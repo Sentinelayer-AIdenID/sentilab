@@ -172,7 +172,9 @@ class LinuxTree:
     def kill(self):
         # Workers use their own sessions. A single killpg is insufficient;
         # enumerate descendants as well, and repeat after orphan adoption.
-        if self.pid is not None:
+        # Once waitpid reaps the leader, its numeric PGID can be reused. Only
+        # identity-checked descendants remain ours to signal after that point.
+        if self.pid is not None and self.returncode is None:
             try:
                 os.killpg(self.pid, signal.SIGKILL)
             except ProcessLookupError:
