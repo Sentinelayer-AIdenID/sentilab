@@ -143,6 +143,44 @@ class ParsePreregTests(unittest.TestCase):
         finally:
             os.unlink(f.name)
 
+    def test_valid_prereg_v2(self):
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump({
+                "schema": "slab-039-prereg-v2",
+                "fixture": "ascend910",
+                "grid": 32,
+                "rule": {"k": 5},
+                "cheap_methods": {
+                    "methods": ["random", "simulated_annealing", "ucb1", "signal_portfolio"],
+                    "search_evaluations_per_method": 28,
+                    "reproduction_evaluations_per_method": 4,
+                    "total_evaluations_per_method": 32,
+                    "seeds": [0, 1, 2, 3, 4, 5, 6, 7],
+                    "seed_count": 8,
+                },
+                "long_sa": {
+                    "restarts": 4,
+                    "max_evaluations_per_restart": 1500,
+                    "max_cpu_minutes": 50,
+                    "seeds": [100, 101, 102, 103],
+                },
+                "allocation": {
+                    "headroom_cpu_minutes": 50,
+                    "aggregate_cpu_minutes": 60,
+                },
+            }, f)
+            f.close()
+        try:
+            prereg = _parse_prereg(f.name)
+            self.assertEqual(prereg["schema"], "slab-039-prereg-v2")
+            self.assertEqual(prereg["fixture"], "ascend910")
+            self.assertEqual(prereg["long_sa"]["max_cpu_minutes"], 50)
+            self.assertIn("signal_portfolio", prereg["cheap_methods"]["methods"])
+            self.assertEqual(prereg["cheap_methods"]["search_evaluations_per_method"], 28)
+            self.assertEqual(prereg["cheap_methods"]["reproduction_evaluations_per_method"], 4)
+        finally:
+            os.unlink(f.name)
+
     def test_invalid_schema(self):
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump({"schema": "wrong", "fixture": "ascend910", "rule": {"k": 5}}, f)
@@ -294,13 +332,15 @@ class HeadroomRunnerTests(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             prereg_path = Path(tmpdir) / "PREREG.json"
             prereg = {
-                "schema": "slab-039-prereg-v1",
+                "schema": "slab-039-prereg-v2",
                 "fixture": "ascend910",
                 "grid": 32,
                 "rule": {"k": 5},
                 "cheap_methods": {
                     "methods": ["random"],
-                    "evaluations_per_method": 2,
+                    "search_evaluations_per_method": 2,
+                    "reproduction_evaluations_per_method": 0,
+                    "total_evaluations_per_method": 2,
                     "seeds": [0],
                     "seed_count": 1,
                 },
@@ -330,13 +370,15 @@ class HeadroomRunnerTests(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             prereg_path = Path(tmpdir) / "PREREG.json"
             prereg = {
-                "schema": "slab-039-prereg-v1",
+                "schema": "slab-039-prereg-v2",
                 "fixture": "ascend910",
                 "grid": 32,
                 "rule": {"k": 5},
                 "cheap_methods": {
                     "methods": ["random"],
-                    "evaluations_per_method": 7,
+                    "search_evaluations_per_method": 7,
+                    "reproduction_evaluations_per_method": 0,
+                    "total_evaluations_per_method": 7,
                     "seeds": [0],
                     "seed_count": 1,
                 },
@@ -367,13 +409,15 @@ class HeadroomRunnerTests(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             prereg_path = Path(tmpdir) / "PREREG.json"
             prereg = {
-                "schema": "slab-039-prereg-v1",
+                "schema": "slab-039-prereg-v2",
                 "fixture": "ascend910",
                 "grid": 32,
                 "rule": {"k": 5},
                 "cheap_methods": {
-                    "methods": ["random", "simulated_annealing", "ucb1"],
-                    "evaluations_per_method": 3,
+                    "methods": ["random", "simulated_annealing", "ucb1", "signal_portfolio"],
+                    "search_evaluations_per_method": 3,
+                    "reproduction_evaluations_per_method": 0,
+                    "total_evaluations_per_method": 3,
                     "seeds": [10, 11, 12],
                     "seed_count": 3,
                 },
