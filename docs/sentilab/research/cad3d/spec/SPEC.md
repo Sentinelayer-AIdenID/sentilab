@@ -37,6 +37,8 @@ moves since lane 3 was written).
     parent and box associations and no view state; reordering keeps the hash, changed geometry changes it (5.0; AC-14).
   - R4 (item 4): the qualified figure (canvas or SVG, chips, legend, source line) is the export boundary; pixel probes
     test only hatching and stippling, and no claim rests on a canvas-only crop (6.5, PL-5; AC-05).
+  - R5 (item 5): a sourced range keeps `value: null`; the number drawn for it is a separate `display` representative,
+    a render hint with its derivation; `drawnMm()` never invents a midpoint (5.0, 5.1, 5.3; AC-10, AC-11).
 
 ## 1. Goals and non-goals
 
@@ -170,7 +172,7 @@ between them, dims the rest (L3:ARCHITECTURE §4.5), and fills the detail panel.
 
 | Mode | The panel shows |
 |---|---|
-| Typical anatomy | name (generic, D1); content chip; kind; what it is and why it is there (reviewed text with fact ids); material (name, class, conductivity "near room temperature" with basis); dimensions (thickness, footprint, area, count), each with its basis tag: `sourced [fact ids]`, `derived (inputs)`, `not sourced · drawn at X (display only: basis)`, or `unknown`; connections (kinds and via); `In our model: lumped into layer 4, chip layer (150 µm silicon block, uniform power)` or `Not in the thermal model`; sources (fact claims, source type and year; titles and URLs only under D1 "named"); confidence. |
+| Typical anatomy | name (generic, D1); content chip; kind; what it is and why it is there (reviewed text with fact ids); material (name, class, conductivity "near room temperature" with basis); dimensions (thickness, footprint, area, count), each with its basis tag: `sourced [fact ids]`, `min–max · sourced [fact ids] · drawn at X (display only: derivation)` for a range, `derived (inputs)`, `not sourced · drawn at X (display only: basis)`, or `unknown`; connections (kinds and via); `In our model: lumped into layer 4, chip layer (150 µm silicon block, uniform power)` or `Not in the thermal model`; sources (fact claims, source type and year; titles and URLs only under D1 "named"); confidence. |
 | Our model | layer name as coded; grid index; thickness (model, `file:line@commit`); material as coded (resistivity and the k it implies, with the bump-mix derivation where it applies); lateral rule (interposer, 2 x, 4 x); powered or not; `Stands for` (anatomy part types, linking back); the ranked simplifications that apply; for a die: role, size, rotation, power input in W, halo width. |
 | Results | chiplet id and role (from the fixture's role map); footprint (evidence: run, seq); J and W from the measurement `metricFor()` picks (main:web/public/sentilab/lab-model.mjs:124), each with its statistic name and label; centre temperature with its own label; evidence validity (valid or stale); the receipt (measurement seq, event id, envelope hash, evaluator identity); receipt completeness (section 5.6). |
 
@@ -291,7 +293,11 @@ for the bundled fixture (main:web/public/temperature-label.mjs:24-25, :48-51; L3
 - **Basis tags** (every number): `sourced` (fact ids), `derived` (arithmetic on cited inputs, inputs named), `model`
   (`file:line@commit`), `evidence` (run, seq), `render_hint` (the real value is not sourced; this is the display
   value, with its reason), `unknown` (no value, nothing drawn from it). Lane 3's `nominal` maps to `sourced` or
-  `derived`, and its `schematic` to `render_hint` (L3:PSEUDOCODE §1 `PROVENANCE`).
+  `derived`, and its `schematic` to `render_hint` (L3:PSEUDOCODE §1 `PROVENANCE`). A sourced range with no single
+  sourced value keeps `value: null` with its `min` and `max`; the number drawn for it is a separate display
+  representative, `display: { basis: "render_hint", value, derivation }`, chosen in the reviewed source with its
+  derivation (for example `midpoint of the sourced range`) and shown and exported as a render hint, never as the
+  sourced value. A range without one is not drawn (section 5.3); nothing invents a midpoint (A#57218 item 5).
 - **No temperatures in static content.** No unit in these schemas is a temperature unit. Static files (anatomy,
   assembly, model stack, layouts, static twins) MUST NOT contain a temperature number in any string or key either
   (PL-4); temperature-valued inputs and literature values are listed in `omitted` with the reason.
@@ -364,9 +370,14 @@ for the bundled fixture (main:web/public/temperature-label.mjs:24-25, :48-51; L3
         "hint_basis": { "$ref": "#/$defs/text" },
         "model_ref": { "$ref": "#/$defs/cite" },
         "evidence_ref": { "type": "string", "maxLength": 300 },
-        "note": { "$ref": "#/$defs/text" }
+        "note": { "$ref": "#/$defs/text" },
+        "display": {
+          "type": "object", "required": ["basis", "value", "derivation"], "additionalProperties": false,
+          "properties": { "basis": { "const": "render_hint" }, "value": { "type": "number" }, "derivation": { "$ref": "#/$defs/text" } }
+        }
       },
       "allOf": [
+        { "if": { "required": ["display"] }, "then": { "properties": { "basis": { "const": "sourced" }, "value": { "type": "null" } } } },
         { "if": { "properties": { "basis": { "const": "unknown" } } },
           "then": { "properties": { "value": { "type": "null" }, "min": { "type": "null" }, "max": { "type": "null" } } } },
         { "if": { "properties": { "basis": { "const": "render_hint" } } },
@@ -392,7 +403,8 @@ for the bundled fixture (main:web/public/temperature-label.mjs:24-25, :48-51; L3
 ```
 
 Checks the schema language cannot state, enforced by the readers (PSEUDOCODE §1-§3) with these refusal codes:
-`range_order` (min > value or value > max), `not_finite`, `bare_temperature` (any string or key matching the
+`range_order` (min > value, value > max, or a `display.value` outside `[min, max]`), `not_finite`,
+`bare_temperature` (any string or key matching the
 temperature pattern of PSEUDOCODE §8), `fact_unknown` (a fact id not in `facts`), `label_mismatch` (a serialized label
 whose keys are not exactly `state`, `text`, `short` and `title`, or whose strings differ from `labelFor()` of the
 value's verified evaluator identity: PL-2; main:web/public/temperature-label.mjs:38-53, :64-70),
@@ -654,8 +666,11 @@ source file in `docs/sentilab/package3d/`.
 ```
 
 Reader rules beyond the schema: a drawn instance's `box` is assembled and in mm with `x0 < x1`, `y0 < y1`,
-`z0 < z1`, and agrees with its quantities (a `sourced` thickness is drawn at its value, or inside its range when only a
-range exists; a `render_hint` is drawn at the hint). **Drawn or undrawn is a union, not a flag** (A#57218 item 1). An
+`z0 < z1`, and agrees with its quantities through `drawnMm()` (section 5.0): a sourced or derived value is drawn at
+that value; a sourced range with `value: null` is drawn at its `display` representative; a `render_hint` is drawn at
+the hint; and each entry of the instance's `basis` equals the basis `drawnMm()` reports for that dimension
+(`render_hint` for a range's representative, never `sourced`: A#57218 item 5). **Drawn or undrawn is a union, not a
+flag** (A#57218 item 1). An
 undrawn instance (`drawn: false`: size unknown and no hint) has no `box`, `basis` or `array`; the reader refuses any of
 them on it instead of drawing an invented box. It keeps its id, type, parent, label, variants and every edge that
 names it, and carries `dims` with `value: null` and `basis: "unknown"` wherever the size is unknown. At least one of
@@ -1087,7 +1102,7 @@ textures, no compression (L3:PSEUDOCODE §10), and its sha256 is listed in `deri
 | `parts[].id`, `parent`, `stack_order` | `part_types` keys, `parent_type`, `level` | kept (sound) |
 | `count` (number or null) | `count` quantity with basis | "30" phases is "thirty or more" (min 30); unknown counts become `unknown` |
 | `material` (free text) | `material_text` (generic) plus `material` id into a new `materials` table | one record per physical material, k with basis |
-| `thickness_um {min, typical, max, notes, render_hint, render_hint_basis}` or `null` | `thickness` quantity | one shape; `typical` becomes `value`; render hints keep their basis; null becomes `unknown` |
+| `thickness_um {min, typical, max, notes, render_hint, render_hint_basis}` or `null` | `thickness` quantity | one shape; `typical` becomes `value`; a range without `typical` keeps `value: null` with its range, and a lane-1 `render_hint` beside it becomes the quantity's `display` (its `render_hint_basis` the derivation); without a range a hint becomes a `render_hint` quantity; a range with no hint is drawn only if the reviewed overlay adds a `display` with its derivation (lane 1's `tim1`, `tim2` and `c4_underfill` ranges have none), else the part is undrawn; null becomes `unknown` (A#57218 item 5) |
 | `lateral_mm {w, h, pattern, examples …}` | `footprint {w, h, area, pattern}` quantities | product-specific sizes (TAP Table II for one product) move to a later product assembly (D1); examples become facts in the text |
 | `k_W_per_mK` (array, number, object or null) | `material.k` quantity, near room temperature | temperature-conditioned entries (the keys `silicon_85C`, `silicon_100C`, `silicon_at_100C`, and the interposer note that states a conductivity at a temperature) are omitted (PL-4); `our_model*` values move to the model manifest (X5) |
 | `connects_to [{id, type[]}]` | `type_edges` (`basis: lane1_typical`) and per-assembly instance edges | edges get a `via` and become instance-to-instance in assemblies |
@@ -1243,7 +1258,7 @@ small change (D9). Nothing in phases 1-5 needs that.
 | PL-7 | A legend is a derived value: `labelForAll()` over the identities behind its scale. | main:web/public/temperature-label.mjs:17-19, :145-153 |
 | PL-8 | The page notice follows `needsNotice()` over the verified prefix, as the Package view does, and must also fire for field-only measurements once P4 lands. The notice slot markup is the existing one. | main:web/public/sentilab/package/package.js:297-300; temperature-label.mjs:163-170; temperature-label.test.mjs:331-333 |
 | PL-9 | Statistics are named and never mixed (section 5.6 table). | A#57059; main:docs/sentilab/references/README.md:105-119 |
-| PL-10 | Unknown stays unknown: `unknown` or `not sourced · drawn at X (display only: reason)` in the panel; null plus basis in the twin; never filled silently; sourced children that do not add up to a sourced parent leave a labelled gap. A part whose size is unknown and has no hint is undrawn: it keeps its id, parent and connections, has no box, and is left out of bounds, picking and field association (section 5.3). | task rule 3; L1:parts.json `conventions.thickness_um`; A#57218 item 1 |
+| PL-10 | Unknown stays unknown: `unknown` or `not sourced · drawn at X (display only: reason)` in the panel, and for a sourced range `min–max · sourced [facts] · drawn at X (display only: derivation)` with `value: null` kept; null plus basis in the twin; never filled silently; sourced children that do not add up to a sourced parent leave a labelled gap. A part whose size is unknown and has no hint is undrawn: it keeps its id, parent and connections, has no box, and is left out of bounds, picking and field association (section 5.3). | task rule 3; L1:parts.json `conventions.thickness_um`; A#57218 item 1 |
 | PL-11 | Instance ids are stable, unique, authored, never reused; removed ids are listed in `retired_ids`. | task rule 3; A#57053 |
 | PL-12 | Assembled geometry is immutable; explode, readable and section are view transforms; lengths, picks and field lookups use assembled coordinates. No view state enters the geometry preimage (section 5.0). | task rule 3; A#57053; A#57059; A#57218 item 3 |
 | PL-13 | Units convert once: µm to mm in `quantity.mjs`, mm to m (and z-up to +Y-up) in the GLB writer. | A#57059 |

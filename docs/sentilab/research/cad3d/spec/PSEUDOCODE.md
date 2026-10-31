@@ -95,22 +95,34 @@ export function readQuantity(q, { path, facts, allowed = BASES }) {
   for (const f of q.facts ?? []) if (!Object.hasOwn(facts ?? {}, f)) return fail("fact_unknown", path, f);
   const lo = q.min ?? -Infinity, hi = q.max ?? Infinity;
   if (lo > hi || (q.value !== null && (q.value < lo || q.value > hi))) return fail("range_order", path, "min <= value <= max");
-  for (const t of [q.derivation, q.hint_basis, q.note]) if (t && findBareTemperatures(t).length) return fail("bare_temperature", path, t);
+  if (q.display !== undefined) {                 // a sourced range's display representative (SPEC.md §5.0; A#57218 item 5)
+    const d = q.display;
+    if (q.basis !== "sourced" || q.value !== null || !isObj(d) || d.basis !== "render_hint" || !(typeof d.value === "number" && Number.isFinite(d.value)) || !nonEmpty(d.derivation))
+      return fail("malformed", path, "display: a sourced range (value null) with a finite render-hint value and its derivation");
+    if (d.value < lo || d.value > hi) return fail("range_order", path, "display inside [min, max]");
+  }
+  for (const t of [q.derivation, q.hint_basis, q.note, q.display?.derivation]) if (t && findBareTemperatures(t).length) return fail("bare_temperature", path, t);
   return { quantity: Object.freeze({ ...q, facts: Object.freeze([...(q.facts ?? [])]) }), error: null };
 }
 
-// The number to DRAW, in mm, for a length quantity: the value, else the middle of a sourced range, else the hint.
-// Returns { mm, basis } or { mm: null, basis: "unknown" } (the instance then cannot be drawn: SPEC.md §5.3).
+// The number to DRAW, in mm, for a length quantity, with the basis the drawing carries (A#57218 item 5):
+//   a value (sourced, derived, model, evidence, render_hint) -> drawn at it, with its own basis;
+//   a sourced range with value null and a display            -> drawn at display.value, basis "render_hint", with
+//                                                               display.derivation (the range itself stays data);
+//   anything else (unknown; a range without a display)       -> { mm: null, basis: "unknown" }: the instance is undrawn.
+// It never invents a representative: no midpoint, no bound.
 export function drawnMm(q) {
   const k = LENGTH_TO_MM[q.unit];
   if (k === undefined) throw new TypeError(`not a length: ${q.unit}`);
-  const v = q.value ?? (q.min !== null && q.max !== null ? (q.min + q.max) / 2 : null);
-  return v === null ? { mm: null, basis: "unknown" } : { mm: tidy(v * k), basis: q.basis };
+  if (q.value !== null) return { mm: tidy(q.value * k), basis: q.basis, derivation: q.basis === "render_hint" ? q.hint_basis : null };
+  if (q.display) return { mm: tidy(q.display.value * k), basis: "render_hint", derivation: q.display.derivation };
+  return { mm: null, basis: "unknown", derivation: null };
 }
 
 // The detail panel's text for one quantity. No temperatures can reach here (no temperature unit exists).
 //   sourced     "100 µm · sourced [pkg-021, thm-029]"        derived  "≈ 5.5 K·mm²/W · derived (720 µm / 130 W/(m·K))"
 //   render_hint "not sourced · drawn at 1.000 mm (display only: <hint_basis>)"
+//   sourced range "20–50 µm · sourced [<facts>] · drawn at 35 µm (display only: <display.derivation>)"   (value stays null)
 //   unknown     "unknown"                                    model    "150 µm · model (sundai_tap/passive_interposer.py:148)"
 export function describeQuantity(q, { digits = 3 } = {}) { /* returns { text, basis, chip } */ }
 ```
@@ -191,7 +203,8 @@ export async function readAssembly(json, anatomy) {
       if (!(inst.box?.x0 < inst.box.x1 && inst.box.y0 < inst.box.y1 && inst.box.z0 < inst.box.z1)) return no("malformed", `${inst.id}: box`);
       const t = dim("t");
       if (t.mm === null || Math.abs((inst.box.z1 - inst.box.z0) - t.mm) > 1e-6) return no("malformed", `${inst.id}: drawn thickness`);
-      // ... the same for footprint w/h when the instance's basis.footprint is sourced/derived/render_hint
+      if (inst.basis.thickness !== t.basis) return no("malformed", `${inst.id}: thickness drawn as ${t.basis}`);   // a range's representative is render_hint
+      // ... the same for footprint w/h (value and basis) when the instance's basis.footprint is sourced/derived/render_hint
     } else return no("malformed", `${inst.id}: drawn must be true or false`);
     ids.add(inst.id);
   }
@@ -671,7 +684,9 @@ export function writeGlb(model) { /* -> Uint8Array; the caller records its sha25
 //   node scripts/package3d.mjs check              every --check above, plus the scanners (W5), without writing
 //
 // data: (1) refuse unless sha256(parts.json) equals the pinned value; (2) apply the overlay; (3) refuse any bare
-// temperature, model field or non-generic name (D1 policy); (4) number-preservation: every number in a served claim
+// temperature, model field or non-generic name (D1 policy); (3b) quantity preservation: every served quantity's value,
+// min and max equal lane 1's typical, min and max (null stays null: no midpoint in value), and a lane-1 render hint
+// lands only in a render_hint quantity or a range's display (A#57218 item 5); (4) number-preservation: every number in a served claim
 // occurs in the lane-1 fact's claim or value (AC-40); (5) layouts: for each reference, parse with verify-core.js
 // parseRaw (keeps number text, web/public/verify-core.js:5-6, :14), recompute sha256(canonical(identity.canonical))
 // with verify-core.js canonical (:103, Python's json.dumps(sort_keys=True, separators=(",", ":"))) and refuse on any

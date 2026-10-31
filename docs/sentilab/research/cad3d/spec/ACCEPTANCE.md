@@ -111,14 +111,20 @@ mode shows no result value; Results shows no flow arrows; Anatomy shows no resul
 **AC-10 Quantity rules** (node). `readQuantity` refuses: `unknown` with a number; `render_hint` without a value or
 `hint_basis`; `sourced` without facts or without any number; `derived` without `derivation`; `model` without
 `model_ref`; `evidence` without `evidence_ref`; `min > max`; `value` outside `[min, max]`; a non-finite number; a fact
-id not in the manifest; a temperature unit; a bare temperature inside `derivation`, `hint_basis` or `note`. The schema
+id not in the manifest; a temperature unit; a bare temperature inside `derivation`, `hint_basis`, `note` or
+`display.derivation`; a `display` on anything but a `sourced` quantity with `value: null`; a `display` without
+`basis: "render_hint"`, a finite value or a derivation; a `display.value` outside `[min, max]`. The schema
 blocks of SPEC.md §5.1 refuse the same set where the schema language can say it. Pass: every case refused with its
 code; valid cases accepted.
 
 **AC-11 An unknown dimension renders as unknown** (browser, node). The lid's thickness (no source in lane 1:
 L1:REPORT §3.3) shows `not sourced · drawn at 1.000 mm (display only: …)` with the hint's reason; the die-side
 capacitors' count shows `unknown`; the twin carries `value: null` with `basis: "unknown"` or the hint with
-`basis: "render_hint"`. An instance with an unknown size and no hint is undrawn (SPEC.md §5.3): it is listed
+`basis: "render_hint"`. TIM1 (lane 1: a sourced 20 to 50 µm range with no typical value, L1:parts.json
+`tim1.thickness_um`) keeps `basis: "sourced"`, `value: null`, `min` and `max` in the served anatomy and in the twin;
+drawn, it sits at the reviewed overlay's `display` representative with the instance's thickness basis `render_hint`,
+and the panel reads `20–50 µm · sourced [facts] · drawn at X (display only: <derivation>)`. An instance with an
+unknown size and no hint is undrawn (SPEC.md §5.3): it is listed
 `not drawn · size unknown` in the part tree, keeps its id, parent and every edge that names it in the panel and the
 twin (with `dims` null where unknown and no box), and is absent from the canvas, `RenderModel.boxes`, `bounds`,
 `pick()`, `sectionAt()` and every field lookup. Adversarial: a build that silently fills an unknown (for example copies
@@ -126,7 +132,10 @@ the model's 1 mm spreader into the anatomy lid as `sourced`) fails `readAnatomy`
 `box` (a placeholder, a zero-size or a 1 mm cube), `basis` or `array` is refused by the schema and by `readAssembly`;
 a `drawn: true` instance without a box is refused; an undrawn instance whose every dimension is drawable is refused
 (a drawable part is drawn); adding an undrawn part leaves `bounds` unchanged, and a pick ray through the space it
-would occupy returns the drawn part behind it or `null`. Pass: all.
+would occupy returns the drawn part behind it or `null`; a data build whose served `value` differs from lane 1's
+`typical` (for example TIM1's midpoint written into `value`) is refused by `scripts/package3d.mjs data`, and an
+assembly that declares a range's drawn thickness `sourced` is refused by `readAssembly`; `drawnMm()` on a range
+without `display` returns `null` (no midpoint is invented), so that part is undrawn. Pass: all.
 
 **AC-12 Explode never mutates geometry** (node, browser). After `buildRenderModel()`, `Object.isFrozen` holds for the
 model and every nested object; a write in strict mode throws. Record `geometry_key` (the geometry preimage of SPEC.md
