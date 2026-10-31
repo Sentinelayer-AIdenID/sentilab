@@ -35,10 +35,12 @@ SCALARS = {key["key_version"]: age_tools.identity_from_phrase(key["phrase"])[0] 
 K_CHALLENGE = hashlib.sha256(VECTORS["test_phrases"]["k_challenge"].encode()).digest()
 
 
-def opener(armour: bytes, manifest: dict, key_version: int) -> bytes:
-    """The reference opener for the test identities: the manifest's key version only; custody keeps old keys."""
+def opener(armour: bytes, _manifest: dict, key_version: int) -> bytes:
+    """The reference opener for the test identities, modelled on custody: it holds every key version, old ones
+    included, and opens with the version it is given. Refusing a version the manifest does not pin is the
+    validator's job, so this opener does not repeat it."""
     scalar = SCALARS.get(key_version)
-    if scalar is None or age_tools.recipient_from_scalar(scalar) != manifest["sealing"]["recipient"]:
+    if scalar is None:
         raise Unopenable()
     try:
         return age_tools.reference_decrypt(age_tools.dearmor(armour), scalar)

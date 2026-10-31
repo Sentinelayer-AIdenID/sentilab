@@ -93,7 +93,13 @@ def ledger_lifecycle(state: str, codes=()) -> str:
 
 def _codes(payload) -> list | None:
     codes = payload.get("codes", [])
-    return list(codes) if isinstance(codes, (list, tuple)) else None
+    if not isinstance(codes, (list, tuple)) or not all(isinstance(code, str) for code in codes):
+        return None
+    return list(codes)
+
+
+def _one_of(value, allowed) -> bool:
+    return isinstance(value, str) and value in allowed
 
 
 def _guard(event: str, entry: Entry, payload: dict) -> str | None:
@@ -107,7 +113,7 @@ def _guard(event: str, entry: Entry, payload: dict) -> str | None:
         return "an attempt is recorded only after it is settled"
     codes = _codes(payload)
     if codes is None:
-        return "codes are a list"
+        return "codes are a list of code names"
     if event == "reject" and (not codes or any(code not in REJECTION_CODES for code in codes)):
         return "a rejection needs rejection codes"
     if event == "fail" and (len(codes) != 1 or codes[0] not in FAILURE_CODES):
@@ -118,16 +124,16 @@ def _guard(event: str, entry: Entry, payload: dict) -> str | None:
         return "reproduction needs a fresh process"
     if event == "not_reproduced" and (len(codes) != 1 or codes[0] not in REPRODUCTION_CODES):
         return "a failed reproduction needs one reproduction code"
-    if event == "cross_checked" and payload.get("tier") not in CROSS_TIERS:
+    if event == "cross_checked" and not _one_of(payload.get("tier"), CROSS_TIERS):
         return "a cross-check needs a cross_build or cross_arch tier"
     if event == "cancel" and any(code not in POLICY_CODES for code in codes):
         return "a cancellation carries policy codes only"
     if event in ("accept", "hold", "release", "start", "replay", "reproduced", "cross_checked", "expire",
                  "hide", "restore") and codes:
         return "this event carries no codes"
-    if event == "hide" and payload.get("reason") not in HIDE_REASONS:
+    if event == "hide" and not _one_of(payload.get("reason"), HIDE_REASONS):
         return "hiding needs a moderation reason"
-    if event == "restore" and payload.get("reason") not in RESTORE_REASONS:
+    if event == "restore" and not _one_of(payload.get("reason"), RESTORE_REASONS):
         return "restoring needs a moderation reason"
     return None
 

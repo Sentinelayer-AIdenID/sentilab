@@ -215,9 +215,15 @@ def _unseal(note: bytes, *, manifests, target_id, opener):
         return None, [violation("unsealable")], True
     if found:
         return None, found, True
-    if POSTED.get(value.get("schema")) not in SEALABLE:
+    if kind_of(value) not in SEALABLE:
         return None, [violation("unsealable")], True
     return value, [], True
+
+
+def kind_of(value: dict):
+    """The posted object's kind from its "schema" value; None for anything else, a non-string included."""
+    schema = value.get("schema")
+    return POSTED.get(schema) if isinstance(schema, str) else None
 
 
 def _admission(manifest: dict, manifest_id: str, admission) -> list:
@@ -275,7 +281,7 @@ def _layout(item: dict, manifest: dict, checker: LayoutChecker) -> list:
 
 def _object(value: dict, *, sealed, reply, manifests, target_id, admission, layout_checker) -> Outcome:
     """Stages 2 (schema), 1b and 3 to 7 on a parsed object."""
-    kind = POSTED.get(value.get("schema"))
+    kind = kind_of(value)
     if kind is None:
         return _rejected([violation("schema_invalid", path="/schema", keyword="enum")], sealed=sealed)
     found = schema_violations(kind, value)

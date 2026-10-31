@@ -2476,6 +2476,43 @@
    }
   },
   {
+   "name": "codes are code names",
+   "state": null,
+   "hidden": null,
+   "event": "reject",
+   "payload": {
+    "codes": [
+     {
+      "code": "lattice"
+     }
+    ]
+   }
+  },
+  {
+   "name": "a tier is a name",
+   "state": "reproduced",
+   "hidden": null,
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": [
+     "cross_build"
+    ]
+   }
+  },
+  {
+   "name": "a moderation reason is a name",
+   "state": "evaluated",
+   "hidden": null,
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": [
+     "spam"
+    ]
+   }
+  },
+  {
    "name": "hiding needs a moderation reason",
    "state": "evaluated",
    "hidden": null,

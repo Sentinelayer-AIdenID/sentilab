@@ -216,7 +216,8 @@ class Vocabulary(unittest.TestCase):
         states = json.loads((golden / "states.json").read_bytes())
         revisions = json.loads((golden / "revisions.json").read_bytes())["cases"]
         seen = set(codes_in(loaded))
-        seen |= {code for pair in states["pairs"] + states["guards"] for code in pair["payload"].get("codes", [])}
+        seen |= {code for pair in states["pairs"] + states["guards"] for code in pair["payload"].get("codes", [])
+                 if isinstance(code, str)}
         for case in revisions:
             expected = case["expect"]
             seen |= set(expected if isinstance(expected, list) else expected.get("codes", [])
@@ -303,6 +304,10 @@ class Seams(unittest.TestCase):
             intake(sealed, mv.P_PRIV, opener=lambda *_: "a string")
         refused = intake(sealed, mv.P_PRIV, opener=lambda *_: (_ for _ in ()).throw(Unopenable()))
         self.assertEqual(["unsealable"], [item["code"] for item in refused.violations])
+
+    def test_a_sealed_schema_that_is_not_a_string_is_unsealable(self):
+        outcome = intake(mv.sealed("private proposal"), mv.P_PRIV, opener=lambda *_: b'{"schema": ["x"]}')
+        self.assertEqual(["unsealable"], [item["code"] for item in outcome.violations])
 
     def test_the_opener_gets_the_header_key_version_and_the_armour(self):
         seen = []
