@@ -1,14 +1,16 @@
-"""Builds contracts/open-proposal-v1/vectors-canonical.json, limits.provisional.json and golden/*.json.
+"""Builds contracts/open-proposal-v1/vectors-canonical.json and golden/*.json for DESIGN rev 3.
 
 Every input, every expected outcome and every expected code below is written by hand. Hashes are computed with the
 contract's functions and cross-checked independently by the JavaScript twin (run-vectors.mjs) and the tests.
 
     python -m open_proposals.contract.make_vectors           # rewrite the files
     python -m open_proposals.contract.make_vectors --check   # exit 1 if a committed file differs
+    python -m open_proposals.contract.make_vectors --seal    # (re)seal the age ciphertexts the golden notes use
 
-Fixture identities are obviously fake (00000000-0000-4000-8000-...). The test keys derive from public phrases at run
-time; no key material is stored. Sealed envelopes here are shape tests only: no age implementation was available
-offline, so no age ciphertext is generated (see the "age" entry of the vectors).
+Fixture identities are obviously fake (00000000-0000-4000-8000-...). Test keys derive from public phrases at run time
+(k_challenge here; the age identities in vectors-age.json); no key material is stored. Sealed notes are real age v1
+ciphertexts, made once by --seal with pyrage or the age binary and kept in golden/sealed-notes.json (encryption is
+randomised, so they are an input, not an output); the tests open every one with the reference opener.
 """
 from __future__ import annotations
 
@@ -17,264 +19,306 @@ import copy
 import hashlib
 import json
 import sys
-from pathlib import Path
 
+from . import age_tools
 from . import canonical as h
+from .predicate_fixtures import cases as predicate_cases
 from .schemas import CONTRACT_DIR
+from .states import EVENTS, FLAG_EVENTS, LIFECYCLE
 
 GOLDEN = CONTRACT_DIR / "golden"
-PSEUDONYM_PHRASE = "sentilab-open-proposal-v1 test pseudonym key, not a secret"
-CLIENT_PHRASE = "sentilab-open-proposal-v1 test client secret, not a secret"
-PSEUDONYM_KEY = hashlib.sha256(PSEUDONYM_PHRASE.encode()).digest()
-CLIENT_SECRET = hashlib.sha256(CLIENT_PHRASE.encode()).digest()
+SEALED_CACHE = GOLDEN / "sealed-notes.json"
+AGE_VECTORS = json.loads((CONTRACT_DIR / "vectors-age.json").read_bytes())
+K_PHRASE = "sentilab-open-proposal-v1 test k_challenge, not a secret"
+K_CHALLENGE = hashlib.sha256(K_PHRASE.encode()).digest()
+AGE_KEYS = {key["key_version"]: age_tools.identity_from_phrase(key["phrase"]) for key in AGE_VECTORS["keys"]}
 
-# Obviously fake identities. The two participants are outside (non-staff) accounts: one human via REST, one agent.
+# Obviously fake identities. Both participants are outside (non-staff) accounts: one posts as a person over REST,
+# the other through its admitted agent.
 HUMAN = "00000000-0000-4000-8000-00000000000a"
 AGENT_ACCOUNT = "00000000-0000-4000-8000-00000000000b"
-INTAKE = {"account_id": "00000000-0000-4000-8000-0000000000f0", "agent_id": "example-intake"}
+AGENT_ID = "example-agent"
 ROOM = "00000000-0000-4000-8000-0000000000c1"
 OVERFLOW_ROOM = "00000000-0000-4000-8000-0000000000c2"
 ACTIONS = [f"00000000-0000-4000-8000-0000000000a{index}" for index in range(1, 10)]
-RESERVATIONS = [f"00000000-0000-4000-8000-0000000000e{index}" for index in range(1, 6)]
-FAKE_CAPABILITY = "opencap1-" + "0" * 63 + "1"
-ROUTER_SHA256 = "bed6fa4ad0035cd67ea2b6bc2f498775767893a601ad2dea855e4f3a4a966568"   # PR #57 tap_router.py @063f659
+RESERVATION = "00000000-0000-4000-8000-0000000000e1"
+SALTS = [f"{index:032x}" for index in range(1, 9)]          # obviously fake: never use a fixed salt for real
 HOTSPOT6 = "a7a3286e368867c26381e0a23e36b3e273bdeda9"
 WITHDRAWN = "HotSpot-7:f18831e48cef5d62580585cca0d7fab6c71bc3cc:grid:64x64"
 FIXTURE = "fixture-no-solver"
-AGE_HEADER_ONLY = b"age-encryption.org/v1\n"      # the v1 header line alone: a shape test, never a ciphertext
+TERMS_TEXT = "sentilab-open-proposal-v1 test terms text: a fixture, not the published terms"
+TERMS_VERSION = "sentilab-open-terms/1@" + hashlib.sha256(TERMS_TEXT.encode()).hexdigest()
 
 
 def fake(label: str) -> str:
-    """A stand-in digest for a pin of the illustrative test fixture."""
-    return hashlib.sha256(("sentilab-open-proposal-v1 test pin: " + label).encode()).hexdigest()
+    """An obviously fake pin: the sha256 of a label."""
+    return hashlib.sha256(("sentilab-open-proposal-v1 fake: " + label).encode()).hexdigest()
 
 
-TERMS = {"id": "sentilab-open-terms/1", "permits": ["evaluation", "evidence", "display"], "training": False}
-LEGALITY = {"units": "um", "anchor": "die-centre", "origin": "frame lower-left", "lattice_um": 500,
-            "lattice_basis": "engineering_benchmark", "margin_um": 500, "min_die_gap_um": 100,
-            "rotation": "per_die_90"}
-CASES = {"replay": {"id": "replay", "kind": "replay", "applies_to": "both", "grid": None, "die": None, "dx_um": None,
-                    "dy_um": None},
-         "grid32": {"id": "grid32", "kind": "mesh", "applies_to": "both", "grid": 32, "die": None, "dx_um": None,
-                    "dy_um": None},
-         "pos-a-x": {"id": "pos-a-x", "kind": "position", "applies_to": "reference", "grid": None, "die": 0,
-                     "dx_um": 500, "dy_um": 0}}
+OTHER_TERMS = "sentilab-open-terms/2@" + fake("another terms text")
+
+# ── manifests ───────────────────────────────────────────────────────────────────────────────────────────────────
+
+COUNTING = {"routed": "each ordered pair with R[i][j]>0 is a directed net of R[i][j] wires",
+            "proxy": "each unordered pair once"}
+LEGALITY = {"units": "um", "anchor": "die-centre", "lattice_um": 500,
+            "lattice_rationale": "declared finite engineering benchmark choice (A11)", "margin_um": 500,
+            "min_die_gap_um": 100, "min_die_gap_rationale": "TAP-2.5D Eqn. (10)",
+            "halo": "uniform ring per die; rotation-invariant", "keepouts": [], "rotation": "per_die_90"}
+CLAIMS = {"display_order": ["declared temperature target", "strict-wire thermal tolerance",
+                            "r-relaxed-wire thermal tolerance", "strict thermal improvement", "strict wire improvement",
+                            "wire improvement with allowed thermal degradation", "robust dominance over R"],
+          "suppressed_by": ["failed gate zero", "failed binding", "failed predicate fixture",
+                            "failed required scenario"]}
+NOMINAL = {"id": "nominal", "applies_to": "both", "grid": 64}
+MESH = {"id": "mesh-32", "applies_to": "both", "grid": 32}
+POSITION_TEMPLATE = {"id": "position-<die>-<axis>-<sign>", "applies_to": "R",
+                     "cases": "raw-R inventory (A12): separately counted, profiled and granted"}
+BUNDLE_ENTRY = [{"phase": "evaluate", "grid": 64, "suballocation": "native.evaluate"},
+                {"phase": "replay", "grid": 64, "suballocation": "native.replay"},
+                {"phase": "mesh", "grid": 32, "suballocation": "native.mesh"},
+                {"phase": "route", "suballocation": "routing"}]
+PROVISIONAL_POLICY = "provisional; policy choices, not uncertainty; fixed before any candidate is scored"
+FROZEN_POLICY = "frozen; policy choices, not uncertainty; fixed before any candidate is scored"
+SOURCES = ["TAP-2.5D paper PDF b209f51a…", "Fig. 6(a)-(c)", "Fig. 5(a)-(d)", "sys_ascend910_45mm.cfg",
+           "sys_micro150_45mm.cfg"]
 
 
-def temperature(t_m, evaluator, label, *, peak=None, argmax=None, selector=None):
-    return {"statistic": "chiplet-centre-max", "T_M_c": t_m, "grid_peak_c": peak, "grid_argmax": argmax,
-            "tap_selector_c": selector, "evaluator": evaluator, "label": label}
+def unit(index: int) -> str:
+    return f"Chiplet_{index}"
 
 
-def wire(routed, evaluator, label, *, proxy=None, status=None):
-    return {"routed_mm": routed, "routed_status": status or ("optimal" if routed is not None else "timeout"),
-            "proxy_mm": proxy, "evaluator": evaluator, "label": label}
-
-
-def dies_from(rows):
-    return [{"die": index, "x_um": x, "y_um": y, "rot_deg": rot} for index, (x, y, rot) in enumerate(rows)]
-
-
-# The Ascend 910 snap0p5 engineering variant: the raw centres (PR #57 README) rounded to the 0.5 mm lattice.
-ASCEND_SNAP0P5 = dies_from([(17000, 22500, 90), (38500, 22500, 0), (7500, 11000, 90), (21500, 11000, 90),
-                            (7500, 34000, 90), (21500, 34000, 90)])
-TEST_LAYOUT = dies_from([(3000, 5000, 0), (7000, 5000, 0)])
+def manifest_shape(*, problem, fixture, dies, matrix, comparator, variants, targets, status="draft") -> dict:
+    """The rev 3 section 4.11 draft, field for field: every <...> placeholder is null until decided. The draft states
+    two check limits (2 s and 5 s) and every quota, so those are filled in, provisional."""
+    signed = status == "signed"
+    return {
+        "schema": "sentilab-open-manifest/1", "version": 0,
+        "status": "signed" if signed else "draft: provisional fields; not a signed manifest",
+        "problem": problem, "fixture": fixture,
+        "dies": dies,
+        "netlist": {"matrix": matrix, "counting": COUNTING},
+        "legality": copy.deepcopy(LEGALITY),
+        "references": {"file_sha256": None, "comparator": comparator, "engineering_variants": variants,
+                       "published_targets": targets},
+        "statistic": {"id": "M", "definition": "max native GRID_CENTER value over the enumerated real chiplets",
+                      "real_chiplets": [die["unit"] for die in dies],
+                      "centre_mapping": "GRID_CENTER: mean of 1, 2 or 4 central cells (pinned)",
+                      "record_field": "chiplet_centre_mapping.max_C", "grid": 64,
+                      "retained_separately": ["active_layer_grid_peak",
+                                              "historical_tap_stdout_selector.literal_on_stdout"],
+                      "evaluator": {"kind": "hotspot6", "upstream": HOTSPOT6, "binary_sha256": None,
+                                    "gate_zero_record_sha256": None, "build": None, "runtime": None},
+                      "numerical_admission": "UNKNOWN"},
+        "wire": {"metric": "routed", "router_sha256": None, "solver": "HiGHS MILP, mip_rel_gap 0",
+                 "status_acceptance": "proven optimum within the solver limit", "proxy": "diagnostic only"},
+        "policy": {"status": PROVISIONAL_POLICY, "D_K": None, "r": None, "B_T_K": None, "B_W_mm": None,
+                   "B_W_basis": "W_R_mm", "T_limit_C": None,
+                   "proposed_in_draft": {"D_K": 0.5, "r": 0.05, "B_T_K": 1.0, "B_W_fraction": 0.02, "T_limit_C": 85},
+                   "tradeoff_budgets_r": [0.1, 0.25, 0.5, 1.0]},
+        "bounds": {"u_T": "UNKNOWN", "u_q": "UNKNOWN", "u_abs": "UNKNOWN"},
+        "claims": copy.deepcopy(CLAIMS),
+        "screen": {"claim": "passes the listed sensitivity cases", "missing": "INCOMPLETE", "failed": "INCONCLUSIVE",
+                   "scenarios": [NOMINAL, MESH, POSITION_TEMPLATE]},
+        "evaluation_bundle": {"status": "provisional", "per_entry": BUNDLE_ENTRY, "per_manifest": "R's scenario cases",
+                              "lifecycle_suballocation": "lifecycle", "intake_suballocation": "intake",
+                              "ceilings_cpu_s": None},
+        "checks": {"solver_time_limit_s": 2, "check_wall_s": 5, "cleanup_headroom_s": None, "cpu_reserve_s": None,
+                   "status_access": "salted request_sha256 handle or authorized access", "suballocation": "checks"},
+        "ties": "ascending T_M, then geometry hash", "failures": "retained; no automatic retry",
+        "limits": {"status": "provisional (OP-W1)", "eval_per_account_hour": 3, "eval_per_account_day": 12,
+                   "eval_room_hour": 20, "eval_room_day": 120, "queue_max": 30, "warden_call_policy_hour": 40,
+                   "code_cpu_s_per_hour_per_root": 600, "code_default_solve_reserve_cpu_s": 15,
+                   "check_per_account_hour": 30, "check_room_hour": 600},
+        "terms": {"accepted_versions": [], "retention": None},
+        "intake": {"order": ["createdAt", "action_id", "room_id"],
+                   "cursor": "auditWindow.nextCursor, saved after durable processing", "revision": "1 only"},
+        "transport_key": {"schema": "sentilab-open-transport-key/1", "prefix": "so1-", "hex_chars": 48,
+                          "fields": ["room", "account", "actor_slot", "manifest_id", "logical_key", "content_sha256"]},
+        "disclosure": {"at_opening": ["reference geometry", "frozen SentiLab baseline"],
+                       "entries": "public only by explicit choice; private sealed; revealed only by a logged "
+                                  "publish choice"},
+        "pseudonym": {"rule": "HMAC-SHA256(k_challenge, account_id)", "scope": "per challenge"},
+        "exposure": {"sources": list(SOURCES),
+                     "note": "exposed families: mark when building any future held-out split"},
+        "sealing": {"format": "age X25519, ASCII armour", "recipient": None, "key_version": None,
+                    "applies_to": ["private proposals", "private routed checks"], "plaintext_max_bytes": 4096,
+                    "sealed_note_max_bytes": 8192, "plaintext_fallback": False,
+                    "rotation": "new key version and new manifest version; old keys kept in custody, never reused"},
+        "example": {"label": "invented numbers", "inputs": None},
+        "window": {"opens_at": None, "closes_at": None},
+        "refs": {"grant": None, "claim_rules": None, "checker_sha256": None},
+        "submission": {"threads": None}}
 
 
 def draft_ascend() -> dict:
-    manifest = {
-        "schema": "sentilab-open-manifest/1", "version": 0, "status": "draft", "challenge": "sentilab-open-1",
-        "problem": "ascend910", "terms": TERMS,
-        "fixture": {"id": "ascend910-45mm", "config": "sundai_tap/configs/sys_ascend910_45mm.cfg",
-                    "config_sha256": "4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c",
-                    "frame_um": 45000, "ambient_c": 45, "link_type": "nppl"},
-        "dies": [{"die": 0, "name": "compute", "w_um": 14500, "h_um": 31400, "power_w": 256, "halo_um": 90,
-                  "rot_deg": [0, 90]},
-                 {"die": 1, "name": "io", "w_um": 10500, "h_um": 16000, "power_w": 14, "halo_um": 45,
-                  "rot_deg": [0, 90]}]
-                + [{"die": index, "name": "hbm", "w_um": 7750, "h_um": 11870, "power_w": 20, "halo_um": 45,
-                    "rot_deg": [0, 90]} for index in range(2, 6)],
-        "netlist": [[0, 200, 256, 256, 256, 256]] + [[200, 0, 0, 0, 0, 0]] + [[256, 0, 0, 0, 0, 0]] * 4,
-        "legality": LEGALITY,
-        "reference": {
-            "id": "ascend910-tap25d-fig6a", "sha256": None, "track": "MATCH", "verdict_layout": "raw",
-            "coordinate_model": "continuous", "legal": False, "t_ref": None,
-            "w_ref": wire(16417.5, "tap-router:" + ROUTER_SHA256, "unvalidated", proxy=18.82),
-            "paper": {"t_c": 75.48, "w_mm": 16426, "source": "TAP-2.5D paper Fig. 6(a): HotSpot 6.0 and CPLEX",
-                      "evaluator": "paper:TAP-2.5D:HotSpot-6.0+CPLEX", "label": "unvalidated"},
-            "engineering_variant": None},
-        "temperature": {"statistic": "chiplet-centre-max", "grid": 64, "grid_map_mode": "center",
-                        "evaluator": {"kind": "hotspot6", "upstream": HOTSPOT6, "binary_sha256": None,
-                                      "gate_zero_record_sha256": None, "identity": None}},
-        "wire": {"judged": "routed", "proxy": "diagnostic", "router_sha256": None, "time_limit_s": None,
-                 "evaluator": None},
-        "thresholds": {"status": "provisional", "D_k": 0.5, "B_T_k": 1.0,
-                       "B_W": {"fraction": 0.02, "of_reference_wire_mm": 16417.5}, "scenario_target_c": 85,
-                       "tradeoff_budgets": [0.1, 0.25, 0.5, 1.0]},
-        "wire_tracks": [{"id": "strict", "factor": 1}, {"id": "relaxed", "factor": 1.05}],
-        "sensitivity": {"status": "provisional", "cases": [CASES["replay"], CASES["grid32"]]},
-        "discrimination_control": [
-            {"id": "reference", "source_sha256": None,
-             "expected": [{"type": "strict_wire_thermal_tolerance", "r": None, "outcome": "passes_listed_cases"},
-                          {"type": "strict_thermal_improvement", "r": None, "outcome": "fails_listed_cases"}]},
-            {"id": "fig6c", "source_sha256": None,
-             "expected": [{"type": "relaxed_wire_thermal_tolerance", "r": 0.05, "outcome": "passes_listed_cases"},
-                          {"type": "strict_thermal_improvement", "r": None, "outcome": "fails_listed_cases"}]},
-            {"id": "fig6b", "source_sha256": None,
-             "expected": [{"type": "relaxed_wire_thermal_tolerance", "r": 0.05, "outcome": "fails_listed_cases"}]}],
-        "example": {"temperature": temperature(75.8, FIXTURE, "illustrative"),
-                    "wire": wire(16700.0, FIXTURE, "illustrative")},
-        "window": {"opens_at": None, "closes_at": None},
-        "refs": {"grant": None, "claim_rules": None, "checker_sha256": None},
-        "sealing": {"format": "age-encryption.org/v1", "recipient": None, "key_version": None,
-                    "rotation": {"policy": "new_manifest_version", "not_after": None}}}
-    variant = {"problem": "ascend910", "units": "um", "anchor": "die-centre", "lattice_um": 500,
-               "dies": ASCEND_SNAP0P5}
-    manifest["reference"]["engineering_variant"] = {
-        "id": "ascend910-tap25d-fig6a-snap0p5", "grid_um": 500,
-        "geometry_sha256": h.geometry_sha256(variant, manifest), "design_hash": None, "legal": True}
-    return manifest
+    """DESIGN rev 3 section 4.11, Ascend 910."""
+    dies = ([{"die": 0, "unit": unit(0), "name": "compute", "w_um": 14500, "h_um": 31400, "power_w": 256,
+              "halo_um": 90, "rot_deg": [0, 90]},
+             {"die": 1, "unit": unit(1), "name": "io", "w_um": 10500, "h_um": 16000, "power_w": 14, "halo_um": 45,
+              "rot_deg": [0, 90]}]
+            + [{"die": index, "unit": unit(index), "name": "hbm", "w_um": 7750, "h_um": 11870, "power_w": 20,
+                "halo_um": 45, "rot_deg": [0, 90]} for index in range(2, 6)])
+    return manifest_shape(
+        problem="ascend910",
+        fixture={"id": "ascend910-45mm", "config": "sundai_tap/configs/sys_ascend910_45mm.cfg",
+                 "config_sha256": "4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c",
+                 "frame_um": 45000, "origin": "frame lower-left", "ambient_c": 45, "link_type": "nppl",
+                 "package": {"hotspot_config_sha256": None, "assumptions": "steady state, uniform power per die"}},
+        dies=dies,
+        matrix=[[0, 200, 256, 256, 256, 256], [200, 0, 0, 0, 0, 0]] + [[256, 0, 0, 0, 0, 0] for _ in range(4)],
+        comparator={"id": "ascend910-tap25d-fig6a/raw", "continuous": True, "legal_on_fixture": False,
+                    "content_sha256": "0046e17b3e33feef14e570eb6a2026e17c3eea5c232160a052be62c2ae8e470e",
+                    "T_R": "UNKNOWN", "T_R_measurement_id": None, "W_R_mm": 16417.5},
+        variants=[{"id": "ascend910-tap25d-fig6a-snap0p5", "role": "engineering baseline",
+                   "content_sha256": "e0c7ce9eb641ee6aea7d2015e5bc0fc5e3f38f1759c2c2252f14ad5104af022a",
+                   "design_hash": "224f2ea088fc50f5eb209a44f1a82fa3704c06037456dc6976657df105c6c9e0"},
+                  {"id": "ascend910-tap25d-fig6a/snapped-1mm", "role": "history; superseded as baseline",
+                   "content_sha256": "45b0f7e05b82a5eedad1679d751f5684e98ef35c936db54aeea9b475ae397703"}],
+        targets={"source": "Ma et al., DATE 2021, Fig. 6(a)", "T_c": 75.48, "W_mm": 16426,
+                 "use": "paper-target diagnostic only"})
 
 
 def draft_micro150() -> dict:
-    manifest = draft_ascend()
-    manifest.update({
-        "problem": "micro150",
-        "fixture": {"id": "micro150-45mm", "config": "sundai_tap/configs/sys_micro150_45mm.cfg",
-                    "config_sha256": "da94828d683b0d16a243907d51927761892e82f9725f17bc96ab1c867563ed89",
-                    "frame_um": 45000, "ambient_c": 45, "link_type": "nppl"},
-        "dies": [{"die": index, "name": "cpu", "w_um": 8250, "h_um": 9000, "power_w": 150, "halo_um": 180,
-                  "rot_deg": [0, 90]} for index in range(4)]
-                + [{"die": index, "name": "dram", "w_um": 8750, "h_um": 8750, "power_w": 20, "halo_um": 135,
-                    "rot_deg": [0]} for index in range(4, 8)],
-        "netlist": [[0, 256, 0, 256, 1024, 0, 0, 0], [256, 0, 256, 0, 0, 1024, 0, 0],
-                    [0, 256, 0, 256, 0, 0, 1024, 0], [256, 0, 256, 0, 0, 0, 0, 1024],
-                    [1024, 0, 0, 0, 0, 0, 0, 0], [0, 1024, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 1024, 0, 0, 0, 0, 0], [0, 0, 0, 1024, 0, 0, 0, 0]],
-        "discrimination_control": [
-            {"id": "fig5c", "source_sha256": None,
-             "expected": [{"type": "strict_thermal_improvement", "r": None, "outcome": "fails_listed_cases"}]},
-            {"id": "fig5d", "source_sha256": None,
-             "expected": [{"type": "strict_thermal_improvement", "r": None, "outcome": "fails_listed_cases"}]}],
-        "example": None})
-    manifest["reference"] = {
-        "id": "micro150-tap25d-fig5a", "sha256": None, "track": "BEAT", "verdict_layout": "raw",
-        "coordinate_model": "continuous", "legal": False, "t_ref": None,
-        "w_ref": wire(67688.4, "tap-router:" + ROUTER_SHA256, "unvalidated", proxy=9.38),
-        "paper": {"t_c": 115.94, "w_mm": 67686, "source": "TAP-2.5D paper Fig. 5(a): HotSpot 6.0 and CPLEX",
-                  "evaluator": "paper:TAP-2.5D:HotSpot-6.0+CPLEX", "label": "unvalidated"},
-        "engineering_variant": {"id": "micro150-tap25d-fig5a-snap0p5", "grid_um": 500, "geometry_sha256": None,
-                                "design_hash": None, "legal": True}}
-    manifest["thresholds"]["B_W"] = {"fraction": 0.02, "of_reference_wire_mm": 67688.4}
+    """The CPU-DRAM manifest: the same shape (DESIGN rev 3 section 4.11, last paragraph)."""
+    dies = ([{"die": index, "unit": unit(index), "name": "cpu", "w_um": 8250, "h_um": 9000, "power_w": 150,
+              "halo_um": 180, "rot_deg": [0, 90]} for index in range(4)]
+            + [{"die": index, "unit": unit(index), "name": "dram", "w_um": 8750, "h_um": 8750, "power_w": 20,
+                "halo_um": 135, "rot_deg": [0]} for index in range(4, 8)])
+    return manifest_shape(
+        problem="micro150",
+        fixture={"id": "micro150-45mm", "config": "sundai_tap/configs/sys_micro150_45mm.cfg",
+                 "config_sha256": "de6e3edbed848f1bd81758a92f72a1f0b6aa5ffa60aca3153a324cf7a78d9ffd",
+                 "frame_um": 45000, "origin": "frame lower-left", "ambient_c": 45, "link_type": "nppl",
+                 "package": {"hotspot_config_sha256": None, "assumptions": "steady state, uniform power per die"}},
+        dies=dies,
+        matrix=[[0, 256, 0, 256, 1024, 0, 0, 0], [256, 0, 256, 0, 0, 1024, 0, 0], [0, 256, 0, 256, 0, 0, 1024, 0],
+                [256, 0, 256, 0, 0, 0, 0, 1024], [1024, 0, 0, 0, 0, 0, 0, 0], [0, 1024, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1024, 0, 0, 0, 0, 0], [0, 0, 0, 1024, 0, 0, 0, 0]],
+        comparator={"id": "micro150-tap25d-fig5a/raw", "continuous": True, "legal_on_fixture": False,
+                    "content_sha256": "6e541158ef9cec4e9e8eed469325490d7902e5175e7a41925bad72f900a5fce9",
+                    "T_R": "UNKNOWN", "T_R_measurement_id": None, "W_R_mm": 67688.4},
+        variants=[{"id": "micro150-tap25d-fig5a-snap0p5", "role": "engineering baseline",
+                   "content_sha256": "ecfca7f46fd422f6c35ee35cf7c9ffc97f2a0a627907a69f03891910bc248be9",
+                   "design_hash": "0f806acbd50c8847d27509e4e179453cd006444c5adcd7b36413115394d0807f"},
+                  {"id": "micro150-tap25d-fig5a/snapped-1mm", "role": "history; superseded as baseline",
+                   "content_sha256": "9fee13e0b37d830e3ae1e749cb0bc0d84679de1a6dea03e41ad2e5d8aeea6bbb"}],
+        targets={"source": "Ma et al., DATE 2021, Fig. 5(a)", "T_c": 115.94, "W_mm": 67686,
+                 "use": "paper-target diagnostic only"})
+
+
+def signed_test(key_version: int = 1) -> dict:
+    """An illustrative signed manifest: two dies on a 10 mm frame, every pin a fake, open in the golden notes."""
+    dies = [{"die": 0, "unit": unit(0), "name": "a", "w_um": 2000, "h_um": 3000, "power_w": 10, "halo_um": 50,
+             "rot_deg": [0, 90]},
+            {"die": 1, "unit": unit(1), "name": "b", "w_um": 2000, "h_um": 2000, "power_w": 5, "halo_um": 50,
+             "rot_deg": [0]}]
+    manifest = manifest_shape(
+        problem="test-two-die", status="signed",
+        fixture={"id": "test-two-die-10mm", "config": "test/two-die-10mm.cfg", "config_sha256": fake("two-die config"),
+                 "frame_um": 10000, "origin": "frame lower-left", "ambient_c": 45, "link_type": "nppl",
+                 "package": {"hotspot_config_sha256": fake("hotspot config"),
+                             "assumptions": "steady state, uniform power per die"}},
+        dies=dies, matrix=[[0, 4], [4, 0]],
+        comparator={"id": "test-two-die-ref/raw", "continuous": True, "legal_on_fixture": False,
+                    "content_sha256": fake("raw reference"), "T_R": 60.0, "T_R_measurement_id": fake("T_R receipt"),
+                    "W_R_mm": 100.0},
+        variants=[{"id": "test-two-die-ref-snap0p5", "role": "engineering baseline",
+                   "content_sha256": fake("snapped reference"), "design_hash": fake("snapped design")}],
+        targets={"source": "illustrative fixture: no paper", "T_c": 60.5, "W_mm": 101,
+                 "use": "paper-target diagnostic only"})
+    scalar, recipient = AGE_KEYS[key_version]
+    manifest.update({"version": key_version})
+    manifest["references"]["file_sha256"] = fake("reference file")
+    manifest["statistic"]["evaluator"].update({"binary_sha256": fake("binary"),
+                                               "gate_zero_record_sha256": fake("gate zero record"),
+                                               "build": "sha256:" + fake("image"), "runtime": FIXTURE})
+    manifest["statistic"]["numerical_admission"] = "admitted"
+    manifest["wire"]["router_sha256"] = fake("router")
+    manifest["policy"].update({"status": FROZEN_POLICY, "D_K": 0.5, "r": 0.05, "B_T_K": 1.0, "B_W_mm": 2.0,
+                               "T_limit_C": 85, "proposed_in_draft": None})
+    manifest["screen"]["scenarios"] = [NOMINAL, MESH, {"id": "position-0-x-plus", "applies_to": "R", "grid": 64},
+                                       {"id": "position-0-x-minus", "applies_to": "R", "grid": 64}]
+    manifest["evaluation_bundle"].update({"status": "frozen", "ceilings_cpu_s": {
+        "native.evaluate": 15, "native.replay": 15, "native.mesh": 15, "native.reference": 60, "routing": 5,
+        "lifecycle": 2, "checks": 6, "intake": 1}})
+    manifest["checks"].update({"cleanup_headroom_s": 1, "cpu_reserve_s": 6})
+    manifest["limits"]["status"] = "frozen (test)"
+    manifest["terms"] = {"accepted_versions": [TERMS_VERSION], "retention": "P2Y"}
+    manifest["exposure"]["sources"] = ["illustrative fixture: no paper"]
+    manifest["sealing"].update({"recipient": recipient, "key_version": key_version})
+    manifest["example"]["inputs"] = {"W_c_mm": 98.0}
+    manifest["window"] = {"opens_at": "2026-11-01T00:00:00Z", "closes_at": "2026-11-08T00:00:00Z"}
+    manifest["refs"] = {"grant": "test-grant", "claim_rules": "test-claim-rules", "checker_sha256": fake("checker")}
     return manifest
 
 
-def frozen_test() -> dict:
-    """An illustrative interface fixture: two dies, frozen, every value from the no-solver fixture identity."""
-    manifest = {
-        "schema": "sentilab-open-manifest/1", "version": 1, "status": "frozen", "challenge": "test-challenge",
-        "problem": "test-two-die", "terms": TERMS,
-        "fixture": {"id": "test-two-die-10mm", "config": "test/two-die-10mm.cfg",
-                    "config_sha256": fake("two-die config"), "frame_um": 10000, "ambient_c": 45,
-                    "link_type": "nppl"},
-        "dies": [{"die": 0, "name": "a", "w_um": 2000, "h_um": 3000, "power_w": 10, "halo_um": 50,
-                  "rot_deg": [0, 90]},
-                 {"die": 1, "name": "b", "w_um": 2000, "h_um": 2000, "power_w": 5, "halo_um": 50, "rot_deg": [0]}],
-        "netlist": [[0, 4], [4, 0]],
-        "legality": LEGALITY,
-        "reference": {
-            "id": "test-two-die-ref", "sha256": fake("reference file"), "track": "MATCH", "verdict_layout": "raw",
-            "coordinate_model": "continuous", "legal": False,
-            "t_ref": temperature(60.0, FIXTURE, "illustrative", peak=60.4, argmax={"row": 31, "col": 30},
-                                 selector=60.1),
-            "w_ref": wire(100.0, FIXTURE, "illustrative", proxy=5.0),
-            "paper": {"t_c": 60.5, "w_mm": 101, "source": "illustrative fixture: no paper", "evaluator": FIXTURE,
-                      "label": "illustrative"},
-            "engineering_variant": None},
-        "temperature": {"statistic": "chiplet-centre-max", "grid": 64, "grid_map_mode": "center",
-                        "evaluator": {"kind": "hotspot6", "upstream": HOTSPOT6, "binary_sha256": fake("binary"),
-                                      "gate_zero_record_sha256": fake("gate zero record"), "identity": FIXTURE}},
-        "wire": {"judged": "routed", "proxy": "diagnostic", "router_sha256": fake("router"), "time_limit_s": 1.5,
-                 "evaluator": FIXTURE},
-        "thresholds": {"status": "frozen", "D_k": 0.5, "B_T_k": 1.0,
-                       "B_W": {"fraction": 0.02, "of_reference_wire_mm": 100.0}, "scenario_target_c": 85,
-                       "tradeoff_budgets": [0.1, 0.25, 0.5, 1.0]},
-        "wire_tracks": [{"id": "strict", "factor": 1}],
-        "sensitivity": {"status": "frozen", "cases": [CASES["replay"], CASES["grid32"], CASES["pos-a-x"]]},
-        "discrimination_control": [
-            {"id": "test-control", "source_sha256": fake("control source"),
-             "expected": [{"type": "strict_wire_thermal_tolerance", "r": None, "outcome": "passes_listed_cases"}]}],
-        "example": {"temperature": temperature(60.3, FIXTURE, "illustrative"),
-                    "wire": wire(98.0, FIXTURE, "illustrative")},
-        "window": {"opens_at": "2026-11-01T00:00:00Z", "closes_at": "2026-11-08T00:00:00Z"},
-        "refs": {"grant": "test-grant", "claim_rules": "test-claim-rules", "checker_sha256": fake("checker")},
-        "sealing": {"format": "age-encryption.org/v1", "recipient": "age1" + "q" * 58, "key_version": 1,
-                    "rotation": {"policy": "new_manifest_version", "not_after": "2026-11-08T00:00:00Z"}}}
-    variant = {"problem": "test-two-die", "units": "um", "anchor": "die-centre", "lattice_um": 500,
-               "dies": TEST_LAYOUT}
-    manifest["reference"]["engineering_variant"] = {
-        "id": "test-two-die-ref-snap0p5", "grid_um": 500, "geometry_sha256": h.geometry_sha256(variant, manifest),
-        "design_hash": fake("variant design"), "legal": True}
-    return manifest
-
-
-A, M, F = draft_ascend(), draft_micro150(), frozen_test()
-MANIFESTS = {"A": A, "M": M, "F": F}
+A, M, F, F2 = draft_ascend(), draft_micro150(), signed_test(1), signed_test(2)
+MANIFESTS = {"A": A, "M": M, "F": F, "F2": F2}
 ID = {key: h.manifest_id(value) for key, value in MANIFESTS.items()}
+TERMS = {"schema": "sentilab-open-terms/1", "version": TERMS_VERSION,
+         "text_sha256": hashlib.sha256(TERMS_TEXT.encode()).hexdigest(),
+         "covers": ["evaluation", "retention of evidence", "display only if public"],
+         "grants": {"training": False, "lab_memory": False, "study": False},
+         "moderation": {"hide_reasons": ["spam", "abuse", "not_a_layout"],
+                        "hidden": "hidden from public pages with the reason; nothing is deleted",
+                        "pause": {"hidden_per_day": 3, "pause_hours": 24}},
+         "retention": "P2Y"}
+
+# ── the objects participants post ───────────────────────────────────────────────────────────────────────────────
 
 
-def proposal(manifest_key: str, dies, *, key="example-1", track=None, parent=None, client=True, salt=None) -> dict:
-    manifest = MANIFESTS[manifest_key]
-    value = {"schema": "sentilab-open-proposal/1", "manifest_id": ID[manifest_key], "problem": manifest["problem"],
-             "reference_id": manifest["reference"]["id"],
-             "wire_track": track or manifest["wire_tracks"][-1]["id"], "proposal_key": key, "parent": parent,
-             "units": "um", "anchor": "die-centre", "lattice_um": manifest["legality"]["lattice_um"],
-             "dies": copy.deepcopy(dies), "geometry_sha256": "", "terms": "sentilab-open-terms/1"}
-    if salt is not None:
-        value["salt"] = salt
+def dies_from(rows) -> list:
+    return [{"die": index, "x_um": x, "y_um": y, "rot_deg": rot} for index, (x, y, rot) in enumerate(rows)]
+
+
+# Appendix A: the Ascend 910 snapped (1 mm) variant, a reference layout, used only to show the syntax.
+APPENDIX_A = dies_from([(17000, 23000, 90), (39000, 23000, 0), (7000, 11000, 90), (21000, 11000, 90),
+                        (7000, 35000, 90), (21000, 35000, 90)])
+TEST_LAYOUT = dies_from([(3000, 5000, 0), (7000, 5000, 0)])
+MOVED_LAYOUT = dies_from([(3000, 5500, 0), (7000, 5000, 0)])
+
+
+def proposal(manifest_key: str, dies, *, key: str, visibility: str, salt: str, parent=None, client=True,
+             terms=TERMS_VERSION) -> dict:
+    value = {"schema": "sentilab-open-proposal/1", "manifest_id": ID[manifest_key], "terms": terms,
+             "proposal_key": key, "parent": parent, "visibility": visibility, "salt": salt, "units": "um",
+             "anchor": "die-centre", "dies": copy.deepcopy(dies), "geometry_sha256": ""}
     if client:
         value["client"] = {"name": "example-agent", "version": "0.1.0"}
-    value["geometry_sha256"] = h.geometry_sha256(value, manifest)
+    value["geometry_sha256"] = h.geometry_sha256(value, MANIFESTS[manifest_key])
     return value
 
 
-P_A = proposal("A", ASCEND_SNAP0P5)
-P_F = proposal("F", TEST_LAYOUT, key="t-1", track="strict")
-SALT = h.derive_salt(CLIENT_SECRET, ID["F"], "t-2")
-P_SEALED = proposal("F", TEST_LAYOUT, key="t-2", track="strict", salt=SALT)
+def check_request(manifest_key: str, dies, *, key: str, visibility: str, salt: str) -> dict:
+    value = {"schema": "sentilab-open-check-request/1", "manifest_id": ID[manifest_key], "request_key": key,
+             "visibility": visibility, "salt": salt, "units": "um", "anchor": "die-centre",
+             "dies": copy.deepcopy(dies), "geometry_sha256": ""}
+    value["geometry_sha256"] = h.geometry_sha256(value, MANIFESTS[manifest_key])
+    return value
 
 
-def text(value) -> bytes:
-    return json.dumps(value, ensure_ascii=False).encode()
-
-
-def fenced(value, newline=b"\n") -> bytes:
-    return b"```json" + newline + text(value) + newline + b"```"
-
-
-def padded(value, size: int) -> bytes:
-    raw = text(value)
-    return raw[:-1] + b" " * (size - len(raw)) + raw[-1:]
-
-
-def note_entry(note: bytes) -> dict:
-    try:
-        decoded = note.decode("utf-8")
-        if not note.startswith(bytes((0xEF, 0xBB, 0xBF))):
-            return {"note": decoded}
-    except UnicodeDecodeError:
-        pass
-    return {"note_b64": base64.b64encode(note).decode()}
+P_A = proposal("A", APPENDIX_A, key="example-1", visibility="private", salt=SALTS[0])
+P_A_PUBLIC = proposal("A", APPENDIX_A, key="example-1", visibility="public", salt=SALTS[0])
+P_PUB = proposal("F", TEST_LAYOUT, key="t-1", visibility="public", salt=SALTS[1])
+P_PRIV = proposal("F", TEST_LAYOUT, key="t-2", visibility="private", salt=SALTS[2], client=False)
+P_CHILD = proposal("F", MOVED_LAYOUT, key="t-3", visibility="public", salt=SALTS[3], parent=P_PUB["geometry_sha256"])
+P_PRIV_F2 = proposal("F2", TEST_LAYOUT, key="t-2", visibility="private", salt=SALTS[2], client=False)
+C_PUB = check_request("F", TEST_LAYOUT, key="c-1", visibility="public", salt=SALTS[4])
+C_PRIV = check_request("F", TEST_LAYOUT, key="c-2", visibility="private", salt=SALTS[5])
+TEAM = {"schema": "sentilab-open-team/1", "manifest_id": ID["F"], "name": "Team Example 7"}
+PUBLISH = {"schema": "sentilab-open-publish/1", "manifest_id": ID["F"], "terms": TERMS_VERSION,
+           "proposal_sha256": h.proposal_sha256(P_PRIV)}
 
 
 def changed(value: dict, **edits) -> dict:
-    """A copy of a proposal with fields replaced, its geometry hash recomputed unless set explicitly."""
-    result = copy.deepcopy(value)
-    result.update(edits)
-    if "geometry_sha256" not in edits:
-        manifest = next(m for k, m in MANIFESTS.items() if ID[k] == value["manifest_id"])
-        result["geometry_sha256"] = h.geometry_sha256(result, manifest)
-    return result
+    """A copy with fields replaced; a geometric object gets its geometry hash recomputed unless it is edited."""
+    out = copy.deepcopy(value)
+    out.update(copy.deepcopy(edits))
+    manifest_key = next((key for key, manifest_id in ID.items() if manifest_id == out.get("manifest_id")), None)
+    if "dies" in out and "geometry_sha256" not in edits and manifest_key is not None:
+        out["geometry_sha256"] = h.geometry_sha256(out, MANIFESTS[manifest_key])
+    return out
 
 
 def with_dies(value: dict, rows) -> dict:
@@ -282,986 +326,1044 @@ def with_dies(value: dict, rows) -> dict:
 
 
 def without(value: dict, field: str) -> dict:
-    result = copy.deepcopy(value)
-    del result[field]
-    return result
+    out = copy.deepcopy(value)
+    del out[field]
+    return out
+
+
+def text(value) -> bytes:
+    return json.dumps(value, ensure_ascii=False).encode()
+
+
+def fenced(value) -> bytes:
+    return b"```json\n" + text(value) + b"\n```"
 
 
 def raw_text(value: dict, old: str, new: str) -> bytes:
-    """The note's text with one literal replaced: for inputs a JSON encoder will not produce."""
-    source = json.dumps(value)
-    if source.count(old) != 1:
-        raise ValueError("ambiguous replacement")
-    return source.replace(old, new).encode()
+    body = text(value).decode()
+    if body.count(old) != 1:
+        raise AssertionError("raw_text needs exactly one match")
+    return body.replace(old, new).encode()
 
 
-def sealed_note(manifest_key: str, *, key_version=1, age_file=AGE_HEADER_ONLY, extra=None) -> bytes:
-    envelope = {"schema": "sentilab-open-sealed/1", "manifest_id": ID[manifest_key], "key_version": key_version,
-                "format": "age-encryption.org/v1", "ciphertext": base64.b64encode(age_file).decode()}
-    envelope.update(extra or {})
-    return text(envelope)
+def padded(value, size: int) -> bytes:
+    body = text(value)
+    return body + b" " * (size - len(body))
 
 
-def C(code, **fields):
+# ── sealed notes: real age ciphertexts, sealed once (--seal) and kept as an input ───────────────────────────────
+
+SEAL_PLAN = [
+    # label, plaintext, header manifest, header key version, sealed to key version
+    ("private proposal", text(P_PRIV), "F", 1, 1),
+    ("private proposal, sealed again", text(P_PRIV), "F", 1, 1),
+    ("private check request", text(C_PRIV), "F", 1, 1),
+    ("public proposal", text(P_PUB), "F", 1, 1),
+    ("private proposal for the key-2 manifest", text(P_PRIV_F2), "F2", 2, 2),
+    ("names key 1, sealed to key 2", text(P_PRIV), "F", 1, 2),
+    ("not JSON", b"a sealed note that is not JSON", "F", 1, 1),
+    ("a fenced plaintext", fenced(P_PRIV), "F", 1, 1),
+    ("a team object", text(TEAM), "F", 1, 1),
+    ("a duplicate key", raw_text(P_PRIV, '"units": "um"', '"units": "um", "units": "um"'), "F", 1, 1),
+    ("another manifest inside", text(changed(P_PRIV, manifest_id=ID["M"])), "F", 1, 1),
+    ("4,097 plaintext bytes", padded(P_PRIV, 4097), "F", 1, 1),
+    ("not UTF-8", bytes((0xFF,)) + text(P_PRIV), "F", 1, 1),
+]
+
+
+def load_sealed() -> dict:
+    return json.loads(SEALED_CACHE.read_bytes()) if SEALED_CACHE.exists() else {"notes": []}
+
+
+def _entry_ok(entry, plaintext, manifest_key, header_version, sealed_to) -> bool:
+    return (entry["plaintext_sha256"] == hashlib.sha256(plaintext).hexdigest()
+            and entry["manifest_id"] == ID[manifest_key] and entry["header_key_version"] == header_version
+            and entry["sealed_to_key_version"] == sealed_to)
+
+
+def seal_all() -> None:
+    """Seal every planned note that is missing or stale; keep the rest byte for byte."""
+    cache = {entry["label"]: entry for entry in load_sealed()["notes"]}
+    notes = []
+    for label, plaintext, manifest_key, header_version, sealed_to in SEAL_PLAN:
+        entry = cache.get(label)
+        if entry is None or not _entry_ok(entry, plaintext, manifest_key, header_version, sealed_to):
+            recipient = AGE_KEYS[sealed_to][1]
+            if len(plaintext) <= age_tools.PLAINTEXT_MAX_BYTES:
+                note = age_tools.seal(plaintext, ID[manifest_key], header_version, recipient)
+            else:                                   # seal() refuses oversize plaintexts; the intake must too
+                name, implementation = age_tools._implementation()
+                if name != "pyrage":
+                    raise RuntimeError("the oversize vector needs pyrage")
+                age_file = bytes(implementation.encrypt(plaintext, [implementation.x25519.Recipient.from_str(
+                    recipient)]))
+                note = f"{h.sealed_header(ID[manifest_key], header_version)}\n{age_tools.armor(age_file)}"
+            entry = {"label": label, "plaintext_sha256": hashlib.sha256(plaintext).hexdigest(),
+                     "manifest_id": ID[manifest_key], "header_key_version": header_version,
+                     "sealed_to_key_version": sealed_to, "note": note}
+        notes.append(entry)
+    SEALED_CACHE.write_bytes(dump({"sealer": age_tools.sealer(), "notes": notes}))
+
+
+def sealed_notes() -> dict:
+    cache = {entry["label"]: entry for entry in load_sealed()["notes"]}
+    out = {}
+    for label, plaintext, manifest_key, header_version, sealed_to in SEAL_PLAN:
+        entry = cache.get(label)
+        if entry is None or not _entry_ok(entry, plaintext, manifest_key, header_version, sealed_to):
+            raise SystemExit(f"golden/sealed-notes.json is stale for {label!r}: run make_vectors --seal")
+        out[label] = entry["note"].encode("ascii")
+    return out
+
+
+SEALED = {}
+
+
+def sealed(label: str) -> bytes:
+    """A golden sealed note, read from the cache on first use (so --seal can run while it is stale)."""
+    if not SEALED:
+        SEALED.update(sealed_notes())
+    return SEALED[label]
+
+
+def armour_of(note: bytes) -> bytes:
+    return note[note.index(b"\n") + 1:]
+
+
+def flip_one(note: bytes) -> bytes:
+    """One base64 character changed in the middle of the armour: still well-formed, no longer authentic."""
+    lines = note.split(b"\n")
+    middle = lines[len(lines) // 2]
+    swapped = middle[:10] + (b"B" if middle[10:11] != b"B" else b"C") + middle[11:]
+    return b"\n".join(lines[:len(lines) // 2] + [swapped] + lines[len(lines) // 2 + 1:])
+
+
+# ── note cases: the intake (reply) and the offline checker (local) ─────────────────────────────────────────────
+
+AUTO = object()
+
+
+def C(code, **fields) -> dict:
     return {"code": code, **fields}
 
 
-def intake(name, note, expect_outcome, codes=(), *, manifest="F", admission="open", actor=HUMAN, revision=1,
-           edited_at=None):
-    entry = {"name": name, "route": "intake", "thread_manifest": manifest,
-             "admission": {key: admission for key in (manifest,)},
-             "reply": {"actor_user_id": actor, "message_revision": revision, "edited_at": edited_at}}
-    entry.update(note_entry(note))
-    entry["expect"] = {"outcome": expect_outcome, "codes": list(codes)}
-    return entry
+def row(item=None, *, account=HUMAN, kind="human", agent=None, room=ROOM, key=AUTO, revision=1, edited=None) -> dict:
+    if key is AUTO:
+        key = (h.transport_key_for(item, room=room, account=account, actor_kind=kind, actor_id=agent)
+               if item is not None else None)
+    return {"room": room, "actor_user_id": account, "actor_kind": kind, "actor_id": agent, "idempotency": key,
+            "message_revision": revision, "edited_at": edited}
 
 
-def check(name, note, expect_outcome, codes=(), *, manifest="A"):
-    entry = {"name": name, "route": "check", "manifest": manifest}
-    entry.update(note_entry(note))
-    entry["expect"] = {"outcome": expect_outcome, "codes": list(codes)}
-    return entry
+KINDS = {"sentilab-open-proposal/1": "proposal", "sentilab-open-check-request/1": "check-request",
+         "sentilab-open-team/1": "team", "sentilab-open-publish/1": "publish"}
+
+
+def expect(outcome, codes=(), *, parsed=None, stage="all", manifest="F", is_sealed=False) -> dict:
+    """stage: how far the parsed object got: none, kind (the schema value), content (its hash) or all."""
+    kind = KINDS.get(parsed.get("schema")) if parsed is not None and stage != "none" else None
+    content = h.content_sha256(parsed) if kind is not None and stage in ("content", "all") else None
+    geometry = (h.geometry_sha256(parsed, MANIFESTS[manifest])
+                if kind in ("proposal", "check-request") and stage == "all" else None)
+    return {"outcome": outcome, "codes": list(codes), "kind": kind, "content_sha256": content,
+            "geometry_sha256": geometry, "sealed": is_sealed}
+
+
+def note_entry(note: bytes) -> dict:
+    try:
+        return {"note": note.decode("utf-8")}
+    except UnicodeDecodeError:
+        return {"note_b64": base64.b64encode(note).decode()}
+
+
+def reply(name, note, result, *, item=None, row_=None, manifest="F", admission="open", layout=None,
+          opener=True) -> dict:
+    return {"name": name, "mode": "reply", **note_entry(note), "row": row_ if row_ is not None else row(item),
+            "manifest": manifest, "admission": admission, "layout": layout, "opener": opener, "expect": result}
+
+
+def local(name, note, result, *, manifest="F", layout=None, opener=True) -> dict:
+    return {"name": name, "mode": "local", **note_entry(note), "manifest": manifest, "layout": layout,
+            "opener": opener, "expect": result}
 
 
 def note_cases() -> list:
-    deep_client = changed(P_F, client={"name": {"a": {"b": {}}}, "version": "1"})
-    four_deep = changed(P_F, client={"name": {"a": {"b": 1}}, "version": "1"})
+    P, N = P_PUB, text(P_PUB)
+    ok = expect("contract_valid", parsed=P)
+    BIG = b"sentilab-open-sealed/1 " + ID["F"].encode() + b" 1\n" + b"A" * 8200
+    lattice_off = with_dies(P, [(3250, 5000, 0), (7000, 5000, 0)])
     cases = [
-        intake("valid proposal, bare JSON", text(P_F), "contract_valid"),
-        intake("valid proposal in a json fence", fenced(P_F), "contract_valid"),
-        intake("valid proposal in a json fence with CRLF line ends", fenced(P_F, b"\r\n"), "contract_valid"),
-        intake("valid proposal padded to exactly 4096 bytes", padded(P_F, 4096), "contract_valid"),
-        intake("chat in the thread is ignored", b"Is this the right thread for proposals?", "ignored"),
-        intake("an edited chat message is still ignored", b"thanks!", "ignored", revision=2),
-        intake("4097 bytes", padded(P_F, 4097), "rejected", [C("oversize", size_bytes=4097)]),
-        intake("a leading BOM", bytes((0xEF, 0xBB, 0xBF)) + text(P_F), "rejected", [C("not_utf8")]),
-        intake("invalid UTF-8", text(P_F)[:-1] + b' "x": "\xff"}', "rejected", [C("not_utf8")]),
-        intake("no actorUserId on the row", text(P_F), "rejected", [C("unattributable")], actor=None),
-        intake("edited before ingest", text(P_F), "rejected", [C("edited_before_ingest")], revision=2),
-        intake("editedAt set at revision 1", text(P_F), "rejected", [C("edited_before_ingest")],
-               edited_at="2026-11-01T10:00:01+00:00"),
-        intake("unattributable and edited", text(P_F), "rejected", [C("edited_before_ingest"), C("unattributable")],
-               actor=None, revision=3),
-        intake("a trailing comma", text(P_F)[:-1] + b",}", "rejected", [C("malformed_json")]),
-        intake("trailing text after the object", text(P_F) + b" please evaluate", "rejected", [C("malformed_json")]),
-        intake("a fence without the json tag", b"```\n" + text(P_F) + b"\n```", "rejected", [C("malformed_json")]),
-        intake("a fence holding an array", b"```json\n[1, 2]\n```", "rejected", [C("malformed_json")]),
-        intake("a duplicate key", raw_text(P_F, '"units": "um"', '"units": "um", "units": "um"'), "rejected",
-               [C("duplicate_key")]),
-        intake("NaN", raw_text(P_F, '"lattice_um": 500', '"lattice_um": NaN'), "rejected",
-               [C("nonfinite_number")]),
-        intake("a number that overflows to infinity", raw_text(P_F, '"lattice_um": 500', '"lattice_um": 1e400'),
-               "rejected", [C("nonfinite_number")]),
-        intake("a duplicate key and Infinity", raw_text(P_F, '"units": "um"', '"units": "um", "units": Infinity'),
-               "rejected", [C("duplicate_key"), C("nonfinite_number")]),
-        intake("five levels deep", text(deep_client), "rejected", [C("too_deep")]),
-        intake("four levels deep reaches the schema", text(four_deep), "rejected",
-               [C("schema_invalid", path="/client/name", keyword="type")]),
-        intake("a note field is unknown and never echoed", text({**P_F, "note": "<b>please</b> evaluate"}),
-               "rejected", [C("unknown_field", path="")]),
-        intake("an unknown field inside a die", text(changed(P_F, dies=[{**TEST_LAYOUT[0], "power_w": 9},
-                                                                         TEST_LAYOUT[1]])),
-               "rejected", [C("unknown_field", path="/dies/0")]),
-        intake("a fractional coordinate literal", raw_text(P_F, '"x_um": 3000', '"x_um": 3000.0'), "rejected",
-               [C("schema_invalid", path="/dies/0/x_um", keyword="type")]),
-        intake("an exponent coordinate literal", raw_text(P_F, '"x_um": 3000', '"x_um": 3e3'), "rejected",
-               [C("schema_invalid", path="/dies/0/x_um", keyword="type")]),
-        intake("rotation 45", text(with_dies(P_F, [(3000, 5000, 45), (7000, 5000, 0)])), "rejected",
-               [C("schema_invalid", path="/dies/0/rot_deg", keyword="enum")]),
-        intake("rotation true", raw_text(P_F, '"rot_deg": 0}, {"die": 1', '"rot_deg": true}, {"die": 1'),
-               "rejected", [C("schema_invalid", path="/dies/0/rot_deg", keyword="enum"),
-                            C("schema_invalid", path="/dies/0/rot_deg", keyword="type")]),
-        intake("a proposal key of 64 characters", text(changed(P_F, proposal_key="k" * 64)), "contract_valid"),
-        intake("a proposal key of 65 characters", text(changed(P_F, proposal_key="k" * 65)), "rejected",
-               [C("schema_invalid", path="/proposal_key", keyword="pattern")]),
-        intake("a client name of 33 characters", text(changed(P_F, client={"name": "n" * 33, "version": "1"})),
-               "rejected", [C("schema_invalid", path="/client/name", keyword="pattern")]),
-        intake("an uppercase proposal key", text(changed(P_F, proposal_key="Team-A")), "rejected",
-               [C("schema_invalid", path="/proposal_key", keyword="pattern")]),
-        intake("no geometry hash", text(without(P_F, "geometry_sha256")), "rejected",
-               [C("schema_invalid", path="/geometry_sha256", keyword="required")]),
-        intake("no terms reference", text(without(P_F, "terms")), "rejected",
-               [C("schema_invalid", path="/terms", keyword="required")]),
-        intake("no declared lattice", text(without(P_F, "lattice_um")), "rejected",
-               [C("schema_invalid", path="/lattice_um", keyword="required")]),
-        intake("33 dies", text(changed(P_F, dies=[TEST_LAYOUT[0]] * 33, geometry_sha256="0" * 64)), "rejected",
-               [C("schema_invalid", path="/dies", keyword="maxItems")]),
-        intake("a negative coordinate", text(with_dies(P_F, [(-500, 5000, 0), (7000, 5000, 0)])), "rejected",
-               [C("schema_invalid", path="/dies/0/x_um", keyword="minimum")]),
-        intake("a coordinate past the static bound", text(with_dies(P_F, [(1000500, 5000, 0), (7000, 5000, 0)])),
-               "rejected", [C("schema_invalid", path="/dies/0/x_um", keyword="maximum")]),
-        intake("another schema version", text(changed(P_F, schema="sentilab-open-proposal/2")), "rejected",
-               [C("schema_invalid", path="/schema", keyword="const")]),
-        intake("markup in the client name, never echoed",
-               text(changed(P_F, client={"name": "<script>x</script>", "version": "1"})), "rejected",
-               [C("schema_invalid", path="/client/name", keyword="pattern")]),
-        intake("a parent that is not a hash", text(changed(P_F, parent="team-a-06")), "rejected",
-               [C("schema_invalid", path="/parent", keyword="pattern")]),
-        intake("a public proposal may not carry a salt", text(changed(P_F, salt=SALT)), "rejected",
-               [C("salt_forbidden")]),
-        intake("an unknown manifest", text(changed(P_F, manifest_id="1" * 64)), "rejected", [C("unknown_manifest")]),
-        intake("another known manifest than the thread's", text(P_A), "rejected",
-               [C("manifest_mismatch", path="/manifest_id")]),
-        intake("problem and reference disagree with the manifest",
-               text(changed(P_F, problem="ascend910", reference_id="ascend910-tap25d-fig6a")), "rejected",
-               [C("manifest_mismatch", path="/problem"), C("manifest_mismatch", path="/reference_id")]),
-        intake("a different declared lattice", text(changed(P_F, lattice_um=1000)), "rejected",
-               [C("manifest_mismatch", path="/lattice_um")]),
-        intake("a track this manifest does not admit", text(changed(P_F, wire_track="relaxed")), "rejected",
-               [C("wire_track_not_admitted")]),
-        intake("other submission terms", text(changed(P_F, terms="sentilab-open-terms/2")), "rejected",
-               [C("terms_mismatch")]),
-        intake("a closed manifest", text(P_F), "rejected", [C("manifest_closed")], admission="closed"),
-        intake("a manifest not open yet", text(P_F), "rejected", [C("not_open_yet")], admission="not_open_yet"),
-        intake("a draft manifest is never open, whatever admission says", text(P_A), "rejected",
-               [C("not_open_yet")], manifest="A", admission="open"),
-        intake("a wrong geometry hash", text(changed(P_F, geometry_sha256="0" * 64)), "rejected",
-               [C("geometry_hash_mismatch")]),
-        intake("one die short", text(with_dies(P_F, [(3000, 5000, 0)])), "rejected", [C("die_count", count=1)]),
-        intake("dies out of order", text(changed(P_F, dies=[{**TEST_LAYOUT[1], "die": 1}, {**TEST_LAYOUT[0],
-                                                                                           "die": 0}])),
-               "rejected", [C("die_order", dies=[0, 1])]),
-        intake("a turned square die", text(with_dies(P_F, [(3000, 5000, 0), (7000, 5000, 90)])), "rejected",
-               [C("rotation_not_allowed", dies=[1])]),
-        intake("a centre past the frame", text(with_dies(P_F, [(3000, 5000, 0), (10500, 5000, 0)])), "rejected",
-               [C("out_of_frame", dies=[1], amount_um=500)]),
-        intake("off the lattice", text(with_dies(P_F, [(3250, 5000, 0), (7000, 5000, 0)])), "rejected",
-               [C("lattice", dies=[0], amount_um=250)]),
-        intake("every geometry rule at once",
-               text(changed(with_dies(P_F, [(3100, 5000, 0), (10750, 5000, 90)]), geometry_sha256="0" * 64)),
-               "rejected", [C("out_of_frame", dies=[1], amount_um=750), C("rotation_not_allowed", dies=[1]),
-                            C("lattice", dies=[0], amount_um=100), C("lattice", dies=[1], amount_um=250),
-                            C("geometry_hash_mismatch")]),
-        intake("a sealed envelope, not opened at intake", sealed_note("F"), "sealed_unopened"),
-        intake("a sealed envelope for a key version the manifest does not hold", sealed_note("F", key_version=2),
-               "rejected", [C("sealed_key_version")]),
-        intake("a sealed envelope that is not age v1", sealed_note("F", age_file=b"age-encryption.org/v2\n"),
-               "rejected", [C("sealed_format")]),
-        intake("a sealed envelope with a plaintext fallback field",
-               sealed_note("F", extra={"proposal": "plaintext"}), "rejected", [C("unknown_field", path="")]),
-        intake("a sealed envelope to a manifest without a recipient", sealed_note("A"), "rejected",
-               [C("sealed_key_version"), C("not_open_yet")], manifest="A", admission="open"),
-        check("the Ascend snap0p5 copy, checked", text(P_A), "contract_valid"),
-        check("the Ascend snap0p5 copy, fenced", fenced(P_A), "contract_valid"),
-        check("die 0 moved 250 um off the lattice",
-              text(with_dies(P_A, [(17250, 22500, 90)] + [(d["x_um"], d["y_um"], d["rot_deg"])
-                                                          for d in ASCEND_SNAP0P5[1:]])),
-              "rejected", [C("lattice", dies=[0], amount_um=250)]),
-        check("chat is malformed at the check", b"what is the best layout?", "rejected", [C("malformed_json")]),
-        check("4097 bytes at the check", padded(P_A, 4097), "rejected", [C("oversize", size_bytes=4097)]),
-        check("a draft manifest is checked: admission is the intake's", text(P_A), "contract_valid"),
-        check("a proposal for another manifest than m", text(P_F), "rejected",
-              [C("manifest_mismatch", path="/manifest_id")]),
+        # 0. what counts as an attempt (section 5.3): the note's first bytes
+        reply("chat: plain text is ignored", b"hello, which manifest is open?", expect("ignored", stage="none")),
+        reply("chat: a space before the brace", b" " + N, expect("ignored", stage="none"), item=P),
+        reply("chat: a byte-order mark before the brace", bytes((0xEF, 0xBB, 0xBF)) + N,
+              expect("ignored", stage="none"), item=P),
+        reply("chat: the sealed marker later in the text", b"see sentilab-open-sealed/1 for private entries",
+              expect("ignored", stage="none")),
+        reply("chat: a JSON array is not an attempt", b"[1, 2]", expect("ignored", stage="none")),
+        reply("a public proposal from an outside account, as a person", N, ok, item=P),
+        reply("the same proposal from an outside account's agent", N, ok,
+              row_=row(P, account=AGENT_ACCOUNT, kind="agent", agent=AGENT_ID)),
+        reply("a fenced proposal", fenced(P), ok, item=P),
+        reply("a parent: one of the account's own earlier geometry hashes", text(P_CHILD),
+              expect("contract_valid", parsed=P_CHILD), item=P_CHILD),
+        reply("without the optional client", text(without(P, "client")),
+              expect("contract_valid", parsed=without(P, "client")), item=without(P, "client")),
+        reply("a public check request", text(C_PUB), expect("contract_valid", parsed=C_PUB), item=C_PUB),
+        reply("a team name", text(TEAM), expect("contract_valid", parsed=TEAM), item=TEAM),
+        reply("a team name of 32 characters", text(changed(TEAM, name="A" * 32)),
+              expect("contract_valid", parsed=changed(TEAM, name="A" * 32)), item=changed(TEAM, name="A" * 32)),
+        reply("a publish choice", text(PUBLISH), expect("contract_valid", parsed=PUBLISH), item=PUBLISH),
+        # 1. transport
+        reply("unattributable: no actorUserId", N, expect("rejected", [C("unattributable")], stage="none"),
+              row_=row(P, account=None, key=None)),
+        reply("unattributable: an agent row without its agent id", N,
+              expect("rejected", [C("unattributable")], stage="none"), row_=row(P, kind="agent", key=None)),
+        reply("edited before ingest: revision 2", N, expect("rejected", [C("edited_before_ingest")], stage="none"),
+              row_=row(P, revision=2)),
+        reply("edited before ingest: editedAt is set", N,
+              expect("rejected", [C("edited_before_ingest")], stage="none"),
+              row_=row(P, edited="2026-11-01T10:00:00Z")),
+        reply("row failures report together", N,
+              expect("rejected", [C("edited_before_ingest"), C("unattributable")], stage="none"),
+              row_=row(P, account=None, key=None, revision=2)),
+        reply("oversize: 4,097 plaintext bytes", padded(P, 4097),
+              expect("rejected", [C("oversize", size_bytes=4097)], stage="none"), item=P),
+        reply("4,096 plaintext bytes are within the limit", padded(P, 4096), ok, item=P),
+        reply("not UTF-8", b'{"schema": "' + bytes((0xFF,)) + b'"}', expect("rejected", [C("not_utf8")], stage="none")),
+        reply("a private plaintext: private_requires_sealed, nothing else is read", text(P_PRIV),
+              expect("rejected", [C("private_requires_sealed")], stage="none"), item=P_PRIV),
+        reply("a private plaintext with errors: still only private_requires_sealed",
+              text(changed(P_PRIV, extra=1, dies=[])),
+              expect("rejected", [C("private_requires_sealed")], stage="none"), item=P_PRIV),
+        reply("transport key: the proposal_key itself is not the key", N,
+              expect("rejected", [C("transport_key_mismatch")], parsed=P, stage="content"),
+              row_=row(P, key="t-1")),
+        reply("transport key: missing", N,
+              expect("rejected", [C("transport_key_mismatch")], parsed=P, stage="content"), row_=row(P, key=None)),
+        reply("transport key: derived for the human slot, posted by the agent", N,
+              expect("rejected", [C("transport_key_mismatch")], parsed=P, stage="content"),
+              row_=row(P, account=AGENT_ACCOUNT, kind="agent", agent=AGENT_ID,
+                       key=h.transport_key_for(P, room=ROOM, account=AGENT_ACCOUNT, actor_kind="human",
+                                               actor_id=None))),
+        reply("transport key: derived for another room", N,
+              expect("rejected", [C("transport_key_mismatch")], parsed=P, stage="content"),
+              row_=row(P, key=h.transport_key_for(P, room=OVERFLOW_ROOM, account=HUMAN, actor_kind="human",
+                                                  actor_id=None))),
+        reply("transport key: derived for other content under the same logical key", N,
+              expect("rejected", [C("transport_key_mismatch")], parsed=P, stage="content"),
+              row_=row(P, key=h.transport_key_for(P_CHILD | {"proposal_key": "t-1"}, room=ROOM, account=HUMAN,
+                                                  actor_kind="human", actor_id=None))),
+        # 1. sealed notes (section 3.7): real age v1 ciphertexts
+        reply("sealed private proposal, key version 1", sealed("private proposal"),
+              expect("contract_valid", parsed=P_PRIV, is_sealed=True), item=P_PRIV),
+        reply("the same plaintext sealed again: same content hash and transport key, other bytes",
+              sealed("private proposal, sealed again"), expect("contract_valid", parsed=P_PRIV, is_sealed=True),
+              item=P_PRIV),
+        reply("sealed private check request", sealed("private check request"),
+              expect("contract_valid", parsed=C_PRIV, is_sealed=True), item=C_PRIV),
+        reply("a public proposal may also be sealed", sealed("public proposal"),
+              expect("contract_valid", parsed=P_PUB, is_sealed=True), item=P_PUB),
+        reply("sealed for the key-2 manifest (a rotation)", sealed("private proposal for the key-2 manifest"),
+              expect("contract_valid", parsed=P_PRIV_F2, manifest="F2", is_sealed=True), item=P_PRIV_F2,
+              manifest="F2"),
+        reply("unsealable: the header names key version 2, the manifest pins 1",
+              b"sentilab-open-sealed/1 " + ID["F"].encode() + b" 2\n" + armour_of(sealed("private proposal")),
+              expect("rejected", [C("unsealable")], stage="none", is_sealed=True), item=P_PRIV),
+        reply("unsealable: the header names key 1, the ciphertext is for key 2", sealed("names key 1, sealed to key 2"),
+              expect("rejected", [C("unsealable")], stage="none", is_sealed=True), item=P_PRIV),
+        reply("unsealable: one armour character changed", flip_one(sealed("private proposal")),
+              expect("rejected", [C("unsealable")], stage="none", is_sealed=True), item=P_PRIV),
+        reply("unsealable: the plaintext is not JSON", sealed("not JSON"),
+              expect("rejected", [C("unsealable")], stage="none", is_sealed=True)),
+        reply("unsealable: a fence inside a seal", sealed("a fenced plaintext"),
+              expect("rejected", [C("unsealable")], stage="none", is_sealed=True)),
+        reply("unsealable: a team object is not sealable", sealed("a team object"),
+              expect("rejected", [C("unsealable")], stage="none", is_sealed=True)),
+        reply("unsealable: JSON after the header, no armour (never re-read as plaintext)",
+              b"sentilab-open-sealed/1 " + ID["F"].encode() + b" 1\n" + N,
+              expect("rejected", [C("unsealable")], stage="none", is_sealed=True), item=P),
+        reply("unsealable: an upper-case manifest id in the header",
+              b"sentilab-open-sealed/1 " + ID["F"].upper().encode() + b" 1\n" + armour_of(sealed("private proposal")),
+              expect("rejected", [C("unsealable")], stage="none", is_sealed=True), item=P_PRIV),
+        reply("unsealable: a key version with a leading zero",
+              b"sentilab-open-sealed/1 " + ID["F"].encode() + b" 01\n" + armour_of(sealed("private proposal")),
+              expect("rejected", [C("unsealable")], stage="none", is_sealed=True), item=P_PRIV),
+        reply("unsealable: a draft manifest pins no recipient",
+              b"sentilab-open-sealed/1 " + ID["A"].encode() + b" 1\n" + armour_of(sealed("private proposal")),
+              expect("rejected", [C("unsealable")], stage="none", is_sealed=True), item=P_PRIV, manifest="A"),
+        reply("sealed: the header names an unknown manifest",
+              b"sentilab-open-sealed/1 " + b"e" * 64 + b" 1\n" + armour_of(sealed("private proposal")),
+              expect("rejected", [C("unknown_manifest")], stage="none", is_sealed=True), item=P_PRIV),
+        reply("sealed: the header names another manifest than the thread",
+              b"sentilab-open-sealed/1 " + ID["M"].encode() + b" 1\n" + armour_of(sealed("private proposal")),
+              expect("rejected", [C("manifest_mismatch", path="/manifest_id")], stage="none", is_sealed=True),
+              item=P_PRIV),
+        reply("sealed: the plaintext names another manifest than its header", sealed("another manifest inside"),
+              expect("rejected", [C("manifest_mismatch", path="/manifest_id")],
+                     parsed=changed(P_PRIV, manifest_id=ID["M"]), stage="content", is_sealed=True),
+              item=changed(P_PRIV, manifest_id=ID["M"])),
+        reply("sealed: a duplicate key in the plaintext", sealed("a duplicate key"),
+              expect("rejected", [C("duplicate_key")], stage="none", is_sealed=True)),
+        reply("sealed: 4,097 plaintext bytes", sealed("4,097 plaintext bytes"),
+              expect("rejected", [C("oversize", size_bytes=4097)], stage="none", is_sealed=True), item=P_PRIV),
+        reply("sealed: a note over 8,192 bytes", BIG,
+              expect("rejected", [C("oversize", size_bytes=len(BIG))], stage="none", is_sealed=True)),
+        reply("sealed, no opener: the header is valid, the note stays unopened", sealed("private proposal"),
+              expect("sealed_unopened", stage="none", is_sealed=True), item=P_PRIV, opener=False),
+        reply("no opener: JSON after the header is still unsealable",
+              b"sentilab-open-sealed/1 " + ID["F"].encode() + b" 1\n" + N,
+              expect("rejected", [C("unsealable")], stage="none", is_sealed=True), item=P, opener=False),
+        reply("unsealable: the plaintext is not UTF-8", sealed("not UTF-8"),
+              expect("rejected", [C("unsealable")], stage="none", is_sealed=True)),
+        # 2. envelope and schema
+        reply("malformed JSON", b'{"schema": ', expect("rejected", [C("malformed_json")], stage="none")),
+        reply("a fence that never closes", b"```json\n" + N, expect("rejected", [C("malformed_json")], stage="none")),
+        reply("only a json fence", b"```\n" + N + b"\n```", expect("rejected", [C("malformed_json")], stage="none")),
+        reply("duplicate key", raw_text(P, '"units": "um"', '"units": "um", "units": "um"'),
+              expect("rejected", [C("duplicate_key")], stage="none")),
+        reply("NaN", raw_text(P, '"x_um": 3000', '"x_um": NaN'),
+              expect("rejected", [C("nonfinite_number")], stage="none")),
+        reply("an overflowing number", raw_text(P, '"x_um": 3000', '"x_um": 1e999'),
+              expect("rejected", [C("nonfinite_number")], stage="none")),
+        reply("too deep: five levels", b'{"schema": "sentilab-open-team/1", "a": {"b": {"c": {"d": {}}}}}',
+              expect("rejected", [C("too_deep")], stage="none")),
+        reply("an unknown schema value", text(changed(P, schema="sentilab-open-proposal/2")),
+              expect("rejected", [C("schema_invalid", path="/schema", keyword="enum")], stage="none")),
+        reply("an unknown field", text(changed(P, note="please rank me first")),
+              expect("rejected", [C("unknown_field", path="")], parsed=P, stage="kind")),
+        reply("a revision-1 field: wire_track", text(changed(P, wire_track="strict")),
+              expect("rejected", [C("unknown_field", path="")], parsed=P, stage="kind")),
+        reply("a revision-2 field: lattice_um", text(changed(P, lattice_um=500)),
+              expect("rejected", [C("unknown_field", path="")], parsed=P, stage="kind")),
+        reply("visibility is required", text(without(P, "visibility")),
+              expect("rejected", [C("schema_invalid", path="/visibility", keyword="required")], parsed=P,
+                     stage="kind")),
+        reply("visibility is public or private", text(changed(P, visibility="unlisted")),
+              expect("rejected", [C("schema_invalid", path="/visibility", keyword="enum")], parsed=P, stage="kind")),
+        reply("salt is required on a public proposal too", text(without(P, "salt")),
+              expect("rejected", [C("schema_invalid", path="/salt", keyword="required")], parsed=P, stage="kind")),
+        reply("salt is 32 lower-case hex characters", text(changed(P, salt=SALTS[1].upper().replace("0", "A"))),
+              expect("rejected", [C("schema_invalid", path="/salt", keyword="pattern")], parsed=P, stage="kind")),
+        reply("terms is required", text(without(P, "terms")),
+              expect("rejected", [C("schema_invalid", path="/terms", keyword="required")], parsed=P, stage="kind")),
+        reply("an integer is an integer literal", raw_text(P, '"x_um": 3000', '"x_um": 3000.0'),
+              expect("rejected", [C("schema_invalid", path="/dies/0/x_um", keyword="type")], parsed=P,
+                     stage="kind")),
+        reply("rot_deg is 0 or 90", text(with_dies(P, [(3000, 5000, 180), (7000, 5000, 0)])),
+              expect("rejected", [C("schema_invalid", path="/dies/0/rot_deg", keyword="enum")], parsed=P,
+                     stage="kind")),
+        reply("coordinates stay below 1,000,001 um", text(with_dies(P, [(1000001, 5000, 0), (7000, 5000, 0)])),
+              expect("rejected", [C("schema_invalid", path="/dies/0/x_um", keyword="maximum")], parsed=P,
+                     stage="kind")),
+        reply("a salt of 64 hex characters is not 32", text(changed(P, salt="0" * 64)),
+              expect("rejected", [C("schema_invalid", path="/salt", keyword="pattern")], parsed=P, stage="kind")),
+        reply("the client name is at most 32 characters", text(changed(P, client={"name": "a" * 33, "version": "1"})),
+              expect("rejected", [C("schema_invalid", path="/client/name", keyword="pattern")], parsed=P,
+                     stage="kind")),
+        reply("proposal_key is at most 64 characters", text(changed(P, proposal_key="a" * 65)),
+              expect("rejected", [C("schema_invalid", path="/proposal_key", keyword="pattern")], parsed=P,
+                     stage="kind")),
+        reply("at most 32 dies, and die indices up to 31", text(changed(P, dies=dies_from([(500, 500, 0)] * 33))),
+              expect("rejected", [C("schema_invalid", path="/dies", keyword="maxItems"),
+                                  C("schema_invalid", path="/dies/32/die", keyword="maximum")], parsed=P,
+                     stage="kind")),
+        reply("the client name is a short token", text(changed(P, client={"name": "my agent", "version": "1"})),
+              expect("rejected", [C("schema_invalid", path="/client/name", keyword="pattern")], parsed=P,
+                     stage="kind")),
+        reply("proposal_key is lower case", text(changed(P, proposal_key="T-1")),
+              expect("rejected", [C("schema_invalid", path="/proposal_key", keyword="pattern")], parsed=P,
+                     stage="kind")),
+        reply("a team name starts with a letter or digit", text(changed(TEAM, name=" Team")),
+              expect("rejected", [C("schema_invalid", path="/name", keyword="pattern")], parsed=TEAM, stage="kind")),
+        reply("a team name of 33 characters", text(changed(TEAM, name="A" * 33)),
+              expect("rejected", [C("schema_invalid", path="/name", keyword="pattern")], parsed=TEAM, stage="kind")),
+        reply("a check request carries no terms", text(changed(C_PUB, terms=TERMS_VERSION)),
+              expect("rejected", [C("unknown_field", path="")], parsed=C_PUB, stage="kind")),
+        # 3. manifest and terms
+        reply("an unknown manifest", text(changed(P, manifest_id="e" * 64)),
+              expect("rejected", [C("unknown_manifest")], parsed=changed(P, manifest_id="e" * 64),
+                     stage="content"), item=changed(P, manifest_id="e" * 64)),
+        reply("another manifest than the thread's", text(changed(P, manifest_id=ID["M"])),
+              expect("rejected", [C("manifest_mismatch", path="/manifest_id")],
+                     parsed=changed(P, manifest_id=ID["M"]), stage="content"), item=changed(P, manifest_id=ID["M"])),
+        reply("not open yet", N, expect("rejected", [C("not_open_yet")], parsed=P), item=P, admission="not_open_yet"),
+        reply("closed", N, expect("rejected", [C("manifest_closed")], parsed=P), item=P, admission="closed"),
+        reply("a draft manifest is never open, and accepts no terms yet", text(P_A_PUBLIC),
+              expect("rejected", [C("not_open_yet"), C("terms_not_accepted")], parsed=P_A_PUBLIC, manifest="A"),
+              item=P_A_PUBLIC, manifest="A"),
+        reply("terms not accepted", text(changed(P, terms=OTHER_TERMS)),
+              expect("rejected", [C("terms_not_accepted")], parsed=changed(P, terms=OTHER_TERMS)),
+              item=changed(P, terms=OTHER_TERMS)),
+        reply("a publish choice under terms not accepted", text(changed(PUBLISH, terms=OTHER_TERMS)),
+              expect("rejected", [C("terms_not_accepted")], parsed=changed(PUBLISH, terms=OTHER_TERMS)),
+              item=changed(PUBLISH, terms=OTHER_TERMS)),
+        reply("every legality violation is reported together", text(changed(lattice_off, terms=OTHER_TERMS)),
+              expect("rejected", [C("manifest_closed"), C("terms_not_accepted"),
+                                  C("lattice", dies=[0], amount_um=250)],
+                     parsed=changed(lattice_off, terms=OTHER_TERMS)),
+              item=changed(lattice_off, terms=OTHER_TERMS), admission="closed"),
+        # 4-6. geometry, exact integers
+        reply("the geometry hash is recomputed", text(changed(P, geometry_sha256="0" * 64)),
+              expect("rejected", [C("geometry_hash_mismatch")], parsed=changed(P, geometry_sha256="0" * 64)),
+              item=changed(P, geometry_sha256="0" * 64)),
+        reply("one die short", text(with_dies(P, [(3000, 5000, 0)])),
+              expect("rejected", [C("die_count", count=1)], parsed=with_dies(P, [(3000, 5000, 0)])),
+              item=with_dies(P, [(3000, 5000, 0)])),
+        reply("dies out of order", text(changed(P, dies=[TEST_LAYOUT[1], TEST_LAYOUT[0]])),
+              expect("rejected", [C("die_order", dies=[0, 1])],
+                     parsed=changed(P, dies=[TEST_LAYOUT[1], TEST_LAYOUT[0]])),
+              item=changed(P, dies=[TEST_LAYOUT[1], TEST_LAYOUT[0]])),
+        reply("a square die does not turn", text(with_dies(P, [(3000, 5000, 0), (7000, 5000, 90)])),
+              expect("rejected", [C("rotation_not_allowed", dies=[1])],
+                     parsed=with_dies(P, [(3000, 5000, 0), (7000, 5000, 90)])),
+              item=with_dies(P, [(3000, 5000, 0), (7000, 5000, 90)])),
+        reply("a centre outside the frame", text(with_dies(P, [(10500, 5000, 0), (7000, 5000, 0)])),
+              expect("rejected", [C("out_of_frame", dies=[0], amount_um=500)],
+                     parsed=with_dies(P, [(10500, 5000, 0), (7000, 5000, 0)])),
+              item=with_dies(P, [(10500, 5000, 0), (7000, 5000, 0)])),
+        reply("a centre outside the frame in y", text(with_dies(P, [(3000, 10500, 0), (7000, 5000, 0)])),
+              expect("rejected", [C("out_of_frame", dies=[0], amount_um=500)],
+                     parsed=with_dies(P, [(3000, 10500, 0), (7000, 5000, 0)])),
+              item=with_dies(P, [(3000, 10500, 0), (7000, 5000, 0)])),
+        reply("a centre on the frame edge is in the frame (the layout checker judges margins)",
+              text(with_dies(P, [(3000, 5000, 0), (10000, 5000, 0)])),
+              expect("contract_valid", parsed=with_dies(P, [(3000, 5000, 0), (10000, 5000, 0)])),
+              item=with_dies(P, [(3000, 5000, 0), (10000, 5000, 0)])),
+        reply("off the 500 um lattice in x", text(lattice_off),
+              expect("rejected", [C("lattice", dies=[0], amount_um=250)], parsed=lattice_off), item=lattice_off),
+        reply("off the lattice in y, the nearer distance", text(with_dies(P, [(3000, 5400, 0), (7000, 5000, 0)])),
+              expect("rejected", [C("lattice", dies=[0], amount_um=100)],
+                     parsed=with_dies(P, [(3000, 5400, 0), (7000, 5000, 0)])),
+              item=with_dies(P, [(3000, 5400, 0), (7000, 5000, 0)])),
+        reply("several dies, several codes, in vocabulary order",
+              text(with_dies(P, [(3100, 5000, 0), (10500, 5000, 90)])),
+              expect("rejected", [C("out_of_frame", dies=[1], amount_um=500), C("rotation_not_allowed", dies=[1]),
+                                  C("lattice", dies=[0], amount_um=100)],
+                     parsed=with_dies(P, [(3100, 5000, 0), (10500, 5000, 90)])),
+              item=with_dies(P, [(3100, 5000, 0), (10500, 5000, 90)])),
+        reply("a check request off the lattice", text(with_dies(C_PUB, [(3250, 5000, 0), (7000, 5000, 0)])),
+              expect("rejected", [C("lattice", dies=[0], amount_um=250)],
+                     parsed=with_dies(C_PUB, [(3250, 5000, 0), (7000, 5000, 0)])),
+              item=with_dies(C_PUB, [(3250, 5000, 0), (7000, 5000, 0)])),
+        # 7. the layout seam (OP-F7)
+        reply("the layout checker finds nothing: legal", N, expect("legal", parsed=P), item=P, layout=[]),
+        reply("the layout checker's codes are reported", N,
+              expect("rejected", [C("margin", dies=[0], amount_um=20)], parsed=P), item=P,
+              layout=[C("margin", dies=[0], amount_um=20)]),
+        reply("halo overlap, spacing and a keepout, together", N,
+              expect("rejected", [C("halo_overlap", dies=[0, 1], amount_um=40), C("min_spacing", dies=[0, 1],
+                                                                                    amount_um=60),
+                                  C("keepout", dies=[1], amount_um=10)], parsed=P),
+              item=P, layout=[C("keepout", dies=[1], amount_um=10), C("min_spacing", dies=[0, 1], amount_um=60),
+                              C("halo_overlap", dies=[0, 1], amount_um=40)]),
+        reply("the layout checker is not run when the dies do not map",
+              text(changed(P, dies=[TEST_LAYOUT[1], TEST_LAYOUT[0]])),
+              expect("rejected", [C("die_order", dies=[0, 1])],
+                     parsed=changed(P, dies=[TEST_LAYOUT[1], TEST_LAYOUT[0]])),
+              item=changed(P, dies=[TEST_LAYOUT[1], TEST_LAYOUT[0]]), layout=[C("margin", dies=[0], amount_um=20)]),
+        reply("nor when a rotation is not allowed", text(with_dies(P, [(3000, 5000, 0), (7000, 5000, 90)])),
+              expect("rejected", [C("rotation_not_allowed", dies=[1])],
+                     parsed=with_dies(P, [(3000, 5000, 0), (7000, 5000, 90)])),
+              item=with_dies(P, [(3000, 5000, 0), (7000, 5000, 90)]), layout=[C("margin", dies=[0], amount_um=20)]),
+        # the offline checker (section 6.1): no row, no transport key, no admission
+        local("local: anything but an attempt is malformed", b"hello", expect("rejected", [C("malformed_json")],
+                                                                          stage="none")),
+        local("local: a private plaintext before sealing", text(P_PRIV), expect("contract_valid", parsed=P_PRIV)),
+        local("local: a sealed note opens", sealed("private proposal"),
+              expect("contract_valid", parsed=P_PRIV, is_sealed=True)),
+        local("local: Appendix A against the Ascend 910 draft: its terms are not accepted yet", text(P_A),
+              expect("rejected", [C("terms_not_accepted")], parsed=P_A, manifest="A"), manifest="A"),
+        local("local: Appendix A with the layout checker finding nothing", text(P_A),
+              expect("rejected", [C("terms_not_accepted")], parsed=P_A, manifest="A"), manifest="A", layout=[]),
+        local("local: legal with the layout checker", N, expect("legal", parsed=P), layout=[]),
     ]
     return cases
 
 
+# ── records ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-
-def b64url(raw: bytes) -> str:
-    return base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
-
-
-def non_canonical(raw: bytes) -> str:
-    """A base64url text of raw whose final character sets a padding bit: it decodes, but is not canonical."""
-    while len(raw) % 3 != 1:
-        raw += b" "
-    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
-    encoded = b64url(raw)
-    return encoded[:-1] + alphabet[alphabet.index(encoded[-1]) | 1]
-
-
-def needs_padding(raw: bytes) -> bytes:
-    while len(raw) % 3 == 0:
-        raw += b" "
-    return raw
-
-
-def check_requests() -> list:
-    p = b64url(text(P_A))
-    return [
-        {"name": "a valid request", "request": {"m": ID["A"], "p": p},
-         "expect": {"outcome": "contract_valid", "codes": []}},
-        {"name": "an unknown m", "request": {"m": "2" * 64, "p": p},
-         "expect": {"outcome": "rejected", "codes": [C("unknown_manifest")]}},
-        {"name": "padding characters",
-         "request": {"m": ID["A"], "p": base64.urlsafe_b64encode(needs_padding(text(P_A))).decode()},
-         "expect": {"outcome": "refused", "codes": [C("schema_invalid", path="/p", keyword="pattern")]}},
-        {"name": "non-canonical trailing bits", "request": {"m": ID["A"], "p": non_canonical(text(P_A))},
-         "expect": {"outcome": "refused", "codes": [C("schema_invalid", path="/p", keyword="contentEncoding")]}},
-        {"name": "standard base64 characters", "request": {"m": ID["A"], "p": p + "+/"},
-         "expect": {"outcome": "refused", "codes": [C("schema_invalid", path="/p", keyword="pattern")]}},
-        {"name": "an extra parameter", "request": {"m": ID["A"], "p": p, "grid": "128"},
-         "expect": {"outcome": "refused", "codes": [C("unknown_field", path="")]}},
-    ]
-
-
-# ── records ─────────────────────────────────────────────────────────────────────────────────────────────────────
-
-LIMITS = {
-    "schema": "sentilab-open-limits/1", "version": 1, "status": "provisional",
-    "requests": {"submissions_per_account_per_hour": None, "checks_per_account_per_hour": 30,
-                 "checks_per_room_per_hour": 600, "checks_per_ip_per_hour": None},
-    "evaluations": {"per_account_per_hour": 3, "per_account_per_day": 12, "per_room_per_hour": 20,
-                    "per_room_per_day": 120},
-    "calls": {"policy_per_hour": 40},
-    "queue": {"max_waiting": 30, "max_waiting_per_account": None},
-    "check": {"solver_elapsed_limit_s": 2, "wall_deadline_s": 5, "wall_clock_start": "on_admission",
-              "queue_time_counted": False, "timeout_counts": True, "sponsored": True, "no_participant_charge": True},
-    "cpu": {"evaluation_call": {"reservation_s": None, "enforcement_s": None, "cleanup_headroom_s": None},
-            "check": {"reservation_s": None, "enforcement_s": None, "cleanup_headroom_s": None}, "debit": None},
-    "moderation": {"flags_per_day_to_pause": 3, "pause_hours": 24}}
-
-PREF_HUMAN = h.participant_ref(PSEUDONYM_KEY, F["challenge"], HUMAN)
-PREF_AGENT = h.participant_ref(PSEUDONYM_KEY, F["challenge"], AGENT_ACCOUNT)
-NOTE_F = text(P_F)
-NOTE_SEALED = sealed_note("F")
-LABELS = ["geometry only", "no thermal solve", "not a score"]
 DELETE = object()
 
 
-def rec(kind, name, record, expect=(), *, manifest=None, limits=False, pseudonym=False, audience="public"):
-    return {"kind": kind, "name": name,
-            "context": {"manifest": manifest, "limits": limits, "pseudonym": pseudonym, "audience": audience},
-            "record": record, "expect": list(expect)}
+def rec(kind, name, record, expect_=(), **context) -> dict:
+    return {"kind": kind, "name": name, "record": record, "context": context, "expect": list(expect_)}
 
 
 def edit(value, path, new):
-    """A deep copy with one value replaced; path is a list of keys and indices. new=DELETE removes the key."""
-    result = copy.deepcopy(value)
-    target = result
-    for part in path[:-1]:
-        target = target[part]
+    """A copy with one value at a /-separated path replaced (or deleted with DELETE)."""
+    out = copy.deepcopy(value)
+    parts = path.strip("/").split("/")
+    target = out
+    for part in parts[:-1]:
+        target = target[int(part)] if isinstance(target, list) else target[part]
+    last = int(parts[-1]) if isinstance(target, list) else parts[-1]
     if new is DELETE:
-        del target[path[-1]]
+        del target[last]
     else:
-        target[path[-1]] = new
-    return result
+        target[last] = new
+    return out
 
 
-def R(rule, path):
-    code = {"label": "label_mismatch", "ref": "ref_mismatch"}.get(rule.split(".")[0], "record_inconsistent")
-    return C(code, path=path, rule=rule)
+def R(rule, path, code="record_inconsistent") -> dict:
+    return {"code": code, "path": path, "rule": rule}
 
 
-def S(path, keyword):
-    return C("schema_invalid", path=path, keyword=keyword)
+def S(path, keyword) -> dict:
+    return {"code": "schema_invalid", "path": path, "keyword": keyword}
+
+
+def apply_edits(value, edits):
+    """The record a golden manifest case describes: its base manifest with each (path, value) applied in order."""
+    out = copy.deepcopy(value)
+    for change in edits:
+        out = edit(out, change["path"], DELETE if change.get("delete") else change["value"])
+    return out
+
+
+def mrec(name, base, edits=(), expect_=()) -> dict:
+    """A manifest case as its base and edits: the full record is applied by the tests (test_golden.record_of)."""
+    changes = [{"path": path, "delete": True} if value is DELETE else {"path": path, "value": value}
+               for path, value in edits]
+    return {"kind": "manifest", "name": name, "base": base, "edits": changes, "context": {}, "expect": list(expect_)}
 
 
 def manifest_records() -> list:
-    f = F
-    out = [rec("manifest", "Ascend 910 draft v0 (provisional)", A),
-           rec("manifest", "CPU-DRAM draft v0 (provisional)", M),
-           rec("manifest", "two-die illustrative fixture, frozen", f)]
-    paper_capability = edit(edit(f, ["reference", "paper", "evaluator"], FAKE_CAPABILITY),
-                            ["reference", "paper", "label"], "unvalidated")
-    snap_off_lattice = edit(edit(f, ["reference", "engineering_variant", "grid_um"], 750),
-                            ["reference", "engineering_variant", "id"], "test-two-die-ref-snap0p75")
+    out = [mrec(f"valid: {name}", key) for key, name in
+           (("A", "the Ascend 910 draft (rev 3 section 4.11)"), ("M", "the CPU-DRAM draft"),
+            ("F", "a signed test manifest"), ("F2", "the same, rotated to key version 2"))]
+    unknown = {"code": "unknown_field", "path": ""}
     bad = [
-        ("a note field", edit(f, ["note"], "please read"), [C("unknown_field", path="")]),
-        ("die indices out of order", edit(f, ["dies", 1, "die"], 0), [R("manifest.die_index", "/dies/1")]),
-        ("a square die with two orientations", edit(f, ["dies", 1, "rot_deg"], [0, 90]),
+        ("die index", [("/dies/1/die", 0)], [R("manifest.die_index", "/dies/1")]),
+        ("a square die may not turn", [("/dies/1/rot_deg", [0, 90])],
          [R("manifest.square_rotation", "/dies/1/rot_deg")]),
-        ("a turnable die with one orientation", edit(f, ["dies", 0, "rot_deg"], [0]),
-         [R("manifest.square_rotation", "/dies/0/rot_deg")]),
-        ("a netlist that is not square", edit(f, ["netlist"], [[0, 4]]), [R("manifest.netlist", "/netlist")]),
-        ("a netlist with a self-connection", edit(f, ["netlist"], [[1, 4], [4, 0]]),
-         [R("manifest.netlist", "/netlist")]),
-        ("no strict track", edit(f, ["wire_tracks"], [{"id": "relaxed", "factor": 1.05}]),
-         [R("manifest.tracks", "/wire_tracks")]),
-        ("the strict track twice", edit(f, ["wire_tracks"], [{"id": "strict", "factor": 1}] * 2),
-         [R("manifest.tracks", "/wire_tracks")]),
-        ("a strict track with extra wire", edit(f, ["wire_tracks", 0, "factor"], 1.05),
-         [S("/wire_tracks/0/factor", "const")]),
-        ("a relaxed track with no extra wire",
-         edit(f, ["wire_tracks"], [{"id": "strict", "factor": 1}, {"id": "relaxed", "factor": 1}]),
-         [S("/wire_tracks/1/factor", "exclusiveMinimum")]),
-        ("frozen with provisional thresholds", edit(f, ["thresholds", "status"], "provisional"),
-         [R("manifest.frozen_pins", "/thresholds/status")]),
-        ("frozen with an unfilled router pin", edit(f, ["wire", "router_sha256"], None),
-         [R("manifest.frozen_pins", "/wire/router_sha256")]),
-        ("frozen without a sealing recipient", edit(f, ["sealing", "recipient"], None),
-         [R("manifest.frozen_pins", "/sealing/recipient")]),
-        ("frozen without the variant's design hash",
-         edit(f, ["reference", "engineering_variant", "design_hash"], None),
-         [R("manifest.frozen_pins", "/reference/engineering_variant/design_hash")]),
-        ("a reference temperature with the wrong label", edit(f, ["reference", "t_ref", "label"], "unvalidated"),
-         [R("label.single", "/reference/t_ref")]),
-        ("an accepted label while nothing is accepted", edit(A, ["reference", "w_ref", "label"], "accepted"),
-         [R("label.single", "/reference/w_ref")]),
-        ("a reference measured by another evaluator",
-         edit(f, ["reference", "t_ref"], temperature(60.0, "HotSpot-6.0:" + HOTSPOT6, "unvalidated")),
-         [R("manifest.same_evaluator", "/reference/t_ref")]),
-        ("a withdrawn evaluator labelled unvalidated",
-         edit(f, ["reference", "t_ref"], temperature(60.0, WITHDRAWN, "unvalidated")),
-         [R("label.single", "/reference/t_ref"), R("manifest.same_evaluator", "/reference/t_ref")]),
-        ("a variant id that does not bind its snap",
-         edit(f, ["reference", "engineering_variant", "id"], "test-two-die-ref-snapped"),
-         [R("manifest.variant", "/reference/engineering_variant")]),
-        ("a variant snapped off the lattice", snap_off_lattice,
-         [R("manifest.variant", "/reference/engineering_variant")]),
-        ("a paper target without a label", edit(f, ["reference", "paper", "label"], DELETE),
-         [S("/reference/paper/label", "required")]),
-        ("an example temperature without an evaluator", edit(f, ["example", "temperature", "evaluator"], DELETE),
-         [S("/example/temperature/evaluator", "required")]),
-        ("a raw reference on a lattice", edit(f, ["reference", "coordinate_model"], "lattice"),
-         [S("/reference/coordinate_model", "const")]),
-        ("terms that permit training", edit(f, ["terms", "training"], True), [S("/terms/training", "const")]),
-        ("another age format", edit(f, ["sealing", "format"], "age-encryption.org/v2"),
-         [S("/sealing/format", "const")]),
-        ("a free-text diagnostic", edit(f, ["temperature", "diagnostic"], "chip-layer grid peak"),
-         [C("unknown_field", path="/temperature")]),
-        ("a capability-shaped evaluator identity", paper_capability, [R("privacy.capability", "")]),
+        ("a rectangular die turns", [("/dies/0/rot_deg", [0])], [R("manifest.square_rotation", "/dies/0/rot_deg")]),
+        ("real chiplets are the dies' units", [("/statistic/real_chiplets", ["Chiplet_0"])],
+         [R("manifest.real_chiplets", "/statistic/real_chiplets")]),
+        ("netlist: one row per die", [("/netlist/matrix", [[0, 4]])], [R("manifest.netlist", "/netlist/matrix")]),
+        ("netlist: no self links", [("/netlist/matrix", [[1, 4], [4, 0]])],
+         [R("manifest.netlist", "/netlist/matrix")]),
+        ("budgets ascend", [("/policy/tradeoff_budgets_r", [0.25, 0.1])],
+         [R("manifest.r_values", "/policy/tradeoff_budgets_r")]),
+        ("r has at most two decimals", [("/policy/r", 0.125)],
+         [R("manifest.r_values", "/policy/tradeoff_budgets_r")]),
+        ("the solve sits inside the wall", [("/checks/solver_time_limit_s", 5)],
+         [R("manifest.check_limits", "/checks/solver_time_limit_s")]),
+        ("a day allows at least an hour", [("/limits/eval_room_day", 19)], [R("manifest.quota_windows", "/limits")]),
+        ("the window closes after it opens", [("/window/closes_at", "2026-10-31T00:00:00Z")],
+         [R("manifest.window", "/window")]),
+        ("scenario ids are unique", [("/screen/scenarios", [NOMINAL, NOMINAL])],
+         [R("manifest.scenarios", "/screen/scenarios")]),
+        ("the screen lists nominal", [("/screen/scenarios", [MESH])], [R("manifest.scenarios", "/screen/scenarios")]),
+        ("signed: no recipient", [("/sealing/recipient", None)], [R("manifest.signed_pins", "/sealing/recipient")]),
+        ("signed: provisional policy", [("/policy/status", PROVISIONAL_POLICY)],
+         [R("manifest.signed_pins", "/policy/status")]),
+        ("signed: the position inventory still a placeholder",
+         [("/screen/scenarios", [NOMINAL, MESH, POSITION_TEMPLATE])], [R("manifest.signed_pins", "/screen/scenarios")]),
+        ("signed: numerical admission unknown", [("/statistic/numerical_admission", "UNKNOWN")],
+         [R("manifest.signed_pins", "/statistic/numerical_admission")]),
+        ("signed: a check limit unset", [("/checks/cpu_reserve_s", None)],
+         [R("manifest.signed_pins", "/checks/cpu_reserve_s")]),
+        ("signed: no accepted terms", [("/terms/accepted_versions", [])],
+         [R("manifest.signed_pins", "/terms/accepted_versions")]),
+        ("schema: plaintext_fallback is false", [("/sealing/plaintext_fallback", True)],
+         [S("/sealing/plaintext_fallback", "const")]),
+        ("schema: the sealed-note cap is 8,192", [("/sealing/sealed_note_max_bytes", 16384)],
+         [S("/sealing/sealed_note_max_bytes", "const")]),
+        ("schema: the transport-key prefix is so1-", [("/transport_key/prefix", "open-tk1-")],
+         [S("/transport_key/prefix", "const")]),
+        ("schema: no bound defaults to zero", [("/bounds/u_T", 0)], [S("/bounds/u_T", "const")]),
+        ("schema: a revision-1 field", [("/wire_tracks", [{"id": "strict"}])], [unknown]),
+        ("schema: one check limit cannot stand in for the others", [("/checks/time_limit_s", 5)],
+         [{"code": "unknown_field", "path": "/checks"}]),
+        ("schema: the call backstop is a field of its own", [("/limits/warden_call_policy_hour", DELETE)],
+         [S("/limits/warden_call_policy_hour", "required")]),
+        ("schema: threads stay out of the hashed manifest", [("/submission/threads", [ROOM])],
+         [S("/submission/threads", "type")]),
+        ("schema: a lattice in micrometres, an integer", [("/legality/lattice_um", 500.0)],
+         [S("/legality/lattice_um", "type")]),
     ]
-    out += [rec("manifest", name, record, expect) for name, record, expect in bad]
-    return out
+    return out + [mrec(name, "F", edits, expected) for name, edits, expected in bad]
+
+
+def terms_records() -> list:
+    return [rec("terms", "valid: the fixture terms", TERMS),
+            rec("terms", "the version names the text's hash", edit(TERMS, "/text_sha256", fake("other text")),
+                [R("terms.version_hash", "/version")]),
+            rec("terms", "no training grant, ever", edit(TERMS, "/grants/training", True),
+                [S("/grants/training", "const")]),
+            rec("terms", "display only if public", edit(TERMS, "/covers", ["evaluation", "retention of evidence"]),
+                [S("/covers", "const")]),
+            rec("terms", "a retention period is a duration", edit(TERMS, "/retention", "two years"),
+                [S("/retention", "pattern")])]
+
+
+LABELS4 = ["routed wire only", "no thermal solve", "nominal", "not a score"]
+Q_F = {"0": -2.0, "0.05": -7.0, "0.10": -12.0, "0.25": -27.0, "0.50": -52.0, "1.00": -102.0}
+Q_UNKNOWN = {key: "UNKNOWN" for key in Q_F}
+
+
+def check_record(**edits) -> dict:
+    base = {"schema": "sentilab-open-check/1", "W_c_mm": 98.0, "router_status": "optimal", "q_r_nominal": Q_F,
+            "labels": LABELS4, "codes": []}
+    return base | edits
 
 
 def check_records() -> list:
-    def response(**edits):
-        value = {"schema": "sentilab-open-check/1", "manifest_id": ID["F"],
-                 "geometry_sha256": P_F["geometry_sha256"], "proposal_sha256": h.proposal_sha256(P_F),
-                 "legal": True, "violations": [], "wire": wire(99.0, FIXTURE, "illustrative", proxy=4.0),
-                 "fits_tracks": ["strict"], "no_participant_charge": True, "sealed": False, "labels": LABELS}
-        value.update(edits)
-        return value
-    lattice = [C("lattice", dies=[0], amount_um=250)]
-    illegal = response(legal=False, violations=lattice,
-                       wire=wire(None, FIXTURE, "illustrative", proxy=4.1, status="skipped_illegal"), fits_tracks=[])
-    good = [("legal, with routed wire inside the strict track", response()),
-            ("legal at exactly W_ref: strict is inclusive",
-             response(wire=wire(100.0, FIXTURE, "illustrative", proxy=4.0))),
-            ("illegal: never routed", illegal),
-            ("the router hit its time limit",
-             response(wire=wire(None, FIXTURE, "illustrative", proxy=4.0), fits_tracks=[])),
-            ("a sealed check, answered privately", response(sealed=True))]
-    out = [rec("check", name, value, manifest="F", limits=True) for name, value in good]
-    bad = [
-        ("legal with a violation", response(violations=lattice), [R("check.legal", "/legal")]),
-        ("illegal but not marked skipped", response(legal=False, violations=lattice,
-                                                    wire=wire(None, FIXTURE, "illustrative", proxy=4.1),
-                                                    fits_tracks=[]),
-         [R("check.routed", "/wire/routed_status")]),
-        ("legal but marked skipped",
-         response(wire=wire(None, FIXTURE, "illustrative", status="skipped_illegal"), fits_tracks=[]),
-         [R("check.routed", "/wire/routed_status")]),
-        ("a track the wire fits, left out", response(fits_tracks=[]), [R("check.fits_tracks", "/fits_tracks")]),
-        ("a track the wire misses, claimed", response(wire=wire(100.5, FIXTURE, "illustrative")),
-         [R("check.fits_tracks", "/fits_tracks")]),
-        ("a response for another manifest", response(manifest_id=ID["A"]), [R("record.manifest", "/manifest_id")]),
-        ("no charge claimed while the limits say otherwise", response(no_participant_charge=False),
-         [R("check.charge", "/no_participant_charge")]),
-        ("wire labelled against its evaluator", response(wire=wire(99.0, FIXTURE, "unvalidated")),
-         [R("label.single", "/wire")]),
-        ("other labels", response(labels=["geometry only"]), [S("/labels", "const")]),
-        ("a score", {**response(), "score": 1}, [C("unknown_field", path="")]),
-        ("a violation with a field its code does not carry",
-         response(legal=False, violations=[C("lattice", dies=[0], amount_um=250, path="/dies/0")],
-                  wire=wire(None, FIXTURE, "illustrative", status="skipped_illegal"), fits_tracks=[]),
-         [R("violation.fields", "/violations/0")]),
+    rev3_example = {"schema": "sentilab-open-check/1", "W_c_mm": 18155.8, "router_status": "optimal",
+                    "q_r_nominal": {"0": 1738.3, "0.10": 96.55, "0.25": -2366.1},
+                    "labels": ["routed wire only", "nominal", "not a score"]}
+    conformed = rev3_example | {"labels": LABELS4, "codes": [], "q_r_nominal": {
+        "0": 1738.3, "0.10": 96.55, "0.25": -2366.075, "0.50": -6470.45, "1.00": -14679.2}}
+    unfinished = {"router_status": "not_routed", "W_c_mm": "UNKNOWN", "q_r_nominal": Q_UNKNOWN}
+    return [
+        rec("check", "valid: routed (W_R 100 mm, so q_r = W - (1 + r) 100)", check_record(), manifest="F"),
+        rec("check", "valid: the solver limit ended it", check_record(
+            router_status="time_limit", W_c_mm="UNKNOWN", q_r_nominal=Q_UNKNOWN,
+            codes=[C("check_unfinished", limit="solver_time_limit_s")]), manifest="F"),
+        rec("check", "valid: the wall ended it", check_record(
+            **unfinished, codes=[C("check_unfinished", limit="check_wall_s")]), manifest="F"),
+        rec("check", "valid: the CPU reserve ended it", check_record(
+            **unfinished, codes=[C("check_unfinished", limit="cpu_reserve_s")]), manifest="F"),
+        rec("check", "valid: rejected before routing", check_record(
+            **unfinished, codes=[C("lattice", dies=[0], amount_um=250)]), manifest="F"),
+        rec("check", "valid: over the request quota", check_record(
+            **unfinished, codes=[C("rate_limited", retry_after="2026-11-01T11:00:00Z")]), manifest="F"),
+        rec("check", "the rev 3 section 10 example, verbatim: three labels and no codes", rev3_example,
+            [S("/codes", "required"), S("/labels", "const")], manifest="A"),
+        rec("check", "valid: the rev 3 example, conformed (q_0.25 exact: -2366.075)", conformed, manifest="A"),
+        rec("check", "the example's rounded q_0.25 is not the exact value",
+            conformed | {"q_r_nominal": conformed["q_r_nominal"] | {"0.25": -2366.1}},
+            [R("check.q_r_values", "/q_r_nominal")], manifest="A"),
+        rec("check", "q_r keys: r = 0, the tolerance and every budget",
+            check_record(q_r_nominal={key: value for key, value in Q_F.items() if key != "0.05"}),
+            [R("check.q_r_keys", "/q_r_nominal")], manifest="F"),
+        rec("check", "q_r values follow W(c)", check_record(q_r_nominal=Q_F | {"0": -2.5}),
+            [R("check.q_r_values", "/q_r_nominal")], manifest="F"),
+        rec("check", "an unknown W gives unknown q_r", check_record(
+            **unfinished | {"q_r_nominal": Q_F}, codes=[C("check_unfinished", limit="check_wall_s")]),
+            [R("check.q_r_values", "/q_r_nominal")], manifest="F"),
+        rec("check", "the solver limit is not the wall", check_record(
+            router_status="time_limit", W_c_mm="UNKNOWN", q_r_nominal=Q_UNKNOWN,
+            codes=[C("check_unfinished", limit="check_wall_s")]), [R("check.codes", "/codes")], manifest="F"),
+        rec("check", "an unfinished check names one limit", check_record(
+            **unfinished, codes=[C("check_unfinished", limit="check_wall_s"),
+                                 C("check_unfinished", limit="cpu_reserve_s")]),
+            [R("check.codes", "/codes")], manifest="F"),
+        rec("check", "an evaluation code is not a check code", check_record(
+            **unfinished, codes=[C("timeout")]), [R("check.codes", "/codes")], manifest="F"),
+        rec("check", "a routed result has no codes", check_record(codes=[C("router_timeout")]),
+            [S("/codes", "maxItems")], manifest="F"),
+        rec("check", "no proven optimum, no number", check_record(router_status="time_limit",
+                                                                   codes=[C("check_unfinished",
+                                                                            limit="solver_time_limit_s")]),
+            [S("/W_c_mm", "const")], manifest="F"),
+        rec("check", "a code carries exactly its fields", check_record(
+            **unfinished, codes=[C("lattice", dies=[0])]), [R("violation.fields", "/codes/0")], manifest="F"),
+        rec("check", "no geometry in a check result", check_record(dies=TEST_LAYOUT),
+            [{"code": "unknown_field", "path": ""}], manifest="F"),
     ]
-    out += [rec("check", name, value, expect, manifest="F", limits=True) for name, value, expect in bad]
-    return out
 
 
-def receipt(**edits):
-    value = {"schema": "sentilab-open-receipt/1", "participant_ref": PREF_HUMAN,
-             "source_ref": h.source_ref(ACTIONS[0]), "body_sha256": h.body_sha256(NOTE_F), "manifest_id": ID["F"],
-             "proposal_sha256": h.proposal_sha256(P_F), "geometry_sha256": P_F["geometry_sha256"],
-             "design_hash": None, "problem": "test-two-die", "reference_id": "test-two-die-ref",
-             "wire_track": "strict", "proposal_key": "t-1", "parent": None, "terms": "sentilab-open-terms/1",
-             "revision_index": 1, "state": "queued", "codes": [], "values": h.conductor_geometry(P_F, F),
-             "sealed": False, "ciphertext_ref": None}
-    value.update(edits)
-    return value
+BODY_PUB = h.body_sha256(text(P_PUB))
+VALUES_PUB = h.conductor_geometry(P_PUB, F)
+PREF_HUMAN = h.participant_ref(K_CHALLENGE, HUMAN)
+PREF_AGENT = h.participant_ref(K_CHALLENGE, AGENT_ACCOUNT)
 
 
-NULL_PROPOSAL = {"proposal_sha256": None, "geometry_sha256": None, "problem": None, "reference_id": None,
-                 "wire_track": None, "proposal_key": None, "terms": None, "values": None}
+def receipt(**edits) -> dict:
+    base = {"schema": "sentilab-open-receipt/1", "participant_ref": PREF_HUMAN, "source_ref": h.source_ref(ACTIONS[0]),
+            "actor_kind": "human", "body_sha256": BODY_PUB, "proposal_sha256": h.proposal_sha256(P_PUB),
+            "geometry_sha256": P_PUB["geometry_sha256"], "design_hash": None, "manifest_id": ID["F"],
+            "terms": TERMS_VERSION, "visibility": "public", "proposal_key": "t-1", "revision_index": 1,
+            "parent": None, "state": "queued", "codes": [], "values": VALUES_PUB}
+    return base | edits
+
+
+UNREAD = {"proposal_sha256": None, "geometry_sha256": None, "design_hash": None, "terms": None, "visibility": None,
+          "proposal_key": None, "revision_index": None, "parent": None, "values": None}
+CTX = {"manifest": "F", "item": "P_PUB", "action_id": ACTIONS[0], "account_id": HUMAN, "k_challenge": True}
 
 
 def receipt_records() -> list:
-    rejected_json = receipt(state="rejected", codes=[C("malformed_json")], **NULL_PROPOSAL)
-    off_lattice = with_dies(P_F, [(3250, 5000, 0), (7000, 5000, 0)])
-    rejected_geometry = receipt(state="rejected", codes=[C("lattice", dies=[0], amount_um=250)],
-                                proposal_sha256=h.proposal_sha256(off_lattice),
-                                geometry_sha256=off_lattice["geometry_sha256"],
-                                values=h.conductor_geometry(off_lattice, F))
-    sealed = receipt(sealed=True, ciphertext_ref=h.ciphertext_ref(AGE_HEADER_ONLY))
-    good = [("queued, from an outside account", receipt()),
-            ("rejected before the schema: nothing echoed", rejected_json),
-            ("rejected for the lattice, geometry kept", rejected_geometry),
-            ("evaluated with no routed wire",
-             receipt(state="evaluated", codes=[C("router_timeout")], design_hash=fake("design"))),
-            ("failed with one failure code", receipt(state="failed", codes=[C("interrupted")])),
-            ("cancelled when the participant was removed",
-             receipt(state="cancelled", codes=[C("participant_removed")])),
-            ("withdrawn", receipt(state="withdrawn"))]
-    out = [rec("receipt", name, value, manifest="F") for name, value in good]
-    out.append(rec("receipt", "a sealed receipt, served privately", sealed, manifest="F", audience="private"))
-    unparsed_with_fields = receipt(state="rejected", codes=[C("malformed_json")], proposal_sha256=None,
-                                   geometry_sha256=None, values=None)
-    bad = [
-        ("an account id is never public", {**receipt(), "actor_user_id": HUMAN}, [C("unknown_field", path="")]),
-        ("rejected without a code", receipt(state="rejected", codes=[], **NULL_PROPOSAL),
-         [R("state.codes", "/codes")]),
-        ("queued with a code", receipt(codes=[C("lattice", dies=[0], amount_um=250)]), [R("state.codes", "/codes")]),
-        ("failed with two codes", receipt(state="failed", codes=[C("timeout"), C("stopped")]),
-         [R("state.codes", "/codes")]),
-        ("not reproduced with a verification code",
-         receipt(state="not_reproduced", codes=[C("verification_failed")]), [R("state.codes", "/codes")]),
-        ("proposal fields without a proposal hash", unparsed_with_fields,
-         [R("receipt.proposal_fields", "/" + name)
-          for name in ("problem", "proposal_key", "reference_id", "terms", "wire_track")]),
-        ("queued without its geometry", receipt(values=None), [R("receipt.proposal_fields", "/values")]),
-        ("a sealed receipt published", sealed, [R("privacy.sealed", "/sealed")]),
-        ("a code without its required field", receipt(state="rejected", codes=[C("queue_full")]),
-         [R("violation.fields", "/codes/0")]),
-        ("a code with a field it does not carry",
-         receipt(state="rejected", codes=[C("lattice", dies=[0], amount_um=250, path="/dies")]),
-         [R("violation.fields", "/codes/0")]),
-        ("a receipt for another manifest", receipt(manifest_id=ID["A"]), [R("record.manifest", "/manifest_id")]),
+    design = {"design_hash": fake("design")}
+    valid = [
+        ("queued", receipt()),
+        ("evaluating", receipt(state="evaluating")),
+        ("evaluated", receipt(state="evaluated", **design)),
+        ("evaluated, W unknown", receipt(state="evaluated", codes=[C("router_timeout")], **design)),
+        ("replaying", receipt(state="replaying", **design)),
+        ("reproduced", receipt(state="reproduced", **design)),
+        ("cross_checked", receipt(state="cross_checked", **design)),
+        ("failed before a design hash", receipt(state="failed", codes=[C("timeout")])),
+        ("failed after evaluation", receipt(state="failed", codes=[C("interrupted")], **design)),
+        ("not_reproduced", receipt(state="not_reproduced", codes=[C("reproduction_mismatch")], **design)),
+        ("rejected after parsing", receipt(state="rejected", codes=[C("lattice", dies=[0], amount_um=250)])),
+        ("rejected before parsing: no proposal fields", receipt(state="rejected", codes=[C("malformed_json")],
+                                                                **UNREAD)),
+        ("cancelled: the participant was removed", receipt(state="cancelled", codes=[C("participant_removed")])),
+        ("expired", receipt(state="expired")),
+        ("as the agent stamped it", receipt(actor_kind="agent", participant_ref=PREF_AGENT,
+                                            source_ref=h.source_ref(ACTIONS[1]))),
     ]
-    out += [rec("receipt", name, value, expect, manifest="F") for name, value, expect in bad]
-    out.append(rec("receipt", "sealed without a ciphertext reference", receipt(sealed=True),
-                   [R("receipt.sealed", "/ciphertext_ref")], manifest="F", audience="private"))
+    out = [rec("receipt", "valid: " + name, record, manifest="F", item="P_PUB") for name, record in valid]
+    out.append(rec("receipt", "valid: refs recomputed from the restricted row", receipt(), **CTX))
+    bad = [
+        ("a rejection names its codes", receipt(state="rejected"), [R("state.codes", "/codes")]),
+        ("a failure has one failure code", receipt(state="failed", codes=[C("timeout"), C("stopped")]),
+         [R("state.codes", "/codes")]),
+        ("router_timeout is not a failure", receipt(state="failed", codes=[C("router_timeout")]),
+         [R("state.codes", "/codes")]),
+        ("an evaluation carries no rejection code", receipt(state="evaluated", codes=[C("lattice", dies=[0],
+                                                                                        amount_um=250)], **design),
+         [R("state.codes", "/codes")]),
+        ("a queued entry has no codes", receipt(codes=[C("queue_full", retry_after="2026-11-01T11:00:00Z")]),
+         [R("state.codes", "/codes")]),
+        ("a cancellation carries policy codes only", receipt(state="cancelled", codes=[C("timeout")]),
+         [R("state.codes", "/codes")]),
+        ("unread fields stay null", receipt(state="rejected", codes=[C("malformed_json")], **UNREAD | {
+            "terms": TERMS_VERSION}), [R("receipt.proposal_fields", "/terms")]),
+        ("a parsed proposal names its terms", receipt(terms=None),
+         [R("receipt.proposal_fields", "/terms"), R("ref.proposal", "/proposal_sha256", "ref_mismatch")]),
+        ("only a rejection may lack its proposal", receipt(**UNREAD),
+         [R("receipt.proposal_fields", "/proposal_sha256")]),
+        ("an evaluated entry has a design hash", receipt(state="evaluated"), [R("receipt.design_hash", "/design_hash")]),
+        ("a queued entry has none yet", receipt(**design), [R("receipt.design_hash", "/design_hash")]),
+        ("a code carries exactly its fields", receipt(state="rejected", codes=[C("lattice", dies=[0])]),
+         [R("violation.fields", "/codes/0")]),
+        ("no label ever names a participant", receipt(label="Team Example 7"), [{"code": "unknown_field", "path": ""}]),
+        ("no account id in a receipt", receipt(account_id=HUMAN), [{"code": "unknown_field", "path": ""}]),
+    ]
+    out += [rec("receipt", name, record, expected, manifest="F", item="P_PUB") for name, record, expected in bad]
+    out += [
+        rec("receipt", "the manifest id is the manifest's", receipt(manifest_id=ID["A"]),
+            [R("record.manifest", "/manifest_id")], manifest="F", item="P_PUB"),
+        rec("receipt", "the geometry hash is the proposal's", receipt(geometry_sha256=P_CHILD["geometry_sha256"]),
+            [R("ref.geometry", "/geometry_sha256", "ref_mismatch")], manifest="F", item="P_PUB"),
+        rec("receipt", "the proposal hash is the proposal's", receipt(proposal_sha256=h.proposal_sha256(P_CHILD)),
+            [R("ref.proposal", "/proposal_sha256", "ref_mismatch")], manifest="F", item="P_PUB"),
+        rec("receipt", "values.geometry is the conductor's", receipt(values=h.conductor_geometry(P_CHILD, F)),
+            [R("ref.values", "/values", "ref_mismatch")], manifest="F", item="P_PUB"),
+        rec("receipt", "source_ref is recomputed from the action id", receipt(source_ref=h.source_ref(ACTIONS[1])),
+            [R("ref.source", "/source_ref", "ref_mismatch")], **CTX),
+        rec("receipt", "participant_ref is keyed: an unkeyed hash is refused",
+            receipt(participant_ref=hashlib.sha256(HUMAN.encode()).hexdigest()),
+            [R("ref.participant", "/participant_ref", "ref_mismatch")], **CTX),
+        rec("receipt", "a private entry's receipt carries its handle: never in a public record set",
+            receipt(proposal_sha256=h.proposal_sha256(P_PRIV), visibility="private", proposal_key="t-2",
+                    body_sha256=fake("ciphertext")),
+            [R("privacy.handle", "")], private_handles=[h.proposal_sha256(P_PRIV)]),
+    ]
     return out
 
 
-def restricted(**edits):
-    value = {"schema": "sentilab-open-restricted-receipt/1", "participant_ref": PREF_HUMAN, "actor_user_id": HUMAN,
-             "actor_kind": "human", "actor_agent_id": None, "intake": INTAKE, "room": ROOM, "action_id": ACTIONS[0],
-             "created_at": "2026-11-01T10:00:00.123456+00:00", "target_sequence": 4242, "message_revision": 1,
-             "source_ref": h.source_ref(ACTIONS[0]), "body_sha256": h.body_sha256(NOTE_F), "manifest_id": ID["F"],
-             "proposal_key": "t-1", "proposal_sha256": h.proposal_sha256(P_F), "transport_id": "", "sealed": False,
-             "capability_sha256": None, "capability_epoch": None, "capability_revoked": False}
-    value.update(edits)
-    if value["transport_id"] == "":
-        value["transport_id"] = h.transport_id(
-            room=value["room"], account_id=value["actor_user_id"], actor_kind=value["actor_kind"],
-            actor_agent_id=value["actor_agent_id"], manifest_id=value["manifest_id"],
-            proposal_key=value["proposal_key"], proposal_sha256=value["proposal_sha256"])
-    return value
+def status_receipt(**edits) -> dict:
+    base = {"participant_ref": PREF_HUMAN, "actor_kind": "human", "state": "queued",
+            "queue": {"position": 3, "estimated_start": "2026-11-01T10:30:00Z"}, "receipt_hash": fake("receipt"),
+            "run_id": h.run_id(ID["F"], h.proposal_sha256(P_PUB))}
+    return base | edits
 
 
-def restricted_records() -> list:
-    agent = restricted(participant_ref=PREF_AGENT, actor_user_id=AGENT_ACCOUNT, actor_kind="agent",
-                       actor_agent_id="example-agent", action_id=ACTIONS[1], source_ref=h.source_ref(ACTIONS[1]),
-                       room=OVERFLOW_ROOM, created_at="2026-11-01T10:00:01Z")
-    sealed_sha = h.proposal_sha256(P_SEALED)
-    sealed = restricted(action_id=ACTIONS[2], source_ref=h.source_ref(ACTIONS[2]),
-                        body_sha256=h.body_sha256(NOTE_SEALED), proposal_key="t-2", proposal_sha256=sealed_sha,
-                        sealed=True, capability_sha256=h.capability_sha256(h.capability(SALT, ID["F"], sealed_sha)),
-                        capability_epoch=1)
-    rotated = {**sealed, "capability_epoch": 2,
-               "capability_sha256": h.capability_sha256(h.capability(SALT, ID["F"], sealed_sha, 2))}
-    unparsed = restricted(proposal_key=None, proposal_sha256=None, transport_id=None)
-    good = (("an outside (non-staff) human, REST with an account token", restricted()),
-            ("an outside (non-staff) account's admitted agent, MCP", agent),
-            ("a sealed submission: capability hash only", sealed),
-            ("a rotated capability, epoch 2", rotated),
-            ("a revoked capability", {**rotated, "capability_revoked": True}),
-            ("a reply that never parsed", unparsed))
-    out = [rec("restricted_receipt", name, value, manifest="F", pseudonym=True) for name, value in good]
-    other_ref = h.participant_ref(PSEUDONYM_KEY, "sentilab-open-1", HUMAN)
-    other_content = h.transport_id(room=ROOM, account_id=HUMAN, actor_kind="human", actor_agent_id=None,
-                                   manifest_id=ID["F"], proposal_key="t-1", proposal_sha256=h.proposal_sha256(P_SEALED))
-    other_slot = h.transport_id(room=ROOM, account_id=HUMAN, actor_kind="agent", actor_agent_id="example-agent",
-                                manifest_id=ID["F"], proposal_key="t-1", proposal_sha256=h.proposal_sha256(P_F))
-    bad = [
-        ("a source ref for another action", restricted(source_ref=h.source_ref(ACTIONS[3])),
-         [R("ref.source", "/source_ref")]),
-        ("a pseudonym from another challenge", restricted(participant_ref=other_ref),
-         [R("ref.participant", "/participant_ref")]),
-        ("the reserved principal from an account", restricted(participant_ref="sentilab"),
-         [R("ref.participant", "/participant_ref")]),
-        ("a transport id for other content", restricted(transport_id=other_content),
-         [R("ref.transport", "/transport_id")]),
-        ("a transport id for another actor slot", restricted(transport_id=other_slot),
-         [R("ref.transport", "/transport_id")]),
-        ("no transport id for a parsed proposal", restricted(transport_id=None),
-         [R("ref.transport", "/transport_id")]),
-        ("a human with an agent id", restricted(actor_agent_id="example-agent", transport_id=None),
-         [S("/actor_agent_id", "type")]),
-        ("an agent without an agent id", restricted(actor_kind="agent", transport_id=None),
-         [S("/actor_agent_id", "type")]),
-        ("a label is never authority", {**restricted(), "actor_label": "human-example"},
-         [C("unknown_field", path="")]),
-        ("sealed without a capability hash", restricted(sealed=True), [R("receipt.sealed", "/capability_sha256")]),
-        ("sealed without a capability epoch", {**sealed, "capability_epoch": None},
-         [R("receipt.sealed", "/capability_sha256")]),
-        ("a revocation on a public submission", restricted(capability_revoked=True),
-         [R("receipt.sealed", "/capability_sha256")]),
-        ("a capability in place of its hash", {**restricted(), "capability": FAKE_CAPABILITY},
-         [C("unknown_field", path="")]),
-    ]
-    out += [rec("restricted_receipt", name, value, expect, manifest="F", pseudonym=True)
-            for name, value, expect in bad]
-    return out
-
-
-def status_receipt(**edits):
-    value = {"participant_ref": PREF_HUMAN, "team_name": None, "state": "queued", "codes": [],
-             "queue": {"position": 2, "estimated_start": "2026-11-01T10:05:00Z"}, "hidden": False,
-             "hidden_reason": None, "receipt_hash": fake("receipt 1"), "run_id": h.run_id(ID["F"], PREF_HUMAN),
-             "seq": 7, "sealed": False}
-    value.update(edits)
-    return value
-
-
-def status(*receipts):
-    return {"schema": "sentilab-open-status/1", "manifest_id": ID["F"], "proposal_sha256": h.proposal_sha256(P_F),
-            "receipts": list(receipts)}
+def status(*receipts) -> dict:
+    return {"schema": "sentilab-open-status/1", "receipts": list(receipts)}
 
 
 def status_records() -> list:
-    spam = status_receipt(state="rejected", codes=[C("malformed_json")], queue=None, hidden=True,
-                          hidden_reason="spam")
-    agent = status_receipt(participant_ref=PREF_AGENT, run_id=h.run_id(ID["F"], PREF_AGENT), team_name="Team A-7",
-                           state="reproduced", queue=None, receipt_hash=fake("receipt 2"), seq=9)
-    good = [("queued, with its place in the queue", status(status_receipt())),
-            ("hidden as spam, with its reason", status(spam)),
-            ("two principals, one with a moderated team name", status(status_receipt(), agent)),
-            ("withdrawn", status(status_receipt(state="withdrawn", queue=None)))]
-    out = [rec("status", name, value, manifest="F") for name, value in good]
-    wrong_codes = status_receipt(state="failed", queue=None, codes=[C("lattice", dies=[0], amount_um=250)])
-    bad = [
-        ("hidden without a reason", status(status_receipt(hidden=True)), [S("/receipts/0/hidden_reason", "type")]),
-        ("a reason while visible", status(status_receipt(hidden_reason="spam")),
-         [S("/receipts/0/hidden_reason", "type")]),
-        ("a queue place once evaluated", status(status_receipt(state="evaluated")),
-         [S("/receipts/0/queue", "type")]),
-        ("queued without a place", status(status_receipt(queue=None)), [S("/receipts/0/queue", "type")]),
-        ("a run of another manifest", status(status_receipt(run_id=h.run_id(ID["A"], PREF_HUMAN))),
-         [R("ref.run_id", "/receipts/0/run_id")]),
-        ("codes that do not fit the state", status(wrong_codes), [R("state.codes", "/receipts/0/codes")]),
-        ("a sealed entry published", status(status_receipt(sealed=True)),
-         [R("privacy.sealed", "/receipts/0/sealed")]),
-        ("an account id is never public", status({**status_receipt(), "actor_user_id": HUMAN}),
-         [C("unknown_field", path="/receipts/0")]),
-        ("markup in a team name", status(status_receipt(team_name="<b>Team</b>")),
-         [S("/receipts/0/team_name", "pattern")]),
+    ctx = {"manifest": "F", "proposal_sha256": h.proposal_sha256(P_PUB)}
+    return [
+        rec("status", "valid: queued, in the rev 3 section 10 shape", status(status_receipt()), **ctx),
+        rec("status", "valid: no estimate yet", status(status_receipt(queue={"position": 1, "estimated_start": None})),
+            **ctx),
+        rec("status", "valid: evaluated, and as the agent", status(
+            status_receipt(state="evaluated", queue=None),
+            status_receipt(participant_ref=PREF_AGENT, actor_kind="agent", state="reproduced", queue=None)), **ctx),
+        rec("status", "a queue position only while queued", status(status_receipt(state="evaluating")),
+            [R("status.queue", "/receipts/0/queue")], **ctx),
+        rec("status", "a queued entry has its position", status(status_receipt(queue=None)),
+            [R("status.queue", "/receipts/0/queue")], **ctx),
+        rec("status", "the run id is the proposal's", status(status_receipt(
+            run_id=h.run_id(ID["F"], h.proposal_sha256(P_CHILD)))), [R("ref.run_id", "/receipts/0/run_id",
+                                                                         "ref_mismatch")], **ctx),
+        rec("status", "the codes are in the receipt, not here", status(status_receipt(codes=[])),
+            [{"code": "unknown_field", "path": "/receipts/0"}], **ctx),
     ]
-    out += [rec("status", name, value, expect, manifest="F") for name, value, expect in bad]
-    return out
 
 
-def row(kind, **edits):
-    value = {"kind": kind, "id": None, "participant_ref": None, "team_name": None, "proposal_sha256": None,
-             "geometry_sha256": None, "receipt_hash": None, "legal": None, "state": None, "hidden": False,
-             "hidden_reason": None, "sealed": False, "temperature": None, "wire": None, "paper": None,
-             "comparison": None, "sensitivity": [], "claims": [], "diagnostics": [], "control": None}
-    value.update(edits)
-    return value
+def measured(**edits) -> dict:
+    base = {"T_M": 59.5, "delta_T": -0.5, "W_c_mm": 98.0, "q_r": Q_F,
+            "labels": [{"id": "declared temperature target", "r": None, "mode": PASSES},
+                       {"id": "strict-wire thermal tolerance", "r": None, "mode": PASSES},
+                       {"id": "r-relaxed-wire thermal tolerance", "r": 0.05, "mode": PASSES},
+                       {"id": "strict wire improvement", "r": None, "mode": PASSES},
+                       {"id": "wire improvement with allowed thermal degradation", "r": None, "mode": PASSES},
+                       {"id": "robust dominance over R", "r": None, "mode": PASSES}],
+            "suppressed": [], "sensitivities": {"mesh": 0.1, "position": "UNKNOWN", "replay": 0.0},
+            "observables": {"active_layer_grid_peak": 60.1, "literal_on_stdout": 59.9, "W_proxy_mm": 5.2},
+            "evaluator": FIXTURE, "temperature_label": "illustrative"}
+    return base | edits
 
 
-def claim(kind, outcome, *, r=None, evaluators=(FIXTURE,), label="illustrative", suppressed_by=None):
-    return {"type": kind, "r": r, "outcome": outcome, "suppressed_by": suppressed_by, "evaluators": list(evaluators),
-            "label": label}
+PASSES = "passes the listed sensitivity cases"
+UNKNOWN_ROW = {"T_M": "UNKNOWN", "delta_T": "UNKNOWN", "W_c_mm": "UNKNOWN", "q_r": Q_UNKNOWN, "labels": [],
+               "suppressed": [], "sensitivities": {"mesh": "UNKNOWN", "position": "UNKNOWN", "replay": "UNKNOWN"},
+               "observables": {"active_layer_grid_peak": "UNKNOWN", "literal_on_stdout": "UNKNOWN",
+                               "W_proxy_mm": "UNKNOWN"}, "evaluator": None, "temperature_label": None}
 
 
-def observed(case, value, status_="observed"):
-    return {"case": case, "status": status_, "T_M_c": value if status_ == "observed" else None, "evaluator": FIXTURE,
-            "label": "illustrative"}
+def outside(**edits) -> dict:
+    return {"kind": "outside", "participant_ref": PREF_HUMAN, "actor_kind": "human", "state": "reproduced",
+            **measured()} | edits
 
 
-SENSITIVITY = [observed("replay", 59.61), observed("grid32", 59.9), observed("pos-a-x", 59.7)]
-FAILED_GRID = [SENSITIVITY[0], observed("grid32", None, "failed"), SENSITIVITY[2]]
-COMPARISON = {"delta_T_k": -0.4, "q": [{"r": 0, "q_mm": -1.0}], "evaluators": [FIXTURE], "label": "illustrative"}
-DIAGNOSTIC = {"id": "grid-peak-offset", "values": [{"name": "grid_peak_minus_t_m", "value": 0.4, "unit": "k"}],
-              "evaluator": FIXTURE, "label": "illustrative"}
-PASSES = "passes_listed_cases"
-HIGH_WIRE = {"id": "wire-above-relaxed-budget", "values": [{"name": "q_relaxed_mm", "value": 812.5, "unit": "mm"}],
-             "evaluator": "tap-router:" + ROUTER_SHA256, "label": "unvalidated"}
-
-
-def outside(**edits):
-    value = row("outside", participant_ref=PREF_HUMAN, proposal_sha256=h.proposal_sha256(P_F),
-                geometry_sha256=P_F["geometry_sha256"], receipt_hash=fake("receipt 1"), legal=True,
-                state="reproduced",
-                temperature=temperature(59.6, FIXTURE, "illustrative", peak=60.0, argmax={"row": 20, "col": 12},
-                                        selector=59.7),
-                wire=wire(99.0, FIXTURE, "illustrative", proxy=4.0), comparison=COMPARISON,
-                sensitivity=SENSITIVITY,
-                claims=[claim("strict_wire_thermal_tolerance", PASSES), claim("nondominated", "unknown")],
-                diagnostics=[DIAGNOSTIC])
-    value.update(edits)
-    return value
-
-
-def control_row(**edits):
-    value = row("control", id="test-control", legal=False,
-                temperature=temperature(60.0, FIXTURE, "illustrative"), wire=wire(100.0, FIXTURE, "illustrative"),
-                sensitivity=SENSITIVITY, claims=[claim("strict_wire_thermal_tolerance", PASSES)],
-                control={"id": "test-control", "result": "control_match"})
-    value.update(edits)
-    return value
-
-
-def results(*rows_, manifest_key="F", status_="frozen"):
-    return {"schema": "sentilab-open-results/1", "manifest_id": ID[manifest_key], "manifest_status": status_,
-            "rows": list(rows_)}
+def results(*rows, comparator=None, private_entries=2) -> dict:
+    return {"schema": "sentilab-open-results/1",
+            "comparator": comparator or {"id": "test-two-die-ref/raw", "T_R": 60.0, "W_R_mm": 100.0,
+                                         "evaluator": FIXTURE, "temperature_label": "illustrative"},
+            "rows": list(rows), "private_entries": private_entries}
 
 
 def results_records() -> list:
-    ref_f = row("reference-raw", id="test-two-die-ref", legal=False, temperature=F["reference"]["t_ref"],
-                wire=F["reference"]["w_ref"])
-    draft = results(row("reference-raw", id="ascend910-tap25d-fig6a", legal=False, wire=A["reference"]["w_ref"]),
-                    row("paper", paper=A["reference"]["paper"]),
-                    row("reference-variant", id="ascend910-tap25d-fig6a-snap0p5", legal=True,
-                        geometry_sha256=A["reference"]["engineering_variant"]["geometry_sha256"]),
-                    row("outside", participant_ref=PREF_HUMAN, proposal_sha256=h.proposal_sha256(P_A),
-                        geometry_sha256=P_A["geometry_sha256"], receipt_hash=fake("receipt 3"), legal=True,
-                        state="queued"),
-                    manifest_key="A", status_="draft")
-    suppressed = outside(sensitivity=FAILED_GRID, claims=[claim("strict_wire_thermal_tolerance", "suppressed",
-                                                                suppressed_by="scenario_failed")])
-    incomplete_control = control_row(claims=[], control={"id": "test-control", "result": "incomplete"})
-    good = [("a draft manifest: measurements only, nothing scored", draft, "A"),
-            ("a frozen illustrative fixture: scored rows, claims and a control",
-             results(ref_f, outside(), control_row()), "F"),
-            ("a failed required case suppresses the claim", results(suppressed), "F"),
-            ("a control with its claim missing is incomplete", results(incomplete_control), "F"),
-            ("a hidden row keeps its reason", results(outside(hidden=True, hidden_reason="not_a_layout")), "F"),
-            ("a high-wire diagnostic beside the temperature's own label", results(outside(diagnostics=[HIGH_WIRE])),
-             "F")]
-    out = [rec("results", name, value, manifest=key) for name, value, key in good]
-    out.append(rec("results", "a sealed row, served privately", results(outside(sealed=True)), manifest="F",
-                   audience="private"))
-    hotspot6 = "HotSpot-6.0:" + HOTSPOT6
-    bad = [
-        ("a claim under a draft manifest",
-         results(outside(comparison=None, claims=[claim("nondominated", "unknown")]), status_="draft"),
-         [S("/rows/0/claims", "maxItems")], "F"),
-        ("scoring against a manifest that is not frozen",
-         results(outside(proposal_sha256=h.proposal_sha256(P_A)), manifest_key="A", status_="frozen"),
-         [R("record.manifest", "/manifest_status"), C("manifest_not_frozen", path="/rows/0")], "A"),
-        ("a decided claim labelled against its inputs",
-         results(outside(claims=[claim("strict_wire_thermal_tolerance", PASSES, label="unvalidated")])),
-         [R("label.claim_outcome", "/rows/0/claims/0"), R("label.derived", "/rows/0/claims/0")], "F"),
-        ("an unvalidated claim decided",
-         results(outside(claims=[claim("strict_wire_thermal_tolerance", PASSES, evaluators=[hotspot6],
-                                       label="unvalidated")])),
-         [R("label.claim_outcome", "/rows/0/claims/0")], "F"),
-        ("a withdrawn temperature in a comparison",
-         results(outside(temperature=temperature(59.6, WITHDRAWN, "withdrawn"))),
-         [R("label.withdrawn_comparison", "/rows/0"), R("results.same_evaluator", "/rows/0")], "F"),
-        ("a scored row routed by another router",
-         results(outside(wire=wire(99.0, "tap-router:" + ROUTER_SHA256, "unvalidated", proxy=4.0))),
-         [R("results.same_evaluator", "/rows/0")], "F"),
-        ("a high-wire diagnostic replacing the temperature's label",
-         results(outside(temperature=temperature(59.6, FIXTURE, "unvalidated"), diagnostics=[HIGH_WIRE])),
-         [R("label.single", "/rows/0/temperature")], "F"),
-        ("a scored row from another evaluator",
-         results(outside(temperature=temperature(59.6, hotspot6, "unvalidated"))),
-         [R("results.same_evaluator", "/rows/0")], "F"),
-        ("a missing case cannot pass", results(outside(sensitivity=SENSITIVITY[:2])),
-         [R("claim.cases", "/rows/0/claims/0")], "F"),
-        ("a failed case cannot pass", results(outside(sensitivity=FAILED_GRID)),
-         [R("claim.cases", "/rows/0/claims/0")], "F"),
-        ("a failed case does not leave a claim incomplete",
-         results(outside(sensitivity=FAILED_GRID, claims=[claim("strict_wire_thermal_tolerance", "incomplete")])),
-         [R("claim.cases", "/rows/0/claims/0")], "F"),
-        ("a case outside the predeclared list",
-         results(outside(sensitivity=SENSITIVITY + [observed("pos-b-y", 59.8)])),
-         [R("claim.cases", "/rows/0/sensitivity")], "F"),
-        ("a control reported as a mismatch while its claims match",
-         results(control_row(control={"id": "test-control", "result": "control_mismatch"})),
-         [R("control.result", "/rows/0/control")], "F"),
-        ("a control whose claim failed, reported as a match",
-         results(control_row(claims=[claim("strict_wire_thermal_tolerance", "fails_listed_cases")])),
-         [R("control.result", "/rows/0/control")], "F"),
-        ("a control the manifest does not list",
-         results(control_row(id="other-control", control={"id": "other-control", "result": "control_match"})),
-         [R("control.result", "/rows/0/control")], "F"),
-        ("suppressed without a reason code",
-         results(outside(claims=[claim("strict_wire_thermal_tolerance", "suppressed")])),
-         [S("/rows/0/claims/0/suppressed_by", "type")], "F"),
-        ("a reason code on a claim that was not suppressed",
-         results(outside(claims=[claim("strict_wire_thermal_tolerance", PASSES, suppressed_by="gate_failed")])),
-         [S("/rows/0/claims/0/suppressed_by", "type")], "F"),
-        ("a diagnostic labelled against its evaluator",
-         results(outside(diagnostics=[{**DIAGNOSTIC, "label": "accepted"}])),
-         [R("label.single", "/rows/0/diagnostics/0")], "F"),
-        ("a comparison labelled against its inputs", results(outside(comparison={**COMPARISON,
-                                                                                "label": "unvalidated"})),
-         [R("label.derived", "/rows/0/comparison")], "F"),
-        ("a relaxed claim without its r",
-         results(outside(claims=[claim("relaxed_wire_thermal_tolerance", "unknown")])),
-         [S("/rows/0/claims/0/r", "type")], "F"),
-        ("an outside row under the reserved principal", results(outside(participant_ref="sentilab")),
-         [S("/rows/0/participant_ref", "pattern")], "F"),
-        ("the SentiLab row with a team name",
-         results(row("sentilab", participant_ref="sentilab", team_name="SentiLab", proposal_sha256=fake("p"),
-                     receipt_hash=fake("r"), state="queued")),
-         [S("/rows/0/team_name", "type")], "F"),
-        ("a paper row with a measured temperature",
-         results(row("paper", paper=A["reference"]["paper"], temperature=F["reference"]["t_ref"])),
-         [S("/rows/0/temperature", "type")], "F"),
-        ("a sealed row published", results(outside(sealed=True)), [R("privacy.sealed", "/rows/0/sealed")], "F"),
-        ("an account id is never public", results({**outside(), "actor_user_id": HUMAN}),
-         [C("unknown_field", path="/rows/0")], "F"),
-        ("a capability-shaped identity",
-         results(outside(wire=wire(99.0, FAKE_CAPABILITY, "unvalidated"), comparison=None, claims=[])),
-         [R("privacy.capability", "")], "F"),
+    target = {"kind": "published_target", "source": "illustrative fixture: no paper", "T_c": 60.5, "W_mm": 101,
+              "use": "paper target, not our evaluation"}
+    baseline = {"kind": "baseline", **measured()}
+    variant = {"kind": "engineering_variant", "id": "test-two-die-ref-snap0p5", "content_sha256": fake("snapped reference"),
+               "receipt_hash": fake("variant receipt"), **measured()}
+    unknown_r = {"id": "test-two-die-ref/raw", "T_R": "UNKNOWN", "W_R_mm": 100.0, "evaluator": None,
+                 "temperature_label": None}
+    rev3_example = {"schema": "sentilab-open-results/1",
+                    "comparator": {"id": "ascend910-tap25d-fig6a/raw", "T_R": "UNKNOWN", "W_R_mm": 16417.5},
+                    "rows": [{"kind": "outside", "participant_ref": PREF_HUMAN, "state": "reproduced", "T_M": 75.2,
+                              "delta_T": 0.1, "q_r": {"0": 1738.3},
+                              "labels": [{"id": "r-relaxed-wire thermal tolerance", "r": 0.05, "mode": PASSES}],
+                              "sensitivities": {"mesh": 0.2, "position": "UNKNOWN", "replay": 0.0}}]}
+    relaxed_only = [{"id": "r-relaxed-wire thermal tolerance", "r": 0.05, "mode": PASSES}]
+    return [
+        rec("results", "valid: every row kind", results(target, baseline, variant, outside()), manifest="F"),
+        rec("results", "valid: delta_T exact in decimal (59.7 - 60.0 = -0.3)", results(outside(T_M=59.7, delta_T=-0.3)),
+            manifest="F"),
+        rec("results", "valid: an entry still queued shows no values", results(outside(state="queued", **UNKNOWN_ROW)),
+            manifest="F"),
+        rec("results", "valid: T_R unknown leaves delta_T unknown and only the target claimable", results(outside(
+            delta_T="UNKNOWN", labels=[{"id": "declared temperature target", "r": None, "mode": PASSES}]),
+            comparator=unknown_r)),
+        rec("results", "valid: claims beside a suppressed one", results(outside(
+            labels=relaxed_only, suppressed=[{"id": "strict-wire thermal tolerance", "r": None,
+                                              "by": "failed required scenario"}])), manifest="F"),
+        rec("results", "valid: INCOMPLETE and UNKNOWN are shown with their values", results(outside(labels=[
+            {"id": "declared temperature target", "r": None, "mode": "INCOMPLETE"},
+            {"id": "robust dominance over R", "r": None, "mode": "UNKNOWN"}])), manifest="F"),
+        rec("results", "the rev 3 section 10 example, filled in: our added fields are required", rev3_example,
+            [S("/comparator/evaluator", "required"), S("/comparator/temperature_label", "required"),
+             S("/private_entries", "required"), S("/rows/0", "oneOf")]),
+        rec("results", "delta_T reads UNKNOWN while T_R does, never zero", results(outside(delta_T=0.0, labels=[]),
+                                                                                 comparator=unknown_r),
+            [R("results.delta_t", "/rows/0/delta_T")]),
+        rec("results", "delta_T is T_M(c) - T_M(R), exactly", results(outside(delta_T=-0.4)),
+            [R("results.delta_t", "/rows/0/delta_T")], manifest="F"),
+        rec("results", "labels in display order", results(outside(labels=list(reversed(measured()["labels"])))),
+            [R("results.label_set", "/rows/0/labels")], manifest="F"),
+        rec("results", "a claim is shown or suppressed, not both", results(outside(
+            labels=relaxed_only, suppressed=[{"id": "r-relaxed-wire thermal tolerance", "r": 0.05,
+                                              "by": "failed binding"}])),
+            [R("results.label_set", "/rows/0/labels")], manifest="F"),
+        rec("results", "the relaxed label carries r", results(outside(labels=[
+            {"id": "r-relaxed-wire thermal tolerance", "r": None, "mode": PASSES}])),
+            [R("results.label_r", "/rows/0/labels")], manifest="F"),
+        rec("results", "a strict label carries no r", results(outside(labels=[
+            {"id": "strict-wire thermal tolerance", "r": 0.05, "mode": PASSES}])),
+            [R("results.label_r", "/rows/0/labels")], manifest="F"),
+        rec("results", "r is the manifest's tolerance", results(outside(labels=[
+            {"id": "r-relaxed-wire thermal tolerance", "r": 0.1, "mode": PASSES}])),
+            [R("results.label_r", "/rows/0/labels")], manifest="F"),
+        rec("results", "no claim on an unknown wire", results(outside(W_c_mm="UNKNOWN", q_r=Q_UNKNOWN,
+                                                                      labels=relaxed_only)),
+            [R("results.unknown_claim", "/rows/0/labels")], manifest="F"),
+        rec("results", "nothing is bounded while every bound is UNKNOWN", results(outside(labels=[
+            {"id": "declared temperature target", "r": None, "mode": "bounded"}])),
+            [R("results.bounded", "/rows/0/labels")], manifest="F"),
+        rec("results", "a withdrawn temperature claims nothing", results(outside(
+            evaluator=WITHDRAWN, temperature_label="withdrawn")),
+            [R("label.withdrawn_claim", "/rows/0/labels", "label_mismatch")], manifest="F"),
+        rec("results", "the label is the evaluator's (SLAB-053)", results(outside(temperature_label="accepted")),
+            [R("label.temperature", "/rows/0/temperature_label", "label_mismatch")], manifest="F"),
+        rec("results", "an unknown temperature has no label", results(outside(**UNKNOWN_ROW | {
+            "temperature_label": "unvalidated", "state": "queued"})),
+            [R("label.temperature", "/rows/0/temperature_label", "label_mismatch")], manifest="F"),
+        rec("results", "a HotSpot 6.0 value reads unvalidated", results(outside(evaluator="hotspot6:" + HOTSPOT6)),
+            [R("label.temperature", "/rows/0/temperature_label", "label_mismatch")], manifest="F"),
+        rec("results", "the comparator is the manifest's", results(outside(), comparator={
+            "id": "test-two-die-ref/raw", "T_R": 60.5, "W_R_mm": 100.0, "evaluator": FIXTURE,
+            "temperature_label": "illustrative"}),
+            [R("results.comparator", "/comparator"), R("results.delta_t", "/rows/0/delta_T")], manifest="F"),
+        rec("results", "an entry not evaluated has no values", results(outside(state="queued")),
+            [R("results.state", "/rows/0/state")], manifest="F"),
+        rec("results", "q_r follows W(c)", results(outside(q_r=Q_F | {"1.00": -100.0})),
+            [R("results.q_r_values", "/rows/0/q_r")], manifest="F"),
+        rec("results", "q_r keys: r = 0, the tolerance and every budget", results(outside(
+            q_r={key: value for key, value in Q_F.items() if key != "1.00"})),
+            [R("results.q_r_keys", "/rows/0/q_r")], manifest="F"),
+        rec("results", "private entries are only counted", results(outside(), private_entries=-1),
+            [S("/private_entries", "minimum")], manifest="F"),
+        rec("results", "a published target is never our evaluation", results(target | {"use": "comparison"}),
+            [S("/rows/0", "oneOf")]),
     ]
-    out += [rec("results", name, value, expect, manifest=key) for name, value, expect, key in bad]
-    return out
-
-
-def usage(**edits):
-    value = {"schema": "sentilab-open-usage/1", "journal_seq": 31, "suballocation": "evaluate", "payer": "participant",
-             "run_id": h.run_id(ID["F"], PREF_HUMAN), "participant_ref": PREF_HUMAN,
-             "proposal_sha256": h.proposal_sha256(P_F), "call": 0, "reservation_id": RESERVATIONS[0],
-             "reserved_cpu_s": 15, "enforced_cpu_s": 14, "cleanup_headroom_cpu_s": 1, "debited_cpu_s": 4.8,
-             "measured_cpu_s": 4.8, "elapsed_s": 4.9, "enforcement": "not_triggered", "overrun": "none",
-             "outcome": "settled", "codes": []}
-    value.update(edits)
-    return value
-
-
-def error(*codes):
-    return {"schema": "sentilab-open-error/1", "codes": list(codes)}
-
-
-def cursor(after=None, seq=0, journal=None):
-    return {"schema": "sentilab-open-cursor/1", "room": ROOM, "after": after, "journal_seq": seq,
-            "journal_sha256": journal}
-
-
-VOCABULARY = json.loads((CONTRACT_DIR / "reason-codes.json").read_bytes())
-SEALED_ENVELOPE = json.loads(NOTE_SEALED)
 
 
 def other_records() -> list:
-    current = {"schema": "sentilab-open-current/1", "problem": "test-two-die", "version": 1, "manifest_id": ID["F"],
-               "threads": [{"room": ROOM, "root_sequence": 4242}, {"room": OVERFLOW_ROOM, "root_sequence": 5150}]}
-    good = [
-        ("geometry", "the two-die layout's hash preimage", h.geometry_object(P_F, F), None),
-        ("sealed", "envelope shape only: the ciphertext is the bare age v1 header line, not an age file",
-         SEALED_ENVELOPE, None),
-        ("check_request", "a check request", {"m": ID["A"], "p": b64url(text(P_A))}, None),
-        ("error", "queue full, retry after", error(C("queue_full", retry_after="2026-11-01T11:00:00Z")), None),
-        ("error", "check rate limited", error(C("check_rate_limited", retry_after="2026-11-01T10:01:00Z")), None),
-        ("error", "check timed out", error(C("check_timeout")), None),
-        ("error", "evaluations paused for 24 hours", error(C("participant_paused", retry_after="2026-11-02T10:00:00Z")),
-         None),
-        ("limits", "the provisional operational limits (OP-W1/W3)", LIMITS, None),
-        ("usage", "an evaluate call, measured", usage(), None),
-        ("usage", "an interrupted call debits its whole reservation",
-         usage(call=1, reservation_id=RESERVATIONS[1], measured_cpu_s=None, debited_cpu_s=15, elapsed_s=None,
-               overrun="unmeasured", outcome="interrupted", codes=[C("interrupted")]), None),
-        ("usage", "stopped in flight by live enforcement", usage(
-            call=2, reservation_id=RESERVATIONS[3], measured_cpu_s=14.2, debited_cpu_s=14.2, elapsed_s=14.4,
-            enforcement="stopped_in_flight", outcome="failed", codes=[C("timeout")]), None),
-        ("usage", "stopped in flight, and cleanup overran: detected at settlement, not prevented", usage(
-            call=3, reservation_id=RESERVATIONS[4], measured_cpu_s=15.6, debited_cpu_s=15.6, elapsed_s=15.9,
-            enforcement="stopped_in_flight", overrun="detected", outcome="failed", codes=[C("timeout")]), None),
-        ("usage", "a sponsored check still spends sponsor CPU",
-         usage(suballocation="check", payer="sponsor", run_id=None, participant_ref=None, proposal_sha256=None,
-               reservation_id=RESERVATIONS[2], reserved_cpu_s=2.5, enforced_cpu_s=2, cleanup_headroom_cpu_s=0.5,
-               debited_cpu_s=0.9, measured_cpu_s=0.9, elapsed_s=1.1), None),
-        ("cursor", "a room's cursor before any reply", cursor(), None),
-        ("cursor", "after one durably journalled reply",
-         cursor({"created_at": "2026-11-01T10:00:00+00:00", "action_id": ACTIONS[0]}, 1, fake("journal 1")), None),
-        ("current", "the open version and its threads", current, "F"),
-        ("private_request", "a capability addresses one sealed submission", {"cap": FAKE_CAPABILITY}, None),
-        ("reason_codes", "the vocabulary itself", VOCABULARY, None),
+    key_object = h.transport_key_object(room=ROOM, account=HUMAN, actor_slot="human", manifest_id=ID["F"],
+                                        logical_key="t-1", content_sha256=h.proposal_sha256(P_PUB))
+    return [
+        rec("geometry", "valid: a geometry preimage", h.geometry_object(P_PUB, F)),
+        rec("geometry", "no salt in the geometry", h.geometry_object(P_PUB, F) | {"salt": SALTS[1]},
+            [{"code": "unknown_field", "path": ""}]),
+        rec("geometry", "no lattice field (rev 3)", h.geometry_object(P_PUB, F) | {"lattice_um": 500},
+            [{"code": "unknown_field", "path": ""}]),
+        rec("transport_key", "valid: a transport-key preimage", key_object),
+        rec("transport_key", "valid: a publish preimage", key_object | {"logical_key": h.logical_key(PUBLISH)}),
+        rec("transport_key", "an agent slot names its agent", key_object | {"actor_slot": "agent:"},
+            [S("/actor_slot", "pattern")]),
+        rec("transport_key", "the logical key is a key", key_object | {"logical_key": "T-1"},
+            [S("/logical_key", "pattern")]),
+        rec("proposal", "valid: Appendix A's example", P_A),
+        rec("proposal", "valid: a public proposal", P_PUB),
+        rec("check_request", "valid: a check request", C_PUB),
+        rec("team", "valid: a team name", TEAM),
+        rec("publish", "valid: a publish choice", PUBLISH),
+        rec("publish", "a publish names a proposal hash", PUBLISH | {"proposal_sha256": "t-2"},
+            [S("/proposal_sha256", "pattern")]),
+        rec("reason_codes", "valid: the 48 codes", json.loads((CONTRACT_DIR / "reason-codes.json").read_bytes())),
     ]
-    out = [rec(kind, name, value, manifest=key, limits=kind == "limits") for kind, name, value, key in good]
-    bad = [
-        ("geometry", "a salt in the geometry", {**h.geometry_object(P_F, F), "salt": SALT},
-         [C("unknown_field", path="")], None),
-        ("sealed", "a plaintext fallback", {**SEALED_ENVELOPE, "proposal": P_F}, [C("unknown_field", path="")], None),
-        ("sealed", "a ciphertext that is not base64", {**SEALED_ENVELOPE, "ciphertext": "not base64!"},
-         [S("/ciphertext", "pattern")], None),
-        ("sealed", "key version 0", {**SEALED_ENVELOPE, "key_version": 0}, [S("/key_version", "minimum")], None),
-        ("check_request", "m is not a hash", {"m": "manifest", "p": "e30"}, [S("/m", "pattern")], None),
-        ("error", "queue full without a retry_after", error(C("queue_full")), [R("violation.fields", "/codes/0")],
-         None),
-        ("error", "no code", error(), [S("/codes", "minItems")], None),
-        ("error", "a code outside the vocabulary", error(C("try_later")), [S("/codes/0/code", "enum")], None),
-        ("error", "free text beside a code", error({"code": "check_timeout", "message": "took too long"}),
-         [C("unknown_field", path="/codes/0")], None),
-        ("limits", "no participant charge without sponsorship", edit(LIMITS, ["check", "sponsored"], False),
-         [R("limits.charge", "/check/no_participant_charge")], None),
-        ("limits", "no participant charge without a solver limit",
-         edit(LIMITS, ["check", "solver_elapsed_limit_s"], None),
-         [R("limits.charge", "/check/no_participant_charge")], None),
-        ("limits", "a solver limit past the whole-check deadline",
-         edit(LIMITS, ["check", "solver_elapsed_limit_s"], 6),
-         [R("limits.windows", "/check/solver_elapsed_limit_s")], None),
-        ("limits", "a daily quota under the hourly one", edit(LIMITS, ["evaluations", "per_room_per_day"], 10),
-         [R("limits.windows", "/evaluations/per_room_per_day")], None),
-        ("limits", "a reservation that is not enforcement plus headroom",
-         edit(LIMITS, ["cpu", "evaluation_call"], {"reservation_s": 15, "enforcement_s": 15,
-                                                   "cleanup_headroom_s": 1}),
-         [R("limits.cpu", "/cpu/evaluation_call")], None),
-        ("limits", "a deadline clock that counts the queue", edit(LIMITS, ["check", "queue_time_counted"], True),
-         [S("/check/queue_time_counted", "const")], None),
-        ("limits", "an owner field beside the limits", {**LIMITS, "owner": "operations"},
-         [C("unknown_field", path="")], None),
-        ("limits", "a deadline clock started at the request",
-         edit(LIMITS, ["check", "wall_clock_start"], "on_request"), [S("/check/wall_clock_start", "const")], None),
-        ("usage", "an overrun reported as none", usage(measured_cpu_s=15.6, debited_cpu_s=15.6),
-         [R("usage.overrun", "/overrun")], None),
-        ("usage", "an overrun claimed without a measurement", usage(measured_cpu_s=None, debited_cpu_s=15,
-                                                                   overrun="detected"),
-         [R("usage.overrun", "/overrun")], None),
-        ("usage", "stopped in flight but recorded as settled", usage(enforcement="stopped_in_flight"),
-         [R("usage.enforcement", "/enforcement")], None),
-        ("usage", "an unmeasured call debited less than its reservation", usage(measured_cpu_s=None,
-                                                                                overrun="unmeasured"),
-         [R("usage.charge", "/debited_cpu_s")], None),
-        ("usage", "an interrupted call with a measurement", usage(outcome="interrupted", codes=[C("interrupted")]),
-         [R("usage.charge", "/debited_cpu_s")], None),
-        ("usage", "a reservation that is not enforcement plus headroom", usage(enforced_cpu_s=15),
-         [R("usage.charge", "/debited_cpu_s")], None),
-        ("usage", "a check debited to a participant", usage(suballocation="check", run_id=None),
-         [S("/payer", "const")], None),
-        ("usage", "an evaluation outside any run", usage(run_id=None), [S("/run_id", "type")], None),
-        ("usage", "another principal's run", usage(run_id=h.run_id(ID["F"], PREF_AGENT)),
-         [R("ref.run_id", "/run_id")], None),
-        ("cursor", "a start that names a journal entry", cursor(None, 3), [S("/journal_seq", "const")], None),
-        ("cursor", "an impossible date",
-         cursor({"created_at": "2026-02-30T00:00:00Z", "action_id": ACTIONS[0]}, 1, fake("journal 1")),
-         [R("cursor.created_at", "/after/created_at")], None),
-        ("current", "a pointer to another manifest", {**current, "manifest_id": ID["A"]},
-         [R("record.manifest", "/manifest_id")], "F"),
-        ("private_request", "a capability of the wrong shape", {"cap": "opencap1-xyz"}, [S("/cap", "pattern")], None),
-        ("reason_codes", "a field beside the vocabulary", {**VOCABULARY, "note": "x"}, [C("unknown_field", path="")],
-         None),
-    ]
-    out += [rec(kind, name, value, expect, manifest=key, limits=kind == "limits")
-            for kind, name, value, expect, key in bad]
-    return out
 
 
-# ── the state machine, revisions and submission order ───────────────────────────────────────────────────────────
+# ── the state machine, the idempotency decisions and the order ─────────────────────────────────────────────────
 
-ALLOWED = {
-    "none": {"accept": "queued", "reject": "rejected"},
-    "queued": {"hold": "held", "start": "evaluating", "cancel": "cancelled", "expire": "expired"},
-    "held": {"release": "queued", "cancel": "cancelled", "expire": "expired"},
-    "evaluating": {"complete": "evaluated", "fail": "failed"},
-    "evaluated": {"reproduce": "reproducing"},
-    "failed": {"requeue": "queued"},
-    "reproducing": {"reproduced": "reproduced", "not_reproduced": "not_reproduced"},
-    "reproduced": {"verify": "verifying"},
-    "verifying": {"verified": "verified", "not_verified": "not_verified"},
-    "rejected": {}, "not_reproduced": {}, "verified": {}, "not_verified": {}, "cancelled": {}, "expired": {}}
-GOOD_PAYLOAD = {
-    "accept": {}, "reject": {"codes": ["lattice"]}, "hold": {"operator": True}, "release": {"operator": True},
-    "start": {"reservation_id": RESERVATIONS[0]}, "complete": {"settled": True},
-    "fail": {"settled": True, "code": "timeout"}, "requeue": {"operator": True},
-    "reproduce": {"reservation_id": RESERVATIONS[1]}, "reproduced": {"settled": True, "fresh_process": True},
-    "not_reproduced": {"settled": True, "code": "reproduction_mismatch"},
-    "verify": {"reservation_id": RESERVATIONS[2]}, "verified": {"settled": True, "tier": "cross_host"},
-    "not_verified": {"settled": True, "code": "verification_failed"}, "cancel": {"codes": ["participant_removed"]},
-    "expire": {}, "withdraw": {"operator": True}, "restore": {"operator": True},
-    "hide": {"operator": True, "reason": "spam"}, "unhide": {"operator": True, "reason": "reinstated"}}
-GUARDS = [
-    ("reject", "none", {}), ("reject", "none", {"codes": []}), ("reject", "none", {"codes": ["timeout"]}),
-    ("reject", "none", {"codes": ["lattice", "spam"]}),
-    ("start", "queued", {}), ("start", "queued", {"reservation_id": "r-1"}),
-    ("complete", "evaluating", {}), ("complete", "evaluating", {"settled": False}),
-    ("fail", "evaluating", {"settled": True}), ("fail", "evaluating", {"settled": True, "code": "router_timeout"}),
-    ("fail", "evaluating", {"code": "timeout"}),
-    ("reproduce", "evaluated", {}),
-    ("reproduced", "reproducing", {"settled": True}),
-    ("reproduced", "reproducing", {"settled": True, "fresh_process": False}),
-    ("reproduced", "reproducing", {"fresh_process": True}),
-    ("not_reproduced", "reproducing", {"settled": True, "code": "timeout"}),
-    ("verify", "reproduced", {}),
-    ("verified", "verifying", {"settled": True, "tier": "replayed"}),
-    ("verified", "verifying", {"tier": "cross_build"}),
-    ("not_verified", "verifying", {"settled": True, "code": "reproduction_mismatch"}),
-    ("cancel", "queued", {"codes": ["lattice"]}),
-    ("hold", "queued", {}), ("release", "held", {"operator": False}), ("requeue", "failed", {}),
-    ("withdraw", "queued", {}), ("restore", "queued", {}),
-    ("hide", "queued", {"operator": True, "reason": "reinstated"}),
-    ("hide", "queued", {"operator": True}), ("hide", "queued", {"reason": "spam"}),
-]
-
-
-def overlay(name, start, events, expect):
-    return {"name": name, "from": start, "events": events,
-            "expect": expect if expect == "refused" else dict(zip(("lifecycle", "withdrawn", "hidden"), expect))}
+ALLOWED = {(None, "accept"): "queued", (None, "reject"): "rejected", ("queued", "hold"): "held",
+           ("held", "release"): "queued", ("queued", "start"): "evaluating", ("evaluating", "complete"): "evaluated",
+           ("evaluating", "fail"): "failed", ("evaluated", "fail"): "failed", ("evaluated", "replay"): "replaying",
+           ("replaying", "reproduced"): "reproduced", ("replaying", "not_reproduced"): "not_reproduced",
+           ("reproduced", "cross_checked"): "cross_checked", ("queued", "cancel"): "cancelled",
+           ("held", "cancel"): "cancelled", ("queued", "expire"): "expired", ("held", "expire"): "expired"}
+GOOD_PAYLOAD = {"accept": {}, "reject": {"codes": ["lattice"]}, "hold": {"operator": True},
+                "release": {"operator": True}, "start": {"reservation_id": RESERVATION},
+                "complete": {"settled": True}, "fail": {"settled": True, "codes": ["timeout"]},
+                "replay": {"reservation_id": RESERVATION}, "reproduced": {"settled": True, "fresh_process": True},
+                "not_reproduced": {"settled": True, "codes": ["reproduction_mismatch"]},
+                "cross_checked": {"settled": True, "tier": "cross_build"}, "cancel": {"codes": ["participant_removed"]},
+                "expire": {}, "hide": {"operator": True, "reason": "spam"},
+                "restore": {"operator": True, "reason": "reinstated"}}
+SUMMARY_EXPECT = {"rejected": "rejected", "queued": "queued", "held": "queued", "evaluating": "queued",
+                  "evaluated": "evaluated", "failed": "evaluated", "replaying": "evaluated",
+                  "not_reproduced": "evaluated", "reproduced": "independently verified",
+                  "cross_checked": "independently verified", "cancelled": None, "expired": None}
+CHARGED_EXPECT = {"rejected": False, "queued": False, "held": False, "evaluating": True, "evaluated": True,
+                  "failed": True, "replaying": True, "reproduced": True, "not_reproduced": True,
+                  "cross_checked": True, "cancelled": False, "expired": False}
 
 
 def state_table() -> dict:
-    withdraw, restore = ["withdraw", {"operator": True}], ["restore", {"operator": True}]
-    hide_spam = ["hide", {"operator": True, "reason": "spam"}]
-    reinstate = ["unhide", {"operator": True, "reason": "reinstated"}]
-    return {
-        "lifecycle": [state for state in ALLOWED if state != "none"], "allowed": ALLOWED,
-        "good_payload": GOOD_PAYLOAD,
-        "guards": [{"event": event, "from": start, "payload": payload, "expect": "refused"}
-                   for event, start, payload in GUARDS],
-        "overlays": [
-            overlay("withdraw then restore", "evaluated", [withdraw, restore], ("evaluated", False, None)),
-            overlay("work in flight still settles while withdrawn", "evaluating",
-                    [withdraw, ["complete", {"settled": True}]], ("evaluated", True, None)),
-            overlay("no new work starts while withdrawn", "queued",
-                    [withdraw, ["start", {"reservation_id": RESERVATIONS[0]}]], "refused"),
-            overlay("no requeue while withdrawn", "failed", [withdraw, ["requeue", {"operator": True}]], "refused"),
-            overlay("withdraw twice", "queued", [withdraw, withdraw], "refused"),
-            overlay("restore without a withdrawal", "queued", [restore], "refused"),
-            overlay("hide as spam, then reinstate", "rejected", [hide_spam, reinstate], ("rejected", False, None)),
-            overlay("hidden entries keep evaluating", "queued",
-                    [["hide", {"operator": True, "reason": "not_a_layout"}],
-                     ["start", {"reservation_id": RESERVATIONS[0]}]], ("evaluating", False, "not_a_layout")),
-            overlay("hide twice", "queued", [hide_spam, hide_spam], "refused"),
-            overlay("unhide what is visible", "queued", [reinstate], "refused"),
-            overlay("unhide with a hiding reason", "queued",
-                    [hide_spam, ["unhide", {"operator": True, "reason": "spam"}]], "refused"),
-            overlay("no overlay before ingest", "none", [withdraw], "refused"),
-            overlay("an unknown event", "queued", [["evaluate", {}]], "refused")],
-        "summary": {"rejected": "rejected", "queued": "queued", "held": "queued", "evaluating": "queued",
-                    "evaluated": "evaluated", "failed": "evaluated", "reproducing": "evaluated",
-                    "reproduced": "evaluated", "not_reproduced": "evaluated", "verifying": "evaluated",
-                    "not_verified": "evaluated", "verified": "independently_verified", "cancelled": None,
-                    "expired": None}}
+    pairs = []
+    for state in (None,) + LIFECYCLE:
+        for event in tuple(EVENTS) + FLAG_EVENTS:
+            if event in FLAG_EVENTS:
+                for hidden in (None, "spam"):
+                    allowed = state is not None and (hidden is None) == (event == "hide")
+                    after = {"state": state, "hidden": "spam" if event == "hide" else None} if allowed else None
+                    pairs.append({"state": state, "hidden": hidden, "event": event, "payload": GOOD_PAYLOAD[event],
+                                  "expect": after})
+            else:
+                target = ALLOWED.get((state, event))
+                pairs.append({"state": state, "hidden": None, "event": event, "payload": GOOD_PAYLOAD[event],
+                              "expect": None if target is None else {"state": target, "hidden": None}})
+    guards = [
+        ("hold needs an operator", "queued", "hold", {}),
+        ("start needs a reservation", "queued", "start", {}),
+        ("a reservation id is a UUID", "queued", "start", {"reservation_id": "r-1"}),
+        ("replay needs a reservation", "evaluated", "replay", {}),
+        ("complete needs settlement", "evaluating", "complete", {}),
+        ("an evaluation carries qualifier codes only", "evaluating", "complete",
+         {"settled": True, "codes": ["lattice"]}),
+        ("a failure needs a code", "evaluating", "fail", {"settled": True}),
+        ("a failure has one code", "evaluating", "fail", {"settled": True, "codes": ["timeout", "stopped"]}),
+        ("router_timeout is not a failure", "evaluating", "fail", {"settled": True, "codes": ["router_timeout"]}),
+        ("binding_mismatch is not a failure", "evaluated", "fail", {"settled": True, "codes": ["binding_mismatch"]}),
+        ("check_unfinished is a check's code only", "evaluating", "fail",
+         {"settled": True, "codes": ["check_unfinished"]}),
+        ("a failure is settled", "evaluating", "fail", {"codes": ["timeout"]}),
+        ("a rejection needs codes", None, "reject", {}),
+        ("a rejection needs rejection codes", None, "reject", {"codes": ["timeout"]}),
+        ("reproduction needs a fresh process", "replaying", "reproduced", {"settled": True}),
+        ("a failed reproduction needs its code", "replaying", "not_reproduced", {"settled": True, "codes": ["timeout"]}),
+        ("a cross-check is cross_build or cross_arch, never cross_solver", "reproduced", "cross_checked",
+         {"settled": True, "tier": "cross_solver"}),
+        ("replayed is not a cross-check", "reproduced", "cross_checked", {"settled": True, "tier": "replayed"}),
+        ("a cancellation carries policy codes only", "queued", "cancel", {"codes": ["timeout"]}),
+        ("accept carries no codes", None, "accept", {"codes": ["lattice"]}),
+        ("codes are a list", None, "reject", {"codes": "lattice"}),
+        ("hiding needs a moderation reason", "evaluated", "hide", {"operator": True, "reason": "rude"}),
+        ("restoring needs its reason", "evaluated", "restore", {"operator": True, "reason": "spam"}),
+        ("hiding is an operator's", "evaluated", "hide", {"reason": "spam"}),
+        ("an unknown event", "queued", "requeue", {"operator": True}),
+    ]
+    return {"pairs": pairs,
+            "guards": [{"name": name, "state": state, "hidden": "spam" if event == "restore" else None,
+                        "event": event, "payload": payload} for name, state, event, payload in guards],
+            "summary": SUMMARY_EXPECT, "charged": CHARGED_EXPECT}
 
 
-K = {name: hashlib.sha256(("revision vector " + name).encode()).hexdigest() for name in "abcdefgh"}
-
-
-def rev(index, key, content, geometry, order):
-    return {"index": index, "proposal_key": key, "proposal_sha256": content, "geometry_sha256": geometry,
-            "order": order}
+def prior(kind, key, item, order, geometry=None) -> dict:
+    return {"kind": kind, "logical_key": key, "content_sha256": h.content_sha256(item),
+            "geometry_sha256": geometry, "order": order}
 
 
 def revisions() -> list:
-    one = rev(1, "a-1", K["a"], K["b"], [1000, ACTIONS[0], ROOM])
-    two = rev(2, "a-1", K["c"], K["d"], [2000, ACTIONS[1], ROOM])
-    at = lambda ns, index: [ns, ACTIONS[index], ROOM]
+    first = prior("proposal", "t-1", P_PUB, [1], P_PUB["geometry_sha256"])
+    check = prior("check_request", "c-1", C_PUB, [2], C_PUB["geometry_sha256"])
+    team = prior("team", "team", TEAM, [3])
+    other = changed(P_PUB, salt=SALTS[6])
     cases = [
-        ("the first submission", [], ["a-1", K["a"], None, at(1000, 0)], ["new", 1, []]),
-        ("the same content again: no new record", [one], ["a-1", K["a"], None, at(2000, 1)], ["duplicate", 1, []]),
-        ("the same key with changed content: a recorded conflict", [one], ["a-1", K["c"], None, at(2000, 1)],
-         ["new", 2, ["revision_conflict"]]),
-        ("the conflicting content resent: the same conflict record", [one, two],
-         ["a-1", K["c"], None, at(3000, 2)], ["duplicate", 2, []]),
-        ("a new key on an earlier geometry", [one], ["a-2", K["e"], K["b"], at(2000, 1)], ["new", 2, []]),
-        ("a parent that is not the principal's", [one], ["a-2", K["e"], K["f"], at(2000, 1)],
-         ["new", 2, ["unknown_parent"]]),
-        ("a conflict and an unknown parent", [one], ["a-1", K["g"], K["f"], at(2000, 1)],
-         ["new", 2, ["revision_conflict", "unknown_parent"]]),
-        ("a reply that never parsed still counts as a revision", [one], [None, None, None, at(2000, 1)],
-         ["new", 2, []]),
-        ("a key owned by a rejected first revision", [rev(1, "a-1", K["a"], None, at(1000, 0))],
-         ["a-1", K["h"], None, at(2000, 1)], ["new", 2, ["revision_conflict"]]),
-        ("out of order", [one], ["a-2", K["e"], None, at(500, 1)], "order_error"),
-        ("a tie on time, decided by the action id", [one], ["a-2", K["e"], None, at(1000, 1)], ["new", 2, []]),
-        ("history out of order", [one, rev(2, "a-2", K["c"], None, at(900, 1))], ["a-3", K["e"], None,
-                                                                                  at(3000, 2)], "order_error"),
+        ("the first proposal", [], "proposal", "t-1", P_PUB, None, [1], {"kind": "new", "revision_index": 1,
+                                                                         "codes": []}),
+        ("the same key and content: a duplicate, the same receipt", [first], "proposal", "t-1", P_PUB, None, [5],
+         {"kind": "duplicate", "revision_index": 1, "codes": []}),
+        ("the same key, other content: idempotency_conflict, the earliest wins", [first], "proposal", "t-1", other,
+         None, [5], {"kind": "new", "revision_index": 2, "codes": ["idempotency_conflict"]}),
+        ("another key: a new revision", [first], "proposal", "t-3", P_CHILD, P_PUB["geometry_sha256"], [5],
+         {"kind": "new", "revision_index": 2, "codes": []}),
+        ("a parent that is no earlier geometry of the account", [first], "proposal", "t-3", P_CHILD, "0" * 64, [5],
+         {"kind": "new", "revision_index": 2, "codes": ["unknown_parent"]}),
+        ("a check request's geometry is no parent", [check], "proposal", "t-3", P_CHILD, C_PUB["geometry_sha256"],
+         [5], {"kind": "new", "revision_index": 1, "codes": ["unknown_parent"]}),
+        ("a conflict and an unknown parent together", [first], "proposal", "t-1", other, "0" * 64, [5],
+         {"kind": "new", "revision_index": 2, "codes": ["idempotency_conflict", "unknown_parent"]}),
+        ("kinds do not collide: a request_key equal to a proposal_key", [first], "check_request", "t-1", C_PUB, None,
+         [5], {"kind": "new", "revision_index": 1, "codes": []}),
+        ("a check request's own conflict", [check], "check_request", "c-1", changed(C_PUB, salt=SALTS[7]), None, [5],
+         {"kind": "new", "revision_index": 2, "codes": ["idempotency_conflict"]}),
+        ("the same team name: a duplicate", [team], "team", "team", TEAM, None, [5],
+         {"kind": "duplicate", "revision_index": 1, "codes": []}),
+        ("a changed team name: idempotency_conflict", [team], "team", "team", changed(TEAM, name="Team Example 8"),
+         None, [5], {"kind": "new", "revision_index": 2, "codes": ["idempotency_conflict"]}),
     ]
-    return [{"name": name, "history": history,
-             "submission": dict(zip(("proposal_key", "proposal_sha256", "parent", "order"), submission)),
-             "expect": expect if expect == "order_error" else
-             {"kind": expect[0], "revision_index": expect[1], "codes": expect[2]}}
-            for name, history, submission, expect in cases]
+    out = [{"name": name, "decide": "revision", "history": history, "kind": kind, "logical_key": key,
+            "content_sha256": h.content_sha256(item), "parent": parent, "order": order, "expect": expected}
+           for name, history, kind, key, item, parent, order, expected in cases]
+    out += [
+        {"name": "history out of order", "decide": "revision", "history": [prior("proposal", "t-1", P_PUB, [3]),
+                                                                           prior("proposal", "t-3", P_CHILD, [2])],
+         "kind": "proposal", "logical_key": "t-4", "content_sha256": fake("content"), "parent": None, "order": [9],
+         "expect": "order_error"},
+        {"name": "a row decided before an earlier one", "decide": "revision", "history": [first], "kind": "proposal",
+         "logical_key": "t-4", "content_sha256": fake("content"), "parent": None, "order": [0],
+         "expect": "order_error"},
+        {"name": "publish: one of the account's own proposals", "decide": "publish",
+         "history": [prior("proposal", "t-2", P_PRIV, [1])], "proposal_sha256": h.proposal_sha256(P_PRIV),
+         "order": [5], "expect": []},
+        {"name": "publish: no such proposal of this account", "decide": "publish", "history": [first],
+         "proposal_sha256": h.proposal_sha256(P_PRIV), "order": [5], "expect": ["unknown_proposal"]},
+        {"name": "publish: a check request is not a proposal", "decide": "publish", "history": [check],
+         "proposal_sha256": h.content_sha256(C_PUB), "order": [5], "expect": ["unknown_proposal"]},
+    ]
+    return out
 
 
 def ordering() -> dict:
@@ -1285,7 +1387,7 @@ def ordering() -> dict:
                         "2026-10-31T16:05:12.1234567890Z", "2026-10-31T16:05:12z"]}
 
 
-# ── canonical and hash vectors ──────────────────────────────────────────────────────────────────────────────────
+# ── canonical, hash, key and sealing vectors (T1) ───────────────────────────────────────────────────────────────
 
 BACKSLASH, QUOTE = chr(92), chr(34)
 CONTROL_STRING = "say " + QUOTE + "hi" + QUOTE + " " + BACKSLASH + " é 😀" + chr(10) + chr(9) + chr(31)
@@ -1302,64 +1404,86 @@ CANONICAL = [
     ("strings escape only quote, backslash and control characters", {"s": CONTROL_STRING}, CONTROL_CANONICAL),
     ("an empty object differs from a null field", {"present": None}, '{"present":null}'),
 ]
+OBJECTS = {"P_A": P_A, "P_PUB": P_PUB, "P_PRIV": P_PRIV, "P_CHILD": P_CHILD, "P_PRIV_F2": P_PRIV_F2, "C_PUB": C_PUB,
+           "C_PRIV": C_PRIV, "TEAM": TEAM, "PUBLISH": PUBLISH}
+ARMOUR_REFUSALS = [
+    ("CRLF line ends", lambda armour: armour.replace(b"\n", b"\r\n")),
+    ("a missing END line", lambda armour: armour[:armour.rindex(b"-----END")]),
+    ("text after END", lambda armour: armour + b"trailing\n"),
+    ("two body lines joined", lambda armour: armour.replace(b"\n", b"", 2).replace(b"-----BEGIN AGE ENCRYPTED FILE-----",
+                                                                            b"-----BEGIN AGE ENCRYPTED FILE-----\n",
+                                                                            1)),
+]
+
+
+NOTE_REFUSALS = [
+    ("a key version with a leading zero", lambda note: note.replace(b" 1\n", b" 01\n", 1)),
+    ("an upper-case manifest id", lambda note: note[:23] + note[23:87].upper() + note[87:]),
+    ("another schema", lambda note: note.replace(b"sentilab-open-sealed/1", b"sentilab-open-sealed/2", 1)),
+    ("no line feed after the first line", lambda note: note.replace(b" 1\n", b" 1 ", 1)),
+    ("a seven-digit key version", lambda note: note.replace(b" 1\n", b" 1000000\n", 1)),
+]
 
 
 def vectors() -> dict:
-    sealed_sha = h.proposal_sha256(P_SEALED)
-    geometry_cases = (("the Ascend 910 snap0p5 copy", "A", P_A), ("the two-die layout", "F", P_F),
-                      ("a sealed plaintext: same geometry, unsalted hash", "F", P_SEALED))
-    proposal_cases = (("the Ascend 910 snap0p5 copy", P_A), ("the two-die layout", P_F),
-                      ("a sealed plaintext: salted, so its hash is unguessable", P_SEALED),
-                      ("without the optional client", without(P_F, "client")))
-    transport_cases = ((ROOM, HUMAN, "human", None, "t-1", P_F),
-                       (ROOM, AGENT_ACCOUNT, "agent", "example-agent", "t-1", P_F),
-                       (OVERFLOW_ROOM, HUMAN, "human", None, "t-1", P_F),
-                       (ROOM, HUMAN, "human", None, "t-1", P_SEALED))
+    transport_cases = [("P_PUB", ROOM, HUMAN, "human", None), ("P_PUB", ROOM, AGENT_ACCOUNT, "agent", AGENT_ID),
+                       ("P_PUB", OVERFLOW_ROOM, HUMAN, "human", None), ("P_PRIV", ROOM, HUMAN, "human", None),
+                       ("P_CHILD", ROOM, HUMAN, "human", None), ("C_PUB", ROOM, HUMAN, "human", None),
+                       ("C_PRIV", ROOM, AGENT_ACCOUNT, "agent", AGENT_ID), ("TEAM", ROOM, HUMAN, "human", None),
+                       ("PUBLISH", ROOM, HUMAN, "human", None)]
+    sealed_cases = []
+    for case in AGE_VECTORS["cases"]:
+        note = case["note"].encode("ascii")
+        manifest_id, key_version, age_file = age_tools.parse_note(note)
+        sealed_cases.append({"id": case["id"], "note": case["note"], "manifest_id": manifest_id,
+                             "key_version": key_version, "age_file_sha256": hashlib.sha256(age_file).hexdigest()})
+    first = AGE_VECTORS["cases"][0]["note"].encode("ascii")
+    armour = armour_of(first)
     return {
         "schema": "sentilab-open-vectors/1",
-        "test_phrases": {"pseudonym_key": PSEUDONYM_PHRASE, "client_secret": CLIENT_PHRASE,
-                         "derivation": "sha256 of the UTF-8 phrase gives the 32 bytes"},
+        "test_phrases": {"k_challenge": K_PHRASE, "derivation": "sha256 of the UTF-8 phrase gives the 32 bytes"},
         "canonical": [{"name": name, "value": value, "canonical": expected,
-                       "sha256": hashlib.sha256(expected.encode()).hexdigest()}
-                      for name, value, expected in CANONICAL],
-        "manifest_id": [{"manifest": key, "manifest_id": ID[key]} for key in ("A", "M", "F")],
-        "geometry": [{"name": name, "manifest": key, "proposal": value,
-                      "object": h.geometry_object(value, MANIFESTS[key]),
-                      "canonical": h.canonical(h.geometry_object(value, MANIFESTS[key])).decode(),
-                      "geometry_sha256": h.geometry_sha256(value, MANIFESTS[key])}
-                     for name, key, value in geometry_cases],
-        "proposal": [{"name": name, "proposal": value, "canonical": h.canonical(value).decode(),
-                      "proposal_sha256": h.proposal_sha256(value)} for name, value in proposal_cases],
+                       "sha256": hashlib.sha256(expected.encode()).hexdigest()} for name, value, expected in CANONICAL],
+        "manifest_id": [{"manifest": key, "manifest_id": ID[key]} for key in MANIFESTS],
+        "objects": OBJECTS,
+        "geometry": [{"object": name, "manifest": key, "preimage": h.geometry_object(OBJECTS[name], MANIFESTS[key]),
+                      "canonical": h.canonical(h.geometry_object(OBJECTS[name], MANIFESTS[key])).decode(),
+                      "geometry_sha256": h.geometry_sha256(OBJECTS[name], MANIFESTS[key])}
+                     for name, key in (("P_A", "A"), ("P_PUB", "F"), ("P_PRIV", "F"), ("C_PRIV", "F"))],
+        "content": [{"object": name, "canonical": h.canonical(value).decode(), "content_sha256": h.content_sha256(value),
+                     "logical_key": h.logical_key(value)} for name, value in OBJECTS.items()],
         "body_sha256": [{"note_b64": base64.b64encode(note).decode(), "body_sha256": h.body_sha256(note)}
-                        for note in (NOTE_F, NOTE_F + bytes((10,)), fenced(P_F), NOTE_SEALED)],
+                        for note in (text(P_PUB), text(P_PUB) + b"\n", fenced(P_PUB))],
         "source_ref": [{"action_id": action, "source_ref": h.source_ref(action)} for action in ACTIONS[:2]],
-        "participant_ref": [{"challenge": challenge, "account_id": account,
-                             "participant_ref": h.participant_ref(PSEUDONYM_KEY, challenge, account)}
-                            for challenge, account in (("test-challenge", HUMAN), ("test-challenge", AGENT_ACCOUNT),
-                                                       ("sentilab-open-1", HUMAN))],
-        "transport_id": [{"room": room, "account_id": account, "actor_kind": kind, "actor_agent_id": agent,
-                          "manifest_id": ID["F"], "proposal_key": key, "proposal_sha256": h.proposal_sha256(value),
-                          "transport_id": h.transport_id(room=room, account_id=account, actor_kind=kind,
-                                                         actor_agent_id=agent, manifest_id=ID["F"],
-                                                         proposal_key=key, proposal_sha256=h.proposal_sha256(value))}
-                         for room, account, kind, agent, key, value in transport_cases],
-        "run_id": [{"manifest_id": ID["F"], "participant_ref": ref, "run_id": h.run_id(ID["F"], ref)}
-                   for ref in (PREF_HUMAN, "sentilab")],
-        "salt": [{"manifest_id": ID["F"], "proposal_key": "t-2", "salt": SALT}],
-        "capability": [{"salt": SALT, "manifest_id": ID["F"], "proposal_sha256": sealed_sha, "epoch": epoch,
-                        "capability": h.capability(SALT, ID["F"], sealed_sha, epoch),
-                        "capability_sha256": h.capability_sha256(h.capability(SALT, ID["F"], sealed_sha, epoch))}
-                       for epoch in (1, 2)],
-        "ciphertext_ref": [{"age_file_b64": base64.b64encode(AGE_HEADER_ONLY).decode(),
-                            "ciphertext_ref": h.ciphertext_ref(AGE_HEADER_ONLY)}],
-        "conductor_geometry": [{"manifest": key, "proposal": value,
-                                "values": h.conductor_geometry(value, MANIFESTS[key])}
-                               for key, value in (("A", P_A), ("F", P_F))],
-        "age": {"format": "age-encryption.org/v1", "vectors": [],
-                "todo": "TODO: no age implementation (age, rage or a library) was available offline, so no ciphertext "
-                        "vector exists yet. Before sealed submissions are relied on (OP-F3, OP-F7), generate "
-                        "(identity phrase, recipient, ciphertext, plaintext) vectors with age or rage and add them "
-                        "here. Nothing in this contract is an age ciphertext."}}
+        "participant_ref": [{"account_id": account, "participant_ref": h.participant_ref(K_CHALLENGE, account)}
+                            for account in (HUMAN, AGENT_ACCOUNT)],
+        "actor_slot": [{"actor_kind": "human", "actor_id": None, "actor_slot": "human"},
+                       {"actor_kind": "agent", "actor_id": AGENT_ID, "actor_slot": "agent:" + AGENT_ID}],
+        "transport_key": [
+            {"object": name, "room": room, "account": account, "actor_kind": kind, "actor_id": agent,
+             "preimage": h.transport_key_object(room=room, account=account, actor_slot=h.actor_slot(kind, agent),
+                                                manifest_id=OBJECTS[name]["manifest_id"],
+                                                logical_key=h.logical_key(OBJECTS[name]),
+                                                content_sha256=h.content_sha256(OBJECTS[name])),
+             "transport": h.transport_key_for(OBJECTS[name], room=room, account=account, actor_kind=kind,
+                                              actor_id=agent)}
+            for name, room, account, kind, agent in transport_cases],
+        "run_id": [{"manifest_id": ID["F"], "proposal_sha256": h.proposal_sha256(OBJECTS[name]),
+                    "run_id": h.run_id(ID["F"], h.proposal_sha256(OBJECTS[name]))} for name in ("P_PUB", "P_PRIV")],
+        "sealed_header": [{"manifest_id": ID[key], "key_version": version,
+                           "line": h.sealed_header(ID[key], version)} for key, version in (("F", 1), ("F2", 2))],
+        "sealed_notes": sealed_cases,
+        "armour_refusals": [{"name": name, "armour_b64": base64.b64encode(change(armour)).decode()}
+                            for name, change in ARMOUR_REFUSALS],
+        "sealed_note_refusals": [{"name": name, "note_b64": base64.b64encode(change(first)).decode()}
+                                 for name, change in NOTE_REFUSALS],
+        "r_key": [{"r": r, "key": h.r_key(r)} for r in (0, 0.05, 0.1, 0.25, 0.5, 1.0)],
+        "r_key_refused": [0.125, -0.1],
+        "q_r": [{"W_c_mm": 18155.8, "W_R_mm": 16417.5, "key": key, "q_r": h.q_r(18155.8, 16417.5, key)}
+                for key in ("0", "0.10", "0.25", "0.50", "1.00")],
+        "conductor_geometry": [{"object": name, "manifest": key,
+                                "values": h.conductor_geometry(OBJECTS[name], MANIFESTS[key])}
+                               for name, key in (("P_A", "A"), ("P_PUB", "F"))]}
 
 
 # ── output ──────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -1375,22 +1499,24 @@ def dump_cases(cases) -> bytes:
 
 
 def outputs() -> dict:
-    records = (manifest_records() + check_records() + receipt_records() + restricted_records() + status_records()
+    records = (manifest_records() + terms_records() + check_records() + receipt_records() + status_records()
                + results_records() + other_records())
     return {
         CONTRACT_DIR / "vectors-canonical.json": dump(vectors()),
-        CONTRACT_DIR / "limits.provisional.json": dump(LIMITS),
-        GOLDEN / "manifests.json": dump({"manifests": MANIFESTS, "manifest_id": ID}),
+        GOLDEN / "manifests.json": dump({"manifests": MANIFESTS, "manifest_id": ID, "terms": TERMS}),
         GOLDEN / "notes.json": dump_cases(note_cases()),
-        GOLDEN / "check-requests.json": dump_cases(check_requests()),
         GOLDEN / "records.json": dump_cases(records),
         GOLDEN / "states.json": dump(state_table()),
         GOLDEN / "revisions.json": dump_cases(revisions()),
         GOLDEN / "order.json": dump(ordering()),
+        GOLDEN / "predicates.json": dump_cases(predicate_cases()),
     }
 
 
 def main(argv) -> int:
+    if "--seal" in argv:
+        seal_all()
+        return 0
     check_only = "--check" in argv
     stale = []
     for path, data in outputs().items():

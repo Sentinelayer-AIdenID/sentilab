@@ -2,32 +2,16 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sentilab.invalid/open-proposal/v1/geometry.schema.json",
   "title": "sentilab-open-geometry/1",
-  "description": "The preimage of geometry_sha256: the physical layout in its task context, without actor, time, key, salt or client. geometry_sha256 = sha256(JCS(this object)). fixture_config_sha256 is the manifest's fixture.config_sha256; lattice_um is the proposal's declared engineering lattice; dies are the proposal's dies, in the proposal's order, reduced to these four fields.",
+  "description": "The preimage of geometry_sha256 (DESIGN rev 3 section 5.2): sha256(JCS({schema, problem, fixture_config_sha256, units, anchor, dies})). problem and fixture_config_sha256 come from the manifest (problem, fixture.config_sha256); units, anchor and dies from the proposal or check request, each die reduced to die, x_um, y_um and rot_deg. It excludes actor, time, key, salt, terms and client.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "problem", "fixture_config_sha256", "units", "anchor", "lattice_um", "dies"],
+  "required": ["schema", "problem", "fixture_config_sha256", "units", "anchor", "dies"],
   "properties": {
     "schema": {"const": "sentilab-open-geometry/1"},
-    "problem": {"$ref": "common.schema.json#/$defs/id"},
+    "problem": {"$ref": "common.schema.json#/$defs/key"},
     "fixture_config_sha256": {"$ref": "common.schema.json#/$defs/sha256"},
-    "units": {"const": "um"},
-    "anchor": {"const": "die-centre"},
-    "lattice_um": {"type": "integer", "minimum": 1, "maximum": 1000000},
-    "dies": {
-      "type": "array",
-      "minItems": 1,
-      "maxItems": 32,
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["die", "x_um", "y_um", "rot_deg"],
-        "properties": {
-          "die": {"type": "integer", "minimum": 0, "maximum": 31},
-          "x_um": {"type": "integer", "minimum": 0, "maximum": 1000000},
-          "y_um": {"type": "integer", "minimum": 0, "maximum": 1000000},
-          "rot_deg": {"type": "integer", "enum": [0, 90]}
-        }
-      }
-    }
+    "units": {"$ref": "common.schema.json#/$defs/units"},
+    "anchor": {"$ref": "common.schema.json#/$defs/anchor"},
+    "dies": {"$ref": "common.schema.json#/$defs/dies"}
   }
 }

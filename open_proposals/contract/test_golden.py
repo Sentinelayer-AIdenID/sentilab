@@ -1,297 +1,233 @@
-"""The shared contract tests: every golden case and every vector in contracts/open-proposal-v1, against the Python
-reference. The JavaScript twin runs the same vectors (run-vectors.mjs); test_javascript_twin runs it from here too.
-
-    python -m unittest -q open_proposals.contract.test_golden
-"""
+"""The golden examples (contracts/open-proposal-v1/golden), run through the reference: every outcome and code must
+match the hand-written expectation. The files themselves must match their generator (make_vectors --check)."""
 from __future__ import annotations
 
 import base64
+import copy
 import hashlib
 import json
 import shutil
 import subprocess
 import unittest
 
-from sentilab_core.envelope import canonical
-
+from . import age_tools
 from . import canonical as h
-from . import make_vectors
+from .make_vectors import main as make_vectors_main
+from .predicate_fixtures import cases as predicate_cases
 from .schemas import CONTRACT_DIR
-from .states import (SUMMARY, Entry, OrderError, Revision, TransitionRefused, created_at_ns, decide_revision,
-                     order_key, sort_replies, transition)
-from .validator import Reply, validate_check_note, validate_check_request, validate_record, validate_submission
+from .states import (CHARGED, EVENTS, FLAG_EVENTS, SUMMARY, Entry, OrderError, Prior, TransitionRefused, created_at_ns, decide,
+                     decide_publish, sort_replies, transition)
+from .validator import Reply, Unopenable, validate_local, validate_record, validate_reply
 
 GOLDEN = CONTRACT_DIR / "golden"
 
 
-def load(name):
+def load(name: str):
     return json.loads((GOLDEN / name).read_bytes())
 
 
-MANIFESTS = load("manifests.json")
-BY_KEY = MANIFESTS["manifests"]
-REGISTRY = {MANIFESTS["manifest_id"][key]: manifest for key, manifest in BY_KEY.items()}
+MANIFEST_FILE = load("manifests.json")
+MANIFESTS = MANIFEST_FILE["manifests"]
 VECTORS = json.loads((CONTRACT_DIR / "vectors-canonical.json").read_bytes())
-LIMITS = json.loads((CONTRACT_DIR / "limits.provisional.json").read_bytes())
-PSEUDONYM_KEY = hashlib.sha256(VECTORS["test_phrases"]["pseudonym_key"].encode()).digest()
-CLIENT_SECRET = hashlib.sha256(VECTORS["test_phrases"]["client_secret"].encode()).digest()
+OBJECTS = VECTORS["objects"]
+AGE = json.loads((CONTRACT_DIR / "vectors-age.json").read_bytes())
+SCALARS = {key["key_version"]: age_tools.identity_from_phrase(key["phrase"])[0] for key in AGE["keys"]}
+K_CHALLENGE = hashlib.sha256(VECTORS["test_phrases"]["k_challenge"].encode()).digest()
 
 
-def note_bytes(case) -> bytes:
+def opener(armour: bytes, manifest: dict, key_version: int) -> bytes:
+    """The reference opener for the test identities: the manifest's key version only; custody keeps old keys."""
+    scalar = SCALARS.get(key_version)
+    if scalar is None or age_tools.recipient_from_scalar(scalar) != manifest["sealing"]["recipient"]:
+        raise Unopenable()
+    try:
+        return age_tools.reference_decrypt(age_tools.dearmor(armour), scalar)
+    except ValueError:
+        raise Unopenable() from None
+
+
+def note_of(case) -> bytes:
     return case["note"].encode("utf-8") if "note" in case else base64.b64decode(case["note_b64"])
 
 
-def ids(name):
-    return MANIFESTS["manifest_id"][name]
+def stub(found):
+    return None if found is None else (lambda _item, _manifest: copy.deepcopy(found))
 
 
-class GoldenNotes(unittest.TestCase):
-    def test_every_note_case(self):
+def reply_of(row) -> Reply:
+    """A golden row: Senti's idempotencyKey is stored as "idempotency" (no key-named field in the fixtures)."""
+    fields = dict(row)
+    fields["idempotency_key"] = fields.pop("idempotency")
+    return Reply(**fields)
+
+
+def run_note(case):
+    manifests = {h.manifest_id(manifest): manifest for manifest in MANIFESTS.values()}
+    target = MANIFEST_FILE["manifest_id"][case["manifest"]]
+    kwargs = {"manifests": manifests, "layout_checker": stub(case["layout"]),
+              "opener": opener if case["opener"] else None}
+    if case["mode"] == "local":
+        return validate_local(note_of(case), manifest_id=target, **kwargs)
+    admission = {target: case["admission"]}
+    return validate_reply(note_of(case), reply=reply_of(case["row"]), thread_manifest_id=target, admission=admission,
+                          **kwargs)
+
+
+def edit(value, path, new, delete=False):
+    parts = path.strip("/").split("/")
+    target = value
+    for part in parts[:-1]:
+        target = target[int(part)] if isinstance(target, list) else target[part]
+    last = int(parts[-1]) if isinstance(target, list) else parts[-1]
+    if delete:
+        del target[last]
+    else:
+        target[last] = new
+
+
+def record_of(case):
+    if "base" not in case:
+        return case["record"]
+    record = copy.deepcopy(MANIFESTS[case["base"]])
+    for change in case["edits"]:
+        edit(record, change["path"], change.get("value"), change.get("delete", False))
+    return record
+
+
+def context_of(case) -> dict:
+    context = dict(case["context"])
+    if "manifest" in context:
+        context["manifest"] = MANIFESTS[context["manifest"]]
+    if "item" in context:
+        context["item"] = OBJECTS[context["item"]]
+    if context.pop("k_challenge", False):
+        context["k_challenge"] = K_CHALLENGE
+    return context
+
+
+class Files(unittest.TestCase):
+    def test_the_files_match_their_generator(self):
+        self.assertEqual(make_vectors_main(["--check"]), 0)
+
+    @unittest.skipUnless(shutil.which("node"), "the JavaScript twin needs Node 20 or later")
+    def test_the_javascript_twin_agrees(self):
+        """T1: canonical.mjs reproduces every vector Python wrote (run-vectors.mjs)."""
+        result = subprocess.run(["node", "run-vectors.mjs"], cwd=CONTRACT_DIR, capture_output=True, text=True,
+                                check=False)
+        self.assertEqual(0, result.returncode, result.stdout[-2000:] + result.stderr[-2000:])
+        self.assertIn(" vectors passed, 0 failed", result.stdout)
+
+    def test_the_predicate_fixtures_are_the_golden_ones(self):
+        self.assertEqual(load("predicates.json")["cases"], json.loads(json.dumps(predicate_cases())))
+
+
+class Notes(unittest.TestCase):
+    def test_every_note(self):
         cases = load("notes.json")["cases"]
-        self.assertGreater(len(cases), 60)
+        self.assertGreaterEqual(len(cases), 90)
         for case in cases:
             with self.subTest(case["name"]):
-                if case["route"] == "intake":
-                    reply = Reply(**case["reply"])
-                    admission = {ids(key): state for key, state in case["admission"].items()}
-                    outcome = validate_submission(note_bytes(case), reply=reply, manifests=REGISTRY,
-                                                  thread_manifest_id=ids(case["thread_manifest"]),
-                                                  admission=admission)
-                else:
-                    outcome = validate_check_note(note_bytes(case), manifests=REGISTRY,
-                                                  manifest_id=ids(case["manifest"]))
-                self.assertEqual(case["expect"]["outcome"], outcome.outcome)
-                self.assertEqual(case["expect"]["codes"], list(outcome.violations))
+                self.assertEqual(run_note(case).summary(), case["expect"])
 
-    def test_the_check_and_the_intake_agree_on_every_shared_vector(self):
-        """T12: the same bytes give the same codes at the check and the intake, admission and chat aside."""
-        for case in load("notes.json")["cases"]:
-            if case["route"] != "intake" or case["admission"] != {case["thread_manifest"]: "open"}:
-                continue
-            if case["reply"] != {"actor_user_id": make_vectors.HUMAN, "message_revision": 1, "edited_at": None}:
-                continue
-            if case["expect"]["outcome"] == "ignored" or {"not_open_yet", "manifest_closed"} & {
-                    code["code"] for code in case["expect"]["codes"]}:
-                continue
-            with self.subTest(case["name"]):
-                check = validate_check_note(note_bytes(case), manifests=REGISTRY,
-                                            manifest_id=ids(case["thread_manifest"]))
-                self.assertEqual(case["expect"]["outcome"], check.outcome)
-                self.assertEqual(case["expect"]["codes"], list(check.violations))
-
-    def test_valid_notes_in_every_framing_hash_the_same(self):
-        cases = {case["name"]: case for case in load("notes.json")["cases"]}
-        framings = ["valid proposal, bare JSON", "valid proposal in a json fence",
-                    "valid proposal in a json fence with CRLF line ends", "valid proposal padded to exactly 4096 bytes"]
-        hashes = set()
-        for name in framings:
-            outcome = validate_check_note(note_bytes(cases[name]), manifests=REGISTRY, manifest_id=ids("F"))
-            hashes.add((outcome.proposal_sha256, outcome.geometry_sha256))
-        self.assertEqual({(h.proposal_sha256(make_vectors.P_F), make_vectors.P_F["geometry_sha256"])}, hashes)
-        bodies = {h.body_sha256(note_bytes(cases[name])) for name in framings}
-        self.assertEqual(len(framings), len(bodies), "body_sha256 binds the exact bytes, framing included")
+    def test_every_reason_code_a_note_can_carry_is_exercised(self):
+        seen = {code["code"] for case in load("notes.json")["cases"] for code in case["expect"]["codes"]}
+        from_notes = {"oversize", "not_utf8", "edited_before_ingest", "unattributable", "private_requires_sealed",
+                      "unsealable", "transport_key_mismatch", "malformed_json", "duplicate_key", "nonfinite_number",
+                      "too_deep", "unknown_field", "schema_invalid", "unknown_manifest", "manifest_mismatch",
+                      "manifest_closed", "not_open_yet", "terms_not_accepted", "die_count", "die_order",
+                      "out_of_frame", "rotation_not_allowed", "lattice", "margin", "halo_overlap", "min_spacing",
+                      "keepout", "geometry_hash_mismatch"}
+        self.assertEqual(seen, from_notes)
 
 
-class GoldenCheckRequests(unittest.TestCase):
-    def test_every_check_request(self):
-        for case in load("check-requests.json")["cases"]:
-            with self.subTest(case["name"]):
-                outcome = validate_check_request(case["request"], manifests=REGISTRY)
-                self.assertEqual(case["expect"]["outcome"], outcome.outcome)
-                self.assertEqual(case["expect"]["codes"], list(outcome.violations))
-
-
-class GoldenRecords(unittest.TestCase):
+class Records(unittest.TestCase):
     def test_every_record(self):
-        cases = load("records.json")["cases"]
-        kinds = {case["kind"] for case in cases}
-        self.assertEqual({"manifest", "geometry", "sealed", "check_request", "check", "receipt", "restricted_receipt",
-                          "status", "results", "error", "limits", "usage", "cursor", "current", "private_request",
-                          "reason_codes"}, kinds)
-        for kind in kinds:
-            outcomes = {bool(case["expect"]) for case in cases if case["kind"] == kind}
-            self.assertEqual({True, False}, outcomes, f"{kind} needs valid and invalid examples")
-        for case in cases:
-            with self.subTest(f'{case["kind"]}: {case["name"]}'):
-                context = case["context"]
-                found = validate_record(case["kind"], case["record"],
-                                        manifest=BY_KEY[context["manifest"]] if context["manifest"] else None,
-                                        limits=LIMITS if context["limits"] else None,
-                                        pseudonym_key=PSEUDONYM_KEY if context["pseudonym"] else None,
-                                        audience=context["audience"])
-                self.assertEqual(case["expect"], found)
+        for case in load("records.json")["cases"]:
+            with self.subTest(case["kind"] + ": " + case["name"]):
+                found = validate_record(case["kind"], record_of(case), **context_of(case))
+                self.assertEqual(found, case["expect"])
 
-    def test_the_draft_manifests_are_published_ids(self):
-        for key, manifest in BY_KEY.items():
-            self.assertEqual(ids(key), h.manifest_id(manifest))
-        self.assertEqual({"A": "draft", "M": "draft", "F": "frozen"},
-                         {key: manifest["status"] for key, manifest in BY_KEY.items()})
+    def test_every_record_rule_is_exercised(self):
+        from .codes import RULES
+        seen = {item["rule"] for case in load("records.json")["cases"] for item in case["expect"] if "rule" in item}
+        self.assertEqual(seen, set(RULES))
 
 
-class GoldenStates(unittest.TestCase):
-    TABLE = load("states.json")
-
-    def entry(self, state):
-        return Entry(None if state == "none" else state)
-
-    def test_every_allowed_and_every_forbidden_lifecycle_transition(self):
-        table, events = self.TABLE["allowed"], self.TABLE["good_payload"]
-        lifecycle_events = [event for event in events if event not in ("withdraw", "restore", "hide", "unhide")]
-        checked = 0
-        for state, allowed in table.items():
-            for event in lifecycle_events:
-                with self.subTest(state=state, event=event):
-                    payload = events[event]
-                    if event in allowed:
-                        self.assertEqual(Entry(allowed[event]), transition(self.entry(state), event, payload))
-                    else:
-                        with self.assertRaises(TransitionRefused):
-                            transition(self.entry(state), event, payload)
-                    checked += 1
-        self.assertEqual(len(table) * len(lifecycle_events), checked)
-
-    def test_every_guard(self):
-        for case in self.TABLE["guards"]:
-            with self.subTest(event=case["event"], payload=case["payload"]):
-                start = self.entry(case["from"])
-                good = self.TABLE["good_payload"][case["event"]]
-                if case["event"] in ("restore",):
-                    start = transition(start, "withdraw", {"operator": True})
-                transition(start, case["event"], good)          # the good payload passes from this state
-                with self.assertRaises(TransitionRefused):
-                    transition(start, case["event"], case["payload"])
-
-    def test_overlays(self):
-        for case in self.TABLE["overlays"]:
-            with self.subTest(case["name"]):
-                entry = self.entry(case["from"])
-
-                def run():
-                    current = entry
-                    for event, payload in case["events"]:
-                        current = transition(current, event, payload)
-                    return current
-                if case["expect"] == "refused":
+class States(unittest.TestCase):
+    def test_every_state_and_event(self):
+        table = load("states.json")
+        for pair in table["pairs"]:
+            with self.subTest(f"{pair['state']} {pair['event']} hidden={pair['hidden']}"):
+                entry = Entry(pair["state"], pair["hidden"])
+                if pair["expect"] is None:
                     with self.assertRaises(TransitionRefused):
-                        run()
+                        transition(entry, pair["event"], pair["payload"])
                 else:
-                    result = run()
-                    self.assertEqual(case["expect"], {"lifecycle": result.lifecycle, "withdrawn": result.withdrawn,
-                                                      "hidden": result.hidden})
+                    after = transition(entry, pair["event"], pair["payload"])
+                    self.assertEqual({"state": after.state, "hidden": after.hidden}, pair["expect"])
+                    self.assertEqual(entry, Entry(pair["state"], pair["hidden"]))     # never mutated
 
-    def test_withdrawn_shows_publicly_and_restore_reveals_the_lifecycle(self):
-        entry = transition(Entry("evaluating"), "withdraw", {"operator": True})
-        self.assertEqual("withdrawn", entry.public_state)
-        entry = transition(entry, "fail", {"settled": True, "code": "interrupted"})
-        self.assertEqual("withdrawn", entry.public_state)
-        self.assertEqual("failed", transition(entry, "restore", {"operator": True}).public_state)
+    def test_the_table_covers_every_event(self):
+        events = {pair["event"] for pair in load("states.json")["pairs"]}
+        self.assertEqual(set(EVENTS) | set(FLAG_EVENTS), events)
 
-    def test_the_four_contract_states(self):
-        self.assertEqual(self.TABLE["summary"], SUMMARY)
+    def test_every_guard_refuses(self):
+        for guard in load("states.json")["guards"]:
+            with self.subTest(guard["name"]):
+                with self.assertRaises(TransitionRefused):
+                    transition(Entry(guard["state"], guard["hidden"]), guard["event"], guard["payload"])
+
+    def test_the_contract_states_and_quota_charge(self):
+        table = load("states.json")
+        self.assertEqual(SUMMARY, table["summary"])
+        self.assertEqual(CHARGED, table["charged"])
 
 
-class GoldenRevisions(unittest.TestCase):
-    def test_every_revision_case(self):
+class Revisions(unittest.TestCase):
+    def test_every_decision(self):
         for case in load("revisions.json")["cases"]:
             with self.subTest(case["name"]):
-                history = [Revision(item["index"], item["proposal_key"], item["proposal_sha256"],
-                                    item["geometry_sha256"], tuple(item["order"])) for item in case["history"]]
-                submission = dict(case["submission"], order=tuple(case["submission"]["order"]))
+                history = [Prior(**prior | {"order": tuple(prior["order"])}) for prior in case["history"]]
+                if case["decide"] == "publish":
+                    found = decide_publish(history, proposal_sha256=case["proposal_sha256"],
+                                           order=tuple(case["order"]))
+                    self.assertEqual(list(found), case["expect"])
+                    continue
+                arguments = {"kind": case["kind"], "logical_key": case["logical_key"],
+                             "content_sha256": case["content_sha256"], "parent": case["parent"],
+                             "order": tuple(case["order"])}
                 if case["expect"] == "order_error":
                     with self.assertRaises(OrderError):
-                        decide_revision(history, **submission)
+                        decide(history, **arguments)
                     continue
-                decision = decide_revision(history, **submission)
-                self.assertEqual(case["expect"], {"kind": decision.kind, "revision_index": decision.revision_index,
-                                                  "codes": list(decision.codes)})
+                decision = decide(history, **arguments)
+                self.assertEqual({"kind": decision.kind, "revision_index": decision.revision_index,
+                                  "codes": list(decision.codes)}, case["expect"])
 
 
-class GoldenOrder(unittest.TestCase):
-    TABLE = load("order.json")
-
-    def test_replies_sort_by_numeric_time_then_action_then_room(self):
-        rows = self.TABLE["rows"]
-        self.assertEqual(self.TABLE["expect_order"], [row["label"] for row in sort_replies(rows)])
-        self.assertEqual(self.TABLE["expect_order"], [row["label"] for row in sort_replies(list(reversed(rows)))])
-        self.assertNotEqual(self.TABLE["expect_order"], [row["label"] for row in sorted(rows, key=lambda row: (
-            row["createdAt"], row["id"], row["sessionId"]))], "text order is the hazard this rule exists for")
-
-    def test_exact_nanoseconds_and_refusals(self):
-        for case in self.TABLE["expect_ns"]:
-            self.assertEqual(case["ns"], created_at_ns(case["createdAt"]), case["createdAt"])
-        for text in self.TABLE["invalid"]:
+class Order(unittest.TestCase):
+    def test_the_section_3_4_order(self):
+        table = load("order.json")
+        self.assertEqual([row["label"] for row in sort_replies(table["rows"])], table["expect_order"])
+        for case in table["expect_ns"]:
+            self.assertEqual(created_at_ns(case["createdAt"]), case["ns"])
+        for text in table["invalid"]:
             with self.subTest(text):
                 with self.assertRaises(ValueError):
                     created_at_ns(text)
-        self.assertEqual((0, "a", "b"), order_key({"createdAt": "1970-01-01T00:00:00Z", "id": "a", "sessionId": "b"}))
 
 
-class Vectors(unittest.TestCase):
-    def test_canonical_bytes(self):
-        for case in VECTORS["canonical"]:
-            with self.subTest(case["name"]):
-                self.assertEqual(case["canonical"].encode(), canonical(case["value"]))
-                self.assertEqual(case["sha256"], hashlib.sha256(canonical(case["value"])).hexdigest())
-
-    def test_hashes(self):
-        for case in VECTORS["manifest_id"]:
-            self.assertEqual(case["manifest_id"], h.manifest_id(BY_KEY[case["manifest"]]))
-        for case in VECTORS["geometry"]:
-            manifest = BY_KEY[case["manifest"]]
-            self.assertEqual(case["object"], h.geometry_object(case["proposal"], manifest))
-            self.assertEqual(case["canonical"].encode(), canonical(case["object"]))
-            self.assertEqual(case["geometry_sha256"], h.geometry_sha256(case["proposal"], manifest))
-            self.assertEqual(case["geometry_sha256"], case["proposal"]["geometry_sha256"])
-        for case in VECTORS["proposal"]:
-            self.assertEqual(case["canonical"].encode(), canonical(case["proposal"]))
-            self.assertEqual(case["proposal_sha256"], h.proposal_sha256(case["proposal"]))
-        for case in VECTORS["body_sha256"]:
-            self.assertEqual(case["body_sha256"], h.body_sha256(base64.b64decode(case["note_b64"])))
-        for case in VECTORS["source_ref"]:
-            self.assertEqual(case["source_ref"], h.source_ref(case["action_id"]))
-        for case in VECTORS["participant_ref"]:
-            self.assertEqual(case["participant_ref"],
-                             h.participant_ref(PSEUDONYM_KEY, case["challenge"], case["account_id"]))
-        for case in VECTORS["transport_id"]:
-            expected = case.pop("transport_id")
-            self.assertEqual(expected, h.transport_id(**case))
-            self.assertLessEqual(len(expected), h.TRANSPORT_MAX_LENGTH)
-            case["transport_id"] = expected
-        for case in VECTORS["run_id"]:
-            self.assertEqual(case["run_id"], h.run_id(case["manifest_id"], case["participant_ref"]))
-        for case in VECTORS["salt"]:
-            self.assertEqual(case["salt"], h.derive_salt(CLIENT_SECRET, case["manifest_id"], case["proposal_key"]))
-        for case in VECTORS["capability"]:
-            self.assertEqual(case["capability"], h.capability(case["salt"], case["manifest_id"],
-                                                              case["proposal_sha256"], case["epoch"]))
-            self.assertEqual(case["capability_sha256"], h.capability_sha256(case["capability"]))
-        for case in VECTORS["ciphertext_ref"]:
-            self.assertEqual(case["ciphertext_ref"], h.ciphertext_ref(base64.b64decode(case["age_file_b64"])))
-        for case in VECTORS["conductor_geometry"]:
-            self.assertEqual(case["values"], h.conductor_geometry(case["proposal"], BY_KEY[case["manifest"]]))
-
-    def test_the_salt_hides_the_plaintext_hash_but_not_the_geometry(self):
-        public, sealed = VECTORS["proposal"][1], VECTORS["proposal"][2]
-        self.assertNotEqual(public["proposal_sha256"], sealed["proposal_sha256"])
-        geometry = {case["name"]: case["geometry_sha256"] for case in VECTORS["geometry"]}
-        self.assertEqual(geometry["the two-die layout"], geometry["a sealed plaintext: same geometry, unsalted hash"])
-
-    def test_no_age_ciphertext_is_claimed(self):
-        self.assertEqual([], VECTORS["age"]["vectors"])
-        self.assertIn("TODO", VECTORS["age"]["todo"].upper())
-
-
-class Generated(unittest.TestCase):
-    def test_committed_files_match_the_generator(self):
-        self.assertEqual(0, make_vectors.main(["--check"]))
-
-    def test_javascript_twin_runs_the_same_vectors(self):
-        node = shutil.which("node")
-        self.assertIsNotNone(node, "node is required: the contract is checked in Python and JavaScript")
-        result = subprocess.run([node, "run-vectors.mjs"], cwd=CONTRACT_DIR, capture_output=True, text=True,
-                                check=False)
-        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
-        self.assertIn("vectors passed", result.stdout)
+class Sealed(unittest.TestCase):
+    def test_every_golden_ciphertext_opens_as_planned(self):
+        for entry in load("sealed-notes.json")["notes"]:
+            with self.subTest(entry["label"]):
+                manifest_id, key_version, age_file = age_tools.parse_note(entry["note"])
+                self.assertEqual((manifest_id, key_version), (entry["manifest_id"], entry["header_key_version"]))
+                plaintext = age_tools.reference_decrypt(age_file, SCALARS[entry["sealed_to_key_version"]])
+                self.assertEqual(hashlib.sha256(plaintext).hexdigest(), entry["plaintext_sha256"])
+                if entry["sealed_to_key_version"] != entry["header_key_version"]:
+                    with self.assertRaises(ValueError):
+                        age_tools.reference_decrypt(age_file, SCALARS[entry["header_key_version"]])
 
 
 if __name__ == "__main__":

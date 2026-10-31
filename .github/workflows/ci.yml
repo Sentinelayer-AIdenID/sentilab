@@ -339,8 +339,10 @@ jobs:
           python -m unittest -q sentilab_core.memory_conformance
       - name: Install the open-proposal contract's pinned schema validator
         run: python -m pip install "$(grep '^jsonschema==' requirements.txt)"
-      - name: Open-proposal contract (OP-F1) golden examples, rules and the JavaScript twin agree
-        run: python -m unittest -q open_proposals.contract.test_golden open_proposals.contract.test_rules
+      - name: Open-proposal contract (OP-F1) golden examples, rules, claim predicates, age sealing; the JavaScript twin agrees
+        run: >-
+          python -m unittest -q open_proposals.contract.test_golden open_proposals.contract.test_rules
+          open_proposals.contract.test_predicates open_proposals.contract.test_age
 
   live-conformance:
     permissions:

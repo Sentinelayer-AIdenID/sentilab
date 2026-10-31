@@ -18,9 +18,11 @@ from referencing.jsonschema import DRAFT202012
 
 CONTRACT_DIR = Path(__file__).resolve().parents[2] / "contracts" / "open-proposal-v1"
 SCHEMA_DIR = CONTRACT_DIR / "schemas"
-NAMES = ("common", "manifest", "proposal", "geometry", "sealed", "check-request", "check", "receipt",
-         "restricted-receipt", "status", "results", "error", "limits", "usage", "cursor", "current", "private-request",
-         "reason-codes")
+NAMES = ("common", "manifest", "proposal", "check-request", "team", "publish", "terms", "geometry", "transport-key",
+         "check", "receipt", "status", "results", "reason-codes")
+# The objects a participant posts, by their "schema" value.
+POSTED = {"sentilab-open-proposal/1": "proposal", "sentilab-open-check-request/1": "check-request",
+          "sentilab-open-team/1": "team", "sentilab-open-publish/1": "publish"}
 
 
 def _is_integer(_checker, instance):

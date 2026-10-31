@@ -1,30 +1,30 @@
-"""The reference validator: the intake's and the check's checks, in order, and the rules every record must meet.
+"""The reference validator: the intake's checks in order (DESIGN rev 3 sections 5.3 and 5.4), the offline checker's,
+and the cross-field rules every record must meet. No network, no solver, no clock.
 
-No network and no solver. Stages (CONTRACT.md, "Validation"):
+  0. attempt    a note starting with "{", "```" or "sentilab-open-sealed/1" (its first bytes) is an attempt;
+                anything else is chat: ignored, no receipt
+  1. transport  unattributable and edited_before_ingest (the row); oversize (4,096 bytes plaintext, 8,192 sealed);
+                not_utf8; a sealed note's header, key version and armour, then the opener: unsealable; a plaintext
+                that declares "visibility": "private": private_requires_sealed
+  2. envelope   one object, bare or in one ```json fence (a sealed plaintext: bare only): too_deep (pre-scan),
+                malformed_json, duplicate_key, nonfinite_number; the "schema" value picks the object; then
+                unknown_field and schema_invalid
+  1b. key       the transport key recomputed from the row and the parsed content: transport_key_mismatch
+  3. manifest   unknown_manifest, manifest_mismatch (the thread's manifest), not_open_yet / manifest_closed,
+                terms_not_accepted
+  4. hash       geometry_hash_mismatch
+  5. catalogue  die_count, die_order, then per die rotation_not_allowed and out_of_frame
+  6. lattice    exact integers
+  7. layout     the OP-F7 seam (TapGeometry.layout_violations and keepouts): margin, halo_overlap, min_spacing,
+                keepout; run only when every die maps onto its catalogue entry
 
-  0. chat       first non-blank bytes (after one optional BOM) are neither "{" nor "```": ignored, no receipt
-  1. transport  unattributable and edited_before_ingest (intake only), oversize, not_utf8 (a BOM included)
-  2. JSON       one object, bare or in one ```json fence: too_deep (pre-scan), malformed_json, duplicate_key,
-                nonfinite_number
-  2s. sealed    a sentilab-open-sealed/1 envelope: its schema, manifest and key version, the pinned age header;
-                then the opener (the recorder's or the check's age identity) and stages 1-6 on the plaintext, which
-                must carry a salt and name the envelope's manifest
-  3. schema     unknown_field, schema_invalid; then salt_forbidden on a public proposal
-  4. manifest   unknown_manifest, manifest_mismatch (incl. the declared lattice), wire_track_not_admitted,
-                terms_mismatch, and (intake only) not_open_yet / manifest_closed
-  5. geometry   exact integers: geometry_hash_mismatch, die_count, die_order, then per die rotation_not_allowed,
-                out_of_frame, lattice
-  6. layout     the OP-F7 seam: TapGeometry's margin, halo_overlap and min_spacing, run only when every die maps
-                onto its catalogue entry; reported together with stage 5
-
-Each stage reports everything it finds; the first stage with a violation ends the check (5 and 6 report together).
-Without a layout checker a clean proposal is "contract_valid", never "legal"; without an opener a valid sealed
-envelope is "sealed_unopened".
+Stages 1, 2 and 1b each stop the check when they find anything: nothing is read past a transport or envelope
+failure. Stages 3 to 7 report every violation together, except that a manifest the thread does not name stops
+there. Without a layout checker a clean layout is "contract_valid", never "legal"; without an opener a sealed note
+whose header is valid is "sealed_unopened".
 """
 from __future__ import annotations
 
-import base64
-import binascii
 import json
 import math
 import re
@@ -34,79 +34,85 @@ from typing import Callable, Iterable
 
 from . import canonical as hashes
 from .codes import canonical_list, fields_ok, violation
-from .labels import LISTS, label_for, label_for_all
-from .schemas import def_is_valid, schema_violations
-from .states import (FAILURE_CODES, POLICY_CODES, REJECTION_CODES, REPRODUCTION_CODES, VERIFICATION_CODES,
-                     created_at_ns)
+from .labels import LISTS, label_for
+from .predicates import LABELS
+from .schemas import POSTED, def_is_valid, schema_violations
+from .states import FAILURE_CODES, POLICY_CODES, QUALIFIER_CODES, REJECTION_CODES, REPRODUCTION_CODES
 
-MAX_NOTE_BYTES = 4096
+MAX_PLAINTEXT_BYTES = 4096
+MAX_SEALED_BYTES = 8192
 MAX_DEPTH = 4
-BOM = bytes((0xEF, 0xBB, 0xBF))
-BLANK = b" \t\r\n"
+SEALED_PREFIX = b"sentilab-open-sealed/1"
+SEALED_LINE = re.compile(rb"sentilab-open-sealed/1 ([0-9a-f]{64}) ([1-9][0-9]{0,5})\n")
+ARMOR_BEGIN = b"-----BEGIN AGE ENCRYPTED FILE-----\n"
 FENCE = re.compile(r"```json[ \t]*\r?\n(.*)\r?\n```\Z", re.DOTALL)
-LAYOUT_CODES = frozenset({"margin", "halo_overlap", "min_spacing"})
-SEALED_SCHEMA = "sentilab-open-sealed/1"
-AGE_HEADER = b"age-encryption.org/v1\n"
-CAPABILITY = re.compile(r"opencap1-[0-9a-f]{64}")
+LAYOUT_CODES = frozenset({"margin", "halo_overlap", "min_spacing", "keepout"})
+SEALABLE = frozenset({"proposal", "check-request"})
+GEOMETRIC = frozenset({"proposal", "check-request"})
+WITH_TERMS = frozenset({"proposal", "publish"})
 
 LayoutChecker = Callable[[dict, dict], Iterable[dict]]
-Opener = Callable[[bytes, dict], bytes]
+Opener = Callable[[bytes, dict, int], bytes]
 
 
 class Unopenable(Exception):
-    """Raised by an opener that cannot decrypt an age file. Any other exception is a fault and propagates."""
+    """Raised by an opener that cannot decrypt a note. Any other exception is a fault and propagates."""
 
 
 @dataclass(frozen=True)
 class Reply:
-    """What the intake read from Senti's row, all server-set: never anything from the note."""
+    """What the intake read from Senti's row: all server-set, never anything from the note."""
+    room: str
     actor_user_id: str | None
+    actor_kind: str | None          # "agent" or "human", as Senti stamped it
+    actor_id: str | None            # the agent id on an agent row
+    idempotency_key: str | None
     message_revision: int
     edited_at: str | None
 
 
 @dataclass(frozen=True)
 class Outcome:
-    outcome: str        # ignored | rejected | refused | sealed_unopened | contract_valid | legal
+    outcome: str        # ignored | rejected | sealed_unopened | contract_valid | legal
     violations: tuple = ()
-    proposal: dict | None = None
-    proposal_sha256: str | None = None
+    kind: str | None = None
+    item: dict | None = None
+    content_sha256: str | None = None
     geometry_sha256: str | None = None
     sealed: bool = False
-    ciphertext_ref: str | None = None
 
     def summary(self) -> dict:
-        return {"outcome": self.outcome, "codes": list(self.violations), "proposal_sha256": self.proposal_sha256,
-                "geometry_sha256": self.geometry_sha256, "sealed": self.sealed, "ciphertext_ref": self.ciphertext_ref}
+        return {"outcome": self.outcome, "codes": list(self.violations), "kind": self.kind,
+                "content_sha256": self.content_sha256, "geometry_sha256": self.geometry_sha256,
+                "sealed": self.sealed}
 
 
-def _outcome(outcome, found=(), proposal=None, proposal_sha=None, geometry_sha=None) -> Outcome:
-    return Outcome(outcome, tuple(canonical_list(found)), proposal, proposal_sha, geometry_sha)
+def _rejected(found, *, kind=None, item=None, content=None, geometry=None, sealed=False) -> Outcome:
+    return Outcome("rejected", tuple(canonical_list(found)), kind, item, content, geometry, sealed)
 
 
-def is_chat(note: bytes) -> bool:
-    start = 3 if note.startswith(BOM) else 0
-    while start < len(note) and note[start] in BLANK:
-        start += 1
-    rest = note[start:]
-    return not (rest.startswith(b"{") or rest.startswith(b"```"))
+def is_attempt(note: bytes) -> bool:
+    return note.startswith(b"{") or note.startswith(b"```") or note.startswith(SEALED_PREFIX)
 
 
-def _transport(note: bytes, reply: Reply | None) -> list:
+def _row(reply: Reply) -> list:
     found = []
-    if reply is not None:
-        if not reply.actor_user_id:
-            found.append(violation("unattributable"))
-        if reply.message_revision != 1 or reply.edited_at is not None:
-            found.append(violation("edited_before_ingest"))
-    if len(note) > MAX_NOTE_BYTES:
+    slot_ok = (reply.actor_kind == "human" and reply.actor_id is None
+               or reply.actor_kind == "agent" and isinstance(reply.actor_id, str) and reply.actor_id != "")
+    if not reply.actor_user_id or not slot_ok:
+        found.append(violation("unattributable"))
+    if reply.message_revision != 1 or reply.edited_at is not None:
+        found.append(violation("edited_before_ingest"))
+    return found
+
+
+def _size_and_text(note: bytes, cap: int) -> list:
+    found = []
+    if len(note) > cap:
         found.append(violation("oversize", size_bytes=len(note)))
     try:
         note.decode("utf-8", errors="strict")
-        bad = note.startswith(BOM)
     except UnicodeDecodeError:
-        bad = True
-    if bad:
         found.append(violation("not_utf8"))
     return found
 
@@ -132,9 +138,10 @@ def _too_deep(text: str) -> bool:
     return False
 
 
-def _json(note: bytes):
-    text = note.decode("utf-8").strip(" \t\r\n")
-    if text.startswith("```"):
+def _json(text: str, *, fenced: bool):
+    """(object, violations). A fence is allowed only around a plaintext note."""
+    text = text.strip(" \t\r\n")
+    if fenced and text.startswith("```"):
         match = FENCE.match(text)
         if not match:
             return None, [violation("malformed_json")]
@@ -172,13 +179,45 @@ def _json(note: bytes):
     return value, []
 
 
-def _known(manifests, target_id: str, named_id: str):
-    """The thread's manifest, or the violation that stops here."""
-    if target_id not in manifests or named_id not in manifests:
-        return None, [violation("unknown_manifest")]
-    if named_id != target_id:
-        return None, [violation("manifest_mismatch", path="/manifest_id")]
-    return manifests[target_id], []
+def _unseal(note: bytes, *, manifests, target_id, opener):
+    """(plaintext object, violations, opened). The header binds the note to the thread's manifest and its key
+    version; the opener decrypts with that key version only. A note that fails to open is never re-read as
+    plaintext."""
+    match = SEALED_LINE.match(note)
+    if not match:
+        return None, [violation("unsealable")], False
+    named, key_version = match.group(1).decode("ascii"), int(match.group(2))
+    if named not in manifests:
+        return None, [violation("unknown_manifest")], False
+    if named != target_id:
+        return None, [violation("manifest_mismatch", path="/manifest_id")], False
+    sealing = manifests[named]["sealing"]
+    armour = note[match.end():]
+    if sealing["recipient"] is None or sealing["key_version"] != key_version or not armour.startswith(ARMOR_BEGIN):
+        return None, [violation("unsealable")], False
+    if opener is None:
+        return None, [], False
+    try:
+        plaintext = opener(armour, manifests[named], key_version)
+    except Unopenable:
+        return None, [violation("unsealable")], False
+    if not isinstance(plaintext, (bytes, bytearray)):
+        raise TypeError("an opener returns the plaintext bytes")
+    plaintext = bytes(plaintext)
+    if len(plaintext) > MAX_PLAINTEXT_BYTES:
+        return None, [violation("oversize", size_bytes=len(plaintext))], True
+    try:
+        text = plaintext.decode("utf-8", errors="strict")
+    except UnicodeDecodeError:
+        return None, [violation("unsealable")], True
+    value, found = _json(text, fenced=False)
+    if found and found[0]["code"] == "malformed_json":
+        return None, [violation("unsealable")], True
+    if found:
+        return None, found, True
+    if POSTED.get(value.get("schema")) not in SEALABLE:
+        return None, [violation("unsealable")], True
+    return value, [], True
 
 
 def _admission(manifest: dict, manifest_id: str, admission) -> list:
@@ -187,24 +226,9 @@ def _admission(manifest: dict, manifest_id: str, admission) -> list:
     state = admission.get(manifest_id, "not_open_yet")
     if state == "closed":
         return [violation("manifest_closed")]
-    if state != "open" or manifest["status"] != "frozen":
-        return [violation("not_open_yet")]                  # only a frozen manifest can ever be open
+    if state != "open" or manifest["status"] != "signed":
+        return [violation("not_open_yet")]                  # only a signed manifest can ever be open
     return []
-
-
-def _manifest(proposal: dict, manifest: dict) -> list:
-    found = []
-    if proposal["problem"] != manifest["problem"]:
-        found.append(violation("manifest_mismatch", path="/problem"))
-    if proposal["reference_id"] != manifest["reference"]["id"]:
-        found.append(violation("manifest_mismatch", path="/reference_id"))
-    if proposal["lattice_um"] != manifest["legality"]["lattice_um"]:
-        found.append(violation("manifest_mismatch", path="/lattice_um"))
-    if proposal["wire_track"] not in {track["id"] for track in manifest["wire_tracks"]}:
-        found.append(violation("wire_track_not_admitted"))
-    if proposal["terms"] != manifest["terms"]["id"]:
-        found.append(violation("terms_mismatch"))
-    return found
 
 
 def _off_lattice(value: int, step: int) -> int:
@@ -212,13 +236,13 @@ def _off_lattice(value: int, step: int) -> int:
     return min(rest, step - rest)
 
 
-def _geometry(proposal: dict, manifest: dict):
-    """Stage 5. Returns (server geometry hash, violations, whether every die maps onto its catalogue entry)."""
-    server_hash = hashes.geometry_sha256(proposal, manifest)
+def _geometry(item: dict, manifest: dict):
+    """Stages 4 to 6. Returns (server geometry hash, violations, whether every die maps onto its catalogue entry)."""
+    server_hash = hashes.geometry_sha256(item, manifest)
     found = []
-    if server_hash != proposal["geometry_sha256"]:
+    if server_hash != item["geometry_sha256"]:
         found.append(violation("geometry_hash_mismatch"))
-    dies, catalogue = proposal["dies"], manifest["dies"]
+    dies, catalogue = item["dies"], manifest["dies"]
     if len(dies) != len(catalogue):
         found.append(violation("die_count", count=len(dies)))
     misplaced = [index for index, die in enumerate(dies) if die["die"] != index]
@@ -241,151 +265,103 @@ def _geometry(proposal: dict, manifest: dict):
     return server_hash, found, mapped
 
 
-def _layout(proposal: dict, manifest: dict, checker: LayoutChecker) -> list:
-    found = list(checker(proposal, manifest))
-    for item in found:
-        if not (fields_ok(item) and item["code"] in LAYOUT_CODES and def_is_valid("violation", item)):
+def _layout(item: dict, manifest: dict, checker: LayoutChecker) -> list:
+    found = list(checker(item, manifest))
+    for entry in found:
+        if not (fields_ok(entry) and entry["code"] in LAYOUT_CODES and def_is_valid("violation", entry)):
             raise ValueError("the layout checker returned something outside the seam's contract")
     return found
 
 
-def _proposal(value: dict, *, manifests, target_id, admission, layout_checker, sealed=False) -> Outcome:
-    """Stages 3-6 on a parsed proposal. A sealed plaintext names the thread's manifest like any proposal; the
-    envelope was already checked against the same thread, so the two always agree."""
-    found = schema_violations("proposal", value)
+def _object(value: dict, *, sealed, reply, manifests, target_id, admission, layout_checker) -> Outcome:
+    """Stages 2 (schema), 1b and 3 to 7 on a parsed object."""
+    kind = POSTED.get(value.get("schema"))
+    if kind is None:
+        return _rejected([violation("schema_invalid", path="/schema", keyword="enum")], sealed=sealed)
+    found = schema_violations(kind, value)
     if found:
-        return _outcome("rejected", found)
-    if sealed and "salt" not in value:
-        return _outcome("rejected", [violation("salt_required")])
-    if not sealed and "salt" in value:
-        return _outcome("rejected", [violation("salt_forbidden")])
-    proposal_sha = hashes.proposal_sha256(value)
-    manifest, found = _known(manifests, target_id, value["manifest_id"])
-    if not found:
-        found = _manifest(value, manifest) + _admission(manifest, target_id, admission)
-    if found:
-        return _outcome("rejected", found, value, proposal_sha)
-    geometry_sha, found, mapped = _geometry(value, manifest)
-    checked = mapped and layout_checker is not None
-    if checked:
-        found += _layout(value, manifest, layout_checker)
-    if found:
-        return _outcome("rejected", found, value, proposal_sha, geometry_sha)
-    return _outcome("legal" if checked else "contract_valid", (), value, proposal_sha, geometry_sha)
-
-
-def _decode_base64(text: str) -> bytes | None:
-    try:
-        return base64.b64decode(text, validate=True)
-    except (binascii.Error, ValueError):
-        return None
-
-
-def _sealed(envelope: dict, *, manifests, target_id, admission, opener, layout_checker) -> Outcome:
-    found = schema_violations("sealed", envelope)
-    if found:
-        return _outcome("rejected", found)
-    manifest, found = _known(manifests, target_id, envelope["manifest_id"])
-    if found:
-        return _outcome("rejected", found)
-    sealing = manifest["sealing"]
+        return _rejected(found, kind=kind, sealed=sealed)
+    content = hashes.content_sha256(value)
+    if reply is not None and reply.idempotency_key != hashes.transport_key_for(
+            value, room=reply.room, account=reply.actor_user_id, actor_kind=reply.actor_kind,
+            actor_id=reply.actor_id):
+        return _rejected([violation("transport_key_mismatch")], kind=kind, item=value, content=content, sealed=sealed)
+    if value["manifest_id"] not in manifests:
+        return _rejected([violation("unknown_manifest")], kind=kind, item=value, content=content, sealed=sealed)
+    if value["manifest_id"] != target_id:
+        return _rejected([violation("manifest_mismatch", path="/manifest_id")], kind=kind, item=value,
+                         content=content, sealed=sealed)
+    manifest = manifests[target_id]
     found = _admission(manifest, target_id, admission)
-    if sealing is None or sealing["recipient"] is None or sealing["key_version"] != envelope["key_version"]:
-        found.append(violation("sealed_key_version"))
-    age_file = _decode_base64(envelope["ciphertext"])
-    if age_file is None or not age_file.startswith(AGE_HEADER):
-        found.append(violation("sealed_format"))
+    if kind in WITH_TERMS and value["terms"] not in manifest["terms"]["accepted_versions"]:
+        found.append(violation("terms_not_accepted"))
+    geometry_sha, checked = None, False
+    if kind in GEOMETRIC:
+        geometry_sha, more, mapped = _geometry(value, manifest)
+        found += more
+        checked = mapped and layout_checker is not None
+        if checked:
+            found += _layout(value, manifest, layout_checker)
     if found:
-        return _outcome("rejected", found)
-    reference = hashes.ciphertext_ref(age_file)
-    if opener is None:
-        return Outcome("sealed_unopened", sealed=True, ciphertext_ref=reference)
-    try:
-        plaintext = opener(age_file, manifest)
-    except Unopenable:
-        return Outcome("rejected", (violation("sealed_undecryptable"),), sealed=True, ciphertext_ref=reference)
-    if not isinstance(plaintext, (bytes, bytearray)):
-        raise TypeError("an opener returns the plaintext bytes")
-    plaintext = bytes(plaintext)
-    found = _transport(plaintext, None)
-    value = None
-    if not found:
-        value, found = _json(plaintext) if not is_chat(plaintext) else (None, [violation("malformed_json")])
-    if found:
-        inner = _outcome("rejected", found)
-    else:
-        inner = _proposal(value, manifests=manifests, target_id=target_id, admission=None,
-                          layout_checker=layout_checker, sealed=True)
-    return Outcome(inner.outcome, inner.violations, inner.proposal, inner.proposal_sha256, inner.geometry_sha256,
-                   sealed=True, ciphertext_ref=reference)
+        return _rejected(found, kind=kind, item=value, content=content, geometry=geometry_sha, sealed=sealed)
+    outcome = "legal" if checked else "contract_valid"
+    return Outcome(outcome, (), kind, value, content, geometry_sha, sealed)
 
 
-def _validate(note, *, manifests, target_id, reply, admission, layout_checker, opener, chat_is_malformed) -> Outcome:
+def _validate(note, *, reply, manifests, target_id, admission, layout_checker, opener, local) -> Outcome:
     if not isinstance(note, (bytes, bytearray)):
         raise TypeError("the note is validated as bytes")
     note = bytes(note)
-    if is_chat(note):
-        return _outcome("rejected", [violation("malformed_json")]) if chat_is_malformed else Outcome("ignored")
-    found = _transport(note, reply)
+    if not is_attempt(note):
+        return _rejected([violation("malformed_json")]) if local else Outcome("ignored")
+    found = _row(reply) if reply is not None else []
+    sealed = note.startswith(SEALED_PREFIX)
+    found += _size_and_text(note, MAX_SEALED_BYTES if sealed else MAX_PLAINTEXT_BYTES)
     if found:
-        return _outcome("rejected", found)
-    value, found = _json(note)
-    if found:
-        return _outcome("rejected", found)
-    if value.get("schema") == SEALED_SCHEMA:
-        return _sealed(value, manifests=manifests, target_id=target_id, admission=admission, opener=opener,
-                       layout_checker=layout_checker)
-    return _proposal(value, manifests=manifests, target_id=target_id, admission=admission,
-                     layout_checker=layout_checker)
+        return _rejected(found, sealed=sealed)
+    if sealed:
+        value, found, opened = _unseal(note, manifests=manifests, target_id=target_id, opener=opener)
+        if found:
+            return _rejected(found, sealed=True)
+        if not opened:
+            return Outcome("sealed_unopened", sealed=True)
+    else:
+        value, found = _json(note.decode("utf-8"), fenced=True)
+        if found:
+            return _rejected(found)
+        if not local and value.get("visibility") == "private":
+            return _rejected([violation("private_requires_sealed")])
+    return _object(value, sealed=sealed, reply=reply, manifests=manifests, target_id=target_id, admission=admission,
+                   layout_checker=layout_checker)
 
 
-def validate_submission(note, *, reply: Reply, manifests, thread_manifest_id: str, admission,
-                        layout_checker: LayoutChecker | None = None, opener: Opener | None = None) -> Outcome:
+def validate_reply(note, *, reply: Reply, manifests, thread_manifest_id: str, admission,
+                   layout_checker: LayoutChecker | None = None, opener: Opener | None = None) -> Outcome:
     """The intake: one reply to a challenge root. admission maps manifest id to open, not_open_yet or closed."""
     if not isinstance(reply, Reply) or admission is None:
-        raise TypeError("the intake always checks attribution, revision and admission")
-    return _validate(note, manifests=manifests, target_id=thread_manifest_id, reply=reply, admission=admission,
-                     layout_checker=layout_checker, opener=opener, chat_is_malformed=False)
+        raise TypeError("the intake always checks the row, the transport key and admission")
+    return _validate(note, reply=reply, manifests=manifests, target_id=thread_manifest_id, admission=admission,
+                     layout_checker=layout_checker, opener=opener, local=False)
 
 
-def validate_check_note(note, *, manifests, manifest_id: str, layout_checker: LayoutChecker | None = None,
-                        opener: Opener | None = None) -> Outcome:
-    """The check: the intake's checks without attribution, revision or admission. A chat-like note is malformed."""
-    return _validate(note, manifests=manifests, target_id=manifest_id, reply=None, admission=None,
-                     layout_checker=layout_checker, opener=opener, chat_is_malformed=True)
-
-
-def decode_param(text: str) -> bytes | None:
-    """Unpadded base64url, canonical only: re-encoding must give back the same text."""
-    if len(text) % 4 == 1:
-        return None
-    raw = base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))
-    return raw if base64.urlsafe_b64encode(raw).rstrip(b"=").decode("ascii") == text else None
-
-
-def validate_check_request(request, *, manifests, layout_checker: LayoutChecker | None = None,
-                           opener: Opener | None = None) -> Outcome:
-    """GET /api/open/v1/check. A malformed request is "refused" (the error body); everything else is the check."""
-    found = schema_violations("check-request", request)
-    if found:
-        return _outcome("refused", found)
-    note = decode_param(request["p"])
-    if note is None:
-        return _outcome("refused", [violation("schema_invalid", path="/p", keyword="contentEncoding")])
-    return validate_check_note(note, manifests=manifests, manifest_id=request["m"], layout_checker=layout_checker,
-                               opener=opener)
+def validate_local(note, *, manifests, manifest_id: str, layout_checker: LayoutChecker | None = None,
+                   opener: Opener | None = None) -> Outcome:
+    """The offline checker (section 6.1): the intake's content checks without the row, the transport key or
+    admission, on the plaintext a participant is about to post or seal. Anything that is not an attempt is
+    malformed here."""
+    return _validate(note, reply=None, manifests=manifests, target_id=manifest_id, admission=None,
+                     layout_checker=layout_checker, opener=opener, local=True)
 
 
 # ── records: schema first; when the schema holds, the cross-field rules ──────────────────────────────────────────
 
-RECORD_SCHEMAS = {"manifest": "manifest", "geometry": "geometry", "sealed": "sealed", "check_request": "check-request",
-                  "check": "check", "receipt": "receipt", "restricted_receipt": "restricted-receipt",
-                  "status": "status", "results": "results", "error": "error", "limits": "limits", "usage": "usage",
-                  "cursor": "cursor", "current": "current", "private_request": "private-request",
+RECORD_SCHEMAS = {"manifest": "manifest", "terms": "terms", "check": "check", "receipt": "receipt",
+                  "status": "status", "results": "results", "geometry": "geometry", "transport_key": "transport-key",
+                  "proposal": "proposal", "check_request": "check-request", "team": "team", "publish": "publish",
                   "reason_codes": "reason-codes"}
-ROUTER_TIMEOUT = frozenset({"router_timeout"})
-LIFECYCLE_CODES = REJECTION_CODES | FAILURE_CODES | REPRODUCTION_CODES | VERIFICATION_CODES | ROUTER_TIMEOUT
-DECIDED = frozenset({"passes_listed_cases", "fails_listed_cases"})
+CHECK_CODES = REJECTION_CODES | {"check_unfinished"}
+EVALUATED = frozenset({"evaluated", "replaying", "reproduced", "not_reproduced", "cross_checked"})
+NO_DESIGN = frozenset({"rejected", "queued", "held", "cancelled", "expired"})
 
 
 def _bad(code: str, path: str, rule: str) -> dict:
@@ -399,406 +375,299 @@ def _fields(items, path: str) -> list:
 
 def state_codes_ok(state: str, codes) -> bool:
     names = [item["code"] for item in codes]
+    rest = [name for name in names if name not in QUALIFIER_CODES]
     if state == "rejected":
         return bool(names) and all(name in REJECTION_CODES for name in names)
     if state == "failed":
-        return len(names) == 1 and names[0] in FAILURE_CODES
+        return len(rest) == 1 and rest[0] in FAILURE_CODES
     if state == "not_reproduced":
-        return len(names) == 1 and names[0] in REPRODUCTION_CODES
-    if state == "not_verified":
-        return len(names) == 1 and names[0] in VERIFICATION_CODES
-    if state in ("cancelled", "expired"):
+        return len(rest) == 1 and rest[0] in REPRODUCTION_CODES
+    if state in EVALUATED:
+        return not rest
+    if state == "cancelled":
         return all(name in POLICY_CODES for name in names)
-    if state == "withdrawn":
-        return all(name in LIFECYCLE_CODES for name in names)
-    if state in ("queued", "held", "evaluating"):
-        return not names
-    return all(name in ROUTER_TIMEOUT for name in names)
-
-
-def _single(obj, path: str, lists) -> list:
-    if obj is not None and obj["label"] != label_for(obj["evaluator"], lists):
-        return [_bad("label_mismatch", path, "label.single")]
-    return []
-
-
-def _derived(obj, path: str, lists) -> list:
-    if obj is not None and obj["label"] != label_for_all(obj["evaluators"], lists):
-        return [_bad("label_mismatch", path, "label.derived")]
-    return []
+    return not names                                # queued, held, evaluating, expired
 
 
 def _strings(value):
     if isinstance(value, str):
         yield value
     elif isinstance(value, dict):
-        for item in value.values():
+        for key, item in value.items():
+            yield key
             yield from _strings(item)
     elif isinstance(value, list):
         for item in value:
             yield from _strings(item)
 
 
-def _snap_suffix(grid_um: int) -> str:
-    whole, rest = divmod(grid_um, 1000)
-    return f"-snap{whole}" + (f"p{str(rest).rjust(3, '0').rstrip('0')}" if rest else "")
+def _decimals_ok(value) -> bool:
+    exact = Decimal(repr(value))
+    return exact == exact.quantize(Decimal("0.01"))
+
+
+def q_r_keys(manifest: dict) -> set:
+    """r = 0, the policy tolerance r and every tradeoff budget (section 6.2)."""
+    policy = manifest["policy"]
+    values = [0] + ([policy["r"]] if policy["r"] is not None else []) + list(policy["tradeoff_budgets_r"])
+    return {hashes.r_key(value) for value in values}
+
+
+def _q_r_rules(q_r: dict, w_c, manifest: dict, path: str, rule: str) -> list:
+    if set(q_r) != q_r_keys(manifest):
+        return [_bad("record_inconsistent", path, rule + "_keys")]
+    w_r = manifest["references"]["comparator"]["W_R_mm"]
+    for key, value in q_r.items():
+        if value != ("UNKNOWN" if w_c == "UNKNOWN" else hashes.q_r(w_c, w_r, key)):
+            return [_bad("record_inconsistent", path, rule + "_values")]
+    return []
 
 
 def _manifest_rules(record: dict, ctx: dict) -> list:
-    lists, found = ctx["lists"], []
+    found = []
     dies = record["dies"]
     for index, die in enumerate(dies):
         if die["die"] != index:
             found.append(_bad("record_inconsistent", f"/dies/{index}", "manifest.die_index"))
-        # TAP's catalogue: one orientation for a square die or under "catalog" rotation, both otherwise.
-        fixed = die["w_um"] == die["h_um"] or record["legality"]["rotation"] == "catalog"
-        if sorted(die["rot_deg"]) != ([0] if fixed else [0, 90]):
+        if (sorted(die["rot_deg"]) != [0]) if die["w_um"] == die["h_um"] else (sorted(die["rot_deg"]) != [0, 90]):
             found.append(_bad("record_inconsistent", f"/dies/{index}/rot_deg", "manifest.square_rotation"))
-    netlist, count = record["netlist"], len(dies)
-    square = len(netlist) == count and all(len(row) == count for row in netlist)
-    if not square or any(netlist[index][index] != 0 for index in range(count)):
-        found.append(_bad("record_inconsistent", "/netlist", "manifest.netlist"))
-    track_ids = [track["id"] for track in record["wire_tracks"]]
-    if len(set(track_ids)) != len(track_ids) or "strict" not in track_ids:
-        found.append(_bad("record_inconsistent", "/wire_tracks", "manifest.tracks"))
-    reference = record["reference"]
-    found += _single(reference["t_ref"], "/reference/t_ref", lists)
-    found += _single(reference["w_ref"], "/reference/w_ref", lists)
-    found += _single(reference["paper"], "/reference/paper", lists)
-    if record["example"] is not None:
-        found += _single(record["example"]["temperature"], "/example/temperature", lists)
-        found += _single(record["example"]["wire"], "/example/wire", lists)
-    identity, router = record["temperature"]["evaluator"]["identity"], record["wire"]["evaluator"]
-    if reference["t_ref"] is not None and identity is not None and reference["t_ref"]["evaluator"] != identity:
-        found.append(_bad("record_inconsistent", "/reference/t_ref", "manifest.same_evaluator"))
-    if reference["w_ref"] is not None and router is not None and reference["w_ref"]["evaluator"] != router:
-        found.append(_bad("record_inconsistent", "/reference/w_ref", "manifest.same_evaluator"))
-    variant = reference["engineering_variant"]
-    if variant is not None and (variant["id"] != reference["id"] + _snap_suffix(variant["grid_um"])
-                                or variant["grid_um"] % record["legality"]["lattice_um"]):
-        found.append(_bad("record_inconsistent", "/reference/engineering_variant", "manifest.variant"))
-    if record["status"] == "frozen":
-        found += [_bad("record_inconsistent", path, "manifest.frozen_pins") for path in _missing_pins(record)]
+    if record["statistic"]["real_chiplets"] != [die["unit"] for die in dies]:
+        found.append(_bad("record_inconsistent", "/statistic/real_chiplets", "manifest.real_chiplets"))
+    matrix, count = record["netlist"]["matrix"], len(dies)
+    if len(matrix) != count or any(len(row) != count or row[index] != 0 for index, row in enumerate(matrix)):
+        found.append(_bad("record_inconsistent", "/netlist/matrix", "manifest.netlist"))
+    policy = record["policy"]
+    budgets = policy["tradeoff_budgets_r"]
+    if budgets != sorted(budgets) or not all(_decimals_ok(value) for value in budgets + [policy["r"] or 0]):
+        found.append(_bad("record_inconsistent", "/policy/tradeoff_budgets_r", "manifest.r_values"))
+    checks = record["checks"]
+    if None not in (checks["solver_time_limit_s"], checks["check_wall_s"]) and not (
+            checks["solver_time_limit_s"] < checks["check_wall_s"]):
+        found.append(_bad("record_inconsistent", "/checks/solver_time_limit_s", "manifest.check_limits"))
+    limits = record["limits"]
+    if (limits["eval_per_account_day"] < limits["eval_per_account_hour"]
+            or limits["eval_room_day"] < limits["eval_room_hour"]):
+        found.append(_bad("record_inconsistent", "/limits", "manifest.quota_windows"))
+    window = record["window"]
+    if None not in window.values() and not window["opens_at"] < window["closes_at"]:
+        found.append(_bad("record_inconsistent", "/window", "manifest.window"))
+    ids = [scenario["id"] for scenario in record["screen"]["scenarios"]]
+    if len(set(ids)) != len(ids) or "nominal" not in ids:
+        found.append(_bad("record_inconsistent", "/screen/scenarios", "manifest.scenarios"))
+    if record["status"] == "signed":
+        found += [_bad("record_inconsistent", path, "manifest.signed_pins") for path in _missing_pins(record)]
     return found
 
 
 def _missing_pins(record: dict) -> list:
-    evaluator = record["temperature"]["evaluator"]
-    pins = {"/reference/sha256": record["reference"]["sha256"],
-            "/temperature/evaluator/binary_sha256": evaluator["binary_sha256"],
-            "/temperature/evaluator/gate_zero_record_sha256": evaluator["gate_zero_record_sha256"],
-            "/temperature/evaluator/identity": evaluator["identity"],
+    """Every value a signed manifest must have fixed (sections 4.1, 4.11): nothing left null or provisional."""
+    statistic, policy, checks = record["statistic"], record["policy"], record["checks"]
+    pins = {"/fixture/package/hotspot_config_sha256": record["fixture"]["package"]["hotspot_config_sha256"],
+            "/references/file_sha256": record["references"]["file_sha256"],
             "/wire/router_sha256": record["wire"]["router_sha256"],
-            "/wire/time_limit_s": record["wire"]["time_limit_s"],
-            "/wire/evaluator": record["wire"]["evaluator"],
-            "/window/opens_at": record["window"]["opens_at"],
-            "/window/closes_at": record["window"]["closes_at"],
-            "/refs/grant": record["refs"]["grant"],
-            "/refs/claim_rules": record["refs"]["claim_rules"],
-            "/refs/checker_sha256": record["refs"]["checker_sha256"]}
-    thresholds = record["thresholds"]
-    for name in ("D_k", "B_T_k", "B_W", "scenario_target_c"):
-        pins["/thresholds/" + name] = thresholds[name]
-    if thresholds["B_W"] is not None:
-        pins["/thresholds/B_W/of_reference_wire_mm"] = thresholds["B_W"]["of_reference_wire_mm"]
-    variant = record["reference"]["engineering_variant"]
-    if variant is not None:
-        pins["/reference/engineering_variant/geometry_sha256"] = variant["geometry_sha256"]
-        pins["/reference/engineering_variant/design_hash"] = variant["design_hash"]
-    for index, control in enumerate(record["discrimination_control"]):
-        pins[f"/discrimination_control/{index}/source_sha256"] = control["source_sha256"]
-    if record["sealing"] is not None:
-        pins["/sealing/recipient"] = record["sealing"]["recipient"]
-        pins["/sealing/key_version"] = record["sealing"]["key_version"]
+            "/evaluation_bundle/ceilings_cpu_s": record["evaluation_bundle"]["ceilings_cpu_s"],
+            "/terms/retention": record["terms"]["retention"],
+            "/sealing/recipient": record["sealing"]["recipient"],
+            "/sealing/key_version": record["sealing"]["key_version"]}
+    for name in ("binary_sha256", "gate_zero_record_sha256", "build", "runtime"):
+        pins["/statistic/evaluator/" + name] = statistic["evaluator"][name]
+    for name in ("D_K", "r", "B_T_K", "B_W_mm", "T_limit_C"):
+        pins["/policy/" + name] = policy[name]
+    for name in ("solver_time_limit_s", "check_wall_s", "cleanup_headroom_s", "cpu_reserve_s"):
+        pins["/checks/" + name] = checks[name]
+    for name in ("opens_at", "closes_at"):
+        pins["/window/" + name] = record["window"][name]
+    for name in ("grant", "claim_rules", "checker_sha256"):
+        pins["/refs/" + name] = record["refs"][name]
     missing = [path for path, value in pins.items() if value is None]
-    if thresholds["status"] != "frozen":
-        missing.append("/thresholds/status")
-    if record["sensitivity"]["status"] != "frozen":
-        missing.append("/sensitivity/status")
+    if not record["terms"]["accepted_versions"]:
+        missing.append("/terms/accepted_versions")
+    if not policy["status"].startswith("frozen"):
+        missing.append("/policy/status")
+    if record["evaluation_bundle"]["status"] != "frozen":
+        missing.append("/evaluation_bundle/status")
+    if not record["limits"]["status"].startswith("frozen"):
+        missing.append("/limits/status")
+    if statistic["numerical_admission"] != "admitted":
+        missing.append("/statistic/numerical_admission")
+    if any(scenario["id"] == "position-<die>-<axis>-<sign>" for scenario in record["screen"]["scenarios"]):
+        missing.append("/screen/scenarios")
     return missing
 
 
-def _fits_tracks(routed_mm, manifest: dict) -> list:
-    reference = manifest["reference"]["w_ref"]
-    if routed_mm is None or reference is None or reference["routed_mm"] is None:
-        return []
-    limit = Decimal(repr(reference["routed_mm"]))
-    return [track["id"] for track in manifest["wire_tracks"]
-            if Decimal(repr(routed_mm)) <= Decimal(repr(track["factor"])) * limit]
+def _terms_rules(record: dict, ctx: dict) -> list:
+    if not record["version"].endswith("@" + record["text_sha256"]):
+        return [_bad("record_inconsistent", "/version", "terms.version_hash")]
+    return []
+
+
+def check_codes_ok(status: str, codes) -> bool:
+    """A routed check has no codes. The solver limit gives time_limit with one check_unfinished naming it; the wall
+    or the CPU reserve gives not_routed with one check_unfinished naming that limit; a rejection is not_routed with
+    its rejection codes (a quota refusal is rate_limited)."""
+    names = [item["code"] for item in codes]
+    if any(name not in CHECK_CODES for name in names):
+        return False
+    unfinished = [item.get("limit") for item in codes if item["code"] == "check_unfinished"]
+    if status == "optimal":
+        return not names
+    if status == "time_limit":
+        return len(names) == 1 and unfinished == ["solver_time_limit_s"]
+    if unfinished:
+        return len(names) == 1 and unfinished[0] in ("check_wall_s", "cpu_reserve_s")
+    return bool(names)
 
 
 def _check_rules(record: dict, ctx: dict) -> list:
-    found = _fields(record["violations"], "/violations")
-    if record["legal"] != (not record["violations"]):
-        found.append(_bad("record_inconsistent", "/legal", "check.legal"))
-    status = record["wire"]["routed_status"]
-    if (status == "skipped_illegal") == record["legal"] or (not record["legal"] and record["fits_tracks"]):
-        found.append(_bad("record_inconsistent", "/wire/routed_status", "check.routed"))
-    manifest = ctx["manifest"]
-    if manifest is not None:
-        if record["manifest_id"] != hashes.manifest_id(manifest):
-            found.append(_bad("record_inconsistent", "/manifest_id", "record.manifest"))
-        if record["fits_tracks"] != _fits_tracks(record["wire"]["routed_mm"], manifest):
-            found.append(_bad("record_inconsistent", "/fits_tracks", "check.fits_tracks"))
-    elif record["wire"]["routed_mm"] is None and record["fits_tracks"]:
-        found.append(_bad("record_inconsistent", "/fits_tracks", "check.fits_tracks"))
-    limits = ctx["limits"]
-    if limits is not None and record["no_participant_charge"] != limits["check"]["no_participant_charge"]:
-        found.append(_bad("record_inconsistent", "/no_participant_charge", "check.charge"))
-    return found + _single(record["wire"], "/wire", ctx["lists"])
-
-
-PROPOSAL_FIELDS = ("problem", "reference_id", "wire_track", "proposal_key", "terms")
+    found = _fields(record["codes"], "/codes")
+    if not check_codes_ok(record["router_status"], record["codes"]):
+        found.append(_bad("record_inconsistent", "/codes", "check.codes"))
+    if ctx["manifest"] is not None:
+        found += _q_r_rules(record["q_r_nominal"], record["W_c_mm"], ctx["manifest"], "/q_r_nominal", "check.q_r")
+    elif any(value != "UNKNOWN" for value in record["q_r_nominal"].values()) and record["W_c_mm"] == "UNKNOWN":
+        found.append(_bad("record_inconsistent", "/q_r_nominal", "check.q_r_values"))
+    return found
 
 
 def _receipt_rules(record: dict, ctx: dict) -> list:
     found = _fields(record["codes"], "/codes")
-    if not state_codes_ok(record["state"], record["codes"]):
+    state = record["state"]
+    if not state_codes_ok(state, record["codes"]):
         found.append(_bad("record_inconsistent", "/codes", "state.codes"))
+    read = ("terms", "visibility", "proposal_key", "revision_index")
+    derived = ("geometry_sha256", "design_hash", "parent", "values")
     if record["proposal_sha256"] is None:
-        derived = PROPOSAL_FIELDS + ("geometry_sha256", "design_hash", "parent", "values")
-        bad = [name for name in derived if record[name] is not None]
+        bad = [name for name in read + derived if record[name] is not None]
+        if state != "rejected":
+            bad.append("proposal_sha256")
     else:
-        bad = [name for name in PROPOSAL_FIELDS if record[name] is None]
-        if record["state"] not in ("rejected", "withdrawn"):
+        bad = [name for name in read if record[name] is None]
+        if state != "rejected":
             bad += [name for name in ("geometry_sha256", "values") if record[name] is None]
     found += [_bad("record_inconsistent", "/" + name, "receipt.proposal_fields") for name in bad]
-    if record["sealed"] != (record["ciphertext_ref"] is not None):
-        found.append(_bad("record_inconsistent", "/ciphertext_ref", "receipt.sealed"))
-    if ctx["audience"] == "public" and record["sealed"]:
-        found.append(_bad("record_inconsistent", "/sealed", "privacy.sealed"))
-    manifest = ctx["manifest"]
+    if (state in NO_DESIGN and record["design_hash"] is not None
+            or state in EVALUATED and record["design_hash"] is None):
+        found.append(_bad("record_inconsistent", "/design_hash", "receipt.design_hash"))
+    manifest, item = ctx["manifest"], ctx["item"]
     if manifest is not None and record["manifest_id"] != hashes.manifest_id(manifest):
         found.append(_bad("record_inconsistent", "/manifest_id", "record.manifest"))
-    return found
-
-
-def _restricted_rules(record: dict, ctx: dict) -> list:
-    found = []
-    if record["source_ref"] != hashes.source_ref(record["action_id"]):
+    if item is not None and manifest is not None and record["proposal_sha256"] is not None:
+        if (record["proposal_sha256"] != hashes.proposal_sha256(item)
+                or record["proposal_key"] != item["proposal_key"] or record["terms"] != item["terms"]
+                or record["visibility"] != item["visibility"] or record["parent"] != item["parent"]):
+            found.append(_bad("ref_mismatch", "/proposal_sha256", "ref.proposal"))
+        if record["geometry_sha256"] not in (None, hashes.geometry_sha256(item, manifest)):
+            found.append(_bad("ref_mismatch", "/geometry_sha256", "ref.geometry"))
+        if record["values"] not in (None, hashes.conductor_geometry(item, manifest)):
+            found.append(_bad("ref_mismatch", "/values", "ref.values"))
+    if ctx["action_id"] is not None and record["source_ref"] != hashes.source_ref(ctx["action_id"]):
         found.append(_bad("ref_mismatch", "/source_ref", "ref.source"))
-    manifest, key = ctx["manifest"], ctx["pseudonym_key"]
-    if manifest is not None:
-        if record["manifest_id"] != hashes.manifest_id(manifest):
-            found.append(_bad("record_inconsistent", "/manifest_id", "record.manifest"))
-        if key is not None and record["participant_ref"] != hashes.participant_ref(
-                key, manifest["challenge"], record["actor_user_id"]):
-            found.append(_bad("ref_mismatch", "/participant_ref", "ref.participant"))
-    if record["proposal_sha256"] is None:
-        if record["transport_id"] is not None or record["proposal_key"] is not None:
-            found.append(_bad("ref_mismatch", "/transport_id", "ref.transport"))
-    elif record["proposal_key"] is None or record["transport_id"] != hashes.transport_id(
-            room=record["room"], account_id=record["actor_user_id"], actor_kind=record["actor_kind"],
-            actor_agent_id=record["actor_agent_id"], manifest_id=record["manifest_id"],
-            proposal_key=record["proposal_key"], proposal_sha256=record["proposal_sha256"]):
-        found.append(_bad("ref_mismatch", "/transport_id", "ref.transport"))
-    capability = (record["capability_sha256"], record["capability_epoch"], record["capability_revoked"])
-    if (record["sealed"] and None in capability[:2]) or (not record["sealed"] and capability != (None, None, False)):
-        found.append(_bad("record_inconsistent", "/capability_sha256", "receipt.sealed"))
+    if ctx["k_challenge"] is not None and ctx["account_id"] is not None and record["participant_ref"] != (
+            hashes.participant_ref(ctx["k_challenge"], ctx["account_id"])):
+        found.append(_bad("ref_mismatch", "/participant_ref", "ref.participant"))
     return found
 
 
 def _status_rules(record: dict, ctx: dict) -> list:
     found = []
-    manifest = ctx["manifest"]
-    if manifest is not None and record["manifest_id"] != hashes.manifest_id(manifest):
-        found.append(_bad("record_inconsistent", "/manifest_id", "record.manifest"))
+    wanted = None
+    if ctx["manifest"] is not None and ctx["proposal_sha256"] is not None:
+        wanted = hashes.run_id(hashes.manifest_id(ctx["manifest"]), ctx["proposal_sha256"])
     for index, receipt in enumerate(record["receipts"]):
         path = f"/receipts/{index}"
-        found += _fields(receipt["codes"], path + "/codes")
-        if not state_codes_ok(receipt["state"], receipt["codes"]):
-            found.append(_bad("record_inconsistent", path + "/codes", "state.codes"))
-        if receipt["run_id"] != hashes.run_id(record["manifest_id"], receipt["participant_ref"]):
+        if (receipt["queue"] is not None) != (receipt["state"] == "queued"):
+            found.append(_bad("record_inconsistent", path + "/queue", "status.queue"))
+        if wanted is not None and receipt["run_id"] != wanted:
             found.append(_bad("ref_mismatch", path + "/run_id", "ref.run_id"))
-        if ctx["audience"] == "public" and receipt["sealed"]:
-            found.append(_bad("record_inconsistent", path + "/sealed", "privacy.sealed"))
     return found
 
 
-def _scored(row: dict) -> bool:
-    return row["comparison"] is not None or bool(row["claims"]) or row["control"] is not None
+CLAIMED = frozenset({"bounded", "passes the listed sensitivity cases"})
+
+
+def _exact_difference(a, b):
+    """a - b exactly in decimal, then the nearest double; UNKNOWN if either is."""
+    return "UNKNOWN" if "UNKNOWN" in (a, b) else float(Decimal(repr(a)) - Decimal(repr(b)))
+
+
+def _measured_rules(row: dict, path: str, t_r, ctx: dict) -> list:
+    manifest, found = ctx["manifest"], []
+    if not label_ok(row["T_M"], row["evaluator"], row["temperature_label"], ctx["lists"]):
+        found.append(_bad("label_mismatch", path + "/temperature_label", "label.temperature"))
+    if row["delta_T"] != _exact_difference(row["T_M"], t_r):
+        found.append(_bad("record_inconsistent", path + "/delta_T", "results.delta_t"))
+    ids = [label["id"] for label in row["labels"]]
+    positions = [LABELS.index(name) for name in ids]
+    if positions != sorted(set(positions)) or set(ids) & {item["id"] for item in row["suppressed"]}:
+        found.append(_bad("record_inconsistent", path + "/labels", "results.label_set"))
+    policy_r = manifest["policy"]["r"] if manifest is not None else None
+    for item in row["labels"] + row["suppressed"]:
+        relaxed = item["id"] == "r-relaxed-wire thermal tolerance"
+        if relaxed != (item["r"] is not None) or relaxed and manifest is not None and item["r"] != policy_r:
+            found.append(_bad("record_inconsistent", path + "/labels", "results.label_r"))
+            break
+    claimed = [label for label in row["labels"] if label["mode"] in CLAIMED]
+    for label in claimed:
+        needs = [row["T_M"]] if label["id"] == LABELS[0] else [row["delta_T"], row["W_c_mm"]]
+        if "UNKNOWN" in needs:
+            found.append(_bad("record_inconsistent", path + "/labels", "results.unknown_claim"))
+            break
+    if manifest is not None and any(label["mode"] == "bounded" for label in row["labels"]) and "UNKNOWN" in (
+            manifest["bounds"].values()):
+        found.append(_bad("record_inconsistent", path + "/labels", "results.bounded"))
+    if claimed and row["temperature_label"] == "withdrawn":
+        found.append(_bad("label_mismatch", path + "/labels", "label.withdrawn_claim"))
+    if manifest is not None:
+        found += _q_r_rules(row["q_r"], row["W_c_mm"], manifest, path + "/q_r", "results.q_r")
+    return found
 
 
 def _results_rules(record: dict, ctx: dict) -> list:
-    lists, manifest, found = ctx["lists"], ctx["manifest"], []
-    for index, row in enumerate(record["rows"]):
-        path = f"/rows/{index}"
-        if ctx["audience"] == "public" and row["sealed"]:
-            found.append(_bad("record_inconsistent", path + "/sealed", "privacy.sealed"))
-        found += _single(row["temperature"], path + "/temperature", lists)
-        found += _single(row["wire"], path + "/wire", lists)
-        found += _single(row["paper"], path + "/paper", lists)
-        for case_index, case in enumerate(row["sensitivity"]):
-            found += _single(case, f"{path}/sensitivity/{case_index}", lists)
-        for diagnostic_index, diagnostic in enumerate(row["diagnostics"]):
-            found += _single(diagnostic, f"{path}/diagnostics/{diagnostic_index}", lists)
-        found += _derived(row["comparison"], path + "/comparison", lists)
-        for claim_index, claim in enumerate(row["claims"]):
-            claim_path = f"{path}/claims/{claim_index}"
-            found += _derived(claim, claim_path, lists)
-            if claim["outcome"] in DECIDED and claim["label"] not in ("accepted", "illustrative"):
-                found.append(_bad("label_mismatch", claim_path, "label.claim_outcome"))
-        inputs = [row[name]["evaluator"] for name in ("temperature", "wire") if row[name] is not None]
-        inputs += (row["comparison"] or {}).get("evaluators", [])
-        inputs += [identity for claim in row["claims"] for identity in claim["evaluators"]]
-        if _scored(row) and any(label_for(identity, lists) == "withdrawn" for identity in inputs):
-            found.append(_bad("label_mismatch", path, "label.withdrawn_comparison"))
+    manifest, comparator, found = ctx["manifest"], record["comparator"], []
+    if not label_ok(comparator["T_R"], comparator["evaluator"], comparator["temperature_label"], ctx["lists"]):
+        found.append(_bad("label_mismatch", "/comparator/temperature_label", "label.temperature"))
     if manifest is not None:
-        found += _results_manifest_rules(record, manifest)
-    return found
-
-
-def _results_manifest_rules(record: dict, manifest: dict) -> list:
-    found = []
-    if record["manifest_id"] != hashes.manifest_id(manifest):
-        found.append(_bad("record_inconsistent", "/manifest_id", "record.manifest"))
-    if record["manifest_status"] != manifest["status"]:
-        found.append(_bad("record_inconsistent", "/manifest_status", "record.manifest"))
-    case_ids = [case["id"] for case in manifest["sensitivity"]["cases"]]
-    controls = {control["id"]: control for control in manifest["discrimination_control"]}
-    reference = manifest["reference"]
+        pinned = manifest["references"]["comparator"]
+        if (comparator["id"], comparator["T_R"], comparator["W_R_mm"]) != (pinned["id"], pinned["T_R"],
+                                                                              pinned["W_R_mm"]):
+            found.append(_bad("record_inconsistent", "/comparator", "results.comparator"))
     for index, row in enumerate(record["rows"]):
         path = f"/rows/{index}"
-        if not _scored(row):
+        if row["kind"] == "published_target":
             continue
-        if manifest["status"] != "frozen":
-            found.append(violation("manifest_not_frozen", path=path))
-            continue
-        if reference["t_ref"] is None or reference["w_ref"] is None:
-            found.append(_bad("record_inconsistent", path, "results.scoring"))
-        if (row["temperature"] is None or row["wire"] is None
-                or row["temperature"]["evaluator"] != manifest["temperature"]["evaluator"]["identity"]
-                or row["wire"]["evaluator"] != manifest["wire"]["evaluator"]):
-            found.append(_bad("record_inconsistent", path, "results.same_evaluator"))
-        found += _claim_cases(row, path, case_ids)
-        if row["kind"] == "control":
-            found += _control_result(row, path, controls)
+        found += _measured_rules(row, path, comparator["T_R"], ctx)
+        if row["kind"] == "outside" and row["state"] not in EVALUATED and (row["T_M"] != "UNKNOWN" or row["labels"]):
+            found.append(_bad("record_inconsistent", path + "/state", "results.state"))
     return found
 
 
-def _claim_cases(row: dict, path: str, case_ids) -> list:
-    """No case outside the predeclared list. A failed required case suppresses the claims (or leaves them unknown);
-    a missing one leaves them incomplete, unknown or suppressed. Only a complete set of cases can decide a claim."""
-    status = {case["case"]: case["status"] for case in row["sensitivity"]}
-    if set(status) - set(case_ids):
-        return [_bad("record_inconsistent", path + "/sensitivity", "claim.cases")]
-    if any(status.get(case_id) == "failed" for case_id in case_ids):
-        allowed = {"unknown", "suppressed"}
-    elif any(status.get(case_id, "missing") == "missing" for case_id in case_ids):
-        allowed = {"incomplete", "unknown", "suppressed"}
-    else:
-        return []
-    return [_bad("record_inconsistent", f"{path}/claims/{index}", "claim.cases")
-            for index, claim in enumerate(row["claims"]) if claim["outcome"] not in allowed]
+RULES = {"manifest": _manifest_rules, "terms": _terms_rules, "check": _check_rules, "receipt": _receipt_rules,
+         "status": _status_rules, "results": _results_rules}
 
 
-def _control_result(row: dict, path: str, controls: dict) -> list:
-    control = controls.get(row["control"]["id"])
-    if control is None or control["id"] != row["id"]:
-        return [_bad("record_inconsistent", path + "/control", "control.result")]
-    observed = {(claim["type"], claim["r"]): claim["outcome"] for claim in row["claims"]}
-    outcomes = [observed.get((expected["type"], expected["r"])) for expected in control["expected"]]
-    if any(outcome not in DECIDED for outcome in outcomes):
-        result = "incomplete"
-    elif all(outcome == expected["outcome"] for outcome, expected in zip(outcomes, control["expected"])):
-        result = "control_match"
-    else:
-        result = "control_mismatch"
-    return [] if row["control"]["result"] == result else [
-        _bad("record_inconsistent", path + "/control", "control.result")]
-
-
-def _limits_rules(record: dict, ctx: dict) -> list:
-    found, check = [], record["check"]
-    if check["no_participant_charge"] and not (check["sponsored"] and check["solver_elapsed_limit_s"] is not None
-                                               and check["wall_deadline_s"] is not None):
-        found.append(_bad("record_inconsistent", "/check/no_participant_charge", "limits.charge"))
-    if (check["solver_elapsed_limit_s"] is not None and check["wall_deadline_s"] is not None
-            and check["solver_elapsed_limit_s"] > check["wall_deadline_s"]):
-        found.append(_bad("record_inconsistent", "/check/solver_elapsed_limit_s", "limits.windows"))
-    evaluations = record["evaluations"]
-    for scope in ("account", "room"):
-        hour, day = evaluations[f"per_{scope}_per_hour"], evaluations[f"per_{scope}_per_day"]
-        if hour is not None and day is not None and day < hour:
-            found.append(_bad("record_inconsistent", f"/evaluations/per_{scope}_per_day", "limits.windows"))
-    for name in ("evaluation_call", "check"):
-        budget = record["cpu"][name]
-        values = (budget["reservation_s"], budget["enforcement_s"], budget["cleanup_headroom_s"])
-        if None not in values and Decimal(repr(values[0])) != Decimal(repr(values[1])) + Decimal(repr(values[2])):
-            found.append(_bad("record_inconsistent", f"/cpu/{name}", "limits.cpu"))
-    return found
-
-
-def _usage_rules(record: dict, ctx: dict) -> list:
-    found = _fields(record["codes"], "/codes")
-    unmeasured = record["measured_cpu_s"] is None
-    reserved = Decimal(repr(record["reserved_cpu_s"]))
-    if (reserved != Decimal(repr(record["enforced_cpu_s"])) + Decimal(repr(record["cleanup_headroom_cpu_s"]))
-            or unmeasured and record["debited_cpu_s"] != record["reserved_cpu_s"]
-            or record["outcome"] == "interrupted" and not unmeasured):
-        found.append(_bad("record_inconsistent", "/debited_cpu_s", "usage.charge"))
-    if record["enforcement"] == "stopped_in_flight" and (record["outcome"] != "failed" or [
-            item["code"] for item in record["codes"]] != ["timeout"]):
-        found.append(_bad("record_inconsistent", "/enforcement", "usage.enforcement"))
-    measured = record["measured_cpu_s"]
-    overrun = "unmeasured" if unmeasured else (
-        "detected" if Decimal(repr(measured)) > reserved else "none")
-    if record["overrun"] != overrun:
-        found.append(_bad("record_inconsistent", "/overrun", "usage.overrun"))
-    if record["run_id"] is not None:
-        principal = record["participant_ref"]
-        expected = "sentilab" if principal == "sentilab" else (principal or "")[:16]
-        if record["run_id"].rsplit("-", 1)[-1] != expected:
-            found.append(_bad("ref_mismatch", "/run_id", "ref.run_id"))
-    return found
-
-
-def _cursor_rules(record: dict, ctx: dict) -> list:
-    if record["after"] is None:
-        return []
-    try:
-        created_at_ns(record["after"]["created_at"])
-    except ValueError:
-        return [_bad("record_inconsistent", "/after/created_at", "cursor.created_at")]
-    return []
-
-
-def _current_rules(record: dict, ctx: dict) -> list:
-    manifest = ctx["manifest"]
-    if manifest is None:
-        return []
-    if (record["manifest_id"] != hashes.manifest_id(manifest) or record["problem"] != manifest["problem"]
-            or record["version"] != manifest["version"]):
-        return [_bad("record_inconsistent", "/manifest_id", "record.manifest")]
-    return []
-
-
-def _error_rules(record: dict, ctx: dict) -> list:
-    return _fields(record["codes"], "/codes")
-
-
-RULES = {"manifest": _manifest_rules, "check": _check_rules, "receipt": _receipt_rules,
-         "restricted_receipt": _restricted_rules, "status": _status_rules, "results": _results_rules,
-         "limits": _limits_rules, "usage": _usage_rules, "cursor": _cursor_rules, "current": _current_rules,
-         "error": _error_rules}
-
-
-def validate_record(kind: str, record, *, manifest=None, limits=None, pseudonym_key=None, lists=LISTS,
-                    audience: str = "public") -> list:
+def validate_record(kind: str, record, *, manifest=None, item=None, action_id=None, k_challenge=None,
+                    account_id=None, proposal_sha256=None, private_handles=(), lists=LISTS) -> list:
     """Every violation of one record, in canonical order. The schema comes first; rules run only on a valid shape.
 
-    manifest, limits and pseudonym_key enable the rules that need them; without them those rules are skipped.
-    audience "public" (the default) refuses sealed entries; "private" is for capability-addressed responses. No
-    record of any kind may carry a capability: only a private request does.
+    The keyword arguments enable the rules that need them (the manifest, the parsed proposal, the restricted row's
+    action and account ids with k_challenge, the status query); without them those rules are skipped.
+    private_handles are salted proposal_sha256 and request_sha256 values of private items: bearer secrets that no
+    record may carry, checked on every record kind.
     """
-    if kind not in RECORD_SCHEMAS or audience not in ("public", "private"):
-        raise ValueError("unknown record kind or audience")
+    if kind not in RECORD_SCHEMAS:
+        raise ValueError("unknown record kind")
     found = schema_violations(RECORD_SCHEMAS[kind], record)
     if found:
         return canonical_list(found)
-    ctx = {"manifest": manifest, "limits": limits, "pseudonym_key": pseudonym_key, "lists": lists,
-           "audience": audience}
+    ctx = {"manifest": manifest, "item": item, "action_id": action_id, "k_challenge": k_challenge,
+           "account_id": account_id, "proposal_sha256": proposal_sha256, "lists": lists}
     found = RULES.get(kind, lambda _record, _ctx: [])(record, ctx)
-    if kind != "private_request" and any(CAPABILITY.search(text) for text in _strings(record)):
-        found.append(_bad("record_inconsistent", "", "privacy.capability"))
+    handles = set(private_handles)
+    if handles and any(text in handles for text in _strings(record)):
+        found.append(_bad("record_inconsistent", "", "privacy.handle"))
     return canonical_list(found)
+
+
+def label_ok(value, evaluator, label, lists=LISTS) -> bool:
+    """A measured temperature carries its evaluator identity and the SLAB-053 label state that identity gets."""
+    return value == "UNKNOWN" and label is None or value != "UNKNOWN" and label == label_for(evaluator, lists)

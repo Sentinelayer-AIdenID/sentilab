@@ -2,23 +2,20 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sentilab.invalid/open-proposal/v1/check.schema.json",
   "title": "sentilab-open-check/1",
-  "description": "The check response: geometry only, no thermal solve, not a score. geometry_sha256 is the server's recomputation and proposal_sha256 the canonical hash of the submitted proposal; both are null when the proposal did not get far enough to compute them. fits_tracks lists the manifest's tracks whose wire limit the routed wire meets (W <= factor x W_ref). no_participant_charge is true only while the check is sponsored and its MILP solve is capped; it is never assumed.",
+  "description": "GET /api/open/v1/check-status?h=<request_sha256> (DESIGN rev 3 sections 6.2 and 10): the routed wire W(c) in mm, the router status, and nominal q_r = W(c) - (1 + r) W_R for r = 0, the policy tolerance and every tradeoff budget, under the fixed labels \"routed wire only, no thermal solve, nominal, not a score\". It carries no geometry. W_c_mm is a number only for a proven optimum; otherwise it and every q_r read UNKNOWN. codes is empty for a routed result and holds the rejection or check_unfinished codes otherwise (rev 3 shows only the routed shape).",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "manifest_id", "geometry_sha256", "proposal_sha256", "legal", "violations", "wire",
-               "fits_tracks", "no_participant_charge", "sealed", "labels"],
+  "required": ["schema", "W_c_mm", "router_status", "q_r_nominal", "labels", "codes"],
   "properties": {
     "schema": {"const": "sentilab-open-check/1"},
-    "manifest_id": {"$ref": "common.schema.json#/$defs/sha256"},
-    "geometry_sha256": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
-    "proposal_sha256": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
-    "legal": {"type": "boolean"},
-    "violations": {"$ref": "common.schema.json#/$defs/violations"},
-    "wire": {"$ref": "common.schema.json#/$defs/wire"},
-    "fits_tracks": {"type": "array", "maxItems": 2, "uniqueItems": true,
-                    "items": {"$ref": "common.schema.json#/$defs/wire_track"}},
-    "no_participant_charge": {"type": "boolean"},
-    "sealed": {"description": "A sealed check: this response goes to its requester only and is never cached publicly.", "type": "boolean"},
-    "labels": {"const": ["geometry only", "no thermal solve", "not a score"]}
-  }
+    "W_c_mm": {"$ref": "common.schema.json#/$defs/nonnegative_or_unknown"},
+    "router_status": {"description": "optimal: proven by HiGHS with mip_rel_gap 0 within the solver limit (section 4.5). time_limit: the solver limit ended it. not_routed: rejected before routing, or the wall or CPU reserve ended it.",
+                      "enum": ["optimal", "time_limit", "not_routed"]},
+    "q_r_nominal": {"$ref": "common.schema.json#/$defs/q_r"},
+    "labels": {"const": ["routed wire only", "no thermal solve", "nominal", "not a score"]},
+    "codes": {"$ref": "common.schema.json#/$defs/violations"}
+  },
+  "if": {"properties": {"router_status": {"const": "optimal"}}},
+  "then": {"properties": {"W_c_mm": {"type": "number"}, "codes": {"maxItems": 0}}},
+  "else": {"properties": {"W_c_mm": {"const": "UNKNOWN"}, "codes": {"minItems": 1}}}
 }

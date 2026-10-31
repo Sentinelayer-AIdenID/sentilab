@@ -1,4 +1,5 @@
-"""The fixed reason-code vocabulary (contracts/open-proposal-v1/reason-codes.json) and its canonical order."""
+"""The 48 reason codes (contracts/open-proposal-v1/reason-codes.json, DESIGN rev 3 section 7.2), the record-check
+codes and rule ids (record-rules.json), and their canonical order."""
 from __future__ import annotations
 
 import json
@@ -8,6 +9,7 @@ from sentilab_core.envelope import canonical
 from .schemas import CONTRACT_DIR
 
 VOCABULARY = json.loads((CONTRACT_DIR / "reason-codes.json").read_bytes())
+RECORD_VOCABULARY = json.loads((CONTRACT_DIR / "record-rules.json").read_bytes())
 ORDER = {}
 FIELDS = {}
 GROUP = {}
@@ -17,7 +19,14 @@ for _group in VOCABULARY["groups"]:
         FIELDS[_entry["code"]] = tuple(_entry["fields"])
         GROUP[_entry["code"]] = _group["group"]
 GROUPS = {group["group"]: tuple(entry["code"] for entry in group["codes"]) for group in VOCABULARY["groups"]}
-RULES = tuple(VOCABULARY["rules"])
+REASON_CODES = tuple(ORDER)
+# Codes for our own records only (validate_record): never a participant-facing reason, never in a receipt.
+for _entry in RECORD_VOCABULARY["codes"]:
+    ORDER[_entry["code"]] = len(ORDER)
+    FIELDS[_entry["code"]] = tuple(_entry["fields"])
+    GROUP[_entry["code"]] = "record"
+RECORD_CODES = tuple(entry["code"] for entry in RECORD_VOCABULARY["codes"])
+RULES = tuple(RECORD_VOCABULARY["rules"])
 # At most 64 violations per list: the envelope's per-list cap (sentilab_core/envelope.py MAX_ITEMS). A rejection is
 # decided before the list is cut, so the cap never changes an outcome.
 MAX_VIOLATIONS = 64
@@ -33,7 +42,7 @@ def violation(code: str, **fields) -> dict:
 
 
 def fields_ok(item) -> bool:
-    return (isinstance(item, dict) and item.get("code") in FIELDS
+    return (isinstance(item, dict) and item.get("code") in REASON_CODES
             and set(item) - {"code"} == set(FIELDS[item["code"]]))
 
 

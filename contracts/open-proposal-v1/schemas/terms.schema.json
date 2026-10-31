@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/terms.schema.json",
+  "title": "sentilab-open-terms/1",
+  "description": "The machine-readable record of one submission-terms version (DESIGN rev 3 section 5.6). The terms text is published at a stable URL and its SHA-256 is in the version id: version = sentilab-open-terms/<n>@<text_sha256>. The terms cover evaluation, retention of evidence, and display only if visibility is public; they grant no training, lab-memory or study use; they state the moderation visibility semantics (section 12) and the retention period. A change makes a new version; the manifest lists the accepted versions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "text_sha256", "covers", "grants", "moderation", "retention"],
+  "properties": {
+    "schema": {"const": "sentilab-open-terms/1"},
+    "version": {"$ref": "common.schema.json#/$defs/terms_version"},
+    "text_sha256": {"$ref": "common.schema.json#/$defs/sha256"},
+    "covers": {"const": ["evaluation", "retention of evidence", "display only if public"]},
+    "grants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["training", "lab_memory", "study"],
+      "properties": {
+        "training": {"const": false},
+        "lab_memory": {"const": false},
+        "study": {"const": false}
+      }
+    },
+    "moderation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hide_reasons", "hidden", "pause"],
+      "properties": {
+        "hide_reasons": {"const": ["spam", "abuse", "not_a_layout"]},
+        "hidden": {"const": "hidden from public pages with the reason; nothing is deleted"},
+        "pause": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["hidden_per_day", "pause_hours"],
+          "properties": {
+            "hidden_per_day": {"type": "integer", "minimum": 1, "maximum": 1000},
+            "pause_hours": {"type": "integer", "minimum": 1, "maximum": 8760}
+          }
+        }
+      }
+    },
+    "retention": {"description": "The retention period of evidence, as an ISO 8601 duration.",
+                  "type": "string", "pattern": "^P(?=[0-9])([0-9]{1,4}Y)?([0-9]{1,4}M)?([0-9]{1,5}D)?$"}
+  }
+}

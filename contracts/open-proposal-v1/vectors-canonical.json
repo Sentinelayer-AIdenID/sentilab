@@ -1,8 +1,7 @@
 {
  "schema": "sentilab-open-vectors/1",
  "test_phrases": {
-  "pseudonym_key": "sentilab-open-proposal-v1 test pseudonym key, not a secret",
-  "client_secret": "sentilab-open-proposal-v1 test client secret, not a secret",
+  "k_challenge": "sentilab-open-proposal-v1 test k_challenge, not a secret",
   "derivation": "sha256 of the UTF-8 phrase gives the 32 bytes"
  },
  "canonical": [
@@ -79,168 +78,309 @@
  "manifest_id": [
   {
    "manifest": "A",
-   "manifest_id": "5f69e7d3e2a5d83bbeec0367a5798bc1952ed3f9c3b1500722d29baaa15d4f3e"
+   "manifest_id": "088ea3d8ff4be5ac03c90438abbaada5b50badf559c96b2595f304588118aa5e"
   },
   {
    "manifest": "M",
-   "manifest_id": "17e2bee830e33d08afe2cffa3c4c2609e0449e019dcd69c5bf943d126b809fe2"
+   "manifest_id": "d9f96cbe164c5de29450ab19335fc1b800595a68b64fe60b3e44caf9e0103471"
   },
   {
    "manifest": "F",
-   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0"
+   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38"
+  },
+  {
+   "manifest": "F2",
+   "manifest_id": "1247fd1d1ea1721f80602505e4c22e711dc734da239b07549d1ac9b008fc50a0"
   }
  ],
+ "objects": {
+  "P_A": {
+   "schema": "sentilab-open-proposal/1",
+   "manifest_id": "088ea3d8ff4be5ac03c90438abbaada5b50badf559c96b2595f304588118aa5e",
+   "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
+   "proposal_key": "example-1",
+   "parent": null,
+   "visibility": "private",
+   "salt": "00000000000000000000000000000001",
+   "units": "um",
+   "anchor": "die-centre",
+   "dies": [
+    {
+     "die": 0,
+     "x_um": 17000,
+     "y_um": 23000,
+     "rot_deg": 90
+    },
+    {
+     "die": 1,
+     "x_um": 39000,
+     "y_um": 23000,
+     "rot_deg": 0
+    },
+    {
+     "die": 2,
+     "x_um": 7000,
+     "y_um": 11000,
+     "rot_deg": 90
+    },
+    {
+     "die": 3,
+     "x_um": 21000,
+     "y_um": 11000,
+     "rot_deg": 90
+    },
+    {
+     "die": 4,
+     "x_um": 7000,
+     "y_um": 35000,
+     "rot_deg": 90
+    },
+    {
+     "die": 5,
+     "x_um": 21000,
+     "y_um": 35000,
+     "rot_deg": 90
+    }
+   ],
+   "geometry_sha256": "f51eb4ec7db6b5d043eb7da44ba766452031788dc58491f190440a46cd6c0413",
+   "client": {
+    "name": "example-agent",
+    "version": "0.1.0"
+   }
+  },
+  "P_PUB": {
+   "schema": "sentilab-open-proposal/1",
+   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
+   "proposal_key": "t-1",
+   "parent": null,
+   "visibility": "public",
+   "salt": "00000000000000000000000000000002",
+   "units": "um",
+   "anchor": "die-centre",
+   "dies": [
+    {
+     "die": 0,
+     "x_um": 3000,
+     "y_um": 5000,
+     "rot_deg": 0
+    },
+    {
+     "die": 1,
+     "x_um": 7000,
+     "y_um": 5000,
+     "rot_deg": 0
+    }
+   ],
+   "geometry_sha256": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488",
+   "client": {
+    "name": "example-agent",
+    "version": "0.1.0"
+   }
+  },
+  "P_PRIV": {
+   "schema": "sentilab-open-proposal/1",
+   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
+   "proposal_key": "t-2",
+   "parent": null,
+   "visibility": "private",
+   "salt": "00000000000000000000000000000003",
+   "units": "um",
+   "anchor": "die-centre",
+   "dies": [
+    {
+     "die": 0,
+     "x_um": 3000,
+     "y_um": 5000,
+     "rot_deg": 0
+    },
+    {
+     "die": 1,
+     "x_um": 7000,
+     "y_um": 5000,
+     "rot_deg": 0
+    }
+   ],
+   "geometry_sha256": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+  },
+  "P_CHILD": {
+   "schema": "sentilab-open-proposal/1",
+   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
+   "proposal_key": "t-3",
+   "parent": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488",
+   "visibility": "public",
+   "salt": "00000000000000000000000000000004",
+   "units": "um",
+   "anchor": "die-centre",
+   "dies": [
+    {
+     "die": 0,
+     "x_um": 3000,
+     "y_um": 5500,
+     "rot_deg": 0
+    },
+    {
+     "die": 1,
+     "x_um": 7000,
+     "y_um": 5000,
+     "rot_deg": 0
+    }
+   ],
+   "geometry_sha256": "9694b6e92da963988e2db0e2e91fa965382342cecbe2b6d38f6f238fc1ac9152",
+   "client": {
+    "name": "example-agent",
+    "version": "0.1.0"
+   }
+  },
+  "P_PRIV_F2": {
+   "schema": "sentilab-open-proposal/1",
+   "manifest_id": "1247fd1d1ea1721f80602505e4c22e711dc734da239b07549d1ac9b008fc50a0",
+   "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
+   "proposal_key": "t-2",
+   "parent": null,
+   "visibility": "private",
+   "salt": "00000000000000000000000000000003",
+   "units": "um",
+   "anchor": "die-centre",
+   "dies": [
+    {
+     "die": 0,
+     "x_um": 3000,
+     "y_um": 5000,
+     "rot_deg": 0
+    },
+    {
+     "die": 1,
+     "x_um": 7000,
+     "y_um": 5000,
+     "rot_deg": 0
+    }
+   ],
+   "geometry_sha256": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+  },
+  "C_PUB": {
+   "schema": "sentilab-open-check-request/1",
+   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "request_key": "c-1",
+   "visibility": "public",
+   "salt": "00000000000000000000000000000005",
+   "units": "um",
+   "anchor": "die-centre",
+   "dies": [
+    {
+     "die": 0,
+     "x_um": 3000,
+     "y_um": 5000,
+     "rot_deg": 0
+    },
+    {
+     "die": 1,
+     "x_um": 7000,
+     "y_um": 5000,
+     "rot_deg": 0
+    }
+   ],
+   "geometry_sha256": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+  },
+  "C_PRIV": {
+   "schema": "sentilab-open-check-request/1",
+   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "request_key": "c-2",
+   "visibility": "private",
+   "salt": "00000000000000000000000000000006",
+   "units": "um",
+   "anchor": "die-centre",
+   "dies": [
+    {
+     "die": 0,
+     "x_um": 3000,
+     "y_um": 5000,
+     "rot_deg": 0
+    },
+    {
+     "die": 1,
+     "x_um": 7000,
+     "y_um": 5000,
+     "rot_deg": 0
+    }
+   ],
+   "geometry_sha256": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+  },
+  "TEAM": {
+   "schema": "sentilab-open-team/1",
+   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "name": "Team Example 7"
+  },
+  "PUBLISH": {
+   "schema": "sentilab-open-publish/1",
+   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
+   "proposal_sha256": "0963b8ed38f806af11c3f6a0eee66c718df1ba0b266915b5b86cb7e8cd0647ea"
+  }
+ },
  "geometry": [
   {
-   "name": "the Ascend 910 snap0p5 copy",
+   "object": "P_A",
    "manifest": "A",
-   "proposal": {
-    "schema": "sentilab-open-proposal/1",
-    "manifest_id": "5f69e7d3e2a5d83bbeec0367a5798bc1952ed3f9c3b1500722d29baaa15d4f3e",
-    "problem": "ascend910",
-    "reference_id": "ascend910-tap25d-fig6a",
-    "wire_track": "relaxed",
-    "proposal_key": "example-1",
-    "parent": null,
-    "units": "um",
-    "anchor": "die-centre",
-    "lattice_um": 500,
-    "dies": [
-     {
-      "die": 0,
-      "x_um": 17000,
-      "y_um": 22500,
-      "rot_deg": 90
-     },
-     {
-      "die": 1,
-      "x_um": 38500,
-      "y_um": 22500,
-      "rot_deg": 0
-     },
-     {
-      "die": 2,
-      "x_um": 7500,
-      "y_um": 11000,
-      "rot_deg": 90
-     },
-     {
-      "die": 3,
-      "x_um": 21500,
-      "y_um": 11000,
-      "rot_deg": 90
-     },
-     {
-      "die": 4,
-      "x_um": 7500,
-      "y_um": 34000,
-      "rot_deg": 90
-     },
-     {
-      "die": 5,
-      "x_um": 21500,
-      "y_um": 34000,
-      "rot_deg": 90
-     }
-    ],
-    "geometry_sha256": "1abaac6abbb300053cd233e92c3570650171b7d66769eb32760cfbaa0bb0500a",
-    "terms": "sentilab-open-terms/1",
-    "client": {
-     "name": "example-agent",
-     "version": "0.1.0"
-    }
-   },
-   "object": {
+   "preimage": {
     "schema": "sentilab-open-geometry/1",
     "problem": "ascend910",
     "fixture_config_sha256": "4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c",
     "units": "um",
     "anchor": "die-centre",
-    "lattice_um": 500,
     "dies": [
      {
       "die": 0,
       "x_um": 17000,
-      "y_um": 22500,
+      "y_um": 23000,
       "rot_deg": 90
      },
      {
       "die": 1,
-      "x_um": 38500,
-      "y_um": 22500,
+      "x_um": 39000,
+      "y_um": 23000,
       "rot_deg": 0
      },
      {
       "die": 2,
-      "x_um": 7500,
+      "x_um": 7000,
       "y_um": 11000,
       "rot_deg": 90
      },
      {
       "die": 3,
-      "x_um": 21500,
+      "x_um": 21000,
       "y_um": 11000,
       "rot_deg": 90
      },
      {
       "die": 4,
-      "x_um": 7500,
-      "y_um": 34000,
+      "x_um": 7000,
+      "y_um": 35000,
       "rot_deg": 90
      },
      {
       "die": 5,
-      "x_um": 21500,
-      "y_um": 34000,
+      "x_um": 21000,
+      "y_um": 35000,
       "rot_deg": 90
      }
     ]
    },
-   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":90,\"x_um\":17000,\"y_um\":22500},{\"die\":1,\"rot_deg\":0,\"x_um\":38500,\"y_um\":22500},{\"die\":2,\"rot_deg\":90,\"x_um\":7500,\"y_um\":11000},{\"die\":3,\"rot_deg\":90,\"x_um\":21500,\"y_um\":11000},{\"die\":4,\"rot_deg\":90,\"x_um\":7500,\"y_um\":34000},{\"die\":5,\"rot_deg\":90,\"x_um\":21500,\"y_um\":34000}],\"fixture_config_sha256\":\"4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c\",\"lattice_um\":500,\"problem\":\"ascend910\",\"schema\":\"sentilab-open-geometry/1\",\"units\":\"um\"}",
-   "geometry_sha256": "1abaac6abbb300053cd233e92c3570650171b7d66769eb32760cfbaa0bb0500a"
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":90,\"x_um\":17000,\"y_um\":23000},{\"die\":1,\"rot_deg\":0,\"x_um\":39000,\"y_um\":23000},{\"die\":2,\"rot_deg\":90,\"x_um\":7000,\"y_um\":11000},{\"die\":3,\"rot_deg\":90,\"x_um\":21000,\"y_um\":11000},{\"die\":4,\"rot_deg\":90,\"x_um\":7000,\"y_um\":35000},{\"die\":5,\"rot_deg\":90,\"x_um\":21000,\"y_um\":35000}],\"fixture_config_sha256\":\"4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c\",\"problem\":\"ascend910\",\"schema\":\"sentilab-open-geometry/1\",\"units\":\"um\"}",
+   "geometry_sha256": "f51eb4ec7db6b5d043eb7da44ba766452031788dc58491f190440a46cd6c0413"
   },
   {
-   "name": "the two-die layout",
+   "object": "P_PUB",
    "manifest": "F",
-   "proposal": {
-    "schema": "sentilab-open-proposal/1",
-    "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
-    "problem": "test-two-die",
-    "reference_id": "test-two-die-ref",
-    "wire_track": "strict",
-    "proposal_key": "t-1",
-    "parent": null,
-    "units": "um",
-    "anchor": "die-centre",
-    "lattice_um": 500,
-    "dies": [
-     {
-      "die": 0,
-      "x_um": 3000,
-      "y_um": 5000,
-      "rot_deg": 0
-     },
-     {
-      "die": 1,
-      "x_um": 7000,
-      "y_um": 5000,
-      "rot_deg": 0
-     }
-    ],
-    "geometry_sha256": "990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33",
-    "terms": "sentilab-open-terms/1",
-    "client": {
-     "name": "example-agent",
-     "version": "0.1.0"
-    }
-   },
-   "object": {
+   "preimage": {
     "schema": "sentilab-open-geometry/1",
     "problem": "test-two-die",
-    "fixture_config_sha256": "6e65b16a67ed5ab2daee8bb02a6787ed6a582fe92ad74fdd846660ec55eebae9",
+    "fixture_config_sha256": "89ff080af6a70e7ec40ef7917f79a3cabe27ce3a9755b24030aec9577379a6b0",
     "units": "um",
     "anchor": "die-centre",
-    "lattice_um": 500,
     "dies": [
      {
       "die": 0,
@@ -256,52 +396,18 @@
      }
     ]
    },
-   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"fixture_config_sha256\":\"6e65b16a67ed5ab2daee8bb02a6787ed6a582fe92ad74fdd846660ec55eebae9\",\"lattice_um\":500,\"problem\":\"test-two-die\",\"schema\":\"sentilab-open-geometry/1\",\"units\":\"um\"}",
-   "geometry_sha256": "990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33"
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"fixture_config_sha256\":\"89ff080af6a70e7ec40ef7917f79a3cabe27ce3a9755b24030aec9577379a6b0\",\"problem\":\"test-two-die\",\"schema\":\"sentilab-open-geometry/1\",\"units\":\"um\"}",
+   "geometry_sha256": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
   },
   {
-   "name": "a sealed plaintext: same geometry, unsalted hash",
+   "object": "P_PRIV",
    "manifest": "F",
-   "proposal": {
-    "schema": "sentilab-open-proposal/1",
-    "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
-    "problem": "test-two-die",
-    "reference_id": "test-two-die-ref",
-    "wire_track": "strict",
-    "proposal_key": "t-2",
-    "parent": null,
-    "units": "um",
-    "anchor": "die-centre",
-    "lattice_um": 500,
-    "dies": [
-     {
-      "die": 0,
-      "x_um": 3000,
-      "y_um": 5000,
-      "rot_deg": 0
-     },
-     {
-      "die": 1,
-      "x_um": 7000,
-      "y_um": 5000,
-      "rot_deg": 0
-     }
-    ],
-    "geometry_sha256": "990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33",
-    "terms": "sentilab-open-terms/1",
-    "salt": "0b047534ee6da57a261e10b31bd7d82db71e3d4fb5a71ad316da4024e3827c81",
-    "client": {
-     "name": "example-agent",
-     "version": "0.1.0"
-    }
-   },
-   "object": {
+   "preimage": {
     "schema": "sentilab-open-geometry/1",
     "problem": "test-two-die",
-    "fixture_config_sha256": "6e65b16a67ed5ab2daee8bb02a6787ed6a582fe92ad74fdd846660ec55eebae9",
+    "fixture_config_sha256": "89ff080af6a70e7ec40ef7917f79a3cabe27ce3a9755b24030aec9577379a6b0",
     "units": "um",
     "anchor": "die-centre",
-    "lattice_um": 500,
     "dies": [
      {
       "die": 0,
@@ -317,197 +423,105 @@
      }
     ]
    },
-   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"fixture_config_sha256\":\"6e65b16a67ed5ab2daee8bb02a6787ed6a582fe92ad74fdd846660ec55eebae9\",\"lattice_um\":500,\"problem\":\"test-two-die\",\"schema\":\"sentilab-open-geometry/1\",\"units\":\"um\"}",
-   "geometry_sha256": "990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33"
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"fixture_config_sha256\":\"89ff080af6a70e7ec40ef7917f79a3cabe27ce3a9755b24030aec9577379a6b0\",\"problem\":\"test-two-die\",\"schema\":\"sentilab-open-geometry/1\",\"units\":\"um\"}",
+   "geometry_sha256": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+  },
+  {
+   "object": "C_PRIV",
+   "manifest": "F",
+   "preimage": {
+    "schema": "sentilab-open-geometry/1",
+    "problem": "test-two-die",
+    "fixture_config_sha256": "89ff080af6a70e7ec40ef7917f79a3cabe27ce3a9755b24030aec9577379a6b0",
+    "units": "um",
+    "anchor": "die-centre",
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 3000,
+      "y_um": 5000,
+      "rot_deg": 0
+     },
+     {
+      "die": 1,
+      "x_um": 7000,
+      "y_um": 5000,
+      "rot_deg": 0
+     }
+    ]
+   },
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"fixture_config_sha256\":\"89ff080af6a70e7ec40ef7917f79a3cabe27ce3a9755b24030aec9577379a6b0\",\"problem\":\"test-two-die\",\"schema\":\"sentilab-open-geometry/1\",\"units\":\"um\"}",
+   "geometry_sha256": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
   }
  ],
- "proposal": [
+ "content": [
   {
-   "name": "the Ascend 910 snap0p5 copy",
-   "proposal": {
-    "schema": "sentilab-open-proposal/1",
-    "manifest_id": "5f69e7d3e2a5d83bbeec0367a5798bc1952ed3f9c3b1500722d29baaa15d4f3e",
-    "problem": "ascend910",
-    "reference_id": "ascend910-tap25d-fig6a",
-    "wire_track": "relaxed",
-    "proposal_key": "example-1",
-    "parent": null,
-    "units": "um",
-    "anchor": "die-centre",
-    "lattice_um": 500,
-    "dies": [
-     {
-      "die": 0,
-      "x_um": 17000,
-      "y_um": 22500,
-      "rot_deg": 90
-     },
-     {
-      "die": 1,
-      "x_um": 38500,
-      "y_um": 22500,
-      "rot_deg": 0
-     },
-     {
-      "die": 2,
-      "x_um": 7500,
-      "y_um": 11000,
-      "rot_deg": 90
-     },
-     {
-      "die": 3,
-      "x_um": 21500,
-      "y_um": 11000,
-      "rot_deg": 90
-     },
-     {
-      "die": 4,
-      "x_um": 7500,
-      "y_um": 34000,
-      "rot_deg": 90
-     },
-     {
-      "die": 5,
-      "x_um": 21500,
-      "y_um": 34000,
-      "rot_deg": 90
-     }
-    ],
-    "geometry_sha256": "1abaac6abbb300053cd233e92c3570650171b7d66769eb32760cfbaa0bb0500a",
-    "terms": "sentilab-open-terms/1",
-    "client": {
-     "name": "example-agent",
-     "version": "0.1.0"
-    }
-   },
-   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":90,\"x_um\":17000,\"y_um\":22500},{\"die\":1,\"rot_deg\":0,\"x_um\":38500,\"y_um\":22500},{\"die\":2,\"rot_deg\":90,\"x_um\":7500,\"y_um\":11000},{\"die\":3,\"rot_deg\":90,\"x_um\":21500,\"y_um\":11000},{\"die\":4,\"rot_deg\":90,\"x_um\":7500,\"y_um\":34000},{\"die\":5,\"rot_deg\":90,\"x_um\":21500,\"y_um\":34000}],\"geometry_sha256\":\"1abaac6abbb300053cd233e92c3570650171b7d66769eb32760cfbaa0bb0500a\",\"lattice_um\":500,\"manifest_id\":\"5f69e7d3e2a5d83bbeec0367a5798bc1952ed3f9c3b1500722d29baaa15d4f3e\",\"parent\":null,\"problem\":\"ascend910\",\"proposal_key\":\"example-1\",\"reference_id\":\"ascend910-tap25d-fig6a\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1\",\"units\":\"um\",\"wire_track\":\"relaxed\"}",
-   "proposal_sha256": "0f6e3a7d1d1aada899673d86fede71b17c32adcd75bb2dc83a7b99c1476f8d43"
+   "object": "P_A",
+   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":90,\"x_um\":17000,\"y_um\":23000},{\"die\":1,\"rot_deg\":0,\"x_um\":39000,\"y_um\":23000},{\"die\":2,\"rot_deg\":90,\"x_um\":7000,\"y_um\":11000},{\"die\":3,\"rot_deg\":90,\"x_um\":21000,\"y_um\":11000},{\"die\":4,\"rot_deg\":90,\"x_um\":7000,\"y_um\":35000},{\"die\":5,\"rot_deg\":90,\"x_um\":21000,\"y_um\":35000}],\"geometry_sha256\":\"f51eb4ec7db6b5d043eb7da44ba766452031788dc58491f190440a46cd6c0413\",\"manifest_id\":\"088ea3d8ff4be5ac03c90438abbaada5b50badf559c96b2595f304588118aa5e\",\"parent\":null,\"proposal_key\":\"example-1\",\"salt\":\"00000000000000000000000000000001\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"private\"}",
+   "content_sha256": "0d1bb4c97165f916bd7ad1bb2800e756994c6ac741245b53d7e4ce3a44768847",
+   "logical_key": "example-1"
   },
   {
-   "name": "the two-die layout",
-   "proposal": {
-    "schema": "sentilab-open-proposal/1",
-    "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
-    "problem": "test-two-die",
-    "reference_id": "test-two-die-ref",
-    "wire_track": "strict",
-    "proposal_key": "t-1",
-    "parent": null,
-    "units": "um",
-    "anchor": "die-centre",
-    "lattice_um": 500,
-    "dies": [
-     {
-      "die": 0,
-      "x_um": 3000,
-      "y_um": 5000,
-      "rot_deg": 0
-     },
-     {
-      "die": 1,
-      "x_um": 7000,
-      "y_um": 5000,
-      "rot_deg": 0
-     }
-    ],
-    "geometry_sha256": "990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33",
-    "terms": "sentilab-open-terms/1",
-    "client": {
-     "name": "example-agent",
-     "version": "0.1.0"
-    }
-   },
-   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33\",\"lattice_um\":500,\"manifest_id\":\"7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0\",\"parent\":null,\"problem\":\"test-two-die\",\"proposal_key\":\"t-1\",\"reference_id\":\"test-two-die-ref\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1\",\"units\":\"um\",\"wire_track\":\"strict\"}",
-   "proposal_sha256": "c7095572b48b0c2458f86af3b180a1e0e88119a8eb654838d0f9f956b055701d"
+   "object": "P_PUB",
+   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38\",\"parent\":null,\"proposal_key\":\"t-1\",\"salt\":\"00000000000000000000000000000002\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"public\"}",
+   "content_sha256": "05d14081a8bd70884fe06beef143edb6d1be22ed815fcb7c54bee346e053560b",
+   "logical_key": "t-1"
   },
   {
-   "name": "a sealed plaintext: salted, so its hash is unguessable",
-   "proposal": {
-    "schema": "sentilab-open-proposal/1",
-    "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
-    "problem": "test-two-die",
-    "reference_id": "test-two-die-ref",
-    "wire_track": "strict",
-    "proposal_key": "t-2",
-    "parent": null,
-    "units": "um",
-    "anchor": "die-centre",
-    "lattice_um": 500,
-    "dies": [
-     {
-      "die": 0,
-      "x_um": 3000,
-      "y_um": 5000,
-      "rot_deg": 0
-     },
-     {
-      "die": 1,
-      "x_um": 7000,
-      "y_um": 5000,
-      "rot_deg": 0
-     }
-    ],
-    "geometry_sha256": "990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33",
-    "terms": "sentilab-open-terms/1",
-    "salt": "0b047534ee6da57a261e10b31bd7d82db71e3d4fb5a71ad316da4024e3827c81",
-    "client": {
-     "name": "example-agent",
-     "version": "0.1.0"
-    }
-   },
-   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33\",\"lattice_um\":500,\"manifest_id\":\"7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0\",\"parent\":null,\"problem\":\"test-two-die\",\"proposal_key\":\"t-2\",\"reference_id\":\"test-two-die-ref\",\"salt\":\"0b047534ee6da57a261e10b31bd7d82db71e3d4fb5a71ad316da4024e3827c81\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1\",\"units\":\"um\",\"wire_track\":\"strict\"}",
-   "proposal_sha256": "b647fbbc07c6c00248a9d8e1d83312650a03ea25c702bbc89e1876e560f3ab95"
+   "object": "P_PRIV",
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38\",\"parent\":null,\"proposal_key\":\"t-2\",\"salt\":\"00000000000000000000000000000003\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"private\"}",
+   "content_sha256": "0963b8ed38f806af11c3f6a0eee66c718df1ba0b266915b5b86cb7e8cd0647ea",
+   "logical_key": "t-2"
   },
   {
-   "name": "without the optional client",
-   "proposal": {
-    "schema": "sentilab-open-proposal/1",
-    "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
-    "problem": "test-two-die",
-    "reference_id": "test-two-die-ref",
-    "wire_track": "strict",
-    "proposal_key": "t-1",
-    "parent": null,
-    "units": "um",
-    "anchor": "die-centre",
-    "lattice_um": 500,
-    "dies": [
-     {
-      "die": 0,
-      "x_um": 3000,
-      "y_um": 5000,
-      "rot_deg": 0
-     },
-     {
-      "die": 1,
-      "x_um": 7000,
-      "y_um": 5000,
-      "rot_deg": 0
-     }
-    ],
-    "geometry_sha256": "990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33",
-    "terms": "sentilab-open-terms/1"
-   },
-   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33\",\"lattice_um\":500,\"manifest_id\":\"7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0\",\"parent\":null,\"problem\":\"test-two-die\",\"proposal_key\":\"t-1\",\"reference_id\":\"test-two-die-ref\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1\",\"units\":\"um\",\"wire_track\":\"strict\"}",
-   "proposal_sha256": "737578eb0f75b53491c915f1cf02416ef6265e4207aeb688ceddc0f548229f2a"
+   "object": "P_CHILD",
+   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5500},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"9694b6e92da963988e2db0e2e91fa965382342cecbe2b6d38f6f238fc1ac9152\",\"manifest_id\":\"fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38\",\"parent\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"proposal_key\":\"t-3\",\"salt\":\"00000000000000000000000000000004\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"public\"}",
+   "content_sha256": "43410849d3fd45c4581a4fe700c9988176fc78286fd5a204d93bac0963f6c0b2",
+   "logical_key": "t-3"
+  },
+  {
+   "object": "P_PRIV_F2",
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"1247fd1d1ea1721f80602505e4c22e711dc734da239b07549d1ac9b008fc50a0\",\"parent\":null,\"proposal_key\":\"t-2\",\"salt\":\"00000000000000000000000000000003\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"private\"}",
+   "content_sha256": "585f94dae9b0bea3ef5d06eb2db6404b74a581da7ab41e1e5614bf3dd7eaf800",
+   "logical_key": "t-2"
+  },
+  {
+   "object": "C_PUB",
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38\",\"request_key\":\"c-1\",\"salt\":\"00000000000000000000000000000005\",\"schema\":\"sentilab-open-check-request/1\",\"units\":\"um\",\"visibility\":\"public\"}",
+   "content_sha256": "c74e4bbe9841bcd48fd6328a26651e5c8890c75bffa49c0650c21b4f9a949169",
+   "logical_key": "c-1"
+  },
+  {
+   "object": "C_PRIV",
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38\",\"request_key\":\"c-2\",\"salt\":\"00000000000000000000000000000006\",\"schema\":\"sentilab-open-check-request/1\",\"units\":\"um\",\"visibility\":\"private\"}",
+   "content_sha256": "eeedf5fc1ce76103798f8291513eea3cf0df512e220e42e9a0116f26bdf8da7d",
+   "logical_key": "c-2"
+  },
+  {
+   "object": "TEAM",
+   "canonical": "{\"manifest_id\":\"fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38\",\"name\":\"Team Example 7\",\"schema\":\"sentilab-open-team/1\"}",
+   "content_sha256": "1ac09327473b239eb7c7592ecc63ed2fae99dd26993419a5de457ab3f44646d9",
+   "logical_key": "team"
+  },
+  {
+   "object": "PUBLISH",
+   "canonical": "{\"manifest_id\":\"fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38\",\"proposal_sha256\":\"0963b8ed38f806af11c3f6a0eee66c718df1ba0b266915b5b86cb7e8cd0647ea\",\"schema\":\"sentilab-open-publish/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\"}",
+   "content_sha256": "24aff7df78eaef01979581b834f495c132cc0d09e5bf5ca66a5e6d39dd1fc075",
+   "logical_key": "publish:0963b8ed38f806af11c3f6a0eee66c718df1ba0b266915b5b86cb7e8cd0647ea"
   }
  ],
  "body_sha256": [
   {
-   "note_b64": "eyJzY2hlbWEiOiAic2VudGlsYWItb3Blbi1wcm9wb3NhbC8xIiwgIm1hbmlmZXN0X2lkIjogIjc1MDdkZGZiNzc3NDdlMzQzOTMyYzk3MWI0ZDdmMDJkMDc4ZmI1ZGQ0NTQ0YzhkODQ3OWIzNjE4N2MwOWZhYTAiLCAicHJvYmxlbSI6ICJ0ZXN0LXR3by1kaWUiLCAicmVmZXJlbmNlX2lkIjogInRlc3QtdHdvLWRpZS1yZWYiLCAid2lyZV90cmFjayI6ICJzdHJpY3QiLCAicHJvcG9zYWxfa2V5IjogInQtMSIsICJwYXJlbnQiOiBudWxsLCAidW5pdHMiOiAidW0iLCAiYW5jaG9yIjogImRpZS1jZW50cmUiLCAibGF0dGljZV91bSI6IDUwMCwgImRpZXMiOiBbeyJkaWUiOiAwLCAieF91bSI6IDMwMDAsICJ5X3VtIjogNTAwMCwgInJvdF9kZWciOiAwfSwgeyJkaWUiOiAxLCAieF91bSI6IDcwMDAsICJ5X3VtIjogNTAwMCwgInJvdF9kZWciOiAwfV0sICJnZW9tZXRyeV9zaGEyNTYiOiAiOTkwNTY2ZjdjOWQ3YTc2ZWFkMmNlNjI3NThkZGUyZWI2ZWFlOGE0ZmRmZmRmYmU3NTY0YTAxMTVhM2RiZmMzMyIsICJ0ZXJtcyI6ICJzZW50aWxhYi1vcGVuLXRlcm1zLzEiLCAiY2xpZW50IjogeyJuYW1lIjogImV4YW1wbGUtYWdlbnQiLCAidmVyc2lvbiI6ICIwLjEuMCJ9fQ==",
-   "body_sha256": "f2571c18c868d7ba5a04e103148971a3bca181bc227b8c725e43bb47a8df9616"
+   "note_b64": "eyJzY2hlbWEiOiAic2VudGlsYWItb3Blbi1wcm9wb3NhbC8xIiwgIm1hbmlmZXN0X2lkIjogImZlZmQzZTQ1ZTk3MzUxM2EyMzEyMmQ5MjkyMTgyN2E2Yjc1Y2FkNzAwNWFmYjFmZTU2NzBkN2I4NWNhNzZlMzgiLCAidGVybXMiOiAic2VudGlsYWItb3Blbi10ZXJtcy8xQGU5ZDkyYTk5MTk2YzAxMTBlNWRiODg1N2QzZTZhNzgzMGJmOTBiMzlmM2ZjNGViODhhODIzNWVlZWYzOGMxNzUiLCAicHJvcG9zYWxfa2V5IjogInQtMSIsICJwYXJlbnQiOiBudWxsLCAidmlzaWJpbGl0eSI6ICJwdWJsaWMiLCAic2FsdCI6ICIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMiIsICJ1bml0cyI6ICJ1bSIsICJhbmNob3IiOiAiZGllLWNlbnRyZSIsICJkaWVzIjogW3siZGllIjogMCwgInhfdW0iOiAzMDAwLCAieV91bSI6IDUwMDAsICJyb3RfZGVnIjogMH0sIHsiZGllIjogMSwgInhfdW0iOiA3MDAwLCAieV91bSI6IDUwMDAsICJyb3RfZGVnIjogMH1dLCAiZ2VvbWV0cnlfc2hhMjU2IjogIjU4MjI2ZThlMmI1YzZjYjNiODY5OGU3ZWQ1MTk0NTQ3NWZmZWJkMmUzZGUzNTU1ZmI0MzljYWViN2NlMjk0ODgiLCAiY2xpZW50IjogeyJuYW1lIjogImV4YW1wbGUtYWdlbnQiLCAidmVyc2lvbiI6ICIwLjEuMCJ9fQ==",
+   "body_sha256": "00be272c47b128ffe037b80ec6f72cbd0b4e133156976c713e877e99fb380fdb"
   },
   {
-   "note_b64": "eyJzY2hlbWEiOiAic2VudGlsYWItb3Blbi1wcm9wb3NhbC8xIiwgIm1hbmlmZXN0X2lkIjogIjc1MDdkZGZiNzc3NDdlMzQzOTMyYzk3MWI0ZDdmMDJkMDc4ZmI1ZGQ0NTQ0YzhkODQ3OWIzNjE4N2MwOWZhYTAiLCAicHJvYmxlbSI6ICJ0ZXN0LXR3by1kaWUiLCAicmVmZXJlbmNlX2lkIjogInRlc3QtdHdvLWRpZS1yZWYiLCAid2lyZV90cmFjayI6ICJzdHJpY3QiLCAicHJvcG9zYWxfa2V5IjogInQtMSIsICJwYXJlbnQiOiBudWxsLCAidW5pdHMiOiAidW0iLCAiYW5jaG9yIjogImRpZS1jZW50cmUiLCAibGF0dGljZV91bSI6IDUwMCwgImRpZXMiOiBbeyJkaWUiOiAwLCAieF91bSI6IDMwMDAsICJ5X3VtIjogNTAwMCwgInJvdF9kZWciOiAwfSwgeyJkaWUiOiAxLCAieF91bSI6IDcwMDAsICJ5X3VtIjogNTAwMCwgInJvdF9kZWciOiAwfV0sICJnZW9tZXRyeV9zaGEyNTYiOiAiOTkwNTY2ZjdjOWQ3YTc2ZWFkMmNlNjI3NThkZGUyZWI2ZWFlOGE0ZmRmZmRmYmU3NTY0YTAxMTVhM2RiZmMzMyIsICJ0ZXJtcyI6ICJzZW50aWxhYi1vcGVuLXRlcm1zLzEiLCAiY2xpZW50IjogeyJuYW1lIjogImV4YW1wbGUtYWdlbnQiLCAidmVyc2lvbiI6ICIwLjEuMCJ9fQo=",
-   "body_sha256": "95f1cc2b803de36e48a488b0173fa7f13c33162ac60f9370f4d498b15f33f154"
+   "note_b64": "eyJzY2hlbWEiOiAic2VudGlsYWItb3Blbi1wcm9wb3NhbC8xIiwgIm1hbmlmZXN0X2lkIjogImZlZmQzZTQ1ZTk3MzUxM2EyMzEyMmQ5MjkyMTgyN2E2Yjc1Y2FkNzAwNWFmYjFmZTU2NzBkN2I4NWNhNzZlMzgiLCAidGVybXMiOiAic2VudGlsYWItb3Blbi10ZXJtcy8xQGU5ZDkyYTk5MTk2YzAxMTBlNWRiODg1N2QzZTZhNzgzMGJmOTBiMzlmM2ZjNGViODhhODIzNWVlZWYzOGMxNzUiLCAicHJvcG9zYWxfa2V5IjogInQtMSIsICJwYXJlbnQiOiBudWxsLCAidmlzaWJpbGl0eSI6ICJwdWJsaWMiLCAic2FsdCI6ICIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMiIsICJ1bml0cyI6ICJ1bSIsICJhbmNob3IiOiAiZGllLWNlbnRyZSIsICJkaWVzIjogW3siZGllIjogMCwgInhfdW0iOiAzMDAwLCAieV91bSI6IDUwMDAsICJyb3RfZGVnIjogMH0sIHsiZGllIjogMSwgInhfdW0iOiA3MDAwLCAieV91bSI6IDUwMDAsICJyb3RfZGVnIjogMH1dLCAiZ2VvbWV0cnlfc2hhMjU2IjogIjU4MjI2ZThlMmI1YzZjYjNiODY5OGU3ZWQ1MTk0NTQ3NWZmZWJkMmUzZGUzNTU1ZmI0MzljYWViN2NlMjk0ODgiLCAiY2xpZW50IjogeyJuYW1lIjogImV4YW1wbGUtYWdlbnQiLCAidmVyc2lvbiI6ICIwLjEuMCJ9fQo=",
+   "body_sha256": "ff759a610deb515067fac6c80687b3f03fd191dc2c45941359b8d2f1127ac52d"
   },
   {
-   "note_b64": "YGBganNvbgp7InNjaGVtYSI6ICJzZW50aWxhYi1vcGVuLXByb3Bvc2FsLzEiLCAibWFuaWZlc3RfaWQiOiAiNzUwN2RkZmI3Nzc0N2UzNDM5MzJjOTcxYjRkN2YwMmQwNzhmYjVkZDQ1NDRjOGQ4NDc5YjM2MTg3YzA5ZmFhMCIsICJwcm9ibGVtIjogInRlc3QtdHdvLWRpZSIsICJyZWZlcmVuY2VfaWQiOiAidGVzdC10d28tZGllLXJlZiIsICJ3aXJlX3RyYWNrIjogInN0cmljdCIsICJwcm9wb3NhbF9rZXkiOiAidC0xIiwgInBhcmVudCI6IG51bGwsICJ1bml0cyI6ICJ1bSIsICJhbmNob3IiOiAiZGllLWNlbnRyZSIsICJsYXR0aWNlX3VtIjogNTAwLCAiZGllcyI6IFt7ImRpZSI6IDAsICJ4X3VtIjogMzAwMCwgInlfdW0iOiA1MDAwLCAicm90X2RlZyI6IDB9LCB7ImRpZSI6IDEsICJ4X3VtIjogNzAwMCwgInlfdW0iOiA1MDAwLCAicm90X2RlZyI6IDB9XSwgImdlb21ldHJ5X3NoYTI1NiI6ICI5OTA1NjZmN2M5ZDdhNzZlYWQyY2U2Mjc1OGRkZTJlYjZlYWU4YTRmZGZmZGZiZTc1NjRhMDExNWEzZGJmYzMzIiwgInRlcm1zIjogInNlbnRpbGFiLW9wZW4tdGVybXMvMSIsICJjbGllbnQiOiB7Im5hbWUiOiAiZXhhbXBsZS1hZ2VudCIsICJ2ZXJzaW9uIjogIjAuMS4wIn19CmBgYA==",
-   "body_sha256": "2ea4aba308a06b1f0895acb35c59c57bcb0a59758bc6ff288ea22bcebb98e0db"
-  },
-  {
-   "note_b64": "eyJzY2hlbWEiOiAic2VudGlsYWItb3Blbi1zZWFsZWQvMSIsICJtYW5pZmVzdF9pZCI6ICI3NTA3ZGRmYjc3NzQ3ZTM0MzkzMmM5NzFiNGQ3ZjAyZDA3OGZiNWRkNDU0NGM4ZDg0NzliMzYxODdjMDlmYWEwIiwgImtleV92ZXJzaW9uIjogMSwgImZvcm1hdCI6ICJhZ2UtZW5jcnlwdGlvbi5vcmcvdjEiLCAiY2lwaGVydGV4dCI6ICJZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2c9PSJ9",
-   "body_sha256": "57bb01992bebb185aabe3dda8c691edf1ee4bc8748c1a52feb6302e211741846"
+   "note_b64": "YGBganNvbgp7InNjaGVtYSI6ICJzZW50aWxhYi1vcGVuLXByb3Bvc2FsLzEiLCAibWFuaWZlc3RfaWQiOiAiZmVmZDNlNDVlOTczNTEzYTIzMTIyZDkyOTIxODI3YTZiNzVjYWQ3MDA1YWZiMWZlNTY3MGQ3Yjg1Y2E3NmUzOCIsICJ0ZXJtcyI6ICJzZW50aWxhYi1vcGVuLXRlcm1zLzFAZTlkOTJhOTkxOTZjMDExMGU1ZGI4ODU3ZDNlNmE3ODMwYmY5MGIzOWYzZmM0ZWI4OGE4MjM1ZWVlZjM4YzE3NSIsICJwcm9wb3NhbF9rZXkiOiAidC0xIiwgInBhcmVudCI6IG51bGwsICJ2aXNpYmlsaXR5IjogInB1YmxpYyIsICJzYWx0IjogIjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAyIiwgInVuaXRzIjogInVtIiwgImFuY2hvciI6ICJkaWUtY2VudHJlIiwgImRpZXMiOiBbeyJkaWUiOiAwLCAieF91bSI6IDMwMDAsICJ5X3VtIjogNTAwMCwgInJvdF9kZWciOiAwfSwgeyJkaWUiOiAxLCAieF91bSI6IDcwMDAsICJ5X3VtIjogNTAwMCwgInJvdF9kZWciOiAwfV0sICJnZW9tZXRyeV9zaGEyNTYiOiAiNTgyMjZlOGUyYjVjNmNiM2I4Njk4ZTdlZDUxOTQ1NDc1ZmZlYmQyZTNkZTM1NTVmYjQzOWNhZWI3Y2UyOTQ4OCIsICJjbGllbnQiOiB7Im5hbWUiOiAiZXhhbXBsZS1hZ2VudCIsICJ2ZXJzaW9uIjogIjAuMS4wIn19CmBgYA==",
+   "body_sha256": "2ace1757230ef6872a7cac906ed382987ba6ce1973747c235536de9909d0592c"
   }
  ],
  "source_ref": [
@@ -522,186 +536,369 @@
  ],
  "participant_ref": [
   {
-   "challenge": "test-challenge",
    "account_id": "00000000-0000-4000-8000-00000000000a",
-   "participant_ref": "036f226d71a70f5dc18cc7cbd0c0866ed04b4839348180e4f850e1d900561594"
+   "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b"
   },
   {
-   "challenge": "test-challenge",
    "account_id": "00000000-0000-4000-8000-00000000000b",
-   "participant_ref": "9c3f668996d01f2c6e0f6292e47ef6bd871591e5f08e370af03fda5e1ce33e7d"
-  },
-  {
-   "challenge": "sentilab-open-1",
-   "account_id": "00000000-0000-4000-8000-00000000000a",
-   "participant_ref": "0e9bb0eafd068667349749e272d04aa032316e133bb22c5265a6289b9e68370a"
+   "participant_ref": "3076fcfe8bc930a11c4919e4a0a82ec1ab1b939a2de4e0ce8277fe83da4568dd"
   }
  ],
- "transport_id": [
+ "actor_slot": [
   {
-   "room": "00000000-0000-4000-8000-0000000000c1",
-   "account_id": "00000000-0000-4000-8000-00000000000a",
    "actor_kind": "human",
-   "actor_agent_id": null,
-   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
-   "proposal_key": "t-1",
-   "proposal_sha256": "c7095572b48b0c2458f86af3b180a1e0e88119a8eb654838d0f9f956b055701d",
-   "transport_id": "open-tk1-5498fa55031dfe97e158565de4a074faa54f456d2c00d1d2d5ee2661caf9e46f"
+   "actor_id": null,
+   "actor_slot": "human"
   },
   {
-   "room": "00000000-0000-4000-8000-0000000000c1",
-   "account_id": "00000000-0000-4000-8000-00000000000b",
    "actor_kind": "agent",
-   "actor_agent_id": "example-agent",
-   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
-   "proposal_key": "t-1",
-   "proposal_sha256": "c7095572b48b0c2458f86af3b180a1e0e88119a8eb654838d0f9f956b055701d",
-   "transport_id": "open-tk1-220c122fbf0f4b94178ad7c8fb45d94ffc651e8cee1c996a1bb54d3dad48b420"
-  },
+   "actor_id": "example-agent",
+   "actor_slot": "agent:example-agent"
+  }
+ ],
+ "transport_key": [
   {
-   "room": "00000000-0000-4000-8000-0000000000c2",
-   "account_id": "00000000-0000-4000-8000-00000000000a",
-   "actor_kind": "human",
-   "actor_agent_id": null,
-   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
-   "proposal_key": "t-1",
-   "proposal_sha256": "c7095572b48b0c2458f86af3b180a1e0e88119a8eb654838d0f9f956b055701d",
-   "transport_id": "open-tk1-c624f470930510b6cb105d3b647f39d2ec553a20c8b3153b075b40f093501409"
-  },
-  {
+   "object": "P_PUB",
    "room": "00000000-0000-4000-8000-0000000000c1",
-   "account_id": "00000000-0000-4000-8000-00000000000a",
+   "account": "00000000-0000-4000-8000-00000000000a",
    "actor_kind": "human",
-   "actor_agent_id": null,
-   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
-   "proposal_key": "t-1",
-   "proposal_sha256": "b647fbbc07c6c00248a9d8e1d83312650a03ea25c702bbc89e1876e560f3ab95",
-   "transport_id": "open-tk1-c5307c311ca4e020f8101a65ed8134d797cc43f8c981e1cd06582697b01111bc"
+   "actor_id": null,
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c1",
+    "account": "00000000-0000-4000-8000-00000000000a",
+    "actor_slot": "human",
+    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "logical_key": "t-1",
+    "content_sha256": "05d14081a8bd70884fe06beef143edb6d1be22ed815fcb7c54bee346e053560b"
+   },
+   "transport": "so1-3daff36209cc8f2c44985b6a830fbf7b42408f358dda9855"
+  },
+  {
+   "object": "P_PUB",
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account": "00000000-0000-4000-8000-00000000000b",
+   "actor_kind": "agent",
+   "actor_id": "example-agent",
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c1",
+    "account": "00000000-0000-4000-8000-00000000000b",
+    "actor_slot": "agent:example-agent",
+    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "logical_key": "t-1",
+    "content_sha256": "05d14081a8bd70884fe06beef143edb6d1be22ed815fcb7c54bee346e053560b"
+   },
+   "transport": "so1-bfd86c0d93842edb48f1cb8147dcbb7bb02295234796a677"
+  },
+  {
+   "object": "P_PUB",
+   "room": "00000000-0000-4000-8000-0000000000c2",
+   "account": "00000000-0000-4000-8000-00000000000a",
+   "actor_kind": "human",
+   "actor_id": null,
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c2",
+    "account": "00000000-0000-4000-8000-00000000000a",
+    "actor_slot": "human",
+    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "logical_key": "t-1",
+    "content_sha256": "05d14081a8bd70884fe06beef143edb6d1be22ed815fcb7c54bee346e053560b"
+   },
+   "transport": "so1-c2e63a9a6f139afc20670c59a087423ed78c26358c0538e2"
+  },
+  {
+   "object": "P_PRIV",
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account": "00000000-0000-4000-8000-00000000000a",
+   "actor_kind": "human",
+   "actor_id": null,
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c1",
+    "account": "00000000-0000-4000-8000-00000000000a",
+    "actor_slot": "human",
+    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "logical_key": "t-2",
+    "content_sha256": "0963b8ed38f806af11c3f6a0eee66c718df1ba0b266915b5b86cb7e8cd0647ea"
+   },
+   "transport": "so1-dabe59a1d9e00614a81bd37b49dc659cba68e7eef358ff2a"
+  },
+  {
+   "object": "P_CHILD",
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account": "00000000-0000-4000-8000-00000000000a",
+   "actor_kind": "human",
+   "actor_id": null,
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c1",
+    "account": "00000000-0000-4000-8000-00000000000a",
+    "actor_slot": "human",
+    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "logical_key": "t-3",
+    "content_sha256": "43410849d3fd45c4581a4fe700c9988176fc78286fd5a204d93bac0963f6c0b2"
+   },
+   "transport": "so1-ff0419cc3b028e1e2aa2ff97dd968d8bae451aa55ec558c4"
+  },
+  {
+   "object": "C_PUB",
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account": "00000000-0000-4000-8000-00000000000a",
+   "actor_kind": "human",
+   "actor_id": null,
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c1",
+    "account": "00000000-0000-4000-8000-00000000000a",
+    "actor_slot": "human",
+    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "logical_key": "c-1",
+    "content_sha256": "c74e4bbe9841bcd48fd6328a26651e5c8890c75bffa49c0650c21b4f9a949169"
+   },
+   "transport": "so1-0ea9cf3bdd4ed139a7a0ddc213e8130a855df330e7c0eb1e"
+  },
+  {
+   "object": "C_PRIV",
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account": "00000000-0000-4000-8000-00000000000b",
+   "actor_kind": "agent",
+   "actor_id": "example-agent",
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c1",
+    "account": "00000000-0000-4000-8000-00000000000b",
+    "actor_slot": "agent:example-agent",
+    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "logical_key": "c-2",
+    "content_sha256": "eeedf5fc1ce76103798f8291513eea3cf0df512e220e42e9a0116f26bdf8da7d"
+   },
+   "transport": "so1-05fa5ac08cf3d793181922967e447bfedf851431741d0b9b"
+  },
+  {
+   "object": "TEAM",
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account": "00000000-0000-4000-8000-00000000000a",
+   "actor_kind": "human",
+   "actor_id": null,
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c1",
+    "account": "00000000-0000-4000-8000-00000000000a",
+    "actor_slot": "human",
+    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "logical_key": "team",
+    "content_sha256": "1ac09327473b239eb7c7592ecc63ed2fae99dd26993419a5de457ab3f44646d9"
+   },
+   "transport": "so1-d0895c66999fb439fba20125ee8e237456186c2842d65aac"
+  },
+  {
+   "object": "PUBLISH",
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account": "00000000-0000-4000-8000-00000000000a",
+   "actor_kind": "human",
+   "actor_id": null,
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c1",
+    "account": "00000000-0000-4000-8000-00000000000a",
+    "actor_slot": "human",
+    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "logical_key": "publish:0963b8ed38f806af11c3f6a0eee66c718df1ba0b266915b5b86cb7e8cd0647ea",
+    "content_sha256": "24aff7df78eaef01979581b834f495c132cc0d09e5bf5ca66a5e6d39dd1fc075"
+   },
+   "transport": "so1-403d11280f536f3d95bc3b45d98bab00eec7df0ff08972df"
   }
  ],
  "run_id": [
   {
-   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
-   "participant_ref": "036f226d71a70f5dc18cc7cbd0c0866ed04b4839348180e4f850e1d900561594",
-   "run_id": "open-7507ddfb-036f226d71a70f5d"
+   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "proposal_sha256": "05d14081a8bd70884fe06beef143edb6d1be22ed815fcb7c54bee346e053560b",
+   "run_id": "open-fefd3e45-05d14081a8bd7088"
   },
   {
-   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
-   "participant_ref": "sentilab",
-   "run_id": "open-7507ddfb-sentilab"
+   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "proposal_sha256": "0963b8ed38f806af11c3f6a0eee66c718df1ba0b266915b5b86cb7e8cd0647ea",
+   "run_id": "open-fefd3e45-0963b8ed38f806af"
   }
  ],
- "salt": [
+ "sealed_header": [
   {
-   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
-   "proposal_key": "t-2",
-   "salt": "0b047534ee6da57a261e10b31bd7d82db71e3d4fb5a71ad316da4024e3827c81"
-  }
- ],
- "capability": [
-  {
-   "salt": "0b047534ee6da57a261e10b31bd7d82db71e3d4fb5a71ad316da4024e3827c81",
-   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
-   "proposal_sha256": "b647fbbc07c6c00248a9d8e1d83312650a03ea25c702bbc89e1876e560f3ab95",
-   "epoch": 1,
-   "capability": "opencap1-683c6a8bc38551d482006217ae857154cc6907d7248a79b0df06def14a9da54f",
-   "capability_sha256": "913b4719c218cb6aec80ab3b5a3b48afd27a5f01913056c97785ed32b0144bf6"
+   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "key_version": 1,
+   "line": "sentilab-open-sealed/1 fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38 1"
   },
   {
-   "salt": "0b047534ee6da57a261e10b31bd7d82db71e3d4fb5a71ad316da4024e3827c81",
-   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
-   "proposal_sha256": "b647fbbc07c6c00248a9d8e1d83312650a03ea25c702bbc89e1876e560f3ab95",
-   "epoch": 2,
-   "capability": "opencap1-937c8a843141393bb4521511d84c44c7f1f45368cd7f78f9f958ded36e18f56f",
-   "capability_sha256": "be16e5ba9cefea2c12e8fa03d1fe2777a431928b48b09aecd87ebc92b25c012f"
+   "manifest_id": "1247fd1d1ea1721f80602505e4c22e711dc734da239b07549d1ac9b008fc50a0",
+   "key_version": 2,
+   "line": "sentilab-open-sealed/1 1247fd1d1ea1721f80602505e4c22e711dc734da239b07549d1ac9b008fc50a0 2"
   }
  ],
- "ciphertext_ref": [
+ "sealed_notes": [
   {
-   "age_file_b64": "YWdlLWVuY3J5cHRpb24ub3JnL3YxCg==",
-   "ciphertext_ref": "66c2c08ff126324347b09d35bf079722bacf8db334372cfdf61bd9573acbce0e"
+   "id": "json-key-1",
+   "note": "sentilab-open-sealed/1 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff 1\n-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBVNjNXWmFiekZNUGVsUjBR\nNU5yeEwrVVRRYitObkd4WjNHNTU3Q1RXeG1nCi9NbGFQeHhXTzRCSkRvK2lXNEN0\nMjFIWVR4TkxRVCszNmZBam9CT0duZ28KLT4gIip7dy1ncmVhc2UgU1giOT4KSUh6\neXNvaHdmeEpMR0pLb2FubHlqWm5Gd1hXd3BKU1JuVjFvQ1NXU3Z4ZjdFcWJOdSti\nNGpLNE90eDY5NzVwMgoKLS0tIGcrLzNpMGMxbERTVDliNXYwSTV0RG1CRDBSM0lN\nNENHUTJOeWVhM2Q5MDgK5c+KiEuMzTAl0I1SHfZtqQDi4C9ti0UWlvIsEaYmZNa8\npJZxs0tQb+WUabh1KEw3Apu85XPgDDgCI+PDSTLG+lhcJJpyk4zZVjA4+oXnA5v6\nvLFN6UotPr8wCPnFAxRrG3i152ICjXP4ET7QSlqLNZ+Xwtp5+7fRdWmaOEbwDzcv\naQ==\n-----END AGE ENCRYPTED FILE-----\n",
+   "manifest_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "key_version": 1,
+   "age_file_sha256": "e401ed7e1ef090f8f9c871fa453c72936726451d7a95c5fa13687ad753ea2757"
+  },
+  {
+   "id": "json-key-2",
+   "note": "sentilab-open-sealed/1 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff 2\n-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAzRUFqQjlnWUhjenpRSG9E\nb09LRWZ4TmZuT1lHL0ZmVU91T0dRN1FPSVFrCmlhOE54dkRpdjN0aTR6SGRPcmFI\ncnE0MHd0MkRNd0VhbW5HWXlvT0VxQU0KLT4gZ20sKzg4LWdyZWFzZSAyQU5UYWt4\nWQoyNEgrYTY4MmxSM2IzNnFZYjN0UDhtdlgxdTNibTRPdEFiOGVyWUJONVVKTjFu\nOVBQanlsOVNHK1JMZ3QyNi81CjdLSVIKLS0tIDY2Z3JLT2hSZmhEZW1xY3FlZDdI\ndFdDRi81bFJoRXFnWUtwekxsZzZ5eFkK+KhiTN/NKNkKDM7qg/IYhzaOJmxmQ21J\n8W6GmZe1fsdYsVGPfjiErgjoffA1rDw8g9MhWLTvGHxZPNST4D4sHfJEGjPofPbH\nyz393FjnQTUCskz9ssSsVK9q5ZcLPloVcWRCsSJ6l+8bUq/tVezcLwHy0lTewP06\nmZTmdzFJulwuHw==\n-----END AGE ENCRYPTED FILE-----\n",
+   "manifest_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "key_version": 2,
+   "age_file_sha256": "9009c1a75d29a0911698961af89d35470c3075d16d4cef5343055434cb479e44"
+  },
+  {
+   "id": "names-key-1-sealed-to-key-2",
+   "note": "sentilab-open-sealed/1 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff 1\n-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBjM0FIcmx0TmloVFgvazJZ\nZHpIaTI5S3RMM1FOQTBFV3hvWkk4VDVGQWhJCjh4Qk1HeG0zd0FtcGZCTkRyaG5n\nZTJLOXBXZ3ovYzNvQlNIT0ZRZDVBcjQKLT4gZTxxbC1ncmVhc2UgOWFlZkJWVlAg\nR0QKeHBPRGgvRHpQR0hEelVkUzhHRjlNK1h1YW9lbzc3ZHF0SCtmdEN2WHhNY2tz\nL3J2MjQ4Ci0tLSBiak1aN2NYVEdjbzV3S1pWenRxR1FnZzJaLzNpRkJGZloyM282\nWmQ1UHVFCnfQWq0q6ABtqeWFHxbMHVBIJiDbz41FbIUnupjuE4yGZOSscCWEvaHY\nwUMlf675vaqhlx7R5KPGfiV7OA4l0FOGFbk3fRBORliL7r9oNLcrYyDvfC2dau4i\nMzQf3ONnQQjCIzs9DgeN9DPZrSVNLlj8H+PzgxC1dOyWwcfHSnhPmUk=\n-----END AGE ENCRYPTED FILE-----\n",
+   "manifest_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "key_version": 1,
+   "age_file_sha256": "979cdd5f60ce3b4633dc15313d7db9f29eac52f0e15c6807286ec85c5e3735b3"
+  },
+  {
+   "id": "not-json-key-1",
+   "note": "sentilab-open-sealed/1 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff 1\n-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB5YzRaaWJOWHBMV0Z2Mm9T\nUHFIVll5cmc2K1JEbjhiaVFMa3Myb0pVZWlnCnBQVTM3b1FUQUpEazJiL0FTNy9m\nNFQ3aTZEck05c1gyb0RFQ3hLVUFrUFUKLT4gZW1mMT5mLWdyZWFzZSBsLlwxL3U8\nLyA7PjVBID1PJzwkIEcKTTlNWUJ3RzQ0UEsrWVo3cXIzSHpWWnpoOUx3Ci0tLSBh\na3hvVFN4Q0NOc2R3aFRYdmM4a2Q1SmNNazEvM2NwTllKdWpDbGtMQk9nCryYXGxm\nP/E21j7NFn+Kjj6ODTfDTOW4jLeMs0KX7LQB5L46gkrFjYaBmr/pthPj1qrqfcd8\n2m6pLF+KzuKY/JYpn20vqDVlddQRYiimW++/pvGcyulq3TXskg==\n-----END AGE ENCRYPTED FILE-----\n",
+   "manifest_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "key_version": 1,
+   "age_file_sha256": "096ad43defa58e43927c84d7c61094f983e24af5e2fc77ea2b47de2b4db0b006"
+  },
+  {
+   "id": "max-plaintext-key-1",
+   "note": "sentilab-open-sealed/1 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff 1\n-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB6VGg2bCtpdE9rUUo3T1V4\nZWgrMzZqRUtNNlNvckFaQmVZOEVwSzVmTDFFCm10ZVNmcWdPRTBIRXBhby9hTzl1\nQ2U5U25nS2N4NlBHRXg3eGhTaFpZK1EKLT4gUC1ncmVhc2UKOU5IRHhlMjE5VE9l\nU1JsbmR3Ci0tLSByYWJZVVVCNXM1UmJjbXVKbDdCMWpvUU5BbUM3TmZ5YkVQWGZM\nSFB0a09VCiDX1PC2KX4JMgIhQfL7uZSlmU/LpjvMGEi3QZOtLz49xfaQiZnXsLFL\ni8iy2y3Uq6S0/95XM2MxxBwhhOggHdqVxY7sxJAcqT1EMgmKno09Gu+qy8pplOAS\nP5dh35schUA5OfFg/2MFgACWARIctJ5MrIWmjd+/gFiK6gfdE+3DeHmaf6Nhl7Dg\nWfnmnHzlnEQ1MjaeT9rcJyA5MYbGgn/E480JKYpR7bCIbx//N1BCViJCMgrCk0Rz\nVbHCbth9O4yczkWDvZkseFwyxUc0lXXfddPBPa4J9ZpJfCQX2kGBJkJLwmULeFJE\nBKH/yvG/sT4jsWEup7xRiqoaDNwQU0jr0xCy+66NaCrvE6HWcPXtdoNvMb9Js3cP\nkZftgq87UX+E0FlGFQRAGKLuG4GLQ/+EkEsIASnV7GKV0Dlv4DheI05sRyjKj75g\nki+bi/qSIeaSV1S+DaT33k8Pd0bEzZnkxMHlXMViIhsBDnuSCYAQh+nLLX2C6SjP\nR+a8aS6GyPDHwHTgqkb3BI85lo2Op2dhS+/3gOpt5q15C/8c7jrMhQcsRlCm8E+q\nq/Jt2pH5fETe5oEtOs05hhoYIoHi4NyX9l/73/lgWLKooazOkhLaaEdthxjOOIh7\nLKONCsAiMu0j5QvzELorzQlvwljNBS3Ku+0a3UIvSj77gMDaRUibmQ0JzS1DcoaG\nwYu3BljDy0BlakufMh9smq5rj7BEQMyqRUmDHVCFTQlosNFG1BTZCtQ8mdQtGkA/\nDWjNLWbJvXYJ2zKmynXhz6Lie0cEvxsmtChlJXYqYVU8kaj17GpSx2vdCM7VW5tw\nZiCGukUCtYwbK/ZGmr+H3YcozHT4QSY2eaiV4/IaZWJlU4yeCvxfnug2NNH1jYCr\ncwiPt5XpVTbZaeRW/vEcHp6k63dkYa2TbpkfFmHl4rEO5FSLwmnEe2Ro7Y8UA2x/\n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\nX5hDN2NFkA==\n-----END AGE ENCRYPTED FILE-----\n",
+   "manifest_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "key_version": 1,
+   "age_file_sha256": "87d9bdcacbec783d0e8c6951afd8ea999620715d929cfcda8976c43b25acf569"
+  }
+ ],
+ "armour_refusals": [
+  {
+   "name": "CRLF line ends",
+   "armour_b64": "LS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQ0KWVdkbExXVnVZM0o1Y0hScGIyNHViM0puTDNZeENpMCtJRmd5TlRVeE9TQlZOak5YV21GaWVrWk5VR1ZzVWpCUg0KTlU1eWVFd3JWVlJSWWl0T2JrZDRXak5ITlRVM1ExUlhlRzFuQ2k5TmJHRlFlSGhYVHpSQ1NrUnZLMmxYTkVOMA0KTWpGSVdWUjRUa3hSVkNzek5tWkJhbTlDVDBkdVoyOEtMVDRnSWlwN2R5MW5jbVZoYzJVZ1UxZ2lPVDRLU1VoNg0KZVhOdmFIZG1lRXBNUjBwTGIyRnViSGxxV201R2QxaFhkM0JLVTFKdVZqRnZRMU5YVTNaNFpqZEZjV0pPZFN0aQ0KTkdwTE5FOTBlRFk1TnpWd01nb0tMUzB0SUdjckx6TnBNR014YkVSVFZEbGlOWFl3U1RWMFJHMUNSREJTTTBsTg0KTkVOSFVUSk9lV1ZoTTJRNU1EZ0s1YytLaUV1TXpUQWwwSTFTSGZadHFRRGk0Qzl0aTBVV2x2SXNFYVltWk5hOA0KcEpaeHMwdFFiK1dVYWJoMUtFdzNBcHU4NVhQZ0REZ0NJK1BEU1RMRytsaGNKSnB5azR6WlZqQTQrb1huQTV2Ng0KdkxGTjZVb3RQcjh3Q1BuRkF4UnJHM2kxNTJJQ2pYUDRFVDdRU2xxTE5aK1h3dHA1KzdmUmRXbWFPRWJ3RHpjdg0KYVE9PQ0KLS0tLS1FTkQgQUdFIEVOQ1JZUFRFRCBGSUxFLS0tLS0NCg=="
+  },
+  {
+   "name": "a missing END line",
+   "armour_b64": "LS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQpZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2kwK0lGZ3lOVFV4T1NCVk5qTlhXbUZpZWtaTlVHVnNVakJSCk5VNXllRXdyVlZSUllpdE9ia2Q0V2pOSE5UVTNRMVJYZUcxbkNpOU5iR0ZRZUhoWFR6UkNTa1J2SzJsWE5FTjAKTWpGSVdWUjRUa3hSVkNzek5tWkJhbTlDVDBkdVoyOEtMVDRnSWlwN2R5MW5jbVZoYzJVZ1UxZ2lPVDRLU1VoNgplWE52YUhkbWVFcE1SMHBMYjJGdWJIbHFXbTVHZDFoWGQzQktVMUp1VmpGdlExTlhVM1o0WmpkRmNXSk9kU3RpCk5HcExORTkwZURZNU56VndNZ29LTFMwdElHY3JMek5wTUdNeGJFUlRWRGxpTlhZd1NUVjBSRzFDUkRCU00wbE4KTkVOSFVUSk9lV1ZoTTJRNU1EZ0s1YytLaUV1TXpUQWwwSTFTSGZadHFRRGk0Qzl0aTBVV2x2SXNFYVltWk5hOApwSlp4czB0UWIrV1VhYmgxS0V3M0FwdTg1WFBnRERnQ0krUERTVExHK2xoY0pKcHlrNHpaVmpBNCtvWG5BNXY2CnZMRk42VW90UHI4d0NQbkZBeFJyRzNpMTUySUNqWFA0RVQ3UVNscUxOWitYd3RwNSs3ZlJkV21hT0Vid0R6Y3YKYVE9PQo="
+  },
+  {
+   "name": "text after END",
+   "armour_b64": "LS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQpZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2kwK0lGZ3lOVFV4T1NCVk5qTlhXbUZpZWtaTlVHVnNVakJSCk5VNXllRXdyVlZSUllpdE9ia2Q0V2pOSE5UVTNRMVJYZUcxbkNpOU5iR0ZRZUhoWFR6UkNTa1J2SzJsWE5FTjAKTWpGSVdWUjRUa3hSVkNzek5tWkJhbTlDVDBkdVoyOEtMVDRnSWlwN2R5MW5jbVZoYzJVZ1UxZ2lPVDRLU1VoNgplWE52YUhkbWVFcE1SMHBMYjJGdWJIbHFXbTVHZDFoWGQzQktVMUp1VmpGdlExTlhVM1o0WmpkRmNXSk9kU3RpCk5HcExORTkwZURZNU56VndNZ29LTFMwdElHY3JMek5wTUdNeGJFUlRWRGxpTlhZd1NUVjBSRzFDUkRCU00wbE4KTkVOSFVUSk9lV1ZoTTJRNU1EZ0s1YytLaUV1TXpUQWwwSTFTSGZadHFRRGk0Qzl0aTBVV2x2SXNFYVltWk5hOApwSlp4czB0UWIrV1VhYmgxS0V3M0FwdTg1WFBnRERnQ0krUERTVExHK2xoY0pKcHlrNHpaVmpBNCtvWG5BNXY2CnZMRk42VW90UHI4d0NQbkZBeFJyRzNpMTUySUNqWFA0RVQ3UVNscUxOWitYd3RwNSs3ZlJkV21hT0Vid0R6Y3YKYVE9PQotLS0tLUVORCBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQp0cmFpbGluZwo="
+  },
+  {
+   "name": "two body lines joined",
+   "armour_b64": "LS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQpZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2kwK0lGZ3lOVFV4T1NCVk5qTlhXbUZpZWtaTlVHVnNVakJSTlU1eWVFd3JWVlJSWWl0T2JrZDRXak5ITlRVM1ExUlhlRzFuQ2k5TmJHRlFlSGhYVHpSQ1NrUnZLMmxYTkVOMApNakZJV1ZSNFRreFJWQ3N6Tm1aQmFtOUNUMGR1WjI4S0xUNGdJaXA3ZHkxbmNtVmhjMlVnVTFnaU9UNEtTVWg2CmVYTnZhSGRtZUVwTVIwcExiMkZ1YkhscVdtNUdkMWhYZDNCS1UxSnVWakZ2UTFOWFUzWjRaamRGY1dKT2RTdGkKTkdwTE5FOTBlRFk1TnpWd01nb0tMUzB0SUdjckx6TnBNR014YkVSVFZEbGlOWFl3U1RWMFJHMUNSREJTTTBsTgpORU5IVVRKT2VXVmhNMlE1TURnSzVjK0tpRXVNelRBbDBJMVNIZlp0cVFEaTRDOXRpMFVXbHZJc0VhWW1aTmE4CnBKWnhzMHRRYitXVWFiaDFLRXczQXB1ODVYUGdERGdDSStQRFNUTEcrbGhjSkpweWs0elpWakE0K29YbkE1djYKdkxGTjZVb3RQcjh3Q1BuRkF4UnJHM2kxNTJJQ2pYUDRFVDdRU2xxTE5aK1h3dHA1KzdmUmRXbWFPRWJ3RHpjdgphUT09Ci0tLS0tRU5EIEFHRSBFTkNSWVBURUQgRklMRS0tLS0tCg=="
+  }
+ ],
+ "sealed_note_refusals": [
+  {
+   "name": "a key version with a leading zero",
+   "note_b64": "c2VudGlsYWItb3Blbi1zZWFsZWQvMSBmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmIDAxCi0tLS0tQkVHSU4gQUdFIEVOQ1JZUFRFRCBGSUxFLS0tLS0KWVdkbExXVnVZM0o1Y0hScGIyNHViM0puTDNZeENpMCtJRmd5TlRVeE9TQlZOak5YV21GaWVrWk5VR1ZzVWpCUgpOVTV5ZUV3clZWUlJZaXRPYmtkNFdqTkhOVFUzUTFSWGVHMW5DaTlOYkdGUWVIaFhUelJDU2tSdksybFhORU4wCk1qRklXVlI0VGt4UlZDc3pObVpCYW05Q1QwZHVaMjhLTFQ0Z0lpcDdkeTFuY21WaGMyVWdVMWdpT1Q0S1NVaDYKZVhOdmFIZG1lRXBNUjBwTGIyRnViSGxxV201R2QxaFhkM0JLVTFKdVZqRnZRMU5YVTNaNFpqZEZjV0pPZFN0aQpOR3BMTkU5MGVEWTVOelZ3TWdvS0xTMHRJR2NyTHpOcE1HTXhiRVJUVkRsaU5YWXdTVFYwUkcxQ1JEQlNNMGxOCk5FTkhVVEpPZVdWaE0yUTVNRGdLNWMrS2lFdU16VEFsMEkxU0hmWnRxUURpNEM5dGkwVVdsdklzRWFZbVpOYTgKcEpaeHMwdFFiK1dVYWJoMUtFdzNBcHU4NVhQZ0REZ0NJK1BEU1RMRytsaGNKSnB5azR6WlZqQTQrb1huQTV2Ngp2TEZONlVvdFByOHdDUG5GQXhSckczaTE1MklDalhQNEVUN1FTbHFMTlorWHd0cDUrN2ZSZFdtYU9FYndEemN2CmFRPT0KLS0tLS1FTkQgQUdFIEVOQ1JZUFRFRCBGSUxFLS0tLS0K"
+  },
+  {
+   "name": "an upper-case manifest id",
+   "note_b64": "c2VudGlsYWItb3Blbi1zZWFsZWQvMSBGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGIDEKLS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQpZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2kwK0lGZ3lOVFV4T1NCVk5qTlhXbUZpZWtaTlVHVnNVakJSCk5VNXllRXdyVlZSUllpdE9ia2Q0V2pOSE5UVTNRMVJYZUcxbkNpOU5iR0ZRZUhoWFR6UkNTa1J2SzJsWE5FTjAKTWpGSVdWUjRUa3hSVkNzek5tWkJhbTlDVDBkdVoyOEtMVDRnSWlwN2R5MW5jbVZoYzJVZ1UxZ2lPVDRLU1VoNgplWE52YUhkbWVFcE1SMHBMYjJGdWJIbHFXbTVHZDFoWGQzQktVMUp1VmpGdlExTlhVM1o0WmpkRmNXSk9kU3RpCk5HcExORTkwZURZNU56VndNZ29LTFMwdElHY3JMek5wTUdNeGJFUlRWRGxpTlhZd1NUVjBSRzFDUkRCU00wbE4KTkVOSFVUSk9lV1ZoTTJRNU1EZ0s1YytLaUV1TXpUQWwwSTFTSGZadHFRRGk0Qzl0aTBVV2x2SXNFYVltWk5hOApwSlp4czB0UWIrV1VhYmgxS0V3M0FwdTg1WFBnRERnQ0krUERTVExHK2xoY0pKcHlrNHpaVmpBNCtvWG5BNXY2CnZMRk42VW90UHI4d0NQbkZBeFJyRzNpMTUySUNqWFA0RVQ3UVNscUxOWitYd3RwNSs3ZlJkV21hT0Vid0R6Y3YKYVE9PQotLS0tLUVORCBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQo="
+  },
+  {
+   "name": "another schema",
+   "note_b64": "c2VudGlsYWItb3Blbi1zZWFsZWQvMiBmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmIDEKLS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQpZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2kwK0lGZ3lOVFV4T1NCVk5qTlhXbUZpZWtaTlVHVnNVakJSCk5VNXllRXdyVlZSUllpdE9ia2Q0V2pOSE5UVTNRMVJYZUcxbkNpOU5iR0ZRZUhoWFR6UkNTa1J2SzJsWE5FTjAKTWpGSVdWUjRUa3hSVkNzek5tWkJhbTlDVDBkdVoyOEtMVDRnSWlwN2R5MW5jbVZoYzJVZ1UxZ2lPVDRLU1VoNgplWE52YUhkbWVFcE1SMHBMYjJGdWJIbHFXbTVHZDFoWGQzQktVMUp1VmpGdlExTlhVM1o0WmpkRmNXSk9kU3RpCk5HcExORTkwZURZNU56VndNZ29LTFMwdElHY3JMek5wTUdNeGJFUlRWRGxpTlhZd1NUVjBSRzFDUkRCU00wbE4KTkVOSFVUSk9lV1ZoTTJRNU1EZ0s1YytLaUV1TXpUQWwwSTFTSGZadHFRRGk0Qzl0aTBVV2x2SXNFYVltWk5hOApwSlp4czB0UWIrV1VhYmgxS0V3M0FwdTg1WFBnRERnQ0krUERTVExHK2xoY0pKcHlrNHpaVmpBNCtvWG5BNXY2CnZMRk42VW90UHI4d0NQbkZBeFJyRzNpMTUySUNqWFA0RVQ3UVNscUxOWitYd3RwNSs3ZlJkV21hT0Vid0R6Y3YKYVE9PQotLS0tLUVORCBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQo="
+  },
+  {
+   "name": "no line feed after the first line",
+   "note_b64": "c2VudGlsYWItb3Blbi1zZWFsZWQvMSBmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmIDEgLS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQpZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2kwK0lGZ3lOVFV4T1NCVk5qTlhXbUZpZWtaTlVHVnNVakJSCk5VNXllRXdyVlZSUllpdE9ia2Q0V2pOSE5UVTNRMVJYZUcxbkNpOU5iR0ZRZUhoWFR6UkNTa1J2SzJsWE5FTjAKTWpGSVdWUjRUa3hSVkNzek5tWkJhbTlDVDBkdVoyOEtMVDRnSWlwN2R5MW5jbVZoYzJVZ1UxZ2lPVDRLU1VoNgplWE52YUhkbWVFcE1SMHBMYjJGdWJIbHFXbTVHZDFoWGQzQktVMUp1VmpGdlExTlhVM1o0WmpkRmNXSk9kU3RpCk5HcExORTkwZURZNU56VndNZ29LTFMwdElHY3JMek5wTUdNeGJFUlRWRGxpTlhZd1NUVjBSRzFDUkRCU00wbE4KTkVOSFVUSk9lV1ZoTTJRNU1EZ0s1YytLaUV1TXpUQWwwSTFTSGZadHFRRGk0Qzl0aTBVV2x2SXNFYVltWk5hOApwSlp4czB0UWIrV1VhYmgxS0V3M0FwdTg1WFBnRERnQ0krUERTVExHK2xoY0pKcHlrNHpaVmpBNCtvWG5BNXY2CnZMRk42VW90UHI4d0NQbkZBeFJyRzNpMTUySUNqWFA0RVQ3UVNscUxOWitYd3RwNSs3ZlJkV21hT0Vid0R6Y3YKYVE9PQotLS0tLUVORCBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQo="
+  },
+  {
+   "name": "a seven-digit key version",
+   "note_b64": "c2VudGlsYWItb3Blbi1zZWFsZWQvMSBmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmIDEwMDAwMDAKLS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQpZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2kwK0lGZ3lOVFV4T1NCVk5qTlhXbUZpZWtaTlVHVnNVakJSCk5VNXllRXdyVlZSUllpdE9ia2Q0V2pOSE5UVTNRMVJYZUcxbkNpOU5iR0ZRZUhoWFR6UkNTa1J2SzJsWE5FTjAKTWpGSVdWUjRUa3hSVkNzek5tWkJhbTlDVDBkdVoyOEtMVDRnSWlwN2R5MW5jbVZoYzJVZ1UxZ2lPVDRLU1VoNgplWE52YUhkbWVFcE1SMHBMYjJGdWJIbHFXbTVHZDFoWGQzQktVMUp1VmpGdlExTlhVM1o0WmpkRmNXSk9kU3RpCk5HcExORTkwZURZNU56VndNZ29LTFMwdElHY3JMek5wTUdNeGJFUlRWRGxpTlhZd1NUVjBSRzFDUkRCU00wbE4KTkVOSFVUSk9lV1ZoTTJRNU1EZ0s1YytLaUV1TXpUQWwwSTFTSGZadHFRRGk0Qzl0aTBVV2x2SXNFYVltWk5hOApwSlp4czB0UWIrV1VhYmgxS0V3M0FwdTg1WFBnRERnQ0krUERTVExHK2xoY0pKcHlrNHpaVmpBNCtvWG5BNXY2CnZMRk42VW90UHI4d0NQbkZBeFJyRzNpMTUySUNqWFA0RVQ3UVNscUxOWitYd3RwNSs3ZlJkV21hT0Vid0R6Y3YKYVE9PQotLS0tLUVORCBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQo="
+  }
+ ],
+ "r_key": [
+  {
+   "r": 0,
+   "key": "0"
+  },
+  {
+   "r": 0.05,
+   "key": "0.05"
+  },
+  {
+   "r": 0.1,
+   "key": "0.10"
+  },
+  {
+   "r": 0.25,
+   "key": "0.25"
+  },
+  {
+   "r": 0.5,
+   "key": "0.50"
+  },
+  {
+   "r": 1.0,
+   "key": "1.00"
+  }
+ ],
+ "r_key_refused": [
+  0.125,
+  -0.1
+ ],
+ "q_r": [
+  {
+   "W_c_mm": 18155.8,
+   "W_R_mm": 16417.5,
+   "key": "0",
+   "q_r": 1738.3
+  },
+  {
+   "W_c_mm": 18155.8,
+   "W_R_mm": 16417.5,
+   "key": "0.10",
+   "q_r": 96.55
+  },
+  {
+   "W_c_mm": 18155.8,
+   "W_R_mm": 16417.5,
+   "key": "0.25",
+   "q_r": -2366.075
+  },
+  {
+   "W_c_mm": 18155.8,
+   "W_R_mm": 16417.5,
+   "key": "0.50",
+   "q_r": -6470.45
+  },
+  {
+   "W_c_mm": 18155.8,
+   "W_R_mm": 16417.5,
+   "key": "1.00",
+   "q_r": -14679.2
   }
  ],
  "conductor_geometry": [
   {
+   "object": "P_A",
    "manifest": "A",
-   "proposal": {
-    "schema": "sentilab-open-proposal/1",
-    "manifest_id": "5f69e7d3e2a5d83bbeec0367a5798bc1952ed3f9c3b1500722d29baaa15d4f3e",
-    "problem": "ascend910",
-    "reference_id": "ascend910-tap25d-fig6a",
-    "wire_track": "relaxed",
-    "proposal_key": "example-1",
-    "parent": null,
-    "units": "um",
-    "anchor": "die-centre",
-    "lattice_um": 500,
-    "dies": [
-     {
-      "die": 0,
-      "x_um": 17000,
-      "y_um": 22500,
-      "rot_deg": 90
-     },
-     {
-      "die": 1,
-      "x_um": 38500,
-      "y_um": 22500,
-      "rot_deg": 0
-     },
-     {
-      "die": 2,
-      "x_um": 7500,
-      "y_um": 11000,
-      "rot_deg": 90
-     },
-     {
-      "die": 3,
-      "x_um": 21500,
-      "y_um": 11000,
-      "rot_deg": 90
-     },
-     {
-      "die": 4,
-      "x_um": 7500,
-      "y_um": 34000,
-      "rot_deg": 90
-     },
-     {
-      "die": 5,
-      "x_um": 21500,
-      "y_um": 34000,
-      "rot_deg": 90
-     }
-    ],
-    "geometry_sha256": "1abaac6abbb300053cd233e92c3570650171b7d66769eb32760cfbaa0bb0500a",
-    "terms": "sentilab-open-terms/1",
-    "client": {
-     "name": "example-agent",
-     "version": "0.1.0"
-    }
-   },
    "values": {
     "geometry": [
      {
       "id": "tap-chiplet-0",
       "xLL": 1.3,
-      "yLL": 15.25,
+      "yLL": 15.75,
       "w": 31.4,
       "h": 14.5,
       "layer": 0
      },
      {
       "id": "tap-chiplet-1",
-      "xLL": 33.25,
-      "yLL": 14.5,
+      "xLL": 33.75,
+      "yLL": 15.0,
       "w": 10.5,
       "h": 16.0,
       "layer": 0
      },
      {
       "id": "tap-chiplet-2",
-      "xLL": 1.565,
+      "xLL": 1.065,
       "yLL": 7.125,
       "w": 11.87,
       "h": 7.75,
@@ -709,7 +906,7 @@
      },
      {
       "id": "tap-chiplet-3",
-      "xLL": 15.565,
+      "xLL": 15.065,
       "yLL": 7.125,
       "w": 11.87,
       "h": 7.75,
@@ -717,16 +914,16 @@
      },
      {
       "id": "tap-chiplet-4",
-      "xLL": 1.565,
-      "yLL": 30.125,
+      "xLL": 1.065,
+      "yLL": 31.125,
       "w": 11.87,
       "h": 7.75,
       "layer": 0
      },
      {
       "id": "tap-chiplet-5",
-      "xLL": 15.565,
-      "yLL": 30.125,
+      "xLL": 15.065,
+      "yLL": 31.125,
       "w": 11.87,
       "h": 7.75,
       "layer": 0
@@ -737,39 +934,8 @@
    }
   },
   {
+   "object": "P_PUB",
    "manifest": "F",
-   "proposal": {
-    "schema": "sentilab-open-proposal/1",
-    "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
-    "problem": "test-two-die",
-    "reference_id": "test-two-die-ref",
-    "wire_track": "strict",
-    "proposal_key": "t-1",
-    "parent": null,
-    "units": "um",
-    "anchor": "die-centre",
-    "lattice_um": 500,
-    "dies": [
-     {
-      "die": 0,
-      "x_um": 3000,
-      "y_um": 5000,
-      "rot_deg": 0
-     },
-     {
-      "die": 1,
-      "x_um": 7000,
-      "y_um": 5000,
-      "rot_deg": 0
-     }
-    ],
-    "geometry_sha256": "990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33",
-    "terms": "sentilab-open-terms/1",
-    "client": {
-     "name": "example-agent",
-     "version": "0.1.0"
-    }
-   },
    "values": {
     "geometry": [
      {
@@ -793,10 +959,5 @@
     "scenario_id": "nominal"
    }
   }
- ],
- "age": {
-  "format": "age-encryption.org/v1",
-  "vectors": [],
-  "todo": "TODO: no age implementation (age, rage or a library) was available offline, so no ciphertext vector exists yet. Before sealed submissions are relied on (OP-F3, OP-F7), generate (identity phrase, recipient, ciphertext, plaintext) vectors with age or rage and add them here. Nothing in this contract is an age ciphertext."
- }
+ ]
 }

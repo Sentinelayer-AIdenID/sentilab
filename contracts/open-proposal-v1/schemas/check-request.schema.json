@@ -1,13 +1,21 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sentilab.invalid/open-proposal/v1/check-request.schema.json",
-  "title": "Check request: GET /api/open/v1/check?m=<manifest_id>&p=<base64url(proposal JSON)>",
-  "description": "The query parameters as an object. p is unpadded base64url (RFC 4648 section 5) of the proposal note bytes; the decoded bytes go through exactly the intake's checks, so the check and the intake agree on every vector. p must be the canonical encoding of its bytes. Longer than 8192 characters is refused here; a decoded note over 4096 bytes is refused as oversize.",
+  "title": "sentilab-open-check-request/1",
+  "description": "A sponsored routed-wire check, posted as a threaded reply to a challenge root (DESIGN rev 3 sections 5.1 and 6.2). request_key is its logical key. request_sha256 = sha256(JCS(this object)) is salted, so only its author can look the result up at GET /api/open/v1/check-status?h=<request_sha256>: a bearer secret, never indexed and never in a pointer. A private check travels sealed (section 3.7). The geometry rules are the proposal's.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["m", "p"],
+  "required": ["schema", "manifest_id", "request_key", "visibility", "salt", "units", "anchor", "dies",
+               "geometry_sha256"],
   "properties": {
-    "m": {"$ref": "common.schema.json#/$defs/sha256"},
-    "p": {"type": "string", "minLength": 2, "maxLength": 8192, "pattern": "^[A-Za-z0-9_-]+$"}
+    "schema": {"const": "sentilab-open-check-request/1"},
+    "manifest_id": {"$ref": "common.schema.json#/$defs/sha256"},
+    "request_key": {"$ref": "common.schema.json#/$defs/key"},
+    "visibility": {"$ref": "common.schema.json#/$defs/visibility"},
+    "salt": {"$ref": "common.schema.json#/$defs/salt"},
+    "units": {"$ref": "common.schema.json#/$defs/units"},
+    "anchor": {"$ref": "common.schema.json#/$defs/anchor"},
+    "dies": {"$ref": "common.schema.json#/$defs/dies"},
+    "geometry_sha256": {"$ref": "common.schema.json#/$defs/sha256"}
   }
 }

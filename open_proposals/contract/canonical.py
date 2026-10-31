@@ -1,4 +1,4 @@
-"""Canonical bytes and every hash the open-proposal contract binds (CONTRACT.md, "Canonical form and hashes").
+"""Canonical bytes and every hash and key the open-proposal contract binds (DESIGN rev 3 sections 3.4, 3.7, 3.9, 5.2, 7.4).
 
 JSON is canonicalised with the repo's one RFC 8785 (JCS) implementation, sentilab_core.envelope.canonical: keys sorted
 by UTF-16 code units, ECMAScript number text, no insignificant whitespace, UTF-8. Nonfinite numbers, unsafe integers and
@@ -8,25 +8,22 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+from decimal import Decimal
 
 from sentilab_core.envelope import RUN_ID, canonical
 
 GEOMETRY_SCHEMA = "sentilab-open-geometry/1"
-# DESIGN 7.4: source_ref = sha256("sentilab-open-source/1:" + action_id). Action ids are random UUIDs.
+TRANSPORT_SCHEMA = "sentilab-open-transport-key/1"
+TRANSPORT_PREFIX = "so1-"
+TRANSPORT_HEX_CHARS = 48
 SOURCE_PREFIX = "sentilab-open-source/1:"
-# The #59 review: the public pseudonym is keyed per challenge, so it can't be recomputed from a known account id.
-PSEUDONYM_DOMAIN = "sentilab-open-pseudonym/1"
-TRANSPORT_DOMAIN = "sentilab-open-transport/1"
-TRANSPORT_PREFIX = "open-tk1-"
-# The binding Idempotency-Key limit across the four transports: the hosted MCP's 128 (sentinelayer-api 6f8058f5
-# src/routes/mcp.py:100); REST actions allow 180 visible characters (src/routes/sessions.py:1032).
-TRANSPORT_MAX_LENGTH = 128
-SENTILAB_PRINCIPAL = "sentilab"
-# Sealed proposals (decision A10): the plaintext carries a salt, so its canonical hash (the retry identity) is
-# unguessable; the salt also keys the per-request capability that addresses the private status, results and receipt.
-SALT_DOMAIN = "sentilab-open-salt/1"
-CAPABILITY_DOMAIN = "sentilab-open-capability/1"
-CAPABILITY_PREFIX = "opencap1-"
+SEALED_SCHEMA = "sentilab-open-sealed/1"
+PROPOSAL_SCHEMA = "sentilab-open-proposal/1"
+CHECK_REQUEST_SCHEMA = "sentilab-open-check-request/1"
+TEAM_SCHEMA = "sentilab-open-team/1"
+PUBLISH_SCHEMA = "sentilab-open-publish/1"
+TEAM_KEY = "team"
+PUBLISH_KEY_PREFIX = "publish:"
 
 
 def sha256_hex(data: bytes) -> str:
@@ -39,116 +36,133 @@ def digest(value) -> str:
 
 
 def body_sha256(note: bytes) -> str:
-    """The exact note bytes Senti returned (DESIGN 5.2)."""
+    """The exact note bytes Senti returned (section 5.2): for a sealed note, the armoured ciphertext."""
     if not isinstance(note, (bytes, bytearray)):
         raise TypeError("the note is hashed as bytes")
     return sha256_hex(bytes(note))
 
 
-def geometry_object(proposal, manifest) -> dict:
-    """The geometry_sha256 preimage (DESIGN 5.2): layout in its task context, without actor, time, key or client."""
-    return {"schema": GEOMETRY_SCHEMA, "problem": proposal["problem"],
-            "fixture_config_sha256": manifest["fixture"]["config_sha256"],
-            "units": proposal["units"], "anchor": proposal["anchor"], "lattice_um": proposal["lattice_um"],
-            "dies": [{"die": d["die"], "x_um": d["x_um"], "y_um": d["y_um"], "rot_deg": d["rot_deg"]}
-                     for d in proposal["dies"]]}
-
-
-def geometry_sha256(proposal, manifest) -> str:
-    return digest(geometry_object(proposal, manifest))
-
-
-def proposal_sha256(proposal) -> str:
-    """The candidate revision hash: the whole proposal, provenance kept. Clients compute it; it is the status key."""
-    return digest(proposal)
-
-
 def manifest_id(manifest) -> str:
+    """sha256(JCS(manifest)) (section 4.1)."""
     return digest(manifest)
 
 
+def geometry_object(item, manifest) -> dict:
+    """The geometry_sha256 preimage (section 5.2): no actor, time, key, salt, terms or client."""
+    return {"schema": GEOMETRY_SCHEMA, "problem": manifest["problem"],
+            "fixture_config_sha256": manifest["fixture"]["config_sha256"],
+            "units": item["units"], "anchor": item["anchor"],
+            "dies": [{"die": d["die"], "x_um": d["x_um"], "y_um": d["y_um"], "rot_deg": d["rot_deg"]}
+                     for d in item["dies"]]}
+
+
+def geometry_sha256(item, manifest) -> str:
+    return digest(geometry_object(item, manifest))
+
+
+def content_sha256(item) -> str:
+    """sha256(JCS(object)): proposal_sha256, request_sha256, the team hash or the publish hash. For a sealed object,
+    the hash of the canonical salted plaintext: the retry identity, unchanged by re-encryption (section 3.7)."""
+    return digest(item)
+
+
+proposal_sha256 = content_sha256
+request_sha256 = content_sha256
+
+
 def source_ref(action_id: str) -> str:
+    """sha256("sentilab-open-source/1:" + action_id) (section 7.4)."""
     return sha256_hex((SOURCE_PREFIX + action_id).encode("utf-8"))
 
 
-def participant_ref(pseudonym_key: bytes, challenge: str, account_id: str) -> str:
-    """HMAC-SHA256 under the challenge's secret key, over JCS([domain, challenge, account id])."""
-    if not isinstance(pseudonym_key, (bytes, bytearray)) or len(pseudonym_key) < 32:
-        raise ValueError("the pseudonym key is at least 32 bytes")
-    message = canonical([PSEUDONYM_DOMAIN, challenge, account_id])
-    return hmac.new(bytes(pseudonym_key), message, hashlib.sha256).hexdigest()
+def participant_ref(k_challenge: bytes, account_id: str) -> str:
+    """HMAC-SHA256(k_challenge, account_id) (section 3.9): keyed per manifest family, so it does not link across
+    challenges and nobody without the key can compute it from an account id."""
+    if not isinstance(k_challenge, (bytes, bytearray)) or len(k_challenge) < 32:
+        raise ValueError("k_challenge is at least 32 bytes")
+    return hmac.new(bytes(k_challenge), account_id.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
-def actor_slot(actor_kind: str, actor_agent_id: str | None) -> str:
-    """Senti's server-stamped actor: the account's human slot, or one of its admitted agents. Never a label."""
-    if actor_kind == "human" and actor_agent_id is None:
+def actor_slot(actor_kind: str, actor_id: str | None) -> str:
+    """The row's server-stamped actor (section 3.5): "agent:<agentId>" or "human". Never a label."""
+    if actor_kind == "human" and actor_id is None:
         return "human"
-    if actor_kind == "agent" and isinstance(actor_agent_id, str) and actor_agent_id:
-        return "agent:" + actor_agent_id
-    raise ValueError("actor kind and agent id disagree")
+    if actor_kind == "agent" and isinstance(actor_id, str) and actor_id:
+        return "agent:" + actor_id
+    raise ValueError("actor kind and actor id disagree")
 
 
-def transport_id(*, room: str, account_id: str, actor_kind: str, actor_agent_id: str | None, manifest_id: str,
-                 proposal_key: str, proposal_sha256: str) -> str:
-    """The transport idempotency key: identical canonical content from the same room, account and actor slot gives
-    the same key; any content change gives a new one under the same logical key (account, manifest, proposal_key)."""
-    material = canonical([TRANSPORT_DOMAIN, room, account_id, actor_slot(actor_kind, actor_agent_id), manifest_id,
-                          proposal_key, proposal_sha256])
-    key = TRANSPORT_PREFIX + sha256_hex(material)
-    if len(key) > TRANSPORT_MAX_LENGTH:
-        raise ValueError("transport id exceeds the Idempotency-Key limit")
-    return key
+def logical_key(item) -> str:
+    """The logical key a transport key derives from (section 3.4): the proposal_key, the request_key, "team", or
+    "publish:<proposal_sha256>" for a publish reply (rev 3 names no logical key for publish; CONTRACT.md)."""
+    schema = item.get("schema")
+    if schema == PROPOSAL_SCHEMA:
+        return item["proposal_key"]
+    if schema == CHECK_REQUEST_SCHEMA:
+        return item["request_key"]
+    if schema == TEAM_SCHEMA:
+        return TEAM_KEY
+    if schema == PUBLISH_SCHEMA:
+        return PUBLISH_KEY_PREFIX + item["proposal_sha256"]
+    raise ValueError("not a contract object")
 
 
-def derive_salt(client_secret: bytes, manifest_id: str, proposal_key: str) -> str:
-    """The recommended salt: a retry recomputes it from the client's own secret, so nothing needs storing. Any 32
-    bytes of fresh entropy, kept for retries, is equally valid; the server never sees the client secret."""
-    if not isinstance(client_secret, (bytes, bytearray)) or len(client_secret) < 32:
-        raise ValueError("the client secret is at least 32 bytes")
-    return hmac.new(bytes(client_secret), canonical([SALT_DOMAIN, manifest_id, proposal_key]),
-                    hashlib.sha256).hexdigest()
+def transport_key_object(*, room: str, account: str, actor_slot: str, manifest_id: str, logical_key: str,
+                         content_sha256: str) -> dict:
+    return {"schema": TRANSPORT_SCHEMA, "room": room, "account": account, "actor_slot": actor_slot,
+            "manifest_id": manifest_id, "logical_key": logical_key, "content_sha256": content_sha256}
 
 
-def capability(salt: str, manifest_id: str, proposal_sha256: str, epoch: int = 1) -> str:
-    """The bearer capability for one sealed revision at one epoch, keyed by its salt: whoever holds it can read that
-    revision's private status, results and receipt; it proves nothing about authorship. The client derives it, the
-    server re-derives it after opening the envelope and keeps only its sha256. Rotation moves to the next epoch;
-    the epoch is not secret, the salt is."""
-    key = bytes.fromhex(salt)
-    if len(key) != 32:
-        raise ValueError("the salt is 32 bytes")
-    if not isinstance(epoch, int) or isinstance(epoch, bool) or epoch < 1:
-        raise ValueError("the epoch is a positive integer")
-    return CAPABILITY_PREFIX + hmac.new(key, canonical([CAPABILITY_DOMAIN, manifest_id, proposal_sha256, epoch]),
-                                        hashlib.sha256).hexdigest()
+def transport_key(**fields) -> str:
+    """"so1-" + hex(sha256(JCS(preimage)))[0:48]: 52 characters (section 3.4)."""
+    return TRANSPORT_PREFIX + digest(transport_key_object(**fields))[:TRANSPORT_HEX_CHARS]
 
 
-def capability_sha256(value: str) -> str:
-    return sha256_hex(value.encode("ascii"))
+def transport_key_for(item, *, room: str, account: str, actor_kind: str, actor_id: str | None) -> str:
+    """The key a client derives for one contract object, and the intake recomputes from the row."""
+    return transport_key(room=room, account=account, actor_slot=actor_slot(actor_kind, actor_id),
+                         manifest_id=item["manifest_id"], logical_key=logical_key(item),
+                         content_sha256=content_sha256(item))
 
 
-def ciphertext_ref(age_file: bytes) -> str:
-    """The sealed note's reference: sha256 of the decoded age file bytes."""
-    return sha256_hex(bytes(age_file))
-
-
-def run_id(manifest_id: str, participant_ref: str) -> str:
-    """One ledger run per (manifest, principal): open-<manifest 8 hex>-<participant_ref 16 hex> (DESIGN 7.4)."""
-    principal = SENTILAB_PRINCIPAL if participant_ref == SENTILAB_PRINCIPAL else participant_ref[:16]
-    value = "open-" + manifest_id[:8] + "-" + principal
-    if not RUN_ID.fullmatch(value):
+def run_id(manifest_id: str, proposal_sha256: str) -> str:
+    """One signed run per proposal: open-<manifest 8 hex>-<proposal_sha256 16 hex> (section 7.4)."""
+    value = "open-" + manifest_id[:8] + "-" + proposal_sha256[:16]
+    if not RUN_ID.fullmatch(value) or len(manifest_id) != 64 or len(proposal_sha256) != 64:
         raise ValueError("invalid run id")
     return value
 
 
-def conductor_geometry(proposal, manifest) -> dict:
-    """values for the receipt, as the conductor writes them: per die, lower-left corner and footprint in mm.
+def sealed_header(manifest_id: str, key_version: int) -> str:
+    """A sealed note's first line (section 3.7): sentilab-open-sealed/1 <manifest_id> <key_version>."""
+    if isinstance(key_version, bool) or not isinstance(key_version, int) or key_version < 1:
+        raise ValueError("the key version is a positive integer")
+    return f"{SEALED_SCHEMA} {manifest_id} {key_version}"
+
+
+def r_key(r) -> str:
+    """A q_r key: "0", or r with exactly two decimals ("0.10"). r must have at most two decimals."""
+    exact = Decimal(repr(r))
+    if exact != exact.quantize(Decimal("0.01")) or exact < 0:
+        raise ValueError("r has at most two decimals")
+    return "0" if exact == 0 else f"{exact:.2f}"
+
+
+def q_r(w_c_mm, w_r_mm, key: str) -> float:
+    """q_r = W(c) - (1 + r) W(R) (section 4.6), exact in decimal, then the nearest double. Every input carries at
+    most a few decimals, so the double prints back as the exact decimal."""
+    return float(Decimal(repr(w_c_mm)) - (1 + Decimal(key)) * Decimal(repr(w_r_mm)))
+
+
+def conductor_geometry(item, manifest) -> dict:
+    """values for the receipt, as the conductor writes them (sentilab_core/conductor.py:383-386): per die, the
+    lower-left corner and footprint in mm.
 
     Each coordinate is one exact integer ratio rounded once, (2 x centre - footprint) / 2000, so every language gets
     the same doubles. Float arithmetic in mm (centre - width / 2) does not, and is not the contract.
     """
     geometry = []
-    for die in proposal["dies"]:
+    for die in item["dies"]:
         spec = manifest["dies"][die["die"]]
         width, height = (spec["h_um"], spec["w_um"]) if die["rot_deg"] == 90 else (spec["w_um"], spec["h_um"])
         geometry.append({"id": f"tap-chiplet-{die['die']}",

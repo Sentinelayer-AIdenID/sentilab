@@ -1,19 +1,17 @@
-// Open-proposal contract v1: canonical JSON (RFC 8785 JCS) and every hash the contract binds, for JavaScript clients
-// and pages. Isomorphic: Node 20+ and browsers, through Web Crypto; no imports. The Python reference is
-// open_proposals/contract/canonical.py, over sentilab_core/envelope.py's canonical(). Both run vectors-canonical.json.
+// Open-proposal contract v1: canonical JSON (RFC 8785 JCS) and every hash and key the contract binds (DESIGN rev 3
+// sections 3.4, 3.7, 3.9, 5.2, 7.4), for JavaScript clients, adapters and pages. Isomorphic: Node 20+ and browsers,
+// through Web Crypto; no imports. The Python reference is open_proposals/contract/canonical.py, over
+// sentilab_core/envelope.py's canonical(). Both run vectors-canonical.json.
 //
 // Canonical JSON: object keys sorted by UTF-16 code units (JavaScript's default string order), numbers and strings as
 // JSON.stringify writes them (ECMAScript shortest round trip; only quote, backslash and control characters escaped),
 // no whitespace, then UTF-8. A nonfinite number or a lone surrogate is refused, never written as null or escaped.
 
 const SOURCE_PREFIX = "sentilab-open-source/1:";
-const PSEUDONYM_DOMAIN = "sentilab-open-pseudonym/1";
-const TRANSPORT_DOMAIN = "sentilab-open-transport/1";
-const SALT_DOMAIN = "sentilab-open-salt/1";
-const CAPABILITY_DOMAIN = "sentilab-open-capability/1";
-export const TRANSPORT_PREFIX = "open-tk1-";
-export const TRANSPORT_MAX_LENGTH = 128;
-export const CAPABILITY_PREFIX = "opencap1-";
+export const TRANSPORT_PREFIX = "so1-";
+export const TRANSPORT_HEX_CHARS = 48;
+export const SEALED_SCHEMA = "sentilab-open-sealed/1";
+const PUBLISH_KEY_PREFIX = "publish:";
 
 function hasLoneSurrogate(text) {
   for (let i = 0; i < text.length; i += 1) {
@@ -69,69 +67,128 @@ export async function hmacSha256Hex(key, bytes) {
 
 export const digest = (value) => sha256Hex(utf8(canonical(value)));
 
-export function geometryObject(proposal, manifest) {
+// The geometry_sha256 preimage (section 5.2): problem and fixture hash from the manifest; no actor, time, key, salt,
+// terms or client.
+export function geometryObject(item, manifest) {
   return {
-    schema: "sentilab-open-geometry/1", problem: proposal.problem, fixture_config_sha256: manifest.fixture.config_sha256,
-    units: proposal.units, anchor: proposal.anchor, lattice_um: proposal.lattice_um,
-    dies: proposal.dies.map((die) => ({ die: die.die, x_um: die.x_um, y_um: die.y_um, rot_deg: die.rot_deg })),
+    schema: "sentilab-open-geometry/1", problem: manifest.problem, fixture_config_sha256: manifest.fixture.config_sha256,
+    units: item.units, anchor: item.anchor,
+    dies: item.dies.map((die) => ({ die: die.die, x_um: die.x_um, y_um: die.y_um, rot_deg: die.rot_deg })),
   };
 }
 
-export const geometrySha256 = (proposal, manifest) => digest(geometryObject(proposal, manifest));
-export const proposalSha256 = (proposal) => digest(proposal);
+export const geometrySha256 = (item, manifest) => digest(geometryObject(item, manifest));
+// proposal_sha256, request_sha256, the team hash and the publish hash: sha256(JCS(object)). For a sealed object it is
+// the canonical salted plaintext's hash, so re-sealing the same plaintext retries identically.
+export const contentSha256 = (item) => digest(item);
+export const proposalSha256 = contentSha256;
+export const requestSha256 = contentSha256;
 export const manifestId = (manifest) => digest(manifest);
 export const bodySha256 = (noteBytes) => sha256Hex(noteBytes);
 export const sourceRef = (actionId) => sha256Hex(utf8(SOURCE_PREFIX + actionId));
-export const ciphertextRef = (ageFileBytes) => sha256Hex(ageFileBytes);
-export const capabilitySha256 = (capability) => sha256Hex(utf8(capability));
 
-export function actorSlot(actorKind, actorAgentId) {
-  if (actorKind === "human" && actorAgentId === null) return "human";
-  if (actorKind === "agent" && typeof actorAgentId === "string" && actorAgentId) return `agent:${actorAgentId}`;
-  throw new Error("actor kind and agent id disagree");
+// Server side: the public pseudonym HMAC-SHA256(k_challenge, account_id) (section 3.9). Clients never hold the key.
+export function participantRef(kChallenge, accountId) {
+  if (kChallenge.length < 32) throw new Error("k_challenge is at least 32 bytes");
+  return hmacSha256Hex(kChallenge, utf8(accountId));
 }
 
-// The transport idempotency key: send it as Senti's idempotencyKey. Same canonical content from the same room,
-// account and actor slot gives the same key; other content gives a new key under the same proposal_key.
-export async function transportId({ room, account_id, actor_kind, actor_agent_id, manifest_id, proposal_key,
-  proposal_sha256 }) {
-  const material = canonical([TRANSPORT_DOMAIN, room, account_id, actorSlot(actor_kind, actor_agent_id), manifest_id,
-    proposal_key, proposal_sha256]);
-  const key = TRANSPORT_PREFIX + await sha256Hex(utf8(material));
-  if (key.length > TRANSPORT_MAX_LENGTH) throw new Error("transport id exceeds the Idempotency-Key limit");
-  return key;
+export function actorSlot(actorKind, actorId) {
+  if (actorKind === "human" && actorId === null) return "human";
+  if (actorKind === "agent" && typeof actorId === "string" && actorId) return `agent:${actorId}`;
+  throw new Error("actor kind and actor id disagree");
 }
 
-export function runId(manifestId_, participantRef_) {
-  return `open-${manifestId_.slice(0, 8)}-${participantRef_ === "sentilab" ? "sentilab" : participantRef_.slice(0, 16)}`;
+export function logicalKey(item) {
+  switch (item.schema) {
+    case "sentilab-open-proposal/1": return item.proposal_key;
+    case "sentilab-open-check-request/1": return item.request_key;
+    case "sentilab-open-team/1": return "team";
+    case "sentilab-open-publish/1": return PUBLISH_KEY_PREFIX + item.proposal_sha256;
+    default: throw new Error("not a contract object");
+  }
 }
 
-// Server side: the public pseudonym, keyed per challenge. Clients never hold the key.
-export function participantRef(key, challenge, accountId) {
-  if (key.length < 32) throw new Error("the pseudonym key is at least 32 bytes");
-  return hmacSha256Hex(key, utf8(canonical([PSEUDONYM_DOMAIN, challenge, accountId])));
+export function transportKeyObject({ room, account, actor_slot, manifest_id, logical_key, content_sha256 }) {
+  return { schema: "sentilab-open-transport-key/1", room, account, actor_slot, manifest_id, logical_key,
+    content_sha256 };
 }
 
-// A sealed proposal's salt: derived from the client's own 32-byte secret, so a retry recomputes it.
-export function deriveSalt(clientSecret, manifestId_, proposalKey) {
-  if (clientSecret.length < 32) throw new Error("the client secret is at least 32 bytes");
-  return hmacSha256Hex(clientSecret, utf8(canonical([SALT_DOMAIN, manifestId_, proposalKey])));
+// Send it as Senti's idempotencyKey (section 3.4): "so1-" + hex(sha256(JCS(preimage)))[0:48], 52 characters.
+export async function transportKey(fields) {
+  return TRANSPORT_PREFIX + (await digest(transportKeyObject(fields))).slice(0, TRANSPORT_HEX_CHARS);
 }
 
-// The bearer capability for one sealed revision at one epoch: whoever holds it can read that revision's private
-// status, results and receipt. It is a secret (never logged; the server keeps only its sha256) and proves nothing
-// about authorship. Rotation moves to the next epoch.
-export async function capability(salt, manifestId_, proposalSha256_, epoch = 1) {
-  const key = fromHex(salt);
-  if (key.length !== 32) throw new Error("the salt is 32 bytes");
-  if (!Number.isSafeInteger(epoch) || epoch < 1) throw new Error("the epoch is a positive integer");
-  return CAPABILITY_PREFIX + await hmacSha256Hex(key, utf8(canonical([CAPABILITY_DOMAIN, manifestId_, proposalSha256_,
-    epoch])));
+export async function transportKeyFor(item, { room, account, actorKind, actorId }) {
+  return transportKey({ room, account, actor_slot: actorSlot(actorKind, actorId), manifest_id: item.manifest_id,
+    logical_key: logicalKey(item), content_sha256: await contentSha256(item) });
+}
+
+// One signed run per proposal (section 7.4).
+export function runId(manifestId_, proposalSha256_) {
+  if (!/^[0-9a-f]{64}$/.test(manifestId_) || !/^[0-9a-f]{64}$/.test(proposalSha256_)) throw new Error("invalid run id");
+  return `open-${manifestId_.slice(0, 8)}-${proposalSha256_.slice(0, 16)}`;
+}
+
+// A sealed note's first line (section 3.7); the ASCII-armoured age file follows on the next line.
+export function sealedHeader(manifestId_, keyVersion) {
+  if (!Number.isSafeInteger(keyVersion) || keyVersion < 1) throw new Error("the key version is a positive integer");
+  return `${SEALED_SCHEMA} ${manifestId_} ${keyVersion}`;
+}
+
+const ARMOR_BEGIN = "-----BEGIN AGE ENCRYPTED FILE-----";
+const ARMOR_END = "-----END AGE ENCRYPTED FILE-----";
+const LF = String.fromCharCode(10);
+const SEALED_LINE = new RegExp(`^sentilab-open-sealed[/]1 ([0-9a-f]{64}) ([1-9][0-9]{0,5})${LF}`);
+
+function ascii(text) {
+  for (let i = 0; i < text.length; i += 1) if (text.charCodeAt(i) > 127) throw new Error("not ASCII");
+  return text;
+}
+
+// The ASCII armour of an age file: the BEGIN line, padded standard base64 in 64-column lines, the END line, each
+// ending in LF.
+export function armor(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  const encoded = btoa(binary);
+  const lines = [];
+  for (let start = 0; start < encoded.length; start += 64) lines.push(encoded.slice(start, start + 64));
+  return [ARMOR_BEGIN, ...lines, ARMOR_END].join(LF) + LF;
+}
+
+// The age file inside a strict armour: exactly armor()'s output, the final LF optional. Anything else throws.
+export function dearmor(text) {
+  const lines = ascii(text).split(LF);
+  if (lines[lines.length - 1] === "") lines.pop();
+  if (lines.length < 3 || lines[0] !== ARMOR_BEGIN || lines[lines.length - 1] !== ARMOR_END) {
+    throw new Error("armour: a missing or altered BEGIN or END line, or no body");
+  }
+  const body = lines.slice(1, -1).join("");
+  if (body.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(body)) throw new Error("armour: not padded base64");
+  const bytes = Uint8Array.from(atob(body), (char) => char.charCodeAt(0));
+  if (bytes.length === 0 || armor(bytes) !== lines.join(LF) + LF) throw new Error("armour: not canonical");
+  return bytes;
+}
+
+// A sealed note (section 3.7): its first line and the age file in its armour. Opening it needs the intake's key.
+export function parseSealedNote(note) {
+  ascii(note);
+  if (note.length > 8192) throw new Error("sealed note: over 8,192 bytes");
+  const match = SEALED_LINE.exec(note);
+  if (!match) throw new Error("sealed note: the first line is not 'sentilab-open-sealed/1 <manifest_id> <key_version>'");
+  return { manifestId: match[1], keyVersion: Number(match[2]), ageFile: dearmor(note.slice(match[0].length)) };
+}
+
+// A q_r key: "0", or r with exactly two decimals. r must have at most two decimals.
+export function rKey(r) {
+  if (!Number.isFinite(r) || r < 0 || Math.round(r * 100) / 100 !== r) throw new Error("r has at most two decimals");
+  return r === 0 ? "0" : r.toFixed(2);
 }
 
 // values for a receipt, as the conductor writes them: one exact integer ratio per coordinate, rounded once.
-export function conductorGeometry(proposal, manifest) {
-  const geometry = proposal.dies.map((die) => {
+export function conductorGeometry(item, manifest) {
+  const geometry = item.dies.map((die) => {
     const spec = manifest.dies[die.die];
     const [w, h] = die.rot_deg === 90 ? [spec.h_um, spec.w_um] : [spec.w_um, spec.h_um];
     return { id: `tap-chiplet-${die.die}`, xLL: (2 * die.x_um - w) / 2000, yLL: (2 * die.y_um - h) / 2000,
