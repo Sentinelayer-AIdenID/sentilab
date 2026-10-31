@@ -2,6 +2,8 @@
 // (API_ORIGIN). The upstream body streams through, so server-sent events work unchanged.
 // This module's only export is the default handler: the Workers runtime treats every named export of the main module
 // as an entry point and refuses to start on anything else (web/test/worker-boot.mjs boots it in CI).
+import { withEdge } from "./edge.js";
+import { agentPathFor } from "./agent-paths.js";
 import { CSP } from "./csp.js";
 import { addHumanPageHeaders, serveAgentAsset } from "./agent-view.js";
 
@@ -16,6 +18,10 @@ const HOP = ["connection", "keep-alive", "transfer-encoding", "upgrade", "host"]
 async function asset(request, env) {
   const agent = await serveAgentAsset(request, env);
   if (agent) return agent;
+  return humanAsset(request, env);
+}
+
+async function humanAsset(request, env) {
   const res = await env.ASSETS.fetch(request);
   const headers = new Headers(res.headers);
   headers.set("content-security-policy", CSP);
@@ -51,7 +57,7 @@ async function allowRunStart(request, env) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
     // SentiLab is hands-off: the service runs its own loop, so the public edge is read-only. No caller can start
     // runs or reach any write route from outside.
@@ -64,6 +70,6 @@ export default {
         { status: 429, headers: { "content-type": "application/json", "retry-after": "60", "cache-control": "no-store" } });
     }
     if (pathname === "/api" || pathname.startsWith("/api/")) return proxy(request, env);
-    return asset(request, env);
+    return withEdge(request, env, ctx, { agentPathFor, serve: asset, serveHuman: humanAsset });
   },
 };

@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/Sentinelayer-AIdenID/AIdenID",
+  "commit": "09b2ff466d0fadcb83b09b0f6f213d13f430c9e1",
+  "source": "workers/aquarium-edge/src",
+  "files": {
+    "agent-registry.mjs": "f1a9c0f3d6c1463a5aee1046b1a29a9f3055902bbd91587b2822b460e1340b99"
+  }
+}

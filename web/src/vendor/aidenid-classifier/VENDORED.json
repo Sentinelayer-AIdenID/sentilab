@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Sentinelayer-AIdenID/AIdenID",
+  "commit": "09b2ff466d0fadcb83b09b0f6f213d13f430c9e1",
+  "source": "packages/aidenid-classifier",
+  "files": {
+    "src/describe-request.ts": "46051e5889a83c1cf950cd85308b821af74a93813ac7a4392edbf481e0713f1e",
+    "src/deterministic-triage.ts": "c9a3f75e1fc213131dde7a31717a783114324b821a428a2086800a475ddbae89",
+    "src/index.ts": "896279355cd70ff4fd49b124398d8071f33781a8a895b1e6187a08bf7a05ad06",
+    "src/recognized-automation.ts": "1982e970355e0c1fa78838af6f09edb34ae918393a5c39d14e7ce44ca5bb5f63",
+    "src/types.ts": "779ac224a3a5944b1ba56d5a15f36eeae00bf940751b4b09863af5245db03982",
+    "src/web-bot-auth.d.mts": "31e7b553729336fd87660c511454bf9a15949657e01f4608ce5eb09a73327e84",
+    "src/web-bot-auth.mjs": "f985674f4b7c6b4b0931fe47139b69c4890e76951084995c9f95ea1d6651a63d"
+  }
+}
