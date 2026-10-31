@@ -3,6 +3,8 @@
 JSON is canonicalised with the repo's one RFC 8785 (JCS) implementation, sentilab_core.envelope.canonical: keys sorted
 by UTF-16 code units, ECMAScript number text, no insignificant whitespace, UTF-8. Nonfinite numbers, unsafe integers and
 lone surrogates fail closed. contracts/open-proposal-v1/canonical.mjs is the JavaScript twin; both run the same vectors.
+It is a twin only within the values the contract admits: integers within 2^53 (JavaScript has already rounded a larger
+one, which this side refuses) and nesting far shallower than either stack (the schemas bound both).
 """
 from __future__ import annotations
 

@@ -6,7 +6,9 @@ OP-F1 is "schemas, codes, canonical, transport-key and sealing rules, terms sche
 (DESIGN.md:1414). Where revision 3 is explicit this package follows it exactly; where it is silent or ambiguous, the
 resolution is listed at the end with its citation. Nothing here is a signed manifest, a policy value or a result.
 
-The Python reference is `open_proposals/contract/`; `canonical.mjs` is the JavaScript twin. Pure: no network, no
+The Python reference is `open_proposals/contract/`; `canonical.mjs` is the JavaScript twin within the values the
+contract admits (integers within 2^53 and shallow nesting, both bounded by the schemas; beyond them JavaScript has
+already rounded an integer that Python refuses, and very deep nesting fails at different depths). Pure: no network, no
 solver, no clock.
 
 ## Files

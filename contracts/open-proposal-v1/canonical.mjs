@@ -6,6 +6,10 @@
 // Canonical JSON: object keys sorted by UTF-16 code units (JavaScript's default string order), numbers and strings as
 // JSON.stringify writes them (ECMAScript shortest round trip; only quote, backslash and control characters escaped),
 // no whitespace, then UTF-8. A nonfinite number or a lone surrogate is refused, never written as null or escaped.
+//
+// A twin only within the values the contract admits (integers within 2^53, shallow nesting; the schemas bound both).
+// Beyond them the two differ: JavaScript has already rounded an integer above 2^53 that Python refuses, and nesting
+// hundreds of levels deep exhausts the two stacks at different depths.
 
 const SOURCE_PREFIX = "sentilab-open-source/1:";
 export const TRANSPORT_PREFIX = "so1-";
