@@ -78,25 +78,25 @@
  "manifest_id": [
   {
    "manifest": "A",
-   "manifest_id": "088ea3d8ff4be5ac03c90438abbaada5b50badf559c96b2595f304588118aa5e"
+   "manifest_id": "2b62dabf7b0e995328e4caef1c80f9f6d6a26c285e225390de26f58f61711664"
   },
   {
    "manifest": "M",
-   "manifest_id": "d9f96cbe164c5de29450ab19335fc1b800595a68b64fe60b3e44caf9e0103471"
+   "manifest_id": "938d710ccb65c56518ab5afd927f087d790e23b3d77a01a543dc134e699032b7"
   },
   {
    "manifest": "F",
-   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38"
+   "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a"
   },
   {
    "manifest": "F2",
-   "manifest_id": "1247fd1d1ea1721f80602505e4c22e711dc734da239b07549d1ac9b008fc50a0"
+   "manifest_id": "e7be12fb7780aa6a4f93152d81335763bbe5f3afbf384a25263a4b8dad593897"
   }
  ],
  "objects": {
   "P_A": {
    "schema": "sentilab-open-proposal/1",
-   "manifest_id": "088ea3d8ff4be5ac03c90438abbaada5b50badf559c96b2595f304588118aa5e",
+   "manifest_id": "2b62dabf7b0e995328e4caef1c80f9f6d6a26c285e225390de26f58f61711664",
    "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
    "proposal_key": "example-1",
    "parent": null,
@@ -150,7 +150,7 @@
   },
   "P_PUB": {
    "schema": "sentilab-open-proposal/1",
-   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
    "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
    "proposal_key": "t-1",
    "parent": null,
@@ -180,7 +180,7 @@
   },
   "P_PRIV": {
    "schema": "sentilab-open-proposal/1",
-   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
    "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
    "proposal_key": "t-2",
    "parent": null,
@@ -206,7 +206,7 @@
   },
   "P_CHILD": {
    "schema": "sentilab-open-proposal/1",
-   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
    "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
    "proposal_key": "t-3",
    "parent": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488",
@@ -236,7 +236,7 @@
   },
   "P_PRIV_F2": {
    "schema": "sentilab-open-proposal/1",
-   "manifest_id": "1247fd1d1ea1721f80602505e4c22e711dc734da239b07549d1ac9b008fc50a0",
+   "manifest_id": "e7be12fb7780aa6a4f93152d81335763bbe5f3afbf384a25263a4b8dad593897",
    "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
    "proposal_key": "t-2",
    "parent": null,
@@ -262,7 +262,7 @@
   },
   "C_PUB": {
    "schema": "sentilab-open-check-request/1",
-   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
    "request_key": "c-1",
    "visibility": "public",
    "salt": "00000000000000000000000000000005",
@@ -286,7 +286,7 @@
   },
   "C_PRIV": {
    "schema": "sentilab-open-check-request/1",
-   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
    "request_key": "c-2",
    "visibility": "private",
    "salt": "00000000000000000000000000000006",
@@ -310,14 +310,14 @@
   },
   "TEAM": {
    "schema": "sentilab-open-team/1",
-   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
    "name": "Team Example 7"
   },
   "PUBLISH": {
    "schema": "sentilab-open-publish/1",
-   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
    "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
-   "proposal_sha256": "0963b8ed38f806af11c3f6a0eee66c718df1ba0b266915b5b86cb7e8cd0647ea"
+   "proposal_sha256": "946e8112fef9a5638d5aabae346397f22b7df14f791694ccfc6ea1441c38b25c"
   }
  },
  "geometry": [
@@ -457,71 +457,71 @@
  "content": [
   {
    "object": "P_A",
-   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":90,\"x_um\":17000,\"y_um\":23000},{\"die\":1,\"rot_deg\":0,\"x_um\":39000,\"y_um\":23000},{\"die\":2,\"rot_deg\":90,\"x_um\":7000,\"y_um\":11000},{\"die\":3,\"rot_deg\":90,\"x_um\":21000,\"y_um\":11000},{\"die\":4,\"rot_deg\":90,\"x_um\":7000,\"y_um\":35000},{\"die\":5,\"rot_deg\":90,\"x_um\":21000,\"y_um\":35000}],\"geometry_sha256\":\"f51eb4ec7db6b5d043eb7da44ba766452031788dc58491f190440a46cd6c0413\",\"manifest_id\":\"088ea3d8ff4be5ac03c90438abbaada5b50badf559c96b2595f304588118aa5e\",\"parent\":null,\"proposal_key\":\"example-1\",\"salt\":\"00000000000000000000000000000001\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"private\"}",
-   "content_sha256": "0d1bb4c97165f916bd7ad1bb2800e756994c6ac741245b53d7e4ce3a44768847",
+   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":90,\"x_um\":17000,\"y_um\":23000},{\"die\":1,\"rot_deg\":0,\"x_um\":39000,\"y_um\":23000},{\"die\":2,\"rot_deg\":90,\"x_um\":7000,\"y_um\":11000},{\"die\":3,\"rot_deg\":90,\"x_um\":21000,\"y_um\":11000},{\"die\":4,\"rot_deg\":90,\"x_um\":7000,\"y_um\":35000},{\"die\":5,\"rot_deg\":90,\"x_um\":21000,\"y_um\":35000}],\"geometry_sha256\":\"f51eb4ec7db6b5d043eb7da44ba766452031788dc58491f190440a46cd6c0413\",\"manifest_id\":\"2b62dabf7b0e995328e4caef1c80f9f6d6a26c285e225390de26f58f61711664\",\"parent\":null,\"proposal_key\":\"example-1\",\"salt\":\"00000000000000000000000000000001\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"private\"}",
+   "content_sha256": "3dd3dcb320dd2c9740435c9162ac229c533865469277660f31a2a46207036856",
    "logical_key": "example-1"
   },
   {
    "object": "P_PUB",
-   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38\",\"parent\":null,\"proposal_key\":\"t-1\",\"salt\":\"00000000000000000000000000000002\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"public\"}",
-   "content_sha256": "05d14081a8bd70884fe06beef143edb6d1be22ed815fcb7c54bee346e053560b",
+   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a\",\"parent\":null,\"proposal_key\":\"t-1\",\"salt\":\"00000000000000000000000000000002\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"public\"}",
+   "content_sha256": "6ab46e4f99f1658f0c320ffc5178bd1c40bdca6c25f5300a291254b963aeb0d9",
    "logical_key": "t-1"
   },
   {
    "object": "P_PRIV",
-   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38\",\"parent\":null,\"proposal_key\":\"t-2\",\"salt\":\"00000000000000000000000000000003\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"private\"}",
-   "content_sha256": "0963b8ed38f806af11c3f6a0eee66c718df1ba0b266915b5b86cb7e8cd0647ea",
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a\",\"parent\":null,\"proposal_key\":\"t-2\",\"salt\":\"00000000000000000000000000000003\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"private\"}",
+   "content_sha256": "946e8112fef9a5638d5aabae346397f22b7df14f791694ccfc6ea1441c38b25c",
    "logical_key": "t-2"
   },
   {
    "object": "P_CHILD",
-   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5500},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"9694b6e92da963988e2db0e2e91fa965382342cecbe2b6d38f6f238fc1ac9152\",\"manifest_id\":\"fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38\",\"parent\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"proposal_key\":\"t-3\",\"salt\":\"00000000000000000000000000000004\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"public\"}",
-   "content_sha256": "43410849d3fd45c4581a4fe700c9988176fc78286fd5a204d93bac0963f6c0b2",
+   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5500},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"9694b6e92da963988e2db0e2e91fa965382342cecbe2b6d38f6f238fc1ac9152\",\"manifest_id\":\"6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a\",\"parent\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"proposal_key\":\"t-3\",\"salt\":\"00000000000000000000000000000004\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"public\"}",
+   "content_sha256": "281ea22aa2fb8b976cafcc714116095add4afd100678d1688a0619c7f6f3bdc8",
    "logical_key": "t-3"
   },
   {
    "object": "P_PRIV_F2",
-   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"1247fd1d1ea1721f80602505e4c22e711dc734da239b07549d1ac9b008fc50a0\",\"parent\":null,\"proposal_key\":\"t-2\",\"salt\":\"00000000000000000000000000000003\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"private\"}",
-   "content_sha256": "585f94dae9b0bea3ef5d06eb2db6404b74a581da7ab41e1e5614bf3dd7eaf800",
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"e7be12fb7780aa6a4f93152d81335763bbe5f3afbf384a25263a4b8dad593897\",\"parent\":null,\"proposal_key\":\"t-2\",\"salt\":\"00000000000000000000000000000003\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"private\"}",
+   "content_sha256": "4384ad98aea9efd8395297750cc80abd0b948347bdd2bc14961e35271a9a8373",
    "logical_key": "t-2"
   },
   {
    "object": "C_PUB",
-   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38\",\"request_key\":\"c-1\",\"salt\":\"00000000000000000000000000000005\",\"schema\":\"sentilab-open-check-request/1\",\"units\":\"um\",\"visibility\":\"public\"}",
-   "content_sha256": "c74e4bbe9841bcd48fd6328a26651e5c8890c75bffa49c0650c21b4f9a949169",
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a\",\"request_key\":\"c-1\",\"salt\":\"00000000000000000000000000000005\",\"schema\":\"sentilab-open-check-request/1\",\"units\":\"um\",\"visibility\":\"public\"}",
+   "content_sha256": "9d8c76b86b2ee73c72293b8a5248fec1fdaf141cbe3ea20af999d43f38918f77",
    "logical_key": "c-1"
   },
   {
    "object": "C_PRIV",
-   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38\",\"request_key\":\"c-2\",\"salt\":\"00000000000000000000000000000006\",\"schema\":\"sentilab-open-check-request/1\",\"units\":\"um\",\"visibility\":\"private\"}",
-   "content_sha256": "eeedf5fc1ce76103798f8291513eea3cf0df512e220e42e9a0116f26bdf8da7d",
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a\",\"request_key\":\"c-2\",\"salt\":\"00000000000000000000000000000006\",\"schema\":\"sentilab-open-check-request/1\",\"units\":\"um\",\"visibility\":\"private\"}",
+   "content_sha256": "baf576071d2ba1e746034982518dfd64062327c57e9923c4f1c5e39e6d9ed081",
    "logical_key": "c-2"
   },
   {
    "object": "TEAM",
-   "canonical": "{\"manifest_id\":\"fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38\",\"name\":\"Team Example 7\",\"schema\":\"sentilab-open-team/1\"}",
-   "content_sha256": "1ac09327473b239eb7c7592ecc63ed2fae99dd26993419a5de457ab3f44646d9",
+   "canonical": "{\"manifest_id\":\"6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a\",\"name\":\"Team Example 7\",\"schema\":\"sentilab-open-team/1\"}",
+   "content_sha256": "df4792f4c73699a53bff4bcb23870c4ac98dffc57a9475d0adb509c7ca2c88e9",
    "logical_key": "team"
   },
   {
    "object": "PUBLISH",
-   "canonical": "{\"manifest_id\":\"fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38\",\"proposal_sha256\":\"0963b8ed38f806af11c3f6a0eee66c718df1ba0b266915b5b86cb7e8cd0647ea\",\"schema\":\"sentilab-open-publish/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\"}",
-   "content_sha256": "24aff7df78eaef01979581b834f495c132cc0d09e5bf5ca66a5e6d39dd1fc075",
-   "logical_key": "publish:0963b8ed38f806af11c3f6a0eee66c718df1ba0b266915b5b86cb7e8cd0647ea"
+   "canonical": "{\"manifest_id\":\"6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a\",\"proposal_sha256\":\"946e8112fef9a5638d5aabae346397f22b7df14f791694ccfc6ea1441c38b25c\",\"schema\":\"sentilab-open-publish/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\"}",
+   "content_sha256": "0b03b79534cf8f58dddcf443564429b1e2ddb4f5762001e4f0217c1d44d5079a",
+   "logical_key": "publish:946e8112fef9a5638d5aabae346397f22b7df14f791694ccfc6ea1441c38b25c"
   }
  ],
  "body_sha256": [
   {
-   "note_b64": "eyJzY2hlbWEiOiAic2VudGlsYWItb3Blbi1wcm9wb3NhbC8xIiwgIm1hbmlmZXN0X2lkIjogImZlZmQzZTQ1ZTk3MzUxM2EyMzEyMmQ5MjkyMTgyN2E2Yjc1Y2FkNzAwNWFmYjFmZTU2NzBkN2I4NWNhNzZlMzgiLCAidGVybXMiOiAic2VudGlsYWItb3Blbi10ZXJtcy8xQGU5ZDkyYTk5MTk2YzAxMTBlNWRiODg1N2QzZTZhNzgzMGJmOTBiMzlmM2ZjNGViODhhODIzNWVlZWYzOGMxNzUiLCAicHJvcG9zYWxfa2V5IjogInQtMSIsICJwYXJlbnQiOiBudWxsLCAidmlzaWJpbGl0eSI6ICJwdWJsaWMiLCAic2FsdCI6ICIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMiIsICJ1bml0cyI6ICJ1bSIsICJhbmNob3IiOiAiZGllLWNlbnRyZSIsICJkaWVzIjogW3siZGllIjogMCwgInhfdW0iOiAzMDAwLCAieV91bSI6IDUwMDAsICJyb3RfZGVnIjogMH0sIHsiZGllIjogMSwgInhfdW0iOiA3MDAwLCAieV91bSI6IDUwMDAsICJyb3RfZGVnIjogMH1dLCAiZ2VvbWV0cnlfc2hhMjU2IjogIjU4MjI2ZThlMmI1YzZjYjNiODY5OGU3ZWQ1MTk0NTQ3NWZmZWJkMmUzZGUzNTU1ZmI0MzljYWViN2NlMjk0ODgiLCAiY2xpZW50IjogeyJuYW1lIjogImV4YW1wbGUtYWdlbnQiLCAidmVyc2lvbiI6ICIwLjEuMCJ9fQ==",
-   "body_sha256": "00be272c47b128ffe037b80ec6f72cbd0b4e133156976c713e877e99fb380fdb"
+   "note_b64": "eyJzY2hlbWEiOiAic2VudGlsYWItb3Blbi1wcm9wb3NhbC8xIiwgIm1hbmlmZXN0X2lkIjogIjZmZDMyOGMxZTc3MDAzNDIwNDAzNWE4NzU4ZDFiM2QxZGQzNjFmYTM1NzVlOTEwOTVjYjJiODBmM2RiMDk4MWEiLCAidGVybXMiOiAic2VudGlsYWItb3Blbi10ZXJtcy8xQGU5ZDkyYTk5MTk2YzAxMTBlNWRiODg1N2QzZTZhNzgzMGJmOTBiMzlmM2ZjNGViODhhODIzNWVlZWYzOGMxNzUiLCAicHJvcG9zYWxfa2V5IjogInQtMSIsICJwYXJlbnQiOiBudWxsLCAidmlzaWJpbGl0eSI6ICJwdWJsaWMiLCAic2FsdCI6ICIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMiIsICJ1bml0cyI6ICJ1bSIsICJhbmNob3IiOiAiZGllLWNlbnRyZSIsICJkaWVzIjogW3siZGllIjogMCwgInhfdW0iOiAzMDAwLCAieV91bSI6IDUwMDAsICJyb3RfZGVnIjogMH0sIHsiZGllIjogMSwgInhfdW0iOiA3MDAwLCAieV91bSI6IDUwMDAsICJyb3RfZGVnIjogMH1dLCAiZ2VvbWV0cnlfc2hhMjU2IjogIjU4MjI2ZThlMmI1YzZjYjNiODY5OGU3ZWQ1MTk0NTQ3NWZmZWJkMmUzZGUzNTU1ZmI0MzljYWViN2NlMjk0ODgiLCAiY2xpZW50IjogeyJuYW1lIjogImV4YW1wbGUtYWdlbnQiLCAidmVyc2lvbiI6ICIwLjEuMCJ9fQ==",
+   "body_sha256": "e776e64996776ee95313c6a84f3efd3bea020a376e364d4639a6d710235bb36f"
   },
   {
-   "note_b64": "eyJzY2hlbWEiOiAic2VudGlsYWItb3Blbi1wcm9wb3NhbC8xIiwgIm1hbmlmZXN0X2lkIjogImZlZmQzZTQ1ZTk3MzUxM2EyMzEyMmQ5MjkyMTgyN2E2Yjc1Y2FkNzAwNWFmYjFmZTU2NzBkN2I4NWNhNzZlMzgiLCAidGVybXMiOiAic2VudGlsYWItb3Blbi10ZXJtcy8xQGU5ZDkyYTk5MTk2YzAxMTBlNWRiODg1N2QzZTZhNzgzMGJmOTBiMzlmM2ZjNGViODhhODIzNWVlZWYzOGMxNzUiLCAicHJvcG9zYWxfa2V5IjogInQtMSIsICJwYXJlbnQiOiBudWxsLCAidmlzaWJpbGl0eSI6ICJwdWJsaWMiLCAic2FsdCI6ICIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMiIsICJ1bml0cyI6ICJ1bSIsICJhbmNob3IiOiAiZGllLWNlbnRyZSIsICJkaWVzIjogW3siZGllIjogMCwgInhfdW0iOiAzMDAwLCAieV91bSI6IDUwMDAsICJyb3RfZGVnIjogMH0sIHsiZGllIjogMSwgInhfdW0iOiA3MDAwLCAieV91bSI6IDUwMDAsICJyb3RfZGVnIjogMH1dLCAiZ2VvbWV0cnlfc2hhMjU2IjogIjU4MjI2ZThlMmI1YzZjYjNiODY5OGU3ZWQ1MTk0NTQ3NWZmZWJkMmUzZGUzNTU1ZmI0MzljYWViN2NlMjk0ODgiLCAiY2xpZW50IjogeyJuYW1lIjogImV4YW1wbGUtYWdlbnQiLCAidmVyc2lvbiI6ICIwLjEuMCJ9fQo=",
-   "body_sha256": "ff759a610deb515067fac6c80687b3f03fd191dc2c45941359b8d2f1127ac52d"
+   "note_b64": "eyJzY2hlbWEiOiAic2VudGlsYWItb3Blbi1wcm9wb3NhbC8xIiwgIm1hbmlmZXN0X2lkIjogIjZmZDMyOGMxZTc3MDAzNDIwNDAzNWE4NzU4ZDFiM2QxZGQzNjFmYTM1NzVlOTEwOTVjYjJiODBmM2RiMDk4MWEiLCAidGVybXMiOiAic2VudGlsYWItb3Blbi10ZXJtcy8xQGU5ZDkyYTk5MTk2YzAxMTBlNWRiODg1N2QzZTZhNzgzMGJmOTBiMzlmM2ZjNGViODhhODIzNWVlZWYzOGMxNzUiLCAicHJvcG9zYWxfa2V5IjogInQtMSIsICJwYXJlbnQiOiBudWxsLCAidmlzaWJpbGl0eSI6ICJwdWJsaWMiLCAic2FsdCI6ICIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMiIsICJ1bml0cyI6ICJ1bSIsICJhbmNob3IiOiAiZGllLWNlbnRyZSIsICJkaWVzIjogW3siZGllIjogMCwgInhfdW0iOiAzMDAwLCAieV91bSI6IDUwMDAsICJyb3RfZGVnIjogMH0sIHsiZGllIjogMSwgInhfdW0iOiA3MDAwLCAieV91bSI6IDUwMDAsICJyb3RfZGVnIjogMH1dLCAiZ2VvbWV0cnlfc2hhMjU2IjogIjU4MjI2ZThlMmI1YzZjYjNiODY5OGU3ZWQ1MTk0NTQ3NWZmZWJkMmUzZGUzNTU1ZmI0MzljYWViN2NlMjk0ODgiLCAiY2xpZW50IjogeyJuYW1lIjogImV4YW1wbGUtYWdlbnQiLCAidmVyc2lvbiI6ICIwLjEuMCJ9fQo=",
+   "body_sha256": "39ad3f23cd131510c7da93ef1bac367fc9d6dc278a43bcc8508afde8c4346855"
   },
   {
-   "note_b64": "YGBganNvbgp7InNjaGVtYSI6ICJzZW50aWxhYi1vcGVuLXByb3Bvc2FsLzEiLCAibWFuaWZlc3RfaWQiOiAiZmVmZDNlNDVlOTczNTEzYTIzMTIyZDkyOTIxODI3YTZiNzVjYWQ3MDA1YWZiMWZlNTY3MGQ3Yjg1Y2E3NmUzOCIsICJ0ZXJtcyI6ICJzZW50aWxhYi1vcGVuLXRlcm1zLzFAZTlkOTJhOTkxOTZjMDExMGU1ZGI4ODU3ZDNlNmE3ODMwYmY5MGIzOWYzZmM0ZWI4OGE4MjM1ZWVlZjM4YzE3NSIsICJwcm9wb3NhbF9rZXkiOiAidC0xIiwgInBhcmVudCI6IG51bGwsICJ2aXNpYmlsaXR5IjogInB1YmxpYyIsICJzYWx0IjogIjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAyIiwgInVuaXRzIjogInVtIiwgImFuY2hvciI6ICJkaWUtY2VudHJlIiwgImRpZXMiOiBbeyJkaWUiOiAwLCAieF91bSI6IDMwMDAsICJ5X3VtIjogNTAwMCwgInJvdF9kZWciOiAwfSwgeyJkaWUiOiAxLCAieF91bSI6IDcwMDAsICJ5X3VtIjogNTAwMCwgInJvdF9kZWciOiAwfV0sICJnZW9tZXRyeV9zaGEyNTYiOiAiNTgyMjZlOGUyYjVjNmNiM2I4Njk4ZTdlZDUxOTQ1NDc1ZmZlYmQyZTNkZTM1NTVmYjQzOWNhZWI3Y2UyOTQ4OCIsICJjbGllbnQiOiB7Im5hbWUiOiAiZXhhbXBsZS1hZ2VudCIsICJ2ZXJzaW9uIjogIjAuMS4wIn19CmBgYA==",
-   "body_sha256": "2ace1757230ef6872a7cac906ed382987ba6ce1973747c235536de9909d0592c"
+   "note_b64": "YGBganNvbgp7InNjaGVtYSI6ICJzZW50aWxhYi1vcGVuLXByb3Bvc2FsLzEiLCAibWFuaWZlc3RfaWQiOiAiNmZkMzI4YzFlNzcwMDM0MjA0MDM1YTg3NThkMWIzZDFkZDM2MWZhMzU3NWU5MTA5NWNiMmI4MGYzZGIwOTgxYSIsICJ0ZXJtcyI6ICJzZW50aWxhYi1vcGVuLXRlcm1zLzFAZTlkOTJhOTkxOTZjMDExMGU1ZGI4ODU3ZDNlNmE3ODMwYmY5MGIzOWYzZmM0ZWI4OGE4MjM1ZWVlZjM4YzE3NSIsICJwcm9wb3NhbF9rZXkiOiAidC0xIiwgInBhcmVudCI6IG51bGwsICJ2aXNpYmlsaXR5IjogInB1YmxpYyIsICJzYWx0IjogIjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAyIiwgInVuaXRzIjogInVtIiwgImFuY2hvciI6ICJkaWUtY2VudHJlIiwgImRpZXMiOiBbeyJkaWUiOiAwLCAieF91bSI6IDMwMDAsICJ5X3VtIjogNTAwMCwgInJvdF9kZWciOiAwfSwgeyJkaWUiOiAxLCAieF91bSI6IDcwMDAsICJ5X3VtIjogNTAwMCwgInJvdF9kZWciOiAwfV0sICJnZW9tZXRyeV9zaGEyNTYiOiAiNTgyMjZlOGUyYjVjNmNiM2I4Njk4ZTdlZDUxOTQ1NDc1ZmZlYmQyZTNkZTM1NTVmYjQzOWNhZWI3Y2UyOTQ4OCIsICJjbGllbnQiOiB7Im5hbWUiOiAiZXhhbXBsZS1hZ2VudCIsICJ2ZXJzaW9uIjogIjAuMS4wIn19CmBgYA==",
+   "body_sha256": "d4acc034861f7de0cfb76b5ab0a1293c0351aa6c1b584580079a12478a625a02"
   }
  ],
  "source_ref": [
@@ -568,11 +568,11 @@
     "room": "00000000-0000-4000-8000-0000000000c1",
     "account": "00000000-0000-4000-8000-00000000000a",
     "actor_slot": "human",
-    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
     "logical_key": "t-1",
-    "content_sha256": "05d14081a8bd70884fe06beef143edb6d1be22ed815fcb7c54bee346e053560b"
+    "content_sha256": "6ab46e4f99f1658f0c320ffc5178bd1c40bdca6c25f5300a291254b963aeb0d9"
    },
-   "transport": "so1-3daff36209cc8f2c44985b6a830fbf7b42408f358dda9855"
+   "transport": "so1-4e78e13bf9671dc02f4a8e69f660705c569634ab23464dd7"
   },
   {
    "object": "P_PUB",
@@ -585,11 +585,11 @@
     "room": "00000000-0000-4000-8000-0000000000c1",
     "account": "00000000-0000-4000-8000-00000000000b",
     "actor_slot": "agent:example-agent",
-    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
     "logical_key": "t-1",
-    "content_sha256": "05d14081a8bd70884fe06beef143edb6d1be22ed815fcb7c54bee346e053560b"
+    "content_sha256": "6ab46e4f99f1658f0c320ffc5178bd1c40bdca6c25f5300a291254b963aeb0d9"
    },
-   "transport": "so1-bfd86c0d93842edb48f1cb8147dcbb7bb02295234796a677"
+   "transport": "so1-2c3a6c1305bbd382f18bb587d33e68ffb3adf1b469acb9ed"
   },
   {
    "object": "P_PUB",
@@ -602,11 +602,11 @@
     "room": "00000000-0000-4000-8000-0000000000c2",
     "account": "00000000-0000-4000-8000-00000000000a",
     "actor_slot": "human",
-    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
     "logical_key": "t-1",
-    "content_sha256": "05d14081a8bd70884fe06beef143edb6d1be22ed815fcb7c54bee346e053560b"
+    "content_sha256": "6ab46e4f99f1658f0c320ffc5178bd1c40bdca6c25f5300a291254b963aeb0d9"
    },
-   "transport": "so1-c2e63a9a6f139afc20670c59a087423ed78c26358c0538e2"
+   "transport": "so1-58862d51385feb56a1e0c53b8ec1ac3f12f978a44f7f82b4"
   },
   {
    "object": "P_PRIV",
@@ -619,11 +619,11 @@
     "room": "00000000-0000-4000-8000-0000000000c1",
     "account": "00000000-0000-4000-8000-00000000000a",
     "actor_slot": "human",
-    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
     "logical_key": "t-2",
-    "content_sha256": "0963b8ed38f806af11c3f6a0eee66c718df1ba0b266915b5b86cb7e8cd0647ea"
+    "content_sha256": "946e8112fef9a5638d5aabae346397f22b7df14f791694ccfc6ea1441c38b25c"
    },
-   "transport": "so1-dabe59a1d9e00614a81bd37b49dc659cba68e7eef358ff2a"
+   "transport": "so1-6b5ea2875edc44be6dd4106a490fe1e3f201b2741ebe69d3"
   },
   {
    "object": "P_CHILD",
@@ -636,11 +636,11 @@
     "room": "00000000-0000-4000-8000-0000000000c1",
     "account": "00000000-0000-4000-8000-00000000000a",
     "actor_slot": "human",
-    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
     "logical_key": "t-3",
-    "content_sha256": "43410849d3fd45c4581a4fe700c9988176fc78286fd5a204d93bac0963f6c0b2"
+    "content_sha256": "281ea22aa2fb8b976cafcc714116095add4afd100678d1688a0619c7f6f3bdc8"
    },
-   "transport": "so1-ff0419cc3b028e1e2aa2ff97dd968d8bae451aa55ec558c4"
+   "transport": "so1-a0de5c06bcf972374e3b70b9c874edf37eb84a2743c1b830"
   },
   {
    "object": "C_PUB",
@@ -653,11 +653,11 @@
     "room": "00000000-0000-4000-8000-0000000000c1",
     "account": "00000000-0000-4000-8000-00000000000a",
     "actor_slot": "human",
-    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
     "logical_key": "c-1",
-    "content_sha256": "c74e4bbe9841bcd48fd6328a26651e5c8890c75bffa49c0650c21b4f9a949169"
+    "content_sha256": "9d8c76b86b2ee73c72293b8a5248fec1fdaf141cbe3ea20af999d43f38918f77"
    },
-   "transport": "so1-0ea9cf3bdd4ed139a7a0ddc213e8130a855df330e7c0eb1e"
+   "transport": "so1-9a66aebdd28d7a0bc30272ac0709cbeca3c526aff20a5ecc"
   },
   {
    "object": "C_PRIV",
@@ -670,11 +670,11 @@
     "room": "00000000-0000-4000-8000-0000000000c1",
     "account": "00000000-0000-4000-8000-00000000000b",
     "actor_slot": "agent:example-agent",
-    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
     "logical_key": "c-2",
-    "content_sha256": "eeedf5fc1ce76103798f8291513eea3cf0df512e220e42e9a0116f26bdf8da7d"
+    "content_sha256": "baf576071d2ba1e746034982518dfd64062327c57e9923c4f1c5e39e6d9ed081"
    },
-   "transport": "so1-05fa5ac08cf3d793181922967e447bfedf851431741d0b9b"
+   "transport": "so1-9434fb66f37368f8987c88140c48620c47b66baec8ccad49"
   },
   {
    "object": "TEAM",
@@ -687,11 +687,11 @@
     "room": "00000000-0000-4000-8000-0000000000c1",
     "account": "00000000-0000-4000-8000-00000000000a",
     "actor_slot": "human",
-    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+    "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
     "logical_key": "team",
-    "content_sha256": "1ac09327473b239eb7c7592ecc63ed2fae99dd26993419a5de457ab3f44646d9"
+    "content_sha256": "df4792f4c73699a53bff4bcb23870c4ac98dffc57a9475d0adb509c7ca2c88e9"
    },
-   "transport": "so1-d0895c66999fb439fba20125ee8e237456186c2842d65aac"
+   "transport": "so1-8c36a9e9d5b38f07035d056350f8b3408047d66aae472897"
   },
   {
    "object": "PUBLISH",
@@ -704,35 +704,35 @@
     "room": "00000000-0000-4000-8000-0000000000c1",
     "account": "00000000-0000-4000-8000-00000000000a",
     "actor_slot": "human",
-    "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
-    "logical_key": "publish:0963b8ed38f806af11c3f6a0eee66c718df1ba0b266915b5b86cb7e8cd0647ea",
-    "content_sha256": "24aff7df78eaef01979581b834f495c132cc0d09e5bf5ca66a5e6d39dd1fc075"
+    "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
+    "logical_key": "publish:946e8112fef9a5638d5aabae346397f22b7df14f791694ccfc6ea1441c38b25c",
+    "content_sha256": "0b03b79534cf8f58dddcf443564429b1e2ddb4f5762001e4f0217c1d44d5079a"
    },
-   "transport": "so1-403d11280f536f3d95bc3b45d98bab00eec7df0ff08972df"
+   "transport": "so1-fa6a0840bde6ed4cc9b5aa740baf2da3177703cc885c0496"
   }
  ],
  "run_id": [
   {
-   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
-   "proposal_sha256": "05d14081a8bd70884fe06beef143edb6d1be22ed815fcb7c54bee346e053560b",
-   "run_id": "open-fefd3e45-05d14081a8bd7088"
+   "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
+   "proposal_sha256": "6ab46e4f99f1658f0c320ffc5178bd1c40bdca6c25f5300a291254b963aeb0d9",
+   "run_id": "open-6fd328c1-6ab46e4f99f1658f"
   },
   {
-   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
-   "proposal_sha256": "0963b8ed38f806af11c3f6a0eee66c718df1ba0b266915b5b86cb7e8cd0647ea",
-   "run_id": "open-fefd3e45-0963b8ed38f806af"
+   "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
+   "proposal_sha256": "946e8112fef9a5638d5aabae346397f22b7df14f791694ccfc6ea1441c38b25c",
+   "run_id": "open-6fd328c1-946e8112fef9a563"
   }
  ],
  "sealed_header": [
   {
-   "manifest_id": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
+   "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
    "key_version": 1,
-   "line": "sentilab-open-sealed/1 fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38 1"
+   "line": "sentilab-open-sealed/1 6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a 1"
   },
   {
-   "manifest_id": "1247fd1d1ea1721f80602505e4c22e711dc734da239b07549d1ac9b008fc50a0",
+   "manifest_id": "e7be12fb7780aa6a4f93152d81335763bbe5f3afbf384a25263a4b8dad593897",
    "key_version": 2,
-   "line": "sentilab-open-sealed/1 1247fd1d1ea1721f80602505e4c22e711dc734da239b07549d1ac9b008fc50a0 2"
+   "line": "sentilab-open-sealed/1 e7be12fb7780aa6a4f93152d81335763bbe5f3afbf384a25263a4b8dad593897 2"
   }
  ],
  "sealed_notes": [

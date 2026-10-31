@@ -142,7 +142,8 @@ def manifest_shape(*, problem, fixture, dies, matrix, comparator, variants, targ
         "exposure": {"sources": list(SOURCES),
                      "note": "exposed families: mark when building any future held-out split"},
         "sealing": {"format": "age X25519, ASCII armour", "recipient": None, "key_version": None,
-                    "applies_to": ["private proposals", "private routed checks"], "plaintext_max_bytes": 4096,
+                    "applies_to": ["private proposals", "private routed checks", "publish commands"],
+                    "plaintext_max_bytes": 4096,
                     "sealed_note_max_bytes": 8192, "plaintext_fallback": False,
                     "rotation": "new key version and new manifest version; old keys kept in custody, never reused"},
         "example": {"label": "invented numbers", "inputs": None},
@@ -367,6 +368,8 @@ SEAL_PLAN = [
     ("not JSON", b"a sealed note that is not JSON", "F", 1, 1),
     ("a fenced plaintext", fenced(P_PRIV), "F", 1, 1),
     ("a team object", text(TEAM), "F", 1, 1),
+    ("a publish command", text(PUBLISH), "F", 1, 1),
+    ("a publish command under terms not accepted", text(changed(PUBLISH, terms=OTHER_TERMS)), "F", 1, 1),
     ("a duplicate key", raw_text(P_PRIV, '"units": "um"', '"units": "um", "units": "um"'), "F", 1, 1),
     ("another manifest inside", text(changed(P_PRIV, manifest_id=ID["M"])), "F", 1, 1),
     ("4,097 plaintext bytes", padded(P_PRIV, 4097), "F", 1, 1),
@@ -516,7 +519,10 @@ def note_cases() -> list:
         reply("a team name", text(TEAM), expect("contract_valid", parsed=TEAM), item=TEAM),
         reply("a team name of 32 characters", text(changed(TEAM, name="A" * 32)),
               expect("contract_valid", parsed=changed(TEAM, name="A" * 32)), item=changed(TEAM, name="A" * 32)),
-        reply("a publish choice", text(PUBLISH), expect("contract_valid", parsed=PUBLISH), item=PUBLISH),
+        reply("a sealed publish command", sealed("a publish command"),
+              expect("contract_valid", parsed=PUBLISH, is_sealed=True), item=PUBLISH),
+        reply("a plaintext publish names a private handle: private_requires_sealed, nothing else is read",
+              text(PUBLISH), expect("rejected", [C("private_requires_sealed")], stage="none"), item=PUBLISH),
         # 1. transport
         reply("unattributable: no actorUserId", N, expect("rejected", [C("unattributable")], stage="none"),
               row_=row(P, account=None, key=None)),
@@ -703,9 +709,10 @@ def note_cases() -> list:
         reply("terms not accepted", text(changed(P, terms=OTHER_TERMS)),
               expect("rejected", [C("terms_not_accepted")], parsed=changed(P, terms=OTHER_TERMS)),
               item=changed(P, terms=OTHER_TERMS)),
-        reply("a publish choice under terms not accepted", text(changed(PUBLISH, terms=OTHER_TERMS)),
-              expect("rejected", [C("terms_not_accepted")], parsed=changed(PUBLISH, terms=OTHER_TERMS)),
-              item=changed(PUBLISH, terms=OTHER_TERMS)),
+        reply("a sealed publish under terms not accepted is refused privately, nothing made public",
+              sealed("a publish command under terms not accepted"),
+              expect("rejected", [C("terms_not_accepted")], parsed=changed(PUBLISH, terms=OTHER_TERMS),
+                     is_sealed=True), item=changed(PUBLISH, terms=OTHER_TERMS)),
         reply("every legality violation is reported together", text(changed(lattice_off, terms=OTHER_TERMS)),
               expect("rejected", [C("manifest_closed"), C("terms_not_accepted"),
                                   C("lattice", dies=[0], amount_um=250)],
@@ -785,6 +792,7 @@ def note_cases() -> list:
         local("local: Appendix A with the layout checker finding nothing", text(P_A),
               expect("rejected", [C("terms_not_accepted")], parsed=P_A, manifest="A"), manifest="A", layout=[]),
         local("local: legal with the layout checker", N, expect("legal", parsed=P), layout=[]),
+        local("local: a publish command before sealing", text(PUBLISH), expect("contract_valid", parsed=PUBLISH)),
     ]
     return cases
 
@@ -1282,7 +1290,7 @@ GOOD_PAYLOAD = {"accept": {}, "reject": {"codes": ["lattice"]}, "hold": {"operat
                 "not_reproduced": {"settled": True, "codes": ["reproduction_mismatch"]},
                 "cross_checked": {"settled": True, "tier": "cross_build"}, "cancel": {"codes": ["participant_removed"]},
                 "expire": {}, "hide": {"operator": True, "reason": "spam"},
-                "restore": {"operator": True, "reason": "reinstated"}}
+                "restore": {"operator": True, "reason": "reinstated"}, "publish": {"sealed": True}}
 SUMMARY_EXPECT = {"rejected": "rejected", "queued": "queued", "held": "queued", "evaluating": "queued",
                   "evaluated": "evaluated", "failed": "evaluated", "replaying": "evaluated",
                   "not_reproduced": "evaluated", "reproduced": "independently verified",
@@ -1293,19 +1301,31 @@ CHARGED_EXPECT = {"rejected": False, "queued": False, "held": False, "evaluating
 
 
 def state_table() -> dict:
+    """Every state and event with a good payload. Moderation flags are tried hidden and not; publication is tried on a
+    private and on a public entry: only a private entry, once ingested, can be published, and only once."""
     pairs = []
     for state in (None,) + LIFECYCLE:
         for event in tuple(EVENTS) + FLAG_EVENTS:
-            if event in FLAG_EVENTS:
+            if event == "publish":
+                for visibility in ("private", "public"):
+                    allowed = state is not None and visibility == "private"
+                    pairs.append({"state": state, "hidden": None, "visibility": visibility, "event": event,
+                                  "payload": GOOD_PAYLOAD[event],
+                                  "expect": {"state": state, "hidden": None, "visibility": "public"} if allowed
+                                  else None})
+            elif event in FLAG_EVENTS:
                 for hidden in (None, "spam"):
                     allowed = state is not None and (hidden is None) == (event == "hide")
-                    after = {"state": state, "hidden": "spam" if event == "hide" else None} if allowed else None
-                    pairs.append({"state": state, "hidden": hidden, "event": event, "payload": GOOD_PAYLOAD[event],
-                                  "expect": after})
+                    after = ({"state": state, "hidden": "spam" if event == "hide" else None, "visibility": "private"}
+                             if allowed else None)
+                    pairs.append({"state": state, "hidden": hidden, "visibility": "private", "event": event,
+                                  "payload": GOOD_PAYLOAD[event], "expect": after})
             else:
                 target = ALLOWED.get((state, event))
-                pairs.append({"state": state, "hidden": None, "event": event, "payload": GOOD_PAYLOAD[event],
-                              "expect": None if target is None else {"state": target, "hidden": None}})
+                pairs.append({"state": state, "hidden": None, "visibility": "private", "event": event,
+                              "payload": GOOD_PAYLOAD[event],
+                              "expect": None if target is None else {"state": target, "hidden": None,
+                                                                     "visibility": "private"}})
     guards = [
         ("hold needs an operator", "queued", "hold", {}),
         ("start needs a reservation", "queued", "start", {}),
@@ -1338,10 +1358,16 @@ def state_table() -> dict:
         ("restoring needs its reason", "evaluated", "restore", {"operator": True, "reason": "spam"}),
         ("hiding is an operator's", "evaluated", "hide", {"reason": "spam"}),
         ("an unknown event", "queued", "requeue", {"operator": True}),
+        ("publication is a sealed command", "evaluated", "publish", {}),
+        ("a publication refused for its terms changes nothing", "evaluated", "publish",
+         {"sealed": True, "codes": ["terms_not_accepted"]}),
+        ("a publication refused for ownership changes nothing", "reproduced", "publish",
+         {"sealed": True, "codes": ["unknown_proposal"]}),
     ]
     return {"pairs": pairs,
             "guards": [{"name": name, "state": state, "hidden": "spam" if event == "restore" else None,
-                        "event": event, "payload": payload} for name, state, event, payload in guards],
+                        "visibility": "private", "event": event, "payload": payload}
+                       for name, state, event, payload in guards],
             "summary": SUMMARY_EXPECT, "charged": CHARGED_EXPECT}
 
 

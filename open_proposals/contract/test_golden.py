@@ -159,15 +159,16 @@ class States(unittest.TestCase):
     def test_every_state_and_event(self):
         table = load("states.json")
         for pair in table["pairs"]:
-            with self.subTest(f"{pair['state']} {pair['event']} hidden={pair['hidden']}"):
-                entry = Entry(pair["state"], pair["hidden"])
+            with self.subTest(f"{pair['state']} {pair['event']} hidden={pair['hidden']} {pair['visibility']}"):
+                entry = Entry(pair["state"], pair["hidden"], pair["visibility"])
                 if pair["expect"] is None:
                     with self.assertRaises(TransitionRefused):
                         transition(entry, pair["event"], pair["payload"])
                 else:
                     after = transition(entry, pair["event"], pair["payload"])
-                    self.assertEqual({"state": after.state, "hidden": after.hidden}, pair["expect"])
-                    self.assertEqual(entry, Entry(pair["state"], pair["hidden"]))     # never mutated
+                    self.assertEqual({"state": after.state, "hidden": after.hidden, "visibility": after.visibility},
+                                     pair["expect"])
+                    self.assertEqual(entry, Entry(pair["state"], pair["hidden"], pair["visibility"]))  # not mutated
 
     def test_the_table_covers_every_event(self):
         events = {pair["event"] for pair in load("states.json")["pairs"]}
@@ -177,7 +178,8 @@ class States(unittest.TestCase):
         for guard in load("states.json")["guards"]:
             with self.subTest(guard["name"]):
                 with self.assertRaises(TransitionRefused):
-                    transition(Entry(guard["state"], guard["hidden"]), guard["event"], guard["payload"])
+                    transition(Entry(guard["state"], guard["hidden"], guard["visibility"]), guard["event"],
+                               guard["payload"])
 
     def test_the_contract_states_and_quota_charge(self):
         table = load("states.json")

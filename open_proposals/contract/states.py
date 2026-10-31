@@ -7,6 +7,8 @@
                                    evaluated -> failed                    (charged; no automatic retry)
              queued | held -> cancelled | expired          before any reservation; no quota charge
     hidden: a public-view flag from moderation, with a reason; nothing is deleted
+    publish: a private entry becomes public only through its participant's sealed publish command, after the terms
+             and ownership checks pass; a refused publication changes nothing and is reported only privately
 
 Every event that starts work needs a reservation id (reserved before launch); every event that ends an attempt
 needs settled=True (settled on every exit). There is no retry edge: a failure is retained and never re-run.
@@ -68,7 +70,7 @@ EVENTS = {
     "cancel": (("queued", "held"), "cancelled"),
     "expire": (("queued", "held"), "expired"),
 }
-FLAG_EVENTS = ("hide", "restore")
+FLAG_EVENTS = ("hide", "restore", "publish")
 STARTS_WORK = frozenset({"start", "replay"})
 ENDS_ATTEMPT = frozenset({"complete", "fail", "reproduced", "not_reproduced", "cross_checked"})
 OPERATOR_ONLY = frozenset({"hold", "release", "hide", "restore"})
@@ -83,6 +85,7 @@ class TransitionRefused(ValueError):
 class Entry:
     state: str | None = None
     hidden: str | None = None       # the moderation reason while hidden from public views
+    visibility: str = "private"     # the proposal's choice; private until a sealed publish command succeeds
 
 
 def ledger_lifecycle(state: str, codes=()) -> str:
@@ -131,6 +134,10 @@ def _guard(event: str, entry: Entry, payload: dict) -> str | None:
     if event in ("accept", "hold", "release", "start", "replay", "reproduced", "cross_checked", "expire",
                  "hide", "restore") and codes:
         return "this event carries no codes"
+    if event == "publish" and payload.get("sealed") is not True:
+        return "publication is a sealed command"
+    if event == "publish" and codes:
+        return "a refused publication changes nothing"
     if event == "hide" and not _one_of(payload.get("reason"), HIDE_REASONS):
         return "hiding needs a moderation reason"
     if event == "restore" and not _one_of(payload.get("reason"), RESTORE_REASONS):
@@ -147,6 +154,9 @@ def transition(entry: Entry, event: str, payload: dict | None = None) -> Entry:
         sources, _target = EVENTS[event]
         if entry.state not in sources:
             raise TransitionRefused("not allowed from this state")
+    elif event == "publish":
+        if entry.state is None or entry.visibility != "private":
+            raise TransitionRefused("not allowed from this state")
     elif event in FLAG_EVENTS:
         if entry.state is None or (event == "hide") != (entry.hidden is None):
             raise TransitionRefused("not allowed from this state")
@@ -157,6 +167,8 @@ def transition(entry: Entry, event: str, payload: dict | None = None) -> Entry:
         raise TransitionRefused(refusal)
     if event in EVENTS:
         return replace(entry, state=EVENTS[event][1])
+    if event == "publish":
+        return replace(entry, visibility="public")
     return replace(entry, hidden=payload["reason"] if event == "hide" else None)
 
 

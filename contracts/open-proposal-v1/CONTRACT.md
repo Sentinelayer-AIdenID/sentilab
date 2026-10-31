@@ -31,7 +31,7 @@ Participants post four objects as threaded replies to a challenge root (DESIGN.m
 | Proposal (DESIGN.md:675-699) | `proposal.schema.json` | `proposal_key` |
 | Routed-wire check request (DESIGN.md:701-704, 776-811) | `check-request.schema.json` | `request_key` |
 | Team name (DESIGN.md:314-316) | `team.schema.json` | `"team"` |
-| Publish choice (DESIGN.md:754) | `publish.schema.json` | `"publish:<proposal_sha256>"` |
+| Publish command (DESIGN.md:754), always sealed | `publish.schema.json` | `"publish:<proposal_sha256>"` |
 
 Ours: `manifest.schema.json` (the 31 fields of the DESIGN.md:568-672 draft), `terms.schema.json`, `receipt.schema.json`
 (DESIGN.md:908-917), and the GET responses `check.schema.json` (`sentilab-open-check/1`), `status.schema.json` and
@@ -76,9 +76,15 @@ content, and rejects a mismatch with `transport_key_mismatch`. Logical keys are 
 - Plaintext at most 4,096 bytes; a sealed note at most 8,192 (both `oversize`). The header must name the thread's
   manifest and that manifest's key version, and the manifest must pin a recipient; the opener decrypts with that key
   version only. A failure to decrypt, a wrong key version, a malformed header or armour, a plaintext that is not one
-  JSON object (a fence included), or a plaintext whose schema is not a proposal or check request is `unsealable`.
+  JSON object (a fence included), or a plaintext whose schema is not a proposal, check request or publish command is
+  `unsealable`.
 - No plaintext fallback: a note that fails to open is never re-read as plaintext. A plaintext reply that declares
-  `"visibility": "private"` is `private_requires_sealed`, and nothing else in it is read. Public items may be sealed.
+  `"visibility": "private"`, and any plaintext publish command, is `private_requires_sealed`, and nothing else in it is
+  read. Public items may be sealed.
+- Publishing a still-private entry (root's review of DESIGN.md:754) is a sealed command, because it names the entry's
+  read handle. Terms (`terms_not_accepted`) and ownership (`unknown_proposal`, `decide_publish`) are checked after
+  opening and before anything is made public; only then does the entry's `publish` transition run. A refused command
+  changes nothing, gets no room pointer, and is reported only privately.
 - Rotation is a new key version in a new manifest version; old keys stay in custody (golden manifest `F2`).
 - The opener is a seam: `opener(armour, manifest, key_version) -> plaintext` or `Unopenable`. `age_tools` holds the
   reference opener for tests (X25519 age v1 on `cryptography`), the strict armour, and sealing for vector generation.
@@ -93,8 +99,8 @@ private_handles=...)` refuses a record that carries one anywhere (`exposes_handl
 prefix, before a suffix, in the middle, in any letter case, broken up by separators, or as the base64 or base64url text
 of its 32 bytes. The server can revoke a handle, after which only
 authorized access reads the entry. A handle cannot be re-keyed in place, because it is the content hash: a new handle
-means a new salt, which is new content and so a new revision under a new `proposal_key`. A publish reply names the
-handle in plaintext (DESIGN.md:754); once published, the entry is public anyway.
+means a new salt, which is new content and so a new revision under a new `proposal_key`. The publish command that names
+a handle travels sealed.
 
 ## Validation (DESIGN.md:714-733)
 

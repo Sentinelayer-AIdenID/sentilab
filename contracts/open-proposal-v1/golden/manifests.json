@@ -402,7 +402,8 @@
     "key_version": null,
     "applies_to": [
      "private proposals",
-     "private routed checks"
+     "private routed checks",
+     "publish commands"
     ],
     "plaintext_max_bytes": 4096,
     "sealed_note_max_bytes": 8192,
@@ -884,7 +885,8 @@
     "key_version": null,
     "applies_to": [
      "private proposals",
-     "private routed checks"
+     "private routed checks",
+     "publish commands"
     ],
     "plaintext_max_bytes": 4096,
     "sealed_note_max_bytes": 8192,
@@ -1214,7 +1216,8 @@
     "key_version": 1,
     "applies_to": [
      "private proposals",
-     "private routed checks"
+     "private routed checks",
+     "publish commands"
     ],
     "plaintext_max_bytes": 4096,
     "sealed_note_max_bytes": 8192,
@@ -1546,7 +1549,8 @@
     "key_version": 2,
     "applies_to": [
      "private proposals",
-     "private routed checks"
+     "private routed checks",
+     "publish commands"
     ],
     "plaintext_max_bytes": 4096,
     "sealed_note_max_bytes": 8192,
@@ -1574,10 +1578,10 @@
   }
  },
  "manifest_id": {
-  "A": "088ea3d8ff4be5ac03c90438abbaada5b50badf559c96b2595f304588118aa5e",
-  "M": "d9f96cbe164c5de29450ab19335fc1b800595a68b64fe60b3e44caf9e0103471",
-  "F": "fefd3e45e973513a23122d92921827a6b75cad7005afb1fe5670d7b85ca76e38",
-  "F2": "1247fd1d1ea1721f80602505e4c22e711dc734da239b07549d1ac9b008fc50a0"
+  "A": "2b62dabf7b0e995328e4caef1c80f9f6d6a26c285e225390de26f58f61711664",
+  "M": "938d710ccb65c56518ab5afd927f087d790e23b3d77a01a543dc134e699032b7",
+  "F": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
+  "F2": "e7be12fb7780aa6a4f93152d81335763bbe5f3afbf384a25263a4b8dad593897"
  },
  "terms": {
   "schema": "sentilab-open-terms/1",

@@ -5,7 +5,8 @@ and the cross-field rules every record must meet. No network, no solver, no cloc
                 anything else is chat: ignored, no receipt
   1. transport  unattributable and edited_before_ingest (the row); oversize (4,096 bytes plaintext, 8,192 sealed);
                 not_utf8; a sealed note's header, key version and armour, then the opener: unsealable; a plaintext
-                that declares "visibility": "private": private_requires_sealed
+                that declares "visibility": "private", or a plaintext publish command (it names a private handle):
+                private_requires_sealed
   2. envelope   one object, bare or in one ```json fence (a sealed plaintext: bare only): too_deep (pre-scan),
                 malformed_json, duplicate_key, nonfinite_number; the "schema" value picks the object; then
                 unknown_field and schema_invalid
@@ -48,7 +49,7 @@ SEALED_LINE = re.compile(rb"sentilab-open-sealed/1 ([0-9a-f]{64}) ([1-9][0-9]{0,
 ARMOR_BEGIN = b"-----BEGIN AGE ENCRYPTED FILE-----\n"
 FENCE = re.compile(r"```json[ \t]*\r?\n(.*)\r?\n```\Z", re.DOTALL)
 LAYOUT_CODES = frozenset({"margin", "halo_overlap", "min_spacing", "keepout"})
-SEALABLE = frozenset({"proposal", "check-request"})
+SEALABLE = frozenset({"proposal", "check-request", "publish"})
 GEOMETRIC = frozenset({"proposal", "check-request"})
 WITH_TERMS = frozenset({"proposal", "publish"})
 
@@ -336,7 +337,7 @@ def _validate(note, *, reply, manifests, target_id, admission, layout_checker, o
         value, found = _json(note.decode("utf-8"), fenced=True)
         if found:
             return _rejected(found)
-        if not local and value.get("visibility") == "private":
+        if not local and (value.get("visibility") == "private" or kind_of(value) == "publish"):
             return _rejected([violation("private_requires_sealed")])
     return _object(value, sealed=sealed, reply=reply, manifests=manifests, target_id=target_id, admission=admission,
                    layout_checker=layout_checker)

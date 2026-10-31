@@ -569,6 +569,20 @@ class Handles(unittest.TestCase):
         with self.assertRaises(ValueError):
             exposes_handle({}, [handle.upper()])
 
+    def test_a_publish_command_is_sealed_and_refused_privately(self):
+        """Root's review: publishing a still-private item is a sealed command; terms and ownership are checked after
+        opening, before anything is public; a refusal changes nothing."""
+        plain = intake(note(mv.PUBLISH), mv.PUBLISH, opener=opener)
+        self.assertEqual(["private_requires_sealed"], [item["code"] for item in plain.violations])
+        self.assertIsNone(plain.content_sha256, "a plaintext publish is not read")
+        sealed = intake(mv.sealed("a publish command"), mv.PUBLISH, opener=opener)
+        self.assertEqual(("contract_valid", "publish", True), (sealed.outcome, sealed.kind, sealed.sealed))
+        refused = mv.changed(mv.PUBLISH, terms=mv.OTHER_TERMS)
+        outcome = intake(mv.sealed("a publish command under terms not accepted"), refused, opener=opener)
+        self.assertEqual(["terms_not_accepted"], [item["code"] for item in outcome.violations])
+        self.assertTrue(outcome.sealed)
+        self.assertIn("publish commands", mv.F["sealing"]["applies_to"])
+
 
 class Limits(unittest.TestCase):
     def test_the_four_check_limits_are_separate_fields(self):

@@ -422,7 +422,7 @@
         "format": {"const": "age X25519, ASCII armour"},
         "recipient": {"anyOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/age_recipient"}]},
         "key_version": {"anyOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/key_version"}]},
-        "applies_to": {"const": ["private proposals", "private routed checks"]},
+        "applies_to": {"const": ["private proposals", "private routed checks", "publish commands"]},
         "plaintext_max_bytes": {"const": 4096},
         "sealed_note_max_bytes": {"const": 8192},
         "plaintext_fallback": {"const": false},
