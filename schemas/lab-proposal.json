@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sentilab:lab-proposal:1",
+  "title": "Advisory lab proposal v1",
+  "description": "Canonical UTF-8 wire size is capped at 16384 bytes by the core before schema validation. No event-writing authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "v",
+    "kind",
+    "lab_id",
+    "role",
+    "rationale",
+    "geometry"
+  ],
+  "properties": {
+    "v": {
+      "const": "lab-proposal/1"
+    },
+    "kind": {
+      "const": "proposal"
+    },
+    "lab_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+      "maxLength": 32
+    },
+    "role": {
+      "const": "scientist"
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "geometry": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "x_mm",
+          "y_mm"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+            "maxLength": 32
+          },
+          "x_mm": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "y_mm": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000
+          }
+        }
+      }
+    }
+  }
+}
