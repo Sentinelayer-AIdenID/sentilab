@@ -23,6 +23,8 @@ import realWorker from "../src/worker.js";
 import * as realPaths from "../src/agent-paths.js";
 import * as realView from "../src/agent-view.js";
 import { CSP } from "../src/csp.js";
+import { classifyRequest } from "../src/generated/aidenid-classifier/index.js";
+import { UNRECOGNIZED_CLIENT_UA } from "./client-fixture.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const NL = String.fromCharCode(10);
@@ -72,7 +74,7 @@ function assets() {
 const envOf = () => ({ ASSETS: assets(), API_ORIGIN: "https://sentilab-api.example.test" });
 async function get(worker, path, { headers = {}, method = "GET" } = {}) {
   const env = envOf();
-  const res = await worker.fetch(new Request(BASE + path, { method, headers }), env);
+  const res = await worker.fetch(new Request(BASE + path, { method, headers: { "user-agent": UNRECOGNIZED_CLIENT_UA, ...headers } }), env);
   return { res, body: new Uint8Array(await res.arrayBuffer()), asked: env.ASSETS.asked };
 }
 
@@ -139,13 +141,21 @@ async function acceptNegotiationIsDeterministic(worker) {
     }
   }
 }
-async function everyVaryingResponseIsPrivate(worker) {
+async function everyVaryingResponseIsPrivate(worker, { view }) {
   for (const path of Object.keys(HUMAN)) {
     for (const headers of [{}, { accept: BROWSERS[0] }, { accept: "text/markdown" }, { accept: "application/json" },
       { accept: "text/markdown", "if-none-match": `"${AGENT_MD[path]}"` }, { accept: BROWSERS[1], "if-none-match": `"${path}index.html"` }]) {
       for (const method of ["GET", "HEAD"]) {
+        // Check forge's seam directly too: edge's headers must not hide a seam regression.
+        const request = new Request(BASE + path, { method, headers: { "user-agent": UNRECOGNIZED_CLIENT_UA, ...headers } });
+        const env = envOf();
+        const agent = await view.serveAgentAsset(request, env);
+        const direct = agent ?? await env.ASSETS.fetch(request);
+        if (!agent) view.addHumanPageHeaders(request, direct.headers);
+        assert.equal(direct.headers.get("vary"), "Accept", `direct seam ${method} ${path} (${direct.status}): Vary`);
+        assert.equal(direct.headers.get("cache-control"), NO_SHARED_CACHE, `direct seam ${method} ${path} (${direct.status}): cache-control`);
         const { res } = await get(worker, path, { headers, method });
-        assert.equal(res.headers.get("vary"), "Accept", `${method} ${path} ${JSON.stringify(headers)} (${res.status}): Vary`);
+        assert.equal(res.headers.get("vary"), "Accept, User-Agent, Signature, Signature-Input, Signature-Agent, Cookie, Accept-Language, Sec-Fetch-Mode, Sec-Fetch-Dest, Sec-Fetch-Site, Sec-CH-UA, Sec-CH-UA-Mobile, Sec-CH-UA-Platform, Referer", `${method} ${path} ${JSON.stringify(headers)} (${res.status}): Vary`);
         assert.equal(res.headers.get("cache-control"), NO_SHARED_CACHE, `${method} ${path} ${JSON.stringify(headers)} (${res.status}): cache-control`);
       }
     }
@@ -172,7 +182,7 @@ test("1. agentPathFor maps each page with an agent version to its file, and ever
 test("1. serveAgentVersion serves the mapped file, typed, varying on Accept, private; JSON when preferred; null otherwise", () => serveAgentVersionServesTheMappedFile(realWorker, REAL));
 test("2. a browser's Accept gets the exact human page, byte for byte, with its Link to the agent version", () => browsersGetTheExactHumanPage(realWorker));
 test("3. markdown or JSON in Accept gets the agent index; mixed and q-weighted headers resolve by the documented rule", () => acceptNegotiationIsDeterministic(realWorker));
-test("4. every response that can differ varies on Accept and stays out of shared caches (GET, HEAD and 304)", () => everyVaryingResponseIsPrivate(realWorker));
+test("4. every response that can differ varies on Accept and stays out of shared caches (GET, HEAD and 304)", () => everyVaryingResponseIsPrivate(realWorker, REAL));
 test("every other path is unchanged: the asset layer's status, bytes and headers, plus the CSP", () => otherPathsAreUnchanged(realWorker));
 
 test("/agents and /agents/ serve /agents/index.md to everyone", async () => {
@@ -219,10 +229,16 @@ test("acceptQuality, preferredAgentType and varyWith follow the documented rule"
   assert.equal(varyWith("accept", ["Accept"]), "accept");
   assert.equal(varyWith("*", ["Accept"]), "*");
 });
+test("normal-client fixture is unknown to the pinned classifier", () => {
+  for (const headers of [{}, ...[...BROWSERS, ...NEGOTIATION.map(([accept]) => accept)].map((accept) => ({ accept })), { "x-aidenid-class": "agent" }]) {
+    const request = new Request(BASE + "/", { headers: { "user-agent": UNRECOGNIZED_CLIENT_UA, ...headers } });
+    assert.equal(classifyRequest(request).triage.class, "unknown", JSON.stringify(headers));
+  }
+});
 test("the classification header of an earlier draft is not read: x-aidenid-class changes nothing", async () => {
   for (const env of [{}, { TRUST_EDGE_CLASS: "1" }]) {
     const bound = { ...envOf(), ...env };
-    const res = await realWorker.fetch(new Request(`${BASE}/`, { headers: { "x-aidenid-class": "agent" } }), bound);
+    const res = await realWorker.fetch(new Request(`${BASE}/`, { headers: { "user-agent": UNRECOGNIZED_CLIENT_UA, "x-aidenid-class": "agent" } }), bound);
     assert.ok(same(new Uint8Array(await res.arrayBuffer()), file("index.html")));
   }
   assert.doesNotMatch(["agent-paths.js", "agent-view.js", "worker.js"].map((f) => readFileSync(join(SRC, f), "utf8")).join(""), /aidenid-class|TRUST_EDGE_CLASS/);
