@@ -315,6 +315,18 @@ class Lifecycle(unittest.TestCase):
         self.assertEqual((self.root / 'response-00.json').read_bytes(), b'{malformed')
         self.assertTrue(s.state()['cleanup_verified'])
 
+    def test_valid_outer_json_with_missing_or_deep_content_retains_receipts(self):
+        r = self.reserve()
+        responses = [b'{"choices":[]}', s.encode({'choices': [{'message': {'content': '[' * 2000 + '0' + ']' * 2000}}]})]
+        for index, raw in enumerate(responses):
+            with mock.patch.object(s, 'request', return_value=(200, raw)):
+                s.inference(r, self.rows()[index], index)
+            receipt = json.loads((self.root / f'inference-{index:02d}.json').read_bytes())
+            self.assertEqual(receipt['http_status'], 200)
+            self.assertFalse(receipt['exact_json_match'])
+            self.assertEqual(receipt['response_sha256'], s.digest(raw))
+            self.assertEqual(s.state()['inference_requests_reserved'], index + 1)
+
     def test_readiness_and_cleanup_are_inside_original_time_budget(self):
         r = self.reserve()
         def unavailable(path, body, allowance):

@@ -502,7 +502,7 @@ def inference(r, row, index):
     if parsed is not None:
         try:
             exact = strict_json(parsed['choices'][0]['message']['content']) == strict_json(row['output'])
-        except (ValueError, KeyError, TypeError, Refusal):
+        except (ValueError, KeyError, IndexError, TypeError, Refusal, RecursionError):
             pass
     elapsed = time.monotonic() - started
     usage = parsed.get('usage') if isinstance(parsed, dict) else None
