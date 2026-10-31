@@ -1,4 +1,4 @@
-"""Minimal stdio MCP host for the shared live and ResultCheck operations."""
+"""Stdio MCP host for shared live operations, ResultCheck and dataset export."""
 import asyncio
 import json
 import sys
@@ -23,6 +23,18 @@ def schema(name):
     if name == "sentilab_resultcheck":
         return {"type": "object", "properties": {"file": {"type": "string"}},
                 "required": ["file"], "additionalProperties": False}
+    if name == "sentilab_dataset_export":
+        return {"type": "object", "properties": {
+            "run_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+            "output_dir": {"type": "string"},
+            "policy": {"type": "object", "properties": {
+                "heldout_families": {"type": "array", "items": {"type": "string"}},
+                "rights": {"type": "object", "additionalProperties": {
+                    "type": "object", "properties": {
+                        "status": {"enum": ["ok", "blocked"]}, "reason": {"type": "string", "minLength": 1}},
+                    "required": ["status", "reason"], "additionalProperties": False}}},
+                "additionalProperties": False}},
+            "required": ["run_ids"], "additionalProperties": False}
     properties = {"ai_off": {"type": "boolean", "const": True}}
     required = ["ai_off"]
     if name != "sentilab_live_stop":
@@ -43,7 +55,9 @@ async def handle(request, context):
                 "serverInfo": {"name": "sentilab-live", "version": "0.1"}}
     if method == "tools/list":
         return {"tools": [{"name": name, "description": ("Check local ResultCheck v2 file consistency and arithmetic"
-                                           if name == "sentilab_resultcheck" else "AI off live " + name.rsplit("_", 1)[-1]),
+                                           if name == "sentilab_resultcheck" else
+                                           "Export recorded verifier datasets" if name == "sentilab_dataset_export" else
+                                           "AI off live " + name.rsplit("_", 1)[-1]),
                            "inputSchema": schema(name)} for name in TOOLS]}
     if method == "tools/call":
         params = request["params"]

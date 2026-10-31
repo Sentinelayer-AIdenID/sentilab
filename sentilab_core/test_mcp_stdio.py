@@ -196,6 +196,53 @@ host.main()
             self.assertEqual(json.loads(response["result"]["content"][0]["text"]), {"context_calls": 1})
             self.assertEqual(marker.read_text(), "1")
 
+    async def test_combined_host_preserves_dataset_resultcheck_and_live_tools(self):
+        fixture = Path(__file__).resolve().parents[1] / "docs/sentilab/evidence/SLAB-016"
+        ledger = Path(self.temp.name) / "ledger"
+        ledger.mkdir()
+        (ledger / "fixture.jsonl").write_bytes((fixture / "fixture.jsonl").read_bytes())
+        env = {**os.environ, "SENTILAB_LIVE_DIR": str(ledger),
+               "SENTILAB_VIEW_PUBLIC_KEYS": (fixture / "public-keys.json").read_text()}
+        env.pop("SENTILAB_SIGNER_FACTORY", None)
+        await self.start("-m", "sentilab_mcp", env=env)
+        await self.send({"id": 1, "method": "tools/list"})
+        tools = (await self.receive())["result"]["tools"]
+        expected = {"sentilab_live_" + name for name in ("run", "status", "stop", "verify")}
+        expected.update(("sentilab_dataset_export", "sentilab_resultcheck"))
+        self.assertEqual({tool["name"] for tool in tools}, expected)
+        self.assertEqual(len(tools), len(expected), "each tool must be registered once")
+        schemas = {tool["name"]: tool["inputSchema"] for tool in tools}
+        self.assertEqual(schemas["sentilab_resultcheck"]["required"], ["file"])
+        self.assertEqual(schemas["sentilab_dataset_export"]["required"], ["run_ids"])
+        for name in ("run", "status", "stop", "verify"):
+            self.assertIn("ai_off", schemas["sentilab_live_" + name]["required"])
+        await self.resultcheck(2)
+        await self.send({"id": 3, "method": "tools/call", "params": {
+            "name": "sentilab_dataset_export", "arguments": {
+                "run_ids": ["fixture"], "output_dir": str(Path(self.temp.name) / "export"),
+                "policy": {"rights": {"fixture": {"status": "ok", "reason": "synthetic fixture grant"}}}}}})
+        exported = await self.receive()
+        self.assertEqual(exported["id"], 3)
+        directory = Path(json.loads(exported["result"]["content"][0]["text"])["directory"])
+        self.assertTrue((directory / "rlaif.jsonl").read_bytes())
+        await self.send({"id": 4, "method": "tools/call", "params": {
+            "name": "sentilab_live_verify", "arguments": {"ai_off": True, "run_id": "fixture"}}})
+        verified = json.loads((await self.receive())["result"]["content"][0]["text"])
+        self.assertTrue(verified["ok"])
+        await self.send({"id": 5, "method": "tools/call", "params": {
+            "name": "sentilab_live_run", "arguments": {"ai_off": False}}})
+        self.assertEqual((await self.receive())["error"]["code"], -32602)
+        await self.call(6, "stop")
+        self.assertTrue(json.loads((await self.receive())["result"]["content"][0]["text"])["stopped"])
+        await self.call(7, "status")
+        status = json.loads((await self.receive())["result"]["content"][0]["text"])
+        self.assertTrue(status["stopped"])
+        self.assertEqual([run["run_id"] for run in status["runs"]], ["fixture"])
+        await self.resultcheck(8)
+        self.process.stdin.close()
+        await asyncio.wait_for(self.process.wait(), 5)
+        self.assertEqual(self.process.returncode, 0, (await self.process.stderr.read()).decode())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import json
 import sys
+from pathlib import Path
 
 
 def _write_utf8(message, stream):
@@ -22,6 +23,22 @@ async def dispatch(command, context, **arguments):
     return await result if hasattr(result, "__await__") else result
 
 
+def dataset_main():
+    from sentilab_core import operations
+    from sentilab_core.dataset import export
+    parser = argparse.ArgumentParser(prog="sentilab dataset")
+    parser.add_argument("command", choices=["export"])
+    parser.add_argument("--run-id", action="append", required=True, dest="run_ids")
+    parser.add_argument("--output-dir", help="parent of immutable dataset snapshots")
+    parser.add_argument("--policy", help="JSON file with heldout_families and run rights grants")
+    args = parser.parse_args(sys.argv[2:])
+    context = operations.environment_context()
+    policy = json.loads(Path(args.policy).read_text()) if args.policy else None
+    result = export(context.root, args.run_ids, public_keys=context.public_keys,
+                    output_dir=args.output_dir, policy=policy)
+    print(json.dumps(result, allow_nan=False))
+
+
 def main(conductor=False):
     if not conductor and sys.argv[1:2] == ["resultcheck"]:
         from sentilab_core.resultcheck import canonical, check_file, exit_code
@@ -38,11 +55,14 @@ def main(conductor=False):
             raise SystemExit(2)
         _write_utf8(canonical(receipt) + "\n", sys.stdout)
         raise SystemExit(exit_code(receipt))
+    if not conductor and sys.argv[1:2] == ["dataset"]:
+        return dataset_main()
     from sentilab_core import operations
     from sentilab_core.budget import Limits
     parser = argparse.ArgumentParser(prog="sentilab" if not conductor else "sentilab_core.conductor")
     if not conductor:
-        parser.add_argument("namespace", choices=["live"], help="live operations; use resultcheck <file> for offline checking")
+        parser.add_argument("namespace", choices=["live", "dataset", "resultcheck"],
+                            help="use dataset --help for export options or resultcheck <file> for offline checking")
         parser.add_argument("command", choices=["run", "status", "stop", "verify"])
     parser.add_argument("--ai-off", action="store_true", default=conductor)
     parser.add_argument("--run-id")
@@ -72,7 +92,6 @@ def main(conductor=False):
     if args.export:
         if command != "verify" or not result["ok"]:
             parser.error("export requires a verified complete run")
-        from pathlib import Path
         from sentilab_core.ledger import replay
         from sentilab_core.envelope import canonical
         rows = replay(context.root, args.run_id, public_keys=context.public_keys)["prefix"]

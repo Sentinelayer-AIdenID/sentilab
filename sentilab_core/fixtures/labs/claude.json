@@ -1,0 +1,81 @@
+{
+  "propose": [
+    {
+      "v": "lab-proposal/1",
+      "kind": "proposal",
+      "role": "scientist",
+      "lab_id": "claude",
+      "rationale": "Replay the fixed synthetic plate layout as a diagnostic fixture.",
+      "geometry": [
+        {
+          "id": "compute-a",
+          "x_mm": 2,
+          "y_mm": 2
+        },
+        {
+          "id": "compute-b",
+          "x_mm": 9,
+          "y_mm": 2
+        },
+        {
+          "id": "memory-a",
+          "x_mm": 2,
+          "y_mm": 10
+        },
+        {
+          "id": "memory-b",
+          "x_mm": 9,
+          "y_mm": 10
+        }
+      ]
+    }
+  ],
+  "review": [
+    {
+      "v": "lab-review/1",
+      "kind": "review",
+      "role": "adversarial_judge",
+      "lab_id": "claude",
+      "rationale": "Reproduction from one solver is not independent physical validation.",
+      "target_hash": "$target_hash",
+      "judge_role": "$judge_role",
+      "verdict": "concern",
+      "findings": [
+        "Require independent numerical evidence before a scientific claim."
+      ]
+    }
+  ],
+  "repair": [
+    {
+      "v": "lab-repair/1",
+      "kind": "repair",
+      "role": "scientist",
+      "lab_id": "claude",
+      "rationale": "Retain the layout pending deterministic evaluation; this suggestion is advisory.",
+      "geometry": [
+        {
+          "id": "compute-a",
+          "x_mm": 2,
+          "y_mm": 2
+        },
+        {
+          "id": "compute-b",
+          "x_mm": 9,
+          "y_mm": 2
+        },
+        {
+          "id": "memory-a",
+          "x_mm": 2,
+          "y_mm": 10
+        },
+        {
+          "id": "memory-b",
+          "x_mm": 9,
+          "y_mm": 10
+        }
+      ],
+      "target_hash": "$target_hash",
+      "review_hash": "$review_hash"
+    }
+  ]
+}

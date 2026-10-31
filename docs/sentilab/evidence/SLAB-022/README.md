@@ -99,6 +99,21 @@ No contract files are changed. [VERIFICATION.json](VERIFICATION.json) records
 the gates rerun on the final implementation, source hashes, and transport regression proofs.
 [P2-VERIFICATION.json](P2-VERIFICATION.json) records the file-intake/cancellation
 correction, actual stdio regressions, mutation checks and remaining gate scope.
+The merge of PR #21's `fbf6ea2` with main `d031c8d` is recorded in
+`MAIN-MERGE-VERIFICATION.json`. All six MCP tools and the live, dataset export,
+and ResultCheck CLI paths survive; the combined-host regression fails on both
+parents and passes after the merge. The unchanged CI smoke script passed 276
+tests (zero skips), including every requested module and both MCP stdio suites,
+plus eight HotSpot probes. Browser tests (103), live conformance (9), ResultCheck
+parity (9 over 39 vectors), and all four contract runners also passed. Execution
+was native Ubuntu 24.04/Python 3.12.3 at `/app`, with pinned dependencies and
+Haswell OpenBLAS dispatch; Docker is absent and mount namespaces are denied, so
+this is not a Docker image-build or container health/secret-scan claim. The
+manifest records exact commands, module counts, source hashes and log hashes.
+Warden separately reported native Windows verification of `fbf6ea2`: CLI exit 2,
+551 bytes ending in one LF without CR, and 8 platform tests with 1 skip. That
+Windows evidence is Warden's report, not execution in this Linux box.
+
 The Windows correction is exercised on Linux by replacing only the core's OS
 dependency: no `O_NONBLOCK`/`O_NOFOLLOW`, an available `O_BINARY`, and simulated
 CRLF translation unless binary mode is selected. Actual CLI subprocesses prove
