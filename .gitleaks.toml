@@ -1,0 +1,9 @@
+# gitleaks: the default rules, plus one narrow allowlist. Files named public-keys.json hold only Ed25519 PUBLIC
+# keys (fixtures and registries); the generic-api-key rule flags their 64-hex values, but public keys are not
+# secrets. Everything else stays under the default rules, and .gitleaksignore still applies.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Ed25519 public-key files (public keys are not secrets)"
+paths = ['''(^|/)public-keys\.json$''']
