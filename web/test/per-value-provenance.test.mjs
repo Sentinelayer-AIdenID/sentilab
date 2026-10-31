@@ -8,10 +8,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { LABELS, labelFor, labelForAll, evaluatorIds, scaleIdentities, sourceTags } from "../public/temperature-label.mjs";
+import { LABELS, labelFor, labelForAll, evaluatorIds, envelopeEvaluator, scaleIdentities, sourceTags } from "../public/temperature-label.mjs";
 import { project } from "../public/sentilab/evidence-projection.mjs";
-import { buildView } from "../public/sentilab/lab-model.mjs";
-import { buildScene } from "../public/sentilab/package/scene.mjs";
+import { buildView, colorScale, colorScaleInputs } from "../public/sentilab/lab-model.mjs";
+import { buildScene, runFrame, frameScaleInputs } from "../public/sentilab/package/scene.mjs";
 import * as paging from "../public/sentilab/paging.mjs";
 import * as ref from "../../contracts/view-envelope-v0.5/view-envelope.mjs";
 import { testKey } from "./sentilab-keys.mjs";
@@ -26,8 +26,9 @@ const LAB = { agent_id: "agent-lab-a-01", life_id: "life-lab-a-0001", lab: "lab-
 const semantics = (evaluator) => ({ task_contract: "t", metric_id: "peak-chip-c", evaluator_version: evaluator, coordinate_frame: "lower-left-mm" });
 const geometry = [{ id: "CPU0", xLL: 2, yLL: 2, w: 10, h: 8, layer: 0 }, { id: "HBM0", xLL: 16, yLL: 2, w: 7, h: 9, layer: 0 }];
 
-// Astra's witness: a schema-valid create of meas-a that names the fixture but lacks the other semantics fields, which
-// the projector REJECTS (missing_semantics); then the applied create of the same meas-a from the withdrawn build, J 52.
+// The reported witness: a schema-valid create of meas-a that names the fixture but lacks the other semantics
+// fields, which the projector REJECTS (missing_semantics); then the applied create of the same meas-a from the
+// withdrawn build, J 52.
 const STEPS = [
   { actor: LAB, role: "lab", type: "node.create", body: { id: "cand-a", kind: "candidate" }, values: { geometry, units: "mm", scenario_id: "nominal" } },
   { actor: CORE, role: "core", type: "node.create", body: { id: "meas-a", kind: "measurement", semantics: { evaluator_version: FIXTURE } }, values: { J: { value: 40, unit: "C" }, scenario_id: "nominal" } },
@@ -55,7 +56,7 @@ function packageDisplay(prefixEnvelopes, projection) {
   return { J: L.J, label: labelFor(ids.get(L.metric?.measurement ?? (L.ref.kind === "measurement" ? L.ref.id : undefined))), temps: labelFor(ids.get(L.temps_from?.measurement)) };
 }
 
-test("the projector rejects the fixture create and applies the withdrawn one: the witness is what astra built", () => {
+test("the projector rejects the fixture create and applies the withdrawn one: the witness is as reported", () => {
   const projection = project(stubbed.map((env) => env.event));
   assert.deepEqual(projection.rejected, [{ event_id: "p2", code: "missing_semantics" }]);
   assert.equal(projection.nodes["meas-a"].kind, "measurement");
@@ -124,7 +125,7 @@ for (const [first, second, expected] of [[HS7, FIXTURE, LABELS.withdrawn], [FIXT
   });
 }
 
-test("astra's Package witness: the applied measurement carries one rectangle, so the board shows it; its J is labelled withdrawn", () => {
+test("the reported Package witness: the applied measurement carries one rectangle, so the board shows it; its J is labelled withdrawn", () => {
   const rect = { geometry: [{ id: "CPU0", xLL: 2, yLL: 2, w: 10, h: 8, layer: 0 }], units: "mm" };
   const envs = chain([
     [CORE, "core", "node.create", { id: "meas-a", kind: "measurement", semantics: { evaluator_version: FIXTURE } }, { J: { value: 40, unit: "C" }, ...rect }],
@@ -180,12 +181,12 @@ test("sourceTags: one tag when both sources share a label; the temperatures' alo
 const measurementRow = (i, evaluator) => ({ event: { event_id: `m${i}`, seq: i, type: "node.create", body: { id: `meas-${i}`, kind: "measurement", semantics: semantics(evaluator) } },
   values: { J: { value: 50 + (i % 7), unit: "C" }, center_temps: { CPU0: 50 + (i % 7) } } });
 
-// lab.js: on every verification, src.scaleIds = scaleIdentities(trusted, ids, widened ? src.scaleIds : null).
+// lab.js: on every verification, src.scaleIds = scaleIdentities(colorScaleInputs(trusted), ids, widened ? src.scaleIds : null).
 function liveArrivals(rows) {
   let set = null;
   for (let k = 1; k <= rows.length; k += 1) {
     const trusted = rows.slice(0, k);
-    set = scaleIdentities(trusted, evaluatorIds(trusted), k > 1 ? set : null);   // each arrival widens the live scale
+    set = scaleIdentities(colorScaleInputs(trusted), evaluatorIds(trusted), k > 1 ? set : null);   // each arrival widens the live scale
   }
   return set;
 }
@@ -197,7 +198,7 @@ test("regression: 128 one-row arrivals of one evaluator keep ONE identity, not 8
   assert.equal(set.size, 1, "one distinct identity in scope");
   assert.equal(labelForAll(set), LABELS.withdrawn);
   // A rejected suffix re-verifies the same trusted prefix of 128 (widened, K unchanged): still one.
-  const again = scaleIdentities(rows, evaluatorIds(rows), set);
+  const again = scaleIdentities(colorScaleInputs(rows), evaluatorIds(rows), set);
   assert.equal(again.size, 1);
 });
 
@@ -207,7 +208,7 @@ test("the scale's set is the distinct identities in scope: two evaluators give t
   assert.equal(set.size, 2);
   assert.equal(labelForAll(set), LABELS.withdrawn);
   // The prefix shrank (a late conflict cut it back to the first row): rebuilt from what remains.
-  const shrunk = scaleIdentities(rows.slice(0, 1), evaluatorIds(rows.slice(0, 1)), null);
+  const shrunk = scaleIdentities(colorScaleInputs(rows.slice(0, 1)), evaluatorIds(rows.slice(0, 1)), null);
   assert.deepEqual([...shrunk], [CORRECTED]);
   assert.equal(labelForAll(shrunk), LABELS.unvalidated);
 });
@@ -224,10 +225,74 @@ test("a widened scale keeps the identities it was widened from; a rebuilt one do
 test("both views take per-value identities from the applied creates and keep the scale's identities as a set", () => {
   const read = (rel) => readFileSync(join(PUBLIC, rel), "utf8");
   assert.match(read("sentilab/lab.js"), /src\.ids = evaluatorIds\(trusted, src\.verification\.projection\?\.rejected\);/);
-  assert.match(read("sentilab/lab.js"), /src\.scaleIds = scaleIdentities\(trusted, src\.ids, widened \? src\.scaleIds : null\);/);
+  assert.match(read("sentilab/lab.js"), /src\.scaleIds = scaleIdentities\(colorScaleInputs\(trusted\), src\.ids, widened \? src\.scaleIds : null\);/);
   assert.match(read("sentilab/package/package.js"), /src\.ids = evaluatorIds\(verification\.prefixEnvelopes, verification\.projection\?\.rejected\);/);
-  assert.match(read("sentilab/package/package.js"), /src\.scaleIds = scaleIdentities\(verification\.prefixEnvelopes, src\.ids\);/);
+  assert.match(read("sentilab/package/package.js"), /src\.scaleIds = scaleIdentities\(frameScaleInputs\(verification\.prefixEnvelopes, verification\.projection\), src\.ids\);/);
   // The Lab card shows J's and the centre temperatures' qualifiers from their own sources (sourceTags), never merged.
   assert.match(read("sentilab/lab.js"), /const tags = sourceTags\(jl, tl\);/);
   assert.match(read("sentilab/lab.js"), /tags\.map\(\(t\) => tq\(t\.label, t\.text\)\)/);
+});
+
+// ── each view's scale provenance comes from exactly that view's own scale inputs ────────────────────────────
+// The reported scale witness: a fixture measurement at 45 °C, and a candidate node that carries centre temperatures of
+// 900 °C. The Package view's scale reads applied MEASUREMENT creates only (40-50 °C, fixture-only); the Lab view's reads
+// every envelope with centre temperatures (45-900 °C, candidate included). Each labels its scale by its own inputs.
+const witness = chain([
+  [CORE, "core", "node.create", { id: "meas-f", kind: "measurement", semantics: semantics(FIXTURE) }, { J: { value: 45, unit: "C" }, center_temps: { CPU0: 45 } }],
+  [LAB, "lab", "node.create", { id: "cand-h", kind: "candidate" }, { geometry, units: "mm", center_temps: { CPU0: 900 } }],
+]);
+// The same, but the candidate also declares a J unit, so the Package view's temperature reader would accept its centre
+// temperatures: only the measurement-creates rule keeps the candidate out of the Package scale.
+const witnessReadable = chain([
+  [CORE, "core", "node.create", { id: "meas-f", kind: "measurement", semantics: semantics(FIXTURE) }, { J: { value: 45, unit: "C" }, center_temps: { CPU0: 45 } }],
+  [LAB, "lab", "node.create", { id: "cand-h", kind: "candidate" }, { geometry, units: "mm", J: { value: 900, unit: "C" }, center_temps: { CPU0: 900 } }],
+]);
+
+test("regression: the Package scale stays fixture-only in numbers AND label; the Lab scale includes the candidate in both", () => {
+  for (const [name, envs] of Object.entries({ witness, witnessReadable })) {
+    const projection = project(envs.map((e) => e.event));
+    const ids = evaluatorIds(envs, projection.rejected);
+    const pkgScale = runFrame(envs, projection).scale;
+    assert.deepEqual([pkgScale.min, pkgScale.max], [40, 50], `${name}: the Package view's numbers ignore the candidate`);
+    assert.equal(labelForAll(scaleIdentities(frameScaleInputs(envs, projection), ids)), LABELS.illustrative, `${name}: and so does its label`);
+    const labScale = colorScale(envs);
+    assert.deepEqual([labScale.min, labScale.max], [45, 900], `${name}: the Lab view's numbers include the candidate`);
+    assert.equal(labelForAll(scaleIdentities(colorScaleInputs(envs), ids)), LABELS.unvalidated, `${name}: and so does its label`);
+  }
+});
+
+// Each view's numbers and provenance come from one input set: the identity set is exactly the evaluators of the rows the
+// scale function consumed, and the scale computed from those rows alone is the same scale.
+const renumber = (envs) => envs.map((env, i) => ({ ...env, event: { ...env.event, seq: i + 1 } }));
+const SCALE_CASES = {
+  witness,
+  witnessReadable,
+  mixed: chain([
+    [CORE, "core", "node.create", { id: "m-1", kind: "measurement", semantics: semantics(HS7) }, { J: { value: 61, unit: "C" }, center_temps: { CPU0: 61, HBM0: 48 } }],
+    [CORE, "core", "node.create", { id: "m-2", kind: "measurement", semantics: { evaluator_version: FIXTURE } }, { J: { value: 30, unit: "C" }, center_temps: { CPU0: 30 } }],
+    [CORE, "core", "node.create", { id: "m-3", kind: "measurement", semantics: semantics(CORRECTED) }, { J: { value: 75, unit: "F" }, center_temps: { CPU0: 75 } }],
+    [CORE, "core", "node.create", { id: "m-4", kind: "measurement", semantics: semantics(CORRECTED) }, { J: { value: 52, unit: "C" }, center_temps: { CPU0: 52 } }],
+    [LAB, "lab", "node.create", { id: "cand-x", kind: "candidate" }, { geometry, units: "mm", center_temps: { CPU0: 5 } }],
+  ]),
+  none: chain([candidate]),
+};
+test("each view's scale provenance is exactly the evaluators of the rows its scale consumed (projector-rejected, refused-unit and candidate rows)", () => {
+  for (const [name, envs] of Object.entries(SCALE_CASES)) {
+    const projection = project(envs.map((e) => e.event));
+    const ids = evaluatorIds(envs, projection.rejected);
+    // Package: applied measurement creates whose temperatures pass the unit and range checks.
+    const pkgInputs = frameScaleInputs(envs, projection);
+    assert.deepEqual(scaleIdentities(pkgInputs, ids), new Set(pkgInputs.map((env) => ids.get(env.event.body.id))), `${name}: Package set = its inputs' evaluators`);
+    assert.deepEqual(runFrame(renumber(pkgInputs)).scale, runFrame(envs, projection).scale, `${name}: Package numbers come from those inputs alone`);
+    // Lab: every envelope with centre temperatures (it doesn't consult the projector, so rejected rows count, as before).
+    const labInputs = colorScaleInputs(envs);
+    assert.deepEqual(scaleIdentities(labInputs, ids), new Set(labInputs.map((env) => envelopeEvaluator(env, ids))), `${name}: Lab set = its inputs' evaluators`);
+    assert.deepEqual(colorScale(labInputs), colorScale(envs), `${name}: Lab numbers come from those inputs alone`);
+  }
+  // The mixed case: the projector-rejected m-2 and the refused-unit m-3 feed the Lab scale but not the Package one.
+  const projection = project(SCALE_CASES.mixed.map((e) => e.event));
+  assert.deepEqual(frameScaleInputs(SCALE_CASES.mixed, projection).map((env) => env.event.body.id), ["m-1", "m-4"]);
+  assert.deepEqual(colorScaleInputs(SCALE_CASES.mixed).map((env) => env.event.body.id), ["m-1", "m-2", "m-3", "m-4", "cand-x"]);
+  assert.deepEqual(frameScaleInputs(SCALE_CASES.none), [], "no temperatures: no inputs");
+  assert.equal(runFrame(SCALE_CASES.none).scale, null);
 });

@@ -142,14 +142,13 @@ export function sourceTags(jLabel, tempsLabel) {
   if (tempsLabel && tempsLabel !== jLabel) tags.push({ label: tempsLabel, text: `temps ${tempsLabel.short}` });
   return tags;
 }
-// The identities behind a colour scale, as a set: one entry per distinct identity among the envelopes with centre
-// temperatures in scope. A live scale that widened keeps the identities it was widened from (previous); any other scale
-// is rebuilt. So it grows with the number of evaluators, never with the number of rows or verifications.
-export function scaleIdentities(envelopes, ids, previous = null) {
+// The identities behind a colour scale, as a set: one entry per distinct identity among EXACTLY the rows that view's own
+// scale calculation consumed (each view passes its own inputs: the Lab colorScaleInputs, the Package frameScaleInputs;
+// there is no shared contributor rule here). A live scale that widened keeps the identities it was widened from
+// (previous); any other scale is rebuilt. So it grows with the number of evaluators, never with rows or verifications.
+export function scaleIdentities(contributors, ids, previous = null) {
   const out = new Set(previous ?? []);
-  for (const env of Array.isArray(envelopes) ? envelopes : []) {
-    if (isObj(env) && isObj(env.values) && isObj(env.values.center_temps)) out.add(envelopeEvaluator(env, ids));
-  }
+  for (const env of Array.isArray(contributors) ? contributors : []) out.add(envelopeEvaluator(env, ids));
   return out;
 }
 // The identity behind one envelope's display values: a node.create's own semantics, or for any other event the node it

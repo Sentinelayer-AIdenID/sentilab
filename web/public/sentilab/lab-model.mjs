@@ -153,11 +153,13 @@ const tempsOf = (values) => {
 
 // One color scale per run, declared up front: every center temperature in the run's authenticated envelopes,
 // rounded out to 5 degrees, at least 10 degrees wide. Replay sees the whole run, so it never changes during play.
+// The rows the Lab's colour scale is computed from: every authenticated envelope with centre temperatures, of any node
+// kind. colorScale reads only these, and the page labels the scale by exactly these (one definition for both).
+export const colorScaleInputs = (trusted) => trusted.filter((env) => tempsOf(env.values) !== null);
 export function colorScale(trusted) {
   let lo = Infinity, hi = -Infinity, unit = null;
-  for (const env of trusted) {
+  for (const env of colorScaleInputs(trusted)) {
     const temps = tempsOf(env.values);
-    if (!temps) continue;
     for (const v of Object.values(temps)) { if (v < lo) lo = v; if (v > hi) hi = v; }
     if (!unit && isObj(env.values.J) && typeof env.values.J.unit === "string") unit = tempUnit(env.values.J.unit);
   }

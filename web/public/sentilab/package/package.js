@@ -5,7 +5,7 @@
 import { DEMO, CONTRACT_VERSION, MAX_FILE_BYTES, setupTrust, fetchReplayBytes, verifyReplayFile, isDrill, chainSummary, modeNow, runStatusOf, createLiveFeed, reasonText } from "./source.mjs";
 import { viewHref } from "../view-links.mjs";
 import { shortId } from "../lab-model.mjs";
-import { sceneAt, scaleTicks, describeEvent, describeSource, refusalText, spanText, TRACK_ORDER, TRACKS, trackName } from "./scene.mjs";
+import { sceneAt, frameScaleInputs, scaleTicks, describeEvent, describeSource, refusalText, spanText, TRACK_ORDER, TRACKS, trackName } from "./scene.mjs";
 import { reconcile } from "./playhead.mjs";
 import { drawPackage, TrackAnimation, HOME_AZIMUTH, ORBIT_MS, easeInOut } from "./render.mjs";
 // Temperatures are labelled by the one rule (temperature-label.mjs) from the evaluator identity of the measurement each
@@ -196,7 +196,7 @@ function adoptVerification(src, verification, { active: isActive, following, fre
   // and the set behind the frame's scale (the frame only widens over a prefix that extends the old one, so the current
   // prefix covers every value behind it). A set, rebuilt per verification.
   src.ids = evaluatorIds(verification.prefixEnvelopes, verification.projection?.rejected);
-  src.scaleIds = scaleIdentities(verification.prefixEnvelopes, src.ids);
+  src.scaleIds = scaleIdentities(frameScaleInputs(verification.prefixEnvelopes, verification.projection), src.ids);
   src.fullScene = sceneAt(r.prefix, verification.prefixCount, r.frame);
   S.gen += 1;
   if (!isActive) return;

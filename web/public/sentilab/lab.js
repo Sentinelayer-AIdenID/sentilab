@@ -15,7 +15,7 @@ import { pollLiveOnce, POLL_BACKOFF_MS } from "./lab-live.mjs";
 import { strictJson, MAX_SMALL_JSON } from "./runs-list.mjs";
 import { layoutSpan, spanText } from "./package/scene.mjs";
 import {
-  buildView, feedRows, chainSummary, isDrill, isRejected, colorScale, nextScale, heat, frameOf, labInfo, reasonText, rankReasons,
+  buildView, feedRows, chainSummary, isDrill, isRejected, colorScale, colorScaleInputs, nextScale, heat, frameOf, labInfo, reasonText, rankReasons,
   rowIdentity, resolveRow, shortId, stageOf, STAGES, isObj,
 } from "./lab-model.mjs";
 // Temperatures are labelled by the one rule (temperature-label.mjs) from the evaluator identity of the measurement each
@@ -137,7 +137,7 @@ async function verify(src) {
   // and the set behind the colour scale (colorScale's inputs; a widened live scale keeps the identities it was widened
   // from). A set, rebuilt per verification: it never grows with rows or polls.
   src.ids = evaluatorIds(trusted, src.verification.projection?.rejected);
-  src.scaleIds = scaleIdentities(trusted, src.ids, widened ? src.scaleIds : null);
+  src.scaleIds = scaleIdentities(colorScaleInputs(trusted), src.ids, widened ? src.scaleIds : null);
   src.frame = frameOf(trusted);
   // The run's layout span, labelled exactly as the Package view labels it (scene.mjs: one definition, one label).
   src.span = spanText(layoutSpan(trusted));
