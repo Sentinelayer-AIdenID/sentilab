@@ -29,7 +29,7 @@ from unittest import mock
 import urllib.error
 
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
 from sundai_hotspot import gate0_anchor, gate_zero, provenance, reference_validation, slab049, tap_oracle
 from sundai_hotspot.coupling_variant import strip_variant_blocks
@@ -1316,11 +1316,14 @@ class ManifestTests(unittest.TestCase):
             with self.assertRaises(CallRefused):
                 reference_validation.load_manifest()
 
-    def test_the_operator_key_is_pending_and_the_anchor_is_published(self):
+    def test_the_operator_key_is_pinned_and_the_anchor_is_published(self):
         manifest = slab049.check_manifest(slab049.MANIFEST_PATH.read_bytes())
         operator, anchor, ledger = manifest["operator"], manifest["anchor"], manifest["ledger"]
-        self.assertIsNone(operator["public_key_ed25519"])  # warden pins it before the grant
-        self.assertTrue(operator["status"].startswith("pending"))
+        # warden's operator key, pinned by a reviewed commit before the grant: the raw public key in hex
+        pinned = "aedce64bbc007b3538c02d302da9cedbce1465c409efac8589477284bdbd2132"
+        self.assertEqual((slab049.OPERATOR_PUBLIC_KEY, operator["public_key_ed25519"]), (pinned, pinned))
+        Ed25519PublicKey.from_public_bytes(bytes.fromhex(pinned))  # a valid Ed25519 public key
+        self.assertEqual(operator["status"], "pinned")
         self.assertIn("never lives in the repository", operator["custody"])
         self.assertEqual((anchor["repository"], anchor["namespace"], anchor["message_schema"]),
                          ("Sentinelayer-AIdenID/sentilab", "refs/tags/gate0-<grant-id>/", gate0_anchor.TAG_SCHEMA))
@@ -1620,14 +1623,19 @@ class ManifestEntryTests(EntryCase):
         self.assertEqual(len(self.scenario.ledger()["entries"]), 1, "a refused call is never reserved")
         self.assertEqual((self.scenario.api.admitted_calls(), self.scenario.api.launch_tags()), ([], []))
 
-    def test_the_committed_manifest_pins_no_operator_key_so_nothing_is_admitted_or_passed(self):
-        committed = REPO_ROOT / "docs/sentilab/diagnostics/SLAB-049" / slab049.MANIFEST_NAME
+    def test_an_unpinned_manifest_admits_nothing_and_passes_nothing(self):
+        # The committed manifest carries warden's pinned key (test_the_operator_key_is_pinned_...). The manifest
+        # this tree generates without a key, as before the pin, still admits nothing and passes nothing.
+        unpinned = self.root / "unpinned" / slab049.MANIFEST_NAME
+        unpinned.parent.mkdir()
         with mock.patch.object(slab049, "OPERATOR_PUBLIC_KEY", None):
+            unpinned.write_bytes(slab049._dump(slab049.build_call_list()))
+            self.assertIsNone(json.loads(unpinned.read_text(encoding="utf-8"))["operator"]["public_key_ed25519"])
             with self.assertRaisesRegex(CallRefused, "no operator public key is pinned"):
-                self.call(P_ASCEND, "unpinned", manifest_path=committed)
+                self.call(P_ASCEND, "unpinned", manifest_path=unpinned)
             with self.assertRaisesRegex(GateZeroRefusal, "no operator public key is pinned"):
                 build_record("hotspot6", self.fake, ledger_root=self.scenario.root, tags=self.scenario.tags,
-                             manifest_path=committed)
+                             manifest_path=unpinned)
 
     def test_ci_allocation_refuses_before_anything_runs(self):
         """Main's CI allocation (SLAB-046): native HotSpot launches in CI go through ci_gate; SLAB-049 never solves there."""

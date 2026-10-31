@@ -787,13 +787,13 @@
   "not_requested": "The prior snapped-primary rows; the v1 and v2 plans (32 calls, 37 executions; later 23); and every material-only HotSpot 7 call. The material-only flag stays as labelled, bounded diagnostic evidence; it is not the MATCH evaluator and inherits no grant.",
   "operator": {
     "custody": "the private key belongs to the operator supervisor (warden) and never lives in the repository; validate-reference reads it from SLAB049_OPERATOR_KEY, a PEM file outside it",
-    "public_key_ed25519": null,
+    "public_key_ed25519": "aedce64bbc007b3538c02d302da9cedbce1465c409efac8589477284bdbd2132",
     "signs": [
       "the grant (ledger entry 0)",
       "each reservation and settlement entry",
       "each receipt"
     ],
-    "status": "pending: warden pins the operator's public key before the grant; until then every admission and every gate check refuses"
+    "status": "pinned"
   },
   "paper": "Ma et al., TAP-2.5D, DATE 2021 (HotSpot 6.0, 45 mm interposer, grid 64, 45 C ambient)",
   "post_run_diagnostics": "From the 12 calls, with no extra call (reference_validation report, by call id from the ledger): HotSpot 6.0's grid 32 -> 64 change per reference (aneta's network model predicts 0.01 K Ascend, 0.18 K CPU-DRAM; the old HotSpot 7 micro150 mesh error was 0.79 K), CPU-s per call, replay byte identity, the same-index spreader-sink drop and the same-index stack at each active-layer argmax (reported, not asserted). Nothing is frozen on them or on the old mesh error.",
