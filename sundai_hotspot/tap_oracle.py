@@ -295,6 +295,12 @@ class _WarmWorker:
         self._stderr_file = Path(workspace.name) / 'worker-stderr.bin'
         self._stderr_tail = bytearray()
         self._stderr_task = asyncio.create_task(self._drain_stderr())
+        self._stdout_file = Path(workspace.name) / 'worker-response.bin'
+        self._response = None
+        self._response_buffer = bytearray()
+        self._stdout_status = {'retained_bytes': 0, 'has_terminator': False,
+                               'eof': False, 'truncated': False, 'parser_error': None}
+        self._stdout_task = asyncio.create_task(self._drain_stdout())
 
     @classmethod
     async def start(cls) -> "_WarmWorker":
@@ -346,19 +352,68 @@ class _WarmWorker:
                 pass
         return self._stderr_tail.decode("utf-8", errors="replace")[-2000:].strip()
 
+    def _write_stdout_status(self):
+        status = dict(self._stdout_status)
+        status['status'] = ('terminated' if status['has_terminator'] else 'partial')
+        self._stdout_file.with_name('WORKER-RESPONSE.json').write_text(
+            json.dumps(status, sort_keys=True) + '\n')
+
+    async def _drain_stdout(self):
+        """Retain bytes independently of parser limits and request cancellation."""
+        assert self.process.stdout is not None
+        self._stdout_file.touch()
+        while True:
+            chunk = await self.process.stdout.read(4096)
+            if not chunk:
+                self._stdout_status['eof'] = True
+                self._write_stdout_status()
+                if self._response is not None and not self._response.done():
+                    self._response.set_result(bytes(self._response_buffer))
+                return
+            with self._stdout_file.open('ab') as stream:
+                stream.write(chunk)
+            self._stdout_status['retained_bytes'] += len(chunk)
+            self._stdout_status['has_terminator'] |= b'\n' in chunk
+            if self._response is not None and not self._response.done():
+                prefix, separator, _ = chunk.partition(b'\n')
+                if len(self._response_buffer) + len(prefix) + bool(separator) > MAX_WORKER_RESPONSE_BYTES:
+                    self._stdout_status['parser_error'] = 'frame_limit_exceeded'
+                    self._response.set_exception(HotSpotOracleError('HotSpot worker response exceeds frame limit'))
+                    self._response_buffer.clear()
+                else:
+                    self._response_buffer.extend(prefix + separator)
+                    if separator:
+                        self._response.set_result(bytes(self._response_buffer))
+                        self._response_buffer.clear()
+            self._write_stdout_status()
+
     async def _exchange(self, payload: bytes) -> bytes:
-        assert self.process.stdin is not None and self.process.stdout is not None
+        assert self.process.stdin is not None
+        self._response_buffer.clear()
+        self._response = asyncio.get_running_loop().create_future()
         self.process.stdin.write(payload + b"\n")
         await self.process.stdin.drain()
-        line = await self.process.stdout.readline()
-        if self._retained_directory is not None:
-            (self._retained_directory / 'worker-response.bin').write_bytes(line)
-        return line
+        # A timeout cancels the waiter, never the independent evidence spool.
+        return await self._response
 
     async def evaluate(self, request: dict, *, worker_timeout_s: float) -> dict:
         if request.get('retained_output_root'):
             self._retained_directory = Path(request['retained_output_root'])
             self._retained_directory.mkdir(parents=True, exist_ok=True)
+            destination = self._retained_directory / 'worker-response.bin'
+            if self._stdout_file != destination:
+                # A cold worker may have emitted startup bytes before admission.
+                if self._retained_directory is not None and self._stdout_file.parent == Path(self.workspace.name):
+                    if self._stdout_file.exists():
+                        shutil.copyfile(self._stdout_file, destination)
+                    else:
+                        destination.touch()
+                else:
+                    destination.touch()
+                    self._stdout_status = {'retained_bytes': 0, 'has_terminator': False,
+                                           'eof': False, 'truncated': False, 'parser_error': None}
+                self._stdout_file = destination
+                self._write_stdout_status()
             # Spool in the retained tree while the call runs: SIGKILL cannot
             # execute close() to copy a temporary spool afterwards.
             destination = self._retained_directory / 'worker-stderr.bin'
@@ -437,6 +492,15 @@ class _WarmWorker:
             await _terminate_process_group(self.process, immediate=getattr(self, 'immediate_kill', False))
         finally:
             self.kill_latency_s = time.perf_counter() - started
+            stdout_task = getattr(self, '_stdout_task', None)
+            if stdout_task is not None:
+                try:
+                    await asyncio.wait_for(asyncio.shield(stdout_task), timeout=1.0)
+                except asyncio.TimeoutError:
+                    stdout_task.cancel()
+                    await asyncio.gather(stdout_task, return_exceptions=True)
+                    self._stdout_status['truncated'] = True
+                    self._write_stdout_status()
             if not self._stderr_task.done():
                 try:
                     await asyncio.wait_for(asyncio.shield(self._stderr_task), timeout=1.0)

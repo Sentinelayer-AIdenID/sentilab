@@ -111,6 +111,71 @@ class AdapterEvidenceTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((self.retained / 'worker-stderr.bin').read_bytes(),
                          b'begin\xff' + b'long worker diagnostic\n' * 1000 + b'end\xfe')
 
+    async def test_partial_stdout_survives_timeout_cancel_and_forced_stop(self):
+        prefix = b'partial worker response, no LF!'
+        self.assertEqual(len(prefix), 31)
+        for stop in ('timeout', 'cancel', 'forced_stop'):
+            with self.subTest(stop=stop):
+                self.retained = self.root / stop
+                witness = self.root / (stop + '-emitted')
+                self.script.write_text(
+                    'import pathlib, sys, time\n'
+                    'sys.stdin.buffer.readline()\n'
+                    f'sys.stdout.buffer.write({prefix!r})\n'
+                    'sys.stdout.buffer.flush()\n'
+                    f'pathlib.Path({str(witness)!r}).touch()\n'
+                    'time.sleep(10)\n')
+                async with self.worker() as instance:
+                    workspace = Path(instance.workspace.name)
+                    task = asyncio.create_task(instance.evaluate(self.request(), worker_timeout_s=0.3))
+                    if stop != 'timeout':
+                        for _ in range(100):
+                            if witness.exists():
+                                break
+                            await asyncio.sleep(0.001)
+                        self.assertTrue(witness.exists())
+                        if stop == 'cancel':
+                            task.cancel()
+                        else:
+                            await tap._terminate_process_group(instance.process, immediate=True)
+                    with self.assertRaises((tap.HotSpotOracleError, asyncio.CancelledError)):
+                        await task
+                self.assertTrue(witness.exists())
+                self.assertEqual((self.retained / 'worker-response.bin').read_bytes(), prefix)
+                status = json.loads((self.retained / 'WORKER-RESPONSE.json').read_bytes())
+                self.assertEqual(status['retained_bytes'], 31)
+                self.assertEqual(status['status'], 'partial')
+                self.assertFalse(status['has_terminator'])
+                self.assertFalse(status['truncated'])
+                self.assertTrue(status['eof'])
+                self.assertFalse(workspace.exists())
+                self.assertIsNotNone(instance.process.returncode)
+
+    async def test_oversized_frame_retention_is_separate_from_parser_limit(self):
+        data = b'x' * 65536 + b'\n'
+        witness = self.root / 'oversized-emitted'
+        self.script.write_text(
+            'import pathlib, sys, time\n'
+            'sys.stdin.buffer.readline()\n'
+            f'sys.stdout.buffer.write({data!r})\n'
+            'sys.stdout.buffer.flush()\n'
+            f'pathlib.Path({str(witness)!r}).touch()\n'
+            'time.sleep(10)\n')
+        with patch.object(tap, 'MAX_WORKER_RESPONSE_BYTES', 1024):
+            async with self.worker() as instance:
+                with self.assertRaises(tap.HotSpotOracleError):
+                    await instance.evaluate(self.request(), worker_timeout_s=3)
+                for _ in range(100):
+                    if witness.exists():
+                        break
+                    await asyncio.sleep(0.001)
+                self.assertTrue(witness.exists())
+        self.assertEqual((self.retained / 'worker-response.bin').read_bytes(), data)
+        status = json.loads((self.retained / 'WORKER-RESPONSE.json').read_bytes())
+        self.assertEqual(status['parser_error'], 'frame_limit_exceeded')
+        self.assertEqual(status['retained_bytes'], len(data))
+        self.assertFalse(status['truncated'])
+
 
 if __name__ == '__main__':
     unittest.main()
