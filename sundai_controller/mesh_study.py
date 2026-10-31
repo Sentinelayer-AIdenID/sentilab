@@ -280,6 +280,18 @@ def check_receipts(result, evidence_dir):
                 raise ValueError('invalid receipt sequence')
             entry = evaluations[sequence - 1]
             receipt = entry['parsed_receipt']
+            heatmap = receipt['heatmap_c']
+            if (not isinstance(heatmap, list) or len(heatmap) != grid
+                    or any(not isinstance(line, list) or len(line) != grid for line in heatmap)):
+                raise ValueError('receipt heatmap dimensions differ from grid')
+            peak = receipt['maximum_temperature_c']
+            if (any(isinstance(value, bool) or not isinstance(value, (int, float))
+                    or not math.isfinite(value) for line in heatmap for value in line)
+                    or isinstance(peak, bool) or not isinstance(peak, (int, float))
+                    or not math.isfinite(peak)):
+                raise ValueError('receipt heatmap and peak must be finite numbers')
+            if not math.isclose(peak, max(max(line) for line in heatmap), rel_tol=0, abs_tol=1e-9):
+                raise ValueError('receipt heatmap peak differs from declared peak')
             if (entry['layout_id'] != row['id'] or entry['grid'] != grid
                     or entry['evaluator_identity'] != result['evaluator_identity']
                     or receipt['candidate_hash'] != row['design_hash']
