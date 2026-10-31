@@ -49,10 +49,10 @@ class CallCapTests(unittest.IsolatedAsyncioTestCase):
 
     def test_fixture_cpu_remainder_binds_call(self):
         self.prereg['allocation']['per_fixture']['cpu_minutes'] = 0.05
-        self.assertEqual(self.budget().call_timeout(), 3.0)
+        self.assertEqual(self.budget().call_timeout(), 2.0)
 
     def test_headroom_cpu_remainder_includes_unrounded_prior_charge(self):
-        self.state['cpu_seconds'] = 4318.75
+        self.state['cpu_seconds'] = 4317.75
         budget = self.budget()
         # Aggregate reservation normally ties this bound; isolate the headroom
         # check so deleting it cannot hide behind the independent aggregate cap.
@@ -60,7 +60,7 @@ class CallCapTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(budget.call_timeout(), 1.25)
 
     def test_aggregate_cpu_remainder_includes_non_headroom_charge(self):
-        self.state['non_headroom']['cpu_seconds'] = 5040 - self.state['cpu_seconds'] - 2.0
+        self.state['non_headroom']['cpu_seconds'] = 5040 - self.state['cpu_seconds'] - 3.0
         self.assertEqual(self.budget().call_timeout(), 2.0)
 
     def test_noon_deadline_cannot_be_extended(self):
@@ -73,12 +73,12 @@ class CallCapTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.budget().call_timeout(), 1.5)
 
     def test_restart_cpu_remainder_binds_call(self):
-        self.assertEqual(self.budget().call_timeout(0.75), 0.75)
+        self.assertEqual(self.budget().call_timeout(1.75), 0.75)
 
     def test_p95_boundary_and_sub_p95_refusal_do_not_charge_call(self):
         budget = self.budget()
-        self.assertEqual(budget.call_timeout(h.V4_P95_SECONDS), h.V4_P95_SECONDS)
-        budget.fixture_cpu_limit = h.V4_P95_SECONDS - 1e-6
+        self.assertEqual(budget.call_timeout(h.V4_P95_SECONDS + h.V4_CPU_RESERVE_SECONDS), h.V4_P95_SECONDS)
+        budget.fixture_cpu_limit = h.V4_P95_SECONDS + h.V4_CPU_RESERVE_SECONDS - 1e-6
         before = budget.state['total_calls']
         with self.assertRaisesRegex(h.BudgetExhausted, 'fixture_cpu_cap_below_p95'):
             budget.reserve(MagicMock(hash='fake-design'), 'fake-lane')
@@ -118,13 +118,14 @@ class CallCapTests(unittest.IsolatedAsyncioTestCase):
                 case.wall += 0.025
                 self.last_kill_latency_s = 0.025
         oracle = Oracle()
-        budget.fixture_cpu_limit = 1.25
+        budget.fixture_cpu_limit = 2.25
         lane = h._LaneOracle(oracle, budget, 'fake', 2)
         async def fake_wait_for(coro, *, timeout):
             task = asyncio.create_task(coro)
             await asyncio.sleep(0)
+            await asyncio.sleep(0)
             self.assertEqual(oracle.timeout, timeout)
-            self.assertEqual(timeout, 1.0)  # admission I/O reduces the original 1.25
+            self.assertEqual(timeout, 1.0)  # admission I/O reduces the original 2.25 minus H
             self.wall += timeout
             task.cancel()
             with self.assertRaises(asyncio.CancelledError):
@@ -137,8 +138,8 @@ class CallCapTests(unittest.IsolatedAsyncioTestCase):
                 await lane(initial)
             with self.assertRaisesRegex(h.BudgetExhausted, 'call_timeout'):
                 await lane(initial)
-        self.assertEqual(affinity.call_args_list[0].args, (0, {2}))
-        self.assertEqual(affinity.call_args_list[-1].args, (0, {2, 3}))
+        self.assertEqual(affinity.call_args_list[0].args[1], {2})
+        self.assertEqual(affinity.call_args_list[-1].args[1], {2, 3})
         self.assertEqual(budget.state['total_calls'], before + 1)
         self.assertIsNone(budget.state['active'])
         history = json.loads(next((budget.artifact_dir / 'evaluations').glob('*.json')).read_text())
@@ -163,7 +164,7 @@ class CallCapTests(unittest.IsolatedAsyncioTestCase):
         from sundai_controller.test_headroom import CountingOracle
         from sundai_controller.controller import ThermalResult
         budget = self.budget()
-        budget.fixture_cpu_limit = 1.0
+        budget.fixture_cpu_limit = 2.0
         case = self
         class Oracle(CountingOracle):
             centers_for = lambda self, design: design.positions
@@ -239,6 +240,150 @@ class CallCapTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(caught.exception.kill_latency_s, 0.015)
         worker.close.assert_awaited_once()
         await pool.close()
+
+    def test_exact_remaining_cpu_and_q_scaled_wall_bound(self):
+        budget = self.budget()
+        self.assertEqual(budget.fixture_cpu_limit, 2879.705435)
+        self.assertAlmostEqual(budget.cpu_limit - budget.state['cpu_seconds'], 2879.705435)
+        budget.fixture_cpu_limit = 9.0
+        for q in (1, 2, 8):
+            with self.subTest(q=q):
+                budget.cpu_rate = q
+                self.assertEqual(budget.call_timeout(), 8.0 / q)
+                self.assertEqual(budget.call_cpu_allowance, 9.0)
+                self.assertLessEqual(budget.call_timeout() * q + budget.cpu_reserve, 9.0)
+
+    def test_rate_reserve_and_sampling_are_frozen(self):
+        for field, invalid in (('rate_q', 0), ('rate_q', True), ('rate_q', 9),
+                               ('reserve_h_cpu_seconds', 0), ('poll_seconds', 2)):
+            with self.subTest(field=field, invalid=invalid):
+                saved = self.prereg['cpu_enforcement'][field]
+                self.prereg['cpu_enforcement'][field] = invalid
+                with self.assertRaisesRegex(ValueError, 'CPU rate Q'):
+                    h._validate_v4(self.prereg)
+                self.prereg['cpu_enforcement'][field] = saved
+
+    async def test_live_cpu_stop_counts_kill_to_reap_and_rejects_partial_result(self):
+        from sundai_controller.test_headroom import CountingOracle
+        from sundai_controller.controller import ThermalResult
+        case = self
+        class Oracle(CountingOracle):
+            centers_for = lambda self, design: design.positions
+            async def __call__(self, design, *, timeout_s):
+                case.cpu += 2.0  # CPU + H reaches 3, before the wall cap.
+                try:
+                    await asyncio.Event().wait()
+                except asyncio.CancelledError:
+                    case.cpu += 0.2  # work between cancellation/kill and reap
+                    return ThermalResult(design.hash, 90.0, 'fake-solver')
+            async def aclose(self):
+                case.cpu += 0.1  # worker/descendant cleanup is also charged
+                self.last_kill_latency_s = 0.025
+        budget = self.budget()
+        budget.fixture_cpu_limit = 3.0
+        lane = h._LaneOracle(Oracle(), budget, 'cpu-stop', 2)
+        design = lane.oracle.design_from_centers(h.MICRO150_INITIAL_CENTERS)
+        with self.assertRaisesRegex(h.BudgetExhausted, 'call_cpu_cap'):
+            await lane(design)
+        self.assertIsNone(lane.best_result)
+        self.assertAlmostEqual(budget.entry['cpu_seconds'], 2.3)
+        state = json.loads(budget.path.read_text())
+        self.assertEqual(state['metered_runs'], 1)
+        run = json.loads(Path(state['cpu_run_ledger']).read_text().splitlines()[-1])
+        self.assertAlmostEqual(run['metered_cpu_seconds'], 2.3)
+        self.assertAlmostEqual(run['cpu_at_stop_seconds'], 2.0)
+        self.assertAlmostEqual(run['cpu_after_stop_seconds'], 0.3)
+        self.assertTrue(run['reaping_confirmed'])
+        self.assertNotIn('result', run)
+        self.assertLessEqual(run['metered_cpu_seconds'], run['cpu_allowance_s'] + run['reserve_h_cpu_seconds'])
+        with self.assertRaisesRegex(h.BudgetExhausted, 'call_cpu_cap'):
+            await lane(design)
+
+    def test_transient_proc_snapshot_dip_does_not_double_charge(self):
+        budget = self.budget()
+        self.cpu = 1.0
+        budget.checkpoint()
+        self.cpu = 0.9  # a child disappears mid-scan; its CPU appears on next read
+        budget.checkpoint()
+        self.cpu = 1.1
+        budget.checkpoint()
+        self.assertAlmostEqual(budget.entry['cpu_seconds'], 1.1)
+
+    async def test_cleanup_cpu_is_charged_and_over_budget_result_is_rejected(self):
+        from sundai_controller.test_headroom import CountingOracle
+        from sundai_controller.controller import ThermalResult
+        case = self
+        class Oracle(CountingOracle):
+            centers_for = lambda self, design: design.positions
+            async def __call__(self, design, *, timeout_s):
+                case.cpu += 0.1
+                return ThermalResult(design.hash, 90.0, 'fake-solver')
+            async def aclose(self):
+                case.cpu += 3.0
+        budget = self.budget()
+        budget.fixture_cpu_limit = 3.0
+        oracle = Oracle()
+        lane = h._LaneOracle(oracle, budget, 'cleanup-over-budget', 2)
+        with self.assertRaisesRegex(h.BudgetExhausted, 'call_cpu_cap'):
+            await lane(oracle.design_from_centers(h.MICRO150_INITIAL_CENTERS))
+        self.assertIsNone(lane.best_result)
+        self.assertAlmostEqual(budget.entry['cpu_seconds'], 3.1)
+        run = json.loads(Path(budget.state['cpu_run_ledger']).read_text().splitlines()[-1])
+        self.assertNotIn('result', run)
+        self.assertIn('cleanup', run['error'])
+        self.assertAlmostEqual(run['metered_cpu_seconds'], 3.1)
+        self.assertLessEqual(run['metered_cpu_seconds'], 3.0 + budget.cpu_reserve)
+
+    async def test_cpu_meter_failure_cancels_call_and_never_accepts_result(self):
+        from sundai_controller.test_headroom import CountingOracle
+        case = self
+        case.fail_meter = False
+        class Oracle(CountingOracle):
+            centers_for = lambda self, design: design.positions
+            async def __call__(self, design, *, timeout_s):
+                case.fail_meter = True
+                await asyncio.Event().wait()
+        def cpu():
+            if case.fail_meter:
+                case.fail_meter = False
+                raise OSError('fake unreadable /proc')
+            return case.cpu
+        budget = self.budget()
+        oracle = Oracle()
+        budget.fixture_cpu_limit = 1.75
+        lane = h._LaneOracle(oracle, budget, 'meter-failure', 2)
+        with patch.object(h, '_cpu_seconds', side_effect=cpu):
+            with self.assertRaisesRegex(RuntimeError, 'CPU metering failed'):
+                await lane(oracle.design_from_centers(h.MICRO150_INITIAL_CENTERS))
+        self.assertIsNone(lane.best_result)
+        run = json.loads(Path(budget.state['cpu_run_ledger']).read_text().splitlines()[-1])
+        self.assertTrue(run['reaping_confirmed'])
+        self.assertNotIn('result', run)
+
+    async def test_external_cancellation_retains_cleanup_charge_and_propagates(self):
+        from sundai_controller.test_headroom import CountingOracle
+        case = self
+        started = asyncio.Event()
+        class Oracle(CountingOracle):
+            centers_for = lambda self, design: design.positions
+            async def __call__(self, design, *, timeout_s):
+                started.set()
+                await asyncio.Event().wait()
+            async def aclose(self):
+                case.cpu += 0.2
+        budget = self.budget()
+        oracle = Oracle()
+        lane = h._LaneOracle(oracle, budget, 'cancelled', 2)
+        task = asyncio.create_task(lane(oracle.design_from_centers(h.MICRO150_INITIAL_CENTERS)))
+        await started.wait()
+        task.cancel()
+        with self.assertRaises(asyncio.CancelledError):
+            await task
+        self.assertIsNone(lane.best_result)
+        self.assertAlmostEqual(budget.entry['cpu_seconds'], 0.2)
+        run = json.loads(Path(budget.state['cpu_run_ledger']).read_text().splitlines()[-1])
+        self.assertTrue(run['reaping_confirmed'])
+        self.assertAlmostEqual(run['metered_cpu_seconds'], 0.2)
 
 
 if __name__ == '__main__':

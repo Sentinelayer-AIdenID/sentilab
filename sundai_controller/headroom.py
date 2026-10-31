@@ -27,6 +27,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from sundai_controller.process_budget import ProcessTreeScope, tree_snapshot
 from sundai_controller.controller import Controller, Ed25519PrivateKey
 from sundai_controller.experiment import OPERATORS, _candidate, _shared_designs, _signal_portfolio
 
@@ -38,6 +39,9 @@ REPRODUCTION_ABS_TOLERANCE_C = 1e-6
 V4_DEADLINE = datetime(2026, 10, 31, 12, tzinfo=timezone.utc)
 # Nearest-rank p95 of the five retained micro150 grid32 single-call timings.
 V4_P95_SECONDS = 0.524939
+V4_CPU_SECONDS = 2879.705435
+V4_CPU_RESERVE_SECONDS = 1.0
+V4_CPU_POLL_SECONDS = 0.01
 
 
 def _validate_mesh_error(value: float | None) -> None:
@@ -83,6 +87,11 @@ def _validate_v4(prereg):
     if (admission.get('maximum_seconds') != 45 or admission.get('p95_seconds') != V4_P95_SECONDS or
             admission.get('timing_sha256') != _compute_prereg_digest(timing)):
         raise ValueError('v4 requires the frozen measured p95 admission rule')
+    enforcement = prereg.get('cpu_enforcement', {})
+    if (type(enforcement.get('rate_q')) is not int or enforcement['rate_q'] not in (1, 2, 8) or
+            enforcement.get('reserve_h_cpu_seconds') != V4_CPU_RESERVE_SECONDS or
+            enforcement.get('poll_seconds') != V4_CPU_POLL_SECONDS):
+        raise ValueError('v4 requires declared CPU rate Q, reserve H and polling interval')
     if (prereg['fixture'] != 'micro150' or prereg['grid'] != 32 or
             prereg['rule']['k'] != 5 or prereg['mesh_error']['micro150']['e_c'] != 0.79 or
             prereg['reproduction']['absolute_tolerance_c'] != REPRODUCTION_ABS_TOLERANCE_C or
@@ -179,6 +188,12 @@ class _ConstrainedOracle:
 
 
 def _cpu_seconds():
+    if sys.platform == 'linux':
+        return tree_snapshot()[0]
+    return _reaped_cpu_seconds()
+
+
+def _reaped_cpu_seconds():
     usages = (resource.getrusage(resource.RUSAGE_SELF),
               resource.getrusage(resource.RUSAGE_CHILDREN))
     return sum(usage.ru_utime + usage.ru_stime for usage in usages)
@@ -213,11 +228,15 @@ class SolveBudget:
                              allocation.get('headroom_cpu_minutes', total_cpu_minutes) * 60)
         self.fixture_cpu_limit = min(fixture_cpu_minutes * 60,
                                      per_fixture.get('cpu_minutes', fixture_cpu_minutes) * 60)
+        if self.v4:
+            self.fixture_cpu_limit = min(self.fixture_cpu_limit, V4_CPU_SECONDS)
+        self.cpu_rate = prereg.get('cpu_enforcement', {}).get('rate_q', 1)
+        self.cpu_reserve = V4_CPU_RESERVE_SECONDS
         self.aggregate_limit = min(10000, allocation.get('aggregate_solve_limit', 10000))
         self.aggregate_cpu_limit = min(84 * 60, allocation.get('aggregate_cpu_minutes', 84) * 60)
         self.clock = prereg.get('clock', {})
         self.wall_limit = min(90 * 60, self.clock.get('solving_wall_minutes', 90) * 60)
-        self.last_cpu = _cpu_seconds()
+        self.last_cpu = self.cpu_seconds()
         self.last_wall = time.perf_counter()
         self.state = (json.loads(self.path.read_text()) if self.path.exists() else
                       {'total_calls': 0, 'cpu_seconds': 0.0, 'fixtures': {}, 'active': None})
@@ -243,10 +262,13 @@ class SolveBudget:
         self.reason = None
         self.artifact_dir = None
 
+    def cpu_seconds(self):
+        return _cpu_seconds() if self.v4 else _reaped_cpu_seconds()
+
     def checkpoint(self):
-        now = _cpu_seconds()
+        now = self.cpu_seconds()
         elapsed = max(0.0, now - self.last_cpu)
-        self.last_cpu = now
+        self.last_cpu = max(self.last_cpu, now)
         self.state['cpu_seconds'] += elapsed
         self.entry['cpu_seconds'] += elapsed
         if self.v4:
@@ -301,23 +323,27 @@ class SolveBudget:
         self.entry['calls'] += 1
         self.state['active'] = {'fixture': self.fixture, 'lane': lane, 'design_hash': design.hash}
         if self.v4:
-            self.state['active'].update(timeout_s=timeout, p95_seconds=V4_P95_SECONDS)
+            self.state['active'].update(timeout_s=timeout, p95_seconds=V4_P95_SECONDS,
+                                        rate_q=self.cpu_rate, reserve_h_cpu_seconds=self.cpu_reserve)
         self.checkpoint()
 
     def call_timeout(self, restart_remaining=None):
         """Bound a whole call by all remaining time allowances, never a grace period."""
         self.checkpoint()
         deadline = min(V4_DEADLINE, datetime.fromisoformat(self.clock.get('deadline', V4_DEADLINE.isoformat())))
-        bounds = {
-            'single_call_cap': 45.0,
+        cpu_bounds = {
             'total_cpu_cap': self.cpu_limit - self.state['cpu_seconds'],
             'fixture_cpu_cap': self.fixture_cpu_limit - self.entry['cpu_seconds'],
             'aggregate_cpu_cap': self.aggregate_cpu_limit - self.state['aggregate_cpu_seconds_charged'],
-            'deadline': (deadline - datetime.now(timezone.utc)).total_seconds(),
-            'solving_wall_cap': self.wall_limit - self.state['solving_wall_seconds'],
         }
         if restart_remaining is not None:
-            bounds['restart_cpu_cap'] = restart_remaining
+            cpu_bounds['restart_cpu_cap'] = restart_remaining
+        self.call_cpu_allowance = min(cpu_bounds.values())
+        bounds = {reason: (remaining - self.cpu_reserve) / self.cpu_rate
+                  for reason, remaining in cpu_bounds.items()}
+        bounds.update(single_call_cap=45.0,
+                      deadline=(deadline - datetime.now(timezone.utc)).total_seconds(),
+                      solving_wall_cap=self.wall_limit - self.state['solving_wall_seconds'])
         reason = min(bounds, key=bounds.get)
         timeout = bounds[reason]
         if timeout < V4_P95_SECONDS:
@@ -325,7 +351,17 @@ class SolveBudget:
             raise BudgetExhausted(self.reason)
         return timeout
 
-    def finish(self):
+    def finish(self, run=None):
+        if run is not None and self.v4:
+            # Append once: rewriting every past run on each CPU poll/checkpoint
+            # would itself consume an increasing fraction of the allocation.
+            ledger = self.path.with_suffix('.runs.jsonl')
+            with ledger.open('a') as stream:
+                stream.write(json.dumps(run, allow_nan=False) + '\n')
+                stream.flush()
+                os.fsync(stream.fileno())
+            self.state['cpu_run_ledger'] = str(ledger.resolve())
+            self.state['metered_runs'] = self.state.get('metered_runs', 0) + 1
         self.state['active'] = None
         self.checkpoint()
         if self.v4:
@@ -348,7 +384,7 @@ class _LaneOracle:
         self.oracle, self.budget, self.lane = oracle, budget, lane
         self.limit, self.calls, self.best_design, self.best_result = limit, 0, None, None
         self.stop_reason = None
-        self.started_cpu = _cpu_seconds()
+        self.started_cpu = self.budget.cpu_seconds()
         self.cpu_timeout_s = cpu_timeout_s
 
     def __getattr__(self, name):
@@ -358,7 +394,7 @@ class _LaneOracle:
         if self.calls >= self.limit:
             self.stop_reason = 'lane_solve_cap'
         elif (self.cpu_timeout_s is not None and
-              _cpu_seconds() - self.started_cpu >= self.cpu_timeout_s):
+              self.budget.cpu_seconds() - self.started_cpu >= self.cpu_timeout_s):
             self.stop_reason = 'restart_cpu_cap'
         if self.stop_reason:
             raise BudgetExhausted(self.stop_reason)
@@ -373,13 +409,15 @@ class _LaneOracle:
         self.calls += 1
         history = {'lane': self.lane, 'call': self.budget.state['total_calls'],
                    'design_hash': design.hash, 'design': asdict(design)}
-        affinity = None
+        scope = None
+        call_cpu_started = self.budget.cpu_seconds()
+        metering = {}
+        result = None
         try:
             if self.budget.v4:
-                # One shared CPU bounds aggregate runner/worker/solver CPU by wall.
-                # New worker and BLAS threads inherit this mask; restore after reap.
-                affinity = os.sched_getaffinity(0)
-                os.sched_setaffinity(0, {min(affinity)})
+                candidate_scope = ProcessTreeScope(self.budget.cpu_rate)
+                candidate_scope.start()
+                scope = candidate_scope
             if self.budget.artifact_dir is not None:
                 raw_dir = self.budget.artifact_dir / 'raw' / f"{history['call']:05d}"
                 self.oracle.retain_evaluation(raw_dir)
@@ -388,12 +426,15 @@ class _LaneOracle:
                 from sundai_hotspot.tap_oracle import HotSpotTimeoutError
                 # Recompute after reservation/retention I/O; their CPU/wall is charged.
                 remaining = (None if self.cpu_timeout_s is None else
-                             self.cpu_timeout_s - (_cpu_seconds() - self.started_cpu))
+                             self.cpu_timeout_s - (self.budget.cpu_seconds() - self.started_cpu))
                 timeout = self.budget.call_timeout(remaining)
-                history.update(timeout_s=timeout, p95_seconds=V4_P95_SECONDS)
+                history.update(timeout_s=timeout, p95_seconds=V4_P95_SECONDS,
+                               rate_q=self.budget.cpu_rate, reserve_h_cpu_seconds=self.budget.cpu_reserve,
+                               cpu_allowance_s=self.budget.call_cpu_allowance)
+                metering['cpu_started'] = self.budget.cpu_seconds()
                 call_started = time.perf_counter()
                 try:
-                    result = await asyncio.wait_for(self.oracle(design, timeout_s=timeout), timeout=timeout)
+                    result = await asyncio.wait_for(self._metered_call(design, timeout, metering), timeout=timeout)
                     if time.perf_counter() - call_started > timeout:
                         raise TimeoutError('oracle returned after its call allowance')
                 except (TimeoutError, HotSpotTimeoutError):
@@ -404,31 +445,89 @@ class _LaneOracle:
             else:
                 result = await self.oracle(design)
             history['result'] = asdict(result)
-            Controller.validate_result(result, design)
-            if self.best_result is None or result.maximum_temperature_c < self.best_result.maximum_temperature_c:
-                self.best_design, self.best_result = design, result
-            return result
         except BaseException as exc:
             if isinstance(exc, BudgetExhausted):
                 self.stop_reason = str(exc)
             history['error'] = f'{type(exc).__name__}: {exc}'
             raise
         finally:
-            # Warm workers retain descendant CPU until reaped. Closing after each
-            # call makes SELF+CHILDREN include solver AND worker startup CPU before
-            # the next admission. No hidden warm-up or uncounted retry is allowed.
             try:
                 close = getattr(self.oracle, 'aclose', None)
-                if close is not None:
-                    await close()
+                try:
+                    if close is not None:
+                        await close()
+                finally:
+                    if scope is not None:
+                        from sundai_hotspot.tap_oracle import _uncancellable_cleanup
+                        await _uncancellable_cleanup(scope.reap())
+                        history.update(reaping_confirmed=True, adopted_pids_reaped=scope.reaped_pids)
+                final_cpu = self.budget.cpu_seconds()
+                history['metered_cpu_seconds'] = max(0.0, final_cpu - call_cpu_started)
                 if self.budget.v4:
                     history['kill_latency_s'] = getattr(self.oracle, 'last_kill_latency_s', None)
-                self.budget.finish()
+                    history['cpu_at_stop_seconds'] = metering.get('cpu_at_stop_seconds')
+                    if metering.get('cpu_at_stop_seconds') is not None:
+                        history['cpu_after_stop_seconds'] = max(
+                            0.0, final_cpu - metering['cpu_started'] - metering['cpu_at_stop_seconds'])
+                cleanup_over_budget = (self.budget.v4 and 'cpu_allowance_s' in history and
+                                       final_cpu - metering['cpu_started'] > history['cpu_allowance_s'])
+                if cleanup_over_budget:
+                    history.pop('result', None)
+                    history['error'] = 'BudgetExhausted: call_cpu_cap during cleanup'
+                    self.stop_reason = self.budget.reason = 'call_cpu_cap'
+                self.budget.finish(dict(history))
                 if self.budget.artifact_dir is not None:
                     _write_json(self.budget.artifact_dir / 'evaluations' / f"{history['call']:05d}.json", history)
+                if cleanup_over_budget:
+                    raise BudgetExhausted('call_cpu_cap')
             finally:
-                if affinity is not None:
-                    os.sched_setaffinity(0, affinity)
+                if scope is not None:
+                    scope.restore()
+        Controller.validate_result(result, design)
+        if self.best_result is None or result.maximum_temperature_c < self.best_result.maximum_temperature_c:
+            self.best_design, self.best_result = design, result
+        return result
+
+    async def _metered_call(self, design, timeout, metering):
+        async def watch(task):
+            try:
+                while not task.done():
+                    used = self.budget.cpu_seconds() - metering['cpu_started']
+                    if used + self.budget.cpu_reserve >= self.budget.call_cpu_allowance:
+                        metering['cpu_at_stop_seconds'] = used
+                        metering['cpu_limit_reached'] = True
+                        task.cancel()
+                        return
+                    await asyncio.sleep(V4_CPU_POLL_SECONDS)
+            except Exception as exc:
+                metering['error'] = str(exc)
+                task.cancel()
+        task = asyncio.create_task(self.oracle(design, timeout_s=timeout))
+        monitor = asyncio.create_task(watch(task))
+        try:
+            result = await asyncio.shield(task)
+            used = self.budget.cpu_seconds() - metering['cpu_started']
+            if used + self.budget.cpu_reserve >= self.budget.call_cpu_allowance:
+                metering.setdefault('cpu_at_stop_seconds', used)
+            if metering.get('error') is not None:
+                raise RuntimeError('CPU metering failed: ' + metering['error'])
+            if metering.get('cpu_at_stop_seconds') is not None:
+                self.stop_reason = self.budget.reason = 'call_cpu_cap'
+                raise BudgetExhausted('call_cpu_cap')
+            return result
+        except asyncio.CancelledError:
+            metering.setdefault('cpu_at_stop_seconds', self.budget.cpu_seconds() - metering['cpu_started'])
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+            if metering.get('error') is not None:
+                raise RuntimeError('CPU metering failed: ' + metering['error'])
+            if metering.get('cpu_limit_reached'):
+                self.stop_reason = self.budget.reason = 'call_cpu_cap'
+                raise BudgetExhausted('call_cpu_cap') from None
+            raise
+        finally:
+            monitor.cancel()
+            await asyncio.gather(monitor, return_exceptions=True)
 
 
 async def _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs,
@@ -565,7 +664,7 @@ async def _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs,
                 search_evaluation_count=search_count, reproduction_evaluation_count=len(reproductions),
                 reproductions=reproductions, init_evaluations=init_evaluations,
                 total_evaluations_including_init=counted.calls, noop_evaluations=noop_evaluations,
-                wall_time_s=time.perf_counter()-started, cpu_seconds=_cpu_seconds()-counted.started_cpu,
+                wall_time_s=time.perf_counter()-started, cpu_seconds=budget.cpu_seconds()-counted.started_cpu,
                 cpu_exhausted='cpu' in (counted.stop_reason or ''), stop_reason=counted.stop_reason,
                 complete=counted.calls == evaluations + reproduction_evaluations,
                 solver_version=None if best is None else best.solver_version,
@@ -686,6 +785,9 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
         budget.state.setdefault('attempts', []).append(attempt)
         (output_dir / 'PREREG.json').write_bytes(prereg_bytes)
         (output_dir / 'headroom.py').write_bytes(runner_bytes)
+        enforcement_bytes = (Path(__file__).with_name('process_budget.py')).read_bytes()
+        (output_dir / 'process_budget.py').write_bytes(enforcement_bytes)
+        attempt['cpu_enforcement_sha256'] = hashlib.sha256(enforcement_bytes).hexdigest()
         budget.checkpoint()
     started_at = datetime.now(timezone.utc).isoformat()
     starting_calls = budget.state['total_calls']
@@ -826,7 +928,8 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
         'aggregate_evaluations': budget.state['total_calls'] - starting_calls,
         'cpu_seconds': budget.state['cpu_seconds'] - starting_cpu,
         'allocation_spend': budget.state,
-        'cpu_accounting': 'getrusage SELF+CHILDREN; workers reaped after every call; includes startup',
+        'cpu_accounting': ('Linux /proc whole tree including process threads and waited children; subreaper confirms all descendants reaped; includes startup and kill CPU'
+                           if v4 else 'getrusage SELF+CHILDREN; workers reaped after every call; includes startup'),
         'search_evaluations': evaluations, 'reproduction_evaluations': reproduction_evals,
     }
     if v4:

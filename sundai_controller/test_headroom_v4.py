@@ -449,7 +449,7 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
         path.write_text(json.dumps(self.spend))
         budget = h.SolveBudget(path, 'micro150', self.prereg)
         try:
-            self.assertEqual(budget.fixture_cpu_limit, 2880)
+            self.assertEqual(budget.fixture_cpu_limit, 2879.705435)
             self.assertEqual(budget.cpu_limit, 4320)
         finally:
             budget.close()

@@ -33,7 +33,8 @@
       "long_sa_solves": 4000,
       "total_solves": 4768,
       "cpu_minutes": 48,
-      "note": "micro150 only: 768 cheap + 4000 reference = 4768 calls. Actual Ascend910 2650 calls / 1440.2945650000001 CPU-s retained. Its 0.294565-second overshoot reduces remaining headroom CPU; do not round to compliance."
+      "note": "micro150 only: 768 cheap + 4000 reference = 4768 calls. Actual Ascend910 2650 calls / 1440.2945650000001 CPU-s retained. Its 0.294565-second overshoot reduces remaining headroom CPU; do not round to compliance.",
+      "cpu_seconds": 2879.705435
     },
     "note": "Headroom 9700 solves / 72 CPU-min distinct from aggregate 10000 / 84. Reserve mesh 8 CPU-min plus timing 4; reserve the full 300 non-headroom calls. Retain all known charges, unknown historical CPU and unresolved CI allocation separately. Count max(reserved, recorded non-headroom charges) toward aggregate. No claim that unknown historical/CI spend is zero or reconciled. The 300-call/720-second reservation is conservative allocation accounting, not a claim of measured non-headroom spend.",
     "non_headroom_reserved_solves": 300,
@@ -173,7 +174,7 @@
     "reference": "999 search calls including initialization then 1 fresh call of frozen restart winner; total 1000. If stopped before verification, winner ineligible. Earlier verified witnesses remain eligible. This intentionally checks one winner per restart, not every interim improvement: CPU exhaustion before the reserved final call leaves that restart ineligible.",
     "failure": "Disagreement, invalid result or missing verification cannot establish a verified winner. Missing any cheap winner makes C unavailable; incomplete reference forbids FAIL."
   },
-  "overshoot_policy": "Supersedes the prior admitted-call completion policy: in-flight calls are cancelled at the admitted time bound; immediate process-group kill and reap latency is measured, not assumed zero. Any actual CPU/wall/deadline excess remains charged. No numerical overshoot allowance is granted. OS scheduling and kill latency are observable residuals, not permission to complete a late solve.",
+  "overshoot_policy": "Reserve H=1 CPU-s for sampling/startup/shutdown, enforce Q via affinity and stop at CPU + H >= remaining. Bound call wall by (remaining CPU - H)/Q and all wall limits. Actual charges through confirmed reap remain in the ledger; reject late/partial results and stop after exhaustion. Tests require measured spend <= remaining + H. Any larger excess is a violation, never a fresh allowance.",
   "domain": {
     "wire_metric": "connectivity-weighted Manhattan center distance in mm; not routed CPLEX length",
     "wire_ceiling": "fixed initial micro150 layout proxy, never updated by winners",
@@ -186,7 +187,15 @@
     "p95_method": "nearest-rank, ceil(0.95 * 5), retained micro150 32x32 times_seconds",
     "timing_source": "docs/sentilab/evidence/micro150/TIMING.json",
     "timing_sha256": "a750a98cbb61fc89a58a6896de19e877b01599feacd66418168c1069b17471ff",
-    "policy": "Timeout = min(45 seconds, remaining fixture/headroom/aggregate CPU allowance, remaining wall to 12:00Z, remaining cumulative 90-minute solving wall, restart CPU allowance). Admit only if timeout >= measured p95. Recompute after reservation I/O. Bound the complete await including worker startup; solver and worker have no added grace. On timeout kill the isolated process group immediately and retain measured kill/reap latency and timeout overrun. No retry or later call after timeout.",
-    "cpu_execution": "The sequential v4 runner pins its calling thread and inherited worker/solver threads to one allowed CPU until reap, then restores affinity. This prevents multicore child execution from consuming CPU faster than the wall allowance. Actual scheduling/kill/reap excess remains recorded and charged."
+    "policy": "min(45s, (each remaining CPU allowance - H)/Q, remaining wall to noon, remaining 90-minute solving wall); reject below measured p95; meter through reap",
+    "cpu_execution": "Pin every existing runner thread and all inherited worker/solver threads to the declared Q CPU set; subreaper waits for all descendants. Append each metered call to SPEND.runs.jsonl, linked by SPEND.json; charge startup and CPU through confirmed reap."
+  },
+  "cpu_enforcement": {
+    "rate_q": 1,
+    "reserve_h_cpu_seconds": 1.0,
+    "poll_seconds": 0.01,
+    "meter": "Linux /proc parent and every descendant, including waited children. Subreaper owns orphans; count through confirmed reap. All existing runner threads and newly created descendants confined to Q CPUs. Dedicated process, no pre-existing children.",
+    "policy": "Wall bound <= (remaining CPU - H) / Q; stop when measured CPU + H reaches allowance. H covers sampling, startup and kill/reap burst. Record actual metered CPU through reap per call, including CPU after stop. P95 is only an admission floor, never a CPU cap. No partial result acceptance.",
+    "remaining_micro150_cpu_seconds": 2879.705435
   }
 }
