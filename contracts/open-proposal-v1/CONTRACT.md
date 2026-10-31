@@ -92,8 +92,10 @@ content, and rejects a mismatch with `transport_key_mismatch`. Logical keys are 
   opening and before anything is made public; only then does the entry's `publish` transition run. A refused command
   changes nothing, gets no room pointer, and is reported only privately.
 - Rotation is a new key version in a new manifest version; old keys stay in custody (golden manifest `F2`).
-- The test identities in `vectors-age.json` are public, so anyone can open what is sealed to them: a signed manifest
-  must not pin one unless it is a test fixture (its `problem` starts `test-`); rule `manifest.test_key`.
+- The test identities in `vectors-age.json` are public, so anyone can open what is sealed to them: no signed manifest
+  may pin one, whatever its name (rule `manifest.test_key`). The intake's test fixtures `F` and `F2` do, so they are
+  refused as signed records and serve only the sealed-note tests; the signed record example `S` pins an obviously fake
+  recipient.
 - The opener is a seam: `opener(armour, manifest, key_version) -> plaintext` or `Unopenable`. `age_tools` holds the
   reference opener for tests (X25519 age v1 on `cryptography`), the strict armour, and sealing for vector generation.
 
@@ -197,9 +199,9 @@ receipts bind `actor_kind` and the keyed `participant_ref`, never a label; golde
 ## Resolutions where revision 3 is silent or ambiguous
 
 1. `<...>` placeholders in the DESIGN.md:568-672 draft are `null` until decided; a `signed` manifest has none
-   (`manifest.signed_pins`). The draft's manifest `status` text is kept verbatim, and a signed manifest's status is
-   `signed`. `limits.status` is not verbatim: the golden drafts read `provisional (OP-W1)` where the draft names a
-   person and a room (DESIGN.md:644).
+   (`manifest.signed_pins`). The draft's manifest `status` text is copied unchanged, and a signed manifest's status
+   is `signed`. `limits.status` differs from the draft: the golden drafts read `provisional (OP-W1)` where the draft
+   names a person and a room (DESIGN.md:644).
 2. The draft's terms placeholder (DESIGN.md:648) becomes an empty `accepted_versions` in the drafts; a terms version is
    `sentilab-open-terms/<n>@<sha256 of the text>`, and the retention period an ISO 8601 duration. Its canonical URL
    path (DESIGN.md:1111) drops the fixed prefix: `/sentilab/open/terms/<n>@<sha256>.md` (`terms_path`, the terms

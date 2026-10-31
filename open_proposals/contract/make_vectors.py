@@ -258,8 +258,19 @@ def signed_test(key_version: int = 1) -> dict:
     return manifest
 
 
-A, M, F, F2 = draft_ascend(), draft_micro150(), signed_test(1), signed_test(2)
-MANIFESTS = {"A": A, "M": M, "F": F, "F2": F2}
+# An obviously fake recipient (no key behind it): the signed record example S pins it, because no signed manifest may
+# pin a published test key (manifest.test_key). F and F2 do, for the intake's sealed-note tests only.
+RECORD_RECIPIENT = "age1" + "q" * 58
+
+
+def signed_record() -> dict:
+    manifest = signed_test(1)
+    manifest["sealing"]["recipient"] = RECORD_RECIPIENT
+    return manifest
+
+
+A, M, F, F2, S_SIGNED = draft_ascend(), draft_micro150(), signed_test(1), signed_test(2), signed_record()
+MANIFESTS = {"A": A, "M": M, "F": F, "F2": F2, "S": S_SIGNED}
 ID = {key: h.manifest_id(value) for key, value in MANIFESTS.items()}
 TERMS = {"schema": "sentilab-open-terms/1", "version": TERMS_VERSION, "path": h.terms_path(TERMS_VERSION),
          "text_sha256": hashlib.sha256(TERMS_TEXT.encode()).hexdigest(),
@@ -885,7 +896,12 @@ def mrec(name, base, edits=(), expect_=(), **context) -> dict:
 def manifest_records() -> list:
     out = [mrec(f"valid: {name}", key) for key, name in
            (("A", "the Ascend 910 draft (rev 3 section 4.11)"), ("M", "the CPU-DRAM draft"),
-            ("F", "a signed test manifest"), ("F2", "the same, rotated to key version 2"))]
+            ("S", "a signed manifest"))]
+    out += [mrec(f"the intake's test fixture {key} pins a published test recipient: never a signed record", key,
+                 (), [R("manifest.test_key", "/sealing/recipient")]) for key in ("F", "F2")]
+    out.append(mrec("a signed manifest pins a published test recipient, whatever its name", "S",
+                    [("/sealing/recipient", AGE_KEYS[1][1]), ("/problem", "two-die"), ("/limits/status", "frozen")],
+                    [R("manifest.test_key", "/sealing/recipient")]))
     unknown = {"code": "unknown_field", "path": ""}
     bad = [
         ("die index", [("/dies/1/die", 0)], [R("manifest.die_index", "/dies/1")]),
@@ -925,8 +941,6 @@ def manifest_records() -> list:
          [S("/checks/cpu_enforcement", "const")]),
         ("schema: overrun detection is its own field", [("/checks/cpu_overrun", DELETE)],
          [S("/checks/cpu_overrun", "required")]),
-        ("signed: a manifest outside the test fixtures pins a published test recipient", [("/problem", "two-die")],
-         [R("manifest.test_key", "/sealing/recipient")]),
         ("signed: no accepted terms", [("/terms/accepted_versions", [])],
          [R("manifest.signed_pins", "/terms/accepted_versions")]),
         ("schema: plaintext_fallback is false", [("/sealing/plaintext_fallback", True)],
@@ -950,8 +964,8 @@ def manifest_records() -> list:
         ("schema: a lattice in micrometres, an integer", [("/legality/lattice_um", 500.0)],
          [S("/legality/lattice_um", "type")]),
     ]
-    out += [mrec(name, "F", edits, expected) for name, edits, expected in bad]
-    out.append(mrec("a private handle in a public manifest field, as base64url", "F",
+    out += [mrec(name, "S", edits, expected) for name, edits, expected in bad]
+    out.append(mrec("a private handle in a public manifest field, as base64url", "S",
                     [("/refs/grant", "grant-" + PRIV_B64URL)], [R("privacy.handle", "")],
                     private_handles=[PRIV_HANDLE]))
     return out

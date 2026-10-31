@@ -667,9 +667,10 @@ class Limits(unittest.TestCase):
         self.assertEqual((2, 5), (mv.A["checks"]["solver_time_limit_s"], mv.A["checks"]["check_wall_s"]))
         for path, value in (("/checks/cpu_reserve_s", 1), ("/checks/cpu_reserve_s", 500),
                             ("/checks/cleanup_headroom_s", 30), ("/limits/check_room_hour", 1)):
-            self.assertEqual([], validate_record("manifest", mv.edit(mv.F, path, value)), "none stands in for another")
+            self.assertEqual([], validate_record("manifest", mv.edit(mv.S_SIGNED, path, value)),
+                             "none stands in for another")
         self.assertEqual(40, mv.F["limits"]["warden_call_policy_hour"])
-        self.assertEqual([], validate_record("manifest", mv.edit(mv.F, "/limits/warden_call_policy_hour", 7)),
+        self.assertEqual([], validate_record("manifest", mv.edit(mv.S_SIGNED, "/limits/warden_call_policy_hour", 7)),
                          "the call backstop is a policy, not 600/15")
 
     def test_each_limit_keeps_its_own_finding(self):

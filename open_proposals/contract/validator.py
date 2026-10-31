@@ -49,8 +49,8 @@ SEALED_LINE = re.compile(rb"sentilab-open-sealed/1 ([0-9a-f]{64}) ([1-9][0-9]{0,
 ARMOR_BEGIN = b"-----BEGIN AGE ENCRYPTED FILE-----\n"
 FENCE = re.compile(r"```json[ \t]*\r?\n(.*)\r?\n```\Z", re.DOTALL)
 LAYOUT_CODES = frozenset({"margin", "halo_overlap", "min_spacing", "keepout"})
-# The published test identities (vectors-age.json): anyone can open what is sealed to them, so only a test fixture
-# (a problem named test-...) may pin one.
+# The published test identities (vectors-age.json): anyone can open what is sealed to them, so no signed manifest may
+# pin one. The intake's test fixture does, and is refused as a signed record.
 TEST_RECIPIENTS = frozenset(key["recipient"] for key in json.loads((CONTRACT_DIR / "vectors-age.json").read_bytes())[
     "keys"])
 SEALABLE = frozenset({"proposal", "check-request", "publish"})
@@ -470,7 +470,7 @@ def _manifest_rules(record: dict, ctx: dict) -> list:
         found.append(_bad("record_inconsistent", "/screen/scenarios", "manifest.scenarios"))
     if record["status"] == "signed":
         found += [_bad("record_inconsistent", path, "manifest.signed_pins") for path in _missing_pins(record)]
-        if not record["problem"].startswith("test-") and record["sealing"]["recipient"] in TEST_RECIPIENTS:
+        if record["sealing"]["recipient"] in TEST_RECIPIENTS:
             found.append(_bad("record_inconsistent", "/sealing/recipient", "manifest.test_key"))
     return found
 
