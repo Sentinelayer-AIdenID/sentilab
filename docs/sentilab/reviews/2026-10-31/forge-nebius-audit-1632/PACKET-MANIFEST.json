@@ -1,0 +1,56 @@
+{
+  "schema": "sentilab-private-forge-nebius-audit/1",
+  "at": "2026-10-31T16:38:48.168Z",
+  "repo": "Sentinelayer-AIdenID/sentilab",
+  "private": true,
+  "branch": "codex/diagnosis-20261031",
+  "publicationBase": "2f697274959bf11de512381cd1507d0608df3322",
+  "packetPath": "docs/sentilab/reviews/2026-10-31/forge-nebius-audit-1632",
+  "scope": "Root-authored bounded source audit and citation metadata only; no original memo or raw third-party response bodies",
+  "acceptedFindingsSha256": "bd9a0b879b7b69e37c049d190981a3885852d3d9857a08b34dd197bed5e14e32",
+  "originalMemo": {
+    "commit": "037ab59bb1d0c557d3a928f4db6c96746256dadb",
+    "path": "docs/sentilab/reviews/2026-10-31/forge-nebius/nebius.md",
+    "sha256": "ccc5aff1711b078dd62e9df7aec5f29059390888219ba00ab798647b831d9136",
+    "gitBlob": "bd2b75705f10afb88b5a58071627d04c1e09fc5f",
+    "url": "https://github.com/Sentinelayer-AIdenID/sentilab/blob/037ab59bb1d0c557d3a928f4db6c96746256dadb/docs/sentilab/reviews/2026-10-31/forge-nebius/nebius.md"
+  },
+  "files": [
+    {
+      "path": "FINDINGS.md",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/forge-nebius-audit-1632/FINDINGS.md",
+      "bytes": 6049,
+      "sha256": "bd9a0b879b7b69e37c049d190981a3885852d3d9857a08b34dd197bed5e14e32"
+    },
+    {
+      "path": "CAPTURE.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/forge-nebius-audit-1632/CAPTURE.json",
+      "bytes": 319,
+      "sha256": "2394af71e6b588069232e9b2ada2c02229674b00db5b64de3762aa9f6c7765d8"
+    },
+    {
+      "path": "CITATIONS.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/forge-nebius-audit-1632/CITATIONS.json",
+      "bytes": 2712,
+      "sha256": "360b1e6aefffd5eb736c523b158a2f2d51867ea7cc2ef8f96c7291b1559aeb2c"
+    },
+    {
+      "path": "README.md",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/forge-nebius-audit-1632/README.md",
+      "bytes": 1045,
+      "sha256": "0dfdb50e32d2964ea332212b5e4b33960bc0f32155ad90d4c98994a04865dbee"
+    }
+  ],
+  "totalPublishedFiles": 5,
+  "manifestExcludesItself": true,
+  "rights": "Private user-authorized original audit text plus source-identification metadata; source authors retain their rights; no new license or entitlement is asserted",
+  "execution": {
+    "productChanges": false,
+    "models": 0,
+    "solves": 0,
+    "providerActions": 0,
+    "prCreated": false,
+    "ciRequested": false,
+    "mainMutation": false
+  }
+}
