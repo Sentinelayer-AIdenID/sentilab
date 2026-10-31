@@ -54,3 +54,12 @@ TFL_CANONICAL_CONTAINER=1 TFL_HOTSPOT_PROBE_REPORT=/tmp/probe/sundai_hotspot/pro
 rm -rf /tmp/probe
 # TFL-09: the run service (start, one-run lock, persisted verifiable result, restart recovery, validation).
 cd /app && python -m unittest -q app.test_runs
+# SentiLab (10-31): every test module a SLAB ticket adds runs here, from the repo root, with no CI edit per ticket.
+# The legacy modules above keep their own invocations and checks.
+cd /app
+for t in sundai_controller/test_*.py sundai_hotspot/test_*.py app/test_*.py; do
+  [ -e "$t" ] || continue
+  case "$t" in */test_controller.py|*/test_safety_property.py|*/test_experiment.py|*/test_tfl08_leaderboard.py|*/test_tap_oracle.py|app/test_runs.py) continue;; esac
+  echo "SentiLab tests: $t"
+  python -m unittest -q "$(echo "${t%.py}" | tr / .)"
+done
