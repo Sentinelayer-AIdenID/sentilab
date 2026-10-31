@@ -335,19 +335,27 @@ def run(prereg_path, budget_path, output_dir, policy_path):
     with budget_path.with_suffix('.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         before = json.loads(budget_path.read_text())
-        allowance = remaining_cpu(before, prereg)
+        from sundai_controller.headroom_evidence import available_cpu, execution_identity, check_declared_calls
+        allowance = available_cpu(prereg, before)
+        from sundai_controller.evidence_profile import load_admission
+        from sundai_hotspot.tap_oracle import HotSpotOracle
+        identity = execution_identity(HotSpotOracle(prereg['grid'], prereg['grid'], fixture=prereg['fixture']))
+        profile_admission = load_admission(prereg, prereg_path, allowance, identity=identity)
+        check_declared_calls(prereg, before, profile_admission['declared_calls'])
         state = json.loads(json.dumps(before))
         deadline = min(DEADLINE, datetime.fromisoformat(prereg['clock']['deadline']))
         backend = LinuxTree(policy)
         reservation = {'id': uuid.uuid4().hex, 'reserved_cpu_seconds': allowance,
                        'policy': declaration, 'status': 'running',
                        'policy_sha256': policy_sha256,
+                       'evidence_profile_admission': profile_admission,
                        'container_rate_cap': rate_cap,
                        'prereg_sha256': hashlib.sha256(prereg_bytes).hexdigest(),
                        'supervisor_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
         state['outer_active'] = reservation
         _write(budget_path, state)
         WORKER_CONTEXT = {'lock': lock, 'policy': policy, 'reservation': reservation['id'],
+                          'evidence_profile_admission': profile_admission,
                           'prereg_sha256': reservation['prereg_sha256']}
         def work():
             from sundai_controller.headroom import run_headroom
@@ -362,6 +370,29 @@ def run(prereg_path, budget_path, output_dir, policy_path):
         finally:
             WORKER_CONTEXT = None
         state = json.loads(budget_path.read_text())
+        # A killed worker cannot run its finally block. Rebuild a durable
+        # incomplete profile here after reap, before the final CPU sample.
+        from sundai_controller.evidence_profile import build_profile
+        try:
+            records = []
+            for attempt in state.get('attempts', [])[len(before.get('attempts', [])):]:
+                directory = Path(attempt['artifact_directory']) / 'evaluations'
+                for path in sorted(directory.glob('*.json')):
+                    try:
+                        records.append(json.loads(path.read_bytes()))
+                    except (OSError, ValueError) as exc:
+                        records.append({'status': 'incomplete', 'error': f'unreadable call receipt: {exc}',
+                                        'artifact_directory': str(path)})
+            if receipt.get('status') != 'completed' or receipt.get('returncode') != 0:
+                records.append({'status': 'incomplete', 'error': 'supervisor interrupted run',
+                                'charge_source': f"SETTLEMENT-{reservation['id']}.json"})
+            profile = build_profile(records, identity)
+            profile['supervisor_settlement'] = f"SETTLEMENT-{reservation['id']}.json"
+            _write(Path(output_dir) / f"PHASE_PROFILE-{reservation['id']}.json", profile)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            # Evidence failure must still settle every charge and reject the run.
+            receipt['status'] = 'evidence_failed'
+            receipt['profile_error'] = f'{type(exc).__name__}: {exc}'
         # Includes startup, setup, all calls, serialization, persistence and reap.
         # Settlement writes/exit after this sample are conservatively charged T.
         receipt['metered_cpu_seconds'] = backend.cpu()
@@ -370,6 +401,7 @@ def run(prereg_path, budget_path, output_dir, policy_path):
         receipt['supervisor_sha256'] = reservation['supervisor_sha256']
         receipt['prereg_sha256'] = reservation['prereg_sha256']
         receipt['policy_sha256'] = reservation['policy_sha256']
+        receipt['evidence_profile_admission'] = reservation['evidence_profile_admission']
         receipt['container_rate_cap'] = reservation['container_rate_cap']
         receipt = settle(state, before, receipt, policy, allowance)
         _write(budget_path, state)

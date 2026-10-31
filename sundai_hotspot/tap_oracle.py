@@ -10,6 +10,7 @@ import math
 import numbers
 import os
 import signal
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -78,6 +79,7 @@ class HotSpotThermalResult(ThermalResult):
     all_layers_peak_c: float = field(kw_only=True)
     fixture_id: str = field(kw_only=True)
     config_sha256: str = field(kw_only=True)
+    phase_timings: dict = field(default_factory=dict, kw_only=True)
 
 
 @dataclass(frozen=True)
@@ -289,6 +291,8 @@ class _WarmWorker:
         self.process = process
         self.workspace = workspace
         self.broken = False
+        self._retained_directory = None
+        self._stderr_file = Path(workspace.name) / 'worker-stderr.bin'
         self._stderr_tail = bytearray()
         self._stderr_task = asyncio.create_task(self._drain_stderr())
 
@@ -306,6 +310,7 @@ class _WarmWorker:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 limit=MAX_WORKER_RESPONSE_BYTES,
+                env=_worker_environment(),
                 **process_options,
             )
         except BaseException:
@@ -327,6 +332,8 @@ class _WarmWorker:
             chunk = await self.process.stderr.read(4096)
             if not chunk:
                 return
+            with self._stderr_file.open('ab') as stream:
+                stream.write(chunk)
             self._stderr_tail.extend(chunk)
             if len(self._stderr_tail) > 8192:
                 del self._stderr_tail[:-8192]
@@ -343,9 +350,24 @@ class _WarmWorker:
         assert self.process.stdin is not None and self.process.stdout is not None
         self.process.stdin.write(payload + b"\n")
         await self.process.stdin.drain()
-        return await self.process.stdout.readline()
+        line = await self.process.stdout.readline()
+        if self._retained_directory is not None:
+            (self._retained_directory / 'worker-response.bin').write_bytes(line)
+        return line
 
     async def evaluate(self, request: dict, *, worker_timeout_s: float) -> dict:
+        if request.get('retained_output_root'):
+            self._retained_directory = Path(request['retained_output_root'])
+            self._retained_directory.mkdir(parents=True, exist_ok=True)
+            # Spool in the retained tree while the call runs: SIGKILL cannot
+            # execute close() to copy a temporary spool afterwards.
+            destination = self._retained_directory / 'worker-stderr.bin'
+            if self._stderr_file != destination:
+                if self._stderr_file.exists():
+                    shutil.copyfile(self._stderr_file, destination)
+                else:
+                    destination.touch()
+                self._stderr_file = destination
         self.immediate_kill = request.get('bounded_call', False)
         if not self.healthy:
             self.broken = True
@@ -360,6 +382,11 @@ class _WarmWorker:
         if len(encoded) > MAX_WORKER_REQUEST_BYTES:
             self.broken = True
             raise HotSpotOracleError("HotSpot worker request exceeds 64 KiB")
+        if self._retained_directory is not None:
+            (self._retained_directory / 'WORKER.json').write_text(json.dumps({
+                'command': [sys.executable, str(WORKER)], 'cwd': str(TAP_ROOT),
+                'environment': _worker_environment(), 'request': message}, allow_nan=False) + '\n')
+            (self._retained_directory / 'worker-request.bin').write_bytes(encoded + b'\n')
 
         try:
             line = await asyncio.wait_for(self._exchange(encoded), timeout=worker_timeout_s)
@@ -410,13 +437,21 @@ class _WarmWorker:
             await _terminate_process_group(self.process, immediate=getattr(self, 'immediate_kill', False))
         finally:
             self.kill_latency_s = time.perf_counter() - started
-            self.workspace.cleanup()
             if not self._stderr_task.done():
                 try:
                     await asyncio.wait_for(asyncio.shield(self._stderr_task), timeout=1.0)
                 except asyncio.TimeoutError:
                     self._stderr_task.cancel()
                     await asyncio.gather(self._stderr_task, return_exceptions=True)
+            if getattr(self, '_retained_directory', None) is not None:
+                destination = self._retained_directory / 'worker-stderr.bin'
+                if self._stderr_file == destination:
+                    pass
+                elif self._stderr_file.exists():
+                    shutil.copyfile(self._stderr_file, destination)
+                else:
+                    destination.touch()
+            self.workspace.cleanup()
 
 
 class _WarmWorkerPool:
@@ -512,8 +547,17 @@ class _WarmWorkerPool:
         self._closed = True
 
 
+def _worker_environment():
+    """Explicit reproducible child environment; never persist parent credentials."""
+    return {'PATH': os.defpath, 'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8',
+            'OPENBLAS_CORETYPE': 'Haswell', 'OPENBLAS_NUM_THREADS': '1',
+            'OMP_NUM_THREADS': '1', 'PYTHONUNBUFFERED': '1'}
+
+
 class HotSpotOracle:
     """Async controller oracle backed by a run-scoped pool of isolated workers."""
+
+    requires_evidence_profile = True
 
     def __init__(self, grid_rows: int = 32, grid_cols: int = 32, *, fixture: str = TAP_CONFIG_DEFAULT_ID,
                  solver_timeout_s: float = 45.0, worker_timeout_s: float | None = None,
@@ -694,6 +738,7 @@ class HotSpotOracle:
         }
         if self.retained_output_root is not None:
             request['retained_output_root'] = str(self.retained_output_root)
+            request['image_identity'] = getattr(self, 'image_identity', {'status': 'unavailable'})
         if timeout_s is not None:
             request['solver_timeout_s'] = min(self.solver_timeout_s, timeout_s)
             request['bounded_call'] = True
@@ -774,6 +819,7 @@ class HotSpotOracle:
             evidence_kind=f"HotSpot 7 steady-state TAP {self.problem.fixture_id} grid; Manhattan wire proxy, not CPLEX routing",
             fixture_id=self.problem.fixture_id,
             config_sha256=self.problem.config_sha256,
+            phase_timings=response.get('phase_timings', {}),
             problem_hash=self.problem_hash,
             wirelength_mm=self._wirelength_mm(centers),
             wire_metric="connectivity-weighted Manhattan center distance (mm); not routed CPLEX length",

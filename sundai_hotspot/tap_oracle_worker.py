@@ -8,11 +8,15 @@ import math
 import os
 from pathlib import Path
 import re
+import resource
 import subprocess
 import sys
 import tempfile
 import time
 
+
+_MODULE_STARTED = time.perf_counter()
+_STARTUP_ACCOUNTED = False
 
 TAP_ROOT = Path(__file__).resolve().parent.parent / "sundai_tap"
 HOTSPOT_ROOT = Path(__file__).resolve().parent
@@ -117,7 +121,99 @@ def _retain_solver_output(output, stdout, stderr, status):
     (output / 'EXIT.json').write_text(json.dumps(status) + '\n', encoding='utf-8')
 
 
+def _cpu_seconds() -> float:
+    return sum(usage.ru_utime + usage.ru_stime for usage in (
+        resource.getrusage(resource.RUSAGE_SELF), resource.getrusage(resource.RUSAGE_CHILDREN)))
+
+
+def _worker_startup() -> dict:
+    global _STARTUP_ACCOUNTED
+    if _STARTUP_ACCOUNTED:
+        return {'cpu_seconds': 0.0, 'wall_seconds': 0.0}
+    _STARTUP_ACCOUNTED = True
+    usage = resource.getrusage(resource.RUSAGE_SELF)
+    try:
+        # stat field 22 follows the parenthesized comm field; comm may contain spaces.
+        fields = Path('/proc/self/stat').read_text().rsplit(')', 1)[1].split()
+        start_seconds = int(fields[19]) / os.sysconf('SC_CLK_TCK')
+        wall_seconds = time.clock_gettime(time.CLOCK_BOOTTIME) - start_seconds
+    except (OSError, ValueError, AttributeError, IndexError):
+        wall_seconds = time.perf_counter() - _MODULE_STARTED
+    return {'cpu_seconds': usage.ru_utime + usage.ru_stime,
+            'wall_seconds': max(0.0, wall_seconds)}
+
+
+class _PhaseTimings:
+    def __init__(self):
+        self.values = {name: {'cpu_seconds': 0.0, 'wall_seconds': 0.0}
+                       for name in ('generate', 'solve', 'archive')}
+        self.values['worker_startup'] = _worker_startup()
+        self.active = 'generate'
+        self.cpu, self.wall = _cpu_seconds(), time.perf_counter()
+
+    def switch(self, name):
+        cpu, wall = _cpu_seconds(), time.perf_counter()
+        if self.active is not None:
+            phase = self.values[self.active]
+            phase['cpu_seconds'] += max(0.0, cpu - self.cpu)
+            phase['wall_seconds'] += max(0.0, wall - self.wall)
+        self.active, self.cpu, self.wall = name, cpu, wall
+
+    def checkpoint(self, output, status, active_phase=None):
+        self.switch(self.active)
+        path = output / 'PHASES.json'
+        temporary = output / 'PHASES.json.tmp'
+        temporary.write_text(json.dumps({'schema_version': 1, 'status': status,
+                                        'active_phase': active_phase or self.active,
+                                        'phase_timings': self.values}, sort_keys=True) + '\n')
+        temporary.replace(path)
+
+
 def evaluate(request: dict) -> dict:
+    phases = _PhaseTimings()
+    workspace_root = request.get('workspace_root')
+    if not isinstance(workspace_root, str) or not Path(workspace_root).is_dir():
+        raise ValueError('parent-owned workspace is unavailable')
+    retained = request.get('retained_output_root') is not None
+    with _output_directory(Path(workspace_root), request.get('retained_output_root')) as directory:
+        output = Path(directory)
+        result = None
+        status = 'error'
+        try:
+            if retained:
+                phases.switch('archive')
+                (output / 'REQUEST.json').write_text(json.dumps(request, sort_keys=True) + '\n')
+                phases.checkpoint(output, 'generating', 'generate')
+                phases.switch('generate')
+            result = _evaluate(request, output, retained, phases)
+            status = 'complete'
+            return result
+        except Exception as exc:
+            phases.switch('archive')
+            if retained:
+                (output / 'ERROR.json').write_text(json.dumps({
+                    'error_type': type(exc).__name__, 'error': str(exc)}) + '\n')
+                if not (output / 'EXIT.json').exists():
+                    _retain_solver_output(output, None, None,
+                                          {'status': 'worker_error', 'returncode': None})
+            exc.phase_timings = phases.values
+            exc.raw_output_directory = str(output) if retained else None
+            raise
+        finally:
+            phases.switch('archive')
+            if retained:
+                artifacts = {path.name: _sha256(path) for path in sorted(output.iterdir())
+                             if path.is_file() and path.name not in {'PHASES.json', 'ARTIFACTS.json'}}
+                (output / 'ARTIFACTS.json').write_text(json.dumps(artifacts, sort_keys=True) + '\n')
+            phases.switch(None)
+            if result is not None:
+                result['phase_timings'] = phases.values
+                result['raw_output_directory'] = str(output) if retained else None
+            if retained:
+                phases.checkpoint(output, status)
+
+
+def _evaluate(request: dict, output: Path, retained: bool, phases: _PhaseTimings) -> dict:
     requested_binary = request.get("hotspot_binary")
     if not isinstance(requested_binary, str) or not requested_binary:
         raise ValueError("HotSpot binary path is missing")
@@ -188,115 +284,120 @@ def evaluate(request: dict) -> dict:
             not isinstance(parameters["link_type"], str)):
         raise ValueError("TAP fixture parameters are inconsistent")
 
-    # TAP's legacy generator reads util/hotspot.config relative to the process
-    # startup directory. The worker is launched with TAP_ROOT as cwd; no chdir
-    # mutates process-global state, and each call receives a fresh output tree
-    # under the parent-owned workspace so timeout cleanup is reliable.
-    workspace_root = request.get("workspace_root")
-    if not isinstance(workspace_root, str) or not workspace_root:
-        raise ValueError("parent-owned workspace path is missing")
-    workspace_root = Path(workspace_root).resolve()
-    if not workspace_root.is_dir():
-        raise ValueError("parent-owned workspace is unavailable")
+    # The worker starts in TAP_ROOT for the legacy generator's relative config.
     started_generation = time.perf_counter()
-    with _output_directory(workspace_root, request.get('retained_output_root')) as directory:
-        output = Path(directory)
-        if request.get('retained_output_root') is not None:
-            (output / 'REQUEST.json').write_text(json.dumps(request, sort_keys=True) + '\n')
-        system = PassiveInterposer()
-        system.set_chiplet_count(len(widths))
-        system.initialize()
-        system.set_interposer_size(size)
-        system.set_chiplet_size(list(widths), list(heights))
-        system.set_chiplet_power(list(powers))
-        system.set_connection_matrix([list(row) for row in connections])
-        system.set_granularity(granularity)
-        system.set_link_type(parameters["link_type"])
-        system.compute_ubump_overhead()
-        if any(not math.isclose(float(actual), expected, rel_tol=0, abs_tol=1e-12)
-               for actual, expected in zip(system.hubump, halos)):
-            raise ValueError("TAP microbump halos differ from the problem contract")
-        system.set_path(str(output) + os.sep)
-        system.x = [point[0] for point in points]
-        system.y = [point[1] for point in points]
-        system.gen_flp("sample")
-        system.gen_ptrace("sample")
-        generation_seconds = time.perf_counter() - started_generation
+    system = PassiveInterposer()
+    system.set_chiplet_count(len(widths))
+    system.initialize()
+    system.set_interposer_size(size)
+    system.set_chiplet_size(list(widths), list(heights))
+    system.set_chiplet_power(list(powers))
+    system.set_connection_matrix([list(row) for row in connections])
+    system.set_granularity(granularity)
+    system.set_link_type(parameters["link_type"])
+    system.compute_ubump_overhead()
+    if any(not math.isclose(float(actual), expected, rel_tol=0, abs_tol=1e-12)
+           for actual, expected in zip(system.hubump, halos)):
+        raise ValueError("TAP microbump halos differ from the problem contract")
+    system.set_path(str(output) + os.sep)
+    system.x = [point[0] for point in points]
+    system.y = [point[1] for point in points]
+    system.gen_flp("sample")
+    system.gen_ptrace("sample")
+    generation_seconds = time.perf_counter() - started_generation
 
-        config = output / "new_hotspot.config"
-        floorplan = output / "sampleL4_ChipLayer.flp"
-        trace = output / "sample.ptrace"
-        steady = output / "sample.steady"
-        grid = output / "sample.grid.steady"
-        layers = output / "samplelayers.lcf"
-        input_paths = tuple(sorted(path for path in output.iterdir() if path.is_file()))
-        input_hashes = {path.name: _sha256(path) for path in input_paths}
-        layer_references = {
-            Path(line.strip()).name
-            for line in layers.read_text(encoding="utf-8").splitlines()
-            if line.strip().endswith(".flp")
-        }
-        if not layer_references or not layer_references.issubset(input_hashes):
-            raise RuntimeError("TAP layer config references an unhashed generated floorplan")
-        command = [
-            str(hotspot_binary),
-            "-c", str(config),
-            "-f", str(floorplan),
-            "-p", str(trace),
-            "-steady_file", str(steady),
-            "-grid_steady_file", str(grid),
-            "-model_type", "grid",
-            "-detailed_3D", "on",
-            "-grid_layer_file", str(layers),
-            "-grid_rows", str(rows),
-            "-grid_cols", str(cols),
-            "-grid_map_mode", "max",
-        ]
-        solver_started = time.perf_counter()
-        retained = request.get('retained_output_root') is not None
-        # File-backed streams survive a parent-enforced worker/process-group kill.
-        from contextlib import ExitStack
-        try:
-            with ExitStack() as streams:
-                outputs = ({name: streams.enter_context((output / f'{name}.bin').open('wb'))
-                            for name in ('stdout', 'stderr')} if retained else {'capture_output': True})
-                process = subprocess.run(command, cwd=HOTSPOT_ROOT, text=True,
-                                         timeout=timeout, check=False, **outputs)
-        except subprocess.TimeoutExpired as exc:
-            if retained:
-                _retain_solver_output(output, exc.stdout, exc.stderr,
-                                      {'status': 'timeout', 'returncode': None, 'command': command,
-                                       'timeout_s': timeout,
-                                       'elapsed_s': time.perf_counter() - solver_started})
-                (output / 'TIMEOUT.txt').write_text(str(exc))
-            raise TimeoutError(f"TFL_ORACLE_TIMEOUT HotSpot exceeded {timeout:g} seconds") from exc
-        solver_seconds = time.perf_counter() - solver_started
+    config = output / "new_hotspot.config"
+    floorplan = output / "sampleL4_ChipLayer.flp"
+    trace = output / "sample.ptrace"
+    steady = output / "sample.steady"
+    grid = output / "sample.grid.steady"
+    layers = output / "samplelayers.lcf"
+    input_paths = tuple(sorted(path for path in output.iterdir()
+                              if path.is_file() and path.name not in {'REQUEST.json', 'PHASES.json'}))
+    input_hashes = {path.name: _sha256(path) for path in input_paths}
+    layer_references = {
+        Path(line.strip()).name
+        for line in layers.read_text(encoding="utf-8").splitlines()
+        if line.strip().endswith(".flp")
+    }
+    if not layer_references or not layer_references.issubset(input_hashes):
+        raise RuntimeError("TAP layer config references an unhashed generated floorplan")
+    command = [
+        str(hotspot_binary),
+        "-c", str(config),
+        "-f", str(floorplan),
+        "-p", str(trace),
+        "-steady_file", str(steady),
+        "-grid_steady_file", str(grid),
+        "-model_type", "grid",
+        "-detailed_3D", "on",
+        "-grid_layer_file", str(layers),
+        "-grid_rows", str(rows),
+        "-grid_cols", str(cols),
+        "-grid_map_mode", "max",
+    ]
+    # The native process receives exactly this environment, never inherited secrets.
+    environment = {'LANG': 'C', 'LC_ALL': 'C', 'TZ': 'UTC'}
+    phases.switch('archive')
+    if retained:
+        (output / 'COMMAND.json').write_text(json.dumps({
+            'command': command, 'cwd': str(HOTSPOT_ROOT), 'environment': environment},
+            sort_keys=True) + '\n')
+        (output / 'IDENTITIES.json').write_text(json.dumps({
+            'binary_sha256': binary_sha256, 'source_sha256': expected_sources,
+            'image_identity': request.get('image_identity'),
+            'candidate_hash': candidate_hash, 'problem_hash': problem_hash},
+            sort_keys=True) + '\n')
+        (output / 'INPUTS.json').write_text(json.dumps(input_hashes, sort_keys=True) + '\n')
+        phases.checkpoint(output, 'solving', 'solve')
+    phases.switch('solve')
+    solver_started = time.perf_counter()
+    # File-backed streams survive a parent-enforced worker/process-group kill.
+    from contextlib import ExitStack
+    try:
+        with ExitStack() as streams:
+            outputs = ({name: streams.enter_context((output / f'{name}.bin').open('wb'))
+                        for name in ('stdout', 'stderr')} if retained else {'capture_output': True})
+            process = subprocess.run(command, cwd=HOTSPOT_ROOT, text=True,
+                                     timeout=timeout, check=False, env=environment, **outputs)
+    except subprocess.TimeoutExpired as exc:
+        phases.switch('archive')
         if retained:
-            _retain_solver_output(output, process.stdout, process.stderr,
-                                  {'status': 'exited', 'returncode': process.returncode, 'command': command})
-        if process.returncode != 0:
-            stdout = (output / 'stdout.txt').read_text() if retained else process.stdout
-            stderr = (output / 'stderr.txt').read_text() if retained else process.stderr
-            detail = (stderr + "\n" + stdout)[-4000:].strip()
-            raise RuntimeError(f"HotSpot exited {process.returncode}: {detail}")
-        if not grid.is_file() or grid.stat().st_size == 0:
-            raise RuntimeError("HotSpot completed without a grid steady-state file")
+            _retain_solver_output(output, exc.stdout, exc.stderr,
+                                  {'status': 'timeout', 'returncode': None, 'command': command,
+                                   'timeout_s': timeout,
+                                   'elapsed_s': time.perf_counter() - solver_started})
+            (output / 'TIMEOUT.txt').write_text(str(exc))
+        raise TimeoutError(f"TFL_ORACLE_TIMEOUT HotSpot exceeded {timeout:g} seconds") from exc
+    finally:
+        phases.switch('archive')
+    solver_seconds = time.perf_counter() - solver_started
+    if retained:
+        _retain_solver_output(output, process.stdout, process.stderr,
+                              {'status': 'exited', 'returncode': process.returncode, 'command': command})
+    if process.returncode != 0:
+        stdout = (output / 'stdout.txt').read_text() if retained else process.stdout
+        stderr = (output / 'stderr.txt').read_text() if retained else process.stderr
+        detail = (stderr + "\n" + stdout)[-4000:].strip()
+        raise RuntimeError(f"HotSpot exited {process.returncode}: {detail}")
+    if not grid.is_file() or grid.stat().st_size == 0:
+        raise RuntimeError("HotSpot completed without a grid steady-state file")
 
-        heatmap, all_layers_peak = _parse_grid(grid, rows, cols)
-        return {
-            "candidate_hash": candidate_hash,
-            "problem_hash": problem_hash,
-            "binary_sha256": binary_sha256,
-            "grid_rows": rows,
-            "grid_cols": cols,
-            "ambient_c": ambient_c,
-            "heatmap_c": [[cell - 273.15 for cell in row] for row in heatmap],
-            "maximum_temperature_c": max(max(row) for row in heatmap) - 273.15,
-            "all_layers_peak_c": all_layers_peak - 273.15,
-            "solver_seconds": solver_seconds,
-            "input_generation_seconds": generation_seconds,
-            "input_sha256": input_hashes,
-        }
+    heatmap, all_layers_peak = _parse_grid(grid, rows, cols)
+    return {
+        "candidate_hash": candidate_hash,
+        "problem_hash": problem_hash,
+        "binary_sha256": binary_sha256,
+        "grid_rows": rows,
+        "grid_cols": cols,
+        "ambient_c": ambient_c,
+        "heatmap_c": [[cell - 273.15 for cell in row] for row in heatmap],
+        "maximum_temperature_c": max(max(row) for row in heatmap) - 273.15,
+        "all_layers_peak_c": all_layers_peak - 273.15,
+        "solver_seconds": solver_seconds,
+        "input_generation_seconds": generation_seconds,
+        "input_sha256": input_hashes,
+    }
 
 
 def main() -> int:
@@ -319,6 +420,8 @@ def main() -> int:
                 "ok": False,
                 "error_type": type(exc).__name__,
                 "error": f"{type(exc).__name__}: {exc}"[-2000:],
+                "phase_timings": getattr(exc, 'phase_timings', {}),
+                "raw_output_directory": getattr(exc, 'raw_output_directory', None),
             }
             print(json.dumps(response, separators=(",", ":")), flush=True)
             return 1

@@ -363,7 +363,7 @@ class SolveBudget:
         return timeout
 
     def finish(self, run=None):
-        if run is not None and self.v4:
+        if run is not None and (self.v4 or self.artifact_dir is not None):
             # Append once: rewriting every past run on each CPU poll/checkpoint
             # would itself consume an increasing fraction of the allocation.
             ledger = self.path.with_suffix('.runs.jsonl')
@@ -402,6 +402,8 @@ class _LaneOracle:
         return getattr(self.oracle, name)
 
     async def __call__(self, design):
+        from sundai_controller import headroom_evidence as evidence
+        call_cpu_started = self.budget.cpu_seconds()
         if self.calls >= self.limit:
             self.stop_reason = 'lane_solve_cap'
         elif (self.cpu_timeout_s is not None and
@@ -421,9 +423,10 @@ class _LaneOracle:
         history = {'lane': self.lane, 'call': self.budget.state['total_calls'],
                    'design_hash': design.hash, 'design': asdict(design)}
         scope = None
-        call_cpu_started = self.budget.cpu_seconds()
         metering = {}
         result = None
+        raw_dir = None
+        history['status'] = 'started'
         try:
             if self.budget.v4 and not self.budget.supervised:
                 candidate_scope = ProcessTreeScope(self.budget.cpu_rate)
@@ -431,8 +434,16 @@ class _LaneOracle:
                 scope = candidate_scope
             if self.budget.artifact_dir is not None:
                 raw_dir = self.budget.artifact_dir / 'raw' / f"{history['call']:05d}"
-                self.oracle.retain_evaluation(raw_dir)
+                retain = getattr(self.oracle, 'retain_evaluation', None)
+                if retain is not None:
+                    retain(raw_dir)
+                else:
+                    raw_dir.mkdir(parents=True, exist_ok=False)
+                    self.oracle.retained_output_root = raw_dir
                 history['raw_output_directory'] = str(raw_dir)
+                self.budget.state['active']['raw_output_directory'] = str(raw_dir)
+                self.budget.checkpoint()
+                _write_json(self.budget.artifact_dir / 'evaluations' / f"{history['call']:05d}.json", history)
             if self.budget.supervised:
                 # The independent parent owns the cumulative CPU/wall limit,
                 # including setup, inter-call work and cleanup. Retain only the
@@ -460,23 +471,42 @@ class _LaneOracle:
                     raise BudgetExhausted('call_timeout')
             else:
                 result = await self.oracle(design)
+            Controller.validate_result(result, design)
             history['result'] = asdict(result)
+            history['status'] = 'completed'
         except BaseException as exc:
             if isinstance(exc, BudgetExhausted):
                 self.stop_reason = str(exc)
             history['error'] = f'{type(exc).__name__}: {exc}'
+            history['status'] = 'incomplete'
             raise
         finally:
             try:
                 close = getattr(self.oracle, 'aclose', None)
+                teardown_started = evidence.stamp()
+                cleanup_error = None
                 try:
                     if close is not None:
                         await close()
+                except BaseException as exc:
+                    cleanup_error = exc
+                    history['cleanup_error'] = f'{type(exc).__name__}: {exc}'
+                    history['error'] = history['cleanup_error']
+                    history['status'] = 'incomplete'
                 finally:
                     if scope is not None:
                         from sundai_hotspot.tap_oracle import _uncancellable_cleanup
-                        await _uncancellable_cleanup(scope.reap())
-                        history.update(reaping_confirmed=True, adopted_pids_reaped=scope.reaped_pids)
+                        try:
+                            await _uncancellable_cleanup(scope.reap())
+                            history.update(reaping_confirmed=True, adopted_pids_reaped=scope.reaped_pids)
+                        except BaseException as exc:
+                            cleanup_error = exc
+                            history.update(status='incomplete', reaping_confirmed=False,
+                                           error=f'{type(exc).__name__}: {exc}')
+                teardown = evidence.elapsed(teardown_started)
+                phases = dict(getattr(result, 'phase_timings', {}) or evidence.native_phases(raw_dir))
+                phases['teardown_reap'] = teardown
+                history['phase_timings'] = phases
                 final_cpu = self.budget.cpu_seconds()
                 history['metered_cpu_seconds'] = max(0.0, final_cpu - call_cpu_started)
                 if self.budget.v4:
@@ -491,9 +521,20 @@ class _LaneOracle:
                     history.pop('result', None)
                     history['error'] = 'BudgetExhausted: call_cpu_cap during cleanup'
                     self.stop_reason = self.budget.reason = 'call_cpu_cap'
+                archive_started = evidence.stamp()
+                if self.budget.artifact_dir is not None:
+                    evidence.record_call(self.budget.artifact_dir / 'evaluations' / f"{history['call']:05d}.json",
+                                         history, archive_started=archive_started,
+                                         call_started_cpu=call_cpu_started, cpu_clock=self.budget.cpu_seconds)
+                ledger_started = evidence.stamp()
                 self.budget.finish(dict(history))
                 if self.budget.artifact_dir is not None:
-                    _write_json(self.budget.artifact_dir / 'evaluations' / f"{history['call']:05d}.json", history)
+                    evidence.finalize_call(self.budget.artifact_dir / 'evaluations' / f"{history['call']:05d}.json",
+                                           history, ledger_started=ledger_started,
+                                           call_started_cpu=call_cpu_started, cpu_clock=self.budget.cpu_seconds)
+                    self.budget.checkpoint()
+                if cleanup_error is not None:
+                    raise cleanup_error
                 if cleanup_over_budget:
                     raise BudgetExhausted('call_cpu_cap')
             finally:
@@ -574,7 +615,7 @@ async def _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs,
                     {'public_key': controller.log.public_key})
     controller.register(agent_id, signing_identity)
     controller.bind_lane(lane_id, agent_id)
-    init_evaluations = search_count = noop_evaluations = 0
+    init_evaluations = search_count = noop_evaluations = noop_skipped = 0
     reproductions = []
     frozen_design = frozen_result = None
     reproduction_failure = None
@@ -594,7 +635,8 @@ async def _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs,
         while counted.calls < evaluations:
             attempts += 1
             if attempts > evaluations * 128:
-                raise RuntimeError(f'{lane_id} could not fill its search budget')
+                counted.stop_reason = 'proposal_attempt_cap'
+                raise BudgetExhausted(counted.stop_reason)
             before_calls = counted.calls
             before_best = counted.best_result.maximum_temperature_c
             progress = counted.calls / max(1, evaluations - 1)
@@ -618,7 +660,12 @@ async def _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs,
                 raise ValueError(f'unknown lane: {lane_id}')
             parent = controller.design if lane_id in ('random', 'ucb1') else current_design
             candidate, operation, args = _candidate(parent, operator, rng, oracle)
-            noop_evaluations += int(candidate.hash == parent.hash)
+            if candidate.hash == parent.hash:
+                noop_skipped += 1
+                controller.log.append('noop_skipped', design_hash=parent.hash, operator=operator,
+                                      reason='unchanged deterministic oracle input')
+                budget.check()
+                continue
             proposal = controller.proposal(agent_id, signing_identity, controller.mint_task(agent_id),
                                            operation, args, lane_id=lane_id, parent_hash=parent.hash,
                                            model_id='slab039', tool_hash=controller.problem_contract_hash)
@@ -680,6 +727,7 @@ async def _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs,
                 search_evaluation_count=search_count, reproduction_evaluation_count=len(reproductions),
                 reproductions=reproductions, init_evaluations=init_evaluations,
                 total_evaluations_including_init=counted.calls, noop_evaluations=noop_evaluations,
+                noop_skipped=noop_skipped,
                 wall_time_s=time.perf_counter()-started, cpu_seconds=budget.cpu_seconds()-counted.started_cpu,
                 cpu_exhausted='cpu' in (counted.stop_reason or ''), stop_reason=counted.stop_reason,
                 complete=counted.calls == evaluations + reproduction_evaluations,
@@ -792,7 +840,8 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
     if (not seeds or not long_seeds or not reducer_methods or evaluations < 1 or
             max_evals < 1 or reproduction_evals < 0):
         raise ValueError('empty or invalid declared evaluation schedule')
-    output_dir = Path(output_dir) if output_dir is not None else Path(prereg_path).parent / ('micro150-v4' if v4 else '.')
+    output_dir = (Path(output_dir) if output_dir is not None else
+                  Path(prereg_path).parent / ('micro150-v4' if v4 else '.')).resolve()
     if v4 and output_dir.resolve() == Path(prereg_path).parent.resolve():
         raise ValueError('v4 output must not overwrite the retained v3 evidence directory')
     from sundai_controller.headroom_supervisor import WORKER_CONTEXT
@@ -800,28 +849,73 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
         raise RuntimeError('real v4 execution requires the independent headroom_supervisor and operational approval')
     if WORKER_CONTEXT is not None and prereg_digest != WORKER_CONTEXT['prereg_sha256']:
         raise ValueError('preregistration changed after supervisor admission')
-    output_dir.mkdir(parents=True, exist_ok=True)
+    from sundai_hotspot.tap_oracle import HotSpotOracle
+    from sundai_controller.headroom_evidence import execution_identity, available_cpu, check_declared_calls
+    from sundai_controller.evidence_profile import load_admission
+    oracle_type = oracle_factory or HotSpotOracle
+    requires_profile = getattr(oracle_type, 'requires_evidence_profile', False)
+    identity = admission = None
+    profile_oracle = None
+    if requires_profile:
+        # Construction only reads the catalog and identities: no worker or solve.
+        profile_oracle = oracle_type(prereg['grid'], prereg['grid'], fixture=fixture)
+        identity = execution_identity(profile_oracle)
+    budget_file = Path(budget_path or Path(prereg_path).parent / 'SPEND.json')
+    spend = json.loads(budget_file.read_bytes()) if budget_file.exists() else {}
+    if WORKER_CONTEXT is not None and spend.get('outer_active', {}).get('id') == WORKER_CONTEXT['reservation']:
+        spend = {key: value for key, value in spend.items() if key != 'outer_active'}
+    if requires_profile or 'evidence_profile' in prereg:
+        admission = load_admission(prereg, prereg_path, available_cpu(prereg, spend), identity=identity)
+        check_declared_calls(prereg, spend, admission['declared_calls'])
+        if WORKER_CONTEXT is not None and admission != WORKER_CONTEXT.get('evidence_profile_admission'):
+            raise ValueError('phase profile changed after supervisor admission')
+    retain_evidence = v4 or requires_profile or admission is not None
     budget = SolveBudget(budget_path or Path(prereg_path).parent / 'SPEND.json', fixture, prereg)
-    starting_cpu = budget.state['cpu_seconds']
-    if v4:
-        budget.last_cpu, budget.last_wall = lifetime_cpu, lifetime_wall
+    try:
+        if requires_profile or 'evidence_profile' in prereg:
+            # Recheck while owning the ledger lock: another run may have spent
+            # capacity between the early refusal check and lock acquisition.
+            locked_spend = dict(budget.state)
+            if WORKER_CONTEXT is not None:
+                locked_spend.pop('outer_active', None)
+            admission = load_admission(prereg, prereg_path, available_cpu(prereg, locked_spend), identity=identity)
+            check_declared_calls(prereg, locked_spend, admission['declared_calls'])
+            if WORKER_CONTEXT is not None and admission != WORKER_CONTEXT.get('evidence_profile_admission'):
+                raise ValueError('phase profile changed after supervisor admission')
+    except BaseException:
+        if not budget.supervised:
+            budget.lock.close()
+        raise
     attempt = None
-    if v4:
-        output_dir = output_dir / f'attempt-{uuid.uuid4().hex}'
-        output_dir.mkdir(exist_ok=False)
-        budget.artifact_dir = output_dir
-        attempt = {'artifact_directory': str(output_dir.resolve()), 'prereg_digest_sha256': prereg_digest,
-                   'runner_sha256': runner_digest, 'status': 'started', 'starting_calls': budget.state['total_calls']}
-        budget.state.setdefault('attempts', []).append(attempt)
-        (output_dir / 'PREREG.json').write_bytes(prereg_bytes)
-        (output_dir / 'headroom.py').write_bytes(runner_bytes)
-        enforcement_bytes = (Path(__file__).with_name('process_budget.py')).read_bytes()
-        (output_dir / 'process_budget.py').write_bytes(enforcement_bytes)
-        attempt['cpu_enforcement_sha256'] = hashlib.sha256(enforcement_bytes).hexdigest()
-        budget.checkpoint()
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        starting_cpu = budget.state['cpu_seconds']
+        if v4:
+            budget.last_cpu, budget.last_wall = lifetime_cpu, lifetime_wall
+        if retain_evidence:
+            output_dir = output_dir / f'attempt-{uuid.uuid4().hex}'
+            output_dir.mkdir(exist_ok=False)
+            budget.artifact_dir = output_dir
+            attempt = {'artifact_directory': str(output_dir.resolve()), 'prereg_digest_sha256': prereg_digest,
+                       'runner_sha256': runner_digest, 'status': 'started', 'starting_calls': budget.state['total_calls']}
+            budget.state.setdefault('attempts', []).append(attempt)
+            (output_dir / 'PREREG.json').write_bytes(prereg_bytes)
+            (output_dir / 'headroom.py').write_bytes(runner_bytes)
+            enforcement_bytes = (Path(__file__).with_name('process_budget.py')).read_bytes()
+            (output_dir / 'process_budget.py').write_bytes(enforcement_bytes)
+            attempt['cpu_enforcement_sha256'] = hashlib.sha256(enforcement_bytes).hexdigest()
+            attempt['evidence_profile_admission'] = admission
+            if identity is not None:
+                _write_json(output_dir / 'IDENTITY.json', identity)
+                _write_json(output_dir / 'ADMISSION.json', admission)
+            budget.checkpoint()
+    except BaseException:
+        if attempt is not None:
+            attempt['status'] = 'setup_failed'
+        budget.close()
+        raise
     started_at = datetime.now(timezone.utc).isoformat()
     starting_calls = budget.state['total_calls']
-    from sundai_hotspot.tap_oracle import HotSpotOracle
 
     oracle = None
     all_reducer_results, all_diag_results, long_sa_results = [], [], []
@@ -830,8 +924,10 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
     baseline = None
     try:
         grid = prereg['grid']
-        options = {'retained_output_root': output_dir / 'raw'} if v4 else {}
-        oracle = (oracle_factory or HotSpotOracle)(grid, grid, fixture=fixture, **options)
+        options = {'retained_output_root': output_dir / 'raw'} if retain_evidence else {}
+        oracle = profile_oracle or oracle_type(grid, grid, fixture=fixture, **options)
+        if identity is not None:
+            oracle.image_identity = identity['image_identity']
         initial = oracle.design_from_centers(MICRO150_INITIAL_CENTERS if v4 else TAP_INITIAL_CENTERS)
         if v4:
             initial.check()
@@ -906,7 +1002,13 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
             failed = sys.exc_info()[0] is not None
             if attempt is not None and failed:
                 attempt['status'] = 'failed'
-            budget.close(release=not v4 or failed)
+            try:
+                if identity is not None:
+                    from sundai_controller.evidence_profile import build_profile
+                    records = [json.loads(path.read_bytes()) for path in sorted((output_dir / 'evaluations').glob('*.json'))]
+                    _write_json(output_dir / 'PHASE_PROFILE.json', build_profile(records, identity))
+            finally:
+                budget.close(release=not v4 or failed or sys.exc_info()[0] is not None)
 
     reducer_medians, all_method_all_bests = {}, {}
     for method in reducer_methods:
@@ -942,6 +1044,8 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
         'schema': 'slab-039-result-v3', 'prereg_schema': prereg['schema'],
         'prereg_digest_sha256': prereg_digest,
         'runner_sha256': runner_digest,
+        'evidence_profile_admission': admission,
+        'artifact_directory': str(output_dir.resolve()) if retain_evidence else None,
         'fixture': fixture, 'grid': grid, 'mesh_error_c': mesh_error,
         'mesh_error_source': 'provided' if j32_values is None else 'dynamic from J32/J64',
         'started_at': started_at, 'finished_at': datetime.now(timezone.utc).isoformat(),
