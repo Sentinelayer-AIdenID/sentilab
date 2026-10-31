@@ -103,50 +103,6 @@ export function readReplayFile(text) {
   return { ok: true, lines: splitLines(text) };
 }
 
-// ---- Raw bytes (page side; provisional until contracts/view-envelope-v0.6/paging.mjs publishes its bytes->rows
-// function, which this must then mirror exactly). The page never decodes a whole response or file: the default
-// TextDecoder strips a leading BOM, which would make the same row verify differently here and in node. Instead the raw
-// bytes are split on LF (0x0A) only, and each row is decoded on its own, strictly, with any BOM kept. A row that isn't
-// valid UTF-8 is one malformed row ("invalid_utf8"); a row that starts with a BOM keeps U+FEFF, so it doesn't parse
-// ("not_json"). Either way the rest of the page continues. ----
-const strictUtf8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
-const asBytes = (data) => (data instanceof Uint8Array ? data : new Uint8Array(data));
-// Rows of a raw body: split on 0x0A only; a trailing LF doesn't make a row; a blank row in the middle does.
-export function splitRows(data) {
-  const bytes = asBytes(data);
-  const rows = [];
-  let from = 0;
-  for (let i = 0; i < bytes.length; i += 1) {
-    if (bytes[i] === 0x0a) { rows.push(bytes.subarray(from, i)); from = i + 1; }
-  }
-  if (from < bytes.length) rows.push(bytes.subarray(from));
-  return rows;
-}
-// Step 1 for raw bodies: an API response over 4 MiB or 256 rows, or a replay file over 64 MiB, is refused unparsed.
-export function parseApiBytes(data) {
-  const bytes = asBytes(data);
-  if (bytes.length > MAX_API_BYTES) return { ok: false, reason: "response_too_large" };
-  const rows = splitRows(bytes);
-  if (rows.length > MAX_API_LINES) return { ok: false, reason: "too_many_lines" };
-  return { ok: true, rows };
-}
-export function readReplayBytes(data) {
-  const bytes = asBytes(data);
-  if (bytes.length > MAX_FILE_BYTES) return { ok: false, reason: "file_too_large" };
-  return { ok: true, rows: splitRows(bytes) };
-}
-// Steps 1 to 4 for one raw row: the raw size first (an oversize row is never decoded), then strict decoding, then
-// checkLine(). Returns checkLine()'s shape, plus the decoded text (null if the row was never decoded).
-export function checkRowBytes(row) {
-  if (row.length > MAX_LINE_BYTES) return { ...rejection(["line_too_large"]), value: undefined, text: null };
-  let text;
-  try { text = strictUtf8.decode(row); } catch { return { ...rejection(["invalid_utf8"]), value: undefined, text: null }; }
-  return { ...checkLine(text), text };
-}
-export function checkRows(rows) {
-  return rows.map((row) => checkRowBytes(row));
-}
-
 // Browser transport (not in the reference): read a fetch Response body as raw bytes, but stop once it passes maxBytes,
 // so an oversize response is never fully read, split or parsed. Returns { ok: true, bytes } or { ok: false, reason }.
 export async function readBodyCapped(response, maxBytes, reason) {
@@ -294,79 +250,6 @@ export function checkLine(line) {
 // Steps 1 to 4 for every line. The page keeps these results, so a live feed parses each new line once.
 export function checkLines(lines) {
   return (Array.isArray(lines) ? lines : []).map((line) => checkLine(line));
-}
-
-// The live view's accumulator (page side, not in the reference): every raw row received, in stream order, with its
-// input-check result. Cursor paging fetches each physical row of the run's stream exactly once, so every row is kept:
-// a repeated row is a real row of the stream (the verifier treats an identical envelope as a duplicate and keeps a
-// repeated rejected row as its own row, as the reference does). Each distinct decodable row is checked once.
-// Past maxRows it stops accepting and says so.
-export function liveFeed(maxRows = Infinity) {
-  const checked = new Map();
-  const items = [];
-  let truncated = false;
-  let repeats = 0;
-  return {
-    items,
-    add(rows) {
-      let added = 0;
-      for (const row of rows) {
-        if (items.length >= maxRows) { truncated = true; break; }
-        let item = null;
-        if (row.length <= MAX_LINE_BYTES) {
-          let text = null;
-          try { text = strictUtf8.decode(row); } catch { text = null; }
-          if (text !== null && checked.has(text)) { item = checked.get(text); repeats += 1; }
-        }
-        if (item === null) {
-          item = checkRowBytes(row);
-          if (item.text !== null) checked.set(item.text, item);
-        }
-        items.push(item);
-        added += 1;
-      }
-      return added;
-    },
-    get truncated() { return truncated; },
-    get repeats() { return repeats; },   // byte-identical rows seen again
-  };
-}
-
-// ---- Live paging (rule 4 as the producer serves it; PROVISIONAL until contracts/view-envelope-v0.6 publishes its
-// reference reducer, which this must then be replaced by). GET /api/view/events?run_id=<id>&cursor=<n>&limit=256.
-// The cursor counts the physical JSONL rows already consumed, malformed rows and duplicates included; the response
-// headers x-next-cursor and x-has-more carry the paging state. Paging by seq is never used: it can't deliver a late
-// envelope at a seq the view already has.
-// pagingStart() is the state at cursor 0. applyPage(state, response) is pure: response is { status, bytes,
-// nextCursor, hasMore } (bytes: the raw body, or null when it passed the 4 MiB cap while being read and was not read
-// further). It returns { state, rows, more, failure }: rows are the raw rows to keep (empty unless the page is
-// accepted), and failure is null or one of:
-//   "paging_unsupported"  400, 404 or 501 to the cursor request. Terminal: the view is never LIVE in this state.
-//   "stream_replaced"     409 or 416, or 0 rows with x-next-cursor below the cursor asked for (the log was truncated
-//                         or replaced). Terminal: never reset automatically; only a reload starts again from 0.
-//   "paging_error"        x-next-cursor missing, not an integer, backwards, or not the cursor plus the rows sent.
-//   "over_cap"            over 256 lines or 4 MiB; dropped before parsing.
-//   "http_error"          any other status that isn't 200.
-// A failed page keeps nothing and leaves the cursor where it was, so the verified prefix is unchanged. ----
-export const TERMINAL_PAGING = Object.freeze(["paging_unsupported", "stream_replaced"]);
-export function pagingStart() {
-  return { cursor: 0, terminal: null };
-}
-export function applyPage(state, response) {
-  const fail = (failure, terminal = false) => ({ state: terminal ? { ...state, terminal: failure } : state, rows: [], more: false, failure });
-  if (state.terminal) return fail(state.terminal, true);
-  const { status, bytes, nextCursor, hasMore } = response;
-  if (status === 400 || status === 404 || status === 501) return fail("paging_unsupported", true);
-  if (status === 409 || status === 416) return fail("stream_replaced", true);
-  if (status !== 200) return fail("http_error");
-  if (bytes === null) return fail("over_cap");
-  const caps = parseApiBytes(bytes);
-  if (!caps.ok) return fail("over_cap");
-  if (typeof nextCursor !== "string" || !/^[0-9]{1,15}$/.test(nextCursor)) return fail("paging_error");
-  const next = Number(nextCursor);
-  if (caps.rows.length === 0 && next < state.cursor) return fail("stream_replaced", true);
-  if (next !== state.cursor + caps.rows.length) return fail("paging_error");
-  return { state: { ...state, cursor: next }, rows: caps.rows, more: hasMore === "true" && caps.rows.length > 0, failure: null };
 }
 
 // ---- The view. ----
@@ -550,30 +433,25 @@ export function modeLabel(sourceKind, lastPollOkMs, lastProgressMs, nowMs) {
 // Feed it every poll. ok: the response passed the transport caps and was read. K: the projectable prefix after it.
 // received: how many lines arrived; it is deliberately unused, because arrivals that don't grow K (duplicates,
 // unverified envelopes, envelopes after a break) must never refresh LIVE.
-// Rule 5 as v0.6 words it (stricter than the v0.5 reference tracker, which only looks at growth): LIVE also needs K
-// not below the highest value it has reached. When K falls, because a late conflict or break cut the prefix, LIVE ends
-// at once and the label is "STALE · chain broken"; it stays so until K is back at its highest value.
-export const CHAIN_BROKEN_LABEL = "STALE · chain broken";
+// The v0.6 label rule that ends LIVE when K falls below its highest value lives in paging.mjs liveLabel(), which
+// reads this tracker's highest K, exactly as the v0.6 reference does.
 export function progressTracker() {
   let highK = 0;
-  let currentK = 0;
   let lastPollOkMs = null;
   let lastProgressMs = null;
-  const fell = () => currentK < highK;
   return {
-    poll({ nowMs, ok, K = currentK, received = 0 }) {
+    poll({ nowMs, ok, K = highK, received = 0 }) {
       if (!ok) return;
       lastPollOkMs = nowMs;
-      currentK = K;
       const grew = K > highK;
       if (grew) {
         highK = K;
         lastProgressMs = nowMs;
       }
     },
-    mode: (sourceKind, nowMs) => (sourceKind === "api" && fell() ? "STALE" : mode(sourceKind, lastPollOkMs, lastProgressMs, nowMs)),
-    label: (sourceKind, nowMs) => (sourceKind === "api" && fell() ? CHAIN_BROKEN_LABEL : modeLabel(sourceKind, lastPollOkMs, lastProgressMs, nowMs)),
-    state: () => ({ K: highK, current_K: currentK, last_poll_ok_ms: lastPollOkMs, last_progress_ms: lastProgressMs }),
+    mode: (sourceKind, nowMs) => mode(sourceKind, lastPollOkMs, lastProgressMs, nowMs),
+    label: (sourceKind, nowMs) => modeLabel(sourceKind, lastPollOkMs, lastProgressMs, nowMs),
+    state: () => ({ K: highK, last_poll_ok_ms: lastPollOkMs, last_progress_ms: lastProgressMs }),
   };
 }
 

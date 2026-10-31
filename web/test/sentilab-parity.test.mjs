@@ -6,6 +6,8 @@
 //     every chain (V1-V11, V13-V15) in every delivery order, the live timelines (V16, V17), the transport caps (V18),
 //     every input check (V12), mode, hashing and canonical cases. It never canonicalizes, hashes or verifies input
 //     that failed the input checks (instrumented counters);
+//   - paging.mjs (the WebCrypto port of the v0.6 paging reference) gives the recorded trace for every v0.6 scenario,
+//     C1-C6 and C8-C11, and the same bytes-to-rows, cursor-hash and verification answers;
 //   - the production pins hold only the service key (never a derivable test key), and the demo verifies only under TEST keys.
 // The originals are the repo's executable contracts in contracts/ (hashes checked below and in contracts/HASHES.txt).
 import { test } from "node:test";
@@ -18,9 +20,11 @@ import { fileURLToPath } from "node:url";
 import { project as refProject } from "../../contracts/contract-0.2/evidence-projection.mjs";
 import { canonical as refCanonical } from "../../contracts/contract-0.2/resultcheck.mjs";
 import * as ref from "../../contracts/view-envelope-v0.5/view-envelope.mjs";
+import * as refPaging from "../../contracts/view-envelope-v0.6/paging.mjs";
 import { project } from "../public/sentilab/evidence-projection.mjs";
 import { canonical } from "../public/sentilab/canonical.mjs";
 import * as core from "../public/sentilab/view-core.mjs";
+import * as paging from "../public/sentilab/paging.mjs";
 import { VIEW_PINS } from "../public/sentilab/view-pins.js";
 import { buildView, feedRows, chainSummary, isDrill } from "../public/sentilab/lab-model.mjs";
 import { testKey } from "./sentilab-keys.mjs";
@@ -33,9 +37,9 @@ const sha = (buf) => createHash("sha256").update(buf).digest("hex");
 const same = (a, b) => refCanonical(a) === refCanonical(b);
 const bytes = (text) => Buffer.byteLength(text, "utf8");
 const enc = (text) => new TextEncoder().encode(text);
-const rowsOf = (lines) => lines.map(enc);
 const evidenceVectors = JSON.parse(contract("contract-0.2", "vectors-evidence.json")).vectors;
 const viewFile = JSON.parse(contract("view-envelope-v0.5", "vectors-view.json"));
+const pagingFile = JSON.parse(contract("view-envelope-v0.6", "vectors-paging.json"));
 
 // ── the contracts are what their hashes say they are ────────────────────────────────────────────────────────
 const PINNED = {
@@ -45,12 +49,16 @@ const PINNED = {
   "view-envelope-v0.5/VIEW-ENVELOPE.md": "7a92d88aca1e4911a5119dbdff15ad096922dc238a67349e087030d45ad53df6",
   "view-envelope-v0.5/view-envelope.mjs": "54b248236ff93e249c7638a0dbeb4533fc7d9f15915e9b1895d1709d348f1ea7",
   "view-envelope-v0.5/vectors-view.json": "6149b9b131be50e2f4affa6badfa832435a457a6fa306bf137585608dbe54d88",
+  "view-envelope-v0.6/VIEW-ENVELOPE.md": "933868490e7f3cc3598f9e0266b65eedf75a00331e33604b5e8a08a0ee941bfe",
+  "view-envelope-v0.6/paging.mjs": "39247b6da066c2330962e2e5f279bd14a3a4a4b1986c482f4a136954f04dc343",
+  "view-envelope-v0.6/vectors-paging.json": "5dcc2a6eb55b55b1588da19478f603be9b24e74393c36c51666b3a6c474f1cc2",
 };
 test("the contract files are the hashed originals", () => {
   for (const [path, want] of Object.entries(PINNED)) assert.equal(sha(contract(...path.split("/"))), want, path);
   assert.equal(viewFile.contract_sha256, PINNED["view-envelope-v0.5/VIEW-ENVELOPE.md"], "vectors are for VIEW ENVELOPE v0.5");
   assert.equal(core.VERSION, ref.VERSION);
   assert.equal(core.VERSION, "view-envelope/0.5");
+  assert.equal(pagingFile.contract_sha256, PINNED["view-envelope-v0.6/VIEW-ENVELOPE.md"], "paging vectors are for VIEW ENVELOPE v0.6");
 });
 test("the browser projection is aneta's evidence-projection.mjs byte for byte", () => {
   assert.equal(sha(read("..", "public", "sentilab", "evidence-projection.mjs")), PINNED["contract-0.2/evidence-projection.mjs"]);
@@ -367,12 +375,12 @@ test("V12: in a mixed feed, the rejected lines add no canonical, hash or verify 
   assert.equal(mixed.chain_ok, false, "chain_ok is false whenever any row is rejected");
 });
 
-// ── V16, V17: the page's live loop (transport caps, liveFeed, verifyChecked, progressTracker) on the client clock ──
+// ── V16, V17: the reference's live simulation (caps, every received line kept, verify, tracker) on the client clock ──
 const BASE_MS = Date.UTC(2026, 9, 31, 12, 0, 0);
 async function simulateBrowser(spec) {
   const options = coreOptions(spec.view);
   const tracker = core.progressTracker();
-  const feed = core.liveFeed();
+  const received = [];
   const lineOf = new Map(spec.envelopes.map((env) => [env.event.seq, JSON.stringify(env)]));
   const sent = new Set();
   const timeline = [];
@@ -383,14 +391,14 @@ async function simulateBrowser(spec) {
     const due = spec.schedule.releases.filter((release) => release.at_s <= t).flatMap((release) => release.seqs);
     const batch = spec.schedule.resend_all ? due : due.filter((seq) => !sent.has(seq));
     batch.forEach((seq) => sent.add(seq));
-    // The page's path: the raw response bytes, caps first, split on LF, each row decoded on its own.
-    const response = core.parseApiBytes(enc(batch.map((seq) => `${lineOf.get(seq)}\n`).join("")));
-    if (response.ok && (feed.add(response.rows) > 0 || verification === null)) verification = await core.verifyChecked(feed.items, options);
+    const response = core.parseApiResponse(batch.map((seq) => `${lineOf.get(seq)}\n`).join(""));
+    if (response.ok) received.push(...response.lines);
+    verification = await core.verifyJsonl(received, options);
     const K = verification.prefix_end;
-    tracker.poll({ nowMs, ok: response.ok, K, received: response.ok ? response.rows.length : 0 });
-    timeline.push({ t, received: response.ok ? response.rows.length : 0, K, label: tracker.label("api", nowMs) });
+    tracker.poll({ nowMs, ok: response.ok, K, received: response.ok ? response.lines.length : 0 });
+    timeline.push({ t, received: response.ok ? response.lines.length : 0, K, label: tracker.label("api", nowMs) });
   }
-  return { timeline, verification, items: feed.items.length };
+  return { timeline, verification, items: received.length };
 }
 for (const spec of viewFile.live) {
   const label = spec.name.split(":")[0];
@@ -437,185 +445,6 @@ test("tracker: only growth of K beyond its highest value refreshes progress; a f
   assert.equal(tracker.label("api", 65_000), "LIVE · progress 60 s ago", "60 s is inclusive");
   assert.equal(tracker.label("api", 65_001), "STALE", "polls succeed, but K hasn't grown for over 60 s");
 });
-test("liveFeed: every physical row is kept; a repeated line is checked once and verifies as one duplicate; the cap says so", async () => {
-  const feed = core.liveFeed();
-  const lines = buildLines(v1Chain.envelopes, {})[0];
-  const junk = "{not json";
-  assert.equal(feed.add(rowsOf([...lines, lines[0], junk, junk])), 14);
-  assert.equal(feed.repeats, 2);
-  assert.equal(feed.items[0], feed.items[11], "the repeated line reuses its check result");
-  const mine = await core.verifyChecked(feed.items, coreOptions(v1Chain.view));
-  const theirs = ref.verifyJsonl([...lines, lines[0], junk, junk], refOptions(v1Chain.view));
-  assert.ok(same(refFields(mine), theirs), "same as the reference over the same physical rows");
-  assert.equal(mine.duplicates, 1);
-  assert.equal(mine.rows.length, 13, "11 envelopes and two junk rows (a rejected line is never deduplicated)");
-  const capped = core.liveFeed(3);
-  assert.equal(capped.add(rowsOf(lines.slice(0, 5))), 3);
-  assert.equal(capped.truncated, true);
-});
-
-// ── cursor paging: GET /api/view/events?run_id=&cursor=<n>&limit=256 (x-next-cursor, x-has-more) ────────────────
-// applyPage() is provisional until contracts/view-envelope-v0.6 publishes the reference paging reducer.
-const page = ({ text = "{}\n{}\n", ...overrides } = {}) => ({ status: 200, bytes: text === null ? null : enc(text), nextCursor: "12", hasMore: "true", ...overrides });
-const asText = (rows) => rows.map((row) => Buffer.from(row).toString("utf8"));
-const at = (cursor) => ({ cursor, terminal: null });
-test("applyPage: an accepted page moves the cursor by exactly its rows, malformed rows included", () => {
-  assert.deepEqual(core.pagingStart(), { cursor: 0, terminal: null });
-  const accepted = core.applyPage(at(10), page());
-  assert.deepEqual([accepted.state, asText(accepted.rows), accepted.more, accepted.failure], [at(12), ["{}", "{}"], true, null]);
-  assert.equal(core.applyPage(at(10), page({ hasMore: "false" })).more, false);
-  assert.equal(core.applyPage(at(10), page({ hasMore: null })).more, false, "a missing x-has-more means no more");
-  assert.deepEqual(core.applyPage(at(10), page({ text: "", nextCursor: "10" })), { state: at(10), rows: [], more: false, failure: null }, "nothing new yet");
-  const rows = ["{not json", "", "x".repeat(70_000)];
-  assert.deepEqual(core.applyPage(at(3), page({ text: rows.map((l) => `${l}\n`).join(""), nextCursor: "6" })).state, at(6), "malformed, blank and oversize rows count");
-});
-test("applyPage: no cursor support (400, 404, 501) is terminal 'paging unsupported'; nothing is ever accepted after it", () => {
-  for (const status of [400, 404, 501]) {
-    const step = core.applyPage(at(7), page({ status }));
-    assert.deepEqual(step, { state: { cursor: 7, terminal: "paging_unsupported" }, rows: [], more: false, failure: "paging_unsupported" }, String(status));
-    assert.deepEqual(core.applyPage(step.state, page({ nextCursor: "9" })).rows, [], "terminal: a later good page is refused");
-  }
-});
-test("applyPage: a cursor beyond the stream (409, 416, or 0 rows with x-next-cursor below it) is terminal 'stream replaced'", () => {
-  for (const response of [page({ status: 409 }), page({ status: 416 }), page({ text: "", nextCursor: "3" })]) {
-    const step = core.applyPage(at(10), response);
-    assert.deepEqual([step.failure, step.state, step.rows], ["stream_replaced", { cursor: 10, terminal: "stream_replaced" }, []]);
-    assert.equal(core.applyPage(step.state, page({ text: "{}\n", nextCursor: "11" })).failure, "stream_replaced", "never reset automatically");
-  }
-});
-test("applyPage: a missing, non-integer, backwards or inconsistent x-next-cursor is a 'paging error'; nothing is kept", () => {
-  for (const nextCursor of [null, "", "abc", "12a", "-1", "1.5", " 12", "1e3", "9".repeat(16), "9", "11", "13"]) {
-    assert.deepEqual(core.applyPage(at(10), page({ nextCursor })), { state: at(10), rows: [], more: false, failure: "paging_error" }, String(nextCursor));
-  }
-});
-test("applyPage: an over-cap page is dropped before parsing; any other status is a failed poll", () => {
-  core.resetCounters();
-  assert.equal(core.applyPage(at(0), page({ text: "{}\n".repeat(257), nextCursor: "257" })).failure, "over_cap");
-  assert.equal(core.applyPage(at(0), page({ text: buildResponse({ bytes: 4 * 1024 * 1024 + 1 }), nextCursor: "65" })).failure, "over_cap");
-  assert.equal(core.applyPage(at(0), page({ text: null })).failure, "over_cap", "the body passed 4 MiB while being read");
-  assert.equal(core.counters.parse, 0, "an over-cap page is never parsed");
-  assert.deepEqual(core.applyPage(at(4), page({ status: 503 })), { state: at(4), rows: [], more: false, failure: "http_error" });
-});
-
-// A cursor-paged stream as the producer serves it: rows are the run's physical JSONL rows; `limit` rows per page.
-// A cursor beyond the rows (a truncated or replaced log) gets 0 rows and x-next-cursor = the rows it has.
-const cursorServer = (rows, limit) => (cursor) => {
-  const from = Math.min(cursor, rows.length);
-  const slice = rows.slice(from, from + limit);
-  return { status: 200, bytes: enc(slice.map((line) => `${line}\n`).join("")), nextCursor: String(from + slice.length), hasMore: String(from + slice.length < rows.length) };
-};
-// The page's live loop for one poll (lab.js pollLive): drain while x-has-more, keep every row, verify the whole stream.
-async function cursorPoll(state, serve, options, nowMs) {
-  let failure = null;
-  for (let pages = 0; pages < 40; pages += 1) {
-    const step = core.applyPage(state.paging, serve(state.paging.cursor));
-    state.paging = step.state;
-    if (step.failure) { failure = step.failure; break; }
-    state.feed.add(step.rows);
-    if (!step.more) break;
-  }
-  state.verification = await core.verifyChecked(state.feed.items, options);
-  state.tracker.poll({ nowMs, ok: failure === null, K: state.verification.prefix_end });
-  return failure;
-}
-const liveState = () => ({ paging: core.pagingStart(), feed: core.liveFeed(), tracker: core.progressTracker(), verification: null });
-test("cursor paging: a late, validly signed conflict at a seq already seen still arrives and freezes the board before it", async () => {
-  // A second, validly signed seq 5 from a fork of V1 (same seq 1-4, a different ts at seq 5); its prev_hash is seq 4's.
-  const entries = v1Chain.input.entries.map((e) => (e.event.seq === 5 ? { ...structuredClone(e), ts: "2026-10-31T12:00:05.500Z" } : e));
-  const fork = ref.makeChain(v1Chain.input.run, entries, v1Chain.input.values, { key_id: "core", privateKey: testKey("core").privateKey });
-  const late = JSON.stringify(fork.find((env) => env.event.seq === 5));
-  const rows = buildLines(v1Chain.envelopes, {})[0];
-  const options = coreOptions(v1Chain.view);
-  const state = liveState();
-  const serve = cursorServer(rows, 4);   // small pages, so the first pages are consumed by the drain loop
-  assert.equal(await cursorPoll(state, serve, options, BASE_MS), null);
-  assert.deepEqual([state.paging.cursor, state.verification.prefix_end, state.verification.chain_ok], [11, 11, true]);
-  rows.push(late);                       // the producer appends the late conflicting row to the run's stream
-  assert.equal(await cursorPoll(state, serve, options, BASE_MS + 1000), null);
-  const r = state.verification;
-  assert.deepEqual([state.paging.cursor, r.prefix_end, r.chain_ok, r.frozen], [12, 4, false, true]);
-  assert.equal(r.label, "chain broken after seq 4; board frozen at seq 4");
-  assert.deepEqual(r.rows.filter((row) => row.seq === 5).map((row) => row.reasons), [["seq_conflict", "event_id_conflict"], ["seq_conflict", "event_id_conflict"]]);
-  assert.ok(same(refFields(r), ref.verifyJsonl(rows, refOptions(v1Chain.view))), "the reference agrees over the same stream");
-  assert.equal(state.tracker.state().last_progress_ms, BASE_MS, "K fell; that is never progress");
-  assert.equal(state.tracker.label("api", BASE_MS + 1000), "STALE · chain broken", "K fell below its highest value: LIVE ends at once");
-  await cursorPoll(state, serve, options, BASE_MS + 2000);
-  assert.equal(state.tracker.label("api", BASE_MS + 2000), "STALE · chain broken", "and stays ended while the conflict is in the stream");
-  // Paging by seq (after=11) could never have delivered the late seq 5: why the view never pages by seq.
-  assert.deepEqual(rows.filter((line) => JSON.parse(line).event.seq > 11), []);
-});
-// C11 (VIEW ENVELOPE v0.6, rule 5): LIVE also needs K not below its highest value. The demo run reaches K = 44; one second
-// later a late, validly signed second seq 10 arrives and freezes the board at 9, so the label is STALE at once, not
-// "LIVE · progress 1 s ago".
-test("C11: K 44, then a conflict at seq 10 freezes at 9 one second later: STALE · chain broken at once", async () => {
-  const rows = readFileSync(DEMO_PATH, "utf8").split("\n").filter(Boolean);
-  const { hash, sig, ...seq10 } = JSON.parse(rows[9]);
-  const late = JSON.stringify(ref.signEnvelope({ ...seq10, ts: new Date(Date.parse(seq10.ts) + 500).toISOString() }, testKey("core").privateKey, sig.key_id));
-  const options = { runId: DEMO_RUN.run_id, pins: testPins, keys: testKeys };
-  const state = liveState();
-  const serve = cursorServer(rows, 256);
-  assert.equal(await cursorPoll(state, serve, options, BASE_MS), null);
-  assert.equal(state.verification.prefix_end, 44);
-  assert.equal(state.tracker.label("api", BASE_MS), "LIVE · progress 0 s ago");
-  rows.push(late);
-  assert.equal(await cursorPoll(state, serve, options, BASE_MS + 1000), null);
-  assert.deepEqual([state.verification.prefix_end, state.verification.label], [9, "chain broken after seq 9; board frozen at seq 9"]);
-  assert.equal(state.tracker.mode("api", BASE_MS + 1000), "STALE");
-  assert.equal(state.tracker.label("api", BASE_MS + 1000), "STALE · chain broken");
-  assert.deepEqual([state.tracker.state().K, state.tracker.state().current_K], [44, 9]);
-  // The pure mode() of the v0.5 reference would still say LIVE here (a good poll 0 s ago, growth 1 s ago): this is the
-  // v0.6 tightening, which only the tracker can apply because only it knows the highest K.
-  assert.equal(core.modeLabel("api", BASE_MS + 1000, BASE_MS, BASE_MS + 1000), "LIVE · progress 1 s ago");
-  // A replay file is REPLAY whatever K did.
-  assert.equal(state.tracker.label("file", BASE_MS + 1000), "REPLAY");
-});
-test("tracker: K back at its highest value ends 'chain broken'; LIVE then still needs growth within 60 s", () => {
-  const tracker = core.progressTracker();
-  tracker.poll({ nowMs: 0, ok: true, K: 5 });
-  tracker.poll({ nowMs: 1_000, ok: true, K: 3 });
-  assert.equal(tracker.label("api", 1_000), "STALE · chain broken");
-  tracker.poll({ nowMs: 2_000, ok: false, K: 5 });
-  assert.equal(tracker.label("api", 2_000), "STALE · chain broken", "a failed poll changes nothing");
-  tracker.poll({ nowMs: 3_000, ok: true, K: 5 });
-  assert.equal(tracker.label("api", 3_000), "LIVE · progress 3 s ago", "progress still dates from the growth at 0 s");
-  tracker.poll({ nowMs: 60_001, ok: true, K: 5 });
-  assert.equal(tracker.label("api", 60_001), "STALE");
-});
-test("cursor paging: malformed rows and duplicates count toward the cursor; the stream verifies as the reference says", async () => {
-  const rows = [...buildLines(v1Chain.envelopes, {})[0], "{not json", "", buildLines(v1Chain.envelopes, {})[0][3]];
-  const state = liveState();
-  assert.equal(await cursorPoll(state, cursorServer(rows, 5), coreOptions(v1Chain.view), BASE_MS), null);
-  assert.equal(state.paging.cursor, 14);
-  assert.ok(same(refFields(state.verification), ref.verifyJsonl(rows, refOptions(v1Chain.view))));
-  assert.deepEqual([state.verification.prefix_end, state.verification.frozen, state.verification.duplicates], [11, true, 1]);
-});
-test("cursor paging: a failed page keeps the prefix and the cursor; a replaced stream stops for good", async () => {
-  const rows = buildLines(v1Chain.envelopes, {})[0];
-  const options = coreOptions(v1Chain.view);
-  const state = liveState();
-  await cursorPoll(state, cursorServer(rows.slice(0, 6), 256), options, BASE_MS);
-  assert.deepEqual([state.paging.cursor, state.verification.prefix_end], [6, 6]);
-  for (const [name, serve, failure] of [
-    ["missing x-next-cursor", (cursor) => ({ ...cursorServer(rows, 256)(cursor), nextCursor: null }), "paging_error"],
-    ["backwards with rows", (cursor) => ({ ...cursorServer(rows, 256)(cursor), nextCursor: String(cursor - 1) }), "paging_error"],
-    ["skips a row", (cursor) => ({ ...cursorServer(rows, 2)(cursor), nextCursor: String(cursor + 3) }), "paging_error"],
-    ["257 lines", () => ({ status: 200, bytes: enc("{}\n".repeat(257)), nextCursor: "263", hasMore: "false" }), "over_cap"],
-    ["503", () => ({ status: 503, bytes: new Uint8Array(0), nextCursor: null, hasMore: null }), "http_error"],
-  ]) {
-    assert.equal(await cursorPoll(state, serve, options, BASE_MS + 1000), failure, name);
-    assert.deepEqual([state.paging, state.feed.items.length, state.verification.prefix_end], [at(6), 6, 6], `${name}: nothing kept`);
-  }
-  // The log is truncated under the view: the server has 3 rows now, so cursor 6 is beyond it.
-  assert.equal(await cursorPoll(state, cursorServer(rows.slice(0, 3), 256), options, BASE_MS + 2000), "stream_replaced");
-  assert.equal(await cursorPoll(state, cursorServer(rows, 256), options, BASE_MS + 3000), "stream_replaced", "never reset automatically");
-  assert.deepEqual([state.paging.cursor, state.verification.prefix_end], [6, 6], "the prefix is kept");
-  // No cursor support from the first request: never LIVE, nothing verified.
-  const legacy = liveState();
-  assert.equal(await cursorPoll(legacy, () => ({ status: 400, bytes: new Uint8Array(0), nextCursor: null, hasMore: null }), options, BASE_MS), "paging_unsupported");
-  assert.equal(legacy.tracker.mode("api", BASE_MS), "STALE");
-  assert.equal(legacy.verification.prefix_end, 0);
-});
-
 // ── V18 and the replay cap: transport limits, before anything is parsed ─────────────────────────────────────────
 // The vector file's response rule (run-view-vectors.mjs buildResponse).
 function buildResponse(build) {
@@ -646,16 +475,15 @@ for (const spec of viewFile.transport) {
 test("V18: a rejected response leaves the prefix unchanged and counts the poll as failed (the page's sequence)", async () => {
   const options = coreOptions(v1Chain.view);
   const tracker = core.progressTracker();
-  const feed = core.liveFeed();
-  feed.add(core.parseApiBytes(enc(buildLines(v1Chain.envelopes, {})[0].map((line) => `${line}\n`).join(""))).rows);
-  let verification = await core.verifyChecked(feed.items, options);
+  const received = core.parseApiResponse(buildLines(v1Chain.envelopes, {})[0].map((line) => `${line}\n`).join("")).lines;
+  let verification = await core.verifyJsonl(received, options);
   tracker.poll({ nowMs: BASE_MS, ok: true, K: verification.prefix_end });
   for (const [t, build] of [[1, { lines: 257 }], [2, { bytes: 4 * 1024 * 1024 + 1 }]]) {
-    const response = core.parseApiBytes(enc(buildResponse(build)));
+    const response = core.parseApiResponse(buildResponse(build));
     assert.equal(response.ok, false, `at ${t} s the response was accepted`);
     tracker.poll({ nowMs: BASE_MS + t * 1000, ok: false });
   }
-  verification = await core.verifyChecked(feed.items, options);
+  verification = await core.verifyJsonl(received, options);
   assert.equal(verification.prefix_end, 11);
   assert.equal(tracker.state().K, 11);
   assert.equal(tracker.state().last_poll_ok_ms, BASE_MS, "a rejected response is not a good poll");
@@ -679,52 +507,6 @@ test("readBodyCapped: a response over the cap is never fully read; one at the ca
   assert.deepEqual(stopped, { ok: false, reason: "response_too_large" });
   assert.ok(cancelled && pulled <= cap / (64 * 1024) + 2, `pulled ${pulled} chunks`);
 });
-// ── bytes -> rows (page side; to mirror contracts/view-envelope-v0.6/paging.mjs once it exists, with a C10 parity test) ──
-test("splitRows splits raw bytes on LF only, like splitLines on the same text, for every vector stream", () => {
-  const texts = [
-    ...viewFile.chains.flatMap((c) => buildLines(c.envelopes, c.send).map((lines) => lines.map((l) => `${l}\n`).join(""))),
-    "", "\n", "a", "a\n", "a\n\nb", "a\r\nb\r\n", "\n\n", "x\ny",
-  ];
-  for (const text of texts) assert.deepEqual(core.splitRows(enc(text)).map((r) => Buffer.from(r).toString("utf8")), ref.readReplayFile(text).lines);
-});
-test("checkRowBytes gives checkLine's verdict for every vector line and V12 input, and never decodes an oversize row", () => {
-  const lines = [...viewFile.chains.flatMap((c) => buildLines(c.envelopes, c.send)[0]), ...inputCases.filter(({ made }) => made.raw !== null).map(({ made }) => made.raw)];
-  for (const line of lines) {
-    const { value: a, text, ...mine } = core.checkRowBytes(enc(line));
-    const { value: b, ...theirs } = ref.checkLine(line);
-    assert.deepEqual(mine, theirs, line.slice(0, 60));
-  }
-  core.resetCounters();
-  assert.deepEqual(core.checkRowBytes(enc(`{"a":"${"x".repeat(65_536)}"}`)).text, null, "an oversize row is never decoded");
-  assert.equal(core.counters.parse, 0);
-});
-test("a row with a leading BOM or invalid UTF-8 is one malformed row; the rest of the page still verifies", async () => {
-  const lines = buildLines(v1Chain.envelopes, {})[0];
-  const parts = lines.map((line) => enc(`${line}\n`));
-  parts.splice(4, 0, Uint8Array.from([0xef, 0xbb, 0xbf, ...enc(`${lines[4]}\n`)]));                    // the seq 5 line again, with a BOM
-  parts.splice(9, 0, Uint8Array.from([...enc('{"event":{"seq":20},"x":"'), 0xc3, 0x28, ...enc('"}\n')])); // invalid UTF-8, seq readable only after decoding
-  const body = Uint8Array.from(parts.flatMap((p) => [...p]));
-  const read = core.readReplayBytes(body);
-  assert.equal(read.rows.length, 13);
-  const items = core.checkRows(read.rows);
-  assert.deepEqual(items.filter((i) => !i.ok).map((i) => [i.status, i.reasons]), [["malformed", ["not_json"]], ["malformed", ["invalid_utf8"]]]);
-  core.resetCounters();
-  const r = await core.verifyChecked(items, coreOptions(v1Chain.view));
-  assert.equal(r.rows.filter((row) => row.status === "verified").length, 11, "every real envelope still verifies");
-  assert.deepEqual(r.rows.filter((row) => row.status === "malformed").map((row) => row.seq), [null, null], "neither rejected row has a readable seq, so both sit last");
-  assert.deepEqual([r.prefix_end, r.frozen, r.chain_ok], [11, true, false]);
-  assert.equal(core.counters.hash, 11, "only the 11 good rows are hashed");
-  // Node reads the BOM row the same way (readFileSync keeps a BOM): not JSON.
-  assert.deepEqual(ref.checkLine(`\uFEFF${lines[4]}`).reasons, ["not_json"]);
-});
-test("the demo through the page's byte path equals the reference over the same file as text", async () => {
-  const raw = readFileSync(DEMO_PATH);
-  const read = core.readReplayBytes(raw);
-  const mine = await core.verifyChecked(core.checkRows(read.rows), { runId: DEMO_RUN.run_id, pins: testPins, keys: testKeys });
-  const theirs = ref.verifyJsonl(raw.toString("utf8"), { runId: DEMO_RUN.run_id, pins: testPins, keys: { core: testKey("core").publicKey } });
-  assert.ok(same(refFields(mine), theirs));
-  assert.equal(core.readReplayBytes(new Uint8Array(64 * 1024 * 1024 + 1)).reason, "file_too_large");
-});
 test("readReplayFile: a file over 64 MiB is refused before parsing; a small one splits into lines like the reference", () => {
   core.resetCounters();
   const big = core.readReplayFile("x".repeat(64 * 1024 * 1024 + 1));
@@ -745,6 +527,191 @@ test("canonicalSize equals the canonical byte length for every vector envelope, 
   core.resetCounters();
   for (const env of all) assert.equal(core.canonicalSize(env), bytes(refCanonical(env)), env.event.event_id);
   assert.equal(core.counters.canonical, 0);
+});
+
+// ── v0.6 live paging: paging.mjs (browser port) against the reference and its recorded vectors ─────────────────
+// The harness below is run-paging-vectors.mjs's: rows from the vector file, logs as row ids, the reference server
+// (servePage) behind a scripted `server`, and the client loop that fetches while x-has-more is true (16 pages a poll).
+// The client under test is the browser port: request(), step(), verifyRows() and liveLabel() from paging.mjs, with the
+// browser progressTracker() and the browser keys.
+const PAGING_OPTIONS = { runId: pagingFile.view.run_id, pins: nodePins(pagingFile.view), keys: rawKeys(pagingFile.view) };
+const REF_PAGING_OPTIONS = { runId: pagingFile.view.run_id, pins: nodePins(pagingFile.view), keys: nodeKeys(pagingFile.view) };
+const pagingBytes = new Map();
+const bytesOf = (rowId) => {
+  if (!pagingBytes.has(rowId)) {
+    const spec = pagingFile.rows[rowId];
+    assert.ok(spec, `unknown row ${rowId}`);
+    pagingBytes.set(rowId, spec.text !== undefined ? enc(spec.text) : spec.base64 !== undefined ? new Uint8Array(Buffer.from(spec.base64, "base64")) : new Uint8Array(spec.bytes).fill(spec.fill.charCodeAt(0)));
+  }
+  return pagingBytes.get(rowId);
+};
+const expand = (list) => list.flatMap((entry) => (Array.isArray(entry) ? Array(entry[1]).fill(entry[0]) : [entry]));
+const runLengths = (ids) => {
+  const out = [];
+  for (const rowId of ids) {
+    const last = out.at(-1);
+    if (Array.isArray(last) && last[0] === rowId) last[1] += 1;
+    else if (last === rowId) out[out.length - 1] = [rowId, 2];
+    else out.push(rowId);
+  }
+  return out;
+};
+const lenient = (bytes) => new TextDecoder("utf-8", { fatal: false, ignoreBOM: true }).decode(bytes);
+const splitRowsOf = (buffer) => paging.splitRows(new Uint8Array(buffer));
+const rawHash = (rows) => createHash("sha256").update(Buffer.concat(rows.flatMap((row) => [Buffer.from(row), Buffer.from([0x0a])]))).digest("hex");
+const LOGS = pagingFile.logs;
+function legacyRows(logName, after) {
+  return expand(LOGS[logName]).filter((rowId) => {
+    try { return JSON.parse(lenient(bytesOf(rowId))).event.seq > after; } catch { return false; }
+  });
+}
+function serve(server, req) {
+  if (server.network_error) return { response: null, bodyIds: [] };
+  if (server.status !== undefined && server.status !== 200) {
+    if (server.legacy && req.after !== undefined) {
+      const ids = legacyRows(server.legacy, req.after);
+      return { response: { status: 200, headers: {}, bodyBytes: refPaging.joinRows(ids.map(bytesOf)) }, bodyIds: ids };
+    }
+    return { response: { status: server.status, headers: {}, bodyBytes: new Uint8Array(0) }, bodyIds: [] };
+  }
+  if (server.page) {
+    const before = expand(LOGS[server.page.log]);
+    const rows = expand(server.page.rows);
+    const next = req.cursor + rows.length;
+    const headers = { "x-next-cursor": String(next), "x-has-more": "false", "x-cursor-hash": rawHash([...before, ...rows].slice(0, next).map(bytesOf)) };
+    return { response: { status: 200, headers, bodyBytes: refPaging.joinRows(rows.map(bytesOf)) }, bodyIds: rows };
+  }
+  const ids = expand(LOGS[server.log]);
+  const response = refPaging.servePage(ids.map(bytesOf), req);
+  let bodyIds = response.status === 200 ? ids.slice(req.cursor, Number(response.headers["x-next-cursor"])) : [];
+  for (const [name, value] of Object.entries(server.headers ?? {})) {
+    if (value === null) delete response.headers[name];
+    else response.headers[name] = value;
+  }
+  if (server.tamper) {
+    const at = server.tamper.index - req.cursor;
+    if (at >= 0 && at < bodyIds.length) {
+      bodyIds = bodyIds.with(at, server.tamper.row);
+      response.bodyBytes = refPaging.joinRows(bodyIds.map(bytesOf));
+    }
+  }
+  return { response, bodyIds };
+}
+const summary = (state) => ({ cursor: state.cursor, rows: state.rows.length, cursor_hash: state.cursor_hash, has_more: state.has_more, last_ok_ms: state.last_ok_ms, failure: state.failure, degraded: state.degraded });
+async function runScenarioBrowser(spec) {
+  let state = paging.initialState(pagingFile.view.run_id, { limit: spec.limit });
+  const tracker = core.progressTracker();
+  const trace = [];
+  const transitions = [];
+  for (const poll of spec.polls) {
+    const nowMs = BASE_MS + poll.t_s * 1000;
+    const fetches = [];
+    for (let n = 0; n < 16; n += 1) {
+      const req = paging.request(state);
+      const { response, bodyIds } = serve(poll.server, req);
+      const before = state;
+      const result = await paging.step(state, response, nowMs);
+      state = result.state;
+      transitions.push({ before, after: state, req, outcome: result.outcome });
+      if (result.outcome === "ok") tracker.poll({ nowMs, ok: true, K: (await paging.verifyRows(state, PAGING_OPTIONS)).K, received: result.newRows.length });
+      else tracker.poll({ nowMs, ok: false });
+      fetches.push({ request: req, response: response && { status: response.status, headers: response.headers, body_rows: runLengths(bodyIds) }, outcome: result.outcome, new_rows: result.newRows.length });
+      if (result.outcome !== "ok" || !state.has_more) break;
+    }
+    const { verification, K } = await paging.verifyRows(state, PAGING_OPTIONS);
+    const row_counts = {};
+    const rejected = {};
+    for (const row of verification.rows) {
+      row_counts[row.status] = (row_counts[row.status] ?? 0) + 1;
+      if (["malformed", "oversize"].includes(row.status)) rejected[row.reasons.join("+")] = (rejected[row.reasons.join("+")] ?? 0) + 1;
+    }
+    trace.push({ t_s: poll.t_s, fetches, after: summary(state), K, board: verification.label, label: paging.liveLabel(state, tracker, nowMs, K), row_counts, rejected });
+  }
+  return { trace, transitions, state };
+}
+
+test("paging.mjs is pure, like the reference: no clock, randomness, network, timers, files or process state", () => {
+  const text = read("..", "public", "sentilab", "paging.mjs").toString("utf8");
+  assert.deepEqual(["Date", "Math.random", "fetch(", "setTimeout", "setInterval", "process.", "node:", "performance", "Buffer"].filter((token) => text.includes(token)), []);
+});
+test(`v0.6 bytes to rows: all ${pagingFile.bytes_to_rows.length} cases through the browser splitRows() and rowText()`, () => {
+  for (const spec of pagingFile.bytes_to_rows) {
+    const body = new Uint8Array(Buffer.from(spec.body_base64, "base64"));
+    assert.deepEqual(paging.splitRows(body).map(paging.rowText), spec.rows, spec.name);
+    assert.deepEqual(paging.splitRows(body).map(paging.rowText), refPaging.splitRows(body).map(refPaging.rowText), spec.name);
+  }
+});
+test(`v0.6 cursor hash: all ${pagingFile.cursor_hash_cases.length} cases through the browser cursorHash() (WebCrypto), over raw bytes`, async () => {
+  for (const spec of pagingFile.cursor_hash_cases) {
+    const rows = spec.rows.map(bytesOf);
+    assert.equal(await paging.cursorHash(rows), spec.expect, spec.name);
+    assert.equal(await paging.cursorHash(rows), refPaging.cursorHash(rows), spec.name);
+  }
+  assert.equal(paging.initialState("run-v1").cursor_hash, refPaging.initialState("run-v1").cursor_hash, "the written-out empty hash is the reference's");
+  assert.deepEqual(paging.initialState("run-v1", { limit: 4 }), refPaging.initialState("run-v1", { limit: 4 }));
+  assert.throws(() => paging.initialState("run-v1", { limit: 257 }), RangeError);
+});
+test("v0.6 verifyBytes: a BOM row is not_json and an invalid-UTF-8 row is invalid_utf8 wherever they sit; the rest verifies, as the reference says", async () => {
+  const v1Rows = expand(LOGS.v1).map(bytesOf);
+  for (const at of [0, 5, 11]) {
+    const rows = [...v1Rows.slice(0, at), bytesOf("bom-v1-01"), bytesOf("junk-utf8"), ...v1Rows.slice(at)];
+    const mine = await paging.verifyBytes(rows, PAGING_OPTIONS);
+    assert.ok(same(refFields(mine), refPaging.verifyBytes(rows, REF_PAGING_OPTIONS)), `at ${at}`);
+    assert.deepEqual(mine.rows.filter((row) => row.status === "malformed").map((row) => row.reasons), [["not_json"], ["invalid_utf8"]]);
+    assert.equal(mine.prefix_end, 11);
+    assert.deepEqual(checkPageFields(mine), [], "the page's extra fields stay aligned with the relabelled rows");
+  }
+  const big = await paging.verifyBytes([new Uint8Array(65_537).fill(0xff)], PAGING_OPTIONS);
+  assert.deepEqual([big.rows[0].status, big.rows[0].reasons], ["oversize", ["line_too_large"]], "raw size first");
+});
+test("v0.6 verifyReplayBytes: over 64 MiB is refused unread; the demo file verifies exactly as the reference verifies it", async () => {
+  assert.deepEqual(await paging.verifyReplayBytes(new Uint8Array(64 * 1024 * 1024 + 1), PAGING_OPTIONS), { ok: false, reason: "file_too_large" });
+  const demo = new Uint8Array(readFileSync(DEMO_PATH));
+  const mine = await paging.verifyReplayBytes(demo, { runId: DEMO_RUN.run_id, pins: testPins, keys: testKeys });
+  const theirs = refPaging.verifyReplayBytes(demo, { runId: DEMO_RUN.run_id, pins: testPins, keys: { core: testKey("core").publicKey } });
+  assert.ok(mine.ok && same(refFields(mine.verification), theirs.verification));
+  assert.equal(mine.verification.prefix_end, 44);
+});
+for (const spec of pagingFile.scenarios) {
+  const label = spec.name.split(" ")[0];
+  test(`${label}: the browser paging client gives the reference's recorded trace, poll for poll`, async () => {
+    const run = await runScenarioBrowser(spec);
+    for (const [i, step] of run.trace.entries()) {
+      assert.ok(same(step, spec.trace[i]), `t = ${step.t_s} s: ${refCanonical(step).slice(0, 400)}\n  expected ${refCanonical(spec.trace[i]).slice(0, 400)}`);
+    }
+    assert.equal(run.trace.length, spec.trace.length);
+    // The rules the reference runner checks on every fetch.
+    for (const { before, after, req, outcome } of run.transitions) {
+      assert.ok(after.cursor >= before.cursor && after.rows.length >= before.rows.length, "never resets");
+      if (outcome !== "ok") assert.ok(after.rows === before.rows && after.cursor === before.cursor && after.cursor_hash === before.cursor_hash, "a failed poll keeps nothing");
+      assert.equal(after.cursor, after.rows.length);
+      assert.deepEqual(Object.keys(req).sort(), before.cursor > 0 ? ["cursor", "cursor_hash", "limit"] : ["cursor", "limit"], "cursor_hash with every cursor above 0; never a seq parameter");
+      if (before.cursor > 0) assert.equal(req.cursor_hash, rawHash(before.rows));
+    }
+    // The full verification of the rows held equals the reference's over the same raw rows.
+    const mine = (await paging.verifyRows(run.state, PAGING_OPTIONS)).verification;
+    assert.ok(same(refFields(mine), refPaging.verifyRows({ ...run.state }, REF_PAGING_OPTIONS).verification));
+  });
+}
+test("C11 on the bundled demo: K 44, then a late signed seq 10 one second later freezes it at 9, and the label is STALE · chain broken at once", async () => {
+  const rows = splitRowsOf(readFileSync(DEMO_PATH));
+  const { hash, sig, ...seq10 } = JSON.parse(lenient(rows[9]));
+  const late = enc(JSON.stringify(ref.signEnvelope({ ...seq10, ts: new Date(Date.parse(seq10.ts) + 500).toISOString() }, testKey("core").privateKey, sig.key_id)));
+  const options = { runId: DEMO_RUN.run_id, pins: testPins, keys: testKeys };
+  const tracker = core.progressTracker();
+  let state = paging.initialState(DEMO_RUN.run_id);
+  const poll = async (log, nowMs) => {
+    const result = await paging.step(state, refPaging.servePage(log, paging.request(state)), nowMs);
+    state = result.state;
+    const { K } = await paging.verifyRows(state, options);
+    tracker.poll({ nowMs, ok: result.outcome === "ok", K });
+    return K;
+  };
+  assert.equal(await poll(rows, BASE_MS), 44);
+  assert.equal(paging.liveLabel(state, tracker, BASE_MS, 44), "LIVE · progress 0 s ago");
+  assert.equal(await poll([...rows, late], BASE_MS + 1000), 9);
+  assert.equal(paging.liveLabel(state, tracker, BASE_MS + 1000, 9), "STALE · chain broken");
+  assert.equal(refPaging.liveLabel(state, tracker, BASE_MS + 1000, 9), "STALE · chain broken", "the reference label agrees");
 });
 
 // ── mode, hashing ─────────────────────────────────────────────────────────────────────────────────────────────
