@@ -482,6 +482,14 @@ export class TrackAnimation {
     else if (!animate) this.pulseStart = null;
   }
 
+  // Cut to a layout: no glide, fade, ghost or pulse survives from what was showing before.
+  reset(layout, { accepted = false, now = 0 } = {}) {
+    this.items = new Map();
+    this.ghosts = [];
+    this.pulseStart = null;
+    this.set(layout, { animate: false, accepted, now });
+  }
+
   frame(now) {
     const chiplets = [];
     let active = false;

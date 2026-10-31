@@ -3,7 +3,8 @@
 // (pure, also used by the CLI); the drawing through render.mjs (hand-written Canvas 2D). Every string from an
 // envelope reaches the page through textContent, never innerHTML.
 import { DEMO, CONTRACT_VERSION, setupTrust, parseReplay, runIdFromFile, isDrill, verifyRun, chainSummary, modeNow, createLiveFeed, reasonText } from "./source.mjs";
-import { sceneAt, runFrame, scaleTicks, describeEvent, TRACK_ORDER, TRACKS, trackName } from "./scene.mjs";
+import { sceneAt, scaleTicks, describeEvent, TRACK_ORDER, TRACKS, trackName } from "./scene.mjs";
+import { reconcile } from "./playhead.mjs";
 import { drawPackage, TrackAnimation, HOME_AZIMUTH, ORBIT_MS, easeInOut } from "./render.mjs";
 
 const params = new URLSearchParams(location.search);
@@ -32,6 +33,10 @@ const KIND = {
   rejected_schema: "out", rejected_constraints: "out", failed_run: "out", reproduction_failed: "out", cancelled: "out",
 };
 const lifeKind = (l) => KIND[l] ?? "open";
+// Why a verified value was refused (scene.errors codes). Refused values are never placed or coloured.
+const REFUSAL = { unit_not_supported: "unit not supported", unit_missing: "unit missing", out_of_range: "value out of range", malformed: "malformed value" };
+const refusalText = (e) => `${REFUSAL[e.code] ?? e.code}${e.unit ? ` ("${e.unit}")` : ""}`;
+const FIELD = { geometry: "geometry", center_temps: "temperatures", J: "J", W: "W" };
 const NO_TEMPS = { rejected_schema: "not simulated (schema rejected)", rejected_constraints: "not simulated (failed the constraint check)", failed_run: "simulation failed", cancelled: "cancelled" };
 
 // ── state ───────────────────────────────────────────────────────────────────────────────────────────────────
@@ -41,6 +46,7 @@ const S = {
   file: null,            // { label, runId, runIdFrom, isDemo, envelopes, verification, frame, fullScene, error }
   live: null,            // created on first switch to live
   liveSrc: { verification: null, frame: null, fullScene: null, envelopes: [] },
+  gen: 0,                // bumps on every verification change (ticks, banners and the scene are rebuilt)
   cursor: 0, cursors: {}, following: true,
   scene: null,
   selected: TRACK_ORDER.includes(params.get("track")) ? params.get("track") : "board",
@@ -52,6 +58,7 @@ const S = {
 const anims = Object.fromEntries(TRACK_ORDER.map((t) => [t, new TrackAnimation()]));
 const active = () => (S.source === "api" ? S.liveSrc : S.file);
 const total = () => active()?.verification?.ordered.length ?? 0;
+const prefixK = () => active()?.verification?.prefixCount ?? 0;
 
 // ── canvases ────────────────────────────────────────────────────────────────────────────────────────────────
 const surfaces = new Map();      // name -> { canvas, ctx, w, h }
@@ -113,24 +120,21 @@ async function loadReplay({ url, text, label, runId, isDemo, at = null }) {
     }
   } catch (error) {
     S.file = { label, runId: runId ?? "", runIdFrom: "requested", isDemo, envelopes: [], verification: null, error: String(error.message ?? error) };
-    S.scene = null;
-    renderDom();
+    applyScene(null);
     return;
   }
   const envelopes = parseReplay(text);
   let runIdFrom = "requested";
   if (!runId) { runId = runIdFromFile(envelopes); runIdFrom = "file"; }
   const verification = await verifyRun(envelopes, { runId, trust: S.trust });
-  // One frame per run: the scale and the footprint come from the whole verified prefix, so they never change
-  // while the playhead moves.
-  const frame = runFrame(verification.prefixEnvelopes, verification.projection);
-  const fullScene = sceneAt(verification.prefixEnvelopes, verification.prefixCount, frame);
-  S.file = { label, runId, runIdFrom, isDemo, envelopes, verification, frame, fullScene };
+  // A new file is a verification change like any other: one frame for the run (scale and footprint from its whole
+  // verified prefix, fixed while the playhead moves), the playhead clamped to K, every animation cut.
+  S.file = { label, runId, runIdFrom, isDemo, envelopes, verification: null, frame: null, fullScene: null };
+  adoptVerification(S.file, verification, { active: S.source === "file", following: false, fresh: true });
   if (S.source !== "file") return;
-  for (const a of Object.values(anims)) a.set(null);
   if (verification.prefixCount === 0) {
-    // Nothing verifies: there is nothing to play. Show the whole list's state (frozen at seq 0) with the reason.
-    setCursor(verification.ordered.length);
+    // Nothing verifies: there is nothing to play. The frozen banner and the empty state say why.
+    setCursor(0);
   } else if (at !== null && Number.isInteger(at) && at >= 0) {
     setCursor(verification.ordered.filter((e, i) => verification.rows[i].seq !== null && verification.rows[i].seq <= at).length);
   } else {
@@ -145,26 +149,54 @@ function setCursor(n, { stepwise = false } = {}) {
   const v = src?.verification;
   const prev = S.scene;
   S.cursor = Math.max(0, Math.min(n, v ? v.ordered.length : 0));
-  if (!v || !src.frame) { S.scene = null; renderDom(); requestDraw(); return; }
+  if (!v || !src.frame) { applyScene(null); return; }
   // Rule 1: the drawing is the scene of the projectable prefix, as far as the playhead has reached. Envelopes after
   // the prefix move the playhead but never the package.
   const k = Math.min(S.cursor, v.prefixCount);
-  S.scene = sceneAt(v.prefixEnvelopes, k, src.frame);
-  const animate = stepwise && !REDUCED && prev !== null && S.scene.at.seq === prev.at.seq + 1;
-  const crossed = animate ? S.scene.timeline.filter((e) => e.seq === S.scene.at.seq) : [];
+  const scene = sceneAt(v.prefixEnvelopes, k, src.frame);
+  applyScene(scene, { animate: stepwise && prev !== null && scene.at.seq === prev.at.seq + 1 });
+}
+
+// Show a scene: tween each track into it (a playhead step), or cut every animation to it (anything else).
+function applyScene(scene, { animate = false } = {}) {
+  S.scene = scene;
+  const tween = animate && !REDUCED;
+  const crossed = tween ? scene.timeline.filter((e) => e.seq === scene.at.seq) : [];
   const now = performance.now();
-  for (const track of S.scene.tracks) {
-    const move = crossed.find((e) => e.kind === "move" && e.track === track.track) ?? null;
-    const pulse = animate && track.track === "board" && crossed.some((e) => e.kind === "accept");
-    anims[track.track].set(track.layout, { move, animate, pulse, accepted: track.track === "board" && track.showing === "accepted", now });
+  for (const t of TRACK_ORDER) {
+    const track = scene?.tracks.find((x) => x.track === t) ?? null;
+    const accepted = t === "board" && track?.showing === "accepted";
+    if (!tween) { anims[t].reset(track?.layout ?? null, { accepted, now }); continue; }
+    const move = crossed.find((e) => e.kind === "move" && e.track === t) ?? null;
+    const pulse = t === "board" && crossed.some((e) => e.kind === "accept");
+    anims[t].set(track?.layout ?? null, { move, animate: true, pulse, accepted, now });
   }
   renderDom();
   requestDraw();
 }
+
+// Every verification change (a replay opened, a live poll, a late conflict that shrinks K) goes through here:
+// reconcile() clamps the playhead to K, rebuilds the scene from the new prefix, recomputes the frame unless the
+// prefix only grew, and the scene is cut in without any animation from the old prefix left running.
+function adoptVerification(src, verification, { active: isActive, following, fresh = false }) {
+  const r = reconcile({
+    prefix: fresh ? [] : src.verification?.prefixEnvelopes ?? [],
+    frame: fresh ? null : src.frame,
+    cursor: isActive ? S.cursor : 0,
+    following,
+  }, verification);
+  src.verification = verification;
+  src.frame = r.frame;
+  src.fullScene = sceneAt(r.prefix, verification.prefixCount, r.frame);
+  S.gen += 1;
+  if (!isActive) return;
+  S.cursor = r.cursor;
+  applyScene(r.scene, { animate: r.stepped });
+}
 function stop() { if (S.playing) clearInterval(S.playing); S.playing = null; $("play").textContent = "▶"; $("play").setAttribute("aria-label", "Play"); }
 function play() {
   stop();
-  if (S.source === "api") { S.following = true; setCursor(total()); return; }
+  if (S.source === "api") { S.following = true; setCursor(prefixK()); return; }
   if (S.cursor >= total()) setCursor(0);
   $("play").textContent = "❚❚"; $("play").setAttribute("aria-label", "Pause");
   S.playing = setInterval(() => { if (S.cursor >= total()) return stop(); setCursor(S.cursor + 1, { stepwise: true }); }, STEP_MS);
@@ -173,7 +205,7 @@ function step(delta) {
   stop();
   if (S.source === "api") S.following = false;
   setCursor(S.cursor + delta, { stepwise: delta === 1 });
-  if (S.source === "api" && S.cursor === total()) S.following = true;
+  if (S.source === "api" && S.cursor >= prefixK()) S.following = true;
 }
 
 // ── camera ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -210,7 +242,9 @@ function drawAll(now) {
   const main = surfaces.get("main");
   const mf = anims[S.selected].frame(now);
   busy ||= mf.active;
-  const hasMain = footprint && S.scene && S.scene.tracks.find((t) => t.track === S.selected)?.layout;
+  // A layout whose geometry was refused draws nothing at all, not even an empty package.
+  const drawable = (t) => { const L = S.scene?.tracks.find((x) => x.track === t)?.layout; return Boolean(footprint && L && !L.geometry_error); };
+  const hasMain = drawable(S.selected);
   const compactMain = main.w < 700;
   drawPackage(main.ctx, hasMain ? { ...mf, footprint, unit } : null, {
     width: main.w, height: main.h, azimuthDeg: az, labels: true, callouts: !compactMain, lid: S.lid,
@@ -219,7 +253,7 @@ function drawAll(now) {
   for (const [t, tile] of tiles) {
     const fr = t === S.selected ? mf : anims[t].frame(now);
     if (t !== S.selected) busy ||= fr.active;
-    const has = footprint && S.scene && S.scene.tracks.find((x) => x.track === t)?.layout;
+    const has = drawable(t);
     drawPackage(tile.surf.ctx, has ? { ...fr, footprint, unit } : null, {
       width: tile.surf.w, height: tile.surf.h, azimuthDeg: HOME_AZIMUTH, labels: false, callouts: false, lid: false, balls: false, pad: { l: 6, r: 6, t: 4, b: 4 },
     });
@@ -234,6 +268,7 @@ function renderDom() {
   renderTop(src, v);
   renderControls(src, v);
   renderFrozen(v);
+  renderValueErrors();
   renderMain(src, v);
   renderInfo(src);
   renderStrip();
@@ -278,7 +313,7 @@ function renderControls(src, v) {
 
 let ticksFor = null;
 function renderTicks(src, v) {
-  const key = v ? `${S.source}:${v.total}:${v.prefixCount}` : "";
+  const key = v ? `${S.source}:${S.gen}` : "";
   if (ticksFor === key) return;
   ticksFor = key;
   const box = $("ticks");
@@ -293,10 +328,23 @@ function renderTicks(src, v) {
   }
 }
 
+// Values that verified but can't be drawn (an unsupported or missing unit, a value outside the bounds). Listed for
+// what is on screen now; distinct from the chain banner because the chain itself is fine.
+function renderValueErrors() {
+  const el = $("valerr");
+  el.replaceChildren();
+  const errs = S.scene?.errors ?? [];
+  if (!errs.length) { el.hidden = true; return; }
+  el.hidden = false;
+  el.append(`Value check: ${errs.length} verified value${errs.length === 1 ? "" : "s"} refused, not drawn`,
+    h("span", null, ` · ${errs.slice(0, 3).map((e) => `${e.node} ${FIELD[e.field] ?? e.field}: ${refusalText(e)}`).join(" · ")}${errs.length > 3 ? ` · +${errs.length - 3} more` : ""}. Supported units: mm, m, µm; °C, K.`));
+}
+
 function renderFrozen(v) {
   const el = $("frozen");
   el.replaceChildren();
-  if (!v || S.cursor <= v.prefixCount || !v.firstBreak) { el.hidden = true; return; }
+  // Shown whenever anything follows the prefix, wherever the playhead is: the drawing can never pass seq K.
+  if (!v || !v.frozen || !v.firstBreak) { el.hidden = true; return; }
   const fb = v.firstBreak;
   el.className = `frozen${fb.keyOnly ? " cfg" : ""}`;
   el.hidden = false;
@@ -314,6 +362,7 @@ function emptyState(src, v) {
   }
   if (!S.scene || S.scene.at.count === 0) return ["Ready", "Press Space to play, or → to step one envelope."];
   const t = S.scene.tracks.find((x) => x.track === S.selected);
+  if (t?.layout?.geometry_error) return ["Not drawn: geometry refused", `${t.layout.ref.id}: ${refusalText(t.layout.geometry_error)}. ${t.layout.geometry_error.detail}. The envelope verified; this value can't be placed, so nothing is drawn for it.`];
   if (!t?.layout) return S.selected === "board" ? ["No layout yet", "The board shows the initial layout once the core's first measurement is verified."] : [`${TRACKS[S.selected].name} has no candidate yet`, "Its package appears when the lab proposes a layout."];
   return null;
 }
@@ -346,6 +395,10 @@ function renderMain(src, v) {
     ? `${TRACKS[S.selected].name}: ${L.ref.id}, ${L.chiplets.length} chiplets${L.J ? `, J ${fmt(L.J.value)} ${L.J.unit}` : ", no temperatures"}. Isometric drawing; colours are chiplet-centre temperatures.`
     : "No package drawn");
   $("picker").value = S.selected;
+
+  const note = $("refusedNote");
+  note.hidden = !(L && L.temps_error && !L.geometry_error);
+  if (!note.hidden) note.textContent = `Temperatures not drawn: ${refusalText(L.temps_error)} · from ${L.temps_error.measurement}`;
 
   // Caption: what the playhead just did (from the prefix's timeline), or why the package is not moving.
   const cap = $("caption");
@@ -382,6 +435,7 @@ function renderInfo(src) {
   srcEl.className = "src";
   if (!L) srcEl.textContent = "";
   else if (!L.temps_from) srcEl.textContent = `no temperatures · ${NO_TEMPS[L.lifecycle] ?? "awaiting simulation"}`;
+  else if (L.temps_error) { srcEl.className = "src stale"; srcEl.textContent = `temperatures from ${L.temps_from.measurement} not drawn · ${refusalText(L.temps_error)}`; }
   else if (L.temps_from.state === "stale") { srcEl.className = "src stale"; srcEl.textContent = `values from ${L.temps_from.measurement} · STALE (${L.temps_from.validity})`; }
   else if (L.temps_from.via_alternative) { srcEl.className = "src alt"; srcEl.textContent = `values via ${L.temps_from.measurement} (set ${L.temps_from.set_id}) · set ${L.temps_from.broken_sets.join(", ")} broken`; }
   else srcEl.textContent = L.temps_from.set_id ? `values from ${L.temps_from.measurement} · support set ${L.temps_from.set_id}` : `values from ${L.temps_from.measurement} (its own)`;
@@ -416,8 +470,8 @@ function renderStrip() {
     tile.btn.classList.toggle("sel", t === S.selected);
     tile.btn.setAttribute("aria-pressed", String(t === S.selected));
     const nothing = (active()?.verification?.prefixCount ?? 0) === 0;
-    tile.none.hidden = !!L || (!nothing && (!S.scene || S.scene.at.count === 0));
-    tile.none.textContent = nothing ? "nothing verified" : t === "board" ? "no layout yet" : "no candidate yet";
+    tile.none.hidden = (!!L && !L.geometry_error) || (!L && !nothing && (!S.scene || S.scene.at.count === 0));
+    tile.none.textContent = L?.geometry_error ? `geometry: ${refusalText(L.geometry_error)}` : nothing ? "nothing verified" : t === "board" ? "no layout yet" : "no candidate yet";
     tile.j.hidden = !L;
     if (t === "board") {
       tile.chip.className = `chip ${track?.showing === "accepted" ? "won" : "init"}`;
@@ -446,19 +500,12 @@ function renderOffline() {
 function onLive() {
   const st = S.live.state;
   const v = st.verification;
-  if (v && v !== S.liveSrc.verification) {
-    // A live run can only widen its scale and footprint, never shift or narrow them (the Lab view's rule).
-    const f = runFrame(v.prefixEnvelopes, v.projection), old = S.liveSrc.frame;
-    const frame = !old ? f : {
-      scale: old.scale && f.scale ? { ...f.scale, min: Math.min(old.scale.min, f.scale.min), max: Math.max(old.scale.max, f.scale.max) } : f.scale ?? old.scale,
-      footprint: old.footprint && f.footprint ? widen(old.footprint, f.footprint) : f.footprint ?? old.footprint,
-    };
-    S.liveSrc = { verification: v, frame, fullScene: sceneAt(v.prefixEnvelopes, v.prefixCount, frame), envelopes: st.envelopes };
-    if (S.source === "api" && S.following) { const before = S.cursor; setCursor(v.ordered.length, { stepwise: v.ordered.length === before + 1 }); return; }
-  }
+  S.liveSrc.envelopes = st.envelopes;
+  // Any new verification, paused or following: the same rule as a replay (a live run's frame only widens while
+  // its prefix grows; a shrinking or rewritten prefix recomputes it).
+  if (v && v !== S.liveSrc.verification) { adoptVerification(S.liveSrc, v, { active: S.source === "api", following: S.following }); return; }
   if (S.source === "api") renderDom();
 }
-const widen = (a, b) => Object.fromEntries(Object.entries(a).map(([k, r]) => [k, typeof r === "object" ? { x0: Math.min(r.x0, b[k].x0), y0: Math.min(r.y0, b[k].y0), x1: Math.max(r.x1, b[k].x1), y1: Math.max(r.y1, b[k].y1) } : r]));
 
 function setSource(src) {
   if (S.source === src) return;
@@ -467,13 +514,14 @@ function setSource(src) {
   S.source = src;
   for (const b of $("source").querySelectorAll("button")) b.classList.toggle("on", b.dataset.src === src);
   ticksFor = null;
-  for (const a of Object.values(anims)) a.set(null);
+  for (const a of Object.values(anims)) a.reset(null);
   S.scene = null;
   if (src === "api") {
     if (!S.live) S.live = createLiveFeed({ trust: S.trust, runId: params.get("run"), onChange: onLive });
     S.following = true;
     S.live.start();
-    setCursor(total());
+    if (S.liveSrc.verification) adoptVerification(S.liveSrc, S.liveSrc.verification, { active: true, following: true, fresh: true });
+    else setCursor(0);
   } else {
     S.live?.stop();
     setCursor(Math.min(S.cursors.file ?? 0, total()));

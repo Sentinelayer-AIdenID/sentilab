@@ -10,7 +10,9 @@
 //
 // Trust: the production pins come from web/public/sentilab/view-pins.js, as in the page. A served public key may be
 // given with --key; it is used only if its sha256 matches a pin. --pins test uses the vectors' "core" test key, which
-// anyone can derive; the output says so. Exit codes: 0 ok; 1 usage or input error; 2 broken prefix with --strict.
+// anyone can derive; the output says so. Exit codes: 0 ok; 1 usage or input error; with --strict, 2 for a broken
+// prefix (chain) and 3 for refused values (a verified value with an unsupported unit or out of range: scene.errors).
+// Lengths are exported in mm and temperatures in °C; a refused value is listed, never exported as a number.
 import { createHash, createPrivateKey, createPublicKey } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
@@ -112,6 +114,8 @@ export function sceneFromReplay(text, { runId = null, trust, at = null } = {}) {
       first_break: after ? { seq: after.seq, reasons: after.reasons, oversize: after.oversize } : null,
       projection_error: v.projection_error,
     },
+    // Not chain validity: values in verified envelopes that the scene refused to place or colour.
+    value_errors: scene.errors.length,
     scene,
   };
 }
@@ -122,7 +126,7 @@ const OPTIONS = {
   "--pins": { arg: "test", help: "use the derivable TEST key instead of the production pins (local checks only)" },
   "--key": { arg: "key_id=hex", help: "a served raw Ed25519 public key (64 hex); used only if its sha256 matches a pin", repeat: true },
   "--at": { arg: "seq", help: "the scene after seq N of the prefix (default: the whole prefix)" },
-  "--strict": { help: "exit 2 if the prefix does not cover every envelope (a broken or frozen chain)" },
+  "--strict": { help: "exit 2 if the prefix does not cover every envelope (a broken or frozen chain); exit 3 if the scene refused any value (scene.errors)" },
   "--out": { arg: "file", help: "export: where to write the scene JSON" },
 };
 export const COMMANDS = {
@@ -171,12 +175,11 @@ export function run(argv) {
   try { text = readFileSync(file, "utf8"); } catch (error) { throw new UsageError(`cannot read ${file}: ${error.code ?? error.message}`); }
   const trust = trustFor({ pins: opts.pins === "test" ? "test" : "production", served });
   const result = { command, input: basename(file), ...sceneFromReplay(text, { runId: opts.run ?? null, trust, at }) };
-  const broken = result.verification.frozen;
-  const code = opts.strict && broken ? 2 : 0;
+  const code = !opts.strict ? 0 : result.verification.frozen ? 2 : result.value_errors > 0 ? 3 : 0;
   if (command === "export") {
     const body = `${JSON.stringify(result, null, 2)}\n`;
     writeFileSync(opts.out, body);
-    return { code, out: { command, out: opts.out, bytes: Buffer.byteLength(body), run: result.run, trust: result.trust.mode, verification: result.verification } };
+    return { code, out: { command, out: opts.out, bytes: Buffer.byteLength(body), run: result.run, trust: result.trust.mode, verification: result.verification, value_errors: result.value_errors } };
   }
   return { code, out: result };
 }

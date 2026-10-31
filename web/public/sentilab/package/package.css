@@ -21,9 +21,9 @@ a { color: var(--cyan); }
 
 .shell { display: grid; height: 100dvh; padding: 0 20px; gap: 10px;
          grid-template-columns: minmax(0, 1fr);
-         grid-template-rows: 60px 54px auto minmax(0, 1fr) var(--strip-h) 28px;
-         grid-template-areas: "top" "controls" "frozen" "stage" "strip" "status"; }
-.top { grid-area: top; } .controls { grid-area: controls; } .frozen { grid-area: frozen; } .stage { grid-area: stage; }
+         grid-template-rows: 60px 54px auto auto minmax(0, 1fr) var(--strip-h) 28px;
+         grid-template-areas: "top" "controls" "frozen" "valerr" "stage" "strip" "status"; }
+.top { grid-area: top; } .controls { grid-area: controls; } .frozen { grid-area: frozen; } .valerr { grid-area: valerr; } .stage { grid-area: stage; }
 .strip { grid-area: strip; } .status { grid-area: status; }
 
 /* ── header ── */
@@ -84,6 +84,10 @@ a { color: var(--cyan); }
 .frozen { padding: 8px 14px; border-radius: 7px; border: 1px solid var(--red-line); background: var(--red-bg); color: #f6c3b2; font: 600 13.5px var(--mono); }
 .frozen.cfg { border-color: #6b5a3c; background: #2a2418; color: var(--amber); }
 .frozen span { font-weight: 400; }
+/* Value check: a verified envelope whose value can't be placed or coloured. Not a chain problem, so not red. */
+.valerr { padding: 8px 14px; border-radius: 7px; border: 1px solid #5d4a7e; background: #211b2e; color: #d8c9f0; font: 600 13.5px var(--mono); }
+.valerr span { font-weight: 400; }
+.refusednote { position: absolute; z-index: 2; top: 16px; right: 18px; max-width: 46%; padding: 7px 12px; border-radius: 6px; border: 1px solid #5d4a7e; background: rgba(33,27,46,.92); color: #d8c9f0; font: 600 14px var(--mono); }
 
 /* ── stage: main canvas + info ── */
 .stage { display: grid; gap: 10px; min-height: 0; grid-template-columns: minmax(0, 1fr) var(--info-w); }
@@ -198,7 +202,7 @@ dialog ul { margin: 0; padding: 14px 18px 16px 34px; display: grid; gap: 8px; co
 /* ── 1280x720 and other small desktops ── */
 @media (max-width: 1500px), (max-height: 900px) {
   :root { --strip-h: 136px; --info-w: 330px; }
-  .shell { grid-template-rows: 50px 48px auto minmax(0, 1fr) var(--strip-h) 24px; gap: 8px; padding: 0 14px; }
+  .shell { grid-template-rows: 50px 48px auto auto minmax(0, 1fr) var(--strip-h) 24px; gap: 8px; padding: 0 14px; }
   .runmeta .opt, .status .hotkeys { display: none; }
   .links a#limitsLink { display: none; }
   .brand .sub { display: none; }
@@ -246,6 +250,7 @@ dialog ul { margin: 0; padding: 14px 18px 16px 34px; display: grid; gap: 8px; co
   .canvaswrap { flex: none; height: auto; display: flex; flex-direction: column; }
   .canvaswrap canvas { position: relative; inset: auto; height: 300px; flex: none; }
   .caption { position: static; padding: 0 12px 10px; max-width: none; white-space: normal; }
+  .refusednote { position: static; max-width: none; margin: 8px 12px 0; font-size: 12.5px; }
   .empty { position: static; }
   .canvaswrap:has(.empty:not([hidden])) canvas { display: none; }
   .caption { font-size: 12.5px; white-space: normal; }

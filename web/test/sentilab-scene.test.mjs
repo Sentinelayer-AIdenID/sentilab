@@ -8,13 +8,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { Worker } from "node:worker_threads";
 
 import { canonical } from "../public/sentilab/canonical.mjs";
-import { buildScene, sceneAt, runFrame, heatColor, contiguousPrefix, scaleTicks, describeEvent, STACK, TEMP_BASIS, TRACK_ORDER, LAB_TRACKS, SCENE_VERSION } from "../public/sentilab/package/scene.mjs";
+import { buildScene, sceneAt, runFrame, heatColor, contiguousPrefix, scaleTicks, describeEvent, STACK, TEMP_BASIS, TRACK_ORDER, LAB_TRACKS, SCENE_VERSION, SUPPORTED_UNITS, BOUNDS, MAX_TICKS, readGeometry, readTemps } from "../public/sentilab/package/scene.mjs";
+import { reconcile, extendsPrefix } from "../public/sentilab/package/playhead.mjs";
+import { TrackAnimation } from "../public/sentilab/package/render.mjs";
+import { makeChain } from "../../contracts/view-envelope/view-envelope.mjs";
 import * as source from "../public/sentilab/package/source.mjs";
 import { VIEW_PINS } from "../public/sentilab/view-pins.js";
 import { testKey } from "./sentilab-keys.mjs";
@@ -356,4 +360,309 @@ test("CLI export writes the same JSON as build; bad usage exits 1 with a JSON er
   }
   const help = JSON.parse(execFileSync(process.execPath, [CLI, "help"], { encoding: "utf8" }));
   assert.deepEqual(Object.keys(help.commands), ["build", "export", "help"]);
+});
+
+// ── P2-1: a verification change while paused, playing or mid-glide ───────────────────────────────────────────────
+// reconcile() is the one rule the page runs on every verification change (package.js adoptVerification).
+const tamperAt = (envelopes, seq) => envelopes.map((env) => {
+  if (env.event.seq !== seq) return structuredClone(env);
+  const bad = structuredClone(env);
+  bad.event.body = { ...bad.event.body, note: "changed after signing" };
+  return bad;
+});
+const productionTrust = { pins: VIEW_PINS.map((p) => ({ key_id: p.key_id, key_sha256: p.key_sha256 })), keys: {} };
+async function demoAt38() {
+  const v44 = await demoVerified();
+  const first = reconcile({ prefix: [], frame: null, cursor: 0, following: false }, v44);
+  return { v44, view: { prefix: first.prefix, frame: first.frame, cursor: 38, following: false } };
+}
+const positions = (layout) => (layout?.chiplets ?? []).map((c) => `${c.id}@${c.x},${c.y}`).sort();
+
+test("paused at seq 38, K drops from 44 to 3: playhead clamped to K, scene and frame rebuilt from the new prefix", async () => {
+  const { v44, view } = await demoAt38();
+  assert.equal(sceneAt(v44.prefixEnvelopes, 38, view.frame).board.candidate, "cand-b", "before: the accepted package is drawn");
+  const v3 = await source.verifyRun(tamperAt(source.parseReplay(demoText), 4), { runId: DEMO_RUN, trust: testTrust });
+  assert.equal(v3.prefixCount, 3, "a changed seq 4 ends the prefix at 3");
+  const r = reconcile(view, v3);
+  assert.equal(r.cursor, 3, "the playhead is clamped to K");
+  assert.equal(r.scene.at.seq, 3);
+  assert.equal(r.reset, true, "every animation is cut");
+  assert.equal(r.grew, false);
+  assert.equal(r.scene.board, null, "the accepted cand-b is gone");
+  assert.equal(r.scene.tracks[0].showing, "initial");
+  assert.ok(!JSON.stringify(r.scene).includes("cand-b\",\"lab\":\"lab-b\",\"seq\":32"), "no acceptance at seq 32");
+  assert.ok(!r.scene.timeline.some((e) => e.seq > 3), "nothing after K is in the timeline");
+  // The frame is recomputed from seq 1..3 alone: the scale no longer stretches to values that left the prefix.
+  assert.deepEqual(r.frame, runFrame(v3.prefixEnvelopes, v3.projection));
+  assert.deepEqual([r.frame.scale.min, r.frame.scale.max], [70, 100]);
+  assert.notDeepEqual(r.frame.scale, view.frame.scale, "the old extrema (65) are cleared");
+  assert.equal(canonical(r.scene), canonical(sceneAt(v3.prefixEnvelopes, 3, runFrame(v3.prefixEnvelopes))));
+});
+
+test("K drops to 0 (nothing verifies any more): the playhead goes to 0 and nothing is drawn", async () => {
+  const { view } = await demoAt38();
+  const v0 = await source.verifyRun(source.parseReplay(demoText), { runId: DEMO_RUN, trust: productionTrust });
+  assert.equal(v0.prefixCount, 0);
+  const r = reconcile(view, v0);
+  assert.equal(r.cursor, 0);
+  assert.deepEqual(r.frame, { scale: null, footprint: null });
+  assert.ok(r.scene.tracks.every((t) => t.layout === null));
+  assert.deepEqual(r.scene.timeline, []);
+  assert.equal(r.reset, true);
+  const following = reconcile({ ...view, following: true }, v0);
+  assert.equal(following.cursor, 0, "following the live edge means sitting at K, here 0");
+});
+
+test("K drops mid-glide: the glide, its ghosts and the acceptance pulse are cut; nothing from the old prefix finishes", async () => {
+  const { v44, view } = await demoAt38();
+  const frame = view.frame;
+  const s31 = sceneAt(v44.prefixEnvelopes, 31, frame), s32 = sceneAt(v44.prefixEnvelopes, 32, frame);
+  const move = s32.timeline.find((e) => e.kind === "move" && e.track === "board" && e.seq === 32);
+  const anim = new TrackAnimation();
+  anim.reset(s31.tracks[0].layout, { now: 0 });
+  anim.set(s32.tracks[0].layout, { move, animate: true, pulse: true, accepted: true, now: 1000 });
+  const mid = anim.frame(1350);
+  assert.equal(mid.active, true, "mid-glide");
+  assert.ok(mid.ghosts.length > 0 && mid.pulse !== null);
+  const cpu1 = mid.chiplets.find((c) => c.id === "CPU1");
+  assert.ok(cpu1.x !== 22 && cpu1.x !== 23, "CPU1 is between the initial layout and cand-b");
+
+  const v3 = await source.verifyRun(tamperAt(source.parseReplay(demoText), 4), { runId: DEMO_RUN, trust: testTrust });
+  const r = reconcile({ ...view, cursor: 32 }, v3);
+  assert.equal(r.reset, true);
+  anim.reset(r.scene.tracks[0].layout, { accepted: r.scene.tracks[0].showing === "accepted", now: 1350 });
+  for (const t of [1350, 1700, 5000]) {
+    const f = anim.frame(t);
+    assert.equal(f.active, false, `t=${t}: nothing in flight`);
+    assert.deepEqual(f.ghosts, []);
+    assert.equal(f.pulse, null);
+    assert.equal(f.accepted, false);
+    assert.deepEqual(f.chiplets.map((c) => `${c.id}@${c.x},${c.y}`).sort(), positions(r.scene.tracks[0].layout), "exactly the new prefix's layout");
+  }
+  // K -> 0 mid-glide: the package disappears at once.
+  const anim0 = new TrackAnimation();
+  anim0.reset(s31.tracks[0].layout, { now: 0 });
+  anim0.set(s32.tracks[0].layout, { move, animate: true, pulse: true, now: 1000 });
+  anim0.reset(null, { now: 1300 });
+  assert.deepEqual(anim0.frame(1300).chiplets, []);
+  assert.equal(anim0.frame(1300).active, false);
+});
+
+test("a growing prefix keeps a paused playhead, widens the frame, and animates only a single followed step", async () => {
+  const all = source.parseReplay(demoText);
+  const v20 = await source.verifyRun(all.slice(0, 20), { runId: DEMO_RUN, trust: testTrust });
+  const v21 = await source.verifyRun(all.slice(0, 21), { runId: DEMO_RUN, trust: testTrust });
+  const v44 = await demoVerified();
+  assert.equal(extendsPrefix(v20.prefixEnvelopes, v44.prefixEnvelopes), true);
+  const base = reconcile({ prefix: [], frame: null, cursor: 0, following: false }, v20);
+  const paused = reconcile({ prefix: base.prefix, frame: base.frame, cursor: 15, following: false }, v44);
+  assert.equal(paused.cursor, 15, "paused inside K: the playhead stays");
+  assert.equal(paused.grew, true);
+  assert.ok(paused.frame.scale.min <= base.frame.scale.min && paused.frame.scale.max >= base.frame.scale.max, "the frame only widens");
+  const followed = reconcile({ prefix: base.prefix, frame: base.frame, cursor: 20, following: true }, v21);
+  assert.equal(followed.cursor, 21);
+  assert.equal(followed.stepped, true);
+  assert.equal(followed.reset, false, "one new envelope at the live edge glides");
+  const jumped = reconcile({ prefix: base.prefix, frame: base.frame, cursor: 20, following: true }, v44);
+  assert.equal(jumped.cursor, 44);
+  assert.equal(jumped.reset, true, "a burst is a jump cut");
+  const forked = v44.prefixEnvelopes.map((env) => (env.event.seq === 30 ? { ...structuredClone(env), hash: "0".repeat(64) } : env));
+  assert.equal(extendsPrefix(v44.prefixEnvelopes, forked), false, "a different envelope at an old seq is not growth");
+  assert.equal(extendsPrefix(v44.prefixEnvelopes, v20.prefixEnvelopes), false, "a shorter prefix is not growth");
+});
+
+// ── P2-2 and P2-3: units and numeric bounds ──────────────────────────────────────────────────────────────────────
+// Real signed runs (reference makeChain, core TEST key), so the same values go through the verifier and the CLI.
+const RUN = { run_id: "units-0001", arm: "live", family: "fixture-units", seed: 1, ticket_id: "ticket-units" };
+const ACTOR = Object.fromEntries([["core", { agent_id: null, life_id: null, lab: "core", grant_id: null }],
+  ...LAB_TRACKS.map((lab) => [lab, { agent_id: `agent-${lab}`, life_id: `life-${lab}`, lab, grant_id: `grant-${lab}` }])]);
+const SEM = { task_contract: "tc-units", metric_id: "max-chiplet-center-temp-c", evaluator_version: "fixture-no-solver", coordinate_frame: "pkg-lower-left-mm" };
+// steps: [lab, type, body, values?] in seq order.
+function signedRun(steps) {
+  const entries = [], values = {};
+  steps.forEach(([lab, type, body, vals], i) => {
+    const event_id = `u${i + 1}`;
+    entries.push({ event: { event_id, seq: i + 1, type, actor_role: lab === "core" ? "core" : "lab", body }, ts: `2026-11-01T15:00:${String(i).padStart(2, "0")}.000Z`, actor: ACTOR[lab] });
+    if (vals) values[event_id] = vals;
+  });
+  return makeChain(RUN, entries, values, { key_id: "core", privateKey: testKey("core").privateKey });
+}
+const geo = (units, rects) => ({ geometry: rects.map(([id, x, y, w, h]) => ({ id, xLL: x, yLL: y, w, h, layer: 0 })), ...(units === undefined ? {} : { units }) });
+const meas = (id, unit, temps, J = Math.max(...Object.values(temps))) => ["core", "node.create", { id, kind: "measurement", semantics: SEM }, { J: unit === undefined ? { value: J } : { value: J, unit }, W: { value: 100, metric_id: "hpwl-mm" }, center_temps: temps }];
+const cand = (lab, id, units, rects) => [lab, "node.create", { id, kind: "candidate" }, geo(units, rects)];
+const support = (node, m) => ["core", "support.add", { node, set_id: "eval", members: [m] }];
+async function verifiedScene(envelopes) {
+  const v = await source.verifyRun(structuredClone(envelopes), { runId: RUN.run_id, trust: testTrust });
+  assert.equal(v.chainOk, true, "the chain itself verifies: refusals are not chain errors");
+  return { v, scene: sceneOf(v) };
+}
+const track = (scene, lab) => scene.tracks.find((t) => t.track === lab).layout;
+const everyNumberFinite = (x) => (typeof x === "number" ? Number.isFinite(x) : Array.isArray(x) ? x.every(everyNumberFinite) : x && typeof x === "object" ? Object.values(x).every(everyNumberFinite) : true);
+// Every number the scene exports as data (the declared bounds and stack constants aside).
+function dataNumbers(x, out = []) {
+  if (typeof x === "number") out.push(x);
+  else if (Array.isArray(x)) x.forEach((v) => dataNumbers(v, out));
+  else if (x && typeof x === "object") for (const [k, v] of Object.entries(x)) if (k !== "bounds" && k !== "constants") dataNumbers(v, out);
+  return out;
+}
+
+test("units: 25 °C and 298.15 K are one temperature on one °C scale; m and µm are placed in mm", async () => {
+  const { scene } = await verifiedScene(signedRun([
+    cand("lab-a", "KA", "m", [["A", 0.01, 0, 0.01, 0.005]]),
+    cand("lab-b", "KB", "µm", [["A", 2000, 3000, 5000, 4000]]),
+    meas("MA", "°C", { A: 25 }),
+    meas("MB", "K", { A: 298.15 }),
+    support("KA", "MA"),
+    support("KB", "MB"),
+  ]));
+  assert.deepEqual(scene.errors, []);
+  assert.equal(scene.units.length, "mm");
+  assert.equal(scene.units.temperature, "°C");
+  assert.deepEqual(scene.units.supported, SUPPORTED_UNITS);
+  assert.deepEqual([scene.scale.min, scene.scale.max, scene.scale.unit], [20, 30, "°C"], "one value, 25 °C, not a 25 to 300 scale");
+  const a = track(scene, "lab-a"), b = track(scene, "lab-b");
+  assert.deepEqual(a.chiplets.map((c) => [c.x, c.y, c.w, c.h]), [[10, 0, 10, 5]], "0.01 m is 10 mm");
+  assert.equal(a.units, "mm");
+  assert.equal(a.declared_units, "m");
+  assert.deepEqual(b.chiplets.map((c) => [c.x, c.y, c.w, c.h]), [[2, 3, 5, 4]], "µm to mm");
+  assert.equal(a.chiplets[0].temp, 25);
+  assert.equal(b.chiplets[0].temp, 25, "298.15 K is 25 °C");
+  assert.equal(a.chiplets[0].color, b.chiplets[0].color, "the same temperature, the same colour");
+  assert.deepEqual(b.J, { value: 25, unit: "°C", declared_unit: "K" });
+  assert.deepEqual([scene.footprint.extent.x0, scene.footprint.extent.x1], [2, 20], "the footprint is in mm too");
+});
+
+test("units: unsupported, missing and unknown units are refused, never placed or coloured, and listed as errors", async () => {
+  const { scene } = await verifiedScene(signedRun([
+    cand("lab-a", "KA", "in", [["A", 0, 0, 1, 1]]),                    // unsupported length unit
+    cand("lab-b", "KB", undefined, [["A", 0, 0, 5, 5]]),               // no length unit
+    cand("lab-c", "KC", "mm", [["A", 0, 0, 6, 6]]),
+    cand("lab-d", "KD", "mm", [["A", 10, 0, 6, 6]]),
+    cand("baseline-sa", "KS", "constructor", [["A", 0, 0, 6, 6]]),     // an object key, not a unit
+    meas("MC", "°F", { A: 77 }),                                       // unsupported temperature unit
+    meas("MD", undefined, { A: 25 }),                                  // no temperature unit
+    meas("MS", "°C", { A: 40 }),
+    support("KC", "MC"),
+    support("KD", "MD"),
+  ]));
+  const byNode = Object.fromEntries(scene.errors.map((e) => [`${e.node}:${e.field}`, e]));
+  assert.deepEqual([byNode["KA:geometry"].code, byNode["KA:geometry"].unit], ["unit_not_supported", "in"]);
+  assert.equal(byNode["KB:geometry"].code, "unit_missing");
+  assert.equal(byNode["KS:geometry"].code, "unit_not_supported");
+  assert.deepEqual([byNode["MC:center_temps"].code, byNode["MC:center_temps"].unit], ["unit_not_supported", "°F"]);
+  assert.equal(byNode["MC:J"].code, "unit_not_supported");
+  assert.equal(byNode["MD:center_temps"].code, "unit_missing");
+  assert.equal(byNode["MS:center_temps"], undefined, "a °C measurement is fine");
+  assert.equal(scene.errors.length, 7);
+  for (const lab of ["lab-a", "lab-b", "baseline-sa"]) {
+    const L = track(scene, lab);
+    assert.deepEqual(L.chiplets, [], `${lab}: refused geometry is never placed`);
+    assert.ok(L.geometry_error);
+  }
+  for (const lab of ["lab-c", "lab-d"]) {
+    const L = track(scene, lab);
+    assert.equal(L.chiplets.length, 1, `${lab}: its geometry is fine`);
+    assert.equal(L.chiplets[0].color, null, `${lab}: its temperatures are refused, so never coloured`);
+    assert.ok(L.temps_error);
+  }
+  assert.deepEqual([scene.scale.min, scene.scale.max], [35, 45], "only the accepted measurement makes the scale");
+  assert.deepEqual([scene.footprint.extent.x0, scene.footprint.extent.x1], [0, 16], "refused geometry is not in the footprint");
+  assert.ok(!dataNumbers(scene).includes(77), "the refused temperature is not exported as a number");
+});
+
+test("units: refused temperatures leave chiplets placed but uncoloured, with the reason on the layout", async () => {
+  const { scene } = await verifiedScene(signedRun([
+    cand("lab-a", "KA", "mm", [["A", 0, 0, 6, 6], ["B", 8, 0, 6, 6]]),
+    meas("MF", "°F", { A: 77, B: 80 }),
+    support("KA", "MF"),
+  ]));
+  const a = track(scene, "lab-a");
+  assert.equal(a.chiplets.length, 2, "geometry is fine, so it is placed");
+  assert.ok(a.chiplets.every((c) => c.temp === null && c.color === null && c.temp_state === null), "never coloured");
+  assert.deepEqual(a.temps_error, { code: "unit_not_supported", unit: "°F", detail: 'temperature unit "°F" is not one of °C, K', measurement: "MF" });
+  assert.equal(a.temps_from.state, "refused");
+  assert.equal(a.J, null);
+  assert.equal(scene.scale, null, "nothing accepted, so no scale");
+  assert.ok(!dataNumbers(scene).includes(77) && !dataNumbers(scene).includes(80), "the refused numbers are not exported");
+});
+
+test("bounds: 1e20 °C, below absolute zero, 1e308 + 1e308 mm, zero or huge sizes and wild layers are scene errors, never drawn", async () => {
+  const { v, scene } = await verifiedScene(signedRun([
+    cand("lab-a", "K1", "mm", [["A", 1e308, 0, 1e308, 5]]),          // the sum overflows; each part is out of range
+    cand("lab-b", "K2", "mm", [["A", 0, 0, 0, 5]]),                  // zero size
+    cand("lab-c", "K3", "mm", [["A", 0, 0, 1001, 5]]),               // over 1000 mm
+    cand("lab-d", "K4", "mm", [["A", 0, 0, 5, 5]]),
+    cand("baseline-sa", "K5", "m", [["A", 0, 0, 1.5, 0.001]]),       // 1500 mm after conversion
+    meas("M1", "°C", { A: 1e20 }),
+    meas("M2", "K", { A: -5 }),
+    meas("M3", "°C", { A: 50 }, 50),
+    support("K4", "M1"),
+  ]));
+  assert.equal(v.chainOk, true);
+  assert.equal(v.frozen, false, "every envelope verified and projected: these are value errors, not chain errors");
+  const codes = Object.fromEntries(scene.errors.map((e) => [`${e.node}:${e.field}`, e.code]));
+  for (const k of ["K1:geometry", "K2:geometry", "K3:geometry", "K5:geometry", "M1:center_temps", "M1:J", "M2:center_temps", "M2:J"]) assert.equal(codes[k], "out_of_range", k);
+  assert.equal(scene.errors.length, 8);
+  assert.ok(everyNumberFinite(scene), "no Infinity anywhere in the scene");
+  assert.deepEqual(JSON.parse(JSON.stringify(scene)), scene, "a JSON round trip changes nothing (no Infinity turned into null)");
+  assert.ok(dataNumbers(scene).every((n) => Math.abs(n) <= 1e4), "no refused magnitude reaches the scene as data");
+  assert.deepEqual(track(scene, "lab-d").chiplets.map((c) => c.temp), [null], "K4's 1e20 °C measurement colours nothing");
+  assert.deepEqual([scene.footprint.extent.x0, scene.footprint.extent.x1], [0, 5], "only the in-range layout makes the footprint");
+  assert.deepEqual([scene.scale.min, scene.scale.max], [45, 55], "only the in-range temperature makes the scale");
+  assert.ok(scaleTicks(scene.scale).length <= MAX_TICKS);
+  for (const [id, lo, hi] of [["layer", 17, 17], ["layer", -1, -1]]) {
+    const r = readGeometry({ units: "mm", geometry: [{ id: "A", xLL: 0, yLL: 0, w: 1, h: 1, layer: lo }] });
+    assert.equal(r.error.code, "out_of_range", `${id} ${lo}..${hi}`);
+  }
+  assert.equal(readTemps({ J: { value: 2000.5, unit: "°C" }, center_temps: { A: 2000.5 } }).error.code, "out_of_range");
+  assert.equal(readTemps({ J: { value: -273.15, unit: "°C" }, center_temps: { A: -273.15 } }).error, null, "the bounds are inclusive");
+  assert.deepEqual(BOUNDS.temperature_c, { min: -273.15, max: 2000 });
+});
+
+test("bounds: scaleTicks always terminates, is capped, and refuses non-finite scales (timeout guard)", async () => {
+  // A worker, so a non-terminating loop fails the test instead of hanging the runner.
+  const sceneUrl = pathToFileURL(join(repo, "web", "public", "sentilab", "package", "scene.mjs")).href;
+  const code = `
+    const { parentPort } = require("node:worker_threads");
+    import(${JSON.stringify(sceneUrl)}).then(({ scaleTicks }) => {
+      const cases = [[0, 1e20], [65, 100], [-275, 2000], [0, Number.MAX_VALUE], [-Number.MAX_VALUE, Number.MAX_VALUE], [1e300, 1e300 * 2], [NaN, 5], [5, Infinity], [10, 10], [10, 5]];
+      parentPort.postMessage(cases.map(([min, max]) => scaleTicks({ min, max })));
+    });`;
+  const result = await new Promise((resolve, reject) => {
+    const w = new Worker(code, { eval: true });
+    const timer = setTimeout(() => { w.terminate(); reject(new Error("scaleTicks did not terminate within 2 s")); }, 2000);
+    w.once("message", (m) => { clearTimeout(timer); w.terminate(); resolve(m); });
+    w.once("error", (e) => { clearTimeout(timer); reject(e); });
+  });
+  for (const ticks of result) assert.ok(ticks.length <= MAX_TICKS, `${ticks.length} ticks`);
+  assert.equal(result[0].length > 1, true, "a huge finite range still gets a few ticks");
+  assert.deepEqual(result[1], [65, 70, 75, 80, 85, 90, 95, 100]);
+  assert.ok(result[2].length >= 2 && result[2].length <= MAX_TICKS);
+  assert.deepEqual(result[4], [], "a range that overflows has no ticks");
+  assert.deepEqual(result.slice(6), [[], [], [], []], "NaN, Infinity and empty scales have no ticks");
+});
+
+test("CLI: unit-normalised export (0.01 m -> 10 mm), refused values listed not exported, --strict exits 3 on value errors", () => {
+  const dir = mkdtempSync(join(tmpdir(), "sentilab-units-"));
+  try {
+    const good = join(dir, "good.jsonl"), bad = join(dir, "bad.jsonl"), out = join(dir, "scene.json");
+    writeFileSync(good, signedRun([cand("lab-a", "KA", "m", [["A", 0.01, 0, 0.01, 0.005]]), meas("MA", "K", { A: 298.15 }), support("KA", "MA")]).map((e) => JSON.stringify(e)).join("\n") + "\n");
+    writeFileSync(bad, signedRun([cand("lab-a", "KA", "mm", [["A", 1e308, 0, 1e308, 1]]), meas("MA", "°F", { A: 77 }), support("KA", "MA")]).map((e) => JSON.stringify(e)).join("\n") + "\n");
+    const r = cli("export", good, "--out", out, "--pins", "test", "--strict");
+    assert.equal(r.status, 0, r.stderr);
+    const doc = JSON.parse(readFileSync(out, "utf8"));
+    assert.deepEqual(doc.scene.tracks[1].layout.chiplets.map((c) => [c.x, c.w, c.h]), [[10, 10, 5]]);
+    assert.equal(doc.scene.tracks[1].layout.chiplets[0].temp, 25);
+    assert.equal(doc.value_errors, 0);
+    const b = cli("build", bad, "--pins", "test", "--strict");
+    assert.equal(b.status, 3, "value errors exit 3 under --strict");
+    const res = JSON.parse(b.stdout);
+    assert.equal(res.verification.chain_ok, true, "distinct from chain validity");
+    assert.equal(res.value_errors, 3, "KA geometry, MA temperatures, MA J");
+    assert.ok(everyNumberFinite(res.scene));
+    assert.ok(dataNumbers(res.scene).every((n) => Math.abs(n) <= 1e4) && !dataNumbers(res.scene).includes(77), "refused numbers are never exported as data");
+    assert.equal(cli("build", bad, "--pins", "test").status, 0, "without --strict, value errors still exit 0");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
