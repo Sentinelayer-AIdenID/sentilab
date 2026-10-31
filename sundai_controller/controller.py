@@ -182,8 +182,19 @@ class Design:
 
     def apply(self, operation: str, args: dict):
         positions = list(self.positions)
+        chiplets = list(self.chiplets)
         indexes = {c.id: i for i, c in enumerate(self.chiplets)}
-        if operation == "move" and set(args) == {"chiplet", "x_mm", "y_mm"}:
+        if operation == "rotate" and set(args) == {"chiplet"}:
+            # A 90-degree turn about the die centre: the footprint swaps width and height, so every
+            # consumer that reads the chiplet (legality, centres, wire, view) sees the turned die.
+            index = indexes[args["chiplet"]]
+            chiplet, (x, y) = chiplets[index], positions[index]
+            if chiplet.width_mm == chiplet.height_mm:
+                raise DesignValidationError("a square chiplet has one orientation; rotate would be a no-op")
+            center_x, center_y = x + chiplet.width_mm / 2, y + chiplet.height_mm / 2
+            chiplets[index] = Chiplet(chiplet.id, chiplet.height_mm, chiplet.width_mm)
+            positions[index] = (center_x - chiplet.height_mm / 2, center_y - chiplet.width_mm / 2)
+        elif operation == "move" and set(args) == {"chiplet", "x_mm", "y_mm"}:
             positions[indexes[args["chiplet"]]] = (
                 _finite_coordinate(args["x_mm"], "move"),
                 _finite_coordinate(args["y_mm"], "move"),
@@ -209,7 +220,7 @@ class Design:
                 raise DesignValidationError("place must specify one coordinate pair per chiplet")
         else:
             raise ValueError("operation or argument set not allowlisted")
-        candidate = Design(self.width_mm, self.height_mm, self.gap_mm, self.chiplets, tuple(positions))
+        candidate = Design(self.width_mm, self.height_mm, self.gap_mm, tuple(chiplets), tuple(positions))
         candidate.check()
         return candidate
 

@@ -117,6 +117,36 @@ def _retain_solver_output(output, stdout, stderr, status):
     (output / 'EXIT.json').write_text(json.dumps(status) + '\n', encoding='utf-8')
 
 
+def generate_inputs(output: Path, *, size, granularity, widths, heights, powers, connections, link_type,
+                    halos, points, rotated) -> None:
+    """Write TAP's floorplans, power trace and HotSpot config for one layout. Runs no solver.
+
+    TAP reads util/hotspot.config relative to the working directory, so call this from TAP_ROOT.
+    """
+    system = PassiveInterposer()
+    system.set_chiplet_count(len(widths))
+    system.initialize()
+    system.set_interposer_size(size)
+    system.set_chiplet_size(list(widths), list(heights))
+    system.set_chiplet_power(list(powers))
+    system.set_connection_matrix([list(row) for row in connections])
+    system.set_granularity(granularity)
+    system.set_link_type(link_type)
+    system.compute_ubump_overhead()
+    if any(not math.isclose(float(actual), expected, rel_tol=0, abs_tol=1e-12)
+           for actual, expected in zip(system.hubump, halos)):
+        raise ValueError("TAP microbump halos differ from the problem contract")
+    # TAP's own rotate swaps a die's width and height; the halo depends on the perimeter only.
+    for index, turned in enumerate(rotated):
+        if turned:
+            system.rotate(index)
+    system.set_path(str(output) + os.sep)
+    system.x = [point[0] for point in points]
+    system.y = [point[1] for point in points]
+    system.gen_flp("sample")
+    system.gen_ptrace("sample")
+
+
 def evaluate(request: dict) -> dict:
     requested_binary = request.get("hotspot_binary")
     if not isinstance(requested_binary, str) or not requested_binary:
@@ -187,6 +217,10 @@ def evaluate(request: dict) -> dict:
             len(halos) != count or len(connections) != count or any(len(row) != count for row in connections) or
             not isinstance(parameters["link_type"], str)):
         raise ValueError("TAP fixture parameters are inconsistent")
+    # Absent means the configured orientation for every die (requests that predate rotation).
+    rotated = request.get("rotated", [False] * count)
+    if not isinstance(rotated, list) or len(rotated) != count or any(not isinstance(flag, bool) for flag in rotated):
+        raise ValueError("TAP rotation flags are malformed")
 
     # TAP's legacy generator reads util/hotspot.config relative to the process
     # startup directory. The worker is launched with TAP_ROOT as cwd; no chdir
@@ -203,24 +237,9 @@ def evaluate(request: dict) -> dict:
         output = Path(directory)
         if request.get('retained_output_root') is not None:
             (output / 'REQUEST.json').write_text(json.dumps(request, sort_keys=True) + '\n')
-        system = PassiveInterposer()
-        system.set_chiplet_count(len(widths))
-        system.initialize()
-        system.set_interposer_size(size)
-        system.set_chiplet_size(list(widths), list(heights))
-        system.set_chiplet_power(list(powers))
-        system.set_connection_matrix([list(row) for row in connections])
-        system.set_granularity(granularity)
-        system.set_link_type(parameters["link_type"])
-        system.compute_ubump_overhead()
-        if any(not math.isclose(float(actual), expected, rel_tol=0, abs_tol=1e-12)
-               for actual, expected in zip(system.hubump, halos)):
-            raise ValueError("TAP microbump halos differ from the problem contract")
-        system.set_path(str(output) + os.sep)
-        system.x = [point[0] for point in points]
-        system.y = [point[1] for point in points]
-        system.gen_flp("sample")
-        system.gen_ptrace("sample")
+        generate_inputs(output, size=size, granularity=granularity, widths=widths, heights=heights,
+                        powers=powers, connections=connections, link_type=parameters["link_type"],
+                        halos=halos, points=points, rotated=rotated)
         generation_seconds = time.perf_counter() - started_generation
 
         config = output / "new_hotspot.config"
