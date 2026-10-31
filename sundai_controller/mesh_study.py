@@ -269,14 +269,24 @@ def check_receipts(result, evidence_dir):
             or records[-1].get('status') != 'complete'
             or records[-1].get('evaluation_count') != count):
         raise ValueError('receipt journal is incomplete')
+    header = records[0]
+    expected = {(row['id'], grid) for row in result['layouts'] for grid in result['grids']}
+    if (any(header[field] != result[field] for field in ('fixture', 'grids', 'layouts_sha256'))
+            or header['layout_ids'] != [row['id'] for row in result['layouts']]
+            or header['expected_evaluations'] != len(expected)):
+        raise ValueError('receipt run header differs from result')
     evaluations = [r for r in records if r['kind'] == 'evaluation']
-    if (len(evaluations) != count or evidence['evaluation_count'] != count
+    if (count != len(expected) or len(evaluations) != count or evidence['evaluation_count'] != count
             or [r['sequence'] for r in evaluations] != list(range(1, count + 1))):
         raise ValueError('receipt journal count or sequence mismatch')
+    if {(entry['layout_id'], entry['grid']) for entry in evaluations} != expected:
+        raise ValueError('receipt coverage must include each layout and grid exactly once')
     for row in result['layouts']:
+        if set(row['receipt_sequence']) != {str(grid) for grid in result['grids']}:
+            raise ValueError('receipt sequence grids mismatch')
         for grid in result['grids']:
             sequence = row['receipt_sequence'][str(grid)]
-            if not isinstance(sequence, int) or not 1 <= sequence <= count:
+            if isinstance(sequence, bool) or not isinstance(sequence, int) or not 1 <= sequence <= count:
                 raise ValueError('invalid receipt sequence')
             entry = evaluations[sequence - 1]
             receipt = entry['parsed_receipt']
@@ -340,7 +350,8 @@ def append_receipt(stream, value):
     os.fsync(stream.fileno())
 
 
-async def evaluate_layouts(frozen, grids=(16, 32, 64), layout_ids=None, *, evidence_dir: Path):
+async def evaluate_layouts(frozen, grids=(16, 32, 64), layout_ids=None, *, evidence_dir: Path,
+                           layouts_sha256: str | None = None):
     if len(set(grids)) != len(grids) or len(grids) < 2 or any(g not in (16, 32, 64) for g in grids):
         raise ValueError('choose at least two distinct grids from 16, 32, 64')
     selected = frozen['layouts']
@@ -350,6 +361,9 @@ async def evaluate_layouts(frozen, grids=(16, 32, 64), layout_ids=None, *, evide
         selected = [r for r in selected if r['id'] in layout_ids]
     if len(selected) < 2:
         raise ValueError('select at least two layouts')
+    # File-backed runs supply the hash of the exact frozen bytes they loaded.
+    if layouts_sha256 is None:
+        layouts_sha256 = hashlib.sha256(_json_bytes(frozen)).hexdigest()
     rows = [{**r, 'J_c': {}, 'all_layers_peak_c': {}, 'seconds': {},
              'solver_seconds': {}, 'candidate_hash': {}, 'receipt_sequence': {}} for r in selected]
     started = time.perf_counter()
@@ -365,7 +379,7 @@ async def evaluate_layouts(frozen, grids=(16, 32, 64), layout_ids=None, *, evide
     with journal.open('xb') as stream:
         append_receipt(stream, {'kind': 'run', 'status': 'incomplete',
                                'fixture': frozen['fixture'], 'grids': list(grids),
-                               'layouts_sha256': hashlib.sha256(_json_bytes(frozen)).hexdigest(),
+                               'layouts_sha256': layouts_sha256,
                                'layout_ids': [r['id'] for r in rows],
                                'expected_evaluations': len(rows) * len(grids),
                                'raw_artifacts_retained': False})
@@ -409,6 +423,7 @@ async def evaluate_layouts(frozen, grids=(16, 32, 64), layout_ids=None, *, evide
             finally:
                 await oracle.aclose()
         result = {'schema': 'slab-mesh-result-v1', 'fixture': frozen['fixture'],
+                  'layouts_sha256': layouts_sha256,
                   'grids': list(grids), 'fixed_tolerance_c': frozen['fixed_tolerance_c'],
                   'objective': 'chip-layer grid peak in Celsius', 'layouts': rows,
                   'evaluation_count': solver_executions, 'seconds': time.perf_counter() - started,
@@ -545,8 +560,8 @@ def main(argv=None):
     revision = execution_commit()
     if not re.fullmatch(r'(?:[0-9a-f]{40}|[0-9a-f]{64})', revision):
         raise ValueError('mesh execution requires a full source revision; set BUILD_SHA before evaluation')
-    result = asyncio.run(evaluate_layouts(frozen, args.grids, args.layout_ids, evidence_dir=output))
-    result['layouts_sha256'] = sha
+    result = asyncio.run(evaluate_layouts(frozen, args.grids, args.layout_ids,
+                                         evidence_dir=output, layouts_sha256=sha))
     result['execution_commit'] = revision
     errors = check_result(result, output)
     if errors:

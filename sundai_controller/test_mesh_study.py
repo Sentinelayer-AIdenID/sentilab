@@ -253,6 +253,89 @@ class MeshReceiptTests(unittest.TestCase):
                     errors = mesh.check_result(result, output)
                     self.assertTrue(errors, name)
 
+    def test_result_must_match_run_header(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            result, records = self.complete_fake_run(output)
+            for field, value in [('fixture', 'micro150'), ('grids', [64, 32]),
+                                 ('layouts_sha256', '0' * 64)]:
+                with self.subTest(result_field=field):
+                    changed = copy.deepcopy(result)
+                    changed[field] = value
+                    self.assertTrue(any('run header' in error for error in mesh.check_result(changed, output)))
+            with self.subTest(result_field='layouts'):
+                changed = copy.deepcopy(result)
+                changed['layouts'].reverse()
+                self.assertTrue(any('run header' in error for error in mesh.check_result(changed, output)))
+            # The one-field RESULT mutation must fail with the journal untouched.
+            changed = copy.deepcopy(result)
+            changed['layouts_sha256'] = '0' * 64
+            (output / 'RESULT.json').write_bytes(mesh._json_bytes(changed))
+            with self.subTest(case='one-field-cli-mutation'), redirect_stdout(io.StringIO()):
+                self.assertEqual(mesh.main(['--check', str(output / 'RESULT.json')]), 1)
+            for field, value in [('fixture', 'micro150'), ('grids', [16, 32, 64]),
+                                 ('layout_ids', ['clustered-01']), ('layouts_sha256', '0' * 64),
+                                 ('expected_evaluations', 5)]:
+                with self.subTest(header_field=field):
+                    changed = copy.deepcopy(records)
+                    changed[0][field] = value
+                    self.rewrite_journal(output, result, changed)
+                    self.assertTrue(any('run header' in error for error in mesh.check_result(result, output)))
+
+    def test_receipt_coverage_is_complete_and_unique(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            result, records = self.complete_fake_run(output)
+            for case in ('extra', 'missing', 'duplicate', 'reused-sequence', 'extra-sequence', 'bool-sequence'):
+                with self.subTest(case=case):
+                    changed = copy.deepcopy(records)
+                    altered = copy.deepcopy(result)
+                    evaluations = [r for r in changed if r['kind'] == 'evaluation']
+                    if case == 'extra':
+                        extra = copy.deepcopy(evaluations[-1])
+                        extra['sequence'] = 5
+                        changed.insert(-1, extra)
+                    elif case == 'missing':
+                        changed.remove(evaluations[-1])
+                    elif case == 'duplicate':
+                        duplicate = copy.deepcopy(evaluations[0])
+                        duplicate['sequence'] = 4
+                        changed[changed.index(evaluations[-1])] = duplicate
+                    else:
+                        sequences = altered['layouts'][0]['receipt_sequence']
+                        if case == 'reused-sequence':
+                            sequences['64'] = sequences['32']
+                        elif case == 'extra-sequence':
+                            sequences['16'] = sequences['32']
+                        else:
+                            sequences['32'] = True
+                    count = sum(r['kind'] == 'evaluation' for r in changed)
+                    altered['evaluation_count'] = altered['rows_evidence']['evaluation_count'] = count
+                    changed[0]['expected_evaluations'] = changed[-1]['evaluation_count'] = count
+                    self.rewrite_journal(output, altered, changed)
+                    self.assertTrue(mesh.check_result(altered, output), case)
+
+    def test_run_header_binds_exact_frozen_file_bytes(self):
+        async def fake_call(oracle, design):
+            return fake_thermal_result(oracle, design)
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            frozen_path = output / 'layouts.json'
+            data = (mesh.EVIDENCE_ROOT / 'ascend910/layouts.json').read_bytes() + b'\n'
+            sha = hashlib.sha256(data).hexdigest()
+            frozen_path.write_bytes(data)
+            frozen_path.with_suffix('.sha256').write_text(sha + '\n')
+            with patch.object(mesh.HotSpotOracle, '__call__', fake_call), redirect_stdout(io.StringIO()):
+                self.assertEqual(mesh.main(['--grids', '32', '64', '--layout-ids',
+                    'clustered-01', 'spread-01', '--layouts', str(frozen_path),
+                    '--output-dir', str(output)]), 0)
+            result = json.loads((output / 'RESULT.json').read_text())
+            header = json.loads((output / 'rows.jsonl').read_text().splitlines()[0])
+            self.assertEqual(header['layouts_sha256'], sha)
+            self.assertEqual(result['layouts_sha256'], sha)
+            self.assertEqual(mesh.check_result(result, output), [])
+
     def test_execution_commit_is_optional_provenance(self):
         cases = [
             ('build', {'BUILD_SHA': self.revision}, FileNotFoundError('git'), self.revision, 0),
