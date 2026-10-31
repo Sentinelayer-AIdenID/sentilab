@@ -85,7 +85,7 @@ STOP, the service operator removes that file and starts a new finite run.
 
 The read-only routes are `/api/view/runs`,
 `/api/view/events?run_id=...&cursor=0&limit=256`, and `/api/view/key`. Event responses
-default to v0.5 JSONL, with at most 256 lines and 4 MiB per page. `cursor` is the
+default to v0.5 JSONL, with at most 256 lines and normally 4 MiB per page. `cursor` is the
 number of physical append rows already consumed, including duplicates and
 malformed rows. Follow `x-next-cursor` and `x-has-more`; JSON diagnostics provide
 `next_cursor` and `has_more`. A page may split conflicting sequences: retain all
@@ -94,6 +94,11 @@ received evidence and reverify the combined stream. Each cursor also has an
 byte prefix. Echo it as `cursor_hash` with every nonzero `cursor`. A missing or
 changed boundary returns 409 and requires replay from zero, including after
 in-place changes or file replacement. Append-only progress preserves the hash.
+Only LF-terminated rows are counted, hashed or served. An unfinished tail waits
+for its LF; writers still refuse to append onto it. Oversize rows retain their
+original bytes, including invalid UTF-8. A row larger than 4 MiB is sent alone
+in cursor JSONL transport; the client rejects that poll at its transport cap
+and keeps its prior cursor and evidence.
 The hash binds a read boundary; envelope verification against pinned keys still
 establishes authenticity. Late conflicting appends
 are delivered at their append position and can retract an earlier verified
@@ -104,9 +109,19 @@ returns 409 and requires replay from zero.
 Legacy `after=seq` remains supported separately. Its conflicting sequence groups
 stay on one page; earlier break evidence is sent again. A group that cannot fit
 returns 413. Clients needing bounded progress through such evidence use `cursor`.
-Do not combine a nonzero `after` with `cursor`. Unsupported row-cursor polling
+Do not combine `after` with `cursor`, even `after=0`. Mixed parameters or malformed
+`cursor_hash` return 422, so clients do not mistake them for unsupported paging.
+Unsupported row-cursor polling
 must preserve the prior prefix as STALE/unsupported; incremental sequence-only
 fallback must not advance a LIVE/current claim.
+
+For v0.6 transport conformance, run `python -m app.check_view_paging` after its
+contract lands, or pass the exact `contracts/view-envelope-v0.6` directory from
+PR26 as an argument. It drives the unchanged reducer and C1–C11 vector data
+against a local HTTP server, plus unfinished-tail and oversize-row regressions.
+Fault scenarios deliberately alter responses after fetching from the real route.
+The three C7 invalid cursor/limit cases retain FastAPI's existing 422 response;
+the reference uses 400. The harness reports these differences explicitly.
 An explicit `format=json` returns diagnostic `envelopes`, `next_after`, `has_more`,
 `prefix_end`, `chain_error`, and the core projection, also capped at 4 MiB.
 Clients fetch one run from genesis through contiguous pages and
