@@ -72,15 +72,16 @@ def runs():
 
 
 @router.get("/api/view/events")
-def events(run_id: str, after: int = Query(0, ge=0),
+def events(run_id: str, after: int | None = Query(None, ge=0),
            limit: int = Query(MAX_PAGE_LINES, ge=1, le=MAX_PAGE_LINES),
            format: Literal["jsonl", "json"] = "jsonl",
            cursor: int | None = Query(None, ge=0), cursor_hash: str | None = None):
-    if cursor is not None and after != 0:
-        raise HTTPException(400, "use cursor or after, not both")
+    if cursor is not None and after is not None:
+        raise HTTPException(422, "use cursor or after, not both")
+    after = after or 0
     if cursor_hash is not None and (cursor is None or len(cursor_hash) != 64 or
                                     any(c not in "0123456789abcdef" for c in cursor_hash)):
-        raise HTTPException(400, "invalid cursor hash")
+        raise HTTPException(422, "invalid cursor hash")
     try:
         state = replay(context().root, run_id, public_keys=context().public_keys)
     except FileNotFoundError:
@@ -111,9 +112,12 @@ def events(run_id: str, after: int = Query(0, ge=0),
     for group in groups:
         group_bytes = sum(len(row["raw"]) for row in group)
         if len(page) + len(group) > limit or byte_count + group_bytes > MAX_PAGE_BYTES:
-            if not page:
+            if page:
+                break
+            # Physical cursor transport preserves an over-cap row alone. The
+            # client rejects the poll at its byte cap without losing evidence.
+            if cursor is None or format != "jsonl":
                 raise HTTPException(413, "one sequence group exceeds the view transport caps")
-            break
         page.extend(group)
         byte_count += group_bytes
     next_after = max((sequence(row) or after_seq for row in page), default=after_seq)

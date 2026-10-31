@@ -6,7 +6,7 @@ from urllib.request import urlopen
 import unittest
 
 from app import test_view
-from sentilab_core.envelope import build, canonical
+from sentilab_core.envelope import MAX_BYTES, MAX_PAGE_BYTES, build, canonical
 from sentilab_core.ledger import read_prefix
 
 
@@ -105,11 +105,66 @@ class CursorTests(unittest.TestCase):
         data, cursor, more = self.page("caps", 0, 256)
         self.assertEqual((len(data), cursor, more), (4 * 1024 * 1024, 64, True))
         self.assertEqual(self.page("caps", cursor, 256)[1:], (65, False))
-        for query, code in (("cursor=-1", 422), ("cursor=256", 409), ("cursor=1&after=1", 400),
-                            ("cursor=1", 409), ("cursor=1&cursor_hash=invalid", 400)):
+        for query, code in (("cursor=-1", 422), ("cursor=256", 409), ("cursor=1&after=1", 422),
+                            ("cursor=1", 409), ("cursor=1&cursor_hash=invalid", 422)):
             with self.assertRaises(HTTPError) as caught:
                 self.get("/api/view/events?run_id=caps&" + query)
             self.assertEqual(caught.exception.code, code)
+
+    def test_unfinished_tail_waits_for_lf_without_changing_cursor_hash(self):
+        rows = self.seed_run("partial", 2)
+        first, last = (canonical(row) + b"\n" for row in rows)
+        path = self.root / "partial.jsonl"
+        self.boundaries = {("partial", 1): hashlib.sha256(first).hexdigest()}
+        for tail in (last[:25], last[:-1], b"x" * (MAX_BYTES + 5)):
+            with self.subTest(tail_bytes=len(tail)):
+                path.write_bytes(first + tail)
+                self.assertEqual(self.page("partial", 0, 256), (first, 1, False))
+                self.assertEqual(self.boundaries[("partial", 1)], hashlib.sha256(first).hexdigest())
+                self.assertEqual(self.page("partial", 1), (b"", 1, False))
+                # The legacy sequence feed must also wait for complete bytes.
+                with urlopen(f"http://127.0.0.1:{self.port}/api/view/events?run_id=partial&after=1",
+                             timeout=10) as response:
+                    self.assertEqual(response.read(), b"")
+        path.write_bytes(first + last[:-1])
+        with path.open("ab") as handle:
+            handle.write(b"\n")
+        self.assertEqual(self.page("partial", 1), (last, 2, False))
+        self.assertEqual(self.boundaries[("partial", 2)], hashlib.sha256(first + last).hexdigest())
+        path.write_bytes(b"unfinished")
+        self.assertEqual(self.page("partial", 0), (b"", 0, False))
+        self.assertEqual(self.boundaries[("partial", 0)], hashlib.sha256(b"").hexdigest())
+
+    def test_oversize_rows_preserve_bytes_and_hash_at_each_page_boundary(self):
+        rows = self.seed_run("oversize", 2)
+        first, last = (canonical(row) + b"\n" for row in rows)
+        for size in (MAX_BYTES + 1, MAX_PAGE_BYTES - 1, MAX_PAGE_BYTES + 1):
+            with self.subTest(size=size):
+                oversize = b"\xff" + b"x" * (size - 1) + b"\n"
+                self.root.joinpath("oversize.jsonl").write_bytes(first + oversize + last)
+                consumed = b""
+                for cursor, raw in enumerate((first, oversize, last)):
+                    self.assertEqual(self.page("oversize", cursor), (raw, cursor + 1, cursor < 2))
+                    consumed += raw
+                    self.assertEqual(self.boundaries[("oversize", cursor + 1)],
+                                     hashlib.sha256(consumed).hexdigest())
+                self.assertEqual(self.page("oversize", 3), (b"", 3, False))
+                if size >= MAX_PAGE_BYTES - 1:
+                    # A full/over-cap row goes alone even with a larger row limit.
+                    self.assertEqual(self.page("oversize", 0, 256), (first, 1, True))
+                    self.assertEqual(self.page("oversize", 1, 256), (oversize, 2, True))
+                    self.assertEqual(self.page("oversize", 2, 256), (last, 3, False))
+
+    def test_bad_cursor_parameters_are_retryable_validation_errors(self):
+        self.seed_run("invalid", 1)
+        for query in ("cursor=1&after=1", "cursor=0&after=1", "cursor=0&after=0",
+                      "cursor_hash=" + "a" * 64,
+                      "cursor=0&cursor_hash=", "cursor=1&cursor_hash=invalid",
+                      "cursor=0&cursor_hash=" + "A" * 64):
+            with self.subTest(query=query):
+                with self.assertRaises(HTTPError) as caught:
+                    self.get("/api/view/events?run_id=invalid&" + query)
+                self.assertEqual(caught.exception.code, 422)
 
 
 if __name__ == "__main__":
