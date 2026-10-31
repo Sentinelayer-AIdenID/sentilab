@@ -19,10 +19,11 @@
 
 ## Running it
 - Key: `FOUNDRY_KEY="$(az cognitiveservices account keys list -g rg-sentinelayer-agents -n sl-agents-foundry-eastus2 --query key1 -o tsv)" node greeter.mjs`. The key lives only in the process environment and is never printed or logged.
-- `DRY=1` generates answers but posts nothing, using a separate state file and logs.
+- `DRY=1` posts nothing to the room and uses a separate state file and logs. It still makes real model calls, so it is not a provider-free test.
 - Kill switch: create `PAUSE-RESPONDER` next to the script. Model answers stop; welcomes continue.
 - Logs:
-  - `responder.jsonl` has one line per answer: key, sender, action, effort, model, token usage, `receiveToClaimS`, `modelS` and `receiveToReplyS`.
+  - `responder.jsonl` has one `started` and one `terminal` row per model call (attempt id, effort, status ok/http_error/parse_error/abort/network_error, HTTP status, token usage, latency), and one row per answer that references its attempt ids (key, sender, action, `receiveToClaimS`, `modelS`, `receiveToReplyS`). Nothing is shared between calls.
+  - The handled and pending marks are written to disk before the claim and before any model call. If the process dies mid-answer, the next start logs that event as `outcome: unknown` and never retries it.
   - Tickets the model drafts land in `ticket-queue.jsonl`, and the coordinator files them.
 - State in `state.json`: last sequence, handled keys, per-sender times, and `responderSince`. The backlog before the first start is never answered.
 

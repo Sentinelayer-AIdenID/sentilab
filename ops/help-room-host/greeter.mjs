@@ -4,6 +4,7 @@
 //    only writes text that this process posts). Keys on server sequence ids and event ids; state survives restarts.
 import { execFile } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 const ROOM = "32a841e5-308b-411a-87f7-6454082d72fe";
 const DIR = "H:/sl-temp/rooms/hackathon-room/greeter";
 const DRY = process.env.DRY === "1"; // dry run: generate answers, post nothing, separate state
@@ -61,20 +62,34 @@ Return only a JSON object: {"action":"answer"|"ticket"|"skip","reply":string,"ti
 FACTS:
 ${FACTS}`;
 
-let lastUsage = null; // token usage of the latest model call, logged per answer
-async function ask(user, effort) {
+// One logged attempt per model call: a "started" row before the request and a "terminal" row after it (ok, http_error,
+// parse_error, abort or network_error), each with its own id, usage and latency. Nothing is shared between calls, so a
+// retry can't overwrite or borrow another call's usage (root review of PR68).
+async function ask(user, effort, key) {
+  const id = randomUUID();
+  const t0 = Date.now();
+  log({ attempt: id, key, effort, model: "gpt-6-astra", phase: "started" });
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 75000);
+  let status = "network_error", httpStatus = null, usage = null, out = null;
   try {
     const r = await fetch(MODEL_URL, { method: "POST", signal: ctl.signal, headers: { "api-key": KEY, "content-type": "application/json" },
       body: JSON.stringify({ model: "gpt-6-astra", input: [{ role: "system", content: SYSTEM }, { role: "user", content: user }],
         reasoning: { effort }, max_output_tokens: 6000, text: { format: { type: "json_object" } } }) });
-    const j = await r.json();
-    if (!r.ok) throw new Error(`model http ${r.status} ${j.error?.code || ""}`);
-    const out = j.output_text || (j.output || []).flatMap((o) => o.content || []).map((c) => c.text || "").join("");
-    lastUsage = j.usage ? { in: j.usage.input_tokens, out: j.usage.output_tokens, reasoning: j.usage.output_tokens_details?.reasoning_tokens } : null;
-    return JSON.parse(out);
-  } finally { clearTimeout(timer); }
+    httpStatus = r.status;
+    const j = await r.json().catch(() => null);
+    usage = j?.usage ? { in: j.usage.input_tokens, out: j.usage.output_tokens, reasoning: j.usage.output_tokens_details?.reasoning_tokens } : null;
+    if (!r.ok || !j) { status = "http_error"; return { id, ok: false }; }
+    const text = j.output_text || (j.output || []).flatMap((o) => o.content || []).map((c) => c.text || "").join("");
+    try { out = JSON.parse(text); status = "ok"; } catch { status = "parse_error"; }
+    return { id, ok: status === "ok", out };
+  } catch (err) {
+    status = err?.name === "AbortError" ? "abort" : "network_error";
+    return { id, ok: false };
+  } finally {
+    clearTimeout(timer);
+    log({ attempt: id, key, effort, phase: "terminal", status, httpStatus, usage, ms: Date.now() - t0 });
+  }
 }
 
 // ── Output guard: the model's text is posted publicly, so it must not carry links we don't vouch for, secrets or mass mentions ──
@@ -100,23 +115,29 @@ const clip = (s, n) => { const t = String(s || "").replace(/\s+\n/g, "\n"); retu
 const senderOf = (e) => String(e.agentId || e.agent?.id || "");
 const textOf = (e) => String(e.event === "session_reply" ? (e.payload?.note || "") : (e.payload?.message || ""));
 const log = (o) => { console.log(new Date().toISOString(), JSON.stringify(o)); appendFileSync(`${DIR}/responder${DRY ? "-dry" : ""}.jsonl`, JSON.stringify({ at: new Date().toISOString(), ...o }) + "\n"); };
+const persist = () => writeFileSync(STATE, JSON.stringify(state));
+const settle = (key) => { if (state.pending) delete state.pending[key]; persist(); };
 
 async function respond(e, events, tickets) {
   const sender = senderOf(e);
   const isReply = e.event === "session_reply";
   const thread = isReply ? Number(e.payload?.targetSequenceId) : Number(e.sequenceId);
   const key = isReply ? `r:${e.eventId}` : `m:${e.sequenceId}`;
+  // Durable before any claim, provider call or reply: a restart never answers this event again. If the process dies
+  // mid-answer, the pending mark turns into a logged "unknown" outcome at the next start, never a silent second call.
   state.handled.push(key);
+  state.pending = { ...(state.pending || {}), [key]: new Date().toISOString() };
+  persist();
   const receivedMs = Date.parse(e.ts || e.timestamp);
   const now = Date.now();
   state.senderTimes[sender] = (state.senderTimes[sender] || []).filter((t) => now - t < 3600000);
   const human = e.agent?.role === "human" || sender.startsWith("human-");
-  if (state.senderTimes[sender].length >= (human ? 15 : 3) || !underCap(now)) return log({ key, sender, skipped: "rate cap" });
+  if (state.senderTimes[sender].length >= (human ? 15 : 3) || !underCap(now)) { settle(key); return log({ key, sender, skipped: "rate cap" }); }
   // Someone on the host team already answered or claimed this after it arrived: don't double up.
   const taken = events.some((x) => HOST_TEAM.test(senderOf(x)) && Date.parse(x.ts) > receivedMs
     && (x.event === "session_reply" || (x.event === "session_action" && x.payload?.actionType === "working_on"))
     && Number(x.payload?.targetSequenceId) === thread);
-  if (taken && !DRY) return log({ key, sender, skipped: "already answered" });
+  if (taken && !DRY) { settle(key); return log({ key, sender, skipped: "already answered" }); }
   const claim = await cli(["session", "action", ROOM, "working_on", "--target-sequence", String(thread), "--note", "Host answering", "--agent", "sentilab-host"]);
   const claimMs = Date.now();
   const known = new Set(events.map((x) => senderOf(x).toLowerCase()).filter(Boolean));
@@ -134,21 +155,25 @@ async function respond(e, events, tickets) {
     (state.firstMsgs || []).includes(key) ? `This is ${sender}'s first message in the room. Welcome them in one line, point them to the pinned guide (npx -y sentinelayer-cli@0.46.5 session pins ${ROOM} --json), and connect them with participants or open tickets from the transcript that fit what they do, naming the thread or ticket.` : "",
     `Start your reply with @${sender}.`,
   ].filter(Boolean).join("\n\n");
-  let out, effort = "medium";
+  let out = null, effort = null;
+  const attempts = [];
   const t0 = Date.now();
-  try { out = await ask(user, effort); } catch (err) {
-    effort = "low";
-    try { out = await ask(user, effort); } catch (err2) { out = null; log({ key, sender, modelError: String(err2.message || err2).slice(0, 160) }); }
+  for (const eff of ["medium", "low"]) {
+    const a = await ask(user, eff, key);
+    attempts.push(a.id);
+    if (a.ok) { out = a.out; effort = eff; break; }
   }
   const modelMs = Date.now() - t0;
-  if (out?.action === "skip") return log({ key, sender, action: "skip", reason: clip(out.reason, 200), modelMs });
+  if (out?.action === "skip") { settle(key); return log({ key, sender, action: "skip", reason: clip(out.reason, 200), effort, attempts, modelS: modelMs / 1000 }); }
   let text = out ? guard(out.reply, sender, known) : null;
   if (!text) text = `@${sender} Thanks, I've got this and our team is on it. You'll get the answer right here under your message.`;
   const r = await cli(["session", "reply", ROOM, String(thread), text, "--agent", "sentilab-host"]);
   const replyMs = Date.now();
   if (!r.err) { state.senderTimes[sender].push(replyMs); state.sentTimes.push(replyMs); }
   if (out?.action === "ticket" && out.ticket?.title) appendFileSync(`${DIR}/ticket-queue${DRY ? "-dry" : ""}.jsonl`, JSON.stringify({ key, sender, thread, title: out.ticket.title, body: out.ticket.body, at: new Date().toISOString() }) + "\n");
-  log({ key, sender, thread, action: out?.action || "fallback", effort, model: "gpt-6-astra", usage: lastUsage, claimOk: !claim.err, posted: !r.err, chars: text.length,
+  settle(key);
+  // Usage lives on each attempt's own terminal row; this row only references them.
+  log({ key, sender, thread, action: out?.action || "fallback", effort, model: "gpt-6-astra", attempts, claimOk: !claim.err, posted: !r.err, chars: text.length,
     receiveToClaimS: (claimMs - receivedMs) / 1000, modelS: modelMs / 1000, receiveToReplyS: (replyMs - receivedMs) / 1000 });
 }
 
@@ -214,6 +239,10 @@ async function tick() {
 }
 // Start after the current tail so existing staff messages are never answered.
 if (!existsSync(STATE)) { state.lastSeq = 56684; writeFileSync(STATE, JSON.stringify(state)); }
+// A previous process that died mid-answer left these pending: their outcome is unknown (a claim, provider call or reply
+// may or may not have happened). Record that and never retry them automatically.
+for (const [key, since] of Object.entries(state.pending || {})) log({ key, outcome: "unknown", pendingSince: since, note: "process ended mid-answer; not retried" });
+state.pending = {};
 writeFileSync(STATE, JSON.stringify(state));
 console.log("host up; lastSeq", state.lastSeq, "responder", KEY ? `on since ${state.responderSince}` : "OFF (no key)");
 while (Date.now() < UNTIL) { try { await tick(); } catch (e) { console.log("tick error", e.message); } await new Promise((r) => setTimeout(r, TICK_MS)); }
