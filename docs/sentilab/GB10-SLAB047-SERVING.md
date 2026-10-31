@@ -1,0 +1,65 @@
+# SLAB047b: bounded fixture serving correction
+
+This source implements the separate corrective Warden grant #56545, source `55fe3cab-88b4-4f80-9ae7-2f5ff43c70f7`, on ticket `1509c616-03ee-4d35-b60c-bc70dd18b7fe`. Independent exact-source startup review and a successful reviewed non-GPU scratch execution probe must precede root installation of the controller approval and GPU start. This corrected source has not run on GB10.
+
+The grant permits one attempt with at most 900 seconds including startup/load/cleanup, starting before 2026-10-31 12:15 UTC and stopping by 12:30 UTC. It permits only the retained SLAB018 model/adapter/vLLM image and up to 20 fixed fixture inference requests in one owned localhost container. No training, SLAB018 restart, external route, arbitrary prompts or new model comparison is implemented.
+
+This supports original **SLAB033** checkpoint identity/resource evidence and SLAB018 lifecycle measurement. It does **not** complete SLAB033's held-out promotion, quarantine or rollback, or original **SLAB038** private box-to-GB10 routing/probe. SLAB043 owns canonical CLI/MCP mapping and aliases. No shared CLI/MCP/registry files are changed by this slice. All responses remain `scope_state=staged_open`; no final deliverable is accepted.
+
+## Fixed interface and source identity
+
+The existing entry point remains `sentilab_core.gb10_backend.execute('serve', action='start'|'status'|'stop')`; omitted action means status. No caller can supply a root, host, executable, source, image, grant, approval, command, request body, timeout or SSH option. `context` remains unused. Status/checkpoint operations remain the independently reviewed PR42 implementation.
+
+`gb10_serving.py` uses alias `gb10`, strict known_hosts checking, no forwarding, no multiplexed master and the existing bounded 20-second SSH transport. Its small stdin bootstrap opens every installed source path component without following links, reads at most 64 KiB, checks the compiled-in controller SHA256, then executes those exact bytes. Host identity is additionally checked, but hostname/login/architecture are self-reports: authentication relies on the PC's existing known_hosts pin. Missing/unreviewed staging returns unavailable/refused, not success.
+
+The remote controller is only `/home/dell/sentilab/serving-20261031b/serve047.py`, under a root-provisioned directory owned by `dell` with mode 0700. All new artifacts remain there. The retained `/home/dell/sentilab/preflight-20261031` root is only read and mounted read-only. There is no runtime installation, download or SSH-key change.
+
+## Root staging after independent review
+
+Root must use the exact reviewed commit and verify `scripts/gb10/serve047.py` against `CONTROLLER_SHA256` in `sentilab_core/gb10_serving.py`. Any correction changes that pin and requires a new exact-source decision. This source does not grant itself execution.
+
+Root provisions the new 0700 directory and exact controller bytes, then creates a 0600 `APPROVED.json` there from the actual authenticated nonauthor decision. Its shape is:
+
+```json
+{
+  "schema": "sentilab-slab047-review/1",
+  "grant_source": "55fe3cab-88b4-4f80-9ae7-2f5ff43c70f7",
+  "controller_sha256": "EXACT_CONTROLLER_SHA256_FROM_REVIEWED_BRIDGE",
+  "policy_sha256": "EXACT_POLICY_SHA256_FROM_REVIEWED_BRIDGE",
+  "decision": "PENDING",
+  "reviewer": "INDEPENDENT_NONAUTHOR_IDENTITY",
+  "review_record": "AUTHENTICATED_EXACT_SOURCE_PLUS_ONE_RECORD"
+}
+```
+
+The example deliberately cannot authorize a start. Only root may replace `PENDING` with the actual `+1` and fill the verified record and pins. The approval file is a trusted local operator gate, not a cryptographic verifier for room identity. It is not accepted through caller arguments. Root should preserve the review record and source hashes alongside deployment evidence.
+
+Admission acquires an exclusive lock and reads approval **after** obtaining that lock, so a revocation while waiting is not stale authorization. It checks the cutoff and STOP again. An exclusive, fsynced `reservation.json` consumes the only attempt before child spawn or Docker work; it freezes exact approval bytes/hash and policy bytes/hash. Interrupted/spawn-ambiguous reservations remain consumed with a 900-second conservative charge. A permanent `worker-claimed.json` prevents restarting the same attempt even after the worker exits. There is no retry/reset endpoint.
+
+The detached worker embeds the validated source bytes in its launch arguments, with stdin/stdout/stderr closed, an independent session, and no later PID signals. It holds a worker lock and uses a separate lock around Docker lifecycle operations. Status reports lock observation, current fully checked container state and current port state rather than inferring liveness from stale state or an old SLAB018 teardown.
+
+## Runtime boundaries and evidence
+
+Seventeen retained-file pins cover the 13 model files, adapter weights/config, original attempt input manifest and exact 20-row evaluation JSONL. Model shards are streamed with bounded reads and descriptor identity/stability checks. The exact bytes used as prompts are rehashed after loading. No model shard is accumulated in RAM. Host files are assumed to remain under trusted operator control; the container receives read-only mounts and cannot mutate them.
+
+Docker commands explicitly use `/usr/bin/docker --host unix:///var/run/docker.sock` with a minimal environment and a new-root Docker configuration path. They cannot inherit a cloud Docker context. The pinned image ID uses `--pull=never`. The controller creates one container with owner/token/source/policy labels, saves the full ID before start, and uses user 1000:1000, dropped capabilities, no-new-privileges, 96 GiB memory, 12 CPUs, 2 GiB shared memory, read-only root filesystem, temporary `/tmp`, offline model settings and disabled usage telemetry. Only `127.0.0.1:18047:8000` is published. These new filesystem restrictions still require a real approved compatibility observation; fake tests do not establish vLLM readiness.
+
+The container's entry wrapper derives its timeout from the original reservation wall and monotonic deadlines, including if Docker START is delayed. GNU timeout provides TERM plus a five-second kill fallback, leaving at least 35 seconds before the original deadline. The controller stops new work with a 60-second cleanup reserve. Readiness is bounded to 300 seconds. Health requests allow at most three seconds; inference allows the smaller of 60 seconds and the remaining attempt time minus the cleanup reserve. Both the socket timeout and hard outer child timeout use that same allowance, including non-streaming cold generation. These request durations remain within the original charged attempt; they do not reset its clocks. Requests are serial. Only the fixed adapter name `fixture` and original 20 rows are used. Health GETs do not consume inference slots; every inference POST first persists its exact JSON body and consumes a slot, then rechecks STOP and deadline before dispatch. STOP or expiry during the reservation consumes that slot without a POST. Ambiguous POSTs are never retried.
+
+The new root retains reservation/state, input verification, exact request and response **body** bytes, SHA256s, HTTP status, per-request receipts, and bounded available container logs. A non-200 body is retained before failure. A malformed HTTP 200 JSON body also retains its status, exact bytes, request/response hashes, timeout allowance and parse-error receipt before the attempt fails without retry. When the server supplies valid integer token usage, receipts retain it and derive completion tokens divided by client-observed request duration; absent usage remains null. Timing includes the serial client overhead and is not decoder throughput or a concurrency benchmark. Warmup is Docker start intent through the first successful localhost health response. Six repeated training-source cases and label metadata mean this is plumbing evidence, not held-out generalization or scientific learning.
+
+STOP is durable and remains set. Cleanup can only stop/remove a full 64-hex container ID after matching exact owner/token/source/policy labels, image and name. A name is used solely to recover a full ID for inspection after ambiguous CREATE. A daemon CREATE with no returned ID cannot be declared closed from an empty inventory; it stays unresolved and charged conservatively. No arbitrary listener, host PID or process group is killed. After stop, the controller retains bounded raw logs, removes the exact checked container, confirms absence via daemon inventory, and requires a localhost connection-refused result. A timeout/permission error is not port-closure proof.
+
+Actual charge covers reservation through confirmed removal and port closure, including startup, hashing, load, requests and cleanup. Unknown cleanup uses at least the full 900-second reservation; measured overshoot is retained and makes the result fail. No charge is presented as monetary cost. Docker/host failure can prevent confirmed cleanup despite the internal watchdog; this is reported as unresolved and blocks retry rather than asserting a hard physical guarantee. Root must independently confirm closure and account any overshoot. A slow STOP may outlast the existing 20-second SSH transport; the durable STOP and detached worker continue to govern it, and root must query status instead of interpreting transport timeout as cleanup success.
+
+## Verification limits
+
+The initial author ran finite local fakes, including one-attempt races, source/policy/reviewer gates, approval revocation during lock wait, frozen admitted bytes, STOP before/between requests, ambiguous CREATE/HTTP/removal, ownership mismatch, deadline handling, exactly 20 byte-bound receipts and token/timing scope. The corrective root run passes 35 affected controller/bridge tests, including five added cases: STOP and deadline during slot reservation, malformed-200 receipt preservation, equal bounded socket/outer allowance and a real local stdlib fake HTTP server returning after 2.6 seconds. This last test launches only the fixed stdlib HTTP child, with no GPU/model/SSH/Docker work. Existing Windows backend tests retain their platform skips. An independent exact-source reviewer must assess the Linux path/lock/process boundaries before root considers the one real attempt.
+
+## Preserved first attempt and corrective boundary
+
+Original SLAB047 at baf0091b11c6020601b5ce11029307bf034a3953 started at 2026-10-31 11:09:50 UTC and failed during Triton shared-object loading before any inference. Its charge is 79.6175887260033 seconds, with independently observed container removal, refused localhost port and free worker lock. Its directory /home/dell/sentilab/serving-20261031 and all source, approval, reservation and raw evidence remain untouched. The separate047b grant uses a new identity/directory and does not reset or retry that reservation.
+
+047b adds explicit exec to /tmp scratch while retaining nosuid,nodev,read-only root, uid1000, cap-drop ALL, no-new-privileges and fixed localhost/model/input controls. It records the actual Docker HostConfig.Tmpfs bytes before start and logs bounded kernel mountinfo for / and /tmp before launching vLLM. The wrapper refuses a noexec scratch mount. The separately reviewed preflight must compile/load a tiny shared object or directly execute a script with those mount flags, without GPU access, and verify owned cleanup. Root writes the controller APPROVED.json only after checking that preflight proof and its independent source decision. The preflight and GPU charges remain separate. Source/fake tests do not establish the remaining model/JIT/readiness/first-request path.
+
+The047b root verification ran87 finite local tests:74passed and13explicit platform skips on Windows. The separate Linux preflight author run passed all15preflight tests. Actual model/container readiness remains unproved. Available Docker logs are captured up to8MiB per stream with no tail filter; the4m/one-file driver may already have rotated, so container-log-scope.json explicitly makes no complete-history claim. Final container inspection preserves exit and OOM state before removal.

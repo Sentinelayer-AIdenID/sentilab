@@ -1,0 +1,29 @@
+{
+  "schema": "sentilab-slab047-author-tests/1",
+  "at": "2026-10-31T10:51:02.709510+00:00",
+  "base": "0d4a6eea17971a0aaaa25992ce5cce7e44cf0a7a",
+  "platform": "Windows-10-10.0.26300-SP0",
+  "python": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+  "testsRun": 62,
+  "passed": 59,
+  "skipped": 3,
+  "errors": 0,
+  "failures": 0,
+  "wallSeconds": 6.922000000020489,
+  "sourceSha256": {
+    "scripts/gb10/serve047.py": "f11a2b89ddd9ec00bb985c8d5733159817d3817f947035e5b055837e4cb94e40",
+    "scripts/gb10/test_serve047.py": "f3971889a95860a56b2018aeac6a2254f7db276d002a32d0b86e9d2736f382ab",
+    "sentilab_core/gb10_serving.py": "7301c221ec011ce7cc9d8adca205246f5728282bfd62a5ae6d67733242ad28f9",
+    "sentilab_core/test_gb10_serving.py": "9cb1241e55495eafbda744c7450ed55208f99664cdc6eadbc49759ac277a45e1",
+    "sentilab_core/gb10_backend.py": "ec2e65ae2bc5f9e232eabf16b17c2c4890f4751c495a335e26be4fa74475fe34",
+    "sentilab_core/test_gb10_backend.py": "f95c19d0d1c8532d284a1ebb1cf0b1acb9bd51faf1c650fb1e1487ca6df7186a",
+    "docs/sentilab/GB10-SLAB047-SERVING.md": "6c2aa97db020f4b9d71a2b23aec8facc07476db122e5a084fb968d529dc45a73"
+  },
+  "controllerSha256": "f11a2b89ddd9ec00bb985c8d5733159817d3817f947035e5b055837e4cb94e40",
+  "policySha256": "9b49f5149bcab62137dba7515c305a7079364630f74c6a0bab002a430ed944fc",
+  "limits": [
+    "Author finite fakes and local fake peer processes only. No actual SSH/Docker/GPU/model/solver/network/CI execution.",
+    "Windows controller lock is a deterministic test substitute; Linux flock and actual container compatibility remain for independent review and root.",
+    "No deployment, runtime readiness or whole SLAB033/038/final-deliverable acceptance."
+  ]
+}
