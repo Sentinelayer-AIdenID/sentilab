@@ -5,9 +5,10 @@
 //     padded, lone-surrogate, conflicting and wrong-run vectors from contracts/view-envelope-v0.5/vectors-view.json
 //     never contribute geometry or colour (verification is VIEW ENVELOPE v0.5 over raw rows, through source.mjs);
 //   - the colour scale is fixed per run, and the move timeline exists per lab;
-//   - the live path (source.mjs over paging.mjs: cursor, cursor_hash, 409/413/terminal states, liveLabel with
-//     frozen) gives the reference's recorded trace for every v0.6.1 paging scenario (C1-C15), poll for poll, and the
-//     recorded label for every v0.6.1 label case; LIVE never shows next to a frozen board;
+//   - the live path (source.mjs over paging.mjs: cursor, cursor_hash, 409/413/terminal states, track() and liveLabel
+//     with frozen and the run status) gives the reference's recorded trace for every v0.6.2 paging scenario (C1-C17),
+//     poll for poll, and the recorded label for every v0.6.2 label case; LIVE never shows next to a frozen board or
+//     during catch-up; a finished run shows ENDED;
 //   - the CLI (v0.5 node reference verifier) builds the same scene as the browser path for the demo.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -24,7 +25,7 @@ import { buildScene, sceneAt, runFrame, heatColor, contiguousPrefix, scaleTicks,
 import { reconcile, extendsPrefix } from "../public/sentilab/package/playhead.mjs";
 import { TrackAnimation } from "../public/sentilab/package/render.mjs";
 import { makeChain, signEnvelope } from "../../contracts/view-envelope-v0.5/view-envelope.mjs";
-import * as refPaging from "../../contracts/view-envelope-v0.6.1/paging.mjs";
+import * as refPaging from "../../contracts/view-envelope-v0.6.2/paging.mjs";
 import { viewHref } from "../public/sentilab/view-links.mjs";
 import * as cliModule from "../../scripts/sentilab-scene.mjs";
 import * as source from "../public/sentilab/package/source.mjs";
@@ -37,7 +38,7 @@ const CLI = join(repo, "scripts", "sentilab-scene.mjs");
 const DEMO_FILE = join(repo, "web", "public", "sentilab", "demo-run.jsonl");
 const DEMO_RUN = "demo-8c-0001";
 const viewFile = JSON.parse(readFileSync(join(repo, "contracts", "view-envelope-v0.5", "vectors-view.json"), "utf8"));
-const pagingFile = JSON.parse(readFileSync(join(repo, "contracts", "view-envelope-v0.6.1", "vectors-paging.json"), "utf8"));
+const pagingFile = JSON.parse(readFileSync(join(repo, "contracts", "view-envelope-v0.6.2", "vectors-paging.json"), "utf8"));
 const demoBytes = () => new Uint8Array(readFileSync(DEMO_FILE));
 const enc = (text) => new TextEncoder().encode(text);
 const lenient = (bytes) => new TextDecoder("utf-8", { fatal: false, ignoreBOM: true }).decode(bytes);
@@ -716,8 +717,28 @@ test("CLI: unit-normalised export (0.01 m -> 10 mm), refused values listed not e
 // limit; never a seq), every outcome, the paging state after each poll, K, the board label and the mode label.
 const pagingTrust = vectorTrust(pagingFile.view);
 const P_BASE_MS = Date.UTC(2026, 9, 31, 12, 0, 0);   // the paging runner's clock (run-paging-vectors.mjs BASE_MS)
+// The vectors' rule-built chain (C16: 273 envelopes), rebuilt as run-paging-vectors.mjs builds it and checked against
+// its recorded rows_sha256.
+const CHAIN_ROWS = (() => {
+  const spec = pagingFile.chains.c16;
+  const v1Chain = viewFile.chains[0];
+  const [labActor, coreActor] = [v1Chain.input.entries[0].actor, v1Chain.input.entries[1].actor];
+  const at = (seconds) => new Date(P_BASE_MS + seconds * 1000).toISOString();
+  const entries = Array.from({ length: spec.count }, (_, i) => {
+    const seq = i + 1;
+    const event = seq === 1
+      ? { event_id: "c16-e001", seq, type: "node.create", actor_role: "lab", body: { id: "K16", kind: "candidate" } }
+      : { event_id: `c16-e${String(seq).padStart(3, "0")}`, seq, type: "node.create", actor_role: "core", body: { id: `U${seq}`, kind: "source" } };
+    return { event, ts: at(seq), actor: seq === 1 ? labActor : coreActor };
+  });
+  const rows = makeChain(v1Chain.input.run, entries, {}, { key_id: "core", privateKey: testKey("core").privateKey }).map((env) => enc(JSON.stringify(env)));
+  assert.equal(createHash("sha256").update(refPaging.joinRows(rows)).digest("hex"), spec.rows_sha256, "C16 chain rebuilt by its rule");
+  return { c16: rows };
+})();
 const pagingBytes = new Map();
 const rowBytes = (rowId) => {
+  const chainRow = /^(\w+):(\d+)$/.exec(rowId);
+  if (chainRow) return CHAIN_ROWS[chainRow[1]][Number(chainRow[2]) - 1];
   if (!pagingBytes.has(rowId)) {
     const spec = pagingFile.rows[rowId];
     assert.ok(spec, `unknown row ${rowId}`);
@@ -725,7 +746,9 @@ const rowBytes = (rowId) => {
   }
   return pagingBytes.get(rowId);
 };
-const expand = (list) => list.flatMap((entry) => (Array.isArray(entry) ? Array(entry[1]).fill(entry[0]) : [entry]));
+// A log entry is a row id, [id, n] for n copies, or { chain, from, to } for that chain's rows seq from..to.
+const expand = (list) => list.flatMap((entry) => (Array.isArray(entry) ? Array(entry[1]).fill(entry[0])
+  : typeof entry === "object" ? Array.from({ length: entry.to - entry.from + 1 }, (_, i) => `${entry.chain}:${entry.from + i}`) : [entry]));
 const runLengths = (ids) => {
   const out = [];
   for (const rowId of ids) {
@@ -788,7 +811,8 @@ function serve(server, req) {
   if (server.strip_final_lf && response.bodyBytes.length > 0) response.bodyBytes = response.bodyBytes.subarray(0, response.bodyBytes.length - 1);
   return { response, bodyIds };
 }
-const summary = (st) => ({ cursor: st.cursor, rows: st.rows.length, cursor_hash: st.cursor_hash, has_more: st.has_more, last_ok_ms: st.last_ok_ms, failure: st.failure, degraded: st.degraded });
+const summary = (st) => ({ cursor: st.cursor, rows: st.rows.length, cursor_hash: st.cursor_hash, has_more: st.has_more, last_ok_ms: st.last_ok_ms, failure: st.failure, degraded: st.degraded,
+  caught_up: st.caught_up, high_k: st.high_k, last_progress_ms: st.last_progress_ms });
 // The package view's live driver, one scripted poll at a time (the reference client loop: up to 16 pages a poll while
 // x-has-more is true).
 async function runScenarioPackage(spec) {
@@ -797,6 +821,7 @@ async function runScenarioPackage(spec) {
   const transitions = [];
   for (const poll of spec.polls) {
     const nowMs = P_BASE_MS + poll.t_s * 1000;
+    const runStatus = poll.run_status ?? "running";
     const fetches = [];
     for (let n = 0; n < 16; n += 1) {
       const req = source.liveRequest(live);
@@ -805,7 +830,8 @@ async function runScenarioPackage(spec) {
       const before = live.paging;
       const { outcome, newRows } = await source.applyPage(live, response, nowMs, pagingTrust);
       transitions.push({ before, after: live.paging, req, outcome });
-      fetches.push({ request: req, response: response && { status: response.status, headers: response.headers, body_bytes: response.bodyBytes.length, body_rows: runLengths(bodyIds) }, outcome, new_rows: newRows });
+      fetches.push({ request: req, response: response && { status: response.status, headers: response.headers, body_bytes: response.bodyBytes.length, body_rows: runLengths(bodyIds) }, outcome, new_rows: newRows,
+        catching_up: live.paging.catching_up, label: source.liveModeOf(live, nowMs, runStatus).label });
       if (outcome !== "ok" || !live.paging.has_more) break;
     }
     const v = live.verification;
@@ -815,13 +841,13 @@ async function runScenarioPackage(spec) {
       row_counts[row.status] = (row_counts[row.status] ?? 0) + 1;
       if (["malformed", "oversize"].includes(row.status)) rejected[row.reasons.join("+")] = (rejected[row.reasons.join("+")] ?? 0) + 1;
     }
-    trace.push({ t_s: poll.t_s, fetches, after: summary(live.paging), K: v?.prefixEnd ?? 0, board: v?.label ?? null, label: source.liveModeOf(live, nowMs).label, row_counts, rejected });
+    trace.push({ t_s: poll.t_s, run_status: runStatus, fetches, after: summary(live.paging), K: v?.prefixEnd ?? 0, board: v?.label ?? null, label: source.liveModeOf(live, nowMs, runStatus).label, row_counts, rejected });
   }
   return { trace, transitions, live };
 }
 
-const REQUIRED_SCENARIOS = ["C1", "C2", "C11", "C12a", "C13", "C15a", "C15b", "C15c"];
-test("the package view replays every required paging scenario (C1, C2, C11, C12a, C13; v0.6.1 C15a-c) and the vector file has them", () => {
+const REQUIRED_SCENARIOS = ["C1", "C2", "C11", "C12a", "C13", "C15a", "C15b", "C15c", "C16", "C17a", "C17b", "C17c"];
+test("the package view replays every required paging scenario (C1, C2, C11, C12a, C13; v0.6.1 C15a-c; v0.6.2 C16, C17a-c) and the vector file has them", () => {
   const ids = pagingFile.scenarios.map((spec) => spec.name.split(" ")[0]);
   for (const id of REQUIRED_SCENARIOS) assert.ok(ids.includes(id), id);
 });
@@ -833,6 +859,7 @@ for (const spec of pagingFile.scenarios) {
     for (const [i, step] of run.trace.entries()) {
       assert.deepEqual(json(step), json(spec.trace[i]), `t = ${step.t_s} s`);
       assert.ok(!(step.label.startsWith("LIVE") && step.board !== null), `t = ${step.t_s} s: ${step.label} next to "${step.board}"`);
+      for (const f of step.fetches) assert.ok(!(f.catching_up && f.label.startsWith("LIVE")), `t = ${step.t_s} s: LIVE during catch-up`);
     }
     for (const { before, after, req, outcome } of run.transitions) {
       assert.ok(after.cursor >= before.cursor && after.rows.length >= before.rows.length, "never resets");
@@ -844,17 +871,18 @@ for (const spec of pagingFile.scenarios) {
   });
 }
 
-// The v0.6.1 rule-5 label cases, through the package view's own liveModeOf().
+// The v0.6.2 label cases, through the package view's own liveModeOf().
 for (const spec of pagingFile.label_cases) {
-  test(`v0.6.1 label through the package view: ${spec.name}`, () => {
+  test(`v0.6.2 label through the package view: ${spec.name}`, () => {
+    const nowMs = P_BASE_MS + 100_000;
+    const ago = (seconds) => (seconds === null ? null : nowMs - seconds * 1000);
+    // A terminal failure is also the state's degraded reason, as step() sets it.
+    const degraded = ["stream_replaced", "row_too_large", "paging_unsupported"].includes(spec.failure) ? spec.failure : null;
     const live = source.createLive("run-v1");
-    live.tracker.poll({ nowMs: P_BASE_MS, ok: true, K: spec.high, received: spec.high });
-    live.tracker.poll({ nowMs: P_BASE_MS + spec.now_s * 1000, ok: true, K: spec.K, received: 0 });
-    live.paging = { ...live.paging, failure: spec.failure };
+    live.paging = { ...live.paging, failure: spec.failure, degraded, caught_up: true, high_k: spec.high_k, last_ok_ms: ago(spec.ok_age_s), last_progress_ms: ago(spec.progress_age_s) };
     live.verification = { prefixEnd: spec.K, frozen: spec.frozen };
-    const nowMs = P_BASE_MS + spec.now_s * 1000;
-    assert.equal(source.liveModeOf(live, nowMs).label, spec.expect);
-    assert.equal(source.liveModeOf(live, nowMs).label, refPaging.liveLabel(live.paging, live.tracker, nowMs, spec.K, spec.frozen), "the reference agrees");
+    assert.equal(source.liveModeOf(live, nowMs, spec.run_status).label, spec.expect);
+    assert.equal(source.liveModeOf(live, nowMs, spec.run_status).label, refPaging.liveLabel(live.paging, nowMs, spec.K, spec.frozen, spec.run_status), "the reference agrees");
   });
 }
 
@@ -866,7 +894,7 @@ async function demoLateConflict() {
   const late = enc(JSON.stringify(signEnvelope({ ...seq10, ts: new Date(Date.parse(seq10.ts) + 500).toISOString() }, testKey("core").privateKey, sig.key_id)));
   return { rows, late };
 }
-test("live C11 on the demo: K 44, a late signed seq 10 one second later: STALE · chain broken at once, and the scene drops to 9", async () => {
+test("live C11 on the demo: a 43-row backlog is STALE, row 44 is LIVE, a late signed seq 10 one second later: STALE · chain broken at once, and the scene drops to 9", async () => {
   const { rows, late } = await demoLateConflict();
   const live = source.createLive(DEMO_RUN);
   const poll = async (log, nowMs) => {
@@ -877,9 +905,12 @@ test("live C11 on the demo: K 44, a late signed seq 10 one second later: STALE �
       if (outcome !== "ok" || !live.paging.has_more) break;
     }
   };
+  await poll(rows.slice(0, 43), P_BASE_MS - 1000);
+  assert.equal(live.verification.prefixEnd, 43);
+  assert.deepEqual(source.liveModeOf(live, P_BASE_MS - 1000), { mode: "STALE", reason: null, label: "STALE" }, "catching up is not progress");
   await poll(rows, P_BASE_MS);
   assert.equal(live.verification.prefixEnd, 44);
-  assert.deepEqual(source.liveModeOf(live, P_BASE_MS), { mode: "LIVE", reason: null, label: "LIVE · progress 0 s ago" });
+  assert.deepEqual(source.liveModeOf(live, P_BASE_MS), { mode: "LIVE", reason: null, label: "LIVE · progress 0 s ago" }, "the first new row is");
   await poll([...rows, late], P_BASE_MS + 1000);
   assert.equal(live.verification.prefixEnd, 9);
   assert.deepEqual(source.liveModeOf(live, P_BASE_MS + 1000), { mode: "STALE", reason: "chain broken", label: "STALE · chain broken" }, "at once, though K grew 1 s ago");
@@ -915,22 +946,24 @@ test("live: failed and terminal polls show liveLabel's reason; a terminal state 
   }
   assert.deepEqual(source.modeNow("file", null, 0), { mode: "REPLAY", reason: null, label: "REPLAY" });
   assert.equal(source.modeNow("api", null, 0).label, "STALE", "live before any run");
-  // Recovery, as liveLabel decides it: back at the high with the last growth within 60 s is LIVE again.
+  // Recovery, as liveLabel decides it: back at the high with the last growth (after catch-up) within 60 s is LIVE again.
   const live = source.createLive(DEMO_RUN);
-  await source.applyPage(live, refPaging.servePage(rows, source.liveRequest(live)), P_BASE_MS, testTrust);
+  await source.applyPage(live, refPaging.servePage(rows.slice(0, 43), source.liveRequest(live)), P_BASE_MS, testTrust);
+  assert.equal(source.liveModeOf(live, P_BASE_MS).label, "STALE", "the backlog is history, not progress");
+  await source.applyPage(live, refPaging.servePage(rows, source.liveRequest(live)), P_BASE_MS + 3000, testTrust);
   const atHigh = live.verification;
   live.verification = { ...atHigh, prefixEnd: 9 };
-  assert.equal(source.liveModeOf(live, P_BASE_MS + 1000).label, "STALE · chain broken");
+  assert.equal(source.liveModeOf(live, P_BASE_MS + 3000).label, "STALE · chain broken");
   live.verification = atHigh;
-  live.tracker.poll({ nowMs: P_BASE_MS + 3000, ok: true, K: 44 });
-  assert.equal(source.liveModeOf(live, P_BASE_MS + 3000).label, "LIVE · progress 3 s ago");
-  live.tracker.poll({ nowMs: P_BASE_MS + 60_001, ok: true, K: 44 });
-  assert.equal(source.liveModeOf(live, P_BASE_MS + 60_001).label, "STALE", "no growth for over 60 s");
+  assert.equal(source.liveModeOf(live, P_BASE_MS + 6000).label, "LIVE · progress 3 s ago");
+  assert.deepEqual(source.liveModeOf(live, P_BASE_MS + 6000, "finished"), { mode: "ENDED", reason: "run finished", label: "ENDED · run finished" });
+  await source.applyPage(live, refPaging.servePage(rows, source.liveRequest(live)), P_BASE_MS + 63_001, testTrust);
+  assert.equal(source.liveModeOf(live, P_BASE_MS + 63_001).label, "STALE", "no growth for over 60 s");
 });
 
 test("the source adapter uses the shared code and never pages by seq", () => {
   const text = readFileSync(join(repo, "web", "public", "sentilab", "package", "source.mjs"), "utf8");
-  for (const name of ["initialState", "request as pageRequest", "step as pageStep", "verifyRows", "verifyReplayBytes", "liveLabel"]) assert.ok(text.includes(name), name);
+  for (const name of ["initialState", "request as pageRequest", "step as pageStep", "verifyRows", "verifyReplayBytes", "track", "liveLabel"]) assert.ok(text.includes(name), name);
   assert.ok(text.includes('from "../paging.mjs"') && text.includes('from "../view-core.mjs"'));
   assert.ok(!/[?&]after=|after:\s|"after"/.test(text), "no after=seq paging");
   assert.ok(!/function (createProgress|recordPoll|liveMode)\b/.test(text), "no duplicate progress tracker");
@@ -954,42 +987,62 @@ test("view links carry the run, source, bundle, test-key request and replay play
 
 // ── Review of 861c611: a failed /runs refresh, and the CLI's file intake ─────────────────────────────────────────────
 // 1. The package view's own poller (createLiveFeed), driven with a scripted fetch and clock. Event polls are valid
-//    through t15; at t16 the /runs refresh answers 503. The shared failed-poll transition (paging.mjs step() with no
-//    response, as for a failed events page) runs before the page is told, so the label is "STALE · transport" at once,
-//    and rows and cursor are kept.
+//    through t15; at t16 the /runs refresh fails: a 503, a network throw, a malformed 200 or a non-schema 200. The
+//    shared failed-poll transition (runs-list.mjs refreshRuns: paging.mjs step() with no response, as for a failed
+//    events page; the Lab view's path too) runs before the page is told, so the label is "STALE · transport" at once,
+//    and rows, cursor and cursor hash are kept.
+const RUNS_FAILURES = {
+  503: { answer: () => new Response("unavailable", { status: 503 }), error: /answered 503/ },
+  "network throw": { answer: () => { throw new TypeError("Failed to fetch"); }, error: /Failed to fetch/ },
+  "malformed 200": { answer: () => new Response("{not json", { status: 200, headers: { "content-type": "application/json" } }), error: /aren't JSON/ },
+  "non-schema 200": { answer: () => new Response(JSON.stringify({ items: [{ run_id: DEMO_RUN }] }), { status: 200, headers: { "content-type": "application/json" } }), error: /isn't a runs list/ },
+};
+// The log holds core.released rows (all of them unless a test grows it); /runs lists the run with core.status, or
+// fails as core.runsFail says.
 function scriptedCore(rows) {
-  const core = { runs503: false, calls: [] };
+  const core = { runsFail: null, calls: [], released: rows.length, status: "running" };
   core.fetch = async (url) => {
     core.calls.push(url);
     if (url.startsWith("/api/view/runs")) {
-      if (core.runs503) return new Response("unavailable", { status: 503 });
-      return new Response(JSON.stringify([{ run_id: DEMO_RUN, arm: "live", family: "fixture-8chiplet", seed: 11, last_seq: 44 }]), { status: 200, headers: { "content-type": "application/json" } });
+      if (core.runsFail) return RUNS_FAILURES[core.runsFail].answer();
+      return new Response(JSON.stringify([{ run_id: DEMO_RUN, arm: "live", family: "fixture-8chiplet", seed: 11, last_seq: core.released, status: core.status }]), { status: 200, headers: { "content-type": "application/json" } });
     }
     const q = new URL(url, "http://x").searchParams;
-    const page = refPaging.servePage(rows, { cursor: Number(q.get("cursor")), limit: Number(q.get("limit")), ...(q.has("cursor_hash") ? { cursor_hash: q.get("cursor_hash") } : {}) });
+    const page = refPaging.servePage(rows.slice(0, core.released), { cursor: Number(q.get("cursor")), limit: Number(q.get("limit")), ...(q.has("cursor_hash") ? { cursor_hash: q.get("cursor_hash") } : {}) });
     return new Response(Buffer.from(page.bodyBytes), { status: page.status, headers: page.headers });
   };
   return core;
 }
-test("live: a /runs 503 mid-live gives STALE · transport at once (shared failed-poll transition), with rows and cursor kept", async () => {
+for (const kind of Object.keys(RUNS_FAILURES)) test(`live: a /runs ${kind} mid-live gives STALE · transport at once (shared failed-poll transition), with rows, cursor and hash kept`, async () => {
+  // The core appends one row a second: 29 rows at t0 (the backlog: catch-up, STALE), then 30 at t1 ... 44 at t15.
   const core = scriptedCore(refPaging.splitRows(demoBytes()));
+  core.released = 29;
   let t = P_BASE_MS;
   const seen = [];
   const feed = source.createLiveFeed({ trust: testTrust, fetchImpl: core.fetch, now: () => t,
     onChange: () => seen.push({ t: (t - P_BASE_MS) / 1000, label: feed.state.live ? source.liveModeOf(feed.state.live, t).label : "STALE" }) });
   const label = () => source.liveModeOf(feed.state.live, t).label;
-  for (let s = 0; s <= 15; s += 1) {
+  await feed.pollOnce();
+  assert.equal(label(), "STALE", "t0: the backlog is history, not progress");
+  for (let s = 1; s <= 15; s += 1) {
     t = P_BASE_MS + s * 1000;
+    core.released = 29 + s;
     await feed.pollOnce();
-    assert.equal(label(), `LIVE · progress ${s} s ago`, `t${s}: valid event polls`);
+    assert.equal(label(), "LIVE · progress 0 s ago", `t${s}: a new row after catch-up`);
   }
   assert.equal(core.calls.filter((u) => u.startsWith("/api/view/runs")).length, 1, "/runs is refreshed only after 15 s");
-  core.runs503 = true;
+  const keptHash = feed.state.live.paging.cursor_hash, keptRows = feed.state.live.paging.rows;
+  core.runsFail = kind;
   t = P_BASE_MS + 16_000;
+  const before = core.calls.length;
   await feed.pollOnce();
-  assert.equal(core.calls.filter((u) => u.startsWith("/api/view/runs")).length, 2, "t16: the /runs refresh is due, and answers 503");
+  assert.equal(core.calls.filter((u) => u.startsWith("/api/view/runs")).length, 2, `t16: the /runs refresh is due, and fails (${kind})`);
+  assert.equal(core.calls.length, before + 1, "no events request after the failed refresh");
   assert.equal(feed.state.connected, false);
-  assert.match(feed.state.error, /503/);
+  assert.match(feed.state.error, RUNS_FAILURES[kind].error);
+  assert.equal(feed.state.live.paging.failure, "transport", "the shared failed-poll transition ran");
+  assert.equal(feed.state.live.paging.cursor_hash, keptHash, "the cursor hash is kept");
+  assert.equal(feed.state.live.paging.rows, keptRows, "the rows are kept (the same list)");
   assert.equal(label(), "STALE · transport", "t16: at once, not LIVE");
   assert.deepEqual(seen.at(-1), { t: 16, label: "STALE · transport" }, "the page is told after the transition, never with LIVE");
   assert.equal(feed.state.live.paging.cursor, 44, "the cursor is kept");
@@ -1000,13 +1053,31 @@ test("live: a /runs 503 mid-live gives STALE · transport at once (shared failed
     await feed.pollOnce();
     assert.equal(label(), "STALE · transport", `t${s}: still the transport reason, never a plain STALE`);
   }
-  core.runs503 = false;
+  core.runsFail = null;
   t = P_BASE_MS + 21_000;
   await feed.pollOnce();
   assert.equal(feed.state.connected, true);
-  assert.equal(label(), "LIVE · progress 21 s ago", "a good poll clears the failure; K last grew at t0");
+  assert.equal(label(), "LIVE · progress 6 s ago", "a good poll clears the failure; K last grew at t15");
   assert.equal(feed.state.live.paging.cursor, 44, "no reset: paging resumed from the kept cursor");
   assert.ok(core.calls.every((u) => !/[?&]after=/.test(u)), "never seq paging");
+});
+test("live: a run /api/view/runs lists as finished shows ENDED · run finished after loading, never LIVE (runStatusOf)", async () => {
+  const core = scriptedCore(refPaging.splitRows(demoBytes()));
+  core.status = "finished";
+  let t = P_BASE_MS;
+  const labels = [];
+  const feed = source.createLiveFeed({ trust: testTrust, fetchImpl: core.fetch, now: () => t,
+    onChange: () => labels.push(source.modeNow("api", feed.state.live, t, source.runStatusOf(feed.state)).label) });
+  for (let s = 0; s <= 3; s += 1) {
+    t = P_BASE_MS + s * 1000;
+    await feed.pollOnce();
+  }
+  assert.equal(feed.state.live.verification.prefixEnd, 44);
+  assert.deepEqual(labels, Array(4).fill("ENDED · run finished"));
+  assert.equal(source.runStatusOf(feed.state), "finished");
+  assert.equal(source.runStatusOf({ runs: [{ run_id: DEMO_RUN, status: "paused" }], runId: DEMO_RUN }), "running", "unknown status counts as running");
+  assert.equal(source.runStatusOf({ runs: [{ run_id: "other", status: "finished" }], runId: DEMO_RUN }), "running", "another run's status is not this one's");
+  assert.equal(source.runStatusOf(undefined), "running");
 });
 
 // 2. The CLI refuses a replay over 64 MiB before reading, splitting, decoding or parsing any of it.

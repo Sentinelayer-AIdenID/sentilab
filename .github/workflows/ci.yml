@@ -70,6 +70,7 @@ jobs:
           (cd contracts/view-envelope-v0.5 && node run-view-vectors.mjs)
           (cd contracts/view-envelope-v0.6 && node run-paging-vectors.mjs)
           (cd contracts/view-envelope-v0.6.1 && node run-paging-vectors.mjs)
+          (cd contracts/view-envelope-v0.6.2 && node run-paging-vectors.mjs)
       - name: Lab view matches the contracts (browser copies, demo fixture)
         run: |
           node --test web/test/sentilab-parity.test.mjs
@@ -117,6 +118,16 @@ jobs:
             python -m app.check_view_paging contracts/view-envelope-v0.6.1
           else
             echo "Skipping producer HTTP paging: contracts/view-envelope-v0.6.1 is absent"
+          fi
+      - name: Producer HTTP paging matches the v0.6.2 contract (catch-up is not progress; finished runs show ENDED)
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '1'
+        run: |
+          if [ -d contracts/view-envelope-v0.6.2 ]; then
+            python -m app.check_view_paging contracts/view-envelope-v0.6.2
+          else
+            echo "Skipping producer HTTP paging: contracts/view-envelope-v0.6.2 is absent"
           fi
 
   secret-scan:

@@ -7,21 +7,20 @@
 import { VIEW_PINS } from "./view-pins.js";
 import { viewHref } from "./view-links.mjs";
 import {
-  checkLine, readBodyCapped, progressTracker, parseKeyResponse, publicKeyFromSeedText, sha256Hex,
-  MAX_LINE_BYTES, MAX_FILE_BYTES, MAX_API_BYTES,
+  checkLine, readBodyCapped, parseKeyResponse, publicKeyFromSeedText, sha256Hex,
+  MAX_LINE_BYTES, MAX_FILE_BYTES,
 } from "./view-core.mjs";
-import { initialState, request as pageRequest, step as pageStep, verifyRows, verifyBytes, splitRows, rowText, liveLabel, REASON_TEXT } from "./paging.mjs";
+import { initialState, verifyRows, verifyBytes, splitRows, rowText, liveLabel, REASON_TEXT } from "./paging.mjs";
+import { pollLiveOnce, POLL_BACKOFF_MS } from "./lab-live.mjs";
+import { strictJson, MAX_SMALL_JSON } from "./runs-list.mjs";
 import {
   buildView, feedRows, chainSummary, isDrill, isRejected, colorScale, nextScale, heat, frameOf, labInfo, reasonText, rankReasons,
-  rowIdentity, resolveRow, stageOf, STAGES, isObj,
+  rowIdentity, resolveRow, shortId, stageOf, STAGES, isObj,
 } from "./lab-model.mjs";
 
 const DEMO = { url: "demo-run.jsonl", runId: "demo-8c-0001", label: "demo-run.jsonl · bundled interface fixture" };
 const TEST_KEY_NAMES = ["core"];                 // ?pins=test: the vectors' "core" test key, derived here at run time
 const STEP_MS = matchMedia("(prefers-reduced-motion: reduce)").matches ? 1300 : 800;
-const POLL_OK_MS = 1000, POLL_BACKOFF_MS = 5000;
-const MAX_SMALL_JSON = 256 * 1024;               // /api/view/runs and /api/view/key are small; a bigger answer is refused
-const strictJson = (bytes) => JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes));
 const FEED_ROWS_SHOWN = 400;
 const params = new URLSearchParams(location.search);
 const $ = (id) => document.getElementById(id);
@@ -62,9 +61,10 @@ const S = {
   source: params.get("src") === "live" ? "api" : "file",
   file: null,                 // { label, runId, runIdFrom, isDemo, rows, verification, scale, frame, error }
   // paging: paging.mjs state (every raw row received, the cursor and its hash, the latest failure, and "degraded" once
-  // the stream was replaced or paging is unsupported). tracker: the v0.5 progress tracker, fed only valid pages.
+  // the stream was replaced or paging is unsupported) and the mode inputs: caught_up, catching_up, high_k and
+  // last_progress_ms, updated by track() (v0.6.2: catching up is not progress).
   live: { runs: null, runId: params.get("run"), paging: initialState(params.get("run") ?? ""), verification: null, scale: null, frame: null,
-          tracker: progressTracker(), connected: null, timer: null, error: "" },
+          connected: null, timer: null, error: "" },
   cursor: 0, cursors: {}, playing: null, following: true,
   // Open dialogs follow the data. inspected: the inspector's subject, by stable identity ({ source, id }), and the
   // verification it was last drawn from; chainFor: what the chain dialog was last drawn from.
@@ -185,103 +185,52 @@ async function loadReplay({ url, bytes, label, runId, isDemo, at = null }) {
   }
 }
 
-// ── live: GET /api/view/runs, then GET /api/view/events?run_id=&after= ───────────────────────────────────────
+// ── live: GET /api/view/runs, then GET /api/view/events?run_id=&cursor= ──────────────────────────────────────
 function scheduleLive(ms) {
   clearTimeout(S.live.timer);
   if (S.source === "api") S.live.timer = setTimeout(pollLive, ms);
 }
-// Rule 4 (v0.6): GET /api/view/events?run_id=&cursor=<n>&limit=256[&cursor_hash=<hash of rows 0..n-1>] returns the
-// run's log rows n.. as JSONL, with x-next-cursor, x-has-more and x-cursor-hash. paging.mjs step() applies each page:
-// the caps before anything is split, then the cursor and the cursor hash over the raw bytes. The page keeps every raw
-// row it accepted and re-verifies the whole stream when rows arrive, so a late envelope at a seq it already has (a
-// conflict) still reaches it and freezes the board. A failed page keeps nothing and leaves the cursor and the prefix.
-// "stream replaced" (409) and "paging unsupported" (400, 404, 501) are terminal: polling stops, the view is never LIVE
-// again, and only a reload starts over from cursor 0. The view never pages by seq.
-const MAX_PAGES_PER_POLL = 16;   // as the reference client loop
-async function fetchPage(runId, req) {
-  const query = new URLSearchParams({ run_id: runId, cursor: String(req.cursor), limit: String(req.limit) });
-  if (req.cursor_hash !== undefined) query.set("cursor_hash", req.cursor_hash);
-  let r;
-  try { r = await fetch(`/api/view/events?${query}`, { cache: "no-store" }); } catch { return null; }   // transport
-  if (r.status !== 200) { r.body?.cancel().catch(() => {}); return { status: r.status, headers: r.headers, bodyBytes: new Uint8Array(0) }; }
-  // Raw bytes, never decoded whole; reading stops past 4 MiB, and a body that isn't read whole fails as transport.
-  const body = await readBodyCapped(r, MAX_API_BYTES, "response_too_large").catch(() => ({ ok: false }));
-  return { status: 200, headers: r.headers, bodyBytes: body.ok ? body.bytes : null };
-}
+// One poll is lab-live.mjs pollLiveOnce() (no DOM, so the node tests drive the same code): the runs list, then the
+// events drain by cursor, then track(). A failed /api/view/runs refresh goes through the shared failed-poll
+// transition before this page renders, so the label leaves LIVE at once with the transport reason.
 async function pollLive() {
   const L = S.live;
   if (L.paging.degraded) return;   // stopped for good; a reload starts over
   if (document.hidden) return scheduleLive(POLL_BACKOFF_MS);
-  try {
-    if (!L.runs || !L.runId || Date.now() - (L.runsAt ?? 0) > 15000) {
-      const r = await fetch("/api/view/runs", { cache: "no-store" });
-      if (!r.ok) throw new Error(`/api/view/runs answered ${r.status}`);
-      const body = await readBodyCapped(r, MAX_SMALL_JSON, "too_large");
-      if (!body.ok) throw new Error("/api/view/runs answered with more than 256 KiB");
-      if (S.live !== L) return;   // the run was switched while this poll was out
-      const doc = strictJson(body.bytes);
-      const runs = (Array.isArray(doc) ? doc : isObj(doc) && Array.isArray(doc.runs) ? doc.runs : [])
-        .filter((x) => isObj(x) && typeof x.run_id === "string" && x.run_id.length <= 128).slice(0, 200);
-      L.runs = runs;
-      L.runsAt = Date.now();
-      L.connected = true;
-      if (!L.runId && runs.length) { L.runId = runs[0].run_id; L.paging = initialState(L.runId); }
-      renderRunPicker();
-      if (!L.runId) { render(); return scheduleLive(POLL_BACKOFF_MS); }
-    }
-  } catch (error) {
-    if (S.live !== L) return;
-    L.connected = false;
-    L.error = String(error.message ?? error);
-    render();
-    return scheduleLive(POLL_BACKOFF_MS);   // calm back-off; one request every 5 s, nothing written to the console
-  }
-  // Drain: keep fetching while x-has-more is true (at most 16 pages a poll), then poll every 1 s from the last cursor.
-  let outcome = "ok", added = 0;
-  for (let pages = 0; pages < MAX_PAGES_PER_POLL; pages += 1) {
-    const req = pageRequest(L.paging);
-    if (req === null) break;     // terminal: request() sends nothing more
-    const response = await fetchPage(L.runId, req);
-    if (S.live !== L) return;   // the run was switched while this poll was out
-    const result = await pageStep(L.paging, response, Date.now());
-    if (S.live !== L) return;
-    L.paging = result.state;
-    outcome = result.outcome;
-    added += result.newRows.length;
-    if (outcome !== "ok" || !L.paging.has_more) break;
-  }
-  L.connected = true;
-  L.error = "";
-  if (added) {
-    const anchor = !S.following && L.verification && S.cursor > 0 ? rowIdentity(L.verification, Math.min(S.cursor, L.verification.rows.length) - 1) : null;
-    await verify(L);              // the whole stream, every time new rows arrive
-    if (S.live !== L) return;
-    if (S.following) S.cursor = L.verification.rows.length;
-    else if (anchor) {
-      // Paused: stay on the same envelope, even if a late row was sorted in before it.
-      const at = resolveRow(L.verification, anchor);
-      if (at >= 0) S.cursor = at + 1;
-    }
-  }
-  // The tracker is fed only valid pages (rule 5); a failed latest poll shows its reason through liveLabel().
-  if (outcome === "ok") L.tracker.poll({ nowMs: Date.now(), ok: true, K: L.verification ? L.verification.prefix_end : 0, received: added });
-  else L.tracker.poll({ nowMs: Date.now(), ok: false });
+  const result = await pollLiveOnce(L, { fetchImpl: (...args) => fetch(...args), now: () => Date.now(), current: () => S.live === L, verify: verifyLive, onRuns: renderRunPicker });
+  if (result === null) return;     // the run was switched while this poll was out
   render();
-  if (!L.paging.degraded) scheduleLive(outcome !== "ok" ? POLL_BACKOFF_MS : L.paging.has_more ? 0 : POLL_OK_MS);
+  if (result.delay !== null) scheduleLive(result.delay);
 }
-// The mode pill: rule 5's label from paging.mjs liveLabel(), e.g. "LIVE · progress 3 s ago", "STALE · chain broken",
-// "STALE · paging error".
+// New rows arrived: verify the whole stream, then keep the playhead where the viewer left it.
+async function verifyLive(L) {
+  const anchor = !S.following && L.verification && S.cursor > 0 ? rowIdentity(L.verification, Math.min(S.cursor, L.verification.rows.length) - 1) : null;
+  await verify(L);
+  if (S.live !== L) return;
+  if (S.following) S.cursor = L.verification.rows.length;
+  else if (anchor) {
+    // Paused: stay on the same envelope, even if a late row was sorted in before it.
+    const at = resolveRow(L.verification, anchor);
+    if (at >= 0) S.cursor = at + 1;
+  }
+}
+// The run's status as GET /api/view/runs lists it: "running" or "finished"; missing or unknown counts as running.
+const runStatusOf = (L) => {
+  const status = (L.runs ?? []).find((run) => run.run_id === L.runId)?.status;
+  return status === "finished" ? "finished" : "running";
+};
+// The mode pill: rule 5's label from paging.mjs liveLabel(), e.g. "LIVE · progress 3 s ago", "STALE", "STALE · chain
+// broken", "ENDED · run finished". frozen: anything follows the projectable prefix (LIVE never shows next to it).
 function liveMode(now) {
   const L = S.live;
-  // frozen: anything follows the projectable prefix (rule 5, v0.6.1): LIVE never shows next to a frozen board.
-  const label = liveLabel(L.paging, L.tracker, now, L.verification ? L.verification.prefix_end : 0, L.verification ? L.verification.frozen : false);
-  const mode = label.startsWith("LIVE") ? "LIVE" : "STALE";
+  const label = liveLabel(L.paging, now, L.verification ? L.verification.prefix_end : 0, L.verification ? L.verification.frozen : false, runStatusOf(L));
+  const mode = label.startsWith("LIVE") ? "LIVE" : label.startsWith("ENDED") ? "ENDED" : "STALE";
   return { mode, detail: label.slice(mode.length) };
 }
 function resetLive(runId) {
   // A new object, so a poll still out for the previous run writes only to the old one.
   clearTimeout(S.live.timer);
-  S.live = { ...S.live, runId, paging: initialState(runId), verification: null, scale: null, frame: null, tracker: progressTracker(), timer: null };
+  S.live = { ...S.live, runId, paging: initialState(runId), verification: null, scale: null, frame: null, timer: null };
   S.cursor = 0; S.following = true;
 }
 
@@ -443,32 +392,43 @@ function renderCards(src, v, view) {
     const [title, text] = empty ?? (view?.projectionError ? ["Projection error", view.projectionError] : ["No layouts yet", "No candidate in the verified prefix so far."]);
     box.append(h("div", { class: "empty", style: "grid-column: 1 / -1" }, h("div", null, h("b", null, title), text)));
     box.style.gridAutoRows = "";
+    box.classList.remove("many", "list");
     return;
   }
   const { scale, frame } = src;
   const boardId = view.board.current?.id;
-  for (const c of view.cards) box.append(cardEl(c, scale, frame, c.id === boardId));
-  renderLegend(scale);
+  // No geometry anywhere in the verified prefix: say so, and list the candidates with J instead of empty frames.
+  // Many cards: rows keep a minimum height (the panel scrolls), so each layout stays visible.
+  const anyGeometry = view.cards.some((c) => c.geometry.length > 0);
+  box.classList.toggle("list", !anyGeometry);
+  box.classList.toggle("many", anyGeometry && view.cards.length > 6);
+  if (!anyGeometry) box.append(h("div", { class: "nogeom" }, "No layout geometry in the verified data, so there is nothing to draw. Candidates are listed with J from their measurements."));
+  for (const c of view.cards) box.append(cardEl(c, scale, frame, c.id === boardId, anyGeometry));
+  // The layouts' unit, when every card with geometry states the same one; otherwise none is claimed.
+  const units = [...new Set(view.cards.filter((c) => c.geometry.length > 0).map((c) => c.units ?? ""))];
+  renderLegend(scale, anyGeometry ? frame : null, units.length === 1 && units[0] ? units[0] : null);
 }
 
-function cardEl(c, scale, frame, onBoard) {
+function cardEl(c, scale, frame, onBoard, draw = true) {
   const [, kind] = stageOf(c.lifecycle);
   const chip = c.kind === "candidate" ? h("span", { class: `chip ${kind}` }, c.lifecycle) : h("span", { class: `chip v-${c.validity}` }, c.validity);
-  const el = h("div", { class: `card${onBoard ? " board" : ""}`, style: `--lab:${c.color}` },
+  const el = h("div", { class: `card${onBoard ? " board" : ""}${draw ? "" : " compact"}`, style: `--lab:${c.color}` },
     h("div", { class: "ch" }, h("b", { style: `color:${c.color}` }, c.labName), chip));
-  el.append(drawLayout(c, scale, frame));
-  // Where the colors come from, in words. The measurement and its set status are project()'s.
-  const src = c.source;
+  if (draw) el.append(drawLayout(c, scale, frame));
+  // Where the colors and J come from, in words. The measurements and their set status are project()'s.
+  const src = c.source, m = c.metric;
+  const metricNote = m && c.kind !== "measurement" ? `J from ${shortId(m.id)}${m.validity === "valid" ? "" : ` · ${m.validity}`}` : null;
   let note, alt = false;
   if (c.kind === "measurement") note = c.labName === "Core" ? "core measurement" : "measurement";
-  else if (!src) note = { rejected_schema: "not simulated", rejected_constraints: "not simulated", failed_run: "simulation failed", cancelled: "cancelled" }[c.lifecycle] ?? "awaiting simulation";
-  else if (src.setStatus === "valid" && src.set_id !== c.firstSet) { note = `via ${src.id} · set ${c.firstSet} broken`; alt = true; }
-  else if (src.validity === "valid") note = `temps from ${src.id}`;
-  else note = `temps from ${src.id} · ${src.validity}`;
+  else if (!src) note = metricNote ?? { rejected_schema: "not simulated", rejected_constraints: "not simulated", failed_run: "simulation failed", cancelled: "cancelled" }[c.lifecycle] ?? "awaiting simulation";
+  else if (src.setStatus === "valid" && src.set_id !== c.firstSet) { note = `via ${shortId(src.id)} · set ${c.firstSet} broken`; alt = true; }
+  else if (src.validity === "valid") note = `temps from ${shortId(src.id)}`;
+  else note = `temps from ${shortId(src.id)} · ${src.validity}`;
+  const jTitle = m ? `J from ${m.id} (${m.validity})` : "no measurement with J in the verified prefix";
   el.append(h("div", { class: "cf" },
-    h("span", { class: "j" }, h("small", null, "J"), c.J ? `${fmt(c.J.value)} ${c.J.unit}` : "-"),
+    h("span", { class: `j${m && m.validity !== "valid" ? " dim" : ""}`, title: jTitle }, h("small", null, "J"), c.J ? `${fmt(c.J.value)} ${c.J.unit}` : "-"),
     c.W ? h("span", { class: "src", title: `W ${c.W.metric_id}` }, `W ${fmt(c.W.value)} ${c.W.metric_id}`) : null));
-  el.append(h("div", { class: "cf", style: "padding-top:0" }, h("span", { class: `src${alt ? " alt" : ""}`, style: "margin-left:0;text-align:left", title: `${c.id} · ${note}` }, `${c.id} · ${note}`),
+  el.append(h("div", { class: "cf", style: "padding-top:0" }, h("span", { class: `src${alt ? " alt" : ""}`, style: "margin-left:0;text-align:left", title: `${c.id} · ${note}` }, `${shortId(c.id)} · ${note}`),
     onBoard ? h("span", { class: "chip won", style: "margin-left:auto" }, "BOARD") : null));
   return el;
 }
@@ -512,9 +472,19 @@ function drawLayout(c, scale, frame) {
   return svg;
 }
 
-function renderLegend(scale) {
+function renderLegend(scale, frame, units) {
   const lg = $("legend");
-  if (!scale) { lg.append(h("span", { class: "what" }, "No center temperatures in the verified prefix yet.")); return; }
+  $("p1note").textContent = scale ? "chiplet-center temperatures, not a field" : "layouts only: no temperatures drawn";
+  if (frame) {
+    const size = `${fmt(frame.x1 - frame.x0, 0)} × ${fmt(frame.y1 - frame.y0, 0)}`;
+    lg.append(h("span", { class: "dims", title: "Every card is drawn on one frame: all the layouts in the verified prefix, from 0, lower-left origin." },
+      units ? `layouts in ${units} · frame ${size} ${units}` : `layout units not stated · frame ${size}`));
+  }
+  if (!scale) {
+    const what = "No per-chiplet temperatures in the verified data: chiplets are uncolored; J is the measurement's, not a chiplet's.";
+    lg.append(h("span", { class: "what", title: what }, what));
+    return;
+  }
   const unit = scale.unit || "";
   lg.append(h("span", { class: "end" }, `${scale.min} ${unit}`), h("span", { class: "bar" }), h("span", { class: "end" }, `${scale.max} ${unit}`),
     h("span", { class: "what" }, S.source === "file" ? "one fixed scale for this run · center value per chiplet" : "one scale for this run, widens only if a value falls outside"));
@@ -540,7 +510,7 @@ function renderBoard(v, view) {
     best.append(h("div", null, h("div", { class: "lbl" }, "Current board"), h("div", { class: "who", style: `color:${cur.color}` }, cur.labName)),
       h("div", { class: "j" }, cur.J ? `${fmt(cur.J.value)} ${cur.J.unit}` : "-"),
       h("div", { style: "min-width:0" }, h("span", { class: `chip v-${cur.validity}` }, cur.validity),
-        h("div", { class: "meta", title: `${cur.id}, accepted by the gate at seq ${cur.acceptedSeq}` }, `accepted at seq ${cur.acceptedSeq} · ${cur.id}`)));
+        h("div", { class: "meta", title: `${cur.id}, accepted by the gate at seq ${cur.acceptedSeq}` }, `accepted at seq ${cur.acceptedSeq} · ${shortId(cur.id)}`)));
   } else {
     best.className = "best none";
     best.append(h("span", null, "No candidate accepted yet."));
@@ -553,7 +523,7 @@ function renderBoard(v, view) {
     const [pos, kind] = stageOf(c.lifecycle);
     const dots = STAGES.map((name, i) => h("i", { title: name, class: pos === null ? "" : i < pos ? "done" : i === pos ? (kind === "open" ? "done" : kind) : "" }));
     body.append(h("tr", { class: cur && cur.id === c.id ? "cur" : "" },
-      h("td", null, h("span", { class: "lab", style: `color:${c.color}` }, c.labName)), h("td", { class: "mono col-wide" }, c.id),
+      h("td", null, h("span", { class: "lab", style: `color:${c.color}` }, c.labName)), h("td", { class: "mono col-wide", title: c.id }, shortId(c.id)),
       h("td", null, h("span", { class: `chip ${kind}` }, c.lifecycle)), h("td", { class: "col-wide" }, h("span", { class: "track" }, dots)),
       h("td", { class: "mono" }, c.J ? `${fmt(c.J.value)}` : "-"), h("td", null, h("span", { class: `chip v-${c.validity}` }, c.validity))));
   }
@@ -578,9 +548,9 @@ function renderEvidence(v, view) {
     box.hidden = false;
     const list = (items, fmtItem) => (items.length ? items.map(fmtItem).join(" · ") : "none");
     box.append(
-      h("span", { class: "k" }, "Withdrawn"), h("span", { class: "v" }, list(view.drill.withdrawn, (e) => `${e.id}${e.withdrawal ? ` (seq ${e.withdrawal.seq}: ${e.withdrawal.reason})` : ""}`)),
-      h("span", { class: "k" }, "Went stale"), h("span", { class: "v" }, list(view.drill.stale, (e) => `${e.id} ← ${e.stale_because.join(", ")}`)),
-      h("span", { class: "k" }, "Still valid"), h("span", { class: "v" }, list(view.drill.survived, (e) => `${e.id} via ${Object.entries(e.support_status).filter(([, st]) => st === "valid").map(([k]) => k).join(", ")}`)));
+      h("span", { class: "k" }, "Withdrawn"), h("span", { class: "v" }, list(view.drill.withdrawn, (e) => `${shortId(e.id)}${e.withdrawal ? ` (seq ${e.withdrawal.seq}: ${e.withdrawal.reason})` : ""}`)),
+      h("span", { class: "k" }, "Went stale"), h("span", { class: "v" }, list(view.drill.stale, (e) => `${shortId(e.id)} ← ${e.stale_because.map(shortId).join(", ")}`)),
+      h("span", { class: "k" }, "Still valid"), h("span", { class: "v" }, list(view.drill.survived, (e) => `${shortId(e.id)} via ${Object.entries(e.support_status).filter(([, st]) => st === "valid").map(([k]) => k).join(", ")}`)));
   } else box.hidden = true;
   table.append(h("thead", null, h("tr", null, h("th", null, "Node"), h("th", { class: "col-wide" }, "Kind"), h("th", null, "Validity"), h("th", null, "Support sets"), h("th", null, "Why / tiers"))));
   const body = h("tbody");
@@ -590,9 +560,9 @@ function renderEvidence(v, view) {
   for (const e of [...view.evidence].sort((a, b) => order(a) - order(b))) {
     const cls = e.validity === "withdrawn" ? "hl-withdrawn" : e.validity === "stale" ? "hl-stale" : survived.has(e.id) ? "hl-survived" : "";
     const sets = Object.entries(e.support_status).map(([id, st]) => h("span", { class: `set ${st}`, title: `support set ${id}: ${st}` }, `${id} ${st === "valid" ? "✓" : "✕"}`));
-    const why = e.validity === "stale" ? h("span", { class: "because" }, `stale because ${e.stale_because.join(", ")}`)
+    const why = e.validity === "stale" ? h("span", { class: "because", title: e.stale_because.join(", ") }, `stale because ${e.stale_because.map(shortId).join(", ")}`)
       : e.tiers.length ? h("span", { class: "mono" }, `tier ${e.tiers.join(", ")}`) : e.review_required ? h("span", { class: "because" }, "review required") : "";
-    body.append(h("tr", { class: cls }, h("td", { class: "mono" }, e.id), h("td", { class: "mono col-wide" }, e.kind),
+    body.append(h("tr", { class: cls }, h("td", { class: "mono", title: e.id }, shortId(e.id)), h("td", { class: "mono col-wide" }, e.kind),
       h("td", null, h("span", { class: `chip v-${e.validity}` }, e.validity)), h("td", { class: "sets" }, sets.length ? sets : h("span", { class: "mono", style: "color:var(--muted)" }, "-")), h("td", null, why)));
   }
   table.append(body);
@@ -708,14 +678,15 @@ function showChain() {
 }
 function renderChain() {
   const src = active(), v = src?.verification;
-  S.chainFor = { v, paging: S.source === "api" ? S.live.paging : null, tracker: S.source === "api" ? S.live.tracker.state() : null };
+  S.chainFor = { v, paging: S.source === "api" ? S.live.paging : null, runs: S.source === "api" ? S.live.runs : null };
   const rows = [["pins in this page", S.testMode ? `${S.pins.length} (TEST KEYS)` : `${S.pins.length}${S.pins.length ? "" : " (an empty list verifies nothing)"}`],
     ["key source", S.keyNote || "-"], ["run checked", src?.runId ? `${src.runId} (${src.runIdFrom === "file" ? "from the file you opened" : "requested by the page"})` : "-"]];
   if (S.source === "api") {
-    const t = S.live.tracker.state();
-    const why = S.live.paging.failure;
-    rows.push(["last poll", S.live.connected === false ? `failed: ${S.live.error}` : why ? `failed: ${REASON_TEXT[why] ?? why}${S.live.paging.degraded ? " (stopped; reload to start over)" : ""}` : t.last_poll_ok_ms ? "ok" : "-"],
-      ["progress", t.last_progress_ms ? `K reached ${t.K} ${Math.max(0, Math.floor((Date.now() - t.last_progress_ms) / 1000))} s ago` : "K has not grown yet"]);
+    const P = S.live.paging;
+    const why = P.failure;
+    rows.push(["run status", `${runStatusOf(S.live)}${(S.live.runs ?? []).some((run) => run.run_id === S.live.runId && typeof run.status === "string") ? "" : " (not listed; counts as running)"}`],
+      ["last poll", S.live.connected === false ? `failed: ${S.live.error}` : why ? `failed: ${REASON_TEXT[why] ?? why}${P.degraded ? " (stopped; reload to start over)" : ""}` : P.last_ok_ms ? "ok" : "-"],
+      ["progress", !P.caught_up ? "catching up: the backlog is history, not progress" : P.last_progress_ms ? `K reached ${P.high_k} ${Math.max(0, Math.floor((Date.now() - P.last_progress_ms) / 1000))} s ago` : `caught up at K ${P.high_k}; no new rows since`]);
   }
   if (v) {
     const sum = chainSummary(v.rows);
@@ -738,9 +709,7 @@ function refreshDialogs() {
   if ($("chainDlg").open && S.chainFor) {
     const src = active();
     const live = S.source === "api";
-    const t = live ? S.live.tracker.state() : null;
-    const changed = (src?.verification ?? undefined) !== S.chainFor.v || (live && (S.live.paging !== S.chainFor.paging ||
-      t.K !== S.chainFor.tracker.K || t.last_poll_ok_ms !== S.chainFor.tracker.last_poll_ok_ms));
+    const changed = (src?.verification ?? undefined) !== S.chainFor.v || (live && (S.live.paging !== S.chainFor.paging || S.live.runs !== S.chainFor.runs));
     if (changed) keepScroll($("chainBody"), renderChain);
   }
 }

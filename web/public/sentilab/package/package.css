@@ -42,6 +42,8 @@ a { color: var(--cyan); }
 .mode.stale.broken { border-color: var(--red-line); background: var(--red-bg); color: #f6c3b2; }
 .mode.stale.broken i { background: var(--red); }
 .mode.replay { color: #c9d6d9; }
+.mode.ended { border-color: #44586a; color: #b8c9d9; }
+.mode.ended i { background: #8ea6bb; }
 @keyframes pulse { 50% { opacity: .35; } }
 .drill { padding: 5px 10px; border-radius: 4px; background: var(--amber); color: #20180c; font: 700 13px var(--mono); letter-spacing: .14em; }
 .brand { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; flex: none; }
