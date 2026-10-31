@@ -1865,9 +1865,9 @@
     "status": "unverified; historical CPU and additional gate/warm-up executions not captured"
   },
   "resolution_analysis": {
-    "base_commit": "eca68f61ef3d267dc458053b92f0bea1a6eed5f8",
-    "method": "reanalysis of recorded J values; no solver executions",
-    "source_sha256": "12f7204bacaa15d96ee295e0f934081e16807a32d3f6cf7331c3729827f22869",
+    "base_commit": "db9b8a1a8f5a6f070bc549b8ad84059e7c59b316",
+    "method": "reanalysis of recorded J values for resolution and protocol rank corrections; no solver executions",
+    "source_sha256": "9b5ebf8f2b191ef9063e3e1cbc3d5f7f15b6271d07d8ebbf289537135ba7ed22",
     "uncommitted_source_changes": true
   },
   "run_accounting": {
@@ -1882,6 +1882,7 @@
   },
   "schema": "slab-mesh-result-v1",
   "seconds": 152.28929412097204,
+  "study_status": "interim Ascend910 evidence; combined study inconclusive pending micro150",
   "summary": {
     "comparisons": {
       "16": {
@@ -1889,8 +1890,10 @@
         "max_misordered_reference_gap_c": 0.38999999999998636,
         "rank_2e": {
           "agreement_fraction": 1.0,
+          "coarse_ties": 0,
           "eligible_pairs": 55,
           "excluded_pairs": 221,
+          "inversions": 0,
           "max_misordered_reference_gap_c": 0.0,
           "passes": true,
           "tolerance_c": 1.7200000000000273,
@@ -1900,8 +1903,10 @@
         },
         "rank_fixed": {
           "agreement_fraction": 0.9413919413919414,
+          "coarse_ties": 1,
           "eligible_pairs": 273,
           "excluded_pairs": 3,
+          "inversions": 15,
           "max_misordered_reference_gap_c": 0.38999999999998636,
           "passes": false,
           "tolerance_c": 0.01,
@@ -1980,8 +1985,10 @@
         "max_misordered_reference_gap_c": 0.11000000000001364,
         "rank_2e": {
           "agreement_fraction": 1.0,
+          "coarse_ties": 0,
           "eligible_pairs": 220,
           "excluded_pairs": 56,
+          "inversions": 0,
           "max_misordered_reference_gap_c": 0.0,
           "passes": true,
           "tolerance_c": 0.32000000000005,
@@ -1991,8 +1998,10 @@
         },
         "rank_fixed": {
           "agreement_fraction": 0.9816849816849816,
+          "coarse_ties": 2,
           "eligible_pairs": 273,
           "excluded_pairs": 3,
+          "inversions": 3,
           "max_misordered_reference_gap_c": 0.11000000000001364,
           "passes": false,
           "tolerance_c": 0.01,

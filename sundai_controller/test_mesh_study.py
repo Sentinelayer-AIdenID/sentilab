@@ -49,6 +49,8 @@ class MeshStatisticsTests(unittest.TestCase):
     def test_rank_catches_inversion_and_coarse_tie(self):
         rank = mesh.rank_agreement([30, 10, 10], [10, 20, 30], 1)
         self.assertEqual(rank['violations'], 3)
+        self.assertEqual(rank['inversions'], 2)
+        self.assertEqual(rank['coarse_ties'], 1)
         self.assertEqual(rank['eligible_pairs'], 3)
         self.assertFalse(rank['passes'])
 
@@ -59,7 +61,7 @@ class MeshStatisticsTests(unittest.TestCase):
         self.assertEqual(rank['violations'], 1)
         empty = mesh.rank_agreement([1, 0], [0, 1], 1)
         self.assertIsNone(empty['agreement_fraction'])
-        self.assertTrue(empty['passes'])
+        self.assertIsNone(empty['passes'])
         decimal = mesh.rank_agreement([3, 2, 1], [117.17, 117.18, 117.20], 0.01)
         self.assertEqual(decimal['eligible_pairs'], 2)
 

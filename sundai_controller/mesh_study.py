@@ -157,13 +157,14 @@ def rank_agreement(coarse, reference, tolerance_c: float) -> dict:
     """Compare exact coarse signs only where the reference gap exceeds tolerance.
 
     Equality at the tolerance is excluded (1e-12 C roundoff guard). A coarse tie on an eligible pair is
-    a violation. Zero eligible pairs yields no agreement fraction (vacuous pass).
+    a violation. Zero eligible pairs yields no agreement fraction or pass verdict.
     """
     _values(coarse, reference)
     if (isinstance(tolerance_c, bool) or not isinstance(tolerance_c, (int, float))
             or not math.isfinite(tolerance_c) or tolerance_c < 0):
         raise ValueError('tolerance must be finite and nonnegative')
     eligible = 0
+    coarse_ties = 0
     violations = []
     total = len(reference) * (len(reference) - 1) // 2
     for i, j in itertools.combinations(range(len(reference)), 2):
@@ -175,9 +176,11 @@ def rank_agreement(coarse, reference, tolerance_c: float) -> dict:
         coarse_gap = coarse[i] - coarse[j]
         if coarse_gap == 0 or (coarse_gap > 0) != (fine_gap > 0):
             violations.append([i, j])
+            coarse_ties += coarse_gap == 0
     return {'tolerance_c': tolerance_c, 'total_pairs': total, 'eligible_pairs': eligible,
             'excluded_pairs': total - eligible, 'violations': len(violations),
-            'violation_pairs': violations, 'passes': not violations,
+            'inversions': len(violations) - coarse_ties, 'coarse_ties': coarse_ties,
+            'violation_pairs': violations, 'passes': (not violations) if eligible else None,
             'max_misordered_reference_gap_c': max(
                 (abs(reference[i] - reference[j]) for i, j in violations), default=0.0),
             'agreement_fraction': (eligible - len(violations)) / eligible if eligible else None}
@@ -311,21 +314,23 @@ def report(result):
              f'Reference: {summary["reference_grid"]}x{summary["reference_grid"]}. '
              f'e = max |J32-J64| = {summary["e_c"]} C; e16 = max |J16-J64| = {summary["e16_c"]} C.', '',
              '## Rank rule', '',
-             '32 passes if violations = 0: for each pair with |J64(a)-J64(b)| > 2e, '
+             '32 passes if violations = 0 and at least one pair is eligible: '
+             'for each pair with |J64(a)-J64(b)| > 2e, '
              'the signs of J32(a)-J32(b) and J64(a)-J64(b) must agree. '
              '16 uses its own 2e16. Equality at the tolerance is excluded (1e-12 C roundoff guard); a coarse tie is a violation.', '',
              'Because e is the maximum error on this same sample, the triangle inequality guarantees '
              'no inversions beyond 2e. This pass is an internal consistency check, not independent '
-             'evidence that all ranks agree. Zero eligible pairs is a vacuous pass. '
+             'evidence that all ranks agree. Zero eligible pairs is inconclusive (null pass verdict). '
              'The predeclared fixed 0.01 C tolerance provides an additional ranking diagnostic.', '',
              '| Grid | Max error C | 2e tolerance C | Eligible / total | Violations | Pass | '
-             'Fixed 0.01 C eligible | Fixed violations |',
-             '| --- | ---: | ---: | ---: | ---: | --- | ---: | ---: |']
+             'Fixed 0.01 C eligible | Fixed inversions | Fixed coarse ties |',
+             '| --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: |']
     for grid, comparison in summary['comparisons'].items():
         rank, fixed = comparison['rank_2e'], comparison['rank_fixed']
         lines.append(f'| {grid} | {comparison["max_abs_error_c"]:.6f} | {rank["tolerance_c"]:.6f} | '
                      f'{rank["eligible_pairs"]} / {rank["total_pairs"]} | {rank["violations"]} | '
-                     f'{rank["passes"]} | {fixed["eligible_pairs"]} | {fixed["violations"]} |')
+                     f'{rank["passes"]} | {fixed["eligible_pairs"]} | '
+                     f'{fixed["inversions"]} | {fixed["coarse_ties"]} |')
     lines += ['', '## Observed ranking resolution', '']
     for grid, comparison in summary['comparisons'].items():
         gap = comparison['max_misordered_reference_gap_c']
@@ -353,11 +358,14 @@ def report(result):
               'e is an empirical discrepancy against 64 on this fixed layout set, not an error bound '
               'against the continuum or unseen layouts. Later R4/u_num and SLAB-039 margins can use e '
               'with that scope; a two-layout difference needs a margin greater than 2e. '
+              'The fixed 0.01 C tolerance is a sensitivity diagnostic, not measured numerical '
+              'uncertainty or a practical minimum effect. '
               'The 16-grid error and fixed-tolerance inversions show the limits of cheap screening. '
               'No benchmark method-gap or continuum-convergence claim is made here.', '',
               'All J values, per-evaluation timings, design hashes, problem/config/source/binary hashes '
               'and all-layer peaks are in RESULT.json. Layout generation and reproduction instructions '
-              'are in ../README.md. micro150 is pending SLAB-002b wiring.', '']
+              'are in ../README.md. Ascend910 is interim evidence; required micro150 evidence is '
+              'pending SLAB-002b wiring, so the combined study remains inconclusive.', '']
     return '\n'.join(lines)
 
 
