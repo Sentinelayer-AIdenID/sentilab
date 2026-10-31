@@ -1,0 +1,648 @@
+{
+  "schema": "sentilab-deck-final-data/1",
+  "deck": {
+    "title": "SentiLab",
+    "event": "ScienceClaw hackathon",
+    "talk": "Three-minute talk",
+    "cutoff": "2026-10-31 23:25 UTC",
+    "variant": "not-run",
+    "variantLabel": "NOT RUN",
+    "preview": false
+  },
+  "budget": {
+    "wordsPerSecond": 2.2,
+    "mainWords": 350,
+    "mainSeconds": 159.1,
+    "speechBudgetSeconds": 165,
+    "bufferSeconds": 15,
+    "maxSeconds": 180
+  },
+  "slides": [
+    {
+      "id": "problem",
+      "main": true,
+      "kicker": "The problem",
+      "notes": {
+        "text": "AI agents can produce plausible scientific results faster than a team can check them. The hard part is knowing which result deserves to survive. We built SentiLab so agents propose work, challenge each other and keep the evidence behind every decision. Our test case is placing chiplets on a package so they run cool.",
+        "words": 54,
+        "seconds": 24.5
+      },
+      "content": {
+        "hero": "AI agents produce plausible results faster than anyone can check them.",
+        "question": "Which result deserves to survive?",
+        "caption": "Our own illustration of a chiplet package. Its colours are not measurements.",
+        "answerEyebrow": "SentiLab",
+        "answer": "Agents propose, challenge each other and keep the evidence behind every decision.",
+        "domain": "Test case: placing chiplets on a package so they run cool."
+      },
+      "label": "1 / 5"
+    },
+    {
+      "id": "how",
+      "main": true,
+      "kicker": "How the team works",
+      "notes": {
+        "text": "A person sets the goal. Agents take separate pieces, read the sources and code, and post what they find in one shared room. Other agents challenge it. Findings carry their inputs, method and status, and missing evidence is marked, not hidden. So anyone can follow a claim back, repeat the check and see what has to change.",
+        "words": 57,
+        "seconds": 25.9
+      },
+      "content": {
+        "title": "One goal, separate investigations, open challenge, one record.",
+        "footnote": "Anyone can follow a claim back to its inputs, repeat the check and see exactly what has to change.",
+        "steps": [
+          {
+            "title": "A person sets the goal",
+            "text": "One question, asked in the shared room.",
+            "today": "Why did our study come out inconclusive?"
+          },
+          {
+            "title": "Agents investigate separately",
+            "text": "Each reads the sources and code, then posts what it found.",
+            "today": "Three agents sealed their findings before reading each other's."
+          },
+          {
+            "title": "Others challenge",
+            "text": "Reviewers attack the findings and the assumptions behind them.",
+            "today": "They challenged each other's reports; an agent run by another person attacked them too."
+          },
+          {
+            "title": "One readable record",
+            "text": "Inputs, method, status and history stay with each finding.",
+            "today": "Missing evidence is marked, not hidden."
+          }
+        ]
+      },
+      "label": "2 / 5"
+    },
+    {
+      "id": "timeline",
+      "main": true,
+      "kicker": "Our own numbers",
+      "notes": {
+        "text": "Then our own results became the test. On Saturday a person asked why our study came out inconclusive. Within an hour, one agent suspected the simulator's link between the heat spreader and the heat sink, and a second confirmed it in the source. A third agent, run by a different person, built a simplified model from the public code. Saved output from our simulator showed more than fifty degrees lost between two copper layers. So we withdrew our own temperatures. An agent proposed stopping the public run, two others agreed, and it stopped within five minutes, with its history kept.",
+        "words": 100,
+        "seconds": 45.5
+      },
+      "content": {
+        "title": "We withdrew our own numbers.",
+        "lede": {
+          "at": "12:43",
+          "date": "31 Oct",
+          "text": "A person asks why our result was inconclusive, and how to match a package human engineers built."
+        },
+        "lines": [
+          {
+            "at": "13:15",
+            "text": "One agent suspects the simulator's spreader-to-sink link."
+          },
+          {
+            "at": "13:28",
+            "text": "A second agent's source review confirms that reading."
+          },
+          {
+            "at": "14:26",
+            "text": "A third agent, run by another person, models it from public source."
+          },
+          {
+            "at": "14:42",
+            "text": "Saved simulator output: 51 to 52 degrees lost there, in eight test layouts."
+          },
+          {
+            "at": "14:53",
+            "text": "A separate parser confirms two of those cases."
+          },
+          {
+            "at": "15:21",
+            "text": "Simplified model: gaps between our own layouts stretched 2.3 to 3.7 times."
+          },
+          {
+            "at": "15:52",
+            "text": "An agent proposes stopping the public run. Two others agree by 15:54."
+          },
+          {
+            "at": "15:57",
+            "text": "Stopped within five minutes and read back. History and charges kept."
+          },
+          {
+            "at": "16:40",
+            "text": "The public notice withdrawing those temperatures is checked live."
+          }
+        ],
+        "callout": {
+          "big": "50+",
+          "label": "degrees lost between the copper heat spreader and the heat sink",
+          "sub": "In our simulator's saved output, across eight hand-written test layouts. A retained observation, not a calibrated temperature."
+        },
+        "note": "Simplified-model values are not native simulator results. The simulator's authors have not confirmed this. No calibrated temperature is claimed."
+      },
+      "label": "3 / 5"
+    },
+    {
+      "id": "gate",
+      "main": true,
+      "kicker": "The test fixed in advance",
+      "notes": {
+        "text": "The link differs between the simulator's versions, and only its authors can say what was intended. So we fixed a test before seeing its answer: the older version must reproduce two published temperatures within one degree. It has not run yet. A pass would reproduce those numbers, not prove physical accuracy, and it would not bring back any old result. A miss would mean our explanation is incomplete. Either way, the old numbers stay withdrawn, and scientific benefit is not established.",
+        "words": 81,
+        "seconds": 36.8
+      },
+      "content": {
+        "title": "The link differs between versions. We fixed the test first.",
+        "common": "In public source, the spreader-to-sink link is `rz(n)` in HotSpot 6.0 and `rz(n)/2 + rz(n+1)/2` in 7.0, and the sink's `rz` includes convection. Our old results used 7.0. Test fixed in advance: HotSpot 6 must land within 1 K of the published 75.48 C and 115.94 C.",
+        "toleranceK": "1.0",
+        "variant": "not-run",
+        "label": "NOT RUN",
+        "text": "The test hasn't run. What we have is a source reading, saved output and a simplified model: 75.34 and 115.83 C, from an agent that had read the hypothesis.",
+        "bottom": "Whatever the result, our old numbers stay withdrawn. Scientific benefit: not established.",
+        "rows": [
+          {
+            "label": "Published layout A",
+            "source": "TAP-2.5D paper, Fig. 6(a)",
+            "publishedC": "75.48",
+            "result": "not run",
+            "tone": "muted"
+          },
+          {
+            "label": "Published layout B",
+            "source": "TAP-2.5D paper, Fig. 5(a)",
+            "publishedC": "115.94",
+            "result": "not run",
+            "tone": "muted"
+          }
+        ]
+      },
+      "label": "4 / 5"
+    },
+    {
+      "id": "reuse",
+      "main": true,
+      "kicker": "Other teams",
+      "notes": {
+        "text": "Our checks are built for other teams to rerun. Team FEAgent took a closed-form heat test our agent posed, solved it with their own solver, and published a package anyone can rerun with one command. It checks the method, not our simulator. Next, they took our parameter sheet for the paper's two layouts and started their own solve.",
+        "words": 58,
+        "seconds": 26.4
+      },
+      "content": {
+        "title": "Another team ran one of our checks with its own solver.",
+        "receipt": {
+          "team": "Team FEAgent",
+          "where": "github.com/zucalerega/feagent",
+          "commit": "32f3ed1a",
+          "what": "Their own finite-element solver, run on a closed-form heat test our agent posed: a uniformly heated slab, cooled two ways.",
+          "result": "Higher-order elements match the exact answer to rounding; lower-order elements converge as the mesh is refined.",
+          "rerun": "One command reruns it. A checksum list covers all 48 files.",
+          "limit": "It checks units, signs and the cooling boundary on a slab. It is not a test of our simulator, and not an experiment."
+        },
+        "next": "Next: they took our parameter sheet for the paper's two layouts, checked every input's checksum and started their own solve. No result yet.",
+        "status": [
+          {
+            "label": "Deliverables fully accepted",
+            "value": "0 of 8"
+          },
+          {
+            "label": "Scientific benefit",
+            "value": "not established"
+          }
+        ]
+      },
+      "label": "5 / 5"
+    },
+    {
+      "id": "chronology",
+      "main": false,
+      "kicker": "Backup · chronology",
+      "notes": {
+        "text": "Backup. If asked how the day unfolded, walk this table; every line is a room record.",
+        "words": 16,
+        "seconds": 7.3
+      },
+      "content": {
+        "title": "The day in detail: 31 Oct 2026, UTC, from the room record.",
+        "note": "Each line matches at least one room record (room, message, author, time), listed in the repository's TIMELINE-VERIFY.md.",
+        "rows": [
+          {
+            "at": "12:43",
+            "text": "A person asks why the study was inconclusive and how to match a package human engineers built, and asks three agents to research separately, then challenge each other."
+          },
+          {
+            "at": "13:08",
+            "text": "Three agents seal their findings before reading each other's (13:08 to 13:15), then attack each other's reports (13:18)."
+          },
+          {
+            "at": "13:15",
+            "text": "One agent's sealed findings suspect that the simulator puts part of the heat-sink convection term between the spreader and the sink. Marked as a hypothesis."
+          },
+          {
+            "at": "13:28",
+            "text": "A second agent's source reviewer confirms that the link includes half of the sink's resistance, which carries convection."
+          },
+          {
+            "at": "14:26",
+            "text": "A third agent, run by another person under a separate account, posts a simplified model built from public source. It had read the hypothesis: an informed peer, not a blind check. The older link form lands within 0.4 K of the paper on both original layouts; the newer form raises the rise about 2.6 times."
+          },
+          {
+            "at": "14:38",
+            "text": "Two other agents rerun that model; every row reproduces (14:38 and 14:45)."
+          },
+          {
+            "at": "14:42",
+            "text": "Saved simulator output, no new solve: 51.10 to 52.40 K lost between spreader and sink across eight hand-written test layouts. A separate parser confirms two of them at 14:53."
+          },
+          {
+            "at": "14:58",
+            "text": "The peer model's version 2 fixes both review findings on version 1: it uses the simulator's own centre rule and refuses to return a result that has not converged."
+          },
+          {
+            "at": "15:21",
+            "text": "In the simplified model the error stretches gaps between layouts 2.3 to 3.7 times and reorders 8 to 9% of pairs, so old comparisons between our own layouts cannot stand either."
+          },
+          {
+            "at": "15:52",
+            "text": "An agent flags that the public loop still runs on that engine and proposes a notice plus no new runs. A second agent agrees at 15:52, a third at 15:54."
+          },
+          {
+            "at": "15:57",
+            "text": "The stop is written at 15:56:59 and read back: the running job settles, and its ledger, chain and charges are kept. Another agent's public readback confirms it at 16:02."
+          },
+          {
+            "at": "16:31",
+            "text": "The notice withdrawing those temperatures is merged, deployed and checked in a real browser."
+          },
+          {
+            "at": "16:40",
+            "text": "Four production reads by another agent match the reviewed source."
+          }
+        ]
+      },
+      "label": "B1"
+    },
+    {
+      "id": "metrics",
+      "main": false,
+      "kicker": "Backup · numbers",
+      "notes": {
+        "text": "Backup. If asked for the numbers, separate saved output from the simplified model; neither is a calibrated temperature.",
+        "words": 18,
+        "seconds": 8.2
+      },
+      "content": {
+        "kicker": "Backup · numbers",
+        "title": "The numbers behind slide 3, each with its evidence class.",
+        "saved": {
+          "eyebrow": "Our simulator's saved output · no new solve",
+          "lines": [
+            "Spreader-to-sink drop: 51.10 to 52.40 K across eight hand-written test layouts.",
+            "Baseline layout: chip peak 118.89 C; at that cell the spreader is 70.11 K above ambient and the sink 18.51 K.",
+            "A separate parser re-read two cases: 51.10 and 51.60 K."
+          ],
+          "limit": "Hand-written probes at 50 mm, not the headroom study. Values come from the pre-correction simulator and are withdrawn as temperatures."
+        },
+        "model": {
+          "eyebrow": "Simplified model by an informed peer · not native simulator results",
+          "head": [
+            "Layout",
+            "Paper",
+            "Older link form",
+            "Newer link form"
+          ],
+          "rows": [
+            [
+              "A",
+              "75.48 C",
+              "75.09 C (v2)",
+              "122.32 C (v1)"
+            ],
+            [
+              "B",
+              "115.94 C",
+              "115.83 C (v2)",
+              "229.35 C (v1)"
+            ]
+          ],
+          "spread": "With digitized coordinates, version 3 gives 75.34 C for layout A. Across 60 random legal layouts each, layout gaps stretch 2.32 times (A) and 3.71 times (B), and 8.1% and 9.2% of pairs flip order.",
+          "review": "Review of version 1 found a one-cell centre and no convergence check. Version 2 (14:58 UTC) uses the simulator's 1, 2 or 4 cell centre rule and refuses to return a result that has not converged. It remains the author's simplified model, written after reading the hypothesis."
+        },
+        "history": "The original headroom verdict stays INCONCLUSIVE, as recorded. Every temperature from the pre-correction simulator is labelled withdrawn.",
+        "continuum": {
+          "eyebrow": "Continuum check by our own agent · not an outside team",
+          "lines": [
+            "Layout A: 78.04 C against the paper's 75.48 C (+2.56 K).",
+            "Layout B: 122.21 C against the paper's 115.94 C (+6.27 K)."
+          ],
+          "limit": "A finite-element solve of the same parameter sheet, finished 23:13 UTC, by an agent that had seen the paper's targets. Mesh error under 0.06 K. The gap is not explained yet."
+        }
+      },
+      "label": "B2"
+    },
+    {
+      "id": "gate-detail",
+      "main": false,
+      "kicker": "Backup · the fixed test",
+      "notes": {
+        "text": "Backup. If asked how the test works, read the rules; the three wordings were written before any result.",
+        "words": 18,
+        "seconds": 8.2
+      },
+      "content": {
+        "title": "Gate zero: what runs, what passes, and the wording fixed before the result.",
+        "rules": [
+          "The older simulator version (6.0), at the paper's conditions: 45 mm interposer, 64 by 64 grid, 45 C ambient, the paper's block-centre metric.",
+          "Each published layout gets one run plus a replay in a fresh process. Both must land within 1.0 K, and the replay's output must be byte-identical.",
+          "Verdicts, most definitive first: FAIL, ERROR, INCOMPLETE, PASS. Anything missing or unsettled is INCOMPLETE, never PASS.",
+          "Two more published points (75.47 C and 94.89 C) are deferred: no runs here, and they cannot pass or fail this gate."
+        ],
+        "source": "Ma et al., TAP-2.5D, DATE 2021: Fig. 6(a) at 75.48 C and Fig. 5(a) at 115.94 C.",
+        "wordingTitle": "Wording fixed before the result, for all three outcomes",
+        "status": {
+          "pr": 56,
+          "state": "merged",
+          "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
+          "checked": "checked 2026-10-31 23:25 UTC"
+        },
+        "wordings": [
+          {
+            "gate": "not-run",
+            "label": "NOT RUN",
+            "text": "The test hasn't run. What we have is a source reading, saved output and a simplified model: 75.34 and 115.83 C, from an agent that had read the hypothesis.",
+            "chosen": true
+          },
+          {
+            "gate": "pass",
+            "label": "PASS",
+            "text": "Both landed within 1 K. That reproduces those published numbers. It doesn't establish physical accuracy, and it doesn't validate any older result.",
+            "chosen": false
+          },
+          {
+            "gate": "fail",
+            "label": "FAIL",
+            "text": "It missed: [values]. Our explanation is incomplete, and the withdrawal stands.",
+            "chosen": false
+          }
+        ]
+      },
+      "label": "B3"
+    },
+    {
+      "id": "drill",
+      "main": false,
+      "kicker": "Backup · test fixture",
+      "notes": {
+        "text": "Backup. This is a test fixture with illustrative values; it shows the designed mechanism, not a result.",
+        "words": 17,
+        "seconds": 7.7
+      },
+      "content": {
+        "kicker": "Backup · test fixture",
+        "title": "The correction mechanism, shown on a test fixture.",
+        "flow": [
+          {
+            "title": "Candidate",
+            "text": "A lab proposes a layout."
+          },
+          {
+            "title": "Reproduction",
+            "text": "Re-run in a fresh process."
+          },
+          {
+            "title": "Acceptance",
+            "text": "The gate accepts it."
+          },
+          {
+            "title": "Withdrawal",
+            "text": "A measurement is withdrawn in a seeded-fault drill."
+          },
+          {
+            "title": "Propagation",
+            "text": "Its dependents go stale; independently supported results stand."
+          }
+        ],
+        "labCaption": "Lab view: the measurement is withdrawn, the claim built on it is stale, and the accepted candidate stays valid through its reproduction.",
+        "packageCaption": "Package view: after the drill the accepted board keeps its values, now carried by the reproduction.",
+        "fixture": "Test fixture: both views replay illustrative values, and no solver ran. It shows the designed mechanism. The real withdrawal on slide 3 used a public notice and per-value labels."
+      },
+      "label": "B4"
+    },
+    {
+      "id": "status",
+      "main": false,
+      "kicker": "Backup · where it stands",
+      "notes": {
+        "text": "Backup. Where it stands: no deliverable is fully accepted, and scientific benefit is not established.",
+        "words": 15,
+        "seconds": 6.8
+      },
+      "content": {
+        "title": "Where it stands: 0 of 8 deliverables fully accepted.",
+        "deliverables": [
+          {
+            "id": "D00",
+            "text": "Proposed chiplet layout with exact coordinates and constraints"
+          },
+          {
+            "id": "D01",
+            "text": "Power scenarios and package assumptions"
+          },
+          {
+            "id": "D02",
+            "text": "Simulator inputs, versions and raw outputs"
+          },
+          {
+            "id": "D03",
+            "text": "Independent reproduction results"
+          },
+          {
+            "id": "D04",
+            "text": "Complete proposal, review, correction and acceptance history"
+          },
+          {
+            "id": "D05",
+            "text": "Comparison against conventional and agent baselines"
+          },
+          {
+            "id": "D06",
+            "text": "Trained worker checkpoint or adapter, with its evaluation"
+          },
+          {
+            "id": "D07",
+            "text": "Replayable visual demonstration"
+          }
+        ],
+        "cards": [
+          {
+            "title": "Original scope remains open",
+            "text": "41 tickets, 234 requirements, 8 deliverables. Fully accepted deliverables: 0.",
+            "origin": "origin time not recorded",
+            "asOf": "as of 2026-10-31 17:54 UTC"
+          },
+          {
+            "title": "Scientific benefit",
+            "text": "Not established.",
+            "origin": "origin time not recorded",
+            "asOf": "as of 2026-10-31 15:05 UTC"
+          },
+          {
+            "title": "Still open",
+            "text": "Physical validation, the held-out five-arm study, full command-line and agent-interface parity. New scientific runs are not released.",
+            "origin": "origin time not recorded",
+            "asOf": "as of 2026-10-31 17:54 UTC"
+          },
+          {
+            "title": "Old headroom result",
+            "text": "INCONCLUSIVE, kept as recorded; no rerun result is claimed.",
+            "origin": "origin time not recorded",
+            "asOf": "as of 2026-10-31 17:54 UTC"
+          }
+        ]
+      },
+      "label": "B5"
+    },
+    {
+      "id": "prs",
+      "main": false,
+      "kicker": "Backup · pull requests",
+      "notes": {
+        "text": "Backup. Pull request states at the check time; merged ones show their merge commit.",
+        "words": 14,
+        "seconds": 6.4
+      },
+      "content": {
+        "title": "Pull requests behind this talk, with their state at the check time.",
+        "repo": "Sentinelayer-AIdenID/sentilab",
+        "checked": "checked 2026-10-31 23:25 UTC",
+        "rows": [
+          {
+            "number": "#56",
+            "what": "Gate zero: the older simulator version behind the fixed test",
+            "state": "merged",
+            "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
+            "checked": "checked 2026-10-31 23:25 UTC"
+          },
+          {
+            "number": "#73",
+            "what": "Gate zero: pin the operator's public key",
+            "state": "open",
+            "text": "open at head 2d35e9cd",
+            "checked": "checked 2026-10-31 23:25 UTC"
+          },
+          {
+            "number": "#57",
+            "what": "Reference layouts from the paper, plus the paper's wire router",
+            "state": "merged",
+            "text": "merged as d298cb00 at 2026-10-31 18:04 UTC",
+            "checked": "checked 2026-10-31 23:25 UTC"
+          },
+          {
+            "number": "#58",
+            "what": "Public notice: pre-correction temperatures withdrawn",
+            "state": "merged",
+            "text": "merged as 568dd397 at 2026-10-31 16:27 UTC",
+            "checked": "checked 2026-10-31 23:25 UTC"
+          },
+          {
+            "number": "#60",
+            "what": "Notice on the leaderboard and verify pages",
+            "state": "merged",
+            "text": "merged as 551777a9 at 2026-10-31 17:59 UTC",
+            "checked": "checked 2026-10-31 23:25 UTC"
+          },
+          {
+            "number": "#64",
+            "what": "Every temperature carries its own qualifier",
+            "state": "merged",
+            "text": "merged as d2504625 at 2026-10-31 19:38 UTC",
+            "checked": "checked 2026-10-31 23:25 UTC"
+          },
+          {
+            "number": "#61",
+            "what": "Test fix: a guard pattern held raw control bytes",
+            "state": "merged",
+            "text": "merged as a5744f3a at 2026-10-31 16:48 UTC",
+            "checked": "checked 2026-10-31 23:25 UTC"
+          },
+          {
+            "number": "#59",
+            "what": "Design: outside agents propose layouts",
+            "state": "merged",
+            "text": "merged as 4f6ad0cb at 2026-10-31 17:53 UTC",
+            "checked": "checked 2026-10-31 23:25 UTC"
+          },
+          {
+            "number": "#55",
+            "what": "Measured run profiles; refuse to start when calls cannot fit the cap",
+            "state": "merged",
+            "text": "merged as 315bbff4 at 2026-10-31 15:38 UTC",
+            "checked": "checked 2026-10-31 23:25 UTC"
+          },
+          {
+            "number": "#37",
+            "what": "Allocation controller for simulator runs in CI",
+            "state": "merged",
+            "text": "merged as 224fa704 at 2026-10-31 17:09 UTC",
+            "checked": "checked 2026-10-31 23:25 UTC"
+          },
+          {
+            "number": "#25",
+            "what": "Headroom study runner; its result is INCONCLUSIVE, kept as recorded",
+            "state": "merged",
+            "text": "merged as deb24670 at 2026-10-31 12:05 UTC",
+            "checked": "checked 2026-10-31 23:25 UTC"
+          }
+        ]
+      },
+      "label": "B6"
+    },
+    {
+      "id": "receipt",
+      "main": false,
+      "kicker": "Backup · other teams",
+      "notes": {
+        "text": "Backup. The other-team receipt in full, and why our own leaderboard is not used as evidence.",
+        "words": 16,
+        "seconds": 7.3
+      },
+      "content": {
+        "kicker": "Backup · other teams",
+        "title": "The other-team receipt, exactly, and what we do not count as evidence.",
+        "facts": [
+          {
+            "label": "Who",
+            "text": "Team FEAgent, posting from its own account in the shared help room."
+          },
+          {
+            "label": "Where",
+            "text": "Public repository github.com/zucalerega/feagent, commit 32f3ed1a, 22:12 UTC."
+          },
+          {
+            "label": "What",
+            "text": "Their existing finite-element solver on a uniformly heated 20 by 20 by 1 mm slab, held at 25 C at the bottom or cooled by convection, as our agent specified. Exact answers: peaks 25.0833 C and 50.0833 C."
+          },
+          {
+            "label": "Result",
+            "text": "Second-order elements reproduce the exact profile to rounding on three meshes; first-order error falls with each refinement; heat balance is checked two ways."
+          },
+          {
+            "label": "Package",
+            "text": "One entry command; a checksum list over 48 files; their report states that no remote AI model was used."
+          },
+          {
+            "label": "Their limit",
+            "text": "Analytical verification, not experimental validation. It does not test multilayer packages or our simulator."
+          }
+        ],
+        "notYet": "Not yet in the record: their slab run through our own evaluator, and their result on our parameter sheet. They started that solve at 23:23 UTC after checking every input's checksum.",
+        "notEvidence": "Not counted as evidence: our help-room leaderboard. Our own host's model scores it, so it is not independent."
+      },
+      "label": "B7"
+    }
+  ],
+  "build": {
+    "gate": "not-run",
+    "measured": null,
+    "cutoff": "2026-10-31T23:25:00Z",
+    "preview": false
+  },
+  "source": {
+    "finalSha256": "0fd30282eb43aba04119805ce166a060087027c049b02cb89df21ba7cd6918c0",
+    "schemaSha256": "e82516ff8fa1a2384755aa61cfa320c78d506414a4219ccec92cccc184954db9"
+  }
+}

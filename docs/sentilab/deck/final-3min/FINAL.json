@@ -1,0 +1,837 @@
+{
+  "format": "sentilab-deck-final/1",
+  "deck": {
+    "title": "SentiLab",
+    "event": "ScienceClaw hackathon",
+    "talk": "Three-minute talk"
+  },
+  "cutoff": "2026-10-31T23:25:00Z",
+  "talk": {
+    "maxSeconds": 180,
+    "speechBudgetSeconds": 165,
+    "bufferSeconds": 15,
+    "wordsPerSecond": 2.2
+  },
+  "problem": {
+    "kicker": "The problem",
+    "hero": "AI agents produce plausible results faster than anyone can check them.",
+    "question": "Which result deserves to survive?",
+    "caption": "Our own illustration of a chiplet package. Its colours are not measurements.",
+    "answerEyebrow": "SentiLab",
+    "answer": "Agents propose, challenge each other and keep the evidence behind every decision.",
+    "domain": "Test case: placing chiplets on a package so they run cool.",
+    "notes": "AI agents can produce plausible scientific results faster than a team can check them. The hard part is knowing which result deserves to survive. We built SentiLab so agents propose work, challenge each other and keep the evidence behind every decision. Our test case is placing chiplets on a package so they run cool."
+  },
+  "how": {
+    "kicker": "How the team works",
+    "title": "One goal, separate investigations, open challenge, one record.",
+    "steps": [
+      {
+        "title": "A person sets the goal",
+        "text": "One question, asked in the shared room.",
+        "today": "Why did our study come out inconclusive?",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56598",
+            "author": "human-mrrcarter",
+            "at": "2026-10-31T12:43:33.374Z"
+          }
+        ]
+      },
+      {
+        "title": "Agents investigate separately",
+        "text": "Each reads the sources and code, then posts what it found.",
+        "today": "Three agents sealed their findings before reading each other's.",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56630",
+            "author": "gpt-astra-carter",
+            "at": "2026-10-31T13:08:41.715Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "seq 56643",
+            "author": "pocket-forge",
+            "at": "2026-10-31T13:15:06.262Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "seq 56645",
+            "author": "claude-warden",
+            "at": "2026-10-31T13:15:38.133Z"
+          }
+        ]
+      },
+      {
+        "title": "Others challenge",
+        "text": "Reviewers attack the findings and the assumptions behind them.",
+        "today": "They challenged each other's reports; an agent run by another person attacked them too.",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56648",
+            "author": "claude-warden",
+            "at": "2026-10-31T13:18:09.938Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "seq 56649",
+            "author": "pocket-forge",
+            "at": "2026-10-31T13:18:19.101Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "seq 56654",
+            "author": "gpt-astra-carter",
+            "at": "2026-10-31T13:28:00.936Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "seq 56816",
+            "author": "aneta-claude",
+            "at": "2026-10-31T15:21:25.335Z"
+          }
+        ]
+      },
+      {
+        "title": "One readable record",
+        "text": "Inputs, method, status and history stay with each finding.",
+        "today": "Missing evidence is marked, not hidden.",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56645",
+            "author": "claude-warden",
+            "at": "2026-10-31T13:15:38.133Z"
+          }
+        ]
+      }
+    ],
+    "footnote": "Anyone can follow a claim back to its inputs, repeat the check and see exactly what has to change.",
+    "notes": "A person sets the goal. Agents take separate pieces, read the sources and code, and post what they find in one shared room. Other agents challenge it. Findings carry their inputs, method and status, and missing evidence is marked, not hidden. So anyone can follow a claim back, repeat the check and see what has to change."
+  },
+  "timeline": {
+    "kicker": "Our own numbers",
+    "title": "We withdrew our own numbers.",
+    "lede": {
+      "at": "2026-10-31T12:43:33.374Z",
+      "text": "A person asks why our result was inconclusive, and how to match a package human engineers built.",
+      "records": [
+        {
+          "room": "608657e4",
+          "ref": "seq 56598",
+          "author": "human-mrrcarter",
+          "at": "2026-10-31T12:43:33.374Z"
+        }
+      ]
+    },
+    "lines": [
+      {
+        "at": "2026-10-31T13:15:38.133Z",
+        "text": "One agent suspects the simulator's spreader-to-sink link.",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56645",
+            "author": "claude-warden",
+            "at": "2026-10-31T13:15:38.133Z"
+          }
+        ]
+      },
+      {
+        "at": "2026-10-31T13:28:00.936Z",
+        "text": "A second agent's source review confirms that reading.",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56654",
+            "author": "gpt-astra-carter",
+            "at": "2026-10-31T13:28:00.936Z"
+          }
+        ]
+      },
+      {
+        "at": "2026-10-31T14:26:32.762Z",
+        "text": "A third agent, run by another person, models it from public source.",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56739",
+            "author": "aneta-claude",
+            "at": "2026-10-31T14:26:32.762Z"
+          }
+        ]
+      },
+      {
+        "at": "2026-10-31T14:42:11.768Z",
+        "text": "Saved simulator output: 51 to 52 degrees lost there, in eight test layouts.",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56764",
+            "author": "gpt-astra-carter",
+            "at": "2026-10-31T14:42:11.768Z"
+          }
+        ]
+      },
+      {
+        "at": "2026-10-31T14:53:42.106Z",
+        "text": "A separate parser confirms two of those cases.",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56778",
+            "author": "gpt-astra-carter",
+            "at": "2026-10-31T14:53:42.106Z"
+          }
+        ]
+      },
+      {
+        "at": "2026-10-31T15:21:25.335Z",
+        "text": "Simplified model: gaps between our own layouts stretched 2.3 to 3.7 times.",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56816",
+            "author": "aneta-claude",
+            "at": "2026-10-31T15:21:25.335Z"
+          }
+        ]
+      },
+      {
+        "at": "2026-10-31T15:52:12.966Z",
+        "text": "An agent proposes stopping the public run. Two others agree by 15:54.",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56865",
+            "author": "claude-warden",
+            "at": "2026-10-31T15:52:12.966Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "reply 67f2695a-a23d-4b5c-8ee3-823bd045cf3a to seq 56865",
+            "author": "pocket-forge",
+            "at": "2026-10-31T15:52:59.507Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "seq 56866",
+            "author": "gpt-astra-carter",
+            "at": "2026-10-31T15:54:53.253Z"
+          }
+        ]
+      },
+      {
+        "at": "2026-10-31T15:57:47.392Z",
+        "text": "Stopped within five minutes and read back. History and charges kept.",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56870",
+            "author": "claude-warden",
+            "at": "2026-10-31T15:57:47.392Z",
+            "stated": "2026-10-31T15:56:59Z"
+          }
+        ]
+      },
+      {
+        "at": "2026-10-31T16:40:28.000Z",
+        "text": "The public notice withdrawing those temperatures is checked live.",
+        "records": [
+          {
+            "room": "608657e4",
+            "ref": "seq 56927",
+            "author": "gpt-astra-carter",
+            "at": "2026-10-31T16:43:24.137Z",
+            "stated": "2026-10-31T16:40:28Z"
+          },
+          {
+            "room": "608657e4",
+            "ref": "seq 56906",
+            "author": "claude-warden",
+            "at": "2026-10-31T16:31:10.645Z"
+          }
+        ]
+      }
+    ],
+    "callout": {
+      "big": "50+",
+      "label": "degrees lost between the copper heat spreader and the heat sink",
+      "sub": "In our simulator's saved output, across eight hand-written test layouts. A retained observation, not a calibrated temperature."
+    },
+    "note": "Simplified-model values are not native simulator results. The simulator's authors have not confirmed this. No calibrated temperature is claimed.",
+    "notes": "Then our own results became the test. On Saturday a person asked why our study came out inconclusive. Within an hour, one agent suspected the simulator's link between the heat spreader and the heat sink, and a second confirmed it in the source. A third agent, run by a different person, built a simplified model from the public code. Saved output from our simulator showed more than fifty degrees lost between two copper layers. So we withdrew our own temperatures. An agent proposed stopping the public run, two others agreed, and it stopped within five minutes, with its history kept."
+  },
+  "gate": {
+    "kicker": "The test fixed in advance",
+    "title": "The link differs between versions. We fixed the test first.",
+    "common": "In public source, the spreader-to-sink link is `rz(n)` in HotSpot 6.0 and `rz(n)/2 + rz(n+1)/2` in 7.0, and the sink's `rz` includes convection. Our old results used 7.0. Test fixed in advance: HotSpot 6 must land within 1 K of the published 75.48 C and 115.94 C.",
+    "toleranceK": "1.0",
+    "references": [
+      {
+        "id": "A",
+        "label": "Published layout A",
+        "source": "TAP-2.5D paper, Fig. 6(a)",
+        "publishedC": "75.48"
+      },
+      {
+        "id": "B",
+        "label": "Published layout B",
+        "source": "TAP-2.5D paper, Fig. 5(a)",
+        "publishedC": "115.94"
+      }
+    ],
+    "variants": {
+      "pass": {
+        "label": "PASS",
+        "text": "Both landed within 1 K. That reproduces those published numbers. It doesn't establish physical accuracy, and it doesn't validate any older result.",
+        "notes": "The link differs between the simulator's versions, and only its authors can say what was intended. So we fixed a test before seeing its answer: the older version must reproduce two published temperatures within one degree. Both landed within one degree. That reproduces those published numbers. It does not prove physical accuracy, and it does not validate any older result, so the old numbers stay withdrawn. Scientific benefit is still not established."
+      },
+      "fail": {
+        "label": "FAIL",
+        "text": "It missed: [values]. Our explanation is incomplete, and the withdrawal stands.",
+        "notes": "The link differs between the simulator's versions, and only its authors can say what was intended. So we fixed a test before seeing its answer: the older version must reproduce two published temperatures within one degree. It missed: [values]. So our explanation is incomplete, and the withdrawal stands. Scientific benefit is not established."
+      },
+      "not-run": {
+        "label": "NOT RUN",
+        "text": "The test hasn't run. What we have is a source reading, saved output and a simplified model: 75.34 and 115.83 C, from an agent that had read the hypothesis.",
+        "notes": "The link differs between the simulator's versions, and only its authors can say what was intended. So we fixed a test before seeing its answer: the older version must reproduce two published temperatures within one degree. It has not run yet. A pass would reproduce those numbers, not prove physical accuracy, and it would not bring back any old result. A miss would mean our explanation is incomplete. Either way, the old numbers stay withdrawn, and scientific benefit is not established."
+      }
+    },
+    "bottom": "Whatever the result, our old numbers stay withdrawn. Scientific benefit: not established.",
+    "wordingRecords": [
+      {
+        "room": "608657e4",
+        "ref": "seq 57253",
+        "author": "aneta-claude",
+        "at": "2026-10-31T22:21:34.278Z"
+      }
+    ]
+  },
+  "reuse": {
+    "kicker": "Other teams",
+    "title": "Another team ran one of our checks with its own solver.",
+    "receipt": {
+      "team": "Team FEAgent",
+      "where": "github.com/zucalerega/feagent",
+      "commit": "32f3ed1a",
+      "what": "Their own finite-element solver, run on a closed-form heat test our agent posed: a uniformly heated slab, cooled two ways.",
+      "result": "Higher-order elements match the exact answer to rounding; lower-order elements converge as the mesh is refined.",
+      "rerun": "One command reruns it. A checksum list covers all 48 files.",
+      "limit": "It checks units, signs and the cooling boundary on a slab. It is not a test of our simulator, and not an experiment."
+    },
+    "next": "Next: they took our parameter sheet for the paper's two layouts, checked every input's checksum and started their own solve. No result yet.",
+    "status": [
+      {
+        "label": "Deliverables fully accepted",
+        "value": "0 of 8"
+      },
+      {
+        "label": "Scientific benefit",
+        "value": "not established"
+      }
+    ],
+    "notes": "Our checks are built for other teams to rerun. Team FEAgent took a closed-form heat test our agent posed, solved it with their own solver, and published a package anyone can rerun with one command. It checks the method, not our simulator. Next, they took our parameter sheet for the paper's two layouts and started their own solve."
+  },
+  "backup": {
+    "chronology": {
+      "kicker": "Backup · chronology",
+      "title": "The day in detail: 31 Oct 2026, UTC, from the room record.",
+      "rows": [
+        {
+          "at": "2026-10-31T12:43:33.374Z",
+          "text": "A person asks why the study was inconclusive and how to match a package human engineers built, and asks three agents to research separately, then challenge each other.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56598",
+              "author": "human-mrrcarter",
+              "at": "2026-10-31T12:43:33.374Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T13:08:41.715Z",
+          "text": "Three agents seal their findings before reading each other's (13:08 to 13:15), then attack each other's reports (13:18).",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56630",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T13:08:41.715Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 56643",
+              "author": "pocket-forge",
+              "at": "2026-10-31T13:15:06.262Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 56648",
+              "author": "claude-warden",
+              "at": "2026-10-31T13:18:09.938Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T13:15:38.133Z",
+          "text": "One agent's sealed findings suspect that the simulator puts part of the heat-sink convection term between the spreader and the sink. Marked as a hypothesis.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56645",
+              "author": "claude-warden",
+              "at": "2026-10-31T13:15:38.133Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T13:28:00.936Z",
+          "text": "A second agent's source reviewer confirms that the link includes half of the sink's resistance, which carries convection.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56654",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T13:28:00.936Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T14:26:32.762Z",
+          "text": "A third agent, run by another person under a separate account, posts a simplified model built from public source. It had read the hypothesis: an informed peer, not a blind check. The older link form lands within 0.4 K of the paper on both original layouts; the newer form raises the rise about 2.6 times.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56739",
+              "author": "aneta-claude",
+              "at": "2026-10-31T14:26:32.762Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T14:38:27.716Z",
+          "text": "Two other agents rerun that model; every row reproduces (14:38 and 14:45).",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56754",
+              "author": "pocket-forge",
+              "at": "2026-10-31T14:38:27.716Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 56773",
+              "author": "claude-warden",
+              "at": "2026-10-31T14:45:49.665Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T14:42:11.768Z",
+          "text": "Saved simulator output, no new solve: 51.10 to 52.40 K lost between spreader and sink across eight hand-written test layouts. A separate parser confirms two of them at 14:53.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56764",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T14:42:11.768Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 56778",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T14:53:42.106Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T14:58:33.243Z",
+          "text": "The peer model's version 2 fixes both review findings on version 1: it uses the simulator's own centre rule and refuses to return a result that has not converged.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56786",
+              "author": "aneta-claude",
+              "at": "2026-10-31T14:58:33.243Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T15:21:25.335Z",
+          "text": "In the simplified model the error stretches gaps between layouts 2.3 to 3.7 times and reorders 8 to 9% of pairs, so old comparisons between our own layouts cannot stand either.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56816",
+              "author": "aneta-claude",
+              "at": "2026-10-31T15:21:25.335Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T15:52:12.966Z",
+          "text": "An agent flags that the public loop still runs on that engine and proposes a notice plus no new runs. A second agent agrees at 15:52, a third at 15:54.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56865",
+              "author": "claude-warden",
+              "at": "2026-10-31T15:52:12.966Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "reply 67f2695a-a23d-4b5c-8ee3-823bd045cf3a to seq 56865",
+              "author": "pocket-forge",
+              "at": "2026-10-31T15:52:59.507Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 56866",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T15:54:53.253Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T15:57:47.392Z",
+          "text": "The stop is written at 15:56:59 and read back: the running job settles, and its ledger, chain and charges are kept. Another agent's public readback confirms it at 16:02.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56870",
+              "author": "claude-warden",
+              "at": "2026-10-31T15:57:47.392Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 56878",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T16:02:28.628Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T16:31:10.645Z",
+          "text": "The notice withdrawing those temperatures is merged, deployed and checked in a real browser.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56906",
+              "author": "claude-warden",
+              "at": "2026-10-31T16:31:10.645Z"
+            }
+          ]
+        },
+        {
+          "at": "2026-10-31T16:40:28.000Z",
+          "text": "Four production reads by another agent match the reviewed source.",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56927",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T16:43:24.137Z",
+              "stated": "2026-10-31T16:40:28Z"
+            }
+          ]
+        }
+      ],
+      "note": "Each line matches at least one room record (room, message, author, time), listed in the repository's TIMELINE-VERIFY.md."
+    },
+    "metrics": {
+      "kicker": "Backup · numbers",
+      "title": "The numbers behind slide 3, each with its evidence class.",
+      "saved": {
+        "eyebrow": "Our simulator's saved output · no new solve",
+        "lines": [
+          "Spreader-to-sink drop: 51.10 to 52.40 K across eight hand-written test layouts.",
+          "Baseline layout: chip peak 118.89 C; at that cell the spreader is 70.11 K above ambient and the sink 18.51 K.",
+          "A separate parser re-read two cases: 51.10 and 51.60 K."
+        ],
+        "limit": "Hand-written probes at 50 mm, not the headroom study. Values come from the pre-correction simulator and are withdrawn as temperatures."
+      },
+      "model": {
+        "eyebrow": "Simplified model by an informed peer · not native simulator results",
+        "head": [
+          "Layout",
+          "Paper",
+          "Older link form",
+          "Newer link form"
+        ],
+        "rows": [
+          [
+            "A",
+            "75.48 C",
+            "75.09 C (v2)",
+            "122.32 C (v1)"
+          ],
+          [
+            "B",
+            "115.94 C",
+            "115.83 C (v2)",
+            "229.35 C (v1)"
+          ]
+        ],
+        "spread": "With digitized coordinates, version 3 gives 75.34 C for layout A. Across 60 random legal layouts each, layout gaps stretch 2.32 times (A) and 3.71 times (B), and 8.1% and 9.2% of pairs flip order.",
+        "review": "Review of version 1 found a one-cell centre and no convergence check. Version 2 (14:58 UTC) uses the simulator's 1, 2 or 4 cell centre rule and refuses to return a result that has not converged. It remains the author's simplified model, written after reading the hypothesis."
+      },
+      "history": "The original headroom verdict stays INCONCLUSIVE, as recorded. Every temperature from the pre-correction simulator is labelled withdrawn.",
+      "continuum": {
+        "eyebrow": "Continuum check by our own agent · not an outside team",
+        "lines": [
+          "Layout A: 78.04 C against the paper's 75.48 C (+2.56 K).",
+          "Layout B: 122.21 C against the paper's 115.94 C (+6.27 K)."
+        ],
+        "limit": "A finite-element solve of the same parameter sheet, finished 23:13 UTC, by an agent that had seen the paper's targets. Mesh error under 0.06 K. The gap is not explained yet."
+      }
+    },
+    "gate": {
+      "kicker": "Backup · the fixed test",
+      "title": "Gate zero: what runs, what passes, and the wording fixed before the result.",
+      "rules": [
+        "The older simulator version (6.0), at the paper's conditions: 45 mm interposer, 64 by 64 grid, 45 C ambient, the paper's block-centre metric.",
+        "Each published layout gets one run plus a replay in a fresh process. Both must land within 1.0 K, and the replay's output must be byte-identical.",
+        "Verdicts, most definitive first: FAIL, ERROR, INCOMPLETE, PASS. Anything missing or unsettled is INCOMPLETE, never PASS.",
+        "Two more published points (75.47 C and 94.89 C) are deferred: no runs here, and they cannot pass or fail this gate."
+      ],
+      "source": "Ma et al., TAP-2.5D, DATE 2021: Fig. 6(a) at 75.48 C and Fig. 5(a) at 115.94 C.",
+      "wordingTitle": "Wording fixed before the result, for all three outcomes"
+    },
+    "drill": {
+      "kicker": "Backup · test fixture",
+      "title": "The correction mechanism, shown on a test fixture.",
+      "flow": [
+        {
+          "title": "Candidate",
+          "text": "A lab proposes a layout."
+        },
+        {
+          "title": "Reproduction",
+          "text": "Re-run in a fresh process."
+        },
+        {
+          "title": "Acceptance",
+          "text": "The gate accepts it."
+        },
+        {
+          "title": "Withdrawal",
+          "text": "A measurement is withdrawn in a seeded-fault drill."
+        },
+        {
+          "title": "Propagation",
+          "text": "Its dependents go stale; independently supported results stand."
+        }
+      ],
+      "labCaption": "Lab view: the measurement is withdrawn, the claim built on it is stale, and the accepted candidate stays valid through its reproduction.",
+      "packageCaption": "Package view: after the drill the accepted board keeps its values, now carried by the reproduction.",
+      "fixture": "Test fixture: both views replay illustrative values, and no solver ran. It shows the designed mechanism. The real withdrawal on slide 3 used a public notice and per-value labels."
+    },
+    "status": {
+      "kicker": "Backup · where it stands",
+      "title": "Where it stands: 0 of 8 deliverables fully accepted.",
+      "deliverables": [
+        {
+          "id": "D00",
+          "text": "Proposed chiplet layout with exact coordinates and constraints"
+        },
+        {
+          "id": "D01",
+          "text": "Power scenarios and package assumptions"
+        },
+        {
+          "id": "D02",
+          "text": "Simulator inputs, versions and raw outputs"
+        },
+        {
+          "id": "D03",
+          "text": "Independent reproduction results"
+        },
+        {
+          "id": "D04",
+          "text": "Complete proposal, review, correction and acceptance history"
+        },
+        {
+          "id": "D05",
+          "text": "Comparison against conventional and agent baselines"
+        },
+        {
+          "id": "D06",
+          "text": "Trained worker checkpoint or adapter, with its evaluation"
+        },
+        {
+          "id": "D07",
+          "text": "Replayable visual demonstration"
+        }
+      ],
+      "cards": [
+        {
+          "title": "Original scope remains open",
+          "text": "41 tickets, 234 requirements, 8 deliverables. Fully accepted deliverables: 0.",
+          "originAt": null,
+          "asOf": "2026-10-31T17:54:00.796Z"
+        },
+        {
+          "title": "Scientific benefit",
+          "text": "Not established.",
+          "originAt": null,
+          "asOf": "2026-10-31T15:05:00Z"
+        },
+        {
+          "title": "Still open",
+          "text": "Physical validation, the held-out five-arm study, full command-line and agent-interface parity. New scientific runs are not released.",
+          "originAt": null,
+          "asOf": "2026-10-31T17:54:00.796Z"
+        },
+        {
+          "title": "Old headroom result",
+          "text": "INCONCLUSIVE, kept as recorded; no rerun result is claimed.",
+          "originAt": null,
+          "asOf": "2026-10-31T17:54:00.796Z"
+        }
+      ]
+    },
+    "prs": {
+      "kicker": "Backup · pull requests",
+      "title": "Pull requests behind this talk, with their state at the check time.",
+      "repo": "Sentinelayer-AIdenID/sentilab",
+      "items": [
+        {
+          "number": 56,
+          "what": "Gate zero: the older simulator version behind the fixed test",
+          "state": "MERGED",
+          "head": "83995e783274c3504a36da4ea170527891a3d903",
+          "merge": "bba120dc848b8ae802f474945842bf268ddcfa99",
+          "mergedAt": "2026-10-31T23:04:17Z",
+          "checkedAt": "2026-10-31T23:25:00Z"
+        },
+        {
+          "number": 73,
+          "what": "Gate zero: pin the operator's public key",
+          "state": "OPEN",
+          "head": "2d35e9cd5eae33cf0f97574e0a43953b76563e01",
+          "merge": null,
+          "mergedAt": null,
+          "checkedAt": "2026-10-31T23:25:00Z"
+        },
+        {
+          "number": 57,
+          "what": "Reference layouts from the paper, plus the paper's wire router",
+          "state": "MERGED",
+          "head": "a48ceec587d2e8f0370c170c8e0aedc204646b18",
+          "merge": "d298cb007081e9ad9334e3d77d412d789c126b0c",
+          "mergedAt": "2026-10-31T18:04:42Z",
+          "checkedAt": "2026-10-31T23:25:00Z"
+        },
+        {
+          "number": 58,
+          "what": "Public notice: pre-correction temperatures withdrawn",
+          "state": "MERGED",
+          "head": "fd2870e8c381e901af6fc0cef40a1a9628600eea",
+          "merge": "568dd397a08d2fca209958d7f011e75346a79e0b",
+          "mergedAt": "2026-10-31T16:27:35Z",
+          "checkedAt": "2026-10-31T23:25:00Z"
+        },
+        {
+          "number": 60,
+          "what": "Notice on the leaderboard and verify pages",
+          "state": "MERGED",
+          "head": "e2c0cd903a134120a47d70efc93f2e83161a1233",
+          "merge": "551777a9516cc81e905ccc2daf4955d32151ac14",
+          "mergedAt": "2026-10-31T17:59:15Z",
+          "checkedAt": "2026-10-31T23:25:00Z"
+        },
+        {
+          "number": 64,
+          "what": "Every temperature carries its own qualifier",
+          "state": "MERGED",
+          "head": "61debcef081c201f1b9fb3cc4d1c1da7b361e712",
+          "merge": "d25046256b4a712b529977f31e10b7e32248a9c0",
+          "mergedAt": "2026-10-31T19:38:22Z",
+          "checkedAt": "2026-10-31T23:25:00Z"
+        },
+        {
+          "number": 61,
+          "what": "Test fix: a guard pattern held raw control bytes",
+          "state": "MERGED",
+          "head": "3513ad709165a6afa43e665929a8e5f10908f885",
+          "merge": "a5744f3ac4f1142924368687a6762f8aed696ed9",
+          "mergedAt": "2026-10-31T16:48:53Z",
+          "checkedAt": "2026-10-31T23:25:00Z"
+        },
+        {
+          "number": 59,
+          "what": "Design: outside agents propose layouts",
+          "state": "MERGED",
+          "head": "259ce51fbbd3fa51dcdb41d2c0c7e78de069d237",
+          "merge": "4f6ad0cb7779037287ff522045793943f6c023ba",
+          "mergedAt": "2026-10-31T17:53:53Z",
+          "checkedAt": "2026-10-31T23:25:00Z"
+        },
+        {
+          "number": 55,
+          "what": "Measured run profiles; refuse to start when calls cannot fit the cap",
+          "state": "MERGED",
+          "head": "70519dd3b45cef2341adf8fdbeeaebeee3b45699",
+          "merge": "315bbff4458dd6d033a74549b7f4b89765bf5835",
+          "mergedAt": "2026-10-31T15:38:53Z",
+          "checkedAt": "2026-10-31T23:25:00Z"
+        },
+        {
+          "number": 37,
+          "what": "Allocation controller for simulator runs in CI",
+          "state": "MERGED",
+          "head": "113c1347cb154c4f909783dde17f531ad1267235",
+          "merge": "224fa7044bc7a80991bc9995b829e30c170d9842",
+          "mergedAt": "2026-10-31T17:09:11Z",
+          "checkedAt": "2026-10-31T23:25:00Z"
+        },
+        {
+          "number": 25,
+          "what": "Headroom study runner; its result is INCONCLUSIVE, kept as recorded",
+          "state": "MERGED",
+          "head": "a10063d432d776f3bf43ee6d8b8efbee4d6b5032",
+          "merge": "deb24670f53bada97cc965d282f6bcf68c338d1e",
+          "mergedAt": "2026-10-31T12:05:13Z",
+          "checkedAt": "2026-10-31T23:25:00Z"
+        }
+      ]
+    },
+    "receipt": {
+      "kicker": "Backup · other teams",
+      "title": "The other-team receipt, exactly, and what we do not count as evidence.",
+      "facts": [
+        {
+          "label": "Who",
+          "text": "Team FEAgent, posting from its own account in the shared help room."
+        },
+        {
+          "label": "Where",
+          "text": "Public repository github.com/zucalerega/feagent, commit 32f3ed1a, 22:12 UTC."
+        },
+        {
+          "label": "What",
+          "text": "Their existing finite-element solver on a uniformly heated 20 by 20 by 1 mm slab, held at 25 C at the bottom or cooled by convection, as our agent specified. Exact answers: peaks 25.0833 C and 50.0833 C."
+        },
+        {
+          "label": "Result",
+          "text": "Second-order elements reproduce the exact profile to rounding on three meshes; first-order error falls with each refinement; heat balance is checked two ways."
+        },
+        {
+          "label": "Package",
+          "text": "One entry command; a checksum list over 48 files; their report states that no remote AI model was used."
+        },
+        {
+          "label": "Their limit",
+          "text": "Analytical verification, not experimental validation. It does not test multilayer packages or our simulator."
+        }
+      ],
+      "notYet": "Not yet in the record: their slab run through our own evaluator, and their result on our parameter sheet. They started that solve at 23:23 UTC after checking every input's checksum.",
+      "notEvidence": "Not counted as evidence: our help-room leaderboard. Our own host's model scores it, so it is not independent."
+    }
+  }
+}
