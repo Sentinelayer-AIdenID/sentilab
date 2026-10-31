@@ -1,0 +1,1423 @@
+{
+  "format": "sentilab-deck-facts/1",
+  "asOf": "2026-10-31T17:54:00.796Z",
+  "packagedAt": "2026-10-31T18:20:35.731Z",
+  "title": "SentiLab daytime supplement — 31 October 2026, 17:54 UTC",
+  "timePolicy": "asOf is the factual cutoff. sourceAt is an originating record/event time when known; observedAt is the cited observation or frozen checkpoint time. packagedAt is later packaging only.",
+  "priorPacket": {
+    "commit": "405332861cfc2303019523c831b35c9b2b89da2d",
+    "manifestSha256": "674276ed0e9358e8f162cbec0b1660b4b623c99693c2fb4b17390cf12693ca95",
+    "factualCutoff": "2026-10-31T15:05:00Z",
+    "fileCount": 26,
+    "baselineFiles": 9
+  },
+  "renderer": {
+    "compatibleWithLegacySchema": false,
+    "integrationAccepted": false
+  },
+  "items": [
+    {
+      "id": "baseline",
+      "claimStatus": "preserved",
+      "evidenceClass": "accepted_content",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": null,
+      "observedAt": "2026-10-31T17:54:00.796Z",
+      "title": "Original scope remains open",
+      "display": "The original plan still contains 41 tickets, 234 requirements, 104 CLI declarations and 104 MCP declarations. All eight deliverables remain incomplete.",
+      "qualifications": [
+        "Additive research and implementation tickets do not replace the original counts.",
+        "Original chiplet simulation and visualization; no silicon-performance or generalization claim."
+      ],
+      "facts": [
+        {
+          "key": "original_tickets",
+          "kind": "integer",
+          "value": 41,
+          "unit": "count"
+        },
+        {
+          "key": "requirements",
+          "kind": "integer",
+          "value": 234,
+          "unit": "count"
+        },
+        {
+          "key": "cli_declarations",
+          "kind": "integer",
+          "value": 104,
+          "unit": "count"
+        },
+        {
+          "key": "mcp_declarations",
+          "kind": "integer",
+          "value": 104,
+          "unit": "count"
+        },
+        {
+          "key": "deliverables",
+          "kind": "integer",
+          "value": 8,
+          "unit": "count"
+        },
+        {
+          "key": "fully_accepted_deliverables",
+          "kind": "integer",
+          "value": 0,
+          "unit": "count"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "cf75fd2fbaa2a4860d043b02bdfe82abc3052ec655e40ee0f002b8b53faf1b61",
+          "evidenceClass": "historical_record"
+        }
+      ]
+    },
+    {
+      "id": "aneta-v3",
+      "claimStatus": "peer_reported",
+      "evidenceClass": "peer_model_report",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": "2026-10-31T15:21:25.335Z",
+      "observedAt": "2026-10-31T17:54:00.796Z",
+      "title": "Informed peer model critique",
+      "display": "Aneta v3 reports coupling-dependent temperature spread and ordering in a simplified model. Root verified its report and source and performed static review.",
+      "qualifications": [
+        "This is an informed peer claim, not a blind first report or native reproduction.",
+        "Root did not execute the model. Offset/rank carry and summed sampled-uncertainty bounds remain unsupported.",
+        "Extra rank and curve diagnostics are separate future work."
+      ],
+      "facts": [
+        {
+          "key": "report_and_source_hashes_verified",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        },
+        {
+          "key": "root_model_executed",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "root_native_reproduction",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "2014306dd246979f59daf7cc7d10c4f34b6219a0cb90d3fa446d0ec070d1801c",
+          "evidenceClass": "peer_model_report"
+        },
+        {
+          "sha256": "1f4d3646d084df740f1b5687691280e5da76653ad48271c35469f525f8f88b19",
+          "evidenceClass": "peer_model_source"
+        },
+        {
+          "sha256": "3db5ed9948aa1593a380d1e8aaa09fcaadf6d1b5c79bfee7242c8b3d56988370",
+          "evidenceClass": "static_review"
+        }
+      ]
+    },
+    {
+      "id": "reference-consistency",
+      "claimStatus": "retained_author_results",
+      "evidenceClass": "retained_result_review",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": null,
+      "observedAt": "2026-10-31T17:54:00.796Z",
+      "title": "Seven retained wire-consistency results",
+      "display": "Seven retained author routing results agree with the paper within 0.1%. Root reviewed source, formulation and finite fixtures; it did not run the real optimizer.",
+      "qualifications": [
+        "Agreement supports consistency, not unique absolute coordinates. Extraction and verification reuse panels.",
+        "Raw reconstruction and legal half-millimetre variants have separate identities; sampled sensitivity is not a uniform error bound.",
+        "At the cutoff, the pre-routing guard and launch-audit correction was still under review."
+      ],
+      "facts": [
+        {
+          "key": "retained_routing_results",
+          "kind": "integer",
+          "value": 7,
+          "unit": "count"
+        },
+        {
+          "key": "reported_difference_bound_basis_points",
+          "kind": "integer",
+          "value": 10,
+          "unit": "basis_points"
+        },
+        {
+          "key": "root_real_optimizer_calls",
+          "kind": "integer",
+          "value": 0,
+          "unit": "count"
+        },
+        {
+          "key": "root_finite_group_checks",
+          "kind": "integer",
+          "value": 68,
+          "unit": "count"
+        },
+        {
+          "key": "final_pr57_source_accepted",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "b28c7bb36fe4888c5d43d234d9414e5dee776199eabb629686b5e7c70768be08",
+          "evidenceClass": "finite_source_review"
+        },
+        {
+          "sha256": "7b4bdb3ecd59ff86a133b04dc52c25aba74256f4b7d18e6066f80239ee4335fc",
+          "evidenceClass": "retained_result_review"
+        },
+        {
+          "sha256": "b220f1a67eab7856e57b72787465378e969c92c7e1e4132b070f0b109a6b4812",
+          "evidenceClass": "retained_author_results"
+        },
+        {
+          "sha256": "c9dcfba1306f4c90ebbfbc1b1a0feec2cd45c709fec82b15f0b9e166b16ef8a3",
+          "evidenceClass": "retained_author_results"
+        }
+      ]
+    },
+    {
+      "id": "loop-stopped",
+      "claimStatus": "observed",
+      "evidenceClass": "http_observation",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": null,
+      "observedAt": "2026-10-31T16:00:18.035Z",
+      "title": "Public loop reported stopped",
+      "display": "A bounded HTTP read reported the loop stopped and returned 38 event rows, ending with a STOP-file reason.",
+      "qualifications": [
+        "This observes the API report; no filesystem STOP inspection, complete-chain recomputation or live cleanup audit was performed.",
+        "Historical rows and charges remain retained."
+      ],
+      "facts": [
+        {
+          "key": "loop_alive",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "stopped",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        },
+        {
+          "key": "event_rows",
+          "kind": "integer",
+          "value": 38,
+          "unit": "count"
+        },
+        {
+          "key": "http_status",
+          "kind": "integer",
+          "value": 200,
+          "unit": "http_status"
+        },
+        {
+          "key": "service_error_reported_clear",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "dd651b408840c78f9fc1d3f82b596a3d5aaced2e652dd937df7399d86d7db982",
+          "evidenceClass": "http_observation"
+        }
+      ]
+    },
+    {
+      "id": "withdrawal-notice",
+      "claimStatus": "bounded_runtime_verified",
+      "evidenceClass": "http_observation",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": "2026-10-31T16:27:35Z",
+      "observedAt": "2026-10-31T16:40:28.239Z",
+      "title": "Comparison withdrawal is served",
+      "display": "The reviewed withdrawal notice was merged. Four production HTTP responses returned 200 with exact CSP and the exact module; each HTML response retained one additional 367-byte beacon insertion.",
+      "qualifications": [
+        "These simulated temperatures were withdrawn from comparison with published layouts while coupling and evaluator correspondence are investigated.",
+        "No universal correction multiplier or ranking distortion is asserted.",
+        "Root did not verify production browser rendering or Worker control-plane identity."
+      ],
+      "facts": [
+        {
+          "key": "production_gets",
+          "kind": "integer",
+          "value": 4,
+          "unit": "count"
+        },
+        {
+          "key": "all_http_200",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        },
+        {
+          "key": "exact_csp",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        },
+        {
+          "key": "module_exact",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        },
+        {
+          "key": "html_insertion_bytes_each",
+          "kind": "integer",
+          "value": 367,
+          "unit": "bytes"
+        },
+        {
+          "key": "root_production_browser_verified",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "worker_control_plane_verified",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "87a545c2f0df5b918e2df34b5058d9d64ce9f568fa08df1025b553c2b783319d",
+          "evidenceClass": "finite_source_review"
+        },
+        {
+          "sha256": "5d6932cf34561244d6d2706d683c6959ca09ab2dc7382b7ae1bf951f35c9bd97",
+          "evidenceClass": "merge_binding"
+        },
+        {
+          "sha256": "7b148354f658ea49b69f5597d4f8f3773a9fb8820a600f42a3d532ad3d7b004c",
+          "evidenceClass": "http_observation"
+        }
+      ]
+    },
+    {
+      "id": "pr55",
+      "claimStatus": "merged_source_verified",
+      "evidenceClass": "merge_binding",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": "2026-10-31T15:38:53Z",
+      "observedAt": "2026-10-31T15:43:36.098Z",
+      "title": "Execution and evidence repairs merged",
+      "display": "PR55 repairs to cardinality, result identity, terminal state, timeout-byte retention and unsupported-method refusal were independently reviewed and merged.",
+      "qualifications": [
+        "All 16 changed blobs match the reviewed head; five existing CI jobs pass on that head.",
+        "Source and fixture acceptance supplies no profiling or scientific execution release."
+      ],
+      "facts": [
+        {
+          "key": "pr_number",
+          "kind": "integer",
+          "value": 55,
+          "unit": "count"
+        },
+        {
+          "key": "reviewed_changed_blobs",
+          "kind": "integer",
+          "value": 16,
+          "unit": "count"
+        },
+        {
+          "key": "exact_head_ci_successes",
+          "kind": "integer",
+          "value": 5,
+          "unit": "count"
+        },
+        {
+          "key": "merge_verified",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        },
+        {
+          "key": "scientific_execution_released",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "7c33fae83519d3ede62e2612b2211dcbccb01e4440aa77173e46bbcb584912d9",
+          "evidenceClass": "finite_source_review"
+        },
+        {
+          "sha256": "9ea939afac99dabcbf194a856ff1bb20f1747f62e979e18aa1e4e085965213a5",
+          "evidenceClass": "merge_binding"
+        }
+      ]
+    },
+    {
+      "id": "pr61",
+      "claimStatus": "merged_source_verified",
+      "evidenceClass": "merge_binding",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": "2026-10-31T16:48:53Z",
+      "observedAt": "2026-10-31T17:54:00.796Z",
+      "title": "Notice regression tests merged",
+      "display": "PR61 merged two reviewed test changes. All 179 public asset leaves remained unchanged.",
+      "qualifications": [
+        "This test-only merge is not a deployment or a fresh production-asset check."
+      ],
+      "facts": [
+        {
+          "key": "pr_number",
+          "kind": "integer",
+          "value": 61,
+          "unit": "count"
+        },
+        {
+          "key": "changed_test_files",
+          "kind": "integer",
+          "value": 2,
+          "unit": "count"
+        },
+        {
+          "key": "unchanged_public_leaves",
+          "kind": "integer",
+          "value": 179,
+          "unit": "count"
+        },
+        {
+          "key": "merge_verified",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "5dc94d7e2d8909656ee342a7e99f5eddfece8796caff987bec4a30456b300872",
+          "evidenceClass": "merge_binding"
+        }
+      ]
+    },
+    {
+      "id": "pr62",
+      "claimStatus": "bounded_runtime_verified",
+      "evidenceClass": "runtime_accounting",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": "2026-10-31T17:34:01Z",
+      "observedAt": "2026-10-31T17:54:00.796Z",
+      "title": "CI admission and terminal accounting verified",
+      "display": "PR62 merge, normal admission and terminal witness were bound. The journal contains 237 rows and 78 process chains: 77 exit-zero outcomes and one charged timeout.",
+      "qualifications": [
+        "These are process outcomes, not scientifically accepted solves.",
+        "The accounted total is 471.654559 CPU-seconds; the full 100-launch/900-CPU-second reservation remains retained without refund.",
+        "Older consumption and the comprehensive total remain unknown. The corrected operator terminal citation is retained in the private audit."
+      ],
+      "facts": [
+        {
+          "key": "pr_number",
+          "kind": "integer",
+          "value": 62,
+          "unit": "count"
+        },
+        {
+          "key": "journal_rows",
+          "kind": "integer",
+          "value": 237,
+          "unit": "count"
+        },
+        {
+          "key": "process_chains",
+          "kind": "integer",
+          "value": 78,
+          "unit": "count"
+        },
+        {
+          "key": "exit_zero_outcomes",
+          "kind": "integer",
+          "value": 77,
+          "unit": "count"
+        },
+        {
+          "key": "timeouts",
+          "kind": "integer",
+          "value": 1,
+          "unit": "count"
+        },
+        {
+          "key": "accounted_cpu",
+          "kind": "fixed_decimal",
+          "value": {
+            "whole": 471,
+            "fraction": 654559,
+            "places": 6
+          },
+          "unit": "cpu_seconds"
+        },
+        {
+          "key": "cgroup_cpu",
+          "kind": "fixed_decimal",
+          "value": {
+            "whole": 461,
+            "fraction": 303315,
+            "places": 6
+          },
+          "unit": "cpu_seconds"
+        },
+        {
+          "key": "supervisor_cpu",
+          "kind": "fixed_decimal",
+          "value": {
+            "whole": 10,
+            "fraction": 331244,
+            "places": 6
+          },
+          "unit": "cpu_seconds"
+        },
+        {
+          "key": "helper_startup_debit",
+          "kind": "fixed_decimal",
+          "value": {
+            "whole": 0,
+            "fraction": 2,
+            "places": 2
+          },
+          "unit": "cpu_seconds"
+        },
+        {
+          "key": "retained_launch_reservation",
+          "kind": "integer",
+          "value": 100,
+          "unit": "count"
+        },
+        {
+          "key": "retained_cpu_reservation",
+          "kind": "integer",
+          "value": 900,
+          "unit": "cpu_seconds"
+        },
+        {
+          "key": "refunded",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "merge_verified",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "b1a341e10971fdf71c2d7e0ab2328b2624a75a3790b8b97cf49a4747ad22dd03",
+          "evidenceClass": "runtime_accounting"
+        }
+      ]
+    },
+    {
+      "id": "pr56",
+      "claimStatus": "repair_pending",
+      "evidenceClass": "finite_source_review",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": null,
+      "observedAt": "2026-10-31T17:34:55Z",
+      "title": "Native validation source still needs repair",
+      "display": "PR56 retained earlier parser, digest, replay, default and centre-mapping repairs. Three later findings remained open at the cutoff: strict grid reconstruction, settlement after output-setup failure, and binding report values to raw evidence.",
+      "qualifications": [
+        "75 selected supplied tests and 16 independent finite controls include deliberately asserted counterexamples; they are not an all-green product decision.",
+        "Final source composition and manifest must be reconciled before admission. No native compile or numerical execution occurred in root review."
+      ],
+      "facts": [
+        {
+          "key": "pr_number",
+          "kind": "integer",
+          "value": 56,
+          "unit": "count"
+        },
+        {
+          "key": "open_p2_findings",
+          "kind": "integer",
+          "value": 3,
+          "unit": "count"
+        },
+        {
+          "key": "supplied_tests",
+          "kind": "integer",
+          "value": 75,
+          "unit": "count"
+        },
+        {
+          "key": "independent_finite_controls",
+          "kind": "integer",
+          "value": 16,
+          "unit": "count"
+        },
+        {
+          "key": "source_accepted",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "root_native_execution",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "3c210d679b056e75d6ab1ad32e35f32c56346f82e5bdc1b26d5e5d20b49ded34",
+          "evidenceClass": "finite_source_review"
+        }
+      ]
+    },
+    {
+      "id": "keeper",
+      "claimStatus": "repair_pending",
+      "evidenceClass": "finite_source_review",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": null,
+      "observedAt": "2026-10-31T17:54:00.796Z",
+      "title": "Keeper repairs remain under review",
+      "display": "Historical identity/quota and frozen-receipt fixes are retained. Three queue findings remained under focused follow-up review at the cutoff: legacy migration, expiry before reads, and retrying malformed successful responses.",
+      "qualifications": [
+        "No keeper service or live ticket effects were accepted. Server-produced identity remains a separate dependency.",
+        "The earlier reviewer erratum records one send followed by three processing/read failures; it did not prove repeated remote delivery."
+      ],
+      "facts": [
+        {
+          "key": "open_round4_p2_findings",
+          "kind": "integer",
+          "value": 3,
+          "unit": "count"
+        },
+        {
+          "key": "followup_review_active",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        },
+        {
+          "key": "runtime_accepted",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "live_keeper_effects_in_root_reviews",
+          "kind": "integer",
+          "value": 0,
+          "unit": "count"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "1ec7ccc031ac826b4d92ef93da5b1d388b68eaedde9b283af932acc02b5af9a2",
+          "evidenceClass": "finite_source_review"
+        },
+        {
+          "sha256": "414239c946c77fdac8ced61ceacfcd254fd121a6d24dad52a4a1cdc780d69d01",
+          "evidenceClass": "review_erratum"
+        }
+      ]
+    },
+    {
+      "id": "help-room",
+      "claimStatus": "observed",
+      "evidenceClass": "room_readback",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": null,
+      "observedAt": "2026-10-31T14:45:12.877Z",
+      "title": "Bounded join, post and reply flow observed",
+      "display": "The retained help-room readback covers two joins, host welcomes, human and agent posts, and replies to both.",
+      "qualifications": [
+        "Seven events and three actions were retained. This does not establish the full outside-account/MCP/role/media flow or keeper effects."
+      ],
+      "facts": [
+        {
+          "key": "joins",
+          "kind": "integer",
+          "value": 2,
+          "unit": "count"
+        },
+        {
+          "key": "retained_events",
+          "kind": "integer",
+          "value": 7,
+          "unit": "count"
+        },
+        {
+          "key": "retained_actions",
+          "kind": "integer",
+          "value": 3,
+          "unit": "count"
+        },
+        {
+          "key": "human_and_agent_posts_observed",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        },
+        {
+          "key": "replies_observed",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        },
+        {
+          "key": "full_outside_account_flow_accepted",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "keeper_runtime_accepted",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "2b6c4a19ca6d2c3d48219daf6e7c5d76545975d803ee579121889b447a1dbc73",
+          "evidenceClass": "room_readback"
+        }
+      ]
+    },
+    {
+      "id": "agent-site-priority",
+      "claimStatus": "directed_pending",
+      "evidenceClass": "human_direction",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": "2026-10-31T17:49:36.294Z",
+      "observedAt": "2026-10-31T17:49:36.294Z",
+      "title": "Actual agent rerouting and live aquarium are next",
+      "display": "The current priority is to detect agents at the edge and actually route them to an agent-facing site, with live chiplet placements and a reproducible package for engineers.",
+      "qualifications": [
+        "An observer-only page does not satisfy the requested routing behavior.",
+        "Implementation and deployment were not yet independently verified at the cutoff."
+      ],
+      "facts": [
+        {
+          "key": "actual_agent_rerouting_required",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        },
+        {
+          "key": "live_aquarium_required",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        },
+        {
+          "key": "implementation_independently_verified",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "deployment_independently_verified",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        }
+      ]
+    },
+    {
+      "id": "science-content",
+      "claimStatus": "private_content_delivered",
+      "evidenceClass": "publication_receipt",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": "2026-10-31T17:51:20.342Z",
+      "observedAt": "2026-10-31T17:51:20.342Z",
+      "title": "Agent-site science packet delivered",
+      "display": "Two science content files totaling 14,909 bytes were delivered privately and byte-verified for the agent-facing site work.",
+      "qualifications": [
+        "This is descriptive scientific content, not an ENGRAM implementation, live route or deployed agent runtime.",
+        "A new native6 identity cannot retrospectively validate withdrawn native7 history."
+      ],
+      "facts": [
+        {
+          "key": "delivered_files",
+          "kind": "integer",
+          "value": 2,
+          "unit": "count"
+        },
+        {
+          "key": "delivered_bytes",
+          "kind": "integer",
+          "value": 14909,
+          "unit": "bytes"
+        },
+        {
+          "key": "remote_bytes_verified",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        },
+        {
+          "key": "engram_implemented",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "site_runtime_accepted",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "cfbe954dfe9b94052ae8cb2e04b00014633db4e8667d21edbe1e9da600cb33e1",
+          "evidenceClass": "publication_receipt"
+        },
+        {
+          "sha256": "1431f24d872a7456a6dea01633a634e9a99f2e1b5fcfc0bd3e7783c3b5f366fc",
+          "evidenceClass": "descriptive_content"
+        }
+      ]
+    },
+    {
+      "id": "pr59",
+      "claimStatus": "design_accepted",
+      "evidenceClass": "design_review",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": null,
+      "observedAt": "2026-10-31T17:48:39.347Z",
+      "title": "Open proposal design accepted within scope",
+      "display": "PR59 carries design approval with seven green checks and three wording corrections retained. Actual merge was unverified at the cutoff.",
+      "qualifications": [
+        "Settlement overrun detection is distinct from live CPU enforcement.",
+        "The no-label qualification concerns wire-conditioned labels; a private bearer handle is not author-exclusive authentication.",
+        "Design acceptance does not establish implemented intake, outside-account access, privacy, runtime CLI/MCP or scientific readiness."
+      ],
+      "facts": [
+        {
+          "key": "pr_number",
+          "kind": "integer",
+          "value": 59,
+          "unit": "count"
+        },
+        {
+          "key": "ci_successes",
+          "kind": "integer",
+          "value": 7,
+          "unit": "count"
+        },
+        {
+          "key": "wording_corrections",
+          "kind": "integer",
+          "value": 3,
+          "unit": "count"
+        },
+        {
+          "key": "design_accepted",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        },
+        {
+          "key": "merge_verified",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "runtime_accepted",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "2e16ea3893342906143a01256fb98bd1c5a7bd2a4dc08668f9f1df82ac8463f5",
+          "evidenceClass": "design_review"
+        }
+      ]
+    },
+    {
+      "id": "pr60",
+      "claimStatus": "source_accepted",
+      "evidenceClass": "source_carry",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": null,
+      "observedAt": "2026-10-31T17:44:05.127Z",
+      "title": "Temperature-label source approval carried",
+      "display": "PR60 preserves all ten reviewed feature files in its new composition. At the 17:44 snapshot six checks were successful and container was still running.",
+      "qualifications": [
+        "Actual merge and deployment were unverified at the cutoff. Later CI results are outside this supplement.",
+        "Operator browser observations remain separate from root source/composition review."
+      ],
+      "facts": [
+        {
+          "key": "pr_number",
+          "kind": "integer",
+          "value": 60,
+          "unit": "count"
+        },
+        {
+          "key": "own_files_preserved",
+          "kind": "integer",
+          "value": 10,
+          "unit": "count"
+        },
+        {
+          "key": "ci_successes_at_snapshot",
+          "kind": "integer",
+          "value": 6,
+          "unit": "count"
+        },
+        {
+          "key": "container_complete_at_snapshot",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "source_accepted",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        },
+        {
+          "key": "merge_verified",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "a1555765cf7781126ce31281295a5a54929a0746a73b2b3362368c4ac2713463",
+          "evidenceClass": "source_carry"
+        }
+      ]
+    },
+    {
+      "id": "native-gate",
+      "claimStatus": "proposed_not_released",
+      "evidenceClass": "proposed_protocol",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": null,
+      "observedAt": "2026-10-31T17:54:00.796Z",
+      "title": "Native gate remains an eight-plus-four proposal",
+      "display": "The agreed design allocates eight primary combinations across two raw 45 mm references, native6/native7 and grid32/grid64, plus four fresh grid64 replays. No numerical execution release exists.",
+      "qualifications": [
+        "Raw paper-match references and separate snapped engineering layouts keep distinct identities. Deferred references and separate 46-call sensitivity work are not appended.",
+        "The latest proposed 600-CPU-second cap sits within an 1800-CPU-second envelope; the 564-second arithmetic is a forecast, not established lifecycle feasibility.",
+        "Exact source/build/binary/input/host/supervisor/window/grant admission remains required. One kelvin is prospective engineering reproduction tolerance, not physical accuracy."
+      ],
+      "facts": [
+        {
+          "key": "primary_calls",
+          "kind": "integer",
+          "value": 8,
+          "unit": "count"
+        },
+        {
+          "key": "replay_calls",
+          "kind": "integer",
+          "value": 4,
+          "unit": "count"
+        },
+        {
+          "key": "total_proposed_calls",
+          "kind": "integer",
+          "value": 12,
+          "unit": "count"
+        },
+        {
+          "key": "raw_reference_size",
+          "kind": "integer",
+          "value": 45,
+          "unit": "millimetres"
+        },
+        {
+          "key": "latest_proposed_cpu_cap",
+          "kind": "integer",
+          "value": 600,
+          "unit": "cpu_seconds"
+        },
+        {
+          "key": "proposed_cpu_envelope",
+          "kind": "integer",
+          "value": 1800,
+          "unit": "cpu_seconds"
+        },
+        {
+          "key": "execution_released",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "physical_calibration_established",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "3c210d679b056e75d6ab1ad32e35f32c56346f82e5bdc1b26d5e5d20b49ded34",
+          "evidenceClass": "finite_source_review"
+        },
+        {
+          "sha256": "b28c7bb36fe4888c5d43d234d9414e5dee776199eabb629686b5e7c70768be08",
+          "evidenceClass": "finite_source_review"
+        }
+      ]
+    },
+    {
+      "id": "gb10-history",
+      "claimStatus": "closed_historical",
+      "evidenceClass": "retained_runtime",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": null,
+      "observedAt": "2026-10-31T17:54:00.796Z",
+      "title": "GB10 attempts are closed and charged",
+      "display": "Training/save/reload validation completed; the first serving attempt failed before requests; the later serving attempt completed 20 of 20 fixture requests. All three attempts are closed.",
+      "qualifications": [
+        "Twenty requests repeat six training-source cases with labels in prompts; no held-out generalization or scientific benefit is established.",
+        "SLAB018 retains approximately 494.189538605 seconds including a 180-second reservation; failed SLAB047 retains approximately 79.6175887260033 seconds; SLAB047b retains 148.90950332500506 seconds plus a separate 0.638011345-second non-GPU preflight.",
+        "These are the recorded charge/lifecycle boundaries, not GPU busy time or continuous service. Exact stored decimal fields are retained; abbreviated display is explicitly approximate.",
+        "No restart or new device/model grant follows."
+      ],
+      "facts": [
+        {
+          "key": "closed_attempts",
+          "kind": "integer",
+          "value": 3,
+          "unit": "count"
+        },
+        {
+          "key": "successful_serving_fixture_requests",
+          "kind": "integer",
+          "value": 20,
+          "unit": "count"
+        },
+        {
+          "key": "fixture_denominator",
+          "kind": "integer",
+          "value": 20,
+          "unit": "count"
+        },
+        {
+          "key": "training_source_cases",
+          "kind": "integer",
+          "value": 6,
+          "unit": "count"
+        },
+        {
+          "key": "labels_in_prompts",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        },
+        {
+          "key": "generalization_established",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "slab018_retained_charge",
+          "kind": "fixed_decimal",
+          "value": {
+            "whole": 494,
+            "fraction": 18953860500187,
+            "places": 14
+          },
+          "unit": "seconds"
+        },
+        {
+          "key": "slab018_prior_reservation",
+          "kind": "integer",
+          "value": 180,
+          "unit": "seconds"
+        },
+        {
+          "key": "slab047_retained_charge",
+          "kind": "fixed_decimal",
+          "value": {
+            "whole": 79,
+            "fraction": 6175887260033,
+            "places": 13
+          },
+          "unit": "seconds"
+        },
+        {
+          "key": "slab047b_retained_charge",
+          "kind": "fixed_decimal",
+          "value": {
+            "whole": 148,
+            "fraction": 90950332500506,
+            "places": 14
+          },
+          "unit": "seconds"
+        },
+        {
+          "key": "slab047b_separate_non_gpu_preflight",
+          "kind": "fixed_decimal",
+          "value": {
+            "whole": 0,
+            "fraction": 638011345,
+            "places": 9
+          },
+          "unit": "seconds"
+        },
+        {
+          "key": "restart_authorized",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "cc4b2a0bc4af3d27477ac314691d6802d07b29e80165721e523ff82e66172841",
+          "evidenceClass": "accepted_content"
+        },
+        {
+          "sha256": "00a3685f0ab586603f82890da0fd637c460a64622f99e32c2a26b26743ae69c1",
+          "evidenceClass": "retained_runtime"
+        },
+        {
+          "sha256": "09c3d1a75fcd08b11f63221755ec9536bf627f4ec5fa5d2f8b0db86ffffeccfe",
+          "evidenceClass": "retained_runtime"
+        },
+        {
+          "sha256": "f1805df614b705e2b9127feb5ab6e9ca3365a2afd194dbe6788d7c20cfcdcd2b",
+          "evidenceClass": "retained_runtime"
+        }
+      ]
+    },
+    {
+      "id": "ascend-history",
+      "claimStatus": "retained_inconclusive",
+      "evidenceClass": "historical_record",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": null,
+      "observedAt": "2026-10-31T17:54:00.796Z",
+      "title": "Ascend history remains inconclusive",
+      "display": "The retained Ascend charge is 1440.294565 CPU-seconds. Its prior remaining upper bound is 2879.705435 seconds before later charges; it is not a fresh allowance.",
+      "qualifications": [
+        "Historical v3 remains INCONCLUSIVE. Raw long-search best lacks fresh reproduction.",
+        "A 43.19-CPU-minute proportional forecast is not a proven minimum; retained history is not reset or refunded."
+      ],
+      "facts": [
+        {
+          "key": "retained_cpu",
+          "kind": "fixed_decimal",
+          "value": {
+            "whole": 1440,
+            "fraction": 294565,
+            "places": 6
+          },
+          "unit": "cpu_seconds"
+        },
+        {
+          "key": "prior_remaining_upper_bound",
+          "kind": "fixed_decimal",
+          "value": {
+            "whole": 2879,
+            "fraction": 705435,
+            "places": 6
+          },
+          "unit": "cpu_seconds"
+        },
+        {
+          "key": "fresh_reproduction_accepted",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "allowance_reset",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "cf75fd2fbaa2a4860d043b02bdfe82abc3052ec655e40ee0f002b8b53faf1b61",
+          "evidenceClass": "historical_record"
+        },
+        {
+          "sha256": "b28c7bb36fe4888c5d43d234d9414e5dee776199eabb629686b5e7c70768be08",
+          "evidenceClass": "finite_source_review"
+        }
+      ]
+    },
+    {
+      "id": "open-science",
+      "claimStatus": "open",
+      "evidenceClass": "checkpoint",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": null,
+      "observedAt": "2026-10-31T17:54:00.796Z",
+      "title": "Scientific acceptance and full runtime remain open",
+      "display": "Physical TTC validation and the held-out five-arm study remain open, alongside actual scientific agents, eligible data, independent reproduction and full CLI/MCP runtime parity.",
+      "qualifications": [
+        "They remain deliverables; they do not prevent a separately admitted descriptive computational comparison.",
+        "Interfaces, fixture results, source approval and green CI do not establish model/provider/payer admission or scientific acceptance."
+      ],
+      "facts": [
+        {
+          "key": "physical_validation_complete",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "held_out_five_arm_complete",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "full_runtime_parity_complete",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "new_scientific_execution_released",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "cc4b2a0bc4af3d27477ac314691d6802d07b29e80165721e523ff82e66172841",
+          "evidenceClass": "accepted_content"
+        }
+      ]
+    },
+    {
+      "id": "costs",
+      "claimStatus": "unknown",
+      "evidenceClass": "checkpoint",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": null,
+      "observedAt": "2026-10-31T17:54:00.796Z",
+      "title": "Comprehensive CPU and dollars remain unknown",
+      "display": "Known individual charges and reservations are retained. The comprehensive CPU total and current SentiLab dollar total are unknown.",
+      "qualifications": [
+        "Historical/shared Azure figures have different dates and scopes and are not a current SentiLab invoice.",
+        "Do not sum partial evidence into a claimed complete cost, refund historical failure charges or equate unmeasured cost with zero."
+      ],
+      "facts": [
+        {
+          "key": "current_total_usd",
+          "kind": "unknown",
+          "value": null,
+          "unit": "usd"
+        },
+        {
+          "key": "comprehensive_cpu",
+          "kind": "unknown",
+          "value": null,
+          "unit": "cpu_seconds"
+        },
+        {
+          "key": "invoice_verified",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        },
+        {
+          "sha256": "cc4b2a0bc4af3d27477ac314691d6802d07b29e80165721e523ff82e66172841",
+          "evidenceClass": "accepted_content"
+        },
+        {
+          "sha256": "b1a341e10971fdf71c2d7e0ab2328b2624a75a3790b8b97cf49a4747ad22dd03",
+          "evidenceClass": "runtime_accounting"
+        }
+      ]
+    },
+    {
+      "id": "web709",
+      "claimStatus": "source_accepted",
+      "evidenceClass": "finite_source_review",
+      "asOf": "2026-10-31T17:54:00.796Z",
+      "sourceAt": null,
+      "observedAt": "2026-10-31T17:47:10Z",
+      "title": "Invitation replacement source repair accepted",
+      "display": "Web PR709 at 710f50c closes the normal-close replacement repair. Forty-eight offline cases passed, and all seven required check contexts succeeded on the exact head.",
+      "qualifications": [
+        "This is source and simulated-DOM evidence: application APIs were mocked and native network access was blocked.",
+        "No live invitation was created, revoked, claimed or replaced during root review. Actual merge, deployment, outside-account flow, media and full-platform acceptance remain unverified at the cutoff.",
+        "CPU and monetary cost of the offline review are unmeasured."
+      ],
+      "facts": [
+        {
+          "key": "pr_number",
+          "kind": "integer",
+          "value": 709,
+          "unit": "count"
+        },
+        {
+          "key": "offline_cases_passed",
+          "kind": "integer",
+          "value": 48,
+          "unit": "count"
+        },
+        {
+          "key": "required_contexts_succeeded",
+          "kind": "integer",
+          "value": 7,
+          "unit": "count"
+        },
+        {
+          "key": "changed_blobs_verified",
+          "kind": "integer",
+          "value": 7,
+          "unit": "count"
+        },
+        {
+          "key": "source_accepted",
+          "kind": "boolean",
+          "value": true,
+          "unit": "boolean"
+        },
+        {
+          "key": "live_invitation_accepted",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "merge_verified",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        },
+        {
+          "key": "deployment_verified",
+          "kind": "boolean",
+          "value": false,
+          "unit": "boolean"
+        }
+      ],
+      "evidenceRefs": [
+        {
+          "sha256": "56f85c772f7763d3d71e6922e6d5e77825ba5f00c43409682da759acfbf49c29",
+          "evidenceClass": "finite_source_review"
+        },
+        {
+          "sha256": "763a708bb0139c85d1dc5735506472e3c1747ab8403d5d7b070adc5a2e8a8503",
+          "evidenceClass": "checkpoint"
+        }
+      ]
+    }
+  ]
+}

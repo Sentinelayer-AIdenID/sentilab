@@ -1,0 +1,42 @@
+/* SentiLab dated supplement. Loads after ../daytime/deck.css, which it reuses unchanged, and adds only the supplement
+   layout: an amber "Supplement" tag on every slide, the cover, and one card per dated item. Same 1920x1080 canvas and
+   22px type floor as the daytime deck. */
+.kicker.sp-k { color: var(--amber); border-color: var(--am-line); background: var(--am-bg); }
+.kicker.sp-k [data-f] { text-transform: none; letter-spacing: .04em; }
+.slide.sp .head { padding: 18px 0 14px; }
+.slide.sp .head h1 { font-size: 44px; }
+.slide.sp .head .eyebrow { display: block; margin-bottom: 6px; color: var(--amber); }
+
+/* ── cover ────────────────────────────────────────────────────────────────────────────────────────────────────── */
+.sp-cover { flex: 1; min-height: 0; display: grid; grid-template-columns: 740px 1fr; gap: 40px; padding-bottom: 12px; }
+.sp-read { display: flex; flex-direction: column; min-height: 0; }
+.sp-bind [data-f] { white-space: nowrap; }
+.sp-bind { margin: 0 0 18px; padding: 12px 20px; border-left: 6px solid var(--amber); background: var(--am-bg); border-radius: 4px 12px 12px 4px; font-size: 26px; line-height: 1.3; color: #f3e3c7; }
+.sp-how { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.sp-how li { display: grid; grid-template-columns: 200px 1fr; gap: 16px; align-items: baseline; padding: 4px 0 8px; border-bottom: 2px solid var(--line-soft); font-size: 23px; line-height: 1.3; color: var(--body); }
+.sp-how b { font: 600 22px var(--mono); color: var(--cyan); }
+.sp-how em { font-style: italic; }
+.sp-prov { margin-top: auto; display: grid; gap: 6px; font-size: 22px; color: var(--muted); }
+.sp-prov b { color: var(--eyebrow); font-weight: 600; margin-right: 8px; }
+.sp-prov code { font-weight: 500; color: var(--body); }
+.sp-idx { min-height: 0; display: flex; flex-direction: column; }
+.sp-index { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.sp-index li { display: grid; grid-template-columns: 58px 1fr auto; gap: 14px; align-items: baseline; padding: 2px 0 3px; border-bottom: 2px solid var(--line-soft); font-size: 22px; line-height: 1.25; color: var(--body); }
+.sp-index b { font: 700 22px var(--mono); color: var(--amber); }
+.sp-index code { font: 500 22px var(--mono); color: var(--cyan); }
+
+/* ── cards: the delivered text on the left, the typed facts on the right ─────────────────────────────────────── */
+.sp-cards { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding-bottom: 10px; }
+.sp-c { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 30px; align-items: start; padding: 10px 24px 12px; border: 2px solid var(--line); border-radius: 14px; background: var(--panel); }
+.sp-c h3 { margin: 0; font: 650 28px/1.2 var(--display); }
+.sp-m { margin: 4px 0 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; font-size: 22px; color: var(--muted); }
+.sp-l { font-size: 22px; color: var(--eyebrow); }
+.sp-m code { font: 600 22px var(--mono); color: var(--cyan); margin-right: 10px; }
+.sp-t { font-variant-numeric: tabular-nums; color: var(--body); margin-right: 10px; }
+.sp-d { margin: 8px 0 0; font-size: 24px; line-height: 1.3; color: var(--text); }
+.sp-q { margin: 6px 0 0; padding-left: 24px; font-size: 22px; line-height: 1.28; color: var(--body); }
+.sp-q li + li { margin-top: 2px; }
+.sp-f { margin: 0; width: max-content; min-width: 380px; max-width: 620px; display: grid; align-content: start; }
+.sp-fi { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: baseline; padding: 2px 0 3px; border-bottom: 2px solid var(--line-soft); }
+.sp-fi dt { font-size: 22px; line-height: 1.25; color: var(--muted); }
+.sp-fi dd { margin: 0; font: 600 22px var(--mono); color: var(--text); text-align: right; white-space: nowrap; }
