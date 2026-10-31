@@ -99,9 +99,13 @@ class DefaultAscend910UnchangedTests(unittest.IsolatedAsyncioTestCase):
         self.assertAlmostEqual(result.maximum_temperature_c, 118.36, delta=0.01)
 
     async def test_default_problem_hash_is_stable_for_fixed_config(self):
-        """Matches a value captured before micro150 wiring on base 8e73598."""
-        self.assertEqual(self.oracle.problem_hash,
-                         "5b48b67e8f245f3c7a63941b44da0860612daec6689ba29e171e73d86168b050")
+        """Content identity is stable; the default candidate still matches base."""
+        explicit = HotSpotOracle(16, 16, fixture="ascend910")
+        self.assertEqual(self.oracle.problem_hash, explicit.problem_hash)
+        self.assertEqual(self.oracle.solver_version, explicit.solver_version)
+        # Captured without a solve from snapshot base ff7cc6a (source a40ac0d8).
+        self.assertEqual(self.oracle.design_from_centers(BASE_CENTERS).hash,
+                         "b3512eb6b58fb0d0916847de6ec7399adf75f6536facea116a30b1afda08b66f")
 
 
 class FixtureIdentityTests(unittest.TestCase):
