@@ -91,6 +91,8 @@ jobs:
           OPENBLAS_NUM_THREADS: '1'
           OMP_NUM_THREADS: '1'
         run: python -m unittest -q sentilab_core.conformance
+      - name: ResultCheck vectors match Python, CLI and MCP byte for byte
+        run: python -m sentilab_core.test_resultcheck --parity
 
   secret-scan:
     runs-on: ubuntu-24.04
