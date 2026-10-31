@@ -1,4 +1,5 @@
 """Execute the actual workflow shell blocks without GitHub or thermal solves."""
+import hashlib
 import json
 import os
 import re
@@ -33,12 +34,20 @@ def shell_step(job_name, name):
 
 
 class WorkflowTests(unittest.TestCase):
+    def context(self, base_sha='c' * 40, attempt='1'):
+        return {'GITHUB_SHA': IDENTITY.build_sha, 'GITHUB_RUN_ID': IDENTITY.run_id,
+                    'GITHUB_RUN_ATTEMPT': attempt, 'GITHUB_REPOSITORY': IDENTITY.repository,
+                    'GITHUB_WORKFLOW_REF': IDENTITY.repository + '/.github/workflows/ci.yml@refs/heads/main',
+                    'job': 'container', 'matrix': {}, 'head_sha': IDENTITY.head_sha, 'base_sha': base_sha}
+
     def authorization(self, base_sha='c' * 40):
+        raw = json.dumps(self.context(base_sha), sort_keys=True, separators=(',', ':'))
         return {'schema': 'ci-hotspot-bootstrap-authorization-v1', 'allocation_id': '56314',
                 'authorization_id': 'fake-owner-rollout', 'approved_by': 'fake owner approval',
                 'repository': IDENTITY.repository, 'workflow_path': '.github/workflows/ci.yml',
                 'expires_at': 1793556000,
-                'runs': [{'identity': asdict(IDENTITY), 'base_sha': base_sha}]}
+                'runs': [{'identity': dict(asdict(IDENTITY), attempt='2'), 'base_sha': base_sha,
+                          'context_json': raw, 'context_sha256': hashlib.sha256(raw.encode()).hexdigest()}]}
 
     def environment(self, directory):
         return dict(os.environ, RUNNER_TEMP=str(directory),
@@ -54,7 +63,7 @@ class WorkflowTests(unittest.TestCase):
                 'identity': asdict(IDENTITY), 'launch_reservation': 100,
                 'cpu_reservation_seconds': 900}
 
-    def validate(self, receipt, *, result='success'):
+    def validate(self, receipt, *, result='success', environment_overrides=None):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             if receipt is not None:
@@ -62,6 +71,7 @@ class WorkflowTests(unittest.TestCase):
                 (directory / 'allocation/admission.json').write_text(receipt)
             environment = self.environment(directory)
             environment['ADMISSION_RESULT'] = result
+            environment.update(environment_overrides or {})
             return subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell_step(
                 'container', 'Validate admission before any workload')],
                 cwd=directory, env=environment, text=True, capture_output=True, check=False)
@@ -109,7 +119,8 @@ class WorkflowTests(unittest.TestCase):
         process = self.validate(json.dumps(self.receipt()))
         self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
 
-    def bootstrap(self, *, controller=None, remove_controller=False, authorization='valid'):
+    def bootstrap(self, *, controller=None, remove_controller=False, authorization='valid',
+                  environment_overrides=None):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             tree = directory / 'base'
@@ -127,28 +138,44 @@ class WorkflowTests(unittest.TestCase):
                 (tree / 'scripts/ci_admit.py').unlink()
             environment = self.environment(directory)
             environment['TRUSTED_BASE_SHA'] = base_sha
+            environment['GITHUB_RUN_ATTEMPT'] = '2'
             environment['CI_BOOTSTRAP_AUTHORIZATION'] = (
                 json.dumps(self.authorization(base_sha)) if authorization == 'valid' else authorization)
             if callable(authorization):
                 environment['CI_BOOTSTRAP_AUTHORIZATION'] = json.dumps(authorization(self.authorization(base_sha)))
+            environment.update(environment_overrides or {})
+            if 'Record runtime context before admission' in job('admission'):
+                context = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell_step(
+                    'admission', 'Record runtime context before admission')],
+                    cwd=tree, env=environment, text=True, capture_output=True, check=False)
+                if context.returncode:
+                    raise AssertionError(context.stderr)
             process = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell_step(
                 'admission', 'Read global run slot from trusted allocation controller')],
                 cwd=tree, env=environment, text=True, capture_output=True, check=False)
+            if 'Record runtime context before admission' in job('admission'):
+                process.stdout = context.stdout + process.stdout
             path = directory / 'allocation/admission.json'
             receipt = json.loads(path.read_text()) if path.exists() else None
             return process, receipt, base_sha
 
     def test_bootstrap_requires_bounded_owner_authorization_and_records_run_debit(self):
+        def oversized(a):
+            return dict(a, runs=[{}] * 201)
         for authorization in ('', '{}', lambda a: dict(a, runs=[]), lambda a: dict(a, expires_at=0),
                               lambda a: dict(a, workflow_path='other.yml'),
                               lambda a: dict(a, repository='other/repo'),
                               lambda a: dict(a, runs=a['runs'] * 2),
-                              lambda a: dict(a, runs=a['runs'] * 201),
+                              oversized,
                               lambda a: dict(a, runs=[dict(a['runs'][0], base_sha='d' * 40)])):
             with self.subTest(authorization=authorization):
                 process, receipt, _ = self.bootstrap(authorization=authorization)
                 self.assertNotEqual(process.returncode, 0)
-                self.assertIsNone(receipt)
+                if authorization is oversized:
+                    self.assertIn('bounded run allowlist', process.stderr)
+                self.assertEqual(receipt['state'], 'admission_refused')
+                self.assertEqual(receipt['rollout_debit']['charged_launches'], 0 if authorization == '' else 100)
+                self.assertEqual(receipt['rollout_debit']['charged_cpu_seconds'], 0 if authorization == '' else 900)
         process, receipt, _ = self.bootstrap()
         self.assertEqual(process.returncode, 0, process.stderr)
         self.assertEqual(receipt['bootstrap_authorization']['authorization_id'], 'fake-owner-rollout')
@@ -163,7 +190,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(receipt['reason'], 'controller absent at base ' + base_sha)
         self.assertEqual(receipt['base_sha'], base_sha)
         self.assertEqual(receipt['state'], 'admitted')
-        self.assertEqual(receipt['identity'], asdict(IDENTITY))
+        self.assertEqual(receipt['identity'], dict(asdict(IDENTITY), attempt='2'))
         self.assertEqual(receipt['launch_reservation'], 100)
         self.assertEqual(receipt['cpu_reservation_seconds'], 900)
         self.assertIsNone(receipt.get('slot'))
@@ -183,7 +210,8 @@ class WorkflowTests(unittest.TestCase):
 
     def test_container_accepts_only_bootstrap_bound_to_trusted_base(self):
         valid = dict(self.receipt(), mode='bootstrap', slot=None, base_sha='c' * 40,
-                     reason='controller absent at base ' + 'c' * 40)
+                     reason='controller absent at base ' + 'c' * 40,
+                     bootstrap_authorization={'authorized_attempt': '1'})
         process = self.validate(json.dumps(valid))
         self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
         for invalid in (dict(valid, base_sha='d' * 40), dict(valid, reason='controller failed'),

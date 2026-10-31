@@ -117,31 +117,69 @@ def authorized_bootstrap(raw, repository, event):
             or type(value.get('expires_at')) is not int or not 0 < value['expires_at'] <= EXPIRY
             or not isinstance(value.get('runs'), list) or not 1 <= len(value['runs']) <= 200):
         raise ValueError('invalid owner bootstrap authorization')
-    seen, matched = set(), None
+    seen, matched, matched_base, matched_context = set(), None, None, None
     for entry in value['runs']:
+        if not isinstance(entry, dict) or set(entry) != {'identity', 'base_sha', 'context_json', 'context_sha256'}:
+            raise ValueError('invalid owner rollout entry fields')
         identity = entry['identity']
         try:
             Identity(**identity)
         except (AttributeError, TypeError) as exc:
             raise ValueError('invalid bootstrap identity') from exc
         base = entry['base_sha']
-        if (identity['repository'] != repository or identity['attempt'] != '1'
+        if (identity['repository'] != repository
                 or identity['run_id'] in seen or not isinstance(base, str)
                 or len(base) != 40 or any(c not in 'abcdef0123456789' for c in base)):
             raise ValueError('invalid or duplicate bootstrap run')
         seen.add(identity['run_id'])
+        pinned_json = entry['context_json']
+        pinned = json.loads(pinned_json)
+        if (pinned_json != json.dumps(pinned, sort_keys=True, separators=(',', ':'))
+                or hashlib.sha256(pinned_json.encode()).hexdigest() != entry['context_sha256']):
+            raise ValueError('invalid pinned runtime context digest')
+        previous = pinned['GITHUB_RUN_ATTEMPT']
+        if (not isinstance(previous, str) or not previous.isdecimal() or int(previous) < 1
+                or previous != str(int(previous)) or str(int(previous) + 1) != identity['attempt']):
+            raise ValueError('pinned context must be the immediate predecessor attempt')
+        ref = pinned['GITHUB_WORKFLOW_REF']
+        bound = {'GITHUB_SHA': identity['build_sha'], 'GITHUB_RUN_ID': identity['run_id'],
+                     'GITHUB_RUN_ATTEMPT': previous, 'GITHUB_REPOSITORY': identity['repository'],
+                     'GITHUB_WORKFLOW_REF': ref, 'job': identity['job'], 'matrix': identity['matrix'],
+                     'head_sha': identity['head_sha'], 'base_sha': base}
+        if (pinned != bound or not isinstance(ref, str)
+                or not ref.startswith(repository + '/.github/workflows/ci.yml@')):
+            raise ValueError('pinned context conflicts with authorized source')
         if identity['run_id'] == str(event['id']) and identity['attempt'] == str(event['run_attempt']):
+            if identity['head_sha'] != event.get('head_sha'):
+                raise ValueError('bootstrap head identity mismatch')
+            if event.get('event') == 'pull_request':
+                pulls = event.get('pull_requests')
+                if (not isinstance(pulls, list) or len(pulls) != 1
+                        or pulls[0]['head']['sha'] != identity['head_sha']
+                        or pulls[0]['base']['sha'] != base):
+                    raise ValueError('bootstrap base identity mismatch')
+            elif (event.get('event') != 'push' or base != identity['head_sha']
+                  or identity['build_sha'] != identity['head_sha']):
+                raise ValueError('bootstrap push identity mismatch')
+            # workflow_run has no synthetic merge SHA. reconcile() requires the
+            # settlement's full identity (including build/job/matrix) to match.
             matched = identity
+            matched_base = base
+            matched_context = entry
     if matched is None:
         return None
     if event.get('path') != value['workflow_path']:
         raise ValueError('bootstrap workflow identity mismatch')
     provenance = {key: value[key] for key in
                   ('authorization_id', 'approved_by', 'expires_at', 'workflow_path')}
-    provenance.update(authorized_runs=len(value['runs']), sha256=hashlib.sha256(
+    provenance.update(context_json=matched_context['context_json'], context_sha256=matched_context['context_sha256'],
+        authorized_attempt=matched['attempt'], authorized_runs=len(value['runs']), sha256=hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest())
-    return {'identity': matched, 'bootstrap_authorization': provenance,
-            'rollout_debit': {'run_id': matched['run_id'], 'attempt': '1', 'charged_launches': LAUNCH_CAP,
+    live = dict(json.loads(matched_context['context_json']), GITHUB_RUN_ATTEMPT=matched['attempt'])
+    live_json = json.dumps(live, sort_keys=True, separators=(',', ':'))
+    return {'identity': matched, 'base_sha': matched_base, 'bootstrap_authorization': provenance,
+            'runtime_context_json': live_json, 'runtime_context_sha256': hashlib.sha256(live_json.encode()).hexdigest(),
+            'rollout_debit': {'run_id': matched['run_id'], 'attempt': matched['attempt'], 'charged_launches': LAUNCH_CAP,
                              'charged_cpu_seconds': CPU_CAP,
                              'scope': 'owner rollout; outside durable run counter'}}
 
@@ -163,6 +201,13 @@ def main():
             # intentionally has no slot, including when settlement was lost.
             identity = bootstrap.pop('identity')
             witness = dict(reconcile(identity, event['conclusion']), admission_mode='bootstrap', **bootstrap)
+            admission = json.loads((directory / 'download' / 'admission.json').read_text())
+            if (not isinstance(admission, dict) or admission.get('state') != 'admitted'
+                    or admission.get('mode') != 'bootstrap' or admission.get('identity') != identity
+                    or admission.get('base_sha') != bootstrap['base_sha']
+                    or admission.get('runtime_context_json') != bootstrap['runtime_context_json']
+                    or admission.get('runtime_context_sha256') != bootstrap['runtime_context_sha256']):
+                raise ValueError('bootstrap admission identity mismatch')
             path = directory / 'download' / 'settlement.json'
             settlement = json.loads(path.read_text()) if path.exists() else None
             witness = dict(reconcile(identity, event['conclusion'], settlement),

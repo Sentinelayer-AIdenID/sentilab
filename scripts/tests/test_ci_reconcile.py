@@ -5,7 +5,7 @@ import os
 import sys
 import tempfile
 import unittest
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 from unittest.mock import patch
 
@@ -161,7 +161,10 @@ class ReconcileTests(unittest.TestCase):
         from scripts.tests.test_ci_workflow import WorkflowTests
 
         authorization = WorkflowTests().authorization()
-        ledger = Ledger(self.root / 'bootstrap-events.jsonl', IDENTITY)
+        identity = replace(IDENTITY, attempt='2')
+        context_json = json.dumps(WorkflowTests().context(attempt='2'), sort_keys=True, separators=(',', ':'))
+        import hashlib
+        ledger = Ledger(self.root / 'bootstrap-events.jsonl', identity)
         for _ in range(2):
             slot = ledger.reserve('fake')
             ledger.started(slot, 123)
@@ -169,11 +172,17 @@ class ReconcileTests(unittest.TestCase):
         ledger.finish('success', {'cpu_seconds': 12.5, 'charged_cpu_seconds': 12.5})
         measured = json.dumps(ledger.summary())
         event_path = self.root / 'event.json'
-        event_path.write_text(json.dumps({'workflow_run': {'id': 123, 'run_attempt': 1,
-                            'conclusion': 'failure', 'path': '.github/workflows/ci.yml'}}))
+        event_path.write_text(json.dumps({'workflow_run': {'id': 123, 'run_attempt': 2,
+                            'conclusion': 'failure', 'path': '.github/workflows/ci.yml',
+                            'event': 'pull_request', 'head_sha': IDENTITY.head_sha,
+                            'pull_requests': [{'head': {'sha': IDENTITY.head_sha},
+                                               'base': {'sha': 'c' * 40}}]}}))
         output = self.root / 'bootstrap'
         artifact = output / 'download/settlement.json'
         artifact.parent.mkdir(parents=True)
+        (artifact.parent / 'admission.json').write_text(json.dumps(dict(
+            WorkflowTests().receipt(), identity=asdict(identity), mode='bootstrap', base_sha='c' * 40,
+            runtime_context_json=context_json, runtime_context_sha256=hashlib.sha256(context_json.encode()).hexdigest())))
         with patch('scripts.ci_reconcile.GitHubRefs') as store, \
              patch.dict(os.environ, GITHUB_EVENT_PATH=str(event_path), GH_TOKEN='fake',
                         GITHUB_REPOSITORY=IDENTITY.repository,
@@ -188,7 +197,7 @@ class ReconcileTests(unittest.TestCase):
                     main()
                     result = json.loads((output / 'terminal.json').read_text())
                     self.assertEqual(result['admission_mode'], 'bootstrap')
-                    self.assertEqual(result['identity'], asdict(IDENTITY))
+                    self.assertEqual(result['identity'], asdict(identity))
                     self.assertEqual(result['rollout_debit']['charged_cpu_seconds'], 900)
                     self.assertEqual(result['rollout_debit']['charged_launches'], 100)
                     if raw == measured:

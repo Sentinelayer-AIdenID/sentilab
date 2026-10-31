@@ -117,7 +117,7 @@ def monitor(group, process, account, *, cancelled, violated=lambda: False, cpu=r
 
 def run(directory, admission, command):
     identity = Identity(**admission['identity'])
-    if admission.get('state') != 'admitted' or identity.attempt != '1':
+    if admission.get('state') != 'admitted':
         raise RuntimeError('no valid admission')
     if (admission.get('launch_reservation') != 100
             or admission.get('cpu_reservation_seconds') != CPU_CAP
@@ -128,9 +128,11 @@ def run(directory, admission, command):
         base = admission.get('base_sha', '')
         if (not isinstance(base, str) or not re.fullmatch(r'[a-f0-9]{40}', base)
                 or admission.get('reason') != 'controller absent at base ' + base
-                or admission.get('slot') is not None):
+                or admission.get('slot') is not None
+                or identity.attempt != os.environ.get('GITHUB_RUN_ATTEMPT')
+                or admission.get('bootstrap_authorization', {}).get('authorized_attempt') != identity.attempt):
             raise RuntimeError('invalid base-controller bootstrap')
-    elif (mode != 'enforced' or type(admission.get('slot')) is not int
+    elif (mode != 'enforced' or identity.attempt != '1' or type(admission.get('slot')) is not int
           or not 1 <= admission['slot'] <= 200):
         raise RuntimeError('invalid admission bounds')
     ledger = Ledger(directory / 'events.jsonl', identity)

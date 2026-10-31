@@ -433,7 +433,7 @@ class MeterTests(unittest.TestCase):
                              violated=lambda value=violation: value, wall_clock=lambda value=wall: value)
             self.assertEqual(result, (state, 1))
 
-    def test_bootstrap_uses_normal_meter_and_preserves_mode_in_settlement(self):
+    def test_bootstrap_uses_normal_meter_and_preserves_mode_in_settlement(self, attempt='2'):
         import json
         import sys
         from unittest.mock import patch
@@ -442,7 +442,11 @@ class MeterTests(unittest.TestCase):
         from scripts.tests.test_ci_workflow import WorkflowTests
 
         # The receipt comes from the actual workflow bootstrap shell, not a copy.
-        process, admission, _ = WorkflowTests().bootstrap()
+        def authorization(value):
+            value['runs'][0]['identity']['attempt'] = attempt
+            return value
+        process, admission, _ = WorkflowTests().bootstrap(
+            authorization=authorization, environment_overrides={'GITHUB_RUN_ATTEMPT': attempt})
         self.assertEqual(process.returncode, 0, process.stderr)
         for exitcode in (0, 7):
             with self.subTest(exitcode=exitcode), tempfile.TemporaryDirectory() as temporary:
@@ -458,6 +462,7 @@ class MeterTests(unittest.TestCase):
                            ('import pathlib,sys; pathlib.Path(sys.argv[1]).write_text("usage_usec 1250000\\n"); '
                             'sys.exit(int(sys.argv[2]))'), str(group / 'cpu.stat'), str(exitcode)]
                 with patch('scripts.ci_cpu_meter.create_group', return_value=group), \
+                     patch.dict('os.environ', GITHUB_RUN_ATTEMPT=attempt), \
                      patch('scripts.ci_cpu_meter.time.time', return_value=1793448000):
                     self.assertEqual(run(ledger_dir, admission, command), exitcode)
                 result = json.loads((ledger_dir / 'settlement.json').read_text())
@@ -467,6 +472,40 @@ class MeterTests(unittest.TestCase):
                 self.assertEqual((group / 'cgroup.kill').read_text(), '1')
                 recover(ledger_dir, root=directory)
                 self.assertEqual(json.loads((ledger_dir / 'settlement.json').read_text()), result)
+
+    def test_bootstrap_attempt_two_reaches_workload_but_replays_never_launch(self):
+        import copy
+        from unittest.mock import patch
+
+        from scripts.ci_cpu_meter import run
+        from scripts.tests.test_ci_bootstrap_attempt import attempt_two
+        from scripts.tests.test_ci_workflow import WorkflowTests
+
+        self.test_bootstrap_uses_normal_meter_and_preserves_mode_in_settlement(attempt='2')
+        process, admitted, _ = WorkflowTests().bootstrap(
+            authorization=attempt_two, environment_overrides={'GITHUB_RUN_ATTEMPT': '2'})
+        self.assertEqual(process.returncode, 0, process.stderr)
+        for kind in ('attempt_three', 'attempt_one', 'mismatched_receipt', 'authorization', 'durable_two'):
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as temporary:
+                admission = copy.deepcopy(admitted)
+                attempt = '2'
+                if kind == 'attempt_three':
+                    attempt = '3'
+                elif kind == 'attempt_one':
+                    attempt = '1'
+                elif kind == 'mismatched_receipt':
+                    admission['identity']['attempt'] = '3'
+                elif kind == 'authorization':
+                    admission['bootstrap_authorization']['authorized_attempt'] = '3'
+                else:
+                    admission.update(mode='enforced', slot=3)
+                with patch.dict('os.environ', GITHUB_RUN_ATTEMPT=attempt), \
+                     patch('scripts.ci_cpu_meter.Ledger') as ledger, \
+                     patch('scripts.ci_cpu_meter.create_group') as group:
+                    with self.assertRaises(RuntimeError):
+                        run(Path(temporary), admission, ['must-not-launch'])
+                    ledger.assert_not_called()
+                    group.assert_not_called()
 
     def test_bootstrap_orphan_recovery_preserves_mode_and_reserved_charge(self):
         import json

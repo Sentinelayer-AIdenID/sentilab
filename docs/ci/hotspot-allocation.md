@@ -98,11 +98,32 @@ by the controller or this document:
 }
 ```
 
-Before an authorized queued run reaches admission, the owner adds an entry with
-`base_sha` and the complete `identity` (repository, run_id, attempt `"1"`, job
-`"container"`, matrix `{}`, head_sha and build_sha). Use owner queue/approval
-controls to hold a run while assigning its known run ID. Every listed identity
-reserves a separate 100 launches and 900 CPU seconds, including lost/failed runs;
+GitHub Actions snapshots repository variables when a run is created; setting a
+variable while an earlier job runs does not update that run's snapshot. A rerun
+takes a fresh variable snapshot but keeps the original workflow source. Create a
+**new run at the patched head**; do not rerun the older, unpatched bootstrap run.
+Before checkout, the admission job writes canonical `context.json` (sorted keys,
+compact separators, no newline) and its SHA-256 to `context.sha256`, prints the
+digest, and uploads `allocation-context-<run>-<attempt>` with `always()`. This
+records actual `GITHUB_SHA`, run ID, attempt, repository, workflow ref, container
+job/matrix and PR head/base. Attempt `"1"` refuses without authorization. Retain
+its context and attempt-specific admission artifacts, which record the identity,
+base and a zero-workload debit. The owner then sets a **single-entry** authorization for that same run ID and attempt `"2"`,
+pinning the independently downloaded raw context in `context_json` and its digest
+in `context_sha256`, alongside `base_sha` and the complete `identity`
+(repository, run_id, attempt, job
+`"container"`, matrix `{}`, head_sha and build_sha = `GITHUB_SHA`). Keep the same
+head, build and base; read the actual build SHA from attempt 1's context artifact
+before authorizing attempt 2. Preserve and hash the raw prior context untouched.
+Live context must match every field exactly except `GITHUB_RUN_ATTEMPT`: the
+live attempt must equal the authorized decimal string and the pin must be its
+immediate predecessor. Missing, noncanonical, conflicting or incorrectly hashed
+context refuses admission and retains a full conservative debit. Re-running the
+failed jobs admits attempt `"2"` only if every
+field still matches; any drift requires a new authorization before execution.
+Attempts must be decimal strings and match exactly; `"1"` and `"3"` cannot reuse
+the attempt-2 authorization. The durable controller's rerun policy is unchanged.
+Every listed identity reserves a separate 100 launches and 900 CPU seconds, including lost/failed runs;
 IDs cannot repeat and the list is bounded to 200 entries. Source SHAs, repository,
 workflow path, attempt, and expiry must match before the inline branch runs.
 This is a bounded owner rollout allowance **outside** the durable 200-run counter,
@@ -115,10 +136,17 @@ the implementation box.
 
 Admission records the authorization reference, approver reference, expiry,
 allowlist size and SHA-256 of its canonical JSON, plus a `rollout_debit` bound to
-the run/attempt and full reservation. Archive authorization revisions and retain
+the run/attempt and full reservation. The receipt also records `authorized_attempt`;
+the container validator and meter precheck bind it to the receipt identity and
+`GITHUB_RUN_ATTEMPT`. Archive authorization revisions and retain
 the allowlist until all terminal witnesses have been produced. The trusted
 default-branch `workflow_run` job receives the owner variable independently of
-PR artifacts. It reconciles matching bootstrap identities before consulting the
+PR artifacts. It binds the event run, attempt, head, PR base and workflow path
+to the owner entry. The downloaded admission and settlement must match the
+authorized identity, including build SHA, job and matrix, before any measurement
+is accepted. Attempt 1's refusal artifact remains a separate zero-workload record;
+it cannot be matched to attempt 2. Missing or unverifiable terminal evidence still
+gets a conservative full charge, not an inferred zero. It reconciles matching bootstrap identities before consulting the
 durable slot store. A valid measured settlement remains measured; a lost or
 malformed settlement remains unknown/full charge with the same rollout debit.
 Absent/unverifiable authorization and no matching durable slot also stay
