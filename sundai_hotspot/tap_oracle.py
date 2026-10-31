@@ -82,7 +82,6 @@ class HotSpotThermalResult(ThermalResult):
 @dataclass(frozen=True)
 class TapProblem:
     fixture_id: str
-    repo_sha256: str
     interposer_size_mm: float
     widths_mm: tuple[float, ...]
     heights_mm: tuple[float, ...]
@@ -123,23 +122,6 @@ def _parse_float_list(value: str, label: str) -> tuple[float, ...]:
     if not values or not all(math.isfinite(item) for item in values):
         raise HotSpotOracleError(f"invalid TAP {label}")
     return values
-
-
-def _git_sha(repo_root: Path) -> str:
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=repo_root,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        value = result.stdout.strip()
-        if not value or any(ch not in "0123456789abcdef" for ch in value):
-            raise HotSpotOracleError("invalid repository commit marker")
-        return value.lower()
-    except (subprocess.CalledProcessError, FileNotFoundError) as exc:
-        raise HotSpotOracleError("repository commit is unavailable") from exc
 
 
 def _load_problem(*, config_path: Path = TAP_CONFIGS[TAP_CONFIG_DEFAULT_ID], hotspot_binary: Path = HOTSPOT_BINARY) -> TapProblem:
@@ -225,7 +207,6 @@ def _load_problem(*, config_path: Path = TAP_CONFIGS[TAP_CONFIG_DEFAULT_ID], hot
         hotspot_config_sha256=_sha256(TAP_HOTSPOT_CONFIG),
         tap_upstream_commit=_read_upstream_commit(TAP_ROOT / "UPSTREAM_COMMIT"),
         hotspot_upstream_commit=_read_upstream_commit(HOTSPOT_ROOT / "UPSTREAM_COMMIT"),
-        repo_sha256=_git_sha(REPO_ROOT),
         hotspot_binary_sha256=_sha256(hotspot_binary),
         generator_sha256=generators,
     )
@@ -549,7 +530,7 @@ class HotSpotOracle:
         self.hotspot_binary = Path(hotspot_binary).resolve()
         self.problem = _load_problem(config_path=TAP_CONFIGS[self.fixture_id], hotspot_binary=self.hotspot_binary)
         self.solver_version = (
-            f"repo:{self.problem.repo_sha256}:HotSpot-7:{self.problem.hotspot_upstream_commit}"
+            f"HotSpot-7:{self.problem.hotspot_upstream_commit}"
             f":binary_sha256:{self.problem.hotspot_binary_sha256}"
             f":config_sha256:{self.problem.config_sha256}"
             f":grid:{self.grid_rows}x{self.grid_cols}"
@@ -557,7 +538,6 @@ class HotSpotOracle:
         self.problem_hash = _canonical_hash({
             "schema": "tfl-tap-hotspot-problem-v1",
             "fixture_id": self.problem.fixture_id,
-            "repo_sha256": self.problem.repo_sha256,
             "tap_config_sha256": self.problem.config_sha256,
             "tap_hotspot_config_sha256": self.problem.hotspot_config_sha256,
             "tap_upstream_commit": self.problem.tap_upstream_commit,
