@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import configparser
+from contextlib import asynccontextmanager
 import hashlib
 import json
 import math
@@ -13,9 +14,9 @@ import subprocess
 import sys
 import tempfile
 import time
-from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TAP_ROOT = REPO_ROOT / "sundai_tap"
@@ -37,11 +38,11 @@ DEFAULT_MAX_WORKERS = 8
 if str(TAP_ROOT) in sys.path:
     sys.path.remove(str(TAP_ROOT))
 sys.path.insert(0, str(TAP_ROOT))
-from passive_interposer import PassiveInterposer
+from passive_interposer import PassiveInterposer  # noqa: E402
 
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
-from sundai_controller.controller import Chiplet, Design, ThermalResult
+from sundai_controller.controller import Chiplet, Design, ThermalResult  # noqa: E402
 
 
 class TapLegalityError(ValueError):
@@ -193,7 +194,6 @@ def _load_problem(*, config_path: Path = TAP_CONFIGS[TAP_CONFIG_DEFAULT_ID], hot
         raise HotSpotOracleError(f"unknown TAP fixture for config path: {config_path}")
     return TapProblem(
         fixture_id=fixture_id,
-        
         interposer_size_mm=size,
         widths_mm=widths,
         heights_mm=heights,
@@ -234,7 +234,7 @@ async def _terminate_process_group(process: asyncio.subprocess.Process) -> None:
             pass
         try:
             await asyncio.wait_for(process.wait(), timeout=1.0)
-        except TimeoutError:
+        except asyncio.TimeoutError:
             pass
         # The worker can exit on SIGTERM while HotSpot or another descendant
         # ignores it and keeps the inherited pipes open. Kill the isolated group
@@ -256,7 +256,7 @@ async def _terminate_process_group(process: asyncio.subprocess.Process) -> None:
                     creationflags=subprocess.CREATE_NO_WINDOW,
                 )
                 await asyncio.wait_for(taskkill.wait(), timeout=3.0)
-            except (TimeoutError, FileNotFoundError, OSError):
+            except (FileNotFoundError, OSError, asyncio.TimeoutError):
                 if taskkill is not None and taskkill.returncode is None:
                     taskkill.kill()
                     await taskkill.wait()
@@ -286,7 +286,7 @@ class _WarmWorker:
         self._stderr_task = asyncio.create_task(self._drain_stderr())
 
     @classmethod
-    async def start(cls) -> _WarmWorker:
+    async def start(cls) -> "_WarmWorker":
         workspace = tempfile.TemporaryDirectory(prefix="tfl-hotspot-worker-")
         process_options = ({"start_new_session": True} if os.name == "posix" else
                            {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP})
@@ -328,7 +328,7 @@ class _WarmWorker:
         if self.process.returncode is not None:
             try:
                 await asyncio.wait_for(asyncio.shield(self._stderr_task), timeout=1.0)
-            except TimeoutError:
+            except asyncio.TimeoutError:
                 pass
         return self._stderr_tail.decode("utf-8", errors="replace")[-2000:].strip()
 
@@ -355,7 +355,7 @@ class _WarmWorker:
 
         try:
             line = await asyncio.wait_for(self._exchange(encoded), timeout=worker_timeout_s)
-        except TimeoutError as exc:
+        except asyncio.TimeoutError as exc:
             self.broken = True
             raise HotSpotTimeoutError(f"HotSpot worker exceeded {worker_timeout_s:g} seconds") from exc
         except asyncio.CancelledError:
@@ -370,7 +370,7 @@ class _WarmWorker:
             self.broken = True
             try:
                 await asyncio.wait_for(self.process.wait(), timeout=1.0)
-            except TimeoutError:
+            except asyncio.TimeoutError:
                 pass
             detail = await self._stderr_text()
             raise HotSpotOracleError(detail or "HotSpot worker exited without a response")
@@ -404,7 +404,7 @@ class _WarmWorker:
             if not self._stderr_task.done():
                 try:
                     await asyncio.wait_for(asyncio.shield(self._stderr_task), timeout=1.0)
-                except TimeoutError:
+                except asyncio.TimeoutError:
                     self._stderr_task.cancel()
                     await asyncio.gather(self._stderr_task, return_exceptions=True)
 
