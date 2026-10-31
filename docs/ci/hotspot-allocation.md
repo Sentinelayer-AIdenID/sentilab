@@ -7,23 +7,62 @@ unknown; a visible Actions run count is neither a quota nor a measurement.
 
 ## Admission and rollout
 
-The `allocation-proof` job runs fake tests first. `admission` then executes only
-trusted base-branch code, with a job-scoped `contents: write` permission. It reserves
-one immutable Git ref before the unprivileged container job may run its workload
-(except for the base-controller rollout path below).
-PR code never runs in the admission job; checkout does not persist credentials.
-Normal durable admission for fork PRs without a writable token fails closed. The
-inline rollout branch needs no write API; its separate owner authorization below
-applies regardless of token write access. No `pull_request_target` execution of PR
-code is introduced.
+The `pull_request`/main-push workflow (`ci.yml`) has **no write-token job**.
+Its `allocation-proof` job runs fake tests first; `admission` then executes the
+trusted base controller with `--read-only` and `contents: read`. It polls the
+immutable Git slot receipt for up to 180 seconds, then uploads a local admission
+artifact for `container`. Reading never creates, updates, deletes or refunds a
+slot. Missing, unreadable, corrupt, expired, duplicate or mismatched admission
+fails closed. The existing bounded owner rollout exception is described below.
 
-`contents: write` is necessary for the Git database API's commit creation and
-atomic create-if-absent slot refs; `contents: read` cannot reserve a durable slot.
-Only admission receives this permission. Its sole checkout is the PR **base SHA**
-(the pushed SHA on `main`), checked against `HEAD` before execution. The module is
-loaded only from that tree; no PR checkout, PR artifact, dependency install, or
-PR-head script runs with the write token. Head/merge SHAs enter the receipt only
-as data, through environment variables. The container job has read permissions.
+`ci-allocation-admission.yml` separately handles `workflow_run: requested` for
+`CI`. Only its `reserve` job has `contents: write`, with `actions: read` and
+`pull-requests: read` for the metadata API (including private repositories). It checks
+out `github.sha`, the **default-branch snapshot** for that event, with credentials
+persistence disabled. It installs no PR dependencies, downloads no PR artifacts
+and executes no upstream code. Its sole input is GitHub-authenticated run/PR/commit
+metadata. The Git database API's commit creation and atomic create-if-absent slot
+refs still supply durable reservation; the PR token cannot write them.
+
+The writer validates repository, exact workflow path, event, run ID and first
+attempt; re-reads the upstream run to refuse changed or already terminal requests;
+and accepts only default-branch pushes or a single open PR targeting that branch.
+For a PR it resolves the current merge commit through the API and checks its two
+parents against the current base and the upstream run's head. For a push,
+head/build are the pushed SHA. The reader requires exact equality with its own
+repository/run/attempt/job/matrix/head/build identity. If a queued PR's merge ref
+has moved, the slot may be charged but the old run cannot execute against that
+mismatched receipt. Missing/ambiguous PR metadata (including fork events without
+PR association), a pending merge SHA, API denial and source drift all refuse;
+none falls back to a guessed SHA or a run-count estimate.
+
+This uses the durable ref as the cross-workflow receipt, not a potentially lost
+or expired Actions artifact as the quota. The writer also uploads
+`allocation-owner-admission-RUN-ATTEMPT` for review; the PR-side copy remains
+`allocation-admission-RUN-ATTEMPT`. The existing separate completed-event terminal
+workflow needs only read permissions and retains runner-loss/full-charge handling,
+combined CPU/launch violations and their known higher charges.
+
+**Trade-off:** admission can reserve before fake proof finishes, and delayed
+writers or source drift can waste a slot without workload. Reservations are never
+refunded, including when the writer loses its response. A bounded reader wait
+costs an extra job/latency and can fail under runner congestion. Counting prior
+settlement artifacts instead would lack atomic reservation across overlapping
+runs and would undercount pending, lost, deleted or expired artifacts. Keep the
+immutable slot ruleset and owner history debit as the durable authority.
+
+The writer workflow and controller must be reviewed and installed on the default
+branch before normal PR admission can work. A base with the older controller but
+without `--read-only` support fails closed; it does not use bootstrap. Preserve
+all required CI suites during this rollout. The bounded owner-authorized inline
+bootstrap remains available only when the base has no controller at all. It
+needs no write token and does not claim global-quota enforcement.
+[GitHub's workflow_run documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run)
+confirms that the workflow must exist on the default branch, uses that branch's
+SHA, can receive a write token, and does not emit `requested` for reruns. Attempts
+above one are refused by both admission paths. No `pull_request_target` execution
+is introduced. End-to-end Actions scheduling and real cgroup proof remain rollout
+checks; local fake API proof does not establish that they have occurred.
 
 The PR introducing this controller cannot run a module absent from its trusted
 base. For that rollout window only, admission inspects `git ls-tree` at the
@@ -225,7 +264,9 @@ the supervisor or host, unknown CPU is charged at the full 900-second reservatio
 
 ## Artifacts and failure semantics
 
-* `allocation-admission-RUN-ATTEMPT`: durable slot receipt or refusal.
+* `allocation-owner-admission-RUN-ATTEMPT`: trusted writer receipt or refusal.
+* `allocation-admission-RUN-ATTEMPT`: read-only copy of the durable slot receipt,
+  bounded owner bootstrap, or refusal.
 * `allocation-settlement-RUN-ATTEMPT`: admission, `events.jsonl`, `settlement.json`.
 * `allocation-terminal-RUN-ATTEMPT`: separate trusted `workflow_run` witness,
   including cancellation, timeout or runner loss when the original runner could

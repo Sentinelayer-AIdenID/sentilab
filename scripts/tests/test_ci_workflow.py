@@ -132,7 +132,7 @@ class WorkflowTests(unittest.TestCase):
             if callable(authorization):
                 environment['CI_BOOTSTRAP_AUTHORIZATION'] = json.dumps(authorization(self.authorization(base_sha)))
             process = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell_step(
-                'admission', 'Reserve global run slot from trusted allocation controller')],
+                'admission', 'Read global run slot from trusted allocation controller')],
                 cwd=tree, env=environment, text=True, capture_output=True, check=False)
             path = directory / 'allocation/admission.json'
             receipt = json.loads(path.read_text()) if path.exists() else None
