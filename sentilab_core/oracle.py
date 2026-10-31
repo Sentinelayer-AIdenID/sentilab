@@ -14,7 +14,6 @@ import tempfile
 
 from sundai_hotspot.tap_oracle import HotSpotOracle
 
-from .envelope import canonical
 
 INITIAL_CENTERS = ((25, 25), (40, 40), (8, 9), (8, 25), (8, 41), (41, 15))
 ROOT = Path(__file__).resolve().parent.parent
@@ -50,6 +49,8 @@ class FreshProcessOracle(HotSpotOracle):
     async def _evaluate(self, request, *, worker_timeout_s):
         reservation = self.reservation
         ceiling = reservation["ceiling_s"]
+        if ceiling < 2:
+            raise ValueError("worker reservation must allow at least two CPU seconds")
         request = {**request, "solver_timeout_s": max(0.01, ceiling - 2)}
         payload = json.dumps(request, separators=(",", ":"), allow_nan=False).encode() + b"\n"
         if len(payload) > 65537:

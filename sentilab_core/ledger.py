@@ -187,7 +187,11 @@ class Ledger:
             self._require_sound(state)
             return self._append(state, event_type, body, event_id, role, values)
 
-    def append_gate(self, gate, candidate_id, *, event_id, stopped=False):
+    def append_gate(self, gate, candidate_id, *, event_id):
+        with lock(self.root / "admission.lock"):
+            return self._gate(gate, candidate_id, event_id=event_id)
+
+    def _gate(self, gate, candidate_id, *, event_id):
         from .projection import board
         with lock(self.lock_path):
             state = self._read()
@@ -208,7 +212,7 @@ class Ledger:
                 raise ValueError("gate configuration differs from frozen run")
             inputs = {"geometry_valid": proposal["geometry_valid"], "wire_cap_mm": config["wire_cap_mm"],
                       "binding": proposal["binding"], "evaluation": measurements.get("evaluate"),
-                      "reproduction": measurements.get("reproduce"), "stopped": stopped,
+                      "reproduction": measurements.get("reproduce"), "stopped": (self.root / "STOP").exists(),
                       "current": board(state["prefix"])}
             decision = gate.decide(**inputs)
             if decision["outcome"] not in ("accepted", "non_improving_current", "within_margin"):
