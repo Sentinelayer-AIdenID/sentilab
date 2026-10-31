@@ -7,13 +7,16 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { verifyDocument, verifyRun } from "../public/verify-core.js";
+import { verifyDocument as verifyDocumentWithPins, verifyRun as verifyRunWithPins } from "../public/verify-core.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const dir = mkdtempSync(join(tmpdir(), "tfl-verify-"));
 execFileSync(process.env.PYTHON || "python3", [join(here, "make_record.py"), dir]);
 const read = (name) => readFileSync(join(dir, name), "utf8");
 const fastapi = read("run_fastapi.json");
+const pins = JSON.parse(read("pins.json")); // Trusted test configuration, separate from submitted records.
+const verifyDocument = (text) => verifyDocumentWithPins(text, pins);
+const verifyRun = (text) => verifyRunWithPins(text, pins);
 
 test("accepts a Python-signed four-lane run in both serializations", async () => {
   for (const text of [read("run_stdlib.json"), fastapi]) {

@@ -15,10 +15,13 @@ from sundai_controller.controller import thermal_plate_adapter  # noqa: E402
 from sundai_controller.experiment import plate_initial_design, run_four_lanes  # noqa: E402
 
 
+from sundai_controller.trust import load_service_key  # noqa: E402
+
+
 TAP_INITIAL_CENTERS = ((25, 25), (40, 40), (8, 9), (8, 25), (8, 41), (41, 15))
 
 
-async def run(benchmark: str) -> dict:
+async def run(benchmark: str, *, service_key) -> dict:
     if benchmark == "plate":
         initial = plate_initial_design()
         oracle = thermal_plate_adapter(grid_size=16)
@@ -29,7 +32,7 @@ async def run(benchmark: str) -> dict:
         initial = oracle.design_from_centers(TAP_INITIAL_CENTERS)
     try:
         experiment = await run_four_lanes(
-            initial, oracle, run_id=f"tfl05-{benchmark}-seed11", seed=11,
+            initial, oracle, service_key=service_key, run_id=f"tfl05-{benchmark}-seed11", seed=11,
             evaluations_per_lane=4, evaluation_ceiling_microdollars=1,
             shared_sample_count=3,
         )
@@ -64,7 +67,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--benchmark", choices=("plate", "ascend910"), required=True)
     args = parser.parse_args()
-    print(json.dumps(asyncio.run(run(args.benchmark)), sort_keys=True, allow_nan=False), flush=True)
+    print(json.dumps(asyncio.run(run(args.benchmark, service_key=load_service_key())), sort_keys=True, allow_nan=False), flush=True)
 
 
 if __name__ == "__main__":

@@ -53,7 +53,7 @@ td.k{color:#7fa0a8;font-size:10px}
     <input type="text" id="run-id" placeholder="paste a run id" autocomplete="off" spellcheck="false">
     <button id="load">Fetch and verify</button>
     <div class="drop" id="drop">or drop a downloaded run JSON here<br><input type="file" id="file" accept="application/json,.json" style="margin-top:10px"></div>
-    <div class="note"><strong>What this proves:</strong> each record is complete, unaltered, and signed by the key shown beside it. <strong>What it does not prove:</strong> who holds that key. Anchoring keys to an identity is TFL-07 v2.</div>
+    <div class="note"><strong>Integrity:</strong> hashes and signatures agree. <strong>Authentic origin:</strong> the record key has a current certificate under a pinned SentiLab service key. Older records are integrity only, unanchored. <strong>Scientific validity:</strong> not checked; a signature does not validate temperatures or simulator accuracy.</div>
   </section>
   <section class="panel">
     <div class="summary" id="summary"></div>
@@ -73,17 +73,20 @@ function render(report, source) {
     report.extra.length ? `unexpected ${report.extra.join(", ")}` : ""].filter(Boolean).join("; ");
   if (report.kind === "lane") {
     const l = report.lanes[0];
-    $("summary").innerHTML = `<span>lane <strong>${esc(l.laneId)}</strong> (signed) · run label <strong>${esc(report.runId || "—")}</strong> (unsigned)</span>`
-      + badge(report.allValid, "RECORD VERIFIED", "record NOT verified")
+    $("summary").innerHTML = `<span>lane <strong>${esc(l.laneId)}</strong> (signed) · run label <strong>${esc(report.runId || "—")}</strong> ${report.runIdUnsigned ? "(unsigned)" : "(certified)"}</span>`
+      + badge(report.allValid, "AUTHENTIC RECORD", "origin NOT authenticated")
+      + `<span class="badge">scientific validity: not checked</span>`
       + (l.ok ? `<span class="badge">${esc(l.evaluations)} signed evaluations</span>` : "")
       + `<span style="color:var(--muted)">single lane: the four-lane, equal-budget and shared-pool checks need the whole run · source: ${esc(source)}</span>`;
     $("results").innerHTML = laneTable(report.lanes);
     return;
   }
   $("summary").innerHTML = `<span>run <strong>${esc(report.runId || "—")}</strong></span>`
-    + badge(report.allValid, "RUN VERIFIED", "run NOT verified")
+    + badge(report.allValid, "AUTHENTIC RUN", "run NOT authenticated")
     + badge(report.laneSet, "all four lanes present", esc(laneProblem || "lane set wrong"))
-    + badge(report.recordsValid, "every record verifies", "a record fails")
+    + badge(report.recordsValid, "record integrity passes", "record integrity fails")
+    + badge(report.authentic, "authentic service origin", "origin NOT authenticated")
+    + `<span class="badge">scientific validity: not checked</span>`
     + badge(report.equalCounts, "equal signed evaluation counts", "evaluation counts differ")
     + badge(report.samePool, "same signed starting pool", "starting pools differ")
     + (report.countsMatchClaims ? "" : badge(false, "", "summary counts disagree with the records"))
@@ -95,12 +98,12 @@ function render(report, source) {
 
 function laneTable(lanes) {
   const rows = lanes.map((l) => `<tr>
-      <td>${l.ok ? '<span class="ok">✓ VALID</span>' : '<span class="bad">✗ INVALID</span>'}</td>
+      <td>${l.integrity ? '<span class="ok">✓ integrity</span>' : '<span class="bad">✗ integrity</span>'}<br>${l.authentic ? '<span class="ok">✓ authentic origin</span>' : l.origin === "unanchored" ? 'integrity only, unanchored' : '<span class="bad">✗ origin not authenticated</span>'}</td>
       <td>${esc(l.laneId)}<br><span class="k">${esc(l.agentId)}</span></td>
       <td>${esc(l.checked)} events</td>
       <td>${Number.isFinite(l.best) ? l.best.toFixed(4) + " °C" : "—"}<br><span class="k">${esc(l.evaluations)} evaluations</span></td>
       <td><span class="k">key</span> ${esc(short(l.publicKey))}<br><span class="k">final</span> ${esc(short(l.finalHash))}</td>
-      <td>${l.ok ? "" : esc(l.reason)}${!l.ok && l.claimedValid === true ? '<br><span class="k">(the file claims record_valid=true; this check disagrees)</span>' : ""}</td>
+      <td>${esc(l.reason || l.originReason)}${!l.ok && l.claimedValid === true ? '<br><span class="k">(the file claims record_valid=true; this check disagrees)</span>' : ""}</td>
     </tr>`).join("");
   return `<table><thead><tr><th>Verdict</th><th>Lane</th><th>Checked</th><th>Best peak</th><th>Signing key · final hash</th><th>First failure</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
