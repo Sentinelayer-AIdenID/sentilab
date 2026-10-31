@@ -1,0 +1,180 @@
+{
+  "head": "3236e23aecafb8e49e31aaec8101d3906f1de2a8",
+  "controller_sha256": "a707a77d4b39836c461b7cacabe17bf1a59efbdcb3938871ea04c077ef32276d",
+  "policy_sha256": "1d3acc0186a2d799851f7b43ed1454c6ae893dbacedbfddec3735b6eb593401d",
+  "token": "35612fda883c4d2ca7bb0cb82882c8f5",
+  "container_id": "c16b3e9d6a352c2fc64373e4dc65879ed8ca589bf570fa081249932f917e26bb",
+  "scope": "Offline identity, approval order, timing, closure, and preserved prior-attempt consistency only",
+  "finding": "No blocking inconsistency found in retained evidence; clocks must remain separated",
+  "timing": {
+    "reserved_at": "2026-10-31T11:37:44.101327+00:00",
+    "worker_claimed_at": "2026-10-31T11:37:44.145236+00:00",
+    "launch_intent_at": "2026-10-31T11:37:47.924542+00:00",
+    "container_started_at": "2026-10-31T11:37:47.948382098Z",
+    "ready_at": "2026-10-31T11:39:16.974899+00:00",
+    "container_exited_at": "2026-10-31T11:40:12.685959112Z",
+    "cleanup_finished_at": "2026-10-31T11:40:13.010829+00:00",
+    "completed_at": "2026-10-31T11:40:13.014224+00:00",
+    "later_closure_captured_at": "2026-10-31T11:41:42.683883+00:00",
+    "charged_seconds": 148.90950332500506,
+    "reservation_to_cleanup_wall_seconds": 148.909508228302,
+    "wall_minus_reported_charge_seconds": 4.9032969400286674e-06,
+    "launch_to_ready_reported_seconds": 89.05037042799813,
+    "launch_to_ready_wall_seconds": 89.05035710334778,
+    "effective_attempt_deadline": "2026-10-31T11:52:44.101321+00:00",
+    "pc_start_receipt_finished_at": "2026-10-31T11:37:43.996774+00:00",
+    "remote_reservation_minus_pc_receipt_seconds": 0.10454654693603516,
+    "preflight_finished_at": "2026-10-31T11:35:44.142891+00:00",
+    "preflight_closure_at": "2026-10-31T11:36:27.217162+00:00",
+    "gpu_approval_install_at": "2026-10-31T11:37:23.782117+00:00"
+  },
+  "old_snapshot_files_verified": [
+    "APPROVED.json",
+    "admission.lock",
+    "container.stderr.log",
+    "container.stdout.log",
+    "docker.lock",
+    "input-verification.json",
+    "reservation.json",
+    "serve047.py",
+    "state.json",
+    "state.lock",
+    "worker-claimed.json",
+    "worker.lock"
+  ],
+  "old_attempt_charge_seconds": 79.6175887260033,
+  "separate_preflight_charge_seconds": 0.6380113449995406,
+  "evidence": {
+    "slab047b-admission/gpu-runtime/reservation.json": {
+      "bytes": 1853,
+      "sha256": "ccb223f7ad85517e5f771c9a2ba226183ce1b253361b8bd837d2e915b7d30667"
+    },
+    "slab047b-admission/gpu-runtime/state.json": {
+      "bytes": 1006,
+      "sha256": "d1a29957642ca4f2fa4ba8c8920bc400d1cb49c640a763aacea551f281053b77"
+    },
+    "slab047b-admission/gpu-runtime/worker-claimed.json": {
+      "bytes": 84,
+      "sha256": "64155111436b7e18f3e536f3d2a0e12042b17cd2b1802cc35e5898cc827c358f"
+    },
+    "slab047b-admission/gpu-runtime/APPROVED.json": {
+      "bytes": 527,
+      "sha256": "ed50fbf43c4101059941dce7b5507b01226614a748b871079db0e3c433f6ed2f"
+    },
+    "slab047b-admission/gpu-runtime/container-inspection-final.json": {
+      "bytes": 1468,
+      "sha256": "818113fffff59cd17ffc776396391dd33a422e449a2ffab28865a6c9dad2c458"
+    },
+    "slab047b-admission/gpu-runtime/serve047.py": {
+      "bytes": 37216,
+      "sha256": "a707a77d4b39836c461b7cacabe17bf1a59efbdcb3938871ea04c077ef32276d"
+    },
+    "slab047b-admission/REMOTE-SOURCE-BINDING.json": {
+      "bytes": 1331,
+      "sha256": "3a4e9b944584eab520ab4d747ef2be666542ba3f243e9fc33cde9b122b36a3c9"
+    },
+    "slab047b-admission/SOURCE-APPROVAL.json": {
+      "bytes": 1360,
+      "sha256": "f60879d0b54c18e7a8f7cefc1ae48ae99c5c6ea51b9778e8adf3b15dda578e94"
+    },
+    "slab047b-admission/START-INTENT.json": {
+      "bytes": 111,
+      "sha256": "8e17c5d40549b937cc02fa1f514159897928e3b44f2dd4dd14d2d7125f30f439"
+    },
+    "slab047b-admission/START-RESULT.json": {
+      "bytes": 1252,
+      "sha256": "f2c69152cb2d175ed190cfdb65e8b94b64cdbc285d26f36015ccb1c77dd612f5"
+    },
+    "slab047b-admission/GPU-DOWNLOAD-AND-CLOSURE.json": {
+      "bytes": 12188,
+      "sha256": "43594a43fa98ed8eaa415b5e530677520a4d85f16eb36cd32ef4583a0d7de9f9"
+    },
+    "slab047b-admission/STATUS-1793446881444929600.json": {
+      "bytes": 2618,
+      "sha256": "118a55a5a43ccca2208da7c75856f2a9b92c4225694c8fb8d76ba1661ef321e3"
+    },
+    "slab047b-admission/GPU-APPROVAL-INSTALL.json": {
+      "bytes": 408,
+      "sha256": "a0b423c9682e117be143be13922480d4b346f1aeac4ecde24af4ec510c516226"
+    },
+    "slab047b-admission/GPU-APPROVED.json": {
+      "bytes": 527,
+      "sha256": "ed50fbf43c4101059941dce7b5507b01226614a748b871079db0e3c433f6ed2f"
+    },
+    "slab047b-admission/preflight-runtime/result.json": {
+      "bytes": 1268,
+      "sha256": "d7bd65d6fbc96b7ed3517ecca14f9275900f176a737761fd4fad8104a91bd620"
+    },
+    "slab047b-admission/preflight-runtime/intent.json": {
+      "bytes": 1160,
+      "sha256": "e3994a940adcc72024e6d2b73f3f58cd69895381dce43a8217b61abe58f4b47d"
+    },
+    "slab047b-admission/PREFLIGHT-DOWNLOAD.json": {
+      "bytes": 1888,
+      "sha256": "8eb2f9b59147dc997de187a3057897711d2ce41d481f2b7cf64bfada471fdeef"
+    },
+    "slab047b-admission/ROOT-PREFLIGHT-VALIDATION.json": {
+      "bytes": 3913,
+      "sha256": "8f41ace30a9db3badb00f6f150121430dc5f4942c40bb42da859c49a9b3c00f0"
+    },
+    "slab047-admission/DOWNLOAD-AND-CLOSURE.json": {
+      "bytes": 2395,
+      "sha256": "ba3b300534d2fc0e531f982ca8742dbae357a99839cd04007271db7f2f361b1a"
+    },
+    "slab047-admission/runtime/APPROVED.json": {
+      "bytes": 488,
+      "sha256": "fce8e1bc31cfe025eb629f4daef32acb0f3024304cb1b5e84ac4f2c21fd32be1"
+    },
+    "slab047-admission/runtime/admission.lock": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "slab047-admission/runtime/container.stderr.log": {
+      "bytes": 18701,
+      "sha256": "33981844d6be0320ceb5c924bdd76e162ee1e43d65bdf78002c5ae540eb21ae1"
+    },
+    "slab047-admission/runtime/container.stdout.log": {
+      "bytes": 1174,
+      "sha256": "8caf92f237b506ef8233e1e244b28587f3e0df545376f4032807721129ffdfd2"
+    },
+    "slab047-admission/runtime/docker.lock": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "slab047-admission/runtime/input-verification.json": {
+      "bytes": 2202,
+      "sha256": "ed3865edb9d7b35e8538891999bbdec54c4d113a19fd67b1b03866a2fb9b61e4"
+    },
+    "slab047-admission/runtime/reservation.json": {
+      "bytes": 1783,
+      "sha256": "81bc91d6f0fb478db8c43f53a408c295a872e5c2d3b70362cafaf44b0be88947"
+    },
+    "slab047-admission/runtime/serve047.py": {
+      "bytes": 35412,
+      "sha256": "1e4b901a1b8b65ad8b40afd89637b6b6044e12f8f6df58fd6ae4771309c21eaa"
+    },
+    "slab047-admission/runtime/state.json": {
+      "bytes": 806,
+      "sha256": "09c3d1a75fcd08b11f63221755ec9536bf627f4ec5fa5d2f8b0db86ffffeccfe"
+    },
+    "slab047-admission/runtime/state.lock": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "slab047-admission/runtime/worker-claimed.json": {
+      "bytes": 84,
+      "sha256": "9b97eb976cc39e3619ad7aeed48fb21d7b0bcbb5e584aff7d8cc54285bb2f35f"
+    },
+    "slab047-admission/runtime/worker.lock": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "limits": [
+    "No device or network operation, runtime execution, tests, or model/numerical work.",
+    "Local JSON does not independently authenticate the external reviewer or device.",
+    "The reported charge has no separately stored terminal monotonic sample; wall-clock comparison corroborates consistency.",
+    "Verified old local snapshot preservation does not establish current remote filesystem immutability.",
+    "Full 75-file hash manifest, 17 input pins, raw requests/responses/receipts and startup/native/mount claims are owned by the parent audit."
+  ]
+}

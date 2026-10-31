@@ -1,0 +1,193 @@
+2026-10-31T11:11:07.466367734Z Traceback (most recent call last):
+2026-10-31T11:11:07.466717286Z   File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+2026-10-31T11:11:07.466733686Z     self.run()
+2026-10-31T11:11:07.466735942Z   File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+2026-10-31T11:11:07.466737878Z     self._target(*self._args, **self._kwargs)
+2026-10-31T11:11:07.466739622Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1636, in run_engine_core
+2026-10-31T11:11:07.466741350Z     raise e
+2026-10-31T11:11:07.466742758Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1603, in run_engine_core
+2026-10-31T11:11:07.466744230Z     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+2026-10-31T11:11:07.466745686Z                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466747094Z   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 175, in sync_wrapper
+2026-10-31T11:11:07.466748662Z     return func(*args, **kwargs)
+2026-10-31T11:11:07.466750310Z            ^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466751670Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 1274, in __init__
+2026-10-31T11:11:07.466753238Z     super().__init__(
+2026-10-31T11:11:07.466754646Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 170, in __init__
+2026-10-31T11:11:07.466756134Z     kv_cache_config = self._initialize_kv_caches(vllm_config)
+2026-10-31T11:11:07.466757558Z                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466758934Z   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 175, in sync_wrapper
+2026-10-31T11:11:07.466760374Z     return func(*args, **kwargs)
+2026-10-31T11:11:07.466761718Z            ^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466772566Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core.py", line 317, in _initialize_kv_caches
+2026-10-31T11:11:07.466774230Z     available_gpu_memory = self.model_executor.determine_available_memory()
+2026-10-31T11:11:07.466775702Z                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466777126Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/abstract.py", line 157, in determine_available_memory
+2026-10-31T11:11:07.466778662Z     return self.collective_rpc("determine_available_memory")
+2026-10-31T11:11:07.466780070Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466781398Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/executor/uniproc_executor.py", line 103, in collective_rpc
+2026-10-31T11:11:07.466782998Z     result = run_method(self.driver_worker, method, args, kwargs)
+2026-10-31T11:11:07.466784390Z              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466786326Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/serial_utils.py", line 508, in run_method
+2026-10-31T11:11:07.466787926Z     return func(*args, **kwargs)
+2026-10-31T11:11:07.466789222Z            ^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466790470Z   File "/usr/local/lib/python3.12/dist-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+2026-10-31T11:11:07.466792006Z     return func(*args, **kwargs)
+2026-10-31T11:11:07.466793270Z            ^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466794630Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu_worker.py", line 707, in determine_available_memory
+2026-10-31T11:11:07.466796150Z     self.model_runner.profile_run(randomize_inputs=self.randomize_dummy_inputs)
+2026-10-31T11:11:07.466797670Z   File "/usr/local/lib/python3.12/dist-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+2026-10-31T11:11:07.466799126Z     return func(*args, **kwargs)
+2026-10-31T11:11:07.466800438Z            ^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466801766Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu/model_runner.py", line 1056, in profile_run
+2026-10-31T11:11:07.466803206Z     hidden_states, sample_hidden_states = self._dummy_run(
+2026-10-31T11:11:07.466804550Z                                           ^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466805894Z   File "/usr/local/lib/python3.12/dist-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+2026-10-31T11:11:07.466807318Z     return func(*args, **kwargs)
+2026-10-31T11:11:07.466808662Z            ^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466809974Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu/eplb_utils.py", line 57, in wrapper
+2026-10-31T11:11:07.466811462Z     result = fn(self, *args, **kwargs)
+2026-10-31T11:11:07.466812758Z              ^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466815878Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu/model_runner.py", line 942, in _dummy_run
+2026-10-31T11:11:07.466817446Z     self.execute_model(
+2026-10-31T11:11:07.466818758Z   File "/usr/local/lib/python3.12/dist-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+2026-10-31T11:11:07.466820278Z     return func(*args, **kwargs)
+2026-10-31T11:11:07.466821574Z            ^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466822870Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/worker/gpu/model_runner.py", line 2122, in execute_model
+2026-10-31T11:11:07.466824406Z     model_output = self.model(**model_inputs)
+2026-10-31T11:11:07.466826022Z                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466827350Z   File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+2026-10-31T11:11:07.466828790Z     return self._call_impl(*args, **kwargs)
+2026-10-31T11:11:07.466830102Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466831398Z   File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+2026-10-31T11:11:07.466833094Z     return forward_call(*args, **kwargs)
+2026-10-31T11:11:07.466834438Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466835718Z   File "/usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/qwen3.py", line 334, in forward
+2026-10-31T11:11:07.466837190Z     hidden_states = self.model(
+2026-10-31T11:11:07.466838534Z                     ^^^^^^^^^^^
+2026-10-31T11:11:07.466839830Z   File "/usr/local/lib/python3.12/dist-packages/vllm/compilation/decorators.py", line 538, in __call__
+2026-10-31T11:11:07.466841254Z     return self.forward(*args, **kwargs)
+2026-10-31T11:11:07.466842582Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466843830Z   File "/usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/qwen2.py", line 413, in forward
+2026-10-31T11:11:07.466845318Z     hidden_states = self.embed_input_ids(input_ids)
+2026-10-31T11:11:07.466846646Z                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466847974Z   File "/usr/local/lib/python3.12/dist-packages/vllm/model_executor/models/qwen2.py", line 400, in embed_input_ids
+2026-10-31T11:11:07.466849494Z     return self.embed_tokens(input_ids)
+2026-10-31T11:11:07.466850790Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466852150Z   File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1783, in _wrapped_call_impl
+2026-10-31T11:11:07.466853638Z     return self._call_impl(*args, **kwargs)
+2026-10-31T11:11:07.466854950Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466856262Z   File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1794, in _call_impl
+2026-10-31T11:11:07.466859334Z     return forward_call(*args, **kwargs)
+2026-10-31T11:11:07.466860774Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466862070Z   File "/usr/local/lib/python3.12/dist-packages/vllm/lora/layers/vocab_parallel_embedding.py", line 101, in forward
+2026-10-31T11:11:07.466863574Z     lora_output: torch.Tensor | None = self.punica_wrapper.add_lora_embedding(
+2026-10-31T11:11:07.466865014Z                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466866422Z   File "/usr/local/lib/python3.12/dist-packages/vllm/lora/punica_wrapper/punica_gpu.py", line 195, in add_lora_embedding
+2026-10-31T11:11:07.466867926Z     lora_expand(
+2026-10-31T11:11:07.466869286Z   File "/usr/local/lib/python3.12/dist-packages/torch/_ops.py", line 1350, in __call__
+2026-10-31T11:11:07.466870774Z     return self._op(*args, **kwargs)
+2026-10-31T11:11:07.466872182Z            ^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466874822Z   File "/usr/local/lib/python3.12/dist-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+2026-10-31T11:11:07.466876326Z     return func(*args, **kwargs)
+2026-10-31T11:11:07.466877654Z            ^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466879382Z   File "/usr/local/lib/python3.12/dist-packages/vllm/lora/ops/triton_ops/lora_expand_op.py", line 251, in _lora_expand
+2026-10-31T11:11:07.466880934Z     _lora_expand_kernel[grid](
+2026-10-31T11:11:07.466882262Z   File "/usr/local/lib/python3.12/dist-packages/triton/runtime/jit.py", line 374, in <lambda>
+2026-10-31T11:11:07.466883942Z     return lambda *args, **kwargs: self.run(grid=grid, warmup=False, *args, **kwargs)
+2026-10-31T11:11:07.466885430Z                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466886806Z   File "/usr/local/lib/python3.12/dist-packages/triton/runtime/jit.py", line 731, in run
+2026-10-31T11:11:07.466888294Z     device = driver.active.get_current_device()
+2026-10-31T11:11:07.466889686Z              ^^^^^^^^^^^^^
+2026-10-31T11:11:07.466891014Z   File "/usr/local/lib/python3.12/dist-packages/triton/runtime/driver.py", line 39, in active
+2026-10-31T11:11:07.466892550Z     self._active = self.default
+2026-10-31T11:11:07.466893926Z                    ^^^^^^^^^^^^
+2026-10-31T11:11:07.466895238Z   File "/usr/local/lib/python3.12/dist-packages/triton/runtime/driver.py", line 33, in default
+2026-10-31T11:11:07.466896630Z     self._default = _create_driver()
+2026-10-31T11:11:07.466898262Z                     ^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466899574Z   File "/usr/local/lib/python3.12/dist-packages/triton/runtime/driver.py", line 21, in _create_driver
+2026-10-31T11:11:07.466901030Z     return active_drivers[0]()
+2026-10-31T11:11:07.466902278Z            ^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466903574Z   File "/usr/local/lib/python3.12/dist-packages/triton/backends/nvidia/driver.py", line 342, in __init__
+2026-10-31T11:11:07.466906598Z     self.utils = CudaUtils()  # TODO: make static
+2026-10-31T11:11:07.466908134Z                  ^^^^^^^^^^^
+2026-10-31T11:11:07.466909462Z   File "/usr/local/lib/python3.12/dist-packages/triton/backends/nvidia/driver.py", line 101, in __init__
+2026-10-31T11:11:07.466910966Z     mod = compile_module_from_file(
+2026-10-31T11:11:07.466912262Z           ^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466913590Z   File "/usr/local/lib/python3.12/dist-packages/triton/runtime/build.py", line 196, in compile_module_from_file
+2026-10-31T11:11:07.466915062Z     return _compile_so_from_file(src_path, name, library_dirs, include_dirs, libraries, ccflags, load_module=True)
+2026-10-31T11:11:07.466916550Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466917990Z   File "/usr/local/lib/python3.12/dist-packages/triton/runtime/build.py", line 165, in _compile_so_from_file
+2026-10-31T11:11:07.466919430Z     return _compile_so(src=src, src_path=src_path, name=name, library_dirs=library_dirs, include_dirs=include_dirs,
+2026-10-31T11:11:07.466920870Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466922486Z   File "/usr/local/lib/python3.12/dist-packages/triton/runtime/build.py", line 154, in _compile_so
+2026-10-31T11:11:07.466924006Z     return _load_module_from_path(name, cache_path) if load_module else cache_path
+2026-10-31T11:11:07.466925462Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466926726Z   File "/usr/local/lib/python3.12/dist-packages/triton/runtime/build.py", line 112, in _load_module_from_path
+2026-10-31T11:11:07.466928214Z     mod = importlib.util.module_from_spec(spec)
+2026-10-31T11:11:07.466929606Z           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.466930918Z   File "<frozen importlib._bootstrap>", line 813, in module_from_spec
+2026-10-31T11:11:07.466932342Z   File "<frozen importlib._bootstrap_external>", line 1289, in create_module
+2026-10-31T11:11:07.466933830Z   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2026-10-31T11:11:07.466935382Z ImportError: /tmp/.triton/cache/CT6VQQBWDTPKZBVXR75UCD7JJRLULEZ4WK3JRKFKQ4YAPCM45QZQ/cuda_utils.cpython-312-aarch64-linux-gnu.so: failed to map segment from shared object
+2026-10-31T11:11:08.987837528Z Traceback (most recent call last):
+2026-10-31T11:11:08.987859720Z   File "<frozen runpy>", line 198, in _run_module_as_main
+2026-10-31T11:11:08.987861496Z   File "<frozen runpy>", line 88, in _run_code
+2026-10-31T11:11:08.987862968Z   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/openai/api_server.py", line 59, in <module>
+2026-10-31T11:11:08.987878200Z     main()
+2026-10-31T11:11:08.987879256Z   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/launchers/api_server/entry.py", line 226, in main
+2026-10-31T11:11:08.987880104Z     uvloop.run(run_server(args))
+2026-10-31T11:11:08.987880952Z   File "/usr/local/lib/python3.12/dist-packages/uvloop/__init__.py", line 96, in run
+2026-10-31T11:11:08.987881784Z     return __asyncio.run(
+2026-10-31T11:11:08.987882632Z            ^^^^^^^^^^^^^^
+2026-10-31T11:11:08.987883448Z   File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+2026-10-31T11:11:08.987884248Z     return runner.run(main)
+2026-10-31T11:11:08.987885096Z            ^^^^^^^^^^^^^^^^
+2026-10-31T11:11:08.987885832Z   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+2026-10-31T11:11:08.987984888Z     return self._loop.run_until_complete(task)
+2026-10-31T11:11:08.987985784Z            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:08.987986648Z   File "uvloop/loop.pyx", line 1515, in uvloop.loop.Loop.run_until_complete
+2026-10-31T11:11:08.987987464Z   File "/usr/local/lib/python3.12/dist-packages/uvloop/__init__.py", line 48, in wrapper
+2026-10-31T11:11:08.988015448Z     return await main
+2026-10-31T11:11:08.988016904Z            ^^^^^^^^^^
+2026-10-31T11:11:08.988017784Z   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/launchers/api_server/entry.py", line 176, in run_server
+2026-10-31T11:11:08.988152696Z     await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
+2026-10-31T11:11:08.988153688Z   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/launchers/api_server/entry.py", line 190, in run_server_worker
+2026-10-31T11:11:08.988154664Z     async with build_async_engine_client(
+2026-10-31T11:11:08.988155592Z   File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+2026-10-31T11:11:08.988156520Z     return await anext(self.gen)
+2026-10-31T11:11:08.988157416Z            ^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:08.988158296Z   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/launchers/api_server/entry.py", line 60, in build_async_engine_client
+2026-10-31T11:11:08.988159160Z     async with build_async_engine_client_from_engine_args(
+2026-10-31T11:11:08.988160072Z   File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+2026-10-31T11:11:08.988160904Z     return await anext(self.gen)
+2026-10-31T11:11:08.988161864Z            ^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:08.988162584Z   File "/usr/local/lib/python3.12/dist-packages/vllm/entrypoints/launchers/api_server/entry.py", line 94, in build_async_engine_client_from_engine_args
+2026-10-31T11:11:08.988178760Z     async_llm = AsyncLLM.from_vllm_config(
+2026-10-31T11:11:08.988184328Z                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:08.988201960Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/async_llm.py", line 264, in from_vllm_config
+2026-10-31T11:11:08.988968840Z     return cls(
+2026-10-31T11:11:08.988981000Z            ^^^^
+2026-10-31T11:11:08.988982200Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/async_llm.py", line 193, in __init__
+2026-10-31T11:11:08.988983432Z     self.engine_core = EngineCoreClient.make_async_mp_client(
+2026-10-31T11:11:08.988984360Z                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:08.988985304Z   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 175, in sync_wrapper
+2026-10-31T11:11:08.988986216Z     return func(*args, **kwargs)
+2026-10-31T11:11:08.988987080Z            ^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:08.988987928Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 171, in make_async_mp_client
+2026-10-31T11:11:08.989163352Z     return AsyncMPClient(
+2026-10-31T11:11:08.989165048Z            ^^^^^^^^^^^^^^
+2026-10-31T11:11:08.989165864Z   File "/usr/local/lib/python3.12/dist-packages/vllm/tracing/otel.py", line 175, in sync_wrapper
+2026-10-31T11:11:08.989166696Z     return func(*args, **kwargs)
+2026-10-31T11:11:08.989167448Z            ^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:08.989168184Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 1173, in __init__
+2026-10-31T11:11:08.989381656Z     super().__init__(
+2026-10-31T11:11:08.989382888Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/core_client.py", line 709, in __init__
+2026-10-31T11:11:08.989383736Z     with launch_core_engines(
+2026-10-31T11:11:08.989384504Z   File "/usr/lib/python3.12/contextlib.py", line 144, in __exit__
+2026-10-31T11:11:08.989385304Z     next(self.gen)
+2026-10-31T11:11:08.989386184Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/utils.py", line 1393, in launch_core_engines
+2026-10-31T11:11:08.989694232Z     wait_for_engine_startup(
+2026-10-31T11:11:08.989703528Z   File "/usr/local/lib/python3.12/dist-packages/vllm/v1/engine/utils.py", line 1473, in wait_for_engine_startup
+2026-10-31T11:11:08.989704440Z     raise RuntimeError(
+2026-10-31T11:11:08.989705256Z RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}

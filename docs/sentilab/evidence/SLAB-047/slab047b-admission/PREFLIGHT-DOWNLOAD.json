@@ -1,0 +1,65 @@
+{
+  "at_unix": 1793446587.217162,
+  "files": [
+    {
+      "name": "APPROVED.json",
+      "bytes": 447,
+      "sha256": "d3af4760af160a374758229931b54bfe8d745897ef49a774b7ef5d68a35fd918"
+    },
+    {
+      "name": "inspection-created.json",
+      "bytes": 3157,
+      "sha256": "47ac1455ce1528534141743d0d8f11ff47d7f5369dffc1ec2cd193a8fd3e58c0"
+    },
+    {
+      "name": "inspection-finished.json",
+      "bytes": 3175,
+      "sha256": "829a42234687008043f5c71f10f07065cbcfa06f8685a6c1869ad115d2e75e57"
+    },
+    {
+      "name": "intent.json",
+      "bytes": 1160,
+      "sha256": "e3994a940adcc72024e6d2b73f3f58cd69895381dce43a8217b61abe58f4b47d"
+    },
+    {
+      "name": "preflight047b.py",
+      "bytes": 22140,
+      "sha256": "ed856df35246a8c1a59459d0e5b197f0921ec893cc2ab1bae047f8e43432a74f"
+    },
+    {
+      "name": "probe.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "probe.stdout.json",
+      "bytes": 6810,
+      "sha256": "600a5fbd5c6961bddfbc61b07b5be49a0b02b15e06925cbf090ea3ff336335ac"
+    },
+    {
+      "name": "probe.stdout.log",
+      "bytes": 6842,
+      "sha256": "f78d07a739c452d5fb48d1e6a1e842e1390bad1f315baccaa3fa3f102bbef850"
+    },
+    {
+      "name": "result.json",
+      "bytes": 1268,
+      "sha256": "d7bd65d6fbc96b7ed3517ecca14f9275900f176a737761fd4fad8104a91bd620"
+    },
+    {
+      "name": "run.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "state.json",
+      "bytes": 152,
+      "sha256": "376e31a4f368a3089c17a58cfc01004a1d9dd98964f7ebaf2b2bb64aafc434ea"
+    }
+  ],
+  "docker_inventory_exit": 0,
+  "docker_ids": [],
+  "docker_stderr": "",
+  "run_lock_free": true,
+  "gpu_approval_exists": false
+}

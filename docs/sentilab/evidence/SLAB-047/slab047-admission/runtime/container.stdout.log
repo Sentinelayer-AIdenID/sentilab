@@ -1,0 +1,7 @@
+2026-10-31T11:11:07.465959958Z (EngineCore pid=166) ERROR 10-31 11:11:07 [core.py:1632]     mod = importlib.util.module_from_spec(spec)
+2026-10-31T11:11:07.465961526Z (EngineCore pid=166) ERROR 10-31 11:11:07 [core.py:1632]           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-10-31T11:11:07.465962966Z (EngineCore pid=166) ERROR 10-31 11:11:07 [core.py:1632]   File "<frozen importlib._bootstrap>", line 813, in module_from_spec
+2026-10-31T11:11:07.465964598Z (EngineCore pid=166) ERROR 10-31 11:11:07 [core.py:1632]   File "<frozen importlib._bootstrap_external>", line 1289, in create_module
+2026-10-31T11:11:07.465966246Z (EngineCore pid=166) ERROR 10-31 11:11:07 [core.py:1632]   File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+2026-10-31T11:11:07.465967878Z (EngineCore pid=166) ERROR 10-31 11:11:07 [core.py:1632] ImportError: /tmp/.triton/cache/CT6VQQBWDTPKZBVXR75UCD7JJRLULEZ4WK3JRKFKQ4YAPCM45QZQ/cuda_utils.cpython-312-aarch64-linux-gnu.so: failed to map segment from shared object
+2026-10-31T11:11:08.697999606Z (APIServer pid=57) INFO 10-31 11:11:08 [utils.py:628] [shutdown] Process manager: send sigterm to process EngineCore

@@ -1,0 +1,1825 @@
+{
+  "head": "3236e23aecafb8e49e31aaec8101d3906f1de2a8",
+  "success": true,
+  "checks": [
+    {
+      "name": "download byte length and SHA APPROVED.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA admission.lock",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA container-inspection-final.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA container-log-scope.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA container-tmpfs.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA container.stderr.log",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA container.stdout.log",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA docker.lock",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-00.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-01.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-02.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-03.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-04.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-05.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-06.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-07.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-08.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-09.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-10.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-11.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-12.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-13.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-14.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-15.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-16.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-17.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-18.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA inference-19.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA input-verification.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-00.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-01.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-02.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-03.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-04.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-05.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-06.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-07.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-08.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-09.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-10.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-11.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-12.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-13.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-14.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-15.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-16.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-17.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-18.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA request-19.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA reservation.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-00.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-01.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-02.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-03.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-04.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-05.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-06.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-07.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-08.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-09.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-10.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-11.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-12.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-13.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-14.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-15.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-16.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-17.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-18.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA response-19.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA serve047.py",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA state.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA state.lock",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA worker-claimed.json",
+      "passed": true
+    },
+    {
+      "name": "download byte length and SHA worker.lock",
+      "passed": true
+    },
+    {
+      "name": "exactly75 downloaded artifact files",
+      "passed": true
+    },
+    {
+      "name": "downloaded source exact reviewed head",
+      "passed": true
+    },
+    {
+      "name": "policy and bridge hashes agree",
+      "passed": true
+    },
+    {
+      "name": "17 exact input metadata receipts",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin model/.gitattributes",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin model/LICENSE",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin model/README.md",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin model/config.json",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin model/generation_config.json",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin model/merges.txt",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin model/model-00001-of-00003.safetensors",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin model/model-00002-of-00003.safetensors",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin model/model-00003-of-00003.safetensors",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin model/model.safetensors.index.json",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin model/tokenizer.json",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin model/tokenizer_config.json",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin model/vocab.json",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin attempt-01/adapter/adapter_model.safetensors",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin attempt-01/adapter/adapter_config.json",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin attempt-01/execution-inputs.json",
+      "passed": true
+    },
+    {
+      "name": "unique wellformed input pin fixtures/eval.jsonl",
+      "passed": true
+    },
+    {
+      "name": "fixture actual source bytes match runtime pin",
+      "passed": true
+    },
+    {
+      "name": "fixture manifests bind train and eval",
+      "passed": true
+    },
+    {
+      "name": "20 rows are six repeated source cases",
+      "passed": true
+    },
+    {
+      "name": "same source identities in200trainingrows",
+      "passed": true
+    },
+    {
+      "name": "fixture labels are explicitly supplied",
+      "passed": true
+    },
+    {
+      "name": "source policy reservation match",
+      "passed": true
+    },
+    {
+      "name": "frozen approval matches exact downloaded bytes",
+      "passed": true
+    },
+    {
+      "name": "approval exact controller policy grant",
+      "passed": true
+    },
+    {
+      "name": "terminal state exactly20 no error",
+      "passed": true
+    },
+    {
+      "name": "controller final acceptance remains false",
+      "passed": true
+    },
+    {
+      "name": "00 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "00 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "00 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "00 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "00 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "00 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "00 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "00 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "00 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "01 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "01 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "01 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "01 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "01 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "01 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "01 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "01 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "01 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "02 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "02 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "02 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "02 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "02 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "02 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "02 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "02 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "02 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "03 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "03 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "03 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "03 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "03 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "03 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "03 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "03 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "03 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "04 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "04 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "04 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "04 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "04 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "04 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "04 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "04 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "04 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "05 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "05 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "05 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "05 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "05 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "05 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "05 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "05 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "05 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "06 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "06 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "06 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "06 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "06 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "06 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "06 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "06 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "06 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "07 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "07 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "07 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "07 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "07 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "07 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "07 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "07 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "07 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "08 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "08 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "08 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "08 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "08 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "08 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "08 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "08 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "08 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "09 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "09 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "09 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "09 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "09 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "09 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "09 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "09 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "09 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "10 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "10 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "10 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "10 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "10 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "10 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "10 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "10 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "10 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "11 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "11 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "11 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "11 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "11 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "11 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "11 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "11 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "11 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "12 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "12 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "12 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "12 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "12 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "12 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "12 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "12 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "12 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "13 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "13 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "13 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "13 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "13 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "13 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "13 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "13 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "13 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "14 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "14 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "14 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "14 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "14 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "14 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "14 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "14 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "14 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "15 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "15 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "15 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "15 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "15 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "15 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "15 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "15 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "15 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "16 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "16 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "16 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "16 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "16 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "16 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "16 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "16 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "16 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "17 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "17 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "17 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "17 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "17 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "17 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "17 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "17 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "17 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "18 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "18 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "18 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "18 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "18 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "18 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "18 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "18 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "18 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "19 exact fixed request bytes",
+      "passed": true
+    },
+    {
+      "name": "19 request response hash binding",
+      "passed": true
+    },
+    {
+      "name": "19 receipt source and policy",
+      "passed": true
+    },
+    {
+      "name": "19 valid HTTP200 receipt",
+      "passed": true
+    },
+    {
+      "name": "19 independently compared output",
+      "passed": true
+    },
+    {
+      "name": "19 adapter output completed normally",
+      "passed": true
+    },
+    {
+      "name": "19 reported usage exact and additive",
+      "passed": true
+    },
+    {
+      "name": "19 bounded measured latency and request allowance",
+      "passed": true
+    },
+    {
+      "name": "19 recomputed client token rate",
+      "passed": true
+    },
+    {
+      "name": "20 response IDs unique and created times ordered",
+      "passed": true
+    },
+    {
+      "name": "exact20 request files",
+      "passed": true
+    },
+    {
+      "name": "exact20 response files",
+      "passed": true
+    },
+    {
+      "name": "exact20 inference files",
+      "passed": true
+    },
+    {
+      "name": "retained log event SLAB047B_MOUNTINFO=",
+      "passed": true
+    },
+    {
+      "name": "retained log event SLAB047B_STARTUP=",
+      "passed": true
+    },
+    {
+      "name": "retained log event Loading model from scratch...",
+      "passed": true
+    },
+    {
+      "name": "retained log event Loading weights took 46.39 seconds",
+      "passed": true
+    },
+    {
+      "name": "retained log event Model loading took 7.67 GiB memory and 48.126966 seconds",
+      "passed": true
+    },
+    {
+      "name": "retained log event Using PunicaWrapperGPU.",
+      "passed": true
+    },
+    {
+      "name": "retained log event env_dir='/tmp/.cache/flashinfer/autotune/v2/3e78077ed30abee7'",
+      "passed": true
+    },
+    {
+      "name": "retained log event Autotuning process ends",
+      "passed": true
+    },
+    {
+      "name": "retained log event init engine (profile, create kv cache, warmup model) took 22.96 s",
+      "passed": true
+    },
+    {
+      "name": "retained log event Loaded new LoRA adapter: name 'fixture', path '/adapter'",
+      "passed": true
+    },
+    {
+      "name": "retained log event \"GET /health HTTP/1.1\" 200 OK",
+      "passed": true
+    },
+    {
+      "name": "retained log event \"POST /v1/chat/completions HTTP/1.1\" 200 OK",
+      "passed": true
+    },
+    {
+      "name": "retained log event shutdown triggered",
+      "passed": true
+    },
+    {
+      "name": "retained log event force killing remaining process EngineCore",
+      "passed": true
+    },
+    {
+      "name": "retained log event 1 leaked semaphore objects",
+      "passed": true
+    },
+    {
+      "name": "exactly20 logged POST200 completions",
+      "passed": true
+    },
+    {
+      "name": "service actual writable executable tmpfs and read-only root",
+      "passed": true
+    },
+    {
+      "name": "service effective UID HOME and cache env",
+      "passed": true
+    },
+    {
+      "name": "service Docker tmpfs exact policy",
+      "passed": true
+    },
+    {
+      "name": "startup inference shutdown temporal sequence",
+      "passed": true
+    },
+    {
+      "name": "no retained old mapping exception",
+      "passed": true
+    },
+    {
+      "name": "log capture limit disclosed",
+      "passed": true
+    },
+    {
+      "name": "retained logs below capture caps",
+      "passed": true
+    },
+    {
+      "name": "same host reservation charge wall consistency",
+      "passed": true
+    },
+    {
+      "name": "same host launch warmup wall consistency",
+      "passed": true
+    },
+    {
+      "name": "original900second deadlines preserved",
+      "passed": true
+    },
+    {
+      "name": "cleanup and closure evidence",
+      "passed": true
+    },
+    {
+      "name": "request time fits ready to cleanup interval",
+      "passed": true
+    },
+    {
+      "name": "original consumed attempt retained state.json",
+      "passed": true
+    },
+    {
+      "name": "original consumed attempt retained reservation.json",
+      "passed": true
+    },
+    {
+      "name": "original consumed attempt retained container.stdout.log",
+      "passed": true
+    },
+    {
+      "name": "original consumed attempt retained container.stderr.log",
+      "passed": true
+    },
+    {
+      "name": "old failed attempt distinct and zero requests",
+      "passed": true
+    }
+  ],
+  "downloaded_files": 75,
+  "pinned_input_receipts": 17,
+  "request_receipts": [
+    {
+      "index": 0,
+      "row_id": "eval-000",
+      "source_record_id": "8a7f3e21c1f9d67235104ddb900f67c48afb9a217f4bca3c7ad841b39eb7fafa",
+      "wall_seconds": 34.9695479140064,
+      "usage": {
+        "completion_tokens": 15,
+        "prompt_tokens": 153,
+        "total_tokens": 168
+      },
+      "client_completion_tokens_per_second": 0.42894463596974414,
+      "exact_json_match": true
+    },
+    {
+      "index": 1,
+      "row_id": "eval-001",
+      "source_record_id": "befba27dc2cc282e3f20d1676f7daecebbbcc89a066b7cb54f111813402e64f6",
+      "wall_seconds": 2.6205715520045487,
+      "usage": {
+        "completion_tokens": 17,
+        "prompt_tokens": 158,
+        "total_tokens": 175
+      },
+      "client_completion_tokens_per_second": 6.487134452404561,
+      "exact_json_match": true
+    },
+    {
+      "index": 2,
+      "row_id": "eval-002",
+      "source_record_id": "6f15e9f205f391c564cae4560e29b1250f710b061775b2f0a9f38d9e9e1fb624",
+      "wall_seconds": 0.8208374219975667,
+      "usage": {
+        "completion_tokens": 16,
+        "prompt_tokens": 156,
+        "total_tokens": 172
+      },
+      "client_completion_tokens_per_second": 19.492288693494082,
+      "exact_json_match": true
+    },
+    {
+      "index": 3,
+      "row_id": "eval-003",
+      "source_record_id": "ee62e9d349b4c306debbe3340c12990db54779e37b0ae2b1e99fc140ea3dc4b6",
+      "wall_seconds": 1.5776582000034978,
+      "usage": {
+        "completion_tokens": 19,
+        "prompt_tokens": 155,
+        "total_tokens": 174
+      },
+      "client_completion_tokens_per_second": 12.043166257404726,
+      "exact_json_match": true
+    },
+    {
+      "index": 4,
+      "row_id": "eval-004",
+      "source_record_id": "666a1fb025befdea872ae724022c323976d3776213df1bda380174f2ad7cc823",
+      "wall_seconds": 1.1192374439997366,
+      "usage": {
+        "completion_tokens": 22,
+        "prompt_tokens": 161,
+        "total_tokens": 183
+      },
+      "client_completion_tokens_per_second": 19.656240164178406,
+      "exact_json_match": true
+    },
+    {
+      "index": 5,
+      "row_id": "eval-005",
+      "source_record_id": "1a43c671efe7e3f5240941bc7327850cc5a54defb1dc89ca6c9674e0b61e0f4a",
+      "wall_seconds": 0.9217145029979292,
+      "usage": {
+        "completion_tokens": 18,
+        "prompt_tokens": 156,
+        "total_tokens": 174
+      },
+      "client_completion_tokens_per_second": 19.52882366660606,
+      "exact_json_match": true
+    },
+    {
+      "index": 6,
+      "row_id": "eval-006",
+      "source_record_id": "8a7f3e21c1f9d67235104ddb900f67c48afb9a217f4bca3c7ad841b39eb7fafa",
+      "wall_seconds": 0.7758115800024825,
+      "usage": {
+        "completion_tokens": 15,
+        "prompt_tokens": 153,
+        "total_tokens": 168
+      },
+      "client_completion_tokens_per_second": 19.33459152537012,
+      "exact_json_match": true
+    },
+    {
+      "index": 7,
+      "row_id": "eval-007",
+      "source_record_id": "befba27dc2cc282e3f20d1676f7daecebbbcc89a066b7cb54f111813402e64f6",
+      "wall_seconds": 0.8744719399983296,
+      "usage": {
+        "completion_tokens": 17,
+        "prompt_tokens": 158,
+        "total_tokens": 175
+      },
+      "client_completion_tokens_per_second": 19.440303596285172,
+      "exact_json_match": true
+    },
+    {
+      "index": 8,
+      "row_id": "eval-008",
+      "source_record_id": "6f15e9f205f391c564cae4560e29b1250f710b061775b2f0a9f38d9e9e1fb624",
+      "wall_seconds": 0.8253819640012807,
+      "usage": {
+        "completion_tokens": 16,
+        "prompt_tokens": 156,
+        "total_tokens": 172
+      },
+      "client_completion_tokens_per_second": 19.38496441385188,
+      "exact_json_match": true
+    },
+    {
+      "index": 9,
+      "row_id": "eval-009",
+      "source_record_id": "ee62e9d349b4c306debbe3340c12990db54779e37b0ae2b1e99fc140ea3dc4b6",
+      "wall_seconds": 0.9613576010015095,
+      "usage": {
+        "completion_tokens": 19,
+        "prompt_tokens": 155,
+        "total_tokens": 174
+      },
+      "client_completion_tokens_per_second": 19.76371745561324,
+      "exact_json_match": true
+    },
+    {
+      "index": 10,
+      "row_id": "eval-010",
+      "source_record_id": "666a1fb025befdea872ae724022c323976d3776213df1bda380174f2ad7cc823",
+      "wall_seconds": 1.1135448299974087,
+      "usage": {
+        "completion_tokens": 22,
+        "prompt_tokens": 161,
+        "total_tokens": 183
+      },
+      "client_completion_tokens_per_second": 19.756725914708973,
+      "exact_json_match": true
+    },
+    {
+      "index": 11,
+      "row_id": "eval-011",
+      "source_record_id": "1a43c671efe7e3f5240941bc7327850cc5a54defb1dc89ca6c9674e0b61e0f4a",
+      "wall_seconds": 0.9130624559984426,
+      "usage": {
+        "completion_tokens": 18,
+        "prompt_tokens": 156,
+        "total_tokens": 174
+      },
+      "client_completion_tokens_per_second": 19.713875958591274,
+      "exact_json_match": true
+    },
+    {
+      "index": 12,
+      "row_id": "eval-012",
+      "source_record_id": "8a7f3e21c1f9d67235104ddb900f67c48afb9a217f4bca3c7ad841b39eb7fafa",
+      "wall_seconds": 0.7659143630007748,
+      "usage": {
+        "completion_tokens": 15,
+        "prompt_tokens": 153,
+        "total_tokens": 168
+      },
+      "client_completion_tokens_per_second": 19.584434924593296,
+      "exact_json_match": true
+    },
+    {
+      "index": 13,
+      "row_id": "eval-013",
+      "source_record_id": "befba27dc2cc282e3f20d1676f7daecebbbcc89a066b7cb54f111813402e64f6",
+      "wall_seconds": 0.8639773100003367,
+      "usage": {
+        "completion_tokens": 17,
+        "prompt_tokens": 158,
+        "total_tokens": 175
+      },
+      "client_completion_tokens_per_second": 19.676442660274695,
+      "exact_json_match": true
+    },
+    {
+      "index": 14,
+      "row_id": "eval-014",
+      "source_record_id": "6f15e9f205f391c564cae4560e29b1250f710b061775b2f0a9f38d9e9e1fb624",
+      "wall_seconds": 0.8160129889947711,
+      "usage": {
+        "completion_tokens": 16,
+        "prompt_tokens": 156,
+        "total_tokens": 172
+      },
+      "client_completion_tokens_per_second": 19.607531026816197,
+      "exact_json_match": true
+    },
+    {
+      "index": 15,
+      "row_id": "eval-015",
+      "source_record_id": "ee62e9d349b4c306debbe3340c12990db54779e37b0ae2b1e99fc140ea3dc4b6",
+      "wall_seconds": 0.9626818069955334,
+      "usage": {
+        "completion_tokens": 19,
+        "prompt_tokens": 155,
+        "total_tokens": 174
+      },
+      "client_completion_tokens_per_second": 19.73653169918911,
+      "exact_json_match": true
+    },
+    {
+      "index": 16,
+      "row_id": "eval-016",
+      "source_record_id": "666a1fb025befdea872ae724022c323976d3776213df1bda380174f2ad7cc823",
+      "wall_seconds": 1.1140003570035333,
+      "usage": {
+        "completion_tokens": 22,
+        "prompt_tokens": 161,
+        "total_tokens": 183
+      },
+      "client_completion_tokens_per_second": 19.748647172049534,
+      "exact_json_match": true
+    },
+    {
+      "index": 17,
+      "row_id": "eval-017",
+      "source_record_id": "1a43c671efe7e3f5240941bc7327850cc5a54defb1dc89ca6c9674e0b61e0f4a",
+      "wall_seconds": 0.9159174550004536,
+      "usage": {
+        "completion_tokens": 18,
+        "prompt_tokens": 156,
+        "total_tokens": 174
+      },
+      "client_completion_tokens_per_second": 19.65242599289811,
+      "exact_json_match": true
+    },
+    {
+      "index": 18,
+      "row_id": "eval-018",
+      "source_record_id": "8a7f3e21c1f9d67235104ddb900f67c48afb9a217f4bca3c7ad841b39eb7fafa",
+      "wall_seconds": 0.7662041380026494,
+      "usage": {
+        "completion_tokens": 15,
+        "prompt_tokens": 153,
+        "total_tokens": 168
+      },
+      "client_completion_tokens_per_second": 19.577028178289652,
+      "exact_json_match": true
+    },
+    {
+      "index": 19,
+      "row_id": "eval-019",
+      "source_record_id": "befba27dc2cc282e3f20d1676f7daecebbbcc89a066b7cb54f111813402e64f6",
+      "wall_seconds": 0.8740412550032488,
+      "usage": {
+        "completion_tokens": 17,
+        "prompt_tokens": 158,
+        "total_tokens": 175
+      },
+      "client_completion_tokens_per_second": 19.44988283183133,
+      "exact_json_match": true
+    }
+  ],
+  "metrics": {
+    "request_count": 20,
+    "exact_json_matches": 20,
+    "unique_source_cases": 6,
+    "repeat_counts": [
+      3,
+      3,
+      3,
+      3,
+      4,
+      4
+    ],
+    "launch_to_health_seconds": 89.05037042799813,
+    "charged_attempt_seconds": 148.90950332500506,
+    "all20": {
+      "sum_client_request_seconds": 54.57194708001043,
+      "mean_latency_seconds": 2.7285973540005215,
+      "median_latency_seconds": 0.9144899554994481,
+      "range_latency_seconds": [
+        0.7659143630007748,
+        34.9695479140064
+      ],
+      "reported_completion_tokens": 353,
+      "reported_prompt_tokens": 3128,
+      "completion_tokens_over_sum_client_seconds": 6.468524926963858
+    },
+    "first_request": {
+      "index": 0,
+      "row_id": "eval-000",
+      "source_record_id": "8a7f3e21c1f9d67235104ddb900f67c48afb9a217f4bca3c7ad841b39eb7fafa",
+      "wall_seconds": 34.9695479140064,
+      "usage": {
+        "completion_tokens": 15,
+        "prompt_tokens": 153,
+        "total_tokens": 168
+      },
+      "client_completion_tokens_per_second": 0.42894463596974414,
+      "exact_json_match": true
+    },
+    "subsequent19": {
+      "sum_client_request_seconds": 19.602399166004034,
+      "mean_latency_seconds": 1.0317052192633702,
+      "median_latency_seconds": 0.9130624559984426,
+      "range_latency_seconds": [
+        0.7659143630007748,
+        2.6205715520045487
+      ],
+      "reported_completion_tokens": 338,
+      "completion_tokens_over_sum_client_seconds": 17.2427873311643
+    },
+    "scope": "Single serial localhost run including client overhead; provider-reported tokens; first request separate, no decoder-throughput/concurrency/TTFT/baseline/generalization claim."
+  },
+  "events": {
+    "mount": {
+      "stream": "stdout",
+      "line": 1,
+      "timestamp": "2026-10-31T11:37:48.118617357Z",
+      "text": "SLAB047B_MOUNTINFO=['7298 7250 0:102 / / ro,relatime - overlay overlay rw,lowerdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/674/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/40/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/39/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/38/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/37/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/36/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/35/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/34/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/33/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/32/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/31/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/30/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/29/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/28/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/27/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/26/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/25/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/24/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/23/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/22/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/21/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/20/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/19/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/18/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/17/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/16/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/15/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/14/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/13/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/12/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/11/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/10/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/9/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/8/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/7/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/6/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/5/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/2/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1/fs,upperdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/675/fs,workdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/675/work,nouserxattr', '7360 7298 0:116 / /tmp rw,nosuid,nodev,relatime - tmpfs tmpfs rw,size=4194304k,inode64']"
+    },
+    "environment": {
+      "stream": "stdout",
+      "line": 2,
+      "timestamp": "2026-10-31T11:37:48.118670830Z",
+      "text": "SLAB047B_STARTUP={'uid': 1000, 'gid': 1000, 'cache_env': {'HOME': '/tmp', 'HF_HOME': '/tmp/hf', 'TRITON_CACHE_DIR': None, 'TORCHINDUCTOR_CACHE_DIR': None, 'TORCH_EXTENSIONS_DIR': None, 'XDG_CACHE_HOME': None, 'CUDA_CACHE_PATH': None}}"
+    },
+    "model_load_start": {
+      "stream": "stdout",
+      "line": 22,
+      "timestamp": "2026-10-31T11:38:04.891229678Z",
+      "text": "(EngineCore pid=165) INFO 10-31 11:38:04 [model_runner.py:402] Loading model from scratch..."
+    },
+    "weights_loaded": {
+      "stream": "stdout",
+      "line": 28,
+      "timestamp": "2026-10-31T11:38:52.027156849Z",
+      "text": "(EngineCore pid=165) INFO 10-31 11:38:52 [default_loader.py:506] Loading weights took 46.39 seconds"
+    },
+    "model_loaded": {
+      "stream": "stdout",
+      "line": 30,
+      "timestamp": "2026-10-31T11:38:52.825706343Z",
+      "text": "(EngineCore pid=165) INFO 10-31 11:38:52 [model_runner.py:434] Model loading took 7.67 GiB memory and 48.126966 seconds"
+    },
+    "punica": {
+      "stream": "stdout",
+      "line": 29,
+      "timestamp": "2026-10-31T11:38:52.443725626Z",
+      "text": "(EngineCore pid=165) INFO 10-31 11:38:52 [punica_selector.py:20] Using PunicaWrapperGPU."
+    },
+    "flashinfer_cache": {
+      "stream": "stderr",
+      "line": 23,
+      "timestamp": "2026-10-31T11:38:58.113555140Z",
+      "text": "2026-10-31 11:38:58,112 - INFO - autotune_cache.py:495 - flashinfer.jit: [Autotuner]: Managed autotune cache attached for this process: ManagedAutotuneCache(env_dir='/tmp/.cache/flashinfer/autotune/v2/3e78077ed30abee7', hits=0, misses=0)"
+    },
+    "autotune_end": {
+      "stream": "stderr",
+      "line": 24,
+      "timestamp": "2026-10-31T11:39:15.455727898Z",
+      "text": "2026-10-31 11:39:15,454 - INFO - autotuner.py:1071 - flashinfer.jit: [Autotuner]: Autotuning process ends"
+    },
+    "engine_initialized": {
+      "stream": "stdout",
+      "line": 40,
+      "timestamp": "2026-10-31T11:39:15.801069977Z",
+      "text": "(EngineCore pid=165) INFO 10-31 11:39:15 [core.py:419] init engine (profile, create kv cache, warmup model) took 22.96 s"
+    },
+    "adapter_loaded": {
+      "stream": "stdout",
+      "line": 48,
+      "timestamp": "2026-10-31T11:39:16.104841965Z",
+      "text": "(APIServer pid=56) INFO 10-31 11:39:16 [serving.py:229] Loaded new LoRA adapter: name 'fixture', path '/adapter'"
+    },
+    "health": {
+      "stream": "stdout",
+      "line": 89,
+      "timestamp": "2026-10-31T11:39:16.970472777Z",
+      "text": "INFO:     172.17.0.1:33042 - \"GET /health HTTP/1.1\" 200 OK"
+    },
+    "post": [
+      {
+        "stream": "stdout",
+        "line": 91,
+        "timestamp": "2026-10-31T11:39:51.941954159Z",
+        "text": "INFO:     172.17.0.1:33046 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 92,
+        "timestamp": "2026-10-31T11:39:54.573590804Z",
+        "text": "INFO:     172.17.0.1:46334 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 93,
+        "timestamp": "2026-10-31T11:39:55.405097828Z",
+        "text": "INFO:     172.17.0.1:46982 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 95,
+        "timestamp": "2026-10-31T11:39:56.997005503Z",
+        "text": "INFO:     172.17.0.1:46994 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 96,
+        "timestamp": "2026-10-31T11:39:58.124804267Z",
+        "text": "INFO:     172.17.0.1:47010 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 97,
+        "timestamp": "2026-10-31T11:39:59.061156582Z",
+        "text": "INFO:     172.17.0.1:47026 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 98,
+        "timestamp": "2026-10-31T11:39:59.842243578Z",
+        "text": "INFO:     172.17.0.1:47030 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 99,
+        "timestamp": "2026-10-31T11:40:00.724971652Z",
+        "text": "INFO:     172.17.0.1:47046 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 100,
+        "timestamp": "2026-10-31T11:40:01.559783052Z",
+        "text": "INFO:     172.17.0.1:47050 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 101,
+        "timestamp": "2026-10-31T11:40:02.528796704Z",
+        "text": "INFO:     172.17.0.1:47064 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 102,
+        "timestamp": "2026-10-31T11:40:03.649385855Z",
+        "text": "INFO:     172.17.0.1:47070 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 103,
+        "timestamp": "2026-10-31T11:40:04.567326461Z",
+        "text": "INFO:     172.17.0.1:44594 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 104,
+        "timestamp": "2026-10-31T11:40:05.346602614Z",
+        "text": "INFO:     172.17.0.1:44602 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 105,
+        "timestamp": "2026-10-31T11:40:06.216556256Z",
+        "text": "INFO:     172.17.0.1:44608 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 107,
+        "timestamp": "2026-10-31T11:40:07.039298700Z",
+        "text": "INFO:     172.17.0.1:44624 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 108,
+        "timestamp": "2026-10-31T11:40:08.007754326Z",
+        "text": "INFO:     172.17.0.1:44636 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 109,
+        "timestamp": "2026-10-31T11:40:09.128841868Z",
+        "text": "INFO:     172.17.0.1:44644 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 110,
+        "timestamp": "2026-10-31T11:40:10.049582113Z",
+        "text": "INFO:     172.17.0.1:44650 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 111,
+        "timestamp": "2026-10-31T11:40:10.823175613Z",
+        "text": "INFO:     172.17.0.1:44664 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      },
+      {
+        "stream": "stdout",
+        "line": 112,
+        "timestamp": "2026-10-31T11:40:11.706614192Z",
+        "text": "INFO:     172.17.0.1:44678 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+      }
+    ],
+    "shutdown": {
+      "stream": "stdout",
+      "line": 113,
+      "timestamp": "2026-10-31T11:40:11.773575060Z",
+      "text": "(APIServer pid=56) INFO 10-31 11:40:11 [launcher.py:256] [shutdown] API server: shutdown triggered"
+    },
+    "force_kill_warning": {
+      "stream": "stdout",
+      "line": 123,
+      "timestamp": "2026-10-31T11:40:11.774485832Z",
+      "text": "(APIServer pid=56) WARNING 10-31 11:40:11 [utils.py:653] [shutdown] Process manager: force killing remaining process EngineCore pid 165"
+    },
+    "semaphore_warning": {
+      "stream": "stderr",
+      "line": 31,
+      "timestamp": "2026-10-31T11:40:12.596218443Z",
+      "text": "/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown"
+    }
+  },
+  "old_failed_charge_seconds": 79.6175887260033,
+  "closure_captured_unix": 1793446902.6838827,
+  "limits": "Offline record consistency only. Model/adapter bytes were not downloaded or rehashed; input receipt is exact reviewed controller attestation. No workload, model, native, device, SSH, Docker, status, stop or CI actions."
+}
