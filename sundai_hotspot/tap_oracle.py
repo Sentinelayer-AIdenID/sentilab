@@ -226,8 +226,15 @@ def _number(value: object, label: str) -> float:
     return result
 
 
-async def _terminate_process_group(process: asyncio.subprocess.Process) -> None:
+async def _terminate_process_group(process: asyncio.subprocess.Process, *, immediate=False) -> None:
     if os.name == "posix":
+        if immediate:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            await process.wait()
+            return
         try:
             os.killpg(process.pid, signal.SIGTERM)
         except ProcessLookupError:
@@ -339,6 +346,7 @@ class _WarmWorker:
         return await self.process.stdout.readline()
 
     async def evaluate(self, request: dict, *, worker_timeout_s: float) -> dict:
+        self.immediate_kill = request.get('bounded_call', False)
         if not self.healthy:
             self.broken = True
             raise HotSpotOracleError("HotSpot worker is not available")
@@ -397,9 +405,11 @@ class _WarmWorker:
 
     async def close(self) -> None:
         self.broken = True
+        started = time.perf_counter()
         try:
-            await _terminate_process_group(self.process)
+            await _terminate_process_group(self.process, immediate=getattr(self, 'immediate_kill', False))
         finally:
+            self.kill_latency_s = time.perf_counter() - started
             self.workspace.cleanup()
             if not self._stderr_task.done():
                 try:
@@ -427,19 +437,22 @@ class _WarmWorkerPool:
         self._workers.discard(worker)
         await _uncancellable_cleanup(worker.close())
 
-    async def _spawn(self) -> _WarmWorker:
+    async def _spawn(self, *, immediate_kill=False) -> _WarmWorker:
         task = asyncio.create_task(_WarmWorker.start())
         try:
             worker = await asyncio.shield(task)
-        except asyncio.CancelledError:
+        except asyncio.CancelledError as exc:
             worker = await task
+            worker.immediate_kill = immediate_kill
             await _uncancellable_cleanup(worker.close())
+            exc.kill_latency_s = worker.kill_latency_s
             raise
+        worker.immediate_kill = immediate_kill
         self._workers.add(worker)
         return worker
 
     @asynccontextmanager
-    async def lease(self):
+    async def lease(self, *, immediate_kill=False):
         if asyncio.get_running_loop() is not self.loop:
             raise RuntimeError("HotSpotOracle workers must be closed before using the oracle on another event loop")
         await self._capacity.acquire()
@@ -455,7 +468,7 @@ class _WarmWorkerPool:
                 try:
                     candidate = self._available.get_nowait()
                 except asyncio.QueueEmpty:
-                    worker = await self._spawn()
+                    worker = await self._spawn(immediate_kill=immediate_kill)
                 else:
                     if candidate.healthy:
                         worker = candidate
@@ -650,7 +663,10 @@ class HotSpotOracle:
                        for i in range(len(centers)) for j in range(i + 1, len(centers)))
         return distance / total_weight
 
-    async def __call__(self, candidate: Design) -> HotSpotThermalResult:
+    async def __call__(self, candidate: Design, *, timeout_s: float | None = None) -> HotSpotThermalResult:
+        if timeout_s is not None and (not math.isfinite(timeout_s) or timeout_s <= 0):
+            raise ValueError('call timeout must be positive and finite')
+        self.last_kill_latency_s = None
         evaluation_started = time.perf_counter()
         # All legality checks happen before the worker is created or HotSpot is run.
         centers = self.centers_for(candidate)
@@ -678,17 +694,39 @@ class HotSpotOracle:
         }
         if self.retained_output_root is not None:
             request['retained_output_root'] = str(self.retained_output_root)
-        response = await _run_worker(
-            request,
-            worker_timeout_s=self.worker_timeout_s,
-            pool=self._get_worker_pool(),
-            validator=lambda value: self._result_from_response(value, candidate, centers, evaluation_started),
-        )
+        if timeout_s is not None:
+            request['solver_timeout_s'] = min(self.solver_timeout_s, timeout_s)
+            request['bounded_call'] = True
+        try:
+            response = await _run_worker(
+                request,
+                worker_timeout_s=self.worker_timeout_s if timeout_s is None else min(self.worker_timeout_s, timeout_s),
+                pool=self._get_worker_pool(),
+                validator=lambda value: self._result_from_response(value, candidate, centers, evaluation_started),
+            )
+        except BaseException as exc:
+            self.last_kill_latency_s = getattr(exc, 'kill_latency_s', None)
+            if timeout_s is not None and isinstance(exc, (asyncio.CancelledError, HotSpotTimeoutError)):
+                self._retain_interrupted_output(timeout_s)
+            raise
         # Tests and adapters may replace _run_worker with a simple response stub;
         # the production pool validates inside the lease so malformed replies retire it.
         if isinstance(response, HotSpotThermalResult):
             return response
         return self._result_from_response(response, candidate, centers, evaluation_started)
+
+    def _retain_interrupted_output(self, timeout_s):
+        if self.retained_output_root is None:
+            return
+        for output in self.retained_output_root.glob('evaluation-*'):
+            for name in ('stdout', 'stderr'):
+                binary = output / f'{name}.bin'
+                if binary.exists():
+                    (output / f'{name}.txt').write_text(binary.read_bytes().decode('utf-8', errors='replace'))
+            if not (output / 'EXIT.json').exists():
+                (output / 'EXIT.json').write_text(json.dumps({
+                    'status': 'parent_timeout', 'returncode': None, 'timeout_s': timeout_s,
+                    'kill_latency_s': self.last_kill_latency_s}) + '\n')
 
     def _result_from_response(self, response: dict, candidate: Design,
                               centers: tuple[tuple[float, float], ...], evaluation_started: float
@@ -756,10 +794,14 @@ async def _run_worker(request: dict, *, worker_timeout_s: float,
     """Send one request to a leased warm worker; standalone calls own a short-lived pool."""
     owns_pool = pool is None
     pool = pool or _WarmWorkerPool(max_workers=1)
+    worker = None
     try:
-        async with pool.lease() as worker:
+        async with pool.lease(immediate_kill=request.get('bounded_call', False)) as worker:
             response = await worker.evaluate(request, worker_timeout_s=worker_timeout_s)
             return validator(response) if validator is not None else response
+    except BaseException as exc:
+        exc.kill_latency_s = getattr(worker, 'kill_latency_s', getattr(exc, 'kill_latency_s', None))
+        raise
     finally:
         if owns_pool:
             await _uncancellable_cleanup(pool.close())

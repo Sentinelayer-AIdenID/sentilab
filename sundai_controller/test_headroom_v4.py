@@ -58,7 +58,7 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
             def _wirelength_mm(self, centers):
                 return case.fake_wire(centers)
 
-            async def __call__(self, design):
+            async def __call__(self, design, *, timeout_s=None):
                 case.on_call()
                 ledger = json.loads(spend_path.read_text())
                 reservation = ledger['active']
@@ -72,6 +72,12 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
                     # A reference call only has a persisted C if all cheap checks passed.
                     if baseline.exists():
                         case.assertEqual(json.loads(baseline.read_text())['reproductions'], 96)
+                case.last_timeout = timeout_s
+                if timeout_s is not None and max(case.cpu_per_call, case.wall_per_call) > timeout_s:
+                    case.cpu += min(case.cpu_per_call, timeout_s)
+                    case.wall += timeout_s
+                    self.last_kill_latency_s = 0.0
+                    raise TimeoutError('fake in-flight timeout')
                 case.cpu += case.cpu_per_call
                 case.wall += case.wall_per_call
                 value = case.temperature(lane, count, design)
@@ -430,9 +436,9 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
         self.spend['cpu_seconds'] += 2879.5
         self.cpu_per_call = 0.3
         result = await self.run_fixture()
-        self.assertEqual(len(self.calls), 1)
-        self.assertEqual(result['reducer_results'][0]['stop_reason'], 'total_cpu_cap')
-        self.assertAlmostEqual(result['allocation_spend']['overshoot']['headroom_cpu_seconds'], 0.094565)
+        self.assertEqual(len(self.calls), 0)
+        self.assertEqual(result['reducer_results'][0]['stop_reason'], 'total_cpu_cap_below_p95')
+        self.assertEqual(result['allocation_spend']['overshoot']['headroom_cpu_seconds'], 0.0)
         self.assertEqual(result['allocation_spend']['fixtures']['ascend910']['cpu_seconds'], 1440.2945650000001)
 
     async def test_fixture_cpu_cap_cannot_be_increased_by_prereg(self):
@@ -478,18 +484,18 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
         self.spend['non_headroom']['cpu_seconds'] = 5040 - self.spend['cpu_seconds'] - 0.25
         self.cpu_per_call = 0.5
         result = await self.run_fixture()
-        self.assertEqual(len(self.calls), 1)
-        self.assertEqual(result['reducer_results'][0]['stop_reason'], 'aggregate_cpu_cap')
-        self.assertAlmostEqual(result['allocation_spend']['overshoot']['aggregate_cpu_seconds'], 0.25)
+        self.assertEqual(len(self.calls), 0)
+        self.assertEqual(result['reducer_results'][0]['stop_reason'], 'aggregate_cpu_cap_below_p95')
+        self.assertEqual(result['allocation_spend']['overshoot']['aggregate_cpu_seconds'], 0.0)
 
     async def test_90_minute_cumulative_wall_cap_and_overshoot(self):
         self.prereg['clock']['solving_wall_minutes'] = 999
         self.spend['solving_wall_seconds'] = 5399.5
         self.wall_per_call = 1.0
         result = await self.run_fixture()
-        self.assertEqual(len(self.calls), 1)
-        self.assertEqual(result['reducer_results'][0]['stop_reason'], 'solving_wall_cap')
-        self.assertEqual(result['allocation_spend']['overshoot']['solving_wall_seconds'], 0.5)
+        self.assertEqual(len(self.calls), 0)
+        self.assertEqual(result['reducer_results'][0]['stop_reason'], 'solving_wall_cap_below_p95')
+        self.assertEqual(result['allocation_spend']['overshoot']['solving_wall_seconds'], 0.0)
 
     async def test_deadline_and_admitted_call_overshoot(self):
         self.now = datetime(2026, 10, 31, 11, 59, 59, tzinfo=timezone.utc)
@@ -497,8 +503,9 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
         self.wall_per_call = 2.0
         result = await self.run_fixture()
         self.assertEqual(len(self.calls), 1)
-        self.assertEqual(result['reducer_results'][0]['stop_reason'], 'deadline')
-        self.assertEqual(result['allocation_spend']['overshoot']['deadline_seconds'], 1.0)
+        self.assertEqual(result['reducer_results'][0]['stop_reason'], 'call_timeout')
+        self.assertEqual(result['allocation_spend']['overshoot']['deadline_seconds'], 0.0)
+        self.assertEqual(self.last_timeout, 1.0)
 
     async def test_no_admission_at_deadline(self):
         self.now = datetime(2026, 10, 31, 12, tzinfo=timezone.utc)
