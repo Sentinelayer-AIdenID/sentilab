@@ -98,10 +98,13 @@ class ResultCheckTests(unittest.TestCase):
             self.assertEqual(mcp.stderr, '')
             replies = [json.loads(line) for line in mcp.stdout.splitlines()]
             self.assertEqual(len(replies), len(self.vectors) + 2)
-            self.assertEqual(replies[0]['result']['protocolVersion'], '2024-11-05')
-            self.assertIn('sentilab_resultcheck', [tool['name'] for tool in replies[1]['result']['tools']])
-            for i, (vector, file, reply) in enumerate(zip(self.vectors, files, replies[2:]), 1):
+            replies_by_id = {reply['id']: reply for reply in replies}
+            self.assertEqual(set(replies_by_id), {0, 'list', *range(1, len(self.vectors) + 1)})
+            self.assertEqual(replies_by_id[0]['result']['protocolVersion'], '2024-11-05')
+            self.assertIn('sentilab_resultcheck', [tool['name'] for tool in replies_by_id['list']['result']['tools']])
+            for i, (vector, file) in enumerate(zip(self.vectors, files), 1):
                 with self.subTest(vector=vector['name']):
+                    reply = replies_by_id[i]
                     receipt = resultcheck.check_raw(file.read_bytes())
                     expected = vector.get('receipt', resultcheck.canonical(receipt))
                     if vector.get('request') is not None:
@@ -207,9 +210,12 @@ class ResultCheckTests(unittest.TestCase):
             mcp = subprocess.run([sys.executable, '-m', 'sentilab_mcp'], cwd=ROOT, env=env,
                 input=''.join(json.dumps(r) + '\n' for r in bad_calls).encode(), capture_output=True, timeout=10, check=True)
             responses = [json.loads(line) for line in mcp.stdout.splitlines()]
-            self.assertTrue(responses[0]['result']['isError'])
-            self.assertEqual(responses[0]['result']['content'][0]['text'], missing.stdout.decode().strip())
-            self.assertEqual([r['error']['code'] for r in responses[1:]], [-32602, -32602])
+            self.assertEqual(len(responses), 3)
+            responses_by_id = {response['id']: response for response in responses}
+            self.assertEqual(set(responses_by_id), {1, 2, 3})
+            self.assertTrue(responses_by_id[1]['result']['isError'])
+            self.assertEqual(responses_by_id[1]['result']['content'][0]['text'], missing.stdout.decode().strip())
+            self.assertEqual([responses_by_id[i]['error']['code'] for i in (2, 3)], [-32602, -32602])
 
     def test_rounding_and_overflow_match_reference_examples(self):
         request = dict(schema_version='resultcheck.request.v2', request_id='rounding',
