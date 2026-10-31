@@ -18,9 +18,10 @@
 - This slice owns the producer/API. Forge owns the deploy-time browser trust pin
   and live page integration. The read-only API and every emitted event carry
   **AI off** and **provisional margin** labels. No public deployment is included.
-- The core signer is one injected service argument. Production provisioning and
-  trust/grant enforcement remain the SLAB-040 integration seam; the explicit
-  local demo signer exists only in RAM. No signer material is given to workers.
+- The core signer is one injected service argument. The production factory now
+  uses SLAB-040's shared service loader and public-key registry. Deployment owns
+  seed provisioning; the explicit local demo signer exists only in RAM. No signer
+  material is given to workers.
 - The imported HotSpot worker currently returns hashes of its raw input files
   and removes its temporary workspace. Raw-output retention awaits the separately
   owned oracle capture seam; this slice does not claim retained raw outputs.

@@ -81,12 +81,19 @@ def stop(context, *, ai_off):
 
 def environment_context(*, ephemeral=False):
     root = Path(os.environ.get("SENTILAB_LIVE_DIR", "/tmp/sentilab-live"))
-    # Operator configuration is the trust anchor, independent of ledger files
-    # and /api/view/key. Public keys are not credentials.
-    public_keys = {key: bytes.fromhex(value) for key, value in
-                   json.loads(os.environ.get("SENTILAB_VIEW_PUBLIC_KEYS", "{}")).items()}
-    signer = None
     factory = os.environ.get("SENTILAB_SIGNER_FACTORY")
+    # The shared registry is the default trust anchor. An explicit override,
+    # including an empty mapping, replaces it rather than adding trusted keys.
+    configured_keys = os.environ.get("SENTILAB_VIEW_PUBLIC_KEYS")
+    if configured_keys is not None:
+        public_keys_hex = json.loads(configured_keys)
+    elif ephemeral and not factory:
+        public_keys_hex = {}
+    else:
+        from sundai_controller import trust
+        public_keys_hex = trust.PINNED_SERVICE_KEYS
+    public_keys = {key: bytes.fromhex(value) for key, value in public_keys_hex.items()}
+    signer = None
     if factory:
         module, name = factory.split(":", 1)
         signer = getattr(importlib.import_module(module), name)()

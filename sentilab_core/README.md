@@ -50,14 +50,24 @@ python -m sentilab_mcp
 
 `--ephemeral` is an explicit local-only in-memory signer. Restarting a local demo
 requires a newly provisioned signer and trusted public-key configuration; private
-material is never serialized. Production injects one signer exposing `key_id`,
-raw public-key bytes in `public_key`, and `sign(bytes) -> bytes` through the
-service-owned `SENTILAB_SIGNER_FACTORY=module:function`. The signer must match
-`SENTILAB_VIEW_PUBLIC_KEYS`, an operator-provisioned JSON mapping of key IDs to raw
-public-key hex. The browser's deploy-time pin remains independent of `/key` and
-replay artifacts. Do not provision trust from an untrusted replay.
+material is never serialized. Production sets
+`SENTILAB_SIGNER_FACTORY=sentilab_core.signing:service_signer`. This adapter uses
+`sundai_controller.trust.load_service_key()` and the same `FLIGHT_SIGNING_SEED_B64`
+service identity as flight-record certificates. Missing or invalid signing
+configuration fails closed. The adapter exposes `key_id`, raw public-key bytes
+in `public_key`, and `sign(bytes) -> bytes`; its ID comes from `trust.key_id_for()`.
 
-Set `SENTILAB_LIVE_DIR` to durable service storage. `SENTILAB_LIVE_ENABLED=1`
+Verification defaults to `sundai_controller.trust.PINNED_SERVICE_KEYS`, backed by
+the shared `web/public/trust-pins.json` registry. `SENTILAB_VIEW_PUBLIC_KEYS` is an
+explicit override: a JSON mapping of key IDs to raw public-key hex that replaces
+the registry, including when set to `{}`. The signer must match a configured pin.
+The browser's deploy-time pin remains independent of `/key` and replay artifacts.
+Do not provision trust from an untrusted replay.
+
+`SENTILAB_LIVE_DIR` must point to durable service storage, such as the deployment's
+mounted volume, for restart-resume. Its default `/tmp/sentilab-live` is temporary
+and does not guarantee history survives a container replacement.
+`SENTILAB_LIVE_ENABLED=1`
 starts the bounded renewable loop with FastAPI startup. Without a matching signer
 and operator pin, startup fails closed. Run one service writer per storage root;
 the OS ownership lock enforces this across processes. To release an explicit
