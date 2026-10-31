@@ -88,6 +88,17 @@ function pyString(s) {
   return out + "\"";
 }
 
+function compareCodePoints(a, b) {
+  let i = 0; let j = 0;
+  while (i < a.length && j < b.length) {
+    const left = a.codePointAt(i); const right = b.codePointAt(j);
+    if (left !== right) return left - right;
+    i += left > 0xffff ? 2 : 1;
+    j += right > 0xffff ? 2 : 1;
+  }
+  return a.length - b.length;
+}
+
 // Python's json.dumps(value, sort_keys=True, separators=(",", ":")): keys sorted by code point.
 export function canonical(v) {
   if (v === null) return "null";
@@ -100,7 +111,7 @@ export function canonical(v) {
   if (typeof v === "string") return pyString(v);
   if (Array.isArray(v)) return "[" + v.map(canonical).join(",") + "]";
   if (typeof v === "object") {
-    const keys = Object.keys(v).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    const keys = Object.keys(v).sort(compareCodePoints);
     return "{" + keys.map((k) => pyString(k) + ":" + canonical(v[k])).join(",") + "}";
   }
   throw new Error(`cannot canonicalize ${typeof v}`);
