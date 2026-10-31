@@ -158,3 +158,15 @@ dialog li { margin: 4px 0; color: #cfd8d6; }
   .feed div span:nth-child(3) { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* Set from app.js as classes, not style="" attributes (the page's Content-Security-Policy refuses those). */
+.fg-random { color: var(--lane-random); } .fg-simulated_annealing { color: var(--lane-simulated_annealing); }
+.fg-ucb1 { color: var(--lane-ucb1); } .fg-signal_portfolio { color: var(--lane-signal_portfolio); } .fg-other { color: #91a3aa; }
+.bg-random { background: var(--lane-random); } .bg-simulated_annealing { background: var(--lane-simulated_annealing); }
+.bg-ucb1 { background: var(--lane-ucb1); } .bg-signal_portfolio { background: var(--lane-signal_portfolio); } .bg-other { background: #91a3aa; }
+.lanecell canvas.heatcanvas { aspect-ratio: 1; height: 100%; width: auto; max-width: 100%; align-self: center; }
+.lanecell .bigtemp { font-size: 28px; }
+.axis { position: absolute; left: 4px; font-size: 10px; }
+.axis.hi { top: 0; }
+.axis.lo { bottom: 0; }
+.track .fill { display: block; }

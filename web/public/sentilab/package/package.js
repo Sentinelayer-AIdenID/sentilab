@@ -15,11 +15,14 @@ const STEP_MS = REDUCED ? 1300 : 800;
 const ORBIT_EVERY_MS = 6500;
 
 // ── tiny DOM helper: text only ────────────────────────────────────────────────────────────────────────────────
+// A `style` prop goes through the CSSOM (style.cssText), never a style="" attribute: the page's Content-Security-Policy
+// (style-src 'self') refuses inline style attributes, and allows the CSSOM.
 function h(tag, props, ...kids) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(props ?? {})) {
     if (v == null || v === false) continue;
     if (k === "class") node.className = v;
+    else if (k === "style") node.style.cssText = String(v);
     else if (k.startsWith("on")) node.addEventListener(k.slice(2), v);
     else node.setAttribute(k, v === true ? "" : String(v));
   }

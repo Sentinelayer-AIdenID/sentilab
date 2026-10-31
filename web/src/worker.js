@@ -2,6 +2,21 @@
 // (API_ORIGIN). The upstream body streams through, so server-sent events work unchanged.
 const HOP = ["connection", "keep-alive", "transfer-encoding", "upgrade", "host"];
 
+// Every static asset response (the pages, their scripts and styles, the data files) carries this policy, so only our
+// own scripts run on the verifier pages: a script the edge injects into the HTML on its way out (its analytics script),
+// any inline script or inline style, eval, and any other origin are all refused by the browser. The pages hold no
+// inline code (no <script> or <style> blocks, no on* or style="" attributes; styles set from script use the CSSOM).
+// /api/* responses are passed through untouched. wrangler.jsonc sends every request through this Worker
+// (assets.run_worker_first: true); without that the asset layer would answer first and this header would never be set.
+export const CSP = "default-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
+
+async function asset(request, env) {
+  const res = await env.ASSETS.fetch(request);
+  const headers = new Headers(res.headers);
+  headers.set("content-security-policy", CSP);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
 async function proxy(request, env) {
   const origin = String(env.API_ORIGIN || "").replace(/\/+$/, "");
   if (!origin.startsWith("https://")) return new Response("API origin not configured", { status: 503 });
@@ -43,6 +58,6 @@ export default {
         { status: 429, headers: { "content-type": "application/json", "retry-after": "60", "cache-control": "no-store" } });
     }
     if (pathname === "/api" || pathname.startsWith("/api/")) return proxy(request, env);
-    return env.ASSETS.fetch(request);
+    return asset(request, env);
   },
 };

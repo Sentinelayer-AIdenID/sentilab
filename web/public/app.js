@@ -10,6 +10,11 @@ const HEAT = [[0x11, 0x2a, 0x48], [0x23, 0x6b, 0x91], [0x56, 0xb6, 0xba], [0xdf,
 const $ = (id) => document.getElementById(id);
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const laneColor = (lane) => css(`--lane-${lane}`) || "#91a3aa";
+// The page's Content-Security-Policy (style-src 'self') refuses style="" attributes, so markup built here never
+// carries one: lane colours are classes (fg-<lane> for text, bg-<lane> for fills, from the --lane-* variables in
+// styles.css), and computed sizes are set through the CSSOM after the markup is in place (data-w: a width in %).
+const laneKey = (lane) => (LANES.includes(lane) ? lane : "other");
+const applyWidths = (root) => { for (const el of root.querySelectorAll("[data-w]")) el.style.width = `${Number(el.dataset.w)}%`; };
 const fmt = (v, d = 2) => (v === null || v === undefined || Number.isNaN(v) ? "-" : Number(v).toFixed(d));
 const short = (h, n = 12) => (h ? String(h).slice(0, n) : "-");
 const plain = (t) => String(t == null ? "" : t).replace(/\bjev\b[-\w.]*/gi, "signal layer");   // the UI never names the model
@@ -131,8 +136,8 @@ function renderRace() {
       if (!S.lanes[lane]) continue;
       const cell = document.createElement("div");
       cell.className = "lanecell"; cell.dataset.lane = lane; cell.style.borderColor = laneColor(lane);
-      cell.innerHTML = `<div class="lh"><b style="color:${laneColor(lane)}">${LANE_NAME[lane]}</b><span class="muted w"></span><span class="t num"></span></div>` +
-        (S.lanes[lane].baseline && S.lanes[lane].baseline.heat ? `<canvas style="aspect-ratio:1;height:100%;width:auto;max-width:100%;align-self:center"></canvas>`
+      cell.innerHTML = `<div class="lh"><b class="fg-${laneKey(lane)}">${LANE_NAME[lane]}</b><span class="muted w"></span><span class="t num"></span></div>` +
+        (S.lanes[lane].baseline && S.lanes[lane].baseline.heat ? `<canvas class="heatcanvas"></canvas>`
                                                                 : `<div class="noheat"></div>`) + `<span class="verdict"></span>`;
       cell.onclick = () => { S.sel = { lane, step: Math.min(S.k, S.lanes[lane].steps.length) }; render(); };
       race.appendChild(cell);
@@ -147,7 +152,7 @@ function renderRace() {
     const canvas = cell.querySelector("canvas");
     if (canvas && shown.heat) drawHeat(canvas, shown.heat);
     const noheat = cell.querySelector(".noheat");
-    if (noheat) noheat.innerHTML = `${S.view === "best" ? "lane best" : "this step"}<br><span style="font-size:28px;color:${laneColor(L.lane)}">${fmt(shown.temp)} °C</span><br>best ${fmt(b.temp)} °C`;
+    if (noheat) noheat.innerHTML = `${S.view === "best" ? "lane best" : "this step"}<br><span class="bigtemp fg-${laneKey(L.lane)}">${fmt(shown.temp)} °C</span><br>best ${fmt(b.temp)} °C`;
     const v = cell.querySelector(".verdict");
     v.textContent = s ? (s.outcome ? `${s.outcome.status}: ${s.outcome.reason}` : "simulated") : "shared pool best";
     v.style.color = s && s.outcome && s.outcome.status === "committed" ? css("--cyan") : css("--muted");
@@ -168,10 +173,10 @@ function renderCurves() {
     const pts = L.best.slice(0, Math.min(S.k, L.steps.length) + 1).map((b, i) => `${x(i)},${y(b.temp)}`).join(" ");
     svg += `<polyline fill="none" stroke="${laneColor(L.lane)}" stroke-width="2.2" vector-effect="non-scaling-stroke" points="${pts}"/>`;
   }
-  chart.innerHTML = svg + `</svg><span class="mono muted" style="position:absolute;left:4px;top:0;font-size:10px">${fmt(hi)} °C</span>` +
-    `<span class="mono muted" style="position:absolute;left:4px;bottom:0;font-size:10px">${fmt(lo)} °C</span>`;
+  chart.innerHTML = svg + `</svg><span class="mono muted axis hi">${fmt(hi)} °C</span>` +
+    `<span class="mono muted axis lo">${fmt(lo)} °C</span>`;
   $("curveLegend").innerHTML = Object.values(S.lanes).map((L) =>
-    `<span><i style="background:${laneColor(L.lane)}"></i>${LANE_NAME[L.lane]} ${fmt(L.best[Math.min(S.k, L.steps.length)].temp)}</span>`).join("");
+    `<span><i class="bg-${laneKey(L.lane)}"></i>${LANE_NAME[L.lane]} ${fmt(L.best[Math.min(S.k, L.steps.length)].temp)}</span>`).join("");
 }
 
 function renderEvidence() {
@@ -215,8 +220,8 @@ function renderRouting() {
   if (!L) return;
   const k = Math.min(S.k, L.steps.length), s = stepAt(L, k);
   const d = s && s.decision;
-  $("routeReason").innerHTML = d ? `<b style="color:${laneColor(L.lane)}">${LANE_NAME[L.lane]}</b> chose <b>${esc(d.operator)}</b> · ${esc(plain(d.reason))}`
-                                 : `<b style="color:${laneColor(L.lane)}">${LANE_NAME[L.lane]}</b> · starting from the shared pool`;
+  $("routeReason").innerHTML = d ? `<b class="fg-${laneKey(L.lane)}">${LANE_NAME[L.lane]}</b> chose <b>${esc(d.operator)}</b> · ${esc(plain(d.reason))}`
+                                 : `<b class="fg-${laneKey(L.lane)}">${LANE_NAME[L.lane]}</b> · starting from the shared pool`;
   for (const [id, on] of [["r1", !!d], ["r2", !!(s && s.admitted)], ["r3", !!s], ["r4", !!(s && s.outcome)]]) $(id).classList.toggle("on", on);
   // The signal layer's CHOICE for this step, exactly as signed into the record (signal-portfolio lane only).
   const g = s && s.signal;
@@ -229,15 +234,17 @@ function renderRouting() {
     const probs = g.probabilities && typeof g.probabilities === "object" ? g.probabilities : {};
     $("sigCard").innerHTML = ["local_move", "swap", "global_resample", "stop"].map((o) => {
       const v = Number(probs[o]), w = Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0;
-      return `<div class="row${g.requested_choice === o ? " chosen" : ""}"><span>${o}</span><span class="track"><span class="fill" style="display:block;width:${100 * w}%"></span></span><span class="num">${fmt(w, 2)}</span></div>`;
+      return `<div class="row${g.requested_choice === o ? " chosen" : ""}"><span>${o}</span><span class="track"><span class="fill" data-w="${100 * w}"></span></span><span class="num">${fmt(w, 2)}</span></div>`;
     }).join("") + `<div class="micro">CHOICE ${esc(g.requested_choice)} · confidence ${fmt(Number(g.confidence), 2)} · ${fmt(Number(g.latency_ms), 0)} ms` +
       `${g.stop_requested ? " · stop requested: deterministic continuation" : ""}</div>`;
+    applyWidths($("sigCard"));
   }
   const counts = Object.fromEntries(OPS.map((o) => [o, 0]));
   for (const st of L.steps.slice(0, k)) if (st.decision && counts[st.decision.operator] !== undefined) counts[st.decision.operator]++;
   const max = Math.max(1, ...Object.values(counts));
   $("opbars").innerHTML = OPS.map((o) => `<div class="row${d && d.operator === o ? " chosen" : ""}"><span>${o}</span>` +
-    `<span class="track"><span class="fill" style="display:block;width:${(100 * counts[o]) / max}%"></span></span><span class="num">${counts[o]}</span></div>`).join("");
+    `<span class="track"><span class="fill" data-w="${(100 * counts[o]) / max}"></span></span><span class="num">${counts[o]}</span></div>`).join("");
+  applyWidths($("opbars"));
 }
 
 function renderFeed() {
@@ -246,7 +253,7 @@ function renderFeed() {
     const s = L.steps[i - 1];
     if (!s) continue;
     const verdict = s.outcome ? s.outcome.status : "simulated";
-    lines.push(`<div data-lane="${esc(L.lane)}" data-step="${i}"><span class="num">#${esc(s.seq)}</span><span class="chip" style="background:${laneColor(L.lane)}">${LANE_NAME[L.lane]}</span>` +
+    lines.push(`<div data-lane="${esc(L.lane)}" data-step="${i}"><span class="num">#${esc(s.seq)}</span><span class="chip bg-${laneKey(L.lane)}">${LANE_NAME[L.lane]}</span>` +
       `<span>${esc(s.decision ? s.decision.operator : "-")} → ${esc(s.admitted ? s.admitted.op : "-")}</span><span>${esc(verdict)}${s.outcome && s.outcome.reason ? ` · ${esc(plain(s.outcome.reason))}` : ""}</span>` +
       `<span class="num">${fmt(s.temp)} °C</span></div>`);
   }
@@ -280,7 +287,7 @@ function renderKpis() {
 function renderRecords() {
   const Ls = Object.values(S.lanes);
   const html = `<table><tr><th>Lane</th><th>Record</th><th>Events</th><th>Final hash (tip)</th><th>Record key</th></tr>` +
-    Ls.map((L) => `<tr><td style="color:${laneColor(L.lane)}">${LANE_NAME[L.lane]}</td><td class="${L.valid ? "ok" : "bad"}">${L.valid ? "VALID" : "INVALID"}</td>` +
+    Ls.map((L) => `<tr><td class="fg-${laneKey(L.lane)}">${LANE_NAME[L.lane]}</td><td class="${L.valid ? "ok" : "bad"}">${L.valid ? "VALID" : "INVALID"}</td>` +
       `<td class="num">${L.events.length}</td><td class="num">${esc(short(L.closed && L.closed.finalHash, 16))}</td><td class="num">${esc(short(L.recordKey, 16))}</td></tr>`).join("") +
     `</table><p class="micro">Verified by the service with FlightRecord.verify (hash chain, Ed25519 per event, run_closed count and final hash). ` +
     `<a class="dl" href="${esc($("exportLink").href)}" download>Download the full signed records</a> · ` +
@@ -295,7 +302,7 @@ async function renderBoard() {
   const rank = Ls.map((L) => ({ L, b: L.best[Math.min(kNow, L.steps.length)].temp })).sort((a, b) => a.b - b.b);
   const init = Math.min(...Ls.map((L) => (L.baseline ? L.baseline.temp : Infinity)));
   let html = `<table><tr><th>This run</th><th>Lane best</th><th>Δ vs pool</th><th>Evals</th><th>Committed</th><th>Record</th></tr>` +
-    rank.map(({ L, b }, i) => `<tr class="${i === 0 ? "best" : ""}"><td style="color:${laneColor(L.lane)}">${LANE_NAME[L.lane]}</td>` +
+    rank.map(({ L, b }, i) => `<tr class="${i === 0 ? "best" : ""}"><td class="fg-${laneKey(L.lane)}">${LANE_NAME[L.lane]}</td>` +
       `<td class="num">${fmt(b, 3)} °C</td><td class="num">${fmt(b - init, 3)}</td><td class="num">${Math.min(kNow, L.steps.length)}/${L.steps.length}</td>` +
       `<td class="num">${L.steps.slice(0, kNow).filter((s) => s.outcome && s.outcome.status === "committed").length}</td>` +
       `<td class="${L.valid ? "ok" : "bad"}">${L.valid ? "VALID" : "INVALID"}</td></tr>`).join("") + `</table>`;
@@ -353,6 +360,7 @@ document.addEventListener("keydown", (e) => {
   else if (/^[1-4]$/.test(e.key) && S.lanes[LANES[Number(e.key) - 1]]) { S.sel.lane = LANES[Number(e.key) - 1]; render(); }
 });
 $("scope").onclick = $("limitsLink").onclick = (e) => { e.preventDefault(); $("limits").showModal(); };
+$("limitsClose").onclick = () => $("limits").close();   // a listener, not an onclick="" attribute (CSP)
 
 // ── data: replay file, live runs (POST then poll GET /api/runs/{id}) ───────────────────────────────────────────
 async function openReplay() {

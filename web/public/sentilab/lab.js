@@ -38,10 +38,13 @@ function s(tag, props, ...kids) {
   for (const kid of kids.flat(Infinity)) if (kid != null && kid !== false) node.append(kid instanceof Node ? kid : String(kid));
   return node;
 }
+// A `style` prop goes through the CSSOM (style.cssText), never a style="" attribute: the page's Content-Security-Policy
+// (style-src 'self') refuses inline style attributes, and allows the CSSOM.
 function setProps(node, props) {
   for (const [k, v] of Object.entries(props ?? {})) {
     if (v == null || v === false) continue;
     if (k === "class") node.setAttribute("class", v);
+    else if (k === "style") node.style.cssText = String(v);
     else if (k.startsWith("on")) node.addEventListener(k.slice(2), v);
     else node.setAttribute(k, v === true ? "" : String(v));
   }
