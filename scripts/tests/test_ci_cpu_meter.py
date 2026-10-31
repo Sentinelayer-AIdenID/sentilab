@@ -54,6 +54,31 @@ class MeterTests(unittest.TestCase):
                 (group / 'cgroup.events').write_text('populated 0\n')
             kill_group(group, clock=lambda: 0, sleep=drained)
 
+    def test_kill_deadline_includes_write_and_empty_observation(self):
+        from unittest.mock import patch
+
+        for slow_operation in ('write', 'empty_read'):
+            with self.subTest(slow_operation=slow_operation), tempfile.TemporaryDirectory() as temporary:
+                group = Path(temporary)
+                (group / 'cgroup.events').write_text('populated 0\n')
+                elapsed = [0]
+                write = Path.write_text
+                read = Path.read_text
+
+                def slow_write(path, *args, operation=slow_operation, elapsed=elapsed, write=write, **kwargs):
+                    if path.name == 'cgroup.kill' and operation == 'write':
+                        elapsed[0] += 6
+                    return write(path, *args, **kwargs)
+
+                def slow_read(path, *args, operation=slow_operation, elapsed=elapsed, read=read, **kwargs):
+                    if path.name == 'cgroup.events' and operation == 'empty_read':
+                        elapsed[0] += 6
+                    return read(path, *args, **kwargs)
+
+                with patch.object(Path, 'write_text', slow_write), patch.object(Path, 'read_text', slow_read), \
+                     self.assertRaisesRegex(RuntimeError, 'drain'):
+                    kill_group(group, clock=lambda elapsed=elapsed: elapsed[0], sleep=lambda _: None)
+
     def test_full_runner_enters_group_and_exports_success_and_failure(self):
         # Fake kernel files replace the unavailable writable cgroup mount; process
         # launch, enter helper, broker, monitoring, drain and export are shipped code.
