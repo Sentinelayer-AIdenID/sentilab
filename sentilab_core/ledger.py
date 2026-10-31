@@ -81,10 +81,26 @@ def read_prefix(path, *, run_id, public_keys):
                 if not isinstance(value, dict):
                     raise ValueError("envelope is not an object")
                 rows.append({"envelope": value})
-            except (ValueError, UnicodeError):
+            except (ValueError, UnicodeError, RecursionError):
                 rows.append({"error": "invalid JSONL row"})
-    if all(type(row.get("envelope", {}).get("event", {}).get("seq")) is int for row in rows):
+    def seq(row):
+        event = row.get("envelope", {}).get("event")
+        return event.get("seq") if isinstance(event, dict) else None
+    if all(type(seq(row)) is int for row in rows):
         rows.sort(key=lambda row: row["envelope"]["event"]["seq"])
+    # Refuse the whole duplicate/conflict group before projecting any member.
+    # Exact duplicate envelopes are also refused; ingestion is not deduplication.
+    by_seq, by_id = {}, {}
+    for index, row in enumerate(rows):
+        if type(seq(row)) is int:
+            by_seq.setdefault(seq(row), []).append(index)
+        event = row.get("envelope", {}).get("event")
+        if isinstance(event, dict) and isinstance(event.get("event_id"), str):
+            by_id.setdefault(event["event_id"], []).append(index)
+    for indices in list(by_seq.values()) + list(by_id.values()):
+        if len(indices) > 1:
+            for index in indices:
+                rows[index]["error"] = "conflicting or duplicate sequence/event id"
     prefix, previous, broken = [], genesis(run_id), None
     for row in rows:
         error = row.get("error")
@@ -145,39 +161,76 @@ class Ledger:
         with lock(self.lock_path, shared=True):
             return self._read()
 
-    def append(self, event_type, body, *, event_id, role="core", values=None):
+    def append(self, event_type, body, *, event_id, values=None):
         """Service-internal append. No transport exposes roles or this method.
 
         A repeated event id returns the original envelope only for identical
         content. Roles are assigned by the service operation, not lab input.
         """
-        if self.signer is None:
-            raise ValueError("append requires the injected service signer")
-        if role not in ("core", "lab", "acceptance_gate") or "actor_role" in body:
+        if "actor_role" in body:
             raise ValueError("invalid caller role")
+        if event_type == "lifecycle.transition" and body.get("to") in (
+                "accepted", "non_improving_current", "within_margin"):
+            raise ValueError("board outcome requires core gate")
+        role = "lab" if event_type == "node.create" and body.get("kind") == "candidate" else "core"
         with lock(self.lock_path):
             state = self._read()
             self._require_sound(state)
+            return self._append(state, event_type, body, event_id, role, values)
+
+    def append_gate(self, gate, candidate_id, *, event_id, stopped=False):
+        from .projection import board
+        with lock(self.lock_path):
+            state = self._read()
+            self._require_sound(state)
+            # A replayed operation returns its recorded outcome; it cannot be
+            # re-decided against the board it changed on its first execution.
             for old in state["prefix"]:
                 if old["event"]["event_id"] == event_id:
-                    expected = {"event_id": event_id, "seq": old["event"]["seq"],
-                                "type": event_type, "actor_role": role, "body": body}
-                    if canonical(old["event"]) != canonical(expected) or old.get("values") != values:
+                    if old["event"]["body"]["node"] != candidate_id:
                         raise ValueError("idempotency conflict")
                     return old
-            event = {"event_id": event_id, "seq": state["last_seq"] + 1,
-                     "type": event_type, "actor_role": role, "body": body}
-            actor = {"agent_id": None, "life_id": None, "grant_id": None,
-                     "lab": "gate" if role == "acceptance_gate" else "baseline-sa" if role == "lab" else "core"}
-            envelope = build(event=event, run=self.run, actor=actor,
-                             prev_hash=state["head_hash"], signer=self.signer, values=values)
-            verify(envelope, run_id=self.run["run_id"], public_keys=self.public_keys)
-            with open(self.path, "ab") as handle:
-                handle.write(canonical(envelope) + b"\n")
-                handle.flush()
-                os.fsync(handle.fileno())
-            atomic_json(self.head_path, {"seq": event["seq"], "hash": envelope["hash"]})
-            return envelope
+            bodies = [e["event"]["body"] for e in state["prefix"] if e["event"]["type"] == "node.create"]
+            config = next(b["record"] for b in bodies if b["id"] == self.run["run_id"] + ":run")
+            proposal = next(b["record"] for b in bodies if b["id"] == candidate_id)
+            measurements = {b["record"]["phase"]: b["record"] for b in bodies
+                            if b.get("kind") == "measurement" and b["record"]["candidate_node"] == candidate_id}
+            if gate.margin != config["margin"] or gate.reproduction_tolerance != config["reproduction_tolerance"]:
+                raise ValueError("gate configuration differs from frozen run")
+            inputs = {"geometry_valid": proposal["geometry_valid"], "wire_cap_mm": config["wire_cap_mm"],
+                      "binding": proposal["binding"], "evaluation": measurements.get("evaluate"),
+                      "reproduction": measurements.get("reproduce"), "stopped": stopped,
+                      "current": board(state["prefix"])}
+            decision = gate.decide(**inputs)
+            if decision["outcome"] not in ("accepted", "non_improving_current", "within_margin"):
+                raise ValueError("candidate is not ready for a board outcome: " + decision["outcome"])
+            body = {"node": candidate_id, "to": decision["outcome"], "ai_mode": "AI off",
+                    "margin_label": "provisional margin", "record": {"inputs": inputs, "decision": decision}}
+            return self._append(state, "lifecycle.transition", body, event_id, "acceptance_gate", None)
+
+    def _append(self, state, event_type, body, event_id, role, values):
+        if self.signer is None:
+            raise ValueError("append requires the injected service signer")
+        for old in state["prefix"]:
+            if old["event"]["event_id"] == event_id:
+                expected = {"event_id": event_id, "seq": old["event"]["seq"],
+                            "type": event_type, "actor_role": role, "body": body}
+                if canonical(old["event"]) != canonical(expected) or old.get("values") != values:
+                    raise ValueError("idempotency conflict")
+                return old
+        event = {"event_id": event_id, "seq": state["last_seq"] + 1,
+                 "type": event_type, "actor_role": role, "body": body}
+        actor = {"agent_id": None, "life_id": None, "grant_id": None,
+                 "lab": "gate" if role == "acceptance_gate" else "baseline-sa" if role == "lab" else "core"}
+        envelope = build(event=event, run=self.run, actor=actor,
+                         prev_hash=state["head_hash"], signer=self.signer, values=values)
+        verify(envelope, run_id=self.run["run_id"], public_keys=self.public_keys)
+        with open(self.path, "ab") as handle:
+            handle.write(canonical(envelope) + b"\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        atomic_json(self.head_path, {"seq": event["seq"], "hash": envelope["hash"]})
+        return envelope
 
 
 def replay(root, run_id, *, public_keys):

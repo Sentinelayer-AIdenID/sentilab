@@ -38,9 +38,11 @@ def canonical(value) -> bytes:
             item.encode("utf-8", errors="strict")
             return json.dumps(item, ensure_ascii=False, separators=(",", ":"))
         if isinstance(item, int):
-            if abs(item) > 9007199254740991:
-                raise ValueError("integer exceeds exact JSON number range")
-            return str(item)
+            if abs(item) <= 9007199254740991:
+                return str(item)
+            if not math.isfinite(float(item)) or int(float(item)) != item:
+                raise ValueError("integer is not exactly representable as a JSON number")
+            item = float(item)
         if isinstance(item, float):
             if not math.isfinite(item):
                 raise ValueError("nonfinite JSON number")
@@ -123,7 +125,8 @@ def build(*, event, run, actor, prev_hash, signer, values=None, ts=None):
                 "prev_hash": prev_hash,
                 "ts": ts or datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")}
     if values is not None:
-        if event["type"] not in ("node.create", "verify.add"):
+        if not (event["type"] == "verify.add" or
+                event["type"] == "node.create" and event["body"].get("kind") in ("candidate", "measurement")):
             raise ValueError("values are only permitted for node.create and verify.add")
         envelope["values"] = values
     check_caps(envelope)
@@ -154,6 +157,10 @@ def verify(envelope, *, run_id, public_keys):
             raise ValueError("invalid actor role")
         if (envelope["actor"].get("lab") == "gate") != (event["actor_role"] == "acceptance_gate"):
             raise ValueError("invalid gate actor")
+        if (event["type"] == "lifecycle.transition" and
+                event["body"].get("to") in ("accepted", "non_improving_current", "within_margin") and
+                event["actor_role"] != "acceptance_gate"):
+            raise ValueError("board outcome requires core gate")
         if "values" in envelope and event["type"] not in ("node.create", "verify.add"):
             raise ValueError("invalid values event")
         sig = envelope["sig"]

@@ -10,8 +10,10 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 
 from app import runs
+from app.view import router as view_router
 
 app = FastAPI(title="Thermal Flight Lab API")
+app.include_router(view_router)
 ORIGIN_TOKEN = os.environ.get("ORIGIN_SHARED_TOKEN", "")
 
 
