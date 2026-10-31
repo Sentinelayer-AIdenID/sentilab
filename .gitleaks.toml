@@ -1,9 +1,11 @@
-# gitleaks: the default rules, plus one narrow allowlist. Files named public-keys.json hold only Ed25519 PUBLIC
-# keys (fixtures and registries); the generic-api-key rule flags their 64-hex values, but public keys are not
-# secrets. Everything else stays under the default rules, and .gitleaksignore still applies.
+# gitleaks: the default rules, plus ONE exact-value exemption: the recorded Ed25519 PUBLIC fixture key in
+# docs/sentilab/evidence/SLAB-016/public-keys.json, which the generic-api-key rule flags. Only this exact value is
+# exempt (anywhere it appears, because a public key is never a secret). Any other value, in that file or elsewhere,
+# is still scanned. gitleaks 8.24.2 ignores `condition = "AND"` and `[[allowlists]]`, so path+value cannot be combined.
 [extend]
 useDefault = true
 
 [allowlist]
-description = "Ed25519 public-key files (public keys are not secrets)"
-paths = ['''(^|/)public-keys\.json$''']
+description = "SLAB-016 recorded Ed25519 public fixture key (exact value)"
+regexTarget = "secret"
+regexes = ['''^b0a81ec524864886e38b623b4852200ccd2ea14dc757d9da598bc4244e66d465$''']
