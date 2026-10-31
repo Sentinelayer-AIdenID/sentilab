@@ -1,0 +1,17 @@
+{
+ "schema": "sentilab-agents-pointer/1",
+ "name": "SentiLab, for agents",
+ "agents": {"md": "/agents/index.md", "json": "/agents/index.json", "alias": "/agents/"},
+ "llms_txt": "/llms.txt",
+ "status": {
+  "submissions": "not_open",
+  "learning": "open",
+  "offline_check": "coming",
+  "status_and_results": "not_open",
+  "senti_room_skills": "coming",
+  "evaluator": "pending gate zero",
+  "thresholds": "provisional",
+  "temperatures_shown": false,
+  "simulated_not_silicon": true
+ }
+}

@@ -1,0 +1,420 @@
+{
+ "center_uncertainty_mm": [
+  [
+   0.0009,
+   0.0009
+  ],
+  [
+   0.0012,
+   0.0009
+  ],
+  [
+   0.0007,
+   0.0008
+  ],
+  [
+   0.0009,
+   0.0008
+  ],
+  [
+   0.0007,
+   0.0011
+  ],
+  [
+   0.0009,
+   0.0011
+  ]
+ ],
+ "center_uncertainty_note": "Per coordinate (L-infinity), an empirical estimate under stated assumptions of the error in reading the figure: the largest offset found on TAP-2.5D's own placer panels from their 1 mm grid, plus the coordinate times the relative spread of the panel's three scale estimates, plus the 5e-5 mm storage step, rounded up to 1e-4 mm. It covers reading the figure only. It is not a figure-to-silicon error bound, and how faithfully the figure shows the authors' simulated layout cannot be read from it.",
+ "centers_mm": [
+  [
+   17.1501,
+   22.6003
+  ],
+  [
+   38.3497,
+   22.6003
+  ],
+  [
+   7.335,
+   11.1256
+  ],
+  [
+   21.3048,
+   11.1256
+  ],
+  [
+   7.335,
+   33.8754
+  ],
+  [
+   21.3048,
+   33.8754
+  ]
+ ],
+ "claim_label": "Simulated with [evaluator and hash], steady state, uniform power per die. Reference reconstructed from a published figure. Not CAD, not silicon, not measured.",
+ "continuous_rules_legal": true,
+ "copied_from": [
+  {
+   "file_sha256": "0271e8324f1d4dcf17b7b5d5427c79ac5540f3888d573b96f2b9a5dcd0c11dd6",
+   "path": "docs/sentilab/references/ascend910-tap25d-fig6a.json",
+   "record": "SLAB-048 reference layouts"
+  }
+ ],
+ "design_hash": "b9bfcd232bdbd5c10158fc680512fab874de472077811dc637b5c283e303ebee",
+ "dies": [
+  {
+   "catalog_mm": [
+    14.5,
+    31.4
+   ],
+   "die": 0,
+   "halo_mm": 0.09,
+   "name": "Vitruvian compute die (TAP spells it Virtuvian), 256 W",
+   "power_w": 256.0
+  },
+  {
+   "catalog_mm": [
+    10.5,
+    16.0
+   ],
+   "die": 1,
+   "halo_mm": 0.045,
+   "name": "Nimbus I/O die, 14 W",
+   "power_w": 14.0
+  },
+  {
+   "catalog_mm": [
+    7.75,
+    11.87
+   ],
+   "die": 2,
+   "halo_mm": 0.045,
+   "name": "HBM stack, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    7.75,
+    11.87
+   ],
+   "die": 3,
+   "halo_mm": 0.045,
+   "name": "HBM stack, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    7.75,
+    11.87
+   ],
+   "die": 4,
+   "halo_mm": 0.045,
+   "name": "HBM stack, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    7.75,
+    11.87
+   ],
+   "die": 5,
+   "halo_mm": 0.045,
+   "name": "HBM stack, 20 W",
+   "power_w": 20.0
+  }
+ ],
+ "fixture": {
+  "config": "sundai_tap/configs/sys_ascend910_45mm.cfg",
+  "config_sha256": "4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c",
+  "fixture_id": "ascend910-45mm",
+  "frame_mm": 45.0
+ },
+ "footprints_mm": [
+  [
+   31.4,
+   14.5
+  ],
+  [
+   10.5,
+   16.0
+  ],
+  [
+   11.87,
+   7.75
+  ],
+  [
+   11.87,
+   7.75
+  ],
+  [
+   11.87,
+   7.75
+  ],
+  [
+   11.87,
+   7.75
+  ]
+ ],
+ "identity": {
+  "canonical": {
+   "centers_mm": [
+    [
+     17.1501,
+     22.6003
+    ],
+    [
+     38.3497,
+     22.6003
+    ],
+    [
+     7.335,
+     11.1256
+    ],
+    [
+     21.3048,
+     11.1256
+    ],
+    [
+     7.335,
+     33.8754
+    ],
+    [
+     21.3048,
+     33.8754
+    ]
+   ],
+   "die_order": "TAP fixture config order",
+   "footprints_mm": [
+    [
+     31.4,
+     14.5
+    ],
+    [
+     10.5,
+     16.0
+    ],
+    [
+     11.87,
+     7.75
+    ],
+    [
+     11.87,
+     7.75
+    ],
+    [
+     11.87,
+     7.75
+    ],
+    [
+     11.87,
+     7.75
+    ]
+   ],
+   "frame_mm": 45.0,
+   "rotated": [
+    true,
+    false,
+    true,
+    true,
+    true,
+    true
+   ],
+   "schema": "sentilab-layout-identity-v1",
+   "units": {
+    "coordinates": "die centres; origin at the interposer's lower-left corner; +x right, +y up",
+    "length": "mm",
+    "rotation": "true = turned 90 degrees from the fixture config's (width, height)"
+   }
+  },
+  "content_sha256": "0046e17b3e33feef14e570eb6a2026e17c3eea5c232160a052be62c2ae8e470e",
+  "hashing": "sha256 of json.dumps(canonical, sort_keys=True, separators=(',', ':'))"
+ },
+ "kind": "raw",
+ "label": "reconstructed from a published figure, continuous, reference-only",
+ "labels": [
+  "approximate reconstruction from published figure",
+  "simulated reference, not silicon",
+  "SHIPPED product (Huawei Ascend 910); positions read from a published figure, not CAD"
+ ],
+ "layout_id": "ascend910-tap25d-fig6a/raw",
+ "legal_on_fixture": false,
+ "lower_left_mm": [
+  [
+   1.4504,
+   15.3507
+  ],
+  [
+   33.0995,
+   14.6005
+  ],
+  [
+   1.4002,
+   7.2505
+  ],
+  [
+   15.37,
+   7.2505
+  ],
+  [
+   1.4002,
+   30.0003
+  ],
+  [
+   15.37,
+   30.0003
+  ]
+ ],
+ "model_omissions": [
+  "The shipped package carries two unpowered silicon dummy dies (about 110 mm2 each, Hot Chips 31: 'added to ensure mechanical uniformity') beside Nimbus. TAP-2.5D's model, its Fig. 6(a) and this reconstruction omit them, so their lateral heat path is not modelled.",
+  "TAP's die sizes and its 256/14/4x20 W power split are TAP modelling assumptions, not Huawei data (HBM drawn 7.75 x 11.87 mm = 92 mm2; Huawei's slide gives 96 mm2)."
+ ],
+ "omitted": [
+  {
+   "fields": [
+    "paper_reported",
+    "paper_settings",
+    "round_trip",
+    "validation_points"
+   ],
+   "why": "temperatures and paper-reported values: these pages show no temperatures, and published targets are kept in separate fields of the signed manifest (the router identity is kept in routed_wirelength)"
+  },
+  {
+   "fields": [
+    "snapped",
+    "raw_to_snapped_mm",
+    "raw_to_snapped_norms",
+    "max_abs_raw_to_snapped_mm"
+   ],
+   "why": "the 1 mm snapped variant: kept as history in the source record, superseded as the baseline, not part of this site"
+  },
+  {
+   "fields": [
+    "raw.label",
+    "raw.role",
+    "track",
+    "wire_metric"
+   ],
+   "why": "superseded wording, replaced by this file's label, role and wire_note"
+  },
+  {
+   "fields": [
+    "decoding",
+    "raw.how_obtained",
+    "raw.decoded_size_mm",
+    "raw.uncertainty_rule",
+    "raw.fixture_gate_message",
+    "raw_annotations.uncertainty_statement",
+    "raw_annotations.continuous_rules_check",
+    "raw_annotations.role",
+    "raw_annotations.frozen",
+    "raw_annotations.reviewed_at",
+    "raw_annotations.section_sha256",
+    "snapped_annotations",
+    "interposer_mm",
+    "schema",
+    "ticket.uuid"
+   ],
+   "why": "figure-extraction and record internals; the uncertainty rule is restated in center_uncertainty_note"
+  }
+ ],
+ "reference_id": "ascend910-tap25d-fig6a",
+ "role": "The comparator R. It is scored by the same evaluator, router and rules as every proposal. Its centres are continuous and sit off the 500 um lattice, so it is reference-only and never an admissible entry.",
+ "rotated": [
+  true,
+  false,
+  true,
+  true,
+  true,
+  true
+ ],
+ "routed_wirelength": {
+  "frozen": false,
+  "label": "routed (open router), not paper",
+  "router": "sundai_hotspot/tap_router.py",
+  "router_acceptance": "UNKNOWN: router acceptance is pending",
+  "router_sha256": "2d9bb56c48501891817fb7c4a19c091ea5e6df9174d1afef43f4826aa79312f3",
+  "solver": {
+   "highs": "1.8.0",
+   "highs_status": "reported by the pinned SciPy build and recorded; not pinned, and not an admission of any other binary or host",
+   "scipy": "1.17.0",
+   "scipy_pinned_by": "requirements.txt"
+  },
+  "status": "provisional",
+  "value_mm": 16417.5
+ },
+ "schema": "sentilab-agents-reference/1",
+ "source": {
+  "caption": "Fig. 6: Thermal maps of the Huawei Ascend 910 System [15]: (a) the original layout, (b) a placement solution using Compact-2.5D approach, and (c) TAP-2.5D solution.",
+  "citation": "Y. Ma, L. Delshadtehrani, C. Demirkiran, J. L. Abellan, A. Joshi, \"TAP-2.5D: A Thermally-Aware Chiplet Placement Methodology for 2.5D Systems\", DATE 2021, pp. 1246-1251, doi:10.23919/DATE51398.2021.9474011",
+  "figure": "Fig. 6",
+  "page_index": 5,
+  "page_number": 6,
+  "panel": "a",
+  "pdf_sha256": "b209f51aec188e2bcdbf6f4acc3723fb30fbc5c14cca7e70141d478edadec234",
+  "url": "http://people.bu.edu/joshi/files/Ma_TAP-2.5D-DATE2021.pdf"
+ },
+ "ticket": {
+  "id": "SLAB-048",
+  "name": "REF-RECON"
+ },
+ "title": "Huawei Ascend 910 original layout as drawn in TAP-2.5D Fig. 6(a)",
+ "units": {
+  "coordinates": "die centres; origin at the interposer's lower-left corner; +x right, +y up",
+  "length": "mm",
+  "rotation": "true = turned 90 degrees from the fixture config's (width, height)"
+ },
+ "violations_on_fixture": [
+  {
+   "amount_mm": 0.1501,
+   "dies": [
+    0
+   ],
+   "message": "chiplet 0 center is off the 0.5 mm placement grid",
+   "rule": "lattice"
+  },
+  {
+   "amount_mm": 0.1503,
+   "dies": [
+    1
+   ],
+   "message": "chiplet 1 center is off the 0.5 mm placement grid",
+   "rule": "lattice"
+  },
+  {
+   "amount_mm": 0.165,
+   "dies": [
+    2
+   ],
+   "message": "chiplet 2 center is off the 0.5 mm placement grid",
+   "rule": "lattice"
+  },
+  {
+   "amount_mm": 0.1952,
+   "dies": [
+    3
+   ],
+   "message": "chiplet 3 center is off the 0.5 mm placement grid",
+   "rule": "lattice"
+  },
+  {
+   "amount_mm": 0.165,
+   "dies": [
+    4
+   ],
+   "message": "chiplet 4 center is off the 0.5 mm placement grid",
+   "rule": "lattice"
+  },
+  {
+   "amount_mm": 0.1952,
+   "dies": [
+    5
+   ],
+   "message": "chiplet 5 center is off the 0.5 mm placement grid",
+   "rule": "lattice"
+  }
+ ],
+ "violations_without_center_lattice": [],
+ "wire_note": "routed_wirelength is this layout's routed wire W, from the open router (TAP-2.5D's MILP router ported from CPLEX to HiGHS), the wire figure the challenge judges. It depends only on the dies' relative positions: moving the whole layout leaves it unchanged. wire_proxy_mm is the proxy W_proxy, the connectivity-weighted mean Manhattan distance between die centres, a diagnostic that is never used to judge. Neither runs a thermal solve.",
+ "wire_proxy_mm": 18.8238
+}

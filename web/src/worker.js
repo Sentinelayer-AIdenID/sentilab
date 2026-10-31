@@ -3,6 +3,7 @@
 // This module's only export is the default handler: the Workers runtime treats every named export of the main module
 // as an entry point and refuses to start on anything else (web/test/worker-boot.mjs boots it in CI).
 import { CSP } from "./csp.js";
+import { CONTENT_TYPES, NEGOTIATED_CACHE_CONTROL, VARY, agentView, alternateLink, varyWith } from "./agent-view.js";
 
 const HOP = ["connection", "keep-alive", "transfer-encoding", "upgrade", "host"];
 
@@ -10,11 +11,24 @@ const HOP = ["connection", "keep-alive", "transfer-encoding", "upgrade", "host"]
 // our own scripts run on the verifier pages. /api/* responses are passed through untouched. wrangler.jsonc sends every
 // request through this Worker (assets.run_worker_first: true); without that the asset layer would answer first and
 // this header would never be set.
+// The three human pages with an agent version are negotiated (agent-view.js): the agent version is another file under
+// public/ (markdown or JSON, its type set here), and both versions vary on Accept and the edge class header and stay out
+// of shared caches. The human version names its agent version in a Link header. Every other path is unchanged.
 
 async function asset(request, env) {
-  const res = await env.ASSETS.fetch(request);
+  const view = agentView(request, env);
+  const target = view && view.serve
+    ? new Request(new URL(view.serve, request.url), { method: request.method, headers: request.headers })
+    : request;
+  const res = await env.ASSETS.fetch(target);
   const headers = new Headers(res.headers);
   headers.set("content-security-policy", CSP);
+  if (view && view.serve && res.status === 200) headers.set("content-type", CONTENT_TYPES[view.kind]);
+  if (view && view.negotiated) {
+    headers.set("vary", varyWith(headers.get("vary"), VARY));
+    headers.set("cache-control", NEGOTIATED_CACHE_CONTROL);
+    if (!view.serve) headers.set("link", alternateLink(view.alternate));
+  }
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 }
 

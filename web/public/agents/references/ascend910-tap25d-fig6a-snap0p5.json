@@ -1,0 +1,351 @@
+{
+ "centers_mm": [
+  [
+   17.0,
+   22.5
+  ],
+  [
+   38.5,
+   22.5
+  ],
+  [
+   7.5,
+   11.0
+  ],
+  [
+   21.5,
+   11.0
+  ],
+  [
+   7.5,
+   34.0
+  ],
+  [
+   21.5,
+   34.0
+  ]
+ ],
+ "copied_from": [
+  {
+   "file_sha256": "ed7764052814e63ff224bc82cde33324b782b288e022a1f2a737afe29aa6a202",
+   "path": "docs/sentilab/references/ascend910-tap25d-fig6a-snap0p5.json",
+   "record": "SLAB-048 reference layouts"
+  },
+  {
+   "file_sha256": "0271e8324f1d4dcf17b7b5d5427c79ac5540f3888d573b96f2b9a5dcd0c11dd6",
+   "path": "docs/sentilab/references/ascend910-tap25d-fig6a.json",
+   "record": "SLAB-048 reference layouts"
+  }
+ ],
+ "derived_from": {
+  "raw_design_hash": "b9bfcd232bdbd5c10158fc680512fab874de472077811dc637b5c283e303ebee",
+  "raw_identity_sha256": "0046e17b3e33feef14e570eb6a2026e17c3eea5c232160a052be62c2ae8e470e",
+  "reference_id": "ascend910-tap25d-fig6a"
+ },
+ "design_hash": "224f2ea088fc50f5eb209a44f1a82fa3704c06037456dc6976657df105c6c9e0",
+ "dies": [
+  {
+   "catalog_mm": [
+    14.5,
+    31.4
+   ],
+   "die": 0,
+   "halo_mm": 0.09,
+   "name": "Vitruvian compute die (TAP spells it Virtuvian), 256 W",
+   "power_w": 256.0
+  },
+  {
+   "catalog_mm": [
+    10.5,
+    16.0
+   ],
+   "die": 1,
+   "halo_mm": 0.045,
+   "name": "Nimbus I/O die, 14 W",
+   "power_w": 14.0
+  },
+  {
+   "catalog_mm": [
+    7.75,
+    11.87
+   ],
+   "die": 2,
+   "halo_mm": 0.045,
+   "name": "HBM stack, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    7.75,
+    11.87
+   ],
+   "die": 3,
+   "halo_mm": 0.045,
+   "name": "HBM stack, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    7.75,
+    11.87
+   ],
+   "die": 4,
+   "halo_mm": 0.045,
+   "name": "HBM stack, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    7.75,
+    11.87
+   ],
+   "die": 5,
+   "halo_mm": 0.045,
+   "name": "HBM stack, 20 W",
+   "power_w": 20.0
+  }
+ ],
+ "displacement_from_raw": {
+  "max_euclidean_mm": 0.232117,
+  "max_per_coordinate_linf_mm": 0.1952,
+  "per_die": [
+   {
+    "die": 0,
+    "dx_mm": -0.1501,
+    "dy_mm": -0.1003,
+    "euclidean_mm": 0.180527
+   },
+   {
+    "die": 1,
+    "dx_mm": 0.1503,
+    "dy_mm": -0.1003,
+    "euclidean_mm": 0.180694
+   },
+   {
+    "die": 2,
+    "dx_mm": 0.165,
+    "dy_mm": -0.1256,
+    "euclidean_mm": 0.207365
+   },
+   {
+    "die": 3,
+    "dx_mm": 0.1952,
+    "dy_mm": -0.1256,
+    "euclidean_mm": 0.232117
+   },
+   {
+    "die": 4,
+    "dx_mm": 0.165,
+    "dy_mm": 0.1246,
+    "euclidean_mm": 0.206761
+   },
+   {
+    "die": 5,
+    "dx_mm": 0.1952,
+    "dy_mm": 0.1246,
+    "euclidean_mm": 0.231578
+   }
+  ]
+ },
+ "fixture": {
+  "config": "sundai_tap/configs/sys_ascend910_45mm.cfg",
+  "config_sha256": "4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c",
+  "fixture_id": "ascend910-45mm",
+  "frame_mm": 45.0
+ },
+ "footprints_mm": [
+  [
+   31.4,
+   14.5
+  ],
+  [
+   10.5,
+   16.0
+  ],
+  [
+   11.87,
+   7.75
+  ],
+  [
+   11.87,
+   7.75
+  ],
+  [
+   11.87,
+   7.75
+  ],
+  [
+   11.87,
+   7.75
+  ]
+ ],
+ "identity": {
+  "canonical": {
+   "centers_mm": [
+    [
+     17.0,
+     22.5
+    ],
+    [
+     38.5,
+     22.5
+    ],
+    [
+     7.5,
+     11.0
+    ],
+    [
+     21.5,
+     11.0
+    ],
+    [
+     7.5,
+     34.0
+    ],
+    [
+     21.5,
+     34.0
+    ]
+   ],
+   "die_order": "TAP fixture config order",
+   "footprints_mm": [
+    [
+     31.4,
+     14.5
+    ],
+    [
+     10.5,
+     16.0
+    ],
+    [
+     11.87,
+     7.75
+    ],
+    [
+     11.87,
+     7.75
+    ],
+    [
+     11.87,
+     7.75
+    ],
+    [
+     11.87,
+     7.75
+    ]
+   ],
+   "frame_mm": 45.0,
+   "rotated": [
+    true,
+    false,
+    true,
+    true,
+    true,
+    true
+   ],
+   "schema": "sentilab-layout-identity-v1",
+   "units": {
+    "coordinates": "die centres; origin at the interposer's lower-left corner; +x right, +y up",
+    "length": "mm",
+    "rotation": "true = turned 90 degrees from the fixture config's (width, height)"
+   }
+  },
+  "content_sha256": "e0c7ce9eb641ee6aea7d2015e5bc0fc5e3f38f1759c2c2252f14ad5104af022a",
+  "hashing": "sha256 of json.dumps(canonical, sort_keys=True, separators=(',', ':'))"
+ },
+ "is_the_paper_layout": false,
+ "kind": "engineering-variant",
+ "label": "engineering variant",
+ "labels": [
+  "approximate reconstruction from published figure",
+  "simulated reference, not silicon",
+  "engineering comparison and sensitivity baseline, not a paper match"
+ ],
+ "layout_id": "ascend910-tap25d-fig6a-snap0p5",
+ "legal_on_fixture": true,
+ "limits": [
+  "A raw layout inside this variant's +/-0.5 mm per-coordinate box is not thereby a sampled point of the envelope: its one-axis stencil moves one die along one axis at a time.",
+  "Finite sensitivity probes do not prove a uniform reconstruction bound."
+ ],
+ "omitted": [
+  {
+   "fields": [
+    "routed_wirelength.vs_paper_pct"
+   ],
+   "why": "a paper-reported comparison: published targets are kept in separate fields of the signed manifest"
+  },
+  {
+   "fields": [
+    "one_mm_snapped_for_comparison"
+   ],
+   "why": "the 1 mm snapped variant: kept as history in the source record, not part of this site"
+  },
+  {
+   "fields": [
+    "decision",
+    "role",
+    "label"
+   ],
+   "why": "internal attribution and superseded wording, replaced by this file's label and role"
+  },
+  {
+   "fields": [
+    "sources",
+    "schema",
+    "variant_id",
+    "ticket.uuid"
+   ],
+   "why": "record internals; layout_id is the variant_id, and source names the published figure"
+  }
+ ],
+ "raw_inside_pm0p5_mm_per_coordinate_box": true,
+ "reference_id": "ascend910-tap25d-fig6a",
+ "repair_moves": 0,
+ "role": "Engineering comparison and sensitivity baseline, legal on the fixture as rounded: the raw centres rounded to the nearest 0.5 mm, rotations kept, no repair moves. It is not the paper's layout, never a paper match, and not part of gate zero.",
+ "rotated": [
+  true,
+  false,
+  true,
+  true,
+  true,
+  true
+ ],
+ "rounding_rule": "Each centre coordinate c becomes 0.5 * floor(c / 0.5 + 0.5): the nearest multiple of 0.5 mm. An exact tie (c / 0.5 ends in .5) rounds up, toward +infinity. Rotations are kept. No repair moves.",
+ "routed_wirelength": {
+  "frozen": false,
+  "label": "routed (open router), not paper",
+  "router": "sundai_hotspot/tap_router.py",
+  "router_acceptance": "UNKNOWN: router acceptance is pending",
+  "router_sha256": "2d9bb56c48501891817fb7c4a19c091ea5e6df9174d1afef43f4826aa79312f3",
+  "solver": {
+   "highs": "1.8.0",
+   "highs_status": "reported by the pinned SciPy build and recorded; not pinned, and not an admission of any other binary or host",
+   "scipy": "1.17.0",
+   "scipy_pinned_by": "requirements.txt"
+  },
+  "status": "provisional",
+  "value_mm": 16672.1
+ },
+ "schema": "sentilab-agents-reference/1",
+ "source": {
+  "caption": "Fig. 6: Thermal maps of the Huawei Ascend 910 System [15]: (a) the original layout, (b) a placement solution using Compact-2.5D approach, and (c) TAP-2.5D solution.",
+  "citation": "Y. Ma, L. Delshadtehrani, C. Demirkiran, J. L. Abellan, A. Joshi, \"TAP-2.5D: A Thermally-Aware Chiplet Placement Methodology for 2.5D Systems\", DATE 2021, pp. 1246-1251, doi:10.23919/DATE51398.2021.9474011",
+  "figure": "Fig. 6",
+  "page_index": 5,
+  "page_number": 6,
+  "panel": "a",
+  "pdf_sha256": "b209f51aec188e2bcdbf6f4acc3723fb30fbc5c14cca7e70141d478edadec234",
+  "url": "http://people.bu.edu/joshi/files/Ma_TAP-2.5D-DATE2021.pdf"
+ },
+ "ticket": {
+  "id": "SLAB-048",
+  "name": "REF-RECON"
+ },
+ "units": {
+  "coordinates": "die centres; origin at the interposer's lower-left corner; +x right, +y up",
+  "length": "mm",
+  "rotation": "true = turned 90 degrees from the fixture config's (width, height)"
+ },
+ "wire_note": "routed_wirelength is this layout's routed wire W, from the open router (TAP-2.5D's MILP router ported from CPLEX to HiGHS), the wire figure the challenge judges. It depends only on the dies' relative positions: moving the whole layout leaves it unchanged. wire_proxy_mm is the proxy W_proxy, the connectivity-weighted mean Manhattan distance between die centres, a diagnostic that is never used to judge. Neither runs a thermal solve.",
+ "wire_proxy_mm": 18.9902
+}
