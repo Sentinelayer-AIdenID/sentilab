@@ -3,7 +3,7 @@ import asyncio
 import copy
 from contextlib import redirect_stdout
 import io
-from dataclasses import asdict, replace
+from dataclasses import asdict, make_dataclass, replace
 import json
 import hashlib
 from pathlib import Path
@@ -25,7 +25,9 @@ def fake_thermal_result(oracle, design):
         grid_rows=oracle.grid_rows, grid_cols=oracle.grid_cols, ambient_c=40.0,
         solver_seconds=0.05, evaluation_seconds=0.1, input_generation_seconds=0.02,
         input_sha256=(('sample.ptrace', hashlib.sha256(b'synthetic-input').hexdigest()),),
-        all_layers_peak_c=101.0)
+        all_layers_peak_c=101.0,
+        # SLAB-002b: results carry the fixture identity the oracle was built for.
+        fixture_id=oracle.problem.fixture_id, config_sha256=oracle.problem.config_sha256)
 
 
 class MeshAccountingTests(unittest.TestCase):
@@ -147,6 +149,38 @@ class MeshLayoutTests(unittest.TestCase):
 
 
 class MeshIdentityTests(unittest.TestCase):
+    def test_fixture_id_matches_frozen_fixture_before_evaluation(self):
+        frozen, _ = mesh.load_layouts(mesh.EVIDENCE_ROOT / 'ascend910/layouts.json')
+        make_oracle = mesh.make_oracle
+        for fixture_id in ('ascend910', 'micro150', None, ''):
+            calls = []
+
+            def factory(fixture, grid):
+                oracle = make_oracle(fixture, grid)
+                problem_type = make_dataclass('FixtureProblem', [('fixture_id', str)],
+                                              bases=(type(oracle.problem),), frozen=True)
+                oracle.problem = problem_type(**{**asdict(oracle.problem), 'fixture_id': fixture_id})
+                return oracle
+
+            async def fake_call(oracle, design):
+                calls.append(oracle.grid_rows)
+                return fake_thermal_result(oracle, design)
+
+            with self.subTest(fixture_id=fixture_id), patch.object(mesh, 'make_oracle', factory), \
+                    patch.object(mesh.HotSpotOracle, '__call__', fake_call), tempfile.TemporaryDirectory() as directory:
+                evaluation = mesh.evaluate_layouts(frozen, [32, 64],
+                    ['clustered-01', 'spread-01'], evidence_dir=Path(directory))
+                if fixture_id == frozen['fixture']:
+                    result = asyncio.run(evaluation)
+                    self.assertEqual(calls, [32, 32, 64, 64])
+                    self.assertEqual(mesh.check_result(result, Path(directory)), [])
+                else:
+                    with self.assertRaisesRegex(ValueError, 'oracle fixture id does not match frozen fixture'):
+                        asyncio.run(evaluation)
+                    self.assertEqual(calls, [])
+                    records = [json.loads(line) for line in (Path(directory) / 'rows.jsonl').read_text().splitlines()]
+                    self.assertFalse(any(r['kind'] == 'evaluation' for r in records))
+
     def test_rejects_changed_evaluator_before_evaluating_next_grid(self):
         frozen, _ = mesh.load_layouts(mesh.EVIDENCE_ROOT / 'ascend910/layouts.json')
         make_oracle = mesh.make_oracle

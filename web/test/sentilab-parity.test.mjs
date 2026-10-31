@@ -4,7 +4,7 @@
 //   - canonical.mjs gives the same strings as resultcheck.mjs's canonical();
 //   - view-core.mjs (the WebCrypto port) gives the same verifyChain() result as the reference on every view vector,
 //     plus the same mode, caps and hashing answers;
-//   - the production pin list is empty, so nothing verifies without a pin, and the demo verifies only under TEST keys.
+//   - the production pins hold only the service key (never a derivable test key), and the demo verifies only under TEST keys.
 // The originals are the repo's executable contracts in contracts/ (hashes checked below and in contracts/HASHES.txt).
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -194,10 +194,22 @@ test("the browser derives the same test keys as the vectors' rule", async () => 
     assert.equal((await core.keySha256(raw)).slice(0, 8), viewFile.test_keys[name].key_sha256_prefix, name);
   }
 });
-test("the production pin list is empty and frozen", () => {
+test("the production pins are well-formed, frozen and never a derivable test key", () => {
   assert.ok(Array.isArray(VIEW_PINS));
-  assert.equal(VIEW_PINS.length, 0);
   assert.ok(Object.isFrozen(VIEW_PINS));
+  const testHashes = new Set(["core", "forger", "lab", "gate"].map((name) => testKey(name).sha256));
+  for (const pin of VIEW_PINS) {
+    assert.ok(Object.isFrozen(pin));
+    assert.deepEqual(Object.keys(pin).sort(), ["key_id", "key_sha256"]);
+    assert.match(pin.key_sha256, /^[0-9a-f]{64}$/);
+    assert.equal(pin.key_id, `sha256:${pin.key_sha256}`, "key_id is the sha256 of the raw public key, as in trust.key_id_for");
+    assert.ok(!testHashes.has(pin.key_sha256), "a test key is never a production pin");
+  }
+  const flightPins = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../public/trust-pins.json"), "utf8"));
+  assert.deepEqual(VIEW_PINS.map((p) => p.key_id).sort(), flightPins.map((p) => p.key_id).sort(), "one service key in both registries");
+  for (const pin of flightPins) {
+    assert.equal(createHash("sha256").update(Buffer.from(pin.public_key_hex, "hex")).digest("hex"), pin.key_id.slice(7));
+  }
 });
 test("a served key is used only if its hash matches the pin: V1 under wrong pins never verifies", async () => {
   const v1 = viewFile.chains[0];

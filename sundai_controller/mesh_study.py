@@ -36,10 +36,10 @@ def make_oracle(fixture: str, grid: int) -> HotSpotOracle:
 
 
 def fixture_contract(oracle):
-    # Geometry freeze is portable across builds; each study separately pins its evaluator.
+    # Geometry freeze is portable across builds; fixture name and evaluator are checked separately.
     problem = asdict(oracle.problem)
     return {key: value for key, value in problem.items()
-            if key not in ('hotspot_binary_sha256', 'generator_sha256')}
+            if key not in ('fixture_id', 'hotspot_binary_sha256', 'generator_sha256')}
 
 
 def evaluator_identity(problem):
@@ -386,6 +386,8 @@ async def evaluate_layouts(frozen, grids=(16, 32, 64), layout_ids=None, *, evide
         for grid in grids:
             oracle = make_oracle(frozen['fixture'], grid)
             try:
+                if getattr(oracle.problem, 'fixture_id', frozen['fixture']) != frozen['fixture']:
+                    raise ValueError('oracle fixture id does not match frozen fixture')
                 if json.loads(_json_bytes(fixture_contract(oracle))) != frozen['fixture_contract']:
                     raise ValueError('frozen fixture contract changed')
                 identity = evaluator_identity(asdict(oracle.problem))
