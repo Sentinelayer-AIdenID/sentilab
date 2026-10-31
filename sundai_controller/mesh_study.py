@@ -28,11 +28,9 @@ EVIDENCE_ROOT = Path(__file__).resolve().parents[1] / 'docs/sentilab/evidence/me
 
 
 def make_oracle(fixture: str, grid: int) -> HotSpotOracle:
-    if fixture == 'micro150':
-        raise ValueError('micro150 requires SLAB-002b wiring; no Ascend910 fallback is allowed')
-    if fixture != 'ascend910':
+    if fixture not in ('ascend910', 'micro150'):
         raise ValueError(f'unsupported fixture: {fixture}')
-    return HotSpotOracle(grid, grid, max_workers=1)
+    return HotSpotOracle(grid, grid, fixture=fixture, max_workers=1)
 
 
 def fixture_contract(oracle):
@@ -493,9 +491,9 @@ def report(result):
     lines += ['', '## Resource accounting', '',
               f'Solver executions in this run: {accounting.get("solver_executions", "not recorded")}. '
               f'CPU-minutes (process plus reaped children): {cpu_label}.', '',
-              'The shared allowance is 150 solver executions and 6 CPU-minutes across both fixtures, '
-              'including warm-up and validation. Per-run accounting is not a shared-budget clearance. '
-              'See RESULT.json and VALIDATION.md for prior usage and unresolved accounting.', '']
+              'Per-run accounting is not a shared-budget clearance. See VALIDATION.md in this '
+              'evidence directory for the reservation, validation use and remaining allowance; '
+              'historical accounting limitations are recorded in ../VALIDATION.md.', '']
     evidence = result.get('evidence_status', {})
     lines += ['', '## Retained evidence', '',
               'Raw HotSpot inputs and outputs are not retained; D02 is incomplete.',
@@ -514,8 +512,8 @@ def report(result):
               'No benchmark method-gap or continuum-convergence claim is made here.', '',
               'All J values, per-evaluation timings, design hashes, problem/config/source/binary hashes '
               'and all-layer peaks are in RESULT.json. Layout generation and reproduction instructions '
-              'are in ../README.md. Ascend910 is interim evidence; required micro150 evidence is '
-              'pending SLAB-002b wiring, so the combined study remains inconclusive.', '']
+              'are in ../README.md. Each fixture has its own frozen sample and measured mesh '
+              'error; do not transfer an error estimate between fixtures.', '']
     return '\n'.join(lines)
 
 
