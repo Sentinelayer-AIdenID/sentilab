@@ -15,7 +15,7 @@ import { checkLine, readBodyCapped, progressTracker, parseKeyResponse, publicKey
 import { initialState, request as pageRequest, step as pageStep, verifyRows, verifyReplayBytes, splitRows, rowText, liveLabel, REASON_TEXT, MAX_LIMIT } from "../paging.mjs";
 import { reasonText, chainSummary, isDrill as anyDrill, isRejected } from "../lab-model.mjs";
 
-export const CONTRACT_VERSION = `${VERSION} (live paging: view-envelope/0.6)`;
+export const CONTRACT_VERSION = `${VERSION} (live paging: view-envelope/0.6.1)`;
 export const DEMO = Object.freeze({ url: "../demo-run.jsonl", runId: "demo-8c-0001", label: "demo-run.jsonl · bundled interface fixture" });
 // The Lab view's rule (lab.js TEST_PIN_HOSTS): anyone can derive the test keys, so a public host must never accept
 // them; there they would let a forged file show as verified on our domain.
