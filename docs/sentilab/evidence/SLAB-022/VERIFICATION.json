@@ -1,0 +1,180 @@
+{
+  "schema_version": "sentilab.verification.v1",
+  "implementation_head": "3dae9d3c4b83a2af4d7435a130a4216504a215f4",
+  "implementation_base": "de3fa41c9fe45dd958bc2e06418d993027807448",
+  "tests": [
+    {
+      "command": "python3.12 -m unittest -q sentilab_core.test_resultcheck",
+      "count": 8,
+      "exit": 0
+    },
+    {
+      "command": "python3.12 -m sentilab_core.test_resultcheck --parity",
+      "count": 9,
+      "contract_vectors": 39,
+      "exit": 0
+    },
+    {
+      "command": "(cd sundai_controller && python -m unittest -v test_controller.py test_experiment.py)",
+      "count": 55,
+      "exit": 0
+    },
+    {
+      "command": "python -m unittest discover -s sundai_thermal -p 'test_*.py'",
+      "count": 2,
+      "exit": 0
+    },
+    {
+      "command": "python -m unittest -q sentilab_core.test_budget sentilab_core.test_gate sentilab_core.test_ledger sentilab_core.test_environment sentilab_core.test_signing sentilab_core.conformance.CanonicalConformance",
+      "count": 38,
+      "exit": 0
+    },
+    {
+      "command": "node --test web/test/*.test.mjs",
+      "count": 103,
+      "exit": 0
+    },
+    {
+      "command": "node contracts/contract-0.2/run-vectors.mjs",
+      "count": 74,
+      "exit": 0
+    },
+    {
+      "command": "node contracts/view-envelope/run-view-vectors.mjs",
+      "count": 113,
+      "exit": 0
+    },
+    {
+      "command": "node contracts/view-envelope-v0.5/run-view-vectors.mjs",
+      "count": 193,
+      "exit": 0
+    },
+    {
+      "command": "node web/test/make-sentilab-demo.mjs --check",
+      "envelopes": 44,
+      "exit": 0
+    }
+  ],
+  "checks": [
+    {
+      "command": "python3.12 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt",
+      "exit": 0
+    },
+    {
+      "command": "pip install -r requirements-service.txt",
+      "exit": 0
+    },
+    {
+      "command": "pip check",
+      "exit": 0
+    },
+    {
+      "command": "(cd contracts && sha256sum -c HASHES.txt)",
+      "exit": 0
+    },
+    {
+      "command": "(cd sundai_hotspot && make -j4 SUPERLU=1)",
+      "exit": 0
+    },
+    {
+      "command": "python3.12 -m compileall -q sentilab_core/resultcheck.py sentilab_core/test_resultcheck.py sentilab_cli sentilab_mcp",
+      "exit": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit": 0
+    }
+  ],
+  "mutation_proofs": [
+    {
+      "mutation": "size-before-parse",
+      "detected": true,
+      "exit": 1,
+      "seconds": 0.159
+    },
+    {
+      "mutation": "depth-bound",
+      "detected": true,
+      "exit": 1,
+      "seconds": 0.362
+    },
+    {
+      "mutation": "bool-is-not-number",
+      "detected": true,
+      "exit": 1,
+      "seconds": 0.147
+    },
+    {
+      "mutation": "notes-are-hashed",
+      "detected": true,
+      "exit": 1,
+      "seconds": 0.13
+    },
+    {
+      "mutation": "cli-route",
+      "detected": true,
+      "exit": 1,
+      "seconds": 0.243
+    },
+    {
+      "mutation": "numeric-rounding",
+      "detected": true,
+      "exit": 1,
+      "seconds": 0.146
+    },
+    {
+      "mutation": "manifest-count",
+      "detected": true,
+      "exit": 1,
+      "seconds": 0.166
+    },
+    {
+      "mutation": "mcp-wire-bytes",
+      "detected": true,
+      "exit": 1,
+      "seconds": 8.866
+    },
+    {
+      "mutation": "exit-code",
+      "detected": true,
+      "exit": 1,
+      "seconds": 8.447
+    },
+    {
+      "mutation": "temperature-refusal",
+      "detected": true,
+      "exit": 1,
+      "seconds": 7.857
+    },
+    {
+      "mutation": "tie-rule",
+      "detected": true,
+      "exit": 1,
+      "seconds": 8.536
+    },
+    {
+      "mutation": "cluster-rule",
+      "detected": true,
+      "exit": 1,
+      "seconds": 8.439
+    },
+    {
+      "mutation": "flipped-vector-expectation",
+      "detected": true,
+      "exit": 1
+    }
+  ],
+  "base_proof": {
+    "bases": [
+      "63c4b711e16ee36093031327d183a9c0ee124da5",
+      "de3fa41c9fe45dd958bc2e06418d993027807448"
+    ],
+    "command": "python3.12 -m unittest sentilab_core.test_resultcheck",
+    "exit": 1,
+    "reason": "ResultCheck import absent; final test file copied into isolated base worktrees"
+  },
+  "additional_proof": "Existing live status CLI and MCP match before and after a ResultCheck tool call; no solver invoked.",
+  "gate_scope": "Repository-defined Python/JS/native-build gates replace the generic npm/TypeScript template: no package.json or TypeScript configuration exists. Native HotSpot execution and full solver-backed suites were not run under the ticket no-solver constraint; the native compile alternative was used.",
+  "independent_review": "Pending; self-run evidence is not independent review or scientific acceptance.",
+  "runtime": "Python 3.12.3; Node 22.23.3 only for tests; ResultCheck runs with Python standard library and no live signer configuration."
+}

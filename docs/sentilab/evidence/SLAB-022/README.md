@@ -63,7 +63,9 @@ contract semantics; they do not silently become passes.
 
 [MANIFEST.json](MANIFEST.json) pins all six v0.2 contract files against
 `contracts/HASHES.txt`, the 39-vector count, and the verdict schema version.
-No contract files are changed.
+No contract files are changed. [VERIFICATION.json](VERIFICATION.json) records
+the executed gates and 13 detected mutations on the implementation commit.
+Independent review remains pending.
 
 ```sh
 # Standard-library tests: safe in the Python-only container, no Node needed.
