@@ -1,30 +1,44 @@
 #!/usr/bin/env node
-// Prints the SentiLab daytime deck to PDF (one 1920x1080 page per slide) and, with --shots, screenshots and checks every
-// slide.
+// Prints a SentiLab deck to PDF (one 1920x1080 page per slide) and, with --shots, screenshots and checks every slide.
 //
-//   PLAYWRIGHT_DIR=<dir containing node_modules/playwright> node scripts/export-deck-pdf.mjs [--shots <dir>] [--no-pdf]
+//   PLAYWRIGHT_DIR=<dir containing node_modules/playwright> node scripts/export-deck-pdf.mjs [--deck daytime|supplement]
+//     [--shots <dir>] [--no-pdf]
 //
-// Run scripts/build-deck-data.mjs first. deck/ (DECK_ROOT) is served by a throwaway local server and the deck opens at
-// /daytime/, so it reads deck-data.json exactly as a browser would and loads the shared images from deck/img/. Output:
-// docs/sentilab/deck/SentiLab-deck-<packet date>-daytime-<HHMM>.pdf, named from the packet the data came from (pdfName),
-// one page per slide and nothing else: the speaker notes are not printed (they are in deck-data.json and the N panel).
-// The v1 deck and its date-only PDF are frozen (FROZEN_V1): this script never writes any of those paths.
+// --deck daytime (the default) is the daytime deck, deck/daytime/; --deck supplement is the dated supplement,
+// deck/supplement/. Run its build script first (build-deck-data.mjs or build-deck-supplement.mjs). deck/ (DECK_ROOT) is
+// served by a throwaway local server and the deck opens at /<deck>/, so it reads deck-data.json exactly as a browser
+// would and loads the shared images, engine and stylesheet from their committed paths. Output, one page per slide and
+// nothing else (the speaker notes are in deck-data.json and the N panel, never printed):
+//   daytime     docs/sentilab/deck/SentiLab-deck-<packet date>-daytime-<HHMM>.pdf, named from the packet (pdfName)
+//   supplement  docs/sentilab/deck/SentiLab-deck-supplement-<date>-<HHMM>-v<n>.pdf (suppPdfName)
+// The v1 deck, the daytime deck and their PDFs are frozen (FROZEN_V1, FROZEN_DAYTIME): this script never writes any of
+// those paths, so the daytime PDF is not re-exported; --no-pdf still screenshots and checks the daytime deck.
 // --shots <dir> also writes every slide at 1920x1080 and 1280x720 (plus one with the notes panel) and a report.json.
-// Each slide is checked: nothing outside its block or the canvas, no clipped text, smallest font size, missing values.
-// Exit 1 when a check fails, the browser logs an error or a request fails, or the PDF page count differs from the slide
-// count.
+// Each slide is checked: nothing outside its block or the canvas, no clipped text, smallest font size, missing values,
+// empty generated blocks. Exit 1 when a check fails, the deck shows its error banner, the browser logs an error or a
+// request fails, or the PDF page count differs from the slide count.
 import { createServer } from "node:http";
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { extname, join, normalize, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { DECK_DIR, DECK_ROOT, FROZEN_V1, PDF_DIR, REPO_ROOT, pdfName } from "./build-deck-data.mjs";
-
-const OUT_DIR = PDF_DIR;
-const PAGE = `${relative(DECK_ROOT, DECK_DIR).split(sep).join("/")}/`;
-const MIN_FONT = 22; // canvas px at 1920x1080
+import { FROZEN_DAYTIME, SUPP_DECK_DIR, suppPdfName } from "./build-deck-supplement.mjs";
 
 const args = process.argv.slice(2);
+const deckAt = args.indexOf("--deck");
+const DECKS = {
+  daytime: { dir: DECK_DIR, pdf: (data) => pdfName(data.source.packetId) },
+  supplement: { dir: SUPP_DECK_DIR, pdf: () => suppPdfName() },
+};
+const DECK_NAME = deckAt >= 0 ? args[deckAt + 1] : "daytime";
+if (!Object.hasOwn(DECKS, DECK_NAME)) { console.error(`unknown deck ${JSON.stringify(DECK_NAME)}: use --deck daytime or --deck supplement`); process.exit(2); }
+const DECK = DECKS[DECK_NAME];
+const FROZEN = { ...FROZEN_V1, ...FROZEN_DAYTIME };
+const OUT_DIR = PDF_DIR;
+const PAGE = `${relative(DECK_ROOT, DECK.dir).split(sep).join("/")}/`;
+const MIN_FONT = 22; // canvas px at 1920x1080
+
 const shotsAt = args.indexOf("--shots");
 const SHOTS = shotsAt >= 0 ? resolve(args[shotsAt + 1]) : null;
 const PDF = !args.includes("--no-pdf");
@@ -86,6 +100,7 @@ function checkSlide(k) {
       if (el.classList.contains("pending")) out.pending.push(el.dataset.f || name(el)); // a missing value: a failure
     }
   });
+  for (const el of slide.querySelectorAll("[data-gen]")) if (!el.textContent.trim()) out.pending.push(`empty generated block ${el.dataset.gen}`);
   for (const t of slide.querySelectorAll("svg text")) {
     const fs = parseFloat(getComputedStyle(t).fontSize) * (t.closest("svg").getBoundingClientRect().width / scale) / t.closest("svg").viewBox.baseVal.width;
     if (fs < out.minFont) { out.minFont = fs; out.minFontAt = `svg text "${t.textContent}"`; }
@@ -108,7 +123,9 @@ async function open(w, h, query = "") {
   page.on("requestfailed", (r) => report.console.push(`${w}x${h}: request failed ${r.url()} ${r.failure()?.errorText ?? ""}`));
   page.on("response", (r) => { if (r.status() >= 400) report.console.push(`${w}x${h}: HTTP ${r.status()} ${r.url()}`); });
   await page.goto(base + PAGE + query, { waitUntil: "networkidle" });
-  await page.waitForFunction(() => window.__deck?.ready === true);
+  await page.waitForFunction(() => window.__deck?.ready === true || document.querySelector(".fatal"));
+  const fatal = await page.evaluate(() => document.querySelector(".fatal")?.textContent ?? null);
+  if (fatal) throw new Error(`${w}x${h}: the deck shows its error banner: ${fatal}`);
   return { ctx, page };
 }
 
@@ -146,10 +163,9 @@ try {
     mkdirSync(OUT_DIR, { recursive: true });
     const { ctx, page } = await open(1920, 1080, "?print=1");
     const count = await page.evaluate(() => window.__deck.count);
-    const { packetId } = JSON.parse(readFileSync(join(DECK_DIR, "deck-data.json"), "utf8")).source;
-    const path = join(OUT_DIR, pdfName(packetId));
+    const path = join(OUT_DIR, DECK.pdf(JSON.parse(readFileSync(join(DECK.dir, "deck-data.json"), "utf8"))));
     const rel = relative(REPO_ROOT, path).split(sep).join("/");
-    if (Object.hasOwn(FROZEN_V1, rel)) throw new Error(`refusing to overwrite the frozen v1 export ${rel}`);
+    if (Object.hasOwn(FROZEN, rel)) throw new Error(`refusing to overwrite the frozen export ${rel}`);
     await page.pdf({ path, width: "1920px", height: "1080px", printBackground: true, preferCSSPageSize: true });
     const pages = (readFileSync(path, "latin1").match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;
     report.pdf = { path, pages, slides: count };

@@ -24,6 +24,9 @@ import {
   DECK_DIR, FROZEN_V1, NOT_PUBLIC, PACKETS, PDF_DIR, REPO_ROOT, SIDECAR_VERSION, PacketError,
 } from "./build-deck-data.mjs";
 import { validateSchema, UnsupportedSchemaError } from "./json-schema-lite.mjs";
+import { FROZEN_DAYTIME, SUPPLEMENT, suppPdfName } from "./build-deck-supplement.mjs";
+// The dated supplement deck (deck/supplement/) has its own tests; importing them here runs them in the same CI step.
+import "./deck-supplement.test.mjs";
 
 const require = createRequire(import.meta.url);
 const Deck = require(join(DECK_DIR, "deck.js"));
@@ -699,12 +702,18 @@ test("deck v1 and its PDF stay byte-identical; the daytime PDF has its own packe
   assert.equal(pdfName(PACKET), "SentiLab-deck-2026-10-31-daytime-1505.pdf");
   const v1 = relative(REPO_ROOT, join(PDF_DIR, pdfName("progress-2026-10-31"))).split(sep).join("/");
   assert.ok(Object.hasOwn(FROZEN_V1, v1), "the date-only name is the frozen v1 export, which the export script refuses to write");
+  // The accepted daytime export is frozen too (PR 63): the export script refuses both sets of paths.
+  const daytime = relative(REPO_ROOT, join(PDF_DIR, pdfName(PACKET))).split(sep).join("/");
+  assert.ok(Object.hasOwn(FROZEN_DAYTIME, daytime), "the daytime export is frozen");
+  for (const f of ["index.html", "deck.js", "deck.css", "deck-data.json", "deck-data.js"]) assert.ok(Object.hasOwn(FROZEN_DAYTIME, `deck/daytime/${f}`), f);
   const exporter = readFileSync(join(REPO_ROOT, "scripts", "export-deck-pdf.mjs"), "utf8");
-  assert.match(exporter, /if \(Object\.hasOwn\(FROZEN_V1, rel\)\) throw/);
+  assert.match(exporter, /const FROZEN = \{ \.\.\.FROZEN_V1, \.\.\.FROZEN_DAYTIME \};/);
+  assert.match(exporter, /if \(Object\.hasOwn\(FROZEN, rel\)\) throw/);
   assert.doesNotMatch(exporter, /new Date\(\)\.toISOString\(\)/, "the PDF name comes from the packet, not the clock");
   const pdf = join(PDF_DIR, pdfName(PACKET));
   assert.ok(existsSync(pdf), `${pdfName(PACKET)} is exported`);
   const pages = (readFileSync(pdf, "latin1").match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;
   assert.equal(pages, rendered.length, "one PDF page per slide");
-  assert.deepEqual(readdirSync(PDF_DIR).sort(), ["SentiLab-deck-2026-10-31-daytime-1505.pdf", "SentiLab-deck-2026-10-31.pdf"]);
+  // Beside them only the dated supplement: its source files and its own PDF.
+  assert.deepEqual(readdirSync(PDF_DIR).sort(), ["SentiLab-deck-2026-10-31-daytime-1505.pdf", "SentiLab-deck-2026-10-31.pdf", suppPdfName(), SUPPLEMENT.id]);
 });
