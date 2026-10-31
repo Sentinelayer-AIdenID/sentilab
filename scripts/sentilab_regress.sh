@@ -3,6 +3,9 @@
 # Exits nonzero on any failure. Requires: python3.12, build-essential, libsuperlu-dev, libblas-dev.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# SLAB-040: run entry points need a signer. Every rerun gets a fresh throwaway seed in its own environment,
+# never a production seed and never a file; records it signs read as "integrity only, unanchored".
+export FLIGHT_SIGNING_SEED_B64="$(python3 -c 'import base64,os;print(base64.b64encode(os.urandom(32)).decode())')"
 FAILED=0
 PASSED=0
 
