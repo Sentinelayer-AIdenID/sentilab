@@ -404,6 +404,27 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(json.loads((output / 'EXIT.json').read_text())['returncode'], 17)
         self.assertTrue((output / 'sample.ptrace').exists())
 
+        # TimeoutExpired carries bytes even with text=True on supported Python;
+        # adapters may supply text or no payload. Exercise both streams/types.
+        for stdout, stderr in [(b'partial\xff out', b'partial\xfe err'),
+                               ('partial out', 'partial err'), (None, None)]:
+            with self.subTest(stdout_type=type(stdout).__name__):
+                error = worker.subprocess.TimeoutExpired('fake solver', 0.5, output=stdout, stderr=stderr)
+                with patch.object(worker, 'PassiveInterposer', return_value=system), patch.object(
+                        worker.subprocess, 'run', side_effect=error):
+                    with self.assertRaisesRegex(TimeoutError, 'TFL_ORACLE_TIMEOUT'):
+                        worker.evaluate(captured)
+                for name, value in [('stdout', stdout), ('stderr', stderr)]:
+                    expected = value if isinstance(value, bytes) else (value or '').encode()
+                    self.assertEqual((output / f'{name}.bin').read_bytes(), expected)
+                    self.assertEqual((output / f'{name}.txt').read_text(), expected.decode(errors='replace'))
+                status = json.loads((output / 'EXIT.json').read_text())
+                self.assertEqual(status['status'], 'timeout')
+                self.assertEqual(status['stdout_payload_type'], type(stdout).__name__)
+                self.assertEqual(status['stderr_payload_type'], type(stderr).__name__)
+                self.assertEqual(status['timeout_s'], captured['solver_timeout_s'])
+                self.assertIsNone(status['returncode'])
+
     async def test_cpu_48_and_72_minute_caps_preserve_prior_actuals(self):
         self.spend['fixtures']['micro150'] = {'calls': 0, 'cpu_seconds': 2879.5}
         self.spend['cpu_seconds'] += 2879.5
