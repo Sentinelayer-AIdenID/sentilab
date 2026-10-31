@@ -3,6 +3,70 @@
 This implementation is **incomplete**. No all-gates-green or PR-publication claim
 is made. The work is by a surrogate executor under recorded model substitution.
 
+## Round-3 container render correction, 2026-10-31
+
+Warden reported the `chiplet.render` valid-input assertion failing at published
+PR #43 head `dd3512cd`. The local pre-fix source is
+`b01c08e8ac794f31b216a2aba19cd6e4f41f5bb6`.
+
+The image lacked both parts of the render runtime: Dockerfile did not install
+Node, and `.dockerignore` excluded `web/` except `trust-pins.json`. The existing
+Python render adapter executes Node and imports `lab-model.mjs`, which imports
+`evidence-projection.mjs`. The fix installs `nodejs` and includes exactly those
+two existing modules. No handler, fixture, test or assertion is changed. The
+existing container smoke already runs the regression through both transports.
+
+Reproduction used a detached pre-fix worktree at `/app` and
+`pip install -r requirements.txt -r requirements-service.txt` in the Python 3.12
+venv. Every pinned version matched; `pip check` passed. Only the Docker-included
+`web/public/trust-pins.json` was retained under `/app/web`, and PATH was set to
+an empty directory to reproduce the image's absent Node executable. Running:
+
+```sh
+PATH=/tmp/slab043-no-node OPENBLAS_CORETYPE=Haswell OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /workspace/sentilab/.venv/bin/python -m unittest -q sentilab_core.test_conformance.ExecutionConformance.test_each_capability_returns_identical_bytes_and_output_schema
+```
+
+failed (1 test, 1 failure) at `chiplet.render` with the reported
+`AssertionError: 2 != 0` and JSON error code `-32602`, message `ValueError`.
+Calling the real adapter directly exposed `FileNotFoundError: ... 'node'`.
+Restoring Node alone exposed `ERR_MODULE_NOT_FOUND` for
+`/app/web/public/sentilab/lab-model.mjs`.
+
+After retaining the two modules named by the corrected `.dockerignore` and
+providing Node, all **105 conformance/transport/lane tests passed** in `/app`,
+including the unchanged failing test. `/app/web` contained exactly the two
+modules and the trust-pins file. The exact invocation was:
+
+```sh
+OPENBLAS_CORETYPE=Haswell OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 /workspace/sentilab/.venv/bin/python -m unittest -q sentilab_core.test_conformance sentilab_core.test_memory_transports sentilab_core.test_mcp_stdio sentilab_core.test_dataset_mcp sentilab_core.test_cleanup sentilab_core.test_research_transports sentilab_core.test_resultcheck sentilab_core.test_resultcheck_boundary sentilab_core.test_resultcheck_io sentilab_core.test_resultcheck_platform sentilab_core.test_memory sentilab_core.test_routing sentilab_core.memory_conformance
+```
+
+Additional fresh checks all exited 0. Python tests used the same three
+OPENBLAS/OMP settings and the same venv interpreter:
+
+| Command | Result |
+|---|---|
+| `/workspace/sentilab/.venv/bin/python -m unittest -q test_controller.py test_experiment.py` from `/app/sundai_controller` | 55 pass |
+| `/workspace/sentilab/.venv/bin/python -m unittest -q sentilab_core.test_dataset sentilab_core.test_ledger sentilab_core.test_history sentilab_core.test_environment sentilab_core.test_signing sentilab_core.test_budget sentilab_core.test_gate sentilab_core.test_labs` from `/app` | 73 pass |
+| `PATH="$PWD/.venv/bin:$PATH" node --test web/test/*.test.mjs` from the source checkout | 216 pass |
+| `sha256sum -c HASHES.txt` from `contracts` | All hashes pass |
+| `node run-vectors.mjs` from `contracts/contract-0.2` and `contracts/contract-0.3` | 74 and 83 checks pass |
+| `node run-view-vectors.mjs` from `contracts/view-envelope` and `contracts/view-envelope-v0.5` | 113 and 193 checks pass |
+| `node run-paging-vectors.mjs` from `contracts/view-envelope-v0.6` and `contracts/view-envelope-v0.6.1` | 174 and 222 checks pass |
+| `node web/test/make-sentilab-demo.mjs --check` | 44 envelopes current |
+| `.venv/bin/python -m sentilab_core.capabilities --check docs/sentilab/evidence/SLAB-043/COVERAGE.md` | Pass |
+| `.venv/bin/python -m compileall -q sentilab_core sentilab_cli sentilab_mcp` | Pass |
+| `make -C sundai_hotspot -j4 SUPERLU=1` | Build passes; no solver execution |
+| `git diff --check` | Pass |
+
+This is an image-layout reproduction on Ubuntu 24.04.5, Python 3.12.3 and
+Node 22.23.3, not a Docker build: Docker is unavailable in this box. The full
+container/thermal/live-conformance gates also execute solves, which this ticket
+forbids. Those gates remain for CI/Warden; no all-gates-green claim is made.
+The broader incomplete-ticket items below remain outstanding. Image packaging
+requires elevated independent review under SWE Excellence Framework F.2/O.1;
+rollback is to revert this packaging correction.
+
 ## Round-2 integration on main 780427a, 2026-10-31
 
 Rebased the two partial commits onto supplied main

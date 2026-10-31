@@ -13,5 +13,8 @@ sundai_hotspot/*.a
 **/.dev.vars
 web/
 !web/public/trust-pins.json
+# chiplet.render calls the shared browser model through Node.
+!web/public/sentilab/lab-model.mjs
+!web/public/sentilab/evidence-projection.mjs
 **/*.pem
 **/*.key
