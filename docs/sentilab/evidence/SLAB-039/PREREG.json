@@ -1,0 +1,42 @@
+{
+  "schema": "slab-039-prereg-v1",
+  "ticket": "SLAB-039",
+  "description": "Headroom runner: cheap search (random/SA/UCB1) at 32 evaluations vs a long SA to determine if an LLM has room to beat cheap methods on this task",
+  "fixture": "ascend910",
+  "grid": 32,
+  "mesh_error_source": "SLAB-006a mesh freeze ticket",
+  "rule": {
+    "k": 5,
+    "criterion": "pass only if cheap_median - best >= k * max|J32 - J64|",
+    "cheap_median": "minimum over methods of the per-method median best J (temperature in C) across seeds",
+    "best": "the best J seen anywhere (long SA or any cheap run)",
+    "gap": "cheap_median - best",
+    "note": "Use the strongest cheap method's median, not the average, as the bar. All temperatures in C; lower is better."
+  },
+  "cheap_methods": {
+    "methods": ["random", "simulated_annealing", "ucb1"],
+    "evaluations_per_method": 32,
+    "seeds": [0, 1, 2, 3, 4, 5, 6, 7],
+    "seed_count": 8
+  },
+  "long_sa": {
+    "restarts": 4,
+    "max_evaluations_per_restart": 1500,
+    "max_cpu_minutes": 90,
+    "seeds": [100, 101, 102, 103],
+    "note": "Each restart is a separate seed; total max evaluations = 4 * 1500 = 6000"
+  },
+  "hard_caps": {
+    "evaluations_per_cheap_lane": 32,
+    "long_sa_max_evaluations_per_restart": 1500,
+    "long_sa_max_cpu_minutes": 90,
+    "enforced_in_code": true
+  },
+  "reporting": {
+    "outputs": ["RESULT.json", "REPORT.md"],
+    "gap_with_spread": true,
+    "plain_verdict": true
+  },
+  "committed_at": "2026-10-31T05:07:00Z",
+  "commit_before_first_result": true
+}
