@@ -6,6 +6,7 @@ The Docker daemon uses cgroupfs and this same parent explicitly, because ancestr
 of the docker CLI alone does not include BuildKit or runtime containers.
 """
 import json
+import math
 import os
 import re
 import resource
@@ -24,6 +25,11 @@ from scripts.ci_allocation import (
     read_cpu,
 )
 from scripts.ci_hotspot_gate import serve
+
+# No site hooks or repository imports before containment. Only the parent can
+# attach this child; EOF on the release pipe can never start the workload.
+ENTER = ('import os,sys; fd=int(sys.argv[1]); ready=os.read(fd,1); os.close(fd); '
+         'sys.exit(125) if ready != b"1" else os.execvpe(sys.argv[2],sys.argv[2:],os.environ)')
 
 
 def supervisor_cpu():
@@ -114,6 +120,8 @@ def run(directory, admission, command):
     (directory / 'meter-started').touch(exist_ok=False)
     export(ledger, directory, admission)
     group, broker, process = None, None, None
+    release_read, release_write = None, None
+    baseline, own, account = None, None, None
     state, code = 'inconclusive', 1
     final_cpu = {'cpu_seconds': None, 'measurement': 'unavailable',
                  'charged_cpu_seconds': CPU_CAP}
@@ -132,25 +140,70 @@ def run(directory, admission, command):
         # Authentication belongs to admission only, never Docker or child code.
         environment.pop('GH_TOKEN', None)
         environment.pop('GITHUB_TOKEN', None)
-        process = subprocess.Popen([sys.executable, '-m', 'scripts.ci_cpu_meter',
-                                    'enter', str(group), *command], env=environment)
-        state, code = monitor(group, process, account, cancelled=lambda: bool(stop),
-                              violated=lambda: bool(ledger.summary()['direct_call_violations']))
+        release_read, release_write = os.pipe()
+        process = subprocess.Popen([sys.executable, '-I', '-S', '-c', ENTER,
+                                    str(release_read), *command], env=environment,
+                                   pass_fds=(release_read,))
+        os.close(release_read)
+        release_read = None
+        if stop:
+            state, code = 'cancelled', 130
+        elif time.time() >= EXPIRY:
+            state, code = 'expired', 1
+        else:
+            (group / 'host' / 'cgroup.procs').write_text(str(process.pid))
+            # Recheck after the potentially blocking attach, before release.
+            if stop:
+                state, code = 'cancelled', 130
+            elif time.time() >= EXPIRY:
+                state, code = 'expired', 1
+            else:
+                os.write(release_write, b'1')
+                state, code = monitor(group, process, account, cancelled=lambda: bool(stop),
+                                      violated=lambda: bool(ledger.summary()['direct_call_violations']))
     except (OSError, RuntimeError, ValueError, KeyError) as exc:
         print('CI allocation stopped:', str(exc), file=sys.stderr)
         state, code = 'inconclusive', 1
     finally:
+        for fd in (release_read, release_write):
+            if fd is not None:
+                os.close(fd)
+        errors = []
+        helper_reaped, kill_within_reserve = process is None, group is None
+        # Cancel the retained helper BEFORE draining. It cannot later attach
+        # itself or release another workload, even when wait/kill fails.
+        if process is not None:
+            try:
+                process.kill()
+            except ProcessLookupError:
+                pass
+            except OSError as exc:
+                errors.append(str(exc))
         if group is not None:
             try:
                 kill_group(group)
-                if process is not None:
-                    process.wait(timeout=5)
-                if broker is not None:
-                    broker.shutdown()
-                    broker.server_close()
-                    broker = None
+                kill_within_reserve = True
+            except (OSError, RuntimeError, ValueError, KeyError) as exc:
+                errors.append(str(exc))
+        if process is not None:
+            try:
+                process.wait(timeout=5)
+                helper_reaped = True
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                errors.append(str(exc))
+        if broker is not None:
+            broker.shutdown()
+            broker.server_close()
+        final_populated = None
+        if group is not None:
+            try:
+                final_populated = populated(group)
+                if final_populated:
+                    errors.append('cgroup still populated after cleanup')
+                # A late/failed kill must not discard an available CPU sample.
                 group_end, own_end = read_cpu(group), supervisor_cpu()
-                if group_end < account.previous[0] or own_end < account.previous[1]:
+                if (account is None or not all(math.isfinite(v) for v in (group_end, own_end))
+                        or group_end < account.previous[0] or own_end < account.previous[1]):
                     raise RuntimeError('final CPU counter regressed')
                 total = group_end - baseline + own_end - own
                 final_cpu = {'cpu_seconds': total, 'measurement': 'cgroup-v2 plus supervisor rusage',
@@ -158,17 +211,22 @@ def run(directory, admission, command):
                              'supervisor_cpu_seconds': own_end - own,
                              'charged_cpu_seconds': total, 'stop_reserve_seconds': 30,
                              'cgroup': str(group), 'cpu_max': '100000 100000',
-                             'final_populated': False}
+                             'final_populated': final_populated}
                 if total > CPU_CAP:
                     state, code = 'cpu_limit_violated', 1
-            except (OSError, RuntimeError, ValueError, KeyError, subprocess.TimeoutExpired, UnboundLocalError) as exc:
-                print('CPU settlement inconclusive:', str(exc), file=sys.stderr)
-                state, code = 'inconclusive', 1
-        if broker is not None:
-            broker.shutdown()
-            broker.server_close()
+            except (OSError, RuntimeError, ValueError, KeyError) as exc:
+                errors.append(str(exc))
+        final_cpu.update(final_populated=final_populated, helper_reaped=helper_reaped,
+                         cleanup_complete=helper_reaped and final_populated is False,
+                         kill_within_reserve=kill_within_reserve)
         if ledger.summary()['direct_call_violations']:
             state, code = 'launch_violation', 1
+        if errors or state == 'inconclusive':
+            if errors:
+                print('CPU settlement inconclusive:', '; '.join(errors), file=sys.stderr)
+            final_cpu.update(cleanup_errors=errors,
+                             charged_cpu_seconds=max(CPU_CAP, final_cpu['charged_cpu_seconds']))
+            state, code = 'inconclusive', 1
         ledger.finish(state, final_cpu)
         export(ledger, directory, admission)
         for sig, handler in old_handlers.items():
@@ -183,25 +241,35 @@ def recover(directory, *, root=Path('/sys/fs/cgroup')):
     if admission.get('state') != 'admitted':
         return
     ledger = Ledger(directory / 'events.jsonl', Identity(**admission['identity']))
-    if ledger.summary()['state'] != 'in_progress':
-        export(ledger, directory, admission)
-        return
     group = root / ('ci-allocation-' + admission['identity']['run_id'])
-    sample = None
+    sample, final_populated, errors = None, None, []
     if group.exists():
-        kill_group(group)
-        sample = read_cpu(group)
+        try:
+            kill_group(group)
+        except (OSError, RuntimeError, ValueError, KeyError) as exc:
+            errors.append(str(exc))
+        try:
+            final_populated = populated(group)
+            sample = read_cpu(group)
+        except (OSError, RuntimeError, ValueError, KeyError) as exc:
+            errors.append(str(exc))
+        # Append cleanup evidence even for a terminal, conservatively charged
+        # ledger. A finished event is not evidence that all descendants stopped.
+        with ledger._locked() as (stream, events):
+            ledger._append(stream, events, 'cleanup', final_populated=final_populated,
+                           cleanup_complete=final_populated is False,
+                           last_cgroup_cpu_seconds=sample, errors=errors)
     ledger.finish('interrupted', {'cpu_seconds': None, 'last_cgroup_cpu_seconds': sample,
                                   'measurement': 'supervisor lost; total unknown',
-                                  'charged_cpu_seconds': CPU_CAP})
+                                  'charged_cpu_seconds': CPU_CAP, 'final_populated': final_populated,
+                                  'cleanup_complete': final_populated is False, 'cleanup_errors': errors})
     export(ledger, directory, admission)
+    if errors or final_populated:
+        raise RuntimeError('cgroup recovery incomplete or outside reserved kill overhead')
 
 
 def main():
     directory = Path(sys.argv[2]).resolve()
-    if sys.argv[1] == 'enter':
-        (directory / 'host' / 'cgroup.procs').write_text(str(os.getpid()))
-        os.execvpe(sys.argv[3], sys.argv[3:], os.environ)
     if sys.argv[1] == 'recover':
         recover(directory)
         return 0
