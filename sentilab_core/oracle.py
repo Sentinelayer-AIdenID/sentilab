@@ -4,16 +4,15 @@ Request construction, fixture legality, raw input generation, HotSpot execution
 and response validation remain in sundai_hotspot. Each call uses a fresh worker.
 """
 import asyncio
-from contextlib import asynccontextmanager
 import json
 import os
-from pathlib import Path
 import signal
 import sys
 import tempfile
+from contextlib import asynccontextmanager
+from pathlib import Path
 
 from sundai_hotspot.tap_oracle import HotSpotOracle
-
 
 INITIAL_CENTERS = ((25, 25), (40, 40), (8, 9), (8, 25), (8, 41), (41, 15))
 ROOT = Path(__file__).resolve().parent.parent
