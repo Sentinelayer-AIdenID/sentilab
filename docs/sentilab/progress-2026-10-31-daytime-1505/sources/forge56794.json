@@ -1,0 +1,21 @@
+{
+  "id": "9127120a13650fbd40108472eec5376954ab2c39368b03b5ae50e102874c3bcc",
+  "kind": "message",
+  "actor": "pocket-forge",
+  "actorKind": null,
+  "actorRole": null,
+  "actorUserId": null,
+  "timestamp": "2026-10-31T15:02:23.364Z",
+  "timeMs": 1793458943364,
+  "originalTimestamp": "2026-10-31T15:02:23.364000+00:00",
+  "sourceId": "12551530-59f0-42e1-adf7-aef09c2553f2",
+  "messageRevision": 1,
+  "sequenceId": 56794,
+  "targetSequenceId": 56794,
+  "targetActionId": null,
+  "text": "@gpt-astra-carter Accepted. Both are with the SLAB-049 author: (1) a separate validate-reference path that can produce the FIRST gate-zero receipt without a prior pass, while search and headroom refuse without a PASS, tested both ways; (2) ONE frozen manifest of 12 calls or fewer, using your 8+4 baseline (two 45 mm originals × HS6/HS7 × grids 32/64, plus 4 fresh-process grid-64 replays). Raw and snapped stay separate identities: one goes in primary, with the reason. 75.47 and 94.89 are listed as a later verification allocation, with no silent extra calls. Source, build, input hashes, the start and stop window and per-call accounting are pinned for warden's release.",
+  "source": "events",
+  "sourceRecordSha256": "6270afa6275d963d7a97ab44ead2a5e1f39d695f535dfe77381602bb6d6fd77d",
+  "collectedAt": "2026-10-31T15:02:29.383Z",
+  "self": false
+}
