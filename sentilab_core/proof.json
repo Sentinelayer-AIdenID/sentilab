@@ -1,0 +1,341 @@
+{
+  "started_at": 1793425502.0407186,
+  "ended_at": 1793426102.5089831,
+  "elapsed_s": 600.4682646129513,
+  "process_tree_cpu_s": 20.440436,
+  "deadline": 1793426220.0,
+  "project_equals_live": true,
+  "run_id": "ascend910-local-proof-v2",
+  "seq": 203,
+  "board": {
+    "candidate_id": "ascend910-local-proof-v2:candidate-0",
+    "j": 118.36000000000001,
+    "seq": 14
+  },
+  "spend": {
+    "solves": 30,
+    "cpu_charged_s": 450,
+    "cpu_actual_s": 2.652977,
+    "cpu_unmeasured": 0,
+    "unsettled": 0
+  },
+  "allocation_spend": {
+    "solves": 38,
+    "cpu_charged_s": 570,
+    "cpu_actual_s": 2.7409909999999997,
+    "cpu_unmeasured": 7,
+    "unsettled": 0
+  },
+  "head_hash": "fc63f960dc4e8f9bc5799321bca1d26799189bcc03c906df532c42bf4a02098a",
+  "chain_error": null,
+  "scope": "AI off; provisional margin; diagnostic integration; same-solver reproduction",
+  "source_revision": "650553d",
+  "artifacts": {
+    "ledger/ascend910-local-proof-v2.jsonl": "5eacf9c8f5b6995edf48173bd6e69120bcb7fbc734745ec7c089346d0772c04f",
+    "public-pin.json": "4a1e8f580d5daffc2d7010f307d1dc9d8dcff2a95ff639bb6f838bfc7122a2f9",
+    "mutation-checks.json": "3f4e9859d60070a31b6f2afbe80c037805dd347d92b4a8f8b69e88a597241baf",
+    "proof-v1.json": "6661f503d73c92158d2f04c50738ecbd0a51a585c6e84d461828da23b46b5a11",
+    "thermal-gate-spend.json": "794e2ae2222a3799c65ccdee7f6a1ff60d54e2c1bd1fff8bfe0ef7f077e3cd0f"
+  },
+  "validation": {
+    "controller_experiment": 55,
+    "thermal_regression": 2,
+    "core": 28,
+    "view": 4,
+    "conformance": 4,
+    "existing_service": 6,
+    "contract_checks": [
+      74,
+      113
+    ],
+    "contract_manifest_files": 11,
+    "mutations_caught": 14,
+    "presign_regression_before_fix": "2 tests failed, 6 failures",
+    "nonfinite_http_before_fix": "HTTP 500; one test failed",
+    "final_affected_ledger_and_view_suite": 16
+  },
+  "limitations": [
+    "Diagnostic AI-off integration with provisional margin and same-solver reproduction.",
+    "Ten-minute proof used source 650553d; later validation and restart fixes have separate tests.",
+    "Public key artifact is a local proof convenience, never a production trust source.",
+    "Raw HotSpot outputs were removed by the imported worker; only input hashes retained.",
+    "Historical total development CPU and synthetic invocation counts were not completely instrumented; no certified task-wide total is claimed. Recorded failed attempts remain retained.",
+    "Docker unavailable: native HotSpot build and named Python gates ran; container build deferred to CI.",
+    "Shared SLAB-040 signer and reviewed v0.5 producer are integrated; Forge owns the browser and client-clock progress tracker. Native verifier keeps stricter field checks and one diagnostic error; see DEVIATIONS.md."
+  ],
+  "service_and_v05_revision": {
+    "base": "2d2d310f11dd2858533ffdca18c59edbb8f1558f",
+    "service_loader_tests": "runtime-generated seed, stable identity, missing/invalid seed fail closed",
+    "historical_203_envelope_proof_still_verifies": true,
+    "core_tests": 41,
+    "api_existing_service_conformance_tests": 18,
+    "controller_trust_leaderboard_tests": 75,
+    "thermal_tests": 2,
+    "property_tests": 2,
+    "property_cases": 1000,
+    "browser_tests": 64,
+    "contract_checks": [
+      74,
+      113,
+      193
+    ],
+    "contract_manifest_files": 16,
+    "reviewed_chain_vectors": 16,
+    "regression_tests_failed_before_v05_fix": 7,
+    "measured_python_gate_process_tree_cpu_s": 148.085594,
+    "counted_synthetic_calls_in_measured_python_gates": 2920,
+    "hotspot_calls_in_revision_gates": 4,
+    "measurement_limits": "The initial core runner missed two tuple-based worker launches; test_oracle ran two. The corrected final runner counted two further launches. Focused checks and JS/Node subprocess work are not included in the measured Python-gate totals. No certified task-wide CPU total is claimed.",
+    "remaining": "Operator carry, exact published head, Docker CI and independent review; no deployment from this box."
+  },
+  "artifact_root": "sentilab_core/proof-artifacts",
+  "review_56167_revision": {
+    "base": "fae2559238cc554dab77749e6c9fa956e2cfab33",
+    "fixes": {
+      "mcp": "3bf20ec",
+      "cursor": "b52c803",
+      "readonly": "00ddde8"
+    },
+    "regressions_failed_before_fix": {
+      "sentilab_core/test_mcp_stdio.py": 4,
+      "app/test_view_cursor.py": 3,
+      "app/test_view_readonly.py": 2
+    },
+    "python_gates": {
+      "core": {
+        "suite": "review-core",
+        "argv": [
+          "discover",
+          "-s",
+          "sentilab_core",
+          "-p",
+          "test_*.py",
+          "-q"
+        ],
+        "tests": 45,
+        "success": true,
+        "elapsed_s": 47.987364287953824,
+        "process_tree_cpu_s": 16.516791,
+        "synthetic_calls": 23,
+        "hotspot_dispatches": 2
+      },
+      "view": {
+        "suite": "review-view",
+        "argv": [
+          "-q",
+          "app.test_view",
+          "app.test_view_cursor",
+          "app.test_view_readonly",
+          "app.test_runs",
+          "sentilab_core.conformance"
+        ],
+        "tests": 23,
+        "success": true,
+        "elapsed_s": 51.80601945600938,
+        "process_tree_cpu_s": 17.720692,
+        "synthetic_calls": 8,
+        "hotspot_dispatches": 0
+      },
+      "controller": {
+        "suite": "review-controller",
+        "argv": [
+          "-q",
+          "test_controller",
+          "test_experiment",
+          "test_trust",
+          "test_tfl08_leaderboard"
+        ],
+        "tests": 75,
+        "success": true,
+        "elapsed_s": 54.2863381219795,
+        "process_tree_cpu_s": 22.041629999999998,
+        "synthetic_calls": 720,
+        "hotspot_dispatches": 0
+      },
+      "thermal": {
+        "suite": "review-thermal",
+        "argv": [
+          "discover",
+          "-s",
+          "sundai_thermal",
+          "-p",
+          "test_*.py",
+          "-q"
+        ],
+        "tests": 2,
+        "success": true,
+        "elapsed_s": 60.024461356922984,
+        "process_tree_cpu_s": 27.570684,
+        "synthetic_calls": 2138,
+        "hotspot_dispatches": 0
+      },
+      "property": {
+        "suite": "review-property",
+        "argv": [
+          "-q",
+          "test_safety_property"
+        ],
+        "tests": 2,
+        "success": true,
+        "elapsed_s": 98.26747570198495,
+        "process_tree_cpu_s": 65.6399,
+        "synthetic_calls": 0,
+        "hotspot_dispatches": 0
+      }
+    },
+    "browser_tests": 64,
+    "contract_checks": [
+      74,
+      113,
+      193
+    ],
+    "contract_manifest_files": 16,
+    "compileall": "pass",
+    "ruff_E9_F": "pass",
+    "make_hotspot_superlu": "pass",
+    "pip_check": "pass",
+    "cursor_reference": {
+      "prefix_end": 0,
+      "chain_ok": false,
+      "pages": 3,
+      "next_cursor": 3,
+      "has_more": false,
+      "sequences": [
+        1,
+        1,
+        2
+      ]
+    },
+    "historical_reference": {
+      "historical_v04_reference": {
+        "prefix_end": 203,
+        "chain_ok": true
+      },
+      "historical_v05_version_rejection": [
+        "bad_version"
+      ]
+    },
+    "measured_python_gate_cpu_s": 149.489697,
+    "counted_synthetic_calls": 2889,
+    "hotspot_test_dispatches": 2,
+    "measurement_limits": "Only the final five instrumented Python gates are counted here; focused checks, browser/Node subprocesses and earlier turns are outside these totals. No new live proof run. No certified task-wide total.",
+    "remaining": "Operator carry, published PR head confirmation, Docker CI and assigned independent review; no deployment."
+  },
+  "review_56186_boundary": {
+    "base": "bbe006080d98b9eab36bcb8ee59570afb6597140",
+    "regression": "one HTTP test failed in both in-place-rewrite and atomic-replacement subcases before the fix",
+    "affected_http_ledger_tests": 28,
+    "cursor_semantics": "numeric physical row count plus x-cursor-hash/next_cursor_hash echoed as cursor_hash; nonzero cursor without a matching consumed-byte boundary returns409; appends preserve boundaries",
+    "contract_status": "Frozen v0.4/v0.5 unchanged; proposed extension communicated to Forge under56186, versioned cursor contract and browser integration pending",
+    "live_fallback": "Unsupported row cursors require STALE; sequence-only fallback cannot advance LIVE/current",
+    "hotspot_calls": 0
+  },
+  "review_56187_revision": {
+    "base": "f8048f9f3c65a27b7fa2de0446aadc641a703dcf",
+    "fixes": [
+      "Enumerate v0.4/v0.5; reject unknown signed versions; allow explicit version-pinned history verification without rewriting bytes.",
+      "Strict UTF-8 JSONL decoding preserves BOM for rejection and retains original raw feed evidence."
+    ],
+    "regression_proof": {
+      "base_tests_failed": 4,
+      "base_assertion_failures": 15,
+      "failure": "verified prefix 1 != expected 0",
+      "unicode_preservation_mutation": "Removing U+FEFF from decoded JSON fails the Unicode content test."
+    },
+    "python_gates": {
+      "core": {
+        "suite": "history-core",
+        "argv": [
+          "discover",
+          "-s",
+          "sentilab_core",
+          "-p",
+          "test_*.py",
+          "-q"
+        ],
+        "tests": 49,
+        "success": true,
+        "elapsed_s": 36.5921499109827,
+        "process_tree_cpu_s": 15.935744,
+        "synthetic_calls": 23,
+        "hotspot_dispatches": 2
+      },
+      "view": {
+        "suite": "history-view",
+        "argv": [
+          "-q",
+          "app.test_view",
+          "app.test_view_cursor",
+          "app.test_view_readonly",
+          "app.test_runs",
+          "sentilab_core.conformance"
+        ],
+        "tests": 28,
+        "success": true,
+        "elapsed_s": 44.32640000898391,
+        "process_tree_cpu_s": 19.702458999999998,
+        "synthetic_calls": 8,
+        "hotspot_dispatches": 0
+      },
+      "controller": {
+        "suite": "history-controller",
+        "argv": [
+          "-q",
+          "test_controller",
+          "test_experiment",
+          "test_trust",
+          "test_tfl08_leaderboard",
+          "test_safety_property"
+        ],
+        "tests": 77,
+        "success": true,
+        "elapsed_s": 105.44610817392822,
+        "process_tree_cpu_s": 84.209378,
+        "synthetic_calls": 720,
+        "hotspot_dispatches": 0
+      },
+      "thermal": {
+        "suite": "history-thermal",
+        "argv": [
+          "discover",
+          "-s",
+          "sundai_thermal",
+          "-p",
+          "test_*.py",
+          "-q"
+        ],
+        "tests": 2,
+        "success": true,
+        "elapsed_s": 49.34179456799757,
+        "process_tree_cpu_s": 27.871738,
+        "synthetic_calls": 2138,
+        "hotspot_dispatches": 0
+      }
+    },
+    "browser_tests": 64,
+    "contract_checks": [
+      74,
+      113,
+      193
+    ],
+    "contract_manifest_files": 16,
+    "historical_reference": {
+      "v04_prefix": 203,
+      "v05_prefix": 0,
+      "v05_reason": "bad_version",
+      "original_artifact_hashes_matched": 5
+    },
+    "other_gates": [
+      "python -m compileall -q sentilab_core sentilab_cli sentilab_mcp app",
+      "ruff check --select E9,F sentilab_core sentilab_cli sentilab_mcp app",
+      "make -C sundai_hotspot -j4 SUPERLU=1",
+      "python -m pip check",
+      "git diff --check"
+    ],
+    "measured_python_gate_cpu_s": 147.71931899999998,
+    "counted_synthetic_calls": 2889,
+    "counted_hotspot_dispatches": 2,
+    "measurement_scope": "Only these four instrumented Python gates. Focused tests, Node and build work are not included; no certified task-wide total. No new live run.",
+    "remaining": "Operator carry and published head confirmation; Forge versioned cursor/client binding; Docker CI and independent review."
+  }
+}
