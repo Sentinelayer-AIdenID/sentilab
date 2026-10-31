@@ -28,7 +28,9 @@ async def run(context, *, ai_off, run_id=None, duration=600, interval=15, renew=
     require_ai_off(ai_off)
     if context.signer is None:
         raise ValueError("only the service with an injected signer may run the conductor")
-    conductor = Conductor(context.root, signer=context.signer, public_keys=context.public_keys, **context.options)
+    options = {key: value for key, value in context.options.items()
+               if key not in {"research_namespace", "research_backend", "research_admission"}}
+    conductor = Conductor(context.root, signer=context.signer, public_keys=context.public_keys, **options)
     return await conductor.run(run_id=run_id, duration=duration, interval=interval, renew=renew, max_ticks=max_ticks)
 
 

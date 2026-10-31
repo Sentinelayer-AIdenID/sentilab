@@ -217,6 +217,21 @@ class ResearchTests(unittest.TestCase):
         self.assertEqual(self.call("request", question="symlink")["error"]["code"], "invalid_store")
         self.assertFalse((self.root / "outside").exists())
 
+    def test_research_host_options_do_not_break_existing_live_run(self):
+        import asyncio
+        from sentilab_core import operations
+        from sentilab_core.signing import ephemeral_signer
+        signer = ephemeral_signer()
+        self.context.signer = signer
+        self.context.public_keys = {signer.key_id: signer.public_key}
+        self.context.options.update(research_backend=OfflinePlugin(), research_admission={})
+        (self.root / "STOP").touch()
+        # Real live dispatch must reach its STOP boundary without starting a solve.
+        result = asyncio.run(operations.run(self.context, ai_off=True, run_id="coexist", duration=1))
+        self.assertEqual(result["status"], "stopped")
+        self.assertEqual(result["spend"]["solves"], 0)
+        self.assertFalse((self.root / "research").exists())
+
     def test_fixture_never_opens_network_or_starts_a_process(self):
         from unittest.mock import patch
         with patch("socket.create_connection", side_effect=AssertionError("network")), \
