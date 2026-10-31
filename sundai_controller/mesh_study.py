@@ -156,7 +156,7 @@ def mesh_error(coarse, reference) -> float:
 def rank_agreement(coarse, reference, tolerance_c: float) -> dict:
     """Compare exact coarse signs only where the reference gap exceeds tolerance.
 
-    Equality at the tolerance is excluded. A coarse tie on an eligible pair is
+    Equality at the tolerance is excluded (1e-12 C roundoff guard). A coarse tie on an eligible pair is
     a violation. Zero eligible pairs yields no agreement fraction (vacuous pass).
     """
     _values(coarse, reference)
@@ -168,7 +168,8 @@ def rank_agreement(coarse, reference, tolerance_c: float) -> dict:
     total = len(reference) * (len(reference) - 1) // 2
     for i, j in itertools.combinations(range(len(reference)), 2):
         fine_gap = reference[i] - reference[j]
-        if abs(fine_gap) <= tolerance_c:
+        if (abs(fine_gap) <= tolerance_c
+                or math.isclose(abs(fine_gap), tolerance_c, rel_tol=0, abs_tol=1e-12)):
             continue
         eligible += 1
         coarse_gap = coarse[i] - coarse[j]
@@ -281,7 +282,7 @@ def report(result):
              '## Rank rule', '',
              '32 passes if violations = 0: for each pair with |J64(a)-J64(b)| > 2e, '
              'the signs of J32(a)-J32(b) and J64(a)-J64(b) must agree. '
-             '16 uses its own 2e16. Equality at the tolerance is excluded; a coarse tie is a violation.', '',
+             '16 uses its own 2e16. Equality at the tolerance is excluded (1e-12 C roundoff guard); a coarse tie is a violation.', '',
              'Because e is the maximum error on this same sample, the triangle inequality guarantees '
              'no inversions beyond 2e. This pass is an internal consistency check, not independent '
              'evidence that all ranks agree. Zero eligible pairs is a vacuous pass. '
@@ -294,6 +295,12 @@ def report(result):
         lines.append(f'| {grid} | {comparison["max_abs_error_c"]:.6f} | {rank["tolerance_c"]:.6f} | '
                      f'{rank["eligible_pairs"]} / {rank["total_pairs"]} | {rank["violations"]} | '
                      f'{rank["passes"]} | {fixed["eligible_pairs"]} | {fixed["violations"]} |')
+    lines += ['', '## Measured peaks (C)', '',
+              '| Layout | ' + ' | '.join(f'J{grid}' for grid in result['grids']) + ' |',
+              '| --- | ' + ' | '.join('---:' for _ in result['grids']) + ' |']
+    for row in result['layouts']:
+        lines.append('| ' + row['id'] + ' | ' + ' | '.join(
+            f'{row["J_c"][str(grid)]:.2f}' for grid in result['grids']) + ' |')
     lines += ['', '## Scope', '',
               'e is an empirical discrepancy against 64 on this fixed layout set, not an error bound '
               'against the continuum or unseen layouts. Later R4/u_num and SLAB-039 margins can use e '
