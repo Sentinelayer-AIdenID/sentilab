@@ -12,6 +12,7 @@ import hashlib
 import itertools
 import json
 import math
+import os
 from pathlib import Path
 import random
 import subprocess
@@ -21,6 +22,7 @@ from sundai_hotspot.tap_oracle import HotSpotOracle
 
 CATEGORIES = ('clustered', 'spread', 'random')
 FIXED_TOLERANCE_C = 0.01
+MAX_RECEIPT_BYTES = 1024 * 1024
 EVIDENCE_ROOT = Path(__file__).resolve().parents[1] / 'docs/sentilab/evidence/mesh'
 
 
@@ -211,11 +213,12 @@ def summarize(rows, grids, fixed_tolerance_c):
             'comparisons': comparisons}
 
 
-def check_result(result: dict) -> list[str]:
+def check_result(result: dict, evidence_dir: Path | None = None) -> list[str]:
     """Recompute summaries and test the published tolerance without inflating it.
 
     An edited J cannot silently increase the frozen 2e bound and hide an inversion.
     This checks internal consistency, not authenticity; rerun HotSpot for that.
+    With evidence_dir, also verify the journal and its aggregate references.
     """
     errors = []
     try:
@@ -235,15 +238,61 @@ def check_result(result: dict) -> list[str]:
         summary = summarize(rows, grids, result['fixed_tolerance_c'])
         if summary != result['summary']:
             errors.append('stored summary differs from measured values')
+        if evidence_dir is not None and 'rows_evidence' in result:
+            check_receipts(result, evidence_dir)
         reference = [r['J_c'][str(max(grids))] for r in rows]
         for grid, comparison in result['summary']['comparisons'].items():
             coarse = [r['J_c'][grid] for r in rows]
             rank = rank_agreement(coarse, reference, comparison['rank_2e']['tolerance_c'])
             if rank['violations']:
                 errors.append(f'grid {grid}: {rank["violations"]} inversion/tie violations at published 2e tolerance')
-    except (KeyError, TypeError, ValueError) as exc:
+    except (KeyError, TypeError, ValueError, OSError) as exc:
         errors.append(f'invalid result: {exc}')
     return errors
+
+
+def check_receipts(result, evidence_dir):
+    evidence = result['rows_evidence']
+    if evidence['path'] != 'rows.jsonl':
+        raise ValueError('invalid receipt journal path')
+    path = Path(evidence_dir) / 'rows.jsonl'
+    if not path.resolve().is_relative_to(Path(evidence_dir).resolve()):
+        raise ValueError('receipt journal escapes evidence directory')
+    data = path.read_bytes()
+    if hashlib.sha256(data).hexdigest() != evidence['sha256']:
+        raise ValueError('receipt journal sha256 mismatch')
+    records = [json.loads(line) for line in data.splitlines()]
+    count = result['evaluation_count']
+    if (not records or records[0].get('kind') != 'run'
+            or records[-1].get('kind') != 'completion'
+            or records[-1].get('status') != 'complete'
+            or records[-1].get('evaluation_count') != count):
+        raise ValueError('receipt journal is incomplete')
+    evaluations = [r for r in records if r['kind'] == 'evaluation']
+    if (len(evaluations) != count or evidence['evaluation_count'] != count
+            or [r['sequence'] for r in evaluations] != list(range(1, count + 1))):
+        raise ValueError('receipt journal count or sequence mismatch')
+    for row in result['layouts']:
+        for grid in result['grids']:
+            sequence = row['receipt_sequence'][str(grid)]
+            if not isinstance(sequence, int) or not 1 <= sequence <= count:
+                raise ValueError('invalid receipt sequence')
+            entry = evaluations[sequence - 1]
+            receipt = entry['parsed_receipt']
+            if (entry['layout_id'] != row['id'] or entry['grid'] != grid
+                    or entry['evaluator_identity'] != result['evaluator_identity']
+                    or receipt['candidate_hash'] != row['design_hash']
+                    or receipt['problem_hash'] != result['provenance'][str(grid)]['problem_hash']
+                    or receipt['grid_rows'] != grid or receipt['grid_cols'] != grid
+                    or not receipt['input_sha256']
+                    or hashlib.sha256(_json_bytes(receipt['heatmap_c'])).hexdigest() != entry['heatmap_sha256']):
+                raise ValueError('receipt identity or heatmap hash mismatch')
+            for field, aggregate in [('maximum_temperature_c', 'J_c'),
+                                     ('all_layers_peak_c', 'all_layers_peak_c'),
+                                     ('evaluation_seconds', 'seconds'), ('solver_seconds', 'solver_seconds'),
+                                     ('candidate_hash', 'candidate_hash')]:
+                if receipt[field] != row[aggregate][str(grid)]:
+                    raise ValueError('receipt differs from aggregate result')
 
 
 def cpu_usage():
@@ -269,7 +318,16 @@ def run_accounting(start_cpu, solver_executions):
             'scope': 'this evaluation run, including worker startup and shutdown; no warm-up runs'}
 
 
-async def evaluate_layouts(frozen, grids=(16, 32, 64), layout_ids=None):
+def append_receipt(stream, value):
+    data = (json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False) + '\n').encode()
+    if len(data) > MAX_RECEIPT_BYTES:
+        raise ValueError('evaluation receipt exceeds 1 MiB')
+    stream.write(data)
+    stream.flush()
+    os.fsync(stream.fileno())
+
+
+async def evaluate_layouts(frozen, grids=(16, 32, 64), layout_ids=None, *, evidence_dir: Path):
     if len(set(grids)) != len(grids) or len(grids) < 2 or any(g not in (16, 32, 64) for g in grids):
         raise ValueError('choose at least two distinct grids from 16, 32, 64')
     selected = frozen['layouts']
@@ -280,45 +338,82 @@ async def evaluate_layouts(frozen, grids=(16, 32, 64), layout_ids=None):
     if len(selected) < 2:
         raise ValueError('select at least two layouts')
     rows = [{**r, 'J_c': {}, 'all_layers_peak_c': {}, 'seconds': {},
-             'solver_seconds': {}, 'candidate_hash': {}} for r in selected]
+             'solver_seconds': {}, 'candidate_hash': {}, 'receipt_sequence': {}} for r in selected]
     started = time.perf_counter()
     start_cpu = cpu_usage()
     solver_executions = 0
     provenance = {}
     pinned = None
-    for grid in grids:
-        oracle = make_oracle(frozen['fixture'], grid)
-        try:
-            if json.loads(_json_bytes(fixture_contract(oracle))) != frozen['fixture_contract']:
-                raise ValueError('frozen fixture contract changed')
-            identity = evaluator_identity(asdict(oracle.problem))
-            if pinned is None:
-                pinned = identity
-            elif identity != pinned:
-                raise ValueError('evaluator identity changed before next grid')
-            provenance[str(grid)] = {'problem_hash': oracle.problem_hash,
-                                     'solver_version': oracle.solver_version,
-                                     'problem': asdict(oracle.problem)}
-            for row in rows:
-                design = oracle.design_from_centers(row['centers_mm'])
-                oracle.centers_for(design)
-                if design.hash != row['design_hash']:
-                    raise ValueError('frozen design hash mismatch')
-                result = await oracle(design)
-                solver_executions += 1
-                row['J_c'][str(grid)] = result.maximum_temperature_c
-                row['all_layers_peak_c'][str(grid)] = result.all_layers_peak_c
-                row['seconds'][str(grid)] = result.evaluation_seconds
-                row['solver_seconds'][str(grid)] = result.solver_seconds
-                row['candidate_hash'][str(grid)] = result.candidate_hash
-        finally:
-            await oracle.aclose()
-    return {'schema': 'slab-mesh-result-v1', 'fixture': frozen['fixture'],
-            'grids': list(grids), 'fixed_tolerance_c': frozen['fixed_tolerance_c'],
-            'objective': 'chip-layer grid peak in Celsius', 'layouts': rows,
-            'evaluation_count': len(rows) * len(grids), 'seconds': time.perf_counter() - started,
-            'run_accounting': run_accounting(start_cpu, solver_executions),
-            'evaluator_identity': pinned, 'provenance': provenance, 'summary': summarize(rows, grids, frozen['fixed_tolerance_c'])}
+    evidence_dir = Path(evidence_dir)
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    journal = evidence_dir / 'rows.jsonl'
+    # Exclusive creation reserves the run before evaluating. Never append a rerun
+    # to historical evidence. A missing completion record means incomplete.
+    with journal.open('xb') as stream:
+        append_receipt(stream, {'kind': 'run', 'status': 'incomplete',
+                               'fixture': frozen['fixture'], 'grids': list(grids),
+                               'layouts_sha256': hashlib.sha256(_json_bytes(frozen)).hexdigest(),
+                               'layout_ids': [r['id'] for r in rows],
+                               'expected_evaluations': len(rows) * len(grids),
+                               'raw_artifacts_retained': False})
+        for grid in grids:
+            oracle = make_oracle(frozen['fixture'], grid)
+            try:
+                if json.loads(_json_bytes(fixture_contract(oracle))) != frozen['fixture_contract']:
+                    raise ValueError('frozen fixture contract changed')
+                identity = evaluator_identity(asdict(oracle.problem))
+                if pinned is None:
+                    pinned = identity
+                elif identity != pinned:
+                    raise ValueError('evaluator identity changed before next grid')
+                provenance[str(grid)] = {'problem_hash': oracle.problem_hash,
+                                         'solver_version': oracle.solver_version,
+                                         'problem': asdict(oracle.problem)}
+                append_receipt(stream, {'kind': 'grid', 'grid': grid,
+                                        'evaluator_identity': pinned, 'provenance': provenance[str(grid)]})
+                for row in rows:
+                    design = oracle.design_from_centers(row['centers_mm'])
+                    oracle.centers_for(design)
+                    if design.hash != row['design_hash']:
+                        raise ValueError('frozen design hash mismatch')
+                    result = await oracle(design)
+                    solver_executions += 1
+                    # Persist the complete parsed return before the next await.
+                    # A failed later call or cancellation cannot discard this row.
+                    append_receipt(stream, {
+                        'kind': 'evaluation', 'sequence': solver_executions,
+                        'layout_id': row['id'], 'grid': grid,
+                        'evaluator_identity': pinned,
+                        'heatmap_sha256': hashlib.sha256(_json_bytes(result.heatmap_c)).hexdigest(),
+                        'parsed_receipt': asdict(result),
+                    })
+                    row['J_c'][str(grid)] = result.maximum_temperature_c
+                    row['all_layers_peak_c'][str(grid)] = result.all_layers_peak_c
+                    row['seconds'][str(grid)] = result.evaluation_seconds
+                    row['solver_seconds'][str(grid)] = result.solver_seconds
+                    row['candidate_hash'][str(grid)] = result.candidate_hash
+                    row['receipt_sequence'][str(grid)] = solver_executions
+            finally:
+                await oracle.aclose()
+        result = {'schema': 'slab-mesh-result-v1', 'fixture': frozen['fixture'],
+                  'grids': list(grids), 'fixed_tolerance_c': frozen['fixed_tolerance_c'],
+                  'objective': 'chip-layer grid peak in Celsius', 'layouts': rows,
+                  'evaluation_count': solver_executions, 'seconds': time.perf_counter() - started,
+                  'run_accounting': run_accounting(start_cpu, solver_executions),
+                  'evaluator_identity': pinned, 'provenance': provenance,
+                  'summary': summarize(rows, grids, frozen['fixed_tolerance_c']),
+                  'evidence_status': {'parsed_receipts_retained': True,
+                                      'raw_artifacts_retained': False, 'D02_complete': False,
+                                      'limitation': 'Raw solver archival awaits the oracle artifact seam.'}}
+        errors = check_result(result)
+        if errors:
+            raise ValueError('; '.join(errors))
+        append_receipt(stream, {'kind': 'completion', 'status': 'complete',
+                               'evaluation_count': solver_executions,
+                               'run_accounting': result['run_accounting']})
+    result['rows_evidence'] = {'path': journal.name, 'sha256': hashlib.sha256(journal.read_bytes()).hexdigest(),
+                               'evaluation_count': solver_executions}
+    return result
 
 
 def report(result):
@@ -371,6 +466,14 @@ def report(result):
               'The shared allowance is 150 solver executions and 6 CPU-minutes across both fixtures, '
               'including warm-up and validation. Per-run accounting is not a shared-budget clearance. '
               'See RESULT.json and VALIDATION.md for prior usage and unresolved accounting.', '']
+    evidence = result.get('evidence_status', {})
+    lines += ['', '## Retained evidence', '',
+              'Raw HotSpot inputs and outputs are not retained; D02 is incomplete.',
+              ('Full parsed receipts, input hashes, heatmaps and heatmap hashes are in rows.jsonl; '
+               'RESULT.json binds the journal hash and per-row sequence numbers.'
+               if evidence.get('parsed_receipts_retained') else
+               'The historical run also discarded per-evaluation input hashes and heatmaps. '
+               'These cannot be reconstructed from the retained peak values.'), '']
     lines += ['', '## Scope', '',
               'e is an empirical discrepancy against 64 on this fixed layout set, not an error bound '
               'against the continuum or unseen layouts. Later R4/u_num and SLAB-039 margins can use e '
@@ -399,7 +502,7 @@ def main(argv=None):
     parser.add_argument('--check', type=Path, help='validate an existing RESULT.json without simulation')
     args = parser.parse_args(argv)
     if args.check:
-        errors = check_result(json.loads(args.check.read_text(encoding='utf-8')))
+        errors = check_result(json.loads(args.check.read_text(encoding='utf-8')), args.check.parent)
         print(json.dumps({'ok': not errors, 'errors': errors}))
         return int(bool(errors))
     path = args.layouts or EVIDENCE_ROOT / args.fixture / 'layouts.json'
@@ -413,11 +516,11 @@ def main(argv=None):
     output = args.output_dir or path.parent
     if (output / 'RESULT.json').exists() or (output / 'REPORT.md').exists():
         raise FileExistsError('results already exist; use a new --output-dir for reruns')
-    result = asyncio.run(evaluate_layouts(frozen, args.grids, args.layout_ids))
+    result = asyncio.run(evaluate_layouts(frozen, args.grids, args.layout_ids, evidence_dir=output))
     result['layouts_sha256'] = sha
     result['execution_commit'] = subprocess.check_output(
         ['git', 'rev-parse', 'HEAD'], cwd=Path(__file__).resolve().parents[1], text=True).strip()
-    errors = check_result(result)
+    errors = check_result(result, output)
     if errors:
         raise ValueError('; '.join(errors))
     output.mkdir(parents=True, exist_ok=True)

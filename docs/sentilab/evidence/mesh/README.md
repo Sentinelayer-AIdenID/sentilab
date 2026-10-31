@@ -37,7 +37,27 @@ On POSIX, new runs record process CPU plus reaped worker/solver child CPU with
 dedicated process without concurrent child work. No warm-up solver runs are
 performed by this harness; every successful oracle call executes the solver
 once. This is per-run accounting, not a shared enforcement ledger. Failed runs
-do not produce a completed RESULT.json and require external accounting.
+do not produce a completed RESULT.json. Completed calls survive in the receipt
+journal; an interrupted call that never returned still requires external accounting.
+
+Every run requires a fresh evidence directory. Before the first solve, the harness
+exclusively creates `rows.jsonl` with an incomplete run header and pins evaluator
+identity in a grid record. After each oracle return, it appends the complete parsed
+receipt (including input hashes, heatmap and all timings), a heatmap SHA-256, and
+layout/grid identity. Each JSON line is bounded to 1 MiB, flushed and fsynced
+before the next evaluation or worker cleanup. Failures and cancellation leave
+completed lines intact. A journal without a completion record remains incomplete;
+a partial final line after an abrupt stop is not a completed receipt. Never append
+a replacement run to this file; use a separate output directory.
+
+The final RESULT binds the journal SHA-256 and receipt sequence for each J. The
+CLI checker verifies these references and aggregate values. The Python checker
+also verifies the journal when given `evidence_dir`. These are consistency checks,
+not authenticity guarantees. Raw generated floorplans/trace/config/layers and
+solver grid/steady/stdout files still need the oracle-owned archival seam.
+**D02 remains incomplete.** The historical Ascend910 run predates journaling;
+its raw files, parsed heatmaps and per-evaluation input hashes are unavailable.
+No new receipt journal is fabricated for it.
 
 The shared reservation is **150 solver executions and 6 CPU-minutes across both
 fixtures**, including warm-up and validation. The committed Ascend910 run

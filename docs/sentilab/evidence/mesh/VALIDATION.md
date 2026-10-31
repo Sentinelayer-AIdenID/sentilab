@@ -135,3 +135,42 @@ also rejects mixed per-grid identities. Two regression tests fail on pre-fix
 All 12 non-solver mesh tests pass after the fix. No HotSpot calls were made.
 The historical per-grid identities compare equal; the new RESULT identity field
 explicitly records retrospective equality, not enforcement by the original run.
+
+
+## Review 56079: incremental parsed evidence
+
+As directed by Warden, no oracle or worker file was edited. New mesh runs require
+an evidence directory and exclusively create an append-only `rows.jsonl` before
+evaluating. Each completed call immediately persists the full parsed receipt,
+input SHA-256 values, heatmap, heatmap SHA-256, timings, layout/grid identity and
+evaluator pin. Each line is bounded to 1 MiB, flushed and fsynced before the next
+await. An incomplete header without a completion footer denotes an interrupted
+run. RESULT binds the journal hash and per-layout/grid receipt sequence; the CLI
+checker checks journal integrity and correspondence with aggregate fields.
+
+Three new non-solver tests cover failure/cancellation persistence, completed CLI
+output plus journal binding/reuse/tampering, and the receipt size limit. The two
+persistence tests fail on `e5c86f9` with `FileNotFoundError: rows.jsonl`; the bound
+test fails because the append API is absent. Targeted mutations of the new code
+also fail: dropping evaluation records (`0 != 1` before the next call), skipping
+receipt verification (`False is not true`), and removing the byte limit
+(`ValueError not raised`). These proofs ran in a disposable worktree with fake
+oracle returns and zero HotSpot solver executions.
+
+The historical Ascend910 RESULT and REPORT explicitly say raw solver files,
+per-evaluation input hashes and heatmaps were not retained, and D02 is incomplete.
+The original 72 measurements, timings, frozen layouts and summaries are unchanged.
+New journaling does not fabricate historical receipts. Raw archival remains with
+the oracle owners; a future replacement study still requires remaining allowance.
+
+
+Final checks for these two review fixes: 15 non-solver mesh tests pass, including
+5 identity/receipt regressions; the 65-test controller/experiment/property/
+leaderboard suite passes (34.146 s, including 1,000 property cases).
+`make -C sundai_hotspot -j4 SUPERLU=1`, compileall on both mesh modules,
+`git diff --check`, and the historical RESULT checker all exit 0. A direct
+comparison against `f9a96b3` confirms all 72 measurements, summaries, timings,
+per-grid provenance and accounting are unchanged, and the layouts/hash remain
+byte-identical to freeze commit `20e72d8`. No oracle/real-mesh suites were rerun;
+the known baseline README thermal failure and shared-budget limitations above
+remain unchanged. Full integrated gates require operator carry onto fixed main.
