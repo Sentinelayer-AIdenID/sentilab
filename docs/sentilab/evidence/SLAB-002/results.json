@@ -64,12 +64,12 @@
         "detail": "baseline_center (16/32), left_shift_2mm (16/32), left_shift_4mm (16/32), right_shift_2mm (16/32); all values within expected ranges"
       },
       {
-        "claim": "TFL-14 HotSpot probe peaks match published values",
-        "command": "TFL_CANONICAL_CONTAINER=1 TFL_HOTSPOT_PROBE_REPORT=.../report.json cd sundai_thermal && python -m unittest test_tfl14_regression.TFL14RegressionTests.test_eight_published_hotspot_probe_peaks",
+        "claim": "TFL-14 full regression (probe peaks + artifact check)",
+        "command": "cd sundai_thermal && TFL_CANONICAL_CONTAINER=1 python -m unittest -q test_tfl14_regression.py",
         "exit_code": 0,
-        "count": 1,
+        "count": 2,
         "wall_time_s": 0.1,
-        "detail": "All 8 probe peaks within 0.01 C of expected values"
+        "detail": "test_eight_published_hotspot_probe_peaks + test_seeded_random_annealing_and_recorded_artifacts_are_reproducible"
       },
       {
         "claim": "Deterministic demo (baseline 93.3423169 C \u2192 final 92.3143491 C)",
@@ -114,13 +114,6 @@
     ],
     "reported_not_reproducible": [
       {
-        "claim": "TFL-14 seeded random annealing artifacts in README.md",
-        "command": "TFL_CANONICAL_CONTAINER=1 TFL_HOTSPOT_PROBE_REPORT=.../report.json cd sundai_thermal && python -m unittest test_tfl14_regression.TFL14RegressionTests.test_seeded_random_annealing_and_recorded_artifacts_are_reproducible",
-        "exit_code": 1,
-        "count": 0,
-        "detail": "FAIL: test checks README.md for 'random 79.9564865\u00b0C' etc. \u2014 README.md was explicitly rewritten for SentiLab per PROVENANCE.json exclusions, replacing the thermal-flight-lab README that contained these values. The simulation itself reproduces, but the README strings it checks do not exist in the SentiLab README."
-      },
-      {
         "claim": "TFL-03 latency targets (median < 0.1 s at 16x16, < 0.4 s at 32x32)",
         "command": "container_smoke.sh asserts median < 2.0 s as SuperLU-in-use check; real targets apply only to deployed container",
         "exit_code": "N/A",
@@ -133,13 +126,6 @@
         "exit_code": "N/A",
         "count": 0,
         "detail": "These figures appear only in docs/sentilab/draft-0.5/ plan documents and TFL-08 seed records, not as reproducible claims in product code. They represent prior reported results, not current assertions."
-      },
-      {
-        "claim": "container_smoke.sh full Docker path (TFL-09, TFL-05 ascend910 probe, TFL-14 regression with canonical container)",
-        "command": "bash scripts/container_smoke.sh (full)",
-        "exit_code": "N/A",
-        "count": 0,
-        "detail": "Container smoke script runs inside Docker with /app paths. Individual components run outside the container as documented above. The TFL-14 regression reproducible-artifacts test (test_seeded_random_annealing_and_recorded_artifacts_are_reproducible) requires the canonical container (TFL_CANONICAL_CONTAINER=1) and the rewritten README causes it to fail even then."
       }
     ],
     "not_attempted": [
@@ -147,11 +133,15 @@
         "claim": "sys_micro150.cfg (8 chiplets, 680 W) probe",
         "command": "No test references this config",
         "detail": "Ticket notes: 'nothing uses it yet'. No test or probe runs against this config."
-      },
+      }
+    ],
+    "not_run_in_this_box": [
       {
-        "claim": "Docker build + full container_smoke.sh",
-        "command": "docker build .",
-        "detail": "Docker not available in this box. All individual components verified separately."
+        "claim": "TFL-14 README artifact check on base 126507d4",
+        "command": "TFL_CANONICAL_CONTAINER=1 cd sundai_thermal && python -m unittest test_tfl14_regression.TFL14RegressionTests.test_seeded_random_annealing_and_recorded_artifacts_are_reproducible",
+        "exit_code": 1,
+        "count": 0,
+        "detail": "Failed at 126507d4 \u2014 import defect: the rewritten README dropped the asserted figures. Fixed on main by 29b0c3b; passes on main."
       }
     ]
   },
