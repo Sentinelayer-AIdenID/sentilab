@@ -632,6 +632,7 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
     oracle = None
     all_reducer_results, all_diag_results, long_sa_results = [], [], []
     diagnostic_skip_reason = None
+    reference_skip_reason = None
     baseline = None
     try:
         grid = prereg['grid']
@@ -668,9 +669,11 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
             baseline = _freeze_cheap_baseline(all_reducer_results)
             if baseline is not None:
                 _write_json(output_dir / 'CHEAP_BASELINE.json', baseline)
+            else:
+                reference_skip_reason = 'cheap_baseline_incomplete'
 
         # All four declared reference restarts take precedence over diagnostics.
-        for seed in long_seeds:
+        for seed in (() if reference_skip_reason else long_seeds):
             shared_designs = shared_initials(seed, max_evals)
             result = await _run_long_sa(initial, oracle, seed, max_evals,
                                         long_cfg['max_cpu_minutes'] * 60, shared_designs,
@@ -755,6 +758,7 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
         'cheap_method_medians_c': all_method_medians, 'cheap_method_all_bests_c': all_method_all_bests,
         'reducer_results': all_reducer_results, 'extra_diagnostic_results': all_diag_results,
         'diagnostic_skip_reason': diagnostic_skip_reason, 'long_sa_results': long_sa_results,
+        'reference_skip_reason': reference_skip_reason,
         'long_sa_exhausted': long_sa_exhausted, 'long_sa_partial': long_sa_partial,
         'aggregate_evaluations': budget.state['total_calls'] - starting_calls,
         'cpu_seconds': budget.state['cpu_seconds'] - starting_cpu,
@@ -772,7 +776,8 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
                       reproduction_absolute_tolerance_c=REPRODUCTION_ABS_TOLERANCE_C)
         result['artifact_directory'] = str(output_dir.resolve())
         result['wire_limit_mm'] = oracle.wire_limit
-        attempt.update(status='finished', ending_calls=budget.state['total_calls'], verdict=verdict)
+        attempt.update(status='baseline_failed' if baseline is None else 'finished',
+                       ending_calls=budget.state['total_calls'], verdict=verdict)
         _write_json(budget.path, budget.state)
     try:
         _write_json(output_dir / 'RESULT.json', result)
