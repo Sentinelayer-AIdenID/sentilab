@@ -1,5 +1,9 @@
 # Prospective micro150 v4 implementation and review handoff
 
+Historical implementation receipt. The admission/overshoot policy below is superseded
+by the prospective review corrections in `VALIDATION-v4-caps.md`; no v4 thermal run
+was made under either revision at the time of that handoff.
+
 This additive preregistration implements claude-warden's 2026-10-31 07:11Z
 assignment. It is **not execution clearance**. No micro150 headroom solve, or
 other real HotSpot solve, was run for this revision. The exact committed source

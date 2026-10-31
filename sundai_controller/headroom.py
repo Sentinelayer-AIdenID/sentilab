@@ -36,6 +36,8 @@ MICRO150_INITIAL_CENTERS = ((10, 10), (28, 10), (10, 28), (28, 28),
 V4_SCHEMA = 'slab-039-prereg-v4'
 REPRODUCTION_ABS_TOLERANCE_C = 1e-6
 V4_DEADLINE = datetime(2026, 10, 31, 12, tzinfo=timezone.utc)
+# Nearest-rank p95 of the five retained micro150 grid32 single-call timings.
+V4_P95_SECONDS = 0.524939
 
 
 def _validate_mesh_error(value: float | None) -> None:
@@ -76,6 +78,11 @@ def _parse_prereg(path: str | Path, *, contents: bytes | None = None) -> dict:
 def _validate_v4(prereg):
     """The prospective schedule cannot be weakened by editing its input file."""
     cheap, long = prereg['reducer_methods'], prereg['long_sa']
+    admission = prereg.get('call_admission', {})
+    timing = ROOT / 'docs/sentilab/evidence/micro150/TIMING.json'
+    if (admission.get('maximum_seconds') != 45 or admission.get('p95_seconds') != V4_P95_SECONDS or
+            admission.get('timing_sha256') != _compute_prereg_digest(timing)):
+        raise ValueError('v4 requires the frozen measured p95 admission rule')
     if (prereg['fixture'] != 'micro150' or prereg['grid'] != 32 or
             prereg['rule']['k'] != 5 or prereg['mesh_error']['micro150']['e_c'] != 0.79 or
             prereg['reproduction']['absolute_tolerance_c'] != REPRODUCTION_ABS_TOLERANCE_C or
@@ -162,9 +169,9 @@ class _ConstrainedOracle:
             raise ValueError('fixed initial wirelength ceiling exceeded')
         return centers
 
-    async def __call__(self, design):
+    async def __call__(self, design, **kwargs):
         self.centers_for(design)
-        return await self.oracle(design)
+        return await self.oracle(design, **kwargs)
 
     def retain_evaluation(self, directory):
         directory.mkdir(parents=True, exist_ok=False)
@@ -289,10 +296,34 @@ class SolveBudget:
 
     def reserve(self, design, lane):
         self.check()
+        timeout = self.call_timeout() if self.v4 else None
         self.state['total_calls'] += 1
         self.entry['calls'] += 1
         self.state['active'] = {'fixture': self.fixture, 'lane': lane, 'design_hash': design.hash}
+        if self.v4:
+            self.state['active'].update(timeout_s=timeout, p95_seconds=V4_P95_SECONDS)
         self.checkpoint()
+
+    def call_timeout(self, restart_remaining=None):
+        """Bound a whole call by all remaining time allowances, never a grace period."""
+        self.checkpoint()
+        deadline = min(V4_DEADLINE, datetime.fromisoformat(self.clock.get('deadline', V4_DEADLINE.isoformat())))
+        bounds = {
+            'single_call_cap': 45.0,
+            'total_cpu_cap': self.cpu_limit - self.state['cpu_seconds'],
+            'fixture_cpu_cap': self.fixture_cpu_limit - self.entry['cpu_seconds'],
+            'aggregate_cpu_cap': self.aggregate_cpu_limit - self.state['aggregate_cpu_seconds_charged'],
+            'deadline': (deadline - datetime.now(timezone.utc)).total_seconds(),
+            'solving_wall_cap': self.wall_limit - self.state['solving_wall_seconds'],
+        }
+        if restart_remaining is not None:
+            bounds['restart_cpu_cap'] = restart_remaining
+        reason = min(bounds, key=bounds.get)
+        timeout = bounds[reason]
+        if timeout < V4_P95_SECONDS:
+            self.reason = reason + '_below_p95'
+            raise BudgetExhausted(self.reason)
+        return timeout
 
     def finish(self):
         self.state['active'] = None
@@ -342,30 +373,62 @@ class _LaneOracle:
         self.calls += 1
         history = {'lane': self.lane, 'call': self.budget.state['total_calls'],
                    'design_hash': design.hash, 'design': asdict(design)}
+        affinity = None
         try:
+            if self.budget.v4:
+                # One shared CPU bounds aggregate runner/worker/solver CPU by wall.
+                # New worker and BLAS threads inherit this mask; restore after reap.
+                affinity = os.sched_getaffinity(0)
+                os.sched_setaffinity(0, {min(affinity)})
             if self.budget.artifact_dir is not None:
                 raw_dir = self.budget.artifact_dir / 'raw' / f"{history['call']:05d}"
                 self.oracle.retain_evaluation(raw_dir)
                 history['raw_output_directory'] = str(raw_dir)
-            result = await self.oracle(design)
+            if self.budget.v4:
+                from sundai_hotspot.tap_oracle import HotSpotTimeoutError
+                # Recompute after reservation/retention I/O; their CPU/wall is charged.
+                remaining = (None if self.cpu_timeout_s is None else
+                             self.cpu_timeout_s - (_cpu_seconds() - self.started_cpu))
+                timeout = self.budget.call_timeout(remaining)
+                history.update(timeout_s=timeout, p95_seconds=V4_P95_SECONDS)
+                call_started = time.perf_counter()
+                try:
+                    result = await asyncio.wait_for(self.oracle(design, timeout_s=timeout), timeout=timeout)
+                    if time.perf_counter() - call_started > timeout:
+                        raise TimeoutError('oracle returned after its call allowance')
+                except (TimeoutError, HotSpotTimeoutError):
+                    history['timeout_status'] = 'timeout'
+                    history['timeout_overrun_s'] = max(0.0, time.perf_counter() - call_started - timeout)
+                    self.stop_reason = self.budget.reason = 'call_timeout'
+                    raise BudgetExhausted('call_timeout')
+            else:
+                result = await self.oracle(design)
             history['result'] = asdict(result)
             Controller.validate_result(result, design)
             if self.best_result is None or result.maximum_temperature_c < self.best_result.maximum_temperature_c:
                 self.best_design, self.best_result = design, result
             return result
         except BaseException as exc:
+            if isinstance(exc, BudgetExhausted):
+                self.stop_reason = str(exc)
             history['error'] = f'{type(exc).__name__}: {exc}'
             raise
         finally:
             # Warm workers retain descendant CPU until reaped. Closing after each
             # call makes SELF+CHILDREN include solver AND worker startup CPU before
             # the next admission. No hidden warm-up or uncounted retry is allowed.
-            close = getattr(self.oracle, 'aclose', None)
-            if close is not None:
-                await close()
-            self.budget.finish()
-            if self.budget.artifact_dir is not None:
-                _write_json(self.budget.artifact_dir / 'evaluations' / f"{history['call']:05d}.json", history)
+            try:
+                close = getattr(self.oracle, 'aclose', None)
+                if close is not None:
+                    await close()
+                if self.budget.v4:
+                    history['kill_latency_s'] = getattr(self.oracle, 'last_kill_latency_s', None)
+                self.budget.finish()
+                if self.budget.artifact_dir is not None:
+                    _write_json(self.budget.artifact_dir / 'evaluations' / f"{history['call']:05d}.json", history)
+            finally:
+                if affinity is not None:
+                    os.sched_setaffinity(0, affinity)
 
 
 async def _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs,
@@ -842,7 +905,9 @@ def _write_report(path: Path, result: dict, prereg: dict, cheap_cfg: dict) -> No
               ('Caps: micro150 4,768 calls / 48 CPU minutes; headroom 9,700 / 72; aggregate 10,000 / 84. '
                'Cumulative solving wall cap: 90 minutes; admission deadline: 2026-10-31 12:00Z. '
                if v4 else 'Caps are 4,768 calls / 24 CPU minutes per fixture and 9,700 calls / 48 CPU minutes across fixtures. ') +
-              'An in-flight evaluation may cross the CPU limit; the next call is refused. '
+              ('Each complete call is bounded by the minimum remaining CPU/wall/deadline allowance and 45 seconds; '
+               'admission requires at least the frozen measured p95. Timeout kills immediately; kill/reap latency is recorded. '
+               if v4 else 'An in-flight evaluation may cross the CPU limit; the next call is refused. ') +
               'A crash with an outstanding reservation fails closed pending reconciliation.', '',
               f"Extra diagnostics: {len(result['extra_diagnostic_results'])} runs; "
               f"skip reason: {result['diagnostic_skip_reason'] or 'none'}. "
@@ -863,7 +928,8 @@ def _write_report(path: Path, result: dict, prereg: dict, cheap_cfg: dict) -> No
                   f"reference complete: {result['reference_complete']}. "
                   'Only feasible winners independently reproduced by fresh same-solver/problem calls within absolute 1e-6 C qualify. '
                   'Each long-SA restart reserves its 1,000th call for reproduction after 999 search calls.',
-                  'Already-admitted calls may finish across CPU, wall or deadline caps; overshoot is retained in SPEND. '
+                  'Timed-out calls cannot finish as eligible witnesses or permit another admission. '
+                  'Kill/reap latency and any actual excess are retained and charged, never assumed zero. '
                   'Unknown historical CPU and unresolved CI allocation remain separate from known charges. '
                   'Ascend910 remains INCONCLUSIVE under v3.', '']
     else:

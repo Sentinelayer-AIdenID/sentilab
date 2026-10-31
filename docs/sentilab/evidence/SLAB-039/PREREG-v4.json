@@ -46,7 +46,7 @@
     "best": "Minimum frozen score among feasible, same-solver/problem independently reproduced cheap winners and completed long-SA winners. Unverified partial improvements and diagnostics are ineligible.",
     "gap": "cheap_median - best",
     "mesh_error": "Fixed micro150 e=0.79 C from PR #18, 24-layout sample only; dynamic substitution forbidden.",
-    "cheap_completion": "Exactly 24 lanes (3 x 8), each 28 search including initialization plus 4 agreeing fresh reproductions. Freeze every search winner and score; then persist CHEAP_BASELINE.json before any reference call.",
+    "cheap_completion": "Exactly 24 lanes (3 x 8), each 28 search including initialization plus 4 agreeing fresh reproductions. Freeze every search winner and score; then persist CHEAP_BASELINE.json before any reference call. If C cannot be frozen, retain the failed attempt and all charges, return INCONCLUSIVE, and admit no reference calls.",
     "monotonicity": "With C frozen, eligible witnesses are only added: C - min(S_n) cannot decrease. No re-ranking a winner using its reproduction temperature.",
     "paid_scientific_model_release": false
   },
@@ -173,11 +173,20 @@
     "reference": "999 search calls including initialization then 1 fresh call of frozen restart winner; total 1000. If stopped before verification, winner ineligible. Earlier verified witnesses remain eligible. This intentionally checks one winner per restart, not every interim improvement: CPU exhaustion before the reserved final call leaves that restart ineligible.",
     "failure": "Disagreement, invalid result or missing verification cannot establish a verified winner. Missing any cheap winner makes C unavailable; incomplete reference forbids FAIL."
   },
-  "overshoot_policy": "Before each call check SELF+CHILDREN CPU, durable call counts, cumulative solving wall and UTC deadline. A call admitted strictly before every cap may finish. Record CPU/wall/deadline overshoot; no later call admitted. Calls are reserved before execution and never overshoot solve caps. No retries outside budget.",
+  "overshoot_policy": "Supersedes the prior admitted-call completion policy: in-flight calls are cancelled at the admitted time bound; immediate process-group kill and reap latency is measured, not assumed zero. Any actual CPU/wall/deadline excess remains charged. No numerical overshoot allowance is granted. OS scheduling and kill latency are observable residuals, not permission to complete a late solve.",
   "domain": {
     "wire_metric": "connectivity-weighted Manhattan center distance in mm; not routed CPLEX length",
     "wire_ceiling": "fixed initial micro150 layout proxy, never updated by winners",
     "wire_tolerance_mm": 0,
     "applies_to": "all initial/shared designs, all reducer and reference proposals, all fresh reproductions; over-ceiling candidates rejected before oracle admission"
+  },
+  "call_admission": {
+    "maximum_seconds": 45,
+    "p95_seconds": 0.524939,
+    "p95_method": "nearest-rank, ceil(0.95 * 5), retained micro150 32x32 times_seconds",
+    "timing_source": "docs/sentilab/evidence/micro150/TIMING.json",
+    "timing_sha256": "a750a98cbb61fc89a58a6896de19e877b01599feacd66418168c1069b17471ff",
+    "policy": "Timeout = min(45 seconds, remaining fixture/headroom/aggregate CPU allowance, remaining wall to 12:00Z, remaining cumulative 90-minute solving wall, restart CPU allowance). Admit only if timeout >= measured p95. Recompute after reservation I/O. Bound the complete await including worker startup; solver and worker have no added grace. On timeout kill the isolated process group immediately and retain measured kill/reap latency and timeout overrun. No retry or later call after timeout.",
+    "cpu_execution": "The sequential v4 runner pins its calling thread and inherited worker/solver threads to one allowed CPU until reap, then restores affinity. This prevents multicore child execution from consuming CPU faster than the wall allowance. Actual scheduling/kill/reap excess remains recorded and charged."
   }
 }
