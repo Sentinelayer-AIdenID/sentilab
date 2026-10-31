@@ -154,6 +154,23 @@ ROUTE_INPUT = {
                "not": {"required": ["task"]}}], "additionalProperties": False}
 
 
+PROPOSAL_INPUTS = {
+    "context": object_schema({}),
+    "submit": object_schema({
+        "request_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"},
+        "positions": {"type": "array", "minItems": 1, "maxItems": 32,
+                      "items": {"type": "array", "minItems": 2, "maxItems": 2,
+                                "items": {"type": "number", "minimum": -10000, "maximum": 10000}}}},
+        ["request_id", "positions"]),
+}
+PROPOSAL_OUTPUT = {"type": "object", "required": ["schema", "status"],
+                   "properties": {"schema": {"const": "sentilab-proposal/1"},
+                                  "status": {"enum": ["ready", "blocked", "refused", "interrupted",
+                                                       "evaluated", "illegal", "stopped", "cancelled",
+                                                       "timeout", "grant_expired", "admission_revoked",
+                                                       "oracle_error"]}}}
+
+
 CAPABILITIES = tuple(
     Capability("live." + command, "live." + command, ("live", command), "sentilab_live_" + command,
                live_input(command), LIVE_OUTPUTS[command], ERROR_CODES,
@@ -233,6 +250,17 @@ CAPABILITIES = tuple(
     for command in ("request", "status", "export"))
 
 
+CAPABILITIES += tuple(
+    Capability("proposal." + command, "proposal." + command, ("proposal", command),
+               "sentilab_proposal_" + command, PROPOSAL_INPUTS[command], PROPOSAL_OUTPUT,
+               ERROR_CODES + ("not_configured", "lab_busy", "stopped", "solve_budget"),
+               "proposal." + command + "; host-bound lab, lead admission and prospective run grant",
+               "STOP refuses new slots and cancels active oracle; cancellation drains adapter and retains signed charge",
+               "SLAB-052 astra-slab043-conformance",
+               mapping_note="Harness only: no default solver/model transport. Host must inject SLAB-048/051 readiness, admission and grant. Comparator results are operator-only.")
+    for command in ("context", "submit"))
+
+
 def implemented():
     return tuple(row for row in CAPABILITIES if row.status == "done")
 
@@ -281,7 +309,10 @@ def coverage_markdown():
              "before it starts and records zero solves; it does not prove active-run STOP parity.",
              "Thirteen recorded operations also exercise CLI SIGINT / MCP cancellation against real OS workers,",
              "asserting workers are reaped before acknowledgement and the MCP connection remains usable.",
-             "This is request cancellation, not mid-call creation of a STOP file. That ticket check remains open.",
+             "This is request cancellation, not mid-call creation of a STOP file. That ticket check remains open for these recorded operations.",
+             "SLAB-052 proposal submission separately proves active-call STOP, CLI SIGINT and MCP cancellation with a fixture adapter,",
+             "including signed retained charges and adapter cleanup. proposal.context is a bounded synchronous read.",
+             "Proposal transports require a host-bound session; default hosts return not_configured. See SLAB-052 harness notes.",
              "The CLI cap counts UTF-8 argv bytes plus one separator per argument;",
              "the MCP cap counts frame bytes excluding the newline. Malformed MCP frames fail safely.",
              "Pending entries are reserved interfaces with rejecting schemas, not tools.", "",

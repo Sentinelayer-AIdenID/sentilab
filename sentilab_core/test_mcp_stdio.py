@@ -100,6 +100,8 @@ class StdioTests(unittest.IsolatedAsyncioTestCase):
             "sentilab_chiplet_export": {"run_id"},
             "sentilab_gb10_status": set(),
             "sentilab_gb10_checkpoint_verify": set(),
+            "sentilab_proposal_context": set(),
+            "sentilab_proposal_submit": {"request_id", "positions"},
         }
         self.assertCountEqual([tool["name"] for tool in tools], expected)
         for tool in tools:
@@ -273,6 +275,7 @@ host.main()
         expected.update("sentilab_research_" + name for name in ("request", "status", "export"))
         expected.update("sentilab_chiplet_" + name for name in ("build", "render", "replay", "export"))
         expected.update(("sentilab_gb10_status", "sentilab_gb10_checkpoint_verify"))
+        expected.update(("sentilab_proposal_context", "sentilab_proposal_submit"))
         self.assertEqual({tool["name"] for tool in tools}, expected)
         self.assertEqual(len(tools), len(expected), "each tool must be registered once")
         schemas = {tool["name"]: tool["inputSchema"] for tool in tools}

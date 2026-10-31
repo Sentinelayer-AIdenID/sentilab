@@ -78,7 +78,9 @@ class IdentityTests(unittest.TestCase):
             with patch.object(s, 'supervise', side_effect=replacement), \
                     patch.object(s, 'verify_cpu_max', return_value={'rate_q': 1}), \
                     patch.object(Path, 'read_bytes', counted_read), \
-                    patch.object(s.LinuxTree, 'cpu', return_value=.1):
+                    patch.object(s.LinuxTree, 'cpu', return_value=.1), \
+                    patch('sundai_controller.evidence_profile.load_admission',
+                          return_value={'synthetic': True, 'declared_calls': 4768}):
                 receipt = s.run(EVIDENCE / 'PREREG-v4.json', budget, root / 'out', policy_path)
             state = json.loads(budget.read_text())
             self.assertTrue(receipt['result_accepted'])

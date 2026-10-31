@@ -268,6 +268,15 @@ RAW_SPAWNS += [('sentilab_core/test_conformance.py', 'subprocess.run',
   ("[sys.executable, '-m', 'sentilab_cli', namespace, '--help']",)),
  ('sentilab_core/test_conformance.py', 'subprocess.run', ("[*invocation, '--help']",))]
 
+# Proposal transport fixtures inject BarrierOracle; no native solver is dispatched.
+RAW_SPAWNS += [('sentilab_core/test_proposals.py', 'subprocess.run',
+                ("self.command('cli', *arguments)",)),
+               ('sentilab_core/test_proposals.py', 'subprocess.Popen',
+                ("self.command('mcp')",)),
+               ('sentilab_core/test_proposals.py', 'subprocess.Popen',
+                ("self.command('cli', 'proposal', 'submit', '--request-id', 'first', '--positions', json.dumps(POSITIONS))",))]
+
+
 class GateTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -420,7 +429,7 @@ int main(int argc, char **argv) {
         for filename, callee in (
             ('sundai_hotspot/run_tap_probe.py', 'HotSpotOracle'),
             ('sundai_controller/mesh_study.py', 'HotSpotOracle'),
-            ('sundai_controller/headroom.py', 'oracle_factory or HotSpotOracle'),
+            ('sundai_controller/headroom.py', 'oracle_type'),
             ('sundai_controller/headroom_supervisor.py', 'run_headroom'),
             ('sundai_controller/tfl08_leaderboard.py', 'HotSpotOracle'),
             ('app/runs.py', 'HotSpotOracle'),
@@ -428,6 +437,12 @@ int main(int argc, char **argv) {
         ):
             with self.subTest(filename=filename):
                 tree = ast.parse((ROOT / filename).read_text())
+                if filename == 'sundai_controller/headroom.py':
+                    self.assertTrue(any(isinstance(node, ast.Assign)
+                                        and any(isinstance(target, ast.Name) and target.id == 'oracle_type'
+                                                for target in node.targets)
+                                        and ast.unparse(node.value) == 'oracle_factory or HotSpotOracle'
+                                        for node in ast.walk(tree)))
                 self.assertTrue(any(isinstance(node, ast.Call)
                                     and ast.unparse(node.func) == callee for node in ast.walk(tree)))
 

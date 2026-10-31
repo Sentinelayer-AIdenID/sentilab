@@ -20,6 +20,7 @@ class Context:
     memory_tenant: str | None = None
     held_out_families: tuple = ()
     routing_fixture: Path | None = None
+    proposal_session: object = None
 
 
 def require_ai_off(ai_off):

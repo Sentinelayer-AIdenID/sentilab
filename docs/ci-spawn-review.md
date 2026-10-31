@@ -111,3 +111,25 @@ remain outside the Python source inventory. The Dockerfile preserves main's
 pinned Python base, pinned Debian Node package and build receipt, followed by
 the allocation ARG/ENV and allocation-aware native build. The enclosing cgroup
 still includes these build steps through the existing dedicated Docker daemon.
+
+## Round 9: worker evidence and proposal harness merge
+
+Main `315bbff4` adds SLAB-050 worker evidence and SLAB-052 proposal transports.
+The unchanged inventory assertion refused three new sites in
+`sentilab_core/test_proposals.py`: the CLI `subprocess.run`, MCP `Popen`, and
+CLI interrupt `Popen`. Each command uses this Python interpreter with the fixed
+`HOST` program, which injects `BarrierOracle(FixtureOracle)` before entering
+the real CLI/MCP. The fixture returns synthetic metrics or waits for cancellation;
+none of these three sites invokes HotSpot. Their exact command expressions are
+now listed without changing the inventory assertion or scan scope.
+
+The merged TAP worker preserves main's parameter/cardinality validation order,
+native environment allowlist, retained streams and phase accounting. Its one
+native call uses `run_hotspot`, preserving reservation before execution and
+settlement after termination. Main's incremental response spool in
+`tap_oracle.py` is unchanged. Its explicit child environment preserves only the
+nonsecret `CI_ALLOCATION=1` flag so the warm worker uses the reservation gate;
+all other parent settings remain excluded. A real protocol-worker regression
+refuses the old environment omission. The frontend inventory now checks both
+main's `oracle_type = oracle_factory or HotSpotOracle` binding and its calls. The two native-process mocks in the new worker
+evidence tests target `worker.run_hotspot`; all assertions remain intact.
