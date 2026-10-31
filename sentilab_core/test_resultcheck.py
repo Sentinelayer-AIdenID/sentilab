@@ -1,6 +1,9 @@
 """Conformance tests exercise the reference and the shipped CLI/MCP processes."""
 import hashlib
 import json
+import os
+import time
+from unittest.mock import patch
 from pathlib import Path
 import subprocess
 import sys
@@ -36,10 +39,30 @@ for (const v of vectors) {
 class ResultCheckTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Missing Node is a failing gate, never a skipped conformance check.
-        reference = subprocess.run(['node', '--input-type=module', '-e', REFERENCE],
-                                   cwd=ROOT, check=True, capture_output=True, text=True)
-        cls.vectors = [json.loads(line) for line in reference.stdout.splitlines()]
+        cls.vectors = []
+        for vector in json.loads((CONTRACT / 'vectors-resultcheck.json').read_text())['vectors']:
+            request = None
+            if 'raw' in vector:
+                raw = vector['raw']
+            elif 'raw_generate' in vector:
+                spec = vector['raw_generate']
+                if spec['kind'] == 'deep':
+                    raw = '[' * spec['depth'] + ']' * spec['depth']
+                elif spec['kind'] == 'multibyte_notes':
+                    raw = json.dumps(dict(schema_version='resultcheck.request.v2', request_id='x',
+                        metric=dict(name='t', unit='ms', direction='lower_is_better'),
+                        pairs=[], notes='é' * spec['chars']), ensure_ascii=False, separators=(',', ':'))
+                else:
+                    raise AssertionError('unknown vector generator')
+            else:
+                request = dict(schema_version='resultcheck.request.v2', request_id='vector', **vector['request'])
+                if 'generate_pairs' in vector:
+                    spec = vector['generate_pairs']
+                    request['pairs'] = [dict(id=f'w{i}', baseline=2, candidate=1) for i in range(spec['wins'])]
+                    request['pairs'] += [dict(id=f'l{i}', baseline=1, candidate=2) for i in range(spec['losses'])]
+                raw = json.dumps(request, ensure_ascii=False, separators=(',', ':'))
+            cls.vectors.append(dict(name=vector['name'], raw=raw, expected=vector['expect'],
+                                    banned=vector.get('receipt_must_not_contain', []), request=request))
 
     def subset(self, actual, expected):
         if isinstance(expected, dict):
@@ -79,8 +102,10 @@ class ResultCheckTests(unittest.TestCase):
             self.assertIn('sentilab_resultcheck', [tool['name'] for tool in replies[1]['result']['tools']])
             for i, (vector, file, reply) in enumerate(zip(self.vectors, files, replies[2:]), 1):
                 with self.subTest(vector=vector['name']):
-                    expected = vector['receipt']
                     receipt = resultcheck.check_raw(file.read_bytes())
+                    expected = vector.get('receipt', resultcheck.canonical(receipt))
+                    if vector.get('request') is not None:
+                        self.assertEqual(resultcheck.canonical(resultcheck.check(vector['request'])), expected)
                     self.subset(receipt, vector['expected'])
                     self.subset(json.loads(expected), vector['expected'])
                     self.assertEqual(resultcheck.canonical(receipt), expected)
@@ -92,10 +117,171 @@ class ResultCheckTests(unittest.TestCase):
                     self.assertEqual(cli.stderr, b'')
                     self.assertEqual(cli.stdout, (expected + '\n').encode())
                     self.assertEqual(reply['id'], i)
+                    self.assertEqual(reply['result']['isError'], code != 0)
                     self.assertEqual(reply['result']['content'], [{'type': 'text', 'text': expected}])
                     for banned in vector['banned']:
                         self.assertNotIn(banned, expected)
 
 
+    def test_size_limit_before_parse_and_full_file_hash(self):
+        raw = b'{' + b'x' * (10 * 1024 * 1024 - 1)
+        with tempfile.TemporaryDirectory() as directory:
+            file = Path(directory) / 'oversize.json'
+            file.write_bytes(raw)
+            started = time.monotonic()
+            # Parser is a dependency, not the unit under test: entering it is a defect.
+            with patch.object(resultcheck.json, 'loads', side_effect=AssertionError('parsed oversized input')):
+                receipt = resultcheck.check_file(file)
+                self.assertEqual(resultcheck.check_raw(raw), receipt)
+            self.assertLess(time.monotonic() - started, 5)
+            self.assertEqual(receipt['errors'], ['request_too_large'])
+            self.assertEqual(receipt['request_hash'], hashlib.sha256(raw).hexdigest())
+            self.assertIsNone(receipt['statistics'])
+            boundary = b'[]' + b' ' * (resultcheck.MAX_BYTES - 2)
+            self.assertEqual(resultcheck.check_raw(boundary)['errors'], ['not_an_object'])
+            self.assertEqual(resultcheck.check_raw(boundary + b' ')['errors'], ['request_too_large'])
+
+    def test_deep_json_syntax_and_structure_bounds(self):
+        for raw, error in [('[' * 100000 + ']' * 100000, 'request_too_deep'),
+                           ('[' * 100000 + ']' * 99999, 'not_json'),
+                           ('[' * 1000 + '1,]' + ']' * 999, 'not_json'),
+                           ('{"x":' * 1000 + '[]' + '}' * 1000, 'request_too_deep')]:
+            with self.subTest(error=error, length=len(raw)):
+                receipt = resultcheck.check_raw(raw)
+                self.assertEqual(receipt['errors'], [error])
+                if error == 'request_too_deep':
+                    self.assertIsNone(receipt['request_hash'])
+        self.assertEqual(resultcheck.check_raw('[' * 8 + ']' * 8)['errors'], ['not_an_object'])
+        self.assertEqual(resultcheck.check_raw('[' * 9 + ']' * 9)['errors'], ['request_too_deep'])
+        self.assertEqual(resultcheck.check([None] * 200000)['errors'], ['request_too_large'])
+
+    def test_schema_codes_and_invalid_encoding(self):
+        request = dict(schema_version='resultcheck.request.v2', request_id='schema',
+                       metric=dict(name='latency', unit='ms', direction='lower_is_better'), pairs=[])
+        cases = [('schema_version', 'v1', 'bad_schema_version'),
+                 ('request_id', 'not an id', 'bad_request_id'), ('metric', None, 'bad_metric'),
+                 ('pairs', None, 'bad_pairs'), ('pairs', [None], 'bad_pairs'),
+                 ('pairs', [dict(id='a', baseline=True, candidate=1)], 'bad_pair_value'),
+                 ('pairs', [dict(id='a', baseline=1, candidate=2, group=False)], 'bad_pair_group'),
+                 ('claim', dict(estimand='unknown', value=1), 'bad_claim'),
+                 ('notes', '😀' * 2049, 'bad_notes')]
+        for key, value, code in cases:
+            with self.subTest(code=code):
+                self.assertEqual(resultcheck.check({**request, key: value})['errors'], [code])
+        for raw in (b'\xff', b'NaN', b'Infinity', b'1 2', b''):
+            self.assertEqual(resultcheck.check_raw(raw)['errors'], ['not_json'])
+
+    def test_notes_hashes_and_byte_determinism(self):
+        request = json.loads(self.vectors[1]['raw'])
+        before = resultcheck.check(request)
+        after = resultcheck.check({**request, 'notes': 'opaque untrusted text'})
+        self.assertNotEqual(before['request_hash'], after['request_hash'])
+        self.assertEqual(before['statistics'], after['statistics'])
+        self.assertNotIn('opaque untrusted text', resultcheck.canonical(after))
+        self.assertEqual(before, resultcheck.check_raw(json.dumps(request, indent=2)))
+        self.assertEqual(before, resultcheck.check(dict(reversed(list(request.items())))))
+        unsealed = {key: value for key, value in before.items() if key != 'receipt_hash'}
+        self.assertEqual(before['receipt_hash'], hashlib.sha256(resultcheck.canonical(unsealed).encode()).hexdigest())
+
+    def test_transports_without_node_or_live_configuration(self):
+        with tempfile.TemporaryDirectory() as directory:
+            env = {**os.environ, 'PATH': directory, 'SENTILAB_SIGNER_FACTORY': 'missing:factory',
+                   'SENTILAB_VIEW_PUBLIC_KEYS': 'invalid'}
+            file = Path(directory) / 'input.json'
+            file.write_text(self.vectors[1]['raw'])
+            cli = subprocess.run([sys.executable, str(ROOT / 'sentilab_cli' / 'sentilab'), 'resultcheck', str(file)],
+                                 env=env, capture_output=True, timeout=10, check=True)
+            request = dict(jsonrpc='2.0', id=1, method='tools/call', params={
+                'name': 'sentilab_resultcheck', 'arguments': {'file': str(file)}})
+            mcp = subprocess.run([sys.executable, '-m', 'sentilab_mcp'], cwd=ROOT, env=env,
+                                 input=json.dumps(request).encode() + b'\n', capture_output=True, timeout=10, check=True)
+            self.assertEqual(cli.stdout.rstrip(b'\n').decode(), json.loads(mcp.stdout)['result']['content'][0]['text'])
+            self.assertEqual(cli.stderr + mcp.stderr, b'')
+            file.unlink()
+            missing = subprocess.run([sys.executable, '-m', 'sentilab_cli', 'resultcheck', str(file)],
+                                     cwd=ROOT, env=env, capture_output=True, timeout=10)
+            self.assertEqual(missing.returncode, 2)
+            self.assertEqual(json.loads(missing.stdout), {'error': {'code': 'file_unreadable'}})
+            bad_calls = [request, {**request, 'id': 2, 'params': {'name': 'sentilab_resultcheck', 'arguments': {}}},
+                         {**request, 'id': 3, 'params': {'name': 'sentilab_resultcheck', 'arguments': {'file': 42}}}]
+            mcp = subprocess.run([sys.executable, '-m', 'sentilab_mcp'], cwd=ROOT, env=env,
+                input=''.join(json.dumps(r) + '\n' for r in bad_calls).encode(), capture_output=True, timeout=10, check=True)
+            responses = [json.loads(line) for line in mcp.stdout.splitlines()]
+            self.assertTrue(responses[0]['result']['isError'])
+            self.assertEqual(responses[0]['result']['content'][0]['text'], missing.stdout.decode().strip())
+            self.assertEqual([r['error']['code'] for r in responses[1:]], [-32602, -32602])
+
+    def test_rounding_and_overflow_match_reference_examples(self):
+        request = dict(schema_version='resultcheck.request.v2', request_id='rounding',
+                       metric=dict(name='t', unit='ms', direction='lower_is_better', scale='ratio'))
+        for wins, losses, expected in [(6, 2, 0.289063), (8, 0, 0.007813), (6, 3, 0.507812)]:
+            pairs = [dict(id=f'w{i}', baseline=2, candidate=1) for i in range(wins)]
+            pairs += [dict(id=f'l{i}', baseline=1, candidate=2) for i in range(losses)]
+            with self.subTest(wins=wins, losses=losses):
+                self.assertEqual(resultcheck.check({**request, 'pairs': pairs})['statistics']['sign_test_p_two_sided'], expected)
+        request.update(pairs=[dict(id='a', baseline=1e308, candidate=-1e308),
+                              dict(id='b', baseline=1e308, candidate=0)],
+                       claim=dict(estimand='percent_change_of_means', value=1))
+        receipt = json.loads(resultcheck.canonical(resultcheck.check(request)))
+        self.assertIsNone(receipt['claim_result']['tolerance'])
+        self.assertEqual(receipt['claim_result']['outcome'], 'discrepancy')
+
+    def test_evidence_manifest_matches_reviewed_contract(self):
+        manifest = json.loads((ROOT / 'docs/sentilab/evidence/SLAB-022/MANIFEST.json').read_text())
+        self.assertEqual(manifest['verdict_schema_version'], resultcheck.SCHEMA_VERSION)
+        self.assertEqual(manifest['checker_version'], resultcheck.CHECKER_VERSION)
+        self.assertEqual(manifest['vector_count'], len(self.vectors))
+        reviewed = dict(line.split()[::-1] for line in (ROOT / 'contracts/HASHES.txt').read_text().splitlines() if line.strip())
+        for path, digest in manifest['contract_files'].items():
+            self.assertEqual(digest, reviewed[path.removeprefix('contracts/')])
+            self.assertEqual(digest, hashlib.sha256((ROOT / path).read_bytes()).hexdigest())
+
+
+def parity_suite():
+    """Explicit Node-only gate, separate from the Python-only container suite."""
+    class ContractParityTests(ResultCheckTests):
+        @classmethod
+        def setUpClass(cls):
+            reference = subprocess.run(['node', '--input-type=module', '-e', REFERENCE],
+                                       cwd=ROOT, check=True, capture_output=True, text=True, timeout=30)
+            cls.vectors = [json.loads(line) for line in reference.stdout.splitlines()]
+
+        def test_reference_numeric_and_schema_edges(self):
+            base = dict(schema_version='resultcheck.request.v2', request_id='numeric',
+                        metric=dict(name='t', unit='ms', direction='lower_is_better', scale='ratio'))
+            cases = []
+            for n in range(6, 41):
+                for wins in range((n + 1) // 2, n + 1):
+                    pairs = [dict(id=f'w{i}', baseline=2, candidate=1) for i in range(wins)]
+                    pairs += [dict(id=f'l{i}', baseline=1, candidate=2) for i in range(n - wins)]
+                    cases.append({**base, 'pairs': pairs})
+            for value in (1e308, -1e308, 1e-308, 5e-324, 1e21, 1e20, 9007199254740993, 0.0000005):
+                for estimand in ('mean_difference', 'percent_change_of_means', 'mean_of_percent_changes'):
+                    cases.append({**base, 'pairs': [dict(id='a', baseline=value, candidate=-value),
+                                                   dict(id='b', baseline=value, candidate=0)],
+                                  'claim': dict(estimand=estimand, value=1)})
+            cases += [{**base, 'pairs': [], 'notes': value} for value in ('é', '😀', '\ud800', '\udfff', '\ufeff')]
+            cases += [None, [], {}, {**base, 'pairs': [], 'metric': {'name': '😀' * 65}},
+                      {**base, 'pairs': [], 'claim': {'estimand': [], 'value': 1}}]
+            nested = []
+            for _ in range(9):
+                nested = [nested]
+            cases.append({'a': [0] * 200000, '0': nested})
+            raw = [json.dumps(case, ensure_ascii=True) for case in cases]
+            raw += ['NaN', 'Infinity', '{"x":1e400}', '\ufeff{}', '\ud800', '"\ud800"', '[' * 1000 + ']' * 999]
+            script = """import {canonical,checkRaw} from './contracts/contract-0.2/resultcheck.mjs';
+let s=''; for await (const chunk of process.stdin) s+=chunk;
+console.log(JSON.stringify(JSON.parse(s).map(raw=>canonical(checkRaw(raw)))));"""
+            reference = subprocess.run(['node', '--input-type=module', '-e', script], cwd=ROOT,
+                                       input=json.dumps(raw), text=True, capture_output=True, check=True, timeout=30)
+            for i, (text, expected) in enumerate(zip(raw, json.loads(reference.stdout))):
+                with self.subTest(case=i):
+                    self.assertEqual(resultcheck.canonical(resultcheck.check_raw(text)), expected)
+
+    return unittest.defaultTestLoader.loadTestsFromTestCase(ContractParityTests)
+
+
 if __name__ == '__main__':
+    if sys.argv[1:] == ['--parity']:
+        raise SystemExit(not unittest.TextTestRunner(verbosity=2).run(parity_suite()).wasSuccessful())
     unittest.main()

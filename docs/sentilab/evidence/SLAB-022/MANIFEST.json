@@ -1,0 +1,18 @@
+{
+  "schema_version": "sentilab.evidence-manifest.v1",
+  "ticket": "SLAB-022",
+  "contract_version": "0.2",
+  "verdict_schema_version": "resultcheck.receipt.v2",
+  "checker_version": "resultcheck-ref-0.2",
+  "vector_count": 39,
+  "contract_files": {
+    "contracts/contract-0.2/CONTRACTS.md": "2a5502302fa8b84fce06765f80eea36db37605cb3447008f731ca4b6bff7aaf2",
+    "contracts/contract-0.2/evidence-projection.mjs": "fe861207ed1bfbf90e457f84606dbbd335cb762d2041c9ee942aa006d3f31001",
+    "contracts/contract-0.2/resultcheck.mjs": "4fb7a64ea3e22379e3731494225e7be29062990284724ef08a5dc0a4ea582049",
+    "contracts/contract-0.2/run-vectors.mjs": "c02d8f7670e5be4615587b828971e42db170b9e138b82338ac875c5c3cfbe6d7",
+    "contracts/contract-0.2/vectors-evidence.json": "5c20a91a0890b9a66774e93b5792b9a717ec085314adf879b458ad9006f2510c",
+    "contracts/contract-0.2/vectors-resultcheck.json": "4956952f6095f0403a7a92472727c97834c2aefd674701e5814b5ad4c498c9a6"
+  },
+  "parity_command": "python -m sentilab_core.test_resultcheck --parity",
+  "scope": "Submitted-data consistency and arithmetic only; not scientific acceptance."
+}

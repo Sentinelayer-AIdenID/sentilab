@@ -9,6 +9,7 @@ import hashlib
 import json
 import math
 import re
+import struct
 import unicodedata
 
 CHECKER_VERSION = 'resultcheck-ref-0.2'
@@ -48,6 +49,7 @@ def _number(value):
 
 
 def _string(value):
+    value = value.encode('utf-16-le', errors='surrogatepass').decode('utf-16-le', errors='surrogatepass')
     text = json.dumps(value, ensure_ascii=False)
     # JSON.stringify escapes lone UTF-16 surrogates but emits ordinary Unicode.
     return ''.join(f'\\u{ord(c):04x}' if 0xD800 <= ord(c) <= 0xDFFF else c for c in text)
@@ -102,7 +104,14 @@ def _structure_error(request):
             continue
         if depth > MAX_DEPTH:
             return 'request_too_deep'
-        children = value if isinstance(value, list) else value.values()
+        if isinstance(value, dict):
+            # Object.values visits array-index keys first, then insertion order.
+            indices = sorted((k for k in value if isinstance(k, str) and
+                              re.fullmatch(r'0|[1-9][0-9]{0,9}', k) and int(k) < 4294967295), key=int)
+            index_keys = set(indices)
+            children = [value[k] for k in indices] + [v for k, v in value.items() if k not in index_keys]
+        else:
+            children = value
         stack.extend((child, depth + 1) for child in children)
     return None
 
@@ -206,14 +215,78 @@ def _round6(value):
     return 0 if rounded == 0 else rounded
 
 
+# The following two restricted-domain routines are adapted from fdlibm, as
+# used by Node 22's V8 src/base/ieee754.cc. Host libm can differ by one ulp,
+# changing toFixed(6) at half-way sign-test values (e.g. 6 wins / 2 losses).
+# Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
+# Developed at SunSoft, a Sun Microsystems, Inc. business.
+# Permission to use, copy, modify, and distribute this software is freely
+# granted, provided that this notice is preserved.
+_LN2_HI = 6.93147180369123816490e-01
+_LN2_LO = 1.90821492927058770002e-10
+
+
+def _integer_log(value):
+    """fdlibm log for positive integers used by the bounded sign test."""
+    high, low = struct.unpack('>II', struct.pack('>d', float(value)))
+    k = (high >> 20) - 1023
+    high &= 0x000FFFFF
+    adjust = (high + 0x95F64) & 0x100000
+    x = struct.unpack('>d', struct.pack('>II', high | (adjust ^ 0x3FF00000), low))[0]
+    k += adjust >> 20
+    f = x - 1.0
+    if (0x000FFFFF & (2 + high)) < 3:
+        if f == 0:
+            return k * _LN2_HI + k * _LN2_LO
+        r = f * f * (0.5 - 0.33333333333333333 * f)
+        return f - r if k == 0 else k * _LN2_HI - ((r - k * _LN2_LO) - f)
+    t = f / (2.0 + f)
+    z = t * t
+    w = z * z
+    t1 = w * (3.999999999940941908e-01 + w * (2.222219843214978396e-01 + w * 1.531383769920937332e-01))
+    t2 = z * (6.666666666666735130e-01 + w * (2.857142874366239149e-01 + w *
+              (1.818357216161805012e-01 + w * 1.479819860511658591e-01)))
+    r = t2 + t1
+    if ((high - 0x6147A) | (0x6B851 - high)) > 0:
+        half_square = 0.5 * f * f
+        if k == 0:
+            return f - (half_square - t * (half_square + r))
+        return k * _LN2_HI - ((half_square - (t * (half_square + r) + k * _LN2_LO)) - f)
+    return f - t * (f - r) if k == 0 else k * _LN2_HI - ((t * (f - r) - k * _LN2_LO) - f)
+
+
+def _negative_exp(x):
+    """fdlibm exp for the nonpositive log probabilities in the sign test."""
+    if x < -7.45133219101941108420e+02:
+        return 0.0
+    high = struct.unpack('>II', struct.pack('>d', x))[0] & 0x7FFFFFFF
+    k, hi, lo = 0, 0.0, 0.0
+    if high > 0x3FD62E42:
+        if high < 0x3FF0A2B2:
+            hi, lo, k = x + _LN2_HI, -_LN2_LO, -1
+        else:
+            k = int(1.44269504088896338700e+00 * x - 0.5)
+            hi, lo = x - k * _LN2_HI, k * _LN2_LO
+        x = hi - lo
+    elif high < 0x3E300000:
+        return 1.0 + x
+    t = x * x
+    c = x - t * (1.66666666666666019037e-01 + t * (-2.77777777770155933842e-03 + t *
+                 (6.61375632143793436117e-05 + t * (-1.65339022054652515390e-06 + t * 4.13813679705723846039e-08))))
+    if k == 0:
+        return 1.0 - ((x * c) / (c - 2.0) - x)
+    y = 1.0 - ((lo - (x * c) / (2.0 - c)) - hi)
+    return y * math.ldexp(1.0, k) if k >= -1021 else y * math.ldexp(1.0, k + 1000) * 9.33263618503218878990e-302
+
+
 def _sign_test(wins, losses):
     n, k = wins + losses, max(wins, losses)
     log_coefficient, tail = 0.0, 0.0
     for i in range(n + 1):
         if i >= k:
-            tail += math.exp(log_coefficient - n * math.log(2))
+            tail += _negative_exp(log_coefficient - n * 0.6931471805599453)
         if i < n:
-            log_coefficient += math.log(n - i) - math.log(i + 1)
+            log_coefficient += _integer_log(n - i) - _integer_log(i + 1)
     return min(1, 2 * tail)
 
 
@@ -246,6 +319,8 @@ def _claim(claim, metric, units, improvements, flags):
             recomputed = _mean([d / abs(u['baseline']) for u, d in zip(units, improvements)]) * 100
     declared = 'tolerance' in claim
     tolerance = claim['tolerance'] if declared else max(1e-12, 0.001 * max(abs(recomputed), abs(claim['value'])))
+    if not declared and math.isnan(recomputed):
+        tolerance = float('nan')  # Math.max propagates NaN; Python max does not.
     difference = abs(recomputed - claim['value'])
     matches = difference <= tolerance + 1e-12
     if not matches:
@@ -388,13 +463,15 @@ def _parse_deep(text):
 
 def check_raw(data):
     """Check UTF-8 bytes (or text), rejecting over 1 MiB before any parsing."""
-    if isinstance(data, str):
-        data = data.encode('utf-8', errors='surrogatepass')
+    text = data if isinstance(data, str) else None
+    if text is not None:
+        data = text.encode('utf-16-le', errors='surrogatepass').decode('utf-16-le', errors='replace').encode('utf-8')
     request_hash = hashlib.sha256(data).hexdigest()
     if len(data) > MAX_BYTES:
         return _rejected(['request_too_large'], request_hash)
     try:
-        text = data.decode('utf-8')
+        if text is None:
+            text = data.decode('utf-8')
         try:
             request = json.loads(text, parse_int=float, parse_float=float, parse_constant=_invalid_constant)
         except RecursionError:
