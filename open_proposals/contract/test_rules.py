@@ -254,6 +254,16 @@ class Files(unittest.TestCase):
             data = path.read_bytes()
             self.assertEqual([], [index for index, byte in enumerate(data) if byte < 0x20 and byte != 0x0A], path)
 
+    def test_record_helpers_return_fresh_objects(self):
+        """A test that edits a golden record must not edit the generator's shared values (an order-dependent
+        stale-golden failure otherwise)."""
+        for make in (mv.receipt, mv.check_record, mv.status_receipt, mv.measured, mv.outside):
+            first, second = make(), make()
+            self.assertEqual(first, second)
+            for key, value in first.items():
+                if isinstance(value, (dict, list)):
+                    self.assertIsNot(value, second[key], f"{make.__name__}: {key}")
+
     def test_handles_are_bearer_secrets_in_every_word(self):
         """The carry-forward correction (#56992): a salted handle is a bearer secret, never called authentication."""
         texts = [path.read_text(encoding="utf-8") for path in CONTRACT.rglob("*.json")]

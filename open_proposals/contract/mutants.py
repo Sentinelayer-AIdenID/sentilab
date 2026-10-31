@@ -511,6 +511,8 @@ MUTANTS = [
     ("age-armour", "age: canonical armour", A, "if not data or armor(data) !=", "if not data or False and armor(data) !="),
     ("age-key-version", "age: six-digit key versions", A, "([1-9][0-9]{0,5})", "([1-9][0-9]*)"),
     # ── schema-level rules ──
+    ("fixtures-fresh", "tests: record helpers return fresh objects", PKG + "make_vectors.py",
+     '"values": VALUES_PUB}\n    return copy.deepcopy(base | edits)', '"values": VALUES_PUB}\n    return base | edits'),
     ("schema-dies", "limit: 32 dies", SCH + "common.schema.json", '"minItems": 1,\n      "maxItems": 32,',
      '"minItems": 1,\n      "maxItems": 33,'),
     ("schema-coordinate", "limit: coordinate range", SCH + "common.schema.json",

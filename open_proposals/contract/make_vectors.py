@@ -941,7 +941,7 @@ Q_UNKNOWN = {key: "UNKNOWN" for key in Q_F}
 def check_record(**edits) -> dict:
     base = {"schema": "sentilab-open-check/1", "W_c_mm": 98.0, "router_status": "optimal", "q_r_nominal": Q_F,
             "labels": LABELS4, "codes": []}
-    return base | edits
+    return copy.deepcopy(base | edits)          # never an alias of a shared module value
 
 
 def check_records() -> list:
@@ -1012,7 +1012,7 @@ def receipt(**edits) -> dict:
             "geometry_sha256": P_PUB["geometry_sha256"], "design_hash": None, "manifest_id": ID["F"],
             "terms": TERMS_VERSION, "visibility": "public", "proposal_key": "t-1", "revision_index": 1,
             "parent": None, "state": "queued", "codes": [], "values": VALUES_PUB}
-    return base | edits
+    return copy.deepcopy(base | edits)          # never an alias of a shared module value
 
 
 UNREAD = {"proposal_sha256": None, "geometry_sha256": None, "design_hash": None, "terms": None, "visibility": None,
@@ -1096,7 +1096,7 @@ def status_receipt(**edits) -> dict:
     base = {"participant_ref": PREF_HUMAN, "actor_kind": "human", "state": "queued",
             "queue": {"position": 3, "estimated_start": "2026-11-01T10:30:00Z"}, "receipt_hash": fake("receipt"),
             "run_id": h.run_id(ID["F"], PREF_HUMAN, h.proposal_sha256(P_PUB))}
-    return base | edits
+    return copy.deepcopy(base | edits)          # never an alias of a shared module value
 
 
 def status(*receipts) -> dict:
@@ -1139,7 +1139,7 @@ def measured(**edits) -> dict:
             "suppressed": [], "sensitivities": {"mesh": 0.1, "position": "UNKNOWN", "replay": 0.0},
             "observables": {"active_layer_grid_peak": 60.1, "literal_on_stdout": 59.9, "W_proxy_mm": 5.2},
             "evaluator": FIXTURE, "temperature_label": "illustrative"}
-    return base | edits
+    return copy.deepcopy(base | edits)          # never an alias of a shared module value
 
 
 PASSES = "passes the listed sensitivity cases"
@@ -1151,7 +1151,7 @@ UNKNOWN_ROW = {"T_M": "UNKNOWN", "delta_T": "UNKNOWN", "W_c_mm": "UNKNOWN", "q_r
 
 def outside(**edits) -> dict:
     return {"kind": "outside", "participant_ref": PREF_HUMAN, "actor_kind": "human", "state": "reproduced",
-            **measured()} | edits
+            **measured()} | copy.deepcopy(edits)
 
 
 def results(*rows, comparator=None, private_entries=2) -> dict:
