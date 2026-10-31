@@ -422,7 +422,7 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
     _write_json(result_path, result)
 
     report_path = output_dir / "REPORT.md"
-    _write_report(report_path, result, prereg)
+    _write_report(report_path, result, prereg, cheap_cfg)
 
     return result
 
@@ -435,7 +435,7 @@ def _write_json(path: Path, value) -> None:
     os.replace(temporary, path)
 
 
-def _write_report(path: Path, result: dict, prereg: dict) -> None:
+def _write_report(path: Path, result: dict, prereg: dict, cheap_cfg: dict) -> None:
     verdict = result["verdict"]
     gap = result["gap_c"]
     threshold = result["threshold_c"]
