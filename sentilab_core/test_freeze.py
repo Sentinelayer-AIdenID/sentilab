@@ -159,6 +159,18 @@ class FreezeTests(unittest.TestCase):
         self.assertEqual(result["board"], rows[1])
         self.assertEqual(result["decisions"][1]["outcome"], "within_margin")
 
+    def test_rank_cannot_override_or_bypass_frozen_margin(self):
+        rows = [candidate("a", 9.5)]
+        for margin in (0, 2):
+            with self.subTest(margin=margin), self.assertRaisesRegex(ValueError, "frozen acceptance_margin"):
+                rank_order_gate(rows, self.reference, margin, freeze=self.freeze)
+        result = rank_order_gate(rows, self.reference, 1, freeze=self.freeze)
+        self.assertEqual(result["board"], self.reference)
+        self.assertEqual(result["decisions"][0]["outcome"], "within_margin")
+        self.freeze["parameters"]["acceptance_margin"] = None
+        with self.assertRaises(ValueError):
+            rank_order_gate(rows, self.reference, 0, freeze=self.freeze)
+
     def test_reproduced_j_can_reverse_search_order(self):
         rows = [candidate("a", 8), candidate("b", 8.1, "lab-b")]
         result = self.replay(rows, [attempt("a", 8.2), attempt("b", 7.95, "lab-b")])

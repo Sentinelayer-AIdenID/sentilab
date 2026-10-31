@@ -206,10 +206,11 @@ def nominate(candidates, arm, reference, *, freeze):
 
 
 def rank_order_gate(reproduced, reference, margin, *, freeze):
-    """One exact reproduced-J batch winner, then resolve losers against its board."""
+    """One batch winner; caller margin must equal the non-null frozen margin."""
     validate_freeze(freeze)
     _check_reference(reference)
-    _number(margin, nonnegative=True)
+    if _number(margin, nonnegative=True) != _parameter(freeze, "acceptance_margin"):
+        raise ValueError("margin must equal frozen acceptance_margin")
     rows = tuple(reproduced)
     for c in rows:
         _check_candidate(c)
