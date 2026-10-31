@@ -6,13 +6,14 @@ from dataclasses import replace
 import math
 import os
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 from unittest import mock
 
 from tap_oracle import (
-    HOTSPOT_BINARY, REPO_ROOT, HotSpotOracle, HotSpotOracleError, HotSpotTimeoutError,
-    TapLegalityError, _WarmWorkerPool, _run_worker, _sha256,
+    HOTSPOT_BINARY, REPO_ROOT, WORKER, HotSpotOracle, HotSpotOracleError, HotSpotTimeoutError,
+    TapLegalityError, _WarmWorkerPool, _run_worker, _sha256, _worker_environment,
 )
 from tap_oracle_worker import _parse_grid
 
@@ -324,12 +325,35 @@ class WarmWorkerProtocolTests(unittest.IsolatedAsyncioTestCase):
 @unittest.skipUnless(os.name == "posix", "fake HotSpot executable uses a POSIX shebang")
 class HotSpotIntegrityTests(unittest.IsolatedAsyncioTestCase):
     async def test_warm_worker_rechecks_binary_and_source_hashes_on_each_call(self):
+        await self._check_warm_worker_integrity()
+
+    async def test_warm_worker_integrity_with_empty_path(self):
+        with tempfile.TemporaryDirectory(prefix="tfl-hotspot-empty-path-") as directory:
+            worker = Path(directory) / "worker.py"
+            # Omitted PATH falls back to /bin:/usr/bin on this host, masking the
+            # slim image's missing python3 there. Explicitly empty it at exec.
+            worker.write_text(
+                "import runpy, subprocess\n"
+                "run = subprocess.run\n"
+                "def run_without_path(*args, **kwargs):\n"
+                " kwargs['env'] = {**kwargs['env'], 'PATH': ''}\n"
+                " return run(*args, **kwargs)\n"
+                "subprocess.run = run_without_path\n"
+                f"runpy.run_path({str(WORKER)!r}, run_name='__main__')\n",
+                encoding="utf-8",
+            )
+            environment = {**_worker_environment(), "PATH": ""}
+            with mock.patch.dict(os.environ, {"PATH": ""}), \
+                    mock.patch("tap_oracle._worker_environment", return_value=environment):
+                await self._check_warm_worker_integrity(worker_script=worker)
+
+    async def _check_warm_worker_integrity(self, *, worker_script=WORKER):
         with tempfile.TemporaryDirectory(prefix="tfl-hotspot-fake-bin-") as directory:
             temp = Path(directory)
             binary = temp / "hotspot"
             invocations = temp / "invocations"
             binary.write_text(
-                "#!/usr/bin/env python3\n"
+                f"#!{sys.executable}\n"
                 "import pathlib, sys\n"
                 f"log = pathlib.Path({str(invocations)!r})\n"
                 "log.write_text(str(int(log.read_text()) + 1) if log.exists() else '1')\n"
@@ -362,7 +386,8 @@ class HotSpotIntegrityTests(unittest.IsolatedAsyncioTestCase):
                     worker_pids.append(worker.pid)
                     return await original_evaluate(worker, request, worker_timeout_s=worker_timeout_s)
 
-                with mock.patch("tap_oracle._WarmWorker.evaluate", new=track_worker):
+                with mock.patch("tap_oracle._WarmWorker.evaluate", new=track_worker), \
+                        mock.patch("tap_oracle.WORKER", worker_script):
                     first = await oracle(design)
                     self.assertEqual(first.grid_rows, 2)
                     self.assertEqual(invocations.read_text(encoding="utf-8"), "1")
@@ -382,7 +407,7 @@ class HotSpotIntegrityTests(unittest.IsolatedAsyncioTestCase):
                     self.assertNotEqual(original_worker_pid, replacement_worker_pid)
                     self.assertEqual(invocations.read_text(encoding="utf-8"), "2")
 
-                    binary.write_text("#!/usr/bin/env python3\n# tampered binary\n", encoding="utf-8")
+                    binary.write_text(f"#!{sys.executable}\n# tampered binary\n", encoding="utf-8")
                     binary.chmod(0o755)
                     with self.assertRaisesRegex(HotSpotOracleError, "binary changed"):
                         await oracle(design)
