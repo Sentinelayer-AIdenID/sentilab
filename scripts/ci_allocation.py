@@ -155,12 +155,14 @@ class Ledger:
 
 
 class CPUAccount:
-    """cgroup inclusive CPU delta plus the out-of-group supervisor CPU delta.
+    """cgroup CPU delta plus supervisor CPU delta and helper startup debit.
 
-    The workload cgroup has cpu.max=100000/100000 (one CPU). The 30-second reserve
+    The workload cgroup has cpu.max=100000/100000 (quota/period, with burst;
+    neither a rolling-second bound nor a cumulative cap). The 30-second reserve
     covers observation (<=2 wall seconds), kill (<=5), quota burst and supervisor
     overhead. Missing/late/regressing observations fail closed, never use wall time
     as a CPU measurement. The final read is after cgroup.events populated=0.
+    The caller adds the fixed helper startup debit to each supervisor sample.
     """
     def __init__(self, cgroup_cpu, supervisor_cpu, clock):
         self.start = cgroup_cpu, supervisor_cpu

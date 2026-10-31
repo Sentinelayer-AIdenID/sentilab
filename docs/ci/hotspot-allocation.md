@@ -162,7 +162,10 @@ PR head SHA and the synthetic merge/build SHA in the journal's opening identity.
 ## CPU boundary
 
 `scripts/ci_cpu_meter.py` creates a fresh cgroup-v2 subtree with
-`cpu.max = 100000 100000` (one CPU). Its `host` leaf contains the job shell and a
+`cpu.max = 100000 100000` (100,000 microseconds of CPU quota per 100,000-microsecond
+period). This permits bursts around period boundaries: it does not guarantee a
+one-CPU bound over every rolling second and is not a cumulative CPU cap.
+Its `host` leaf contains the job shell and a
 **dedicated** Docker daemon. The daemon explicitly uses `cgroupfs` and the allocation
 parent for all build and runtime containers. Docker's integrated BuildKit passes
 this parent to its runc executor. The existing runner Docker socket is never used.
@@ -171,8 +174,28 @@ work and exited descendants are included by the parent's cumulative `cpu.stat`.
 Build cache is disabled, so a cached numerical suite cannot masquerade as a fresh
 execution. Required smoke suites and their assertions are unchanged.
 
-The out-of-group supervisor's measured `getrusage(SELF)` CPU is added, including
-broker threads. This is deliberately broader than solver CPU. Process-tree CPU
+The out-of-group supervisor's `getrusage(SELF)` CPU delta from the initial cgroup
+sample through the final sample is added, including broker threads. The isolated
+Python entry helper initially starts outside the cgroup and blocks on its release
+pipe. After attaching it, and before releasing any workload, the supervisor reads
+the helper's cumulative user/system CPU counters from `/proc/PID/stat`. It adds
+two clock ticks (one per truncated counter) to make a conservative startup debit.
+This bounds the pre-attachment CPU; any helper CPU between attachment and that
+sample is deliberately double charged. The debit participates in the pre-release
+budget check, every in-flight observation, and the final accounted CPU total.
+An unreadable counter prevents release. If cancellation, expiry or attach failure
+prevents sampling, the helper is killed/reaped without release; the supervisor's
+`getrusage(CHILDREN)` delta supplies its full CPU debit instead. Other children
+reaped in that interval could only increase that conservative debit. An unreaped
+helper makes the total unknown and charges at least the full reservation.
+
+The artifact names this component `helper_startup_cpu_seconds` and records its
+measurement method. `cpu_seconds` is the cgroup delta plus supervisor delta plus
+this conservative startup debit, not a claim of exact disjoint measurement.
+The boundary includes the helper's pre-attachment lifetime, but excludes the
+supervisor's own interpreter/setup CPU before its baseline and serialization after
+its final sample. It is not whole-lifetime accounting of the CI runner or meter.
+This is deliberately broader than solver CPU. Process-tree CPU
 from the mesh runner cannot account for a separately managed Docker daemon, so it
 is not used as a fallback. Checkout, admission, artifact transfer and the unrelated
 browser/contracts/secret-scan jobs are outside the container-job boundary.
@@ -190,6 +213,12 @@ artifact serialization/transfer follows outside that boundary.
 The stop reserve assumes a functioning Linux scheduler and kill mechanism within
 those bounds. A stalled host or failure to drain is **inconclusive**, never a pass;
 if an observed total exceeds 900 the result is explicitly `cpu_limit_violated`.
+The settlement's `violations` array retains both `cpu_limit_violated` and
+`launch_violation` when both occur; CPU takes primary state unless cleanup is
+inconclusive. Terminal reconciliation preserves the known higher CPU total and
+charge (including totals above 900) and validates that the violation list agrees
+with the counters. It also accepts older combined records without a violation
+list when their CPU and direct-entry counters support both facts.
 This is not a kernel-provided cumulative CPU quota. The real CI proof must verify
 these assumptions and the cgroup placement on the pinned runner image. On loss of
 the supervisor or host, unknown CPU is charged at the full 900-second reservation.
