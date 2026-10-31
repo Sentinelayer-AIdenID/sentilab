@@ -489,6 +489,19 @@ def report(result):
     return '\n'.join(lines)
 
 
+def execution_commit():
+    """Best-effort provenance; never part of the evaluator identity."""
+    build_sha = os.environ.get('BUILD_SHA', '').strip()
+    if build_sha:
+        return build_sha
+    try:
+        return subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], cwd=Path(__file__).resolve().parents[1],
+            text=True, stderr=subprocess.DEVNULL).strip() or 'unknown'
+    except (OSError, subprocess.CalledProcessError):
+        return 'unknown'
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--fixture', choices=('ascend910', 'micro150'), default='ascend910')
@@ -518,8 +531,7 @@ def main(argv=None):
         raise FileExistsError('results already exist; use a new --output-dir for reruns')
     result = asyncio.run(evaluate_layouts(frozen, args.grids, args.layout_ids, evidence_dir=output))
     result['layouts_sha256'] = sha
-    result['execution_commit'] = subprocess.check_output(
-        ['git', 'rev-parse', 'HEAD'], cwd=Path(__file__).resolve().parents[1], text=True).strip()
+    result['execution_commit'] = execution_commit()
     errors = check_result(result, output)
     if errors:
         raise ValueError('; '.join(errors))

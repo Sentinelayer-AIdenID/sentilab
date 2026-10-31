@@ -174,3 +174,25 @@ per-grid provenance and accounting are unchanged, and the layouts/hash remain
 byte-identical to freeze commit `20e72d8`. No oracle/real-mesh suites were rerun;
 the known baseline README thermal failure and shared-budget limitations above
 remain unchanged. Full integrated gates require operator carry onto fixed main.
+
+## Container provenance fallback
+
+Warden reported that PR #5 container CI has no Git executable or checkout.
+`execution_commit` now uses nonempty `BUILD_SHA`, otherwise Git when available,
+otherwise `unknown`. It remains report metadata, outside all identity hashes;
+the evaluator pin still contains only binary and generator SHA-256 values.
+
+`test_execution_commit_is_optional_provenance` exercises the CLI with fake oracle
+returns for build-SHA precedence, Git success, missing Git (`FileNotFoundError`),
+missing checkout (`CalledProcessError`) and empty Git output. Copied into a
+disposable worktree at `248e6e640a9bfecbca04760a9a3f82355e3072bb`, it fails with
+three errors (including `FileNotFoundError: git`) and one assertion failure;
+all five cases pass with the fix. The existing completion/journal test also passes.
+
+Validation: `python -m unittest -q` on the mesh Accounting, Statistics, Layout,
+Identity and Receipt test classes passes **16 tests**. The controller command
+listed above passes **65 tests** (34.587 s, 1,000 property cases). Both mesh modules
+pass compileall; `make -C sundai_hotspot -j4 SUPERLU=1`, `git diff --check` and the
+historical RESULT checker exit 0. No HotSpot solves or container smoke runs were
+performed for this repair. Historical evidence is unchanged; operator carry and
+container CI on the integrated head remain pending.

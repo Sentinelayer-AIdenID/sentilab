@@ -184,6 +184,40 @@ class MeshIdentityTests(unittest.TestCase):
 
 
 class MeshReceiptTests(unittest.TestCase):
+    def test_execution_commit_is_optional_provenance(self):
+        cases = [
+            ('build', {'BUILD_SHA': 'container-revision'}, FileNotFoundError('git'),
+             'container-revision', 0),
+            ('git', {}, 'checkout-revision\n', 'checkout-revision', 1),
+            ('missing-git', {}, FileNotFoundError('git'), 'unknown', 1),
+            ('missing-checkout', {}, subprocess.CalledProcessError(128, ['git']), 'unknown', 1),
+            ('empty-git-output', {}, '', 'unknown', 1),
+        ]
+
+        async def fake_call(oracle, design):
+            return fake_thermal_result(oracle, design)
+
+        for name, environment, git_result, expected, git_calls in cases:
+            with self.subTest(case=name), tempfile.TemporaryDirectory() as directory, \
+                    patch.dict(mesh.os.environ, environment, clear=True), \
+                    patch.object(mesh.subprocess, 'check_output') as git, \
+                    patch.object(mesh.HotSpotOracle, '__call__', fake_call), \
+                    redirect_stdout(io.StringIO()):
+                if isinstance(git_result, Exception):
+                    git.side_effect = git_result
+                else:
+                    git.return_value = git_result
+                output = Path(directory)
+                self.assertEqual(mesh.main(['--grids', '32', '64', '--layout-ids',
+                    'clustered-01', 'spread-01', '--output-dir', str(output)]), 0)
+                result = json.loads((output / 'RESULT.json').read_text())
+                self.assertEqual(result['execution_commit'], expected)
+                self.assertEqual(git.call_count, git_calls)
+                self.assertIn(f'Execution commit: `{expected}`.', (output / 'REPORT.md').read_text())
+                self.assertEqual(set(result['evaluator_identity']),
+                                 {'hotspot_binary_sha256', 'generator_sha256'})
+                self.assertEqual(mesh.check_result(result, output), [])
+
     def test_completed_receipts_survive_failure_and_cancellation(self):
         for failure in (RuntimeError('second call failed'), asyncio.CancelledError()):
             with self.subTest(failure=type(failure).__name__), tempfile.TemporaryDirectory() as directory:
