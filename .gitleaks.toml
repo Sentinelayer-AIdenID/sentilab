@@ -48,3 +48,18 @@ paths = [
   '''^docs/sentilab/evidence/SLAB-047/slab047b-admission/gpu-runtime/worker-claimed\.json$''',
   '''^docs/sentilab/evidence/SLAB-047/slab047b-gpu-cleanup-review/EVIDENCE-CHECK\.json$''',
 ]
+
+# The 17:54 dated deck supplement names its typed facts in JSON fields called "key"; four of those names
+# (slab0xx_retained_charge, slab018_prior_reservation) read as high-entropy values to generic-api-key. They are fact
+# identifiers, never credentials. Exempt only these four exact names, only at the delivered supplement (byte-pinned by
+# the deck test) and the deck data generated from it. Path- and value-bound, so the exemption survives a squash merge.
+[[rules.allowlists]]
+description = "Exact fact identifiers of the 17:54 deck supplement at the supplement and its generated deck data"
+condition = "AND"
+regexTarget = "secret"
+regexes = ['''^slab0(?:18_retained_charge|18_prior_reservation|47_retained_charge|47b_retained_charge)$''']
+paths = [
+  '''^docs/sentilab/deck/supplement-2026-10-31-1754-v2/SUPPLEMENT\.json$''',
+  '''^deck/supplement/deck-data\.json$''',
+  '''^deck/supplement/deck-data\.js$''',
+]
