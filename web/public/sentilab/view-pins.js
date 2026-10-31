@@ -1,9 +1,10 @@
-// Lab view signing-key pins (VIEW ENVELOPE v0.4, rule 6). This is the ONLY place the page learns which core
+// Lab view signing-key pins (VIEW ENVELOPE v0.5, rule 6). This is the ONLY place the page learns which core
 // key it trusts. Each entry is { key_id, key_sha256 }: key_sha256 is the lowercase hex sha256 of the raw
 // 32-byte Ed25519 public key. More than one entry allows rotation.
 //
-// The production list is EMPTY on purpose. The deploy fills it with the core's key once that key exists.
-// Until then every envelope shows as unverified with the reason "no pinned key", which is the correct result.
+// Filled at deploy with the core's key. An envelope verifies only if its sig.key_id is pinned here and the key the
+// core serves (GET /api/view/key) hashes to that pin; otherwise it shows as unverified, with the reason. An empty
+// list means nothing verifies.
 //
 // Never fill this from a replay file, its manifest, or the event API: a forged bundle would pin its own key.
 // Test keys are never listed here. They exist only in the node tests and in the ?pins=test mode, which only a local

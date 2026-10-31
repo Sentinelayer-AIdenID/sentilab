@@ -1,0 +1,60 @@
+[
+  {
+    "mutation": "withdrawal_filter",
+    "exit": 1,
+    "summary": [
+      "FAIL: test_withdrawal_stale_and_alternative_support_preserve_audit (sentilab_core.test_memory.MemoryTests.test_withdrawal_stale_and_alternative_support_preserve_audit)",
+      "FAILED (failures=1)"
+    ]
+  },
+  {
+    "mutation": "heldout_write",
+    "exit": 1,
+    "summary": [
+      "FAIL: test_heldout_and_incomplete_scope_refused_before_creating_store (sentilab_core.test_memory.MemoryTests.test_heldout_and_incomplete_scope_refused_before_creating_store)",
+      "FAILED (failures=1)"
+    ]
+  },
+  {
+    "mutation": "scope_key",
+    "exit": 1,
+    "summary": [
+      "ERROR: test_every_scope_dimension_is_isolated_and_typed (sentilab_core.test_memory.MemoryTests.test_every_scope_dimension_is_isolated_and_typed) (field='run')",
+      "ERROR: test_every_scope_dimension_is_isolated_and_typed (sentilab_core.test_memory.MemoryTests.test_every_scope_dimension_is_isolated_and_typed) (field='arm')",
+      "ERROR: test_every_scope_dimension_is_isolated_and_typed (sentilab_core.test_memory.MemoryTests.test_every_scope_dimension_is_isolated_and_typed) (field='family')",
+      "ERROR: test_every_scope_dimension_is_isolated_and_typed (sentilab_core.test_memory.MemoryTests.test_every_scope_dimension_is_isolated_and_typed) (field='seed')",
+      "FAILED (errors=4)"
+    ]
+  },
+  {
+    "mutation": "history_anchor",
+    "exit": 1,
+    "summary": [
+      "FAIL: test_validly_resigned_replacement_history_cannot_revive_memory (sentilab_core.test_memory.MemoryTests.test_validly_resigned_replacement_history_cannot_revive_memory)",
+      "FAILED (failures=1)"
+    ]
+  },
+  {
+    "mutation": "unknown_route",
+    "exit": 1,
+    "summary": [
+      "FAIL: test_calibration_examples_reject_missing_identity_duplicates_and_unknown_truth (sentilab_core.test_routing.RoutingTests.test_calibration_examples_reject_missing_identity_duplicates_and_unknown_truth) (rows=[{'id': 'fit-thermal-high-1', 'family': 'fit-thermal', 'task': {'candidate': 'thermal-lab', 'score': 0.9}, 'expected': 'unregistered'}])",
+      "FAIL: test_unknown_route_rejected_even_with_low_score_or_high_threshold (sentilab_core.test_routing.RoutingTests.test_unknown_route_rejected_even_with_low_score_or_high_threshold) (score=0)",
+      "FAIL: test_unknown_route_rejected_even_with_low_score_or_high_threshold (sentilab_core.test_routing.RoutingTests.test_unknown_route_rejected_even_with_low_score_or_high_threshold) (score=0.1)",
+      "FAIL: test_unknown_route_rejected_even_with_low_score_or_high_threshold (sentilab_core.test_routing.RoutingTests.test_unknown_route_rejected_even_with_low_score_or_high_threshold) (score=1)",
+      "FAIL: test_unknown_route_rejected_even_with_low_score_or_high_threshold (sentilab_core.test_routing.RoutingTests.test_unknown_route_rejected_even_with_low_score_or_high_threshold)",
+      "FAILED (failures=5)"
+    ]
+  },
+  {
+    "mutation": "abstention",
+    "exit": 1,
+    "summary": [
+      "FAIL: test_all_abstention_report_has_no_invented_selective_accuracy (sentilab_core.test_routing.RoutingTests.test_all_abstention_report_has_no_invented_selective_accuracy)",
+      "FAIL: test_frozen_heldout_reports_accuracy_buckets_and_abstention (sentilab_core.test_routing.RoutingTests.test_frozen_heldout_reports_accuracy_buckets_and_abstention)",
+      "FAIL: test_no_calibration_support_always_abstains_even_at_zero_threshold (sentilab_core.test_routing.RoutingTests.test_no_calibration_support_always_abstains_even_at_zero_threshold)",
+      "FAIL: test_threshold_is_inclusive_and_below_threshold_abstains (sentilab_core.test_routing.RoutingTests.test_threshold_is_inclusive_and_below_threshold_abstains)",
+      "FAILED (failures=4)"
+    ]
+  }
+]

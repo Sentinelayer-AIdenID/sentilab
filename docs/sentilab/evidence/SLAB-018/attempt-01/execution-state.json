@@ -1,0 +1,72 @@
+{
+  "schema": "sentilab-slab018-execution/1",
+  "attempts": [
+    {
+      "number": 1,
+      "token": "46be90708af4438c85ffb5ed210eebd8",
+      "started_at": "2026-10-31T07:48:31.734528+00:00",
+      "input_manifest_sha256": "230fd89ad116537c30cfd2c934d0ccae28dd4acec5d7b3361e1bd16bbecf1357",
+      "status": "completed",
+      "stages": [
+        {
+          "stage": "train",
+          "image": "nvcr.io/nvidia/nemo-automodel@sha256:70b4e9df8dd23ef451372b25952cffe24ad29c17f5b9de5fd1b244caf4e7b55a",
+          "name": "sentilab-slab018-20261031-1-train",
+          "token": "46be90708af4438c85ffb5ed210eebd8",
+          "container_id": "e66c9a69876e6dd895be68deea767bfab9722ef241db9b9411df9cb35f357d8d",
+          "allowance_seconds": 3400,
+          "started_at": "2026-10-31T07:48:31.737170+00:00",
+          "image_id": "sha256:70b4e9df8dd23ef451372b25952cffe24ad29c17f5b9de5fd1b244caf4e7b55a",
+          "pid": 551181,
+          "container_started_at": "2026-10-31T07:48:31.816336251Z",
+          "exit_code": 0,
+          "charged_container_wall_seconds": 67.27139592099411,
+          "supervisor_stage_seconds": 67.33367571899726,
+          "error": null,
+          "finished_at": "2026-10-31T07:49:39.070848+00:00"
+        },
+        {
+          "stage": "evaluate",
+          "image": "nvcr.io/nvidia/nemo-automodel@sha256:70b4e9df8dd23ef451372b25952cffe24ad29c17f5b9de5fd1b244caf4e7b55a",
+          "name": "sentilab-slab018-20261031-1-evaluate",
+          "token": "46be90708af4438c85ffb5ed210eebd8",
+          "container_id": "df3ec8fc2ff12493c2f22caa3ba86ae4ce65f7ea29cca122acd2025dccd84246",
+          "allowance_seconds": 3332,
+          "started_at": "2026-10-31T07:49:39.073309+00:00",
+          "image_id": "sha256:70b4e9df8dd23ef451372b25952cffe24ad29c17f5b9de5fd1b244caf4e7b55a",
+          "pid": 552475,
+          "container_started_at": "2026-10-31T07:49:39.152793431Z",
+          "exit_code": 0,
+          "charged_container_wall_seconds": 61.15560599700257,
+          "supervisor_stage_seconds": 61.225161552996724,
+          "error": null,
+          "finished_at": "2026-10-31T07:50:40.298473+00:00"
+        },
+        {
+          "stage": "serve",
+          "image": "sha256:2e735ffeef26457f8a3ff44a62ae182870b10af37adc06ecbb08baca152365c6",
+          "name": "sentilab-slab018-20261031-1-serve",
+          "token": "46be90708af4438c85ffb5ed210eebd8",
+          "container_id": "94b009194a367c716905742e6ff6bb49700486ae28e809618c5a5b82b02c6b8c",
+          "allowance_seconds": 3271,
+          "started_at": "2026-10-31T07:50:40.300835+00:00",
+          "image_id": "sha256:2e735ffeef26457f8a3ff44a62ae182870b10af37adc06ecbb08baca152365c6",
+          "pid": 553879,
+          "container_started_at": "2026-10-31T07:50:40.406423273Z",
+          "exit_code": 0,
+          "charged_container_wall_seconds": 185.7625366870052,
+          "supervisor_stage_seconds": 185.83616170800087,
+          "error": null,
+          "finished_at": "2026-10-31T07:53:46.136999+00:00"
+        }
+      ],
+      "finished_at": "2026-10-31T07:53:46.147370+00:00"
+    }
+  ],
+  "active": null,
+  "gpu_container_wall_seconds": 494.18953860500187,
+  "initial_charge": "Conservative 180-second reservation for prior primitive GPU container checks; not a measured usage claim.",
+  "max_gpu_seconds": 3600,
+  "max_attempts": 3,
+  "absolute_stop": "2026-10-31T10:00:00Z"
+}

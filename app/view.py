@@ -1,30 +1,37 @@
 """Read-only, run-scoped signed view feed and optional service-owned live loop."""
 import asyncio
+from datetime import datetime, timezone
 import hashlib
 import json
+import logging
 from itertools import groupby
 from typing import Literal
 import os
+import random
 import threading
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
 from sentilab_core import operations
 from sentilab_core.budget import Limits
-from sentilab_core.ledger import replay
+from sentilab_core.ledger import LockBusy, ReplayCache, replay
 from sentilab_core.envelope import MAX_PAGE_BYTES, MAX_PAGE_LINES
 
 router = APIRouter()
 _context = None
 _thread = None
 _failure = None
+_last_failure_at = None
 _shutdown = None
+_replay_cache = ReplayCache()
+_logger = logging.getLogger(__name__)
 
 
 def configure(context):
-    global _context
+    global _context, _replay_cache
     _context = context
+    _replay_cache = ReplayCache()
 
 
 def context():
@@ -45,16 +52,30 @@ def start_live_service():
     ctx.options.setdefault("limits", Limits(development=False))
     if ctx.signer is None:
         raise RuntimeError("live service requires the injected core signer and operator trust pin")
-    _shutdown = threading.Event()
-    ctx.options["cancel_event"] = _shutdown
+    _shutdown = shutdown = threading.Event()
+    ctx.options["cancel_event"] = shutdown
 
     def loop():
-        global _failure
-        try:
-            while not _shutdown.is_set() and not (ctx.root / "STOP").exists():
+        global _failure, _last_failure_at
+        backoff = 5
+        while not shutdown.is_set():
+            try:
+                if (ctx.root / "STOP").exists():
+                    break
                 asyncio.run(operations.run(ctx, ai_off=True, duration=3600, renew=True))
-        except Exception as exc:
-            _failure = type(exc).__name__
+            except LockBusy:
+                pass
+            except Exception as exc:
+                _failure = type(exc).__name__
+                _last_failure_at = datetime.now(timezone.utc).isoformat()
+                _logger.error("AI-off live loop failed (%s); retrying", _failure)
+            else:
+                backoff = 5
+                continue
+            # Equal jitter retains a 5 s floor and a 60 s ceiling, even after
+            # prolonged contention. Shutdown interrupts the wait immediately.
+            shutdown.wait(random.uniform(max(5, backoff / 2), backoff))
+            backoff = min(60, backoff * 2)
     _thread = threading.Thread(target=loop, name="sentilab-ai-off", daemon=True)
     _thread.start()
 
@@ -68,21 +89,40 @@ def stop_live_service():
 
 @router.get("/api/view/runs")
 def runs():
-    return {**operations.status(context(), ai_off=True), "service_error": _failure}
+    return {**operations.status(context(), ai_off=True), "service_error": _failure,
+            "last_failure_at": _last_failure_at,
+            "loop_alive": _thread is not None and _thread.is_alive()}
 
 
 @router.get("/api/view/events")
-def events(run_id: str, after: int = Query(0, ge=0),
-           limit: int = Query(MAX_PAGE_LINES, ge=1, le=MAX_PAGE_LINES),
+def events(run_id: str, after: str | None = None,
+           limit: str = str(MAX_PAGE_LINES),
            format: Literal["jsonl", "json"] = "jsonl",
-           cursor: int | None = Query(None, ge=0), cursor_hash: str | None = None):
-    if cursor is not None and after != 0:
-        raise HTTPException(400, "use cursor or after, not both")
+           cursor: str | None = None, cursor_hash: str | None = None):
+    # Validate here so bad ranges return the contract's 400 without echoing input.
+    def count(value, minimum=0, maximum=2**53 - 1):
+        try:
+            if not value.isascii() or not value.isdecimal():
+                raise ValueError
+            number = int(value)
+            if not minimum <= number <= maximum:
+                raise ValueError
+            return number
+        except ValueError:
+            raise HTTPException(400, "invalid paging range") from None
+
+    after = count(after) if after is not None else None
+    cursor = count(cursor) if cursor is not None else None
+    limit = count(limit, 1, MAX_PAGE_LINES)
+    if cursor is not None and after is not None:
+        raise HTTPException(422, "use cursor or after, not both")
+    after = after or 0
     if cursor_hash is not None and (cursor is None or len(cursor_hash) != 64 or
                                     any(c not in "0123456789abcdef" for c in cursor_hash)):
-        raise HTTPException(400, "invalid cursor hash")
+        raise HTTPException(422, "invalid cursor hash")
     try:
-        state = replay(context().root, run_id, public_keys=context().public_keys)
+        ctx = context()
+        state = replay(ctx.root, run_id, public_keys=ctx.public_keys, cache=_replay_cache)
     except FileNotFoundError:
         raise HTTPException(404, "run not found") from None
     except ValueError as exc:
@@ -111,9 +151,9 @@ def events(run_id: str, after: int = Query(0, ge=0),
     for group in groups:
         group_bytes = sum(len(row["raw"]) for row in group)
         if len(page) + len(group) > limit or byte_count + group_bytes > MAX_PAGE_BYTES:
-            if not page:
-                raise HTTPException(413, "one sequence group exceeds the view transport caps")
-            break
+            if page:
+                break
+            return Response(status_code=413)
         page.extend(group)
         byte_count += group_bytes
     next_after = max((sequence(row) or after_seq for row in page), default=after_seq)

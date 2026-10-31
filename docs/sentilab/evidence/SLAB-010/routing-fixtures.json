@@ -1,0 +1,32 @@
+{
+  "schema_version": "slab-routing-1",
+  "evidence_kind": "synthetic-interface-fixture",
+  "description": "Frozen synthetic interface examples only. Calibration and held-out families are disjoint; no deployed model, capability availability, or scientific acceptance claim. Candidate and raw score are deterministic adapter inputs. Threshold 0.75 was fixed before evaluation; held-out labels never fit confidence.",
+  "threshold": 0.75,
+  "registry": {
+    "thermal-lab": {"kind": "lab", "description": "Advisory thermal research intake; does not run a solve."},
+    "proof-check": {"kind": "capability", "description": "Advisory evidence validation intake; cannot accept a scientific result."},
+    "literature-lab": {"kind": "lab", "description": "Advisory literature intake; no calibrated examples and no external service."}
+  },
+  "calibration": [
+    {"id": "fit-thermal-high-1", "family": "fit-thermal", "task": {"candidate": "thermal-lab", "score": 0.9}, "expected": "thermal-lab"},
+    {"id": "fit-thermal-high-2", "family": "fit-thermal", "task": {"candidate": "thermal-lab", "score": 0.8}, "expected": "thermal-lab"},
+    {"id": "fit-thermal-high-3", "family": "fit-thermal", "task": {"candidate": "thermal-lab", "score": 0.85}, "expected": "thermal-lab"},
+    {"id": "fit-thermal-high-4", "family": "fit-thermal", "task": {"candidate": "thermal-lab", "score": 0.95}, "expected": "proof-check"},
+    {"id": "fit-thermal-low-1", "family": "fit-thermal", "task": {"candidate": "thermal-lab", "score": 0.3}, "expected": "thermal-lab"},
+    {"id": "fit-thermal-low-2", "family": "fit-thermal", "task": {"candidate": "thermal-lab", "score": 0.4}, "expected": null},
+    {"id": "fit-proof-high-1", "family": "fit-proof", "task": {"candidate": "proof-check", "score": 0.9}, "expected": "proof-check"},
+    {"id": "fit-proof-high-2", "family": "fit-proof", "task": {"candidate": "proof-check", "score": 1.0}, "expected": "proof-check"},
+    {"id": "fit-proof-low-1", "family": "fit-proof", "task": {"candidate": "proof-check", "score": 0.1}, "expected": null}
+  ],
+  "heldout": [
+    {"id": "held-thermal-high-1", "family": "held-thermal", "task": {"candidate": "thermal-lab", "score": 0.8}, "expected": "thermal-lab"},
+    {"id": "held-thermal-high-2", "family": "held-thermal", "task": {"candidate": "thermal-lab", "score": 0.9}, "expected": "thermal-lab"},
+    {"id": "held-thermal-high-3", "family": "held-thermal", "task": {"candidate": "thermal-lab", "score": 0.99}, "expected": "proof-check"},
+    {"id": "held-thermal-low-1", "family": "held-ambiguous", "task": {"candidate": "thermal-lab", "score": 0.3}, "expected": "thermal-lab"},
+    {"id": "held-thermal-low-2", "family": "held-ambiguous", "task": {"candidate": "thermal-lab", "score": 0.4}, "expected": null},
+    {"id": "held-proof-high-1", "family": "held-proof", "task": {"candidate": "proof-check", "score": 0.8}, "expected": "proof-check"},
+    {"id": "held-proof-high-2", "family": "held-proof", "task": {"candidate": "proof-check", "score": 1.0}, "expected": "proof-check"},
+    {"id": "held-literature-1", "family": "held-literature", "task": {"candidate": "literature-lab", "score": 0.95}, "expected": "literature-lab"}
+  ]
+}

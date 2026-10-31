@@ -1,12 +1,17 @@
 """Real HTTP requests against the registered FastAPI view routes."""
 import json
 import asyncio
+from contextlib import contextmanager
+from datetime import datetime, timezone
+import errno
+import fcntl
 import os
 import socket
 import tempfile
 import threading
 import time
 import unittest
+from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import urlopen
 from pathlib import Path
@@ -21,6 +26,8 @@ from sentilab_core.test_ledger import RuntimeSigner, run_record
 from sentilab_core.test_history import signed_version
 from sentilab_core.test_conductor import PlateOracle
 from sentilab_core.budget import Limits
+from sentilab_core.conductor import Conductor
+from sentilab_core.ledger import lock
 
 
 class ViewTests(unittest.TestCase):
@@ -111,7 +118,7 @@ class ViewTests(unittest.TestCase):
         last = self.get("/api/view/events?run_id=first&after=256")
         self.assertEqual([e["event"]["seq"] for e in last["envelopes"]], [257])
         self.assertTrue(all(e["run"]["run_id"] == "first" for e in first["envelopes"] + last["envelopes"]))
-        for query, code in (("run_id=first&limit=257", 422), ("run_id=first&after=-1", 422),
+        for query, code in (("run_id=first&limit=257", 400), ("run_id=first&after=-1", 400),
                             ("run_id=missing", 404), ("run_id=..%2Foutside", 400)):
             with self.assertRaises(HTTPError) as caught:
                 self.get("/api/view/events?" + query)
@@ -197,6 +204,168 @@ class ViewTests(unittest.TestCase):
                 os.environ.pop("SENTILAB_LIVE_ENABLED", None)
             else:
                 os.environ["SENTILAB_LIVE_ENABLED"] = old
+
+    @contextmanager
+    def live_context(self):
+        oracle = asyncio.run(PlateOracle().initialize())
+        original_root = self.root
+        # Independent failure scenarios must not resume a prior scenario's run
+        # and wait for its normal 15-second proposal interval.
+        with tempfile.TemporaryDirectory(dir=original_root) as directory:
+            self.root = Path(directory)
+            try:
+                ctx = Context(self.root, {self.signer.key_id: self.signer.public_key}, self.signer,
+                              {"oracle": oracle, "fixture": "synthetic-test", "limits": Limits(evals_per_run=12)})
+                view.configure(ctx)
+                with patch.dict(os.environ, SENTILAB_LIVE_ENABLED="1"), \
+                        patch.object(view, "_failure", None), \
+                        patch.object(view, "_last_failure_at", None, create=True):
+                    try:
+                        yield ctx
+                    finally:
+                        view.stop_live_service()
+            finally:
+                self.root = original_root
+
+    def wait_for_board(self):
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            listed = self.get("/api/view/runs")
+            for run in listed["runs"]:
+                result = self.get("/api/view/events?run_id=" + run["run_id"])
+                if result["board"] and view.context().options["oracle"].calls >= 2:
+                    return listed
+            time.sleep(0.01)
+        self.fail("service did not produce a board after retry")
+
+    def test_service_recovers_from_cifs_owner_lock_contention(self):
+        real_flock = fcntl.flock
+        attempts = []
+        contended = threading.Event()
+
+        def cifs_flock(handle, flags):
+            try:
+                return real_flock(handle, flags)
+            except BlockingIOError:
+                if Path(handle.name) != self.root / "owner.lock" or not flags & fcntl.LOCK_NB:
+                    raise
+                attempts.append(flags)
+                if len(attempts) >= 2:
+                    contended.set()
+                raise PermissionError(errno.EACCES, "simulated CIFS lock contention") from None
+
+        with self.live_context(), patch("sentilab_core.ledger.fcntl.flock", side_effect=cifs_flock), \
+                patch("random.uniform", return_value=0.01):
+            with lock(self.root / "owner.lock"):
+                view.start_live_service()
+                self.assertTrue(contended.wait(2), "held CIFS lock was not retried")
+                status = self.get("/api/view/runs")
+                self.assertTrue(status["loop_alive"])
+                self.assertIsNone(status["service_error"])
+                self.assertIsNone(status["last_failure_at"])
+                self.assertEqual(status["runs"], [])
+            status = self.wait_for_board()
+            self.assertTrue(status["loop_alive"])
+            self.assertIsNone(status["service_error"])
+
+    def test_service_records_and_retries_errors_inside_the_owner_lock(self):
+        real_open_run = Conductor.open_run
+        # EACCES/EAGAIN after acquisition must not be mistaken for contention.
+        for error in (ValueError("unexpected run error"), PermissionError(errno.EACCES, "run denied"),
+                      BlockingIOError(errno.EAGAIN, "unrelated operation busy")):
+            with self.subTest(error=type(error).__name__), self.live_context(), \
+                    patch("random.uniform", return_value=0.01):
+                attempts = []
+
+                def open_run(conductor, run_id=None):
+                    attempts.append(run_id)
+                    if len(attempts) == 1:
+                        raise error
+                    return real_open_run(conductor, run_id)
+
+                before = datetime.now(timezone.utc)
+                with patch.object(Conductor, "open_run", open_run):
+                    view.start_live_service()
+                    deadline = time.monotonic() + 2
+                    while len(attempts) < 2 and time.monotonic() < deadline:
+                        time.sleep(0.01)
+                    self.assertGreaterEqual(len(attempts), 2, "unexpected failure was not retried")
+                    status = self.wait_for_board()
+                    self.assertEqual(status["service_error"], type(error).__name__)
+                    self.assertTrue(status["loop_alive"])
+                    failed_at = datetime.fromisoformat(status["last_failure_at"])
+                    self.assertGreaterEqual(failed_at, before)
+                    self.assertLessEqual(failed_at, datetime.now(timezone.utc))
+                    view.stop_live_service()
+                    self.assertFalse(self.get("/api/view/runs")["loop_alive"])
+
+    def test_service_records_non_contention_errors_opening_or_acquiring_owner_lock(self):
+        import builtins
+        for target, original, error in (
+                ("builtins.open", builtins.open, PermissionError(errno.EACCES, "cannot open lock file")),
+                ("sentilab_core.ledger.fcntl.flock", fcntl.flock, OSError(errno.EIO, "lock I/O failure"))):
+            with self.subTest(target=target), self.live_context(), patch("random.uniform", return_value=0.01):
+                attempts = []
+
+                def fail_once(first, *args, **kwargs):
+                    path = first if target == "builtins.open" else first.name
+                    if isinstance(path, (str, Path)) and Path(path) == self.root / "owner.lock":
+                        attempts.append(path)
+                        if len(attempts) == 1:
+                            raise error
+                    return original(first, *args, **kwargs)
+
+                with patch(target, side_effect=fail_once):
+                    view.start_live_service()
+                    deadline = time.monotonic() + 2
+                    while len(attempts) < 2 and time.monotonic() < deadline:
+                        time.sleep(0.01)
+                    self.assertGreaterEqual(len(attempts), 2, "storage failure was not retried")
+                    status = self.wait_for_board()
+                    self.assertEqual(status["service_error"], type(error).__name__)
+                    self.assertIsNotNone(status["last_failure_at"])
+
+    def test_service_backoff_is_bounded_and_stop_prevents_another_attempt(self):
+        delays = []
+
+        def fast_delay(low, high):
+            delays.append((low, high))
+            return 0.01
+
+        async def failing_run(ctx, **kwargs):
+            if len(delays) == 8:
+                (ctx.root / "STOP").touch()
+            raise RuntimeError("persistent failure")
+
+        with self.live_context(), patch("app.view.operations.run", side_effect=failing_run) as run, \
+                patch("random.uniform", side_effect=fast_delay):
+            view.start_live_service()
+            view._thread.join(2)
+            self.assertFalse(view._thread.is_alive())
+            self.assertEqual(run.call_count, 9)
+            self.assertEqual(len(delays), 9)
+            self.assertEqual(delays[0], (5, 5))
+            self.assertEqual(delays[-1][1], 60)
+            self.assertTrue(all(5 <= low <= high <= 60 for low, high in delays))
+            self.assertGreater(delays[1][1], delays[0][1])
+            self.assertLess(delays[-1][0], delays[-1][1], "jitter must remain at the cap")
+            status = self.get("/api/view/runs")
+            self.assertFalse(status["loop_alive"])
+            self.assertEqual(status["service_error"], "RuntimeError")
+
+    def test_service_shutdown_interrupts_lock_retry_wait(self):
+        with self.live_context(), lock(self.root / "owner.lock"):
+            view.start_live_service()
+            time.sleep(0.1)
+            self.assertTrue(view._thread.is_alive(), "lock contention killed the loop")
+            before = time.monotonic()
+            view.stop_live_service()
+            self.assertLess(time.monotonic() - before, 2, "shutdown waited for the backoff")
+            self.assertFalse(view._thread.is_alive())
+            status = self.get("/api/view/runs")
+            self.assertFalse(status["loop_alive"])
+            self.assertIsNone(status["service_error"])
+            self.assertEqual(status["runs"], [])
 
 
 if __name__ == "__main__":
