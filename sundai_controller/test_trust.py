@@ -44,9 +44,8 @@ def fixtures():
     """Public-only artifacts for both verifiers; private material never leaves memory."""
     seed = os.urandom(32)
     service = Ed25519PrivateKey.from_private_bytes(seed)
-    with patch.dict(os.environ, {"FLIGHT_SIGNING_SEED_B64": base64.b64encode(seed).decode()}):
-        run = asyncio.run(run_four_lanes(design(), Oracle(), run_id="trust-run", evaluations_per_lane=1,
-                                         shared_sample_count=0))
+    run = asyncio.run(run_four_lanes(design(), Oracle(), service_key=service, run_id="trust-run",
+                                     evaluations_per_lane=1, shared_sample_count=0))
     lane = run["lane_results"]["random"]
     valid = {"run_id": run["run_id"], "lane_id": "random", "events": lane["record"],
              "record_public_key": lane["record_public_key"], "record_certificate": lane["record_certificate"]}
@@ -155,6 +154,19 @@ class TrustTests(unittest.TestCase):
         self.assertTrue(verify_chain(doc["events"], doc["record_certificate"], self.data["pins"], now=expiry - 1))
         self.assertFalse(verify_chain(doc["events"], doc["record_certificate"], self.data["pins"], now=expiry))
 
+    def test_library_takes_explicit_signer_without_environment(self):
+        env = os.environ.copy()
+        env.pop("FLIGHT_SIGNING_SEED_B64", None)
+        oracle = Oracle()
+        with patch.dict(os.environ, env, clear=True):
+            with self.assertRaisesRegex(ValueError, "service_key"):
+                asyncio.run(run_four_lanes(design(), oracle, service_key=None))
+            self.assertEqual(oracle.calls, 0)
+            service = Ed25519PrivateKey.from_private_bytes(os.urandom(32))
+            run = asyncio.run(run_four_lanes(design(), oracle, service_key=service, evaluations_per_lane=1,
+                                            shared_sample_count=0))
+            self.assertTrue(run["flight_records_valid"])
+
     def test_seed_loader_reuses_configured_service_key(self):
         seed = os.urandom(32)
         with patch.dict(os.environ, {"FLIGHT_SIGNING_SEED_B64": base64.b64encode(seed).decode()}):
@@ -162,26 +174,53 @@ class TrustTests(unittest.TestCase):
             self.assertEqual(public_hex(load_service_key()), expected)
             self.assertEqual(public_hex(load_service_key()), expected)
 
-    def test_missing_or_malformed_seed_stops_real_run_before_oracle(self):
+    def test_api_records_chain_to_configured_seed(self):
+        from app import runs
+
+        seed = os.urandom(32)
+        encoded = base64.b64encode(seed).decode()
+        public = public_hex(Ed25519PrivateKey.from_private_bytes(seed))
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.dict(os.environ, {"RUNS_DIR": directory, "FLIGHT_SIGNING_SEED_B64": encoded}):
+                started = runs.start({"benchmark": "plate", "grid": 16, "proposals": 1})
+                deadline = time.monotonic() + 30
+                while time.monotonic() < deadline:
+                    text = runs.get(started["id"])
+                    record = json.loads(text)
+                    if record["status"] != "running":
+                        break
+                    time.sleep(0.01)
+                self.assertEqual(record["status"], "done", record.get("error"))
+                self.assertTrue(encoded not in text, "private signing material must not be persisted")
+                for lane_id, lane in record["result"]["lane_results"].items():
+                    self.assertTrue(verify_chain(lane["record"], lane["record_certificate"], public,
+                                                 run_id=started["id"], lane_id=lane_id))
+
+    def test_missing_or_malformed_seed_stops_real_entry_points(self):
+        from app import runs
+
         for seed in (None, "", "not base64!", "non-ascii-ü", *(base64.b64encode(os.urandom(n)).decode() for n in (31, 33))):
             with self.subTest(case="missing" if seed is None else "malformed"):
                 env = os.environ.copy()
                 env.pop("FLIGHT_SIGNING_SEED_B64", None)
                 if seed is not None:
                     env["FLIGHT_SIGNING_SEED_B64"] = seed
-                oracle = Oracle()
-                with patch.dict(os.environ, env, clear=True):
-                    with self.assertRaisesRegex(ValueError, "FLIGHT_SIGNING_SEED_B64"):
-                        asyncio.run(run_four_lanes(design(), oracle, shared_sample_count=0))
-                self.assertEqual(oracle.calls, 0)
                 with tempfile.TemporaryDirectory() as directory:
-                    result = subprocess.run([sys.executable, str(ROOT / "sundai_controller/tfl05_smoke.py"),
-                                             "--benchmark", "plate"], cwd=directory, env=env,
-                                            capture_output=True, text=True, timeout=30)
-                    self.assertNotEqual(result.returncode, 0)
-                    self.assertIn("FLIGHT_SIGNING_SEED_B64", result.stderr)
-                    self.assertEqual(result.stdout, "")
+                    env["RUNS_DIR"] = directory
+                    with patch.dict(os.environ, env, clear=True):
+                        with self.assertRaisesRegex(ValueError, "FLIGHT_SIGNING_SEED_B64"):
+                            runs.start({"benchmark": "plate"})
                     self.assertEqual(list(Path(directory).iterdir()), [])
+                    for command in (["tfl05_smoke.py", "--benchmark", "plate"],
+                                    ["tfl08_leaderboard.py", "--out", directory]):
+                        result = subprocess.run([sys.executable, str(ROOT / "sundai_controller" / command[0]),
+                                                 *command[1:]], cwd=directory, env=env,
+                                                capture_output=True, text=True, timeout=30)
+                        self.assertNotEqual(result.returncode, 0)
+                        self.assertIn("FLIGHT_SIGNING_SEED_B64", result.stderr)
+                        self.assertEqual(result.stdout, "")
+                        self.assertEqual(list(Path(directory).iterdir()), [])
+
 
 
 if __name__ == "__main__":
