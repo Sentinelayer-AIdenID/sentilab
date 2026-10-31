@@ -5,13 +5,19 @@ integer literal: Python's json parses 17000.0 and 1e4 as floats, which this chec
 "integer" would accept them). Errors become unknown_field (the containing object's path) or schema_invalid (the path
 and the failing keyword). Paths are built only from schema-declared property names and array indices, so no
 submitted text is ever echoed.
+
+"pattern" is ECMA-262, JSON Schema's regex dialect: without the multiline flag, $ matches only at the end of the input.
+Python's $ also matches just before a final newline, so "t-1\n" would pass "^...$" here and fail in JavaScript; every
+$ outside a character class is therefore read as \Z (ecma_pattern), and Python and JavaScript agree on each pattern
+(vectors-canonical.json "patterns").
 """
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, ValidationError
 from jsonschema.validators import extend
 from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
@@ -33,8 +39,45 @@ def _is_number(_checker, instance):
     return isinstance(instance, (int, float)) and not isinstance(instance, bool)
 
 
-StrictValidator = extend(Draft202012Validator, type_checker=Draft202012Validator.TYPE_CHECKER.redefine_many(
-    {"integer": _is_integer, "number": _is_number}))
+def ecma_pattern(pattern: str) -> str:
+    """The Python spelling of an ECMA-262 pattern: each $ outside a character class becomes \Z (the end of the input,
+    as $ is in ECMA-262 without the multiline flag). Escapes and classes are copied as they are."""
+    out, in_class, escaped = [], False, False
+    for char in pattern:
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif in_class:
+            in_class = char != "]"
+        elif char == "[":
+            in_class = True
+        elif char == "$":
+            out.append(r"\Z")
+            continue
+        out.append(char)
+    return "".join(out)
+
+
+_COMPILED = {}
+
+
+def pattern_matches(pattern: str, text: str) -> bool:
+    """JSON Schema's "pattern": an unanchored search, with ECMA-262's $."""
+    compiled = _COMPILED.get(pattern)
+    if compiled is None:
+        compiled = _COMPILED[pattern] = re.compile(ecma_pattern(pattern))
+    return compiled.search(text) is not None
+
+
+def _pattern(validator, pattern, instance, _schema):
+    if validator.is_type(instance, "string") and not pattern_matches(pattern, instance):
+        yield ValidationError("does not match the pattern")          # never the instance: no echo
+
+
+StrictValidator = extend(Draft202012Validator, validators={"pattern": _pattern},
+                         type_checker=Draft202012Validator.TYPE_CHECKER.redefine_many(
+                             {"integer": _is_integer, "number": _is_number}))
 
 
 def load_schemas(schema_dir: Path = SCHEMA_DIR) -> dict:

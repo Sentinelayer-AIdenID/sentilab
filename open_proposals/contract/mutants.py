@@ -150,6 +150,8 @@ MUTANTS = [
      "        return 0\n"),
     ("limit-duplicate", "limit: no duplicate keys", V, 'flags.add("duplicate_key")', "pass"),
     ("limit-violations", "limit: 64 violations", D, "MAX_VIOLATIONS = 64", "MAX_VIOLATIONS = 65"),
+    ("pattern-end", "patterns: $ is the end of the input (ECMA-262)", K, '            out.append(r"\\Z")\n',
+     '            out.append("$")\n'),
     ("limit-integer", "limit: integer literals only", K, "return isinstance(instance, int) and not isinstance",
      "return isinstance(instance, (int, float)) and not isinstance"),
     ("limit-closed", "limit: no unknown fields", K, 'found.append({"code": "unknown_field", "path": pointer(path)})',

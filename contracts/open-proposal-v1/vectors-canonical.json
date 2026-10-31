@@ -901,6 +901,1058 @@
    "note_b64": "c2VudGlsYWItb3Blbi1zZWFsZWQvMSBmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmIDEwMDAwMDAKLS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQpZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2kwK0lGZ3lOVFV4T1NCVk5qTlhXbUZpZWtaTlVHVnNVakJSCk5VNXllRXdyVlZSUllpdE9ia2Q0V2pOSE5UVTNRMVJYZUcxbkNpOU5iR0ZRZUhoWFR6UkNTa1J2SzJsWE5FTjAKTWpGSVdWUjRUa3hSVkNzek5tWkJhbTlDVDBkdVoyOEtMVDRnSWlwN2R5MW5jbVZoYzJVZ1UxZ2lPVDRLU1VoNgplWE52YUhkbWVFcE1SMHBMYjJGdWJIbHFXbTVHZDFoWGQzQktVMUp1VmpGdlExTlhVM1o0WmpkRmNXSk9kU3RpCk5HcExORTkwZURZNU56VndNZ29LTFMwdElHY3JMek5wTUdNeGJFUlRWRGxpTlhZd1NUVjBSRzFDUkRCU00wbE4KTkVOSFVUSk9lV1ZoTTJRNU1EZ0s1YytLaUV1TXpUQWwwSTFTSGZadHFRRGk0Qzl0aTBVV2x2SXNFYVltWk5hOApwSlp4czB0UWIrV1VhYmgxS0V3M0FwdTg1WFBnRERnQ0krUERTVExHK2xoY0pKcHlrNHpaVmpBNCtvWG5BNXY2CnZMRk42VW90UHI4d0NQbkZBeFJyRzNpMTUySUNqWFA0RVQ3UVNscUxOWitYd3RwNSs3ZlJkV21hT0Vid0R6Y3YKYVE9PQotLS0tLUVORCBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQo="
   }
  ],
+ "patterns": [
+  {
+   "pattern": "^(/[A-Za-z0-9_]{1,64})*$",
+   "text": "/ab",
+   "match": true
+  },
+  {
+   "pattern": "^(/[A-Za-z0-9_]{1,64})*$",
+   "text": "/ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^(/[A-Za-z0-9_]{1,64})*$",
+   "text": "/ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^(/[A-Za-z0-9_]{1,64})*$",
+   "text": "/ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^(/[A-Za-z0-9_]{1,64})*$",
+   "text": "/ab ",
+   "match": false
+  },
+  {
+   "pattern": "^(/[A-Za-z0-9_]{1,64})*$",
+   "text": "\n/ab",
+   "match": false
+  },
+  {
+   "pattern": "^(0|[0-9]{1,2}\\.[0-9]{2})$",
+   "text": "0.10",
+   "match": true
+  },
+  {
+   "pattern": "^(0|[0-9]{1,2}\\.[0-9]{2})$",
+   "text": "0.10\n",
+   "match": false
+  },
+  {
+   "pattern": "^(0|[0-9]{1,2}\\.[0-9]{2})$",
+   "text": "0.10\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^(0|[0-9]{1,2}\\.[0-9]{2})$",
+   "text": "0.10\r",
+   "match": false
+  },
+  {
+   "pattern": "^(0|[0-9]{1,2}\\.[0-9]{2})$",
+   "text": "0.10 ",
+   "match": false
+  },
+  {
+   "pattern": "^(0|[0-9]{1,2}\\.[0-9]{2})$",
+   "text": "\n0.10",
+   "match": false
+  },
+  {
+   "pattern": "^([a-z0-9][a-z0-9_-]{0,63}|publish:[0-9a-f]{64})$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^([a-z0-9][a-z0-9_-]{0,63}|publish:[0-9a-f]{64})$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^([a-z0-9][a-z0-9_-]{0,63}|publish:[0-9a-f]{64})$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^([a-z0-9][a-z0-9_-]{0,63}|publish:[0-9a-f]{64})$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^([a-z0-9][a-z0-9_-]{0,63}|publish:[0-9a-f]{64})$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^([a-z0-9][a-z0-9_-]{0,63}|publish:[0-9a-f]{64})$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^(human|agent:[A-Za-z0-9][A-Za-z0-9._-]{0,119})$",
+   "text": "agent:ab",
+   "match": true
+  },
+  {
+   "pattern": "^(human|agent:[A-Za-z0-9][A-Za-z0-9._-]{0,119})$",
+   "text": "agent:ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^(human|agent:[A-Za-z0-9][A-Za-z0-9._-]{0,119})$",
+   "text": "agent:ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^(human|agent:[A-Za-z0-9][A-Za-z0-9._-]{0,119})$",
+   "text": "agent:ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^(human|agent:[A-Za-z0-9][A-Za-z0-9._-]{0,119})$",
+   "text": "agent:ab ",
+   "match": false
+  },
+  {
+   "pattern": "^(human|agent:[A-Za-z0-9][A-Za-z0-9._-]{0,119})$",
+   "text": "\nagent:ab",
+   "match": false
+  },
+  {
+   "pattern": "^(provisional|frozen)( \\([A-Za-z0-9 ,/#-]{1,64}\\))?$",
+   "text": "frozen",
+   "match": true
+  },
+  {
+   "pattern": "^(provisional|frozen)( \\([A-Za-z0-9 ,/#-]{1,64}\\))?$",
+   "text": "frozen\n",
+   "match": false
+  },
+  {
+   "pattern": "^(provisional|frozen)( \\([A-Za-z0-9 ,/#-]{1,64}\\))?$",
+   "text": "frozen\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^(provisional|frozen)( \\([A-Za-z0-9 ,/#-]{1,64}\\))?$",
+   "text": "frozen\r",
+   "match": false
+  },
+  {
+   "pattern": "^(provisional|frozen)( \\([A-Za-z0-9 ,/#-]{1,64}\\))?$",
+   "text": "frozen ",
+   "match": false
+  },
+  {
+   "pattern": "^(provisional|frozen)( \\([A-Za-z0-9 ,/#-]{1,64}\\))?$",
+   "text": "\nfrozen",
+   "match": false
+  },
+  {
+   "pattern": "^Chiplet_[0-9]{1,2}$",
+   "text": "Chiplet_0",
+   "match": true
+  },
+  {
+   "pattern": "^Chiplet_[0-9]{1,2}$",
+   "text": "Chiplet_0\n",
+   "match": false
+  },
+  {
+   "pattern": "^Chiplet_[0-9]{1,2}$",
+   "text": "Chiplet_0\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^Chiplet_[0-9]{1,2}$",
+   "text": "Chiplet_0\r",
+   "match": false
+  },
+  {
+   "pattern": "^Chiplet_[0-9]{1,2}$",
+   "text": "Chiplet_0 ",
+   "match": false
+  },
+  {
+   "pattern": "^Chiplet_[0-9]{1,2}$",
+   "text": "\nChiplet_0",
+   "match": false
+  },
+  {
+   "pattern": "^P(?=[0-9])([0-9]{1,4}Y)?([0-9]{1,4}M)?([0-9]{1,5}D)?$",
+   "text": "P2Y",
+   "match": true
+  },
+  {
+   "pattern": "^P(?=[0-9])([0-9]{1,4}Y)?([0-9]{1,4}M)?([0-9]{1,5}D)?$",
+   "text": "P2Y\n",
+   "match": false
+  },
+  {
+   "pattern": "^P(?=[0-9])([0-9]{1,4}Y)?([0-9]{1,4}M)?([0-9]{1,5}D)?$",
+   "text": "P2Y\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^P(?=[0-9])([0-9]{1,4}Y)?([0-9]{1,4}M)?([0-9]{1,5}D)?$",
+   "text": "P2Y\r",
+   "match": false
+  },
+  {
+   "pattern": "^P(?=[0-9])([0-9]{1,4}Y)?([0-9]{1,4}M)?([0-9]{1,5}D)?$",
+   "text": "P2Y ",
+   "match": false
+  },
+  {
+   "pattern": "^P(?=[0-9])([0-9]{1,4}Y)?([0-9]{1,4}M)?([0-9]{1,5}D)?$",
+   "text": "\nP2Y",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+   "text": "2026-11-01T00:00:00Z",
+   "match": true
+  },
+  {
+   "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+   "text": "2026-11-01T00:00:00Z\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+   "text": "2026-11-01T00:00:00Z\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+   "text": "2026-11-01T00:00:00Z\r",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+   "text": "2026-11-01T00:00:00Z ",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+   "text": "\n2026-11-01T00:00:00Z",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{32}$",
+   "text": "00000000000000000000000000000000",
+   "match": true
+  },
+  {
+   "pattern": "^[0-9a-f]{32}$",
+   "text": "00000000000000000000000000000000\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{32}$",
+   "text": "00000000000000000000000000000000\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{32}$",
+   "text": "00000000000000000000000000000000\r",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{32}$",
+   "text": "00000000000000000000000000000000 ",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{32}$",
+   "text": "\n00000000000000000000000000000000",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{40}$",
+   "text": "0000000000000000000000000000000000000000",
+   "match": true
+  },
+  {
+   "pattern": "^[0-9a-f]{40}$",
+   "text": "0000000000000000000000000000000000000000\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{40}$",
+   "text": "0000000000000000000000000000000000000000\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{40}$",
+   "text": "0000000000000000000000000000000000000000\r",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{40}$",
+   "text": "0000000000000000000000000000000000000000 ",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{40}$",
+   "text": "\n0000000000000000000000000000000000000000",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{64}$",
+   "text": "0000000000000000000000000000000000000000000000000000000000000000",
+   "match": true
+  },
+  {
+   "pattern": "^[0-9a-f]{64}$",
+   "text": "0000000000000000000000000000000000000000000000000000000000000000\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{64}$",
+   "text": "0000000000000000000000000000000000000000000000000000000000000000\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{64}$",
+   "text": "0000000000000000000000000000000000000000000000000000000000000000\r",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{64}$",
+   "text": "0000000000000000000000000000000000000000000000000000000000000000 ",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{64}$",
+   "text": "\n0000000000000000000000000000000000000000000000000000000000000000",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+   "text": "00000000-0000-4000-8000-00000000000a",
+   "match": true
+  },
+  {
+   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+   "text": "00000000-0000-4000-8000-00000000000a\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+   "text": "00000000-0000-4000-8000-00000000000a\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+   "text": "00000000-0000-4000-8000-00000000000a\r",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+   "text": "00000000-0000-4000-8000-00000000000a ",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+   "text": "\n00000000-0000-4000-8000-00000000000a",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9._-]{1,32}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9._-]{1,32}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9._-]{1,32}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9._-]{1,32}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9._-]{1,32}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9._-]{1,32}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,127}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,127}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,127}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,127}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,127}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,127}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,511}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,511}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,511}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,511}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,511}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,511}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_-]{0,127}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_-]{0,127}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_-]{0,127}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_-]{0,127}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_-]{0,127}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_-]{0,127}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_…-]{0,127}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_…-]{0,127}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_…-]{0,127}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_…-]{0,127}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_…-]{0,127}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_…-]{0,127}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._-]{0,31}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._-]{0,31}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._-]{0,31}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._-]{0,31}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._-]{0,31}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._-]{0,31}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z]{1,32}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z]{1,32}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z]{1,32}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z]{1,32}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z]{1,32}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z]{1,32}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9_-]{1,32}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[a-z0-9_-]{1,32}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9_-]{1,32}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9_-]{1,32}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9_-]{1,32}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9_-]{1,32}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^age1[02-9ac-hj-np-z]{58}$",
+   "text": "age1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
+   "match": true
+  },
+  {
+   "pattern": "^age1[02-9ac-hj-np-z]{58}$",
+   "text": "age1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq\n",
+   "match": false
+  },
+  {
+   "pattern": "^age1[02-9ac-hj-np-z]{58}$",
+   "text": "age1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^age1[02-9ac-hj-np-z]{58}$",
+   "text": "age1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq\r",
+   "match": false
+  },
+  {
+   "pattern": "^age1[02-9ac-hj-np-z]{58}$",
+   "text": "age1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq ",
+   "match": false
+  },
+  {
+   "pattern": "^age1[02-9ac-hj-np-z]{58}$",
+   "text": "\nage1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
+   "match": false
+  },
+  {
+   "pattern": "^open-[0-9a-f]{8}-[0-9a-f]{32}$",
+   "text": "open-00000000-00000000000000000000000000000000",
+   "match": true
+  },
+  {
+   "pattern": "^open-[0-9a-f]{8}-[0-9a-f]{32}$",
+   "text": "open-00000000-00000000000000000000000000000000\n",
+   "match": false
+  },
+  {
+   "pattern": "^open-[0-9a-f]{8}-[0-9a-f]{32}$",
+   "text": "open-00000000-00000000000000000000000000000000\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^open-[0-9a-f]{8}-[0-9a-f]{32}$",
+   "text": "open-00000000-00000000000000000000000000000000\r",
+   "match": false
+  },
+  {
+   "pattern": "^open-[0-9a-f]{8}-[0-9a-f]{32}$",
+   "text": "open-00000000-00000000000000000000000000000000 ",
+   "match": false
+  },
+  {
+   "pattern": "^open-[0-9a-f]{8}-[0-9a-f]{32}$",
+   "text": "\nopen-00000000-00000000000000000000000000000000",
+   "match": false
+  },
+  {
+   "pattern": "^position-[0-9]{1,2}-[xy]-(plus|minus)$",
+   "text": "position-0-x-plus",
+   "match": true
+  },
+  {
+   "pattern": "^position-[0-9]{1,2}-[xy]-(plus|minus)$",
+   "text": "position-0-x-plus\n",
+   "match": false
+  },
+  {
+   "pattern": "^position-[0-9]{1,2}-[xy]-(plus|minus)$",
+   "text": "position-0-x-plus\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^position-[0-9]{1,2}-[xy]-(plus|minus)$",
+   "text": "position-0-x-plus\r",
+   "match": false
+  },
+  {
+   "pattern": "^position-[0-9]{1,2}-[xy]-(plus|minus)$",
+   "text": "position-0-x-plus ",
+   "match": false
+  },
+  {
+   "pattern": "^position-[0-9]{1,2}-[xy]-(plus|minus)$",
+   "text": "\nposition-0-x-plus",
+   "match": false
+  },
+  {
+   "pattern": "^sentilab-open-terms/[1-9][0-9]{0,5}@[0-9a-f]{64}$",
+   "text": "sentilab-open-terms/1@0000000000000000000000000000000000000000000000000000000000000000",
+   "match": true
+  },
+  {
+   "pattern": "^sentilab-open-terms/[1-9][0-9]{0,5}@[0-9a-f]{64}$",
+   "text": "sentilab-open-terms/1@0000000000000000000000000000000000000000000000000000000000000000\n",
+   "match": false
+  },
+  {
+   "pattern": "^sentilab-open-terms/[1-9][0-9]{0,5}@[0-9a-f]{64}$",
+   "text": "sentilab-open-terms/1@0000000000000000000000000000000000000000000000000000000000000000\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^sentilab-open-terms/[1-9][0-9]{0,5}@[0-9a-f]{64}$",
+   "text": "sentilab-open-terms/1@0000000000000000000000000000000000000000000000000000000000000000\r",
+   "match": false
+  },
+  {
+   "pattern": "^sentilab-open-terms/[1-9][0-9]{0,5}@[0-9a-f]{64}$",
+   "text": "sentilab-open-terms/1@0000000000000000000000000000000000000000000000000000000000000000 ",
+   "match": false
+  },
+  {
+   "pattern": "^sentilab-open-terms/[1-9][0-9]{0,5}@[0-9a-f]{64}$",
+   "text": "\nsentilab-open-terms/1@0000000000000000000000000000000000000000000000000000000000000000",
+   "match": false
+  },
+  {
+   "pattern": "^sha256:[0-9a-f]{64}$",
+   "text": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "match": true
+  },
+  {
+   "pattern": "^sha256:[0-9a-f]{64}$",
+   "text": "sha256:0000000000000000000000000000000000000000000000000000000000000000\n",
+   "match": false
+  },
+  {
+   "pattern": "^sha256:[0-9a-f]{64}$",
+   "text": "sha256:0000000000000000000000000000000000000000000000000000000000000000\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^sha256:[0-9a-f]{64}$",
+   "text": "sha256:0000000000000000000000000000000000000000000000000000000000000000\r",
+   "match": false
+  },
+  {
+   "pattern": "^sha256:[0-9a-f]{64}$",
+   "text": "sha256:0000000000000000000000000000000000000000000000000000000000000000 ",
+   "match": false
+  },
+  {
+   "pattern": "^sha256:[0-9a-f]{64}$",
+   "text": "\nsha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "match": false
+  },
+  {
+   "pattern": "^so1-[0-9a-f]{48}$",
+   "text": "so1-000000000000000000000000000000000000000000000000",
+   "match": true
+  },
+  {
+   "pattern": "^so1-[0-9a-f]{48}$",
+   "text": "so1-000000000000000000000000000000000000000000000000\n",
+   "match": false
+  },
+  {
+   "pattern": "^so1-[0-9a-f]{48}$",
+   "text": "so1-000000000000000000000000000000000000000000000000\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^so1-[0-9a-f]{48}$",
+   "text": "so1-000000000000000000000000000000000000000000000000\r",
+   "match": false
+  },
+  {
+   "pattern": "^so1-[0-9a-f]{48}$",
+   "text": "so1-000000000000000000000000000000000000000000000000 ",
+   "match": false
+  },
+  {
+   "pattern": "^so1-[0-9a-f]{48}$",
+   "text": "\nso1-000000000000000000000000000000000000000000000000",
+   "match": false
+  },
+  {
+   "pattern": "^tap-chiplet-[0-9]{1,2}$",
+   "text": "tap-chiplet-0",
+   "match": true
+  },
+  {
+   "pattern": "^tap-chiplet-[0-9]{1,2}$",
+   "text": "tap-chiplet-0\n",
+   "match": false
+  },
+  {
+   "pattern": "^tap-chiplet-[0-9]{1,2}$",
+   "text": "tap-chiplet-0\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^tap-chiplet-[0-9]{1,2}$",
+   "text": "tap-chiplet-0\r",
+   "match": false
+  },
+  {
+   "pattern": "^tap-chiplet-[0-9]{1,2}$",
+   "text": "tap-chiplet-0 ",
+   "match": false
+  },
+  {
+   "pattern": "^tap-chiplet-[0-9]{1,2}$",
+   "text": "\ntap-chiplet-0",
+   "match": false
+  },
+  {
+   "pattern": "^/sentilab/open/terms/[1-9][0-9]{0,5}@[0-9a-f]{64}[.]md$",
+   "text": "/sentilab/open/terms/1@0000000000000000000000000000000000000000000000000000000000000000.md",
+   "match": true
+  },
+  {
+   "pattern": "^/sentilab/open/terms/[1-9][0-9]{0,5}@[0-9a-f]{64}[.]md$",
+   "text": "/sentilab/open/terms/1@0000000000000000000000000000000000000000000000000000000000000000.md\n",
+   "match": false
+  },
+  {
+   "pattern": "^/sentilab/open/terms/[1-9][0-9]{0,5}@[0-9a-f]{64}[.]md$",
+   "text": "/sentilab/open/terms/1@0000000000000000000000000000000000000000000000000000000000000000.md\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^/sentilab/open/terms/[1-9][0-9]{0,5}@[0-9a-f]{64}[.]md$",
+   "text": "/sentilab/open/terms/1@0000000000000000000000000000000000000000000000000000000000000000.md\r",
+   "match": false
+  },
+  {
+   "pattern": "^/sentilab/open/terms/[1-9][0-9]{0,5}@[0-9a-f]{64}[.]md$",
+   "text": "/sentilab/open/terms/1@0000000000000000000000000000000000000000000000000000000000000000.md ",
+   "match": false
+  },
+  {
+   "pattern": "^/sentilab/open/terms/[1-9][0-9]{0,5}@[0-9a-f]{64}[.]md$",
+   "text": "\n/sentilab/open/terms/1@0000000000000000000000000000000000000000000000000000000000000000.md",
+   "match": false
+  }
+ ],
  "r_key": [
   {
    "r": 0,

@@ -90,6 +90,10 @@ for (const v of vectors.sealed_note_refusals) {
   refuses(`sealed note refused: ${v.name}`, () => c.parseSealedNote(Buffer.from(v.note_b64, "base64").toString("latin1")));
 }
 for (const v of vectors.armour_refusals) refuses(`armour refused: ${v.name}`, () => c.dearmor(Buffer.from(v.armour_b64, "base64").toString("latin1")));
+for (const v of vectors.patterns) {
+  // JSON Schema patterns are ECMA-262 regular expressions, searched (not anchored by the engine), with the u flag.
+  expect(`pattern ${v.pattern} on ${JSON.stringify(v.text)}`, new RegExp(v.pattern, "u").test(v.text), v.match);
+}
 for (const v of vectors.r_key) expect(`r key ${v.r}`, c.rKey(v.r), v.key);
 for (const r of vectors.r_key_refused) refuses(`r key refused ${r}`, () => c.rKey(r));
 for (const v of vectors.conductor_geometry) {

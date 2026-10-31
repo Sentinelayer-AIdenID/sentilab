@@ -689,6 +689,22 @@ def note_cases() -> list:
         reply("the client name is a short token", text(changed(P, client={"name": "my agent", "version": "1"})),
               expect("rejected", [C("schema_invalid", path="/client/name", keyword="pattern")], parsed=P,
                      stage="kind")),
+        reply("a trailing newline: proposal_key", text(changed(P, proposal_key="t-1\n")),
+              expect("rejected", [C("schema_invalid", path="/proposal_key", keyword="pattern")], parsed=P,
+                     stage="kind")),
+        reply("a trailing CRLF: proposal_key", text(changed(P, proposal_key="t-1\r\n")),
+              expect("rejected", [C("schema_invalid", path="/proposal_key", keyword="pattern")], parsed=P,
+                     stage="kind")),
+        reply("a trailing newline: a 33-character salt", text(changed(P, salt=SALTS[1] + "\n")),
+              expect("rejected", [C("schema_invalid", path="/salt", keyword="pattern")], parsed=P, stage="kind")),
+        reply("a trailing newline: client.name", text(changed(P, client={"name": "example-agent\n", "version": "1"})),
+              expect("rejected", [C("schema_invalid", path="/client/name", keyword="pattern")], parsed=P,
+                     stage="kind")),
+        reply("a trailing newline: request_key", text(changed(C_PUB, request_key="c-1\n")),
+              expect("rejected", [C("schema_invalid", path="/request_key", keyword="pattern")], parsed=C_PUB,
+                     stage="kind")),
+        reply("a trailing newline: a team name", text(changed(TEAM, name="Team Example 7\n")),
+              expect("rejected", [C("schema_invalid", path="/name", keyword="pattern")], parsed=TEAM, stage="kind")),
         reply("proposal_key is lower case", text(changed(P, proposal_key="T-1")),
               expect("rejected", [C("schema_invalid", path="/proposal_key", keyword="pattern")], parsed=P,
                      stage="kind")),
@@ -797,6 +813,11 @@ def note_cases() -> list:
               expect("rejected", [C("terms_not_accepted")], parsed=P_A, manifest="A"), manifest="A", layout=[]),
         local("local: legal with the layout checker", N, expect("legal", parsed=P), layout=[]),
         local("local: a publish command before sealing", text(PUBLISH), expect("contract_valid", parsed=PUBLISH)),
+        local("local: a trailing newline in proposal_key", text(changed(P, proposal_key="t-1\n")),
+              expect("rejected", [C("schema_invalid", path="/proposal_key", keyword="pattern")], parsed=P,
+                     stage="kind")),
+        local("local: a trailing newline in a team name", text(changed(TEAM, name="Team Example 7\n")),
+              expect("rejected", [C("schema_invalid", path="/name", keyword="pattern")], parsed=TEAM, stage="kind")),
     ]
     return cases
 
@@ -1581,6 +1602,7 @@ def vectors() -> dict:
                             for name, change in ARMOUR_REFUSALS],
         "sealed_note_refusals": [{"name": name, "note_b64": base64.b64encode(change(first)).decode()}
                                  for name, change in NOTE_REFUSALS],
+        "patterns": pattern_cases(),
         "r_key": [{"r": r, "key": h.r_key(r)} for r in (0, 0.05, 0.1, 0.25, 0.5, 1.0)],
         "r_key_refused": [0.125, -0.1],
         "q_r": [{"W_c_mm": 18155.8, "W_R_mm": 16417.5, "key": key, "q_r": h.q_r(18155.8, 16417.5, key)}
@@ -1588,6 +1610,44 @@ def vectors() -> dict:
         "conductor_geometry": [{"object": name, "manifest": key,
                                 "values": h.conductor_geometry(OBJECTS[name], MANIFESTS[key])}
                                for name, key in (("P_A", "A"), ("P_PUB", "F"))]}
+
+
+# A known-good sample for every schema pattern: the meta tests and the cross-language pattern vectors use it.
+PATTERN_SAMPLES = {
+    r"^(/[A-Za-z0-9_]{1,64})*$": "/ab", r"^(0|[0-9]{1,2}\.[0-9]{2})$": "0.10",
+    r"^([a-z0-9][a-z0-9_-]{0,63}|publish:[0-9a-f]{64})$": "ab", r"^(human|agent:[A-Za-z0-9][A-Za-z0-9._-]{0,119})$":
+        "agent:ab",
+    r"^(provisional|frozen)( \([A-Za-z0-9 ,/#-]{1,64}\))?$": "frozen", r"^Chiplet_[0-9]{1,2}$": "Chiplet_0",
+    r"^P(?=[0-9])([0-9]{1,4}Y)?([0-9]{1,4}M)?([0-9]{1,5}D)?$": "P2Y",
+    r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$": "2026-11-01T00:00:00Z",
+    r"^[0-9a-f]{32}$": "0" * 32, r"^[0-9a-f]{40}$": "0" * 40, r"^[0-9a-f]{64}$": "0" * 64,
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$": HUMAN,
+    r"^[A-Za-z0-9._-]{1,32}$": "ab", r"^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,127}$": "ab",
+    r"^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,511}$": "ab", r"^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_-]{0,127}$": "ab",
+    "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_" + chr(0x2026) + "-]{0,127}$": "ab",
+    r"^[A-Za-z0-9][A-Za-z0-9 ._-]{0,31}$": "ab", r"^[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}$": "ab",
+    r"^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$": "ab", r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$": "ab",
+    r"^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$": "ab", r"^[A-Za-z][A-Za-z0-9_]{0,31}$": "ab", r"^[A-Za-z]{1,32}$": "ab",
+    r"^[a-z0-9][a-z0-9_-]{0,63}$": "ab", r"^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$": "ab",
+    r"^[a-z0-9_-]{1,32}$": "ab", r"^age1[02-9ac-hj-np-z]{58}$": "age1" + "q" * 58,
+    r"^open-[0-9a-f]{8}-[0-9a-f]{32}$": "open-" + "0" * 8 + "-" + "0" * 32,
+    r"^position-[0-9]{1,2}-[xy]-(plus|minus)$": "position-0-x-plus",
+    r"^sentilab-open-terms/[1-9][0-9]{0,5}@[0-9a-f]{64}$": "sentilab-open-terms/1@" + "0" * 64,
+    r"^sha256:[0-9a-f]{64}$": "sha256:" + "0" * 64, r"^so1-[0-9a-f]{48}$": "so1-" + "0" * 48,
+    r"^tap-chiplet-[0-9]{1,2}$": "tap-chiplet-0",
+    r"^/sentilab/open/terms/[1-9][0-9]{0,5}@[0-9a-f]{64}[.]md$": "/sentilab/open/terms/1@" + "0" * 64 + ".md",
+}
+
+
+def pattern_cases() -> list:
+    """Each pattern with its sample (a match), and the sample with a line ending or separator at either end (never a
+    match). JSON Schema patterns are ECMA-262: $ is the end of the input, as in schemas.ecma_pattern."""
+    cases = []
+    for pattern, sample in PATTERN_SAMPLES.items():
+        cases.append({"pattern": pattern, "text": sample, "match": True})
+        for text in (sample + "\n", sample + "\r\n", sample + "\r", sample + chr(0x2028), "\n" + sample):
+            cases.append({"pattern": pattern, "text": text, "match": False})
+    return cases
 
 
 # ── output ──────────────────────────────────────────────────────────────────────────────────────────────────────

@@ -9,7 +9,6 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-import re
 import unittest
 from pathlib import Path
 
@@ -23,7 +22,7 @@ from . import make_vectors as mv
 from .codes import FIELDS, GROUPS, MAX_VIOLATIONS, ORDER, REASON_CODES, RECORD_CODES, RULES, VOCABULARY
 from .labels import LISTS, label_for, label_for_all
 from .predicates import apply_suppression, evaluate_labels, record_diagnostic
-from .schemas import NAMES, SCHEMA_DIR, SCHEMAS, VALIDATORS
+from .schemas import NAMES, SCHEMA_DIR, SCHEMAS, VALIDATORS, StrictValidator, ecma_pattern, pattern_matches
 from .states import CHARGED, LEDGER, LIFECYCLE, SUMMARY, ledger_lifecycle
 from .test_golden import opener
 from .validator import (Reply, Unopenable, check_codes_ok, is_attempt, validate_local, validate_record,
@@ -80,31 +79,8 @@ def is_object(node) -> bool:
     return "object" in ([types] if isinstance(types, str) else types)
 
 
-# A known-good sample per pattern; the no-free-text test needs one for every pattern in the schemas.
-SAMPLES = {
-    r"^(/[A-Za-z0-9_]{1,64})*$": "/ab", r"^(0|[0-9]{1,2}\.[0-9]{2})$": "0.10",
-    r"^([a-z0-9][a-z0-9_-]{0,63}|publish:[0-9a-f]{64})$": "ab", r"^(human|agent:[A-Za-z0-9][A-Za-z0-9._-]{0,119})$":
-        "agent:ab",
-    r"^(provisional|frozen)( \([A-Za-z0-9 ,/#-]{1,64}\))?$": "frozen", r"^Chiplet_[0-9]{1,2}$": "Chiplet_0",
-    r"^P(?=[0-9])([0-9]{1,4}Y)?([0-9]{1,4}M)?([0-9]{1,5}D)?$": "P2Y",
-    r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$": "2026-11-01T00:00:00Z",
-    r"^[0-9a-f]{32}$": "0" * 32, r"^[0-9a-f]{40}$": "0" * 40, r"^[0-9a-f]{64}$": "0" * 64,
-    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$": mv.HUMAN,
-    r"^[A-Za-z0-9._-]{1,32}$": "ab", r"^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,127}$": "ab",
-    r"^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,511}$": "ab", r"^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_-]{0,127}$": "ab",
-    "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_" + chr(0x2026) + "-]{0,127}$": "ab",
-    r"^[A-Za-z0-9][A-Za-z0-9 ._-]{0,31}$": "ab", r"^[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}$": "ab",
-    r"^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$": "ab", r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$": "ab",
-    r"^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$": "ab", r"^[A-Za-z][A-Za-z0-9_]{0,31}$": "ab", r"^[A-Za-z]{1,32}$": "ab",
-    r"^[a-z0-9][a-z0-9_-]{0,63}$": "ab", r"^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$": "ab",
-    r"^[a-z0-9_-]{1,32}$": "ab", r"^age1[02-9ac-hj-np-z]{58}$": "age1" + "q" * 58,
-    r"^open-[0-9a-f]{8}-[0-9a-f]{32}$": "open-" + "0" * 8 + "-" + "0" * 32,
-    r"^position-[0-9]{1,2}-[xy]-(plus|minus)$": "position-0-x-plus",
-    r"^sentilab-open-terms/[1-9][0-9]{0,5}@[0-9a-f]{64}$": "sentilab-open-terms/1@" + "0" * 64,
-    r"^sha256:[0-9a-f]{64}$": "sha256:" + "0" * 64, r"^so1-[0-9a-f]{48}$": "so1-" + "0" * 48,
-    r"^tap-chiplet-[0-9]{1,2}$": "tap-chiplet-0",
-    r"^/sentilab/open/terms/[1-9][0-9]{0,5}@[0-9a-f]{64}[.]md$": "/sentilab/open/terms/1@" + "0" * 64 + ".md",
-}
+# A known-good sample per pattern (make_vectors.PATTERN_SAMPLES); the no-free-text test needs one for every pattern.
+SAMPLES = mv.PATTERN_SAMPLES
 DANGEROUS = "<>&\"'`\\" + "".join(chr(code) for code in (0, 9, 10, 13, 0x7F, 0x2028))
 # Maps keyed by data (q_r, CPU ceilings, example inputs) are closed by propertyNames instead; the measured-row mixin
 # is closed by each row kind that includes it.
@@ -157,9 +133,19 @@ class Schemas(unittest.TestCase):
         self.assertEqual(set(SAMPLES), seen, "add a sample for each new pattern")
         for pattern, sample in SAMPLES.items():
             self.assertTrue(pattern.startswith("^") and pattern.endswith("$"), pattern)
-            self.assertTrue(re.fullmatch(pattern, sample), pattern)
+            self.assertTrue(pattern_matches(pattern, sample), pattern)
             for char in DANGEROUS:
-                self.assertIsNone(re.fullmatch(pattern, sample[:1] + char + sample[2:]), (pattern, char))
+                self.assertFalse(pattern_matches(pattern, sample[:1] + char + sample[2:]), (pattern, char))
+
+    def test_a_trailing_line_ending_never_passes_a_pattern(self):
+        """Warden's review: a pattern's $ is the end of the input (ECMA-262), not "before a final newline"."""
+        for pattern, sample in SAMPLES.items():
+            for text in (sample + "\n", sample + "\r\n", sample + "\r", sample + chr(0x2028), "\n" + sample):
+                with self.subTest(pattern=pattern, text=repr(text)):
+                    self.assertFalse(pattern_matches(pattern, text))
+                    self.assertFalse(StrictValidator({"type": "string", "pattern": pattern}).is_valid(text))
+        self.assertEqual(r"^[a-z]{2}\Z", ecma_pattern("^[a-z]{2}$"))
+        self.assertEqual(r"^[$]\$\Z", ecma_pattern(r"^[$]\$$"), "a $ in a class or escaped stays literal")
 
     def test_the_only_participant_text_is_the_team_name(self):
         """Section 5.1: no free text apart from the moderated team name; client is a short token."""
@@ -584,6 +570,8 @@ class PythonVectors(unittest.TestCase):
         for case in v["conductor_geometry"]:
             self.assertEqual(case["values"], h.conductor_geometry(objects[case["object"]],
                                                                 self.manifests[case["manifest"]]))
+        for case in v["patterns"]:
+            self.assertEqual(case["match"], pattern_matches(case["pattern"], case["text"]), case)
         for case in v["sealed_note_refusals"]:
             with self.subTest(case["name"]):
                 with self.assertRaises(ValueError):
