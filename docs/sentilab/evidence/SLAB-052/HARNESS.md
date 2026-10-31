@@ -34,6 +34,13 @@ must obtain the real reviewed evidence before constructing them.
 
 Each `ProposalLab` binds an existing `Admission` to the run and that lab's arm.
 Submission rechecks current model/provider/payer admission and the `lead` role.
+Reservation takes the ledger lock and then the registry publication lock, reads
+current authority after both waits, and holds it through the signed append. The
+adapter task rechecks authority and STOP at its protected start boundary. A policy
+change after reservation returns `admission_revoked` without an adapter call and
+retains the charged reservation. STOP is also checked inside the final append
+lock: a new result becomes `stopped`, while prior charges and genuine failures
+remain unchanged. See [ROUND-2.md](ROUND-2.md) for real-lock regression proof.
 No model generation occurs here; any generating host must continue to use the
 existing admitted, metered model transport. Proposal slots do not replace model
 USD accounting or the solver's CPU/wall accounting.

@@ -5,6 +5,7 @@ SLAB-051 single-evaluation adapter after SLAB-048 readiness, admission and a
 prospective grant. The budgeted oracle is the only lab-facing evaluation path.
 """
 import asyncio
+from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -25,6 +26,14 @@ CLAIM = "descriptive computational simulation"
 PROMPT = ("Propose ordered chiplet centers using only this public problem and your own feedback. "
           "Every submission, including an illegal layout, consumes one oracle slot. "
           "Results are simulated and descriptive; do not claim measured silicon performance.")
+
+
+class _Stopped(Exception):
+    pass
+
+
+class _AdmissionRevoked(NotAdmitted):
+    pass
 
 
 def _positive(value):
@@ -253,7 +262,7 @@ class BudgetedProposalOracle:
     async def _submit(self, request_id, positions):
         h, lab = self.harness, self.lab
         h.grant.check(h.run["run_id"], h.problem.oracle_id, h.solve_budget, h.labs)
-        admission = lab.check(h.run["run_id"])
+        lab.check(h.run["run_id"])
         rows = h._rows(lab.lab_id)
         reservations = [row for row in rows if row["event"]["type"] == "proposal.reserved"]
         previous = next((row for row in reservations if row["event"]["body"]["request_id"] == request_id), None)
@@ -270,19 +279,20 @@ class BudgetedProposalOracle:
         if len(reservations) >= h.solve_budget:
             return {"schema": SCHEMA, "status": "refused", "error": {"code": "solve_budget"}}
         event_id = digest({"lab_id": lab.lab_id, "request_id": request_id})
-        reserved = h.ledger.append("proposal.reserved", {
-            "lab_id": lab.lab_id, "request_id": request_id, "positions": positions,
-            "slot": len(reservations) + 1, "budget": h.solve_budget,
-            "grant_ref": h.grant.reference, "oracle_id": h.problem.oracle_id,
-            "model_id": admission.model_id, "provider": admission.provider,
-            "payer": admission.payer, "admission_hash": admission.policy_sha256},
-            event_id="reserve-" + event_id)
+        try:
+            reserved = h.ledger.append("proposal.reserved", {
+                "lab_id": lab.lab_id, "request_id": request_id, "positions": positions,
+                "slot": len(reservations) + 1, "budget": h.solve_budget,
+                "grant_ref": h.grant.reference, "oracle_id": h.problem.oracle_id},
+                event_id="reserve-" + event_id, guard=self._reserve)
+        except _Stopped:
+            return {"schema": SCHEMA, "status": "refused", "error": {"code": "stopped"}}
         receipt = {"schema": SCHEMA, "status": "oracle_error", "lab_id": lab.lab_id,
                    "request_id": request_id, "charged": True, "slot": len(reservations) + 1,
                    "budget": h.solve_budget, "reservation_hash": reserved["hash"]}
         try:
             async with asyncio.timeout(h.timeout):
-                result = await self._evaluate(positions)
+                result = await self._evaluate(positions, reserved["event"]["body"]["admission_hash"])
             if not h.stop_file.exists():
                 h.grant.check(h.run["run_id"], h.problem.oracle_id, h.solve_budget, h.labs)
             if h.stop_file.exists():
@@ -298,6 +308,10 @@ class BudgetedProposalOracle:
         except asyncio.CancelledError:
             receipt["status"] = "cancelled"
             raise
+        except _Stopped:
+            receipt["status"] = "stopped"
+        except _AdmissionRevoked:
+            receipt["status"] = "admission_revoked"
         except NotAdmitted:
             receipt["status"] = "grant_expired"
         except TimeoutError:
@@ -307,15 +321,54 @@ class BudgetedProposalOracle:
             receipt["status"] = "oracle_error"
         finally:
             h.ledger.append("proposal.finished", {"lab_id": lab.lab_id, "request_id": request_id,
-                            "receipt": receipt}, event_id="finish-" + event_id)
+                            "receipt": receipt}, event_id="finish-" + event_id, guard=self._commit)
         return receipt
 
-    async def _evaluate(self, positions):
+    @contextmanager
+    def _reserve(self, body):
+        h, lab = self.harness, self.lab
+        # Ledger -> registry, never the reverse. Publication uses only registry.
+        # Validate after BOTH waits; keep the policy stable through the append.
+        with lock(lab.admission.registry_lock_path):
+            h.grant.check(h.run["run_id"], h.problem.oracle_id, h.solve_budget, h.labs)
+            admission = lab.check(h.run["run_id"])
+            if h.stop_file.exists():
+                raise _Stopped()
+            body.update(model_id=admission.model_id, provider=admission.provider,
+                        payer=admission.payer, admission_hash=admission.policy_sha256)
+            yield
+
+    @contextmanager
+    def _commit(self, body):
+        # This runs inside the final append lock, not before its potentially
+        # blocking acquisition. Do not rewrite genuine errors or prior charges.
+        receipt = body["receipt"]
+        if receipt["status"] in {"evaluated", "illegal"} and self.harness.stop_file.exists():
+            receipt["status"] = "stopped"
+            receipt.pop("J", None)
+            receipt.pop("wire_mm", None)
+        yield
+
+    async def _evaluate(self, positions, admission_hash):
         h = self.harness
-        if len(positions) != len(h.problem.chiplets):
-            return {"legal": False, "J": None, "wire_mm": None}
+        async def start():
+            # Recheck when the task actually starts, after scheduling and lock
+            # waits. A prior reservation remains charged if authority was lost.
+            with lock(h.ledger.lock_path), lock(self.lab.admission.registry_lock_path):
+                h.grant.check(h.run["run_id"], h.problem.oracle_id, h.solve_budget, h.labs)
+                try:
+                    current = self.lab.check(h.run["run_id"])
+                    if current.policy_sha256 != admission_hash:
+                        raise NotAdmitted("proposal admission changed after reservation")
+                except NotAdmitted:
+                    raise _AdmissionRevoked() from None
+                if h.stop_file.exists():
+                    raise _Stopped()
+            if len(positions) != len(h.problem.chiplets):
+                return {"legal": False, "J": None, "wire_mm": None}
+            return await self.backend.evaluate(positions, stop_file=h.stop_file)
         # The adapter owns/reaps any child processes in its cancellation finally.
-        task = asyncio.create_task(self.backend.evaluate(positions, stop_file=h.stop_file))
+        task = asyncio.create_task(start())
         try:
             while not task.done():
                 h.grant.check(h.run["run_id"], h.problem.oracle_id, h.solve_budget, h.labs)

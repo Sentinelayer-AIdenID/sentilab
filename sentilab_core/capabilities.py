@@ -167,7 +167,8 @@ PROPOSAL_OUTPUT = {"type": "object", "required": ["schema", "status"],
                    "properties": {"schema": {"const": "sentilab-proposal/1"},
                                   "status": {"enum": ["ready", "blocked", "refused", "interrupted",
                                                        "evaluated", "illegal", "stopped", "cancelled",
-                                                       "timeout", "grant_expired", "oracle_error"]}}}
+                                                       "timeout", "grant_expired", "admission_revoked",
+                                                       "oracle_error"]}}}
 
 
 CAPABILITIES = tuple(
