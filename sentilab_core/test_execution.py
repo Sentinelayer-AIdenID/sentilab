@@ -2,6 +2,7 @@
 import asyncio
 from pathlib import Path
 import os
+import select
 import signal
 import subprocess
 import sys
@@ -54,16 +55,28 @@ class WholeJobCleanupTests(unittest.IsolatedAsyncioTestCase):
         # teardown. No real broadcast signal, or unrelated victim, is needed.
         with tempfile.TemporaryDirectory() as directory:
             marker = Path(directory) / "child"
+            go = Path(directory) / "go"
+            natural_exit = Path(directory) / "natural-exit"
             code = "\n".join([
                 "import json, os, sys, time",
                 "json.load(sys.stdin)",
+                "def await_pin():",
+                "    deadline = time.monotonic() + 3",
+                f"    while not os.path.exists({str(go)!r}):",
+                "        if time.monotonic() >= deadline:",
+                f"            open({str(natural_exit)!r}, 'w').close()",
+                "            os._exit(3)",
+                "        time.sleep(0.001)",
                 "child = os.fork()",
                 "if child == 0:",
                 "    os.close(0)",
+                f"    with open({str(marker)!r}, 'w') as ready: ready.write(str(os.getpid()))",
+                "    await_pin()",
                 "    os.close(1)" if closed_pipe else "    pass",
                 "    time.sleep(4)",
+                f"    open({str(natural_exit)!r}, 'w').close()",
                 "    os._exit(0)",
-                f"open({str(marker)!r}, 'w').write(str(child))",
+                "await_pin()",
                 "print('not-json', flush=True)" if failure else
                 "print(json.dumps({'result': {'fixture': 'plate'}}), flush=True)",
                 "os._exit(0)",
@@ -112,6 +125,11 @@ class WholeJobCleanupTests(unittest.IsolatedAsyncioTestCase):
                             await asyncio.sleep(0.005)
                     child = int(marker.read_text())
                     child_fd = os.pidfd_open(child)
+                    # Both fixture processes wait for this release. In
+                    # particular, closed-pipe completion cannot race the pin.
+                    self.assertEqual(select.select([child_fd], [], [], 0)[0], [],
+                                     "descendant must be alive before release")
+                    go.touch()
                     if cancel:
                         # A zombie is deliberately still owned by the fixed
                         # implementation; the old watcher has already reaped it.
@@ -140,10 +158,9 @@ class WholeJobCleanupTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue(not reaped or spawned[0].pid in reaped)
                     broadcast.assert_not_called()
                     numeric_signal.assert_not_called()
-                    stat = Path(f"/proc/{child}/stat")
-                    self.assertTrue(not stat.exists() or
-                                    stat.read_text().rsplit(")", 1)[1].split()[0] == "Z",
-                                    "worker returned with a surviving descendant")
+                    self.assertFalse(natural_exit.exists(), "descendant exited naturally before cleanup")
+                    self.assertEqual(select.select([child_fd], [], [], 0)[0], [child_fd],
+                                     "worker returned with a surviving descendant")
                     self.assertTrue(pinned_signal.called, "cleanup must signal by pinned identity")
                     if cancel:
                         self.assertGreaterEqual(call.cancelling(), 2)
