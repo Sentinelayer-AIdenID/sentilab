@@ -15,7 +15,8 @@ Test kinds:
 - **device**: manual on the reference phone (D4), recording and traces attached to the PR.
 
 Gate: no phase is done until its listed ACs pass (SPEC.md §9). The top gate for any public release of the page is
-AC-01 to AC-06, AC-12, AC-20 to AC-27, AC-32, AC-34, AC-36 and AC-41.
+AC-01 to AC-06, AC-12, AC-20 to AC-27, AC-32, AC-34, AC-36 and AC-41. The product gate is separate: Carter
+approves the rendered page, from real-browser screenshots, before any deploy (SPEC.md §11).
 
 ## Temperatures and labels
 
@@ -37,11 +38,12 @@ The page is added to the existing "every page takes its notice and labels from t
 over every string and every key of `web/public/sentilab/package3d/data/*.json`, every static file under
 `web/public/agents/package3d/` except result twins, and the model-stack and anatomy sources in
 `docs/sentilab/package3d/`. Unit fields are checked against the unit list (no temperature unit). Adversarial: seeded
-copies containing `47 C`, `300.5 K`, `61 °C`, `99°C`, `-12 degC`, `0.7 K rise`, `12 kelvin`, `33 ºC`,
-`0.04 °C·cm²/W` and the keys `silicon_85C`, `silicon_at_100C` are each caught; `4 K*mm2/W`, `0.039 K/W`,
-`5 K·mm²/W`, `117.5 W/(m*K)`, `C4 bumps`, `4 C4 rows`, `10,000-30,000`, `2,778 W/(m²·K)`, `HBM3E 12-high` stay clean.
-The model stack's `boundary.temperature_inputs` entries all have `rendered: false` and carry no value. Pass: real files
-clean, every seeded case caught, every clean case clean.
+copies containing `47 C`, `300.5 K`, `61 °C`, `99°C`, `-12 degC`, `0.7 K rise`, `12 kelvin`, `33 ºC`, `0.04 °C·cm²/W`
+and the keys `silicon_85C`, `silicon_at_100C` are each caught; `4 K*mm2/W`, `0.039 K/W`, `5 K·mm²/W`, `117.5 W/(m*K)`,
+`C4 bumps`, `4 C4 rows`, `10,000-30,000`, `2,778 W/(m²·K)`, `HBM3E 12-high` stay clean. The model stack's
+`boundary.temperature_inputs` entries all have `rendered: false` and carry no value, and every temperature-valued
+`omitted` entry names its role (`model_input`, `material_condition`, `published_limit`: D2). Pass: real files clean,
+every seeded case caught, every clean case clean.
 
 **AC-04 Every temperature on screen carries its label** (browser). Load signed replays whose measurements carry
 (a) the withdrawn HotSpot-7 identity (`LIVE_HS7`, main:web/test/temperature-label.test.mjs:28; `HS7`,
@@ -105,8 +107,9 @@ the manifest's thicknesses. Pass: all (X1 to X5).
 
 **AC-09 Banners and chips match their kind** (browser, node). In each mode the content banner and the canvas chip are
 the exact strings of SPEC.md §3, and the twin's `status_text` for that kind is the same string (schema const). Model
-mode shows no result value; Results shows no flow arrows; Anatomy shows no result value and no model number outside the
-"In our model" line. Pass: string equality, and zero result or model values in the wrong mode.
+mode shows no result value; Results shows no flow arrows; the compute die's conceptual inset carries the chip
+`conceptual · not a floorplan` and a fact id on every block (D13); Anatomy shows no result value and no model number
+outside the "In our model" line. Pass: string equality, and zero result or model values in the wrong mode.
 
 ## Quantities, unknowns, ids
 
@@ -321,10 +324,13 @@ and control-bytes pass over every new file; if a `.glb` is served, `.glb` joins 
 data and `/agents/package3d/` finds none of the infrastructure vendor or mechanism names (rule 8): `cloudflare`,
 `workers.dev`, `wrangler`, `azure`, `containerapps`, `container app`, `aws`, `amazon`, `s3`, `r2`, `vercel`, `netlify`,
 `fastly`, `akamai`, `github pages`, `durable object`, and the model-vendor names already in `NAMES`
-(public-names.test.mjs:20-26); negative controls are seeded and caught. (c) Under `names_policy: "generic"` the served
-anatomy and twins contain none of the product, company or technology names on the reviewed generic-names list
-(built in W2 from lane 1's sources and facts); under `"named"` (D1) the scan is replaced by the founder's allow-list.
-Pass: all.
+(public-names.test.mjs:20-26); negative controls are seeded and caught. (c) Under `names_policy: "generic"` (D1) the
+served teaching copy (part and instance names, claims, explanations, labels, flow and edge text, the twins' prose)
+contains none of the product, company or technology names on the reviewed generic-names list (built in W2 from lane
+1's sources and facts); source records (`title`, `publisher`, `url`, `sha256`) keep usable citations and are exempt
+from (c), never from (a) or (b) (D10). (d) A license inventory lists every vendored or copied file the room serves,
+with its license and sha256, and matches the served files exactly (D10; for D5 option B, the MIT text and each
+vendored core file). Pass: all.
 
 **AC-30 No MicroDuck or Pollen material** (static, review). Names scan as AC-29 (both are in `NAMES`); the room ships
 no binary asset except generated GLB derivatives, each traceable to `writeGlb()` output by hash; the reviewed sources
@@ -351,10 +357,13 @@ without glides and nothing pulses (L3:ACCEPTANCE A-16). Pass: all.
 
 ## Performance and resilience
 
-**AC-34 Budgets** (device, browser traces). Measured with the largest fixture (the anatomy assembly with every array,
-and a results run with 8 layers at 64 x 64 once fields exist). Gating values are the stricter per row (D4):
+**AC-34 Budgets, measured against targets** (device, browser traces). Measured by the plan of SPEC.md §6.11: the
+workload (the anatomy assembly with every array, and a results run with 8 layers at 64 x 64 once fields exist), the
+reference phone and its browser, and a desktop are named before measuring; preparation and end-to-present are
+reported separately; both D5 options are measured in W9.5 and the built renderer again in W11. The phone column is
+root's initial tier (D4): prospective targets, not limits.
 
-| Budget | Lane 3 phone (A-10) | astra phone (A#57059) | Gate on the phone | Desktop (lane 3) |
+| Measure | Lane 3 phone (A-10) | astra phone (A#57059) | Phone target (D4) | Desktop (lane 3) |
 |---|---|---|---|---|
 | p95 frame time while orbiting or exploding | ≤ 33 ms | ≤ 33 ms (interaction, named phone) | ≤ 33 ms | ≤ 16.7 ms |
 | triangles per frame | ≤ 300 k | ≤ 50 k | ≤ 50 k | ≤ 1.5 M |
@@ -368,9 +377,13 @@ and a results run with 8 layers at 64 x 64 once fields exist). Gating values are
 | new verified field to pixels, 8 x 64 x 64 | ≤ 30 ms off the main thread | not set | ≤ 30 ms off the main thread | ≤ 8 ms |
 | first 3D frame after verification, cold, 4G | ≤ 2.5 s | not set | ≤ 2.5 s | ≤ 1 s |
 | GL objects after a mode switch | not set | explicit disposal | back to the baseline count | same |
+| preparation (fetch to first frame ready) and end-to-present (input or new result to presented frame) | not set | measured separately (A#57218) | reported, p50 and p95 | reported |
+| bytes the renderer adds (raw, gzip, brotli), per D5 option | not set | not set | reported | reported |
 
-The reference phone is named by warden before W11; both sources' values are proposals, not measurements, until W11
-measures them. Pass: every gate row on both classes; traces attached.
+The reference phone is named by warden before W9.5. Pass: every row measured and reported on both classes against a
+named workload, device and browser, with traces attached; a missed target is recorded with its cause and the three
+owners' disposition (D4), never silently relaxed. The renderer's own caps (DPR 2; 1,000,000 pixels on phones) are
+settings, verified rather than measured.
 
 **AC-35 No WebGL, lost context, no WebCrypto** (browser). Chromium with WebGL disabled: the SVG cross-section, part
 tree, detail panel, legend with its label state and notice appear; zero errors. `WEBGL_lose_context.loseContext()`

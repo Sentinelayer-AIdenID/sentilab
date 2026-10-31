@@ -54,6 +54,11 @@ moves since lane 3 was written).
     (C7). Root's exact source map confirms C5-C7 (A#57278, A#57288). Kept distinct: the warm oracle's max mapping
     and the gate-validation centre mapping; native HotSpot 6's layer 0 and the powered layer 4 (5.4, 5.6, 5.7;
     AC-16, AC-21, AC-22, AC-41).
+  - Decisions (A#57218, A#57278): every resolution is root-proposed, forge-adopted, warden co-sign pending, with no
+    separate human confirmation; D5 records root's vote for the vendored adapter and is resolved by warden in this
+    draft, with both options' scope (6.10) and the measurement plan (6.11); D4's phone numbers are measured targets,
+    not limits. Carter's product gate is approving the rendered page from screenshots before any deploy (section 11;
+    AC-03, AC-09, AC-29, AC-34).
 
 ## 1. Goals and non-goals
 
@@ -68,7 +73,7 @@ moves since lane 3 was written).
 | G5 | Every value shows its provenance; every temperature its label; unknowns stay visible (section 7). | task rules 1, 3; A#57059 |
 | G6 | Usable without WebGL, by keyboard and by touch, at 320, 390 and 1280 CSS px and at 200% zoom. | A#57059; L3:ACCEPTANCE A-09 |
 | G7 | Every visual has an agent-readable twin (JSON plus markdown under `/agents/`) with the same qualifications. | task rule 9; A#57053 |
-| G8 | Same trust posture as today: CSP unchanged, no third-party runtime code (default), no Worker change, read-only. | L3:ARCHITECTURE §1-2; main:web/src/csp.js:7 |
+| G8 | Same trust posture as today: CSP unchanged, no third-party runtime code unless D5 picks the pinned, vendored option with its license inventory (section 6.10), no Worker change, read-only. | L3:ARCHITECTURE §1-2; main:web/src/csp.js:7 |
 
 ### Non-goals
 
@@ -76,7 +81,7 @@ moves since lane 3 was written).
 |---|---|---|
 | NG1 | Manufacturer CAD or any product's real floorplan. The anatomy is a representative reconstruction from public sources. | L1:REPORT.md status block |
 | NG2 | Silicon validation or acceptance of any evaluator. ACCEPTED is empty. A rendering success creates no scientific acceptance. | main:web/public/temperature-label.mjs:26-28; A#57059 |
-| NG3 | Die-internal anatomy (tensor arrays, SRAM, network-on-chip floorplan, power maps). No public power map was captured. | L1:thermal_path.md §4 item 1; D13 |
+| NG3 | Die-internal floorplans and power maps: no public power map or die floorplan was captured. A sourced conceptual inset of the compute die (compute, SRAM, interconnect) is in scope as a schematic, never as a floorplan (D13). | L1:thermal_path.md §4 item 1; D13 |
 | NG4 | Solver iterates, transient physical time, or anything mid-solve. The solver is steady state. | L3:ARCHITECTURE §6, §6.4 |
 | NG5 | An in-browser solver in this build. SKETCH is specified only as constraints (section 4.9). | task rule 4; D7 |
 | NG6 | Write routes, WebSockets, or any way for a viewer to start a solve. | main:web/src/worker.js:51-56; A#57059 |
@@ -196,6 +201,9 @@ between them, dims the rest (L3:ARCHITECTURE §4.5), and fills the detail panel.
 | Our model | layer name as coded; grid index; thickness (model, `file:line@commit`); material as coded (resistivity and the k it implies, with the bump-mix derivation where it applies); lateral rule (interposer, 2 x, 4 x); powered or not; `Stands for` (anatomy part types, linking back); the ranked simplifications that apply; for a die: role, size, rotation, power input in W, halo width. |
 | Results | chiplet id and role (from the fixture's role map); footprint (evidence: run, seq); J and W from the measurement `metricFor()` picks (main:web/public/sentilab/lab-model.mjs:124), each with its statistic name and label; centre temperature with its own label; evidence validity (valid or stale); the receipt (measurement seq, event id, envelope hash, evaluator identity); receipt completeness (section 5.6); model association side by side: `family_match` with its fixture as labelled reference context, and `run_inputs_verified` with its differences (section 5.6). |
 
+- **Compute-die inset (D13):** selecting the compute die adds a conceptual inset of compute arrays, SRAM and on-die
+  interconnect: a schematic arrangement (render hints), every block's text sourced, the chip `conceptual · not a
+  floorplan`; no power map and no manufacturer floorplan.
 - **Agent:** `anatomy.json` (part types, facts, sources, materials, edges) and `anatomy.md` (one section per part
   type with the same text); `model-<fixture>.json`/`.md`; for results, the result twin (section 4.8).
 
@@ -284,7 +292,8 @@ nothing about the chip's own operation is implied (L3:ARCHITECTURE §6.4).
 | Results (S2-S5) | `results.md` (how to obtain a result twin and the rules); `replays/<bundle>-at-<seq>.json` for the bundled replays, built by the CLI; for any run, `node scripts/package3d.mjs export3d <replay.jsonl> ...` (same verifier path as `scripts/sentilab-scene.mjs`, main:scripts/sentilab-scene.mjs:1-17); in the page, a `Twin JSON` dialog that shows the current view's twin as text | Every temperature carries its serialized label record (PL-2); refused values are listed, never exported as numbers (sentilab-scene.mjs:17). No blob or data URLs: the dialog shows text. |
 
 The MCP half of SLAB-026's CLI+MCP comes later through the generated bridge and calls this CLI; it adds no
-validation of its own (main:scripts/sentilab-scene.mjs:6-7; A#57059 "CLI/MCP must share validation/artifacts").
+validation of its own (main:scripts/sentilab-scene.mjs:6-7; A#57059 "CLI/MCP must share validation/artifacts"). Its
+conformance has an explicit owner: forge, until the three owners hand it to the bridge's owner (D9).
 
 ### 4.9 SKETCH mode (deferred, D7)
 
@@ -320,7 +329,8 @@ for the bundled fixture (main:web/public/temperature-label.mjs:24-25, :48-51; L3
   sourced value. A range without one is not drawn (section 5.3); nothing invents a midpoint (A#57218 item 5).
 - **No temperatures in static content.** No unit in these schemas is a temperature unit. Static files (anatomy,
   assembly, model stack, layouts, static twins) MUST NOT contain a temperature number in any string or key either
-  (PL-4); temperature-valued inputs and literature values are listed in `omitted` with the reason.
+  (PL-4); temperature-valued inputs and literature values are listed in `omitted` with the reason and their role
+  (`model_input`, `material_condition` or `published_limit`: D2).
 - **Hashes.** Files are pinned by sha256 of their exact bytes, never of a re-serialisation (JavaScript re-serialising
   Python JSON changes numbers such as `45.0`: main:web/public/verify-core.js:5-6). `geometry_sha256` follows the
   frozen geometry preimage below. Layout `content_sha256` values are Python-canonical (README.md:53-59) and are
@@ -365,7 +375,7 @@ for the bundled fixture (main:web/public/temperature-label.mjs:24-25, :48-51; L3
     },
     "omission": {
       "type": "object", "required": ["what", "why"], "additionalProperties": false,
-      "properties": { "what": { "$ref": "#/$defs/text" }, "why": { "$ref": "#/$defs/text" }, "from": { "type": "string", "maxLength": 300 } }
+      "properties": { "what": { "$ref": "#/$defs/text" }, "why": { "$ref": "#/$defs/text" }, "from": { "type": "string", "maxLength": 300 }, "role": { "enum": ["model_input", "material_condition", "published_limit"] } }
     },
     "rect": {
       "type": "object", "required": ["x0", "x1", "y0", "y1"], "additionalProperties": false,
@@ -584,9 +594,11 @@ Served at `/sentilab/package3d/data/anatomy.json`; generated by `scripts/package
 }
 ```
 
-Under `names_policy: "generic"` a source carries only `type`, `kind` and `year` (D1); `title`, `publisher`, `url` and
-`sha256` appear only under `"named"`. Every served `claim` is a generic rewrite of the lane-1 fact claim that keeps
-every number of the original (checked mechanically, AC-40) and contains no temperature (PL-4).
+Under `names_policy: "generic"` (D1) the teaching copy uses generic representative names, and each source keeps a
+usable citation: its `title`, `publisher`, `url` and capture `sha256`, wherever lane 1 records them (a title that
+holds a temperature is replaced by its source's kind and year, and listed in `omitted`: PL-4). `"named"` is not used.
+Every served `claim` is a generic rewrite of the lane-1 fact claim that keeps every number of the original (checked
+mechanically, AC-40) and contains no temperature (PL-4).
 
 ### 5.3 Assembly `sentilab-assembly/1` (instances, transforms, edges)
 
@@ -1273,7 +1285,7 @@ textures, no compression (L3:PSEUDOCODE §10), and its sha256 is listed in `deri
 | `source_index.tap25d_date2021` (no URL, no hash) | completed: URL and PDF sha256 `b209f51a…` from main:docs/sentilab/references/README.md:79-80, which equals the lane-1 sealed manifest's entry for `thermal/tap25d_date2021.pdf` | provenance gap (L1:SOURCES.md row 58) |
 | `heat_sink.thickness_um.typical 6900`, `lateral_mm 180` (model values in a typical field) | model manifest only; the anatomy heat sink's thickness is `unknown` with a render hint | X5 |
 | `coolant.in_our_model.detail` (contains an ambient temperature) | removed | PL-4 |
-| `source_index.vertiv_coolant_temp_roadmap.title` (a temperature in the title) | title shown only under D1 "named", and then only after D2 | PL-4 |
+| `source_index.vertiv_coolant_temp_roadmap.title` (a temperature in the title) | cited by publisher, URL and hash; the title is listed in `omitted` (D1, D2) | PL-4 |
 
 Against lane 3's assumed `sentilab-parts/0.1` (L3:PSEUDOCODE §1): `solver_layer` becomes the model manifest's
 `stands_for` (inverse map); `kind` keeps its role; `lateral.from: "evidence"` becomes the Results rule "chiplet
@@ -1286,11 +1298,11 @@ Lane 3's architecture (L3:ARCHITECTURE §0-§10) is adopted, with the deltas in 
 
 ### 6.1 Stack and what the CSP allows
 
-- **Renderer: our own WebGL2 renderer** (default; D5), the 3D sibling of the hand-written Canvas 2D renderer
-  (render.mjs:1-9): three GLSL programs (instanced lit boxes and cylinders, unlit field sheets, lines), our own orbit
-  and touch camera, our own DOM labels; estimated 900 to 1,300 lines (an estimate, not measured). No third-party
-  runtime code, no build step, no CSP change. three.js r187 stays the documented alternative behind the same
-  `render3d.mjs` interface (L3:PSEUDOCODE Appendix A).
+- **Renderer: D5, which warden resolves in this draft** (root votes for option B). Option A is our own WebGL2
+  renderer, the 3D sibling of the hand-written Canvas 2D renderer (render.mjs:1-9); option B is a pinned, locally
+  vendored three.js adapter. Both sit behind the same `render3d.mjs` contract with our own DOM labels, no build step
+  and no CSP change (L3:PSEUDOCODE Appendix A); their scopes are in section 6.10 and the measurement that informs the
+  choice in section 6.11.
 - **CSP consequences** (main:web/src/csp.js:7; L3:ARCHITECTURE §2.1): same-origin module files only; no `eval` or
   `Function`; no WebAssembly (so no Draco, meshopt, KTX2, WASM CAD); no inline script, so no import map; module
   Workers only from our own files; images only from our origin or `data:`; no `<style>` or `style=""`; styles set per
@@ -1391,7 +1403,7 @@ WebSocket: the Worker strips `upgrade` (main:web/src/worker.js:7, :26).
 | RenderModel carries display thickness next to true (`z0`, `z0_true`, `thickened`) | RenderModel is assembled only; display boxes come from `view.mjs` | rule 3, A#57059 (immutable assembled geometry) |
 | `checkFieldArtifact` binds run, measurement, evaluator | also checks input-source hashes against the signed `artifact_hashes`, and lists layer-table differences | L3:ARCHITECTURE §5.2 item 1 says those hashes are signed; this makes the check explicit |
 | Twin JSON (+ GLB) at `/agents/package3d/<id>.json`, catalogue at `/agents/index.json` | JSON plus markdown per content kind under `/agents/package3d/`; catalogue `/agents/package3d/index.json` | rule 9; PR #66 owns `/agents/index.json` (D9) |
-| Budgets: phone 300,000 triangles, 60 draw calls | the stricter of lane 3 and astra per row, pending D4 | inputs differ |
+| Budgets: phone 300,000 triangles, 60 draw calls | root's initial phone tier as measured targets, not limits (D4, section 6.11) | inputs differ |
 | `explodedZ` added to section rectangles | the same, through `view.mjs` | |
 | Glides and pulses as in the Package view | glides for chiplet moves only; field changes are hard cuts | PL-20, D17 |
 
@@ -1401,6 +1413,44 @@ The twins are static files under `web/public/agents/package3d/` and are linked f
 room may also be added to its Accept negotiation (`AGENT_PATHS`, pr66:web/src/agent-paths.js:4-8) as a separate,
 small change (D9). Nothing in phases 1-5 needs that.
 
+### 6.10 Renderer options (D5: warden resolves in this draft)
+
+Both options draw the same frozen RenderModel and display Map through one contract, `render3d.mjs`: `setModel(model,
+display)`, `draw()`, `ray(x, y)` for `pick.mjs`, `setField(texels)`, `dispose()` returning object counts, and `stats`.
+Picking stays analytic in `pick.mjs`, labels stay DOM (`labels.mjs`), the SVG cross-section stays the no-WebGL path,
+the figure stays the export boundary (section 6.5), and the CSP stays exactly as it is (AC-27). Neither option's size
+nor performance has been measured (section 6.11).
+
+| | Option A: our own WebGL2 renderer | Option B: a pinned, locally vendored three.js adapter (root's vote) |
+|---|---|---|
+| What ships | `mat4.mjs`, `camera.mjs`, `gl.mjs`, `shaders.mjs`, `render3d.mjs`: three GLSL programs (instanced lit boxes and cylinders, unlit field sheets, lines) and our orbit and touch camera; estimated 900 to 1,300 lines and 12 to 20 KB gzip (lane 3's estimates, not measured: L3:ARCHITECTURE §2.2) | one pinned three.js release's core as same-origin module files (r187's core is 2,133,699 B raw and 419,212 B gzip, measured by lane 3 from the verified tarball, and ships unminified since r186: L3:ARCHITECTURE §2.2-§2.3), plus `render3d.mjs` as an adapter that maps the RenderModel's original primitives (boxes, cylinders, sheets) to scene objects; no add-ons (they need an import map the CSP cannot host), no loaders, no GLB in the display path |
+| What we maintain | every line: WebGL state, shader errors, context loss and restore, DPR, z-fighting of thin layers, transparent-lid ordering, disposal (L3:ARCHITECTURE §2.3) | the adapter and its tests; upstream maintains the scene graph, camera maths, buffers and disposal; each upgrade is re-pinned, re-hashed and re-reviewed |
+| Site rules | no exception: no third-party code on a verifier page, no names-test exception, no license change | the first third-party code on a page that verifies signatures in the same realm (L3:ARCHITECTURE §2.3 item 1); the vendored files are pinned by sha256 and reviewed; `three.core.js` needs a narrow, named public-names exception (one comment URL: L3:evidence/extra-02); a license inventory lists the MIT text and every vendored file (D10, AC-29) |
+| Main risk | schedule, and GL pitfalls we must handle ourselves | transfer and parse size on the phone, upgrade cadence, and the same-realm trust boundary |
+
+Either way the renderer decides nothing (section 6.2). W10 builds the option warden picks; the other option's scope
+stays recorded here.
+
+### 6.11 Measurement plan (D4, D5)
+
+D4's phone numbers are prospective targets to measure against, not limits (A#57278). AC-34 records the results.
+
+1. **Name before measuring:** the workload (the `typ-1c4m` assembly with every array at its sampled budget, assembled
+   and fully exploded with a section on; and a TEST-key results run with 8 layers at 64 x 64 once fields exist), the
+   reference phone and its browser version (warden names them), and a desktop (Chromium on the build box). Every
+   result is reported against a named workload, device and browser.
+2. **Both D5 options** are measured as spikes behind the same `render3d.mjs` contract on that workload (W9.5) before
+   W10 builds one.
+3. **Size:** the transferred and parsed bytes of everything each option adds (raw, gzip, brotli).
+4. **Preparation, on its own:** fetch, verification, `buildRenderModel`, `displayBoxes` and the GPU upload, to the
+   first frame ready.
+5. **End-to-present, on its own:** from an input event (orbit, explode) or a new verified result to the presented
+   frame, p50 and p95, from traces.
+6. **Steady state:** p95 frame time while orbiting or exploding; triangles and draw calls per frame; drawing-buffer
+   pixels; GL objects after repeated mode switches; heap after 10 minutes live; frames while idle.
+7. **Report** against the targets with traces attached; a missed target is recorded with its cause and the three
+   owners' disposition, never silently relaxed.
+
 ## 7. Provenance and labelling rules
 
 | Id | Rule | Source |
@@ -1408,7 +1458,7 @@ small change (D9). Nothing in phases 1-5 needs that.
 | PL-1 | Every displayed number shows its basis tag beside it (section 5.0). | L3:ACCEPTANCE A-13; A#57059 |
 | PL-2 | A temperature becomes text only through `temps.mjs` `formatTemp(valueC, label)`, which refuses any label that is not one of the frozen `LABELS` objects (identity, not shape) and any non-finite value; the value and its qualifier sit in one DOM element. Labels that travel as data (result values, twins, the Twin JSON dialog, CLI output) are serialized records `{ state, text, short, title }` (the rule's `notice` flag is not serialized; it follows from the state), because a JSON round trip cannot keep object identity. A record reaches `formatTemp` only through `resolveLabel(record, identity)`, which recomputes `labelFor(identity)` from the value's verified evaluator identity, requires exactly those four keys with strings equal to the recomputed label's, and returns the canonical in-process `LABELS` object; any difference is `label_mismatch` and the value is refused (PSEUDOCODE §8). This holds for DOM text, `title`, `aria-label`, the twin JSON and markdown, and the Twin JSON dialog. No canvas text exists. | task rule 1; main:web/public/temperature-label.mjs:38-85; L3:PSEUDOCODE §5; A#57218 item 2 |
 | PL-3 | Labels are per value. A global badge or the page notice never replaces a value's own label. J and centre temperatures from different measurements keep separate labels. | A#57059; main:web/public/temperature-label.mjs:137-144; main:web/test/per-value-provenance.test.mjs |
-| PL-4 | Static content (anatomy, assembly, model stack, layouts, static twins) contains no temperature number in any string, key or unit (absolute or difference), until D2 is decided. Literature limits, model boundary temperatures and temperature-conditioned material values are listed in `omitted` with the reason. | task rule 1; D2 |
+| PL-4 | Static content (anatomy, assembly, model stack, layouts, static twins) contains no temperature number in any string, key or unit (absolute or difference) until the role formatter lands (D2, P9). Literature limits, model boundary temperatures and temperature-conditioned material values are listed in `omitted` with the reason and their role (`published_limit`, `model_input`, `material_condition`); only computed results use the four result states. | task rule 1; D2 |
 | PL-5 | Withdrawn and unvalidated field sheets carry pixel patterns (hatch, stipple), so the canvas pixels alone separate them from unpatterned sheets. Words (the content chip, the label-state chip, the legend and the source context) are DOM inside the qualified figure (section 6.5), which is the export boundary; a canvas-only crop is never claimed to show them. | L3:ARCHITECTURE §5.5; A#57218 item 4 |
 | PL-6 | A field's label is `labelFor()` of the verified envelope's evaluator identity, never the artifact's claim; a mismatch refuses the artifact. | L3:ARCHITECTURE §5.5; main:web/public/temperature-label.mjs:156-161 |
 | PL-7 | A legend is a derived value: `labelForAll()` over the identities behind its scale. | main:web/public/temperature-label.mjs:17-19, :145-153 |
@@ -1421,7 +1471,7 @@ small change (D9). Nothing in phases 1-5 needs that.
 | PL-14 | Overlays draw typical or model paths with their qualifier always visible; no watts or temperatures on arrows; Results draws no flow arrows. | A#57059 |
 | PL-15 | A drawn link is not a routed wire and not a bandwidth; the model's netlist weights and W say so (`wire proxy`). | A#57059; main:sentilab_core/conductor.py:345; README.md:105-108 |
 | PL-16 | The HBM illustration is not a recovered internal stack (anatomy), and the model's HBM is a 150 µm block (model); the panel says which. | A#57059; L1:our_model_mapping.md §2 (L4 row) |
-| PL-17 | Names: `generic` until D1 is decided; no infrastructure vendor or mechanism names in any served room file (scan, AC-29). | task rule 8 |
+| PL-17 | Names: generic representative names in the teaching copy, with source records keeping usable citations (D1); no infrastructure vendor or mechanism names in any served room file (scan, AC-29). | task rule 8; D1, D10 |
 | PL-18 | No MicroDuck or Pollen material of any kind. | task rule 7 |
 | PL-19 | Live honesty: the mode chip comes only from `source.mjs`; every result says `as of seq S`; `solving` only from a verified `simulation_pending` while LIVE; fields only from completed signed solves; simulated time stated separately; the doorbell never sets LIVE. | task rule 4; L3:ARCHITECTURE §6.4; VIEW-ENVELOPE v0.6.2 rule 5 |
 | PL-20 | Motion is one of three kinds and says which: replay playback (REPLAY), a new live receipt (announced once), view-only motion (explode, orbit, chiplet glides). No idle effects. Field changes are hard cuts. | A#57053; L3:RISKS R-08 |
@@ -1442,7 +1492,7 @@ small change (D9). Nothing in phases 1-5 needs that.
 | P6 | **Replay artifacts:** serve fields next to replay bundles (`/api/replay/<bundle>/artifacts/<sha256>` or static files). | TBD (API owner) | fields in replays | the page builds `/api/replay/…` (package.js:652-654); not served |
 | P7 | **Grid layer order and extent** for layers 6 and 7 confirmed by the producer (section 5.4). | TBD (producer owner) | drawing fields on spreader and sink | code reading only |
 | P8 | **Evaluator acceptance:** an ACCEPTED entry for an exact identity. | label-rule owner with the SLAB-049 review | any "accepted" label (never blocks the build) | ACCEPTED is empty (temperature-label.mjs:28) |
-| P9 | **A label state for non-result temperatures** (D2). | TBD (label-rule owner) and the founder | showing literature or input temperatures as numbers | none |
+| P9 | **The role formatter for non-result temperatures** (D2): typed roles (`model_input`, `material_condition`, `published_limit`), never the four result states, with tests. | TBD (label-rule owner) | showing literature or input temperatures as numbers | none |
 | P10 | **Doorbell route** (optional): `GET /api/view/doorbell?run_id=` (SSE); measure edge and container idle timeouts first. | TBD (API owner) | W15 | none |
 | P11 | **PR #66 merged** (optional) for Accept negotiation of the room. | forge | D9 only | PR #66 open |
 
@@ -1458,7 +1508,7 @@ screenshots. No item deploys, runs a solver, or touches the producer, the API, t
 |---|---|---|
 | W0.1 | forge, warden and astra sign this exact document (section 5 schemas at version 1, the operation names in PSEUDOCODE §0, the no-result behaviour in sections 4.5 and 7, the AC list). | three sign-offs naming the commit |
 | W0.2 | astra maps her 41 source cases (30 web, 11 anatomy; A#57059) to AC ids, or lists the gaps; gaps become ACs before W1. | mapping committed next to ACCEPTANCE.md |
-| W0.3 | The founder answers D1 (names) and D2 (non-result temperatures), or accepts the defaults. | decision recorded |
+| W0.3 | The decisions settle with this document (section 11: root-proposed, forge-adopted, warden co-sign pending); warden resolves D5; no separate human decision is needed (A#57278). Carter approves the rendered page before any deploy. | warden's co-sign names the commit |
 | W0.4 | warden provisions the box: a branch with push rights only (no deploy credentials, no secrets, no solver or GB10 access); Node 22; Python with the repo's requirements for the W4 check (TAP's floorplan writer only); Playwright with Chromium via `PLAYWRIGHT_DIR` (the pattern of main:scripts/export-deck-pdf.mjs:4); the pinned wrangler for a local Worker (main:web/test/worker-boot.mjs:5-11, :22); gitleaks; access to the reference phone named under D4. | warden's admission record |
 
 ### Phase 1: data and validators (no page)
@@ -1489,8 +1539,9 @@ screenshots. No item deploys, runs a solver, or touches the producer, the API, t
 
 | Item | Size | Scope | Acceptance |
 |---|---|---|---|
-| W10 | L | `mat4.mjs`, `camera.mjs`, `gl.mjs`, `shaders.mjs`, `render3d.mjs`, `labels.mjs`; picking, explode tween, section caps, overlays, lid and spreader outlines; context loss and restore; disposal; the `window.__package3d.facts()` test hook. | AC-12 (browser), AC-15, AC-27, AC-33, AC-35 |
-| W11 | S | Performance and device run on the reference phone and a desktop; traces attached. | AC-34 |
+| W9.5 | S | The section 6.11 measurement of both D5 options as spikes behind the `render3d.mjs` contract (no page integration); traces attached; warden resolves D5 from them. | AC-34 (measurement protocol) |
+| W10 | L | The renderer warden picks under D5 (section 6.10: option A's `mat4.mjs`, `camera.mjs`, `gl.mjs`, `shaders.mjs`, or option B's pinned vendored core), `render3d.mjs`, `labels.mjs`; picking, explode tween, section caps, overlays, lid and spreader outlines; context loss and restore; disposal; the `window.__package3d.facts()` test hook. | AC-12 (browser), AC-15, AC-27, AC-33, AC-35 |
+| W11 | S | The section 6.11 measurement of the built renderer on the named workload, phone, browser and desktop, against the D4 targets; traces attached. | AC-34 |
 
 ### Phase 5: results (view envelopes; no fields in production)
 
@@ -1507,7 +1558,7 @@ screenshots. No item deploys, runs a solver, or touches the producer, the API, t
 | W15 | P10 | Optional doorbell. | AC-24 (doorbell clause) |
 | W16 | a trial approved by the reviewers (section 10) | Optional scriptable CAD for authored geometry. | AC-38 |
 | W17 | D7 | Optional SKETCH mode. | AC-39 |
-| W18 | D1 = named | Named content variant and a product assembly. | AC-29 (named mode), AC-40 |
+| W18 | a new decision | Not planned: D1 resolved generic names with usable citations; a named content variant and a product assembly would need a new decision. | AC-29, AC-40 |
 
 ## 10. CAD
 
@@ -1553,28 +1604,41 @@ transforms (A#57059). Parity with the primitive model: per-instance bounding box
 ids, glTF-Validator 0 errors (L3:ARCHITECTURE §7.2), every resolved dependency's license reviewed, versions and Python
 pinned, no CAD in the display path.
 
-## 11. Open decisions for the founder and the reviewers
+## 11. Decisions: root's proposed resolutions and their status
 
-| Id | Decision | Options and inputs | Default until decided | Who |
+Root proposed a resolution for every advertised decision under Carter's standing authorization (A#57218, A#57278).
+None needs a new human decision, and Carter already chose Astra ultra for the build after joint agreement. Each is
+recorded here as **root-proposed, forge-adopted, warden co-sign pending**: the existing three-owner sign-off (W0.1)
+settles them with this document, and no fourth signer or new gate is added. D5 is the one shared implementation
+choice still open: root votes for option B and warden resolves it in this draft (section 6.10). D15 is informational;
+D16 is the test mapping, kept with W0.2.
+
+**Product gate: Carter approves the rendered page, from real-browser screenshots, before any deploy; this
+document's text is not that gate.**
+
+| Id | Decision | Options and inputs | Resolution | Status |
 |---|---|---|---|---|
-| D1 | Naming the chip products studied (for example "Ascend 910", "H100") and their makers and technologies in the room's educational content and citations. | Rule 8 makes it open. The site already names "Ascend910-class 2.5D (TAP, HotSpot)" in the run view's benchmark list (main:web/public/index.html:28) and serves the fixture id `ascend910` in data (main:web/public/replay/ascend910-seed11-32x32.json `benchmark`); PR #66 names "Ascend 910" and "CPU-DRAM" as problems (pr66:web/public/agents/index.json:19). | `generic`: no product or company names in new copy or twins; sources shown as type, kind and year; fixture ids kept only as identifiers. | founder |
-| D2 | Temperatures that are not results (literature limits such as HBM refresh trip points, model inputs such as the ambient, the condition of a material value). | **Contradiction.** Rule 1 requires one of four label states, and none is truthful for them: withdrawn and unvalidated say "simulated", illustrative means the bundled fixture, accepted says "simulated" (main:web/public/temperature-label.mjs:38-53). Lane 1 content contains such values (L1:thermal_path.md §3; parts.json `silicon_85C` and others). PR #66 shows policy temperatures with "provisional" and "invented" qualifiers that are not label states (pr66:web/public/agents/math.md:168, :221-225). Options: keep them unrendered; or the label-rule owner adds a state (for example "sourced · not a result") with tests, outside the four states rule 1 names. | unrendered, listed in `omitted` (PL-4) | founder and label-rule owner |
-| D3 | Signed chip-layer grids that already exist. | **Contradiction.** The task's rule 5 says no signed record carries a temperature field today. Lane 3's finding is narrower: no verified view envelope carries a field (L3:ARCHITECTURE §0 and §5.1). On origin/main, the served run-view replay holds signed flight records with a 32 x 32 chip-layer `heatmap_c` from the withdrawn HotSpot-7 build, drawn by the run view (main:web/public/app.js:52, :63, :139). Use them in the room (through the flight-record verifier, main:web/public/verify-core.js), or not. | not used; the Results path is view envelopes only; P1-P4 stay required for any 3D field | founder and reviewers |
-| D4 | Phone performance budgets and the reference phone. | **Inputs differ.** Lane 3: at most 300,000 triangles, 60 draw calls, 6,000 interconnect instances, p95 frame 33 ms, DPR 2 (L3:ACCEPTANCE A-10). astra: at most 50,000 triangles, 100 draw calls, a 2 MiB derivative, a 1-megapixel buffer, p95 interaction frame 33 ms on a named tested phone; proposed and unmeasured (A#57059). | the stricter value per row, plus both sources' extra rows (ACCEPTANCE AC-34) | reviewers; warden names the phone |
-| D5 | Renderer. | Own WebGL2 (lane 3's recommendation) or vendored three.js r187 (lane 3's alternative: 2,133,699 B raw, 419,212 B gzip, a public-names exception needed; L3:ARCHITECTURE §2.2-§2.3). | own WebGL2 | reviewers |
-| D6 | Thickness in results mode without a field artifact. | **Inputs differ.** Lane 3 falls back to the parts list's nominal thickness (L3:PSEUDOCODE §1 step 3); astra and rule 2 keep anatomy separate from the computational references (A#57053). | the run's verified inputs (`run_inputs_verified`), else schematic; never anatomy, and never the family's current manifest (X3, X4; A#57218 item 6) | reviewers |
-| D7 | Build SKETCH mode at all, and a label state for its numbers. | L3:ARCHITECTURE §6.3; rule 4. | not built | founder and label-rule owner |
-| D8 | Which model content is shown by default. | The 45 mm raw references are gate zero (README.md:24; A#57059: the retained references are on a 45 mm interposer); the live service's default fixture is the 50 mm `ascend910` (main:sentilab_core/conductor.py:55; tap_oracle.py:25). | Model mode opens on `ascend910-45mm` raw, with the 0.5 mm variant and the other fixtures selectable; Results draws each run's signed geometry, with its family's manifest as reference context only (X3) | forge and astra |
-| D9 | Agent catalogue location and negotiation. | Lane 3 put a catalogue at `/agents/index.json` (L3:ARCHITECTURE §8); PR #66 uses that path for its own index (`sentilab-agents-index/1`, pr66:web/public/agents/index.json:2). | `/agents/package3d/index.json` and `index.md`; linked from PR #66's index only if it merges; Accept negotiation for the room only after PR #66 | forge |
-| D10 | Scope of the infrastructure-names scan (rule 8). | A room-scoped test now, or extend the global `NAMES` list (main:web/test/public-names.test.mjs:20-26). | room-scoped (AC-29) | site test owner |
-| D11 | The first typical assembly. | One compute die and four HBM stacks on a silicon interposer (within lane 1's "one or two compute dies and four to eight HBM stacks", L1:REPORT §1), 12-high HBM (lane 1's FEM stack), lidded with a lidless variant; lane 1's `generic_hbm3e_two_die` (two dies, eight stacks, bridge-class interposer) as the second. | as stated | forge |
-| D12 | Results whose receipts lack named inputs and argv (all of today's). | Show with the `receipt incomplete` chip, or hide until P5. | show, with the chip (section 5.6) | astra and founder |
-| D13 | Die-internal anatomy ("every intricacy", F#57046). | No public power map or die floorplan was captured (L1:thermal_path.md §4). | out of scope; the compute die's function is described in words | founder |
-| D14 | Static manifests when WebCrypto is unavailable. | Refuse to draw, or draw with a `file check unavailable` chip. | draw with the chip; Results draws nothing (package.js:644-648) | reviewers |
-| D15 | FreeCAD's latest release. | Lane 3 recorded 1.1.4 from the GitHub releases API on 2026-10-31 (L3:evidence/cad-05-12 §cad-06); astra's review did not establish the latest stable release. FreeCAD is not used. | informational; no action | none needed |
-| D16 | Test mapping to astra's 41 source cases. | Her full report (sha256 `cccbe9d165fc358a17108e23ab6cbf1d8bdc4739d049e5e2565a90d430614d97`) is retained by her and was not available here. | Phase 0 exit (W0.2) | astra |
-| D17 | Transitions between verified fields. | astra calls a steady-map fade "presentation" (A#57059), which permits a labelled fade; this spec prefers a hard cut so no frame shows colours of no solve. | hard cut | reviewers |
-| D18 | Page path and title. | Lane 3's `/sentilab/package3d/` and "Package 3D"; the founder calls it the simulation room. | `/sentilab/package3d/`, "Package 3D" | founder |
+| D1 | Names in the room's teaching content and citations. | Rule 8. The run view names "Ascend910-class 2.5D (TAP, HotSpot)" (main:web/public/index.html:28) and serves the fixture id `ascend910` in data (main:web/public/replay/ascend910-seed11-32x32.json `benchmark`); PR #66 names "Ascend 910" and "CPU-DRAM" (pr66:web/public/agents/index.json:19). | Generic representative labels in the teaching copy (part names, claims, explanations, labels, flow text, the twins' prose), with usable source citations kept: each source record carries its title, publisher, URL and capture hash (section 5.2). The names scan covers the copy, not the source records (D10). Fixture ids stay identifiers. | root-proposed, forge-adopted, warden co-sign pending |
+| D2 | Temperatures that are not results. | v0.1 recorded a contradiction: the four label states are result states, and none is truthful for a literature limit, a model input or a material condition (main:web/public/temperature-label.mjs:38-53). Lane 1 holds such values (L1:thermal_path.md §3; parts.json `silicon_85C` and others); PR #66 shows qualified policy temperatures (pr66:web/public/agents/math.md:168, :221-225). | Typed roles: a temperature quantity is a `model_input` (for example the ambient), a `material_condition` (the temperature a conductivity is stated at), a `published_limit` (for example a refresh trip point) or a `computed_result`; only computed results use the four result states. Until the role formatter and its tests land with the label-rule owner (P9), non-result temperatures stay unrendered and are listed in `omitted` with their role (PL-4). | root-proposed, forge-adopted, warden co-sign pending |
+| D3 | Signed chip-layer grids that already exist. | v0.1 recorded a contradiction: rule 5 says no signed record carries a field, but the served run-view replay holds signed 32 x 32 chip-layer grids from the withdrawn HotSpot-7 build, drawn by the run view (main:web/public/app.js:52, :63, :139). | The fact that these legacy withdrawn grids exist is retained (section 2). A 3D field is enabled only through an exact supported verifier and association path (section 5.7 with `run_inputs_verified`, section 5.6); the legacy grids have none, so the room does not draw them. | root-proposed, forge-adopted, warden co-sign pending |
+| D4 | Phone budgets, the reference phone, and how they are measured. | Lane 3: 300,000 triangles, 60 draw calls, 6,000 instances, p95 33 ms, DPR 2 (L3:ACCEPTANCE A-10). astra: 50,000 triangles, 100 draw calls, a 2 MiB derivative, a 1-megapixel buffer, p95 interaction 33 ms on a named phone, unmeasured (A#57059). | Initial phone tier: 50,000 triangles, 60 draw calls, a 1-megapixel drawing buffer and a 2 MiB render derivative, as prospective measurement targets, not limits (A#57278). The workload, device and browser are named before measuring, and preparation is measured separately from end-to-present (section 6.11; AC-34). | root-proposed, forge-adopted, warden co-sign pending; warden names the phone |
+| D5 | Renderer. | Option A, our own WebGL2 renderer (lane 3's recommendation); option B, a pinned, locally vendored three.js adapter behind the RenderModel (root's vote). Both scopes are written out in section 6.10; neither size nor performance is measured yet. | Open: root votes option B, with a license inventory; warden resolves it in this draft, informed by the measurement plan (section 6.11). Nothing outside `render3d.mjs` depends on the choice. | root's vote recorded; warden resolves in this draft |
+| D6 | Thickness in Results without verified inputs. | Lane 3 fell back to the parts list (L3:PSEUDOCODE §1 step 3); astra and rule 2 keep anatomy separate (A#57053). | The run's verified inputs (`run_inputs_verified`), else schematic; never anatomy, and never a newer family manifest (X3, X4; A#57218 item 6). | root-proposed, forge-adopted, warden co-sign pending |
+| D7 | SKETCH mode, and a label state for its numbers. | L3:ARCHITECTURE §6.3; rule 4. | Deferred: not built in this phase; the room ships verified playback only (section 4.9). | root-proposed, forge-adopted, warden co-sign pending |
+| D8 | Which model content is shown by default. | The 45 mm raw references are gate zero (README.md:24; A#57059); the live service's default fixture is the 50 mm `ascend910` (main:sentilab_core/conductor.py:55; tap_oracle.py:25). | Model mode opens on the reviewed 45 mm raw reference (`ascend910-45mm` raw), with the 0.5 mm variant and the other fixtures selectable; Results uses each run's recorded (signed) geometry, its family's manifest being reference context only (X3). | root-proposed, forge-adopted, warden co-sign pending |
+| D9 | Agent catalogue location, negotiation, and the future MCP half. | Lane 3 put a catalogue at `/agents/index.json` (L3:ARCHITECTURE §8); PR #66 uses that path for its own index (`sentilab-agents-index/1`, pr66:web/public/agents/index.json:2). | `/agents/package3d/` (`index.json`, `index.md` and the twins), linked from PR #66's index only if it merges; Accept negotiation only after PR #66. The future MCP half has an explicit owner: forge, until the three owners hand it to the bridge's owner; it conforms to the CLI's validation and artifacts (section 4.8). | root-proposed, forge-adopted, warden co-sign pending |
+| D10 | Scope of the names and license checks. | A room-scoped test now, or extend the global `NAMES` list (main:web/test/public-names.test.mjs:20-26). | Room-scoped, with two scopes: the served teaching copy is held to the generic-names list and to the infrastructure and model-vendor names; source records (title, publisher, URL, hash) keep usable citations and are held to the infrastructure and model-vendor names only. Plus a license inventory of every vendored or copied file the room serves (AC-29). | root-proposed, forge-adopted, warden co-sign pending |
+| D11 | The first typical assembly. | One compute die and four HBM stacks on a silicon interposer (within lane 1's "one or two compute dies and four to eight HBM stacks", L1:REPORT §1), 12-high HBM, lidded with a lidless variant; lane 1's `generic_hbm3e_two_die` as a second. | One generic teaching assembly, `typ-1c4m` (section 5.3); a second assembly is later work. | root-proposed, forge-adopted, warden co-sign pending |
+| D12 | Results whose receipts lack signed flags or argv (all of today's). | Show with the chip, or hide until P5. | Shown as explicitly qualified diagnostics: values with their labels, statistics, receipts and the `receipt incomplete` chip; `run_inputs_verified: false` keeps the stack schematic and any field unassociated (sections 5.6, 5.7). | root-proposed, forge-adopted, warden co-sign pending |
+| D13 | Die-internal anatomy ("every intricacy", F#57046). | No public power map or die floorplan was captured (L1:thermal_path.md §4). | A sourced conceptual inset of the compute die (compute arrays, SRAM, on-die interconnect): schematic arrangement (`render_hint`), every block's text sourced, the chip `conceptual · not a floorplan`; no claimed manufacturer floorplan and no power map (NG3). Its facts are new content for W2: lane 1 holds none. | root-proposed, forge-adopted, warden co-sign pending |
+| D14 | Static manifests when WebCrypto is unavailable. | Refuse to draw, or draw with a `file check unavailable` chip. | A useful static fallback: Anatomy and Model draw with the chip `file check unavailable here (needs a secure connection)`; Results draws nothing (package.js:644-648). | root-proposed, forge-adopted, warden co-sign pending |
+| D15 | FreeCAD's latest release. | Lane 3 recorded 1.1.4 from the GitHub releases API on 2026-10-31 (L3:evidence/cad-05-12 §cad-06); astra's review did not establish the latest stable release. FreeCAD is not used. | Informational; no action. | informational |
+| D16 | Test mapping to astra's 41 source cases. | Her full report (sha256 `cccbe9d165fc358a17108e23ab6cbf1d8bdc4739d049e5e2565a90d430614d97`) is retained by her and was not available here. | Phase 0 exit (W0.2). | astra |
+| D17 | Transitions between verified fields. | astra calls a steady-map fade "presentation" (A#57059), which permits a labelled fade; this spec prefers a hard cut so no frame shows colours of no solve. | Hard cut between verified fields (PL-20). | root-proposed, forge-adopted, warden co-sign pending |
+| D18 | Page path and title. | Lane 3's `/sentilab/package3d/` and "Package 3D"; the founder calls it the simulation room. | `/sentilab/package3d/`, "Package 3D", linked from the simulation room (the SentiLab Lab and Package views, G1). | root-proposed, forge-adopted, warden co-sign pending |
+
+CAD-kernel adoption is deferred the same way (root-proposed, forge-adopted, warden co-sign pending): scriptable CAD
+stays behind the W16 trial (section 10), and deferred CAD cases do not block the first original-primitive page.
 
 ## 12. Limits of this spec
 

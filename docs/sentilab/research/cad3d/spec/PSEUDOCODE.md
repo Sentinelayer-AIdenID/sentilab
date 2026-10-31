@@ -36,8 +36,9 @@ web/public/sentilab/package3d/
   twin.mjs            PURE  twinOf(), twinMarkdown()
   labels.mjs          DOM   createLabelLayer() (per-property CSSOM)
   fallback2d.mjs      DOM   renderSectionSvg()
-  mat4.mjs camera.mjs PURE  matrices, orbit reducers
-  gl.mjs shaders.mjs render3d.mjs   WebGL2 only here
+  mat4.mjs camera.mjs PURE  matrices, orbit reducers (D5 option A)
+  gl.mjs shaders.mjs render3d.mjs   WebGL2 only here (option A; under option B a pinned, vendored core replaces gl, shaders,
+                      mat4 and camera behind the same render3d.mjs contract: SPEC.md §6.10)
   pins.mjs            GENERATED: sha256 of each data file (written by scripts/package3d.mjs data)
   data/anatomy.json  data/assembly-typ-1c4m.json  data/model-stack.json  data/layouts.json
 web/public/agents/package3d/
@@ -776,10 +777,11 @@ export function writeGlb(model) { /* -> Uint8Array; the caller records its sha25
   (`el.style.transform = …`), never `cssText`; labels are `aria-hidden`, the part tree is the accessible route.
 - `fallback2d.mjs`: `renderSectionSvg(svg, sectionAt(...), { describe })`: one `<rect>` per section rectangle,
   `<title>` text from the same `describeQuantity()` strings the panel uses; SVG attributes only, no `style=""`.
-- `render3d.mjs`, `gl.mjs`, `shaders.mjs`, `mat4.mjs`, `camera.mjs`: lane 3's (L3:PSEUDOCODE §9) with:
+- `render3d.mjs`, `gl.mjs`, `shaders.mjs`, `mat4.mjs`, `camera.mjs` (D5 option A; option B keeps `render3d.mjs` as the
+  adapter over the pinned, vendored core, with the same contract: SPEC.md §6.10): lane 3's (L3:PSEUDOCODE §9) with:
   `dispose()` deletes every program, buffer and texture and returns the counts; `stats` adds `glObjects`;
   `setModel()` takes a frozen RenderModel plus the display Map from `displayBoxes()` (the renderer never computes
-  offsets); the drawing buffer is capped (`dprCap = 2`, and on phones also at most 1,000,000 pixels: D4).
+  offsets); the drawing buffer is capped (`dprCap = 2`, and on phones also at most 1,000,000 pixels: the D4 targets).
 
 ## 13. `package3d.js`: the page controller
 
