@@ -3,19 +3,20 @@
 //   - replay files: paging.mjs verifyReplayBytes() (VIEW ENVELOPE v0.6 bytes-to-rows, then the v0.5 browser core:
 //     input checks before any hashing, duplicates and conflicts, the projectable prefix);
 //   - live: the v0.6 cursor reducer from paging.mjs (initialState / request / step, cursor + cursor_hash, the 409, 413
-//     and paging-unsupported terminal states), verifyRows() over every row held, and rule 5's label from liveLabel()
-//     over view-core's progressTracker(): "LIVE · progress N s ago", "STALE · chain broken", "STALE · <reason>".
-//     There is no seq paging anywhere.
+//     and paging-unsupported terminal states), verifyRows() over every row held, and the v0.6.2 label from track() and
+//     liveLabel(): "LIVE · progress N s ago", "ENDED · run finished", "STALE · chain broken", "STALE · <reason>".
+//     Catching up is not progress, and a run /api/view/runs lists as finished shows ENDED. There is no seq paging.
 // The trust rules are the Lab view's, unchanged:
 //   - pins come only from view-pins.js (the deployed page), never from a replay file, its manifest or the API;
 //   - ?pins=test (keys anyone can derive) is honoured only on a local server, exactly as lab.js does;
 //   - only the projectable prefix (verified, in-run, unbroken from seq 1, before any conflict) is handed on for drawing.
 import { VIEW_PINS } from "../view-pins.js";
-import { checkLine, readBodyCapped, progressTracker, parseKeyResponse, publicKeyFromSeedText, sha256Hex, VERSION, MAX_LINE_BYTES, MAX_FILE_BYTES, MAX_API_BYTES } from "../view-core.mjs";
-import { initialState, request as pageRequest, step as pageStep, verifyRows, verifyReplayBytes, splitRows, rowText, liveLabel, REASON_TEXT, MAX_LIMIT } from "../paging.mjs";
+import { checkLine, readBodyCapped, parseKeyResponse, publicKeyFromSeedText, sha256Hex, VERSION, MAX_LINE_BYTES, MAX_FILE_BYTES, MAX_API_BYTES } from "../view-core.mjs";
+import { initialState, request as pageRequest, step as pageStep, verifyRows, verifyReplayBytes, splitRows, rowText, track, liveLabel, REASON_TEXT, MAX_LIMIT } from "../paging.mjs";
 import { reasonText, chainSummary, isDrill as anyDrill, isRejected } from "../lab-model.mjs";
+import { refreshRuns, strictJson, MAX_SMALL_JSON } from "../runs-list.mjs";
 
-export const CONTRACT_VERSION = `${VERSION} (live paging: view-envelope/0.6.1)`;
+export const CONTRACT_VERSION = `${VERSION} (live paging: view-envelope/0.6.2)`;
 export const DEMO = Object.freeze({ url: "../demo-run.jsonl", runId: "demo-8c-0001", label: "demo-run.jsonl · bundled interface fixture" });
 // The Lab view's rule (lab.js TEST_PIN_HOSTS): anyone can derive the test keys, so a public host must never accept
 // them; there they would let a forged file show as verified on our domain.
@@ -23,13 +24,10 @@ export const TEST_PIN_HOSTS = Object.freeze(["localhost", "127.0.0.1", "[::1]"])
 export const TEST_KEY_NAMES = Object.freeze(["core"]);
 export const testPinsAllowed = (hostname) => TEST_PIN_HOSTS.includes(String(hostname));
 export { MAX_FILE_BYTES, reasonText, chainSummary };
-const MAX_SMALL_JSON = 256 * 1024;              // /api/view/runs and /api/view/key are small; a bigger answer is refused
 const MAX_PAGES_PER_POLL = 16;                  // as the reference client loop and lab.js
 export const LIVE_POLL_MS = 1000;
 export const LIVE_BACKOFF_MS = 5000;
 
-const isObj = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
-const strictJson = (bytes) => JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes));
 const encoder = new TextEncoder();
 
 // ── trust ───────────────────────────────────────────────────────────────────────────────────────────────────
@@ -145,15 +143,16 @@ export async function fetchReplayBytes(url) {
 export const replayBytes = (input) => encoder.encode(typeof input === "string" ? input : `${input.map((e) => JSON.stringify(e)).join("\n")}\n`);
 
 // ── live: the v0.6 cursor reducer, one page at a time ────────────────────────────────────────────────────────
-// A live run's state: the paging state (rows, cursor, cursor_hash, failure, degraded), the rule 5 progress tracker,
-// and the normalized verification of every row held. Pure apart from the tracker, which is the shared one.
+// A live run's state: the paging state (rows, cursor, cursor_hash, failure, degraded, and v0.6.2's caught_up,
+// catching_up, high_k and last_progress_ms) and the normalized verification of every row held.
 export function createLive(runId, { limit = MAX_LIMIT } = {}) {
-  return { runId, paging: initialState(runId, { limit }), tracker: progressTracker(), verification: null };
+  return { runId, paging: initialState(runId, { limit }), verification: null };
 }
 // The next request ({ cursor, limit, cursor_hash? }), or null in a terminal state (409, 413, paging unsupported).
 export const liveRequest = (live) => pageRequest(live.paging);
 // One response to liveRequest(live). A valid page re-verifies every row held when rows arrived (a late conflict at an
-// old seq still reaches the view and shrinks K), and feeds the tracker; a failed poll keeps nothing.
+// old seq still reaches the view and shrinks K), then track() records progress: a page read while catching up only
+// raises the high, and growth after catch-up is progress (v0.6.2). A failed poll keeps nothing.
 export async function applyPage(live, response, nowMs, trust) {
   const result = await pageStep(live.paging, response, nowMs);
   live.paging = result.state;
@@ -161,26 +160,30 @@ export async function applyPage(live, response, nowMs, trust) {
     if (result.newRows.length > 0 || live.verification === null) {
       live.verification = normalize((await verifyRows(live.paging, optionsFor(live.runId, trust))).verification, live.runId);
     }
-    live.tracker.poll({ nowMs, ok: true, K: live.verification.prefixEnd, received: result.newRows.length });
-  } else {
-    live.tracker.poll({ nowMs, ok: false });
+    live.paging = track(live.paging, live.verification.prefixEnd, nowMs);
   }
   return { outcome: result.outcome, newRows: result.newRows.length };
 }
-// Rule 5's label (v0.6.1), from paging.mjs liveLabel(): a failed latest poll shows its reason; a frozen board (anything
-// after the prefix, including K cut back below its high) is "STALE · chain broken" at once; otherwise the tracker
-// decides (LIVE · progress N s ago, or STALE).
-export function liveModeOf(live, nowMs) {
-  // frozen: anything follows the projectable prefix (v0.6.1 rule 5): LIVE never shows next to a frozen board.
-  const label = liveLabel(live.paging, live.tracker, nowMs, live.verification?.prefixEnd ?? 0, live.verification?.frozen ?? false);
-  const mode = label.startsWith("LIVE") ? "LIVE" : "STALE";
-  const reason = mode === "STALE" && label.includes(" · ") ? label.slice(label.indexOf(" · ") + 3) : null;
+// The label (v0.6.2), from paging.mjs liveLabel(). A finished run: ENDED · run finished, unless the board is frozen
+// (STALE · chain broken) or a terminal reason holds. A running run: a failed latest poll shows its reason; a frozen
+// board (anything after the prefix, including K cut back below its high) is "STALE · chain broken" at once; otherwise
+// LIVE · progress N s ago when K grew after catch-up within 60 s and a poll succeeded within 5 s, else STALE.
+// runStatus: the run's status from /api/view/runs (runStatusOf); anything but "finished" counts as running.
+export function liveModeOf(live, nowMs, runStatus = "running") {
+  const label = liveLabel(live.paging, nowMs, live.verification?.prefixEnd ?? 0, live.verification?.frozen ?? false, runStatus);
+  const mode = label.startsWith("LIVE") ? "LIVE" : label.startsWith("ENDED") ? "ENDED" : "STALE";
+  const reason = mode !== "LIVE" && label.includes(" · ") ? label.slice(label.indexOf(" · ") + 3) : null;
   return { mode, reason, label };
 }
 // { mode, reason, label } for the header. A replay file is always REPLAY; live before any run is STALE.
-export function modeNow(kind, live, nowMs) {
+export function modeNow(kind, live, nowMs, runStatus = "running") {
   if (kind === "file") return { mode: "REPLAY", reason: null, label: "REPLAY" };
-  return live ? liveModeOf(live, nowMs) : { mode: "STALE", reason: null, label: "STALE" };
+  return live ? liveModeOf(live, nowMs, runStatus) : { mode: "STALE", reason: null, label: "STALE" };
+}
+// The selected run's status as /api/view/runs lists it: "finished" or, for anything else or no entry, "running".
+export function runStatusOf(feedState) {
+  const status = (feedState?.runs ?? []).find((run) => run.run_id === feedState.runId)?.status;
+  return status === "finished" ? "finished" : "running";
 }
 export { REASON_TEXT };
 
@@ -206,30 +209,25 @@ export function createLiveFeed({ trust, runId = null, onChange = () => {}, fetch
   // One poll. Returns the delay before the next one (null: stopped for good).
   async function pollOnce() {
     if (state.live?.paging.degraded) { onChange(); return null; }   // stopped for good; a reload starts over
-    try {
-      if (!state.runs || !state.runId || now() - state.runsAt > 15000) {
-        const r = await fetchImpl("/api/view/runs", { cache: "no-store" });
-        if (!r.ok) throw new Error(`/api/view/runs answered ${r.status}`);
-        const body = await readBodyCapped(r, MAX_SMALL_JSON, "too_large");
-        if (!body.ok) throw new Error("/api/view/runs answered with more than 256 KiB");
-        const doc = strictJson(body.bytes);
-        state.runs = (Array.isArray(doc) ? doc : isObj(doc) && Array.isArray(doc.runs) ? doc.runs : [])
-          .filter((x) => isObj(x) && typeof x.run_id === "string" && x.run_id.length <= 128).slice(0, 200);
-        state.runsAt = now();
-        state.connected = true;
-        if (!state.runId && state.runs.length) state.runId = state.runs[0].run_id;
-        if (state.runId && !state.live) state.live = createLive(state.runId);
-        if (!state.runId) { onChange(); return LIVE_BACKOFF_MS; }
+    if (!state.runs || !state.runId || now() - state.runsAt > 15000) {
+      // runs-list.mjs refreshRuns(), the Lab view's path too. A failed refresh (a 503 or any non-200, a network
+      // throw, a malformed or non-schema 200) is a failed poll: the shared paging transition (paging.mjs step() with
+      // no response: failure "transport", rows, cursor and cursor hash kept), exactly as for a failed events page,
+      // is stored BEFORE the page is told: the label reads "STALE · transport" at once, never LIVE.
+      const got = await refreshRuns(fetchImpl, state.live?.paging ?? null, now);
+      if (!got.ok) {
+        if (state.live) state.live.paging = got.paging;
+        state.connected = false;
+        state.error = got.error;
+        onChange();
+        return LIVE_BACKOFF_MS;
       }
-    } catch (error) {
-      state.connected = false;
-      state.error = String(error?.message ?? error);
-      // A failed /runs refresh is a failed poll. The shared paging transition records it (paging.mjs step() with no
-      // response: failure "transport", rows and cursor kept) and the tracker counts it as failed, exactly as for a
-      // failed events page, BEFORE the page is told: the label reads "STALE · transport" at once, never LIVE.
-      if (state.live) await applyPage(state.live, null, now(), trust);
-      onChange();
-      return LIVE_BACKOFF_MS;
+      state.runs = got.runs;
+      state.runsAt = now();
+      state.connected = true;
+      if (!state.runId && state.runs.length) state.runId = state.runs[0].run_id;
+      if (state.runId && !state.live) state.live = createLive(state.runId);
+      if (!state.runId) { onChange(); return LIVE_BACKOFF_MS; }
     }
     const live = state.live;
     let outcome = "ok";

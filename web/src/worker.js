@@ -1,6 +1,22 @@
 // sentilab.aidenid.com: static assets from ./public, and read-only /api/* proxied to the sentilab-api Azure Container App
 // (API_ORIGIN). The upstream body streams through, so server-sent events work unchanged.
+// This module's only export is the default handler: the Workers runtime treats every named export of the main module
+// as an entry point and refuses to start on anything else (web/test/worker-boot.mjs boots it in CI).
+import { CSP } from "./csp.js";
+
 const HOP = ["connection", "keep-alive", "transfer-encoding", "upgrade", "host"];
+
+// Every static asset response (the pages, their scripts and styles, the data files) carries the CSP (csp.js), so only
+// our own scripts run on the verifier pages. /api/* responses are passed through untouched. wrangler.jsonc sends every
+// request through this Worker (assets.run_worker_first: true); without that the asset layer would answer first and
+// this header would never be set.
+
+async function asset(request, env) {
+  const res = await env.ASSETS.fetch(request);
+  const headers = new Headers(res.headers);
+  headers.set("content-security-policy", CSP);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
 
 async function proxy(request, env) {
   const origin = String(env.API_ORIGIN || "").replace(/\/+$/, "");
@@ -43,6 +59,6 @@ export default {
         { status: 429, headers: { "content-type": "application/json", "retry-after": "60", "cache-control": "no-store" } });
     }
     if (pathname === "/api" || pathname.startsWith("/api/")) return proxy(request, env);
-    return env.ASSETS.fetch(request);
+    return asset(request, env);
   },
 };

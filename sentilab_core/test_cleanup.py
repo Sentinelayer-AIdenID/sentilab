@@ -203,8 +203,11 @@ class StdioCleanupTests(unittest.IsolatedAsyncioTestCase):
                 await process.stdin.drain()
 
             async def call(id, operation):
+                arguments = {"ai_off": True}
+                if operation == "verify":
+                    arguments["run_id"] = "cleanup"
                 await send({"id": id, "method": "tools/call", "params": {
-                    "name": "sentilab_live_" + operation, "arguments": {"ai_off": True}}})
+                    "name": "sentilab_live_" + operation, "arguments": arguments}})
 
             async def receive():
                 return json.loads(await asyncio.wait_for(process.stdout.readline(), 5))

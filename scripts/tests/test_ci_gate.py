@@ -165,11 +165,8 @@ RAW_SPAWNS += [('sentilab_core/test_resultcheck_platform.py',
   'subprocess.run',
   ("[sys.executable, '-m', 'sentilab_cli', 'resultcheck', str(file)]",))]
 
-# Export worker replays recorded data; ResultCheck CLI checks files. Neither evaluates HotSpot.
+# ResultCheck CLI checks files; no thermal evaluation.
 RAW_SPAWNS += [('sentilab_mcp/__init__.py',
-  'asyncio.create_subprocess_exec',
-  ('sys.executable', "'-m'", "'sentilab_mcp.export_worker'")),
- ('sentilab_mcp/__init__.py',
   'asyncio.create_subprocess_exec',
   ('sys.executable',
    "'-m'",
@@ -226,6 +223,50 @@ RAW_SPAWNS += [('sundai_controller/test_process_budget.py',
 # Fixed cancellation host starts a sleeping Python descendant; no solver.
 RAW_SPAWNS += [('sentilab_core/test_oracle.py', 'asyncio.create_subprocess_exec',
                 ('sys.executable', "'-c'", 'script', 'str(ready)'))]
+
+# Recorded capability worker excludes live.run; chiplet Node only projects recorded JSON.
+RAW_SPAWNS += [('sentilab_core/execution.py', 'subprocess.Popen',
+  ("[sys.executable, '-m', 'sentilab_core.execution']",)),
+ ('sentilab_core/chiplet.py', 'subprocess.run',
+  ("['node', '--input-type=module', '-e', source]",))]
+
+# Saved Popen aliases: recorded worker before dispatch, or finite fork/pipe cleanup fixture.
+RAW_SPAWNS += [('sentilab_core/test_execution.py', 'subprocess.Popen', ('*args',)),
+ ('sentilab_core/test_execution.py', 'subprocess.Popen', ('command', '*args'))]
+
+# Build metadata probes query the installed package/runtime and the fixed receipt script.
+RAW_SPAWNS += [('sentilab_core/test_build_info.py', 'subprocess.check_output',
+  ("['dpkg-query', '-W', '-f=${Version}', 'nodejs']",)),
+ ('sentilab_core/test_build_info.py', 'subprocess.check_output',
+  ("['/usr/bin/node', '--version']",)),
+ ('sentilab_core/test_build_info.py', 'subprocess.run',
+  ("[*command, '--base-image', base, '--node-package-version', package]",)),
+ ('sentilab_core/test_build_info.py', 'subprocess.run',
+  ("[*command, '--base-image', image, '--node-package-version', pin]",))]
+
+# CLI/MCP conformance: recorded data, fake SSH, refused requests, help and registry output.
+# Successful live.run uses FIXTURE_HOST with BarrierOracle and a preexisting STOP file.
+RAW_SPAWNS += [('sentilab_core/test_conformance.py', 'subprocess.run',
+  ('self.cli_command(row, arguments)',)),
+ ('sentilab_core/test_conformance.py', 'subprocess.Popen', ('command',)),
+ ('sentilab_core/test_conformance.py', 'subprocess.run', ('command',)),
+ ('sentilab_core/test_conformance.py', 'subprocess.run', ('command',)),
+ ('sentilab_core/test_conformance.py', 'subprocess.Popen',
+  ('self.cli_command(row, arguments)',)),
+ ('sentilab_core/test_conformance.py', 'subprocess.run',
+  ("[sys.executable, '-m', 'sentilab_cli', *row.cli_command, *flags, *extra]",)),
+ ('sentilab_core/test_conformance.py', 'subprocess.run',
+  ("[sys.executable, '-m', 'sentilab_mcp']",)),
+ ('sentilab_core/test_conformance.py', 'subprocess.run', ('command',)),
+ ('sentilab_core/test_conformance.py', 'subprocess.run',
+  ("[sys.executable, '-m', 'sentilab_core.capabilities']",)),
+ ('sentilab_core/test_conformance.py', 'subprocess.run',
+  ("[sys.executable, '-m', 'sentilab_mcp']",)),
+ ('sentilab_core/test_conformance.py', 'subprocess.run',
+  ("[sys.executable, '-m', 'sentilab_cli', namespace, '--help']",)),
+ ('sentilab_core/test_conformance.py', 'subprocess.run',
+  ("[sys.executable, '-m', 'sentilab_cli', namespace, '--help']",)),
+ ('sentilab_core/test_conformance.py', 'subprocess.run', ("[*invocation, '--help']",))]
 
 class GateTests(unittest.TestCase):
     @classmethod
