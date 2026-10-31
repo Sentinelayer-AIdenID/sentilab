@@ -18,7 +18,10 @@ else:
 
 
 LANE_IDS = ("random", "simulated_annealing", "ucb1", "signal_portfolio")
+# The frozen lanes keep their three operators. "rotate" (SLAB-048) is a further move that
+# _candidate understands; a new protocol opts in by declaring it, which changes no frozen run.
 OPERATORS = ("local_move", "swap", "global_resample")
+ROTATE_OPERATOR = "rotate"
 SIGNAL_CHOICES = (*OPERATORS, "stop")
 
 
@@ -62,6 +65,13 @@ def _candidate(parent: Design, operator: str, rng: random.Random, oracle):
                 positions[chiplet.id] = [rng.choice(xs) - chiplet.width_mm / 2,
                                          rng.choice(ys) - chiplet.height_mm / 2]
             found = accept("place", {"positions": positions})
+            if found:
+                return found
+    elif operator == ROTATE_OPERATOR:
+        # Turn one non-square die 90 degrees about its centre; try each such die once, in a seeded order.
+        turnable = [chiplet.id for chiplet in parent.chiplets if chiplet.width_mm != chiplet.height_mm]
+        for chiplet_id in rng.sample(turnable, len(turnable)):
+            found = accept("rotate", {"chiplet": chiplet_id})
             if found:
                 return found
 

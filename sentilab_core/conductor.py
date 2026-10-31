@@ -44,6 +44,12 @@ def load_design(record):
                   tuple(tuple(p) for p in record["positions"]))
 
 
+def view_geometry(design):
+    """Lab/Package view rectangles: lower-left corner and the die's own footprint (turned if rotated)."""
+    return [{"id": c.id, "xLL": xy[0], "yLL": xy[1], "w": c.width_mm,
+             "h": c.height_mm, "layer": 0} for c, xy in zip(design.chiplets, design.positions)]
+
+
 class Conductor:
     def __init__(self, root, *, signer, public_keys, limits=Limits(), deadline=None,
                  fixture="ascend910", margin=0.32, grid=16, seed=11, oracle=None, cancel_event=None,
@@ -380,8 +386,7 @@ class Conductor:
             if isolated is not None:
                 proposal["originator"] = provenance
                 proposal["missing"] = missing
-            geometry = [{"id": c.id, "xLL": xy[0], "yLL": xy[1], "w": c.width_mm,
-                         "h": c.height_mm, "layer": 0} for c, xy in zip(candidate.chiplets, candidate.positions)]
+            geometry = view_geometry(candidate)
             candidate_envelope = self.emit("node.create", {"id": node, "kind": "candidate", "record": proposal}, node,
                                            {"geometry": geometry, "units": "mm", "scenario_id": "nominal"})
             if lab_proposal is not None:

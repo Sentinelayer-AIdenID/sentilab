@@ -1,4 +1,9 @@
+// A module: the page notice comes from the one rule (temperature-label.mjs). leaderboard.json names no evaluator for its
+// temperatures, so they are unvalidated (the rule's fail safe) and the notice shows while any are on the page.
+import { labelForAll, NOTICE } from "./temperature-label.mjs";
+
 const $ = (id) => document.getElementById(id);
+const setNotice = (on) => { $("wnotice").hidden = !on; $("wnotice").textContent = on ? NOTICE : ""; };
 const svgNS = "http://www.w3.org/2000/svg";
 const colors = {
   random: "#78aaff",
@@ -79,10 +84,12 @@ function renderBenchmark(name) {
   if (!item || item.seed_count < 10) {
     $("status").textContent = "This batch is missing or has fewer than 10 seeds; it is not shown as a TFL-08 result.";
     $("content").hidden = true;
+    setNotice(false);
     return;
   }
   $("status").hidden = true;
   $("content").hidden = false;
+  setNotice(labelForAll([]).notice);   // the batch's temperatures, with no evaluator named for them
   $("seedCount").textContent = String(item.seed_count);
   $("protocol").textContent = `${item.evaluations_per_lane} charged evaluations per lane · seeds ${item.seeds.join(", ")}`;
   $("winner").textContent = item.statistics.winner_by_median.replaceAll("_", " ");

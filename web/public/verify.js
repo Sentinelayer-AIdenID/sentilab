@@ -1,10 +1,14 @@
 // Offline record verifier (verify.html). A file, not an inline <script>: the page's Content-Security-Policy
 // (script-src 'self') runs only this site's own script files. Markup built here carries no style="" attributes.
 import { verifyDocument } from "./verify-core.js";
+// The page notice comes from the one rule (temperature-label.mjs), over the identity of every temperature each shown
+// best peak was taken from, as the verifier reports it: any withdrawn or unvalidated one (or none named) shows it.
+import { reportNeedsNotice, NOTICE } from "./temperature-label.mjs";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c]);
 const short = (h) => (h ? `${h.slice(0, 12)}…${h.slice(-6)}` : "—");
+const setNotice = (on) => { $("wnotice").hidden = !on; $("wnotice").textContent = on ? NOTICE : ""; };
 
 function render(report, source) {
   const badge = (ok, yes, no) => `<span class="badge ${ok ? "ok" : "bad"}">${ok ? "✓" : "✗"} ${ok ? yes : no}</span>`;
@@ -48,12 +52,17 @@ function laneTable(lanes) {
 }
 
 function fail(message) {
+  setNotice(false);
   $("summary").innerHTML = `<span class="badge bad">✗ ${esc(message)}</span>`;
   $("results").innerHTML = "";
 }
 
 async function verifyText(text, source) {
-  try { render(await verifyDocument(text), source); } catch (e) { fail(e.message || String(e)); }
+  try {
+    const report = await verifyDocument(text);
+    render(report, source);
+    setNotice(reportNeedsNotice(report));
+  } catch (e) { fail(e.message || String(e)); }
 }
 
 async function fetchRun(id) {
