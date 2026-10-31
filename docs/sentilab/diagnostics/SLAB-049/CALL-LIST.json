@@ -1,0 +1,1506 @@
+{
+  "calls": [
+    {
+      "evaluator": "OLD",
+      "grid": 64,
+      "group": "a",
+      "h_multiplier": 0.5,
+      "id": "a-slab-h0p5-old",
+      "invocation": {
+        "argv": [
+          "<repo>/sundai_hotspot/hotspot",
+          "-c",
+          "slab_h0p5.config",
+          "-f",
+          "slab_die.flp",
+          "-p",
+          "slab.ptrace",
+          "-steady_file",
+          "slab.steady",
+          "-grid_steady_file",
+          "slab.grid.steady",
+          "-model_type",
+          "grid",
+          "-detailed_3D",
+          "on",
+          "-grid_layer_file",
+          "slab.lcf",
+          "-grid_rows",
+          "64",
+          "-grid_cols",
+          "64",
+          "-grid_map_mode",
+          "max"
+        ],
+        "copy_in": [
+          "slab_die.flp",
+          "slab_tim.flp",
+          "slab.lcf",
+          "slab.ptrace",
+          "slab_h0p5.config"
+        ],
+        "cwd": "<fresh empty directory>",
+        "verify": "every copied file matches slab/SHA256SUMS before the solver starts"
+      },
+      "prediction": {
+        "flux_W_per_m2": 139999.99999999997,
+        "h_W_per_m2K": 1388.888888888889,
+        "interior_drop_die_minus_sink_K": 52.86749999999999,
+        "rise_K": {
+          "die_layer0": 156.08249999999998,
+          "sink_layer3": 103.21499999999999,
+          "spreader_layer2": 154.99749999999997,
+          "tim_layer1": 155.52249999999998
+        }
+      },
+      "r_convec_K_per_W": 0.07171286170174622,
+      "status": "ready"
+    },
+    {
+      "evaluator": "NEW",
+      "grid": 64,
+      "group": "a",
+      "h_multiplier": 0.5,
+      "id": "a-slab-h0p5-new",
+      "invocation": {
+        "argv": [
+          "<repo>/sundai_hotspot/hotspot-material-only",
+          "-c",
+          "slab_h0p5.config",
+          "-f",
+          "slab_die.flp",
+          "-p",
+          "slab.ptrace",
+          "-steady_file",
+          "slab.steady",
+          "-grid_steady_file",
+          "slab.grid.steady",
+          "-model_type",
+          "grid",
+          "-detailed_3D",
+          "on",
+          "-grid_layer_file",
+          "slab.lcf",
+          "-grid_rows",
+          "64",
+          "-grid_cols",
+          "64",
+          "-grid_map_mode",
+          "max"
+        ],
+        "copy_in": [
+          "slab_die.flp",
+          "slab_tim.flp",
+          "slab.lcf",
+          "slab.ptrace",
+          "slab_h0p5.config"
+        ],
+        "cwd": "<fresh empty directory>",
+        "verify": "every copied file matches slab/SHA256SUMS before the solver starts"
+      },
+      "prediction": {
+        "flux_W_per_m2": 139999.99999999997,
+        "h_W_per_m2K": 1388.888888888889,
+        "interior_drop_die_minus_sink_K": 2.467500000000001,
+        "rise_K": {
+          "die_layer0": 105.68249999999999,
+          "sink_layer3": 103.21499999999999,
+          "spreader_layer2": 104.59749999999998,
+          "tim_layer1": 105.12249999999999
+        }
+      },
+      "r_convec_K_per_W": 0.07171286170174622,
+      "status": "ready"
+    },
+    {
+      "evaluator": "OLD",
+      "grid": 64,
+      "group": "a",
+      "h_multiplier": 1.0,
+      "id": "a-slab-h1-old",
+      "invocation": {
+        "argv": [
+          "<repo>/sundai_hotspot/hotspot",
+          "-c",
+          "slab_h1.config",
+          "-f",
+          "slab_die.flp",
+          "-p",
+          "slab.ptrace",
+          "-steady_file",
+          "slab.steady",
+          "-grid_steady_file",
+          "slab.grid.steady",
+          "-model_type",
+          "grid",
+          "-detailed_3D",
+          "on",
+          "-grid_layer_file",
+          "slab.lcf",
+          "-grid_rows",
+          "64",
+          "-grid_cols",
+          "64",
+          "-grid_map_mode",
+          "max"
+        ],
+        "copy_in": [
+          "slab_die.flp",
+          "slab_tim.flp",
+          "slab.lcf",
+          "slab.ptrace",
+          "slab_h1.config"
+        ],
+        "cwd": "<fresh empty directory>",
+        "verify": "every copied file matches slab/SHA256SUMS before the solver starts"
+      },
+      "prediction": {
+        "flux_W_per_m2": 139999.99999999997,
+        "h_W_per_m2K": 2777.777777777778,
+        "interior_drop_die_minus_sink_K": 27.667499999999997,
+        "rise_K": {
+          "die_layer0": 80.48249999999999,
+          "sink_layer3": 52.81499999999999,
+          "spreader_layer2": 79.39749999999998,
+          "tim_layer1": 79.92249999999999
+        }
+      },
+      "r_convec_K_per_W": 0.03585643085087311,
+      "status": "ready"
+    },
+    {
+      "evaluator": "NEW",
+      "grid": 64,
+      "group": "a",
+      "h_multiplier": 1.0,
+      "id": "a-slab-h1-new",
+      "invocation": {
+        "argv": [
+          "<repo>/sundai_hotspot/hotspot-material-only",
+          "-c",
+          "slab_h1.config",
+          "-f",
+          "slab_die.flp",
+          "-p",
+          "slab.ptrace",
+          "-steady_file",
+          "slab.steady",
+          "-grid_steady_file",
+          "slab.grid.steady",
+          "-model_type",
+          "grid",
+          "-detailed_3D",
+          "on",
+          "-grid_layer_file",
+          "slab.lcf",
+          "-grid_rows",
+          "64",
+          "-grid_cols",
+          "64",
+          "-grid_map_mode",
+          "max"
+        ],
+        "copy_in": [
+          "slab_die.flp",
+          "slab_tim.flp",
+          "slab.lcf",
+          "slab.ptrace",
+          "slab_h1.config"
+        ],
+        "cwd": "<fresh empty directory>",
+        "verify": "every copied file matches slab/SHA256SUMS before the solver starts"
+      },
+      "prediction": {
+        "flux_W_per_m2": 139999.99999999997,
+        "h_W_per_m2K": 2777.777777777778,
+        "interior_drop_die_minus_sink_K": 2.467500000000001,
+        "rise_K": {
+          "die_layer0": 55.28249999999999,
+          "sink_layer3": 52.81499999999999,
+          "spreader_layer2": 54.19749999999999,
+          "tim_layer1": 54.72249999999999
+        }
+      },
+      "r_convec_K_per_W": 0.03585643085087311,
+      "status": "ready"
+    },
+    {
+      "evaluator": "OLD",
+      "grid": 64,
+      "group": "a",
+      "h_multiplier": 2.0,
+      "id": "a-slab-h2-old",
+      "invocation": {
+        "argv": [
+          "<repo>/sundai_hotspot/hotspot",
+          "-c",
+          "slab_h2.config",
+          "-f",
+          "slab_die.flp",
+          "-p",
+          "slab.ptrace",
+          "-steady_file",
+          "slab.steady",
+          "-grid_steady_file",
+          "slab.grid.steady",
+          "-model_type",
+          "grid",
+          "-detailed_3D",
+          "on",
+          "-grid_layer_file",
+          "slab.lcf",
+          "-grid_rows",
+          "64",
+          "-grid_cols",
+          "64",
+          "-grid_map_mode",
+          "max"
+        ],
+        "copy_in": [
+          "slab_die.flp",
+          "slab_tim.flp",
+          "slab.lcf",
+          "slab.ptrace",
+          "slab_h2.config"
+        ],
+        "cwd": "<fresh empty directory>",
+        "verify": "every copied file matches slab/SHA256SUMS before the solver starts"
+      },
+      "prediction": {
+        "flux_W_per_m2": 139999.99999999997,
+        "h_W_per_m2K": 5555.555555555556,
+        "interior_drop_die_minus_sink_K": 15.067500000000003,
+        "rise_K": {
+          "die_layer0": 42.6825,
+          "sink_layer3": 27.614999999999995,
+          "spreader_layer2": 41.5975,
+          "tim_layer1": 42.122499999999995
+        }
+      },
+      "r_convec_K_per_W": 0.017928215425436555,
+      "status": "ready"
+    },
+    {
+      "evaluator": "NEW",
+      "grid": 64,
+      "group": "a",
+      "h_multiplier": 2.0,
+      "id": "a-slab-h2-new",
+      "invocation": {
+        "argv": [
+          "<repo>/sundai_hotspot/hotspot-material-only",
+          "-c",
+          "slab_h2.config",
+          "-f",
+          "slab_die.flp",
+          "-p",
+          "slab.ptrace",
+          "-steady_file",
+          "slab.steady",
+          "-grid_steady_file",
+          "slab.grid.steady",
+          "-model_type",
+          "grid",
+          "-detailed_3D",
+          "on",
+          "-grid_layer_file",
+          "slab.lcf",
+          "-grid_rows",
+          "64",
+          "-grid_cols",
+          "64",
+          "-grid_map_mode",
+          "max"
+        ],
+        "copy_in": [
+          "slab_die.flp",
+          "slab_tim.flp",
+          "slab.lcf",
+          "slab.ptrace",
+          "slab_h2.config"
+        ],
+        "cwd": "<fresh empty directory>",
+        "verify": "every copied file matches slab/SHA256SUMS before the solver starts"
+      },
+      "prediction": {
+        "flux_W_per_m2": 139999.99999999997,
+        "h_W_per_m2K": 5555.555555555556,
+        "interior_drop_die_minus_sink_K": 2.4674999999999976,
+        "rise_K": {
+          "die_layer0": 30.082499999999992,
+          "sink_layer3": 27.614999999999995,
+          "spreader_layer2": 28.997499999999995,
+          "tim_layer1": 29.522499999999994
+        }
+      },
+      "r_convec_K_per_W": 0.017928215425436555,
+      "status": "ready"
+    },
+    {
+      "blocked_on": [
+        "SLAB-048: a 45 mm fixture in tap_oracle.TAP_CONFIGS",
+        "SLAB-048: per-die orientation (Virtuvian, HBM and Nimbus orientations are not in the catalog) and off-grid reference centres"
+      ],
+      "centers_mm": null,
+      "centers_note": null,
+      "evaluator": "OLD",
+      "fixture": "ascend910@45mm",
+      "grid": 64,
+      "group": "b",
+      "id": "b-ascend910-original-45mm-old",
+      "layout": "ascend910-original",
+      "paper_peak_c": 75.48,
+      "status": "blocked"
+    },
+    {
+      "blocked_on": [
+        "SLAB-048: a 45 mm fixture in tap_oracle.TAP_CONFIGS",
+        "SLAB-048: per-die orientation (Virtuvian, HBM and Nimbus orientations are not in the catalog) and off-grid reference centres"
+      ],
+      "centers_mm": null,
+      "centers_note": null,
+      "evaluator": "NEW",
+      "fixture": "ascend910@45mm",
+      "grid": 64,
+      "group": "b",
+      "id": "b-ascend910-original-45mm-new",
+      "layout": "ascend910-original",
+      "paper_peak_c": 75.48,
+      "status": "blocked"
+    },
+    {
+      "blocked_on": [
+        "SLAB-048: per-die orientation (Virtuvian, HBM and Nimbus orientations are not in the catalog) and off-grid reference centres"
+      ],
+      "centers_mm": null,
+      "centers_note": null,
+      "evaluator": "OLD",
+      "fixture": "ascend910@50mm",
+      "grid": 64,
+      "group": "b",
+      "id": "b-ascend910-original-50mm-old",
+      "layout": "ascend910-original",
+      "paper_peak_c": 75.48,
+      "status": "blocked"
+    },
+    {
+      "blocked_on": [
+        "SLAB-048: per-die orientation (Virtuvian, HBM and Nimbus orientations are not in the catalog) and off-grid reference centres"
+      ],
+      "centers_mm": null,
+      "centers_note": null,
+      "evaluator": "NEW",
+      "fixture": "ascend910@50mm",
+      "grid": 64,
+      "group": "b",
+      "id": "b-ascend910-original-50mm-new",
+      "layout": "ascend910-original",
+      "paper_peak_c": 75.48,
+      "status": "blocked"
+    },
+    {
+      "blocked_on": [
+        "SLAB-048: a 45 mm fixture in tap_oracle.TAP_CONFIGS",
+        "SLAB-048: reference centres for the 45 mm frame (nearest-mm rounding overlaps the CPU halos in y)"
+      ],
+      "centers_mm": null,
+      "centers_note": null,
+      "evaluator": "OLD",
+      "fixture": "micro150@45mm",
+      "grid": 64,
+      "group": "b",
+      "id": "b-micro150-original-45mm-old",
+      "layout": "micro150-original",
+      "paper_peak_c": 115.94,
+      "status": "blocked"
+    },
+    {
+      "blocked_on": [
+        "SLAB-048: a 45 mm fixture in tap_oracle.TAP_CONFIGS",
+        "SLAB-048: reference centres for the 45 mm frame (nearest-mm rounding overlaps the CPU halos in y)"
+      ],
+      "centers_mm": null,
+      "centers_note": null,
+      "evaluator": "NEW",
+      "fixture": "micro150@45mm",
+      "grid": 64,
+      "group": "b",
+      "id": "b-micro150-original-45mm-new",
+      "layout": "micro150-original",
+      "paper_peak_c": 115.94,
+      "status": "blocked"
+    },
+    {
+      "blocked_on": null,
+      "centers_mm": [
+        [
+          20.0,
+          20.0
+        ],
+        [
+          20.0,
+          30.0
+        ],
+        [
+          30.0,
+          30.0
+        ],
+        [
+          30.0,
+          20.0
+        ],
+        [
+          11.0,
+          20.0
+        ],
+        [
+          11.0,
+          30.0
+        ],
+        [
+          39.0,
+          30.0
+        ],
+        [
+          39.0,
+          20.0
+        ]
+      ],
+      "centers_note": "PROVISIONAL: decoded 45 mm centres +2.5 mm, rounded to 1 mm; SLAB-048 reference data supersedes this before any run (regenerate the list, never swap after)",
+      "evaluator": "OLD",
+      "fixture": "micro150@50mm",
+      "grid": 64,
+      "group": "b",
+      "id": "b-micro150-original-50mm-old",
+      "layout": "micro150-original",
+      "paper_peak_c": 115.94,
+      "status": "ready"
+    },
+    {
+      "blocked_on": null,
+      "centers_mm": [
+        [
+          20.0,
+          20.0
+        ],
+        [
+          20.0,
+          30.0
+        ],
+        [
+          30.0,
+          30.0
+        ],
+        [
+          30.0,
+          20.0
+        ],
+        [
+          11.0,
+          20.0
+        ],
+        [
+          11.0,
+          30.0
+        ],
+        [
+          39.0,
+          30.0
+        ],
+        [
+          39.0,
+          20.0
+        ]
+      ],
+      "centers_note": "PROVISIONAL: decoded 45 mm centres +2.5 mm, rounded to 1 mm; SLAB-048 reference data supersedes this before any run (regenerate the list, never swap after)",
+      "evaluator": "NEW",
+      "fixture": "micro150@50mm",
+      "grid": 64,
+      "group": "b",
+      "id": "b-micro150-original-50mm-new",
+      "layout": "micro150-original",
+      "paper_peak_c": 115.94,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          9.0,
+          22.0
+        ],
+        [
+          22.0,
+          35.0
+        ],
+        [
+          45.0,
+          27.0
+        ],
+        [
+          40.0,
+          41.0
+        ],
+        [
+          37.0,
+          15.0
+        ],
+        [
+          24.0,
+          18.0
+        ]
+      ],
+      "evaluator": "NEW",
+      "fixture": "ascend910@50mm",
+      "grid": 32,
+      "group": "c",
+      "id": "c-mesh-ascend910-random-06-g32-new",
+      "layout": "mesh/ascend910/random-06",
+      "old_reference_j_c": 118.38,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          9.0,
+          22.0
+        ],
+        [
+          22.0,
+          35.0
+        ],
+        [
+          45.0,
+          27.0
+        ],
+        [
+          40.0,
+          41.0
+        ],
+        [
+          37.0,
+          15.0
+        ],
+        [
+          24.0,
+          18.0
+        ]
+      ],
+      "evaluator": "NEW",
+      "fixture": "ascend910@50mm",
+      "grid": 64,
+      "group": "c",
+      "id": "c-mesh-ascend910-random-06-g64-new",
+      "layout": "mesh/ascend910/random-06",
+      "old_reference_j_c": 118.54000000000002,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          15.0,
+          30.0
+        ],
+        [
+          40.0,
+          33.0
+        ],
+        [
+          37.0,
+          16.0
+        ],
+        [
+          29.0,
+          11.0
+        ],
+        [
+          45.0,
+          11.0
+        ],
+        [
+          29.0,
+          23.0
+        ]
+      ],
+      "evaluator": "NEW",
+      "fixture": "ascend910@50mm",
+      "grid": 32,
+      "group": "c",
+      "id": "c-mesh-ascend910-clustered-01-g32-new",
+      "layout": "mesh/ascend910/clustered-01",
+      "old_reference_j_c": 118.10000000000002,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          15.0,
+          30.0
+        ],
+        [
+          40.0,
+          33.0
+        ],
+        [
+          37.0,
+          16.0
+        ],
+        [
+          29.0,
+          11.0
+        ],
+        [
+          45.0,
+          11.0
+        ],
+        [
+          29.0,
+          23.0
+        ]
+      ],
+      "evaluator": "NEW",
+      "fixture": "ascend910@50mm",
+      "grid": 64,
+      "group": "c",
+      "id": "c-mesh-ascend910-clustered-01-g64-new",
+      "layout": "mesh/ascend910/clustered-01",
+      "old_reference_j_c": 118.15000000000003,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          25.0,
+          23.0
+        ],
+        [
+          41.0,
+          39.0
+        ],
+        [
+          44.0,
+          8.0
+        ],
+        [
+          6.0,
+          16.0
+        ],
+        [
+          8.0,
+          40.0
+        ],
+        [
+          40.0,
+          22.0
+        ]
+      ],
+      "evaluator": "NEW",
+      "fixture": "ascend910@50mm",
+      "grid": 32,
+      "group": "c",
+      "id": "c-mesh-ascend910-spread-01-g32-new",
+      "layout": "mesh/ascend910/spread-01",
+      "old_reference_j_c": 118.88,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          25.0,
+          23.0
+        ],
+        [
+          41.0,
+          39.0
+        ],
+        [
+          44.0,
+          8.0
+        ],
+        [
+          6.0,
+          16.0
+        ],
+        [
+          8.0,
+          40.0
+        ],
+        [
+          40.0,
+          22.0
+        ]
+      ],
+      "evaluator": "NEW",
+      "fixture": "ascend910@50mm",
+      "grid": 64,
+      "group": "c",
+      "id": "c-mesh-ascend910-spread-01-g64-new",
+      "layout": "mesh/ascend910/spread-01",
+      "old_reference_j_c": 118.97000000000003,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          42.0,
+          31.0
+        ],
+        [
+          12.0,
+          11.0
+        ],
+        [
+          22.0,
+          25.0
+        ],
+        [
+          20.0,
+          41.0
+        ],
+        [
+          11.0,
+          37.0
+        ],
+        [
+          30.0,
+          27.0
+        ]
+      ],
+      "evaluator": "NEW",
+      "fixture": "ascend910@50mm",
+      "grid": 32,
+      "group": "c",
+      "id": "c-mesh-ascend910-random-01-g32-new",
+      "layout": "mesh/ascend910/random-01",
+      "old_reference_j_c": 120.06,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          42.0,
+          31.0
+        ],
+        [
+          12.0,
+          11.0
+        ],
+        [
+          22.0,
+          25.0
+        ],
+        [
+          20.0,
+          41.0
+        ],
+        [
+          11.0,
+          37.0
+        ],
+        [
+          30.0,
+          27.0
+        ]
+      ],
+      "evaluator": "NEW",
+      "fixture": "ascend910@50mm",
+      "grid": 64,
+      "group": "c",
+      "id": "c-mesh-ascend910-random-01-g64-new",
+      "layout": "mesh/ascend910/random-01",
+      "old_reference_j_c": 120.03000000000003,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          9.0,
+          22.0
+        ],
+        [
+          22.0,
+          35.0
+        ],
+        [
+          45.0,
+          27.0
+        ],
+        [
+          40.0,
+          41.0
+        ],
+        [
+          37.0,
+          15.0
+        ],
+        [
+          24.0,
+          18.0
+        ]
+      ],
+      "evaluator": "OLD",
+      "fixture": "ascend910@50mm",
+      "grid": 64,
+      "group": "c",
+      "id": "c-mesh-ascend910-random-06-g64-old-reproduction",
+      "layout": "mesh/ascend910/random-06",
+      "old_reference_j_c": 118.54000000000002,
+      "purpose": "ties this host's OLD binary to the committed mesh J64 before NEW is compared with it",
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          19.0,
+          30.0
+        ],
+        [
+          26.0,
+          10.0
+        ],
+        [
+          31.0,
+          21.0
+        ],
+        [
+          7.0,
+          26.0
+        ],
+        [
+          30.0,
+          36.0
+        ],
+        [
+          35.0,
+          11.0
+        ],
+        [
+          17.0,
+          14.0
+        ],
+        [
+          42.0,
+          36.0
+        ]
+      ],
+      "evaluator": "NEW",
+      "fixture": "micro150@50mm",
+      "grid": 32,
+      "group": "c",
+      "id": "c-mesh-micro150-random-06-g32-new",
+      "layout": "mesh/micro150/random-06",
+      "old_reference_j_c": 194.14000000000004,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          19.0,
+          30.0
+        ],
+        [
+          26.0,
+          10.0
+        ],
+        [
+          31.0,
+          21.0
+        ],
+        [
+          7.0,
+          26.0
+        ],
+        [
+          30.0,
+          36.0
+        ],
+        [
+          35.0,
+          11.0
+        ],
+        [
+          17.0,
+          14.0
+        ],
+        [
+          42.0,
+          36.0
+        ]
+      ],
+      "evaluator": "NEW",
+      "fixture": "micro150@50mm",
+      "grid": 64,
+      "group": "c",
+      "id": "c-mesh-micro150-random-06-g64-new",
+      "layout": "mesh/micro150/random-06",
+      "old_reference_j_c": 194.93,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          32.0,
+          21.0
+        ],
+        [
+          17.0,
+          34.0
+        ],
+        [
+          23.0,
+          13.0
+        ],
+        [
+          27.0,
+          34.0
+        ],
+        [
+          8.0,
+          17.0
+        ],
+        [
+          42.0,
+          22.0
+        ],
+        [
+          23.0,
+          24.0
+        ],
+        [
+          36.0,
+          39.0
+        ]
+      ],
+      "evaluator": "NEW",
+      "fixture": "micro150@50mm",
+      "grid": 32,
+      "group": "c",
+      "id": "c-mesh-micro150-clustered-01-g32-new",
+      "layout": "mesh/micro150/clustered-01",
+      "old_reference_j_c": 205.75,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          32.0,
+          21.0
+        ],
+        [
+          17.0,
+          34.0
+        ],
+        [
+          23.0,
+          13.0
+        ],
+        [
+          27.0,
+          34.0
+        ],
+        [
+          8.0,
+          17.0
+        ],
+        [
+          42.0,
+          22.0
+        ],
+        [
+          23.0,
+          24.0
+        ],
+        [
+          36.0,
+          39.0
+        ]
+      ],
+      "evaluator": "NEW",
+      "fixture": "micro150@50mm",
+      "grid": 64,
+      "group": "c",
+      "id": "c-mesh-micro150-clustered-01-g64-new",
+      "layout": "mesh/micro150/clustered-01",
+      "old_reference_j_c": 205.79000000000002,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          40.0,
+          9.0
+        ],
+        [
+          6.0,
+          9.0
+        ],
+        [
+          22.0,
+          19.0
+        ],
+        [
+          7.0,
+          44.0
+        ],
+        [
+          17.0,
+          36.0
+        ],
+        [
+          34.0,
+          41.0
+        ],
+        [
+          43.0,
+          25.0
+        ],
+        [
+          31.0,
+          8.0
+        ]
+      ],
+      "evaluator": "NEW",
+      "fixture": "micro150@50mm",
+      "grid": 32,
+      "group": "c",
+      "id": "c-mesh-micro150-spread-01-g32-new",
+      "layout": "mesh/micro150/spread-01",
+      "old_reference_j_c": 170.23000000000002,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          40.0,
+          9.0
+        ],
+        [
+          6.0,
+          9.0
+        ],
+        [
+          22.0,
+          19.0
+        ],
+        [
+          7.0,
+          44.0
+        ],
+        [
+          17.0,
+          36.0
+        ],
+        [
+          34.0,
+          41.0
+        ],
+        [
+          43.0,
+          25.0
+        ],
+        [
+          31.0,
+          8.0
+        ]
+      ],
+      "evaluator": "NEW",
+      "fixture": "micro150@50mm",
+      "grid": 64,
+      "group": "c",
+      "id": "c-mesh-micro150-spread-01-g64-new",
+      "layout": "mesh/micro150/spread-01",
+      "old_reference_j_c": 170.89000000000004,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          27.0,
+          10.0
+        ],
+        [
+          28.0,
+          39.0
+        ],
+        [
+          9.0,
+          43.0
+        ],
+        [
+          13.0,
+          15.0
+        ],
+        [
+          41.0,
+          18.0
+        ],
+        [
+          19.0,
+          31.0
+        ],
+        [
+          44.0,
+          40.0
+        ],
+        [
+          41.0,
+          28.0
+        ]
+      ],
+      "evaluator": "NEW",
+      "fixture": "micro150@50mm",
+      "grid": 32,
+      "group": "c",
+      "id": "c-mesh-micro150-random-01-g32-new",
+      "layout": "mesh/micro150/random-01",
+      "old_reference_j_c": 170.31,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          27.0,
+          10.0
+        ],
+        [
+          28.0,
+          39.0
+        ],
+        [
+          9.0,
+          43.0
+        ],
+        [
+          13.0,
+          15.0
+        ],
+        [
+          41.0,
+          18.0
+        ],
+        [
+          19.0,
+          31.0
+        ],
+        [
+          44.0,
+          40.0
+        ],
+        [
+          41.0,
+          28.0
+        ]
+      ],
+      "evaluator": "NEW",
+      "fixture": "micro150@50mm",
+      "grid": 64,
+      "group": "c",
+      "id": "c-mesh-micro150-random-01-g64-new",
+      "layout": "mesh/micro150/random-01",
+      "old_reference_j_c": 170.65000000000003,
+      "status": "ready"
+    },
+    {
+      "centers_mm": [
+        [
+          19.0,
+          30.0
+        ],
+        [
+          26.0,
+          10.0
+        ],
+        [
+          31.0,
+          21.0
+        ],
+        [
+          7.0,
+          26.0
+        ],
+        [
+          30.0,
+          36.0
+        ],
+        [
+          35.0,
+          11.0
+        ],
+        [
+          17.0,
+          14.0
+        ],
+        [
+          42.0,
+          36.0
+        ]
+      ],
+      "evaluator": "OLD",
+      "fixture": "micro150@50mm",
+      "grid": 64,
+      "group": "c",
+      "id": "c-mesh-micro150-random-06-g64-old-reproduction",
+      "layout": "mesh/micro150/random-06",
+      "old_reference_j_c": 194.93,
+      "purpose": "ties this host's OLD binary to the committed mesh J64 before NEW is compared with it",
+      "status": "ready"
+    }
+  ],
+  "evaluators": {
+    "NEW": {
+      "binary": "sundai_hotspot/hotspot-material-only",
+      "build": "make -C sundai_hotspot SUPERLU=1 hotspot-material-only",
+      "coupling": "material_only",
+      "identity_checks": [
+        "binary must contain SENTILAB_SINK_COUPLING=material_only;ticket=SLAB-049",
+        "solver_version and problem_hash name coupling=material_only"
+      ],
+      "oracle": "sundai_hotspot.coupling_variant.MaterialOnlyCouplingOracle(64, 64, fixture=..., max_workers=1, retained_output_root=<fresh dir>)"
+    },
+    "OLD": {
+      "binary": "sundai_hotspot/hotspot",
+      "build": "make -C sundai_hotspot -j4 SUPERLU=1",
+      "coupling": "hotspot7_default",
+      "identity_checks": [
+        "binary must NOT contain the SLAB-049 tag",
+        "problem_hash is the unchanged default"
+      ],
+      "oracle": "sundai_hotspot.tap_oracle.HotSpotOracle(64, 64, fixture=..., max_workers=1, retained_output_root=<fresh dir>)"
+    }
+  },
+  "fixtures": {
+    "ascend910@45mm": {
+      "available_on_main": false,
+      "blocked_on": "SLAB-048: a 45 mm fixture in tap_oracle.TAP_CONFIGS",
+      "family": "ascend910",
+      "interposer_mm": 45,
+      "oracle_fixture_id": null,
+      "r_convec_K_per_W": 0.011111111111111112,
+      "sink_mm": 180.0,
+      "spreader_mm": 90.0
+    },
+    "ascend910@50mm": {
+      "available_on_main": true,
+      "blocked_on": null,
+      "family": "ascend910",
+      "interposer_mm": 50,
+      "oracle_fixture_id": "ascend910",
+      "r_convec_K_per_W": 0.008999999999999998,
+      "sink_mm": 200.0,
+      "spreader_mm": 100.0
+    },
+    "micro150@45mm": {
+      "available_on_main": false,
+      "blocked_on": "SLAB-048: a 45 mm fixture in tap_oracle.TAP_CONFIGS",
+      "family": "micro150",
+      "interposer_mm": 45,
+      "oracle_fixture_id": null,
+      "r_convec_K_per_W": 0.011111111111111112,
+      "sink_mm": 180.0,
+      "spreader_mm": 90.0
+    },
+    "micro150@50mm": {
+      "available_on_main": true,
+      "blocked_on": null,
+      "family": "micro150",
+      "interposer_mm": 50,
+      "oracle_fixture_id": "micro150",
+      "r_convec_K_per_W": 0.008999999999999998,
+      "sink_mm": 200.0,
+      "spreader_mm": 100.0
+    }
+  },
+  "generated_by": "python -m sundai_hotspot.slab049 call-list --write docs/sentilab/diagnostics/SLAB-049",
+  "grant_request": {
+    "concurrency": 1,
+    "cpu_cap_minutes": 6,
+    "cpu_cap_rule": "ceil(1.2 x total_conservative_cpu_s / 60)",
+    "cpu_cap_scope": "solver executions, worker start/reap and archiving; HotSpot builds are separate",
+    "gpu": false,
+    "host": "the Azure x86_64 host that produced the mesh and TIMING evidence",
+    "proposed_expiry_utc": "2026-11-01T12:00:00Z",
+    "solver_executions_declared": 32,
+    "solver_executions_max_including_reserves": 37,
+    "tier_B_condition": "runs only if SLAB-048's 45 mm fixture and reference data merge before expiry"
+  },
+  "mesh_subset": {
+    "ascend910": {
+      "argmax_layout": "random-06",
+      "epsilon_c": 0.160000000000025,
+      "layouts": [
+        "random-06",
+        "clustered-01",
+        "spread-01",
+        "random-01"
+      ]
+    },
+    "micro150": {
+      "argmax_layout": "random-06",
+      "epsilon_c": 0.7899999999999636,
+      "layouts": [
+        "random-06",
+        "clustered-01",
+        "spread-01",
+        "random-01"
+      ]
+    }
+  },
+  "original_layouts": {
+    "ascend910-original": {
+      "decoded_centers_mm_45mm_frame": [
+        [
+          17.15,
+          22.6
+        ],
+        [
+          38.35,
+          22.6
+        ],
+        [
+          7.34,
+          11.12
+        ],
+        [
+          21.31,
+          11.12
+        ],
+        [
+          7.34,
+          33.87
+        ],
+        [
+          21.31,
+          33.87
+        ]
+      ],
+      "decoded_orientation": "Virtuvian 31.4 x 14.5 (horizontal), Nimbus 10.5 x 16, HBM 11.87 x 7.75 (rotated); the catalog fixes Virtuvian 14.5 x 31.4 and HBM 7.75 x 11.87",
+      "fixture_family": "ascend910",
+      "paper_figure": "Fig. 6(a) original layout",
+      "paper_peak_c": 75.48,
+      "source": "forge-research/repo-forensics.md section 6 (decoded from the paper's vector figure)"
+    },
+    "micro150-original": {
+      "decoded_centers_mm_45mm_frame": [
+        [
+          17.92,
+          17.55
+        ],
+        [
+          17.92,
+          27.45
+        ],
+        [
+          27.07,
+          27.45
+        ],
+        [
+          27.07,
+          17.55
+        ],
+        [
+          8.57,
+          17.55
+        ],
+        [
+          8.57,
+          27.45
+        ],
+        [
+          36.42,
+          27.45
+        ],
+        [
+          36.42,
+          17.55
+        ]
+      ],
+      "decoded_orientation": "CPU 8.25 x 9 and DRAM 8.75 x 8.75, catalog orientation",
+      "fixture_family": "micro150",
+      "index_assignment": "CPUs 0-3 around the 2x2 cluster so the 0-1-2-3 ring is adjacent, DRAM 4+i beside CPU i. Equal dies have equal power, so the assignment changes the wire proxy only.",
+      "paper_figure": "Fig. 5(a) original placement (Kannan et al., MICRO 2015)",
+      "paper_peak_c": 115.94,
+      "source": "forge-research/repo-forensics.md section 6 (decoded from the paper's vector figure)"
+    }
+  },
+  "paper": "Ma et al., TAP-2.5D, DATE 2021 (HotSpot 6.0, 45 mm interposer, grid 64, 45 C ambient)",
+  "per_call_record": [
+    "python -m sundai_hotspot.slab049 summarize <retained evaluation dir> (reads files only):",
+    "SHA-256 and size of every generated input and output file, including the actual config",
+    "output precision: HotSpot prints grid and block temperatures as %.2f K",
+    "package parameters read back from the actual config (spreader, sink, r_convec) and checked against the fixture row",
+    "layer-4 grid peak and its argmax cell(s)",
+    "each real chiplet's GRID_CENTER value with the cell indices and weights (1, 2 or 4 cells)",
+    "the max over those chiplet centre values",
+    "TAP's positional stdout selector: on this binary's stdout (HotSpot 7 prints no temperatures, so it is recorded as not applicable) and emulated on HotSpot 6's stdout layout (every block of every layer centre-mapped, plus the package nodes)"
+  ],
+  "per_call_rules": [
+    "each call runs in a fresh, empty directory; the TAP generator skips an existing new_hotspot.config, so a reused directory could run a stale config",
+    "max_workers=1: one solver process at a time",
+    "no parameter is changed between OLD and NEW: same inputs, only the binary differs",
+    "nothing is tuned toward a published temperature"
+  ],
+  "pristine_source_commit": "3e7c4807bf2fbcf5fcde2c12659e8f35fef69f46",
+  "schema": "sentilab-slab049-call-list-v1",
+  "sizing": {
+    "cost_model": {
+      "grid32_conservative_cpu_s": 0.6,
+      "grid32_typical_cpu_s": 0.5435,
+      "grid64_conservative_cpu_s": 7.84,
+      "grid64_typical_cpu_s": 4.9,
+      "per_call_archive_cpu_s": 0.5,
+      "retry_reserve_calls": 4,
+      "timeout_cpu_s": 55.0,
+      "timeout_reserve_calls": 1
+    },
+    "declared": {
+      "calls": 32,
+      "conservative_cpu_s": 192.96,
+      "grid32_calls": 8,
+      "grid64_calls": 24,
+      "typical_cpu_s": 121.95
+    },
+    "reserves_cpu_s": 102.36,
+    "tier_A_ready_now": {
+      "calls": 26,
+      "conservative_cpu_s": 145.92,
+      "grid32_calls": 8,
+      "grid64_calls": 18,
+      "typical_cpu_s": 92.55
+    },
+    "tier_B_blocked_on_SLAB_048": {
+      "calls": 6,
+      "conservative_cpu_s": 47.04,
+      "grid32_calls": 0,
+      "grid64_calls": 6,
+      "typical_cpu_s": 29.4
+    },
+    "total_conservative_cpu_min": 4.92,
+    "total_conservative_cpu_s": 295.32
+  },
+  "slab": {
+    "description": "one uniformly powered silicon die (TAP chip-layer material) under TAP's TIM, spreader and sink materials; spreader and sink overhang the die by only 0.05 mm per side so the column is one-dimensional away from the edges",
+    "die": {
+      "resistivity": 0.01,
+      "specific_heat": "1.75E+06",
+      "thickness": 0.00015
+    },
+    "die_edge_m": 0.1,
+    "grid": 64,
+    "inputs": "docs/sentilab/diagnostics/SLAB-049/slab/ (SHA256SUMS)",
+    "power_W": 1400.0,
+    "r_convec_K_per_W_by_h": {
+      "0.5": 0.07171286170174622,
+      "1": 0.03585643085087311,
+      "2": 0.017928215425436555
+    },
+    "s_sink_m": 0.1002,
+    "s_spreader_m": 0.1001,
+    "tim": {
+      "resistivity": 0.25,
+      "specific_heat": "4.00E+06",
+      "thickness": 2e-05
+    }
+  },
+  "status": "PROPOSED. Not executed. Every call needs warden's grant; no solve has been run for SLAB-049.",
+  "ticket": "SLAB-049",
+  "ticket_uuid": "d41fca43-2e6c-464e-8fbc-0c485e4828dd"
+}

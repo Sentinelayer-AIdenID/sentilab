@@ -1,0 +1,3 @@
+# SLAB-049 minimal slab. Line Format: <unit-name>\t<width>\t<height>\t<left-x>\t<bottom-y>
+# all dimensions are in meters
+die	0.1	0.1	0.0	0.0

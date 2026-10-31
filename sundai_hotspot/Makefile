@@ -190,6 +190,18 @@ ifdef LIBDIR
 		@echo "...Done. Do not forget to include $(LIBDIR) in your LD_LIBRARY_PATH"
 endif
 
+# SentiLab SLAB-049 diagnostic evaluator (not built by `all`): the spreader<->sink coupling uses
+# material resistances only and convection stays on the sink-to-ambient link. Only temperature_grid.c
+# is compiled differently, into its own object, so the default `hotspot` binary and objects are unchanged.
+VARIANT_GRIDOBJ = temperature_grid_material_only.$(OEXT)
+VARIANT_OBJ = $(filter-out $(GRIDOBJ),$(OBJ)) $(VARIANT_GRIDOBJ)
+
+hotspot-material-only:	hotspot.$(OEXT) $(VARIANT_OBJ)
+	$(CC) $(CFLAGS) -o hotspot-material-only hotspot.$(OEXT) $(VARIANT_OBJ) $(LIBS)
+
+$(VARIANT_GRIDOBJ):	temperature_grid.c $(GRIDHDR)
+	$(CC) $(CFLAGS) -DSENTILAB_SINK_COUPLING_MATERIAL_ONLY=1 -c temperature_grid.c -o $(VARIANT_GRIDOBJ)
+
 hotfloorplan:	hotfloorplan.$(OEXT) $(OBJ)
 	$(CC) $(CFLAGS) -o hotfloorplan hotfloorplan.$(OEXT) $(OBJ) $(LIBS)
 ifdef LIBDIR
@@ -222,7 +234,7 @@ filelist:
 		  tofig.pl grid_thermal_map.pl \
 		  Makefile
 clean:
-	$(RM) *.$(OEXT) *.obj *.d core *~ Makefile.bak hotspot hotfloorplan libhotspot.$(LEXT)
+	$(RM) *.$(OEXT) *.obj *.d core *~ Makefile.bak hotspot hotfloorplan hotspot-material-only libhotspot.$(LEXT)
 
 cleano:
 	$(RM) *.$(OEXT) *.obj

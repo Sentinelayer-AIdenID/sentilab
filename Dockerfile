@@ -17,7 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt -r requirements-service.txt
 COPY . .
 RUN python scripts/record_build_info.py --base-image "${PYTHON_BASE}" \
     --node-package-version "${NODEJS_VERSION}" --output /app/build-info.json
-RUN cd sundai_hotspot && make -j4 SUPERLU=1 \
+# SLAB-049 also builds the material-only coupling diagnostic binary. It is never the default oracle;
+# its own oracle class checks the binary's identity tag (sundai_hotspot/coupling_variant.py).
+RUN cd sundai_hotspot && make -j4 SUPERLU=1 && make SUPERLU=1 hotspot-material-only \
  && mkdir -p /licenses \
  && cp /app/sundai_hotspot/LICENSE /licenses/HotSpot-LICENSE \
  && cp /app/sundai_tap/LICENSE /licenses/TAP-2.5D-LICENSE \

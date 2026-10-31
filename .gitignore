@@ -12,6 +12,7 @@ dist/
 /runs/
 sundai_hotspot/hotspot
 sundai_hotspot/hotfloorplan
+sundai_hotspot/hotspot-material-only
 sundai_hotspot/*.o
 sundai_hotspot/*.a
 sundai_hotspot/*.d
