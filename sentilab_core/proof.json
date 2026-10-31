@@ -220,5 +220,14 @@
     "hotspot_test_dispatches": 2,
     "measurement_limits": "Only the final five instrumented Python gates are counted here; focused checks, browser/Node subprocesses and earlier turns are outside these totals. No new live proof run. No certified task-wide total.",
     "remaining": "Operator carry, published PR head confirmation, Docker CI and assigned independent review; no deployment."
+  },
+  "review_56186_boundary": {
+    "base": "bbe006080d98b9eab36bcb8ee59570afb6597140",
+    "regression": "one HTTP test failed in both in-place-rewrite and atomic-replacement subcases before the fix",
+    "affected_http_ledger_tests": 28,
+    "cursor_semantics": "numeric physical row count plus x-cursor-hash/next_cursor_hash echoed as cursor_hash; nonzero cursor without a matching consumed-byte boundary returns409; appends preserve boundaries",
+    "contract_status": "Frozen v0.4/v0.5 unchanged; proposed extension communicated to Forge under56186, versioned cursor contract and browser integration pending",
+    "live_fallback": "Unsupported row cursors require STALE; sequence-only fallback cannot advance LIVE/current",
+    "hotspot_calls": 0
   }
 }

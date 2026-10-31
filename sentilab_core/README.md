@@ -81,17 +81,24 @@ default to v0.5 JSONL, with at most 256 lines and 4 MiB per page. `cursor` is th
 number of physical append rows already consumed, including duplicates and
 malformed rows. Follow `x-next-cursor` and `x-has-more`; JSON diagnostics provide
 `next_cursor` and `has_more`. A page may split conflicting sequences: retain all
-received evidence and reverify the combined stream. Late conflicting appends
+received evidence and reverify the combined stream. Each cursor also has an
+`x-cursor-hash` (`next_cursor_hash` in JSON), the SHA-256 of the consumed physical
+byte prefix. Echo it as `cursor_hash` with every nonzero `cursor`. A missing or
+changed boundary returns 409 and requires replay from zero, including after
+in-place changes or file replacement. Append-only progress preserves the hash.
+The hash binds a read boundary; envelope verification against pinned keys still
+establishes authenticity. Late conflicting appends
 are delivered at their append position and can retract an earlier verified
 prefix. `has_more=false` describes only the current read; poll the same cursor
 for new appends. Storage is append-only; a cursor beyond its current length
-returns 409 and requires replay from zero. A cursor is not a snapshot integrity
-proof for externally rewritten storage.
+returns 409 and requires replay from zero.
 
 Legacy `after=seq` remains supported separately. Its conflicting sequence groups
 stay on one page; earlier break evidence is sent again. A group that cannot fit
 returns 413. Clients needing bounded progress through such evidence use `cursor`.
-Do not combine a nonzero `after` with `cursor`.
+Do not combine a nonzero `after` with `cursor`. Unsupported row-cursor polling
+must preserve the prior prefix as STALE/unsupported; incremental sequence-only
+fallback must not advance a LIVE/current claim.
 An explicit `format=json` returns diagnostic `envelopes`, `next_after`, `has_more`,
 `prefix_end`, `chain_error`, and the core projection, also capped at 4 MiB.
 Clients fetch one run from genesis through contiguous pages and

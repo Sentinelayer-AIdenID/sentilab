@@ -1,5 +1,6 @@
 """Append-position paging must retain evidence independently of event sequence."""
 import json
+import hashlib
 from urllib.error import HTTPError
 from urllib.request import urlopen
 import unittest
@@ -21,9 +22,14 @@ class CursorTests(unittest.TestCase):
                      prev_hash=row["prev_hash"], signer=self.signer)
 
     def page(self, name, cursor, limit=1):
+        boundaries = getattr(self, "boundaries", {})
+        boundary = "&cursor_hash=" + boundaries[(name, cursor)] if cursor else ""
         with urlopen(f"http://127.0.0.1:{self.port}/api/view/events?run_id={name}"
-                     f"&cursor={cursor}&limit={limit}", timeout=10) as response:
-            return (response.read(), int(response.headers["x-next-cursor"]),
+                     f"&cursor={cursor}&limit={limit}{boundary}", timeout=10) as response:
+            following = int(response.headers["x-next-cursor"])
+            boundaries[(name, following)] = response.headers["x-cursor-hash"]
+            self.boundaries = boundaries
+            return (response.read(), following,
                     response.headers["x-has-more"] == "true")
 
     def test_one_row_pages_preserve_conflict_and_reference_prefix(self):
@@ -63,10 +69,32 @@ class CursorTests(unittest.TestCase):
         downloaded.write_bytes(initial + b"".join(pages))
         result = read_prefix(downloaded, run_id="late", public_keys={self.signer.key_id: self.signer.public_key})
         self.assertEqual(result["last_seq"], 0)
-        diagnostic = self.get("/api/view/events?run_id=late&cursor=2&limit=1")
+        diagnostic = self.get("/api/view/events?run_id=late&cursor=2&limit=1&cursor_hash="
+                              + self.boundaries[("late", 2)])
         self.assertEqual(diagnostic["next_cursor"], 3)
         self.assertTrue(diagnostic["has_more"])
         self.assertEqual(diagnostic["prefix_end"], 0)
+
+    def test_consumed_prefix_replacement_refuses_incremental_history(self):
+        for atomic in (False, True):
+            with self.subTest(atomic=atomic):
+                rows = self.seed_run("replaced", 3)
+                with urlopen(f"http://127.0.0.1:{self.port}/api/view/events?run_id=replaced"
+                             "&cursor=0&limit=1", timeout=10) as response:
+                    # This boundary is computable from the original physical row,
+                    # so the regression also exercises the old cursor-only API.
+                    boundary = hashlib.sha256(response.read()).hexdigest()
+                changed = [self.conflicting_row(rows[0]), *rows[1:]]
+                path = self.root / ("replacement.tmp" if atomic else "replaced.jsonl")
+                path.write_bytes(b"".join(canonical(row) + b"\n" for row in changed))
+                if atomic:
+                    path.replace(self.root / "replaced.jsonl")
+                with self.assertRaises(HTTPError) as caught:
+                    self.get("/api/view/events?run_id=replaced&cursor=1&cursor_hash=" + boundary)
+                self.assertEqual(caught.exception.code, 409)
+                restarted = self.get("/api/view/events?run_id=replaced&cursor=0")
+                self.assertEqual(restarted["next_cursor"], 3)
+                self.assertIsNotNone(restarted["chain_error"])
 
     def test_cursor_caps_and_invalid_or_truncated_positions(self):
         rows = self.seed_run("caps", 257)
@@ -77,7 +105,8 @@ class CursorTests(unittest.TestCase):
         data, cursor, more = self.page("caps", 0, 256)
         self.assertEqual((len(data), cursor, more), (4 * 1024 * 1024, 64, True))
         self.assertEqual(self.page("caps", cursor, 256)[1:], (65, False))
-        for query, code in (("cursor=-1", 422), ("cursor=256", 409), ("cursor=1&after=1", 400)):
+        for query, code in (("cursor=-1", 422), ("cursor=256", 409), ("cursor=1&after=1", 400),
+                            ("cursor=1", 409), ("cursor=1&cursor_hash=invalid", 400)):
             with self.assertRaises(HTTPError) as caught:
                 self.get("/api/view/events?run_id=caps&" + query)
             self.assertEqual(caught.exception.code, code)
