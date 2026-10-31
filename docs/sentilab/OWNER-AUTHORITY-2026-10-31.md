@@ -18,7 +18,7 @@ This additive record carries Carter's latest instructions into the new implement
 
 Effective scope:
 - **No** MicroDuck or Pollen robots, models, meshes, code, policies or licenses, in any form.
-- SentiLab builds **its own** chiplet simulation and visual, taking after how NVIDIA's MicroDuck demo presents a simulation that drives the visual. That's inspiration only; every model, asset and line of code is our own.
+- SentiLab builds **its own** chiplet simulation and visual, taking after how NVIDIA's MicroDuck demo presents a simulation that drives the visual. That's inspiration only: nothing from MicroDuck or Pollen is used. This does not change any other authorized reuse already in scope, such as the imported Thermal Flight Lab source with HotSpot and TAP, or the tools and models the plan names.
 - PR #8 (the MicroDuck recon) was closed unmerged and its box stopped. Any earlier text in this repository that reads as an actual MicroDuck robot requirement is superseded by this correction.
 - gpt-astra-carter's row-by-row disposition: `docs/sentilab/CHIPLET-VISUAL-SCOPE-DISPOSITION.md` and `.json`, once published.
 
