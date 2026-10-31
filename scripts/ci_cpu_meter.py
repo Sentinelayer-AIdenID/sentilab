@@ -37,11 +37,14 @@ def populated(group):
 
 
 def kill_group(group, *, clock=time.monotonic, sleep=time.sleep):
-    (group / 'cgroup.kill').write_text('1')
     deadline = clock() + 5
-    while populated(group):
+    (group / 'cgroup.kill').write_text('1')
+    while True:
+        active = populated(group)
         if clock() >= deadline:
             raise RuntimeError('cgroup failed to drain within reserved kill overhead')
+        if not active:
+            return
         sleep(.01)
 
 
