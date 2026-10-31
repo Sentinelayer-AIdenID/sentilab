@@ -122,6 +122,10 @@ The stdio host uses one persistent event loop with at most eight in-flight
 requests, so status and STOP can complete while a run is active. Excess requests
 receive a busy error. `notifications/cancelled` cancels the matching request;
 disconnect cancels pending work and awaits cleanup before the host exits.
+The conductor retains its ownership lock while oracle cleanup completes, even
+when cancellation arrives during normal cleanup or is repeated. Cancellation is
+reported only after cleanup; unexpected cleanup failures return an internal-error
+response instead of silently ending the request.
 
 ## Checks
 
