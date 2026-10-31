@@ -9,3 +9,8 @@ f58faf429cc770d1b6d7782d1c92ad036ad113417d89d4fd1663962ef65cca3f  view-envelope/
 675c588bbfe9a487950522a9dd4432511d3d06040441c3d50fd71acdabe0a314  view-envelope/vectors-view.json
 6a1eb6421f726f1b67f0bcace9dd32322bd472babb30a89c68a69be4e0df4d56  view-envelope/VIEW-ENVELOPE.md
 ee37a2f47e269f1d17f66a995cb9f5ae3137735b773c8300927e30b3d0626ed5  view-envelope/view-envelope.mjs
+35f7385c24b914f59c1f76d11e07847b491f9ec1c7831a01a03e8642afd638e9  view-envelope-v0.5/README.md
+dd89497f756453751776aa149923bbe2135f5bf489427e36cdf959e0891885ce  view-envelope-v0.5/run-view-vectors.mjs
+6149b9b131be50e2f4affa6badfa832435a457a6fa306bf137585608dbe54d88  view-envelope-v0.5/vectors-view.json
+7a92d88aca1e4911a5119dbdff15ad096922dc238a67349e087030d45ad53df6  view-envelope-v0.5/VIEW-ENVELOPE.md
+54b248236ff93e249c7638a0dbeb4533fc7d9f15915e9b1895d1709d348f1ea7  view-envelope-v0.5/view-envelope.mjs
