@@ -1,2 +1,5 @@
 # False positive: the generic-api-key rule matches ordinary words in a PLAN.md table row (P9).
 126507d4dbd8cf327aa158c4dd893c436f7cdf8f:docs/sentilab/draft-0.5/PLAN.md:generic-api-key:394
+# The same false positive, re-added in full by the parentless owner bootstrap commit behind
+# refs/tags/ci-allocation-56314/bootstrap (its tree is main 224fa704's); gitleaks scans tag history too.
+898982800967ee76621112c61a8dfd6764ec9e8d:docs/sentilab/draft-0.5/PLAN.md:generic-api-key:394

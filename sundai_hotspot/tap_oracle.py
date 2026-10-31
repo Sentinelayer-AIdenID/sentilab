@@ -820,9 +820,12 @@ class _WarmWorkerPool:
 
 def _worker_environment():
     """Explicit reproducible child environment; never persist parent credentials."""
-    return {'PATH': os.defpath, 'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8',
-            'OPENBLAS_CORETYPE': 'Haswell', 'OPENBLAS_NUM_THREADS': '1',
-            'OMP_NUM_THREADS': '1', 'PYTHONUNBUFFERED': '1'}
+    environment = {'PATH': os.defpath, 'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8',
+                   'OPENBLAS_CORETYPE': 'Haswell', 'OPENBLAS_NUM_THREADS': '1',
+                   'OMP_NUM_THREADS': '1', 'PYTHONUNBUFFERED': '1'}
+    if os.environ.get('CI_ALLOCATION') == '1':
+        environment['CI_ALLOCATION'] = '1'
+    return environment
 
 
 class HotSpotOracle:

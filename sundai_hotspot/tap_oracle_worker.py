@@ -25,6 +25,10 @@ if str(TAP_ROOT) not in sys.path:
     sys.path.insert(0, str(TAP_ROOT))
 from passive_interposer import PassiveInterposer  # noqa: E402
 
+if str(HOTSPOT_ROOT) not in sys.path:
+    sys.path.insert(0, str(HOTSPOT_ROOT))
+from ci_gate import run_hotspot  # noqa: E402
+
 
 @contextmanager
 def _output_directory(workspace_root, retained_root=None):
@@ -385,7 +389,7 @@ def _evaluate(request: dict, output: Path | None, retained: bool, phases: _Phase
         with ExitStack() as streams:
             outputs = ({name: streams.enter_context((output / f'{name}.bin').open('wb'))
                         for name in ('stdout', 'stderr')} if retained else {'capture_output': True})
-            process = subprocess.run(command, cwd=HOTSPOT_ROOT, text=True,
+            process = run_hotspot(command, cwd=HOTSPOT_ROOT, text=True,
                                      timeout=timeout, check=False, env=environment, **outputs)
     except subprocess.TimeoutExpired as exc:
         phases.switch('archive')
