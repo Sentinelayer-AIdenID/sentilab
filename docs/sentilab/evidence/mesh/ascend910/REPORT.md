@@ -9,14 +9,14 @@ Reference: 64x64. e = max |J32-J64| = 0.160000000000025 C; e16 = max |J16-J64| =
 
 ## Rank rule
 
-32 passes if violations = 0: for each pair with |J64(a)-J64(b)| > 2e, the signs of J32(a)-J32(b) and J64(a)-J64(b) must agree. 16 uses its own 2e16. Equality at the tolerance is excluded (1e-12 C roundoff guard); a coarse tie is a violation.
+32 passes if violations = 0 and at least one pair is eligible: for each pair with |J64(a)-J64(b)| > 2e, the signs of J32(a)-J32(b) and J64(a)-J64(b) must agree. 16 uses its own 2e16. Equality at the tolerance is excluded (1e-12 C roundoff guard); a coarse tie is a violation.
 
-Because e is the maximum error on this same sample, the triangle inequality guarantees no inversions beyond 2e. This pass is an internal consistency check, not independent evidence that all ranks agree. Zero eligible pairs is a vacuous pass. The predeclared fixed 0.01 C tolerance provides an additional ranking diagnostic.
+Because e is the maximum error on this same sample, the triangle inequality guarantees no inversions beyond 2e. This pass is an internal consistency check, not independent evidence that all ranks agree. Zero eligible pairs is inconclusive (null pass verdict). The predeclared fixed 0.01 C tolerance provides an additional ranking diagnostic.
 
-| Grid | Max error C | 2e tolerance C | Eligible / total | Violations | Pass | Fixed 0.01 C eligible | Fixed violations |
-| --- | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| 16 | 0.860000 | 1.720000 | 55 / 276 | 0 | True | 273 | 16 |
-| 32 | 0.160000 | 0.320000 | 220 / 276 | 0 | True | 273 | 5 |
+| Grid | Max error C | 2e tolerance C | Eligible / total | Violations | Pass | Fixed 0.01 C eligible | Fixed inversions | Fixed coarse ties |
+| --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: |
+| 16 | 0.860000 | 1.720000 | 55 / 276 | 0 | True | 273 | 15 | 1 |
+| 32 | 0.160000 | 0.320000 | 220 / 276 | 0 | True | 273 | 3 | 2 |
 
 ## Observed ranking resolution
 
@@ -64,6 +64,6 @@ The shared allowance is 150 solver executions and 6 CPU-minutes across both fixt
 
 ## Scope
 
-e is an empirical discrepancy against 64 on this fixed layout set, not an error bound against the continuum or unseen layouts. Later R4/u_num and SLAB-039 margins can use e with that scope; a two-layout difference needs a margin greater than 2e. The 16-grid error and fixed-tolerance inversions show the limits of cheap screening. No benchmark method-gap or continuum-convergence claim is made here.
+e is an empirical discrepancy against 64 on this fixed layout set, not an error bound against the continuum or unseen layouts. Later R4/u_num and SLAB-039 margins can use e with that scope; a two-layout difference needs a margin greater than 2e. The fixed 0.01 C tolerance is a sensitivity diagnostic, not measured numerical uncertainty or a practical minimum effect. The 16-grid error and fixed-tolerance inversions show the limits of cheap screening. No benchmark method-gap or continuum-convergence claim is made here.
 
-All J values, per-evaluation timings, design hashes, problem/config/source/binary hashes and all-layer peaks are in RESULT.json. Layout generation and reproduction instructions are in ../README.md. micro150 is pending SLAB-002b wiring.
+All J values, per-evaluation timings, design hashes, problem/config/source/binary hashes and all-layer peaks are in RESULT.json. Layout generation and reproduction instructions are in ../README.md. Ascend910 is interim evidence; required micro150 evidence is pending SLAB-002b wiring, so the combined study remains inconclusive.

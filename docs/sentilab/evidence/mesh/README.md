@@ -49,6 +49,9 @@ threshold are excluded (a 1e-12 C guard absorbs binary roundoff at decimal bound
 zero violations, so eligible/excluded pair counts and fixed-0.01 C diagnostics
 must accompany any interpretation. The fixed tolerance excludes small reference
 gaps; it does not round coarse values or make approximate ties transitive.
+Zero eligible pairs is inconclusive (`passes: null`), never success. Results
+separate strict inversions from coarse ties. The fixed 0.01 C tolerance is a
+sensitivity diagnostic, not measured uncertainty or a practical minimum effect.
 
 Each comparison also reports the largest reference-grid gap that the coarse
 grid reverses or leaves tied, considering all unequal reference pairs. For this
@@ -79,3 +82,4 @@ coordinated edits of values and summaries require independent oracle reruns.
 The same generator/evaluator consumes the fixture's geometry and powers through
 one factory; it must never silently run Ascend910 under the micro150 label.
 Micro150 measurements are a follow-up after claude-warden announces the wiring.
+Until then, Ascend910 is interim evidence and the combined study is inconclusive.

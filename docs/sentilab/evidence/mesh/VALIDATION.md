@@ -114,3 +114,12 @@ fails it with `AssertionError: 2 != 4`. Final accounting/statistics/layout tests
 10 pass, no HotSpot runs. Resolution analysis has separate source-hash/base
 provenance in RESULT.json; original execution and roundoff-analysis commits and
 all measured temperatures remain unchanged.
+
+Protocol correction #56072 is applied: zero eligible pairs now has a null pass
+verdict (inconclusive), and strict inversions and coarse ties are reported
+separately. At fixed 0.01 C, grid 32 has 3 inversions and 2 coarse ties; grid 16
+has 15 inversions and 1 coarse tie. The strengthened tests failed before
+these changes (`True is not None` and missing inversion-count key), then all
+10 non-solver tests passed. All 24 frozen layouts are retained; no observed
+subset is described as a preregistered independent check set. Ascend910 is
+interim evidence and the combined fixture study remains inconclusive.
