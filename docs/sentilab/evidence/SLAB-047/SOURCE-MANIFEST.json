@@ -1,0 +1,860 @@
+{
+  "schema": "sentilab-runtime-evidence-packet/1",
+  "at": "2026-10-31T11:51:10.427Z",
+  "head": "3236e23aecafb8e49e31aaec8101d3906f1de2a8",
+  "files": [
+    {
+      "path": "room/56531-9e15972c-11a3-475c-bfb5-89bfd572c50d.json",
+      "bytes": 998,
+      "sha256": "67a1d7a8c7ff437a481af4d8fb9df3c36e7c5cc3f93580721bee2e72516b98d7",
+      "source": "authenticated local collector record 9e15972c-11a3-475c-bfb5-89bfd572c50d"
+    },
+    {
+      "path": "room/56532-2ca25d30-384e-4d3c-8785-1019fed42c2c.json",
+      "bytes": 1348,
+      "sha256": "eeff0a66ec8abdbe30eb93643c9f3bf51440b41915c6e0e71965c84e9f7bfb02",
+      "source": "authenticated local collector record 2ca25d30-384e-4d3c-8785-1019fed42c2c"
+    },
+    {
+      "path": "room/56545-55fe3cab-88b4-4f80-9ae7-2f5ff43c70f7.json",
+      "bytes": 2667,
+      "sha256": "bcd09c441d45e5fc5e77dfc3e9fc6c584ddbb7370520baaec338faddb60ae2e7",
+      "source": "authenticated local collector record 55fe3cab-88b4-4f80-9ae7-2f5ff43c70f7"
+    },
+    {
+      "path": "room/56553-752b1eae-d5e0-4c5c-a991-a1cd0fc580b8.json",
+      "bytes": 1361,
+      "sha256": "1c5b1bc1d843cd6809ad7b907b781beda93a78b2515d8a9663e43947477a1f7f",
+      "source": "authenticated local collector record 752b1eae-d5e0-4c5c-a991-a1cd0fc580b8"
+    },
+    {
+      "path": "room/56555-2d461f0e-8344-4737-ac80-93e466ff4988.json",
+      "bytes": 1641,
+      "sha256": "6499b2aaa9d6d0cbec819f97aa94b3b15b4567fe299a0c92bd5da22049d3b4df",
+      "source": "authenticated local collector record 2d461f0e-8344-4737-ac80-93e466ff4988"
+    },
+    {
+      "path": "slab047-admission/DOWNLOAD-AND-CLOSURE.json",
+      "bytes": 2395,
+      "sha256": "ba3b300534d2fc0e531f982ca8742dbae357a99839cd04007271db7f2f361b1a",
+      "source": "TASK/slab047-admission/DOWNLOAD-AND-CLOSURE.json"
+    },
+    {
+      "path": "slab047-admission/runtime/admission.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "TASK/slab047-admission/runtime/admission.lock"
+    },
+    {
+      "path": "slab047-admission/runtime/APPROVED.json",
+      "bytes": 488,
+      "sha256": "fce8e1bc31cfe025eb629f4daef32acb0f3024304cb1b5e84ac4f2c21fd32be1",
+      "source": "TASK/slab047-admission/runtime/APPROVED.json"
+    },
+    {
+      "path": "slab047-admission/runtime/container.stderr.log",
+      "bytes": 18701,
+      "sha256": "33981844d6be0320ceb5c924bdd76e162ee1e43d65bdf78002c5ae540eb21ae1",
+      "source": "TASK/slab047-admission/runtime/container.stderr.log"
+    },
+    {
+      "path": "slab047-admission/runtime/container.stdout.log",
+      "bytes": 1174,
+      "sha256": "8caf92f237b506ef8233e1e244b28587f3e0df545376f4032807721129ffdfd2",
+      "source": "TASK/slab047-admission/runtime/container.stdout.log"
+    },
+    {
+      "path": "slab047-admission/runtime/docker.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "TASK/slab047-admission/runtime/docker.lock"
+    },
+    {
+      "path": "slab047-admission/runtime/input-verification.json",
+      "bytes": 2202,
+      "sha256": "ed3865edb9d7b35e8538891999bbdec54c4d113a19fd67b1b03866a2fb9b61e4",
+      "source": "TASK/slab047-admission/runtime/input-verification.json"
+    },
+    {
+      "path": "slab047-admission/runtime/reservation.json",
+      "bytes": 1783,
+      "sha256": "81bc91d6f0fb478db8c43f53a408c295a872e5c2d3b70362cafaf44b0be88947",
+      "source": "TASK/slab047-admission/runtime/reservation.json"
+    },
+    {
+      "path": "slab047-admission/runtime/serve047.py",
+      "bytes": 35412,
+      "sha256": "1e4b901a1b8b65ad8b40afd89637b6b6044e12f8f6df58fd6ae4771309c21eaa",
+      "source": "TASK/slab047-admission/runtime/serve047.py"
+    },
+    {
+      "path": "slab047-admission/runtime/state.json",
+      "bytes": 806,
+      "sha256": "09c3d1a75fcd08b11f63221755ec9536bf627f4ec5fa5d2f8b0db86ffffeccfe",
+      "source": "TASK/slab047-admission/runtime/state.json"
+    },
+    {
+      "path": "slab047-admission/runtime/state.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "TASK/slab047-admission/runtime/state.lock"
+    },
+    {
+      "path": "slab047-admission/runtime/worker-claimed.json",
+      "bytes": 84,
+      "sha256": "9b97eb976cc39e3619ad7aeed48fb21d7b0bcbb5e584aff7d8cc54285bb2f35f",
+      "source": "TASK/slab047-admission/runtime/worker-claimed.json"
+    },
+    {
+      "path": "slab047-admission/runtime/worker.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "TASK/slab047-admission/runtime/worker.lock"
+    },
+    {
+      "path": "slab047-runtime-review/audit-seal.json",
+      "bytes": 3683,
+      "sha256": "cd488bb04e7c3f6ac718b97d3a12fc20b5d56f55e18fe1c42594a9e6303cb991",
+      "source": "TASK/slab047-runtime-review/audit-seal.json"
+    },
+    {
+      "path": "slab047-runtime-review/RUNTIME-REVIEW.md",
+      "bytes": 6203,
+      "sha256": "e205a56b4f45ec1ac778f6f581a1e5e27cda73a49bbe4f43f8c5e6220d4fb387",
+      "source": "TASK/slab047-runtime-review/RUNTIME-REVIEW.md"
+    },
+    {
+      "path": "slab047-runtime-review/validation-20261031T111419608092Z/REPORT.md",
+      "bytes": 1312,
+      "sha256": "6804368dd511d7c2c6785199a3d785cbe5d545209211c8b4478d9a109e8e41ce",
+      "source": "TASK/slab047-runtime-review/validation-20261031T111419608092Z/REPORT.md"
+    },
+    {
+      "path": "slab047-runtime-review/validation-20261031T111419608092Z/VALIDATION.json",
+      "bytes": 11835,
+      "sha256": "b2b4d5a0c5760aa36b10ec3a3e4cf0dd6c371de854cf3997180b124f4f128151",
+      "source": "TASK/slab047-runtime-review/validation-20261031T111419608092Z/VALIDATION.json"
+    },
+    {
+      "path": "slab047b-admission/CI-41197186625.json",
+      "bytes": 10187,
+      "sha256": "9ba04e489f96f965702877604d40cb120d362b1d3b6db13775c93cab812fc21c",
+      "source": "TASK/slab047b-admission/CI-41197186625.json"
+    },
+    {
+      "path": "slab047b-admission/GPU-APPROVAL-INSTALL.json",
+      "bytes": 408,
+      "sha256": "a0b423c9682e117be143be13922480d4b346f1aeac4ecde24af4ec510c516226",
+      "source": "TASK/slab047b-admission/GPU-APPROVAL-INSTALL.json"
+    },
+    {
+      "path": "slab047b-admission/GPU-APPROVED.json",
+      "bytes": 527,
+      "sha256": "ed50fbf43c4101059941dce7b5507b01226614a748b871079db0e3c433f6ed2f",
+      "source": "TASK/slab047b-admission/GPU-APPROVED.json"
+    },
+    {
+      "path": "slab047b-admission/GPU-DOWNLOAD-AND-CLOSURE.json",
+      "bytes": 12188,
+      "sha256": "43594a43fa98ed8eaa415b5e530677520a4d85f16eb36cd32ef4583a0d7de9f9",
+      "source": "TASK/slab047b-admission/GPU-DOWNLOAD-AND-CLOSURE.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/admission.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "TASK/slab047b-admission/gpu-runtime/admission.lock"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/APPROVED.json",
+      "bytes": 527,
+      "sha256": "ed50fbf43c4101059941dce7b5507b01226614a748b871079db0e3c433f6ed2f",
+      "source": "TASK/slab047b-admission/gpu-runtime/APPROVED.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/container-inspection-final.json",
+      "bytes": 1468,
+      "sha256": "818113fffff59cd17ffc776396391dd33a422e449a2ffab28865a6c9dad2c458",
+      "source": "TASK/slab047b-admission/gpu-runtime/container-inspection-final.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/container-log-scope.json",
+      "bytes": 196,
+      "sha256": "44b34920288fe57c8143606dd669fdb7dfe1abb566ef653872cd59cf82ececdb",
+      "source": "TASK/slab047b-admission/gpu-runtime/container-log-scope.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/container-tmpfs.json",
+      "bytes": 50,
+      "sha256": "85d08e96e144d41ca437f5128fa0f1d8ca1a24f303004d04ab0ca922d066296d",
+      "source": "TASK/slab047b-admission/gpu-runtime/container-tmpfs.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/container.stderr.log",
+      "bytes": 3469,
+      "sha256": "33b396bf509879fd4b1ff28f0be22de76b6eeea414c165b421e0870278fdd725",
+      "source": "TASK/slab047b-admission/gpu-runtime/container.stderr.log"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/container.stdout.log",
+      "bytes": 26328,
+      "sha256": "9cf70fa2da3d6ea6eb65bb7ffa2cd7a94490dd760a3de1dccfc9a2a5b563edcd",
+      "source": "TASK/slab047b-admission/gpu-runtime/container.stdout.log"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/docker.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "TASK/slab047b-admission/gpu-runtime/docker.lock"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-00.json",
+      "bytes": 779,
+      "sha256": "281e8143aea421c52dbe2ed95c8a406e158aa3677a172c8383e60e2d62ec7c9d",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-00.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-01.json",
+      "bytes": 779,
+      "sha256": "14a4d094882d753765ffb5207f08de3b28cbfb3a61e973b9ba771c742aa5ed05",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-01.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-02.json",
+      "bytes": 780,
+      "sha256": "8c1285eda96b41fc93a97b82ac783a623fa5ce5f7fb05c582ed43df264542027",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-02.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-03.json",
+      "bytes": 780,
+      "sha256": "25e74de9c6e6daf9f410a436558e4639b1225f0280635ad7bc6d39585c4943e5",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-03.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-04.json",
+      "bytes": 780,
+      "sha256": "bd3ab6f277141483171417c5d6a26b36b9ef5f28e7929b10ec31a0a9b6ed2ffc",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-04.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-05.json",
+      "bytes": 779,
+      "sha256": "f5e4979f51483308ac168ea6561bc84e0b6216da75a04d53f3dcfb2995b6594b",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-05.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-06.json",
+      "bytes": 779,
+      "sha256": "f5382196023329a5ed69c370e90426917db484e7aee9ef00370479054d8bbede",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-06.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-07.json",
+      "bytes": 780,
+      "sha256": "dfafdaba41f06b9ca8bffb68d74c0f382db681f2162fdce5a8316a99b40e60dd",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-07.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-08.json",
+      "bytes": 779,
+      "sha256": "c317502d38995c0b449ad74f1451262226d31cd2658ef7ac85633152a7162c65",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-08.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-09.json",
+      "bytes": 779,
+      "sha256": "966c2375c63ff7aa9212f0d7feaa794a4dc4ee9074c5d254c85435dd7133c265",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-09.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-10.json",
+      "bytes": 780,
+      "sha256": "bab41c9f19843447f34ef3e1931068cfe9dd2e32801a1839468f56487df17b7c",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-10.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-11.json",
+      "bytes": 780,
+      "sha256": "64d0e2c7a339c5c8c4a0dfed4dd9b4896d04da7e2f85cec73708b1d3f1b4ebca",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-11.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-12.json",
+      "bytes": 780,
+      "sha256": "91024868b528f890d97247fcd1af8078a50164b3953e359629be0fc975c9103b",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-12.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-13.json",
+      "bytes": 780,
+      "sha256": "c294a3c5d5e0457ec96aa46f3bd3ac9a82b0e9dbaa95d5c140da6845707a369a",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-13.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-14.json",
+      "bytes": 780,
+      "sha256": "85e79fe7a14d49ecd94e557ec78c0926eeb9ef5ea9a095563fd4338c1a8ffaf7",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-14.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-15.json",
+      "bytes": 779,
+      "sha256": "d11756078dade62414a37406e794822640892f2810364de1ddd2f8a43ad2ac71",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-15.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-16.json",
+      "bytes": 780,
+      "sha256": "8180c355e6c746de02d2616cb44b660ea7032cec7ebb1765928f33ecb4ea437a",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-16.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-17.json",
+      "bytes": 779,
+      "sha256": "be0fe932a74bfd728f924eb974970438c2f7bd39dc7ab5c3f15be4d8b0c053a5",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-17.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-18.json",
+      "bytes": 780,
+      "sha256": "615b1d42d5ed8c39a47ac47b9b98f91ab039ac42c30e4e98a38aa0f8e8c4ace5",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-18.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/inference-19.json",
+      "bytes": 779,
+      "sha256": "c94a4a244725503206b7e6bba8f58d3cbd092c19285e6979fe336f4376b92fe5",
+      "source": "TASK/slab047b-admission/gpu-runtime/inference-19.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/input-verification.json",
+      "bytes": 2202,
+      "sha256": "ed3865edb9d7b35e8538891999bbdec54c4d113a19fd67b1b03866a2fb9b61e4",
+      "source": "TASK/slab047b-admission/gpu-runtime/input-verification.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-00.json",
+      "bytes": 821,
+      "sha256": "939a9af321a452f25525ed4986febc3ddb84d29cd6a2913f65a1021f04c07709",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-00.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-01.json",
+      "bytes": 847,
+      "sha256": "bafa0d383c1754ef9fdd576385a46699b2721462b6525f81c9c653aaad89d869",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-01.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-02.json",
+      "bytes": 831,
+      "sha256": "8c8eaae267ff60d3842d98af614fb12e5aea6e3921a6efbd20013363f612d38c",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-02.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-03.json",
+      "bytes": 831,
+      "sha256": "28d1efde2cfcc10a350c7a476f1dd7f1912d5ef0dea3929dab1fa7f19a8b68f1",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-03.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-04.json",
+      "bytes": 846,
+      "sha256": "46658a7b959de20e69d5596c256756b13f2ca8ac62edfe6b767a06a81d6ce182",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-04.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-05.json",
+      "bytes": 839,
+      "sha256": "5aed5d8493fe368f9580ec093d7975baaa24120d5a98dd8401271ee04c5ee1c0",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-05.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-06.json",
+      "bytes": 821,
+      "sha256": "939a9af321a452f25525ed4986febc3ddb84d29cd6a2913f65a1021f04c07709",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-06.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-07.json",
+      "bytes": 847,
+      "sha256": "bafa0d383c1754ef9fdd576385a46699b2721462b6525f81c9c653aaad89d869",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-07.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-08.json",
+      "bytes": 831,
+      "sha256": "8c8eaae267ff60d3842d98af614fb12e5aea6e3921a6efbd20013363f612d38c",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-08.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-09.json",
+      "bytes": 831,
+      "sha256": "28d1efde2cfcc10a350c7a476f1dd7f1912d5ef0dea3929dab1fa7f19a8b68f1",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-09.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-10.json",
+      "bytes": 846,
+      "sha256": "46658a7b959de20e69d5596c256756b13f2ca8ac62edfe6b767a06a81d6ce182",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-10.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-11.json",
+      "bytes": 839,
+      "sha256": "5aed5d8493fe368f9580ec093d7975baaa24120d5a98dd8401271ee04c5ee1c0",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-11.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-12.json",
+      "bytes": 821,
+      "sha256": "939a9af321a452f25525ed4986febc3ddb84d29cd6a2913f65a1021f04c07709",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-12.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-13.json",
+      "bytes": 847,
+      "sha256": "bafa0d383c1754ef9fdd576385a46699b2721462b6525f81c9c653aaad89d869",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-13.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-14.json",
+      "bytes": 831,
+      "sha256": "8c8eaae267ff60d3842d98af614fb12e5aea6e3921a6efbd20013363f612d38c",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-14.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-15.json",
+      "bytes": 831,
+      "sha256": "28d1efde2cfcc10a350c7a476f1dd7f1912d5ef0dea3929dab1fa7f19a8b68f1",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-15.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-16.json",
+      "bytes": 846,
+      "sha256": "46658a7b959de20e69d5596c256756b13f2ca8ac62edfe6b767a06a81d6ce182",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-16.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-17.json",
+      "bytes": 839,
+      "sha256": "5aed5d8493fe368f9580ec093d7975baaa24120d5a98dd8401271ee04c5ee1c0",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-17.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-18.json",
+      "bytes": 821,
+      "sha256": "939a9af321a452f25525ed4986febc3ddb84d29cd6a2913f65a1021f04c07709",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-18.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/request-19.json",
+      "bytes": 847,
+      "sha256": "bafa0d383c1754ef9fdd576385a46699b2721462b6525f81c9c653aaad89d869",
+      "source": "TASK/slab047b-admission/gpu-runtime/request-19.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/reservation.json",
+      "bytes": 1853,
+      "sha256": "ccb223f7ad85517e5f771c9a2ba226183ce1b253361b8bd837d2e915b7d30667",
+      "source": "TASK/slab047b-admission/gpu-runtime/reservation.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-00.json",
+      "bytes": 792,
+      "sha256": "db160958dbf4a8f6738e76584ed4e4312d7d72a780bd5c6ce7e81960c8cdf26e",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-00.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-01.json",
+      "bytes": 806,
+      "sha256": "0022d2b25de524eeb4959e760439efcc5fde43b8da86912e2df72ee68a0bfa23",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-01.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-02.json",
+      "bytes": 794,
+      "sha256": "85c4b92f196b661a9b8bb49aa4a66bbe84dddf29a418b117b21d13afcfc1549e",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-02.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-03.json",
+      "bytes": 803,
+      "sha256": "f1b35bd603e618b19956ddc624dd6dd18a80d2a58e9f9f88095e0e48a10aca64",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-03.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-04.json",
+      "bytes": 811,
+      "sha256": "40aad587577f70d63d6afac45030b58617c908dd8249d145d33fd21e2239a6ed",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-04.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-05.json",
+      "bytes": 810,
+      "sha256": "f4235a5df1e93f387b5fbf2eef1575b7d533a0a2846d8af8a75e5573e1a26d93",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-05.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-06.json",
+      "bytes": 792,
+      "sha256": "b351b758d48379423bbcb7cc2e81a58ac905c99a103cdae0bed4026e3f8b99a6",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-06.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-07.json",
+      "bytes": 806,
+      "sha256": "c4b114dbbae06c1572c77a5595e67e1b23d86c1bf2eecbcd43d9d59a4062d6e2",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-07.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-08.json",
+      "bytes": 794,
+      "sha256": "3cd6e4f6ea999fa4987a16fa52fcf863b103cfdca277fcf0066f3b9db514ec92",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-08.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-09.json",
+      "bytes": 803,
+      "sha256": "ec9746d5b47b67fb9895383da37520826d2339c78cc86094009228d5dacffbfe",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-09.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-10.json",
+      "bytes": 811,
+      "sha256": "fe2ef0577966d47e28de5063fec2bd0df6bf4b7a1d9bd9e3a7eb7a602ec77a8b",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-10.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-11.json",
+      "bytes": 810,
+      "sha256": "ab422f86cdd3d7c0ef7c95efcd9a2da14808a778c54d58ff74eabbb7cd2662af",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-11.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-12.json",
+      "bytes": 792,
+      "sha256": "078ff6166fc551ce1ec73d676d82c2e46860d86aedb382e2ed248f85543d5f26",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-12.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-13.json",
+      "bytes": 806,
+      "sha256": "df161d139b4fd3cd4ac55e46ff35479a155bdafdc7e0185ca6a95070b50e8e9d",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-13.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-14.json",
+      "bytes": 794,
+      "sha256": "263a219c8ae366355b7d13bb85033b8c094ca22f333ac2210e2b5e5532c87ee4",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-14.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-15.json",
+      "bytes": 803,
+      "sha256": "eaa27603ce69fd727db0ad201fc27cdd3744c47da9268a9f61dca1c389c7501e",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-15.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-16.json",
+      "bytes": 811,
+      "sha256": "e418e60722c7c556a84cad4d422b4a862117ec930d90358ca3a50be2dd06a40d",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-16.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-17.json",
+      "bytes": 810,
+      "sha256": "1fac9801d6f2d53bc969db803771e306c1394f82dbd982156858456c251a9933",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-17.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-18.json",
+      "bytes": 792,
+      "sha256": "19415fc810d8c0e06b1ccebfc5bf5f1bfefd4ac929cee594eae41e6691c81083",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-18.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/response-19.json",
+      "bytes": 806,
+      "sha256": "3d6d12b5c287b1bebd4f680e5fed35c7c3e7ca7c11fcfa48be733fe6ab8513e8",
+      "source": "TASK/slab047b-admission/gpu-runtime/response-19.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/serve047.py",
+      "bytes": 37216,
+      "sha256": "a707a77d4b39836c461b7cacabe17bf1a59efbdcb3938871ea04c077ef32276d",
+      "source": "TASK/slab047b-admission/gpu-runtime/serve047.py"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/state.json",
+      "bytes": 1006,
+      "sha256": "d1a29957642ca4f2fa4ba8c8920bc400d1cb49c640a763aacea551f281053b77",
+      "source": "TASK/slab047b-admission/gpu-runtime/state.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/state.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "TASK/slab047b-admission/gpu-runtime/state.lock"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/worker-claimed.json",
+      "bytes": 84,
+      "sha256": "64155111436b7e18f3e536f3d2a0e12042b17cd2b1802cc35e5898cc827c358f",
+      "source": "TASK/slab047b-admission/gpu-runtime/worker-claimed.json"
+    },
+    {
+      "path": "slab047b-admission/gpu-runtime/worker.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "TASK/slab047b-admission/gpu-runtime/worker.lock"
+    },
+    {
+      "path": "slab047b-admission/LOCAL-TESTS.json",
+      "bytes": 262,
+      "sha256": "23e6c07bc45f6d259d0a15b7c63080c1ea277a6822dd502e0e9cb5b045d3c03d",
+      "source": "TASK/slab047b-admission/LOCAL-TESTS.json"
+    },
+    {
+      "path": "slab047b-admission/PREFLIGHT-APPROVED.json",
+      "bytes": 472,
+      "sha256": "00555a0be6566bd1c97545510b3686fd3ffbec7d8007bf0ede88e76e29e076f8",
+      "source": "TASK/slab047b-admission/PREFLIGHT-APPROVED.json"
+    },
+    {
+      "path": "slab047b-admission/PREFLIGHT-DOWNLOAD.json",
+      "bytes": 1888,
+      "sha256": "8eb2f9b59147dc997de187a3057897711d2ce41d481f2b7cf64bfada471fdeef",
+      "source": "TASK/slab047b-admission/PREFLIGHT-DOWNLOAD.json"
+    },
+    {
+      "path": "slab047b-admission/PREFLIGHT-INVOKE-INTENT.json",
+      "bytes": 80,
+      "sha256": "0a338d63639415ad519149eda4b4c29fd6857ef18de02e3f78a0d1aec8d51e01",
+      "source": "TASK/slab047b-admission/PREFLIGHT-INVOKE-INTENT.json"
+    },
+    {
+      "path": "slab047b-admission/PREFLIGHT-INVOKE-RESULT.json",
+      "bytes": 1476,
+      "sha256": "d05f45b4a810ad73cdcd18b7af792b7e569d029aee537ebc141022417d355708",
+      "source": "TASK/slab047b-admission/PREFLIGHT-INVOKE-RESULT.json"
+    },
+    {
+      "path": "slab047b-admission/preflight-runtime/APPROVED.json",
+      "bytes": 447,
+      "sha256": "d3af4760af160a374758229931b54bfe8d745897ef49a774b7ef5d68a35fd918",
+      "source": "TASK/slab047b-admission/preflight-runtime/APPROVED.json"
+    },
+    {
+      "path": "slab047b-admission/preflight-runtime/inspection-created.json",
+      "bytes": 3157,
+      "sha256": "47ac1455ce1528534141743d0d8f11ff47d7f5369dffc1ec2cd193a8fd3e58c0",
+      "source": "TASK/slab047b-admission/preflight-runtime/inspection-created.json"
+    },
+    {
+      "path": "slab047b-admission/preflight-runtime/inspection-finished.json",
+      "bytes": 3175,
+      "sha256": "829a42234687008043f5c71f10f07065cbcfa06f8685a6c1869ad115d2e75e57",
+      "source": "TASK/slab047b-admission/preflight-runtime/inspection-finished.json"
+    },
+    {
+      "path": "slab047b-admission/preflight-runtime/intent.json",
+      "bytes": 1160,
+      "sha256": "e3994a940adcc72024e6d2b73f3f58cd69895381dce43a8217b61abe58f4b47d",
+      "source": "TASK/slab047b-admission/preflight-runtime/intent.json"
+    },
+    {
+      "path": "slab047b-admission/preflight-runtime/preflight047b.py",
+      "bytes": 22140,
+      "sha256": "ed856df35246a8c1a59459d0e5b197f0921ec893cc2ab1bae047f8e43432a74f",
+      "source": "TASK/slab047b-admission/preflight-runtime/preflight047b.py"
+    },
+    {
+      "path": "slab047b-admission/preflight-runtime/probe.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "TASK/slab047b-admission/preflight-runtime/probe.stderr.log"
+    },
+    {
+      "path": "slab047b-admission/preflight-runtime/probe.stdout.json",
+      "bytes": 6810,
+      "sha256": "600a5fbd5c6961bddfbc61b07b5be49a0b02b15e06925cbf090ea3ff336335ac",
+      "source": "TASK/slab047b-admission/preflight-runtime/probe.stdout.json"
+    },
+    {
+      "path": "slab047b-admission/preflight-runtime/probe.stdout.log",
+      "bytes": 6842,
+      "sha256": "f78d07a739c452d5fb48d1e6a1e842e1390bad1f315baccaa3fa3f102bbef850",
+      "source": "TASK/slab047b-admission/preflight-runtime/probe.stdout.log"
+    },
+    {
+      "path": "slab047b-admission/preflight-runtime/result.json",
+      "bytes": 1268,
+      "sha256": "d7bd65d6fbc96b7ed3517ecca14f9275900f176a737761fd4fad8104a91bd620",
+      "source": "TASK/slab047b-admission/preflight-runtime/result.json"
+    },
+    {
+      "path": "slab047b-admission/preflight-runtime/run.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "source": "TASK/slab047b-admission/preflight-runtime/run.lock"
+    },
+    {
+      "path": "slab047b-admission/preflight-runtime/state.json",
+      "bytes": 152,
+      "sha256": "376e31a4f368a3089c17a58cfc01004a1d9dd98964f7ebaf2b2bb64aafc434ea",
+      "source": "TASK/slab047b-admission/preflight-runtime/state.json"
+    },
+    {
+      "path": "slab047b-admission/REMOTE-SOURCE-BINDING.json",
+      "bytes": 1331,
+      "sha256": "3a4e9b944584eab520ab4d747ef2be666542ba3f243e9fc33cde9b122b36a3c9",
+      "source": "TASK/slab047b-admission/REMOTE-SOURCE-BINDING.json"
+    },
+    {
+      "path": "slab047b-admission/ROOT-PREFLIGHT-VALIDATION.json",
+      "bytes": 3913,
+      "sha256": "8f41ace30a9db3badb00f6f150121430dc5f4942c40bb42da859c49a9b3c00f0",
+      "source": "TASK/slab047b-admission/ROOT-PREFLIGHT-VALIDATION.json"
+    },
+    {
+      "path": "slab047b-admission/SOURCE-APPROVAL.json",
+      "bytes": 1360,
+      "sha256": "f60879d0b54c18e7a8f7cefc1ae48ae99c5c6ea51b9778e8adf3b15dda578e94",
+      "source": "TASK/slab047b-admission/SOURCE-APPROVAL.json"
+    },
+    {
+      "path": "slab047b-admission/STAGE-INTENT.json",
+      "bytes": 82,
+      "sha256": "680146efb3a57ee9ee8e49cbd36d6b29bfef6e376e673b5a6c5e54513b6029aa",
+      "source": "TASK/slab047b-admission/STAGE-INTENT.json"
+    },
+    {
+      "path": "slab047b-admission/STAGE-RESULT.json",
+      "bytes": 644,
+      "sha256": "52bd476930f2dd1385e3fc329b8acb9aab76ee791da2b5bf4d27750d8d5e9d7a",
+      "source": "TASK/slab047b-admission/STAGE-RESULT.json"
+    },
+    {
+      "path": "slab047b-admission/START-INTENT.json",
+      "bytes": 111,
+      "sha256": "8e17c5d40549b937cc02fa1f514159897928e3b44f2dd4dd14d2d7125f30f439",
+      "source": "TASK/slab047b-admission/START-INTENT.json"
+    },
+    {
+      "path": "slab047b-admission/START-RESULT.json",
+      "bytes": 1252,
+      "sha256": "f2c69152cb2d175ed190cfdb65e8b94b64cdbc285d26f36015ccb1c77dd612f5",
+      "source": "TASK/slab047b-admission/START-RESULT.json"
+    },
+    {
+      "path": "slab047b-gpu-cleanup-review/CLEANUP-REVIEW.md",
+      "bytes": 4539,
+      "sha256": "c0d40704ecd8b8c38d8be7dbb75019b4031eb4ed55ff5b77fa005000a4bb7f9a",
+      "source": "TASK/slab047b-gpu-cleanup-review/CLEANUP-REVIEW.md"
+    },
+    {
+      "path": "slab047b-gpu-cleanup-review/EVIDENCE-CHECK.json",
+      "bytes": 8097,
+      "sha256": "cc8b29f042960baf2856710a57ab1a023a757dd5baa39c44c10e077935fe6646",
+      "source": "TASK/slab047b-gpu-cleanup-review/EVIDENCE-CHECK.json"
+    },
+    {
+      "path": "slab047b-gpu-cleanup-review/VALIDATION.json",
+      "bytes": 563,
+      "sha256": "779ac0ef87880e7937ad2e7cd2dce92c6210e20bcd7c2573851aff8a3534eff5",
+      "source": "TASK/slab047b-gpu-cleanup-review/VALIDATION.json"
+    },
+    {
+      "path": "slab047b-gpu-review/AUDIT-SEAL.json",
+      "bytes": 25057,
+      "sha256": "a83ddf30bf024dbf33da624e9d95810ad5ec86aea8f483781363b3c9b909c625",
+      "source": "TASK/slab047b-gpu-review/AUDIT-SEAL.json"
+    },
+    {
+      "path": "slab047b-gpu-review/METRICS.json",
+      "bytes": 1655,
+      "sha256": "f1805df614b705e2b9127feb5ab6e9ca3365a2afd194dbe6788d7c20cfcdcd2b",
+      "source": "TASK/slab047b-gpu-review/METRICS.json"
+    },
+    {
+      "path": "slab047b-gpu-review/RUNTIME-REVIEW.md",
+      "bytes": 8823,
+      "sha256": "a09ab77326e1afbb3708ee1858a6380815f3451c9434836f5031884ddc014cf9",
+      "source": "TASK/slab047b-gpu-review/RUNTIME-REVIEW.md"
+    },
+    {
+      "path": "slab047b-gpu-review/STARTUP-TRACE.json",
+      "bytes": 11182,
+      "sha256": "0ed3f67cf6fb8cd22e80249f0cd39f2575b648433afa9e96e4ea268056c36a59",
+      "source": "TASK/slab047b-gpu-review/STARTUP-TRACE.json"
+    },
+    {
+      "path": "slab047b-gpu-review/VALIDATION.json",
+      "bytes": 52860,
+      "sha256": "a8967e396dd920897c116e1dac37d259f3d989b87daf275d47a991fdc0f3ddc8",
+      "source": "TASK/slab047b-gpu-review/VALIDATION.json"
+    },
+    {
+      "path": "slab047b-preflight-review/AUDIT-SEAL.json",
+      "bytes": 5707,
+      "sha256": "b47305e59cee572f51ca89e9e5730ff7b8831f61c8020efe46552fc6ce8f852a",
+      "source": "TASK/slab047b-preflight-review/AUDIT-SEAL.json"
+    },
+    {
+      "path": "slab047b-preflight-review/PREFLIGHT-REVIEW.md",
+      "bytes": 3320,
+      "sha256": "25f267065889c947bbfea8f27e86cbbb8e6d015f7c6811c66614aa33f4ce8b36",
+      "source": "TASK/slab047b-preflight-review/PREFLIGHT-REVIEW.md"
+    },
+    {
+      "path": "slab047b-preflight-review/VALIDATION.json",
+      "bytes": 16041,
+      "sha256": "529beed6ce61bd650b36841627f07b352c89edc3e1989488ac666dbb1c2144f4",
+      "source": "TASK/slab047b-preflight-review/VALIDATION.json"
+    },
+    {
+      "path": "source/docs/sentilab/evidence/SLAB-018/fixtures/DATA-MANIFEST.json",
+      "bytes": 2397,
+      "sha256": "cb91562a8dc97b7f702fa168cb759fdddab4ea5f509c6fea8f0ae896aa67ad36",
+      "source": "git:3236e23aecafb8e49e31aaec8101d3906f1de2a8:docs/sentilab/evidence/SLAB-018/fixtures/DATA-MANIFEST.json",
+      "gitBlob": "724e2851ca623a5417055720421f61fb9f90bc3a"
+    },
+    {
+      "path": "source/docs/sentilab/evidence/SLAB-018/fixtures/eval.jsonl",
+      "bytes": 33054,
+      "sha256": "c2fea4f049385c6f85108d0afc4ffad1ba776be0be6319f46d9086d8564e1231",
+      "source": "git:3236e23aecafb8e49e31aaec8101d3906f1de2a8:docs/sentilab/evidence/SLAB-018/fixtures/eval.jsonl",
+      "gitBlob": "2ea52280bd0cb943faa43122401e7315ae2ea139"
+    },
+    {
+      "path": "source/docs/sentilab/evidence/SLAB-018/fixtures/train.jsonl",
+      "bytes": 330218,
+      "sha256": "cf60653270ee58c68cb87183576207080b595280e0b2bb54ba5af6872ce24aaf",
+      "source": "git:3236e23aecafb8e49e31aaec8101d3906f1de2a8:docs/sentilab/evidence/SLAB-018/fixtures/train.jsonl",
+      "gitBlob": "d5978a259fc0f44b6978e7c0c65e7c6ad7ba1b61"
+    },
+    {
+      "path": "source/scripts/gb10/preflight047b.py",
+      "bytes": 22140,
+      "sha256": "ed856df35246a8c1a59459d0e5b197f0921ec893cc2ab1bae047f8e43432a74f",
+      "source": "git:3236e23aecafb8e49e31aaec8101d3906f1de2a8:scripts/gb10/preflight047b.py",
+      "gitBlob": "8692a4f06a900a10ad7d5b3e33c39c564d39fd05"
+    },
+    {
+      "path": "source/scripts/gb10/serve047.py",
+      "bytes": 37216,
+      "sha256": "a707a77d4b39836c461b7cacabe17bf1a59efbdcb3938871ea04c077ef32276d",
+      "source": "git:3236e23aecafb8e49e31aaec8101d3906f1de2a8:scripts/gb10/serve047.py",
+      "gitBlob": "48a66895c4071d525dc4a0b186986d39dbc2e396"
+    },
+    {
+      "path": "source/sentilab_core/gb10_serving.py",
+      "bytes": 3896,
+      "sha256": "1db18852fd7e83344a4968396a2dd16afdf6f01da1792b3f0649603d56483f3b",
+      "source": "git:3236e23aecafb8e49e31aaec8101d3906f1de2a8:sentilab_core/gb10_serving.py",
+      "gitBlob": "39285794abf04144c38d76adeca46369f4ddb4b8"
+    }
+  ],
+  "scope": "Immutable source snapshots and runtime records; hashes verify preserved bytes, not independent remote truth."
+}

@@ -1,0 +1,379 @@
+{
+  "head": "3236e23aecafb8e49e31aaec8101d3906f1de2a8",
+  "success": true,
+  "checks": [
+    {
+      "name": "source record exact head",
+      "passed": true
+    },
+    {
+      "name": "download length and hash APPROVED.json",
+      "passed": true
+    },
+    {
+      "name": "download length and hash inspection-created.json",
+      "passed": true
+    },
+    {
+      "name": "download length and hash inspection-finished.json",
+      "passed": true
+    },
+    {
+      "name": "download length and hash intent.json",
+      "passed": true
+    },
+    {
+      "name": "download length and hash preflight047b.py",
+      "passed": true
+    },
+    {
+      "name": "download length and hash probe.stderr.log",
+      "passed": true
+    },
+    {
+      "name": "download length and hash probe.stdout.json",
+      "passed": true
+    },
+    {
+      "name": "download length and hash probe.stdout.log",
+      "passed": true
+    },
+    {
+      "name": "download length and hash result.json",
+      "passed": true
+    },
+    {
+      "name": "download length and hash run.lock",
+      "passed": true
+    },
+    {
+      "name": "download length and hash state.json",
+      "passed": true
+    },
+    {
+      "name": "download exactly covers runtime files",
+      "passed": true
+    },
+    {
+      "name": "exact git source binding docs/sentilab/GB10-047B-PREFLIGHT.md",
+      "passed": true
+    },
+    {
+      "name": "exact git source binding docs/sentilab/GB10-SLAB047-SERVING.md",
+      "passed": true
+    },
+    {
+      "name": "exact git source binding scripts/gb10/preflight047b.py",
+      "passed": true
+    },
+    {
+      "name": "exact git source binding scripts/gb10/serve047.py",
+      "passed": true
+    },
+    {
+      "name": "exact git source binding scripts/gb10/test_preflight047b.py",
+      "passed": true
+    },
+    {
+      "name": "exact git source binding scripts/gb10/test_serve047.py",
+      "passed": true
+    },
+    {
+      "name": "exact git source binding sentilab_core/gb10_serving.py",
+      "passed": true
+    },
+    {
+      "name": "downloaded helper exact reviewed bytes",
+      "passed": true
+    },
+    {
+      "name": "native input literal attestation tiny.c",
+      "passed": true
+    },
+    {
+      "name": "native input literal attestation tiny.py",
+      "passed": true
+    },
+    {
+      "name": "successful result preflight_ok",
+      "passed": true
+    },
+    {
+      "name": "successful result probe_verified",
+      "passed": true
+    },
+    {
+      "name": "successful result cleanup_verified",
+      "passed": true
+    },
+    {
+      "name": "result errors absent",
+      "passed": true
+    },
+    {
+      "name": "result fixed identities",
+      "passed": true
+    },
+    {
+      "name": "no GPU retry or exceedance",
+      "passed": true
+    },
+    {
+      "name": "intent and result same token/source/grant",
+      "passed": true
+    },
+    {
+      "name": "one intent with bounded original deadline",
+      "passed": true
+    },
+    {
+      "name": "frozen approval bytes preserved",
+      "passed": true
+    },
+    {
+      "name": "approval exact source and grant",
+      "passed": true
+    },
+    {
+      "name": "six result hash references complete",
+      "passed": true
+    },
+    {
+      "name": "result hash inspection-created.json",
+      "passed": true
+    },
+    {
+      "name": "result hash inspection-finished.json",
+      "passed": true
+    },
+    {
+      "name": "result hash intent.json",
+      "passed": true
+    },
+    {
+      "name": "result hash probe.stderr.log",
+      "passed": true
+    },
+    {
+      "name": "result hash probe.stdout.json",
+      "passed": true
+    },
+    {
+      "name": "result hash probe.stdout.log",
+      "passed": true
+    },
+    {
+      "name": "single raw stdout line binds structured proof",
+      "passed": true
+    },
+    {
+      "name": "raw stderr empty",
+      "passed": true
+    },
+    {
+      "name": "native mapping and invocation result",
+      "passed": true
+    },
+    {
+      "name": "native library attestation bounded",
+      "passed": true
+    },
+    {
+      "name": "numeric identity and scratch mode",
+      "passed": true
+    },
+    {
+      "name": "visible GPU devices absent",
+      "passed": true
+    },
+    {
+      "name": "compiler output empty",
+      "passed": true
+    },
+    {
+      "name": "unique mount /",
+      "passed": true
+    },
+    {
+      "name": "unique mount /dev/shm",
+      "passed": true
+    },
+    {
+      "name": "unique mount /tmp",
+      "passed": true
+    },
+    {
+      "name": "effective root read only",
+      "passed": true
+    },
+    {
+      "name": "effective tmp executable restricted tmpfs",
+      "passed": true
+    },
+    {
+      "name": "effective shm size retained",
+      "passed": true
+    },
+    {
+      "name": "inspection-created.json exact container identity",
+      "passed": true
+    },
+    {
+      "name": "inspection-created.json ownership/source labels",
+      "passed": true
+    },
+    {
+      "name": "inspection-created.json fixed runtime identity",
+      "passed": true
+    },
+    {
+      "name": "inspection-created.json no GPU or host mounts",
+      "passed": true
+    },
+    {
+      "name": "inspection-created.json no network or privilege",
+      "passed": true
+    },
+    {
+      "name": "inspection-created.json fixed resource bounds",
+      "passed": true
+    },
+    {
+      "name": "inspection-created.json exact scratch/root policy",
+      "passed": true
+    },
+    {
+      "name": "inspection-finished.json exact container identity",
+      "passed": true
+    },
+    {
+      "name": "inspection-finished.json ownership/source labels",
+      "passed": true
+    },
+    {
+      "name": "inspection-finished.json fixed runtime identity",
+      "passed": true
+    },
+    {
+      "name": "inspection-finished.json no GPU or host mounts",
+      "passed": true
+    },
+    {
+      "name": "inspection-finished.json no network or privilege",
+      "passed": true
+    },
+    {
+      "name": "inspection-finished.json fixed resource bounds",
+      "passed": true
+    },
+    {
+      "name": "inspection-finished.json exact scratch/root policy",
+      "passed": true
+    },
+    {
+      "name": "created inspection before start",
+      "passed": true
+    },
+    {
+      "name": "container finished cleanly",
+      "passed": true
+    },
+    {
+      "name": "state retains consumed creation and removal",
+      "passed": true
+    },
+    {
+      "name": "independent download closure and no GPU approval",
+      "passed": true
+    },
+    {
+      "name": "invocation agrees with retained result",
+      "passed": true
+    },
+    {
+      "name": "GPU install success references exact preflight result",
+      "passed": true
+    },
+    {
+      "name": "GPU approval exact bytes/source/grant",
+      "passed": true
+    },
+    {
+      "name": "retained approval and preflight ordering",
+      "passed": true
+    },
+    {
+      "name": "preflight within grant and declared charge",
+      "passed": true
+    }
+  ],
+  "checked_files": 11,
+  "source_files_bound": 7,
+  "preflight_source_sha256": "ed856df35246a8c1a59459d0e5b197f0921ec893cc2ab1bae047f8e43432a74f",
+  "preflight_result_sha256": "d7bd65d6fbc96b7ed3517ecca14f9275900f176a737761fd4fad8104a91bd620",
+  "preflight_token": "548265aa8b4d42bdb907cc82df444878",
+  "container_id": "7d90ef652317c56c626644d7ed99f254d862418f9ce61546a073fd4127b6ca0b",
+  "charged_seconds": 0.6380113449995406,
+  "timeline_unix": {
+    "source_approval": 1793446328.607,
+    "reservation": 1793446543.5046387,
+    "container_started": 1793446543.633773,
+    "container_finished": 1793446543.742959,
+    "result_finished": 1793446544.142891,
+    "independent_closure": 1793446587.217162,
+    "GPU_approval_install": 1793446643.7821174
+  },
+  "mounts": {
+    "/": {
+      "line": "7298 7250 0:102 / / ro,relatime - overlay overlay rw,lowerdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/672/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/40/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/39/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/38/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/37/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/36/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/35/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/34/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/33/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/32/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/31/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/30/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/29/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/28/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/27/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/26/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/25/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/24/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/23/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/22/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/21/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/20/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/19/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/18/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/17/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/16/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/15/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/14/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/13/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/12/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/11/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/10/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/9/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/8/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/7/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/6/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/5/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/2/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1/fs,upperdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/673/fs,workdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/673/work,nouserxattr",
+      "mount_options": [
+        "ro",
+        "relatime"
+      ],
+      "filesystem": "overlay",
+      "super_options": [
+        "rw",
+        "lowerdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/672/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/40/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/39/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/38/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/37/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/36/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/35/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/34/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/33/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/32/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/31/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/30/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/29/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/28/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/27/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/26/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/25/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/24/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/23/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/22/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/21/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/20/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/19/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/18/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/17/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/16/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/15/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/14/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/13/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/12/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/11/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/10/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/9/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/8/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/7/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/6/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/5/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/2/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1/fs",
+        "upperdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/673/fs",
+        "workdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/673/work",
+        "nouserxattr"
+      ]
+    },
+    "/dev/shm": {
+      "line": "7306 7301 0:115 / /dev/shm rw,nosuid,nodev,noexec,relatime - tmpfs shm rw,size=2097152k,inode64",
+      "mount_options": [
+        "rw",
+        "nosuid",
+        "nodev",
+        "noexec",
+        "relatime"
+      ],
+      "filesystem": "tmpfs",
+      "super_options": [
+        "rw",
+        "size=2097152k",
+        "inode64"
+      ]
+    },
+    "/tmp": {
+      "line": "7308 7298 0:116 / /tmp rw,nosuid,nodev,relatime - tmpfs tmpfs rw,size=4194304k,inode64",
+      "mount_options": [
+        "rw",
+        "nosuid",
+        "nodev",
+        "relatime"
+      ],
+      "filesystem": "tmpfs",
+      "super_options": [
+        "rw",
+        "size=4194304k",
+        "inode64"
+      ]
+    }
+  },
+  "tiny_so_attestation": {
+    "bytes": 69248,
+    "sha256": "775872d57d409d21d36806a0ade63fd613fcd6490618d85faf5f7d3c25d78b65"
+  },
+  "limits": "Offline byte/record consistency review. Does not independently authenticate the external room actor or re-execute/re-hash the ephemeral native library; native behavior is the exact reviewed helper retained attestation. No claim about the separately active GPU attempt."
+}

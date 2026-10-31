@@ -1,0 +1,208 @@
+{
+  "mount": {
+    "stream": "stdout",
+    "line": 1,
+    "timestamp": "2026-10-31T11:37:48.118617357Z",
+    "text": "SLAB047B_MOUNTINFO=['7298 7250 0:102 / / ro,relatime - overlay overlay rw,lowerdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/674/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/40/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/39/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/38/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/37/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/36/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/35/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/34/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/33/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/32/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/31/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/30/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/29/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/28/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/27/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/26/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/25/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/24/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/23/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/22/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/21/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/20/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/19/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/18/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/17/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/16/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/15/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/14/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/13/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/12/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/11/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/10/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/9/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/8/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/7/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/6/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/5/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/4/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/3/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/2/fs:/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1/fs,upperdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/675/fs,workdir=/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/675/work,nouserxattr', '7360 7298 0:116 / /tmp rw,nosuid,nodev,relatime - tmpfs tmpfs rw,size=4194304k,inode64']"
+  },
+  "environment": {
+    "stream": "stdout",
+    "line": 2,
+    "timestamp": "2026-10-31T11:37:48.118670830Z",
+    "text": "SLAB047B_STARTUP={'uid': 1000, 'gid': 1000, 'cache_env': {'HOME': '/tmp', 'HF_HOME': '/tmp/hf', 'TRITON_CACHE_DIR': None, 'TORCHINDUCTOR_CACHE_DIR': None, 'TORCH_EXTENSIONS_DIR': None, 'XDG_CACHE_HOME': None, 'CUDA_CACHE_PATH': None}}"
+  },
+  "model_load_start": {
+    "stream": "stdout",
+    "line": 22,
+    "timestamp": "2026-10-31T11:38:04.891229678Z",
+    "text": "(EngineCore pid=165) INFO 10-31 11:38:04 [model_runner.py:402] Loading model from scratch..."
+  },
+  "weights_loaded": {
+    "stream": "stdout",
+    "line": 28,
+    "timestamp": "2026-10-31T11:38:52.027156849Z",
+    "text": "(EngineCore pid=165) INFO 10-31 11:38:52 [default_loader.py:506] Loading weights took 46.39 seconds"
+  },
+  "model_loaded": {
+    "stream": "stdout",
+    "line": 30,
+    "timestamp": "2026-10-31T11:38:52.825706343Z",
+    "text": "(EngineCore pid=165) INFO 10-31 11:38:52 [model_runner.py:434] Model loading took 7.67 GiB memory and 48.126966 seconds"
+  },
+  "punica": {
+    "stream": "stdout",
+    "line": 29,
+    "timestamp": "2026-10-31T11:38:52.443725626Z",
+    "text": "(EngineCore pid=165) INFO 10-31 11:38:52 [punica_selector.py:20] Using PunicaWrapperGPU."
+  },
+  "flashinfer_cache": {
+    "stream": "stderr",
+    "line": 23,
+    "timestamp": "2026-10-31T11:38:58.113555140Z",
+    "text": "2026-10-31 11:38:58,112 - INFO - autotune_cache.py:495 - flashinfer.jit: [Autotuner]: Managed autotune cache attached for this process: ManagedAutotuneCache(env_dir='/tmp/.cache/flashinfer/autotune/v2/3e78077ed30abee7', hits=0, misses=0)"
+  },
+  "autotune_end": {
+    "stream": "stderr",
+    "line": 24,
+    "timestamp": "2026-10-31T11:39:15.455727898Z",
+    "text": "2026-10-31 11:39:15,454 - INFO - autotuner.py:1071 - flashinfer.jit: [Autotuner]: Autotuning process ends"
+  },
+  "engine_initialized": {
+    "stream": "stdout",
+    "line": 40,
+    "timestamp": "2026-10-31T11:39:15.801069977Z",
+    "text": "(EngineCore pid=165) INFO 10-31 11:39:15 [core.py:419] init engine (profile, create kv cache, warmup model) took 22.96 s"
+  },
+  "adapter_loaded": {
+    "stream": "stdout",
+    "line": 48,
+    "timestamp": "2026-10-31T11:39:16.104841965Z",
+    "text": "(APIServer pid=56) INFO 10-31 11:39:16 [serving.py:229] Loaded new LoRA adapter: name 'fixture', path '/adapter'"
+  },
+  "health": {
+    "stream": "stdout",
+    "line": 89,
+    "timestamp": "2026-10-31T11:39:16.970472777Z",
+    "text": "INFO:     172.17.0.1:33042 - \"GET /health HTTP/1.1\" 200 OK"
+  },
+  "post": [
+    {
+      "stream": "stdout",
+      "line": 91,
+      "timestamp": "2026-10-31T11:39:51.941954159Z",
+      "text": "INFO:     172.17.0.1:33046 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 92,
+      "timestamp": "2026-10-31T11:39:54.573590804Z",
+      "text": "INFO:     172.17.0.1:46334 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 93,
+      "timestamp": "2026-10-31T11:39:55.405097828Z",
+      "text": "INFO:     172.17.0.1:46982 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 95,
+      "timestamp": "2026-10-31T11:39:56.997005503Z",
+      "text": "INFO:     172.17.0.1:46994 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 96,
+      "timestamp": "2026-10-31T11:39:58.124804267Z",
+      "text": "INFO:     172.17.0.1:47010 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 97,
+      "timestamp": "2026-10-31T11:39:59.061156582Z",
+      "text": "INFO:     172.17.0.1:47026 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 98,
+      "timestamp": "2026-10-31T11:39:59.842243578Z",
+      "text": "INFO:     172.17.0.1:47030 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 99,
+      "timestamp": "2026-10-31T11:40:00.724971652Z",
+      "text": "INFO:     172.17.0.1:47046 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 100,
+      "timestamp": "2026-10-31T11:40:01.559783052Z",
+      "text": "INFO:     172.17.0.1:47050 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 101,
+      "timestamp": "2026-10-31T11:40:02.528796704Z",
+      "text": "INFO:     172.17.0.1:47064 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 102,
+      "timestamp": "2026-10-31T11:40:03.649385855Z",
+      "text": "INFO:     172.17.0.1:47070 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 103,
+      "timestamp": "2026-10-31T11:40:04.567326461Z",
+      "text": "INFO:     172.17.0.1:44594 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 104,
+      "timestamp": "2026-10-31T11:40:05.346602614Z",
+      "text": "INFO:     172.17.0.1:44602 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 105,
+      "timestamp": "2026-10-31T11:40:06.216556256Z",
+      "text": "INFO:     172.17.0.1:44608 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 107,
+      "timestamp": "2026-10-31T11:40:07.039298700Z",
+      "text": "INFO:     172.17.0.1:44624 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 108,
+      "timestamp": "2026-10-31T11:40:08.007754326Z",
+      "text": "INFO:     172.17.0.1:44636 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 109,
+      "timestamp": "2026-10-31T11:40:09.128841868Z",
+      "text": "INFO:     172.17.0.1:44644 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 110,
+      "timestamp": "2026-10-31T11:40:10.049582113Z",
+      "text": "INFO:     172.17.0.1:44650 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 111,
+      "timestamp": "2026-10-31T11:40:10.823175613Z",
+      "text": "INFO:     172.17.0.1:44664 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    },
+    {
+      "stream": "stdout",
+      "line": 112,
+      "timestamp": "2026-10-31T11:40:11.706614192Z",
+      "text": "INFO:     172.17.0.1:44678 - \"POST /v1/chat/completions HTTP/1.1\" 200 OK"
+    }
+  ],
+  "shutdown": {
+    "stream": "stdout",
+    "line": 113,
+    "timestamp": "2026-10-31T11:40:11.773575060Z",
+    "text": "(APIServer pid=56) INFO 10-31 11:40:11 [launcher.py:256] [shutdown] API server: shutdown triggered"
+  },
+  "force_kill_warning": {
+    "stream": "stdout",
+    "line": 123,
+    "timestamp": "2026-10-31T11:40:11.774485832Z",
+    "text": "(APIServer pid=56) WARNING 10-31 11:40:11 [utils.py:653] [shutdown] Process manager: force killing remaining process EngineCore pid 165"
+  },
+  "semaphore_warning": {
+    "stream": "stderr",
+    "line": 31,
+    "timestamp": "2026-10-31T11:40:12.596218443Z",
+    "text": "/usr/lib/python3.12/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown"
+  }
+}
