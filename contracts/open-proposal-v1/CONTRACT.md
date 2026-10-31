@@ -197,7 +197,9 @@ receipts bind `actor_kind` and the keyed `participant_ref`, never a label; golde
 ## Resolutions where revision 3 is silent or ambiguous
 
 1. `<...>` placeholders in the DESIGN.md:568-672 draft are `null` until decided; a `signed` manifest has none
-   (`manifest.signed_pins`). The draft's status text is kept verbatim; a signed manifest's status is `signed`.
+   (`manifest.signed_pins`). The draft's manifest `status` text is kept verbatim, and a signed manifest's status is
+   `signed`. `limits.status` is not verbatim: the golden drafts read `provisional (OP-W1)` where the draft names a
+   person and a room (DESIGN.md:644).
 2. The draft's terms placeholder (DESIGN.md:648) becomes an empty `accepted_versions` in the drafts; a terms version is
    `sentilab-open-terms/<n>@<sha256 of the text>`, and the retention period an ISO 8601 duration. Its canonical URL
    path (DESIGN.md:1111) drops the fixed prefix: `/sentilab/open/terms/<n>@<sha256>.md` (`terms_path`, the terms
