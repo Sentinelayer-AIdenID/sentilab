@@ -76,7 +76,9 @@ contract semantics; they do not silently become passes.
 [MANIFEST.json](MANIFEST.json) pins all six v0.2 contract files against
 `contracts/HASHES.txt`, the 39-vector count, and the verdict schema version.
 No contract files are changed. [VERIFICATION.json](VERIFICATION.json) records
-the executed gates and 13 detected mutations on the implementation commit.
+the executed gates and 13 detected mutations on the initial implementation.
+[P2-VERIFICATION.json](P2-VERIFICATION.json) records the file-intake/cancellation
+correction, actual stdio regressions, mutation checks and remaining gate scope.
 Independent review remains pending.
 
 ```sh
