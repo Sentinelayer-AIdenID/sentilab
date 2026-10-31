@@ -58,3 +58,32 @@ No new native HotSpot caller was found among these additions. Existing live
 CLI/MCP operations still reach the shared oracle/worker and `run_hotspot` gate.
 This review makes no claim about historical consumption, global admission
 rollout, or measured container CPU usage.
+
+## Round 6: headroom merge
+
+Main `2d9eca2` adds the SLAB-039 headroom supervisor and retained-output worker
+changes. The worker keeps `ExitStack` and file-backed `stdout.bin`/`stderr.bin`
+when retention is requested, or `capture_output=True` otherwise; both paths
+call `run_hotspot`. Its existing keyword forwarding accepts those file handles,
+so neither the reservation wrapper nor its settlement behavior changes.
+
+The complete inventory initially failed on seven unclassified call sites.
+Review also identified the production fork, now explicitly scanned and listed.
+All eight sites are classified below, including identical-call multiplicities.
+Path comparisons use POSIX separators so the inventory is portable.
+
+| File | Count | Classification |
+| --- | ---: | --- |
+| `sundai_controller/headroom.py` | 1 | `os.execv` enters the fixed `sundai_controller.headroom_supervisor` module, preserving the CI environment. It does not execute a native solver itself. |
+| `sundai_controller/headroom_supervisor.py` | 1 | `LinuxTree.start` forks the supplied worker. The production `work` closure calls `run_headroom`, which constructs `HotSpotOracle`; its warm worker executes `tap_oracle_worker.evaluate` through `run_hotspot`. CI environment and the enclosing cgroup are inherited across exec/fork. A failed headroom reservation cannot bypass the independent CI launch reservation. The synthetic test closures use fake oracles or CPU loops. |
+| `sundai_controller/test_headroom_supervisor.py` | 2 | Dedicated Python programs test CPU/reaping with a forked busy loop and the production supervisor with `oracle_factory=Fake`. Neither executes HotSpot. |
+| `sundai_controller/test_process_budget.py` | 3 | Fixed Python programs test sleep, orphan cleanup, and threaded hash work under affinity. Embedded forks create CPU/signal probes, not solvers. |
+| `sentilab_core/test_oracle.py` | 1 | Saved `asyncio.create_subprocess_exec` alias starts a fixed Python cancellation host and sleeping forked descendant. It substitutes the real worker at the process boundary; no solver runs. |
+
+`tap_oracle.py` retains its existing two inventoried process calls: the fixed
+warm Python worker (gated as above) and Windows `taskkill.exe` for cleanup. Its
+new immediate-kill, latency and retained-output paths introduce no launch.
+`sentilab_core/oracle.py` still launches the fixed `sentilab_core.worker`, whose
+`evaluate` path reaches the same gate. Existing GB10 serving additions use the
+reviewed SSH transport; scripts under `scripts/gb10` are outside this inventory
+and do not introduce a HotSpot call.

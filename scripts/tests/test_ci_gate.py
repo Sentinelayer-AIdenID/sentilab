@@ -181,6 +181,51 @@ RAW_SPAWNS += [('sentilab_mcp/__init__.py',
    'file'))]
 
 
+# Execs the fixed supervisor; its forked headroom worker delegates to the gated TAP oracle.
+RAW_SPAWNS += [('sundai_controller/headroom.py',
+  'os.execv',
+  ('sys.executable',
+   ("[sys.executable, '-m', 'sundai_controller.headroom_supervisor', '--prereg', str(args.prereg), "
+   "'--budget', str(args.budget or args.prereg.parent / 'SPEND.json'), '--out', str(args.out or "
+   "args.prereg.parent / 'micro150-v4'), '--policy', str(args.resource_policy)]")))]
+
+# Fork inherits CI environment; work calls run_headroom -> HotSpotOracle -> gated TAP worker.
+RAW_SPAWNS += [('sundai_controller/headroom_supervisor.py', 'os.fork', ())]
+
+# Dedicated synthetic CPU/reaping and fake-oracle workers; neither invokes HotSpot.
+RAW_SPAWNS += [('sundai_controller/test_headroom_supervisor.py',
+  'subprocess.run',
+  ("[sys.executable, '-c', program]",)),
+ ('sundai_controller/test_headroom_supervisor.py',
+  'subprocess.run',
+  ("[sys.executable, '-c', program]",))]
+
+# Fixed sleep, orphan cleanup and CPU/affinity probes; no solver.
+RAW_SPAWNS += [('sundai_controller/test_process_budget.py',
+  'asyncio.create_subprocess_exec',
+  ('sys.executable', "'-c'", "'import time; time.sleep(5)'")),
+ ('sundai_controller/test_process_budget.py',
+  'asyncio.create_subprocess_exec',
+  ('sys.executable',
+   "'-c'",
+   ("f'import os,pathlib,time,signal\\npid=os.fork()\\nif pid: os._exit(0)\\nos.setsid()\\ndef "
+   'stop(sig, frame):\\n end=time.process_time()+0.04\\n while time.process_time()<end: pass\\n '
+   'os._exit(0)\\nsignal.signal(signal.SIGTERM, '
+   'stop)\\npathlib.Path({str(marker)!r}).write_text(str(os.getpid()))\\nend=time.monotonic()+0.6\\nwhile '
+   "time.monotonic()<end: pass\\n'"))),
+ ('sundai_controller/test_process_budget.py',
+  'asyncio.create_subprocess_exec',
+  ('sys.executable',
+   "'-c'",
+   ("f'import hashlib,os,threading,time\\nassert len(os.sched_getaffinity(0)) == "
+   '{expected_cpus}\\nend=time.monotonic()+0.18\\ndef busy():\\n assert '
+   'len(os.sched_getaffinity(0)) == {expected_cpus}\\n while time.monotonic()<end: '
+   'hashlib.sha256(b"x"*131072).digest()\\nthreads=[threading.Thread(target=busy) for _ in '
+   "range({q})]\\n[t.start() for t in threads]\\n[t.join() for t in threads]\\n'")))]
+
+# Fixed cancellation host starts a sleeping Python descendant; no solver.
+RAW_SPAWNS += [('sentilab_core/test_oracle.py', 'asyncio.create_subprocess_exec',
+                ('sys.executable', "'-c'", 'script', 'str(ready)'))]
 
 class GateTests(unittest.TestCase):
     @classmethod
@@ -309,9 +354,9 @@ int main(int argc, char **argv) {
                 name = imports.get(prefix, prefix) + (dot + suffix if dot else '')
                 if (name in {f'subprocess.{method}' for method in
                              ('run', 'Popen', 'call', 'check_call', 'check_output', 'getoutput', 'getstatusoutput')}
-                        or name in ('os.system', 'os.popen')
+                        or name in ('os.system', 'os.popen', 'os.fork', 'os.forkpty')
                         or name.startswith(('asyncio.create_subprocess_', 'os.exec', 'os.spawn', 'os.posix_spawn'))):
-                    raw_spawns.append((str(path.relative_to(ROOT)), name,
+                    raw_spawns.append((path.relative_to(ROOT).as_posix(), name,
                                        tuple(ast.unparse(arg) for arg in node.args)))
         self.assertCountEqual(raw_spawns, RAW_SPAWNS, 'unreviewed direct process launch')
 
@@ -323,7 +368,7 @@ int main(int argc, char **argv) {
                 for line in path.read_text().splitlines():
                     words = shlex.split(line, comments=True)
                     if words and Path(words[0]).name == 'hotspot':
-                        example_launches.append(str(path.relative_to(ROOT)))
+                        example_launches.append(path.relative_to(ROOT).as_posix())
         self.assertCountEqual(example_launches, [
             f'sundai_hotspot/examples/example{number}/run.sh'
             for number in range(1, 6) for _ in range(2)
@@ -334,14 +379,16 @@ int main(int argc, char **argv) {
         for filename, callee in (
             ('sundai_hotspot/run_tap_probe.py', 'HotSpotOracle'),
             ('sundai_controller/mesh_study.py', 'HotSpotOracle'),
+            ('sundai_controller/headroom.py', 'oracle_factory or HotSpotOracle'),
+            ('sundai_controller/headroom_supervisor.py', 'run_headroom'),
             ('sundai_controller/tfl08_leaderboard.py', 'HotSpotOracle'),
             ('app/runs.py', 'HotSpotOracle'),
             ('sentilab_core/worker.py', 'evaluate'),
         ):
             with self.subTest(filename=filename):
                 tree = ast.parse((ROOT / filename).read_text())
-                self.assertTrue(any(isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-                                    and node.func.id == callee for node in ast.walk(tree)))
+                self.assertTrue(any(isinstance(node, ast.Call)
+                                    and ast.unparse(node.func) == callee for node in ast.walk(tree)))
 
     def test_ignored_direct_call_still_poisoned_the_job_ledger(self):
         # The compiled entry reports a bypass attempt independently of its caller.

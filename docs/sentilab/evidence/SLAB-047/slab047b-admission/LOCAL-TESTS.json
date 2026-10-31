@@ -1,0 +1,11 @@
+{
+  "exit": 0,
+  "wall_seconds": 11.247459411621094,
+  "commands": [
+    "scripts.gb10.test_serve047",
+    "scripts.gb10.test_preflight047b",
+    "sentilab_core.test_gb10_serving",
+    "sentilab_core.test_gb10_backend"
+  ],
+  "no_remote_or_gpu": true
+}

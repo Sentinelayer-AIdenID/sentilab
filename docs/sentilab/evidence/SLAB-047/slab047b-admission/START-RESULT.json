@@ -1,0 +1,35 @@
+{
+  "head": "3236e23aecafb8e49e31aaec8101d3906f1de2a8",
+  "action": "start",
+  "started_unix": 1793446663.378605,
+  "finished_unix": 1793446663.9967742,
+  "result": {
+    "schema": "sentilab-gb10-backend/1",
+    "operation": "serve",
+    "ok": true,
+    "status": "observed",
+    "checked_at": "2026-10-31T11:37:43.996774+00:00",
+    "scope_state": "staged_open",
+    "action": "start",
+    "ssh_alias": "gb10",
+    "identity": {
+      "architecture": "aarch64",
+      "hostname": "promaxgb10-9a1e",
+      "login": "dell"
+    },
+    "serving": {
+      "attempt": 1,
+      "controller_sha256": "a707a77d4b39836c461b7cacabe17bf1a59efbdcb3938871ea04c077ef32276d",
+      "gpu_started": "not_yet_observed",
+      "launched": "worker_spawn_returned",
+      "phase": "start_reserved",
+      "policy_sha256": "1d3acc0186a2d799851f7b43ed1454c6ae893dbacedbfddec3735b6eb593401d",
+      "reserved_gpu_seconds": 900,
+      "retry_allowed": false,
+      "token": "35612fda883c4d2ca7bb0cb82882c8f5"
+    },
+    "controller_sha256": "a707a77d4b39836c461b7cacabe17bf1a59efbdcb3938871ea04c077ef32276d",
+    "policy_sha256": "1d3acc0186a2d799851f7b43ed1454c6ae893dbacedbfddec3735b6eb593401d",
+    "final_deliverable_accepted": false
+  }
+}

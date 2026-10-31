@@ -1,0 +1,52 @@
+{
+  "request_count": 20,
+  "exact_json_matches": 20,
+  "unique_source_cases": 6,
+  "repeat_counts": [
+    3,
+    3,
+    3,
+    3,
+    4,
+    4
+  ],
+  "launch_to_health_seconds": 89.05037042799813,
+  "charged_attempt_seconds": 148.90950332500506,
+  "all20": {
+    "sum_client_request_seconds": 54.57194708001043,
+    "mean_latency_seconds": 2.7285973540005215,
+    "median_latency_seconds": 0.9144899554994481,
+    "range_latency_seconds": [
+      0.7659143630007748,
+      34.9695479140064
+    ],
+    "reported_completion_tokens": 353,
+    "reported_prompt_tokens": 3128,
+    "completion_tokens_over_sum_client_seconds": 6.468524926963858
+  },
+  "first_request": {
+    "index": 0,
+    "row_id": "eval-000",
+    "source_record_id": "8a7f3e21c1f9d67235104ddb900f67c48afb9a217f4bca3c7ad841b39eb7fafa",
+    "wall_seconds": 34.9695479140064,
+    "usage": {
+      "completion_tokens": 15,
+      "prompt_tokens": 153,
+      "total_tokens": 168
+    },
+    "client_completion_tokens_per_second": 0.42894463596974414,
+    "exact_json_match": true
+  },
+  "subsequent19": {
+    "sum_client_request_seconds": 19.602399166004034,
+    "mean_latency_seconds": 1.0317052192633702,
+    "median_latency_seconds": 0.9130624559984426,
+    "range_latency_seconds": [
+      0.7659143630007748,
+      2.6205715520045487
+    ],
+    "reported_completion_tokens": 338,
+    "completion_tokens_over_sum_client_seconds": 17.2427873311643
+  },
+  "scope": "Single serial localhost run including client overhead; provider-reported tokens; first request separate, no decoder-throughput/concurrency/TTFT/baseline/generalization claim."
+}
