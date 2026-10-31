@@ -1,0 +1,1468 @@
+{
+  "schema": "sentilab-static-producer-map-v1",
+  "at": "2026-10-31T22:35:49.848Z",
+  "draftCommit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+  "successorCommit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+  "reviewedDraftDocument": "da9b1ee60c6b2fd11ab97e66e9384cc44da1a0d7",
+  "draftWriterPinMatched": true,
+  "sourceOnly": true,
+  "sourceFiles": [
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/passive_interposer.py",
+      "bytes": 16101,
+      "gitBlob": "b51518258f3a4572efb636926bfcd5495c8a3c9b",
+      "sha256": "cecc5b85f7dd8e6a3816c635879eb06193a270595f6bdbc71b76e4ef96f227df",
+      "packetPath": "draft-d2504625/sundai_tap/passive_interposer.py"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/system.py",
+      "bytes": 2847,
+      "gitBlob": "28fb79ed2ab7f3f274429015fb3be1bd3ffc509a",
+      "sha256": "22adcc1c5b9228b21b1264ee8f1b31bac916a3f5fb1f9f06d5428d04d11a5acf",
+      "packetPath": "draft-d2504625/sundai_tap/system.py"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/util/fill_space.py",
+      "bytes": 5464,
+      "gitBlob": "d02a17fceac45e90d85c5d857373a4fa1b065dc8",
+      "sha256": "645c0c372509577a77476878ddfac236fd9a0d523133af40011c7bb84db96a82",
+      "packetPath": "draft-d2504625/sundai_tap/util/fill_space.py"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/util/hotspot.config",
+      "bytes": 4507,
+      "gitBlob": "497fa9913898901bdfa9da7ef8026a902a72be77",
+      "sha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc",
+      "packetPath": "draft-d2504625/sundai_tap/util/hotspot.config"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature_grid.c",
+      "bytes": 275052,
+      "gitBlob": "e06e73851dd8c8c6470757ff6dd5dd9fd7aaf97f",
+      "sha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature_grid.c"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature_grid.h",
+      "bytes": 8776,
+      "gitBlob": "d1b6fd27913831d87bd5088576906ad43c310a9b",
+      "sha256": "0b760dfebe231d9a00b5e3f6ee07dd9c1cde2d7d8906c1856f394342851fb1ec",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature_grid.h"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature.c",
+      "bytes": 44374,
+      "gitBlob": "f4dda202a46d7389125a45f8b376985f88a93e7f",
+      "sha256": "03ea708a3ab231300cc2d2ffd0ebd5db15e81f86a2f1cb968f4adf6dc4168066",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature.c"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature.h",
+      "bytes": 14314,
+      "gitBlob": "33dd3ffd161dc9af87b01e460ac2e2a68f38f508",
+      "sha256": "5056ac1932465250f79226c6d434774f56c2d3230d6612041085dfed36a6be8b",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature.h"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/hotspot.c",
+      "bytes": 28891,
+      "gitBlob": "d16994b4caca083810f09925999aa220f63edf40",
+      "sha256": "711b1a81dbec0770bcdc4c75dd82ae929693f483a4e6bffc282f80321419669d",
+      "packetPath": "draft-d2504625/sundai_hotspot/hotspot.c"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/Makefile",
+      "bytes": 5235,
+      "gitBlob": "9110e53ec0dbd7173daeb5e5a99b9989e714d002",
+      "sha256": "d034691877ca455124d47f59d13640e5f2975904b2956394f6b7b664da2696c5",
+      "packetPath": "draft-d2504625/sundai_hotspot/Makefile"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/tap_oracle.py",
+      "bytes": 52855,
+      "gitBlob": "94c0ed727e43811850cc468715b6068e048d9c56",
+      "sha256": "43eeb93ccc6ef6a89876c1efbefc02d43c2262b9b1068307474e69915043fe60",
+      "packetPath": "draft-d2504625/sundai_hotspot/tap_oracle.py"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/tap_oracle_worker.py",
+      "bytes": 22303,
+      "gitBlob": "89006afabdccac612c01335464f5077d550e8366",
+      "sha256": "bf0266dba03d980565d337b7092f0ec0589e6f8438045c9860d1af8ea5e145dd",
+      "packetPath": "draft-d2504625/sundai_hotspot/tap_oracle_worker.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_tap/passive_interposer.py",
+      "bytes": 16101,
+      "gitBlob": "b51518258f3a4572efb636926bfcd5495c8a3c9b",
+      "sha256": "cecc5b85f7dd8e6a3816c635879eb06193a270595f6bdbc71b76e4ef96f227df",
+      "packetPath": "successor-7f70baf5/sundai_tap/passive_interposer.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_tap/system.py",
+      "bytes": 2847,
+      "gitBlob": "28fb79ed2ab7f3f274429015fb3be1bd3ffc509a",
+      "sha256": "22adcc1c5b9228b21b1264ee8f1b31bac916a3f5fb1f9f06d5428d04d11a5acf",
+      "packetPath": "successor-7f70baf5/sundai_tap/system.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_tap/util/fill_space.py",
+      "bytes": 5464,
+      "gitBlob": "d02a17fceac45e90d85c5d857373a4fa1b065dc8",
+      "sha256": "645c0c372509577a77476878ddfac236fd9a0d523133af40011c7bb84db96a82",
+      "packetPath": "successor-7f70baf5/sundai_tap/util/fill_space.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_tap/util/hotspot.config",
+      "bytes": 4507,
+      "gitBlob": "497fa9913898901bdfa9da7ef8026a902a72be77",
+      "sha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc",
+      "packetPath": "successor-7f70baf5/sundai_tap/util/hotspot.config"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/temperature_grid.c",
+      "bytes": 276521,
+      "gitBlob": "3abe1c8b1ed26c1c24cb1c52558c27756daf60a8",
+      "sha256": "80e60bf7f32cc69ec9d46f3704d2d9541975d174f8bcda6b14ecb9fcfa900375",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/temperature_grid.c"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/temperature_grid.h",
+      "bytes": 8776,
+      "gitBlob": "d1b6fd27913831d87bd5088576906ad43c310a9b",
+      "sha256": "0b760dfebe231d9a00b5e3f6ee07dd9c1cde2d7d8906c1856f394342851fb1ec",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/temperature_grid.h"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/temperature.c",
+      "bytes": 44374,
+      "gitBlob": "f4dda202a46d7389125a45f8b376985f88a93e7f",
+      "sha256": "03ea708a3ab231300cc2d2ffd0ebd5db15e81f86a2f1cb968f4adf6dc4168066",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/temperature.c"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/temperature.h",
+      "bytes": 14314,
+      "gitBlob": "33dd3ffd161dc9af87b01e460ac2e2a68f38f508",
+      "sha256": "5056ac1932465250f79226c6d434774f56c2d3230d6612041085dfed36a6be8b",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/temperature.h"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/hotspot.c",
+      "bytes": 28891,
+      "gitBlob": "d16994b4caca083810f09925999aa220f63edf40",
+      "sha256": "711b1a81dbec0770bcdc4c75dd82ae929693f483a4e6bffc282f80321419669d",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/hotspot.c"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/Makefile",
+      "bytes": 5975,
+      "gitBlob": "7761126d648daa03c0ecad5f175d6d6d61b357b8",
+      "sha256": "a23c84c1c9e16e62f3502e08f11237260384c9f113f36d17a1402eddbb5991b4",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/Makefile"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/tap_oracle.py",
+      "bytes": 52855,
+      "gitBlob": "94c0ed727e43811850cc468715b6068e048d9c56",
+      "sha256": "43eeb93ccc6ef6a89876c1efbefc02d43c2262b9b1068307474e69915043fe60",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/tap_oracle.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/tap_oracle_worker.py",
+      "bytes": 22303,
+      "gitBlob": "89006afabdccac612c01335464f5077d550e8366",
+      "sha256": "bf0266dba03d980565d337b7092f0ec0589e6f8438045c9860d1af8ea5e145dd",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/tap_oracle_worker.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature_grid.c",
+      "bytes": 187555,
+      "gitBlob": "7d5a83028477313c3938705b374bfcef33119195",
+      "sha256": "3ffb58e102cae8e8c844b7758ffce1491c833ed75c8ab78758960caff61c25ad",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature_grid.c"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature_grid.h",
+      "bytes": 8000,
+      "gitBlob": "52176809d391ed7ad16453aa4ab48f53a4d7ce68",
+      "sha256": "c8d25c6b7c767dfc206659221764e7757f62bbc1020f68346041718785fedc2c",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature_grid.h"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature.c",
+      "bytes": 41614,
+      "gitBlob": "716635870359548de4959f56d89967635c8069e8",
+      "sha256": "ae1175cdeb77de11420176988884689f12da8d83638a2914a28b95b1da793347",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature.c"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature.h",
+      "bytes": 13876,
+      "gitBlob": "da22d55784d6f765c53c3ff54ebe70734a93e7b5",
+      "sha256": "9d586a7fa43fa295a672e0499823c37cecc96ca06c6cab34ccd3ed0ba4676b87",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature.h"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/hotspot.c",
+      "bytes": 23234,
+      "gitBlob": "db6f22ed48d2ffba15a2d81d4a1236a51f9611d9",
+      "sha256": "9cac68e9615077e98d7ad22613d04c39a24759626c99b25073b71b3263acc5e0",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/hotspot.c"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/hotspot.config",
+      "bytes": 4507,
+      "gitBlob": "497fa9913898901bdfa9da7ef8026a902a72be77",
+      "sha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/hotspot.config"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/Makefile",
+      "bytes": 4926,
+      "gitBlob": "5b291fed32ebfa86a75f067d98c4a34859bfad51",
+      "sha256": "6dea60a98bc35e376cb0899bad2345dd90592a79834fb6c067b8365b64e58af4",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/Makefile"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/UPSTREAM_COMMIT",
+      "bytes": 41,
+      "gitBlob": "137c85d086e2bc60e524a6a9ee6990a13570a77a",
+      "sha256": "98beb05d8182ba824df6443e67804639945722d2c0ec7e78f09ad3f74371acf2",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/UPSTREAM_COMMIT"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/UPSTREAM_BLOBS.txt",
+      "bytes": 1598,
+      "gitBlob": "8e7be27157700cd735e0a36648a8c2f7caee4718",
+      "sha256": "25a1fc87a67b7405eaf011d2d3680f0c87ba3a30f798df984ceab69b1935d93a",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/UPSTREAM_BLOBS.txt"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "scripts/build_hotspot6.sh",
+      "bytes": 2447,
+      "gitBlob": "2f78dd939f3d43f587a24efca0b9e433408f2b3e",
+      "sha256": "617ad089784c5a2141fdd2978b579df24ab0727149f5240978cc66836c7b6581",
+      "packetPath": "successor-7f70baf5/scripts/build_hotspot6.sh"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/evaluators.py",
+      "bytes": 6587,
+      "gitBlob": "39302e196a1898a7a4dd421895d3177ea81244e3",
+      "sha256": "db3121fdea136a0ae6d13cc625601b33c1f89e60847270d4241b0f16bc49e5d5",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/evaluators.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/slab049.py",
+      "bytes": 101516,
+      "gitBlob": "5bb38c0810dbc7aa6e36a59b0aa86e080f7e0980",
+      "sha256": "669aef9788e97b0f860e21389e7c79d16e296891888cdc956fb9bbc3d8b6271a",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/slab049.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/gate_zero.py",
+      "bytes": 37555,
+      "gitBlob": "ff608db5284eff6edce7fc1b1a38cad7c6c6922f",
+      "sha256": "33d65b37b3503c18d9811fba1ab0b472bd577252aa449046d065a31dd13c6c66",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/gate_zero.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/reference_validation.py",
+      "bytes": 35201,
+      "gitBlob": "f773250942a866654fb636d9507dad9eadcef51b",
+      "sha256": "f1d413f73044fd0b62173458c9dc5565679a1e7db66fe6e94915b35fecd9b18b",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/reference_validation.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/new_hotspot.config",
+      "bytes": 4524,
+      "gitBlob": "8fd10438cfaaf5416f9d87a7dcb7efb07c586d30",
+      "sha256": "5af52c844c0504b5b9bacec5ba0a908a306c4db98655a573919f1e7e65de594a",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/new_hotspot.config"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/samplelayers.lcf",
+      "bytes": 666,
+      "gitBlob": "252051b8b6c1c8bd986a607cc86069afa2d74b4e",
+      "sha256": "283c59b2c82e40fcfefe55662cfaf1499d558fc4f39453e9f360479388ba3881",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/samplelayers.lcf"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/sample.ptrace",
+      "bytes": 517,
+      "gitBlob": "d649022f36374822c76a87a2713a4201d9a6d9c4",
+      "sha256": "9691bf095ed9f55ceb61c2605aa87a593c5a893de5ccbcb4b170a4c70d171fe0",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/sample.ptrace"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/sampleL4_ChipLayer.flp",
+      "bytes": 4773,
+      "gitBlob": "0a355f885dca8b1798b3f4a6bfdcdaad68d0b735",
+      "sha256": "1174771e429dff9811723d62a8f5a9a62614121401a3dd91b8de9a86e55c0749",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/sampleL4_ChipLayer.flp"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/new_hotspot.config",
+      "bytes": 4524,
+      "gitBlob": "8fd10438cfaaf5416f9d87a7dcb7efb07c586d30",
+      "sha256": "5af52c844c0504b5b9bacec5ba0a908a306c4db98655a573919f1e7e65de594a",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/new_hotspot.config"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/samplelayers.lcf",
+      "bytes": 666,
+      "gitBlob": "252051b8b6c1c8bd986a607cc86069afa2d74b4e",
+      "sha256": "283c59b2c82e40fcfefe55662cfaf1499d558fc4f39453e9f360479388ba3881",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/samplelayers.lcf"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/sample.ptrace",
+      "bytes": 638,
+      "gitBlob": "845b687e847016a3ed38088d11db44a38d2a0b41",
+      "sha256": "ddf1086fb58524072576b4624b4c94780080f4eb63e383d4aceac8f292532ece",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/sample.ptrace"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/sampleL4_ChipLayer.flp",
+      "bytes": 5124,
+      "gitBlob": "87cf25b479e40209bb476317a8efdc3ded98ce16",
+      "sha256": "2ea583e91c18aedf383bebe449adcd594c74dcc44a978e0af7e3962d65ea4f0e",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/sampleL4_ChipLayer.flp"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/util.c",
+      "bytes": 18027,
+      "gitBlob": "dfd9e6cb8c27978cfc2110d0fcad9861fe0c998d",
+      "sha256": "54121b2c0d07d18553150c4d06673ac29eeaaf290162bb6ccb68dd16d644330c",
+      "packetPath": "draft-d2504625/sundai_hotspot/util.c"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/util.c",
+      "bytes": 18027,
+      "gitBlob": "dfd9e6cb8c27978cfc2110d0fcad9861fe0c998d",
+      "sha256": "54121b2c0d07d18553150c4d06673ac29eeaaf290162bb6ccb68dd16d644330c",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/util.c"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/util.c",
+      "bytes": 11889,
+      "gitBlob": "2601cc2a7b78b525bce5c4f19fa18cf35e964464",
+      "sha256": "f5d9616d5b9e8852ec0f534e94b25ef056681041267ea7a9aac8b21312cc7c83",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/util.c"
+    }
+  ],
+  "commonPathComparisons": [
+    {
+      "path": "sundai_tap/passive_interposer.py",
+      "draftSha256": "cecc5b85f7dd8e6a3816c635879eb06193a270595f6bdbc71b76e4ef96f227df",
+      "successorSha256": "cecc5b85f7dd8e6a3816c635879eb06193a270595f6bdbc71b76e4ef96f227df",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_tap/system.py",
+      "draftSha256": "22adcc1c5b9228b21b1264ee8f1b31bac916a3f5fb1f9f06d5428d04d11a5acf",
+      "successorSha256": "22adcc1c5b9228b21b1264ee8f1b31bac916a3f5fb1f9f06d5428d04d11a5acf",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_tap/util/fill_space.py",
+      "draftSha256": "645c0c372509577a77476878ddfac236fd9a0d523133af40011c7bb84db96a82",
+      "successorSha256": "645c0c372509577a77476878ddfac236fd9a0d523133af40011c7bb84db96a82",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_tap/util/hotspot.config",
+      "draftSha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc",
+      "successorSha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_hotspot/temperature_grid.c",
+      "draftSha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df",
+      "successorSha256": "80e60bf7f32cc69ec9d46f3704d2d9541975d174f8bcda6b14ecb9fcfa900375",
+      "byteIdentical": false
+    },
+    {
+      "path": "sundai_hotspot/temperature_grid.h",
+      "draftSha256": "0b760dfebe231d9a00b5e3f6ee07dd9c1cde2d7d8906c1856f394342851fb1ec",
+      "successorSha256": "0b760dfebe231d9a00b5e3f6ee07dd9c1cde2d7d8906c1856f394342851fb1ec",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_hotspot/temperature.c",
+      "draftSha256": "03ea708a3ab231300cc2d2ffd0ebd5db15e81f86a2f1cb968f4adf6dc4168066",
+      "successorSha256": "03ea708a3ab231300cc2d2ffd0ebd5db15e81f86a2f1cb968f4adf6dc4168066",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_hotspot/temperature.h",
+      "draftSha256": "5056ac1932465250f79226c6d434774f56c2d3230d6612041085dfed36a6be8b",
+      "successorSha256": "5056ac1932465250f79226c6d434774f56c2d3230d6612041085dfed36a6be8b",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_hotspot/hotspot.c",
+      "draftSha256": "711b1a81dbec0770bcdc4c75dd82ae929693f483a4e6bffc282f80321419669d",
+      "successorSha256": "711b1a81dbec0770bcdc4c75dd82ae929693f483a4e6bffc282f80321419669d",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_hotspot/Makefile",
+      "draftSha256": "d034691877ca455124d47f59d13640e5f2975904b2956394f6b7b664da2696c5",
+      "successorSha256": "a23c84c1c9e16e62f3502e08f11237260384c9f113f36d17a1402eddbb5991b4",
+      "byteIdentical": false
+    },
+    {
+      "path": "sundai_hotspot/tap_oracle.py",
+      "draftSha256": "43eeb93ccc6ef6a89876c1efbefc02d43c2262b9b1068307474e69915043fe60",
+      "successorSha256": "43eeb93ccc6ef6a89876c1efbefc02d43c2262b9b1068307474e69915043fe60",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_hotspot/tap_oracle_worker.py",
+      "draftSha256": "bf0266dba03d980565d337b7092f0ec0589e6f8438045c9860d1af8ea5e145dd",
+      "successorSha256": "bf0266dba03d980565d337b7092f0ec0589e6f8438045c9860d1af8ea5e145dd",
+      "byteIdentical": true
+    }
+  ],
+  "hotspot7WriterSliceEquality": {
+    "draftLines": [
+      1261,
+      1295
+    ],
+    "successorLines": [
+      1286,
+      1320
+    ],
+    "byteIdenticalUtf8Lf": true,
+    "sha256": "5a2dabb71db321a02a5c35db3e8626fb1749fe5aab68908a4d2d6e815c80dbbc"
+  },
+  "facts": [
+    {
+      "id": "native_defaults",
+      "scope": "both named source sets",
+      "statement": "Native defaults are block model, 64 rows by 64 columns, center block mapping, no layer file/grid-output filename, detailed3D off. These are defaults, not the effective TAP invocation.",
+      "evidence": [
+        "E01",
+        "E02"
+      ]
+    },
+    {
+      "id": "cli_over_config",
+      "scope": "both named source sets",
+      "statement": "Command-line options are read first; config-file options are appended and later duplicate names removed. CLI values therefore override the file, whose remaining values override initialized defaults.",
+      "evidence": [
+        "E03",
+        "E04",
+        "E05",
+        "E06"
+      ]
+    },
+    {
+      "id": "draft_hotspot7_grid_writer",
+      "scope": "draft d2504625",
+      "statement": "The native HotSpot7 grid steady writer emits every layer as Layer n:, followed by zero-based row-major index i*cols+j and Kelvin at two decimals. Its top-layer comment is stale. This is grid-cell output, not block-mapped steady output.",
+      "evidence": [
+        "E07"
+      ]
+    },
+    {
+      "id": "successor_hotspot7_grid_writer",
+      "scope": "successor 7f70baf5",
+      "statement": "The successor HotSpot7 grid writer has the same all-layer format. Its C file has separate macro-guarded material-coupling additions; whole-file byte equivalence with d250 is false.",
+      "evidence": [
+        "E08",
+        "E09"
+      ]
+    },
+    {
+      "id": "native_hotspot6_headerless",
+      "scope": "successor native6 macro-off branch",
+      "statement": "Native HotSpot6 without SENTILAB_GRID_DUMP_ALL_LAYERS writes a headerless index/T_K grid and a blank line after each row. The selected silidx is 0 when secondary is off, 3 with secondary plus LCF, and 5 with secondary without LCF. It is not selected from the power-enabled flag. The captured TAP config has secondary off, so its native6 output is layer0 only.",
+      "evidence": [
+        "E10",
+        "E11",
+        "E12",
+        "E13"
+      ]
+    },
+    {
+      "id": "native6_evaluator_all_layers",
+      "scope": "successor evaluator build branch",
+      "statement": "SENTILAB_GRID_DUMP_ALL_LAYERS=1 selects a writer with Layer n: for every layer and an identifying marker. The build script produces hotspot-tap-faithful with SUPERLU=0 and hotspot with SUPERLU=1 plus this writer macro. The compiled identity and actual build have not been observed here.",
+      "evidence": [
+        "E14",
+        "E15",
+        "E16",
+        "E17"
+      ]
+    },
+    {
+      "id": "block_steady_and_stdout",
+      "scope": "both named source sets",
+      "statement": "With model_type=grid, the block-mapped steady dump names layer_n_unit, hsp_/hsink_ package units and inode_n peripheral nodes, with two-decimal Kelvin. The native6 main steady path prints Unit/Steady(Kelvin) and that dump to stdout; native7 writes the configured files and has no equivalent unconditional thermal stdout dump. Do not parse a grid file as this stream.",
+      "evidence": [
+        "E18",
+        "E19",
+        "E20",
+        "E21"
+      ]
+    },
+    {
+      "id": "six_layer_recipe",
+      "scope": "draft writer; also byte-identical in successor",
+      "statement": "The generator emits six explicit lateral-enabled LCF layers: substrate200um, C4/underfill70um, interposer110um, microbump/underfill10um, chip150um, TIM20um. Only layer4 enables power. The ptrace assigns configured powers only to Chiplet_*; other L4 units receive zero. Powered-layer status does not mean uniform power over the whole layer.",
+      "evidence": [
+        "E22",
+        "E23"
+      ]
+    },
+    {
+      "id": "coordinates_and_regions",
+      "scope": "draft writer; also byte-identical in successor",
+      "statement": "Input die centres/sizes are mm; FLP dimensions and lower-left coordinates are metres. Die lower-left is centre/1000 minus half-size/1000. In L4, Chiplet and Ubump-named regions use silicon; Edge regions use bump mixture. L3 uses bump mixture for written die/halo/edge regions; fill_space adds whitespace with underfill properties. Names alone do not establish material.",
+      "evidence": [
+        "E24",
+        "E25",
+        "E26",
+        "E27"
+      ]
+    },
+    {
+      "id": "material_precedence",
+      "scope": "draft detailed3D C; related successor separately pinned",
+      "statement": "For detailed3D, per-unit FLP resistivity and volumetric heat capacity override the layer fallback when present. L1/C4 and L2/interposer slabs carry calculated mixture properties in their FLPs. Resolve properties from the actual generated region and flags, not only LCF defaults.",
+      "evidence": [
+        "E28",
+        "E29"
+      ]
+    },
+    {
+      "id": "package_layers_and_extent",
+      "scope": "draft grid model",
+      "statement": "With LCF and secondary off, the C model reads six LCF layers then appends two package layers: spreader6 and sink7; there is no second implicit TIM. They retain the TIM FLP extent and grid-to-block map. Detailed3D replaces the package block-to-grid map and clears its per-cell material override flags, so package properties come from spreader/sink configuration. Grid writers emit central cuboid cells, not peripheral inode values; package outlines can extend beyond that field domain.",
+      "evidence": [
+        "E30",
+        "E31",
+        "E32",
+        "E33",
+        "E34",
+        "E35"
+      ]
+    },
+    {
+      "id": "conditional_config_writer",
+      "scope": "draft writer; also byte-identical in successor",
+      "statement": "The generator only creates new_hotspot.config when it is absent. On that branch it sets spreader side=2*interposer and sink side=4*interposer (metres), and replaces r_convec with 0.1*0.06^2/sink_side^2 by exact template-line matching. Existing generated config is retained. Source alone does not prove an old run performed scaling; fixture comparisons need a fresh directory.",
+      "evidence": [
+        "E36",
+        "E37"
+      ]
+    },
+    {
+      "id": "captured_45mm_configs",
+      "scope": "successor committed input data; not a run",
+      "statement": "Both captured raw45mm reference configs declare sink0.18m, spreader0.09m, r_convec0.011111111111111112K/W, ambient318.15K, secondary0, block model, grid64x64 and center mapping. The invocation overrides model_type to grid and detailed3D on. These retained input bytes are not an observed effective runtime configuration.",
+      "evidence": [
+        "E38",
+        "E39",
+        "E40",
+        "E41"
+      ]
+    },
+    {
+      "id": "warm_oracle_overrides",
+      "scope": "draft warm worker; byte-identical in successor",
+      "statement": "tap_oracle_worker selects the requested binary and passes -c new_hotspot.config, -f sampleL4_ChipLayer.flp, -p sample.ptrace, steady/grid outputs, model_type grid, detailed3D on, the LCF, requested rows/cols, and grid_map_mode max. HotSpotOracle defaults rows/cols to32x32. The worker requires headers for all8 layers and returns layer4 as the heatmap. A HotSpot6Oracle uses this same worker after separate gate checks, so its search worker also forces max; its native6 gate-validation command is a different path.",
+      "evidence": [
+        "E42",
+        "E43",
+        "E44",
+        "E45",
+        "E46"
+      ]
+    },
+    {
+      "id": "gate_validation_command",
+      "scope": "successor PR56 path",
+      "statement": "slab049.tap_argv uses explicit binary/config/L4 FLP/ptrace/steady/grid/model grid/detailed3D/LCF arguments. For grid64 it leaves rows/cols and center mapping to the captured config; grid32 adds only rows/cols, preserving center mapping. reference_validation uses this argv with a private executable copy; its solver environment pins locale, zone and BLAS thread/dispatch settings. This code path has not run here.",
+      "evidence": [
+        "E47",
+        "E48",
+        "E49",
+        "E50"
+      ]
+    },
+    {
+      "id": "native_centre_not_peak",
+      "scope": "both native sources",
+      "statement": "Native grid-to-block center mapping uses the half-open mapped block bounds and averages four indexed terms; duplicated indices yield1,2or4distinct cells. Row0 is the top/north row. This observable differs from the active-layer grid peak/argmax and from a whole-dump maximum.",
+      "evidence": [
+        "E51",
+        "E52",
+        "E53",
+        "E54"
+      ]
+    },
+    {
+      "id": "record_outputs",
+      "scope": "successor PR56 parser contract",
+      "statement": "The record binds grid format to evaluator identity, obtains the single powered layer from LCF, requires complete block evidence, and records the literal stdout selector separately from its steady-file counterpart. For all-layer files it separately reports active-layer peak/argmax, weighted native centre mappings and same-index stack fields. For native6 macro-off it returns only the scoped layer0 grid and cannot derive the other grid layers from it.",
+      "evidence": [
+        "E55",
+        "E56",
+        "E57"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E01",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature.c",
+      "startLine": 86,
+      "endLine": 106,
+      "sourceSha256": "03ea708a3ab231300cc2d2ffd0ebd5db15e81f86a2f1cb968f4adf6dc4168066",
+      "sourceGitBlob": "f4dda202a46d7389125a45f8b376985f88a93e7f",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature.c",
+      "excerpt": "\t/* set block model as default\t*/\n\tstrcpy(config.model_type, BLOCK_MODEL_STR);\n\n\t/* block model specific parameters\t*/\n\tconfig.block_omit_lateral = FALSE;\t/* omit lateral chip resistances?\t*/\n\n\t/* grid model specific parameters\t*/\n\tconfig.grid_rows = 64;\t\t\t\t/* grid resolution - no. of rows\t*/\n\tconfig.grid_cols = 64;\t\t\t\t/* grid resolution - no. of cols\t*/\n\t/* layer configuration from\tfile */\n\tstrcpy(config.grid_layer_file, NULLFILE);\n\t/* output steady state grid temperatures apart from block temperatures */\n\tstrcpy(config.grid_steady_file, NULLFILE);\n\t/*\n\t * mapping mode between block and grid models.\n\t * default: use the temperature of the center\n\t * grid cell as that of the entire block\n\t */\n\tstrcpy(config.grid_map_mode, GRID_CENTER_STR);\n\n\tconfig.detailed_3D_used = 0;\t//BU_3D: by default detailed 3D modeling is disabled.",
+      "excerptUtf8LfSha256": "fac4d8d49ba97e95275066c5959a7400fd4c8ac89ac50f2cf6c4bef6f41b68ed"
+    },
+    {
+      "id": "E02",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature.c",
+      "startLine": 84,
+      "endLine": 104,
+      "sourceSha256": "ae1175cdeb77de11420176988884689f12da8d83638a2914a28b95b1da793347",
+      "sourceGitBlob": "716635870359548de4959f56d89967635c8069e8",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature.c",
+      "excerpt": "\t/* set block model as default\t*/\n\tstrcpy(config.model_type, BLOCK_MODEL_STR);\n\n\t/* block model specific parameters\t*/\n\tconfig.block_omit_lateral = FALSE;\t/* omit lateral chip resistances?\t*/\n\n\t/* grid model specific parameters\t*/\n\tconfig.grid_rows = 64;\t\t\t\t/* grid resolution - no. of rows\t*/\n\tconfig.grid_cols = 64;\t\t\t\t/* grid resolution - no. of cols\t*/\n\t/* layer configuration from\tfile */\n\tstrcpy(config.grid_layer_file, NULLFILE);\n\t/* output steady state grid temperatures apart from block temperatures */\n\tstrcpy(config.grid_steady_file, NULLFILE);\n\t/* \n\t * mapping mode between block and grid models.\n\t * default: use the temperature of the center\n\t * grid cell as that of the entire block\n\t */\n\tstrcpy(config.grid_map_mode, GRID_CENTER_STR);\n\n\tconfig.detailed_3D_used = 0;\t//BU_3D: by default detailed 3D modeling is disabled.\t",
+      "excerptUtf8LfSha256": "3b21840cec5cb25ffcc9eab5f5173e6538ebae23df0c33fe7f399983ba79180a"
+    },
+    {
+      "id": "E03",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/hotspot.c",
+      "startLine": 403,
+      "endLine": 437,
+      "sourceSha256": "711b1a81dbec0770bcdc4c75dd82ae929693f483a4e6bffc282f80321419669d",
+      "sourceGitBlob": "d16994b4caca083810f09925999aa220f63edf40",
+      "packetPath": "draft-d2504625/sundai_hotspot/hotspot.c",
+      "excerpt": "  size = parse_cmdline(table, MAX_ENTRIES, argc, argv);\n  global_config_from_strs(&global_config, table, size);\n\n  /* no transient simulation, only steady state\t*/\n  if(!strcmp(global_config.t_outfile, NULLFILE))\n    do_transient = FALSE;\n\n  /* read configuration file\t*/\n  if (strcmp(global_config.config, NULLFILE))\n    size += read_str_pairs(&table[size], MAX_ENTRIES, global_config.config);\n\n  /* earlier entries override later ones. so, command line options\n   * have priority over config file\n   */\n  size = str_pairs_remove_duplicates(table, size);\n\n  /* BU_3D: check if heterogenous R-C modeling is on */\n  if(!strcmp(global_config.detailed_3D, \"on\")){\n      do_detailed_3D = TRUE;\n  }\n  else if(strcmp(global_config.detailed_3D, \"off\")){\n      //fatal(\"detailed_3D parameter should be either \\'on\\' or \\'off\\'\\n\");\n      do_detailed_3D = FALSE;\n  }//end->BU_3D\n\n  // fill in material properties\n  default_materials(&materials_list);\n  if(strncmp(global_config.materials_file, NULLFILE, STR_SIZE)) {\n    materials_add_from_file(&materials_list, global_config.materials_file);\n  }\n\n  /* get defaults */\n  thermal_config = default_thermal_config();\n  /* modify according to command line / config file\t*/\n  thermal_config_add_from_strs(&thermal_config, &materials_list, table, size);",
+      "excerptUtf8LfSha256": "957af9eea361745ccc235a6599dc07ddb7b2dba5935165072e97857e10f9bcd0"
+    },
+    {
+      "id": "E04",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/util.c",
+      "startLine": 422,
+      "endLine": 437,
+      "sourceSha256": "54121b2c0d07d18553150c4d06673ac29eeaaf290162bb6ccb68dd16d644330c",
+      "sourceGitBlob": "dfd9e6cb8c27978cfc2110d0fcad9861fe0c998d",
+      "packetPath": "draft-d2504625/sundai_hotspot/util.c",
+      "excerpt": " * remove duplicate names in the table - the entries later\n * in the table are discarded. returns the new size of the\n * table\n */\nint str_pairs_remove_duplicates(str_pair *table, int size)\n{\n\tint i, j;\n\n\tfor(i=0; i < size-1; i++)\n\t\tfor(j=i+1; j < size; j++)\n\t\t\tif (!strcasecmp(table[i].name, table[j].name)) {\n\t\t\t\tdelete_entry(table, size, j);\n\t\t\t\tsize--;\n\t\t\t\tj--;\n\t\t\t}\n\treturn size;",
+      "excerptUtf8LfSha256": "71245bee6bc0641441f8a2911d9481cdcd0d73f6a9556028c1dfc501ce0c478e"
+    },
+    {
+      "id": "E05",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/hotspot.c",
+      "startLine": 316,
+      "endLine": 343,
+      "sourceSha256": "9cac68e9615077e98d7ad22613d04c39a24759626c99b25073b71b3263acc5e0",
+      "sourceGitBlob": "db6f22ed48d2ffba15a2d81d4a1236a51f9611d9",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/hotspot.c",
+      "excerpt": "  size = parse_cmdline(table, MAX_ENTRIES, argc, argv);\n  global_config_from_strs(&global_config, table, size);\n\n  /* no transient simulation, only steady state\t*/\n  if(!strcmp(global_config.t_outfile, NULLFILE))\n    do_transient = FALSE;\n\n  /* read configuration file\t*/\n  if (strcmp(global_config.config, NULLFILE))\n    size += read_str_pairs(&table[size], MAX_ENTRIES, global_config.config);\n\n  /* earlier entries override later ones. so, command line options \n   * have priority over config file \n   */\n  size = str_pairs_remove_duplicates(table, size);\n\n  /* BU_3D: check if heterogenous R-C modeling is on */\n  if(!strcmp(global_config.detailed_3D, \"on\")){\n      do_detailed_3D = TRUE;\n  }\n  else if(strcmp(global_config.detailed_3D, \"off\")){\n      fatal(\"detailed_3D parameter should be either \\'on\\' or \\'off\\'\\n\");\n  }//end->BU_3D\n\n  /* get defaults */\n  thermal_config = default_thermal_config();\n  /* modify according to command line / config file\t*/\n  thermal_config_add_from_strs(&thermal_config, table, size);",
+      "excerptUtf8LfSha256": "94eac4dc36830e068e857ca7f80e17f8186f460393f6f78c42e0a44b96727b92"
+    },
+    {
+      "id": "E06",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/util.c",
+      "startLine": 420,
+      "endLine": 435,
+      "sourceSha256": "f5d9616d5b9e8852ec0f534e94b25ef056681041267ea7a9aac8b21312cc7c83",
+      "sourceGitBlob": "2601cc2a7b78b525bce5c4f19fa18cf35e964464",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/util.c",
+      "excerpt": " * remove duplicate names in the table - the entries later \n * in the table are discarded. returns the new size of the\n * table\n */\nint str_pairs_remove_duplicates(str_pair *table, int size)\n{\n\tint i, j;\n\n\tfor(i=0; i < size-1; i++)\n\t\tfor(j=i+1; j < size; j++)\n\t\t\tif (!strcasecmp(table[i].name, table[j].name)) {\n\t\t\t\tdelete_entry(table, size, j);\n\t\t\t\tsize--;\n\t\t\t\tj--;\n\t\t\t}\n\treturn size;",
+      "excerptUtf8LfSha256": "b58d1eb903ac0297b0dd3375f839c7c33673b864e43fa6455beb0f9a4d8d8346"
+    },
+    {
+      "id": "E07",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature_grid.c",
+      "startLine": 1261,
+      "endLine": 1295,
+      "sourceSha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df",
+      "sourceGitBlob": "e06e73851dd8c8c6470757ff6dd5dd9fd7aaf97f",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature_grid.c",
+      "excerpt": "/* dump the steady state grid temperatures of the top layer onto 'file'\t*/\nvoid dump_steady_temp_grid (grid_model_t *model, char *file)\n{\n  int i, j, n;\n  char str[STR_SIZE];\n  FILE *fp;\n\n  if (!model->r_ready)\n    fatal(\"R model not ready\\n\");\n\n  if (!strcasecmp(file, \"stdout\"))\n    fp = stdout;\n  else if (!strcasecmp(file, \"stderr\"))\n    fp = stderr;\n  else\n    fp = fopen (file, \"w\");\n\n  if (!fp) {\n      sprintf (str,\"error: %s could not be opened for writing\\n\", file);\n      fatal(str);\n  }\n\n  for(n=0; n < model->n_layers; n++) {\n    fprintf(fp, \"Layer %d:\\n\", n);\n    for(i=0; i < model->rows; i++){\n      for(j=0; j < model->cols; j++){\n          fprintf(fp, \"%d\\t%.2f\\n\", i*model->cols+j,\n                  model->last_steady->cuboid[n][i][j]);\n      }\n    }\n  }\n\n  if(fp != stdout && fp != stderr)\n    fclose(fp);\n}",
+      "excerptUtf8LfSha256": "5a2dabb71db321a02a5c35db3e8626fb1749fe5aab68908a4d2d6e815c80dbbc"
+    },
+    {
+      "id": "E08",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/temperature_grid.c",
+      "startLine": 23,
+      "endLine": 50,
+      "sourceSha256": "80e60bf7f32cc69ec9d46f3704d2d9541975d174f8bcda6b14ecb9fcfa900375",
+      "sourceGitBlob": "3abe1c8b1ed26c1c24cb1c52558c27756daf60a8",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/temperature_grid.c",
+      "excerpt": "#include \"slu_ddefs.h\"\n#endif\n\n#if SENTILAB_SINK_COUPLING_MATERIAL_ONLY\n/* SentiLab SLAB-049 diagnostic variant, compiled only with -DSENTILAB_SINK_COUPLING_MATERIAL_ONLY=1\n * (make hotspot-material-only). Without that macro this file preprocesses to the unmodified\n * HotSpot source, so the default `hotspot` binary is unchanged.\n *\n * populate_R_model_grid gives the heatsink layer rz = t_sink/(k_sink*cw*ch) + r_convec*s_sink^2/(cw*ch):\n * the material term plus this cell's share of the convection resistance. That rz is the right\n * sink-to-ambient link, but find_res also used it for the interior spreader<->sink link, so half the\n * convection resistance sat between the spreader and the sink. This variant couples the two cells\n * through material resistances only; convection stays solely on the sink-to-ambient link. */\nconst char sentilab_sink_coupling_identity[] = \"SENTILAB_SINK_COUPLING=material_only;ticket=SLAB-049\";\n\nstatic double sentilab_vertical_res_material_only(grid_model_t *model, int n, int i, int j)\n{\n  int hsidx = model->n_layers - DEFAULT_PACK_LAYERS + LAYER_SINK;\n  if (n == hsidx)\n    return getr(model->layers[n].k, model->layers[n].thickness,\n                (model->width / model->cols) * (model->height / model->rows));\n  return find_res_3D(n, i, j, model, 3);\n}\n#endif\ndouble find_res(grid_model_t *model, int n1, int i1, int j1, int n2, int i2, int j2) {\n  double res;\n\n  // Testing using Heat Transfer Coefficient instead of thermal conductivities",
+      "excerptUtf8LfSha256": "51d82118383a7a4c68d84e66ef44d38d861d7813fa0f89b21591473d3b53bd42"
+    },
+    {
+      "id": "E09",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/temperature_grid.c",
+      "startLine": 1286,
+      "endLine": 1320,
+      "sourceSha256": "80e60bf7f32cc69ec9d46f3704d2d9541975d174f8bcda6b14ecb9fcfa900375",
+      "sourceGitBlob": "3abe1c8b1ed26c1c24cb1c52558c27756daf60a8",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/temperature_grid.c",
+      "excerpt": "/* dump the steady state grid temperatures of the top layer onto 'file'\t*/\nvoid dump_steady_temp_grid (grid_model_t *model, char *file)\n{\n  int i, j, n;\n  char str[STR_SIZE];\n  FILE *fp;\n\n  if (!model->r_ready)\n    fatal(\"R model not ready\\n\");\n\n  if (!strcasecmp(file, \"stdout\"))\n    fp = stdout;\n  else if (!strcasecmp(file, \"stderr\"))\n    fp = stderr;\n  else\n    fp = fopen (file, \"w\");\n\n  if (!fp) {\n      sprintf (str,\"error: %s could not be opened for writing\\n\", file);\n      fatal(str);\n  }\n\n  for(n=0; n < model->n_layers; n++) {\n    fprintf(fp, \"Layer %d:\\n\", n);\n    for(i=0; i < model->rows; i++){\n      for(j=0; j < model->cols; j++){\n          fprintf(fp, \"%d\\t%.2f\\n\", i*model->cols+j,\n                  model->last_steady->cuboid[n][i][j]);\n      }\n    }\n  }\n\n  if(fp != stdout && fp != stderr)\n    fclose(fp);\n}",
+      "excerptUtf8LfSha256": "5a2dabb71db321a02a5c35db3e8626fb1749fe5aab68908a4d2d6e815c80dbbc"
+    },
+    {
+      "id": "E10",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature_grid.c",
+      "startLine": 1037,
+      "endLine": 1082,
+      "sourceSha256": "3ffb58e102cae8e8c844b7758ffce1491c833ed75c8ab78758960caff61c25ad",
+      "sourceGitBlob": "7d5a83028477313c3938705b374bfcef33119195",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature_grid.c",
+      "excerpt": "/* dump the steady state grid temperatures of the top layer onto 'file'\t*/\nvoid dump_top_layer_temp_grid (grid_model_t *model, char *file, grid_model_vector_t *temp)\n{\n  int i, j;\n  char str[STR_SIZE];\n  FILE *fp;\n  int silidx;\n\n  if (!model->config.model_secondary) {\n      silidx = LAYER_SI;\n  } else {\n      if(model->has_lcf)\n        silidx = SEC_PACK_LAYERS;\n      else\n        silidx = SEC_PACK_LAYERS + SEC_CHIP_LAYERS;\n  }\n\n  if (!model->r_ready)\n    fatal(\"R model not ready\\n\");\n\n  if (!strcasecmp(file, \"stdout\"))\n    fp = stdout;\n  else if (!strcasecmp(file, \"stderr\"))\n    fp = stderr;\n  else \t\n    fp = fopen (file, \"w\");\n\n  if (!fp) {\n      sprintf (str,\"error: %s could not be opened for writing\\n\", file);\n      fatal(str);\n  }\n\n  for(i=0; i < model->rows; i++){\n      for(j=0; j < model->cols; j++){\n          /* top layer of the most-recently computed \n           * steady state temperature\t\n           */\n  //        fprintf(fp, \"%d\\t%d\\t%.2f\\n\", j, model->rows-i-1, \n  //                model->last_steady->cuboid[silidx][i][j]); \n          fprintf(fp, \"%d\\t%.2f\\n\", i*model->cols+j, \n                  model->last_steady->cuboid[silidx][i][j]); \n      }\n      fprintf(fp, \"\\n\");\n  }\n\n  //int l;",
+      "excerptUtf8LfSha256": "e9f8d49dc9f672728295c6b747444429b5957ffee54c5557a755691640904589"
+    },
+    {
+      "id": "E11",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature_grid.c",
+      "startLine": 1140,
+      "endLine": 1148,
+      "sourceSha256": "3ffb58e102cae8e8c844b7758ffce1491c833ed75c8ab78758960caff61c25ad",
+      "sourceGitBlob": "7d5a83028477313c3938705b374bfcef33119195",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature_grid.c",
+      "excerpt": "/* dump the steady state grid temperatures of the top layer onto 'file'\t*/\nvoid dump_steady_temp_grid (grid_model_t *model, char *file)\n{\n#if SENTILAB_GRID_DUMP_ALL_LAYERS\n  sentilab_dump_all_layers(model, file);\n#else\n  /* top layer of the most-recently computed steady state temperature\t*/\n  dump_top_layer_temp_grid(model, file, model->last_steady);\n#endif",
+      "excerptUtf8LfSha256": "db42b78eedbbde4e606ea8dca1331ecee8f6c38156825f2f62f3c8d6453b5fe7"
+    },
+    {
+      "id": "E12",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature_grid.h",
+      "startLine": 35,
+      "endLine": 50,
+      "sourceSha256": "c8d25c6b7c767dfc206659221764e7757f62bbc1020f68346041718785fedc2c",
+      "sourceGitBlob": "52176809d391ed7ad16453aa4ab48f53a4d7ce68",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature_grid.h",
+      "excerpt": "#define DEFAULT_CHIP_LAYERS\t2\n#define LAYER_SI\t\t\t      0\n#define LAYER_INT\t\t\t      1\n\n/* layers of secondary path with same area as die */\n#define SEC_CHIP_LAYERS\t2\n#define LAYER_C4\t      0\n#define LAYER_METAL     1\n\n/* default no. of package layers\t*/\n#define DEFAULT_PACK_LAYERS\t2\n#define LAYER_SP\t\t\t      0\n#define LAYER_SINK\t\t\t    1\n\n/* additional package layers from secondary path */\n#define SEC_PACK_LAYERS\t3",
+      "excerptUtf8LfSha256": "a150c34dee890c3aef794e6498dd0095ab3fa47fb237424297af12ace28bc8ff"
+    },
+    {
+      "id": "E13",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/util/hotspot.config",
+      "startLine": 46,
+      "endLine": 50,
+      "sourceSha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc",
+      "sourceGitBlob": "497fa9913898901bdfa9da7ef8026a902a72be77",
+      "packetPath": "draft-d2504625/sundai_tap/util/hotspot.config",
+      "excerpt": "\t# ONLY AVAILABLE IN THE GRID MODEL\n\t\t# model secondary path or not?\n\t\t-model_secondary\t0\n\t\t# convection resistance at the air/PCB interface in K/W\n\t\t-r_convec_sec\t50.0",
+      "excerptUtf8LfSha256": "526d68d1c6c4e2a76b359928b98f49c4410efc0825f7c7c57ba8c181122a5bef"
+    },
+    {
+      "id": "E14",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature_grid.c",
+      "startLine": 1107,
+      "endLine": 1148,
+      "sourceSha256": "3ffb58e102cae8e8c844b7758ffce1491c833ed75c8ab78758960caff61c25ad",
+      "sourceGitBlob": "7d5a83028477313c3938705b374bfcef33119195",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature_grid.c",
+      "excerpt": "#if SENTILAB_GRID_DUMP_ALL_LAYERS\n/* SentiLab SLAB-049 evaluator build, compiled only with -DSENTILAB_GRID_DUMP_ALL_LAYERS=1. The solver is\n * unchanged. The grid steady file lists every layer in HotSpot 7's format (\"Layer n:\", then index and T) instead\n * of the top layer only, so the oracle and the per-solve record can read the chip, spreader and sink layers.\n * Without the macro this file preprocesses to upstream a7a3286e. */\nconst char sentilab_hotspot6_identity[] = \"SENTILAB_EVALUATOR=hotspot6@a7a3286e;grid_dump=all_layers;ticket=SLAB-049\";\n\nstatic void sentilab_dump_all_layers(grid_model_t *model, char *file)\n{\n  int i, j, n;\n  char str[STR_SIZE];\n  FILE *fp;\n\n  if (!strcasecmp(file, \"stdout\"))\n    fp = stdout;\n  else if (!strcasecmp(file, \"stderr\"))\n    fp = stderr;\n  else\n    fp = fopen (file, \"w\");\n  if (!fp) {\n      sprintf (str,\"error: %s could not be opened for writing\\n\", file);\n      fatal(str);\n  }\n  for(n=0; n < model->n_layers; n++) {\n    fprintf(fp, \"Layer %d:\\n\", n);\n    for(i=0; i < model->rows; i++)\n      for(j=0; j < model->cols; j++)\n        fprintf(fp, \"%d\\t%.2f\\n\", i*model->cols+j, model->last_steady->cuboid[n][i][j]);\n  }\n  if(fp != stdout && fp != stderr)\n    fclose(fp);\n}\n#endif\n/* dump the steady state grid temperatures of the top layer onto 'file'\t*/\nvoid dump_steady_temp_grid (grid_model_t *model, char *file)\n{\n#if SENTILAB_GRID_DUMP_ALL_LAYERS\n  sentilab_dump_all_layers(model, file);\n#else\n  /* top layer of the most-recently computed steady state temperature\t*/\n  dump_top_layer_temp_grid(model, file, model->last_steady);\n#endif",
+      "excerptUtf8LfSha256": "d11def8ff7924592eb85fed559e3f5b4f2b4e09e6302f77441c4e71e0279054b"
+    },
+    {
+      "id": "E15",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "scripts/build_hotspot6.sh",
+      "startLine": 1,
+      "endLine": 16,
+      "sourceSha256": "617ad089784c5a2141fdd2978b579df24ab0727149f5240978cc66836c7b6581",
+      "sourceGitBlob": "2f78dd939f3d43f587a24efca0b9e433408f2b3e",
+      "packetPath": "successor-7f70baf5/scripts/build_hotspot6.sh",
+      "excerpt": "#!/usr/bin/env bash\n# SLAB-049: build the HotSpot 6.0 evaluator, TAP-2.5D's HotSpot (uvahotspot/HotSpot a7a3286e), on x86_64 or\n# aarch64 (Debian/Ubuntu; the same packages on amd64 and arm64):\n#   apt-get install build-essential libsuperlu-dev libblas-dev\n# Two binaries come from the vendored source in sundai_hotspot6/:\n#   hotspot               the evaluator: SuperLU direct solver plus the all-layer grid dump\n#                         (-DSENTILAB_GRID_DUMP_ALL_LAYERS=1, writer only; the solver is unchanged)\n#   hotspot-tap-faithful  the cross-check: upstream source, SUPERLU=0, as TAP-2.5D's util/hotspot was built\n# -ffp-contract=off stops GCC contracting a*b+c into one fused multiply-add in the HotSpot sources it compiles here\n# (GCC contracts by default where the target has FMA, as aarch64 does; the x86_64 baseline target has none). It\n# does not reach the precompiled SuperLU, BLAS or libm, which may pick FMA or other kernels per CPU. So it narrows\n# cross-architecture differences; it does not make results bit-identical across architectures, and none is claimed.\n# Binary hashes depend on the toolchain and, through the Makefile's -g, on the build path. Every host pins its own\n# through gate zero: an aarch64 build needs its own receipts. sundai_hotspot.provenance writes\n# <binary>.provenance.json for each binary (compiler, flags, build path, SuperLU/BLAS packages, the libraries the\n# loader resolves with their hashes, the binary hash); validate-reference refuses a binary without it.",
+      "excerptUtf8LfSha256": "c7142ccbd24a43e6d3ced1eb506d939dc6da4ed0f799c8034def578d6288bdc8"
+    },
+    {
+      "id": "E16",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "scripts/build_hotspot6.sh",
+      "startLine": 30,
+      "endLine": 42,
+      "sourceSha256": "617ad089784c5a2141fdd2978b579df24ab0727149f5240978cc66836c7b6581",
+      "sourceGitBlob": "2f78dd939f3d43f587a24efca0b9e433408f2b3e",
+      "packetPath": "successor-7f70baf5/scripts/build_hotspot6.sh",
+      "excerpt": "make cleano >/dev/null\nrm -f hotspot hotspot-tap-faithful\nmake hotspot SUPERLU=0 EXTRAFLAGS=\"-ffp-contract=off\"\nmv hotspot hotspot-tap-faithful\nmake cleano >/dev/null\nmake hotspot SUPERLU=1 SUPERLULIB=-lsuperlu BLASLIB=-lblas SLU_HEADER=\"$SLU_HEADER\" \\\n  EXTRAFLAGS=\"-DSENTILAB_GRID_DUMP_ALL_LAYERS=1 -ffp-contract=off\"\nmake cleano >/dev/null\necho \"architecture $arch\"\ngcc --version | head -n 1\nsha256sum hotspot hotspot-tap-faithful\ncd \"$root\"\npython3 -m sundai_hotspot.provenance hotspot6 hotspot6_tap_faithful",
+      "excerptUtf8LfSha256": "45544ef4c48485b7acc241baa0e4f68192b4759c8ee93cc5d09353ba5aaf6c58"
+    },
+    {
+      "id": "E17",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/gate_zero.py",
+      "startLine": 300,
+      "endLine": 306,
+      "sourceSha256": "33d65b37b3503c18d9811fba1ab0b472bd577252aa449046d065a31dd13c6c66",
+      "sourceGitBlob": "ff608db5284eff6edce7fc1b1a38cad7c6c6922f",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/gate_zero.py",
+      "excerpt": "                      \"withdrawn pending the HS6 correction)\"),\n    \"hotspot6\": \"simulated (HotSpot 6.0 at a7a3286e, SuperLU evaluator build)\",\n    \"hotspot6_tap_faithful\": \"simulated (HotSpot 6.0 at a7a3286e, SUPERLU=0 as TAP-2.5D built it)\",\n}\n# The grid file each build writes. Only the unmodified upstream HotSpot 6.0 build writes layer 0 alone.\nGRID_FORMATS = {\"hotspot7_default\": \"all_layers\", \"material_only\": \"all_layers\", \"hotspot6\": \"all_layers\",\n                \"hotspot6_tap_faithful\": \"upstream6_top_layer\"}",
+      "excerptUtf8LfSha256": "84cb9266773897f8aafb9d5f223229cbc271f9c7be84e343b28f3e606aa15b43"
+    },
+    {
+      "id": "E18",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature_grid.c",
+      "startLine": 1198,
+      "endLine": 1273,
+      "sourceSha256": "3ffb58e102cae8e8c844b7758ffce1491c833ed75c8ab78758960caff61c25ad",
+      "sourceGitBlob": "7d5a83028477313c3938705b374bfcef33119195",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature_grid.c",
+      "excerpt": "  /* layer temperatures\t*/\n  for(n=0; n < model->n_layers; n++) {\n      if (!model_secondary) {\n          /* default set of layers\t*/\n          if (!model->has_lcf) {\n              if(n == silidx)\n                strcpy(str,\"\");\n              else if(n == intidx)\n                strcpy(str,\"iface_\");\n              else if(n == spidx)\n                strcpy(str,\"hsp_\");\n              else if(n == hsidx)\n                strcpy(str,\"hsink_\");\n              else\n                fatal(\"unknown layer\\n\");\n          } else {\n              if (n == spidx)\n                strcpy(str, \"hsp_\");\t/* spreader layer\t*/\n              else if (n == hsidx)\n                strcpy(str, \"hsink_\");\t/* heatsink layer\t*/\n              else\t/* other layers\t*/\n                sprintf(str,\"layer_%d_\", n);\n          }\n      } else {\n          /* default set of layers\t*/\n          if (!model->has_lcf) {\n              if(n == silidx)\n                strcpy(str,\"\");\n              else if(n == intidx)\n                strcpy(str,\"iface_\");\n              else if(n == spidx)\n                strcpy(str,\"hsp_\");\n              else if(n == hsidx)\n                strcpy(str,\"hsink_\");\n              else if(n == metalidx)\n                strcpy(str,\"metal_\");\n              else if(n == c4idx)\n                strcpy(str,\"c4_\");\n              else if(n == subidx)\n                strcpy(str,\"sub_\");\n              else if(n == solderidx)\n                strcpy(str,\"solder_\");\n              else if(n == pcbidx)\n                strcpy(str,\"pcb_\");\n              else\n                fatal(\"unknown layer\\n\");\n              /* layer configuration file\t*/\n          } else {\n              if (n == spidx)\n                strcpy(str, \"hsp_\");\t/* spreader layer\t*/\n              else if (n == hsidx)\n                strcpy(str, \"hsink_\");\t/* heatsink layer\t*/\n              else if (n == subidx)\n                strcpy(str, \"sub_\");\t/* package substrate layer\t*/\n              else if (n == solderidx)\n                strcpy(str, \"solder_\");\t/* solder layer\t*/\n              else if (n == pcbidx)\n                strcpy(str, \"pcb_\");\t/* pcb layer\t*/\n              else\t/* other layers\t*/\n                sprintf(str,\"layer_%d_\", n);\n          }\n      }\n\n      for(i=0; i < model->layers[n].flp->n_units; i++)\n        fprintf(fp, \"%s%s\\t%.2f\\n\", str, \n                model->layers[n].flp->units[i].name, temp[base+i]);\n      base += model->layers[n].flp->n_units;\t\n  }\n\n  if (base != model->total_n_blocks)\n    fatal(\"total_n_blocks failed to tally\\n\");\n\n  /* internal node temperatures\t*/\n  for (i=0; i < extra_nodes; i++) {\n      sprintf(str, \"inode_%d\", i);\n      fprintf(fp, \"%s\\t%.2f\\n\", str, temp[base+i]);",
+      "excerptUtf8LfSha256": "e063e8bfa9bc6c3269fe7a6ba454f753d295ce8b45d76192f603aabb5cc66ed0"
+    },
+    {
+      "id": "E19",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature_grid.c",
+      "startLine": 1368,
+      "endLine": 1443,
+      "sourceSha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df",
+      "sourceGitBlob": "e06e73851dd8c8c6470757ff6dd5dd9fd7aaf97f",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature_grid.c",
+      "excerpt": "  /* layer temperatures\t*/\n  for(n=0; n < model->n_layers; n++) {\n      if (!model_secondary) {\n          /* default set of layers\t*/\n          if (!model->has_lcf) {\n              if(n == silidx)\n                strcpy(str,\"\");\n              else if(n == intidx)\n                strcpy(str,\"iface_\");\n              else if(n == spidx)\n                strcpy(str,\"hsp_\");\n              else if(n == hsidx)\n                strcpy(str,\"hsink_\");\n              else\n                fatal(\"unknown layer\\n\");\n          } else {\n              if (n == spidx)\n                strcpy(str, \"hsp_\");\t/* spreader layer\t*/\n              else if (n == hsidx)\n                strcpy(str, \"hsink_\");\t/* heatsink layer\t*/\n              else\t/* other layers\t*/\n                sprintf(str,\"layer_%d_\", n);\n          }\n      } else {\n          /* default set of layers\t*/\n          if (!model->has_lcf) {\n              if(n == silidx)\n                strcpy(str,\"\");\n              else if(n == intidx)\n                strcpy(str,\"iface_\");\n              else if(n == spidx)\n                strcpy(str,\"hsp_\");\n              else if(n == hsidx)\n                strcpy(str,\"hsink_\");\n              else if(n == metalidx)\n                strcpy(str,\"metal_\");\n              else if(n == c4idx)\n                strcpy(str,\"c4_\");\n              else if(n == subidx)\n                strcpy(str,\"sub_\");\n              else if(n == solderidx)\n                strcpy(str,\"solder_\");\n              else if(n == pcbidx)\n                strcpy(str,\"pcb_\");\n              else\n                fatal(\"unknown layer\\n\");\n              /* layer configuration file\t*/\n          } else {\n              if (n == spidx)\n                strcpy(str, \"hsp_\");\t/* spreader layer\t*/\n              else if (n == hsidx)\n                strcpy(str, \"hsink_\");\t/* heatsink layer\t*/\n              else if (n == subidx)\n                strcpy(str, \"sub_\");\t/* package substrate layer\t*/\n              else if (n == solderidx)\n                strcpy(str, \"solder_\");\t/* solder layer\t*/\n              else if (n == pcbidx)\n                strcpy(str, \"pcb_\");\t/* pcb layer\t*/\n              else\t/* other layers\t*/\n                sprintf(str,\"layer_%d_\", n);\n          }\n      }\n\n      for(i=0; i < model->layers[n].flp->n_units; i++)\n        fprintf(fp, \"%s%s\\t%.2f\\n\", str,\n                model->layers[n].flp->units[i].name, temp[base+i]);\n      base += model->layers[n].flp->n_units;\n  }\n\n  if (base != model->total_n_blocks)\n    fatal(\"total_n_blocks failed to tally\\n\");\n\n  /* internal node temperatures\t*/\n  for (i=0; i < extra_nodes; i++) {\n      sprintf(str, \"inode_%d\", i);\n      fprintf(fp, \"%s\\t%.2f\\n\", str, temp[base+i]);",
+      "excerptUtf8LfSha256": "0097847e0b018f71aa8ca5e02ae938fff255e70ee7f2b8ce48f9f6b23e2c085d"
+    },
+    {
+      "id": "E20",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/hotspot.c",
+      "startLine": 545,
+      "endLine": 561,
+      "sourceSha256": "9cac68e9615077e98d7ad22613d04c39a24759626c99b25073b71b3263acc5e0",
+      "sourceGitBlob": "db6f22ed48d2ffba15a2d81d4a1236a51f9611d9",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/hotspot.c",
+      "excerpt": "  /* print steady state results\t*/\n  //BU_3D: Only print steady state results to stdout when DEBUG3D flag is not set\n#if DEBUG3D < 1\n  fprintf(stdout, \"Unit\\tSteady(Kelvin)\\n\");\n  dump_temp(model, steady_temp, \"stdout\");\n#endif //end->BU_3D\n\n  /* dump steady state temperatures on to file if needed\t*/\n  if (strcmp(model->config->steady_file, NULLFILE))\n    dump_temp(model, steady_temp, model->config->steady_file);\n\n  /* for the grid model, optionally dump the most recent \n   * steady state temperatures of the grid cells\t\n   */\n  if (model->type == GRID_MODEL &&\n      strcmp(model->config->grid_steady_file, NULLFILE))\n    dump_steady_temp_grid(model->grid, model->config->grid_steady_file);",
+      "excerptUtf8LfSha256": "3f404d339891f639d34da103e6925cf739dae7cdbc76868e9f375cbe88a91494"
+    },
+    {
+      "id": "E21",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/hotspot.c",
+      "startLine": 689,
+      "endLine": 715,
+      "sourceSha256": "711b1a81dbec0770bcdc4c75dd82ae929693f483a4e6bffc282f80321419669d",
+      "sourceGitBlob": "d16994b4caca083810f09925999aa220f63edf40",
+      "packetPath": "draft-d2504625/sundai_hotspot/hotspot.c",
+      "excerpt": "  /* dump steady state temperatures on to file if needed\t*/\n  if (strcmp(model->config->steady_file, NULLFILE))\n    dump_temp(model, steady_temp, model->config->steady_file);\n  /* for the grid model, optionally dump the most recent\n   * steady state temperatures of the grid cells\n   */\n  if (model->type == GRID_MODEL &&\n      strcmp(model->config->grid_steady_file, NULLFILE))\n    dump_steady_temp_grid(model->grid, model->config->grid_steady_file);\n\n\n#if VERBOSE > 2\n  if (model->type == BLOCK_MODEL) {\n      if (do_transient) {\n          fprintf(stdout, \"printing temp...\\n\");\n          dump_dvector(temp, model->block->n_nodes);\n      }\n      fprintf(stdout, \"printing steady_temp...\\n\");\n      dump_dvector(steady_temp, model->block->n_nodes);\n  } else {\n      if (do_transient) {\n          fprintf(stdout, \"printing temp...\\n\");\n          dump_dvector(temp, model->grid->total_n_blocks + EXTRA);\n      }\n      fprintf(stdout, \"printing steady_temp...\\n\");\n      dump_dvector(steady_temp, model->grid->total_n_blocks + EXTRA);\n  }",
+      "excerptUtf8LfSha256": "cfee9fd70d9fadcbcdc509c4e15bd32f9b7a1f6bdc587a93b0ccff7f05553a5e"
+    },
+    {
+      "id": "E22",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/passive_interposer.py",
+      "startLine": 135,
+      "endLine": 149,
+      "sourceSha256": "cecc5b85f7dd8e6a3816c635879eb06193a270595f6bdbc71b76e4ef96f227df",
+      "sourceGitBlob": "b51518258f3a4572efb636926bfcd5495c8a3c9b",
+      "packetPath": "draft-d2504625/sundai_tap/passive_interposer.py",
+      "excerpt": "\t\twith open(self.path+filename + 'layers.lcf','w') as LCF:\n\t\t\tLCF.write(\"# File Format:\\n\")\n\t\t\tLCF.write(\"#<Layer Number>\\n\")\n\t\t\tLCF.write(\"#<Lateral heat flow Y/N?>\\n\")\n\t\t\tLCF.write(\"#<Power Dissipation Y/N?>\\n\")\n\t\t\tLCF.write(\"#<Specific heat capacity in J/(m^3K)>\\n\")\n\t\t\tLCF.write(\"#<Resistivity in (m-K)/W>\\n\")\n\t\t\tLCF.write(\"#<Thickness in m>\\n\")\n\t\t\tLCF.write(\"#<floorplan file>\\n\")\n\t\t\tLCF.write(\"\\n# Layer 0: substrate\\n0\\nY\\nN\\n1.06E+06\\n3.33\\n0.0002\\n\"+self.path+filename+\"L0_Substrate.flp\\n\")\n\t\t\tLCF.write(\"\\n# Layer 1: Epoxy SiO2 underfill with C4 copper pillar\\n1\\nY\\nN\\n2.32E+06\\n0.625\\n0.00007\\n\"+self.path+filename+\"L1_C4Layer.flp\\n\")\n\t\t\tLCF.write(\"\\n# Layer 2: silicon interposer\\n2\\nY\\nN\\n1.75E+06\\n0.01\\n0.00011\\n\"+self.path+filename+\"L2_Interposer.flp\\n\")\n\t\t\tLCF.write(\"\\n# Layer 3: Underfill with ubump\\n3\\nY\\nN\\n2.32E+06\\n0.625\\n1.00E-05\\n\"+self.path+filename+\"L3_UbumpLayer.flp\\n\")\n\t\t\tLCF.write(\"\\n# Layer 4: Chip layer\\n4\\nY\\nY\\n1.75E+06\\n0.01\\n0.00015\\n\"+self.path+filename+\"L4_ChipLayer.flp\\n\")\n\t\t\tLCF.write(\"\\n# Layer 5: TIM\\n5\\nY\\nN\\n4.00E+06\\n0.25\\n2.00E-05\\n\"+self.path+filename+\"L5_TIM.flp\\n\")",
+      "excerptUtf8LfSha256": "52d3b28a401b6157508cf89f50492bf74a9de2798e550c8c24681679c484c071"
+    },
+    {
+      "id": "E23",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/passive_interposer.py",
+      "startLine": 167,
+      "endLine": 195,
+      "sourceSha256": "cecc5b85f7dd8e6a3816c635879eb06193a270595f6bdbc71b76e4ef96f227df",
+      "sourceGitBlob": "b51518258f3a4572efb636926bfcd5495c8a3c9b",
+      "packetPath": "draft-d2504625/sundai_tap/passive_interposer.py",
+      "excerpt": "\tdef gen_ptrace(self, filename):\n\t\tnum_component = 0\n\t\tcomponent, component_name, component_index = [], [], []\n\t\t# Read components from flp file\n\t\twith open (self.path + filename + 'L4_ChipLayer.flp','r') as FLP:\n\t\t\tfor line in FLP:\n\t\t\t\tline_sp = line.split()\n\t\t\t\tif line_sp:\n\t\t\t\t\tif line_sp[0] != '#':\n\t\t\t\t\t\tcomponent.append(line_sp[0])\n\t\t\t\t\t\tcomp = component[num_component].split('_')\n\t\t\t\t\t\tcomponent_name.append(comp[0])\n\t\t\t\t\t\tcomponent_index.append(int(comp[1]))\n\t\t\t\t\t\tnum_component+=1\t\n\n\t\twith open (self.path + filename + '.ptrace','w') as Ptrace:\n\t\t\t# Write ptrace header\n\t\t\tfor i in range(0,num_component):\n\t\t\t\t# if component_name[i] == 'Core':\n\t\t\t\tPtrace.write(component[i]+'\\t')\n\t\t\tPtrace.write('\\n')\n\t\t\tfor i in range(0,num_component):\n\t\t\t\tif component_name[i] == 'Chiplet':\n\t\t\t\t\tPtrace.write(str(self.power[component_index[i]])+'\\t')\n\t\t\t\t# elif component_name[i] == 'Ubump':\n\t\t\t\t# \tPtrace.write('0.3\\t')\n\t\t\t\telse:\n\t\t\t\t\tPtrace.write('0\\t')\n\t\t\tPtrace.write('\\n')",
+      "excerptUtf8LfSha256": "0d28cdfe37fe903a0daff522e110fc2c7522ae36b406a50d42f21779513f8e59"
+    },
+    {
+      "id": "E24",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/passive_interposer.py",
+      "startLine": 20,
+      "endLine": 48,
+      "sourceSha256": "cecc5b85f7dd8e6a3816c635879eb06193a270595f6bdbc71b76e4ef96f227df",
+      "sourceGitBlob": "b51518258f3a4572efb636926bfcd5495c8a3c9b",
+      "packetPath": "draft-d2504625/sundai_tap/passive_interposer.py",
+      "excerpt": "\tdef gen_flp(self, filename):\n\t\t# material properties\n\t\tUnderFill = \"\\t2.32E+06\\t0.625\\n\"\n\t\tCopper = \"\\t3494400\\t0.0025\\n\"\n\t\tSilicon = \"\\t1.75E+06\\t0.01\\n\"\n\t\tresistivity_Cu = 0.0025\n\t\tresistivity_UF = 0.625\n\t\tresistivity_Si = 0.01\n\t\tspecHeat_Cu = 3494400\n\t\tspecHeat_UF = 2320000\n\t\tspecHeat_Si = 1750000\n\t\tC4_diameter \t= 0.000250\t\t#250um\n\t\tC4_edge \t\t= 0.000600 \t\t#600um\n\t\tTSV_diameter \t= 0.000010\t\t#10um  \n\t\tTSV_edge\t\t= 0.000050\t\t#50um  \n\t\tubump_diameter \t= 0.000025\t\t#25um\n\t\tubump_edge \t\t= 0.000045\t\t#45um\n\t\tAratio_C4 = (C4_edge/C4_diameter)*(C4_edge/C4_diameter)-1\t\t\t# ratio of white area and C4 area\n\t\tAratio_TSV= (TSV_edge/TSV_diameter)*(TSV_edge/TSV_diameter)-1\n\t\tAratio_ubump=(ubump_edge/ubump_diameter)*(ubump_edge/ubump_diameter)-1\n\t\tresistivity_C4=(1+Aratio_C4)*resistivity_Cu*resistivity_UF/(resistivity_UF+Aratio_C4*resistivity_Cu)\n\t\tresistivity_TSV=(1+Aratio_TSV)*resistivity_Cu*resistivity_Si/(resistivity_Si+Aratio_TSV*resistivity_Cu)\n\t\tresistivity_ubump=(1+Aratio_ubump)*resistivity_Cu*resistivity_UF/(resistivity_UF+Aratio_ubump*resistivity_Cu)\n\t\tspecHeat_C4=(specHeat_Cu+Aratio_C4*specHeat_UF)/(1+Aratio_C4)\n\t\tspecHeat_TSV=(specHeat_Cu+Aratio_TSV*specHeat_Si)/(1+Aratio_TSV)\n\t\tspecHeat_ubump=(specHeat_Cu+Aratio_ubump*specHeat_UF)/(1+Aratio_ubump)\n\t\tmat_C4 = \"\\t\"+str(specHeat_C4)+\"\\t\"+str(resistivity_C4)+\"\\n\"\n\t\tmat_TSV = \"\\t\"+str(specHeat_TSV)+\"\\t\"+str(resistivity_TSV)+\"\\n\"\n\t\tmat_ubump = \"\\t\"+str(specHeat_ubump)+\"\\t\"+str(resistivity_ubump)+\"\\n\"",
+      "excerptUtf8LfSha256": "2bd9da8ed101fa9cb55b651a24357c37cb00f2e6f23de1b3362fb0c076d50470"
+    },
+    {
+      "id": "E25",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/passive_interposer.py",
+      "startLine": 90,
+      "endLine": 122,
+      "sourceSha256": "cecc5b85f7dd8e6a3816c635879eb06193a270595f6bdbc71b76e4ef96f227df",
+      "sourceGitBlob": "b51518258f3a4572efb636926bfcd5495c8a3c9b",
+      "packetPath": "draft-d2504625/sundai_tap/passive_interposer.py",
+      "excerpt": "\t\t\t\t\tL3_UbumpLayer.write('Edge_0\\t' + str(self.intp_size / 1000 - self.granularity / 1000) + '\\t' + str(self.granularity / 2 / 1000) + '\\t'+str(self.granularity/2/1000)+'\\t0\\t' + mat_ubump)\n\t\t\t\t\tL3_UbumpLayer.write('Edge_1\\t' + str(self.intp_size / 1000 - self.granularity / 1000) + '\\t' + str(self.granularity / 2 / 1000) + '\\t'+str(self.granularity/2/1000)+'\\t'+ str(self.intp_size / 1000 - self.granularity / 2 / 1000)+'\\t' + mat_ubump)\n\t\t\t\t\tL3_UbumpLayer.write('Edge_2\\t' + str(self.granularity / 2 / 1000) + '\\t' + str(self.intp_size / 1000) + '\\t0\\t0\\t' + mat_ubump)\n\t\t\t\t\tL3_UbumpLayer.write('Edge_3\\t' + str(self.granularity / 2 / 1000) + '\\t' + str(self.intp_size / 1000) + '\\t'+str(self.intp_size/1000-self.granularity / 2/1000)+'\\t0\\t' + mat_ubump)\n\t\t\t\t\tL4_ChipLayer.write('Edge_0\\t' + str(self.intp_size / 1000 - self.granularity / 1000) + '\\t' + str(self.granularity / 2 / 1000) + '\\t'+str(self.granularity/2/1000)+'\\t0\\t' + mat_ubump)\n\t\t\t\t\tL4_ChipLayer.write('Edge_1\\t' + str(self.intp_size / 1000 - self.granularity / 1000) + '\\t' + str(self.granularity / 2 / 1000) + '\\t'+str(self.granularity/2/1000)+'\\t'+ str(self.intp_size / 1000 - self.granularity / 2 / 1000)+'\\t' + mat_ubump)\n\t\t\t\t\tL4_ChipLayer.write('Edge_2\\t' + str(self.granularity / 2 / 1000) + '\\t' + str(self.intp_size / 1000) + '\\t0\\t0\\t' + mat_ubump)\n\t\t\t\t\tL4_ChipLayer.write('Edge_3\\t' + str(self.granularity / 2 / 1000) + '\\t' + str(self.intp_size / 1000) + '\\t'+str(self.intp_size/1000-self.granularity / 2/1000)+'\\t0\\t' + mat_ubump)\n\t\t\t\t\t\n\t\t\t\t\tx_offset0, y_offset0 = self.granularity / 2 / 1000, self.granularity / 2 / 1000\n\t\t\t\t\tindex_ubump = 0\n\t\t\t\t\tfor i in range(0, self.chiplet_count):\n\t\t\t\t\t\tx_offset1 = self.x[i] / 1000 - self.width[i] / 1000 * 0.5 - self.hubump[i] / 1000\n\t\t\t\t\t\ty_offset1 = self.y[i] / 1000 - self.height[i] / 1000 * 0.5 - self.hubump[i] / 1000\n\t\t\t\t\t\tif self.hubump[i] > 0:\n\t\t\t\t\t\t\tL3_UbumpLayer.write(\"Ubump_\"+str(index_ubump)+\"\\t\"+str(self.width[i] / 1000 + self.hubump[i] / 1000)+\"\\t\"+str(self.hubump[i] / 1000)+\"\\t\"+str(x_offset1)+\"\\t\"+str(y_offset1)+mat_ubump)\n\t\t\t\t\t\t\tL3_UbumpLayer.write(\"Ubump_\"+str(index_ubump+1)+\"\\t\"+str(self.hubump[i] / 1000)+\"\\t\"+str(self.height[i] / 1000 + self.hubump[i] / 1000)+\"\\t\"+str(x_offset1)+\"\\t\"+str(y_offset1+self.hubump[i] / 1000)+mat_ubump)\n\t\t\t\t\t\t\tL3_UbumpLayer.write(\"Ubump_\"+str(index_ubump+2)+\"\\t\"+str(self.hubump[i] / 1000)+\"\\t\"+str(self.height[i] / 1000 + self.hubump[i] / 1000)+\"\\t\"+str(x_offset1+self.width[i] / 1000 + self.hubump[i] / 1000)+\"\\t\"+str(y_offset1)+mat_ubump)\n\t\t\t\t\t\t\tL3_UbumpLayer.write(\"Ubump_\"+str(index_ubump+3)+\"\\t\"+str(self.width[i] / 1000 + self.hubump[i] / 1000)+\"\\t\"+str(self.hubump[i] / 1000)+\"\\t\"+str(x_offset1+self.hubump[i] / 1000)+\"\\t\"+str(y_offset1+self.height[i] / 1000 + self.hubump[i] / 1000)+mat_ubump)\n\t\t\t\t\t\t\tL4_ChipLayer.write(\"Ubump_\"+str(index_ubump)+\"\\t\"+str(self.width[i] / 1000 + self.hubump[i] / 1000)+\"\\t\"+str(self.hubump[i] / 1000)+\"\\t\"+str(x_offset1)+\"\\t\"+str(y_offset1)+Silicon)\n\t\t\t\t\t\t\tL4_ChipLayer.write(\"Ubump_\"+str(index_ubump+1)+\"\\t\"+str(self.hubump[i] / 1000)+\"\\t\"+str(self.height[i] / 1000 + self.hubump[i] / 1000)+\"\\t\"+str(x_offset1)+\"\\t\"+str(y_offset1+self.hubump[i] / 1000)+Silicon)\n\t\t\t\t\t\t\tL4_ChipLayer.write(\"Ubump_\"+str(index_ubump+2)+\"\\t\"+str(self.hubump[i] / 1000)+\"\\t\"+str(self.height[i] / 1000 + self.hubump[i] / 1000)+\"\\t\"+str(x_offset1+self.width[i] / 1000 + self.hubump[i] / 1000)+\"\\t\"+str(y_offset1)+Silicon)\n\t\t\t\t\t\t\tL4_ChipLayer.write(\"Ubump_\"+str(index_ubump+3)+\"\\t\"+str(self.width[i] / 1000 + self.hubump[i] / 1000)+\"\\t\"+str(self.hubump[i] / 1000)+\"\\t\"+str(x_offset1+self.hubump[i] / 1000)+\"\\t\"+str(y_offset1+self.height[i] / 1000 + self.hubump[i] / 1000)+Silicon)\n\t\t\t\t\t\t\tindex_ubump += 4\n\t\t\t\t\t\t# not sure about the microbump density for the center region. Assume the same as the edge area so far. Need to be updated if the microbump pitch for center power/gnd clk is found\n\t\t\t\t\t\tL3_UbumpLayer.write(\"Chiplet_\"+str(i)+\"\\t\"+str(self.width[i] / 1000)+\"\\t\"+str(self.height[i] / 1000)+\"\\t\"+str(x_offset1 + self.hubump[i] / 1000)+\"\\t\"+str(y_offset1+self.hubump[i] / 1000)+mat_ubump)\n\t\t\t\t\t\tL4_ChipLayer.write(\"Chiplet_\"+str(i)+\"\\t\"+str(self.width[i] / 1000)+\"\\t\"+str(self.height[i] / 1000)+\"\\t\"+str(x_offset1 + self.hubump[i] / 1000)+\"\\t\"+str(y_offset1+self.hubump[i] / 1000)+Silicon)\n\t\t\t\t\t\tSIMP.write(\"Unit_\"+str(i)+\"\\t\"+str(self.width[i] / 1000 + 2 * self.hubump[i] / 1000)+\"\\t\"+str(self.height[i] / 1000 + 2 * self.hubump[i] / 1000)+\"\\t\"+str(x_offset1)+\"\\t\"+str(y_offset1)+\"\\n\")\n\t\t# os.system(\"perl util/tofig.pl -f 20 \"+self.path+filename+\"L3.flp | fig2dev -L ps | ps2pdf - \"+self.path+filename+\"L3.pdf\")\n\t\t# os.system(\"perl util/tofig.pl -f 20 \"+self.path+filename+\"L4.flp | fig2dev -L ps | ps2pdf - \"+self.path+filename+\"L4.pdf\")\n\n\t\tutil.fill_space.fill_space(x_offset0, self.intp_size / 1000 - x_offset0, y_offset0, self.intp_size / 1000 - y_offset0, self.path+filename+'sim', self.path+filename+'L3', self.path+filename+'L3_UbumpLayer')\n\t\tutil.fill_space.fill_space(x_offset0, self.intp_size / 1000 - x_offset0, y_offset0, self.intp_size / 1000 - y_offset0, self.path+filename+'sim', self.path+filename+'L4', self.path+filename+'L4_ChipLayer')",
+      "excerptUtf8LfSha256": "cdeeff375c3b3bde68a189c815de460b4335de579230287ba9622f687b6a65f3"
+    },
+    {
+      "id": "E26",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/util/fill_space.py",
+      "startLine": 18,
+      "endLine": 20,
+      "sourceSha256": "645c0c372509577a77476878ddfac236fd9a0d523133af40011c7bb84db96a82",
+      "sourceGitBlob": "d02a17fceac45e90d85c5d857373a4fa1b065dc8",
+      "packetPath": "draft-d2504625/sundai_tap/util/fill_space.py",
+      "excerpt": "def fill_space(width_st, width_ed, height_st, height_ed, filesim, filein, fileout):\n\tUnderFill = \"\\t2.32E+06\\t0.625\\n\"\n\tws = []",
+      "excerptUtf8LfSha256": "a6d0f1c56d18282227d13fe58bb7efbc7837197995f1dcc4e5d26be3de84650d"
+    },
+    {
+      "id": "E27",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/util/fill_space.py",
+      "startLine": 157,
+      "endLine": 165,
+      "sourceSha256": "645c0c372509577a77476878ddfac236fd9a0d523133af40011c7bb84db96a82",
+      "sourceGitBlob": "d02a17fceac45e90d85c5d857373a4fa1b065dc8",
+      "packetPath": "draft-d2504625/sundai_tap/util/fill_space.py",
+      "excerpt": "\twith open(fileout+'.flp','w') as FlpOut:\n\t\t# for i in range(0,n):\n\t\t# \tFlpOut.write(comp_name[i] + '\\t' +str(comp_width[i])+'\\t'+str(comp_height[i])+'\\t'+str(comp_x[i])+'\\t'+str(comp_y[i])+'\\n')\n\t\twith open (filein+ '.flp','r') as FlpIn:\n\t\t\tfor line in FlpIn:\n\t\t\t\tFlpOut.write(line)\n\t\tfor i in range(0,ws_n):\n\t\t\tFlpOut.write(ws[i].name+'\\t'+str(ws[i].width)+'\\t'+str(ws[i].height)+'\\t'+str(ws[i].x)+'\\t'+str(ws[i].y)+UnderFill)\n",
+      "excerptUtf8LfSha256": "2a387465ad78ac1615689d374fd51f6e1e9b4e5b5f2dd3535e110002975ee4bb"
+    },
+    {
+      "id": "E28",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature_grid.c",
+      "startLine": 387,
+      "endLine": 400,
+      "sourceSha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df",
+      "sourceGitBlob": "e06e73851dd8c8c6470757ff6dd5dd9fd7aaf97f",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature_grid.c",
+      "excerpt": "          for(j=j1; j < j2; j++) {\n              /* grid cells fully overlapped by this unit\t*/\n\n              /*BU_3D*/\n              // - Load values from floorplan into each grid\n              if(layer->flp->units[u].hasRes && model->config.detailed_3D_used)\n                res = layer->flp->units[u].resistivity;\n              else\n                res = 1/layer->k;\n              if(layer->flp->units[u].hasSh && model->config.detailed_3D_used)\n                sh = layer->flp->units[u].specificheat;\n              else\n                sh = layer->sp;\n              /*end->BU_3D*/",
+      "excerptUtf8LfSha256": "377262075cf66eca68fe418eea868f1e81d830290dad48f4f6d6ff4302a2c89a"
+    },
+    {
+      "id": "E29",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/passive_interposer.py",
+      "startLine": 59,
+      "endLine": 74,
+      "sourceSha256": "cecc5b85f7dd8e6a3816c635879eb06193a270595f6bdbc71b76e4ef96f227df",
+      "sourceGitBlob": "b51518258f3a4572efb636926bfcd5495c8a3c9b",
+      "packetPath": "draft-d2504625/sundai_tap/passive_interposer.py",
+      "excerpt": "\t\twith open(self.path+filename +'L1_C4Layer.flp','w') as L1_C4Layer:\n\t\t\tL1_C4Layer.write(\"# Floorplan for C4 Layer \\n\")\n\t\t\tL1_C4Layer.write(\"# Line Format: <unit-name>\\\\t<width>\\\\t<height>\\\\t<left-x>\\\\t<bottom-y>\\\\t[<specific-heat>]\\\\t[<resistivity>]\\n\")\n\t\t\tL1_C4Layer.write(\"# all dimensions are in meters\\n\")\n\t\t\tL1_C4Layer.write(\"# comment lines begin with a '#' \\n\")\n\t\t\tL1_C4Layer.write(\"# comments and empty lines are ignored\\n\\n\")\n\t\t\tL1_C4Layer.write(\"C4Layer\\t\"+str(self.intp_size / 1000)+\"\\t\"+str(self.intp_size / 1000)+\"\\t0.0\\t0.0\"+mat_C4)\n\t\t# os.system(\"perl util/tofig.pl -f 20 \"+self.path+filename+\"L1_C4Layer.flp | fig2dev -L ps | ps2pdf - \"+self.path+filename+\"L1_C4Layer.pdf\")\n\n\t\twith open(self.path+filename +'L2_Interposer.flp','w') as L2_Interposer:\n\t\t\tL2_Interposer.write(\"# Floorplan for Silicon Interposer Layer\\n\")\n\t\t\tL2_Interposer.write(\"# Line Format: <unit-name>\\\\t<width>\\\\t<height>\\\\t<left-x>\\\\t<bottom-y>\\\\t[<specific-heat>]\\\\t[<resistivity>]\\n\")\n\t\t\tL2_Interposer.write(\"# all dimensions are in meters\\n\")\n\t\t\tL2_Interposer.write(\"# comment lines begin with a '#' \\n\")\n\t\t\tL2_Interposer.write(\"# comments and empty lines are ignored\\n\\n\")\n\t\t\tL2_Interposer.write(\"Interposer\\t\"+str(self.intp_size / 1000)+\"\\t\"+str(self.intp_size / 1000)+\"\\t0.0\\t0.0\"+mat_TSV)",
+      "excerptUtf8LfSha256": "fd0f896200c074691aa1c1483f16661ab5c5a682de0b49052619b99df2f12fb2"
+    },
+    {
+      "id": "E30",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature_grid.c",
+      "startLine": 527,
+      "endLine": 558,
+      "sourceSha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df",
+      "sourceGitBlob": "e06e73851dd8c8c6470757ff6dd5dd9fd7aaf97f",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature_grid.c",
+      "excerpt": "  int silidx, spidx, hsidx, subidx, solderidx, pcbidx;\n\n  spidx = nl - DEFAULT_PACK_LAYERS + LAYER_SP;\n  hsidx = nl - DEFAULT_PACK_LAYERS + LAYER_SINK;\n\n  /* spreader\t*/\n  model->layers[spidx].no = spidx;\n  model->layers[spidx].has_lateral = TRUE;\n  model->layers[spidx].has_power = FALSE;\n  model->layers[spidx].k = model->config.k_spreader;\n  model->layers[spidx].thickness = model->config.t_spreader;\n  model->layers[spidx].sp = model->config.p_spreader;\n  model->layers[spidx].flp = model->layers[spidx-1].flp;\n  model->layers[spidx].b2gmap = model->layers[spidx-1].b2gmap;\n  model->layers[spidx].g2bmap = model->layers[spidx-1].g2bmap;\n\n  /* heatsink\t*/\n  model->layers[hsidx].no = hsidx;\n  model->layers[hsidx].has_lateral = TRUE;\n  model->layers[hsidx].has_power = FALSE;\n  model->layers[hsidx].k = model->config.k_sink;\n  model->layers[hsidx].thickness = model->config.t_sink;\n  model->layers[hsidx].sp = model->config.p_sink;\n  model->layers[hsidx].flp = model->layers[spidx-1].flp;\n  model->layers[hsidx].b2gmap = model->layers[spidx-1].b2gmap;\n  model->layers[hsidx].g2bmap = model->layers[spidx-1].g2bmap;\n\n  /* BU_3D: If detailed_3d option is on, the hasRes & hasCap variables must be set false in the b2gmap*/\n  if(model->config.detailed_3D_used){\n      model->layers[spidx].b2gmap = new_b2gmap(model->rows, model->cols);\n      model->layers[hsidx].b2gmap = model->layers[spidx].b2gmap;\n  }",
+      "excerptUtf8LfSha256": "fc9e3bcd60eb095b711e48730ca44698e839f8a4307c77bd186f7aef1f3b21db"
+    },
+    {
+      "id": "E31",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature_grid.c",
+      "startLine": 854,
+      "endLine": 889,
+      "sourceSha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df",
+      "sourceGitBlob": "e06e73851dd8c8c6470757ff6dd5dd9fd7aaf97f",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature_grid.c",
+      "excerpt": "  /* compute the no. of layers\t*/\n  if (!model->config.model_secondary) {\n      if (model->has_lcf) {\n          model->n_layers = count_num_layers(fp);\n      } else\n        model->n_layers = DEFAULT_CHIP_LAYERS;\n  } else {\n      if (model->has_lcf) {\n          model->n_layers = count_num_layers(fp);\n      } else\n        model->n_layers = DEFAULT_CHIP_LAYERS + SEC_CHIP_LAYERS;\n  }\n\n  /* allocate initial memory including package layers\t*/\n  if (!model->config.model_secondary) {\n      model->n_layers += DEFAULT_PACK_LAYERS;\n      model->layers = (layer_t *) calloc (model->n_layers, sizeof(layer_t));\n      if (!model->layers)\n        fatal(\"memory allocation error\\n\");\n  } else {\n      model->n_layers += DEFAULT_PACK_LAYERS + SEC_PACK_LAYERS;\n      model->layers = (layer_t *) calloc (model->n_layers, sizeof(layer_t));\n      if (!model->layers)\n        fatal(\"memory allocation error\\n\");\n  }\n\n  /* read in values from the lcf when specified\t*/\n  if (model->has_lcf) {\n      parse_layer_file(model, fp, materials_list);\n  } else {\n      /* default set of layers\t*/\n      populate_default_layers(model, flp_default);\n  }\n\n  /* append the package layers\t*/\n  append_package_layers(model);",
+      "excerptUtf8LfSha256": "0eb158d363e97e9b021d5b77d7c2fdcd2e2c3e2b9d369ed9a47500815ac0e502"
+    },
+    {
+      "id": "E32",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature_grid.c",
+      "startLine": 999,
+      "endLine": 1009,
+      "sourceSha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df",
+      "sourceGitBlob": "e06e73851dd8c8c6470757ff6dd5dd9fd7aaf97f",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature_grid.c",
+      "excerpt": "  /* BU_3D: If detailed 3D is used we need to set variables in the b2gmap of the spreader layer*/\n  if(model->config.detailed_3D_used){\n      int ii,jj;\n      int spidx = nl - DEFAULT_PACK_LAYERS + LAYER_SP;\n      set_bgmap(model, &model->layers[spidx]);\n      for(ii=0; ii < model->rows; ii++)\n        for(jj=0; jj < model->cols; jj++){\n            /* Make hasRes & hasCap as false*/\n            model->layers[spidx].b2gmap[ii][jj]->hasRes = FALSE;\n            model->layers[spidx].b2gmap[ii][jj]->hasCap = FALSE;\n            model->layers[spidx].b2gmap[ii][jj]->lock   = FALSE;",
+      "excerptUtf8LfSha256": "b4601dffeea294f332ab1154dd8f3cf2478152fc28e536a31db8c76d7ef383f3"
+    },
+    {
+      "id": "E33",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature_grid.c",
+      "startLine": 1283,
+      "endLine": 1291,
+      "sourceSha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df",
+      "sourceGitBlob": "e06e73851dd8c8c6470757ff6dd5dd9fd7aaf97f",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature_grid.c",
+      "excerpt": "  for(n=0; n < model->n_layers; n++) {\n    fprintf(fp, \"Layer %d:\\n\", n);\n    for(i=0; i < model->rows; i++){\n      for(j=0; j < model->cols; j++){\n          fprintf(fp, \"%d\\t%.2f\\n\", i*model->cols+j,\n                  model->last_steady->cuboid[n][i][j]);\n      }\n    }\n  }",
+      "excerptUtf8LfSha256": "d0a5735ba8c48e286a82b25988ce69ef4403183589135a61eeb822a91bc4af2a"
+    },
+    {
+      "id": "E34",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature_grid.c",
+      "startLine": 408,
+      "endLine": 437,
+      "sourceSha256": "3ffb58e102cae8e8c844b7758ffce1491c833ed75c8ab78758960caff61c25ad",
+      "sourceGitBlob": "7d5a83028477313c3938705b374bfcef33119195",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature_grid.c",
+      "excerpt": "  spidx = nl - DEFAULT_PACK_LAYERS + LAYER_SP;\n  hsidx = nl - DEFAULT_PACK_LAYERS + LAYER_SINK;\n\n  /* spreader\t*/\n  model->layers[spidx].no = spidx;\n  model->layers[spidx].has_lateral = TRUE;\n  model->layers[spidx].has_power = FALSE;\n  model->layers[spidx].k = model->config.k_spreader;\n  model->layers[spidx].thickness = model->config.t_spreader;\n  model->layers[spidx].sp = model->config.p_spreader;\n  model->layers[spidx].flp = model->layers[spidx-1].flp;\n  model->layers[spidx].b2gmap = model->layers[spidx-1].b2gmap;\n  model->layers[spidx].g2bmap = model->layers[spidx-1].g2bmap;\n\n  /* heatsink\t*/\n  model->layers[hsidx].no = hsidx;\n  model->layers[hsidx].has_lateral = TRUE;\n  model->layers[hsidx].has_power = FALSE;\n  model->layers[hsidx].k = model->config.k_sink;\n  model->layers[hsidx].thickness = model->config.t_sink;\n  model->layers[hsidx].sp = model->config.p_sink;\n  model->layers[hsidx].flp = model->layers[spidx-1].flp;\n  model->layers[hsidx].b2gmap = model->layers[spidx-1].b2gmap;\n  model->layers[hsidx].g2bmap = model->layers[spidx-1].g2bmap;\n\n  /* BU_3D: If detailed_3d option is on, the hasRes & hasCap variables must be set false in the b2gmap*/\n  if(model->config.detailed_3D_used){\n      model->layers[spidx].b2gmap = new_b2gmap(model->rows, model->cols);\n      model->layers[hsidx].b2gmap = model->layers[spidx].b2gmap;\n  }",
+      "excerptUtf8LfSha256": "fd1b4a71505f86bd0ac82ab5529565ff7b85f306851c29392eb9afeb90523297"
+    },
+    {
+      "id": "E35",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature_grid.c",
+      "startLine": 614,
+      "endLine": 650,
+      "sourceSha256": "3ffb58e102cae8e8c844b7758ffce1491c833ed75c8ab78758960caff61c25ad",
+      "sourceGitBlob": "7d5a83028477313c3938705b374bfcef33119195",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature_grid.c",
+      "excerpt": "  /* compute the no. of layers\t*/\n  if (!model->config.model_secondary) {\n      if (model->has_lcf) {\n          model->n_layers = count_significant_lines(fp);\n          if (model->n_layers % LCF_NPARAMS)\n            fatal(\"wrong no. of lines in layer file\\n\");\n          model->n_layers /= LCF_NPARAMS;\n          /* default no. of layers when lcf file is not specified\t*/\t\n      } else\n        model->n_layers = DEFAULT_CHIP_LAYERS;\n  } else {\n      if (model->has_lcf) {\n          model->n_layers = count_significant_lines(fp);\n          if (model->n_layers % LCF_NPARAMS)\n            fatal(\"wrong no. of lines in layer file\\n\");\n          model->n_layers /= LCF_NPARAMS;\n          /* default no. of layers when lcf file is not specified\t*/\t\n      } else\n        model->n_layers = DEFAULT_CHIP_LAYERS + SEC_CHIP_LAYERS;\n  }\n\n  /* allocate initial memory including package layers\t*/\n  if (!model->config.model_secondary) {\n      model->n_layers += DEFAULT_PACK_LAYERS;\n      model->layers = (layer_t *) calloc (model->n_layers, sizeof(layer_t));\n      if (!model->layers)\n        fatal(\"memory allocation error\\n\");\n  } else {\n      model->n_layers += DEFAULT_PACK_LAYERS + SEC_PACK_LAYERS;\n      model->layers = (layer_t *) calloc (model->n_layers, sizeof(layer_t));\n      if (!model->layers)\n        fatal(\"memory allocation error\\n\");\n  }\n\n  /* read in values from the lcf when specified\t*/\n  if (model->has_lcf) {\n      parse_layer_file(model, fp);",
+      "excerptUtf8LfSha256": "e26fabf76e54ead91ffe7465f3e76d0c0aed41b1e9b6005b6e6a7bee2b95b5b2"
+    },
+    {
+      "id": "E36",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/passive_interposer.py",
+      "startLine": 151,
+      "endLine": 165,
+      "sourceSha256": "cecc5b85f7dd8e6a3816c635879eb06193a270595f6bdbc71b76e4ef96f227df",
+      "sourceGitBlob": "b51518258f3a4572efb636926bfcd5495c8a3c9b",
+      "packetPath": "draft-d2504625/sundai_tap/passive_interposer.py",
+      "excerpt": "\t\tif os.path.isfile(self.path + 'new_hotspot.config') == False:\n\t\t\twith open('util/hotspot.config','r') as Config_in:\n\t\t\t\twith open(self.path + 'new_hotspot.config','w') as Config_out:\n\t\t\t\t\tsize_spreader = 2 * self.intp_size / 1000\n\t\t\t\t\tsize_heatsink = 2 * size_spreader\n\t\t\t\t\tr_convec =  0.1 * 0.06 * 0.06 / size_heatsink / size_heatsink   #0.1*0.06*0.06 are from default hotspot.config file\n\t\t\t\t\tfor line in Config_in:\n\t\t\t\t\t\tif line == '\t\t-s_sink\t\t\t\t0.06\\n':\n\t\t\t\t\t\t\tConfig_out.write(line.replace('0.06',str(size_heatsink)))\n\t\t\t\t\t\telif line == '\t\t-s_spreader\t\t\t0.03\\n':\n\t\t\t\t\t\t\tConfig_out.write(line.replace('0.03',str(size_spreader)))\n\t\t\t\t\t\telif line == '\t\t-r_convec\t\t\t0.1\\n':\n\t\t\t\t\t\t\tConfig_out.write(line.replace('0.1',str(r_convec)))\n\t\t\t\t\t\telse:\n\t\t\t\t\t\t\tConfig_out.write(line)",
+      "excerptUtf8LfSha256": "555fb627632ca7eba2ec578ca64f413b349d3a47a55ab5de9106ae1b67e90169"
+    },
+    {
+      "id": "E37",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/util/hotspot.config",
+      "startLine": 15,
+      "endLine": 32,
+      "sourceSha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc",
+      "sourceGitBlob": "497fa9913898901bdfa9da7ef8026a902a72be77",
+      "packetPath": "draft-d2504625/sundai_tap/util/hotspot.config",
+      "excerpt": "\t\t-c_convec\t\t\t140.4\n\t\t# convection resistance in K/W\n\t\t-r_convec\t\t\t0.1\n\t\t# heatsink side in meters\n\t\t-s_sink\t\t\t\t0.06\n\t\t# heatsink thickness  in meters\n\t\t-t_sink\t\t\t\t0.0069\n\t\t# heatsink thermal conductivity in W/(m-K)\n\t\t-k_sink\t\t\t\t400.0\n\t\t# heatsink specific heat in J/(m^3-K)\n\t\t-p_sink\t\t\t\t3.55e6\n\n\t# heat spreader specs\n\t\t# spreader side in meters\n\t\t-s_spreader\t\t\t0.03\n\t\t# spreader thickness in meters\n\t\t-t_spreader\t\t\t0.001\n\t\t# heat spreader thermal conductivity in W/(m-K)",
+      "excerptUtf8LfSha256": "7bf8ef198311c3db9a0a9553bdadffcac0a47d74c82163b63fc15ca5cdea1100"
+    },
+    {
+      "id": "E38",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/new_hotspot.config",
+      "startLine": 15,
+      "endLine": 32,
+      "sourceSha256": "5af52c844c0504b5b9bacec5ba0a908a306c4db98655a573919f1e7e65de594a",
+      "sourceGitBlob": "8fd10438cfaaf5416f9d87a7dcb7efb07c586d30",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/new_hotspot.config",
+      "excerpt": "\t\t-c_convec\t\t\t140.4\n\t\t# convection resistance in K/W\n\t\t-r_convec\t\t\t0.011111111111111112\n\t\t# heatsink side in meters\n\t\t-s_sink\t\t\t\t0.18\n\t\t# heatsink thickness  in meters\n\t\t-t_sink\t\t\t\t0.0069\n\t\t# heatsink thermal conductivity in W/(m-K)\n\t\t-k_sink\t\t\t\t400.0\n\t\t# heatsink specific heat in J/(m^3-K)\n\t\t-p_sink\t\t\t\t3.55e6\n\n\t# heat spreader specs\n\t\t# spreader side in meters\n\t\t-s_spreader\t\t\t0.09\n\t\t# spreader thickness in meters\n\t\t-t_spreader\t\t\t0.001\n\t\t# heat spreader thermal conductivity in W/(m-K)",
+      "excerptUtf8LfSha256": "244dd5ef63a1779b3c2d2315404c1efec65d4038425906255105d3b4344a3fd0"
+    },
+    {
+      "id": "E39",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/new_hotspot.config",
+      "startLine": 46,
+      "endLine": 50,
+      "sourceSha256": "5af52c844c0504b5b9bacec5ba0a908a306c4db98655a573919f1e7e65de594a",
+      "sourceGitBlob": "8fd10438cfaaf5416f9d87a7dcb7efb07c586d30",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/new_hotspot.config",
+      "excerpt": "\t# ONLY AVAILABLE IN THE GRID MODEL\n\t\t# model secondary path or not?\n\t\t-model_secondary\t0\n\t\t# convection resistance at the air/PCB interface in K/W\n\t\t-r_convec_sec\t50.0",
+      "excerptUtf8LfSha256": "526d68d1c6c4e2a76b359928b98f49c4410efc0825f7c7c57ba8c181122a5bef"
+    },
+    {
+      "id": "E40",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/new_hotspot.config",
+      "startLine": 77,
+      "endLine": 124,
+      "sourceSha256": "5af52c844c0504b5b9bacec5ba0a908a306c4db98655a573919f1e7e65de594a",
+      "sourceGitBlob": "8fd10438cfaaf5416f9d87a7dcb7efb07c586d30",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/new_hotspot.config",
+      "excerpt": "\t\t# ambient temperature in kelvin\n\t\t-ambient\t\t\t318.15\n\t\t# initial temperatures from file\n\t\t-init_file\t\t\t(null)\n\t\t# initial temperature (kelvin) if not from file\n\t\t-init_temp\t\t\t318.15\n\t\t# steady state temperatures to file\n\t\t-steady_file\t\t(null)\n\t\t# hotspot calling interval - 10K cycles at 3GHz\n\t\t-sampling_intvl\t\t3.333e-06\n\t\t# base processor frequency in Hz\n\t\t-base_proc_freq\t\t3e+09\n\t\t# is DTM employed?\n\t\t-dtm_used\t\t\t0\n\t\t# model type - block or grid\n\t\t-model_type\t\t\tblock\n\t\t\n\t\t# consider temperature-leakage loop within HotSpot?\n\t\t-leakage_used 0\n\t\t\n\t\t# leakage calculation modes: (only valid when -leakage_used=1)\n\t\t# 0 user-defined leakage power model, do temp-leakage loop within HotSpot\n\t\t#\t1 use HotLeakage -- !NOT implemented in this release!, coming later.\n\t\t-leakage_mode\t0\n\t\t\n\t\t# use detailed package model?\n\t\t-package_model_used\t\t\t0\n\t\t-package_config_file\t\t\tpackage.config\n\n\t# block model specific parameters\n\t\t# omit lateral chip resistances?\n\t\t-block_omit_lateral\t0\n\n\t# grid model specific parameters\n\t\t# grid resolution - no. of rows\n\t\t-grid_rows\t\t\t64\n\t\t# grid resolution - no. of cols\n\t\t-grid_cols\t\t\t64\n\t\t# layer configuration from file\n\t\t-grid_layer_file\t(null)\n\t\t# dump internal grid steady state temperatures\n\t\t-grid_steady_file\t(null)\n\t\t# grid to block mapping mode - (avg|min|max|center)\n\t\t# i.e., a block's temperature is the avg, min or max \n\t\t# of all the grid cells in it or equal to that of\n\t\t# the grid cell in its center\n\t\t-grid_map_mode\t\tcenter\n",
+      "excerptUtf8LfSha256": "4881dd749587fe6f2f5ef551affcfee78dad190ab41eaca2921ee29616cf2068"
+    },
+    {
+      "id": "E41",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/new_hotspot.config",
+      "startLine": 15,
+      "endLine": 32,
+      "sourceSha256": "5af52c844c0504b5b9bacec5ba0a908a306c4db98655a573919f1e7e65de594a",
+      "sourceGitBlob": "8fd10438cfaaf5416f9d87a7dcb7efb07c586d30",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/new_hotspot.config",
+      "excerpt": "\t\t-c_convec\t\t\t140.4\n\t\t# convection resistance in K/W\n\t\t-r_convec\t\t\t0.011111111111111112\n\t\t# heatsink side in meters\n\t\t-s_sink\t\t\t\t0.18\n\t\t# heatsink thickness  in meters\n\t\t-t_sink\t\t\t\t0.0069\n\t\t# heatsink thermal conductivity in W/(m-K)\n\t\t-k_sink\t\t\t\t400.0\n\t\t# heatsink specific heat in J/(m^3-K)\n\t\t-p_sink\t\t\t\t3.55e6\n\n\t# heat spreader specs\n\t\t# spreader side in meters\n\t\t-s_spreader\t\t\t0.09\n\t\t# spreader thickness in meters\n\t\t-t_spreader\t\t\t0.001\n\t\t# heat spreader thermal conductivity in W/(m-K)",
+      "excerptUtf8LfSha256": "244dd5ef63a1779b3c2d2315404c1efec65d4038425906255105d3b4344a3fd0"
+    },
+    {
+      "id": "E42",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/tap_oracle_worker.py",
+      "startLine": 356,
+      "endLine": 382,
+      "sourceSha256": "bf0266dba03d980565d337b7092f0ec0589e6f8438045c9860d1af8ea5e145dd",
+      "sourceGitBlob": "89006afabdccac612c01335464f5077d550e8366",
+      "packetPath": "draft-d2504625/sundai_hotspot/tap_oracle_worker.py",
+      "excerpt": "    command = [\n        str(hotspot_binary),\n        \"-c\", str(config),\n        \"-f\", str(floorplan),\n        \"-p\", str(trace),\n        \"-steady_file\", str(steady),\n        \"-grid_steady_file\", str(grid),\n        \"-model_type\", \"grid\",\n        \"-detailed_3D\", \"on\",\n        \"-grid_layer_file\", str(layers),\n        \"-grid_rows\", str(rows),\n        \"-grid_cols\", str(cols),\n        \"-grid_map_mode\", \"max\",\n    ]\n    # The native process receives exactly this environment, never inherited secrets.\n    environment = {'LANG': 'C', 'LC_ALL': 'C', 'TZ': 'UTC'}\n    phases.switch('archive')\n    if retained:\n        (output / 'COMMAND.json').write_text(json.dumps({\n            'command': command, 'cwd': str(HOTSPOT_ROOT), 'environment': environment},\n            sort_keys=True) + '\\n')\n        (output / 'IDENTITIES.json').write_text(json.dumps({\n            'binary_sha256': binary_sha256, 'source_sha256': expected_sources,\n            'image_identity': request.get('image_identity'),\n            'candidate_hash': candidate_hash, 'problem_hash': problem_hash},\n            sort_keys=True) + '\\n')\n        (output / 'INPUTS.json').write_text(json.dumps(input_hashes, sort_keys=True) + '\\n')",
+      "excerptUtf8LfSha256": "0752900aadf696ea12189a06ce6c0ee1b61f10a36f655a78156265b7d4144f39"
+    },
+    {
+      "id": "E43",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/tap_oracle_worker.py",
+      "startLine": 61,
+      "endLine": 101,
+      "sourceSha256": "bf0266dba03d980565d337b7092f0ec0589e6f8438045c9860d1af8ea5e145dd",
+      "sourceGitBlob": "89006afabdccac612c01335464f5077d550e8366",
+      "packetPath": "draft-d2504625/sundai_hotspot/tap_oracle_worker.py",
+      "excerpt": "def _parse_grid(path: Path, rows: int, cols: int) -> tuple[tuple[tuple[float, ...], ...], float]:\n    layers: dict[int, list[float]] = {}\n    current_layer = None\n    for line_number, line in enumerate(path.read_text(encoding=\"utf-8\").splitlines(), start=1):\n        stripped = line.strip()\n        if not stripped:\n            continue\n        if stripped.startswith(\"Layer \"):\n            match = re.fullmatch(r\"Layer\\s+(\\d+):\", stripped)\n            if not match:\n                raise ValueError(f\"invalid grid layer header at line {line_number}\")\n            current_layer = int(match.group(1))\n            if current_layer in layers:\n                raise ValueError(f\"duplicate grid layer {current_layer}\")\n            layers[current_layer] = []\n            continue\n        if current_layer is None:\n            raise ValueError(f\"grid value before layer header at line {line_number}\")\n        fields = stripped.split()\n        if len(fields) != 2:\n            raise ValueError(f\"invalid grid cell at line {line_number}\")\n        index = int(fields[0])\n        value = _finite_number(float(fields[1]), \"grid temperature\")\n        if value <= 0:\n            raise ValueError(f\"grid temperature must be positive Kelvin at line {line_number}\")\n        values = layers[current_layer]\n        if index != len(values):\n            raise ValueError(f\"non-sequential grid index at line {line_number}\")\n        values.append(value)\n\n    if set(layers) != set(range(8)):\n        raise ValueError(\"HotSpot did not return all eight TAP layers\")\n    expected_cells = rows * cols\n    for layer, values in layers.items():\n        if len(values) != expected_cells:\n            raise ValueError(\n                f\"HotSpot layer {layer} has {len(values)} cells; expected {expected_cells}\"\n            )\n    values = layers[4]\n    heatmap = tuple(tuple(values[offset:offset + cols]) for offset in range(0, expected_cells, cols))\n    return heatmap, max(max(layer) for layer in layers.values())",
+      "excerptUtf8LfSha256": "9cc5b4f54df0924604e4b64f95544c67cf128b642eab762158d350e75549ebb3"
+    },
+    {
+      "id": "E44",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/tap_oracle.py",
+      "startLine": 836,
+      "endLine": 842,
+      "sourceSha256": "43eeb93ccc6ef6a89876c1efbefc02d43c2262b9b1068307474e69915043fe60",
+      "sourceGitBlob": "94c0ed727e43811850cc468715b6068e048d9c56",
+      "packetPath": "draft-d2504625/sundai_hotspot/tap_oracle.py",
+      "excerpt": "    def __init__(self, grid_rows: int = 32, grid_cols: int = 32, *, fixture: str = TAP_CONFIG_DEFAULT_ID,\n                 solver_timeout_s: float = 45.0, worker_timeout_s: float | None = None,\n                 hotspot_binary: Path = HOTSPOT_BINARY, max_workers: int = DEFAULT_MAX_WORKERS,\n                 retained_output_root: Path | None = None):\n        if (isinstance(grid_rows, bool) or not isinstance(grid_rows, int) or not 1 <= grid_rows <= 128 or\n                isinstance(grid_cols, bool) or not isinstance(grid_cols, int) or not 1 <= grid_cols <= 128):\n            raise ValueError(\"grid rows and columns must be integers from 1 through 128\")",
+      "excerptUtf8LfSha256": "f44ef719dcaa3c5357816a01e716e438b352117e15b9f06d6408662b530f0e4a"
+    },
+    {
+      "id": "E45",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/evaluators.py",
+      "startLine": 48,
+      "endLine": 59,
+      "sourceSha256": "db3121fdea136a0ae6d13cc625601b33c1f89e60847270d4241b0f16bc49e5d5",
+      "sourceGitBlob": "39302e196a1898a7a4dd421895d3177ea81244e3",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/evaluators.py",
+      "excerpt": "    def __init__(self, grid_rows: int = GRID, grid_cols: int = GRID, *, hotspot_binary: Path = HOTSPOT6_BINARY,\n                 gate_zero_record: Path | dict | None = None, ledger_root: Path | None = None, tags=None, **kwargs):\n        binary = Path(hotspot_binary).resolve()\n        try:\n            identity = evaluator_identity(\"hotspot6\", binary)\n        except GateZeroRefusal as exc:\n            raise HotSpotOracleError(str(exc)) from exc\n        super().__init__(grid_rows, grid_cols, hotspot_binary=binary, **kwargs)\n        if self.problem.hotspot_binary_sha256 != identity[\"binary_sha256\"]:\n            raise HotSpotOracleError(\"HotSpot 6.0 binary changed while its identity was being checked\")\n        sources = _source_hashes()\n        self.base_problem_hash = self.problem_hash",
+      "excerptUtf8LfSha256": "ce98fe10d0ba291cc67cbde82b00ffb77c22bc4538aae655054350f5319062fc"
+    },
+    {
+      "id": "E46",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/evaluators.py",
+      "startLine": 83,
+      "endLine": 88,
+      "sourceSha256": "db3121fdea136a0ae6d13cc625601b33c1f89e60847270d4241b0f16bc49e5d5",
+      "sourceGitBlob": "39302e196a1898a7a4dd421895d3177ea81244e3",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/evaluators.py",
+      "excerpt": "            self._gate_zero_refusal = str(exc)\n\n    async def __call__(self, candidate, *, timeout_s: float | None = None) -> HotSpotThermalResult:\n        if self.gate_zero is None:\n            raise GateZeroRefusal(self._gate_zero_refusal)\n        return await super().__call__(candidate, timeout_s=timeout_s)",
+      "excerptUtf8LfSha256": "92cddae26a7ca6ea5c3edf21c63aceedf5aa22c7feb52d7098d0f56f9a53c5e2"
+    },
+    {
+      "id": "E47",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/slab049.py",
+      "startLine": 981,
+      "endLine": 987,
+      "sourceSha256": "669aef9788e97b0f860e21389e7c79d16e296891888cdc956fb9bbc3d8b6271a",
+      "sourceGitBlob": "5bb38c0810dbc7aa6e36a59b0aa86e080f7e0980",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/slab049.py",
+      "excerpt": "def tap_argv(binary: str, grid: int = 64) -> list[str]:\n    \"\"\"TAP-2.5D's run_hotspot command (passive_interposer.py:197-206); grid 64 and center mapping come from the\n    config. Other grids override rows and columns only.\"\"\"\n    argv = [binary, \"-c\", \"new_hotspot.config\", \"-f\", \"sampleL4_ChipLayer.flp\", \"-p\", \"sample.ptrace\",\n            \"-steady_file\", \"sample.steady\", \"-grid_steady_file\", \"sample.grid.steady\", \"-model_type\", \"grid\",\n            \"-detailed_3D\", \"on\", \"-grid_layer_file\", \"samplelayers.lcf\"]\n    return argv if grid == 64 else argv + [\"-grid_rows\", str(grid), \"-grid_cols\", str(grid)]",
+      "excerptUtf8LfSha256": "96efed0ab7b9e7ffc49b3959a6d6924a781f1c266b96a2aea30da929d8da994b"
+    },
+    {
+      "id": "E48",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/reference_validation.py",
+      "startLine": 64,
+      "endLine": 77,
+      "sourceSha256": "f1d413f73044fd0b62173458c9dc5565679a1e7db66fe6e94915b35fecd9b18b",
+      "sourceGitBlob": "f773250942a866654fb636d9507dad9eadcef51b",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/reference_validation.py",
+      "excerpt": "from sundai_hotspot.gate0_anchor import AnchorUnavailable, AuthenticationError, ClaimRefused, ClaimUncertain\nfrom sundai_hotspot.tap_oracle import REPO_ROOT\n\ntry:  # CPU accounting (getrusage); Windows has none, and validate-reference refuses there (admit)\n    import resource\nexcept ImportError:\n    resource = None\n\nANCHOR_TOKEN_ENV = \"SLAB049_ANCHOR_TOKEN\"   # the operator's tag-creation credential, supplied by its supervisor\nOPERATOR_SIGNER_ENV = \"SLAB049_OPERATOR_KEY\"  # path to the operator's Ed25519 private key, outside the repository\n# The solver gets exactly this environment: locale and zone as in production, one BLAS thread with a pinned\n# OpenBLAS dispatch so a replay is byte-identical whichever BLAS the loader resolves.\nSOLVER_ENVIRONMENT = {\"LANG\": \"C\", \"LC_ALL\": \"C\", \"TZ\": \"UTC\", \"OPENBLAS_CORETYPE\": \"Haswell\",\n                      \"OPENBLAS_NUM_THREADS\": \"1\", \"OMP_NUM_THREADS\": \"1\"}",
+      "excerptUtf8LfSha256": "38e6e83e8ce04713e60dd6e41422990e3bd4f27896dfde0f0f37332124a3f28c"
+    },
+    {
+      "id": "E49",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/reference_validation.py",
+      "startLine": 319,
+      "endLine": 327,
+      "sourceSha256": "f1d413f73044fd0b62173458c9dc5565679a1e7db66fe6e94915b35fecd9b18b",
+      "sourceGitBlob": "f773250942a866654fb636d9507dad9eadcef51b",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/reference_validation.py",
+      "excerpt": "\ndef _run_call(context: dict) -> dict:\n    \"\"\"Steps 5-10 of an admitted call. Every exit settles (_settle), consumed and charged from step 0.\"\"\"\n    call, pinned, out = context[\"call\"], context[\"pinned\"], context[\"out\"]\n    timeout = float(call[\"timeout_s\"])\n    argv = slab049.tap_argv(str(context[\"executable\"]), call[\"grid\"])\n    reservation = context[\"reservation\"]\n    receipt = {\n        \"schema\": gate_zero.RECEIPT_SCHEMA, \"call\": call[\"id\"], \"role\": call[\"role\"], \"replay_of\": call[\"replay_of\"],",
+      "excerptUtf8LfSha256": "225b31091e86a48638de6499156283fc0434c4035362f536098c590bdd0de7be"
+    },
+    {
+      "id": "E50",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/reference_validation.py",
+      "startLine": 368,
+      "endLine": 373,
+      "sourceSha256": "f1d413f73044fd0b62173458c9dc5565679a1e7db66fe6e94915b35fecd9b18b",
+      "sourceGitBlob": "f773250942a866654fb636d9507dad9eadcef51b",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/reference_validation.py",
+      "excerpt": "        # 9. The launch.\n        phase = \"launch\"\n        solver_before = _children_cpu_s()\n        with (out / \"stdout.txt\").open(\"wb\") as stdout, (out / \"stderr.txt\").open(\"wb\") as stderr:\n            process = subprocess.Popen(argv, cwd=out, stdout=stdout, stderr=stderr, env=SOLVER_ENVIRONMENT,\n                                       start_new_session=True, **provenance.cpu_limited(call[\"cpu_limit_s\"]))",
+      "excerptUtf8LfSha256": "a032448849efa39029c8fc647b76127555b408ffa221a5977751159ad52b2f95"
+    },
+    {
+      "id": "E51",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature_grid.c",
+      "startLine": 346,
+      "endLine": 382,
+      "sourceSha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df",
+      "sourceGitBlob": "e06e73851dd8c8c6470757ff6dd5dd9fd7aaf97f",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature_grid.c",
+      "excerpt": "  /* shortcuts for cell width(cw) and cell height(ch)\t*/\n  double cw = model->width / model->cols;\n  double ch = model->height / model->rows;\n  /* shortcut for unit resistivity & specific heat*/\n  double sh,res;\n  /* initialize\t*/\n  reset_b2gmap(model, layer);\n\n  /* for each functional unit\t*/\n  for(u=0; u < layer->flp->n_units; u++) {\n      /* shortcuts for unit boundaries\t*/\n      double lu = layer->flp->units[u].leftx;\n      double ru = lu + layer->flp->units[u].width;\n      double bu = layer->flp->units[u].bottomy;\n      double tu = bu + layer->flp->units[u].height;\n\n      /* top index (lesser row) = rows - ceil (topy / cell height)\t*/\n      i1 = model->rows - tolerant_ceil(tu/ch);\n      /* bottom index (greater row) = rows - floor (bottomy / cell height)\t*/\n      i2 = model->rows - tolerant_floor(bu/ch);\n      /* left index = floor (leftx / cell width)\t*/\n      j1 = tolerant_floor(lu/cw);\n      /* right index = ceil (rightx / cell width)\t*/\n      j2 = tolerant_ceil(ru/cw);\n      /* sanity check\t*/\n      if((i1 < 0) || (j1 < 0))\n        fatal(\"negative grid cell start index!\\n\");\n      if((i2 > model->rows) || (j2 > model->cols))\n        fatal(\"grid cell end index out of bounds!\\n\");\n      if((i1 >= i2) || (j1 >= j2))\n        fatal(\"invalid floorplan spec or grid resolution\\n\");\n\n      /* setup g2bmap\t*/\n      layer->g2bmap[u].i1 = i1;\n      layer->g2bmap[u].i2 = i2;\n      layer->g2bmap[u].j1 = j1;\n      layer->g2bmap[u].j2 = j2;",
+      "excerptUtf8LfSha256": "fd82bd22609f8518e13cf467bca06258784907292c3b777d1463532dca036193"
+    },
+    {
+      "id": "E52",
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature_grid.c",
+      "startLine": 1952,
+      "endLine": 1967,
+      "sourceSha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df",
+      "sourceGitBlob": "e06e73851dd8c8c6470757ff6dd5dd9fd7aaf97f",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature_grid.c",
+      "excerpt": "          /* map the center grid cell's temperature to the block\t*/\n          if (model->map_mode == GRID_CENTER) {\n              /* center co-ordinates\t*/\n              ci1 = (i1 + i2) / 2;\n              cj1 = (j1 + j2) / 2;\n              /* in case of even no. of cells, center\n               * is the average of two central cells\n               */\n              /* ci2 = ci1-1 when even, ci1 otherwise\t*/\n              ci2 = ci1 - !((i2-i1) % 2);\n              /* cj2 = cj1-1 when even, cj1 otherwise\t*/\n              cj2 = cj1 - !((j2-j1) % 2);\n\n              b[base+u] = (g->cuboid[n][ci1][cj1] + g->cuboid[n][ci2][cj1] +\n                           g->cuboid[n][ci1][cj2] + g->cuboid[n][ci2][cj2]) / 4;\n              continue;",
+      "excerptUtf8LfSha256": "da3dcee36473501d8ca3c2155441e55cec40429b27951ba752682c9a51ce6ba6"
+    },
+    {
+      "id": "E53",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature_grid.c",
+      "startLine": 225,
+      "endLine": 261,
+      "sourceSha256": "3ffb58e102cae8e8c844b7758ffce1491c833ed75c8ab78758960caff61c25ad",
+      "sourceGitBlob": "7d5a83028477313c3938705b374bfcef33119195",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature_grid.c",
+      "excerpt": "  /* shortcuts for cell width(cw) and cell height(ch)\t*/\n  double cw = model->width / model->cols;\n  double ch = model->height / model->rows;\n  /* shortcut for unit resistivity & specific heat*/\n  double sh,res;\n  /* initialize\t*/\n  reset_b2gmap(model, layer);\n\n  /* for each functional unit\t*/\n  for(u=0; u < layer->flp->n_units; u++) {\n      /* shortcuts for unit boundaries\t*/\n      double lu = layer->flp->units[u].leftx;\n      double ru = lu + layer->flp->units[u].width;\n      double bu = layer->flp->units[u].bottomy;\n      double tu = bu + layer->flp->units[u].height;\n\n      /* top index (lesser row) = rows - ceil (topy / cell height)\t*/\n      i1 = model->rows - tolerant_ceil(tu/ch);\n      /* bottom index (greater row) = rows - floor (bottomy / cell height)\t*/\n      i2 = model->rows - tolerant_floor(bu/ch);\n      /* left index = floor (leftx / cell width)\t*/\n      j1 = tolerant_floor(lu/cw);\n      /* right index = ceil (rightx / cell width)\t*/\n      j2 = tolerant_ceil(ru/cw);\n      /* sanity check\t*/\n      if((i1 < 0) || (j1 < 0))\n        fatal(\"negative grid cell start index!\\n\");\n      if((i2 > model->rows) || (j2 > model->cols))\n        fatal(\"grid cell end index out of bounds!\\n\");\n      if((i1 >= i2) || (j1 >= j2))\n        fatal(\"invalid floorplan spec or grid resolution\\n\");\n\n      /* setup g2bmap\t*/\n      layer->g2bmap[u].i1 = i1;\n      layer->g2bmap[u].i2 = i2;\n      layer->g2bmap[u].j1 = j1;\n      layer->g2bmap[u].j2 = j2;",
+      "excerptUtf8LfSha256": "fd82bd22609f8518e13cf467bca06258784907292c3b777d1463532dca036193"
+    },
+    {
+      "id": "E54",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature_grid.c",
+      "startLine": 1782,
+      "endLine": 1797,
+      "sourceSha256": "3ffb58e102cae8e8c844b7758ffce1491c833ed75c8ab78758960caff61c25ad",
+      "sourceGitBlob": "7d5a83028477313c3938705b374bfcef33119195",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature_grid.c",
+      "excerpt": "          /* map the center grid cell's temperature to the block\t*/\n          if (model->map_mode == GRID_CENTER) {\n              /* center co-ordinates\t*/\t\n              ci1 = (i1 + i2) / 2;\n              cj1 = (j1 + j2) / 2;\n              /* in case of even no. of cells, center \n               * is the average of two central cells\n               */\n              /* ci2 = ci1-1 when even, ci1 otherwise\t*/  \n              ci2 = ci1 - !((i2-i1) % 2);\n              /* cj2 = cj1-1 when even, cj1 otherwise\t*/  \n              cj2 = cj1 - !((j2-j1) % 2);\n\n              b[base+u] = (g->cuboid[n][ci1][cj1] + g->cuboid[n][ci2][cj1] + \n                           g->cuboid[n][ci1][cj2] + g->cuboid[n][ci2][cj2]) / 4;\n              continue;",
+      "excerptUtf8LfSha256": "fedf97fd268054355178711734b55b3fa1547f2ba84f0a174a69eb54edf5ecf2"
+    },
+    {
+      "id": "E55",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/slab049.py",
+      "startLine": 1452,
+      "endLine": 1459,
+      "sourceSha256": "669aef9788e97b0f860e21389e7c79d16e296891888cdc956fb9bbc3d8b6271a",
+      "sourceGitBlob": "5bb38c0810dbc7aa6e36a59b0aa86e080f7e0980",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/slab049.py",
+      "excerpt": "    \"\"\"The per-solve record. Reads files only; the grid file is parsed strictly (read_grid).\n\n    grid_format is bound to the evaluator identity (gate_zero.GRID_FORMATS): \"all_layers\" requires a headered file\n    with every layer (HotSpot 7 and the HotSpot 6.0 evaluator build); \"upstream6_top_layer\" requires upstream\n    HotSpot 6.0's headerless layer-0 file. Anything else, a truncated file included, is rejected.\n    \"\"\"\n    if grid_format not in (\"all_layers\", \"upstream6_top_layer\"):\n        raise ValueError(f\"unknown grid format {grid_format!r}\")",
+      "excerptUtf8LfSha256": "40885085d9bc0afc75dd5692e26c9ab75fba0fa78a72a697ea51aea92930d8d2"
+    },
+    {
+      "id": "E56",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/slab049.py",
+      "startLine": 1474,
+      "endLine": 1514,
+      "sourceSha256": "669aef9788e97b0f860e21389e7c79d16e296891888cdc956fb9bbc3d8b6271a",
+      "sourceGitBlob": "5bb38c0810dbc7aa6e36a59b0aa86e080f7e0980",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/slab049.py",
+      "excerpt": "    layers = read_lcf(directory / lcf, directory)\n    power_layers = [layer[\"layer\"] for layer in layers if layer[\"power\"]]\n    if len(power_layers) != 1:\n        raise ValueError(\"expected exactly one powered layer\")\n    active = power_layers[0]\n    chip_units = [u for u in read_flp(layers[active][\"flp\"]) if re.fullmatch(chiplet_pattern, u[\"name\"])]\n    if not chip_units:\n        raise ValueError(\"no chiplet blocks matched\")\n    steady_values = dict(read_steady(directory / steady))\n    # Complete block evidence: HotSpot (6.0 and 7) writes one layer_<n>_<unit> line per unit of every LCF layer.\n    expected_blocks = {f\"layer_{layer['layer']}_{unit['name']}\" for layer in layers for unit in read_flp(layer[\"flp\"])}\n    present_blocks = {name for name in steady_values if name.startswith(\"layer_\")}\n    if expected_blocks != present_blocks:\n        missing, unexpected = sorted(expected_blocks - present_blocks), sorted(present_blocks - expected_blocks)\n        raise ValueError(f\"the steady file's block evidence does not match the floorplans: {len(missing)} missing \"\n                         f\"{missing[:3]}, {len(unexpected)} unexpected {unexpected[:3]}\")\n    selector, selector_block = tap_selector_c(directory / steady)\n    literal = {\"applicable\": False, \"value_C\": None}\n    if stdout and (directory / stdout).is_file():\n        try:\n            literal = {\"applicable\": True, \"value_C\": tap_stdout_selector_c(directory / stdout)}\n        except ValueError as exc:\n            literal = {\"applicable\": False, \"value_C\": None,\n                       \"reason\": f\"no temperatures on stdout; HotSpot 7 writes none ({type(exc).__name__})\"}\n    record = {\n        \"schema\": \"sentilab-slab049-solve-record-v3\",\n        \"files\": files,\n        \"config_sha256\": files[config][\"sha256\"],\n        \"block_evidence\": {\"layer_blocks\": len(expected_blocks),\n                           \"other_nodes\": len(steady_values) - len(expected_blocks)},\n        \"output_precision\": {\"grid_decimals_K\": _decimals(directory / grid),\n                             \"steady_decimals_K\": _decimals(directory / steady)},\n        \"effective_package\": package_record,\n        \"package_matches_fixture\": package_ok,\n        \"historical_tap_stdout_selector\": {\n            \"literal_on_stdout\": literal,\n            \"on_steady_file_C\": selector, \"block\": selector_block,\n            \"note\": \"TAP's max(float(stdout.split()[3::2])) - 273.15; HotSpot 6.0 prints the steady dump to stdout\",\n        },\n        \"chiplet_block_values_C\": {u[\"name\"]: steady_values[f\"layer_{active}_{u['name']}\"] - KELVIN_OFFSET\n                                   for u in chip_units},",
+      "excerptUtf8LfSha256": "cb26020f39992e5f127de077f64b35a762c7b4ac870f0890fe9e5a1a97a66bc7"
+    },
+    {
+      "id": "E57",
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/slab049.py",
+      "startLine": 1516,
+      "endLine": 1552,
+      "sourceSha256": "669aef9788e97b0f860e21389e7c79d16e296891888cdc956fb9bbc3d8b6271a",
+      "sourceGitBlob": "5bb38c0810dbc7aa6e36a59b0aa86e080f7e0980",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/slab049.py",
+      "excerpt": "    text_layers = len(layers) + 2\n    if grid_format == \"upstream6_top_layer\":\n        temperatures = read_grid(directory / grid, grid=grid_size, ambient_k=ambient, headered=False)\n        record[\"grid\"] = {\"n\": math.isqrt(len(temperatures[0])), \"layers_in_file\": [0], \"format\": grid_format,\n                          \"note\": \"upstream HotSpot 6.0 writes only layer 0; the grid fields need the evaluator build\"}\n        return record\n    temperatures = read_grid(directory / grid, grid=grid_size, layers=text_layers, ambient_k=ambient, headered=True)\n    side = math.isqrt(len(temperatures[0]))\n    width, height = total_extent(read_flp(layers[0][\"flp\"]))\n    values = temperatures[active]\n\n    def center_value(layer: int, unit: dict) -> tuple[float, list[dict]]:\n        mapped = center_cells(block_extent(unit, width, height, side, side))\n        return sum(temperatures[layer][c[\"row\"] * side + c[\"col\"]] * c[\"weight\"] for c in mapped), mapped\n\n    chiplets = []\n    for unit in chip_units:\n        value, mapped = center_value(active, unit)\n        chiplets.append({\"name\": unit[\"name\"], \"centre_C\": value - KELVIN_OFFSET, \"cells\": mapped,\n                         \"distinct_cells\": len(mapped)})\n    spreader, sink = len(layers), len(layers) + 1\n    record.update({\n        \"grid\": {\"n\": side, \"layers_in_file\": sorted(temperatures)},\n        \"active_layer_grid_peak\": {\"layer\": active, \"peak_C\": max(values) - KELVIN_OFFSET,\n                                   \"argmax\": grid_argmax(values, side)},\n        \"chiplet_centre_mapping\": {\"chiplets\": chiplets, \"max_C\": max(c[\"centre_C\"] for c in chiplets),\n                                   \"rule\": \"xlate_temp_g2b GRID_CENTER: the mean of 1, 2 or 4 central cells\"},\n        \"spreader_sink_hottest_cell_rises\": {\n            \"spreader\": {\"layer\": spreader, \"rise_K\": max(temperatures[spreader]) - ambient,\n                         \"argmax\": grid_argmax(temperatures[spreader], side)},\n            \"sink\": {\"layer\": sink, \"rise_K\": max(temperatures[sink]) - ambient,\n                     \"argmax\": grid_argmax(temperatures[sink], side)},\n            \"pattern\": run1_pattern(max(temperatures[spreader]) - ambient, max(temperatures[sink]) - ambient),\n        },\n        \"spreader_sink_drop_diagnostic\": _same_index_drop(temperatures[spreader], temperatures[sink], side, ambient),\n        \"same_index_stack_at_active_argmax\": same_index_stack(temperatures, layers, side, ambient),\n    })",
+      "excerptUtf8LfSha256": "543a77e7887e31e0f262f3a558c6e0b647aad6625d26091288c804090be149a0"
+    }
+  ],
+  "uncertainties": [
+    "No native executable/build, actual runtime config, source-to-binary correspondence or live field was independently observed.",
+    "PR56 remains pending review; this packet does not accept its admission logic, numerical result or final CAD spec.",
+    "Only the12listed common paths were compared between draft and successor; this is not equivalence of whole commits.",
+    "Historical1bdf writer bytes were not substituted for the draft pin.",
+    "Headerless native6 layer identity requires producer branch plus effective secondary/LCF settings; absent metadata does not permit inferring layer4.",
+    "A signed field still needs the agreed candidate/problem, units, layer IDs, dimensions, orientation and domain checks; the map supplies producer facts only.",
+    "No solver, generator, runtime loader, compiler, subprocess test or contributed checker was executed."
+  ]
+}

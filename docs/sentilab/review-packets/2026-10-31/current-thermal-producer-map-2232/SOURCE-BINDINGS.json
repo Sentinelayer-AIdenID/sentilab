@@ -1,0 +1,502 @@
+{
+  "at": "2026-10-31T22:33:30.710Z",
+  "scope": "Exact object/data reads only; none of the captured source code executed.",
+  "draftCommit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+  "draftWriterPinMatched": true,
+  "successorCommit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+  "successorManifest": {
+    "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\pr56-7f70baf-review-2225\\SOURCE-MANIFEST.json",
+    "sha256": "2c30b5f3b12c91e5946c9e8df708adbf44193fcd0ede260c949975eb36e6dea1"
+  },
+  "localGitReadOnly": true,
+  "files": [
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/passive_interposer.py",
+      "bytes": 16101,
+      "gitBlob": "b51518258f3a4572efb636926bfcd5495c8a3c9b",
+      "sha256": "cecc5b85f7dd8e6a3816c635879eb06193a270595f6bdbc71b76e4ef96f227df",
+      "packetPath": "draft-d2504625/sundai_tap/passive_interposer.py"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/system.py",
+      "bytes": 2847,
+      "gitBlob": "28fb79ed2ab7f3f274429015fb3be1bd3ffc509a",
+      "sha256": "22adcc1c5b9228b21b1264ee8f1b31bac916a3f5fb1f9f06d5428d04d11a5acf",
+      "packetPath": "draft-d2504625/sundai_tap/system.py"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/util/fill_space.py",
+      "bytes": 5464,
+      "gitBlob": "d02a17fceac45e90d85c5d857373a4fa1b065dc8",
+      "sha256": "645c0c372509577a77476878ddfac236fd9a0d523133af40011c7bb84db96a82",
+      "packetPath": "draft-d2504625/sundai_tap/util/fill_space.py"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/util/hotspot.config",
+      "bytes": 4507,
+      "gitBlob": "497fa9913898901bdfa9da7ef8026a902a72be77",
+      "sha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc",
+      "packetPath": "draft-d2504625/sundai_tap/util/hotspot.config"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature_grid.c",
+      "bytes": 275052,
+      "gitBlob": "e06e73851dd8c8c6470757ff6dd5dd9fd7aaf97f",
+      "sha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature_grid.c"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature_grid.h",
+      "bytes": 8776,
+      "gitBlob": "d1b6fd27913831d87bd5088576906ad43c310a9b",
+      "sha256": "0b760dfebe231d9a00b5e3f6ee07dd9c1cde2d7d8906c1856f394342851fb1ec",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature_grid.h"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature.c",
+      "bytes": 44374,
+      "gitBlob": "f4dda202a46d7389125a45f8b376985f88a93e7f",
+      "sha256": "03ea708a3ab231300cc2d2ffd0ebd5db15e81f86a2f1cb968f4adf6dc4168066",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature.c"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/temperature.h",
+      "bytes": 14314,
+      "gitBlob": "33dd3ffd161dc9af87b01e460ac2e2a68f38f508",
+      "sha256": "5056ac1932465250f79226c6d434774f56c2d3230d6612041085dfed36a6be8b",
+      "packetPath": "draft-d2504625/sundai_hotspot/temperature.h"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/hotspot.c",
+      "bytes": 28891,
+      "gitBlob": "d16994b4caca083810f09925999aa220f63edf40",
+      "sha256": "711b1a81dbec0770bcdc4c75dd82ae929693f483a4e6bffc282f80321419669d",
+      "packetPath": "draft-d2504625/sundai_hotspot/hotspot.c"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/Makefile",
+      "bytes": 5235,
+      "gitBlob": "9110e53ec0dbd7173daeb5e5a99b9989e714d002",
+      "sha256": "d034691877ca455124d47f59d13640e5f2975904b2956394f6b7b664da2696c5",
+      "packetPath": "draft-d2504625/sundai_hotspot/Makefile"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/tap_oracle.py",
+      "bytes": 52855,
+      "gitBlob": "94c0ed727e43811850cc468715b6068e048d9c56",
+      "sha256": "43eeb93ccc6ef6a89876c1efbefc02d43c2262b9b1068307474e69915043fe60",
+      "packetPath": "draft-d2504625/sundai_hotspot/tap_oracle.py"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/tap_oracle_worker.py",
+      "bytes": 22303,
+      "gitBlob": "89006afabdccac612c01335464f5077d550e8366",
+      "sha256": "bf0266dba03d980565d337b7092f0ec0589e6f8438045c9860d1af8ea5e145dd",
+      "packetPath": "draft-d2504625/sundai_hotspot/tap_oracle_worker.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_tap/passive_interposer.py",
+      "bytes": 16101,
+      "gitBlob": "b51518258f3a4572efb636926bfcd5495c8a3c9b",
+      "sha256": "cecc5b85f7dd8e6a3816c635879eb06193a270595f6bdbc71b76e4ef96f227df",
+      "packetPath": "successor-7f70baf5/sundai_tap/passive_interposer.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_tap/system.py",
+      "bytes": 2847,
+      "gitBlob": "28fb79ed2ab7f3f274429015fb3be1bd3ffc509a",
+      "sha256": "22adcc1c5b9228b21b1264ee8f1b31bac916a3f5fb1f9f06d5428d04d11a5acf",
+      "packetPath": "successor-7f70baf5/sundai_tap/system.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_tap/util/fill_space.py",
+      "bytes": 5464,
+      "gitBlob": "d02a17fceac45e90d85c5d857373a4fa1b065dc8",
+      "sha256": "645c0c372509577a77476878ddfac236fd9a0d523133af40011c7bb84db96a82",
+      "packetPath": "successor-7f70baf5/sundai_tap/util/fill_space.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_tap/util/hotspot.config",
+      "bytes": 4507,
+      "gitBlob": "497fa9913898901bdfa9da7ef8026a902a72be77",
+      "sha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc",
+      "packetPath": "successor-7f70baf5/sundai_tap/util/hotspot.config"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/temperature_grid.c",
+      "bytes": 276521,
+      "gitBlob": "3abe1c8b1ed26c1c24cb1c52558c27756daf60a8",
+      "sha256": "80e60bf7f32cc69ec9d46f3704d2d9541975d174f8bcda6b14ecb9fcfa900375",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/temperature_grid.c"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/temperature_grid.h",
+      "bytes": 8776,
+      "gitBlob": "d1b6fd27913831d87bd5088576906ad43c310a9b",
+      "sha256": "0b760dfebe231d9a00b5e3f6ee07dd9c1cde2d7d8906c1856f394342851fb1ec",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/temperature_grid.h"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/temperature.c",
+      "bytes": 44374,
+      "gitBlob": "f4dda202a46d7389125a45f8b376985f88a93e7f",
+      "sha256": "03ea708a3ab231300cc2d2ffd0ebd5db15e81f86a2f1cb968f4adf6dc4168066",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/temperature.c"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/temperature.h",
+      "bytes": 14314,
+      "gitBlob": "33dd3ffd161dc9af87b01e460ac2e2a68f38f508",
+      "sha256": "5056ac1932465250f79226c6d434774f56c2d3230d6612041085dfed36a6be8b",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/temperature.h"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/hotspot.c",
+      "bytes": 28891,
+      "gitBlob": "d16994b4caca083810f09925999aa220f63edf40",
+      "sha256": "711b1a81dbec0770bcdc4c75dd82ae929693f483a4e6bffc282f80321419669d",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/hotspot.c"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/Makefile",
+      "bytes": 5975,
+      "gitBlob": "7761126d648daa03c0ecad5f175d6d6d61b357b8",
+      "sha256": "a23c84c1c9e16e62f3502e08f11237260384c9f113f36d17a1402eddbb5991b4",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/Makefile"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/tap_oracle.py",
+      "bytes": 52855,
+      "gitBlob": "94c0ed727e43811850cc468715b6068e048d9c56",
+      "sha256": "43eeb93ccc6ef6a89876c1efbefc02d43c2262b9b1068307474e69915043fe60",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/tap_oracle.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/tap_oracle_worker.py",
+      "bytes": 22303,
+      "gitBlob": "89006afabdccac612c01335464f5077d550e8366",
+      "sha256": "bf0266dba03d980565d337b7092f0ec0589e6f8438045c9860d1af8ea5e145dd",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/tap_oracle_worker.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature_grid.c",
+      "bytes": 187555,
+      "gitBlob": "7d5a83028477313c3938705b374bfcef33119195",
+      "sha256": "3ffb58e102cae8e8c844b7758ffce1491c833ed75c8ab78758960caff61c25ad",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature_grid.c"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature_grid.h",
+      "bytes": 8000,
+      "gitBlob": "52176809d391ed7ad16453aa4ab48f53a4d7ce68",
+      "sha256": "c8d25c6b7c767dfc206659221764e7757f62bbc1020f68346041718785fedc2c",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature_grid.h"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature.c",
+      "bytes": 41614,
+      "gitBlob": "716635870359548de4959f56d89967635c8069e8",
+      "sha256": "ae1175cdeb77de11420176988884689f12da8d83638a2914a28b95b1da793347",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature.c"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/temperature.h",
+      "bytes": 13876,
+      "gitBlob": "da22d55784d6f765c53c3ff54ebe70734a93e7b5",
+      "sha256": "9d586a7fa43fa295a672e0499823c37cecc96ca06c6cab34ccd3ed0ba4676b87",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/temperature.h"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/hotspot.c",
+      "bytes": 23234,
+      "gitBlob": "db6f22ed48d2ffba15a2d81d4a1236a51f9611d9",
+      "sha256": "9cac68e9615077e98d7ad22613d04c39a24759626c99b25073b71b3263acc5e0",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/hotspot.c"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/hotspot.config",
+      "bytes": 4507,
+      "gitBlob": "497fa9913898901bdfa9da7ef8026a902a72be77",
+      "sha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/hotspot.config"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/Makefile",
+      "bytes": 4926,
+      "gitBlob": "5b291fed32ebfa86a75f067d98c4a34859bfad51",
+      "sha256": "6dea60a98bc35e376cb0899bad2345dd90592a79834fb6c067b8365b64e58af4",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/Makefile"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/UPSTREAM_COMMIT",
+      "bytes": 41,
+      "gitBlob": "137c85d086e2bc60e524a6a9ee6990a13570a77a",
+      "sha256": "98beb05d8182ba824df6443e67804639945722d2c0ec7e78f09ad3f74371acf2",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/UPSTREAM_COMMIT"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/UPSTREAM_BLOBS.txt",
+      "bytes": 1598,
+      "gitBlob": "8e7be27157700cd735e0a36648a8c2f7caee4718",
+      "sha256": "25a1fc87a67b7405eaf011d2d3680f0c87ba3a30f798df984ceab69b1935d93a",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/UPSTREAM_BLOBS.txt"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "scripts/build_hotspot6.sh",
+      "bytes": 2447,
+      "gitBlob": "2f78dd939f3d43f587a24efca0b9e433408f2b3e",
+      "sha256": "617ad089784c5a2141fdd2978b579df24ab0727149f5240978cc66836c7b6581",
+      "packetPath": "successor-7f70baf5/scripts/build_hotspot6.sh"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/evaluators.py",
+      "bytes": 6587,
+      "gitBlob": "39302e196a1898a7a4dd421895d3177ea81244e3",
+      "sha256": "db3121fdea136a0ae6d13cc625601b33c1f89e60847270d4241b0f16bc49e5d5",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/evaluators.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/slab049.py",
+      "bytes": 101516,
+      "gitBlob": "5bb38c0810dbc7aa6e36a59b0aa86e080f7e0980",
+      "sha256": "669aef9788e97b0f860e21389e7c79d16e296891888cdc956fb9bbc3d8b6271a",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/slab049.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/gate_zero.py",
+      "bytes": 37555,
+      "gitBlob": "ff608db5284eff6edce7fc1b1a38cad7c6c6922f",
+      "sha256": "33d65b37b3503c18d9811fba1ab0b472bd577252aa449046d065a31dd13c6c66",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/gate_zero.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/reference_validation.py",
+      "bytes": 35201,
+      "gitBlob": "f773250942a866654fb636d9507dad9eadcef51b",
+      "sha256": "f1d413f73044fd0b62173458c9dc5565679a1e7db66fe6e94915b35fecd9b18b",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/reference_validation.py"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/new_hotspot.config",
+      "bytes": 4524,
+      "gitBlob": "8fd10438cfaaf5416f9d87a7dcb7efb07c586d30",
+      "sha256": "5af52c844c0504b5b9bacec5ba0a908a306c4db98655a573919f1e7e65de594a",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/new_hotspot.config"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/samplelayers.lcf",
+      "bytes": 666,
+      "gitBlob": "252051b8b6c1c8bd986a607cc86069afa2d74b4e",
+      "sha256": "283c59b2c82e40fcfefe55662cfaf1499d558fc4f39453e9f360479388ba3881",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/samplelayers.lcf"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/sample.ptrace",
+      "bytes": 517,
+      "gitBlob": "d649022f36374822c76a87a2713a4201d9a6d9c4",
+      "sha256": "9691bf095ed9f55ceb61c2605aa87a593c5a893de5ccbcb4b170a4c70d171fe0",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/sample.ptrace"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/sampleL4_ChipLayer.flp",
+      "bytes": 4773,
+      "gitBlob": "0a355f885dca8b1798b3f4a6bfdcdaad68d0b735",
+      "sha256": "1174771e429dff9811723d62a8f5a9a62614121401a3dd91b8de9a86e55c0749",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/sampleL4_ChipLayer.flp"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/new_hotspot.config",
+      "bytes": 4524,
+      "gitBlob": "8fd10438cfaaf5416f9d87a7dcb7efb07c586d30",
+      "sha256": "5af52c844c0504b5b9bacec5ba0a908a306c4db98655a573919f1e7e65de594a",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/new_hotspot.config"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/samplelayers.lcf",
+      "bytes": 666,
+      "gitBlob": "252051b8b6c1c8bd986a607cc86069afa2d74b4e",
+      "sha256": "283c59b2c82e40fcfefe55662cfaf1499d558fc4f39453e9f360479388ba3881",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/samplelayers.lcf"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/sample.ptrace",
+      "bytes": 638,
+      "gitBlob": "845b687e847016a3ed38088d11db44a38d2a0b41",
+      "sha256": "ddf1086fb58524072576b4624b4c94780080f4eb63e383d4aceac8f292532ece",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/sample.ptrace"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/sampleL4_ChipLayer.flp",
+      "bytes": 5124,
+      "gitBlob": "87cf25b479e40209bb476317a8efdc3ded98ce16",
+      "sha256": "2ea583e91c18aedf383bebe449adcd594c74dcc44a978e0af7e3962d65ea4f0e",
+      "packetPath": "successor-7f70baf5/docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/sampleL4_ChipLayer.flp"
+    }
+  ],
+  "comparisons": [
+    {
+      "path": "sundai_tap/passive_interposer.py",
+      "draftSha256": "cecc5b85f7dd8e6a3816c635879eb06193a270595f6bdbc71b76e4ef96f227df",
+      "successorSha256": "cecc5b85f7dd8e6a3816c635879eb06193a270595f6bdbc71b76e4ef96f227df",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_tap/system.py",
+      "draftSha256": "22adcc1c5b9228b21b1264ee8f1b31bac916a3f5fb1f9f06d5428d04d11a5acf",
+      "successorSha256": "22adcc1c5b9228b21b1264ee8f1b31bac916a3f5fb1f9f06d5428d04d11a5acf",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_tap/util/fill_space.py",
+      "draftSha256": "645c0c372509577a77476878ddfac236fd9a0d523133af40011c7bb84db96a82",
+      "successorSha256": "645c0c372509577a77476878ddfac236fd9a0d523133af40011c7bb84db96a82",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_tap/util/hotspot.config",
+      "draftSha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc",
+      "successorSha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_hotspot/temperature_grid.c",
+      "draftSha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df",
+      "successorSha256": "80e60bf7f32cc69ec9d46f3704d2d9541975d174f8bcda6b14ecb9fcfa900375",
+      "byteIdentical": false
+    },
+    {
+      "path": "sundai_hotspot/temperature_grid.h",
+      "draftSha256": "0b760dfebe231d9a00b5e3f6ee07dd9c1cde2d7d8906c1856f394342851fb1ec",
+      "successorSha256": "0b760dfebe231d9a00b5e3f6ee07dd9c1cde2d7d8906c1856f394342851fb1ec",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_hotspot/temperature.c",
+      "draftSha256": "03ea708a3ab231300cc2d2ffd0ebd5db15e81f86a2f1cb968f4adf6dc4168066",
+      "successorSha256": "03ea708a3ab231300cc2d2ffd0ebd5db15e81f86a2f1cb968f4adf6dc4168066",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_hotspot/temperature.h",
+      "draftSha256": "5056ac1932465250f79226c6d434774f56c2d3230d6612041085dfed36a6be8b",
+      "successorSha256": "5056ac1932465250f79226c6d434774f56c2d3230d6612041085dfed36a6be8b",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_hotspot/hotspot.c",
+      "draftSha256": "711b1a81dbec0770bcdc4c75dd82ae929693f483a4e6bffc282f80321419669d",
+      "successorSha256": "711b1a81dbec0770bcdc4c75dd82ae929693f483a4e6bffc282f80321419669d",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_hotspot/Makefile",
+      "draftSha256": "d034691877ca455124d47f59d13640e5f2975904b2956394f6b7b664da2696c5",
+      "successorSha256": "a23c84c1c9e16e62f3502e08f11237260384c9f113f36d17a1402eddbb5991b4",
+      "byteIdentical": false
+    },
+    {
+      "path": "sundai_hotspot/tap_oracle.py",
+      "draftSha256": "43eeb93ccc6ef6a89876c1efbefc02d43c2262b9b1068307474e69915043fe60",
+      "successorSha256": "43eeb93ccc6ef6a89876c1efbefc02d43c2262b9b1068307474e69915043fe60",
+      "byteIdentical": true
+    },
+    {
+      "path": "sundai_hotspot/tap_oracle_worker.py",
+      "draftSha256": "bf0266dba03d980565d337b7092f0ec0589e6f8438045c9860d1af8ea5e145dd",
+      "successorSha256": "bf0266dba03d980565d337b7092f0ec0589e6f8438045c9860d1af8ea5e145dd",
+      "byteIdentical": true
+    }
+  ]
+}

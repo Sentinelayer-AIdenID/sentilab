@@ -1,0 +1,69 @@
+{
+  "at": "2026-10-31T22:36:28.037Z",
+  "note": "Original HotSpot and TAP license bytes plus each named commit third-party notices retained alongside source. This supplements the source-only map; no new licensing conclusion.",
+  "files": [
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "THIRD_PARTY_NOTICES.md",
+      "packetPath": "draft-d2504625/THIRD_PARTY_NOTICES.md",
+      "bytes": 2344,
+      "gitBlob": "f09746e90f93758787e7b472b5990b0446cb116b",
+      "sha256": "4fbf8c7fa307176e87283da7633b821c37556d746ce5dde1cd5bbf75d4f53d63"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_hotspot/LICENSE",
+      "packetPath": "draft-d2504625/sundai_hotspot/LICENSE",
+      "bytes": 2777,
+      "gitBlob": "65650e80c4ae7df21f4b5185ca6c6ef816466d4d",
+      "sha256": "1e5c182eb7b2de00b47a286644451dd4c7aa1912f41e785deda14f68768ed2ac"
+    },
+    {
+      "set": "draft",
+      "commit": "d25046256b4a712b529977f31e10b7e32248a9c0",
+      "path": "sundai_tap/LICENSE",
+      "packetPath": "draft-d2504625/sundai_tap/LICENSE",
+      "bytes": 11357,
+      "gitBlob": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "THIRD_PARTY_NOTICES.md",
+      "packetPath": "successor-7f70baf5/THIRD_PARTY_NOTICES.md",
+      "bytes": 3093,
+      "gitBlob": "28bb43c8d6764c9a2d8ff10d47bda57e60610e4c",
+      "sha256": "6d56d08360a258e64c27962896957f45f89efa90760c2da4d777512e3baef5e2"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot/LICENSE",
+      "packetPath": "successor-7f70baf5/sundai_hotspot/LICENSE",
+      "bytes": 2777,
+      "gitBlob": "65650e80c4ae7df21f4b5185ca6c6ef816466d4d",
+      "sha256": "1e5c182eb7b2de00b47a286644451dd4c7aa1912f41e785deda14f68768ed2ac"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_hotspot6/LICENSE",
+      "packetPath": "successor-7f70baf5/sundai_hotspot6/LICENSE",
+      "bytes": 2777,
+      "gitBlob": "65650e80c4ae7df21f4b5185ca6c6ef816466d4d",
+      "sha256": "1e5c182eb7b2de00b47a286644451dd4c7aa1912f41e785deda14f68768ed2ac"
+    },
+    {
+      "set": "successor",
+      "commit": "7f70baf56998cdeea9fcaa56954fc78f8f6c8071",
+      "path": "sundai_tap/LICENSE",
+      "packetPath": "successor-7f70baf5/sundai_tap/LICENSE",
+      "bytes": 11357,
+      "gitBlob": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    }
+  ]
+}
