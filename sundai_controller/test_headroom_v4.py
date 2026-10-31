@@ -189,6 +189,22 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(lane['best_temperature_c'], 100.0)
             self.assertEqual(sum(not r['agrees'] for r in lane['reproductions']), 1)
 
+    async def test_failed_baseline_stops_before_reference_and_retains_charges(self):
+        self.prereg['allocation']['per_fixture']['total_solves'] = 769
+        self.cpu_per_call = 0.01
+        self.temperature = lambda lane, call, design: 101.0 if call == 29 else 100.0
+        result = await self.run_fixture()
+        self.assertEqual(len(self.calls), 768)
+        self.assertEqual(result['long_sa_results'], [])
+        self.assertEqual(result['reference_skip_reason'], 'cheap_baseline_incomplete')
+        self.assertEqual(result['verdict'], 'INCONCLUSIVE')
+        self.assertFalse(result['cheap_baseline_complete'])
+        self.assertAlmostEqual(result['cpu_seconds'], 7.68)
+        attempt = result['allocation_spend']['attempts'][-1]
+        self.assertEqual(attempt['ending_calls'] - attempt['starting_calls'], 768)
+        self.assertEqual(attempt['status'], 'baseline_failed')
+        self.assertTrue((Path(result['artifact_directory']) / 'RESULT.json').is_file())
+
     async def test_reference_disagreement_is_ineligible(self):
         self.prereg['allocation']['per_fixture']['total_solves'] = 1768
         self.temperature = lambda lane, call, design: 90.0 if 'long-sa' in lane else 100.0
