@@ -11,8 +11,10 @@ from dataclasses import asdict, dataclass, field, replace
 import math
 import re
 
+from .admission import NotAdmitted, OverCap
+from .model_calls import AdmittedLab
 from .envelope import check_caps
-from .labs import FAMILIES, JUDGE_ROLES, KINDS, MAX_MESSAGE_BYTES, Lab, Request, validate_message
+from .labs import FAMILIES, JUDGE_ROLES, KINDS, MAX_MESSAGE_BYTES, Lab, ReplayLab, Request, validate_message
 
 
 @dataclass(frozen=True)
@@ -102,6 +104,8 @@ class Dispatcher:
         if lab_id not in self.registrations or operation not in KINDS:
             return refuse("unknown_assignment")
         registration = self.registrations[lab_id]
+        if type(registration.lab) not in (ReplayLab, AdmittedLab):
+            return refuse("model_not_admitted")
         if operation != "propose":
             target = self.registrations.get(request.target_lab)
             if target is None or not isinstance(request.target_hash, str) or not re.fullmatch(r"[a-f0-9]{64}", request.target_hash):
@@ -147,6 +151,10 @@ class Dispatcher:
                 raise
             except TimeoutError:
                 return refuse("wall_timeout")
+            except NotAdmitted:
+                return refuse("model_not_admitted")
+            except OverCap:
+                return refuse("model_cost_cap")
             except (ValueError, TypeError, UnicodeError, RecursionError, OverflowError):
                 return refuse("invalid_response")
             except Exception:

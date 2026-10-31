@@ -60,6 +60,30 @@ class ConductorTests(unittest.IsolatedAsyncioTestCase):
                             fixture="synthetic-test", limits=Limits(evals_per_run=12))
         self.conductor = Conductor(self.temp.name, **self.options)
 
+    async def test_view_values_use_candidate_layout_and_peak_c_without_invented_centers(self):
+        await self.conductor.run(run_id="test-view-values", max_ticks=2, interval=0)
+        prefix = self.conductor.ledger.read()["prefix"]
+        candidates = [e for e in prefix if e["event"]["type"] == "node.create"
+                      and e["event"]["body"].get("kind") == "candidate"]
+        self.assertEqual(len(candidates), 2)
+        for entry in candidates:
+            design = entry["event"]["body"]["record"]["design"]
+            geometry = entry["values"]["geometry"]
+            self.assertEqual(entry["values"]["units"], "mm")
+            self.assertEqual(len(geometry), len(design["chiplets"]))
+            for rect, chiplet, position in zip(geometry, design["chiplets"], design["positions"]):
+                self.assertEqual(rect, {"id": chiplet["id"], "xLL": position[0], "yLL": position[1],
+                                        "w": chiplet["width_mm"], "h": chiplet["height_mm"], "layer": 0})
+        self.assertNotEqual(candidates[0]["values"]["geometry"], candidates[1]["values"]["geometry"])
+        measurements = [e for e in prefix if e["event"]["type"] == "node.create"
+                        and e["event"]["body"].get("kind") == "measurement"]
+        self.assertEqual(len(measurements), 4)
+        for entry in measurements:
+            record, values = entry["event"]["body"]["record"], entry["values"]
+            self.assertEqual(values["J"], {"value": record["j"], "unit": "C"})
+            self.assertEqual(values["W"], {"value": record["wire_mm"], "metric_id": "weighted-manhattan-mm"})
+            self.assertNotIn("center_temps", values)
+
     async def test_live_state_matches_full_contract_replay_and_survives_restart(self):
         first = await self.conductor.run(run_id="test-live", max_ticks=2, interval=0)
         self.assertEqual(first["spend"]["solves"], 4)

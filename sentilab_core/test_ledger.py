@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -225,7 +226,7 @@ class LedgerTests(unittest.TestCase):
     def test_raw_cap_is_checked_before_parse_and_whitespace_duplicates_are_idempotent(self):
         entries = self.append(2)
         rows = [json.dumps(entries[0]).encode(), canonical(entries[0]), canonical(entries[1])]
-        self.ledger.path.write_bytes(b"\n".join(rows))  # final newline is optional
+        self.ledger.path.write_bytes(b"\n".join(rows) + b"\n")
         self.assertEqual(self.read()["prefix"], entries)
         self.assertEqual(len(self.read()["rows"]), 2)
         self.ledger.path.write_bytes(canonical(entries[0]) + b" " * 65536 + b"\n")
@@ -233,6 +234,34 @@ class LedgerTests(unittest.TestCase):
             state = read_prefix(self.ledger.path, run_id="test-run", public_keys=self.keys)
         self.assertEqual(state["last_seq"], 0)
         self.assertIn("oversize", state["error"])
+
+    def test_incomplete_tail_is_neither_hashed_nor_published_and_blocks_writes(self):
+        entry = self.append(1)[0]
+        first = canonical(entry) + b"\n"
+        for tail in (b'{"partial":', canonical(entry), b"x" * 70000):
+            with self.subTest(tail_bytes=len(tail)):
+                original = first + tail
+                self.ledger.path.write_bytes(original)
+                state = self.read()
+                self.assertEqual([row["raw"] for row in state["source_rows"]], [first])
+                self.assertEqual(state["source_rows"][0]["prefix_hash"], hashlib.sha256(first).hexdigest())
+                self.assertEqual(state["prefix"], [entry])
+                self.assertIsNone(state["error"])
+                with self.assertRaises(BrokenLedger):
+                    self.ledger.append("node.create", {"id": "next"}, event_id="next")
+                self.assertEqual(self.ledger.path.read_bytes(), original)
+        self.ledger.path.write_bytes(first)
+        self.ledger.append("node.create", {"id": "next"}, event_id="next")
+        self.assertEqual(self.read()["last_seq"], 2)
+
+    def test_oversize_evidence_is_preserved_before_json_parsing(self):
+        raw = b"\xff" + b"x" * 70000 + b"\r\n"
+        self.ledger.path.write_bytes(raw)
+        with mock.patch("sentilab_core.ledger.json.loads", side_effect=AssertionError("parsed oversize")):
+            state = read_prefix(self.ledger.path, run_id="test-run", public_keys=self.keys)
+        self.assertIn("oversize", state["error"])
+        self.assertEqual(state["source_rows"][0]["raw"], raw)
+        self.assertEqual(state["source_rows"][0]["prefix_hash"], hashlib.sha256(raw).hexdigest())
 
     def test_idempotent_append_validates_new_content_before_canonicalization(self):
         self.append(1)

@@ -47,7 +47,7 @@ def load_design(record):
 class Conductor:
     def __init__(self, root, *, signer, public_keys, limits=Limits(), deadline=None,
                  fixture="ascend910", margin=0.32, grid=16, seed=11, oracle=None, cancel_event=None,
-                 replay_labs=None, enable_replay_labs=False):
+                 replay_labs=None, enable_replay_labs=False, isolated_labs=None):
         if type(enable_replay_labs) is not bool:
             raise ValueError("replay flag must be a boolean")
         if replay_labs is not None or enable_replay_labs:
@@ -59,6 +59,15 @@ class Conductor:
                 raise ValueError("only canned ReplayLab adapters are enabled")
             if oracle is None or isinstance(oracle, FreshProcessOracle):
                 raise ValueError("replay labs require an injected CPU fixture oracle")
+        if isolated_labs is not None:
+            from .leads import IsolatedLabs
+            if replay_labs is not None:
+                raise ValueError("choose replay or isolated labs")
+            if type(isolated_labs) is not IsolatedLabs or not isolated_labs.stand_in_only:
+                raise ValueError("only deterministic isolated stand-ins are enabled")
+            if oracle is None or isinstance(oracle, FreshProcessOracle):
+                raise ValueError("isolated stand-ins require an injected CPU fixture oracle")
+        self.isolated_labs = isolated_labs
         self.replay_labs = replay_labs
         self.root = Path(root)
         self.root.mkdir(parents=True, exist_ok=True)
@@ -78,6 +87,8 @@ class Conductor:
                        "initial": design_record(self.oracle.initial)}
         if replay_labs is not None:
             self.config["replay_labs"] = replay_labs.describe()
+        if isolated_labs is not None:
+            self.config["isolated_labs"] = isolated_labs.describe()
         self.ledger = None
         self.meta = None
 
@@ -109,9 +120,10 @@ class Conductor:
         self.ledger = Ledger(self.root, run, signer=self.signer, public_keys=self.public_keys)
         self.emit("node.create", {"id": run_id + ":run", "kind": "source",
                                   "record": self.config}, "run")
-        if self.replay_labs is not None:
+        if self.replay_labs is not None or self.isolated_labs is not None:
             records = [e["event"]["body"].get("record", {}) for e in self.ledger.read()["prefix"]]
-            self.replay_labs.restore(records)
+            if self.replay_labs is not None:
+                self.replay_labs.restore(records)
             self._lab_record_index = sum(r.get("type", "").startswith("lab.") for r in records)
         return run_id
 
@@ -195,6 +207,49 @@ class Conductor:
         envelope = self.emit("node.create", {"id": node, "kind": "source", "record": record}, node)
         self._lab_record_index += 1
         return envelope
+
+    def _isolated_records(self):
+        records = []
+        for envelope in self.ledger.read()["prefix"]:
+            body = envelope["event"]["body"]
+            if envelope["event"]["type"] != "node.create":
+                continue
+            record = dict(body.get("record", {}))
+            if body.get("kind") in ("candidate", "measurement"):
+                record["type"] = body["kind"]
+            records.append(record)
+        return records
+
+    async def _isolated_propose(self, index):
+        from .labs import materialize
+        lab_ids = list(self.isolated_labs.labs)
+        lab_id = lab_ids[(index - 1) % len(lab_ids)]
+        result = await self.isolated_labs.propose(
+            lab_id, self.meta["run"], self.config["initial"], self._isolated_records(),
+            (index - 1) // len(lab_ids), sink=self._lab_record)
+        self.check_stop()
+        candidate, missing = self.oracle.initial, result.reason
+        if result.message is not None:
+            try:
+                candidate = materialize(result.message, self.oracle.initial)
+            except ValueError:
+                missing = "catalog_mismatch"
+        self._lab_record({"type": "lab.proposal", "message": result.message,
+                          "provenance": result.provenance, "missing": missing})
+        return candidate, lab_id, result.provenance, missing
+
+    async def _isolated_advice(self, proposal, evidence):
+        candidate_hash = next(e["hash"] for e in self.ledger.read()["prefix"]
+                              if e["event"]["body"].get("id") == proposal["node"])
+        lab_id = proposal["lane"]
+        result = await self.isolated_labs.review(
+            lab_id, self.meta["run"], proposal["design"], evidence, candidate_hash,
+            (proposal["index"] - 1) // len(self.isolated_labs.labs),
+            records=self._isolated_records(), sink=self._lab_record)
+        self.check_stop()
+        if result.reason != "already_attempted":
+            self._lab_record({"type": "lab.review", "message": result.message,
+                              "provenance": result.provenance, "missing": result.reason})
 
     async def _lab_propose(self, index):
         from .envelope import canonical
@@ -280,7 +335,7 @@ class Conductor:
                   "input_hashes": dict(result.input_sha256)}
         semantics = {"task_contract": self.config["task_id"], "metric_id": "peak-chip-c",
                      "evaluator_version": self.config["solver_id"], "coordinate_frame": "lower-left-mm"}
-        values = {"J": {"value": record["j"], "unit": "°C"},
+        values = {"J": {"value": record["j"], "unit": "C"},
                   "W": {"value": record["wire_mm"], "metric_id": "weighted-manhattan-mm"},
                   "scenario_id": "nominal", "artifact_hashes": list(record["input_hashes"].values())}
         self.emit("node.create", {"id": measurement_id, "kind": "measurement", "semantics": semantics,
@@ -302,7 +357,13 @@ class Conductor:
                 raise BudgetHalt("run solve limit")
             index = len(candidates)
             lab_proposal = await self._lab_propose(index) if self.replay_labs is not None and index else None
-            candidate, lane, operator, parent_hash = lab_proposal or self._propose(index, prefix)
+            isolated = None
+            if self.isolated_labs is not None and index:
+                isolated = await self._isolated_propose(index)
+                candidate, lane, provenance, missing = isolated
+                operator, parent_hash = "stand-in-lead", self.oracle.initial.hash
+            else:
+                candidate, lane, operator, parent_hash = lab_proposal or self._propose(index, prefix)
             node = self.run_id + f":candidate-{index}"
             binding = {"candidate_id": candidate.hash, "task_id": self.config["task_id"],
                        "fixture_id": self.config["fixture"], "metric_id": "peak-chip-c",
@@ -316,6 +377,9 @@ class Conductor:
             proposal = {"node": node, "index": index, "lane": lane, "operator": operator,
                         "parent_hash": parent_hash, "design": design_record(candidate), "binding": binding,
                         "geometry_valid": geometry_valid, "wire_mm": wire}
+            if isolated is not None:
+                proposal["originator"] = provenance
+                proposal["missing"] = missing
             geometry = [{"id": c.id, "xLL": xy[0], "yLL": xy[1], "w": c.width_mm,
                          "h": c.height_mm, "layer": 0} for c, xy in zip(candidate.chiplets, candidate.positions)]
             candidate_envelope = self.emit("node.create", {"id": node, "kind": "candidate", "record": proposal}, node,
@@ -323,6 +387,10 @@ class Conductor:
             if lab_proposal is not None:
                 await self._lab_advice(candidate_envelope, proposal)
         node = proposal["node"]
+        if proposal.get("missing") is not None:
+            self._transition(node, "cancelled", {"reason": proposal["missing"], "outcome": "inconclusive",
+                             "missing_data_policy": self.isolated_labs.readiness.missing_data_policy})
+            return self.snapshot()
         if not proposal["geometry_valid"]:
             self._transition(node, "rejected_schema", {"outcome": "invalid_geometry"})
             return self.snapshot()
@@ -338,6 +406,8 @@ class Conductor:
         self._transition(node, "evaluated")
         self._transition(node, "reproduction_pending")
         reproduction = await self._measurement(candidate, proposal, "reproduce")
+        if self.isolated_labs is not None and proposal.get("originator") is not None:
+            await self._isolated_advice(proposal, [evaluation, reproduction])
         inputs = {"geometry_valid": proposal["geometry_valid"], "wire_cap_mm": self.config["wire_cap_mm"],
                   "binding": proposal["binding"], "evaluation": evaluation,
                   "reproduction": reproduction, "stopped": False}

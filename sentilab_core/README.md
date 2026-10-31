@@ -14,6 +14,22 @@ dependent. Arm exploration state is reconstructed from recorded measurements,
 including valid losers. The wire cap is fixed at the initial layout's weighted
 Manhattan wire proxy; it never follows the board.
 
+Candidate `node.create` envelopes include `values.geometry`, taken from that
+candidate's recorded layout: `{id, xLL, yLL, w, h, layer}` for each chiplet.
+Coordinates are lower-left positions and dimensions in millimetres, declared by
+`values.units = "mm"`; `layer = 0` denotes the single chiplet placement plane.
+Measurements publish the chip-layer grid peak as `values.J` with `unit = "C"`
+and the weighted Manhattan wire proxy as `values.W`. The HotSpot evaluator
+returns a chip-layer heatmap and its peak, but does not compute per-chiplet
+center temperatures. Consequently `values.center_temps` is absent; the peak is
+not a substitute for center samples. Views can show J and the layout without a
+center-temperature overlay.
+
+These fields apply to newly appended rows. Historical rows may lack geometry
+or center temperatures, or spell the Celsius unit `°C`; their bytes, hashes and
+signatures remain unchanged. Readers must accept those omissions and must not
+insert defaults or normalize units before verifying a signed envelope.
+
 Every run has an append-only, fsynced JSONL ledger with a run-scoped sequence and
 idempotency keys. Opening or appending verifies the entire chain. A broken ledger
 refuses writes. Read-only replay and the view expose the verified prefix and a
@@ -83,6 +99,16 @@ and operator pin, startup fails closed. Run one service writer per storage root;
 the OS ownership lock enforces this across processes. To release an explicit
 STOP, the service operator removes that file and starts a new finite run.
 
+During rolling revisions, a busy nonblocking ownership lock (including CIFS
+`EACCES`) retries with exponential backoff and jitter between 5 and 60 seconds.
+Unexpected loop failures are logged and retried with the same backoff. Only
+the lock acquisition classifies contention; file access and run errors remain
+failures. Shutdown interrupts the wait; an operator STOP prevents another run.
+`/api/view/runs` includes `loop_alive`, the most recent unexpected failure's
+type in `service_error`, and its UTC ISO timestamp in `last_failure_at` (both
+null before any failure). Failure evidence remains after recovery; liveness
+reports the service thread, including while waiting, not ledger progress.
+
 The read-only routes are `/api/view/runs`,
 `/api/view/events?run_id=...&cursor=0&limit=256`, and `/api/view/key`. Event responses
 default to v0.5 JSONL, with at most 256 lines and 4 MiB per page. `cursor` is the
@@ -94,6 +120,13 @@ received evidence and reverify the combined stream. Each cursor also has an
 byte prefix. Echo it as `cursor_hash` with every nonzero `cursor`. A missing or
 changed boundary returns 409 and requires replay from zero, including after
 in-place changes or file replacement. Append-only progress preserves the hash.
+Only LF-terminated rows are counted, hashed or served. An unfinished tail waits
+for its LF; writers still refuse to append onto it. Oversize rows retain their
+original bytes, including invalid UTF-8. A page whose whole rows including LFs
+total exactly 4 MiB is served; further rows wait for the next page. If the first
+row at the cursor exceeds 4 MiB including its LF, the response is 413 with no
+body or paging headers, including in cursor JSONL mode. The v0.6 client keeps
+its prefix, shows "STALE · row too large" and stops polling until manual reload.
 The hash binds a read boundary; envelope verification against pinned keys still
 establishes authenticity. Late conflicting appends
 are delivered at their append position and can retract an earlier verified
@@ -101,12 +134,35 @@ prefix. `has_more=false` describes only the current read; poll the same cursor
 for new appends. Storage is append-only; a cursor beyond its current length
 returns 409 and requires replay from zero.
 
+The events route caches parsed rows and signature results per run in memory.
+Every poll reads one bounded byte snapshot and checks the cached physical prefix
+hash; unchanged rows need no repeated parsing or signature verification. Only
+complete appended rows are parsed and verified, while conflict and chain checks
+run again on append. File replacement, shrink, changed prefix bytes or trust pins
+discard that run's cached verdicts. The durable head is checked on every poll.
+The cache retains at most eight runs and 64 MiB of source bytes; eviction changes
+only performance. `python -m unittest app.test_view_cache` includes a reported
+eight-viewer, 1,000-row empty-poll benchmark without a host-speed assertion.
+
 Legacy `after=seq` remains supported separately. Its conflicting sequence groups
 stay on one page; earlier break evidence is sent again. A group that cannot fit
 returns 413. Clients needing bounded progress through such evidence use `cursor`.
-Do not combine a nonzero `after` with `cursor`. Unsupported row-cursor polling
+Do not combine `after` with `cursor`, even `after=0`. Mixed parameters or malformed
+`cursor_hash` return 422, so clients do not mistake them for unsupported paging.
+Invalid numeric paging ranges return 400 with a fixed error message that never
+echoes submitted values. Counts must be nonnegative safe integers; `limit` is 1–256.
+Unsupported row-cursor polling
 must preserve the prior prefix as STALE/unsupported; incremental sequence-only
 fallback must not advance a LIVE/current claim.
+
+For v0.6.1 transport conformance, run `python -m app.check_view_paging`, or pass
+an exact contract directory (such as `contracts/view-envelope-v0.6`) as an
+argument. It drives the unchanged reducer and the reference vector data
+against a local HTTP server, plus unfinished-tail and oversize-row regressions.
+Fault scenarios deliberately alter responses after fetching from the real route.
+All C7 range statuses and C12/C14 server cases must match the reference exactly.
+The harness also compares each response's status, headers and body with an
+uncached replay and a repeated warm-cache request.
 An explicit `format=json` returns diagnostic `envelopes`, `next_after`, `has_more`,
 `prefix_end`, `chain_error`, and the core projection, also capped at 4 MiB.
 Clients fetch one run from genesis through contiguous pages and

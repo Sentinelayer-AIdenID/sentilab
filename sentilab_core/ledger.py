@@ -1,18 +1,26 @@
 """Fsynced per-run JSONL, one append transaction and authenticated replay prefix."""
 from contextlib import contextmanager
+from collections import OrderedDict
+import errno
 import fcntl
 import hashlib
+import io
 import json
 import math
 import os
 from pathlib import Path
 import tempfile
+import threading
 
 from .envelope import MAX_BYTES, MAX_REPLAY_BYTES, build, canonical, check_envelope, genesis, validate_run_id, verify
 
 
 class BrokenLedger(ValueError):
     pass
+
+
+class LockBusy(BlockingIOError):
+    """A nonblocking flock acquisition found an existing owner."""
 
 
 @contextmanager
@@ -28,7 +36,15 @@ def lock(path, *, shared=False, blocking=True):
         return
     with handle:
         flags = fcntl.LOCK_SH if shared else fcntl.LOCK_EX
-        fcntl.flock(handle, flags | (0 if blocking else fcntl.LOCK_NB))
+        try:
+            fcntl.flock(handle, flags | (0 if blocking else fcntl.LOCK_NB))
+        except OSError as exc:
+            # CIFS reports EACCES for contention. Only acquisition can classify
+            # it as busy: opening the file, protected work and unlock may fail.
+            if not blocking and (isinstance(exc, BlockingIOError) or
+                                 exc.errno in {errno.EACCES, errno.EAGAIN}):
+                raise LockBusy(exc.errno, "lock is held") from exc
+            raise
         try:
             yield
         finally:
@@ -87,33 +103,47 @@ def read_prefix(path, *, run_id, public_keys, version=None):
     parsing: json.loads(bytes) would silently accept BOMs and UTF-16/32.
     Raw transport evidence is preserved even when decoding/parsing fails.
     """
-    rows = []
-    source_hash = hashlib.sha256()
     with open(path, "rb") as handle:
         if os.fstat(handle.fileno()).st_size > MAX_REPLAY_BYTES:
             raise ValueError("oversize: replay file")
-        while raw := handle.readline(MAX_BYTES + 2):
-            source_hash.update(raw)
-            line = raw[:-1] if raw.endswith(b"\n") else raw
-            if len(line) > MAX_BYTES:
-                while raw and not raw.endswith(b"\n"):
-                    raw = handle.readline(MAX_BYTES + 2)
-                    source_hash.update(raw)
-                rows.append({"error": "oversize JSONL row", "raw": b"null\n",
-                             "prefix_hash": source_hash.hexdigest()})
-                continue
-            row = {"raw": line + b"\n", "prefix_hash": source_hash.hexdigest()}
-            try:
-                value = json.loads(line.decode("utf-8", errors="strict"), object_pairs_hook=_object,
-                                   parse_float=_finite_float, parse_constant=_finite_float)
-                if not isinstance(value, dict):
-                    raise ValueError("envelope is not an object")
-                row["envelope"] = value
-                data = check_envelope(value, run_id, version=version)
-                row["canonical_digest"] = hashlib.sha256(data).hexdigest()
-            except (ValueError, TypeError, UnicodeError, RecursionError, OverflowError) as exc:
-                row["error"] = str(exc) or "invalid JSONL row"
-            rows.append(row)
+        rows, incomplete_tail = _read_rows(handle, run_id, version, hashlib.sha256())
+    return _verify_rows(rows, run_id, public_keys, version, {}, incomplete_tail)
+
+
+def _read_rows(handle, run_id, version, source_hash):
+    rows = []
+    incomplete_tail = False
+    while raw := handle.readline(MAX_REPLAY_BYTES + 1):
+        if handle.tell() > MAX_REPLAY_BYTES:
+            raise ValueError("oversize: replay file")
+        # An append in progress is not an immutable physical row yet.
+        if not raw.endswith(b"\n"):
+            incomplete_tail = True
+            break
+        source_hash.update(raw)
+        line = raw[:-1]
+        if len(line) > MAX_BYTES:
+            rows.append({"error": "oversize JSONL row", "raw": raw,
+                         "prefix_hash": source_hash.hexdigest()})
+            continue
+        row = {"raw": raw, "prefix_hash": source_hash.hexdigest()}
+        try:
+            value = json.loads(line.decode("utf-8", errors="strict"), object_pairs_hook=_object,
+                               parse_float=_finite_float, parse_constant=_finite_float)
+            if not isinstance(value, dict):
+                raise ValueError("envelope is not an object")
+            row["envelope"] = value
+            data = check_envelope(value, run_id, version=version)
+            row["canonical_digest"] = hashlib.sha256(data).hexdigest()
+        except (ValueError, TypeError, UnicodeError, RecursionError, OverflowError) as exc:
+            row["error"] = str(exc) or "invalid JSONL row"
+        rows.append(row)
+    return rows, incomplete_tail
+
+
+def _verify_rows(parsed, run_id, public_keys, version, signatures, incomplete_tail):
+    # Chain errors are recomputed: a late conflict can retract an earlier prefix.
+    rows = [row.copy() for row in parsed]
 
     def seq(row):
         event = row.get("envelope", {}).get("event")
@@ -127,7 +157,7 @@ def read_prefix(path, *, run_id, public_keys, version=None):
     # whitespace. Rejected input is never canonicalized for duplicate detection.
     unique, seen = [], set()
     for row in rows:
-        fingerprint = row.pop("canonical_digest", None)
+        fingerprint = row.get("canonical_digest")
         if fingerprint is not None:
             if fingerprint in seen:
                 continue
@@ -155,7 +185,15 @@ def read_prefix(path, *, run_id, public_keys, version=None):
         envelope = row.get("envelope")
         if error is None:
             try:
-                verify(envelope, run_id=run_id, public_keys=public_keys, version=version)
+                fingerprint = row["canonical_digest"]
+                if fingerprint not in signatures:
+                    try:
+                        verify(envelope, run_id=run_id, public_keys=public_keys, version=version)
+                        signatures[fingerprint] = None
+                    except ValueError as exc:
+                        signatures[fingerprint] = str(exc)
+                if signatures[fingerprint] is not None:
+                    raise ValueError(signatures[fingerprint])
                 if envelope["event"]["seq"] != len(prefix) + 1:
                     raise ValueError("sequence gap or repeat")
                 if envelope["prev_hash"] != previous:
@@ -170,8 +208,10 @@ def read_prefix(path, *, run_id, public_keys, version=None):
             previous = envelope["hash"]
         else:
             row["error"] = error or "after broken prefix"
+    for row in source_rows:
+        row.pop("canonical_digest", None)
     return {"prefix": prefix, "rows": rows, "source_rows": source_rows, "last_seq": len(prefix),
-            "error": broken, "head_hash": previous}
+            "error": broken, "head_hash": previous, "incomplete_tail": incomplete_tail}
 
 
 def _check_head(state, head_path):
@@ -185,6 +225,74 @@ def _check_head(state, head_path):
         except (ValueError, KeyError, TypeError):
             state["error"] = state["error"] or "invalid durable head"
     return state
+
+
+class _CachedPrefix:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.identity = None
+        self.size = self.offset = 0
+        self.source_hash = hashlib.sha256()
+        self.parsed, self.signatures = [], {}
+        self.state = None
+
+    def read(self, path, run_id, public_keys):
+        with open(path, "rb") as handle:
+            stat = os.fstat(handle.fileno())
+            if stat.st_size > MAX_REPLAY_BYTES:
+                raise ValueError("oversize: replay file")
+            snapshot = handle.read(MAX_REPLAY_BYTES + 1)
+        if len(snapshot) > MAX_REPLAY_BYTES:
+            raise ValueError("oversize: replay file")
+        identity = (stat.st_dev, stat.st_ino, run_id, tuple(sorted(public_keys.items())))
+        # Hash the actual prefix, not metadata: same-size in-place edits and
+        # rewrite+append must invalidate too. Parse and serve this same snapshot.
+        prefix_hash = hashlib.sha256(memoryview(snapshot)[:self.offset])
+        if (identity != self.identity or len(snapshot) < self.size or
+                prefix_hash.digest() != self.source_hash.digest()):
+            self.offset = 0
+            self.parsed, self.signatures = [], {}
+            self.state = None
+            prefix_hash = hashlib.sha256()
+        end = snapshot.rfind(b"\n") + 1
+        incomplete_tail = end != len(snapshot)
+        if self.state is None or end > self.offset:
+            handle = io.BytesIO(snapshot)
+            handle.seek(self.offset)
+            appended, _ = _read_rows(handle, run_id, None, prefix_hash)
+            self.parsed.extend(appended)
+            self.state = _verify_rows(self.parsed, run_id, public_keys, None,
+                                      self.signatures, incomplete_tail)
+            self.offset, self.source_hash = end, prefix_hash
+        self.identity, self.size = identity, len(snapshot)
+        # Head-file errors must not poison the cached envelope verdict, and the
+        # durable head must be checked even on an otherwise empty poll.
+        return _check_head({**self.state, "incomplete_tail": incomplete_tail}, path.with_suffix(".head.json"))
+
+
+class ReplayCache:
+    """Process-local read cache, bounded by run count and retained source bytes."""
+    def __init__(self, *, max_runs=8, max_bytes=MAX_REPLAY_BYTES):
+        self.max_runs, self.max_bytes = max_runs, max_bytes
+        self._entries = OrderedDict()
+        self._lock = threading.Lock()
+
+    def read(self, path, *, run_id, public_keys):
+        with self._lock:
+            entry = self._entries.get(path)
+            if entry is None:
+                entry = self._entries[path] = _CachedPrefix()
+            self._entries.move_to_end(path)
+        # Concurrent viewers of one run share the first verification. Other
+        # runs need not wait for a cold replay to finish.
+        try:
+            with entry.lock:
+                return entry.read(path, run_id, dict(public_keys))
+        finally:
+            with self._lock:
+                while (len(self._entries) > self.max_runs or
+                       sum(item.size for item in self._entries.values()) > self.max_bytes):
+                    self._entries.popitem(last=False)
 
 
 class Ledger:
@@ -212,6 +320,8 @@ class Ledger:
     def _require_sound(state):
         if state["error"]:
             raise BrokenLedger(state["error"])
+        if state.get("incomplete_tail"):
+            raise BrokenLedger("incomplete JSONL tail")
 
     def read(self):
         with lock(self.lock_path, shared=True):
@@ -298,8 +408,10 @@ class Ledger:
         return envelope
 
 
-def replay(root, run_id, *, public_keys):
+def replay(root, run_id, *, public_keys, cache=None):
     """Read-only replay stays usable when append has correctly been refused."""
     path = run_path(root, run_id)
     with lock(path.with_suffix(".lock"), shared=True):
+        if cache is not None:
+            return cache.read(path, run_id=run_id, public_keys=public_keys)
         return _check_head(read_prefix(path, run_id=run_id, public_keys=public_keys), path.with_suffix(".head.json"))

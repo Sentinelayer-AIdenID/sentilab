@@ -1,0 +1,6 @@
+{
+  "requests": 40,
+  "base_exact": 0,
+  "adapter_exact": 20,
+  "claim": "Localhost serving of base and fixture adapter; not a physical-learning benchmark"
+}

@@ -1,0 +1,138 @@
+{
+  "schema": "sentilab-memory-fixture/1",
+  "label": "synthetic correction drill; no measured temperatures or model results",
+  "scope": {
+    "tenant": "tenant-a",
+    "run": "memory-drill",
+    "arm": "baseline",
+    "family": "training-a",
+    "seed": 17
+  },
+  "held_out_families": [
+    "evaluation-a"
+  ],
+  "events": [
+    {
+      "type": "node.create",
+      "body": {
+        "id": "measurement-a",
+        "kind": "measurement",
+        "semantics": {
+          "task_contract": "slab010-fixture",
+          "metric_id": "synthetic-score",
+          "evaluator_version": "fixture-1",
+          "coordinate_frame": "fixture"
+        }
+      }
+    },
+    {
+      "type": "node.create",
+      "body": {
+        "id": "measurement-b",
+        "kind": "measurement",
+        "semantics": {
+          "task_contract": "slab010-fixture",
+          "metric_id": "synthetic-score",
+          "evaluator_version": "fixture-1",
+          "coordinate_frame": "fixture"
+        }
+      }
+    },
+    {
+      "type": "node.create",
+      "body": {
+        "id": "claim-a",
+        "kind": "claim"
+      }
+    },
+    {
+      "type": "support.add",
+      "body": {
+        "node": "claim-a",
+        "set_id": "primary",
+        "members": [
+          "measurement-a"
+        ]
+      }
+    },
+    {
+      "type": "node.create",
+      "body": {
+        "id": "claim-alternative",
+        "kind": "claim"
+      }
+    },
+    {
+      "type": "support.add",
+      "body": {
+        "node": "claim-alternative",
+        "set_id": "primary",
+        "members": [
+          "claim-a"
+        ]
+      }
+    },
+    {
+      "type": "support.add",
+      "body": {
+        "node": "claim-alternative",
+        "set_id": "independent",
+        "members": [
+          "measurement-b"
+        ]
+      }
+    }
+  ],
+  "memories": [
+    {
+      "item": {
+        "id": "direct",
+        "text": "A direct fixture measurement"
+      },
+      "evidence_refs": [
+        "measurement-a"
+      ]
+    },
+    {
+      "item": {
+        "id": "transitive",
+        "text": "A dependent fixture claim"
+      },
+      "evidence_refs": [
+        "claim-a"
+      ]
+    },
+    {
+      "item": {
+        "id": "alternative",
+        "text": "Independent support survives"
+      },
+      "evidence_refs": [
+        "claim-alternative"
+      ]
+    }
+  ],
+  "correction": {
+    "type": "withdraw",
+    "body": {
+      "node": "measurement-a",
+      "reason": "seeded correction drill"
+    }
+  },
+  "expected_before": [
+    "direct",
+    "transitive",
+    "alternative"
+  ],
+  "expected_after": [
+    "alternative"
+  ],
+  "expected_invalid_evidence": {
+    "direct": {
+      "measurement-a": "withdrawn"
+    },
+    "transitive": {
+      "claim-a": "stale"
+    }
+  }
+}
