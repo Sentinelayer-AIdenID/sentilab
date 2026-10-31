@@ -396,10 +396,16 @@ export function buildRenderModel({ kind, anatomy = null, assembly = null, varian
 // verified inputs (X3, X4; A#57218 item 6).
 function resultBoxes(stack, result) { /* ... */ }
 
-// model kind: grid layers 0..5 as interposer-sized slabs (lcf), layer 4 split into Chiplet_i (silicon), halo strips
-// (Ubump_*, width fixture.dies[i].halo_mm), edge strips (Edge_*, width 0.5 mm: TAP_MARGIN_MM, tap_oracle.py:35) and the
-// whitespace fill; layer 3 the same footprints in the bump mix; 6 (spreader) and 7 (sink) as outlines of 2x and 4x the
-// interposer with their grid extent (the interposer) marked. Every box basis "model" with its cite.
+// model kind: grid layers 0..5 as interposer-sized slabs (lcf) whose REGIONS come from the generated floorplans (C6: in
+// detailed 3D a region's FLP resistivity and heat capacity take precedence over its LCF default, temperature_grid.c:
+// 387-400; the C4 and interposer slabs carry their mixture properties, passive_interposer.py:59-74). Layer 4: Chiplet_i
+// (silicon, powered), halo strips Ubump_* (silicon, zero power; width fixture.dies[i].halo_mm), edge strips Edge_* (bump
+// mix; width 0.5 mm: TAP_MARGIN_MM, tap_oracle.py:35) and whitespace (underfill, written by fill_space). Layer 3: the
+// die, halo and edge regions in the bump mix and its whitespace as underfill, each as the generated floorplan records
+// it, never one footprint set painted with the bump mix. A region's material is the manifest's record of the generated
+// file, never inferred from its name or its layer's default. 6 (spreader) and 7 (sink) as outlines of 2x and 4x the
+// interposer with their central grid extent (the interposer) marked and the rest labelled "unmeasured". Every box basis
+// "model" with its cite.
 function modelBoxes(stack, fixtureId, layoutId, layouts) { /* ... */ }
 
 // Deep freeze: every nested object and array. A later write throws in strict mode (modules are strict).
@@ -586,54 +592,85 @@ export const FIELD_CAPS = Object.freeze({ max_bytes: 4 * 1024 * 1024, max_rows: 
 const HEX64 = /^[0-9a-f]{64}$/;
 const INPUT_SOURCES = Object.freeze(["samplelayers.lcf", "new_hotspot.config", "sample.ptrace"]);
 
-// The allowlist: ONLY fields named by measurement node.create envelopes inside the verified projectable prefix that
+/// The allowlist: ONLY fields named by measurement node.create envelopes inside the verified projectable prefix that
 // project() applied. Nothing after K, nothing rejected, nothing from a file manifest (L3:PSEUDOCODE §6, unchanged).
-export function fieldRefs(prefixEnvelopes, projection) { /* -> Map<sha256, ref> with ref.artifact_hashes = env.values.artifact_hashes */ }
+// Each ref carries, from the VERIFIED envelopes: the pointer (sha256, format, rows, cols, layers, unit), run_id,
+// measurement, evaluator, artifact_hashes (the signed input hashes), and (C1) expected_candidate = the measurement's
+// signed record.binding.candidate_id, which must equal its candidate node's (else the ref is refused,
+// binding_mismatch), and expected_problem = its signed semantics.task_contract; either is null when not signed.
+export function fieldRefs(prefixEnvelopes, projection) { /* -> Map<sha256, ref> */ }
 
-// bytes: the raw body, already capped by readBodyCapped (view-core.mjs:108). In this order; nothing is decoded
-// before the hash matches. Any failure: { ok: false, error }, nothing drawn, previous texture bytes untouched.
-export async function checkFieldArtifact(bytes, ref, { stack = null } = {}) {
-  if (!(bytes instanceof Uint8Array) || bytes.length > FIELD_CAPS.max_bytes) return no("too_large");
+const TOP_KEYS = ["argv", "binding", "format", "grid", "layers", "producer", "sources", "unit", "values"];   // closed sets (C4)
+const BINDING_KEYS = ["candidate_hash", "evaluator_version", "measurement", "problem_hash", "run_id"];
+const PRODUCER_KEYS = ["emitted_layer_ids", "executable", "native_format"];
+const GRID_KEYS = ["cols", "extent_mm", "map_mode", "row0", "rows"];
+const LAYER_KEYS = ["heat_capacity_J_m3K", "index", "name", "powered", "resistivity_mK_W", "source", "thickness_m"];
+const UNIT = (u) => (u === "K" ? "K" : u === "C" || u === "°C" ? "C" : u === null ? null : undefined);   // documented aliases only (C2)
+
+// bytes: the raw body, already capped by readBodyCapped (view-core.mjs:108). The seven gates of SPEC.md §5.7, in this
+// order; nothing is decoded before the hash matches. A refusal returns { ok: false, error }: nothing drawn, previous
+// texture bytes untouched. Missing association evidence is not a refusal: it is collected in `unbound` (AC-41).
+// domain: the verified central grid domain { x0: 0, y0: 0, x1: interposer_mm, y1: interposer_mm } of the run's verified
+// inputs, or null when they are not verified (associateField then reports run_inputs_unverified).
+export async function checkFieldArtifact(bytes, ref, { stack = null, domain = null } = {}) {
+  if (!(bytes instanceof Uint8Array) || bytes.length > FIELD_CAPS.max_bytes) return no("too_large");          // 1 bytes
   if ((await sha256Hex(bytes)) !== ref.sha256) return no("hash_mismatch");
   let doc; try { doc = strictJson(bytes); } catch { return no("malformed"); }
   if (doc?.format !== FIELD_FORMAT) return no("format");
-  const b = doc.binding ?? {};
+  if (!closedKeys(doc, TOP_KEYS) || !closedKeys(doc.binding, BINDING_KEYS) || !closedKeys(doc.producer, PRODUCER_KEYS)   // 2 structure (C4)
+      || !closedKeys(doc.grid, GRID_KEYS) || !Array.isArray(doc.layers) || !Array.isArray(doc.values)
+      || !doc.layers.every((l) => closedKeys(l, LAYER_KEYS)) || !doc.values.every(Array.isArray)) return no("malformed");
+  const unbound = [], b = doc.binding;                                                                         // 3 binding
   if (b.run_id !== ref.run_id || b.measurement !== ref.measurement || b.evaluator_version !== ref.evaluator) return no("binding_mismatch");
-  // (+) every INPUT source the artifact names must be a hash the signed envelope already lists (SPEC.md §5.7).
+  for (const [key, want, reason] of [["candidate_hash", ref.expected_candidate, "candidate_unbound"], ["problem_hash", ref.expected_problem, "problem_unbound"]]) {
+    if (b[key] !== null && want !== null && b[key] !== want) return no("binding_mismatch", key);               // (C1) a contradiction
+    if (b[key] === null || want === null) unbound.push(reason);                                                // (C1) missing evidence
+  }
   const signed = new Set(Array.isArray(ref.artifact_hashes) ? ref.artifact_hashes : []);
   for (const name of INPUT_SOURCES) if (!HEX64.test(doc.sources?.[name] ?? "") || !signed.has(doc.sources[name])) return no("binding_mismatch", `source ${name}`);
-  const { rows, cols, row0 } = doc.grid ?? {};
-  if (rows !== ref.rows || cols !== ref.cols || doc.layers?.length !== ref.layers || doc.values?.length !== ref.layers) return no("dims");
-  if (rows > FIELD_CAPS.max_rows || cols > FIELD_CAPS.max_cols || ref.layers > FIELD_CAPS.max_layers || !["top", "bottom"].includes(row0)) return no("dims");
-  const toC = doc.unit === "K" ? (v) => v - 273.15 : doc.unit === "°C" || doc.unit === "C" ? (v) => v : null;   // as scene.mjs:88-89
-  if (!toC) return no("unit_not_supported");
+  const pu = UNIT(ref.unit), au = UNIT(doc.unit);                                                              // 4 units (C2)
+  if (pu === undefined || au === undefined) return no("unit_not_supported");
+  if (pu !== null && au !== null && pu !== au) return no("unit_conflict");                                      // compared BEFORE converting
+  if (pu === null || au === null) unbound.push("unit_unbound");
+  const ids = doc.layers.map((l) => l.index);                                                                  // 5 layer identity (C3)
+  if (!ids.every((i) => Number.isInteger(i) && i >= 0 && i < FIELD_CAPS.max_layers) || ids.some((i, k) => k > 0 && i <= ids[k - 1])) return no("layer_ids");
+  if (doc.layers.length !== ref.layers || doc.values.length !== doc.layers.length) return no("dims");
+  if (!doc.layers.every(wellFormedLayer)) return no("malformed", "layer record");                             // name; finite positive t, r, c; boolean powered
+  const p = doc.producer;
+  if (p.native_format === null || p.executable === null) unbound.push("producer_unbound");
+  if (p.emitted_layer_ids === null) unbound.push("producer_layer_unbound");
+  else if (!sameIds(p.emitted_layer_ids, ids)) return no("layer_ids");
+  const { rows, cols, row0, map_mode, extent_mm } = doc.grid;                                                  // 6 grid (C4)
+  if (rows === null || cols === null) unbound.push("grid_shape_unbound");
+  else if (!(posInt(rows) && posInt(cols)) || rows > FIELD_CAPS.max_rows || cols > FIELD_CAPS.max_cols || rows !== ref.rows || cols !== ref.cols) return no("dims");
+  if (!["top", "bottom"].includes(row0) || !["max", "center"].includes(map_mode)) return no("dims");
+  if (!finiteRect(extent_mm)) return no("extent");                                                            // 7 domain (C4): finite, positive spans
+  if (domain && !sameRect(extent_mm, domain, 1e-9)) return no("extent");                                      // never a package outline
+  const toC = pu === "K" ? (v) => v - 273.15 : (v) => v;                                                       // converted ONCE, only when bound
   const layers = [];
-  for (let L = 0; L < ref.layers; L += 1) {
-    const raw = doc.values[L];
-    if (!Array.isArray(raw) || raw.length !== rows * cols) return no("dims");
-    const c = new Float32Array(rows * cols);
-    for (let i = 0; i < raw.length; i += 1) {
-      const v = typeof raw[i] === "number" ? toC(raw[i]) : NaN;
-      if (!Number.isFinite(v) || v < BOUNDS.temperature_c.min || v > BOUNDS.temperature_c.max) return no("out_of_range");
-      c[i] = v;
-    }
-    layers.push(Object.freeze({ index: L, name: String(doc.layers[L].name), thickness_m: doc.layers[L].thickness_m, c }));
+  for (let k = 0; k < doc.layers.length; k += 1) {
+    const raw = doc.values[k];
+    if (rows !== null && cols !== null && raw.length !== rows * cols) return no("dims");
+    if (!raw.every((v) => typeof v === "number" && Number.isFinite(v))) return no("out_of_range");            // a string, null, 1e400
+    const c = pu === null || au === null ? null : Float32Array.from(raw, toC);                                  // unbound unit: never converted or drawn
+    if (c && c.some((v) => v < BOUNDS.temperature_c.min || v > BOUNDS.temperature_c.max)) return no("out_of_range");
+    layers.push(Object.freeze({ index: ids[k], name: doc.layers[k].name, thickness_m: doc.layers[k].thickness_m, c }));   // the SOURCE id, never k
   }
-  // Not a refusal: a layer table that differs from the model manifest is listed (the artifact is the authority).
-  const differs = stack ? compareLayerTable(doc.layers, stack.layers) : [];
-  return { ok: true, field: Object.freeze({ ref, grid: Object.freeze({ rows, cols, extent_mm: doc.grid.extent_mm, row0 }), layers, differs }) };
+  const differs = stack ? compareLayerTable(doc.layers, stack.layers) : [];   // advisory only for a well-formed table (gate 5 passed)
+  return { ok: true, field: Object.freeze({ ref, grid: Object.freeze({ rows, cols, extent_mm, row0, map_mode }), layers, differs,
+    units_declared: Object.freeze({ pointer: ref.unit, artifact: doc.unit }), producer: p, unbound: Object.freeze(unbound) }) };
 }
 
 // Validity is not association (SPEC.md §5.7; A#57218 item 6). A field that passed checkFieldArtifact is drawn
 // ("verified") only when its association holds; otherwise it is "unassociated" with its reasons, nothing is drawn, no
 // scale comes from it and no number is exported, while its existence and receipt are listed.
 export function associateField(field, result) {
-  const reasons = [];
+  const reasons = [...field.unbound];                                   // candidate, problem, unit, producer, layers, shape (C1-C4)
   if (!result.model.run_inputs_verified) reasons.push("run_inputs_unverified");
   return reasons.length ? { status: "unassociated", reasons } : { status: "verified", reasons: [] };
 }
 
-// One fixed scale per run over every accepted field value, rounded out to 5 and at least 10 wide (the rule runFrame
+/ One fixed scale per run over every accepted field value, rounded out to 5 and at least 10 wide (the rule runFrame
 // applies, scene.mjs:230-233); live runs only widen it (playhead.mjs:28-38).
 export function fieldScale(fields, previous = null) { /* ... */ }
 // 1,024-entry table built from heatColor() at bin centres; within 1/255 per channel (L3:evidence/extra-05).
@@ -658,7 +695,8 @@ export function createFieldFeed({ fetchImpl = (...a) => fetch(...a), onChange = 
                                    artifactUrl = (h) => `/api/view/artifacts/${h}`, enabled = false, maxInFlight = 2,
                                    cacheBytes = 32 << 20, stack = null }) {
   /* adopt(verification), request(seq, pickRef), status(ref), dispose()  (L3:PSEUDOCODE §7); status(ref) is one of
-     loading | verified | unassociated (with reasons, from associateField) | refused (with its error) | unavailable */
+     loading | verified | unassociated (with reasons, from associateField) | refused (with its error) | unavailable;
+     checkFieldArtifact gets the run's verified central grid domain, or null while run inputs are unverified */
 }
 
 // Solve status from the verified lifecycle only (evidence-projection.mjs:11-12 lists simulation_pending):
@@ -792,22 +830,35 @@ Object.defineProperty(window, "__package3d", { value: Object.freeze({ facts: () 
 ```python
 # Checks web/public/sentilab/package3d/data/model-stack.json against the generator, for every fixture in it.
 # Runs TAP's floorplan writer only (PassiveInterposer.gen_flp, sundai_tap/passive_interposer.py:20-165); a process spy
-# asserts that no HotSpot binary is executed (sundai_hotspot/tap_oracle.py:39 names it).
+# asserts that no HotSpot binary is executed (sundai_hotspot/tap_oracle.py:39 names it). (C5) Every fixture is generated
+# in its OWN fresh directory: the writer creates new_hotspot.config only when the directory lacks one
+# (passive_interposer.py:151-165), so a shared directory would keep the previous fixture's spreader, sink and r_convec.
 def test_layers_match_generator(tmp_path):
     for fixture in manifest["fixtures"]:
+        out = tmp_path / fixture["fixture_id"]; out.mkdir()          # fresh and never shared (C5)
         layout = raw_reference_centres(fixture)                       # docs/sentilab/references/*.json, raw section
-        files = write_floorplans(fixture["config"]["path"], layout, tmp_path)   # gen_flp into tmp_path; no solver
-        lcf = parse_lcf(files["samplelayers.lcf"])                    # 6 layers: thickness, resistivity, heat capacity
+        files = write_floorplans(fixture["config"]["path"], layout, out)   # gen_flp into out; no solver
+        lcf = parse_lcf(files["samplelayers.lcf"])                    # 6 layers: thickness, resistivity, heat capacity, power, lateral
         assert_layers_equal(manifest["layers"][:6], lcf, rel=1e-12)
-        units = parse_flp(files["sampleL4_ChipLayer.flp"])            # Chiplet_i, Ubump_i (halos), Edge_i, fill
-        assert_halos_equal(fixture["dies"], units)                     # halo_mm per die from Ubump widths
-        cfg = parse_config(files["new_hotspot.config"])               # s_spreader, s_sink, r_convec rewritten
+        for flp in lcf.floorplans:                                    # all six, as the generated LCF names them (C5, C6)
+            assert_regions_equal(manifest_regions(fixture, flp), parse_flp(files[flp]))   # every region: name, size, position,
+                                                                      # resistivity, heat capacity (FLP before LCF default), power
+        assert_halos_equal(fixture["dies"], parse_flp(files["sampleL4_ChipLayer.flp"]))   # halo_mm per die from Ubump widths
+        cfg = parse_config(files["new_hotspot.config"])               # the RESOLVED config the solver would read
         assert cfg["s_spreader"] == 2 * fixture["interposer_mm"] / 1000 and cfg["s_sink"] == 2 * cfg["s_spreader"]
+        assert cfg["r_convec"] == 0.1 * 0.06 * 0.06 / cfg["s_sink"] / cfg["s_sink"]   # the writer's own expression (:156)
         assert cfg["model_secondary"] == 0                             # bottom adiabatic (sundai_tap/util/hotspot.config:48)
+        assert_package_layers_equal(manifest["layers"][6:], cfg)      # spreader and sink thickness, k, volumetric capacity
+        assert sha256(read_bytes(fixture["config"]["path"])) == fixture["config"]["sha256"]   # THIS fixture's pin, in the loop (C5)
         want = fixture["expected_inputs"]                             # what run_inputs_verified compares (SPEC.md §5.4, §5.6)
         assert sha256(files["samplelayers.lcf"]) == want["samplelayers.lcf"] and sha256(files["new_hotspot.config"]) == want["new_hotspot.config"]
         assert want["solver_flags"] == {"-model_type": "grid", "-detailed_3D": "on", "-grid_map_mode": "max"}   # tap_oracle_worker.py:362-369
-    assert sha256(config_bytes) == fixture["config"]["sha256"]        # the pinned config files
+
+def test_reused_directory_keeps_a_stale_config(tmp_path):            # (C5) the writer's conditional branch, exercised on purpose
+    a, b = fixtures_with_different_interposers(manifest)              # e.g. ascend910 (50 mm), then ascend910-45mm
+    write_floorplans(a["config"]["path"], raw_reference_centres(a), tmp_path)
+    files = write_floorplans(b["config"]["path"], raw_reference_centres(b), tmp_path)   # same directory: a's config kept
+    assert sha256(files["new_hotspot.config"]) != b["expected_inputs"]["new_hotspot.config"]   # what AC-41 (c) relies on
 ```
 
 ## 15. Test files and what they cover

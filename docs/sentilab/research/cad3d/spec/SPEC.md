@@ -14,7 +14,11 @@ moves since lane 3 was written).
 - **Source tags.** `L1:<file> §n` is lane 1 and `L3:<file> §n` is lane 3, both on branch `forge/cad3d-research` at
   `253ee4f74f998f52c06e437acf935f2bf7e63067` (under `docs/sentilab/research/cad3d/`). `A#57053` and `A#57059` are
   astra's room messages (verbatim copy read from `C:/tmp/cad3d-astra-lane2.md`); `A#57218` is root's (astra's) review
-  of v0.1, pinned in TRACE.md section 1. `F#57046` is the founder's ask.
+  of v0.1, pinned in TRACE.md section 1; `A#57278` and `A#57288` are root's notes on the decisions and on the exact
+  producer source map (review packet at sentilab `209dad7a`). `C#57177` marks the ChatGPT field-association/W4
+  review's replies under room message #57177, and `C#57232` its fixture pack. `pr56:<path>:<line>` is PR #56's
+  successor commit `7f70baf56998cdeea9fcaa56954fc78f8f6c8071`, a source identity separate from the draft-pinned
+  `main:` (pending review, not merged). `F#57046` is the founder's ask.
   `main:<path>:<line>` is origin/main at `d25046256b4a712b529977f31e10b7e32248a9c0`. `pr66:<path>:<line>` is the
   open PR #66 head `609d339d79cfa0c120806fc5132044b460db5cd3`.
 - **Line numbers moved once.** Lane 3 cited origin/main at `46791be`. Commit `d250462` (#64, per-value labels)
@@ -42,6 +46,14 @@ moves since lane 3 was written).
   - R6 (item 6): `family_match` (reference context) is separate from `run_inputs_verified` (the run's signed inputs
     equal the fixture's `expected_inputs`); only the latter permits the exact stack or a field registration, and
     every current run reads unverified, with honest completeness states (X3, 5.4, 5.6, 5.7; AC-08, AC-19, AC-41).
+  - C1-C7, the ChatGPT field-association/W4 review (C#57177, attributed separately from root's six): the field
+    check compares the declared candidate and problem (C1) and the pointer and artifact units before converting
+    (C2), keeps and validates solver layer ids (C3) and closes the structural and spatial contract (C4); the W4
+    check runs each fixture in a fresh directory over every region and config value (C5); region materials come
+    from the generated floorplans before LCF defaults (C6); the package-map wording is qualified for detailed 3D
+    (C7). Root's exact source map confirms C5-C7 (A#57278, A#57288). Kept distinct: the warm oracle's max mapping
+    and the gate-validation centre mapping; native HotSpot 6's layer 0 and the powered layer 4 (5.4, 5.6, 5.7;
+    AC-16, AC-21, AC-22, AC-41).
 
 ## 1. Goals and non-goals
 
@@ -836,7 +848,9 @@ fixture and compares (W4, AC-16).
 }
 ```
 
-The initial content (transcribed and to be confirmed by AC-16):
+The initial content, transcribed from the draft-pinned source (main `d250462`, whose writer
+`sundai_tap/passive_interposer.py` is sha256 `cecc5b85…`: TRACE.md section 1; PR #56's successor `7f70baf` is a
+separate source identity this table does not follow) and to be confirmed by AC-16:
 
 | grid | LCF | Layer (as coded) | Thickness | Material as coded (k = 1 / resistivity) | Stands for (anatomy) | Cite (origin/main) |
 |---|---|---|---|---|---|---|
@@ -849,10 +863,26 @@ The initial content (transcribed and to be confirmed by AC-16):
 | 6 | none | spreader (appended) | 1 mm | k 400; side 2 x interposer | `lid` | sundai_tap/util/hotspot.config:29-35; passive_interposer.py:154, :160-161; temperature_grid.c:529, :532-541 |
 | 7 | none | sink (appended) + lumped convection | 6.9 mm | k 400; side 2 x spreader; `r_convec = 0.1 x 0.06² / s_sink²` | `heat_sink`, `cold_plate`, `coolant` (stand-in) | hotspot.config:15-25; passive_interposer.py:155-163; temperature_grid.c:530, :543-552 |
 
-Index basis for grid layers 6 and 7 is `code_reading`: `DEFAULT_PACK_LAYERS 2`, `LAYER_SP 0`, `LAYER_SINK 1`
-(main:sundai_hotspot/temperature_grid.h:46-48) put the spreader at index 6 and the sink at 7 for 8 layers, and both
-reuse the TIM layer's floorplan mapping (temperature_grid.c:539-541, :550-552), so their grid covers the interposer
-area, not the full 90 mm and 180 mm squares. The producer confirms this (P7) before any field is drawn on them.
+**Region properties come before layer defaults** (C6; confirmed by A#57278). The material column lists each LCF
+layer's default beside its region overrides. In detailed-3D mode a floorplan region's own resistivity and volumetric
+heat capacity take precedence over its layer's LCF default (main:sundai_hotspot/temperature_grid.c:387-400), so
+every region resolves from the generated floorplan where it carries properties, and from the LCF only otherwise. The
+C4 and interposer slabs carry their mixture properties in their floorplans (passive_interposer.py:59-74); in layer 3
+the die, halo and edge regions use the bump mix and the whitespace is underfill written by `fill_space`
+(main:sundai_tap/util/fill_space.py:18-20, :157-165); in layer 4 `Ubump_*` regions are silicon and get zero power,
+because only `Chiplet_*` units receive configured power (passive_interposer.py:167-195). A region's material is read
+from the generated files, never inferred from its name or from its layer's default, and a powered layer is not
+uniform power over its area.
+
+Index basis for grid layers 6 and 7 is `code_reading`. With the LCF and `-model_secondary 0` the model reads the six
+LCF layers and appends the spreader and the sink, with no second TIM (main:sundai_hotspot/temperature_grid.c:854-889,
+:527-558); `DEFAULT_PACK_LAYERS 2`, `LAYER_SP 0`, `LAYER_SINK 1` (main:sundai_hotspot/temperature_grid.h:46-48) put
+the spreader at index 6 and the sink at 7. Spreader and sink retain the TIM floorplan extent and grid-to-block mapping
+(temperature_grid.c:539-541, :550-552). In detailed-3D mode HotSpot replaces their block-to-grid map and clears its
+per-cell material overrides (:554-557, :999-1009), so package thermal properties come from the spreader and sink
+configuration (C7; confirmed by A#57278). Their resolved grids cover the interposer core, not the full 90 mm and
+180 mm package footprints, and the grid output holds no values for the package's peripheral nodes (:1261-1295). The
+producer confirms this (P7) before any field is drawn on them.
 
 Boundary: bottom adiabatic (`-model_secondary 0`, hotspot.config:48); ambient and initial temperature are
 temperature-valued inputs (hotspot.config:78, :82) and the DTM threshold another (:11); all three are listed in
@@ -1056,6 +1086,15 @@ Statistics (PL-9), each with where it comes from today:
 | `wire_proxy_weighted_manhattan` | W: connectivity-weighted Manhattan centre distance | every live measurement (conductor.py:345) |
 | `routed_wire_open_router` | routed length from the open router | reference layouts only (README.md:96-108), never from an envelope |
 
+**Two mappings, never mixed** (A#57278). The warm oracle maps blocks with `-grid_map_mode max` and reports J, the
+chip layer's grid maximum (main:sundai_hotspot/tap_oracle_worker.py:356-369; its problem record names the mode,
+main:sundai_hotspot/tap_oracle.py:894). The gate-validation path of PR #56's successor takes centre mapping from its
+captured config at 64 x 64, and a 32 grid overrides rows and columns only (pr56:sundai_hotspot/slab049.py:981-987); a
+native centre value averages 1, 2 or 4 distinct cells by parity (main:sundai_hotspot/temperature_grid.c:1952-1967).
+Neither is derived from the other: a centre value is shown only as its producer emits it (`chiplet_centre` or
+`tap_selector`), never recomputed from a field by the page, and never compared with J (PL-9). Source facts do not
+say which producer a given run used; that needs the run's own producer and config receipt (P5).
+
 Rules: a value's statistic comes from its `metric_id` and source field, never from a caption; values with different
 statistics are never compared, ranked, differenced or put in one column. A value's `label` is the serialized record
 of `labelFor(evaluator_identity)`; wherever it is read back it is recomputed and compared, never trusted (PL-2).
@@ -1092,12 +1131,14 @@ reference layout is numeric (centres within 1e-6 mm, rotations equal, same fixtu
 
 ### 5.7 Field artifact `sentilab-field/0.1` and its pointer (prerequisite formats)
 
-Lane 3's proposal (L3:ARCHITECTURE §5.2) with three additions marked (+). Produced by the core, not by this build.
+Lane 3's proposal (L3:ARCHITECTURE §5.2) with additions marked (+), and (C) from the W4 review C#57177. Produced by
+the core, not by this build.
 
 ```json
 {
   "format": "sentilab-field/0.1",
   "binding": { "run_id": "<run>", "measurement": "<node id>", "evaluator_version": "<identity>", "candidate_hash": "<64 hex> (+)", "problem_hash": "<64 hex> (+)" },
+  "producer": { "native_format": "<hotspot7-all-layers or hotspot6-headerless-layer0, or null> (C)", "executable": "<build identity, or null> (C)", "emitted_layer_ids": [0, 1, 2, 3, 4, 5, 6, 7] },
   "grid": { "rows": 32, "cols": 32, "extent_mm": { "x0": 0, "y0": 0, "x1": 45, "y1": 45 }, "row0": "top", "map_mode": "max (+)" },
   "unit": "K",
   "layers": [ { "index": 0, "name": "substrate", "thickness_m": 0.0002, "resistivity_mK_W": 3.33, "heat_capacity_J_m3K": 1060000, "powered": false, "source": "samplelayers.lcf" } ],
@@ -1108,21 +1149,67 @@ Lane 3's proposal (L3:ARCHITECTURE §5.2) with three additions marked (+). Produ
 ```
 
 Pointer in the measurement envelope: `values.field = { "sha256", "format", "rows", "cols", "layers", "unit" }`.
-Checks before anything is drawn (PSEUDOCODE §9, AC-21): allowlist (named by an applied measurement `node.create` in
-the verified prefix), size cap (4 MiB), sha256 of the exact bytes, strict UTF-8 JSON, format, binding equals the
-envelope (run, measurement, evaluator identity), (+) every input source hash (`samplelayers.lcf`,
-`new_hotspot.config`, `sample.ptrace`) is a member of the envelope's signed `artifact_hashes`, dims equal the pointer
-and the caps (at most 128 x 128, the worker's bound at tap_oracle_worker.py:283-287; at most 16 layers), every value
-finite and inside scene.mjs `BOUNDS` after conversion (scene.mjs:92-98). A layer table that differs from the model
-manifest is not refused: the artifact's table is the authority for that result, and the difference is listed
-(`stack_differs_from_manifest`).
+Checks before anything is drawn (PSEUDOCODE §9; refusals in AC-21, association in AC-41), in this order:
+
+1. **Bytes.** Allowlist (named by an applied measurement `node.create` in the verified prefix), size cap (4 MiB),
+   sha256 of the exact bytes, strict UTF-8 JSON, format.
+2. **Structure (C4).** The top-level, `binding`, `producer`, `grid` and layer-record key sets are closed: an unknown
+   or missing key is `malformed`, and a value the producer could not bind is present as `null`. `layers`, `values`
+   and every layer's values are arrays.
+3. **Binding.** Run, measurement and evaluator identity equal the envelope's. (C1) The artifact's `candidate_hash`
+   and `problem_hash` are compared with the expectations the ref carries from the verified envelopes: the
+   measurement's signed `record.binding.candidate_id`, the candidate's canonical layout hash
+   (main:sundai_controller/controller.py:152-165), which must equal its candidate node's; and its signed
+   `semantics.task_contract`, the producer's problem hash (main:sundai_hotspot/tap_oracle.py:874-895;
+   main:sentilab_core/conductor.py:91, :342-343; the conductor checks both against the oracle result at :335). A
+   contradiction is `binding_mismatch`; a value missing on either side leaves the field unassociated
+   (`candidate_unbound`, `problem_unbound`). (+) Every input source hash (`samplelayers.lcf`, `new_hotspot.config`,
+   `sample.ptrace`) is a member of the envelope's signed input hashes.
+4. **Units (C2).** The pointer's and the artifact's units are each normalised through the documented aliases only
+   (`K`; `C` and `°C` to C) and compared before any conversion: a conflict is `unit_conflict` (a pointer saying C over
+   an artifact in K is never converted), another unit is `unit_not_supported`, and a `null` on either side leaves the
+   field unassociated (`unit_unbound`). Both declarations are kept; values convert exactly once.
+5. **Layer identity (C3).** Every layer record has an integer `index` in 0..15, unique and strictly ascending, a
+   name, finite positive `thickness_m`, `resistivity_mK_W` and `heat_capacity_J_m3K`, and a boolean `powered`; the
+   indices equal `producer.emitted_layer_ids` and their count the pointer's `layers`; `values[i]` belongs to
+   `layers[i].index`, which the field keeps (never the array position). A missing, duplicated, unexpected or
+   non-integer index is `layer_ids`, a bad record is `malformed`, and neither becomes an advisory difference. A
+   `null` `native_format` or `executable` leaves the field unassociated (`producer_unbound`), and a `null`
+   `emitted_layer_ids` too (`producer_layer_unbound`).
+6. **Grid (C4).** `rows` and `cols` are positive integers within the caps (at most 128 x 128, the worker's bound at
+   tap_oracle_worker.py:283-287; at most 16 layers) and equal the pointer's; a same-count different shape is `dims`,
+   and a `null` leaves the field unassociated (`grid_shape_unbound`). Every layer holds exactly rows x cols finite
+   numbers inside scene.mjs `BOUNDS` after conversion (scene.mjs:92-98); `row0` is `top` or `bottom`; `map_mode` is
+   declared.
+7. **Domain (C4).** `extent_mm` has finite bounds and positive spans and equals the verified central grid domain, the
+   interposer square `[0, interposer_mm]²` of the run's verified inputs (section 5.6), within 1e-9 mm. An extent
+   equal to a spreader or sink outline, or otherwise different, is `extent`. Spreader and sink fields cover that
+   central grid only (section 5.4): the rest of their outlines is drawn uncoloured and labelled `unmeasured`.
+
+A layer table that passes 5 but differs from the model manifest is not refused: the artifact's table is the authority
+for that result, and the difference is listed (`stack_differs_from_manifest`).
 
 **Validity is not association** (A#57218 item 6). An artifact that passes every check above exists and is valid; it
 is drawn (`status: verified`) only when its association also holds, starting with `run_inputs_verified` (section
 5.6), which registers its layers to the run's stack and its grid to the run's geometry. Otherwise its status is
-`unassociated` with its reasons (here `run_inputs_unverified`): nothing is drawn, no legend scale comes from it, and
-no number is exported; its existence and receipt are listed. Field existence and field eligibility are separate
-predicates.
+`unassociated` with its reasons (`run_inputs_unverified`, and from the checks above `candidate_unbound`,
+`problem_unbound`, `unit_unbound`, `producer_unbound`, `producer_layer_unbound`, `grid_shape_unbound`): nothing is
+drawn, no legend scale comes from it, and no number is exported; its existence and receipt are listed. Field
+existence and field eligibility are separate predicates.
+
+**Producer formats are not interchangeable** (C3, C4; A#57278). Native grid outputs differ by producer, and nothing
+infers one from another: P1 converts a native file into this format and declares `producer`. The draft-pinned
+HotSpot 7 writer prints every layer under `Layer n:` headers, Kelvin to two decimals, with row-major indices
+restarting in each layer (main:sundai_hotspot/temperature_grid.c:1261-1295; byte-identical in PR #56's successor at
+pr56:sundai_hotspot/temperature_grid.c:1286-1320), and the warm worker requires all eight layers and returns layer 4
+(main:sundai_hotspot/tap_oracle_worker.py:88-101). Native HotSpot 6 built without the all-layers writer prints one
+headerless layer chosen by the secondary-path setting: with the captured `-model_secondary 0` that is layer 0, which
+in TAP's LCF is the substrate, not the powered chip layer 4 (pr56:sundai_hotspot6/temperature_grid.c:1037-1082,
+:1140-1148; pr56:sundai_hotspot6/temperature_grid.h:35-50). Such a field is declared `emitted_layer_ids: [0]` and is
+never relabelled as layer 4. The all-layers HotSpot 6 evaluator build exists in the successor
+(pr56:sundai_hotspot6/temperature_grid.c:1107-1148; pr56:scripts/build_hotspot6.sh:30-42) and has to be named in
+`producer.executable`. Source facts do not establish which producer a run used: that is the run's own producer and
+config receipt (P5).
 
 ### 5.8 Agent twin `sentilab-twin/1`
 
@@ -1347,7 +1434,7 @@ small change (D9). Nothing in phases 1-5 needs that.
 
 | Id | Change | Owner | Blocks | Today |
 |---|---|---|---|---|
-| P1 | **Producer:** publish `sentilab-field/0.1` (section 5.7) from `sample.grid.steady`, all 8 layers, with the layer table, grid extent, row order, named input sources and argv. | TBD (core producer owner) | any field (W14) | the worker parses all 8 layers but keeps layer 4 only (main:sundai_hotspot/tap_oracle_worker.py:91-100, :417-431) |
+| P1 | **Producer:** publish `sentilab-field/0.1` (section 5.7) from `sample.grid.steady`, all 8 layers, with the layer table, grid extent, row order, named input sources and argv; the `producer` block (native format, executable, emitted layer ids), the candidate and problem hashes, and `null` for anything it cannot bind, never a guess (C1-C4). | TBD (core producer owner) | any field (W14) | the worker parses all 8 layers but keeps layer 4 only (main:sundai_hotspot/tap_oracle_worker.py:91-100, :417-431) |
 | P2 | **Measurement pointer:** `values.field = { sha256, format, rows, cols, layers, unit }` in the measurement envelope, and documented in the VIEW-ENVELOPE contract. | TBD (producer and contract owners) | W14 | values are J, W, scenario_id, artifact_hashes (main:sentilab_core/conductor.py:344-346; VIEW-ENVELOPE v0.5:23-25) |
 | P3 | **API route:** `GET /api/view/artifacts/<sha256>`: read-only, immutable, capped at 4 MiB, serving only hashes a run's log names. The Worker passes upstream `cache-control` through, so no Worker change. | TBD (API owner) | W14 | no such route (main:app/view.py:90, :97, :186) |
 | P4 | **Label rule:** `hasTemperature()` counts `values.field`, with a test, so a field-only measurement raises the notice. | TBD (label-rule owner) | W14 | J and centre temperatures only (main:web/public/temperature-label.mjs:163) |

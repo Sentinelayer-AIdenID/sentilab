@@ -190,12 +190,21 @@ and ids (L3:ACCEPTANCE A-11). Pass: equal.
 
 ## Model manifest and layouts
 
-**AC-16 The model manifest matches the generator** (python). For every fixture: the 6 LCF layers' thickness,
-resistivity and heat capacity equal the generated `samplelayers.lcf` (main:sundai_tap/passive_interposer.py:135-149);
-the bump-mix materials equal the generated floorplan units (:37-48); halo widths equal the generated `Ubump_*` units;
-`s_spreader = 2 × interposer` and `s_sink = 2 × s_spreader` in the generated config (:151-165); `-model_secondary 0`
-(main:sundai_tap/util/hotspot.config:48); the config files' sha256 equal the pinned values. A process spy shows no
-HotSpot binary ran. Pass: all equal; zero solver processes.
+**AC-16 The model manifest matches the generator** (python). Every fixture is generated in its own fresh directory
+(C5). For each: the 6 LCF layers' thickness, resistivity, heat capacity, power and lateral flags equal the generated
+`samplelayers.lcf` (main:sundai_tap/passive_interposer.py:135-149); every region of all six generated floorplans
+(name, size, position, resistivity, heat capacity, power) equals the manifest's region records, the floorplan's values
+taking precedence over the LCF defaults (C6; main:sundai_hotspot/temperature_grid.c:387-400): layer-4 `Ubump_*`
+regions are silicon with zero power, `Edge_*` regions use the bump mix, the C4 and interposer slabs carry their
+mixtures (:59-74), and whitespace is the underfill `fill_space` writes (main:sundai_tap/util/fill_space.py:18-20,
+:157-165), each recorded from the files and never inferred from a name; halo widths equal the generated `Ubump_*`
+units; the resolved config has `s_spreader = 2 × interposer`, `s_sink = 2 × s_spreader`, `r_convec` by the writer's
+own expression and `-model_secondary 0` (:151-165; main:sundai_tap/util/hotspot.config:48), and the spreader and sink
+thickness, conductivity and volumetric capacity of manifest layers 6 and 7; each fixture's config sha256 equals its
+own pin, checked inside the loop; the generated LCF and resolved config hashes equal `expected_inputs`. A second test
+writes another fixture into a reused directory: the retained config's hash differs from that fixture's
+`expected_inputs` (the stale case AC-41 (c) relies on). A process spy shows no HotSpot binary ran. Pass: all equal;
+zero solver processes.
 
 **AC-17 Layout identities and separation** (node). For each served layout, `scripts/package3d.mjs data` recomputes
 `content_sha256` from the source's `identity.canonical` with verify-core.js `parseRaw` and `canonical`
@@ -243,22 +252,33 @@ the texture updater is never called (spy) and the previous texture bytes are unc
 | 4 MiB + 1 byte | `too_large` |
 | invalid UTF-8, a BOM, truncated JSON | `malformed` |
 | another format string | `format` |
+| (C4) an unknown or missing key at the top level or in `binding`, `producer`, `grid` or a layer record (for example `extent_m` for `extent_mm`, or no `unit` key); `values` or a layer's values not an array | `malformed` |
 | binding names another run, measurement or evaluator (including the fixture identity on a withdrawn envelope: laundering) | `binding_mismatch` |
+| (C1) the artifact's `candidate_hash` names another candidate's layout, or its `problem_hash` another problem, than the measurement's signed `record.binding.candidate_id` and `semantics.task_contract`; the measurement's signed `candidate_id` differs from its candidate node's | `binding_mismatch` |
 | an input source hash (`samplelayers.lcf`, `new_hotspot.config`, `sample.ptrace`) missing or not in the envelope's `artifact_hashes` | `binding_mismatch` |
-| rows, cols or layers differ from the pointer; a layer one value short; 129 rows; 17 layers; `row0` missing | `dims` |
+| (C2) a pointer in C over an artifact in K, or the reverse (the values are never converted) | `unit_conflict` |
+| (C3) a layer index missing (no 4), duplicated (3 twice), unexpected (8), not an integer (`"four"`) or out of order; indices unequal to `producer.emitted_layer_ids` | `layer_ids` |
+| (C3) a layer record with a non-finite or non-positive thickness, resistivity or heat capacity, a non-boolean `powered` or no name | `malformed` |
+| rows, cols or layers differ from the pointer; a layer one value short; 129 rows; 17 layers; `row0` not `top` or `bottom`; (C4) `rows: 0` with empty arrays, a non-integer `cols`, a 3 x 2 grid against a 2 x 3 pointer (same cell count) | `dims` |
+| (C4) `extent_mm` with a non-finite bound or a zero span; an extent equal to the spreader or sink outline, or otherwise not the verified central grid domain | `extent` |
 | a string, `null`, `1e400` | `out_of_range` |
 | a value below absolute zero or above the scene bounds after conversion (scene.mjs:92-98) | `out_of_range` |
-| unit missing or `F` | `unit_not_supported` |
+| unit `F` or any undocumented alias | `unit_not_supported` |
 
-A layer table that differs from the model manifest is accepted and listed in `stack_differs_from_manifest`. The
-orientation pair (one hot cell at row 0 / column 0 declared `row0: "top"` vs `"bottom"`) renders at the upper-left vs
-lower-left (L3:ACCEPTANCE A-04). Pass: every row, plus the pair.
+A layer table that passes the layer-identity gate but differs from the model manifest is accepted and listed in
+`stack_differs_from_manifest`; a malformed or ambiguous one is refused above and never listed as a difference (C3). A
+`null` unit, shape, producer, layer set, candidate or problem is not a refusal: the field is unassociated (AC-41 (h)).
+The orientation pair (one hot cell at row 0 / column 0 declared `row0: "top"` vs `"bottom"`) renders at the upper-left
+vs lower-left (L3:ACCEPTANCE A-04). Pass: every row, plus the pair.
 
 **AC-22 The field is the solver's grid on the solver's layer, on one declared scale** (node, browser). `colourLut()` is
 built only from `heatColor()` and stays within 1/255 of it over 200,000 temperatures on scales 10, 80 and 400 wide;
 adjacent cells render with a hard edge (NEAREST); the legend names the grid and the solver layer; stepping the playhead
-does not change the legend ticks; grid layers 6 and 7 are drawn over the interposer extent only and say so; no code
-path builds a field from centre temperatures (L3:ACCEPTANCE A-07). Pass: all.
+does not change the legend ticks; grid layers 6 and 7 are drawn over the central grid (the interposer extent) only and
+say so, with the rest of the spreader and sink outlines uncoloured and labelled `unmeasured` because the grid output
+holds no peripheral-node values, and with the spreader and sink configuration's properties (C7); no code path builds a
+field from centre temperatures or a centre value from a field (L3:ACCEPTANCE A-07); J (the warm oracle's max mapping)
+and a gate-validation centre value are never put in one column or compared (A#57278). Pass: all.
 
 ## Live and replay
 
@@ -412,4 +432,8 @@ listed, not verified; (e) a row with only `values.artifact_hashes` → `inputs_e
 (f) a family the manifest lacks → `family_match: no_match`, `reference: null`, schematic with "no model for family
 <f>"; (g) a field artifact that passes every AC-21 check, on a run of (a), (c), (e) or (f) → status `unassociated`
 with reason `run_inputs_unverified`: no texture, no legend scale from it, no number in the twin, while its existence
-and receipt are listed; on a run of (b) → `verified`. Pass: all (SPEC.md §5.6, §5.7).
+and receipt are listed; on a run of (b) → `verified`; (h) on a run of (b), an artifact that passes every AC-21 check
+but declares `null` for its `candidate_hash` or `problem_hash`, its `unit` (or the pointer's), its `rows` and `cols`,
+its producer's `native_format` or `executable`, or its `emitted_layer_ids` → `unassociated` with `candidate_unbound`,
+`problem_unbound`, `unit_unbound`, `grid_shape_unbound`, `producer_unbound` or `producer_layer_unbound` (C#57177,
+C1-C4): never drawn, never exported as numbers. Pass: all (SPEC.md §5.6, §5.7).
