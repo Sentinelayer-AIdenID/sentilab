@@ -5,6 +5,8 @@
 // JSON.parse would turn 93.0 into 93 and change the hash, so parseRaw keeps every number's exact source
 // text. The server writes JSON with Python, so that text is already Python's repr of the value.
 
+import servicePins from "./trust-pins.json" with { type: "json" };
+
 class RawNumber {
   constructor(text) { this.text = text; }
 }
@@ -151,6 +153,61 @@ export async function verifyRecord(events, publicKeyHex, subtle = crypto.subtle)
   return { ok: true, checked: events.length, reason: "", finalHash: closing.hash };
 }
 
+// Reviewed service roots only, shared with sundai_controller/trust.py.
+// No production public root was supplied: empty pins deliberately authenticate
+// nothing. Add a key_id to rotate; remove it to revoke. Historical records use
+// current-time expiry too. Never populate this map from an uploaded document.
+export const PINNED_SERVICE_KEYS = Object.freeze(Object.fromEntries(
+  servicePins.map(({ key_id, public_key_hex }) => [key_id, public_key_hex])));
+const CERTIFICATE_VERSION = "sentilab.lane-certificate.v1";
+
+export async function verifyChain(events, certificate, pins = PINNED_SERVICE_KEYS,
+  { runId, laneId, now = Date.now() / 1000 } = {}) {
+  const bad = (reason) => ({ ok: false, reason });
+  try {
+    const fields = ["expires_at", "key_id", "lane_id", "lane_public_key", "run_id", "signature", "version"];
+    if (!certificate || typeof certificate !== "object" || Array.isArray(certificate)
+      || Object.keys(certificate).sort().join() !== fields.join()
+      || certificate.version !== CERTIFICATE_VERSION
+      || !["key_id", "run_id", "lane_id", "signature"].every((k) => typeof certificate[k] === "string" && certificate[k])
+      || typeof certificate.lane_public_key !== "string" || !/^[0-9a-f]{64}$/.test(certificate.lane_public_key)
+      || !isInt(certificate.expires_at) || !Number.isSafeInteger(num(certificate.expires_at))
+      || num(certificate.expires_at) <= 0) return bad("malformed service certificate");
+    const root = Object.hasOwn(pins, certificate.key_id) ? pins[certificate.key_id] : null;
+    if (typeof root !== "string" || !/^[0-9a-f]{64}$/.test(root)) return bad("unknown service key_id");
+    const key = await crypto.subtle.importKey("raw", fromHex(root), { name: "Ed25519" }, false, ["verify"]);
+    const { signature, ...body } = certificate;
+    if (!(await crypto.subtle.verify({ name: "Ed25519" }, key, fromB64(signature),
+      new TextEncoder().encode(canonical(body))))) return bad("invalid service certificate signature");
+    if (!Number.isFinite(now) || now < 0 || now >= num(certificate.expires_at)) return bad("service certificate expired");
+    if ((runId !== undefined && certificate.run_id !== runId)
+      || (laneId !== undefined && certificate.lane_id !== laneId)) return bad("service certificate scope mismatch");
+    const verified = await verifyRecord(events, certificate.lane_public_key);
+    if (!verified.ok) return verified;
+    const bindings = events.filter((e) => e.event === "lane_identity_bound");
+    if (bindings.length !== 1 || bindings[0].payload.lane_id !== certificate.lane_id
+      || bindings[0].payload.agent_id !== `${certificate.run_id}:${certificate.lane_id}`) {
+      return bad("service certificate does not match the signed run/lane binding");
+    }
+    if (!events.every((e) => num(e.timestamp) >= 0 && num(e.timestamp) < num(certificate.expires_at))) {
+      return bad("record timestamp outside certificate validity");
+    }
+    return verified;
+  } catch {
+    return bad("invalid service certificate");
+  }
+}
+
+async function originVerdict(events, publicKey, certificate, pins, scope, integrity) {
+  if (certificate === undefined || Object.keys(pins).length === 0) return { integrity, authentic: false, origin: "unanchored",
+    originReason: Object.keys(pins).length ? "integrity only, unanchored"
+      : "integrity only, unanchored; service trust pins unconfigured", scientificValidity: "not checked" };
+  const chain = await verifyChain(events, certificate, pins, scope);
+  const authentic = integrity && chain.ok && certificate.lane_public_key === publicKey;
+  return { integrity, authentic, origin: authentic ? "authentic" : "invalid",
+    originReason: authentic ? "" : chain.reason || "record key or integrity mismatch", scientificValidity: "not checked" };
+}
+
 // The experiment is exactly these four lanes; a run missing one (or carrying an extra) is not a valid run, even if
 // every record present verifies.
 export const LANE_IDS = ["random", "simulated_annealing", "ucb1", "signal_portfolio"];
@@ -194,30 +251,33 @@ function bindLabel(verdict, facts, label) {
 // Any file a user may drop: a whole run (verifyRun) or one lane's record artifact, as the TFL-08 leaderboard
 // publishes ({lane_id, run_id, record_public_key, events}). A single lane cannot prove the run-level properties
 // (all four lanes, equal budgets, one pool), so those are reported as not checked rather than passed.
-export async function verifyDocument(text) {
+export async function verifyDocument(text, pins = PINNED_SERVICE_KEYS) {
   const doc = parseRaw(text);
   const result = doc.result && typeof doc.result === "object" ? doc.result : doc;
-  if (result.lane_results) return { kind: "run", ...(await verifyRunDoc(doc)) };
+  if (result.lane_results) return { kind: "run", ...(await verifyRunDoc(doc, pins)) };
   if (Array.isArray(doc.events) && typeof doc.record_public_key === "string") {
     const checked = await verifyRecord(doc.events, doc.record_public_key);
     const facts = checked.ok ? signedFacts(doc.events) : { evaluations: null, pool: null, laneId: null, agentId: null, best: null };
     const verdict = bindLabel(checked, facts, typeof doc.lane_id === "string" ? doc.lane_id : undefined);
+    const origin = await originVerdict(doc.events, doc.record_public_key, doc.record_certificate, pins,
+      { runId: doc.run_id, laneId: doc.lane_id }, verdict.ok);
     const lane = { laneId: facts.laneId || "lane", agentId: facts.agentId, publicKey: doc.record_public_key,
       evaluations: facts.evaluations, claimedEvaluations: facts.evaluations, best: facts.best,
-      claimedValid: undefined, pool: facts.pool, ...verdict };
-    return { kind: "lane", runId: typeof doc.run_id === "string" ? doc.run_id : null, runIdUnsigned: true,
+      claimedValid: undefined, pool: facts.pool, ...verdict, ...origin };
+    return { kind: "lane", runId: typeof doc.run_id === "string" ? doc.run_id : null, runIdUnsigned: !origin.authentic,
       lanes: [lane], missing: [], extra: [], laneSet: null, recordsValid: verdict.ok, equalCounts: null,
-      samePool: null, countsMatchClaims: true, bestMatchesClaims: true, allValid: verdict.ok };
+      samePool: null, countsMatchClaims: true, bestMatchesClaims: true, authentic: origin.authentic,
+      scientificValidity: "not checked", allValid: verdict.ok && origin.authentic };
   }
   throw new Error("this file is neither a run nor a lane record");
 }
 
 // A whole run: a GET /api/runs/{id} response, its `result`, or a raw run_four_lanes() dict.
-export async function verifyRun(runText) {
-  return verifyRunDoc(parseRaw(runText));
+export async function verifyRun(runText, pins = PINNED_SERVICE_KEYS) {
+  return verifyRunDoc(parseRaw(runText), pins);
 }
 
-async function verifyRunDoc(doc) {
+async function verifyRunDoc(doc, pins) {
   const result = doc.result && typeof doc.result === "object" ? doc.result : doc;
   const lanes = result.lane_results;
   if (!lanes || typeof lanes !== "object" || Array.isArray(lanes)) throw new Error("no lane_results in this file");
@@ -242,6 +302,8 @@ async function verifyRunDoc(doc) {
       verdict = { ...verdict, ok: false,
         reason: `the record signs agent "${facts.agentId}", not "${runId}:${laneId}": a lane from another run?` };
     }
+    const origin = await originVerdict(lane.record, lane.record_public_key, lane.record_certificate, pins,
+      { runId, laneId }, verdict.ok);
     out.push({
       laneId,
       agentId: facts.agentId,
@@ -253,9 +315,11 @@ async function verifyRunDoc(doc) {
       claimedValid: lane.record_valid,
       pool: facts.pool,
       ...verdict,
+      ...origin,
     });
   }
   const recordsValid = out.length > 0 && out.every((l) => l.ok);
+  const authentic = out.length > 0 && out.every((l) => l.authentic);
   const laneSet = missing.length === 0 && extra.length === 0;
   const counts = new Set(out.map((l) => l.evaluations));
   const equalCounts = recordsValid && counts.size === 1 && out[0].evaluations > 0;
@@ -266,6 +330,7 @@ async function verifyRunDoc(doc) {
   return {
     runId, lanes: out, missing, extra,
     laneSet, recordsValid, equalCounts, samePool, countsMatchClaims, bestMatchesClaims, runIdMatchesDoc,
-    allValid: laneSet && recordsValid && equalCounts && samePool && countsMatchClaims && bestMatchesClaims && runIdMatchesDoc,
+    authentic, scientificValidity: "not checked",
+    allValid: authentic && laneSet && recordsValid && equalCounts && samePool && countsMatchClaims && bestMatchesClaims && runIdMatchesDoc,
   };
 }

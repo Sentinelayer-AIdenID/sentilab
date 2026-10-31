@@ -11,8 +11,10 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 if __package__:
     from .controller import Controller, Design, FlightRecord, ThermalResult, digest, public_hex
+    from .trust import CERTIFICATE_LIFETIME_SECONDS, certify_lane, load_service_key
 else:
     from controller import Controller, Design, FlightRecord, ThermalResult, digest, public_hex
+    from trust import CERTIFICATE_LIFETIME_SECONDS, certify_lane, load_service_key
 
 
 LANE_IDS = ("random", "simulated_annealing", "ucb1", "signal_portfolio")
@@ -240,6 +242,10 @@ async def run_four_lanes(initial: Design, oracle: Callable[[Design], Awaitable[T
             isinstance(evaluation_ceiling_microdollars, bool) or evaluation_ceiling_microdollars <= 0):
         raise ValueError("evaluation ceiling must be a positive integer")
 
+    # Fail before oracle calls or flight-record creation if signing is unconfigured.
+    service_key = load_service_key()
+    certificate_expiry = int(time.time()) + CERTIFICATE_LIFETIME_SECONDS
+
     shared_designs = _shared_designs(initial, oracle, seed, shared_sample_count)
     sample_hashes = tuple(design.hash for design in shared_designs)
 
@@ -257,6 +263,7 @@ async def run_four_lanes(initial: Design, oracle: Callable[[Design], Awaitable[T
             evaluation_ceiling_microdollars=evaluation_ceiling_microdollars,
             max_attempts=1, lane_ids=(lane_id,), minimum_improvement_c=0.05,
         )
+        certificate = certify_lane(service_key, run_id, lane_id, controller.log.public_key, certificate_expiry)
         controller.register(agent_id, key)
         controller.bind_lane(lane_id, agent_id)
         await controller.initialize(shared_initial_designs=shared_designs[1:])
@@ -433,6 +440,7 @@ async def run_four_lanes(initial: Design, oracle: Callable[[Design], Awaitable[T
             "noop_evaluations": noop_evaluations,
             "wall_time_s": time.perf_counter() - lane_started_at,
             "record_public_key": controller.log.public_key,
+            "record_certificate": certificate,
             "record_valid": valid_record,
             "record": controller.log.events,
         }
