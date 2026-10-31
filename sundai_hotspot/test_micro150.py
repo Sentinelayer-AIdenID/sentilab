@@ -2,7 +2,14 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import math
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
 import unittest
 
 from tap_oracle import (
@@ -13,6 +20,33 @@ from tap_oracle import (
 )
 
 BASE_CENTERS = ((25, 25), (40, 40), (8, 9), (8, 25), (8, 41), (41, 15))
+
+
+class ContentIdentityTests(unittest.TestCase):
+    def test_oracle_constructs_without_git_or_checkout(self):
+        root = Path(__file__).resolve().parent.parent
+        expected = []
+        for fixture in ("ascend910", "micro150"):
+            oracle = HotSpotOracle(fixture=fixture)
+            expected.append([oracle.problem_hash, oracle.solver_version])
+        with tempfile.TemporaryDirectory() as directory:
+            checkout = Path(directory)
+            for name in ("sundai_hotspot", "sundai_tap", "sundai_controller"):
+                shutil.copytree(root / name, checkout / name,
+                                ignore=shutil.ignore_patterns("__pycache__", "*.o", "*.a", "*.d"))
+            self.assertFalse((checkout / ".git").exists())
+            script = (
+                "import json\n"
+                "from sundai_hotspot.tap_oracle import HotSpotOracle\n"
+                "oracles = [HotSpotOracle(fixture=f) for f in ('ascend910', 'micro150')]\n"
+                "print(json.dumps([[o.problem_hash, o.solver_version] for o in oracles]))\n"
+            )
+            environment = {**os.environ, "PATH": "", "PYTHONPATH": "",
+                           "BUILD_SHA": "deployment-metadata-only"}
+            result = subprocess.run([sys.executable, "-c", script], cwd=checkout,
+                                    env=environment, capture_output=True, text=True, timeout=30)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(result.stdout), expected)
 
 
 class DefaultAscend910UnchangedTests(unittest.IsolatedAsyncioTestCase):
