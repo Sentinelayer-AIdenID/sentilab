@@ -1,0 +1,585 @@
+{
+  "schema": "slab018-independent-artifact-audit/1",
+  "at": "2026-10-31T07:58:14.724714+00:00",
+  "scope": "Offline artifact audit only. No SSH, network, Docker, model execution, tensor-library import, GPU work, or thermal work.",
+  "python": "3.12.3 (main, Mar 23 2026, 19:04:32) [GCC 13.3.0]",
+  "source_manifest_sha256": "69e2d99bee3d7c6ca825aef26741094d1ceb2223bb79a62dca605e8541430a01",
+  "audit_script_sha256": "00f3327663dd3a3f91a76109a3469e883bdc4c9599c614efb55515770a5c6f17",
+  "checks": [
+    {
+      "check": "root_fetch_marker_binds_manifest",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:MANIFEST.verified.json",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:adapter/README.md",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:adapter/adapter_config.json",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:adapter/adapter_model.safetensors",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:attempt-receipt.json",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:download-state.json",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:evaluate.stderr.log",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:evaluate.stdout.log",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:evaluation.json",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:execution-inputs.json",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:execution-state.json",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:execution.log",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:http-client.log",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:http-models.json",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:http-responses.jsonl",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:http-result.json",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:http_eval.py",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:model_stage.py",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:reload-tensors.json",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:runtime-evaluate.json",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:runtime-receipt.py",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:runtime-serve.json",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:runtime-train.json",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:serve.stderr.log",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:serve.stdout.log",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:supervise.py",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:tokenization.json",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:train-steps.jsonl",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:train.stderr.log",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:train.stdout.log",
+      "passed": true
+    },
+    {
+      "check": "artifact_bytes:training-result.json",
+      "passed": true
+    },
+    {
+      "check": "complete_31_file_inventory",
+      "passed": true,
+      "bytes": 66305878
+    },
+    {
+      "check": "complete_payload_bytes",
+      "passed": true
+    },
+    {
+      "check": "no_unlisted_payloads",
+      "passed": true,
+      "extras": [
+        "REMOTE-ARTIFACT-MANIFEST.json",
+        "ROOT-FETCH-COMPLETE.json"
+      ]
+    },
+    {
+      "check": "attempt_bound_to_execution_inputs",
+      "passed": true
+    },
+    {
+      "check": "execution_inputs_equal_admission_copy",
+      "passed": true
+    },
+    {
+      "check": "exact_reviewed_script:model_stage.py",
+      "passed": true
+    },
+    {
+      "check": "exact_reviewed_script:supervise.py",
+      "passed": true
+    },
+    {
+      "check": "exact_reviewed_script:http_eval.py",
+      "passed": true
+    },
+    {
+      "check": "model_identity",
+      "passed": true
+    },
+    {
+      "check": "model_manifest_complete",
+      "passed": true
+    },
+    {
+      "check": "model_hashes_bound_to_inputs",
+      "passed": true
+    },
+    {
+      "check": "model_byte_count",
+      "passed": true
+    },
+    {
+      "check": "apache_license",
+      "passed": true
+    },
+    {
+      "check": "frozen_fixture_bytes:train.jsonl",
+      "passed": true
+    },
+    {
+      "check": "frozen_fixture_bytes:eval.jsonl",
+      "passed": true
+    },
+    {
+      "check": "frozen_fixture_bytes:DATA-MANIFEST.json",
+      "passed": true
+    },
+    {
+      "check": "fixture_builder_bytes",
+      "passed": true
+    },
+    {
+      "check": "fixture_source_snapshot:current.jsonl",
+      "passed": true
+    },
+    {
+      "check": "fixture_source_snapshot:manifest.json",
+      "passed": true
+    },
+    {
+      "check": "fixture_source_snapshot:records.jsonl",
+      "passed": true
+    },
+    {
+      "check": "fixture_source_snapshot:rlaif.jsonl",
+      "passed": true
+    },
+    {
+      "check": "fixture_row_counts",
+      "passed": true
+    },
+    {
+      "check": "unique_fixture_row_ids",
+      "passed": true
+    },
+    {
+      "check": "fixture_only_lineage",
+      "passed": true
+    },
+    {
+      "check": "all_220_rows_match_verifier_export",
+      "passed": true
+    },
+    {
+      "check": "20_optimizer_steps",
+      "passed": true
+    },
+    {
+      "check": "200_unique_consumed_rows",
+      "passed": true
+    },
+    {
+      "check": "seed818_consumption_order",
+      "passed": true
+    },
+    {
+      "check": "finite_training_metrics",
+      "passed": true
+    },
+    {
+      "check": "monotonic_training_clock",
+      "passed": true
+    },
+    {
+      "check": "loss_summary_exact",
+      "passed": true
+    },
+    {
+      "check": "raw_train_log_matches_all_steps",
+      "passed": true
+    },
+    {
+      "check": "tokenization_all_rows",
+      "passed": true
+    },
+    {
+      "check": "tokenization_bounds",
+      "passed": true
+    },
+    {
+      "check": "saved_adapter_hash:adapter_config.json",
+      "passed": true
+    },
+    {
+      "check": "saved_adapter_hash:adapter_model.safetensors",
+      "passed": true
+    },
+    {
+      "check": "saved_adapter_hash:README.md",
+      "passed": true
+    },
+    {
+      "check": "lora_configuration",
+      "passed": true
+    },
+    {
+      "check": "safetensors_exact_contiguous_payload",
+      "passed": true
+    },
+    {
+      "check": "safetensors_504_finite_tensors",
+      "passed": true
+    },
+    {
+      "check": "safetensors_parameter_count",
+      "passed": true
+    },
+    {
+      "check": "safetensors_lora_rank8_pairs",
+      "passed": true
+    },
+    {
+      "check": "all_saved_lora_b_nonzero",
+      "passed": true
+    },
+    {
+      "check": "runtime_reload_assertion_receipt",
+      "passed": true
+    },
+    {
+      "check": "all_20_fixed_rows:base",
+      "passed": true
+    },
+    {
+      "check": "evaluation_targets:base",
+      "passed": true
+    },
+    {
+      "check": "evaluation_match_flags:base",
+      "passed": true
+    },
+    {
+      "check": "finite_target_nll:base",
+      "passed": true
+    },
+    {
+      "check": "all_20_fixed_rows:adapter",
+      "passed": true
+    },
+    {
+      "check": "evaluation_targets:adapter",
+      "passed": true
+    },
+    {
+      "check": "evaluation_match_flags:adapter",
+      "passed": true
+    },
+    {
+      "check": "finite_target_nll:adapter",
+      "passed": true
+    },
+    {
+      "check": "evaluation_summary_recomputed",
+      "passed": true
+    },
+    {
+      "check": "raw_eval_log_matches_all_outputs",
+      "passed": true
+    },
+    {
+      "check": "preview_equal_final",
+      "passed": true
+    },
+    {
+      "check": "http_models_base_and_adapter",
+      "passed": true
+    },
+    {
+      "check": "http_same_20_row_ids_each_model",
+      "passed": true
+    },
+    {
+      "check": "40_unique_http_response_ids",
+      "passed": true
+    },
+    {
+      "check": "http_model_response_binding",
+      "passed": true
+    },
+    {
+      "check": "http_match_flags_recomputed",
+      "passed": true
+    },
+    {
+      "check": "http_all_completed_without_truncation",
+      "passed": true
+    },
+    {
+      "check": "http_summary_recomputed",
+      "passed": true
+    },
+    {
+      "check": "40_http_post_200_log_entries",
+      "passed": true
+    },
+    {
+      "check": "single_completed_attempt",
+      "passed": true
+    },
+    {
+      "check": "required_stage_sequence",
+      "passed": true
+    },
+    {
+      "check": "fresh_stage_containers",
+      "passed": true
+    },
+    {
+      "check": "all_stages_exit0_no_error",
+      "passed": true
+    },
+    {
+      "check": "all_stages_same_attempt_owner",
+      "passed": true
+    },
+    {
+      "check": "stages_do_not_overlap",
+      "passed": true
+    },
+    {
+      "check": "recorded_images_match_stage_pins",
+      "passed": true
+    },
+    {
+      "check": "serving_pin_matches_host_recorded_repodigest",
+      "passed": true
+    },
+    {
+      "check": "host_driver_receipt",
+      "passed": true
+    },
+    {
+      "check": "resource_accounting_exact",
+      "passed": true
+    },
+    {
+      "check": "launch_to_confirmed_stop_charges_bounded",
+      "passed": true
+    },
+    {
+      "check": "stage_clocks_consistent",
+      "passed": true
+    },
+    {
+      "check": "within60_gpu_minutes",
+      "passed": true
+    },
+    {
+      "check": "within3_attempts",
+      "passed": true
+    },
+    {
+      "check": "finished_before_absolute_deadline",
+      "passed": true
+    },
+    {
+      "check": "teardown_receipts",
+      "passed": true
+    },
+    {
+      "check": "no_raw_runtime_traceback",
+      "passed": true
+    }
+  ],
+  "passed_checks": 112,
+  "failed_checks": [],
+  "dataset": {
+    "train_rows": 200,
+    "eval_rows": 20,
+    "unique_train_prompt_contents": 60,
+    "unique_eval_prompt_contents": 6,
+    "unique_source_cases": 6,
+    "families": [
+      "fixture-family"
+    ],
+    "all_eval_source_cases_in_training": true,
+    "train_source_multiplicity": {
+      "fixture:accept": 34,
+      "fixture:reject": 34,
+      "fixture:failure": 33,
+      "fixture:margin": 33,
+      "fixture:loser": 33,
+      "fixture:repair": 33
+    },
+    "eval_source_multiplicity": {
+      "fixture:accept": 4,
+      "fixture:reject": 4,
+      "fixture:failure": 3,
+      "fixture:margin": 3,
+      "fixture:loser": 3,
+      "fixture:repair": 3
+    },
+    "scope": "Metadata-label plumbing only. All evaluation source cases occur in training; target lifecycle and repair are supplied in the prompt."
+  },
+  "evaluation_recomputed": {
+    "changed_outputs": 20,
+    "base_exact": 0,
+    "adapter_exact": 20,
+    "base_mean_target_nll": 2.290144020318985,
+    "adapter_mean_target_nll": 2.7318667491726956e-06
+  },
+  "http_recomputed": {
+    "requests": 40,
+    "base_exact": 0,
+    "adapter_exact": 20,
+    "changed_base_adapter_outputs": 20,
+    "hf_vllm_exact_text_agreement_base": 20,
+    "hf_vllm_exact_text_agreement_adapter": 20,
+    "sum_request_seconds": 79.29670650900516,
+    "max_request_seconds": 32.80657204000454,
+    "total_prompt_tokens": 6256,
+    "total_completion_tokens": 873
+  },
+  "checkpoint": {
+    "file_sha256": "695581e310def332bd6307527eff6546d95eebb88bec7e6f6ce288a5a61c0f80",
+    "file_bytes": 66126768,
+    "tensor_count": 504,
+    "parameters": 16515072,
+    "dtype": "F32",
+    "runtime_reported_changed_tensors": 504,
+    "all252_saved_lora_b_tensors_nonzero": true,
+    "limitation": "No before-training checkpoint or second reloaded-memory dump was retained. Changed-tensor count and fresh-reload equality are assertions in the reviewed runtime, corroborated by exit0 and the receipt, not separately replayed by this audit."
+  },
+  "runtime": {
+    "train": {
+      "seed": 818,
+      "torch": "2.13.0a0+8145d630e8.nv26.06",
+      "cuda": "13.3",
+      "gpu": "NVIDIA GB10",
+      "nemo_automodel": "0.5.0",
+      "peft": "0.18.1",
+      "transformers": "5.12.1",
+      "model_class": "Qwen3ForCausalLM",
+      "fixture_only": true,
+      "mode": "train"
+    },
+    "evaluate": {
+      "seed": 818,
+      "torch": "2.13.0a0+8145d630e8.nv26.06",
+      "cuda": "13.3",
+      "gpu": "NVIDIA GB10",
+      "nemo_automodel": "0.5.0",
+      "peft": "0.18.1",
+      "transformers": "5.12.1",
+      "model_class": "Qwen3ForCausalLM",
+      "fixture_only": true,
+      "mode": "evaluate"
+    },
+    "serve": {
+      "torch": "2.14.0+cu130",
+      "cuda": "13.0",
+      "gpu": "NVIDIA GB10",
+      "vllm": "0.33.0rc1.dev157+gedad8b03c",
+      "transformers": "5.20.2",
+      "scope": "Measured inside the actual serving container; no model weights loaded by this probe"
+    }
+  },
+  "additional_host_receipts": {
+    "vllm-repodigests-receipt.json": {
+      "sha256": "56bbfadc05c8460d37af2098d5bceb7e32542254d2748b667aabb6e884b03fb8",
+      "repo_digests": [
+        "vllm/vllm-openai@sha256:2e735ffeef26457f8a3ff44a62ae182870b10af37adc06ecbb08baca152365c6"
+      ]
+    },
+    "gb10-runtime-preflight-result.json": {
+      "sha256": "448a1918f6278924935e695ae6aa8f14df7cfcac4a7670bd60f7aa72f4ab2de1",
+      "driver": "580.178.04"
+    }
+  },
+  "resources": {
+    "stage_charged_seconds": 314.18953860500187,
+    "prior_reservation_seconds": 180,
+    "total_charged_seconds": 494.18953860500187,
+    "total_charged_minutes": 8.236492310083365,
+    "attempt_elapsed_seconds": 314.412842,
+    "finished_at": "2026-10-31T07:53:46.147370+00:00",
+    "deadline": "2026-10-31T10:00:00Z"
+  },
+  "limitations": [
+    "The 13 base-model byte hashes are bound by the downloaded manifest and prelaunch supervisor hash gate. The 8.06GB base model is not present in this local artifact set and was not independently rehashed here.",
+    "The vLLM local image ID matches the separate Docker RepoDigests receipt read by root from the host. This is cached host provenance, not an independent registry revalidation. Driver580.178.04 is linked from the separate earlier host preflight receipt, not newly probed by this audit.",
+    "The HTTP script binds the frozen eval file and the receipts preserve row IDs and full responses. Raw HTTP request bodies were not retained separately.",
+    "Teardown is supported by the reviewed supervisor success path, exit codes, active=null, server shutdown logs and remote archive assertion of zero owned running containers. This reviewer did not inspect the host directly.",
+    "This is one same-family fixture metadata exercise. It establishes no heldout performance, physical outcome prediction, real-data eligibility, chiplet optimization, speed benchmark, or SLAB019 clearance."
+  ],
+  "elapsed_seconds": 10.912581148000001
+}

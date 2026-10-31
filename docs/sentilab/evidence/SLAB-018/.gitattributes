@@ -1,0 +1,4 @@
+# Preserve original byte-hashed evidence, including captured blank-line spaces.
+attempt-01/*.log -text whitespace=-blank-at-eol
+review/AUDIT-MANIFEST.json -text whitespace=cr-at-eol
+vllm-repodigests-receipt.json -text whitespace=cr-at-eol

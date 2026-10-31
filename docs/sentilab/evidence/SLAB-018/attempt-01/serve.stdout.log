@@ -1,0 +1,151 @@
+2026-10-31T07:50:48.286327596Z (APIServer pid=55) INFO 10-31 07:50:48 [startup.py:38] 
+2026-10-31T07:50:48.286374669Z (APIServer pid=55) INFO 10-31 07:50:48 [startup.py:38]        █     █     █▄   ▄█
+2026-10-31T07:50:48.286378845Z (APIServer pid=55) INFO 10-31 07:50:48 [startup.py:38]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.33.0rc1.dev157+gedad8b03c
+2026-10-31T07:50:48.286381085Z (APIServer pid=55) INFO 10-31 07:50:48 [startup.py:38]   █▄█▀ █     █     █     █  model   /model
+2026-10-31T07:50:48.286382957Z (APIServer pid=55) INFO 10-31 07:50:48 [startup.py:38]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+2026-10-31T07:50:48.286384941Z (APIServer pid=55) INFO 10-31 07:50:48 [startup.py:38] 
+2026-10-31T07:50:48.290873398Z (APIServer pid=55) INFO 10-31 07:50:48 [startup.py:96] non-default args: {'lora_modules': [LoRAModulePath(name='fixture', path='/work/attempt-01/adapter', base_model_name=None, is_3d_lora_weight=False)], 'host': '0.0.0.0', 'model': '/model', 'dtype': 'bfloat16', 'max_model_len': 1024, 'enforce_eager': True, 'served_model_name': ['base'], 'gpu_memory_utilization': 0.35, 'enable_lora': True, 'max_lora_rank': 8}
+2026-10-31T07:50:53.153865560Z (APIServer pid=55) INFO 10-31 07:50:53 [model.py:751] Resolved architecture: Qwen3ForCausalLM
+2026-10-31T07:50:53.153881017Z (APIServer pid=55) INFO 10-31 07:50:53 [model.py:2177] Using max model len 1024
+2026-10-31T07:50:53.343421659Z (APIServer pid=55) WARNING 10-31 07:50:53 [vllm.py:1779] Enforce eager set, disabling torch.compile, CUDAGraphs, and JIT kernel warmup. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none and --kernel_config.enable_jit_warmup=False
+2026-10-31T07:50:53.343441803Z (APIServer pid=55) WARNING 10-31 07:50:53 [vllm.py:1803] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+2026-10-31T07:50:53.343758736Z (APIServer pid=55) INFO 10-31 07:50:53 [kernel.py:506] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'], gelu_and_mul_sparse=['triton', 'native'])
+2026-10-31T07:50:53.343973156Z (APIServer pid=55) INFO 10-31 07:50:53 [vllm.py:2006] Cudagraph is disabled under eager mode
+2026-10-31T07:50:53.343979172Z (APIServer pid=55) INFO 10-31 07:50:53 [compilation.py:317] Enabled custom fusions: norm_quant, act_quant
+2026-10-31T07:50:54.967446512Z (APIServer pid=55) INFO 10-31 07:50:54 [numa_utils.py:575] Automatic NUMA binding unavailable on this host; starting unbound. Enable debug logging for the skip reason.
+2026-10-31T07:50:59.173739917Z (EngineCore pid=164) INFO 10-31 07:50:59 [core.py:146] Initializing a V1 LLM engine (v0.33.0rc1.dev157+gedad8b03c) with config: model='/model', speculative_config=None, tokenizer='/model', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=1024, download_dir=None, load_format=auto, tensor_parallel_size=1, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=None, quantization_config=None, enforce_eager=True, aux_output_config=AuxOutputConfig(enable_return_routed_experts=False, max_bytes=None), kv_cache_dtype=auto, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, per_request_spec_decode_metrics='none', kv_cache_metrics=False, kv_cache_metrics_sample=0.01, custom_histogram_buckets=None, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=base, enable_prefix_caching=True, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'ir_enable_torch_wrap': False, 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'cudagraph_decoder_replay': True, 'decoder_replay_cudagraph_capture_sizes': [], 'decoder_replay_trim_threshold': 768, 'compile_sizes': [], 'compile_ranges_endpoints': [2048], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'fuse_allreduce_rms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'], gelu_and_mul_sparse=['triton', 'native']), enable_flashinfer_autotune=True, enable_rocm_segmented_attn_autotune=False, enable_cutedsl_warmup=True, enable_jit_warmup=False, monokernel=False, moe_backend='auto', sparse_indexer_topk_backend='auto', linear_backend='auto', linear_backend_per_quant=None, rdna_hybrid_w4a16_prefill_dequant='disable')
+2026-10-31T07:51:01.335729087Z (EngineCore pid=164) INFO 10-31 07:51:01 [parallel_state.py:1931] world_size=1 rank=0 local_rank=0 distributed_init_method=file:///tmp/vllm_dist_b2b23b918e424708afe3c78180afc8cb backend=nccl
+2026-10-31T07:51:01.352691667Z (EngineCore pid=164) INFO 10-31 07:51:01 [parallel_state.py:2387] rank 0 in world size 1 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, ETP rank 0, EP rank N/A, EPLB rank N/A
+2026-10-31T07:51:01.352715396Z (EngineCore pid=164) INFO 10-31 07:51:01 [gpu_worker.py:513] Using V2 Model Runner
+2026-10-31T07:51:02.157223014Z (EngineCore pid=164) INFO 10-31 07:51:02 [model_runner.py:402] Loading model from scratch...
+2026-10-31T07:51:02.843967163Z (EngineCore pid=164) INFO 10-31 07:51:02 [cuda.py:512] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].
+2026-10-31T07:51:02.843986251Z (EngineCore pid=164) INFO 10-31 07:51:02 [flash_attn.py:1122] Using FlashAttention version 2
+2026-10-31T07:51:03.251451862Z (EngineCore pid=164) INFO 10-31 07:51:03 [base_loader.py:82] Initializing model took 1.093423 seconds
+2026-10-31T07:51:03.253197298Z (EngineCore pid=164) INFO 10-31 07:51:03 [weight_utils.py:1144] Filesystem type for checkpoints: EXT4. Checkpoint size: 7.49 GiB. Available RAM: 92.80 GiB.
+2026-10-31T07:51:03.253207618Z (EngineCore pid=164) INFO 10-31 07:51:03 [weight_utils.py:1167] Auto-prefetch is disabled because the filesystem (EXT4) is not a recognized network FS (NFS/Lustre). If you want to force prefetching, start vLLM with --safetensors-load-strategy=prefetch.
+2026-10-31T07:51:57.770030895Z (EngineCore pid=164) INFO 10-31 07:51:57 [default_loader.py:506] Loading weights took 54.52 seconds
+2026-10-31T07:51:58.231831464Z (EngineCore pid=164) INFO 10-31 07:51:58 [punica_selector.py:20] Using PunicaWrapperGPU.
+2026-10-31T07:51:58.650522386Z (EngineCore pid=164) INFO 10-31 07:51:58 [model_runner.py:434] Model loading took 7.67 GiB memory and 56.672004 seconds
+2026-10-31T07:51:58.666942792Z (EngineCore pid=164) INFO 10-31 07:51:58 [topk_topp_sampler.py:152] Using FlashInfer for top-p & top-k sampling.
+2026-10-31T07:51:58.666980376Z (EngineCore pid=164) INFO 10-31 07:51:58 [torch_utils.py:293] Reducing Torch threads from 12 to 1 for serving. Set OMP_NUM_THREADS in the external environment to override.
+2026-10-31T07:51:58.667803029Z (EngineCore pid=164) INFO 10-31 07:51:58 [utils.py:397] Using LBNHC KV cache layout.
+2026-10-31T07:51:58.990419126Z (EngineCore pid=164) WARNING 10-31 07:51:58 [utils.py:276] Using default LoRA kernel configs
+2026-10-31T07:52:03.303860311Z (EngineCore pid=164) INFO 10-31 07:52:03 [gpu_worker.py:775] Available KV cache memory: 32.69 GiB
+2026-10-31T07:52:03.304590419Z (EngineCore pid=164) INFO 10-31 07:52:03 [kv_cache_utils.py:1147] GPU KV cache size: 238,000 tokens, Maximum concurrency for 1,024 tokens per request: 232.42x
+2026-10-31T07:52:04.681334872Z (EngineCore pid=164) INFO 10-31 07:52:04 [kernel_warmup.py:485] Using FlashInfer managed autotune cache (root=flashinfer default). Pass --disable-flashinfer-autotune to skip autotuning.
+2026-10-31T07:52:04.882055965Z (EngineCore pid=164) INFO 10-31 07:52:04 [kernel_warmup.py:371] Running FlashInfer autotune with 2048 tokens and token buckets (1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 768, 1024, 1280, 1536, 1792, 2048).
+2026-10-31T07:52:23.441734883Z (EngineCore pid=164) INFO 10-31 07:52:23 [gpu_worker.py:1069] Free memory on device (114.46/121.63 GiB) on startup. Desired GPU memory utilization is (0.35, 42.57 GiB). Actual usage is 9.36 GiB for consumed memory (weights + non-torch), 0.52 GiB for peak activation, and 0.0 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=34939175936` (32.54 GiB) to fit into requested memory, or `--kv-cache-memory=112134737920` (104.43 GiB) to fully utilize gpu memory. Current kv cache memory in use is 32.69 GiB.
+2026-10-31T07:52:23.803587411Z (EngineCore pid=164) INFO 10-31 07:52:23 [core.py:419] init engine (profile, create kv cache, warmup model) took 25.14 s
+2026-10-31T07:52:24.043266427Z (EngineCore pid=164) WARNING 10-31 07:52:24 [vllm.py:1779] Enforce eager set, disabling torch.compile, CUDAGraphs, and JIT kernel warmup. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none and --kernel_config.enable_jit_warmup=False
+2026-10-31T07:52:24.043287307Z (EngineCore pid=164) WARNING 10-31 07:52:24 [vllm.py:1803] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+2026-10-31T07:52:24.043490318Z (EngineCore pid=164) INFO 10-31 07:52:24 [kernel.py:506] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'], gelu_and_mul_sparse=['triton', 'native'])
+2026-10-31T07:52:24.043681985Z (EngineCore pid=164) INFO 10-31 07:52:24 [vllm.py:2006] Cudagraph is disabled under eager mode
+2026-10-31T07:52:24.043709970Z (EngineCore pid=164) INFO 10-31 07:52:24 [compilation.py:317] Enabled custom fusions: norm_quant, act_quant
+2026-10-31T07:52:24.047666384Z (APIServer pid=55) INFO 10-31 07:52:24 [entry.py:135] Supported tasks: ['generate']
+2026-10-31T07:52:24.158738393Z (APIServer pid=55) INFO 10-31 07:52:24 [factories.py:105] Scale-out endpoints are disabled. Restart vllm serve with --enable-scale-out to enable them.
+2026-10-31T07:52:24.190763058Z (APIServer pid=55) INFO 10-31 07:52:24 [serving.py:229] Loaded new LoRA adapter: name 'fixture', path '/work/attempt-01/adapter'
+2026-10-31T07:52:24.371890637Z (APIServer pid=55) INFO 10-31 07:52:24 [hf.py:736] Detected the chat template content format to be 'string'. You can set `--chat-template-content-format` to override this.
+2026-10-31T07:52:24.379652823Z (APIServer pid=55) WARNING 10-31 07:52:24 [model.py:1914] Default vLLM sampling parameters have been overridden by the model's `generation_config.json`: `{'temperature': 0.7, 'top_k': 20, 'top_p': 0.8}`. If this is not intended, please relaunch vLLM instance with `--generation-config vllm`.
+2026-10-31T07:52:24.399454624Z (APIServer pid=55) INFO 10-31 07:52:24 [entry.py:139] Starting vLLM server on http://0.0.0.0:8000
+2026-10-31T07:52:24.399475616Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:188] Available routes are:
+2026-10-31T07:52:24.399478176Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /openapi.json, Methods: GET, HEAD
+2026-10-31T07:52:24.399480144Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /docs, Methods: GET, HEAD
+2026-10-31T07:52:24.399481952Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /docs/oauth2-redirect, Methods: GET, HEAD
+2026-10-31T07:52:24.399483680Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /redoc, Methods: GET, HEAD
+2026-10-31T07:52:24.399485376Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /load, Methods: GET
+2026-10-31T07:52:24.399487008Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /version, Methods: GET
+2026-10-31T07:52:24.399488640Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /kv_event_sources, Methods: GET
+2026-10-31T07:52:24.399490240Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /health, Methods: GET
+2026-10-31T07:52:24.399491824Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /metrics, Methods: GET
+2026-10-31T07:52:24.399493360Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /tokenize, Methods: POST
+2026-10-31T07:52:24.399494897Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /detokenize, Methods: POST
+2026-10-31T07:52:24.399496417Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/models, Methods: GET
+2026-10-31T07:52:24.399497953Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/systemone, Methods: POST
+2026-10-31T07:52:24.399499521Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/decisions, Methods: POST
+2026-10-31T07:52:24.399501041Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /ping, Methods: GET
+2026-10-31T07:52:24.399516113Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /ping, Methods: POST
+2026-10-31T07:52:24.399517841Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /invocations, Methods: POST
+2026-10-31T07:52:24.399519393Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/chat/completions, Methods: POST
+2026-10-31T07:52:24.399521201Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/chat/completions/batch, Methods: POST
+2026-10-31T07:52:24.399522705Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/responses, Methods: POST
+2026-10-31T07:52:24.399525009Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/responses/{response_id}, Methods: GET
+2026-10-31T07:52:24.399526513Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/responses/{response_id}/cancel, Methods: POST
+2026-10-31T07:52:24.399528001Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/completions, Methods: POST
+2026-10-31T07:52:24.399529441Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/messages, Methods: POST
+2026-10-31T07:52:24.399530833Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/messages/count_tokens, Methods: POST
+2026-10-31T07:52:24.399532305Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /generative_scoring, Methods: POST
+2026-10-31T07:52:24.399533729Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /scale_elastic_ep, Methods: POST
+2026-10-31T07:52:24.399535153Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /is_scaling_elastic_ep, Methods: POST
+2026-10-31T07:52:24.399536545Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/chat/completions/render, Methods: POST
+2026-10-31T07:52:24.399537969Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/messages/render, Methods: POST
+2026-10-31T07:52:24.399539425Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/completions/render, Methods: POST
+2026-10-31T07:52:24.399540817Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/responses/render, Methods: POST
+2026-10-31T07:52:24.399542241Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/chat/completions/derender, Methods: POST
+2026-10-31T07:52:24.399543633Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /v1/completions/derender, Methods: POST
+2026-10-31T07:52:24.399545041Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /inference/v1/generate, Methods: POST
+2026-10-31T07:52:24.399546433Z (APIServer pid=55) INFO 10-31 07:52:24 [launcher.py:197] Route: /inference/v1/abort_requests, Methods: POST
+2026-10-31T07:52:24.848892277Z INFO:     172.17.0.1:42500 - "GET /health HTTP/1.1" 200 OK
+2026-10-31T07:52:24.900224175Z INFO:     172.17.0.1:42504 - "GET /v1/models HTTP/1.1" 200 OK
+2026-10-31T07:52:57.707154876Z INFO:     172.17.0.1:42520 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:52:58.876633356Z INFO:     172.17.0.1:46638 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:00.094787276Z INFO:     172.17.0.1:46642 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:01.310654305Z INFO:     172.17.0.1:46658 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:02.615747854Z INFO:     172.17.0.1:46670 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:03.919711954Z INFO:     172.17.0.1:46672 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:04.572521677Z (APIServer pid=55) INFO 10-31 07:53:04 [loggers.py:335] Engine 000: Avg prompt throughput: 38.8 tokens/s, Avg generation throughput: 17.0 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.1%, Prefix cache hit rate: 64.5%
+2026-10-31T07:53:05.041609721Z INFO:     172.17.0.1:58042 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:06.206711386Z INFO:     172.17.0.1:58048 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:07.419639981Z INFO:     172.17.0.1:58058 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:08.630329894Z INFO:     172.17.0.1:58074 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:09.935799069Z INFO:     172.17.0.1:58090 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:11.237783379Z INFO:     172.17.0.1:58102 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:12.357795606Z INFO:     172.17.0.1:58104 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:13.525152529Z INFO:     172.17.0.1:58110 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:14.573227642Z (APIServer pid=55) INFO 10-31 07:53:14 [loggers.py:335] Engine 000: Avg prompt throughput: 8.5 tokens/s, Avg generation throughput: 21.5 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.1%, Prefix cache hit rate: 79.8%
+2026-10-31T07:53:14.735616948Z INFO:     172.17.0.1:45418 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:15.947725355Z INFO:     172.17.0.1:45422 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:17.257203537Z INFO:     172.17.0.1:45430 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:18.557413999Z INFO:     172.17.0.1:45444 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:19.682865551Z INFO:     172.17.0.1:45448 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:20.849296500Z INFO:     172.17.0.1:45450 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:20.853560087Z (APIServer pid=55) WARNING 10-31 07:53:20 [input_processor.py:298] vLLM has deprecated support for supporting different tokenizers for different LoRAs. By default, vLLM uses base model's tokenizer. If you are using a LoRA with its own tokenizer, consider specifying `--tokenizer [lora_path]` to use the LoRA tokenizer.
+2026-10-31T07:53:24.573693051Z (APIServer pid=55) INFO 10-31 07:53:24 [loggers.py:335] Engine 000: Avg prompt throughput: 20.0 tokens/s, Avg generation throughput: 14.9 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.1%, Prefix cache hit rate: 79.5%
+2026-10-31T07:53:24.618787014Z INFO:     172.17.0.1:45466 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:27.199526416Z INFO:     172.17.0.1:42310 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:28.021438332Z INFO:     172.17.0.1:42324 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:29.617235075Z INFO:     172.17.0.1:42336 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:30.730636543Z INFO:     172.17.0.1:42340 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:31.654370451Z INFO:     172.17.0.1:42344 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:32.423311915Z INFO:     172.17.0.1:42360 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:33.290926676Z INFO:     172.17.0.1:42362 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:34.111590646Z INFO:     172.17.0.1:55670 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:34.574807109Z (APIServer pid=55) INFO 10-31 07:53:34 [loggers.py:335] Engine 000: Avg prompt throughput: 27.2 tokens/s, Avg generation throughput: 14.9 tokens/s, Running: 1 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.1%, Prefix cache hit rate: 79.8%
+2026-10-31T07:53:35.076390117Z INFO:     172.17.0.1:55676 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:36.194600480Z INFO:     172.17.0.1:55682 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:37.111410242Z INFO:     172.17.0.1:55694 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:37.880570330Z INFO:     172.17.0.1:55698 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:38.751882647Z INFO:     172.17.0.1:55712 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:39.571840121Z INFO:     172.17.0.1:55722 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:40.533166987Z INFO:     172.17.0.1:55732 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:41.651301513Z INFO:     172.17.0.1:55742 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:42.569281798Z INFO:     172.17.0.1:55754 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:43.339743824Z INFO:     172.17.0.1:55760 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:44.210085866Z INFO:     172.17.0.1:52410 - "POST /v1/chat/completions HTTP/1.1" 200 OK
+2026-10-31T07:53:44.575889049Z (APIServer pid=55) INFO 10-31 07:53:44 [loggers.py:335] Engine 000: Avg prompt throughput: 9.5 tokens/s, Avg generation throughput: 19.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 83.4%
+2026-10-31T07:53:44.961315878Z (APIServer pid=55) INFO 10-31 07:53:44 [launcher.py:256] [shutdown] API server: shutdown triggered
+2026-10-31T07:53:44.961338694Z (EngineCore pid=164) INFO 10-31 07:53:44 [core.py:1573] [shutdown] EngineCore: trigger received signal=SIGTERM
+2026-10-31T07:53:44.961377559Z (APIServer pid=55) INFO 10-31 07:53:44 [launcher.py:269] [shutdown] API server: stopping engine client mode=abort timeout=0s
+2026-10-31T07:53:44.961601547Z (EngineCore pid=164) INFO 10-31 07:53:44 [core.py:1760] [shutdown] EngineCore: start mode=abort timeout=0s
+2026-10-31T07:53:44.961617275Z (EngineCore pid=164) INFO 10-31 07:53:44 [core.py:1791] [shutdown] EngineCore: request processing complete; starting resource teardown
+2026-10-31T07:53:44.961667388Z (EngineCore pid=164) INFO 10-31 07:53:44 [core.py:1621] [shutdown] EngineCore: exiting busy loop
+2026-10-31T07:53:44.961888511Z (APIServer pid=55) INFO 10-31 07:53:44 [core_client.py:802] [shutdown] MPClient: start timeout=0s
+2026-10-31T07:53:44.962090066Z (APIServer pid=55) INFO 10-31 07:53:44 [core_client.py:804] [shutdown] MPClient: stopping engine manager
+2026-10-31T07:53:44.962185204Z (APIServer pid=55) INFO 10-31 07:53:44 [utils.py:628] [shutdown] Process manager: send sigterm to process EngineCore
+2026-10-31T07:53:44.963407046Z (APIServer pid=55) WARNING 10-31 07:53:44 [utils.py:648] [shutdown] Process manager: force killing remaining processes count=1
+2026-10-31T07:53:44.963410774Z (APIServer pid=55) WARNING 10-31 07:53:44 [utils.py:653] [shutdown] Process manager: force killing remaining process EngineCore pid 164
+2026-10-31T07:53:44.963411974Z (APIServer pid=55) INFO 10-31 07:53:44 [core_client.py:806] [shutdown] MPClient: engine manager stopped
+2026-10-31T07:53:44.963413174Z (APIServer pid=55) INFO 10-31 07:53:44 [core_client.py:807] [shutdown] MPClient: cleaning up background resources
+2026-10-31T07:53:44.963414294Z (APIServer pid=55) INFO 10-31 07:53:44 [core_client.py:809] [shutdown] MPClient: complete
+2026-10-31T07:53:44.963651434Z (APIServer pid=55) INFO 10-31 07:53:44 [launcher.py:278] [shutdown] API server: engine client stopped
+2026-10-31T07:53:44.963681643Z (APIServer pid=55) INFO 10-31 07:53:44 [launcher.py:281] [shutdown] API server: signalling HTTP server shutdown
+2026-10-31T07:53:44.971031692Z (APIServer pid=55) INFO 10-31 07:53:44 [launcher.py:304] [shutdown] API server: shutting down FastAPI HTTP server

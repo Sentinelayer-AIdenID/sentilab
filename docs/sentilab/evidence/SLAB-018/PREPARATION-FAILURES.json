@@ -1,0 +1,27 @@
+{
+  "scope": "Preparation failures retained separately from the one GPU model attempt",
+  "modelTrainingAttempts": 1,
+  "preparationFailures": [
+    {
+      "error": "Initial GPU primitive command used unavailable python entry point; python3 succeeded",
+      "modelLoaded": false
+    },
+    {
+      "error": "CPU tokenization returned BatchEncoding instead of list; fixed explicit return_dict=false",
+      "modelLoaded": false
+    },
+    {
+      "error": "UID1000 could not read root-owned NeMo sources; root import validated",
+      "modelLoaded": false
+    },
+    {
+      "error": "Root with all capabilities dropped could not read dell0700 workspace; added only DAC_OVERRIDE and CHOWN for NeMo",
+      "modelLoaded": false
+    },
+    {
+      "error": "Diagnostic capture-nemo-api.py path was not present remotely; used exact model_stage validate import instead",
+      "modelLoaded": false
+    }
+  ],
+  "scientificFailuresClaimed": false
+}
