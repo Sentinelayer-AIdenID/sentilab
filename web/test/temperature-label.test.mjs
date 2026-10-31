@@ -331,6 +331,10 @@ test("every page that shows these temperatures takes its notice and labels from 
   for (const rel of ["index.html", "sentilab/index.html", "sentilab/package/index.html", "leaderboard.html", "verify.html"]) {
     assert.match(page(rel), /<p class="wnotice" id="wnotice" role="note" hidden><\/p>/, `${rel} has the notice slot`);
   }
+  // The run, Lab and Package views label each value too: they take labelFor and labelForAll from the same module.
+  for (const rel of ["app.js", "sentilab/lab.js", "sentilab/package/package.js"]) {
+    assert.match(page(rel), /import \{[^}]*\blabelFor\b[^}]*\blabelForAll\b[^}]*\} from "(\.\.\/)*(\.\/)?temperature-label\.mjs";/, `${rel} labels each value`);
+  }
   assert.match(page("index.html"), /<script type="module" src="app\.js"><\/script>/, "app.js loads as a module");
   assert.match(page("leaderboard.html"), /<script type="module" src="leaderboard\.js"><\/script>/, "leaderboard.js loads as a module");
   assert.match(page("verify.html"), /<script type="module" src="verify\.js"><\/script>/);

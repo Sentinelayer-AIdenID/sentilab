@@ -211,16 +211,20 @@ export const spanText = (span) => (span ? `layouts span ${(span.x1 - span.x0).to
 // The colour scale covers every chiplet-centre temperature in the run's prefix, rounded out to 5 degrees and at
 // least 10 degrees wide (the Lab view's rule). The footprint is the run's layout span (layoutSpan) plus margins.
 // A replay computes this once from the whole prefix, so neither changes while the playhead moves.
+// The rows the run's colour scale is computed from: the applied measurement creates whose centre temperatures pass the
+// unit and range checks. runFrame reads only these, and the page labels the scale by exactly these (one definition).
+export function frameScaleInputs(prefixEnvelopes, projection = null) {
+  const prefix = contiguousPrefix(prefixEnvelopes);
+  const proj = projection && prefix.length === (prefixEnvelopes?.length ?? 0) ? projection : project(prefix.map((env) => env.event));
+  return measurementCreates(appliedEvents(prefix, proj)).filter((env) => readTemps(env.values).temps !== null);
+}
 export function runFrame(prefixEnvelopes, projection = null) {
   const prefix = contiguousPrefix(prefixEnvelopes);
   const proj = projection && prefix.length === (prefixEnvelopes?.length ?? 0) ? projection : project(prefix.map((env) => env.event));
-  const applied = appliedEvents(prefix, proj);
   // Only accepted values count: normalised to °C and mm, inside the bounds. Refused values never move the frame.
   let lo = Infinity, hi = -Infinity;
-  for (const env of measurementCreates(applied)) {
-    const { temps } = readTemps(env.values);
-    if (!temps) continue;
-    for (const v of Object.values(temps)) { if (v < lo) lo = v; if (v > hi) hi = v; }
+  for (const env of frameScaleInputs(prefix, proj)) {
+    for (const v of Object.values(readTemps(env.values).temps)) { if (v < lo) lo = v; if (v > hi) hi = v; }
   }
   let scale = null;
   if (lo !== Infinity) {
