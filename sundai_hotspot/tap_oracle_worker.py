@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+from contextlib import contextmanager
 import json
 import math
 import os
@@ -19,6 +20,21 @@ REPO_ROOT = HOTSPOT_ROOT.parent
 if str(TAP_ROOT) not in sys.path:
     sys.path.insert(0, str(TAP_ROOT))
 from passive_interposer import PassiveInterposer  # noqa: E402
+
+
+@contextmanager
+def _output_directory(workspace_root, retained_root=None):
+    if retained_root is None:
+        with tempfile.TemporaryDirectory(prefix='tfl-hotspot-', dir=workspace_root) as directory:
+            yield directory
+        return
+    if not isinstance(retained_root, str) or not Path(retained_root).is_absolute():
+        raise ValueError('retained output root must be an absolute parent-owned directory')
+    root = Path(retained_root).resolve(strict=True)
+    # Only the parent supplies this path; use a fresh child, never a caller-supplied filename.
+    directory = Path(tempfile.mkdtemp(prefix='evaluation-', dir=root)).resolve()
+    directory.relative_to(root)
+    yield str(directory)
 
 
 def _sha256(path: Path) -> str:
@@ -168,8 +184,10 @@ def evaluate(request: dict) -> dict:
     if not workspace_root.is_dir():
         raise ValueError("parent-owned workspace is unavailable")
     started_generation = time.perf_counter()
-    with tempfile.TemporaryDirectory(prefix="tfl-hotspot-", dir=workspace_root) as directory:
+    with _output_directory(workspace_root, request.get('retained_output_root')) as directory:
         output = Path(directory)
+        if request.get('retained_output_root') is not None:
+            (output / 'REQUEST.json').write_text(json.dumps(request, sort_keys=True) + '\n')
         system = PassiveInterposer()
         system.set_chiplet_count(len(widths))
         system.initialize()
@@ -230,8 +248,15 @@ def evaluate(request: dict) -> dict:
                 check=False,
             )
         except subprocess.TimeoutExpired as exc:
+            if request.get('retained_output_root') is not None:
+                (output / 'TIMEOUT.txt').write_text(str(exc))
             raise TimeoutError(f"TFL_ORACLE_TIMEOUT HotSpot exceeded {timeout:g} seconds") from exc
         solver_seconds = time.perf_counter() - solver_started
+        if request.get('retained_output_root') is not None:
+            (output / 'stdout.txt').write_text(process.stdout)
+            (output / 'stderr.txt').write_text(process.stderr)
+            (output / 'EXIT.json').write_text(json.dumps({'returncode': process.returncode,
+                                                        'command': command}) + '\n')
         if process.returncode != 0:
             detail = (process.stderr + "\n" + process.stdout)[-4000:].strip()
             raise RuntimeError(f"HotSpot exited {process.returncode}: {detail}")

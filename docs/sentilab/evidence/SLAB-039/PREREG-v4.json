@@ -106,7 +106,8 @@
     "gap_with_spread": true,
     "plain_verdict": true,
     "inconclusive_on_exhaustion": false,
-    "note": "A partial reference may PASS only with frozen complete C and an independently reproduced eligible witness. Partial reference never FAILs. Numeric threshold alone never authorizes paid scientific models."
+    "note": "A partial reference may PASS only with frozen complete C and an independently reproduced eligible witness. Partial reference never FAILs. Numeric threshold alone never authorizes paid scientific models.",
+    "retention": "Unique per-attempt directory; snapshot exact start-time preregistration and runner bytes; full evaluation designs/results, signed proposal/receipt events and raw generated inputs/solver output. Shared spend links all attempts. Never overwrite previous attempts."
   },
   "amendments": [
     {
@@ -154,7 +155,8 @@
         "Prospective micro150 only. Ascend910 remains INCONCLUSIVE under v3, with its original result/preregistration bytes retained.",
         "Completed frozen cheap baseline and growing independently reproduced eligible witness set.",
         "48 CPU-min micro150, 72 headroom, 84 aggregate; unchanged call caps; 90-minute cumulative solving wall; deadline 12:00Z.",
-        "PR #18 fixed sample discrepancy 0.79 C; no universal-error or model-release claim."
+        "PR #18 fixed sample discrepancy 0.79 C; no universal-error or model-release claim.",
+        "Carter #56223: fixed initial wire proxy ceiling across every lane; immutable start-bound inputs and unique attempt history with raw artifacts. No retroactive Ascend910 refiltering."
       ]
     }
   ],
@@ -171,5 +173,11 @@
     "reference": "999 search calls including initialization then 1 fresh call of frozen restart winner; total 1000. If stopped before verification, winner ineligible. Earlier verified witnesses remain eligible. This intentionally checks one winner per restart, not every interim improvement: CPU exhaustion before the reserved final call leaves that restart ineligible.",
     "failure": "Disagreement, invalid result or missing verification cannot establish a verified winner. Missing any cheap winner makes C unavailable; incomplete reference forbids FAIL."
   },
-  "overshoot_policy": "Before each call check SELF+CHILDREN CPU, durable call counts, cumulative solving wall and UTC deadline. A call admitted strictly before every cap may finish. Record CPU/wall/deadline overshoot; no later call admitted. Calls are reserved before execution and never overshoot solve caps. No retries outside budget."
+  "overshoot_policy": "Before each call check SELF+CHILDREN CPU, durable call counts, cumulative solving wall and UTC deadline. A call admitted strictly before every cap may finish. Record CPU/wall/deadline overshoot; no later call admitted. Calls are reserved before execution and never overshoot solve caps. No retries outside budget.",
+  "domain": {
+    "wire_metric": "connectivity-weighted Manhattan center distance in mm; not routed CPLEX length",
+    "wire_ceiling": "fixed initial micro150 layout proxy, never updated by winners",
+    "wire_tolerance_mm": 0,
+    "applies_to": "all initial/shared designs, all reducer and reference proposals, all fresh reproductions; over-ceiling candidates rejected before oracle admission"
+  }
 }

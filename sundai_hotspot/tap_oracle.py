@@ -504,7 +504,8 @@ class HotSpotOracle:
 
     def __init__(self, grid_rows: int = 32, grid_cols: int = 32, *, fixture: str = TAP_CONFIG_DEFAULT_ID,
                  solver_timeout_s: float = 45.0, worker_timeout_s: float | None = None,
-                 hotspot_binary: Path = HOTSPOT_BINARY, max_workers: int = DEFAULT_MAX_WORKERS):
+                 hotspot_binary: Path = HOTSPOT_BINARY, max_workers: int = DEFAULT_MAX_WORKERS,
+                 retained_output_root: Path | None = None):
         if (isinstance(grid_rows, bool) or not isinstance(grid_rows, int) or not 1 <= grid_rows <= 128 or
                 isinstance(grid_cols, bool) or not isinstance(grid_cols, int) or not 1 <= grid_cols <= 128):
             raise ValueError("grid rows and columns must be integers from 1 through 128")
@@ -521,6 +522,9 @@ class HotSpotOracle:
             raise ValueError(f"fixture must be one of {sorted(TAP_CONFIGS)}")
 
         self.fixture_id = fixture
+        self.retained_output_root = None if retained_output_root is None else Path(retained_output_root).resolve()
+        if self.retained_output_root is not None:
+            self.retained_output_root.mkdir(parents=True, exist_ok=True)
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
         self.solver_timeout_s = float(solver_timeout_s)
@@ -672,6 +676,8 @@ class HotSpotOracle:
                 "ambient_c": self.problem.ambient_c,
             },
         }
+        if self.retained_output_root is not None:
+            request['retained_output_root'] = str(self.retained_output_root)
         response = await _run_worker(
             request,
             worker_timeout_s=self.worker_timeout_s,

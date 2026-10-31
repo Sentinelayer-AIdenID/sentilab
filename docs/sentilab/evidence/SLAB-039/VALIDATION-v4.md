@@ -116,3 +116,45 @@ under the existing allocation hold; Docker is absent in this box. No npm manifes
 exists, so synthetic npm/typecheck/audit commands are not repository gates.
 Worker proof is not independent review, export verification, merge, or execution
 clearance. No paid scientific model release is claimed.
+
+## Additional review #56223: common domain and retained attempts
+
+Carter's review of the earlier Ascend910 source identified a domain mismatch:
+the retained winners were not constrained to the initial wire proxy. This
+revision makes the domain explicit prospectively; it does not refilter or
+reinterpret the Ascend910 history. A wrapper checks the connectivity-weighted
+Manhattan center-distance proxy against the initial micro150 value, with zero
+tolerance, before shared sampling, proposals and every oracle admission.
+The ceiling never follows a new winner. `DOMAIN.json` retains the initial design,
+its hash, wire ceiling and complete fixture problem description.
+
+Every v4 invocation creates a unique `attempt-<id>` child of the requested output
+root. `SPEND.json` links cumulative attempts and preserves their starting/ending
+call counts and status. Each attempt retains the exact preregistration and runner
+bytes read at its start; result hashes use those bytes, not a later reread of the
+live files. Signed controller events are appended durably during each lane,
+including proposals and receipts, with their public verification identity. No
+private signing identity is serialized. Complete per-call designs and returned
+thermal records (or errors) are retained. Raw generated inputs, steady-state
+output files, stdout/stderr and process exit records are retained under that
+call's directory. A failed solver keeps its generated files and error output;
+default oracle use retains its existing temporary-directory cleanup behavior.
+
+Six added review regression tests fail on the preceding v4 implementation
+`0a820aa`. They test the common wire domain, the fixed ceiling after a better
+layout, mid-run preregistration mutation, two-invocation artifact preservation
+and signature verification, directory survival on success/error, and the
+oracle-to-worker retention route with a fake nonzero solver exit. All pass with
+this change. The fake worker test calls no native solver.
+
+The updated combined command passed **85 tests** (54 legacy plus 31 v4); the
+subsequently added raw-failure routing test passed separately (**86 total**).
+The tightened zero-wire-tolerance parser case and wire-domain test also passed
+in a focused rerun. Nine selected existing worker/protocol/integrity/parser
+checks passed from `sundai_hotspot`, using stubs/synthetic executables, plus the
+two existing content-identity/cardinality tests passed from the repository root.
+The first worker invocation from root hit legacy bare-import errors; the
+correct directory invocation passed without changing those tests. Compileall
+and whitespace checks pass for all four changed Python files. Other pure gates
+above remain valid; no real HotSpot solves or container/thermal gate reruns were
+made. Final export and exact-head review remain pending.
