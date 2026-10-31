@@ -12,6 +12,7 @@ import json
 import math
 import os
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
 from unittest import mock
@@ -21,6 +22,7 @@ from sundai_hotspot.coupling_variant import (
     NEW, OLD, PRISTINE_TEMPERATURE_GRID_SHA256, VARIANT_BINARY, VARIANT_MACRO, VARIANT_SOURCES, VARIANT_TAG,
     MaterialOnlyCouplingOracle, PackageStack, area_resistances, cell_resistances, strip_variant_blocks,
 )
+from sundai_hotspot.gate_zero import GateZeroRefusal
 from sundai_hotspot.tap_oracle import HOTSPOT_BINARY, HOTSPOT_ROOT, REPO_ROOT, HotSpotOracle, HotSpotOracleError
 
 H_VALUES = (0.25, 0.5, 1.0, 2.0, 4.0)
@@ -150,37 +152,140 @@ class CommittedOutputTests(unittest.TestCase):
         self.assertEqual(len(slab049.center_cells((0, 4, 0, 3))), 2)
         self.assertEqual([c["weight"] for c in slab049.center_cells((0, 4, 0, 4))], [0.25] * 4)
 
-    def test_call_record_carries_every_requested_field(self):
+    def test_solve_record_carries_every_requested_field(self):
         case = slab049.PROBE_RESULTS / "baseline_center_32"
         report = json.loads((slab049.PROBE_RESULTS / "combined_report.json").read_text(encoding="utf-8"))
         expected_peak = next(r["chip_layer_peak_C"] for r in report["runs"]
                              if r["placement"] == "baseline_center" and r["grid_rows"] == 32)
-        record = slab049.summarize_evaluation(case, expected_package=slab049.tap_package(50))
+        record = slab049.summarize_evaluation(case, expected_package=slab049.tap_package(50), grid_size=32)
         self.assertTrue(record["package_matches_fixture"])
         self.assertFalse(slab049.summarize_evaluation(case, expected_package=slab049.tap_package(45))
                          ["package_matches_fixture"])
         self.assertEqual(record["output_precision"], {"grid_decimals_K": 2, "steady_decimals_K": 2})
-        self.assertIn("new_hotspot.config", record["files"])
-        self.assertAlmostEqual(record["layer4_grid_peak_C"], expected_peak, places=9)
-        self.assertEqual(len(record["chiplet_centers"]), 6)
-        for chiplet in record["chiplet_centers"]:
+        self.assertEqual(record["config_sha256"], record["files"]["new_hotspot.config"]["sha256"])
+        peak = record["active_layer_grid_peak"]
+        self.assertEqual(peak["layer"], 4)
+        self.assertAlmostEqual(peak["peak_C"], expected_peak, places=9)
+        self.assertTrue(all(0 <= c["row"] < 32 and 0 <= c["col"] < 32 for c in peak["argmax"]))
+        mapping = record["chiplet_centre_mapping"]
+        self.assertEqual(len(mapping["chiplets"]), 6)
+        for chiplet in mapping["chiplets"]:
             self.assertIn(chiplet["distinct_cells"], (1, 2, 4))
             self.assertAlmostEqual(sum(c["weight"] for c in chiplet["cells"]), 1.0)
-            self.assertLessEqual(chiplet["center_C"], record["layer4_grid_peak_C"] + 1e-9)
-        self.assertEqual(record["max_chiplet_center_C"], max(c["center_C"] for c in record["chiplet_centers"]))
-        self.assertFalse(record["tap_stdout_selector_literal"]["applicable"])
-        self.assertGreaterEqual(record["tap_stdout_selector_emulated_hotspot6"]["value_C"],
-                                record["max_chiplet_center_C"] - 1e-9)
+            self.assertLessEqual(chiplet["centre_C"], peak["peak_C"] + 1e-9)
+        self.assertEqual(mapping["max_C"], max(c["centre_C"] for c in mapping["chiplets"]))
+        selector = record["historical_tap_stdout_selector"]
+        self.assertFalse(selector["literal_on_stdout"]["applicable"])  # HotSpot 7 prints no temperatures
+        self.assertGreaterEqual(selector["on_steady_file_C"], peak["peak_C"] - 1e-9)  # this run mapped max
+        rises = record["spreader_sink_hottest_cell_rises"]
+        self.assertAlmostEqual(rises["spreader"]["rise_K"], 70.11, places=6)
+        self.assertAlmostEqual(rises["sink"]["rise_K"], 18.51, places=6)
+        self.assertEqual(rises["pattern"]["pattern"], "v7-link")
+
+    def test_committed_probes_show_the_v7_link_signature_with_scaled_convection(self):
+        records = slab049.committed_run1_signature()
+        self.assertEqual(len(records), 8)
+        for record in records:
+            self.assertTrue(record["r_convec_is_generator_scaled"], record["case"])
+            self.assertEqual(record["pattern"], "v7-link", record["case"])
+            self.assertGreater(record["spreader_rise_K"] - record["sink_rise_K"], 50.0)
+
+
+def _grid_lines(case: Path) -> list[str]:
+    return (case / "sample.grid.steady").read_text(encoding="utf-8").splitlines(keepends=True)
+
+
+class GridParserTests(unittest.TestCase):
+    """Strict parsing (astra #56785): one mutated input per rule, plus the unmodified control."""
+
+    CASE = slab049.PROBE_RESULTS / "baseline_center_32"
+
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory(prefix="slab049-grid-")
+        self.lines = _grid_lines(self.CASE)
+        self.header4 = self.lines.index("Layer 4:\n")
+        self.header5 = self.lines.index("Layer 5:\n")
+
+    def tearDown(self):
+        self.directory.cleanup()
+
+    def parse(self, lines: list[str], **kwargs) -> dict:
+        path = Path(self.directory.name) / "sample.grid.steady"
+        path.write_text("".join(lines), encoding="utf-8")
+        return slab049.read_grid(path, **kwargs)
+
+    def summarize(self, lines: list[str]) -> dict:
+        case = Path(self.directory.name) / "case"
+        if not case.exists():
+            shutil.copytree(self.CASE, case)
+        (case / "sample.grid.steady").write_text("".join(lines), encoding="utf-8")
+        return slab049.summarize_evaluation(case)
+
+    def test_the_committed_file_parses(self):
+        grid = self.parse(self.lines, grid=32, layers=8, ambient_k=318.15)
+        self.assertEqual(sorted(grid), list(range(8)))
+        self.assertTrue(all(len(values) == 1024 for values in grid.values()))
+
+    def test_astra_control_an_extra_cell_in_layer_4_is_rejected(self):
+        mutated = self.lines[:self.header5] + ["1024\t999.00\n"] + self.lines[self.header5:]
+        with self.assertRaises(slab049.GridFormatError):
+            self.parse(mutated)
+        with self.assertRaises(slab049.GridFormatError):
+            self.summarize(mutated)
+
+    def test_astra_control_a_duplicate_layer_4_is_rejected(self):
+        mutated = self.lines + self.lines[self.header4:self.header5]
+        with self.assertRaises(slab049.GridFormatError):
+            self.parse(mutated)
+        with self.assertRaises(slab049.GridFormatError):
+            self.summarize(mutated)
+
+    def test_each_rule_rejects_its_own_mutation(self):
+        cell = self.header4 + 1  # "0\t..." of layer 4
+        mutations = {
+            "missing cell": self.lines[:cell] + self.lines[cell + 1:],
+            "out-of-order index": self.lines[:cell] + ["5\t330.00\n"] + self.lines[cell + 1:],
+            "malformed cell": self.lines[:cell] + ["0 330.00 extra\n"] + self.lines[cell + 1:],
+            "malformed header": self.lines[:self.header4] + ["Layer four:\n"] + self.lines[self.header4 + 1:],
+            "missing layer": self.lines[:self.header4] + self.lines[self.header5:],
+            "nan": self.lines[:cell] + ["0\tnan\n"] + self.lines[cell + 1:],
+            "infinity": self.lines[:cell] + ["0\tinf\n"] + self.lines[cell + 1:],
+            "not above 0 K": self.lines[:cell] + ["0\t0.00\n"] + self.lines[cell + 1:],
+            "implausibly hot": self.lines[:cell] + ["0\t2500.00\n"] + self.lines[cell + 1:],
+            "below ambient": self.lines[:cell] + ["0\t300.00\n"] + self.lines[cell + 1:],
+            "headerless cells before a header": ["0\t330.00\n"] + self.lines,
+        }
+        for rule, lines in mutations.items():
+            with self.subTest(rule=rule), self.assertRaises(slab049.GridFormatError):
+                self.parse(lines, layers=8, ambient_k=318.15)
+        with self.assertRaises(slab049.GridFormatError):  # the grid size is enforced when known
+            self.parse(self.lines, grid=64)
+        with self.assertRaises(slab049.GridFormatError):  # the layer count is enforced when known
+            self.parse(self.lines, layers=9)
+
+    def test_argmax_is_always_inside_the_grid(self):
+        self.assertEqual(slab049.grid_argmax([1.0, 3.0, 2.0, 3.0], 2), [{"row": 0, "col": 1}, {"row": 1, "col": 1}])
+        with self.assertRaises(slab049.GridFormatError):
+            slab049.grid_argmax([1.0, 2.0, 3.0, 4.0, 999.0], 2)
+
+    def test_upstream_hotspot6_top_layer_only_format_parses_as_one_layer(self):
+        rows = ["%d\t%.2f\n" % (i, 330.0) for i in range(16)]
+        grid = self.parse(rows[:4] + ["\n"] + rows[4:8] + ["\n"] + rows[8:12] + ["\n"] + rows[12:] + ["\n"], grid=4)
+        self.assertEqual(list(grid), [0])
 
 
 class GeneratedArtifactTests(unittest.TestCase):
     """The committed SLAB-049 files must be exactly what the frozen code generates."""
 
-    def test_call_list_and_slab_inputs_are_current(self):
+    def test_manifest_slab_and_reference_inputs_are_current(self):
         directory = slab049.EVIDENCE_DIR
         self.assertEqual((directory / "CALL-LIST.json").read_bytes(), slab049._dump(slab049.build_call_list()))
         for name, data in slab049.slab_files().items():
             self.assertEqual((directory / "slab" / name).read_bytes(), data, name)
+        for layout, variant in slab049.REFERENCE_SETS:
+            folder = REPO_ROOT / slab049.reference_dir(layout, variant)
+            for name, data in slab049.reference_files(layout, variant).items():
+                self.assertEqual((folder / name).read_bytes(), data, (layout, variant, name))
 
     def test_frozen_analytic_report_is_current(self):
         committed = json.loads((slab049.EVIDENCE_DIR / "ANALYTIC.json").read_text(encoding="utf-8"))
@@ -188,18 +293,40 @@ class GeneratedArtifactTests(unittest.TestCase):
         committed.pop("assembly_confirmation")
         self.assertEqual(committed, json.loads(slab049._dump(slab049.analytic_report(include_assembly=False))))
 
-    def test_call_list_counts_and_slab_predictions(self):
-        calls = slab049.build_call_list()
-        self.assertEqual(calls["grant_request"]["solver_executions_declared"], len(calls["calls"]))
-        self.assertEqual(len({c["id"] for c in calls["calls"]}), len(calls["calls"]))
-        new = [c for c in calls["calls"] if c["group"] == "a" and c["evaluator"] == "NEW"]
-        old = [c for c in calls["calls"] if c["group"] == "a" and c["evaluator"] == "OLD"]
-        self.assertFalse(h_dependent({c["h_multiplier"]: round(c["prediction"]["interior_drop_die_minus_sink_K"], 9)
-                                      for c in new}))
-        self.assertTrue(h_dependent({c["h_multiplier"]: c["prediction"]["interior_drop_die_minus_sink_K"] for c in old}))
-        for call in calls["calls"]:
-            if call["group"] == "b" and call["status"] == "ready":
-                self.assertEqual(call["fixture"], "micro150@50mm")
+    def test_manifest_is_twelve_calls_within_the_cap(self):
+        manifest = slab049.build_call_list()
+        calls = manifest["calls"]
+        self.assertEqual(len(calls), 12)
+        self.assertEqual(len({c["id"] for c in calls}), 12)
+        primary = [c for c in calls if c["replay_of"] is None]
+        replays = [c for c in calls if c["replay_of"] is not None]
+        self.assertEqual(len(primary), 8)
+        self.assertEqual({(c["kind"], c["reference"], c["grid"]) for c in primary},
+                         {(k, f"{r}-snapped", g) for k in ("hotspot6", "hotspot7_default")
+                          for r in ("ascend910-original", "micro150-original") for g in (32, 64)})
+        self.assertEqual(len(replays), 4)
+        self.assertTrue(all(c["grid"] == 64 and c["replay_of"] in {p["id"] for p in primary} for c in replays))
+        self.assertEqual({c["id"] for c in calls if c["gating"]},
+                         {"p-hs6-ascend910-original-g64", "p-hs6-micro150-original-g64"})
+        accounting = manifest["accounting"]
+        self.assertEqual((accounting["max_runs"], accounting["retries"]), (12, 0))
+        self.assertLessEqual(accounting["cpu_cap_minutes"], 30)
+        self.assertGreaterEqual(accounting["cpu_cap_minutes"] * 60, accounting["worst_case_cpu_s"])
+        for call in calls:
+            folder = REPO_ROOT / call["inputs"]["dir"]
+            self.assertEqual(hashlib.sha256((folder / "SHA256SUMS").read_bytes()).hexdigest(),
+                             call["inputs"]["sha256sums_sha256"])
+        for path, digest in manifest["source"]["files_sha256"].items():
+            self.assertEqual(hashlib.sha256((REPO_ROOT / path).read_bytes()).hexdigest(), digest, path)
+        self.assertIn("not_requested", manifest)
+
+    def test_slab_predictions_stay_bounded_diagnostic_evidence(self):
+        for kind, drop in ((NEW, 2.4675), ("hotspot6", 1.26)):
+            values = {m: round(slab049.slab_prediction(kind, m)["interior_drop_die_minus_sink_K"], 9) for m in H_VALUES}
+            self.assertFalse(h_dependent(values), kind)
+            self.assertAlmostEqual(values[1.0], drop, places=6)
+        self.assertTrue(h_dependent({m: slab049.slab_prediction(OLD, m)["interior_drop_die_minus_sink_K"]
+                                     for m in H_VALUES}))
 
 
 class OracleIdentityTests(unittest.TestCase):
@@ -209,7 +336,8 @@ class OracleIdentityTests(unittest.TestCase):
         self.untagged = root / "hotspot-default"
         self.untagged.write_bytes(b"placeholder default binary")
         self.tagged = root / "hotspot-material-only"
-        self.tagged.write_bytes(b"placeholder\0" + VARIANT_TAG + b"\0variant")
+        self.tagged.write_bytes(b"placeholder microchannel\0" + VARIANT_TAG + b"\0variant")
+        self.root = root
 
     def tearDown(self):
         self.directory.cleanup()
@@ -231,8 +359,16 @@ class OracleIdentityTests(unittest.TestCase):
         for path in VARIANT_SOURCES:
             self.assertNotIn(path, dict(same_binary_default.problem.generator_sha256))
 
-    def test_variant_result_is_labelled(self):
+    def test_variant_refuses_evaluations_without_a_gate_zero_pass(self):
         variant = MaterialOnlyCouplingOracle(4, 4, hotspot_binary=self.tagged)
+        design = variant.design_from_centers(((25, 25), (40, 40), (8, 9), (8, 25), (8, 41), (41, 15)))
+        with self.assertRaises(GateZeroRefusal):
+            asyncio.run(variant(design))
+
+    def test_variant_result_is_labelled(self):
+        from sundai_hotspot.test_gate_zero import passing_record
+        record = passing_record(self.root / "receipts", "material_only", self.tagged)
+        variant = MaterialOnlyCouplingOracle(4, 4, hotspot_binary=self.tagged, gate_zero_record=record)
         design = variant.design_from_centers(((25, 25), (40, 40), (8, 9), (8, 25), (8, 41), (41, 15)))
         response = {
             "candidate_hash": design.hash, "problem_hash": variant.problem_hash,

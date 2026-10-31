@@ -3,8 +3,14 @@
 Ticket `d41fca43-2e6c-464e-8fbc-0c485e4828dd` (owner pocket-forge). Line numbers refer to `3e7c480`;
 `sundai_hotspot/` and `sundai_tap/` are unchanged on `origin/main` through `1e6b97e`.
 
-**Status.** Source analysis, code, an analytic check and a call list. **No thermal solve was run for this
-ticket.** The pre-declared interpretation is in [CALL-LIST.md](CALL-LIST.md), written before any run.
+**Status.** Source analysis, code, an analytic check, and a frozen 12-call manifest for gate zero. **No
+thermal solve was run for this ticket.** The pre-declared interpretation is in [CALL-LIST.md](CALL-LIST.md),
+written before any run.
+
+**Room decision (section 8).** The cause is settled from source and saved grids. HotSpot 7 is not patched as the
+path forward. The material-only HotSpot 7 variant below (sections 3, 4 and 7) stays as labelled, bounded
+diagnostic evidence only. The MATCH candidate is HotSpot 6.0, the version TAP-2.5D pinned, and it is behind gate
+zero.
 
 **The question.** Our oracle's rise above ambient is about 2.3 to 2.4 times TAP-2.5D's on both fixtures
 (forge-research `repo-forensics.md` section 5 #6). The suspect: in the vendored HotSpot detailed-3D model,
@@ -200,9 +206,11 @@ Line numbers in this section are on this branch.
 | Image | `Dockerfile:20-22` builds both binaries. `.gitignore` and `.dockerignore` list the new binary. |
 | Evaluator identity | `sundai_hotspot/coupling_variant.py`: `MaterialOnlyCouplingOracle`. It requires the tag in the binary bytes it hashed. `solver_version` gets `+SLAB-049:coupling=material_only`. `problem_hash` is a new schema over the base hash, the coupling, the tag and the variant source hashes. The worker re-hashes those sources before every solve, and `evidence_kind` is labelled. |
 | Frozen equations | `coupling_variant.py` `cell_resistances` / `area_resistances` |
-| Tooling (no solves) | `sundai_hotspot/slab049.py`: analytic report, committed-output residuals, slab inputs, call list, per-call summarizer |
+| Tooling (no solves) | `sundai_hotspot/slab049.py`: analytic report, committed-output residuals, slab inputs, frozen reference inputs, the manifest, and the strict per-solve record |
 | C harness (assembly only) | `sundai_hotspot/coupling_assembly_harness.c` |
-| Tests | `sundai_hotspot/test_sink_coupling.py`. The container smoke loop picks it up automatically. |
+| HotSpot 6.0 evaluator | `sundai_hotspot6/` (upstream `a7a3286e`, blob-checked), `scripts/build_hotspot6.sh` (x86_64 and aarch64), `sundai_hotspot/evaluators.py` (`HotSpot6Oracle`, `make_oracle`) |
+| Gate zero | `sundai_hotspot/gate_zero.py` (pinned references, identities, records, refusal) and `sundai_hotspot/reference_validation.py` (`validate-reference`, the bootstrap path) |
+| Tests | `sundai_hotspot/test_sink_coupling.py`, `sundai_hotspot/test_gate_zero.py`. The container smoke loop picks them up automatically. |
 
 **The default is byte-identical** (author host: gcc 15.2.0, glibc 2.43, SuperLU 7.0.1; WSL Ubuntu):
 
@@ -217,7 +225,8 @@ Binary hashes depend on the toolchain. The grant host pins its own hashes at run
 source identity of NEW is the SHA-256 of `temperature_grid.c`, `Makefile` and `coupling_variant.py`, as listed
 in `problem.generator_sha256`.
 
-**What the tests show** (28 tests; the native ones run on POSIX and in the CI image):
+**What the tests show** (61 tests across both modules; the native, fake-solver and built-binary tests run on
+POSIX and in the CI image):
 
 - **Default byte-identity.**
   - Stripping the variant blocks from `temperature_grid.c` gives exactly the upstream bytes.
@@ -233,3 +242,91 @@ in `problem.generator_sha256`.
   steady files.
 - **Identity.** The variant oracle refuses an untagged binary, and its identity never equals the default's.
 - **Generated artifacts.** The committed artifacts are exactly what the code generates.
+- **Gate zero.**
+  - The pinned values, roles and input digest are fixed.
+  - Each evaluator kind accepts only its own binary.
+  - A record is refused if it is out of tolerance, forged, references the wrong binary, references a non-64 grid,
+    or comes from stale inputs.
+  - The bootstrap path (`validate-reference`, driven by a fake solver) makes receipts without a prior PASS, and
+    those receipts unlock search.
+  - Search and headroom refuse without a PASS.
+- **Strict parser.** Astra's controls are rejected: an extra layer-4 cell, and a duplicate layer 4. So is one
+  mutation per rule.
+- **HotSpot 6.0 source.** Every vendored file matches its upstream blob. The SentiLab block touches only the grid
+  writer.
+
+## 8. Room decision: settled cause, HotSpot 6.0 evaluator, gate zero
+
+Warden #56773, astra #56778, #56780, #56785 and #56794, and aneta #56739. [READ: room messages, relayed by the
+coordinator]
+
+**The cause is settled without new solves.**
+
+- **Source:** warden traced the HotSpot 7 chain in our code. `temperature_grid.c:104` links layers half and half;
+  `:1056` puts the cooling term in the sink's `rz`; `:167` reads that `rz` back on the link. TAP runs with
+  `-detailed_3D on` (`passive_interposer.py:205`).
+- **Saved grids:** astra's zero-solve read shows a 51.10 K / 51.60 K drop inside the copper, the v7 signature,
+  confirmed by a second, independent parser over 28 of 28 hashes.
+- **Section 6 agrees.** `committed_run1_signature` in `ANALYTIC.json`, read from files only, gives on all 8 saved
+  probes:
+  - spreader rise 69.6-71.0 K and sink rise 18.4-18.6 K, within 2.5-4.0 K of aneta's v7-link signature
+    (73.5 / 19.2 K) and about 43 K from the other two;
+  - `r_convec = 0.008999999999999998`, the generator's scaled value. That rules out the unscaled-`r_convec`
+    route for those probes. The generator skips an existing config, so its source alone does not prove it for
+    every run.
+
+**HotSpot 7 is not patched as the path forward.**
+
+- **The residual:** in aneta's independent network model (`thermal-network.mjs`, SHA-256 `2fedbad9...`), taking
+  convection out of v7's link still leaves +3.0 K on Ascend and +10.8 K on CPU-DRAM. With HotSpot 6.0's form, the
+  model lands at 75.09 C and 116.27 C, against the paper's 75.48 C and 115.94 C.
+- **What remains of the residual:** these are the lumping differences in section 3 that the single-term variant
+  leaves alone.
+- **The variant's role:** it remains bounded diagnostic evidence, not the MATCH evaluator. Its earlier call plans
+  are not requested.
+
+**The HotSpot 6.0 evaluator.**
+
+- **Source:** `sundai_hotspot6/` is uvahotspot/HotSpot `a7a3286e368867c26381e0a23e36b3e273bdeda9`. That is
+  TAP-2.5D's version: its `util/hotspot` is a 6.0 binary whose debug lines match this commit, built without
+  SuperLU.
+  - `UPSTREAM_BLOBS.txt` pins the git blob of all 30 vendored files.
+  - One macro-gated block (`SENTILAB_GRID_DUMP_ALL_LAYERS`) changes only the grid writer, so the chip, spreader and
+    sink layers can be read. Without the macro the file compiles to the upstream text.
+- **Physics:** HotSpot 6.0 couples layer n to n+1 through `rz(n)`, in both solver paths (`BC_det3D`; and
+  `build_steady_grid_matrix`, where `Rb = find_res_3D(l)`). So the spreader-to-sink link is the spreader's
+  material alone, and convection appears once, on the link to ambient.
+- **Build:** `scripts/build_hotspot6.sh` works on x86_64 and aarch64 with the same Debian/Ubuntu packages. It
+  builds:
+  - `hotspot`, the evaluator: SuperLU, `-ffp-contract=off`;
+  - `hotspot-tap-faithful`: `SUPERLU=0`, as TAP built it.
+
+  On the author box (WSL, gcc 15.2.0), both build with no source changes. Binary hashes depend on the toolchain
+  and the build path, so each host pins its own through gate zero.
+- **Selector:** `evaluators.make_oracle(evaluator, purpose)`. `HotSpot6Oracle` has its own solver version
+  (`HotSpot-6.0:a7a3286e...`) and problem hash. HotSpot 7's class, binary and identity are unchanged.
+  - Code that constructs `HotSpotOracle` directly (the live loop and the existing headroom runner) is not
+    rerouted. Rerouting it would stop them until HotSpot 7 passes gate zero, which is an owner decision.
+- **Licence:** the UVA notices are kept (`sundai_hotspot6/LICENSE`, `THIRD_PARTY_NOTICES.md`, and
+  `/licenses/HotSpot-6.0-LICENSE` in the image).
+
+**Gate zero (`gate_zero.py`).**
+
+- **The rule:** search and headroom refuse an evaluator identity until a recorded PASS for its exact binary shows
+  the pinned originals reproduced at 45 mm and grid 64, on the block-centre metric, within the prospective
+  computational reference-reproduction tolerance of 1.0 K.
+- **The values:** the gate uses the legal snapped originals, Ascend 910 at 75.48 C and CPU-DRAM at 115.94 C. The
+  out-of-sample TAP points, 75.47 C and 94.89 C, are pinned as verification cases.
+- **The digest:** the references digest covers values, roles, frozen inputs, tolerance and metric, so any change
+  invalidates old records.
+- **Bootstrap:** `reference_validation validate-reference` produces the first receipt and needs no PASS. It
+  writes a fresh config into a fresh directory with TAP's own generator, checks it byte for byte against the
+  frozen inputs, and records its hash and the effective start and stop.
+- **Record check:** a record is accepted only if it binds this binary and was computed from receipts. The
+  verdict is recomputed every time; the stored verdict is never trusted.
+
+**The 12-call manifest** is in [CALL-LIST.md](CALL-LIST.md):
+
+- 2 snapped originals x 2 engines (HotSpot 6.0 pinned, HotSpot 7 current) x grids 32 and 64;
+- plus 4 fresh-process grid-64 replays;
+- 10 CPU-min cap, no retries, expiring 2026-11-01T12:00Z.

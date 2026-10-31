@@ -4,6 +4,8 @@
                                                                            committed-output residuals,
                                                                            C assembly confirmation (POSIX)
     python -m sundai_hotspot.slab049 slab      [--write DIR | --check DIR]   frozen minimal-slab inputs, group (a)
+    python -m sundai_hotspot.slab049 references [--write DIR | --check DIR]  frozen TAP inputs of the published
+                                                                           references at 45 mm
     python -m sundai_hotspot.slab049 call-list [--write DIR | --check DIR]   the probe call list for the grant
     python -m sundai_hotspot.slab049 summarize EVALUATION_DIR ...           per-call record, for use after a
                                                                            granted run (reads files only)
@@ -28,8 +30,7 @@ import sys
 import tempfile
 
 from sundai_hotspot.coupling_variant import (
-    COUPLINGS, NEW, OLD, VARIANT_MACRO, VARIANT_MAKE_TARGET, VARIANT_TAG, PackageStack, area_resistances,
-    cell_resistances,
+    COUPLINGS, NEW, OLD, VARIANT_MACRO, PackageStack, area_resistances, cell_resistances,
 )
 from sundai_hotspot.tap_oracle import HOTSPOT_ROOT, REPO_ROOT, TAP_HOTSPOT_CONFIG
 
@@ -118,32 +119,89 @@ def read_lcf(path: Path, directory: Path) -> list[dict]:
     return layers
 
 
-def read_grid(path: Path) -> dict[int, list[float]]:
-    layers: dict[int, list[float]] = {}
+MAX_PLAUSIBLE_K = 2273.15  # anything hotter is garbage, not a temperature
+
+
+class GridFormatError(ValueError):
+    """A grid steady file that is not exactly what HotSpot writes for this grid and stack."""
+
+
+def read_grid(path: Path, *, grid: int | None = None, layers: int | None = None,
+              ambient_k: float | None = None) -> dict[int, list[float]]:
+    """Strictly parse a HotSpot grid steady file.
+
+    HotSpot 7 (and the SentiLab HotSpot 6.0 evaluator build) writes "Layer n:" and then exactly grid x grid lines
+    "index<TAB>T", for layers 0..L-1. Upstream HotSpot 6.0 writes layer 0 only, with no header. The reader rejects:
+    duplicate or missing layers, extra, missing or out-of-order cells, a cell count that differs from grid x grid
+    or between layers, and non-finite or implausible temperatures (not above 0 K, above MAX_PLAUSIBLE_K, or more
+    than the print rounding below ambient, which a passive steady state cannot reach).
+    """
+    sections: dict[int, list[float]] = {}
     current = None
-    for line in Path(path).read_text(encoding="utf-8").splitlines():
+    headerless = False
+    for line_number, line in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), start=1):
         stripped = line.strip()
         if not stripped:
             continue
         match = re.fullmatch(r"Layer\s+(\d+):", stripped)
         if match:
+            if headerless:
+                raise GridFormatError(f"layer header after headerless cells at line {line_number}")
             current = int(match.group(1))
-            layers[current] = []
+            if current in sections:
+                raise GridFormatError(f"duplicate layer {current} at line {line_number}")
+            sections[current] = []
             continue
-        index, value = stripped.split()
-        if int(index) != len(layers[current]):
-            raise ValueError("non-sequential grid index")
-        layers[current].append(float(value))
-    return layers
+        if stripped.startswith("Layer"):
+            raise GridFormatError(f"malformed layer header at line {line_number}")
+        if current is None:  # upstream HotSpot 6.0: the top layer only, without a header
+            headerless, current = True, 0
+            sections[0] = []
+        fields = stripped.split()
+        if len(fields) != 2:
+            raise GridFormatError(f"malformed cell at line {line_number}")
+        try:
+            index, value = int(fields[0]), float(fields[1])
+        except ValueError as exc:
+            raise GridFormatError(f"malformed cell at line {line_number}") from exc
+        if index != len(sections[current]):
+            raise GridFormatError(f"cell index {index} out of order at line {line_number}")
+        if not 0.0 < value <= MAX_PLAUSIBLE_K:  # also rejects nan and inf
+            raise GridFormatError(f"implausible temperature {fields[1]} at line {line_number}")
+        if ambient_k is not None and value < ambient_k - ROUNDING_K:
+            raise GridFormatError(f"temperature {fields[1]} below ambient at line {line_number}")
+        sections[current].append(value)
+    if not sections:
+        raise GridFormatError(f"no cells in {path}")
+    if sorted(sections) != list(range(len(sections))):
+        raise GridFormatError(f"layers {sorted(sections)} are not 0..{len(sections) - 1}")
+    if layers is not None and not headerless and len(sections) != layers:
+        raise GridFormatError(f"{len(sections)} layers; expected {layers}")
+    counts = {len(values) for values in sections.values()}
+    if len(counts) != 1:
+        raise GridFormatError(f"layers differ in cell count: {sorted(counts)}")
+    cells = counts.pop()
+    side = math.isqrt(cells)
+    if side * side != cells or (grid is not None and side != grid):
+        raise GridFormatError(f"{cells} cells per layer; expected {grid if grid else 'a square'} x same")
+    return sections
+
+
+def grid_argmax(values: list[float], side: int) -> list[dict]:
+    """Every cell holding the maximum, as (row, col); each is checked to lie inside the grid."""
+    if len(values) != side * side:
+        raise GridFormatError("argmax over a layer that is not grid x grid")
+    peak = max(values)
+    cells = [{"row": index // side, "col": index % side} for index, value in enumerate(values) if value == peak]
+    for cell in cells:
+        if not (0 <= cell["row"] < side and 0 <= cell["col"] < side):
+            raise GridFormatError(f"argmax {cell} outside the {side} x {side} grid")
+    return cells
 
 
 def read_steady(path: Path) -> list[tuple[str, float]]:
-    rows = []
-    for line in Path(path).read_text(encoding="utf-8").splitlines():
-        fields = line.split()
-        if len(fields) == 2:
-            rows.append((fields[0], float(fields[1])))
-    return rows
+    from sundai_hotspot.gate_zero import read_steady_values
+    return read_steady_values(path)
 
 
 def _eq(x: float, y: float) -> bool:
@@ -482,6 +540,7 @@ def analytic_report(include_assembly: bool) -> dict:
         "h_definition": "h = 1/(r_convec * s_sink^2); multipliers scale h, i.e. r_convec / multiplier",
         "frozen_equations": analytic_rows(),
         "committed_output_residuals": committed_output_residuals(),
+        "committed_run1_signature": committed_run1_signature(),
     }
     if include_assembly:
         with tempfile.TemporaryDirectory(prefix="slab049-assembly-") as directory:
@@ -553,304 +612,380 @@ def slab_argv(binary: str, multiplier: float) -> list[str]:
             "-grid_map_mode", "max"]
 
 
-def slab_prediction(coupling: str, multiplier: float) -> dict:
-    """Closed-form 1-D column, node temperatures above ambient (K) at the die centre.
+def slab_prediction(kind: str, multiplier: float) -> dict:
+    """Closed-form 1-D column at the die centre: node temperatures above ambient (K), per evaluator kind.
 
-    find_res pairs: die(0)-TIM(1) = r_die + r_tim/2 (layer 0 keeps its full rz), TIM-spreader = r_tim/2 + r_sp/2,
-    spreader-sink per coupling, sink-ambient = r_hs,mat + r_conv. All heat leaves through the sink.
+    HotSpot 7 (find_res): die(0)-TIM(1) = r_die + r_tim/2 (layer 0 keeps its full rz), TIM-spreader =
+    r_tim/2 + r_sp/2, spreader-sink = r_sp/2 + r_hs,mat/2, plus r_conv/2 in the default build. HotSpot 6.0
+    (BC_det3D): every link n -> n+1 is the upper layer's rz, so r_die, r_tim and r_sp. Sink to ambient is
+    r_hs,mat + r_conv in all three. All heat leaves through the sink.
     """
     config = read_hotspot_config(TAP_HOTSPOT_CONFIG)
     stack = PackageStack(float(config["k_spreader"]), float(config["t_spreader"]), float(config["k_sink"]),
                          float(config["t_sink"]), slab_r_convec(multiplier), SLAB["s_sink_m"])
-    links = area_resistances(stack, coupling)
     r_die = SLAB["die"]["resistivity"] * SLAB["die"]["thickness"]
     r_tim = SLAB["tim"]["resistivity"] * SLAB["tim"]["thickness"]
     r_sp = stack.t_spreader / stack.k_spreader
+    if kind == HOTSPOT6:
+        die_tim, tim_spreader, spreader_sink = r_die, r_tim, r_sp
+    elif kind in COUPLINGS:
+        die_tim, tim_spreader = r_die + r_tim / 2, r_tim / 2 + r_sp / 2
+        spreader_sink = area_resistances(stack, kind)["spreader_sink"]
+    else:
+        raise ValueError(f"unknown evaluator kind {kind!r}")
+    sink_ambient = area_resistances(stack, OLD)["sink_ambient"]
     flux = SLAB["power_W"] / (SLAB["die_edge_m"] ** 2)
-    sink = flux * links["sink_ambient"]
-    spreader = sink + flux * links["spreader_sink"]
-    tim = spreader + flux * (r_tim / 2 + r_sp / 2)
-    die = tim + flux * (r_die + r_tim / 2)
+    sink = flux * sink_ambient
+    spreader = sink + flux * spreader_sink
+    tim = spreader + flux * tim_spreader
+    die = tim + flux * die_tim
     return {"flux_W_per_m2": flux, "h_W_per_m2K": stack.heat_transfer_coefficient,
             "rise_K": {"die_layer0": die, "tim_layer1": tim, "spreader_layer2": spreader, "sink_layer3": sink},
-            "interior_drop_die_minus_sink_K": die - sink}
+            "interior_drop_die_minus_sink_K": die - sink,
+            "observable": ("steady-file block values (-grid_map_mode max): layer_0_die, layer_1_TIM, hsp_TIM, "
+                           "hsink_TIM, minus the config ambient")}
 
 
 # ----------------------------------------------------------------------------------------------
-# Groups (b) and (c): TAP layouts
+# Published references: frozen TAP inputs at 45 mm, the paper's frame
 # ----------------------------------------------------------------------------------------------
 
+HOTSPOT6 = "hotspot6"
 PAPER = "Ma et al., TAP-2.5D, DATE 2021 (HotSpot 6.0, 45 mm interposer, grid 64, 45 C ambient)"
-ORIGINAL_LAYOUTS = {
+ASCEND_PLACED_DIMS = [[31.4, 14.5], [10.5, 16.0], [11.87, 7.75], [11.87, 7.75], [11.87, 7.75], [11.87, 7.75]]
+REFERENCE_LAYOUTS = {
     "ascend910-original": {
-        "fixture_family": "ascend910",
-        "paper_figure": "Fig. 6(a) original layout",
-        "paper_peak_c": 75.48,
-        "decoded_centers_mm_45mm_frame": [[17.15, 22.60], [38.35, 22.60], [7.34, 11.12], [21.31, 11.12],
-                                          [7.34, 33.87], [21.31, 33.87]],
-        "decoded_orientation": ("Virtuvian 31.4 x 14.5 (horizontal), Nimbus 10.5 x 16, HBM 11.87 x 7.75 (rotated); "
-                                "the catalog fixes Virtuvian 14.5 x 31.4 and HBM 7.75 x 11.87"),
-        "source": "forge-research/repo-forensics.md section 6 (decoded from the paper's vector figure)",
+        "fixture": "ascend910", "paper_figure": "Fig. 6(a) original layout", "paper_peak_c": 75.48,
+        "centers_mm": [[17.15, 22.60], [38.35, 22.60], [7.34, 11.12], [21.31, 11.12], [7.34, 33.87], [21.31, 33.87]],
+        "placed_dims_mm": ASCEND_PLACED_DIMS,
+        "orientation_note": ("Virtuvian and the HBMs sit rotated 90 degrees from the catalog. TAP's microbump halo "
+                             "depends on the perimeter only (passive_interposer.py compute_ubump_overhead), so it "
+                             "is unchanged."),
     },
     "micro150-original": {
-        "fixture_family": "micro150",
-        "paper_figure": "Fig. 5(a) original placement (Kannan et al., MICRO 2015)",
+        "fixture": "micro150", "paper_figure": "Fig. 5(a) original placement (Kannan et al., MICRO 2015)",
         "paper_peak_c": 115.94,
-        "decoded_centers_mm_45mm_frame": [[17.92, 17.55], [17.92, 27.45], [27.07, 27.45], [27.07, 17.55],
-                                          [8.57, 17.55], [8.57, 27.45], [36.42, 27.45], [36.42, 17.55]],
-        "decoded_orientation": "CPU 8.25 x 9 and DRAM 8.75 x 8.75, catalog orientation",
-        "index_assignment": ("CPUs 0-3 around the 2x2 cluster so the 0-1-2-3 ring is adjacent, DRAM 4+i beside "
-                             "CPU i. Equal dies have equal power, so the assignment changes the wire proxy only."),
-        "source": "forge-research/repo-forensics.md section 6 (decoded from the paper's vector figure)",
+        "centers_mm": [[17.92, 17.55], [17.92, 27.45], [27.07, 27.45], [27.07, 17.55],
+                       [8.57, 17.55], [8.57, 27.45], [36.42, 27.45], [36.42, 17.55]],
+        "placed_dims_mm": None,
+        "orientation_note": ("Catalog orientation. CPUs 0-3 go around the 2x2 cluster so the 0-1-2-3 ring is "
+                             "adjacent; DRAM 4+i sits beside CPU i. Equal dies carry equal power, so the index "
+                             "assignment changes the wire proxy only."),
+    },
+    "ascend910-tap": {
+        "fixture": "ascend910", "paper_figure": "Fig. 6(c) TAP-2.5D solution", "paper_peak_c": 75.47,
+        "centers_mm": [[17.0, 25.0], [39.0, 25.0], [11.0, 13.0], [24.0, 13.0], [10.0, 37.0], [23.0, 37.0]],
+        "placed_dims_mm": ASCEND_PLACED_DIMS,
+        "orientation_note": "orientations assumed as in the original layout; the paper's panels share its structure",
+    },
+    "micro150-tap": {
+        "fixture": "micro150", "paper_figure": "Fig. 5 TAP-2.5D solution (non-pipelined links)", "paper_peak_c": 94.89,
+        "centers_mm": None, "placed_dims_mm": None,
+        "orientation_note": "pending: the DRAM positions are not decoded; SLAB-048 supplies them",
     },
 }
+REFERENCE_SOURCE = ("forge-research/repo-forensics.md section 6, decoded from the paper's vector figures; "
+                    "SLAB-048 reference data supersedes it before any run (regenerate the manifest, never swap after)")
+# (layout, variant): raw is the decoded reconstruction; snapped is its legal 1 mm snap. They are separate identities.
+REFERENCE_SETS = (("ascend910-original", "raw"), ("ascend910-original", "snapped"), ("micro150-original", "raw"),
+                  ("micro150-original", "snapped"), ("ascend910-tap", "raw"))
+REFERENCE_INPUTS = ("new_hotspot.config", "samplelayers.lcf", "sample.ptrace", "sampleL0_Substrate.flp",
+                    "sampleL1_C4Layer.flp", "sampleL2_Interposer.flp", "sampleL3_UbumpLayer.flp",
+                    "sampleL4_ChipLayer.flp", "sampleL5_TIM.flp")
+_GENERATOR = r"""
+import json, sys
+from passive_interposer import PassiveInterposer
+spec, out = json.loads(sys.argv[1]), sys.argv[2]
+system = PassiveInterposer()
+system.set_chiplet_count(len(spec["widths"]))
+system.initialize()
+system.set_interposer_size(spec["interposer_mm"])
+system.set_chiplet_size(spec["widths"], spec["heights"])
+system.set_chiplet_power(spec["powers"])
+system.set_connection_matrix(spec["connections"])
+system.set_granularity(spec["granularity"])
+system.set_link_type(spec["link_type"])
+system.compute_ubump_overhead()
+system.set_path(out + "/")
+system.x, system.y = spec["x"], spec["y"]
+system.gen_flp("sample")
+system.gen_ptrace("sample")
+"""
+MARGIN_MM = 0.5  # the oracle's interposer margin, microbump halo included
 
 
-def provisional_50mm_centers(centers_45: list[list[float]]) -> list[list[float]]:
-    """Shift the 45 mm frame by +2.5 mm into the 50 mm frame, then round to the oracle's 1 mm centre grid."""
-    return [[float(math.floor(x + 2.5 + 0.5)), float(math.floor(y + 2.5 + 0.5))] for x, y in centers_45]
-
-
-def _legal(fixture: str, centers: list[list[float]]) -> tuple[bool, str]:
-    from sundai_hotspot.tap_oracle import HotSpotOracle, TapLegalityError
-    with tempfile.TemporaryDirectory(prefix="slab049-legality-") as directory:
+def _fixture_problem(fixture: str):
+    from sundai_hotspot.tap_oracle import TAP_CONFIGS, _load_problem
+    with tempfile.TemporaryDirectory(prefix="slab049-problem-") as directory:
         placeholder = Path(directory) / "hotspot-placeholder"
-        placeholder.write_bytes(b"legality check only; never executed")
-        oracle = HotSpotOracle(64, 64, fixture=fixture, hotspot_binary=placeholder)
-        try:
-            oracle.centers_for(oracle.design_from_centers([tuple(c) for c in centers]))
-        except TapLegalityError as exc:
-            return False, str(exc)
-    return True, "passes the oracle's catalog, margin, halo-overlap and 1 mm grid checks"
+        placeholder.write_bytes(b"problem parameters only; never executed")
+        return _load_problem(config_path=TAP_CONFIGS[fixture], hotspot_binary=placeholder)
 
 
-def mesh_subset(fixture: str) -> tuple[list[dict], dict]:
-    """The layout that set the fixture's mesh error, plus clustered-01, spread-01 and random-01."""
-    result = json.loads((REPO_ROOT / "docs/sentilab/evidence/mesh" / fixture / "RESULT.json").read_text())
-    rows = sorted(result["layouts"], key=lambda r: (-abs(r["J_c"]["32"] - r["J_c"]["64"]), r["id"]))
-    chosen = [rows[0]]
-    for wanted in ("clustered-01", "spread-01", "random-01"):
-        row = next(r for r in result["layouts"] if r["id"] == wanted)
-        if row not in chosen:
-            chosen.append(row)
-    for row in rows:
-        if len(chosen) >= 4:
-            break
-        if row not in chosen:
-            chosen.append(row)
-    epsilon = max(abs(r["J_c"]["32"] - r["J_c"]["64"]) for r in result["layouts"])
-    return chosen, {"epsilon_c": epsilon, "argmax_layout": rows[0]["id"]}
+def layout_problems(dims: list[list[float]], centers: list[list[float]], halos: list[float], size: float) -> list[str]:
+    """The oracle's legality rules for any orientation: margin with halo, no halo overlap (touching allowed)."""
+    rects = [(x - w / 2 - h, y - d / 2 - h, x + w / 2 + h, y + d / 2 + h)
+             for (w, d), (x, y), h in zip(dims, centers, halos)]
+    problems = [f"die {i} breaks the {MARGIN_MM} mm margin" for i, r in enumerate(rects)
+                if r[0] < MARGIN_MM - 1e-9 or r[1] < MARGIN_MM - 1e-9 or r[2] > size - MARGIN_MM + 1e-9
+                or r[3] > size - MARGIN_MM + 1e-9]
+    for i, a in enumerate(rects):
+        for j, b in enumerate(rects[:i]):
+            if not (a[2] <= b[0] + 1e-9 or b[2] <= a[0] + 1e-9 or a[3] <= b[1] + 1e-9 or b[3] <= a[1] + 1e-9):
+                problems.append(f"dies {j} and {i} overlap with their halos")
+    return problems
+
+
+_SNAP_OFFSETS = sorted(((dx, dy) for dx in range(-3, 4) for dy in range(-3, 4)),
+                       key=lambda d: (abs(d[0]) + abs(d[1]), abs(d[1]), d[0] < 0, d[1] < 0))
+
+
+def snap_legal(dims: list[list[float]], centers: list[list[float]], halos: list[float], size: float) -> list[list[float]]:
+    """Deterministic legal 1 mm snap: round each centre half up; in index order, take the first offset (nearest
+    first, x moves before y, positive before negative) that keeps the margin and clears every die placed so far."""
+    placed: list[list[float]] = []
+    for index, (x, y) in enumerate(centers):
+        base = (math.floor(x + 0.5), math.floor(y + 0.5))
+        for dx, dy in _SNAP_OFFSETS:
+            candidate = [float(base[0] + dx), float(base[1] + dy)]
+            if not layout_problems(dims[:index + 1], placed + [candidate], halos[:index + 1], size):
+                placed.append(candidate)
+                break
+        else:
+            raise ValueError(f"die {index} has no legal 1 mm position within 3 mm of its decoded centre")
+    return placed
+
+
+def reference_spec(layout_id: str, variant: str, interposer_mm: int = 45) -> dict:
+    layout = REFERENCE_LAYOUTS[layout_id]
+    if layout["centers_mm"] is None:
+        raise ValueError(f"{layout_id} is pending: {layout['orientation_note']}")
+    problem = _fixture_problem(layout["fixture"])
+    catalog = [list(d) for d in zip(problem.widths_mm, problem.heights_mm)]
+    dims = layout["placed_dims_mm"] or catalog
+    if sorted(map(sorted, dims)) != sorted(map(sorted, catalog)):
+        raise ValueError(f"{layout_id}: placed dies are not the fixture's catalog dies")
+    halos = list(problem.bump_halos_mm)
+    centers = [list(c) for c in layout["centers_mm"]]
+    if variant == "snapped":
+        centers = snap_legal(dims, centers, halos, interposer_mm)
+    elif variant != "raw":
+        raise ValueError(f"unknown variant {variant!r}")
+    return {"interposer_mm": float(interposer_mm), "widths": [d[0] for d in dims], "heights": [d[1] for d in dims],
+            "powers": list(problem.powers_w), "connections": [list(row) for row in problem.connections],
+            "granularity": problem.granularity_mm, "link_type": problem.link_type, "halos": halos,
+            "x": [c[0] for c in centers], "y": [c[1] for c in centers],
+            "legality_problems": layout_problems(dims, centers, halos, interposer_mm)}
+
+
+def generate_reference(spec: dict, directory: Path) -> dict[str, bytes]:
+    """Run TAP's own generator for `spec` in `directory`; return the HotSpot inputs with a local, LF-only LCF."""
+    from sundai_hotspot.tap_oracle import TAP_ROOT
+    process = subprocess.run([sys.executable, "-c", _GENERATOR, json.dumps(spec), str(directory)], cwd=TAP_ROOT,
+                             capture_output=True, text=True, check=False, timeout=120)
+    if process.returncode != 0:
+        raise RuntimeError(f"TAP generator failed: {process.stderr[-2000:]}")
+    # TAP writes in text mode; keep the Linux bytes (LF) the run host produces, whatever generated them.
+    files = {name: (Path(directory) / name).read_bytes().replace(b"\r\n", b"\n") for name in REFERENCE_INPUTS}
+    lines = []
+    for line in files["samplelayers.lcf"].decode("utf-8").splitlines():
+        stripped = line.strip()
+        lines.append(Path(stripped.replace("\\", "/")).name if stripped.endswith(".flp") else line)
+    files["samplelayers.lcf"] = ("\n".join(lines) + "\n").encode("utf-8")
+    return files
+
+
+def reference_files(layout_id: str, variant: str) -> dict[str, bytes]:
+    with tempfile.TemporaryDirectory(prefix="slab049-reference-") as directory:
+        return generate_reference(reference_spec(layout_id, variant), Path(directory))
+
+
+def reference_dir(layout_id: str, variant: str) -> str:
+    return f"docs/sentilab/diagnostics/SLAB-049/references/{layout_id}-{variant}-45mm"
+
+
+def tap_argv(binary: str, grid: int = 64) -> list[str]:
+    """TAP-2.5D's run_hotspot command (passive_interposer.py:197-206); grid 64 and center mapping come from the
+    config. Other grids override rows and columns only."""
+    argv = [binary, "-c", "new_hotspot.config", "-f", "sampleL4_ChipLayer.flp", "-p", "sample.ptrace",
+            "-steady_file", "sample.steady", "-grid_steady_file", "sample.grid.steady", "-model_type", "grid",
+            "-detailed_3D", "on", "-grid_layer_file", "samplelayers.lcf"]
+    return argv if grid == 64 else argv + ["-grid_rows", str(grid), "-grid_cols", str(grid)]
+
+
+# The v7 signature: rise above ambient (K) at the hottest spreader and sink cells, Ascend 910 at 45 mm, from
+# aneta-claude's independent network model (#56739, not HotSpot). Recorded for every solve; the cause is settled.
+RUN1_SIGNATURES_ASCEND_45MM = {
+    "correct (HotSpot 6 form, the paper's)": [26.5, 25.2],
+    "v7 spreader-sink link": [73.5, 19.2],
+    "r_convec not rescaled": [62.4, 61.2],
+}
+
+
+def run1_pattern(spreader_rise: float, sink_rise: float) -> dict:
+    ratio = (spreader_rise - sink_rise) / sink_rise
+    pattern = "v7-link" if ratio >= 1.0 else ("v6-like" if ratio <= 0.25 else "ambiguous")
+    distances = {name: math.hypot(spreader_rise - s, sink_rise - k)
+                 for name, (s, k) in RUN1_SIGNATURES_ASCEND_45MM.items()}
+    return {"spreader_rise_K": spreader_rise, "sink_rise_K": sink_rise, "drop_over_sink_rise": ratio,
+            "pattern": pattern, "distance_to_ascend_45mm_signatures_K": distances}
+
+
+def committed_run1_signature() -> list[dict]:
+    """The spreader and sink reading on the committed 2026-10-18 probe outputs (50 mm, probe layouts, grids 16/32)."""
+    records = []
+    for case in sorted(p for p in PROBE_RESULTS.iterdir() if (p / "sample.grid.steady").is_file()):
+        config = read_hotspot_config(case / "new_hotspot.config")
+        layers = read_lcf(case / "samplelayers.lcf", case)
+        ambient = float(config["ambient"])
+        grid = read_grid(case / "sample.grid.steady", layers=len(layers) + 2, ambient_k=ambient)
+        records.append({"case": case.name, "r_convec": config["r_convec"], "s_sink": config["s_sink"],
+                        "s_spreader": config["s_spreader"],
+                        "r_convec_is_generator_scaled": float(config["r_convec"]) == tap_package(50)["r_convec_K_per_W"],
+                        **run1_pattern(max(grid[len(layers)]) - ambient, max(grid[len(layers) + 1]) - ambient)})
+    return records
 
 
 # ----------------------------------------------------------------------------------------------
-# The call list
+# The manifest: one frozen list of at most 12 calls (astra #56794)
 # ----------------------------------------------------------------------------------------------
 
-EVALUATORS = {
-    "OLD": {
-        "coupling": OLD,
-        "build": "make -C sundai_hotspot -j4 SUPERLU=1",
-        "binary": "sundai_hotspot/hotspot",
-        "oracle": ("sundai_hotspot.tap_oracle.HotSpotOracle(64, 64, fixture=..., max_workers=1, "
-                   "retained_output_root=<fresh dir>)"),
-        "identity_checks": ["binary must NOT contain the SLAB-049 tag", "problem_hash is the unchanged default"],
-    },
-    "NEW": {
-        "coupling": NEW,
-        "build": f"make -C sundai_hotspot SUPERLU=1 {VARIANT_MAKE_TARGET}",
-        "binary": f"sundai_hotspot/{VARIANT_MAKE_TARGET}",
-        "oracle": ("sundai_hotspot.coupling_variant.MaterialOnlyCouplingOracle(64, 64, fixture=..., max_workers=1, "
-                   "retained_output_root=<fresh dir>)"),
-        "identity_checks": [f"binary must contain {VARIANT_TAG.decode()}",
-                            "solver_version and problem_hash name coupling=material_only"],
-    },
+MANIFEST_ENGINES = (("HS6", HOTSPOT6), ("HS7", "hotspot7_default"))
+MANIFEST_REFERENCES = ("ascend910-original", "micro150-original")
+PRIMARY_VARIANT = "snapped"
+PRIMARY_VARIANT_REASON = (
+    "The legal snapped variant passes the same constraint checker that every search candidate must pass (margin, "
+    "halos, 1 mm grid), so a later MATCH compares like with like. The raw reconstruction carries the figure's "
+    "digitizing noise and off-grid positions that search can never reach. Snapping moves no die more than its "
+    "rounding plus the first clear 1 mm offset; on Ascend 910 the paper's three layouts differ by only 0.35 K. "
+    "Risk, declared now: if a snapped reference misses by more than 1.0 K, the raw run in the next allocation "
+    "separates snapping from physics before the evaluator is called wrong.")
+TIMING = {  # micro150/TIMING.json, Azure x86_64 (16 CPU); HotSpot 6.0 SuperLU is unmeasured and assumed alike
+    "grid64_expected_wall_s": 4.76,
+    "grid32_expected_wall_s": 0.49,
+    "per_call_overhead_cpu_s": 1.5,  # TAP generation, hashing, process start and reap, archive, summary
+    "grid64_cpu_cap_s": 60.0,        # each call is killed at its cap; a failed attempt costs at most that
+    "grid32_cpu_cap_s": 15.0,
 }
-
-# Measured costs (see CALL-LIST.md for sources). CPU seconds per call, including worker start and reap.
-COST = {
-    "grid64_typical_cpu_s": 4.90,     # micro150 mesh: 129.79 CPU-s / 72 calls, grid-64 share of wall time
-    "grid64_conservative_cpu_s": 7.84,  # slowest grid-64 evaluation in the micro150 mesh journal
-    "grid32_typical_cpu_s": 0.5435,   # SLAB-039: 1,440.29 CPU-s / 2,650 grid-32 calls
-    "grid32_conservative_cpu_s": 0.60,
-    "per_call_archive_cpu_s": 0.5,    # hashing and summarizing the retained files
-    "retry_reserve_calls": 4,
-    "timeout_reserve_calls": 1,
-    "timeout_cpu_s": 55.0,            # 45 s solver timeout + 10 s worker margin
-}
+MANIFEST_SOURCES = (
+    "scripts/build_hotspot6.sh", "sundai_hotspot/Makefile", "sundai_hotspot/temperature_grid.c",
+    "sundai_hotspot/tap_oracle.py", "sundai_hotspot/tap_oracle_worker.py", "sundai_hotspot/gate_zero.py",
+    "sundai_hotspot/evaluators.py", "sundai_hotspot/reference_validation.py", "sundai_hotspot/slab049.py",
+    "sundai_hotspot6/UPSTREAM_COMMIT", "sundai_hotspot6/UPSTREAM_BLOBS.txt", "sundai_hotspot6/temperature_grid.c",
+    "sundai_hotspot6/Makefile", "sundai_tap/passive_interposer.py", "sundai_tap/system.py",
+    "sundai_tap/util/hotspot.config", "sundai_tap/util/fill_space.py", "sundai_tap/configs/sys_ascend910.cfg",
+    "sundai_tap/configs/sys_micro150.cfg",
+)
 
 
-def _fixture(family: str, interposer: int) -> dict:
-    package = tap_package(interposer)
-    available = interposer == 50
+def _sums_digest(directory: str) -> str:
+    return hashlib.sha256((REPO_ROOT / directory / "SHA256SUMS").read_bytes()).hexdigest()
+
+
+def _manifest_call(call_id: str, label: str, kind: str, layout_id: str, grid: int, purpose: str,
+                   replay_of: str | None = None) -> dict:
+    from sundai_hotspot.gate_zero import EVALUATOR_KINDS
+    directory = reference_dir(layout_id, PRIMARY_VARIANT)
+    cap = TIMING[f"grid{grid}_cpu_cap_s"]
     return {
-        "family": family,
-        "interposer_mm": interposer,
-        "spreader_mm": round(package["s_spreader_m"] * 1000, 9),
-        "sink_mm": round(package["s_sink_m"] * 1000, 9),
-        "r_convec_K_per_W": package["r_convec_K_per_W"],
-        "available_on_main": available,
-        "oracle_fixture_id": family if available else None,
-        "blocked_on": None if available else "SLAB-048: a 45 mm fixture in tap_oracle.TAP_CONFIGS",
+        "id": call_id, "engine": label, "kind": kind, "binary": EVALUATOR_KINDS[kind]["binary"],
+        "reference": f"{layout_id}-{PRIMARY_VARIANT}", "paper_peak_c": REFERENCE_LAYOUTS[layout_id]["paper_peak_c"],
+        "grid": grid, "gating": grid == 64 and kind == HOTSPOT6 and replay_of is None, "purpose": purpose,
+        "replay_of": replay_of,
+        "inputs": {"dir": directory, "sha256sums_sha256": _sums_digest(directory)},
+        "command": (f"python -m sundai_hotspot.reference_validation validate-reference --kind {kind} "
+                    f"--reference {layout_id}-{PRIMARY_VARIANT} --grid {grid} --out <fresh empty dir>"),
+        "argv": tap_argv(f"<repo>/{EVALUATOR_KINDS[kind]['binary']}", grid),
+        "accounting": {"expected_wall_s": TIMING[f"grid{grid}_expected_wall_s"],
+                       "expected_cpu_s": round(TIMING[f"grid{grid}_expected_wall_s"] + TIMING["per_call_overhead_cpu_s"], 2),
+                       "cpu_cap_s": cap, "solver_timeout_s": cap,
+                       "worst_case_cpu_s": cap + TIMING["per_call_overhead_cpu_s"]},
     }
 
 
 def build_call_list() -> dict:
-    fixtures = {f"{family}@{size}mm": _fixture(family, size)
-                for family in ("ascend910", "micro150") for size in (45, 50)}
+    from sundai_hotspot.gate_zero import EVALUATOR_KINDS, PINNED_REFERENCES_SHA256, TOLERANCE_K, TOLERANCE_LABEL
     calls = []
-
-    for multiplier in H_MULTIPLIERS:
-        for evaluator in ("OLD", "NEW"):
-            coupling = EVALUATORS[evaluator]["coupling"]
-            calls.append({
-                "id": f"a-slab-{_slab_label(multiplier)}-{evaluator.lower()}",
-                "group": "a", "evaluator": evaluator, "grid": SLAB["grid"], "status": "ready",
-                "h_multiplier": multiplier, "r_convec_K_per_W": slab_r_convec(multiplier),
-                "invocation": {
-                    "cwd": "<fresh empty directory>",
-                    "copy_in": ["slab_die.flp", "slab_tim.flp", "slab.lcf", "slab.ptrace",
-                                f"slab_{_slab_label(multiplier)}.config"],
-                    "verify": "every copied file matches slab/SHA256SUMS before the solver starts",
-                    "argv": slab_argv(f"<repo>/{EVALUATORS[evaluator]['binary']}", multiplier),
-                },
-                "prediction": slab_prediction(coupling, multiplier),
-            })
-
-    for layout_id, layout in ORIGINAL_LAYOUTS.items():
-        for size in (45, 50):
-            fixture_key = f"{layout['fixture_family']}@{size}mm"
-            fixture = fixtures[fixture_key]
-            centers = None
-            blocked = []
-            if not fixture["available_on_main"]:
-                blocked.append(fixture["blocked_on"])
-            if layout_id == "ascend910-original":
-                blocked.append("SLAB-048: per-die orientation (Virtuvian, HBM and Nimbus orientations are not in the "
-                               "catalog) and off-grid reference centres")
-            elif size == 45:
-                blocked.append("SLAB-048: reference centres for the 45 mm frame (nearest-mm rounding overlaps the "
-                               "CPU halos in y)")
-            else:
-                centers = provisional_50mm_centers(layout["decoded_centers_mm_45mm_frame"])
-                legal, reason = _legal(layout["fixture_family"], centers)
-                if not legal:
-                    blocked.append(f"provisional 50 mm centres are illegal: {reason}")
-            for evaluator in ("OLD", "NEW"):
-                calls.append({
-                    "id": f"b-{layout_id}-{size}mm-{evaluator.lower()}",
-                    "group": "b", "evaluator": evaluator, "grid": 64, "fixture": fixture_key,
-                    "layout": layout_id,
-                    "centers_mm": centers,
-                    "centers_note": ("PROVISIONAL: decoded 45 mm centres +2.5 mm, rounded to 1 mm; SLAB-048 reference "
-                                     "data supersedes this before any run (regenerate the list, never swap after)"
-                                     if centers else None),
-                    "status": "blocked" if blocked else "ready",
-                    "blocked_on": blocked or None,
-                    "paper_peak_c": layout["paper_peak_c"],
-                })
-
-    mesh = {}
-    for fixture in ("ascend910", "micro150"):
-        subset, summary = mesh_subset(fixture)
-        mesh[fixture] = {**summary, "layouts": [row["id"] for row in subset]}
-        for row in subset:
-            for grid in (32, 64):
-                calls.append({
-                    "id": f"c-mesh-{fixture}-{row['id']}-g{grid}-new",
-                    "group": "c", "evaluator": "NEW", "grid": grid, "fixture": f"{fixture}@50mm",
-                    "layout": f"mesh/{fixture}/{row['id']}", "centers_mm": row["centers_mm"], "status": "ready",
-                    "old_reference_j_c": row["J_c"][str(grid)],
-                })
-        argmax = subset[0]
-        calls.append({
-            "id": f"c-mesh-{fixture}-{argmax['id']}-g64-old-reproduction",
-            "group": "c", "evaluator": "OLD", "grid": 64, "fixture": f"{fixture}@50mm",
-            "layout": f"mesh/{fixture}/{argmax['id']}", "centers_mm": argmax["centers_mm"], "status": "ready",
-            "old_reference_j_c": argmax["J_c"]["64"],
-            "purpose": "ties this host's OLD binary to the committed mesh J64 before NEW is compared with it",
-        })
-
-    def cost(call: dict, key: str) -> float:
-        return COST[f"grid{call['grid']}_{key}_cpu_s"]
-
-    ready = [c for c in calls if c["status"] == "ready"]
-    blocked = [c for c in calls if c["status"] == "blocked"]
-
-    def tier(selection: list[dict]) -> dict:
-        typical = sum(cost(c, "typical") for c in selection)
-        conservative = sum(cost(c, "conservative") for c in selection)
-        return {"calls": len(selection),
-                "grid64_calls": sum(c["grid"] == 64 for c in selection),
-                "grid32_calls": sum(c["grid"] == 32 for c in selection),
-                "typical_cpu_s": round(typical, 2), "conservative_cpu_s": round(conservative, 2)}
-
-    reserve = (COST["retry_reserve_calls"] * COST["grid64_conservative_cpu_s"]
-               + COST["timeout_reserve_calls"] * COST["timeout_cpu_s"]
-               + len(calls) * COST["per_call_archive_cpu_s"])
-    all_tiers = tier(calls)
-    total = all_tiers["conservative_cpu_s"] + reserve
+    for label, kind in MANIFEST_ENGINES:
+        for layout_id in MANIFEST_REFERENCES:
+            for grid in (64, 32):
+                purpose = ("gate zero: the block-centre metric within 1.0 K of the paper" if kind == HOTSPOT6 and grid == 64
+                           else "numerical evidence, not gating: " + ("current engine at the paper's grid" if grid == 64
+                                                                     else "grid 32 against grid 64"))
+                calls.append(_manifest_call(f"p-{label.lower()}-{layout_id}-g{grid}", label, kind, layout_id, grid,
+                                            purpose))
+    for label, kind in MANIFEST_ENGINES:
+        for layout_id in MANIFEST_REFERENCES:
+            primary = f"p-{label.lower()}-{layout_id}-g64"
+            calls.append(_manifest_call(f"r-{label.lower()}-{layout_id}-g64", label, kind, layout_id, 64,
+                                        "independent fresh-process replay: outputs must be byte-identical",
+                                        replay_of=primary))
+    expected = sum(c["accounting"]["expected_cpu_s"] for c in calls)
+    worst = sum(c["accounting"]["worst_case_cpu_s"] for c in calls)
     return {
-        "schema": "sentilab-slab049-call-list-v1",
+        "schema": "sentilab-slab049-manifest-v3",
         "ticket": TICKET,
         "ticket_uuid": TICKET_UUID,
-        "status": "PROPOSED. Not executed. Every call needs warden's grant; no solve has been run for SLAB-049.",
-        "pristine_source_commit": BASE_COMMIT,
+        "status": ("PROPOSED. Frozen manifest of 12 calls for warden's grant against the merged build. Nothing has "
+                   "been executed; no solve has been run for SLAB-049."),
         "generated_by": "python -m sundai_hotspot.slab049 call-list --write docs/sentilab/diagnostics/SLAB-049",
         "paper": PAPER,
-        "evaluators": EVALUATORS,
-        "fixtures": fixtures,
-        "original_layouts": ORIGINAL_LAYOUTS,
-        "slab": {**SLAB, "inputs": "docs/sentilab/diagnostics/SLAB-049/slab/ (SHA256SUMS)",
-                 "r_convec_K_per_W_by_h": {f"{m:g}": slab_r_convec(m) for m in H_MULTIPLIERS}},
-        "mesh_subset": mesh,
-        "per_call_record": [
-            "python -m sundai_hotspot.slab049 summarize <retained evaluation dir> (reads files only):",
-            "SHA-256 and size of every generated input and output file, including the actual config",
-            "output precision: HotSpot prints grid and block temperatures as %.2f K",
-            "package parameters read back from the actual config (spreader, sink, r_convec) and checked "
-            "against the fixture row",
-            "layer-4 grid peak and its argmax cell(s)",
-            "each real chiplet's GRID_CENTER value with the cell indices and weights (1, 2 or 4 cells)",
-            "the max over those chiplet centre values",
-            "TAP's positional stdout selector: on this binary's stdout (HotSpot 7 prints no temperatures, so it "
-            "is recorded as not applicable) and emulated on HotSpot 6's stdout layout (every block of every "
-            "layer centre-mapped, plus the package nodes)",
-        ],
-        "per_call_rules": [
-            "each call runs in a fresh, empty directory; the TAP generator skips an existing new_hotspot.config, "
-            "so a reused directory could run a stale config",
-            "max_workers=1: one solver process at a time",
-            "no parameter is changed between OLD and NEW: same inputs, only the binary differs",
-            "nothing is tuned toward a published temperature",
-        ],
+        "grant_window": {"not_before": "warden's grant against the merged build",
+                         "not_after_utc": "2026-11-01T12:00:00Z",
+                         "per_call_receipts_record": "effective start and stop (UTC), wall and child CPU seconds"},
+        "source": {"pin": "SHA-256 of every file that builds, stages or judges the calls; the merged build must match",
+                   "files_sha256": {path: hashlib.sha256((REPO_ROOT / path).read_bytes()).hexdigest()
+                                    for path in MANIFEST_SOURCES}},
+        "builds": {
+            kind: {"command": EVALUATOR_KINDS[kind]["build"], "binary": EVALUATOR_KINDS[kind]["binary"],
+                   "upstream": EVALUATOR_KINDS[kind]["upstream"],
+                   "binary_sha256": "recorded at build on the grant host; every receipt binds it",
+                   "identity_markers": {"required": [m.decode("ascii") for m in EVALUATOR_KINDS[kind]["required_markers"]],
+                                        "forbidden": [m.decode("ascii") for m in EVALUATOR_KINDS[kind]["forbidden_markers"]]}}
+            for _, kind in MANIFEST_ENGINES},
+        "references": {f"{layout}-{variant}": {"dir": reference_dir(layout, variant),
+                                               "sha256sums_sha256": _sums_digest(reference_dir(layout, variant)),
+                                               "paper_peak_c": REFERENCE_LAYOUTS[layout]["paper_peak_c"],
+                                               "in_this_manifest": layout in MANIFEST_REFERENCES and variant == PRIMARY_VARIANT}
+                       for layout, variant in REFERENCE_SETS},
+        "reference_layouts": REFERENCE_LAYOUTS,
+        "reference_source": REFERENCE_SOURCE,
+        "primary_variant": PRIMARY_VARIANT,
+        "primary_variant_reason": PRIMARY_VARIANT_REASON,
+        "gate_zero": {"module": "sundai_hotspot/gate_zero.py", "tolerance_k": TOLERANCE_K,
+                      "tolerance_label": TOLERANCE_LABEL, "pinned_references_sha256": PINNED_REFERENCES_SHA256,
+                      "pinned_values_c": {"ascend910-original": 75.48, "micro150-original": 115.94,
+                                          "ascend910-tap (verification, next allocation)": 75.47,
+                                          "micro150-tap (verification, next allocation)": 94.89}},
         "calls": calls,
-        "sizing": {
-            "cost_model": COST,
-            "declared": all_tiers,
-            "tier_A_ready_now": tier(ready),
-            "tier_B_blocked_on_SLAB_048": tier(blocked),
-            "reserves_cpu_s": round(reserve, 2),
-            "total_conservative_cpu_s": round(total, 2),
-            "total_conservative_cpu_min": round(total / 60, 2),
+        "accounting": {
+            "calls": len(calls), "max_runs": len(calls), "retries": 0,
+            "timing_basis": TIMING,
+            "expected_cpu_s": round(expected, 2),
+            "worst_case_cpu_s": round(worst, 2),
+            "cpu_cap_minutes": math.ceil(worst / 60),
+            "cpu_cap_rule": "every call killed at its cap plus its overhead: the sum is the worst case",
+            "failed_attempt_reserve": "inside each call's cap; a failed attempt is not retried under this grant",
+            "concurrency": 1, "gpu": False,
+            "host": "x86_64 Azure host behind the mesh and TIMING evidence; an aarch64 build needs its own receipts",
         },
-        "grant_request": {
-            "solver_executions_declared": len(calls),
-            "solver_executions_max_including_reserves": (len(calls) + COST["retry_reserve_calls"]
-                                                         + COST["timeout_reserve_calls"]),
-            "cpu_cap_minutes": math.ceil(1.2 * total / 60),
-            "cpu_cap_rule": "ceil(1.2 x total_conservative_cpu_s / 60)",
-            "cpu_cap_scope": "solver executions, worker start/reap and archiving; HotSpot builds are separate",
-            "concurrency": 1,
-            "proposed_expiry_utc": "2026-11-01T12:00:00Z",
-            "tier_B_condition": "runs only if SLAB-048's 45 mm fixture and reference data merge before expiry",
-            "gpu": False,
-            "host": "the Azure x86_64 host that produced the mesh and TIMING evidence",
-        },
+        "next_allocation": [
+            "raw reconstructions of both originals on HS6 at grid 64 (a separate reference identity)",
+            "verification cases, not a statistical holdout: ascend910-tap 75.47 C and micro150-tap 94.89 C "
+            "(layout pending SLAB-048)",
+            "HotSpot 6.0 built SUPERLU=0 exactly as TAP-2.5D's util/hotspot (kind hotspot6_tap_faithful) on both "
+            "originals: the solver cross-check",
+            "the aarch64 (GB10) build's own gate-zero receipts",
+            "a 50 mm frame comparison and NEW-evaluator mesh margins",
+        ],
+        "not_requested": ("The v1 and v2 plans (32 calls, 37 executions; later 23) and every material-only HotSpot 7 "
+                          "call. The material-only flag stays as labelled, bounded diagnostic evidence; it is not the "
+                          "MATCH evaluator and inherits no grant."),
     }
 
 
 # ----------------------------------------------------------------------------------------------
-# After a granted run: the per-call record (astra #56701)
+# After a granted run: the per-solve record (astra #56701, #56785; aneta #56739)
 # ----------------------------------------------------------------------------------------------
 
 
@@ -866,86 +1001,92 @@ def _decimals(path: Path) -> int:
 def summarize_evaluation(directory: Path, *, lcf: str = "samplelayers.lcf", grid: str = "sample.grid.steady",
                          steady: str = "sample.steady", config: str = "new_hotspot.config",
                          stdout: str | None = "stdout.txt", chiplet_pattern: str = r"Chiplet_\d+",
-                         expected_package: dict | None = None) -> dict:
+                         expected_package: dict | None = None, grid_size: int | None = None) -> dict:
+    """The per-solve record. Reads files only; the grid file is parsed strictly (read_grid)."""
+    from sundai_hotspot.gate_zero import tap_selector_c, tap_stdout_selector_c
     directory = Path(directory)
     files = {path.name: {"sha256": hashlib.sha256(path.read_bytes()).hexdigest(), "bytes": path.stat().st_size}
              for path in sorted(directory.iterdir()) if path.is_file()}
     package = read_hotspot_config(directory / config)
     package_record = {name: package.get(name) for name in ("s_spreader", "s_sink", "r_convec", "t_spreader",
                                                            "k_spreader", "t_sink", "k_sink", "ambient",
-                                                           "model_secondary")}
+                                                           "model_secondary", "grid_map_mode")}
     package_ok = None
     if expected_package is not None:
         package_ok = (math.isclose(float(package["s_spreader"]), expected_package["s_spreader_m"], rel_tol=1e-12)
                       and math.isclose(float(package["s_sink"]), expected_package["s_sink_m"], rel_tol=1e-12)
                       and math.isclose(float(package["r_convec"]), expected_package["r_convec_K_per_W"], rel_tol=1e-12))
+    ambient = float(package["ambient"])
     layers = read_lcf(directory / lcf, directory)
-    temperatures = read_grid(directory / grid)
-    cells = len(temperatures[0])
-    n = int(round(math.sqrt(cells)))
-    if n * n != cells or set(temperatures) != set(range(len(layers) + 2)):
-        raise ValueError("grid output does not cover every layer on a square grid")
-    width, height = total_extent(read_flp(layers[0]["flp"]))
     power_layers = [layer["layer"] for layer in layers if layer["power"]]
     if len(power_layers) != 1:
         raise ValueError("expected exactly one powered layer")
     active = power_layers[0]
-    values = temperatures[active]
-    peak = max(values)
-    argmax = [{"row": index // n, "col": index % n} for index, value in enumerate(values) if value == peak]
-
-    def center_value(layer: int, unit: dict) -> tuple[float, list[dict]]:
-        mapped = center_cells(block_extent(unit, width, height, n, n))
-        total = sum(temperatures[layer][c["row"] * n + c["col"]] * c["weight"] for c in mapped)
-        return total, mapped
-
-    chiplets = []
-    for unit in read_flp(layers[active]["flp"]):
-        if re.fullmatch(chiplet_pattern, unit["name"]):
-            value, mapped = center_value(active, unit)
-            chiplets.append({"name": unit["name"], "center_K": value, "center_C": value - KELVIN_OFFSET,
-                             "cells": mapped, "distinct_cells": len(mapped)})
-    if not chiplets:
+    chip_units = [u for u in read_flp(layers[active]["flp"]) if re.fullmatch(chiplet_pattern, u["name"])]
+    if not chip_units:
         raise ValueError("no chiplet blocks matched")
-
-    # HotSpot 6.0 stdout: "Unit Steady(Kelvin)" then dump_temp (every block of every layer, centre-mapped in
-    # TAP's config, then the package nodes). TAP takes max(float(tokens[3::2])) - 273.15.
-    emulated = []
-    package_layers = (len(layers), len(layers) + 1)
-    for layer in [*range(len(layers)), *package_layers]:
-        floorplan = layers[min(layer, len(layers) - 1)]["flp"]
-        for unit in read_flp(floorplan):
-            value, _ = center_value(layer, unit)
-            emulated.append((f"layer{layer}:{unit['name']}", value))
-    emulated.extend((name, value) for name, value in read_steady(directory / steady) if name.startswith("inode_"))
-    selector_name, selector_value = max(emulated, key=lambda item: item[1])
-    literal = {"applicable": False, "value_c": None}
+    steady_values = dict(read_steady(directory / steady))
+    selector, selector_block = tap_selector_c(directory / steady)
+    literal = {"applicable": False, "value_C": None}
     if stdout and (directory / stdout).is_file():
-        tokens = (directory / stdout).read_text(encoding="utf-8", errors="replace").split()
         try:
-            literal = {"applicable": True, "value_c": max(map(float, tokens[3::2])) - KELVIN_OFFSET}
+            literal = {"applicable": True, "value_C": tap_stdout_selector_c(directory / stdout)}
         except ValueError as exc:
-            literal = {"applicable": False, "value_c": None,
-                       "reason": f"HotSpot 7 prints no temperatures to stdout ({type(exc).__name__})"}
-    return {
-        "schema": "sentilab-slab049-call-record-v1",
+            literal = {"applicable": False, "value_C": None,
+                       "reason": f"no temperatures on stdout; HotSpot 7 writes none ({type(exc).__name__})"}
+    record = {
+        "schema": "sentilab-slab049-solve-record-v3",
         "files": files,
+        "config_sha256": files[config]["sha256"],
         "output_precision": {"grid_decimals_K": _decimals(directory / grid),
                              "steady_decimals_K": _decimals(directory / steady)},
-        "package_from_actual_config": package_record,
+        "effective_package": package_record,
         "package_matches_fixture": package_ok,
-        "grid": n,
-        "active_layer": active,
-        "layer4_grid_peak_K": peak,
-        "layer4_grid_peak_C": peak - KELVIN_OFFSET,
-        "layer4_grid_argmax": argmax,
-        "chiplet_centers": chiplets,
-        "max_chiplet_center_C": max(c["center_C"] for c in chiplets),
-        "tap_stdout_selector_literal": literal,
-        "tap_stdout_selector_emulated_hotspot6": {"value_C": selector_value - KELVIN_OFFSET, "argmax": selector_name,
-                                                  "note": "computed from %.2f K grid cells, so within 0.01 K of "
-                                                          "HotSpot's own centre mapping"},
+        "historical_tap_stdout_selector": {
+            "literal_on_stdout": literal,
+            "on_steady_file_C": selector, "block": selector_block,
+            "note": "TAP's max(float(stdout.split()[3::2])) - 273.15; HotSpot 6.0 prints the steady dump to stdout",
+        },
+        "chiplet_block_values_C": {u["name"]: steady_values[f"layer_{active}_{u['name']}"] - KELVIN_OFFSET
+                                   for u in chip_units},
     }
+    text_layers = len(layers) + 2
+    temperatures = read_grid(directory / grid, grid=grid_size, ambient_k=ambient)
+    side = math.isqrt(len(temperatures[0]))
+    if len(temperatures) != text_layers:
+        if len(temperatures) != 1:
+            raise GridFormatError(f"{len(temperatures)} layers; expected {text_layers}, or 1 from upstream HotSpot 6.0")
+        record["grid"] = {"n": side, "layers_in_file": [0],
+                          "note": "upstream HotSpot 6.0 writes only layer 0; the grid fields need the evaluator build"}
+        return record
+    width, height = total_extent(read_flp(layers[0]["flp"]))
+    values = temperatures[active]
+
+    def center_value(layer: int, unit: dict) -> tuple[float, list[dict]]:
+        mapped = center_cells(block_extent(unit, width, height, side, side))
+        return sum(temperatures[layer][c["row"] * side + c["col"]] * c["weight"] for c in mapped), mapped
+
+    chiplets = []
+    for unit in chip_units:
+        value, mapped = center_value(active, unit)
+        chiplets.append({"name": unit["name"], "centre_C": value - KELVIN_OFFSET, "cells": mapped,
+                         "distinct_cells": len(mapped)})
+    spreader, sink = len(layers), len(layers) + 1
+    record.update({
+        "grid": {"n": side, "layers_in_file": sorted(temperatures)},
+        "active_layer_grid_peak": {"layer": active, "peak_C": max(values) - KELVIN_OFFSET,
+                                   "argmax": grid_argmax(values, side)},
+        "chiplet_centre_mapping": {"chiplets": chiplets, "max_C": max(c["centre_C"] for c in chiplets),
+                                   "rule": "xlate_temp_g2b GRID_CENTER: the mean of 1, 2 or 4 central cells"},
+        "spreader_sink_hottest_cell_rises": {
+            "spreader": {"layer": spreader, "rise_K": max(temperatures[spreader]) - ambient,
+                         "argmax": grid_argmax(temperatures[spreader], side)},
+            "sink": {"layer": sink, "rise_K": max(temperatures[sink]) - ambient,
+                     "argmax": grid_argmax(temperatures[sink], side)},
+            "pattern": run1_pattern(max(temperatures[spreader]) - ambient, max(temperatures[sink]) - ambient),
+        },
+    })
+    return record
 
 
 # ----------------------------------------------------------------------------------------------
@@ -973,7 +1114,7 @@ def _write_or_check(path: Path, data: bytes, check: bool) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("analytic", "slab", "call-list"):
+    for name in ("analytic", "slab", "references", "call-list"):
         command = sub.add_parser(name)
         mode = command.add_mutually_exclusive_group(required=True)
         mode.add_argument("--write", type=Path)
@@ -1008,13 +1149,16 @@ def main(argv: list[str] | None = None) -> int:
             print(f"ok: {target / 'ANALYTIC.json'} (frozen equations and residuals)")
             return 0
         return _write_or_check(target / "ANALYTIC.json", _dump(report), check)
-    if args.command == "slab":
+    if args.command in ("slab", "references"):
+        bundles = ({"slab": slab_files()} if args.command == "slab" else
+                   {f"references/{layout}-{variant}-45mm": reference_files(layout, variant)
+                    for layout, variant in REFERENCE_SETS})
         status = 0
-        files = slab_files()
-        sums = "".join(f"{hashlib.sha256(data).hexdigest()}  {name}\n" for name, data in sorted(files.items()))
-        for name, data in sorted(files.items()):
-            status |= _write_or_check(target / "slab" / name, data, check)
-        status |= _write_or_check(target / "slab" / "SHA256SUMS", sums.encode("ascii"), check)
+        for folder, files in bundles.items():
+            sums = "".join(f"{hashlib.sha256(data).hexdigest()}  {name}\n" for name, data in sorted(files.items()))
+            for name, data in sorted(files.items()):
+                status |= _write_or_check(target / folder / name, data, check)
+            status |= _write_or_check(target / folder / "SHA256SUMS", sums.encode("ascii"), check)
         return status
     return _write_or_check(target / "CALL-LIST.json", _dump(build_call_list()), check)
 

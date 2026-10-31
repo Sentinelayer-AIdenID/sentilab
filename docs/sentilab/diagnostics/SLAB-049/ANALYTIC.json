@@ -280,6 +280,136 @@
       }
     }
   ],
+  "committed_run1_signature": [
+    {
+      "case": "baseline_center_16",
+      "distance_to_ascend_45mm_signatures_K": {
+        "correct (HotSpot 6 form, the paper's)": 43.60097246621918,
+        "r_convec not rescaled": 43.31917358399164,
+        "v7 spreader-sink link": 3.9855739862659245
+      },
+      "drop_over_sink_rise": 2.765151515151514,
+      "pattern": "v7-link",
+      "r_convec": "0.008999999999999998",
+      "r_convec_is_generator_scaled": true,
+      "s_sink": "0.2",
+      "s_spreader": "0.1",
+      "sink_rise_K": 18.480000000000018,
+      "spreader_rise_K": 69.58000000000004
+    },
+    {
+      "case": "baseline_center_32",
+      "distance_to_ascend_45mm_signatures_K": {
+        "correct (HotSpot 6 form, the paper's)": 44.12015639138194,
+        "r_convec not rescaled": 43.38064314875929,
+        "v7 spreader-sink link": 3.459508635630187
+      },
+      "drop_over_sink_rise": 2.787682333873573,
+      "pattern": "v7-link",
+      "r_convec": "0.008999999999999998",
+      "r_convec_is_generator_scaled": true,
+      "s_sink": "0.2",
+      "s_spreader": "0.1",
+      "sink_rise_K": 18.510000000000048,
+      "spreader_rise_K": 70.11000000000001
+    },
+    {
+      "case": "left_shift_2mm_16",
+      "distance_to_ascend_45mm_signatures_K": {
+        "correct (HotSpot 6 form, the paper's)": 44.45864595329016,
+        "r_convec not rescaled": 43.39508267073587,
+        "v7 spreader-sink link": 3.1066380542315795
+      },
+      "drop_over_sink_rise": 2.7963362068965534,
+      "pattern": "v7-link",
+      "r_convec": "0.008999999999999998",
+      "r_convec_is_generator_scaled": true,
+      "s_sink": "0.2",
+      "s_spreader": "0.1",
+      "sink_rise_K": 18.560000000000002,
+      "spreader_rise_K": 70.46000000000004
+    },
+    {
+      "case": "left_shift_2mm_32",
+      "distance_to_ascend_45mm_signatures_K": {
+        "correct (HotSpot 6 form, the paper's)": 44.58421805975745,
+        "r_convec not rescaled": 43.39977534504064,
+        "v7 spreader-sink link": 2.9753151093623282
+      },
+      "drop_over_sink_rise": 2.7992465016146326,
+      "pattern": "v7-link",
+      "r_convec": "0.008999999999999998",
+      "r_convec_is_generator_scaled": true,
+      "s_sink": "0.2",
+      "s_spreader": "0.1",
+      "sink_rise_K": 18.58000000000004,
+      "spreader_rise_K": 70.59000000000003
+    },
+    {
+      "case": "left_shift_4mm_16",
+      "distance_to_ascend_45mm_signatures_K": {
+        "correct (HotSpot 6 form, the paper's)": 45.02049755389206,
+        "r_convec not rescaled": 43.42813834370519,
+        "v7 spreader-sink link": 2.5229347989989455
+      },
+      "drop_over_sink_rise": 2.811158798283254,
+      "pattern": "v7-link",
+      "r_convec": "0.008999999999999998",
+      "r_convec_is_generator_scaled": true,
+      "s_sink": "0.2",
+      "s_spreader": "0.1",
+      "sink_rise_K": 18.640000000000043,
+      "spreader_rise_K": 71.04000000000002
+    },
+    {
+      "case": "left_shift_4mm_32",
+      "distance_to_ascend_45mm_signatures_K": {
+        "correct (HotSpot 6 form, the paper's)": 44.98384598942158,
+        "r_convec not rescaled": 43.43980202533156,
+        "v7 spreader-sink link": 2.566398254363495
+      },
+      "drop_over_sink_rise": 2.813104189044038,
+      "pattern": "v7-link",
+      "r_convec": "0.008999999999999998",
+      "r_convec_is_generator_scaled": true,
+      "s_sink": "0.2",
+      "s_spreader": "0.1",
+      "sink_rise_K": 18.620000000000005,
+      "spreader_rise_K": 71.0
+    },
+    {
+      "case": "right_shift_2mm_16",
+      "distance_to_ascend_45mm_signatures_K": {
+        "correct (HotSpot 6 form, the paper's)": 44.126239359365314,
+        "r_convec not rescaled": 43.420006909257836,
+        "v7 spreader-sink link": 3.4677081768799214
+      },
+      "drop_over_sink_rise": 2.7958852192744943,
+      "pattern": "v7-link",
+      "r_convec": "0.008999999999999998",
+      "r_convec_is_generator_scaled": true,
+      "s_sink": "0.2",
+      "s_spreader": "0.1",
+      "sink_rise_K": 18.470000000000027,
+      "spreader_rise_K": 70.11000000000001
+    },
+    {
+      "case": "right_shift_2mm_32",
+      "distance_to_ascend_45mm_signatures_K": {
+        "correct (HotSpot 6 form, the paper's)": 44.091297327250466,
+        "r_convec not rescaled": 43.44245043733147,
+        "v7 spreader-sink link": 3.513189434118186
+      },
+      "drop_over_sink_rise": 2.799891540130155,
+      "pattern": "v7-link",
+      "r_convec": "0.008999999999999998",
+      "r_convec_is_generator_scaled": true,
+      "s_sink": "0.2",
+      "s_spreader": "0.1",
+      "sink_rise_K": 18.439999999999998,
+      "spreader_rise_K": 70.07000000000005
+    }
+  ],
   "equations": {
     "hotspot7_default": "R_sp,hs = rz_sp/2 + (rz_hs,mat + R_conv)/2 ; R_hs,amb = rz_hs,mat + R_conv",
     "material_only": "R_sp,hs = rz_sp/2 + rz_hs,mat/2 ; R_hs,amb = rz_hs,mat + R_conv",

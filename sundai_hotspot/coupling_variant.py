@@ -22,6 +22,7 @@ from dataclasses import dataclass, replace
 import hashlib
 from pathlib import Path
 
+from sundai_hotspot.gate_zero import VARIANT_TAG, GateZeroRefusal, require_gate_zero
 from sundai_hotspot.tap_oracle import (
     HOTSPOT_ROOT, REPO_ROOT, HotSpotOracle, HotSpotOracleError, HotSpotThermalResult, _canonical_hash,
 )
@@ -33,9 +34,8 @@ COUPLINGS = (OLD, NEW)
 VARIANT_MACRO = "SENTILAB_SINK_COUPLING_MATERIAL_ONLY"
 VARIANT_MAKE_TARGET = "hotspot-material-only"
 VARIANT_BINARY = HOTSPOT_ROOT / VARIANT_MAKE_TARGET
-# Compiled into the variant binary only (temperature_grid.c). It is an identity check against
-# mixing up binaries, not an authenticity guarantee.
-VARIANT_TAG = b"SENTILAB_SINK_COUPLING=material_only;ticket=SLAB-049"
+# VARIANT_TAG (gate_zero.py) is compiled into the variant binary only (temperature_grid.c). It is an identity
+# check against mixing up binaries, not an authenticity guarantee.
 # Files that define the variant. The worker re-hashes each of them before every solve.
 VARIANT_SOURCES = (
     "sundai_hotspot/temperature_grid.c",
@@ -117,9 +117,9 @@ def area_resistances(stack: PackageStack, coupling: str) -> dict[str, float]:
     }
 
 
-def strip_variant_blocks(source: str) -> str:
-    """Return the text the default build compiles: drop each SLAB-049 block, keep its #else branch."""
-    opening = f"#if {VARIANT_MACRO}"
+def strip_variant_blocks(source: str, macro: str = VARIANT_MACRO) -> str:
+    """Return the text the default build compiles: drop each `#if <macro>` block, keep its #else branch."""
+    opening = f"#if {macro}"
     output = []
     state = None
     for line in source.splitlines(keepends=True):
@@ -157,11 +157,16 @@ class MaterialOnlyCouplingOracle(HotSpotOracle):
 
     Its solver version, problem hash and evidence kind all name the coupling, so a NEW result can
     never be mistaken for, or compared as, an OLD (production) result.
+
+    Gate zero: evaluating a design needs a PASS record for this exact binary (gate_zero.require_gate_zero).
+    Without one the oracle constructs, so identity can be inspected, but refuses every evaluation. The gate's
+    own reference runs, and the SLAB-049 diagnostics, invoke the binary directly from the granted call list.
     """
 
     coupling = NEW
 
-    def __init__(self, grid_rows: int = 32, grid_cols: int = 32, *, hotspot_binary: Path = VARIANT_BINARY, **kwargs):
+    def __init__(self, grid_rows: int = 32, grid_cols: int = 32, *, hotspot_binary: Path = VARIANT_BINARY,
+                 gate_zero_record: Path | dict | None = None, **kwargs):
         binary = Path(hotspot_binary).resolve()
         if not binary.is_file():
             raise HotSpotOracleError(f"material-only HotSpot binary is not built (make {VARIANT_MAKE_TARGET}): {binary}")
@@ -189,6 +194,17 @@ class MaterialOnlyCouplingOracle(HotSpotOracle):
             f":config_sha256:{self.problem.config_sha256}"
             f":grid:{self.grid_rows}x{self.grid_cols}"
         )
+        self.gate_zero = None
+        self._gate_zero_refusal = None
+        try:
+            self.gate_zero = require_gate_zero(self.coupling, binary, gate_zero_record)
+        except GateZeroRefusal as exc:
+            self._gate_zero_refusal = str(exc)
+
+    async def __call__(self, candidate, *, timeout_s: float | None = None) -> HotSpotThermalResult:
+        if self.gate_zero is None:
+            raise GateZeroRefusal(self._gate_zero_refusal)
+        return await super().__call__(candidate, timeout_s=timeout_s)
 
     def _result_from_response(self, response, candidate, centers, evaluation_started) -> HotSpotThermalResult:
         result = super()._result_from_response(response, candidate, centers, evaluation_started)
