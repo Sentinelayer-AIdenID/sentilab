@@ -69,7 +69,7 @@ cd /app && python -m unittest -q app.test_runs
 # SentiLab (10-31): every test module a SLAB ticket adds runs here, from the repo root, with no CI edit per ticket.
 # The legacy modules above keep their own invocations and checks.
 cd /app
-for t in sundai_controller/test_*.py sundai_hotspot/test_*.py app/test_*.py sentilab_core/test_*.py; do
+for t in sundai_controller/test_*.py sundai_hotspot/test_*.py app/test_*.py sentilab_core/test_*.py open_proposals/*/test_*.py; do
   [ -e "$t" ] || continue
   case "$t" in */test_controller.py|*/test_safety_property.py|*/test_experiment.py|*/test_tfl08_leaderboard.py|*/test_tap_oracle.py|app/test_runs.py) continue;; esac
   echo "SentiLab tests: $t"

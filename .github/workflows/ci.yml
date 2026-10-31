@@ -300,8 +300,8 @@ jobs:
           retention-days: 90
 
   contracts:
-    # The evidence/ResultCheck contracts (v0.2, v0.3) and the view envelopes (v0.4, v0.5) are executable: their vector runners must
-    # pass, and every file must still match the hash the reviewers +1'd (contracts/HASHES.txt).
+    # The evidence/ResultCheck contracts (v0.2, v0.3), the view envelopes (v0.4, v0.5) and the open-proposal contract (v1) are executable:
+    # their vector runners must pass, and every file must still match the hash the reviewers +1'd (contracts/HASHES.txt).
     permissions:
       contents: read
     runs-on: ubuntu-24.04
@@ -320,6 +320,7 @@ jobs:
           (cd contracts/view-envelope-v0.6 && node run-paging-vectors.mjs)
           (cd contracts/view-envelope-v0.6.1 && node run-paging-vectors.mjs)
           (cd contracts/view-envelope-v0.6.2 && node run-paging-vectors.mjs)
+          (cd contracts/open-proposal-v1 && node run-vectors.mjs)
       - name: Lab view matches the contracts (browser copies, demo fixture)
         run: |
           node --test web/test/sentilab-parity.test.mjs
@@ -336,6 +337,10 @@ jobs:
         run: |
           node --version
           python -m unittest -q sentilab_core.memory_conformance
+      - name: Install the open-proposal contract's pinned schema validator
+        run: python -m pip install "$(grep '^jsonschema==' requirements.txt)"
+      - name: Open-proposal contract (OP-F1) golden examples, rules and the JavaScript twin agree
+        run: python -m unittest -q open_proposals.contract.test_golden open_proposals.contract.test_rules
 
   live-conformance:
     permissions:
