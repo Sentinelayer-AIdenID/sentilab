@@ -1,0 +1,1257 @@
+PTM7950
+
+false
+
+ Solstice Advanced Materials was created through the 2025 spin-off of the former Advanced Materials business of Honeywell International Inc.
+
+ Learn More
+
+ Location
+
+ North America
+
+ United States - English 
+
+ Canada - English 
+
+ Canada - French 
+
+ Europe
+
+ Germany - German
+
+ Spain - Spanish 
+
+ United Kingdom - English 
+
+ Latin America
+
+ Mexico - Spanish 
+
+ Asia Pacific
+
+ China - Chinese 
+
+ Japan - Japanese
+
+ Republic of Korea - Korean
+
+|
+
+Contact Us
+
+|
+
+Investors
+
+|
+
+ Sign InSIGN IN TO ACCOUNT 
+
+ Close Side Navigation
+
+ Back
+
+Create an Account
+
+ Sign in to My Portal
+
+ Close Side Navigation
+
+ Account
+
+My Home
+
+My Applications
+
+Order Status
+
+Online Order
+
+SIGN OUT
+
+ Close
+
+ Solutions
+
+ Solutions
+
+ Solutions by Application 
+
+ Solutions by Product
+
+ Insights
+
+ Insights
+
+ Insights Overview
+
+ Growing Advanced Computing
+
+ Smarter Health Outcomes
+
+ Next-Generation Safety and Defense
+
+ Accelerating Energy Evolution
+
+ Resources
+
+ News & Events
+
+ News & Events
+
+ News & Events
+
+ Featured Stories
+
+ Case Studies 
+
+ Upcoming Events
+
+ About Us
+
+ About Us
+
+ About Us
+
+ Leadership
+
+ Community Impact
+
+ Careers
+
+ Sign InSIGN IN TO ACCOUNT 
+
+ Close Side Navigation
+
+ Back
+
+Create an Account
+
+ Sign in to My Portal
+
+ Close Side Navigation
+
+ Account
+
+My Home
+
+My Applications
+
+Order Status
+
+Online Order
+
+SIGN OUT
+
+ Location
+
+ North America
+
+ United States - English 
+
+ Canada - English 
+
+ Canada - French 
+
+ Europe
+
+ Germany - German
+
+ Spain - Spanish 
+
+ United Kingdom - English 
+
+ Latin America
+
+ Mexico - Spanish 
+
+ Asia Pacific
+
+ China - Chinese 
+
+ Japan - Japanese
+
+ Republic of Korea - Korean
+
+|
+
+Contact Us
+
+|
+
+Investors
+
+|
+
+ Search
+
+You are browsing the product catalog for 
+
+You are viewing the overview and resources for
+
+/content/advancedmaterials/us/en/search-results.html
+
+ Solutions by Product
+
+ Advanced Semiconductor Materials
+
+ Thermal Management
+
+ Phase Change Materials
+
+ PTM7950
+
+Phase Change Materials
+
+PTM7950
+
+PTM7950 is a Phase Change Pad with a Thermal Impedance of 0.04 - 0.08 (°C cm²/w), Thermal Conductivity of 8.5 (w/mk) and Specific Gravity of 2.8 (g/cm³) 
+
+ Please sign in to access more documents 
+
+ Once signed in, you may be able to access additional documents for your account. 
+
+ Overview
+
+ Typical Properties
+
+ Resources
+
+Overview
+
+ Search
+
+ prev
+
+ next
+
+ Save this page as PDF
+
+ AI CHIPS RUN HOT.
+
+YOUR TIM CAN'T FALL BEHIND.
+
+Higher clock speeds. Massive parallelism. Extreme heat flux. AI hardware leaves no room for thermal compromise. Traditional TIMS pump out, dry out, and drift. Solstice PTM7950 Phase Change Material (PCM) is built for sustained performance, delivering:
+
+Ultra-low thermal resistance at the interface
+
+Superior wetting at operating temperature
+
+Reliable heat transfer from chip to sink
+
+Long service life under thermal cycling
+
+Based on a novel polymer PCM system, this proprietary material provides superior reliability (pass 150˚C baking 1000 hours, T/C-B 1000 cycles) and maintains low thermal impedance (<0.04˚Ccm2/W @ no shim), making the PTM7950 series desirable for high performance integrated circuit devices.
+
+We invite you to evaluate PTM7950 for your applications, including:
+
+Power modules/inverters in automotive and power applications
+
+High-performance IT/enterprise computing devices
+
+Consumer electronics, high-performance IC
+
+High power LED
+
+Available formats: 
+
+PTM7950 Pad | Easy application and no drying steps
+
+PTM7950-SPS | Paste version with slow-drying solvent
+
+PTM7950-SP | Paste version for automatic stencil printing
+
+Key Features
+
+High performance filler and polymer technology
+
+Silicone-free, no pump out, bleed out, dry out issues
+
+Highly conductive filler loading to optimize performance
+
+Industry-proven superior long-term reliability 
+
+Min BLT~20um, typical BLT is below 50um 
+
+30~40 psi pressure is needed for usage
+
+Achieving thin bondline and great thermal performance by minimum pressure application
+
+One of the key characteristics of PTM7950 is its bondline thickness, which refers to the thickness of the layer of adhesive between two surfaces being bonded. Please refer to the chart - PTM7950 Bondline Thickness vs. Pressure in the thumbnail to learn more about changes in PTM7950 BLT (mm) under varying pressure conditions (psi).
+
+As the pressure applied to PTM7950 increases, the bondline thickness decreases. Specifically, a minimum pressure of 10 psi is needed to observe a significant reduction in bondline thickness. This means that lower pressure is sufficient to achieve a thinner bondline, which can be advantageous in certain applications.
+
+PTM7950 is best-in-class against other thermal materials
+
+Refer to chart - Solstice PTM7950: Comparison of thermal performance (click on the thumbnails to enlarge), where thermal impedance values for various materials is shown, including that of PTM7950 and PTM7900.  Both of these materials have the lowest thermal impedance values when compared to all other materials tested, including competitive thermal greases. Overall, the PTM 7950 is the top performer among all materials tested for thermal impedance.
+
+The PTM 7950 is clearly the best choice for thermal impedance, with the lowest value among all materials tested. This makes it an excellent option for electronic devices that require exceptional thermal management.
+
+Get in touch with our experts to learn more.
+
+Typical Properties
+
+Physical Properties
+
+Bond-Line Thickness (BLT)
+
+ 0.038 
+
+Color
+
+ Grey 
+
+Shelf Life
+
+ 12 months 
+
+Specific Gravity
+
+ 2.8 g/cm3, Test Method ASTM D374 
+
+Thickness (mm)
+
+ 0.2 
+
+ 0.25 
+
+ 0.3 
+
+ 0.4 
+
+ 0.5 
+
+Viscosity
+
+ N/A 
+
+Liner Color
+
+ Light 
+
+Format
+
+ Pad 
+
+Thermal Properties
+
+Thermal Conductivity
+
+ 8.5 W/m-K, Test Method ASTM D5470 
+
+Thermal Impedance
+
+ 0.04-0.08 at no shim °C cm²/w, Test Method ASTM D5470 Modified 
+
+General Information
+
+Application
+
+ Base Station 
+
+ CPU 
+
+ GPU 
+
+ Optical 
+
+ Switch 
+
+ Thin Bondline 
+
+ Transceiver 
+
+Key Features
+
+ High Reliability 
+
+ Low TI 
+
+Sub-segment
+
+ Networks 
+
+ Notebook 
+
+ PC 
+
+ Tablet 
+
+Industry
+
+ Consumer Electronics 
+
+ Technology and Telecommunications 
+
+Other
+
+Other Notes
+
+ Pads available in sheets and rolls 
+
+Physical Properties
+
+Bond-Line Thickness (BLT)
+
+ 0.038 
+
+Color
+
+ Grey 
+
+Shelf Life
+
+ 12 months 
+
+Specific Gravity
+
+ 2.8 g/cm3, Test Method ASTM D374 
+
+Thickness (mm)
+
+ 0.2 
+
+ 0.25 
+
+ 0.3 
+
+ 0.4 
+
+ 0.5 
+
+Viscosity
+
+ N/A 
+
+Liner Color
+
+ Light 
+
+Format
+
+ Pad 
+
+Thermal Properties
+
+Thermal Conductivity
+
+ 8.5 W/m-K, Test Method ASTM D5470 
+
+Thermal Impedance
+
+ 0.04-0.08 at no shim °C cm²/w, Test Method ASTM D5470 Modified 
+
+General Information
+
+Application
+
+ Base Station 
+
+ CPU 
+
+ GPU 
+
+ Optical 
+
+ Switch 
+
+ Thin Bondline 
+
+ Transceiver 
+
+Key Features
+
+ High Reliability 
+
+ Low TI 
+
+Sub-segment
+
+ Networks 
+
+ Notebook 
+
+ PC 
+
+ Tablet 
+
+Industry
+
+ Consumer Electronics 
+
+ Technology and Telecommunications 
+
+Other
+
+Other Notes
+
+ Pads available in sheets and rolls 
+
+Viscosity : N/A
+
+Thickness (mm) : 0.2|0.25|0.3|0.4|0.5
+
+Thermal Impedance : 0.04-0.08 at no shim °C cm²/w, Test Method ASTM D5470 Modified
+
+Thermal Conductivity : 8.5 W/m-K, Test Method ASTM D5470
+
+Specific Gravity : 2.8 g/cm3, Test Method ASTM D374
+
+Shelf Life : 12 months
+
+Liner Color : Light
+
+Format : Pad
+
+Color : Grey
+
+Bond-Line Thickness (BLT) : 0.038
+
+Application : Base Station|CPU|GPU|Optical|Switch|Thin Bondline|Transceiver
+
+Sub-segment : Networks|Notebook|PC|Tablet
+
+Key Features : High Reliability|Low TI
+
+Industry : Consumer Electronics|Technology and Telecommunications
+
+Other Notes : Pads available in sheets and rolls
+
+Application Note
+
+Name
+
+Description
+
+File Size
+
+Date
+
+Size
+
+ Optimizing AI Systems | application note
+
+Application Note
+
+application/pdf 2.23 MB
+
+9/18/2026
+
+2.23 MB
+
+Brochure
+
+Name
+
+Description
+
+File Size
+
+Date
+
+Size
+
+ Brochure - Thermal Interface Materials (TIMs)
+
+Brochure - Thermal Interface Materials (TIMs)
+
+application/pdf 5.99 MB
+
+9/16/2026
+
+5.99 MB
+
+Data Sheet
+
+Name
+
+Description
+
+File Size
+
+Date
+
+Size
+
+ Thermal Phase Change Materials | datasheet
+
+Data Sheet
+
+application/pdf 102.7 KB
+
+9/17/2026
+
+102.7 KB
+
+ TDS – TIP1500 and TIP3500 | Thermal Insulator Pad
+
+Data Sheet
+
+application/pdf 91.54 KB
+
+9/17/2026
+
+91.54 KB
+
+ TDS – TIP5000 | Thermal Insulator Pad
+
+Data Sheet
+
+application/pdf 79.29 KB
+
+9/17/2026
+
+79.29 KB
+
+ TDS – TG2000 to TG8000 Series
+
+Data Sheet
+
+application/pdf 118.8 KB
+
+9/17/2026
+
+118.8 KB
+
+ TDS – HT4500 Gap Filler
+
+Data Sheet
+
+application/pdf 57.47 KB
+
+9/17/2026
+
+57.47 KB
+
+ PCM45F | datasheet
+
+Technical Data Sheet
+
+application/pdf 283.64 KB
+
+9/17/2026
+
+283.64 KB
+
+ LTM6300-SP | datasheet
+
+Technical Data Sheet
+
+application/pdf 274.1 KB
+
+9/17/2026
+
+274.1 KB
+
+ HLT3500 Thermal Conductive Gel | datasheet
+
+Data Sheet
+
+application/pdf 104.71 KB
+
+9/17/2026
+
+104.71 KB
+
+ TDS – HLT2000 | HLT3500 Liquid Gap Filler
+
+Data Sheet
+
+application/pdf 157.65 KB
+
+9/17/2026
+
+157.65 KB
+
+ TDS – HLT3000 Liquid Gap Filler
+
+Data Sheet
+
+application/pdf 67.31 KB
+
+9/17/2026
+
+67.31 KB
+
+ TDS – Gap Filler Pads - TGP1200, TGP1500, TGP3000, TGP5000, TGP6000, TGP8000
+
+Data Sheet
+
+application/pdf 70.68 KB
+
+9/17/2026
+
+70.68 KB
+
+ TDS – PTM60000 Phase Change Material
+
+Data Sheet
+
+application/pdf 262.81 KB
+
+9/17/2026
+
+262.81 KB
+
+ TDS - PTM7900 Phase Change Material
+
+Data Sheet
+
+application/pdf 251.41 KB
+
+9/17/2026
+
+251.41 KB
+
+ TDS – HGP10000 | Thermal Gap Pad
+
+Data Sheet
+
+application/pdf 78.62 KB
+
+9/17/2026
+
+78.62 KB
+
+ TDS – PTM60000HV-SP Phase Change Material
+
+Data Sheet
+
+application/pdf 261.15 KB
+
+9/16/2026
+
+261.15 KB
+
+ Phase Change Material Properties Chart
+
+Phase Change Material Properties Chart
+
+application/pdf 93.98 KB
+
+9/16/2026
+
+93.98 KB
+
+ PYM7950 Phase Change Material (PCM) | data sheet
+
+Data Sheet
+
+application/pdf 197.9 KB
+
+10/6/2026
+
+197.9 KB
+
+Case Study
+
+Name
+
+Description
+
+File Size
+
+Date
+
+Size
+
+ Efficient Phase Change Thermal Interface Material for New Energy Vehicle Inverters | case study
+
+Case Study
+
+application/pdf 909.42 KB
+
+9/18/2026
+
+909.42 KB
+
+Name
+
+Description
+
+File Size
+
+Date
+
+Size
+
+ Thermal Phase Change Materials | datasheet
+
+Data Sheet
+
+application/pdf 102.7 KB
+
+9/17/2026
+
+102.7 KB
+
+ Efficient Phase Change Thermal Interface Material for New Energy Vehicle Inverters | case study
+
+Case Study
+
+application/pdf 909.42 KB
+
+9/18/2026
+
+909.42 KB
+
+ Optimizing AI Systems | application note
+
+Application Note
+
+application/pdf 2.23 MB
+
+9/18/2026
+
+2.23 MB
+
+ TDS – TIP1500 and TIP3500 | Thermal Insulator Pad
+
+Data Sheet
+
+application/pdf 91.54 KB
+
+9/17/2026
+
+91.54 KB
+
+ TDS – TIP5000 | Thermal Insulator Pad
+
+Data Sheet
+
+application/pdf 79.29 KB
+
+9/17/2026
+
+79.29 KB
+
+ TDS – TG2000 to TG8000 Series
+
+Data Sheet
+
+application/pdf 118.8 KB
+
+9/17/2026
+
+118.8 KB
+
+ TDS – HT4500 Gap Filler
+
+Data Sheet
+
+application/pdf 57.47 KB
+
+9/17/2026
+
+57.47 KB
+
+ PCM45F | datasheet
+
+Technical Data Sheet
+
+application/pdf 283.64 KB
+
+9/17/2026
+
+283.64 KB
+
+ LTM6300-SP | datasheet
+
+Technical Data Sheet
+
+application/pdf 274.1 KB
+
+9/17/2026
+
+274.1 KB
+
+ HLT3500 Thermal Conductive Gel | datasheet
+
+Data Sheet
+
+application/pdf 104.71 KB
+
+9/17/2026
+
+104.71 KB
+
+ TDS – HLT2000 | HLT3500 Liquid Gap Filler
+
+Data Sheet
+
+application/pdf 157.65 KB
+
+9/17/2026
+
+157.65 KB
+
+ TDS – HLT3000 Liquid Gap Filler
+
+Data Sheet
+
+application/pdf 67.31 KB
+
+9/17/2026
+
+67.31 KB
+
+ TDS – Gap Filler Pads - TGP1200, TGP1500, TGP3000, TGP5000, TGP6000, TGP8000
+
+Data Sheet
+
+application/pdf 70.68 KB
+
+9/17/2026
+
+70.68 KB
+
+ TDS – PTM60000 Phase Change Material
+
+Data Sheet
+
+application/pdf 262.81 KB
+
+9/17/2026
+
+262.81 KB
+
+ TDS - PTM7900 Phase Change Material
+
+Data Sheet
+
+application/pdf 251.41 KB
+
+9/17/2026
+
+251.41 KB
+
+ TDS – HGP10000 | Thermal Gap Pad
+
+Data Sheet
+
+application/pdf 78.62 KB
+
+9/17/2026
+
+78.62 KB
+
+ TDS – PTM60000HV-SP Phase Change Material
+
+Data Sheet
+
+application/pdf 261.15 KB
+
+9/16/2026
+
+261.15 KB
+
+ Brochure - Thermal Interface Materials (TIMs)
+
+Brochure - Thermal Interface Materials (TIMs)
+
+application/pdf 5.99 MB
+
+9/16/2026
+
+5.99 MB
+
+ Phase Change Material Properties Chart
+
+Phase Change Material Properties Chart
+
+application/pdf 93.98 KB
+
+9/16/2026
+
+93.98 KB
+
+ PYM7950 Phase Change Material (PCM) | data sheet
+
+Data Sheet
+
+application/pdf 197.9 KB
+
+10/6/2026
+
+197.9 KB
+
+All
+
+ Application Note
+
+ Brochure
+
+ Data Sheet
+
+ Case Study
+
+Name
+
+Description
+
+File Size
+
+Date
+
+Size
+
+ Optimizing AI Systems | application note
+
+Application Note
+
+2.23 MB
+
+9/18/2026
+
+ Brochure - Thermal Interface Materials (TIMs)
+
+Brochure - Thermal Interface Materials (TIMs)
+
+5.99 MB
+
+9/16/2026
+
+ Thermal Phase Change Materials | datasheet
+
+Data Sheet
+
+102.7 KB
+
+9/17/2026
+
+ TDS – TIP1500 and TIP3500 | Thermal Insulator Pad
+
+Data Sheet
+
+91.54 KB
+
+9/17/2026
+
+ TDS – TIP5000 | Thermal Insulator Pad
+
+Data Sheet
+
+79.29 KB
+
+9/17/2026
+
+ TDS – TG2000 to TG8000 Series
+
+Data Sheet
+
+118.8 KB
+
+9/17/2026
+
+ TDS – HT4500 Gap Filler
+
+Data Sheet
+
+57.47 KB
+
+9/17/2026
+
+ PCM45F | datasheet
+
+Technical Data Sheet
+
+283.64 KB
+
+9/17/2026
+
+ LTM6300-SP | datasheet
+
+Technical Data Sheet
+
+274.1 KB
+
+9/17/2026
+
+ HLT3500 Thermal Conductive Gel | datasheet
+
+Data Sheet
+
+104.71 KB
+
+9/17/2026
+
+ TDS – HLT2000 | HLT3500 Liquid Gap Filler
+
+Data Sheet
+
+157.65 KB
+
+9/17/2026
+
+ TDS – HLT3000 Liquid Gap Filler
+
+Data Sheet
+
+67.31 KB
+
+9/17/2026
+
+ TDS – Gap Filler Pads - TGP1200, TGP1500, TGP3000, TGP5000, TGP6000, TGP8000
+
+Data Sheet
+
+70.68 KB
+
+9/17/2026
+
+ TDS – PTM60000 Phase Change Material
+
+Data Sheet
+
+262.81 KB
+
+9/17/2026
+
+ TDS - PTM7900 Phase Change Material
+
+Data Sheet
+
+251.41 KB
+
+9/17/2026
+
+ TDS – HGP10000 | Thermal Gap Pad
+
+Data Sheet
+
+78.62 KB
+
+9/17/2026
+
+ TDS – PTM60000HV-SP Phase Change Material
+
+Data Sheet
+
+261.15 KB
+
+9/16/2026
+
+ Phase Change Material Properties Chart
+
+Phase Change Material Properties Chart
+
+93.98 KB
+
+9/16/2026
+
+ PYM7950 Phase Change Material (PCM) | data sheet
+
+Data Sheet
+
+197.9 KB
+
+10/6/2026
+
+ Efficient Phase Change Thermal Interface Material for New Energy Vehicle Inverters | case study
+
+Case Study
+
+909.42 KB
+
+9/18/2026
+
+Related Categories
+
+ Close Video 
+
+Error
+
+Maximum File Size
+
+Maximum Files Exceeded
+
+ Close
+
+ OK
+
+Your Session Is Expiring.
+
+Maximum File Size
+
+Maximum Files Exceeded
+
+ Close
+
+Due to inactivity you will be logged out in 000 seconds.
+
+ Keep Me Signed In
+
+ Denied / Restricted Access
+
+Maximum File Size
+
+Maximum Files Exceeded
+
+ Close
+
+Honeywell International Inc. is committed to ensuring compliance with global laws that regulate its export and import activities. In following company procedures, it has been determined that is identified on a denied/restricted parties list that is applicable to this transaction.
+
+As a result, Honeywell is unable to continue with this request.
+
+CONTACT US
+
+We’re here if you need us. Complete the form to connect with our team on any inquiry, including outreach to our sales or customer experience teams, tips on and troubleshooting with your portal or ecommerce profile, and to sign up for marketing communications.
+
+ CONTACT US
+
+Solstice Advanced Materials Inc.
+
+115 Tabor Rd.
+
+Morris Plains, NJ 07950
+
+MENU
+
+ toggle view
+
+Solutions by Application
+
+Solutions by Product
+
+Resources
+
+News & Events
+
+About Us
+
+Careers
+
+Investors
+
+QUICK LINKS
+
+ toggle view
+
+CoA Database
+
+Safety Data Sheets Search
+
+Online Ordering
+
+Research Chemicals Portal
+
+Talk to an Engineer
+
+Compliance
+
+Product Search
+
+Apply for Jobs
+
+Copyright © 2026 Solstice Advanced Materials US, Inc.
+
+ Compliance & Integrity
+
+ Terms & Conditions
+
+ Privacy Policy
+
+ Cookie Policy
+
+ Your Privacy Choices

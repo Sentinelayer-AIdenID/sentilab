@@ -1,0 +1,523 @@
+HBM3E Controller | Interface IP - Rambus
+
+ Skip to primary navigation
+
+ Skip to main content
+
+ Skip to footer
+
+Investor Relations
+
+Resource Library
+
+Newsroom
+
+Blog
+
+Careers
+
+Support Center
+
+Rambus
+
+At Rambus, we create cutting-edge semiconductor and IP products, providing industry-leading chips and silicon IP to make data faster and safer.
+
+Products
+
+Chips
+
+Server
+
+DDR5 Server DIMM Chipset
+
+DDR4 Server DIMM Chipset
+
+SOCAMM2 Server Chipset
+
+Client
+
+DDR5 Client DIMM Chipset
+
+LPCAMM2 Client Chipset
+
+Silicon IP
+
+Interface IP
+
+PCI Express
+
+CXL
+
+MIPI
+
+HBM
+
+GDDR
+
+LPDDR
+
+DDR
+
+Security IP
+
+Root of Trust
+
+Secure Networking
+
+Inline Memory Encryption
+
+Quantum Safe Cryptography
+
+Crypto Accelerator
+
+Crypto Hub IP
+
+Software Protocols
+
+DPA & FIA Countermeasures
+
+Anti-Counterfeiting
+
+Provisioning & Key Management
+
+Explore our full catalog of products so you can find the right solution to fit your needs.
+
+Product Selector
+
+Solutions
+
+By Market
+
+AI & Machine Learning
+
+Automotive
+
+Data Center
+
+Edge
+
+Government
+
+IoT
+
+Explore our full catalog of products so you can find the right solution to fit your needs.
+
+Product Selector
+
+Resources
+
+Resource Library
+
+Our library of informational videos, papers, presentations, and more
+
+Webinars
+
+Check out our library of upcoming and on-demand webinars
+
+Chip + Interface IP Glossary
+
+Inventions
+
+Explore innovations that enable the superior performance of Rambus solutions
+
+Certifications
+
+Certified silicon IP solutions tailored to the specific needs of some of the world’s most demanding applications
+
+Security IP Glossary
+
+Explore our full catalog of products so you can find the right solution to fit your needs.
+
+Product Selector
+
+Company
+
+About
+
+Corporate Overview
+
+Leadership
+
+Inventors
+
+Careers
+
+Locations
+
+Investor Relations
+
+Contact
+
+Rambus Partner Program
+
+Sales Representatives and Distributors
+
+Certifications
+
+Corporate Responsibility
+
+Diversity, Equality & Inclusion
+
+News & Media
+
+Newsroom
+
+Blog
+
+Events
+
+Explore our full catalog of products so you can find the right solution to fit your needs.
+
+Product Selector
+
+ English
+
+ 简体中文 (Chinese (Simplified))
+
+HBM3E / HBM3 Controller IP
+
+ Contact Us
+
+Home > Interface IP > HBM Controller IP > HBM3E Controller
+
+The Rambus HBM3E / HBM3 controller cores are designed for use in applications requiring high memory bandwidth and low latency including AI/ML, HPC, advanced data center workloads and graphics.
+
+ Secure Site Login
+
+ Contact 
+
+ Product Brief 
+
+The HBM3E Memory Subsystem
+
+HBM3E is a high-performance memory that features reduced power consumption and a small form factor. It combines a 2.5D/3D architecture with a 1024-bit wide interface operating at a lower clock speed (as compared to GDDR6) to deliver higher overall throughput at a higher bandwidth-per-watt efficiency for AI/ML and HPC applications.
+
+The Rambus HBM3E memory controller supports data rates up to 9.6 Gbps per data pin. The interface features 16 independent channels, each containing 64 bits for a total data width of 1024 bits. At maximum data rate, this provides a total interface bandwidth of 1229 GB/s.
+
+HBM3E Memory Controller Example
+
+The Rambus HBM3E memory controller supports HBM3E memory devices with 2, 4, 8, 12 and 16 DRAM stack height with densities of up 32 Gb. The subsystem maximizes bandwidth and latency via Look-Ahead command processing.
+
+The Rambus HBM3E memory controller combined with the customer’s choice of PHY comprises a complete HBM3E memory subsystem.
+
+Ask the Experts: HBM3E Memory Interface IP
+
+ In this episode of Ask the Experts, we discuss HBM3E memory with Nidish Kamath, director of product management for memory interface IP at Rambus, and Frank Ferro, group director of memory and storage IP at Cadence. Learn about the evolution of the HBM in the market, challenges of meeting higher performance targets of HBM3E, and IP solutions you can integrate into your project today. 
+
+Solution Offerings
+
+Features
+
+Deliverables
+
+Services
+
+Features
+
+Supports HBM3E / HBM3 memory devices
+
+Supports all standard HBM3 channel densities (up to 32 Gb)
+
+Supports up to 9.6 Gbps/pin (HBM3E) or 8.4 Gbps/pin (HBM3)
+
+Refresh Management (RFM) support
+
+Maximizes memory bandwidth and minimizes latency via Look-Ahead command processing
+
+Integrated Reorder functionality
+
+Achieves high clock rates with minimal routing constraints
+
+Self-refresh and Power-down Low Power Modes
+
+Support for HBM3 RAS features
+
+Built-in hardware-level performance Activity Monitor
+
+DFI compatible
+
+End-to-end data parity
+
+Supports AXI or native interface to user logic
+
+Deliverables
+
+Core (source code)
+
+Testbench (source code)
+
+Complete documentation
+
+Expert technical support
+
+Maintenance updates
+
+Services
+
+Engineering Design Services:
+
+Customization
+
+SoC Integration
+
+HBM3E Memory: Break Through to Greater Bandwidth
+
+Delivering unrivaled memory bandwidth in a compact, high-capacity footprint, has made HBM the memory of choice for AI training. HBM3 is the third major generation of the HBM standard, with HBM3E offering an extended data rate and the same feature set. The Rambus HBM3E/3 Controller provides industry-leading performance to 9.6 Gb/s, enabling a memory throughput of over 1.23 TB/s for training recommender systems, generative AI and other compute-intensive AI workloads.
+
+ Download White Paper
+
+Protocol Compatibility
+
+Protocol
+
+Data Rate (Gbps) Max.
+
+ Application
+
+HBM3E
+
+9.6
+
+AI/ML, HPC, Graphics
+
+HBM3
+
+8.4
+
+AI/ML, HPC, Graphics
+
+From the blog
+
+ The Ultimate Guide to PCI Express: Specs, Features, Use Cases and PCIe 7.0 
+
+ Read More » 
+
+ Enabling Memory Choice for Modern AI Systems: Tenstorrent and Rambus Deliver Flexible, Power-Efficient Solutions 
+
+ Read More » 
+
+ High Bandwidth Memory (HBM): Everything You Need to Know 
+
+ Read More » 
+
+News
+
+ Rambus Introduces PCIe® 7.0 Switch IP with Time Division Multiplexing for Scalable AI and Data Center Infrastructure 
+
+ Rambus Sets New Benchmark for AI Memory Performance with Industry-Leading HBM4E Controller IP 
+
+ Rambus Announces Industry-First HBM4 Controller IP to Accelerate Next-Generation AI Workloads 
+
+Papers
+
+ Enabling Efficient Edge AI Inferencing Through Ecosystem Collaboration 
+
+ HBM4E Memory: Break Through to Greater Bandwidth 
+
+ MIPI DSI-2 & VESA Video Compression Drive Performance for Next-Generation Displays 
+
+Webinars
+
+ Enabling Efficient Edge AI Inferencing Through Ecosystem Collaboration 
+
+ HBM4E Memory: Break Through to Greater Bandwidth 
+
+ MIPI DSI-2 & VESA Video Compression Drive Performance for Next-Generation Displays 
+
+ Contact Us
+
+Related Markets & Applications
+
+ AI & Machine Learning
+
+ Automotive
+
+ Data Center
+
+ Edge
+
+Footer
+
+Company
+
+Corporate Overview
+
+Leadership
+
+Careers
+
+Locations
+
+Investor Relations
+
+News
+
+Corporate Responsibility
+
+Products
+
+Memory Interface Chips 
+
+Interface IP 
+
+Security IP
+
+Markets
+
+AI & Machine Learning
+
+Automotive
+
+Data Center
+
+Edge
+
+Government
+
+IoT
+
+Pay TV
+
+Resources
+
+Resource Library
+
+Webinars
+
+Inventions
+
+Product Selector
+
+Contact
+
+Copyright © 2026 Rambus.com. All Rights Reserved. Privacy Policy | Trademark & Guidelines
+
+Products
+
+Chips
+
+Server
+
+DDR5 Server DIMM Chipset
+
+DDR4 Server DIMM Chipset
+
+SOCAMM2 Server Chipset
+
+ Back
+
+Client
+
+DDR5 Client DIMM Chipset
+
+LPCAMM2 Client Chipset
+
+ Back
+
+ Back
+
+Silicon IP
+
+Interface IP
+
+PCI Express
+
+CXL
+
+HBM
+
+GDDR
+
+DDR
+
+LPDDR
+
+MIPI
+
+ Back
+
+Security IP
+
+Root of Trust
+
+Secure Networking
+
+Quantum Safe Cryptography
+
+Inline Memory Encryption
+
+DPA and FIA Countermeasures
+
+Crypto Accelerator
+
+Anti-Counterfeiting
+
+Security Software & Toolkits
+
+Provisioning and Key Management
+
+ Back
+
+ Back
+
+ Back
+
+Markets
+
+AI & Machine Learning
+
+Automotive
+
+Data Center
+
+Edge
+
+Government
+
+IoT
+
+ Back
+
+Resources
+
+Resource Library
+
+Webinars
+
+Inventions
+
+Product Selector
+
+ Back
+
+Company
+
+Corporate Overview
+
+Leadership
+
+Inventors
+
+Careers
+
+Locations
+
+Investor Relations
+
+Corporate Responsibility
+
+Rambus Partner Program
+
+Newsroom
+
+Blog
+
+Events
+
+ Back
+
+ English
+
+ 简体中文 (Chinese (Simplified))
+
+ × Close Panel

@@ -1,0 +1,368 @@
+JEDEC® and Industry Leaders Collaborate to Release JESD270-4 HBM4 Standard: Advancing Bandwidth, Efficiency, and Capacity for AI and HPC | JEDEC
+
+ Forgot Password | Site Login 
+
+ Go to main content
+ Menu
+
+Global Standards for the Microelectronics Industry
+
+Main menu
+
+Standards & Documents 
+
+Search Standards & Documents
+
+Recently Published Documents
+
+Technology Focus Areas 
+
+Main Memory: DDR SDRAM, HBM
+
+Low Power Memory: LPDDR
+
+Flash Memory: SSDs, UFS, e.MMC, XFMD
+
+Memory Configurations: JESD21-C
+
+Memory Module Design File Registrations
+
+Wide Bandgap Power Semiconductors: GaN, SiC
+
+Registered Outlines: JEP95
+
+JEP30: Part Model Guidelines
+
+ESD: Electrostatic Discharge
+
+Lead-Free Manufacturing
+
+Type Registration, Data Sheets
+
+Order JEDEC Standard Manufacturer's ID Code
+
+Order ID Code for Low Power Memories
+
+Copyright Information
+
+Document Translation
+
+About JEDEC Standards
+
+Committees 
+
+All Committees
+
+JC-11: Mechanical Standardization
+
+JC-13: Government Liaison
+
+JC-14: Quality and Reliability of Solid State Products
+
+JC-15: Thermal Characterization Techniques for Semiconductor Packages
+
+JC-16: Interface Technology
+
+JC-40: Digital Logic
+
+JC-42: Solid State Memories
+
+JC-45: DRAM Modules
+
+JC-63: Multiple Chip Packages
+
+JC-64: Embedded Memory Storage & Removable Memory Cards
+
+JC-70: Wide Bandgap Power Electronic Conversion Semiconductors
+
+News 
+
+News
+
+JEDEC Awards: 2026 Honorees
+
+JEDEC Awards: Distinguished Members Recognition
+
+In Memoriam
+
+Media Kit
+
+Events & Meetings 
+
+All Events & Meetings
+
+Join 
+
+Membership Dues & Details
+
+Apply for Membership
+
+Membership Benefits
+
+About 
+
+Overview
+
+Member List
+
+Board of Directors
+
+JEDEC History 
+
+Pre-1960s
+
+1960s
+
+1970s
+
+1980s
+
+1990s
+
+2010s
+
+2000s
+
+Committee Chairs
+
+Industry Collaboration
+
+Policies & Governance
+
+Patent Policy
+
+Year in Review: 2026
+
+Contact
+
+JEDEC Staff
+
+Website Help
+
+ Members Area
+
+Main menu
+
+Standards & Documents 
+
+Search Standards & Documents
+
+Recently Published Documents
+
+Technology Focus Areas 
+
+Main Memory: DDR SDRAM, HBM
+
+Low Power Memory: LPDDR
+
+Flash Memory: SSDs, UFS, e.MMC, XFMD
+
+Memory Configurations: JESD21-C
+
+Memory Module Design File Registrations
+
+Wide Bandgap Power Semiconductors: GaN, SiC
+
+Registered Outlines: JEP95
+
+JEP30: Part Model Guidelines
+
+ESD: Electrostatic Discharge
+
+Lead-Free Manufacturing
+
+Type Registration, Data Sheets
+
+Order JEDEC Standard Manufacturer's ID Code
+
+Order ID Code for Low Power Memories
+
+Copyright Information
+
+Document Translation
+
+About JEDEC Standards
+
+Committees 
+
+All Committees
+
+JC-11: Mechanical Standardization
+
+JC-13: Government Liaison
+
+JC-14: Quality and Reliability of Solid State Products
+
+JC-15: Thermal Characterization Techniques for Semiconductor Packages
+
+JC-16: Interface Technology
+
+JC-40: Digital Logic
+
+JC-42: Solid State Memories
+
+JC-45: DRAM Modules
+
+JC-63: Multiple Chip Packages
+
+JC-64: Embedded Memory Storage & Removable Memory Cards
+
+JC-70: Wide Bandgap Power Electronic Conversion Semiconductors
+
+News 
+
+News
+
+JEDEC Awards: 2026 Honorees
+
+JEDEC Awards: Distinguished Members Recognition
+
+In Memoriam
+
+Media Kit
+
+Events & Meetings 
+
+All Events & Meetings
+
+Join 
+
+Membership Dues & Details
+
+Apply for Membership
+
+Membership Benefits
+
+About 
+
+Overview
+
+Member List
+
+Board of Directors
+
+JEDEC History 
+
+Pre-1960s
+
+1960s
+
+1970s
+
+1980s
+
+1990s
+
+2010s
+
+2000s
+
+Committee Chairs
+
+Industry Collaboration
+
+Policies & Governance
+
+Patent Policy
+
+Year in Review: 2026
+
+Contact
+
+JEDEC Staff
+
+Website Help
+
+ Members Area
+
+JEDEC® and Industry Leaders Collaborate to Release JESD270-4 HBM4 Standard: Advancing Bandwidth, Efficiency, and Capacity for AI and HPC
+
+ARLINGTON, Va., USA - April 16, 2025 – JEDEC Solid State Technology Association, the global leader in the development of standards for the microelectronics industry, today announced the publication of its highly anticipated High Bandwidth Memory (HBM) DRAM standard: HBM4. Designed as an evolutionary step beyond the previous HBM3 standard, JESD270-4 HBM4 will further enhance data processing rates while maintaining essential features such as higher bandwidth, power efficiency, and increased capacity per die and/or stack, because the higher bandwidth enables the higher data processing rate. To download JESD270-4, visit the JEDEC website.
+
+The advancements introduced by HBM4 are vital for applications that require efficient handling of large datasets and complex calculations, including generative artificial intelligence (AI), high-performance computing, high-end graphics cards, and servers. HBM4 introduces numerous improvements to the prior version of the standard, including:
+
+Increased Bandwidth: With transfer speeds up to 8 Gb/s across a 2048-bit interface, HBM4 boosts total bandwidth up to 2 TB/s.
+
+Doubled Channels: HBM4 doubles the number of independent channels per stack, from 16 channels (HBM3) to 32 channels with 2 pseudo-channels per channel. This provides designers with more flexibility and independent ways to access the cube.
+
+Power Efficiency: JESD270-4 supports vendor specific VDDQ (0.7V, 0.75V, 0.8V or 0.9V) and VDDC (1.0V or 1.05V) levels, resulting in lower power consumption and improved energy efficiency.
+
+Compatibility and Flexibility: The HBM4 interface definition ensures backwards compatibility with existing HBM3 controllers, allowing for seamless integration and flexibility in various applications and allowing a single controller to work with both HBM3 and HBM4 if needed.
+
+Directed Refresh Management (DRFM): HBM4 incorporates Directed Refresh Management (DRFM) for improved row-hammer mitigation and Reliability, Availability, and Serviceability (RAS).
+
+Capacity: HBM4 supports 4-high, 8-high, 12-high and 16-high DRAM stack configurations with 24 Gb or 32 Gb die densities, providing for a higher cube density of 64GB (32 Gb 16-High).
+
+“High performance computing platforms are evolving rapidly and require innovation in memory bandwidth and capacity,” said Barry Wagner, Director of Technical Marketing at NVIDIA and JEDEC HBM Subcommittee Chair. “Developed in collaboration with technology industry leaders, HBM4 is designed to drive a leap forward in efficient, high performance computing for AI and other accelerated applications.”
+
+“JEDEC members are dedicated to developing the standards needed to support the technology of the future,” said Mian Quddus, Chairman of the JEDEC Board of Directors. He added, “The HBM Subcommittee’s efforts to continuously improve the HBM standard hold the potential to drive significant advancements in a wide variety of applications.”
+
+Industry Support
+
+“The introduction of HBM4 marks a critical step forward in high-bandwidth memory innovation, delivering the performance, efficiency, and scalability required to power the next generation of AI, HPC, and graphics workloads," said Joe Macri, Senior Vice President, Corporate Fellow and Compute and Graphics CTO, AMD. "AMD is proud to have collaborated with JEDEC and industry partners in the development of this standard, ensuring that HBM4 meets the evolving demands of modern computing. With increased bandwidth, improved power efficiency, and enhanced capacity, HBM4 will be instrumental in enabling cutting-edge advancements across a wide range of applications.”
+
+“The tremendous growth in AI model sizes demands higher memory bandwidth to improve the efficiency of AI hardware systems with heterogeneous compute architectures, ensuring rapid and seamless data movement at a large scale. The HBM4 standard addresses this need for higher bandwidth with significant enhancements,” said Boyd Phelps, Senior Vice President and General Manager of the Silicon Solutions Group at Cadence. “Through our collaboration with JEDEC and ecosystem partners, Cadence is facilitating this transition by delivering the industry’s highest-performing HBM4 memory subsystem with the lowest power and area.”
+
+“Memory bandwidth is one of the key pillars of performance for AI computing systems,” said Nikhil Jayaram, VP, Google Cloud Silicon. “JEDEC HBM4 represents the big step in bandwidth that Google needs for next generation training and inference systems. We look forward to the advances in AI that HBM4-based systems will enable and to collaborate with JEDEC to extend HBM into the future.”
+
+"Meta welcomes HBM4 standard by JEDEC that enables the necessary memory functionality to address Memory bandwidth and capacity needs of AI Systems,” said David Ramku, Director of Ecosystems and Technical Operations at Meta. “We are excited to see the progress and collaboration in this community."
+
+“High-performance, high-bandwidth memory (HBM) solutions are the foundation of AI’s continuous growth. HBM4 has been developed to unleash the potential of next-generation computational capabilities,” said Praveen Vaidyanathan, Micron Vice President and General Manager of Data Center Business. “Micron is proud to have played a pivotal role in the development of the HBM4 JEDEC standard, working closely with industry leaders and ecosystem collaborators to drive innovation and set new benchmarks in memory technology. Our strong collaboration with JEDEC and other partners has been instrumental in advancing next-generation memory standards, making HBM4 an ideal choice for high-performance computing and AI applications.”
+
+"Samsung has been at the forefront of the HBM technology and market growth through supporting technical advancements as well as close collaborations with industry stakeholders. As part of this initiative, Samsung is pleased to have taken part in the HBM4 JEDEC standardization work over the past three years," said JS Choi, Corporate Vice President and Head of Memory Biz Product Planning Team. "Samsung looks forward to bringing high-performing products to market that leverage the enhanced memory bandwidth, capacity, energy efficiency and other key performance attributes of the HBM4 standard."
+
+“In the rapidly evolving landscape of technology, artificial intelligence (AI) is advancing and spreading at an unprecedented pace, outpacing many other applications in history. High Bandwidth Memory (HBM) stands as one of the crucial components driving AI performance. Through the adoption of the HBM4 JEDEC Standard, this technology promises to deliver even higher bandwidth and the best power efficiency available. SK hynix is honored to lead in the establishment of the HBM4 standard, and believes that HBM4 will enable significant advancements in AI development, in partnership with various ecosystem partners.” - Jeff Choi, VP, HBM Business Planning, SK hynix
+
+“The rapid adoption of multi-die designs for HPC and AI applications, requiring significant compute performance, is driving new innovations in HBM technologies,” said Neeraj Paliwal, Senior Vice President of Product Management at Synopsys. “As an active member of JEDEC, Synopsys is driving the development and adoption of the HBM4 standard, which companies can leverage to meet the memory capacity and performance targets of their multi-die designs with a complete HBM4 IP solution that has been adopted by multiple customers.”
+
+About JEDEC
+
+JEDEC is the global leader in the development of standards for the microelectronics industry. Thousands of volunteers representing over 360 member companies work together in more than 100 JEDEC committees and task groups to meet the needs of every segment of the industry, for manufacturers and consumers alike. The publications and standards generated by JEDEC committees are accepted throughout the world. All JEDEC standards are available for download from the JEDEC website. For more information, visit https://www.jedec.org.
+
+Contact
+
+Emily Desjardins
+
+703-907-7560
+
+[email protected]
+
+###
+
+Media Inquiries
+
+Please direct all media inquiries to:
+
+Emily Desjardins
+
+703-907-7560
+
+Email Emily
+
+News RSS Feed
+
+Subscribe to the JEDEC News and Media Coverage RSS feed to be notified when new documents are uploaded.
+
+News and Media Coverage RSS Feed
+
+See all JEDEC RSS Feed Options
+
+Terms & Conditions
+
+Privacy Policy
+
+Contact Us
+
+Refund Policy
+
+Website Help
+
+Login
+
+Copyright © 2026 JEDEC. All Rights Reserved.
+
+User login
+
+ Username *
+
+ Password *

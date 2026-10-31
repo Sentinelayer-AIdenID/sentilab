@@ -1,0 +1,512 @@
+Lidded Versus Bare Die Flip Chip Package: Impact on Thermal Performance | Electronics Cooling
+
+Sponsor
+
+Electronics Cooling
+
+Focused on Thermal Management, TIMs, Fans, Heat Sinks, CFD Software, LEDs/Lighting
+
+Articles
+
+Technologies
+
+Blowers / Fans / Filters
+
+CFD Software
+
+Design
+
+Heat Sinks
+
+LED / Lighting
+
+Liquid Cooling
+
+TIMs
+
+Test & Measurement
+
+Thermal Imaging
+
+TECs
+
+More…
+
+Ceramics
+
+Coolers
+
+Enclosures
+
+Free/Forced Air Cooling
+
+Heat Exchanger
+
+Heat Pipes
+
+Materials, Compounds, Adhesives, Substrates
+
+Plastics
+
+Refrigeration
+
+Semiconductor
+
+Software/Modeling
+
+Markets
+
+Aerospace
+
+Automotive
+
+Communications
+
+Computer
+
+Consumer
+
+Data Centers
+
+Defense
+
+Industrial
+
+IT Products
+
+Medical
+
+Power
+
+Research
+
+News
+
+Industry Updates
+
+Products
+
+Resources
+
+Thermal Resources
+
+Events
+
+Standards
+
+Digital Publications
+
+Thermal Live
+
+Subscribe
+
+Advertise
+
+Sponsor
+
+Lidded Versus Bare Die Flip Chip Package: Impact on Thermal Performance
+
+June 21, 2012 Jesse Galloway Articles 
+
+Figure 1. Styles of FCBGA packages. (a) Stiffener window FCBGA, (b) FCmBGA, (c) FCLBGA.
+
+Thermal design and material selection continues to be a concern for electronic packages, particularly for flip chip ball grid array packages (FCBGA). Lower cost package options are available today, which are finding applications in high power design spaces that previously only employed copper lid heat spreaders. Exposed die flip chip packages are used frequently in lower power applications where the die size is relatively small (less than 8mm). Larger die sizes exhibit greater package warpage due to the difference in thermal expansion coefficients between silicon and laminate materials. As a result, large die packages are more difficult to solder mount and may produce larger variations in the bond line thickness between the die and external heat sinks. Two options are available to reduce the package warpage. The first option, shown in Figure 1(a), is to mount a stiffener window to the periphery of the package in order to provide structural rigidity. A second and lower cost option is to underfill the die and mold the body of the package in a single process step. This style of package, as shown in Figure 1(b), is called a flip chip molded ball grid array (FCmBGA). The most common style of package is the flip chip lidded ball grid array (FCLBGA), as shown in Figure 1(c). A copper lid is mounted to the die back-side with thermal interface material (TIM I) between the lid and die. An added benefit of the exposed die package options, Figure 1(a) and 1(b), is the elimination of the thermal interface material (TIM I). For exposed die packages, only one interface is needed (TIM II) between the die and heat sink.
+
+                Table 1. Heat sink description.
+
+Figure 2a. Theta ja resistance as a function of FCLBGA and FCmBGA packages for three different heat sinks.
+
+Experimental Measurements
+
+This study reports measurements made with FCmBGA and FCLBGA packages as a function of heat sink size. Both styles of packages have a 45mm body size with an 18mm die. Experimental measurements were made using packages shown in Figure 1(b) and 1(c) with three different size heat sinks as described in Table 1. A relatively low thermal resistance TIM II, 15C- mm2/W, was used to gather the data reported here. A more detailed description may be found in Galloway and Kanuparthi [1]. Theta js is defined as the maximum junction temperature (measured at center of die), less the heat sink temperature (measured at a location centered on the heat sink base), divided by the supplied power. Theta js is useful in characterizing the performance of the package and TIM II. The FCmBGA style package has a lower thermal resistance when the heat sink base can adequately spread the heat, see Figure 2(a). A thicker heat sink base with a higher conductivity material promotes greater spreading of heat away from the die. Heat sink C has a relatively thin base and is made from a lower conductivity material (aluminum). As a result the lidded package, even though it has an additional TIM layer, produces a lower Theta js due to the design of heat sink C. Theta ja provides a measurement of the total resistance including the combined resistance of the heat sink, TIM II and package, see Figure 2(b). A slight reduction in Theta ja was measured for heat sinks A and B with the FCmBGA package. Theta js is approximately 25X lower than Theta ja for heat sink C. Hence no appreciable differences in Theta ja was measured for heat sink C even though Theta js was lower for the FCLBGA package.
+
+Figure 2b. Theta js resistance as a function of FCLBGA and FCmBGA packages for three different heat sinks.
+
+Numerical Simulations
+
+To provide a more detailed understanding of the impact of TIM II material on Theta ja, a finite element analysis (FEA) study was conducted to predict Theta ja as a function of package style (FCLBGA versus FCmBGA) and TIM II resistance for 6mm,
+
+10mm and 18mm die. As one may expect, for low TIM II resistance, the FCmBGA package provides the lowest thermal resistance since there is only one interface (TIM II) whereas the FCLBGA has two interfaces, TIM I and TIM II.
+
+Figure 3. Theta ja vs. TIM II resistance for 6mm, 10mm, 18mm die.
+
+The TIM II interface can become a dominant factor if the bond line thickness (BLT) is large. In certain cases, system level designs cannot control the BLT at the TIM II layer due to component stack-up variations, e.g. when the de facto heat sink is an EMI shield or a system chassis. For these cases, a gap filler TIM II must be used. Gap filler TIMs, as their name suggests, are relatively thick/low modulus materials that conform to the gap available between the package top surface and the heat sink. FCmBGA Theta ja variation with TIM II resistance has a steeper slope compared to the FCLBGA package. Adding a lid tends to spread the heat over an area larger than the die, thus reducing the TIM II resistance. However, for larger die sizes, the difference between FCLBGA and FCmBGA Theta ja becomes smaller. The Theta ja resistance cross-over point, where the FCLBGA resistance is equal to the FCmBGA package, occurs at a TIM II resistance of approximately 45oC- mm2/W.
+
+Conclusion
+
+The FCmBGA package style offers an attractive means for reducing the overall package resistance. To achieve these benefits, a lower resistance TIM II material will be required.
+
+References
+
+[1] Galloway J. and S. Kanuparthi, “Thermal performance of FCmBGA: Exposed molded die compared to lidded package” Semiconductor Thermal Measurement and Management Symposium (SEMI-THERM), 2011, 27th Annual IEEE, March 2011, pp. 181 – 186.
+
+Author
+
+Jesse Galloway
+
+Jesse Galloway is a member of the technical staff at ON Semiconductor. He supports advanced package reliability along with thermal and mechanical characterization. His specialties include thermal and mechanical simulation and experimental measurements related to reliability. He has worked in the electronics package industry for more than 25 years. Jesse currently lives in Phoenix, AZ and enjoys hiking and bicycling.
+
+ View all posts
+
+About the Author
+
+Jesse Galloway
+
+Jesse Galloway is a member of the technical staff at ON Semiconductor. He supports advanced package reliability along with thermal and mechanical characterization. His specialties include thermal and mechanical simulation and experimental measurements related to reliability. He has worked in the electronics package industry for more than 25 years. Jesse currently lives in Phoenix, AZ and enjoys hiking and bicycling.
+
+ « Previous Post
+
+ Spray Cooling Heat Transfer – Test and CFD Analysis
+
+ Next Post » 
+
+Electronics Cooling June Issue Now Online
+
+Subscribe
+
+Sponsor
+
+Recommended Reads
+
+Thermal Challenges In LED Cooling
+
+An Introduction to Solar Photovoltaic Cell Thermal Measurements
+
+Self-Healing Electronics Could Work Longer, Reduce Waste
+
+Sponsor
+
+EVENTS
+
+Current Month
+
+November
+
+09novAll Day10Europe Data Center Cooling and Thermal Management ForumFrankfurt, Germany
+
+Event Details
+
+Key Themes of the Forum: AI-Driven Data Center and Cooling Market Dynamics, Opportunities, and Infrastructure Transformation, Scaling Liquid Cooling, Energy Efficiency, Cost Optimization, and PUE Management in High-Density Environments, Sustainable
+
+Event Details
+
+Key Themes of the Forum: AI-Driven Data Center and Cooling Market Dynamics, Opportunities, and Infrastructure Transformation, Scaling Liquid Cooling, Energy Efficiency, Cost Optimization, and PUE Management in High-Density Environments, Sustainable Data Center Development in Europe: Heat Reuse, Water Efficiency (WUE), and Decarbonization Policies.
+
+Time
+
+November 9, 2026 - November 10, 2026 (All Day)(GMT+00:00)
+
+Location
+
+Frankfurt, Germany
+
+Other Events
+
+Learn More
+
+CalendarGoogleCal
+
+10novAll Day13Electronica 2026Munich, Germany
+
+Event Details
+
+Every two years, the world of electronics meets at electronica in Munich, Germany. As the world’s leading trade fair, it showcases the full range of technologies, products, and solutions that
+
+Event Details
+
+Every two years, the world of electronics meets at electronica in Munich, Germany. As the world’s leading trade fair, it showcases the full range of technologies, products, and solutions that are empowering an All Electric Society (AES).
+
+Time
+
+November 10, 2026 - November 13, 2026 (All Day)(GMT+00:00)
+
+Location
+
+Munich, Germany
+
+Other Events
+
+Learn More
+
+CalendarGoogleCal
+
+March
+
+07marAll Day11APEC 2027New Orleans, Louisiana
+
+Event Details
+
+APEC 2027 meets in New Orleans. The Applied Power Electronics Conference covers power conversion hardware, including the thermal design of supplies, magnetics, and components.
+
+Event Details
+
+APEC 2027 meets in New Orleans. The Applied Power Electronics Conference covers power conversion hardware, including the thermal design of supplies, magnetics, and components.
+
+Time
+
+March 7, 2027 - March 11, 2027 (All Day)(GMT+00:00)
+
+Location
+
+New Orleans, Louisiana
+
+Other Events
+
+Learn More
+
+CalendarGoogleCal
+
+15marAll Day18SEMI-THERM 2027San Jose, California
+
+Event Details
+
+The 43rd SEMI-THERM symposium meets in San Jose. Sessions cover thermal measurement, modeling, and management of electronic components and systems.
+
+Event Details
+
+The 43rd SEMI-THERM symposium meets in San Jose. Sessions cover thermal measurement, modeling, and management of electronic components and systems.
+
+Time
+
+March 15, 2027 - March 18, 2027 (All Day)(GMT+00:00)
+
+Location
+
+San Jose, California
+
+Other Events
+
+Learn More
+
+CalendarGoogleCal
+
+17marAll Day18THERMAL 2027La Rochelle, France
+
+Event Details
+
+The 20th European workshop on micropackaging and thermal management meets in La Rochelle. Sessions cover cooling solutions, heat-conductive materials, heat sinks, heat pipes, and liquid cooling.
+
+Event Details
+
+The 20th European workshop on micropackaging and thermal management meets in La Rochelle. Sessions cover cooling solutions, heat-conductive materials, heat sinks, heat pipes, and liquid cooling.
+
+Time
+
+March 17, 2027 - March 18, 2027 (All Day)(GMT+00:00)
+
+Location
+
+La Rochelle, France
+
+Other Events
+
+Learn More
+
+CalendarGoogleCal
+
+April
+
+11aprAll Day14EuroSimE 2027Regensburg, Germany
+
+Event Details
+
+The 28th EuroSimE conference meets in Regensburg. The program covers thermal, mechanical, and multiphysics simulation and experiments for microelectronics and microsystems.
+
+Event Details
+
+The 28th EuroSimE conference meets in Regensburg. The program covers thermal, mechanical, and multiphysics simulation and experiments for microelectronics and microsystems.
+
+Time
+
+April 11, 2027 - April 14, 2027 (All Day)(GMT+00:00)
+
+Location
+
+Regensburg, Germany
+
+Other Events
+
+Learn More
+
+CalendarGoogleCal
+
+May
+
+11mayAll Day13PCIM Expo & Conference 2027Nuremberg, Germany
+
+Event Details
+
+PCIM Expo & Conference returns to Nuremberg. The 2027 program includes power semiconductors, passive components, and heat management.
+
+Event Details
+
+PCIM Expo & Conference returns to Nuremberg. The 2027 program includes power semiconductors, passive components, and heat management.
+
+Time
+
+May 11, 2027 - May 13, 2027 (All Day)(GMT+00:00)
+
+Location
+
+Nuremberg, Germany
+
+Other Events
+
+Learn More
+
+CalendarGoogleCal
+
+01junAll Day04IEEE ITherm 2027Denver, Colorado
+
+Event Details
+
+IEEE ITherm 2027 meets in Denver alongside the Electronic Components and Technology Conference. The program covers thermal and thermomechanical behavior of electronic devices, packages, and systems.
+
+Event Details
+
+IEEE ITherm 2027 meets in Denver alongside the Electronic Components and Technology Conference. The program covers thermal and thermomechanical behavior of electronic devices, packages, and systems.
+
+Time
+
+June 1, 2027 - June 4, 2027 (All Day)(GMT+00:00)
+
+Location
+
+Denver, Colorado
+
+Other Events
+
+Learn More
+
+CalendarGoogleCal
+
+June
+
+01junAll Day04IEEE ITherm 2027Denver, Colorado
+
+Event Details
+
+IEEE ITherm 2027 meets in Denver alongside the Electronic Components and Technology Conference. The program covers thermal and thermomechanical behavior of electronic devices, packages, and systems.
+
+Event Details
+
+IEEE ITherm 2027 meets in Denver alongside the Electronic Components and Technology Conference. The program covers thermal and thermomechanical behavior of electronic devices, packages, and systems.
+
+Time
+
+June 1, 2027 - June 4, 2027 (All Day)(GMT+00:00)
+
+Location
+
+Denver, Colorado
+
+Other Events
+
+Learn More
+
+CalendarGoogleCal
+
+July
+
+01augAll Day04Summer Heat Transfer Conference 2027Orlando, Florida
+
+Event Details
+
+The ASME Summer Heat Transfer Conference meets in Orlando. Tracks include heat transfer in electronic equipment and data-center thermal management.
+
+Event Details
+
+The ASME Summer Heat Transfer Conference meets in Orlando. Tracks include heat transfer in electronic equipment and data-center thermal management.
+
+Time
+
+August 1, 2027 - August 4, 2027 (All Day)(GMT+00:00)
+
+Location
+
+Orlando, Florida
+
+Other Events
+
+Learn More
+
+CalendarGoogleCal
+
+August
+
+01augAll Day04Summer Heat Transfer Conference 2027Orlando, Florida
+
+Event Details
+
+The ASME Summer Heat Transfer Conference meets in Orlando. Tracks include heat transfer in electronic equipment and data-center thermal management.
+
+Event Details
+
+The ASME Summer Heat Transfer Conference meets in Orlando. Tracks include heat transfer in electronic equipment and data-center thermal management.
+
+Time
+
+August 1, 2027 - August 4, 2027 (All Day)(GMT+00:00)
+
+Location
+
+Orlando, Florida
+
+Other Events
+
+Learn More
+
+CalendarGoogleCal
+
+Industry Sponsors
+
+Sponsor
+
+Sponsor
+
+About Us | Subscribe | Advertise | Contribute | Contact Us
+
+Copyright © 2026 Lectrix®. All Rights Reserved.
+
+Privacy Policy | Cookie Policy
+
+Media Kit 2027 - Message to David
+
+Phone
+
+This field is for validation purposes and should be left unchanged.
+
+Name(Required)
+
+ First
+
+ Last
+
+Email(Required)
+
+Company(Required)
+
+Country(Required)
+United StatesAfghanistanAlbaniaAlgeriaAmerican SamoaAndorraAngolaAnguillaAntarcticaAntigua and BarbudaArgentinaArmeniaArubaAustraliaAustriaAzerbaijanBahamasBahrainBangladeshBarbadosBelarusBelgiumBelizeBeninBermudaBhutanBoliviaBonaire, Sint Eustatius and SabaBosnia and HerzegovinaBotswanaBouvet IslandBrazilBritish Indian Ocean TerritoryBrunei DarussalamBulgariaBurkina FasoBurundiCabo VerdeCambodiaCameroonCanadaCayman IslandsCentral African RepublicChadChileChinaChristmas IslandCocos IslandsColombiaComorosCongoCongo, Democratic Republic of theCook IslandsCosta RicaCroatiaCubaCuraçaoCyprusCzechiaCôte d'IvoireDenmarkDjiboutiDominicaDominican RepublicEcuadorEgyptEl SalvadorEquatorial GuineaEritreaEstoniaEswatiniEthiopiaFalkland IslandsFaroe IslandsFijiFinlandFranceFrench GuianaFrench PolynesiaFrench Southern TerritoriesGabonGambiaGeorgiaGermanyGhanaGibraltarGreeceGreenlandGrenadaGuadeloupeGuamGuatemalaGuernseyGuineaGuinea-BissauGuyanaHaitiHeard Island and McDonald IslandsHoly SeeHondurasHong KongHungaryIcelandIndiaIndonesiaIranIraqIrelandIsle of ManIsraelItalyJamaicaJapanJerseyJordanKazakhstanKenyaKiribatiKorea, Democratic People's Republic ofKorea, Republic ofKuwaitKyrgyzstanLao People's Democratic RepublicLatviaLebanonLesothoLiberiaLibyaLiechtensteinLithuaniaLuxembourgMacaoMadagascarMalawiMalaysiaMaldivesMaliMaltaMarshall IslandsMartiniqueMauritaniaMauritiusMayotteMexicoMicronesiaMoldovaMonacoMongoliaMontenegroMontserratMoroccoMozambiqueMyanmarNamibiaNauruNepalNetherlandsNew CaledoniaNew ZealandNicaraguaNigerNigeriaNiueNorfolk IslandNorth MacedoniaNorthern Mariana IslandsNorwayOmanPakistanPalauPalestine, State ofPanamaPapua New GuineaParaguayPeruPhilippinesPitcairnPolandPortugalPuerto RicoQatarRomaniaRussian FederationRwandaRéunionSaint BarthélemySaint Helena, Ascension and Tristan da CunhaSaint Kitts and NevisSaint LuciaSaint MartinSaint Pierre and MiquelonSaint Vincent and the GrenadinesSamoaSan MarinoSao Tome and PrincipeSaudi ArabiaSenegalSerbiaSeychellesSierra LeoneSingaporeSint MaartenSlovakiaSloveniaSolomon IslandsSomaliaSouth AfricaSouth Georgia and the South Sandwich IslandsSouth SudanSpainSri LankaSudanSurinameSvalbard and Jan MayenSwedenSwitzerlandSyria Arab RepublicTaiwanTajikistanTanzania, the United Republic ofThailandTimor-LesteTogoTokelauTongaTrinidad and TobagoTunisiaTurkmenistanTurks and Caicos IslandsTuvaluTürkiyeUS Minor Outlying IslandsUgandaUkraineUnited Arab EmiratesUnited KingdomUruguayUzbekistanVanuatuVenezuelaViet NamVirgin Islands, BritishVirgin Islands, U.S.Wallis and FutunaWestern SaharaYemenZambiaZimbabweÅland Islands
+
+Which media kit(s) are you interested in?(Required)
+
+ Events
+
+ Media Products
+
+ Email Marketing
+
+ Website Marketing
+
+Untitled
+
+ Subscribe to Electronics Cooling Newsletter
+
+ Submit 
+
+ CLOSE 
+
+ × 
+
+ X

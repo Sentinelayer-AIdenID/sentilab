@@ -1,0 +1,358 @@
+JEDEC Publishes HBM3 Update to High Bandwidth Memory (HBM) Standard | JEDEC
+
+ Forgot Password | Site Login 
+
+ Go to main content
+ Menu
+
+Global Standards for the Microelectronics Industry
+
+Main menu
+
+Standards & Documents 
+
+Search Standards & Documents
+
+Recently Published Documents
+
+Technology Focus Areas 
+
+Main Memory: DDR SDRAM, HBM
+
+Low Power Memory: LPDDR
+
+Flash Memory: SSDs, UFS, e.MMC, XFMD
+
+Memory Configurations: JESD21-C
+
+Memory Module Design File Registrations
+
+Wide Bandgap Power Semiconductors: GaN, SiC
+
+Registered Outlines: JEP95
+
+JEP30: Part Model Guidelines
+
+ESD: Electrostatic Discharge
+
+Lead-Free Manufacturing
+
+Type Registration, Data Sheets
+
+Order JEDEC Standard Manufacturer's ID Code
+
+Order ID Code for Low Power Memories
+
+Copyright Information
+
+Document Translation
+
+About JEDEC Standards
+
+Committees 
+
+All Committees
+
+JC-11: Mechanical Standardization
+
+JC-13: Government Liaison
+
+JC-14: Quality and Reliability of Solid State Products
+
+JC-15: Thermal Characterization Techniques for Semiconductor Packages
+
+JC-16: Interface Technology
+
+JC-40: Digital Logic
+
+JC-42: Solid State Memories
+
+JC-45: DRAM Modules
+
+JC-63: Multiple Chip Packages
+
+JC-64: Embedded Memory Storage & Removable Memory Cards
+
+JC-70: Wide Bandgap Power Electronic Conversion Semiconductors
+
+News 
+
+News
+
+JEDEC Awards: 2026 Honorees
+
+JEDEC Awards: Distinguished Members Recognition
+
+In Memoriam
+
+Media Kit
+
+Events & Meetings 
+
+All Events & Meetings
+
+Join 
+
+Membership Dues & Details
+
+Apply for Membership
+
+Membership Benefits
+
+About 
+
+Overview
+
+Member List
+
+Board of Directors
+
+JEDEC History 
+
+Pre-1960s
+
+1960s
+
+1970s
+
+1980s
+
+1990s
+
+2010s
+
+2000s
+
+Committee Chairs
+
+Industry Collaboration
+
+Policies & Governance
+
+Patent Policy
+
+Year in Review: 2026
+
+Contact
+
+JEDEC Staff
+
+Website Help
+
+ Members Area
+
+Main menu
+
+Standards & Documents 
+
+Search Standards & Documents
+
+Recently Published Documents
+
+Technology Focus Areas 
+
+Main Memory: DDR SDRAM, HBM
+
+Low Power Memory: LPDDR
+
+Flash Memory: SSDs, UFS, e.MMC, XFMD
+
+Memory Configurations: JESD21-C
+
+Memory Module Design File Registrations
+
+Wide Bandgap Power Semiconductors: GaN, SiC
+
+Registered Outlines: JEP95
+
+JEP30: Part Model Guidelines
+
+ESD: Electrostatic Discharge
+
+Lead-Free Manufacturing
+
+Type Registration, Data Sheets
+
+Order JEDEC Standard Manufacturer's ID Code
+
+Order ID Code for Low Power Memories
+
+Copyright Information
+
+Document Translation
+
+About JEDEC Standards
+
+Committees 
+
+All Committees
+
+JC-11: Mechanical Standardization
+
+JC-13: Government Liaison
+
+JC-14: Quality and Reliability of Solid State Products
+
+JC-15: Thermal Characterization Techniques for Semiconductor Packages
+
+JC-16: Interface Technology
+
+JC-40: Digital Logic
+
+JC-42: Solid State Memories
+
+JC-45: DRAM Modules
+
+JC-63: Multiple Chip Packages
+
+JC-64: Embedded Memory Storage & Removable Memory Cards
+
+JC-70: Wide Bandgap Power Electronic Conversion Semiconductors
+
+News 
+
+News
+
+JEDEC Awards: 2026 Honorees
+
+JEDEC Awards: Distinguished Members Recognition
+
+In Memoriam
+
+Media Kit
+
+Events & Meetings 
+
+All Events & Meetings
+
+Join 
+
+Membership Dues & Details
+
+Apply for Membership
+
+Membership Benefits
+
+About 
+
+Overview
+
+Member List
+
+Board of Directors
+
+JEDEC History 
+
+Pre-1960s
+
+1960s
+
+1970s
+
+1980s
+
+1990s
+
+2010s
+
+2000s
+
+Committee Chairs
+
+Industry Collaboration
+
+Policies & Governance
+
+Patent Policy
+
+Year in Review: 2026
+
+Contact
+
+JEDEC Staff
+
+Website Help
+
+ Members Area
+
+JEDEC Publishes HBM3 Update to High Bandwidth Memory (HBM) Standard
+
+ARLINGTON, Va., USA January 27, 2022 – JEDEC Solid State Technology Association, the global leader in the development of standards for the microelectronics industry, today announced the publication of the next version of its High Bandwidth Memory (HBM) DRAM standard: JESD238 HBM3, available for download from the JEDEC website.  HBM3 is an innovative approach to raising the data processing rate used in applications where higher bandwidth, lower power consumption and capacity per area are essential to a solution’s market success, including graphics processing and high-performance computing and servers.
+
+Key attributes of the new HBM3 include:
+
+Extending the proven architecture of HBM2 towards even higher bandwidth, doubling the per-pin data rate of HBM2 generation and defining data rates of up to 6.4 Gb/s, equivalent to 819 GB/s per device
+
+Doubling the number of independent channels from 8 (HBM2) to 16; with two pseudo channels per channel, HBM3 virtually supports 32 channels
+
+Supporting 4-high, 8-high and 12-high TSV stacks with provision for a future extension to a 16-high TSV stack
+
+Enabling a wide range of densities based on 8Gb to 32Gb per memory layer, spanning device densities from 4GB (8Gb 4-high) to 64GB (32Gb 16-high); first generation HBM3 devices are expected to be based on a 16Gb memory layer
+
+Addressing the market need for high platform-level RAS (reliability, availability, serviceability), HBM3 introduces strong, symbol-based ECC on-die, as well as real-time error reporting and transparency
+
+Improved energy efficiency by using low-swing (0.4V) signaling on the host interface and a lower (1.1V) operating voltage
+
+“With its enhanced performance and reliability attributes, HBM3 will enable new applications requiring tremendous memory bandwidth and capacity,” said Barry Wagner, Director of Technical Marketing at NVIDIA and JEDEC HBM Subcommittee Chair.
+
+Industry Support
+
+“HBM3 will enable the industry to reach even higher performance thresholds with improved reliability and lower energy consumption,” said Mark Montierth, vice president and general manager of High-Performance Memory and Networking at Micron. “In collaborating with JEDEC members to develop this specification, we leveraged Micron’s long history of delivering advanced memory stacking and packaging solutions to optimize market-leading computing platforms.”
+
+“As a long-time global leader in advanced memory solutions, Samsung fully understands that the rapidly growing use of artificial intelligence, graphics processing and machine learning is driving a whole new push for computing enablers like the latest HBM3 standard that not only excel in performance upgrades, but also deliver unprecedented power efficiency,” said Kyung-Soo Ha, Corporate Vice President and Head of the DRAM Memory Planning/Enabling Group. “We believe that the enhanced standard for HBM3 will set a critical new framework for high-performance memory – an achievement that we have been tirelessly working with other major industry players at JEDEC to make a reality,” he added.
+
+“With continued advancements in HPC and AI applications, demands for higher performance and improved power efficiency has been growing more than ever before. With the current release of the HBM3 JEDEC standard, SK hynix is pleased to be able to provide a memory to our customers that has the highest bandwidth and the best power efficiency existing today with added robustness through adoption of an enhanced ECC scheme. SK Hynix is proud to be part of JEDEC and is thereby excited to be able to continue to build a strong HBM eco-system together with our industry partners, and to provide both ESG and TCO values to our customers”, said Uksong Kang, Vice President of DRAM Product Planning at SK hynix.
+
+“Synopsys has been an active contributor of JEDEC for more than a decade, helping to drive development and adoption of the most advanced memory interfaces like HBM3, DDR5 and LPDDR5 for a range of emerging applications,” said John Koeter, Senior Vice President of Marketing and Strategy for IP at Synopsys. “The Synopsys HBM3 IP and verification solutions, already adopted by leading customers, accelerate the integration of this new interface into high-performance SoCs and enable development of multi-die system-in-package designs with maximum memory bandwidth and power-efficiency.”
+
+About JEDEC
+
+JEDEC is the global leader in the development of standards for the microelectronics industry. Thousands of volunteers representing more than 300 member companies work together in over 100 JEDEC committees and task groups to meet the needs of every segment of the industry, manufacturers and consumers alike. The publications and standards generated by JEDEC committees are accepted throughout the world.  All JEDEC standards are available for download from the JEDEC website. For more information, visit www.jedec.org.
+
+Contact
+
+Emily Desjardins
+
+703-907-7560
+
+[email protected]
+
+###
+
+Media Inquiries
+
+Please direct all media inquiries to:
+
+Emily Desjardins
+
+703-907-7560
+
+Email Emily
+
+News RSS Feed
+
+Subscribe to the JEDEC News and Media Coverage RSS feed to be notified when new documents are uploaded.
+
+News and Media Coverage RSS Feed
+
+See all JEDEC RSS Feed Options
+
+Terms & Conditions
+
+Privacy Policy
+
+Contact Us
+
+Refund Policy
+
+Website Help
+
+Login
+
+Copyright © 2026 JEDEC. All Rights Reserved.
+
+User login
+
+ Username *
+
+ Password *

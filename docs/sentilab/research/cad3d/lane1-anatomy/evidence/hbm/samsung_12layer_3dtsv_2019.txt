@@ -1,0 +1,286 @@
+Samsung Electronics Develops Industry’s First 12-Layer 3D-TSV Chip Packaging Technology – Samsung Global Newsroom
+
+ skip to content
+
+Corporate
+
+People & Culture
+
+Technology
+
+Design
+
+More Stories
+
+Products
+
+Mobile
+
+TV/Display & AV
+
+Home Appliances
+
+Semiconductors
+
+More Products
+
+Social Impact
+
+CSR
+
+Environment
+
+Sustainability
+
+Press Resources
+
+Press Releases
+
+Video News
+
+Campus Images
+
+Statements
+
+Fast Facts
+
+ Search open
+ Nation choice page link
+ Menu open
+
+ Title+Body
+
+Title+Body
+
+Tag
+
+Images
+
+ X
+
+ Search
+
+ Suggestions
+
+Galaxy Z Series
+
+Galaxy S26 Series
+
+Milan Design Week
+
+The First Look 2026
+
+AI
+
+Bespoke
+
+SmartThings
+
+One UI
+
+Samsung Art Store
+
+ Custom range
+
+Any time
+
+Past week
+
+Past month
+
+Past year
+
+ Custom range
+
+ Category
+
+All
+
+Corporate
+
+Products
+
+Social Impact
+
+ Content Type
+
+All
+
+Article
+
+Press Release
+
+Worldwide
+
+ Search close
+
+Samsung Electronics Develops Industry’s First 12-Layer 3D-TSV Chip Packaging Technology
+
+ Korea on October 7, 2019 
+
+ AUDIO Play
+
+ Download
+
+ Share open
+
+ Print
+
+The new technology allows for the stacking of 12 DRAM chips using more than 
+
+60,000 TSV holes, while maintaining the same thickness as current 8-layer chips
+
+Samsung Electronics, a world leader in advanced semiconductor technology, today announced that it has developed the industry’s first 12-layer 3D-TSV (Through Silicon Via) technology.
+
+Samsung’s new innovation is considered one of the most challenging packaging technologies for mass production of high-performance chips, as it requires pinpoint accuracy to vertically interconnect 12 DRAM chips through a three-dimensional configuration of more than 60,000 TSV holes, each of which is one-twentieth the thickness of a single strand of human hair.
+
+The thickness of the package (720㎛) remains the same as current 8-layer High Bandwidth Memory-2 (HBM2) products, which is a substantial advancement in component design. This will help customers release next-generation, high-capacity products with higher performance capacity without having to change their system configuration designs.
+
+In addition, the 3D packaging technology also features a shorter data transmission time between chips than the currently existing wire bonding technology, resulting in significantly faster speed and lower power consumption.
+
+“Packaging technology that secures all of the intricacies of ultra-performance memory is becoming tremendously important, with the wide variety of new-age applications, such as artificial intelligence (AI) and High Power Computing (HPC),” said Hong-Joo Baek, executive vice president of TSP (Test & System Package) at Samsung Electronics.
+
+“As Moore’s law scaling reaches its limit, the role of 3D-TSV technology is expected to become even more critical. We want to be at the forefront of this state-of-the-art chip packaging technology.”
+
+Relying on its 12-layer 3D-TSV technology, Samsung will offer the highest DRAM performance for applications that are data-intensive and extremely high-speed.
+
+Also, by increasing the number of stacked layers from eight to 12, Samsung will soon be able to mass produce 24-gigabyte (GB)* High Bandwidth Memory, which provides three times the capacity of 8GB high bandwidth memory on the market today.
+
+Samsung will be able to meet the rapidly growing market demand for high-capacity HBM solutions with its cutting-edge 12-layer 3D TSV technology and it hopes to solidify its leadership in the premium semiconductor market.
+
+*8GB mass-production product= 8Gb x 8 layers, 24GB developed product= 16Gb x 12 layers
+
+*PKG cross section structure
+
+*Wire bonding vs TSV technology
+
+12-layer 3D-TSV
+
+3D packaging technology
+
+Samsung 12-layer 3D-TSV
+
+Samsung DRAM
+
+ Press Resources 
+ Press Releases
+
+ Products 
+ Semiconductors
+
+ For any issues related to customer service, please go to Customer Support pagefor assistance.
+
+ For media inquiries, please click Media Contactto move to the form. 
+
+Related Articles
+
+Samsung Begins Mass Production of Industry’s First 12Gb LPDDR5 Mobile DRAM for Premium Smartphones
+
+ July 18, 2019 Press Release
+
+Samsung Electronics Begins Mass Production of Industry’s Largest Capacity SSD – 30.72TB – for Next-Generation Enterprise Systems
+
+ February 20, 2018 Press Release
+
+Samsung Starts Producing 8-Gigabyte High Bandwidth Memory-2 with Highest Data Transmission Speed
+
+ January 11, 2018 Press Release
+
+ slide prev
+
+ slide next
+
+ More on Latest
+
+Download
+
+No files found
+
+ Copy text
+
+Copied to clipboard
+
+Share
+
+ Close
+
+X
+
+Facebook
+
+LinkedIn
+
+Tumblr
+
+e-mail
+
+WhatsApp
+
+ Copy link
+
+ top
+
+ Sitemap
+
+ Terms of Use
+
+ Privacy and Cookies
+
+ Media Contact
+
+ SAMSUNG.COM
+
+Copyright© SAMSUNG All Rights Reserved.
+
+ Start date
+
+ End date
+
+ Cancel
+ OK
+
+Sitemap
+
+ Close
+
+Corporate
+
+People & Culture
+
+Technology
+
+Design
+
+More Stories
+
+Products
+
+Mobile
+
+TV/Display & AV
+
+Home Appliances
+
+Semiconductors
+
+More Products
+
+Social Impact
+
+CSR
+
+Environment
+
+Sustainability
+
+Press Resources
+
+Press Releases
+
+Video News
+
+Campus Images
+
+Statements
+
+Fast Facts

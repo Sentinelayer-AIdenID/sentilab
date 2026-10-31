@@ -1,0 +1,2569 @@
+US10083920B1 - Package stiffener for protecting semiconductor die 
+ - Google Patents
+
+US10083920B1 - Package stiffener for protecting semiconductor die 
+ - Google Patents
+
+ Package stiffener for protecting semiconductor die 
+
+ Download PDF
+
+Info
+
+Publication number
+
+US10083920B1
+
+ US10083920B1
+ US15/886,246
+ US201815886246A
+ US10083920B1
+ US 10083920 B1
+ US10083920 B1
+ US 10083920B1
+
+ US 201815886246 A
+ US201815886246 A
+ US 201815886246A
+ US 10083920 B1
+ US10083920 B1
+ US 10083920B1
+
+Authority
+
+US
+
+United States
+
+Prior art keywords
+
+die
+
+substrate
+
+stiffener
+
+electronic package
+
+top surface
+
+Prior art date
+
+2018-02-01
+
+Legal status (The legal status is an assumption and is not a legal conclusion. Google has not performed a legal analysis and makes no representation as to the accuracy of the status listed.)
+
+ Active
+
+Application number
+
+US15/886,246
+
+Inventor
+
+William Edwards
+
+Erick Tuttle
+
+Madhusudan Krishnan Iyengar
+
+Yuan Li
+
+Jorge Padilla
+
+Woon seong Kwon
+
+Teckgyu Kang
+
+Current Assignee (The listed assignees may be inaccurate. Google has not performed a legal analysis and makes no representation or warranty as to the accuracy of the list.)
+
+ Google LLC
+
+Original Assignee
+
+Google LLC
+
+Priority date (The priority date is an assumption and is not a legal conclusion. Google has not performed a legal analysis and makes no representation as to the accuracy of the date listed.)
+
+2018-02-01
+
+Filing date
+
+2018-02-01
+
+Publication date
+
+2018-09-25
+
+ 2018-02-01
+ Application filed by Google LLC
+ filed
+ Critical
+
+ Google LLC
+
+ 2018-02-01
+ Priority to US15/886,246
+ priority
+ Critical
+
+ patent/US10083920B1/en
+
+ 2018-02-02
+ Assigned to GOOGLE LLC
+ reassignment
+
+ GOOGLE LLC
+ ASSIGNMENT OF ASSIGNORS INTEREST (SEE DOCUMENT FOR DETAILS).
+ Assignors: EDWARDS, WILLIAM, TUTTLE, ERICK, KANG, TECKGYU, KWON, WOON SEONG, LI, YUAN, IYENGAR, MADHUSUDAN KRISHNAN, PADILLA, JORGE
+
+ 2018-08-23
+ Priority to US16/110,133
+ priority
+
+ patent/US10468359B2/en
+
+ 2018-09-25
+ Application granted
+ granted
+ Critical
+
+ 2018-09-25
+ Publication of US10083920B1
+ publication
+ Critical
+
+ patent/US10083920B1/en
+
+ 2019-01-29
+ Priority to PCT/US2019/015551
+ priority
+
+ patent/WO2019152358A1/en
+
+ 2019-01-29
+ Priority to EP19705277.2A
+ priority
+
+ patent/EP3747041B1/en
+
+ 2019-01-29
+ Priority to EP22209565.5A
+ priority
+
+ patent/EP4160665B1/en
+
+ 2019-01-29
+ Priority to DK19705277.2T
+ priority
+
+ patent/DK3747041T3/en
+
+ 2019-01-29
+ Priority to CN201980016011.XA
+ priority
+
+ patent/CN111788665B/en
+
+ 2019-01-29
+ Priority to FIEP19705277.2T
+ priority
+
+ patent/FI3747041T3/en
+
+ 2019-01-29
+ Priority to CN202111440063.5A
+ priority
+
+ patent/CN114141718B/en
+
+ 2019-02-01
+ Priority to TW109108588A
+ priority
+
+ patent/TWI720846B/en
+
+ 2019-02-01
+ Priority to TW108104161A
+ priority
+
+ patent/TWI690042B/en
+
+ Status
+ Active
+ legal-status
+ Critical
+ Current
+
+ 2038-02-01
+ Anticipated expiration
+ legal-status
+ Critical
+
+Links
+
+ USPTO
+
+ USPTO PatentCenter
+
+ USPTO Assignment
+
+ Espacenet
+
+ Global Dossier
+
+ Discuss
+
+Images
+
+Classifications
+
+ H01L23/562—
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W42/00—Arrangements for protection of devices
+
+ H10W42/121—Arrangements for protection of devices protecting against mechanical damage
+
+ H01L23/50—
+
+ H—ELECTRICITY
+
+ H05—ELECTRIC TECHNIQUES NOT OTHERWISE PROVIDED FOR
+
+ H05K—PRINTED CIRCUITS; CASINGS OR CONSTRUCTIONAL DETAILS OF ELECTRIC APPARATUS; MANUFACTURE OF ASSEMBLAGES OF ELECTRICAL COMPONENTS
+
+ H05K5/00—Casings, cabinets or drawers for electric apparatus
+
+ H05K5/0026—Casings, cabinets or drawers for electric apparatus provided with connectors and printed circuit boards [PCB], e.g. automotive electronic control units
+
+ H—ELECTRICITY
+
+ H05—ELECTRIC TECHNIQUES NOT OTHERWISE PROVIDED FOR
+
+ H05K—PRINTED CIRCUITS; CASINGS OR CONSTRUCTIONAL DETAILS OF ELECTRIC APPARATUS; MANUFACTURE OF ASSEMBLAGES OF ELECTRICAL COMPONENTS
+
+ H05K5/00—Casings, cabinets or drawers for electric apparatus
+
+ H05K5/02—Details
+
+ H05K5/0217—Mechanical details of casings
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W40/00—Arrangements for thermal protection or thermal control
+
+ H10W40/10—Arrangements for heating
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W72/00—Interconnections or connectors in packages
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W76/00—Containers; Fillings or auxiliary members therefor; Seals
+
+ H10W76/10—Containers or parts thereof
+
+ H10W76/12—Containers or parts thereof characterised by their shape
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W76/00—Containers; Fillings or auxiliary members therefor; Seals
+
+ H10W76/40—Fillings or auxiliary members in containers, e.g. centering rings
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W90/00—Package configurations
+
+ H10W90/701—Package configurations characterised by the relative positions of pads or connectors relative to package parts
+
+Definitions
+
+ a lidless electronic package
+ is one that does not include a lid mounted to the die.
+
+ a lidless electronic package
+ allows a heat sink to directly contact the die, which allows for better thermal performance than electronic packages that include a lid.
+
+ lidless electronic package designs
+ suffer from increasing flatness problems as the packages grow in size. Increasing flatness problems can make package assembly difficult and result in lower yield.
+
+ This specification
+ describes lidless electronic packages having a multi-surface stiffener that protects the semiconductor die from damage and keeps the package flat.
+
+ lidless electronic packages
+ that include a substrate having a surface and a die disposed on the surface of the substrate.
+
+ the die
+ can have an outside perimeter, a bottom surface adjacent to the surface of the substrate, and a top surface opposite the bottom surface.
+
+ the lidless electronic package
+ can also include a stiffener disposed on the surface of the substrate and that encloses at least a portion of the outside perimeter of the die.
+
+ the stiffener
+ can include a first surface that is a first distance from the surface of the substrate. The first distance can be greater than a distance between the surface of the substrate and the top surface of the die.
+
+ the stiffener
+ can also include a second surface that is disposed between the die and the first surface. The second surface can be a second distance from the surface of the substrate. The second distance can be less than the distance between the surface of the substrate and the top surface of the die.
+
+ first surface and the second surface
+ are substantially parallel with the surface of the substrate.
+
+ the first surface
+ can be above the top surface of the die and the second surface can be below the top surface of the die.
+
+ the second surface
+ can be 0.02-0.06 millimeters closer to the surface of the substrate than the top surface of the die.
+
+ the stiffener
+ includes a sloped surface that extends from the first surface to the second surface.
+
+ the sloped surface
+ can be at a less than ninety-degree angle with respect to the second surface.
+
+ the stiffener
+ includes a recessed groove between the first surface and the second surface. The recessed groove can include a third surface that is closer to the surface of the substrate than the second surface.
+
+ the stiffener
+ includes a first stiffener with a first thickness that causes the second surface to be closer to the surface of the substrate than the top surface of the die and a second stiffener disposed on a portion of the first stiffener.
+
+ the second stiffener
+ can have a thickness that causes the second surface to be farther from the surface of the substrate than the top surface of the die.
+
+ first surface and the second surface
+ are part of a single stiffener that has a varying thickness.
+
+ the thickness of the stiffener below the first surface
+ can be greater than a thickness of the stiffener below the second surface.
+
+ a substrate
+ having a surface and a die disposed on the surface of the substrate.
+
+ the die
+ can have an outside perimeter, a bottom surface adjacent to the surface of the substrate, and a top surface opposite the bottom surface.
+
+ the electronic package
+ can also include a stiffener disposed on the surface of the substrate and that encloses at least a portion of the outside perimeter of the die.
+
+ the stiffener
+ can include a first portion having a first surface and a first thickness extending between the surface of the substrate and the first surface. The first thickness can be greater than a thickness of the die.
+
+ the stiffener
+ can also include a second portion having (i) a second surface that is disposed between the die and the first surface and (ii) a second thickness extending between the surface of the substrate and the second surface.
+
+ the second thickness
+ can be less than the thickness of the die.
+
+ first surface and the second surface
+ are substantially parallel with the surface of the substrate.
+
+ the first surface
+ can be above the top surface of the die and the second surface can be below the top surface of the die.
+
+ the die
+ can be 0.02-0.06 millimeters thicker than the second portion.
+
+ the stiffener
+ includes a sloped surface that extends from the first surface to the second surface.
+
+ the sloped surface
+ can be at a less than ninety-degree angle with respect to the second surface.
+
+ the stiffener
+ includes a recessed groove between the first surface and the second surface. The recessed groove can include a third surface that is closer to the surface of the substrate than the second surface.
+
+ lidless electronic packages
+ that include a substrate having a surface and a die attached to the surface of the substrate.
+
+ the die
+ can have an outside perimeter, a bottom surface adjacent to the surface of the substrate, and a top surface opposite the bottom surface.
+
+ the lidless electronic package
+ can also include a stiffener disposed on the surface of the substrate and that encloses the outside perimeter of the die.
+
+ the stiffener
+ can include a first surface that is farther from the surface of the substrate than the top surface of the die and a second surface that is disposed between the die and the first surface. The second surface can be closer to the surface of the substrate than the top surface of the die.
+
+ the first surface
+ is above the top surface of the die and the second surface is below the top surface of the die.
+
+ the second surface
+ can be 0.02-0.06 millimeters closer to the surface of the substrate than the top surface of the die.
+
+ the stiffener
+ includes a sloped surface that extends from the first surface to the second surface.
+
+ the sloped surface
+ can be at a less than ninety-degree angle with respect to the second surface.
+
+ the stiffener
+ includes a recessed groove between the first surface and the second surface.
+
+ the recessed groove
+ can include a third surface that is closer to the surface of the substrate than the second surface.
+
+ the stiffener
+ includes a first stiffener with a first thickness that causes the second surface to be closer to the surface of the substrate than the top surface of the die and a second stiffener disposed on a portion of the first stiffener.
+
+ the second stiffener
+ can have a thickness that causes the second surface to be farther from the surface of the substrate than the top surface of the die.
+
+ An electronic package
+ can include multiple surfaces (e.g., in a stepped arrangement) to prevent warping of the package while also protecting the semiconductor die from damage during heat sink installation.
+
+ a first portion of the stiffener
+ can be thicker and extend above a top surface of the die to provide better protection from warping.
+
+ a second portion of the stiffener
+ which can be disposed between the die and the first portion of the stiffener, can have a surface that is below the top surface of the die.
+
+ the second portion
+ provides a landing shelf for the heat sink that prevents the heat sink from first contacting the die and damaging the die, e.g., if the heat sink approaches the die at an angle with respect to the top surface of the die.
+
+ the heat sink
+ can also rest flat against the die, which provides better thermal contact between the heat sink and the die than if there was space between the heat sink and the die. This provides better heat transfer between the die and the heat sink.
+
+ electronic packages described herein
+ allow for larger stiffeners that provide better protection against warping while also protecting the die from damage that could result from having a stiffener that extends above the top surface of the die.
+
+ FIG. 1A
+ is a cross-sectional view of an example electronic package.
+
+ FIG. 1B
+ is a top view of the example electronic package of FIG. 1A .
+
+ FIG. 1C
+ is a partial cross-sectional view of the example electronic package of FIG. 1A .
+
+ FIG. 1D
+ is a cross-sectional view of the electronic package of FIG. 1A with a heat sink being installed on the electronic package.
+
+ FIG. 1E
+ is a cross-sectional view of the electronic package of FIG. 1A with a heat sink installed thereon.
+
+ FIG. 2
+ is a cross-sectional view of another example electronic package.
+
+ An electronic package
+ which is also referred to an integrated circuit (IC) package, includes a substrate and one or more die disposed on a surface of the substrate. Each die can include integrated circuits fabricated on semiconducting material.
+
+ An electronic package
+ can also include one or more stiffeners that prevent the components of the electronic package from warping. For example, there are mismatches of coefficients of thermal expansion (CTE) in the different components of an electronic package. When the temperature changes, e.g., during the package assembly process, the CTE mismatch can cause the electronic package to warp, bend, or twist, resulting in a less flat electronic package. Flatness problems can make the soldering process more difficult, resulting in poor solder joints between the electronic package and a circuit board or other mounting surface.
+
+ CTE
+ coefficients of thermal expansion
+
+ a stiffener
+ can prevent the electronic package from warping.
+
+ a stiffener
+ can be attached to the perimeter of the substrate, e.g., around the perimeter of the die.
+
+ the stiffener
+ can have a higher elastic modulus than the substrate to prevent the substrate from warping.
+
+ the protection against warping
+ improves with an increase in the size of the stiffener, e.g., with an increase in the thickness of the stiffener.
+
+ the size of the stiffener
+ may be limited by the size of the substrate and characteristics of the package assembly process.
+
+ the stiffener
+ extends above the top surface of the die (i.e., the surface opposite the surface of the substrate), the stiffener can provide better protection against warping. However, this can make it more difficult to install the heat sink without damaging the die. For example, if the heat sink is installed at an angle, (e.g., not flat with respect to the top surface of the die), the heat sink can damage the die. In some cases, heat sinks are installed by people that may not be able to see how flat the heat sink is when the heat sink is approaching the die due to the geometry of the electronic package.
+
+ Stiffeners described herein
+ have multiple surfaces and/or varying thicknesses that allow for a portion of the stiffener to extend above the top surface of the die, while also protecting the die from damage during the heat sink installation.
+
+ the stiffener
+ can include a first surface that is above the top surface of the die and a second surface that is below the top surface of the die. The second surface can be disposed between the die and the first surface. In this way, the second surface can provide a landing shelf for the heat sink in case the heat sink approaches the die at an angle, while also allowing for a larger stiffener.
+
+ FIGS. 1A-1E
+ depict an example electronic package 100 .
+
+ the relative dimensions in each figure
+ are illustrative only and not necessarily to scale.
+
+ FIG. 1A
+ is a cross-sectional view of the example electronic package 100 .
+
+ the electronic package 100
+ includes a substrate 110 and a die 120 disposed on (e.g., attached to) a surface 111 of the substrate 110 . Although one die 120 is illustrated in FIG. 1A , multiple die can be disposed on the surface 111 of the substrate 110 .
+
+ the electronic package 100
+ also includes interconnection pins for attaching the electronic package 110 to a mounting surface, e.g., to a printed circuit board.
+
+ the electronic package 100
+ can be a lidless electronic package that does not include a lid over the die 120 .
+
+ the electronic package
+ can be a lidless ball grid array (BGA) package.
+
+ BGA
+ lidless ball grid array
+
+ the electronic package 100
+ also includes a stiffener 130 disposed on (e.g., attached to) the surface 111 of the substrate 110 .
+
+ the stiffener 130
+ can be made of a material that has a higher elastic modulus than the elastic modulus of the substrate 110 .
+
+ the stiffener 130
+ can be made of a metal (e.g., aluminum, copper, or steel), a ceramic, a composite material, or another appropriate material.
+
+ the stiffener 130
+ can be a single stiffener structure or multiple stiffener structures coupled to one another, as described below with reference to FIG. 2 .
+
+ the stiffener 130
+ can enclose at least a portion of the outside perimeter of the die 120 .
+
+ the outside perimeter of the die 120
+ includes the four sides 121 A- 121 D of the die 120 .
+
+ the stiffener 130
+ encloses the entire outside perimeter of the die 120 .
+
+ the stiffener 130
+ encloses only a portion of the outside perimeter of the die 120 .
+
+ the stiffener 130
+ can be installed on one or more sides of the die 120 , e.g., on two or three dies of the die 120 .
+
+ the stiffener 130
+ can substantially enclose the outside perimeter of the die 120 by having a respective stiffener on each side 121 A- 121 C of the die 120 , but some space between each adjacent stiffener.
+
+ the stiffener 130
+ is adjacent to each side 121 A- 121 D of the die 120 .
+
+ each side 121 A- 121 D of the die 120
+ may contact a respective part of the stiffener 130 .
+
+ FIG. 1C
+ is a partial cross-sectional view of a portion 160 of the example electronic package of FIG. 1A .
+
+ the stiffener 130
+ includes a first surface 131 and a second surface 132 .
+
+ the first surface 131
+ can be above the top surface 122 of the die 120 , while the second surface is below the top surface 122 of the die 120 .
+
+ the top surface 122 of the die 120
+ is the surface of the die 120 opposite the surface 123 of the die 120 that is adjacent to the surface 111 of the substrate 110 .
+
+ the term “top surface”
+ is used for ease of subsequent discussion, but the top surface 122 may not always be the top portion of the die 120 depending on the orientation of the electronic package 110 . For example, if the electronic package it flipped, the top surface 122 would be below the surface 123 .
+
+ the term “above”
+ is used to refer to the first surface 131 being a greater distance away from the surface 111 of the substrate 110 than the distance between the top surface 122 of the die 120 and the surface 111 of the substrate 110 .
+
+ the term “below”
+ is used to refer to the second surface 132 being a shorter distance from the surface 111 of the substrate 110 than the distance between the top surface 122 of the die 120 and the surface 111 of the substrate 110 .
+
+ the first surface 131
+ may be at a lower altitude than the top surface 122 of the die 120 .
+
+ the first surface 131
+ will still be at a greater distance from the surface 111 of the substrate 110 than the distance between the top surface 122 of the die 120 and the surface 111 of the substrate 110 .
+
+ the additional thickness of the stiffener 130 between the first surface 131 and the surface 111 of the substrate 110
+ provides better protection against warping, allowing the substrate to remain flatter.
+
+ thickness of a portion of the stiffener 130
+ represents the distance between the surface 111 of the substrate 110 and the surface of the portion of the stiffener 130 opposite the surface 111 of the substrate 110 .
+
+ the protection against warping
+ improves with an increase in the thickness of the stiffener.
+
+ the portion of the stiffener 130 between the first surface 131 and the surface 111 of the substrate 110
+ is thicker than the portion of the stiffener 130 between the second surface 132 and the surface 111 of the substrate 110 .
+
+ the second surface 132
+ provides a landing shelf for a heat sink when the heat sink is being installed on the electronic package 100 .
+
+ the heat sink
+ is more likely to make contact with a portion of the second surface 122 (e.g., on one side of the die 120 ) rather than the die 120 itself. This protects the die 120 from damage caused by the heat sink.
+
+ the second surface 132
+ is below the top surface 122 of the die 120 . That is, the second surface 122 is a shorter distance from the surface 111 of the substrate 110 than the distance between the top surface 122 of the die 120 and the surface 111 of the substrate 110 . As described below with reference to FIG. 1E , this allows the heat sink to rest flat against the die 120 .
+
+ the second surface 132 of the stiffener
+ can be close to the same distance from the surface 111 of the substrate 110 as the top surface 122 of the die 120 .
+
+ the second surface 132 of the stiffener 130
+ can be 0.02-0.06 millimeters (mm) below the top surface 122 of the die 120 . That is, the distance 171 between the surface 111 of the substrate 110 and the top surface 122 of the die 120 can be 0.02-0.06 mm longer than the distance 172 between the surface 111 of the substrate 110 and the second surface 132 .
+
+ the designed distance
+ is too short, manufacturing defects can result in a second surface 132 that is above the top surface 122 of the die 120 , resulting in reduced thermal contact between the heat sink and the die 120 .
+
+ the first surface 131 of the stiffener 130 and the second surface 132 of the stiffener 130
+ are substantially parallel. That is, the surfaces 131 and 132 may be parallel or have less than a five-degree angle between the surfaces. Similarly, the surfaces 131 and 132 may be substantially parallel with the top surface 122 of the die 120 .
+
+ the stiffener 130
+ also includes a lead-in draft 133 and a recessed groove 134 .
+
+ the lead-in draft 133
+ provides a sloped surface from the first surface 131 of the stiffener 130 towards the die 120 .
+
+ the lead-in draft 130
+ can help guide the heat sink towards the center of the electronic package 100 if the heat sink is approaching the die 120 near the first surface 131 of the stiffener 130 .
+
+ the slope of the lead-in draft 130 with respect to the first surface
+ can be less than ninety degrees, i.e., not normal to the first surface 131 .
+
+ the recessed groove 134
+ can help ensure that the heat sink rests flat against the die 120 .
+
+ the second surface 122 of the stiffener 130
+ extended to the lead-in draft 134 , an end of the heat sink could rest on the lean-in draft 133 . This would result in the heat sink being at a non-zero angle with respect to the top surface 122 of the die 120 , resulting in less thermal contact between the heat sink and the die 120 .
+
+ FIG. 1D
+ is a cross-sectional view of the electronic package 100 of FIG. 1A with a heat sink 150 being installed on the electronic package 100 .
+
+ the heat sink 150
+ includes a base 154 (e.g., a copper base) and a fin array 153 .
+
+ the heat sink 150
+ is approaching the die 120 at an angle, i.e., the bottom surface of the base 154 of the heat sink 150 is not parallel with the top surface 122 of the die 120 .
+
+ a first side 151 of the heat sink 150
+ contacts a portion of the second surface 132 of the stiffener 130 before any portion of the heat sink 150 contacts the die 120 .
+
+ the second side 152 of the heat sink 150
+ can continue moving towards the second surface 132 of the stiffener 130 on the other side of the substrate 130 until the base 154 of the heat sink 150 rests flat on the top surface 122 of the die 120 .
+
+ the heat sink 150
+ can be attached to the electronic package 100 using a mechanical device (e.g., a spring-loaded screw), and adhesive (e.g., a thermal adhesive), or another appropriate attachment technique.
+
+ a side of the heat sink 150
+ may contact the lead-in draft 133 .
+
+ the lead-in draft 133
+ can guide the side of the heat sink towards the center of the electronic package 100 .
+
+ the side of the heat sink 150 that contacts the lead-in draft
+ may rest above the recessed groove 134 .
+
+ FIG. 1E
+ is a cross-sectional view of the electronic package 100 of FIG. 1A with the heat sink 150 installed thereon.
+
+ the base 154 of the heat sink 150
+ rests on the top surface 122 of the die 120 .
+
+ the heat sink 150
+ is longer than the die 120 .
+
+ a portion of the heat sink 150
+ extends over the second surface 132 of the stiffener 130 .
+
+ As the second surface 132 of the stiffener 130 is below the top surface 122 of the die 120
+ there is a gap between the base 154 of the heat sink 150 and the second surface 132 of the stiffener 130 . This gap helps to ensure that the base 154 of the heat sink 150 rests flat on the top surface 122 of the die 120 .
+
+ the base 154 of the heat sink 150
+ would not directly contact the top surface 122 of the die 120 at least in some portions of the top surface 122 of the die 120 .
+
+ the configuration of the stiffener 130 in the electronic package 100
+ also provides a wider window in which the heat sink 150 can be installed relative to designs in which the stiffener includes a single thickness. This allows the fin array 153 to be lowered closer to the top surface 122 of the die 120 . This also lowers the heat sink thermal resistance by minimizing the thickness of the base 154 of the heatsink, which allows for higher heat flux (watts/square mm) from the die 120 .
+
+ FIG. 2
+ is a cross-sectional view of another example electronic package 200 .
+
+ the example electronic package 200
+ includes a substrate 210 and a die 120 disposed on (e.g., attached to) a surface 211 of the substrate 210 . Although one die 220 is illustrated in FIG. 2 , multiple die can be disposed on the surface 211 of the substrate 210 .
+
+ the electronic package 200
+ also includes interconnection pins for attaching the electronic package 210 to a mounting surface, e.g., to a printed circuit board.
+
+ the electronic package 200
+ also includes a stiffener 230 disposed on (e.g., attached to) the surface 211 of the substrate 210 . Similar to the stiffener 130 of FIGS. 1A-1E , the stiffener 230 can be made of a material that has a higher elastic modulus than the elastic modulus of the substrate 210 .
+
+ the stiffener 230
+ is made of two stiffeners 231 and 233 .
+
+ the stiffener 231
+ is disposed on the surface 211 of the substrate 210 and can enclose at least a portion of the outside perimeter of the die 220 , similar to the stiffener 130 of FIGS. 1A-1E .
+
+ the stiffener 231
+ has a surface 232 , e.g., a flat surface, that is below the top surface 222 of the die 220 . That is, the surface 232 of the stiffener 232 is a shorter distance from the surface 211 of the substrate 210 than the distance between the top surface 222 of the die 220 and the surface 211 of the substrate 210 .
+
+ the surface 232 of the stiffener 231
+ provides a landing shelf for a heat sink, similar to the second surface 132 of the stiffener 130 of FIGS. 1A-1E .
+
+ the stiffener 233
+ can be disposed on (e.g., attached to) the surface 232 of the stiffener 231 .
+
+ the stiffener 233
+ provides additional protection against warping of the electronic package 230 .
+
+ the combination of the size of the stiffener 231 and the size of the stiffener 233
+ provide better protection against warping than the stiffener 231 alone.
+
+ the stiffener 233
+ can be disposed along the entire perimeter of the stiffener 231 and enclose at least a portion of the die 220 .
+
+ the stiffener 233
+ can be disposed on an outside edge of the stiffener 231 , as shown in FIG. 2 .
+
+ the stiffener 233
+ can cover the outside edge of the stiffener 231 on each side of the substrate 210 .
+
+ the stiffener 231
+ can run along all four sides and the stiffener 233 can be disposed on the stiffener 231 on all four sides.
+
+ the stiffener 233
+ can include a lead-in draft 235 that is sloped similar to the lead-in draft 133 of FIGS. 1A-1E .
+
+ the stiffener 231
+ can include a recessed groove similar to the recessed groove 134 of FIGS. 1A-1E .
+
+ the stiffener 231
+ can include a recessed groove where the lead-in draft 235 contacts the surface 232 of the stiffener 231 .
+
+ Implementations of the subject matter and the operations described in this specification
+ can be implemented in digital electronic circuitry, or in computer software, firmware, or hardware, including the structures disclosed in this specification and their structural equivalents, or in combinations of one or more of them.
+
+Landscapes
+
+ Engineering & Computer Science
+ (AREA)
+
+ Microelectronics & Electronic Packaging
+ (AREA)
+
+ Cooling Or The Like Of Semiconductors Or Solid State Devices
+ (AREA)
+
+ Lead Frames For Integrated Circuits
+ (AREA)
+
+ Moulds For Moulding Plastics Or The Like
+ (AREA)
+
+ Structures Or Materials For Encapsulating Or Coating Semiconductor Devices Or Solid State Devices
+ (AREA)
+
+ Structure Of Printed Boards
+ (AREA)
+
+Abstract
+
+The subject matter of this specification generally relates to electronic packages. In some implementations, a lidless electronic package includes a substrate having a surface and a die disposed on the surface of the substrate. The die has an outside perimeter, a bottom surface adjacent to the surface of the substrate, and a top surface. The electronic package includes a stiffener disposed on the surface of the substrate. The stiffener includes a first surface that is a first distance from the surface of the substrate and a second surface disposed between the die and the first surface. The first distance is greater than a distance between the surface of the substrate and the top surface of the die. The second surface is a second distance from the surface of the substrate that is less than the distance between the surface of the substrate and the top surface of the die.
+
+Description
+
+ BACKGROUND
+
+There are various ways to package an integrated circuit. A lidless electronic package is one that does not include a lid mounted to the die. A lidless electronic package allows a heat sink to directly contact the die, which allows for better thermal performance than electronic packages that include a lid. However, lidless electronic package designs suffer from increasing flatness problems as the packages grow in size. Increasing flatness problems can make package assembly difficult and result in lower yield.
+
+ SUMMARY
+
+This specification describes lidless electronic packages having a multi-surface stiffener that protects the semiconductor die from damage and keeps the package flat.
+
+In general, one innovative aspect of the subject matter described in this specification can be implemented in lidless electronic packages that include a substrate having a surface and a die disposed on the surface of the substrate. The die can have an outside perimeter, a bottom surface adjacent to the surface of the substrate, and a top surface opposite the bottom surface. The lidless electronic package can also include a stiffener disposed on the surface of the substrate and that encloses at least a portion of the outside perimeter of the die. The stiffener can include a first surface that is a first distance from the surface of the substrate. The first distance can be greater than a distance between the surface of the substrate and the top surface of the die. The stiffener can also include a second surface that is disposed between the die and the first surface. The second surface can be a second distance from the surface of the substrate. The second distance can be less than the distance between the surface of the substrate and the top surface of the die.
+
+These and other implementations can each optionally include one or more of the following features. In some aspects, the first surface and the second surface are substantially parallel with the surface of the substrate. The first surface can be above the top surface of the die and the second surface can be below the top surface of the die. The second surface can be 0.02-0.06 millimeters closer to the surface of the substrate than the top surface of the die.
+
+In some aspects, the stiffener includes a sloped surface that extends from the first surface to the second surface. The sloped surface can be at a less than ninety-degree angle with respect to the second surface. In some aspects, the stiffener includes a recessed groove between the first surface and the second surface. The recessed groove can include a third surface that is closer to the surface of the substrate than the second surface.
+
+In some aspects, the stiffener includes a first stiffener with a first thickness that causes the second surface to be closer to the surface of the substrate than the top surface of the die and a second stiffener disposed on a portion of the first stiffener. The second stiffener can have a thickness that causes the second surface to be farther from the surface of the substrate than the top surface of the die.
+
+In some aspects, the first surface and the second surface are part of a single stiffener that has a varying thickness. The thickness of the stiffener below the first surface can be greater than a thickness of the stiffener below the second surface.
+
+In general, another innovative aspect of the subject matter described in this specification can be implemented in electronic packages that include a substrate having a surface and a die disposed on the surface of the substrate. The die can have an outside perimeter, a bottom surface adjacent to the surface of the substrate, and a top surface opposite the bottom surface. The electronic package can also include a stiffener disposed on the surface of the substrate and that encloses at least a portion of the outside perimeter of the die. The stiffener can include a first portion having a first surface and a first thickness extending between the surface of the substrate and the first surface. The first thickness can be greater than a thickness of the die. The stiffener can also include a second portion having (i) a second surface that is disposed between the die and the first surface and (ii) a second thickness extending between the surface of the substrate and the second surface. The second thickness can be less than the thickness of the die.
+
+These and other implementations can each optionally include one or more of the following features. In some aspects, the first surface and the second surface are substantially parallel with the surface of the substrate. The first surface can be above the top surface of the die and the second surface can be below the top surface of the die. The die can be 0.02-0.06 millimeters thicker than the second portion.
+
+In some aspects, the stiffener includes a sloped surface that extends from the first surface to the second surface. The sloped surface can be at a less than ninety-degree angle with respect to the second surface. In some aspects, the stiffener includes a recessed groove between the first surface and the second surface. The recessed groove can include a third surface that is closer to the surface of the substrate than the second surface.
+
+In general, another innovative aspect of the subject matter described in this specification can be implemented in lidless electronic packages that include a substrate having a surface and a die attached to the surface of the substrate. The die can have an outside perimeter, a bottom surface adjacent to the surface of the substrate, and a top surface opposite the bottom surface. The lidless electronic package can also include a stiffener disposed on the surface of the substrate and that encloses the outside perimeter of the die. The stiffener can include a first surface that is farther from the surface of the substrate than the top surface of the die and a second surface that is disposed between the die and the first surface. The second surface can be closer to the surface of the substrate than the top surface of the die.
+
+These and other implementations can each optionally include one or more of the following features. In some aspects, the first surface is above the top surface of the die and the second surface is below the top surface of the die. The second surface can be 0.02-0.06 millimeters closer to the surface of the substrate than the top surface of the die.
+
+In some aspects, the stiffener includes a sloped surface that extends from the first surface to the second surface. The sloped surface can be at a less than ninety-degree angle with respect to the second surface.
+
+In some aspects, the stiffener includes a recessed groove between the first surface and the second surface. The recessed groove can include a third surface that is closer to the surface of the substrate than the second surface.
+
+In some aspects, the stiffener includes a first stiffener with a first thickness that causes the second surface to be closer to the surface of the substrate than the top surface of the die and a second stiffener disposed on a portion of the first stiffener. The second stiffener can have a thickness that causes the second surface to be farther from the surface of the substrate than the top surface of the die.
+
+Particular aspects of the subject matter described in this specification can be implemented so as to realize one or more of the following advantages. An electronic package can include multiple surfaces (e.g., in a stepped arrangement) to prevent warping of the package while also protecting the semiconductor die from damage during heat sink installation. A first portion of the stiffener can be thicker and extend above a top surface of the die to provide better protection from warping. A second portion of the stiffener, which can be disposed between the die and the first portion of the stiffener, can have a surface that is below the top surface of the die. The second portion provides a landing shelf for the heat sink that prevents the heat sink from first contacting the die and damaging the die, e.g., if the heat sink approaches the die at an angle with respect to the top surface of the die. By having the surface of the second portion below the top surface of the die, the heat sink can also rest flat against the die, which provides better thermal contact between the heat sink and the die than if there was space between the heat sink and the die. This provides better heat transfer between the die and the heat sink. Thus, electronic packages described herein allow for larger stiffeners that provide better protection against warping while also protecting the die from damage that could result from having a stiffener that extends above the top surface of the die.
+
+The details of one or more implementations of the subject matter described in this specification are set forth in the accompanying drawings and the description below. Other features, aspects, and advantages of the subject matter will become apparent from the description, the drawings, and the claims.
+
+ BRIEF DESCRIPTION OF THE DRAWINGS
+
+ FIG. 1A is a cross-sectional view of an example electronic package.
+
+ FIG. 1B is a top view of the example electronic package of FIG. 1A.
+
+ FIG. 1C is a partial cross-sectional view of the example electronic package of FIG. 1A.
+
+ FIG. 1D is a cross-sectional view of the electronic package of FIG. 1A with a heat sink being installed on the electronic package.
+
+ FIG. 1E is a cross-sectional view of the electronic package of FIG. 1A with a heat sink installed thereon.
+
+ FIG. 2 is a cross-sectional view of another example electronic package.
+
+Like reference numbers and designations in the various drawings indicate like elements.
+
+ DETAILED DESCRIPTION
+
+An electronic package, which is also referred to an integrated circuit (IC) package, includes a substrate and one or more die disposed on a surface of the substrate. Each die can include integrated circuits fabricated on semiconducting material. An electronic package can also include one or more stiffeners that prevent the components of the electronic package from warping. For example, there are mismatches of coefficients of thermal expansion (CTE) in the different components of an electronic package. When the temperature changes, e.g., during the package assembly process, the CTE mismatch can cause the electronic package to warp, bend, or twist, resulting in a less flat electronic package. Flatness problems can make the soldering process more difficult, resulting in poor solder joints between the electronic package and a circuit board or other mounting surface.
+
+A stiffener can prevent the electronic package from warping. A stiffener can be attached to the perimeter of the substrate, e.g., around the perimeter of the die. The stiffener can have a higher elastic modulus than the substrate to prevent the substrate from warping. In general, the protection against warping improves with an increase in the size of the stiffener, e.g., with an increase in the thickness of the stiffener. However, the size of the stiffener may be limited by the size of the substrate and characteristics of the package assembly process.
+
+If the stiffener extends above the top surface of the die (i.e., the surface opposite the surface of the substrate), the stiffener can provide better protection against warping. However, this can make it more difficult to install the heat sink without damaging the die. For example, if the heat sink is installed at an angle, (e.g., not flat with respect to the top surface of the die), the heat sink can damage the die. In some cases, heat sinks are installed by people that may not be able to see how flat the heat sink is when the heat sink is approaching the die due to the geometry of the electronic package.
+
+Stiffeners described herein have multiple surfaces and/or varying thicknesses that allow for a portion of the stiffener to extend above the top surface of the die, while also protecting the die from damage during the heat sink installation. For example, the stiffener can include a first surface that is above the top surface of the die and a second surface that is below the top surface of the die. The second surface can be disposed between the die and the first surface. In this way, the second surface can provide a landing shelf for the heat sink in case the heat sink approaches the die at an angle, while also allowing for a larger stiffener.
+
+ FIGS. 1A-1E depict an example electronic package 100. The relative dimensions in each figure are illustrative only and not necessarily to scale. FIG. 1A is a cross-sectional view of the example electronic package 100. The electronic package 100 includes a substrate 110 and a die 120 disposed on (e.g., attached to) a surface 111 of the substrate 110. Although one die 120 is illustrated in FIG. 1A, multiple die can be disposed on the surface 111 of the substrate 110.
+
+The electronic package 100 also includes interconnection pins for attaching the electronic package 110 to a mounting surface, e.g., to a printed circuit board. The electronic package 100 can be a lidless electronic package that does not include a lid over the die 120. For example, the electronic package can be a lidless ball grid array (BGA) package.
+
+The electronic package 100 also includes a stiffener 130 disposed on (e.g., attached to) the surface 111 of the substrate 110. In general, the stiffener 130 can be made of a material that has a higher elastic modulus than the elastic modulus of the substrate 110. For example, the stiffener 130 can be made of a metal (e.g., aluminum, copper, or steel), a ceramic, a composite material, or another appropriate material. The stiffener 130 can be a single stiffener structure or multiple stiffener structures coupled to one another, as described below with reference to FIG. 2.
+
+Referring to FIG. 1B, the stiffener 130 can enclose at least a portion of the outside perimeter of the die 120. The outside perimeter of the die 120 includes the four sides 121A-121D of the die 120. In this example, the stiffener 130 encloses the entire outside perimeter of the die 120. In some implementations, the stiffener 130 encloses only a portion of the outside perimeter of the die 120. For example, the stiffener 130 can be installed on one or more sides of the die 120, e.g., on two or three dies of the die 120. In another example, the stiffener 130 can substantially enclose the outside perimeter of the die 120 by having a respective stiffener on each side 121A-121C of the die 120, but some space between each adjacent stiffener.
+
+In the example of FIGS. 1A-1E, the stiffener 130 is adjacent to each side 121A-121D of the die 120. For example, each side 121A-121D of the die 120 may contact a respective part of the stiffener 130. In some implementations, there is space between the stiffener 130 and the sides 121A-121D of the die 120.
+
+ FIG. 1C is a partial cross-sectional view of a portion 160 of the example electronic package of FIG. 1A. Referring to FIG. 1C, the stiffener 130 includes a first surface 131 and a second surface 132. The first surface 131 can be above the top surface 122 of the die 120, while the second surface is below the top surface 122 of the die 120. The top surface 122 of the die 120 is the surface of the die 120 opposite the surface 123 of the die 120 that is adjacent to the surface 111 of the substrate 110. The term “top surface” is used for ease of subsequent discussion, but the top surface 122 may not always be the top portion of the die 120 depending on the orientation of the electronic package 110. For example, if the electronic package it flipped, the top surface 122 would be below the surface 123.
+
+The term “above” is used to refer to the first surface 131 being a greater distance away from the surface 111 of the substrate 110 than the distance between the top surface 122 of the die 120 and the surface 111 of the substrate 110. Similarly, the term “below” is used to refer to the second surface 132 being a shorter distance from the surface 111 of the substrate 110 than the distance between the top surface 122 of the die 120 and the surface 111 of the substrate 110. In different orientations of the electronic package 110, e.g., if the electronic package 110 is flipped upside down from the illustrated orientation, the first surface 131 may be at a lower altitude than the top surface 122 of the die 120. However, the first surface 131 will still be at a greater distance from the surface 111 of the substrate 110 than the distance between the top surface 122 of the die 120 and the surface 111 of the substrate 110.
+
+The additional thickness of the stiffener 130 between the first surface 131 and the surface 111 of the substrate 110 provides better protection against warping, allowing the substrate to remain flatter. As used herein, thickness of a portion of the stiffener 130 represents the distance between the surface 111 of the substrate 110 and the surface of the portion of the stiffener 130 opposite the surface 111 of the substrate 110. The protection against warping improves with an increase in the thickness of the stiffener. In this example, the portion of the stiffener 130 between the first surface 131 and the surface 111 of the substrate 110 is thicker than the portion of the stiffener 130 between the second surface 132 and the surface 111 of the substrate 110.
+
+The second surface 132 provides a landing shelf for a heat sink when the heat sink is being installed on the electronic package 100. As described in more detail below with reference to FIG. 1D, if the heat sink approaches the die 120 at an angle with respect to the top surface 122 of the die 120, the heat sink is more likely to make contact with a portion of the second surface 122 (e.g., on one side of the die 120) rather than the die 120 itself. This protects the die 120 from damage caused by the heat sink.
+
+To provide the landing shelf, the second surface 132 is below the top surface 122 of the die 120. That is, the second surface 122 is a shorter distance from the surface 111 of the substrate 110 than the distance between the top surface 122 of the die 120 and the surface 111 of the substrate 110. As described below with reference to FIG. 1E, this allows the heat sink to rest flat against the die 120.
+
+The second surface 132 of the stiffener can be close to the same distance from the surface 111 of the substrate 110 as the top surface 122 of the die 120. For example, the second surface 132 of the stiffener 130 can be 0.02-0.06 millimeters (mm) below the top surface 122 of the die 120. That is, the distance 171 between the surface 111 of the substrate 110 and the top surface 122 of the die 120 can be 0.02-0.06 mm longer than the distance 172 between the surface 111 of the substrate 110 and the second surface 132. The closer the second surface 132 of the stiffener 130 and the top surface 122 of the die 120 are to being the same distance from the surface 111 of the substrate 110, the more likely it is that the heat sink contacts a portion of the second surface 132 of the stiffener 130 prior to contacting the die 120. However, if the designed distance is too short, manufacturing defects can result in a second surface 132 that is above the top surface 122 of the die 120, resulting in reduced thermal contact between the heat sink and the die 120.
+
+In some implementations, the first surface 131 of the stiffener 130 and the second surface 132 of the stiffener 130 are substantially parallel. That is, the surfaces 131 and 132 may be parallel or have less than a five-degree angle between the surfaces. Similarly, the surfaces 131 and 132 may be substantially parallel with the top surface 122 of the die 120.
+
+The stiffener 130 also includes a lead-in draft 133 and a recessed groove 134. The lead-in draft 133 provides a sloped surface from the first surface 131 of the stiffener 130 towards the die 120. The lead-in draft 130 can help guide the heat sink towards the center of the electronic package 100 if the heat sink is approaching the die 120 near the first surface 131 of the stiffener 130. The slope of the lead-in draft 130 with respect to the first surface can be less than ninety degrees, i.e., not normal to the first surface 131.
+
+The recessed groove 134 can help ensure that the heat sink rests flat against the die 120. For example, if the second surface 122 of the stiffener 130 extended to the lead-in draft 134, an end of the heat sink could rest on the lean-in draft 133. This would result in the heat sink being at a non-zero angle with respect to the top surface 122 of the die 120, resulting in less thermal contact between the heat sink and the die 120.
+
+ FIG. 1D is a cross-sectional view of the electronic package 100 of FIG. 1A with a heat sink 150 being installed on the electronic package 100. The heat sink 150 includes a base 154 (e.g., a copper base) and a fin array 153. In this example, the heat sink 150 is approaching the die 120 at an angle, i.e., the bottom surface of the base 154 of the heat sink 150 is not parallel with the top surface 122 of the die 120. A first side 151 of the heat sink 150 contacts a portion of the second surface 132 of the stiffener 130 before any portion of the heat sink 150 contacts the die 120. After the first side 151 contacts the second surface 132 of the stiffener 130, the second side 152 of the heat sink 150 can continue moving towards the second surface 132 of the stiffener 130 on the other side of the substrate 130 until the base 154 of the heat sink 150 rests flat on the top surface 122 of the die 120. The heat sink 150 can be attached to the electronic package 100 using a mechanical device (e.g., a spring-loaded screw), and adhesive (e.g., a thermal adhesive), or another appropriate attachment technique.
+
+If the heat sink 150 approached the die 120 farther to one side of the electronic package 110, a side of the heat sink 150 may contact the lead-in draft 133. The lead-in draft 133 can guide the side of the heat sink towards the center of the electronic package 100. In this example, the side of the heat sink 150 that contacts the lead-in draft may rest above the recessed groove 134.
+
+ FIG. 1E is a cross-sectional view of the electronic package 100 of FIG. 1A with the heat sink 150 installed thereon. The base 154 of the heat sink 150 rests on the top surface 122 of the die 120. In this example, the heat sink 150 is longer than the die 120. Thus, a portion of the heat sink 150 extends over the second surface 132 of the stiffener 130. As the second surface 132 of the stiffener 130 is below the top surface 122 of the die 120, there is a gap between the base 154 of the heat sink 150 and the second surface 132 of the stiffener 130. This gap helps to ensure that the base 154 of the heat sink 150 rests flat on the top surface 122 of the die 120. For example, if the second surface 132 of the stiffener 130 was above the top surface 122 of the die 120, the base 154 of the heat sink 150 would not directly contact the top surface 122 of the die 120 at least in some portions of the top surface 122 of the die 120.
+
+The configuration of the stiffener 130 in the electronic package 100 also provides a wider window in which the heat sink 150 can be installed relative to designs in which the stiffener includes a single thickness. This allows the fin array 153 to be lowered closer to the top surface 122 of the die 120. This also lowers the heat sink thermal resistance by minimizing the thickness of the base 154 of the heatsink, which allows for higher heat flux (watts/square mm) from the die 120.
+
+ FIG. 2 is a cross-sectional view of another example electronic package 200. The example electronic package 200 includes a substrate 210 and a die 120 disposed on (e.g., attached to) a surface 211 of the substrate 210. Although one die 220 is illustrated in FIG. 2, multiple die can be disposed on the surface 211 of the substrate 210. The electronic package 200 also includes interconnection pins for attaching the electronic package 210 to a mounting surface, e.g., to a printed circuit board.
+
+The electronic package 200 also includes a stiffener 230 disposed on (e.g., attached to) the surface 211 of the substrate 210. Similar to the stiffener 130 of FIGS. 1A-1E, the stiffener 230 can be made of a material that has a higher elastic modulus than the elastic modulus of the substrate 210.
+
+In this example, the stiffener 230 is made of two stiffeners 231 and 233. The stiffener 231 is disposed on the surface 211 of the substrate 210 and can enclose at least a portion of the outside perimeter of the die 220, similar to the stiffener 130 of FIGS. 1A-1E. The stiffener 231 has a surface 232, e.g., a flat surface, that is below the top surface 222 of the die 220. That is, the surface 232 of the stiffener 232 is a shorter distance from the surface 211 of the substrate 210 than the distance between the top surface 222 of the die 220 and the surface 211 of the substrate 210. The surface 232 of the stiffener 231 provides a landing shelf for a heat sink, similar to the second surface 132 of the stiffener 130 of FIGS. 1A-1E.
+
+The stiffener 233 can be disposed on (e.g., attached to) the surface 232 of the stiffener 231. The stiffener 233 provides additional protection against warping of the electronic package 230. For example, the combination of the size of the stiffener 231 and the size of the stiffener 233 provide better protection against warping than the stiffener 231 alone.
+
+The stiffener 233 can be disposed along the entire perimeter of the stiffener 231 and enclose at least a portion of the die 220. For example, the stiffener 233 can be disposed on an outside edge of the stiffener 231, as shown in FIG. 2. The stiffener 233 can cover the outside edge of the stiffener 231 on each side of the substrate 210. For example, if the substrate is rectangular-shaped like the substrate 110 of FIGS. 1A-1E, the stiffener 231 can run along all four sides and the stiffener 233 can be disposed on the stiffener 231 on all four sides.
+
+The stiffener 233 can include a lead-in draft 235 that is sloped similar to the lead-in draft 133 of FIGS. 1A-1E. Although not shown, the stiffener 231 can include a recessed groove similar to the recessed groove 134 of FIGS. 1A-1E. For example, the stiffener 231 can include a recessed groove where the lead-in draft 235 contacts the surface 232 of the stiffener 231.
+
+Implementations of the subject matter and the operations described in this specification can be implemented in digital electronic circuitry, or in computer software, firmware, or hardware, including the structures disclosed in this specification and their structural equivalents, or in combinations of one or more of them.
+
+While this specification contains many specific implementation details, these should not be construed as limitations on the scope of any inventions or of what may be claimed, but rather as descriptions of features specific to particular implementations of particular inventions. Certain features that are described in this specification in the context of separate implementations can also be implemented in combination in a single implementation. Conversely, various features that are described in the context of a single implementation can also be implemented in multiple implementations separately or in any suitable subcombination. Moreover, although features may be described above as acting in certain combinations and even initially claimed as such, one or more features from a claimed combination can in some cases be excised from the combination, and the claimed combination may be directed to a subcombination or variation of a subcombination.
+
+Similarly, while operations are depicted in the drawings in a particular order, this should not be understood as requiring that such operations be performed in the particular order shown or in sequential order, or that all illustrated operations be performed, to achieve desirable results. Thus, particular implementations of the subject matter have been described. Other implementations are within the scope of the following claims. In some cases, the actions recited in the claims can be performed in a different order and still achieve desirable results. In addition, the processes depicted in the accompanying figures do not necessarily require the particular order shown, or sequential order, to achieve desirable results. In certain implementations, multitasking and parallel processing may be advantageous.
+
+Claims (20)
+
+ What is claimed is:
+
+1. A lidless electronic package, comprising:
+
+a substrate having a surface;
+
+a die disposed on the surface of the substrate, the die having an outside perimeter, a bottom surface adjacent to the surface of the substrate, and a top surface opposite the bottom surface; and
+
+a stiffener disposed on the surface of the substrate and that encloses at least a portion of the outside perimeter of the die, the stiffener including:
+
+a first surface that is a first distance from the surface of the substrate, the first distance being greater than a distance between the surface of the substrate and the top surface of the die; and
+
+a second surface that is disposed between the die and the first surface, the second surface being a second distance from the surface of the substrate, wherein the second distance is less than the distance between the surface of the substrate and the top surface of the die.
+
+2. The lidless electronic package of claim 1, wherein the first surface and the second surface are substantially parallel with the surface of the substrate.
+
+3. The lidless electronic package of claim 1, wherein the first surface is above the top surface of the die and the second surface is below the top surface of the die.
+
+4. The lidless electronic package of claim 1, wherein the second surface is 0.02-0.06 millimeters closer to the surface of the substrate than the top surface of the die.
+
+5. The lidless electronic package of claim 1, wherein the stiffener comprises a sloped surface that extends from the first surface to the second surface, the sloped surface being at a less than ninety-degree angle with respect to the second surface.
+
+6. The lidless electronic package of claim 1, wherein the stiffener comprises a recessed groove between the first surface and the second surface, the recessed groove including a third surface that is closer to the surface of the substrate than the second surface.
+
+7. The lidless electronic package of claim 1, wherein the stiffener comprises:
+
+a first stiffener with a first thickness that causes the second surface to be closer to the surface of the substrate than the top surface of the die; and
+
+a second stiffener disposed on a portion of the first stiffener, the second stiffener having a thickness that causes the second surface to be farther from the surface of the substrate than the top surface of the die.
+
+8. The lidless electronic package of claim 1, wherein the first surface and the second surface are part of a single stiffener that has a varying thickness, wherein a thickness of the stiffener below the first surface is greater than a thickness of the stiffener below the second surface.
+
+9. The lidless electronic package of claim 1, wherein the stiffener comprises:
+
+a first stiffener with a first thickness that causes the second surface to be closer to the surface of the substrate than the top surface of the die; and
+
+a second stiffener disposed on a portion of the first stiffener, the second stiffener having a thickness that causes the second surface to be farther from the surface of the substrate than the top surface of the die.
+
+10. An electronic package, comprising:
+
+a substrate having a surface;
+
+a die disposed on the surface of the substrate, the die having an outside perimeter, a bottom surface adjacent to the surface of the substrate, and a top surface opposite the bottom surface; and
+
+a stiffener disposed on the surface of the substrate and that encloses at least a portion of the outside perimeter of the die, the stiffener including:
+
+a first portion having a first surface and a first thickness extending between the surface of the substrate and the first surface, the first thickness being greater than a thickness of the die; and
+
+a second portion having (i) a second surface that is disposed between the die and the first surface and (ii) a second thickness extending between the surface of the substrate and the second surface, the second thickness being less than the thickness of the die.
+
+11. The electronic package of claim 10, wherein the first surface and the second surface are substantially parallel with the surface of the substrate.
+
+12. The electronic package of claim 10, wherein the first surface is above the top surface of the die and the second surface is below the top surface of the die.
+
+13. The electronic package of claim 10, wherein the die is 0.02-0.06 millimeters thicker than the second portion.
+
+14. The electronic package of claim 10, wherein the stiffener comprises a sloped surface that extends from the first surface to the second surface, the sloped surface being at a less than ninety-degree angle with respect to the second surface.
+
+15. The electronic package of claim 10, wherein the stiffener comprises a recessed groove between the first surface and the second surface, the recessed groove including a third surface that is closer to the surface of the substrate than the second surface.
+
+16. A lidless electronic package, comprising:
+
+a substrate having a surface;
+
+a die attached to the surface of the substrate, the die having an outside perimeter, a bottom surface adjacent to the surface of the substrate, and a top surface opposite the bottom surface; and
+
+a stiffener disposed on the surface of the substrate and that encloses the outside perimeter of the die, the stiffener including:
+
+a first surface that is farther from the surface of the substrate than the top surface of the die; and
+
+a second surface that is disposed between the die and the first surface, the second surface being closer to the surface of the substrate than the top surface of the die.
+
+17. The lidless electronic package of claim 16, wherein the first surface is above the top surface of the die and the second surface is below the top surface of the die.
+
+18. The lidless electronic package of claim 16, wherein the second surface is 0.02-0.06 millimeters closer to the surface of the substrate than the top surface of the die.
+
+19. The lidless electronic package of claim 16, wherein the stiffener comprises a sloped surface that extends from the first surface to the second surface, the sloped surface being at a less than ninety-degree angle with respect to the second surface.
+
+20. The lidless electronic package of claim 16, wherein the stiffener comprises a recessed groove between the first surface and the second surface, the recessed groove including a third surface that is closer to the surface of the substrate than the second surface.
+
+ US15/886,246
+ 2018-02-01
+ 2018-02-01
+ Package stiffener for protecting semiconductor die 
+
+ Active
+
+ US10083920B1
+ (en)
+
+Priority Applications (11)
+
+Application Number
+
+Priority Date
+
+Filing Date
+
+Title
+
+ US15/886,246
+
+ US10083920B1
+ (en)
+
+2018-02-01
+
+2018-02-01
+
+Package stiffener for protecting semiconductor die 
+
+ US16/110,133
+
+ US10468359B2
+ (en)
+
+2018-02-01
+
+2018-08-23
+
+Package stiffener for protecting semiconductor die 
+
+ CN202111440063.5A
+
+ CN114141718B
+ (en)
+
+2018-02-01
+
+2019-01-29
+
+ Package reinforcement for protecting semiconductor dies
+
+ FIEP19705277.2T
+
+ FI3747041T3
+ (en)
+
+2018-02-01
+
+2019-01-29
+
+ CASE STIFFENING TO PROTECT THE SEMICONDUCTOR CHIP
+
+ EP22209565.5A
+
+ EP4160665B1
+ (en)
+
+2018-02-01
+
+2019-01-29
+
+Package stiffener for protecting a semiconductor die 
+
+ EP19705277.2A
+
+ EP3747041B1
+ (en)
+
+2018-02-01
+
+2019-01-29
+
+Package stiffener for protecting semiconductor die 
+
+ PCT/US2019/015551
+
+ WO2019152358A1
+ (en)
+
+2018-02-01
+
+2019-01-29
+
+Package stiffener for protecting semiconductor die 
+
+ DK19705277.2T
+
+ DK3747041T3
+ (en)
+
+2018-02-01
+
+2019-01-29
+
+ CASE BRACING COMPONENT FOR PROTECTION OF SEMICONDUCTOR CHIP
+
+ CN201980016011.XA
+
+ CN111788665B
+ (en)
+
+2018-02-01
+
+2019-01-29
+
+Package reinforcement for protecting semiconductor die 
+
+ TW109108588A
+
+ TWI720846B
+ (en)
+
+2018-02-01
+
+2019-02-01
+
+Package stiffener for protecting semiconductor die 
+
+ TW108104161A
+
+ TWI690042B
+ (en)
+
+2018-02-01
+
+2019-02-01
+
+Package stiffener for protecting semiconductor die 
+
+Applications Claiming Priority (1)
+
+Application Number
+
+Priority Date
+
+Filing Date
+
+Title
+
+ US15/886,246
+
+ US10083920B1
+ (en)
+
+2018-02-01
+
+2018-02-01
+
+Package stiffener for protecting semiconductor die 
+
+Related Child Applications (1)
+
+Application Number
+
+Title
+
+Priority Date
+
+Filing Date
+
+ US16/110,133
+ Continuation
+
+ US10468359B2
+ (en)
+
+2018-02-01
+
+2018-08-23
+
+Package stiffener for protecting semiconductor die 
+
+Publications (1)
+
+Publication Number
+
+Publication Date
+
+ US10083920B1
+
+ true
+
+ US10083920B1
+ (en)
+
+2018-09-25
+
+Family
+
+ID=63556820
+
+Family Applications (2)
+
+Application Number
+
+Title
+
+Priority Date
+
+Filing Date
+
+ US15/886,246
+ Active
+
+ US10083920B1
+ (en)
+
+2018-02-01
+
+2018-02-01
+
+Package stiffener for protecting semiconductor die 
+
+ US16/110,133
+ Active
+
+ US10468359B2
+ (en)
+
+2018-02-01
+
+2018-08-23
+
+Package stiffener for protecting semiconductor die 
+
+Family Applications After (1)
+
+Application Number
+
+Title
+
+Priority Date
+
+Filing Date
+
+ US16/110,133
+ Active
+
+ US10468359B2
+ (en)
+
+2018-02-01
+
+2018-08-23
+
+Package stiffener for protecting semiconductor die 
+
+Country Status (7)
+
+Country
+
+Link
+
+ US
+ (2)
+
+ US10083920B1
+ (en)
+
+ EP
+ (2)
+
+ EP3747041B1
+ (en)
+
+ CN
+ (2)
+
+ CN114141718B
+ (en)
+
+ DK
+ (1)
+
+ DK3747041T3
+ (en)
+
+ FI
+ (1)
+
+ FI3747041T3
+ (en)
+
+ TW
+ (2)
+
+ TWI690042B
+ (en)
+
+ WO
+ (1)
+
+ WO2019152358A1
+ (en)
+
+Cited By (5)
+
+* Cited by examiner, † Cited by third party
+
+Publication number
+
+Priority date
+
+Publication date
+
+Assignee
+
+Title
+
+ US10468359B2
+ (en)
+
+ *
+
+2018-02-01
+
+2019-11-05
+
+Google Llc
+
+Package stiffener for protecting semiconductor die 
+
+ CN113394171A
+ (en)
+
+ *
+
+2020-03-11
+
+2021-09-14
+
+迈络思科技有限公司
+
+Reinforcing ring 
+
+ US20210366841A1
+ (en)
+
+2020-05-19
+
+2021-11-25
+
+Google Llc
+
+Weight Optimized Stiffener and Sealing Structure for Direct Liquid Cooled Modules 
+
+ US11521939B2
+ (en)
+
+ *
+
+2020-07-24
+
+2022-12-06
+
+Advanced Semiconductor Engineering, Inc.
+
+Semiconductor device structure having stiffener with two or more contact points for heat dissipating element 
+
+ CN116936493A
+ (en)
+
+ *
+
+2023-07-26
+
+2023-10-24
+
+星科金朋半导体（江阴）有限公司
+
+Packaging structure and packaging method of flip chip 
+
+Families Citing this family (1)
+
+* Cited by examiner, † Cited by third party
+
+Publication number
+
+Priority date
+
+Publication date
+
+Assignee
+
+Title
+
+ US12119275B2
+ (en)
+
+ *
+
+2021-08-30
+
+2024-10-15
+
+Apple Inc.
+
+Recessed lid and ring designs and lid local peripheral reinforcement designs 
+
+Citations (11)
+
+* Cited by examiner, † Cited by third party
+
+Publication number
+
+Priority date
+
+Publication date
+
+Assignee
+
+Title
+
+ US6046077A
+ (en)
+
+ *
+
+1998-01-07
+
+2000-04-04
+
+ Nec Corporation
+
+Semiconductor device assembly method and semiconductor device produced by the method 
+
+ US6288900B1
+ (en)
+
+ *
+
+1999-12-02
+
+2001-09-11
+
+ International Business Machines Corporation
+
+Warpage compensating heat spreader 
+
+ US20050127484A1
+ (en)
+
+ *
+
+2003-12-16
+
+2005-06-16
+
+ Texas Instruments Incorporated
+
+Die extender for protecting an integrated circuit die on a flip chip package 
+
+ US7030484B1
+ (en)
+
+2004-04-14
+
+2006-04-18
+
+ Sun Microsystems, Inc.
+
+Lidless chip package effectively having co-planar frame and semiconductor die surfaces 
+
+ US20070145571A1
+ (en)
+
+ *
+
+2005-12-15
+
+2007-06-28
+
+ Taiwan Semiconductor Manufacturing Co., Ltd.
+
+Semiconductor package structure with constraint stiffener for cleaning and underfilling efficiency 
+
+ US20080272482A1
+ (en)
+
+ *
+
+2007-03-23
+
+2008-11-06
+
+ Honeywell International Inc.
+
+Integrated Circuit Package With Top-Side Conduction Cooling 
+
+ US7459782B1
+ (en)
+
+2005-10-05
+
+2008-12-02
+
+ Altera Corporation
+
+Stiffener for flip chip BGA package 
+
+ US20100025081A1
+ (en)
+
+ *
+
+2008-07-30
+
+2010-02-04
+
+ Tadashi Arai
+
+Wiring substrate and electronic component device 
+
+ US20110235304A1
+ (en)
+
+2010-03-23
+
+2011-09-29
+
+ Alcatel-Lucent Canada, Inc.
+
+Ic package stiffener with beam 
+
+ US20130258619A1
+ (en)
+
+ *
+
+2012-03-30
+
+2013-10-03
+
+ Tom J. Ley
+
+Stiffener frame with circuit board corner protection 
+
+ US20140167243A1
+ (en)
+
+ *
+
+2012-12-13
+
+2014-06-19
+
+ Yuci Shen
+
+Semiconductor packages using a chip constraint means 
+
+Family Cites Families (25)
+
+* Cited by examiner, † Cited by third party
+
+Publication number
+
+Priority date
+
+Publication date
+
+Assignee
+
+Title
+
+ SG79982A1
+ (en)
+
+1998-06-18
+
+2001-04-17
+
+Texas Instr Singapore Pte Ltd
+
+Reinforced semiconductor package 
+
+ JP2001094001A
+ (en)
+
+ *
+
+1999-09-20
+
+2001-04-06
+
+Toshiba Corp
+
+ Semiconductor device and manufacturing method thereof
+
+ TWI311366B
+ (en)
+
+ *
+
+2006-06-30
+
+2009-06-21
+
+Advanced Semiconductor Eng
+
+A flip-chip package structure with stiffener 
+
+ US7772683B2
+ (en)
+
+ *
+
+2006-12-09
+
+2010-08-10
+
+Stats Chippac Ltd.
+
+Stacked integrated circuit package-in-package system 
+
+ US7883937B1
+ (en)
+
+ *
+
+2007-04-30
+
+2011-02-08
+
+Altera Corporation
+
+Electronic package and method of forming the same 
+
+ US20090057867A1
+ (en)
+
+ *
+
+2007-08-30
+
+2009-03-05
+
+Vincent Hool
+
+Integrated Circuit Package with Passive Component 
+
+ CN100550354C
+ (en)
+
+ *
+
+2007-10-30
+
+2009-10-14
+
+日月光半导体制造股份有限公司
+
+Reinforced packaging structure and reinforcing member thereof 
+
+ US8008133B2
+ (en)
+
+2008-02-11
+
+2011-08-30
+
+Globalfoundries Inc.
+
+Chip package with channel stiffener frame 
+
+ TWI368301B
+ (en)
+
+ *
+
+2008-04-02
+
+2012-07-11
+
+Advanced Semiconductor Eng
+
+Semiconductor package using an active type heat-spreading element 
+
+ CN101276795B
+ (en)
+
+ *
+
+2008-04-21
+
+2010-04-07
+
+日月光半导体制造股份有限公司
+
+Semiconductor Package Structure 
+
+ DE102009036970A1
+ (en)
+
+ *
+
+2009-08-12
+
+2011-02-17
+
+Tesa Se
+
+ Method for encapsulating an electronic device
+
+ KR100993074B1
+ (en)
+
+ *
+
+2009-12-29
+
+2010-11-08
+
+엘지이노텍 주식회사
+
+Light emitting device, method for fabricating the same and light emitting device package 
+
+ US9048396B2
+ (en)
+
+ *
+
+2012-06-11
+
+2015-06-02
+
+Cree, Inc.
+
+LED package with encapsulant having planar surfaces 
+
+ US8823164B2
+ (en)
+
+ *
+
+2011-10-28
+
+2014-09-02
+
+International Business Machines Corporation
+
+Heatsink attachment module 
+
+ JP5978631B2
+ (en)
+
+ *
+
+2012-01-26
+
+2016-08-24
+
+日亜化学工業株式会社
+
+ Light emitting device
+
+ US8981578B2
+ (en)
+
+ *
+
+2012-04-30
+
+2015-03-17
+
+Apple Inc.
+
+Sensor array package 
+
+ CN103515506B
+ (en)
+
+ *
+
+2012-06-15
+
+2017-04-26
+
+展晶科技(深圳)有限公司
+
+Light emitting diode packaging structure and its manufacturing method 
+
+ US9312193B2
+ (en)
+
+ *
+
+2012-11-09
+
+2016-04-12
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Stress relief structures in package assemblies 
+
+ US9089051B2
+ (en)
+
+2013-06-27
+
+2015-07-21
+
+International Business Machines Corporation
+
+Multichip module with stiffening frame and associated covers 
+
+ US9832860B2
+ (en)
+
+ *
+
+2014-09-26
+
+2017-11-28
+
+Intel Corporation
+
+Panel level fabrication of package substrates with integrated stiffeners 
+
+ US9502368B2
+ (en)
+
+ *
+
+2014-12-16
+
+2016-11-22
+
+Intel Corporation
+
+Picture frame stiffeners for microelectronic packages 
+
+ US9583408B1
+ (en)
+
+2015-08-21
+
+2017-02-28
+
+International Business Machines Corporation
+
+Reducing directional stress in an orthotropic encapsulation member of an electronic package 
+
+ US9947603B2
+ (en)
+
+ *
+
+2015-12-09
+
+2018-04-17
+
+International Business Machines Corporation
+
+Lid attach optimization to limit electronic package warpage 
+
+ US9799610B2
+ (en)
+
+ *
+
+2015-12-18
+
+2017-10-24
+
+Intel Corporation
+
+Plurality of stiffeners with thickness variation 
+
+ US10083920B1
+ (en)
+
+ *
+
+2018-02-01
+
+2018-09-25
+
+Google Llc
+
+Package stiffener for protecting semiconductor die 
+
+ 2018
+
+ 2018-02-01
+ US
+ US15/886,246
+ patent/US10083920B1/en
+ active
+ Active
+
+ 2018-08-23
+ US
+ US16/110,133
+ patent/US10468359B2/en
+ active
+ Active
+
+ 2019
+
+ 2019-01-29
+ DK
+ DK19705277.2T
+ patent/DK3747041T3/en
+ active
+
+ 2019-01-29
+ FI
+ FIEP19705277.2T
+ patent/FI3747041T3/en
+ active
+
+ 2019-01-29
+ CN
+ CN202111440063.5A
+ patent/CN114141718B/en
+ active
+ Active
+
+ 2019-01-29
+ EP
+ EP19705277.2A
+ patent/EP3747041B1/en
+ active
+ Active
+
+ 2019-01-29
+ EP
+ EP22209565.5A
+ patent/EP4160665B1/en
+ active
+ Active
+
+ 2019-01-29
+ CN
+ CN201980016011.XA
+ patent/CN111788665B/en
+ active
+ Active
+
+ 2019-01-29
+ WO
+ PCT/US2019/015551
+ patent/WO2019152358A1/en
+ not_active
+ Ceased
+
+ 2019-02-01
+ TW
+ TW108104161A
+ patent/TWI690042B/en
+ active
+
+ 2019-02-01
+ TW
+ TW109108588A
+ patent/TWI720846B/en
+ active
+
+Patent Citations (12)
+
+* Cited by examiner, † Cited by third party
+
+Publication number
+
+Priority date
+
+Publication date
+
+Assignee
+
+Title
+
+ US6046077A
+ (en)
+
+ *
+
+1998-01-07
+
+2000-04-04
+
+Nec Corporation
+
+Semiconductor device assembly method and semiconductor device produced by the method 
+
+ US6288900B1
+ (en)
+
+ *
+
+1999-12-02
+
+2001-09-11
+
+International Business Machines Corporation
+
+Warpage compensating heat spreader 
+
+ US20050127484A1
+ (en)
+
+ *
+
+2003-12-16
+
+2005-06-16
+
+Texas Instruments Incorporated
+
+Die extender for protecting an integrated circuit die on a flip chip package 
+
+ US7030484B1
+ (en)
+
+2004-04-14
+
+2006-04-18
+
+Sun Microsystems, Inc.
+
+Lidless chip package effectively having co-planar frame and semiconductor die surfaces 
+
+ US7459782B1
+ (en)
+
+2005-10-05
+
+2008-12-02
+
+Altera Corporation
+
+Stiffener for flip chip BGA package 
+
+ US20070145571A1
+ (en)
+
+ *
+
+2005-12-15
+
+2007-06-28
+
+Taiwan Semiconductor Manufacturing Co., Ltd.
+
+Semiconductor package structure with constraint stiffener for cleaning and underfilling efficiency 
+
+ US20080272482A1
+ (en)
+
+ *
+
+2007-03-23
+
+2008-11-06
+
+Honeywell International Inc.
+
+Integrated Circuit Package With Top-Side Conduction Cooling 
+
+ US20100025081A1
+ (en)
+
+ *
+
+2008-07-30
+
+2010-02-04
+
+Tadashi Arai
+
+Wiring substrate and electronic component device 
+
+ US20110235304A1
+ (en)
+
+2010-03-23
+
+2011-09-29
+
+Alcatel-Lucent Canada, Inc.
+
+Ic package stiffener with beam 
+
+ WO2011117726A1
+ (en)
+
+2010-03-23
+
+2011-09-29
+
+Alcatel Lucent
+
+Ic package stiffener with beam 
+
+ US20130258619A1
+ (en)
+
+ *
+
+2012-03-30
+
+2013-10-03
+
+Tom J. Ley
+
+Stiffener frame with circuit board corner protection 
+
+ US20140167243A1
+ (en)
+
+ *
+
+2012-12-13
+
+2014-06-19
+
+Yuci Shen
+
+Semiconductor packages using a chip constraint means 
+
+Non-Patent Citations (8)
+
+* Cited by examiner, † Cited by third party
+
+Title
+
+ ‘www.altera.com’ [online] "Thermal Management and Mechanical Handling for Lidless Flip Chip Ball-Grid Array," Application Note AN-659 1.2, Jun. 2016 [Retrieved Feb. 1, 2018] Retrieved from Internet URL< https://www.altera.com/en_US/pdfs/literature/an/an659.pdf.> 14 pages.
+
+ ‘www.electronics-cooling.com’ [online] "Lidded Versus Bare Die Flip Chip Package: Impact on Thermal Performance," by Jesse Galloway, No. 2, vol. 18, Jun. 21, 2012 [retrieved on Feb. 1, 2018] Retrieved from Internet: URL< https://www.electronics-cooling.com/2012/06/lidded-versus-bare-die-flip-chip-package-impact-on-thermal-performance/> 10 pages.
+
+ ‘www.nxp.com’ [online] "Assembly Handling and Thermal Solutions for Lidless Flip Chip Ball Grid Array Packages," NXP Freescale Semiconductor Application No. Document No. AN4871, Feb. 2014 [retrieved Feb. 1, 2018] Retrieved from Internet: URL<https://www.nxp.com/docs/en/application-note/AN4871.pdf> 10 pages.
+
+ Bash et al. "Improving Heat Transfer from a Flip-Chip Package," Article 16, Hewlett-Packard Journal, Aug. 1997, 7 pages.
+
+ Prasad et al. "Comparison of lidless & overmold flip chip package with 40nm ultra low-k Silicon Technology," Proceedings of the 60th Electronic Components and Technology Conference, Jun. 2010, 5 pages.
+
+ 'www.altera.com' [online] "Thermal Management and Mechanical Handling for Lidless Flip Chip Ball-Grid Array," Application Note AN-659 1.2, Jun. 2016 [Retrieved Feb. 1, 2018] Retrieved from Internet URL< https://www.altera.com/en_US/pdfs/literature/an/an659.pdf.> 14 pages.
+
+ 'www.electronics-cooling.com' [online] "Lidded Versus Bare Die Flip Chip Package: Impact on Thermal Performance," by Jesse Galloway, No. 2, vol. 18, Jun. 21, 2012 [retrieved on Feb. 1, 2018] Retrieved from Internet: URL< https://www.electronics-cooling.com/2012/06/lidded-versus-bare-die-flip-chip-package-impact-on-thermal-performance/> 10 pages.
+
+ 'www.nxp.com' [online] "Assembly Handling and Thermal Solutions for Lidless Flip Chip Ball Grid Array Packages," NXP Freescale Semiconductor Application No. Document No. AN4871, Feb. 2014 [retrieved Feb. 1, 2018] Retrieved from Internet: URL<https://www.nxp.com/docs/en/application-note/AN4871.pdf> 10 pages.
+
+Cited By (8)
+
+* Cited by examiner, † Cited by third party
+
+Publication number
+
+Priority date
+
+Publication date
+
+Assignee
+
+Title
+
+ US10468359B2
+ (en)
+
+ *
+
+2018-02-01
+
+2019-11-05
+
+Google Llc
+
+Package stiffener for protecting semiconductor die 
+
+ CN113394171A
+ (en)
+
+ *
+
+2020-03-11
+
+2021-09-14
+
+迈络思科技有限公司
+
+Reinforcing ring 
+
+ US20210366841A1
+ (en)
+
+2020-05-19
+
+2021-11-25
+
+Google Llc
+
+Weight Optimized Stiffener and Sealing Structure for Direct Liquid Cooled Modules 
+
+ US11721641B2
+ (en)
+
+2020-05-19
+
+2023-08-08
+
+Google Llc
+
+Weight optimized stiffener and sealing structure for direct liquid cooled modules 
+
+ US12588510B2
+ (en)
+
+2020-05-19
+
+2026-03-24
+
+Google Llc
+
+Weight optimized stiffener and sealing structure for direct liquid cooled modules 
+
+ US11521939B2
+ (en)
+
+ *
+
+2020-07-24
+
+2022-12-06
+
+Advanced Semiconductor Engineering, Inc.
+
+Semiconductor device structure having stiffener with two or more contact points for heat dissipating element 
+
+ CN116936493A
+ (en)
+
+ *
+
+2023-07-26
+
+2023-10-24
+
+星科金朋半导体（江阴）有限公司
+
+Packaging structure and packaging method of flip chip 
+
+ CN116936493B
+ (en)
+
+ *
+
+2023-07-26
+
+2026-07-24
+
+星科金朋半导体（江阴）有限公司
+
+ A flip-chip packaging structure and packaging method
+
+Also Published As
+
+Publication number
+
+Publication date
+
+ TW202025415A
+ (en)
+
+2020-07-01
+
+ US10468359B2
+ (en)
+
+2019-11-05
+
+ EP3747041B1
+ (en)
+
+2023-01-04
+
+ FI3747041T3
+ (en)
+
+2023-03-31
+
+ CN111788665B
+ (en)
+
+2022-07-08
+
+ DK3747041T3
+ (en)
+
+2023-02-20
+
+ TWI690042B
+ (en)
+
+2020-04-01
+
+ US20190237411A1
+ (en)
+
+2019-08-01
+
+ EP3747041A1
+ (en)
+
+2020-12-09
+
+ TWI720846B
+ (en)
+
+2021-03-01
+
+ CN114141718B
+ (en)
+
+2025-08-08
+
+ EP4160665B1
+ (en)
+
+2025-06-25
+
+ CN111788665A
+ (en)
+
+2020-10-16
+
+ CN114141718A
+ (en)
+
+2022-03-04
+
+ WO2019152358A1
+ (en)
+
+2019-08-08
+
+ EP4160665A1
+ (en)
+
+2023-04-05
+
+ TW201944555A
+ (en)
+
+2019-11-16
+
+Similar Documents
+
+Publication
+
+Publication Date
+
+Title
+
+ US10468359B2
+ (en)
+
+ 2019-11-05
+
+Package stiffener for protecting semiconductor die 
+
+ KR102608133B1
+ (en)
+
+ 2023-11-30
+
+Semiconductor device 
+
+ US10840192B1
+ (en)
+
+ 2020-11-17
+
+Stacked silicon package assembly having enhanced stiffener 
+
+ KR102552894B1
+ (en)
+
+ 2023-07-10
+
+ Electronic package containing multi-layer stiffeners
+
+ US4009752A
+ (en)
+
+ 1977-03-01
+
+Warp-resistant heat sink 
+
+ US20080283951A1
+ (en)
+
+ 2008-11-20
+
+Semiconductor device and method for manufacturing the same 
+
+ US7755895B2
+ (en)
+
+ 2010-07-13
+
+Heat sink, an electronic component package, and a method of manufacturing a heat sink 
+
+ US20060249852A1
+ (en)
+
+ 2006-11-09
+
+Flip-chip semiconductor device 
+
+ TW201725672A
+ (en)
+
+ 2017-07-16
+
+ Film flip chip package
+
+ US6703704B1
+ (en)
+
+ 2004-03-09
+
+Stress reducing stiffener ring 
+
+ CN205789928U
+ (en)
+
+ 2016-12-07
+
+ Thermal package structure
+
+ JP6319477B1
+ (en)
+
+ 2018-05-09
+
+ Module, module manufacturing method, package
+
+ US11282762B2
+ (en)
+
+ 2022-03-22
+
+Heat sink design for flip chip ball grid array 
+
+ JP2013080742A
+ (en)
+
+ 2013-05-02
+
+Semiconductor package, wiring board unit, and electronic apparatus 
+
+ US20170178985A1
+ (en)
+
+ 2017-06-22
+
+Semiconductor device 
+
+ HK40082312A
+ (en)
+
+ 2023-06-09
+
+Package stiffener for protecting a semiconductor die 
+
+ US9831189B2
+ (en)
+
+ 2017-11-28
+
+Integrated circuit package with a conductive grid formed in a packaging substrate 
+
+ TWI442523B
+ (en)
+
+ 2014-06-21
+
+ Semiconductor structure with metal frame
+
+ KR20160112345A
+ (en)
+
+ 2016-09-28
+
+Semiconductor chip 
+
+ JP3592515B2
+ (en)
+
+ 2004-11-24
+
+ Package for semiconductor device
+
+ CN102064137A
+ (en)
+
+ 2011-05-18
+
+Semiconductor structure with metal frame 
+
+ US20060278975A1
+ (en)
+
+ 2006-12-14
+
+Ball grid array package with thermally-enhanced heat spreader 
+
+ US20240339375A1
+ (en)
+
+ 2024-10-10
+
+Heat sink fastened on the substrate of a package of integrated circuits 
+
+ US20240379490A1
+ (en)
+
+ 2024-11-14
+
+Flip-chip package heat spreader 
+
+ JP2018073864A
+ (en)
+
+ 2018-05-10
+
+ Cooling device and mounting method
+
+Legal Events
+
+Date
+
+Code
+
+Title
+
+Description
+
+2018-02-01
+
+FEPP
+
+Fee payment procedure
+
+ Free format text:
+ ENTITY STATUS SET TO UNDISCOUNTED (ORIGINAL EVENT CODE: BIG.); ENTITY STATUS OF PATENT OWNER: LARGE ENTITY
+
+2018-09-05
+
+STCF
+
+Information on status: patent grant
+
+ Free format text:
+ PATENTED CASE
+
+2022-03-25
+
+MAFP
+
+Maintenance fee payment
+
+ Free format text:
+ PAYMENT OF MAINTENANCE FEE, 4TH YEAR, LARGE ENTITY (ORIGINAL EVENT CODE: M1551); ENTITY STATUS OF PATENT OWNER: LARGE ENTITY
+
+ Year of fee payment:
+ 4
+
+2026-03-25
+
+MAFP
+
+Maintenance fee payment
+
+ Free format text:
+ PAYMENT OF MAINTENANCE FEE, 8TH YEAR, LARGE ENTITY (ORIGINAL EVENT CODE: M1552); ENTITY STATUS OF PATENT OWNER: LARGE ENTITY
+
+ Year of fee payment:
+ 8

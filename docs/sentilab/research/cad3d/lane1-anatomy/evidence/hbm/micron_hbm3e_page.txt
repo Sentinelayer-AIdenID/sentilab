@@ -1,0 +1,744 @@
+HBM3E | Micron Technology Inc.
+
+ close
+
+ close
+
+ close
+
+ close
+
+Sign in / Register
+
+Welcome to Micron.com, please Log in or Register an account to continue.
+
+ Enter your email address
+
+ check_circle_two_tone
+
+Please enter a valid email address
+
+Restricted email domain. Please enter your registered work email address.
+
+Unexpected Error, please try after some time
+
+The email address you provided is not registered. Please register prior to logging in
+
+This account currently does not meet compliance standards due to incomplete information and requires a review. Please click on the registration link below to update your details.
+
+This email address is not registered. Please register prior to logging in.
+
+Your Sign in information is managed by your organization. Please get in touch with your organization's administrator to reset your password.
+
+Your registration request has been denied. If you believe this is a mistake, please reach out to our Web Support using the Contact Us form.
+
+ Sign in
+
+ Forgot Password?
+
+ New Account ?
+
+ Register Here
+
+ Unable to Sign In?
+
+ Visit Support
+
+ Privacy Policy
+
+ close
+
+ AI
+
+ Design Tools
+
+ Blog
+
+ Investors
+
+ Careers
+
+ language
+ clear
+
+ Sign in
+ keyboard_arrow_down
+
+ Products
+
+ Market & Industries
+
+ Partners
+
+ Sales & Support
+
+ About
+
+ Search Micron Technology
+
+ search
+
+ search
+
+Suggested Search
+
+ See all
+
+Recent Search
+
+ search
+
+ menu
+ clear
+
+Products
+
+ Memory
+
+ HBM
+
+ DRAM components
+
+ DRAM modules
+
+ LPDDR components
+
+ LPDDR modules
+
+ GDDR
+
+ Data center
+
+ Storage
+
+ All SSDs
+
+ Data center SSDs
+
+ Client SSD
+
+ Automotive and industrial SSD
+
+ Managed NAND
+
+ NAND flash
+
+ NOR flash
+
+ Memory cards
+
+ Multichip packages
+
+ e.MMC-based MCP
+
+ uMCP
+
+ NAND-based MCP
+
+ Technology leadership
+
+ 1γ DRAM technology
+
+ G9 NAND technology
+
+ Design tools
+
+ FBGA and part decoder
+
+ DRAM power calculators
+
+ NAND power calculator
+
+ Simulation models
+
+ Chipset compatibility guide
+
+ Serial presence-detect tool
+
+ Cross-reference tools
+
+ UFSparm
+
+ SSD firmware
+
+ Software and drivers
+
+ Storage Executive software
+
+ Obsolete part catalogs
+
+Search for, filter and download Micron data sheets
+
+ SEARCH DATA SHEETS
+
+Market & Industries
+
+ AI
+
+ AI data center
+
+ Edge AI
+
+ Automotive
+
+ Functional safety for automotive
+
+ Client PC
+
+ Consumer
+
+ Data center and servers
+
+ Cloud solutions
+
+ Data center storage insights
+
+ High-performance computing
+
+ Customer and partner storage success
+
+ Industrial IoT
+
+ Robotics
+
+ Aerospace and defense​
+
+ Video security
+
+ Mobile
+
+ Network infrastructure
+
+ Learn about AI
+
+Partners
+
+ Partner networks
+
+ Partner tools
+
+ Chipset partners
+
+ Design IP partners
+
+ Industrial quotient partners
+
+ Sales network
+
+ Storage ecosystem partners
+
+ Suppliers
+
+ Verification IP partners
+
+ Technology enablement programs
+
+ DDR5 TEP resources
+
+ SOCAMM2 TEP resources
+
+ AVL status by platform
+
+ AIC
+
+ ASRock
+
+ ASUS
+
+ Giga Computing
+
+ Mitac
+
+Learn about and enroll in Micron's Technology Enablement Program (TEP)
+
+ Visit TEP
+
+Sales & Support
+
+ Customer Support
+
+ Customer trust center
+
+ FAQs
+
+ Obsolete part catalogs
+
+ Quality
+
+ Shipping quantities
+
+ Technical support contact
+
+ Sales
+
+ Authorized distributors
+
+ Order samples
+
+ Sales network
+
+ Sales support contact
+
+ Surplus
+
+ Downloads and tech docs
+
+ Compatibility guides
+
+ Data sheets
+
+ Firmware
+
+ Software and drivers
+
+ Technical notes
+
+ White papers
+
+ All downloads and tech docs
+
+Data sheets, software & more
+
+ View tech docs
+
+Contact Micron's sales support
+
+ Sales support
+
+About
+
+ Company
+
+ Company timeline
+
+ Customer trust center
+
+ Educator Hub
+
+ Global affairs and public policy
+
+ Leadership
+
+ Micron brand
+
+ Opportunity for all
+
+ Product security center
+
+ Quality
+
+ Security
+
+ Suppliers
+
+ Ventures
+
+ Sustainability
+
+ Compliance and ethics
+
+ Corporate governance
+
+ Global culture and workforce
+
+ Micron Gives
+
+ Responsible sourcing
+
+ Sustainability report
+
+ Sustainability resources
+
+ Careers
+
+ Search open jobs
+
+ Jobs by location
+
+ Executive career opportunities
+
+ Global office locations
+
+ Press
+
+ Image gallery
+
+ Media relations and resources
+
+ Newsroom
+
+ Trademark and usage guidelines
+
+ U.S. expansion
+
+ Idaho
+
+ New York
+
+ Virginia
+
+ Awards and recognition
+
+ Events
+
+ Micron blog
+
+ Micron glossary
+
+ Sign in
+ keyboard_arrow_right
+
+ |
+
+ language
+
+chevron_leftBack 
+
+ US - English
+
+ China - 简体中文
+
+ India - English
+
+ Japan - 日本語
+
+ Malaysia - English
+
+ Singapore - English
+
+ Taiwan – 繁體中文
+
+ chevron_leftBack 
+
+ Enter your email address
+
+ check_circle_two_tone
+
+Please enter a valid email address
+
+Restricted email domain. Please enter your registered work email address.
+
+Unexpected Error, please try after some time
+
+The email address you provided is not registered. Please register prior to logging in
+
+This account currently does not meet compliance standards due to incomplete information and requires a review. Please click on the registration link below to update your details.
+
+This email address is not registered. Please register prior to logging in.
+
+Your Sign in information is managed by your organization. Please get in touch with your organization's administrator to reset your password.
+
+Your registration request has been denied. If you believe this is a mistake, please reach out to our Web Support using the Contact Us form.
+
+ Sign in
+
+ Forgot Password?
+
+ New Account?
+
+ Register Here
+
+ Unable to Sign In?
+
+ Visit Support
+
+ My Micron Dashboard
+
+ Logout
+
+ Privacy Policy
+
+ Home
+
+ Products
+
+ Memory
+
+ High-bandwidth memory
+
+ HBM3E
+
+ High-bandwidth memory
+
+HBM3E
+
+The industry's fastest, highest-capacity high-bandwidth memory (HBM) to advance generative AI innovation
+
+ pause
+ play_arrow
+
+ Micron HBM3E designed into AMD Instinct™ MI350 GPU and platform
+
+Micron announces the integration of our HBM3E 36GB 12-high offering into AMD's upcoming InstinctTM MI350X Series GPUs and platform. Highlighting the critical role of power efficiency and performance in AI and complex HPC workloads.
+
+ Read press release
+
+ Micron Innovates from Data Center to the Edge with NVIDIA
+
+Micron HBM3E 12-high and LPDDR5X-based SOCAMM solutions designed to unlock full potential of AI platforms.
+
+ Read press release
+
+ Production-capable Micron HBM3E 36GB 12-high cube now available
+
+Today’s generative AI models require an ever-growing amount of data as they scale to deliver better results and address new opportunities. Micron’s 1ß (1-beta) memory technology leadership and packaging advancements ensure the most efficient data flow in and out of the GPU. Micron’s 8-high and 12-high HBM3E memory cubes further fuel AI innovation at up to 30% lower power consumption than the competition’s. Micron’s 24GB 8-high HBM3E is shipping with NVIDIA H200 Tensor Core GPUs and production-capable 36GB 12-high HBM3E is also available.
+
+ Read HBM3E 12H blog
+
+ Micron HBM3E | High-bandwidth memory for AI
+
+Dive into the rapidly evolving landscape of AI with Micron HBM3E, the industry’s most efficient high-bandwidth memory offering 30% lower power than the competition. Built to advance generative AI innovation, HBM3E delivers over 1.2 TB/s bandwidth with superior power efficiency. Discover how Micron is shaping the future of AI, powering advancements in data centers, engineering, medicine, and more. All of that, all in here, with Micron HBM3E.
+
+ Watch video
+
+ play_arrow
+
+ close
+
+ Focus Trap End
+
+Advancing the rate of AI innovation
+
+ Generative AI
+
+Generative AI opens a world for new forms of creativity and expression, like the image above, by using large language model (LLM) for training and inference. Utilization of compute and memory resources make the difference in time to deploy and response time. Micron HBM3E provides higher memory capacity that improves performance and reduces AI CPU offload for faster training and more responsive queries when inferencing LLMs such as ChatGPT.™
+
+ Deep learning
+
+AI unlocks new possibilities for businesses, IT, engineering, science, medicine and more. As larger AI models are deployed to accelerate deep learning, maintaining compute and memory efficiency is important to address performance, costs and power to ensure benefits for all. Micron HBM3E improves memory performance while focusing on energy efficiency that increases performance per watt resulting in lower time to train LLMs such as GPT-4 and beyond.
+
+ High-performance computing
+
+Scientists, researchers, and engineers are challenged to discover solutions for climate modeling, curing cancer and renewable and sustainable energy resources. High-performance computing (HPC) propels time to discovery by executing very complex algorithms and advanced simulations that use large datasets. Micron HBM3E provides higher memory capacity and improves performance by reducing the need to distribute data across multiple nodes, accelerating the pace of innovation.
+
+ HBM3E built for AI and supercomputing with industry-leading process technology
+
+Micron extends industry-leading performance across our data center product portfolio with HBM3E. Delivering faster data rates, improved thermal response, and 50% higher monolithic die density within same package footprint as previous generation.
+
+HBM3E built for AI and supercomputing with industry-leading process technology
+
+ HBM3E provides the memory bandwidth to fuel AI compute cores
+
+With advanced CMOS innovations and industry-leading 1β process technology. Micron HBM3E provides higher memory bandwidth that exceeds 1.2 TB/s.1
+
+ HBM3E unlocks the world of generative AI
+
+With 50% more memory capacity2 per 8-high, 24GB cube, HBM3E enables training at higher precision and accuracy.
+
+ HBM3E delivers increased performance per watt for AI and HPC workloads
+
+Micron designed an energy-efficient data path that reduces thermal impedance and enables greater than 2.5X improvement in performance/watt3 compared to the previous generation.
+
+ HBM3E pioneers training of multimodal, multitrillion-parameter AI models
+
+With increased memory bandwidth that improves system-level performance, HBM3E reduces training time by more than 30%4 and allows >50% more queries per day.5,6
+
+ Micron HBM3E: The foundation for unlocking unprecedented compute possibilities
+
+Micron HBM3E is the fastest, highest-capacity high-bandwidth memory to advance AI innovation — an 8-high, 24GB cube that delivers over 1.2 TB/s bandwidth and superior power efficiency. Micron is your trusted partner for AI memory and storage innovation. 
+
+ View HBM3E infographic
+
+Engineering reports: The impact of HBM on LLM performance
+
+ Fine-tuning LLMs with HBM
+
+Learn about the value of fine-tuning large language models (LLMs) using HBM. This report provides an analysis of LLM fine-tuning performance using HBM3 and anticipates the value of fine-tuning with HBM3E. You can use the results as a guide in making informed decisions for the design, deployment and procurement of memory solutions optimized for AI.
+
+ Read report
+
+ Running inference on LLMs with HBM
+
+How does HBM enable LLMs to deliver faster and more accurate inference responses? Read this technical report to learn more about the effectiveness of HBM in handling the intense computational demands of LLM inference.
+
+ Read report
+
+Frequently asked questions
+
+ What differentiates Micron’s HBM3E solution from others in the market? 
+
+Micron’s HBM3E 24GB 8-high and HBM3E 36GB 12-high deliver industry-leading performance with bandwidth greater than 1.2 TB/s and consume 30% less power than any other competitor in the market. 
+
+ When will Micron’s HBM3E be available?
+
+Micron HBM3E 24GB 8-high will ship in NVIDIA H200 Tensor Core GPUs starting in the second calendar quarter 2024. Micron HBM3E 36GB 12-high samples are available now.
+
+ What is the data rate of Micron’s HBM3E
+
+Micron’s HBM3E 8-high and 12-high modules deliver an industry-leading pin speed of greater than 9.2Gbps and can support backward-compatible data rates of HBM2 first-generation devices.
+
+ What is the bandwidth of Micron’s HBM3E? 
+
+Micron’s HBM3E 8-high and 12-high solutions deliver an industry-leading bandwidth of more than 1.2 TB/s per placement. HBM3E has 1024 IO pins and the HBM3E pin speed of greater than 9.2Gbps achieves a rate higher than 1.2TB/s​.
+
+ What is the capacity of HBM3E? 
+
+Micron’s industry-leading HBM3E 8-high provides 24GB capacity per placement. The recently announced Micron HBM3E 12-high cube will deliver a jaw-dropping 36GB of capacity per placement. 
+
+ How fast is HBM3E memory? 
+
+Micron’s HBM3E 8-high and 12-high solutions deliver an industry-leading bandwidth of greater than 1.2 TB/s per placement. HBM3E has 1024 IO pins and the HBM3E pin speed of more than 9.2Gbps and achieves a rate greater than 1.2TB/s.​
+
+ What is the difference between HBM2 and HBM3E? 
+
+HBM2 offers 8 independent channels running at 3.6Gbps per pin and delivering up to 410GB/s bandwidth and comes in 4GB, 8GB and 16GB capacity. HBM3E offers 16 independent channels and 32 pseudo channels. Micron’s HBM3E delivers pin speed greater than 9.2Gbps at an industry-leading bandwidth of more than 1.2 TB/s per placement. Micron’s HBM3E offers 24GB capacity using an 8-high stack and 36GB capacity using a 12-high stack. Micron’s HBM3E delivers 30% lower power consumption than competitors. 
+
+Featured resources
+
+ Accelerating large language model inference with Micron HBM3E
+
+ Download technical brief
+
+ Micron commences volume production of industry-leading HBM3E to accelerate growth of AI
+
+ Read press release
+
+ The Six Five Insider with Micron's Girish Cherussery
+
+ View HBM3E video
+
+ play_arrow
+
+ close
+
+ Focus Trap End
+
+ Introducing memory built for AI innovation
+
+ Download product brief
+
+1.  Data rate testing estimates based on shmoo plot of pin speed performed in manufacturing test environment.
+
+2.  50% more capacity for same stack height.
+
+3.  Power and performance estimates based on simulation results of workload uses cases.
+
+4.  Based on internal Micron model referencing an ACM Publication, as compared to the current shipping platform (H100).
+
+5.  Based on internal Micron model referencing Bernstein’s research report, NVIDIA (NVDA): A bottoms-up approach to sizing the ChatGPT opportunity, February 27, 2023, as compared to the current shipping platform (H100).
+
+6.  Based on system measurements using commercially available H100 platform and linear extrapolation.
+
+ Design tools
+
+Access our design tools and resources to test, build, and maintain high-performance solutions to support your design process.
+
+ Visit design tools
+
+ Search for, filter and download data sheets
+
+Get in-depth information about product features, specifications, functionality, and more.
+
+ Search for data sheets
+
+ Order a Micron sample
+
+Your online source for placing and tracking orders for Micron memory samples.
+
+ Order samples
+
+ Downloads and technical documentation
+
+Resources to help you design, test, build and optimize your innovative designs.
+
+ Downloads and tech docs
+
+ Products
+
+ Memory
+
+ Storage
+
+ Multichip packages
+
+ Technology leadership
+
+ Design tools
+
+ Markets & industries
+
+ AI
+
+ Automotive
+
+ Client PC
+
+ Consumer
+
+ Data center and servers
+
+ Customer and partner storage success
+
+ Industrial IoT
+
+ Mobile
+
+ Network infrastructure
+
+ Partners
+
+ Partners overview
+
+ Partner networks
+
+ Technology enablement programs
+
+ Become a partner
+
+ Partner login
+
+ Sales network
+
+ Suppliers
+
+ ODM Partners: AVL status by platform
+
+ Sales & Support
+
+ Sales and support overview
+
+ Customer support
+
+ Sales
+
+ Downloads and technical documentation
+
+ About
+
+ About overview
+
+ Company
+
+ Corporate governance
+
+ Micron blog
+
+ Events
+
+ Micron glossary
+
+ Awards and recognition
+
+ U.S. expansion
+
+ Investor Relations
+
+ IR home
+
+ Events and presentations
+
+ Latest news
+
+ Quarterly financial results
+
+ Contact us
+
+ Legal
+
+ Micron Privacy Notice
+
+ Terms of sale
+
+ Privacy choices
+
+ ©2023  Micron Technology, Inc. All rights reserved. Information, products, and/or specifications are subject to change without notice. All information is provided on an "AS IS" basis without warranties of any kind. Drawings may not be to scale. Micron, the Micron logo, and all other Micron trademarks are the property of Micron Technology, Inc. All other trademarks are the property of their respective owners

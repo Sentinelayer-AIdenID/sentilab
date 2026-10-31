@@ -1,0 +1,331 @@
+SK hynix Begins Volume Production of the World’s First 12-Layer HBM3E – SK hynix Newsroom
+
+ SK hynix Newsroom | SK hynix Begins Volume Production of the World’s First 12-Layer HBM3E
+
+ Skip to the content
+
+FACT
+
+PRESS
+
+TECH&AI
+
+STORY
+
+IR
+
+ Open Search
+
+ EN
+
+EN
+
+KR
+
+CN
+
+ Seach 
+
+ Seach 
+
+ Open Menu
+
+FACT
+
+PRESS
+
+TECH&AI
+
+STORY
+
+IR
+
+EN
+
+KR
+
+CN
+
+ Close Menu
+
+ PRESS 
+
+SK hynix Begins Volume Production of the World’s First 12-Layer HBM3E
+
+12-layer HBM3E
+
+Advanced MR-MUF
+
+AI Memory
+
+HBM3E
+
+TSV
+
+ September 26, 2024 
+
+ SK hynix 
+
+ AI Summary 
+
+ SK hynix began mass production of the world’s first 36GB 12-layer HBM3E, offering record speed, capacity, and heat performance, reinforcing its AI memory leadership. 
+
+ Share 
+
+Copy URL
+
+Share Facebook/span>
+
+Share X
+
+Print
+
+ PRESS 
+
+SK hynix Begins Volume Production of the World’s First 12-Layer HBM3E
+
+News Highlights
+
+· The company plans to supply the highest-performing, highest-capacity 12-layer HBM3E to customers by the end of the year
+
+· DRAM chips made 40% thinner to increase capacity by 50% at the same thickness as the previous 8-layer product
+
+· The company to continue HBM’s success with outstanding product performance and competitiveness
+
+Seoul, September 26, 2024
+
+SK hynix Inc. (or “the company”, www.skhynix.com) announced today that it has begun mass production of the world’s first 12-layer HBM3E product with 36GB*, the largest capacity of existing HBM* to date.
+
+*Previously, the maximum capacity of HBM3E was 24GB from eight vertically stacked 3GB DRAM chips.
+
+*HBM (High Bandwidth Memory): This high-value, high-performance memory vertically interconnects multiple DRAM chips and dramatically increases data processing speed in comparison to traditional DRAM products. HBM3E is the extended version of HBM3, the fourth generation product that succeeds the previous generations of HBM, HBM2 and HBM2E.
+
+The company plans to supply mass-produced products to customers within the year, proving its overwhelming technology once again six months after delivering the HBM3E 8-layer product to customers for the first time in the industry in March this year.
+
+SK hynix is the only company in the world that has developed and supplied the entire HBM lineup from the first generation (HBM1) to the fifth generation (HBM3E), since releasing the world’s first HBM in 2013. The company plans to continue its leadership in the AI memory market, addressing the growing needs of AI companies by being the first in the industry to mass-produce the 12-layer HBM3E.
+
+According to the company, the 12-layer HBM3E product meets the world’s highest standards in all areas that are essential for AI memory including speed, capacity and stability. SK hynix has increased the speed of memory operations to 9.6 Gbps, the highest memory speed available today. If ‘Llama 3 70B’*, a Large Language Model (LLM), is driven by a single GPU equipped with four HBM3E products, it can read 70 billion total parameters 35 times within a second.
+
+*Llama 3: Open-source LLM released by Meta in April 2024, with 3 sizes in total: 8B (Billion), 70B, and 400B.
+
+SK hynix has increased the capacity by 50% by stacking 12 layers of 3GB DRAM chips at the same thickness as the previous eight-layer product. To achieve this, the company made each DRAM chip 40% thinner than before and stacked vertically using TSV* technology.
+
+The company also solved structural issues that arise from stacking thinner chips higher by applying its core technology, the Advanced MR-MUF* process. This allows to provide 10% higher heat dissipation performance compared to the previous generation, and secure the stability and reliability of the product through enhanced warpage controlling.
+
+*TSV (Through Silicon Via): This advanced packaging technology links upper and lower chips with an electrode that vertically passes through thousands of fine holes on DRAM chips.
+
+*MR-MUF (Mass Reflow Molded Underfill): The process of stacking semiconductor chips, injecting liquid protective materials between them to protect the circuit between chips, and hardening them. The process has proved to be more efficient and effective for heat dissipation, compared with the method of laying film-type materials for each chip stack. SK hynix’s advanced MR-MUF technology is critical to securing a stable HBM mass production as it provides good warpage control and reduces the pressure on the chips being stacked.
+
+“SK hynix has once again broken through technological limits demonstrating our industry leadership in AI memory,” said Justin Kim, President (Head of AI Infra) at SK hynix. “We will continue our position as the No.1 global AI memory provider as we steadily prepare next-generation memory products to overcome the challenges of the AI era.”
+
+About SK hynix Inc.
+
+SK hynix Inc., headquartered in Korea, is the world’s top-tier semiconductor supplier offering Dynamic Random Access Memory chips (“DRAM”), flash memory chips (“NAND flash”), and CMOS Image Sensors (“CIS”) for a wide range of distinguished customers globally. The company’s shares are traded on the Korea Exchange, and the Global Depository shares are listed on the Luxembourg Stock Exchange. Further information about SK hynix is available at www.skhynix.com, news.skhynix.com.
+
+Media Contact
+
+SK hynix Inc.
+
+Global Public Relations
+
+Technical Leader
+
+Sooyeon Lee
+
+E-Mail: global_newsroom@skhynix.com
+
+Technical Leader
+
+Kanga Kong
+
+E-Mail: global_newsroom@skhynix.com
+
+12-layer HBM3E
+
+Advanced MR-MUF
+
+AI Memory
+
+HBM3E
+
+TSV
+
+Copy URL
+
+Share Facebook
+
+Share X
+
+ View All 
+
+Related content
+
+ SK hynix Hosts ‘2026 Global Forum,’ Sharing Its Technology Vision and Future Strategy for the AI Era 
+
+ September 21, 2026 
+
+ STORY 
+
+AI Memory
+
+Global Forum
+
+recruitment
+
+Talent Development
+
+ SK hynix Presents ‘New Spectrum’ for AI Infrastructure at ‘AI Infra Summit 2026’ 
+
+ September 17, 2026 
+
+ TECH&AI 
+
+AI
+
+AI Infra Summit
+
+AI Memory
+
+eSSD
+
+HBF
+
+PIM
+
+SALT-KV
+
+ SK hynix Charts Its Business and Technology Direction at the 2026 Future Forum—”Now Is the Golden Time to Leap Forward” 
+
+ September 9, 2026 
+
+ TECH&AISTORY 
+
+3D Memory
+
+AI Memory
+
+AX
+
+Future Semiconductor
+
+SK hynix Future Forum
+
+ [AI Ecosystem] The real bottleneck: Data, not compute 
+
+ September 3, 2026 
+
+ TECH&AI 
+
+AI
+
+AI ecosystem
+
+AI Memory
+
+HBF
+
+HBM
+
+ SK hynix Hosts ‘2026 Global Forum,’ Sharing Its Technology Vision and Future Strategy for the AI Era 
+
+ September 21, 2026 
+
+ STORY 
+
+AI Memory
+
+Global Forum
+
+recruitment
+
+Talent Development
+
+ SK hynix Presents ‘New Spectrum’ for AI Infrastructure at ‘AI Infra Summit 2026’ 
+
+ September 17, 2026 
+
+ TECH&AI 
+
+AI
+
+AI Infra Summit
+
+AI Memory
+
+eSSD
+
+HBF
+
+PIM
+
+SALT-KV
+
+ SK hynix Charts Its Business and Technology Direction at the 2026 Future Forum—”Now Is the Golden Time to Leap Forward” 
+
+ September 9, 2026 
+
+ TECH&AISTORY 
+
+3D Memory
+
+AI Memory
+
+AX
+
+Future Semiconductor
+
+SK hynix Future Forum
+
+ [AI Ecosystem] The real bottleneck: Data, not compute 
+
+ September 3, 2026 
+
+ TECH&AI 
+
+AI
+
+AI ecosystem
+
+AI Memory
+
+HBF
+
+HBM
+
+ Homepage 
+
+ INSTAGRAM 
+
+ YOUTUBE 
+
+ Heritage 
+
+ Media Library 
+
+ Toggle Menu 
+
+ Back to Top 
+
+FACT
+
+PRESS
+
+TECH&AI
+
+STORY
+
+IR
+
+Contact Us
+
+Terms of Use
+
+ Homepage 
+
+ Instagram 
+
+ Youtube 
+
+ Linkedin 
+
+ RSS

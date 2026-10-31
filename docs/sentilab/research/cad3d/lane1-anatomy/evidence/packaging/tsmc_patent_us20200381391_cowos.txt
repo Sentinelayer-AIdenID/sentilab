@@ -1,0 +1,3213 @@
+US20200381391A1 - COWOS Structures and Methods Forming Same 
+ - Google Patents
+
+US20200381391A1 - COWOS Structures and Methods Forming Same 
+ - Google Patents
+
+ COWOS Structures and Methods Forming Same 
+
+ Download PDF
+
+Info
+
+Publication number
+
+US20200381391A1
+
+ US20200381391A1
+ US16/427,477
+ US201916427477A
+ US2020381391A1
+ US 20200381391 A1
+ US20200381391 A1
+ US 20200381391A1
+
+ US 201916427477 A
+ US201916427477 A
+ US 201916427477A
+ US 2020381391 A1
+ US2020381391 A1
+ US 2020381391A1
+
+Authority
+
+US
+
+United States
+
+Prior art keywords
+
+encapsulant
+
+interposers
+
+packages
+
+dielectric layer
+
+package
+
+Prior art date
+
+2019-05-31
+
+Legal status (The legal status is an assumption and is not a legal conclusion. Google has not performed a legal analysis and makes no representation as to the accuracy of the status listed.)
+
+ Granted
+
+Application number
+
+US16/427,477
+
+Other versions
+
+ US11133282B2
+ (en
+
+Inventor
+
+Chen-Hua Yu
+
+Szu-Wei Lu
+
+Current Assignee (The listed assignees may be inaccurate. Google has not performed a legal analysis and makes no representation or warranty as to the accuracy of the list.)
+
+ Taiwan Semiconductor Manufacturing Co TSMC Ltd
+
+Original Assignee
+
+Taiwan Semiconductor Manufacturing Co TSMC Ltd
+
+Priority date (The priority date is an assumption and is not a legal conclusion. Google has not performed a legal analysis and makes no representation as to the accuracy of the date listed.)
+
+2019-05-31
+
+Filing date
+
+2019-05-31
+
+Publication date
+
+2020-12-03
+
+ 2019-05-31
+ Application filed by Taiwan Semiconductor Manufacturing Co TSMC Ltd
+ filed
+ Critical
+
+ Taiwan Semiconductor Manufacturing Co TSMC Ltd
+
+ 2019-05-31
+ Priority to US16/427,477
+ priority
+ Critical
+
+ patent/US11133282B2/en
+
+ 2019-06-12
+ Assigned to TAIWAN SEMICONDUCTOR MANUFACTURING COMPANY, LTD.
+ reassignment
+
+ TAIWAN SEMICONDUCTOR MANUFACTURING COMPANY, LTD.
+ ASSIGNMENT OF ASSIGNORS INTEREST (SEE DOCUMENT FOR DETAILS).
+ Assignors: YU, CHEN-HUA, LU, SZU-WEI
+
+ 2019-07-03
+ Priority to DE102019117892.4A
+ priority
+
+ patent/DE102019117892A1/en
+
+ 2019-09-11
+ Priority to KR1020190112887A
+ priority
+
+ patent/KR102459551B1/en
+
+ 2020-05-29
+ Priority to TW109117962A
+ priority
+
+ patent/TWI744922B/en
+
+ 2020-06-01
+ Priority to CN202010485845.XA
+ priority
+
+ patent/CN112018065B/en
+
+ 2020-12-03
+ Publication of US20200381391A1
+ publication
+ Critical
+
+ patent/US20200381391A1/en
+
+ 2021-09-28
+ Application granted
+ granted
+ Critical
+
+ 2021-09-28
+ Publication of US11133282B2
+ publication
+ Critical
+
+ patent/US11133282B2/en
+
+ Status
+ Active
+ legal-status
+ Critical
+ Current
+
+ 2039-05-31
+ Anticipated expiration
+ legal-status
+ Critical
+
+Links
+
+ USPTO
+
+ USPTO PatentCenter
+
+ USPTO Assignment
+
+ Espacenet
+
+ Global Dossier
+
+ Discuss
+
+Images
+
+Classifications
+
+ H01L24/97—
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W74/00—Encapsulations, e.g. protective coatings
+
+ H10W74/01—Manufacture or treatment
+
+ H10W74/016—Manufacture or treatment using moulds
+
+ H01L21/561—
+
+ H01L23/3135—
+
+ H01L23/49827—
+
+ H01L23/5226—
+
+ H01L24/16—
+
+ H01L24/81—
+
+ H01L25/0655—
+
+ H01L25/18—
+
+ H01L25/50—
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10P—GENERIC PROCESSES OR APPARATUS FOR THE MANUFACTURE OR TREATMENT OF DEVICES COVERED BY CLASS H10
+
+ H10P52/00—Grinding, lapping or polishing of wafers, substrates or parts of devices
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10P—GENERIC PROCESSES OR APPARATUS FOR THE MANUFACTURE OR TREATMENT OF DEVICES COVERED BY CLASS H10
+
+ H10P54/00—Cutting or separating of wafers, substrates or parts of devices
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10P—GENERIC PROCESSES OR APPARATUS FOR THE MANUFACTURE OR TREATMENT OF DEVICES COVERED BY CLASS H10
+
+ H10P72/00—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof
+
+ H10P72/70—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof for supporting or gripping
+
+ H10P72/74—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof for supporting or gripping using temporarily an auxiliary support
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W20/00—Interconnections in chips, wafers or substrates
+
+ H10W20/20—Interconnections within wafers or substrates, e.g. through-silicon vias [TSV]
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W20/00—Interconnections in chips, wafers or substrates
+
+ H10W20/40—Interconnections external to wafers or substrates, e.g. back-end-of-line [BEOL] metallisations or vias connecting to gate electrodes
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W20/00—Interconnections in chips, wafers or substrates
+
+ H10W20/40—Interconnections external to wafers or substrates, e.g. back-end-of-line [BEOL] metallisations or vias connecting to gate electrodes
+
+ H10W20/41—Interconnections external to wafers or substrates, e.g. back-end-of-line [BEOL] metallisations or vias connecting to gate electrodes characterised by their conductive parts
+
+ H10W20/42—Vias, e.g. via plugs
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W20/00—Interconnections in chips, wafers or substrates
+
+ H10W20/40—Interconnections external to wafers or substrates, e.g. back-end-of-line [BEOL] metallisations or vias connecting to gate electrodes
+
+ H10W20/482—Interconnections external to wafers or substrates, e.g. back-end-of-line [BEOL] metallisations or vias connecting to gate electrodes for individual devices provided for in groups H10D8/00 - H10D48/00, e.g. for power transistors
+
+ H10W20/484—Interconnections having extended contours, e.g. pads having mesh shape or interconnections comprising connected parallel stripes
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W70/00—Package substrates; Interposers; Redistribution layers [RDL]
+
+ H10W70/01—Manufacture or treatment
+
+ H10W70/05—Manufacture or treatment of insulating or insulated package substrates, or of interposers, or of redistribution layers
+
+ H10W70/095—Manufacture or treatment of insulating or insulated package substrates, or of interposers, or of redistribution layers of vias therein
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W70/00—Package substrates; Interposers; Redistribution layers [RDL]
+
+ H10W70/60—Insulating or insulated package substrates; Interposers; Redistribution layers
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W70/00—Package substrates; Interposers; Redistribution layers [RDL]
+
+ H10W70/60—Insulating or insulated package substrates; Interposers; Redistribution layers
+
+ H10W70/611—Insulating or insulated package substrates; Interposers; Redistribution layers for connecting multiple chips together
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W70/00—Package substrates; Interposers; Redistribution layers [RDL]
+
+ H10W70/60—Insulating or insulated package substrates; Interposers; Redistribution layers
+
+ H10W70/611—Insulating or insulated package substrates; Interposers; Redistribution layers for connecting multiple chips together
+
+ H10W70/614—Insulating or insulated package substrates; Interposers; Redistribution layers for connecting multiple chips together the multiple chips being integrally enclosed
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W70/00—Package substrates; Interposers; Redistribution layers [RDL]
+
+ H10W70/60—Insulating or insulated package substrates; Interposers; Redistribution layers
+
+ H10W70/62—Insulating or insulated package substrates; Interposers; Redistribution layers characterised by their interconnections
+
+ H10W70/63—Vias, e.g. via plugs
+
+ H10W70/635—Through-vias
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W72/00—Interconnections or connectors in packages
+
+ H10W72/01—Manufacture or treatment
+
+ H10W72/019—Manufacture or treatment of bond pads
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W72/00—Interconnections or connectors in packages
+
+ H10W72/071—Connecting or disconnecting
+
+ H10W72/072—Connecting or disconnecting of bump connectors
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W72/00—Interconnections or connectors in packages
+
+ H10W72/20—Bump connectors, e.g. solder bumps or copper pillars; Dummy bumps; Thermal bumps
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W74/00—Encapsulations, e.g. protective coatings
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W74/00—Encapsulations, e.g. protective coatings
+
+ H10W74/01—Manufacture or treatment
+
+ H10W74/014—Manufacture or treatment using batch processing
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W74/00—Encapsulations, e.g. protective coatings
+
+ H10W74/10—Encapsulations, e.g. protective coatings characterised by their shape or disposition
+
+ H10W74/111—Encapsulations, e.g. protective coatings characterised by their shape or disposition the semiconductor body being completely enclosed
+
+ H10W74/114—Encapsulations, e.g. protective coatings characterised by their shape or disposition the semiconductor body being completely enclosed by a substrate and the encapsulations
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W74/00—Encapsulations, e.g. protective coatings
+
+ H10W74/10—Encapsulations, e.g. protective coatings characterised by their shape or disposition
+
+ H10W74/111—Encapsulations, e.g. protective coatings characterised by their shape or disposition the semiconductor body being completely enclosed
+
+ H10W74/121—Encapsulations, e.g. protective coatings characterised by their shape or disposition the semiconductor body being completely enclosed by multiple encapsulations, e.g. by a thin protective coating and a thick encapsulation
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W74/00—Encapsulations, e.g. protective coatings
+
+ H10W74/40—Encapsulations, e.g. protective coatings characterised by their materials
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W74/00—Encapsulations, e.g. protective coatings
+
+ H10W74/40—Encapsulations, e.g. protective coatings characterised by their materials
+
+ H10W74/47—Encapsulations, e.g. protective coatings characterised by their materials comprising organic materials, e.g. plastics or resins
+
+ H10W74/473—Encapsulations, e.g. protective coatings characterised by their materials comprising organic materials, e.g. plastics or resins containing a filler
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W90/00—Package configurations
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10P—GENERIC PROCESSES OR APPARATUS FOR THE MANUFACTURE OR TREATMENT OF DEVICES COVERED BY CLASS H10
+
+ H10P72/00—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof
+
+ H10P72/70—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof for supporting or gripping
+
+ H10P72/74—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof for supporting or gripping using temporarily an auxiliary support
+
+ H10P72/7416—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof for supporting or gripping using temporarily an auxiliary support used during dicing or grinding
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10P—GENERIC PROCESSES OR APPARATUS FOR THE MANUFACTURE OR TREATMENT OF DEVICES COVERED BY CLASS H10
+
+ H10P72/00—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof
+
+ H10P72/70—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof for supporting or gripping
+
+ H10P72/74—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof for supporting or gripping using temporarily an auxiliary support
+
+ H10P72/7424—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof for supporting or gripping using temporarily an auxiliary support used as a support during the manufacture of self-supporting substrates
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10P—GENERIC PROCESSES OR APPARATUS FOR THE MANUFACTURE OR TREATMENT OF DEVICES COVERED BY CLASS H10
+
+ H10P72/00—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof
+
+ H10P72/70—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof for supporting or gripping
+
+ H10P72/74—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof for supporting or gripping using temporarily an auxiliary support
+
+ H10P72/7428—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof for supporting or gripping using temporarily an auxiliary support used to support diced chips prior to mounting
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10P—GENERIC PROCESSES OR APPARATUS FOR THE MANUFACTURE OR TREATMENT OF DEVICES COVERED BY CLASS H10
+
+ H10P72/00—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof
+
+ H10P72/70—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof for supporting or gripping
+
+ H10P72/74—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof for supporting or gripping using temporarily an auxiliary support
+
+ H10P72/743—Handling or holding of wafers, substrates or devices during manufacture or treatment thereof for supporting or gripping using temporarily an auxiliary support used as a support during manufacture of interconnect decals or build up layers
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W70/00—Package substrates; Interposers; Redistribution layers [RDL]
+
+ H10W70/01—Manufacture or treatment
+
+ H10W70/05—Manufacture or treatment of insulating or insulated package substrates, or of interposers, or of redistribution layers
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W70/00—Package substrates; Interposers; Redistribution layers [RDL]
+
+ H10W70/60—Insulating or insulated package substrates; Interposers; Redistribution layers
+
+ H10W70/62—Insulating or insulated package substrates; Interposers; Redistribution layers characterised by their interconnections
+
+ H10W70/65—Shapes or dispositions of interconnections
+
+ H10W70/652—Cross-sectional shapes
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W70/00—Package substrates; Interposers; Redistribution layers [RDL]
+
+ H10W70/60—Insulating or insulated package substrates; Interposers; Redistribution layers
+
+ H10W70/62—Insulating or insulated package substrates; Interposers; Redistribution layers characterised by their interconnections
+
+ H10W70/65—Shapes or dispositions of interconnections
+
+ H10W70/654—Top-view layouts
+
+ H10W70/655—Fan-out layouts
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W70/00—Package substrates; Interposers; Redistribution layers [RDL]
+
+ H10W70/60—Insulating or insulated package substrates; Interposers; Redistribution layers
+
+ H10W70/67—Insulating or insulated package substrates; Interposers; Redistribution layers characterised by their insulating layers or insulating parts
+
+ H10W70/69—Insulating materials thereof
+
+ H10W70/695—Organic materials
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W72/00—Interconnections or connectors in packages
+
+ H10W72/01—Manufacture or treatment
+
+ H10W72/0198—Manufacture or treatment batch processes
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W72/00—Interconnections or connectors in packages
+
+ H10W72/071—Connecting or disconnecting
+
+ H10W72/073—Connecting or disconnecting of die-attach connectors
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W72/00—Interconnections or connectors in packages
+
+ H10W72/071—Connecting or disconnecting
+
+ H10W72/073—Connecting or disconnecting of die-attach connectors
+
+ H10W72/07331—Connecting techniques
+
+ H10W72/07337—Connecting techniques using a polymer adhesive, e.g. an adhesive based on silicone or epoxy
+
+ H10W72/07338—Connecting techniques using a polymer adhesive, e.g. an adhesive based on silicone or epoxy hardening the adhesive by curing, e.g. thermosetting
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W72/00—Interconnections or connectors in packages
+
+ H10W72/30—Die-attach connectors
+
+ H10W72/321—Structures or relative sizes of die-attach connectors
+
+ H10W72/325—Die-attach connectors having a filler embedded in a matrix
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W72/00—Interconnections or connectors in packages
+
+ H10W72/30—Die-attach connectors
+
+ H10W72/351—Materials of die-attach connectors
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W72/00—Interconnections or connectors in packages
+
+ H10W72/30—Die-attach connectors
+
+ H10W72/351—Materials of die-attach connectors
+
+ H10W72/353—Materials of die-attach connectors not comprising solid metals or solid metalloids, e.g. ceramics
+
+ H10W72/354—Materials of die-attach connectors not comprising solid metals or solid metalloids, e.g. ceramics comprising polymers
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W74/00—Encapsulations, e.g. protective coatings
+
+ H10W74/01—Manufacture or treatment
+
+ H10W74/012—Manufacture or treatment of encapsulations on active surfaces of flip-chip devices, e.g. forming underfills
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W74/00—Encapsulations, e.g. protective coatings
+
+ H10W74/01—Manufacture or treatment
+
+ H10W74/019—Manufacture or treatment using temporary auxiliary substrates
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W74/00—Encapsulations, e.g. protective coatings
+
+ H10W74/10—Encapsulations, e.g. protective coatings characterised by their shape or disposition
+
+ H10W74/111—Encapsulations, e.g. protective coatings characterised by their shape or disposition the semiconductor body being completely enclosed
+
+ H10W74/114—Encapsulations, e.g. protective coatings characterised by their shape or disposition the semiconductor body being completely enclosed by a substrate and the encapsulations
+
+ H10W74/117—Encapsulations, e.g. protective coatings characterised by their shape or disposition the semiconductor body being completely enclosed by a substrate and the encapsulations the substrate having spherical bumps for external connection
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W74/00—Encapsulations, e.g. protective coatings
+
+ H10W74/10—Encapsulations, e.g. protective coatings characterised by their shape or disposition
+
+ H10W74/15—Encapsulations, e.g. protective coatings characterised by their shape or disposition on active surfaces of flip-chip devices, e.g. underfills
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W90/00—Package configurations
+
+ H10W90/701—Package configurations characterised by the relative positions of pads or connectors relative to package parts
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W90/00—Package configurations
+
+ H10W90/701—Package configurations characterised by the relative positions of pads or connectors relative to package parts
+
+ H10W90/721—Package configurations characterised by the relative positions of pads or connectors relative to package parts of bump connectors
+
+ H10W90/724—Package configurations characterised by the relative positions of pads or connectors relative to package parts of bump connectors between a chip and a stacked insulating package substrate, interposer or RDL
+
+ H—ELECTRICITY
+
+ H10—SEMICONDUCTOR DEVICES; ELECTRIC SOLID-STATE DEVICES NOT OTHERWISE PROVIDED FOR
+
+ H10W—GENERIC PACKAGES, INTERCONNECTIONS, CONNECTORS OR OTHER CONSTRUCTIONAL DETAILS OF DEVICES COVERED BY CLASS H10
+
+ H10W90/00—Package configurations
+
+ H10W90/701—Package configurations characterised by the relative positions of pads or connectors relative to package parts
+
+ H10W90/731—Package configurations characterised by the relative positions of pads or connectors relative to package parts of die-attach connectors
+
+ H10W90/734—Package configurations characterised by the relative positions of pads or connectors relative to package parts of die-attach connectors between a chip and a stacked insulating package substrate, interposer or RDL
+
+Definitions
+
+ a plurality of dies
+ may be bonded on an interposer wafer, which comprises a plurality of interposers therein.
+
+ an underfill
+ may be dispensed into the gaps between the dies and the interposer wafer.
+
+ a curing process
+ may then be performed to cure the underfill.
+
+ Underfill
+ may shrink after being cured.
+
+ the cured underfill
+ applies a stress on the dies and the interposer wafer, and may cause the interposer wafer to have a warpage.
+
+ the warpage of the interposer wafer
+ further results in the process difficulty in the subsequent processes.
+
+ the interposer wafer
+ needs to be secured on a chuck table through vacuum in order to form metal lines and solder regions thereon. With the interposer wafer having the warpage, however, the interposer wafer may not be able to be secured on the chuck table.
+
+ FIGS. 1 through 18
+ are cross-sectional views of intermediate stages in the formation of a package in accordance with some embodiments.
+
+ FIGS. 19 through 24
+ are cross-sectional views of intermediate stages in the formation of a package in accordance with some embodiments.
+
+ FIG. 25
+ illustrates a magnified view of a part of a package in accordance with some embodiments.
+
+ FIG. 26
+ illustrates a process flow for forming a package in accordance with some embodiments.
+
+ first and second features
+ are formed in direct contact
+
+ additional features
+ may be formed between the first and second features, such that the first and second features may not be in direct contact
+
+ present disclosure
+ may repeat reference numerals and/or letters in the various examples. This repetition is for the purpose of simplicity and clarity and does not in itself dictate a relationship between the various embodiments and/or configurations discussed.
+
+ spatially relative terms
+ such as “underlying,” “below,” “lower,” “overlying,” “upper” and the like, may be used herein for ease of description to describe one element or feature's relationship to another element(s) or feature(s) as illustrated in the figures.
+
+ the spatially relative terms
+ are intended to encompass different orientations of the device in use or operation in addition to the orientation depicted in the figures.
+
+ the apparatus
+ may be otherwise oriented (rotated 90 degrees or at other orientations) and the spatially relative descriptors used herein may likewise be interpreted accordingly.
+
+ a process for forming a Chip-on-Wafer-on-Substrate (CoWoS) package
+ includes bonding device dies on an interposer wafer, encapsulating the device dies, and then sawing the resulting reconstructed wafer into discrete Chip-on-Wafer (CoW) packages. The discrete CoW packages are then placed over a carrier and then encapsulated.
+
+ CoWoS
+ Chip-on-Wafer-on-Substrate
+
+ RDLs
+ Redistribution lines
+
+ the substrate of the present disclosure
+ is formed starting from the interposers, rather than being pre-formed and bonded to the CoW packages.
+
+ Embodiments
+ will be described with respect to a specific context, namely a CoWoS package. Other embodiments may also be applied, however, to other packages such as the bonding of device dies to device wafers (rather than interposer wafers) including active devices such as transistors, and other processing.
+
+ Embodiments discussed herein
+ are to provide examples to enable making or using the subject matter of this disclosure, and a person having ordinary skill in the art will readily understand modifications that can be made while remaining within contemplated scopes of different embodiments.
+
+ Like reference numbers and characters in the figures below
+ refer to like components.
+
+ FIGS. 1 through 18
+ illustrate the cross-sectional views of intermediate stages in the formation of a package in accordance with some embodiments of the present disclosure. The corresponding processes are also reflected schematically in the process flow 200 shown in FIG. 26 .
+
+ FIG. 1
+ illustrates a cross-sectional view of interposer wafer 20 .
+
+ Interposer wafer 20
+ may include substrate 22 .
+
+ substrate 22
+ is a semiconductor substrate, which may further be a crystalline silicon substrate, although it may comprise other semiconductor materials such as silicon germanium, silicon carbon, or the like.
+
+ substrate 22
+ is a dielectric substrate.
+
+ interposer wafer 20
+ does not have active devices such as transistors and diodes therein.
+
+ interposer wafer 20
+ may or may not include passive devices such as capacitors, inductors, and resistors formed therein.
+
+ wafer 20
+ is a device wafer, which includes active devices such as transistors (not shown) formed at the top surface of semiconductor substrate 22 .
+
+ Through-vias
+ (sometimes referred to as Through-Substrate Vias (TSVs)) 24 may be formed to extend from the top surface of substrate 22 into substrate 22 .
+
+ TSVs
+ Through-Substrate Vias
+
+ TVs 24
+ are also sometimes referred as through-silicon vias when formed in a silicon substrate.
+
+ each of TVs 24
+ may be encircled by an isolation liner 26 ( FIG. 25 ), which is formed of a dielectric material such as silicon oxide, silicon nitride, or the like. Isolation liner 26 isolates the respective TV 24 from semiconductor substrate 22 .
+
+ interposer wafer 20
+ includes a plurality of interposers 40 , which may be identical to each other.
+
+ the substrate 22 in interposer wafer 20
+ may continuously extend throughout the entire interposer wafer 20 , and the substrate 22 in the plurality of interposers 40 are interconnected without being separated from each other by dielectric regions.
+
+ wafer 20
+ may include device dies 40 (also known as chips), which may be logic/core dies, memory dies, analog dies, or the like.
+
+ Interconnect structure 28
+ is formed over semiconductor substrate 22 , and is used to electrically connect to TVs 24 .
+
+ Interconnect structure 28
+ may include a plurality of dielectrics layers 30 .
+
+ Metal lines 32
+ are formed in dielectric layers 30 .
+
+ Vias 34
+ are formed between, and interconnecting, the overlying and underlying metal lines 32 .
+
+ Metal lines 32 and vias 34
+ are sometimes referred to as Redistribution Layer (RDL) 32 / 34 .
+
+ dielectric layers 30
+ is formed of silicon oxide, silicon nitride, silicon carbide, silicon oxynitride, combinations thereof, and/or multi-layers thereof.
+
+ dielectric layers 30
+ may comprise one or more low-k dielectric layer having low k values. The k values of the low-k dielectric materials in dielectric layers 30 may be lower than about 3.0, or lower than about 2.5, for example.
+
+ Electrical connectors 36
+ are formed at the top surface of interposer wafer 20 .
+
+ electrical connectors 36
+ comprise metal pillars, wherein solder caps may be, or may not be, formed on the top surfaces of the metal pillars.
+
+ electrical connectors 36
+ comprise solder regions.
+
+ electrical connectors 36
+ may be composite bumps comprising copper posts, nickel layers, solder caps, Electroless Nickel Immersion Gold (ENIG), Electroless Nickel Electroless Palladium Immersion Gold (ENEPIG), and/or the like.
+
+ package components 42
+ are bonded to interposers 40 , for example, through flip-chip bonding.
+
+ the respective process
+ is illustrated as process 202 in the process flow 200 shown in FIG. 26 .
+
+ Electrical connectors 38
+ electrically couple the circuits in package components 42 to RDLs 32 / 34 and TVs 24 in interposer wafer 20 through electrical connectors 36 .
+
+ Package components 42
+ may be device dies comprising logic circuits, memory circuits, or the like. Accordingly, package components 42 are alternatively referred to as dies 42 hereinafter.
+
+ package components 42
+ comprise packages including dies bonded to the respective interposers, package substrates, and/or the like. On each of interposers 40 , there may be a single one, two, or more, dies 42 bonded thereon.
+
+ underfill 44
+ is dispensed into the space (gaps) between dies 42 and interposer wafer 20 .
+
+ Underfill 44
+ may include a polymer, a resin, an epoxy, or the like, as a base material, and may include filler particles therein.
+
+ the filler particles
+ may be formed of silica, aluminum oxide, or the like, and may have spherical shapes.
+
+ Underfill 44
+ is then cured in a curing process.
+
+ the curing process
+ may include a thermal curing process or a Ultra-Violet (UV) curing process, depending on the type of underfill 44 .
+
+ UV
+ Ultra-Violet
+
+ encapsulant 46
+ After the underfill 44 is applied, device dies 42 are encapsulated in encapsulant 46 .
+
+ the respective process
+ is illustrated as process 204 in the process flow 200 shown in FIG. 26 .
+
+ Encapsulant 46
+ may be a molding compound, a molding underfill, or the like.
+
+ the top surface of encapsulant 46
+ is higher than the top surfaces of device dies 42 .
+
+ underfill 44 and encapsulant 46
+ are applied in a same process, for example, using a molding underfill.
+
+ FIG. 3
+ schematically illustrates some details of encapsulant 46 .
+
+ Encapsulant 46
+ may include base material 46 A, which may be a polymer, a resin, an epoxy, or the like, and filler particles 46 B in the base material 46 A.
+
+ the filler particles 46 B
+ may be the particles of a dielectric material(s) such as SiO 2 , Al 2 O 3 , silica, the dielectric compound of iron (Fe), the dielectric compound of sodium (Na), or the like, and may have spherical shapes. Also, the spherical filler particles 46 B may have the same or different diameters, as illustrated in FIG. 3 in accordance with some examples.
+
+ encapsulant 46
+ is cured, followed by a planarization process, which may be a Chemical Mechanical Polish (CMP) process or a mechanical polish process.
+
+ CMP
+ Chemical Mechanical Polish
+
+ the top surfaces
+ which may be the top surfaces of semiconductor substrates
+
+ device dies 42
+ are covered by a layer of remaining encapsulant 46 .
+
+ reconstructed wafer 48
+ the structures including interposer wafer 20 , dies 42 , underfill 44 , and encapsulant 46 are collectively referred to as reconstructed wafer 48 .
+
+ Reconstructed wafer 48
+ is also referred to as a CoW wafer.
+
+ Die-Attach Film (DAF) 52
+ which is an adhesive film, may be adhered to the top surface of reconstructed wafer 48 before the singulation process, and the DAF is sawed along with reconstructed wafer 48 .
+
+ DAF
+ Die-Attach Film
+
+ a singulation process
+ is performed to separate reconstructed wafer 48 into individual packages 54 .
+
+ the respective process
+ is illustrated as process 206 in the process flow 200 shown in FIG. 26 .
+
+ the singulation process
+ may be performed along the scribe lines 50 of interposer wafer 20 .
+
+ One of the resulting packages 54
+ (sometimes referred to as a CoW die or a CoW package) is illustrated in FIG. 3 .
+
+ the sawed DAF 52
+ is attached to package 54 , and may be in contact with encapsulant 46 and the semiconductor substrates (not shown separately) of dies 42 .
+
+ FIG. 3
+ illustrates an example of package 54 .
+
+ some of filler particles 46 B
+ are polished partially, causing some of the filler particles 46 B to have some portions (bottom portions in FIG. 3 ) removed, and top portions remaining.
+
+ the resulting partial filler particles 46 B
+ will thus have bottom surfaces to be planar, which planar bottom surfaces are coplanar with the bottom surface of base material 46 A and the semiconductor substrates of device dies 42 .
+
+ some of filler particles 46 B
+ are sawed, causing some of the filler particles 46 B to have some portions (such as the left portions of the leftmost filler particles 46 B as shown in FIG. 3 ) removed.
+
+ the resulting partial filler particles 46 B
+ will thus have either left or right surfaces (sidewalls) to be planar, which planar surfaces are coplanar (flush) with the sidewalls of base material 46 A.
+
+ FIGS. 4 through 20
+ illustrate the formation of a fan-out package, with packages 54 packed therein.
+
+ carrier 60
+ is provided, and release film 62 is coated on carrier 60 .
+
+ Carrier 60
+ is formed of a transparent material, and may be a glass carrier, a ceramic carrier or the like. Carrier 60 may have a round top-view shape, and may have a size of a silicon wafer.
+
+ Release film 62
+ may be formed of a Light-To-Heat-Conversion (LTHC) coating material. Release film 62 may be applied onto carrier 60 through coating.
+
+ the LTHC coating material
+ is capable of being decomposed under the heat of light/radiation (such as laser), and hence can release carrier 60 from the structure formed thereon.
+
+ buffer layer 64
+ is formed on release film 62 .
+
+ Polymer buffer layer 64
+ may be formed of a dielectric material, which may be a polymer such as polybenzoxazole (PBO), polyimide, benzocyclobutene (BCB), or the like.
+
+ Redistribution Lines (RDLs) 66
+ are formed over buffer layer 64 .
+
+ the respective process
+ is illustrated as process 208 in the process flow 200 shown in FIG. 26 .
+
+ the formation of RDLs 66
+ may include forming a seed layer (not shown) over buffer layer 64 , forming a patterned mask (not shown) such as a patterned photo resist over the seed layer, and then performing a metal plating process to form RDLs 66 .
+
+ the seed layer
+ includes a titanium layer and a copper layer over the titanium layer.
+
+ the seed layer
+ may be formed using, for example, Physical Vapor Deposition (PVD).
+
+ the plating
+ may be performed using, for example, electro-chemical plating or electro-less plating.
+
+ dielectric layer 68
+ is formed on RDLs 66 .
+
+ the respective process
+ is illustrated as process 210 in the process flow 200 shown in FIG. 26 .
+
+ the bottom surface of dielectric layer 68
+ may be in contact with the top surfaces of RDLs 66 and buffer layer 64 .
+
+ dielectric layer 68
+ is formed of a polymer, which may be a photo-sensitive material such as PBO, polyimide, or the like.
+
+ dielectric layer 68
+ is formed of a nitride such as silicon nitride, an oxide such as silicon oxide, or the like. Dielectric layer 68 is then patterned to form openings 70 therein. Hence, some pad portions of RDLs 66 are exposed through the openings 70 in dielectric layer 68 .
+
+ metal seed layer 72
+ is formed, for example, through PVD. The respective process is illustrated as process 212 in the process flow 200 shown in FIG. 26 .
+
+ metal seed layer 72
+ includes a titanium layer and a copper layer over the titanium layer.
+
+ metal seed layer 72
+ includes a copper layer in contact with buffer layer 64 .
+
+ a plating mask
+ such as a photo resist 74 is formed over metal seed layer 72 .
+
+ the respective process
+ is illustrated as process 214 in the process flow 200 shown in FIG. 26 .
+
+ a light-exposure process
+ is then performed on photo resist 74 using a photo lithography mask (not shown).
+
+ openings 76
+ are formed in photo resist 74 . Some portions of metal seed layer 72 are exposed through openings 76 .
+
+ metal posts 78
+ are formed by plating a metallic material in openings 76 .
+
+ the respective process
+ is illustrated as process 216 in the process flow 200 shown in FIG. 26 .
+
+ Metal posts 78
+ are alternatively referred to as through-vias or through-molding vias since they will penetrate through the subsequently formed encapsulating material (which may be a molding compound) in the final package.
+
+ the plated metallic material
+ may be copper or a copper alloy.
+
+ the top surfaces of metal posts 78
+ are lower than the top surface of photo resist 74 , so that the shapes of metal posts 78 are confined by openings 76 .
+
+ Metal posts 78
+ may have substantially vertical and straight edges. Alternatively, metal posts 78 may have a sand timer shape in a cross-sectional view, with the middle parts of metal posts 78 being narrower than the respective top parts and bottom parts.
+
+ metal posts 78
+ are illustrated in FIG. 7 .
+
+ the top-view shapes of metal posts 78
+ include, and are not limited to, circular shapes, rectangles, hexagons, octagons, and the like.
+
+ FIG. 8
+ illustrates the placement/attachment of CoW packages 54 , with DAFs 52 adhere the respective packages 54 to dielectric layer 68 .
+
+ the respective process
+ is illustrated as process 218 in the process flow 200 shown in FIG. 26 .
+
+ packages 54 and metal posts 78
+ are encapsulated in encapsulant 80 , as shown in FIG. 9 .
+
+ the respective process
+ is illustrated as process 220 in the process flow 200 shown in FIG. 26 .
+
+ Encapsulant 80
+ fills the gaps between neighboring through-vias 78 and the gaps between through-vias 78 and packages 54 .
+
+ Encapsulant 80
+ may include a molding compound, a molding underfill, an epoxy, and/or a resin.
+
+ the top surface of encapsulant 80
+ is higher than the top ends of metal posts 78 and the top surfaces of packages 54 .
+
+ the molding compound
+ may include a base material 80 A (not shown in FIG. 9 , refer to FIG. 25 ), which may be a polymer, a resin, an epoxy, or the like, and filler particles 80 B (not shown) in the base material.
+
+ the filler particles
+ may be dielectric particles of SiO 2 , Al 2 O 3 , silica, or the like, and may have spherical shapes. Also, the spherical filler particles may have the same or different diameters.
+
+ the base material 80 A and filler particles 80 B
+ are shown in FIG. 25 .
+
+ a planarization step
+ such as a CMP step or a mechanical grinding step is performed to thin encapsulant 80 and the substrates 22 in interposers 40 . Both encapsulant 80 and substrates 22 in dies 40 are polished.
+
+ the planarization process
+ is performed until both metal posts 78 and through-vias 24 in interposers 40 are exposed. Also, the isolation liners 26 ( FIG. 25 ) encircling through-vias 24 are also revealed. Due to the planarization process, the top ends of through-vias 24 and metal posts 78 are level (coplanar) with the top surfaces of encapsulant 80 .
+
+ Metal posts 78
+ are alternatively referred to as through-vias 78 hereinafter since they penetrate through encapsulant 80 .
+
+ FIGS. 11 through 13
+ illustrate the formation of a redistribution structure overlying and connecting to packages 54 and metal posts 78 .
+
+ the respective process
+ is illustrated as process 222 in the process flow 200 shown in FIG. 26 .
+
+ FIGS. 11 and 12
+ illustrate the formation of a first layer of RDLs and the respective dielectric layer.
+
+ dielectric layer 82
+ is formed.
+
+ dielectric layer 82
+ is formed of a polymer such as PBO, polyimide, or the like.
+
+ the formation method
+ includes coating dielectric layer 82 in a flowable form, and then curing dielectric layer 82 .
+
+ dielectric layer 82
+ is formed of an inorganic dielectric material such as silicon nitride, silicon oxide, or the like.
+
+ the formation method
+ may include Chemical Vapor Deposition (CVD), Atomic Layer Deposition (ALD), Plasma-Enhanced Chemical Vapor Deposition (PECVD), or other applicable deposition methods.
+
+ Openings 84
+ are then formed, for example, through a photo lithography process.
+
+ dielectric layer 82
+ is formed of a photo sensitive material such as PBO or polyimide
+
+ the formation of openings 84
+ involves a photo exposure process on dielectric layer 82 using a lithography mask (not shown), and a development of the exposed dielectric layer 82 .
+
+ Through-vias 24 and 78
+ are exposed through openings 84 .
+
+ RDLs 86
+ are formed.
+
+ RDLs 86
+ include vias 86 A formed in dielectric layer 82 to contact through-vias 24 and 78 , and metal traces (metal lines) 86 B over dielectric layer 82 .
+
+ RDLs 86
+ are formed in a plating process, which includes depositing a metal seed layer (not shown), forming and patterning a photo resist (not shown) over the metal seed layer, and plating a metallic material such as copper and/or aluminum over the metal seed layer.
+
+ the metal seed layer and the plated metallic material
+ may be formed of the same material or different materials.
+
+ the patterned photo resist
+ is then removed, followed by etching the portions of the metal seed layer previously covered by the patterned photo resist.
+
+ FIG. 25
+ illustrates an amplified view of one of RDLs 86 and dielectric layer 82 .
+
+ dielectric layer 82
+ more dielectric layers are formed over dielectric layer 82 , and more RDLs are formed over and connecting to RDLs 86 .
+
+ the dielectric layers
+ include dielectric layers 88 , 92 and 96 in some examples.
+
+ the RDLs
+ include RDLs 90 and 94 in some examples.
+
+ Dielectric layers 88 , 92 and 96
+ may be formed using a material selected from the same or different group of candidate materials for forming dielectric layer 82 , which may include PBO, polyimide, BCB, or other organic or inorganic materials.
+
+ RDLs 90 and 94
+ may be the same as the formation of RDLs 86 , which includes forming a seed layer, forming a patterned mask, plating RDLs 90 and 94 , and then removing the patterned mask and undesirable portions of the seed layer.
+
+ the components over release film 62
+ are collectively referred to as reconstructed wafer 100 .
+
+ RDLs 86
+ may include vias 86 A in dielectric layer 82 and metal lines 86 B over dielectric layer 82 .
+
+ the top surfaces of some portions of RDLs 86 formed from openings 84 ( FIG. 11 )
+ may be recessed lower than the top surfaces of metal lines 86 B directly overlying dielectric layer 82 .
+
+ the RDLs formed over RDLs 86
+ such as RDLs 90 and 94 may have the similar profile.
+
+ reconstructed wafer 100 as shown in FIG. 13
+ is de-bonded from carrier 60 .
+
+ the respective process
+ is illustrated as process 224 in the process flow 200 shown in FIG. 26 .
+
+ the de-bonding
+ may be performed by projecting a light beam (such as a laser beam) on release film 62 , so that the heat resulted from the light beam causes the decomposing of release film 62 , and reconstructed wafer 100 is released from carrier 60 .
+
+ the residue of release film 62
+ is then removed, for example, through a plasma cleaning step.
+
+ the resulting reconstructed wafer 100
+ is shown in FIG. 14 .
+
+ FIG. 15
+ illustrates the formation of openings 102 in buffer layer 64 .
+
+ openings 102
+ are formed through laser drill using a laser beam. The respective process is illustrated as process 226 in the process flow 200 shown in FIG. 26 .
+
+ RDLs 66
+ act as the stop layer for the laser beam, and some portions of RDLs 66 are exposed through openings 102 .
+
+ openings 103
+ are also formed to expose some portions of RDLs 66 .
+
+ openings 103
+ are not formed. Openings 103 may be used for heat dissipation.
+
+ a Thermal Interface Material
+ may be dispensed into openings 103 to be in contact with RDLs 66 , and the TIM is also in contact with a heat sink to dissipate heat into the heat sink.
+
+ FIG. 16
+ illustrates the bonding of Integrated Passive Device (IPD) 104 to RDLs 66 .
+
+ IPDs 104
+ include capacitors, inductors, resistors, or combinations thereof, which are formed as discrete device dies.
+
+ the bonding
+ may be through solder regions 106 .
+
+ Underfill 108
+ may be dispensed between IPDs 104 and reconstructed wafer 100 .
+
+ FIG. 17
+ illustrates the formation of Under-Bump Metallurgies (UBMs) 110 and electrical connectors 112 in accordance with some exemplary embodiments.
+
+ the respective process
+ is illustrated as process 230 in the process flow 200 shown in FIG. 26 .
+
+ UBMs 110
+ are formed to extend into the openings in dielectric layer 96 to contact the metal pads in RDLs 94 .
+
+ UBMs 110
+ may be formed of nickel, copper, titanium, or multi-layers thereof.
+
+ UBMs 110
+ include a titanium layer and a copper layer over the titanium layer.
+
+ Electrical connectors 112
+ are then formed.
+
+ the formation of electrical connectors 112
+ may include placing solder balls on the exposed portions of UBMs 110 , and then reflowing the solder balls.
+
+ the resulting electrical connectors 112
+ are solder regions.
+
+ the formation of electrical connectors 112
+ includes performing a plating step to form solder layers over UBMs 110 , and then reflowing the solder layers.
+
+ Electrical connectors 112
+ may also include non-solder metal pillars, or metal pillars and solder caps over the non-solder metal pillars, which may also be formed through plating.
+
+ reconstructed wafer 100
+ is placed on a dicing tape (not shown), which is attached to a frame (not shown).
+
+ either electrical connectors 112 or IPDs 104
+ are in contact with the dicing tap.
+
+ reconstructed wafer 100
+ is singulated in a die-saw process, for example, using a blade. The respective process is illustrated as process 232 in the process flow 200 shown in FIG. 26 .
+
+ the kerves
+ pass through scribe lines 114 of reconstructed wafer 100 , and packages 116 are formed.
+
+ FIG. 18
+ illustrates a resulting package 116 in accordance with some embodiments.
+
+ Package 116
+ is also referred to as a chip-on-wafer-on-substrate package, or a CoWoS package, with RDLs 86 , 90 , and 94 and the corresponding dielectric layers 82 , 88 , 92 , and 96 collectively acting as substrate 97 .
+
+ CoWoS package 116
+ differs from conventional CoWoS package in that substrate 97 is formed directly from the interposers 40 and encapsulant 80 in a fan-out process, rather being pre-formed (as cored or core-less package substrates) and bonded to the interposer.
+
+ FIGS. 19 through 24
+ illustrate cross-sectional views of intermediate stages in the formation of a package in accordance with alternative embodiments of the present disclosure. These embodiments are similar to the embodiments shown in FIGS. 1 through 18 , except that no through-vias are formed at the same level as packages 54 , no IPDs are attached, and RDLs are formed on one side, not on both sides, of package 54 . Unless specified otherwise, the materials and the formation processes of the components in these embodiments are essentially the same as the like components, which are denoted by like reference numerals in the embodiments shown in FIGS. 1 through 18 . The details regarding the formation process and the materials of the components shown in FIGS. 19 through 24 may thus be found in the discussion of the embodiments shown in FIGS. 1 through 18 .
+
+ packages 54 and DAFs 52
+ are encapsulated in encapsulant 80 .
+
+ packages 54
+ are fully encapsulated, with the top surface of encapsulant 80 being higher than the top surfaces of packages 54 .
+
+ Encapsulant 80
+ is then cured, followed by a planarization process to thin semiconductor substrate 22 in interposers 40 .
+
+ the resulting structure
+ is shown in FIG. 21 .
+
+ through-vias 24
+ and isolation layers 26 as shown in FIG. 25
+
+ FIG. 22
+ illustrates the formation of redistribution structure (substrate 97 ) including, for example, dielectric layers 82 , 88 , 92 , and 96 and RDLs 86 , 90 , and 94 .
+
+ the resulting reconstructed wafer 100
+ is de-bonded from carrier 60 .
+
+ UBMs 110 and electrical connectors 112
+ are formed.
+
+ the reconstructed wafer 100
+ is then singulated, and the resulting package 116 is shown in FIG. 24 .
+
+ package 116
+ includes DAF 52 , which is encapsulated in encapsulant 80 .
+
+ Buffer layer 64
+ may be attached to DAF 52 and encapsulant 80 .
+
+ reconstructed wafer 100
+ may be polished to remove buffer layer 64 and DAF 52 .
+
+ FIG. 24
+ illustrates dashed line 120 , wherein the bottom surface of package 116 may be at the level represented by line 120 when buffer layer 64 and DAF 52 are removed.
+
+ the packages 116 as shown in FIGS. 18 and 24
+ may be bonded to other packages.
+
+ electrical connectors 112 of packages 116 in FIGS. 18 and 24
+ may be bonded to another package component such as a printed circuit board, a frame, a package, or the like.
+
+ An underfill
+ (not shown) may also be disposed between the package 116 and the corresponding bonding package component to protect electrical connectors 112 .
+
+ a TIM and a heat sink
+ may be attached, with the thermal interface material being between and contacting package 116 and the heat sink.
+
+ the TIM
+ may also extend into the openings 103 in FIG. 13 .
+
+ FIG. 25
+ illustrates an amplified view of a portion 124 of the package 116 as shown in FIG. 18 .
+
+ Isolation liner 26
+ which encircles through-via 24 , is illustrated.
+
+ Isolation liner 26
+ may be formed of a dielectric material such as silicon oxide, silicon nitride, or the like.
+
+ the top surfaces of isolation liner 26 and through-via 24
+ are coplanar, and are in contact with the bottom surface of via 86 A in RDL 86 .
+
+ the top surface of isolation liner 26
+ may also contact the bottom surface of dielectric layer 82 , depending on the relative sizes of through-via 24 and vias 86 A.
+
+ through-via 24
+ may be in contact with the seed layer of RDL 86 , which seed layer may include, for example, titanium.
+
+ FIG. 25
+ illustrates that encapsulant 80 include some partial filler particles 80 B in contact with dielectric layer 82 . Since these parts of filler particles 80 B are polished in the planarization process shown in FIG. 10 , these partial particles 80 B may have planar top surfaces in contact with dielectric layer 82 . As a comparison, the partial filler particles 80 B in contact with dielectric layer 68 are full spherical particles that are not polished, and may have rounded bottom surfaces.
+
+ the encapsulant 46 in package 54
+ has left edge contacting encapsulant 80 .
+
+ Some partial filler particles 46 B
+ are at the interface between encapsulant 46 and encapsulant 80 , and the partial filler particles 46 B have flat surfaces contacting encapsulant 80 and DAF 52 in accordance with some embodiments.
+
+ testing structures
+ may be included to aid in the verification testing of the 3D packaging or 3DIC devices.
+
+ the testing structures
+ may include, for example, test pads formed in a redistribution layer or on a substrate that allows the testing of the 3D packaging or 3DIC, the use of probes and/or probe cards, and the like.
+
+ the verification testing
+ may be performed on intermediate structures as well as the final structure.
+
+ the structures and methods disclosed herein
+ may be used in conjunction with testing methodologies that incorporate intermediate verification of known good dies to increase the yield and decrease costs.
+
+ Some CoW packages
+ are large, for example, with sizes greater than about 70 mm ⁇ 70 mm.
+
+ the large CoW packages
+ may include solder regions and possibly RDLs formed on the through-vias of the interposers.
+
+ the CoW packages
+ are bonded to pre-formed package substrates (which may be cored or core-less substrates) through the solder regions. Because the CoW packages are large, and further because there is a significant difference between the Coefficient of Thermal Expansion (CTE) of the interposer and the pre-formed package substrate, the packages suffer from issues such as poor solder joint, underfill void, poor planarity, and degrade reliability.
+
+ CTE
+ Coefficient of Thermal Expansion
+
+ Integrated Fan-Out (InFO) process
+ is used to form substrates directly from CoW packages, and hence no solder regions are used to bond the CoW packages to substrates.
+
+ the thinning of the interposer wafer
+ is performed after, not before, sawing the interposer wafer. As a result, the reliability of the resulting packages is improved.
+
+ a method
+ includes bonding a device die to an interposer, wherein the interposer comprises a through-via extending from a top surface of a semiconductor substrate of the interposer into an intermediate level between the top surface and a bottom surface of the semiconductor substrate; performing a first singulation process to saw the interposer and the device die into a first package; placing the first package over a carrier; encapsulating the first package in a first encapsulant; thinning the first encapsulant and the semiconductor substrate of the interposer, until the through-via is exposed; and forming redistribution lines, wherein a redistribution line in the redistribution lines is in contact with the through-via.
+
+ the method
+ further includes forming a dielectric layer contacting the first package and the first encapsulant, wherein the redistribution lines extend into the dielectric layer, and wherein the through-via is encircled by an isolation layer, and the isolation layer is in contact with one of the dielectric layer and the redistribution line.
+
+ the method
+ further includes, after the device die is bonded to the interposer, encapsulating the device die in a second encapsulant, wherein in the first singulation process, the second encapsulant is sawed-through.
+
+ the interposer
+ is free from active devices.
+
+ the method
+ further includes forming a metal post over the carrier, wherein the metal post is encapsulated in the first encapsulant, and wherein after the thinning the first encapsulant, the metal post is revealed.
+
+ the method
+ further includes forming additional redistribution lines over the carrier, wherein the first package is placed over the additional redistribution lines; and bonding a passive device to the additional redistribution lines.
+
+ the method
+ further includes performing a second singulation process to form a second package, wherein the first package and portions of the first encapsulant and portions of the redistribution lines are in the second package.
+
+ a method
+ includes encapsulating a plurality of interposers in an encapsulant, with the plurality of interposers separated from each other by the encapsulant, wherein the plurality of interposers comprises through-vias extending into semiconductor substrates in the plurality of interposers; polishing the interposers to remove portions of the semiconductor substrates, wherein surfaces of the through-vias are revealed; forming a first dielectric layer over and contacting the semiconductor substrates and the through-vias of the plurality of interposers; forming redistribution lines extending into the first dielectric layer to contact the through-vias of the plurality of interposers; and sawing-through the encapsulant to separate the plurality of interposers into a plurality of packages.
+
+ the interposers
+ are not sawed through.
+
+ the method
+ further includes bonding a plurality of device dies, with each of the plurality of device dies bonded to one of the plurality of interposers, wherein the encapsulant comprises a first portion at a same level as the plurality of interposers, and a second portion at a same level as the plurality of device dies.
+
+ the method
+ further includes, encapsulating the one of the plurality of device dies in an additional encapsulant; and sawing-through the additional encapsulant before the encapsulating the plurality of interposers in an encapsulant.
+
+ the first dielectric layer
+ extends over the encapsulant, with a bottom surface of the first dielectric layer contacting a top surface of the encapsulant.
+
+ the interposers
+ are free from active devices and passive devices therein.
+
+ an integrated circuit device
+ includes a package, which includes a device die; an interposer bonded with the device die, wherein the interposer comprises: a semiconductor substrate; and a through-via penetrating through the semiconductor substrate; a first encapsulant encapsulating the package therein; a dielectric layer contacting the semiconductor substrate and the first encapsulant; and redistribution lines extending into the dielectric layer, wherein a redistribution line in the redistribution lines is in contact with the through-via.
+
+ the interposer
+ further comprises an isolation liner encircling the through-via, wherein the isolation liner separates the through-via from the semiconductor substrate, and the isolation liner is in contact with one of the redistribution line and the dielectric layer.
+
+ the interposer
+ is free from active devices therein.
+
+ the package
+ further comprises a second encapsulant encapsulating the device die therein, wherein sidewalls of the second encapsulant are flush with corresponding sidewalls of the interposer.
+
+ the integrated circuit device
+ further includes a metal post penetrating through the first encapsulant; and a passive device on an opposite side of the first encapsulant than the redistribution lines, wherein the passive device is electrically coupled to the metal post.
+
+ the integrated circuit device
+ further includes an adhesive film contacting the package, wherein the adhesive film is encapsulated in the first encapsulant.
+
+Landscapes
+
+ Structures Or Materials For Encapsulating Or Coating Semiconductor Devices Or Solid State Devices
+ (AREA)
+
+ Engineering & Computer Science
+ (AREA)
+
+ Internal Circuitry In Semiconductor Integrated Circuit Devices
+ (AREA)
+
+ Manufacturing & Machinery
+ (AREA)
+
+ Production Of Multi-Layered Print Wiring Board
+ (AREA)
+
+ Microelectronics & Electronic Packaging
+ (AREA)
+
+Abstract
+
+A method includes bonding a device die to an interposer. The interposer includes a through-via extending from a top surface of a semiconductor substrate of the interposer into an intermediate level between the top surface and a bottom surface of the semiconductor substrate. A singulation process is performed to saw the interposer and the device die into a package. The method further includes placing the package over a carrier, encapsulating the package in an encapsulant, thinning the encapsulant and the semiconductor substrate of the interposer until the through-via is exposed, and forming redistribution lines, wherein a redistribution line in the redistribution lines is in contact with the through-via.
+
+Description
+
+ BACKGROUND
+
+In the packaging of integrated circuits, a plurality of dies may be bonded on an interposer wafer, which comprises a plurality of interposers therein. After the bonding of the dies, an underfill may be dispensed into the gaps between the dies and the interposer wafer. A curing process may then be performed to cure the underfill.
+
+Underfill may shrink after being cured. As a result, the cured underfill applies a stress on the dies and the interposer wafer, and may cause the interposer wafer to have a warpage. The warpage of the interposer wafer further results in the process difficulty in the subsequent processes. For example, in a subsequent process (e.g. molding, grinding, thinning, or the like), the interposer wafer needs to be secured on a chuck table through vacuum in order to form metal lines and solder regions thereon. With the interposer wafer having the warpage, however, the interposer wafer may not be able to be secured on the chuck table.
+
+ BRIEF DESCRIPTION OF THE DRAWINGS
+
+Aspects of the present disclosure are best understood from the following detailed description when read with the accompanying figures. It is noted that, in accordance with the standard practice in the industry, various features are not drawn to scale. In fact, the dimensions of the various features may be arbitrarily increased or reduced for clarity of discussion.
+
+ FIGS. 1 through 18 are cross-sectional views of intermediate stages in the formation of a package in accordance with some embodiments.
+
+ FIGS. 19 through 24 are cross-sectional views of intermediate stages in the formation of a package in accordance with some embodiments.
+
+ FIG. 25 illustrates a magnified view of a part of a package in accordance with some embodiments.
+
+ FIG. 26 illustrates a process flow for forming a package in accordance with some embodiments.
+
+ DETAILED DESCRIPTION
+
+The following disclosure provides many different embodiments, or examples, for implementing different features of the invention. Specific examples of components and arrangements are described below to simplify the present disclosure. These are, of course, merely examples and are not intended to be limiting. For example, the formation of a first feature over or on a second feature in the description that follows may include embodiments in which the first and second features are formed in direct contact, and may also include embodiments in which additional features may be formed between the first and second features, such that the first and second features may not be in direct contact. In addition, the present disclosure may repeat reference numerals and/or letters in the various examples. This repetition is for the purpose of simplicity and clarity and does not in itself dictate a relationship between the various embodiments and/or configurations discussed.
+
+Further, spatially relative terms, such as “underlying,” “below,” “lower,” “overlying,” “upper” and the like, may be used herein for ease of description to describe one element or feature's relationship to another element(s) or feature(s) as illustrated in the figures. The spatially relative terms are intended to encompass different orientations of the device in use or operation in addition to the orientation depicted in the figures. The apparatus may be otherwise oriented (rotated 90 degrees or at other orientations) and the spatially relative descriptors used herein may likewise be interpreted accordingly.
+
+A package and the method of forming the same are provided in accordance with various embodiments. The intermediate stages in the formation of the package are illustrated in accordance with some embodiments. Some variations of some embodiments are discussed. Throughout the various views and illustrative embodiments, like reference numbers are used to designate like elements. In accordance with some embodiments of the present disclosure, a process for forming a Chip-on-Wafer-on-Substrate (CoWoS) package includes bonding device dies on an interposer wafer, encapsulating the device dies, and then sawing the resulting reconstructed wafer into discrete Chip-on-Wafer (CoW) packages. The discrete CoW packages are then placed over a carrier and then encapsulated. A thinning/planarization process is performed to reveal the through-vias in the interposer. Redistribution lines (RDLs) are formed using fan-out processes, with the RDLs and the corresponding dielectric layers in combination acting as a substrate. Accordingly, the substrate of the present disclosure is formed starting from the interposers, rather than being pre-formed and bonded to the CoW packages.
+
+Embodiments will be described with respect to a specific context, namely a CoWoS package. Other embodiments may also be applied, however, to other packages such as the bonding of device dies to device wafers (rather than interposer wafers) including active devices such as transistors, and other processing. Embodiments discussed herein are to provide examples to enable making or using the subject matter of this disclosure, and a person having ordinary skill in the art will readily understand modifications that can be made while remaining within contemplated scopes of different embodiments. Like reference numbers and characters in the figures below refer to like components. Although method embodiments may be discussed as being performed in a particular order, other method embodiments may be performed in any logical order.
+
+ FIGS. 1 through 18 illustrate the cross-sectional views of intermediate stages in the formation of a package in accordance with some embodiments of the present disclosure. The corresponding processes are also reflected schematically in the process flow 200 shown in FIG. 26.
+
+ FIG. 1 illustrates a cross-sectional view of interposer wafer 20. Interposer wafer 20 may include substrate 22. In accordance with some embodiments, substrate 22 is a semiconductor substrate, which may further be a crystalline silicon substrate, although it may comprise other semiconductor materials such as silicon germanium, silicon carbon, or the like. In accordance with alternative embodiments, substrate 22 is a dielectric substrate. In accordance with some embodiments, interposer wafer 20 does not have active devices such as transistors and diodes therein. In these embodiments, interposer wafer 20 may or may not include passive devices such as capacitors, inductors, and resistors formed therein. In accordance with alternative embodiments, wafer 20 is a device wafer, which includes active devices such as transistors (not shown) formed at the top surface of semiconductor substrate 22. Through-vias (sometimes referred to as Through-Substrate Vias (TSVs)) 24 may be formed to extend from the top surface of substrate 22 into substrate 22. TVs 24 are also sometimes referred as through-silicon vias when formed in a silicon substrate. Although not shown in FIG. 1, each of TVs 24 may be encircled by an isolation liner 26 (FIG. 25), which is formed of a dielectric material such as silicon oxide, silicon nitride, or the like. Isolation liner 26 isolates the respective TV 24 from semiconductor substrate 22.
+
+In the embodiments in which wafer 20 is an interposer wafer, interposer wafer 20 includes a plurality of interposers 40, which may be identical to each other. The substrate 22 in interposer wafer 20 may continuously extend throughout the entire interposer wafer 20, and the substrate 22 in the plurality of interposers 40 are interconnected without being separated from each other by dielectric regions. In accordance with alternative embodiments, wafer 20 may include device dies 40 (also known as chips), which may be logic/core dies, memory dies, analog dies, or the like.
+
+ Interconnect structure 28 is formed over semiconductor substrate 22, and is used to electrically connect to TVs 24. Interconnect structure 28 may include a plurality of dielectrics layers 30. Metal lines 32 are formed in dielectric layers 30. Vias 34 are formed between, and interconnecting, the overlying and underlying metal lines 32. Metal lines 32 and vias 34 are sometimes referred to as Redistribution Layer (RDL) 32/34. In accordance with some embodiments, dielectric layers 30 is formed of silicon oxide, silicon nitride, silicon carbide, silicon oxynitride, combinations thereof, and/or multi-layers thereof. Alternatively, dielectric layers 30 may comprise one or more low-k dielectric layer having low k values. The k values of the low-k dielectric materials in dielectric layers 30 may be lower than about 3.0, or lower than about 2.5, for example.
+
+ Electrical connectors 36 are formed at the top surface of interposer wafer 20. In accordance with some embodiments, electrical connectors 36 comprise metal pillars, wherein solder caps may be, or may not be, formed on the top surfaces of the metal pillars. In accordance with alternative embodiments, electrical connectors 36 comprise solder regions. In yet other embodiments, electrical connectors 36 may be composite bumps comprising copper posts, nickel layers, solder caps, Electroless Nickel Immersion Gold (ENIG), Electroless Nickel Electroless Palladium Immersion Gold (ENEPIG), and/or the like.
+
+Further referring to FIG. 1, package components 42 are bonded to interposers 40, for example, through flip-chip bonding. The respective process is illustrated as process 202 in the process flow 200 shown in FIG. 26. Electrical connectors 38 electrically couple the circuits in package components 42 to RDLs 32/34 and TVs 24 in interposer wafer 20 through electrical connectors 36. Package components 42 may be device dies comprising logic circuits, memory circuits, or the like. Accordingly, package components 42 are alternatively referred to as dies 42 hereinafter. In accordance with other embodiments of the present disclosure, package components 42 comprise packages including dies bonded to the respective interposers, package substrates, and/or the like. On each of interposers 40, there may be a single one, two, or more, dies 42 bonded thereon.
+
+Next, as shown in FIG. 2, underfill 44 is dispensed into the space (gaps) between dies 42 and interposer wafer 20. Underfill 44 may include a polymer, a resin, an epoxy, or the like, as a base material, and may include filler particles therein. The filler particles may be formed of silica, aluminum oxide, or the like, and may have spherical shapes. Underfill 44 is then cured in a curing process. The curing process may include a thermal curing process or a Ultra-Violet (UV) curing process, depending on the type of underfill 44.
+
+After the underfill 44 is applied, device dies 42 are encapsulated in encapsulant 46. The respective process is illustrated as process 204 in the process flow 200 shown in FIG. 26. Encapsulant 46 may be a molding compound, a molding underfill, or the like. The top surface of encapsulant 46 is higher than the top surfaces of device dies 42. In accordance with alternative embodiments, underfill 44 and encapsulant 46 are applied in a same process, for example, using a molding underfill.
+
+ FIG. 3 schematically illustrates some details of encapsulant 46. Encapsulant 46 may include base material 46A, which may be a polymer, a resin, an epoxy, or the like, and filler particles 46B in the base material 46A. The filler particles 46B may be the particles of a dielectric material(s) such as SiO2, Al2O3, silica, the dielectric compound of iron (Fe), the dielectric compound of sodium (Na), or the like, and may have spherical shapes. Also, the spherical filler particles 46B may have the same or different diameters, as illustrated in FIG. 3 in accordance with some examples.
+
+Referring back to FIG. 2, encapsulant 46 is cured, followed by a planarization process, which may be a Chemical Mechanical Polish (CMP) process or a mechanical polish process. In accordance with some embodiments of the present disclosure, after the planarization process, the top surfaces (which may be the top surfaces of semiconductor substrates) of some or all device dies 42 are revealed. In accordance with some embodiments of the present disclosure, after the planarization process, device dies 42 are covered by a layer of remaining encapsulant 46.
+
+Throughout the description, the structures including interposer wafer 20, dies 42, underfill 44, and encapsulant 46 are collectively referred to as reconstructed wafer 48. Reconstructed wafer 48 is also referred to as a CoW wafer. In accordance with some embodiments, Die-Attach Film (DAF) 52, which is an adhesive film, may be adhered to the top surface of reconstructed wafer 48 before the singulation process, and the DAF is sawed along with reconstructed wafer 48.
+
+After the planarization process, a singulation process is performed to separate reconstructed wafer 48 into individual packages 54. The respective process is illustrated as process 206 in the process flow 200 shown in FIG. 26. The singulation process may be performed along the scribe lines 50 of interposer wafer 20. One of the resulting packages 54 (sometimes referred to as a CoW die or a CoW package) is illustrated in FIG. 3. The sawed DAF 52 is attached to package 54, and may be in contact with encapsulant 46 and the semiconductor substrates (not shown separately) of dies 42.
+
+ FIG. 3 illustrates an example of package 54. As a result of the planarization process, some of filler particles 46B are polished partially, causing some of the filler particles 46B to have some portions (bottom portions in FIG. 3) removed, and top portions remaining. The resulting partial filler particles 46B will thus have bottom surfaces to be planar, which planar bottom surfaces are coplanar with the bottom surface of base material 46A and the semiconductor substrates of device dies 42. Furthermore, due to the singulation process, some of filler particles 46B are sawed, causing some of the filler particles 46B to have some portions (such as the left portions of the leftmost filler particles 46B as shown in FIG. 3) removed. The resulting partial filler particles 46B will thus have either left or right surfaces (sidewalls) to be planar, which planar surfaces are coplanar (flush) with the sidewalls of base material 46A.
+
+ FIGS. 4 through 20 illustrate the formation of a fan-out package, with packages 54 packed therein. Referring to FIG. 4, carrier 60 is provided, and release film 62 is coated on carrier 60. Carrier 60 is formed of a transparent material, and may be a glass carrier, a ceramic carrier or the like. Carrier 60 may have a round top-view shape, and may have a size of a silicon wafer. Release film 62 may be formed of a Light-To-Heat-Conversion (LTHC) coating material. Release film 62 may be applied onto carrier 60 through coating. In accordance with some embodiments of the present disclosure, the LTHC coating material is capable of being decomposed under the heat of light/radiation (such as laser), and hence can release carrier 60 from the structure formed thereon.
+
+In accordance with some embodiments, as shown in FIG. 4, buffer layer 64 is formed on release film 62. Polymer buffer layer 64 may be formed of a dielectric material, which may be a polymer such as polybenzoxazole (PBO), polyimide, benzocyclobutene (BCB), or the like. Redistribution Lines (RDLs) 66 are formed over buffer layer 64. The respective process is illustrated as process 208 in the process flow 200 shown in FIG. 26. The formation of RDLs 66 may include forming a seed layer (not shown) over buffer layer 64, forming a patterned mask (not shown) such as a patterned photo resist over the seed layer, and then performing a metal plating process to form RDLs 66. The patterned mask and the portions of the seed layer covered by the patterned mask are then removed, leaving RDLs 66 as in FIG. 4. In accordance with some embodiments of the present disclosure, the seed layer includes a titanium layer and a copper layer over the titanium layer. The seed layer may be formed using, for example, Physical Vapor Deposition (PVD). The plating may be performed using, for example, electro-chemical plating or electro-less plating.
+
+Further referring to FIG. 4, dielectric layer 68 is formed on RDLs 66. The respective process is illustrated as process 210 in the process flow 200 shown in FIG. 26. The bottom surface of dielectric layer 68 may be in contact with the top surfaces of RDLs 66 and buffer layer 64. In accordance with some embodiments of the present disclosure, dielectric layer 68 is formed of a polymer, which may be a photo-sensitive material such as PBO, polyimide, or the like. In accordance with alternative embodiments, dielectric layer 68 is formed of a nitride such as silicon nitride, an oxide such as silicon oxide, or the like. Dielectric layer 68 is then patterned to form openings 70 therein. Hence, some pad portions of RDLs 66 are exposed through the openings 70 in dielectric layer 68.
+
+Referring to FIG. 5, metal seed layer 72 is formed, for example, through PVD. The respective process is illustrated as process 212 in the process flow 200 shown in FIG. 26. In accordance with some embodiments of the present disclosure, metal seed layer 72 includes a titanium layer and a copper layer over the titanium layer. In accordance with alternative embodiments of the present disclosure, metal seed layer 72 includes a copper layer in contact with buffer layer 64.
+
+As also shown in FIG. 5, a plating mask such as a photo resist 74 is formed over metal seed layer 72. The respective process is illustrated as process 214 in the process flow 200 shown in FIG. 26. A light-exposure process is then performed on photo resist 74 using a photo lithography mask (not shown). After a subsequent development process of photo resist 74, openings 76 are formed in photo resist 74. Some portions of metal seed layer 72 are exposed through openings 76.
+
+Next, as shown in FIG. 6, metal posts 78 are formed by plating a metallic material in openings 76. The respective process is illustrated as process 216 in the process flow 200 shown in FIG. 26. Metal posts 78 are alternatively referred to as through-vias or through-molding vias since they will penetrate through the subsequently formed encapsulating material (which may be a molding compound) in the final package. The plated metallic material may be copper or a copper alloy. The top surfaces of metal posts 78 are lower than the top surface of photo resist 74, so that the shapes of metal posts 78 are confined by openings 76. Metal posts 78 may have substantially vertical and straight edges. Alternatively, metal posts 78 may have a sand timer shape in a cross-sectional view, with the middle parts of metal posts 78 being narrower than the respective top parts and bottom parts.
+
+In subsequent steps, photo resist 74 is removed, and the underlying portions of metal seed layer 72 are exposed. The exposed portions of metal seed layer 72 are then removed in an etching process, for example, an anisotropic etching step or an isotropic etching step. The edges of the remaining seed layer 72 may thus be co-terminus or substantially co-terminus with the respective overlying portions of metal posts 78. The resulting metal posts 78 are illustrated in FIG. 7. Throughout the description, the remaining portions of metal seed layer 72 directly underlying the plated metal posts 78 are considered as parts of metal posts 78. The top-view shapes of metal posts 78 include, and are not limited to, circular shapes, rectangles, hexagons, octagons, and the like. After the formation of metal posts 78, buffer layer 64 is exposed.
+
+ FIG. 8 illustrates the placement/attachment of CoW packages 54, with DAFs 52 adhere the respective packages 54 to dielectric layer 68. The respective process is illustrated as process 218 in the process flow 200 shown in FIG. 26. Next, packages 54 and metal posts 78 are encapsulated in encapsulant 80, as shown in FIG. 9. The respective process is illustrated as process 220 in the process flow 200 shown in FIG. 26. Encapsulant 80 fills the gaps between neighboring through-vias 78 and the gaps between through-vias 78 and packages 54. Encapsulant 80 may include a molding compound, a molding underfill, an epoxy, and/or a resin. The top surface of encapsulant 80 is higher than the top ends of metal posts 78 and the top surfaces of packages 54. The molding compound may include a base material 80A (not shown in FIG. 9, refer to FIG. 25), which may be a polymer, a resin, an epoxy, or the like, and filler particles 80B (not shown) in the base material. The filler particles may be dielectric particles of SiO2, Al2O3, silica, or the like, and may have spherical shapes. Also, the spherical filler particles may have the same or different diameters. The base material 80A and filler particles 80B are shown in FIG. 25.
+
+In a subsequent step, as shown in FIG. 10, a planarization step such as a CMP step or a mechanical grinding step is performed to thin encapsulant 80 and the substrates 22 in interposers 40. Both encapsulant 80 and substrates 22 in dies 40 are polished. In accordance with some embodiments of the present disclosure, the planarization process is performed until both metal posts 78 and through-vias 24 in interposers 40 are exposed. Also, the isolation liners 26 (FIG. 25) encircling through-vias 24 are also revealed. Due to the planarization process, the top ends of through-vias 24 and metal posts 78 are level (coplanar) with the top surfaces of encapsulant 80. Metal posts 78 are alternatively referred to as through-vias 78 hereinafter since they penetrate through encapsulant 80.
+
+ FIGS. 11 through 13 illustrate the formation of a redistribution structure overlying and connecting to packages 54 and metal posts 78. The respective process is illustrated as process 222 in the process flow 200 shown in FIG. 26. FIGS. 11 and 12 illustrate the formation of a first layer of RDLs and the respective dielectric layer. Referring to FIG. 11, dielectric layer 82 is formed. In accordance with some embodiments of the present disclosure, dielectric layer 82 is formed of a polymer such as PBO, polyimide, or the like. The formation method includes coating dielectric layer 82 in a flowable form, and then curing dielectric layer 82. In accordance with alternative embodiments of the present disclosure, dielectric layer 82 is formed of an inorganic dielectric material such as silicon nitride, silicon oxide, or the like. The formation method may include Chemical Vapor Deposition (CVD), Atomic Layer Deposition (ALD), Plasma-Enhanced Chemical Vapor Deposition (PECVD), or other applicable deposition methods. Openings 84 are then formed, for example, through a photo lithography process. In accordance with some embodiments in which dielectric layer 82 is formed of a photo sensitive material such as PBO or polyimide, the formation of openings 84 involves a photo exposure process on dielectric layer 82 using a lithography mask (not shown), and a development of the exposed dielectric layer 82. Through- vias 24 and 78 are exposed through openings 84.
+
+Next, referring to FIG. 12, RDLs 86 are formed. RDLs 86 include vias 86A formed in dielectric layer 82 to contact through- vias 24 and 78, and metal traces (metal lines) 86B over dielectric layer 82. In accordance with some embodiments of the present disclosure, RDLs 86 are formed in a plating process, which includes depositing a metal seed layer (not shown), forming and patterning a photo resist (not shown) over the metal seed layer, and plating a metallic material such as copper and/or aluminum over the metal seed layer. The metal seed layer and the plated metallic material may be formed of the same material or different materials. The patterned photo resist is then removed, followed by etching the portions of the metal seed layer previously covered by the patterned photo resist. FIG. 25 illustrates an amplified view of one of RDLs 86 and dielectric layer 82.
+
+Referring to FIG. 13, more dielectric layers are formed over dielectric layer 82, and more RDLs are formed over and connecting to RDLs 86. The dielectric layers include dielectric layers 88, 92 and 96 in some examples. The RDLs include RDLs 90 and 94 in some examples. Dielectric layers 88, 92 and 96 may be formed using a material selected from the same or different group of candidate materials for forming dielectric layer 82, which may include PBO, polyimide, BCB, or other organic or inorganic materials. The material and the formation process of RDLs 90 and 94 may be the same as the formation of RDLs 86, which includes forming a seed layer, forming a patterned mask, plating RDLs 90 and 94, and then removing the patterned mask and undesirable portions of the seed layer. Throughout the description, the components over release film 62 are collectively referred to as reconstructed wafer 100.
+
+As shown in FIG. 25, RDLs 86 may include vias 86A in dielectric layer 82 and metal lines 86B over dielectric layer 82. The top surfaces of some portions of RDLs 86 formed from openings 84 (FIG. 11) may be recessed lower than the top surfaces of metal lines 86B directly overlying dielectric layer 82. The RDLs formed over RDLs 86 such as RDLs 90 and 94 may have the similar profile.
+
+Next, reconstructed wafer 100 as shown in FIG. 13 is de-bonded from carrier 60. The respective process is illustrated as process 224 in the process flow 200 shown in FIG. 26. The de-bonding may be performed by projecting a light beam (such as a laser beam) on release film 62, so that the heat resulted from the light beam causes the decomposing of release film 62, and reconstructed wafer 100 is released from carrier 60. The residue of release film 62 is then removed, for example, through a plasma cleaning step. The resulting reconstructed wafer 100 is shown in FIG. 14.
+
+ FIG. 15 illustrates the formation of openings 102 in buffer layer 64. In accordance with some embodiments, openings 102 are formed through laser drill using a laser beam. The respective process is illustrated as process 226 in the process flow 200 shown in FIG. 26. RDLs 66 act as the stop layer for the laser beam, and some portions of RDLs 66 are exposed through openings 102. In accordance with some embodiments, openings 103 are also formed to expose some portions of RDLs 66. In accordance with other embodiments, openings 103 are not formed. Openings 103 may be used for heat dissipation. For example, in the final structure when the resulting package is packed, a Thermal Interface Material (TIM) may be dispensed into openings 103 to be in contact with RDLs 66, and the TIM is also in contact with a heat sink to dissipate heat into the heat sink.
+
+ FIG. 16 illustrates the bonding of Integrated Passive Device (IPD) 104 to RDLs 66. The respective process is illustrated as process 228 in the process flow 200 shown in FIG. 26. In accordance with some embodiments, IPDs 104 include capacitors, inductors, resistors, or combinations thereof, which are formed as discrete device dies. The bonding may be through solder regions 106. Underfill 108 may be dispensed between IPDs 104 and reconstructed wafer 100.
+
+ FIG. 17 illustrates the formation of Under-Bump Metallurgies (UBMs) 110 and electrical connectors 112 in accordance with some exemplary embodiments. The respective process is illustrated as process 230 in the process flow 200 shown in FIG. 26. In accordance with some embodiment of the present disclosure, UBMs 110 are formed to extend into the openings in dielectric layer 96 to contact the metal pads in RDLs 94. UBMs 110 may be formed of nickel, copper, titanium, or multi-layers thereof. In accordance with some exemplary embodiments, UBMs 110 include a titanium layer and a copper layer over the titanium layer.
+
+ Electrical connectors 112 are then formed. The formation of electrical connectors 112 may include placing solder balls on the exposed portions of UBMs 110, and then reflowing the solder balls. The resulting electrical connectors 112 are solder regions. In accordance with alternative embodiments of the present disclosure, the formation of electrical connectors 112 includes performing a plating step to form solder layers over UBMs 110, and then reflowing the solder layers. Electrical connectors 112 may also include non-solder metal pillars, or metal pillars and solder caps over the non-solder metal pillars, which may also be formed through plating.
+
+Next, reconstructed wafer 100 is placed on a dicing tape (not shown), which is attached to a frame (not shown). In accordance with some embodiments of the present disclosure, either electrical connectors 112 or IPDs 104 are in contact with the dicing tap. Next, reconstructed wafer 100 is singulated in a die-saw process, for example, using a blade. The respective process is illustrated as process 232 in the process flow 200 shown in FIG. 26. The kerves pass through scribe lines 114 of reconstructed wafer 100, and packages 116 are formed. FIG. 18 illustrates a resulting package 116 in accordance with some embodiments. Package 116 is also referred to as a chip-on-wafer-on-substrate package, or a CoWoS package, with RDLs 86, 90, and 94 and the corresponding dielectric layers 82, 88, 92, and 96 collectively acting as substrate 97. CoWoS package 116 differs from conventional CoWoS package in that substrate 97 is formed directly from the interposers 40 and encapsulant 80 in a fan-out process, rather being pre-formed (as cored or core-less package substrates) and bonded to the interposer.
+
+ FIGS. 19 through 24 illustrate cross-sectional views of intermediate stages in the formation of a package in accordance with alternative embodiments of the present disclosure. These embodiments are similar to the embodiments shown in FIGS. 1 through 18, except that no through-vias are formed at the same level as packages 54, no IPDs are attached, and RDLs are formed on one side, not on both sides, of package 54. Unless specified otherwise, the materials and the formation processes of the components in these embodiments are essentially the same as the like components, which are denoted by like reference numerals in the embodiments shown in FIGS. 1 through 18. The details regarding the formation process and the materials of the components shown in FIGS. 19 through 24 may thus be found in the discussion of the embodiments shown in FIGS. 1 through 18.
+
+The initial steps of these embodiments are essentially the same as shown in FIGS. 1 through 3, in which packages 54 are formed. Next, referring to FIG. 19, release film 62 is coated on carrier 60, and buffer layer 64 is formed on release film 62. Next, packages 54 are attached to buffer layer 64 through DAFs 52. In accordance with some embodiments of the present disclosure, no metal posts are formed on buffer layer 64.
+
+Referring to FIG. 20, packages 54 and DAFs 52 are encapsulated in encapsulant 80. In accordance with some embodiments of the present disclosure, packages 54 are fully encapsulated, with the top surface of encapsulant 80 being higher than the top surfaces of packages 54. Encapsulant 80 is then cured, followed by a planarization process to thin semiconductor substrate 22 in interposers 40. The resulting structure is shown in FIG. 21. After the planarization process, through-vias 24 (and isolation layers 26 as shown in FIG. 25) are revealed, with the top surfaces of through-vias 24 being coplanar with the top surface of encapsulant 80.
+
+ FIG. 22 illustrates the formation of redistribution structure (substrate 97) including, for example, dielectric layers 82, 88, 92, and 96 and RDLs 86, 90, and 94. After the formation of the redistribution structure, the resulting reconstructed wafer 100 is de-bonded from carrier 60. In subsequent processes, as shown in FIG. 23, UBMs 110 and electrical connectors 112 are formed. The reconstructed wafer 100 is then singulated, and the resulting package 116 is shown in FIG. 24.
+
+In accordance with some embodiments, package 116 includes DAF 52, which is encapsulated in encapsulant 80. Buffer layer 64 may be attached to DAF 52 and encapsulant 80. In accordance with alternative embodiments, reconstructed wafer 100 may be polished to remove buffer layer 64 and DAF 52. FIG. 24 illustrates dashed line 120, wherein the bottom surface of package 116 may be at the level represented by line 120 when buffer layer 64 and DAF 52 are removed.
+
+The packages 116 as shown in FIGS. 18 and 24 may be bonded to other packages. For example, electrical connectors 112 of packages 116 in FIGS. 18 and 24 may be bonded to another package component such as a printed circuit board, a frame, a package, or the like. An underfill (not shown) may also be disposed between the package 116 and the corresponding bonding package component to protect electrical connectors 112. A TIM and a heat sink may be attached, with the thermal interface material being between and contacting package 116 and the heat sink. The TIM may also extend into the openings 103 in FIG. 13.
+
+ FIG. 25 illustrates an amplified view of a portion 124 of the package 116 as shown in FIG. 18. Isolation liner 26, which encircles through-via 24, is illustrated. Isolation liner 26 may be formed of a dielectric material such as silicon oxide, silicon nitride, or the like. The top surfaces of isolation liner 26 and through-via 24 are coplanar, and are in contact with the bottom surface of via 86A in RDL 86. The top surface of isolation liner 26 may also contact the bottom surface of dielectric layer 82, depending on the relative sizes of through-via 24 and vias 86A. Furthermore, through-via 24 may be in contact with the seed layer of RDL 86, which seed layer may include, for example, titanium. FIG. 25 illustrates that encapsulant 80 include some partial filler particles 80B in contact with dielectric layer 82. Since these parts of filler particles 80B are polished in the planarization process shown in FIG. 10, these partial particles 80B may have planar top surfaces in contact with dielectric layer 82. As a comparison, the partial filler particles 80B in contact with dielectric layer 68 are full spherical particles that are not polished, and may have rounded bottom surfaces.
+
+Furthermore, the encapsulant 46 in package 54 has left edge contacting encapsulant 80. Some partial filler particles 46B are at the interface between encapsulant 46 and encapsulant 80, and the partial filler particles 46B have flat surfaces contacting encapsulant 80 and DAF 52 in accordance with some embodiments.
+
+In above-illustrated embodiments, some processes and features are discussed in accordance with some embodiments of the present disclosure. Other features and processes may also be included. For example, testing structures may be included to aid in the verification testing of the 3D packaging or 3DIC devices. The testing structures may include, for example, test pads formed in a redistribution layer or on a substrate that allows the testing of the 3D packaging or 3DIC, the use of probes and/or probe cards, and the like. The verification testing may be performed on intermediate structures as well as the final structure. Additionally, the structures and methods disclosed herein may be used in conjunction with testing methodologies that incorporate intermediate verification of known good dies to increase the yield and decrease costs.
+
+The embodiments of the present disclosure have some advantageous features. Some CoW packages (including interposers) are large, for example, with sizes greater than about 70 mm×70 mm. In conventional packaging processes, the large CoW packages may include solder regions and possibly RDLs formed on the through-vias of the interposers. The CoW packages are bonded to pre-formed package substrates (which may be cored or core-less substrates) through the solder regions. Because the CoW packages are large, and further because there is a significant difference between the Coefficient of Thermal Expansion (CTE) of the interposer and the pre-formed package substrate, the packages suffer from issues such as poor solder joint, underfill void, poor planarity, and degrade reliability. In accordance with the embodiments of the present disclosure, Integrated Fan-Out (InFO) process is used to form substrates directly from CoW packages, and hence no solder regions are used to bond the CoW packages to substrates. Alternatively stated, the thinning of the interposer wafer is performed after, not before, sawing the interposer wafer. As a result, the reliability of the resulting packages is improved.
+
+In accordance with some embodiments of the present disclosure, a method includes bonding a device die to an interposer, wherein the interposer comprises a through-via extending from a top surface of a semiconductor substrate of the interposer into an intermediate level between the top surface and a bottom surface of the semiconductor substrate; performing a first singulation process to saw the interposer and the device die into a first package; placing the first package over a carrier; encapsulating the first package in a first encapsulant; thinning the first encapsulant and the semiconductor substrate of the interposer, until the through-via is exposed; and forming redistribution lines, wherein a redistribution line in the redistribution lines is in contact with the through-via. In an embodiment, the method further includes forming a dielectric layer contacting the first package and the first encapsulant, wherein the redistribution lines extend into the dielectric layer, and wherein the through-via is encircled by an isolation layer, and the isolation layer is in contact with one of the dielectric layer and the redistribution line. In an embodiment, the method further includes, after the device die is bonded to the interposer, encapsulating the device die in a second encapsulant, wherein in the first singulation process, the second encapsulant is sawed-through. In an embodiment, the interposer is free from active devices. In an embodiment, before the semiconductor substrate of the interposer is thinned, a portion of the semiconductor substrate overlaps the through-via, and the portion of the semiconductor substrate is removed in the thinning. In an embodiment, the method further includes forming a metal post over the carrier, wherein the metal post is encapsulated in the first encapsulant, and wherein after the thinning the first encapsulant, the metal post is revealed. In an embodiment, the method further includes forming additional redistribution lines over the carrier, wherein the first package is placed over the additional redistribution lines; and bonding a passive device to the additional redistribution lines. In an embodiment, the method further includes performing a second singulation process to form a second package, wherein the first package and portions of the first encapsulant and portions of the redistribution lines are in the second package.
+
+In accordance with some embodiments of the present disclosure, a method includes encapsulating a plurality of interposers in an encapsulant, with the plurality of interposers separated from each other by the encapsulant, wherein the plurality of interposers comprises through-vias extending into semiconductor substrates in the plurality of interposers; polishing the interposers to remove portions of the semiconductor substrates, wherein surfaces of the through-vias are revealed; forming a first dielectric layer over and contacting the semiconductor substrates and the through-vias of the plurality of interposers; forming redistribution lines extending into the first dielectric layer to contact the through-vias of the plurality of interposers; and sawing-through the encapsulant to separate the plurality of interposers into a plurality of packages. In an embodiment, in the sawing-through the encapsulant, the interposers are not sawed through. In an embodiment, the method further includes bonding a plurality of device dies, with each of the plurality of device dies bonded to one of the plurality of interposers, wherein the encapsulant comprises a first portion at a same level as the plurality of interposers, and a second portion at a same level as the plurality of device dies. In an embodiment, the method further includes, encapsulating the one of the plurality of device dies in an additional encapsulant; and sawing-through the additional encapsulant before the encapsulating the plurality of interposers in an encapsulant. In an embodiment, the first dielectric layer extends over the encapsulant, with a bottom surface of the first dielectric layer contacting a top surface of the encapsulant. In an embodiment, the interposers are free from active devices and passive devices therein.
+
+In accordance with some embodiments of the present disclosure, an integrated circuit device includes a package, which includes a device die; an interposer bonded with the device die, wherein the interposer comprises: a semiconductor substrate; and a through-via penetrating through the semiconductor substrate; a first encapsulant encapsulating the package therein; a dielectric layer contacting the semiconductor substrate and the first encapsulant; and redistribution lines extending into the dielectric layer, wherein a redistribution line in the redistribution lines is in contact with the through-via. In an embodiment, the interposer further comprises an isolation liner encircling the through-via, wherein the isolation liner separates the through-via from the semiconductor substrate, and the isolation liner is in contact with one of the redistribution line and the dielectric layer. In an embodiment, the interposer is free from active devices therein. In an embodiment, the package further comprises a second encapsulant encapsulating the device die therein, wherein sidewalls of the second encapsulant are flush with corresponding sidewalls of the interposer. In an embodiment, the integrated circuit device further includes a metal post penetrating through the first encapsulant; and a passive device on an opposite side of the first encapsulant than the redistribution lines, wherein the passive device is electrically coupled to the metal post. In an embodiment, the integrated circuit device further includes an adhesive film contacting the package, wherein the adhesive film is encapsulated in the first encapsulant.
+
+The foregoing outlines features of several embodiments so that those skilled in the art may better understand the aspects of the present disclosure. Those skilled in the art should appreciate that they may readily use the present disclosure as a basis for designing or modifying other processes and structures for carrying out the same purposes and/or achieving the same advantages of the embodiments introduced herein. Those skilled in the art should also realize that such equivalent constructions do not depart from the spirit and scope of the present disclosure, and that they may make various changes, substitutions, and alterations herein without departing from the spirit and scope of the present disclosure.
+
+Claims (21)
+
+ 1. A method comprising:
+
+bonding a device die to an interposer, wherein the interposer comprises a through-via extending from a top surface of a semiconductor substrate of the interposer into an intermediate level between the top surface and a bottom surface of the semiconductor substrate;
+
+performing a first singulation process to saw the interposer and the device die into a first package;
+
+forming a first plurality of redistribution lines over a carrier;
+
+placing the first package over the carrier and the first plurality of redistribution lines, wherein the first package is attached to the first plurality of redistribution lines through a die-attach film, and the device die is in physical contact with the die-attach film;
+
+encapsulating the first package in a first encapsulant;
+
+thinning the first encapsulant and the semiconductor substrate of the interposer, until the through-via is exposed;
+
+forming a second plurality of redistribution lines, wherein a redistribution line in the second plurality of redistribution lines is in contact with the through-via; and
+
+bonding a passive device to the first plurality of redistribution lines.
+
+ 2. The method of claim 1 further comprising forming a dielectric layer contacting the first package and the first encapsulant, wherein the second plurality of redistribution lines extend into the dielectric layer, and wherein the through-via is encircled by an isolation layer, and the isolation layer is in contact with one of the dielectric layer and the redistribution line.
+
+ 3. The method of claim 1 further comprising, after the device die is bonded to the interposer, encapsulating the device die in a second encapsulant, wherein in the first singulation process, the second encapsulant is sawed-through.
+
+ 4. The method of claim 1, wherein the thinning is performed with the first package being attached to the carrier.
+
+ 5. The method of claim 1, wherein before the semiconductor substrate of the interposer is thinned, a portion of the semiconductor substrate overlaps the through-via, and the portion of the semiconductor substrate is removed in the thinning.
+
+ 6. The method of claim 1 further comprising:
+
+forming a metal post over the carrier, wherein the metal post is encapsulated in the first encapsulant, and wherein during the thinning the first encapsulant, both of the metal post and the through-via are polished.
+
+ 7. (canceled)
+
+ 8. The method of claim 1 further comprising, after the forming the second plurality of redistribution lines, performing a second singulation process to form a second package, wherein the first package and portions of the first encapsulant and portions of the second plurality of redistribution lines are in the second package.
+
+ 9. A method comprising:
+
+forming first redistribution lines over a carrier;
+
+forming a dielectric layer over the first redistribution lines;
+
+placing a plurality of packages over the dielectric layer, wherein the plurality of packages comprise a plurality of interposers;
+
+forming a plurality of metal posts and a plurality of vias in a common plating process, wherein the plurality of metal posts are over the dielectric layer, and the plurality of vias extend into the dielectric layer to contact the first redistribution lines;
+
+encapsulating the plurality of interposers and the plurality of metal posts in an encapsulant, with the plurality of interposers separated from each other by the encapsulant, wherein the plurality of interposers comprises through-vias extending into semiconductor substrates in the plurality of interposers;
+
+polishing the interposers and the plurality of metal posts to remove portions of the semiconductor substrates, wherein surfaces of the through-vias and the plurality of metal posts are revealed;
+
+forming a first dielectric layer over and contacting the semiconductor substrates and the through-vias of the plurality of interposers;
+
+forming second redistribution lines extending into the first dielectric layer to contact the through-vias of the plurality of interposers and the plurality of metal posts; and
+
+sawing-through the encapsulant to separate the plurality of interposers into an additional plurality of packages.
+
+ 10. The method of claim 9, wherein in the sawing-through the encapsulant, the interposers are not sawed through.
+
+ 11. The method of claim 9 further comprising:
+
+bonding a plurality of device dies, with each of the plurality of device dies bonded to one of the plurality of interposers, wherein the encapsulant comprises a first portion at a same level as the plurality of interposers, and a second portion at a same level as the plurality of device dies.
+
+ 12. The method of claim 11 further comprising:
+
+encapsulating the one of the plurality of device dies in an additional encapsulant; and
+
+sawing-through the additional encapsulant before the encapsulating the plurality of interposers in an encapsulant and before the forming the second redistribution lines.
+
+ 13. The method of claim 9, wherein the first dielectric layer extends over the encapsulant, with a bottom surface of the first dielectric layer contacting a top surface of the encapsulant.
+
+ 14. The method of claim 9, wherein the encapsulating is performed with the plurality of interposers and the plurality of metal posts being on the carrier, and wherein the polishing is performed when the plurality of interposers and the plurality of metal posts are on the carrier.
+
+ 15.-20. (canceled)
+
+ 21. A method comprising:
+
+performing a first singulation process to separate an interposer wafer into a first plurality of packages, wherein interposers in the interposer wafer are separated into the first plurality of packages, and wherein each of the interposers comprises a semiconductor substrate and a through-via extended into the semiconductor substrate;
+
+placing the first plurality of packages over a carrier, wherein at a time the first plurality of packages are placed, the interposers in the first plurality of packages are free from device dies therein;
+
+encapsulating the first plurality of packages in an encapsulant;
+
+with the first plurality of packages being attached to the carrier, thinning the encapsulant and the first plurality of packages to reveal the through-vias in the interposers of the first plurality of packages;
+
+forming redistribution lines in contact with the through-vias; and
+
+performing a second singulation process to separate the encapsulant and the first plurality of packages into a second plurality of packages.
+
+ 22. The method of claim 21 further comprising, before the first singulation process, bonding a plurality of device dies to the interposer wafer, with each of the plurality of device dies bonded to one of the interposers.
+
+ 23. The method of claim 21, wherein at a time the first singulation process is performed, the through-via extends from a top surface of the respective semiconductor substrate into an intermediate level between the top surface and a bottom surface of the respective semiconductor substrate.
+
+ 24. The method of claim 21 further comprising forming a dielectric layer contacting the first plurality of packages and the encapsulant, wherein the redistribution lines extend into the dielectric layer.
+
+ 25. The method of claim 24, wherein the through-via is encircled by an isolation layer, and the isolation layer is in contact with one of the dielectric layer and the redistribution lines.
+
+ 26. The method of claim 21, wherein no additional active devices are inserted into the interposers.
+
+ US16/427,477
+ 2019-05-31
+ 2019-05-31
+ COWOS structures and methods forming same 
+
+ Active
+
+ US11133282B2
+ (en)
+
+Priority Applications (5)
+
+Application Number
+
+Priority Date
+
+Filing Date
+
+Title
+
+ US16/427,477
+
+ US11133282B2
+ (en)
+
+2019-05-31
+
+2019-05-31
+
+COWOS structures and methods forming same 
+
+ DE102019117892.4A
+
+ DE102019117892A1
+ (en)
+
+2019-05-31
+
+2019-07-03
+
+ COWOS STRUCTURES AND PROCESS FOR THEIR PRODUCTION
+
+ KR1020190112887A
+
+ KR102459551B1
+ (en)
+
+2019-05-31
+
+2019-09-11
+
+Cowos structures and methods forming same 
+
+ TW109117962A
+
+ TWI744922B
+ (en)
+
+2019-05-31
+
+2020-05-29
+
+Integrated circuit device and method of forming package structure 
+
+ CN202010485845.XA
+
+ CN112018065B
+ (en)
+
+2019-05-31
+
+2020-06-01
+
+Integrated circuit device and method of forming the same 
+
+Applications Claiming Priority (1)
+
+Application Number
+
+Priority Date
+
+Filing Date
+
+Title
+
+ US16/427,477
+
+ US11133282B2
+ (en)
+
+2019-05-31
+
+2019-05-31
+
+COWOS structures and methods forming same 
+
+Publications (2)
+
+Publication Number
+
+Publication Date
+
+ US20200381391A1
+
+ true
+
+ US20200381391A1
+ (en)
+
+2020-12-03
+
+ US11133282B2
+
+ US11133282B2
+ (en)
+
+2021-09-28
+
+Family
+
+ID=73264610
+
+Family Applications (1)
+
+Application Number
+
+Title
+
+Priority Date
+
+Filing Date
+
+ US16/427,477
+ Active
+
+ US11133282B2
+ (en)
+
+2019-05-31
+
+2019-05-31
+
+COWOS structures and methods forming same 
+
+Country Status (5)
+
+Country
+
+Link
+
+ US
+ (1)
+
+ US11133282B2
+ (en)
+
+ KR
+ (1)
+
+ KR102459551B1
+ (en)
+
+ CN
+ (1)
+
+ CN112018065B
+ (en)
+
+ DE
+ (1)
+
+ DE102019117892A1
+ (en)
+
+ TW
+ (1)
+
+ TWI744922B
+ (en)
+
+Cited By (9)
+
+* Cited by examiner, † Cited by third party
+
+Publication number
+
+Priority date
+
+Publication date
+
+Assignee
+
+Title
+
+ US11227849B2
+ (en)
+
+ *
+
+2019-09-25
+
+2022-01-18
+
+Intel Corporation
+
+Electroless-catalyst doped-mold materials for integrated-circuit die packaging architectures 
+
+ US11393763B2
+ (en)
+
+ *
+
+2020-05-28
+
+2022-07-19
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Integrated fan-out (info) package structure and method 
+
+ US11410902B2
+ (en)
+
+ *
+
+2019-09-16
+
+2022-08-09
+
+Advanced Semiconductor Engineering, Inc.
+
+Semiconductor device package and method of manufacturing the same 
+
+ US20220262694A1
+ (en)
+
+ *
+
+2021-02-18
+
+2022-08-18
+
+Taiwan Semiconductor Manufacturing Co., Ltd.
+
+Packages with Multiple Encapsulated Substrate Blocks 
+
+ KR20220154602A
+ (en)
+
+ *
+
+2021-05-13
+
+2022-11-22
+
+타이완 세미콘덕터 매뉴팩쳐링 컴퍼니 리미티드
+
+Info packages including thermal dissipation blocks 
+
+ US11728238B2
+ (en)
+
+ *
+
+2019-07-29
+
+2023-08-15
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Semiconductor package with heat dissipation films and manufacturing method thereof 
+
+ WO2023153240A1
+ (en)
+
+ *
+
+2022-02-09
+
+2023-08-17
+
+株式会社村田製作所
+
+Composite component 
+
+ US20240079352A1
+ (en)
+
+ *
+
+2022-09-02
+
+2024-03-07
+
+Qualcomm Incorporated
+
+Integrated circuit (ic) packages employing capacitor interposer substrate with aligned external interconnects, and related fabrication methods 
+
+ US20250096199A1
+ (en)
+
+ *
+
+2023-09-15
+
+2025-03-20
+
+Taiwan Semiconductor Manufacturing Co., Ltd.
+
+Semiconductor package structures and methods of forming same 
+
+Families Citing this family (2)
+
+* Cited by examiner, † Cited by third party
+
+Publication number
+
+Priority date
+
+Publication date
+
+Assignee
+
+Title
+
+ KR20240023276A
+ (en)
+
+2022-08-11
+
+2024-02-21
+
+삼성전자주식회사
+
+semiconductor package 
+
+ US20240404853A1
+ (en)
+
+ *
+
+2023-05-31
+
+2024-12-05
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Redistribution layer metallic layout structure and method with warpage reduction 
+
+Citations (3)
+
+* Cited by examiner, † Cited by third party
+
+Publication number
+
+Priority date
+
+Publication date
+
+Assignee
+
+Title
+
+ US20170263518A1
+ (en)
+
+ *
+
+2016-03-11
+
+2017-09-14
+
+ Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Integrated Fan-Out Package Including Voltage Regulators and Methods Forming Same 
+
+ US20180068978A1
+ (en)
+
+ *
+
+2016-09-02
+
+2018-03-08
+
+ Taiwan Semiconductor Manufacturing Company Ltd.
+
+Semiconductor package structure and method of manufacturing the same 
+
+ US20180138151A1
+ (en)
+
+ *
+
+2016-11-14
+
+2018-05-17
+
+ Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Package structures and methods of forming the same 
+
+Family Cites Families (37)
+
+* Cited by examiner, † Cited by third party
+
+Publication number
+
+Priority date
+
+Publication date
+
+Assignee
+
+Title
+
+ US8759964B2
+ (en)
+
+2007-07-17
+
+2014-06-24
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Wafer level package structure and fabrication methods 
+
+ US20100171197A1
+ (en)
+
+2009-01-05
+
+2010-07-08
+
+Hung-Pin Chang
+
+Isolation Structure for Stacked Dies 
+
+ EP2557597A4
+ (en)
+
+2010-04-07
+
+2014-11-26
+
+Shimadzu Corp
+
+ RADIATION DETECTOR AND METHOD FOR MANUFACTURING SAME
+
+ US9048233B2
+ (en)
+
+2010-05-26
+
+2015-06-02
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Package systems having interposers 
+
+ US8361842B2
+ (en)
+
+2010-07-30
+
+2013-01-29
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Embedded wafer-level bonding approaches 
+
+ US9224647B2
+ (en)
+
+ *
+
+2010-09-24
+
+2015-12-29
+
+Stats Chippac, Ltd.
+
+Semiconductor device and method of forming TSV interposer with semiconductor die and build-up interconnect structure on opposing surfaces of the interposer 
+
+ KR101692955B1
+ (en)
+
+ *
+
+2010-10-06
+
+2017-01-05
+
+삼성전자 주식회사
+
+Semiconductor package and method for manufacturing same 
+
+ US8884431B2
+ (en)
+
+2011-09-09
+
+2014-11-11
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Packaging methods and structures for semiconductor devices 
+
+ US9064879B2
+ (en)
+
+2010-10-14
+
+2015-06-23
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Packaging methods and structures using a die attach film 
+
+ KR101799326B1
+ (en)
+
+2011-02-10
+
+2017-11-20
+
+삼성전자 주식회사
+
+Semiconductor package having CoC(Chip on Chip) structure and method for fabricating the same package 
+
+ US8829676B2
+ (en)
+
+2011-06-28
+
+2014-09-09
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Interconnect structure for wafer level package 
+
+ TWI476888B
+ (en)
+
+2011-10-31
+
+2015-03-11
+
+欣興電子股份有限公司
+
+ Package substrate with embedded perforation interposer and preparation method thereof
+
+ US9000584B2
+ (en)
+
+2011-12-28
+
+2015-04-07
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Packaged semiconductor device with a molding compound and a method of forming the same 
+
+ US8680647B2
+ (en)
+
+2011-12-29
+
+2014-03-25
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Packages with passive devices and methods of forming the same 
+
+ US8703542B2
+ (en)
+
+2012-05-18
+
+2014-04-22
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Wafer-level packaging mechanisms 
+
+ US9991190B2
+ (en)
+
+2012-05-18
+
+2018-06-05
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Packaging with interposer frame 
+
+ US8809996B2
+ (en)
+
+2012-06-29
+
+2014-08-19
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Package with passive devices and method of forming the same 
+
+ KR101970291B1
+ (en)
+
+ *
+
+2012-08-03
+
+2019-04-18
+
+삼성전자주식회사
+
+Methods of manufacturing semiconductor packages 
+
+ US9040349B2
+ (en)
+
+2012-11-15
+
+2015-05-26
+
+Amkor Technology, Inc.
+
+Method and system for a semiconductor device package with a die to interposer wafer first bond 
+
+ US8785299B2
+ (en)
+
+2012-11-30
+
+2014-07-22
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Package with a fan-out structure and method of forming the same 
+
+ US8803306B1
+ (en)
+
+2013-01-18
+
+2014-08-12
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Fan-out package structure and methods for forming the same 
+
+ US8778738B1
+ (en)
+
+2013-02-19
+
+2014-07-15
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Packaged semiconductor devices and packaging devices and methods 
+
+ US9263511B2
+ (en)
+
+2013-02-11
+
+2016-02-16
+
+Taiwan Semiconductor Manufacturing Co., Ltd.
+
+Package with metal-insulator-metal capacitor and method of manufacturing the same 
+
+ US9048222B2
+ (en)
+
+2013-03-06
+
+2015-06-02
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Method of fabricating interconnect structure for package-on-package devices 
+
+ US8877554B2
+ (en)
+
+2013-03-15
+
+2014-11-04
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Packaged semiconductor devices, methods of packaging semiconductor devices, and PoP devices 
+
+ US9368460B2
+ (en)
+
+2013-03-15
+
+2016-06-14
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Fan-out interconnect structure and method for forming same 
+
+ KR20150094135A
+ (en)
+
+2014-02-10
+
+2015-08-19
+
+삼성전자주식회사
+
+Semiconductor package and manufacturing the same 
+
+ CN104851812B
+ (en)
+
+ *
+
+2014-02-19
+
+2017-10-20
+
+钰桥半导体股份有限公司
+
+Semiconductor element and manufacturing method thereof 
+
+ KR102258743B1
+ (en)
+
+2014-04-30
+
+2021-06-02
+
+삼성전자주식회사
+
+Method of fabricating semiconductor package, the semiconductor package formed thereby, and semiconductor device comprising the same 
+
+ US10381326B2
+ (en)
+
+ *
+
+2014-05-28
+
+2019-08-13
+
+Invensas Corporation
+
+Structure and method for integrated circuits packaging with increased density 
+
+ US9252030B1
+ (en)
+
+ *
+
+2014-08-04
+
+2016-02-02
+
+Stmicroelectronics Pte Ltd
+
+System-in-packages and methods for forming same 
+
+ US9570322B2
+ (en)
+
+ *
+
+2014-11-26
+
+2017-02-14
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Integrated circuit packages and methods of forming same 
+
+ US9589903B2
+ (en)
+
+2015-03-16
+
+2017-03-07
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Eliminate sawing-induced peeling through forming trenches 
+
+ US10141276B2
+ (en)
+
+2016-09-09
+
+2018-11-27
+
+Powertech Technology Inc.
+
+Semiconductor package structure and manufacturing method thereof 
+
+ US10833052B2
+ (en)
+
+2016-10-06
+
+2020-11-10
+
+Micron Technology, Inc.
+
+Microelectronic package utilizing embedded bridge through-silicon-via interconnect component and related methods 
+
+ US10784203B2
+ (en)
+
+ *
+
+2017-11-15
+
+2020-09-22
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Semiconductor package and method 
+
+ US10510634B2
+ (en)
+
+2017-11-30
+
+2019-12-17
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Package structure and method 
+
+ 2019
+
+ 2019-05-31
+ US
+ US16/427,477
+ patent/US11133282B2/en
+ active
+ Active
+
+ 2019-07-03
+ DE
+ DE102019117892.4A
+ patent/DE102019117892A1/en
+ active
+ Pending
+
+ 2019-09-11
+ KR
+ KR1020190112887A
+ patent/KR102459551B1/en
+ active
+ Active
+
+ 2020
+
+ 2020-05-29
+ TW
+ TW109117962A
+ patent/TWI744922B/en
+ active
+
+ 2020-06-01
+ CN
+ CN202010485845.XA
+ patent/CN112018065B/en
+ active
+ Active
+
+Patent Citations (3)
+
+* Cited by examiner, † Cited by third party
+
+Publication number
+
+Priority date
+
+Publication date
+
+Assignee
+
+Title
+
+ US20170263518A1
+ (en)
+
+ *
+
+2016-03-11
+
+2017-09-14
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Integrated Fan-Out Package Including Voltage Regulators and Methods Forming Same 
+
+ US20180068978A1
+ (en)
+
+ *
+
+2016-09-02
+
+2018-03-08
+
+Taiwan Semiconductor Manufacturing Company Ltd.
+
+Semiconductor package structure and method of manufacturing the same 
+
+ US20180138151A1
+ (en)
+
+ *
+
+2016-11-14
+
+2018-05-17
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Package structures and methods of forming the same 
+
+Cited By (20)
+
+* Cited by examiner, † Cited by third party
+
+Publication number
+
+Priority date
+
+Publication date
+
+Assignee
+
+Title
+
+ US11728238B2
+ (en)
+
+ *
+
+2019-07-29
+
+2023-08-15
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Semiconductor package with heat dissipation films and manufacturing method thereof 
+
+ US11410902B2
+ (en)
+
+ *
+
+2019-09-16
+
+2022-08-09
+
+Advanced Semiconductor Engineering, Inc.
+
+Semiconductor device package and method of manufacturing the same 
+
+ US12300560B2
+ (en)
+
+2019-09-16
+
+2025-05-13
+
+Advanced Semiconductor Engineering, Inc.
+
+Semiconductor device package and method of manufacturing the same 
+
+ US11901252B2
+ (en)
+
+2019-09-16
+
+2024-02-13
+
+Advanced Semiconductor Engineering, Inc.
+
+Semiconductor device package and method of manufacturing the same 
+
+ US11227849B2
+ (en)
+
+ *
+
+2019-09-25
+
+2022-01-18
+
+Intel Corporation
+
+Electroless-catalyst doped-mold materials for integrated-circuit die packaging architectures 
+
+ US11393763B2
+ (en)
+
+ *
+
+2020-05-28
+
+2022-07-19
+
+Taiwan Semiconductor Manufacturing Company, Ltd.
+
+Integrated fan-out (info) package structure and method 
+
+ KR102684456B1
+ (en)
+
+ *
+
+2021-02-18
+
+2024-07-11
+
+타이완 세미콘덕터 매뉴팩쳐링 컴퍼니 리미티드
+
+Packages with multiple encapsulated substrate blocks 
+
+ KR20220118282A
+ (en)
+
+ *
+
+2021-02-18
+
+2022-08-25
+
+타이완 세미콘덕터 매뉴팩쳐링 컴퍼니 리미티드
+
+Packages with multiple encapsulated substrate blocks 
+
+ US20220262694A1
+ (en)
+
+ *
+
+2021-02-18
+
+2022-08-18
+
+Taiwan Semiconductor Manufacturing Co., Ltd.
+
+Packages with Multiple Encapsulated Substrate Blocks 
+
+ US11842935B2
+ (en)
+
+ *
+
+2021-02-18
+
+2023-12-12
+
+Taiwan Semiconductor Manufacturing Co., Ltd.
+
+Method for forming a reconstructed package substrate comprising substrates blocks 
+
+ CN114975383A
+ (en)
+
+ *
+
+2021-02-18
+
+2022-08-30
+
+台湾积体电路制造股份有限公司
+
+ Semiconductor structure and method of forming semiconductor structure
+
+ US20220384287A1
+ (en)
+
+ *
+
+2021-02-18
+
+2022-12-01
+
+Taiwan Semiconductor Manufactuting Co., LLtd
+
+Packages with Multiple Encapsulated Substrate Blocks 
+
+ US12027435B2
+ (en)
+
+ *
+
+2021-02-18
+
+2024-07-02
+
+Taiwan Semiconductor Manufacturing Co., Ltd.
+
+Packages including multiple encapsulated substrate blocks and overlapping redistribution structures 
+
+ KR20220154602A
+ (en)
+
+ *
+
+2021-05-13
+
+2022-11-22
+
+타이완 세미콘덕터 매뉴팩쳐링 컴퍼니 리미티드
+
+Info packages including thermal dissipation blocks 
+
+ KR102774034B1
+ (en)
+
+2021-05-13
+
+2025-02-26
+
+타이완 세미콘덕터 매뉴팩쳐링 컴퍼니 리미티드
+
+Info packages including thermal dissipation blocks 
+
+ JP7556475B2
+ (en)
+
+2022-02-09
+
+2024-09-26
+
+株式会社村田製作所
+
+ Composite Parts
+
+ JPWO2023153240A1
+ (en)
+
+ *
+
+2022-02-09
+
+2023-08-17
+
+ WO2023153240A1
+ (en)
+
+ *
+
+2022-02-09
+
+2023-08-17
+
+株式会社村田製作所
+
+Composite component 
+
+ US20240079352A1
+ (en)
+
+ *
+
+2022-09-02
+
+2024-03-07
+
+Qualcomm Incorporated
+
+Integrated circuit (ic) packages employing capacitor interposer substrate with aligned external interconnects, and related fabrication methods 
+
+ US20250096199A1
+ (en)
+
+ *
+
+2023-09-15
+
+2025-03-20
+
+Taiwan Semiconductor Manufacturing Co., Ltd.
+
+Semiconductor package structures and methods of forming same 
+
+Also Published As
+
+Publication number
+
+Publication date
+
+ KR102459551B1
+ (en)
+
+2022-10-26
+
+ TW202046416A
+ (en)
+
+2020-12-16
+
+ US11133282B2
+ (en)
+
+2021-09-28
+
+ CN112018065B
+ (en)
+
+2023-04-07
+
+ DE102019117892A1
+ (en)
+
+2020-12-03
+
+ TWI744922B
+ (en)
+
+2021-11-01
+
+ CN112018065A
+ (en)
+
+2020-12-01
+
+ KR20200138636A
+ (en)
+
+2020-12-10
+
+Similar Documents
+
+Publication
+
+Publication Date
+
+Title
+
+ US11133282B2
+ (en)
+
+ 2021-09-28
+
+COWOS structures and methods forming same 
+
+ US12368115B2
+ (en)
+
+ 2025-07-22
+
+Supporting InFO packages to reduce warpage 
+
+ US20250300155A1
+ (en)
+
+ 2025-09-25
+
+Buffer design for package integration 
+
+ US11018091B2
+ (en)
+
+ 2021-05-25
+
+Eliminate sawing-induced peeling through forming trenches 
+
+ US12300659B2
+ (en)
+
+ 2025-05-13
+
+Aligning bumps in fan-out packaging process 
+
+ CN111799228B
+ (en)
+
+ 2022-06-28
+
+ Method and integrated circuit structure for forming a die stack
+
+ US10083913B2
+ (en)
+
+ 2018-09-25
+
+Fan-out POP structure with inconsecutive polymer layer 
+
+ US9425178B2
+ (en)
+
+ 2016-08-23
+
+RDL-first packaging process 
+
+ US10861823B2
+ (en)
+
+ 2020-12-08
+
+Dual-sided integrated fan-out package 
+
+ US20200035647A1
+ (en)
+
+ 2020-01-30
+
+Stacked Integrated Circuit Structure and Method of Forming 
+
+ US20200035661A1
+ (en)
+
+ 2020-01-30
+
+Multi-Stack Package-on-Package Structures 
+
+ CN115064505A
+ (en)
+
+ 2022-09-16
+
+Package structure and method for manufacturing the same 
+
+ US9613895B1
+ (en)
+
+ 2017-04-04
+
+Semiconductor package with double side molding 
+
+ US20250357301A1
+ (en)
+
+ 2025-11-20
+
+Semiconductor packages with reinforcement structures 
+
+ TW202538996A
+ (en)
+
+ 2025-10-01
+
+Semiconductor device and method for fabricating the same 
+
+ KR20250177380A
+ (en)
+
+ 2025-12-23
+
+Semiconductor packages and methods of forming same 
+
+Legal Events
+
+Date
+
+Code
+
+Title
+
+Description
+
+2019-05-31
+
+FEPP
+
+Fee payment procedure
+
+ Free format text:
+ ENTITY STATUS SET TO UNDISCOUNTED (ORIGINAL EVENT CODE: BIG.); ENTITY STATUS OF PATENT OWNER: LARGE ENTITY
+
+2019-06-12
+
+AS
+
+Assignment
+
+ Owner name:
+ TAIWAN SEMICONDUCTOR MANUFACTURING COMPANY, LTD., TAIWAN
+
+ Free format text:
+ ASSIGNMENT OF ASSIGNORS INTEREST;ASSIGNORS:YU, CHEN-HUA;LU, SZU-WEI;SIGNING DATES FROM 20190531 TO 20190603;REEL/FRAME:049447/0321
+
+2021-01-13
+
+STPP
+
+Information on status: patent application and granting procedure in general
+
+ Free format text:
+ RESPONSE TO NON-FINAL OFFICE ACTION ENTERED AND FORWARDED TO EXAMINER
+
+2021-04-05
+
+STPP
+
+Information on status: patent application and granting procedure in general
+
+ Free format text:
+ FINAL REJECTION MAILED
+
+2021-05-18
+
+STPP
+
+Information on status: patent application and granting procedure in general
+
+ Free format text:
+ RESPONSE AFTER FINAL ACTION FORWARDED TO EXAMINER
+
+2021-05-25
+
+STPP
+
+Information on status: patent application and granting procedure in general
+
+ Free format text:
+ NOTICE OF ALLOWANCE MAILED -- APPLICATION RECEIVED IN OFFICE OF PUBLICATIONS
+
+2021-08-27
+
+STPP
+
+Information on status: patent application and granting procedure in general
+
+ Free format text:
+ PUBLICATIONS -- ISSUE FEE PAYMENT VERIFIED
+
+2021-09-08
+
+STCF
+
+Information on status: patent grant
+
+ Free format text:
+ PATENTED CASE
+
+2025-01-13
+
+MAFP
+
+Maintenance fee payment
+
+ Free format text:
+ PAYMENT OF MAINTENANCE FEE, 4TH YEAR, LARGE ENTITY (ORIGINAL EVENT CODE: M1551); ENTITY STATUS OF PATENT OWNER: LARGE ENTITY
+
+ Year of fee payment:
+ 4

@@ -1,0 +1,849 @@
+# git -C H:/sentilab show origin/main:sundai_hotspot/tap_references.py | cat -n
+# origin/main = 46791be360555d0e24b4ad5f906abafb71f07118
+     1	"""SLAB-048 reference layouts reconstructed from TAP-2.5D figures, and the SAMPLED envelope plan.
+     2	
+     3	Layouts per reference, never confused:
+     4	- raw: the die centres exactly as extracted from the paper's vector figure. Approximate. It passes
+     5	  the continuous geometry rules; only the 0.5 mm search lattice refuses it. Gate zero (the
+     6	  paper-reconstruction comparison) uses this layout.
+     7	- snapped (1 mm): the first legal experiment layout, kept unchanged. It is NOT the paper's layout.
+     8	- snap0p5: plain nearest-0.5 mm rounding of the raw layout, legal with no repair. It is the
+     9	  ENGINEERING comparison and sensitivity baseline (per root's decision, ScienceClaw #56857/#56858),
+    10	  separately admitted, never a paper match. The SAMPLED envelope probes it.
+    11	
+    12	The raw and snapped sections of each record stay exactly as reviewed at 063f6593: SLAB-049 (PR #56)
+    13	pins the canonical-JSON sha256 of the raw section and refuses any change. Everything added since lives
+    14	in raw_annotations and snapped_annotations.
+    15	
+    16	Geometry only: this module builds, checks and writes JSON. It runs TAP's wire router (a MILP on a
+    17	real optimizer, no physics) and never a thermal solver. Every route goes through _routed_mm, which
+    18	refuses a SciPy other than requirements.txt's pin before the optimizer runs.
+    19	
+    20	    python -m sundai_hotspot.tap_references --check   # committed files equal a fresh build
+    21	    python -m sundai_hotspot.tap_references --write   # rebuild them from the committed decode
+    22	"""
+    23	from __future__ import annotations
+    24	
+    25	import argparse
+    26	import hashlib
+    27	import json
+    28	import math
+    29	import re
+    30	import statistics
+    31	import sys
+    32	from pathlib import Path
+    33	
+    34	from sundai_hotspot.tap_oracle import REPO_ROOT, TAP_CONFIGS, TapGeometry, TapLegalityError
+    35	from sundai_hotspot.tap_router import routed_wirelength, solver_versions
+    36	
+    37	TICKET = {"id": "SLAB-048", "name": "REF-RECON", "uuid": "c3dcb49a-430a-462e-a446-f532da204c46"}
+    38	REFERENCES_DIR = REPO_ROOT / "docs" / "sentilab" / "references"
+    39	DECODER = REFERENCES_DIR / "decode_tap25d_figures.py"
+    40	DECODE = REFERENCES_DIR / "tap25d-figure-decode.json"
+    41	ENVELOPE_PLAN = REFERENCES_DIR / "envelope-plan.json"
+    42	ROUTER = REPO_ROOT / "sundai_hotspot" / "tap_router.py"
+    43	REQUIREMENTS = REPO_ROOT / "requirements.txt"
+    44	RAW_LABEL = "raw reconstruction (approximate, from published figure)"
+    45	SNAPPED_LABEL = "legal snapped variant (adjusted)"
+    46	VARIANT_SUFFIX = "snap0p5"
+    47	VARIANT_LATTICE_MM = 0.5
+    48	VARIANT_LABEL = "0.5 mm snapped variant (plain nearest rounding, no repair): engineering baseline, not the paper's layout"
+    49	VARIANT_ROLE = ("ENGINEERING comparison and sensitivity baseline, separately admitted (per root's decision, ScienceClaw "
+    50	                "#56857 and #56858). Never a paper match, and not part of gate zero: gate zero uses the raw 45 mm "
+    51	                "reference.")
+    52	REVIEWED_AT = "063f659368f32b653acf8084f85a0c7926a106ec"
+    53	FROZEN_SECTION = ("This section is kept exactly as reviewed at 063f6593. SLAB-049 (PR #56) pins the canonical-JSON "
+    54	                  "sha256 of the raw section and refuses any change, so later additions live in raw_annotations and "
+    55	                  "snapped_annotations instead.")
+    56	# raw.uncertainty_rule as reviewed; raw_annotations.uncertainty_statement says what the numbers are.
+    57	RAW_UNCERTAINTY_RULE_AS_REVIEWED = (
+    58	    "decode error measured on TAP's own panels (max offset from its 1 mm grid) + coordinate x relative spread of the "
+    59	    "panel's three scale estimates + 5e-5 mm storage step, rounded up to 1e-4 mm. Fidelity of the figure to the "
+    60	    "authors' simulated layout is not measurable from the figure.")
+    61	LABELS = ("approximate reconstruction from published figure", "simulated reference, not silicon")
+    62	CLAIM_LABEL = ("Simulated with [evaluator and hash], steady state, uniform power per die. Reference reconstructed "
+    63	               "from a published figure. Not CAD, not silicon, not measured.")
+    64	ROUNDING_RULE = ("Each centre coordinate c becomes 0.5 * floor(c / 0.5 + 0.5): the nearest multiple of 0.5 mm. "
+    65	                 "An exact tie (c / 0.5 ends in .5) rounds up, toward +infinity. Rotations are kept. No repair moves.")
+    66	UNITS = {"length": "mm", "coordinates": "die centres; origin at the interposer's lower-left corner; +x right, +y up",
+    67	         "rotation": "true = turned 90 degrees from the fixture config's (width, height)"}
+    68	SNAP_GRID_MM = 1.0
+    69	MAX_SNAP_STEPS = 8
+    70	PERTURBATION_MM = 0.5
+    71	ENVELOPE_GRID = 64
+    72	ROUND_TRIP = {"temperature_tolerance_k": 1.0, "routed_wire_tolerance_pct": 2.0}
+    73	ROUTED_LABEL = "routed (open router), not paper"
+    74	HIGHS_STATUS = ("reported by the pinned SciPy build and recorded; not pinned, and not an admission of any other "
+    75	                "binary or host")
+    76	WIRE_METRIC = ("wire_proxy_mm is the oracle's W: a connectivity-weighted mean Manhattan centre distance, a proxy, "
+    77	               "not comparable with the paper's routed mm. routed_wirelength_mm comes from an open port of TAP's "
+    78	               "router (sundai_hotspot/tap_router.py), the same kind of metric the paper reports.")
+    79	PAPER_SETTINGS = {
+    80	    "interposer_mm": 45, "placement_grid_mm": 1, "thermal_grid": "64x64", "ambient_c": 45,
+    81	    "simulator": "HotSpot 6.0 (ours: HotSpot 7)",
+    82	    "temperature_metric": (
+    83	        "Three statistics, kept separate and never substituted for one another: (1) TAP's selector, "
+    84	        "run_hotspot() in sundai_tap/passive_interposer.py: the maximum of stdout.split()[3::2], i.e. of the unit "
+    85	        "temperatures HotSpot prints for the run (with -grid_map_mode center from sundai_tap/util/hotspot.config); "
+    86	        "it is not by construction limited to the chip layer, and reproducing it needs the literal selector or a "
+    87	        "reviewed emulation of it; (2) the native temperatures of the real chiplet units (Chiplet_i); (3) the "
+    88	        "active (chip) layer grid peak, our J, with -grid_map_mode max."),
+    89	    "wire_metric": "total routed inter-chiplet wirelength from TAP's MILP router (CPLEX)",
+    90	}
+    91	REFERENCES = (
+    92	    {
+    93	        "reference_id": "ascend910-tap25d-fig6a",
+    94	        "track": "MATCH",
+    95	        "title": "Huawei Ascend 910 original layout as drawn in TAP-2.5D Fig. 6(a)",
+    96	        "figure": "fig6", "panel": "a", "fixture_id": "ascend910-45mm",
+    97	        "dies": ("Vitruvian compute die (TAP spells it Virtuvian), 256 W", "Nimbus I/O die, 14 W",
+    98	                 "HBM stack, 20 W", "HBM stack, 20 W", "HBM stack, 20 W", "HBM stack, 20 W"),
+    99	        "extra_labels": ("SHIPPED product (Huawei Ascend 910); positions read from a published figure, not CAD",),
+   100	        "paper_reported": {
+   101	            "original": {"panel": "a", "peak_temperature_c": 75.48, "routed_wirelength_mm": 16426,
+   102	                         "link_type": "nppl"},
+   103	            "quote": ("The original layout of Ascend 910 System (Fig. 6(a)) already achieves minimum wirelength "
+   104	                      "and is thermally-safe when running at the nominal frequency."),
+   105	        },
+   106	        # Out-of-sample: published points not used to build or tune anything here.
+   107	        "validation_points": (
+   108	            {"panel": "b", "method": "Compact-2.5D", "peak_temperature_c": 75.13, "routed_wirelength_mm": 23794,
+   109	             "link_type": "nppl"},
+   110	            {"panel": "c", "method": "TAP-2.5D", "peak_temperature_c": 75.47, "routed_wirelength_mm": 16597,
+   111	             "link_type": "nppl"},
+   112	        ),
+   113	        "model_omissions": (
+   114	            "The shipped package carries two unpowered silicon dummy dies (about 110 mm2 each, Hot Chips 31: "
+   115	            "'added to ensure mechanical uniformity') beside Nimbus. TAP-2.5D's model, its Fig. 6(a) and this "
+   116	            "reconstruction omit them, so their lateral heat path is not modelled.",
+   117	            "TAP's die sizes and its 256/14/4x20 W power split are TAP modelling assumptions, not Huawei data "
+   118	            "(HBM drawn 7.75 x 11.87 mm = 92 mm2; Huawei's slide gives 96 mm2).",
+   119	        ),
+   120	    },
+   121	    {
+   122	        "reference_id": "micro150-tap25d-fig5a",
+   123	        "track": "BEAT",
+   124	        "title": "CPU-DRAM original placement (Kannan et al., MICRO 2015) as drawn in TAP-2.5D Fig. 5(a)",
+   125	        "figure": "fig5", "panel": "a", "fixture_id": "micro150-45mm",
+   126	        "dies": ("CPU, 150 W", "CPU, 150 W", "CPU, 150 W", "CPU, 150 W",
+   127	                 "DRAM, 20 W", "DRAM, 20 W", "DRAM, 20 W", "DRAM, 20 W"),
+   128	        "extra_labels": ("human-designed RESEARCH layout (Kannan et al., MICRO 2015), not a shipped package",),
+   129	        "paper_reported": {
+   130	            "original": {"panel": "a", "peak_temperature_c": 115.94, "routed_wirelength_mm": 67686,
+   131	                         "link_type": "nppl"},
+   132	            "quote": ("The original placement (a) is optimal from the routing perspective (total wirelength of "
+   133	                      "67,686mm according to our evaluation). However, our HotSpot simulations show that the "
+   134	                      "system operates at 115.94oC, which is thermally infeasible."),
+   135	        },
+   136	        "validation_points": (
+   137	            {"panel": "b", "method": "Compact-2.5D", "peak_temperature_c": 113.54, "routed_wirelength_mm": 100864,
+   138	             "link_type": "nppl"},
+   139	            {"panel": "c", "method": "TAP-2.5D, repeaterless non-pipelined links", "peak_temperature_c": 94.89,
+   140	             "routed_wirelength_mm": 216064, "link_type": "nppl"},
+   141	            {"panel": "d", "method": "TAP-2.5D, gas-station links", "peak_temperature_c": 93.89,
+   142	             "routed_wirelength_mm": 138956, "link_type": "ppl"},
+   143	        ),
+   144	        "model_omissions": (
+   145	            "Kannan et al.'s design is a research proposal; TAP-2.5D's die sizes and powers are its model of it.",
+   146	        ),
+   147	    },
+   148	)
+   149	TIMING = REPO_ROOT / "docs/sentilab/evidence/micro150/TIMING.json"
+   150	MESH_ASCEND = REPO_ROOT / "docs/sentilab/evidence/mesh/ascend910/RESULT.json"
+   151	MESH_MICRO_ROWS = REPO_ROOT / "docs/sentilab/evidence/mesh/micro150/rows.jsonl"
+   152	SLAB039 = REPO_ROOT / "docs/sentilab/evidence/SLAB-039/RESULT.json"
+   153	POLICY = REPO_ROOT / "docs/sentilab/evidence/SLAB-039/SUPERVISOR-POLICY.json"
+   154	# Declared per-call reserves (CPU-s): reap and settlement tail as approved in SUPERVISOR-POLICY.json;
+   155	# startup and archive are this plan's own declared reserves, each well above the heuristic overhead estimate.
+   156	STARTUP_RESERVE_S = 0.25
+   157	ARCHIVE_RESERVE_S = 0.25
+   158	FAILED_ATTEMPT_FRACTION = 0.10
+   159	
+   160	
+   161	def _sha256(path: Path) -> str:
+   162	    return hashlib.sha256(path.read_bytes()).hexdigest()
+   163	
+   164	
+   165	def _rel(path: Path) -> str:
+   166	    return path.relative_to(REPO_ROOT).as_posix()
+   167	
+   168	
+   169	def _json_bytes(value) -> bytes:
+   170	    return (json.dumps(value, indent=1, sort_keys=True, allow_nan=False) + "\n").encode("utf-8")
+   171	
+   172	
+   173	def _mm(value: float) -> float:
+   174	    """Millimetres at the decode's 1e-4 mm resolution; also strips float noise such as 0.30000000000000004."""
+   175	    return round(float(value), 4) + 0.0
+   176	
+   177	
+   178	def _violations(geometry: TapGeometry, centers, rotated):
+   179	    return geometry.layout_violations(geometry.design_from_centers(centers, rotated))
+   180	
+   181	
+   182	def _violation_records(violations):
+   183	    return [{"rule": v.rule, "dies": list(v.dies), "amount_mm": _mm(v.amount_mm), "message": v.message}
+   184	            for v in violations]
+   185	
+   186	
+   187	def section_sha256(section: dict) -> str:
+   188	    """sha256 of a record section's canonical JSON, the form SLAB-049 pins (slab049.raw_layout_sha256)."""
+   189	    return hashlib.sha256(json.dumps(section, sort_keys=True, separators=(",", ":"), ensure_ascii=True,
+   190	                                     allow_nan=False).encode("utf-8")).hexdigest()
+   191	
+   192	
+   193	def round_to_lattice(value: float, step: float) -> float:
+   194	    """Nearest multiple of step; an exact tie rounds up, toward +infinity (see ROUNDING_RULE)."""
+   195	    return math.floor(value / step + 0.5) * step
+   196	
+   197	
+   198	def layout_identity(frame_mm: float, centers, rotated, footprints) -> dict:
+   199	    """A content hash for a layout: canonical JSON of its frame, units, centres, rotations and footprints."""
+   200	    canonical = {"schema": "sentilab-layout-identity-v1", "units": UNITS, "frame_mm": float(frame_mm),
+   201	                 "die_order": "TAP fixture config order",
+   202	                 "centers_mm": [[float(v) for v in c] for c in centers], "rotated": [bool(f) for f in rotated],
+   203	                 "footprints_mm": [[float(v) for v in f] for f in footprints]}
+   204	    encoded = json.dumps(canonical, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+   205	    return {"canonical": canonical, "content_sha256": hashlib.sha256(encoded).hexdigest(),
+   206	            "hashing": "sha256 of json.dumps(canonical, sort_keys=True, separators=(',', ':'))"}
+   207	
+   208	
+   209	def displacement(raw_centers, centers) -> dict:
+   210	    """Raw-to-layout displacement under two named norms: per coordinate (L-infinity) and Euclidean per die."""
+   211	    per_die = []
+   212	    for die, (r, c) in enumerate(zip(raw_centers, centers)):
+   213	        dx, dy = c[0] - r[0], c[1] - r[1]
+   214	        per_die.append({"die": die, "dx_mm": _mm(dx), "dy_mm": _mm(dy), "euclidean_mm": round(math.hypot(dx, dy), 6)})
+   215	    return {"per_die": per_die,
+   216	            "max_per_coordinate_linf_mm": _mm(max(max(abs(d["dx_mm"]), abs(d["dy_mm"])) for d in per_die)),
+   217	            "max_euclidean_mm": max(d["euclidean_mm"] for d in per_die)}
+   218	
+   219	
+   220	def pinned_solver() -> dict:
+   221	    """Refuse unless SciPy is the version requirements.txt pins; return the checked versions for the record.
+   222	
+   223	    Only SciPy is pinned. The HiGHS version is whatever this SciPy build reports: it is recorded, not pinned,
+   224	    and it admits no other binary or host.
+   225	    """
+   226	    pin = re.search(r"^scipy==(\S+)$", REQUIREMENTS.read_text(encoding="utf-8"), re.M)
+   227	    versions = solver_versions()
+   228	    if pin is None or versions["scipy"] != pin.group(1):
+   229	        raise RuntimeError(f"routed records need scipy=={pin.group(1) if pin else '?'} (requirements.txt); "
+   230	                           f"this environment has {versions['scipy']}")
+   231	    return {"scipy": versions["scipy"], "scipy_pinned_by": "requirements.txt",
+   232	            "highs": versions["highs"], "highs_status": HIGHS_STATUS}
+   233	
+   234	
+   235	def continuous_legal(geometry: TapGeometry, centers, rotated) -> tuple[bool, str | None]:
+   236	    """The continuous geometry rules without the search lattice (TapGeometry.continuous_centers_for)."""
+   237	    try:
+   238	        geometry.continuous_centers_for(geometry.design_from_centers(centers, rotated))
+   239	    except TapLegalityError as exc:
+   240	        return False, str(exc)
+   241	    return True, None
+   242	
+   243	
+   244	def legal_on(geometry: TapGeometry, centers, rotated) -> tuple[bool, str | None]:
+   245	    """The fixture's own gate (TapGeometry.centers_for), not a re-implementation."""
+   246	    try:
+   247	        geometry.centers_for(geometry.design_from_centers(centers, rotated))
+   248	    except TapLegalityError as exc:
+   249	        return False, str(exc)
+   250	    return True, None
+   251	
+   252	
+   253	def minimal_snaps(geometry: TapGeometry, raw_centers, rotated, grid_mm: float) -> tuple[tuple, dict]:
+   254	    """Every legal layout reachable from the rounded raw centres with the fewest grid-step moves.
+   255	
+   256	    Conflict-directed: from the current layout it branches only on one-step moves of the dies in the
+   257	    first remaining violation. That is complete, because no move of a third die can clear a margin or
+   258	    pair violation. Returns the rounded centres and {steps per die: centres}.
+   259	    """
+   260	    count = len(raw_centers)
+   261	    rounded = tuple(tuple(round_to_lattice(value, grid_mm) for value in point) for point in raw_centers)
+   262	
+   263	    def centers_for(steps):
+   264	        return tuple((rounded[i][0] + steps[i][0] * grid_mm, rounded[i][1] + steps[i][1] * grid_mm)
+   265	                     for i in range(count))
+   266	
+   267	    solutions = {}
+   268	    for depth in range(MAX_SNAP_STEPS + 1):
+   269	        steps = [[0, 0] for _ in range(count)]
+   270	
+   271	        def search(remaining):
+   272	            problems = _violations(geometry, centers_for(steps), rotated)
+   273	            if not problems:
+   274	                if remaining == 0:
+   275	                    key = tuple(tuple(step) for step in steps)
+   276	                    solutions[key] = centers_for(steps)
+   277	                return
+   278	            if remaining == 0:
+   279	                return
+   280	            for die in problems[0].dies:
+   281	                for axis in (0, 1):
+   282	                    for sign in (1, -1):
+   283	                        if steps[die][axis] * sign < 0:  # never undo a step: a minimal set has no pair
+   284	                            continue
+   285	                        steps[die][axis] += sign
+   286	                        search(remaining - 1)
+   287	                        steps[die][axis] -= sign
+   288	
+   289	        search(depth)
+   290	        if solutions:
+   291	            return rounded, solutions
+   292	    raise ValueError(f"no legal {grid_mm:g} mm layout within {MAX_SNAP_STEPS} grid steps of the raw centres")
+   293	
+   294	
+   295	def snap_to_grid(geometry: TapGeometry, raw_centers, rotated, *, decode_precision_mm: float,
+   296	                 grid_mm: float = SNAP_GRID_MM) -> dict:
+   297	    """Round each centre to the nearest grid node, then make the fewest grid-step moves that make
+   298	    the layout legal on the fixture (minimal_snaps). Among the move sets of minimal size it keeps the
+   299	    one closest to the raw centres (sum of squared distances), then the lexicographically smallest
+   300	    centres. If the runner-up is closer than the decode precision can separate, the result says so.
+   301	    """
+   302	    rounded, solutions = minimal_snaps(geometry, raw_centers, rotated, grid_mm)
+   303	    count = len(raw_centers)
+   304	
+   305	    def centers_for(steps):
+   306	        return tuple((rounded[i][0] + steps[i][0] * grid_mm, rounded[i][1] + steps[i][1] * grid_mm)
+   307	                     for i in range(count))
+   308	
+   309	    def cost(centers):
+   310	        return sum((c[0] - r[0]) ** 2 + (c[1] - r[1]) ** 2 for c, r in zip(centers, raw_centers))
+   311	
+   312	    ranked = sorted(solutions.items(), key=lambda item: (cost(item[1]), item[1]))
+   313	    best_steps, best = ranked[0]
+   314	    if not legal_on(geometry, best, rotated)[0]:
+   315	        raise AssertionError("snapped layout failed the fixture gate")
+   316	    adjustments = []
+   317	    for die, (dx, dy) in enumerate(best_steps):
+   318	        if dx == 0 and dy == 0:
+   319	            continue
+   320	        # The reason is exactly what dropping this adjustment would break.
+   321	        without = list(best_steps)
+   322	        without[die] = (0, 0)
+   323	        dropped = _violations(geometry, centers_for(without), rotated)
+   324	        if not dropped:
+   325	            raise AssertionError(f"adjustment of die {die} is not needed; the move set is not minimal")
+   326	        adjustments.append({"die": die, "dx_mm": dx * grid_mm, "dy_mm": dy * grid_mm,
+   327	                            "reason": [v.message for v in dropped],
+   328	                            "violations_if_dropped": _violation_records(dropped)})
+   329	    alternatives = [{"centers_mm": [list(c) for c in centers], "squared_distance_to_raw_mm2": _mm(cost(centers))}
+   330	                    for _, centers in ranked[1:4]]
+   331	    runner_up = None
+   332	    if len(ranked) > 1:
+   333	        second = ranked[1][1]
+   334	        margin = cost(second) - cost(best)
+   335	        # Moving each raw coordinate by up to the decode precision shifts the cost difference by at most this.
+   336	        bound = sum(2 * decode_precision_mm * (abs(b - r) + abs(s - r))
+   337	                    for bp, sp, rp in zip(best, second, raw_centers) for b, s, r in zip(bp, sp, rp) if b != s)
+   338	        runner_up = {"squared_distance_margin_mm2": _mm(margin), "decode_precision_bound_mm2": _mm(bound),
+   339	                     "decided_below_decode_precision": margin <= bound}
+   340	    return {
+   341	        "rounded_centers_mm": [list(c) for c in rounded],
+   342	        "rounded_violations": _violation_records(_violations(geometry, rounded, rotated)),
+   343	        "grid_steps": int(sum(abs(s) for pair in best_steps for s in pair)),
+   344	        "adjustments": adjustments,
+   345	        "centers_mm": [list(c) for c in best],
+   346	        "squared_distance_to_raw_mm2": _mm(cost(best)),
+   347	        "alternatives_same_step_count": alternatives,
+   348	        "runner_up": runner_up,
+   349	    }
+   350	
+   351	
+   352	def _precision_evidence(decode: dict) -> dict:
+   353	    """TAP's own placer puts centres on the 1 mm grid, so its panels measure the decode error."""
+   354	    deviations = []
+   355	    for figure in decode["figures"].values():
+   356	        for panel_name, panel in figure["panels"].items():
+   357	            if panel_name == "a":
+   358	                continue
+   359	            for chiplet in panel["chiplets"]:
+   360	                deviations.extend(abs(v - round(v)) for v in chiplet["decoded_center_mm"])
+   361	    return {"tap_placer_panels": "fig5 b,c,d and fig6 b,c (TAP output, 1 mm grid by construction)",
+   362	            "max_center_offset_from_grid_mm": _mm(max(deviations)), "centers_checked": len(deviations) // 2,
+   363	            "norm": "per coordinate (L-infinity)",
+   364	            "kind": ("empirical estimate under stated assumptions: the TAP-placer panels sit exactly on its 1 mm grid, "
+   365	                     "and the drawing maps every panel the same way. It is not a figure-to-silicon error bound."),
+   366	            "reuse": ("These five panels are also the router's validation points, so the two checks are not "
+   367	                      "independent of each other.")}
+   368	
+   369	
+   370	def _routed_mm(problem, centers, rotated, link_type) -> tuple[float, dict]:
+   371	    """The builder's only route. The SciPy pin is checked before the optimizer runs, so a mismatched stack is
+   372	    refused with zero optimizer calls.
+   373	
+   374	    Returns the routed total, rounded to 0.1 mm (every committed value sits at least 0.015 mm from a rounding
+   375	    boundary), and the solver versions checked for this route, for the record.
+   376	    """
+   377	    solver = pinned_solver()
+   378	    wire = routed_wirelength(problem, centers, rotated, link_type=link_type)
+   379	    return round(wire.total_mm, 1), solver
+   380	
+   381	
+   382	def _vs_paper(routed_mm: float, paper_mm: float) -> float:
+   383	    return round(100 * (routed_mm - paper_mm) / paper_mm, 3)
+   384	
+   385	
+   386	def _coordinate_uncertainty(panel: dict, center, grid_error_mm: float) -> list[float]:
+   387	    """Per-coordinate decode uncertainty (mm), rounded up: TAP-grid decode error, plus the coordinate times
+   388	    the spread of the panel's three scale estimates, plus half the 1e-4 mm storage step."""
+   389	    scales = panel["scale_pt_per_mm"]
+   390	    estimates = (scales["x"], scales["y"], scales["from_die_outlines"])
+   391	    spread = (max(estimates) - min(estimates)) / min(estimates)
+   392	    return [math.ceil((grid_error_mm + abs(v) * spread + 0.00005) * 1e4) / 1e4 for v in center]
+   393	
+   394	
+   395	def build_reference(spec: dict, decode: dict) -> dict:
+   396	    geometry = TapGeometry.load(spec["fixture_id"])
+   397	    problem = geometry.problem
+   398	    figure = decode["figures"][spec["figure"]]
+   399	    panel = figure["panels"][spec["panel"]]
+   400	    dies = panel["chiplets"]
+   401	    raw_centers = tuple(tuple(d["decoded_center_mm"]) for d in dies)
+   402	    rotated = tuple(d["rotated_vs_catalog"] for d in dies)
+   403	    if panel["frame_mm"] != problem.interposer_size_mm or len(dies) != len(problem.widths_mm):
+   404	        raise ValueError(f"{spec['reference_id']}: decoded frame or die count does not match {spec['fixture_id']}")
+   405	
+   406	    raw_design = geometry.design_from_centers(raw_centers, rotated)
+   407	    raw_legal, raw_reason = legal_on(geometry, raw_centers, rotated)
+   408	    physical_violations = geometry.layout_violations(raw_design, lattice=False)
+   409	    raw_continuous_legal, _ = continuous_legal(geometry, raw_centers, rotated)
+   410	    raw_wire = geometry.wirelength_mm(TapGeometry._centers(raw_design))
+   411	
+   412	    precision = _precision_evidence(decode)
+   413	    snapped = snap_to_grid(geometry, raw_centers, rotated,
+   414	                           decode_precision_mm=precision["max_center_offset_from_grid_mm"])
+   415	    snapped_centers = tuple(tuple(c) for c in snapped["centers_mm"])
+   416	    snapped_design = geometry.design_from_centers(snapped_centers, rotated)
+   417	    snapped_wire = geometry.wirelength_mm(geometry.centers_for(snapped_design))
+   418	    deltas = [{"die": i, "dx_mm": _mm(s[0] - r[0]), "dy_mm": _mm(s[1] - r[1])}
+   419	              for i, (r, s) in enumerate(zip(raw_centers, snapped_centers))]
+   420	    config = TAP_CONFIGS[spec["fixture_id"]]
+   421	    original = spec["paper_reported"]["original"]
+   422	    raw_routed, solver = _routed_mm(problem, raw_centers, rotated, original["link_type"])
+   423	    snapped_routed, _ = _routed_mm(problem, snapped_centers, rotated, original["link_type"])
+   424	    validation = []
+   425	    for point in spec["validation_points"]:
+   426	        chiplets = figure["panels"][point["panel"]]["chiplets"]
+   427	        # TAP's own placer output: back onto its 1 mm grid (the decode is within 0.0005 mm of it).
+   428	        centers = [[float(round(v)) for v in c["decoded_center_mm"]] for c in chiplets]
+   429	        routed, _ = _routed_mm(problem, centers, [c["rotated_vs_catalog"] for c in chiplets], point["link_type"])
+   430	        validation.append({**point, "figure": spec["figure"].replace("fig", "Fig. "), "centers_mm": centers,
+   431	                           "rotated": [c["rotated_vs_catalog"] for c in chiplets], "our_routed_wirelength_mm": routed,
+   432	                           "routed_label": ROUTED_LABEL,
+   433	                           "routed_vs_paper_pct": _vs_paper(routed, point["routed_wirelength_mm"]),
+   434	                           "reuse": "this panel also feeds the decode-precision estimate",
+   435	                           "temperature": "paper value only; not evaluated (no thermal solve in SLAB-048)"})
+   436	    raw_identity = layout_identity(problem.interposer_size_mm, raw_centers, rotated, [d["footprint_mm"] for d in dies])
+   437	    snapped_identity = layout_identity(problem.interposer_size_mm, snapped_centers, rotated,
+   438	                                       [d["footprint_mm"] for d in dies])
+   439	    snapped_norms = displacement(raw_centers, snapped_centers)
+   440	    record = {
+   441	        "schema": "sentilab-reference-layout-v1",
+   442	        "reference_id": spec["reference_id"],
+   443	        "ticket": TICKET,
+   444	        "track": spec["track"],
+   445	        "title": spec["title"],
+   446	        "labels": [*LABELS, *spec["extra_labels"]],
+   447	        "claim_label": CLAIM_LABEL,
+   448	        "fixture": {"fixture_id": spec["fixture_id"], "config": _rel(config), "config_sha256": _sha256(config),
+   449	                    "frame_mm": problem.interposer_size_mm},
+   450	        "interposer_mm": problem.interposer_size_mm,
+   451	        "source": {**decode["paper"], "page_number": decode["paper"]["page_index"] + 1,
+   452	                   "figure": spec["figure"].replace("fig", "Fig. "), "panel": spec["panel"],
+   453	                   "caption": figure["caption"]},
+   454	        "decoding": {
+   455	            "script": _rel(DECODER), "script_sha256": _sha256(DECODER),
+   456	            "output": _rel(DECODE), "output_sha256": _sha256(DECODE),
+   457	            "pymupdf_version": decode["pymupdf_version"],
+   458	            "displayed_rotated_90_cw": panel["displayed_rotated_90_cw"],
+   459	            "frame_pt": panel["frame_pt"], "scale_pt_per_mm": panel["scale_pt_per_mm"],
+   460	            "frame_checks_mm": panel["frame_checks_mm"],
+   461	            "origin": "lower-left corner of the interposer frame (outer edge of TAP's Edge_2/Edge_0 strips)",
+   462	            "precision": precision,
+   463	        },
+   464	        "paper_reported": spec["paper_reported"],
+   465	        "paper_settings": PAPER_SETTINGS,
+   466	        "model_omissions": list(spec["model_omissions"]),
+   467	        "dies": [{"die": i, "name": name, "catalog_mm": [w, h], "power_w": p, "halo_mm": halo}
+   468	                 for i, (name, w, h, p, halo) in enumerate(zip(spec["dies"], problem.widths_mm, problem.heights_mm,
+   469	                                                                problem.powers_w, problem.bump_halos_mm))],
+   470	        "raw": {
+   471	            "label": RAW_LABEL,
+   472	            "centers_mm": [list(c) for c in raw_centers],
+   473	            "rotated": list(rotated),
+   474	            "footprints_mm": [list(d["footprint_mm"]) for d in dies],
+   475	            "lower_left_mm": [list(d["decoded_lower_left_mm"]) for d in dies],
+   476	            "decoded_size_mm": [list(d["decoded_size_mm"]) for d in dies],
+   477	            "center_uncertainty_mm": [_coordinate_uncertainty(panel, c, precision["max_center_offset_from_grid_mm"])
+   478	                                      for c in raw_centers],
+   479	            "how_obtained": [
+   480	                f"Die {d['die']}: the outline drawn as Chiplet_{d['die']} (die-sized unit {d['die'] + 1} in the "
+   481	                f"figure's drawing order); centre = midpoint of the outline, outline pt {d['body_pt']}, mapped "
+   482	                f"through the panel's edge-strip frame" for d in dies],
+   483	            "uncertainty_rule": RAW_UNCERTAINTY_RULE_AS_REVIEWED,
+   484	            "design_hash": raw_design.hash,
+   485	            "legal_on_fixture": raw_legal,
+   486	            "fixture_gate_message": raw_reason,
+   487	            "violations_on_fixture": _violation_records(_violations(geometry, raw_centers, rotated)),
+   488	            "violations_without_center_lattice": _violation_records(physical_violations),
+   489	            "wire_proxy_mm": _mm(raw_wire),
+   490	            "routed_wirelength_mm": raw_routed,
+   491	        },
+   492	        "raw_annotations": {
+   493	            "frozen": FROZEN_SECTION,
+   494	            "reviewed_at": REVIEWED_AT,
+   495	            "section_sha256": None,  # filled below, over the finished raw section
+   496	            "identity": raw_identity,
+   497	            "role": ("gate zero: the paper-reconstruction comparison (per root's decision, ScienceClaw #56857 and "
+   498	                     "#56858). Use it with its exact continuous geometry and rotations."),
+   499	            "continuous_rules_legal": raw_continuous_legal,
+   500	            "continuous_rules_check": "sundai_hotspot/tap_oracle.py TapGeometry.continuous_centers_for",
+   501	            "uncertainty_statement": (
+   502	                "raw.center_uncertainty_mm is an empirical estimate under stated assumptions, per coordinate "
+   503	                "(L-infinity): the decode error measured on TAP's own panels (max offset from its 1 mm grid) + the "
+   504	                "coordinate x the relative spread of the panel's three scale estimates + the 5e-5 mm storage step, "
+   505	                "rounded up to 1e-4 mm. It covers reading the figure only; it is not a figure-to-silicon error bound, "
+   506	                "and the figure's fidelity to the authors' simulated layout is not measurable from the figure."),
+   507	        },
+   508	        "round_trip": {
+   509	            "criteria": (f"Our evaluator and router on the raw reference land within the paper's own numbers: "
+   510	                         f"temperature within {ROUND_TRIP['temperature_tolerance_k']:g} K and routed wire within "
+   511	                         f"{ROUND_TRIP['routed_wire_tolerance_pct']:g}% (room #56739, item (b)2)."),
+   512	            "wire": {"router": _rel(ROUTER), "router_sha256": _sha256(ROUTER), "solver": solver, "layout": "raw",
+   513	                     "routed_wirelength_mm": raw_routed, "routed_label": ROUTED_LABEL,
+   514	                     "paper_mm": original["routed_wirelength_mm"],
+   515	                     "difference_pct": _vs_paper(raw_routed, original["routed_wirelength_mm"]),
+   516	                     "tolerance_pct": ROUND_TRIP["routed_wire_tolerance_pct"],
+   517	                     "within_tolerance": abs(_vs_paper(raw_routed, original["routed_wirelength_mm"]))
+   518	                     <= ROUND_TRIP["routed_wire_tolerance_pct"],
+   519	                     "note": ("Consistency evidence, not identification. Routed wire depends only on differences "
+   520	                              "between pin positions, so a common translation of the whole layout leaves it "
+   521	                              "unchanged: agreement checks the relative geometry, not the absolute coordinates. "
+   522	                              "The routes launch no thermal solver; they run a real optimizer (HiGHS) under "
+   523	                              "whatever per-job accounting applies.")},
+   524	            "temperature": {
+   525	                "status": "PLANNED, NOT RUN: SLAB-048 has no solve grant",
+   526	                "paper_c": original["peak_temperature_c"],
+   527	                "tolerance_k": ROUND_TRIP["temperature_tolerance_k"],
+   528	                "layout": "raw",
+   529	                "prerequisites": [
+   530	                    "a named warden grant for the solves",
+   531	                    "the paper's statistic: TAP's literal run_hotspot selector (max of stdout.split()[3::2], with "
+   532	                    "-grid_map_mode center at 64x64) or a reviewed emulation of it. It is not assumed to be "
+   533	                    "chip-layer-only; the chiplet unit temperatures and our active-layer grid peak J are separate "
+   534	                    "statistics (see paper_settings.temperature_metric)",
+   535	                    "the paper's package physics: HotSpot 6.0 vertical coupling, or a reviewed fix (SLAB-049 "
+   536	                    "CAL-COUPLING)",
+   537	                    "an evaluation path that validates the raw centres with the continuous rules "
+   538	                    "(TapGeometry.continuous_centers_for): HotSpotOracle calls keep the 0.5 mm search lattice, "
+   539	                    "which refuses them",
+   540	                ],
+   541	            },
+   542	        },
+   543	        "validation_points": validation,
+   544	        "snapped": {
+   545	            "label": SNAPPED_LABEL,
+   546	            "is_the_paper_layout": False,
+   547	            "grid_mm": SNAP_GRID_MM,
+   548	            "rule": ("Round every raw centre to the nearest 1 mm grid node, then make the fewest 1 mm moves that "
+   549	                     "make the layout legal on the fixture (margin with halo, halo non-overlap, 0.1 mm minimum "
+   550	                     "body spacing, centre lattice). Ties at that move count go to the layout closest to the raw "
+   551	                     "centres (sum of squared distances), then the lexicographically smallest centres."),
+   552	            **snapped,
+   553	            "rotated": list(rotated),
+   554	            "design_hash": snapped_design.hash,
+   555	            "legal_on_fixture": True,
+   556	            "wire_proxy_mm": _mm(snapped_wire),
+   557	            "routed_wirelength_mm": snapped_routed,
+   558	        },
+   559	        "snapped_annotations": {
+   560	            "frozen": FROZEN_SECTION,
+   561	            "reviewed_at": REVIEWED_AT,
+   562	            "section_sha256": None,  # filled below, over the finished snapped section
+   563	            "identity": snapped_identity,
+   564	            "routed_label": ROUTED_LABEL,
+   565	        },
+   566	        "raw_to_snapped_mm": deltas,
+   567	        "max_abs_raw_to_snapped_mm": _mm(max(max(abs(d["dx_mm"]), abs(d["dy_mm"])) for d in deltas)),
+   568	        "raw_to_snapped_norms": {
+   569	            "max_per_coordinate_linf_mm": snapped_norms["max_per_coordinate_linf_mm"],
+   570	            "max_euclidean_mm": snapped_norms["max_euclidean_mm"],
+   571	            "raw_inside_pm0p5_mm_per_coordinate_box": snapped_norms["max_per_coordinate_linf_mm"] <= 0.5,
+   572	            "note": "max_abs_raw_to_snapped_mm is the per-coordinate (L-infinity) maximum",
+   573	        },
+   574	        "wire_metric": WIRE_METRIC,
+   575	    }
+   576	    for section in ("raw", "snapped"):
+   577	        record[f"{section}_annotations"]["section_sha256"] = section_sha256(record[section])
+   578	    return record
+   579	
+   580	
+   581	def _timing_inputs() -> dict:
+   582	    timing = json.loads(TIMING.read_text(encoding="utf-8"))
+   583	    mesh = json.loads(MESH_ASCEND.read_text(encoding="utf-8"))
+   584	    rows = [json.loads(line) for line in MESH_MICRO_ROWS.read_text(encoding="utf-8").splitlines() if line.strip()]
+   585	    micro64 = [row["parsed_receipt"]["evaluation_seconds"] for row in rows
+   586	               if row.get("kind") == "evaluation" and row.get("grid") == 64]
+   587	    ascend64 = [layout["seconds"]["64"] for layout in mesh["layouts"]]
+   588	    slab039 = json.loads(SLAB039.read_text(encoding="utf-8"))
+   589	    policy = json.loads(POLICY.read_text(encoding="utf-8"))["limits"]
+   590	    per_call_039 = slab039["cpu_seconds"] / slab039["aggregate_evaluations"]
+   591	    grid32 = timing["fixtures"]["ascend910"]["32x32"]["median_seconds"]
+   592	    return {
+   593	        "host": timing["machine"],
+   594	        "median_64_s": {fixture: timing["fixtures"][fixture]["64x64"]["median_seconds"]
+   595	                        for fixture in ("ascend910", "micro150")},
+   596	        "worst_64_s": max(max(ascend64), max(micro64),
+   597	                          *(timing["fixtures"][f]["64x64"]["max_seconds"] for f in ("ascend910", "micro150"))),
+   598	        "mesh_64": {"ascend910": {"n": len(ascend64), "median_s": statistics.median(ascend64), "max_s": max(ascend64)},
+   599	                    "micro150": {"n": len(micro64), "median_s": statistics.median(micro64), "max_s": max(micro64)}},
+   600	        "overhead_s": per_call_039 - grid32,
+   601	        "slab039_per_call_cpu_s": per_call_039,
+   602	        "grid32_median_s": grid32,
+   603	        "reap_s": policy["reap_seconds"],
+   604	        "tail_s": policy["settlement_tail_cpu_seconds"],
+   605	    }
+   606	
+   607	
+   608	def build_variant(reference: dict, decode: dict) -> dict:
+   609	    """The 0.5 mm engineering variant: plain nearest rounding of the raw layout, legal with no repair."""
+   610	    fixture = reference["fixture"]["fixture_id"]
+   611	    geometry = TapGeometry.load(fixture)
+   612	    problem = geometry.problem
+   613	    raw = reference["raw"]
+   614	    rotated = tuple(raw["rotated"])
+   615	    raw_centers = [tuple(c) for c in raw["centers_mm"]]
+   616	    centers = [[round_to_lattice(v, VARIANT_LATTICE_MM) for v in c] for c in raw_centers]
+   617	    legal, message = legal_on(geometry, centers, rotated)
+   618	    if not legal:
+   619	        raise ValueError(f"{reference['reference_id']}: plain 0.5 mm rounding needs a repair: {message}")
+   620	    design = geometry.design_from_centers(centers, rotated)
+   621	    norms = displacement(raw_centers, centers)
+   622	    one_mm = displacement(raw_centers, reference["snapped"]["centers_mm"])
+   623	    _, minimal = minimal_snaps(geometry, raw_centers, rotated, SNAP_GRID_MM)
+   624	    minimal_linf = [displacement(raw_centers, c)["max_per_coordinate_linf_mm"] for c in minimal.values()]
+   625	    original = reference["paper_reported"]["original"]
+   626	    routed, solver = _routed_mm(problem, centers, rotated, original["link_type"])
+   627	    variant_id = f"{reference['reference_id']}-{VARIANT_SUFFIX}"
+   628	    return {
+   629	        "schema": "sentilab-layout-variant-v1",
+   630	        "variant_id": variant_id,
+   631	        "ticket": TICKET,
+   632	        "role": VARIANT_ROLE,
+   633	        "label": VARIANT_LABEL,
+   634	        "labels": [*LABELS, "engineering comparison and sensitivity baseline, not a paper match"],
+   635	        "is_the_paper_layout": False,
+   636	        "decision": {
+   637	            "by": "root (ScienceClaw #56857, #56858)",
+   638	            "rationale": ("Per root's decision (ScienceClaw #56857, #56858): chosen because plain rounding is legal on "
+   639	                          "the fixture with zero repair moves and moves the dies less than the 1 mm variant; made "
+   640	                          "before any new thermal outcome, and NOT chosen to fit the published routed wire."),
+   641	        },
+   642	        "derived_from": {"reference_id": reference["reference_id"],
+   643	                         "raw_identity_sha256": reference["raw_annotations"]["identity"]["content_sha256"],
+   644	                         "raw_design_hash": raw["design_hash"]},
+   645	        "units": UNITS,
+   646	        "fixture": reference["fixture"],
+   647	        "sources": {"pdf_sha256": reference["source"]["pdf_sha256"],
+   648	                    "decoder": reference["decoding"]["script"], "decoder_sha256": reference["decoding"]["script_sha256"],
+   649	                    "decode_output": reference["decoding"]["output"],
+   650	                    "decode_output_sha256": reference["decoding"]["output_sha256"]},
+   651	        "rounding_rule": ROUNDING_RULE,
+   652	        "repair_moves": 0,
+   653	        "centers_mm": centers,
+   654	        "rotated": list(rotated),
+   655	        "footprints_mm": raw["footprints_mm"],
+   656	        "identity": layout_identity(problem.interposer_size_mm, centers, rotated, raw["footprints_mm"]),
+   657	        "design_hash": design.hash,
+   658	        "legal_on_fixture": True,
+   659	        "displacement_from_raw": norms,
+   660	        "raw_inside_pm0p5_mm_per_coordinate_box": norms["max_per_coordinate_linf_mm"] <= 0.5,
+   661	        "one_mm_snapped_for_comparison": {
+   662	            "where": f"docs/sentilab/references/{reference['reference_id']}.json, field snapped",
+   663	            "max_per_coordinate_linf_mm": one_mm["max_per_coordinate_linf_mm"],
+   664	            "max_euclidean_mm": one_mm["max_euclidean_mm"],
+   665	            "raw_inside_pm0p5_mm_per_coordinate_box": one_mm["max_per_coordinate_linf_mm"] <= 0.5,
+   666	            "all_minimal_1mm_snaps": {"count": len(minimal), "max_per_coordinate_linf_mm_min": min(minimal_linf),
+   667	                                      "max_per_coordinate_linf_mm_max": max(minimal_linf)},
+   668	        },
+   669	        "wire_proxy_mm": _mm(geometry.wirelength_mm(geometry.centers_for(design))),
+   670	        "routed_wirelength": {"value_mm": routed, "label": ROUTED_LABEL,
+   671	                              "vs_paper_pct": _vs_paper(routed, original["routed_wirelength_mm"]),
+   672	                              "router": _rel(ROUTER), "router_sha256": _sha256(ROUTER), "solver": solver},
+   673	        "limits": [
+   674	            "A raw layout inside this variant's +/-0.5 mm per-coordinate box is not thereby a sampled point of the "
+   675	            "envelope: its one-axis stencil moves one die along one axis at a time.",
+   676	            "Finite sensitivity probes do not prove a uniform reconstruction bound.",
+   677	        ],
+   678	    }
+   679	
+   680	
+   681	def _envelope(bases: list[dict], timing: dict) -> dict:
+   682	    """Calls for each base layout: itself, plus each die +/-0.5 mm in x and separately in y."""
+   683	    reserve = STARTUP_RESERVE_S + timing["reap_s"] + ARCHIVE_RESERVE_S
+   684	    plans, forecast, reserved, total = [], 0.0, 0.0, 0
+   685	    for base in bases:
+   686	        geometry = TapGeometry.load(base["fixture_id"])
+   687	        rotated = tuple(base["rotated"])
+   688	        start = [list(c) for c in base["centers_mm"]]
+   689	        calls, excluded = [], []
+   690	        options = [("base", None, None, 0.0)] + [
+   691	            (f"die{die}/{axis}{'+' if delta > 0 else '-'}{PERTURBATION_MM:g}", die, axis, delta)
+   692	            for die in range(len(start)) for axis in ("x", "y") for delta in (PERTURBATION_MM, -PERTURBATION_MM)]
+   693	        for name, die, axis, delta in options:
+   694	            centers = [list(c) for c in start]
+   695	            if die is not None:
+   696	                centers[die][0 if axis == "x" else 1] += delta
+   697	            entry = {"call_id": f"{base['id']}/{name}", "die": die, "axis": axis, "delta_mm": delta}
+   698	            legal, reason = legal_on(geometry, centers, rotated)
+   699	            if not legal:
+   700	                excluded.append({**entry, "fixture_gate_message": reason,
+   701	                                 "violations": _violation_records(_violations(geometry, centers, rotated))})
+   702	                continue
+   703	            design = geometry.design_from_centers(centers, rotated)
+   704	            calls.append({**entry, "centers_mm": centers, "rotated": list(rotated), "design_hash": design.hash,
+   705	                          "wire_proxy_mm": _mm(geometry.wirelength_mm(geometry.centers_for(design)))})
+   706	        if calls[0]["call_id"] != f"{base['id']}/base":
+   707	            raise ValueError("the unperturbed base layout must be legal")
+   708	        family = base["fixture_id"].removesuffix("-45mm")
+   709	        median = timing["median_64_s"][family]
+   710	        forecast += len(calls) * (median + timing["overhead_s"])
+   711	        reserved += len(calls) * (median + reserve)
+   712	        total += len(calls)
+   713	        plans.append({**{k: v for k, v in base.items() if k not in ("centers_mm", "rotated")},
+   714	                      "timing_family": family, "grid": ENVELOPE_GRID,
+   715	                      "considered": len(options), "expected_call_count": len(calls),
+   716	                      "excluded_count": len(excluded), "calls": calls, "excluded": excluded})
+   717	    worst_call = timing["worst_64_s"] + reserve
+   718	    failed = math.ceil(FAILED_ATTEMPT_FRACTION * total) * worst_call
+   719	    cap = reserved + failed + worst_call + timing["tail_s"]
+   720	    return {"plans": plans, "total": total, "forecast": forecast, "reserved": reserved, "failed": failed,
+   721	            "worst_call": worst_call, "cap": cap}
+   722	
+   723	
+   724	def build_envelope_plan(references: list[dict], variants: list[dict]) -> dict:
+   725	    timing = _timing_inputs()
+   726	    bases = [{"id": v["variant_id"], "fixture_id": v["fixture"]["fixture_id"],
+   727	              "fixture_config_sha256": v["fixture"]["config_sha256"], "layout": v["label"],
+   728	              "layout_source": f"docs/sentilab/references/{v['variant_id']}.json",
+   729	              "base_identity_sha256": v["identity"]["content_sha256"], "base_design_hash": v["design_hash"],
+   730	              "centers_mm": v["centers_mm"], "rotated": v["rotated"],
+   731	              "raw_to_base": {"max_per_coordinate_linf_mm": v["displacement_from_raw"]["max_per_coordinate_linf_mm"],
+   732	                              "max_euclidean_mm": v["displacement_from_raw"]["max_euclidean_mm"]}}
+   733	             for v in variants]
+   734	    plan = _envelope(bases, timing)
+   735	    # The first plan probed the 1 mm variants. It was never granted or run; its forecast stays on record.
+   736	    prior = _envelope([{"id": r["reference_id"], "fixture_id": r["fixture"]["fixture_id"],
+   737	                        "centers_mm": r["snapped"]["centers_mm"], "rotated": r["snapped"]["rotated"]}
+   738	                       for r in references], timing)
+   739	    total, forecast, reserved, failed, cap = (plan[k] for k in ("total", "forecast", "reserved", "failed", "cap"))
+   740	    return {
+   741	        "schema": "sentilab-envelope-plan-v2",
+   742	        "ticket": TICKET,
+   743	        "kind": "SAMPLED sensitivity envelope, not a bound",
+   744	        "role": ("ENGINEERING comparison and sensitivity: a separately admitted experiment, never a paper match. "
+   745	                 "Nothing here is part of gate zero. These calls are never appended to any other job, the gate-zero "
+   746	                 "job included; gate zero (the accepted 8+4 allocation) uses the two original raw 45 mm references."),
+   747	        "status": ("PLAN ONLY. No solve has been run for SLAB-048. Every call below waits for a named warden grant "
+   748	                   "that lists these exact calls, a CPU cap, an expiry and the prior charges it keeps."),
+   749	        "labels": [*LABELS, "sampled envelope: finite probes, not a bound on reconstruction error",
+   750	                   "engineering comparison and sensitivity, not a paper match"],
+   751	        "design": ("For each reference: its 0.5 mm engineering variant (snap0p5), plus each die moved by +0.5 and by "
+   752	                   "-0.5 mm in x, and separately in y. Moves the fixture gate rejects are listed under 'excluded' and "
+   753	                   "are not run. Every call id names its snap0p5 base, so no call can be mistaken for raw."),
+   754	        "limits": [
+   755	            "A raw layout inside the base's +/-0.5 mm per-coordinate box is not thereby a sampled point of this "
+   756	            "one-axis stencil.",
+   757	            "Finite sensitivity probes do not prove a uniform reconstruction bound.",
+   758	        ],
+   759	        "grid": ENVELOPE_GRID,
+   760	        "perturbation_mm": PERTURBATION_MM,
+   761	        "expected_call_count": total,
+   762	        "references": plan["plans"],
+   763	        "superseded": {
+   764	            "what": "the first plan, which probed the 1 mm snapped variants",
+   765	            "status": "superseded before any grant (root #56857, warden review P2); never granted, never run",
+   766	            "expected_call_count": prior["total"],
+   767	            "forecast_cpu_s": round(prior["forecast"], 3),
+   768	            "proposed_cap_cpu_s": round(prior["cap"], 3),
+   769	            "qualifier": "forecasts with the same derivation as below; not measured guarantees",
+   770	        },
+   771	        "sizing": {
+   772	            "basis": "measured grid-64 wall time on the recorded Azure x86_64 host; a forecast, not a bound",
+   773	            "host": timing["host"],
+   774	            "sources": {_rel(path): _sha256(path) for path in (TIMING, MESH_ASCEND, MESH_MICRO_ROWS, SLAB039, POLICY)},
+   775	            "median_solve_wall_s_64x64": timing["median_64_s"],
+   776	            "mesh_grid64_evaluation_wall_s": {k: {"n": v["n"], "median_s": round(v["median_s"], 6),
+   777	                                                  "max_s": round(v["max_s"], 6)} for k, v in timing["mesh_64"].items()},
+   778	            "worst_observed_grid64_call_s": round(timing["worst_64_s"], 6),
+   779	            "lifecycle_overhead_heuristic_cpu_s_per_call": {
+   780	                "value": round(timing["overhead_s"], 6),
+   781	                "kind": ("heuristic: an aggregate CPU mean minus a different workload's wall median; it cannot "
+   782	                         "isolate lifecycle overhead"),
+   783	                "derivation": (f"SLAB-039: {timing['slab039_per_call_cpu_s']:.6f} CPU-s per call (getrusage, fresh "
+   784	                               f"worker reaped every call, grid 32) minus the {timing['grid32_median_s']:.6f} s "
+   785	                               f"grid-32 median solve wall time from TIMING.json; the SLAB-039 host is not recorded")},
+   786	            "reserves_cpu_s_per_call": {"startup": STARTUP_RESERVE_S, "reap": timing["reap_s"],
+   787	                                        "archive_raw_outputs": ARCHIVE_RESERVE_S},
+   788	            "failed_attempt_reserve": {"fraction_of_calls": FAILED_ATTEMPT_FRACTION,
+   789	                                       "calls": math.ceil(FAILED_ATTEMPT_FRACTION * total),
+   790	                                       "cpu_s": round(failed, 3), "each_at": "worst observed call plus reserves"},
+   791	            "settlement_tail_cpu_s": timing["tail_s"],
+   792	            "forecast_cpu_s": round(forecast, 3),
+   793	            "forecast_cpu_min": round(forecast / 60, 3),
+   794	            "reserved_cpu_s": round(reserved, 3),
+   795	            "proposed_cap_cpu_s": round(cap, 3),
+   796	            "proposed_cap_cpu_min": round(cap / 60, 3),
+   797	            "formula": ("forecast = sum(median solve + heuristic overhead); reserved = sum(median solve + startup + "
+   798	                        "reap + archive); cap = reserved + failed-attempt reserve + one worst-case call of stop "
+   799	                        "headroom + settlement tail. Every figure here is a forecast, not a measured guarantee."),
+   800	            "assumption": ("The 45 mm frame keeps the 64x64 grid, so solve time is assumed equal to the measured "
+   801	                           "50 mm grid-64 time; HotSpot is single-threaded, so CPU is close to wall at one CPU."),
+   802	        },
+   803	        "grant": {"status": "awaiting a named warden grant", "granted_by": None, "grant_id": None, "expiry": None,
+   804	                  "prior_charges_kept": None,
+   805	                  "slab048_prior_solves": 0},
+   806	        "execution_rules": [
+   807	            "Run exactly the listed calls on the named 45 mm fixtures at grid 64; refuse any design whose hash is "
+   808	            "not listed, and refuse a fixture whose config sha256 differs.",
+   809	            "Admit this as its own job: never append these calls to any other job, the gate-zero job included.",
+   810	            "One fresh worker per call, reaped after the call; serial at one CPU.",
+   811	            "Before each call, stop if cumulative CPU plus one worst-case call would pass the granted cap.",
+   812	            "Keep raw outputs and every incomplete or failed outcome; never rerun a completed call.",
+   813	            "Report J per call against the base call: a sampled envelope, not a bound.",
+   814	        ],
+   815	    }
+   816	
+   817	
+   818	def build_all() -> dict[Path, bytes]:
+   819	    decode = json.loads(DECODE.read_text(encoding="utf-8"))
+   820	    references = [build_reference(spec, decode) for spec in REFERENCES]
+   821	    outputs = {REFERENCES_DIR / f"{ref['reference_id']}.json": _json_bytes(ref) for ref in references}
+   822	    variants = [build_variant(ref, decode) for ref in references]
+   823	    outputs.update({REFERENCES_DIR / f"{v['variant_id']}.json": _json_bytes(v) for v in variants})
+   824	    outputs[ENVELOPE_PLAN] = _json_bytes(build_envelope_plan(references, variants))
+   825	    return outputs
+   826	
+   827	
+   828	def main(argv=None) -> int:
+   829	    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+   830	    mode = parser.add_mutually_exclusive_group(required=True)
+   831	    mode.add_argument("--write", action="store_true")
+   832	    mode.add_argument("--check", action="store_true")
+   833	    args = parser.parse_args(argv)
+   834	    outputs = build_all()
+   835	    if args.write:
+   836	        for path, data in outputs.items():
+   837	            path.write_bytes(data)
+   838	            print(f"wrote {_rel(path)} {hashlib.sha256(data).hexdigest()}")
+   839	        return 0
+   840	    stale = [_rel(path) for path, data in outputs.items() if not path.is_file() or path.read_bytes() != data]
+   841	    for name in stale:
+   842	        print(f"stale: {name}", file=sys.stderr)
+   843	    return 1 if stale else 0
+   844	
+   845	
+   846	if __name__ == "__main__":
+   847	    raise SystemExit(main())

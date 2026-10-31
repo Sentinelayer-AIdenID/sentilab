@@ -1,0 +1,341 @@
+SK hynix Partners with TSMC to Strengthen HBM Technological Leadership – SK hynix Newsroom
+
+ SK hynix Newsroom | SK hynix Partners with TSMC to Strengthen HBM Technological Leadership
+
+ Skip to the content
+
+FACT
+
+PRESS
+
+TECH&AI
+
+STORY
+
+IR
+
+ Open Search
+
+ EN
+
+EN
+
+KR
+
+CN
+
+ Seach 
+
+ Seach 
+
+ Open Menu
+
+FACT
+
+PRESS
+
+TECH&AI
+
+STORY
+
+IR
+
+EN
+
+KR
+
+CN
+
+ Close Menu
+
+ PRESS 
+
+SK hynix Partners with TSMC to Strengthen HBM Technological Leadership
+
+AI Memory
+
+CoWoS
+
+HBM
+
+HBM4
+
+MOU
+
+Packaging Technology
+
+TSMC
+
+ April 19, 2024 
+
+ SK hynix 
+
+ AI Summary 
+
+ SK hynix and TSMC signed an MOU to co-develop HBM4 using TSMC’s advanced logic and CoWoS packaging, boosting AI memory performance through tightly integrated, customizable HBM solutions from 2026. 
+
+ Share 
+
+Copy URL
+
+Share Facebook/span>
+
+Share X
+
+Print
+
+ PRESS 
+
+SK hynix Partners with TSMC to Strengthen HBM Technological Leadership
+
+News Highlights
+
+· SK hynix and TSMC sign MOU to collaborate on HBM4 development and next-generation packaging technology
+
+· SK hynix will adopt TSMC’s cutting-edge foundry process to advance HBM4 performance
+
+· Product Design-Foundry-Memory trilateral collaboration to break memory performance limits for AI applications
+
+Seoul, April 19, 2024
+
+SK hynix Inc. (or “the company”, www.skhynix.com) announced today that it has recently signed a memorandum of understanding with TSMC for collaboration to produce next-generation HBM and enhance logic and HBM integration through advanced packaging technology. The company plans to proceed with the development of HBM4, or the sixth generation of the HBM family, slated to be mass produced from 2026, through this initiative.
+
+SK hynix said the collaboration between the global leader in the AI memory space and TSMC, a top global logic foundry, will lead to more innovations in HBM technology. The collaboration is also expected to enable breakthroughs in memory performance through trilateral collaboration between product design, foundry, and memory provider.
+
+The two companies will first focus on improving the performance of the base die that is mounted at the very bottom of the HBM package. HBM is made by stacking a core DRAM die on top of a base die that features TSV* technology, and vertically connecting a fixed number of layers in the DRAM stack to the core die with TSV into an HBM package. The base die located at the bottom is connected to the GPU, which controls the HBM.
+
+*TSV (Through Silicon Via): An interconnect technology that links upper and lower chips with an electrode that vertically passes through the base logic chip and DRAM chips. There can be thousands of pass-through TSVs depending on the chip design
+
+SK hynix has used a proprietary technology to make base dies up to HBM3E, but plans to adopt TSMC’s advanced logic process for HBM4’s base die so additional functionality can be packed into limited space. That also helps SK hynix produce customized HBM that meets a wide range of customer demand for performance and power efficiency.
+
+SK hynix and TSMC also agreed to collaborate to optimize the integration of SK hynix’s HBM and TSMC’s CoWoS®2 technology, while cooperating in responding to common customers’ requests related to HBM.
+
+*CoWoS (Chip on Wafer on Substrate): A TSMC proprietary packaging process that connects GPU/xPU, a logic chip, and HBM, on a special substrate called an interposer. It is also called 2.5D packaging as the logic chip and the vertically stacked(3D) HBM are integrated into one module which is placed on a horizontal (2D) package substrate
+
+“We expect a strong partnership with TSMC to help accelerate our efforts for open collaboration with our customers and develop the industry’s best-performing HBM4,” said Justin Kim, President and the Head of AI Infra, at SK hynix. “With this cooperation in place, we will strengthen our market leadership as the total AI memory provider further by beefing up competitiveness in the space of the custom memory platform.”
+
+“TSMC and SK hynix have already established a strong partnership over the years. We’ve worked together in integrating the most advanced logic and state-of-the art HBM in providing the world’s leading AI solutions,” said Dr. Kevin Zhang, Senior Vice President of TSMC’s Business Development and Overseas Operations Office, and Deputy Co-Chief Operating Officer. “Looking ahead to the next-generation HBM4, we’re confident that we will continue to work closely in delivering the best-integrated solutions to unlock new AI innovations for our common customers.”
+
+About SK hynix Inc.
+
+SK hynix Inc., headquartered in Korea, is the world’s top tier semiconductor supplier offering Dynamic Random Access Memory chips (“DRAM”), flash memory chips (“NAND flash”) and CMOS Image Sensors (“CIS”) for a wide range of distinguished customers globally. The Company’s shares are traded on the Korea Exchange, and the Global Depository shares are listed on the Luxembourg Stock Exchange. Further information about SK hynix is available at www.skhynix.com, news.skhynix.com.
+
+Media Contact
+
+SK hynix Inc.
+
+Global Public Relations
+
+Technical Leader
+
+Sooyeon Lee
+
+E-Mail: global_newsroom@skhynix.com
+
+Technical Leader
+
+Kanga Kong
+
+E-Mail: global_newsroom@skhynix.com
+
+AI Memory
+
+CoWoS
+
+HBM
+
+HBM4
+
+MOU
+
+Packaging Technology
+
+TSMC
+
+Copy URL
+
+Share Facebook
+
+Share X
+
+ View All 
+
+Related content
+
+ [Tech Note] Why does AI still have to wait with tens of thousands of GPUs? How silicon photonics and CPO are building the ‘highways of light’ 
+
+ October 29, 2026 
+
+ TECH&AI 
+
+AI
+
+CPO
+
+Data centers
+
+HBM
+
+Silicon Photonics
+
+ [AI Infrastructure Insight] How AI infrastructure will be designed for the future 
+
+ October 22, 2026 
+
+ TECH&AI 
+
+Agentic AI
+
+AI data center
+
+AI Infrastructure
+
+AI Infrastructure Insight
+
+HBM
+
+Rack-scale Systems
+
+ [AI Ecosystem] The semiconductor paradigm shifts toward memory 
+
+ October 21, 2026 
+
+ TECH&AI 
+
+AI ecosystem
+
+HBM
+
+Hybrid Bonding
+
+PIM
+
+ “Memory-Centric Server Systems Are the Future”: SK hynix Presents Its Next-Generation AI Infrastructure Vision at OCP Global Summit 2026 
+
+ October 16, 2026 
+
+ TECH&AI 
+
+Agentic AI
+
+AI
+
+CXL
+
+DRAM
+
+eSSD
+
+HBF
+
+HBM
+
+OCP Global Summit
+
+ [Tech Note] Why does AI still have to wait with tens of thousands of GPUs? How silicon photonics and CPO are building the ‘highways of light’ 
+
+ October 29, 2026 
+
+ TECH&AI 
+
+AI
+
+CPO
+
+Data centers
+
+HBM
+
+Silicon Photonics
+
+ [AI Infrastructure Insight] How AI infrastructure will be designed for the future 
+
+ October 22, 2026 
+
+ TECH&AI 
+
+Agentic AI
+
+AI data center
+
+AI Infrastructure
+
+AI Infrastructure Insight
+
+HBM
+
+Rack-scale Systems
+
+ [AI Ecosystem] The semiconductor paradigm shifts toward memory 
+
+ October 21, 2026 
+
+ TECH&AI 
+
+AI ecosystem
+
+HBM
+
+Hybrid Bonding
+
+PIM
+
+ “Memory-Centric Server Systems Are the Future”: SK hynix Presents Its Next-Generation AI Infrastructure Vision at OCP Global Summit 2026 
+
+ October 16, 2026 
+
+ TECH&AI 
+
+Agentic AI
+
+AI
+
+CXL
+
+DRAM
+
+eSSD
+
+HBF
+
+HBM
+
+OCP Global Summit
+
+ Homepage 
+
+ INSTAGRAM 
+
+ YOUTUBE 
+
+ Heritage 
+
+ Media Library 
+
+ Toggle Menu 
+
+ Back to Top 
+
+FACT
+
+PRESS
+
+TECH&AI
+
+STORY
+
+IR
+
+Contact Us
+
+Terms of Use
+
+ Homepage 
+
+ Instagram 
+
+ Youtube 
+
+ Linkedin 
+
+ RSS

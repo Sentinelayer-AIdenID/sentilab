@@ -1,0 +1,283 @@
+Whitepaper | Chip Cooling at 1000W | Iceotope
+
+Iceotope announces $26M series B funding round
+
+Precision liquid cooling that solves thermal bottlenecks in AI infrastructure
+
+Learn more
+
+Iceotope announces $26M series B funding round
+
+Precision liquid cooling that solves thermal bottlenecks in AI infrastructure
+
+Learn more
+
+Iceotope announces $26M series B funding round
+
+Precision liquid cooling that solves thermal bottlenecks in AI infrastructure
+
+Learn more
+
+Iceotope announces $26M series B funding round
+
+Precision liquid cooling that solves thermal bottlenecks in AI infrastructure
+
+Learn more
+
+Iceotope announces $26M series B funding round
+
+Precision liquid cooling that solves thermal bottlenecks in AI infrastructure
+
+Learn more
+
+Iceotope announces $26M series B funding round
+
+Precision liquid cooling that solves thermal bottlenecks in AI infrastructure
+
+Learn more
+
+Partner with us
+
+Technology & IP
+
+Back
+
+TECHNOLOGY & IP
+
+How it works
+
+Validation partners
+
+FAQs
+
+Compare technologies
+
+IP portfolio
+
+Approved fluids
+
+Reference designs
+
+Back
+
+Reference Designs
+
+All reference designs
+
+Edge
+
+Compact, comprehensive solutions for AI and HPC near-edge infrastructure deployments.
+
+Datacenter
+
+Precision liquid-cooled server chassis for high density AI and HPC datacenter rack environments.
+
+Industry applications
+
+Back
+
+industries we serve
+
+All industry applications
+
+Manufacturing
+
+AI, vision, and analytics workloads at the edge and in the cloud for quality control, predictive maintenance, and automation.
+
+Health & Life Sciences
+
+For dense HPC and AI clusters in existing labs, campuses, and edge facilities while cutting energy, noise, and water usage.
+
+FinTech
+
+Enabling high-density, compliant infrastructure for real-time analytics, fraud detection, and offer personalization.
+
+Telecommunications
+
+Delivering telco-grade energy savings, reliability, and scalability from the network core to the far edge.
+
+Travel & Hospitality
+
+Access real-time personalization, pricing, and operations data across globally distributed properties and hubs.
+
+Media & Entertainment
+
+Allowing studios and broadcasters to run render farms and edge encoders close to the action while reducing power and noise.
+
+Defense
+
+Precision liquid cooling technology enables mission-critical systems to operate at the tactical edge.
+
+Security
+
+Enterprise IT teams struggle to secure increasingly complex, distributed environments. Learn how precision liquid cooled systems help.
+
+Company
+
+Back
+
+About Iceotope
+
+About us
+
+News
+
+Resources
+
+Careers
+
+Start a conversation
+
+Resources
+
+Back
+
+Whitepapers
+Chip cooling at 1000W and beyond
+
+author
+
+Neil Edmunds
+
+published:
+
+March 1, 2023
+
+tags
+
+AI & HPC
+
+Data Center
+
+Infrastructure
+
+share
+
+Copied to Clipboard!
+
+text
+
+Chip cooling at 1000W and beyond
+
+Key takeaways
+
+Iceotope’s single‑phase precision liquid cooling has demonstrated stable chip cooling at 1000 W, breaking the perceived ~400 W limit for single‑phase systems and matching or exceeding two‑phase immersion performance.
+
+The tested heat sinks achieved low, power‑agnostic thermal resistance (0.039 K/W at 1000 W and 7.01 l/min), with results indicating scalability to at least 1.5 kW chips.
+
+Precision liquid cooling supports future high‑TDP CPU/GPU roadmaps while enabling up to 40% lower energy use, up to 100% water savings, and 6x rack density uplift versus air and tank immersion approaches.
+
+This whitepaper documents how Iceotope’s single‑phase precision liquid cooling achieves reliable chip‑level cooling at 1000 W and is positioned to support even higher power densities demanded by AI and next‑generation CPUs and GPUs. Historically, single‑phase liquid cooling was perceived as limited to around 400 W, but rising TDPs and sustainability requirements are forcing the industry to adopt solutions that can scale well beyond this level.
+
+Iceotope evaluated four heat sinks using Intel’s Airport Cove thermal test vehicle, a thermal emulator for 4th Gen Intel Xeon Scalable processors. The copper sinks were supplied with Shell S3X dielectric coolant at 40 °C over flow rates up to 7.5 l/min, while the TTV was driven up to 1000 W with uniform die heating. Detailed instrumentation, including embedded thermocouples, enabled calculation of thermal resistance from fluid to Tcase and assessment of TIM behavior.
+
+At 7.01 l/min, the copper-pinned sinks reached a thermal resistance of 0.039 K/W at 1000 W, an 11.4% improvement over a like‑for‑like tank immersion product with a forced‑flow heatsink. Thermal resistance remained essentially constant as power increased from 250 W to 1000 W, giving high confidence the design will behave similarly at 1.5 kW and beyond.
+
+Looking forward, the paper argues that precision liquid cooling, using minimal, safe single‑phase dielectric fluids, can meet future processor roadmaps while reducing energy use by up to 40%, eliminating water consumption, and enabling 6x density uplift in familiar rack‑based form factors.
+
+Read the report
+
+Learn more about our testing methodology and results
+
+Download now
+
+READ MORE
+
+Similar resources from Iceotope
+
+Back to resources
+
+Blog Posts
+
+ICEOTOPE PRODUCTS
+
+Sep 30, 2026
+
+/
+
+Iceotope
+
+Precision liquid cooling for high density compute at the edge
+
+AI is moving to the edge, where space, power, noise and harsh conditions rule out air cooling. See how sealed, chassis-level liquid cooling solves it.
+
+Read more
+
+Blog Posts
+
+ICEOTOPE PRODUCTS
+
+Sep 29, 2026
+
+/
+
+Iceotope
+
+Why are datacenter power supplies still cooled by fans?
+
+AI power density is exposing the limits of fan-cooled PSUs. Explore data center power and cooling as rack density rises, and how PSU cooling could reshape power hardware. 
+
+Read more
+
+Blog Posts
+
+ICEOTOPE PRODUCTS
+
+Sep 23, 2026
+
+/
+
+Iceotope
+
+Upfront license, royalty, or both? Choose your own adventure with Iceotope
+
+Iceotope licenses proven liquid cooling IP to OEMs on flexible terms, with lab access and co-development support to speed time to market.
+
+Read more
+
+Precision liquid cooling technology for OEM/ODM co-design and IP licensing
+
+Reference Designs
+
+All reference designsEdgeDatacenter
+
+Industries
+
+All industries
+
+Manufacturing
+
+Health & Life Sciences
+
+FinTech
+
+Telecommunications
+
+Travel & Hospitality
+
+Media & Entertainment
+
+Defense
+
+Security
+
+Company
+
+About usNewsResourcesCareers
+
+Technology & IP
+
+TechnologyValidation PartnersFAQsCompare technologiesIP portfolioApproved fluids
+
+stay up to date
+
+By submitting you agree to our privacy policy.
+
+Thank you! Check your inbox for more details and updates from Iceotope.
+
+Oops! Something went wrong while submitting the form.
+
+Privacy policyCookie policyWebsite terms of use
+Cookie preferences
+
+©Iceotope 2026

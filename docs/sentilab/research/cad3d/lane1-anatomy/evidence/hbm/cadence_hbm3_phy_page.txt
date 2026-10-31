@@ -1,0 +1,1522 @@
+HBM3 | Cadence
+
+Skip to main content
+
+Skip to search
+
+Skip to footer
+
+ AI
+
+ Products
+
+ Solutions
+
+ Support
+
+ Company
+
+Free Trials
+
+ Agentic AI Super Agents
+
+ChipStack AI
+
+Agentic AI for SoC design and verification
+
+InnoStack AI
+
+Agentic AI for digital implementation and signoff
+
+AuraStack AI
+
+Agentic AI for PCB and advanced packaging design
+
+ViraStack AI
+
+Agentic AI for custom and analog design
+
+ Design for AI
+
+Infrastructure AI
+
+Physics-Based AI Infrastructure Platform
+
+Physical AI
+
+Autonomous Transportation, Drones, and Robotics
+
+ AI for Design
+
+Agentic AI
+
+Workflows to enhance engineering productivity and efficiency
+
+ AI-Enabled Products
+
+Millennium Platform
+
+AI-driven digital twin supercomputer
+
+Cadence Cerebrus AI Studio
+
+Multi-block, multi-user SoC design platform
+
+Verisium Verification Platform
+
+AI-driven verification platform
+
+Allegro AI Studio
+
+AI-driven platform for full-flow advanced packaging, PCB, and multiphysics analysis
+
+Tensilica AI Platform
+
+On-device AI IP
+
+ Cadence.AI
+
+Agentic AI Super Agents
+
+Level-5 autonomous agentic AI for chip-to-system design
+
+Millennium Platform
+
+AI-driven digital twin supercomputer
+
+Cadence Cerebrus AI Studio
+
+Multi-block, multi-user SoC design platform
+
+Verisium Verification Platform
+
+AI-driven verification platform
+
+Allegro AI Studio
+
+AI-driven platform for full-flow advanced packaging, PCB, and multiphysics analysis
+
+Tensilica AI Platform
+
+On-device AI IP
+
+ IC Design & Verification
+
+Virtuoso AI Studio
+
+Analog and custom IC design
+
+Spectre Simulation
+
+Analog and mixed-signal SoC verification
+
+Innovus+ Platform
+
+Synthesis and implementation for advanced nodes
+
+Xcelium Logic Simulation
+
+IP and SoC design verification
+
+Silicon Solutions
+
+IP, Chiplets, and Services
+
+Palladium and Protium
+
+Emulation and prototyping platforms
+
+ System Design & Analysis
+
+Allegro X Design Platform
+
+System and PCB design platform
+
+Allegro X Adv Package Designer Platform
+
+IC packaging design and analysis platform
+
+Sigrity X Platform
+
+Signal and power integrity analysis platform
+
+AWR Design Environment Platform
+
+RF and microwave development platform
+
+Cadence Reality Digital Twin Platform
+
+Data center design and management platform
+
+Fidelity CFD Software
+
+Computational fluid dynamics platform
+
+MSC Software
+
+Advanced physics-based simulation
+
+BETA CAE Simulation Solutions
+
+Reduce product development cost and time
+
+All Analog IC Design Products
+
+All Verification Products
+
+All Digital Design and Signoff Products
+
+All 3D-IC Design Products
+
+All PCB Design Products
+
+All 3D Electromagnetic Analysis Products
+
+All Thermal Analysis Products
+
+All Molecular Simulation Products
+
+All Cadence Cloud Services and Solutions
+
+All Products (A-Z)
+
+Industries
+
+5G Systems and Subsystems
+
+Aerospace and Defense
+
+Automotive
+
+Data Center Solutions
+
+Hyperscale Computing
+
+Life Sciences
+
+Services
+
+Services Overview
+
+Chiplet Design Services
+
+Custom Silicon Services
+
+CAE Engineering Services and Support
+
+Technologies
+
+Agentic AI
+
+Artificial Intelligence
+
+3D-IC Design
+
+Advanced Node
+
+Arm-Based Solutions
+
+Chiplets
+
+Cloud Solutions
+
+Computational Fluid Dynamics
+
+Functional Safety
+
+Low Power
+
+Mixed-signal
+
+Molecular Simulation
+
+Multiphysics System Analysis
+
+Photonics
+
+Physical Systems Simulation
+
+RF / Microwave
+
+ See how our customers create innovative products with Cadence
+
+ Explore Cadence Cloud Now
+
+ Support
+
+Support Process
+
+Online Support
+
+Software Downloads
+
+Computing Platform Support
+
+Customer Support Contacts
+
+Community Forums
+
+OnCloud Help Center
+
+Doc Assistant
+
+ Training
+
+BETA CAE Systems
+
+Cadence Reality Digital Twin Platform
+
+Computational Fluid Dynamics Courses
+
+Custom IC Design and Signoff
+
+Digital Design and Signoff Courses
+
+IC Package and Analysis Courses
+
+Mixed-Signal Design Modeling, Simulation, and Verification
+
+Onboarding Curricula
+
+PCB Design and Analysis Courses
+
+Physical Systems Design and Analysis
+
+RF/Microwave Design and Analysis
+
+System Design and Verification Courses
+
+Tech Domain Certification Programs
+
+Tensilica Processor IP Courses
+
+ Stay up to date with the latest software
+
+ Cadence award-winning online support available 24/7
+
+ Connect with expert users in our Community Forums
+
+Corporate
+
+About Us
+
+Designed with Cadence
+
+Investor Relations
+
+Leadership Team
+
+Computational Software
+
+Alliances
+
+Channel Partners
+
+Technology Partners
+
+Corporate Social Responsibility
+
+Cadence Academic Network
+
+Intelligent System Design
+
+Culture and Careers
+
+Careers
+
+Culture
+
+One Team
+
+Intern and Grads
+
+Media Center
+
+Cadence Events
+
+Events
+
+Newsroom
+
+Blogs
+
+ Cadence Giving Foundation
+
+ Premier Cadence Events
+
+ search
+
+ This search text may be transcribed, used, stored, or accessed by our third-party service providers per our
+ Cookie Policy and Privacy Policy
+
+ search
+
+ This search text may be transcribed, used, stored, or accessed by our third-party service providers per our
+ Cookie Policy and Privacy Policy
+
+ All Cadence
+
+ AI
+
+AI
+
+ Agentic AI Super Agents
+
+AI
+
+ Agentic AI Super Agents
+
+ChipStack AI
+
+Agentic AI for SoC design and verification
+
+InnoStack AI
+
+Agentic AI for digital implementation and signoff
+
+AuraStack AI
+
+Agentic AI for PCB and advanced packaging design
+
+ViraStack AI
+
+Agentic AI for custom and analog design
+
+ Design for AI
+
+AI
+
+ Design for AI
+
+Infrastructure AI
+
+Physics-Based AI Infrastructure Platform
+
+Physical AI
+
+Autonomous Transportation, Drones, and Robotics
+
+ AI for Design
+
+AI
+
+ AI for Design
+
+Agentic AI
+
+Workflows to enhance engineering productivity and efficiency
+
+ AI-Enabled Products
+
+AI
+
+ AI-Enabled Products
+
+Millennium Platform
+
+AI-driven digital twin supercomputer
+
+Cadence Cerebrus AI Studio
+
+Multi-block, multi-user SoC design platform
+
+Verisium Verification Platform
+
+AI-driven verification platform
+
+Allegro AI Studio
+
+AI-driven platform for full-flow advanced packaging, PCB, and multiphysics analysis
+
+Tensilica AI Platform
+
+On-device AI IP
+
+ Products
+
+Products
+
+ Cadence.AI
+
+Products
+
+ Cadence.AI
+
+Agentic AI Super Agents
+
+Level-5 autonomous agentic AI for chip-to-system design
+
+Millennium Platform
+
+AI-driven digital twin supercomputer
+
+Cadence Cerebrus AI Studio
+
+Multi-block, multi-user SoC design platform
+
+Verisium Verification Platform
+
+AI-driven verification platform
+
+Allegro AI Studio
+
+AI-driven platform for full-flow advanced packaging, PCB, and multiphysics analysis
+
+Tensilica AI Platform
+
+On-device AI IP
+
+ IC Design & Verification
+
+Products
+
+ IC Design & Verification
+
+Virtuoso AI Studio
+
+Analog and custom IC design
+
+Spectre Simulation
+
+Analog and mixed-signal SoC verification
+
+Innovus+ Platform
+
+Synthesis and implementation for advanced nodes
+
+Xcelium Logic Simulation
+
+IP and SoC design verification
+
+Silicon Solutions
+
+IP, Chiplets, and Services
+
+Palladium and Protium
+
+Emulation and prototyping platforms
+
+ System Design & Analysis
+
+Products
+
+ System Design & Analysis
+
+Allegro X Design Platform
+
+System and PCB design platform
+
+Allegro X Adv Package Designer Platform
+
+IC packaging design and analysis platform
+
+Sigrity X Platform
+
+Signal and power integrity analysis platform
+
+AWR Design Environment Platform
+
+RF and microwave development platform
+
+Cadence Reality Digital Twin Platform
+
+Data center design and management platform
+
+Fidelity CFD Software
+
+Computational fluid dynamics platform
+
+MSC Software
+
+Advanced physics-based simulation
+
+BETA CAE Simulation Solutions
+
+Reduce product development cost and time
+
+ All Analog IC Design Products
+
+ All Verification Products
+
+ All Digital Design and Signoff Products
+
+ All 3D-IC Design Products
+
+ All PCB Design Products
+
+ All 3D Electromagnetic Analysis Products
+
+ All Thermal Analysis Products
+
+ All Molecular Simulation Products
+
+ All Cadence Cloud Services and Solutions
+
+ All Products (A-Z)
+
+ Solutions
+
+Solutions
+
+ Industries
+
+5G Systems and Subsystems 
+
+Aerospace and Defense 
+
+Automotive 
+
+Data Center Solutions 
+
+Hyperscale Computing 
+
+Life Sciences 
+
+ Services
+
+Services Overview 
+
+Chiplet Design Services 
+
+Custom Silicon Services 
+
+CAE Engineering Services and Support 
+
+ Technologies
+
+Agentic AI 
+
+Artificial Intelligence 
+
+3D-IC Design 
+
+Advanced Node 
+
+Arm-Based Solutions 
+
+Chiplets 
+
+Cloud Solutions 
+
+Computational Fluid Dynamics 
+
+Functional Safety 
+
+Low Power 
+
+Mixed-signal 
+
+Molecular Simulation 
+
+Multiphysics System Analysis 
+
+Photonics 
+
+Physical Systems Simulation 
+
+RF / Microwave 
+
+ See how our customers create innovative products with Cadence
+
+ Explore Cadence Cloud Now
+
+ Support
+
+Support
+
+ Support
+
+Support Process 
+
+Online Support 
+
+Software Downloads 
+
+Computing Platform Support 
+
+Customer Support Contacts 
+
+Community Forums 
+
+OnCloud Help Center 
+
+Doc Assistant 
+
+ Training
+
+BETA CAE Systems 
+
+Cadence Reality Digital Twin Platform 
+
+Computational Fluid Dynamics 
+
+Custom IC Design and Signoff 
+
+Digital Design and Signoff 
+
+IC Package and Analysis 
+
+Mixed-Signal Design Modeling, Simulation, and Verification 
+
+Onboarding Curricula 
+
+PCB Design and Analysis 
+
+Physical Systems Design and Analysis 
+
+RF/Microwave Design and Analysis 
+
+System Design and Verification 
+
+Tech Domain Certification Programs 
+
+Tensilica Processor IP 
+
+ Stay up to date with the latest software
+
+ Cadence award-winning online support available 24/7
+
+ Connect with expert users in our Community Forums
+
+ Company
+
+Company
+
+ Corporate
+
+About Us 
+
+Designed with Cadence 
+
+Investor Relations 
+
+Leadership Team 
+
+Computational Software 
+
+Alliances 
+
+Channel Partners 
+
+Technology Partners 
+
+Corporate Social Responsibility 
+
+Cadence Academic Network 
+
+Intelligent System Design 
+
+ Culture and Careers
+
+Careers 
+
+Culture 
+
+One Team 
+
+Intern and Grads 
+
+ Media Center
+
+Cadence Events 
+
+Events 
+
+Newsroom 
+
+Blogs 
+
+ Cadence Giving Foundation
+
+ Premier Cadence Events
+
+Free Trials
+
+Key Benefits
+
+Features
+
+Resources
+
+ HBM3
+
+ Contact Us
+
+Key Benefits
+
+Features
+
+Resources
+
+ Contact Us
+
+ Scale-Up and Scale-Out SerDes
+
+ Overview
+
+ 224G-LR SerDes PHY
+
+ 112G-ULR PAM4 SerDes PHY
+
+ 112G-VSR PAM4 SerDes PHY
+
+ 56G-LR PAM4 SerDes
+
+ 1.6T Ultra Ethernet Controller
+
+ Scale-Up Solutions
+
+ PCIe and CXL
+
+ Overview
+
+ Controller for PCIe and CXL
+
+ Overview
+
+ Controller for CXL
+
+ Controller for PCIe
+
+ PHY for PCIe and CXL
+
+ Overview
+
+ PHY for PCIe 3.1
+
+ PHY for PCIe 4.0
+
+ PHY for PCIe 5.0 and CXL
+
+ PHY for PCIe 6.0 and CXL
+
+ PHY for PCIe 7.0 and CXL
+
+ Chiplet and D2D
+
+ Overview
+
+ 40G UltraLink D2D PHY
+
+ UCIe PHY and Controller
+
+ Interface IP
+
+ Overview
+
+ Low-Speed Ethernet
+
+ Overview
+
+ Low-Speed Ethernet 10G Multi-Protocol PHY
+
+ Low-Speed Ethernet 16G Multi-Protocol PHY
+
+ Low-Speed Ethernet SerDes
+
+ Low-Speed Ethernet Controller
+
+ Low-Speed Ethernet PCS
+
+ MIPI
+
+ Overview
+
+ MIPI CSI-2 Rx Controller
+
+ MIPI CSI-2 Tx Controller
+
+ MIPI D-PHY
+
+ MIPI DSI Tx Controller
+
+ MIPI I3C Controller
+
+ MIPI Manager SoundWire Controller
+
+ USB
+
+ Overview
+
+ USB3 PHY
+
+ USB3 Controller
+
+ USB2 PHY
+
+ USB2 Controller
+
+ eUSB2V2 PHY
+
+ eUSB2V2 Controller
+
+ Memory Interface and Storage IP
+
+ Overview
+
+ DDR/LPDDR PHY and Controller
+
+ Overview
+
+ DDR/LPDDR PHY and Controller
+
+ DDR PHY and Controller
+
+ Overview
+
+ DDR5 MRDIMM PHY and Controller
+
+ DDR4/3 PHY and Controller
+
+ LPDDR PHY and Controller
+
+ Overview
+
+ LPDDR PHY and Controller
+
+ GDDR PHY and Controller
+
+ Overview
+
+ GDDR7 PHY
+
+ GDDR6 PHY and Controller IP
+
+ HBM PHY
+
+ Overview
+
+ HBM4E
+
+ HBM3
+
+ HBM2E/HBM2 PHY
+
+ Storage IP
+
+ Overview
+
+ Nand Flash Controller
+
+ Nand Flash PHY
+
+ SD/eMMC Flash Controller
+
+ xSPI
+
+ Design IP
+
+ Scale-Up and Scale-Out SerDes
+
+ Overview
+
+ 224G-LR SerDes PHY
+
+ 112G-ULR PAM4 SerDes PHY
+
+ 112G-VSR PAM4 SerDes PHY
+
+ 56G-LR PAM4 SerDes
+
+ 1.6T Ultra Ethernet Controller
+
+ Scale-Up Solutions
+
+ PCIe and CXL
+
+ Overview
+
+ Controller for PCIe and CXL
+
+ Overview
+
+ Controller for CXL
+
+ Controller for PCIe
+
+ PHY for PCIe and CXL
+
+ Overview
+
+ PHY for PCIe 3.1
+
+ PHY for PCIe 4.0
+
+ PHY for PCIe 5.0 and CXL
+
+ PHY for PCIe 6.0 and CXL
+
+ PHY for PCIe 7.0 and CXL
+
+ Chiplet and D2D
+
+ Overview
+
+ 40G UltraLink D2D PHY
+
+ UCIe PHY and Controller
+
+ Interface IP
+
+ Overview
+
+ Low-Speed Ethernet
+
+ Overview
+
+ Low-Speed Ethernet 10G Multi-Protocol PHY
+
+ Low-Speed Ethernet 16G Multi-Protocol PHY
+
+ Low-Speed Ethernet SerDes
+
+ Low-Speed Ethernet Controller
+
+ Low-Speed Ethernet PCS
+
+ MIPI
+
+ Overview
+
+ MIPI CSI-2 Rx Controller
+
+ MIPI CSI-2 Tx Controller
+
+ MIPI D-PHY
+
+ MIPI DSI Tx Controller
+
+ MIPI I3C Controller
+
+ MIPI Manager SoundWire Controller
+
+ USB
+
+ Overview
+
+ USB3 PHY
+
+ USB3 Controller
+
+ USB2 PHY
+
+ USB2 Controller
+
+ eUSB2V2 PHY
+
+ eUSB2V2 Controller
+
+ Memory Interface and Storage IP
+
+ Overview
+
+ DDR/LPDDR PHY and Controller
+
+ Overview
+
+ DDR/LPDDR PHY and Controller
+
+ DDR PHY and Controller
+
+ Overview
+
+ DDR5 MRDIMM PHY and Controller
+
+ DDR4/3 PHY and Controller
+
+ LPDDR PHY and Controller
+
+ Overview
+
+ LPDDR PHY and Controller
+
+ GDDR PHY and Controller
+
+ Overview
+
+ GDDR7 PHY
+
+ GDDR6 PHY and Controller IP
+
+ HBM PHY
+
+ Overview
+
+ HBM4E
+
+ HBM3
+
+ HBM2E/HBM2 PHY
+
+ Storage IP
+
+ Overview
+
+ Nand Flash Controller
+
+ Nand Flash PHY
+
+ SD/eMMC Flash Controller
+
+ xSPI
+
+ Design IP
+
+ Scale-Up and Scale-Out SerDes
+
+ Overview
+
+ 224G-LR SerDes PHY
+
+ 112G-ULR PAM4 SerDes PHY
+
+ 112G-VSR PAM4 SerDes PHY
+
+ 56G-LR PAM4 SerDes
+
+ 1.6T Ultra Ethernet Controller
+
+ Scale-Up Solutions
+
+ PCIe and CXL
+
+ Overview
+
+ Controller for PCIe and CXL
+
+ PHY for PCIe and CXL
+
+ Chiplet and D2D
+
+ Overview
+
+ 40G UltraLink D2D PHY
+
+ UCIe PHY and Controller
+
+ Interface IP
+
+ Overview
+
+ Low-Speed Ethernet
+
+ MIPI
+
+ USB
+
+ Memory Interface and Storage IP
+
+ Overview
+
+ DDR/LPDDR PHY and Controller
+
+ DDR PHY and Controller
+
+ LPDDR PHY and Controller
+
+ GDDR PHY and Controller
+
+ HBM PHY
+
+ Storage IP
+
+ Compute IP
+
+ AI IP Platform
+
+ Overview
+
+ Neo NPUs
+
+ NeuroEdge AI Co-Processor
+
+ HiFi DSP
+
+ Vision DSP and Accelerators
+
+ NeuroWeave SDK
+
+ Protocol IP for AI
+
+ Cadence Janus NoC System IP
+
+ Connx DSP
+
+ ConnX 120
+
+ HiFi DSP
+
+ Overview
+
+ HiFi iQ
+
+ Cache-Coherent HiFi 5s SMP
+
+ HiFi 5s
+
+ HiFi 4
+
+ HiFi 3z
+
+ HiFi 1s
+
+ Software
+
+ Tensilica Xtensa Controllers
+
+ Overview
+
+ Xtensa NX Processor Platform
+
+ Xtensa LX Processor Platform
+
+ Xtensa Multicore LX8 Platform
+
+ Vision DSP and Accelerators
+
+ Overview
+
+ Vision 341
+
+ Vision 331
+
+ Vision 4DR
+
+ Vision 130
+
+ Vision 110
+
+ Foundation IP
+
+ Security IP
+
+ Chiplet-Based SoC Design
+
+ Physical AI
+
+ Silicon Solutions
+
+ Design IP
+
+ Scale-Up and Scale-Out SerDes
+
+ Overview
+
+ 224G-LR SerDes PHY
+
+ 112G-ULR PAM4 SerDes PHY
+
+ 112G-VSR PAM4 SerDes PHY
+
+ 56G-LR PAM4 SerDes
+
+ 1.6T Ultra Ethernet Controller
+
+ Scale-Up Solutions
+
+ PCIe and CXL
+
+ Overview
+
+ Controller for PCIe and CXL
+
+ PHY for PCIe and CXL
+
+ Chiplet and D2D
+
+ Overview
+
+ 40G UltraLink D2D PHY
+
+ UCIe PHY and Controller
+
+ Interface IP
+
+ Overview
+
+ Low-Speed Ethernet
+
+ MIPI
+
+ USB
+
+ Memory Interface and Storage IP
+
+ Overview
+
+ DDR/LPDDR PHY and Controller
+
+ DDR PHY and Controller
+
+ LPDDR PHY and Controller
+
+ GDDR PHY and Controller
+
+ HBM PHY
+
+ Storage IP
+
+ Compute IP
+
+ AI IP Platform
+
+ Overview
+
+ Neo NPUs
+
+ NeuroEdge AI Co-Processor
+
+ HiFi DSP
+
+ Vision DSP and Accelerators
+
+ NeuroWeave SDK
+
+ Protocol IP for AI
+
+ Cadence Janus NoC System IP
+
+ Connx DSP
+
+ ConnX 120
+
+ HiFi DSP
+
+ Overview
+
+ HiFi iQ
+
+ Cache-Coherent HiFi 5s SMP
+
+ HiFi 5s
+
+ HiFi 4
+
+ HiFi 3z
+
+ HiFi 1s
+
+ Software
+
+ Tensilica Xtensa Controllers
+
+ Overview
+
+ Xtensa NX Processor Platform
+
+ Xtensa LX Processor Platform
+
+ Xtensa Multicore LX8 Platform
+
+ Vision DSP and Accelerators
+
+ Overview
+
+ Vision 341
+
+ Vision 331
+
+ Vision 4DR
+
+ Vision 130
+
+ Vision 110
+
+ Foundation IP
+
+ Security IP
+
+ Chiplet-Based SoC Design
+
+ Physical AI
+
+ HBM3
+
+ Highest performance, lowest power and area
+
+Overview
+
+The Cadence High-Bandwidth Memory generation 3 (HBM3) PHY is optimized for systems that require the highest-bandwidth, low-latency memory solution. The memory subsystem PHY supports data rates up to 8.4Gbps per data pin, featuring 16 independent channels, for a total data width of 1024 bits. The PHY is designed for a 2.5D system with a silicon interposer to route signals between the 3D DRAM stack and PHY. The third-generation design is optimized for low power consumption and low PHY area. Cadence provides the complete solution including PHY, interposer, and package.
+
+Key Benefits
+
+Highest Performance
+
+HBM3E up to 8.4Gbps per pin and HBM2E up to 3.6Gbps per pin
+
+Low Latency
+
+For data-intensive applications
+
+Low Power and Area
+
+Low-power control and advanced low-power modes with power down
+
+Easy integration
+
+PHY is hardened, and timing closed including all I/O and decoupling capacitors
+
+Complete HBM Solution
+
+Full system design including PHY, interposer, and package
+
+Excellent Support
+
+Access to Cadence expert SI/PI team to support customer designs
+
+Features
+
+Advanced clocking architecture minimizes clock jitter
+
+DFI PHY Independent Mode for initialization and training
+
+IEEE 1500 interface, Memory BIST feature, and loop-back function
+
+Supports lane repair
+
+Designed for optimized interposer routing
+
+ Resources
+
+video
+
+The Cadence HBM3e Solution at 12.4Gbps
+
+This video shows a demo of the Cadence HBM3e solution, performance, and robustness of the eye at 12.4Gbps and reads/writes to the HBM3 stack at the DRAM speed.
+
+Article
+
+HBM3E: All About Bandwidth
+
+View Now 
+
+ View All 
+
+A Great Place to Do Great Work!
+
+Over 10 years on the FORTUNE 100 list
+
+The Wall Street Journal
+
+Best Managed Companies
+
+ Our Culture
+ Join The Team
+
+ Products
+ Products
+
+ Custom IC and RF
+
+ Digital Design and Signoff
+
+ IC Package
+
+ Silicon Solutions
+
+ PCB Design
+
+ System Analysis
+
+ Verification
+
+ All Products
+
+ Company
+ Company
+
+ About Us
+
+ Leadership Team
+
+ Investor Relations
+
+ Alliances
+
+ Channel Partners
+
+ Technology Partners
+
+ Careers
+
+ Cadence Academic Network
+
+ Supplier
+
+ Media Center
+ Media Center
+
+ Events
+
+ Newsroom
+
+ Designed with Cadence
+
+ Blogs
+
+ Forums
+
+ Glossary
+
+ Resources
+
+ Contact Us
+ Contact Us
+
+ Customer Support
+
+ Media Relations
+
+ Global Office Locator
+
+ Information Security
+
+Sign up to receive the latest Cadence news
+
+Thank you for subscribing. You will get an email to confirm your subscription.
+
+ Connect with us
+
+ Sign up to receive the latest Cadence news
+
+ Email Address*
+
+ Subscribe
+
+ English (US)
+
+ English
+
+United States
+
+简体中文
+
+China
+
+日本語
+
+Japan
+
+한국어
+
+Korea 
+
+繁體中文
+
+Taiwan
+
+© 2026 Cadence Design Systems, Inc.
+
+ Trademarks
+
+ Terms of Use
+
+ Privacy
+
+ Cookie Policy
+
+ Accessibility
+
+ Do Not Sell or Share My Personal Information
+
+© 2026 Cadence Design Systems, Inc.

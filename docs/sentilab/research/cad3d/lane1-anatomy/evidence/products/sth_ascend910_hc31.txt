@@ -1,0 +1,405 @@
+Huawei Ascend 910 Provides a NVIDIA AI Training Alternative 
+
+ Facebook 
+
+ Linkedin 
+
+ RSS 
+
+ TikTok 
+
+ X 
+
+ Youtube 
+
+Forums
+
+AI
+
+Server
+
+Server Systems
+
+Server CPUs
+
+Accelerators
+
+Server Motherboards
+
+Server Chassis
+
+Other Components
+
+5G Edge
+
+Storage
+
+Networking
+
+Workstation
+
+Workstation Processors
+
+Workstation Motherboards
+
+Software
+
+Operating Systems
+
+Server Applications
+
+Virtualization
+
+Guides
+
+Buyer’s Guides
+
+Tips
+
+Top Hardware Components for TrueNAS / FreeNAS NAS Servers
+
+Top Hardware Components for pfSense Appliances
+
+Top Hardware Components for napp-it and Solarish NAS Servers
+
+Top Picks for Windows Server 2016 Essentials Hardware
+
+The DIY WordPress Hosting Server Hardware Guide
+
+ Search 
+
+ Facebook 
+
+ Linkedin 
+
+ RSS 
+
+ TikTok 
+
+ X 
+
+ Youtube 
+
+ Saturday, October 31, 2026 
+
+ServeTheHome News
+
+Storage Reliability
+
+Raid Calculator
+
+RAID Reliability Calculator | Simple MTTDL Model
+
+About
+
+Contact
+
+Editorial and Copyright Policies
+
+AG Substack
+
+AG Reports
+
+Subscribe
+
+ServeTheHome Forums
+
+Sign in
+
+Welcome! Log into your account
+
+your username
+
+your password
+
+Forgot your password? Get help
+
+Privacy Policy
+
+Password recovery
+
+Recover your password
+
+your email
+
+A password will be e-mailed to you.
+
+ ServeTheHome 
+
+Advertisement
+
+Forums
+
+AI
+
+Server
+
+Server Systems
+
+Server CPUs
+
+Accelerators
+
+Server Motherboards
+
+Server Chassis
+
+Other Components
+
+5G Edge
+
+Storage
+
+Networking
+
+Workstation
+
+Workstation Processors
+
+Workstation Motherboards
+
+Software
+
+Operating Systems
+
+Server Applications
+
+Virtualization
+
+Guides
+
+Buyer’s Guides
+
+Tips
+
+Top Hardware Components for TrueNAS / FreeNAS NAS Servers
+
+Top Hardware Components for pfSense Appliances
+
+Top Hardware Components for napp-it and Solarish NAS Servers
+
+Top Picks for Windows Server 2016 Essentials Hardware
+
+The DIY WordPress Hosting Server Hardware Guide
+
+Home AI Huawei Ascend 910 Provides a NVIDIA AI Training Alternative
+
+AI
+
+Huawei Ascend 910 Provides a NVIDIA AI Training Alternative
+
+By
+ Patrick Kennedy
+ - 
+
+ August 25, 2019 
+6
+
+Facebook
+
+X
+
+Pinterest
+
+Linkedin
+
+ReddIt
+
+Email
+
+Print
+
+Copy URL
+
+Huawei Ascend 910 AI Training Server Cover
+
+The Huawei Davinci core is designed to take NVIDIA head-on in AI. What is more, the company is expecting to sell millions of Davinci core devices over the next year. While many competitors in the AI space are small and underfunded, without a clear path to market, Huawei has the resources and market to sell their AI chips which makes them very interesting. At Hot Chips 31 (2019), the company showed off its newest Ascend 910 AI training chip.
+
+Huawei DaVinci Core
+
+At the heart of Huawei’s efforts is the DaVinci core. “DaVinci” and “Davinci” were used throughout the Hot Chips 31 presentation, so we are going to use “DaVinci”.
+
+Huawei Davinci Building Blocks HC31.jpg
+
+Huawei, like many of the companies coming up with specific AI chips, says that they are more efficient both in terms of compute and in terms of memory bandwidth than NVIDIA’s offerings.
+
+Huawei Davinci Core HC31
+
+Another key to Huawei’s design is that this DaVinci core needs to scale from single units to larger units. Huawei wants to make this a building block that it can scale from IoT and automotive to large training chips.
+
+Huawei Ascend 910 AI Training Chip
+
+With 32 DaVinci AI cores, the Huawei Ascend 910 is the company’s flagship AI training chip. The chip combines these DaVinci AI cores with high-speed HBM2 memory, similar in some ways to how the NVIDIA Tesla solutions work. The main chip also has a number of additional logic blocks such as 128 channel video decoding engines beyond the DaVinci cores and memory controllers, but there is a Nimbus V3 chip that handles most of the I/O. This Nimbus V3 is co-packaged alongside the main chip and the HBM2 stacks.
+
+Huawei Ascend 910 AI Training Chip Block Diagram
+
+Compared to the Ascend 310, the Huawei Ascend 910 is designed to run at a higher power envelope (350W) and higher performance. Huawei claims 256 TFLOPs of FP16 performance. Update: To make this clearer, the Tesla V100 is 112-125 TFLOPs for deep learning thanks to its tensor cores.
+
+Huawei Ascend 910 And Ascend 910 Overview
+
+There are four HBM2 memory stacks, the main Virtuvian die with the DaVinci AI cores, and the Nimbus V3 I/O chip. For mechanical stability, there are two 110mm2 dummy dies integrated. Huawei includes the 220mm2 of dummy dies their totals, but we would likely call this a 1028mm2 solution.
+
+Huawei Ascend 910 AI Training Die Shot 1
+
+The Ascend 910 floorplan involves an array of 32 DaVinci cores along with 720Gbps of inter-chip links plus 2x 100Gbps RoCE networking interfaces.
+
+Huawei Ascend 910 AI Training Chip Floorplan
+
+The on-chip interconnect is considered a mesh with six rows and four columns. Huawei claims TB/s figures for the L2 cache access and HBM2 access.
+
+Huawei Ascend 910 AI Training NOC
+
+Overall, this is a very interesting solution. Huawei is focusing on the same type of form factors and spectrum that NVIDIA currently offers. Putting that together, the company has solutions to scale-up these chips into systems and clusters much as NVIDIA has done.
+
+Huawei Ascend 910 AI Training Solutions
+
+Beyond the chip, Huawei also has these designed into systems. Here, the topology will remind you a lot of the NVIDIA DGX-1/ HGX-1 as we saw in DeepLearning12. Here, the company has eight Ascend 910 modules installed plus a dual Intel Xeon Scalable platform. We were slightly surprised that these servers do not use the Huawei Kunpeng 920 64-Core Arm Server CPU with CCIX and PCIe Gen4.
+
+Huawei Ascend 910 310 And Kunpeng 920
+
+The Ascend 910 also supports CCIX so that would have made for an interesting pairing. Also of note, the Ascend 310 chip uses Arm A55 cores.
+
+Huawei Ascend 910 AI Training Server
+
+Of course, Huawei has this also designed as a larger cluster.
+
+Huawei Ascend 910 AI Training Cluster
+
+With eight Ascend 910 chips on each board, one can see that the cluster is designed with water-cooling. If you look at the NVIDIA DGX Superpod, it is clear that Huawei is forming a competitive solution.
+
+Final Words
+
+The DaVinci cores are not just designed for training. Huawei also has the Ascend 310 for AI inferencing at the edge. There is also a mid-range Ascend 610 mentioned that seems to be a higher bandwidth per DaVinci core, but lower DaVinci core count unit versus the Ascend 910.
+
+Huawei Davinci Scale HC31.jpg
+
+What is clear is that Huawei is going to be pushing away from its dependence on NVIDIA Tesla V100 cards with these releases. It has chips designed for training through edge inferencing and automotive. One of NVIDIA’s strong points is CUDA’s ability to scale from the Jetson Nano to the DGX-2H. Huawei is building a similar scale ecosystem and has the ability to make it the solution of choice for its domestic market.
+
+TAGS
+
+Huawei
+
+NVIDIA
+
+Facebook
+
+X
+
+Pinterest
+
+Linkedin
+
+ReddIt
+
+Email
+
+Print
+
+Copy URL
+
+Previous articleDell Precision 7540 Review Ups the Game for Mobile Workstations
+
+Next articleVMware Tanzu Grasps for Next-gen Relevance
+
+Patrick Kennedy
+
+https://www.servethehome.com
+
+Patrick has been running STH since 2009 and covers a wide variety of SME, SMB, and SOHO IT topics. Patrick is a consultant in the technology industry and has worked with numerous large hardware and storage vendors in the Silicon Valley. The goal of STH is simply to help users find some information about server, storage and networking, building blocks. If you have any helpful information please feel free to post on the forums.
+
+ Facebook 
+
+ Linkedin 
+
+ X 
+
+RELATED ARTICLESMORE FROM AUTHOR
+
+ASRock Industrial AI Box-A395 Review: Taking Strix Halo to Work
+
+Microsoft Maia 300 Shown at OCP 2026
+
+ASRock Creator Radeon AI Pro R9700 Review: Workstation Inference, AMD Style
+
+ 6 COMMENTS 
+
+ L.P. 
+
+ August 25, 2019 At 11:57 am 
+
+@Patrick Do you ever see Huawei offering their chips as standalone modules on the OCM form factor or do you see this mostly as an in-house solution?
+
+Comment: Just went back over the slides of Ian Cutress to look for the answer to above question and on their own slides they quoted the V100 at 120 TFlops FP16. So I guess their FP16 output is around 2 times that of the V100, assuming their claims are accurate.
+
+ GregUT 
+
+ August 25, 2019 At 7:06 pm 
+
+L.P. it is in the article FP16 is around 30TFLOPs. The actual range is ~28-31 so 30 sounds right. If someone is telling you a V100 is 120TFLOPS at FP16 they’re wrong.
+
+But they have tensor ops which are different and much higher.
+
+ L.P. 
+
+ August 26, 2019 At 1:10 am 
+
+@GregUT I work with them every day so know V100s quite well. It is more of an isolated quote of their claims, where the actual 30TFlops seem to be incomparable to the quoted 256TFlops number.
+
+Here is the respective slide:
+
+https://images.anandtech.com/doci/14756/IMG_20190819_171052.jpg
+
+ Patrick Kennedy 
+
+ August 26, 2019 At 5:09 am 
+
+Guys – added an update. I was in the midst of doing VMworld coverage and missed that one.
+
+ M.S. 
+
+ August 27, 2019 At 2:25 am 
+
+@L.P. and @GregUT: if you look at source image, you see that claim is not professional – you can‘t compare NVIDIA Tensor Core, TPU and Ascend like they do. Just not similar things compare. Bettet check MLPerf https://mlperf.org/ – more professional benchmark on real cases.
+
+ Basel Alsaadi 
+
+ September 14, 2021 At 4:51 pm 
+
+Great article. Thank you Patrick for the coverage. This was more than 2 years ago. Have there been any updates since?
+
+Comments are closed.
+
+Newsletter
+
+ Get the best of STH delivered weekly to your inbox. We are going to curate a selection of the best posts from STH each week and deliver them directly to you. 
+
+ Your email address: 
+
+ By opting-in you agree to have us send you our newsletter. We are using a third party service to manage subscriptions so you can unsubscribe at any time. 
+
+Leave this field empty if you're human: 
+
+ABOUT US
+ServeTheHome is the IT professional's guide to servers, storage, networking, and high-end workstation hardware, plus great open source projects.
+
+Advertise on STH 
+
+DISCLAIMERS: We are a participant in the Amazon Services LLC Associates Program, an affiliate advertising program designed to provide a means for us to earn fees by linking to Amazon.com and affiliated sites.
+
+Please be advised of our data usage for machine learning and AI inference and training purposes which can be found here along with our other editorial and copyright policies.
+
+FOLLOW US
+
+ Facebook 
+
+ Linkedin 
+
+ RSS 
+
+ TikTok 
+
+ X 
+
+ Youtube 
+
+ © 2009-2026 Axautik Group LLC

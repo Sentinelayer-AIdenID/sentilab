@@ -1,0 +1,3 @@
+# git -C H:/sentilab show origin/main:sundai_tap/UPSTREAM_COMMIT | cat -n
+# origin/main = 46791be360555d0e24b4ad5f906abafb71f07118
+     1	3a3f4e5a4d019b2d9cda1f72d8d1755238845dbb

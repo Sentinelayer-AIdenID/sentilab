@@ -1,0 +1,466 @@
+TSMC-SoIC® - Taiwan Semiconductor Manufacturing Company Limited
+
+ Dedicated IC Foundry
+
+ Dedicated IC Foundry  
+
+ Overview
+
+ Technology
+
+Overview
+
+Logic Technology
+
+Specialty Technology
+
+TSMC 3DFabric®
+
+Technology Platforms
+
+Future R&D Plans
+
+ Manufacturing
+
+Overview
+
+Fab Locations
+
+Fab Capacity
+
+GIGAFAB® Facilities
+
+Engineering Performance Optimization
+
+Agile and Intelligent Operations
+
+ Open Innovation Platform®
+
+Overview
+
+IP Alliance
+
+EDA Alliance
+
+Design Center Alliance
+
+Cloud Alliance
+
+Value Chain Aggregator
+
+TSMC 3DFabric® Alliance
+
+ Services
+
+Overview
+
+Advanced Packaging
+
+Mask Services
+
+eFoundry®
+
+CyberShuttle®
+
+University FinFET Program
+
+ Grand Alliance
+
+Overview
+
+Innovate with TSMC!
+
+ Investors
+
+ Investors 
+
+ Overview
+
+ Financials
+
+Fundamentals
+
+Quarterly Results
+
+Annual Reports
+
+Monthly Revenue
+
+Historical Information
+
+SEC Filings
+
+Financial Reports
+
+Financial Calendar
+
+Credit Rating
+
+ Corporate Governance
+
+Overview
+
+Board of Directors
+
+Committees
+
+Corporate Governance Officer
+
+Major Internal Policies
+
+NYSE Section 303A
+
+Internal Audit
+
+Risk Management
+
+ Shareholder Services
+
+Stock Quotes
+
+Shareholders' Meeting
+
+Dividend
+
+TSE Market Observation Post System
+
+TSMC Material Information
+
+Prospectuses
+
+Contacts
+
+ FAQ
+
+ Press Center
+
+ Press Center 
+
+ Overview
+
+ Press Releases
+
+Latest News
+
+News Archives
+
+ Events
+
+All Events
+
+Investor Meetings
+
+TSMC Events
+
+Industry Events
+
+ Multimedia Gallery
+
+Fabs: Outside
+
+Fabs: Inside
+
+Executives
+
+Videos
+
+ Corporate Information
+
+About TSMC
+
+Financial Results
+
+Corporate Social Responsibility
+
+ Careers
+
+ Careers 
+
+ Overview
+
+ Explore Career
+
+Browse & Apply
+
+Application Process
+
+ Resources at TSMC
+
+Core Values
+
+Relocation to Headquarters
+
+ Life at TSMC
+
+Working Environment
+
+Inclusive Workplace
+
+ ESG
+
+ Research
+
+ Research 
+
+ Overview
+
+ Research Areas
+
+Overview
+
+Logic
+
+Interconnect
+
+Memory
+
+Artificial Intelligence
+
+ Collaborations
+
+Collaboration Programs
+
+Events
+
+ Careers
+
+Openings
+
+Core Values
+
+Vision and Mission
+
+Inclusive Workplace
+
+ About TSMC
+
+ About TSMC 
+
+ Overview
+
+ Company Info
+
+Overview
+
+Vision and Mission
+
+Values and Business Philosophy
+
+Organization
+
+Executives
+
+Board of Directors
+
+Document Center
+
+ Foundation & Museum
+
+TSMC Museum of Innovation
+
+TSMC Charity Foundation
+
+TSMC Education and Culture Foundation
+
+ Policy
+
+Human Rights Policy
+
+Quality Policy
+
+Risk Management Policy
+
+ Contact Us
+
+TSMC Fabs
+
+Subsidiaries
+
+Business Contacts
+
+Investor Relations, Public Relations, ESG Contacts
+
+Procurement Contacts
+
+Career Contact
+
+Whistleblowing Mechanism
+
+ English
+ 繁中
+ 简中
+ 日本語
+
+Home
+
+Dedicated IC Foundry
+
+Technology
+
+TSMC 3DFabric®
+
+TSMC-SoIC®
+
+TSMC-SoIC®
+
+SoIC-X chip-on-wafer 
+
+SoIC-X wafer-on-wafer
+
+ TSMC-SoIC® is an innovative wafer-level 3D IC chip stacking platform.
+
+ TSMC-SoIC® manufacturing service includes custom manufacturing of semiconductors, memory chips, wafers, integrated circuits, product research, custom design and testing for new product development, along with technology consultation services for electrical and electronic products, semiconductors, semiconductor systems, semiconductor cell libraries, wafers, and integrated circuits.
+
+ SoIC integrated chips can be subsquently assembled by using conventional packages or new TSMC 3DFabric® technology services, such as CoWoS® or TSMC-SoW™, for next-generation high-performance computing (HPC), artificial intelligence (AI), and mobile applications. Several ongoing developments will allow the SoIC family to unleash more innovations, including the SoIC Gen-2 process that enables advanced SoC (N2 and beyond) compatibility and compact universal photonics engine (COUPE) to enable Si photonic solution. TSMC will continue to pursue SoIC technological improvements and co-optimize with the Company’s advanced silicon technologies for further gains in transistor density, system power, performance, and area (PPA), and cost.
+
+ Key TSMC-SoIC® features:
+
+ Exceptional Heterogeneous integration (HI)
+
+ Integrating known good dies (KGDs) with different chip sizes, functionalities and wafer node technologies.
+
+ (a) System-on-Chip (SoC) before chip partition; (b), (c), (d) Variant TSMC-SoIC® partitioned chiplets and re-integration schemes
+
+ Exceptional scalability
+
+ With an innovative bonding scheme, TSMC-SoIC® technology service enables bond pitch scalability for chip input/output (I/O) to realize high density die-to-die interconnects. The bond pitch starts from the sub-10µm rule. This technology provides high-density interconnect chiplet architectures for HPC products; its 3nm chip stacking technology successfully entered volume production in 2025. A short die-to-die connection creates a smaller form factor, higher bandwidth, better power integrity (PI), signal integrity (SI), and lower power consumption compared to current state-of-the-art packaging solutions.
+
+ Holistic 3D System Integration
+
+ TSMC-SoIC® technology service integrates both homogeneous and heterogeneous chiplets into a single SoC-like chip. With a smaller footprint and thinner profile, this chip can be holistically integrated into CoWoS® and InFO. From the outside, the integrated chip looks like an ordinary SoC. But on the inside, it is embedded with heterogeneously integrated functionalities.
+
+ SoIC-X wafer-on-wafer technology creates heterogeneous and homogeneous 3D silicon integration through a wafer stacking process. The tight bonding pitch and thin through-silicon vias (TSVs) minimize parasitics, enabling better performance, lower power consumption, reduced latency, and a smaller form factor. SoIC-X wafer-on-wafer is suitable for high yielding nodes and the same die size applications or design.
+
+ News Release
+
+2021/05/24
+
+GUC Announces GLink-3D Die-on-Die Interface IP using TSMC N5 and N6 Process for 3DFabric™ Advanced Packaging Technology
+
+ LEARN MORE 
+
+ Infographic
+
+The Whats, Whys, and Hows of TSMC-SoIC®
+
+ LEARN MORE 
+
+ Industry Publication
+
+3D Multi-chip Integration with System on Integrated Chips (SoIC)
+
+ LEARN MORE 
+
+System on Integrated Chips (SoIC™) for 3D Heterogeneous Integration
+
+ LEARN MORE 
+
+Related Information
+
+ Business Contacts
+
+ Fab Locations
+
+ Technology Platforms
+
+TSMC-Online 
+
+Online information and transaction for our customers
+
+TSMC-Supply Online 360 
+
+The web-based portal for smarter supplier interactions
+
+Document Center 
+
+Find more information about TSMC
+
+ Dedicated IC Foundry
+
+Overview
+
+Technology
+
+Manufacturing
+
+Open Innovation Platform®
+
+Services
+
+Grand Alliance
+
+ Investors
+
+Overview
+
+Financials
+
+Corporate Governance
+
+Shareholder Services
+
+FAQ
+
+ Press Center
+
+Overview
+
+Press Releases
+
+Events
+
+Multimedia Gallery
+
+Corporate Information
+
+ Careers
+
+Overview
+
+Browse & Apply
+
+Application Process
+
+Core Values
+
+Relocation to Headquarter 
+
+Working Environment
+
+Inclusive Workplace
+
+ ESG
+
+An Innovation Pioneer
+
+A Responsible Purchaser
+
+A Practitioner of Green Power
+
+An Admired Employer
+
+Power to Change Society
+
+ Research
+
+Research Areas
+
+Collaborations
+
+Careers
+
+ About TSMC
+
+Overview
+
+TSMC Museum of Innovation
+
+TSMC Charity Foundation
+
+TSMC Education and Culture Foundation
+
+Contact Us
+
+ Legal Notice & Trademark Information  |  Privacy Policy  |  Sitemap  |  Cookie Policy
+
+ Copyright © Taiwan Semiconductor Manufacturing Company Limited 2010-, All Rights Reserved.

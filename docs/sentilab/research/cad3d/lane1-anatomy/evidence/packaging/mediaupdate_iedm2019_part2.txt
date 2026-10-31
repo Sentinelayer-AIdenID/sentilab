@@ -1,0 +1,251 @@
+IEDM 2019 (Part 2) 3D_Packaging Innovation and Memory Technology (Ferroelectrics) – The Media News
+
+ Skip to content
+
+The Media News
+
+ Industry Trend and Idea Sharing on the Media Applications by Jay Hyun 
+
+IEDM 2019 (Part 2) 3D_Packaging Innovation and Memory Technology (Ferroelectrics)
+
+ Posted byJayDecember 31, 2019Posted inUncategorized 
+
+With the scaling/reticle limitations, the trend in IC technology is somewhat moving away from monolithic chips toward the use of chiplets tied together on an advanced packaging technology. A few major companies (E.g. Intel, AMD and IBM) are going this way to continue with virtual scaling TODAY.
+
+Intel continues to unveil new advanced packaging technologies. This year’s IEDM was no exception, where they have disclosed their latest developments more details. I’ll try to illustrate these in this article.
+
+Heterogeneous integration through 2.5D and 3D packaging is gaining significant interest in recent years. These techniques are gearing towards connecting chips and chiplets in a package to match the functionality of a monolithic system-on-chip. It’s been recognized that a heterogeneous approach gives more flexibility to mix and match IP blocks and process technologies with various memory and I/O elements in new device form factors compared to standard monolithic integration approaches. For example, the 8th GEN Intel Core is consisted of Intel high-performance CPU, HBM2 and AMD discrete graphics and AMD ZEN2 has separating the core with 7nm technology node while IO/Analog with 12nm tech process in their own optimal design/process.
+
+Well, chiplets with the advanced in packaging technologies in directions of shrinking a board into a package and disaggregating a complex and/or large die could provide a game-changing solution for the short term. This is fascinating, and one of these days, I’ll cover the Open Specific Domain Architecture (ODSA) runs by OCP to elaborate the current status as well as the future possibility on Chiplet-based Open Architecture.
+
+If I may re-iterate on Gordon Moore’s statement in his paper in 1965 (as a few others have done lately): “It may prove to be more economical to build large systems out of smaller functions, which are separately packaged and interconnected.”, Intel seems to be going a full steam to follow his prediction once again.  
+
+Now, let’s get down to Part 2 on 3D Packaging Innovation and Memory Technology (Ferroelectrics). If viewers didn’t get a chance to read Part 1, please visit the previous blog later.
+
+Again, three parts:
+
+Main Keynotes (Plenary) and Memory Technology (STT-MRAM)
+
+3D Packaging Innovation and Memory Technology (Ferroelectrics)
+
+Emerging AI Hardware (PIM/CIM), Memory Technology (Charge based Memory) and Advanced Logic Technologies
+
+No photos or videos were allowed during the talks and sessions at IEDM. The presentation materials will NOT be distributed, only the 4 – 6-page long IEDM papers. 
+
+(Part 2) 3D Packaging Innovation and Memory Technology (Ferroelectrics)
+
+Two commonly used 2.5/3D package technologies in many commercial systems are silicon interposers (active or passive) and Embedded Multi-Interconnect Bridge (EMIB). The benefit of using a passive silicon interposer is that it allows better cooling of the procesor and memory, and does not require TSV holes in the processor die to have simpler design and smaller area. Although it enables high data rate communication between two top dies, it lacks the flexibility and the extremely necessary high bandwidth with emerging AI/ML applications.
+
+So, what are EMIB and Foveros from Intel?
+
+EMIB is a very small interposer layer embedded in a substrate to provide the high bandwidth link between multiple die of different nodes and circuit types on (organic) substrate. The diagram below illustrates the EMIB technology, which is based on embedding bridge silicon die(s) in an organic package to provide very high bandwidth between neighboring top dies. It bridges two chiplets over a short distance horizontally using a small piece of silicon embedded in a package’s organic substrate. The interconnect lines on silicon can be made narrower than on the organic substrate and can be packed together more tightly to form a high-bandwidth chip-to-chip connection.
+
+ (Source: Intel’s IEDM 2019) 
+
+So far, it’s been deployed in Intel’s Stratix 10 FPGA, where an FPGA chiplet linked to two high-bandwidth DRAM and four high-speed transceiver chiplets in the same package.
+
+On the other hand, Foveros is Intel’s 3D face-to-face chip-stacking technology, which offers die-to-die connections leading to high-bandwidth vertical connections as well as higher density scaling and even thinner bump pitches.
+
+Essentially, face-to-face connection between the logic die allows a shorter interconnect distance between dies, compared to multiple chip packages (MCP) or wire-bonding. Shorter interconnect length reduces heat generation and parasitic capacitance/impedance, which is beneficial for low power application and high-speed connection with high bandwidth.
+
+The key features of Foveros 3D stacking technology is that it makes possible logic-on-logic die stacking and possibly provide a pathway for devices and systems to combine high-performance, high-density, and low-power silicon process technologies. In other words, this could extend die stacking beyond traditional passive interposers and stacked memory, to high-performance logic such as GPU and AI processors, where products will be broken up into smaller chiplets, where I/O, SRAM and power delivery circuits fabricated in a base die while high-performance logic chiplets stacked on top. Fascinating, isn’t it?
+
+To help your understanding, here is a snapshot of Foveros technology shared at Intel’s 2018 Architecture Day. I’m using this figure instead of Intel’s IEDM 2019 paper since it has a bit more clarity. The figure shows the process details for Foveros, which is done with face-to-face microbump connections for the logic die, then using Through Silicon Vias (TSVs) to connect the bottom die to the package.
+
+(Source: Intel’s 2018 Architecture Day)
+
+This is very impressive! Intel didn’t stop here, but went one step further.
+
+New 3D ODI (Omni-Directional Interconnect) in POC Stage
+
+Omni-Directional Interconnect is Intel’s new packaging building block for 3D integrated circuits. This enables top-packaged chips to communicate with other chips horizontally, like EMIB, or vertically, through TSVs, like Foveros. In short, this new system could deploy EMIB and Foveros collectively in the same package.
+
+In addition, one unique feature of ODI is the use of much larger than ordinary TSVs to deliver power to the top of the die. These larger than ordinary TSVs (about 70um across versus a typical TSV’s 10um) have lower resistance and provide more robust power delivery with higher bandwidth and lower latency through stacking. Naturally, the large diameter makes them especially well-suited to deliver power to the top die in a 3D stack. As a matter of fact, this reduces the number of TSVs required in the base die, freeing up more area for active transistors and gives a better optimization in die size.
+
+According to Intel’s IEDM paper, ODI enables:
+
+Direct die to die interconnect for maximum bandwidth, scalability and shortest possible channels
+
+Top and Bottom die to package interconnect for direct power delivery and reduced off die IO parasitics.
+
+One simplified example in HPC was described to help our understanding on ODI technology in the same paper. The below diagram shows an evolution of their package technologies, which led to 3D ODI where 3D stacked processor and memory results in ultra-high bandwidth communication between the top and bottom die with good thermal and power performance.
+
+(a) Today’s commercial solution: 3D stacked processor and memory supporting large bandwidth but limited by TSV area increase and thermal
+
+(b) Solution to TSV and thermal problem: Using the silicon interposer at the expense of reduced bandwidth and higher power
+
+(c) ODI solution: Establish large bandwidth, good thermal performance and minimal TSV area increase
+
+ (Source: Intel’s IEDM 2019) 
+
+Again, with ODI solution in the diagram (C), the same bandwidth benefits as 3D stacking are achieved with the good cooling performance and low TSV area. Intel said that the top memory chip is attached to one side of the processor die for illustration purposes, but more chips can be used and attached at two or more locations to have more bandwidth or to reduce data movement energy overhead.
+
+Although ODI isn’t ground-breaking technology, rather combining the benefits of several existing technologies (MCP, EMIB and Silicon Interposer), I can see the architecture flexibility and benefits, cost advantages and signaling advantages over existing technologies. However, it’s uncertain if ODI will result in significant reduction of the process window, which would be one of main factors to consider.  It’s still at the proof of concept stage to see how it would play out with other 2/2.5/3D technologies. Surely, the year 2020 will be pretty interesting…
+
+TSMC’s Deep Trench Capacitors (DTC) in CoWoS Platform
+
+2.5D wafer-level system integration (Chip-on-Wafer-on-Substrate (CoWoS)) is TSMC’s main packaging technology for high-performance computing applications. This is used to integrate multiple die onto a silicon interposer and is widely used in products like GPUs, CPUs, vector processors, neural processors, and programmable switches TODAY.
+
+To reduce the power supply noise and ease the impedance of a power distribution system to provide the required charges to the circuit dynamically, it’s a common practice to use the decoupling capacitors. To achieve the same goal, TSMC has been using metal-insulator-metal (MIM) decoupling capacitors in the Si interposer on CoWoS platform where they have demonstrated to have good power integrity handling capability. However, the trouble is for the advanced artificial intelligence (AI) and high-performance computing (HPC) components, where a better solution than MIM is essential with delivering much higher capacitance density over what the planar MIM could provide in order to accommodate the exceedingly demanding power integrity requirements.
+
+At IEDM, TSMC introduced iCAP to tackle this issue, where they’ve taken a different approach than the current planar MIM by going vertically with deep trenches to significantly increase the capacitance density possible. They showed high-K (HK) based deep trench capacitors (DTC) integrated in the silicon interposer with Through Silicon Vias (TSVs).
+
+Please see the diagram below to see it clearly. It illustrates the array of DTC in the 100um thick Si interposer with the silicon interposer containing TSV and metal routing layers to accommodate the high routing capacity demand. The process choice (whether it’s “DTC-first” or “TSV-first”) needs to be made due to the co-existence of DTC and TSV on a wafer since both require high aspect ratio silicon etch at dimensions nearly two orders of magnitude different from each other.
+
+(Source: TSMC’s IEDM 2019)
+
+Again, HK DTC is integrated in the silicon interposer to form iCAP to achieve an upgrade in both the specific capacitance density (Cs) and total available capacitance per interposer (Ct) by more than an order of magnitude compared with the planar MIM capacitors.
+
+According to TSMC, the iCAP standard cell is 40 µm x 40 µm. While TSMC didn’t disclose the depth of the trenches, they said the capacitance density it can achieve is up to 340 nF/mm². This translates to close to 20x improvement in capacitance density over the planar MIM. Since multiple iCAPs can be used on a single interposer, they also said the total capacitance possible is over 68 μF per Si interposer. Wow!
+
+My impression is that with DTC technology integrated in silicon interposer, TSMC has led a path to have an excellent power integrity for wafer-level heterogeneous integration for HPC and AI applications in their CoWoS platform. During this presentation, TSMC’s main competitor, Samsung foundary, seemed to pay quite attention to this technology and try to find out the depth of the trenches. Let the games begin! So, which process first, DTC or TSV? 😊
+
+Memory Technology (Ferroelectrics)
+
+In all honesty, my focus on emerging memories has shifted away from FRAM after the launch of a few niche applications. This was mainly due to the integration challenge it has with the mainstream CMOS process and limited scalability of capacitor-based (1T-1C) as well as transistor-based (1T) ferroelectric memory cells with the commonly used perovskites (i.e. PZT or SBT) materials. It’s well known that PZT based FRAM is very hard to integrate with CMOS process, resulting in a limited scaling.
+
+So, what triggered me to change my view on this technology?
+
+Prior to the IEDM, I had some of my own questions on Ferroelectrics:  
+
+How is the progress since its discovery of ferroelectricity in (doped) hafnium oxide which could solve the scaling and integration issues?
+
+Are the Physics behind it well understood now? Or are more studies needed?
+
+Is it really ready to compete against other persistent memories? If so, which applications? Embedded or Standalone?
+
+What configuration would have a better chance? 1T+1C or 1T? Or something else?
+
+What would be the rough estimation that the fully functioning die would be ready to be sampled? Is it too early to discuss such a thing?
+
+And more…
+
+While not all my questions were answered, I was very impressed by the attention that it was getting from both academia and industry. The huge momentum and positive progresses were definitely felt.
+
+Rather than writing an analysis, allow me to simplify what I have learned into bullet points. I think it’s too early to make a sound judgement on this device. Perhaps after a year or two.  
+
+So, here they are:
+
+Ferroelectric hafnium oxide is very “friendly” with the mainstream CMOS process where Hafnium oxide (HfO2) is used as the gate dielectric in modern transistors since 2007. So far, highly scaled 1T FRAM at the 2X nm node, as well as the possibility of a DRAM-like 3D-integration of 1T-1C FRAM has been demonstrated.
+
+Ferroelectric Field-Effect Transistors (FeFETs) with orthorhombic-phase HfO2 film have gained significant attention as embedded nonvolatile memories because of CMOS compatibility and device scalability. However, there are ONLY a few experimental reports about the threshold voltage (Vth) variation for the HfO2-based FeFET memory, which is crucial for scaled memory array operation.
+
+Also, it’s been observed that the Vth variation of the two polarization states, high Vth and low Vth states, are overlapping for industrial scaled FeFETs. Does it mean indirectly that there might be an issue with array operations with FeFETs?
+
+Complete understanding of physics isn’t yet there. The understanding of the influences of doping, stress, oxygen content, surface energy and their interaction is still in the phase of intense researches. The exact mechanism in thin film is still NOT fully understood.
+
+Many reports indicate that various dopants can stabilize the ferroelectric properties in HfO2 films, however, it has not been clearly understood how dopants and other process conditions induce the ferroelectric phase in HfO2.
+
+Although the enhancement of the endurance with additional doping as the one of IEDM papers shows, it’s only making an estimative extrapolation that the cycle could reach up to 1010 – 1012. Again, it’s a prediction with no real confirmation but still won’t be able to meet DRAM (or SRAM)’s unlimited endurance demands.
+
+It’s been demonstrated by Duenkel et al. in 2017 that a standard CMOS device can be integrated next to a FeFET device using the GlobalFoundries 28nm FeFET process without deteriorating either the FeFET or the standard CMOS device performance.
+
+Figure (a) shows HfO2based FeFET integrated next to a standard nFET where (in Figure (b)) voltage threshold (Vth) distributions for low Vth, high Vth of the FeFET and standard nFET for devices integrated next to each other (2T NOR) in comparison to separated devices (AND).
+
+ (Source: Duenkel et al. IEDM Tech Digest 2017 and re-iterated in IEDM 2019) 
+
+Together with the possibility to integrate the FeFETs very close to other CMOS logic devices, open the path towards overcoming the von-Neumann bottleneck to have in-memory compute. When the stored information inside a FeFET is used as one input variable, calculations with this variable can be done without a memory access. Well, without sufficient cycling from FeFET, it can easily become a nice lab work, like some of other persistent memories out there today.
+
+Teams from Taiwan demonstrated and reported a CMOS-compatible HfZrOx FRAM technology that shows endurance of 109 cycles and 10-year retention at 85OC with 3D FRAM.
+
+Coercive voltage (Vc) shift during data retention, known as “imprint”, has been regarded as a major issue for ferroelectric materials memory operation. Imprint leads, for example, to the requirement of a larger operating voltage, which results in a higher voltage stress and lower endurance.
+
+Understanding the physical mechanism of imprint is important to improve the FeFET-based memory performance. Controlling the charge trapping and the resulting imprinting is crutial in order to ensure the reliability of the FeFET memory. With the limited cycles due to imprint and other effects, extremely unlikely that this will replace DRAM or SRAM. This is a very critical issue to tackle.
+
+Well, based on this current progress and the history of typical “Memory” device developments, it’s safe to speculate that the real working sample would be at least 5 to 10 years away from today.
+
+Although Ferroelectric HfO2 is in their early stage compared to the decade’s long developments on PCM, MRAM, ReRAM and even PZT-based FRAM and its physics yet to be fully understood, my overall impression is still good. It has a promising future in the embedded memory markets (but highly unlikely for standalone) like other emerging memory technologies. In my view, it has the fundamental (and unique) advantage over other emerging memory devices, that is, HfO2 is used in any advanced CMOS manufacturing environments from both logic and memory fabrication baselines. This would help lowering the adoption barrier and the development cost tremendously.  
+
+With the huge attention and great momentum seen in the conference, the future of Ferroelectric RAM is brighter than ever. I believe this can be realized faster with more involvements from main memory players. Nonetheless, I have noticed some participation from Kioxia but not from Samsung, WDC, SkHynix, Intel or Micron at the conference. Curious when they will get involved in this research. This could jump the momentum and progress further.
+
+I think it will be a great contender in the embedded memory market by 2025. However, for short term, SCM domain applications will be implemented mainly by other emerging memory devices.
+
+Stay tuned for Part 3!
+
+Share this:
+
+ Share on X (Opens in new window)
+ X
+
+ Share on Facebook (Opens in new window)
+ Facebook
+
+Like Loading...
+
+Related
+
+ Posted byJayDecember 31, 2019Posted inUncategorized 
+
+Post navigation
+
+Previous Post Previous post: 
+
+IEDM 2019 (Part 1) Keynotes and Memory Technology (STT-MRAM)
+
+Next Post Next post: 
+
+More about Zoned Namespace (ZNS) NVMe (Challenges and New Concepts)
+
+Leave a Reply Cancel reply
+
+Comment
+
+Name
+
+Email
+
+Website
+
+Δ
+
+Blog Stats
+
+12,751 Views
+
+ The Media News,
+Blog at WordPress.com. 
+
+ Privacy & Cookies: This site uses cookies. By continuing to use this website, you agree to their use. 
+
+To find out more, including how to control cookies, see here:
+
+ Cookie Policy 
+
+ Comment 
+
+ Reblog
+
+ Subscribe
+
+ Subscribed
+
+The Media News
+
+ Sign me up
+
+ Have a WordPress.com account? Log in now. 
+
+The Media News
+
+Copy shortlinkView post in Reader
+
+Manage subscriptionsSign upLog in
+
+Report this content
+
+Collapse this bar
+
+ Loading Comments...
+
+ Write a Comment...
+
+ Email (Required)
+
+ Name (Required)
+
+ Website
+
+%d
+
+Create your own website, free on WordPress.com.Create your own website.
+Start free

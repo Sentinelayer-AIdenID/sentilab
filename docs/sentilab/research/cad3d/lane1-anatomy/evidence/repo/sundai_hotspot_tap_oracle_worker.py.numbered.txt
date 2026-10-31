@@ -1,0 +1,465 @@
+# git -C H:/sentilab show origin/main:sundai_hotspot/tap_oracle_worker.py | cat -n
+# origin/main = 46791be360555d0e24b4ad5f906abafb71f07118
+     1	"""Persistent isolated TAP worker; each request launches one bounded HotSpot process."""
+     2	from __future__ import annotations
+     3	
+     4	import hashlib
+     5	from contextlib import contextmanager
+     6	import json
+     7	import math
+     8	import os
+     9	from pathlib import Path
+    10	import re
+    11	import resource
+    12	import subprocess
+    13	import sys
+    14	import tempfile
+    15	import time
+    16	
+    17	
+    18	_MODULE_STARTED = time.perf_counter()
+    19	_STARTUP_ACCOUNTED = False
+    20	
+    21	TAP_ROOT = Path(__file__).resolve().parent.parent / "sundai_tap"
+    22	HOTSPOT_ROOT = Path(__file__).resolve().parent
+    23	REPO_ROOT = HOTSPOT_ROOT.parent
+    24	if str(TAP_ROOT) not in sys.path:
+    25	    sys.path.insert(0, str(TAP_ROOT))
+    26	from passive_interposer import PassiveInterposer  # noqa: E402
+    27	
+    28	if str(HOTSPOT_ROOT) not in sys.path:
+    29	    sys.path.insert(0, str(HOTSPOT_ROOT))
+    30	from ci_gate import run_hotspot  # noqa: E402
+    31	
+    32	
+    33	@contextmanager
+    34	def _output_directory(workspace_root, retained_root=None):
+    35	    if retained_root is None:
+    36	        with tempfile.TemporaryDirectory(prefix='tfl-hotspot-', dir=workspace_root) as directory:
+    37	            yield directory
+    38	        return
+    39	    if not isinstance(retained_root, str) or not Path(retained_root).is_absolute():
+    40	        raise ValueError('retained output root must be an absolute parent-owned directory')
+    41	    root = Path(retained_root).resolve(strict=True)
+    42	    # Only the parent supplies this path; use a fresh child, never a caller-supplied filename.
+    43	    directory = Path(tempfile.mkdtemp(prefix='evaluation-', dir=root)).resolve()
+    44	    directory.relative_to(root)
+    45	    yield str(directory)
+    46	
+    47	
+    48	def _sha256(path: Path) -> str:
+    49	    return hashlib.sha256(path.read_bytes()).hexdigest()
+    50	
+    51	
+    52	def _finite_number(value, label: str) -> float:
+    53	    if isinstance(value, bool) or not isinstance(value, (int, float)):
+    54	        raise ValueError(f"{label} must be a finite number")
+    55	    result = float(value)
+    56	    if not math.isfinite(result):
+    57	        raise ValueError(f"{label} must be a finite number")
+    58	    return result
+    59	
+    60	
+    61	def _parse_grid(path: Path, rows: int, cols: int) -> tuple[tuple[tuple[float, ...], ...], float]:
+    62	    layers: dict[int, list[float]] = {}
+    63	    current_layer = None
+    64	    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+    65	        stripped = line.strip()
+    66	        if not stripped:
+    67	            continue
+    68	        if stripped.startswith("Layer "):
+    69	            match = re.fullmatch(r"Layer\s+(\d+):", stripped)
+    70	            if not match:
+    71	                raise ValueError(f"invalid grid layer header at line {line_number}")
+    72	            current_layer = int(match.group(1))
+    73	            if current_layer in layers:
+    74	                raise ValueError(f"duplicate grid layer {current_layer}")
+    75	            layers[current_layer] = []
+    76	            continue
+    77	        if current_layer is None:
+    78	            raise ValueError(f"grid value before layer header at line {line_number}")
+    79	        fields = stripped.split()
+    80	        if len(fields) != 2:
+    81	            raise ValueError(f"invalid grid cell at line {line_number}")
+    82	        index = int(fields[0])
+    83	        value = _finite_number(float(fields[1]), "grid temperature")
+    84	        if value <= 0:
+    85	            raise ValueError(f"grid temperature must be positive Kelvin at line {line_number}")
+    86	        values = layers[current_layer]
+    87	        if index != len(values):
+    88	            raise ValueError(f"non-sequential grid index at line {line_number}")
+    89	        values.append(value)
+    90	
+    91	    if set(layers) != set(range(8)):
+    92	        raise ValueError("HotSpot did not return all eight TAP layers")
+    93	    expected_cells = rows * cols
+    94	    for layer, values in layers.items():
+    95	        if len(values) != expected_cells:
+    96	            raise ValueError(
+    97	                f"HotSpot layer {layer} has {len(values)} cells; expected {expected_cells}"
+    98	            )
+    99	    values = layers[4]
+   100	    heatmap = tuple(tuple(values[offset:offset + cols]) for offset in range(0, expected_cells, cols))
+   101	    return heatmap, max(max(layer) for layer in layers.values())
+   102	
+   103	
+   104	def _request(raw: bytes) -> dict:
+   105	    if len(raw) > 65536:
+   106	        raise ValueError("oracle request exceeds 64 KiB")
+   107	    value = json.loads(raw.decode("utf-8"))
+   108	    if not isinstance(value, dict):
+   109	        raise ValueError("oracle request must be an object")
+   110	    return value
+   111	
+   112	
+   113	def _retain_solver_output(output, stdout, stderr, status):
+   114	    """Keep original bytes as well as readable text, including timeout payloads."""
+   115	    for name, value in (('stdout', stdout), ('stderr', stderr)):
+   116	        binary = output / f'{name}.bin'
+   117	        status[f'{name}_payload_type'] = type(value).__name__
+   118	        if value is None:
+   119	            data = binary.read_bytes() if binary.exists() else b''
+   120	        else:
+   121	            data = value if isinstance(value, bytes) else value.encode('utf-8')
+   122	        binary.write_bytes(data)
+   123	        (output / f'{name}.txt').write_text(data.decode('utf-8', errors='replace'), encoding='utf-8')
+   124	        status[f'{name}_bytes'] = len(data)
+   125	    (output / 'EXIT.json').write_text(json.dumps(status) + '\n', encoding='utf-8')
+   126	
+   127	
+   128	def _cpu_seconds() -> float:
+   129	    return sum(usage.ru_utime + usage.ru_stime for usage in (
+   130	        resource.getrusage(resource.RUSAGE_SELF), resource.getrusage(resource.RUSAGE_CHILDREN)))
+   131	
+   132	
+   133	def _worker_startup() -> dict:
+   134	    global _STARTUP_ACCOUNTED
+   135	    if _STARTUP_ACCOUNTED:
+   136	        return {'cpu_seconds': 0.0, 'wall_seconds': 0.0}
+   137	    _STARTUP_ACCOUNTED = True
+   138	    usage = resource.getrusage(resource.RUSAGE_SELF)
+   139	    try:
+   140	        # stat field 22 follows the parenthesized comm field; comm may contain spaces.
+   141	        fields = Path('/proc/self/stat').read_text().rsplit(')', 1)[1].split()
+   142	        start_seconds = int(fields[19]) / os.sysconf('SC_CLK_TCK')
+   143	        wall_seconds = time.clock_gettime(time.CLOCK_BOOTTIME) - start_seconds
+   144	    except (OSError, ValueError, AttributeError, IndexError):
+   145	        wall_seconds = time.perf_counter() - _MODULE_STARTED
+   146	    return {'cpu_seconds': usage.ru_utime + usage.ru_stime,
+   147	            'wall_seconds': max(0.0, wall_seconds)}
+   148	
+   149	
+   150	class _PhaseTimings:
+   151	    def __init__(self):
+   152	        self.values = {name: {'cpu_seconds': 0.0, 'wall_seconds': 0.0}
+   153	                       for name in ('generate', 'solve', 'archive')}
+   154	        self.values['worker_startup'] = _worker_startup()
+   155	        self.active = 'generate'
+   156	        self.cpu, self.wall = _cpu_seconds(), time.perf_counter()
+   157	
+   158	    def switch(self, name):
+   159	        cpu, wall = _cpu_seconds(), time.perf_counter()
+   160	        if self.active is not None:
+   161	            phase = self.values[self.active]
+   162	            phase['cpu_seconds'] += max(0.0, cpu - self.cpu)
+   163	            phase['wall_seconds'] += max(0.0, wall - self.wall)
+   164	        self.active, self.cpu, self.wall = name, cpu, wall
+   165	
+   166	    def checkpoint(self, output, status, active_phase=None):
+   167	        self.switch(self.active)
+   168	        path = output / 'PHASES.json'
+   169	        temporary = output / 'PHASES.json.tmp'
+   170	        temporary.write_text(json.dumps({'schema_version': 1, 'status': status,
+   171	                                        'active_phase': active_phase or self.active,
+   172	                                        'phase_timings': self.values}, sort_keys=True) + '\n')
+   173	        temporary.replace(path)
+   174	
+   175	
+   176	def generate_inputs(output: Path, *, size, granularity, widths, heights, powers, connections, link_type,
+   177	                    halos, points, rotated) -> None:
+   178	    """Write TAP's floorplans, power trace and HotSpot config for one layout. Runs no solver.
+   179	
+   180	    TAP reads util/hotspot.config relative to the working directory, so call this from TAP_ROOT.
+   181	    """
+   182	    system = PassiveInterposer()
+   183	    system.set_chiplet_count(len(widths))
+   184	    system.initialize()
+   185	    system.set_interposer_size(size)
+   186	    system.set_chiplet_size(list(widths), list(heights))
+   187	    system.set_chiplet_power(list(powers))
+   188	    system.set_connection_matrix([list(row) for row in connections])
+   189	    system.set_granularity(granularity)
+   190	    system.set_link_type(link_type)
+   191	    system.compute_ubump_overhead()
+   192	    if any(not math.isclose(float(actual), expected, rel_tol=0, abs_tol=1e-12)
+   193	           for actual, expected in zip(system.hubump, halos)):
+   194	        raise ValueError("TAP microbump halos differ from the problem contract")
+   195	    # TAP's own rotate swaps a die's width and height; the halo depends on the perimeter only.
+   196	    for index, turned in enumerate(rotated):
+   197	        if turned:
+   198	            system.rotate(index)
+   199	    system.set_path(str(output) + os.sep)
+   200	    system.x = [point[0] for point in points]
+   201	    system.y = [point[1] for point in points]
+   202	    system.gen_flp("sample")
+   203	    system.gen_ptrace("sample")
+   204	
+   205	
+   206	def evaluate(request: dict) -> dict:
+   207	    phases = _PhaseTimings()
+   208	    workspace_root = request.get('workspace_root')
+   209	    if not isinstance(workspace_root, str) or not workspace_root or not Path(workspace_root).is_dir():
+   210	        # Preserve request-validation precedence when there is nowhere to archive.
+   211	        # _evaluate rejects the workspace before generating any native inputs.
+   212	        return _evaluate(request, None, False, phases)
+   213	    retained = request.get('retained_output_root') is not None
+   214	    with _output_directory(Path(workspace_root), request.get('retained_output_root')) as directory:
+   215	        output = Path(directory)
+   216	        result = None
+   217	        status = 'error'
+   218	        try:
+   219	            if retained:
+   220	                phases.switch('archive')
+   221	                (output / 'REQUEST.json').write_text(json.dumps(request, sort_keys=True) + '\n')
+   222	                phases.checkpoint(output, 'generating', 'generate')
+   223	                phases.switch('generate')
+   224	            result = _evaluate(request, output, retained, phases)
+   225	            status = 'complete'
+   226	            return result
+   227	        except Exception as exc:
+   228	            phases.switch('archive')
+   229	            if retained:
+   230	                (output / 'ERROR.json').write_text(json.dumps({
+   231	                    'error_type': type(exc).__name__, 'error': str(exc)}) + '\n')
+   232	                if not (output / 'EXIT.json').exists():
+   233	                    _retain_solver_output(output, None, None,
+   234	                                          {'status': 'worker_error', 'returncode': None})
+   235	            exc.phase_timings = phases.values
+   236	            exc.raw_output_directory = str(output) if retained else None
+   237	            raise
+   238	        finally:
+   239	            phases.switch('archive')
+   240	            if retained:
+   241	                artifacts = {path.name: _sha256(path) for path in sorted(output.iterdir())
+   242	                             if path.is_file() and path.name not in {'PHASES.json', 'ARTIFACTS.json'}}
+   243	                (output / 'ARTIFACTS.json').write_text(json.dumps(artifacts, sort_keys=True) + '\n')
+   244	            phases.switch(None)
+   245	            if result is not None:
+   246	                result['phase_timings'] = phases.values
+   247	                result['raw_output_directory'] = str(output) if retained else None
+   248	            if retained:
+   249	                phases.checkpoint(output, status)
+   250	
+   251	
+   252	def _evaluate(request: dict, output: Path | None, retained: bool, phases: _PhaseTimings) -> dict:
+   253	    requested_binary = request.get("hotspot_binary")
+   254	    if not isinstance(requested_binary, str) or not requested_binary:
+   255	        raise ValueError("HotSpot binary path is missing")
+   256	    hotspot_binary = Path(requested_binary).resolve()
+   257	    if not hotspot_binary.is_file():
+   258	        raise FileNotFoundError(f"HotSpot binary is not built: {hotspot_binary}")
+   259	    expected_binary_sha256 = request.get("expected_binary_sha256")
+   260	    binary_sha256 = _sha256(hotspot_binary)
+   261	    if expected_binary_sha256 != binary_sha256:
+   262	        raise ValueError("HotSpot binary changed after the problem contract was created")
+   263	    expected_sources = request.get("expected_source_sha256")
+   264	    if not isinstance(expected_sources, dict) or not expected_sources:
+   265	        raise ValueError("problem source hashes are missing")
+   266	    for relative_path, expected_sha256 in expected_sources.items():
+   267	        if (not isinstance(relative_path, str) or not isinstance(expected_sha256, str) or
+   268	                not re.fullmatch(r"[0-9a-f]{64}", expected_sha256)):
+   269	            raise ValueError("problem source hash is malformed")
+   270	        source_path = (REPO_ROOT / relative_path).resolve()
+   271	        if not source_path.is_relative_to(REPO_ROOT) or not source_path.is_file():
+   272	            raise ValueError("problem source path is invalid")
+   273	        if _sha256(source_path) != expected_sha256:
+   274	            raise ValueError(f"problem source changed during oracle run: {relative_path}")
+   275	
+   276	    candidate_hash = request.get("candidate_hash")
+   277	    problem_hash = request.get("problem_hash")
+   278	    if not isinstance(candidate_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", candidate_hash):
+   279	        raise ValueError("invalid candidate hash")
+   280	    if not isinstance(problem_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", problem_hash):
+   281	        raise ValueError("invalid problem hash")
+   282	
+   283	    rows = request.get("grid_rows")
+   284	    cols = request.get("grid_cols")
+   285	    if (isinstance(rows, bool) or not isinstance(rows, int) or not 1 <= rows <= 128 or
+   286	            isinstance(cols, bool) or not isinstance(cols, int) or not 1 <= cols <= 128):
+   287	        raise ValueError("invalid HotSpot grid dimensions")
+   288	    timeout = _finite_number(request.get("solver_timeout_s"), "solver timeout")
+   289	    if timeout <= 0:
+   290	        raise ValueError("solver timeout must be positive")
+   291	
+   292	    centers = request.get("centers_mm")
+   293	    if not isinstance(centers, list) or len(centers) == 0:
+   294	        raise ValueError("TAP fixture requires at least one chiplet center")
+   295	    points = []
+   296	    for index, point in enumerate(centers):
+   297	        if not isinstance(point, list) or len(point) != 2:
+   298	            raise ValueError(f"invalid center for chiplet {index}")
+   299	        points.append(tuple(_finite_number(value, f"chiplet {index} center") for value in point))
+   300	
+   301	    parameters = request.get("tap_parameters")
+   302	    required_parameters = {
+   303	        "interposer_size_mm", "widths_mm", "heights_mm", "powers_w", "connections",
+   304	        "link_type", "granularity_mm", "bump_halos_mm", "ambient_c",
+   305	    }
+   306	    if not isinstance(parameters, dict) or set(parameters) != required_parameters:
+   307	        raise ValueError("TAP parameters are missing or malformed")
+   308	    size = _finite_number(parameters["interposer_size_mm"], "interposer size")
+   309	    granularity = _finite_number(parameters["granularity_mm"], "placement granularity")
+   310	    ambient_c = _finite_number(parameters["ambient_c"], "ambient temperature")
+   311	    widths = tuple(_finite_number(value, "chiplet width") for value in parameters["widths_mm"])
+   312	    heights = tuple(_finite_number(value, "chiplet height") for value in parameters["heights_mm"])
+   313	    powers = tuple(_finite_number(value, "chiplet power") for value in parameters["powers_w"])
+   314	    halos = tuple(_finite_number(value, "microbump halo") for value in parameters["bump_halos_mm"])
+   315	    connections = tuple(tuple(_finite_number(value, "connection weight") for value in row)
+   316	                        for row in parameters["connections"])
+   317	    count = len(widths)
+   318	    if (size <= 0 or granularity <= 0 or len(points) != count or len(heights) != count or len(powers) != count or
+   319	            len(halos) != count or len(connections) != count or any(len(row) != count for row in connections) or
+   320	            not isinstance(parameters["link_type"], str)):
+   321	        raise ValueError("TAP fixture parameters are inconsistent")
+   322	    # Absent means the configured orientation for every die (requests that predate rotation).
+   323	    rotated = request.get("rotated", [False] * count)
+   324	    if not isinstance(rotated, list) or len(rotated) != count or any(not isinstance(flag, bool) for flag in rotated):
+   325	        raise ValueError("TAP rotation flags are malformed")
+   326	
+   327	    workspace_root = request.get('workspace_root')
+   328	    if not isinstance(workspace_root, str) or not workspace_root:
+   329	        raise ValueError('parent-owned workspace path is missing')
+   330	    if output is None:
+   331	        raise ValueError('parent-owned workspace is unavailable')
+   332	
+   333	    # The worker starts in TAP_ROOT for the legacy generator's relative config.
+   334	    started_generation = time.perf_counter()
+   335	    generate_inputs(output, size=size, granularity=granularity, widths=widths, heights=heights,
+   336	                    powers=powers, connections=connections, link_type=parameters["link_type"],
+   337	                    halos=halos, points=points, rotated=rotated)
+   338	    generation_seconds = time.perf_counter() - started_generation
+   339	
+   340	    config = output / "new_hotspot.config"
+   341	    floorplan = output / "sampleL4_ChipLayer.flp"
+   342	    trace = output / "sample.ptrace"
+   343	    steady = output / "sample.steady"
+   344	    grid = output / "sample.grid.steady"
+   345	    layers = output / "samplelayers.lcf"
+   346	    input_paths = tuple(sorted(path for path in output.iterdir()
+   347	                              if path.is_file() and path.name not in {'REQUEST.json', 'PHASES.json'}))
+   348	    input_hashes = {path.name: _sha256(path) for path in input_paths}
+   349	    layer_references = {
+   350	        Path(line.strip()).name
+   351	        for line in layers.read_text(encoding="utf-8").splitlines()
+   352	        if line.strip().endswith(".flp")
+   353	    }
+   354	    if not layer_references or not layer_references.issubset(input_hashes):
+   355	        raise RuntimeError("TAP layer config references an unhashed generated floorplan")
+   356	    command = [
+   357	        str(hotspot_binary),
+   358	        "-c", str(config),
+   359	        "-f", str(floorplan),
+   360	        "-p", str(trace),
+   361	        "-steady_file", str(steady),
+   362	        "-grid_steady_file", str(grid),
+   363	        "-model_type", "grid",
+   364	        "-detailed_3D", "on",
+   365	        "-grid_layer_file", str(layers),
+   366	        "-grid_rows", str(rows),
+   367	        "-grid_cols", str(cols),
+   368	        "-grid_map_mode", "max",
+   369	    ]
+   370	    # The native process receives exactly this environment, never inherited secrets.
+   371	    environment = {'LANG': 'C', 'LC_ALL': 'C', 'TZ': 'UTC'}
+   372	    phases.switch('archive')
+   373	    if retained:
+   374	        (output / 'COMMAND.json').write_text(json.dumps({
+   375	            'command': command, 'cwd': str(HOTSPOT_ROOT), 'environment': environment},
+   376	            sort_keys=True) + '\n')
+   377	        (output / 'IDENTITIES.json').write_text(json.dumps({
+   378	            'binary_sha256': binary_sha256, 'source_sha256': expected_sources,
+   379	            'image_identity': request.get('image_identity'),
+   380	            'candidate_hash': candidate_hash, 'problem_hash': problem_hash},
+   381	            sort_keys=True) + '\n')
+   382	        (output / 'INPUTS.json').write_text(json.dumps(input_hashes, sort_keys=True) + '\n')
+   383	        phases.checkpoint(output, 'solving', 'solve')
+   384	    phases.switch('solve')
+   385	    solver_started = time.perf_counter()
+   386	    # File-backed streams survive a parent-enforced worker/process-group kill.
+   387	    from contextlib import ExitStack
+   388	    try:
+   389	        with ExitStack() as streams:
+   390	            outputs = ({name: streams.enter_context((output / f'{name}.bin').open('wb'))
+   391	                        for name in ('stdout', 'stderr')} if retained else {'capture_output': True})
+   392	            process = run_hotspot(command, cwd=HOTSPOT_ROOT, text=True,
+   393	                                     timeout=timeout, check=False, env=environment, **outputs)
+   394	    except subprocess.TimeoutExpired as exc:
+   395	        phases.switch('archive')
+   396	        if retained:
+   397	            _retain_solver_output(output, exc.stdout, exc.stderr,
+   398	                                  {'status': 'timeout', 'returncode': None, 'command': command,
+   399	                                   'timeout_s': timeout,
+   400	                                   'elapsed_s': time.perf_counter() - solver_started})
+   401	            (output / 'TIMEOUT.txt').write_text(str(exc))
+   402	        raise TimeoutError(f"TFL_ORACLE_TIMEOUT HotSpot exceeded {timeout:g} seconds") from exc
+   403	    finally:
+   404	        phases.switch('archive')
+   405	    solver_seconds = time.perf_counter() - solver_started
+   406	    if retained:
+   407	        _retain_solver_output(output, process.stdout, process.stderr,
+   408	                              {'status': 'exited', 'returncode': process.returncode, 'command': command})
+   409	    if process.returncode != 0:
+   410	        stdout = (output / 'stdout.txt').read_text() if retained else process.stdout
+   411	        stderr = (output / 'stderr.txt').read_text() if retained else process.stderr
+   412	        detail = (stderr + "\n" + stdout)[-4000:].strip()
+   413	        raise RuntimeError(f"HotSpot exited {process.returncode}: {detail}")
+   414	    if not grid.is_file() or grid.stat().st_size == 0:
+   415	        raise RuntimeError("HotSpot completed without a grid steady-state file")
+   416	
+   417	    heatmap, all_layers_peak = _parse_grid(grid, rows, cols)
+   418	    return {
+   419	        "candidate_hash": candidate_hash,
+   420	        "problem_hash": problem_hash,
+   421	        "binary_sha256": binary_sha256,
+   422	        "grid_rows": rows,
+   423	        "grid_cols": cols,
+   424	        "ambient_c": ambient_c,
+   425	        "heatmap_c": [[cell - 273.15 for cell in row] for row in heatmap],
+   426	        "maximum_temperature_c": max(max(row) for row in heatmap) - 273.15,
+   427	        "all_layers_peak_c": all_layers_peak - 273.15,
+   428	        "solver_seconds": solver_seconds,
+   429	        "input_generation_seconds": generation_seconds,
+   430	        "input_sha256": input_hashes,
+   431	    }
+   432	
+   433	
+   434	def main() -> int:
+   435	    # The parent leases this process to one request at a time. Each request
+   436	    # still gets a fresh output TemporaryDirectory, and evaluate() re-hashes
+   437	    # the binary and every generator source before starting HotSpot.
+   438	    while True:
+   439	        raw = sys.stdin.buffer.readline(65538)
+   440	        if not raw:
+   441	            return 0
+   442	        if len(raw) > 65537 or not raw.endswith(b"\n"):
+   443	            response = {"ok": False, "error_type": "ValueError", "error": "oracle request exceeds 64 KiB or is not line terminated"}
+   444	            print(json.dumps(response, separators=(",", ":")), flush=True)
+   445	            return 1
+   446	        try:
+   447	            request = _request(raw[:-1])
+   448	            result = evaluate(request)
+   449	        except Exception as exc:  # one failed request poisons this worker; the parent replaces it
+   450	            response = {
+   451	                "ok": False,
+   452	                "error_type": type(exc).__name__,
+   453	                "error": f"{type(exc).__name__}: {exc}"[-2000:],
+   454	                "phase_timings": getattr(exc, 'phase_timings', {}),
+   455	                "raw_output_directory": getattr(exc, 'raw_output_directory', None),
+   456	            }
+   457	            print(json.dumps(response, separators=(",", ":")), flush=True)
+   458	            return 1
+   459	        print(json.dumps({"ok": True, "result": result}, separators=(",", ":"), allow_nan=False), flush=True)
+   460	
+   461	
+   462	if __name__ == "__main__":
+   463	    raise SystemExit(main())

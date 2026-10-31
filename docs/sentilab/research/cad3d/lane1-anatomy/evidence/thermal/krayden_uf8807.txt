@@ -1,0 +1,178 @@
+Loctite Eccobond UF 8807 | Semiconductor level underfill with low moisture absorption. | Krayden 
+
+Looking for Aviation MRO solutions?
+
+Visit Aerospheres, part of the Krayden group.
+
+ Products 
+
+About Krayden
+ Learn more about Krayden and the products and services we offer
+ Discover our story
+
+ Applications 
+
+ Brands 
+
+Our Premier Partners
+ Browse our premier partners available through Krayden
+ Meet our partners
+
+ Services 
+
+Our services
+ Discover the range of services we offer to meet your needs
+ Explore our services
+
+Careers
+
+ Blog
+
+ Contact us
+
+Search 
+
+Home
+
+ Products 
+
+ Encapsulants & Underfills 
+
+ Underfills 
+
+ LOCTITE ECCOBOND UF 8807 
+
+LOCTITE ECCOBOND UF 8807
+
+Harmonization Code : 3907.30.00.85 | Polyacetals, other polyethers and epoxide resins, in primary forms; polycarbonates, alkyd resins, polyallyl esters and other polyesters, in primary forms : Epoxide resins : Other 
+
+Main features
+
+Cyanate Ester
+
+Fast cure - Low temp
+
+Superior adhesion after moisture testing
+
+Product Description
+
+LOCTITE ECCOBOND UF 8807 is formulated using a novel moisture Resistant Cyanate Ester (MRCE) chemistry. This material's characteristics help to reduce thermal and mechanical stresses between CSP packages and HDI substrates in MPM applications on organic substrates. It is silica filled with 63.5% solids content.
+
+LOCTITE ECCOBOND UF 8807 is an electrically insulating, semiconductor level capillary underfill that offers excellent flow characteristics for high density arrays. An optimized particle size distribution allows LOCTITE ECCOBOND UF 8807 adhesive to flow rapidly into gaps of 10 mil and greater to form a protective polymer when cured.
+
+Cure Schedule
+
+15 minute ramp to 165°C + 30 minutes @ 165°C
+
+3 hours @ 125°C
+
+Product Family 
+UF8807/30D0
+ 30cc Syringe - 1454433
+
+1. Select Package Type 
+30cc Syringe
+
+Price on request 
+This product is sold by quotation rather than directly from the website. Contact us for a price.
+
+Contact for pricing
+
+ Packaging 
+
+Unit of measure Syringe
+
+Net weight 51 g
+
+Gross weight 68 g
+
+Dimensions 3 x 3 x 11.8 cm
+
+ TDS, SDS & Technical Documents 
+
+ECCOBOND UF 8807-EN
+
+English (Technical Data Sheet (TDS)) 
+
+1454433_MSDS_UT_GB_EN
+
+English (Safety Data Sheet (SDS)) 
+
+CAPLINQ Underfill Material Handling Guide
+
+English (Technical documents) 
+
+ Specifications 
+
+Technical Specifications
+
+ General Properties 
+
+ Work life @25°C 
+Work life is the amount of time we have to work with a material until it is no longer able to be easily worked and applied on a substrate. 
+
+It is based on the change in viscosity and it can rely on the application requirements.
+
+ 8 hours 
+
+ Thermal Properties 
+
+ Glass Transition Temperature (Tg) 
+The glass transition temperature for organic adhesives is a temperature region where the polymers change from glassy and brittle to soft and rubbery. Increasing the temperature further continues the softening process as the viscosity drops too. Temperatures between the glass transition temperature and below the decomposition point of the adhesive are the best region for bonding. 
+
+The glass-transition temperature Tg of a material characterizes the range of temperatures over which this glass transition occurs.
+
+ 130 °C 
+
+ Thermal Conductivity 
+Thermal conductivity describes the ability of a material to conduct heat. It is required by power packages in order to dissipate heat and maintain stable electrical performance. 
+
+Thermal conductivity units are [W/(m K)] in the SI system and [Btu/(hr ft °F)] in the Imperial system.
+
+ 0.6 W/m.K 
+
+ Weight Loss @ 300°C 
+ 1.4 % 
+
+ Physical Properties 
+
+ Thixotropic index 
+Thixotropic Index is a ratio of a material s viscosity at two different speeds in Ambient temperature, generally different by a factor of ten. 
+
+A thixotropic material s viscosity will decrease as agitation or pressure is increased. It indicates the capability of a material to hold its shape. Mayonnaise is a great example of this. It holds its shape very well, but when a shear stress is applied, the material easily spreads. 
+
+It helps in choosing a material in accordance to the application, dispense method and viscosity of a material.
+
+ 0.75 
+
+ Viscosity 
+Viscosity is a measurement of a fluid’s resistance to flow. 
+
+Viscosity is commonly measured in centiPoise (cP). One cP is defined as 
+the viscosity of water and all other viscosities are derived from this base. MPa is another common unit with a 1:1 conversion to cP. 
+
+A product like honey would have a much higher viscosity -around 10,000 cPs- 
+compared to water. As a result, honey would flow much slower out of a tipped glass than 
+water would. 
+
+The viscosity of a material can be decreased with an increase in temperature in 
+order to better suit an application
+
+ 13,000 mPa.s 
+
+Leading Brands Trust in Our Products and Services
+
+ Products that Perform| Knowledge that Serves| Service that Delivers
+
+ Krayden Inc. 
+
+1491 West 124th Avenue,
+ Denver, Colorado
+
+Phone: +1 (800)448-0406
+
+Certifications
+
+ Follow us 
+
+Krayden, Inc. © 2026. All Rights Reserved.

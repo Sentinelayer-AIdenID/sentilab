@@ -1,0 +1,1085 @@
+# git -C H:/sentilab show origin/main:sundai_hotspot/tap_oracle.py | cat -n
+# origin/main = d25046256b4a712b529977f31e10b7e32248a9c0
+     1	"""Warm isolated-worker HotSpot adapter for the TAP-2.5D Ascend910 design."""
+     2	from __future__ import annotations
+     3	
+     4	import asyncio
+     5	import configparser
+     6	from contextlib import asynccontextmanager
+     7	import hashlib
+     8	import json
+     9	import math
+    10	import numbers
+    11	import os
+    12	import signal
+    13	import shutil
+    14	import subprocess
+    15	import sys
+    16	import tempfile
+    17	import time
+    18	from dataclasses import asdict, dataclass, field
+    19	from pathlib import Path
+    20	
+    21	
+    22	REPO_ROOT = Path(__file__).resolve().parent.parent
+    23	TAP_ROOT = REPO_ROOT / "sundai_tap"
+    24	HOTSPOT_ROOT = REPO_ROOT / "sundai_hotspot"
+    25	TAP_CONFIG_DEFAULT_ID = "ascend910"
+    26	TAP_CONFIGS = {
+    27	    "ascend910": TAP_ROOT / "configs" / "sys_ascend910.cfg",
+    28	    "micro150": TAP_ROOT / "configs" / "sys_micro150.cfg",
+    29	    # The TAP-2.5D paper's 45 mm frame (SLAB-048). Same dies and package recipe; the frame and
+    30	    # the [sentilab] legality rules in each file are what differ from the 50 mm fixtures above.
+    31	    "ascend910-45mm": TAP_ROOT / "configs" / "sys_ascend910_45mm.cfg",
+    32	    "micro150-45mm": TAP_ROOT / "configs" / "sys_micro150_45mm.cfg",
+    33	}
+    34	# TAP draws g/2-wide edge strips (g = 1 mm) round the interposer; every die keeps its halo clear of them.
+    35	TAP_MARGIN_MM = 0.5
+    36	SENTILAB_RULES_SECTION = "sentilab"
+    37	ROTATION_MODES = ("catalog", "per_die_90")
+    38	TAP_HOTSPOT_CONFIG = TAP_ROOT / "util" / "hotspot.config"
+    39	HOTSPOT_BINARY = HOTSPOT_ROOT / "hotspot"
+    40	WORKER = HOTSPOT_ROOT / "tap_oracle_worker.py"
+    41	MAX_WORKER_REQUEST_BYTES = 64 * 1024
+    42	MAX_WORKER_RESPONSE_BYTES = 8 * 1024 * 1024
+    43	DEFAULT_MAX_WORKERS = 8
+    44	
+    45	# TAP imports its sibling modules as top-level names and computes the bump
+    46	# halos in PassiveInterposer. Keep its source tree first for those imports.
+    47	if str(TAP_ROOT) in sys.path:
+    48	    sys.path.remove(str(TAP_ROOT))
+    49	sys.path.insert(0, str(TAP_ROOT))
+    50	from passive_interposer import PassiveInterposer  # noqa: E402
+    51	
+    52	if str(REPO_ROOT) not in sys.path:
+    53	    sys.path.insert(0, str(REPO_ROOT))
+    54	from sundai_controller.controller import Chiplet, Design, ThermalResult  # noqa: E402
+    55	
+    56	
+    57	class TapLegalityError(ValueError):
+    58	    """A design violates the TAP benchmark geometry or placement grid."""
+    59	
+    60	
+    61	class HotSpotOracleError(RuntimeError):
+    62	    """HotSpot did not produce a complete, valid thermal result."""
+    63	
+    64	
+    65	class HotSpotTimeoutError(HotSpotOracleError):
+    66	    """The isolated evaluator exceeded its bounded runtime."""
+    67	
+    68	
+    69	@dataclass(frozen=True)
+    70	class HotSpotThermalResult(ThermalResult):
+    71	    """Controller result plus a Manhattan center-distance wire proxy and chip heatmap."""
+    72	
+    73	    @property
+    74	    def evaluator_version(self) -> str:
+    75	        return self.solver_version
+    76	
+    77	    wirelength_mm: float = field(kw_only=True)
+    78	    wire_metric: str = field(kw_only=True)
+    79	    heatmap_c: tuple[tuple[float, ...], ...] = field(kw_only=True)
+    80	    grid_rows: int = field(kw_only=True)
+    81	    grid_cols: int = field(kw_only=True)
+    82	    ambient_c: float = field(kw_only=True)
+    83	    solver_seconds: float = field(kw_only=True)
+    84	    evaluation_seconds: float = field(kw_only=True)
+    85	    input_generation_seconds: float = field(kw_only=True)
+    86	    input_sha256: tuple[tuple[str, str], ...] = field(kw_only=True)
+    87	    all_layers_peak_c: float = field(kw_only=True)
+    88	    fixture_id: str = field(kw_only=True)
+    89	    config_sha256: str = field(kw_only=True)
+    90	    phase_timings: dict = field(default_factory=dict, kw_only=True)
+    91	
+    92	
+    93	@dataclass(frozen=True)
+    94	class TapProblem:
+    95	    fixture_id: str
+    96	    interposer_size_mm: float
+    97	    widths_mm: tuple[float, ...]
+    98	    heights_mm: tuple[float, ...]
+    99	    powers_w: tuple[float, ...]
+   100	    connections: tuple[tuple[float, ...], ...]
+   101	    link_type: str
+   102	    granularity_mm: float
+   103	    bump_halos_mm: tuple[float, ...]
+   104	    ambient_c: float
+   105	    config_sha256: str
+   106	    hotspot_config_sha256: str
+   107	    tap_upstream_commit: str
+   108	    hotspot_upstream_commit: str
+   109	    hotspot_binary_sha256: str
+   110	    generator_sha256: tuple[tuple[str, str], ...]
+   111	
+   112	
+   113	@dataclass(frozen=True)
+   114	class TapLegality:
+   115	    """SentiLab placement rules on top of the TAP problem; TapProblem keeps only the physics inputs.
+   116	
+   117	    The 50 mm fixtures declare no rules and keep their historical defaults: the 1 mm TAP grid,
+   118	    catalog orientation only and halo clearance as the only spacing rule.
+   119	    """
+   120	
+   121	    margin_mm: float
+   122	    center_lattice_mm: float | None
+   123	    min_die_gap_mm: float
+   124	    rotation: str
+   125	    # Allowed (width, height) footprints per die, in die order; a turned die swaps the pair.
+   126	    orientation_catalog_mm: tuple[tuple[tuple[float, float], ...], ...]
+   127	
+   128	
+   129	@dataclass(frozen=True)
+   130	class LayoutViolation:
+   131	    """One placement-rule miss: rule is margin, lattice, halo_overlap or min_spacing."""
+   132	
+   133	    rule: str
+   134	    dies: tuple[int, ...]
+   135	    amount_mm: float
+   136	    message: str
+   137	
+   138	
+   139	def _same_mm(a: float, b: float) -> bool:
+   140	    return math.isclose(a, b, rel_tol=0, abs_tol=1e-9)
+   141	
+   142	
+   143	def _sha256(path: Path) -> str:
+   144	    return hashlib.sha256(path.read_bytes()).hexdigest()
+   145	
+   146	
+   147	def _read_text(path: Path) -> str:
+   148	    return path.read_text(encoding="utf-8")
+   149	
+   150	
+   151	def _read_upstream_commit(path: Path) -> str:
+   152	    value = _read_text(path).strip()
+   153	    if not value or any(ch not in "0123456789abcdefABCDEF" for ch in value):
+   154	        raise HotSpotOracleError(f"invalid upstream commit marker: {path.name}")
+   155	    return value.lower()
+   156	
+   157	
+   158	def _parse_float_list(value: str, label: str) -> tuple[float, ...]:
+   159	    try:
+   160	        values = tuple(float(item.strip()) for item in value.replace("\n", "").split(",") if item.strip())
+   161	    except ValueError as exc:
+   162	        raise HotSpotOracleError(f"invalid TAP {label}") from exc
+   163	    if not values or not all(math.isfinite(item) for item in values):
+   164	        raise HotSpotOracleError(f"invalid TAP {label}")
+   165	    return values
+   166	
+   167	
+   168	def _load_problem(*, config_path: Path = TAP_CONFIGS[TAP_CONFIG_DEFAULT_ID],
+   169	                  hotspot_binary: Path | None = HOTSPOT_BINARY) -> TapProblem:
+   170	    """Load the TAP problem. hotspot_binary=None gives a geometry-only problem with no solver identity."""
+   171	    if not config_path.is_file() or not TAP_HOTSPOT_CONFIG.is_file():
+   172	        raise HotSpotOracleError(f"TAP fixture configuration is missing: {config_path}")
+   173	    if hotspot_binary is not None and not hotspot_binary.is_file():
+   174	        raise HotSpotOracleError(f"HotSpot binary is not built: {hotspot_binary}")
+   175	
+   176	    parser = configparser.ConfigParser(interpolation=None)
+   177	    parser.read_string(_read_text(config_path))
+   178	    count = parser.getint("chiplets", "chiplet_count")
+   179	    widths = _parse_float_list(parser.get("chiplets", "widths"), "widths")
+   180	    heights = _parse_float_list(parser.get("chiplets", "heights"), "heights")
+   181	    powers = _parse_float_list(parser.get("chiplets", "powers"), "powers")
+   182	    rows = parser.get("chiplets", "connections").split(";")
+   183	    try:
+   184	        connections = tuple(tuple(float(value.strip()) for value in row.split(",") if value.strip())
+   185	                            for row in rows if row.strip())
+   186	        connections = tuple(tuple(float(value) for value in row) for row in connections)
+   187	        size = parser.getfloat("interposer", "intp_size")
+   188	        granularity = parser.getfloat("general", "placer_granularity", fallback=1.0)
+   189	        link_type = parser.get("interposer", "link_type", fallback="nppl")
+   190	    except (ValueError, configparser.Error) as exc:
+   191	        raise HotSpotOracleError("invalid TAP fixture configuration") from exc
+   192	    if (count != len(widths) or count != len(heights) or count != len(powers) or
+   193	            len(connections) != count or any(len(row) != count for row in connections) or
+   194	            not math.isfinite(size) or size <= 0 or not math.isfinite(granularity) or granularity <= 0):
+   195	        raise HotSpotOracleError("inconsistent TAP fixture configuration")
+   196	
+   197	    ambient_kelvin = None
+   198	    for line in _read_text(TAP_HOTSPOT_CONFIG).splitlines():
+   199	        parts = line.split()
+   200	        if parts and parts[0] == "-ambient" and len(parts) == 2:
+   201	            ambient_kelvin = float(parts[1])
+   202	            break
+   203	    if ambient_kelvin is None or not math.isfinite(ambient_kelvin) or ambient_kelvin <= 0:
+   204	        raise HotSpotOracleError("TAP HotSpot config has no valid ambient temperature")
+   205	
+   206	    system = PassiveInterposer()
+   207	    system.set_chiplet_count(count)
+   208	    system.initialize()
+   209	    system.set_link_type(link_type)
+   210	    system.set_chiplet_size(list(widths), list(heights))
+   211	    system.set_connection_matrix([list(row) for row in connections])
+   212	    system.compute_ubump_overhead()
+   213	    bump_halos = tuple(float(value) for value in system.hubump)
+   214	
+   215	    generator_paths = (
+   216	        config_path,
+   217	        TAP_HOTSPOT_CONFIG,
+   218	        TAP_ROOT / "UPSTREAM_COMMIT",
+   219	        HOTSPOT_ROOT / "UPSTREAM_COMMIT",
+   220	        TAP_ROOT / "passive_interposer.py",
+   221	        TAP_ROOT / "system.py",
+   222	        TAP_ROOT / "init_placement.py",
+   223	        TAP_ROOT / "block_occupation.py",
+   224	        TAP_ROOT / "fastSA.py",
+   225	        TAP_ROOT / "bstree.py",
+   226	        TAP_ROOT / "util" / "fill_space.py",
+   227	        Path(__file__).resolve(),
+   228	        WORKER,
+   229	    )
+   230	    generators = tuple((path.relative_to(REPO_ROOT).as_posix(), _sha256(path)) for path in generator_paths)
+   231	    fixture_id = next(
+   232	        (fixture_id for fixture_id, fixture_path in TAP_CONFIGS.items() if fixture_path.resolve() == config_path.resolve()),
+   233	        None,
+   234	    )
+   235	    if fixture_id is None:
+   236	        raise HotSpotOracleError(f"unknown TAP fixture for config path: {config_path}")
+   237	    return TapProblem(
+   238	        fixture_id=fixture_id,
+   239	        interposer_size_mm=size,
+   240	        widths_mm=widths,
+   241	        heights_mm=heights,
+   242	        powers_w=powers,
+   243	        connections=connections,
+   244	        link_type=link_type,
+   245	        granularity_mm=granularity,
+   246	        bump_halos_mm=bump_halos,
+   247	        ambient_c=ambient_kelvin - 273.15,
+   248	        config_sha256=_sha256(config_path),
+   249	        hotspot_config_sha256=_sha256(TAP_HOTSPOT_CONFIG),
+   250	        tap_upstream_commit=_read_upstream_commit(TAP_ROOT / "UPSTREAM_COMMIT"),
+   251	        hotspot_upstream_commit=_read_upstream_commit(HOTSPOT_ROOT / "UPSTREAM_COMMIT"),
+   252	        hotspot_binary_sha256="" if hotspot_binary is None else _sha256(hotspot_binary),
+   253	        generator_sha256=generators,
+   254	    )
+   255	
+   256	
+   257	def _load_legality(config_path: Path, problem: TapProblem) -> TapLegality:
+   258	    """Read the optional [sentilab] section; anything unknown or malformed fails closed."""
+   259	    parser = configparser.ConfigParser(interpolation=None)
+   260	    parser.read_string(_read_text(config_path))
+   261	    rules = dict(parser.items(SENTILAB_RULES_SECTION)) if parser.has_section(SENTILAB_RULES_SECTION) else {}
+   262	    unknown = set(rules) - {"center_lattice_mm", "min_die_gap_mm", "rotation"}
+   263	    if unknown:
+   264	        raise HotSpotOracleError(f"unknown SentiLab fixture rule: {sorted(unknown)}")
+   265	    try:
+   266	        lattice = float(rules.get("center_lattice_mm", problem.granularity_mm))
+   267	        min_gap = float(rules.get("min_die_gap_mm", 0.0))
+   268	    except ValueError as exc:
+   269	        raise HotSpotOracleError("invalid SentiLab fixture rule") from exc
+   270	    rotation = rules.get("rotation", "catalog")
+   271	    if (not math.isfinite(lattice) or lattice <= 0 or not math.isfinite(min_gap) or min_gap < 0 or
+   272	            rotation not in ROTATION_MODES):
+   273	        raise HotSpotOracleError("invalid SentiLab fixture rule")
+   274	    # A square die has one footprint, so a turn never gives it a second catalog entry.
+   275	    catalog = tuple(((w, h),) if rotation == "catalog" or w == h else ((w, h), (h, w))
+   276	                    for w, h in zip(problem.widths_mm, problem.heights_mm))
+   277	    return TapLegality(TAP_MARGIN_MM, lattice, min_gap, rotation, catalog)
+   278	
+   279	
+   280	class TapGeometry:
+   281	    """A fixture's geometry and legality. Needs no HotSpot binary; HotSpotOracle delegates here."""
+   282	
+   283	    def __init__(self, problem: TapProblem, legality: TapLegality):
+   284	        self.problem = problem
+   285	        self.legality = legality
+   286	
+   287	    @classmethod
+   288	    def load(cls, fixture: str = TAP_CONFIG_DEFAULT_ID) -> "TapGeometry":
+   289	        if not isinstance(fixture, str) or fixture not in TAP_CONFIGS:
+   290	            raise ValueError(f"fixture must be one of {sorted(TAP_CONFIGS)}")
+   291	        problem = _load_problem(config_path=TAP_CONFIGS[fixture], hotspot_binary=None)
+   292	        return cls(problem, _load_legality(TAP_CONFIGS[fixture], problem))
+   293	
+   294	    @property
+   295	    def fixture_id(self) -> str:
+   296	        return self.problem.fixture_id
+   297	
+   298	    def design_from_centers(self, centers_mm, rotated=None) -> Design:
+   299	        """Build the controller Design for this fixture. rotated[i] turns die i by 90 degrees."""
+   300	        count = len(self.problem.widths_mm)
+   301	        if len(centers_mm) != count:
+   302	            raise TapLegalityError("TAP layout must provide one center per chiplet")
+   303	        rotated = (False,) * count if rotated is None else tuple(rotated)
+   304	        if len(rotated) != count or any(not isinstance(flag, bool) for flag in rotated):
+   305	            raise TapLegalityError("TAP layout must give one boolean rotation flag per chiplet")
+   306	        chiplets, positions = [], []
+   307	        for index, ((x, y), width, height, turned) in enumerate(
+   308	                zip(centers_mm, self.problem.widths_mm, self.problem.heights_mm, rotated)):
+   309	            if turned:
+   310	                width, height = height, width
+   311	            chiplets.append(Chiplet(f"tap-chiplet-{index}", width, height))
+   312	            positions.append((float(x) - width / 2, float(y) - height / 2))
+   313	        return Design(self.problem.interposer_size_mm, self.problem.interposer_size_mm, 0.0,
+   314	                      tuple(chiplets), tuple(positions))
+   315	
+   316	    def rotated(self, candidate: Design) -> tuple[bool, ...]:
+   317	        """Which dies of a legal candidate sit turned 90 degrees from the configured orientation."""
+   318	        return tuple(not (_same_mm(chiplet.width_mm, width) and _same_mm(chiplet.height_mm, height))
+   319	                     for chiplet, width, height in zip(candidate.chiplets, self.problem.widths_mm,
+   320	                                                       self.problem.heights_mm))
+   321	
+   322	    def centers_for(self, candidate: Design) -> tuple[tuple[float, float], ...]:
+   323	        """The search gate: every fixture rule, including the centre lattice."""
+   324	        return self._checked_centers(candidate, lattice=True)
+   325	
+   326	    def continuous_centers_for(self, candidate: Design) -> tuple[tuple[float, float], ...]:
+   327	        """The continuous geometry rules without the search lattice: frame, orientation catalog,
+   328	        margin with halo, halo non-overlap and minimum spacing. For fixed reference layouts such as
+   329	        the raw figure reconstructions (gate zero); search candidates go through centers_for."""
+   330	        return self._checked_centers(candidate, lattice=False)
+   331	
+   332	    def _checked_centers(self, candidate: Design, *, lattice: bool) -> tuple[tuple[float, float], ...]:
+   333	        if not isinstance(candidate, Design):
+   334	            raise TapLegalityError("TAP oracle requires a controller Design")
+   335	        try:
+   336	            candidate.check()
+   337	        except (TypeError, ValueError, OverflowError) as exc:
+   338	            raise TapLegalityError(f"invalid TAP candidate: {exc}") from exc
+   339	        catalog = self.legality.orientation_catalog_mm
+   340	        footprints = tuple((chiplet.width_mm, chiplet.height_mm) for chiplet in candidate.chiplets)
+   341	        if (len(footprints) != len(catalog) or
+   342	                any(not any(_same_mm(actual[0], width) and _same_mm(actual[1], height) for width, height in allowed)
+   343	                    for actual, allowed in zip(footprints, catalog))):
+   344	            raise TapLegalityError("TAP fixture chiplet catalog mismatch")
+   345	        size = self.problem.interposer_size_mm
+   346	        if not _same_mm(candidate.width_mm, size) or not _same_mm(candidate.height_mm, size):
+   347	            raise TapLegalityError("TAP fixture interposer size mismatch")
+   348	        violations = self.layout_violations(candidate, lattice=lattice)
+   349	        if violations:
+   350	            raise TapLegalityError(violations[0].message)
+   351	        return self._centers(candidate)
+   352	
+   353	    @staticmethod
+   354	    def _centers(candidate: Design) -> tuple[tuple[float, float], ...]:
+   355	        # Centres come from each die's own footprint, so a turned die is placed as turned.
+   356	        return tuple((float(x + chiplet.width_mm / 2), float(y + chiplet.height_mm / 2))
+   357	                     for chiplet, (x, y) in zip(candidate.chiplets, candidate.positions))
+   358	
+   359	    def layout_violations(self, candidate: Design, *, lattice: bool = True) -> tuple[LayoutViolation, ...]:
+   360	        """Every placement-rule miss, in the order centers_for reports them: margins, lattice (unless
+   361	        lattice=False), halo overlaps, then minimum spacing. Reads each die's own (possibly turned)
+   362	        footprint."""
+   363	        size = self.problem.interposer_size_mm
+   364	        centers = self._centers(candidate)
+   365	        found = []
+   366	        margin = self.legality.margin_mm
+   367	        rectangles = []
+   368	        for index, (chiplet, (center_x, center_y), halo) in enumerate(
+   369	                zip(candidate.chiplets, centers, self.problem.bump_halos_mm)):
+   370	            rect = (center_x - chiplet.width_mm / 2 - halo,
+   371	                    center_y - chiplet.height_mm / 2 - halo,
+   372	                    center_x + chiplet.width_mm / 2 + halo,
+   373	                    center_y + chiplet.height_mm / 2 + halo)
+   374	            excess = max(margin - rect[0], margin - rect[1], rect[2] - (size - margin), rect[3] - (size - margin))
+   375	            if excess > 1e-9:
+   376	                found.append(LayoutViolation("margin", (index,), excess,
+   377	                             f"chiplet {index} violates the {margin:g} mm interposer margin with its microbump halo"))
+   378	            rectangles.append(rect)
+   379	
+   380	        step = self.legality.center_lattice_mm if lattice else None
+   381	        if step is not None:
+   382	            for index, (center_x, center_y) in enumerate(centers):
+   383	                off = max(abs(center_x / step - round(center_x / step)), abs(center_y / step - round(center_y / step)))
+   384	                if off > 1e-9:
+   385	                    found.append(LayoutViolation("lattice", (index,), off * step,
+   386	                                 f"chiplet {index} center is off the {step:g} mm placement grid"))
+   387	
+   388	        for index, rect in enumerate(rectangles):
+   389	            for other_index, other in enumerate(rectangles[:index]):
+   390	                if not (rect[2] <= other[0] or other[2] <= rect[0] or
+   391	                        rect[3] <= other[1] or other[3] <= rect[1]):
+   392	                    depth = min(min(rect[2], other[2]) - max(rect[0], other[0]),
+   393	                                min(rect[3], other[3]) - max(rect[1], other[1]))
+   394	                    found.append(LayoutViolation("halo_overlap", (other_index, index), depth,
+   395	                                 f"chiplets {other_index} and {index} overlap with their microbump halos"))
+   396	
+   397	        min_gap = self.legality.min_die_gap_mm
+   398	        if min_gap > 0:
+   399	            # TAP-2.5D Eqn. (10): die bodies at least w_gap apart along some axis.
+   400	            bodies = [(rect[0] + halo, rect[1] + halo, rect[2] - halo, rect[3] - halo)
+   401	                      for rect, halo in zip(rectangles, self.problem.bump_halos_mm)]
+   402	            for index, body in enumerate(bodies):
+   403	                for other_index, other in enumerate(bodies[:index]):
+   404	                    spacing = max(other[0] - body[2], body[0] - other[2], other[1] - body[3], body[1] - other[3])
+   405	                    if spacing < min_gap - 1e-9:
+   406	                        apart = (f"are {spacing:.4f} mm apart" if spacing >= 0 else
+   407	                                 f"overlap by {-spacing:.4f} mm")
+   408	                        found.append(LayoutViolation("min_spacing", (other_index, index), min_gap - spacing,
+   409	                                     f"chiplets {other_index} and {index} {apart}, "
+   410	                                     f"under the {min_gap:g} mm minimum spacing"))
+   411	        return tuple(found)
+   412	
+   413	    def wirelength_mm(self, centers: tuple[tuple[float, float], ...]) -> float:
+   414	        total_weight = sum(self.problem.connections[i][j]
+   415	                           for i in range(len(centers)) for j in range(i + 1, len(centers)))
+   416	        if total_weight <= 0 or not math.isfinite(total_weight):
+   417	            raise HotSpotOracleError("TAP benchmark has no positive connection weight")
+   418	        distance = sum(self.problem.connections[i][j] *
+   419	                       (abs(centers[i][0] - centers[j][0]) + abs(centers[i][1] - centers[j][1]))
+   420	                       for i in range(len(centers)) for j in range(i + 1, len(centers)))
+   421	        return distance / total_weight
+   422	
+   423	
+   424	def _canonical_hash(value: dict) -> str:
+   425	    encoded = json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+   426	    return hashlib.sha256(encoded).hexdigest()
+   427	
+   428	
+   429	def _number(value: object, label: str) -> float:
+   430	    if isinstance(value, bool) or not isinstance(value, numbers.Real):
+   431	        raise HotSpotOracleError(f"worker returned invalid {label}")
+   432	    result = float(value)
+   433	    if not math.isfinite(result):
+   434	        raise HotSpotOracleError(f"worker returned non-finite {label}")
+   435	    return result
+   436	
+   437	
+   438	async def _terminate_process_group(process: asyncio.subprocess.Process, *, immediate=False) -> None:
+   439	    if os.name == "posix":
+   440	        if immediate:
+   441	            try:
+   442	                os.killpg(process.pid, signal.SIGKILL)
+   443	            except ProcessLookupError:
+   444	                pass
+   445	            await process.wait()
+   446	            return
+   447	        try:
+   448	            os.killpg(process.pid, signal.SIGTERM)
+   449	        except ProcessLookupError:
+   450	            pass
+   451	        try:
+   452	            await asyncio.wait_for(process.wait(), timeout=1.0)
+   453	        except asyncio.TimeoutError:
+   454	            pass
+   455	        # The worker can exit on SIGTERM while HotSpot or another descendant
+   456	        # ignores it and keeps the inherited pipes open. Kill the isolated group
+   457	        # after the grace period even when the group leader has already exited.
+   458	        try:
+   459	            os.killpg(process.pid, signal.SIGKILL)
+   460	        except ProcessLookupError:
+   461	            pass
+   462	        if process.returncode is None:
+   463	            await process.wait()
+   464	    else:
+   465	        taskkill = None
+   466	        if process.returncode is None:
+   467	            try:
+   468	                taskkill = await asyncio.create_subprocess_exec(
+   469	                    "taskkill.exe", "/PID", str(process.pid), "/T", "/F",
+   470	                    stdout=asyncio.subprocess.DEVNULL,
+   471	                    stderr=asyncio.subprocess.DEVNULL,
+   472	                    creationflags=subprocess.CREATE_NO_WINDOW,
+   473	                )
+   474	                await asyncio.wait_for(taskkill.wait(), timeout=3.0)
+   475	            except (FileNotFoundError, OSError, asyncio.TimeoutError):
+   476	                if taskkill is not None and taskkill.returncode is None:
+   477	                    taskkill.kill()
+   478	                    await taskkill.wait()
+   479	        if process.returncode is None:
+   480	            process.kill()
+   481	            await process.wait()
+   482	
+   483	
+   484	async def _uncancellable_cleanup(coroutine) -> None:
+   485	    """Finish process cleanup even when the caller is being cancelled."""
+   486	    task = asyncio.create_task(coroutine)
+   487	    try:
+   488	        await asyncio.shield(task)
+   489	    except asyncio.CancelledError:
+   490	        await task
+   491	        raise
+   492	
+   493	
+   494	class _WarmWorker:
+   495	    """One persistent evaluator process and its private parent-owned workspace."""
+   496	
+   497	    def __init__(self, process: asyncio.subprocess.Process, workspace: tempfile.TemporaryDirectory):
+   498	        self.process = process
+   499	        self.workspace = workspace
+   500	        self.broken = False
+   501	        self._retained_directory = None
+   502	        self._stderr_file = Path(workspace.name) / 'worker-stderr.bin'
+   503	        self._stderr_tail = bytearray()
+   504	        self._stderr_task = asyncio.create_task(self._drain_stderr())
+   505	        self._stdout_file = Path(workspace.name) / 'worker-response.bin'
+   506	        self._response = None
+   507	        self._response_buffer = bytearray()
+   508	        self._stdout_status = {'retained_bytes': 0, 'has_terminator': False,
+   509	                               'eof': False, 'truncated': False, 'parser_error': None}
+   510	        self._stdout_task = asyncio.create_task(self._drain_stdout())
+   511	
+   512	    @classmethod
+   513	    async def start(cls) -> "_WarmWorker":
+   514	        workspace = tempfile.TemporaryDirectory(prefix="tfl-hotspot-worker-")
+   515	        process_options = ({"start_new_session": True} if os.name == "posix" else
+   516	                           {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP})
+   517	        try:
+   518	            process = await asyncio.create_subprocess_exec(
+   519	                sys.executable,
+   520	                str(WORKER),
+   521	                cwd=str(TAP_ROOT),
+   522	                stdin=asyncio.subprocess.PIPE,
+   523	                stdout=asyncio.subprocess.PIPE,
+   524	                stderr=asyncio.subprocess.PIPE,
+   525	                limit=MAX_WORKER_RESPONSE_BYTES,
+   526	                env=_worker_environment(),
+   527	                **process_options,
+   528	            )
+   529	        except BaseException:
+   530	            workspace.cleanup()
+   531	            raise
+   532	        return cls(process, workspace)
+   533	
+   534	    @property
+   535	    def pid(self) -> int:
+   536	        return self.process.pid
+   537	
+   538	    @property
+   539	    def healthy(self) -> bool:
+   540	        return not self.broken and self.process.returncode is None
+   541	
+   542	    async def _drain_stderr(self) -> None:
+   543	        assert self.process.stderr is not None
+   544	        while True:
+   545	            chunk = await self.process.stderr.read(4096)
+   546	            if not chunk:
+   547	                return
+   548	            with self._stderr_file.open('ab') as stream:
+   549	                stream.write(chunk)
+   550	            self._stderr_tail.extend(chunk)
+   551	            if len(self._stderr_tail) > 8192:
+   552	                del self._stderr_tail[:-8192]
+   553	
+   554	    async def _stderr_text(self) -> str:
+   555	        if self.process.returncode is not None:
+   556	            try:
+   557	                await asyncio.wait_for(asyncio.shield(self._stderr_task), timeout=1.0)
+   558	            except asyncio.TimeoutError:
+   559	                pass
+   560	        return self._stderr_tail.decode("utf-8", errors="replace")[-2000:].strip()
+   561	
+   562	    def _write_stdout_status(self):
+   563	        status = dict(self._stdout_status)
+   564	        status['status'] = ('terminated' if status['has_terminator'] else 'partial')
+   565	        self._stdout_file.with_name('WORKER-RESPONSE.json').write_text(
+   566	            json.dumps(status, sort_keys=True) + '\n')
+   567	
+   568	    async def _drain_stdout(self):
+   569	        """Retain bytes independently of parser limits and request cancellation."""
+   570	        assert self.process.stdout is not None
+   571	        self._stdout_file.touch()
+   572	        while True:
+   573	            chunk = await self.process.stdout.read(4096)
+   574	            if not chunk:
+   575	                self._stdout_status['eof'] = True
+   576	                self._write_stdout_status()
+   577	                if self._response is not None and not self._response.done():
+   578	                    self._response.set_result(bytes(self._response_buffer))
+   579	                return
+   580	            with self._stdout_file.open('ab') as stream:
+   581	                stream.write(chunk)
+   582	            self._stdout_status['retained_bytes'] += len(chunk)
+   583	            self._stdout_status['has_terminator'] |= b'\n' in chunk
+   584	            if self._response is not None and not self._response.done():
+   585	                prefix, separator, _ = chunk.partition(b'\n')
+   586	                if len(self._response_buffer) + len(prefix) + bool(separator) > MAX_WORKER_RESPONSE_BYTES:
+   587	                    self._stdout_status['parser_error'] = 'frame_limit_exceeded'
+   588	                    self._response.set_exception(HotSpotOracleError('HotSpot worker response exceeds frame limit'))
+   589	                    self._response_buffer.clear()
+   590	                else:
+   591	                    self._response_buffer.extend(prefix + separator)
+   592	                    if separator:
+   593	                        self._response.set_result(bytes(self._response_buffer))
+   594	                        self._response_buffer.clear()
+   595	            self._write_stdout_status()
+   596	
+   597	    async def _exchange(self, payload: bytes) -> bytes:
+   598	        assert self.process.stdin is not None
+   599	        self._response_buffer.clear()
+   600	        self._response = asyncio.get_running_loop().create_future()
+   601	        self.process.stdin.write(payload + b"\n")
+   602	        await self.process.stdin.drain()
+   603	        # A timeout cancels the waiter, never the independent evidence spool.
+   604	        return await self._response
+   605	
+   606	    async def evaluate(self, request: dict, *, worker_timeout_s: float) -> dict:
+   607	        if request.get('retained_output_root'):
+   608	            self._retained_directory = Path(request['retained_output_root'])
+   609	            self._retained_directory.mkdir(parents=True, exist_ok=True)
+   610	            destination = self._retained_directory / 'worker-response.bin'
+   611	            if self._stdout_file != destination:
+   612	                # A cold worker may have emitted startup bytes before admission.
+   613	                if self._retained_directory is not None and self._stdout_file.parent == Path(self.workspace.name):
+   614	                    if self._stdout_file.exists():
+   615	                        shutil.copyfile(self._stdout_file, destination)
+   616	                    else:
+   617	                        destination.touch()
+   618	                else:
+   619	                    destination.touch()
+   620	                    self._stdout_status = {'retained_bytes': 0, 'has_terminator': False,
+   621	                                           'eof': False, 'truncated': False, 'parser_error': None}
+   622	                self._stdout_file = destination
+   623	                self._write_stdout_status()
+   624	            # Spool in the retained tree while the call runs: SIGKILL cannot
+   625	            # execute close() to copy a temporary spool afterwards.
+   626	            destination = self._retained_directory / 'worker-stderr.bin'
+   627	            if self._stderr_file != destination:
+   628	                if self._stderr_file.exists():
+   629	                    shutil.copyfile(self._stderr_file, destination)
+   630	                else:
+   631	                    destination.touch()
+   632	                self._stderr_file = destination
+   633	        self.immediate_kill = request.get('bounded_call', False)
+   634	        if not self.healthy:
+   635	            self.broken = True
+   636	            raise HotSpotOracleError("HotSpot worker is not available")
+   637	        message = dict(request)
+   638	        message["workspace_root"] = self.workspace.name
+   639	        try:
+   640	            encoded = json.dumps(message, separators=(",", ":"), allow_nan=False).encode("utf-8")
+   641	        except (TypeError, ValueError) as exc:
+   642	            self.broken = True
+   643	            raise HotSpotOracleError("HotSpot worker request is not valid JSON") from exc
+   644	        if len(encoded) > MAX_WORKER_REQUEST_BYTES:
+   645	            self.broken = True
+   646	            raise HotSpotOracleError("HotSpot worker request exceeds 64 KiB")
+   647	        if self._retained_directory is not None:
+   648	            (self._retained_directory / 'WORKER.json').write_text(json.dumps({
+   649	                'command': [sys.executable, str(WORKER)], 'cwd': str(TAP_ROOT),
+   650	                'environment': _worker_environment(), 'request': message}, allow_nan=False) + '\n')
+   651	            (self._retained_directory / 'worker-request.bin').write_bytes(encoded + b'\n')
+   652	
+   653	        try:
+   654	            line = await asyncio.wait_for(self._exchange(encoded), timeout=worker_timeout_s)
+   655	        except asyncio.TimeoutError as exc:
+   656	            self.broken = True
+   657	            raise HotSpotTimeoutError(f"HotSpot worker exceeded {worker_timeout_s:g} seconds") from exc
+   658	        except asyncio.CancelledError:
+   659	            self.broken = True
+   660	            raise
+   661	        except Exception as exc:
+   662	            self.broken = True
+   663	            detail = await self._stderr_text()
+   664	            raise HotSpotOracleError(detail or "HotSpot worker communication failed") from exc
+   665	
+   666	        if not line:
+   667	            self.broken = True
+   668	            try:
+   669	                await asyncio.wait_for(self.process.wait(), timeout=1.0)
+   670	            except asyncio.TimeoutError:
+   671	                pass
+   672	            detail = await self._stderr_text()
+   673	            raise HotSpotOracleError(detail or "HotSpot worker exited without a response")
+   674	        try:
+   675	            envelope = json.loads(line.decode("utf-8"))
+   676	        except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
+   677	            self.broken = True
+   678	            raise HotSpotOracleError("HotSpot worker returned invalid JSON") from exc
+   679	        if not isinstance(envelope, dict) or not isinstance(envelope.get("ok"), bool):
+   680	            self.broken = True
+   681	            raise HotSpotOracleError("HotSpot worker returned an invalid response envelope")
+   682	        if envelope["ok"] is not True:
+   683	            self.broken = True
+   684	            error = envelope.get("error")
+   685	            detail = error[:2000] if isinstance(error, str) else "HotSpot evaluation failed"
+   686	            if envelope.get("error_type") == "TimeoutError":
+   687	                raise HotSpotTimeoutError(detail or "HotSpot exceeded its solver timeout")
+   688	            raise HotSpotOracleError(detail)
+   689	        response = envelope.get("result")
+   690	        if not isinstance(response, dict):
+   691	            self.broken = True
+   692	            raise HotSpotOracleError("HotSpot worker returned an invalid result")
+   693	        return response
+   694	
+   695	    async def close(self) -> None:
+   696	        self.broken = True
+   697	        started = time.perf_counter()
+   698	        try:
+   699	            await _terminate_process_group(self.process, immediate=getattr(self, 'immediate_kill', False))
+   700	        finally:
+   701	            self.kill_latency_s = time.perf_counter() - started
+   702	            stdout_task = getattr(self, '_stdout_task', None)
+   703	            if stdout_task is not None:
+   704	                try:
+   705	                    await asyncio.wait_for(asyncio.shield(stdout_task), timeout=1.0)
+   706	                except asyncio.TimeoutError:
+   707	                    stdout_task.cancel()
+   708	                    await asyncio.gather(stdout_task, return_exceptions=True)
+   709	                    self._stdout_status['truncated'] = True
+   710	                    self._write_stdout_status()
+   711	            if not self._stderr_task.done():
+   712	                try:
+   713	                    await asyncio.wait_for(asyncio.shield(self._stderr_task), timeout=1.0)
+   714	                except asyncio.TimeoutError:
+   715	                    self._stderr_task.cancel()
+   716	                    await asyncio.gather(self._stderr_task, return_exceptions=True)
+   717	            if getattr(self, '_retained_directory', None) is not None:
+   718	                destination = self._retained_directory / 'worker-stderr.bin'
+   719	                if self._stderr_file == destination:
+   720	                    pass
+   721	                elif self._stderr_file.exists():
+   722	                    shutil.copyfile(self._stderr_file, destination)
+   723	                else:
+   724	                    destination.touch()
+   725	            self.workspace.cleanup()
+   726	
+   727	
+   728	class _WarmWorkerPool:
+   729	    """Run-scoped pool: a worker is leased by one evaluation at a time."""
+   730	
+   731	    def __init__(self, max_workers: int):
+   732	        self.loop = asyncio.get_running_loop()
+   733	        self._max_workers = max_workers
+   734	        self._capacity = asyncio.Semaphore(max_workers)
+   735	        self._available: asyncio.Queue[_WarmWorker] = asyncio.Queue()
+   736	        self._workers: set[_WarmWorker] = set()
+   737	        self._condition = asyncio.Condition()
+   738	        self._active = 0
+   739	        self._closing = False
+   740	        self._closed = False
+   741	
+   742	    async def _retire(self, worker: _WarmWorker) -> None:
+   743	        self._workers.discard(worker)
+   744	        await _uncancellable_cleanup(worker.close())
+   745	
+   746	    async def _spawn(self, *, immediate_kill=False) -> _WarmWorker:
+   747	        task = asyncio.create_task(_WarmWorker.start())
+   748	        try:
+   749	            worker = await asyncio.shield(task)
+   750	        except asyncio.CancelledError as exc:
+   751	            worker = await task
+   752	            worker.immediate_kill = immediate_kill
+   753	            await _uncancellable_cleanup(worker.close())
+   754	            exc.kill_latency_s = worker.kill_latency_s
+   755	            raise
+   756	        worker.immediate_kill = immediate_kill
+   757	        self._workers.add(worker)
+   758	        return worker
+   759	
+   760	    @asynccontextmanager
+   761	    async def lease(self, *, immediate_kill=False):
+   762	        if asyncio.get_running_loop() is not self.loop:
+   763	            raise RuntimeError("HotSpotOracle workers must be closed before using the oracle on another event loop")
+   764	        await self._capacity.acquire()
+   765	        active = False
+   766	        worker = None
+   767	        try:
+   768	            async with self._condition:
+   769	                if self._closing:
+   770	                    raise RuntimeError("HotSpotOracle worker pool is closed")
+   771	                self._active += 1
+   772	                active = True
+   773	            while worker is None:
+   774	                try:
+   775	                    candidate = self._available.get_nowait()
+   776	                except asyncio.QueueEmpty:
+   777	                    worker = await self._spawn(immediate_kill=immediate_kill)
+   778	                else:
+   779	                    if candidate.healthy:
+   780	                        worker = candidate
+   781	                    else:
+   782	                        await _uncancellable_cleanup(self._retire(candidate))
+   783	            try:
+   784	                yield worker
+   785	            except BaseException:
+   786	                retiring, worker = worker, None
+   787	                await _uncancellable_cleanup(self._retire(retiring))
+   788	                raise
+   789	            else:
+   790	                if worker.healthy and not self._closing:
+   791	                    self._available.put_nowait(worker)
+   792	                else:
+   793	                    retiring, worker = worker, None
+   794	                    await _uncancellable_cleanup(self._retire(retiring))
+   795	                if worker is not None:
+   796	                    worker = None
+   797	        finally:
+   798	            if worker is not None:
+   799	                retiring, worker = worker, None
+   800	                await _uncancellable_cleanup(self._retire(retiring))
+   801	            if active:
+   802	                async with self._condition:
+   803	                    self._active -= 1
+   804	                    self._condition.notify_all()
+   805	            self._capacity.release()
+   806	
+   807	    async def close(self) -> None:
+   808	        if self._closed:
+   809	            return
+   810	        if asyncio.get_running_loop() is not self.loop:
+   811	            raise RuntimeError("HotSpotOracle worker pool must close on its owning event loop")
+   812	        async with self._condition:
+   813	            self._closing = True
+   814	            await self._condition.wait_for(lambda: self._active == 0)
+   815	        workers = tuple(self._workers)
+   816	        self._workers.clear()
+   817	        await asyncio.gather(*(_uncancellable_cleanup(worker.close()) for worker in workers))
+   818	        self._closed = True
+   819	
+   820	
+   821	def _worker_environment():
+   822	    """Explicit reproducible child environment; never persist parent credentials."""
+   823	    environment = {'PATH': os.defpath, 'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8',
+   824	                   'OPENBLAS_CORETYPE': 'Haswell', 'OPENBLAS_NUM_THREADS': '1',
+   825	                   'OMP_NUM_THREADS': '1', 'PYTHONUNBUFFERED': '1'}
+   826	    if os.environ.get('CI_ALLOCATION') == '1':
+   827	        environment['CI_ALLOCATION'] = '1'
+   828	    return environment
+   829	
+   830	
+   831	class HotSpotOracle:
+   832	    """Async controller oracle backed by a run-scoped pool of isolated workers."""
+   833	
+   834	    requires_evidence_profile = True
+   835	
+   836	    def __init__(self, grid_rows: int = 32, grid_cols: int = 32, *, fixture: str = TAP_CONFIG_DEFAULT_ID,
+   837	                 solver_timeout_s: float = 45.0, worker_timeout_s: float | None = None,
+   838	                 hotspot_binary: Path = HOTSPOT_BINARY, max_workers: int = DEFAULT_MAX_WORKERS,
+   839	                 retained_output_root: Path | None = None):
+   840	        if (isinstance(grid_rows, bool) or not isinstance(grid_rows, int) or not 1 <= grid_rows <= 128 or
+   841	                isinstance(grid_cols, bool) or not isinstance(grid_cols, int) or not 1 <= grid_cols <= 128):
+   842	            raise ValueError("grid rows and columns must be integers from 1 through 128")
+   843	        if (not isinstance(solver_timeout_s, numbers.Real) or isinstance(solver_timeout_s, bool) or
+   844	                not math.isfinite(solver_timeout_s) or solver_timeout_s <= 0):
+   845	            raise ValueError("solver_timeout_s must be positive")
+   846	        timeout = solver_timeout_s + 10.0 if worker_timeout_s is None else worker_timeout_s
+   847	        if (not isinstance(timeout, numbers.Real) or isinstance(timeout, bool) or
+   848	                not math.isfinite(timeout) or timeout <= solver_timeout_s):
+   849	            raise ValueError("worker_timeout_s must exceed solver_timeout_s")
+   850	        if isinstance(max_workers, bool) or not isinstance(max_workers, int) or max_workers < 1:
+   851	            raise ValueError("max_workers must be a positive integer")
+   852	        if not isinstance(fixture, str) or fixture not in TAP_CONFIGS:
+   853	            raise ValueError(f"fixture must be one of {sorted(TAP_CONFIGS)}")
+   854	
+   855	        self.fixture_id = fixture
+   856	        self.retained_output_root = None if retained_output_root is None else Path(retained_output_root).resolve()
+   857	        if self.retained_output_root is not None:
+   858	            self.retained_output_root.mkdir(parents=True, exist_ok=True)
+   859	        self.grid_rows = grid_rows
+   860	        self.grid_cols = grid_cols
+   861	        self.solver_timeout_s = float(solver_timeout_s)
+   862	        self.worker_timeout_s = float(timeout)
+   863	        self.max_workers = max_workers
+   864	        self._worker_pool: _WarmWorkerPool | None = None
+   865	        self.hotspot_binary = Path(hotspot_binary).resolve()
+   866	        self.problem = _load_problem(config_path=TAP_CONFIGS[self.fixture_id], hotspot_binary=self.hotspot_binary)
+   867	        self.legality = _load_legality(TAP_CONFIGS[self.fixture_id], self.problem)
+   868	        self.solver_version = (
+   869	            f"HotSpot-7:{self.problem.hotspot_upstream_commit}"
+   870	            f":binary_sha256:{self.problem.hotspot_binary_sha256}"
+   871	            f":config_sha256:{self.problem.config_sha256}"
+   872	            f":grid:{self.grid_rows}x{self.grid_cols}"
+   873	        )
+   874	        self.problem_hash = _canonical_hash({
+   875	            "schema": "tfl-tap-hotspot-problem-v1",
+   876	            "fixture_id": self.problem.fixture_id,
+   877	            "tap_config_sha256": self.problem.config_sha256,
+   878	            "tap_hotspot_config_sha256": self.problem.hotspot_config_sha256,
+   879	            "tap_upstream_commit": self.problem.tap_upstream_commit,
+   880	            "hotspot_upstream_commit": self.problem.hotspot_upstream_commit,
+   881	            "hotspot_binary_sha256": self.problem.hotspot_binary_sha256,
+   882	            "generator_sha256": self.problem.generator_sha256,
+   883	            "grid": {"rows": self.grid_rows, "cols": self.grid_cols},
+   884	            "ambient_c": self.problem.ambient_c,
+   885	            "powers_w": self.problem.powers_w,
+   886	            "interposer_size_mm": self.problem.interposer_size_mm,
+   887	            "widths_mm": self.problem.widths_mm,
+   888	            "heights_mm": self.problem.heights_mm,
+   889	            "connections": self.problem.connections,
+   890	            "link_type": self.problem.link_type,
+   891	            "granularity_mm": self.problem.granularity_mm,
+   892	            "bump_halos_mm": self.problem.bump_halos_mm,
+   893	            "legality": asdict(self.legality),
+   894	            "model": "grid/detailed_3D/grid_map_mode=max",
+   895	            "wire_metric": "connectivity-weighted Manhattan center distance in mm; not routed CPLEX length",
+   896	        })
+   897	
+   898	    def _get_worker_pool(self) -> _WarmWorkerPool:
+   899	        loop = asyncio.get_running_loop()
+   900	        if self._worker_pool is None:
+   901	            self._worker_pool = _WarmWorkerPool(self.max_workers)
+   902	        elif self._worker_pool.loop is not loop:
+   903	            raise RuntimeError("HotSpotOracle must be closed before using it on another event loop")
+   904	        return self._worker_pool
+   905	
+   906	    async def aclose(self) -> None:
+   907	        """Terminate all run-scoped workers and their solver descendants."""
+   908	        pool = self._worker_pool
+   909	        if pool is None:
+   910	            return
+   911	        try:
+   912	            await _uncancellable_cleanup(pool.close())
+   913	        finally:
+   914	            if pool._closed:
+   915	                self._worker_pool = None
+   916	
+   917	    @property
+   918	    def geometry(self) -> TapGeometry:
+   919	        """This oracle's fixture geometry and legality (built from the current problem)."""
+   920	        return TapGeometry(self.problem, self.legality)
+   921	
+   922	    def design_from_centers(self, centers_mm: tuple[tuple[float, float], ...] | list[list[float]],
+   923	                            rotated=None) -> Design:
+   924	        """Build the controller Design expected for this fixed TAP benchmark."""
+   925	        return self.geometry.design_from_centers(centers_mm, rotated)
+   926	
+   927	    def centers_for(self, candidate: Design) -> tuple[tuple[float, float], ...]:
+   928	        return self.geometry.centers_for(candidate)
+   929	
+   930	    def continuous_centers_for(self, candidate: Design) -> tuple[tuple[float, float], ...]:
+   931	        """Validation only: the continuous rules without the search lattice. A call still applies
+   932	        centers_for, lattice included."""
+   933	        return self.geometry.continuous_centers_for(candidate)
+   934	
+   935	    def _wirelength_mm(self, centers: tuple[tuple[float, float], ...]) -> float:
+   936	        return self.geometry.wirelength_mm(centers)
+   937	
+   938	    async def __call__(self, candidate: Design, *, timeout_s: float | None = None) -> HotSpotThermalResult:
+   939	        if timeout_s is not None and (not math.isfinite(timeout_s) or timeout_s <= 0):
+   940	            raise ValueError('call timeout must be positive and finite')
+   941	        self.last_kill_latency_s = None
+   942	        evaluation_started = time.perf_counter()
+   943	        # All legality checks happen before the worker is created or HotSpot is run.
+   944	        centers = self.centers_for(candidate)
+   945	        request = {
+   946	            "candidate_hash": candidate.hash,
+   947	            "problem_hash": self.problem_hash,
+   948	            "centers_mm": centers,
+   949	            # The worker turns these dies (TAP's own rotate) before it writes the floorplan.
+   950	            "rotated": list(self.geometry.rotated(candidate)),
+   951	            "grid_rows": self.grid_rows,
+   952	            "grid_cols": self.grid_cols,
+   953	            "solver_timeout_s": self.solver_timeout_s,
+   954	            "expected_binary_sha256": self.problem.hotspot_binary_sha256,
+   955	            "hotspot_binary": str(self.hotspot_binary),
+   956	            "expected_source_sha256": dict(self.problem.generator_sha256),
+   957	            "tap_parameters": {
+   958	                "interposer_size_mm": self.problem.interposer_size_mm,
+   959	                "widths_mm": self.problem.widths_mm,
+   960	                "heights_mm": self.problem.heights_mm,
+   961	                "powers_w": self.problem.powers_w,
+   962	                "connections": self.problem.connections,
+   963	                "link_type": self.problem.link_type,
+   964	                "granularity_mm": self.problem.granularity_mm,
+   965	                "bump_halos_mm": self.problem.bump_halos_mm,
+   966	                "ambient_c": self.problem.ambient_c,
+   967	            },
+   968	        }
+   969	        if self.retained_output_root is not None:
+   970	            request['retained_output_root'] = str(self.retained_output_root)
+   971	            request['image_identity'] = getattr(self, 'image_identity', {'status': 'unavailable'})
+   972	        if timeout_s is not None:
+   973	            request['solver_timeout_s'] = min(self.solver_timeout_s, timeout_s)
+   974	            request['bounded_call'] = True
+   975	        try:
+   976	            response = await _run_worker(
+   977	                request,
+   978	                worker_timeout_s=self.worker_timeout_s if timeout_s is None else min(self.worker_timeout_s, timeout_s),
+   979	                pool=self._get_worker_pool(),
+   980	                validator=lambda value: self._result_from_response(value, candidate, centers, evaluation_started),
+   981	            )
+   982	        except BaseException as exc:
+   983	            self.last_kill_latency_s = getattr(exc, 'kill_latency_s', None)
+   984	            if timeout_s is not None and isinstance(exc, (asyncio.CancelledError, HotSpotTimeoutError)):
+   985	                self._retain_interrupted_output(timeout_s)
+   986	            raise
+   987	        # Tests and adapters may replace _run_worker with a simple response stub;
+   988	        # the production pool validates inside the lease so malformed replies retire it.
+   989	        if isinstance(response, HotSpotThermalResult):
+   990	            return response
+   991	        return self._result_from_response(response, candidate, centers, evaluation_started)
+   992	
+   993	    def _retain_interrupted_output(self, timeout_s):
+   994	        if self.retained_output_root is None:
+   995	            return
+   996	        for output in self.retained_output_root.glob('evaluation-*'):
+   997	            for name in ('stdout', 'stderr'):
+   998	                binary = output / f'{name}.bin'
+   999	                if binary.exists():
+  1000	                    (output / f'{name}.txt').write_text(binary.read_bytes().decode('utf-8', errors='replace'))
+  1001	            if not (output / 'EXIT.json').exists():
+  1002	                (output / 'EXIT.json').write_text(json.dumps({
+  1003	                    'status': 'parent_timeout', 'returncode': None, 'timeout_s': timeout_s,
+  1004	                    'kill_latency_s': self.last_kill_latency_s}) + '\n')
+  1005	
+  1006	    def _result_from_response(self, response: dict, candidate: Design,
+  1007	                              centers: tuple[tuple[float, float], ...], evaluation_started: float
+  1008	                              ) -> HotSpotThermalResult:
+  1009	        if response.get("candidate_hash") != candidate.hash or response.get("problem_hash") != self.problem_hash:
+  1010	            raise HotSpotOracleError("worker result is not bound to the requested design and problem")
+  1011	        if response.get("binary_sha256") != self.problem.hotspot_binary_sha256:
+  1012	            raise HotSpotOracleError("worker HotSpot binary differs from the problem contract")
+  1013	        if response.get("grid_rows") != self.grid_rows or response.get("grid_cols") != self.grid_cols:
+  1014	            raise HotSpotOracleError("worker returned a different grid resolution")
+  1015	
+  1016	        rows = response.get("heatmap_c")
+  1017	        if (not isinstance(rows, list) or len(rows) != self.grid_rows or
+  1018	                any(not isinstance(row, list) or len(row) != self.grid_cols for row in rows)):
+  1019	            raise HotSpotOracleError("worker returned an incomplete chip-layer heatmap")
+  1020	        heatmap = tuple(tuple(_number(value, "heatmap temperature") for value in row) for row in rows)
+  1021	        peak = _number(response.get("maximum_temperature_c"), "peak temperature")
+  1022	        if not math.isclose(peak, max(max(row) for row in heatmap), rel_tol=0, abs_tol=1e-9):
+  1023	            raise HotSpotOracleError("worker peak does not match its chip-layer heatmap")
+  1024	        all_layers_peak = _number(response.get("all_layers_peak_c"), "all-layer peak temperature")
+  1025	        if all_layers_peak < peak:
+  1026	            raise HotSpotOracleError("worker all-layer peak is below its chip-layer peak")
+  1027	        solver_seconds = _number(response.get("solver_seconds"), "solver runtime")
+  1028	        generation_seconds = _number(response.get("input_generation_seconds"), "input generation runtime")
+  1029	        if solver_seconds < 0 or generation_seconds < 0:
+  1030	            raise HotSpotOracleError("worker returned a negative runtime")
+  1031	        input_hashes = response.get("input_sha256")
+  1032	        required_inputs = {
+  1033	            "new_hotspot.config", "sampleL4_ChipLayer.flp", "sample.ptrace", "samplelayers.lcf",
+  1034	            "sampleL0_Substrate.flp", "sampleL1_C4Layer.flp", "sampleL2_Interposer.flp",
+  1035	            "sampleL3_UbumpLayer.flp", "sampleL5_TIM.flp",
+  1036	        }
+  1037	        if (not isinstance(input_hashes, dict) or not required_inputs.issubset(input_hashes) or
+  1038	                any(not isinstance(name, str) or not isinstance(digest, str) or len(digest) != 64
+  1039	                    or any(character not in "0123456789abcdef" for character in digest)
+  1040	                    for name, digest in input_hashes.items())):
+  1041	            raise HotSpotOracleError("worker returned invalid generated-input hashes")
+  1042	
+  1043	        return HotSpotThermalResult(
+  1044	            candidate.hash,
+  1045	            peak,
+  1046	            self.solver_version,
+  1047	            converged=True,
+  1048	            cost_microdollars=0,
+  1049	            evidence_kind=f"HotSpot 7 steady-state TAP {self.problem.fixture_id} grid; Manhattan wire proxy, not CPLEX routing",
+  1050	            fixture_id=self.problem.fixture_id,
+  1051	            config_sha256=self.problem.config_sha256,
+  1052	            phase_timings=response.get('phase_timings', {}),
+  1053	            problem_hash=self.problem_hash,
+  1054	            wirelength_mm=self._wirelength_mm(centers),
+  1055	            wire_metric="connectivity-weighted Manhattan center distance (mm); not routed CPLEX length",
+  1056	            heatmap_c=heatmap,
+  1057	            grid_rows=self.grid_rows,
+  1058	            grid_cols=self.grid_cols,
+  1059	            ambient_c=self.problem.ambient_c,
+  1060	            solver_seconds=solver_seconds,
+  1061	            evaluation_seconds=time.perf_counter() - evaluation_started,
+  1062	            input_generation_seconds=generation_seconds,
+  1063	            input_sha256=tuple(sorted(input_hashes.items())),
+  1064	            all_layers_peak_c=all_layers_peak,
+  1065	        )
+  1066	
+  1067	
+  1068	async def _run_worker(request: dict, *, worker_timeout_s: float,
+  1069	                      pool: _WarmWorkerPool | None = None, validator=None):
+  1070	    """Send one request to a leased warm worker; standalone calls own a short-lived pool."""
+  1071	    owns_pool = pool is None
+  1072	    pool = pool or _WarmWorkerPool(max_workers=1)
+  1073	    worker = None
+  1074	    try:
+  1075	        async with pool.lease(immediate_kill=request.get('bounded_call', False)) as worker:
+  1076	            response = await worker.evaluate(request, worker_timeout_s=worker_timeout_s)
+  1077	            return validator(response) if validator is not None else response
+  1078	    except BaseException as exc:
+  1079	        exc.kill_latency_s = getattr(worker, 'kill_latency_s', getattr(exc, 'kill_latency_s', None))
+  1080	        raise
+  1081	    finally:
+  1082	        if owns_pool:
+  1083	            await _uncancellable_cleanup(pool.close())

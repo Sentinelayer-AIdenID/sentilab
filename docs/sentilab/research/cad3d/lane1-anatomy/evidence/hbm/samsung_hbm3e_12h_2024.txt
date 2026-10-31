@@ -1,0 +1,278 @@
+Samsung Develops Industry-First 36GB HBM3E 12H DRAM – Samsung Global Newsroom
+
+ skip to content
+
+Corporate
+
+People & Culture
+
+Technology
+
+Design
+
+More Stories
+
+Products
+
+Mobile
+
+TV/Display & AV
+
+Home Appliances
+
+Semiconductors
+
+More Products
+
+Social Impact
+
+CSR
+
+Environment
+
+Sustainability
+
+Press Resources
+
+Press Releases
+
+Video News
+
+Campus Images
+
+Statements
+
+Fast Facts
+
+ Search open
+ Nation choice page link
+ Menu open
+
+ Title+Body
+
+Title+Body
+
+Tag
+
+Images
+
+ X
+
+ Search
+
+ Suggestions
+
+Galaxy Z Series
+
+Galaxy S26 Series
+
+Milan Design Week
+
+The First Look 2026
+
+AI
+
+Bespoke
+
+SmartThings
+
+One UI
+
+Samsung Art Store
+
+ Custom range
+
+Any time
+
+Past week
+
+Past month
+
+Past year
+
+ Custom range
+
+ Category
+
+All
+
+Corporate
+
+Products
+
+Social Impact
+
+ Content Type
+
+All
+
+Article
+
+Press Release
+
+Worldwide
+
+ Search close
+
+Samsung Develops Industry-First 36GB HBM3E 12H DRAM
+
+ Korea on February 27, 2024 
+
+ AUDIO Play
+
+ Download
+
+ Share open
+
+ Print
+
+Samsung’s HBM3E 12H achieves industry’s largest capacity HBM with groundbreaking 12-layer stack, raising both performance and capacity by more than 50%
+
+Advanced TC NCF technology enhances vertical density and thermal properties
+
+Samsung positioned to meet demand for high-performance and high-capacity solutions in the AI era
+
+Samsung Electronics, a world leader in advanced memory technology, today announced that it has developed HBM3E 12H, the industry’s first 12-stack HBM3E DRAM and the highest-capacity HBM product to date.
+
+Samsung’s HBM3E 12H provides an all-time high bandwidth of up to 1,280 gigabytes per second (GB/s) and an industry-leading capacity of 36 gigabytes (GB). In comparison to the 8-stack HBM3 8H, both aspects have improved by more than 50%.
+
+“The industry’s AI service providers are increasingly requiring HBM with higher capacity, and our new HBM3E 12H product has been designed to answer that need,” said Yongcheol Bae, Executive Vice President of Memory Product Planning at Samsung Electronics. “This new memory solution forms part of our drive toward developing core technologies for high-stack HBM and providing technological leadership for the high-capacity HBM market in the AI era.”
+
+The HBM3E 12H applies advanced thermal compression non-conductive film (TC NCF), allowing the 12-layer products to have the same height specification as 8-layer ones to meet current HBM package requirements. The technology is anticipated to have added benefits especially with higher stacks as the industry seeks to mitigate chip die warping that come with thinner die. Samsung has continued to lower the thickness of its NCF material and achieved the industry’s smallest gap between chips at seven micrometers (µm), while also eliminating voids between layers. These efforts result in enhanced vertical density by over 20% compared to its HBM3 8H product.
+
+Samsung’s advanced TC NCF also improves thermal properties of the HBM by enabling the use of bumps in various sizes between the chips. During the chip bonding process, smaller bumps are used in areas for signaling and larger ones are placed in spots that require heat dissipation. This method also helps with higher product yield.
+
+As AI applications grow exponentially, the HBM3E 12H is expected to be an optimal solution for future systems that require more memory. Its higher performance and capacity will especially allow customers to manage their resources more flexibly and reduce total cost of ownership (TCO) for datacenters. When used in AI applications, it is estimated that, in comparison to adopting HBM3 8H, the average speed for AI training can be increased by 34% while the number of simultaneous users of inference services can be expanded more than 11.5 times.1
+
+Samsung has begun sampling its HBM3E 12H to customers and mass production is slated for the first half of this year.
+
+1 Based on internal simulation results
+
+DRAM
+
+HBM
+
+Memory Solutions
+
+ Press Resources 
+ Press Releases
+
+ Products 
+ Semiconductors
+
+ For any issues related to customer service, please go to Customer Support pagefor assistance.
+
+ For media inquiries, please click Media Contactto move to the form. 
+
+Related Articles
+
+Samsung Launches SSD 990 EVO: Elevating Performance for Everyday Gaming, Business and Creative Workflows
+
+ January 24, 2024 Press Release
+
+Samsung Electronics Holds Memory Tech Day 2023 Unveiling New Innovations To Lead the Hyperscale AI Era
+
+ October 21, 2023 Press Release
+
+ slide prev
+
+ slide next
+
+ More on Latest
+
+Download
+
+Industry-First-36GB-HBM3E-12H-DRAM_dl1.jpg
+
+No files found
+
+ Copy text
+
+ Download files
+
+Copied to clipboard
+
+Share
+
+ Close
+
+X
+
+Facebook
+
+LinkedIn
+
+Tumblr
+
+e-mail
+
+WhatsApp
+
+ Copy link
+
+ top
+
+ Sitemap
+
+ Terms of Use
+
+ Privacy and Cookies
+
+ Media Contact
+
+ SAMSUNG.COM
+
+Copyright© SAMSUNG All Rights Reserved.
+
+ Start date
+
+ End date
+
+ Cancel
+ OK
+
+Sitemap
+
+ Close
+
+Corporate
+
+People & Culture
+
+Technology
+
+Design
+
+More Stories
+
+Products
+
+Mobile
+
+TV/Display & AV
+
+Home Appliances
+
+Semiconductors
+
+More Products
+
+Social Impact
+
+CSR
+
+Environment
+
+Sustainability
+
+Press Resources
+
+Press Releases
+
+Video News
+
+Campus Images
+
+Statements
+
+Fast Facts

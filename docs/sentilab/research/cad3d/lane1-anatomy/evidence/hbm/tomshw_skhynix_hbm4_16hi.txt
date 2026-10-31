@@ -1,0 +1,1229 @@
+SK hynix shows 16-Hi HBM4 memory for AI accelerators — 48 GB at 10 GT/s over a 2,048 interface | Tom's Hardware
+
+Skip to main content
+
+Join Tom’s Hardware today
+
+Upgrade to Tom’s Hardware Premium
+
+Explore
+
+GO PREMIUM
+
+Choose how you want to join Tom’s Hardware
+
+MEMBER
+
+Get started with free access to reviews, badges and discussions.
+
+Become a member
+
+Premium member
+
+Unlock exclusive tools and insights for enthusiasts who want more.
+
+Bench Database
+
+Exclusive Features
+
+Roadmaps
+
+Deep Analysis
+
+Become a premium member
+
+Go beyond the headlines with Tom’s Hardware Premium
+
+Access Bench, Roadmaps, deep analysis and other exclusive tools.
+
+Explore PREMIUM
+
+Bench Performance Database
+
+Dive into our proprietary testing data and compare hardware with detailed benchmarks.
+
+Deep-Dive Analysis
+
+Go beyond the headlines with expert reporting on the hardware industry.
+
+Hardware Roadmaps
+
+Track upcoming CPUs, GPUs and tech releases before they arrive.
+
+Exclusive Long-Form Features
+
+In-depth features, interviews and insider stories from the world of hardware.
+
+Uptime Premium Newsletter
+
+Expert insights and analysis delivered to your inbox.
+
+ of
+
+Bench Performance Database
+
+Dive into our proprietary testing data and compare hardware with detailed benchmarks.
+
+1
+of
+5
+
+Deep-Dive Analysis
+
+Go beyond the headlines with expert reporting on the hardware industry.
+
+2
+of
+5
+
+Hardware Roadmaps
+
+Track upcoming CPUs, GPUs and tech releases before they arrive.
+
+3
+of
+5
+
+Exclusive Long-Form Features
+
+In-depth features, interviews and insider stories from the world of hardware.
+
+4
+of
+5
+
+Uptime Premium Newsletter
+
+Expert insights and analysis delivered to your inbox.
+
+5
+of
+5
+
+Explore PREMIUM
+
+Welcome
+
+to
+Tom's Hardware club!
+
+Hi
+,
+
+Your membership journey starts here.
+
+Keep exploring and earning more as a member.
+
+MY ACCOUNT
+
+Earn your first
+badge
+
+Read 1 article to unlock your first badge.
+
+Keep earning badges
+
+Explore ways to get more involved as a member.
+
+Latest on CPUs
+
+News, reviews, and technical insights.
+
+Explore
+
+GPU Insights
+
+Reviews, benchmarks, and updates on current GPUs.
+
+Explore
+
+See what you’ve unlocked.
+
+Explore your membership
+benefits.
+
+Explore
+
+Unlock Premium
+
+Limited-time Premium offer
+
+Cancel anytime
+
+Explore premium
+
+Sign Out
+
+Premium Member
+
+Hi
+,
+
+Keep exploring with your premium access.
+
+Go TO Premium Hub
+
+Premium Tools
+
+Bench Database
+
+Exclusive Features
+
+Roadmaps
+
+Deep Analysis
+
+My Account
+
+Sign Out
+
+Get club Access Quick
+
+Join for quick access. Enter your email below and we'll send confirmation plus sign you up to our newsletter.
+
+Contact me with news and offers from other Future brands
+
+Sign Up
+
+By submitting your information, you confirm you are aged 16 or over,
+have read our
+Privacy Policy
+and agree to the
+Terms & Conditions. Geographical rules apply.
+
+Tom's Hardware
+
+US Edition
+
+UK
+
+US
+
+Australia
+
+Canada
+
+RSS
+
+Sign in
+
+View Profile
+
+Sign out
+
+Search
+
+Search Tom's Hardware
+
+Best Picks
+
+CPU Buying Advice
+
+CPU Best Picks
+
+CPU Reviews
+
+GPU Buying Advice
+
+GPU Best Picks
+
+GPU Reviews
+
+Laptop Buying Advice
+
+Laptop Best Picks
+
+Laptop Reviews
+
+More Buying Advice
+
+Keyboard Best Picks
+
+Gaming Monitor Best Picks
+
+Gaming Headset Best Picks
+
+3D Printer Best Picks
+
+Webcam Best Picks
+
+Mice Best Picks
+
+How We Test
+
+CPUs
+
+CPU Brands
+
+Nvidia RTX Spark
+
+AMD Ryzen
+
+Intel Core Ultra
+
+Qualcomm Snapdragon X
+
+Apple Silicon (M-Series)
+
+Platforms
+
+X86
+
+RISC-V
+
+ARM
+
+Zen 5
+
+AM5
+
+Oryon
+
+Chipmaking
+
+DUV
+
+EUV
+
+Rare Earth Metals
+
+Photonics
+
+GPUs
+
+GPU Brands
+
+Nvidia Blackwell
+
+Nvidia GeForce
+
+AMD Radeon
+
+Intel Arc
+
+Memory Tech
+
+GDDR7
+
+GDDR8
+
+HBM
+
+AI Architecture
+
+Nvidia Vera Rubin
+
+Meta MTIA
+
+Google TPU
+
+AMD Instinct
+
+Microsoft Maia
+
+Drivers
+
+PC Components
+
+Memory
+
+RAM
+
+DRAM
+
+DDR5
+
+Storage
+
+HDDs
+
+SSDs
+
+Cooling
+
+Air Cooling
+
+Liquid Cooling
+
+Thermal Paste
+
+Networking
+
+Routers
+
+Motherboards
+
+Overclocking
+
+PC Cases
+
+PC Building
+
+Power Supplies
+
+News
+
+Tech Industry News
+
+CPU News
+
+GPU News
+
+Chips Act
+
+Semiconductors
+
+Cybersecurity
+
+Supercomputers
+
+Quantum Computing
+
+Company News
+
+AMD
+
+Intel
+
+Nvidia
+
+Microsoft
+
+TSMC
+
+IBM
+
+ASML
+
+Newsletters
+
+Laptops
+
+Gaming Laptops
+
+Ultrabooks
+
+Processors
+
+Intel Lunar Lake
+
+Intel Panther Lake
+
+AMD Strix Point
+
+AMD Gorgon Point
+
+Qualcomm Snapdragon X
+
+Qualcomm Snapdragon X2
+
+Laptop Brands
+
+Apple
+
+Asus
+
+HP
+
+Lenovo
+
+Microsoft
+
+MSI
+
+Razer
+
+Desktops
+
+PC Building
+
+PC Cases
+
+Gaming PCs
+
+Monitors
+
+Gaming Monitors
+
+Peripherals
+
+Keyboards
+
+Mice
+
+3D Printers
+
+Headphones
+
+Desktop Brands
+
+Acer
+
+Alienware
+
+Corsair
+
+CyberPowerPC
+
+Gigabyte
+
+MSI
+
+Software & AI
+
+Artificial Intelligence
+
+Machine Learning
+
+R&D
+
+Intel Gaudi
+
+Cerebras
+
+xAI
+
+LLMs
+
+OpenAI
+
+Anthropic
+
+DeepSeek
+
+Gemini
+
+Grok
+
+Operating Systems
+
+Windows
+
+MacOS
+
+iOS
+
+ChromeOS
+
+Linux
+
+Software
+
+Programming
+
+Applications
+
+Microsoft Office
+
+Web Browsers
+
+Coupons
+
+Laptop and PC Coupons
+
+Dell Coupon Codes
+
+Asus Coupon Codes
+
+Logitech Promo Codes
+
+Samsung Promo codes
+
+Hardware Coupons
+
+Newegg Promo Codes
+
+Corsair Discount Codes
+
+Razer Promo Codes
+
+Anycubic Discount codes
+
+Software Coupons
+
+Bitdefender Coupons
+
+Simplisafe Coupons
+
+MacPaw Coupons
+
+Squarespace Coupon Codes
+
+Gaming Coupons
+
+Kinguin Discount Codes
+
+Loaded Discount Codes
+
+Logitech G Promo Codes
+
+SteelSeries Coupons
+
+More
+
+Premium
+
+Forums
+
+Home
+
+Best Picks
+
+View Best Picks
+
+CPU Buying Advice 
+
+CPU Best Picks
+
+CPU Reviews
+
+GPU Buying Advice 
+
+GPU Best Picks
+
+GPU Reviews
+
+Laptop Buying Advice 
+
+Laptop Best Picks
+
+Laptop Reviews
+
+More Buying Advice 
+
+Keyboard Best Picks
+
+Gaming Monitor Best Picks
+
+Gaming Headset Best Picks
+
+3D Printer Best Picks
+
+Webcam Best Picks
+
+Mice Best Picks
+
+How We Test
+
+CPUs
+
+View CPUs
+
+CPU Brands 
+
+Nvidia RTX Spark
+
+AMD Ryzen
+
+Intel Core Ultra
+
+Qualcomm Snapdragon X
+
+Apple Silicon (M-Series)
+
+Platforms 
+
+X86
+
+RISC-V
+
+ARM
+
+Zen 5
+
+AM5
+
+Oryon
+
+Chipmaking 
+
+View Chipmaking
+
+DUV
+
+EUV
+
+Rare Earth Metals
+
+Photonics
+
+GPUs
+
+View GPUs
+
+GPU Brands 
+
+Nvidia Blackwell
+
+Nvidia GeForce
+
+AMD Radeon
+
+Intel Arc
+
+Memory Tech 
+
+GDDR7
+
+GDDR8
+
+HBM
+
+AI Architecture 
+
+Nvidia Vera Rubin
+
+Meta MTIA
+
+Google TPU
+
+AMD Instinct
+
+Microsoft Maia
+
+Drivers
+
+PC Components
+
+View PC Components
+
+Memory 
+
+RAM
+
+DRAM
+
+DDR5
+
+Storage 
+
+View Storage
+
+HDDs
+
+SSDs
+
+Cooling 
+
+View Cooling
+
+Air Cooling
+
+Liquid Cooling
+
+Thermal Paste
+
+Networking 
+
+View Networking
+
+Routers
+
+Motherboards
+
+Overclocking
+
+PC Cases
+
+PC Building
+
+Power Supplies
+
+News
+
+View News
+
+Tech Industry News 
+
+View Tech Industry News
+
+CPU News
+
+GPU News
+
+Chips Act
+
+Semiconductors
+
+Cybersecurity
+
+Supercomputers
+
+Quantum Computing
+
+Company News 
+
+AMD
+
+Intel
+
+Nvidia
+
+Microsoft
+
+TSMC
+
+IBM
+
+ASML
+
+Newsletters
+
+Laptops
+
+View Laptops
+
+Gaming Laptops
+
+Ultrabooks
+
+Processors 
+
+Intel Lunar Lake
+
+Intel Panther Lake
+
+AMD Strix Point
+
+AMD Gorgon Point
+
+Qualcomm Snapdragon X
+
+Qualcomm Snapdragon X2
+
+Laptop Brands 
+
+Apple
+
+Asus
+
+HP
+
+Lenovo
+
+Microsoft
+
+MSI
+
+Razer
+
+Desktops
+
+View Desktops
+
+PC Building 
+
+View PC Building
+
+PC Cases
+
+Gaming PCs
+
+Monitors 
+
+View Monitors
+
+Gaming Monitors
+
+Peripherals 
+
+View Peripherals
+
+Keyboards
+
+Mice
+
+3D Printers
+
+Headphones
+
+Desktop Brands 
+
+Acer
+
+Alienware
+
+Corsair
+
+CyberPowerPC
+
+Gigabyte
+
+MSI
+
+Software & AI
+
+View Software & AI
+
+Artificial Intelligence 
+
+View Artificial Intelligence
+
+Machine Learning
+
+R&D
+
+Intel Gaudi
+
+Cerebras
+
+xAI
+
+LLMs 
+
+View LLMs
+
+OpenAI
+
+Anthropic
+
+DeepSeek
+
+Gemini
+
+Grok
+
+Operating Systems 
+
+View Operating Systems
+
+Windows
+
+MacOS
+
+iOS
+
+ChromeOS
+
+Linux
+
+Software 
+
+View Software
+
+Programming
+
+Applications
+
+Microsoft Office
+
+Web Browsers
+
+Coupons
+
+View Coupons
+
+Laptop and PC Coupons 
+
+View Laptop and PC Coupons
+
+Dell Coupon Codes
+
+Asus Coupon Codes
+
+Logitech Promo Codes
+
+Samsung Promo codes
+
+Hardware Coupons 
+
+View Hardware Coupons
+
+Newegg Promo Codes
+
+Corsair Discount Codes
+
+Razer Promo Codes
+
+Anycubic Discount codes
+
+Software Coupons 
+
+View Software Coupons
+
+Bitdefender Coupons
+
+Simplisafe Coupons
+
+MacPaw Coupons
+
+Squarespace Coupon Codes
+
+Gaming Coupons 
+
+View Gaming Coupons
+
+Kinguin Discount Codes
+
+Loaded Discount Codes
+
+Logitech G Promo Codes
+
+SteelSeries Coupons
+
+Premium
+
+Forums
+
+Stay On the Cutting Edge: Get the Tom's Hardware Newsletter
+
+Get Tom's Hardware's best news and in-depth reviews, straight to your inbox.
+
+Become a Member in Seconds
+
+ Unlock instant access to exclusive member features.
+
+Contact me with news and offers from other Future brands
+
+Receive email from us on behalf of our trusted partners or sponsors
+
+By submitting your information you agree to the Terms & Conditions and Privacy Policy and are aged 16 or over.
+
+You are now subscribed
+
+Your newsletter sign-up was successful
+
+Join the club
+
+Get full access to premium articles, exclusive features and a growing list of member rewards.
+
+Explore
+
+ An account already exists for this email address, please log in.
+
+Trending
+
+RTX Spark Deals
+
+Nova Lake
+
+RAM Shortage
+
+AI Data Centers
+
+TH App
+
+RAM Combo Deals
+
+Vera Rubin
+
+Tom's 30th Anniversary
+
+Tech Industry
+
+SK hynix shows 16-Hi HBM4 memory for AI accelerators — 48 GB at 10 GT/s over a 2,048 interface
+
+News
+
+By
+Anton Shilov 
+
+Contributions by
+Matt Safford 
+
+Published
+
+14 January 2026
+
+A 2048-bit interface in all of its glory..
+
+When you purchase through links on our site, we may earn an affiliate commission. Here’s how it works.
+
+ (Image credit: Tom's Hardware)
+
+Copy link
+
+Facebook
+
+X
+
+Whatsapp
+
+Reddit
+
+Pinterest
+
+Flipboard
+
+Email
+
+Share this article
+
+0
+
+Join the conversation
+
+Follow us
+
+Add us as a preferred source on Google
+
+Newsletter
+
+Subscribe to our newsletter
+
+Avid readers of Tom’s Hardware have read a lot about the upcoming HBM4 and GDDR6 memory technologies, but as neither is used on mass production devices, few of us get to see actual HBM4 and GDDR6 memory packages. Good news, SK Hynix demonstrated them at CES, and our own Matt Safford has managed to grab some pictures.
+
+SK Hynix demonstrated the industry’s first 16-Hi HBM4 memory package at the trade show, highlighting both the density that could not be achieved without its MR-MUF molding technology as well as HBM4’s 2,048-bit interface. SK hynix's HBM4 memory stacks are said to operate at 10 GT/s, which is 25% faster than the official JEDEC specification. Meanwhile, adopters like Nvidia want to have headroom for both extra performance in scale-up deployments (if customers are willing to) and for performance efficiency in hyperscaler applications.
+
+(Image credit: SK Hynix)
+
+HBM3/HBM3E and HBM4 share the same ~10.5 × 12.0 mm footprint, but HBM4 allows taller stacks — up to ~950 µm for 16-Hi versus ~750 µm for 12-Hi HBM3 — while packing far denser I/O and power bumps. When it comes to packaging, the company continues with its advanced mass Reflow molded underfill (MR-MUF) approach: multiple memory dies are mounted on a base substrate and bonded in a single reflow step, then encapsulated with mold material between DRAM layers, the base die, and the substrate.
+
+Latest Videos FromTom's Hardware
+
+Watch full video here: 
+
+Looking at the backsides of HBM4 and HBM3E, the difference between them becomes obvious, even taking the general pin count aside. HBM3E and HBM4 feature the same dimensions/footprint, so the backside indeed shows a much denser and more uniformly packed BGA pin field with noticeably higher bump density across the entire footprint. This is not particularly surprising as the jump from a 1,024 to a 2,048-bit I/O takes its obvious toll and requires substantially more signal bumps as well as additional power and ground pins to support higher bandwidth and tighter signal integrity margins. By contrast, HBM3E's backside has a sparser bump layout with more visible separation between regions, which is consistent with its 1,024-bit interface and lower aggregate I/O demand.
+
+Meanwhile, HBM4's power delivery and ground contacts are also visibly different compared to the less advanced type of memory. Perhaps HBM4 allocates a larger fraction of its backside area to power and ground bumps; they are arranged more evenly across the package, something that could reduce noise and IR drop at data rates that are as high as 8 GT/s per standard or 10 GTs, given the listed capability.
+
+ You may like
+
+ Samsung teases new HBM5 with twice the performance of HBM4E 
+
+ Hot Chips 2026: SK hynix pushes hybrid bonding to HBM5 as AI memory hits 775-micron ceiling
+
+ New HBF spec outlines tech that can give GPUs terabytes of extra memory
+
+Yet, we may be speculating here purely based on the fact that HBM3E features fewer power pins and shows clearer zoning between I/O and power regions. In fact, even without precise specs, the backside alone shows that HBM4 is designed for much higher I/O bandwidth and power delivery requirements.
+
+In any case, these HBM4 modules use custom DRAM dies manufactured on the proven 1b-nm (5th-generation 10-nm-class) process to wed a large DRAM die with low defect density, reduced variability, and eventually high yield, something that makes them cheaper, yet it is hard to estimate how that lower cost could translate to the end user.
+
+Stay On the Cutting Edge: Get the Tom's Hardware Newsletter
+
+Get Tom's Hardware's best news and in-depth reviews, straight to your inbox.
+Contact me with news and offers from other Future brandsReceive email from us on behalf of our trusted partners or sponsors
+By submitting your information you agree to the Terms & Conditions and Privacy Policy and are aged 16 or over.
+
+Follow Tom's Hardware on Google News, or add us as a preferred source, to get our latest news, analysis, & reviews in your feeds.
+
+TOPICS
+
+HBM4
+
+SK Hynix
+
+See all comments (0)
+
+Anton Shilov
+
+Social Links Navigation
+
+Contributing Writer
+
+Anton Shilov is a contributing writer at Tom’s Hardware. Over the past couple of decades, he has covered everything from CPUs and GPUs to supercomputers and from modern process technologies and latest fab tools to high-tech industry trends.
+
+With contributions from
+
+Matt Safford
+
+Managing Editor
+
+Read more
+
+ DRAM
+
+ Samsung teases new HBM5 with twice the performance of HBM4E 
+
+ Semiconductors
+
+ Hot Chips 2026: SK hynix pushes hybrid bonding to HBM5 as AI memory hits 775-micron ceiling
+
+ SSDs
+
+ New HBF spec outlines tech that can give GPUs terabytes of extra memory
+
+ GPUs
+
+ Nvidia reportedly testing lower memory configs of Rubin Ultra as memory shortage bites back
+
+ DRAM
+
+ Nvidia NVHBM promises 30% higher bandwidth, 15% lower power than commodity HBM4e 
+
+ Semiconductors
+
+ Hot Chips 2026: Micron warns HBM wafer penalty is widening with every generation 
+
+Latest in Tech Industry
+
+ Policy
+
+ Nvidia CEO Jensen Huang may have been the target of a spy plot through 'Chinese intelligence asset,' report claims
+
+ Cybersecurity
+
+ Tech whiz's internet-accessible Synology NAS gets bit by ransomware attack from 18-month-old remote code execution flaw 
+
+ Artificial Intelligence
+
+ Dept of Justice reportedly probes Nvidia over $13 billion Hugging Face AI platform acquisition
+
+ Artificial Intelligence
+
+ Man granted first-of-its-kind religious exemption against mandatory AI use at work 
+
+ Policy
+
+ Malaysia seizes $12 million worth of advanced AI chips hidden inside 30 servers 
+
+ Cybersecurity
+
+ Fake PS5 emulators are being used to steal gamers' passwords
+
+Latest in News
+
+ Policy
+
+ Nvidia CEO Jensen Huang may have been the target of a spy plot through 'Chinese intelligence asset,' report claims
+
+ Cybersecurity
+
+ Tech whiz's internet-accessible Synology NAS gets bit by ransomware attack from 18-month-old remote code execution flaw 
+
+ Artificial Intelligence
+
+ Dept of Justice reportedly probes Nvidia over $13 billion Hugging Face AI platform acquisition
+
+ Software
+
+ GitHub says massive influx of AI-generated code required extra 4 million CPU cores and 160 petabytes of storage to manage
+
+ Artificial Intelligence
+
+ Man granted first-of-its-kind religious exemption against mandatory AI use at work 
+
+ Laptops
+
+ Apple launches new MacBook Pro with touchscreen and OLED — starts at $2,899
+
+No comments yet
+
+Comment from the forums
+
+Tom's Hardware is part of Future US Inc, an international media group and leading digital publisher. Visit our corporate site.
+
+Add as a preferred source on Google
+
+Terms and conditions
+
+Contact Future's experts
+
+Privacy policy
+
+Cookies policy
+
+Accessibility Statement
+
+Advertise with us
+
+About us
+
+Coupons
+
+Careers
+
+©
+Future US, Inc. Full 7th Floor, 130 West 42nd Street,
+New York,
+NY 10036.

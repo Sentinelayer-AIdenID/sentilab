@@ -1,0 +1,172 @@
+# git -C H:/sentilab show origin/main:web/public/temperature-label.mjs | cat -n
+# origin/main = d25046256b4a712b529977f31e10b7e32248a9c0
+     1	// The one label rule for every temperature on these pages: the run view (app.js), the Lab view (sentilab/lab.js) and
+     2	// the Package view (sentilab/package/package.js). Pure, no DOM, so the node tests run it (web/test/temperature-label.test.mjs).
+     3	//
+     4	// A temperature is labelled by the evaluator identity it came from:
+     5	//   - the run view: the result's thermal.solver_version;
+     6	//   - the Lab and Package views: the measurement's semantics.evaluator_version (the producer copies solver_version in).
+     7	// Replays, the live feed and the API all reach the pages as these same fields, so one rule covers them all.
+     8	// An identity names its engine and upstream commit first ("HotSpot-7:<commit>"), then the build, config and grid
+     9	// (":binary_sha256:…:config_sha256:…:grid:16x16"; older rows ":sha256:<16 hex>"). A variant extends the commit field
+    10	// ("HotSpot-7:<commit>+SLAB-049:…") and is a different evaluator, as is "HotSpot-6.0:…".
+    11	//
+    12	//   withdrawn     the identity's engine:commit is on WITHDRAWN: the known affected build;
+    13	//   illustrative  exactly the bundled interface fixture's identity: illustrative numbers, no solver ran;
+    14	//   accepted      exactly an identity on ACCEPTED (there are none yet);
+    15	//   unvalidated   anything else: any other identity, and a missing or unreadable one (unvalidated provenance). A
+    16	//                 different identity never implies validation.
+    17	// A value derived from several (a difference, a gap, a range, an axis) takes the most cautious state among its inputs:
+    18	// withdrawn, then unvalidated, then illustrative. It is illustrative only if every input is, accepted only if every
+    19	// input is; any other mix, or no input at all, is unvalidated. Withdrawn and unvalidated values show the page notice.
+    20	
+    21	// WITHDRAWN: the known affected build, HotSpot 7.0 at upstream f18831e, in every build, config and grid. It is under
+    22	// review for heat-sink coupling; see the SLAB-049 review.
+    23	export const WITHDRAWN = Object.freeze(["HotSpot-7:f18831e48cef5d62580585cca0d7fab6c71bc3cc"]);
+    24	// ILLUSTRATIVE: the bundled demo replay (sentilab/demo-run.jsonl) is an interface fixture; no solver produced it.
+    25	export const ILLUSTRATIVE = Object.freeze(["fixture-no-solver"]);
+    26	// ACCEPTED: evaluator identities accepted for comparison. Each entry needs an exact evaluator acceptance, recorded for
+    27	// that exact identity string (engine, commit, build, config and grid); it is matched exactly. None yet.
+    28	export const ACCEPTED = Object.freeze([]);
+    29	
+    30	// The page notice, shown at the top of any page that shows a withdrawn or unvalidated temperature. One constant:
+    31	// reword it here only.
+    32	export const NOTICE = "These simulated temperatures are under review and have been withdrawn from comparison with published " +
+    33	  "layouts. We are investigating heat-sink coupling and validating the evaluator against reconstructed research layouts. " +
+    34	  "Historical results remain available.";
+    35	
+    36	// text: the qualifier; short: the tag beside a value (not "withdrawn" alone, which the evidence views already use for a
+    37	// withdrawn node); title: the full sentence, on hover; notice: whether the value shows the page notice.
+    38	export const LABELS = Object.freeze({
+    39	  withdrawn: Object.freeze({
+    40	    state: "withdrawn", notice: true, text: "simulated · pre-correction (withdrawn)", short: "pre-correction",
+    41	    title: "Withdrawn: this evaluator build is under review for heat-sink coupling. Not for comparison with published layouts; " +
+    42	      "kept as recorded.",
+    43	  }),
+    44	  unvalidated: Object.freeze({
+    45	    state: "unvalidated", notice: true, text: "simulated · unvalidated", short: "unvalidated",
+    46	    title: "Unvalidated: this value's evaluator has not been accepted, or isn't named. Not for comparison with published layouts.",
+    47	  }),
+    48	  illustrative: Object.freeze({
+    49	    state: "illustrative", notice: false, text: "illustrative · no solver ran", short: "illustrative",
+    50	    title: "Interface fixture: an illustrative number. No solver produced it.",
+    51	  }),
+    52	  accepted: Object.freeze({ state: "accepted", notice: false, text: "simulated", short: "simulated", title: "Simulated with an accepted evaluator. Not silicon." }),
+    53	});
+    54	
+    55	const isObj = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
+    56	// The leading engine:commit of an identity, compared without case.
+    57	const evaluatorKey = (identity) => identity.trim().split(":", 2).join(":").toLowerCase();
+    58	
+    59	// The rule over given lists (the tests build their own; the pages use the frozen lists above).
+    60	export function labeller({ withdrawn = WITHDRAWN, illustrative = ILLUSTRATIVE, accepted = ACCEPTED } = {}) {
+    61	  const withdrawnKeys = new Set(withdrawn.map((id) => id.toLowerCase()));
+    62	  const illustrativeIds = new Set(illustrative), acceptedIds = new Set(accepted);
+    63	  // One value, from one identity.
+    64	  const labelFor = (identity) => {
+    65	    if (typeof identity !== "string" || identity.trim() === "") return LABELS.unvalidated;   // unvalidated provenance
+    66	    if (withdrawnKeys.has(evaluatorKey(identity))) return LABELS.withdrawn;                   // every build of it
+    67	    if (illustrativeIds.has(identity)) return LABELS.illustrative;                            // exactly the fixture
+    68	    if (acceptedIds.has(identity)) return LABELS.accepted;                                    // exactly as accepted
+    69	    return LABELS.unvalidated;
+    70	  };
+    71	  // A value derived from several: the identities of everything it was made from.
+    72	  const labelForAll = (identities) => {
+    73	    const list = typeof identities === "string" ? [identities] : Array.isArray(identities) ? identities
+    74	      : identities != null && typeof identities[Symbol.iterator] === "function" ? [...identities] : [];
+    75	    const labels = list.map(labelFor);
+    76	    if (labels.includes(LABELS.withdrawn)) return LABELS.withdrawn;
+    77	    if (labels.length > 0 && labels.every((label) => label === LABELS.illustrative)) return LABELS.illustrative;
+    78	    if (labels.length > 0 && labels.every((label) => label === LABELS.accepted)) return LABELS.accepted;
+    79	    return LABELS.unvalidated;                    // an unvalidated input, a mix of fixture and real inputs, or none
+    80	  };
+    81	  return Object.freeze({ labelFor, labelForAll });
+    82	}
+    83	const RULE = labeller();
+    84	export const labelFor = RULE.labelFor;
+    85	export const labelForAll = RULE.labelForAll;
+    86	
+    87	// ── the run view and the verify page: flight records ─────────────────────────────────────────────────────
+    88	// A run (a GET /api/runs/{id} response, a replay file of one, or the raw { run_id, lane_results } it wraps), or one
+    89	// lane's record document ({ events, ... }, as the TFL-08 records carry it). The identity of every temperature it holds,
+    90	// in record order: each baseline, each of its shared initial samples, and each oracle result (a committed proposal's
+    91	// temperature is its oracle result's).
+    92	export function runTemperatureIds(run) {
+    93	  const ids = [];
+    94	  const result = isObj(run) && isObj(run.result) ? run.result : run;
+    95	  const records = !isObj(result) ? []
+    96	    : isObj(result.lane_results) ? Object.values(result.lane_results).map((lane) => (isObj(lane) ? lane.record : null))
+    97	    : [result.events];
+    98	  const solverOf = (thermal) => (isObj(thermal) ? thermal.solver_version : undefined);
+    99	  for (const record of records) {
+   100	    for (const e of Array.isArray(record) ? record : []) {
+   101	      if (!isObj(e) || (e.event !== "baseline" && e.event !== "oracle_result")) continue;
+   102	      const payload = isObj(e.payload) ? e.payload : {};
+   103	      ids.push(solverOf(payload.thermal));
+   104	      if (e.event === "baseline" && Array.isArray(payload.shared_initial_samples)) {
+   105	        for (const sample of payload.shared_initial_samples) ids.push(isObj(sample) ? solverOf(sample.thermal) : undefined);
+   106	      }
+   107	    }
+   108	  }
+   109	  return ids;
+   110	}
+   111	
+   112	// The verify page's notice, from the verifier's own report (verify-core.js): each lane's shown best peak comes with the
+   113	// identity of every temperature it was taken from (bestIds). A lane showing a best whose inputs need the notice, or that
+   114	// names none, shows it (labelForAll: the most cautious state wins).
+   115	export function reportNeedsNotice(report) {
+   116	  const lanes = isObj(report) && Array.isArray(report.lanes) ? report.lanes : [];
+   117	  return lanes.some((lane) => isObj(lane) && typeof lane.best === "number" && Number.isFinite(lane.best) &&
+   118	    labelForAll(Array.isArray(lane.bestIds) ? lane.bestIds : []).notice);
+   119	}
+   120	
+   121	// ── view envelopes (Lab and Package views) ──────────────────────────────────────────────────────────────────
+   122	// node id -> evaluator identity, from the node.create the projector APPLIED for each id: the first one it did not
+   123	// reject, the same event the views take the node's values from. A rejected create (missing semantics, an unknown kind,
+   124	// a repeat) lends no identity. rejected: project()'s rejections ({ event_id, code } entries, or event ids); the pages
+   125	// pass their verification's projection.rejected. Only measurements and comparisons declare semantics, so a candidate
+   126	// maps to undefined.
+   127	export function evaluatorIds(envelopes, rejected = []) {
+   128	  const skip = new Set((Array.isArray(rejected) ? rejected : []).map((r) => (isObj(r) ? r.event_id : r)));
+   129	  const ids = new Map();
+   130	  for (const env of Array.isArray(envelopes) ? envelopes : []) {
+   131	    const body = isObj(env) && isObj(env.event) && env.event.type === "node.create" && isObj(env.event.body) ? env.event.body : null;
+   132	    if (!body || typeof body.id !== "string" || ids.has(body.id) || skip.has(env.event.event_id)) continue;
+   133	    ids.set(body.id, isObj(body.semantics) ? body.semantics.evaluator_version : undefined);
+   134	  }
+   135	  return ids;
+   136	}
+   137	// The qualifiers for a value whose J and centre temperatures may come from different measurements: each keeps its own
+   138	// source's label, never merged. J's first; the temperatures' too when their label differs (or when there is no J).
+   139	export function sourceTags(jLabel, tempsLabel) {
+   140	  const tags = [];
+   141	  if (jLabel) tags.push({ label: jLabel, text: jLabel.short });
+   142	  if (tempsLabel && tempsLabel !== jLabel) tags.push({ label: tempsLabel, text: `temps ${tempsLabel.short}` });
+   143	  return tags;
+   144	}
+   145	// The identities behind a colour scale, as a set: one entry per distinct identity among EXACTLY the rows that view's own
+   146	// scale calculation consumed (each view passes its own inputs: the Lab colorScaleInputs, the Package frameScaleInputs;
+   147	// there is no shared contributor rule here). A live scale that widened keeps the identities it was widened from
+   148	// (previous); any other scale is rebuilt. So it grows with the number of evaluators, never with rows or verifications.
+   149	export function scaleIdentities(contributors, ids, previous = null) {
+   150	  const out = new Set(previous ?? []);
+   151	  for (const env of Array.isArray(contributors) ? contributors : []) out.add(envelopeEvaluator(env, ids));
+   152	  return out;
+   153	}
+   154	// The identity behind one envelope's display values: a node.create's own semantics, or for any other event the node it
+   155	// names (a verify.add's values belong to the measurement it verifies). Anything else has none.
+   156	export function envelopeEvaluator(env, ids) {
+   157	  if (!isObj(env) || !isObj(env.event) || !isObj(env.event.body)) return undefined;
+   158	  const body = env.event.body;
+   159	  if (env.event.type === "node.create") return isObj(body.semantics) ? body.semantics.evaluator_version : undefined;
+   160	  return typeof body.node === "string" && ids instanceof Map ? ids.get(body.node) : undefined;
+   161	}
+   162	// Does an envelope carry a temperature for display (a J, or centre temperatures)?
+   163	export const hasTemperature = (env) => isObj(env) && isObj(env.values) && (isObj(env.values.J) || isObj(env.values.center_temps));
+   164	// The page notice's test for envelopes: does any of them carry a temperature whose label shows the notice (withdrawn or
+   165	// unvalidated)? Envelopes that failed verification count too: the feed lists them.
+   166	export function needsNotice(envelopes) {
+   167	  const list = (Array.isArray(envelopes) ? envelopes : []).filter(Boolean);
+   168	  const ids = evaluatorIds(list);
+   169	  return list.some((env) => hasTemperature(env) && labelFor(envelopeEvaluator(env, ids)).notice);
+   170	}

@@ -1,0 +1,40 @@
+# git -C H:/sentilab show origin/main:sundai_hotspot/package.config | cat -n
+# origin/main = 46791be360555d0e24b4ad5f906abafb71f07118
+     1	#	NOTE:
+     2	#	CAUTION!! The model is valid only with reasonable heatsink/fan parameters!
+     3	# CAUTION!! This thermal package model is based on empirical convection heat transfer
+     4	#						theories in textbooks. Detailed FEM and/or actual measurements might be needed
+     5	#						to ensure the accuracy of those empirical formulas.  
+     6	#
+     7	# In most cases, the package model should be turned off and the default lumped 
+     8	#	convection thermal resistance r_convec should serve well for most purposes.
+     9	#	However, this feature of modeling thermal packaging details might be useful when:
+    10	#		1) detailed heatsink and fan information is known, or,
+    11	#		2) you are using HotSpot for thermal package design, or,
+    12	#		3) detailed investigation of the impact of thermal package configs on silcion temperature is desired
+    13	
+    14	# package model parameters
+    15		# heat sink specs
+    16			# natural convection? 0: forced convection, 1: natural convection
+    17			-natural_convec	0
+    18			# if not natural convection, then
+    19			#	flow type: 0) lateral airflow from sink side. 1) impinging airflow from sink top
+    20			-flow_type				0
+    21			#	heatsink type: 0) fin-channel sink, 1) pin-fin sink
+    22			-sink_type				0
+    23			
+    24			#	(sink base size is defined in hotspot.config)
+    25			#	all in meters
+    26			#	1) fin-channel sink
+    27			-fin_height				0.03	# most CPU fin heights are only a couple of centimeters
+    28			-fin_width				0.001	# uasually a few millimeters
+    29			-channel_width				0.002	# usually a few millimeters
+    30			#	2) pin-fin sink 
+    31			-pin_height				0.02	# similar value to fin height
+    32			-pin_diam				0.002	# similar to greater than fin width
+    33			-pin_dist				0.005	# similar to or greater than channel width
+    34			
+    35		#	fan specs, in meters 
+    36			-fan_radius				0.03	# usually about half of heat sink size
+    37			-motor_radius				0.01 # less than the fan radius, usually not a very small value
+    38			-rpm				1000 #	usually a few thousands

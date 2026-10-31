@@ -1,0 +1,167 @@
+# git -C H:/sentilab show origin/main:sundai_tap/util/hotspot.config | cat -n
+# origin/main = 46791be360555d0e24b4ad5f906abafb71f07118
+     1	# thermal model parameters
+     2	
+     3		# chip specs
+     4			# chip thickness in meters
+     5			-t_chip				0.00015
+     6			# silicon thermal conductivity in W/(m-K)
+     7			-k_chip				100.0
+     8			# silicon specific heat in J/(m^3-K)
+     9			-p_chip				1.75e6
+    10			# temperature threshold for DTM (kelvin)
+    11			-thermal_threshold	354.95
+    12	
+    13		# heat sink specs
+    14			# convection capacitance in J/K
+    15			-c_convec			140.4
+    16			# convection resistance in K/W
+    17			-r_convec			0.1
+    18			# heatsink side in meters
+    19			-s_sink				0.06
+    20			# heatsink thickness  in meters
+    21			-t_sink				0.0069
+    22			# heatsink thermal conductivity in W/(m-K)
+    23			-k_sink				400.0
+    24			# heatsink specific heat in J/(m^3-K)
+    25			-p_sink				3.55e6
+    26	
+    27		# heat spreader specs
+    28			# spreader side in meters
+    29			-s_spreader			0.03
+    30			# spreader thickness in meters
+    31			-t_spreader			0.001
+    32			# heat spreader thermal conductivity in W/(m-K)
+    33			-k_spreader				400.0
+    34			# heat spreader specific heat in J/(m^3-K)
+    35			-p_spreader				3.55e6
+    36	
+    37		# interface material specs
+    38			# interface material thickness in meters
+    39			-t_interface		2.0e-05
+    40			# interface material thermal conductivity in W/(m-K)
+    41			-k_interface				4.0
+    42			# interface material specific heat in J/(m^3-K)
+    43			-p_interface				4.0e6
+    44			
+    45		# secondary path (C4/underfill, package substrate, solder balls etc)
+    46		# ONLY AVAILABLE IN THE GRID MODEL
+    47			# model secondary path or not?
+    48			-model_secondary	0
+    49			# convection resistance at the air/PCB interface in K/W
+    50			-r_convec_sec	50.0
+    51			# convection capacitance at the air/PCB interface in J/K
+    52			-c_convec_sec	40.0
+    53			#	number of on-chip metal layers
+    54			-n_metal	8
+    55			#	one metal layer thickness in meters
+    56			-t_metal	100.0e-6 
+    57			#	C4/underfill thickness in meters
+    58			-t_c4	0.0001
+    59			#	side size of EACH C4 pad
+    60			-s_c4	20.0e-6
+    61			# number of C4 pads
+    62			-n_c4	400 
+    63			# package substrate side in meters
+    64			-s_sub	0.021
+    65			# package substrate thickness in meters
+    66			-t_sub	0.001
+    67			#	solder ball side in meters
+    68			-s_solder	0.021
+    69			#	solder ball thickness in meters
+    70			-t_solder	0.00094
+    71			# PCB side in meters
+    72			-s_pcb	0.1
+    73			# PCB thickness in meters
+    74			-t_pcb	0.002	
+    75	
+    76		# others
+    77			# ambient temperature in kelvin
+    78			-ambient			318.15
+    79			# initial temperatures from file
+    80			-init_file			(null)
+    81			# initial temperature (kelvin) if not from file
+    82			-init_temp			318.15
+    83			# steady state temperatures to file
+    84			-steady_file		(null)
+    85			# hotspot calling interval - 10K cycles at 3GHz
+    86			-sampling_intvl		3.333e-06
+    87			# base processor frequency in Hz
+    88			-base_proc_freq		3e+09
+    89			# is DTM employed?
+    90			-dtm_used			0
+    91			# model type - block or grid
+    92			-model_type			block
+    93			
+    94			# consider temperature-leakage loop within HotSpot?
+    95			-leakage_used 0
+    96			
+    97			# leakage calculation modes: (only valid when -leakage_used=1)
+    98			# 0 user-defined leakage power model, do temp-leakage loop within HotSpot
+    99			#	1 use HotLeakage -- !NOT implemented in this release!, coming later.
+   100			-leakage_mode	0
+   101			
+   102			# use detailed package model?
+   103			-package_model_used			0
+   104			-package_config_file			package.config
+   105	
+   106		# block model specific parameters
+   107			# omit lateral chip resistances?
+   108			-block_omit_lateral	0
+   109	
+   110		# grid model specific parameters
+   111			# grid resolution - no. of rows
+   112			-grid_rows			64
+   113			# grid resolution - no. of cols
+   114			-grid_cols			64
+   115			# layer configuration from file
+   116			-grid_layer_file	(null)
+   117			# dump internal grid steady state temperatures
+   118			-grid_steady_file	(null)
+   119			# grid to block mapping mode - (avg|min|max|center)
+   120			# i.e., a block's temperature is the avg, min or max 
+   121			# of all the grid cells in it or equal to that of
+   122			# the grid cell in its center
+   123			-grid_map_mode		center
+   124	
+   125	# floorplanner parameters
+   126	
+   127		# L2 modeling
+   128			# wrap around L2?
+   129			-wrap_l2			1
+   130			# name of the L2 unit to look for
+   131			-l2_label			L2
+   132		
+   133		# rim modeling
+   134			# model dead space around the rim of the chip?
+   135			-model_rim			0
+   136			# thickness of the rim in meters
+   137			-rim_thickness		5e-05
+   138		
+   139		# others
+   140			# area ratio below which to ignore dead space
+   141			-compact_ratio		0.005
+   142			# no. of discrete orientations for a shape curve (even no. > 1)
+   143			-n_orients			300
+   144		
+   145		# annealing parameters
+   146			# initial acceptance probability
+   147			-P0					0.99
+   148			# average change (delta) in cost
+   149			-Davg				1
+   150			# no. of moves to try in each step
+   151			-Kmoves				7
+   152			# ratio for the cooling schedule
+   153			-Rcool				0.99
+   154			# ratio of rejects at which to stop annealing
+   155			-Rreject			0.99
+   156			# absolute max no. of annealing steps
+   157			-Nmax				1000
+   158	
+   159		# weights for the metric: lambdaA * A + lambdaT * T + lambdaW * W
+   160			# weight for the area term
+   161			-lambdaA			5.0e+06
+   162			# weight for the temperature term
+   163			-lambdaT			1
+   164			# weight for the wire length term
+   165			-lambdaW			350

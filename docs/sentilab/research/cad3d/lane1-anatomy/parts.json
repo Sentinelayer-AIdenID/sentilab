@@ -1,0 +1,4637 @@
+{
+  "schema": "sentilab.cad3d.lane1.parts/v1",
+  "status": "REPRESENTATIVE RECONSTRUCTION from public sources. Not any manufacturer's CAD, not silicon-validated. Contains no temperatures from the SentiLab repo (old HotSpot 7.0 detailed-3D kelvin values are withdrawn).",
+  "generated_by": "lane1-anatomy (research agent), 2026-10-31",
+  "repo_snapshot": {
+    "repo": "Sentinelayer-AIdenID/sentilab (local H:/sentilab)",
+    "ref": "origin/main",
+    "sha": "46791be360555d0e24b4ad5f906abafb71f07118"
+  },
+  "conventions": {
+    "stack_order": "integer levels bottom-to-top: -1 under the board, 0 board, 1 BGA ... 9 top dies, 10 TIM1, 11 lid, 12 TIM2, 13 cooler, 14 coolant. Decimals order sub-layers inside an assembly. Parts sharing a level sit side by side or are alternatives (see variant).",
+    "thickness_um": "{min, typical, max} only where a source gives them; null = not sourced. render_hint = an illustrative display value that is NOT a sourced claim (basis given).",
+    "k_W_per_mK": "thermal conductivity near room temperature unless stated; 'derived' entries show their inputs.",
+    "sources": "fact ids resolve to evidence/<lane>/FACTS.jsonl (verbatim quotes, verified) and source slugs to source_index.",
+    "variant": "all | lidded | lidless | cowos_r | cowos_l_or_emib | ascend910 | liquid_cooled | air_cooled | vertical_power_delivery",
+    "connection_types": [
+      "thermal",
+      "power",
+      "signal",
+      "mechanical"
+    ]
+  },
+  "parts": [
+    {
+      "id": "system_board",
+      "name": "System board (PCB / OAM / SXM carrier)",
+      "parent": null,
+      "stack_order": 0,
+      "count": 1,
+      "material": "Multilayer glass-epoxy PCB with copper power and ground planes",
+      "thickness_um": {
+        "min": null,
+        "typical": null,
+        "max": null,
+        "render_hint": 2000,
+        "render_hint_basis": "HotSpot secondary-path default t_pcb = 2 mm in our config (model default, not a product value)"
+      },
+      "lateral_mm": {
+        "pattern": "board area around and under the package; carries VRMs and bypass capacitors"
+      },
+      "k_W_per_mK": {
+        "value": null,
+        "notes": "not sourced; Cu planes make in-plane k much higher than through-plane"
+      },
+      "function": "Mechanical carrier; delivers the core and HBM rails from the VRMs; routes off-package I/O; minor heat sink for the secondary path.",
+      "connects_to": [
+        {
+          "id": "bga_balls",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "vrm_lateral",
+          "type": [
+            "power"
+          ]
+        },
+        {
+          "id": "vrm_vertical",
+          "type": [
+            "power"
+          ]
+        },
+        {
+          "id": "board_bypass_caps",
+          "type": [
+            "power"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-044",
+          "source": "vicor_vpd_genai_article"
+        },
+        {
+          "fact": "thm-012",
+          "source": "hotspot60_tr_https"
+        },
+        {
+          "fact": "thm-035",
+          "source": "itherm2024_dual_sided_bspdn"
+        }
+      ],
+      "confidence": "low",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false,
+        "detail": "model_secondary = 0, so no PCB, solder or package-substrate secondary layers are built",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/util/hotspot.config",
+            "lines": "48, 72-74"
+          }
+        ]
+      },
+      "notes": "Board-side lateral I2R loss is >= 50 W with lateral VRs (pkg-044). Purdue FEM model lumps the PCB side as 20 K/W (thm-035)."
+    },
+    {
+      "id": "vrm_lateral",
+      "name": "Voltage regulators, lateral (multiphase buck around the package)",
+      "parent": "system_board",
+      "stack_order": 0,
+      "count": 30,
+      "material": "Power stages, inductors, controllers on the board",
+      "thickness_um": null,
+      "lateral_mm": {
+        "pattern": "ring of 30+ VR phases arranged around the processor footprint"
+      },
+      "k_W_per_mK": null,
+      "function": "Convert the board bus to the sub-1 V core rail (and 1.1-1.2 V HBM rail) at ~1000 A continuous with dI/dt >= 2000 A/us.",
+      "connects_to": [
+        {
+          "id": "system_board",
+          "type": [
+            "power",
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-044",
+          "source": "vicor_vpd_genai_article"
+        },
+        {
+          "fact": "pkg-041",
+          "source": "vicor_vpd_genai_article"
+        },
+        {
+          "fact": "pkg-042",
+          "source": "vicor_vpd_genai_article"
+        },
+        {
+          "fact": "pkg-043",
+          "source": "vicor_vpd_genai_article"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false
+      },
+      "notes": "count = 'thirty or more' phases (vendor article, Vicor). Core VDD as low as 0.7 V, +/-5%."
+    },
+    {
+      "id": "vrm_vertical",
+      "name": "Voltage regulator, vertical (module under the package, opposite board side)",
+      "parent": "system_board",
+      "stack_order": -1,
+      "count": 1,
+      "material": "High-current-density VR module (~1 A/mm2 state of the art)",
+      "thickness_um": null,
+      "lateral_mm": {
+        "pattern": "inside the bypass-capacitor field beneath the package; ~3,500 mm2 package footprint quoted"
+      },
+      "k_W_per_mK": null,
+      "function": "Shortens the PDN: moving one PoL module under the processor cut lumped PDN impedance from 60 to 11 uOhm in a vendor test.",
+      "connects_to": [
+        {
+          "id": "system_board",
+          "type": [
+            "power"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-045",
+          "source": "vicor_vpd_genai_article"
+        },
+        {
+          "fact": "pkg-043",
+          "source": "vicor_vpd_genai_article"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "vertical_power_delivery",
+      "in_our_model": {
+        "modeled": false
+      },
+      "notes": "Optional variant; lateral and lateral-vertical schemes coexist."
+    },
+    {
+      "id": "board_bypass_caps",
+      "name": "Board bypass capacitors under the processor",
+      "parent": "system_board",
+      "stack_order": -1,
+      "count": null,
+      "material": "MLCC array",
+      "thickness_um": null,
+      "lateral_mm": {
+        "pattern": "fills the PCB area beneath the processor"
+      },
+      "k_W_per_mK": null,
+      "function": "Supply charge for fast load steps; >= 3 mF for a 1000 A TDC processor.",
+      "connects_to": [
+        {
+          "id": "system_board",
+          "type": [
+            "power"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-043",
+          "source": "vicor_vpd_genai_article"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false
+      },
+      "notes": ""
+    },
+    {
+      "id": "package",
+      "name": "2.5D package assembly (CoWoS-class)",
+      "parent": null,
+      "stack_order": null,
+      "count": 1,
+      "material": "assembly",
+      "thickness_um": null,
+      "lateral_mm": {
+        "w": null,
+        "h": null,
+        "pattern": "substrate body 55-130 mm square depending on generation (see package_substrate)"
+      },
+      "k_W_per_mK": null,
+      "function": "Container for everything from BGA balls to lid.",
+      "connects_to": [
+        {
+          "id": "system_board",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-001",
+          "source": "tsmc_cowos_page"
+        },
+        {
+          "fact": "pkg-007",
+          "source": "tsmc_cowos_page"
+        },
+        {
+          "fact": "pkg-033",
+          "source": "kyocera_fcbga_organic_substrates"
+        }
+      ],
+      "confidence": "high",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": true,
+        "detail": "TAP passive-interposer system"
+      },
+      "notes": "Variants: lidded vs lidless; Si interposer (CoWoS-S) vs RDL interposer (CoWoS-R) vs RDL + local Si bridges (CoWoS-L / EMIB)."
+    },
+    {
+      "id": "bga_balls",
+      "name": "BGA solder balls",
+      "parent": "package",
+      "stack_order": 1,
+      "count": null,
+      "material": "Solder balls (SAC-family assumed; k from SAC305 data)",
+      "thickness_um": {
+        "min": 310,
+        "typical": null,
+        "max": 600,
+        "render_hint": 450,
+        "render_hint_basis": "midpoint of cited stand-off range (derived)"
+      },
+      "lateral_mm": {
+        "pattern": "full area array, pitch 0.8-1.0 mm; ball diameter 0.5-0.6 mm",
+        "pitch_mm": [
+          0.8,
+          1.0
+        ],
+        "ball_diameter_mm": {
+          "min": 0.4,
+          "typical": null,
+          "max": 0.7,
+          "nominals": [
+            0.5,
+            0.6
+          ],
+          "notes": "0.50 nominal (Microchip 15 mm FCBGA), 0.600 nominal (IDT 29 mm FCBGA)"
+        }
+      },
+      "k_W_per_mK": {
+        "value": 58,
+        "notes": "bulk SAC305; the ball layer as a whole is mostly air/underfill-free gap"
+      },
+      "function": "Second-level interconnect: power, ground and I/O between substrate and board; mechanical attach.",
+      "connects_to": [
+        {
+          "id": "substrate_buildup_bottom",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "system_board",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-022",
+          "source": "amkor_fcbga_ds831"
+        },
+        {
+          "fact": "pkg-018",
+          "source": "xilinx_cpmt1104b"
+        },
+        {
+          "fact": "pkg-049",
+          "source": "microchip_fcbga196_c04_25015"
+        },
+        {
+          "fact": "pkg-050",
+          "source": "renesas_alg784_fcbga_29mm"
+        },
+        {
+          "fact": "pkg-027",
+          "source": "amkor_fcbga_ds831"
+        },
+        {
+          "fact": "thm-025",
+          "source": "solderconnection_sac305"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false,
+        "detail": "secondary path disabled",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/util/hotspot.config",
+            "lines": "48, 68-70"
+          }
+        ]
+      },
+      "notes": "Ball counts: 3,136 balls for a 55 mm body at 1.0 mm full array (pkg-027); a 90-110 mm body allows up to (90/1)^2 = 8,100 to (110/1)^2 = 12,100 sites at 1.0 mm (derived upper bound, not a product count). Diameter values from small FCBGA drawings (15 mm and 29 mm bodies)."
+    },
+    {
+      "id": "land_side_caps",
+      "name": "Land-side capacitors (substrate bottom)",
+      "parent": "package",
+      "stack_order": 1,
+      "count": null,
+      "material": "MLCC / silicon capacitors",
+      "thickness_um": null,
+      "lateral_mm": {
+        "pattern": "in the BGA field under the die shadow"
+      },
+      "k_W_per_mK": null,
+      "function": "Package-level decoupling close to the die.",
+      "connects_to": [
+        {
+          "id": "substrate_buildup_bottom",
+          "type": [
+            "power"
+          ]
+        }
+      ],
+      "sources": [],
+      "confidence": "low",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false
+      },
+      "notes": "Included for anatomy completeness; NO source captured in this evidence pack. Do not show numbers."
+    },
+    {
+      "id": "package_substrate",
+      "name": "Package substrate (FCBGA, ABF build-up on organic core)",
+      "parent": "package",
+      "stack_order": null,
+      "count": 1,
+      "material": "Glass-reinforced resin (BT/epoxy) core + ABF build-up dielectric + Cu layers",
+      "thickness_um": {
+        "min": null,
+        "typical": null,
+        "max": null,
+        "notes": "core 400-1600 um (thin core 150-250 um); total stack not sourced"
+      },
+      "lateral_mm": {
+        "w": null,
+        "h": null,
+        "range_mm": [
+          55,
+          130
+        ],
+        "pattern": "square body; 90 x 90 mm (2026) to 130 x 130 mm (roadmap); 110 mm square already used for a 2.5x-reticle InFO_oS in 2021"
+      },
+      "k_W_per_mK": {
+        "core": 0.8,
+        "build_up_dielectric": 0.35,
+        "solder_mask": 0.24,
+        "notes": "dielectric values; Cu planes raise effective in-plane k (not sourced)"
+      },
+      "function": "Fans out from C4 pitch (~90-210 um) to BGA pitch (0.8-1.0 mm); distributes power/ground planes; mechanical base.",
+      "connects_to": [
+        {
+          "id": "c4_bumps",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "bga_balls",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "stiffener_ring",
+          "type": [
+            "mechanical"
+          ]
+        },
+        {
+          "id": "lid",
+          "type": [
+            "mechanical",
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-048",
+          "source": "tomshw_abf_substrates_2026"
+        },
+        {
+          "fact": "pkg-032",
+          "source": "kyocera_fcbga_organic_substrates"
+        },
+        {
+          "fact": "pkg-031",
+          "source": "kyocera_fcbga_organic_substrates"
+        },
+        {
+          "fact": "pkg-033",
+          "source": "kyocera_fcbga_organic_substrates"
+        },
+        {
+          "fact": "pkg-047",
+          "source": "tomshw_abf_substrates_2026"
+        },
+        {
+          "fact": "pkg-017",
+          "source": "tsmc_hotchips33_packaging_tutorial"
+        },
+        {
+          "fact": "thm-015",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        },
+        {
+          "fact": "thm-014",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        },
+        {
+          "fact": "thm-013",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        },
+        {
+          "fact": "pkg-018",
+          "source": "xilinx_cpmt1104b"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": true,
+        "layer": "L0 'substrate'",
+        "detail": "200 um, k = 0.30 W/mK, footprint = interposer (45 or 50 mm); bottom adiabatic",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/passive_interposer.py",
+            "lines": "50-56, 144"
+          }
+        ]
+      },
+      "notes": "Build-up 9/x/9 to 10/x/10 in volume, 12/x/12 and 14/x/14 on roadmaps; Xilinx 2011 SSIT used 4-2-4 with 1.0 mm BGA pitch."
+    },
+    {
+      "id": "substrate_buildup_bottom",
+      "name": "Substrate build-up layers (bottom side)",
+      "parent": "package_substrate",
+      "stack_order": 2,
+      "count": 10,
+      "material": "ABF dielectric + patterned Cu, laser microvias",
+      "thickness_um": {
+        "min": null,
+        "typical": null,
+        "max": null,
+        "render_hint": 300,
+        "render_hint_basis": "illustrative, NOT sourced (layer thickness not captured)"
+      },
+      "lateral_mm": {
+        "pattern": "full substrate body"
+      },
+      "k_W_per_mK": {
+        "dielectric": 0.35,
+        "solder_mask": 0.24
+      },
+      "function": "BGA-side routing and power planes.",
+      "connects_to": [
+        {
+          "id": "substrate_core",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "bga_balls",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-031",
+          "source": "kyocera_fcbga_organic_substrates"
+        },
+        {
+          "fact": "pkg-047",
+          "source": "tomshw_abf_substrates_2026"
+        },
+        {
+          "fact": "thm-014",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        },
+        {
+          "fact": "thm-013",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false,
+        "detail": "lumped into L0"
+      },
+      "notes": "count = build-up layers per side (10/x/10 class)."
+    },
+    {
+      "id": "substrate_core",
+      "name": "Substrate core",
+      "parent": "package_substrate",
+      "stack_order": 3,
+      "count": 1,
+      "material": "Glass-fabric reinforced resin (BT/epoxy) copper-clad laminate with plated through holes",
+      "thickness_um": {
+        "min": 150,
+        "typical": null,
+        "max": 1600,
+        "notes": "conventional 400-1600 um; thin core 150-250 um",
+        "render_hint": 800,
+        "render_hint_basis": "within cited conventional range (illustrative)"
+      },
+      "lateral_mm": {
+        "pattern": "full substrate body"
+      },
+      "k_W_per_mK": {
+        "value": 0.8,
+        "notes": "organic core, room temperature"
+      },
+      "function": "Mechanical rigidity; through holes connect top and bottom build-ups.",
+      "connects_to": [
+        {
+          "id": "substrate_buildup_bottom",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "substrate_buildup_top",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-032",
+          "source": "kyocera_fcbga_organic_substrates"
+        },
+        {
+          "fact": "pkg-048",
+          "source": "tomshw_abf_substrates_2026"
+        },
+        {
+          "fact": "thm-015",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false,
+        "detail": "lumped into L0"
+      },
+      "notes": "Glass-core substrates are on industry roadmaps (pkg-048 source)."
+    },
+    {
+      "id": "substrate_buildup_top",
+      "name": "Substrate build-up layers (die side)",
+      "parent": "package_substrate",
+      "stack_order": 4,
+      "count": 10,
+      "material": "ABF dielectric + patterned Cu, fine line/space under the interposer",
+      "thickness_um": {
+        "min": null,
+        "typical": null,
+        "max": null,
+        "render_hint": 300,
+        "render_hint_basis": "illustrative, NOT sourced"
+      },
+      "lateral_mm": {
+        "pattern": "full body; finest L/S (9/12 um now, 6/6 um roadmap) in the flip-chip area"
+      },
+      "k_W_per_mK": {
+        "dielectric": 0.35
+      },
+      "function": "Escape routing from C4 field; power/ground planes.",
+      "connects_to": [
+        {
+          "id": "substrate_core",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "c4_bumps",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "die_side_caps",
+          "type": [
+            "power"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-031",
+          "source": "kyocera_fcbga_organic_substrates"
+        },
+        {
+          "fact": "pkg-034",
+          "source": "kyocera_fcbga_organic_substrates"
+        },
+        {
+          "fact": "thm-014",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false,
+        "detail": "lumped into L0"
+      },
+      "notes": ""
+    },
+    {
+      "id": "die_side_caps",
+      "name": "Die-side capacitors (substrate top, around the interposer)",
+      "parent": "package_substrate",
+      "stack_order": 5,
+      "count": null,
+      "material": "MLCC",
+      "thickness_um": null,
+      "lateral_mm": {
+        "pattern": "ring around the interposer footprint"
+      },
+      "k_W_per_mK": null,
+      "function": "Package decoupling.",
+      "connects_to": [
+        {
+          "id": "substrate_buildup_top",
+          "type": [
+            "power"
+          ]
+        }
+      ],
+      "sources": [],
+      "confidence": "low",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false
+      },
+      "notes": "NO source captured; anatomy placeholder only."
+    },
+    {
+      "id": "stiffener_ring",
+      "name": "Stiffener ring (lidless variant)",
+      "parent": "package",
+      "stack_order": 5,
+      "count": 1,
+      "material": "Metal frame (material not sourced here)",
+      "thickness_um": null,
+      "lateral_mm": {
+        "pattern": "ring around the die area on the substrate top; top surface may sit higher than the die"
+      },
+      "k_W_per_mK": null,
+      "function": "Keeps large lidless packages flat and protects the die edge; lets the heat sink contact the die directly.",
+      "connects_to": [
+        {
+          "id": "substrate_buildup_top",
+          "type": [
+            "mechanical"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-024",
+          "source": "amkor_fcbga_ds831"
+        },
+        {
+          "fact": "pkg-039",
+          "source": "google_patent_us10083920_stiffener"
+        },
+        {
+          "fact": "pkg-040",
+          "source": "google_patent_us10083920_stiffener"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "lidless",
+      "in_our_model": {
+        "modeled": false
+      },
+      "notes": ""
+    },
+    {
+      "id": "c4_bumps",
+      "name": "C4 bumps (interposer-to-substrate)",
+      "parent": "package",
+      "stack_order": 5,
+      "count": null,
+      "material": "Cu C4 / Cu pillar with SnAg cap, or Pb-free SnAg solder",
+      "thickness_um": {
+        "min": 40,
+        "typical": 50,
+        "max": 100,
+        "notes": "Cu pillar ~40 um; standard bump 60-100 um high; 50 um Cu pillar layer in a published FEM stack"
+      },
+      "lateral_mm": {
+        "pattern": "full area array under the interposer",
+        "pitch_um": [
+          90,
+          210
+        ],
+        "diameter_um": [
+          80,
+          125
+        ]
+      },
+      "k_W_per_mK": {
+        "cu": 389,
+        "solder_sac305": 58,
+        "derived_layer_estimate": "~14 W/mK (parallel model: bump area fraction ~0.24 for 100 um bumps at 180 um pitch, solder 58, underfill 0.6; derived, illustrative)"
+      },
+      "function": "First-level interconnect from interposer TSVs to substrate: all power, ground and off-package I/O.",
+      "connects_to": [
+        {
+          "id": "interposer_silicon",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "substrate_buildup_top",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "c4_underfill",
+          "type": [
+            "mechanical",
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-013",
+          "source": "tsmc_hotchips33_packaging_tutorial"
+        },
+        {
+          "fact": "pkg-028",
+          "source": "amkor_flipchip_ts102"
+        },
+        {
+          "fact": "pkg-029",
+          "source": "amkor_flipchip_ts102"
+        },
+        {
+          "fact": "pkg-054",
+          "source": "amkor_flipchip_ts102"
+        },
+        {
+          "fact": "pkg-053",
+          "source": "amkor_flipchip_ts102"
+        },
+        {
+          "fact": "pkg-016",
+          "source": "tsmc_hotchips33_packaging_tutorial"
+        },
+        {
+          "fact": "pkg-021",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        },
+        {
+          "fact": "pkg-018",
+          "source": "xilinx_cpmt1104b"
+        },
+        {
+          "fact": "pkg-034",
+          "source": "kyocera_fcbga_organic_substrates"
+        },
+        {
+          "fact": "thm-029",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "thm-013",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        },
+        {
+          "fact": "thm-025",
+          "source": "solderconnection_sac305"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": true,
+        "layer": "L1 'C4 layer'",
+        "detail": "70 um; 250 um 'copper' bumps on a 600 um cell, k_eff = 70.8 W/mK (17.4% Cu)",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/passive_interposer.py",
+            "lines": "31-32, 37, 40, 59-65, 145"
+          }
+        ]
+      },
+      "notes": "Pitch examples: 130 um (InFO Cu bump; Amkor array minimum), 180 um (Xilinx 2011 test vehicle), 210 um (Virtex-7 SSIT); substrate bump pitch roadmap 130 -> 110 -> 90 um."
+    },
+    {
+      "id": "c4_underfill",
+      "name": "C4 underfill",
+      "parent": "package",
+      "stack_order": 5,
+      "count": 1,
+      "material": "Epoxy capillary underfill (silica filled)",
+      "thickness_um": {
+        "min": 40,
+        "typical": null,
+        "max": 100,
+        "notes": "equals C4 stand-off"
+      },
+      "lateral_mm": {
+        "pattern": "fills the C4 field under the interposer, with fillet"
+      },
+      "k_W_per_mK": {
+        "value": 0.6
+      },
+      "function": "Buffers the interposer-substrate CTE mismatch; protects C4 joints.",
+      "connects_to": [
+        {
+          "id": "c4_bumps",
+          "type": [
+            "mechanical",
+            "thermal"
+          ]
+        },
+        {
+          "id": "interposer_silicon",
+          "type": [
+            "mechanical",
+            "thermal"
+          ]
+        },
+        {
+          "id": "substrate_buildup_top",
+          "type": [
+            "mechanical",
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-005",
+          "source": "tsmc_cowos_page"
+        },
+        {
+          "fact": "pkg-030",
+          "source": "amkor_flipchip_ts102"
+        },
+        {
+          "fact": "thm-023",
+          "source": "krayden_uf8807"
+        },
+        {
+          "fact": "thm-005",
+          "source": "tap25d_date2021"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": true,
+        "layer": "L1 (mixed into C4 effective material, underfill k = 1.6 W/mK)",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/passive_interposer.py",
+            "lines": "22, 26, 40"
+          }
+        ]
+      },
+      "notes": ""
+    },
+    {
+      "id": "interposer_silicon",
+      "name": "Silicon interposer (CoWoS-S class) with TSVs",
+      "parent": "package",
+      "stack_order": 6,
+      "count": 1,
+      "material": "Passive silicon (no transistors) with Cu TSVs",
+      "thickness_um": {
+        "min": null,
+        "typical": 100,
+        "max": null,
+        "notes": "thinned to reveal TSVs"
+      },
+      "lateral_mm": {
+        "w": 45,
+        "h": 45,
+        "max_area_mm2": 2700,
+        "pattern": "up to 3.3x reticle (~2,700 mm2) for CoWoS-S; 3.5x (CoWoS-L) in production; 45 x 45 mm in TAP-2.5D; 42 x 42 mm in a published FEM model"
+      },
+      "k_W_per_mK": {
+        "silicon_room_temp": [
+          117.5,
+          150
+        ],
+        "silicon_at_100C": 112,
+        "effective_with_tsv_in_our_model": 112.0,
+        "notes": "112 at 373 K from k = 150 (T/300)^-4/3 (derived); our model uses Si = 100 plus 4% Cu"
+      },
+      "function": "Dense die-to-die and die-to-HBM wiring (>10,000 connections, ~20x denser than organic); carries power through TSVs; stress buffer; hosts eDTC.",
+      "connects_to": [
+        {
+          "id": "microbumps",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "c4_bumps",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "interposer_beol_rdl",
+          "type": [
+            "power",
+            "signal",
+            "thermal"
+          ]
+        },
+        {
+          "id": "interposer_tsv",
+          "type": [
+            "power",
+            "signal",
+            "thermal"
+          ]
+        },
+        {
+          "id": "interposer_edtc",
+          "type": [
+            "power"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-001",
+          "source": "tsmc_cowos_page"
+        },
+        {
+          "fact": "pkg-007",
+          "source": "tsmc_cowos_page"
+        },
+        {
+          "fact": "pkg-021",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        },
+        {
+          "fact": "thm-029",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "thm-006",
+          "source": "tap25d_date2021"
+        },
+        {
+          "fact": "pkg-020",
+          "source": "xilinx_wp380"
+        },
+        {
+          "fact": "pkg-015",
+          "source": "tsmc_hotchips33_packaging_tutorial"
+        },
+        {
+          "fact": "thm-016",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        },
+        {
+          "fact": "thm-017",
+          "source": "ecool_si_thermal_conductivity_1998"
+        },
+        {
+          "fact": "thm-019",
+          "source": "ioffe_si_thermal_http"
+        }
+      ],
+      "confidence": "high",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": true,
+        "layer": "L2 'silicon interposer'",
+        "detail": "110 um; k_eff 112 W/mK (10 um Cu TSV on 50 um cell = 4% Cu in Si at 100 W/mK)",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/passive_interposer.py",
+            "lines": "33-34, 38, 41, 68-74, 146"
+          }
+        ]
+      },
+      "notes": ""
+    },
+    {
+      "id": "interposer_tsv",
+      "name": "Interposer TSVs",
+      "parent": "interposer_silicon",
+      "stack_order": 6,
+      "count": null,
+      "material": "Cu-filled through-silicon vias",
+      "thickness_um": {
+        "min": null,
+        "typical": 100,
+        "max": null,
+        "notes": "TSV depth = interposer thickness"
+      },
+      "lateral_mm": {
+        "pattern": "array under C4 sites",
+        "diameter_um": ">10",
+        "pitch_um": 210
+      },
+      "k_W_per_mK": {
+        "cu": 389
+      },
+      "function": "Vertical power, ground and I/O through the interposer; minor thermal vias.",
+      "connects_to": [
+        {
+          "id": "c4_bumps",
+          "type": [
+            "power",
+            "signal",
+            "thermal"
+          ]
+        },
+        {
+          "id": "interposer_beol_rdl",
+          "type": [
+            "power",
+            "signal",
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-018",
+          "source": "xilinx_cpmt1104b"
+        },
+        {
+          "fact": "pkg-021",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        },
+        {
+          "fact": "thm-013",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": true,
+        "layer": "L2 (homogenised)",
+        "detail": "10 um diameter on 50 um cell",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/passive_interposer.py",
+            "lines": "33-34"
+          }
+        ]
+      },
+      "notes": "Aspect ratio ~10:1 (100 um / ~10 um, derived). Xilinx 2011 SSIT values; current CoWoS TSV geometry not public in this pack ('New TSV' in CoWoS-S gen 4, pkg-012)."
+    },
+    {
+      "id": "interposer_edtc",
+      "name": "Embedded deep-trench capacitors (eDTC / iCap)",
+      "parent": "interposer_silicon",
+      "stack_order": 6,
+      "count": null,
+      "material": "High-k deep trench capacitors etched into the interposer silicon",
+      "thickness_um": null,
+      "lateral_mm": {
+        "pattern": "capacitor arrays under the dies; 40 x 40 um standard cell",
+        "density_nF_per_mm2": 340
+      },
+      "k_W_per_mK": null,
+      "function": "On-interposer decoupling close to the die, lowering PDN impedance.",
+      "connects_to": [
+        {
+          "id": "interposer_beol_rdl",
+          "type": [
+            "power"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-002",
+          "source": "tsmc_cowos_page"
+        },
+        {
+          "fact": "pkg-046",
+          "source": "mediaupdate_iedm2019_part2"
+        },
+        {
+          "fact": "pkg-006",
+          "source": "tsmc_cowos_page"
+        },
+        {
+          "fact": "pkg-009",
+          "source": "tsmc_cowos_page"
+        },
+        {
+          "fact": "pkg-012",
+          "source": "tsmc_hotchips33_packaging_tutorial"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false
+      },
+      "notes": "340 nF/mm2 from a blog report of TSMC's IEDM 2019 iCap paper (secondary). CoWoS-L can also embed stand-alone eDTCs under the SoC."
+    },
+    {
+      "id": "interposer_beol_rdl",
+      "name": "Interposer wiring (BEOL metal / RDL) on the top face",
+      "parent": "interposer_silicon",
+      "stack_order": 7,
+      "count": 4,
+      "material": "Cu interconnect in oxide/low-k (Si interposer) or polymer (RDL interposer)",
+      "thickness_um": {
+        "min": null,
+        "typical": 10,
+        "max": null,
+        "notes": "10 um interposer BEOL in a published FEM model"
+      },
+      "lateral_mm": {
+        "pattern": "full interposer; 4 metal layers at 2 um pitch (65 nm SSIT); thick Cu '5Mi' in 2021 CoWoS-S; RDL 2/2 um L/S (CoWoS-R)"
+      },
+      "k_W_per_mK": {
+        "value": null,
+        "notes": "dielectric k not sourced here"
+      },
+      "function": "Routes HBM buses and die-to-die links laterally (mm-scale); distributes power to micro-bumps.",
+      "connects_to": [
+        {
+          "id": "microbumps",
+          "type": [
+            "power",
+            "signal",
+            "thermal"
+          ]
+        },
+        {
+          "id": "interposer_tsv",
+          "type": [
+            "power",
+            "signal"
+          ]
+        },
+        {
+          "id": "interposer_edtc",
+          "type": [
+            "power"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-018",
+          "source": "xilinx_cpmt1104b"
+        },
+        {
+          "fact": "pkg-019",
+          "source": "xilinx_wp380"
+        },
+        {
+          "fact": "pkg-014",
+          "source": "tsmc_hotchips33_packaging_tutorial"
+        },
+        {
+          "fact": "pkg-003",
+          "source": "tsmc_cowos_page"
+        },
+        {
+          "fact": "thm-029",
+          "source": "itherm2024_dual_sided_bspdn"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false,
+        "detail": "not a separate layer; L2 is 110 um of TSV-silicon"
+      },
+      "notes": ""
+    },
+    {
+      "id": "rdl_interposer",
+      "name": "Organic RDL interposer (CoWoS-R variant)",
+      "parent": "package",
+      "stack_order": 6,
+      "count": 1,
+      "material": "Polymer dielectric + Cu RDL",
+      "thickness_um": null,
+      "lateral_mm": {
+        "pattern": "replaces the Si interposer; min 4 um pitch (2/2 um L/S)"
+      },
+      "k_W_per_mK": {
+        "value": null,
+        "notes": "polymer; not sourced"
+      },
+      "function": "Lower-cost, flexible interposer; buffers CTE mismatch.",
+      "connects_to": [
+        {
+          "id": "microbumps",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "c4_bumps",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-003",
+          "source": "tsmc_cowos_page"
+        },
+        {
+          "fact": "pkg-004",
+          "source": "tsmc_cowos_page"
+        },
+        {
+          "fact": "pkg-005",
+          "source": "tsmc_cowos_page"
+        }
+      ],
+      "confidence": "high",
+      "variant": "cowos_r",
+      "in_our_model": {
+        "modeled": false
+      },
+      "notes": ""
+    },
+    {
+      "id": "lsi_bridge",
+      "name": "Local silicon bridge (CoWoS-L LSI / Intel EMIB variant)",
+      "parent": "package",
+      "stack_order": 6,
+      "count": null,
+      "material": "Small Si die with multi-layer sub-um Cu wiring, embedded in RDL interposer or substrate",
+      "thickness_um": null,
+      "lateral_mm": {
+        "pattern": "under die-to-die and die-to-HBM edges only; EMIB bump pitch 55 -> 45 um"
+      },
+      "k_W_per_mK": {
+        "silicon": [
+          117.5,
+          150
+        ]
+      },
+      "function": "Fine-pitch die-to-die / die-to-HBM wiring without a full silicon interposer.",
+      "connects_to": [
+        {
+          "id": "microbumps",
+          "type": [
+            "signal",
+            "power"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-006",
+          "source": "tsmc_cowos_page"
+        },
+        {
+          "fact": "pkg-008",
+          "source": "tsmc_cowos_page"
+        },
+        {
+          "fact": "pkg-035",
+          "source": "intel_qr_vol6_adv_packaging"
+        },
+        {
+          "fact": "pkg-036",
+          "source": "intel_qr_vol6_adv_packaging"
+        }
+      ],
+      "confidence": "high",
+      "variant": "cowos_l_or_emib",
+      "in_our_model": {
+        "modeled": false
+      },
+      "notes": ""
+    },
+    {
+      "id": "microbumps",
+      "name": "Micro-bumps (die/HBM-to-interposer)",
+      "parent": "package",
+      "stack_order": 8,
+      "count": null,
+      "material": "Cu pillar with solder (SnAg) cap",
+      "thickness_um": {
+        "min": null,
+        "typical": 35,
+        "max": null,
+        "notes": "35 um reflowed height (HBM1 base-die micro-bumps); our model uses a 10 um layer"
+      },
+      "lateral_mm": {
+        "pattern": "dense arrays under PHY edges and power/ground grid under die",
+        "pitch_um": [
+          36,
+          55
+        ],
+        "diameter_um": 25,
+        "examples": {
+          "HBM base die": "55 um FCR pitch, 25 um CD",
+          "Xilinx SSIT": "45 um",
+          "UCIe advanced": "25-55 um",
+          "EMIB": "55 -> 45 um"
+        }
+      },
+      "k_W_per_mK": {
+        "value": null,
+        "our_model_effective": 124.6,
+        "derived_parallel_range": "14-95 W/mK (bump area fraction 0.24 for 25 um round bumps on 45 um pitch; bump k 58 (solder) to 389 (Cu); underfill 0.6) - derived, illustrative"
+      },
+      "function": "First-level interconnect of every top die: power/ground, HBM bus, die-to-die links; part of the secondary heat path.",
+      "connects_to": [
+        {
+          "id": "compute_die_active_layer",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "hbm_base_die",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "interposer_beol_rdl",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "microbump_underfill",
+          "type": [
+            "mechanical",
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "hbm-023",
+          "source": "skhynix_hc28_hbm_tutorial"
+        },
+        {
+          "fact": "hbm-026",
+          "source": "skhynix_iedm23_hbm_packaging"
+        },
+        {
+          "fact": "hbm-033",
+          "source": "imaps_hbm_underfill_tsv_study"
+        },
+        {
+          "fact": "hbm-032",
+          "source": "formfactor_swtw2016_hbm_probing"
+        },
+        {
+          "fact": "pkg-021",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        },
+        {
+          "fact": "pkg-018",
+          "source": "xilinx_cpmt1104b"
+        },
+        {
+          "fact": "hbm-041",
+          "source": "ucie_hc2023_electrical"
+        },
+        {
+          "fact": "pkg-035",
+          "source": "intel_qr_vol6_adv_packaging"
+        },
+        {
+          "fact": "pkg-029",
+          "source": "amkor_flipchip_ts102"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": true,
+        "layer": "L3 'underfill with ubump'",
+        "detail": "10 um; 25 um bumps on 45 um cell treated as a 25 x 25 um copper square: 30.9% Cu, k_eff 124.6 W/mK, applied under the whole die and its halo",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/passive_interposer.py",
+            "lines": "35-36, 39, 42, 105-108, 114-115, 147"
+          }
+        ]
+      },
+      "notes": "Counts: ~4,000 bumps under an HBM2-era base die (3,990 TSV micro-bumps: 1,728 I/O, 1,030 ground); 10K-30K chip-to-chip connections in Virtex-7 SSIT. IEDM 2023 quotes a 96 um 'staggered' pitch for HBM's 1,024 I/Os (different pitch definition from 55 um FCR)."
+    },
+    {
+      "id": "microbump_underfill",
+      "name": "Micro-bump underfill / molded underfill",
+      "parent": "package",
+      "stack_order": 8,
+      "count": 1,
+      "material": "Epoxy capillary underfill or molded underfill (MUF)",
+      "thickness_um": {
+        "min": null,
+        "typical": 35,
+        "max": null,
+        "notes": "equals micro-bump stand-off; our model uses 10 um"
+      },
+      "lateral_mm": {
+        "pattern": "under each top die"
+      },
+      "k_W_per_mK": {
+        "value": 0.6,
+        "our_model": 1.6
+      },
+      "function": "Mechanical support of micro-bump joints; CTE buffer.",
+      "connects_to": [
+        {
+          "id": "microbumps",
+          "type": [
+            "mechanical",
+            "thermal"
+          ]
+        },
+        {
+          "id": "compute_die_active_layer",
+          "type": [
+            "mechanical",
+            "thermal"
+          ]
+        },
+        {
+          "id": "interposer_beol_rdl",
+          "type": [
+            "mechanical",
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "thm-023",
+          "source": "krayden_uf8807"
+        },
+        {
+          "fact": "thm-005",
+          "source": "tap25d_date2021"
+        },
+        {
+          "fact": "pkg-038",
+          "source": "tsmc_patent_us20200381391_cowos"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": true,
+        "layer": "L3 (mixed with bumps; whitespace between dies is underfill)",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/passive_interposer.py",
+            "lines": "22, 147"
+          },
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/util/fill_space.py",
+            "lines": "19, 164"
+          }
+        ]
+      },
+      "notes": ""
+    },
+    {
+      "id": "compute_die",
+      "name": "Compute die (logic chiplet, flip-chip)",
+      "parent": "package",
+      "stack_order": 9,
+      "count": 1,
+      "material": "Silicon (TSMC N7/N5/4N/4NP-class logic)",
+      "thickness_um": {
+        "min": null,
+        "typical": 720,
+        "max": 775,
+        "notes": "710 um Si + 10 um BEOL in a published FEM stack; planarized to the HBM height (720 um HBM3E; 775 um if matched to HBM4 nominal, derived); our model uses 150 um"
+      },
+      "lateral_mm": {
+        "w": 14.5,
+        "h": 31.4,
+        "area_mm2_examples": {
+          "Ascend 910 Vitruvian": 456,
+          "NVIDIA GH100": 814,
+          "Blackwell": "two reticle-limited dies",
+          "FEM model": "26 x 26 = 676"
+        },
+        "pattern": "w/h shown for the Ascend 910 reference (TAP Table II); reticle-limited dies are ~820-830 mm2"
+      },
+      "k_W_per_mK": {
+        "silicon_room_temp": [
+          117.5,
+          150
+        ],
+        "silicon_85C": 118.5,
+        "silicon_100C": 112,
+        "notes": "temperature values from k = 150 (T/300)^-4/3 (derived); doped Si ~80% of pure"
+      },
+      "function": "Tensor/vector compute, SRAM, NoC, HBM controllers and PHYs, die-to-die PHYs. Main heat source.",
+      "connects_to": [
+        {
+          "id": "compute_die_active_layer",
+          "type": [
+            "power",
+            "signal",
+            "thermal"
+          ]
+        },
+        {
+          "id": "tim1",
+          "type": [
+            "thermal"
+          ]
+        },
+        {
+          "id": "mold_compound",
+          "type": [
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "hbm_stack",
+          "type": [
+            "signal",
+            "thermal"
+          ]
+        },
+        {
+          "id": "io_die",
+          "type": [
+            "signal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "thm-029",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "thm-032",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "hbm-018",
+          "source": "micron_hbm3e_product_brief"
+        },
+        {
+          "fact": "hbm-009",
+          "source": "trendforce_hbm4_775um_2025"
+        },
+        {
+          "fact": "prd-003",
+          "source": "huawei_hc31_davinci_slides"
+        },
+        {
+          "fact": "prd-009",
+          "source": "nvidia_h100_whitepaper_v102"
+        },
+        {
+          "fact": "prd-014",
+          "source": "nvidia_blackwell_arch_page"
+        },
+        {
+          "fact": "thm-007",
+          "source": "tap25d_date2021"
+        },
+        {
+          "fact": "thm-016",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        },
+        {
+          "fact": "thm-017",
+          "source": "ecool_si_thermal_conductivity_1998"
+        },
+        {
+          "fact": "thm-018",
+          "source": "ecool_si_thermal_conductivity_1998"
+        },
+        {
+          "fact": "prd-012",
+          "source": "nvidia_h100_whitepaper_v102"
+        },
+        {
+          "fact": "prd-022",
+          "source": "amd_cdna3_whitepaper"
+        },
+        {
+          "fact": "prd-023",
+          "source": "amd_cdna3_whitepaper"
+        },
+        {
+          "fact": "prd-005",
+          "source": "huawei_hc31_davinci_slides"
+        }
+      ],
+      "confidence": "high",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": true,
+        "layer": "L4 'chip layer' (Chiplet_0)",
+        "detail": "150 um silicon, k = 100, uniform power (Ascend910 fixture: 256 W)",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/passive_interposer.py",
+            "lines": "116, 148, 189-190"
+          },
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/configs/sys_ascend910_45mm.cfg",
+            "lines": "18-21"
+          }
+        ]
+      },
+      "notes": "Power examples: H100 SXM5 700 W TDP; MI300X 750 W; MI325X 1000 W; Ascend 910 350 W (whole package). Average die flux for H100 <= 86 W/cm2 (700 W / 814 mm2; derived upper bound since TDP includes HBM). Flip-chip: active side faces the interposer."
+    },
+    {
+      "id": "compute_die_active_layer",
+      "name": "Active layer (FEOL transistors + BEOL interconnect), facing down",
+      "parent": "compute_die",
+      "stack_order": 9.1,
+      "count": 1,
+      "material": "Transistors + Cu/low-k interconnect stack",
+      "thickness_um": {
+        "min": null,
+        "typical": 10,
+        "max": null,
+        "notes": "BEOL 10 um in a published FEM stack; FEOL is a sub-um layer"
+      },
+      "lateral_mm": {
+        "pattern": "whole die; HBM PHY strips on edges facing HBM; D2D PHY on edges facing the partner die"
+      },
+      "k_W_per_mK": {
+        "value": null,
+        "notes": "low-k BEOL dielectric; not sourced"
+      },
+      "function": "Where heat is generated (junction). Sits at the BOTTOM of the flipped die, next to the micro-bumps, so top-side heat must cross the full die thickness.",
+      "connects_to": [
+        {
+          "id": "microbumps",
+          "type": [
+            "power",
+            "signal",
+            "thermal"
+          ]
+        },
+        {
+          "id": "compute_die_bulk_si",
+          "type": [
+            "thermal"
+          ]
+        },
+        {
+          "id": "hbm_phy",
+          "type": [
+            "signal"
+          ]
+        },
+        {
+          "id": "d2d_phy",
+          "type": [
+            "signal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "thm-043",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "thm-029",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "pkg-055",
+          "source": "amkor_fcbga_ds831"
+        },
+        {
+          "fact": "pkg-026",
+          "source": "amkor_fcbga_ds831"
+        }
+      ],
+      "confidence": "high",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": true,
+        "detail": "power is injected in L4 as a whole (no separate active layer)",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/passive_interposer.py",
+            "lines": "148"
+          }
+        ]
+      },
+      "notes": ""
+    },
+    {
+      "id": "compute_die_bulk_si",
+      "name": "Compute die bulk silicon (backside, facing up)",
+      "parent": "compute_die",
+      "stack_order": 9.2,
+      "count": 1,
+      "material": "Silicon",
+      "thickness_um": {
+        "min": null,
+        "typical": 710,
+        "max": null
+      },
+      "lateral_mm": {
+        "pattern": "whole die"
+      },
+      "k_W_per_mK": {
+        "silicon_room_temp": [
+          117.5,
+          150
+        ],
+        "silicon_100C": 112
+      },
+      "function": "Conducts and spreads heat from the active layer up to TIM1.",
+      "connects_to": [
+        {
+          "id": "compute_die_active_layer",
+          "type": [
+            "thermal"
+          ]
+        },
+        {
+          "id": "tim1",
+          "type": [
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "thm-029",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "pkg-051",
+          "source": "tsmc_hotchips33_packaging_tutorial"
+        },
+        {
+          "fact": "thm-017",
+          "source": "ecool_si_thermal_conductivity_1998"
+        }
+      ],
+      "confidence": "high",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": true,
+        "layer": "L4",
+        "detail": "150 um"
+      },
+      "notes": "Measured area-specific resistance of a bulk Si die in TSMC's benchmark: 5 C*mm2/W (2 when thinned)."
+    },
+    {
+      "id": "hbm_phy",
+      "name": "HBM PHY (on compute die edge)",
+      "parent": "compute_die",
+      "stack_order": 9.1,
+      "count": 4,
+      "material": "Mixed-signal I/O macros",
+      "thickness_um": null,
+      "lateral_mm": {
+        "pattern": "strip along each die edge that faces an HBM stack; one 1024-bit (HBM3/3E) or 2048-bit (HBM4) PHY per stack"
+      },
+      "k_W_per_mK": null,
+      "function": "Drives the HBM bus across the interposer (16 x 64-bit channels, up to 9.6 Gb/s/pin for HBM3E).",
+      "connects_to": [
+        {
+          "id": "microbumps",
+          "type": [
+            "signal",
+            "power"
+          ]
+        },
+        {
+          "id": "hbm_base_die",
+          "type": [
+            "signal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "hbm-025",
+          "source": "skhynix_hc28_hbm_tutorial"
+        },
+        {
+          "fact": "hbm-038",
+          "source": "synopsys_hbm3_phy_page"
+        },
+        {
+          "fact": "hbm-039",
+          "source": "rambus_hbm3e_controller_page"
+        },
+        {
+          "fact": "hbm-040",
+          "source": "cadence_hbm3_phy_page"
+        },
+        {
+          "fact": "hbm-005",
+          "source": "jedec_hbm4_pr_2025"
+        }
+      ],
+      "confidence": "high",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false,
+        "detail": "no intra-die power map"
+      },
+      "notes": "count = number of HBM stacks served (4 for Ascend 910)."
+    },
+    {
+      "id": "d2d_phy",
+      "name": "Die-to-die PHY (on facing edges)",
+      "parent": "compute_die",
+      "stack_order": 9.1,
+      "count": 1,
+      "material": "Parallel short-reach I/O",
+      "thickness_um": null,
+      "lateral_mm": {
+        "pattern": "edge facing the partner compute die or I/O die"
+      },
+      "k_W_per_mK": null,
+      "function": "Joins dies into one logical chip (e.g. NV-HBI 10 TB/s on Blackwell; UCIe-A x64 modules).",
+      "connects_to": [
+        {
+          "id": "microbumps",
+          "type": [
+            "signal",
+            "power"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "prd-015",
+          "source": "nvidia_blackwell_ultra_blog"
+        },
+        {
+          "fact": "hbm-041",
+          "source": "ucie_hc2023_electrical"
+        },
+        {
+          "fact": "hbm-042",
+          "source": "ucie_hc2023_electrical"
+        },
+        {
+          "fact": "hbm-043",
+          "source": "ucie_buss25_dassharma"
+        }
+      ],
+      "confidence": "high",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false
+      },
+      "notes": ""
+    },
+    {
+      "id": "io_die",
+      "name": "I/O die (e.g. Ascend 910 'Nimbus V3')",
+      "parent": "package",
+      "stack_order": 9,
+      "count": 1,
+      "material": "Silicon",
+      "thickness_um": {
+        "min": null,
+        "typical": 720,
+        "max": null,
+        "notes": "assumed planarized with the other top dies (derived)"
+      },
+      "lateral_mm": {
+        "w": 10.5,
+        "h": 16.0,
+        "area_mm2": 168
+      },
+      "k_W_per_mK": {
+        "silicon_room_temp": [
+          117.5,
+          150
+        ]
+      },
+      "function": "PCIe / coherent links / host I/O; low power (14 W in TAP's model).",
+      "connects_to": [
+        {
+          "id": "microbumps",
+          "type": [
+            "power",
+            "signal",
+            "thermal"
+          ]
+        },
+        {
+          "id": "compute_die",
+          "type": [
+            "signal"
+          ]
+        },
+        {
+          "id": "tim1",
+          "type": [
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "prd-003",
+          "source": "huawei_hc31_davinci_slides"
+        },
+        {
+          "fact": "thm-007",
+          "source": "tap25d_date2021"
+        }
+      ],
+      "confidence": "high",
+      "variant": "ascend910",
+      "in_our_model": {
+        "modeled": true,
+        "layer": "L4 (Chiplet_1)",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/configs/sys_ascend910_45mm.cfg",
+            "lines": "19-21"
+          }
+        ]
+      },
+      "notes": ""
+    },
+    {
+      "id": "hbm_stack",
+      "name": "HBM stack (molded known-good stacked die)",
+      "parent": "package",
+      "stack_order": 9,
+      "count": 4,
+      "material": "1 base logic die + 4-16 thinned DRAM core dies, TSVs, micro-bumps, gap fill, side mold",
+      "thickness_um": {
+        "min": 490,
+        "typical": 720,
+        "max": 775,
+        "notes": "490 um HBM1; 720 um HBM2-HBM3E (JEDEC height kept for 12-high); 775 um reported for HBM4 12/16-high"
+      },
+      "lateral_mm": {
+        "w": 7.75,
+        "h": 11.87,
+        "examples": {
+          "HBM2 (SK hynix)": "7.75 x 11.87",
+          "HBM3E (Micron)": "11 x 11",
+          "HBM3/3E/4 (press)": "~10.5 x 12.0",
+          "Ascend 910 slide": "96 mm2"
+        },
+        "pattern": "w/h shown for the Ascend 910 / TAP reference"
+      },
+      "k_W_per_mK": {
+        "silicon": [
+          117.5,
+          150
+        ],
+        "vertical_effective_derived": "~15 W/mK (720 um / ~49 K*mm2/W; 12 bond layers x 3.8 K*mm2/W + 501 um Si at 130 W/mK; BEOL ignored) - derived",
+        "notes": "the stack is ~9x more resistive vertically than a 720 um logic die (derived)"
+      },
+      "function": "On-package DRAM: 1024-bit (HBM3/3E) or 2048-bit (HBM4) bus; 24-36 GB per stack for 12-high HBM3E, up to 64 GB.",
+      "connects_to": [
+        {
+          "id": "microbumps",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "hbm_phy",
+          "type": [
+            "signal"
+          ]
+        },
+        {
+          "id": "tim1",
+          "type": [
+            "thermal"
+          ]
+        },
+        {
+          "id": "mold_compound",
+          "type": [
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "compute_die",
+          "type": [
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "hbm-047",
+          "source": "skhynix_hc28_hbm_tutorial"
+        },
+        {
+          "fact": "hbm-003",
+          "source": "jedec_hbm3_pr_2022"
+        },
+        {
+          "fact": "hbm-007",
+          "source": "jedec_hbm4_pr_2025"
+        },
+        {
+          "fact": "hbm-018",
+          "source": "micron_hbm3e_product_brief"
+        },
+        {
+          "fact": "hbm-022",
+          "source": "skhynix_hc28_hbm_tutorial"
+        },
+        {
+          "fact": "hbm-035",
+          "source": "samsung_12layer_3dtsv_2019"
+        },
+        {
+          "fact": "hbm-009",
+          "source": "trendforce_hbm4_775um_2025"
+        },
+        {
+          "fact": "hbm-037",
+          "source": "tomshw_skhynix_hbm4_16hi"
+        },
+        {
+          "fact": "prd-003",
+          "source": "huawei_hc31_davinci_slides"
+        },
+        {
+          "fact": "hbm-010",
+          "source": "skhynix_hbm3e_12h_2024"
+        },
+        {
+          "fact": "hbm-014",
+          "source": "samsung_hbm3e_12h_2024"
+        },
+        {
+          "fact": "hbm-019",
+          "source": "micron_hbm3e_product_brief"
+        },
+        {
+          "fact": "hbm-004",
+          "source": "jedec_hbm3_pr_2022"
+        },
+        {
+          "fact": "thm-031",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "thm-030",
+          "source": "itherm2024_dual_sided_bspdn"
+        }
+      ],
+      "confidence": "high",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": true,
+        "layer": "L4 (Chiplet_2..5)",
+        "detail": "a single 150 um silicon block, 7.75 x 11.87 mm, uniform 20 W; no internal layers",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/configs/sys_ascend910_45mm.cfg",
+            "lines": "19-21"
+          },
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/passive_interposer.py",
+            "lines": "116, 148"
+          }
+        ]
+      },
+      "notes": "Counts: Ascend 910 4; H100 SXM5 5 active of 6 sites; MI300X 8; Blackwell 8 (press). Power ~10-20 W per stack (imec ~40 W for four; TAP/Purdue models 20 W)."
+    },
+    {
+      "id": "hbm_base_die",
+      "name": "HBM base (logic / buffer) die",
+      "parent": "hbm_stack",
+      "stack_order": 9.1,
+      "count": 1,
+      "material": "Silicon; DRAM-process up to HBM3E (SK hynix), foundry logic process for HBM4",
+      "thickness_um": {
+        "min": null,
+        "typical": 50,
+        "max": null,
+        "notes": "50 um in a published FEM stack"
+      },
+      "lateral_mm": {
+        "w": 12.0,
+        "h": 7.75,
+        "notes": "FEM-model footprint; product footprints differ"
+      },
+      "k_W_per_mK": {
+        "silicon": [
+          117.5,
+          150
+        ]
+      },
+      "function": "PHY, TSV landing, test/repair logic; drives the 1024/2048-bit bus to the host through the interposer. Hottest layer of the stack in a published model.",
+      "connects_to": [
+        {
+          "id": "microbumps",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "hbm_bond_layer",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "hbm_tsv",
+          "type": [
+            "power",
+            "signal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "thm-030",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "thm-029",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "hbm-036",
+          "source": "skhynix_tsmc_hbm4_mou_2024"
+        },
+        {
+          "fact": "hbm-025",
+          "source": "skhynix_hc28_hbm_tutorial"
+        },
+        {
+          "fact": "thm-034",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "thm-033",
+          "source": "itherm2024_dual_sided_bspdn"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false,
+        "detail": "HBM is one homogeneous block"
+      },
+      "notes": "8 W assumed for the base die in the Purdue model (thm-033)."
+    },
+    {
+      "id": "hbm_bond_layer",
+      "name": "HBM inter-die bond layer (micro-bumps + gap fill)",
+      "parent": "hbm_stack",
+      "stack_order": 9.2,
+      "count": 12,
+      "material": "~20 um micro-bumps + MR-MUF molded underfill (SK hynix) or TC-NCF film (Samsung); thermal dummy bumps",
+      "thickness_um": {
+        "min": 7,
+        "typical": 15,
+        "max": null,
+        "notes": "7 um chip gap with TC-NCF (Samsung); 15 um bump layer in a published FEM stack"
+      },
+      "lateral_mm": {
+        "pattern": "full die area; signal/power bumps concentrated around the central TSV area, dummy thermal bumps elsewhere"
+      },
+      "k_W_per_mK": {
+        "area_specific_R_K_mm2_per_W": 3.8,
+        "effective_derived": "~3.9 W/mK if 15 um thick (derived)"
+      },
+      "function": "Electrical joints between stacked dies; dominant internal thermal resistance of the stack.",
+      "connects_to": [
+        {
+          "id": "hbm_base_die",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "hbm_dram_core_die",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "hbm-046",
+          "source": "imaps_hbm_underfill_tsv_study"
+        },
+        {
+          "fact": "hbm-013",
+          "source": "skhynix_hbm3e_12h_2024"
+        },
+        {
+          "fact": "hbm-015",
+          "source": "samsung_hbm3e_12h_2024"
+        },
+        {
+          "fact": "hbm-017",
+          "source": "samsung_hbm3e_12h_2024"
+        },
+        {
+          "fact": "thm-029",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "thm-031",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "hbm-024",
+          "source": "skhynix_hc28_hbm_tutorial"
+        },
+        {
+          "fact": "hbm-016",
+          "source": "samsung_hbm3e_12h_2024"
+        },
+        {
+          "fact": "hbm-028",
+          "source": "skhynix_iedm23_hbm_packaging"
+        },
+        {
+          "fact": "hbm-031",
+          "source": "skhynix_iedm23_hbm_packaging"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false
+      },
+      "notes": "count = one per DRAM core die (12 for 12-high). Hybrid bonding (no gap fill) is the path for taller stacks (hbm-030)."
+    },
+    {
+      "id": "hbm_dram_core_die",
+      "name": "HBM DRAM core dies",
+      "parent": "hbm_stack",
+      "stack_order": 9.3,
+      "count": 11,
+      "material": "Thinned DRAM silicon with TSVs",
+      "thickness_um": {
+        "min": null,
+        "typical": 35,
+        "max": null,
+        "notes": "35 um in a published FEM stack; 12-high HBM3E dies were made 40% thinner than 8-high dies"
+      },
+      "lateral_mm": {
+        "w": 11.5,
+        "h": 7.5,
+        "notes": "FEM-model footprint"
+      },
+      "k_W_per_mK": {
+        "silicon": [
+          117.5,
+          150
+        ]
+      },
+      "function": "DRAM arrays; 24-32 Gb per die (HBM3E/HBM4); ~1 W each in a published model.",
+      "connects_to": [
+        {
+          "id": "hbm_bond_layer",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "hbm_tsv",
+          "type": [
+            "power",
+            "signal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "thm-030",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "hbm-010",
+          "source": "skhynix_hbm3e_12h_2024"
+        },
+        {
+          "fact": "hbm-007",
+          "source": "jedec_hbm4_pr_2025"
+        },
+        {
+          "fact": "thm-033",
+          "source": "itherm2024_dual_sided_bspdn"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false
+      },
+      "notes": "count shown = 11 core dies below a thicker top die in a 12-high stack."
+    },
+    {
+      "id": "hbm_top_die",
+      "name": "HBM top DRAM die (thicker)",
+      "parent": "hbm_stack",
+      "stack_order": 9.4,
+      "count": 1,
+      "material": "DRAM silicon",
+      "thickness_um": {
+        "min": null,
+        "typical": 66,
+        "max": null,
+        "notes": "66 um in a published FEM stack"
+      },
+      "lateral_mm": {
+        "w": 11.5,
+        "h": 7.5
+      },
+      "k_W_per_mK": {
+        "silicon": [
+          117.5,
+          150
+        ]
+      },
+      "function": "Last DRAM die; extra thickness sets the stack height to the JEDEC limit.",
+      "connects_to": [
+        {
+          "id": "hbm_bond_layer",
+          "type": [
+            "power",
+            "signal",
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "tim1",
+          "type": [
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "thm-030",
+          "source": "itherm2024_dual_sided_bspdn"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false
+      },
+      "notes": ""
+    },
+    {
+      "id": "hbm_tsv",
+      "name": "HBM TSVs",
+      "parent": "hbm_stack",
+      "stack_order": 9.2,
+      "count": 60000,
+      "material": "Cu TSVs through each core die",
+      "thickness_um": null,
+      "lateral_mm": {
+        "pattern": "concentrated in a central TSV area of each die; ~1.3% of die area (HBM1)"
+      },
+      "k_W_per_mK": {
+        "cu": 389
+      },
+      "function": "Vertical data, command and power paths through the stack.",
+      "connects_to": [
+        {
+          "id": "hbm_base_die",
+          "type": [
+            "power",
+            "signal"
+          ]
+        },
+        {
+          "id": "hbm_dram_core_die",
+          "type": [
+            "power",
+            "signal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "hbm-034",
+          "source": "samsung_12layer_3dtsv_2019"
+        },
+        {
+          "fact": "hbm-021",
+          "source": "micron_hbm3e_product_brief"
+        },
+        {
+          "fact": "hbm-033",
+          "source": "imaps_hbm_underfill_tsv_study"
+        },
+        {
+          "fact": "hbm-024",
+          "source": "skhynix_hc28_hbm_tutorial"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false
+      },
+      "notes": "count = >60,000 TSVs per 12-high stack (Samsung 2019); HBM3E has 2x the TSVs of HBM3 (Micron). Diameter not sourced in this pack."
+    },
+    {
+      "id": "hbm_side_mold",
+      "name": "HBM side mold",
+      "parent": "hbm_stack",
+      "stack_order": 9.2,
+      "count": 1,
+      "material": "Epoxy molding compound around the stack",
+      "thickness_um": {
+        "min": null,
+        "typical": 720,
+        "max": null,
+        "notes": "full stack height"
+      },
+      "lateral_mm": {
+        "pattern": "thin wall around the die stack"
+      },
+      "k_W_per_mK": {
+        "value": 0.96,
+        "notes": "generic EMC value"
+      },
+      "function": "Protects and stiffens the stack (molded KGSD).",
+      "connects_to": [
+        {
+          "id": "hbm_dram_core_die",
+          "type": [
+            "mechanical",
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "hbm-047",
+          "source": "skhynix_hc28_hbm_tutorial"
+        },
+        {
+          "fact": "thm-024",
+          "source": "sumikon_g700l"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": false
+      },
+      "notes": ""
+    },
+    {
+      "id": "dummy_die",
+      "name": "Dummy silicon die (Ascend 910)",
+      "parent": "package",
+      "stack_order": 9,
+      "count": 2,
+      "material": "Unpowered silicon",
+      "thickness_um": {
+        "min": null,
+        "typical": 720,
+        "max": null,
+        "notes": "assumed planarized (derived)"
+      },
+      "lateral_mm": {
+        "area_mm2": 110,
+        "pattern": "beside the I/O die, in line with the HBM rows"
+      },
+      "k_W_per_mK": {
+        "silicon_room_temp": [
+          117.5,
+          150
+        ]
+      },
+      "function": "Mechanical uniformity of the package (warpage, flat top for the cooler).",
+      "connects_to": [
+        {
+          "id": "mold_compound",
+          "type": [
+            "mechanical",
+            "thermal"
+          ]
+        },
+        {
+          "id": "tim1",
+          "type": [
+            "thermal"
+          ]
+        },
+        {
+          "id": "interposer_silicon",
+          "type": [
+            "mechanical"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "prd-001",
+          "source": "huawei_hc31_davinci_slides"
+        },
+        {
+          "fact": "prd-003",
+          "source": "huawei_hc31_davinci_slides"
+        },
+        {
+          "fact": "prd-008",
+          "source": "sth_ascend910_hc31"
+        }
+      ],
+      "confidence": "high",
+      "variant": "ascend910",
+      "in_our_model": {
+        "modeled": false,
+        "detail": "omitted by TAP's Ascend910 fixture and by our reconstruction",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "docs/sentilab/references/README.md",
+            "lines": "172-174"
+          }
+        ]
+      },
+      "notes": ""
+    },
+    {
+      "id": "mold_compound",
+      "name": "Molding compound between top dies",
+      "parent": "package",
+      "stack_order": 9,
+      "count": 1,
+      "material": "Epoxy molding compound (or molded underfill), ground flush with die tops",
+      "thickness_um": {
+        "min": null,
+        "typical": 720,
+        "max": null,
+        "notes": "equal to the planarized die height (derived)"
+      },
+      "lateral_mm": {
+        "pattern": "fills gaps between dies: 0.72 mm (compute to HBM row) and 2 mm (between HBMs) on Ascend 910; >= 0.1 mm die gap rule in our fixtures"
+      },
+      "k_W_per_mK": {
+        "value": 0.96,
+        "our_model": 1.6
+      },
+      "function": "Encapsulates and stiffens the chip-on-wafer assembly; a weak lateral thermal path between logic and HBM.",
+      "connects_to": [
+        {
+          "id": "compute_die",
+          "type": [
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "hbm_stack",
+          "type": [
+            "thermal",
+            "mechanical"
+          ]
+        },
+        {
+          "id": "interposer_beol_rdl",
+          "type": [
+            "mechanical"
+          ]
+        },
+        {
+          "id": "tim1",
+          "type": [
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-038",
+          "source": "tsmc_patent_us20200381391_cowos"
+        },
+        {
+          "fact": "thm-032",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "thm-024",
+          "source": "sumikon_g700l"
+        },
+        {
+          "fact": "prd-004",
+          "source": "huawei_hc31_davinci_slides"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": true,
+        "layer": "L4 whitespace",
+        "detail": "gaps between dies filled with underfill (k 1.6); interposer edge strips get micro-bump material",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/util/fill_space.py",
+            "lines": "19, 164"
+          },
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/passive_interposer.py",
+            "lines": "94-97, 122"
+          },
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/configs/sys_ascend910_45mm.cfg",
+            "lines": "35-36"
+          }
+        ]
+      },
+      "notes": ""
+    },
+    {
+      "id": "tim1",
+      "name": "TIM1 (die to lid; die to cold plate in lidless designs = 'TIM1.5')",
+      "parent": "package",
+      "stack_order": 10,
+      "count": 1,
+      "material": "Polymer/PCM, indium solder, or liquid metal",
+      "thickness_um": {
+        "min": 20,
+        "typical": null,
+        "max": 50,
+        "notes": "PCM bondline min ~20 um, typical < 50 um; our model uses 20 um"
+      },
+      "lateral_mm": {
+        "pattern": "over all top dies (compute, HBM, dummies)"
+      },
+      "k_W_per_mK": {
+        "indium": 86,
+        "pcm_ptm7950": 8.5,
+        "conventional_high_performance": 20,
+        "older_polymer_tim1_2011": 0.92,
+        "our_model": 4,
+        "area_specific_R_K_mm2_per_W": {
+          "liquid_metal_TSMC": 4,
+          "oxide_fusion_bond_TSMC": 1.5,
+          "ptm7950": 4
+        }
+      },
+      "function": "Fills microscopic gaps between die backsides and the lid/cold plate.",
+      "connects_to": [
+        {
+          "id": "compute_die_bulk_si",
+          "type": [
+            "thermal"
+          ]
+        },
+        {
+          "id": "hbm_stack",
+          "type": [
+            "thermal"
+          ]
+        },
+        {
+          "id": "lid",
+          "type": [
+            "thermal"
+          ]
+        },
+        {
+          "id": "cold_plate",
+          "type": [
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "thm-020",
+          "source": "indium_tim_products_page"
+        },
+        {
+          "fact": "thm-021",
+          "source": "solstice_ptm7950_tds"
+        },
+        {
+          "fact": "thm-022",
+          "source": "solstice_ptm7950_tds"
+        },
+        {
+          "fact": "thm-028",
+          "source": "ucla_embedded_isolators_2p5d"
+        },
+        {
+          "fact": "thm-013",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        },
+        {
+          "fact": "pkg-051",
+          "source": "tsmc_hotchips33_packaging_tutorial"
+        },
+        {
+          "fact": "pkg-012",
+          "source": "tsmc_hotchips33_packaging_tutorial"
+        }
+      ],
+      "confidence": "high",
+      "variant": "all",
+      "in_our_model": {
+        "modeled": true,
+        "layer": "L5 'TIM'",
+        "detail": "20 um, k = 4 W/mK, one block over the whole interposer (incl. gaps)",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/passive_interposer.py",
+            "lines": "126-132, 149"
+          }
+        ]
+      },
+      "notes": "PTM7950: 0.04 C*cm2/W = 4 K*mm2/W, same as TSMC's measured liquid-metal TIM."
+    },
+    {
+      "id": "lid",
+      "name": "Lid / integrated heat spreader (lidded variant)",
+      "parent": "package",
+      "stack_order": 11,
+      "count": 1,
+      "material": "Copper (often Ni-plated; plating not sourced here)",
+      "thickness_um": {
+        "min": null,
+        "typical": null,
+        "max": null,
+        "render_hint": 1000,
+        "render_hint_basis": "HotSpot default spreader thickness 1 mm (model default, not a product value)"
+      },
+      "lateral_mm": {
+        "pattern": "covers the die area and lands on the substrate (lid foot / seal not sourced)"
+      },
+      "k_W_per_mK": {
+        "cu": 389,
+        "our_model_spreader": 400
+      },
+      "function": "Spreads heat laterally, protects dies, flattens the package; the main lateral coupling path between logic and HBM in one study.",
+      "connects_to": [
+        {
+          "id": "tim1",
+          "type": [
+            "thermal"
+          ]
+        },
+        {
+          "id": "tim2",
+          "type": [
+            "thermal"
+          ]
+        },
+        {
+          "id": "package_substrate",
+          "type": [
+            "mechanical",
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "pkg-025",
+          "source": "amkor_fcbga_ds831"
+        },
+        {
+          "fact": "pkg-012",
+          "source": "tsmc_hotchips33_packaging_tutorial"
+        },
+        {
+          "fact": "thm-013",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        },
+        {
+          "fact": "thm-026",
+          "source": "ucla_embedded_isolators_2p5d"
+        },
+        {
+          "fact": "thm-041",
+          "source": "ecool_lidded_vs_bare_die_2012"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "lidded",
+      "in_our_model": {
+        "modeled": true,
+        "layer": "HotSpot spreader (appended)",
+        "detail": "1 mm Cu, side = 2 x interposer (90 mm for 45 mm)",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/util/hotspot.config",
+            "lines": "29-35"
+          },
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/passive_interposer.py",
+            "lines": "154, 160-161"
+          },
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_hotspot/temperature_grid.c",
+            "lines": "529-541"
+          }
+        ]
+      },
+      "notes": ""
+    },
+    {
+      "id": "tim2",
+      "name": "TIM2 (lid to cold plate / heat sink)",
+      "parent": "package",
+      "stack_order": 12,
+      "count": 1,
+      "material": "Thermal grease, PCM pad or putty",
+      "thickness_um": {
+        "min": 20,
+        "typical": null,
+        "max": 50,
+        "notes": "PCM-class bondline"
+      },
+      "lateral_mm": {
+        "pattern": "lid top surface"
+      },
+      "k_W_per_mK": {
+        "pcm_ptm7950": 8.5,
+        "notes": "grease values not captured"
+      },
+      "function": "Interface between lid and cooler (absent in lidless designs, where TIM1.5 touches the die).",
+      "connects_to": [
+        {
+          "id": "lid",
+          "type": [
+            "thermal"
+          ]
+        },
+        {
+          "id": "cold_plate",
+          "type": [
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "thm-021",
+          "source": "solstice_ptm7950_tds"
+        },
+        {
+          "fact": "thm-022",
+          "source": "solstice_ptm7950_tds"
+        },
+        {
+          "fact": "thm-040",
+          "source": "ocp_oai_liquid_cooling_guidelines"
+        },
+        {
+          "fact": "thm-041",
+          "source": "ecool_lidded_vs_bare_die_2012"
+        },
+        {
+          "fact": "thm-009",
+          "source": "hotspot60_tr_https"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "lidded",
+      "in_our_model": {
+        "modeled": false,
+        "detail": "HotSpot does not support TIM2",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/util/hotspot.config",
+            "lines": "37-43"
+          }
+        ]
+      },
+      "notes": ""
+    },
+    {
+      "id": "cold_plate",
+      "name": "Liquid cold plate",
+      "parent": null,
+      "stack_order": 13,
+      "count": 1,
+      "material": "Copper (most used) with fins/pins or micro-channels",
+      "thickness_um": null,
+      "lateral_mm": {
+        "pattern": "covers the lid (or bare dies + stiffener)"
+      },
+      "k_W_per_mK": {
+        "cu": 389
+      },
+      "function": "Moves heat into coolant; dominant single resistance at 1 kW class (case-to-fluid ~0.04 K/W in a vendor test).",
+      "connects_to": [
+        {
+          "id": "tim2",
+          "type": [
+            "thermal"
+          ]
+        },
+        {
+          "id": "tim1",
+          "type": [
+            "thermal"
+          ]
+        },
+        {
+          "id": "coolant",
+          "type": [
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "thm-042",
+          "source": "ocp_oai_liquid_cooling_guidelines"
+        },
+        {
+          "fact": "thm-039",
+          "source": "iceotope_1000w_whitepaper"
+        },
+        {
+          "fact": "thm-040",
+          "source": "ocp_oai_liquid_cooling_guidelines"
+        },
+        {
+          "fact": "prd-017",
+          "source": "nvidia_blackwell_arch_page"
+        },
+        {
+          "fact": "pkg-051",
+          "source": "tsmc_hotchips33_packaging_tutorial"
+        }
+      ],
+      "confidence": "medium",
+      "variant": "liquid_cooled",
+      "in_our_model": {
+        "modeled": "partly",
+        "detail": "HotSpot heat sink layer + lumped r_convec stands in for any cooler",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/util/hotspot.config",
+            "lines": "13-25"
+          },
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/passive_interposer.py",
+            "lines": "155-163"
+          }
+        ]
+      },
+      "notes": ""
+    },
+    {
+      "id": "heat_sink",
+      "name": "Air heat sink (air-cooled alternative)",
+      "parent": null,
+      "stack_order": 13,
+      "count": 1,
+      "material": "Copper/aluminium base + fins (or vapor chamber)",
+      "thickness_um": {
+        "min": null,
+        "typical": 6900,
+        "max": null,
+        "notes": "HotSpot default sink base thickness (model value)"
+      },
+      "lateral_mm": {
+        "w": 180,
+        "h": 180,
+        "notes": "our model: 2 x spreader = 4 x interposer (180 mm for 45 mm)"
+      },
+      "k_W_per_mK": {
+        "our_model": 400
+      },
+      "function": "Forced-air cooling; TAP-2.5D models 'a realistic air-forced heatsink'.",
+      "connects_to": [
+        {
+          "id": "tim2",
+          "type": [
+            "thermal"
+          ]
+        },
+        {
+          "id": "lid",
+          "type": [
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "thm-002",
+          "source": "tap25d_date2021"
+        },
+        {
+          "fact": "thm-003",
+          "source": "tap25d_date2021"
+        }
+      ],
+      "confidence": "low",
+      "variant": "air_cooled",
+      "in_our_model": {
+        "modeled": true,
+        "layer": "HotSpot sink (appended)",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/util/hotspot.config",
+            "lines": "15-25"
+          },
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/passive_interposer.py",
+            "lines": "155-163"
+          }
+        ]
+      },
+      "notes": ""
+    },
+    {
+      "id": "coolant",
+      "name": "Coolant",
+      "parent": null,
+      "stack_order": 14,
+      "count": 1,
+      "material": "DI water or water-glycol (single phase); dielectric or refrigerant in some systems",
+      "thickness_um": null,
+      "lateral_mm": null,
+      "k_W_per_mK": null,
+      "function": "Carries heat to the facility loop.",
+      "connects_to": [
+        {
+          "id": "cold_plate",
+          "type": [
+            "thermal"
+          ]
+        }
+      ],
+      "sources": [
+        {
+          "fact": "thm-044",
+          "source": "ocp_oai_liquid_cooling_guidelines"
+        },
+        {
+          "fact": "thm-039",
+          "source": "iceotope_1000w_whitepaper"
+        }
+      ],
+      "confidence": "high",
+      "variant": "liquid_cooled",
+      "in_our_model": {
+        "modeled": false,
+        "detail": "ambient 45 C boundary via r_convec",
+        "cite": [
+          {
+            "repo": "H:/sentilab@origin/main 46791be",
+            "path": "sundai_tap/util/hotspot.config",
+            "lines": "76-78"
+          }
+        ]
+      },
+      "notes": ""
+    }
+  ],
+  "interconnects": [
+    {
+      "id": "microbump",
+      "class": "die/HBM-to-interposer micro-bumps",
+      "pitch_um": {
+        "min": 25,
+        "typical": 45,
+        "max": 55,
+        "typical_basis": "Xilinx SSIT / 2011 test vehicle example; HBM uses 55 um FCR"
+      },
+      "diameter_um": 25,
+      "height_um": 35,
+      "material": "Cu pillar + SnAg cap",
+      "counts": "~4,000 under an HBM2-era base die; 10K-30K D2D (Virtex-7 SSIT)",
+      "sources": [
+        {
+          "fact": "pkg-021",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        },
+        {
+          "fact": "hbm-023",
+          "source": "skhynix_hc28_hbm_tutorial"
+        },
+        {
+          "fact": "hbm-033",
+          "source": "imaps_hbm_underfill_tsv_study"
+        },
+        {
+          "fact": "hbm-032",
+          "source": "formfactor_swtw2016_hbm_probing"
+        },
+        {
+          "fact": "hbm-041",
+          "source": "ucie_hc2023_electrical"
+        },
+        {
+          "fact": "pkg-018",
+          "source": "xilinx_cpmt1104b"
+        },
+        {
+          "fact": "pkg-035",
+          "source": "intel_qr_vol6_adv_packaging"
+        }
+      ],
+      "notes": "Micro-bump joining is challenging below ~20 um pitch (hbm-029)."
+    },
+    {
+      "id": "hbm_internal_bond",
+      "class": "HBM die-to-die bonds",
+      "pitch_um": null,
+      "diameter_um": 20,
+      "gap_um": {
+        "tc_ncf": 7,
+        "fem_model_layer": 15
+      },
+      "area_specific_R_K_mm2_per_W": 3.8,
+      "methods": [
+        "MR-MUF (SK hynix)",
+        "TC-NCF (Samsung)",
+        "hybrid bonding (future, >=16-high)"
+      ],
+      "sources": [
+        {
+          "fact": "hbm-046",
+          "source": "imaps_hbm_underfill_tsv_study"
+        },
+        {
+          "fact": "hbm-015",
+          "source": "samsung_hbm3e_12h_2024"
+        },
+        {
+          "fact": "thm-029",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "thm-031",
+          "source": "itherm2024_dual_sided_bspdn"
+        },
+        {
+          "fact": "hbm-013",
+          "source": "skhynix_hbm3e_12h_2024"
+        },
+        {
+          "fact": "hbm-028",
+          "source": "skhynix_iedm23_hbm_packaging"
+        },
+        {
+          "fact": "hbm-030",
+          "source": "skhynix_iedm23_hbm_packaging"
+        }
+      ]
+    },
+    {
+      "id": "hybrid_bond",
+      "class": "3D hybrid bonding (Cu-Cu + dielectric)",
+      "pitch_um": {
+        "min": 0.9,
+        "typical": 9,
+        "max": 10,
+        "typical_basis": "first-generation SoIC / Foveros Direct; 0.9 um is a roadmap point"
+      },
+      "examples": {
+        "TSMC SoIC": "sub-10 um; roadmap 9 -> 6 -> 3 -> 0.9 um",
+        "Intel Foveros Direct": "9 um",
+        "UCIe-3D": "<= 10 um"
+      },
+      "sources": [
+        {
+          "fact": "pkg-010",
+          "source": "tsmc_soic_page"
+        },
+        {
+          "fact": "pkg-011",
+          "source": "tsmc_hotchips33_packaging_tutorial"
+        },
+        {
+          "fact": "pkg-037",
+          "source": "intel_qr_vol6_adv_packaging"
+        },
+        {
+          "fact": "hbm-043",
+          "source": "ucie_buss25_dassharma"
+        }
+      ],
+      "notes": "MI300X stacks XCDs on IODs (prd-019/020); its bond pitch is not in this pack."
+    },
+    {
+      "id": "c4",
+      "class": "C4 bumps (interposer-to-substrate)",
+      "pitch_um": {
+        "min": 90,
+        "typical": 180,
+        "max": 210,
+        "typical_basis": "Xilinx 2011 interposer test vehicle example; 90 um is a substrate roadmap value"
+      },
+      "diameter_um": {
+        "min": 80,
+        "max": 125
+      },
+      "height_um": {
+        "cu_pillar": 40,
+        "standard_min": 60,
+        "standard_max": 100
+      },
+      "material": "Cu C4 / Cu pillar + SnAg; Pb-free 98.2Sn/1.8Ag",
+      "sources": [
+        {
+          "fact": "pkg-053",
+          "source": "amkor_flipchip_ts102"
+        },
+        {
+          "fact": "pkg-016",
+          "source": "tsmc_hotchips33_packaging_tutorial"
+        },
+        {
+          "fact": "pkg-021",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        },
+        {
+          "fact": "pkg-018",
+          "source": "xilinx_cpmt1104b"
+        },
+        {
+          "fact": "pkg-034",
+          "source": "kyocera_fcbga_organic_substrates"
+        },
+        {
+          "fact": "pkg-028",
+          "source": "amkor_flipchip_ts102"
+        },
+        {
+          "fact": "pkg-029",
+          "source": "amkor_flipchip_ts102"
+        },
+        {
+          "fact": "pkg-054",
+          "source": "amkor_flipchip_ts102"
+        },
+        {
+          "fact": "pkg-013",
+          "source": "tsmc_hotchips33_packaging_tutorial"
+        }
+      ]
+    },
+    {
+      "id": "interposer_tsv",
+      "class": "interposer TSVs",
+      "diameter_um": ">10",
+      "pitch_um": 210,
+      "depth_um": 100,
+      "aspect_ratio": "~10:1 (derived)",
+      "sources": [
+        {
+          "fact": "pkg-018",
+          "source": "xilinx_cpmt1104b"
+        },
+        {
+          "fact": "pkg-021",
+          "source": "imaps_xilinx_thermal_tsv_interposer"
+        }
+      ],
+      "notes": "2011 Xilinx/TSMC SSIT values; our model uses 10 um on a 50 um cell."
+    },
+    {
+      "id": "hbm_tsv",
+      "class": "HBM TSVs",
+      "count_per_12_high_stack": ">60,000",
+      "relative": "HBM3E 2x HBM3",
+      "area_fraction": "~1.3% (HBM1)",
+      "sources": [
+        {
+          "fact": "hbm-034",
+          "source": "samsung_12layer_3dtsv_2019"
+        },
+        {
+          "fact": "hbm-021",
+          "source": "micron_hbm3e_product_brief"
+        },
+        {
+          "fact": "hbm-033",
+          "source": "imaps_hbm_underfill_tsv_study"
+        }
+      ],
+      "notes": "diameter/pitch not captured from a primary source."
+    },
+    {
+      "id": "interposer_wiring",
+      "class": "interposer BEOL / RDL line and space",
+      "values": {
+        "Si interposer (65 nm SSIT)": "4 metal layers, 2 um pitch",
+        "CoWoS-S 2021": "thick metal (5Mi)",
+        "CoWoS-R RDL": "2/2 um L/S, 4 um pitch",
+        "CoWoS-L LSI": "sub-um Cu lines"
+      },
+      "sources": [
+        {
+          "fact": "pkg-018",
+          "source": "xilinx_cpmt1104b"
+        },
+        {
+          "fact": "pkg-019",
+          "source": "xilinx_wp380"
+        },
+        {
+          "fact": "pkg-014",
+          "source": "tsmc_hotchips33_packaging_tutorial"
+        },
+        {
+          "fact": "pkg-003",
+          "source": "tsmc_cowos_page"
+        },
+        {
+          "fact": "pkg-008",
+          "source": "tsmc_cowos_page"
+        }
+      ]
+    },
+    {
+      "id": "substrate_wiring",
+      "class": "substrate build-up line/space and layers",
+      "values": {
+        "L/S": "9/12 um (volume) -> 6/6 um (roadmap)",
+        "layers": "10/x/10 (2026) -> 14/x/14 (roadmap)",
+        "Xilinx 2011": "4-2-4"
+      },
+      "sources": [
+        {
+          "fact": "pkg-031",
+          "source": "kyocera_fcbga_organic_substrates"
+        },
+        {
+          "fact": "pkg-034",
+          "source": "kyocera_fcbga_organic_substrates"
+        },
+        {
+          "fact": "pkg-033",
+          "source": "kyocera_fcbga_organic_substrates"
+        },
+        {
+          "fact": "pkg-047",
+          "source": "tomshw_abf_substrates_2026"
+        },
+        {
+          "fact": "pkg-018",
+          "source": "xilinx_cpmt1104b"
+        }
+      ]
+    },
+    {
+      "id": "bga",
+      "class": "BGA balls",
+      "pitch_mm": {
+        "min": 0.8,
+        "typical": 1.0,
+        "max": 1.0,
+        "typical_basis": "Virtex-7 SSIT package and both FCBGA drawings use 1.0 mm"
+      },
+      "ball_diameter_mm": {
+        "min": 0.4,
+        "typical": null,
+        "max": 0.7,
+        "nominals": [
+          0.5,
+          0.6
+        ]
+      },
+      "standoff_mm": {
+        "min": 0.31,
+        "max": 0.6
+      },
+      "sources": [
+        {
+          "fact": "pkg-022",
+          "source": "amkor_fcbga_ds831"
+        },
+        {
+          "fact": "pkg-018",
+          "source": "xilinx_cpmt1104b"
+        },
+        {
+          "fact": "pkg-049",
+          "source": "microchip_fcbga196_c04_25015"
+        },
+        {
+          "fact": "pkg-050",
+          "source": "renesas_alg784_fcbga_29mm"
+        },
+        {
+          "fact": "pkg-027",
+          "source": "amkor_fcbga_ds831"
+        }
+      ]
+    },
+    {
+      "id": "hbm_bus",
+      "class": "HBM PHY-to-PHY bus across the interposer",
+      "width_bits": {
+        "HBM2/HBM3/HBM3E": 1024,
+        "HBM4": 2048
+      },
+      "channels": {
+        "HBM3": "16 x 64-bit (32 pseudo)",
+        "HBM4": "32 (2 pseudo each)"
+      },
+      "rate_Gbps_per_pin": {
+        "HBM2": 2.0,
+        "HBM3": 6.4,
+        "HBM3E": [
+          9.2,
+          9.6,
+          10.0
+        ],
+        "HBM4": 8.0
+      },
+      "bandwidth_per_stack": {
+        "HBM2": "256 GB/s",
+        "HBM3": "819 GB/s",
+        "HBM3E": "1.2-1.28 TB/s",
+        "HBM4": "2 TB/s"
+      },
+      "energy_pJ_per_bit": {
+        "HBM2E": 4.3,
+        "HBM3E": "~20% lower",
+        "HBM4": "~60% lower (expected)"
+      },
+      "voltages_V": {
+        "HBM VDD (HBM3E era)": [
+          1.1,
+          1.2
+        ],
+        "HBM4 VDDQ": [
+          0.7,
+          0.9
+        ],
+        "HBM4 VDDC": [
+          1.0,
+          1.05
+        ]
+      },
+      "route": "host HBM PHY -> micro-bumps -> interposer wiring -> micro-bumps -> HBM base-die PHY -> TSVs",
+      "sources": [
+        {
+          "fact": "hbm-048",
+          "source": "skhynix_hc28_hbm_tutorial"
+        },
+        {
+          "fact": "hbm-001",
+          "source": "jedec_hbm3_pr_2022"
+        },
+        {
+          "fact": "hbm-002",
+          "source": "jedec_hbm3_pr_2022"
+        },
+        {
+          "fact": "hbm-005",
+          "source": "jedec_hbm4_pr_2025"
+        },
+        {
+          "fact": "hbm-006",
+          "source": "jedec_hbm4_pr_2025"
+        },
+        {
+          "fact": "hbm-019",
+          "source": "micron_hbm3e_product_brief"
+        },
+        {
+          "fact": "hbm-011",
+          "source": "skhynix_hbm3e_12h_2024"
+        },
+        {
+          "fact": "hbm-014",
+          "source": "samsung_hbm3e_12h_2024"
+        },
+        {
+          "fact": "hbm-025",
+          "source": "skhynix_hc28_hbm_tutorial"
+        },
+        {
+          "fact": "hbm-027",
+          "source": "skhynix_iedm23_hbm_packaging"
+        },
+        {
+          "fact": "hbm-039",
+          "source": "rambus_hbm3e_controller_page"
+        },
+        {
+          "fact": "pkg-042",
+          "source": "vicor_vpd_genai_article"
+        },
+        {
+          "fact": "hbm-008",
+          "source": "jedec_hbm4_pr_2025"
+        }
+      ],
+      "notes": "Samsung quotes 1,280 GB/s for HBM3E 12H, i.e. 10 Gb/s x 1024 / 8 (derived)."
+    },
+    {
+      "id": "die_to_die",
+      "class": "compute-to-compute / compute-to-IO links",
+      "examples": {
+        "NVIDIA NV-HBI (Blackwell)": "10 TB/s",
+        "AMD MI300X XCD-IOD": "2.1 TB/s",
+        "AMD Infinity Fabric AP": "4.8 TB/s and 6 TB/s bisection",
+        "UCIe-A (2.5D)": "x64, 4-32 GT/s, <=2 mm, 165-1317 GB/s/mm, 0.25 pJ/b",
+        "UCIe-S (2D)": "x16, 100-130 um bumps, <=25 mm, 28-224 GB/s/mm, 0.5 pJ/b",
+        "Xilinx SSIT": ">10,000 die-to-die connections"
+      },
+      "sources": [
+        {
+          "fact": "prd-015",
+          "source": "nvidia_blackwell_ultra_blog"
+        },
+        {
+          "fact": "prd-025",
+          "source": "amd_hc2024_mi300x"
+        },
+        {
+          "fact": "hbm-041",
+          "source": "ucie_hc2023_electrical"
+        },
+        {
+          "fact": "hbm-042",
+          "source": "ucie_hc2023_electrical"
+        },
+        {
+          "fact": "hbm-043",
+          "source": "ucie_buss25_dassharma"
+        },
+        {
+          "fact": "hbm-044",
+          "source": "ucie_buss25_dassharma"
+        },
+        {
+          "fact": "pkg-020",
+          "source": "xilinx_wp380"
+        }
+      ]
+    },
+    {
+      "id": "power_delivery",
+      "class": "VRM to die",
+      "chain": [
+        "vrm_lateral | vrm_vertical",
+        "system_board planes",
+        "bga_balls",
+        "substrate_buildup_bottom",
+        "substrate_core (PTH)",
+        "substrate_buildup_top",
+        "c4_bumps",
+        "interposer_tsv",
+        "interposer_beol_rdl (+ eDTC)",
+        "microbumps",
+        "compute_die_active_layer"
+      ],
+      "values": {
+        "core_VDD_V": ">= 0.7 (+/-5%)",
+        "continuous_A": 1000,
+        "dI_dt_A_per_us": ">= 2000",
+        "board_bypass_mF": ">= 3",
+        "PDN_uOhm": "60 lateral -> 11 lateral-vertical",
+        "eDTC_nF_per_mm2": 340
+      },
+      "sources": [
+        {
+          "fact": "pkg-041",
+          "source": "vicor_vpd_genai_article"
+        },
+        {
+          "fact": "pkg-043",
+          "source": "vicor_vpd_genai_article"
+        },
+        {
+          "fact": "pkg-045",
+          "source": "vicor_vpd_genai_article"
+        },
+        {
+          "fact": "pkg-046",
+          "source": "mediaupdate_iedm2019_part2"
+        },
+        {
+          "fact": "thm-012",
+          "source": "hotspot60_tr_https"
+        },
+        {
+          "fact": "pkg-026",
+          "source": "amkor_fcbga_ds831"
+        }
+      ]
+    }
+  ],
+  "flows": {
+    "heat_primary_lidded": [
+      "compute_die_active_layer",
+      "compute_die_bulk_si",
+      "tim1",
+      "lid",
+      "tim2",
+      "cold_plate",
+      "coolant"
+    ],
+    "heat_primary_lidless": [
+      "compute_die_active_layer",
+      "compute_die_bulk_si",
+      "tim1",
+      "cold_plate",
+      "coolant"
+    ],
+    "heat_secondary": [
+      "compute_die_active_layer",
+      "microbumps",
+      "interposer_beol_rdl",
+      "interposer_silicon",
+      "c4_bumps",
+      "substrate_buildup_top",
+      "substrate_core",
+      "substrate_buildup_bottom",
+      "bga_balls",
+      "system_board"
+    ],
+    "heat_hbm_vertical": [
+      "hbm_base_die",
+      "hbm_bond_layer",
+      "hbm_dram_core_die",
+      "hbm_top_die",
+      "tim1"
+    ],
+    "heat_lateral_coupling_logic_to_hbm": [
+      [
+        "compute_die",
+        "tim1",
+        "lid",
+        "tim1",
+        "hbm_stack"
+      ],
+      [
+        "compute_die",
+        "mold_compound",
+        "hbm_stack"
+      ],
+      [
+        "compute_die_active_layer",
+        "microbumps",
+        "interposer_silicon",
+        "microbumps",
+        "hbm_base_die"
+      ]
+    ],
+    "heat_share_note": "Some 95% of a chip's heat leaves through the top (thm-036); one study finds most inter-chiplet coupling goes through the heat spreader rather than the interposer (thm-026).",
+    "power": [
+      "vrm_lateral",
+      "system_board",
+      "bga_balls",
+      "package_substrate",
+      "c4_bumps",
+      "interposer_tsv",
+      "interposer_beol_rdl",
+      "microbumps",
+      "compute_die_active_layer"
+    ],
+    "signal_hbm": [
+      "hbm_phy",
+      "microbumps",
+      "interposer_beol_rdl",
+      "microbumps",
+      "hbm_base_die",
+      "hbm_tsv",
+      "hbm_dram_core_die"
+    ],
+    "signal_d2d": [
+      "d2d_phy",
+      "microbumps",
+      "interposer_beol_rdl | lsi_bridge",
+      "microbumps",
+      "d2d_phy"
+    ],
+    "signal_off_package": [
+      "compute_die_active_layer",
+      "microbumps",
+      "interposer_beol_rdl",
+      "interposer_tsv",
+      "c4_bumps",
+      "package_substrate",
+      "bga_balls",
+      "system_board"
+    ]
+  },
+  "reference_layouts": {
+    "ascend910_reference": {
+      "purpose": "Matches the die set our simulations use (TAP-2.5D Ascend 910 fixture) plus the real package's extra parts.",
+      "interposer_mm": {
+        "w": 45,
+        "h": 45,
+        "source": "TAP-2.5D Sec. IV (thm-006); our 45 mm fixture"
+      },
+      "dies": [
+        {
+          "part": "compute_die",
+          "name": "Vitruvian",
+          "w_mm": 14.5,
+          "h_mm": 31.4,
+          "power_W_in_model": 256
+        },
+        {
+          "part": "io_die",
+          "name": "Nimbus V3",
+          "w_mm": 10.5,
+          "h_mm": 16.0,
+          "power_W_in_model": 14
+        },
+        {
+          "part": "hbm_stack",
+          "name": "HBM2 x4",
+          "w_mm": 7.75,
+          "h_mm": 11.87,
+          "power_W_in_model": 20,
+          "count": 4
+        },
+        {
+          "part": "dummy_die",
+          "name": "dummy x2",
+          "area_mm2": 110,
+          "power_W_in_model": null,
+          "count": 2,
+          "in_model": false
+        }
+      ],
+      "real_gaps_mm": {
+        "compute_to_hbm_row": 0.72,
+        "between_hbms": 2.0
+      },
+      "total_silicon_mm2": 1228,
+      "package_power_W": 350,
+      "sources": [
+        {
+          "fact": "thm-007",
+          "source": "tap25d_date2021"
+        },
+        {
+          "fact": "prd-001",
+          "source": "huawei_hc31_davinci_slides"
+        },
+        {
+          "fact": "prd-002",
+          "source": "huawei_hc31_davinci_slides"
+        },
+        {
+          "fact": "prd-003",
+          "source": "huawei_hc31_davinci_slides"
+        },
+        {
+          "fact": "prd-004",
+          "source": "huawei_hc31_davinci_slides"
+        },
+        {
+          "fact": "prd-005",
+          "source": "huawei_hc31_davinci_slides"
+        },
+        {
+          "fact": "thm-006",
+          "source": "tap25d_date2021"
+        }
+      ],
+      "repo": [
+        {
+          "repo": "H:/sentilab@origin/main 46791be",
+          "path": "sundai_tap/configs/sys_ascend910_45mm.cfg",
+          "lines": "14, 18-28"
+        },
+        {
+          "repo": "H:/sentilab@origin/main 46791be",
+          "path": "docs/sentilab/references/README.md",
+          "lines": "164-174"
+        }
+      ],
+      "notes": "Die w/h follow TAP Table II (Huawei states areas only). The real interposer size is not in this pack."
+    },
+    "generic_hbm3e_two_die": {
+      "purpose": "Modern reticle-limited two-die accelerator with 8 HBM3E stacks (Blackwell-like class; NOT NVIDIA dimensions).",
+      "dies": [
+        {
+          "part": "compute_die",
+          "count": 2,
+          "area_mm2": "~820-830 each (one reticle)",
+          "note": "aspect ratio not public in this pack"
+        },
+        {
+          "part": "hbm_stack",
+          "count": 8,
+          "w_mm": 11,
+          "h_mm": 11,
+          "height_um": 720
+        }
+      ],
+      "interposer": "CoWoS-L class, >= 3.5x reticle",
+      "substrate_mm": "90-110 square",
+      "cooling": "liquid cold plate",
+      "sources": [
+        {
+          "fact": "prd-014",
+          "source": "nvidia_blackwell_arch_page"
+        },
+        {
+          "fact": "prd-018",
+          "source": "tomshw_abf_substrates_2026"
+        },
+        {
+          "fact": "hbm-018",
+          "source": "micron_hbm3e_product_brief"
+        },
+        {
+          "fact": "pkg-007",
+          "source": "tsmc_cowos_page"
+        },
+        {
+          "fact": "pkg-001",
+          "source": "tsmc_cowos_page"
+        },
+        {
+          "fact": "pkg-033",
+          "source": "kyocera_fcbga_organic_substrates"
+        },
+        {
+          "fact": "pkg-017",
+          "source": "tsmc_hotchips33_packaging_tutorial"
+        },
+        {
+          "fact": "prd-017",
+          "source": "nvidia_blackwell_arch_page"
+        }
+      ]
+    }
+  },
+  "source_index": {
+    "jedec_hbm3_pr_2022": {
+      "evidence_file": "evidence/hbm/jedec_hbm3_pr_2022.html",
+      "url": "https://www.jedec.org/news/pressreleases/jedec-publishes-hbm3-update-high-bandwidth-memory-hbm-standard",
+      "retrieved_utc": "2026-10-31T19:09:42Z",
+      "sha256": "97af2be84234d9c569a1af53af94abbb19f37e56980ed42903eb7e63e9e5be78",
+      "title": "JEDEC Publishes HBM3 Update to High Bandwidth Memory (HBM) Standard (JESD238)",
+      "publisher": "JEDEC",
+      "date": "2022-01-27",
+      "source_type": "primary"
+    },
+    "jedec_hbm4_pr_2025": {
+      "evidence_file": "evidence/hbm/jedec_hbm4_pr_2025.html",
+      "url": "https://www.jedec.org/news/pressreleases/jedec%C2%AE-and-industry-leaders-collaborate-release-jesd270-4-hbm4-standard-advancing",
+      "retrieved_utc": "2026-10-31T19:09:42Z",
+      "sha256": "ecd0157a7eca89c9b6565e7a6e2483dbe5282b9501d8978ec46de2399ffe8b6a",
+      "title": "JEDEC and Industry Leaders Collaborate to Release JESD270-4 HBM4 Standard",
+      "publisher": "JEDEC",
+      "date": "2025-04-16",
+      "source_type": "primary"
+    },
+    "trendforce_hbm4_775um_2025": {
+      "evidence_file": "evidence/hbm/trendforce_hbm4_775um_2025.html",
+      "url": "https://www.trendforce.com/news/2025/04/21/news-jedec-finalizes-hbm4-standard-potentially-easing-pressure-on-hybrid-bonding-adoption/",
+      "retrieved_utc": "2026-10-31T19:09:43Z",
+      "sha256": "d82c2be876e677e85add0ae1fe6ec4c3a20412cb415821713da597573dd35e45",
+      "title": "JEDEC Finalizes HBM4 Standard, Potentially Easing Pressure on Hybrid Bonding Adoption (citing ZDNet)",
+      "publisher": "TrendForce",
+      "date": "2025-04-21",
+      "source_type": "secondary"
+    },
+    "skhynix_hbm3e_12h_2024": {
+      "evidence_file": "evidence/hbm/skhynix_hbm3e_12h_2024.html",
+      "url": "https://news.skhynix.com/en/sk-hynix-begins-volume-production-of-the-world-first-12-layer-hbm3e/",
+      "retrieved_utc": "2026-10-31T19:12:24Z",
+      "sha256": "95786f28de43387cba14c1ea0cb71d273d136bcb32aaaf0bd857cd39c78c6b57",
+      "title": "SK hynix Begins Volume Production of the World's First 12-Layer HBM3E",
+      "publisher": "SK hynix Newsroom",
+      "date": "2024-09-26",
+      "source_type": "primary"
+    },
+    "samsung_hbm3e_12h_2024": {
+      "evidence_file": "evidence/hbm/samsung_hbm3e_12h_2024.html",
+      "url": "https://news.samsung.com/global/samsung-develops-industry-first-36gb-hbm3e-12h-dram",
+      "retrieved_utc": "2026-10-31T19:12:24Z",
+      "sha256": "d98fbc86cd579388d4f905b0165210724c280c78f466dfdbd327453247b75601",
+      "title": "Samsung Develops Industry-First 36GB HBM3E 12H DRAM",
+      "publisher": "Samsung Global Newsroom",
+      "date": "2024-02-27",
+      "source_type": "primary"
+    },
+    "micron_hbm3e_product_brief": {
+      "evidence_file": "evidence/hbm/micron_hbm3e_product_brief.pdf",
+      "url": "https://assets.micron.com/adobe/assets/urn:aaid:aem:b710d8f2-7f66-44c1-a234-456e2b986347/renditions/original/as/hbm3e-product-brief.pdf",
+      "retrieved_utc": "2026-10-31T19:22:14Z",
+      "sha256": "c9c99fbc7f3ca759b22add23c7a5151340d559954919c30092a966ac6e51da48",
+      "title": "Product Brief - Micron HBM3E (Rev C 10/2023)",
+      "publisher": "Micron Technology",
+      "date": "2023-10",
+      "source_type": "primary"
+    },
+    "skhynix_hc28_hbm_tutorial": {
+      "evidence_file": "evidence/hbm/skhynix_hc28_hbm_tutorial.pdf",
+      "url": "https://old.hotchips.org/wp-content/uploads/hc_archives/hc28/HC28.21-Tutorial-Epub/HC28.21.1-Next-Gen-Memory-Epub/HC28.21.130-High-Bandwidth-KEVIN_TRAN-SKHYNIX-VERSION_FINAL-dcrp-t1-4_.pdf",
+      "retrieved_utc": "2026-10-31T19:16:27Z",
+      "sha256": "a5cfc1793a3ae128144ff62786cca9195c659581d1a33ddb6131b23eb2c0563b",
+      "title": "The Era of High Bandwidth Memory (K. Tran, Hot Chips 28 tutorial)",
+      "publisher": "SK hynix / Hot Chips",
+      "date": "2016-08",
+      "source_type": "primary"
+    },
+    "skhynix_iedm23_hbm_packaging": {
+      "evidence_file": "evidence/hbm/skhynix_iedm23_hbm_packaging.pdf",
+      "url": "https://iedm23.mapyourshow.com/mys_shared/iedm23/handouts/15-6_Tue_14482.pdf",
+      "retrieved_utc": "2026-10-31T19:16:25Z",
+      "sha256": "e48f80e713309d19bdc847c32c65edd0dca87e727db50e2b54d2c8de41eaf403",
+      "title": "Advanced Packaging Technologies in Memory Applications for Future Generative AI Era (K.-I. Moon, H.-Y. Son, K. Lee; IEDM 2023 paper 15-6 handout)",
+      "publisher": "SK hynix / IEEE IEDM",
+      "date": "2023-12",
+      "source_type": "primary"
+    },
+    "formfactor_swtw2016_hbm_probing": {
+      "evidence_file": "evidence/hbm/formfactor_swtw2016_hbm_probing.pdf",
+      "url": "https://www.swtest.org/swtw_library/2016proc/PDF/S01_02_Loranger_SWTW2016.pdf",
+      "retrieved_utc": "2026-10-31T19:16:26Z",
+      "sha256": "de575d10c69ec7a70369829b4e5c81df5a6110e5c4929f73dcbea1fe10bcf7ab",
+      "title": "Verification of HBM through Direct Probing on MicroBumps (M. Loranger, SWTW 2016)",
+      "publisher": "FormFactor / SW Test Workshop",
+      "date": "2016-06",
+      "source_type": "primary"
+    },
+    "imaps_hbm_underfill_tsv_study": {
+      "evidence_file": "evidence/hbm/imaps_hbm_underfill_tsv_study.pdf",
+      "url": "https://imapsource.org/api/v1/articles/57356-a-study-on-the-effectiveness-of-underfill-in-the-high-bandwidth-memory-with-tsv.pdf",
+      "retrieved_utc": "2026-10-31T19:25:17Z",
+      "sha256": "300d4374a1b1033a106e65e8e65875a9a111e135c0ceaf0bfd49fa10cd402d62",
+      "title": "A Study on the Effectiveness of Underfill in the High Bandwidth Memory with TSV (W.-S. Lee et al., IMAPS 2013)",
+      "publisher": "IMAPS (authors from SK hynix)",
+      "date": "2013-10",
+      "source_type": "primary"
+    },
+    "samsung_12layer_3dtsv_2019": {
+      "evidence_file": "evidence/hbm/samsung_12layer_3dtsv_2019.html",
+      "url": "https://news.samsung.com/global/samsung-electronics-develops-industrys-first-12-layer-3d-tsv-chip-packaging-technology",
+      "retrieved_utc": "2026-10-31T19:28:18Z",
+      "sha256": "9467e2ccdf70dc1d745bc0309afc707def98cccfeef4d0a40f7190c3a6ea7a0e",
+      "title": "Samsung Electronics Develops Industry's First 12-Layer 3D-TSV Chip Packaging Technology",
+      "publisher": "Samsung Global Newsroom",
+      "date": "2019-10-07",
+      "source_type": "primary"
+    },
+    "skhynix_tsmc_hbm4_mou_2024": {
+      "evidence_file": "evidence/hbm/skhynix_tsmc_hbm4_mou_2024.html",
+      "url": "https://news.skhynix.com/en/sk-hynix-partners-with-tsmc-to-strengthen-hbm-technological-leadership/",
+      "retrieved_utc": "2026-10-31T19:24:07Z",
+      "sha256": "cf603aefb8216c20c0673e113fdc1752e94e2a55fb946ad51474ff72d94ece31",
+      "title": "SK hynix Partners with TSMC to Strengthen HBM Technological Leadership",
+      "publisher": "SK hynix Newsroom",
+      "date": "2024-04-19",
+      "source_type": "primary"
+    },
+    "tomshw_skhynix_hbm4_16hi": {
+      "evidence_file": "evidence/hbm/tomshw_skhynix_hbm4_16hi.html",
+      "url": "https://www.tomshardware.com/tech-industry/sk-hynix-shows-16-hi-hbm4-memory-for-ai-accelerators-48-gb-at-10-gt-s-over-a-2-048-interface",
+      "retrieved_utc": "2026-10-31T19:22:13Z",
+      "sha256": "fb225a97d01ac177556567a66639ce4e4fa4d756f657bcc7268313674c7a4e67",
+      "title": "SK hynix shows 16-Hi HBM4 memory for AI accelerators",
+      "publisher": "Tom's Hardware",
+      "date": "2026-01",
+      "source_type": "secondary"
+    },
+    "synopsys_hbm3_phy_page": {
+      "evidence_file": "evidence/hbm/synopsys_hbm3_phy_page.html",
+      "url": "https://www.synopsys.com/designware-ip/interface-ip/hbm/hbm3-phy.html",
+      "retrieved_utc": "2026-10-31T19:24:07Z",
+      "sha256": "0a3055efa7f89839aae57696018b0c985c61ce4fa3cbf426ad6e43bb370efe48",
+      "title": "HBM3 PHY IP (product page)",
+      "publisher": "Synopsys",
+      "date": "accessed 2026-10-31",
+      "source_type": "primary"
+    },
+    "rambus_hbm3e_controller_page": {
+      "evidence_file": "evidence/hbm/rambus_hbm3e_controller_page.html",
+      "url": "https://www.rambus.com/interface-ip/hbm/hbm3-controller/",
+      "retrieved_utc": "2026-10-31T19:24:07Z",
+      "sha256": "9b72644355120940620040db25407d16a918c6cc1ccbdb755c3ffb1b044e8b4c",
+      "title": "HBM3E Controller (product page)",
+      "publisher": "Rambus",
+      "date": "accessed 2026-10-31",
+      "source_type": "primary"
+    },
+    "cadence_hbm3_phy_page": {
+      "evidence_file": "evidence/hbm/cadence_hbm3_phy_page.html",
+      "url": "https://www.cadence.com/en_US/home/tools/silicon-solutions/design-ip/memory-interface-and-storage-ip/hbm-phy/hbm3.html",
+      "retrieved_utc": "2026-10-31T19:24:07Z",
+      "sha256": "e9982fef51733ababf7572fa2b62321a75121a9f9000fe1db7e9692b3fa82245",
+      "title": "HBM3 PHY (product page)",
+      "publisher": "Cadence",
+      "date": "accessed 2026-10-31",
+      "source_type": "primary"
+    },
+    "ucie_hc2023_electrical": {
+      "evidence_file": "evidence/hbm/ucie_hc2023_electrical.pdf",
+      "url": "https://www.hc2023.hotchips.org/assets/program/tutorials/ucie/Electrical%20Form%20Factor%20and%20Compliance.pdf",
+      "retrieved_utc": "2026-10-31T19:14:05Z",
+      "sha256": "64acd314723af2ecf0e7e9a0c616de47d114d5da94272fd24e304b953e8e17ce",
+      "title": "UCIe Electrical, Form Factor and Compliance (Hot Chips 2023 tutorial)",
+      "publisher": "UCIe Consortium / Hot Chips",
+      "date": "2023-08",
+      "source_type": "primary"
+    },
+    "ucie_buss25_dassharma": {
+      "evidence_file": "evidence/hbm/ucie_buss25_dassharma.pdf",
+      "url": "https://attend.ieee.org/buss/wp-content/uploads/sites/693/F08-DasSharma.pdf",
+      "retrieved_utc": "2026-10-31T19:14:04Z",
+      "sha256": "5353272432ce8bdebf85664477b36f5cfd0068e5a83ab54fcbb43f5d1628f2cb",
+      "title": "UCIe (D. Das Sharma), IEEE Build-Up Substrate Symposium BUSS'25",
+      "publisher": "Intel / UCIe Consortium / IEEE",
+      "date": "2025-05-08",
+      "source_type": "primary"
+    },
+    "broadcom_stratadnx_hbm_appnote": {
+      "evidence_file": "evidence/hbm/broadcom_stratadnx_hbm_appnote.pdf",
+      "url": "https://docs.broadcom.com/doc/StrataDNX-HBM-Configuration-and-Debugging-Guide-AN",
+      "retrieved_utc": "2026-10-31T19:16:27Z",
+      "sha256": "0fcc232a67452b2b5b5137d176648e3d5226770fd1db69bda9250b2052f42060",
+      "title": "StrataDNX HBM Configuration and Debugging Guide (DNX-HBM-AN101-PUB)",
+      "publisher": "Broadcom",
+      "date": "2021-12-10",
+      "source_type": "primary"
+    },
+    "tsmc_cowos_page": {
+      "evidence_file": "evidence/packaging/tsmc_cowos_page.html",
+      "url": "https://3dfabric.tsmc.com/english/dedicatedFoundry/technology/cowos.htm",
+      "retrieved_utc": "2026-10-31T19:09:42Z",
+      "sha256": "2347cc2285c093d48ee50f5ed0753958302a925866406575d97d5a41e7a2768d",
+      "title": "CoWoS (3DFabric technology page)",
+      "publisher": "TSMC",
+      "date": "accessed 2026-10-31",
+      "source_type": "primary"
+    },
+    "tsmc_soic_page": {
+      "evidence_file": "evidence/packaging/tsmc_soic_page.html",
+      "url": "https://3dfabric.tsmc.com/english/dedicatedFoundry/technology/SoIC.htm",
+      "retrieved_utc": "2026-10-31T19:09:43Z",
+      "sha256": "a2e706a4e161e2e6ec8be9a500ac5bf22f260d17bf105f3fb13481f34ad1d337",
+      "title": "TSMC-SoIC (3DFabric technology page)",
+      "publisher": "TSMC",
+      "date": "accessed 2026-10-31",
+      "source_type": "primary"
+    },
+    "tsmc_hotchips33_packaging_tutorial": {
+      "evidence_file": "evidence/packaging/tsmc_hotchips33_packaging_tutorial.pdf",
+      "url": "https://hc33.hotchips.org/assets/program/tutorials/2021%20HotChips%20TSMC%20Packaging%20Technologies%20for%20Chiplets%20and%203D_0819%20publish_public.pdf",
+      "retrieved_utc": "2026-10-31T19:09:43Z",
+      "sha256": "b9c11d1a52ed15ee888486202dee286456fc6299a54cd1504885bee32c28d113",
+      "title": "TSMC Packaging Technologies for Chiplets and 3D (Hot Chips 33 tutorial)",
+      "publisher": "TSMC / Hot Chips",
+      "date": "2021-08-19",
+      "source_type": "primary"
+    },
+    "xilinx_cpmt1104b": {
+      "evidence_file": "evidence/packaging/xilinx_cpmt1104b.pdf",
+      "url": "https://ewh.ieee.org/soc/cpmt/presentations/cpmt1104b.pdf",
+      "retrieved_utc": "2026-10-31T19:14:06Z",
+      "sha256": "255b5bcf0c8676cfd011981934d6c4105b69bb31a18f7a528696da414f0e84e9",
+      "title": "Stacked Silicon Interconnect Technology (Xilinx; IEEE CPMT chapter presentation)",
+      "publisher": "Xilinx / IEEE CPMT",
+      "date": "2011-04-28",
+      "source_type": "primary"
+    },
+    "xilinx_wp380": {
+      "evidence_file": "evidence/packaging/xilinx_wp380.pdf",
+      "url": "https://docs.amd.com/api/khub/documents/jcXzYXzAZP1LXWncl0_Oig/content",
+      "retrieved_utc": "2026-10-31T19:14:05Z",
+      "sha256": "876f5a40ca727a93d985b726eea482dc592b3b5a96a2d88cc5df59bb03bde867",
+      "title": "Xilinx Stacked Silicon Interconnect Technology Delivers Breakthrough FPGA Capacity, Bandwidth, and Power Efficiency (WP380)",
+      "publisher": "Xilinx / AMD",
+      "date": "2012",
+      "source_type": "primary"
+    },
+    "amkor_fcbga_ds831": {
+      "evidence_file": "evidence/packaging/amkor_fcbga_ds831.pdf",
+      "url": "https://amkor.com/wp-content/uploads/2018/02/FCBGA_DS831.pdf",
+      "retrieved_utc": "2026-10-31T19:14:04Z",
+      "sha256": "e38280726a8b1749e9dc07fd1f7edea06489f62545e5605948716211dc3d92ad",
+      "title": "Flip Chip BGA (FCBGA) data sheet DS831",
+      "publisher": "Amkor Technology",
+      "date": "accessed 2026-10-31",
+      "source_type": "primary"
+    },
+    "amkor_flipchip_ts102": {
+      "evidence_file": "evidence/packaging/amkor_flipchip_ts102.pdf",
+      "url": "https://amkormarcomexternal.blob.core.windows.net/amkordotcom/wp-content/uploads/2018/02/Flip_Chip_TS102.pdf",
+      "retrieved_utc": "2026-10-31T19:14:05Z",
+      "sha256": "27cc1df55d58ecf9316fccffe7db97325d75e0587f0019411d92e731a47a99f3",
+      "title": "Flip Chip Packaging technology sheet TS102",
+      "publisher": "Amkor Technology",
+      "date": "accessed 2026-10-31",
+      "source_type": "primary"
+    },
+    "kyocera_fcbga_organic_substrates": {
+      "evidence_file": "evidence/packaging/kyocera_fcbga_organic_substrates.pdf",
+      "url": "https://sweden.kyocera.com/uploads/eu/DB_SC_FCBGA_organic_substrates_A4_2024_web.pdf",
+      "retrieved_utc": "2026-10-31T19:25:19Z",
+      "sha256": "21c29e2e204946a30c6409c8967802bd134841f8a1cdb80cb72acadf3a03b53d",
+      "title": "Package Substrate Solutions - FCBGA Technology (roadmap)",
+      "publisher": "Kyocera Europe",
+      "date": "2024",
+      "source_type": "primary"
+    },
+    "intel_qr_vol6_adv_packaging": {
+      "evidence_file": "evidence/packaging/intel_qr_vol6_adv_packaging.pdf",
+      "url": "https://cdrdv2-public.intel.com/826148/Volume%206%20Intel%20Advanced%20Packaging%20Technology.pdf",
+      "retrieved_utc": "2026-10-31T19:28:18Z",
+      "sha256": "420599cdface05250f356c1fa7c37c3f6c2b85864427751734e10f2e58fd71ba",
+      "title": "Quality & Reliability Vol. 6: Intel Advanced Packaging Technology",
+      "publisher": "Intel",
+      "date": "accessed 2026-10-31",
+      "source_type": "primary"
+    },
+    "tsmc_patent_us20200381391_cowos": {
+      "evidence_file": "evidence/packaging/tsmc_patent_us20200381391_cowos.html",
+      "url": "https://patents.google.com/patent/US20200381391A1/en",
+      "retrieved_utc": "2026-10-31T19:24:07Z",
+      "sha256": "85fd16686742533571d742d1a364d11dd0e05a7768c52aa11288a4bb9007d47f",
+      "title": "US20200381391A1 CoWoS Structures and Methods Forming Same (Google Patents)",
+      "publisher": "TSMC (assignee)",
+      "date": "2020",
+      "source_type": "primary"
+    },
+    "google_patent_us10083920_stiffener": {
+      "evidence_file": "evidence/packaging/google_patent_us10083920_stiffener.html",
+      "url": "https://patents.google.com/patent/US10083920B1/en",
+      "retrieved_utc": "2026-10-31T19:20:39Z",
+      "sha256": "7efce1a6268d27bb27f736c6ea60116279d1d055672e0ccfebc8007169a63003",
+      "title": "US10083920B1 Package stiffener for protecting semiconductor die (Google Patents)",
+      "publisher": "Google LLC (assignee)",
+      "date": "2018",
+      "source_type": "primary"
+    },
+    "vicor_vpd_genai_article": {
+      "evidence_file": "evidence/packaging/vicor_vpd_genai_article.html",
+      "url": "https://www.vicorpower.com/resource-library/articles/high-performance-computing/modules-mitigate-the-environmental-impact-of-genai",
+      "retrieved_utc": "2026-10-31T19:20:39Z",
+      "sha256": "e5e860e6724b5b37f9abc86f21fd908c1e72c6bbd21ebdce16173f8605f0911b",
+      "title": "High-Current-Density Power Modules Mitigate the Environmental Impact of Power-Intensive GenAI",
+      "publisher": "Vicor",
+      "date": "accessed 2026-10-31",
+      "source_type": "primary"
+    },
+    "mediaupdate_iedm2019_part2": {
+      "evidence_file": "evidence/packaging/mediaupdate_iedm2019_part2.html",
+      "url": "https://mediaupdate2019.wordpress.com/2019/12/31/iedm2019-part2-3d-packaging-innovation-and-memory-technology-ferroelectrics/",
+      "retrieved_utc": "2026-10-31T19:33:05Z",
+      "sha256": "19a169c271b5f4083837202aea3ebb731b5a041673381f11b4d8caff3e1f99cc",
+      "title": "IEDM 2019 (Part 2): 3D Packaging Innovation and Memory Technology (blog report of TSMC iCap paper)",
+      "publisher": "mediaupdate2019 (blog)",
+      "date": "2019-12-31",
+      "source_type": "secondary"
+    },
+    "tomshw_abf_substrates_2026": {
+      "evidence_file": "evidence/packaging/tomshw_abf_substrates_2026.html",
+      "url": "https://www.tomshardware.com/tech-industry/semiconductors/the-state-of-abf-substrates-in-data-center-silicon-in-2026-solving-the-supply-crunch-and-material-wall-beneath-every-ai-accelerator",
+      "retrieved_utc": "2026-10-31T19:20:39Z",
+      "sha256": "8d8612f6c2b04db79abce0b8fb110f89f690b4f9ee59d1e671f94de4034836f9",
+      "title": "The state of ABF substrates in data center silicon in 2026",
+      "publisher": "Tom's Hardware",
+      "date": "2026",
+      "source_type": "secondary"
+    },
+    "microchip_fcbga196_c04_25015": {
+      "evidence_file": "evidence/packaging/microchip_fcbga196_c04_25015.pdf",
+      "url": "https://ww1.microchip.com/downloads/aemDocuments/documents/package-outline-drawings/c04-25015a.pdf",
+      "retrieved_utc": "2026-10-31T19:35:51Z",
+      "sha256": "79eaace1d089fe00db80c9326614a3a60e0e2026d4397f790369fc6c2aca3888",
+      "title": "196-Ball FCBGA 15x15x1.4 mm package drawing C04-25015 Rev A",
+      "publisher": "Microchip Technology",
+      "date": "2021",
+      "source_type": "primary"
+    },
+    "renesas_alg784_fcbga_29mm": {
+      "evidence_file": "evidence/packaging/renesas_alg784_fcbga_29mm.pdf",
+      "url": "https://www.renesas.com/en/document/psc/alg-784-package-outline-fcbga-290-x-290mm-body-100-mm-ballpitch-fcbga",
+      "retrieved_utc": "2026-10-31T19:35:52Z",
+      "sha256": "93ecbbc52a3818ceb3d19bf7d80d38fadfed63dd730c8510fbe46bbc87456cf1",
+      "title": "ALG 784 package outline, FCBGA 29.0 x 29.0 mm body, 1.00 mm ball pitch (flat lid), PSC-4627",
+      "publisher": "IDT / Renesas",
+      "date": "2015-11-18",
+      "source_type": "primary"
+    },
+    "imaps_xilinx_thermal_tsv_interposer": {
+      "evidence_file": "evidence/thermal/imaps_xilinx_thermal_tsv_interposer.pdf",
+      "url": "https://imapsource.org/api/v1/articles/56953-advanced-thermal-study-of-very-high-power-tsv-interposer-and-interconnects-for-28nm-technology-fpga.pdf",
+      "retrieved_utc": "2026-10-31T19:14:04Z",
+      "sha256": "2048f6a2a9d1eaf9980d1f9d802e863de08d9574d881f280899086e8924dcd78",
+      "title": "Advanced Thermal Study of Very High Power TSV Interposer and Interconnects for 28nm Technology FPGA (B. Banijamali, S. Ramalingam, R. Chaware; IMAPS 2011)",
+      "publisher": "Xilinx / IMAPS",
+      "date": "2011-10",
+      "source_type": "primary"
+    },
+    "tap25d_date2021": {
+      "title": "TAP-2.5D: A Thermally-Aware Chiplet Placement Methodology for 2.5D Systems (Y. Ma et al., DATE 2021)",
+      "publisher": "Boston University / DATE",
+      "date": "2021",
+      "source_type": "primary"
+    },
+    "hotspot60_tr_https": {
+      "evidence_file": "evidence/thermal/hotspot60_tr_https.pdf",
+      "url": "https://www.cs.virginia.edu/~skadron/Papers/HotSpot60_TR.pdf",
+      "retrieved_utc": "2026-10-31T19:10:10Z",
+      "sha256": "e3ca1b312f8e57a186e2dd6946f9f836af9d19a5facc27d5e42a7026475403c4",
+      "title": "HotSpot 6.0: Validation, Acceleration and Extension (R. Zhang, M. Stan, K. Skadron; UVA TR CS-2015-04)",
+      "publisher": "University of Virginia",
+      "date": "2015",
+      "source_type": "primary"
+    },
+    "ecool_si_thermal_conductivity_1998": {
+      "evidence_file": "evidence/thermal/ecool_si_thermal_conductivity_1998.html",
+      "url": "https://www.electronics-cooling.com/1998/05/the-thermal-conductivity-of-silicon/",
+      "retrieved_utc": "2026-10-31T19:20:40Z",
+      "sha256": "e907bcdc7f58c275c71cc6832af238581c40bf9f4446cf81ad8304cd47e420eb",
+      "title": "The thermal conductivity of silicon",
+      "publisher": "Electronics Cooling magazine",
+      "date": "1998-05",
+      "source_type": "secondary"
+    },
+    "ioffe_si_thermal_http": {
+      "evidence_file": "evidence/thermal/ioffe_si_thermal_http.html",
+      "url": "http://www.ioffe.ru/SVA/NSM/Semicond/Si/thermal.html",
+      "retrieved_utc": "2026-10-31T19:19:19Z",
+      "sha256": "e87101fb40e1036ff5d91eb8d41696a7529902b2e7eb50cfc5666e52e01a27bd",
+      "title": "Thermal properties of Silicon (Si), NSM Archive",
+      "publisher": "Ioffe Institute",
+      "date": "accessed 2026-10-31",
+      "source_type": "primary"
+    },
+    "indium_tim_products_page": {
+      "evidence_file": "evidence/thermal/indium_tim_products_page.html",
+      "url": "https://www.indium.com/products/thermal-interface-materials/",
+      "retrieved_utc": "2026-10-31T19:19:08Z",
+      "sha256": "e66cdae9098524ba2f80c38f758e9a890e87a513fe0c3dd14292c511dea8a470",
+      "title": "Thermal Interface Materials (product page)",
+      "publisher": "Indium Corporation",
+      "date": "accessed 2026-10-31",
+      "source_type": "primary"
+    },
+    "solstice_ptm7950_tds": {
+      "evidence_file": "evidence/thermal/solstice_ptm7950_tds.pdf",
+      "url": "https://prod-edam.solstice.com/content/dam/honeywell-edam/pmt/oneam/en-us/electronic-materials/thermal-interface-materials/documents/100600-esm-tds-ptm7950-pcm-ltr-en.pdf",
+      "retrieved_utc": "2026-10-31T19:22:13Z",
+      "sha256": "15687e0574dc427a6b8fef49a6d9477f73356fae744fcdef17f12267d2d023ed",
+      "title": "PTM7950 Phase Change Material technical data sheet",
+      "publisher": "Solstice Advanced Materials (formerly Honeywell)",
+      "date": "accessed 2026-10-31",
+      "source_type": "primary"
+    },
+    "krayden_uf8807": {
+      "evidence_file": "evidence/thermal/krayden_uf8807.html",
+      "url": "https://www.krayden.com/products/eccobond-uf8807",
+      "retrieved_utc": "2026-10-31T19:19:09Z",
+      "sha256": "a879f8cd009cf1c27b233ff4550dcb209b1dce985e080824ede3210dcf470920",
+      "title": "LOCTITE ECCOBOND UF 8807 (distributor product page)",
+      "publisher": "Krayden / CAPLINQ (Henkel product)",
+      "date": "accessed 2026-10-31",
+      "source_type": "secondary"
+    },
+    "sumikon_g700l": {
+      "evidence_file": "evidence/thermal/sumikon_g700l.pdf",
+      "url": "https://www.mirrorsemi.com/pdf/G700L.pdf",
+      "retrieved_utc": "2026-10-31T19:19:08Z",
+      "sha256": "5b6f785b7824958b34c546b6da04e5eb65df9da965cc627c4831d175f0dbe446",
+      "title": "SUMIKON EME-G700LA Type L typical properties",
+      "publisher": "Sumitomo Bakelite (mirrored by mirrorsemi.com)",
+      "date": "accessed 2026-10-31",
+      "source_type": "primary"
+    },
+    "solderconnection_sac305": {
+      "evidence_file": "evidence/thermal/solderconnection_sac305.html",
+      "url": "https://www.solderconnection.com/product/puralloy-sac305-lead-free-solid-feed-wire/",
+      "retrieved_utc": "2026-10-31T19:22:14Z",
+      "sha256": "33a05b4f51076c511dd3b0b6dce6695a6f5ec5cfd74e1a298feb9c1cefde71d1",
+      "title": "PURALLOY SAC305 lead-free solid feed wire (product page)",
+      "publisher": "Solder Connection",
+      "date": "accessed 2026-10-31",
+      "source_type": "primary"
+    },
+    "ucla_embedded_isolators_2p5d": {
+      "evidence_file": "evidence/thermal/ucla_embedded_isolators_2p5d.pdf",
+      "url": "https://nanocad.ee.ucla.edu/wp-content/papercite-data/pdf/j84.pdf",
+      "retrieved_utc": "2026-10-31T19:16:27Z",
+      "sha256": "dd54c0e1a499e455ddd0a2f336d7c6c4581ce0a6ed39b65c8e2f42c519bfe514",
+      "title": "Optimizing Thermal Performance in 2.5D Systems Using Embedded Isolators (G. Karfakis et al., UCLA / Georgia Tech; author-hosted)",
+      "publisher": "UCLA NanoCAD",
+      "date": "2025",
+      "source_type": "primary"
+    },
+    "itherm2024_dual_sided_bspdn": {
+      "evidence_file": "evidence/thermal/itherm2024_dual_sided_bspdn.pdf",
+      "url": "https://s-pack.org/wp-content/uploads/2024/07/ITherm-2024-Feifan_Xie-revised_version.pdf",
+      "retrieved_utc": "2026-10-31T19:16:29Z",
+      "sha256": "90a215de76f95ac167542623804dbdf1a1ea73b2a375f21aee7c3461cfa85f26",
+      "title": "Thermal Analysis of Dual-sided Cooling for Backside Power Delivery Networks on 2.5D Glass/Silicon Interposer Package (F. Xie, S. Lyu, T. Wei; ITherm 2024, author-hosted revised version)",
+      "publisher": "Purdue University / IEEE ITherm",
+      "date": "2024",
+      "source_type": "primary"
+    },
+    "ieee_spectrum_hbm_on_gpu_imec": {
+      "evidence_file": "evidence/thermal/ieee_spectrum_hbm_on_gpu_imec.html",
+      "url": "https://spectrum.ieee.org/hbm-on-gpu-imec-iedm",
+      "retrieved_utc": "2026-10-31T19:16:26Z",
+      "sha256": "61bd7904936ef1b38ef16215028df2ff5777d44d7337d4171664edbc70fd8f8a",
+      "title": "HBM on GPU: Thermal Challenges and Solutions (reporting imec, IEDM 2025)",
+      "publisher": "IEEE Spectrum",
+      "date": "2026",
+      "source_type": "secondary"
+    },
+    "vertiv_coolant_temp_roadmap": {
+      "evidence_file": "evidence/thermal/vertiv_coolant_temp_roadmap.html",
+      "url": "https://www.vertiv.com/en-us/insights/articles/blog-posts/a-roadmap-for-the-future-chip-coolant-temperature/",
+      "retrieved_utc": "2026-10-31T19:16:27Z",
+      "sha256": "e8fdaefbbf81f524c174ba847805bc4bc9f3bca48ffa7a793ac4745848034a31",
+      "title": "Keep it at 30C: A roadmap for the future chip coolant temperature (blog)",
+      "publisher": "Vertiv",
+      "date": "2026",
+      "source_type": "secondary"
+    },
+    "iceotope_1000w_whitepaper": {
+      "evidence_file": "evidence/thermal/iceotope_1000w_whitepaper.html",
+      "url": "https://www.iceotope.com/company/resources/chip-cooling-1000w-beyond",
+      "retrieved_utc": "2026-10-31T19:24:07Z",
+      "sha256": "1c731361008f77729a6b0d1971df3b9700208ec20ec65a15952f63768ac491d1",
+      "title": "Chip cooling at 1000W and beyond (whitepaper page)",
+      "publisher": "Iceotope",
+      "date": "accessed 2026-10-31",
+      "source_type": "primary"
+    },
+    "ocp_oai_liquid_cooling_guidelines": {
+      "evidence_file": "evidence/thermal/ocp_oai_liquid_cooling_guidelines.pdf",
+      "url": "https://www.opencompute.org/documents/oai-system-liquid-cooling-guidelines-in-ocp-template-mar-3-2023-update-pdf/",
+      "retrieved_utc": "2026-10-31T19:24:07Z",
+      "sha256": "531d457d34a0a1aad82468cbbcb7ba0a1e21f74c5a0b101da42a3dc8ee748f52",
+      "title": "OAI System Liquid Cooling Guidelines (Mar 2023 update)",
+      "publisher": "Open Compute Project",
+      "date": "2023-03-03",
+      "source_type": "primary"
+    },
+    "ecool_lidded_vs_bare_die_2012": {
+      "evidence_file": "evidence/thermal/ecool_lidded_vs_bare_die_2012.html",
+      "url": "https://www.electronics-cooling.com/2012/06/lidded-versus-bare-die-flip-chip-package-impact-on-thermal-performance/",
+      "retrieved_utc": "2026-10-31T19:20:40Z",
+      "sha256": "b84a1e6883e4660abb0b9150367eeb15504a4a7b9e2b4f6654d1f9aefb900ac4",
+      "title": "Lidded Versus Bare Die Flip Chip Package: Impact on Thermal Performance",
+      "publisher": "Electronics Cooling magazine",
+      "date": "2012-06",
+      "source_type": "secondary"
+    },
+    "huawei_hc31_davinci_slides": {
+      "evidence_file": "evidence/products/huawei_hc31_davinci_slides.pdf",
+      "url": "https://www.old.hotchips.org/hc31/HC31_1.11_Huawei.Davinci.HengLiao_v4.0.pdf",
+      "retrieved_utc": "2026-10-31T19:09:43Z",
+      "sha256": "c9fc6953008d96deface0b66a416cb574672131066a097d625b9f1794aa918b6",
+      "title": "DaVinci: A Scalable Architecture for Neural Network Computing (Heng Liao, Hot Chips 31)",
+      "publisher": "Huawei / Hot Chips",
+      "date": "2019-08",
+      "source_type": "primary"
+    },
+    "sth_ascend910_hc31": {
+      "evidence_file": "evidence/products/sth_ascend910_hc31.html",
+      "url": "https://www.servethehome.com/huawei-ascend-910-provides-a-nvidia-ai-training-alternative/",
+      "retrieved_utc": "2026-10-31T19:09:43Z",
+      "sha256": "3ef5c9e7b2f1a5a58b04c84aac26ade2100b1fcb0550adb762178c5eb9ff4a83",
+      "title": "Huawei Ascend 910 Provides a NVIDIA AI Training Alternative",
+      "publisher": "ServeTheHome",
+      "date": "2019-08",
+      "source_type": "secondary"
+    },
+    "nvidia_h100_whitepaper_v102": {
+      "evidence_file": "evidence/products/nvidia_h100_whitepaper_v102.pdf",
+      "url": "https://www.hpctech.co.jp/assets/images/info/catalog/pdf/gtc22-whitepaper-hopper_v1.02.pdf",
+      "retrieved_utc": "2026-10-31T19:12:27Z",
+      "sha256": "2023ed533a66ea61ce9c8e84ff621c7ac595fd8d87c1a7aedf9bccd872fe6458",
+      "title": "NVIDIA H100 Tensor Core GPU Architecture whitepaper v1.02 (NVIDIA document; third-party mirror)",
+      "publisher": "NVIDIA",
+      "date": "2022",
+      "source_type": "primary"
+    },
+    "nvidia_h100_datasheet": {
+      "evidence_file": "evidence/products/nvidia_h100_datasheet.pdf",
+      "url": "https://www.megware.com/fileadmin/user_upload/LandingPage%20NVIDIA/nvidia-h100-datasheet.pdf",
+      "retrieved_utc": "2026-10-31T19:12:25Z",
+      "sha256": "e636e226f957b4540715f4def7fb3ca933098569c037fd8b348756997b1f444b",
+      "title": "NVIDIA H100 Tensor Core GPU datasheet (NVIDIA document; third-party mirror)",
+      "publisher": "NVIDIA",
+      "date": "2023",
+      "source_type": "primary"
+    },
+    "nvidia_blackwell_arch_page": {
+      "evidence_file": "evidence/products/nvidia_blackwell_arch_page.html",
+      "url": "https://www.nvidia.com/en-us/data-center/technologies/blackwell-architecture/",
+      "retrieved_utc": "2026-10-31T19:14:04Z",
+      "sha256": "9e555b398cd24da846db97a4f74344f6f3da4f9ccae6a89fcbec4c7c392cd529",
+      "title": "NVIDIA Blackwell Architecture (technology page)",
+      "publisher": "NVIDIA",
+      "date": "accessed 2026-10-31",
+      "source_type": "primary"
+    },
+    "nvidia_blackwell_ultra_blog": {
+      "evidence_file": "evidence/products/nvidia_blackwell_ultra_blog.html",
+      "url": "https://developer.nvidia.com/blog/inside-nvidia-blackwell-ultra-the-chip-powering-the-ai-factory-era/",
+      "retrieved_utc": "2026-10-31T19:14:05Z",
+      "sha256": "b77b0fe6ed2c37b267b50fb11682c78979747a21e354ff7d003987399ab01b5e",
+      "title": "Inside NVIDIA Blackwell Ultra: The Chip Powering the AI Factory Era",
+      "publisher": "NVIDIA Technical Blog",
+      "date": "2025",
+      "source_type": "primary"
+    },
+    "amd_cdna3_whitepaper": {
+      "evidence_file": "evidence/products/amd_cdna3_whitepaper.pdf",
+      "url": "https://www.amd.com/content/dam/amd/en/documents/instinct-tech-docs/white-papers/amd-cdna-3-white-paper.pdf",
+      "retrieved_utc": "2026-10-31T19:12:24Z",
+      "sha256": "a0811d04f101f9127bd183d6e228f462b6fd988b0e0e6d263a25e4bed712f593",
+      "title": "AMD CDNA 3 Architecture white paper",
+      "publisher": "AMD",
+      "date": "2024-2025",
+      "source_type": "primary"
+    },
+    "amd_hc2024_mi300x": {
+      "evidence_file": "evidence/products/amd_hc2024_mi300x.pdf",
+      "url": "https://hc2024.hotchips.org/assets/program/conference/day1/23_HC2024.AMD.MI300X.ASmith(MI300X).v1.Final.20240817.pdf",
+      "retrieved_utc": "2026-10-31T19:12:25Z",
+      "sha256": "795e9f2b7fd0d541967c3dbe4293123f05a89c3e4f2e101608b1f97d13180d61",
+      "title": "AMD Instinct MI300X Generative AI Accelerator and Platform Architecture (A. Smith, Hot Chips 2024)",
+      "publisher": "AMD / Hot Chips",
+      "date": "2024-08",
+      "source_type": "primary"
+    }
+  }
+}

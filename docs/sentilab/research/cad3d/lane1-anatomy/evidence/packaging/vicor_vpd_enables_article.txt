@@ -1,0 +1,286 @@
+Vertical Power Delivery Enables Cutting-Edge Processing | Vicor
+
+Skip to
+ main content
+
+ Site Search
+
+ Products
+
+ DC-DC Isolated Regulated
+
+ DCM DC-DC Converters
+
+ PRM and VTM Factorized Power
+
+ Maxi, Mini, Micro DC-DC Converters
+
+ VI-200/VI‑J00 DC-DC Converters
+
+ DC-DC Isolated Fixed Ratio
+
+ BCM Bus Converters
+
+ VTM Current Multipliers
+
+ DC-DC Non-Isolated Regulated
+
+ DCM DC-DC Converters
+
+ PRM Regulators
+
+ ZVS Buck Regulators
+
+ ZVS Buck-Boost Regulators
+
+ DC-DC Non-Isolated Fixed Ratio
+
+ NBM Bus Converters
+
+ By Specialty Application
+
+ MIL-COTS AC-DC
+
+ MIL-COTS DC-DC and Filters
+
+ MIL-COTS VPX Systems
+
+ AI and Data Centers
+
+ Automotive
+
+ MEO/LEO Satellite
+
+ By Conversion Stage
+
+ High Voltage to 48V
+
+ 48V to Point of Load
+
+ 48V/12V Compatibility
+
+ Other Products
+
+ AC-DC Converters
+
+ AC-DC Input Modules
+
+ Custom Aerospace and Defense
+
+ Custom Commercial
+
+ Filters
+
+ Accessories
+
+The Vicor modular approach to power provides flexible, scalable, high-performance power solutions
+
+ Applications
+
+ All Applications
+
+ AI and Data Centers
+
+ Automotive
+
+ Battery Lifecycle
+
+ Defense and Aerospace
+
+ eMobility
+
+ Rail
+
+ Robotics
+
+ Satellite/Space
+
+ Test and Measurement
+
+ UAVs
+
+Get the free eBook: Accelerate your move to a high performance 48V power delivery network
+
+Powering innovation: Explore how our customers are changing the world with their technologies 
+
+The Vicor 48V power module ecosystem: solutions for the entire power delivery network
+
+ IP LicensingIP Licensing
+
+ Design & Support
+
+ Resource Library
+
+ Application Notes
+
+ Articles
+
+ eBooks
+
+ Case Studies
+
+ On-demand Webinars
+
+ Podcasts
+
+ Tech Videos
+
+ Videos
+
+ White Papers
+
+ Design Tools
+
+ Calculators
+
+ Design Guides/Manuals
+
+ Power System Configurator
+
+ Power System Designer
+
+ Simulators
+
+ Tutorials
+
+ User Guides
+
+ Whiteboard
+
+ Quality Center
+
+ Environmental Compliance
+
+ Product Change Notices
+
+ Reliability Data
+
+ Get Support
+
+Tech Videos: Learn practical design strategies to reduce losses and optimize your next power system design
+
+ Account
+
+ Home
+
+ Resource Library
+
+ Vertical power delivery enables cutting-edge processing
+
+Power Electronic Tips Article
+
+Vertical power delivery enables cutting-edge processing
+
+To meet that perpetual need for HPC demands innovation and the ability to adapt and scale for tomorrow using modular power. The Vicor architectures are flexible enough to be adapted in a wide variety of high-performance computing scenarios. Leveraging an FPA, Vicor minimizes the “last inch” resistances by combining lateral power delivery and vertical power delivery.
+
+By Ajith Jain, VP of WW Computing, Communication and Consumer BU
+
+High-performance artificial intelligence (AI) processor power levels continue to rise and core voltages are declining with advanced process nodes. These developments are challenging power system designers with managing ever-rising power delivery network (PDN) impedance voltage drops, voltage gradients across high-current, low-voltage processor power pins, transient performance specifications and power loss.
+
+Figure 1: The dramatic increase in current requirements arising from reduced transistor geometry and core voltages.
+
+Consider the case of clustered computing, where tightly packed arrays of processors boost the speed and performance of machine learning. PDN complexity rises significantly as current delivery must take place vertically from underneath the array. Designing a PDN using the Vicor Factorized Power Architecture (FPA™) with current multipliers at the point-of-load, instead of legacy voltage averaging techniques, allows a significant step up in performance. This is thanks to the qualities of point-of-load (PoL) power components: high current density, reduced component count and importantly, flexible placement. PoL power components thus enable the delivery of current laterally and/or vertically to AI processor core(s) and memory rails, significantly minimizing PDN impedances.
+
+Modern-day GPUs have tens of billions of transistors. Better processor performance comes at the price of exponentially rising power demands. In most cases, power delivery is now the limiting factor in computing performance. Power delivery entails not just the distribution of power but also the efficiency, size, cost and thermal performance.
+
+Figure 2: Architecture of a typical high-performance processor PDN.
+
+Peak current demands of up to 2,000A are now a typical requirement. In response, some xPU companies are evaluating multi-rail options where the main core power rails are split into five or more lower-current power inputs. The PDN for each of these rails must still deliver a high current while also undergoing individual tight regulation, which puts pressure on the density of the PDN and its physical location on the accelerator card.
+
+To further add to this complexity, the highly dynamic nature of machine learning workloads result in high di/dt transients lasting several microseconds. These transients create stress across the PDN of a high-performance processor module or accelerator card.
+
+The work by the Open Compute Project (OCP) consortium has helped establish a framework of standards for designing rack- and card-based processor developments. The Open Rack Standard V2.2 defines a 48V server backplane and a 48V operating voltage for open accelerator modules (OAMs) used predominately for AI and machine learning workloads. To maintain compatibility with legacy 12V systems, the standard stipulates the ability to meet 12-to-48V and 48-to-12V requirements.
+
+The technical advances just highlighted focus on the downward trend of voltage scaling, the requirement for tight core voltage tolerance and the upward trend of current consumption. At the board level, the impact of these factors manifests in multiple ways.
+
+The peak current densities encountered are extreme for any PCB. The task of routing power paths capable of handling these huge loads demands careful attention. Highly dynamic workloads can create spiking voltage transients, which sophisticated processors find disruptive and potentially damaging. Yet, a processor board has hundreds of other passive components, memory and other ICs essential to its operation that also need placement.
+
+Then there are the I2R losses. Power path trace lengths must be short, so the power conversion modules should be close to the processor. The processor load currents and localized thermal gradients of the processor can also flex the PCB, forcing use of board stiffeners. Additionally, the converter’s power efficiency specification should be as high as possible to help mitigate thermal management challenges.
+
+Factorized Power Architecture
+
+Figure 3: Factorized Power Architecture (FPA) factorizes the power into dedicated regulation and transformation functions. both these functions can be optimized and deployed individually to provide high density and high efficiency.
+
+New ideas, architectures, topologies and technologies provide a path to a more reliable, scalable PDN. The Vicor Factorized Power Architecture (FPA) is the foundation for delivering more efficient power for today’s unprecedented high-performance computing demands.
+
+The Vicor FPA divides the task of a power converter into the dedicated functions of regulation and transformation. Separating the two functions allows both to be optimized individually to foster high efficiency and high density. FPA in conjunction with the Sine Amplitude Converter (SAC) topology underpins several innovative power architectures that can help unleash today’s high-performance processors.
+
+Figure 4: Leveraging FPA, Vicor minimizes the “last inch” resistances via lateral power delivery (LPD) and vertical power delivery (VPDd). In LPD, two current multipliers (Vicor VTM modules) flank the north and south side or the east and west side of the processor. This technique is preferable for load currents of ~800 ª at 0.8 V nominal with an associated 70 µΩ of PDN at 100°c. Using these numbers, we can compute ~45 W of power loss. A heat sink covering both the 2.8-mm-tall current multipliers and the processor could help dissipate heat. Click image to enlarge.
+
+Lateral power delivery is an innovative technique where the two current multipliers (Vicor VTM™ modules) flank the north and south side or the east and west side of the processor. This technique is preferable for load currents of ~800A at 0.8V nominal with an associated 70µΩ of PDN at 100°C. This architecture is excellent for powering graphics accelerator cards (OAM or otherwise), networking ASICs and APUs used in hyperscale data centers or supercomputer cabinets.
+
+The Lateral-vertical power delivery technique resembles lateral power delivery but with this difference: Only 70% of the power is delivered laterally using the current multipliers that flank the sides of the processor. An additional current multiplier on the bottom side of the processor delivers the remaining 30% of the load current directly to the processor BGA. The hybrid of lateral and vertical reduces PDN loss by almost a factor of four! This technique also frees board space to accommodate a second high-current rail (aux) or HBM memory rails on the top side of the board around the processor.
+
+Vertical-lateral power delivery, on the other hand, pushes >50% of the load current through additional current multipliers on the bottom side of the processor. This technique enables a further halving of PDN loss compared to the lateral-vertical approach. A 1,200A design can now realize a PDN resistance of a mere 10 µΩ, resulting in fewer than 14.4W of power loss. In this case, heat sinks can cool both the top and bottom sides of the load as space permits. This architecture is especially effective for applications that must accommodate high-speed signal routing from the periphery of the ASIC on the top side of the board and thus cannot afford to host power components there. Examples are CPO, NPO and networking / broadband communication devices.
+
+Vertical power delivery is the ultimate way of delivering high current at low processor core voltages with the lowest PDN resistance. In this case, current multipliers and bypass capacitors are stacked on each other to form an integrated power module (geared current multiplier) that can mount directly underneath the processor by displacing the bypass capacitor bank. Vicor GCMs are custom-built devices that map the current multiplier pinouts to the AI processor BGA and in addition, can provide all the bypass capacitor needs within the module itself. This technique opens up the top floor of the PCB for high-speed signal routing from the periphery of the processor. Applications such as CPO (co-packaged optics, networking processors) and high-speed signaling ASICs can take advantage of this power delivery technique.
+
+The Vicor architectures are flexible enough to be adapted in a wide variety of high-performance computing scenarios. Vicor architectures can reduce motherboard resistances up to 50x and processing power pin count more than 10x. Leveraging an FPA, Vicor minimizes the “last inch” resistances by combining lateral power delivery (LPD) and vertical power delivery (VPD). All enable processors to hit previously unattainable performance levels to support exponentially growing HPC processing demands.
+
+The FPA architectures are unmatched in current density and in reducing power losses across the PDN. The propriety architectures, topologies and small module size are unique in the power industry. Next-generation processors will need power architectures able to adapt, scale and deliver high-density power. Robust, reliable power modules in conjunction with innovative topologies are essential in a dynamic systems where power requirements change rapidly. To meet that perpetual need demands innovation and the ability to adapt and scale for tomorrow using modular power.
+
+This article was originally published by Power Electronic Tips.
+
+Mr. Jain has served as our Vice President, High Performance Computing, since September 2011. Prior to joining the Corporation, Mr. Jain was employed by Semtech Corporation as their Director of marketing power business unit from 2009 to 2011. Mr. Jain served in various positions with National Semiconductor corp., a manufacturer of power converters, mixed signal and networking integrated circuits in different countries such as India, Hong Kong and most recently in the USA as Strategic Marketing for the power management group. Mr. Jain received a B.S.E.E. from the University of Karnataka, India and a business management degree from the Berkeley HAAS School of business CA USA.
+
+VP of WW Computing, Communication and Consumer BU
+
+Related content
+
+Vicor vertical power delivery: The highest compute density and PUE performance
+
+Resources
+
+Resources for the design engineer
+
+ Video
+
+Power Corner: Vicor’s Maury Wood on vertical power delivery for AI data centers
+
+Vicor’s 48V Factorized Power ArchitectureTM uses vertical power delivery to cut I2R ...
+
+ Partner podcast
+
+Powering AI at scale
+
+Maury Wood appears on Electronic Specifier podcast explaining the challenges of powering AI and unveiling the trends toward wafer-scale processors
+
+ Article
+
+Current gain and current density essential to power AI today: Patrizio Vinciarelli interview
+
+Patrizio Vinciarelli, CEO of Vicor shares insights on powering AI today and its extraordinary current demands and the need to easily scale
+
+ Article
+
+Powering AI Processors using a 48V Factorized Power Architecture™
+
+Using a 48V Factorized Power Architecture™ to overcome traditional multiphase limitations and drastically cut I²R thermal losses for high-demand loads
+
+Contact Us
+
+About the Company
+
+Press Room
+
+Careers
+
+Investor Relations
+
+Quality Center
+
+Distributor Portal
+
+Accessibility Statement
+
+Privacy and Cookie Policy
+
+Site Map
+
+ 繁體中文
+
+ 简体中文
+
+ 日本語
+
+©2026 Vicor Corporation

@@ -1,0 +1,254 @@
+HBM on GPU: Thermal Challenges and Solutions - IEEE Spectrum
+
+IEEE.orgIEEE XploreIEEE StandardsIEEE Job SiteMore Sites
+
+Sign InJoin IEEE
+
+The November issue of IEEE Spectrum is here!
+
+Download PDF ↓
+
+ Close bar
+
+The Ultimate 3D Integration Would Cook Future GPUs
+
+Share
+
+FOR THE TECHNOLOGY INSIDER
+
+Search: 
+
+Explore by topic
+
+AerospaceAIBiomedicalClimate TechComputingConsumer ElectronicsEnergyHistory of TechnologyRoboticsSemiconductorsTelecommunicationsTransportation
+
+ IEEE Spectrum
+
+FOR THE TECHNOLOGY INSIDER
+
+Topics
+
+AerospaceAIBiomedicalClimate TechComputingConsumer ElectronicsEnergyHistory of TechnologyRoboticsSemiconductorsTelecommunicationsTransportation
+
+Sections
+
+FeaturesNewsOpinionCareersDIYEngineering Resources
+
+More
+
+NewslettersSpecial ReportsCollectionsExplainersTop Programming LanguagesRobots Guide ↗IEEE Job Site ↗
+
+For IEEE Members
+
+Current IssueMagazine ArchiveThe InstituteThe Institute Archive
+
+For IEEE Members
+
+Current IssueMagazine ArchiveThe InstituteThe Institute Archive
+
+IEEE Spectrum
+
+About UsContact UsReprints & Permissions ↗Advertising ↗
+
+Follow IEEE Spectrum
+
+Support IEEE Spectrum
+
+IEEE Spectrum is the flagship publication of the IEEE — the world’s largest professional organization devoted to engineering and applied sciences. Our articles, videos, and infographics inform our readers about developments in technology, engineering, and science.
+
+Subscribe
+
+About IEEEContact & SupportAccessibilityNondiscrimination PolicyTermsIEEE Privacy PolicyCookie PreferencesAd Privacy Options
+
+© Copyright 2026 IEEE — All rights reserved. A public charity, IEEE is the world's largest technical professional organization dedicated to advancing technology for the benefit of humanity.
+
+ Enjoy more free content and benefits by creating an account
+
+ Saving articles to read later requires an IEEE Spectrum account
+
+ The Institute content is only available for members
+
+ Downloading full PDF issues is exclusive for IEEE Members
+
+ Downloading this e-book is exclusive for IEEE Members
+
+ Access to
+ Spectrum
+ 's Digital Edition is exclusive for IEEE Members
+
+ Following topics is a feature exclusive for IEEE Members
+
+ Adding your response to an article requires an IEEE Spectrum account
+
+ Create an account to access more content and features on
+ IEEE Spectrum
+ , including the ability to save articles to read later, download Spectrum Collections, and participate in
+ conversations with readers and editors. For more exclusive content and features, consider
+ Joining IEEE
+ .
+
+ Join the world’s largest professional organization devoted to engineering and applied sciences and get access to
+ all of Spectrum’s articles, archives, PDF downloads, and other benefits.
+ Learn more about IEEE →
+
+ Join the world’s largest professional organization devoted to engineering and applied sciences and get access to
+ this e-book plus all of
+ IEEE Spectrum’s
+ articles, archives, PDF downloads, and other benefits.
+ Learn more about IEEE →
+
+CREATE AN ACCOUNTSIGN IN
+
+JOIN IEEESIGN IN
+
+Close
+Access Thousands of Articles — Completely Free
+
+ Create an account and get exclusive content and features:
+ Save articles, download collections,
+ and
+ post comments
+ — all free! For full access and benefits,
+ subscribe
+ to
+ Spectrum
+ .
+
+CREATE AN ACCOUNTSIGN IN
+
+SemiconductorsMarch 2026MagazineNews
+
+ The Ultimate 3D Integration Would Cook Future GPUs
+
+ Imec has a multistep plan to keep things cool
+
+Samuel K. Moore
+
+14 Jan 2026
+
+4 min read
+
+Samuel K. Moore is IEEE Spectrum’s semiconductor editor.
+
+The large black squares are high-bandwidth memory connected to the AMD Instinct MI300X GPU's logic die [center]. 
+
+ AMD
+
+Peek inside the package of AMD’s or Nvidia’s most advanced AI products, and you’ll find a familiar arrangement: The GPU is flanked on two sides by high-bandwidth memory (HBM), the most advanced memory chips available. These memory chips are placed as close as possible to the computing chips they serve in order to cut down on the biggest bottleneck in AI computing—the energy and delay in getting billions of bits per second from memory into logic. But what if you could bring computing and memory even closer together by stacking the HBM on top of the GPU?
+
+ Imec recently explored this scenario using advanced thermal simulations, and the answer—delivered in December at the 2025 IEEE International Electron Device Meeting (IEDM)—was a bit grim. 3D stacking doubles the operating temperature inside the GPU, rendering it inoperable. But the team, led by Imec’s James Myers, didn’t just give up. They identified several engineering optimizations that ultimately could whittle down the temperature difference to nearly zero.
+
+2.5D and 3D Advanced Packaging
+
+Imec started with a thermal simulation of a GPU and four HBM dies as you’d find them today, inside what’s called a 2.5D package. That is, both the GPU and the HBM sit on substrate called an interposer, with minimal distance between them. The two types of chips are linked by thousands of micrometer-scale copper interconnects built into the interposer’s surface. In this configuration, the model GPU consumes 414 watts and reaches a peak temperature of just under 70 °C—typical for a processor. The memory chips consume an additional 40 W or so and get somewhat less hot. The heat is removed from the top of the package by the kind of liquid cooling that’s become common in new AI data centers.
+
+RELATED: Future Chips Will Be Hotter Than Ever
+
+“While this approach is currently used, it does not scale well for the future—especially as it blocks two sides of the GPU, limiting future GPU-to-GPU connections inside the package,” Yukai Chen, a senior researcher at Imec, told engineers at IEDM. In contrast, “the 3D approach leads to higher bandwidth, lower latency.… The most important improvement is the package footprint.”
+
+Unfortunately, as Chen and his colleagues found, the most straightforward version of stacking, simply putting the HBM chips on top of the GPU and adding a block of blank silicon to fill in a gap at the center, shot up temperatures in the GPU to a scorching 140 °C—well past a typical GPU’s 80 °C limit.
+
+System Technology Co-optimization
+
+The Imec team set about trying a number of technology and system optimizations aimed at lowering the temperature. The first thing they tried was throwing out a layer of silicon that was now redundant. To understand why, you have to first get a grip on what HBM really is.
+
+This form of memory is a stack of as many as 12 high-density DRAM dies. Each has been thinned down to tens of micrometers and is shot through with vertical connections. These thinned dies are stacked one atop another and connected by tiny balls of solder, and this stack of memory is vertically connected to another piece of silicon, called the base die. The base die is a logic chip designed to multiplex the data—pack it into the limited number of wires that can fit across the millimeter-scale gap to the GPU.
+
+But with the HBM now on top of the GPU, there’s no need for such a data pump. Bits can flow directly into the processor without regard for how many wires happen to fit along the side of the chip. Of course, this change means moving the memory control circuits from the base die into the GPU and therefore changing the processor’s floorplan, says Myers. But there should be ample room, he suggests, because the GPU will no longer need the circuits used to demultiplex incoming memory data.
+
+RELATED: The Hot, Hot Future of Chips
+
+Cutting out this middleman of memory cooled things down by only a little less than 4 °C. But, importantly, it should massively boost the bandwidth between the memory and the processor, which is important for another optimization the team tried—slowing down the GPU.
+
+That might seem contrary to the whole purpose of better AI computing, but in this case, it’s an advantage. Large language models are what are called “memory-bound” problems. That is, memory bandwidth is the main limiting factor. But Myers’s team estimated 3D stacking HBM on the GPU would boost bandwidth fourfold. With that added headroom, even slowing the GPU’s clock by 50 percent still leads to a performance win, while cooling everything down by more than 20 °C. In practice, the processor might not need to be slowed down quite that much. Increasing the clock frequency to 70 percent led to a GPU that was only 1.7 °C warmer, Myers says.
+
+Optimized HBM
+
+Another big drop in temperature came from making the HBM stack and the area around it more conductive. That included merging the four stacks into two wider stacks, thereby eliminating a heat-trapping region; thinning out the top—usually thicker—die of the stack; and filling in more of the space around the HBM with blank pieces of silicon to conduct more heat.
+
+ Imec explored seven steps to reduce the thermal penalty of stacking memory on GPUs.Source image: Imec
+
+With all of that, the stack now operated at about 88 °C. One final optimization brought things back to near 70 °C. Generally, some 95 percent of a chip’s heat is removed from the top of the package, where in this case water carries the heat away. But adding similar cooling to the underside as well drove the stacked chips down a final 17 °C.
+
+Although the research presented at IEDM shows it might be possible, HBM-on-GPU isn’t necessarily the best choice, Myers says. “We are simulating other system configurations to help build confidence that this is or isn’t the best choice,” he says. “GPU-on-HBM is of interest to some in industry,” because it puts the GPU closer to the cooling. But it would likely be a more complex design, because the GPU’s power and data would have to flow vertically through the HBM to reach it.
+
+This article appears in the March 2026 print issue as “3D Chip Integration Risks Cooking Future GPUs.”
+
+From Your Site Articles
+
+AMD’s Next GPU Is a 3D-Integrated Superchip ›
+
+Hybrid Bonding Plays Starring Role in 3D Chips ›
+
+How We’ll Reach a 1 Trillion Transistor GPU ›
+
+AI and the High Bandwidth Memory Shortage - IEEE Spectrum ›
+
+Stacking Chips Sideways Gives AI More Memory - IEEE Spectrum ›
+
+Related Articles Around the Web
+
+Inside NVIDIA Blackwell Ultra: The Chip Powering the AI Factory Era ... ›
+
+High Bandwidth Memory - Wikipedia ›
+
+3d chips3d stackingadvanced packaginghbmsystem technology cooptimization
+
+{"imageShortcodeIds":[]}
+
+Samuel K. Moore
+
+Samuel K. Moore is the senior editor at IEEE Spectrum in charge of semiconductors coverage. An IEEE member, he has a bachelor's degree in biomedical engineering from Brown University and a master's degree in journalism from New York University.
+
+The Conversation (1)
+
+Jonathan Kanner22 Jan, 2026
+
+ LM
+
+SiC? Did I hear someone say SiC? 
+
+0
+ Replies
+
+ Hide replies
+
+Show More Replies
+
+History of TechnologyMagazineEnergyArticlePast ForwardNovember 2026Transportation
+
+ When Electric Cars Were for Women
+
+3h
+
+7 min read
+
+AIConsumer ElectronicsSponsored Article
+
+ Consumer Appetite for Personal AI Goes Mainstream
+
+29 Oct 2026
+
+5 min read
+
+RoboticsNews
+
+ Video Friday: Spot Plays to Show Its Whole-Body Manipulation
+
+23h
+
+3 min read
+
+ Related Stories
+
+SemiconductorsNews
+
+ Records Fall for 3D Chip Tech
+
+SemiconductorsNewsComputing
+
+ Junctionless Transistors Show a New Path to 3D Chips
+
+SemiconductorsApril 2026MagazineAIFeatureComputing
+
+ How and When the Memory Chip Shortage Will End

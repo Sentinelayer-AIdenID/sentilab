@@ -1,0 +1,393 @@
+Designing AI accelerator cards with currents over 1000A ...
+
+MENU
+
+ Europe
+
+ Analog
+
+ Automotive
+
+ Embedded
+
+ Power
+
+ Wireless
+
+ Smart2.0
+
+ ECINews.fr
+
+ About
+
+ About eeNews Europe Power Management
+
+ Contact
+
+ Learning center
+
+ White Papers
+
+ Webinars
+
+ News
+
+ Business
+
+ Market
+
+ Technology
+
+ New products
+
+ Interviews
+
+ Featured Articles
+
+ Events
+
+ Other sites
+
+ eeNews Europe
+
+ eeNews Analog
+
+ eeNews Automotive
+
+ eeNews Embedded
+
+ eeNews Power
+
+ eeNews Wireless
+
+ Electronique-ECI
+
+ Smart2.0
+
+ My Account
+
+ About
+
+ Learning center
+
+ News
+
+ Events
+
+ Other sites
+
+ My Account
+
+ About eeNews Europe Power Management
+
+ Contact
+
+ White Papers
+
+ Webinars
+
+ Business
+
+ Market
+
+ Technology
+
+ New products
+
+ Interviews
+
+ Featured Articles
+
+ ECINews.fr
+
+ eeNews Europe
+
+ eeNews Analog
+
+ eeNews Automotive
+
+ eeNews Embedded
+
+ eeNews Power
+
+ eeNews Wireless
+
+ Smart2.0
+
+ eeNews Europe
+
+ eeNews Analog
+
+ eeNews Automotive
+
+ eeNews Embedded
+
+ eeNews Power
+
+ eeNews Wireless
+
+ ECINews.fr
+
+ Smart2.0
+
+ Designing AI accelerator cards with currents over 1000A
+
+ Technology News
+ |
+
+ October 9, 2020
+
+ By
+ Nick Flaherty
+
+ Power Management
+ Boards & Embedded Cards
+ Artificial Intelligence
+
+The latest AI accelerator cards for the data centre such as Nvidia’s A100 card and the Open Compute Project are rapidly moving to 48V and over 1000A of current, challenging the power management requirements, both for the chip and the board designs. A new power architecture and both lateral and vertical packages are needed to power the boards.
+
+“We support an accelerator card that’s very similar to the Nvidia card,” said Robert Gendron, Corporate Vice President for Product Marketing & Technical Resources at Vicor. “We support delivery for the AI processor itself – if you look at the card, there are three chips, with one supporting the primary rail. There’s two other devices for the memory and the other rails of the processor,” he said.
+
+The high current requirements means existing multiphase point of load converters powering the primary rail have run out of steam, he says.
+
+“Customers use us for these AI accelerator cards and the OCP cards, so we designed the chipset specifically to fit an AI accelerator card where the power required exceeds that of what a multiphase could accommodate,” he said. “It would consume too much area and too much loss, transmitting the current from the voltage rail to the processor and the noise contribution would be challenging for a conventional multiphase converter.
+
+Lateral power MCM power for AI boards requiring 400 to 1000A
+
+“We use a different architecture to support 400A and above, and different packaging style to create the high density module. This Factorised Power Architecture does not use a series of inductors to supply current to the processor. Our solution has almost no energy stored within the device so its much smaller and provides better noise and transient performance. We do use a magnetic structure, a magnetic core, that provides and voltage division and current multiplication.” 
+
+Next: Vertical power for AI accelerator cards
+
+“This is more like an ideal transformer where there is no energy stored, versus an inductor which acts as an averaging device, so it’s harder for the inductor to respond,” said Gendron.
+
+“We have integrated our magnetics along with the silicon into the package so it’s a higher level of integration,” he said. “It’s a true 3D power package with  a FR4 type substrate, components on both sides and overmolded, with a plating process   –  there is our own controller that’s a mix of analog and digital control. Part of the higher density we have comes from the high switching typically over 1MHz compared to 300kHz. The loop itself is set up with a speed of a conventional processor of 200 to 300kHz.” 
+
+Board makers are running to keep up as currents move over 1000A.
+
+“The growth of AI processing in the cloud with accelerator cards or racks means the power consumption has quickly gone form 10 to 15kW to 40kW or more,” said Gendron. “This dramatic increase in power consumption of the board and the rack itself no one really saw coming, the speed at which AI is being adopted in the cloud so the conventional multiphase designs were outpaced, there was no way it could keep up.”
+
+This means mounting the power devices even closer to the AI chips.
+
+“Right now we are working with several customers on 1000A designs of continuous currents – with those solutions we are using the same architecture but reintegrating to vertical power delivery to put the MCM underneath the processor to further minimise the losses,” he said.
+
+Vertical MCM power to support currents over 1000A
+
+“The FPA resolved a lot of the losses from a multiphase topology but even that runs into a wall at 1000A, so we have a power delivery topology that will further take away the losses and not waste it through the PCB,” said Ajith Jain, strategic accounts manager for data centre and high performance computing at Vicor who works closely with the board designers.  
+
+“The efficiency the chipset is definitely important but what is even more important is the losses in the board, the Power Distribution Losses (PDN),” said Gendron. “This has gone from 400uO on a server board but if you are delivering 500A that means you are burning 100W in the board so its a maximum efficiency of 75 percent. On these accelerator card we reduced that to 50uO, so we can show and 96.8% with 12W of loss. With vertical power delivery with 1000A we have designs 5uO of loss on the board – with 500A that’s 99.7% overall – this is why the PDN losses are so important as they dominate the losses.
+
+This also fits into existing board designs.
+
+“There’s nothing unique that needs to change in the board design,” he said. “You already have a large bank of bypass capacitance there with vias, so power is already routed down there and back up again.”
+
+There is also a system advantage that drives more memory in racks to boost the AI performance.
+
+“If you look at the ATX power supply that puts out 12V they were using PCIe and a flying cable to deliver power over and above the power from PCIe,” said Jain. “48V allows one connection and is able to put the power conversion at the point of load and this allows more memory that more than quadruples the AI performance – this has given them a massive leg up at the rack level, so it’s not just the power efficiency,” he said.
+
+www.vicorpower.com
+
+Related articles 
+
+POWER INTEGRITY FOR WAFERSCALE AI WITH 400,000 CORES
+
+22A ZVS BUCK REGULATOR HAS WIDE TEMPERATURE RANGE
+
+POWER SYSTEM HELPS REBUILD CORAL REEF
+
+750W REGULATED DC-DC CONVERTER FOR 48V LEGACY SUPPORT
+
+Other articles on eeNews Power 
+
+48V to 12V Converters for xEV Applications
+
+Using redundant DIN rail power supplies for system reliability
+
+II-VI launches power technology division
+
+Dürr aims at automotive battery makers with Techno Smart deal
+
+ If you enjoyed this article, you will like the following ones: don't miss them by subscribing to :
+
+    eeNews on Google News
+
+ Share:
+
+Linked Articles
+
+Microsoft links ConnectWise supply chain attack to AI agents
+
+ October 31, 2026
+
+BMW iX5 brings 460 kW charging to new X5 range
+
+ October 28, 2026
+
+Infineon and Enphase develop 900 V GaN switches for AI data centres
+
+ October 28, 2026
+
+NVIDIA expands Kazakhstan AI infrastructure with Firebird
+
+ October 25, 2026
+
+Nuclear restarts: Holtec, Constellation, NextEra plan 2.25 GW
+
+ October 24, 2026
+
+Latest News
+
+Microsoft links ConnectWise supply chain attack to AI agents
+
+Vox Power EIRE600 offers 600 W and three cooling options
+
+LATAM Airlines Turns to Quvia for Smarter In-Flight Wi-Fi
+
+Raltron crystal filters support LEO satellite broadband networks
+
+Microsoft promotes Xbox console trade-ins as costs rise
+
+Sponsored Content
+
+OPINION
+
+System Check: What is next for industrial RF engineering?
+
+ October 26, 2026
+
+System Check: Do you work with FPGA technology?
+
+ September 30, 2026
+
+System Check: Should designers move fast and break things?
+
+ September 15, 2026
+
+LEADERS' TALK
+
+SiPearl CEO Philippe Notton on Europe’s AI processors, chiplets, and semiconductor sovereignty
+
+ July 13, 2026
+
+Michael Chapman, CEO of Cortus, on RISC-V, AI, and Europe’s semiconductor future
+
+ June 10, 2026
+
+Mateja Lampe Rupnik, CEO of Red Pitaya, on Open Innovation and Europe’s Deep-Tech Future
+
+ June 9, 2026
+
+Most read articles
+
+Electronics production growth accelerates on AI demand
+
+Stolen RTX 5090 traced to online seller in Brazil
+
+Microsoft promotes Xbox console trade-ins as costs rise
+
+BMW iX5 brings 460 kW charging to new X5 range
+
+SEMICON Europa 2026 puts advanced packaging and AI in focus
+
+Vox Power EIRE600 offers 600 W and three cooling options
+
+Apple Brings 2 nm A20 Pro Chip to New iPad mini
+
+AI agents for embedded design
+
+Volkswagen Group and NXP team up on next-generation vehicle chips
+
+Infineon and Enphase develop 900 V GaN switches for AI data centres
+
+Opinion
+
+System Check: Should designers move fast and break things?
+
+ September 15, 2026
+
+System Check: How do you feel about humanoid robots?
+
+ September 8, 2026
+
+White papers
+
+The Bug That Vanishes When You Look
+
+The Fundamentals of Electromagnetic Compliance
+
+Direct Liquid-Cooled Power Modules for Commercial EV Drivetrains
+
+Selecting Current Sense Transformers for Switched-mode Power Supplies
+
+Common Mode Chokes: Simulation, Design, and Unconventional Applications
+
+Video webinar channel
+
+ Elektor & eeNews Europe
+
+CRA-ready IoT products webinar from eeNews and Lemberg
+
+ August 18, 2026
+
+ams OSRAM Webinar: AS8580 capacitive sensor – robust, safe, and ready for harsh environments
+
+ October 24, 2025
+
+10s
+
+ Contact
+
+ Search
+
+ Privacy Statement
+
+ All material on this site Copyright © 2026 European Business Press SA. All rights reserved.
+
+ Powered by Artwhere
+
+Cookie Consent
+
+We use cookies to enhance your browsing experience, serve personalized ads or content, and analyze our traffic. By clicking "Accept", you consent to our use of cookies
+
+ Functional
+
+ Functional
+
+ Always active 
+
+ The technical storage or access is strictly necessary for the legitimate purpose of enabling the use of a specific service explicitly requested by the subscriber or user, or for the sole purpose of carrying out the transmission of a communication over an electronic communications network.
+
+ Preferences
+
+ Preferences
+
+ The technical storage or access is necessary for the legitimate purpose of storing preferences that are not requested by the subscriber or user.
+
+ Statistics
+
+ Statistics
+
+ The technical storage or access that is used exclusively for statistical purposes.
+ The technical storage or access that is used exclusively for anonymous statistical purposes. Without a subpoena, voluntary compliance on the part of your Internet Service Provider, or additional records from a third party, information stored or retrieved for this purpose alone cannot usually be used to identify you.
+
+ Marketing
+
+ Marketing
+
+ The technical storage or access is required to create user profiles to send advertising, or to track the user on a website or across several websites for similar marketing purposes.
+
+ Manage options
+ Manage services
+ Manage vendors
+ Read more about these purposes
+
+ Accept
+ Deny
+ Settings
+ Save settings
+ Settings
+
+ {title}
+ {title}
+ {title}
+
+Manage consent

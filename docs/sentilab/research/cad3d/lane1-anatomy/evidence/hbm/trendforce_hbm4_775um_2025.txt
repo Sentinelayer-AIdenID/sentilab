@@ -1,0 +1,350 @@
+[News] JEDEC Finalizes HBM4 Standard, Potentially Easing Pressure on Hybrid Bonding Adoption
+
+Popular Keywords
+
+ #DRAM
+ #Foundry
+ #AI Server
+ #HBM
+ #FOPLP
+ #CoWoS
+ #NAND Flash
+ #Automotive
+ #MLCC
+ #Server
+ #Micro LED
+ #IC Design
+
+ Sign In
+
+ Member Center
+ SIGN OUT
+
+ Sign In
+
+ Member Center
+
+ SIGN OUT
+
+ About Us
+
+Research Report
+
+Research Directory
+
+Semiconductor Research
+
+Display Research
+
+Optoelectronics Research
+
+Green Energy Research
+
+ICT Applications Research
+
+ Semiconductors 
+
+ DRAM 
+
+ NAND Flash 
+
+ MLCC 
+
+ Wafer Foundries 
+
+ Compound Semiconductor 
+
+ AI/HBM/Server 
+
+ Display 
+
+ LCD 
+
+ OLED 
+
+ Upstream Components 
+
+ Panel Industry 
+
+ Display Supply Chain 
+
+ Display Technologies 
+
+ LED 
+
+ LED Demand / Supply Database 
+
+ Micro/Mini LED 
+
+ Near-Eye Display 
+
+ LED Video Wall 
+
+ Automotive LED - Lighting and Display 
+
+ General / Agricultural Lighting 
+
+ UV LED 
+
+ Infrared Sensing - IR LED / VCSEL / EEL 
+
+ Sapphire Market 
+
+ Energy 
+
+ Solar PV 
+
+ Lithium Battery and Energy Storage 
+
+ Consumer Electronics 
+
+ Notebook Computers 
+
+ TVs 
+
+ Smartphones 
+
+ Tablets 
+
+ Monitors / AIO 
+
+ Emerging Technologies 
+
+ Cloud / Edge Computing 
+
+ Artificial Intelligence 
+
+ Automotive Technologies 
+
+ Robot 
+
+ Selected Topics 
+
+ Semiconductors 
+
+ Telecommunications 
+
+ Computer System 
+
+ Consumer Electronics 
+
+ Automotive & EV 
+
+ Green Energy & Storage 
+
+ Display Panel & LED 
+
+ Economics 
+
+ Selected Topics
+
+ Membership
+
+Semiconductor Research
+
+Display Research
+
+Optoelectronics Research
+
+Green Energy Research
+
+ICT Applications Research
+
+Selected Topics
+
+ Price Trends
+
+ DRAM (Index)
+
+DRAM Spot Price
+
+DRAM Contract Price
+
+Module Spot Price
+
+GDDR Spot Price
+
+LPDDR Spot Price
+
+Mobile DRAM Contract Price
+
+ NAND Flash
+
+NAND Flash Spot Price
+
+NAND Flash Contract Price
+
+Wafer Spot Price
+
+Memory Card Spot Price
+
+PC-Client OEM SSD Contract Price
+
+SSD Street Price
+
+NAND Flash Wafer Contract Price
+
+eMMC Spot Price
+
+eMMC/UFS Contract Price
+
+ TFT-LCD (Index)
+
+Large Size Panel Price
+
+LCD Smartphone Panel Price
+
+Street Price
+
+Large Size Panel Shipment
+
+ PV
+
+Polysilicon
+
+Wafer
+
+Cell
+
+Module
+
+PV Glass
+
+ Li-Ion Battery
+
+Battery Cell & Pack
+
+Precursor and Cathode Material
+
+Anode Material
+
+Separator
+
+Electrolyte
+
+Li & Co & Ni
+
+Other
+
+ Press Center
+
+ News
+
+ Events
+
+ Contact Us
+
+ AI Agent
+
+Q&A Assistant
+
+ Beta
+ DataTrack
+
+About TrendForce News
+
+TrendForce News operates independently from our research team, curating key semiconductor and tech updates to support timely, informed decisions.
+
+Home
+
+News
+
+[News] JEDEC Finalizes HBM4 Standard, Potentially Easing Pressure on Hybrid Bonding Adoption
+
+ 2025-04-21
+
+ Semiconductors
+
+ editor 
+
+As leading memory giants ramp up preparations for the next-generation high bandwidth memory (HBM) battle, JEDEC—the standards-setting body for the microelectronics industry—has officially released the JESD270-4 HBM4 standard, a new memory standard designed to meet the surging demands of AI workloads.
+
+Notably, one of the major improvements in HBM4 is the doubling of independent channels per stack—from 16 in HBM3 to 32. Each channel is further split into two pseudo-channels, allowing for faster and more flexible memory access, as stated by JEDEC.
+
+Meanwhile, HBM4 delivers transfer speeds of up to 8 Gb/s over a 2048-bit interface, reaching a total bandwidth of 2 TB/s. It also supports lower power consumption and improved energy efficiency, according to JEDEC’s press release.
+
+In addition to performance and efficiency gains, HBM4 offers better compatibility and flexibility. Its interface is designed to work with existing HBM3 controllers, allowing a single controller to support both HBM3 and HBM4 if needed, as indicated by JEDEC.
+
+On the capacity side, HBM4 supports 4-high, 8-high, 12-high, and 16-high DRAM stack configurations with 24 Gb or 32 Gb die densities, enabling a maximum cube capacity of 64 GB when using 32 Gb 16-high stacks.
+
+Finally, HBM4 also enhances reliability. According to JEDEC, it incorporates Directed Refresh Management (DRFM) to improve row-hammer mitigation and strengthens Reliability, Availability, and Serviceability (RAS).
+
+HBM4 Standard Eases Pressure on Hybrid Bonding Adoption
+
+As noted by ZDNet, the newly agreed JEDEC standard is expected to have a significant impact across the memory, AI semiconductor, and packaging industries. The report highlights that the increased stack height of HBM4 had raised concerns about the limits of existing packaging technologies, potentially pushing manufacturers toward adopting hybrid bonding.
+
+However, with JEDEC confirming a relaxed nominal package thickness of 775 micrometers for both 12-high and 16-high stacked HBM4, the immediate need for hybrid bonding has diminished.
+
+Read more
+
+[News] Samsung Reportedly Achieves Stable 40%+ Test Yield for 4nm Logic Die, Accelerating HBM4 12-High Development
+
+[News] SK hynix Delivers World’s First 12-Layer HBM4 Samples, Gearing up for Mass Production in 2H25
+
+(Photo credit: Samsung)
+
+Please note that this article cites information from JEDEC and ZDNet.
+
+Previous Article 
+
+[News] Samsung and ASML Reportedly Scrap EUV Research Center in Hwaseong, Eyeing New Alternatives
+
+Next Article 
+
+[News] NVIDIA CEO Rumored to Meet DeepSeek’s Founder during His Visit in China
+
+Subject
+
+ Latest 
+
+ Semiconductors 
+
+ Display 
+
+ Optical Semiconductors 
+
+ Energy 
+
+ Consumer Electronics 
+
+ Telecommunications 
+
+ Emerging Technologies 
+
+Related Articles
+
+[News] ASE Reportedly Raises Advanced Packaging Quotes by More Than 20% in Latest AI-Driven Price Hike
+
+ 2026.07.01
+
+[News] Musk's TeraFab Lands First Major Hire as 18-Year Intel Veteran With 18A Experience Joins as Director
+
+ 2026.07.01
+
+[Insights] Memory Spot Price Update: DRAM Spot Prices See Gains in Low-Density DDR4 and DDR3 Amid Sideways Market
+
+ 2026.07.01
+
+About US
+
+Research Report
+
+Terms of Use
+
+Privacy Policy
+
+Membership Terms & Conditions
+
+Contact Us
+
+© 2026 TrendForce Corp. All rights reserved
+
+Get in touch with us
+
+ Your Email
+
+ Message
+
+ Send
+
+ Cancel

@@ -1,0 +1,724 @@
+CoWoS® - Taiwan Semiconductor Manufacturing Company Limited
+
+ Dedicated IC Foundry
+
+ Dedicated IC Foundry  
+
+ Overview
+
+ Technology
+
+Overview
+
+Logic Technology
+
+Specialty Technology
+
+TSMC 3DFabric®
+
+Technology Platforms
+
+Future R&D Plans
+
+ Manufacturing
+
+Overview
+
+Fab Locations
+
+Fab Capacity
+
+GIGAFAB® Facilities
+
+Engineering Performance Optimization
+
+Agile and Intelligent Operations
+
+ Open Innovation Platform®
+
+Overview
+
+IP Alliance
+
+EDA Alliance
+
+Design Center Alliance
+
+Cloud Alliance
+
+Value Chain Aggregator
+
+TSMC 3DFabric® Alliance
+
+ Services
+
+Overview
+
+Advanced Packaging
+
+Mask Services
+
+eFoundry®
+
+CyberShuttle®
+
+University FinFET Program
+
+ Grand Alliance
+
+Overview
+
+Innovate with TSMC!
+
+ Investors
+
+ Investors 
+
+ Overview
+
+ Financials
+
+Fundamentals
+
+Quarterly Results
+
+Annual Reports
+
+Monthly Revenue
+
+Historical Information
+
+SEC Filings
+
+Financial Reports
+
+Financial Calendar
+
+Credit Rating
+
+ Corporate Governance
+
+Overview
+
+Board of Directors
+
+Committees
+
+Corporate Governance Officer
+
+Major Internal Policies
+
+NYSE Section 303A
+
+Internal Audit
+
+Risk Management
+
+ Shareholder Services
+
+Stock Quotes
+
+Shareholders' Meeting
+
+Dividend
+
+TSE Market Observation Post System
+
+TSMC Material Information
+
+Prospectuses
+
+Contacts
+
+ FAQ
+
+ Press Center
+
+ Press Center 
+
+ Overview
+
+ Press Releases
+
+Latest News
+
+News Archives
+
+ Events
+
+All Events
+
+Investor Meetings
+
+TSMC Events
+
+Industry Events
+
+ Multimedia Gallery
+
+Fabs: Outside
+
+Fabs: Inside
+
+Executives
+
+Videos
+
+ Corporate Information
+
+About TSMC
+
+Financial Results
+
+Corporate Social Responsibility
+
+ Careers
+
+ Careers 
+
+ Overview
+
+ Explore Career
+
+Browse & Apply
+
+Application Process
+
+ Resources at TSMC
+
+Core Values
+
+Relocation to Headquarters
+
+ Life at TSMC
+
+Working Environment
+
+Inclusive Workplace
+
+ ESG
+
+ Research
+
+ Research 
+
+ Overview
+
+ Research Areas
+
+Overview
+
+Logic
+
+Interconnect
+
+Memory
+
+Artificial Intelligence
+
+ Collaborations
+
+Collaboration Programs
+
+Events
+
+ Careers
+
+Openings
+
+Core Values
+
+Vision and Mission
+
+Inclusive Workplace
+
+ About TSMC
+
+ About TSMC 
+
+ Overview
+
+ Company Info
+
+Overview
+
+Vision and Mission
+
+Values and Business Philosophy
+
+Organization
+
+Executives
+
+Board of Directors
+
+Document Center
+
+ Foundation & Museum
+
+TSMC Museum of Innovation
+
+TSMC Charity Foundation
+
+TSMC Education and Culture Foundation
+
+ Policy
+
+Human Rights Policy
+
+Quality Policy
+
+Risk Management Policy
+
+ Contact Us
+
+TSMC Fabs
+
+Subsidiaries
+
+Business Contacts
+
+Investor Relations, Public Relations, ESG Contacts
+
+Procurement Contacts
+
+Career Contact
+
+Whistleblowing Mechanism
+
+ English
+ 繁中
+ 简中
+ 日本語
+
+Home
+
+Dedicated IC Foundry
+
+Technology
+
+TSMC 3DFabric®
+
+CoWoS®
+
+CoWoS®
+
+ TSMC’s world-leading CoWoS® advanced 2.5D packaging technology provides the essential foundation for high-performance computing (HPC) and artificial intelligence (AI) products. By integrating multiple SoCs and high-bandwidth memory stacks, CoWoS® empowers products with high-performance compute and memory bandwidth. CoWoS®-S can accommodate an interposer up to 3.3X-reticle size (or ~2700mm2). CoWoS®-L or CoWoS®-R are recommended for larger than 3.3X-reticle interposer sizes. A variety of interconnect options provide integration flexibility to meet performance target.
+
+ Since entering volume production in 2012, the CoWoS® platform has continued to evolve, offering a growing number of options. With the advent of generative AI in late 2022, market demand for CoWoS® solutions has become even greater.
+
+ To support next-generation products such as HPC, AI, and mobile applications, TSMC continues to expand its advanced packaging capacity, helping customers accelerate innovation to meet rapidly changing market challenges.
+
+CoWoS®-S
+
+CoWoS®-R
+
+CoWoS®-L
+
+ TSMC’s CoWoS®-S solution provides best-in-class package technology for ultra-high performance computing applications. Wafer-level system integration provides high-density interconnects and embedded deep trench capacitors over a large silicon interposer area to accommodate various functional top dies, including logic chiplets, with high-bandwidth memory (HBM) cubes stacked over it. CoWoS® has been in production since 2012, with its silicon interposer size reaching up to 3.3X-reticle.
+
+ CoWoS®-R advanced packaging service achieves heterogeneous integration by using a redistribution layer (RDL) interposer as the interconnect between System-on-Chip (SoC) and/or high-bandwidth memory (HBM), having been in volume production since 2023. An RDL interposer is comprised of polymer and copper traces and is relatively flexible. This enhances C4 joint integrity and allows the package to scale to meet very complex functional demands. 
+
+ Key CoWoS®-R features include:
+
+ An RDL interposer for routing, with a minimum 4μm pitch (i.e., 2μm line width/spacing).
+
+ An RDL interconnect offers good signal and power integrity with a lower RC value routing line to achieve a high data transmission rate. The co-planar Ground-Signal-Ground-Signal-Ground (GSGSG) and interlayer ground shielding with RDL interconnections offer superior electrical performance.
+
+ RDL layer and C4/underfill (UF) layers provide an excellent buffer thanks to the coefficient of thermal expansion (CTE) mismatch between an SoC and the corresponding substrate. The strain energy density is greatly reduced in C4 bump area. 
+
+ CoWoS®-L advanced packaging service enables larger high-performance computing (HPC) products by combining Chip on Wafer on Substrate with RDL-based interposer, higher density embedded local silicon interconnect (LSI), eDTC, and the integration of diverse embedded chips.
+
+ TSMC’s first CoWoS®-L at 3.5X-reticle size has been in volume production since 2024. To meet the escalating demand for higher package performance and artificial intelligence (AI) computing power, CoWoS®-L continues scaling the interposer size to integrate more silicon and memory in CoWoS®.
+
+ CoWoS®-L features include:
+
+ LSI chips for a high routing density die-to-die interconnect through multiple layers of sub-micron copper lines. LSI chips can feature a variety of connection architectures, e.g., System-on-Chip (SoC)-to-SoC, SoC-to-chiplet, SoC-to-high-bandwidth memory (HBM), within each product, and can be used repeatedly in multiple products. The corresponding metal types, layer counts, and pitches align with the offering from CoWoS®-S.
+
+ A molding-based interposer with a wide pitch of RDL layers on the front-side and back-side that delivers signal and power provides a low loss of high frequency signals during high-speed transmission.
+
+ The ability to integrate additional elements, such as stand-alone eDTCs underneath the SoC die to improve power management.
+
+ The Chronicle of CoWoS
+
+2024
+
+ News Release
+
+2024/01/10
+
+GUC Taped Out UCIe 32G IP using TSMC's 3nm and CoWoS Technology
+
+ LEARN MORE 
+
+2023
+
+ News Release
+
+2023/04/06
+
+GUC Taped Out 3nm 8.6Gbps HBM3 and 5Tbps/mm GLink-2.5D IP using TSMC Advanced Packaging Technology
+
+ LEARN MORE 
+
+2022
+
+ News Release
+
+2022/07/07
+
+GUC Demonstrate World's First HBM3 PHY, Controller, and CoWoS Platform at 7.2 Gbps
+
+ LEARN MORE 
+
+2022/03/10
+
+GUC announces 2.5D and 3D multi-die APT platform for AI, HPC, networking ASICs
+
+ LEARN MORE 
+
+2021
+
+ Industry Publication
+
+ECTC 2021
+
+Wafer Level System Integration of the Fifth Generation CoWoS®-S with High Performance Si Interposer at 2500 mm2
+
+ LEARN MORE 
+
+ News Release
+
+2021/08/31
+
+GUC Announces Industry Highest Bandwidth and Power Efficient Die-to-Die (GLink 2.0) Total Solution
+
+ LEARN MORE 
+
+2021/06/08
+
+GUC Tapes Out AI/HPC/Networking Platform on TSMC CoWoS® Technology Validating 7.2 Gbps HBM3 Controller and PHY, GLink-2.5D and 112G-LR SerDes IPs
+
+ LEARN MORE 
+
+2020
+
+ Industry Publication
+
+ECTC 2020
+
+Design and Analysis of Logic-HBM2E Power Delivery System on CoWoS® Platform with Deep Trench Capacitor
+
+ LEARN MORE 
+
+ News Release
+
+2020/11/17
+
+GUC Die-to-Die (D2D) Total Solution Opening the New Era of Flagship SoC
+
+ LEARN MORE 
+
+2020/09/09
+
+Rambus Advances HBM2E Performance to 4.0 Gbps for AI/ML Training Applications
+
+ LEARN MORE 
+
+2020/03/03
+
+TSMC and Broadcom Enhance the CoWoS Platform with World’s First 2X Reticle Size Interposer
+
+ LEARN MORE 
+
+2019
+
+ Industry Publication
+
+IEDM 2019
+
+Integrated Deep Trench Capacitor in Si Interposer for CoWoS Heterogeneous Integration
+
+ LEARN MORE 
+
+ Production Milestone
+
+More than 60 product tape-outs are in production or in development as of Aug. 2019
+
+ Customer Product
+
+Industry 1st 7nm GPU w/ deep learning accelerator
+
+1TB/s in BW
+
+4 HBM2
+
+1X reticle interposer
+
+AI training accelerator w/ 1.2TB/s in BW
+
+N16+
+
+4 HBM2
+
+1.5X reticle interposer
+
+2018
+
+ Customer Product
+
+Fujitsu A64FX
+
+ LEARN MORE 
+
+Build your 56G Enterprise Networking ASICs with MediaTek
+
+ LEARN MORE 
+
+2017
+
+ Customer Product
+
+Broadcom Announces Industry's First Silicon-Proven 7nm IP for ASICs in Deep Learning and Networking Applications
+
+ LEARN MORE 
+
+NEC "Aurora" Vector Engine vector processor
+
+ LEARN MORE 
+
+Nvidia TESLA GV100
+
+ LEARN MORE 
+
+ Industry Publication
+
+IEEE Transaction on electronics devices 2017
+
+Wafer-Level Integration of an Advanced Logic-Memory System Through the Second-Generation CoWoS Technology
+
+ LEARN MORE 
+
+IEDM 2017
+
+Advanced Heterogeneous Integration Technology Trend for Cloud and Edge
+
+ LEARN MORE 
+
+2016
+
+ Customer Product
+
+Nvidia TESLA GP100
+
+ LEARN MORE 
+
+Industry's first ASIC based AI accelerator from learning only to learning+inference
+
+ Industry Publication
+
+SEMICON Taiwan 2016
+
+Interposer Technology: Past, Now, and Future
+
+ LEARN MORE 
+
+SEMICON Taiwan 2016
+
+WLSI Extends Si Processing and Supports Moore's Law
+
+ LEARN MORE 
+
+2015
+
+ Customer Product
+
+Xilinx XCVU440
+
+ LEARN MORE 
+
+2014
+
+ Customer Product
+
+HiSilicon Hi1616
+
+ LEARN MORE 
+
+ Industry Publication
+
+IEDM 2014
+
+A manufacturable interposer MIM decoupling capacitor with robust thin high-K dielectric for heterogeneous 3D IC CoWoS wafer level system integration
+
+ LEARN MORE 
+
+IEDM 2014
+
+Wafer Level System Integration for SiP
+
+ LEARN MORE 
+
+CICC 2014
+
+New System-in-Package (SiP) Integration technologies
+
+ LEARN MORE 
+
+2013
+
+ Industry Publication
+
+VLSI 2013
+
+Manufacturability Optimization and Design Validation Studies for FPGA-Based, 3D Integrated Circuits
+
+ LEARN MORE 
+
+IITC 2013
+
+Innovative Wafer-based Interconnect Enabling System Integration and Semiconductor Paradigm Shifts
+
+ LEARN MORE 
+
+ECTC 2013
+
+Reliability Evaluation of a CoWoS-enabled 3D IC Package
+
+ LEARN MORE 
+
+2012
+
+ Customer Product
+
+Xilinx 7V2000T/7V580T
+
+ LEARN MORE 
+
+ Industry Publication
+
+VLSI 2012
+
+An ultra-thin interposer utilizing 3D TSV technology
+
+ LEARN MORE 
+
+2011
+
+ Industry Publication
+
+ECTC 2011
+
+Advanced Reliability Study of TSV Interposers and Interconnects for the 28nm Technology FPGA
+
+ LEARN MORE 
+
+Related Information
+
+ Business Contacts
+
+ Fab Locations
+
+ Technology Platforms
+
+TSMC-Online 
+
+Online information and transaction for our customers
+
+TSMC-Supply Online 360 
+
+The web-based portal for smarter supplier interactions
+
+Document Center 
+
+Find more information about TSMC
+
+ Dedicated IC Foundry
+
+Overview
+
+Technology
+
+Manufacturing
+
+Open Innovation Platform®
+
+Services
+
+Grand Alliance
+
+ Investors
+
+Overview
+
+Financials
+
+Corporate Governance
+
+Shareholder Services
+
+FAQ
+
+ Press Center
+
+Overview
+
+Press Releases
+
+Events
+
+Multimedia Gallery
+
+Corporate Information
+
+ Careers
+
+Overview
+
+Browse & Apply
+
+Application Process
+
+Core Values
+
+Relocation to Headquarter 
+
+Working Environment
+
+Inclusive Workplace
+
+ ESG
+
+An Innovation Pioneer
+
+A Responsible Purchaser
+
+A Practitioner of Green Power
+
+An Admired Employer
+
+Power to Change Society
+
+ Research
+
+Research Areas
+
+Collaborations
+
+Careers
+
+ About TSMC
+
+Overview
+
+TSMC Museum of Innovation
+
+TSMC Charity Foundation
+
+TSMC Education and Culture Foundation
+
+Contact Us
+
+ Legal Notice & Trademark Information  |  Privacy Policy  |  Sitemap  |  Cookie Policy
+
+ Copyright © Taiwan Semiconductor Manufacturing Company Limited 2010-, All Rights Reserved.

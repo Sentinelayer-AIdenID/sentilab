@@ -1,0 +1,2131 @@
+Keep it at 30°C: A roadmap for the future chip coolant temperature 
+
+null 
+
+ × 
+
+Activation status
+
+ Your account is restricted to access this link.
+Please contact Vertiv Partner Support: salescloudsupport@vertivco.com 
+
+ Menu 
+
+ Open search modal 
+
+ US/EN 
+
+ Save 
+
+ Portals 
+
+Partners
+
+ Discover the Program 
+
+ Apply now to get started! 
+
+ Login as Partner 
+
+ Find an IT Distributor 
+
+ Vertiv™ eTail Partner Program 
+
+Consultant Engineers
+
+ Join the consultant program 
+
+ Apply now 
+
+ Login as Consultant 
+
+ My Account 
+
+ Customer Portal Login 
+
+ Discover the Customer Portal 
+
+ Investors 
+
+ Contact 
+
+ Products & Services 
+
+ Critical Power 
+
+ Uninterruptible Power Supplies (UPS) 
+
+ Energy Storage System 
+
+ DC Power Systems 
+
+ Power Distribution 
+
+ Static Transfer Switches 
+
+ Switchgear and Switchboard 
+
+ Busway and Busduct 
+
+ Thermal Management 
+
+ Liquid Cooling Solutions 
+
+ Heat Rejection 
+
+ Outdoor Packaged Systems 
+
+ Room Cooling 
+
+ In-Row Cooling 
+
+ Rack Cooling 
+
+ Free Cooling Chillers 
+
+ Evaporative Free Cooling 
+
+ Thermal Control and Monitoring 
+
+ Custom Thermal 
+
+ Racks & Enclosures 
+
+ Integrated Solutions 
+
+ Racks & Containment 
+
+ Outdoor Enclosures 
+
+ Monitoring & Management 
+
+ Embedded Device Management 
+
+ Serial Console 
+
+ IP KVM Switches 
+
+ High Performance KVM 
+
+ LCD Tray 
+
+ Desktop KVM and KM 
+
+ Secure KVM 
+
+ Software 
+
+ Monitoring 
+
+ Services 
+
+ Project Services 
+
+ Liquid Cooling Services 
+
+ Digital Services 
+
+ Fluid Management Services 
+
+ Thermal Services 
+
+ UPS & Battery Services 
+
+ DC Power Services 
+
+ Rack PDU Services 
+
+ Electrical Reliability Services 
+
+ Electrical Safety & Compliance 
+
+ Service Training 
+
+ Switchgear and Busway Services 
+
+Tools & Product Registration
+
+ AI Reference Design Selector 
+
+ UPS Selector 
+
+ Use the rPDU Finder 
+
+ Calculate Cooling Economization 
+
+ Compare Rack Products 
+
+ Compare IT Management Products 
+
+ Consultants Corner 
+
+ Download the Vertiv™ XR App 
+
+ Download the Vertiv™ Virtual Showroom App 
+
+ Vertiv Trade-In Program 
+
+ How to Buy 
+
+ Product Registration 
+
+ Virtually Test Cooling Systems in our Labs’ Digital Twins 
+
+ Download BIM files 
+
+ Vertiv Web Interface Demonstrations 
+
+ Vertiv Modular Designer 
+
+ Solutions 
+
+ Artificial Intelligence 
+
+ AI Hub 
+
+ Vertiv™ 360AI 
+
+Offerings
+
+ Chilled Water Solutions 
+
+ Bring Your Own Power & Cooling 
+
+ Prefabricated Modular Solutions 
+
+ Edge Data Center 
+
+ Server room and IT cooling 
+
+ Learn About 
+
+ 800 VDC: The next evolution of AI power architecture 
+
+ Data Center Liquid Cooling 
+
+ Battery Energy Storage System 
+
+ Hydrogen Fuel Cells 
+
+ Vertiv Continuing Education (CE) Program 
+
+ Low global warming potential (GWP) refrigerants​ 
+
+Vertiv Guides
+
+ AI Hub 
+
+ Data Center Sustainability 
+
+ Edge Computing 
+
+ Mission-Critical Facility Services 
+
+ Industries 
+
+ Colocation data centers 
+
+ Education 
+
+ Federal 
+
+ Finance 
+
+ Healthcare 
+
+ Hyperscale and cloud 
+
+ Logistics 
+
+ Manufacturing 
+
+ Retail 
+
+ Telecom 
+
+ Support 
+
+ Self-help tools 
+
+ Product Documentation 
+
+ Software/Firmware Updates 
+
+ Warranty Information 
+
+ Quality Policy & Certifications 
+
+ Information and Product Security 
+
+ Report a Security Concern 
+
+ Register Your Product 
+
+ Tools & Applications 
+
+ Discontinued Products 
+
+ Frequently Asked Questions 
+
+ Open Source Software Information 
+
+ Download BIM files 
+
+ Vertiv Modular Designer 
+
+Support for Vertiv brands
+
+ Avocent maintenance program overview 
+
+ Avocent support contacts 
+
+ Busway and Busduct BIM library 
+
+ Insights 
+
+ Insights Overview 
+
+ Artificial intelligence 
+
+ Extreme densification 
+
+ Energy autonomy 
+
+ Thermal chain evolution 
+
+ Digital first design 
+
+ Power architecture transformation 
+
+ Gigawatt-scale campuses 
+
+ Data center innovation 
+
+ Vertiv™ Frontiers 
+
+ Spotlights and Case Studies 
+
+ About 
+
+ About Vertiv 
+
+ About Us 
+
+ Fact sheet 
+
+ Responsible Business 
+
+ Executives 
+
+ Awards and Recognition 
+
+ Become a Supplier 
+
+ Connect With Us 
+
+ News and Events 
+
+ News Releases 
+
+ Analyst Reports 
+
+ In the News 
+
+ Events 
+
+ Media & Analyst Contacts 
+
+ Career Center 
+
+ View all jobs 
+
+ Working at Vertiv 
+
+ Start your journey 
+
+ How To Buy 
+
+ Vertiv Sales Support
+
+Working with our Vertiv Sales team enables complex designs to be configured to your unique needs. If you are an organization seeking technical guidance on a large project, Vertiv can provide the support you require.
+
+Learn More
+
+Vertiv Reseller Partners
+
+Many customers work with a Vertiv reseller partner to buy Vertiv products for their IT applications. Partners have extensive training and experience, and are uniquely positioned to specify, sell and support entire IT and infrastructure solutions with Vertiv products.
+
+Find a Reseller
+
+Vertiv Online Resellers
+
+Already know what you need? Want the convenience of online purchase and shipping? Certain categories of Vertiv products can be purchased through an online reseller.
+
+Find an Online Reseller
+
+Not Sure What You Need?
+
+Need help choosing a product? Speak with a highly qualified Vertiv Specialist who will help guide you to the solution that is right for you.
+
+Contact a Vertiv Specialist
+
+ Type search term here 
+
+{{keyword}}
+
+ Search 
+
+Artificial intelligence
+
+Extreme densification
+
+Energy autonomy
+
+Thermal chain evolution
+
+Digital-first design
+
+Power architecture transformation
+
+Gigawatt-scale campuses
+
+Data center innovation
+
+Vertiv™ Frontiers
+
+Spotlights and Case Studies
+
+ More 
+
+ Home 
+
+ Insights 
+
+A roadmap for the future chip coolant temperature 
+
+A roadmap for the future chip coolant temperature
+
+ 6 min. Read 
+
+ 4/9/26 
+
+The adoption of liquid cooling has dramatically increased in recent years due to the rapid increase of graphics processing unit/application-specific integrated circuit (GPU/ASIC) power consumption for AI/ML workloads. Cloud service providers (CSPs) and OEM adoption also rapidly went up as CPU energy consumption steadily increased to an estimated 100W in a decade, to over 400W in the last five years. GPU/ASIC energy use has dramatically increased compared to CPUs, with power rising by hundreds of watts annually. Silicon vendors like NVIDIA, AMD, and Intel have published GPU powers greater than 1kW. In addition, CSPs such as Microsoft, Google, Amazon, and Meta are designing their silicon for AI/ML workloads, with their future silicon requiring liquid cooling.
+
+In collaboration with some members of the Open Compute Project (OCP), such as AMD, Intel, Meta, NVIDIA, Samsung, and Vertiv™, we published a white paper titled “30°C Coolant—A Durable Roadmap for the Future.” The research provides business planning and efficiency insights on maintaining optimal temperatures for equipment longevity, supply chain stability, and environmental responsibility. 
+
+GPU architecture: The thermal stack in the modern silicon
+
+Modern GPUs have had a dramatic shift in their silicon package construction, utilizing 2.5-dimensional (2.5D) multi-chiplet stacking (Chip-on-Wafer-on-Substrate, or CoWoS) to enhance computing performance. This involves combining system-on-chip (SOC) with high bandwidth memory (HBM), allowing for a different type and number of chiplets to be combined for more performant GPU packages. The improvements in process technology, package assembly techniques, processing performance requirements, and co-location of memory have largely driven the large power increases seen in GPUs.
+
+By comparison, the complexity of GPU construction is much higher than CPUs and equally creates unique thermal challenges in the package, namely:
+
+The different chiplets or components require different maximum junction temperatures.
+
+The different chiplets have different stack heights.
+
+For example, the SOC chiplet is typically operating with a maximum junction temperature of 105℃, whereas, the HBM will require a lower junction temperature of 85℃ for a single-refresh, and 95℃ for a double-refresh operation in the early generations. Later generations of HBM have increased that to 95℃ and 105℃, respectively, to better match with SOC junction temperature requirements. Each HBM manufacturer is trying to address this trend based on their expertise.
+
+Durability from a manufacturer’s and operator’s perspective
+
+It is in the best interest of silicon manufacturers to have a durable data center to establish that temperature requirements for silicon will not change with each generation. Next-generation AI products have thermal designs that require significantly cooler fluid temperatures than what some data center designers are currently planning for. By agreeing on a standard coolant, silicon manufacturers can design their products with the assurance that they can be sufficiently cooled. Additionally, a set temperature provides a good design direction for silicon manufacturers.
+
+Meanwhile, data center operators benefit from aligning on a durable coolant temperature for several reasons. While it takes many years to plan, design, build, and commission a data center, AI silicon is rapidly evolving. The industry benefits from quick iterations of silicon. But if the lower limit of the coolant needed to deploy AI silicon were to change rapidly, then new data centers could be obsolete before they are even built. It is also relatively easy and efficient to operate a technology cooling system (TCS) loop at the base of its hottest temperature range. However, it is very expensive and time-consuming to modify a TCS loop to operate below its existing design range once built. Therefore, defining the lower temperature limit of a data center’s TCS loop temperature is very important for long-term viability and investment in the data center infrastructure.
+
+Determining the right temperature for the modern data center
+
+Data centers must be designed for a specific coolant operating temperature and flow rate. If the temperature requirement for a particular generation of IT hardware is higher, the data center operational set points can be adjusted to raise the coolant temperature. This offers the opportunity for improved efficiency. If the temperature requirement is lower than the data center design temperature, expensive and time-consuming modifications to the physical design will be required. For example, lower temperatures may require additional chiller capacity or a new type of chiller. Given the consequences of such a change, it is important to set the coolant temperature requirement to not change through multiple generations of IT hardware.
+
+This is especially challenging for AI hardware, given the rapid changes in silicon power and thermal requirements. Figure 2 illustrates the GPU and CPU power trends and associated technical fluid temperature requirements (Figure 6 in the white paper). AI hardware is driving the need for liquid cooling. GPU power is increasing much faster than CPU power. The chart shows the associated fluid temperature requirements for GPUs over time: the asymptotic temperature requirement is 30℃.
+
+Figure 2. GPU and CPU power trends and associated technical fluid temperature requirements at 1.5 lpm per 1KW. Source: Open Compute Project®, “Coolant Temperatures for Next Generation IT and Durable Data Center Designs” presentation, OCP Regional Summit, April 2023 
+
+We agreed on 30℃ as the minimum fluid temperature for hardware and data center design. The line thickness represents prediction uncertainty. Investments in advanced silicon packaging and liquid cooling performance are needed to maintain 30℃ as a long-term interface specification. The choice of 30℃ matches a common minimum air temperature specification for large-scale data center design. Choosing the same value for air- and liquid-cooled IT hardware allows the industry to maintain the significant power usage effectiveness (PUE) improvements achieved for the past 15 years. The consequences of lowering the fluid temperature from 30℃ to 20℃, and the reduction of the free-cooling hours in a year in zones classified with having hotter climates, can be read in the white paper.
+
+While liquid cooling within computing systems has been around for many decades, the demand for cooling higher-density workloads is driving liquid cooling from boutique to hyperscale. Because of the development and evolution gap between AI solutions and data center build timelines, data center operators and silicon providers need to agree on a coolant temperature that enables the silicon to be durable.
+
+A minimum coolant temperature of 30℃ for the TCS loop offers a setpoint that provides both parties an operating point. Considering a simplified view of the cooling architecture in a data center, there are at least two cooling loops in a liquid-cooling system from the TCS to the facility water system (FWS) as shown in Figure 3 (Figure 8 in the white paper).
+
+Figure 3. Cooling system architecture and components
+
+Cooling AI with confidence
+
+The TCS 30℃ coolant temperature limit is not intended to discourage the development of a wide range of future solutions. While there is a significant value in aligning on a coolant temperature of 30℃ or greater, there is no desire to limit the types of technology used to deliver the cooling capability to the silicon. Freedom of innovation will be needed across many different cooling technologies to provide ideal solutions across the industry, including immersion, cold plate, thermal interface materials, and many others. There will also be demand for silicon solutions across a range of coolant temperatures, including some opportunities below the 30℃ target. However, the goal of this initiative is to target silicon with the best price-per-performance ratio above the 30℃ coolant limit.
+
+As an industry, researchers continue to find solutions and enhancements for the critical digital infrastructure, including technologies that can further business and responsible business efforts into the future. For instance, OCP (Open Compute Project) has been instrumental and will continue promoting cooling solutions that enhance and enable data center efficiency and reliability. To find the technical insights and business details for keeping the optimal temperatures in the modern data center, and identify paths for new technological investments towards increased performance in the future, download the OCP’s latest white paper “30°C Coolant—A Durable Roadmap for the Future.” To know the deployments and implementations to facilitate this, visit Vertiv.com.
+
+ AI 
+ Data center innovation 
+ Thermal chain evolution 
+
+Key points in this article:
+
+Open Compute Project (OCP) members, including Vertiv, agreed on 30°C as the minimum fluid temperature for hardware and data center design.
+
+The 30°C minimum matches large-scale data center air-temperature specifications, preserving 15 years of Power Usage Effectiveness (PUE) progress.
+
+At 30°C, the Technology Cooling System (TCS) loop gives hardware and facility operators a shared operating setpoint.
+
+The specification supports a wide range of cooling approaches — immersion, cold plates, and thermal interface materials among them.
+
+The initiative targets silicon with the best price-per-performance above 30°C, leaving freedom to innovate below it.
+
+Andrea Moscheni 
+
+ Andrea joined Vertiv in 2015 as a Product Application Manager for the EMEA region and specialized in computer room air conditioning (CRAC) and computer room air handler (CRAH) products for data centers. He was and continues to be actively involved in the pre-sales phase for some of EMEA’s largest data centers. Since 2018, he has been focused on global product management for chilled water applications for thermal management solutions. Andrea attended the University of Padua, Italy, where he received a master’s degree in Energy Engineering. 
+
+ {"moreResultsText":"More","filter_by":"Filter by","filterText":"Filter","mostRecent":"Most Recent","articleTypeFilterText":"Article Type","clearAll":"Clear All","closeFilterDoneTextLocalized":"Done","viewAllEventsText":"View all","upcomingEvents":"Upcoming Events","trendingTitle":"Trending","latestTitle":"Latest","moreRelatedTitle":"More on related topics","moreOnText":"More on","minsRead":"min. Read","minsWatch":"min. Watch","additionalResources":"Additional resources"} 
+
+VertivTM AI Hub
+
+Infrastructure designed to stay multiple compute generations ahead, starting now.
+
+ Learn more 
+
+ Subscribe to get the latest trends in technology 
+
+ Receive updates on the most important topics in the industry, with latest discussions and expert insights on AI, liquid cooling, and high performance computing in the data center. 
+ Sign up now 
+
+ RESOURCES 
+
+ Product Documentation 
+ Quality Policy & Certifications 
+ Terms & Conditions of Sales 
+ Warranty Information 
+ Patents 
+ Site Map 
+
+ SUPPORT 
+
+ Technical Support 
+ Software/Firmware Updates 
+ Submit Support Request 
+ Submit Feedback 
+ Contacts 
+ Product Registration 
+ Information and Product Security 
+ Report a Security Concern 
+
+ CORPORATE 
+
+ About Vertiv 
+ Executives 
+ Careers 
+ Investor Relations 
+ Ethics & Compliance 
+
+ Your Privacy Choices 
+
+ Privacy Notices 
+
+Connect with us
+
+ Instagram 
+
+ Terms of Use 
+
+ • 
+ Data Privacy and Cookies Policy 
+
+ • 
+ Accessibility Statement 
+
+ © 2026 Vertiv Group Corp. All rights reserved. 
+
+ × 
+
+Activation status
+
+ Your account is restricted to access this link.
+Please contact Vertiv Partner Support: salescloudsupport@vertivco.com 
+
+ Close 
+
+PRODUCTS & SERVICES
+
+ Overview 
+
+Critical Power
+
+ Overview 
+
+ Uninterruptible Power Supplies (UPS) 
+
+ Energy Storage System 
+
+ DC Power Systems 
+
+ Power Distribution 
+
+ Static Transfer Switches 
+
+ Switchgear and Switchboard 
+
+ Busway and Busduct 
+
+Thermal Management
+
+ Overview 
+
+ Liquid Cooling Solutions 
+
+ Heat Rejection 
+
+ Outdoor Packaged Systems 
+
+ Room Cooling 
+
+ In-Row Cooling 
+
+ Rack Cooling 
+
+ Free Cooling Chillers 
+
+ Evaporative Free Cooling 
+
+ Thermal Control and Monitoring 
+
+ Custom Thermal 
+
+Racks & Enclosures
+
+ Overview 
+
+ Integrated Solutions 
+
+ Racks & Containment 
+
+ Outdoor Enclosures 
+
+Monitoring & Management
+
+ Overview 
+
+ Embedded Device Management 
+
+ Serial Console 
+
+ IP KVM Switches 
+
+ High Performance KVM 
+
+ LCD Tray 
+
+ Desktop KVM and KM 
+
+ Secure KVM 
+
+ Software 
+
+ Monitoring 
+
+Services
+
+ Overview 
+
+ Project Services 
+
+ Liquid Cooling Services 
+
+ Digital Services 
+
+ Fluid Management Services 
+
+ Thermal Services 
+
+ UPS & Battery Services 
+
+ DC Power Services 
+
+ Rack PDU Services 
+
+ Electrical Reliability Services 
+
+ Electrical Safety & Compliance 
+
+ Service Training 
+
+ Switchgear and Busway Services 
+
+Tools & Product Registration
+
+ AI Reference Design Selector 
+
+ UPS Selector 
+
+ Use the rPDU Finder 
+
+ Calculate Cooling Economization 
+
+ Compare Rack Products 
+
+ Compare IT Management Products 
+
+ Consultants Corner 
+
+ Download the Vertiv™ XR App 
+
+ Download the Vertiv™ Virtual Showroom App 
+
+ Vertiv Trade-In Program 
+
+ How to Buy 
+
+ Product Registration 
+
+ Virtually Test Cooling Systems in our Labs’ Digital Twins 
+
+ Download BIM files 
+
+ Vertiv Web Interface Demonstrations 
+
+ Vertiv Modular Designer 
+
+SOLUTIONS
+
+ Overview 
+
+Artificial Intelligence
+
+ Overview 
+
+ AI Hub 
+
+ Vertiv™ 360AI 
+
+Offerings
+
+ Chilled Water Solutions 
+
+ Bring Your Own Power & Cooling 
+
+ Prefabricated Modular Solutions 
+
+ Edge Data Center 
+
+ Server room and IT cooling 
+
+Learn About
+
+ Overview 
+
+ 800 VDC: The next evolution of AI power architecture 
+
+ Data Center Liquid Cooling 
+
+ Battery Energy Storage System 
+
+ Hydrogen Fuel Cells 
+
+ Vertiv Continuing Education (CE) Program 
+
+ Low global warming potential (GWP) refrigerants​ 
+
+Vertiv Guides
+
+ AI Hub 
+
+ Data Center Sustainability 
+
+ Edge Computing 
+
+ Mission-Critical Facility Services 
+
+INDUSTRIES
+
+ Colocation data centers 
+
+ Education 
+
+ Federal 
+
+ Finance 
+
+ Healthcare 
+
+ Hyperscale and cloud 
+
+ Logistics 
+
+ Manufacturing 
+
+ Retail 
+
+ Telecom 
+
+SUPPORT
+
+ Overview 
+
+Self-help tools
+
+ Overview 
+
+ Product Documentation 
+
+ Software/Firmware Updates 
+
+ Warranty Information 
+
+ Quality Policy & Certifications 
+
+ Information and Product Security 
+
+ Report a Security Concern 
+
+ Register Your Product 
+
+ Tools & Applications 
+
+ Discontinued Products 
+
+ Frequently Asked Questions 
+
+ Open Source Software Information 
+
+ Download BIM files 
+
+ Vertiv Modular Designer 
+
+Support for Vertiv brands
+
+ Avocent maintenance program overview 
+
+ Avocent support contacts 
+
+ Busway and Busduct BIM library 
+
+INSIGHTS
+
+ Overview 
+
+Insights Overview
+
+ Overview 
+
+ Artificial intelligence 
+
+ Extreme densification 
+
+ Energy autonomy 
+
+ Thermal chain evolution 
+
+ Digital first design 
+
+ Power architecture transformation 
+
+ Gigawatt-scale campuses 
+
+ Data center innovation 
+
+ Vertiv™ Frontiers 
+
+ Spotlights and Case Studies 
+
+ABOUT
+
+ Overview 
+
+About Vertiv
+
+ Overview 
+
+ About Us 
+
+ Fact sheet 
+
+ Responsible Business 
+
+ Executives 
+
+ Awards and Recognition 
+
+ Become a Supplier 
+
+ Connect With Us 
+
+News and Events
+
+ Overview 
+
+ News Releases 
+
+ Analyst Reports 
+
+ In the News 
+
+ Events 
+
+ Media & Analyst Contacts 
+
+Career Center
+
+ Overview 
+
+ View all jobs 
+
+ Working at Vertiv 
+
+ Start your journey 
+
+PORTALS
+
+ Overview 
+
+Partners
+
+ Discover the Program 
+
+ Apply now to get started! 
+
+ Login as Partner 
+
+ Find an IT Distributor 
+
+ Vertiv™ eTail Partner Program 
+
+Consultant Engineers
+
+ Join the consultant program 
+
+ Apply now 
+
+ Login as Consultant 
+
+MY ACCOUNT
+
+ Overview 
+
+ Customer Portal Login 
+
+ Discover the Customer Portal 
+
+ INVESTORS 
+
+ CONTACT 
+
+ HOW TO BUY 
+
+ USA, English (United States) 
+
+ Close 
+
+Login
+
+ Email address 
+
+ Password 
+
+ Show password 
+
+ Forgot your password? 
+
+ Login 
+
+ Create an account 
+
+ Close 
+
+Language & Location
+
+ Save 
+
+ Close 
+
+{{keyword}}
+
+ × 
+
+Tell us your feedback
+
+ YOUR NAME 
+
+ Salutation 
+ Mr. 
+ Ms. 
+ Mrs. 
+ Dr. 
+ Engr. 
+ Prof. 
+ Other 
+
+ YOUR COUNTRY 
+
+ USA 
+Afghanistan 
+Albania 
+Algeria 
+American Samoa 
+Andorra 
+Angola 
+Anguilla 
+Antigua and Barbuda 
+Argentina 
+Armenia 
+Aruba 
+Ascension Island 
+Australia 
+Austria (Österreich) 
+Azerbaijan 
+Bahamas 
+Bahrain 
+Bangladesh 
+Barbados 
+Belarus (Беларусь) 
+Belgium (Belgique/België) 
+Belize 
+Benin 
+Bermuda 
+Bhutan 
+Bolivia 
+Bonaire and Sint Eustatius 
+Bosnia and Herzegovina 
+Botswana 
+Brazil 
+British Indian Ocean Territory 
+Brunei Darussalam 
+Bulgaria 
+Burkina Faso 
+Burundi 
+Cabo Verde 
+Cambodia 
+Cameroon (Cameroun) 
+Canada 
+Cayman Islands 
+Central African Republic (République centrafricaine) 
+Chad (Tchad) 
+Channel Islands (Îles de la Manche) 
+Chile 
+China (中国) 
+Christmas Island 
+Cocos (Keeling) Islands 
+Colombia 
+Comoros (Union des Comores) 
+Congo, Republic of the 
+Congo, The Democratic Republic 
+Cook Islands 
+Costa Rica 
+Croatia 
+Curacao 
+Cyprus (Kıbrıs) 
+Czech Republic 
+Denmark 
+Djibouti 
+Dominica 
+Dominican Republic (República Dominicana) 
+East Timor 
+Ecuador 
+Egypt 
+El Salvador 
+Equatorial Guinea (Guinea Ecuatorial) 
+Eritrea 
+Estonia 
+Ethiopia 
+Falkland Islands (Malvinas) 
+Faroe Islands 
+Fiji 
+Finland 
+France 
+French Guiana 
+French Polynesia 
+Gabon (République gabonaise) 
+Gambia 
+Georgia 
+Germany (Deutschland) 
+Ghana 
+Gibraltar 
+Greece 
+Greenland 
+Grenada 
+Guadeloupe 
+Guam 
+Guatemala 
+Guinea (Guinée) 
+Guinea-Bissau 
+Guyana 
+Haiti 
+Holy See (Vatican City State) 
+Honduras 
+Hong Kong (中国香港) 
+Hungary 
+Iceland 
+India 
+Indonesia 
+Iraq 
+Ireland 
+Israel 
+Italy (Italia) 
+Ivory Coast (Côte d'Ivoire) 
+Jamaica 
+Japan (日本) 
+Jordan 
+Kazakhstan (Қазақстан) 
+Kenya 
+Kiribati 
+Korea (한국) 
+Kosovo 
+Kuwait 
+Kyrgyzstan (Кыргызстан) 
+Laos 
+Latvia 
+Lebanon 
+Lesotho 
+Liberia 
+Libya 
+Liechtenstein 
+Lithuania 
+Luxembourg 
+Macau 
+Madagascar 
+Malawi 
+Malaysia 
+Maldives 
+Mali 
+Malta 
+Marshall Islands 
+Martinique 
+Mauritania 
+Mauritius 
+Mayotte 
+Mexico 
+Micronesia 
+Moldova, Republic of 
+Monaco 
+Mongolia 
+Montenegro 
+Montserrat 
+Morocco 
+Mozambique (Moçambique) 
+Myanmar 
+Namibia 
+Nauru 
+Nepal 
+Netherlands (Nederland) 
+Netherlands Antilles 
+New Caledonia 
+New Zealand 
+Nicaragua 
+Niger 
+Nigeria 
+Niue 
+Norfolk Island 
+North Macedonia 
+Northern Mariana Islands 
+Norway 
+Oman 
+Pakistan 
+Palau 
+Palestinian Authority 
+Panama 
+Papua New Guinea 
+Paraguay 
+Peru 
+Philippines 
+Pitcairn Islands 
+Poland (Polska) 
+Portugal 
+Puerto Rico 
+Qatar 
+Reunion 
+Romania 
+Rwanda 
+Samoa 
+San Marino 
+Sao Tome and Principe (São Tomé e Príncipe) 
+Saudi Arabia 
+Senegal 
+Serbia 
+Seychelles 
+Sierra Leone 
+Singapore 
+Sint Maarten 
+Slovakia 
+Slovenia 
+Solomon Islands 
+Somalia 
+South Africa 
+South Georgia/South Sandwich 
+South Sudan 
+Spain (España) 
+Sri Lanka 
+St. Barts 
+St. Helena 
+St. Kitts and Nevis 
+St. Lucia 
+St. Martin 
+St. Pierre and Miquelon 
+St. Vincent and the Grenadines 
+Sudan 
+Suriname 
+Swaziland 
+Sweden 
+Switzerland (Schweiz) 
+Taiwan (臺灣地區) 
+Tajikistan (Тоҷикистон) 
+Tanzania, United Republic of 
+Thailand 
+Togo 
+Tokelau 
+Tonga 
+Trinidad and Tobago 
+Tunisia 
+Turkey (Türkiye) 
+Turkmenistan (Түркменистан) 
+Turks and Caicos Islands 
+Tuvalu 
+Uganda 
+Ukraine 
+United Arab Emirates 
+United Kingdom 
+Uruguay 
+US Minor Outlying Islands 
+Uzbekistan 
+Vanuatu 
+Venezuela 
+Vietnam 
+Virgin Islands (British) 
+Virgin Islands (U.S.) 
+Wallis and Futuna Islands 
+Western Sahara 
+Yemen 
+Zambia 
+Zimbabwe 
+
+ YOUR EMAIL 
+
+ SUBJECT LINE 
+
+ MESSAGE 
+
+ PRIVACY NOTICE CONSENT
+
+Having received and read this privacy notice on personal data processing, I consent to:
+
+ Subscribe 
+
+ The processing of my personal data for marketing purposes, including staying informed by email about industry trends, events, offers and product launches. 
+
+ SEND EMAIL 
+
+ Thank You! Your email was sent.
+
+ Sorry, an error was encountered.
+
+ Please try again.
+
+ Continue Browsing 
+
+ × 
+
+Tell us your feedback
+
+ Salutation 
+
+ Mr. 
+ Ms. 
+ Mrs. 
+ Dr. 
+ Engr. 
+ Prof. 
+ Other 
+
+ First name 
+
+ Last name 
+
+ Country 
+ USA 
+Afghanistan 
+Albania 
+Algeria 
+American Samoa 
+Andorra 
+Angola 
+Anguilla 
+Antigua and Barbuda 
+Argentina 
+Armenia 
+Aruba 
+Ascension Island 
+Australia 
+Austria (Österreich) 
+Azerbaijan 
+Bahamas 
+Bahrain 
+Bangladesh 
+Barbados 
+Belarus (Беларусь) 
+Belgium (Belgique/België) 
+Belize 
+Benin 
+Bermuda 
+Bhutan 
+Bolivia 
+Bonaire and Sint Eustatius 
+Bosnia and Herzegovina 
+Botswana 
+Brazil 
+British Indian Ocean Territory 
+Brunei Darussalam 
+Bulgaria 
+Burkina Faso 
+Burundi 
+Cabo Verde 
+Cambodia 
+Cameroon (Cameroun) 
+Canada 
+Cayman Islands 
+Central African Republic (République centrafricaine) 
+Chad (Tchad) 
+Channel Islands (Îles de la Manche) 
+Chile 
+China (中国) 
+Christmas Island 
+Cocos (Keeling) Islands 
+Colombia 
+Comoros (Union des Comores) 
+Congo, Republic of the 
+Congo, The Democratic Republic 
+Cook Islands 
+Costa Rica 
+Croatia 
+Curacao 
+Cyprus (Kıbrıs) 
+Czech Republic 
+Denmark 
+Djibouti 
+Dominica 
+Dominican Republic (República Dominicana) 
+East Timor 
+Ecuador 
+Egypt 
+El Salvador 
+Equatorial Guinea (Guinea Ecuatorial) 
+Eritrea 
+Estonia 
+Ethiopia 
+Falkland Islands (Malvinas) 
+Faroe Islands 
+Fiji 
+Finland 
+France 
+French Guiana 
+French Polynesia 
+Gabon (République gabonaise) 
+Gambia 
+Georgia 
+Germany (Deutschland) 
+Ghana 
+Gibraltar 
+Greece 
+Greenland 
+Grenada 
+Guadeloupe 
+Guam 
+Guatemala 
+Guinea (Guinée) 
+Guinea-Bissau 
+Guyana 
+Haiti 
+Holy See (Vatican City State) 
+Honduras 
+Hong Kong (中国香港) 
+Hungary 
+Iceland 
+India 
+Indonesia 
+Iraq 
+Ireland 
+Israel 
+Italy (Italia) 
+Ivory Coast (Côte d'Ivoire) 
+Jamaica 
+Japan (日本) 
+Jordan 
+Kazakhstan (Қазақстан) 
+Kenya 
+Kiribati 
+Korea (한국) 
+Kosovo 
+Kuwait 
+Kyrgyzstan (Кыргызстан) 
+Laos 
+Latvia 
+Lebanon 
+Lesotho 
+Liberia 
+Libya 
+Liechtenstein 
+Lithuania 
+Luxembourg 
+Macau 
+Madagascar 
+Malawi 
+Malaysia 
+Maldives 
+Mali 
+Malta 
+Marshall Islands 
+Martinique 
+Mauritania 
+Mauritius 
+Mayotte 
+Mexico 
+Micronesia 
+Moldova, Republic of 
+Monaco 
+Mongolia 
+Montenegro 
+Montserrat 
+Morocco 
+Mozambique (Moçambique) 
+Myanmar 
+Namibia 
+Nauru 
+Nepal 
+Netherlands (Nederland) 
+Netherlands Antilles 
+New Caledonia 
+New Zealand 
+Nicaragua 
+Niger 
+Nigeria 
+Niue 
+Norfolk Island 
+North Macedonia 
+Northern Mariana Islands 
+Norway 
+Oman 
+Pakistan 
+Palau 
+Palestinian Authority 
+Panama 
+Papua New Guinea 
+Paraguay 
+Peru 
+Philippines 
+Pitcairn Islands 
+Poland (Polska) 
+Portugal 
+Puerto Rico 
+Qatar 
+Reunion 
+Romania 
+Rwanda 
+Samoa 
+San Marino 
+Sao Tome and Principe (São Tomé e Príncipe) 
+Saudi Arabia 
+Senegal 
+Serbia 
+Seychelles 
+Sierra Leone 
+Singapore 
+Sint Maarten 
+Slovakia 
+Slovenia 
+Solomon Islands 
+Somalia 
+South Africa 
+South Georgia/South Sandwich 
+South Sudan 
+Spain (España) 
+Sri Lanka 
+St. Barts 
+St. Helena 
+St. Kitts and Nevis 
+St. Lucia 
+St. Martin 
+St. Pierre and Miquelon 
+St. Vincent and the Grenadines 
+Sudan 
+Suriname 
+Swaziland 
+Sweden 
+Switzerland (Schweiz) 
+Taiwan (臺灣地區) 
+Tajikistan (Тоҷикистон) 
+Tanzania, United Republic of 
+Thailand 
+Togo 
+Tokelau 
+Tonga 
+Trinidad and Tobago 
+Tunisia 
+Turkey (Türkiye) 
+Turkmenistan (Түркменистан) 
+Turks and Caicos Islands 
+Tuvalu 
+Uganda 
+Ukraine 
+United Arab Emirates 
+United Kingdom 
+Uruguay 
+US Minor Outlying Islands 
+Uzbekistan 
+Vanuatu 
+Venezuela 
+Vietnam 
+Virgin Islands (British) 
+Virgin Islands (U.S.) 
+Wallis and Futuna Islands 
+Western Sahara 
+Yemen 
+Zambia 
+Zimbabwe 
+
+ Zip code 
+
+ Email address 
+
+ Confirm email address 
+
+ Your subject line 
+
+ PRIVACY NOTICE CONSENT
+
+Having received and read this privacy notice on personal data processing, I consent to:
+
+ Subscribe 
+
+ The processing of my personal data for marketing purposes, including staying informed by email about industry trends, events, offers and product launches. 
+
+ SEND EMAIL 
+
+ Thank You! Your email was sent.
+
+ Sorry, an error was encountered.
+
+ Please try again.
+
+ Continue Browsing 
+
+ × 
+
+Discover latest advancements in technology by joining our newsletter
+
+ Get exclusive insights and updates on AI, liquid cooling, and high performance computing in the data center delivered straight to your inbox. 
+
+ YOUR EMAIL 
+
+ YOUR COUNTRY 
+
+ USA 
+Afghanistan 
+Albania 
+Algeria 
+American Samoa 
+Andorra 
+Angola 
+Anguilla 
+Antigua and Barbuda 
+Argentina 
+Armenia 
+Aruba 
+Ascension Island 
+Australia 
+Austria (Österreich) 
+Azerbaijan 
+Bahamas 
+Bahrain 
+Bangladesh 
+Barbados 
+Belarus (Беларусь) 
+Belgium (Belgique/België) 
+Belize 
+Benin 
+Bermuda 
+Bhutan 
+Bolivia 
+Bonaire and Sint Eustatius 
+Bosnia and Herzegovina 
+Botswana 
+Brazil 
+British Indian Ocean Territory 
+Brunei Darussalam 
+Bulgaria 
+Burkina Faso 
+Burundi 
+Cabo Verde 
+Cambodia 
+Cameroon (Cameroun) 
+Canada 
+Cayman Islands 
+Central African Republic (République centrafricaine) 
+Chad (Tchad) 
+Channel Islands (Îles de la Manche) 
+Chile 
+China (中国) 
+Christmas Island 
+Cocos (Keeling) Islands 
+Colombia 
+Comoros (Union des Comores) 
+Congo, Republic of the 
+Congo, The Democratic Republic 
+Cook Islands 
+Costa Rica 
+Croatia 
+Curacao 
+Cyprus (Kıbrıs) 
+Czech Republic 
+Denmark 
+Djibouti 
+Dominica 
+Dominican Republic (República Dominicana) 
+East Timor 
+Ecuador 
+Egypt 
+El Salvador 
+Equatorial Guinea (Guinea Ecuatorial) 
+Eritrea 
+Estonia 
+Ethiopia 
+Falkland Islands (Malvinas) 
+Faroe Islands 
+Fiji 
+Finland 
+France 
+French Guiana 
+French Polynesia 
+Gabon (République gabonaise) 
+Gambia 
+Georgia 
+Germany (Deutschland) 
+Ghana 
+Gibraltar 
+Greece 
+Greenland 
+Grenada 
+Guadeloupe 
+Guam 
+Guatemala 
+Guinea (Guinée) 
+Guinea-Bissau 
+Guyana 
+Haiti 
+Holy See (Vatican City State) 
+Honduras 
+Hong Kong (中国香港) 
+Hungary 
+Iceland 
+India 
+Indonesia 
+Iraq 
+Ireland 
+Israel 
+Italy (Italia) 
+Ivory Coast (Côte d'Ivoire) 
+Jamaica 
+Japan (日本) 
+Jordan 
+Kazakhstan (Қазақстан) 
+Kenya 
+Kiribati 
+Korea (한국) 
+Kosovo 
+Kuwait 
+Kyrgyzstan (Кыргызстан) 
+Laos 
+Latvia 
+Lebanon 
+Lesotho 
+Liberia 
+Libya 
+Liechtenstein 
+Lithuania 
+Luxembourg 
+Macau 
+Madagascar 
+Malawi 
+Malaysia 
+Maldives 
+Mali 
+Malta 
+Marshall Islands 
+Martinique 
+Mauritania 
+Mauritius 
+Mayotte 
+Mexico 
+Micronesia 
+Moldova, Republic of 
+Monaco 
+Mongolia 
+Montenegro 
+Montserrat 
+Morocco 
+Mozambique (Moçambique) 
+Myanmar 
+Namibia 
+Nauru 
+Nepal 
+Netherlands (Nederland) 
+Netherlands Antilles 
+New Caledonia 
+New Zealand 
+Nicaragua 
+Niger 
+Nigeria 
+Niue 
+Norfolk Island 
+North Macedonia 
+Northern Mariana Islands 
+Norway 
+Oman 
+Pakistan 
+Palau 
+Palestinian Authority 
+Panama 
+Papua New Guinea 
+Paraguay 
+Peru 
+Philippines 
+Pitcairn Islands 
+Poland (Polska) 
+Portugal 
+Puerto Rico 
+Qatar 
+Reunion 
+Romania 
+Rwanda 
+Samoa 
+San Marino 
+Sao Tome and Principe (São Tomé e Príncipe) 
+Saudi Arabia 
+Senegal 
+Serbia 
+Seychelles 
+Sierra Leone 
+Singapore 
+Sint Maarten 
+Slovakia 
+Slovenia 
+Solomon Islands 
+Somalia 
+South Africa 
+South Georgia/South Sandwich 
+South Sudan 
+Spain (España) 
+Sri Lanka 
+St. Barts 
+St. Helena 
+St. Kitts and Nevis 
+St. Lucia 
+St. Martin 
+St. Pierre and Miquelon 
+St. Vincent and the Grenadines 
+Sudan 
+Suriname 
+Swaziland 
+Sweden 
+Switzerland (Schweiz) 
+Taiwan (臺灣地區) 
+Tajikistan (Тоҷикистон) 
+Tanzania, United Republic of 
+Thailand 
+Togo 
+Tokelau 
+Tonga 
+Trinidad and Tobago 
+Tunisia 
+Turkey (Türkiye) 
+Turkmenistan (Түркменистан) 
+Turks and Caicos Islands 
+Tuvalu 
+Uganda 
+Ukraine 
+United Arab Emirates 
+United Kingdom 
+Uruguay 
+US Minor Outlying Islands 
+Uzbekistan 
+Vanuatu 
+Venezuela 
+Vietnam 
+Virgin Islands (British) 
+Virgin Islands (U.S.) 
+Wallis and Futuna Islands 
+Western Sahara 
+Yemen 
+Zambia 
+Zimbabwe 
+
+ English (United States) 
+English (India) 
+English (EMEA) 
+Español (EMEA) 
+Español (LATAM) 
+Français (Canada) 
+Français (EMEA) 
+Italiano 
+한국어 
+Nederlands 
+Polski 
+Português (LATAM) 
+Português (EMEA) 
+русский 
+Türkçe 
+繁體中文 （台灣） 
+中文(中华人民共和国) 
+Deutsch 
+English (ASIA) 
+English (Canada) 
+English (China) 
+日本語 (日本) 
+English (LATAM) 
+English (ANZ) 
+Tiếng Việt 
+
+ PRIVACY NOTICE CONSENT
+
+Having received and read this privacy notice on personal data processing, I consent to:
+
+ The processing of my personal data for marketing purposes, including staying informed by email about industry trends, events, offers and product launches. 
+
+ Subscribe 
+
+ Thank You! Your email was sent.
+
+ Sorry, an error was encountered.
+
+ Please try again.
+
+ Continue Browsing 
+
+ × 
+
+Discover latest advancements in technology by joining our newsletter
+
+ Get exclusive insights and updates on AI, liquid cooling, and high performance computing in the data center delivered straight to your inbox. 
+
+ YOUR EMAIL 
+
+ EMAIL ADDRESS 
+
+ TOPICS OF INTEREST 
+
+ AI Solutions 
+
+ Colocation / Cloud / Hyperscale Infrastructure 
+
+ Critical Power 
+
+ 5G / Edge 
+
+ Efficiency / Sustainability 
+
+ Facilities Management / Services / Remote 
+
+ IT Management / Remote Management 
+
+ Modular Data Centers 
+
+ Thermal Management 
+
+ YOUR COUNTRY 
+
+ COUNTRY 
+
+ USA 
+Afghanistan 
+Albania 
+Algeria 
+American Samoa 
+Andorra 
+Angola 
+Anguilla 
+Antigua and Barbuda 
+Argentina 
+Armenia 
+Aruba 
+Ascension Island 
+Australia 
+Austria (Österreich) 
+Azerbaijan 
+Bahamas 
+Bahrain 
+Bangladesh 
+Barbados 
+Belarus (Беларусь) 
+Belgium (Belgique/België) 
+Belize 
+Benin 
+Bermuda 
+Bhutan 
+Bolivia 
+Bonaire and Sint Eustatius 
+Bosnia and Herzegovina 
+Botswana 
+Brazil 
+British Indian Ocean Territory 
+Brunei Darussalam 
+Bulgaria 
+Burkina Faso 
+Burundi 
+Cabo Verde 
+Cambodia 
+Cameroon (Cameroun) 
+Canada 
+Cayman Islands 
+Central African Republic (République centrafricaine) 
+Chad (Tchad) 
+Channel Islands (Îles de la Manche) 
+Chile 
+China (中国) 
+Christmas Island 
+Cocos (Keeling) Islands 
+Colombia 
+Comoros (Union des Comores) 
+Congo, Republic of the 
+Congo, The Democratic Republic 
+Cook Islands 
+Costa Rica 
+Croatia 
+Curacao 
+Cyprus (Kıbrıs) 
+Czech Republic 
+Denmark 
+Djibouti 
+Dominica 
+Dominican Republic (República Dominicana) 
+East Timor 
+Ecuador 
+Egypt 
+El Salvador 
+Equatorial Guinea (Guinea Ecuatorial) 
+Eritrea 
+Estonia 
+Ethiopia 
+Falkland Islands (Malvinas) 
+Faroe Islands 
+Fiji 
+Finland 
+France 
+French Guiana 
+French Polynesia 
+Gabon (République gabonaise) 
+Gambia 
+Georgia 
+Germany (Deutschland) 
+Ghana 
+Gibraltar 
+Greece 
+Greenland 
+Grenada 
+Guadeloupe 
+Guam 
+Guatemala 
+Guinea (Guinée) 
+Guinea-Bissau 
+Guyana 
+Haiti 
+Holy See (Vatican City State) 
+Honduras 
+Hong Kong (中国香港) 
+Hungary 
+Iceland 
+India 
+Indonesia 
+Iraq 
+Ireland 
+Israel 
+Italy (Italia) 
+Ivory Coast (Côte d'Ivoire) 
+Jamaica 
+Japan (日本) 
+Jordan 
+Kazakhstan (Қазақстан) 
+Kenya 
+Kiribati 
+Korea (한국) 
+Kosovo 
+Kuwait 
+Kyrgyzstan (Кыргызстан) 
+Laos 
+Latvia 
+Lebanon 
+Lesotho 
+Liberia 
+Libya 
+Liechtenstein 
+Lithuania 
+Luxembourg 
+Macau 
+Madagascar 
+Malawi 
+Malaysia 
+Maldives 
+Mali 
+Malta 
+Marshall Islands 
+Martinique 
+Mauritania 
+Mauritius 
+Mayotte 
+Mexico 
+Micronesia 
+Moldova, Republic of 
+Monaco 
+Mongolia 
+Montenegro 
+Montserrat 
+Morocco 
+Mozambique (Moçambique) 
+Myanmar 
+Namibia 
+Nauru 
+Nepal 
+Netherlands (Nederland) 
+Netherlands Antilles 
+New Caledonia 
+New Zealand 
+Nicaragua 
+Niger 
+Nigeria 
+Niue 
+Norfolk Island 
+North Macedonia 
+Northern Mariana Islands 
+Norway 
+Oman 
+Pakistan 
+Palau 
+Palestinian Authority 
+Panama 
+Papua New Guinea 
+Paraguay 
+Peru 
+Philippines 
+Pitcairn Islands 
+Poland (Polska) 
+Portugal 
+Puerto Rico 
+Qatar 
+Reunion 
+Romania 
+Rwanda 
+Samoa 
+San Marino 
+Sao Tome and Principe (São Tomé e Príncipe) 
+Saudi Arabia 
+Senegal 
+Serbia 
+Seychelles 
+Sierra Leone 
+Singapore 
+Sint Maarten 
+Slovakia 
+Slovenia 
+Solomon Islands 
+Somalia 
+South Africa 
+South Georgia/South Sandwich 
+South Sudan 
+Spain (España) 
+Sri Lanka 
+St. Barts 
+St. Helena 
+St. Kitts and Nevis 
+St. Lucia 
+St. Martin 
+St. Pierre and Miquelon 
+St. Vincent and the Grenadines 
+Sudan 
+Suriname 
+Swaziland 
+Sweden 
+Switzerland (Schweiz) 
+Taiwan (臺灣地區) 
+Tajikistan (Тоҷикистон) 
+Tanzania, United Republic of 
+Thailand 
+Togo 
+Tokelau 
+Tonga 
+Trinidad and Tobago 
+Tunisia 
+Turkey (Türkiye) 
+Turkmenistan (Түркменистан) 
+Turks and Caicos Islands 
+Tuvalu 
+Uganda 
+Ukraine 
+United Arab Emirates 
+United Kingdom 
+Uruguay 
+US Minor Outlying Islands 
+Uzbekistan 
+Vanuatu 
+Venezuela 
+Vietnam 
+Virgin Islands (British) 
+Virgin Islands (U.S.) 
+Wallis and Futuna Islands 
+Western Sahara 
+Yemen 
+Zambia 
+Zimbabwe 
+
+ ZIP CODE 
+
+ English (United States) 
+English (India) 
+English (EMEA) 
+Español (EMEA) 
+Español (LATAM) 
+Français (Canada) 
+Français (EMEA) 
+Italiano 
+한국어 
+Nederlands 
+Polski 
+Português (LATAM) 
+Português (EMEA) 
+русский 
+Türkçe 
+繁體中文 （台灣） 
+中文(中华人民共和国) 
+Deutsch 
+English (ASIA) 
+English (Canada) 
+English (China) 
+日本語 (日本) 
+English (LATAM) 
+English (ANZ) 
+Tiếng Việt 
+
+ PRIVACY NOTICE CONSENT 
+
+ PRIVACY NOTICE CONSENT
+
+Having received and read this privacy notice on personal data processing, I consent to:
+
+ The processing of my personal data for marketing purposes, including staying informed by email about industry trends, events, offers and product launches. 
+
+ SIGN UP NOW 
+
+ Thank you for signing up! 
+
+ We received your email successfully. 
+
+ Please check your email if you received a confirmation message. 
+
+ Something went wrong. 
+
+ Unfortunately, we encountered an issue with your subscription. 
+
+ Continue Browsing 
+ TRY AGAIN 
+
+ × 
+
+Welcome back, {0}!
+
+ We detected multiple accounts using your login credentials. Please select one account and continue: 
+
+ LOGIN AS CUSTOMER 
+
+ LOGIN AS PARTNER 
+
+ LOGIN AS CONSULTANT

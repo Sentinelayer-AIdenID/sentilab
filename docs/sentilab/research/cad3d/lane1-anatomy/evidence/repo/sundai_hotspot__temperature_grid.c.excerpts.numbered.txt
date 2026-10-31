@@ -1,0 +1,295 @@
+# git -C H:/sentilab show origin/main:sundai_hotspot/temperature_grid.c | cat -n  (excerpts: lines 30-60, 60-131, 455-610, 1030-1063)
+# origin/main = 46791be360555d0e24b4ad5f906abafb71f07118
+[temperature_grid.h]     30	#define V_POWER				0
+[temperature_grid.h]     31	#define V_TEMP				1
+[temperature_grid.h]     32	
+[temperature_grid.h]     33	/* default no. of chip layers (excluding spreader
+[temperature_grid.h]     34	 * and sink). used when LCF file is not specified
+[temperature_grid.h]     35	 */
+[temperature_grid.h]     36	#define DEFAULT_CHIP_LAYERS	2
+[temperature_grid.h]     37	#define LAYER_SI			      0
+[temperature_grid.h]     38	#define LAYER_INT			      1
+[temperature_grid.h]     39	
+[temperature_grid.h]     40	/* layers of secondary path with same area as die */
+[temperature_grid.h]     41	#define SEC_CHIP_LAYERS	2
+[temperature_grid.h]     42	#define LAYER_C4	      0
+[temperature_grid.h]     43	#define LAYER_METAL     1
+[temperature_grid.h]     44	
+[temperature_grid.h]     45	/* default no. of package layers	*/
+[temperature_grid.h]     46	#define DEFAULT_PACK_LAYERS	2
+[temperature_grid.h]     47	#define LAYER_SP			      0
+[temperature_grid.h]     48	#define LAYER_SINK			    1
+[temperature_grid.h]     49	
+[temperature_grid.h]     50	/* additional package layers from secondary path */
+[temperature_grid.h]     51	#define SEC_PACK_LAYERS	3
+[temperature_grid.h]     52	#define LAYER_PCB	      0
+[temperature_grid.h]     53	#define LAYER_SOLDER	  1
+[temperature_grid.h]     54	#define LAYER_SUB	      2
+[temperature_grid.h]     55	
+[temperature_grid.h]     56	/* Occupancy threshold for border-cell calculation.
+[temperature_grid.h]     57	   Effective only when the detailed 3D modeling is turned on. */
+[temperature_grid.h]     58	#define OCCUPANCY_THRESHOLD 0.95
+[temperature_grid.h]     59	
+[temperature_grid.h]     60	/* block list: block to grid mapping data structure.
+    60	  // If one cell is a fluid cell and the other isn't, use HTC instead
+    61	  if((is_fluid_cell1 && !is_fluid_cell2) || (!is_fluid_cell1 && is_fluid_cell2)) {
+    62	    if(n1 == 0) {
+    63	      // We know that n2 must be the fluid cell
+    64	      res = find_res_3D(n1, i1, j1, model, 3) + (1.0 / (htc * ch * cw)) + extra_res;
+    65	      //fprintf(stderr, "Res (%d, %d, %d) -> (%d, %d, %d) = %e\n", n1, i1, j1, n2, i2, j2, res);
+    66	    }
+    67	    else if(n2 == 0) {
+    68	      // We know that n1 must be the fluid cell
+    69	      res = find_res_3D(n2, i2, j2, model, 3) + (1.0 / (htc * ch * cw)) + extra_res;
+    70	      //fprintf(stderr, "Res (%d, %d, %d) -> (%d, %d, %d) = %e\n", n1, i1, j1, n2, i2, j2, res);
+    71	    }
+    72	    else if(n1 != n2 && i1 == i2 && j1 == j2) {
+    73	      if(is_fluid_cell1)
+    74	        res = (find_res_3D(n2, i2, j2, model, 3) / 2.0) + (1.0 / (htc * ch * cw)) + extra_res;
+    75	      else
+    76	        res = (find_res_3D(n1, i1, j1, model, 3) / 2.0) + (1.0 / (htc * ch * cw)) + extra_res;
+    77	      //fprintf(stderr, "Res (%d, %d, %d) -> (%d, %d, %d) = %e\n", n1, i1, j1, n2, i2, j2, res);
+    78	    }
+    79	    else if(n1 == n2 && i1 != i2 && j1 == j2) {
+    80	      if(is_fluid_cell1)
+    81	        res = (find_res_3D(n2, i2, j2, model, 1) / 2.0) + (1.0 / (htc * cw * model->layers[n1].thickness));
+    82	      else
+    83	        res = (find_res_3D(n1, i1, j1, model, 1) / 2.0) + (1.0 / (htc * cw * model->layers[n2].thickness));
+    84	      //fprintf(stderr, "Res (%d, %d, %d) -> (%d, %d, %d) = %e\n", n1, i1, j1, n2, i2, j2, res);
+    85	    }
+    86	    else if(n1 == n2 && i1 == i2 && j1 != j2) {
+    87	      if(is_fluid_cell1)
+    88	        res = (find_res_3D(n2, i2, j2, model, 2) / 2.0) + (1.0 / (htc * ch * model->layers[n1].thickness));
+    89	      else
+    90	        res = (find_res_3D(n1, i1, j1, model, 2) / 2.0) + (1.0 / (htc * ch * model->layers[n2].thickness));
+    91	      //fprintf(stderr, "Res (%d, %d, %d) -> (%d, %d, %d) = %e\n", n1, i1, j1, n2, i2, j2, res);
+    92	    }
+    93	    else {
+    94	      fatal("find_res must be called on adjacent grid cells\n");
+    95	    }
+    96	  }
+    97	  else if(model->config.detailed_3D_used == 1) {
+    98	    if(n1 == 0 && i1 == i2 && j1 == j2) {
+    99	      res = find_res_3D(n1, i1, j1, model, 3) + (find_res_3D(n2, i2, j2, model, 3) / 2.0);
+   100	    }
+   101	    else if(n2 == 0 && i1 == i2 && j1 == j2)
+   102	      res = find_res_3D(n2, i2, j2, model, 3) + (find_res_3D(n1, i1, j1, model, 3) / 2.0);
+   103	    else if(n1 != n2 && i1 == i2 && j1 == j2) {
+   104	      res = (find_res_3D(n1, i1, j1, model, 3) / 2.0) + (find_res_3D(n2, i2, j2, model, 3) / 2.0);
+   105	    }
+   106	    else if(n1 == n2 && i1 != i2 && j1 == j2) {
+   107	      res = (find_res_3D(n1, i1, j1, model, 1) / 2.0) + (find_res_3D(n2, i2, j2, model, 1) / 2.0);
+   108	    }
+   109	    else if(n1 == n2 && i1 == i2 && j1 != j2) {
+   110	      res = (find_res_3D(n1, i1, j1, model, 2) / 2.0) + (find_res_3D(n2, i2, j2, model, 2) / 2.0);
+   111	    }
+   112	    else {
+   113	      fatal("find_res must be called on adjacent grid cells\n");
+   114	    }
+   115	  }
+   116	  else {
+   117	    if(n1 < n2 && i1 == i2 && j1 == j2) {
+   118	      res = model->layers[n1].rz;
+   119	    }
+   120	    else if(n1 > n2 && i1 == i2 && j1 == j2) {
+   121	      res = model->layers[n2].rz;
+   122	    }
+   123	    else if(n1 == n2 && i1 != i2 && j1 == j2) {
+   124	      res = (model->layers[n1].rx / 2.0) + (model->layers[n2].rx / 2.0);
+   125	    }
+   126	    else if(n1 == n2 && i1 == i2 && j1 != j2) {
+   127	      res = (model->layers[n1].ry / 2.0) + (model->layers[n2].ry / 2.0);
+   128	    }
+   129	    else {
+   130	      fatal("find_res must be called on adjacent grid cells\n");
+   131	    }
+   455	  }
+   456	}
+   457	
+   458	/* populate default set of layers	*/
+   459	void populate_default_layers(grid_model_t *model, flp_t *flp_default)
+   460	{
+   461	  int silidx, intidx, metalidx, c4idx;
+   462	
+   463	  if (!model->config.model_secondary) {
+   464	      silidx = LAYER_SI;
+   465	      intidx = LAYER_INT;
+   466	  } else {
+   467	      silidx = SEC_PACK_LAYERS + SEC_CHIP_LAYERS + LAYER_SI;
+   468	      intidx = SEC_PACK_LAYERS + SEC_CHIP_LAYERS + LAYER_INT;
+   469	      c4idx  = SEC_PACK_LAYERS + LAYER_C4;
+   470	      metalidx = SEC_PACK_LAYERS + LAYER_METAL;
+   471	  }
+   472	
+   473	  /* silicon */
+   474	  model->layers[silidx].no = silidx;
+   475	  model->layers[silidx].has_lateral = TRUE;
+   476	  model->layers[silidx].has_power = TRUE;
+   477	  model->layers[silidx].k = model->config.k_chip;
+   478	  model->layers[silidx].thickness = model->config.t_chip;
+   479	  model->layers[silidx].sp = model->config.p_chip;
+   480	  model->layers[silidx].flp = flp_default;
+   481	  model->layers[silidx].b2gmap = new_b2gmap(model->rows, model->cols);
+   482	  model->layers[silidx].g2bmap = (glist_t *) calloc(flp_default->n_units, sizeof(glist_t));
+   483	  if (!model->layers[silidx].g2bmap)
+   484	    fatal("memory allocation error\n");
+   485	
+   486	  /* interface material	*/
+   487	  model->layers[intidx].no = intidx;
+   488	  model->layers[intidx].has_lateral = TRUE;
+   489	  model->layers[intidx].has_power = FALSE;
+   490	  model->layers[intidx].k = model->config.k_interface;
+   491	  model->layers[intidx].thickness = model->config.t_interface;
+   492	  model->layers[intidx].sp = model->config.p_interface;
+   493	  model->layers[intidx].flp = flp_default;
+   494	  model->layers[intidx].b2gmap = model->layers[silidx].b2gmap;
+   495	  model->layers[intidx].g2bmap = model->layers[silidx].g2bmap;
+   496	
+   497	  if (model->config.model_secondary) {
+   498	      /* metal layer	*/
+   499	      model->layers[metalidx].no = metalidx;
+   500	      model->layers[metalidx].has_lateral = TRUE;
+   501	      model->layers[metalidx].has_power = FALSE;
+   502	      model->layers[metalidx].k = K_METAL;
+   503	      model->layers[metalidx].thickness = model->config.t_metal;
+   504	      model->layers[metalidx].sp = SPEC_HEAT_METAL;
+   505	      model->layers[metalidx].flp = flp_default;
+   506	      model->layers[metalidx].b2gmap = model->layers[silidx].b2gmap;
+   507	      model->layers[metalidx].g2bmap = model->layers[silidx].g2bmap;
+   508	
+   509	      /* C4/underfill layer*/
+   510	      model->layers[c4idx].no = c4idx;
+   511	      model->layers[c4idx].has_lateral = TRUE;
+   512	      model->layers[c4idx].has_power = FALSE;
+   513	      model->layers[c4idx].k = K_C4;
+   514	      model->layers[c4idx].thickness = model->config.t_c4;
+   515	      model->layers[c4idx].sp = SPEC_HEAT_C4;
+   516	      model->layers[c4idx].flp = flp_default;
+   517	      model->layers[c4idx].b2gmap = model->layers[silidx].b2gmap;
+   518	      model->layers[c4idx].g2bmap = model->layers[silidx].g2bmap;
+   519	  }
+   520	}
+   521	
+   522	/* populate the package layers	*/
+   523	void append_package_layers(grid_model_t *model)
+   524	{
+   525	  /* shortcut	*/
+   526	  int nl = model->n_layers;
+   527	  int silidx, spidx, hsidx, subidx, solderidx, pcbidx;
+   528	
+   529	  spidx = nl - DEFAULT_PACK_LAYERS + LAYER_SP;
+   530	  hsidx = nl - DEFAULT_PACK_LAYERS + LAYER_SINK;
+   531	
+   532	  /* spreader	*/
+   533	  model->layers[spidx].no = spidx;
+   534	  model->layers[spidx].has_lateral = TRUE;
+   535	  model->layers[spidx].has_power = FALSE;
+   536	  model->layers[spidx].k = model->config.k_spreader;
+   537	  model->layers[spidx].thickness = model->config.t_spreader;
+   538	  model->layers[spidx].sp = model->config.p_spreader;
+   539	  model->layers[spidx].flp = model->layers[spidx-1].flp;
+   540	  model->layers[spidx].b2gmap = model->layers[spidx-1].b2gmap;
+   541	  model->layers[spidx].g2bmap = model->layers[spidx-1].g2bmap;
+   542	
+   543	  /* heatsink	*/
+   544	  model->layers[hsidx].no = hsidx;
+   545	  model->layers[hsidx].has_lateral = TRUE;
+   546	  model->layers[hsidx].has_power = FALSE;
+   547	  model->layers[hsidx].k = model->config.k_sink;
+   548	  model->layers[hsidx].thickness = model->config.t_sink;
+   549	  model->layers[hsidx].sp = model->config.p_sink;
+   550	  model->layers[hsidx].flp = model->layers[spidx-1].flp;
+   551	  model->layers[hsidx].b2gmap = model->layers[spidx-1].b2gmap;
+   552	  model->layers[hsidx].g2bmap = model->layers[spidx-1].g2bmap;
+   553	
+   554	  /* BU_3D: If detailed_3d option is on, the hasRes & hasCap variables must be set false in the b2gmap*/
+   555	  if(model->config.detailed_3D_used){
+   556	      model->layers[spidx].b2gmap = new_b2gmap(model->rows, model->cols);
+   557	      model->layers[hsidx].b2gmap = model->layers[spidx].b2gmap;
+   558	  }
+   559	  /*end->BU_3D*/
+   560	
+   561	  if (model->config.model_secondary) {
+   562	      if(model->has_lcf)
+   563	        silidx = SEC_PACK_LAYERS;
+   564	      else
+   565	        silidx = SEC_PACK_LAYERS + SEC_CHIP_LAYERS + LAYER_SI;
+   566	      subidx = LAYER_SUB;
+   567	      solderidx = LAYER_SOLDER;
+   568	      pcbidx = LAYER_PCB;
+   569	
+   570	      /* package substrate	*/
+   571	      model->layers[subidx].no = subidx;
+   572	      model->layers[subidx].has_lateral = TRUE;
+   573	      model->layers[subidx].has_power = FALSE;
+   574	      model->layers[subidx].k = K_SUB;
+   575	      model->layers[subidx].thickness = model->config.t_sub;
+   576	      model->layers[subidx].sp = SPEC_HEAT_SUB;
+   577	      model->layers[subidx].flp = model->layers[silidx].flp;
+   578	      model->layers[subidx].b2gmap = model->layers[silidx].b2gmap;
+   579	      model->layers[subidx].g2bmap = model->layers[silidx].g2bmap;
+   580	
+   581	      /* solder balls	*/
+   582	      model->layers[solderidx].no = solderidx;
+   583	      model->layers[solderidx].has_lateral = TRUE;
+   584	      model->layers[solderidx].has_power = FALSE;
+   585	      model->layers[solderidx].k = K_SOLDER;
+   586	      model->layers[solderidx].thickness = model->config.t_solder;
+   587	      model->layers[solderidx].sp = SPEC_HEAT_SOLDER;
+   588	      model->layers[solderidx].flp = model->layers[silidx].flp;
+   589	      model->layers[solderidx].b2gmap = model->layers[silidx].b2gmap;
+   590	      model->layers[solderidx].g2bmap = model->layers[silidx].g2bmap;
+   591	
+   592	      /* PCB	*/
+   593	      model->layers[pcbidx].no = pcbidx;
+   594	      model->layers[pcbidx].has_lateral = TRUE;
+   595	      model->layers[pcbidx].has_power = FALSE;
+   596	      model->layers[pcbidx].k = K_PCB;
+   597	      model->layers[pcbidx].thickness = model->config.t_pcb;
+   598	      model->layers[pcbidx].sp = SPEC_HEAT_PCB;
+   599	      model->layers[pcbidx].flp = model->layers[silidx].flp;
+   600	      model->layers[pcbidx].b2gmap = model->layers[silidx].b2gmap;
+   601	      model->layers[pcbidx].g2bmap = model->layers[silidx].g2bmap;
+   602	
+   603	      if(model->config.detailed_3D_used){
+   604	          model->layers[subidx].b2gmap = new_b2gmap(model->rows, model->cols);
+   605	          model->layers[solderidx].b2gmap = model->layers[subidx].b2gmap;
+   606	          model->layers[pcbidx].b2gmap = model->layers[subidx].b2gmap;
+   607	      }
+   608	  }
+   609	}
+   610	
+  1030	      print_flp_fig(model->layers[silidx].flp);
+  1031	      fatal("inordinate floorplan size!\n");
+  1032	  }
+  1033	
+  1034	  /* shortcuts for cell width(cw) and cell height(ch)	*/
+  1035	  cw = model->width / model->cols;
+  1036	  ch = model->height / model->rows;
+  1037	
+  1038	  /* package R's	*/
+  1039	  populate_package_R(&model->pack, &model->config, model->width, model->height);
+  1040	
+  1041	  hsidx = nl - DEFAULT_PACK_LAYERS + LAYER_SINK;
+  1042	  /* layer specific resistances	*/
+  1043	  for(i=0; i < model->n_layers; i++){
+  1044	      if (model->layers[i].has_lateral) {
+  1045	          model->layers[i].rx =  getr(model->layers[i].k, cw, ch * model->layers[i].thickness);
+  1046	          model->layers[i].ry =  getr(model->layers[i].k, ch, cw * model->layers[i].thickness);
+  1047	      } else {
+  1048	          /* positive infinity	*/
+  1049	          model->layers[i].rx = LARGENUM;
+  1050	          model->layers[i].ry = LARGENUM;
+  1051	      }
+  1052	      model->layers[i].rz =  getr(model->layers[i].k, model->layers[i].thickness, cw * ch);
+  1053	
+  1054	      /* heatsink	is connected to ambient. divide r_convec proportional to cell area */
+  1055	      if (i == hsidx){
+  1056	          model->layers[i].rz += model->config.r_convec *
+  1057	            (model->config.s_sink * model->config.s_sink) / (cw * ch);
+  1058	      }
+  1059	  }
+  1060	
+  1061	  /* done	*/
+  1062	  model->r_ready = TRUE;
+  1063	}
