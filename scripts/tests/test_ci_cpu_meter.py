@@ -191,6 +191,75 @@ class MeterTests(unittest.TestCase):
                 terminal = reconcile(result['identity'], 'failure', result)
                 self.assertEqual(terminal['settlement'], result)
 
+    def test_helper_startup_debit_is_gated_before_release_and_kept_in_settlement(self):
+        import json
+        import sys
+        from dataclasses import asdict
+        from unittest.mock import patch
+
+        from scripts.ci_cpu_meter import run
+        from scripts.tests.test_ci_allocation import IDENTITY
+
+        for startup in (.25, 870, OSError('startup counter unavailable')):
+            with self.subTest(startup=startup), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                group = directory / 'group'
+                (group / 'host').mkdir(parents=True)
+                (group / 'cpu.stat').write_text('usage_usec 0\n')
+                (group / 'cgroup.events').write_text('populated 0\n')
+                marker = directory / 'released'
+                admission = {'identity': asdict(IDENTITY), 'state': 'admitted', 'allocation_id': '56314',
+                             'slot': 3, 'launch_reservation': 100, 'cpu_reservation_seconds': 900}
+                with patch('scripts.ci_cpu_meter.create_group', return_value=group), \
+                     patch('scripts.ci_cpu_meter.time.time', return_value=1793448000), \
+                     patch('scripts.ci_cpu_meter.supervisor_cpu', return_value=0), \
+                     patch('scripts.ci_cpu_meter.helper_startup_cpu', create=True,
+                           side_effect=[startup]), \
+                     patch('scripts.ci_cpu_meter.children_cpu', create=True, return_value=0):
+                    code = run(directory / 'ledger', admission, [sys.executable, '-c',
+                               'import pathlib,sys; pathlib.Path(sys.argv[1]).touch()', str(marker)])
+                result = json.loads((directory / 'ledger/settlement.json').read_text())
+                self.assertEqual(marker.exists(), startup == .25)
+                if isinstance(startup, OSError):
+                    self.assertEqual(code, 1)
+                    self.assertEqual(result['state'], 'inconclusive')
+                    self.assertEqual(result['cpu']['charged_cpu_seconds'], 900)
+                else:
+                    self.assertEqual(code, 0 if startup == .25 else 1)
+                    self.assertEqual(result['cpu']['cpu_seconds'], startup)
+                    self.assertEqual(result['cpu']['charged_cpu_seconds'], startup)
+                    self.assertEqual(result['cpu']['helper_startup_cpu_seconds'], startup)
+                    self.assertEqual(result['state'], 'success' if startup == .25 else 'cpu_exhausted')
+
+    def test_cancelled_unreleased_helper_cpu_is_charged_after_reaping(self):
+        from unittest.mock import patch
+
+        for reason in ('cancelled', 'expired'):
+            with self.subTest(reason=reason), tempfile.TemporaryDirectory() as temporary:
+                with patch('scripts.ci_cpu_meter.children_cpu', create=True, side_effect=(10, 12.5)), \
+                     patch('scripts.ci_cpu_meter.supervisor_cpu', return_value=0):
+                    _, result, _, _ = self.fake_run(Path(temporary), reason=reason)
+                self.assertEqual(result['state'], reason)
+                self.assertEqual(result['cpu']['cpu_seconds'], 2.5)
+                self.assertEqual(result['cpu']['helper_startup_cpu_seconds'], 2.5)
+                self.assertEqual(result['cpu']['charged_cpu_seconds'], 2.5)
+
+    def test_helper_startup_counter_rounding_covers_both_clock_ticks(self):
+        from unittest.mock import patch
+
+        from scripts.ci_cpu_meter import helper_startup_cpu
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / '123').mkdir()
+            stat = root / '123/stat'
+            stat.write_text('123 (a name) with spaces) ' + ' '.join(['0'] * 11 + ['2', '3']))
+            with patch('scripts.ci_cpu_meter.os.sysconf', return_value=100):
+                self.assertEqual(helper_startup_cpu(123, root), .07)
+                stat.write_text('123 (python) ' + ' '.join(['0'] * 11 + ['-1', '3']))
+                with self.assertRaisesRegex(RuntimeError, 'helper CPU'):
+                    helper_startup_cpu(123, root)
+
     def test_workload_waits_for_parent_attachment_and_attach_failure_cancels_it(self):
         import json
         import sys

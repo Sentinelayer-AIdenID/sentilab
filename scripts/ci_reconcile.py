@@ -56,8 +56,11 @@ def valid_settlement(value):
             return False
     elif not nonnegative_finite(seconds) or charge < seconds:
         return False
-    for key in ('cgroup_cpu_seconds', 'supervisor_cpu_seconds', 'last_cgroup_cpu_seconds'):
-        if (key in cpu and not (key == 'last_cgroup_cpu_seconds' and cpu[key] is None)
+    for key in ('cgroup_cpu_seconds', 'supervisor_cpu_seconds', 'last_cgroup_cpu_seconds',
+                'helper_startup_cpu_seconds'):
+        unknown_component = (key == 'last_cgroup_cpu_seconds'
+                             or (key == 'helper_startup_cpu_seconds' and seconds is None))
+        if (key in cpu and not (unknown_component and cpu[key] is None)
                 and not nonnegative_finite(cpu[key])):
             return False
     if value['state'] in ('inconclusive', 'interrupted') and charge < CPU_CAP:

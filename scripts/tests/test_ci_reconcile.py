@@ -44,7 +44,8 @@ class ReconcileTests(unittest.TestCase):
             value = copy.deepcopy(self.valid)
             value[field] = invalid
             yield field + '=' + repr(invalid), value
-        for field in ('cpu_seconds', 'charged_cpu_seconds', 'cgroup_cpu_seconds', 'supervisor_cpu_seconds'):
+        for field in ('cpu_seconds', 'charged_cpu_seconds', 'cgroup_cpu_seconds', 'supervisor_cpu_seconds',
+                      'helper_startup_cpu_seconds'):
             for invalid in (-1, float('nan'), float('inf'), '12.5', True):
                 value = copy.deepcopy(self.valid)
                 value['cpu'][field] = invalid

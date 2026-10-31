@@ -37,6 +37,26 @@ def supervisor_cpu():
     return value.ru_utime + value.ru_stime
 
 
+def children_cpu():
+    value = resource.getrusage(resource.RUSAGE_CHILDREN)
+    return value.ru_utime + value.ru_stime
+
+
+def helper_startup_cpu(pid, root=Path('/proc')):
+    """Bound pre-attachment CPU by sampling the blocked helper after attachment.
+
+    proc stat truncates user/system counters to clock ticks. Add one tick for
+    each counter; any overlap with the new cgroup is a conservative double debit.
+    The release pipe still forbids workload execution at this sample.
+    """
+    fields = (root / str(pid) / 'stat').read_text().rsplit(') ', 1)[1].split()
+    user, system = int(fields[11]), int(fields[12])
+    ticks = os.sysconf('SC_CLK_TCK')
+    if user < 0 or system < 0 or ticks <= 0:
+        raise RuntimeError('invalid helper CPU counter')
+    return (user + system + 2) / ticks
+
+
 def populated(group):
     fields = dict(line.split() for line in (group / 'cgroup.events').read_text().splitlines())
     return fields['populated'] == '1'
@@ -122,6 +142,8 @@ def run(directory, admission, command):
     group, broker, process = None, None, None
     release_read, release_write = None, None
     baseline, own, account = None, None, None
+    child_baseline, startup = None, None
+    startup_measurement = 'unavailable'
     state, code = 'inconclusive', 1
     final_cpu = {'cpu_seconds': None, 'measurement': 'unavailable',
                  'charged_cpu_seconds': CPU_CAP}
@@ -141,6 +163,7 @@ def run(directory, admission, command):
         environment.pop('GH_TOKEN', None)
         environment.pop('GITHUB_TOKEN', None)
         release_read, release_write = os.pipe()
+        child_baseline = children_cpu()
         process = subprocess.Popen([sys.executable, '-I', '-S', '-c', ENTER,
                                     str(release_read), *command], env=environment,
                                    pass_fds=(release_read,))
@@ -152,16 +175,21 @@ def run(directory, admission, command):
             state, code = 'expired', 1
         else:
             (group / 'host' / 'cgroup.procs').write_text(str(process.pid))
+            startup = helper_startup_cpu(process.pid)
+            startup_measurement = 'proc stat after attachment plus two clock ticks; upper bound'
             # Recheck after the potentially blocking attach, before release.
             if stop:
                 state, code = 'cancelled', 130
             elif time.time() >= EXPIRY:
                 state, code = 'expired', 1
+            elif account.observe(read_cpu(group), supervisor_cpu() + startup, time.monotonic()):
+                state, code = 'cpu_exhausted', 1
             else:
                 os.write(release_write, b'1')
                 state, code = monitor(group, process, account, cancelled=lambda: bool(stop),
+                                      own_cpu=lambda: supervisor_cpu() + startup,
                                       violated=lambda: bool(ledger.summary()['direct_call_violations']))
-    except (OSError, RuntimeError, ValueError, KeyError) as exc:
+    except (OSError, RuntimeError, ValueError, KeyError, IndexError) as exc:
         print('CI allocation stopped:', str(exc), file=sys.stderr)
         state, code = 'inconclusive', 1
     finally:
@@ -206,18 +234,35 @@ def run(directory, admission, command):
                     errors.append('cgroup still populated after cleanup')
                 # A late/failed kill must not discard an available CPU sample.
                 group_end, own_end = read_cpu(group), supervisor_cpu()
-                if (account is None or not all(math.isfinite(v) for v in (group_end, own_end))
-                        or group_end < account.previous[0] or own_end < account.previous[1]):
+                if process is None:
+                    startup, startup_measurement = 0, 'helper not spawned'
+                elif startup is None and helper_reaped:
+                    # No release occurred. Reaping captures the helper's entire
+                    # CPU even when cancellation/attach failure prevented a sample.
+                    startup = children_cpu() - child_baseline
+                    startup_measurement = 'reaped unreleased helper rusage; upper bound'
+                if startup is not None and (not math.isfinite(startup) or startup < 0):
+                    raise RuntimeError('helper CPU counter unavailable or regressed')
+                accounted_own = own_end + (startup or 0)
+                if (account is None or not all(math.isfinite(v) for v in (group_end, accounted_own))
+                        or group_end < account.previous[0] or accounted_own < account.previous[1]):
                     raise RuntimeError('final CPU counter regressed')
-                total = group_end - baseline + own_end - own
-                final_cpu = {'cpu_seconds': total, 'measurement': 'cgroup-v2 plus supervisor rusage',
+                total = group_end - baseline + accounted_own - own
+                final_cpu = {'cpu_seconds': total,
+                             'measurement': 'cgroup-v2 plus supervisor rusage plus helper startup debit',
                              'cgroup_cpu_seconds': group_end - baseline,
                              'supervisor_cpu_seconds': own_end - own,
+                             'helper_startup_cpu_seconds': startup,
+                             'helper_startup_measurement': startup_measurement,
                              'charged_cpu_seconds': total, 'stop_reserve_seconds': 30,
                              'cgroup': str(group), 'cpu_max': '100000 100000',
                              'final_populated': final_populated}
                 if total > CPU_CAP:
                     state, code = 'cpu_limit_violated', 1
+                if startup is None:
+                    final_cpu.update(cpu_seconds=None, measurement='helper startup CPU unknown',
+                                     charged_cpu_seconds=max(CPU_CAP, total))
+                    errors.append('helper startup CPU unavailable; helper was not reaped')
             except (OSError, RuntimeError, ValueError, KeyError) as exc:
                 errors.append(str(exc))
         final_cpu.update(final_populated=final_populated, helper_reaped=helper_reaped,
