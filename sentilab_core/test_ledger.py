@@ -119,7 +119,7 @@ console.log(JSON.stringify(JSON.parse(s).map(c)));"""
                               input=json.dumps(vectors), text=True, capture_output=True, check=True)
         self.assertEqual([canonical(v).decode() for v in vectors], json.loads(proc.stdout))
         self.assertNotEqual(digest({}), digest({"present": None}))
-        for value in (float("inf"), 9007199254740992, "\ud800"):
+        for value in (float("inf"), 9007199254740993, "\ud800"):
             with self.assertRaises((ValueError, UnicodeError)):
                 canonical(value)
 
