@@ -13,6 +13,22 @@ from sentilab_core import resultcheck
 ROOT = Path(__file__).resolve().parents[1]
 ERROR = {"error": {"code": "file_unreadable"}}
 
+CRLF_STDIO = r'''
+import sys
+sys.stdout.reconfigure(newline='\r\n')
+sys.stderr.reconfigure(newline='\r\n')
+'''
+
+# Immediate process exit also proves that the CLI flushes its own output.
+CLI_HOOK = r'''
+import os
+from sentilab_cli.__main__ import main
+try:
+    main()
+except SystemExit as error:
+    os._exit(error.code)
+'''
+
 # Replace only the core's OS dependency. The real CLI, descriptor operations,
 # parser and receipt serializer run in a child, so exit 1 cannot hide a crash.
 OS_HOOK = r'''
@@ -31,7 +47,7 @@ api = dict(vars(os))
 if windows:
     api.pop('O_NONBLOCK', None)
     api.pop('O_NOFOLLOW', None)
-    api['O_BINARY'] = 0x8000
+    api['O_BINARY'] = getattr(os, 'O_BINARY', 0x8000)
 
 def fail(stage):
     if fault == stage:
@@ -48,7 +64,11 @@ def opened(file, flags):
         os.close(writer)
         return reader
     binary = windows and bool(flags & api['O_BINARY'])
-    return os.open(file, flags & ~api['O_BINARY'] if windows else flags)
+    # Only strip the synthetic flag on hosts whose os.open cannot accept it.
+    # Native Windows needs the real O_BINARY or the CRT translates CRLF first.
+    if windows and not hasattr(os, 'O_BINARY'):
+        flags &= ~api['O_BINARY']
+    return os.open(file, flags)
 
 def fstat(fd):
     events.append(['fstat'])
@@ -83,7 +103,7 @@ class PlatformIntakeTests(unittest.TestCase):
     def invoke(self, file, platform, fault=''):
         probe = file.parent / 'probe.json'
         process = subprocess.run(
-            [sys.executable, '-c', OS_HOOK, 'resultcheck', str(file)],
+            [sys.executable, '-c', CRLF_STDIO + OS_HOOK, 'resultcheck', str(file)],
             cwd=ROOT, capture_output=True, timeout=5,
             env={**os.environ, 'RC_PLATFORM': platform, 'RC_FAULT': fault,
                  'RC_PROBE': str(probe)})
@@ -150,6 +170,79 @@ class PlatformIntakeTests(unittest.TestCase):
             self.assert_error(process)
             self.assertEqual([event[0] for event in probe['events']], ['open'])
             self.assertEqual(probe['delivered_bytes'], 0)
+
+
+class OutputBytesTests(unittest.TestCase):
+    def invoke(self, arguments, crlf):
+        return subprocess.run(
+            [sys.executable, '-c', (CRLF_STDIO if crlf else '') + CLI_HOOK,
+             'resultcheck', *arguments],
+            cwd=ROOT, capture_output=True, timeout=5)
+
+    def assert_lf(self, data):
+        self.assertTrue(data.endswith(b'\n'), data)
+        self.assertFalse(data.endswith(b'\n\n'), data)
+        self.assertNotIn(b'\r', data)
+
+    def test_receipts_are_exact_utf8_bytes_with_one_lf(self):
+        vectors = json.loads((ROOT / 'contracts/contract-0.2/vectors-resultcheck.json').read_text())['vectors']
+        cases = [(b'[]\r\n', 2), (b'not JSON\r\n', 2)]
+        for vector, code in zip(vectors[:2], (1, 0)):
+            request = dict(schema_version='resultcheck.request.v2', request_id='vector', **vector['request'])
+            cases.append((json.dumps(request).encode('utf-8'), code))
+        with tempfile.TemporaryDirectory() as directory:
+            file = Path(directory) / 'input.json'
+            for raw, code in cases:
+                file.write_bytes(raw)
+                expected = (resultcheck.canonical(resultcheck.check_raw(raw)) + '\n').encode('utf-8')
+                for crlf in (False, True):
+                    with self.subTest(raw=raw, crlf=crlf):
+                        process = self.invoke([str(file)], crlf)
+                        self.assertEqual(process.returncode, code, process.stderr)
+                        self.assertEqual(process.stderr, b'')
+                        self.assertEqual(process.stdout, expected)
+                        self.assert_lf(process.stdout)
+
+    def test_unreadable_error_is_exact_utf8_bytes_with_one_lf(self):
+        with tempfile.TemporaryDirectory() as directory:
+            file = Path(directory) / 'missing.json'
+            for crlf in (False, True):
+                with self.subTest(crlf=crlf):
+                    process = self.invoke([str(file)], crlf)
+                    self.assertEqual(process.returncode, 2, process.stderr)
+                    self.assertEqual(process.stderr, b'')
+                    self.assertEqual(process.stdout, b'{"error":{"code":"file_unreadable"}}\n')
+                    self.assert_lf(process.stdout)
+
+    def test_usage_errors_are_utf8_with_lf_on_stderr(self):
+        for arguments in ([], ['--root'], ['--unknown-é', 'input.json']):
+            baseline = None
+            for crlf in (False, True):
+                with self.subTest(arguments=arguments, crlf=crlf):
+                    process = self.invoke(arguments, crlf)
+                    self.assertEqual(process.returncode, 2)
+                    self.assertEqual(process.stdout, b'')
+                    self.assertTrue(process.stderr.startswith(b'usage: sentilab resultcheck '))
+                    self.assertIn(b'sentilab resultcheck: error:', process.stderr)
+                    self.assert_lf(process.stderr)
+                    if arguments and arguments[0].startswith('--unknown'):
+                        self.assertIn('--unknown-é'.encode('utf-8'), process.stderr)
+                    if baseline is None:
+                        baseline = process.stderr
+                    self.assertEqual(process.stderr, baseline)
+
+    def test_help_is_utf8_with_lf_on_stdout(self):
+        baseline = None
+        for crlf in (False, True):
+            with self.subTest(crlf=crlf):
+                process = self.invoke(['--help'], crlf)
+                self.assertEqual(process.returncode, 0, process.stderr)
+                self.assertEqual(process.stderr, b'')
+                self.assertTrue(process.stdout.startswith(b'usage: sentilab resultcheck '))
+                self.assert_lf(process.stdout)
+                if baseline is None:
+                    baseline = process.stdout
+                self.assertEqual(process.stdout, baseline)
 
 
 if __name__ == '__main__':

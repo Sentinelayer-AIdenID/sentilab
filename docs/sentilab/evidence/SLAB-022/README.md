@@ -41,7 +41,10 @@ and `counts`, `details`, `statistics` and `claim_result` explain it. The request
 schema is `resultcheck.request.v2`; see
 [CONTRACTS.md](../../../../contracts/contract-0.2/CONTRACTS.md#2-resultcheck).
 Neither timestamps nor transport metadata enter the receipt. CLI stdout is
-canonical UTF-8 JSON plus one LF. MCP `content[0].text` is those same canonical
+canonical UTF-8 JSON plus one LF, written and flushed as bytes so Windows text
+mode cannot translate the terminator to CRLF. ResultCheck help and usage errors
+also use binary UTF-8 writes, retaining argparse's stdout/stderr and exit codes.
+MCP `content[0].text` is those same canonical
 JSON bytes, without the CLI's line terminator; normal JSON-RPC framing surrounds
 it. MCP `isError` is true only for `rejected` receipts or `file_unreadable` transport
 errors. Flags (including `arithmetic_discrepancy`) and insufficient data are completed
@@ -101,7 +104,19 @@ dependency: no `O_NONBLOCK`/`O_NOFOLLOW`, an available `O_BINARY`, and simulated
 CRLF translation unless binary mode is selected. Actual CLI subprocesses prove
 four bytes read for `[]\r\n`, receipt parity, and structured exit 2 for nonregular
 descriptors and injected OS exceptions before/during/after reading. Native Windows
-execution was not run in this box. MCP and CLI `--root` still require Linux procfs
+execution was not run in this box. Warden reported a direct CLI check on native
+Windows (Python 3.11.9) at `63aa3f7`: `[]\r\n` produced a full `not_an_object`
+receipt and exit 2, but stdout ended in CRLF. Warden also reported platform-test
+failures at that revision. The probe was stripping `O_BINARY` on native Windows;
+it now strips that synthetic flag only on hosts without a native `O_BINARY`.
+No platform assertions are skipped or weakened for this correction. New real-CLI
+subprocess checks configure CRLF text streams and assert exact UTF-8 output,
+one final LF, no CR, correct stdout/stderr, and exits 0/1/2. Immediate child exit
+after `main()` proves the CLI explicitly flushes the binary output. These checks
+cover receipts, unreadable errors, injected intake exceptions, usage errors and
+help. Native Windows execution of this follow-up remains for Warden to verify;
+the native Windows evidence above is Warden's direct CLI result on `63aa3f7` only.
+MCP and CLI `--root` still require Linux procfs
 and fail closed elsewhere; ordinary CLI file intake has no procfs dependency.
 Independent review remains pending.
 

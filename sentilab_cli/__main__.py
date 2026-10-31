@@ -4,6 +4,17 @@ import json
 import sys
 
 
+def _write_utf8(message, stream):
+    stream.buffer.write(message.encode("utf-8"))
+    stream.buffer.flush()
+
+
+class _ResultCheckParser(argparse.ArgumentParser):
+    def _print_message(self, message, file=None):
+        if message:
+            _write_utf8(message, file if file is not None else sys.stderr)
+
+
 async def dispatch(command, context, **arguments):
     from sentilab_core import operations
     operation = getattr(operations, command)
@@ -14,7 +25,7 @@ async def dispatch(command, context, **arguments):
 def main(conductor=False):
     if not conductor and sys.argv[1:2] == ["resultcheck"]:
         from sentilab_core.resultcheck import canonical, check_file, exit_code
-        parser = argparse.ArgumentParser(prog="sentilab resultcheck")
+        parser = _ResultCheckParser(prog="sentilab resultcheck")
         parser.add_argument("--root", help="confine file reads to this directory (requires Linux procfs)")
         parser.add_argument("file", help="UTF-8 ResultCheck v2 JSON file")
         args = parser.parse_args(sys.argv[2:])
@@ -23,9 +34,9 @@ def main(conductor=False):
         except Exception:
             # Intake failures, including unavailable platform operations, must
             # not escape as exit 1: that code denotes a completed flagged check.
-            print(canonical({"error": {"code": "file_unreadable"}}))
+            _write_utf8(canonical({"error": {"code": "file_unreadable"}}) + "\n", sys.stdout)
             raise SystemExit(2)
-        print(canonical(receipt))
+        _write_utf8(canonical(receipt) + "\n", sys.stdout)
         raise SystemExit(exit_code(receipt))
     from sentilab_core import operations
     from sentilab_core.budget import Limits
