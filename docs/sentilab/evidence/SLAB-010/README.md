@@ -58,10 +58,16 @@ file locking. The filesystem is trusted host storage; this is not a remotely
 signed or adversary-proof memory store. Recall is a snapshot, not an acceptance
 decision or a lock on subsequent ledger updates.
 
-Runtime validity inherits PR #15's Python projection and supported event subset;
-unsupported events fail closed. General contract validation remains that
-projection's responsibility. The correction fixture additionally checks its
-Python projection against the reviewed JavaScript contract before/after withdraw.
+Runtime validity uses the Python implementation of the pinned evidence contract,
+including semantic rejection, append-only support sets, lifecycle checks,
+verification tiers, training links, and withdrawal-specific review coverage.
+Rejected events remain in the signed audit but cannot mutate projected evidence.
+Malformed body shapes fail closed. No runtime process executes Node.
+The Python container tests exercise all 29 reviewed evidence vectors. Required
+Node parity lives in `sentilab_core.memory_conformance`, imported by the existing
+`live-conformance` CI stage: every vector prefix, the three signed review probes,
+and the original before/after-withdrawal fixture are compared with the exact
+JavaScript contract. No test is conditionally skipped when Node is unavailable.
 
 ## Advisory routing interface
 

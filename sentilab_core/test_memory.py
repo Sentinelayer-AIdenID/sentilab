@@ -2,7 +2,6 @@
 import copy
 import json
 from pathlib import Path
-import subprocess
 import tempfile
 import unittest
 
@@ -110,6 +109,43 @@ class MemoryTests(unittest.TestCase):
         self.assertEqual(self.store.recall(self.scope), [])
         self.assertEqual(self.store.invalidate(self.scope)[0]["invalid_evidence"], {"measurement-a": "withdrawn"})
 
+    def test_signed_measurement_missing_semantics_cannot_enter_memory(self):
+        self.ledger.append("node.create", {"id": "bad-measurement", "kind": "measurement"},
+                           event_id="missing-semantics")
+        state = self.ledger.read()
+        self.assertIsNone(state["error"])
+        with self.assertRaisesRegex(ValueError, "currently be valid"):
+            self.store.write(self.scope, {"id": "invalid"}, ["bad-measurement"])
+        self.assertEqual(self.store.audit(self.scope), [])
+        projection = project(state["prefix"])
+        self.assertNotIn("bad-measurement", projection["nodes"])
+        self.assertEqual(projection["rejected"], [
+            {"event_id": "missing-semantics", "code": "missing_semantics"}])
+
+    def assert_support_overwrite_rejected(self, members, code):
+        original = self.store.write(self.scope, {"id": "existing"}, ["claim-a"])
+        self.ledger.append("support.add", {"node": "claim-a", "set_id": "primary", "members": members},
+                           event_id="overwrite")
+        self.withdraw()
+        state = self.ledger.read()
+        self.assertIsNone(state["error"])
+        self.assertEqual(self.store.recall(self.scope), [])
+        self.assertEqual(self.store.invalidate(self.scope), [
+            {"id": "existing", "invalid_evidence": {"claim-a": "stale"}}])
+        with self.assertRaisesRegex(ValueError, "currently be valid"):
+            self.store.write(self.scope, {"id": "new"}, ["claim-a"])
+        self.assertEqual(self.store.audit(self.scope), [original])
+        projection = project(state["prefix"])
+        self.assertEqual(projection["rejected"], [{"event_id": "overwrite", "code": code}])
+        self.assertEqual(projection["nodes"]["claim-a"]["stale_because"], ["measurement-a"])
+        self.assertEqual(projection["nodes"]["claim-a"]["support_status"], {"primary": "broken"})
+
+    def test_signed_empty_support_overwrite_cannot_revive_memory(self):
+        self.assert_support_overwrite_rejected([], "empty_support_set")
+
+    def test_signed_duplicate_support_overwrite_cannot_revive_memory(self):
+        self.assert_support_overwrite_rejected(["measurement-b"], "duplicate_set")
+
     def test_idempotency_immutable_inputs_and_literal_query(self):
         memory = copy.deepcopy(self.fixture["memories"][0])
         row = self.store.write(self.scope, **memory)
@@ -146,17 +182,6 @@ class MemoryTests(unittest.TestCase):
         with self.assertRaisesRegex(BrokenLedger, "history was replaced"):
             self.store.write(self.scope, {"id": "new-history"}, ["measurement-a"])
         self.assertEqual(self.store.audit(self.scope), before)
-
-    def test_correction_projection_matches_reviewed_contract_without_solves(self):
-        self.write_fixture()
-        for withdrawn in (False, True):
-            if withdrawn:
-                self.withdraw()
-            prefix = self.ledger.read()["prefix"]
-            process = subprocess.run(["node", str(Path(__file__).with_name("projection.mjs"))],
-                                     input=canonical([row["event"] for row in prefix]),
-                                     capture_output=True, check=True, timeout=30)
-            self.assertEqual(json.loads(process.stdout), project(prefix))
 
     def test_scope_names_do_not_alias_and_path_escape_is_refused(self):
         a = {**self.scope, "arm": "a:b", "family": "c"}
