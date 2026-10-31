@@ -15,7 +15,7 @@ const LF_BYTES = new Uint8Array([LF]);
 const UNSUPPORTED = [400, 404, 501];
 const COUNT = /^(0|[1-9][0-9]*)$/;
 // The reason a failed poll shows after "STALE · ".
-export const REASON_TEXT = { transport: "transport", paging_error: "paging error", stream_replaced: "stream replaced", paging_unsupported: "paging unsupported" };
+export const REASON_TEXT = { transport: "transport", paging_error: "paging error", stream_replaced: "stream replaced", row_too_large: "row too large", paging_unsupported: "paging unsupported" };
 
 // SHA-256, lowercase hex, over the raw bytes of each row followed by one LF.
 export function cursorHash(rows) {
@@ -56,6 +56,12 @@ export function splitRows(body) {
   if (start < body.length) rows.push(body.slice(start));
   return rows;
 }
+// The run's log file to rows (the reference for a server): only complete, LF-terminated rows count. A tail with
+// no LF yet is not a row: it is neither served nor hashed until its LF is written.
+export function logRowsFromFile(fileBytes) {
+  const end = fileBytes.lastIndexOf(LF);
+  return end < 0 ? [] : splitRows(fileBytes.subarray(0, end + 1));
+}
 export function joinRows(rows) {
   const body = new Uint8Array(rows.reduce((total, row) => total + row.length + 1, 0));
   let at = 0;
@@ -77,37 +83,46 @@ const header = (headers, name) => {
 // ---- The client. ----
 // rows: every accepted raw row; cursor: how many rows were accepted; cursor_hash: their hash; has_more: the last
 // page's x-has-more; last_ok_ms: client time of the last valid page; failure: why the latest poll failed, or null;
-// degraded: "stream_replaced" or "paging_unsupported" once either happens, and it stays until a manual reload.
+// degraded: "stream_replaced", "row_too_large" or "paging_unsupported" once one happens. Each is terminal: the
+// client stops polling and the state stays until a manual reload (a new initialState).
 export function initialState(runId, { limit = MAX_LIMIT } = {}) {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_LIMIT) throw new RangeError("limit must be 1 to 256");
   return { run_id: runId, limit, rows: [], cursor: 0, cursor_hash: cursorHash([]), has_more: true, last_ok_ms: null, failure: null, degraded: null };
 }
 
-// The next request. cursor_hash is sent with every cursor above 0. There is never a seq parameter.
+// The next request, or null in a terminal state. cursor_hash is sent with every cursor above 0. There is never a
+// seq parameter.
 export function request(state) {
+  if (state.degraded) return null;
   const req = { cursor: state.cursor, limit: state.limit };
   if (state.cursor > 0) req.cursor_hash = state.cursor_hash;
   return req;
 }
 
 // One response to request(state). response: { status, headers, bodyBytes } or null for a failed transport.
-// Returns { state, outcome, newRows }. outcome is ok, transport, paging_error, stream_replaced or paging_unsupported.
+// Returns { state, outcome, newRows }. outcome is ok, transport, paging_error, stream_replaced, row_too_large or
+// paging_unsupported.
 // A failed poll changes only failure (and degraded): no rows from it are kept, and the cursor never resets.
 export function step(state, response, nowMs) {
   if (state.degraded) return { state, outcome: state.degraded, newRows: [] };
   const fail = (reason, extra = {}) => ({ state: { ...state, ...extra, failure: reason }, outcome: reason, newRows: [] });
   const status = response?.status;
   if (status === 409) return fail("stream_replaced", { degraded: "stream_replaced" });
+  // 413: the next row can never be paged. Terminal, so the same cursor is never asked for again.
+  if (status === 413) return fail("row_too_large", { degraded: "row_too_large" });
   if (UNSUPPORTED.includes(status)) return fail("paging_unsupported", { degraded: "paging_unsupported" });
   if (status !== 200 || !(response.bodyBytes instanceof Uint8Array)) return fail("transport");
   // The v0.5 response caps, before anything is split or decoded.
   const body = response.bodyBytes;
   if (body.length > MAX_PAGE_BYTES || countLines(body) > MAX_PAGE_LINES) return fail("transport");
+  // A conforming server ends every row with LF, so a non-empty body that doesn't end with LF is a paging error.
+  if (body.length > 0 && body[body.length - 1] !== LF) return fail("paging_error");
   const rows = splitRows(body);
   const nextText = header(response.headers, "x-next-cursor");
   const next = typeof nextText === "string" && COUNT.test(nextText) ? Number(nextText) : NaN;
   if (!Number.isSafeInteger(next)) return fail("paging_error");
   if (next !== state.cursor + rows.length) return fail("paging_error");
+  if (rows.length > state.limit) return fail("paging_error");
   // The client's own hash of every row it would now hold, over raw bytes.
   const combined = [...state.rows, ...rows];
   const ownHash = cursorHash(combined);
@@ -182,20 +197,22 @@ export function liveLabel(state, tracker, nowMs, K) {
   return tracker.label("api", nowMs);
 }
 
-// ---- The reference server, for conformance. log: the run's raw rows in append order. ----
+// ---- The reference server, for conformance. log: the run's complete raw rows in append order (logRowsFromFile). ----
 export function servePage(log, { cursor, limit, cursor_hash: claimed } = {}) {
   const reply = (status, headers = {}, rows = []) => ({ status, headers, bodyBytes: joinRows(rows) });
   if (!Number.isSafeInteger(cursor) || cursor < 0 || !Number.isSafeInteger(limit) || limit < 1 || limit > MAX_LIMIT) return reply(400);
   if (cursor > log.length) return reply(409);
   if (cursor > 0 && claimed !== cursorHash(log.slice(0, cursor))) return reply(409);
-  // Up to `limit` rows within the 4 MiB cap. A row too big for any page is still sent alone.
+  // As many whole rows, each with its LF, as fit within 4 MiB, up to `limit`. Never a 200 over the cap.
   const rows = [];
   let size = 0;
   for (let i = cursor; i < Math.min(log.length, cursor + limit); i += 1) {
-    if (rows.length > 0 && size + log[i].length + 1 > MAX_PAGE_BYTES) break;
+    if (size + log[i].length + 1 > MAX_PAGE_BYTES) break;
     rows.push(log[i]);
     size += log[i].length + 1;
   }
+  // The row at the cursor can't fit even alone: 413, with no rows and no cursor headers.
+  if (rows.length === 0 && cursor < log.length) return reply(413);
   const next = cursor + rows.length;
   return reply(200, { "x-next-cursor": String(next), "x-has-more": String(next < log.length), "x-cursor-hash": cursorHash(log.slice(0, next)) }, rows);
 }

@@ -85,6 +85,8 @@ The core writes one envelope per event. It is the only writer.
      - `n` is the number of rows the client has already received, starting at 0. `m` is between 1 and 256.
      - The server returns rows n to n+k-1 of the log as JSONL (0 ≤ k ≤ m), with headers `x-next-cursor: n+k` and `x-has-more: true|false`. The v0.5 response caps (256 lines, 4 MiB) apply.
      - A cursor beyond the end of the log is answered `409` with no rows.
+     - **A row too big to page.** The server never answers `200` over the 4 MiB cap. The page holds as many whole rows, each with its LF, as fit within the cap, up to m. If the very first row at cursor n can't fit even alone (its bytes plus LF exceed 4 MiB), the answer is `413` with no rows and no cursor headers.
+     - **Only complete rows are rows.** The log counts and serves only complete, LF-terminated rows, exactly as stored, including oversize, malformed and duplicate ones. A tail with no LF yet is neither served nor hashed until its LF is written. Nothing is replaced by a sentinel.
    - **The cursor hash** (proposed by the producer, #56186). It binds a cursor to the exact rows behind it, so a replaced log is caught even when it is the same length.
      - Every page carries `x-cursor-hash`: the lowercase hex SHA-256 over the raw bytes of rows 0 to `x-next-cursor`-1, each row followed by a single LF.
      - Every request with a cursor above 0 also sends `cursor_hash=<hash of rows 0..n-1>`. If the server's own first n rows hash differently, it answers `409`.
@@ -93,15 +95,19 @@ The core writes one envelope per event. It is the only writer.
      - Split the raw bytes on LF (0x0A) only. Each row is the bytes between separators. A trailing LF ends the last row and doesn't start a new one.
      - Decode each row on its own as strict UTF-8, keeping any BOM: in a browser, `new TextDecoder("utf-8", { fatal: true, ignoreBOM: true })`.
      - A row that isn't valid UTF-8 is a `malformed` row. A row that starts with a BOM is also `malformed`, because `JSON.parse` rejects it. Either way the page continues.
-     - The same rule applies to replay files.
+     - The same rule applies to replay files, except that a replay file's last line may lack its LF and still counts as a row.
    - **The client:**
      - It starts at cursor 0 and keeps fetching while `x-has-more` is true; it then polls every 1 s from its last cursor.
      - It keeps every raw row it has received and re-runs the full v0.5 verification over the combined rows whenever new rows arrive. So a late conflict at an old `seq` still freezes the board.
    - **A poll fails, keeping the prefix and making the label STALE with the reason, when:**
      - the transport fails or the caps are exceeded: "transport";
      - `x-next-cursor` is missing, isn't an integer, or isn't exactly n plus the number of rows returned: "paging error";
+     - more rows than the requested `limit`: "paging error";
+     - a non-empty page body that doesn't end with LF, which a conforming server never sends: "paging error";
      - `x-cursor-hash` is missing or doesn't equal the client's own hash of the rows it now holds: "paging error";
      - the server answers `409`: "stream replaced". The view never resets on its own. Only a manual reload restarts at cursor 0 and re-verifies everything from scratch.
+   - **`413`** means the next row can never be paged. The view keeps its prefix, shows "STALE · row too large" and stops polling. It never retries the same cursor in a loop.
+   - **Terminal states.** "row too large", "stream replaced" and "paging unsupported" all stop polling until a manual reload.
    - **No cursor support** (`400`, `404` or `501` on the cursor parameters): the view keeps its last verified prefix and shows "STALE · paging unsupported". It never goes LIVE in this state, and it never pages by `seq`, because that can't deliver a late conflict.
    - **The legacy `after=<seq>` parameter** may stay on the server for compatibility. It is not part of this contract, and the view doesn't use it.
 5. The mode label must be honest. It uses the client's own clock, never `ts`, and it describes recent progress, never completeness.
@@ -110,7 +116,7 @@ The core writes one envelope per event. It is the only writer.
    - "Grew" means K rose above the highest value it has reached so far.
    - Arrivals that don't grow K never refresh it: duplicates, unverified envelopes, and envelopes after a break or conflict.
    - The LIVE label shows how long ago K last grew, e.g. "LIVE · progress 12 s ago".
-   - STALE: the source is the API and LIVE doesn't hold, including before the first envelope. When a failed poll is the cause, STALE shows its reason: "transport", "paging error", "stream replaced" or "paging unsupported". When K has dropped below its high, the reason is "chain broken".
+   - STALE: the source is the API and LIVE doesn't hold, including before the first envelope. When a failed poll is the cause, STALE shows its reason: "transport", "paging error", "stream replaced", "row too large" or "paging unsupported". When K has dropped below its high, the reason is "chain broken".
    - REPLAY: the source is a file.
    - Seeded drills also show "drill".
    - Known limit: a server can withhold any suffix, including a final withdrawal, while it keeps releasing earlier envelopes. LIVE stays on and the view can't tell. Only the full history, replayed later, shows the truth.
@@ -170,3 +176,6 @@ The reference adds a pure paging reducer: a state, plus a request and its respon
 - **C9:** a page whose `x-cursor-hash` doesn't match the rows it delivered is a failed poll ("paging error"), and those rows are not kept.
 - **C10:** a page with one row of invalid UTF-8 and one row starting with a BOM. Each is a `malformed` row, the other rows on the page verify, and the cursor hash covers the raw bytes of all of them.
 - **C11:** K reaches 44, then a late conflict at seq 10 freezes it at 9, one second later. The label is "STALE · chain broken" at once, not LIVE.
+- **C12:** the first row at the cursor is 4,194,304 bytes, so it is 4,194,305 with its LF. The server answers `413` with no body. The client shows "STALE · row too large", keeps its prefix and doesn't poll that cursor again. Also: a page whose whole rows reach exactly 4 MiB is served, and one row more is left for the next page.
+- **C13:** a response that holds more rows than the requested `limit` (2 rows for `limit=1`) is a failed poll ("paging error"), and none of its rows are kept. So is a non-empty page whose body doesn't end with LF.
+- **C14:** server conformance on a log file whose last row has no LF yet. That row is neither served nor counted, and `x-cursor-hash` covers only the complete rows. Once the LF lands, it is served on the next poll, and the earlier hashes still hold.
