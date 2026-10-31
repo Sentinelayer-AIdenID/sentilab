@@ -209,7 +209,7 @@ CAPABILITIES = tuple(
                  mapping_note="Calls PR #42 gb10_backend.execute; checked_at is per-call UTC provenance; staged_open is not GPU readiness or serving approval")
       for command in ("status", "checkpoint_verify")),
     pending("gb10.serve", "gpt-astra-carter (root)",
-            "PR #42 serve lifecycle is staged; prospective GPU grant required before exposing a runnable surface"),
+            "Host-owned lifecycle evidence: done. ONE operator-run, bounded localhost validation, SLAB-047b: 20/20 requests, 148.909503325 GPU-s, teardown confirmed ([evidence](../SLAB-047/), merged in #49, `2d9eca2`; [source](../../../../sentilab_core/gb10_serving.py) in #45, `482c451`). Status describes the unexposed surface: no runnable CLI/MCP serve surface is exposed; `sentilab gb10 serve` and `sentilab_gb10_serve` still refuse without a prospective GPU grant"),
 ) + tuple(pending(name, "gpt-astra-carter (root)",
                   "Actual GB10 device/checkpoint/serve parity is pending with root; this CPU-only lane has no device access")
           for name in ("doctor", "train.preflight", "train.status", "train.start", "train.cancel",
@@ -290,7 +290,7 @@ def coverage_markdown():
              "Fixture evidence readers are excluded from public-capability counts and cannot satisfy device parity.",
              "The unimplemented gb10.preflight-record placeholder is removed; gb10.status now calls the owner",
              "backend rather than reserving a duplicate evidence reader. No executable legacy aliases existed.",
-             "GB10 status/checkpoint-verify use the PR #42 backend; gb10.serve remains pending with root.",
+             "GB10 status/checkpoint-verify use the PR #42 backend; gb10.serve host-owned lifecycle evidence is done: ONE operator-run, bounded localhost validation, SLAB-047b (20/20 requests, 148.909503325 GPU-s, teardown confirmed; [evidence](../SLAB-047/), merged in #49, `2d9eca2`; [source](../../../../sentilab_core/gb10_serving.py) in #45, `482c451`). No runnable CLI/MCP serve surface is exposed; `sentilab gb10 serve` and `sentilab_gb10_serve` still refuse without a prospective GPU grant. Owner: gpt-astra-carter (root).",
              "Their offline conformance uses a local fake SSH peer, never a device; it proves transport parity,",
              "not actual device readiness, checkpoint presence or a GPU grant.",
              "Device/checkpoint/serve rows retain the original SLAB-004/018/019/032/033/038 contract names",
