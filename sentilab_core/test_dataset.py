@@ -1,4 +1,5 @@
 """Dataset proofs use signed recorded events; no oracle or model is invoked."""
+import asyncio
 import copy
 import json
 import os
@@ -343,11 +344,33 @@ class DatasetTests(unittest.TestCase):
                     {'jsonrpc': '2.0', 'id': 2, 'method': 'tools/call', 'params': {
                         'name': 'sentilab_dataset_export', 'arguments': {'run_ids': ['fixture'],
                         'output_dir': str(output), 'policy': self.policy}}}]
-        mcp = subprocess.run([sys.executable, '-m', 'sentilab_mcp'], env=env,
-                             input=b''.join(canonical(r) + b'\n' for r in requests), capture_output=True, check=True)
-        responses = [json.loads(line) for line in mcp.stdout.splitlines()]
-        self.assertIn('sentilab_dataset_export', [t['name'] for t in responses[0]['result']['tools']])
-        result = json.loads(responses[1]['result']['content'][0]['text'])
+        async def exchange():
+            mcp = await asyncio.create_subprocess_exec(
+                sys.executable, '-m', 'sentilab_mcp', env=env,
+                stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE)
+            try:
+                mcp.stdin.write(b''.join(canonical(r) + b'\n' for r in requests))
+                await mcp.stdin.drain()
+                # Keep the connection open until both requests complete: EOF
+                # cancels in-flight work in the shared MCP dispatcher.
+                responses = {}
+                for _ in requests:
+                    response = json.loads(await asyncio.wait_for(mcp.stdout.readline(), 5))
+                    self.assertNotIn(response['id'], responses)
+                    responses[response['id']] = response
+                mcp.stdin.close()
+                await asyncio.wait_for(mcp.wait(), 5)
+                self.assertEqual(mcp.returncode, 0, (await mcp.stderr.read()).decode())
+                return responses
+            finally:
+                if mcp.returncode is None:
+                    mcp.kill()
+                await mcp.communicate()
+
+        responses = asyncio.run(exchange())
+        self.assertIn('sentilab_dataset_export', [t['name'] for t in responses[1]['result']['tools']])
+        result = json.loads(responses[2]['result']['content'][0]['text'])
         self.assertEqual(json.loads(cli.stdout), result)
         self.assertTrue(self.rows(result, 'rlaif.jsonl'))
 
