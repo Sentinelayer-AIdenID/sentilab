@@ -235,6 +235,9 @@ class FreezeTests(unittest.TestCase):
             self.replay([candidate("a", 8)], [attempt()], search_charges=dict.fromkeys(self.labs, 0))
         with self.assertRaises(ValueError):
             self.replay([], [], search_charges={"lab-a": 7})
+        # An unused reproduction never becomes an eighth search opportunity.
+        with self.assertRaises(ValueError):
+            self.replay([], [], search_charges=dict.fromkeys(self.labs, 8))
 
     def test_b0_four_slots_keep_failures_and_unused_without_substitutes(self):
         rows = [candidate("a", 8, arm="B0"), candidate("b", 8.5, arm="B0")]
