@@ -24,6 +24,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 import hashlib
 import json
+import math
 from pathlib import Path
 
 from sundai_hotspot.tap_oracle import REPO_ROOT
@@ -193,19 +194,94 @@ def frozen_inputs(reference: Reference, root: Path = REPO_ROOT) -> dict[str, str
     return sums
 
 
-def _within(measured_c: float, reference: Reference) -> bool:
-    return abs(measured_c - reference.paper_c) <= TOLERANCE_K
+def _within(simulated_c: float, reference: Reference) -> bool:
+    return abs(simulated_c - reference.paper_c) <= TOLERANCE_K
 
 
-RECEIPT_SCHEMA = "sentilab-reference-validation-receipt-v1"
+RECEIPT_SCHEMA = "sentilab-reference-validation-receipt-v2"
+RECEIPT_OUTPUTS = ("stdout.txt", "stderr.txt", "sample.steady", "sample.grid.steady")
+
+# Every temperature here is simulated; none is measured. HotSpot 7 values carry the withdrawal notice.
+TEMPERATURE_LABELS = {
+    "hotspot7_default": "simulated (HotSpot 7 detailed-3D coupling; withdrawn pending the HS6 correction)",
+    "material_only": ("simulated (HotSpot 7 with the SLAB-049 material-only link; bounded diagnostic evidence, "
+                      "withdrawn pending the HS6 correction)"),
+    "hotspot6": "simulated (HotSpot 6.0 at a7a3286e, SuperLU evaluator build)",
+    "hotspot6_tap_faithful": "simulated (HotSpot 6.0 at a7a3286e, SUPERLU=0 as TAP-2.5D built it)",
+}
+# The grid file each build writes. Only the unmodified upstream HotSpot 6.0 build writes layer 0 alone.
+GRID_FORMATS = {"hotspot7_default": "all_layers", "material_only": "all_layers", "hotspot6": "all_layers",
+                "hotspot6_tap_faithful": "upstream6_top_layer"}
+
+# A reported diagnostic, not an acceptance bound (astra #56824). HotSpot 6.0 links spreader to sink through the
+# spreader's copper alone (t_sp/k_sp = 2.5e-6 m^2 K/W). The Ascend 910 compute die's 5.62e5 W/m^2 would drop at
+# most 1.41 K across it even without lateral spreading. HotSpot 7's link carries half the convection resistance;
+# the saved grids show about 51 K.
+DROP_EXPECTATION = ("copper predicts about 1-2 K for this package (HotSpot 6.0 form); the HotSpot 7 link shows "
+                    "about 51 K on the saved grids. Reported, not asserted.")
+
+
+def spreader_sink_drop(directory: Path) -> dict:
+    """Same-index spreader and sink observations where their difference is largest (reads files only)."""
+    from sundai_hotspot import slab049
+    directory = Path(directory)
+    layers = slab049.read_lcf(directory / "samplelayers.lcf", directory)
+    config = slab049.read_hotspot_config(directory / "new_hotspot.config")
+    ambient = float(config["ambient"])
+    grid = slab049.read_grid(directory / "sample.grid.steady", ambient_k=ambient)
+    if len(grid) != len(layers) + 2:
+        return {"available": False, "reason": "this build writes only layer 0 to the grid file"}
+    side = math.isqrt(len(grid[0]))
+    return {"available": True, **slab049._same_index_drop(grid[len(layers)], grid[len(layers) + 1], side, ambient)}
+
+
+def _verify_run(kind: str, identity: dict, reference: Reference, directory: Path, root: Path,
+                receipt_sha256: str | None = None) -> dict:
+    """Validate one retained run against its receipt and the frozen inputs, and recompute its result from the
+    raw outputs. Any missing or mismatched digest is a refusal; nothing stored in a record is trusted."""
+    directory = Path(directory)
+    receipt_path = directory / "receipt.json"
+    if not receipt_path.is_file():
+        raise GateZeroRefusal(f"{reference.id}: no receipt in {directory}")
+    if receipt_sha256 is not None and _sha256(receipt_path) != receipt_sha256:
+        raise GateZeroRefusal(f"{reference.id}: the receipt changed after the record was made")
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    if receipt.get("schema") != RECEIPT_SCHEMA or receipt.get("reference") != reference.id:
+        raise GateZeroRefusal(f"{reference.id}: not a validate-reference receipt for this reference")
+    if receipt.get("evaluator", {}).get("binary_sha256") != identity["binary_sha256"]:
+        raise GateZeroRefusal(f"{reference.id}: the receipt was produced by a different binary")
+    if receipt.get("grid") != GRID or receipt.get("status") != "exited" or receipt.get("exit_status") != 0:
+        raise GateZeroRefusal(f"{reference.id}: gate zero needs a completed grid-{GRID} solve")
+    outputs = receipt.get("outputs") or {}
+    for name in RECEIPT_OUTPUTS:
+        if name not in outputs or not (directory / name).is_file() or _sha256(directory / name) != outputs[name]:
+            raise GateZeroRefusal(f"{reference.id}: {name} is missing or differs from its receipt digest")
+    for name, digest in frozen_inputs(reference, root).items():
+        if not (directory / name).is_file() or _sha256(directory / name) != digest:
+            raise GateZeroRefusal(f"{reference.id}: {name} is not the frozen reference input")
+        if receipt.get("inputs", {}).get(name) != digest:
+            raise GateZeroRefusal(f"{reference.id}: the receipt does not bind the frozen {name}")
+    simulated, block = tap_selector_c(directory / "sample.steady")
+    literal = None
+    if kind.startswith("hotspot6"):
+        literal = tap_stdout_selector_c(directory / "stdout.txt")
+        if abs(literal - simulated) > 1e-9:
+            raise GateZeroRefusal(f"{reference.id}: stdout and steady-file selectors disagree")
+    return {"id": reference.id, "role": reference.role, "paper_c": reference.paper_c,
+            "simulated_c": simulated, "temperature_label": TEMPERATURE_LABELS[kind],
+            "selector_block": block, "stdout_selector_c": literal,
+            "delta_k": simulated - reference.paper_c, "within_tolerance": _within(simulated, reference),
+            "spreader_sink_drop_diagnostic": spreader_sink_drop(directory),
+            "run_dir": str(directory.resolve()), "receipt_sha256": _sha256(receipt_path),
+            "output_sha256": {name: outputs[name] for name in RECEIPT_OUTPUTS},
+            "config_sha256": _sha256(directory / "new_hotspot.config")}
 
 
 def build_record(kind: str, binary: Path, run_dirs: dict[str, Path], root: Path = REPO_ROOT) -> dict:
     """Gate-zero record from validate-reference run directories (reads files only).
 
-    Each directory holds the receipt written by `reference_validation validate-reference` and the solver outputs.
-    The receipt must name this binary, the frozen inputs must be byte-identical, the grid must be 64, and the
-    metric is recomputed from the steady file (receipt numbers are not trusted).
+    Each directory holds the receipt and the raw outputs. The record binds each run by its directory and receipt
+    digest; require_gate_zero re-derives every result from those raw files, so editing the record changes nothing.
     """
     identity = evaluator_identity(kind, binary)
     results = []
@@ -214,41 +290,26 @@ def build_record(kind: str, binary: Path, run_dirs: dict[str, Path], root: Path 
             if reference.role == GATE:
                 raise GateZeroRefusal(f"no run directory for the gate reference {reference.id}")
             continue
-        directory = Path(run_dirs[reference.id])
-        receipt = json.loads((directory / "receipt.json").read_text(encoding="utf-8"))
-        if receipt.get("schema") != RECEIPT_SCHEMA or receipt.get("reference") != reference.id:
-            raise GateZeroRefusal(f"{reference.id}: not a validate-reference receipt for this reference")
-        if receipt.get("evaluator", {}).get("binary_sha256") != identity["binary_sha256"]:
-            raise GateZeroRefusal(f"{reference.id}: the receipt was produced by a different binary")
-        if receipt.get("grid") != GRID or receipt.get("exit_status") != 0:
-            raise GateZeroRefusal(f"{reference.id}: gate zero needs a completed grid-{GRID} solve")
-        for name, digest in frozen_inputs(reference, root).items():
-            if _sha256(directory / name) != digest:
-                raise GateZeroRefusal(f"{reference.id}: {name} is not the frozen reference input")
-        measured, block = tap_selector_c(directory / "sample.steady")
-        literal = None
-        if kind.startswith("hotspot6"):
-            literal = tap_stdout_selector_c(directory / "stdout.txt")
-            if abs(literal - measured) > 1e-9:
-                raise GateZeroRefusal(f"{reference.id}: stdout and steady-file selectors disagree")
-        results.append({"id": reference.id, "role": reference.role, "paper_c": reference.paper_c,
-                        "measured_c": measured, "selector_block": block, "stdout_selector_c": literal,
-                        "delta_k": measured - reference.paper_c, "within_tolerance": _within(measured, reference),
-                        "config_sha256": _sha256(directory / "new_hotspot.config"),
-                        "steady_sha256": _sha256(directory / "sample.steady"),
-                        "receipt_sha256": _sha256(directory / "receipt.json")})
-    # Gate references must pass; any other pinned published value that was measured must not be contradicted.
+        results.append(_verify_run(kind, identity, reference, Path(run_dirs[reference.id]), root))
+    # Gate references must pass, and a simulated pinned published value must not be contradicted. The
+    # spreader-sink drop is a reported diagnostic, not part of the verdict (astra #56824).
     passed = all(r["within_tolerance"] for r in results)
     return {"schema": RECORD_SCHEMA, "evaluator": identity, "references_sha256": references_sha256(root),
             "tolerance_k": TOLERANCE_K, "tolerance_label": TOLERANCE_LABEL, "metric": METRIC,
-            "results": results, "verdict": "PASS" if passed else "FAIL"}
+            "temperature_label": TEMPERATURE_LABELS[kind], "results": results,
+            "verdict": "PASS" if passed else "FAIL"}
 
 
 def require_gate_zero(kind: str, binary: Path, record: Path | dict | None, root: Path = REPO_ROOT) -> dict:
-    """Refuse unless `record` is a PASS for exactly this evaluator kind and binary against the pinned references.
+    """Refuse unless the record's raw evidence shows a PASS for exactly this evaluator kind and binary.
 
-    The verdict is recomputed from the measured values; a record's own verdict is never trusted. Search and
-    headroom call this before any evaluation. Producing the first receipt does not (reference_validation).
+    Every result is re-derived from the retained run directory the record names: receipt digest, output digests,
+    frozen inputs, and the metric recomputed from the steady file. A record's stored values and verdict are never
+    trusted, so a FAIL cannot be turned into an unlock by editing a field. This is integrity against edits of the
+    record or of single files. A forger who rewrites raw outputs, receipt and record consistently needs the
+    authenticated operator boundary (warden's host supervisor), which is outside this module.
+
+    Search and headroom call this before any evaluation. Producing the first receipt does not (reference_validation).
     """
     if record is None:
         raise GateZeroRefusal(f"{kind} has no gate-zero PASS receipt; search and headroom may not use it until it "
@@ -263,18 +324,21 @@ def require_gate_zero(kind: str, binary: Path, record: Path | dict | None, root:
     if data.get("evaluator", {}).get("kind") != kind or data["evaluator"].get("binary_sha256") != identity["binary_sha256"]:
         raise GateZeroRefusal("gate-zero record belongs to a different evaluator binary")
     pinned = {r.id: r for r in REFERENCES}
-    results = data.get("results", [])
+    stored = data.get("results", [])
     for reference in REFERENCES:
-        if reference.role == GATE and not any(r.get("id") == reference.id for r in results):
+        if reference.role == GATE and not any(r.get("id") == reference.id for r in stored):
             raise GateZeroRefusal(f"gate-zero record lacks the gate reference {reference.id}")
-    for result in results:
+    recomputed = []
+    for result in stored:
         reference = pinned.get(result.get("id"))
-        if reference is None or result.get("paper_c") != reference.paper_c:
+        if reference is None or reference.inputs is None:
             raise GateZeroRefusal(f"gate-zero record has an unpinned result {result.get('id')!r}")
-        measured = float(result["measured_c"])
-        if not _within(measured, reference):
-            raise GateZeroRefusal(f"{kind} misses {reference.id} by {measured - reference.paper_c:+.2f} K "
+        if not result.get("run_dir") or not result.get("receipt_sha256"):
+            raise GateZeroRefusal(f"{reference.id}: the record does not name its raw evidence")
+        recomputed.append(_verify_run(kind, identity, reference, Path(result["run_dir"]), root,
+                                      receipt_sha256=result["receipt_sha256"]))
+    for result in recomputed:
+        if not result["within_tolerance"]:
+            raise GateZeroRefusal(f"{kind} misses {result['id']} by {result['delta_k']:+.2f} K "
                                   f"(the {TOLERANCE_LABEL} is {TOLERANCE_K} K)")
-    if data.get("verdict") != "PASS":
-        raise GateZeroRefusal("gate-zero record is not a PASS")
-    return data
+    return {**data, "results": recomputed, "verdict": "PASS"}

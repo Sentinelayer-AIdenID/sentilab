@@ -263,6 +263,17 @@ class GridParserTests(unittest.TestCase):
         with self.assertRaises(slab049.GridFormatError):  # the layer count is enforced when known
             self.parse(self.lines, layers=9)
 
+    def test_astra_control_a_headered_layer_0_only_file_is_rejected(self):
+        """astra #56837: the format is bound to the evaluator; truncation is never read as upstream 6.0."""
+        truncated = self.lines[:self.lines.index("Layer 1:\n")]
+        with self.assertRaises(slab049.GridFormatError):
+            self.summarize(truncated)  # all_layers: HotSpot 7 and the HotSpot 6.0 evaluator build
+        case = Path(self.directory.name) / "case"
+        with self.assertRaises(slab049.GridFormatError):  # headered, so not upstream HotSpot 6.0 either
+            slab049.summarize_evaluation(case, grid_format="upstream6_top_layer")
+        with self.assertRaises(ValueError):
+            slab049.summarize_evaluation(case, grid_format="whatever")
+
     def test_argmax_is_always_inside_the_grid(self):
         self.assertEqual(slab049.grid_argmax([1.0, 3.0, 2.0, 3.0], 2), [{"row": 0, "col": 1}, {"row": 1, "col": 1}])
         with self.assertRaises(slab049.GridFormatError):

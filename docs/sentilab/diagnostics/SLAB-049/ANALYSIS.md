@@ -175,6 +175,9 @@ Read-only web check of `github.com/uvahotspot/HotSpot` and `github.com/bu-icsg/T
 
 ## 6. Evidence in committed outputs (read-only; corroborating, not causal)
 
+Every temperature in this section is simulated (HotSpot 7 detailed-3D coupling; withdrawn pending the HS6
+correction). None is measured.
+
 The 2026-10-18 probe (`sundai_hotspot/probe_results/*`) kept every layer's grid temperatures, printed to 0.01 K.
 It ran this source, built without SuperLU, so it also assembled through `find_res`. [COMPUTED,
 `committed_output_residuals`]

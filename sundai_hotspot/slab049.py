@@ -127,7 +127,7 @@ class GridFormatError(ValueError):
 
 
 def read_grid(path: Path, *, grid: int | None = None, layers: int | None = None,
-              ambient_k: float | None = None) -> dict[int, list[float]]:
+              ambient_k: float | None = None, headered: bool | None = None) -> dict[int, list[float]]:
     """Strictly parse a HotSpot grid steady file.
 
     HotSpot 7 (and the SentiLab HotSpot 6.0 evaluator build) writes "Layer n:" and then exactly grid x grid lines
@@ -173,6 +173,8 @@ def read_grid(path: Path, *, grid: int | None = None, layers: int | None = None,
         sections[current].append(value)
     if not sections:
         raise GridFormatError(f"no cells in {path}")
+    if headered is not None and headered == headerless:
+        raise GridFormatError(f"expected a {'headered all-layer' if headered else 'headerless top-layer'} grid file")
     if sorted(sections) != list(range(len(sections))):
         raise GridFormatError(f"layers {sorted(sections)} are not 0..{len(sections) - 1}")
     if layers is not None and not headerless and len(sections) != layers:
@@ -510,12 +512,12 @@ def assembly_confirmation(workdir: Path) -> dict:
                                  run["layers"][run["sink"]]["k"], run["layers"][run["sink"]]["thickness"],
                                  run["r_convec"], run["s_sink"])
             frozen = cell_resistances(stack, run["cell_width"], run["cell_height"], coupling)
-            measured = run["vertical"][(run["spreader"], run["sink"])]
+            assembled = run["vertical"][(run["spreader"], run["sink"])]
             rows.append({
                 "h_multiplier": multiplier, "coupling": coupling, "grid": 16,
-                "assembled_spreader_sink_K_per_W": measured,
+                "assembled_spreader_sink_K_per_W": assembled,
                 "frozen_equation_spreader_sink_K_per_W": frozen.spreader_sink,
-                "bit_identical": measured == frozen.spreader_sink,
+                "bit_identical": assembled == frozen.spreader_sink,
                 "assembled_sink_ambient_K_per_W": run["sink_ambient"],
                 "frozen_equation_sink_ambient_K_per_W": frozen.sink_ambient,
                 "interior_vertical_K_per_W": {f"{a}-{b}": value for (a, b), value in sorted(run["vertical"].items())},
@@ -644,6 +646,96 @@ def slab_prediction(kind: str, multiplier: float) -> dict:
             "interior_drop_die_minus_sink_K": die - sink,
             "observable": ("steady-file block values (-grid_map_mode max): layer_0_die, layer_1_TIM, hsp_TIM, "
                            "hsink_TIM, minus the config ambient")}
+
+
+# ----------------------------------------------------------------------------------------------
+# Analytic known-answer fixture (aneta #56816, astra #56833): a separate later allocation of 2 calls
+# ----------------------------------------------------------------------------------------------
+
+KNOWN_ANSWER_SLAB = {
+    "id": "known-answer-slab",
+    "inputs": "docs/sentilab/diagnostics/SLAB-049/slab/ (SHA256SUMS)",
+    "config": "slab_h1.config",
+    "argv": "slab_argv(<binary>, 1.0)",
+    "allocation": "a separate later grant of 2 calls (HotSpot 6.0, HotSpot 7); not in the 12-call manifest; no "
+                  "gate-zero calls",
+    "observable": "the steady file's layer_0_die value (grid_map_mode max: the interior plateau) minus the ambient",
+    "tolerance_rule": "max(0.5% of the expected rise, 0.02 K)",
+}
+
+
+def known_answer_expected(kind: str) -> dict:
+    """The analytic steady rise of the full-footprint slab, from the frozen fixture files themselves.
+
+    Geometry and power: one die layer of 100 mm x 100 mm (A = 0.01 m^2) carries P = 1400 W uniformly, so
+    q = P/A = 1.4e5 W/m^2. Both chip-side floorplans cover the whole 100 x 100 mm; the grid is 64 x 64.
+
+    Stack, in LCF order, with heat flowing toward higher indices:
+      0  die       t0 = 150 um, rho0 = 0.01 m K/W
+      1  TIM       t1 = 20 um,  rho1 = 0.25 m K/W
+      2  spreader  t2 = 1 mm,   k2 = 400 W/(m K), s_spreader = 100.1 mm  (appended by HotSpot)
+      3  sink      t3 = 6.9 mm, k3 = 400 W/(m K), s_sink = 100.2 mm      (appended by HotSpot)
+    Per unit area, r_n = t_n rho_n = t_n / k_n.
+
+    Convection: the config's r_convec (K/W for the whole sink) is applied per cell as
+    R_conv,cell = r_convec * s_sink^2 / (cw * ch). Per unit area that is r_conv = r_convec * s_sink^2 = 1/h.
+
+    Boundaries:
+    - Ambient T_a = 318.15 K.
+    - Adiabatic below layer 0 (model_secondary 0).
+    - Every sink cell connects to ambient through its own rz.
+    - The edge cells connect to the 0.05 mm package periphery, which holds 0.4% of the convective area.
+
+    Node equations for an interior column. Uniform power makes every lateral flux vanish away from the edges.
+
+    HotSpot 6.0. BC_det3D makes the link from n to n+1 equal rz(n):
+        q = (T0 - T1)/r0 = (T1 - T2)/r1 = (T2 - T3)/r2 = (T3 - T_a)/(r3 + r_conv)
+        so  T0 - T_a = q (r0 + r1 + r2 + r3 + r_conv)
+    This is the physical series resistance, with convection counted once.
+
+    HotSpot 7. find_res links half plus half, layer 0 keeps its full rz, and the sink's rz carries r_conv:
+        T0 - T_a = q (r0 + r1/2 + r1/2 + r2/2 + r2/2 + (r3 + r_conv)/2 + r3 + r_conv)
+                 = q (r0 + r1 + r2 + 1.5 r3 + 1.5 r_conv)
+
+    At h x 1 (r_convec = 0.03585643085087311 K/W): r0 = 1.5e-6, r1 = 5e-6, r2 = 2.5e-6, r3 = 1.725e-5 and
+    r_conv = 3.6e-4 m^2 K/W. So HotSpot 6.0 gives 54.075 K and HotSpot 7 gives 80.4825 K.
+
+    When the slab result applies: uniform power over a single full-footprint die, near-zero overhang, no secondary
+    path, steady state, and constant properties. The heterogeneous TAP package differs: partial coverage, lateral
+    spreading into a 2x spreader and a 4x sink, and several dies. So the slab checks the vertical series and where
+    convection sits. It does not check lateral spreading.
+    """
+    folder = EVIDENCE_DIR / "slab"
+    layers = read_lcf(folder / "slab.lcf", folder)
+    config = read_hotspot_config(folder / KNOWN_ANSWER_SLAB["config"])
+    die = read_flp(layers[0]["flp"])[0]
+    area = die["width"] * die["height"]
+    names, values = (folder / "slab.ptrace").read_text(encoding="utf-8").split("\n")[:2]
+    power = float(values.split()[names.split().index(die["name"])])
+    flux = power / area
+    r_die = layers[0]["resistivity"] * layers[0]["thickness"]
+    r_tim = layers[1]["resistivity"] * layers[1]["thickness"]
+    r_sp = float(config["t_spreader"]) / float(config["k_spreader"])
+    r_hs = float(config["t_sink"]) / float(config["k_sink"])
+    r_conv = float(config["r_convec"]) * float(config["s_sink"]) * float(config["s_sink"])
+    if kind.startswith("hotspot6"):
+        series = r_die + r_tim + r_sp + r_hs + r_conv
+    elif kind == "hotspot7_default":
+        series = r_die + r_tim + r_sp + 1.5 * r_hs + 1.5 * r_conv
+    else:
+        raise ValueError(f"no known answer is declared for {kind!r}")
+    rise = flux * series
+    return {"kind": kind, "flux_W_per_m2": flux, "series_m2K_per_W": series, "expected_rise_K": rise,
+            "tolerance_K": max(0.005 * rise, 0.02), "ambient_K": float(config["ambient"])}
+
+
+def check_known_answer_slab(run_dir: Path, kind: str) -> dict:
+    """Compare a slab run's die block (steady file) with the analytic rise. Reads files only."""
+    expected = known_answer_expected(kind)
+    values = dict(read_steady(Path(run_dir) / "slab.steady"))
+    simulated = values["layer_0_die"] - expected["ambient_K"]
+    return {**expected, "simulated_rise_K": simulated, "difference_K": simulated - expected["expected_rise_K"],
+            "verdict": "PASS" if abs(simulated - expected["expected_rise_K"]) <= expected["tolerance_K"] else "FAIL"}
 
 
 # ----------------------------------------------------------------------------------------------
@@ -893,8 +985,8 @@ def _manifest_call(call_id: str, label: str, kind: str, layout_id: str, grid: in
         "grid": grid, "gating": grid == 64 and kind == HOTSPOT6 and replay_of is None, "purpose": purpose,
         "replay_of": replay_of,
         "inputs": {"dir": directory, "sha256sums_sha256": _sums_digest(directory)},
-        "command": (f"python -m sundai_hotspot.reference_validation validate-reference --kind {kind} "
-                    f"--reference {layout_id}-{PRIMARY_VARIANT} --grid {grid} --out <fresh empty dir>"),
+        "command": (f"python -m sundai_hotspot.reference_validation validate-reference --call {call_id} "
+                    "--out <fresh empty dir> --ledger <the grant's ledger dir>"),
         "argv": tap_argv(f"<repo>/{EVALUATOR_KINDS[kind]['binary']}", grid),
         "accounting": {"expected_wall_s": TIMING[f"grid{grid}_expected_wall_s"],
                        "expected_cpu_s": round(TIMING[f"grid{grid}_expected_wall_s"] + TIMING["per_call_overhead_cpu_s"], 2),
@@ -968,6 +1060,12 @@ def build_call_list() -> dict:
             "failed_attempt_reserve": "inside each call's cap; a failed attempt is not retried under this grant",
             "concurrency": 1, "gpu": False,
             "host": "x86_64 Azure host behind the mesh and TIMING evidence; an aarch64 build needs its own receipts",
+            "host_architecture": "x86_64",
+            "enforced_at_entry": ("validate-reference runs only a listed call id with its listed engine, reference and "
+                                  "grid; refuses after the window, on another architecture, or a second time (the "
+                                  "ledger reserves each call once); sets RLIMIT_CPU to the call's CPU cap and a wall "
+                                  "timeout of twice the cap; writes the reservation and identity before launch and "
+                                  "settles the receipt on every exit path"),
         },
         "next_allocation": [
             "raw reconstructions of both originals on HS6 at grid 64 (a separate reference identity)",
@@ -978,6 +1076,21 @@ def build_call_list() -> dict:
             "the aarch64 (GB10) build's own gate-zero receipts",
             "a 50 mm frame comparison and NEW-evaluator mesh margins",
         ],
+        "separate_allocations": [
+            {**KNOWN_ANSWER_SLAB, "calls": 2, "engines": ["hotspot6", "hotspot7_default"],
+             "in_this_manifest": False, "gate_zero_calls": False,
+             "expected_rise_K": {kind: known_answer_expected(kind)["expected_rise_K"]
+                                 for kind in ("hotspot6", "hotspot7_default")},
+             "equations": "slab049.known_answer_expected docstring: geometry, power, area, node and boundary "
+                          "equations, the series-resistance derivation, and when the slab result applies"},
+            {"id": "24-layout re-score study", "in_this_manifest": False,
+             "note": "a later separate allocation; not folded into this manifest"},
+        ],
+        "post_run_diagnostics": ("From the 12 calls, with no extra call (reference_validation report): HotSpot 6.0's "
+                                 "grid 32 -> 64 change per fixture (aneta's network model predicts 0.01 K Ascend, "
+                                 "0.18 K CPU-DRAM; the old HotSpot 7 micro150 mesh error was 0.79 K), CPU-s per call "
+                                 "on the HotSpot 6.0 build, replay byte-identity, and the same-index spreader-sink "
+                                 "drop (reported, not asserted). Nothing is frozen on them or on the old mesh error."),
         "not_requested": ("The v1 and v2 plans (32 calls, 37 executions; later 23) and every material-only HotSpot 7 "
                           "call. The material-only flag stays as labelled, bounded diagnostic evidence; it is not the "
                           "MATCH evaluator and inherits no grant."),
@@ -1001,8 +1114,16 @@ def _decimals(path: Path) -> int:
 def summarize_evaluation(directory: Path, *, lcf: str = "samplelayers.lcf", grid: str = "sample.grid.steady",
                          steady: str = "sample.steady", config: str = "new_hotspot.config",
                          stdout: str | None = "stdout.txt", chiplet_pattern: str = r"Chiplet_\d+",
-                         expected_package: dict | None = None, grid_size: int | None = None) -> dict:
-    """The per-solve record. Reads files only; the grid file is parsed strictly (read_grid)."""
+                         expected_package: dict | None = None, grid_size: int | None = None,
+                         grid_format: str = "all_layers") -> dict:
+    """The per-solve record. Reads files only; the grid file is parsed strictly (read_grid).
+
+    grid_format is bound to the evaluator identity (gate_zero.GRID_FORMATS): "all_layers" requires a headered file
+    with every layer (HotSpot 7 and the HotSpot 6.0 evaluator build); "upstream6_top_layer" requires upstream
+    HotSpot 6.0's headerless layer-0 file. Anything else, a truncated file included, is rejected.
+    """
+    if grid_format not in ("all_layers", "upstream6_top_layer"):
+        raise ValueError(f"unknown grid format {grid_format!r}")
     from sundai_hotspot.gate_zero import tap_selector_c, tap_stdout_selector_c
     directory = Path(directory)
     files = {path.name: {"sha256": hashlib.sha256(path.read_bytes()).hexdigest(), "bytes": path.stat().st_size}
@@ -1051,14 +1172,13 @@ def summarize_evaluation(directory: Path, *, lcf: str = "samplelayers.lcf", grid
                                    for u in chip_units},
     }
     text_layers = len(layers) + 2
-    temperatures = read_grid(directory / grid, grid=grid_size, ambient_k=ambient)
-    side = math.isqrt(len(temperatures[0]))
-    if len(temperatures) != text_layers:
-        if len(temperatures) != 1:
-            raise GridFormatError(f"{len(temperatures)} layers; expected {text_layers}, or 1 from upstream HotSpot 6.0")
-        record["grid"] = {"n": side, "layers_in_file": [0],
+    if grid_format == "upstream6_top_layer":
+        temperatures = read_grid(directory / grid, grid=grid_size, ambient_k=ambient, headered=False)
+        record["grid"] = {"n": math.isqrt(len(temperatures[0])), "layers_in_file": [0], "format": grid_format,
                           "note": "upstream HotSpot 6.0 writes only layer 0; the grid fields need the evaluator build"}
         return record
+    temperatures = read_grid(directory / grid, grid=grid_size, layers=text_layers, ambient_k=ambient, headered=True)
+    side = math.isqrt(len(temperatures[0]))
     width, height = total_extent(read_flp(layers[0]["flp"]))
     values = temperatures[active]
 
@@ -1085,8 +1205,18 @@ def summarize_evaluation(directory: Path, *, lcf: str = "samplelayers.lcf", grid
                      "argmax": grid_argmax(temperatures[sink], side)},
             "pattern": run1_pattern(max(temperatures[spreader]) - ambient, max(temperatures[sink]) - ambient),
         },
+        "spreader_sink_drop_diagnostic": _same_index_drop(temperatures[spreader], temperatures[sink], side, ambient),
     })
     return record
+
+
+def _same_index_drop(spreader: list[float], sink: list[float], side: int, ambient: float) -> dict:
+    """Same-index spreader and sink observations where their difference is largest. A reported diagnostic."""
+    from sundai_hotspot.gate_zero import DROP_EXPECTATION
+    index = max(range(len(spreader)), key=lambda i: spreader[i] - sink[i])
+    return {"at": {"row": index // side, "col": index % side}, "spreader_K": spreader[index], "sink_K": sink[index],
+            "spreader_rise_K": spreader[index] - ambient, "sink_rise_K": sink[index] - ambient,
+            "drop_K": spreader[index] - sink[index], "expectation": DROP_EXPECTATION}
 
 
 # ----------------------------------------------------------------------------------------------

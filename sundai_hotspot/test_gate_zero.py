@@ -1,20 +1,22 @@
-"""Gate zero (SLAB-049): pinned references, identities, receipts, the bootstrap path and the selector. No solves.
-
-The "binaries" here are placeholders or a tiny fake that writes synthetic outputs; no HotSpot runs.
+"""Gate zero (SLAB-049): pinned references, identities, evidence-bound records, the manifest-bound bootstrap entry
+and the selector. No solves: the "binaries" are placeholders or a tiny fake that writes synthetic outputs.
 """
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
 from pathlib import Path
+import platform
 import shutil
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
-from sundai_hotspot import gate_zero, slab049
+from sundai_hotspot import gate_zero, reference_validation, slab049
 from sundai_hotspot.coupling_variant import strip_variant_blocks
 from sundai_hotspot.evaluators import HotSpot6Oracle, make_oracle
 from sundai_hotspot.gate_zero import (
@@ -22,7 +24,7 @@ from sundai_hotspot.gate_zero import (
     GateZeroRefusal, build_record, evaluator_identity, references_sha256, require_gate_zero, tap_selector_c,
     tap_stdout_selector_c,
 )
-from sundai_hotspot.reference_validation import validate_reference
+from sundai_hotspot.reference_validation import CallRefused, validate_call
 from sundai_hotspot.tap_oracle import REPO_ROOT, HotSpotOracle, HotSpotOracleError
 
 HS6_ROOT = REPO_ROOT / "sundai_hotspot6"
@@ -33,28 +35,42 @@ FAKE_BINARIES = {
     "hotspot6_tap_faithful": b"HotSpot 6.0 placeholder: Unit\tSteady(Kelvin)",
 }
 GATE_IDS = [r.id for r in REFERENCES if r.role == GATE]
+IN_WINDOW = datetime(2026, 10, 31, 16, 0, tzinfo=timezone.utc)
 
 
-def write_steady(path: Path, peak_c: float) -> None:
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def write_outputs(run: Path, peak_c: float, drop_k: float = 1.0, side: int = 4) -> None:
+    """Synthetic steady, stdout and all-layer grid files, as a HotSpot run would leave them."""
     kelvin = peak_c + 273.15
-    path.write_text(f"layer_4_WS_0\t{kelvin - 20:.2f}\nlayer_4_Chiplet_0\t{kelvin:.2f}\nhsp_TIM\t{kelvin - 30:.2f}\n"
-                    f"inode_0\t{kelvin - 40:.2f}\n", encoding="utf-8")
+    (run / "sample.steady").write_text(f"layer_4_WS_0\t{kelvin - 20:.2f}\nlayer_4_Chiplet_0\t{kelvin:.2f}\n"
+                                       f"hsp_TIM\t{kelvin - 30:.2f}\ninode_0\t{kelvin - 40:.2f}\n", encoding="utf-8")
+    (run / "stdout.txt").write_text("Unit\tSteady(Kelvin)\n" + (run / "sample.steady").read_text(), encoding="utf-8")
+    (run / "stderr.txt").write_text("", encoding="utf-8")
+    with (run / "sample.grid.steady").open("w", encoding="utf-8") as grid:
+        for layer in range(8):
+            grid.write(f"Layer {layer}:\n")
+            base = 380.0 if layer < 7 else 380.0 - drop_k
+            for cell in range(side * side):
+                grid.write(f"{cell}\t{base:.2f}\n")
 
 
-def fabricate_runs(root: Path, kind: str, binary: Path, measured: dict[str, float], grid: int = 64) -> dict[str, Path]:
+def fabricate_runs(root: Path, kind: str, binary: Path, simulated: dict[str, float], grid: int = 64) -> dict[str, Path]:
     """Run directories as validate-reference leaves them, with synthetic outputs instead of a solve."""
     identity = evaluator_identity(kind, binary)
     dirs = {}
     for reference in REFERENCES:
-        if reference.id not in measured:
+        if reference.id not in simulated:
             continue
         run = root / f"{kind}-{reference.id}"
         shutil.copytree(REPO_ROOT / reference.inputs, run)
-        write_steady(run / "sample.steady", measured[reference.id])
-        (run / "stdout.txt").write_text("Unit\tSteady(Kelvin)\n" + (run / "sample.steady").read_text(), encoding="utf-8")
-        (run / "receipt.json").write_text(json.dumps({
-            "schema": gate_zero.RECEIPT_SCHEMA, "evaluator": identity, "reference": reference.id, "grid": grid,
-            "exit_status": 0, "status": "exited"}), encoding="utf-8")
+        write_outputs(run, simulated[reference.id])
+        receipt = {"schema": gate_zero.RECEIPT_SCHEMA, "evaluator": identity, "reference": reference.id, "grid": grid,
+                   "status": "exited", "exit_status": 0, "inputs": gate_zero.frozen_inputs(reference),
+                   "outputs": {name: _sha256(run / name) for name in gate_zero.RECEIPT_OUTPUTS}}
+        (run / "receipt.json").write_text(json.dumps(receipt), encoding="utf-8")
         dirs[reference.id] = run
     return dirs
 
@@ -96,7 +112,7 @@ class PinnedReferenceTests(unittest.TestCase):
             self.assertEqual((config["r_convec"], config["s_sink"], config["s_spreader"], config["grid_rows"],
                               config["grid_map_mode"]), ("0.011111111111111112", "0.18", "0.09", "64", "center"))
             for name, digest in gate_zero.frozen_inputs(reference).items():
-                self.assertEqual(hashlib.sha256((REPO_ROOT / reference.inputs / name).read_bytes()).hexdigest(), digest)
+                self.assertEqual(_sha256(REPO_ROOT / reference.inputs / name), digest)
 
     def test_snapped_references_are_legal_and_raw_ones_are_the_decoded_centres(self):
         for layout, variant in slab049.REFERENCE_SETS:
@@ -123,7 +139,7 @@ class PinnedReferenceTests(unittest.TestCase):
 class EvaluatorIdentityTests(TempDirCase):
     def test_each_kind_accepts_its_own_binary_and_refuses_the_others(self):
         for kind, path in self.binaries.items():
-            self.assertEqual(evaluator_identity(kind, path)["binary_sha256"], hashlib.sha256(path.read_bytes()).hexdigest())
+            self.assertEqual(evaluator_identity(kind, path)["binary_sha256"], _sha256(path))
             for other, other_path in self.binaries.items():
                 if other != kind:
                     with self.assertRaises(GateZeroRefusal, msg=f"{kind} accepted a {other} binary"):
@@ -145,13 +161,18 @@ class EvaluatorIdentityTests(TempDirCase):
         with self.assertRaises(GateZeroRefusal):
             evaluator_identity("hotspot7_default", HS6_ROOT / "hotspot")
 
+    def test_temperature_labels_never_call_a_simulation_measured(self):
+        for kind, label in gate_zero.TEMPERATURE_LABELS.items():
+            self.assertTrue(label.startswith("simulated ("), kind)
+            self.assertNotIn("measured", label)
+        self.assertIn("withdrawn pending the HS6 correction", gate_zero.TEMPERATURE_LABELS["hotspot7_default"])
+
 
 class SelectorTests(unittest.TestCase):
     def test_steady_selector_is_the_maximum_block(self):
         with tempfile.TemporaryDirectory() as directory:
-            steady = Path(directory) / "sample.steady"
-            write_steady(steady, 75.48)
-            value, block = tap_selector_c(steady)
+            write_outputs(Path(directory), 75.48)
+            value, block = tap_selector_c(Path(directory) / "sample.steady")
             self.assertAlmostEqual(value, 75.48, places=9)
             self.assertEqual(block, "layer_4_Chiplet_0")
 
@@ -174,6 +195,8 @@ class SelectorTests(unittest.TestCase):
 
 
 class RecordTests(TempDirCase):
+    GOOD = {"ascend910-original-snapped": 75.48, "micro150-original-snapped": 115.94}
+
     def test_within_tolerance_passes_and_binds_the_binary(self):
         record = passing_record(self.root, "hotspot6", self.binaries["hotspot6"])
         self.assertEqual(record["verdict"], "PASS")
@@ -185,55 +208,98 @@ class RecordTests(TempDirCase):
 
     def test_a_gate_reference_outside_tolerance_fails(self):
         runs = fabricate_runs(self.root, "hotspot6", self.binaries["hotspot6"],
-                              {"ascend910-original-snapped": 75.48, "micro150-original-snapped": 115.94 + 1.01})
+                              {**self.GOOD, "micro150-original-snapped": 115.94 + 1.01})
         record = build_record("hotspot6", self.binaries["hotspot6"], runs)
         self.assertEqual(record["verdict"], "FAIL")
         with self.assertRaises(GateZeroRefusal):
             require_gate_zero("hotspot6", self.binaries["hotspot6"], record)
 
-    def test_a_measured_verification_point_cannot_be_contradicted(self):
-        runs = fabricate_runs(self.root, "hotspot6", self.binaries["hotspot6"],
-                              {"ascend910-original-snapped": 75.48, "micro150-original-snapped": 115.94,
-                               "ascend910-tap": 77.0})
+    def test_a_simulated_verification_point_cannot_be_contradicted(self):
+        runs = fabricate_runs(self.root, "hotspot6", self.binaries["hotspot6"], {**self.GOOD, "ascend910-tap": 77.0})
         self.assertEqual(build_record("hotspot6", self.binaries["hotspot6"], runs)["verdict"], "FAIL")
 
-    def test_the_verdict_is_recomputed_and_the_record_is_tamper_checked(self):
-        runs = fabricate_runs(self.root, "hotspot6", self.binaries["hotspot6"],
-                              {"ascend910-original-snapped": 122.32, "micro150-original-snapped": 229.35})
-        record = build_record("hotspot6", self.binaries["hotspot6"], runs)
+    def test_editing_a_fail_record_never_unlocks(self):
+        """astra #56837: an edited simulated value or verdict on a FAIL record must not unlock search."""
+        binary = self.binaries["hotspot6"]
+        runs = fabricate_runs(self.root, "hotspot6", binary, {"ascend910-original-snapped": 122.32,
+                                                              "micro150-original-snapped": 229.35})
+        record = build_record("hotspot6", binary, runs)
         forged = json.loads(json.dumps(record))
         forged["verdict"] = "PASS"
+        for result in forged["results"]:
+            result["simulated_c"], result["delta_k"], result["within_tolerance"] = result["paper_c"], 0.0, True
         with self.assertRaises(GateZeroRefusal):
-            require_gate_zero("hotspot6", self.binaries["hotspot6"], forged)
-        good = passing_record(self.root / "good", "hotspot6", self.binaries["hotspot6"])
-        for key, value in (("references_sha256", "x"), ("schema", "x")):
-            altered = json.loads(json.dumps(good))
-            altered[key] = value
-            with self.assertRaises(GateZeroRefusal):
-                require_gate_zero("hotspot6", self.binaries["hotspot6"], altered)
-        dropped = json.loads(json.dumps(good))
-        dropped["results"] = dropped["results"][:1]
+            require_gate_zero("hotspot6", binary, forged)
         with self.assertRaises(GateZeroRefusal):
-            require_gate_zero("hotspot6", self.binaries["hotspot6"], dropped)
+            make_oracle("hotspot6", "search", 16, 16, hotspot_binary=binary, gate_zero_record=forged)
 
-    def test_receipts_must_be_grid_64_from_this_binary_on_the_frozen_inputs(self):
+    def test_raw_evidence_edits_are_refused(self):
         binary = self.binaries["hotspot6"]
-        good = {"ascend910-original-snapped": 75.48, "micro150-original-snapped": 115.94}
-        runs = fabricate_runs(self.root / "g32", "hotspot6", binary, good, grid=32)
+        record = passing_record(self.root / "a", "hotspot6", binary)
+        run = Path(record["results"][0]["run_dir"])
+        steady = run / "sample.steady"
+        steady.write_text(steady.read_text() + "layer_4_WS_9\t330.00\n", encoding="utf-8")
+        with self.assertRaises(GateZeroRefusal):  # the output no longer matches its receipt digest
+            require_gate_zero("hotspot6", binary, record)
+        record = passing_record(self.root / "b", "hotspot6", binary)
+        receipt = Path(record["results"][0]["run_dir"]) / "receipt.json"
+        receipt.write_text(receipt.read_text().replace('"grid": 64', '"grid":  64'), encoding="utf-8")
+        with self.assertRaises(GateZeroRefusal):  # the receipt changed after the record
+            require_gate_zero("hotspot6", binary, record)
+        record = passing_record(self.root / "c", "hotspot6", binary)
+        nameless = json.loads(json.dumps(record))
+        del nameless["results"][0]["run_dir"]
+        with self.assertRaises(GateZeroRefusal):  # a record must name its raw evidence
+            require_gate_zero("hotspot6", binary, nameless)
+
+    def test_receipt_digests_must_be_complete_and_correct(self):
+        binary = self.binaries["hotspot6"]
+        for edit in ("drop grid digest", "wrong steady digest", "unbound input"):
+            with self.subTest(edit=edit):
+                runs = fabricate_runs(self.root / edit.replace(" ", "-"), "hotspot6", binary, self.GOOD)
+                receipt_path = runs[GATE_IDS[0]] / "receipt.json"
+                receipt = json.loads(receipt_path.read_text())
+                if edit == "drop grid digest":
+                    del receipt["outputs"]["sample.grid.steady"]
+                elif edit == "wrong steady digest":
+                    receipt["outputs"]["sample.steady"] = "0" * 64
+                else:
+                    receipt["inputs"]["new_hotspot.config"] = "0" * 64
+                receipt_path.write_text(json.dumps(receipt))
+                with self.assertRaises(GateZeroRefusal):
+                    build_record("hotspot6", binary, runs)
+
+    def test_receipts_must_be_completed_grid_64_runs_of_this_binary_on_the_frozen_inputs(self):
+        binary = self.binaries["hotspot6"]
         with self.assertRaises(GateZeroRefusal):
-            build_record("hotspot6", binary, runs)
-        runs = fabricate_runs(self.root / "other", "hotspot6", binary, good)
+            build_record("hotspot6", binary, fabricate_runs(self.root / "g32", "hotspot6", binary, self.GOOD, grid=32))
+        runs = fabricate_runs(self.root / "other", "hotspot6", binary, self.GOOD)
         receipt = runs[GATE_IDS[0]] / "receipt.json"
         data = json.loads(receipt.read_text())
         data["evaluator"]["binary_sha256"] = "0" * 64
         receipt.write_text(json.dumps(data))
         with self.assertRaises(GateZeroRefusal):
             build_record("hotspot6", binary, runs)
-        runs = fabricate_runs(self.root / "stale", "hotspot6", binary, good)
+        runs = fabricate_runs(self.root / "stale", "hotspot6", binary, self.GOOD)
         config = runs[GATE_IDS[0]] / "new_hotspot.config"
         config.write_text(config.read_text().replace("0.011111111111111112", "0.1"))
         with self.assertRaises(GateZeroRefusal):
             build_record("hotspot6", binary, runs)
+
+    def test_the_spreader_sink_drop_is_reported_not_asserted(self):
+        binary = self.binaries["hotspot6"]
+        runs = fabricate_runs(self.root, "hotspot6", binary, self.GOOD)
+        write_outputs(runs[GATE_IDS[0]], 75.48, drop_k=51.0)
+        receipt = runs[GATE_IDS[0]] / "receipt.json"
+        data = json.loads(receipt.read_text())
+        data["outputs"] = {name: _sha256(runs[GATE_IDS[0]] / name) for name in gate_zero.RECEIPT_OUTPUTS}
+        receipt.write_text(json.dumps(data))
+        record = build_record("hotspot6", binary, runs)
+        self.assertEqual(record["verdict"], "PASS")
+        drop = record["results"][0]["spreader_sink_drop_diagnostic"]
+        self.assertAlmostEqual(drop["drop_K"], 51.0, places=6)
+        self.assertEqual((drop["spreader_K"], drop["sink_K"]), (380.0, 329.0))
+        self.assertIn("copper predicts about 1-2 K", drop["expectation"])
 
     def test_no_record_is_refused(self):
         with self.assertRaises(GateZeroRefusal):
@@ -276,19 +342,21 @@ class SelectorAndOracleTests(TempDirCase):
             HotSpot6Oracle(16, 16, hotspot_binary=self.binaries["hotspot6_tap_faithful"])
 
 
-FAKE_SOLVER = r'''#!/usr/bin/env python3
+FAKE_SOLVER = r'''#!PYTHON
 # Test-only stand-in for a HotSpot binary: identity markers in this comment, synthetic outputs, no physics.
 # markers: Unit	Steady(Kelvin) dgssv SENTILAB_EVALUATOR=hotspot6@a7a3286e;grid_dump=all_layers;ticket=SLAB-049
-import os, sys
+import os, resource, sys
 args = sys.argv[1:]
 grid = int(args[args.index("-grid_rows") + 1]) if "-grid_rows" in args else 64
-peak = float(os.environ["FAKE_PEAK_C"]) + 273.15
+peak = float(os.environ.get("FAKE_PEAK_C", "75.3")) + 273.15
+open("rlimit_cpu.txt", "w").write(str(resource.getrlimit(resource.RLIMIT_CPU)[0]))
 names = [line.split()[0] for line in open("sampleL4_ChipLayer.flp") if line.strip() and not line.startswith("#")]
 steady = ["layer_4_%s\t%.2f" % (n, peak - (0 if n == "Chiplet_0" else 5)) for n in names]
 steady += ["hsp_TIM\t%.2f" % (peak - 30), "hsink_TIM\t%.2f" % (peak - 40), "inode_0\t320.00"]
 open("sample.steady", "w").write("\n".join(steady) + "\n")
+layers = 1 if os.environ.get("FAKE_TRUNCATE") else 8
 with open("sample.grid.steady", "w") as out:
-    for layer in range(8):
+    for layer in range(layers):
         out.write("Layer %d:\n" % layer)
         for cell in range(grid * grid):
             out.write("%d\t%.2f\n" % (cell, peak - 1 - layer if cell else peak - layer))
@@ -297,37 +365,91 @@ print("\n".join(steady))
 '''
 
 
-@unittest.skipIf(os.name != "posix", "the fake solver is a POSIX script")
-class BootstrapTests(TempDirCase):
-    """validate-reference makes the first receipt without a prior PASS; the receipt then unlocks search."""
+@unittest.skipUnless(os.name == "posix" and platform.machine() == "x86_64",
+                     "the manifest lists an x86_64 POSIX host; the fake solver is a POSIX script")
+class ManifestEntryTests(TempDirCase):
+    """validate-reference: the bootstrap path, bound to the frozen manifest (astra #56794, #56837)."""
 
-    def test_validate_reference_needs_no_pass_and_its_receipts_unlock_search(self):
-        fake = self.root / "fake-hotspot6"
-        fake.write_text(FAKE_SOLVER.replace("#!/usr/bin/env python3", f"#!{sys.executable}"), encoding="utf-8")
-        fake.chmod(0o755)
+    def setUp(self):
+        super().setUp()
+        self.fake = self.root / "fake-hotspot6"
+        self.fake.write_text(FAKE_SOLVER.replace("PYTHON", sys.executable), encoding="utf-8")
+        self.fake.chmod(0o755)
+        self.ledger = self.root / "ledger"
+
+    def call(self, call_id: str, out: str, **kwargs) -> dict:
+        return validate_call(call_id, self.root / out, self.ledger, binary=kwargs.pop("binary", self.fake),
+                             now=kwargs.pop("now", IN_WINDOW), **kwargs)
+
+    def test_anything_not_in_the_manifest_is_refused_before_dispatch(self):
+        refusals = {
+            "unlisted call": dict(call_id="u-hs6-ascend910-original-g64"),
+            "deferred reference": dict(call_id="p-hs6-ascend910-original-g64", reference="ascend910-original-raw"),
+            "grid 128": dict(call_id="p-hs6-ascend910-original-g64", grid=128),
+            "other engine": dict(call_id="p-hs6-ascend910-original-g64", kind="hotspot6_tap_faithful"),
+            "timeout 1e6": dict(call_id="p-hs6-ascend910-original-g64", timeout_s=1e6),
+            "after the window": dict(call_id="p-hs6-ascend910-original-g64",
+                                     now=datetime(2026, 11, 1, 12, 0, 1, tzinfo=timezone.utc)),
+        }
+        with mock.patch("sundai_hotspot.reference_validation.subprocess.run") as dispatch:
+            for rule, arguments in refusals.items():
+                with self.subTest(rule=rule), self.assertRaises(CallRefused):
+                    call_id = arguments.pop("call_id")
+                    self.call(call_id, f"out-{rule.replace(' ', '-')}", **arguments)
+            with mock.patch("sundai_hotspot.reference_validation.platform.machine", return_value="aarch64"):
+                with self.assertRaises(CallRefused):
+                    self.call("p-hs6-ascend910-original-g64", "out-host")
+            dispatch.assert_not_called()
+        self.assertFalse(self.ledger.exists() and any(self.ledger.iterdir()), "a refused call must not be reserved")
+
+    def test_bootstrap_receipts_need_no_pass_bind_every_field_and_unlock_search(self):
         with self.assertRaises(GateZeroRefusal):
-            make_oracle("hotspot6", "search", 16, 16, hotspot_binary=fake)
+            make_oracle("hotspot6", "search", 16, 16, hotspot_binary=self.fake)
         runs = {}
-        for reference_id, peak in (("ascend910-original-snapped", 75.30), ("micro150-original-snapped", 116.50)):
-            os.environ["FAKE_PEAK_C"] = str(peak)
-            try:
-                receipt = validate_reference("hotspot6", fake, reference_id, 64, self.root / reference_id)
-            finally:
-                del os.environ["FAKE_PEAK_C"]
+        for call_id, reference_id, peak in (("p-hs6-ascend910-original-g64", "ascend910-original-snapped", 75.30),
+                                            ("p-hs6-micro150-original-g64", "micro150-original-snapped", 116.50)):
+            with mock.patch.dict(os.environ, {"FAKE_PEAK_C": str(peak)}):
+                receipt = self.call(call_id, call_id)
             self.assertEqual((receipt["status"], receipt["exit_status"]), ("exited", 0))
+            self.assertEqual((Path(self.root / call_id) / "rlimit_cpu.txt").read_text(), "60")  # the CPU cap
             record = receipt["solve_record"]
             self.assertEqual(record["config_sha256"], receipt["inputs"]["new_hotspot.config"])
             for field in ("active_layer_grid_peak", "chiplet_centre_mapping", "historical_tap_stdout_selector",
-                          "spreader_sink_hottest_cell_rises"):
+                          "spreader_sink_hottest_cell_rises", "spreader_sink_drop_diagnostic"):
                 self.assertIn(field, record)
-            self.assertTrue(record["historical_tap_stdout_selector"]["literal_on_stdout"]["applicable"])
-            runs[reference_id] = self.root / reference_id
-        with self.assertRaises(ValueError):  # every call needs a fresh, empty directory
-            validate_reference("hotspot6", fake, "ascend910-original-snapped", 64, self.root / "ascend910-original-snapped")
-        result = build_record("hotspot6", fake, runs)
+            self.assertNotIn("measured", json.dumps(receipt))
+            self.assertTrue((self.ledger / f"{call_id}.reserved.json").is_file())
+            self.assertTrue((self.ledger / f"{call_id}.settled.json").is_file())
+            runs[reference_id] = self.root / call_id
+        with self.assertRaises(CallRefused):  # each call runs once
+            self.call("p-hs6-ascend910-original-g64", "again")
+        result = build_record("hotspot6", self.fake, runs)
         self.assertEqual(result["verdict"], "PASS")
-        oracle = make_oracle("hotspot6", "search", 16, 16, hotspot_binary=fake, gate_zero_record=result)
+        oracle = make_oracle("hotspot6", "search", 16, 16, hotspot_binary=self.fake, gate_zero_record=result)
         self.assertIsNotNone(oracle.gate_zero)
+        report = reference_validation.report(list(runs.values()))
+        self.assertEqual({row["reference"] for row in report["rows"]}, set(runs))
+
+    def test_a_launch_failure_keeps_a_settled_receipt(self):
+        unlaunchable = self.root / "not-executable"
+        unlaunchable.write_bytes(FAKE_BINARIES["hotspot6"])
+        unlaunchable.chmod(0o644)
+        receipt = self.call("p-hs6-ascend910-original-g64", "launch", binary=unlaunchable)
+        self.assertEqual(receipt["status"], "launch_error")
+        on_disk = json.loads((self.root / "launch" / "receipt.json").read_text())
+        self.assertEqual(on_disk["status"], "launch_error")
+        self.assertIn("finished_utc", on_disk)
+        settled = json.loads((self.ledger / "p-hs6-ascend910-original-g64.settled.json").read_text())
+        self.assertEqual(settled["status"], "launch_error")
+
+    def test_a_truncated_grid_after_exit_zero_keeps_the_raw_outputs_and_fails(self):
+        with mock.patch.dict(os.environ, {"FAKE_TRUNCATE": "1"}):
+            receipt = self.call("p-hs6-ascend910-original-g64", "truncated")
+        self.assertEqual((receipt["status"], receipt["exit_status"]), ("record_error", 0))
+        self.assertIn("GridFormatError", receipt["error"])
+        self.assertEqual(set(receipt["outputs"]), set(gate_zero.RECEIPT_OUTPUTS))
+        with self.assertRaises(GateZeroRefusal):
+            build_record("hotspot6", self.fake, {"ascend910-original-snapped": self.root / "truncated"})
 
 
 class VendoredHotSpot6Tests(unittest.TestCase):
@@ -364,6 +486,27 @@ class VendoredHotSpot6Tests(unittest.TestCase):
         for needle in ("x86_64|aarch64)", "SUPERLU=0", "SUPERLU=1", "-DSENTILAB_GRID_DUMP_ALL_LAYERS=1",
                        "-ffp-contract=off", "hotspot-tap-faithful", "sha256sum"):
             self.assertIn(needle, script)
+
+
+class KnownAnswerSlabTests(unittest.TestCase):
+    """The analytic slab fixture: declared now, run later under its own 2-call allocation."""
+
+    def test_expected_rises_follow_the_series_resistance(self):
+        hs6, hs7 = slab049.known_answer_expected("hotspot6"), slab049.known_answer_expected("hotspot7_default")
+        self.assertAlmostEqual(hs6["expected_rise_K"], 54.075, places=9)
+        self.assertAlmostEqual(hs7["expected_rise_K"], 80.4825, places=9)
+        self.assertAlmostEqual(hs6["tolerance_K"], 0.270375, places=9)
+        manifest = slab049.build_call_list()
+        slab = next(a for a in manifest["separate_allocations"] if a["id"] == "known-answer-slab")
+        self.assertEqual((slab["calls"], slab["in_this_manifest"], slab["gate_zero_calls"]), (2, False, False))
+        self.assertEqual(len(manifest["calls"]), 12)
+
+    def test_the_check_reads_the_die_block(self):
+        with tempfile.TemporaryDirectory() as directory:
+            steady = Path(directory) / "slab.steady"
+            for rise, verdict in ((54.075, "PASS"), (54.30, "PASS"), (80.48, "FAIL")):
+                steady.write_text(f"layer_0_die\t{318.15 + rise:.2f}\nlayer_1_TIM\t{318.15 + rise - 1:.2f}\n")
+                self.assertEqual(slab049.check_known_answer_slab(Path(directory), "hotspot6")["verdict"], verdict)
 
 
 if __name__ == "__main__":
