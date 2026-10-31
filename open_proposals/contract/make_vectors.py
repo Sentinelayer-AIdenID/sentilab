@@ -925,6 +925,8 @@ def manifest_records() -> list:
          [S("/checks/cpu_enforcement", "const")]),
         ("schema: overrun detection is its own field", [("/checks/cpu_overrun", DELETE)],
          [S("/checks/cpu_overrun", "required")]),
+        ("signed: a manifest outside the test fixtures pins a published test recipient", [("/problem", "two-die")],
+         [R("manifest.test_key", "/sealing/recipient")]),
         ("signed: no accepted terms", [("/terms/accepted_versions", [])],
          [R("manifest.signed_pins", "/terms/accepted_versions")]),
         ("schema: plaintext_fallback is false", [("/sealing/plaintext_fallback", True)],

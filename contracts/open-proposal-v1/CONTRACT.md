@@ -92,6 +92,8 @@ content, and rejects a mismatch with `transport_key_mismatch`. Logical keys are 
   opening and before anything is made public; only then does the entry's `publish` transition run. A refused command
   changes nothing, gets no room pointer, and is reported only privately.
 - Rotation is a new key version in a new manifest version; old keys stay in custody (golden manifest `F2`).
+- The test identities in `vectors-age.json` are public, so anyone can open what is sealed to them: a signed manifest
+  must not pin one unless it is a test fixture (its `problem` starts `test-`); rule `manifest.test_key`.
 - The opener is a seam: `opener(armour, manifest, key_version) -> plaintext` or `Unopenable`. `age_tools` holds the
   reference opener for tests (X25519 age v1 on `cryptography`), the strict armour, and sealing for vector generation.
 
