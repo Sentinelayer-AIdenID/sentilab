@@ -302,6 +302,22 @@ class FreezeTests(unittest.TestCase):
         self.assertEqual(result["gate"]["board"], self.reference)
         self.assertEqual(result["charged_by_lab"]["lab-a"], 8)
 
+    def test_cancelled_and_no_result_preserve_valid_board_and_spent_slot(self):
+        rows = [candidate("a", 8), candidate("b", 7.5, "lab-b")]
+        for status in ("cancelled", "no_result"):
+            lost = attempt("b", j=None, lab="lab-b", status=status, execution="unknown")
+            with self.subTest(status=status):
+                result = self.replay(rows, [lost, attempt()])
+                self.assertEqual(result["gate"]["board"], replace(rows[0], measurement_id="reproduction-a"))
+                self.assertFalse(result["complete"])
+                self.assertEqual(result["slots"][1]["status"], "inconclusive")
+                self.assertEqual(result["slots"][1]["attempts"], (lost,))
+                self.assertEqual(result["charged_by_lab"]["lab-b"], 8)
+                with self.assertRaises(ValueError):
+                    self.replay(rows, [attempt(), lost, attempt("b", 7.5, "lab-b", number=1)])
+                with self.assertRaises(ValueError):
+                    self.replay(rows, [attempt(), replace(lost, j=7.5)])
+
     def test_no_retry_for_numerical_failure_success_or_unused_slot(self):
         for status, j in (("failed", None), ("success", 8)):
             with self.assertRaises(ValueError):
@@ -320,6 +336,7 @@ class FreezeTests(unittest.TestCase):
         self.assertEqual(sign_test(8, 0), 0.0078125)
         self.assertEqual(sign_test(7, 1), 0.0703125)
         self.assertEqual(sign_test(6, 0), 0.03125)
+        self.assertEqual(sign_test(11, 1), 0.00634765625)
         self.assertEqual(sign_test(0, 0), 1)
         self.assertEqual(holm({"sharing": sign_test(8, 0), "worker": sign_test(6, 0)}, freeze=self.freeze),
                          {"sharing": True, "worker": True})

@@ -26,7 +26,7 @@
     "paired_seeds": 2,
     "seed_aggregation": "arithmetic mean within family before testing",
     "primary_dropping": "forbidden after outcomes",
-    "incomplete_required_pair": "inconclusive; no post-outcome family removal",
+    "incomplete_required_pair": "apply the frozen final-evidence/loss policy; never drop a family or seed, average over only observed seeds, or treat missingness as a measured tie",
     "sharing_ties": "absolute family difference <= frozen sharing_tolerance",
     "worker_ties": "exact equality of rational success rates",
     "ties": "exclude endpoint-specific ties from that endpoint denominator and report n",
@@ -36,7 +36,16 @@
     "first_threshold": 0.025,
     "second_threshold": 0.05,
     "eight_non_tied_required_wins": 8,
-    "six_non_tied_rule": "6/6 may pass second at .05 only after the other primary passes first at .025; a six-family design stays descriptive"
+    "six_non_tied_rule": "6/6 may pass second at .05 only after the other primary passes first at .025; a six-family design stays descriptive",
+    "missing_family_adverse_sign": {
+      "scope": "only a pre-named treatment beneficial-direction primary claim under pins.missing_family_primary_claims; not a harm claim or a secondary endpoint",
+      "retention": "retain all frozen families and both seed positions; endpoint-specific measured ties alone reduce n; never remove unfavorable or missing families",
+      "analysis": "apply adverse family signs for missing required evidence only as preregistered; two-sided exact sign tests and two-primary Holm, with favorable direction also required",
+      "report": "report measured wins, losses and ties separately from imputed adverse signs and missing seed/family evidence",
+      "prohibitions": "never invent temperatures, fabricate seed means, convert missingness to a measured failure, or infer harm from imputed losses"
+    },
+    "eleven_of_twelve_two_sided_p": 0.00634765625,
+    "no_loss_probability_caveat": "quoted 2.1452% and 68.1118% assume iid homogeneous failures; not measured reliability"
   },
   "arms": {
     "B0": {
@@ -92,7 +101,14 @@
     "infrastructure_retry_limit": 1,
     "retry": "exactly one declared transient infrastructure retry only after proven pre-execution failure; same candidate/context/slot; record all attempts and costs; no substitute",
     "retry_accounting": "free only on proof solve never started; uncertain or post-start launch consumes slot; at most one pre-execution retry, never another charged attempt in same slot",
-    "cross_architecture": "same reproduction slot only if frozen reproducer policy authorizes it; no free extra evidence"
+    "cross_architecture": "same reproduction slot only if frozen reproducer policy authorizes it; no free extra evidence",
+    "lost_opportunity": "a consumed search or reproduction loss remains charged and never earns a replacement; preserve reason and execution evidence even if an otherwise valid final board survives",
+    "held_out_no_result_retries": {
+      "scope": "fixed held-out corpus evaluation; not additional chiplet search/reproduction opportunities",
+      "prerequisites": "freeze attempt schedule, seed schedule, idempotency and ordering, symmetric retry limits and every charge before outcomes",
+      "selection": "first complete measurement-valid evaluation in frozen attempt order before any success, nomination margin or favorable-direction test; never retry measured scientific failure for a better result",
+      "accounting": "retain every attempt and charge including no-result attempts; fixed inputs alone do not remove selection bias; chiplet remains at 32 with its existing pre-execution-only retry rule"
+    }
   },
   "epoch": {
     "count_per_run": 1,
@@ -107,13 +123,16 @@
     "sharing": "B3 and B4 may share evaluated evidence during search; no reproduction or accepted-board updates during search",
     "demo": "sequential live-loop board is demonstration only, never benchmark evidence",
     "scope": "family x seed x arm; immutable context binds evaluator, metric, scenarios and physical-layout canonicalization",
-    "missing": "completed scientific failure is observed; missing or unobserved infrastructure result makes confirmatory inference inconclusive, never a tie or free replacement"
+    "missing": "cancelled/no-result and unobserved infrastructure losses remain distinct from measured scientific failures; no free replacement; a consumed loss need not invalidate an otherwise valid final board; apply frozen final-evidence/loss and claim-specific missing-family policies",
+    "final_board_policy": "freeze board fallback, required final evidence, loss counting/limits, and treatment of missing reference, scorer, seed and global STOP before outcomes; unresolved pins block execution"
   },
   "nomination": {
     "ranking": "exact finite evaluated J ascending, then canonical physical-layout hash ascending; no tolerance in comparator",
     "same_hash": "one authoritative measurement per physical-layout/context; retain separate proposal/lab/slot identities and charges",
     "eligibility": "filter valid candidates first: positive reference J minus evaluated J >= acceptance_margin + reference uncertainty + candidate uncertainty",
-    "no_substitute": true
+    "no_substitute": true,
+    "measurement_selection": "select first complete measurement-valid evaluation in frozen attempt order BEFORE testing nomination margin; never first favorable or qualifying result; a margin failure cannot advance to a later repeat",
+    "normalization_evidence": "preserve each slot original independent reproduction and per-slot agreement evidence, B2 isolation, attempt provenance and charge BEFORE duplicate normalization; one authoritative measurement never replaces a slot evidence obligation"
   },
   "gate": {
     "contract": "contract-0.2",
@@ -122,7 +141,8 @@
     "non_improving_current": "board J minus candidate J <= 0",
     "within_margin": "0 < board J minus candidate J < acceptance_margin + board uncertainty + candidate uncertainty; exact boundary qualifies",
     "valid_losers": "retain valid evidence; never stale_parent",
-    "reproduction": "fresh independent worker/process, identical bound inputs and frozen context; absolute J discrepancy <= reproduction_tolerance"
+    "reproduction": "fresh independent worker/process, identical bound inputs and frozen context; absolute J discrepancy <= reproduction_tolerance",
+    "margin_binding": "rank_order_gate rejects null acceptance_margin or a caller margin unequal to the frozen value"
   },
   "parameters": {
     "acceptance_margin": null,
@@ -153,6 +173,20 @@
     "pre_outcome_release": null,
     "physical_layout_canonicalization": null,
     "reference_and_refinement_charges": null,
-    "sharing_round_barriers": null
+    "sharing_round_barriers": null,
+    "evaluation_attempt_order": null,
+    "board_fallback": null,
+    "required_final_evidence": null,
+    "loss_counting_and_limits": null,
+    "missing_reference_policy": null,
+    "missing_scorer_policy": null,
+    "missing_seed_policy": null,
+    "global_stop_policy": null,
+    "missing_family_primary_claims": null,
+    "held_out_attempt_schedule": null,
+    "held_out_seed_schedule": null,
+    "held_out_idempotency_and_ordering": null,
+    "held_out_symmetric_retry_limits": null,
+    "held_out_retry_charges": null
   }
 }
