@@ -140,6 +140,13 @@ dialog { background: #182930; color: var(--text); border: 1px solid var(--line);
 dialog::backdrop { backdrop-filter: blur(5px); background: #0006; }
 dialog li { margin: 4px 0; color: #cfd8d6; }
 
+/* The withdrawn-temperature notice (temperature-label.mjs NOTICE), under the top bar. On the one-screen layout it takes
+   its own row; the numbers below it stay as signed. */
+@media (min-width: 1280px) and (min-height: 720px) {
+  .desk:has(> .wnotice:not([hidden])) { grid-template-rows: 44px auto 52px 68px minmax(0, 1fr) 26px; }
+}
+.wnotice { margin: 0; padding: 6px 12px; border-radius: 6px; border: 1px solid #7a6334; background: #2a2418; color: #f3d9a4; font-size: 12px; line-height: 1.4; }
+
 /* below 1280x720: stacked, scrolling layout */
 @media (max-width: 1279px), (max-height: 719px) {
   .desk { height: auto; grid-template-rows: auto; padding: 0 16px; }

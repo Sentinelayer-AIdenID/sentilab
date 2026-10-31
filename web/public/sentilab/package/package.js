@@ -8,6 +8,9 @@ import { shortId } from "../lab-model.mjs";
 import { sceneAt, scaleTicks, describeEvent, describeSource, refusalText, spanText, TRACK_ORDER, TRACKS, trackName } from "./scene.mjs";
 import { reconcile } from "./playhead.mjs";
 import { drawPackage, TrackAnimation, HOME_AZIMUTH, ORBIT_MS, easeInOut } from "./render.mjs";
+// Temperatures are labelled by the one rule (temperature-label.mjs) from the evaluator identity of the measurement each
+// came from, for replays and the live feed alike. The numbers stay as recorded; the page says so above the stage.
+import { needsNotice, NOTICE } from "../../temperature-label.mjs";
 
 const params = new URLSearchParams(location.search);
 const $ = (id) => document.getElementById(id);
@@ -274,6 +277,10 @@ function renderDom() {
   renderInfo(src);
   renderStrip();
   renderOffline();
+  // Only the verified prefix is drawn: any withdrawn or unvalidated temperature in it shows the notice.
+  const notice = Boolean(v) && needsNotice(v.prefixEnvelopes);
+  $("wnotice").hidden = !notice;
+  $("wnotice").textContent = notice ? NOTICE : "";
 }
 
 function renderTop(src, v) {

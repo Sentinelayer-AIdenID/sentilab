@@ -354,8 +354,10 @@ void print_simulation_summary(thermal_config_t thermal_config, RC_model_t *model
  * the columns are specified doesn't have to match that of the floorplan
  * file.
  */
+#include "ci_entry.h"
 int main(int argc, char **argv)
 {
+  ci_hotspot_entry();
   int i, j, idx, base = 0, count = 0, n = 0;
   int num, size, lines = 0, do_transient = TRUE;
   char **names;
