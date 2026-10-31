@@ -1,0 +1,645 @@
+{
+  "schema": "sentilab.merge-verification/1",
+  "pr": 21,
+  "source_parent": "8ed483c4acbc9f764ac7bf880d14203dec4f7d52",
+  "main_parent": "60ddc5517397226dbd21e45b4de42c13ef29f867",
+  "tested_tree_before_this_evidence": "1ac15f6eb6b74e0b413e884c3ba241d1cb2f9c3b",
+  "scope": "Merge main 60ddc55 into reviewed PR21 8ed483c4. Keep all nine MCP tools and live, dataset, research and ResultCheck CLI namespaces. Preserve research auth/STOP/error behavior, lazy context, worker cancellation and binary ResultCheck output.",
+  "corrections": [
+    "Keep both sides of two transport-file conflicts.",
+    "Import operations locally in research_main after retaining lazy CLI imports.",
+    "Resolve the shared lazy context before calling research MCP handlers."
+  ],
+  "smoke": {
+    "command": ". .venv/bin/activate && OPENBLAS_CORETYPE=Haswell OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 bash /app/scripts/container_smoke.sh",
+    "exit": 0,
+    "wall_seconds": 185.745,
+    "cpu_seconds": 157.653,
+    "log": "/workspace/slab022-main2-smoke.log",
+    "sha256": "44c4ad2eecc656dbac2b3f2368bd2398ff1725a82202ae45cdb60deb63c5fa3d",
+    "environment": "Native Ubuntu 24.04 / Python 3.12.3; Docker executable absent. Existing /app symlink, pinned venv dependencies, unchanged CI smoke script.",
+    "modules": [
+      {
+        "path": "sundai_controller/test_controller.py",
+        "tests": 47,
+        "seconds": 0.174
+      },
+      {
+        "path": "sundai_controller/test_safety_property.py",
+        "tests": 2,
+        "seconds": 29.187
+      },
+      {
+        "path": "sundai_controller/test_experiment.py",
+        "tests": 8,
+        "seconds": 0.209
+      },
+      {
+        "path": "sundai_controller/test_tfl08_leaderboard.py",
+        "tests": 8,
+        "seconds": 6.809
+      },
+      {
+        "path": "sundai_hotspot/test_tap_oracle.py",
+        "tests": 14,
+        "seconds": 6.274
+      },
+      {
+        "path": "sundai_thermal/test_tfl14_regression.py",
+        "tests": 2,
+        "seconds": 13.913
+      },
+      {
+        "path": "app/test_runs.py",
+        "tests": 6,
+        "seconds": 2.301
+      },
+      {
+        "path": "sundai_controller/test_mesh_study.py",
+        "tests": 25,
+        "seconds": 11.191
+      },
+      {
+        "path": "sundai_controller/test_trust.py",
+        "tests": 12,
+        "seconds": 6.821
+      },
+      {
+        "path": "sundai_hotspot/test_micro150.py",
+        "tests": 9,
+        "seconds": 0.834
+      },
+      {
+        "path": "app/test_view.py",
+        "tests": 7,
+        "seconds": 4.977
+      },
+      {
+        "path": "app/test_view_cursor.py",
+        "tests": 9,
+        "seconds": 2.551
+      },
+      {
+        "path": "app/test_view_readonly.py",
+        "tests": 2,
+        "seconds": 0.419
+      },
+      {
+        "path": "sentilab_core/test_budget.py",
+        "tests": 5,
+        "seconds": 0.206
+      },
+      {
+        "path": "sentilab_core/test_cleanup.py",
+        "tests": 8,
+        "seconds": 0.78
+      },
+      {
+        "path": "sentilab_core/test_conductor.py",
+        "tests": 5,
+        "seconds": 4.706
+      },
+      {
+        "path": "sentilab_core/test_dataset.py",
+        "tests": 16,
+        "seconds": 15.259
+      },
+      {
+        "path": "sentilab_core/test_dataset_mcp.py",
+        "tests": 3,
+        "seconds": 0.723
+      },
+      {
+        "path": "sentilab_core/test_environment.py",
+        "tests": 7,
+        "seconds": 0.035
+      },
+      {
+        "path": "sentilab_core/test_gate.py",
+        "tests": 3,
+        "seconds": 0.001
+      },
+      {
+        "path": "sentilab_core/test_history.py",
+        "tests": 4,
+        "seconds": 0.083
+      },
+      {
+        "path": "sentilab_core/test_lab_conductor.py",
+        "tests": 4,
+        "seconds": 24.894
+      },
+      {
+        "path": "sentilab_core/test_labs.py",
+        "tests": 18,
+        "seconds": 0.128
+      },
+      {
+        "path": "sentilab_core/test_ledger.py",
+        "tests": 18,
+        "seconds": 0.503
+      },
+      {
+        "path": "sentilab_core/test_mcp_stdio.py",
+        "tests": 7,
+        "seconds": 1.661
+      },
+      {
+        "path": "sentilab_core/test_oracle.py",
+        "tests": 1,
+        "seconds": 0.244
+      },
+      {
+        "path": "sentilab_core/test_research.py",
+        "tests": 12,
+        "seconds": 0.233
+      },
+      {
+        "path": "sentilab_core/test_research_transports.py",
+        "tests": 5,
+        "seconds": 3.527
+      },
+      {
+        "path": "sentilab_core/test_resultcheck.py",
+        "tests": 8,
+        "seconds": 12.507
+      },
+      {
+        "path": "sentilab_core/test_resultcheck_boundary.py",
+        "tests": 3,
+        "seconds": 1.567
+      },
+      {
+        "path": "sentilab_core/test_resultcheck_io.py",
+        "tests": 10,
+        "seconds": 12.937
+      },
+      {
+        "path": "sentilab_core/test_resultcheck_platform.py",
+        "tests": 8,
+        "seconds": 3.22
+      },
+      {
+        "path": "sentilab_core/test_signing.py",
+        "tests": 2,
+        "seconds": 0.015
+      },
+      {
+        "path": "sentilab_core/test_transports.py",
+        "tests": 2,
+        "seconds": 2.297
+      }
+    ],
+    "total_tests": 300,
+    "skipped": 0,
+    "requested_module_count": 33,
+    "requested_module_tests": 298,
+    "hotspot_probes": 8,
+    "probe_summary": [
+      "right_shift_2mm 32x32 peak 118.8400 C in 0.484 s",
+      "16x16 median oracle evaluation: 0.045 s (within the deployed-host target 0.100 s)",
+      "32x32 median oracle evaluation: 0.485 s (ABOVE the deployed-host target 0.400 s)"
+    ]
+  },
+  "additional_gates": {
+    "gates": [
+      {
+        "command": "make -C sundai_hotspot -j4 SUPERLU=1",
+        "exit": 0,
+        "seconds": 0.019,
+        "log": "/workspace/slab022-main2-gate-0.log",
+        "sha256": "3765c457e2971ef1c96c903fbe092d436a3e632974fc4e2af324b52b87eed957",
+        "summary": [
+          "a - shape.o",
+          "a - util.o",
+          "a - wire.o",
+          "ranlib libhotspot.a",
+          "make: Leaving directory '/workspace/sentilab/sundai_hotspot'"
+        ]
+      },
+      {
+        "command": ". .venv/bin/activate && node --test web/test/*.test.mjs",
+        "exit": 0,
+        "seconds": 6.199,
+        "log": "/workspace/slab022-main2-gate-1.log",
+        "sha256": "83a1c18e63cac393a704c07d6cacf40f91ba2056f30f7e648925e17c692b6fe0",
+        "summary": [
+          "# fail 0",
+          "# cancelled 0",
+          "# skipped 0",
+          "# todo 0",
+          "# duration_ms 6159.8928"
+        ]
+      },
+      {
+        "command": "(cd contracts && sha256sum -c HASHES.txt)",
+        "exit": 0,
+        "seconds": 0.006,
+        "log": "/workspace/slab022-main2-gate-2.log",
+        "sha256": "4d703fb56504124e4bd166e7c1d86c5cdb2c7d8d79b70b74b97a18df5d8f06bb",
+        "summary": [
+          "view-envelope-v0.6/paging.mjs: OK",
+          "view-envelope-v0.6/README.md: OK",
+          "view-envelope-v0.6/run-paging-vectors.mjs: OK",
+          "view-envelope-v0.6/vectors-paging.json: OK",
+          "view-envelope-v0.6/VIEW-ENVELOPE.md: OK"
+        ]
+      },
+      {
+        "command": "node contracts/contract-0.2/run-vectors.mjs",
+        "exit": 0,
+        "seconds": 0.638,
+        "log": "/workspace/slab022-main2-gate-3.log",
+        "sha256": "bba91b23c4e0d8c112d460ce2afbf8bfdf12d0b5cb088288b2e0be7637826892",
+        "summary": [
+          "5c20a91a0890b9a66774e93b5792b9a717ec085314adf879b458ad9006f2510c  vectors-evidence.json",
+          "4956952f6095f0403a7a92472727c97834c2aefd674701e5814b5ad4c498c9a6  vectors-resultcheck.json",
+          "fe861207ed1bfbf90e457f84606dbbd335cb762d2041c9ee942aa006d3f31001  evidence-projection.mjs",
+          "4fb7a64ea3e22379e3731494225e7be29062990284724ef08a5dc0a4ea582049  resultcheck.mjs",
+          "c02d8f7670e5be4615587b828971e42db170b9e138b82338ac875c5c3cfbe6d7  run-vectors.mjs"
+        ]
+      },
+      {
+        "command": "node contracts/contract-0.3/run-vectors.mjs",
+        "exit": 0,
+        "seconds": 0.663,
+        "log": "/workspace/slab022-main2-gate-4.log",
+        "sha256": "4d0eeacdc8e7c87bb4b2fd4cb91dbe33c48206b7be6095759a2e3c916670db2c",
+        "summary": [
+          "5c20a91a0890b9a66774e93b5792b9a717ec085314adf879b458ad9006f2510c  vectors-evidence.json",
+          "d221a182691581ccc9137e471d36462bd4ccbc60c8d935a8c82c371a2d952e10  vectors-resultcheck.json",
+          "fe861207ed1bfbf90e457f84606dbbd335cb762d2041c9ee942aa006d3f31001  evidence-projection.mjs",
+          "dcc0a957cfde6b219f58ea3940bc3a8f0f2384328f851dd2b54994fa93ad2663  resultcheck.mjs",
+          "c02d8f7670e5be4615587b828971e42db170b9e138b82338ac875c5c3cfbe6d7  run-vectors.mjs"
+        ]
+      },
+      {
+        "command": "node contracts/view-envelope/run-view-vectors.mjs",
+        "exit": 0,
+        "seconds": 0.345,
+        "log": "/workspace/slab022-main2-gate-5.log",
+        "sha256": "b0f127ab16e1cf89d476314c0c1cfc50a554011d62f86b05837bc17939509bbe",
+        "summary": [
+          "PASS  append: makeChain refuses a gate actor without the acceptance_gate role, and the reverse",
+          "PASS: 113 of 113 checks",
+          "ee37a2f47e269f1d17f66a995cb9f5ae3137735b773c8300927e30b3d0626ed5  view-envelope.mjs",
+          "f58faf429cc770d1b6d7782d1c92ad036ad113417d89d4fd1663962ef65cca3f  run-view-vectors.mjs",
+          "675c588bbfe9a487950522a9dd4432511d3d06040441c3d50fd71acdabe0a314  vectors-view.json"
+        ]
+      },
+      {
+        "command": "node contracts/view-envelope-v0.5/run-view-vectors.mjs",
+        "exit": 0,
+        "seconds": 1.772,
+        "log": "/workspace/slab022-main2-gate-6.log",
+        "sha256": "e1e77e340c89b6b5bf4d7427a719d053a1d2f6f528464f537a1e521c693899a4",
+        "summary": [
+          "PASS  append: makeChain refuses a gate actor without the acceptance_gate role, and the reverse",
+          "PASS: 193 of 193 checks",
+          "54b248236ff93e249c7638a0dbeb4533fc7d9f15915e9b1895d1709d348f1ea7  view-envelope.mjs",
+          "dd89497f756453751776aa149923bbe2135f5bf489427e36cdf959e0891885ce  run-view-vectors.mjs",
+          "6149b9b131be50e2f4affa6badfa832435a457a6fa306bf137585608dbe54d88  vectors-view.json"
+        ]
+      },
+      {
+        "command": "node contracts/view-envelope-v0.6/run-paging-vectors.mjs",
+        "exit": 0,
+        "seconds": 1.637,
+        "log": "/workspace/slab022-main2-gate-7.log",
+        "sha256": "d09343f27c328abdc5839fd95d3b04b787de0e9898125cfa2884c92c4ac317b3",
+        "summary": [
+          "PASS  C14: verifying the rows held equals verifying the same bytes as one replay file",
+          "PASS: 174 of 174 checks",
+          "7e875920117e5a34b49ba37d33028b8577a018d5c72ed847959d929f72cd16b7  paging.mjs",
+          "b7581800c493065f6b3ff75215054d4123a9f9427e84488145518ff3bef8e631  run-paging-vectors.mjs",
+          "2f70c22799edaca88b8399bbc8fa084e81dbd8ac5f1ad68a546b86506ea6302b  vectors-paging.json"
+        ]
+      },
+      {
+        "command": "node web/test/make-sentilab-demo.mjs --check",
+        "exit": 0,
+        "seconds": 0.085,
+        "log": "/workspace/slab022-main2-gate-8.log",
+        "sha256": "fe2a35188861d6e2c38679786899d9aa88ab5217e0088dee260540110458aae1",
+        "summary": [
+          "demo-run.jsonl is current (44 envelopes)"
+        ]
+      },
+      {
+        "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python -m unittest -q sentilab_core.conformance",
+        "exit": 0,
+        "seconds": 3.782,
+        "log": "/workspace/slab022-main2-gate-9.log",
+        "sha256": "86be78dfc44e1af8cfef9a8407b037eb62e6db0b43e55475875c445416030b01",
+        "summary": [
+          "Executing <Task finished name='Task-2' coro=<ProjectionConformance.test_contract_javascript_projection_equals_real_conductor_state() done, defined at /workspace/sentilab/sentilab_core/conformance.py:196> result=None created at /usr/lib/python3.12/asyncio/runners.py:100> took 0.151 seconds",
+          "----------------------------------------------------------------------",
+          "Ran 9 tests in 3.514s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "command": ".venv/bin/python -m sentilab_core.test_resultcheck --parity",
+        "exit": 0,
+        "seconds": 13.913,
+        "log": "/workspace/slab022-main2-gate-10.log",
+        "sha256": "91062e2151b7c8809be1ca77612dfd8ce6784049702ed103a53c21d0da47854c",
+        "summary": [
+          "",
+          "----------------------------------------------------------------------",
+          "Ran 9 tests in 13.823s",
+          "",
+          "OK"
+        ]
+      },
+      {
+        "command": ".venv/bin/python -m compileall -q sentilab_cli sentilab_mcp sentilab_core",
+        "exit": 0,
+        "seconds": 0.045,
+        "log": "/workspace/slab022-main2-gate-11.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "summary": []
+      },
+      {
+        "command": ".venv/bin/pip check",
+        "exit": 0,
+        "seconds": 0.601,
+        "log": "/workspace/slab022-main2-gate-12.log",
+        "sha256": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09",
+        "summary": [
+          "No broken requirements found."
+        ]
+      },
+      {
+        "command": "git diff --check",
+        "exit": 0,
+        "seconds": 0.009,
+        "log": "/workspace/slab022-main2-gate-13.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "summary": []
+      }
+    ],
+    "cpu_seconds": 30.446
+  },
+  "source_preservation": {
+    "checks": [
+      {
+        "parent": "HEAD",
+        "path": "sentilab_mcp/__init__.py",
+        "scope": "sentilab_live_run",
+        "identical": true
+      },
+      {
+        "parent": "HEAD",
+        "path": "sentilab_mcp/__init__.py",
+        "scope": "sentilab_live_status",
+        "identical": true
+      },
+      {
+        "parent": "HEAD",
+        "path": "sentilab_mcp/__init__.py",
+        "scope": "sentilab_live_stop",
+        "identical": true
+      },
+      {
+        "parent": "HEAD",
+        "path": "sentilab_mcp/__init__.py",
+        "scope": "sentilab_live_verify",
+        "identical": true
+      },
+      {
+        "parent": "HEAD",
+        "path": "sentilab_mcp/__init__.py",
+        "scope": "sentilab_dataset_export",
+        "identical": true
+      },
+      {
+        "parent": "HEAD",
+        "path": "sentilab_mcp/__init__.py",
+        "scope": "sentilab_resultcheck",
+        "identical": true
+      },
+      {
+        "parent": "main-now/main",
+        "path": "sentilab_mcp/__init__.py",
+        "scope": "sentilab_dataset_export",
+        "identical": true
+      },
+      {
+        "parent": "main-now/main",
+        "path": "sentilab_mcp/__init__.py",
+        "scope": "sentilab_research_request",
+        "identical": true
+      },
+      {
+        "parent": "main-now/main",
+        "path": "sentilab_mcp/__init__.py",
+        "scope": "sentilab_research_status",
+        "identical": true
+      },
+      {
+        "parent": "main-now/main",
+        "path": "sentilab_mcp/__init__.py",
+        "scope": "sentilab_research_export",
+        "identical": true
+      },
+      {
+        "parent": "HEAD",
+        "path": "sentilab_mcp/__main__.py",
+        "scope": "LazyLiveContext",
+        "identical": true
+      },
+      {
+        "parent": "HEAD",
+        "path": "sentilab_mcp/__main__.py",
+        "scope": "serve",
+        "identical": true
+      },
+      {
+        "parent": "HEAD",
+        "path": "sentilab_mcp/__main__.py",
+        "scope": "main",
+        "identical": true
+      },
+      {
+        "parent": "HEAD",
+        "path": "sentilab_cli/__main__.py",
+        "scope": "_write_utf8",
+        "identical": true
+      },
+      {
+        "parent": "HEAD",
+        "path": "sentilab_cli/__main__.py",
+        "scope": "_ResultCheckParser",
+        "identical": true
+      },
+      {
+        "parent": "HEAD",
+        "path": "sentilab_cli/__main__.py",
+        "scope": "dataset_main",
+        "identical": true
+      },
+      {
+        "parent": "HEAD",
+        "path": "sentilab_core/resultcheck.py",
+        "scope": "whole file",
+        "identical": true
+      },
+      {
+        "parent": "HEAD",
+        "path": "sentilab_core/test_resultcheck_platform.py",
+        "scope": "whole file",
+        "identical": true
+      },
+      {
+        "parent": "HEAD",
+        "path": "sentilab_core/test_resultcheck_io.py",
+        "scope": "whole file",
+        "identical": true
+      },
+      {
+        "parent": "main-now/main",
+        "path": "sentilab_core/research.py",
+        "scope": "whole file",
+        "identical": true
+      },
+      {
+        "parent": "main-now/main",
+        "path": "sentilab_core/operations.py",
+        "scope": "whole file",
+        "identical": true
+      },
+      {
+        "parent": "main-now/main",
+        "path": "sentilab_core/conductor.py",
+        "scope": "whole file",
+        "identical": true
+      },
+      {
+        "parent": "main-now/main",
+        "path": "sentilab_core/dataset.py",
+        "scope": "whole file",
+        "identical": true
+      },
+      {
+        "parent": "main-now/main",
+        "path": "sentilab_core/test_research.py",
+        "scope": "whole file",
+        "identical": true
+      },
+      {
+        "parent": "main-now/main",
+        "path": "sentilab_core/test_research_transports.py",
+        "scope": "whole file",
+        "identical": true
+      },
+      {
+        "parent": "main-now/main",
+        "path": "sentilab_mcp/export_worker.py",
+        "scope": "whole file",
+        "identical": true
+      },
+      {
+        "parent": "main-now/main",
+        "path": "sentilab_cli/sentilab",
+        "scope": "whole file",
+        "identical": true
+      },
+      {
+        "parent": "main-now/main",
+        "path": "scripts/container_smoke.sh",
+        "scope": "whole file",
+        "identical": true
+      }
+    ],
+    "registration_union": {
+      "parents": {
+        "HEAD": [
+          "sentilab_dataset_export",
+          "sentilab_live_run",
+          "sentilab_live_status",
+          "sentilab_live_stop",
+          "sentilab_live_verify",
+          "sentilab_resultcheck"
+        ],
+        "main-now/main": [
+          "sentilab_dataset_export",
+          "sentilab_live_run",
+          "sentilab_live_status",
+          "sentilab_live_stop",
+          "sentilab_live_verify",
+          "sentilab_research_export",
+          "sentilab_research_request",
+          "sentilab_research_status"
+        ]
+      },
+      "merged": [
+        "sentilab_dataset_export",
+        "sentilab_live_run",
+        "sentilab_live_status",
+        "sentilab_live_stop",
+        "sentilab_live_verify",
+        "sentilab_research_export",
+        "sentilab_research_request",
+        "sentilab_research_status",
+        "sentilab_resultcheck"
+      ],
+      "all_parent_schemas_equal": true
+    },
+    "tested_source_sha256": {
+      ".github/workflows/ci.yml": "bd57e8d645e4da184a67343aa67c8568fd6d29a604ba2f4d48a288e806f0f99b",
+      "scripts/container_smoke.sh": "81abdb75d74709680b9a47cc55df2025e55dca03f44eda6c91bc37aef61e934d",
+      "sentilab_cli/__main__.py": "de6ab48eabbcbe3e8125f35ae1a02e0feba8267b0b34a4762620303534cb16b2",
+      "sentilab_cli/sentilab": "e3247b8ce9e51e05dcc34b6a7afe2caf8bededf902890de5b322b5351c9b2b40",
+      "sentilab_core/conductor.py": "6517d40bc27f8ddd49055de52b45b1b1d33bbcecc2fc8c9bbef2f0f301edd026",
+      "sentilab_core/dataset.py": "b0367449ac0587e2bd2ddac0ad76716944c2982c07f4ecfd909121744d0fd8e1",
+      "sentilab_core/operations.py": "74f0c2e86620563b393bdbed0676a5474a8d93c7ed43de8117f499a9c9d8da5c",
+      "sentilab_core/research.py": "ad6f184ad3d962636f488bb51d019387fae1a649d20f7201d23916a6c6c674b2",
+      "sentilab_core/resultcheck.py": "2a02b12d8b33e6bb728c9150693bd85dff2ef7f423fb91e1c47da46ad358d982",
+      "sentilab_core/test_mcp_stdio.py": "39dae5701c95dc62e30eb00fe1884a2bee6dac73cb63868f6d600f0226c05687",
+      "sentilab_core/test_research.py": "7c2a6d0d463c704e0c4571cc04de91602ea9fd4979b6e82b20378fc05cc4dc8a",
+      "sentilab_core/test_research_transports.py": "5b65429da5103fabae23c317190a2a5f7761a2480b90a9363bfacbc0a69d1153",
+      "sentilab_core/test_resultcheck_io.py": "d206fa94bd703708f8bba829a4f2e6f880f1680eef298f4192c43d4021e11c45",
+      "sentilab_core/test_resultcheck_platform.py": "575c0ace572787a4286de9309add16d88aeb65bb8cc92f978ae13bb0ab9856d9",
+      "sentilab_mcp/__init__.py": "3f9b55ab636bb39d073b6b1eabe4f1c746b94a4220e7f182db768f1d24ad289a",
+      "sentilab_mcp/__main__.py": "625ecb106b12fea42344b96a60268543dcff03776cae3a1fb98f6a7838ab28a9",
+      "sentilab_mcp/export_worker.py": "6eeae70cc3648910203d2025cbbd6fb63d9b83efc949222705e1de9b365b639a"
+    }
+  },
+  "regression": {
+    "test": "sentilab_core.test_mcp_stdio.LazyContextTests.test_combined_host_preserves_dataset_resultcheck_and_live_tools",
+    "scope": "Strengthened existing regression. No removed tests or assertions. Enumerates all nine tools once and exercises ResultCheck, dataset export, live auth/verify/STOP/status, research request/status/export/auth and shared STOP through one real stdio connection.",
+    "passes_after_merge": true,
+    "isolated_parent_failures": [
+      {
+        "parent": "8ed483c4acbc9f764ac7bf880d14203dec4f7d52",
+        "exit": 1,
+        "command": "/workspace/sentilab/.venv/bin/python -m unittest -q sentilab_core.test_mcp_stdio.LazyContextTests.test_combined_host_preserves_dataset_resultcheck_and_live_tools",
+        "log": "/workspace/slab022-main2-before-pr21.log",
+        "sha256": "9e53d84269bed05aee103a1c9f1ec13255faee0320dd0e6bf00ae2c90364bf6f"
+      },
+      {
+        "parent": "60ddc5517397226dbd21e45b4de42c13ef29f867",
+        "exit": 1,
+        "command": "/workspace/sentilab/.venv/bin/python -m unittest -q sentilab_core.test_mcp_stdio.LazyContextTests.test_combined_host_preserves_dataset_resultcheck_and_live_tools",
+        "log": "/workspace/slab022-main2-before-main.log",
+        "sha256": "c835101a947f811302c4ca9ba77315ccba361aadd008bd8cde85f5c5b8b50195"
+      }
+    ],
+    "method": "Only the strengthened test copied into separate detached parent worktrees.",
+    "existing_research_transport_tests": 5,
+    "mechanical_union_failure": {
+      "tests": 5,
+      "failures": 9,
+      "reason": "research_main operations import missing after mechanical union",
+      "log_sha256": "37b2641322985b3d895ed3c834051a48a3deca05058bd464fc89b452fcaf6f3a"
+    }
+  },
+  "name_audit_sha256": "d7adb6dce14c756a9935fafe751bfa4677af7f6bcd0088673acc65bee08c9e91",
+  "limitations": [
+    "Unchanged CI smoke script ran natively on Ubuntu 24.04/Python 3.12.3 with pinned dependencies, Haswell OpenBLAS dispatch and one thread. Docker executable is absent; Docker image build, container health/origin checks and container-based secret scan were not run.",
+    "Native Windows not run in this box; binary ResultCheck CLI output and platform tests remain unchanged.",
+    "READY is a local source/test claim. Operator carry/export verification and assigned review remain pending."
+  ]
+}

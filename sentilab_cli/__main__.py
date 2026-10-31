@@ -4,11 +4,20 @@ import json
 import sys
 from pathlib import Path
 
-from sentilab_core import operations
-from sentilab_core.budget import Limits
+
+def _write_utf8(message, stream):
+    stream.buffer.write(message.encode("utf-8"))
+    stream.buffer.flush()
+
+
+class _ResultCheckParser(argparse.ArgumentParser):
+    def _print_message(self, message, file=None):
+        if message:
+            _write_utf8(message, file if file is not None else sys.stderr)
 
 
 async def dispatch(command, context, **arguments):
+    from sentilab_core import operations
     if command.startswith("research_"):
         from sentilab_core.research import execute
         return execute(command.removeprefix("research_"), context, **arguments)
@@ -18,6 +27,7 @@ async def dispatch(command, context, **arguments):
 
 
 def dataset_main():
+    from sentilab_core import operations
     from sentilab_core.dataset import export
     parser = argparse.ArgumentParser(prog="sentilab dataset")
     parser.add_argument("command", choices=["export"])
@@ -33,7 +43,7 @@ def dataset_main():
 
 
 def research_main():
-    from sentilab_core import research
+    from sentilab_core import operations, research
 
     class Parser(argparse.ArgumentParser):
         def error(self, message):
@@ -65,13 +75,31 @@ def research_main():
 
 
 def main(conductor=False):
+    if not conductor and sys.argv[1:2] == ["resultcheck"]:
+        from sentilab_core.resultcheck import canonical, check_file, exit_code
+        parser = _ResultCheckParser(prog="sentilab resultcheck")
+        parser.add_argument("--root", help="confine file reads to this directory (requires Linux procfs)")
+        parser.add_argument("file", help="UTF-8 ResultCheck v2 JSON file")
+        args = parser.parse_args(sys.argv[2:])
+        try:
+            receipt = check_file(args.file, root=args.root)
+        except Exception:
+            # Intake failures, including unavailable platform operations, must
+            # not escape as exit 1: that code denotes a completed flagged check.
+            _write_utf8(canonical({"error": {"code": "file_unreadable"}}) + "\n", sys.stdout)
+            raise SystemExit(2)
+        _write_utf8(canonical(receipt) + "\n", sys.stdout)
+        raise SystemExit(exit_code(receipt))
     if not conductor and sys.argv[1:2] == ["research"]:
         return research_main()
     if not conductor and sys.argv[1:2] == ["dataset"]:
         return dataset_main()
+    from sentilab_core import operations
+    from sentilab_core.budget import Limits
     parser = argparse.ArgumentParser(prog="sentilab" if not conductor else "sentilab_core.conductor")
     if not conductor:
-        parser.add_argument("namespace", choices=["live", "dataset", "research"], help="use dataset --help for export options")
+        parser.add_argument("namespace", choices=["live", "dataset", "research", "resultcheck"],
+                            help="use dataset --help for export options or resultcheck <file> for offline checking")
         parser.add_argument("command", choices=["run", "status", "stop", "verify"])
     parser.add_argument("--ai-off", action="store_true", default=conductor)
     parser.add_argument("--run-id")
@@ -101,7 +129,6 @@ def main(conductor=False):
     if args.export:
         if command != "verify" or not result["ok"]:
             parser.error("export requires a verified complete run")
-        from pathlib import Path
         from sentilab_core.ledger import replay
         from sentilab_core.envelope import canonical
         rows = replay(context.root, args.run_id, public_keys=context.public_keys)["prefix"]
