@@ -388,7 +388,7 @@ class Conductor:
                 await self._lab_advice(candidate_envelope, proposal)
         node = proposal["node"]
         if proposal.get("missing") is not None:
-            self._transition(node, "inconclusive", {"reason": proposal["missing"],
+            self._transition(node, "cancelled", {"reason": proposal["missing"], "outcome": "inconclusive",
                              "missing_data_policy": self.isolated_labs.readiness.missing_data_policy})
             return self.snapshot()
         if not proposal["geometry_valid"]:

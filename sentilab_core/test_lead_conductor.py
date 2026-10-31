@@ -1,9 +1,11 @@
 """Four isolated labs through the real conductor, ledger and AcceptanceGate."""
+import json
 import tempfile
 import unittest
 from unittest.mock import patch
 
 from sentilab_core.conductor import Conductor
+from sentilab_core.envelope import digest
 from sentilab_core.labs import FAMILIES
 from sentilab_core.leads import DeterministicJudge, DeterministicLead, IsolatedLabs, LabAdapters, StandInAdmission
 from sentilab_core.test_conductor import PlateOracle
@@ -36,7 +38,20 @@ class LeadConductorTests(unittest.IsolatedAsyncioTestCase):
         admission = StandInAdmission()
         labs = fleet(admission=admission)
         conductor = self.conductor(labs)
-        with patch("socket.socket", side_effect=AssertionError("network forbidden")):
+        lead_inputs, judge_inputs = [], []
+        propose, review = DeterministicLead.propose, DeterministicJudge.review
+
+        async def observe_lead(lead, context):
+            lead_inputs.append(json.loads(context.data))
+            return await propose(lead, context)
+
+        async def observe_judge(judge, candidate, evidence):
+            judge_inputs.append((json.loads(candidate), json.loads(evidence)))
+            return await review(judge, candidate, evidence)
+
+        with patch.object(DeterministicLead, "propose", observe_lead), \
+                patch.object(DeterministicJudge, "review", observe_judge), \
+                patch("socket.socket", side_effect=AssertionError("network forbidden")):
             result = await conductor.run(run_id="isolated-proof", max_ticks=9, interval=0)
         records = self.records(conductor)
         proposals = [r for r in records if r.get("operator") == "stand-in-lead"]
@@ -47,6 +62,18 @@ class LeadConductorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(admission.charges), 16)
         self.assertEqual(sum(usd for _, usd in admission.charges), 0)
         self.assertEqual(result["spend"]["solves"], 18)  # synthetic regression oracle, no experiment
+        self.assertEqual(len(lead_inputs), 8)
+        self.assertEqual(len(judge_inputs), 8)
+        for index, (context, proposal, (candidate, advice)) in enumerate(zip(lead_inputs, proposals, judge_inputs)):
+            self.assertEqual(context["scope"]["lab_id"], proposal["lane"])
+            self.assertEqual(len(context["memory"]), index // 4)
+            self.assertTrue(all(m["candidate"]["lane"] == proposal["lane"] for m in context["memory"]))
+            self.assertEqual(proposal["originator"]["context_hash"], digest(context))
+            self.assertEqual(set(context), {"scope", "ordinal", "initial", "memory", "prompt"})
+            self.assertEqual(candidate, proposal["design"])
+            self.assertEqual(advice["scope"]["lab_id"], proposal["lane"])
+            self.assertEqual(len(advice["evidence"]), 2)
+            self.assertTrue(all(e["candidate_node"] == proposal["node"] for e in advice["evidence"]))
         flattened = conductor._isolated_records()
         for lab_id in FAMILIES:
             call = await fleet().propose(lab_id, conductor.meta["run"], conductor.config["initial"], flattened, 2)
@@ -92,7 +119,11 @@ class LeadConductorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([r["lane"] for r in records if r.get("operator") == "stand-in-lead"], list(FAMILIES))
         self.assertEqual(len([r for r in records if r.get("type") == "lab.adapter_call"
                               and r["scope"]["lab_id"] == "openai" and r["status"] == "reserved"]), 1)
-        self.assertEqual(result["projection"]["nodes"][failed[0]["node"]]["lifecycle"], "inconclusive")
+        self.assertEqual(result["projection"]["nodes"][failed[0]["node"]]["lifecycle"], "cancelled")
+        transition = next(e["event"]["body"] for e in conductor.ledger.read()["prefix"]
+                          if e["event"]["type"] == "lifecycle.transition"
+                          and e["event"]["body"]["node"] == failed[0]["node"])
+        self.assertEqual(transition["record"]["outcome"], "inconclusive")
 
     async def test_restart_pins_config_and_never_retries_an_interrupted_call(self):
         conductor = self.conductor(fleet())

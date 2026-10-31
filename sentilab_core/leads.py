@@ -192,7 +192,7 @@ class IsolatedLabs:
         def pin(adapter):
             value = {"model_id": adapter.model_id, "version": adapter.version}
             if type(adapter) in (DeterministicLead, DeterministicJudge):
-                value["settings"] = asdict(adapter)
+                value.update(asdict(adapter))
             return value
         return {"v": "isolated-labs/1", "labs": [
             {"lab_id": x.lab_id, "family": x.family, "lead": pin(x.lead), "judge": pin(x.judge)}
