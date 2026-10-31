@@ -21,13 +21,13 @@ import { createHash } from "node:crypto";
 import { Worker } from "node:worker_threads";
 
 import { canonical } from "../public/sentilab/canonical.mjs";
-import { buildScene, sceneAt, runFrame, heatColor, contiguousPrefix, scaleTicks, describeEvent, STACK, TEMP_BASIS, TRACK_ORDER, LAB_TRACKS, SCENE_VERSION, SUPPORTED_UNITS, BOUNDS, MAX_TICKS, readGeometry, readTemps } from "../public/sentilab/package/scene.mjs";
+import { buildScene, sceneAt, runFrame, heatColor, contiguousPrefix, scaleTicks, describeEvent, describeSource, STACK, TEMP_BASIS, TRACK_ORDER, LAB_TRACKS, SCENE_VERSION, SUPPORTED_UNITS, BOUNDS, MAX_TICKS, readGeometry, readTemps } from "../public/sentilab/package/scene.mjs";
 import { reconcile, extendsPrefix } from "../public/sentilab/package/playhead.mjs";
 import { TrackAnimation } from "../public/sentilab/package/render.mjs";
 import { makeChain, signEnvelope } from "../../contracts/view-envelope-v0.5/view-envelope.mjs";
 import * as refPaging from "../../contracts/view-envelope-v0.6.2/paging.mjs";
 import { viewHref } from "../public/sentilab/view-links.mjs";
-import { shortId, buildView } from "../public/sentilab/lab-model.mjs";
+import { shortId, buildView, metricFor } from "../public/sentilab/lab-model.mjs";
 import * as cliModule from "../../scripts/sentilab-scene.mjs";
 import * as source from "../public/sentilab/package/source.mjs";
 import { VIEW_PINS } from "../public/sentilab/view-pins.js";
@@ -666,13 +666,82 @@ test("producer rows: J and W from the supporting measurement (C or °C, shown °
 });
 test("the Package view and the Lab view pick the same measurement for J (one shared rule, lab-model.mjs metricFor)", async () => {
   const v = await demoVerified();
-  const scene = sceneOf(v);
-  const lab = buildView({ ordered: v.prefixEnvelopes, prefix: v.prefixEnvelopes.length }, v.prefixEnvelopes.length);
-  for (const t of scene.tracks.filter((x) => x.layout?.ref.kind === "candidate")) {
-    const card = lab.cards.find((c) => c.id === t.layout.ref.id);
-    assert.equal(t.layout.metric?.measurement ?? null, card.metric?.id ?? null, t.layout.ref.id);
-    assert.equal(t.layout.J?.value ?? null, card.J?.value ?? null, t.layout.ref.id);
+  const frame = runFrame(v.prefixEnvelopes);
+  // At every step of the demo, for every layout drawn (candidates and the core's initial measurement).
+  for (let k = 1; k <= v.prefixEnvelopes.length; k += 1) {
+    const scene = sceneAt(v.prefixEnvelopes, k, frame);
+    const lab = buildView({ ordered: v.prefixEnvelopes, prefix: v.prefixEnvelopes.length }, k);
+    for (const t of scene.tracks.filter((x) => x.layout)) {
+      const card = lab.cards.find((c) => c.id === t.layout.ref.id);
+      assert.equal(t.layout.metric?.measurement ?? null, card.metric?.id ?? null, `k=${k} ${t.layout.ref.id}`);
+      assert.equal(t.layout.J?.value ?? null, card.J?.value ?? null, `k=${k} ${t.layout.ref.id}`);
+    }
   }
+});
+
+// ── review #56603: J's provenance, the shared picker, and "measured" ─────────────────────────────────────────────
+// Signed runs as above (signedRun, core TEST key), verified through the page's own path.
+const measJ = (id, J) => ["core", "node.create", { id, kind: "measurement", semantics: SEM }, { J: { value: J, unit: "°C" }, W: { value: 30, metric_id: "hpwl-mm" } }];
+test("review #56603 (1): a current J beside withdrawn older temperatures: J is styled and labelled by its own measurement, the temperatures by theirs", async () => {
+  const { scene } = await verifiedScene(signedRun([
+    cand("lab-a", "K", "mm", [["A", 0, 0, 10, 10], ["B", 12, 0, 10, 10]]),
+    meas("old-temperatures", "°C", { A: 81, B: 95 }),
+    ["core", "support.add", { node: "K", set_id: "old", members: ["old-temperatures"] }],
+    measJ("current-metric", 90),                       // J only: no centre temperatures
+    ["core", "support.add", { node: "K", set_id: "current", members: ["current-metric"] }],
+    ["core", "withdraw", { node: "old-temperatures", reason: "superseded" }],
+  ]));
+  const L = track(scene, "lab-a");
+  assert.deepEqual([L.validity, L.support_status], ["valid", { old: "broken", current: "valid" }], "still valid on the current set");
+  assert.deepEqual([L.J.value, L.metric.measurement, L.metric.state], [90, "current-metric", "valid"], "J is the current metric's");
+  assert.deepEqual([L.temps_from.measurement, L.temps_from.state, L.temps_from.validity], ["old-temperatures", "stale", "withdrawn"], "the temperatures are the withdrawn ones");
+  const src = describeSource(L);
+  assert.equal(src.j_state, "", "the J figure is styled from its own metric's validity, not the temperatures'");
+  assert.deepEqual(src.parts, [
+    { text: "J from current-metric", state: "" },
+    { text: "temperatures from old-temperatures · STALE (withdrawn)", state: "stale" },
+  ], "two sources, two labels: STALE names the temperatures only, never 'values'");
+});
+test("review #56603 (2): Lab and Package pick the same measurement and the same J through the shared picker; a candidate in a support set never lends its own J", async () => {
+  const { v, scene } = await verifiedScene(signedRun([
+    ["lab-b", "node.create", { id: "B", kind: "candidate" }, { ...geo("mm", [["A", 0, 0, 10, 10]]), J: { value: 66, unit: "°C" } }],
+    measJ("MB", 70),
+    ["core", "support.add", { node: "B", set_id: "eval", members: ["MB"] }],
+    measJ("M", 77),
+    cand("lab-a", "K", "mm", [["A", 5, 5, 10, 10]]),
+    ["core", "support.add", { node: "K", set_id: "pair", members: ["B", "M"] }],
+  ]));
+  const nodes = v.projection.nodes;
+  assert.deepEqual([nodes.K.support_status.pair, nodes.B.validity, nodes.M.validity, nodes.B.tiers.length, nodes.M.tiers.length], ["valid", "valid", "valid", 0, 0],
+    "a valid set whose members rank equal, the candidate listed first");
+  const lab = buildView({ ordered: v.prefixEnvelopes, prefix: v.prefixEnvelopes.length }, v.prefixEnvelopes.length);
+  const card = lab.cards.find((c) => c.id === "K");
+  const L = track(scene, "lab-a");
+  assert.deepEqual([card.metric.id, card.J.value], ["M", 77], "Lab view: J from measurement M, not candidate B's own 66");
+  assert.deepEqual([L.metric.measurement, L.J.value], ["M", 77], "Package view: the same measurement and the same J");
+  assert.deepEqual([lab.cards.find((c) => c.id === "B").J.value, track(scene, "lab-b").J.value], [70, 70], "B's own J is its measurement's in both views");
+  // The picker itself, given every node's values unfiltered: eligibility is its own, not the caller's.
+  const created = new Map(v.prefixEnvelopes.filter((env) => env.event.type === "node.create").map((env) => [env.event.body.id, { values: env.values ?? null }]));
+  assert.equal(metricFor("K", { nodes, sets: new Map([["K", [{ set_id: "pair", members: ["B", "M"] }]]]), created }).id, "M");
+  assert.equal(metricFor("K", { nodes, sets: new Map([["K", [{ set_id: "pair", members: ["B"] }]]]), created }), null, "a set with no measurement gives no J");
+});
+test("review #56603 (3): a core measurement with geometry but no J or temperatures is measured, not awaiting simulation; an absent or refused J stays '-' with its reason", async () => {
+  const initial = (vals) => ["core", "node.create", { id: "M0", kind: "measurement", semantics: SEM }, { ...geo("mm", [["A", 0, 0, 10, 10]]), ...vals }];
+  const board = (await verifiedScene(signedRun([initial({})]))).scene.tracks[0];
+  assert.equal(board.showing, "initial");
+  const L = board.layout;
+  assert.deepEqual([L.ref.kind, L.measured, L.J, L.W, L.metric, L.J_error, L.temps_from], ["measurement", true, null, null, null, null, null]);
+  assert.deepEqual(describeSource(L).parts, [{ text: "measured, but no J in the verified data", state: "" }, { text: "no per-chiplet temperatures", state: "" }],
+    "absent J: said so; a measurement is never 'awaiting simulation'");
+  // Refused: a J in a unit the view doesn't convert. Shown as "-" with the reason, never as a number.
+  const refused = (await verifiedScene(signedRun([initial({ J: { value: 194, unit: "°F" } })]))).scene.tracks[0].layout;
+  assert.deepEqual([refused.measured, refused.J, refused.metric.measurement], [true, null, "M0"]);
+  assert.deepEqual(refused.J_error, { code: "unit_not_supported", unit: "°F", detail: 'temperature unit "°F" is not one of °C, C, K', measurement: "M0" });
+  assert.deepEqual(describeSource(refused).parts.map((p) => p.text), ['J refused · unit not supported ("°F")', "no per-chiplet temperatures"]);
+  // Only a candidate with no measurement at all is still awaiting simulation.
+  const k = track((await verifiedScene(signedRun([initial({}), cand("lab-a", "K", "mm", [["A", 3, 3, 4, 4]])]))).scene, "lab-a");
+  assert.deepEqual([k.measured, k.J, k.J_error], [false, null, null]);
+  assert.deepEqual(describeSource(k).parts, [{ text: "no temperatures · awaiting simulation", state: "" }]);
 });
 test("bounds: 1e20 °C, below absolute zero, 1e308 + 1e308 mm, zero or huge sizes and wild layers are scene errors, never drawn", async () => {
   const { v, scene } = await verifiedScene(signedRun([

@@ -144,8 +144,8 @@ a { color: var(--cyan); }
 .metrics .j .stale { color: #b9a77f; }
 .metrics .w { margin-top: 4px; font: 14px var(--mono); color: var(--muted); }
 .metrics .src { margin-top: 6px; font: 13.5px var(--mono); color: var(--muted); }
-.metrics .src.alt { color: var(--amber); }
-.metrics .src.stale { color: var(--amber); }
+.metrics .src .alt { color: var(--amber); }      /* per part: J and the temperatures each carry their own state */
+.metrics .src .stale { color: var(--amber); }
 .scalebar { position: relative; height: 16px; }
 .scalebar .bar { position: absolute; inset: 0; border-radius: 3px; border: 1px solid #0a1317;
   background: linear-gradient(90deg, #112a48 0%, #236b91 20%, #56b6ba 40%, #dfd376 60%, #ec994f 80%, #e45138 100%); }

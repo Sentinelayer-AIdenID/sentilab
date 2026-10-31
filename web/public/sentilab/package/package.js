@@ -5,7 +5,7 @@
 import { DEMO, CONTRACT_VERSION, MAX_FILE_BYTES, setupTrust, fetchReplayBytes, verifyReplayFile, isDrill, chainSummary, modeNow, runStatusOf, createLiveFeed, reasonText } from "./source.mjs";
 import { viewHref } from "../view-links.mjs";
 import { shortId } from "../lab-model.mjs";
-import { sceneAt, scaleTicks, describeEvent, TRACK_ORDER, TRACKS, trackName } from "./scene.mjs";
+import { sceneAt, scaleTicks, describeEvent, describeSource, refusalText, TRACK_ORDER, TRACKS, trackName } from "./scene.mjs";
 import { reconcile } from "./playhead.mjs";
 import { drawPackage, TrackAnimation, HOME_AZIMUTH, ORBIT_MS, easeInOut } from "./render.mjs";
 
@@ -35,11 +35,8 @@ const KIND = {
   rejected_schema: "out", rejected_constraints: "out", failed_run: "out", reproduction_failed: "out", cancelled: "out",
 };
 const lifeKind = (l) => KIND[l] ?? "open";
-// Why a verified value was refused (scene.errors codes). Refused values are never placed or coloured.
-const REFUSAL = { unit_not_supported: "unit not supported", unit_missing: "unit missing", out_of_range: "value out of range", malformed: "malformed value" };
-const refusalText = (e) => `${REFUSAL[e.code] ?? e.code}${e.unit ? ` ("${e.unit}")` : ""}`;
+// Why a verified value was refused: scene.mjs refusalText (scene.errors codes). Refused values are never placed or coloured.
 const FIELD = { geometry: "geometry", center_temps: "temperatures", J: "J", W: "W" };
-const NO_TEMPS = { rejected_schema: "not simulated (schema rejected)", rejected_constraints: "not simulated (failed the constraint check)", failed_run: "simulation failed", cancelled: "cancelled" };
 
 // ── state ───────────────────────────────────────────────────────────────────────────────────────────────────
 const S = {
@@ -438,27 +435,18 @@ function renderInfo(src) {
     chips.append(h("span", { class: `chip v-${L.validity}`, title: "Validity from the evidence contract's project(): whether its support still stands" }, `evidence: ${L.validity}`));
     if (L.scenario_id) chips.append(h("span", { class: "chip lost" }, L.scenario_id));
   }
+  // J and the centre temperatures can come from different measurements (scene.mjs describeSource): each part is
+  // labelled and styled by its own source, and the J figure only by J's.
+  const prov = describeSource(L, shortId);
   $("infoJ").textContent = L?.J ? `${fmt(L.J.value)} ${L.J.unit}` : "-";
-  $("infoJ").className = L?.metric?.state === "stale" || L?.temps_from?.state === "stale" ? "stale" : "";
+  $("infoJ").className = prov.j_state;
   $("infoJ").title = L?.metric ? `J from ${L.metric.measurement} (${L.metric.validity})` : "";
   $("infoW").textContent = L?.W ? `W ${fmt(L.W.value)} ${L.W.metric_id}` : "";
   const srcEl = $("infoSrc");
-  srcEl.className = "src";
-  if (!L) srcEl.textContent = "";
-  else if (!L.temps_from) {
-    // No centre temperatures for this layout. J, when a supporting measurement has one, is that measurement's value:
-    // it is shown as J and never painted onto a chiplet. Only a candidate with no measurement at all is "awaiting".
-    if (L.metric) {
-      if (L.metric.state === "stale") srcEl.className = "src stale";
-      srcEl.textContent = `${L.metric.set_id === null ? "J: its own value" : `J from ${shortId(L.metric.measurement)}`}${L.metric.state === "stale" ? ` · STALE (${L.metric.validity})` : ""} · no per-chiplet temperatures`;
-    } else srcEl.textContent = L.measured ? "measured, but no J in the verified data · no per-chiplet temperatures" : `no temperatures · ${NO_TEMPS[L.lifecycle] ?? "awaiting simulation"}`;
-  }
-  else if (L.temps_error) { srcEl.className = "src stale"; srcEl.textContent = `temperatures from ${shortId(L.temps_from.measurement)} not drawn · ${refusalText(L.temps_error)}`; }
-  else if (L.temps_from.state === "stale") { srcEl.className = "src stale"; srcEl.textContent = `values from ${shortId(L.temps_from.measurement)} · STALE (${L.temps_from.validity})`; }
-  else if (L.temps_from.via_alternative) { srcEl.className = "src alt"; srcEl.textContent = `values via ${shortId(L.temps_from.measurement)} (set ${L.temps_from.set_id}) · set ${L.temps_from.broken_sets.join(", ")} broken`; }
-  else srcEl.textContent = L.temps_from.set_id ? `values from ${shortId(L.temps_from.measurement)} · support set ${L.temps_from.set_id}` : `values from ${shortId(L.temps_from.measurement)} (its own)`;
+  srcEl.replaceChildren();
+  prov.parts.forEach((p, i) => srcEl.append(i ? " · " : "", h("span", { class: p.state || null }, p.text)));
   srcEl.title = L ? [L.metric ? `J from ${L.metric.measurement}` : null, L.temps_from ? `temperatures from ${L.temps_from.measurement}` : null].filter(Boolean).join(" · ") : "";
-  if (L && L.overlaps.length) srcEl.textContent += ` · overlap: ${L.overlaps.map((o) => `${o.a}/${o.b}`).join(", ")}`;
+  if (L && L.overlaps.length) srcEl.append(` · overlap: ${L.overlaps.map((o) => `${o.a}/${o.b}`).join(", ")}`);
 
   // Legend: the run's one fixed scale.
   const scale = src?.frame?.scale ?? null;

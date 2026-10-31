@@ -8,8 +8,8 @@
 //
 // Everything drawn comes from our own data: chiplet footprints from values.geometry, colours from values.center_temps
 // on one fixed scale per run (a run without centre temperatures draws its chiplets uncoloured; J is the measurement's
-// value and never colours a chiplet), J and W from the supporting measurement the Lab view picks (lab-model.mjs
-// metricFor). The vertical stack (substrate, interposer, die heights, lid) is schematic: nominal
+// value and never colours a chiplet), J and W from the measurement both views pick (lab-model.mjs metricFor, the
+// one rule). The vertical stack (substrate, interposer, die heights, lid) is schematic: nominal
 // constants below, declared as such in the scene and on screen.
 import { project } from "../evidence-projection.mjs";
 import { metricFor, tempUnit } from "../lab-model.mjs";
@@ -356,15 +356,16 @@ export function buildScene(prefixEnvelopes, projection = null, { frame = null } 
         if (ox1 > ox0 && oy1 > oy0) overlaps.push({ a: a.id, b: b.id, x0: ox0, y0: oy0, x1: ox1, y1: oy1 });
       }
     }
-    // J and W: a measurement's own; a candidate's from the supporting measurement metricFor() picks (it needs no
-    // centre temperatures). It is never painted onto a chiplet.
-    const metric = node.kind === "measurement"
-      ? (isObj(made.values?.J) ? { id, set_id: null, set_status: null, validity: node.validity, values: made.values } : null)
-      : metricFor(id, { nodes, sets, valuesOf: (m) => (created.get(m)?.kind === "measurement" ? created.get(m).values : null) });
-    const J = readJ(metric?.values).J, W = readW(metric?.values).W;
+    // J and W: from the measurement metricFor() picks (lab-model.mjs, the Lab view's rule): a measurement's own, or a
+    // candidate's supporting measurement's. It needs no centre temperatures and is never painted onto a chiplet. A J
+    // that is there but can't be read (unit, range, shape) is refused with its reason, never shown as a number.
+    const metric = metricFor(id, { nodes, sets, created });
+    const readMetric = readJ(metric?.values ?? (node.kind === "measurement" ? made.values : null));
+    const J = readMetric.J, W = readW(metric?.values).W;
     const firstSet = (sets.get(id) ?? [])[0]?.set_id ?? null;
-    // Whether any support set holds a measurement at all (with or without J): then the candidate was simulated.
-    const measured = (sets.get(id) ?? []).some((set) => set.members.some((m) => created.get(m)?.kind === "measurement"));
+    // Measured: a measurement (such as the core's initial layout), or a candidate with a measurement in any support
+    // set (with or without J). Only a candidate with no measurement at all is still awaiting simulation.
+    const measured = node.kind === "measurement" || (sets.get(id) ?? []).some((set) => set.members.some((m) => created.get(m)?.kind === "measurement"));
     return {
       ref: ref(id),
       lifecycle: node.kind === "candidate" ? node.lifecycle : null,
@@ -383,6 +384,7 @@ export function buildScene(prefixEnvelopes, projection = null, { frame = null } 
         broken_sets: Object.entries(node.support_status).filter(([, st]) => st === "broken").map(([k]) => k),
       } : null,
       J, W,
+      J_error: readMetric.error ? { code: readMetric.error.code, unit: readMetric.error.unit, detail: readMetric.error.detail, measurement: metric?.id ?? id } : null,
       metric: metric ? {
         measurement: metric.id, set_id: metric.set_id, validity: metric.validity,
         state: metric.validity === "valid" && (metric.set_id === null || metric.set_status === "valid") ? "valid" : "stale",
@@ -539,4 +541,36 @@ export function describeEvent(e, name = (id) => id) {
     case "withdraw": return `seq ${e.seq} · ${name(e.node)} withdrawn${e.reason ? ` (${e.reason})` : ""}`;
     default: return `seq ${e.seq}`;
   }
+}
+
+// Why a verified value was refused (scene.errors, temps_error and J_error codes). Refused values are never placed,
+// coloured or shown as a number.
+const REFUSAL = { unit_not_supported: "unit not supported", unit_missing: "unit missing", out_of_range: "value out of range", malformed: "malformed value" };
+export const refusalText = (e) => `${REFUSAL[e.code] ?? e.code}${e.unit ? ` ("${e.unit}")` : ""}`;
+const NO_TEMPS = { rejected_schema: "not simulated (schema rejected)", rejected_constraints: "not simulated (failed the constraint check)", failed_run: "simulation failed", cancelled: "cancelled" };
+
+// Where a layout's values come from, for the inspector line under J: { j_state, parts: [{ text, state }] }, state ""
+// or a CSS class ("stale", "alt"). J and W come from the measurement metricFor() picks, the centre temperatures from
+// the one measurementFor() picks, and the two can differ (a current J beside withdrawn older temperatures). So:
+//   - one measurement supplies J, W and the temperatures, all drawn: one part, "values from" it;
+//   - otherwise J and the temperatures get a part each, each labelled and styled by its own source's state. Neither
+//     borrows the other's: a stale temperature source never makes J stale, nor the reverse;
+//   - an absent or refused J says so, with the reason; only a candidate with no measurement at all is "awaiting".
+// j_state is J's own state, for the J figure. name(id) shortens ids for display (the page passes shortId).
+export function describeSource(L, name = (id) => id) {
+  if (!L) return { j_state: "", parts: [] };
+  const m = L.metric, t = L.temps_from;
+  const j_state = m?.state === "stale" ? "stale" : "";
+  const temps = (word) => {
+    if (t.state === "refused") return { text: `temperatures from ${name(t.measurement)} not drawn · ${refusalText(L.temps_error)}`, state: "stale" };
+    if (t.state === "stale") return { text: `${word} from ${name(t.measurement)} · STALE (${t.validity})`, state: "stale" };
+    if (t.via_alternative) return { text: `${word} via ${name(t.measurement)} (set ${t.set_id}) · set ${t.broken_sets.join(", ")} broken`, state: "alt" };
+    return { text: t.set_id ? `${word} from ${name(t.measurement)} · support set ${t.set_id}` : `${word} from ${name(t.measurement)} (its own)`, state: "" };
+  };
+  if (m && t && L.J && t.state !== "refused" && m.measurement === t.measurement) return { j_state, parts: [temps("values")] };
+  if (!m && !t && !L.measured) return { j_state, parts: [{ text: `no temperatures · ${NO_TEMPS[L.lifecycle] ?? "awaiting simulation"}`, state: "" }] };
+  const j = L.J_error ? { text: `J refused · ${refusalText(L.J_error)}${m && m.set_id !== null ? ` · from ${name(m.measurement)}` : ""}`, state: "stale" }
+    : m ? { text: `${m.set_id === null ? "J: its own value" : `J from ${name(m.measurement)}`}${m.state === "stale" ? ` · STALE (${m.validity})` : ""}`, state: j_state }
+    : { text: "measured, but no J in the verified data", state: "" };
+  return { j_state, parts: [j, t ? temps("temperatures") : { text: "no per-chiplet temperatures", state: "" }] };
 }
