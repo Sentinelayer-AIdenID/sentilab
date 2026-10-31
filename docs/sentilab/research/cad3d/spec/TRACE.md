@@ -77,6 +77,15 @@ SPEC.md says; the temperature pattern of PSEUDOCODE §8 catches and passes exact
 verify-core.js `parseRaw` plus `canonical` reproduce all six stored layout `content_sha256` values (raw and 1 mm for
 both references, and both 0.5 mm variants), while a plain `JSON.parse` route does not.
 
+Checked for v0.2, on the committed text: the 7 schema blocks still parse, every `$ref` resolves and each passes the
+2020-12 metaschema; the 16 original instances plus 33 new ones (the drawn/undrawn union, `display`, the result's
+`model` block, `fieldStatus`, `expected_inputs`) behave as SPEC.md says; the label algorithm of R2 (steps S1-S3,
+R1-R5) passes 43 checks against main's own `temperature-label.mjs` and `canonical.mjs` (four identities, a JSON round
+trip, every alteration of state, text, keys and identity); the R3 golden preimage was produced with main's
+`canonical()`, re-hashed in Python, and passes its 10 order and change checks; every AC id used is defined, and every
+AC is referenced from SPEC.md or PSEUDOCODE.md; no added line carries a control byte or a CR; gitleaks 8.24.2 (the
+version CI pins) finds nothing in the ten commits after `da9b1ee`. These are document checks; nothing is implemented.
+
 ## 2. The brief's hard rules, and where each is encoded
 
 | Rule (task) | Encoded in |
@@ -295,7 +304,7 @@ temperature-label.mjs:52), PL-24 (L1:SOURCES.md "How the facts were checked").
 | Benchmarks | A#57059 (benchmark correction paragraph); F#57046 (the pasted 98% claim) |
 | Contract if CAD is used | A#57059 (proposed technical contract paragraph); L3:ARCHITECTURE §7.2 (parity rule) |
 
-### Open decisions (SPEC §11)
+### Decisions (SPEC §11)
 
 | Req | Source |
 |---|---|

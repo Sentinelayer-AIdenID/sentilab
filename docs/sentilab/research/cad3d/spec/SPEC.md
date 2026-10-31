@@ -204,7 +204,7 @@ between them, dims the rest (L3:ARCHITECTURE §4.5), and fills the detail panel.
 
 | Mode | The panel shows |
 |---|---|
-| Typical anatomy | name (generic, D1); content chip; kind; what it is and why it is there (reviewed text with fact ids); material (name, class, conductivity "near room temperature" with basis); dimensions (thickness, footprint, area, count), each with its basis tag: `sourced [fact ids]`, `min–max · sourced [fact ids] · drawn at X (display only: derivation)` for a range, `derived (inputs)`, `not sourced · drawn at X (display only: basis)`, or `unknown`; connections (kinds and via); `In our model: lumped into layer 4, chip layer (150 µm silicon block, uniform power)` or `Not in the thermal model`; sources (fact claims, source type and year; titles and URLs only under D1 "named"); confidence. |
+| Typical anatomy | name (generic, D1); content chip; kind; what it is and why it is there (reviewed text with fact ids); material (name, class, conductivity "near room temperature" with basis); dimensions (thickness, footprint, area, count), each with its basis tag: `sourced [fact ids]`, `min–max · sourced [fact ids] · drawn at X (display only: derivation)` for a range, `derived (inputs)`, `not sourced · drawn at X (display only: basis)`, or `unknown`; connections (kinds and via); `In our model: lumped into layer 4, chip layer (150 µm silicon block, uniform power)` or `Not in the thermal model`; sources (fact claims with usable citations: title, publisher, URL and capture hash, D1); confidence. |
 | Our model | layer name as coded; grid index; thickness (model, `file:line@commit`); material as coded (resistivity and the k it implies, with the bump-mix derivation where it applies); lateral rule (interposer, 2 x, 4 x); powered or not; `Stands for` (anatomy part types, linking back); the ranked simplifications that apply; for a die: role, size, rotation, power input in W, halo width. |
 | Results | chiplet id and role (from the fixture's role map); footprint (evidence: run, seq); J and W from the measurement `metricFor()` picks (main:web/public/sentilab/lab-model.mjs:124), each with its statistic name and label; centre temperature with its own label; evidence validity (valid or stale); the receipt (measurement seq, event id, envelope hash, evaluator identity); receipt completeness (section 5.6); model association side by side: `family_match` with its fixture as labelled reference context, and `run_inputs_verified` with its differences (section 5.6). |
 
@@ -1697,8 +1697,10 @@ stays behind the W16 trial (section 10), and deferred CAD cases do not block the
 - **Estimates, not measurements:** renderer size, frame times, latencies and the budgets are lane 3's estimates or
   astra's proposed targets; AC-34 measures them.
 - **Code readings:** grid layers 6 and 7 being the spreader and sink, covering the interposer area, is a reading of
-  `temperature_grid.c` and `.h` (P7). The halo widths and bump-mix conductivities will be read from the floorplan
-  writer's output by W4, not from this document.
+  `temperature_grid.c` and `.h` (P7). So is the signed measurement body's named input-hash map that
+  `run_inputs_verified` reads (R6: conductor.py:337-347); no live envelope was inspected, and any run's producer and
+  config receipt is confirmed, not assumed (P5). The halo widths and bump-mix conductivities will be read from the
+  floorplan writer's output by W4, not from this document.
 - **Lane 1 internal note:** L1:SOURCES.md line 15 says the readable report "could not be written here", yet
   `REPORT.md` exists in the lane. Where this spec uses a value, REPORT.md, parts.json and thermal_path.md agree on it;
   the lane files were not otherwise cross-checked line by line.
