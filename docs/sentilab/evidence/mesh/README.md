@@ -51,7 +51,12 @@ a partial final line after an abrupt stop is not a completed receipt. Never appe
 a replacement run to this file; use a separate output directory.
 
 The final RESULT binds the journal SHA-256 and receipt sequence for each J. The
-CLI checker verifies these references and aggregate values. The Python checker
+CLI checker verifies these references and aggregate values, and requires the run
+header's fixture, grids, ordered selected layout IDs and frozen-file SHA-256 to
+match RESULT. Receipt coverage must contain exactly one evaluation per selected
+layout/grid pair. Each heatmap must contain finite numbers in a grid-by-grid
+array; its maximum must match the declared chip-layer peak within an absolute
+1e-9 C tolerance (zero relative tolerance), as required by the oracle. The Python checker
 also verifies the journal when given `evidence_dir`. These are consistency checks,
 not authenticity guarantees. Raw generated floorplans/trace/config/layers and
 solver grid/steady/stdout files still need the oracle-owned archival seam.

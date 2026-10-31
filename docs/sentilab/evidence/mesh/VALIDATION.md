@@ -233,3 +233,50 @@ No new HotSpot solves or container smoke runs. Historical evidence is unchanged.
 The previously recorded baseline thermal failure, integrated container gate,
 publication review and micro150 work remain pending; this is not all-gates-green
 or merge clearance.
+
+### Review 56108: receipt numerical consistency and run-header binding
+
+On local parent `93b52415bebcdb0fafd26ccefa900abe9b65dc20`, the checker accepted
+rehashed heatmaps with inconsistent peaks or malformed dimensions. It also
+accepted an isolated change to RESULT.layouts_sha256. Both fixes use fake
+oracle returns; no HotSpot solves were run for this review round.
+
+The checker now validates grid-by-grid finite numeric heatmaps and compares
+max(heatmap) with the declared peak at abs_tol=1e-9 C, rel_tol=0. It binds the
+run header's fixture, grids, ordered selected IDs and frozen-layout hash to
+RESULT and requires complete, unique layout/grid receipt coverage. File-backed
+runs pass the hash of the exact loaded bytes into the journal, including valid
+noncanonical JSON whitespace; direct in-memory runs use canonical JSON bytes.
+
+All five new regression tests were copied into a disposable worktree at the
+parent above. The existing HotSpot binary was copied for oracle construction
+only; every oracle evaluation was replaced with a fake:
+
+- `test_receipt_heatmap_peak_uses_absolute_oracle_tolerance` and
+  `test_receipt_heatmap_requires_finite_grid_shaped_numbers`: **12 subtest
+  failures before the fix**. The 101 C cell with a declared 100 C peak produced
+  `AssertionError: False is not true : []`. Finite-number validation also tests
+  rejection of booleans, strings, null, NaN and infinities, and acceptance of a
+  peak difference inside tolerance. Non-finite values already failed closed
+  through JSON hashing before this fix.
+- `test_result_must_match_run_header`,
+  `test_receipt_coverage_is_complete_and_unique`, and
+  `test_run_header_binds_exact_frozen_file_bytes`: **14 subtest failures before
+  the fix**. The isolated RESULT.layouts_sha256 CLI mutation produced
+  `AssertionError: 0 != 1` against the unchanged journal. Coverage tests include
+  extra, missing and duplicate receipts and invalid aggregate sequence maps.
+
+Final local checks:
+
+- `.venv/bin/python -m unittest -q sundai_controller.test_mesh_study.MeshAccountingTests sundai_controller.test_mesh_study.MeshStatisticsTests sundai_controller.test_mesh_study.MeshLayoutTests sundai_controller.test_mesh_study.MeshIdentityTests sundai_controller.test_mesh_study.MeshReceiptTests`: **22 tests pass**.
+- `(cd sundai_controller && ../.venv/bin/python -m unittest -q test_controller.py test_experiment.py test_safety_property.py test_tfl08_leaderboard.py)`: **65 tests pass**, including 1,000 property cases.
+- `.venv/bin/python -m compileall -q sundai_controller/mesh_study.py sundai_controller/test_mesh_study.py`: exit 0.
+- `make -C sundai_hotspot -j4 SUPERLU=1`: exit 0 (build only).
+- `.venv/bin/python -m pip check`: exit 0, no broken requirements.
+- `.venv/bin/python -m sundai_controller.mesh_study --check docs/sentilab/evidence/mesh/ascend910/RESULT.json`: exit 0, no errors. Historical evidence has no receipt journal; none was fabricated.
+- `git diff --check`: exit 0.
+- `.venv/bin/python -m unittest discover -s sundai_thermal -p 'test_*.py'`: **2 tests, 1 failure**, the previously recorded missing README metric assertion (`random 79.9564865°C`). README and the thermal test are unchanged from the parent.
+
+The full HotSpot/real mesh suites were not run because this assignment forbids
+new solves. Docker is unavailable locally; integrated container gates require
+operator verification. This carry is not an all-gates-green or merge claim.
