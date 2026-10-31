@@ -327,6 +327,36 @@ class Lifecycle(unittest.TestCase):
             self.assertEqual(receipt['response_sha256'], s.digest(raw))
             self.assertEqual(s.state()['inference_requests_reserved'], index + 1)
 
+    def test_overflowing_reported_token_rate_retains_usage_and_receipt(self):
+        r = self.reserve()
+        tokens = 10 ** 400
+        raw = s.encode({'choices': [{'message': {'content': '{"ok":true}'}}],
+                        'usage': {'completion_tokens': tokens}})
+        def request(*args):
+            self.clock.now += 1
+            return 200, raw
+        with mock.patch.object(s, 'request', side_effect=request):
+            s.inference(r, self.rows()[0], 0)
+        receipt = json.loads((self.root / 'inference-00.json').read_bytes())
+        self.assertEqual(receipt['reported_usage']['completion_tokens'], tokens)
+        self.assertIsNone(receipt['client_observed_completion_tokens_per_second'])
+        self.assertEqual(receipt['token_rate_error'], 'reported_token_rate_overflow')
+        self.assertTrue(receipt['exact_json_match'])
+        self.assertEqual(receipt['response_sha256'], s.digest(raw))
+
+    def test_nonfinite_derived_token_rate_retains_finite_reported_integer(self):
+        r = self.reserve(); tokens = 10 ** 308
+        raw = s.encode({'choices': [], 'usage': {'completion_tokens': tokens}})
+        with mock.patch.object(s, 'request', return_value=(200, raw)), \
+             mock.patch.object(s, 'check'), mock.patch.object(s, 'remaining', return_value=120), \
+             mock.patch.object(s.time, 'monotonic', side_effect=[0, 1e-308]):
+            s.inference(r, self.rows()[0], 0)
+        receipt = json.loads((self.root / 'inference-00.json').read_bytes())
+        self.assertEqual(receipt['reported_usage']['completion_tokens'], tokens)
+        self.assertIsNone(receipt['client_observed_completion_tokens_per_second'])
+        self.assertEqual(receipt['token_rate_error'], 'nonfinite_reported_token_rate')
+        self.assertFalse(receipt['exact_json_match'])
+
     def test_readiness_and_cleanup_are_inside_original_time_budget(self):
         r = self.reserve()
         def unavailable(path, body, allowance):

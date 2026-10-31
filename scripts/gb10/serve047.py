@@ -508,11 +508,19 @@ def inference(r, row, index):
     usage = parsed.get('usage') if isinstance(parsed, dict) else None
     counts = {key: usage.get(key) for key in ('prompt_tokens', 'completion_tokens', 'total_tokens')
               if isinstance(usage, dict) and type(usage.get(key)) is int and usage[key] >= 0}
-    rate = counts['completion_tokens'] / elapsed if 'completion_tokens' in counts and elapsed > 0 else None
+    rate, rate_error = None, None
+    if 'completion_tokens' in counts and elapsed > 0:
+        try:
+            rate = counts['completion_tokens'] / elapsed
+            if not math.isfinite(rate):
+                rate, rate_error = None, 'nonfinite_reported_token_rate'
+        except OverflowError:
+            rate_error = 'reported_token_rate_overflow'
     receipt = {'row_id': row['row_id'], 'request_sha256': digest(body), 'response_sha256': digest(raw),
                'http_status': code, 'exact_json_match': exact, 'wall_seconds': elapsed,
                'request_timeout_seconds': allowance, 'response_parse_error': parse_error,
                'reported_usage': counts or None, 'client_observed_completion_tokens_per_second': rate,
+               'token_rate_error': rate_error,
                'timing_scope': 'one serial localhost request including client overhead; no concurrency or decoder-throughput claim',
                'policy_sha256': r['policy_sha256'], 'controller_sha256': r['controller_sha256']}
     write_exclusive(f'inference-{index:02d}.json', encode(receipt))

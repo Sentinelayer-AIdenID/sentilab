@@ -2,7 +2,7 @@
 import json
 import re
 
-CONTROLLER_SHA256 = '7f6a3883ecac1aac773ff5c7aa0f49cd01139db4300a67f21aa93eade8ca7c9b'
+CONTROLLER_SHA256 = '1e4b901a1b8b65ad8b40afd89637b6b6044e12f8f6df58fd6ae4771309c21eaa'
 POLICY_SHA256 = '9b49f5149bcab62137dba7515c305a7079364630f74c6a0bab002a430ed944fc'
 REMOTE_PATH = '/home/dell/sentilab/serving-20261031/serve047.py'
 SCHEMA = 'sentilab-gb10-serving/1'
