@@ -2,6 +2,7 @@
 # Build-time proof that the image works: controller/property tests, the deterministic demo,
 # thermal regressions, and all eight HotSpot+SuperLU cases on a scratch copy. Shipped evidence is untouched.
 set -euo pipefail
+test -f /app/web/public/trust-pins.json
 # Test signing material exists only in the smoke process environment, never a file
 # or image layer. Production entry points still require their configured signer.
 if [[ "${1:-}" != "--with-test-signing" ]]; then
