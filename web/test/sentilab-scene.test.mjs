@@ -81,7 +81,7 @@ function taint(env) {
 }
 const hasTaint = (scene) => {
   const text = JSON.stringify(scene);
-  return text.includes(TAINT_ID) || text.includes(String(TAINT_T)) || text.includes("taint") || /"[xy][01]?":\s*(400|500)/.test(text);
+  return text.includes(TAINT_ID) || text.includes(String(TAINT_T)) || text.includes("taint") || /"[xy][01]?":\s*(400|500)\b/.test(text);
 };
 
 for (const chain of viewFile.chains) {
