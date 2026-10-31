@@ -2,9 +2,11 @@
 
     python -m open_proposals.contract.mutants            # every mutant; exit 1 if any survives or fails to land
     python -m open_proposals.contract.mutants --land     # only check that every mutant lands
+    python -m open_proposals.contract.mutants --only=a,b # just these mutants (a spot check, not the result)
 
 The working tree is never touched. A mutant must land (its snippet occurs exactly once and the file changes), or
-it is reported as an error, never as a survivor. The tests that pin bytes (the hash pins and the generator check)
+it is reported as an error, never as a survivor; a mutant that stops the suite from importing or running is
+broken, never a kill. The tests that pin bytes (the hash pins and the generator check)
 are left out of mutant runs: they fail on any change, so a kill must come from a test of the hazard itself.
 """
 from __future__ import annotations
@@ -404,7 +406,8 @@ MUTANTS = [
      'if row["kind"] == "outside" and row["state"] not in EVALUATED and (row["T_M"] != "UNKNOWN" or row["labels"]):',
      "if False:"),
     ("rule-results-q", "results.q_r", V,
-     '        found += _q_r_rules(row["q_r"], row["W_c_mm"], manifest, path + "/q_r", "results.q_r")\n', ""),
+     '        found += _q_r_rules(row["q_r"], row["W_c_mm"], manifest, path + "/q_r", "results.q_r")\n',
+     "        pass\n"),
     # ── labels: the SLAB-053 mirror ──
     ("label-case", "label: the withdrawn key ignores case", L, '.split(":")[:2]).lower()', '.split(":")[:2])'),
     ("label-exact", "label: illustrative is exact", L, 'if identity in lists["illustrative"]:',
@@ -543,8 +546,11 @@ def main(argv) -> int:
     if baseline:
         print("baseline fails:", baseline)
         return 1
-    results = {"caught": [], "survived": [], "not_landed": []}
+    results = {"caught": [], "survived": [], "not_landed": [], "broken": []}
+    only = {name for arg in argv if arg.startswith("--only=") for name in arg[len("--only="):].split(",")}
     for mutant_id, rule, path, old, new in MUTANTS:
+        if only and mutant_id not in only:
+            continue
         root = fresh_copy()
         try:
             target = root / path
@@ -559,14 +565,18 @@ def main(argv) -> int:
                 print(f"NOT LANDED {mutant_id}: file unchanged")
                 continue
             failing = run_suite(root)
+            if any(name.startswith("<runner crashed>") for name in failing):
+                results["broken"].append(mutant_id)
+                print(f"BROKEN    {mutant_id}: the suite did not run: {failing[0][:160]}", flush=True)
+                continue
             outcome = "caught" if failing else "survived"
             results[outcome].append(mutant_id)
             print(f"{outcome.upper():9} {mutant_id:26} {rule:48} {', '.join(failing)[:120]}", flush=True)
         finally:
             shutil.rmtree(root, ignore_errors=True)
-    print(f"\n{len(MUTANTS)} mutants: {len(results['caught'])} caught, {len(results['survived'])} survived, "
-          f"{len(results['not_landed'])} did not land")
-    return 0 if not results["survived"] and not results["not_landed"] else 1
+    print(f"\n{sum(len(names) for names in results.values())} mutants: {len(results['caught'])} caught, {len(results['survived'])} survived, "
+          f"{len(results['not_landed'])} did not land, {len(results['broken'])} broken")
+    return 0 if not (results["survived"] or results["not_landed"] or results["broken"]) else 1
 
 
 if __name__ == "__main__":

@@ -1376,11 +1376,11 @@ def revisions() -> list:
 
 
 def ordering() -> dict:
-    rows = [("whole second", "2026-10-31T16:05:12+00:00", ACTIONS[1], ROOM),
+    rows = [("the same instant and action, overflow room", "2026-10-31T16:05:12Z", ACTIONS[2], OVERFLOW_ROOM),
+            ("whole second", "2026-10-31T16:05:12+00:00", ACTIONS[1], ROOM),
             ("one microsecond later, but sorts first as text", "2026-10-31T16:05:12.000001+00:00", ACTIONS[0], ROOM),
             ("the same instant as Z, later action id", "2026-10-31T16:05:12Z", ACTIONS[2], ROOM),
-            ("a second earlier, written in another zone", "2026-10-31T17:05:11+01:00", ACTIONS[3], ROOM),
-            ("the same instant and action, overflow room", "2026-10-31T16:05:12Z", ACTIONS[2], OVERFLOW_ROOM)]
+            ("a second earlier, written in another zone", "2026-10-31T17:05:11+01:00", ACTIONS[3], ROOM)]
     return {"rows": [{"label": label, "createdAt": created, "id": action, "sessionId": room}
                      for label, created, action, room in rows],
             "expect_order": ["a second earlier, written in another zone", "whole second",
