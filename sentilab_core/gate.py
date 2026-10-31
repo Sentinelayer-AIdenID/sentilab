@@ -75,7 +75,8 @@ class AcceptanceGate:
             return outcome("reproduction_mismatch")
         if current is None:
             return outcome("accepted")
-        if not isinstance(current, dict) or not _number(current.get("j")):
+        if (not isinstance(current, dict) or current.get("type") == "untrusted_source_evidence" or
+                not _number(current.get("j"))):
             return outcome("invalid_current")
         improvement = Decimal(str(current["j"])) - Decimal(str(reproduction["j"]))
         result["improvement"] = float(improvement)

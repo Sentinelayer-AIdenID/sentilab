@@ -75,6 +75,10 @@ class ResearchTests(unittest.TestCase):
         cycle = []
         cycle.append(cycle)
         cases.append({**args, "question": cycle})
+        shared = ["x"] * 32
+        for _ in range(7):
+            shared = [shared] * 32
+        cases.append({**args, "question": shared})
         for value in cases:
             with self.subTest(value_type=type(value.get("question"))):
                 result = research.request(self.context, **value)
@@ -124,6 +128,8 @@ class ResearchTests(unittest.TestCase):
         exported = self.call("export", request_id=result["request_id"])
         expected_hash = hashlib.sha256(research.dumps(record).encode()).hexdigest()
         self.assertEqual(exported["admission_sha256"], expected_hash)
+        self.assertEqual(exported["admission"]["evidence_hashes"], record["evidence_hashes"])
+        self.assertEqual(exported["admission"]["effective_telemetry"], "off")
         self.assertEqual(exported["backend"]["underlying_model"], backend.underlying_model)
         self.assertEqual(exported["notes"][0]["provenance"]["namespace"], NS)
         self.call("request", question="private submitted text")
@@ -156,6 +162,7 @@ class ResearchTests(unittest.TestCase):
             for value in (evidence, {**evidence, **measurement}):
                 self.assertEqual(gate.decide(**{**args, "evaluation": value})["outcome"], "evaluation_failed")
                 self.assertEqual(gate.decide(**{**args, "reproduction": value})["outcome"], "reproduction_failed")
+                self.assertEqual(gate.decide(**{**args, "current": value})["outcome"], "invalid_current")
         from sentilab_core.dataset import export
         with self.assertRaises(FileNotFoundError):
             export(self.root, [NS["run_id"]], public_keys={})
