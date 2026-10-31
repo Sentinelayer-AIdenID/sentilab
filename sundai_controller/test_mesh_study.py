@@ -191,6 +191,68 @@ class MeshReceiptTests(unittest.TestCase):
         environment.start()
         self.addCleanup(environment.stop)
 
+    def complete_fake_run(self, output):
+        async def fake_call(oracle, design):
+            return fake_thermal_result(oracle, design)
+
+        with patch.object(mesh.HotSpotOracle, '__call__', fake_call), redirect_stdout(io.StringIO()):
+            self.assertEqual(mesh.main(['--grids', '32', '64', '--layout-ids',
+                'clustered-01', 'spread-01', '--output-dir', str(output)]), 0)
+        result = json.loads((output / 'RESULT.json').read_text())
+        records = [json.loads(line) for line in (output / 'rows.jsonl').read_text().splitlines()]
+        self.assertEqual(mesh.check_result(result, output), [])
+        return result, records
+
+    def rewrite_journal(self, output, result, records):
+        # Rehash mutations so the checker must validate content, not stale hashes.
+        data = ''.join(json.dumps(record, sort_keys=True) + '\n' for record in records).encode()
+        (output / 'rows.jsonl').write_bytes(data)
+        result['rows_evidence']['sha256'] = hashlib.sha256(data).hexdigest()
+
+    def test_receipt_heatmap_peak_uses_absolute_oracle_tolerance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            result, records = self.complete_fake_run(output)
+            for cell, valid in [(101.0, False), (100.0 + 2e-9, False),
+                                (100.0 + 5e-10, True), (99.0, True)]:
+                with self.subTest(cell=cell):
+                    changed = copy.deepcopy(records)
+                    entry = next(r for r in changed if r['kind'] == 'evaluation')
+                    heatmap = entry['parsed_receipt']['heatmap_c']
+                    heatmap[0][0] = cell
+                    entry['heatmap_sha256'] = hashlib.sha256(mesh._json_bytes(heatmap)).hexdigest()
+                    self.rewrite_journal(output, result, changed)
+                    errors = mesh.check_result(result, output)
+                    if valid:
+                        self.assertEqual(errors, [])
+                    else:
+                        self.assertTrue(any('heatmap peak' in error for error in errors), errors)
+
+    def test_receipt_heatmap_requires_finite_grid_shaped_numbers(self):
+        heatmap = [[100.0] * 32 for _ in range(32)]
+        cases = [('missing-row', heatmap[:-1]), ('extra-row', heatmap + [heatmap[0]]),
+                 ('short-row', [heatmap[0][:-1]] + heatmap[1:]),
+                 ('long-row', [heatmap[0] + [100.0]] + heatmap[1:]),
+                 ('non-list-row', [100.0] + heatmap[1:]), ('empty', []), ('non-list', 100.0)]
+        for value in (True, '100', None, float('nan'), float('inf'), float('-inf')):
+            changed = copy.deepcopy(heatmap)
+            changed[0][0] = value
+            cases.append((repr(value), changed))
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            result, records = self.complete_fake_run(output)
+            for name, heatmap in cases:
+                with self.subTest(case=name):
+                    changed = copy.deepcopy(records)
+                    entry = next(r for r in changed if r['kind'] == 'evaluation')
+                    entry['parsed_receipt']['heatmap_c'] = heatmap
+                    # Permit non-finite JSON here specifically to exercise malformed evidence.
+                    data = (json.dumps(heatmap, indent=2, sort_keys=True) + '\n').encode()
+                    entry['heatmap_sha256'] = hashlib.sha256(data).hexdigest()
+                    self.rewrite_journal(output, result, changed)
+                    errors = mesh.check_result(result, output)
+                    self.assertTrue(errors, name)
+
     def test_execution_commit_is_optional_provenance(self):
         cases = [
             ('build', {'BUILD_SHA': self.revision}, FileNotFoundError('git'), self.revision, 0),
