@@ -68,6 +68,7 @@ jobs:
           (cd contracts/contract-0.3 && node run-vectors.mjs)
           (cd contracts/view-envelope && node run-view-vectors.mjs)
           (cd contracts/view-envelope-v0.5 && node run-view-vectors.mjs)
+          (cd contracts/view-envelope-v0.6 && node run-paging-vectors.mjs)
       - name: Lab view matches the contracts (browser copies, demo fixture)
         run: |
           node --test web/test/sentilab-parity.test.mjs
@@ -101,6 +102,8 @@ jobs:
           OPENBLAS_NUM_THREADS: '1'
           OMP_NUM_THREADS: '1'
         run: python -m unittest -q sentilab_core.conformance
+      - name: ResultCheck vectors match Python, CLI and MCP byte for byte
+        run: python -m sentilab_core.test_resultcheck --parity
 
   secret-scan:
     runs-on: ubuntu-24.04

@@ -31,7 +31,9 @@ async def run(context, *, ai_off, run_id=None, duration=600, interval=15, renew=
     require_ai_off(ai_off)
     if context.signer is None:
         raise ValueError("only the service with an injected signer may run the conductor")
-    conductor = Conductor(context.root, signer=context.signer, public_keys=context.public_keys, **context.options)
+    options = {key: value for key, value in context.options.items()
+               if key not in {"research_namespace", "research_backend", "research_admission"}}
+    conductor = Conductor(context.root, signer=context.signer, public_keys=context.public_keys, **options)
     return await conductor.run(run_id=run_id, duration=duration, interval=interval, renew=renew, max_ticks=max_ticks)
 
 
@@ -136,7 +138,14 @@ def environment_context(*, ephemeral=False):
         from .signing import ephemeral_signer
         signer = ephemeral_signer()
         public_keys = {signer.key_id: signer.public_key}
-    return Context(root, public_keys, signer,
+    options = {}
+    research_scope = os.environ.get("SENTILAB_RESEARCH_NAMESPACE")
+    if research_scope is not None:
+        try:
+            options["research_namespace"] = json.loads(research_scope)
+        except (ValueError, RecursionError):
+            options["research_namespace"] = {}  # malformed host scope fails closed
+    return Context(root, public_keys, signer, options,
                    memory_tenant=os.environ.get("SENTILAB_MEMORY_TENANT"),
                    held_out_families=json.loads(os.environ.get("SENTILAB_MEMORY_HELD_OUT", "[]")),
                    routing_fixture=os.environ.get("SENTILAB_ROUTING_FIXTURE"))

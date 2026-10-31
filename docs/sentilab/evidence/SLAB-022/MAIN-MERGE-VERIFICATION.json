@@ -1,0 +1,424 @@
+{
+  "schema": "sentilab.merge-verification/1",
+  "pr": 21,
+  "source_parent": "fbf6ea2f2d2ebf42a723616b92527f1f9a5073e2",
+  "main_parent": "d031c8d25fb581f2355fc632fc8c384ba45cf973",
+  "scope": "Resolve shared CLI/MCP conflicts; preserve labs/datasets from main and ResultCheck from PR21. No PR23 memory code.",
+  "smoke": {
+    "command": ". .venv/bin/activate && OPENBLAS_CORETYPE=Haswell OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 bash /app/scripts/container_smoke.sh",
+    "exit": 0,
+    "wall_seconds": 182.43,
+    "cpu_seconds": 152.125,
+    "log": "/workspace/slab022-main-smoke.log",
+    "sha256": "842f957bfc5cc65bb52465a13a5143ad9cbf5661c8b9a8464654a6287ddba39a",
+    "environment": "Native Ubuntu 24.04, Python 3.12.3 venv; unchanged CI smoke script at /app. Docker unavailable; unshare -m denied.",
+    "modules": [
+      {
+        "path": "sundai_controller/test_controller.py",
+        "tests": 47,
+        "seconds": 0.185
+      },
+      {
+        "path": "sundai_controller/test_safety_property.py",
+        "tests": 2,
+        "seconds": 28.073
+      },
+      {
+        "path": "sundai_controller/test_experiment.py",
+        "tests": 8,
+        "seconds": 0.224
+      },
+      {
+        "path": "sundai_controller/test_tfl08_leaderboard.py",
+        "tests": 8,
+        "seconds": 7.041
+      },
+      {
+        "path": "sundai_hotspot/test_tap_oracle.py",
+        "tests": 14,
+        "seconds": 6.437
+      },
+      {
+        "path": "sundai_thermal/test_tfl14_regression.py",
+        "tests": 2,
+        "seconds": 13.727
+      },
+      {
+        "path": "app/test_runs.py",
+        "tests": 6,
+        "seconds": 2.467
+      },
+      {
+        "path": "sundai_controller/test_mesh_study.py",
+        "tests": 25,
+        "seconds": 11.561
+      },
+      {
+        "path": "sundai_controller/test_trust.py",
+        "tests": 12,
+        "seconds": 6.92
+      },
+      {
+        "path": "sundai_hotspot/test_micro150.py",
+        "tests": 9,
+        "seconds": 0.843
+      },
+      {
+        "path": "app/test_view.py",
+        "tests": 7,
+        "seconds": 4.851
+      },
+      {
+        "path": "app/test_view_cursor.py",
+        "tests": 4,
+        "seconds": 1.333
+      },
+      {
+        "path": "app/test_view_readonly.py",
+        "tests": 2,
+        "seconds": 0.42
+      },
+      {
+        "path": "sentilab_core/test_budget.py",
+        "tests": 5,
+        "seconds": 0.253
+      },
+      {
+        "path": "sentilab_core/test_cleanup.py",
+        "tests": 8,
+        "seconds": 0.837
+      },
+      {
+        "path": "sentilab_core/test_conductor.py",
+        "tests": 5,
+        "seconds": 5.148
+      },
+      {
+        "path": "sentilab_core/test_dataset.py",
+        "tests": 16,
+        "seconds": 15.933
+      },
+      {
+        "path": "sentilab_core/test_dataset_mcp.py",
+        "tests": 3,
+        "seconds": 0.732
+      },
+      {
+        "path": "sentilab_core/test_environment.py",
+        "tests": 7,
+        "seconds": 0.044
+      },
+      {
+        "path": "sentilab_core/test_gate.py",
+        "tests": 3,
+        "seconds": 0.001
+      },
+      {
+        "path": "sentilab_core/test_history.py",
+        "tests": 4,
+        "seconds": 0.068
+      },
+      {
+        "path": "sentilab_core/test_lab_conductor.py",
+        "tests": 4,
+        "seconds": 25.768
+      },
+      {
+        "path": "sentilab_core/test_labs.py",
+        "tests": 18,
+        "seconds": 0.124
+      },
+      {
+        "path": "sentilab_core/test_ledger.py",
+        "tests": 16,
+        "seconds": 0.446
+      },
+      {
+        "path": "sentilab_core/test_mcp_stdio.py",
+        "tests": 7,
+        "seconds": 1.779
+      },
+      {
+        "path": "sentilab_core/test_oracle.py",
+        "tests": 1,
+        "seconds": 0.397
+      },
+      {
+        "path": "sentilab_core/test_resultcheck.py",
+        "tests": 8,
+        "seconds": 12.259
+      },
+      {
+        "path": "sentilab_core/test_resultcheck_boundary.py",
+        "tests": 3,
+        "seconds": 1.533
+      },
+      {
+        "path": "sentilab_core/test_resultcheck_io.py",
+        "tests": 10,
+        "seconds": 12.878
+      },
+      {
+        "path": "sentilab_core/test_resultcheck_platform.py",
+        "tests": 8,
+        "seconds": 3.047
+      },
+      {
+        "path": "sentilab_core/test_signing.py",
+        "tests": 2,
+        "seconds": 0.014
+      },
+      {
+        "path": "sentilab_core/test_transports.py",
+        "tests": 2,
+        "seconds": 2.287
+      }
+    ],
+    "total_tests": 276,
+    "skipped": 0,
+    "requested_module_count": 31,
+    "requested_module_tests": 274,
+    "hotspot_probe_cases": 8,
+    "probe_assertions": "All script assertions passed; right_shift_2mm 32x32 118.8400 C. 32x32 median 0.489s exceeds informational deployed-host target 0.400s, below enforced 2.0s bound."
+  },
+  "additional_gates": {
+    "gates": [
+      {
+        "command": ". .venv/bin/activate && node --test web/test/*.test.mjs",
+        "exit": 0,
+        "seconds": 2.469,
+        "log": "/workspace/slab022-main-gate-0.log",
+        "sha256": "a589908770070b2f2506c3ec96b488dee6f6fcd238f8c677fbccd1edfabca49f",
+        "summaries": [
+          "# tests 103",
+          "# pass 103",
+          "# fail 0",
+          "# skipped 0"
+        ]
+      },
+      {
+        "command": "(cd contracts && sha256sum -c HASHES.txt)",
+        "exit": 0,
+        "seconds": 0.008,
+        "log": "/workspace/slab022-main-gate-1.log",
+        "sha256": "ee9031719493897fcc19a24b3b8c14e2c4fa761d6616e815729826b2058aebd3",
+        "summaries": []
+      },
+      {
+        "command": "node contracts/contract-0.2/run-vectors.mjs",
+        "exit": 0,
+        "seconds": 0.665,
+        "log": "/workspace/slab022-main-gate-2.log",
+        "sha256": "bba91b23c4e0d8c112d460ce2afbf8bfdf12d0b5cb088288b2e0be7637826892",
+        "summaries": []
+      },
+      {
+        "command": "node contracts/contract-0.3/run-vectors.mjs",
+        "exit": 0,
+        "seconds": 0.665,
+        "log": "/workspace/slab022-main-gate-3.log",
+        "sha256": "4d0eeacdc8e7c87bb4b2fd4cb91dbe33c48206b7be6095759a2e3c916670db2c",
+        "summaries": []
+      },
+      {
+        "command": "node contracts/view-envelope/run-view-vectors.mjs",
+        "exit": 0,
+        "seconds": 0.418,
+        "log": "/workspace/slab022-main-gate-4.log",
+        "sha256": "b0f127ab16e1cf89d476314c0c1cfc50a554011d62f86b05837bc17939509bbe",
+        "summaries": [
+          "PASS: 113 of 113 checks"
+        ]
+      },
+      {
+        "command": "node contracts/view-envelope-v0.5/run-view-vectors.mjs",
+        "exit": 0,
+        "seconds": 1.718,
+        "log": "/workspace/slab022-main-gate-5.log",
+        "sha256": "e1e77e340c89b6b5bf4d7427a719d053a1d2f6f528464f537a1e521c693899a4",
+        "summaries": [
+          "PASS: 193 of 193 checks"
+        ]
+      },
+      {
+        "command": "node web/test/make-sentilab-demo.mjs --check",
+        "exit": 0,
+        "seconds": 0.064,
+        "log": "/workspace/slab022-main-gate-6.log",
+        "sha256": "fe2a35188861d6e2c38679786899d9aa88ab5217e0088dee260540110458aae1",
+        "summaries": []
+      },
+      {
+        "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python -m unittest -q sentilab_core.conformance",
+        "exit": 0,
+        "seconds": 4.072,
+        "log": "/workspace/slab022-main-gate-7.log",
+        "sha256": "642a08fe8c86948d8abe64e0e8e3463efc3f93387f1c1e387b4e5a397e0e7ef2",
+        "summaries": [
+          "Ran 9 tests in 3.783s"
+        ]
+      },
+      {
+        "command": ".venv/bin/python -m sentilab_core.test_resultcheck --parity",
+        "exit": 0,
+        "seconds": 14.336,
+        "log": "/workspace/slab022-main-gate-8.log",
+        "sha256": "5d0e6c367bdc34da9fc77db6e6b078b0128f9629eb13aae3c6fb9a8008ebb5ec",
+        "summaries": [
+          "Ran 9 tests in 14.187s"
+        ]
+      },
+      {
+        "command": ".venv/bin/python -m compileall -q sentilab_cli sentilab_mcp sentilab_core",
+        "exit": 0,
+        "seconds": 0.064,
+        "log": "/workspace/slab022-main-gate-9.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "summaries": []
+      },
+      {
+        "command": ".venv/bin/pip check",
+        "exit": 0,
+        "seconds": 0.615,
+        "log": "/workspace/slab022-main-gate-10.log",
+        "sha256": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09",
+        "summaries": []
+      },
+      {
+        "command": "git diff --check",
+        "exit": 0,
+        "seconds": 0.016,
+        "log": "/workspace/slab022-main-gate-11.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "summaries": []
+      }
+    ],
+    "cpu_seconds": 24.679
+  },
+  "source_preservation": {
+    "checks": [
+      {
+        "file": "sentilab_cli/__main__.py",
+        "function": "dispatch",
+        "unchanged_from": "fbf6ea2"
+      },
+      {
+        "file": "sentilab_cli/__main__.py",
+        "function": "_write_utf8",
+        "unchanged_from": "fbf6ea2"
+      },
+      {
+        "file": "sentilab_cli/__main__.py",
+        "function": "_ResultCheckParser",
+        "unchanged_from": "fbf6ea2"
+      },
+      {
+        "file": "sentilab_mcp/__init__.py",
+        "function": "sentilab_live_run",
+        "unchanged_from": "fbf6ea2"
+      },
+      {
+        "file": "sentilab_mcp/__init__.py",
+        "function": "sentilab_live_status",
+        "unchanged_from": "fbf6ea2"
+      },
+      {
+        "file": "sentilab_mcp/__init__.py",
+        "function": "sentilab_live_stop",
+        "unchanged_from": "fbf6ea2"
+      },
+      {
+        "file": "sentilab_mcp/__init__.py",
+        "function": "sentilab_live_verify",
+        "unchanged_from": "fbf6ea2"
+      },
+      {
+        "file": "sentilab_mcp/__init__.py",
+        "function": "sentilab_resultcheck",
+        "unchanged_from": "fbf6ea2"
+      },
+      {
+        "file": "sentilab_mcp/__init__.py",
+        "function": "sentilab_dataset_export",
+        "unchanged_from": "main-now/main"
+      },
+      {
+        "file": "sentilab_mcp/__main__.py",
+        "function": "LazyLiveContext",
+        "unchanged_from": "fbf6ea2"
+      },
+      {
+        "file": "sentilab_mcp/__main__.py",
+        "function": "serve",
+        "unchanged_from": "fbf6ea2"
+      },
+      {
+        "file": "sentilab_mcp/__main__.py",
+        "function": "main",
+        "unchanged_from": "fbf6ea2"
+      },
+      {
+        "file": "sentilab_core/resultcheck.py",
+        "unchanged_from": "fbf6ea2"
+      },
+      {
+        "file": "sentilab_mcp/export_worker.py",
+        "unchanged_from": "main-now/main"
+      },
+      {
+        "file": "sentilab_core/operations.py",
+        "unchanged_from": "main-now/main"
+      },
+      {
+        "file": "sentilab_core/conductor.py",
+        "unchanged_from": "main-now/main"
+      },
+      {
+        "file": "sentilab_core/labs.py",
+        "unchanged_from": "main-now/main"
+      },
+      {
+        "file": "sentilab_core/dispatch.py",
+        "unchanged_from": "main-now/main"
+      },
+      {
+        "file": "sentilab_core/dataset.py",
+        "unchanged_from": "main-now/main"
+      },
+      {
+        "file": "scripts/container_smoke.sh",
+        "unchanged_from": "main-now/main"
+      }
+    ],
+    "tested_source_sha256": {
+      "sentilab_cli/__main__.py": "83915414db12fb46d7a3192580aa8c6e932b63805cdf357b0a6ec45e1c06bf1b",
+      "sentilab_mcp/__init__.py": "f6ab326258377a567a0ca59af48e218d09c05cc8c30603656ef9b7da0c55a190",
+      "sentilab_mcp/__main__.py": "3d5fcc7be8a5e58555ef45dcc41e63e293763ea4e7162a6bf176bc4c7d2830e7",
+      "sentilab_core/test_mcp_stdio.py": "99d765c93da5a284f78d1b634d3ed18ef6556bbcb4a377910ede0188c499c2dd"
+    }
+  },
+  "regression": {
+    "test": "sentilab_core.test_mcp_stdio.LazyContextTests.test_combined_host_preserves_dataset_resultcheck_and_live_tools",
+    "passes_after_merge": true,
+    "parents": [
+      {
+        "head": "fbf6ea2f2d2ebf42a723616b92527f1f9a5073e2",
+        "exit": 1,
+        "missing_tool": "sentilab_dataset_export",
+        "log_sha256": "94561e73948c01037e90e8e5e332fb88aa506c689fff378c0d8ceadef48223de"
+      },
+      {
+        "head": "d031c8d25fb581f2355fc632fc8c384ba45cf973",
+        "exit": 1,
+        "missing_tool": "sentilab_resultcheck",
+        "log_sha256": "958f7c4b53e5d5b04a8c8c4e80042d18608d902ff86adb7fe5e42e342c699da5"
+      }
+    ],
+    "method": "Isolated detached worktrees with only the new test and public SLAB-016 fixture copied in."
+  },
+  "limitations": [
+    "Exact CI smoke script ran natively on Ubuntu 24.04/Python 3.12.3 with pinned dependencies, Haswell OpenBLAS dispatch and one thread. Docker is absent and sudo unshare -m is denied; no Docker build/health job or container secret-scan claimed.",
+    "Native Windows was not run here. Warden reported fbf6ea2 direct CLI exit 2, 551 bytes with single LF/no CR, and platform suite 8 tests with 1 skip.",
+    "Contract v0.3 is imported from main; ResultCheck core remains v0.2 unchanged."
+  ]
+}

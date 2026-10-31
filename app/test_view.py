@@ -111,7 +111,7 @@ class ViewTests(unittest.TestCase):
         last = self.get("/api/view/events?run_id=first&after=256")
         self.assertEqual([e["event"]["seq"] for e in last["envelopes"]], [257])
         self.assertTrue(all(e["run"]["run_id"] == "first" for e in first["envelopes"] + last["envelopes"]))
-        for query, code in (("run_id=first&limit=257", 422), ("run_id=first&after=-1", 422),
+        for query, code in (("run_id=first&limit=257", 400), ("run_id=first&after=-1", 400),
                             ("run_id=missing", 404), ("run_id=..%2Foutside", 400)):
             with self.assertRaises(HTTPError) as caught:
                 self.get("/api/view/events?" + query)

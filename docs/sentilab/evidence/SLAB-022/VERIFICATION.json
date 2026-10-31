@@ -1,0 +1,271 @@
+{
+  "schema_version": "sentilab.verification.v1",
+  "ticket": "7b99a2b7",
+  "implementation_base": "63aa3f74c7d705b2737ea1b511d9f523e61fa9bc",
+  "implementation_head": "c9901a52f12e7afdd3735166d955f58a9d4aa4cc",
+  "evidence_commit_policy": "The following commit changes only this evidence file. The 14 gates ran before the implementation commit; their tested source hashes were checked against the committed blobs. No test rerun at the evidence-only commit is claimed. An external handoff receipt binds the final HEAD without a self-referential commit hash.",
+  "final_head_receipt_ref": "/workspace/slab022-win2-handoff.json",
+  "source_sha256": {
+    "docs/sentilab/evidence/SLAB-022/MANIFEST.json": "02eb4715efe4d98e237ae9115277c84c32944402910c1807295ffe752f1a32a6",
+    "docs/sentilab/evidence/SLAB-022/README.md": "fae38153affca09d5abc256ba6e8bda91ea4e39a28793d35d36ceba8c33787da",
+    "requirements-service.txt": "a722c801dd03599b509cbc4490f69ad7221b6ef0859d6231a8a73a02dae3888e",
+    "requirements.txt": "067216658f7d3079687994d1a97695e4c5626c4f87496eed7e816dcb55860de2",
+    "sentilab_cli/__main__.py": "c187396fe6de4fbbd18d80f28e250750eff762cbb2f3ee830ffb4e7dc5634c51",
+    "sentilab_core/resultcheck.py": "2a02b12d8b33e6bb728c9150693bd85dff2ef7f423fb91e1c47da46ad358d982",
+    "sentilab_core/test_cleanup.py": "d99cccf5dc7e36a2a0c751f60620f943ea9b6992733d563ae5c34410314bdfac",
+    "sentilab_core/test_mcp_stdio.py": "c184c1edca0dd1e8b6e4d1fc9b7baf5bd7089009a957e8fd040046d9c4a231d2",
+    "sentilab_core/test_resultcheck.py": "a8db6d0282bd8a24dc6225e9e6398f834d39302f787fdd522e5300b7f24f834e",
+    "sentilab_core/test_resultcheck_boundary.py": "98e8b15b91edc2aadc20ba5ed1a157a5df40e8f956aa36f72b1762a960ebb648",
+    "sentilab_core/test_resultcheck_io.py": "d206fa94bd703708f8bba829a4f2e6f880f1680eef298f4192c43d4021e11c45",
+    "sentilab_core/test_resultcheck_platform.py": "575c0ace572787a4286de9309add16d88aeb65bb8cc92f978ae13bb0ab9856d9",
+    "sentilab_mcp/__init__.py": "44268f1f9454d02f24ad3d2dae79f5dec0b2fca6a275639a2b069a9bedf6ea36",
+    "sentilab_mcp/__main__.py": "d427dd5bad856ed8e1cb5331ffe602329256a2f3d09db1d5f20175a9b1f51a39"
+  },
+  "decisions": [
+    "Preserve immutable v0.2 core semantics, hashes and CLI exit codes, including the separately tracked v0.3 overflow issue.",
+    "MCP isError only for rejected or file_unreadable; flags and insufficient_data are completed checks.",
+    "Require host-configured SENTILAB_RESULTCHECK_DIR; resolve paths under it and validate opened descriptor containment via Linux procfs before any read. Missing/invalid configuration and outside/missing paths return the same hash-free file_unreadable error.",
+    "Retain bounded regular-file intake, 16 MiB file cap, 1 MiB pre-parse cap, 10-second MCP worker deadline, cancellation and kill/drain/reap from the P2 correction.",
+    "Preserve ordinary Windows CLI intake with O_RDONLY plus O_BINARY, O_NOFOLLOW and O_NONBLOCK only where each exists. Keep fstat immediately after open, size/mtime/ctime checks and bounded reads unchanged.",
+    "Catch exceptions around CLI check_file only, returning the same file_unreadable receipt and exit 2 for all intake failures; exit 1 remains reserved for completed flagged/insufficient-data checks.",
+    "Write and flush ResultCheck receipts and intake errors as UTF-8 bytes plus one LF; override argparse message emission for binary UTF-8 help/usage output while preserving streams and exits.",
+    "Preserve O_BINARY in the OS probe on native Windows; strip only the synthetic flag on hosts without native O_BINARY. Existing platform assertions remain; no new skip."
+  ],
+  "os_scope": {
+    "tested": "Linux with Python 3.12.3. Eight platform tests exercise real CLI subprocesses, optional Windows-style OS flags and CRLF-configured text streams. Four new output tests force immediate child exit after main to require an explicit flush.",
+    "binary_proof": "Stable []\\r\\n delivers 4 bytes and the exact native CLI rejected receipt, with exit 2 and empty stderr. Invalid JSON with CRLF also matches the native raw-byte hash.",
+    "failure_proof": "Native and simulated Windows nonregular pipe descriptors are closed without any read; injected OSError and AttributeError at open/fstat/read/close produce structured exit 2 with empty stderr.",
+    "ordinary_cli": "No procfs dependency. O_NOFOLLOW rejects final-component symlinks where supported; platforms without it do not claim that protection. Without O_NONBLOCK, no nonblocking-open guarantee is claimed for special paths before a descriptor is obtained.",
+    "restricted_intake": "MCP and CLI --root retain the Linux /proc/self/fd requirement and fail closed if descriptor resolution is unavailable. Configured in-root symlinks still resolve before open.",
+    "not_run": "Native Windows execution of this follow-up was not run in this Linux box. The native Windows intake evidence is Warden direct CLI verification at 63aa3f7 only; this follow-up still needs native Windows verification.",
+    "stdout_proof": "Exact canonical UTF-8 JSON with a single final LF and no CR for checked, checked_with_flags, rejected, invalid JSON and unreadable input. Usage errors stay on stderr; help stays on stdout. Unicode usage errors are UTF-8. Injected intake exceptions emit the same LF-only error bytes.",
+    "harness_fix": "The previous probe unconditionally stripped O_BINARY in Windows mode, including on native Windows; that caused CRT CRLF translation before the probe read wrapper. It now preserves native O_BINARY. Linux regression tests cannot by themselves establish native Windows execution.",
+    "external_native_windows_report": {
+      "reporter": "claude-warden",
+      "revision": "63aa3f74c7d705b2737ea1b511d9f523e61fa9bc",
+      "python": "3.11.9",
+      "direct_cli": "Input bytes []\\r\\n: full rejected receipt with errors [not_an_object], exit 2, but CRLF stdout. Previous eaebc6e exited 1 with AttributeError O_NONBLOCK.",
+      "platform_suite": "Warden reported 20 subtest failures and one skip: 18 output-newline mismatches and two probe file_unreadable mismatches."
+    }
+  },
+  "gates": [
+    {
+      "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python -m unittest -q sentilab_core.test_resultcheck sentilab_core.test_resultcheck_boundary sentilab_core.test_resultcheck_platform sentilab_core.test_resultcheck_io sentilab_core.test_mcp_stdio sentilab_core.test_cleanup",
+      "exit": 0,
+      "seconds": 34.039,
+      "log_ref": "/workspace/slab022-win2-gates-0.log",
+      "log_sha256": "00f7b5ea7ae8aaff19ef93523ec9244f5384ef15a27bf9b21c85ffe18f0326ab",
+      "count": 43
+    },
+    {
+      "command": ".venv/bin/python -m sentilab_core.test_resultcheck --parity",
+      "exit": 0,
+      "seconds": 13.094,
+      "log_ref": "/workspace/slab022-win2-gates-1.log",
+      "log_sha256": "894d21cac8f6118bd09328d8a0a1210402ef3f8afdcfbd75f22b58aed45f3f4b",
+      "count": 9,
+      "contract_vectors": 39
+    },
+    {
+      "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python -m unittest -q sentilab_core.test_budget sentilab_core.test_gate sentilab_core.test_ledger sentilab_core.test_environment sentilab_core.test_signing sentilab_core.test_history sentilab_core.conformance.CanonicalConformance sentilab_core.conformance.HistoryConformance",
+      "exit": 0,
+      "seconds": 2.068,
+      "log_ref": "/workspace/slab022-win2-gates-2.log",
+      "log_sha256": "425d23800da651207163bc9f119888d058c15fb66273ae0479247ce3432f2c1f",
+      "count": 45
+    },
+    {
+      "command": "(cd sundai_controller && OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 ../.venv/bin/python -m unittest -q test_controller.py test_experiment.py)",
+      "exit": 0,
+      "seconds": 0.515,
+      "log_ref": "/workspace/slab022-win2-gates-3.log",
+      "log_sha256": "085a11195fa53b4537ed01f3bedd482186ab221a00b3cba4c3269f9eef846648",
+      "count": 55
+    },
+    {
+      "command": ". .venv/bin/activate && node --test web/test/*.test.mjs",
+      "exit": 0,
+      "seconds": 2.38,
+      "log_ref": "/workspace/slab022-win2-gates-4.log",
+      "log_sha256": "f2558c239be1df38f696ba9052ba9652c36295893b7da54004b1bb289db8f85f",
+      "count": 103
+    },
+    {
+      "command": "node contracts/contract-0.2/run-vectors.mjs",
+      "exit": 0,
+      "seconds": 0.615,
+      "log_ref": "/workspace/slab022-win2-gates-5.log",
+      "log_sha256": "bba91b23c4e0d8c112d460ce2afbf8bfdf12d0b5cb088288b2e0be7637826892",
+      "count": 74
+    },
+    {
+      "command": "node contracts/view-envelope/run-view-vectors.mjs",
+      "exit": 0,
+      "seconds": 0.314,
+      "log_ref": "/workspace/slab022-win2-gates-6.log",
+      "log_sha256": "b0f127ab16e1cf89d476314c0c1cfc50a554011d62f86b05837bc17939509bbe",
+      "count": 113
+    },
+    {
+      "command": "node contracts/view-envelope-v0.5/run-view-vectors.mjs",
+      "exit": 0,
+      "seconds": 1.467,
+      "log_ref": "/workspace/slab022-win2-gates-7.log",
+      "log_sha256": "e1e77e340c89b6b5bf4d7427a719d053a1d2f6f528464f537a1e521c693899a4",
+      "count": 193
+    },
+    {
+      "command": "node web/test/make-sentilab-demo.mjs --check",
+      "exit": 0,
+      "seconds": 0.064,
+      "log_ref": "/workspace/slab022-win2-gates-8.log",
+      "log_sha256": "fe2a35188861d6e2c38679786899d9aa88ab5217e0088dee260540110458aae1",
+      "envelopes": 44
+    },
+    {
+      "command": "(cd contracts && sha256sum -c HASHES.txt)",
+      "exit": 0,
+      "seconds": 0.008,
+      "log_ref": "/workspace/slab022-win2-gates-9.log",
+      "log_sha256": "f69d5d3f9cf818891c224a3ddab0057eede070482bb42b2395a5c2e8a1e1087d"
+    },
+    {
+      "command": "(cd sundai_hotspot && make -j4 SUPERLU=1)",
+      "exit": 0,
+      "seconds": 0.032,
+      "log_ref": "/workspace/slab022-win2-gates-10.log",
+      "log_sha256": "c46c8b4e9d31caff797cdb91aa80285001a99656a5bfd7a7306eb740e6ad7a6f"
+    },
+    {
+      "command": ".venv/bin/python -m compileall -q sentilab_core/resultcheck.py sentilab_core/test_resultcheck.py sentilab_core/test_resultcheck_io.py sentilab_core/test_resultcheck_boundary.py sentilab_core/test_resultcheck_platform.py sentilab_core/test_mcp_stdio.py sentilab_cli sentilab_mcp",
+      "exit": 0,
+      "seconds": 0.064,
+      "log_ref": "/workspace/slab022-win2-gates-11.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": ".venv/bin/pip check",
+      "exit": 0,
+      "seconds": 0.565,
+      "log_ref": "/workspace/slab022-win2-gates-12.log",
+      "log_sha256": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09"
+    },
+    {
+      "command": "git diff --check",
+      "exit": 0,
+      "seconds": 0.265,
+      "log_ref": "/workspace/slab022-win2-gates-13.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "gate_run_seconds": 55.493,
+  "gate_run_children_cpu_seconds": 43.524,
+  "added_tests_B7": [
+    {
+      "test": "sentilab_core.test_resultcheck_platform.OutputBytesTests.test_receipts_are_exact_utf8_bytes_with_one_lf",
+      "fails_on": "63aa3f74c7d705b2737ea1b511d9f523e61fa9bc",
+      "passes_with_fix": "c9901a52f12e7afdd3735166d955f58a9d4aa4cc"
+    },
+    {
+      "test": "sentilab_core.test_resultcheck_platform.OutputBytesTests.test_unreadable_error_is_exact_utf8_bytes_with_one_lf",
+      "fails_on": "63aa3f74c7d705b2737ea1b511d9f523e61fa9bc",
+      "passes_with_fix": "c9901a52f12e7afdd3735166d955f58a9d4aa4cc"
+    },
+    {
+      "test": "sentilab_core.test_resultcheck_platform.OutputBytesTests.test_usage_errors_are_utf8_with_lf_on_stderr",
+      "fails_on": "63aa3f74c7d705b2737ea1b511d9f523e61fa9bc",
+      "passes_with_fix": "c9901a52f12e7afdd3735166d955f58a9d4aa4cc"
+    },
+    {
+      "test": "sentilab_core.test_resultcheck_platform.OutputBytesTests.test_help_is_utf8_with_lf_on_stdout",
+      "fails_on": "63aa3f74c7d705b2737ea1b511d9f523e61fa9bc",
+      "passes_with_fix": "c9901a52f12e7afdd3735166d955f58a9d4aa4cc"
+    }
+  ],
+  "base_proof": {
+    "base": "63aa3f74c7d705b2737ea1b511d9f523e61fa9bc",
+    "command": "/workspace/sentilab/.venv/bin/python -m unittest -q sentilab_core.test_resultcheck_platform",
+    "cwd": "/tmp/slab022-win2-before",
+    "exit": 1,
+    "tests": 8,
+    "subtest_failures": 36,
+    "log_ref": "/workspace/slab022-win2-before.log",
+    "log_sha256": "bfe1d44a1854461e6bb96aee0a825a1f22f42c1cabbee809dfb08d8b79693c89",
+    "method": "Final test module copied into an isolated detached worktree at 63aa3f7. All four new output tests fail; CRLF-configured existing intake tests also fail. No main-checkout mutation."
+  },
+  "mutation_proofs": [
+    {
+      "mutation": "text-receipt",
+      "command": [
+        "/workspace/sentilab/.venv/bin/python",
+        "-m",
+        "unittest",
+        "-q",
+        "sentilab_core.test_resultcheck_platform.OutputBytesTests.test_receipts_are_exact_utf8_bytes_with_one_lf"
+      ],
+      "exit": 1,
+      "log_ref": "/workspace/slab022-win2-mutation-text-receipt.log",
+      "log_sha256": "ed20e59952c41474895af29c0840bedb9307b80c59e69474457817a9904c0428",
+      "file": "sentilab_cli/__main__.py",
+      "old": "_write_utf8(canonical(receipt) + \"\\n\", sys.stdout)",
+      "new": "print(canonical(receipt))"
+    },
+    {
+      "mutation": "text-intake-error",
+      "command": [
+        "/workspace/sentilab/.venv/bin/python",
+        "-m",
+        "unittest",
+        "-q",
+        "sentilab_core.test_resultcheck_platform.PlatformIntakeTests.test_intake_exceptions_always_return_structured_exit_two"
+      ],
+      "exit": 1,
+      "log_ref": "/workspace/slab022-win2-mutation-text-intake-error.log",
+      "log_sha256": "88ab6b15665e3091f50c6f2ac9b9919b937a3ccd1f283e02d01c7d9649236627",
+      "file": "sentilab_cli/__main__.py",
+      "old": "_write_utf8(canonical({\"error\": {\"code\": \"file_unreadable\"}}) + \"\\n\", sys.stdout)",
+      "new": "print(canonical({\"error\": {\"code\": \"file_unreadable\"}}))"
+    },
+    {
+      "mutation": "text-argparse",
+      "command": [
+        "/workspace/sentilab/.venv/bin/python",
+        "-m",
+        "unittest",
+        "-q",
+        "sentilab_core.test_resultcheck_platform.OutputBytesTests.test_usage_errors_are_utf8_with_lf_on_stderr"
+      ],
+      "exit": 1,
+      "log_ref": "/workspace/slab022-win2-mutation-text-argparse.log",
+      "log_sha256": "46dd525240fd9357d8ee5d61cda40554cec7aec31269ea17124cf00ae4a119a1",
+      "file": "sentilab_cli/__main__.py",
+      "old": "parser = _ResultCheckParser(",
+      "new": "parser = argparse.ArgumentParser("
+    },
+    {
+      "mutation": "missing-flush",
+      "command": [
+        "/workspace/sentilab/.venv/bin/python",
+        "-m",
+        "unittest",
+        "-q",
+        "sentilab_core.test_resultcheck_platform.OutputBytesTests.test_receipts_are_exact_utf8_bytes_with_one_lf"
+      ],
+      "exit": 1,
+      "log_ref": "/workspace/slab022-win2-mutation-missing-flush.log",
+      "log_sha256": "f1c1a399f30a015b5021bc7207273b94a5cc5f6ae1f5c276cd2476fab6d85cd6",
+      "file": "sentilab_cli/__main__.py",
+      "old": "    stream.buffer.flush()\n",
+      "new": ""
+    }
+  ],
+  "mutation_reproduction": "In a disposable worktree containing implementation_head, apply each file/old/new replacement separately and run its recorded command. Every mutation exits 1 with test assertion failures. Restore that file before the next mutation. The main checkout was never mutated.",
+  "previous_transport_evidence": {
+    "git_ref": "63aa3f74c7d705b2737ea1b511d9f523e61fa9bc:docs/sentilab/evidence/SLAB-022/VERIFICATION.json",
+    "note": "Historical intake, transport and first Windows correction evidence remains at this exact Git revision. Its mutation runs were not rerun here. The complete platform/boundary/FIFO/cancellation/stdio suite passes in the 43-test gate."
+  },
+  "previous_file_intake_evidence": "P2-VERIFICATION.json records the prior FIFO fix and its 10 before/after regressions and 8 mutations; these historical mutation runs are not claimed as rerun here. The full FIFO/cancellation suite passes again at implementation_head.",
+  "gate_scope": "All 14 listed permitted checks pass, using 43.524 child CPU seconds for this run. Python/JS/native-build repository gates replace generic npm/TypeScript commands: no package.json or TypeScript configuration exists. pip check checks dependency consistency, not vulnerabilities. No solver or model calls. Solver-backed ProjectionConformance, thermal/full container suites, native Windows and GitHub CI/secret-scan were not run in this box. No full-PR gate clearance or scientific acceptance is claimed.",
+  "independent_review": "Warden requested this follow-up on carried PR21 head 63aa3f7 after direct native Windows CLI checks. This patch awaits operator carry and assigned review; these are Linux self-run proofs.",
+  "runtime": "Python 3.12.3; Node 22.23.3 for reference/browser tests only; ResultCheck runtime uses Python standard library."
+}
