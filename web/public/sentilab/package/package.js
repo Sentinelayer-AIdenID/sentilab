@@ -5,7 +5,7 @@
 import { DEMO, CONTRACT_VERSION, MAX_FILE_BYTES, setupTrust, fetchReplayBytes, verifyReplayFile, isDrill, chainSummary, modeNow, runStatusOf, createLiveFeed, reasonText } from "./source.mjs";
 import { viewHref } from "../view-links.mjs";
 import { shortId } from "../lab-model.mjs";
-import { sceneAt, scaleTicks, describeEvent, describeSource, refusalText, TRACK_ORDER, TRACKS, trackName } from "./scene.mjs";
+import { sceneAt, scaleTicks, describeEvent, describeSource, refusalText, spanText, TRACK_ORDER, TRACKS, trackName } from "./scene.mjs";
 import { reconcile } from "./playhead.mjs";
 import { drawPackage, TrackAnimation, HOME_AZIMUTH, ORBIT_MS, easeInOut } from "./render.mjs";
 
@@ -457,9 +457,9 @@ function renderInfo(src) {
   $("noScale").hidden = !!scale;
   $("basis").hidden = !scale;          // "chiplet-centre temperatures from the solver" only when there are some
   $("scaleUnit").textContent = scale?.unit ? `· ${scale.unit}, fixed` : "";
-  // The footprints' unit and extent: the layouts are placed in mm from values.geometry.
-  const ext = S.scene?.footprint?.extent ?? null;
-  $("stackNote").textContent = `Substrate, interposer, heights and lid are nominal drawing constants, not to scale. Chiplet footprints are from the evidence (values.geometry), in mm, to scale${ext ? `: the run's layouts span ${fmt(ext.x1 - ext.x0)} × ${fmt(ext.y1 - ext.y0)} mm` : ""}.`;
+  // The run's layout span, in the legend so every layout shows it (the stack block is hidden on small desktops).
+  // One definition and label for both views: scene.mjs layoutSpan and spanText, as the Lab view's legend.
+  $("spanNote").textContent = spanText(src?.frame?.footprint?.extent ?? null) ?? "";
   if (scale) for (const v of scaleTicks(scale)) ticks.append(h("span", { style: `left:${((v - scale.min) / (scale.max - scale.min)) * 100}%` }, String(v)));
 
   // Drill: what the withdrawal did, straight from project().

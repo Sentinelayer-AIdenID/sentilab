@@ -21,11 +21,12 @@ import { createHash } from "node:crypto";
 import { Worker } from "node:worker_threads";
 
 import { canonical } from "../public/sentilab/canonical.mjs";
-import { buildScene, sceneAt, runFrame, heatColor, contiguousPrefix, scaleTicks, describeEvent, describeSource, STACK, TEMP_BASIS, TRACK_ORDER, LAB_TRACKS, SCENE_VERSION, SUPPORTED_UNITS, BOUNDS, MAX_TICKS, readGeometry, readTemps } from "../public/sentilab/package/scene.mjs";
+import { buildScene, sceneAt, runFrame, heatColor, contiguousPrefix, scaleTicks, describeEvent, describeSource, layoutSpan, spanText, STACK, TEMP_BASIS, TRACK_ORDER, LAB_TRACKS, SCENE_VERSION, SUPPORTED_UNITS, BOUNDS, MAX_TICKS, readGeometry, readTemps } from "../public/sentilab/package/scene.mjs";
 import { reconcile, extendsPrefix } from "../public/sentilab/package/playhead.mjs";
 import { TrackAnimation } from "../public/sentilab/package/render.mjs";
 import { makeChain, signEnvelope } from "../../contracts/view-envelope-v0.5/view-envelope.mjs";
 import * as refPaging from "../../contracts/view-envelope-v0.6.2/paging.mjs";
+import * as browserPaging from "../public/sentilab/paging.mjs";
 import { viewHref } from "../public/sentilab/view-links.mjs";
 import { shortId, buildView, metricFor } from "../public/sentilab/lab-model.mjs";
 import * as cliModule from "../../scripts/sentilab-scene.mjs";
@@ -742,6 +743,29 @@ test("review #56603 (3): a core measurement with geometry but no J or temperatur
   const k = track((await verifiedScene(signedRun([initial({}), cand("lab-a", "K", "mm", [["A", 3, 3, 4, 4]])]))).scene, "lab-a");
   assert.deepEqual([k.measured, k.J, k.J_error], [false, null, null]);
   assert.deepEqual(describeSource(k).parts, [{ text: "no temperatures · awaiting simulation", state: "" }]);
+});
+
+// ── review #56610: one layout span, one label, in both views ─────────────────────────────────────────────────────
+test("review #56610: the Lab view and the Package view label the run's layout span with the identical string (occupied span, one helper)", async () => {
+  // Producer-shaped: chiplets from x 2.125 to 45.875 mm and y 1.065 to 48 mm; one layout declared in m (placed in mm).
+  const rows = signedRun([
+    cand("baseline-sa", "C0", "mm", [["tap-chiplet-0", 2.125, 1.065, 14.5, 31.4], ["tap-chiplet-1", 34.75, 32, 11.125, 16]]),
+    cand("baseline-sa", "C1", "m", [["tap-chiplet-0", 0.01, 0.005, 0.02, 0.03]]),
+  ]);
+  const both = async (bytes, runId) => {
+    // The Lab view's path (lab.js verify): paging.mjs verifyBytes over the rows, then its verified prefix.
+    const lab = await browserPaging.verifyBytes(browserPaging.splitRows(bytes), { runId, pins: testTrust.pins, keys: testTrust.keys });
+    // The Package view's path (package.js): source.mjs verification, then playhead reconcile()'s run frame.
+    const pkg = await source.verifyReplayFile(bytes, { runId, trust: testTrust });
+    const frame = reconcile({ prefix: [], frame: null, cursor: 0, following: true }, pkg.verification).frame;
+    return [spanText(layoutSpan(lab.ordered.slice(0, lab.prefix))), spanText(frame.footprint.extent)];
+  };
+  const [lab, pkg] = await both(enc(rows.map((env) => `${JSON.stringify(env)}\n`).join("")), RUN.run_id);
+  assert.equal(lab, "layouts span 43.8 × 46.9 mm", "max − min of the chiplet extents, not a frame from 0 (47 × 49)");
+  assert.equal(pkg, lab, "the Package view shows the identical string");
+  const [demoLab, demoPkg] = await both(demoBytes(), DEMO_RUN);
+  assert.match(demoLab, /^layouts span \d+\.\d × \d+\.\d mm$/);
+  assert.equal(demoPkg, demoLab, "the demo too");
 });
 test("bounds: 1e20 °C, below absolute zero, 1e308 + 1e308 mm, zero or huge sizes and wild layers are scene errors, never drawn", async () => {
   const { v, scene } = await verifiedScene(signedRun([

@@ -188,9 +188,28 @@ function appliedEvents(prefix, projection) {
 const measurementCreates = (applied) => applied.filter((env) => env.event.type === "node.create" && isObj(env.event.body) &&
   env.event.body.kind === "measurement" && isObj(env.values));
 
+// ── the run's layout span: ONE definition for both views ─────────────────────────────────────────────────────
+// The occupied span of the run's layouts: max − min of every chiplet extent (x to x + w, y to y + h) in the geometry
+// project() applied in the prefix, placed in mm. Refused geometry (unit, range, shape) is not counted. The Package
+// view (its footprint and legend) and the Lab view (its legend) both use it, and spanText() is the one label.
+export function layoutSpan(prefixEnvelopes, projection = null) {
+  const prefix = contiguousPrefix(prefixEnvelopes);
+  const proj = projection && prefix.length === (prefixEnvelopes?.length ?? 0) ? projection : project(prefix.map((env) => env.event));
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const env of appliedEvents(prefix, proj)) {
+    if (env.event.type !== "node.create" || !isObj(env.values)) continue;
+    for (const r of readGeometry(env.values).rects) {
+      x0 = Math.min(x0, r.x); y0 = Math.min(y0, r.y); x1 = Math.max(x1, r.x + r.w); y1 = Math.max(y1, r.y + r.h);
+    }
+  }
+  return x0 !== Infinity && [x0, y0, x1, y1].every(Number.isFinite) ? { x0, y0, x1, y1 } : null;
+}
+// "layouts span W × H mm", to 0.1 mm; null when there is no span.
+export const spanText = (span) => (span ? `layouts span ${(span.x1 - span.x0).toFixed(1)} × ${(span.y1 - span.y0).toFixed(1)} mm` : null);
+
 // ── run frame: one colour scale and one footprint per run ────────────────────────────────────────────────────
 // The colour scale covers every chiplet-centre temperature in the run's prefix, rounded out to 5 degrees and at
-// least 10 degrees wide (the Lab view's rule). The footprint is the bounding extent of all geometry in the prefix.
+// least 10 degrees wide (the Lab view's rule). The footprint is the run's layout span (layoutSpan) plus margins.
 // A replay computes this once from the whole prefix, so neither changes while the playhead moves.
 export function runFrame(prefixEnvelopes, projection = null) {
   const prefix = contiguousPrefix(prefixEnvelopes);
@@ -209,15 +228,10 @@ export function runFrame(prefixEnvelopes, projection = null) {
     if (max - min < 10) { const mid = (min + max) / 2; min = Math.floor((mid - 5) / 5) * 5; max = min + 10; }
     scale = { min, max, unit: SUPPORTED_UNITS.temperature.canonical, fixed: true, basis: TEMP_BASIS };
   }
-  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  for (const env of applied) {
-    if (env.event.type !== "node.create" || !isObj(env.values)) continue;
-    for (const r of readGeometry(env.values).rects) {
-      x0 = Math.min(x0, r.x); y0 = Math.min(y0, r.y); x1 = Math.max(x1, r.x + r.w); y1 = Math.max(y1, r.y + r.h);
-    }
-  }
+  const extent = layoutSpan(prefix, proj);
   let footprint = null;
-  if (x0 !== Infinity && [x0, y0, x1, y1].every(Number.isFinite)) {
+  if (extent) {
+    const { x0, y0, x1, y1 } = extent;
     const m = STACK.interposer_margin_mm, s = STACK.substrate_margin_mm;
     footprint = {
       extent: { x0, y0, x1, y1 },
