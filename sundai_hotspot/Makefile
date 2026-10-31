@@ -125,6 +125,10 @@ endif
 
 CFLAGS	= $(OFLAGS) $(EXTRAFLAGS) $(INCDIRFLAG) $(LIBDIRFLAG) -DVERBOSE=$(VERBOSE) -DMATHACCEL=$(ACCELNUM) -DSUPERLU=$(SUPERLU)
 
+ifeq ($(CI_ALLOCATION), 1)
+CFLAGS += -DCI_ALLOCATION=1
+endif
+
 # sources, objects, headers and inputs
 
 # Microchannel Files
@@ -202,6 +206,11 @@ lib: 	hotspot hotfloorplan
 	$(RM) libhotspot.$(LEXT)
 	$(AR) libhotspot.$(LEXT) $(OBJ)
 	$(RANLIB) libhotspot.$(LEXT)
+
+# Rebuild the tiny entry object when switching CI allocation mode.
+.PHONY: force-ci-entry
+force-ci-entry:
+hotspot.$(OEXT): ci_entry.h force-ci-entry
 
 #pull in dependency info for existing .o files
 -include $(OBJ:.o=.d)

@@ -23,6 +23,8 @@ class AdapterEvidenceTests(unittest.IsolatedAsyncioTestCase):
             'PATH': os.defpath, 'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8',
             'OPENBLAS_CORETYPE': 'Haswell', 'OPENBLAS_NUM_THREADS': '1',
             'OMP_NUM_THREADS': '1', 'PYTHONUNBUFFERED': '1'}
+        if os.environ.get('CI_ALLOCATION') == '1':
+            self.expected_environment['CI_ALLOCATION'] = '1'
         # Only explicitly named harmless settings are inspected. The fake never
         # writes the ambient environment, including on the unfixed base.
         self.script.write_text(
@@ -102,6 +104,24 @@ class AdapterEvidenceTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(result['unrelated_setting'])
         self.assertEqual(result['environment'], self.expected_environment)
         self.assertNotIn('SLAB050_UNRELATED_SETTING', (self.retained / 'WORKER.json').read_text())
+
+    async def test_ci_launch_flag_reaches_warm_worker_without_parent_settings(self):
+        self.script.write_text(
+            'import json, os, sys\n'
+            'for line in sys.stdin:\n'
+            " print(json.dumps({'ok': True, 'result': {\n"
+            "  'allocation': os.environ.get('CI_ALLOCATION'),\n"
+            "  'unrelated': os.environ.get('SLAB050_UNRELATED_SETTING')}}), flush=True)\n")
+        for flag in ('1', '0', '', 'invalid'):
+            with self.subTest(flag=flag), patch.dict(os.environ, {
+                    'CI_ALLOCATION': flag, 'SLAB050_UNRELATED_SETTING': 'excluded-parent-setting'}):
+                async with self.worker() as instance:
+                    result = await instance.evaluate(self.request(), worker_timeout_s=3.0)
+                self.assertEqual(result['allocation'], '1' if flag == '1' else None)
+                self.assertIsNone(result['unrelated'])
+                metadata = json.loads((self.retained / 'WORKER.json').read_text())
+                self.assertEqual(metadata['environment'].get('CI_ALLOCATION'), result['allocation'])
+                self.assertNotIn('SLAB050_UNRELATED_SETTING', metadata['environment'])
 
     async def test_malformed_response_preserves_original_bytes_and_stderr(self):
         async with self.worker() as instance:
