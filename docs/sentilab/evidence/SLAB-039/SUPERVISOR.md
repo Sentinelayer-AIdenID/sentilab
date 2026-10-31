@@ -1,11 +1,12 @@
-# Prospective resource decision (pending)
+# Approved operating conditions; deployment measurements pending
 
 No real HotSpot or micro150 evaluations were run for this change. The supplied
-`SUPERVISOR-POLICY.json` is pending and refuses execution. A named operator must
-approve its limits and explicitly accept the unbounded scheduler/cleanup risk
-before any real run. This is a proposed best-effort resource policy, **not a hard
-cumulative CPU cap** and not authorization to run. Exact-head scientific review
-and the existing execution hold still apply independently.
+`SUPERVISOR-POLICY.json` records claude-warden's round 14 acceptance of best-effort
+CPU enforcement subject to the conditions below. Its deployment latency value
+and evidence reference remain null: no such measurement was supplied or invented.
+It therefore still refuses execution. This is **not a hard cumulative CPU cap**
+and not authorization to run. Exact-head scientific review and the existing
+execution hold still apply independently.
 
 The prior Ascend charge remains **1440.294565 CPU-s**. Micro150 can use at most
 **2879.705435 CPU-s**, further reduced by existing micro150 charges, tighter fixture,
@@ -30,26 +31,50 @@ It covers worker imports, preregistration, setup, candidate generation between
 calls, solver work, cleanup, RESULT/REPORT serialization and final persistence.
 Workers create additional sessions, so the parent kills both the worker group
 and individually identified descendants, repeating through adoption and reap.
+The group handle is retired as soon as the original leader is reaped. Subsequent
+cleanup signals only descendants whose PID and `/proc/<pid>/stat` start time
+still match the owned snapshot; a reused PID or PGID is not an owned handle.
 No child or successful result escapes accounting on the normal completion path.
 A metering/cleanup failure leaves the durable reservation unresolved.
 
-Parent and worker inherit a CPU mask containing at most Q CPUs (Q = 1, 2 or 8).
+The operator must install a hard container-level cgroup-v2 `cpu.max` rate cap
+equal to Q (Q = 1, 2 or 8), covering the supervisor and every descendant. For a
+100000-microsecond period, quotas are respectively 100000, 200000 and 800000.
+Admission checks the current cgroup's live quota/period, refuses an unlimited
+or mismatching cap, and records the observed value in reservation and settlement.
+The operator must keep the cap unchanged throughout the allocation. The runner
+never writes cgroup settings or treats affinity as proof of the required cap.
+Parent and worker also inherit a CPU mask containing at most Q CPUs.
 This assumes the trusted code does not widen affinity or migrate outside the
 supervised tree. It is not a sandbox against hostile code. `/proc` cumulative
 CPU includes all threads and waited children; final `getrusage` after kernel
 reap confirmation retains precise child charges. A conservative wall envelope
 also limits admission independently of transient `/proc` undercounting.
 
-Proposed parameters are sampling interval S = .01 wall-s, additional observation
+Before any execution release, measure observation-plus-kill latency on the
+deployment host under representative contention using synthetic workers only.
+Include delayed observation, `/proc` traversal, signal delivery and confirmed
+descendant reaping. Retain the raw samples, maximum observed combined latency,
+host/container identity, Q, sampling interval and observed `cpu.max` in an
+artifact referenced by `latency_measurement_evidence`. Set the policy's
+`measured_observation_plus_kill_seconds` to that measured maximum, L. An estimate,
+an unmeasured .25-second default or a p95 solver cost is not this measurement.
+
+The approved reserve is exactly:
+
+```
+H = measured observation-plus-kill latency * Q * 2 = 2 * L * Q
+```
+
+The policy also declares sampling interval S = .01 wall-s, additional observation
 delay D = .25, kill K = .25, reap R = .25, burst B = .02 CPU-s and terminal
-settlement reserve T = .25 CPU-s. Reserve:
+settlement reserve T = .25 CPU-s. Admission refuses if the measured H is smaller
+than `B + Q*(S+D+K+R) + T`; these declared bounds must fit within H. Synthetic
+unit tests may construct policies without L to exercise the original reserve
+formula, but such policies cannot pass production admission.
 
-```
-H = B + Q*(S + D + K + R) + T
-```
-
-H is 1.03 CPU-s at Q=1, 1.79 at Q=2, and 6.35 at Q=8. Before starting work, the
-parent subtracts its already consumed lifetime CPU and H from the allowance.
+Before starting work, the parent subtracts its already consumed lifetime CPU
+and H from the allowance.
 The worker's maximum wall duration is `(allowance - parent CPU - H)/Q`, further
 limited by the remaining solving wall allowance and 12:00Z deadline. The parent
 also stops when observed cumulative CPU plus H reaches the allowance. Startup
@@ -69,9 +94,9 @@ delay `/proc` or filesystem access, or delay kill/reap arbitrarily. Therefore th
 unconditional worst-case CPU overshoot is **unbounded**, recorded as null with
 `hard_cap=false`. A larger H, affinity or cpu.max alone does not fix this. Delayed
 parent observations and cleanup that exceed the assumed bounds invalidate resource
-acceptance. No numeric finite unconditional bound is claimed. Approval must
-explicitly accept that risk, or the experiment must remain stopped until a host
-with independently justified enforcement guarantees is supplied.
+acceptance. No numeric finite unconditional bound is claimed. Warden accepted
+this risk with the rate cap, measured reserve and allocation halt requirements;
+the deployment measurements and execution release remain separate prerequisites.
 
 The solver retains its separate 45-second malfunction timeout and frozen p95
 admission checks. The supervised production path does not start the former
@@ -90,6 +115,14 @@ replaces partial worker CPU with the maximum of its prior recorded charge and
 the original ledger charge plus whole-parent-lifetime CPU plus T. This includes
 parent imports and supervision, worker setup/output and kill-to-reap CPU.
 
+Every overshoot is charged and reported, including on failed or stopped attempts.
+If a single settlement's overshoot is strictly greater than H, it persists
+`allocation_halted` with the reservation ID, excess and H. Both supervisor
+admission and the shared fixture budget refuse further work against that ledger,
+including a different fixture. An excess equal to H is reported and rejected but
+does not trigger this strict-greater-than halt. The runner never clears the halt;
+a person must review/reconcile it before authorizing any further allocation use.
+
 Each worker RESULT is explicitly provisional and carries the reservation ID.
 Resource acceptance requires its matching durable `lifetime_settlements` entry
 in SPEND (also exported as `SETTLEMENT-<id>.json`) with `result_accepted=true`.
@@ -100,6 +133,12 @@ bind the preregistration, supervisor source and operational policy hashes, measu
 CPU, reserved tail, actual observation/kill-to-reap latency and overshoot. A stopped
 or late run cannot obtain resource acceptance. An outstanding per-call reservation
 on a killed worker remains unresolved for manual reconciliation.
+
+The policy is read as bytes exactly once at admission. Parsing, validation and
+SHA-256 use that same buffer; `outer_active` persists the admitted declaration
+and hash. Settlement copies the hash from that reservation. Replacing or deleting
+the policy file during a run cannot relabel the accepted values or prevent final
+settlement. No later-file hash is represented as the admitted policy identity.
 
 ## Numeric representation
 

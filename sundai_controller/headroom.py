@@ -246,6 +246,9 @@ class SolveBudget:
         self.last_wall = time.perf_counter()
         self.state = (json.loads(self.path.read_text()) if self.path.exists() else
                       {'total_calls': 0, 'cpu_seconds': 0.0, 'fixtures': {}, 'active': None})
+        if self.state.get('allocation_halted'):
+            self.lock.close()
+            raise RuntimeError('allocation halted pending human review')
         if self.state['active'] is not None:
             self.lock.close()
             raise RuntimeError('unreconciled oracle reservation in spend ledger')

@@ -2,8 +2,8 @@
 
 This is deliberately NOT advertised as a hard cumulative CPU cap. Ordinary
 Linux cannot bound scheduler delay, /proc traversal, SIGKILL or reap latency.
-An operator must accept that risk explicitly before launching a real worker.
-The proposed policy shipped with the experiment is pending, hence refuses runs.
+The approved operating conditions require a container rate cap and measured
+latency evidence. The shipped policy has no measurements and refuses runs.
 """
 from __future__ import annotations
 
@@ -41,17 +41,22 @@ class Policy:
     reap_seconds: float = 0.25
     burst_cpu_seconds: float = 0.02
     settlement_tail_cpu_seconds: float = 0.25
+    measured_observation_plus_kill_seconds: float | None = None
 
     def __post_init__(self):
         if type(self.rate_q) is not int or self.rate_q not in (1, 2, 8):
             raise ValueError('Q must be 1, 2 or 8')
         for key, value in asdict(self).items():
+            if key == 'measured_observation_plus_kill_seconds' and value is None:
+                continue  # Synthetic policies only; production admission refuses.
             if key != 'rate_q' and (type(value) not in (int, float) or
                                     not math.isfinite(value) or value <= 0):
                 raise ValueError(f'{key} must be positive and finite')
 
     @property
     def reserve(self):
+        if self.measured_observation_plus_kill_seconds is not None:
+            return 2 * self.rate_q * self.measured_observation_plus_kill_seconds
         return (self.burst_cpu_seconds + self.settlement_tail_cpu_seconds +
                 self.rate_q * (self.poll_seconds + self.observation_delay_seconds +
                                self.kill_seconds + self.reap_seconds))
@@ -71,7 +76,34 @@ def load_policy(path):
             not declaration['approved_by'].strip() or
             declaration.get('accept_unbounded_scheduler_and_cleanup_risk') is not True):
         raise RuntimeError('operational approval required: unconditional overshoot is unbounded')
+    if (policy.measured_observation_plus_kill_seconds is None or
+            not isinstance(declaration.get('latency_measurement_evidence'), str) or
+            not declaration['latency_measurement_evidence'].strip()):
+        raise RuntimeError('operational approval required: measured observation-plus-kill latency evidence')
+    minimum = (policy.burst_cpu_seconds + policy.settlement_tail_cpu_seconds +
+               policy.rate_q * (policy.poll_seconds + policy.observation_delay_seconds +
+                                policy.kill_seconds + policy.reap_seconds))
+    if policy.reserve < minimum:
+        raise ValueError('measured H does not cover declared observation, kill, reap, burst and tail reserves')
     return policy, declaration, hashlib.sha256(admitted_bytes).hexdigest()
+
+
+def verify_cpu_max(policy):
+    """Require the host-installed cgroup-v2 rate cap; never modify the host."""
+    entries = Path('/proc/self/cgroup').read_text().splitlines()
+    groups = [entry[3:] for entry in entries if entry.startswith('0::/')]
+    if len(groups) != 1:
+        raise RuntimeError('container cgroup v2 cpu.max is required')
+    root = Path('/sys/fs/cgroup').resolve()
+    group = (root / groups[0].lstrip('/')).resolve()
+    if not group.is_relative_to(root):
+        raise RuntimeError('cannot locate container cpu.max')
+    raw = (group / 'cpu.max').read_text().strip()
+    fields = raw.split()
+    if (len(fields) != 2 or not all(value.isdecimal() for value in fields) or
+            int(fields[1]) <= 0 or int(fields[0]) != policy.rate_q * int(fields[1])):
+        raise RuntimeError('container cpu.max must equal Q')
+    return {'path': str(group / 'cpu.max'), 'value': raw, 'rate_q': policy.rate_q}
 
 
 def _write(path, value):
@@ -98,6 +130,8 @@ def _lifetime_wall_seconds():
 
 def remaining_cpu(state, prereg):
     """No replacement ledger or rounded-up micro150 allowance is admissible."""
+    if state.get('allocation_halted'):
+        raise RuntimeError('allocation halted pending human review')
     prior = state['fixtures'].get('ascend910', {})
     if (prior.get('cpu_seconds', 0) < PRIOR_ASCEND_CPU or prior.get('calls', 0) < 2650 or
             state['cpu_seconds'] < sum(v['cpu_seconds'] for v in state['fixtures'].values()) or
@@ -270,6 +304,14 @@ def settle(state, before, receipt, policy, allowance):
                    result_accepted=accepted, hard_cap=False, unconditional_overshoot_bound=None,
                    settlement_tail_measured=False,
                    policy=asdict(policy), reserve_h_cpu_seconds=policy.reserve)
+    if receipt['overshoot_cpu_seconds'] > policy.reserve:
+        state['allocation_halted'] = {
+            'reason': 'single_lifetime_overshoot_exceeds_h',
+            'overshoot_cpu_seconds': receipt['overshoot_cpu_seconds'],
+            'reserve_h_cpu_seconds': policy.reserve,
+            'reservation_id': receipt.get('reservation_id'),
+            'requires_human_review': True}
+    receipt['allocation_halted'] = bool(state.get('allocation_halted'))
     state['outer_active'] = None
     state.setdefault('overshoot', {})['lifetime_cpu_seconds'] = max(
         state.get('overshoot', {}).get('lifetime_cpu_seconds', 0), receipt['overshoot_cpu_seconds'])
@@ -278,7 +320,7 @@ def settle(state, before, receipt, policy, allowance):
 
 
 def run(prereg_path, budget_path, output_dir, policy_path):
-    """Only production entry point: pending risk decisions fail before worker start."""
+    """Only production entry point: unmet operating conditions refuse launch."""
     global WORKER_CONTEXT
     policy, declaration, policy_sha256 = load_policy(policy_path)
     # Parent lifetime CPU includes this parsing, validation and all final output.
@@ -288,6 +330,7 @@ def run(prereg_path, budget_path, output_dir, policy_path):
         raise ValueError('supervisor is for prospective micro150 v4 only')
     if policy.rate_q != prereg['cpu_enforcement']['rate_q']:
         raise ValueError('supervisor Q differs from preregistration')
+    rate_cap = verify_cpu_max(policy)
     budget_path = Path(budget_path)
     with budget_path.with_suffix('.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -299,6 +342,7 @@ def run(prereg_path, budget_path, output_dir, policy_path):
         reservation = {'id': uuid.uuid4().hex, 'reserved_cpu_seconds': allowance,
                        'policy': declaration, 'status': 'running',
                        'policy_sha256': policy_sha256,
+                       'container_rate_cap': rate_cap,
                        'prereg_sha256': hashlib.sha256(prereg_bytes).hexdigest(),
                        'supervisor_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
         state['outer_active'] = reservation
@@ -326,6 +370,7 @@ def run(prereg_path, budget_path, output_dir, policy_path):
         receipt['supervisor_sha256'] = reservation['supervisor_sha256']
         receipt['prereg_sha256'] = reservation['prereg_sha256']
         receipt['policy_sha256'] = reservation['policy_sha256']
+        receipt['container_rate_cap'] = reservation['container_rate_cap']
         receipt = settle(state, before, receipt, policy, allowance)
         _write(budget_path, state)
         # Authoritative acceptance record lives outside the worker's provisional RESULT.
