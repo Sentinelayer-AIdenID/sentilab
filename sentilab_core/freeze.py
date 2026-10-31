@@ -82,7 +82,11 @@ def validate_freeze(freeze):
         "models_prompts_tools_and_memory", "lab_rosters", "reproducer_policy",
         "runtime_token_proposal_and_retry_cost_caps", "training_only_headroom_protocol",
         "pre_outcome_release", "physical_layout_canonicalization", "reference_and_refinement_charges",
-        "sharing_round_barriers"}
+        "sharing_round_barriers", "evaluation_attempt_order", "board_fallback",
+        "required_final_evidence", "loss_counting_and_limits", "missing_reference_policy",
+        "missing_scorer_policy", "missing_seed_policy", "global_stop_policy",
+        "missing_family_primary_claims", "held_out_attempt_schedule", "held_out_seed_schedule",
+        "held_out_idempotency_and_ordering", "held_out_symmetric_retry_limits", "held_out_retry_charges"}
     if set(freeze["pins"]) != pin_names:
         raise ValueError("missing or unknown execution pin")
     if set(freeze["arms"]) != {"B0", "B1", "B2", "B3", "B4"}:
@@ -283,6 +287,8 @@ def replay_epoch(candidates, attempts, arm, reference, *, freeze, labs, search_c
     reference, refinements, failed/uncertain launches and cache opportunities.
     It must not be a count of only successful candidate rows. Runtime enforces
     these reservations before launch; this function checks the recorded totals.
+    complete reports slot observations, not final-board validity or inference.
+    The runner applies the frozen final-evidence and loss policies separately.
     """
     candidates, labs = tuple(candidates), tuple(labs)
     slots = reproduction_slots(candidates, arm, reference, freeze=freeze, labs=labs, search_complete=search_complete)
@@ -301,7 +307,8 @@ def replay_epoch(candidates, attempts, arm, reference, *, freeze, labs, search_c
                 not _text(a.context) or type(a.slot) is not int or a.slot < 0 or
                 type(a.attempt) is not int or a.attempt < 0 or
                 a.execution not in {"not_started", "started", "unknown"} or
-                a.status not in {"success", "failed", "infrastructure_failure", "missing"}):
+                a.status not in {"success", "failed", "infrastructure_failure", "missing",
+                                 "cancelled", "no_result"}):
             raise ValueError("invalid reproduction attempt")
         _number(a.uncertainty, nonnegative=True)
         if a.status == "success":
@@ -328,7 +335,7 @@ def replay_epoch(candidates, attempts, arm, reference, *, freeze, labs, search_c
         success = last.status == "success" and abs(_number(last.j) - _number(c.j)) <= tolerance
         if success:
             reproduced.append(replace(c, j=last.j, uncertainty=last.uncertainty, measurement_id=last.measurement_id))
-        missing = last.status in {"missing", "infrastructure_failure"}
+        missing = last.status in {"missing", "infrastructure_failure", "cancelled", "no_result"}
         complete = complete and not missing
         status = "reproduced" if success else "inconclusive" if missing else "reproduction_failed"
         charged[slot["lab"]] += charge
