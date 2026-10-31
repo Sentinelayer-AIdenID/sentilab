@@ -1,4 +1,4 @@
-"""Minimal stdio MCP host for the four shared live operations."""
+"""Stdio MCP host for shared live operations and recorded dataset export."""
 import asyncio
 import json
 import sys
@@ -8,6 +8,18 @@ from . import TOOLS
 
 
 def schema(name):
+    if name == "sentilab_dataset_export":
+        return {"type": "object", "properties": {
+            "run_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+            "output_dir": {"type": "string"},
+            "policy": {"type": "object", "properties": {
+                "heldout_families": {"type": "array", "items": {"type": "string"}},
+                "rights": {"type": "object", "additionalProperties": {
+                    "type": "object", "properties": {
+                        "status": {"enum": ["ok", "blocked"]}, "reason": {"type": "string", "minLength": 1}},
+                    "required": ["status", "reason"], "additionalProperties": False}}},
+                "additionalProperties": False}},
+            "required": ["run_ids"], "additionalProperties": False}
     properties = {"ai_off": {"type": "boolean", "const": True}}
     required = ["ai_off"]
     if name != "sentilab_live_stop":
@@ -27,7 +39,8 @@ async def handle(request, context):
         return {"protocolVersion": "2024-11-05", "capabilities": {"tools": {}},
                 "serverInfo": {"name": "sentilab-live", "version": "0.1"}}
     if method == "tools/list":
-        return {"tools": [{"name": name, "description": "AI off live " + name.rsplit("_", 1)[-1],
+        return {"tools": [{"name": name, "description": ("Export recorded verifier datasets" if name == "sentilab_dataset_export"
+                                                        else "AI off live " + name.rsplit("_", 1)[-1]),
                            "inputSchema": schema(name)} for name in TOOLS]}
     if method == "tools/call":
         params = request["params"]

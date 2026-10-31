@@ -18,4 +18,10 @@ def sentilab_live_verify(context, **arguments):
     return operations.verify(context, **arguments)
 
 
+def sentilab_dataset_export(context, **arguments):
+    from sentilab_core.dataset import export
+    return export(context.root, public_keys=context.public_keys, **arguments)
+
+
 TOOLS = {"sentilab_live_" + name: globals()["sentilab_live_" + name] for name in ("run", "status", "stop", "verify")}
+TOOLS["sentilab_dataset_export"] = sentilab_dataset_export

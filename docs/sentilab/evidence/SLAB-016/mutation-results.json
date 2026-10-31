@@ -1,0 +1,158 @@
+[
+  {
+    "mutation": "delta discarded",
+    "test": "test_determinism_and_recorded_outcomes",
+    "exit": 1,
+    "caught": true,
+    "tail": [
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 1 test in 0.263s",
+      "",
+      "FAILED (errors=1)"
+    ]
+  },
+  {
+    "mutation": "rights fail open",
+    "test": "test_rights_fail_closed_and_heldout_never_enters_preferences",
+    "exit": 1,
+    "caught": true,
+    "tail": [
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 1 test in 0.314s",
+      "",
+      "FAILED (failures=1)"
+    ]
+  },
+  {
+    "mutation": "heldout ignored",
+    "test": "test_multiple_runs_seeds_and_heldout_family_isolation",
+    "exit": 1,
+    "caught": true,
+    "tail": [
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 1 test in 2.063s",
+      "",
+      "FAILED (failures=1)"
+    ]
+  },
+  {
+    "mutation": "withdrawal validity ignored",
+    "test": "test_withdraw_and_retract_append_corrections_without_erasing_history",
+    "exit": 1,
+    "caught": true,
+    "tail": [
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 1 test in 0.711s",
+      "",
+      "FAILED (failures=1)"
+    ]
+  },
+  {
+    "mutation": "stale validity ignored",
+    "test": "test_measurement_withdrawal_stales_dependent_candidate",
+    "exit": 1,
+    "caught": true,
+    "tail": [
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 1 test in 0.385s",
+      "",
+      "FAILED (failures=1)"
+    ]
+  },
+  {
+    "mutation": "cross-run pairs",
+    "test": "test_multiple_runs_seeds_and_heldout_family_isolation",
+    "exit": 1,
+    "caught": true,
+    "tail": [
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 1 test in 2.050s",
+      "",
+      "FAILED (failures=1)"
+    ]
+  },
+  {
+    "mutation": "lineage uses proposal not verifier",
+    "test": "test_pairs_have_two_verifier_hashes_and_only_ordered_contexts",
+    "exit": 1,
+    "caught": true,
+    "tail": [
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 1 test in 0.312s",
+      "",
+      "FAILED (errors=1)"
+    ]
+  },
+  {
+    "mutation": "gate consistency ignored",
+    "test": "test_signed_inconsistent_gate_or_context_refuses_export",
+    "exit": 1,
+    "caught": true,
+    "tail": [
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 1 test in 0.816s",
+      "",
+      "FAILED (failures=2)"
+    ]
+  },
+  {
+    "mutation": "near-margin comparison allowed",
+    "test": "test_pair_abstains_when_two_improvements_are_within_margin",
+    "exit": 1,
+    "caught": true,
+    "tail": [
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 1 test in 0.351s",
+      "",
+      "FAILED (failures=1)"
+    ]
+  },
+  {
+    "mutation": "future parent allowed",
+    "test": "test_later_matching_design_cannot_fabricate_parent_lineage",
+    "exit": 1,
+    "caught": true,
+    "tail": [
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 1 test in 0.344s",
+      "",
+      "FAILED (failures=1)"
+    ]
+  },
+  {
+    "mutation": "snapshot overwrites allowed",
+    "test": "test_input_validation_and_existing_export_integrity",
+    "exit": 1,
+    "caught": true,
+    "tail": [
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 1 test in 0.552s",
+      "",
+      "FAILED (failures=1)"
+    ]
+  },
+  {
+    "mutation": "proposal grants rights",
+    "test": "test_display_and_proposal_opinions_cannot_supply_labels_or_rights",
+    "exit": 1,
+    "caught": true,
+    "tail": [
+      "",
+      "----------------------------------------------------------------------",
+      "Ran 1 test in 0.396s",
+      "",
+      "FAILED (failures=1)"
+    ]
+  }
+]
