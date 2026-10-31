@@ -1,14 +1,2 @@
 # False positive: the generic-api-key rule matches ordinary words in a PLAN.md table row (P9).
 126507d4dbd8cf327aa158c4dd893c436f7cdf8f:docs/sentilab/draft-0.5/PLAN.md:generic-api-key:394
-
-# Exact immutable findings for two terminal SLAB-047 attempt-ownership nonces.
-# Independently source/lifecycle-reviewed; not credentials. No path, rule or value wildcard.
-3cd1eb14497de880b2a0a75cba8ec5c71a4c6fc2:docs/sentilab/evidence/SLAB-047/slab047-admission/runtime/reservation.json:generic-api-key:1
-3cd1eb14497de880b2a0a75cba8ec5c71a4c6fc2:docs/sentilab/evidence/SLAB-047/slab047-admission/runtime/worker-claimed.json:generic-api-key:1
-3cd1eb14497de880b2a0a75cba8ec5c71a4c6fc2:docs/sentilab/evidence/SLAB-047/slab047-runtime-review/RUNTIME-REVIEW.md:generic-api-key:12
-3cd1eb14497de880b2a0a75cba8ec5c71a4c6fc2:docs/sentilab/evidence/SLAB-047/slab047-runtime-review/audit-seal.json:generic-api-key:5
-3cd1eb14497de880b2a0a75cba8ec5c71a4c6fc2:docs/sentilab/evidence/SLAB-047/slab047-runtime-review/validation-20261031T111419608092Z/VALIDATION.json:generic-api-key:16
-3cd1eb14497de880b2a0a75cba8ec5c71a4c6fc2:docs/sentilab/evidence/SLAB-047/slab047b-admission/START-RESULT.json:generic-api-key:29
-3cd1eb14497de880b2a0a75cba8ec5c71a4c6fc2:docs/sentilab/evidence/SLAB-047/slab047b-admission/gpu-runtime/reservation.json:generic-api-key:1
-3cd1eb14497de880b2a0a75cba8ec5c71a4c6fc2:docs/sentilab/evidence/SLAB-047/slab047b-admission/gpu-runtime/worker-claimed.json:generic-api-key:1
-3cd1eb14497de880b2a0a75cba8ec5c71a4c6fc2:docs/sentilab/evidence/SLAB-047/slab047b-gpu-cleanup-review/EVIDENCE-CHECK.json:generic-api-key:5
