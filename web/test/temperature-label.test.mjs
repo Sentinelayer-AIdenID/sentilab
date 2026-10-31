@@ -1,16 +1,21 @@
 // node --test web/test/temperature-label.test.mjs
-// The one temperature label rule (web/public/temperature-label.mjs): withdrawn identities and missing ones are
-// qualified, any other identity shows only "simulated", and a value derived from several is withdrawn if any is.
-// Values that arrive live (the Lab view's /api/view/events poller, the run view's /api/runs/{id}) go through the same
-// rule: a signed fixture event is driven through the page's own live poller below.
+// The one temperature label rule (web/public/temperature-label.mjs):
+//   withdrawn     a known affected identity (the WITHDRAWN list);
+//   unvalidated   any other identity, and a missing or unreadable one: a different identity never implies validation;
+//   illustrative  exactly the bundled interface fixture;
+//   accepted      exactly an identity on ACCEPTED (empty: nothing is accepted yet).
+// Withdrawn and unvalidated values show the page notice. A value derived from several takes the most cautious state
+// among its inputs; illustrative or accepted only if every input is. Values that arrive live (the Lab
+// view's /api/view/events poller, the run view's /api/runs/{id}) go through the same rule: a signed fixture event is
+// driven through the page's own live poller below.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  WITHDRAWN, ILLUSTRATIVE, LABELS, NOTICE, labelFor, labelForAll, evaluatorIds, envelopeEvaluator, hasTemperature,
-  anyWithdrawnTemperature, runTemperatureIds,
+  WITHDRAWN, ILLUSTRATIVE, ACCEPTED, LABELS, NOTICE, labeller, labelFor, labelForAll, evaluatorIds, envelopeEvaluator, hasTemperature,
+  needsNotice, runTemperatureIds,
 } from "../public/temperature-label.mjs";
 import * as ref from "../../contracts/view-envelope-v0.5/view-envelope.mjs";
 import * as refPaging from "../../contracts/view-envelope-v0.6.2/paging.mjs";
@@ -22,8 +27,8 @@ const PUBLIC = join(dirname(fileURLToPath(import.meta.url)), "..", "public");
 const COMMIT7 = "f18831e48cef5d62580585cca0d7fab6c71bc3cc";
 const LIVE_HS7 = `HotSpot-7:${COMMIT7}:binary_sha256:9f971da7370a59afb425ed1c8754e12bc67a6a95e8333c3b4a9d537fd30a77f6` +
   ":config_sha256:548562a5f49d502f4b9bd03d3a4acc4b42f225056e6d91556416079c291e06d4:grid:16x16";   // the live feed, 2026-10-31
-// Identities the pre-correction evaluator has signed, in each format it has used.
-const PRE_CORRECTION = [
+// Identities the known affected evaluator has signed, in each format it has used.
+const AFFECTED = [
   `HotSpot-7:${COMMIT7}:sha256:37b2a3bc8dc52462`,                                   // replay/, tfl08/ records
   `HotSpot-7:${COMMIT7}:sha256:e4358b46794ebc00`,                                   // local proof ledger
   LIVE_HS7,
@@ -32,7 +37,7 @@ const PRE_CORRECTION = [
   `HotSpot-7:${COMMIT7}`,
   `  hotspot-7:${COMMIT7.toUpperCase()}:grid:64x64 `,                               // case and padding change nothing
 ];
-// Identities that are not the pre-correction evaluator: they show only "simulated".
+// Other identities, including the corrected evaluator's: unvalidated, never plain or validated.
 const CORRECTED = "HotSpot-6.0:a7a3286e368867c26381e0a23e36b3e273bdeda9+SLAB-049:grid_dump=all_layers:binary_sha256:00:config_sha256:00:grid:32x32";
 const OTHER = [
   CORRECTED,
@@ -42,67 +47,100 @@ const OTHER = [
   "corrected-evaluator-v1",
 ];
 const MISSING = [undefined, null, "", "   ", 42, 0, true, {}, [], ["HotSpot-6.0:x"], { evaluator_version: "HotSpot-6.0:x" }];
+const FIXTURE = "fixture-no-solver";
 
-test("a withdrawn identity is qualified, in every format the evaluator has signed", () => {
-  for (const id of [...WITHDRAWN, ...PRE_CORRECTION]) {
+test("a known affected identity is withdrawn, in every format the evaluator has signed", () => {
+  for (const id of [...WITHDRAWN, ...AFFECTED]) {
     const label = labelFor(id);
     assert.equal(label, LABELS.withdrawn, id);
-    assert.equal(label.withdrawn, true);
+    assert.equal(label.state, "withdrawn");
+    assert.equal(label.notice, true);
     assert.equal(label.text, "simulated · pre-correction (withdrawn)");
-    assert.match(label.title, /2\.3×/);
-    assert.match(label.title, /Simulated, not silicon\.$/);
   }
 });
 
-test("a missing or unreadable identity is qualified (fail safe)", () => {
-  for (const id of MISSING) assert.equal(labelFor(id), LABELS.withdrawn, String(JSON.stringify(id)));
-});
-
-test("an unknown or new identity shows only \"simulated\"", () => {
+test("an unknown or new identity is unvalidated: a different identity never implies validation", () => {
   for (const id of OTHER) {
     const label = labelFor(id);
-    assert.equal(label, LABELS.simulated, id);
-    assert.equal(label.withdrawn, false);
-    assert.equal(label.text, "simulated");
-    assert.doesNotMatch(`${label.text} ${label.short} ${label.title}`, /withdrawn|pre-correction/i);
+    assert.equal(label, LABELS.unvalidated, id);
+    assert.equal(label.state, "unvalidated");
+    assert.equal(label.notice, true, "an unvalidated value shows the notice");
+    assert.equal(label.text, "simulated · unvalidated");
   }
 });
 
-test("a difference of withdrawn values is withdrawn, and so is any derived value with a withdrawn or missing input", () => {
-  const [w1, w2] = PRE_CORRECTION, [s1, s2] = OTHER;
+test("a missing or unreadable identity is unvalidated (fail safe: it still shows the notice)", () => {
+  for (const id of MISSING) {
+    assert.equal(labelFor(id), LABELS.unvalidated, String(JSON.stringify(id)));
+    assert.equal(labelFor(id).notice, true);
+  }
+});
+
+test("only the genuine no-solver fixture is illustrative; a value mixing it with real inputs takes the most cautious state", () => {
+  for (const id of ILLUSTRATIVE) assert.equal(labelFor(id), LABELS.illustrative);
+  assert.equal(LABELS.illustrative.notice, false);
+  for (const near of [`${FIXTURE}:v2`, FIXTURE.toUpperCase(), ` ${FIXTURE}`, "fixture-1", "recorded-fixture-solver"]) {
+    assert.equal(labelFor(near), LABELS.unvalidated, `${near}: not the bundled fixture`);
+  }
+  assert.equal(labelForAll([FIXTURE, FIXTURE]), LABELS.illustrative);
+  assert.equal(labelForAll([FIXTURE, CORRECTED]), LABELS.unvalidated, "fixture and a real input");
+  assert.equal(labelForAll([CORRECTED, FIXTURE]), LABELS.unvalidated);
+  assert.equal(labelForAll([FIXTURE, undefined]), LABELS.unvalidated);
+  assert.equal(labelForAll([FIXTURE, AFFECTED[0]]), LABELS.withdrawn);
+});
+
+test("ACCEPTED is empty, so nothing is accepted yet; an entry is matched exactly and never overrides a withdrawn build", () => {
+  assert.deepEqual([...ACCEPTED], []);
+  assert.ok(Object.isFrozen(ACCEPTED));
+  for (const id of [...AFFECTED, ...OTHER, ...MISSING, FIXTURE]) assert.notEqual(labelFor(id), LABELS.accepted, String(id));
+  // The rule over a list with one accepted identity (the pages use the frozen, empty list).
+  const rule = labeller({ accepted: [CORRECTED, AFFECTED[0]] });
+  assert.equal(rule.labelFor(CORRECTED), LABELS.accepted);
+  assert.equal(LABELS.accepted.notice, false);
+  assert.equal(rule.labelFor(` ${CORRECTED}`), LABELS.unvalidated, "exact: no trimming");
+  assert.equal(rule.labelFor(CORRECTED.replace("grid:32x32", "grid:64x64")), LABELS.unvalidated, "exact: another grid is another identity");
+  assert.equal(rule.labelFor(CORRECTED.toLowerCase()), LABELS.unvalidated, "exact: case counts");
+  assert.equal(rule.labelFor(AFFECTED[0]), LABELS.withdrawn, "a withdrawn build stays withdrawn even if listed");
+  assert.equal(rule.labelForAll([CORRECTED, CORRECTED]), LABELS.accepted);
+  assert.equal(rule.labelForAll([CORRECTED, FIXTURE]), LABELS.unvalidated, "accepted and fixture: neither");
+  assert.equal(rule.labelForAll([CORRECTED, OTHER[2]]), LABELS.unvalidated);
+  assert.equal(rule.labelForAll([CORRECTED, undefined]), LABELS.unvalidated);
+  assert.equal(rule.labelForAll([CORRECTED, AFFECTED[1]]), LABELS.withdrawn);
+});
+
+test("a derived value: withdrawn if any input is (a difference of two withdrawn values too), else unvalidated if any is or it names none", () => {
+  const [w1, w2] = AFFECTED, [u1, u2] = OTHER;
   assert.equal(labelForAll([w1, w2]), LABELS.withdrawn, "two withdrawn values");
   assert.equal(labelForAll([w1, w1]), LABELS.withdrawn, "the same withdrawn evaluator on both sides");
-  assert.equal(labelForAll([s1, w1]), LABELS.withdrawn, "a withdrawn value second");
-  assert.equal(labelForAll([w1, s1]), LABELS.withdrawn, "a withdrawn value first");
-  assert.equal(labelForAll([s1, undefined]), LABELS.withdrawn, "an input with no identity");
-  assert.equal(labelForAll(new Set([s1, w2])), LABELS.withdrawn, "any iterable");
-  assert.equal(labelForAll([]), LABELS.withdrawn, "derived from nothing that names an evaluator");
-  assert.equal(labelForAll(undefined), LABELS.withdrawn);
+  assert.equal(labelForAll([u1, w1]), LABELS.withdrawn, "a withdrawn value second");
+  assert.equal(labelForAll([w1, u1]), LABELS.withdrawn, "a withdrawn value first");
+  assert.equal(labelForAll([undefined, w1]), LABELS.withdrawn, "withdrawn wins over a missing identity");
+  assert.equal(labelForAll(new Set([u1, w2])), LABELS.withdrawn, "any iterable");
   assert.equal(labelForAll(w1), LABELS.withdrawn, "one identity passed bare is one identity, not its characters");
-  assert.equal(labelForAll([s1, s2]), LABELS.simulated, "only other identities: simulated");
-  assert.equal(labelForAll(s1), LABELS.simulated);
+  assert.equal(labelForAll([u1, u2]), LABELS.unvalidated);
+  assert.equal(labelForAll([u1, undefined]), LABELS.unvalidated);
+  assert.equal(labelForAll([]), LABELS.unvalidated, "derived from nothing that names an evaluator");
+  assert.equal(labelForAll(undefined), LABELS.unvalidated);
 });
 
-test("the bundled fixture is illustrative, never simulated; withdrawn still wins over it", () => {
-  for (const id of ILLUSTRATIVE) assert.equal(labelFor(id), LABELS.illustrative);
-  assert.equal(labelForAll(["fixture-no-solver", "fixture-no-solver"]), LABELS.illustrative);
-  assert.equal(labelForAll(["fixture-no-solver", OTHER[0]]), LABELS.illustrative);
-  assert.equal(labelForAll(["fixture-no-solver", PRE_CORRECTION[0]]), LABELS.withdrawn);
-});
-
-test("the lists, labels and notice are frozen, and the notice is one constant", () => {
-  for (const x of [WITHDRAWN, ILLUSTRATIVE, LABELS, LABELS.withdrawn, LABELS.simulated, LABELS.illustrative]) assert.ok(Object.isFrozen(x));
+test("the lists, labels and notice are frozen; the notice is root's wording, and nothing in the module claims a size", () => {
+  for (const x of [WITHDRAWN, ILLUSTRATIVE, ACCEPTED, LABELS, ...Object.values(LABELS)]) assert.ok(Object.isFrozen(x));
   assert.throws(() => WITHDRAWN.push("anything"));
-  assert.equal(NOTICE, "Temperatures on this page come from an evaluator under correction: a known heat-sink coupling defect " +
-    "overstates temperature rises (about 2.3×) and distorts the gaps between layouts. They're being re-validated against " +
-    "published human layouts, so don't compare them with papers. Simulated, not silicon.");
+  assert.deepEqual(Object.keys(LABELS).sort(), ["accepted", "illustrative", "unvalidated", "withdrawn"]);
+  assert.equal(NOTICE, "These simulated temperatures are under review and have been withdrawn from comparison with published layouts. " +
+    "We are investigating heat-sink coupling and validating the evaluator against reconstructed research layouts. " +
+    "Historical results remain available.");
+  for (const text of [NOTICE, ...Object.values(LABELS).flatMap((l) => [l.text, l.short, l.title])]) assert.doesNotMatch(text, /\d\s*×|×\s*\d|\d\.\d+x|%/i, text);
+  // The served module, comments included: no multiplier, gap or reversal figures (provenance is the SLAB-049 review).
+  const source = readFileSync(join(PUBLIC, "temperature-label.mjs"), "utf8");
+  assert.doesNotMatch(source, /\d\s*×|×\s*\d|\d+(\.\d+)?x|\d+\s*-\s*\d+\s*%|\d\s*%|\d+\s*K|revers|flip/i);
+  assert.match(source, /SLAB-049/);
   // The tag beside a value must not read as the evidence views' own "withdrawn" node state.
   assert.notEqual(LABELS.withdrawn.short, "withdrawn");
 });
 
-// Every identity in the data these pages serve is classified as expected: the pre-correction evaluator's records are
-// withdrawn, the synthetic plate is simulated and the bundled fixture is illustrative. A new identity in the served data
-// fails this test until someone decides which it is.
+// Every identity in the data these pages serve is classified: the affected evaluator's records are withdrawn, the
+// synthetic plate is unvalidated and the bundled fixture is illustrative.
 function servedIdentities() {
   const found = new Map();   // identity -> first file
   const walk = (value, file) => {
@@ -120,35 +158,35 @@ function servedIdentities() {
   return found;
 }
 
-test("every identity in the served data is classified: pre-correction withdrawn, plate simulated, fixture illustrative", () => {
+test("every identity in the served data is classified: affected withdrawn, plate unvalidated, fixture illustrative", () => {
   const found = servedIdentities();
   assert.ok(found.size >= 3, "the walk reaches the replay, the records and the demo");
-  const byState = { withdrawn: [], simulated: [], illustrative: [] };
+  const byState = { withdrawn: [], unvalidated: [], illustrative: [] };
   for (const id of found.keys()) byState[labelFor(id).state].push(id);
   assert.ok(byState.withdrawn.length > 0 && byState.withdrawn.every((id) => id.startsWith(`HotSpot-7:${COMMIT7}:`)), byState.withdrawn.join(", "));
-  assert.deepEqual(byState.simulated, ["synthetic-fvm-plate-v1-grid40"]);
-  assert.deepEqual(byState.illustrative, ["fixture-no-solver"]);
-  assert.ok([...found.keys()].filter((id) => /^hotspot-7:/i.test(id)).every((id) => labelFor(id).withdrawn), "no pre-correction identity escapes");
+  assert.deepEqual(byState.unvalidated, ["synthetic-fvm-plate-v1-grid40"]);
+  assert.deepEqual(byState.illustrative, [FIXTURE]);
+  assert.ok([...found.keys()].filter((id) => /^hotspot-7:/i.test(id)).every((id) => labelFor(id) === LABELS.withdrawn), "no affected identity escapes");
 });
 
 test("view envelopes: a measurement's identity is its semantics; a verify.add's values belong to the node it names", () => {
   const rows = readFileSync(join(PUBLIC, "sentilab", "demo-run.jsonl"), "utf8").split("\n").filter(Boolean).map((line) => JSON.parse(line));
   const ids = evaluatorIds(rows);
-  assert.equal(ids.get("meas-b"), "fixture-no-solver");
+  assert.equal(ids.get("meas-b"), FIXTURE);
   assert.equal(ids.get("cand-a"), undefined, "a candidate declares no evaluator");
   const verify = rows.find((env) => env.event.type === "verify.add" && env.values);
-  assert.equal(envelopeEvaluator(verify, ids), "fixture-no-solver");
-  assert.equal(envelopeEvaluator(rows[0], ids), "fixture-no-solver");
-  assert.equal(labelFor(envelopeEvaluator({ event: { type: "support.add", body: { node: "nowhere" } } }, ids)), LABELS.withdrawn, "unknown node: fail safe");
+  assert.equal(envelopeEvaluator(verify, ids), FIXTURE);
+  assert.equal(envelopeEvaluator(rows[0], ids), FIXTURE);
+  assert.equal(labelFor(envelopeEvaluator({ event: { type: "support.add", body: { node: "nowhere" } } }, ids)), LABELS.unvalidated, "unknown node: fail safe");
   assert.equal(envelopeEvaluator(null, ids), undefined);
   // The first node.create of an id wins, as in project().
   const twice = evaluatorIds([
-    { event: { type: "node.create", body: { id: "m", kind: "measurement", semantics: { evaluator_version: PRE_CORRECTION[0] } } } },
+    { event: { type: "node.create", body: { id: "m", kind: "measurement", semantics: { evaluator_version: AFFECTED[0] } } } },
     { event: { type: "node.create", body: { id: "m", kind: "measurement", semantics: { evaluator_version: OTHER[0] } } } },
   ]);
   assert.equal(labelFor(twice.get("m")), LABELS.withdrawn);
-  // The bundled fixture shows no withdrawn temperature, so its pages show no notice.
-  assert.equal(anyWithdrawnTemperature(rows), false);
+  // The bundled fixture is all illustrative, so its pages show no notice.
+  assert.equal(needsNotice(rows), false);
 });
 
 // A measurement as the producer writes it (sentilab_core/conductor.py): semantics name the evaluator, values carry J.
@@ -157,21 +195,22 @@ const measurement = (id, evaluator, J = 118.36) => ({
   values: { J: { value: J, unit: "C" }, W: { value: 27.7, metric_id: "weighted-manhattan-mm" }, scenario_id: "nominal" },
 });
 
-test("the notice test for envelopes: any temperature labelled withdrawn, including ones with no identity", () => {
-  assert.equal(anyWithdrawnTemperature([measurement("m", LIVE_HS7)]), true, "a live pre-correction measurement");
-  assert.equal(anyWithdrawnTemperature([measurement("m", undefined)]), true, "a measurement that names no evaluator (fail safe)");
-  assert.equal(anyWithdrawnTemperature([measurement("m", CORRECTED)]), false, "the corrected evaluator");
-  assert.equal(anyWithdrawnTemperature([measurement("m", CORRECTED), measurement("n", LIVE_HS7)]), true, "one withdrawn among corrected ones");
+test("the notice test for envelopes: any temperature that is withdrawn or unvalidated", () => {
+  assert.equal(needsNotice([measurement("m", LIVE_HS7)]), true, "a live affected measurement");
+  assert.equal(needsNotice([measurement("m", undefined)]), true, "a measurement that names no evaluator (fail safe)");
+  assert.equal(needsNotice([measurement("m", CORRECTED)]), true, "the corrected evaluator is unvalidated too");
+  assert.equal(needsNotice([measurement("m", FIXTURE)]), false, "the fixture alone");
+  assert.equal(needsNotice([measurement("m", FIXTURE), measurement("n", CORRECTED)]), true);
   const verifyOld = { event: { type: "verify.add", body: { node: "m", tier: "replayed", evidence: ["r"] } }, values: { J: { value: 118.4, unit: "C" } } };
-  assert.equal(anyWithdrawnTemperature([measurement("m", LIVE_HS7), verifyOld]), true);
-  assert.equal(anyWithdrawnTemperature([{ event: { type: "node.create", body: { id: "c", kind: "candidate" } }, values: { geometry: [] } }]), false, "no temperature, no notice");
-  assert.equal(anyWithdrawnTemperature([null, undefined]), false, "rows rejected before parsing carry nothing");
-  assert.equal(anyWithdrawnTemperature([]), false);
+  assert.equal(needsNotice([measurement("m", FIXTURE), verifyOld]), false, "a verify.add's values belong to the fixture it verifies");
+  assert.equal(needsNotice([{ event: { type: "node.create", body: { id: "c", kind: "candidate" } }, values: { geometry: [] } }]), false, "no temperature, no notice");
+  assert.equal(needsNotice([null, undefined]), false, "rows rejected before parsing carry nothing");
+  assert.equal(needsNotice([]), false);
   assert.equal(hasTemperature({ values: { center_temps: { a: 1 } } }), true);
   assert.equal(hasTemperature({ values: { W: { value: 1 } } }), false);
 });
 
-test("the run view: every baseline and oracle result names its identity; the replay is all pre-correction", () => {
+test("the run view: every baseline and oracle result names its identity; the replay is all withdrawn", () => {
   const replay = JSON.parse(readFileSync(join(PUBLIC, "replay", "ascend910-seed11-32x32.json"), "utf8"));
   const ids = runTemperatureIds(replay);
   const events = Object.values(replay.result.lane_results).flatMap((lane) => lane.record).filter((e) => e.event === "baseline" || e.event === "oracle_result");
@@ -185,8 +224,9 @@ test("the run view: every baseline and oracle result names its identity; the rep
   ] } } } });
   assert.deepEqual(runTemperatureIds(run(LIVE_HS7)), [LIVE_HS7, LIVE_HS7]);
   assert.equal(labelForAll(runTemperatureIds(run(LIVE_HS7))), LABELS.withdrawn);
-  assert.equal(labelForAll(runTemperatureIds(run(CORRECTED))), LABELS.simulated);
-  assert.equal(labelForAll(runTemperatureIds(run(undefined))), LABELS.withdrawn, "a result that names no evaluator (fail safe)");
+  assert.equal(labelForAll(runTemperatureIds(run(CORRECTED))), LABELS.unvalidated);
+  assert.equal(labelForAll(runTemperatureIds(run(undefined))), LABELS.unvalidated, "a result that names no evaluator (fail safe)");
+  assert.equal(labelForAll(runTemperatureIds(run("synthetic-fvm-plate-v1-grid40"))).notice, true, "the plate shows the notice too");
   assert.deepEqual(runTemperatureIds({ status: "running" }), [], "a run with no results yet shows no temperature");
   assert.deepEqual(runTemperatureIds(null), []);
 });
@@ -216,22 +256,28 @@ async function pollOnce(rows) {
   await pollLiveOnce(L, { fetchImpl, now: () => Date.UTC(2026, 9, 31, 15, 51, 1), verify: async (x) => { x.verification = (await paging.verifyRows(x.paging, options)).verification; } });
   return L.verification;
 }
+const liveLabel = (v) => labelFor(envelopeEvaluator(v.ordered[0], evaluatorIds(v.ordered.slice(0, v.prefix))));
 
-test("live: a signed pre-correction event that arrives through the poller is verified, shown, and labelled withdrawn", async () => {
+test("live: a signed affected event that arrives through the poller is verified, shown, labelled withdrawn, with the notice", async () => {
   const v = await pollOnce(liveRows(LIVE_HS7));
   assert.equal(v.rows.length, 1);
   assert.equal(v.rows[0].status, "verified", "the page shows it: it is in the projectable prefix");
   assert.equal(v.prefix, 1);
-  const ids = evaluatorIds(v.ordered.slice(0, v.prefix));
-  assert.equal(labelFor(envelopeEvaluator(v.ordered[0], ids)), LABELS.withdrawn, "its J is labelled withdrawn");
-  assert.equal(anyWithdrawnTemperature(v.ordered), true, "the page shows the notice");
+  assert.equal(liveLabel(v), LABELS.withdrawn);
+  assert.equal(needsNotice(v.ordered), true);
 });
 
-test("live: the same event from the corrected evaluator shows only \"simulated\", and no notice", async () => {
-  const v = await pollOnce(liveRows(CORRECTED));
-  assert.equal(v.rows[0].status, "verified");
-  assert.equal(labelFor(envelopeEvaluator(v.ordered[0], evaluatorIds(v.ordered))), LABELS.simulated);
-  assert.equal(anyWithdrawnTemperature(v.ordered), false);
+test("live: the same event from another evaluator is unvalidated, with the notice; from the fixture, illustrative, without", async () => {
+  const corrected = await pollOnce(liveRows(CORRECTED));
+  assert.equal(corrected.rows[0].status, "verified");
+  assert.equal(liveLabel(corrected), LABELS.unvalidated);
+  assert.equal(needsNotice(corrected.ordered), true);
+  const nameless = await pollOnce(liveRows(undefined));
+  assert.equal(liveLabel(nameless), LABELS.unvalidated, "an event that names no evaluator (fail safe)");
+  assert.equal(needsNotice(nameless.ordered), true);
+  const fixture = await pollOnce(liveRows(FIXTURE));
+  assert.equal(liveLabel(fixture), LABELS.illustrative);
+  assert.equal(needsNotice(fixture.ordered), false);
 });
 
 test("all three pages take their notice and labels from this one module", () => {
@@ -241,7 +287,7 @@ test("all three pages take their notice and labels from this one module", () => 
   imports("sentilab/lab.js", "../temperature-label.mjs");
   imports("sentilab/package/package.js", "../../temperature-label.mjs");
   for (const rel of ["app.js", "sentilab/lab.js", "sentilab/package/package.js"]) {
-    assert.doesNotMatch(page(rel), /under correction|overstates temperature/, `${rel} holds no copy of the notice text`);
+    assert.doesNotMatch(page(rel), /under review|heat-sink coupling/, `${rel} holds no copy of the notice text`);
   }
   for (const rel of ["index.html", "sentilab/index.html", "sentilab/package/index.html"]) {
     assert.match(page(rel), /<p class="wnotice" id="wnotice" role="note" hidden><\/p>/, `${rel} has the notice slot`);

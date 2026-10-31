@@ -1,7 +1,7 @@
 // Thermal Flight Lab front end (TFL-10). One renderer for live runs and replays: both are a GET /api/runs/{id} object
 // whose result.lane_results[*].record holds every signed event. Every number on screen comes from those events.
 // A module (so strict): temperatures are labelled by the one rule in temperature-label.mjs, from the evaluator identity
-// (thermal.solver_version) of the result each came from. Withdrawn values keep their numbers; the page says so on top.
+// (thermal.solver_version) of the result each came from. The numbers stay as recorded; the page says so on top.
 import { labelFor, labelForAll, runTemperatureIds, NOTICE } from "./temperature-label.mjs";
 
 const LANES = ["random", "simulated_annealing", "ucb1", "signal_portfolio"];
@@ -25,7 +25,7 @@ const plain = (t) => String(t == null ? "" : t).replace(/\bjev\b[-\w.]*/gi, "sig
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c]);
 
 const S = { run: null, lanes: {}, k: 0, maxK: 0, playing: null, view: "step", sel: { lane: LANES[0], step: 0 },
-            heatMin: 0, heatMax: 1, liveId: null, mode: "replay", tempIds: [], boardWithdrawn: false };
+            heatMin: 0, heatMax: 1, liveId: null, mode: "replay", tempIds: [], boardNotice: false };
 
 // ── parse one run into per-lane steps ──────────────────────────────────────────────────────────────────────────
 function parseRun(run) {
@@ -78,9 +78,10 @@ function parseRun(run) {
   return { lanes, lo, hi };
 }
 
-// The notice under the top bar: shown while this run's temperatures, or the runs list's, include a withdrawn one.
+// The notice under the top bar: shown while this run's temperatures, or the runs list's, include a withdrawn or an
+// unvalidated one.
 function updateNotice() {
-  const on = (S.tempIds.length > 0 && labelForAll(S.tempIds).withdrawn) || S.boardWithdrawn;
+  const on = (S.tempIds.length > 0 && labelForAll(S.tempIds).notice) || S.boardNotice;
   $("wnotice").hidden = !on;
   $("wnotice").textContent = on ? NOTICE : "";
 }
@@ -321,8 +322,8 @@ async function renderBoard() {
     const r = await fetch("/api/runs", { cache: "no-store" });
     if (r.ok) {
       const j = await r.json();
-      // The runs list names no evaluator for its best temperatures, so they count as withdrawn (the rule's fail safe).
-      listed = (j.runs || []).some((x) => x.best && labelFor(x.best.solver_version).withdrawn);
+      // The runs list names no evaluator for its best temperatures, so they are unvalidated (the rule's fail safe).
+      listed = (j.runs || []).some((x) => x.best && labelFor(x.best.solver_version).notice);
       html += `<table><tr><th>Recent runs</th><th>Benchmark</th><th>Grid</th><th>Seed</th><th>Best lane</th><th>Best</th><th>Time</th></tr>` +
         (j.runs || []).map((x) => `<tr><td class="num"><a class="dl" href="#" data-run="${esc(x.id)}">${esc(short(x.id, 10))}</a></td><td>${esc(x.benchmark)}</td><td>${esc(x.grid)}</td><td>${esc(x.seed)}</td>` +
           `<td>${esc(x.best ? LANE_NAME[x.best.lane_id] || x.best.lane_id : "-")}</td><td class="num">${x.best ? fmt(x.best.best_temperature_c, 3) : "-"}</td>` +
@@ -331,7 +332,7 @@ async function renderBoard() {
   } catch (_) { /* the run API may not be deployed yet; this run's ranking still stands */ }
   html += `<p class="micro">One seed is descriptive, not a statistical result. The result is stated even when the control (UCB1) wins.</p>`;
   $("board").innerHTML = html;
-  S.boardWithdrawn = !$("board").hidden && listed;
+  S.boardNotice = !$("board").hidden && listed;
   updateNotice();
   for (const a of $("board").querySelectorAll("a[data-run]")) a.onclick = (ev) => { ev.preventDefault(); openRun(a.dataset.run); };
 }
@@ -362,7 +363,7 @@ for (const t of document.querySelectorAll(".tab")) t.onclick = () => {
   for (const x of document.querySelectorAll(".tab")) x.classList.toggle("on", x === t);
   $("feed").hidden = t.dataset.tab !== "feed"; $("board").hidden = t.dataset.tab !== "board"; $("record2").hidden = t.dataset.tab !== "record";
   if (t.dataset.tab === "board") renderBoard();
-  else { S.boardWithdrawn = false; updateNotice(); }
+  else { S.boardNotice = false; updateNotice(); }
 };
 $("feed").onclick = (e) => {
   const row = e.target.closest("div[data-lane]");

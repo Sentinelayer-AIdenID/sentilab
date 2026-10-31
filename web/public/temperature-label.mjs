@@ -9,68 +9,80 @@
 // (":binary_sha256:…:config_sha256:…:grid:16x16"; older rows ":sha256:<16 hex>"). A variant extends the commit field
 // ("HotSpot-7:<commit>+SLAB-049:…") and is a different evaluator, as is "HotSpot-6.0:…".
 //
-//   withdrawn     the identity's engine:commit is on WITHDRAWN, or the identity is missing or unreadable (fail safe);
-//   illustrative  the bundled interface fixture's identity: illustrative numbers, no solver ran;
-//   simulated     any other identity, such as the corrected evaluator.
-// A value derived from several (a difference, a gap, a range, an axis) is withdrawn if any of them is, or if it names
-// none. A difference of two withdrawn values is withdrawn: the defect distorts the gaps too.
+//   withdrawn     the identity's engine:commit is on WITHDRAWN: the known affected build;
+//   illustrative  exactly the bundled interface fixture's identity: illustrative numbers, no solver ran;
+//   accepted      exactly an identity on ACCEPTED (there are none yet);
+//   unvalidated   anything else: any other identity, and a missing or unreadable one (unvalidated provenance). A
+//                 different identity never implies validation.
+// A value derived from several (a difference, a gap, a range, an axis) takes the most cautious state among its inputs:
+// withdrawn, then unvalidated, then illustrative. It is illustrative only if every input is, accepted only if every
+// input is; any other mix, or no input at all, is unvalidated. Withdrawn and unvalidated values show the page notice.
 
-// WITHDRAWN: HotSpot 7.0 at upstream f18831e with the detailed-3D model on, as it runs the TAP-2.5D-generated stack. Its
-// link between the heat spreader and the sink puts half of the convection resistance inside the copper, so rises above
-// ambient come out about 2.3x too high and differences between layouts 2.3-3.7x too large (about 8-9% of layout pairs
-// flip order). Every build, config and grid of it is withdrawn until the corrected evaluator, built under its own
-// identity in SLAB-049, reruns them.
+// WITHDRAWN: the known affected build, HotSpot 7.0 at upstream f18831e, in every build, config and grid. It is under
+// review for heat-sink coupling; see the SLAB-049 review.
 export const WITHDRAWN = Object.freeze(["HotSpot-7:f18831e48cef5d62580585cca0d7fab6c71bc3cc"]);
 // ILLUSTRATIVE: the bundled demo replay (sentilab/demo-run.jsonl) is an interface fixture; no solver produced it.
 export const ILLUSTRATIVE = Object.freeze(["fixture-no-solver"]);
+// ACCEPTED: evaluator identities accepted for comparison. Each entry needs an exact evaluator acceptance, recorded for
+// that exact identity string (engine, commit, build, config and grid); it is matched exactly. None yet.
+export const ACCEPTED = Object.freeze([]);
 
-// The page notice, shown at the top of any page that shows a withdrawn temperature. One constant: reword it here only.
-export const NOTICE = "Temperatures on this page come from an evaluator under correction: a known heat-sink coupling defect " +
-  "overstates temperature rises (about 2.3×) and distorts the gaps between layouts. They're being re-validated against " +
-  "published human layouts, so don't compare them with papers. Simulated, not silicon.";
+// The page notice, shown at the top of any page that shows a withdrawn or unvalidated temperature. One constant:
+// reword it here only.
+export const NOTICE = "These simulated temperatures are under review and have been withdrawn from comparison with published " +
+  "layouts. We are investigating heat-sink coupling and validating the evaluator against reconstructed research layouts. " +
+  "Historical results remain available.";
 
 // text: the qualifier; short: the tag beside a value (not "withdrawn" alone, which the evidence views already use for a
-// withdrawn node); title: the full sentence, on hover.
+// withdrawn node); title: the full sentence, on hover; notice: whether the value shows the page notice.
 export const LABELS = Object.freeze({
   withdrawn: Object.freeze({
-    state: "withdrawn", withdrawn: true, text: "simulated · pre-correction (withdrawn)", short: "pre-correction",
-    title: "Simulated · pre-correction (withdrawn). This temperature comes from an evaluator under correction: a known " +
-      "heat-sink coupling defect overstates temperature rises (about 2.3×) and distorts the gaps between layouts. " +
-      "Don't compare it with papers. Simulated, not silicon.",
+    state: "withdrawn", notice: true, text: "simulated · pre-correction (withdrawn)", short: "pre-correction",
+    title: "Withdrawn: this evaluator build is under review for heat-sink coupling. Not for comparison with published layouts; " +
+      "kept as recorded.",
   }),
-  simulated: Object.freeze({ state: "simulated", withdrawn: false, text: "simulated", short: "simulated", title: "Simulated, not silicon." }),
+  unvalidated: Object.freeze({
+    state: "unvalidated", notice: true, text: "simulated · unvalidated", short: "unvalidated",
+    title: "Unvalidated: this value's evaluator has not been accepted, or isn't named. Not for comparison with published layouts.",
+  }),
   illustrative: Object.freeze({
-    state: "illustrative", withdrawn: false, text: "illustrative · no solver ran", short: "illustrative",
+    state: "illustrative", notice: false, text: "illustrative · no solver ran", short: "illustrative",
     title: "Interface fixture: an illustrative number. No solver produced it.",
   }),
+  accepted: Object.freeze({ state: "accepted", notice: false, text: "simulated", short: "simulated", title: "Simulated with an accepted evaluator. Not silicon." }),
 });
 
+const isObj = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
 // The leading engine:commit of an identity, compared without case.
 const evaluatorKey = (identity) => identity.trim().split(":", 2).join(":").toLowerCase();
-const WITHDRAWN_KEYS = new Set(WITHDRAWN.map((id) => id.toLowerCase()));
-const ILLUSTRATIVE_KEYS = new Set(ILLUSTRATIVE.map((id) => id.toLowerCase()));
 
-// One value, from one identity.
-export function labelFor(identity) {
-  if (typeof identity !== "string" || identity.trim() === "") return LABELS.withdrawn;   // missing or unreadable
-  const key = evaluatorKey(identity);
-  if (WITHDRAWN_KEYS.has(key)) return LABELS.withdrawn;
-  if (ILLUSTRATIVE_KEYS.has(key)) return LABELS.illustrative;
-  return LABELS.simulated;
+// The rule over given lists (the tests build their own; the pages use the frozen lists above).
+export function labeller({ withdrawn = WITHDRAWN, illustrative = ILLUSTRATIVE, accepted = ACCEPTED } = {}) {
+  const withdrawnKeys = new Set(withdrawn.map((id) => id.toLowerCase()));
+  const illustrativeIds = new Set(illustrative), acceptedIds = new Set(accepted);
+  // One value, from one identity.
+  const labelFor = (identity) => {
+    if (typeof identity !== "string" || identity.trim() === "") return LABELS.unvalidated;   // unvalidated provenance
+    if (withdrawnKeys.has(evaluatorKey(identity))) return LABELS.withdrawn;                   // every build of it
+    if (illustrativeIds.has(identity)) return LABELS.illustrative;                            // exactly the fixture
+    if (acceptedIds.has(identity)) return LABELS.accepted;                                    // exactly as accepted
+    return LABELS.unvalidated;
+  };
+  // A value derived from several: the identities of everything it was made from.
+  const labelForAll = (identities) => {
+    const list = typeof identities === "string" ? [identities] : Array.isArray(identities) ? identities
+      : identities != null && typeof identities[Symbol.iterator] === "function" ? [...identities] : [];
+    const labels = list.map(labelFor);
+    if (labels.includes(LABELS.withdrawn)) return LABELS.withdrawn;
+    if (labels.length > 0 && labels.every((label) => label === LABELS.illustrative)) return LABELS.illustrative;
+    if (labels.length > 0 && labels.every((label) => label === LABELS.accepted)) return LABELS.accepted;
+    return LABELS.unvalidated;                    // an unvalidated input, a mix of fixture and real inputs, or none
+  };
+  return Object.freeze({ labelFor, labelForAll });
 }
-
-// A value derived from several (a difference, a gap, a range, an axis): the identities of everything it was made from.
-export function labelForAll(identities) {
-  const list = typeof identities === "string" ? [identities] : Array.isArray(identities) ? identities
-    : identities != null && typeof identities[Symbol.iterator] === "function" ? [...identities] : [];
-  if (list.length === 0) return LABELS.withdrawn;                                          // made from nothing we can name
-  const labels = list.map(labelFor);
-  if (labels.some((label) => label.withdrawn)) return LABELS.withdrawn;
-  if (labels.some((label) => label.state === "illustrative")) return LABELS.illustrative;
-  return LABELS.simulated;
-}
-
-const isObj = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
+const RULE = labeller();
+export const labelFor = RULE.labelFor;
+export const labelForAll = RULE.labelForAll;
 
 // ── the run view: a run object (GET /api/runs/{id}, or a replay file of one) ────────────────────────────────
 // The identity of every temperature it can show: one per baseline and per oracle result, in record order.
@@ -108,10 +120,10 @@ export function envelopeEvaluator(env, ids) {
 }
 // Does an envelope carry a temperature for display (a J, or centre temperatures)?
 export const hasTemperature = (env) => isObj(env) && isObj(env.values) && (isObj(env.values.J) || isObj(env.values.center_temps));
-// The page notice's test for envelopes: does any of them carry a temperature labelled withdrawn? Envelopes that failed
-// verification count too: the feed lists them.
-export function anyWithdrawnTemperature(envelopes) {
+// The page notice's test for envelopes: does any of them carry a temperature whose label shows the notice (withdrawn or
+// unvalidated)? Envelopes that failed verification count too: the feed lists them.
+export function needsNotice(envelopes) {
   const list = (Array.isArray(envelopes) ? envelopes : []).filter(Boolean);
   const ids = evaluatorIds(list);
-  return list.some((env) => hasTemperature(env) && labelFor(envelopeEvaluator(env, ids)).withdrawn);
+  return list.some((env) => hasTemperature(env) && labelFor(envelopeEvaluator(env, ids)).notice);
 }
