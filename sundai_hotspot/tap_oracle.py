@@ -15,7 +15,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 
@@ -26,7 +26,15 @@ TAP_CONFIG_DEFAULT_ID = "ascend910"
 TAP_CONFIGS = {
     "ascend910": TAP_ROOT / "configs" / "sys_ascend910.cfg",
     "micro150": TAP_ROOT / "configs" / "sys_micro150.cfg",
+    # The TAP-2.5D paper's 45 mm frame (SLAB-048). Same dies and package recipe; the frame and
+    # the [sentilab] legality rules in each file are what differ from the 50 mm fixtures above.
+    "ascend910-45mm": TAP_ROOT / "configs" / "sys_ascend910_45mm.cfg",
+    "micro150-45mm": TAP_ROOT / "configs" / "sys_micro150_45mm.cfg",
 }
+# TAP draws g/2-wide edge strips (g = 1 mm) round the interposer; every die keeps its halo clear of them.
+TAP_MARGIN_MM = 0.5
+SENTILAB_RULES_SECTION = "sentilab"
+ROTATION_MODES = ("catalog", "per_die_90")
 TAP_HOTSPOT_CONFIG = TAP_ROOT / "util" / "hotspot.config"
 HOTSPOT_BINARY = HOTSPOT_ROOT / "hotspot"
 WORKER = HOTSPOT_ROOT / "tap_oracle_worker.py"
@@ -102,6 +110,36 @@ class TapProblem:
     generator_sha256: tuple[tuple[str, str], ...]
 
 
+@dataclass(frozen=True)
+class TapLegality:
+    """SentiLab placement rules on top of the TAP problem; TapProblem keeps only the physics inputs.
+
+    The 50 mm fixtures declare no rules and keep their historical defaults: the 1 mm TAP grid,
+    catalog orientation only and halo clearance as the only spacing rule.
+    """
+
+    margin_mm: float
+    center_lattice_mm: float | None
+    min_die_gap_mm: float
+    rotation: str
+    # Allowed (width, height) footprints per die, in die order; a turned die swaps the pair.
+    orientation_catalog_mm: tuple[tuple[tuple[float, float], ...], ...]
+
+
+@dataclass(frozen=True)
+class LayoutViolation:
+    """One placement-rule miss: rule is margin, lattice, halo_overlap or min_spacing."""
+
+    rule: str
+    dies: tuple[int, ...]
+    amount_mm: float
+    message: str
+
+
+def _same_mm(a: float, b: float) -> bool:
+    return math.isclose(a, b, rel_tol=0, abs_tol=1e-9)
+
+
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -127,10 +165,12 @@ def _parse_float_list(value: str, label: str) -> tuple[float, ...]:
     return values
 
 
-def _load_problem(*, config_path: Path = TAP_CONFIGS[TAP_CONFIG_DEFAULT_ID], hotspot_binary: Path = HOTSPOT_BINARY) -> TapProblem:
+def _load_problem(*, config_path: Path = TAP_CONFIGS[TAP_CONFIG_DEFAULT_ID],
+                  hotspot_binary: Path | None = HOTSPOT_BINARY) -> TapProblem:
+    """Load the TAP problem. hotspot_binary=None gives a geometry-only problem with no solver identity."""
     if not config_path.is_file() or not TAP_HOTSPOT_CONFIG.is_file():
         raise HotSpotOracleError(f"TAP fixture configuration is missing: {config_path}")
-    if not hotspot_binary.is_file():
+    if hotspot_binary is not None and not hotspot_binary.is_file():
         raise HotSpotOracleError(f"HotSpot binary is not built: {hotspot_binary}")
 
     parser = configparser.ConfigParser(interpolation=None)
@@ -209,9 +249,176 @@ def _load_problem(*, config_path: Path = TAP_CONFIGS[TAP_CONFIG_DEFAULT_ID], hot
         hotspot_config_sha256=_sha256(TAP_HOTSPOT_CONFIG),
         tap_upstream_commit=_read_upstream_commit(TAP_ROOT / "UPSTREAM_COMMIT"),
         hotspot_upstream_commit=_read_upstream_commit(HOTSPOT_ROOT / "UPSTREAM_COMMIT"),
-        hotspot_binary_sha256=_sha256(hotspot_binary),
+        hotspot_binary_sha256="" if hotspot_binary is None else _sha256(hotspot_binary),
         generator_sha256=generators,
     )
+
+
+def _load_legality(config_path: Path, problem: TapProblem) -> TapLegality:
+    """Read the optional [sentilab] section; anything unknown or malformed fails closed."""
+    parser = configparser.ConfigParser(interpolation=None)
+    parser.read_string(_read_text(config_path))
+    rules = dict(parser.items(SENTILAB_RULES_SECTION)) if parser.has_section(SENTILAB_RULES_SECTION) else {}
+    unknown = set(rules) - {"center_lattice_mm", "min_die_gap_mm", "rotation"}
+    if unknown:
+        raise HotSpotOracleError(f"unknown SentiLab fixture rule: {sorted(unknown)}")
+    try:
+        lattice = float(rules.get("center_lattice_mm", problem.granularity_mm))
+        min_gap = float(rules.get("min_die_gap_mm", 0.0))
+    except ValueError as exc:
+        raise HotSpotOracleError("invalid SentiLab fixture rule") from exc
+    rotation = rules.get("rotation", "catalog")
+    if (not math.isfinite(lattice) or lattice <= 0 or not math.isfinite(min_gap) or min_gap < 0 or
+            rotation not in ROTATION_MODES):
+        raise HotSpotOracleError("invalid SentiLab fixture rule")
+    # A square die has one footprint, so a turn never gives it a second catalog entry.
+    catalog = tuple(((w, h),) if rotation == "catalog" or w == h else ((w, h), (h, w))
+                    for w, h in zip(problem.widths_mm, problem.heights_mm))
+    return TapLegality(TAP_MARGIN_MM, lattice, min_gap, rotation, catalog)
+
+
+class TapGeometry:
+    """A fixture's geometry and legality. Needs no HotSpot binary; HotSpotOracle delegates here."""
+
+    def __init__(self, problem: TapProblem, legality: TapLegality):
+        self.problem = problem
+        self.legality = legality
+
+    @classmethod
+    def load(cls, fixture: str = TAP_CONFIG_DEFAULT_ID) -> "TapGeometry":
+        if not isinstance(fixture, str) or fixture not in TAP_CONFIGS:
+            raise ValueError(f"fixture must be one of {sorted(TAP_CONFIGS)}")
+        problem = _load_problem(config_path=TAP_CONFIGS[fixture], hotspot_binary=None)
+        return cls(problem, _load_legality(TAP_CONFIGS[fixture], problem))
+
+    @property
+    def fixture_id(self) -> str:
+        return self.problem.fixture_id
+
+    def design_from_centers(self, centers_mm, rotated=None) -> Design:
+        """Build the controller Design for this fixture. rotated[i] turns die i by 90 degrees."""
+        count = len(self.problem.widths_mm)
+        if len(centers_mm) != count:
+            raise TapLegalityError("TAP layout must provide one center per chiplet")
+        rotated = (False,) * count if rotated is None else tuple(rotated)
+        if len(rotated) != count or any(not isinstance(flag, bool) for flag in rotated):
+            raise TapLegalityError("TAP layout must give one boolean rotation flag per chiplet")
+        chiplets, positions = [], []
+        for index, ((x, y), width, height, turned) in enumerate(
+                zip(centers_mm, self.problem.widths_mm, self.problem.heights_mm, rotated)):
+            if turned:
+                width, height = height, width
+            chiplets.append(Chiplet(f"tap-chiplet-{index}", width, height))
+            positions.append((float(x) - width / 2, float(y) - height / 2))
+        return Design(self.problem.interposer_size_mm, self.problem.interposer_size_mm, 0.0,
+                      tuple(chiplets), tuple(positions))
+
+    def rotated(self, candidate: Design) -> tuple[bool, ...]:
+        """Which dies of a legal candidate sit turned 90 degrees from the configured orientation."""
+        return tuple(not (_same_mm(chiplet.width_mm, width) and _same_mm(chiplet.height_mm, height))
+                     for chiplet, width, height in zip(candidate.chiplets, self.problem.widths_mm,
+                                                       self.problem.heights_mm))
+
+    def centers_for(self, candidate: Design) -> tuple[tuple[float, float], ...]:
+        """The search gate: every fixture rule, including the centre lattice."""
+        return self._checked_centers(candidate, lattice=True)
+
+    def continuous_centers_for(self, candidate: Design) -> tuple[tuple[float, float], ...]:
+        """The continuous geometry rules without the search lattice: frame, orientation catalog,
+        margin with halo, halo non-overlap and minimum spacing. For fixed reference layouts such as
+        the raw figure reconstructions (gate zero); search candidates go through centers_for."""
+        return self._checked_centers(candidate, lattice=False)
+
+    def _checked_centers(self, candidate: Design, *, lattice: bool) -> tuple[tuple[float, float], ...]:
+        if not isinstance(candidate, Design):
+            raise TapLegalityError("TAP oracle requires a controller Design")
+        try:
+            candidate.check()
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise TapLegalityError(f"invalid TAP candidate: {exc}") from exc
+        catalog = self.legality.orientation_catalog_mm
+        footprints = tuple((chiplet.width_mm, chiplet.height_mm) for chiplet in candidate.chiplets)
+        if (len(footprints) != len(catalog) or
+                any(not any(_same_mm(actual[0], width) and _same_mm(actual[1], height) for width, height in allowed)
+                    for actual, allowed in zip(footprints, catalog))):
+            raise TapLegalityError("TAP fixture chiplet catalog mismatch")
+        size = self.problem.interposer_size_mm
+        if not _same_mm(candidate.width_mm, size) or not _same_mm(candidate.height_mm, size):
+            raise TapLegalityError("TAP fixture interposer size mismatch")
+        violations = self.layout_violations(candidate, lattice=lattice)
+        if violations:
+            raise TapLegalityError(violations[0].message)
+        return self._centers(candidate)
+
+    @staticmethod
+    def _centers(candidate: Design) -> tuple[tuple[float, float], ...]:
+        # Centres come from each die's own footprint, so a turned die is placed as turned.
+        return tuple((float(x + chiplet.width_mm / 2), float(y + chiplet.height_mm / 2))
+                     for chiplet, (x, y) in zip(candidate.chiplets, candidate.positions))
+
+    def layout_violations(self, candidate: Design, *, lattice: bool = True) -> tuple[LayoutViolation, ...]:
+        """Every placement-rule miss, in the order centers_for reports them: margins, lattice (unless
+        lattice=False), halo overlaps, then minimum spacing. Reads each die's own (possibly turned)
+        footprint."""
+        size = self.problem.interposer_size_mm
+        centers = self._centers(candidate)
+        found = []
+        margin = self.legality.margin_mm
+        rectangles = []
+        for index, (chiplet, (center_x, center_y), halo) in enumerate(
+                zip(candidate.chiplets, centers, self.problem.bump_halos_mm)):
+            rect = (center_x - chiplet.width_mm / 2 - halo,
+                    center_y - chiplet.height_mm / 2 - halo,
+                    center_x + chiplet.width_mm / 2 + halo,
+                    center_y + chiplet.height_mm / 2 + halo)
+            excess = max(margin - rect[0], margin - rect[1], rect[2] - (size - margin), rect[3] - (size - margin))
+            if excess > 1e-9:
+                found.append(LayoutViolation("margin", (index,), excess,
+                             f"chiplet {index} violates the {margin:g} mm interposer margin with its microbump halo"))
+            rectangles.append(rect)
+
+        step = self.legality.center_lattice_mm if lattice else None
+        if step is not None:
+            for index, (center_x, center_y) in enumerate(centers):
+                off = max(abs(center_x / step - round(center_x / step)), abs(center_y / step - round(center_y / step)))
+                if off > 1e-9:
+                    found.append(LayoutViolation("lattice", (index,), off * step,
+                                 f"chiplet {index} center is off the {step:g} mm placement grid"))
+
+        for index, rect in enumerate(rectangles):
+            for other_index, other in enumerate(rectangles[:index]):
+                if not (rect[2] <= other[0] or other[2] <= rect[0] or
+                        rect[3] <= other[1] or other[3] <= rect[1]):
+                    depth = min(min(rect[2], other[2]) - max(rect[0], other[0]),
+                                min(rect[3], other[3]) - max(rect[1], other[1]))
+                    found.append(LayoutViolation("halo_overlap", (other_index, index), depth,
+                                 f"chiplets {other_index} and {index} overlap with their microbump halos"))
+
+        min_gap = self.legality.min_die_gap_mm
+        if min_gap > 0:
+            # TAP-2.5D Eqn. (10): die bodies at least w_gap apart along some axis.
+            bodies = [(rect[0] + halo, rect[1] + halo, rect[2] - halo, rect[3] - halo)
+                      for rect, halo in zip(rectangles, self.problem.bump_halos_mm)]
+            for index, body in enumerate(bodies):
+                for other_index, other in enumerate(bodies[:index]):
+                    spacing = max(other[0] - body[2], body[0] - other[2], other[1] - body[3], body[1] - other[3])
+                    if spacing < min_gap - 1e-9:
+                        apart = (f"are {spacing:.4f} mm apart" if spacing >= 0 else
+                                 f"overlap by {-spacing:.4f} mm")
+                        found.append(LayoutViolation("min_spacing", (other_index, index), min_gap - spacing,
+                                     f"chiplets {other_index} and {index} {apart}, "
+                                     f"under the {min_gap:g} mm minimum spacing"))
+        return tuple(found)
+
+    def wirelength_mm(self, centers: tuple[tuple[float, float], ...]) -> float:
+        total_weight = sum(self.problem.connections[i][j]
+                           for i in range(len(centers)) for j in range(i + 1, len(centers)))
+        if total_weight <= 0 or not math.isfinite(total_weight):
+            raise HotSpotOracleError("TAP benchmark has no positive connection weight")
+        distance = sum(self.problem.connections[i][j] *
+                       (abs(centers[i][0] - centers[j][0]) + abs(centers[i][1] - centers[j][1]))
+                       for i in range(len(centers)) for j in range(i + 1, len(centers)))
+        return distance / total_weight
 
 
 def _canonical_hash(value: dict) -> str:
@@ -657,6 +864,7 @@ class HotSpotOracle:
         self._worker_pool: _WarmWorkerPool | None = None
         self.hotspot_binary = Path(hotspot_binary).resolve()
         self.problem = _load_problem(config_path=TAP_CONFIGS[self.fixture_id], hotspot_binary=self.hotspot_binary)
+        self.legality = _load_legality(TAP_CONFIGS[self.fixture_id], self.problem)
         self.solver_version = (
             f"HotSpot-7:{self.problem.hotspot_upstream_commit}"
             f":binary_sha256:{self.problem.hotspot_binary_sha256}"
@@ -682,6 +890,7 @@ class HotSpotOracle:
             "link_type": self.problem.link_type,
             "granularity_mm": self.problem.granularity_mm,
             "bump_halos_mm": self.problem.bump_halos_mm,
+            "legality": asdict(self.legality),
             "model": "grid/detailed_3D/grid_map_mode=max",
             "wire_metric": "connectivity-weighted Manhattan center distance in mm; not routed CPLEX length",
         })
@@ -705,74 +914,26 @@ class HotSpotOracle:
             if pool._closed:
                 self._worker_pool = None
 
-    def design_from_centers(self, centers_mm: tuple[tuple[float, float], ...] | list[list[float]]) -> Design:
+    @property
+    def geometry(self) -> TapGeometry:
+        """This oracle's fixture geometry and legality (built from the current problem)."""
+        return TapGeometry(self.problem, self.legality)
+
+    def design_from_centers(self, centers_mm: tuple[tuple[float, float], ...] | list[list[float]],
+                            rotated=None) -> Design:
         """Build the controller Design expected for this fixed TAP benchmark."""
-        if len(centers_mm) != len(self.problem.widths_mm):
-            raise TapLegalityError("TAP layout must provide one center per chiplet")
-        chiplets = tuple(Chiplet(f"tap-chiplet-{index}", width, height)
-                         for index, (width, height) in enumerate(zip(self.problem.widths_mm, self.problem.heights_mm)))
-        positions = []
-        for (x, y), chiplet in zip(centers_mm, chiplets):
-            positions.append((float(x) - chiplet.width_mm / 2, float(y) - chiplet.height_mm / 2))
-        return Design(self.problem.interposer_size_mm, self.problem.interposer_size_mm, 0.0,
-                      chiplets, tuple(positions))
+        return self.geometry.design_from_centers(centers_mm, rotated)
 
     def centers_for(self, candidate: Design) -> tuple[tuple[float, float], ...]:
-        if not isinstance(candidate, Design):
-            raise TapLegalityError("TAP oracle requires a controller Design")
-        try:
-            candidate.check()
-        except (TypeError, ValueError, OverflowError) as exc:
-            raise TapLegalityError(f"invalid TAP candidate: {exc}") from exc
-        expected_dimensions = tuple(zip(self.problem.widths_mm, self.problem.heights_mm))
-        actual_dimensions = tuple((chiplet.width_mm, chiplet.height_mm) for chiplet in candidate.chiplets)
-        if (len(candidate.chiplets) != len(expected_dimensions) or
-                any(not (math.isclose(actual[0], expected[0], rel_tol=0, abs_tol=1e-9) and
-                         math.isclose(actual[1], expected[1], rel_tol=0, abs_tol=1e-9))
-                    for actual, expected in zip(actual_dimensions, expected_dimensions))):
-            raise TapLegalityError("TAP fixture chiplet catalog mismatch")
-        if (not math.isclose(candidate.width_mm, self.problem.interposer_size_mm, rel_tol=0, abs_tol=1e-9) or
-                not math.isclose(candidate.height_mm, self.problem.interposer_size_mm, rel_tol=0, abs_tol=1e-9)):
-            raise TapLegalityError("TAP fixture interposer size mismatch")
+        return self.geometry.centers_for(candidate)
 
-        centers = tuple((float(x + chiplet.width_mm / 2), float(y + chiplet.height_mm / 2))
-                        for chiplet, (x, y) in zip(candidate.chiplets, candidate.positions))
-        margin = 0.5
-        rectangles = []
-        for index, (chiplet, (center_x, center_y), halo) in enumerate(
-                zip(candidate.chiplets, centers, self.problem.bump_halos_mm)):
-            rect = (center_x - chiplet.width_mm / 2 - halo,
-                    center_y - chiplet.height_mm / 2 - halo,
-                    center_x + chiplet.width_mm / 2 + halo,
-                    center_y + chiplet.height_mm / 2 + halo)
-            if (rect[0] < margin - 1e-9 or rect[1] < margin - 1e-9 or
-                    rect[2] > self.problem.interposer_size_mm - margin + 1e-9 or
-                    rect[3] > self.problem.interposer_size_mm - margin + 1e-9):
-                raise TapLegalityError(f"chiplet {index} violates the 0.5 mm interposer margin with its microbump halo")
-            rectangles.append(rect)
-
-        step = self.problem.granularity_mm
-        for index, (center_x, center_y) in enumerate(centers):
-            if (abs(center_x / step - round(center_x / step)) > 1e-9 or
-                    abs(center_y / step - round(center_y / step)) > 1e-9):
-                raise TapLegalityError(f"chiplet {index} center is off the {step:g} mm placement grid")
-
-        for index, rect in enumerate(rectangles):
-            for other_index, other in enumerate(rectangles[:index]):
-                if not (rect[2] <= other[0] or other[2] <= rect[0] or
-                        rect[3] <= other[1] or other[3] <= rect[1]):
-                    raise TapLegalityError(f"chiplets {other_index} and {index} overlap with their microbump halos")
-        return centers
+    def continuous_centers_for(self, candidate: Design) -> tuple[tuple[float, float], ...]:
+        """Validation only: the continuous rules without the search lattice. A call still applies
+        centers_for, lattice included."""
+        return self.geometry.continuous_centers_for(candidate)
 
     def _wirelength_mm(self, centers: tuple[tuple[float, float], ...]) -> float:
-        total_weight = sum(self.problem.connections[i][j]
-                           for i in range(len(centers)) for j in range(i + 1, len(centers)))
-        if total_weight <= 0 or not math.isfinite(total_weight):
-            raise HotSpotOracleError("TAP benchmark has no positive connection weight")
-        distance = sum(self.problem.connections[i][j] *
-                       (abs(centers[i][0] - centers[j][0]) + abs(centers[i][1] - centers[j][1]))
-                       for i in range(len(centers)) for j in range(i + 1, len(centers)))
-        return distance / total_weight
+        return self.geometry.wirelength_mm(centers)
 
     async def __call__(self, candidate: Design, *, timeout_s: float | None = None) -> HotSpotThermalResult:
         if timeout_s is not None and (not math.isfinite(timeout_s) or timeout_s <= 0):
@@ -785,6 +946,8 @@ class HotSpotOracle:
             "candidate_hash": candidate.hash,
             "problem_hash": self.problem_hash,
             "centers_mm": centers,
+            # The worker turns these dies (TAP's own rotate) before it writes the floorplan.
+            "rotated": list(self.geometry.rotated(candidate)),
             "grid_rows": self.grid_rows,
             "grid_cols": self.grid_cols,
             "solver_timeout_s": self.solver_timeout_s,
