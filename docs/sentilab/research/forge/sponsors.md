@@ -1,10 +1,11 @@
-# ScienceClaw sponsors: where they help SentiLab win (v2)
+# ScienceClaw sponsors: where they help SentiLab win (v2.1)
 
 Forge research subagent. Read-only: no sign-ups, keys, installs, runs, posts or contact. Companion to `nebius.md` (Nebius in depth), `FORGE-FINDINGS.md` (benchmark headroom) and `openresearch-jev-comparison-contract.md` (the offline comparison contract, same folder in the repo).
 
 **Timing.**
 - **v1:** research ran 2026-10-31 from 18:11Z to about 19:30Z (completed). The file was written at about 19:30Z and committed at 153c79e6 (19:32:39Z). v1's header said "19:20–20:30Z": that was a planned window, not the time the research took.
 - **v2:** applies root's review #57079 and her exact-source correction #57080. Work started at 19:41Z; see the commit timestamp.
+- **v2.1:** applies the wording repairs from root's review of d30b9f30 (commit comment 207557916, room #57104): H100 figures relabelled as list-price illustrations, router "optimum" qualified as solver termination, the historical 1 mm row added, and the source binding stated exactly. Work started at about 20:10Z; see the commit timestamp.
 - **Confirmed by root** (#57079; four independent official reads at 19:35Z): the prizes, the six judges, one overall competition, and the rubric (20/25/20/25/10 plus a 10-point collaboration bonus).
 - **Still unknown:** our registration, separate NVIDIA award categories and team credit allocations.
 
@@ -102,9 +103,9 @@ Source: [OFFICIAL https://scienceclawhack.ai/] unless a row says otherwise.
 
 **Cost fields used below:**
 - **Actual:** what we really paid. **Unknown** unless measured. A local GB10 does not establish $0. [INTERNAL SLAB-018 README: "no zero-dollar claim is made"]
-- **Forecast:** marginal external-rental forecast = charged GPU-seconds × $4.50 per GPU-hour.
+- **H100 list-price illustration:** `charged_seconds / 3600 × USD_per_hour`, with USD_per_hour = $4.50.
   - $4.50 is Nebius's HGX H100 on-demand list price [OFFICIAL via `nebius.md` §2.2].
-  - It is a comparator only: an H100 is different hardware, and Nebius use is deferred.
+  - **It is a normalized H100 list-price illustration only.** It is not a forecast of GB10 runtime, not a forecast of marginal actual cost, and not a claim of hardware equivalence. Nebius use is deferred.
 
 ### NVIDIA
 - **Build or use:** see §5.
@@ -217,13 +218,13 @@ Source: [OFFICIAL https://scienceclawhack.ai/] unless a row says otherwise.
 | Rate limit | Per-org tokens/s and requests/s; HTTP 429 when exceeded [OFFICIAL] | Whatever the agent provider allows |
 | Version | `jev-latest` → `jev-1.14.0` (Oct 14). We pin `jev-1.13.0`, which is still active [OFFICIAL] | v0.2.23 |
 
-**How the front door uses Jev** [INTERNAL AIdenID origin/main 09b2ff46 as last fetched locally; `workers/aquarium-edge/src/index.ts` last changed at 4f0d9847; the export must bind the deployed version]:
+**How the front door uses Jev** [INTERNAL source facts at Sentinelayer-AIdenID/AIdenID `09b2ff466d0fadcb83b09b0f6f213d13f430c9e1`, `workers/aquarium-edge/src/index.ts` sha256 `0b0668d9…`. These are not facts about the deployed Worker or its effective variables; warden owns that binding]:
 - `obtainVerdict` is shared by two paths, and both call `callJev(env, jevState(...), TRIAGE_QUESTIONS, 2500 ms)` with the pinned `jev-1.13.0`:
   - **`judgeUnknown`** (the unknown residue): ≥0.75 becomes automation; anything else stays unresolved.
   - **`judgeBrowser`** (consistent browser shapes):
     - Behind `JUDGE_CONSISTENT_BROWSERS`, and only after the DNT/GPC privacy filter.
     - ≥0.75 becomes automation, ≤0.25 "intent model agrees" human, in between becomes unknown, unavailable becomes unverified human.
-- `maybeEnrich` adds a sampled `purpose` Choice.
+- `maybeEnrich` adds a sampled `purpose` Choice. It calls `callJev` directly, not through `obtainVerdict`, with a different payload and a 750 ms code default. See contract §2.
 - Calls run in `ctx.waitUntil`, off the response path.
 
 ### 4.3 Where OpenResearch fits
@@ -247,9 +248,9 @@ Source: [OFFICIAL https://scienceclawhack.ai/] unless a row says otherwise.
   - Jev stays live; any production change is Carter's.
   - The original five-arm chiplet study stays separate [INTERNAL `docs/sentilab/draft-0.5/SCIENCE-REVIEW.md:66`].
 
-**List-price forecasts per 1k decisions** [COMPUTED; assumes 1,000 input + 50 output tokens per decision; actual = unknown until `usage` is measured]:
+**List-price illustrations per 1k decisions** [COMPUTED; assumes 1,000 input + 50 output tokens per decision; actual = unknown until `usage` is measured]:
 - Jev: 1M × $0.042 = $0.042.
-- An admitted local GPU challenger: actual unknown; forecast per §3 cost fields.
+- An admitted local GPU challenger: actual unknown. Any H100 figure is the §3 list-price illustration, not a cost forecast.
 
 ---
 
@@ -305,7 +306,7 @@ Source: [OFFICIAL https://scienceclawhack.ai/] unless a row says otherwise.
 - **Platform:** aarch64 builds and containers exist; the Spark porting guide lists cuOpt as supported (minimum 25.12); `cuopt_cli` reads MPS/LP files [OFFICIAL https://github.com/NVIDIA/cuopt, https://docs.nvidia.com/dgx/dgx-spark-porting-guide/latest/porting/dependencies.html, https://docs.nvidia.com/cuopt/user-guide/latest/cuopt-cli/index.html].
 - **Our router:** `sundai_hotspot/tap_router.py` (TAP-2.5D's MILP, ported from CPLEX to HiGHS via `scipy.optimize.milp`).
   - Pinned SciPy is 1.17.0; HiGHS 1.8.0 is recorded, not pinned.
-  - It refuses any solve that is not a proven optimum. [INTERNAL sentilab@46791be]
+  - It refuses any solve whose solver termination status is not "optimal" under the recorded tolerances. That status is the solver's report, not an exact arithmetic proof or an independent feasibility check. [INTERNAL sentilab@46791be]
 - **Router acceptance is still PENDING.** [INTERNAL #57079, #57080]
 - **Three separate wirelength sets** [INTERNAL PR #66 source audit via #57080; values stored rounded to one decimal]. Never interchange them:
 
@@ -314,8 +315,10 @@ Source: [OFFICIAL https://scienceclawhack.ai/] unless a row says otherwise.
 | Raw open-router output | 16,417.5 mm | 67,688.4 mm | `docs/sentilab/references/ascend910-tap25d-fig6a.json` and `micro150-tap25d-fig5a.json`, `routed_wirelength_mm` |
 | Snap-0.5 mm engineering output | 16,672.1 mm | 68,867.3 mm | `*-snap0p5.json`, `value_mm` ("routed (open router), not paper") |
 | Paper target (Ma et al., DATE 2021) | 16,426 mm | 67,686 mm | `paper_reported` / `paper_mm` |
+| *Historical, separately labelled:* kept 1 mm `snapped` layout (not a comparison baseline) | 18,155.8 mm | 64,771.3 mm | `snapped.routed_wirelength_mm` |
 
 - **Rule:** none of these copies shows the paper values are accepted HiGHS results. The paper targets are never a numerical oracle.
+- **"Four identities"** in root's review means two problems × two layouts (raw and snap-0.5), not four numeric categories [INTERNAL review comment 207557916].
 - **What a cross-check must do:**
   - Bind to one selected geometry (raw or snap-0.5), its exact netlist and MILP, and its units.
   - Record full solver evidence for both solvers: status, objective, bound and gap, tolerances, iterations and time, versions, and input hashes.
@@ -371,9 +374,9 @@ Source: [OFFICIAL https://scienceclawhack.ai/] unless a row says otherwise.
 
 ### 5.4 GPU cost fields
 
-**Forecast basis:** charged seconds × $4.50 per GPU-hour, the H100 comparator from §3. [COMPUTED]
+**Illustration basis:** `charged_seconds / 3600 × $4.50`, the §3 H100 list-price illustration. It is not a GB10 runtime or actual-cost forecast. [COMPUTED]
 
-| Item | Recorded charge | Actual $ | Marginal external-rental forecast |
+| Item | Recorded charge | Actual $ | H100 list-price illustration |
 |---|---|---|---|
 | SLAB-018 (completed; never rerun) | 494.189538605 s incl. 180 s reservation | Unknown | $0.62 |
 | SLAB-047 (failed closed; never rerun) | 79.617588726 s | Unknown | $0.10 |
