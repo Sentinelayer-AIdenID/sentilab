@@ -64,12 +64,14 @@ solver grid/steady/stdout files still need the oracle-owned archival seam.
 its raw files, parsed heatmaps and per-evaluation input hashes are unavailable.
 No new receipt journal is fabricated for it.
 
-The shared reservation is **150 solver executions and 6 CPU-minutes across both
-fixtures**, including warm-up and validation. The committed Ascend910 run
+Warden revised the shared reservation to **250 solver executions and 8 CPU-minutes
+across both fixtures**, including warm-up and validation, and authorized the
+micro150 study after SLAB-002b merged. The committed Ascend910 run
 predates that instruction; its CPU fields are null, not zero or elapsed-time
 estimates. Known study/validation runs account for at least 102 executions,
-with other gate executions unaccounted for. Further reproduction or micro150
-runs require reconciled accounting or a revised remaining allowance.
+with other gate executions unaccounted for. See `micro150/VALIDATION.md` for new
+measured usage and the remaining allowance calculation. Historical unknown CPU
+is never treated as zero; the global remaining CPU allowance is not certified.
 
 The mandatory rule compares signs on reference gaps strictly greater than 2e
 (2e16 for grid 16). Exact coarse ties count as violations; gaps equal to the
@@ -106,8 +108,20 @@ on the copy. It exits 1 on summary mismatch or inversion at the published 2e
 threshold. It validates arithmetic consistency, not cryptographic authenticity;
 coordinated edits of values and summaries require independent oracle reruns.
 
-`--fixture micro150` deliberately errors until SLAB-002b wires that oracle fixture.
-The same generator/evaluator consumes the fixture's geometry and powers through
-one factory; it must never silently run Ascend910 under the micro150 label.
-Micro150 measurements are a follow-up after claude-warden announces the wiring.
-Until then, Ascend910 is interim evidence and the combined study is inconclusive.
+SLAB-002b is merged in source revision
+`c6d5b0caa0c33402eaa35012306a098701808f22`. The same generator/evaluator now
+consumes either fixture's geometry and powers through `--fixture`. The micro150
+sample is separate from the unchanged historical Ascend910 files:
+
+```sh
+python -m sundai_controller.mesh_study --fixture micro150 --seed 1 --n 24 --freeze-only
+# Commit the new micro150/layouts.json and layouts.sha256 before any solve.
+BUILD_SHA=c6d5b0caa0c33402eaa35012306a098701808f22 \
+  python -m sundai_controller.mesh_study --fixture micro150 --seed 1 --n 24
+python -m sundai_controller.mesh_study --check docs/sentilab/evidence/mesh/micro150/RESULT.json
+```
+
+These commands describe the committed study. Independent reruns require a fresh
+output directory and a source revision matching the evaluator being used. Use
+the mesh error measured for the relevant fixture; it is not transferable between
+Ascend910 and micro150.

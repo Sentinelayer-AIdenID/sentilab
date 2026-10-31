@@ -1,0 +1,24 @@
+{
+  "name": "clean-checkout",
+  "command": [
+    "bash",
+    "-c",
+    "\n    dirty=$(git status --porcelain -- . \":(exclude)$1\")\n    [ -z \"$dirty\" ] || { printf \"%s\\n\" \"$dirty\"; exit 1; }\n",
+    "bash",
+    "docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI"
+  ],
+  "cwd": "/workspace/sentilab",
+  "started_at": "2026-10-31T06:30:37.378921Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:30:37.388295Z",
+  "wall_time_s": 0.0093670969363302,
+  "artifacts": [],
+  "stdout": {
+    "path": "clean-checkout/stdout.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "clean-checkout/stderr.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "tap-oracle",
+  "command": [
+    "python",
+    "-m",
+    "unittest",
+    "-q",
+    "test_tap_oracle.py"
+  ],
+  "cwd": "/workspace/sentilab/sundai_hotspot",
+  "started_at": "2026-10-31T06:30:05.091863Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:30:11.484066Z",
+  "wall_time_s": 6.392206442076713,
+  "artifacts": [],
+  "stdout": {
+    "path": "tap-oracle/stdout.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "tap-oracle/stderr.txt",
+    "sha256": "0c132cbcb77bc74da6838bd383e81858f3afcaadc4adeea8299dd918f9c23b35"
+  },
+  "test_count": 14
+}

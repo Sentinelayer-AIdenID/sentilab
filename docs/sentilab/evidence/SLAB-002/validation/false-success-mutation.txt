@@ -1,0 +1,16 @@
+sample: exit 0, 0.012s; /tmp/tmpnlnpca61/run/sample
+demo: exit 17, 0.025s; /tmp/tmp4dfipjkp/run/demo
+missing: exit 0, 0.001s; /tmp/tmp_jrn04ae/run/missing
+probe: exit 0, 0.025s; /tmp/tmp7pobmle1/run/probe
+======================================================================
+FAIL: test_missing_executable_retains_error_and_nonzero_status (test_evidence_capture.EvidenceCaptureTests.test_missing_executable_retains_error_and_nonzero_status)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/slab002-mutant/docs/sentilab/evidence/SLAB-002/test_evidence_capture.py", line 89, in test_missing_executable_retains_error_and_nonzero_status
+    self.assertEqual(status, 127)
+AssertionError: 0 != 127
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.124s
+
+FAILED (failures=1)

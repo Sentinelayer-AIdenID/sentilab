@@ -1,0 +1,9 @@
+#!/usr/bin/env python3
+"""Place sentilab_cli on PATH while the repository environment is active."""
+from pathlib import Path
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from sentilab_cli.__main__ import main
+
+main()

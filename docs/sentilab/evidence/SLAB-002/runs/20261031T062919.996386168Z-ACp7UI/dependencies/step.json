@@ -1,0 +1,28 @@
+{
+  "name": "dependencies",
+  "command": [
+    "python",
+    "-m",
+    "pip",
+    "install",
+    "-q",
+    "-r",
+    "/workspace/sentilab/requirements.txt",
+    "-r",
+    "/workspace/sentilab/requirements-service.txt"
+  ],
+  "cwd": "/workspace/sentilab",
+  "started_at": "2026-10-31T06:29:22.883512Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:29:23.815095Z",
+  "wall_time_s": 0.9315867129480466,
+  "artifacts": [],
+  "stdout": {
+    "path": "dependencies/stdout.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "dependencies/stderr.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

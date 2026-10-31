@@ -1,0 +1,13 @@
+test_duplicate_step_cannot_overwrite_evidence (test_evidence_capture.EvidenceCaptureTests.test_duplicate_step_cannot_overwrite_evidence) ... ok
+test_failed_demo_keeps_streams_artifacts_and_failure_after_cleanup (test_evidence_capture.EvidenceCaptureTests.test_failed_demo_keeps_streams_artifacts_and_failure_after_cleanup) ... ok
+test_missing_executable_retains_error_and_nonzero_status (test_evidence_capture.EvidenceCaptureTests.test_missing_executable_retains_error_and_nonzero_status) ... ok
+test_successful_probe_keeps_report_and_distinct_run (test_evidence_capture.EvidenceCaptureTests.test_successful_probe_keeps_report_and_distinct_run) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.120s
+
+OK
+sample: exit 0, 0.012s; /tmp/tmpgdjmql48/run/sample
+demo: exit 17, 0.025s; /tmp/tmptfj0sdo6/run/demo
+missing: exit 127, 0.001s; /tmp/tmpy7dzgq_z/run/missing
+probe: exit 0, 0.025s; /tmp/tmptehmiqzh/run/probe

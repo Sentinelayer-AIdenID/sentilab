@@ -1,0 +1,26 @@
+{
+  "name": "controller",
+  "command": [
+    "python",
+    "-m",
+    "unittest",
+    "-q",
+    "test_controller.py",
+    "test_experiment.py"
+  ],
+  "cwd": "/workspace/sentilab/sundai_controller",
+  "started_at": "2026-10-31T06:29:29.336895Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:29:29.851205Z",
+  "wall_time_s": 0.5143133100355044,
+  "artifacts": [],
+  "stdout": {
+    "path": "controller/stdout.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "controller/stderr.txt",
+    "sha256": "2df4e396e4beeea23abb8f94ed6b64f06e3fa695c24060321e2218bfa97560b5"
+  },
+  "test_count": 55
+}

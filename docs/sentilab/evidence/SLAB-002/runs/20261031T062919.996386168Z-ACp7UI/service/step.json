@@ -1,0 +1,25 @@
+{
+  "name": "service",
+  "command": [
+    "python",
+    "-m",
+    "unittest",
+    "-q",
+    "app.test_runs"
+  ],
+  "cwd": "/workspace/sentilab",
+  "started_at": "2026-10-31T06:30:34.986207Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:30:37.340225Z",
+  "wall_time_s": 2.354023549007252,
+  "artifacts": [],
+  "stdout": {
+    "path": "service/stdout.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "service/stderr.txt",
+    "sha256": "30fe36c2a01c37b93e9180b6400d3e37a276efdaf46e59d290164972b68fda36"
+  },
+  "test_count": 6
+}

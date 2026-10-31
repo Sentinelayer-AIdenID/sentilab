@@ -1,0 +1,57 @@
+test_duplicate_step_cannot_overwrite_evidence (test_evidence_capture.EvidenceCaptureTests.test_duplicate_step_cannot_overwrite_evidence) ... ERROR
+test_failed_demo_keeps_streams_artifacts_and_failure_after_cleanup (test_evidence_capture.EvidenceCaptureTests.test_failed_demo_keeps_streams_artifacts_and_failure_after_cleanup) ... ERROR
+test_missing_executable_retains_error_and_nonzero_status (test_evidence_capture.EvidenceCaptureTests.test_missing_executable_retains_error_and_nonzero_status) ... ERROR
+test_successful_probe_keeps_report_and_distinct_run (test_evidence_capture.EvidenceCaptureTests.test_successful_probe_keeps_report_and_distinct_run) ... ERROR
+
+======================================================================
+ERROR: test_duplicate_step_cannot_overwrite_evidence (test_evidence_capture.EvidenceCaptureTests.test_duplicate_step_cannot_overwrite_evidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/slab002-before/docs/sentilab/evidence/SLAB-002/test_evidence_capture.py", line 28, in setUp
+    self.api = recorder()
+               ^^^^^^^^^^
+  File "/tmp/slab002-before/docs/sentilab/evidence/SLAB-002/test_evidence_capture.py", line 20, in recorder
+    source = SCRIPT.read_text().split("<<'EVIDENCE_PY'\n", 1)[1].split('\nEVIDENCE_PY\n', 1)[0]
+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+======================================================================
+ERROR: test_failed_demo_keeps_streams_artifacts_and_failure_after_cleanup (test_evidence_capture.EvidenceCaptureTests.test_failed_demo_keeps_streams_artifacts_and_failure_after_cleanup)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/slab002-before/docs/sentilab/evidence/SLAB-002/test_evidence_capture.py", line 28, in setUp
+    self.api = recorder()
+               ^^^^^^^^^^
+  File "/tmp/slab002-before/docs/sentilab/evidence/SLAB-002/test_evidence_capture.py", line 20, in recorder
+    source = SCRIPT.read_text().split("<<'EVIDENCE_PY'\n", 1)[1].split('\nEVIDENCE_PY\n', 1)[0]
+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+======================================================================
+ERROR: test_missing_executable_retains_error_and_nonzero_status (test_evidence_capture.EvidenceCaptureTests.test_missing_executable_retains_error_and_nonzero_status)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/slab002-before/docs/sentilab/evidence/SLAB-002/test_evidence_capture.py", line 28, in setUp
+    self.api = recorder()
+               ^^^^^^^^^^
+  File "/tmp/slab002-before/docs/sentilab/evidence/SLAB-002/test_evidence_capture.py", line 20, in recorder
+    source = SCRIPT.read_text().split("<<'EVIDENCE_PY'\n", 1)[1].split('\nEVIDENCE_PY\n', 1)[0]
+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+======================================================================
+ERROR: test_successful_probe_keeps_report_and_distinct_run (test_evidence_capture.EvidenceCaptureTests.test_successful_probe_keeps_report_and_distinct_run)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/slab002-before/docs/sentilab/evidence/SLAB-002/test_evidence_capture.py", line 28, in setUp
+    self.api = recorder()
+               ^^^^^^^^^^
+  File "/tmp/slab002-before/docs/sentilab/evidence/SLAB-002/test_evidence_capture.py", line 20, in recorder
+    source = SCRIPT.read_text().split("<<'EVIDENCE_PY'\n", 1)[1].split('\nEVIDENCE_PY\n', 1)[0]
+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.001s
+
+FAILED (errors=4)

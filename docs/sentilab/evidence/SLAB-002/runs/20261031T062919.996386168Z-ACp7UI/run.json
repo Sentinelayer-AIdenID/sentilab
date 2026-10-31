@@ -1,0 +1,615 @@
+{
+  "schema": "sentilab-regression-run-v1",
+  "started_at": "2026-10-31T06:29:20.030810Z",
+  "head_sha": "44736fb2c584849ffbf43b39ab06cb061cc26483",
+  "git_tree_sha": "1f0cde65da5a64bff3a5994d80fbaba13a760dd1",
+  "script_sha256": "8ef8d368d9a955ea9ed36f0a6d92fb70dfd689430550b999295a75b0d45cacc6",
+  "status": "passed",
+  "steps": [
+    {
+      "name": "clean-checkout",
+      "command": [
+        "bash",
+        "-c",
+        "\n    dirty=$(git status --porcelain -- . \":(exclude)$1\")\n    [ -z \"$dirty\" ] || { printf \"%s\\n\" \"$dirty\"; exit 1; }\n",
+        "bash",
+        "docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI"
+      ],
+      "cwd": "/workspace/sentilab",
+      "started_at": "2026-10-31T06:30:37.378921Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:30:37.388295Z",
+      "wall_time_s": 0.0093670969363302,
+      "artifacts": [],
+      "stdout": {
+        "path": "clean-checkout/stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "clean-checkout/stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "metadata": {
+        "path": "clean-checkout/step.json",
+        "sha256": "92b6474c72c9f915ff9b382f737eb1e783e4dcda487a0577464edb21c8e119b6"
+      }
+    },
+    {
+      "name": "controller",
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "-q",
+        "test_controller.py",
+        "test_experiment.py"
+      ],
+      "cwd": "/workspace/sentilab/sundai_controller",
+      "started_at": "2026-10-31T06:29:29.336895Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:29:29.851205Z",
+      "wall_time_s": 0.5143133100355044,
+      "artifacts": [],
+      "stdout": {
+        "path": "controller/stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "controller/stderr.txt",
+        "sha256": "2df4e396e4beeea23abb8f94ed6b64f06e3fa695c24060321e2218bfa97560b5"
+      },
+      "test_count": 55,
+      "metadata": {
+        "path": "controller/step.json",
+        "sha256": "6f9e03d9789d1e2e180a6d92f43823a673dbe79c1a42191e6f7018be2886c61e"
+      }
+    },
+    {
+      "name": "demo",
+      "command": [
+        "python",
+        "demo.py"
+      ],
+      "cwd": "/tmp/tmp.BQCHiVnG6s/sundai_controller",
+      "started_at": "2026-10-31T06:30:29.499254Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:30:31.241331Z",
+      "wall_time_s": 1.742063269019127,
+      "artifacts": [
+        {
+          "path": "demo/artifacts/demo_results.json",
+          "sha256": "06b7798a13b477b66ebcec5ec5eb8d7cdfb7a7a0c280b8095b6f1d39276d6b97"
+        },
+        {
+          "path": "demo/artifacts/demo_flight_record.json",
+          "sha256": "fbab342f678d4b7443a51711ea5dfe0016c26d345101334104d2b8860efe5bfb"
+        }
+      ],
+      "stdout": {
+        "path": "demo/stdout.txt",
+        "sha256": "50b36339b110db1a282a5d0bd03a7a203b5514b9eb156dab50844a7dd2a0c7aa"
+      },
+      "stderr": {
+        "path": "demo/stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "metadata": {
+        "path": "demo/step.json",
+        "sha256": "9758e9f3a1152d144d2ae95d161988267de37dab2524ff262e5fe1220f0e640d"
+      }
+    },
+    {
+      "name": "demo-assertions",
+      "command": [
+        "python3",
+        "-c",
+        "\nimport json\nd = json.load(open('/workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/demo/stdout.txt', encoding='utf-8'))\nassert round(d['baseline_c'], 7) == 93.3423169, f\"baseline {d['baseline_c']}\"\nassert round(d['final_c'], 7) == 92.3143491, f\"final {d['final_c']}\"\nassert d['receipt_chain_valid'] is True, d\nprint(f\"demo OK: {d['baseline_c']} \u2192 {d['final_c']} C, receipt_chain_valid={d['receipt_chain_valid']}\")\n"
+      ],
+      "cwd": "/workspace/sentilab",
+      "started_at": "2026-10-31T06:30:31.281896Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:30:31.302368Z",
+      "wall_time_s": 0.020463894004933536,
+      "artifacts": [],
+      "stdout": {
+        "path": "demo-assertions/stdout.txt",
+        "sha256": "b3b290154999680e13d0b34388ee9e3f024596b113020060ba53b1832505fa30"
+      },
+      "stderr": {
+        "path": "demo-assertions/stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "metadata": {
+        "path": "demo-assertions/step.json",
+        "sha256": "dd65fefc01b966e6f5e9e527cf1462702909bf5a96fc7d3b87564f0439e84e62"
+      }
+    },
+    {
+      "name": "dependencies",
+      "command": [
+        "python",
+        "-m",
+        "pip",
+        "install",
+        "-q",
+        "-r",
+        "/workspace/sentilab/requirements.txt",
+        "-r",
+        "/workspace/sentilab/requirements-service.txt"
+      ],
+      "cwd": "/workspace/sentilab",
+      "started_at": "2026-10-31T06:29:22.883512Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:29:23.815095Z",
+      "wall_time_s": 0.9315867129480466,
+      "artifacts": [],
+      "stdout": {
+        "path": "dependencies/stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "dependencies/stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "metadata": {
+        "path": "dependencies/step.json",
+        "sha256": "75b9725dba41cd96175faa6ded2c3b9abb0b36f1da20e6118ca3c6ca10a4cc3a"
+      }
+    },
+    {
+      "name": "fingerprints",
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "-q",
+        "test_tfl08_leaderboard.py"
+      ],
+      "cwd": "/workspace/sentilab/sundai_controller",
+      "started_at": "2026-10-31T06:29:56.725768Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:30:05.042436Z",
+      "wall_time_s": 8.316671014064923,
+      "artifacts": [],
+      "stdout": {
+        "path": "fingerprints/stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "fingerprints/stderr.txt",
+        "sha256": "b522daca18dacd68b5df3c0b711ffa2e256cc844c0b3c3217b353f5201d3064d"
+      },
+      "test_count": 8,
+      "metadata": {
+        "path": "fingerprints/step.json",
+        "sha256": "8c481500087d9351c47a10ea12be67ae5c8afe90525b47c9574a5d6bd81e3d89"
+      }
+    },
+    {
+      "name": "hotspot-build",
+      "command": [
+        "make",
+        "-j4",
+        "SUPERLU=1"
+      ],
+      "cwd": "/workspace/sentilab/sundai_hotspot",
+      "started_at": "2026-10-31T06:29:23.853536Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:29:29.292021Z",
+      "wall_time_s": 5.4384839130798355,
+      "artifacts": [
+        {
+          "path": "hotspot-build/artifacts/hotspot",
+          "sha256": "e4358b46794ebc00f07102d13b3ca687507834a1784eba135d26d1d493d334b4"
+        },
+        {
+          "path": "hotspot-build/artifacts/hotfloorplan",
+          "sha256": "314b454c0e235809bf9295ee3202c65a100cca2e69ffe8045ad1eed037519653"
+        }
+      ],
+      "stdout": {
+        "path": "hotspot-build/stdout.txt",
+        "sha256": "0897e20ec8b78ae443005f22beaec31415b58c5f59c592dd5d4b889bc0f214c5"
+      },
+      "stderr": {
+        "path": "hotspot-build/stderr.txt",
+        "sha256": "972464709e65489878bb74d844e3587ec18dffc9c37cb52616ff3ef1de338af4"
+      },
+      "metadata": {
+        "path": "hotspot-build/step.json",
+        "sha256": "d97eaea266d8a1b346af179bcd6516b1f3b36fc66776ce3261c5bd552709f7ef"
+      }
+    },
+    {
+      "name": "import-delta",
+      "command": [
+        "git",
+        "diff",
+        "--name-only",
+        "126507d4dbd8cf327aa158c4dd893c436f7cdf8f",
+        "HEAD"
+      ],
+      "cwd": "/workspace/sentilab",
+      "started_at": "2026-10-31T06:29:22.842873Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:29:22.845789Z",
+      "wall_time_s": 0.002906298963353038,
+      "artifacts": [],
+      "stdout": {
+        "path": "import-delta/stdout.txt",
+        "sha256": "87171a86924af03a1ecac2cec1b373b3933fd2f28c235b6b93dc124c45ec59f2"
+      },
+      "stderr": {
+        "path": "import-delta/stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "metadata": {
+        "path": "import-delta/step.json",
+        "sha256": "9b6605c9f0a66384f7803b813102bd28cf9b1df06ef635f8c652a6885a120abe"
+      }
+    },
+    {
+      "name": "probe",
+      "command": [
+        "python",
+        "run_tap_probe.py",
+        "--report",
+        "/tmp/tmp.BQCHiVnG6s/sundai_hotspot/probe_results/report.json"
+      ],
+      "cwd": "/tmp/tmp.BQCHiVnG6s/sundai_hotspot",
+      "started_at": "2026-10-31T06:30:11.644656Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:30:14.105102Z",
+      "wall_time_s": 2.4604404299752787,
+      "artifacts": [
+        {
+          "path": "probe/artifacts/probe_results/report.json",
+          "sha256": "10ec9ea1aa7a51bd53c45852a9c1ac03781bd0f4b28e9045385e8dfc7c86d3e5"
+        }
+      ],
+      "stdout": {
+        "path": "probe/stdout.txt",
+        "sha256": "b55294da0c91ef760d93fa6ce6d4ffebc86d5d9b367133941fcdd5806dd5a559"
+      },
+      "stderr": {
+        "path": "probe/stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "metadata": {
+        "path": "probe/step.json",
+        "sha256": "adcc640310aacd37dce35a60ac2455dff9b0defab324b756c379b2d31f87210a"
+      }
+    },
+    {
+      "name": "provenance",
+      "command": [
+        "python3",
+        "-c",
+        "\nimport json, hashlib, subprocess, sys\nwith open('/workspace/sentilab/PROVENANCE.json') as f:\n    p = json.load(f)\nmismatches = 0\nmissing_blobs = 0\nfor entry in p['files']:\n    blob = entry['git_blob']\n    r = subprocess.run(['git', 'cat-file', '-e', blob], cwd='/workspace/sentilab', capture_output=True)\n    if r.returncode != 0:\n        print(f'BLOB MISSING: {entry[\"path\"]} blob={blob}')\n        missing_blobs += 1\n        continue\n    at_import = subprocess.run(['git', 'rev-parse', '126507d4dbd8cf327aa158c4dd893c436f7cdf8f:' + entry['path']], cwd='/workspace/sentilab', capture_output=True, text=True)\n    if at_import.returncode != 0 or at_import.stdout.strip() != blob:\n        print(f'IMPORT TREE MISMATCH: {entry[\"path\"]} is not blob {blob} at 126507d4dbd8cf327aa158c4dd893c436f7cdf8f')\n        mismatches += 1\n        continue\n    r = subprocess.run(['git', 'cat-file', 'blob', blob], cwd='/workspace/sentilab', capture_output=True, text=False)\n    actual = hashlib.sha256(r.stdout).hexdigest()\n    if actual != entry['sha256']:\n        print(f'SHA256 MISMATCH: {entry[\"path\"]} (expected {entry[\"sha256\"][:16]}... got {actual[:16]}...)')\n        mismatches += 1\nif missing_blobs > 0:\n    raise SystemExit(f'PROVENANCE: {missing_blobs} blobs missing from repo')\nif mismatches > 0:\n    raise SystemExit(f'PROVENANCE SHA256 MISMATCHES: {mismatches}')\nprint(f'IMMUTABLE IMPORT VERIFIED: {len(p[\"files\"])} files checked against git blobs at 126507d4dbd8cf327aa158c4dd893c436f7cdf8f, 0 mismatches')\n"
+      ],
+      "cwd": "/workspace/sentilab",
+      "started_at": "2026-10-31T06:29:20.121590Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:29:22.802680Z",
+      "wall_time_s": 2.681088186101988,
+      "artifacts": [],
+      "stdout": {
+        "path": "provenance/stdout.txt",
+        "sha256": "6971437804fafc096d2dd4399c35709c92d4d6f02e5f6ba106be930dfe0f341c"
+      },
+      "stderr": {
+        "path": "provenance/stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "metadata": {
+        "path": "provenance/step.json",
+        "sha256": "ee553b43fed171f7edea246f24669e64fd1398e81db0e965046674035b534c80"
+      }
+    },
+    {
+      "name": "safety",
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "-q",
+        "test_safety_property.py"
+      ],
+      "cwd": "/workspace/sentilab/sundai_controller",
+      "started_at": "2026-10-31T06:29:29.891007Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:29:56.683974Z",
+      "wall_time_s": 26.792969319038093,
+      "artifacts": [],
+      "stdout": {
+        "path": "safety/stdout.txt",
+        "sha256": "346475fd921c0133e044ebc6bf2e8ceb68eca27faceb25ff9b5fc33075a07baf"
+      },
+      "stderr": {
+        "path": "safety/stderr.txt",
+        "sha256": "9d5f7734523eddcf6bda9cadc8409095097e6d66ad11db23a5a06def0441d867"
+      },
+      "test_count": 2,
+      "metadata": {
+        "path": "safety/step.json",
+        "sha256": "c451ceed984d48a557e136f1a081fc6233099714fa747b06e80019193c607740"
+      }
+    },
+    {
+      "name": "scratch-copy",
+      "command": [
+        "cp",
+        "-r",
+        "/workspace/sentilab/sundai_controller",
+        "/workspace/sentilab/sundai_hotspot",
+        "/workspace/sentilab/sundai_tap",
+        "/workspace/sentilab/sundai_thermal",
+        "/tmp/tmp.BQCHiVnG6s/"
+      ],
+      "cwd": "/workspace/sentilab",
+      "started_at": "2026-10-31T06:30:11.527075Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:30:11.560781Z",
+      "wall_time_s": 0.03370805806480348,
+      "artifacts": [],
+      "stdout": {
+        "path": "scratch-copy/stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "scratch-copy/stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "metadata": {
+        "path": "scratch-copy/step.json",
+        "sha256": "e06d3e9b87caaee35e934b2c489ecacf68221a39a11c2c639ccbbf1ff7eb1fb4"
+      }
+    },
+    {
+      "name": "scratch-outputs",
+      "command": [
+        "rm",
+        "-f",
+        "/tmp/tmp.BQCHiVnG6s/sundai_hotspot/probe_results/report.json",
+        "/tmp/tmp.BQCHiVnG6s/sundai_controller/demo_results.json",
+        "/tmp/tmp.BQCHiVnG6s/sundai_controller/demo_flight_record.json"
+      ],
+      "cwd": "/workspace/sentilab",
+      "started_at": "2026-10-31T06:30:11.602861Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:30:11.604690Z",
+      "wall_time_s": 0.0018168980022892356,
+      "artifacts": [],
+      "stdout": {
+        "path": "scratch-outputs/stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "scratch-outputs/stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "metadata": {
+        "path": "scratch-outputs/step.json",
+        "sha256": "1bbcd85a18d278ebeae4bfdde67d1213ea757fdae8c25cf8f0e591889dc9142e"
+      }
+    },
+    {
+      "name": "service",
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "-q",
+        "app.test_runs"
+      ],
+      "cwd": "/workspace/sentilab",
+      "started_at": "2026-10-31T06:30:34.986207Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:30:37.340225Z",
+      "wall_time_s": 2.354023549007252,
+      "artifacts": [],
+      "stdout": {
+        "path": "service/stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "service/stderr.txt",
+        "sha256": "30fe36c2a01c37b93e9180b6400d3e37a276efdaf46e59d290164972b68fda36"
+      },
+      "test_count": 6,
+      "metadata": {
+        "path": "service/step.json",
+        "sha256": "0d83686fd72550b8fdba4f7168a4d97df769e28835d7ff989e62cdba18942889"
+      }
+    },
+    {
+      "name": "smoke-ascend910",
+      "command": [
+        "python",
+        "tfl05_smoke.py",
+        "--benchmark",
+        "ascend910"
+      ],
+      "cwd": "/tmp/tmp.BQCHiVnG6s/sundai_controller",
+      "started_at": "2026-10-31T06:30:33.169780Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:30:34.947352Z",
+      "wall_time_s": 1.7775710329879075,
+      "artifacts": [],
+      "stdout": {
+        "path": "smoke-ascend910/stdout.txt",
+        "sha256": "4f9e355673306de8fbdce18ac54344f53d478c2caf6ea5d74febf2e7dd41979c"
+      },
+      "stderr": {
+        "path": "smoke-ascend910/stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "metadata": {
+        "path": "smoke-ascend910/step.json",
+        "sha256": "fa316bccbfbdad655c4c39243b13d4c301fae408e3d03056f67659a2fc5c71cd"
+      }
+    },
+    {
+      "name": "smoke-plate",
+      "command": [
+        "python",
+        "tfl05_smoke.py",
+        "--benchmark",
+        "plate"
+      ],
+      "cwd": "/tmp/tmp.BQCHiVnG6s/sundai_controller",
+      "started_at": "2026-10-31T06:30:31.340743Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:30:33.127364Z",
+      "wall_time_s": 1.7866321300389245,
+      "artifacts": [],
+      "stdout": {
+        "path": "smoke-plate/stdout.txt",
+        "sha256": "6de80598621e037207004b43a993b8e8a425df10cd9b8dda876e1fb58cc002e2"
+      },
+      "stderr": {
+        "path": "smoke-plate/stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "metadata": {
+        "path": "smoke-plate/step.json",
+        "sha256": "1b23d78798fe18090047019ad7cba7cd41976127708bd7615a40d7fe08e72558"
+      }
+    },
+    {
+      "name": "tap-oracle",
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "-q",
+        "test_tap_oracle.py"
+      ],
+      "cwd": "/workspace/sentilab/sundai_hotspot",
+      "started_at": "2026-10-31T06:30:05.091863Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:30:11.484066Z",
+      "wall_time_s": 6.392206442076713,
+      "artifacts": [],
+      "stdout": {
+        "path": "tap-oracle/stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "tap-oracle/stderr.txt",
+        "sha256": "0c132cbcb77bc74da6838bd383e81858f3afcaadc4adeea8299dd918f9c23b35"
+      },
+      "test_count": 14,
+      "metadata": {
+        "path": "tap-oracle/step.json",
+        "sha256": "a69dc8c95ee16bedd4bca228a862e4a3529aebcee8ba7d6166be73e12619337f"
+      }
+    },
+    {
+      "name": "thermal",
+      "command": [
+        "env",
+        "OPENBLAS_CORETYPE=Haswell",
+        "TFL_CANONICAL_CONTAINER=1",
+        "TFL_HOTSPOT_PROBE_REPORT=/tmp/tmp.BQCHiVnG6s/sundai_hotspot/probe_results/report.json",
+        "python",
+        "-m",
+        "unittest",
+        "-q",
+        "test_tfl14_regression"
+      ],
+      "cwd": "/workspace/sentilab/sundai_thermal",
+      "started_at": "2026-10-31T06:30:14.145725Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:30:29.459445Z",
+      "wall_time_s": 15.313727437052876,
+      "artifacts": [],
+      "stdout": {
+        "path": "thermal/stdout.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stderr": {
+        "path": "thermal/stderr.txt",
+        "sha256": "bbfb1bfab6deeb5abd73f15e6fe526450f66cd05fb9cc9e66082c4ae9343cbf2"
+      },
+      "test_count": 2,
+      "metadata": {
+        "path": "thermal/step.json",
+        "sha256": "0a0e7dd94b52b8bce119388daa22d4a8d2752680faf0c51c5fbfcf250deff8a1"
+      }
+    },
+    {
+      "name": "toolchain",
+      "command": [
+        "bash",
+        "-ec",
+        "gcc --version; python3 --version; dpkg-query -W libsuperlu-dev libblas-dev"
+      ],
+      "cwd": "/workspace/sentilab",
+      "started_at": "2026-10-31T06:29:20.073209Z",
+      "exit_code": 0,
+      "ended_at": "2026-10-31T06:29:20.082173Z",
+      "wall_time_s": 0.008954596007242799,
+      "artifacts": [],
+      "stdout": {
+        "path": "toolchain/stdout.txt",
+        "sha256": "83fa54507e7abf4359eb7b5d42a6968a5ed68011c53b5c6df28a907a09b6f648"
+      },
+      "stderr": {
+        "path": "toolchain/stderr.txt",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "metadata": {
+        "path": "toolchain/step.json",
+        "sha256": "e706441e38cc7b4e689910dac42bc7c837d4cd33463c9226fdcb0a09d5278693"
+      }
+    }
+  ],
+  "ended_at": "2026-10-31T06:30:37.425465Z",
+  "exit_code": 0,
+  "passed": 14,
+  "failed": 0,
+  "toolchain": {
+    "python": {
+      "command": [
+        "/workspace/sentilab/.venv/bin/python3",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout": "Python 3.12.3",
+      "stderr": ""
+    },
+    "gcc": {
+      "command": [
+        "gcc",
+        "--version"
+      ],
+      "exit_code": 0,
+      "stdout": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
+      "stderr": ""
+    },
+    "superlu": {
+      "command": [
+        "dpkg-query",
+        "-W",
+        "-f=${Version}",
+        "libsuperlu-dev"
+      ],
+      "exit_code": 0,
+      "stdout": "6.0.1+dfsg1-1build1",
+      "stderr": ""
+    },
+    "blas": {
+      "command": [
+        "dpkg-query",
+        "-W",
+        "-f=${Version}",
+        "libblas-dev"
+      ],
+      "exit_code": 0,
+      "stdout": "3.12.0-3build1.1",
+      "stderr": ""
+    }
+  },
+  "hotspot_binary_sha256": "e4358b46794ebc00f07102d13b3ca687507834a1784eba135d26d1d493d334b4"
+}

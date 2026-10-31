@@ -140,12 +140,38 @@ class MeshLayoutTests(unittest.TestCase):
                 mesh.load_layouts(path)
 
     def test_fixture_and_size_validation(self):
-        for fixture in ['micro150', '../ascend910', 'unknown']:
+        for fixture in ['../ascend910', 'unknown']:
             with self.subTest(fixture=fixture), self.assertRaises(ValueError):
                 mesh.make_layout_set(fixture, 1, 4)
         for n in [0, 2, True]:
             with self.subTest(n=n), self.assertRaises(ValueError):
                 mesh.make_layout_set('ascend910', 1, n)
+
+    def test_micro150_freeze_uses_its_own_legal_seeded_catalog(self):
+        frozen = mesh.make_layout_set('micro150', 1, 24)
+        self.assertEqual(frozen['fixture'], 'micro150')
+        self.assertEqual(frozen['fixed_tolerance_c'], 0.01)
+        self.assertEqual(frozen, mesh.make_layout_set('micro150', 1, 24))
+        self.assertNotEqual(frozen['layouts'], mesh.make_layout_set('micro150', 2, 24)['layouts'])
+        self.assertEqual(len({row['design_hash'] for row in frozen['layouts']}), 24)
+        for category in mesh.CATEGORIES:
+            self.assertEqual(sum(row['category'] == category for row in frozen['layouts']), 8)
+        cluster = [r['mean_pair_distance_mm'] for r in frozen['layouts'] if r['category'] == 'clustered']
+        spread = [r['mean_pair_distance_mm'] for r in frozen['layouts'] if r['category'] == 'spread']
+        self.assertLess(max(cluster), min(spread))
+        for grid in (16, 32, 64):
+            oracle = mesh.make_oracle('micro150', grid)
+            self.assertEqual(oracle.problem.fixture_id, 'micro150')
+            self.assertEqual((oracle.grid_rows, oracle.grid_cols), (grid, grid))
+            self.assertEqual(oracle.max_workers, 1)
+            self.assertEqual(len(oracle.problem.widths_mm), 8)
+            self.assertEqual(sum(oracle.problem.powers_w), 680)
+            for row in frozen['layouts']:
+                self.assertEqual(len(row['centers_mm']), 8)
+                design = oracle.design_from_centers(row['centers_mm'])
+                design.check()
+                oracle.centers_for(design)
+                self.assertEqual(design.hash, row['design_hash'])
 
 
 class MeshIdentityTests(unittest.TestCase):

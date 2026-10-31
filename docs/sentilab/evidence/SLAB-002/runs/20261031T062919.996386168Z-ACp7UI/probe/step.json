@@ -1,0 +1,28 @@
+{
+  "name": "probe",
+  "command": [
+    "python",
+    "run_tap_probe.py",
+    "--report",
+    "/tmp/tmp.BQCHiVnG6s/sundai_hotspot/probe_results/report.json"
+  ],
+  "cwd": "/tmp/tmp.BQCHiVnG6s/sundai_hotspot",
+  "started_at": "2026-10-31T06:30:11.644656Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:30:14.105102Z",
+  "wall_time_s": 2.4604404299752787,
+  "artifacts": [
+    {
+      "path": "probe/artifacts/probe_results/report.json",
+      "sha256": "10ec9ea1aa7a51bd53c45852a9c1ac03781bd0f4b28e9045385e8dfc7c86d3e5"
+    }
+  ],
+  "stdout": {
+    "path": "probe/stdout.txt",
+    "sha256": "b55294da0c91ef760d93fa6ce6d4ffebc86d5d9b367133941fcdd5806dd5a559"
+  },
+  "stderr": {
+    "path": "probe/stderr.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}
