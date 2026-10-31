@@ -1,0 +1,3989 @@
+{
+  "schema": "sentilab.scope-disposition/v1",
+  "created_at_utc": "2026-10-31T05:54:45.4274320Z",
+  "status": "HUMAN_SCOPE_EFFECTIVE_TICKET_DISPOSITIONS_PROPOSED",
+  "authority": {
+    "actor": "human-mrrcarter",
+    "actorKind": "human",
+    "source_id": "6eafa071-acf2-40f7-bf40-a875babaedc4",
+    "target_sequence_id": 56110,
+    "timestamp": "2026-10-31T05:45:27.427Z",
+    "source_record_sha256": "66c795f39069b1a8ef6104c9a7c64b62ca67f899956d001f4ffd4d63481f4ef5",
+    "summary": "Use NVIDIA-inspired simulation/visual workflow for our chiplets; no MicroDuck/Pollen robot/code/models/meshes."
+  },
+  "sources": [
+    {
+      "path": "docs/sentilab/draft-0.5/PLAN.md",
+      "sha256": "e15174b8040d40b0675d8821586c2725ba84b79419393fe2a42e405218410f1a",
+      "source_revision": "5e47b42a1202cc4889ea74de8c57952e3f679210"
+    },
+    {
+      "path": "docs/sentilab/draft-0.5/REQUIREMENTS.md",
+      "sha256": "cef6ca1268486238be1a98c2fdf2634b2ff8cd7d1004d8b9f5bd61d0b30f658b",
+      "source_revision": "5e47b42a1202cc4889ea74de8c57952e3f679210"
+    },
+    {
+      "path": "docs/sentilab/draft-0.5/TICKETS.json",
+      "sha256": "e5acf2ec49c53407b3918c37c9ff0eeefe2bd53df3d189b7949add77513144d4",
+      "source_revision": "5e47b42a1202cc4889ea74de8c57952e3f679210"
+    },
+    {
+      "path": "docs/sentilab/draft-0.5/OWNER-DECISIONS-2026-10-31.md",
+      "sha256": "3e3541127864a116d8b0f5684f53de1f9fd30f068e60f720e4905867cc997f38",
+      "source_revision": "5e47b42a1202cc4889ea74de8c57952e3f679210"
+    },
+    {
+      "path": "docs/sentilab/OWNER-AUTHORITY-2026-10-31.md",
+      "sha256": "d42e489de37bec58b9e4b7751310ef0566a2d64c2cef20f38d93d13b4a426d93",
+      "observed_revision": "433b12b50ac556e24e5543209926a16dc427b42e",
+      "note": "Historical inspected authority version; later additive human correction supersedes robot wording."
+    },
+    {
+      "kind": "authenticated_senti_record",
+      "source_id": "6eafa071-acf2-40f7-bf40-a875babaedc4",
+      "cached_record_sha256": "1bdc96e871e2bba13225fdf756e29f4523b7dd351e881586dd2d17120d61952b",
+      "source_record_sha256": "66c795f39069b1a8ef6104c9a7c64b62ca67f899956d001f4ffd4d63481f4ef5",
+      "note": "Private room record retained by coordinator; cached representation and source object have distinct hashes."
+    }
+  ],
+  "coverage": {
+    "requirement_count": 234,
+    "ticket_count": 41,
+    "requirement_ids_unique": true,
+    "ticket_ids_unique": true,
+    "all_eight_deliverables_retained": true,
+    "all_ticket_requirement_ids_resolve": true,
+    "all_dependency_ids_resolve": true,
+    "all_requirement_ids_mapped": true
+  },
+  "robot_ticket_graph": {
+    "baseline_ticket": "SLAB-026",
+    "direct_dependents": [
+      "SLAB-028",
+      "SLAB-034"
+    ],
+    "transitive_dependents": [
+      "SLAB-028",
+      "SLAB-034",
+      "SLAB-030",
+      "SLAB-031"
+    ],
+    "baseline_requirement_ids": [
+      "A18",
+      "V08",
+      "V09",
+      "V10",
+      "D07",
+      "F09",
+      "F10",
+      "F11",
+      "F24",
+      "Q02"
+    ],
+    "disposition": "Supersede robot-only revision; link retained chiplet workflow revision/replacement; do not remove complete D07 or worker training."
+  },
+  "requirements": [
+    {
+      "id": "G01",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| G01 | Join requested room 608657e4-5e60-4bb6-9353-9611b70c1c66 | U | SLAB-001 | Join receipt and verified room ID |",
+      "baseline_tickets": [
+        "SLAB-001"
+      ]
+    },
+    {
+      "id": "G02",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| G02 | Use identity gpt-astra-carter; distinguish local peer name from actual Senti identity aneta-claude | U; live peer reply | SLAB-001 | Identity receipt and peer authorization record |",
+      "baseline_tickets": [
+        "SLAB-001"
+      ]
+    },
+    {
+      "id": "G03",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| G03 | Read council 701639be-bd55-4634-8ca5-1eae3d5c0227 including actions and history coverage | U | SLAB-001, SLAB-010, SLAB-011 | Council source references, coverage/gaps and decision ledger |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-010",
+        "SLAB-011"
+      ]
+    },
+    {
+      "id": "G04",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| G04 | Adversarial reciprocal review; evidence/counterexample and resolution test per objection | U; A4 | SLAB-001, SLAB-014 | Independent review packets and resolved-objection ledger |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-014"
+      ]
+    },
+    {
+      "id": "G05",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| G05 | Explicit +1 may release a named ticket set under one scope/cap/expiry; no assumed consent | U; P7 | SLAB-001 | Gate-scoped release record or HOLD; no redundant per-ticket prompt requirement |",
+      "baseline_tickets": [
+        "SLAB-001"
+      ]
+    },
+    {
+      "id": "G06",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| G06 | Ticketed implementation with dependencies and evidence | U | SLAB-001 | Approved ticket graph; current remote_ticket_id values null |",
+      "baseline_tickets": [
+        "SLAB-001"
+      ]
+    },
+    {
+      "id": "G07",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| G07 | Choose models from verified boxes by capability, budget and role | U; A4; B3 | SLAB-003, SLAB-011 | Live capability catalog and returned-model probes |",
+      "baseline_tickets": [
+        "SLAB-003",
+        "SLAB-011"
+      ]
+    },
+    {
+      "id": "G08",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| G08 | Obtain missing Claude capability from carther; Warden proposes Opus/Sonnet catalog/rate entries but provider setup/release pending | U | SLAB-003 | Warden source reply, verified catalog/proxy/model/terms/quotas; secret configured outside chat |",
+      "baseline_tickets": [
+        "SLAB-003"
+      ]
+    },
+    {
+      "id": "G09",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| G09 | Human milestone ownership; human Aneta time/ownership pending; aneta-claude participation authorized, no +1 | U; A3; B11; live peer reply | SLAB-001, SLAB-029 | Named authorized owners and gate records |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "P01",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| P01 | Stage product SentiLab; thermal-aware chiplet placement is first experiment | A1; B1 | SLAB-001, SLAB-029 | Approved naming and scope |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "P02",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| P02 | Reuse Thermal Flight Lab numerical/controller assets after reinspection | A2 | SLAB-002 | Inventory with retain/change decisions |",
+      "baseline_tickets": [
+        "SLAB-002"
+      ]
+    },
+    {
+      "id": "P03",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| P03 | Canonical repo/live build identified at 2199612932da142e0057e6162293940b4ea64bba; inspect source/tests/artifacts before reuse | A2; A9; root independent GitHub/health verification | SLAB-002 | Pinned canonical source/live build plus fresh code/artifact inspection |",
+      "baseline_tickets": [
+        "SLAB-002"
+      ]
+    },
+    {
+      "id": "P04",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| P04 | Distinguish existing work from event contribution | A9 | SLAB-002, SLAB-028, SLAB-029 | Contribution manifest |",
+      "baseline_tickets": [
+        "SLAB-002",
+        "SLAB-028",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "A01",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A01 | Four research labs propose, inspect and revise | A1; B3 | SLAB-013 | Four identity-isolated lab traces |",
+      "baseline_tickets": [
+        "SLAB-013"
+      ]
+    },
+    {
+      "id": "A02",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A02 | Scientific executor validates and measures | A1; B3 | SLAB-005, SLAB-006, SLAB-008 | Typed executor outputs and denial fixtures |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-008"
+      ]
+    },
+    {
+      "id": "A03",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A03 | Independent reproduction queue/worker | A1; B3 | SLAB-015 | Fresh reproduction receipt and independence definition |",
+      "baseline_tickets": [
+        "SLAB-015"
+      ]
+    },
+    {
+      "id": "A04",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A04 | Senti communication requires real authenticated intake consumers | A1; B9 | SLAB-008, SLAB-013, SLAB-023 | Request-consumption-receipt trace |",
+      "baseline_tickets": [
+        "SLAB-008",
+        "SLAB-013",
+        "SLAB-023"
+      ]
+    },
+    {
+      "id": "A05",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A05 | ENGRAM findings, evidence and dependencies | A1; U | SLAB-010 | Source-backed recall and dependency records |",
+      "baseline_tickets": [
+        "SLAB-010"
+      ]
+    },
+    {
+      "id": "A06",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A06 | AIdenID permission at actual execution boundary | A1; A3 | SLAB-008 | Allowed/denied bypass tests at executor boundary |",
+      "baseline_tickets": [
+        "SLAB-008"
+      ]
+    },
+    {
+      "id": "A07",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A07 | Flight recorder preserves actions, hashes, outcomes and correction history | A1 | SLAB-007, SLAB-028, SLAB-036 | Verified event/manifest chain |",
+      "baseline_tickets": [
+        "SLAB-007",
+        "SLAB-028",
+        "SLAB-036"
+      ]
+    },
+    {
+      "id": "A08",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A08 | Deterministic AcceptanceGate budgets, states and accepted-board commits | A1; B3 | SLAB-008 | Atomic state/usage tests |",
+      "baseline_tickets": [
+        "SLAB-008"
+      ]
+    },
+    {
+      "id": "A09",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A09 | Lead identities Astra/OpenAI, Claude, Grok and Kimi | A4; B3 | SLAB-003, SLAB-013 | Verified catalog/model IDs and lead manifests |",
+      "baseline_tickets": [
+        "SLAB-003",
+        "SLAB-013"
+      ]
+    },
+    {
+      "id": "A10",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A10 | Initially at most two active workers per lab | B3 | SLAB-013, SLAB-036 | Concurrency-limit proof |",
+      "baseline_tickets": [
+        "SLAB-013",
+        "SLAB-036"
+      ]
+    },
+    {
+      "id": "A11",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A11 | Shared serving allowed with distinct worker identities/context/history | B3 | SLAB-013, SLAB-019, SLAB-033 | Isolation and serving records |",
+      "baseline_tickets": [
+        "SLAB-013",
+        "SLAB-019",
+        "SLAB-033"
+      ]
+    },
+    {
+      "id": "A12",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A12 | Leads choose scientific trajectories; AcceptanceGate enforces bounds and Jev routes intake without prescribing research | B3; R8 | SLAB-008, SLAB-011, SLAB-013 | Policy and recorded scientific decision originators |",
+      "baseline_tickets": [
+        "SLAB-008",
+        "SLAB-011",
+        "SLAB-013"
+      ]
+    },
+    {
+      "id": "A13",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A13 | Record actual model identity/settings/date/cost/role | A4; B5 | SLAB-003, SLAB-007, SLAB-020 | Invocation and accounting manifests |",
+      "baseline_tickets": [
+        "SLAB-003",
+        "SLAB-007",
+        "SLAB-020"
+      ]
+    },
+    {
+      "id": "A14",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A14 | Four scientists adopt documented best-in-field methods and explicit specialties | U | SLAB-012, SLAB-013, SLAB-014 | Approved specialty/method cards with sources |",
+      "baseline_tickets": [
+        "SLAB-012",
+        "SLAB-013",
+        "SLAB-014"
+      ]
+    },
+    {
+      "id": "A15",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A15 | Gemini independently reviews assumptions/spec/claims | A4 | SLAB-003, SLAB-014 | Independent initial review and model ID |",
+      "baseline_tickets": [
+        "SLAB-003",
+        "SLAB-014"
+      ]
+    },
+    {
+      "id": "A16",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A16 | DeepSeek independently reviews arithmetic/code/constraints/controls | A4 | SLAB-003, SLAB-014 | Counterexamples and numerical review |",
+      "baseline_tickets": [
+        "SLAB-003",
+        "SLAB-014"
+      ]
+    },
+    {
+      "id": "A17",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A17 | Parent/Claude mainly judges; no narrative override of deterministic checks | U; A1; B3 | SLAB-008, SLAB-014, SLAB-017 | Judge/acceptor authority separation |",
+      "baseline_tickets": [
+        "SLAB-008",
+        "SLAB-014",
+        "SLAB-017"
+      ]
+    },
+    {
+      "id": "A18",
+      "disposition": "retained_or_superseded_parts_as_noted",
+      "note": "Retain specialists and capacity; retarget robot-only assignment and 026 lineage.",
+      "baseline_row": "| A18 | Bounded extra agents for interface and specialist tickets | U; B3 | SLAB-003, SLAB-013, SLAB-024, SLAB-025, SLAB-026 | Approved capacity/dependency plan |",
+      "baseline_tickets": [
+        "SLAB-003",
+        "SLAB-013",
+        "SLAB-024",
+        "SLAB-025",
+        "SLAB-026"
+      ]
+    },
+    {
+      "id": "A19",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A19 | OpenResearch required research harness with source-backed outputs | U supersedes B10 optionality; A4 | SLAB-012 | Named underlying-model research run and export |",
+      "baseline_tickets": [
+        "SLAB-012"
+      ]
+    },
+    {
+      "id": "A20",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A20 | Jev preferred intent and decision routing; reuse existing jev-1.13.0/SystemOne seam after runtime capability proof | U; B3; canonical source review | SLAB-011 | Actual identity/access/schema probe, versioned goal contract and calibrated routing results |",
+      "baseline_tickets": [
+        "SLAB-011"
+      ]
+    },
+    {
+      "id": "A21",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A21 | ENGRAM combined memory and fast recall with freshness/provenance | U; A1 | SLAB-010 | Recall/latency/coverage measurements; no invented completeness claim |",
+      "baseline_tickets": [
+        "SLAB-010"
+      ]
+    },
+    {
+      "id": "A22",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| A22 | Reconcile existing council; preserve settled retrieval design | U; council review | SLAB-001, SLAB-010, SLAB-011 | Adopt/change/defer ledger tied to source references |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-010",
+        "SLAB-011"
+      ]
+    },
+    {
+      "id": "S01",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| S01 | Wire and validate existing eight-chiplet680W micro150 configuration as the initial task | B4; canonical addendum | SLAB-002, SLAB-005, SLAB-006 | Pinned sys_micro150.cfg, scenarios/oracle integration and verified initialization |",
+      "baseline_tickets": [
+        "SLAB-002",
+        "SLAB-005",
+        "SLAB-006"
+      ]
+    },
+    {
+      "id": "S02",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| S02 | Frozen power scenarios and power allocation | A7; B4 | SLAB-005, SLAB-006 | Scenario manifest with units |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-006"
+      ]
+    },
+    {
+      "id": "S03",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| S03 | Fixed package, cooling, material and dimension assumptions | A7; B4 | SLAB-005, SLAB-006, SLAB-012 | Assumption/provenance manifest |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-012"
+      ]
+    },
+    {
+      "id": "S04",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| S04 | Placement grid, boundary/spacing and nonoverlap rules | B4 | SLAB-005 | Executable legality fixtures |",
+      "baseline_tickets": [
+        "SLAB-005"
+      ]
+    },
+    {
+      "id": "S05",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| S05 | Explicit lower-left versus center conversion | A2 | SLAB-005 | Round-trip/unit/grid conversion tests |",
+      "baseline_tickets": [
+        "SLAB-005"
+      ]
+    },
+    {
+      "id": "S06",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| S06 | G1 chooses/version-controls proposed chip-layer grid-peak primary with center diagnostics versus attachment center objective | B4; canonical addendum; pending G1 decision | SLAB-005, SLAB-006 | Approved metric_id/evaluator_version and complete fields; historical center values not mixed |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-006"
+      ]
+    },
+    {
+      "id": "S07",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| S07 | Weighted Manhattan center-distance proxy with fixed matrix | B4 | SLAB-005 | Proxy formula fixtures and c_ij pin |",
+      "baseline_tickets": [
+        "SLAB-005"
+      ]
+    },
+    {
+      "id": "S08",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| S08 | Wire allowance fixed to initial layout, not rolling parent; zero baseline policy | B4; expert review | SLAB-005 | No cumulative-budget drift test |",
+      "baseline_tickets": [
+        "SLAB-005"
+      ]
+    },
+    {
+      "id": "S09",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| S09 | In-bounds expanded footprints, correct gap convention and geometry rejection | A2; B4 | SLAB-005 | Boundary/nonoverlap/malformed fixtures |",
+      "baseline_tickets": [
+        "SLAB-005"
+      ]
+    },
+    {
+      "id": "S10",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| S10 | Metric units/layer/statistic explicit; proxy not routing/timing signoff | A2; B4 | SLAB-005, SLAB-006, SLAB-021, SLAB-025 | Labels and scope assertion tests |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-021",
+        "SLAB-025"
+      ]
+    },
+    {
+      "id": "S11",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| S11 | Power/energy/symmetry/zero-power/malformed-geometry checks | A2 | SLAB-002, SLAB-006 | Fresh numerical regression logs |",
+      "baseline_tickets": [
+        "SLAB-002",
+        "SLAB-006"
+      ]
+    },
+    {
+      "id": "S12",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| S12 | Do not combine synthetic-plate, six-chiplet and eight-chiplet experiments | A2 | SLAB-002, SLAB-005, SLAB-021 | Experiment identity and incompatible-comparison refusals |",
+      "baseline_tickets": [
+        "SLAB-002",
+        "SLAB-005",
+        "SLAB-021"
+      ]
+    },
+    {
+      "id": "S13",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| S13 | Substrate field distinct from active-layer center/peak temperatures | A6; B4 | SLAB-006, SLAB-025 | Verified exporter labels and display fixtures |",
+      "baseline_tickets": [
+        "SLAB-006",
+        "SLAB-025"
+      ]
+    },
+    {
+      "id": "S14",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| S14 | New exporter/objective requires new evaluator/protocol version | B4 | SLAB-005, SLAB-006, SLAB-020 | Version-change invalidation test |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-020"
+      ]
+    },
+    {
+      "id": "S15",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| S15 | Annealing exploration may worsen; accepted best state remains separate | A2 | SLAB-008, SLAB-020 | Independent search/accepted-state regression |",
+      "baseline_tickets": [
+        "SLAB-008",
+        "SLAB-020"
+      ]
+    },
+    {
+      "id": "E01",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E01 | Request and candidate IDs | A3 | SLAB-007 | Schema/uniqueness fixtures |",
+      "baseline_tickets": [
+        "SLAB-007"
+      ]
+    },
+    {
+      "id": "E02",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E02 | Retain exact lineage parent and separately record current comparison-board ID/version | A3; P3; canonical addendum | SLAB-007, SLAB-008 | Exact-parent delta materialization and current-board comparison records |",
+      "baseline_tickets": [
+        "SLAB-007",
+        "SLAB-008"
+      ]
+    },
+    {
+      "id": "E03",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E03 | Input/artifact hashes bind retained exact files, not only extracted fields or summaries | A3; canonical source review | SLAB-007, SLAB-028 | Exact-file persistence/readback and manifest hash verification after temporary cleanup |",
+      "baseline_tickets": [
+        "SLAB-007",
+        "SLAB-028"
+      ]
+    },
+    {
+      "id": "E04",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E04 | Evaluator version and source/runtime pin | A3 | SLAB-006, SLAB-007 | Reproducible run metadata |",
+      "baseline_tickets": [
+        "SLAB-006",
+        "SLAB-007"
+      ]
+    },
+    {
+      "id": "E05",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E05 | Metric name and units | A3 | SLAB-005, SLAB-007 | Unit/statistic consistency tests |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-007"
+      ]
+    },
+    {
+      "id": "E06",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E06 | Persist all generated simulator inputs and raw outputs before TemporaryDirectory cleanup | A3; B4; canonical source review | SLAB-006, SLAB-007 | Complete artifacts survive cleanup; missing/corrupt persistence fails D02 completeness |",
+      "baseline_tickets": [
+        "SLAB-006",
+        "SLAB-007"
+      ]
+    },
+    {
+      "id": "E07",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E07 | Constraint results | A3 | SLAB-005, SLAB-007 | Per-constraint evidence |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-007"
+      ]
+    },
+    {
+      "id": "E08",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E08 | Evidence dependencies plus separate lifecycle, validity and verification-tier fields | A3 | SLAB-007, SLAB-010 | Status/dependency schema |",
+      "baseline_tickets": [
+        "SLAB-007",
+        "SLAB-010"
+      ]
+    },
+    {
+      "id": "E09",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E09 | Schema and geometry must pass | B3 | SLAB-005, SLAB-008 | Fail-closed admission test |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-008"
+      ]
+    },
+    {
+      "id": "E10",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E10 | Required scenarios execute successfully | B3 | SLAB-006, SLAB-008 | Failure/incomplete-scenario refusal |",
+      "baseline_tickets": [
+        "SLAB-006",
+        "SLAB-008"
+      ]
+    },
+    {
+      "id": "E11",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E11 | Objective qualifies under frozen margin | B3; expert review | SLAB-006, SLAB-008 | Pinned threshold and uncertainty evidence |",
+      "baseline_tickets": [
+        "SLAB-006",
+        "SLAB-008"
+      ]
+    },
+    {
+      "id": "E12",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E12 | Independent reproduction required before accepted result | B3 | SLAB-008, SLAB-015 | Missing/failed-reproduction refusal |",
+      "baseline_tickets": [
+        "SLAB-008",
+        "SLAB-015"
+      ]
+    },
+    {
+      "id": "E13",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E13 | Atomically compare fixed-task complete candidates against current board; CAS retry reuses valid numerical evidence | B3; P3; canonical addendum | SLAB-008 | No stale-lineage invalidation or duplicate billing; current authority/STOP/context rechecked |",
+      "baseline_tickets": [
+        "SLAB-008"
+      ]
+    },
+    {
+      "id": "E14",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E14 | Combined edits create a new candidate and full reevaluation | B3 | SLAB-008 | Merge-needs-evaluation regression |",
+      "baseline_tickets": [
+        "SLAB-008"
+      ]
+    },
+    {
+      "id": "E15",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E15 | Stale/withdrawn evidence cannot silently remain valid | A6 | SLAB-008, SLAB-010 | Dependency-invalidated acceptance refusal |",
+      "baseline_tickets": [
+        "SLAB-008",
+        "SLAB-010"
+      ]
+    },
+    {
+      "id": "E16",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E16 | Clearly labeled seeded correction drill | A6 | SLAB-010, SLAB-027 | Replay with drill label and provenance |",
+      "baseline_tickets": [
+        "SLAB-010",
+        "SLAB-027"
+      ]
+    },
+    {
+      "id": "E17",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E17 | Direct and transitive stale propagation | A6 | SLAB-010, SLAB-027 | Diamond/cascade test and recorded drill |",
+      "baseline_tickets": [
+        "SLAB-010",
+        "SLAB-027"
+      ]
+    },
+    {
+      "id": "E18",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E18 | Independent support survives a withdrawal | A6 | SLAB-010, SLAB-027 | Alternative-support preservation test |",
+      "baseline_tickets": [
+        "SLAB-010",
+        "SLAB-027"
+      ]
+    },
+    {
+      "id": "E19",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E19 | Preserve original records or authorized tombstones/references under access and retention policy | A6 | SLAB-007, SLAB-010, SLAB-027 | History retention/revocation/deletion/restoration policy and replay proof |",
+      "baseline_tickets": [
+        "SLAB-007",
+        "SLAB-010",
+        "SLAB-027"
+      ]
+    },
+    {
+      "id": "E20",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| E20 | Actual signed evidence needs independently pinned service authority beyond embedded-key consistency | A6; canonical addendum | SLAB-007, SLAB-028, SLAB-036, SLAB-040 | Root/delegation validation, negative forgery tests and integrity/origin/science verdict separation |",
+      "baseline_tickets": [
+        "SLAB-007",
+        "SLAB-028",
+        "SLAB-036",
+        "SLAB-040"
+      ]
+    },
+    {
+      "id": "B01",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B01 | Classical simulated annealing arm | A7; B5 | SLAB-020, SLAB-032 | Pinned B0 implementation and runs |",
+      "baseline_tickets": [
+        "SLAB-020",
+        "SLAB-032"
+      ]
+    },
+    {
+      "id": "B02",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B02 | One lead lab with base worker arm | A7; B5 | SLAB-020, SLAB-032 | Pinned B1 runs |",
+      "baseline_tickets": [
+        "SLAB-020",
+        "SLAB-032"
+      ]
+    },
+    {
+      "id": "B03",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B03 | Four isolated labs with base worker arm | A7; B5 | SLAB-010, SLAB-020, SLAB-032 | Pinned B2 isolation and runs |",
+      "baseline_tickets": [
+        "SLAB-010",
+        "SLAB-020",
+        "SLAB-032"
+      ]
+    },
+    {
+      "id": "B04",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B04 | Four shared labs with base worker arm | A7; B5 | SLAB-020, SLAB-032 | Pinned B3 runs |",
+      "baseline_tickets": [
+        "SLAB-020",
+        "SLAB-032"
+      ]
+    },
+    {
+      "id": "B05",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B05 | Four shared labs with adapted worker arm | A7; B5 | SLAB-019, SLAB-020, SLAB-032 | Pinned B4 checkpoint and runs |",
+      "baseline_tickets": [
+        "SLAB-019",
+        "SLAB-020",
+        "SLAB-032"
+      ]
+    },
+    {
+      "id": "B06",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B06 | Twelve held-out task families | A7; B5 | SLAB-016, SLAB-020 | Family grouping and split manifest |",
+      "baseline_tickets": [
+        "SLAB-016",
+        "SLAB-020"
+      ]
+    },
+    {
+      "id": "B07",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B07 | Two paired seeds | A7; B5 | SLAB-020 | Paired seed manifest |",
+      "baseline_tickets": [
+        "SLAB-020"
+      ]
+    },
+    {
+      "id": "B08",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B08 | 32 inclusive aggregate bundles per run; proposed28search+4reproduction, fixed7+1 per lab in four-lab arms | A7; B5; freeze proposal pending approval | SLAB-020, SLAB-041 | Equal arm table, all charging rules and 3840 interpretation approved before execution |",
+      "baseline_tickets": [
+        "SLAB-020",
+        "SLAB-041"
+      ]
+    },
+    {
+      "id": "B09",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B09 | Each bundle includes required scenarios | A7; B5 | SLAB-006, SLAB-020 | Bundle/scenario accounting |",
+      "baseline_tickets": [
+        "SLAB-006",
+        "SLAB-020"
+      ]
+    },
+    {
+      "id": "B10",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B10 | Count failures and retries | A7; B5 | SLAB-008, SLAB-020, SLAB-036 | Failure/retry budget tests |",
+      "baseline_tickets": [
+        "SLAB-008",
+        "SLAB-020",
+        "SLAB-036"
+      ]
+    },
+    {
+      "id": "B11",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B11 | Fixed proposal ceiling | B5 | SLAB-013, SLAB-020 | No free unlimited oracle/proposal access |",
+      "baseline_tickets": [
+        "SLAB-013",
+        "SLAB-020"
+      ]
+    },
+    {
+      "id": "B12",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B12 | Track aggregate model tokens, wall time and GPU time | A7; B5 | SLAB-007, SLAB-020, SLAB-036 | Usage ledger and per-arm accounting |",
+      "baseline_tickets": [
+        "SLAB-007",
+        "SLAB-020",
+        "SLAB-036"
+      ]
+    },
+    {
+      "id": "B13",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B13 | Predeclare resource-driven reduction rule | B5 | SLAB-020 | Frozen reduction/stop rule before results |",
+      "baseline_tickets": [
+        "SLAB-020"
+      ]
+    },
+    {
+      "id": "B14",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B14 | Same models/total budget for isolated versus shared contrast | B5 | SLAB-003, SLAB-020, SLAB-021 | B2/B3 balance table |",
+      "baseline_tickets": [
+        "SLAB-003",
+        "SLAB-020",
+        "SLAB-021"
+      ]
+    },
+    {
+      "id": "B15",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B15 | Fixed held-out corpus is primary for worker learning; closed-loop B4 remains required secondary evidence | A7; B5; P6 | SLAB-019, SLAB-020, SLAB-021, SLAB-032 | Identical fixed-input decoder/runtime and matched closed-loop conditions; no silent dropped arm |",
+      "baseline_tickets": [
+        "SLAB-019",
+        "SLAB-020",
+        "SLAB-021",
+        "SLAB-032"
+      ]
+    },
+    {
+      "id": "B16",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B16 | Family grouping and train/validation/test separation | B5 | SLAB-016, SLAB-020 | Leakage and duplicate-family audit |",
+      "baseline_tickets": [
+        "SLAB-016",
+        "SLAB-020"
+      ]
+    },
+    {
+      "id": "B17",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B17 | Frontier leads remain frozen | A7; B5 | SLAB-003, SLAB-013, SLAB-019, SLAB-020 | Lead identity/prompt version freeze |",
+      "baseline_tickets": [
+        "SLAB-003",
+        "SLAB-013",
+        "SLAB-019",
+        "SLAB-020"
+      ]
+    },
+    {
+      "id": "B18",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B18 | Reviewers outside search or equal assistance/accounting | A4 | SLAB-014, SLAB-020 | Reviewer exposure/accounting manifest |",
+      "baseline_tickets": [
+        "SLAB-014",
+        "SLAB-020"
+      ]
+    },
+    {
+      "id": "B19",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B19 | First-attempt action validity | B5 | SLAB-019, SLAB-021, SLAB-032 | Per-run valid-action metric |",
+      "baseline_tickets": [
+        "SLAB-019",
+        "SLAB-021",
+        "SLAB-032"
+      ]
+    },
+    {
+      "id": "B20",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B20 | Repairs needed | B5 | SLAB-019, SLAB-021, SLAB-032 | Repair distribution |",
+      "baseline_tickets": [
+        "SLAB-019",
+        "SLAB-021",
+        "SLAB-032"
+      ]
+    },
+    {
+      "id": "B21",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B21 | Simulator-confirmed beneficial proposals | B5 | SLAB-006, SLAB-021, SLAB-032 | Verified beneficial proposal counts |",
+      "baseline_tickets": [
+        "SLAB-006",
+        "SLAB-021",
+        "SLAB-032"
+      ]
+    },
+    {
+      "id": "B22",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B22 | Final thermal objective at fixed budget | B5 | SLAB-020, SLAB-021, SLAB-032 | Per-family final-J table |",
+      "baseline_tickets": [
+        "SLAB-020",
+        "SLAB-021",
+        "SLAB-032"
+      ]
+    },
+    {
+      "id": "B23",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B23 | Time/cost per accepted improvement and contributor credit | B3; B5 | SLAB-007, SLAB-021 | Cost/time and separate proposer/reviewer/reproducer credit |",
+      "baseline_tickets": [
+        "SLAB-007",
+        "SLAB-021"
+      ]
+    },
+    {
+      "id": "B24",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| B24 | Paired outcomes, ties/regressions; loss alone not improvement | B5 | SLAB-019, SLAB-021, SLAB-029, SLAB-032 | Full outcome table and supported claims |",
+      "baseline_tickets": [
+        "SLAB-019",
+        "SLAB-021",
+        "SLAB-029",
+        "SLAB-032"
+      ]
+    },
+    {
+      "id": "M01",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M01 | Retain success/failure/correction/cancelled records | U; B5 | SLAB-007, SLAB-016 | Complete raw JSONL ledger |",
+      "baseline_tickets": [
+        "SLAB-007",
+        "SLAB-016"
+      ]
+    },
+    {
+      "id": "M02",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M02 | Structured state/action/tool feedback and verified correction | B5 | SLAB-016 | SFT/repair schema and validators |",
+      "baseline_tickets": [
+        "SLAB-016"
+      ]
+    },
+    {
+      "id": "M03",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M03 | Task/evaluator versions in training records | B5 | SLAB-016 | Versioned manifests |",
+      "baseline_tickets": [
+        "SLAB-016"
+      ]
+    },
+    {
+      "id": "M04",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M04 | Provenance and supporting raw artifact references | A7; B5 | SLAB-016, SLAB-035 | Source/license/lineage records |",
+      "baseline_tickets": [
+        "SLAB-016",
+        "SLAB-035"
+      ]
+    },
+    {
+      "id": "M05",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M05 | Training eligibility separate from retention; prevent evaluation leakage | A7; B5; U | SLAB-016, SLAB-020 | Eligibility and split checks |",
+      "baseline_tickets": [
+        "SLAB-016",
+        "SLAB-020"
+      ]
+    },
+    {
+      "id": "M06",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M06 | RLAIF-ready JSONL including judge disagreement/ties/abstention | U | SLAB-017 | Preference schema and blinded judge audit |",
+      "baseline_tickets": [
+        "SLAB-017"
+      ]
+    },
+    {
+      "id": "M07",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M07 | Meaningful NVIDIA software use, not incidental GPU hosting | A7; B2 | SLAB-018, SLAB-019, SLAB-029 | Actual NVIDIA framework training evidence |",
+      "baseline_tickets": [
+        "SLAB-018",
+        "SLAB-019",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "M08",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M08 | NeMo AutoModel core; distinguish from Agent Toolkit | B2 | SLAB-018 | Verified product/version recipe |",
+      "baseline_tickets": [
+        "SLAB-018"
+      ]
+    },
+    {
+      "id": "M09",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M09 | Pinned model/tokenizer/container/source/runtime versions | A7; B2 | SLAB-018, SLAB-019, SLAB-028 | Resolved hashes/digests |",
+      "baseline_tickets": [
+        "SLAB-018",
+        "SLAB-019",
+        "SLAB-028"
+      ]
+    },
+    {
+      "id": "M10",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M10 | Tiny train/save/reload/fresh-inference preflight | A7; B2 | SLAB-018 | GB10 preflight logs and loaded-checkpoint proof |",
+      "baseline_tickets": [
+        "SLAB-018"
+      ]
+    },
+    {
+      "id": "M11",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M11 | Freeze actual selected checkpoint before held-out matched evaluation; promotion is a later gate | A7; B5 | SLAB-019, SLAB-032, SLAB-033 | Train/validation selection → immutable hash freeze → untouched held-out results → promotion receipt |",
+      "baseline_tickets": [
+        "SLAB-019",
+        "SLAB-032",
+        "SLAB-033"
+      ]
+    },
+    {
+      "id": "M12",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M12 | Qwen3-4B provisional; fallback before experiment freeze | A7; B2 | SLAB-003, SLAB-018, SLAB-020 | Approved worker choice and freeze |",
+      "baseline_tickets": [
+        "SLAB-003",
+        "SLAB-018",
+        "SLAB-020"
+      ]
+    },
+    {
+      "id": "M13",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M13 | GB10 mandatory; user requests fine-tuning there | U supersedes attachment optional/inference-only scope | SLAB-004, SLAB-018, SLAB-019, SLAB-033 | GB10 actual training and serving records |",
+      "baseline_tickets": [
+        "SLAB-004",
+        "SLAB-018",
+        "SLAB-019",
+        "SLAB-033"
+      ]
+    },
+    {
+      "id": "M14",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M14 | Do not silently substitute H100-only training; reconcile placement | U; B2; B6 | SLAB-004, SLAB-018, SLAB-019, SLAB-033 | Scoped alternative approval if needed |",
+      "baseline_tickets": [
+        "SLAB-004",
+        "SLAB-018",
+        "SLAB-019",
+        "SLAB-033"
+      ]
+    },
+    {
+      "id": "M15",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M15 | C source permits ARM HotSpot build preflight; current x86 path retained until separately verified compatibility | B6; canonical addendum | SLAB-002, SLAB-004, SLAB-006, SLAB-015 | Recorded compiler/library/binary/architecture and prespecified tolerance; no assumed ARM success |",
+      "baseline_tickets": [
+        "SLAB-002",
+        "SLAB-004",
+        "SLAB-006",
+        "SLAB-015"
+      ]
+    },
+    {
+      "id": "M16",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M16 | GB10 portability distinct from same-hardware causal comparison | B6 | SLAB-021, SLAB-032, SLAB-033 | Hardware-labeled deployment and comparison evidence |",
+      "baseline_tickets": [
+        "SLAB-021",
+        "SLAB-032",
+        "SLAB-033"
+      ]
+    },
+    {
+      "id": "M17",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| M17 | H100/Nebius/Brev allocations/spend unconfirmed and capped | B7; B10 | SLAB-003, SLAB-004, SLAB-029 | Confirmed resources and explicit spending caps |",
+      "baseline_tickets": [
+        "SLAB-003",
+        "SLAB-004",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "V01",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| V01 | Exact chiplet geometry and translucent proposed moves | A6; B8 | SLAB-025 | Coordinate-bound visual fixture |",
+      "baseline_tickets": [
+        "SLAB-025"
+      ]
+    },
+    {
+      "id": "V02",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| V02 | Actual lab activity view | B8 | SLAB-025 | Event-derived agent-state trace |",
+      "baseline_tickets": [
+        "SLAB-025"
+      ]
+    },
+    {
+      "id": "V03",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| V03 | Evidence/dependency graph view | A6; B8 | SLAB-010, SLAB-025 | Inspectable provenance and dependencies |",
+      "baseline_tickets": [
+        "SLAB-010",
+        "SLAB-025"
+      ]
+    },
+    {
+      "id": "V04",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| V04 | Experiment-comparison view | B8 | SLAB-021, SLAB-025 | Real matched-result fixtures |",
+      "baseline_tickets": [
+        "SLAB-021",
+        "SLAB-025"
+      ]
+    },
+    {
+      "id": "V05",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| V05 | Show measured result, reproduction and accepted-board update | A6 | SLAB-025, SLAB-027 | Complete result replay |",
+      "baseline_tickets": [
+        "SLAB-025",
+        "SLAB-027"
+      ]
+    },
+    {
+      "id": "V06",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| V06 | Every animation tied to agent/artifact/event timestamp | A6; B8 | SLAB-007, SLAB-025, SLAB-027 | No fabricated activity check |",
+      "baseline_tickets": [
+        "SLAB-007",
+        "SLAB-025",
+        "SLAB-027"
+      ]
+    },
+    {
+      "id": "V07",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| V07 | Inspect exact reference https://www.youtube.com/watch?v=ac6pspFbPsI | U; new reference | SLAB-024 | Timestamped reference inventory and primary sources |",
+      "baseline_tickets": [
+        "SLAB-024"
+      ]
+    },
+    {
+      "id": "V08",
+      "disposition": "retained_or_superseded_parts_as_noted",
+      "note": "Retarget reference understanding and actual chiplet tool/asset provenance; supersede robot adoption.",
+      "baseline_row": "| V08 | Identify exact Microduck simulator/tools/assets/workflow and licenses | U; NVIDIA primary article | SLAB-024, SLAB-026, SLAB-035 | Pinned pipeline/asset/license manifest |",
+      "baseline_tickets": [
+        "SLAB-024",
+        "SLAB-026",
+        "SLAB-035"
+      ]
+    },
+    {
+      "id": "V09",
+      "disposition": "retained_or_superseded_parts_as_noted",
+      "note": "Retain interface/simulation specialists; retarget robot-only assignment and 026 lineage.",
+      "baseline_row": "| V09 | Interface and visual-simulation specialist agents/tickets | U | SLAB-003, SLAB-024, SLAB-025, SLAB-026 | Approved specialty assignments and dependencies |",
+      "baseline_tickets": [
+        "SLAB-003",
+        "SLAB-024",
+        "SLAB-025",
+        "SLAB-026"
+      ]
+    },
+    {
+      "id": "V10",
+      "disposition": "retained_or_superseded_parts_as_noted",
+      "note": "Supersede exact robotic pipeline mandate; direct human correction resolves narrowing condition; retain chiplet workflow.",
+      "baseline_row": "| V10 | Exact pipeline mandatory; any narrowing needs +1 | U; primary reference | SLAB-001, SLAB-024, SLAB-026 | Explicit scope/fidelity acceptance; no silent generic substitute |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-024",
+        "SLAB-026"
+      ]
+    },
+    {
+      "id": "V11",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| V11 | Replays and time compression visibly labeled | A8; B8 | SLAB-027 | Replay labeling test |",
+      "baseline_tickets": [
+        "SLAB-027"
+      ]
+    },
+    {
+      "id": "V12",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| V12 | Replayable bundle and backup demonstration | A8; B11 | SLAB-027, SLAB-028, SLAB-029 | Offline replay rebuild and backup artifact |",
+      "baseline_tickets": [
+        "SLAB-027",
+        "SLAB-028",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "V13",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| V13 | Correct field/layer display; no false continuous die heatmap | A6; B4 | SLAB-006, SLAB-025 | Exporter/display unit/layer assertion |",
+      "baseline_tickets": [
+        "SLAB-006",
+        "SLAB-025"
+      ]
+    },
+    {
+      "id": "X01",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| X01 | Actual intake worker; a Senti message alone is insufficient | B9 | SLAB-022, SLAB-023 | Executed intake-to-result trace |",
+      "baseline_tickets": [
+        "SLAB-022",
+        "SLAB-023"
+      ]
+    },
+    {
+      "id": "X02",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| X02 | Paired baseline/candidate measurements | A6; B9 | SLAB-022 | Pairing fixtures |",
+      "baseline_tickets": [
+        "SLAB-022"
+      ]
+    },
+    {
+      "id": "X03",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| X03 | Task/trial IDs, metric/units and optimization direction | A6; B9 | SLAB-022 | Request schema |",
+      "baseline_tickets": [
+        "SLAB-022"
+      ]
+    },
+    {
+      "id": "X04",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| X04 | Recomputed supported arithmetic/statistics | A6; B9 | SLAB-022 | Independent arithmetic fixtures |",
+      "baseline_tickets": [
+        "SLAB-022"
+      ]
+    },
+    {
+      "id": "X05",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| X05 | Missing/duplicate pairs and discrepancy flags | A6; B9 | SLAB-022 | Malformed-data fixture suite |",
+      "baseline_tickets": [
+        "SLAB-022"
+      ]
+    },
+    {
+      "id": "X06",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| X06 | Insufficient-data outcome rather than invented confidence | A6 | SLAB-022 | Unsupported/insufficient-data refusal |",
+      "baseline_tickets": [
+        "SLAB-022"
+      ]
+    },
+    {
+      "id": "X07",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| X07 | Versioned request-linked receipt; submitted-data scope limits | A6; B9 | SLAB-022 | Hashed receipt and claim-scope text |",
+      "baseline_tickets": [
+        "SLAB-022"
+      ]
+    },
+    {
+      "id": "X08",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| X08 | SentiResultCheck both MCP and CLI | U | SLAB-009, SLAB-022, SLAB-034 | Equivalent positive/negative transport receipts |",
+      "baseline_tickets": [
+        "SLAB-009",
+        "SLAB-022",
+        "SLAB-034"
+      ]
+    },
+    {
+      "id": "X09",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| X09 | Every project capability has MCP and CLI access | U | SLAB-009, SLAB-034 | Complete capability matrix and parity report |",
+      "baseline_tickets": [
+        "SLAB-009",
+        "SLAB-034"
+      ]
+    },
+    {
+      "id": "X10",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| X10 | Real external request, executed result and returned receipt | A6; B9 | SLAB-023 | Authorized real partner exchange |",
+      "baseline_tickets": [
+        "SLAB-023"
+      ]
+    },
+    {
+      "id": "X11",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| X11 | Observed downstream use, not just documentation/API presence | A6; B9 | SLAB-023, SLAB-029 | Partner-use evidence and honest adoption claim |",
+      "baseline_tickets": [
+        "SLAB-023",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "O01",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O01 | Aneta proposed evidence/dependency/ResultCheck/demo owner conditional on authorization | A3; live peer reply | SLAB-001, SLAB-025, SLAB-029 | Authorization and accepted scope |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-025",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "O02",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O02 | Carter proposed scientific/orchestration/auth/evaluation/NVIDIA/partner owner | A3 | SLAB-001 | Confirmed human ownership |",
+      "baseline_tickets": [
+        "SLAB-001"
+      ]
+    },
+    {
+      "id": "O03",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O03 | Freeze shared result schema before parallel implementation | A3; A9 | SLAB-005, SLAB-007 | Contract revision and interface fixtures |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-007"
+      ]
+    },
+    {
+      "id": "O04",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O04 | Interface may build against recorded explicitly labeled fixtures | A3 | SLAB-025 | Fixture lineage and labels |",
+      "baseline_tickets": [
+        "SLAB-025"
+      ]
+    },
+    {
+      "id": "O05",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O05 | First vertical slice is real request→measurement→visible receipt | A9 | SLAB-008, SLAB-015, SLAB-025 | G2 complete-slice packet |",
+      "baseline_tickets": [
+        "SLAB-008",
+        "SLAB-015",
+        "SLAB-025"
+      ]
+    },
+    {
+      "id": "O06",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O06 | General NVIDIA-platform prize target; verify actual rules | B1–2; B7 | SLAB-029 | Current sponsor requirements and submission checklist |",
+      "baseline_tickets": [
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "O07",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O07 | Acknowledge/inspect ScienceClaw+Infinite prior work and integration | B10 | SLAB-012, SLAB-029 | Primary-paper and artifact-integration notes |",
+      "baseline_tickets": [
+        "SLAB-012",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "O08",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O08 | Mentor review of thermal metric, artifacts and controlled comparison | B7; B10 | SLAB-012, SLAB-029 | Authorized request and actual feedback, if obtained |",
+      "baseline_tickets": [
+        "SLAB-012",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "O09",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O09 | Resource URLs, compatible containers, confirmed GPUs/GB10 and submission rules | B7 | SLAB-003, SLAB-004, SLAB-018, SLAB-029 | Verified resources, version pins and eligibility |",
+      "baseline_tickets": [
+        "SLAB-003",
+        "SLAB-004",
+        "SLAB-018",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "O10",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O10 | Sponsor-specific contribution/usage evidence | B10 | SLAB-007, SLAB-029 | Actual usage and sponsor packet |",
+      "baseline_tickets": [
+        "SLAB-007",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "O11",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O11 | PRISMO verification/failure/rerun lessons and other named prior projects | A5 | SLAB-012, SLAB-029 | Primary-source claims ledger with uncertainty |",
+      "baseline_tickets": [
+        "SLAB-012",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "O12",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O12 | Do not invent winning talks, rankings or causal award explanations | A5 | SLAB-012, SLAB-029 | Citation/claim audit |",
+      "baseline_tickets": [
+        "SLAB-012",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "O13",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O13 | Five-slide 2:45 presentation plus 15-second margin | A8 | SLAB-029 | Editable deck and rehearsal timing |",
+      "baseline_tickets": [
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "O14",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O14 | Conditional Aneta one-minute evidence/correction walkthrough | A8 | SLAB-025, SLAB-027, SLAB-029 | Authorized speaker plan and demonstrated sequence |",
+      "baseline_tickets": [
+        "SLAB-025",
+        "SLAB-027",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "O15",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O15 | Actual matched results and NVIDIA artifact on stage | A8; B12 | SLAB-019, SLAB-021, SLAB-029 | Claims bound to measured evidence |",
+      "baseline_tickets": [
+        "SLAB-019",
+        "SLAB-021",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "O16",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O16 | External benefit and final engineering artifact closing | A8; B12 | SLAB-023, SLAB-028, SLAB-029 | Real partner use and D00–D07 link |",
+      "baseline_tickets": [
+        "SLAB-023",
+        "SLAB-028",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "O17",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O17 | Null/regression wording and three rehearsals | A8–9 | SLAB-029 | Honest alternate script and timing logs |",
+      "baseline_tickets": [
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "O18",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O18 | Deadline progress submission may state missing work; full D00–D07 completion remains separately required | A9; B11; P1 | SLAB-002, SLAB-028, SLAB-029 | Verified deadline/eligibility, honest progress/omission ledger and distinct full-completion status |",
+      "baseline_tickets": [
+        "SLAB-002",
+        "SLAB-028",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "O19",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O19 | PhysicsNeMo screening extension only after independent error/split validation | B8 | SLAB-030 | Separate extension approval and predictor validation |",
+      "baseline_tickets": [
+        "SLAB-030"
+      ]
+    },
+    {
+      "id": "O20",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O20 | Nemotron fixed critic optional and mentor-supported | B2 | SLAB-031 | Explicit optional-role approval and model evidence |",
+      "baseline_tickets": [
+        "SLAB-031"
+      ]
+    },
+    {
+      "id": "O21",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O21 | ALCHEMI/BioNeMo only with defensible domain bridge | A7; B2 | SLAB-031 | Scientific bridge and scope approval |",
+      "baseline_tickets": [
+        "SLAB-031"
+      ]
+    },
+    {
+      "id": "O22",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| O22 | Formlabs print/RTL-to-layout deferred; print does not validate thermal physics | B10–11 | SLAB-031 | Deferred-scope ledger and separate approvals |",
+      "baseline_tickets": [
+        "SLAB-031"
+      ]
+    },
+    {
+      "id": "D00",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| D00 | Exact chiplet layout and constraints | U; B1 | SLAB-005, SLAB-028 | D00 geometry manifest |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-028"
+      ]
+    },
+    {
+      "id": "D01",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| D01 | Power scenarios and package assumptions | U; B1 | SLAB-005, SLAB-006, SLAB-028 | D01 frozen assumptions/scenarios |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-028"
+      ]
+    },
+    {
+      "id": "D02",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| D02 | Simulator inputs, versions and raw outputs | U; B1 | SLAB-006, SLAB-007, SLAB-028 | D02 reproducible simulator bundle |",
+      "baseline_tickets": [
+        "SLAB-006",
+        "SLAB-007",
+        "SLAB-028"
+      ]
+    },
+    {
+      "id": "D03",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| D03 | Independent reproduction results | U; B1 | SLAB-015, SLAB-028 | D03 reproduction packet |",
+      "baseline_tickets": [
+        "SLAB-015",
+        "SLAB-028"
+      ]
+    },
+    {
+      "id": "D04",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| D04 | Complete proposal→review→correction→acceptance history | U; B1 | SLAB-007, SLAB-010, SLAB-028 | D04 full event/dependency history |",
+      "baseline_tickets": [
+        "SLAB-007",
+        "SLAB-010",
+        "SLAB-028"
+      ]
+    },
+    {
+      "id": "D05",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| D05 | Conventional and agent baseline comparison | U; B1 | SLAB-020, SLAB-021, SLAB-028, SLAB-032 | D05 paired-results/analysis bundle |",
+      "baseline_tickets": [
+        "SLAB-020",
+        "SLAB-021",
+        "SLAB-028",
+        "SLAB-032"
+      ]
+    },
+    {
+      "id": "D06",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| D06 | Trained worker checkpoint/adapter and evaluation | U; B1 | SLAB-018, SLAB-019, SLAB-028, SLAB-033, SLAB-032 | D06 model/data/provenance/evaluation bundle |",
+      "baseline_tickets": [
+        "SLAB-018",
+        "SLAB-019",
+        "SLAB-028",
+        "SLAB-032",
+        "SLAB-033"
+      ]
+    },
+    {
+      "id": "D07",
+      "disposition": "retained_or_superseded_parts_as_noted",
+      "note": "Retain complete replay deliverable; retarget robot-specific 026 linkage to chiplet workflow.",
+      "baseline_row": "| D07 | Replayable visual demonstration | U; B1 | SLAB-026, SLAB-027, SLAB-028 | D07 replay package |",
+      "baseline_tickets": [
+        "SLAB-026",
+        "SLAB-027",
+        "SLAB-028"
+      ]
+    },
+    {
+      "id": "F01",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F01 | Numerical convergence/uncertainty margin distinct from physical validity | Expert review | SLAB-006, SLAB-008, SLAB-021 | Resolution/sensitivity report and frozen acceptance threshold |",
+      "baseline_tickets": [
+        "SLAB-006",
+        "SLAB-008",
+        "SLAB-021"
+      ]
+    },
+    {
+      "id": "F02",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F02 | Family-level statistical unit and complete paired reporting | Expert review | SLAB-020, SLAB-021 | Preregistered analysis and family-level estimates |",
+      "baseline_tickets": [
+        "SLAB-020",
+        "SLAB-021"
+      ]
+    },
+    {
+      "id": "F03",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F03 | Raw Celsius percentages are origin-dependent; normalize only by declared meaningful denominator | Expert review | SLAB-021, SLAB-022 | Temperature-normalization refusal/validation tests |",
+      "baseline_tickets": [
+        "SLAB-021",
+        "SLAB-022"
+      ]
+    },
+    {
+      "id": "F04",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F04 | RLAIF hard checks outrank model preferences; order bias/self-preference/abstention audited | U; expert review | SLAB-014, SLAB-017 | Judge calibration and adversarial fixtures |",
+      "baseline_tickets": [
+        "SLAB-014",
+        "SLAB-017"
+      ]
+    },
+    {
+      "id": "F05",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F05 | Frozen dataset and memory; corrections mark affected checkpoints, not claimed unlearning | Expert review | SLAB-010, SLAB-016, SLAB-019, SLAB-033 | Eligibility propagation and checkpoint-review trail |",
+      "baseline_tickets": [
+        "SLAB-010",
+        "SLAB-016",
+        "SLAB-019",
+        "SLAB-033"
+      ]
+    },
+    {
+      "id": "F06",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F06 | MCP/CLI auth/errors/idempotency/cancellation parity | U; expert review | SLAB-009, SLAB-034, SLAB-036 | Transport conformance suite |",
+      "baseline_tickets": [
+        "SLAB-009",
+        "SLAB-034",
+        "SLAB-036"
+      ]
+    },
+    {
+      "id": "F07",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F07 | Checkpoint A/B/C fixes, maximum validated coverage order, ACL epoch, gaps and raw expansion | Council review | SLAB-010, SLAB-036 | Council-conformance, model-label poison quarantine and recovery checks |",
+      "baseline_tickets": [
+        "SLAB-010",
+        "SLAB-036"
+      ]
+    },
+    {
+      "id": "F08",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F08 | Jev cannot strip mandatory constraints, bypass ACL, accept science or infer +1 | Council review | SLAB-008, SLAB-011 | Mandatory-context and authorization negative fixtures |",
+      "baseline_tickets": [
+        "SLAB-008",
+        "SLAB-011"
+      ]
+    },
+    {
+      "id": "F09",
+      "disposition": "retained_or_superseded_parts_as_noted",
+      "note": "Retain reference history and applicable concepts; named robotic chain is not mandatory implementation.",
+      "baseline_row": "| F09 | Microduck primary pipeline includes Hermes/Nemotron, Astra, FreeCAD/Blender, CAD/USD, Isaac Sim/Omniverse/Newton, Isaac Lab and sim2real prep | NVIDIA primary article; research agent | SLAB-024, SLAB-026 | Pinned workflow comparison against exact video/reference |",
+      "baseline_tickets": [
+        "SLAB-024",
+        "SLAB-026"
+      ]
+    },
+    {
+      "id": "F10",
+      "disposition": "retained_or_superseded_parts_as_noted",
+      "note": "Retain selected-tool hardware feasibility and mandatory GB10 training; remove robot-specific requirements.",
+      "baseline_row": "| F10 | RTX Spark distinct from GB10/DGX Spark; H100/A100 not Isaac Sim rendering substitutes; Dell/ARM support requires preflight | NVIDIA primary sources; research agent | SLAB-004, SLAB-024, SLAB-026 | Compatible rendering/training hardware proof |",
+      "baseline_tickets": [
+        "SLAB-004",
+        "SLAB-024",
+        "SLAB-026"
+      ]
+    },
+    {
+      "id": "F11",
+      "disposition": "retained_or_superseded_parts_as_noted",
+      "note": "Supersede MicroDuck/Pollen code/STL adoption acceptance; retain actual provenance and rights checks.",
+      "baseline_row": "| F11 | Apache-2.0 code versus CC BY-NC-SA 4.0 STL assets; verify exact revisions/use rights | Primary repository findings; research agent | SLAB-024, SLAB-026, SLAB-035 | Code/asset/data license manifest and allowed-use decisions |",
+      "baseline_tickets": [
+        "SLAB-024",
+        "SLAB-026",
+        "SLAB-035"
+      ]
+    },
+    {
+      "id": "F12",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F12 | Full source-to-ticket-to-evidence audit after every approved scope change | U | SLAB-001, SLAB-028, SLAB-034 | Coverage validation with no orphan requirements |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-028",
+        "SLAB-034"
+      ]
+    },
+    {
+      "id": "F13",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F13 | GB10-specific NeMo26.08/Qwen3-8B playbook differs from general26.10/Qwen3-4B plan; no mixed recipe or silent substitution | Technology primary-source review | SLAB-018 | Exact model/hardware recipe or scoped +1 before freeze |",
+      "baseline_tickets": [
+        "SLAB-018"
+      ]
+    },
+    {
+      "id": "F14",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F14 | Train/validation checkpoint selection precedes held-out freeze; test failure cannot authorize tuning on the same test | Science review | SLAB-019, SLAB-020, SLAB-032, SLAB-033 | Separated G3a/G3b/G4 manifests and no test-driven selection |",
+      "baseline_tickets": [
+        "SLAB-019",
+        "SLAB-020",
+        "SLAB-032",
+        "SLAB-033"
+      ]
+    },
+    {
+      "id": "F15",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F15 | Non-improving/tie/inconclusive outcomes are recorded science; validate geometry before simulation | Science review | SLAB-005, SLAB-008, SLAB-016 | Complete state taxonomy and failure/outcome fixtures |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-008",
+        "SLAB-016"
+      ]
+    },
+    {
+      "id": "F16",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F16 | Same unchanged idempotent request creates no duplicate job; changed payload rejected; executed retries/failures count | Science review | SLAB-008, SLAB-020, SLAB-036 | Job identity and resource-accounting tests |",
+      "baseline_tickets": [
+        "SLAB-008",
+        "SLAB-020",
+        "SLAB-036"
+      ]
+    },
+    {
+      "id": "F17",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F17 | At least three spatial resolutions; finer-grid and aliasing checks; current converged=True only means output validation | Science review; canonical source review | SLAB-006 | Separate numerical convergence/refinement evidence; no flag-based convergence claim |",
+      "baseline_tickets": [
+        "SLAB-006"
+      ]
+    },
+    {
+      "id": "F18",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F18 | Passive heating monotonicity and ΔT=P·Rθ analytic checks; physical validation remains separate | Science review | SLAB-006, SLAB-015 | Independent analytic/numerical tests with explicit claim limits |",
+      "baseline_tickets": [
+        "SLAB-006",
+        "SLAB-015"
+      ]
+    },
+    {
+      "id": "F19",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F19 | Adapters must match base/tokenizer/chat template/modules/rank; any merge is a new evaluated artifact | Science review | SLAB-016, SLAB-019, SLAB-033 | Compatibility manifest and incompatible-merge refusal |",
+      "baseline_tickets": [
+        "SLAB-016",
+        "SLAB-019",
+        "SLAB-033"
+      ]
+    },
+    {
+      "id": "F20",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F20 | Separate delivered/scanned/processed cursors; validated checkpoint coverage rather than insertion order | Council review | SLAB-010, SLAB-036 | Isolated cursor barrier, gap and atomic-projection tests |",
+      "baseline_tickets": [
+        "SLAB-010",
+        "SLAB-036"
+      ]
+    },
+    {
+      "id": "F21",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F21 | Credential×room quotas, typed source authority, live ACL/source-revision revocation across derived artifacts | Council review | SLAB-008, SLAB-010, SLAB-035, SLAB-036 | No quota widening, quoted +1/hash false positives or stale-ACL access |",
+      "baseline_tickets": [
+        "SLAB-008",
+        "SLAB-010",
+        "SLAB-035",
+        "SLAB-036"
+      ]
+    },
+    {
+      "id": "F22",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F22 | Differentiate lost wake from durable event loss; outbox/dedupe and poison-label quarantine | Council review | SLAB-007, SLAB-010, SLAB-036 | Commit/publish failure, visible poison path and downstream receipts |",
+      "baseline_tickets": [
+        "SLAB-007",
+        "SLAB-010",
+        "SLAB-036"
+      ]
+    },
+    {
+      "id": "F23",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F23 | ResultCheck declares percent-change estimand; per-pair versus aggregate percent are not interchangeable | Science review | SLAB-022 | Aggregation/zero-denominator tests and explicit estimand |",
+      "baseline_tickets": [
+        "SLAB-022"
+      ]
+    },
+    {
+      "id": "F24",
+      "disposition": "retained_or_superseded_parts_as_noted",
+      "note": "Retain common temperature scale and thermal-evidence binding; replace robot distinction with renderer/evaluator boundary.",
+      "baseline_row": "| F24 | Temperature comparisons share a declared color scale; robotics physics never substitutes thermal evidence | Science review | SLAB-025, SLAB-026 | Visual scale and physics-source assertions |",
+      "baseline_tickets": [
+        "SLAB-025",
+        "SLAB-026"
+      ]
+    },
+    {
+      "id": "F25",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F25 | Artifact DAG/provenance/exchange/memory are prior ScienceClaw work, not claimed SentiLab novelty | Technology paper review | SLAB-012, SLAB-029 | Primary-paper attribution and measured differential-contribution claims |",
+      "baseline_tickets": [
+        "SLAB-012",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "F26",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F26 | Current code contains web frontend; old snapshot missing frontend is not a current repo claim | Root independent GitHub verification | SLAB-002, SLAB-025 | Pinned current frontend inventory and reuse decision |",
+      "baseline_tickets": [
+        "SLAB-002",
+        "SLAB-025"
+      ]
+    },
+    {
+      "id": "F27",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F27 | Known cached-council analysis is complete; retrieval/current-deployment/external approval boundaries remain explicit | Science review | SLAB-001, SLAB-010 | Hashed council packet, localAppendComplete=false disclosure and deployment probes |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-010"
+      ]
+    },
+    {
+      "id": "F28",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F28 | Existing sys_micro150.cfg defines8chips/680W/50mm/matrix; oracle still hard-wired to six-chiplet Ascend910 | Canonical addendum | SLAB-002, SLAB-005, SLAB-006 | Existing config parameterized and pinned; original temperature claims not presumed reproduced |",
+      "baseline_tickets": [
+        "SLAB-002",
+        "SLAB-005",
+        "SLAB-006"
+      ]
+    },
+    {
+      "id": "F29",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F29 | Current TAP uses chip-layer grid peak; proposed eight-chiplet primary change requires G1/version approval | Canonical addendum | SLAB-005, SLAB-006, SLAB-025 | Correct layer/statistic and approved primary/diagnostic labels |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-025"
+      ]
+    },
+    {
+      "id": "F30",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F30 | Current TAP wirelength_mm is weighted mean; proposed raw-sum proxy requires explicit version/units/threshold reconciliation | Pinned canonical source review | SLAB-005, SLAB-006 | Fixed-matrix relative equivalence and absolute-threshold conversion tests |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-006"
+      ]
+    },
+    {
+      "id": "F31",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| F31 | Account existing initialization/shared samples; reuse atomic run-JSON/recovery while replacing process-local coordination and local-only auth | Pinned canonical source review | SLAB-008, SLAB-020, SLAB-036 | All evaluation work counted; durable coordination and actual per-principal AIdenID start-grant checks |",
+      "baseline_tickets": [
+        "SLAB-008",
+        "SLAB-020",
+        "SLAB-036"
+      ]
+    },
+    {
+      "id": "N01",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| N01 | Peer-proposed hands-off live ticket→box→ResultCheck→approved merge→signed record→live interface within approved scope | Warden reply 03:29:33Z; PEER_PROPOSED | SLAB-001, SLAB-037 | Scoped +1 followed by authentic autonomous live trace |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-037"
+      ]
+    },
+    {
+      "id": "N02",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| N02 | Peer-proposed AI-off deterministic baseline/evaluator/ResultCheck still populates live demo | Warden reply; PEER_PROPOSED | SLAB-020, SLAB-025, SLAB-037 | Model-disabled positive control; no fabricated model judgments |",
+      "baseline_tickets": [
+        "SLAB-020",
+        "SLAB-025",
+        "SLAB-037"
+      ]
+    },
+    {
+      "id": "N03",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| N03 | Choose cheapest role model that passes a measured calibration set | Warden reply; PEER_PROPOSED | SLAB-003, SLAB-013, SLAB-014 | Per-role calibration results and capability/price rationale |",
+      "baseline_tickets": [
+        "SLAB-003",
+        "SLAB-013",
+        "SLAB-014"
+      ]
+    },
+    {
+      "id": "N04",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| N04 | One named owner and contract per solver I/O, flight record and ResultCheck seam | Warden reply; PEER_PROPOSED | SLAB-001, SLAB-005, SLAB-007, SLAB-022 | Accepted seam owners and versioned contracts before parallel boxes |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-005",
+        "SLAB-007",
+        "SLAB-022"
+      ]
+    },
+    {
+      "id": "N05",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| N05 | Two technical +1s proposed from claude-warden/pocket-forge on exact revision; none currently granted | Warden reply; PEER_PROPOSED | SLAB-001 | Actual authorized exact-revision approvals; owner release still required |",
+      "baseline_tickets": [
+        "SLAB-001"
+      ]
+    },
+    {
+      "id": "N06",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| N06 | Proposed Astra plan/parity, Forge architecture/visual and ops Warden release; agent Aneta participation authorized, human lane pending | Warden reply; PEER_PROPOSED | SLAB-001, SLAB-029 | Authorized role assignment; no inferred shipping permission |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "R01",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| R01 | Fixed8/lab in isolated/shared arms including reproduction; updated7search+1reproduction proposal | Actual external review R1; P5 reconciliation | SLAB-020, SLAB-032, SLAB-041 | 32 inclusive equal table; adaptive reallocation separate ablation |",
+      "baseline_tickets": [
+        "SLAB-020",
+        "SLAB-032",
+        "SLAB-041"
+      ]
+    },
+    {
+      "id": "R02",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| R02 | n=12 families with two paired seeds retained; preregister metric/test/ties/multiplicity/resource cuts and single-lead selection | Actual external review #55938; adopted controls pending +1 | SLAB-020, SLAB-021, SLAB-032 | Frozen family-level analysis and owner-approved reduction policy; no silent one-seed cut |",
+      "baseline_tickets": [
+        "SLAB-020",
+        "SLAB-021",
+        "SLAB-032"
+      ]
+    },
+    {
+      "id": "R03",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| R03 | Training-family headroom diagnostic before LLM experiment spend; long SA is CPU-capped proposed best-known reference | Actual external review #55938; adopted controls pending +1 | SLAB-039 | Random/heuristic/short-SA measurements, numerical margin and measured CPU cap; no optimum claim or held-out leakage |",
+      "baseline_tickets": [
+        "SLAB-039"
+      ]
+    },
+    {
+      "id": "R04",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| R04 | Inspect center mapping/interpolation; finer-grid recheck/tie margin and distinct replay/cross-check/analytic labels | Actual external review #55938; adopted controls pending +1 | SLAB-006, SLAB-015 | Mapping/refinement evidence and scoped verification-tier records |",
+      "baseline_tickets": [
+        "SLAB-006",
+        "SLAB-015"
+      ]
+    },
+    {
+      "id": "R05",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| R05 | Same decoder; parse/geometry-wire/simulator-improvement tiers; label_source plus verification_scope; eligible-data readiness | Actual external review #55938; adopted controls pending +1 | SLAB-016, SLAB-017, SLAB-019, SLAB-021, SLAB-032 | Non-formatting worker metrics, mixed-label provenance and frozen minimum eligible data count/diversity |",
+      "baseline_tickets": [
+        "SLAB-016",
+        "SLAB-017",
+        "SLAB-019",
+        "SLAB-021",
+        "SLAB-032"
+      ]
+    },
+    {
+      "id": "R06",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| R06 | Arm/family/seed namespaces; lab isolation; training-only calibration; randomized family-blocked run order; failure/rerun rule | Actual external review #55938; adopted controls pending +1 | SLAB-010, SLAB-013, SLAB-020, SLAB-032 | Reset runtime memory with retained audit history and no cross-run leakage |",
+      "baseline_tickets": [
+        "SLAB-010",
+        "SLAB-013",
+        "SLAB-020",
+        "SLAB-032"
+      ]
+    },
+    {
+      "id": "R07",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| R07 | Parameterize and validate located micro150 config/power/matrix before first eight-chiplet frozen contract | R7 corrected by canonical addendum | SLAB-002, SLAB-005, SLAB-006 | Existing config reused, missing oracle wiring fixed under approval; historical values separately verified |",
+      "baseline_tickets": [
+        "SLAB-002",
+        "SLAB-005",
+        "SLAB-006"
+      ]
+    },
+    {
+      "id": "R08",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| R08 | Jev only compiles goal/intake routes; labs originate scientific trajectories independently of build tickets | Actual external review #55938; adopted controls pending +1 | SLAB-011, SLAB-013 | Decision-originator logs and router authority-negative tests |",
+      "baseline_tickets": [
+        "SLAB-011",
+        "SLAB-013"
+      ]
+    },
+    {
+      "id": "R09",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| R09 | AcceptanceGate deterministic service distinct from ops Warden; each seam requires authorized nonauthor review | Actual external review #55938; adopted controls pending +1 | SLAB-001, SLAB-007, SLAB-008 | Separate identities/authority and author-reviewer matrix; no self-issued independent +1 |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-007",
+        "SLAB-008"
+      ]
+    },
+    {
+      "id": "R10",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| R10 | Bounded live autonomy between named human releases; actual private box-to-GB10/Qwen path and labeled AI-off data | Actual external review #55938; adopted controls pending +1 | SLAB-001, SLAB-004, SLAB-025, SLAB-029, SLAB-037, SLAB-038 | Reachability/authentication receipts and owner dependencies; no blanket shipping approval |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-004",
+        "SLAB-025",
+        "SLAB-029",
+        "SLAB-037",
+        "SLAB-038"
+      ]
+    },
+    {
+      "id": "R11",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| R11 | Reply/action gap coverage; ticket-scoped admission and TTL/renewal proof; UTC expiry tests; hashed canonical files | Actual external review #55938; adopted controls pending +1 | SLAB-001, SLAB-009, SLAB-036 | Actual review reply delivered, grant scope/expiry checks and DST-safe timers; no trust in rewritten room body |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-009",
+        "SLAB-036"
+      ]
+    },
+    {
+      "id": "R12",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| R12 | Typed size-bounded deterministic ResultCheck; quarantine outside text; separate reviewed literature intake; signing key/secret controls | Actual external review #55938; adopted controls pending +1 | SLAB-007, SLAB-016, SLAB-022, SLAB-035 | No automatic external instructions/training; numeric conformance and redacted publication artifacts |",
+      "baseline_tickets": [
+        "SLAB-007",
+        "SLAB-016",
+        "SLAB-022",
+        "SLAB-035"
+      ]
+    },
+    {
+      "id": "R13",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| R13 | Claude and Gemini routes separately pending; no unapproved substitute; prove shared Qwen reachable from actual boxes | Actual external review #55938; adopted controls pending +1 | SLAB-003, SLAB-033, SLAB-038 | Authorized model/entitlement probes and private serving route; owner decides cuts |",
+      "baseline_tickets": [
+        "SLAB-003",
+        "SLAB-033",
+        "SLAB-038"
+      ]
+    },
+    {
+      "id": "R14",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| R14 | Orthogonal lifecycle/validity/verification; ownChecks AND OR-of-AND supports; compatible context; no cyclic self-proof; every trained_on input taints descendants | Actual external review #55938; adopted controls pending +1 | SLAB-007, SLAB-010, SLAB-016, SLAB-019, SLAB-027, SLAB-033 | Golden support/visibility fixtures and trained-input quarantine; immutable event projection |",
+      "baseline_tickets": [
+        "SLAB-007",
+        "SLAB-010",
+        "SLAB-016",
+        "SLAB-019",
+        "SLAB-027",
+        "SLAB-033"
+      ]
+    },
+    {
+      "id": "Q01",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| Q01 | P1: truthful deadline progress submission independent of missing optional/required implementation, without claiming full completion | Actual later review/canonical addendum; approval pending | SLAB-001, SLAB-028, SLAB-029 | Remove any non-core ticket and deadline reporting still has a path; D00–D07 omissions stay incomplete |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-028",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "Q02",
+      "disposition": "retained_or_superseded_parts_as_noted",
+      "note": "Retain independent UI/correction/replay; supersede mandatory robotics clause.",
+      "baseline_row": "| Q02 | P2: base UI/correction drill independent of robotics code; mandatory robotics delivery remains tracked | Actual later review/canonical addendum; approval pending | SLAB-025, SLAB-026, SLAB-027 | Correction fixture runs with no robotics code; no owner-unapproved scope cut |",
+      "baseline_tickets": [
+        "SLAB-025",
+        "SLAB-026",
+        "SLAB-027"
+      ]
+    },
+    {
+      "id": "Q03",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| Q03 | P3: preserve complete candidate evidence under immutable task; exact-parent delta materialization and current-board atomic comparison | Actual later review/canonical addendum; approval pending | SLAB-005, SLAB-007, SLAB-008 | Concurrent known-parent candidates retained, authority rechecked, CAS comparison retry not simulator rerun |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-007",
+        "SLAB-008"
+      ]
+    },
+    {
+      "id": "Q04",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| Q04 | P4: empirical short-search gap to best found exceeds frozen k×mesh error; diagnostic CPU/runtime cap | Actual later review/canonical addendum; approval pending | SLAB-039, SLAB-041 | Training-only staged diagnostic, explicit cost/repetitions/k and no optimum assertion |",
+      "baseline_tickets": [
+        "SLAB-039",
+        "SLAB-041"
+      ]
+    },
+    {
+      "id": "Q05",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| Q05 | P5: keep32 inclusive of reproduction; equal28+4 aggregate /7+1 per lab is a freeze proposal | Actual later review/canonical addendum; approval pending | SLAB-020, SLAB-032, SLAB-041 | Arm allocation/initialization/cache/failure/cross-architecture charging table approved |",
+      "baseline_tickets": [
+        "SLAB-020",
+        "SLAB-032",
+        "SLAB-041"
+      ]
+    },
+    {
+      "id": "Q06",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| Q06 | P6: one primary endpoint per question; fixed corpus learning primary and closed-loop B4 required secondary | Actual later review/canonical addendum; approval pending | SLAB-021, SLAB-032, SLAB-041 | Frozen hypothesis/multiplicity table; deterministic hidden corpus with no training exposure |",
+      "baseline_tickets": [
+        "SLAB-021",
+        "SLAB-032",
+        "SLAB-041"
+      ]
+    },
+    {
+      "id": "Q07",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| Q07 | P7: gate-scoped +1 covers named ticket set under aggregate cap; actual owner spend/cut approval pending | Actual later review/canonical addendum; approval pending | SLAB-001, SLAB-036, SLAB-041 | One release starts its named scope; missing caps/expiry fail closed; no repetitive prompts |",
+      "baseline_tickets": [
+        "SLAB-001",
+        "SLAB-036",
+        "SLAB-041"
+      ]
+    },
+    {
+      "id": "Q08",
+      "disposition": "retained_or_superseded_parts_as_noted",
+      "note": "Retain independent build paths and effective final integrations; do not resurrect robotics.",
+      "baseline_row": "| Q08 | P8: remove incidental thermal/MCP/Jev/robotics/preference-judge prerequisites while preserving final integrations | Actual later review/canonical addendum; approval pending | SLAB-012, SLAB-013, SLAB-016, SLAB-018, SLAB-019, SLAB-020, SLAB-022, SLAB-023, SLAB-025, SLAB-027, SLAB-041 | Independent ResultCheck vectors, standalone smoke/SFT, deterministic routes and fixture UI paths |",
+      "baseline_tickets": [
+        "SLAB-012",
+        "SLAB-013",
+        "SLAB-016",
+        "SLAB-018",
+        "SLAB-019",
+        "SLAB-020",
+        "SLAB-022",
+        "SLAB-023",
+        "SLAB-025",
+        "SLAB-027",
+        "SLAB-041"
+      ]
+    },
+    {
+      "id": "Q09",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| Q09 | P9: measure GB10 latency/throughput/overnight access/private path and device contention schedule | Actual later review/canonical addendum; approval pending | SLAB-004, SLAB-018, SLAB-033, SLAB-038 | Required call count×measured latency fits approved window; mutually bounded training/serving/rendering slots |",
+      "baseline_tickets": [
+        "SLAB-004",
+        "SLAB-018",
+        "SLAB-033",
+        "SLAB-038"
+      ]
+    },
+    {
+      "id": "Q10",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| Q10 | P10: scientific family/provider independence is distinct from nonauthor implementation review | Actual later review/canonical addendum; approval pending | SLAB-003, SLAB-014 | Single role manifest with qualification of shared-family reviewers; no silent lead substitutes |",
+      "baseline_tickets": [
+        "SLAB-003",
+        "SLAB-014"
+      ]
+    },
+    {
+      "id": "Q11",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| Q11 | P11: verify/disable OpenResearch telemetry before nonpublic data and document effective setting/data flows | Actual later review/canonical addendum; approval pending | SLAB-012, SLAB-035 | Exact supported setting and effective-config evidence; no assumed all-egress disabling |",
+      "baseline_tickets": [
+        "SLAB-012",
+        "SLAB-035"
+      ]
+    },
+    {
+      "id": "C01",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| C01 | Service authenticity needs independently pinned trust root and scoped delegation, beyond valid signatures under embedded keys | Actual later review/canonical addendum; approval pending | SLAB-007, SLAB-028, SLAB-034, SLAB-040 | Forged/re-signed/unknown-root/wrong-scope/expired/revoked negative fixtures and fail-closed signing |",
+      "baseline_tickets": [
+        "SLAB-007",
+        "SLAB-028",
+        "SLAB-034",
+        "SLAB-040"
+      ]
+    },
+    {
+      "id": "C02",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| C02 | Micro150 config exists, but oracle wiring and original temperatures are not verified by its existence | Actual later review/canonical addendum; approval pending | SLAB-002, SLAB-005, SLAB-006 | Pinned source plus new task/evaluator integration and independent numerical evidence |",
+      "baseline_tickets": [
+        "SLAB-002",
+        "SLAB-005",
+        "SLAB-006"
+      ]
+    },
+    {
+      "id": "C03",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| C03 | Grid-peak primary with center diagnostics is a proposed G1 change, not approved metric or continuous physical die peak | Actual later review/canonical addendum; approval pending | SLAB-005, SLAB-006, SLAB-021, SLAB-025 | New approved metric/evaluator and mapping/convergence checks |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-021",
+        "SLAB-025"
+      ]
+    },
+    {
+      "id": "C04",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| C04 | Current POST/replay/finish-only UI lacks autonomous durable conductor and incremental event delivery | Actual later review/canonical addendum; approval pending | SLAB-025, SLAB-036, SLAB-037 | Durable scheduler/run recovery/event feed with measured SSE or safe-polling contract |",
+      "baseline_tickets": [
+        "SLAB-025",
+        "SLAB-036",
+        "SLAB-037"
+      ]
+    },
+    {
+      "id": "C05",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| C05 | HotSpot C/SuperLU build permits ARM attempt but Haswell/native dependencies/architecture remain unproved | Actual later review/canonical addendum; approval pending | SLAB-004, SLAB-006, SLAB-015, SLAB-038 | Approved ARM preflight with independent binary pin and matched-model tolerance |",
+      "baseline_tickets": [
+        "SLAB-004",
+        "SLAB-006",
+        "SLAB-015",
+        "SLAB-038"
+      ]
+    },
+    {
+      "id": "C06",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| C06 | Peer-reported tests/manifest changes/contract-vector counts remain attributed unless independently reproduced | Actual later review/canonical addendum; approval pending | SLAB-002, SLAB-007, SLAB-022, SLAB-029 | Source/verification ledger separates code inspection, peer reports and actual execution |",
+      "baseline_tickets": [
+        "SLAB-002",
+        "SLAB-007",
+        "SLAB-022",
+        "SLAB-029"
+      ]
+    },
+    {
+      "id": "C07",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction.",
+      "baseline_row": "| C07 | Positive per-current-board margin is order-dependent; G1 chooses sequential semantics or deterministic batch/epoch ranking | Actual later review/canonical addendum; approval pending | SLAB-005, SLAB-008, SLAB-020, SLAB-041 | Recorded comparison reference/order/tie/margin; no claim CAS guarantees globally best completed candidate |",
+      "baseline_tickets": [
+        "SLAB-005",
+        "SLAB-008",
+        "SLAB-020",
+        "SLAB-041"
+      ]
+    }
+  ],
+  "tickets": [
+    {
+      "id": "SLAB-001",
+      "title": "Reconcile council, peer authority, source packet and explicit +1 gates",
+      "disposition": "apply_additive_note",
+      "note": "Retain governance; effective V10 no longer requires another owner scope clarification.",
+      "baseline_requirements": [
+        "G01",
+        "G02",
+        "G03",
+        "G04",
+        "G05",
+        "G06",
+        "G09",
+        "P01",
+        "A22",
+        "V10",
+        "O01",
+        "O02",
+        "F12",
+        "F27",
+        "N01",
+        "N04",
+        "N05",
+        "N06",
+        "R09",
+        "R10",
+        "R11",
+        "Q01",
+        "Q07"
+      ],
+      "baseline_dependencies": [],
+      "baseline_cli_deliverables": [
+        "sentilab plan export",
+        "sentilab approval inspect"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_plan_export",
+        "sentilab_approval_inspect"
+      ]
+    },
+    {
+      "id": "SLAB-002",
+      "title": "Pin canonical Thermal Flight Lab source and reproduce existing claims",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "P02",
+        "P03",
+        "P04",
+        "S01",
+        "S11",
+        "S12",
+        "M15",
+        "O18",
+        "F26",
+        "F28",
+        "R07",
+        "C02",
+        "C06"
+      ],
+      "baseline_dependencies": [
+        "SLAB-001"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab source inspect",
+        "sentilab regression run"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_source_inspect",
+        "sentilab_regression_run"
+      ]
+    },
+    {
+      "id": "SLAB-003",
+      "title": "Verify box/model catalog and obtain missing Claude capability",
+      "disposition": "apply_additive_note",
+      "note": "Retain generic specialist/capacity assignments; robot-only assignments superseded.",
+      "baseline_requirements": [
+        "G07",
+        "G08",
+        "A09",
+        "A13",
+        "A15",
+        "A16",
+        "A18",
+        "B14",
+        "B17",
+        "M12",
+        "M17",
+        "V09",
+        "O09",
+        "N03",
+        "R13",
+        "Q10"
+      ],
+      "baseline_dependencies": [
+        "SLAB-001"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab model list",
+        "sentilab model probe"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_model_list",
+        "sentilab_model_probe"
+      ]
+    },
+    {
+      "id": "SLAB-004",
+      "title": "Complete GB10 key access and inventory compatible compute",
+      "disposition": "apply_additive_note",
+      "note": "Retain GB10 access/runtime/hardware/caps; apply corrected F10 to selected workloads.",
+      "baseline_requirements": [
+        "M13",
+        "M14",
+        "M15",
+        "M17",
+        "O09",
+        "F10",
+        "R10",
+        "Q09",
+        "C05"
+      ],
+      "baseline_dependencies": [
+        "SLAB-001"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab doctor --host gb10"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_doctor"
+      ]
+    },
+    {
+      "id": "SLAB-005",
+      "title": "Freeze geometry, units, thermal objective and fixed wire budget",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "A02",
+        "S01",
+        "S02",
+        "S03",
+        "S04",
+        "S05",
+        "S06",
+        "S07",
+        "S08",
+        "S09",
+        "S10",
+        "S12",
+        "S14",
+        "E05",
+        "E07",
+        "E09",
+        "O03",
+        "D00",
+        "D01",
+        "F15",
+        "F28",
+        "F29",
+        "F30",
+        "N04",
+        "R07",
+        "Q03",
+        "C02",
+        "C03",
+        "C07"
+      ],
+      "baseline_dependencies": [
+        "SLAB-002"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab contract validate",
+        "sentilab geometry check"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_contract_validate",
+        "sentilab_geometry_check"
+      ]
+    },
+    {
+      "id": "SLAB-006",
+      "title": "Version reference thermal evaluator and numerical uncertainty checks",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "A02",
+        "S01",
+        "S02",
+        "S03",
+        "S06",
+        "S10",
+        "S11",
+        "S13",
+        "S14",
+        "E04",
+        "E06",
+        "E10",
+        "E11",
+        "B09",
+        "B21",
+        "M15",
+        "V13",
+        "D01",
+        "D02",
+        "F01",
+        "F17",
+        "F18",
+        "F28",
+        "F29",
+        "F30",
+        "R04",
+        "R07",
+        "C02",
+        "C03",
+        "C05"
+      ],
+      "baseline_dependencies": [
+        "SLAB-002",
+        "SLAB-005"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab evaluate",
+        "sentilab evaluator inspect"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_evaluate",
+        "sentilab_evaluator_inspect"
+      ]
+    },
+    {
+      "id": "SLAB-007",
+      "title": "Implement typed result contract, event recorder and artifact manifests",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "A07",
+        "A13",
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05",
+        "E06",
+        "E07",
+        "E08",
+        "E19",
+        "E20",
+        "B12",
+        "B23",
+        "M01",
+        "V06",
+        "O03",
+        "O10",
+        "D02",
+        "D04",
+        "F22",
+        "N04",
+        "R09",
+        "R12",
+        "R14",
+        "Q03",
+        "C01",
+        "C06"
+      ],
+      "baseline_dependencies": [
+        "SLAB-009"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab result inspect",
+        "sentilab event export",
+        "sentilab artifact verify"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_result_inspect",
+        "sentilab_event_export",
+        "sentilab_artifact_verify"
+      ]
+    },
+    {
+      "id": "SLAB-008",
+      "title": "Enforce deterministic AcceptanceGate permissions, budgets and atomic admission",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "A02",
+        "A04",
+        "A06",
+        "A08",
+        "A12",
+        "A17",
+        "S15",
+        "E02",
+        "E09",
+        "E10",
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15",
+        "B10",
+        "O05",
+        "F01",
+        "F08",
+        "F15",
+        "F16",
+        "F21",
+        "F31",
+        "R09",
+        "Q03",
+        "C07"
+      ],
+      "baseline_dependencies": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-007",
+        "SLAB-015"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab candidate submit",
+        "sentilab board inspect",
+        "sentilab approval apply",
+        "sentilab job cancel"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_candidate_submit",
+        "sentilab_board_inspect",
+        "sentilab_approval_apply",
+        "sentilab_job_cancel"
+      ]
+    },
+    {
+      "id": "SLAB-009",
+      "title": "Provide shared CLI and MCP contract/transport foundation",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "X08",
+        "X09",
+        "F06",
+        "R11"
+      ],
+      "baseline_dependencies": [
+        "SLAB-001"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab capabilities",
+        "sentilab job status",
+        "sentilab job cancel"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_capabilities",
+        "sentilab_job_status",
+        "sentilab_job_cancel"
+      ]
+    },
+    {
+      "id": "SLAB-010",
+      "title": "Integrate council-compliant ENGRAM and evidence invalidation",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "G03",
+        "A05",
+        "A21",
+        "A22",
+        "E08",
+        "E15",
+        "E16",
+        "E17",
+        "E18",
+        "E19",
+        "B03",
+        "V03",
+        "D04",
+        "F05",
+        "F07",
+        "F20",
+        "F21",
+        "F22",
+        "F27",
+        "R06",
+        "R14"
+      ],
+      "baseline_dependencies": [
+        "SLAB-001",
+        "SLAB-007",
+        "SLAB-009"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab memory recall",
+        "sentilab memory snapshot",
+        "sentilab evidence invalidate",
+        "sentilab evidence inspect"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_memory_recall",
+        "sentilab_memory_snapshot",
+        "sentilab_evidence_invalidate",
+        "sentilab_evidence_inspect"
+      ]
+    },
+    {
+      "id": "SLAB-011",
+      "title": "Integrate Jev intent and calibrated capability routing",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "G03",
+        "G07",
+        "A12",
+        "A20",
+        "A22",
+        "F08",
+        "R08"
+      ],
+      "baseline_dependencies": [
+        "SLAB-001",
+        "SLAB-003",
+        "SLAB-005",
+        "SLAB-009",
+        "SLAB-010"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab intent compile",
+        "sentilab route evaluate"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_intent_compile",
+        "sentilab_route_evaluate"
+      ]
+    },
+    {
+      "id": "SLAB-012",
+      "title": "Run OpenResearch literature, prior-work and reproduction audit",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "A14",
+        "A19",
+        "S03",
+        "O07",
+        "O08",
+        "O11",
+        "O12",
+        "F25",
+        "Q08",
+        "Q11"
+      ],
+      "baseline_dependencies": [
+        "SLAB-001",
+        "SLAB-003"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab research request",
+        "sentilab research status",
+        "sentilab research export"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_research_request",
+        "sentilab_research_status",
+        "sentilab_research_export"
+      ]
+    },
+    {
+      "id": "SLAB-013",
+      "title": "Wire four scientists and bounded worker orchestration",
+      "disposition": "apply_additive_note",
+      "note": "Retain four scientific labs and generic capacity assignments.",
+      "baseline_requirements": [
+        "A01",
+        "A04",
+        "A09",
+        "A10",
+        "A11",
+        "A12",
+        "A14",
+        "A18",
+        "B11",
+        "B17",
+        "N03",
+        "R06",
+        "R08",
+        "Q08"
+      ],
+      "baseline_dependencies": [
+        "SLAB-003",
+        "SLAB-005",
+        "SLAB-008",
+        "SLAB-010",
+        "SLAB-038",
+        "SLAB-039",
+        "SLAB-037"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab lab start",
+        "sentilab lab status",
+        "sentilab candidate propose"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_lab_start",
+        "sentilab_lab_status",
+        "sentilab_candidate_propose"
+      ]
+    },
+    {
+      "id": "SLAB-014",
+      "title": "Implement adversarial review protocol and calibrated LLM judges",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "G04",
+        "A14",
+        "A15",
+        "A16",
+        "A17",
+        "B18",
+        "F04",
+        "N03",
+        "Q10"
+      ],
+      "baseline_dependencies": [
+        "SLAB-003",
+        "SLAB-005",
+        "SLAB-007",
+        "SLAB-012"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab review request",
+        "sentilab review reconcile"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_review_request",
+        "sentilab_review_reconcile"
+      ]
+    },
+    {
+      "id": "SLAB-015",
+      "title": "Build fresh-process reproduction service",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "A03",
+        "E12",
+        "M15",
+        "O05",
+        "D03",
+        "F18",
+        "R04",
+        "C05"
+      ],
+      "baseline_dependencies": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-007"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab reproduce",
+        "sentilab reproduction inspect"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_reproduce",
+        "sentilab_reproduction_inspect"
+      ]
+    },
+    {
+      "id": "SLAB-016",
+      "title": "Build raw experiment and eligible training JSONL datasets",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "B06",
+        "B16",
+        "M01",
+        "M02",
+        "M03",
+        "M04",
+        "M05",
+        "F05",
+        "F15",
+        "F19",
+        "R05",
+        "R12",
+        "R14",
+        "Q08"
+      ],
+      "baseline_dependencies": [
+        "SLAB-005",
+        "SLAB-007",
+        "SLAB-035"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab dataset export",
+        "sentilab dataset validate",
+        "sentilab dataset freeze"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_dataset_export",
+        "sentilab_dataset_validate",
+        "sentilab_dataset_freeze"
+      ]
+    },
+    {
+      "id": "SLAB-017",
+      "title": "Export RLAIF preference JSONL with verifier-grounded judgments",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "A17",
+        "M06",
+        "F04",
+        "R05"
+      ],
+      "baseline_dependencies": [
+        "SLAB-014",
+        "SLAB-016"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab judge compare",
+        "sentilab dataset export --kind rlaif"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_judge_compare",
+        "sentilab_dataset_export"
+      ]
+    },
+    {
+      "id": "SLAB-018",
+      "title": "Prove GB10 NeMo train-save-reload preflight",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "M07",
+        "M08",
+        "M09",
+        "M10",
+        "M12",
+        "M13",
+        "M14",
+        "O09",
+        "D06",
+        "F13",
+        "Q08",
+        "Q09"
+      ],
+      "baseline_dependencies": [
+        "SLAB-004",
+        "SLAB-035"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab train preflight",
+        "sentilab train status",
+        "sentilab checkpoint inspect"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_train_preflight",
+        "sentilab_train_status",
+        "sentilab_checkpoint_inspect"
+      ]
+    },
+    {
+      "id": "SLAB-019",
+      "title": "Train candidate GB10 adapter and select using validation only",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "A11",
+        "B05",
+        "B15",
+        "B17",
+        "B19",
+        "B20",
+        "B24",
+        "M07",
+        "M09",
+        "M11",
+        "M13",
+        "M14",
+        "O15",
+        "D06",
+        "F05",
+        "F14",
+        "F19",
+        "R05",
+        "R14",
+        "Q08"
+      ],
+      "baseline_dependencies": [
+        "SLAB-018",
+        "SLAB-016",
+        "SLAB-041"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab train start",
+        "sentilab train cancel",
+        "sentilab checkpoint select",
+        "sentilab checkpoint inspect"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_train_start",
+        "sentilab_train_cancel",
+        "sentilab_checkpoint_select",
+        "sentilab_checkpoint_inspect"
+      ]
+    },
+    {
+      "id": "SLAB-020",
+      "title": "Preregister benchmark protocol and implement five-arm runner",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "A13",
+        "S14",
+        "S15",
+        "B01",
+        "B02",
+        "B03",
+        "B04",
+        "B05",
+        "B06",
+        "B07",
+        "B08",
+        "B09",
+        "B10",
+        "B11",
+        "B12",
+        "B13",
+        "B14",
+        "B15",
+        "B16",
+        "B17",
+        "B18",
+        "B22",
+        "M05",
+        "M12",
+        "D05",
+        "F02",
+        "F14",
+        "F16",
+        "F31",
+        "N02",
+        "R01",
+        "R02",
+        "R06",
+        "Q05",
+        "Q08",
+        "C07"
+      ],
+      "baseline_dependencies": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-010",
+        "SLAB-013",
+        "SLAB-014",
+        "SLAB-016",
+        "SLAB-039",
+        "SLAB-041"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab benchmark validate",
+        "sentilab benchmark freeze",
+        "sentilab benchmark run",
+        "sentilab benchmark status"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_benchmark_validate",
+        "sentilab_benchmark_freeze",
+        "sentilab_benchmark_run",
+        "sentilab_benchmark_status"
+      ]
+    },
+    {
+      "id": "SLAB-021",
+      "title": "Analyze family-level results and enforce honest claims",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "S10",
+        "S12",
+        "B14",
+        "B15",
+        "B19",
+        "B20",
+        "B21",
+        "B22",
+        "B23",
+        "B24",
+        "M16",
+        "V04",
+        "O15",
+        "D05",
+        "F01",
+        "F02",
+        "F03",
+        "R02",
+        "R05",
+        "Q06",
+        "C03"
+      ],
+      "baseline_dependencies": [
+        "SLAB-032",
+        "SLAB-022"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab compare",
+        "sentilab claim check"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_compare",
+        "sentilab_claim_check"
+      ]
+    },
+    {
+      "id": "SLAB-022",
+      "title": "Ship deterministic SentiResultCheck core with MCP and CLI",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "X01",
+        "X02",
+        "X03",
+        "X04",
+        "X05",
+        "X06",
+        "X07",
+        "X08",
+        "F03",
+        "F23",
+        "N04",
+        "R12",
+        "Q08",
+        "C06"
+      ],
+      "baseline_dependencies": [
+        "SLAB-007",
+        "SLAB-009"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab resultcheck"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_resultcheck"
+      ]
+    },
+    {
+      "id": "SLAB-023",
+      "title": "Connect real ResultCheck intake and authorized external pilot",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "A04",
+        "X01",
+        "X10",
+        "X11",
+        "O16",
+        "Q08"
+      ],
+      "baseline_dependencies": [
+        "SLAB-022",
+        "SLAB-009"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab resultcheck submit",
+        "sentilab resultcheck status",
+        "sentilab resultcheck receipt"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_resultcheck_submit",
+        "sentilab_resultcheck_status",
+        "sentilab_resultcheck_receipt"
+      ]
+    },
+    {
+      "id": "SLAB-024",
+      "title": "Inspect exact Microduck reference and freeze fidelity/feasibility scope",
+      "disposition": "apply_additive_note",
+      "note": "Retarget reference/fidelity/feasibility to our chiplet workflow and actual tools; supersede robot/assets adoption.",
+      "baseline_requirements": [
+        "A18",
+        "V07",
+        "V08",
+        "V09",
+        "V10",
+        "F09",
+        "F10",
+        "F11"
+      ],
+      "baseline_dependencies": [
+        "SLAB-001",
+        "SLAB-004",
+        "SLAB-012",
+        "SLAB-035"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab reference inspect",
+        "sentilab simulation doctor"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_reference_inspect",
+        "sentilab_simulation_doctor"
+      ]
+    },
+    {
+      "id": "SLAB-025",
+      "title": "Build event-derived chiplet, lab, evidence and comparison interface",
+      "disposition": "apply_additive_note",
+      "note": "Retain full chiplet/lab/evidence/comparison UI; apply corrected Q02/F24 without creating robot dependency.",
+      "baseline_requirements": [
+        "A18",
+        "S10",
+        "S13",
+        "V01",
+        "V02",
+        "V03",
+        "V04",
+        "V05",
+        "V06",
+        "V09",
+        "V13",
+        "O01",
+        "O04",
+        "O05",
+        "O14",
+        "F24",
+        "F26",
+        "F29",
+        "N02",
+        "R10",
+        "Q02",
+        "Q08",
+        "C03",
+        "C04"
+      ],
+      "baseline_dependencies": [
+        "SLAB-005",
+        "SLAB-007",
+        "SLAB-010"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab view data",
+        "sentilab view export"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_view_data",
+        "sentilab_view_export"
+      ]
+    },
+    {
+      "id": "SLAB-026",
+      "title": "Implement approved exact Microduck simulation workflow",
+      "disposition": "apply_additive_note",
+      "note": "Supersede robot revision; linked revision/replacement must preserve chiplet build/render/replay/export CLI+MCP. Remove robot train only; GB10 worker training retained.",
+      "baseline_requirements": [
+        "A18",
+        "V08",
+        "V09",
+        "V10",
+        "D07",
+        "F09",
+        "F10",
+        "F11",
+        "F24",
+        "Q02"
+      ],
+      "baseline_dependencies": [
+        "SLAB-024",
+        "SLAB-003",
+        "SLAB-004",
+        "SLAB-009",
+        "SLAB-035"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab simulation build",
+        "sentilab simulation train",
+        "sentilab simulation replay",
+        "sentilab simulation export"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_simulation_build",
+        "sentilab_simulation_train",
+        "sentilab_simulation_replay",
+        "sentilab_simulation_export"
+      ]
+    },
+    {
+      "id": "SLAB-027",
+      "title": "Build correction drill and reproducible visual replay",
+      "disposition": "apply_additive_note",
+      "note": "Retain correction/replay; supersede final mandatory-robotics clause.",
+      "baseline_requirements": [
+        "E16",
+        "E17",
+        "E18",
+        "E19",
+        "V05",
+        "V06",
+        "V11",
+        "V12",
+        "O14",
+        "D07",
+        "R14",
+        "Q02",
+        "Q08"
+      ],
+      "baseline_dependencies": [
+        "SLAB-010",
+        "SLAB-025"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab replay render",
+        "sentilab replay export",
+        "sentilab correction drill"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_replay_render",
+        "sentilab_replay_export",
+        "sentilab_correction_drill"
+      ]
+    },
+    {
+      "id": "SLAB-028",
+      "title": "Package and independently rebuild D00–D07 engineering handoff",
+      "disposition": "apply_additive_note",
+      "note": "Retain all eight deliverables; retarget old robot-only 026 dependency and use corrected 034.",
+      "baseline_requirements": [
+        "P04",
+        "A07",
+        "E03",
+        "E20",
+        "M09",
+        "V12",
+        "O16",
+        "O18",
+        "D00",
+        "D01",
+        "D02",
+        "D03",
+        "D04",
+        "D05",
+        "D06",
+        "D07",
+        "F12",
+        "Q01",
+        "C01"
+      ],
+      "baseline_dependencies": [
+        "SLAB-007",
+        "SLAB-015",
+        "SLAB-019",
+        "SLAB-021",
+        "SLAB-027",
+        "SLAB-033",
+        "SLAB-034",
+        "SLAB-026",
+        "SLAB-040"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab package build",
+        "sentilab package verify",
+        "sentilab package export"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_package_build",
+        "sentilab_package_verify",
+        "sentilab_package_export"
+      ]
+    },
+    {
+      "id": "SLAB-029",
+      "title": "Prepare truthful deadline progress submission and separately report full-completion status",
+      "disposition": "apply_additive_note",
+      "note": "Retain truthful progress reporting; cancelled robotics is not an incomplete current requirement.",
+      "baseline_requirements": [
+        "G09",
+        "P01",
+        "P04",
+        "B24",
+        "M07",
+        "M17",
+        "V12",
+        "X11",
+        "O01",
+        "O06",
+        "O07",
+        "O08",
+        "O09",
+        "O10",
+        "O11",
+        "O12",
+        "O13",
+        "O14",
+        "O15",
+        "O16",
+        "O17",
+        "O18",
+        "F25",
+        "N06",
+        "R10",
+        "Q01",
+        "C06"
+      ],
+      "baseline_dependencies": [
+        "SLAB-001"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab presentation export",
+        "sentilab submission validate"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_presentation_export",
+        "sentilab_submission_validate"
+      ]
+    },
+    {
+      "id": "SLAB-030",
+      "title": "Evaluate optional PhysicsNeMo screening extension",
+      "disposition": "apply_additive_note",
+      "note": "Retain optional status and 028 completion gate under corrected scope.",
+      "baseline_requirements": [
+        "O19"
+      ],
+      "baseline_dependencies": [
+        "SLAB-006",
+        "SLAB-016",
+        "SLAB-020",
+        "SLAB-028"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab surrogate train",
+        "sentilab surrogate evaluate"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_surrogate_train",
+        "sentilab_surrogate_evaluate"
+      ]
+    },
+    {
+      "id": "SLAB-031",
+      "title": "Track optional sponsor/domain/physical-design extensions",
+      "disposition": "apply_additive_note",
+      "note": "Retain optional status and 028/029 dependencies under corrected scope.",
+      "baseline_requirements": [
+        "O20",
+        "O21",
+        "O22"
+      ],
+      "baseline_dependencies": [
+        "SLAB-028",
+        "SLAB-029"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab extension plan export"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_extension_plan_export"
+      ]
+    },
+    {
+      "id": "SLAB-032",
+      "title": "Freeze selected checkpoint and run untouched held-out comparisons",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "B01",
+        "B02",
+        "B03",
+        "B04",
+        "B05",
+        "B15",
+        "B19",
+        "B20",
+        "B21",
+        "B22",
+        "B24",
+        "M11",
+        "M16",
+        "D05",
+        "D06",
+        "F14",
+        "R01",
+        "R02",
+        "R05",
+        "R06",
+        "Q05",
+        "Q06"
+      ],
+      "baseline_dependencies": [
+        "SLAB-019",
+        "SLAB-020"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab benchmark freeze",
+        "sentilab benchmark run",
+        "sentilab checkpoint evaluate"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_benchmark_freeze",
+        "sentilab_benchmark_run",
+        "sentilab_checkpoint_evaluate"
+      ]
+    },
+    {
+      "id": "SLAB-033",
+      "title": "Approve and serve verified worker checkpoint on GB10",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "A11",
+        "M11",
+        "M13",
+        "M14",
+        "M16",
+        "D06",
+        "F05",
+        "F14",
+        "F19",
+        "R13",
+        "R14",
+        "Q09"
+      ],
+      "baseline_dependencies": [
+        "SLAB-019",
+        "SLAB-021",
+        "SLAB-032"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab checkpoint promote",
+        "sentilab checkpoint serve",
+        "sentilab checkpoint rollback"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_checkpoint_promote",
+        "sentilab_checkpoint_serve",
+        "sentilab_checkpoint_rollback"
+      ]
+    },
+    {
+      "id": "SLAB-034",
+      "title": "Audit complete MCP/CLI parity and requirement coverage",
+      "disposition": "apply_additive_note",
+      "note": "Retain full CLI/MCP/coverage; retarget 026 and track superseded rows with source/replacement lineage.",
+      "baseline_requirements": [
+        "X08",
+        "X09",
+        "F06",
+        "F12",
+        "C01"
+      ],
+      "baseline_dependencies": [
+        "SLAB-009",
+        "SLAB-008",
+        "SLAB-010",
+        "SLAB-011",
+        "SLAB-012",
+        "SLAB-017",
+        "SLAB-019",
+        "SLAB-020",
+        "SLAB-022",
+        "SLAB-026",
+        "SLAB-027",
+        "SLAB-032",
+        "SLAB-033",
+        "SLAB-037",
+        "SLAB-038",
+        "SLAB-039",
+        "SLAB-040",
+        "SLAB-041"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab conformance run",
+        "sentilab coverage validate"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_conformance_run",
+        "sentilab_coverage_validate"
+      ]
+    },
+    {
+      "id": "SLAB-035",
+      "title": "Review code/model/data/asset licenses and permitted-use provenance",
+      "disposition": "apply_additive_note",
+      "note": "Retain actual code/model/data/tool/asset provenance and rights; supersede robot-assets and code/STL-specific acceptance.",
+      "baseline_requirements": [
+        "M04",
+        "V08",
+        "F11",
+        "F21",
+        "R12",
+        "Q11"
+      ],
+      "baseline_dependencies": [
+        "SLAB-001"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab provenance inspect",
+        "sentilab license manifest"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_provenance_inspect",
+        "sentilab_license_manifest"
+      ]
+    },
+    {
+      "id": "SLAB-036",
+      "title": "Verify bounded operations, STOP, recovery and accounting",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "A07",
+        "A10",
+        "E20",
+        "B10",
+        "B12",
+        "F06",
+        "F07",
+        "F16",
+        "F20",
+        "F21",
+        "F22",
+        "F31",
+        "R11",
+        "Q07",
+        "C04"
+      ],
+      "baseline_dependencies": [
+        "SLAB-007",
+        "SLAB-008",
+        "SLAB-010"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab runtime status",
+        "sentilab runtime stop",
+        "sentilab runtime recover"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_runtime_status",
+        "sentilab_runtime_stop",
+        "sentilab_runtime_recover"
+      ]
+    },
+    {
+      "id": "SLAB-037",
+      "title": "Build deterministic conductor, AI-off live loop and lab integration seam",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "N01",
+        "N02",
+        "R10",
+        "C04"
+      ],
+      "baseline_dependencies": [
+        "SLAB-008",
+        "SLAB-022",
+        "SLAB-025",
+        "SLAB-036"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab live run",
+        "sentilab live status",
+        "sentilab live stop",
+        "sentilab live verify --ai-off"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_live_run",
+        "sentilab_live_status",
+        "sentilab_live_stop",
+        "sentilab_live_verify"
+      ]
+    },
+    {
+      "id": "SLAB-038",
+      "title": "Verify private box-to-GB10 network and shared Qwen serving path",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "R10",
+        "R13",
+        "Q09",
+        "C05"
+      ],
+      "baseline_dependencies": [
+        "SLAB-003",
+        "SLAB-004",
+        "SLAB-009"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab route doctor --source box --target gb10",
+        "sentilab worker probe"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_route_doctor",
+        "sentilab_worker_probe"
+      ]
+    },
+    {
+      "id": "SLAB-039",
+      "title": "Measure training-family optimization headroom before LLM experiments",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "R03",
+        "Q04"
+      ],
+      "baseline_dependencies": [
+        "SLAB-002"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab headroom run",
+        "sentilab headroom report"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_headroom_run",
+        "sentilab_headroom_report"
+      ]
+    },
+    {
+      "id": "SLAB-040",
+      "title": "Anchor service authenticity to an independent trust root",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "E20",
+        "C01"
+      ],
+      "baseline_dependencies": [
+        "SLAB-001"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab trust inspect",
+        "sentilab receipt verify"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_trust_inspect",
+        "sentilab_receipt_verify"
+      ]
+    },
+    {
+      "id": "SLAB-041",
+      "title": "Preregister task-family splits, endpoints, budgets and gate scope before runner",
+      "disposition": "retained_under_existing_later_authority",
+      "note": "No change from this visual-scope correction; preserve baseline optional/deferred status where applicable.",
+      "baseline_requirements": [
+        "B08",
+        "R01",
+        "Q04",
+        "Q05",
+        "Q06",
+        "Q07",
+        "Q08",
+        "C07"
+      ],
+      "baseline_dependencies": [
+        "SLAB-001",
+        "SLAB-005"
+      ],
+      "baseline_cli_deliverables": [
+        "sentilab protocol validate",
+        "sentilab split inspect",
+        "sentilab protocol freeze"
+      ],
+      "baseline_mcp_deliverables": [
+        "sentilab_protocol_validate",
+        "sentilab_split_inspect",
+        "sentilab_protocol_freeze"
+      ]
+    }
+  ],
+  "publication_note": "The authenticated human correction is effective. Proposed ticket revision/replacement links need operator reconciliation; no implementation or acceptance is claimed."
+}
