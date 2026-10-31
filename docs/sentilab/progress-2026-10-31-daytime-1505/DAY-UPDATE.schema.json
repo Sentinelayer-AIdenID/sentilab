@@ -1,0 +1,5845 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SentiLab frozen 15:05 additive snapshot v2",
+  "description": "Typed separately versioned sidecar. Closed record shapes and per-ID state/authority bindings; no grant or renderer acceptance.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "packetId",
+    "draft",
+    "publicationState",
+    "contentOwner",
+    "deckOwner",
+    "baseline",
+    "asOf",
+    "summary",
+    "milestones",
+    "gb10Attempts",
+    "supplementalTracks",
+    "claimDispositions",
+    "pendingWork",
+    "resources",
+    "delivery",
+    "$schema",
+    "history",
+    "priorities",
+    "previousPacket",
+    "nativeGateZero"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "sentilab-progress-day-update/2"
+    },
+    "packetId": {
+      "const": "progress-2026-10-31-daytime-1505"
+    },
+    "draft": {
+      "const": true
+    },
+    "publicationState": {
+      "const": "local_bounded_update_pending_root_delta_review_and_forge_adapter"
+    },
+    "contentOwner": {
+      "const": "root"
+    },
+    "deckOwner": {
+      "const": "Forge"
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "packetId",
+        "repositoryHead",
+        "progressSha256",
+        "schemaSha256",
+        "coverageThrough",
+        "originalTickets",
+        "requirements",
+        "cliDeclarations",
+        "mcpDeclarations",
+        "deliverables",
+        "fullyAcceptedDeliverables",
+        "wholeTicketCompletions",
+        "scopeCountsAreNotImplementedCoverage",
+        "preservation",
+        "evidenceRefs"
+      ],
+      "properties": {
+        "packetId": {
+          "const": "progress-2026-10-31"
+        },
+        "repositoryHead": {
+          "const": "d63ccd768dbc8cd94816f8363285abed75cfd65c"
+        },
+        "progressSha256": {
+          "const": "cf75fd2fbaa2a4860d043b02bdfe82abc3052ec655e40ee0f002b8b53faf1b61"
+        },
+        "schemaSha256": {
+          "const": "8102def84c206bfd27e89378e7eb0cfaa9eb032198fb3c9e042bda70aa6093e7"
+        },
+        "coverageThrough": {
+          "type": "string",
+          "format": "date-time",
+          "const": "2026-10-31T07:50:00Z"
+        },
+        "originalTickets": {
+          "const": 41
+        },
+        "requirements": {
+          "const": 234
+        },
+        "cliDeclarations": {
+          "const": 104
+        },
+        "mcpDeclarations": {
+          "const": 104
+        },
+        "deliverables": {
+          "const": 8
+        },
+        "fullyAcceptedDeliverables": {
+          "const": 0
+        },
+        "wholeTicketCompletions": {
+          "const": 0
+        },
+        "scopeCountsAreNotImplementedCoverage": {
+          "const": true
+        },
+        "preservation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidenceRefs": {
+          "const": [
+            "baseline_progress",
+            "baseline_requirements"
+          ],
+          "type": "array",
+          "items": {
+            "enum": [
+              "baseline_progress",
+              "baseline_requirements",
+              "day_checkpoint",
+              "day_checkpoint_1431",
+              "root216",
+              "root218",
+              "root219",
+              "root220",
+              "human56741",
+              "forge56744",
+              "human56755",
+              "human56774",
+              "human56774_reply",
+              "warden56763",
+              "pr51_review",
+              "pr51_merge",
+              "pr51_http",
+              "pr51_html_delta",
+              "pr53_review",
+              "pr53_http",
+              "pr54_review",
+              "pr54_seal",
+              "pr54_merge",
+              "pr37_review",
+              "pr37_bootstrap",
+              "pr55_gate",
+              "pr55_gate_seal",
+              "pr55_retention",
+              "pr55_publication",
+              "joint_direction",
+              "gb10_047_review",
+              "gb10_047b_review",
+              "gb10_047b_metrics",
+              "gb10_047b_cleanup",
+              "aneta_report",
+              "aneta_model",
+              "aneta_critique",
+              "aneta_extraction",
+              "aneta_seal",
+              "existing_fields_parent",
+              "existing_fields_independent",
+              "existing_fields_check",
+              "existing_fields_seal",
+              "research_supplement_publication",
+              "nebius_memo",
+              "nebius_sources",
+              "nebius_evidence",
+              "help_kit",
+              "client_matrix",
+              "root_diagnosis",
+              "prior_packet_manifest",
+              "prior_packet_receipt",
+              "pr55_corrective_review",
+              "pr55_corrective_seal",
+              "pr55_corrective_ci",
+              "pr55_corrective_root228",
+              "pr55_corrective_github",
+              "pr55_corrective_root_verification",
+              "pr56_review",
+              "pr56_receipt",
+              "pr56_controls",
+              "pr56_github",
+              "native_gate_proposal",
+              "native_gate_preparation",
+              "human56781",
+              "warden56782",
+              "forge56783",
+              "warden56788",
+              "root56790",
+              "root56791",
+              "forge56794"
+            ]
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "asOf": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpointAt",
+        "latestRoomRecordIncludedAt",
+        "latestLocalReviewIncludedAt",
+        "includedEvidenceThrough",
+        "packagedAt",
+        "liveRepositoryOrRuntimeRefreshPerformed",
+        "note",
+        "laterVerificationAt",
+        "laterVerificationScope"
+      ],
+      "properties": {
+        "checkpointAt": {
+          "type": "string",
+          "format": "date-time",
+          "const": "2026-10-31T14:47:31.571Z"
+        },
+        "latestRoomRecordIncludedAt": {
+          "type": "string",
+          "format": "date-time",
+          "const": "2026-10-31T15:04:12.494Z"
+        },
+        "latestLocalReviewIncludedAt": {
+          "type": "string",
+          "format": "date-time",
+          "const": "2026-10-31T15:03:15.065Z"
+        },
+        "includedEvidenceThrough": {
+          "type": "string",
+          "format": "date-time",
+          "const": "2026-10-31T15:05:00Z"
+        },
+        "packagedAt": {
+          "type": "string",
+          "format": "date-time",
+          "const": "2026-10-31T15:11:23.397Z"
+        },
+        "liveRepositoryOrRuntimeRefreshPerformed": {
+          "const": false
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "laterVerificationAt": {
+          "type": "string",
+          "format": "date-time",
+          "const": "2026-10-31T15:08:55.164Z"
+        },
+        "laterVerificationScope": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scientificBenefitEstablished",
+        "fullProjectCompletionVerified",
+        "publicProductionFullyAccepted",
+        "allEightDeliverablesRemainIncomplete",
+        "newScientificExecutionReleased",
+        "text"
+      ],
+      "properties": {
+        "scientificBenefitEstablished": {
+          "const": false
+        },
+        "fullProjectCompletionVerified": {
+          "const": false
+        },
+        "publicProductionFullyAccepted": {
+          "const": false
+        },
+        "allEightDeliverablesRemainIncomplete": {
+          "const": true
+        },
+        "newScientificExecutionReleased": {
+          "const": false
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "milestones": {
+      "type": "array",
+      "minItems": 12,
+      "maxItems": 12,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "classification",
+              "status",
+              "sourceAt",
+              "head",
+              "merge",
+              "summary",
+              "limitations",
+              "evidenceRefs",
+              "wholeTicketCompletionVerified",
+              "evidenceTimes"
+            ],
+            "properties": {
+              "id": {
+                "const": "DAY-PR51"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "classification": {
+                "const": "scoped_source_merge_and_http_evidence"
+              },
+              "status": {
+                "const": "scoped_accepted"
+              },
+              "sourceAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T13:55:08Z"
+              },
+              "head": {
+                "const": "e518546b4a49262878bb025921bd235614a6f3c3"
+              },
+              "merge": {
+                "const": "1e6b97e2a41fb760154e1bb6f3ba8b2df23a1737"
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "day_checkpoint",
+                  "pr51_review",
+                  "pr51_merge",
+                  "pr51_http",
+                  "pr51_html_delta",
+                  "root216"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "wholeTicketCompletionVerified": {
+                "const": false
+              },
+              "evidenceTimes": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observedAt",
+                  "reviewedAt",
+                  "correctedAt",
+                  "publishedAt",
+                  "note"
+                ],
+                "properties": {
+                  "observedAt": {
+                    "const": null
+                  },
+                  "reviewedAt": {
+                    "const": null
+                  },
+                  "correctedAt": {
+                    "const": null
+                  },
+                  "publishedAt": {
+                    "const": null
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "classification",
+              "status",
+              "sourceAt",
+              "head",
+              "merge",
+              "summary",
+              "limitations",
+              "evidenceRefs",
+              "wholeTicketCompletionVerified",
+              "evidenceTimes"
+            ],
+            "properties": {
+              "id": {
+                "const": "DAY-PR53"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "classification": {
+                "const": "scoped_actual_boot_and_source_evidence"
+              },
+              "status": {
+                "const": "scoped_accepted"
+              },
+              "sourceAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T13:43:37Z"
+              },
+              "head": {
+                "const": "58e3255ff746087039d21a86a84b82116476b3e6"
+              },
+              "merge": {
+                "const": "af1ac838036ddaf7f980e583735f0f35b27912ca"
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "day_checkpoint",
+                  "pr53_review",
+                  "pr53_http"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "wholeTicketCompletionVerified": {
+                "const": false
+              },
+              "evidenceTimes": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observedAt",
+                  "reviewedAt",
+                  "correctedAt",
+                  "publishedAt",
+                  "note"
+                ],
+                "properties": {
+                  "observedAt": {
+                    "const": null
+                  },
+                  "reviewedAt": {
+                    "const": null
+                  },
+                  "correctedAt": {
+                    "const": null
+                  },
+                  "publishedAt": {
+                    "const": null
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "classification",
+              "status",
+              "sourceAt",
+              "head",
+              "merge",
+              "summary",
+              "limitations",
+              "evidenceRefs",
+              "wholeTicketCompletionVerified",
+              "evidenceTimes"
+            ],
+            "properties": {
+              "id": {
+                "const": "DAY-PR54"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "classification": {
+                "const": "scoped_source_merge_and_ci_evidence"
+              },
+              "status": {
+                "const": "scoped_accepted"
+              },
+              "sourceAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:38:57.842Z"
+              },
+              "head": {
+                "const": "d63ccd768dbc8cd94816f8363285abed75cfd65c"
+              },
+              "merge": {
+                "const": "1bdf584b3446bc4b911e9f3a8b10b741ab867c47"
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "day_checkpoint",
+                  "pr54_review",
+                  "pr54_seal",
+                  "pr54_merge",
+                  "root220"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "wholeTicketCompletionVerified": {
+                "const": false
+              },
+              "evidenceTimes": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observedAt",
+                  "reviewedAt",
+                  "correctedAt",
+                  "publishedAt",
+                  "note"
+                ],
+                "properties": {
+                  "observedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T14:38:57.842Z"
+                  },
+                  "reviewedAt": {
+                    "const": null
+                  },
+                  "correctedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T14:38:57.842Z"
+                  },
+                  "publishedAt": {
+                    "const": null
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "classification",
+              "status",
+              "sourceAt",
+              "head",
+              "merge",
+              "summary",
+              "limitations",
+              "evidenceRefs",
+              "wholeTicketCompletionVerified",
+              "evidenceTimes"
+            ],
+            "properties": {
+              "id": {
+                "const": "DAY-PR52"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "classification": {
+                "const": "retained_root_checkpoint"
+              },
+              "status": {
+                "const": "scoped_accepted"
+              },
+              "sourceAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:31:45.186Z"
+              },
+              "head": {
+                "const": "eec0872da2358ad96250d4ec1b9698f6242f64c3"
+              },
+              "merge": {
+                "const": "3e7c4807bf2fbcf5fcde2c12659e8f35fef69f46"
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "day_checkpoint"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "wholeTicketCompletionVerified": {
+                "const": false
+              },
+              "evidenceTimes": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observedAt",
+                  "reviewedAt",
+                  "correctedAt",
+                  "publishedAt",
+                  "note"
+                ],
+                "properties": {
+                  "observedAt": {
+                    "const": null
+                  },
+                  "reviewedAt": {
+                    "const": null
+                  },
+                  "correctedAt": {
+                    "const": null
+                  },
+                  "publishedAt": {
+                    "const": null
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "classification",
+              "status",
+              "sourceAt",
+              "head",
+              "merge",
+              "summary",
+              "limitations",
+              "evidenceRefs",
+              "wholeTicketCompletionVerified",
+              "evidenceTimes"
+            ],
+            "properties": {
+              "id": {
+                "const": "DAY-PR37"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "classification": {
+                "const": "source_closure_plus_retained_failed_bootstrap"
+              },
+              "status": {
+                "const": "source_accepted_execution_failed"
+              },
+              "sourceAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T15:00:39.750Z"
+              },
+              "head": {
+                "const": "9f4571f3fd04f14f7298c6813f765a84aed9891c"
+              },
+              "merge": {
+                "const": null
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "day_checkpoint",
+                  "pr37_review",
+                  "pr37_bootstrap",
+                  "warden56782",
+                  "root56791"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "wholeTicketCompletionVerified": {
+                "const": false
+              },
+              "evidenceTimes": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observedAt",
+                  "reviewedAt",
+                  "correctedAt",
+                  "publishedAt",
+                  "note"
+                ],
+                "properties": {
+                  "observedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T14:56:14.734Z"
+                  },
+                  "reviewedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T15:00:39.750Z"
+                  },
+                  "correctedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T15:00:39.750Z"
+                  },
+                  "publishedAt": {
+                    "const": null
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "classification",
+              "status",
+              "sourceAt",
+              "head",
+              "merge",
+              "summary",
+              "limitations",
+              "evidenceRefs",
+              "wholeTicketCompletionVerified",
+              "evidenceTimes",
+              "findingDispositions",
+              "verification"
+            ],
+            "properties": {
+              "id": {
+                "const": "DAY-PR55"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "classification": {
+                "const": "corrective_source_fixture_review_and_existing_ci_failure"
+              },
+              "status": {
+                "const": "changes_requested"
+              },
+              "sourceAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T15:03:07.741Z"
+              },
+              "head": {
+                "const": "efe12c62d878ec86ac61e39f594676e6d5636c60"
+              },
+              "merge": {
+                "const": null
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "pr55_corrective_review",
+                  "pr55_corrective_seal",
+                  "pr55_corrective_ci",
+                  "pr55_corrective_root228",
+                  "pr55_corrective_github",
+                  "pr55_corrective_root_verification"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "wholeTicketCompletionVerified": {
+                "const": false
+              },
+              "evidenceTimes": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observedAt",
+                  "reviewedAt",
+                  "correctedAt",
+                  "publishedAt",
+                  "note"
+                ],
+                "properties": {
+                  "observedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T15:03:07.741Z"
+                  },
+                  "reviewedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T15:03:07.741Z"
+                  },
+                  "correctedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T15:03:07.741Z"
+                  },
+                  "publishedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T15:04:05Z"
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "findingDispositions": {
+                "type": "array",
+                "minItems": 5,
+                "maxItems": 5,
+                "items": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "severity",
+                        "status",
+                        "scope"
+                      ],
+                      "properties": {
+                        "id": {
+                          "const": "PR55-LONG-SPLIT"
+                        },
+                        "severity": {
+                          "const": "P1"
+                        },
+                        "status": {
+                          "const": "CLOSED"
+                        },
+                        "scope": {
+                          "const": "four searches plus fresh reproduction, nine calls in admitted v3 fixture"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "severity",
+                        "status",
+                        "scope"
+                      ],
+                      "properties": {
+                        "id": {
+                          "const": "PR55-FOREIGN-IDENTITY"
+                        },
+                        "severity": {
+                          "const": "P1"
+                        },
+                        "status": {
+                          "const": "CLOSED_SCOPED"
+                        },
+                        "scope": {
+                          "const": "captured result identity cross-check; foreign record and synthetic charge retained"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "severity",
+                        "status",
+                        "scope"
+                      ],
+                      "properties": {
+                        "id": {
+                          "const": "PR55-NONV4-SETTLEMENT"
+                        },
+                        "severity": {
+                          "const": "P2"
+                        },
+                        "status": {
+                          "const": "CLOSED"
+                        },
+                        "scope": {
+                          "const": "terminal retained attempt state across supplied outcome paths"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "severity",
+                        "status",
+                        "scope"
+                      ],
+                      "properties": {
+                        "id": {
+                          "const": "PR55-UNKNOWN-METHOD"
+                        },
+                        "severity": {
+                          "const": "P2"
+                        },
+                        "status": {
+                          "const": "OPEN"
+                        },
+                        "scope": {
+                          "const": "unsupported identifier accepted before one-search path; require refusal before calls"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "id",
+                        "severity",
+                        "status",
+                        "scope"
+                      ],
+                      "properties": {
+                        "id": {
+                          "const": "PR55-PARTIAL-STDOUT"
+                        },
+                        "severity": {
+                          "const": "P2"
+                        },
+                        "status": {
+                          "const": "CLOSED"
+                        },
+                        "scope": {
+                          "const": "original 31 bytes retained through timeout and owned peer cleanup"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "allOf": [
+                  {
+                    "contains": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "const": "PR55-LONG-SPLIT"
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ]
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "const": "PR55-FOREIGN-IDENTITY"
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ]
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "const": "PR55-NONV4-SETTLEMENT"
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ]
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "const": "PR55-UNKNOWN-METHOD"
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ]
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  },
+                  {
+                    "contains": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "const": "PR55-PARTIAL-STDOUT"
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ]
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                ]
+              },
+              "verification": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "selectedTests",
+                  "selectedPassed",
+                  "selectedErrorsMissingNativeBinary",
+                  "protocolTests",
+                  "protocolPassed",
+                  "independentSyntheticCases",
+                  "existingCiRun",
+                  "existingCiPassedJobs",
+                  "existingCiContainer",
+                  "workerCardinalityFailingSubcases",
+                  "newCiRequested",
+                  "nativeExecution"
+                ],
+                "properties": {
+                  "selectedTests": {
+                    "const": 70
+                  },
+                  "selectedPassed": {
+                    "const": 67
+                  },
+                  "selectedErrorsMissingNativeBinary": {
+                    "const": 3
+                  },
+                  "protocolTests": {
+                    "const": 7
+                  },
+                  "protocolPassed": {
+                    "const": 7
+                  },
+                  "independentSyntheticCases": {
+                    "const": 3
+                  },
+                  "existingCiRun": {
+                    "const": "41210909402"
+                  },
+                  "existingCiPassedJobs": {
+                    "const": 4
+                  },
+                  "existingCiContainer": {
+                    "const": "FAILED"
+                  },
+                  "workerCardinalityFailingSubcases": {
+                    "const": 6
+                  },
+                  "newCiRequested": {
+                    "const": false
+                  },
+                  "nativeExecution": {
+                    "const": false
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "classification",
+              "status",
+              "sourceAt",
+              "head",
+              "merge",
+              "summary",
+              "limitations",
+              "evidenceRefs",
+              "wholeTicketCompletionVerified",
+              "evidenceTimes"
+            ],
+            "properties": {
+              "id": {
+                "const": "DAY-DIAGNOSIS"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "classification": {
+                "const": "frozen_reports_source_review_and_proposed_tracks"
+              },
+              "status": {
+                "const": "reviewed_direction_execution_gated"
+              },
+              "sourceAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:31:45.186Z"
+              },
+              "head": {
+                "const": null
+              },
+              "merge": {
+                "const": null
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "day_checkpoint",
+                  "root_diagnosis",
+                  "joint_direction",
+                  "root216"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "wholeTicketCompletionVerified": {
+                "const": false
+              },
+              "evidenceTimes": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observedAt",
+                  "reviewedAt",
+                  "correctedAt",
+                  "publishedAt",
+                  "note"
+                ],
+                "properties": {
+                  "observedAt": {
+                    "const": null
+                  },
+                  "reviewedAt": {
+                    "const": null
+                  },
+                  "correctedAt": {
+                    "const": null
+                  },
+                  "publishedAt": {
+                    "const": null
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "classification",
+              "status",
+              "sourceAt",
+              "head",
+              "merge",
+              "summary",
+              "limitations",
+              "evidenceRefs",
+              "wholeTicketCompletionVerified",
+              "evidenceTimes"
+            ],
+            "properties": {
+              "id": {
+                "const": "DAY-INFORMED-CRITIQUE"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "classification": {
+                "const": "static_source_review_privately_delivered"
+              },
+              "status": {
+                "const": "static_review_complete"
+              },
+              "sourceAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:36:08.1708060Z"
+              },
+              "head": {
+                "const": null
+              },
+              "merge": {
+                "const": null
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "aneta_critique",
+                  "aneta_extraction",
+                  "aneta_seal",
+                  "research_supplement_publication",
+                  "aneta_report",
+                  "aneta_model",
+                  "root218"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "wholeTicketCompletionVerified": {
+                "const": false
+              },
+              "evidenceTimes": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observedAt",
+                  "reviewedAt",
+                  "correctedAt",
+                  "publishedAt",
+                  "note"
+                ],
+                "properties": {
+                  "observedAt": {
+                    "const": null
+                  },
+                  "reviewedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T14:36:08.1708060Z"
+                  },
+                  "correctedAt": {
+                    "const": null
+                  },
+                  "publishedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T14:42:04.132Z"
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "classification",
+              "status",
+              "sourceAt",
+              "head",
+              "merge",
+              "summary",
+              "limitations",
+              "evidenceRefs",
+              "wholeTicketCompletionVerified",
+              "evidenceTimes"
+            ],
+            "properties": {
+              "id": {
+                "const": "DAY-HELP-ROOM"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "classification": {
+                "const": "human_announcement_and_scoped_setup_reviews"
+              },
+              "status": {
+                "const": "announced_acceptance_pending"
+              },
+              "sourceAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:59:59.712Z"
+              },
+              "head": {
+                "const": null
+              },
+              "merge": {
+                "const": null
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "day_checkpoint",
+                  "human56741",
+                  "forge56744",
+                  "root216",
+                  "help_kit",
+                  "client_matrix",
+                  "warden56763",
+                  "human56755",
+                  "human56774",
+                  "human56774_reply",
+                  "human56781",
+                  "warden56788",
+                  "root56790"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "wholeTicketCompletionVerified": {
+                "const": false
+              },
+              "evidenceTimes": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observedAt",
+                  "reviewedAt",
+                  "correctedAt",
+                  "publishedAt",
+                  "note"
+                ],
+                "properties": {
+                  "observedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T14:58:58.842Z"
+                  },
+                  "reviewedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T14:59:59.712Z"
+                  },
+                  "correctedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T14:59:59.712Z"
+                  },
+                  "publishedAt": {
+                    "const": null
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "classification",
+              "status",
+              "sourceAt",
+              "head",
+              "merge",
+              "summary",
+              "limitations",
+              "evidenceRefs",
+              "wholeTicketCompletionVerified",
+              "evidenceTimes"
+            ],
+            "properties": {
+              "id": {
+                "const": "DAY-RETAINED-FIELDS"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "classification": {
+                "const": "read_only_existing_native_data_analysis"
+              },
+              "status": {
+                "const": "representative_rows_corroborated"
+              },
+              "sourceAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:45:18.5407475Z"
+              },
+              "head": {
+                "const": null
+              },
+              "merge": {
+                "const": null
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "existing_fields_parent",
+                  "existing_fields_independent",
+                  "existing_fields_seal",
+                  "existing_fields_check",
+                  "root219"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "wholeTicketCompletionVerified": {
+                "const": false
+              },
+              "evidenceTimes": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observedAt",
+                  "reviewedAt",
+                  "correctedAt",
+                  "publishedAt",
+                  "note"
+                ],
+                "properties": {
+                  "observedAt": {
+                    "const": null
+                  },
+                  "reviewedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T14:45:18.5407475Z"
+                  },
+                  "correctedAt": {
+                    "const": null
+                  },
+                  "publishedAt": {
+                    "const": null
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "classification",
+              "status",
+              "sourceAt",
+              "head",
+              "merge",
+              "summary",
+              "limitations",
+              "evidenceRefs",
+              "wholeTicketCompletionVerified",
+              "evidenceTimes"
+            ],
+            "properties": {
+              "id": {
+                "const": "DAY-NEBIUS"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "classification": {
+                "const": "official_documentation_and_retained_evidence_assessment"
+              },
+              "status": {
+                "const": "assessment_complete_deployment_unproved"
+              },
+              "sourceAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:42:04.132Z"
+              },
+              "head": {
+                "const": null
+              },
+              "merge": {
+                "const": null
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "nebius_memo",
+                  "nebius_sources",
+                  "nebius_evidence",
+                  "research_supplement_publication",
+                  "root220"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "wholeTicketCompletionVerified": {
+                "const": false
+              },
+              "evidenceTimes": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observedAt",
+                  "reviewedAt",
+                  "correctedAt",
+                  "publishedAt",
+                  "note"
+                ],
+                "properties": {
+                  "observedAt": {
+                    "const": null
+                  },
+                  "reviewedAt": {
+                    "const": null
+                  },
+                  "correctedAt": {
+                    "const": null
+                  },
+                  "publishedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T14:42:04.132Z"
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "title",
+              "classification",
+              "status",
+              "sourceAt",
+              "head",
+              "merge",
+              "summary",
+              "limitations",
+              "evidenceRefs",
+              "wholeTicketCompletionVerified",
+              "evidenceTimes",
+              "verification"
+            ],
+            "properties": {
+              "id": {
+                "const": "DAY-PR56"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1
+              },
+              "classification": {
+                "const": "source_and_retained_file_parser_review"
+              },
+              "status": {
+                "const": "changes_requested"
+              },
+              "sourceAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T15:03:15.065Z"
+              },
+              "head": {
+                "const": "997269eae45424d101cbcea127714cdc1bb67daf"
+              },
+              "merge": {
+                "const": null
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "pr56_review",
+                  "pr56_receipt",
+                  "pr56_controls",
+                  "pr56_github",
+                  "forge56783"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "wholeTicketCompletionVerified": {
+                "const": false
+              },
+              "evidenceTimes": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "observedAt",
+                  "reviewedAt",
+                  "correctedAt",
+                  "publishedAt",
+                  "note"
+                ],
+                "properties": {
+                  "observedAt": {
+                    "const": null
+                  },
+                  "reviewedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T15:03:15.065Z"
+                  },
+                  "correctedAt": {
+                    "const": null
+                  },
+                  "publishedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "const": "2026-10-31T14:58:07Z"
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "verification": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "suppliedPassed",
+                  "suppliedSkipped",
+                  "independentParserControls",
+                  "existingCiRun",
+                  "existingCiPassedJobs",
+                  "newCiRequested",
+                  "nativeExecution"
+                ],
+                "properties": {
+                  "suppliedPassed": {
+                    "const": 20
+                  },
+                  "suppliedSkipped": {
+                    "const": 8
+                  },
+                  "independentParserControls": {
+                    "const": 2
+                  },
+                  "existingCiRun": {
+                    "const": "41210769081"
+                  },
+                  "existingCiPassedJobs": {
+                    "const": 5
+                  },
+                  "newCiRequested": {
+                    "const": false
+                  },
+                  "nativeExecution": {
+                    "const": false
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "DAY-PR51"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "DAY-PR53"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "DAY-PR54"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "DAY-PR52"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "DAY-PR37"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "DAY-PR55"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "DAY-DIAGNOSIS"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "DAY-INFORMED-CRITIQUE"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "DAY-HELP-ROOM"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "DAY-RETAINED-FIELDS"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "DAY-NEBIUS"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "DAY-PR56"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    },
+    "gb10Attempts": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "status",
+              "sourceAt",
+              "classification",
+              "optimizerSteps",
+              "evaluationEntries",
+              "httpResponses",
+              "sourceCases",
+              "adapterExact",
+              "baseExact",
+              "denominator",
+              "stageChargeSeconds",
+              "priorReservationSeconds",
+              "totalAttributedSeconds",
+              "timeMetric",
+              "auditChecks",
+              "limitations",
+              "evidenceRefs",
+              "retryAuthorized",
+              "finalDeliverableAccepted",
+              "trainRowIdsConsumedOnce",
+              "uniqueTrainPromptContents",
+              "uniqueEvaluationPromptContents",
+              "evidenceTimeMeaning"
+            ],
+            "properties": {
+              "id": {
+                "const": "SLAB-018-attempt-1"
+              },
+              "status": {
+                "const": "completed_closed_historical"
+              },
+              "sourceAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T07:53:46.14737Z"
+              },
+              "classification": {
+                "const": "fixture_training_save_reload_serve"
+              },
+              "optimizerSteps": {
+                "const": 20
+              },
+              "evaluationEntries": {
+                "const": 20
+              },
+              "httpResponses": {
+                "const": 40
+              },
+              "sourceCases": {
+                "const": 6
+              },
+              "adapterExact": {
+                "const": 20
+              },
+              "baseExact": {
+                "const": 0
+              },
+              "denominator": {
+                "const": 20
+              },
+              "stageChargeSeconds": {
+                "const": 314.18953860500187
+              },
+              "priorReservationSeconds": {
+                "const": 180
+              },
+              "totalAttributedSeconds": {
+                "const": 494.18953860500187
+              },
+              "timeMetric": {
+                "const": "historical charged attempt lifecycle including separate prior reservation"
+              },
+              "auditChecks": {
+                "const": 112
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "baseline_progress"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "retryAuthorized": {
+                "const": false
+              },
+              "finalDeliverableAccepted": {
+                "const": false
+              },
+              "trainRowIdsConsumedOnce": {
+                "const": 200
+              },
+              "uniqueTrainPromptContents": {
+                "const": 60
+              },
+              "uniqueEvaluationPromptContents": {
+                "const": 6
+              },
+              "evidenceTimeMeaning": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "status",
+              "sourceAt",
+              "classification",
+              "inferenceReservations",
+              "completedRequests",
+              "stageChargeSeconds",
+              "timeMetric",
+              "causeObserved",
+              "causeNotEstablished",
+              "auditChecks",
+              "limitations",
+              "evidenceRefs",
+              "retryAuthorized",
+              "finalDeliverableAccepted",
+              "evidenceTimeMeaning"
+            ],
+            "properties": {
+              "id": {
+                "const": "SLAB-047-attempt-1"
+              },
+              "status": {
+                "const": "failed_closed"
+              },
+              "sourceAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T11:11:10.507591Z"
+              },
+              "classification": {
+                "const": "startup_failure_before_inference"
+              },
+              "inferenceReservations": {
+                "const": 0
+              },
+              "completedRequests": {
+                "const": 0
+              },
+              "stageChargeSeconds": {
+                "const": 79.617588726003
+              },
+              "timeMetric": {
+                "const": "owned attempt lifecycle wall seconds through recorded cleanup"
+              },
+              "causeObserved": {
+                "type": "string",
+                "minLength": 1
+              },
+              "causeNotEstablished": {
+                "type": "string",
+                "minLength": 1
+              },
+              "auditChecks": {
+                "const": 75
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "gb10_047_review",
+                  "root216"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "retryAuthorized": {
+                "const": false
+              },
+              "finalDeliverableAccepted": {
+                "const": false
+              },
+              "evidenceTimeMeaning": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "status",
+              "sourceAt",
+              "classification",
+              "completedRequests",
+              "exactMatches",
+              "denominator",
+              "sourceCases",
+              "sourceCasesSeenInTraining",
+              "labelsProvidedInPrompts",
+              "stageChargeSeconds",
+              "separateNativePreflightSeconds",
+              "timeMetric",
+              "firstClientResponseSeconds",
+              "launchToHealthSeconds",
+              "auditChecks",
+              "baseComparison",
+              "limitations",
+              "evidenceRefs",
+              "retryAuthorized",
+              "finalDeliverableAccepted",
+              "lastResponseAt",
+              "timeAttributionNote",
+              "evidenceTimeMeaning",
+              "cleanupConfirmedAt",
+              "completedAt",
+              "reviewedAt"
+            ],
+            "properties": {
+              "id": {
+                "const": "SLAB-047b"
+              },
+              "status": {
+                "const": "completed_closed"
+              },
+              "sourceAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:34:53.348Z"
+              },
+              "classification": {
+                "const": "serving_fixture_lifecycle"
+              },
+              "completedRequests": {
+                "const": 20
+              },
+              "exactMatches": {
+                "const": 20
+              },
+              "denominator": {
+                "const": 20
+              },
+              "sourceCases": {
+                "const": 6
+              },
+              "sourceCasesSeenInTraining": {
+                "const": true
+              },
+              "labelsProvidedInPrompts": {
+                "const": true
+              },
+              "stageChargeSeconds": {
+                "const": 148.90950332500506
+              },
+              "separateNativePreflightSeconds": {
+                "const": 0.638011345
+              },
+              "timeMetric": {
+                "const": "monotonic elapsed whole owned serving lifecycle seconds including cleanup, corroborated by wall timestamps; not GPU utilization or compute seconds"
+              },
+              "firstClientResponseSeconds": {
+                "const": 34.9695479140064
+              },
+              "launchToHealthSeconds": {
+                "const": 89.05037042799813
+              },
+              "auditChecks": {
+                "const": 323
+              },
+              "baseComparison": {
+                "const": null
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "gb10_047b_review",
+                  "gb10_047b_metrics",
+                  "gb10_047b_cleanup",
+                  "root216"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "retryAuthorized": {
+                "const": false
+              },
+              "finalDeliverableAccepted": {
+                "const": false
+              },
+              "lastResponseAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T11:40:11.7066Z"
+              },
+              "timeAttributionNote": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidenceTimeMeaning": {
+                "type": "string",
+                "minLength": 1
+              },
+              "cleanupConfirmedAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T11:40:13.010829Z"
+              },
+              "completedAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T11:40:13.014224Z"
+              },
+              "reviewedAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:34:53.348Z"
+              }
+            }
+          }
+        ]
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "SLAB-018-attempt-1"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "SLAB-047-attempt-1"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "SLAB-047b"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    },
+    "supplementalTracks": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "status",
+              "purpose"
+            ],
+            "properties": {
+              "id": {
+                "const": "SLAB-048"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "const": "accepted_direction_execution_gated"
+              },
+              "purpose": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "status",
+              "purpose"
+            ],
+            "properties": {
+              "id": {
+                "const": "SLAB-049"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "const": "accepted_direction_execution_gated"
+              },
+              "purpose": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "status",
+              "purpose"
+            ],
+            "properties": {
+              "id": {
+                "const": "SLAB-050"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "const": "source_repairs_required_no_profile_grant"
+              },
+              "purpose": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "status",
+              "purpose"
+            ],
+            "properties": {
+              "id": {
+                "const": "SLAB-051"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "const": "prospective_protocol_not_result"
+              },
+              "purpose": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "status",
+              "purpose"
+            ],
+            "properties": {
+              "id": {
+                "const": "SLAB-052"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "const": "source_slice_reviewed_actual_labs_gated"
+              },
+              "purpose": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "name",
+              "status",
+              "purpose"
+            ],
+            "properties": {
+              "id": {
+                "const": "SLAB-053"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "const": "dependent_work_not_whole_deliverable_completion"
+              },
+              "purpose": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        ]
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "SLAB-048"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "SLAB-049"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "SLAB-050"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "SLAB-051"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "SLAB-052"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "SLAB-053"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    },
+    "claimDispositions": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "status",
+              "earlierClaim",
+              "replacement",
+              "reason",
+              "evidenceRefs",
+              "correctedAt"
+            ],
+            "properties": {
+              "id": {
+                "const": "CLAIM-OLD-THERMAL"
+              },
+              "status": {
+                "const": "historical_operator_observations_not_corrected_physics_certification"
+              },
+              "earlierClaim": {
+                "type": "string",
+                "minLength": 1
+              },
+              "replacement": {
+                "const": null
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "root_diagnosis",
+                  "aneta_critique",
+                  "root216"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "correctedAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:34:53.348Z"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "status",
+              "earlierClaim",
+              "replacement",
+              "reason",
+              "evidenceRefs",
+              "correctedAt"
+            ],
+            "properties": {
+              "id": {
+                "const": "CLAIM-BUDGET"
+              },
+              "status": {
+                "const": "forecast_only"
+              },
+              "earlierClaim": {
+                "type": "string",
+                "minLength": 1
+              },
+              "replacement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "root216",
+                  "pr55_gate"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "correctedAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:34:53.348Z"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "status",
+              "earlierClaim",
+              "replacement",
+              "reason",
+              "evidenceRefs",
+              "correctedAt"
+            ],
+            "properties": {
+              "id": {
+                "const": "CLAIM-047-CAUSE"
+              },
+              "status": {
+                "const": "unproved_cause"
+              },
+              "earlierClaim": {
+                "type": "string",
+                "minLength": 1
+              },
+              "replacement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "gb10_047_review",
+                  "root216"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "correctedAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:34:53.348Z"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "status",
+              "earlierClaim",
+              "replacement",
+              "reason",
+              "evidenceRefs",
+              "correctedAt"
+            ],
+            "properties": {
+              "id": {
+                "const": "CLAIM-047B-TIME"
+              },
+              "status": {
+                "const": "metric_corrected"
+              },
+              "earlierClaim": {
+                "type": "string",
+                "minLength": 1
+              },
+              "replacement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "gb10_047b_metrics",
+                  "gb10_047b_cleanup",
+                  "root216"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "correctedAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:34:53.348Z"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "status",
+              "earlierClaim",
+              "replacement",
+              "reason",
+              "evidenceRefs",
+              "correctedAt"
+            ],
+            "properties": {
+              "id": {
+                "const": "CLAIM-HELP-READY"
+              },
+              "status": {
+                "const": "announced_not_end_to_end_accepted"
+              },
+              "earlierClaim": {
+                "type": "string",
+                "minLength": 1
+              },
+              "replacement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidenceRefs": {
+                "const": [
+                  "day_checkpoint",
+                  "client_matrix",
+                  "help_kit",
+                  "root216"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "correctedAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:34:53.348Z"
+              }
+            }
+          }
+        ]
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "CLAIM-OLD-THERMAL"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "CLAIM-BUDGET"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "CLAIM-047-CAUSE"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "CLAIM-047B-TIME"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "CLAIM-HELP-READY"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    },
+    "pendingWork": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "currentTotalUsd",
+        "invoiceVerified",
+        "comprehensiveCpuSeconds",
+        "lastHistoricalEstimateUsd",
+        "lastHistoricalEstimateAt",
+        "historicalEstimateIsNotCurrentTotal",
+        "oldScientificDeadlineExpiredAt",
+        "closedJobs",
+        "newScientificExecutionReleased",
+        "pr55ProfilingGrantIssued",
+        "pr37SecondAttemptReleased",
+        "note",
+        "evidenceRefs",
+        "pr37Booking"
+      ],
+      "properties": {
+        "currentTotalUsd": {
+          "const": null
+        },
+        "invoiceVerified": {
+          "const": false
+        },
+        "comprehensiveCpuSeconds": {
+          "const": null
+        },
+        "lastHistoricalEstimateUsd": {
+          "const": 255.79
+        },
+        "lastHistoricalEstimateAt": {
+          "type": "string",
+          "format": "date-time",
+          "const": "2026-10-31T07:31:44.345Z"
+        },
+        "historicalEstimateIsNotCurrentTotal": {
+          "const": true
+        },
+        "oldScientificDeadlineExpiredAt": {
+          "type": "string",
+          "format": "date-time",
+          "const": "2026-10-31T12:00:00Z"
+        },
+        "closedJobs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "newScientificExecutionReleased": {
+          "const": false
+        },
+        "pr55ProfilingGrantIssued": {
+          "const": false
+        },
+        "pr37SecondAttemptReleased": {
+          "const": false
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidenceRefs": {
+          "const": [
+            "baseline_progress",
+            "day_checkpoint",
+            "pr37_bootstrap",
+            "pr55_gate",
+            "root216",
+            "warden56782",
+            "root56791"
+          ],
+          "type": "array",
+          "items": {
+            "enum": [
+              "baseline_progress",
+              "baseline_requirements",
+              "day_checkpoint",
+              "day_checkpoint_1431",
+              "root216",
+              "root218",
+              "root219",
+              "root220",
+              "human56741",
+              "forge56744",
+              "human56755",
+              "human56774",
+              "human56774_reply",
+              "warden56763",
+              "pr51_review",
+              "pr51_merge",
+              "pr51_http",
+              "pr51_html_delta",
+              "pr53_review",
+              "pr53_http",
+              "pr54_review",
+              "pr54_seal",
+              "pr54_merge",
+              "pr37_review",
+              "pr37_bootstrap",
+              "pr55_gate",
+              "pr55_gate_seal",
+              "pr55_retention",
+              "pr55_publication",
+              "joint_direction",
+              "gb10_047_review",
+              "gb10_047b_review",
+              "gb10_047b_metrics",
+              "gb10_047b_cleanup",
+              "aneta_report",
+              "aneta_model",
+              "aneta_critique",
+              "aneta_extraction",
+              "aneta_seal",
+              "existing_fields_parent",
+              "existing_fields_independent",
+              "existing_fields_check",
+              "existing_fields_seal",
+              "research_supplement_publication",
+              "nebius_memo",
+              "nebius_sources",
+              "nebius_evidence",
+              "help_kit",
+              "client_matrix",
+              "root_diagnosis",
+              "prior_packet_manifest",
+              "prior_packet_receipt",
+              "pr55_corrective_review",
+              "pr55_corrective_seal",
+              "pr55_corrective_ci",
+              "pr55_corrective_root228",
+              "pr55_corrective_github",
+              "pr55_corrective_root_verification",
+              "pr56_review",
+              "pr56_receipt",
+              "pr56_controls",
+              "pr56_github",
+              "native_gate_proposal",
+              "native_gate_preparation",
+              "human56781",
+              "warden56782",
+              "forge56783",
+              "warden56788",
+              "root56790",
+              "root56791",
+              "forge56794"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "pr37Booking": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "conservativeLaunchDebit",
+            "conservativeCpuSecondsDebit",
+            "reportedMeteredContainerLaunches",
+            "reportedMeteredContainerCpuSeconds",
+            "runnerAdmissionCpuSeconds",
+            "money",
+            "secondAttemptReleased",
+            "evidenceRefs"
+          ],
+          "properties": {
+            "status": {
+              "const": "OPERATOR_REPORTED_NOT_INDEPENDENTLY_VERIFIED"
+            },
+            "conservativeLaunchDebit": {
+              "const": 100
+            },
+            "conservativeCpuSecondsDebit": {
+              "const": 900
+            },
+            "reportedMeteredContainerLaunches": {
+              "const": 0
+            },
+            "reportedMeteredContainerCpuSeconds": {
+              "const": 0
+            },
+            "runnerAdmissionCpuSeconds": {
+              "const": null
+            },
+            "money": {
+              "const": null
+            },
+            "secondAttemptReleased": {
+              "const": false
+            },
+            "evidenceRefs": {
+              "const": [
+                "warden56782",
+                "root56791"
+              ],
+              "type": "array",
+              "items": {
+                "enum": [
+                  "baseline_progress",
+                  "baseline_requirements",
+                  "day_checkpoint",
+                  "day_checkpoint_1431",
+                  "root216",
+                  "root218",
+                  "root219",
+                  "root220",
+                  "human56741",
+                  "forge56744",
+                  "human56755",
+                  "human56774",
+                  "human56774_reply",
+                  "warden56763",
+                  "pr51_review",
+                  "pr51_merge",
+                  "pr51_http",
+                  "pr51_html_delta",
+                  "pr53_review",
+                  "pr53_http",
+                  "pr54_review",
+                  "pr54_seal",
+                  "pr54_merge",
+                  "pr37_review",
+                  "pr37_bootstrap",
+                  "pr55_gate",
+                  "pr55_gate_seal",
+                  "pr55_retention",
+                  "pr55_publication",
+                  "joint_direction",
+                  "gb10_047_review",
+                  "gb10_047b_review",
+                  "gb10_047b_metrics",
+                  "gb10_047b_cleanup",
+                  "aneta_report",
+                  "aneta_model",
+                  "aneta_critique",
+                  "aneta_extraction",
+                  "aneta_seal",
+                  "existing_fields_parent",
+                  "existing_fields_independent",
+                  "existing_fields_check",
+                  "existing_fields_seal",
+                  "research_supplement_publication",
+                  "nebius_memo",
+                  "nebius_sources",
+                  "nebius_evidence",
+                  "help_kit",
+                  "client_matrix",
+                  "root_diagnosis",
+                  "prior_packet_manifest",
+                  "prior_packet_receipt",
+                  "pr55_corrective_review",
+                  "pr55_corrective_seal",
+                  "pr55_corrective_ci",
+                  "pr55_corrective_root228",
+                  "pr55_corrective_github",
+                  "pr55_corrective_root_verification",
+                  "pr56_review",
+                  "pr56_receipt",
+                  "pr56_controls",
+                  "pr56_github",
+                  "native_gate_proposal",
+                  "native_gate_preparation",
+                  "human56781",
+                  "warden56782",
+                  "forge56783",
+                  "warden56788",
+                  "root56790",
+                  "root56791",
+                  "forge56794"
+                ]
+              },
+              "uniqueItems": true
+            }
+          }
+        }
+      }
+    },
+    "delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deadline",
+        "rootContentReviewPending",
+        "forgeRegenerationPending",
+        "deckOrPdfModifiedByThisPacket",
+        "humanPresenterCommitted",
+        "publicDeploymentOrSubmissionPerformed",
+        "originalPacketAndDeckPreserved",
+        "needsAdapterBeforeRendering",
+        "scientificDataOrAuthorityChanged",
+        "evidenceRefs",
+        "priorDatedContentAcceptedByRoot",
+        "currentBoundedUpdateReviewPending"
+      ],
+      "properties": {
+        "deadline": {
+          "type": "string",
+          "format": "date-time",
+          "const": "2026-11-01T18:00:00Z"
+        },
+        "rootContentReviewPending": {
+          "const": true
+        },
+        "forgeRegenerationPending": {
+          "const": true
+        },
+        "deckOrPdfModifiedByThisPacket": {
+          "const": false
+        },
+        "humanPresenterCommitted": {
+          "const": false
+        },
+        "publicDeploymentOrSubmissionPerformed": {
+          "const": false
+        },
+        "originalPacketAndDeckPreserved": {
+          "const": true
+        },
+        "needsAdapterBeforeRendering": {
+          "const": true
+        },
+        "scientificDataOrAuthorityChanged": {
+          "const": false
+        },
+        "evidenceRefs": {
+          "const": [
+            "baseline_progress",
+            "day_checkpoint"
+          ],
+          "type": "array",
+          "items": {
+            "enum": [
+              "baseline_progress",
+              "baseline_requirements",
+              "day_checkpoint",
+              "day_checkpoint_1431",
+              "root216",
+              "root218",
+              "root219",
+              "root220",
+              "human56741",
+              "forge56744",
+              "human56755",
+              "human56774",
+              "human56774_reply",
+              "warden56763",
+              "pr51_review",
+              "pr51_merge",
+              "pr51_http",
+              "pr51_html_delta",
+              "pr53_review",
+              "pr53_http",
+              "pr54_review",
+              "pr54_seal",
+              "pr54_merge",
+              "pr37_review",
+              "pr37_bootstrap",
+              "pr55_gate",
+              "pr55_gate_seal",
+              "pr55_retention",
+              "pr55_publication",
+              "joint_direction",
+              "gb10_047_review",
+              "gb10_047b_review",
+              "gb10_047b_metrics",
+              "gb10_047b_cleanup",
+              "aneta_report",
+              "aneta_model",
+              "aneta_critique",
+              "aneta_extraction",
+              "aneta_seal",
+              "existing_fields_parent",
+              "existing_fields_independent",
+              "existing_fields_check",
+              "existing_fields_seal",
+              "research_supplement_publication",
+              "nebius_memo",
+              "nebius_sources",
+              "nebius_evidence",
+              "help_kit",
+              "client_matrix",
+              "root_diagnosis",
+              "prior_packet_manifest",
+              "prior_packet_receipt",
+              "pr55_corrective_review",
+              "pr55_corrective_seal",
+              "pr55_corrective_ci",
+              "pr55_corrective_root228",
+              "pr55_corrective_github",
+              "pr55_corrective_root_verification",
+              "pr56_review",
+              "pr56_receipt",
+              "pr56_controls",
+              "pr56_github",
+              "native_gate_proposal",
+              "native_gate_preparation",
+              "human56781",
+              "warden56782",
+              "forge56783",
+              "warden56788",
+              "root56790",
+              "root56791",
+              "forge56794"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "priorDatedContentAcceptedByRoot": {
+          "const": true
+        },
+        "currentBoundedUpdateReviewPending": {
+          "const": true
+        }
+      }
+    },
+    "$schema": {
+      "const": "DAY-UPDATE.schema.json"
+    },
+    "history": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "recordedAt",
+              "supersededAt",
+              "evidenceRefs",
+              "factId",
+              "priorStatus",
+              "priorSummary",
+              "replacementStatus",
+              "reason"
+            ],
+            "properties": {
+              "id": {
+                "const": "HISTORY-PR54-PENDING"
+              },
+              "recordedAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:31:45.186Z"
+              },
+              "supersededAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:38:57.842Z"
+              },
+              "evidenceRefs": {
+                "const": [
+                  "day_checkpoint_1431"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "factId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "priorStatus": {
+                "const": "scoped_accepted_pending_ci_merge"
+              },
+              "priorSummary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "replacementStatus": {
+                "const": "scoped_accepted"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "recordedAt",
+              "supersededAt",
+              "evidenceRefs",
+              "factId",
+              "priorStatus",
+              "priorSummary",
+              "priorHead",
+              "replacementStatus",
+              "reason"
+            ],
+            "properties": {
+              "id": {
+                "const": "HISTORY-PR55-FIVE-HELD"
+              },
+              "recordedAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T14:31:45.186Z"
+              },
+              "supersededAt": {
+                "type": "string",
+                "format": "date-time",
+                "const": "2026-10-31T15:03:07.741Z"
+              },
+              "evidenceRefs": {
+                "const": [
+                  "day_checkpoint",
+                  "pr55_gate",
+                  "pr55_gate_seal",
+                  "pr55_retention",
+                  "pr55_publication"
+                ],
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "baseline_progress",
+                    "baseline_requirements",
+                    "day_checkpoint",
+                    "day_checkpoint_1431",
+                    "root216",
+                    "root218",
+                    "root219",
+                    "root220",
+                    "human56741",
+                    "forge56744",
+                    "human56755",
+                    "human56774",
+                    "human56774_reply",
+                    "warden56763",
+                    "pr51_review",
+                    "pr51_merge",
+                    "pr51_http",
+                    "pr51_html_delta",
+                    "pr53_review",
+                    "pr53_http",
+                    "pr54_review",
+                    "pr54_seal",
+                    "pr54_merge",
+                    "pr37_review",
+                    "pr37_bootstrap",
+                    "pr55_gate",
+                    "pr55_gate_seal",
+                    "pr55_retention",
+                    "pr55_publication",
+                    "joint_direction",
+                    "gb10_047_review",
+                    "gb10_047b_review",
+                    "gb10_047b_metrics",
+                    "gb10_047b_cleanup",
+                    "aneta_report",
+                    "aneta_model",
+                    "aneta_critique",
+                    "aneta_extraction",
+                    "aneta_seal",
+                    "existing_fields_parent",
+                    "existing_fields_independent",
+                    "existing_fields_check",
+                    "existing_fields_seal",
+                    "research_supplement_publication",
+                    "nebius_memo",
+                    "nebius_sources",
+                    "nebius_evidence",
+                    "help_kit",
+                    "client_matrix",
+                    "root_diagnosis",
+                    "prior_packet_manifest",
+                    "prior_packet_receipt",
+                    "pr55_corrective_review",
+                    "pr55_corrective_seal",
+                    "pr55_corrective_ci",
+                    "pr55_corrective_root228",
+                    "pr55_corrective_github",
+                    "pr55_corrective_root_verification",
+                    "pr56_review",
+                    "pr56_receipt",
+                    "pr56_controls",
+                    "pr56_github",
+                    "native_gate_proposal",
+                    "native_gate_preparation",
+                    "human56781",
+                    "warden56782",
+                    "forge56783",
+                    "warden56788",
+                    "root56790",
+                    "root56791",
+                    "forge56794"
+                  ]
+                },
+                "uniqueItems": true
+              },
+              "factId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "priorStatus": {
+                "const": "changes_requested"
+              },
+              "priorSummary": {
+                "type": "string",
+                "minLength": 1
+              },
+              "priorHead": {
+                "const": "18f0dcaea086c7817990112398d358bcd28dbe07"
+              },
+              "replacementStatus": {
+                "const": "changes_requested"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        ]
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "HISTORY-PR54-PENDING"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "const": "HISTORY-PR55-FIVE-HELD"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    },
+    "priorities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "researchFirst",
+        "participantListenerOwner",
+        "listenerDirectionOnly",
+        "missingParticipantMaterialsAndUx",
+        "scientificExecutionReleased",
+        "evidenceRefs",
+        "note",
+        "helpRoomAdmission"
+      ],
+      "properties": {
+        "researchFirst": {
+          "const": true
+        },
+        "participantListenerOwner": {
+          "const": "Forge"
+        },
+        "listenerDirectionOnly": {
+          "const": true
+        },
+        "missingParticipantMaterialsAndUx": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scientificExecutionReleased": {
+          "const": false
+        },
+        "evidenceRefs": {
+          "const": [
+            "human56755",
+            "human56774",
+            "human56774_reply",
+            "human56781",
+            "warden56788",
+            "root56790"
+          ],
+          "type": "array",
+          "items": {
+            "enum": [
+              "baseline_progress",
+              "baseline_requirements",
+              "day_checkpoint",
+              "day_checkpoint_1431",
+              "root216",
+              "root218",
+              "root219",
+              "root220",
+              "human56741",
+              "forge56744",
+              "human56755",
+              "human56774",
+              "human56774_reply",
+              "warden56763",
+              "pr51_review",
+              "pr51_merge",
+              "pr51_http",
+              "pr51_html_delta",
+              "pr53_review",
+              "pr53_http",
+              "pr54_review",
+              "pr54_seal",
+              "pr54_merge",
+              "pr37_review",
+              "pr37_bootstrap",
+              "pr55_gate",
+              "pr55_gate_seal",
+              "pr55_retention",
+              "pr55_publication",
+              "joint_direction",
+              "gb10_047_review",
+              "gb10_047b_review",
+              "gb10_047b_metrics",
+              "gb10_047b_cleanup",
+              "aneta_report",
+              "aneta_model",
+              "aneta_critique",
+              "aneta_extraction",
+              "aneta_seal",
+              "existing_fields_parent",
+              "existing_fields_independent",
+              "existing_fields_check",
+              "existing_fields_seal",
+              "research_supplement_publication",
+              "nebius_memo",
+              "nebius_sources",
+              "nebius_evidence",
+              "help_kit",
+              "client_matrix",
+              "root_diagnosis",
+              "prior_packet_manifest",
+              "prior_packet_receipt",
+              "pr55_corrective_review",
+              "pr55_corrective_seal",
+              "pr55_corrective_ci",
+              "pr55_corrective_root228",
+              "pr55_corrective_github",
+              "pr55_corrective_root_verification",
+              "pr56_review",
+              "pr56_receipt",
+              "pr56_controls",
+              "pr56_github",
+              "native_gate_proposal",
+              "native_gate_preparation",
+              "human56781",
+              "warden56782",
+              "forge56783",
+              "warden56788",
+              "root56790",
+              "root56791",
+              "forge56794"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "helpRoomAdmission": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "humanApprovalInterruptionsRequired",
+            "scope",
+            "operatorReportedAutomaticAdmission",
+            "independentImplementationVerification",
+            "agentIdentityRequired",
+            "humanIdentityWorkaroundAllowed",
+            "secondAutoApproverRequested",
+            "singleListenerOwner",
+            "evidenceRefs",
+            "note"
+          ],
+          "properties": {
+            "humanApprovalInterruptionsRequired": {
+              "const": false
+            },
+            "scope": {
+              "const": "ordinary help-room participation and ticket work"
+            },
+            "operatorReportedAutomaticAdmission": {
+              "const": true
+            },
+            "independentImplementationVerification": {
+              "const": false
+            },
+            "agentIdentityRequired": {
+              "const": true
+            },
+            "humanIdentityWorkaroundAllowed": {
+              "const": false
+            },
+            "secondAutoApproverRequested": {
+              "const": false
+            },
+            "singleListenerOwner": {
+              "const": "Forge"
+            },
+            "evidenceRefs": {
+              "const": [
+                "human56781",
+                "warden56788",
+                "root56790"
+              ],
+              "type": "array",
+              "items": {
+                "enum": [
+                  "baseline_progress",
+                  "baseline_requirements",
+                  "day_checkpoint",
+                  "day_checkpoint_1431",
+                  "root216",
+                  "root218",
+                  "root219",
+                  "root220",
+                  "human56741",
+                  "forge56744",
+                  "human56755",
+                  "human56774",
+                  "human56774_reply",
+                  "warden56763",
+                  "pr51_review",
+                  "pr51_merge",
+                  "pr51_http",
+                  "pr51_html_delta",
+                  "pr53_review",
+                  "pr53_http",
+                  "pr54_review",
+                  "pr54_seal",
+                  "pr54_merge",
+                  "pr37_review",
+                  "pr37_bootstrap",
+                  "pr55_gate",
+                  "pr55_gate_seal",
+                  "pr55_retention",
+                  "pr55_publication",
+                  "joint_direction",
+                  "gb10_047_review",
+                  "gb10_047b_review",
+                  "gb10_047b_metrics",
+                  "gb10_047b_cleanup",
+                  "aneta_report",
+                  "aneta_model",
+                  "aneta_critique",
+                  "aneta_extraction",
+                  "aneta_seal",
+                  "existing_fields_parent",
+                  "existing_fields_independent",
+                  "existing_fields_check",
+                  "existing_fields_seal",
+                  "research_supplement_publication",
+                  "nebius_memo",
+                  "nebius_sources",
+                  "nebius_evidence",
+                  "help_kit",
+                  "client_matrix",
+                  "root_diagnosis",
+                  "prior_packet_manifest",
+                  "prior_packet_receipt",
+                  "pr55_corrective_review",
+                  "pr55_corrective_seal",
+                  "pr55_corrective_ci",
+                  "pr55_corrective_root228",
+                  "pr55_corrective_github",
+                  "pr55_corrective_root_verification",
+                  "pr56_review",
+                  "pr56_receipt",
+                  "pr56_controls",
+                  "pr56_github",
+                  "native_gate_proposal",
+                  "native_gate_preparation",
+                  "human56781",
+                  "warden56782",
+                  "forge56783",
+                  "warden56788",
+                  "root56790",
+                  "root56791",
+                  "forge56794"
+                ]
+              },
+              "uniqueItems": true
+            },
+            "note": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "previousPacket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "packetId",
+        "manifestSha256",
+        "validationSha256",
+        "rootAcceptedDatedContent",
+        "priorFilesPreserved",
+        "evidenceRefs"
+      ],
+      "properties": {
+        "packetId": {
+          "const": "progress-2026-10-31-daytime-1435"
+        },
+        "manifestSha256": {
+          "const": "53943af807869a1dcd1a04dc2bccc59327705c1553931f6bbdb237c84eeb5ad9"
+        },
+        "validationSha256": {
+          "const": "b099989b8eee3e8bd5f66224a0ef85518ba48a865493c552d410ba02941d22c8"
+        },
+        "rootAcceptedDatedContent": {
+          "const": true
+        },
+        "priorFilesPreserved": {
+          "const": true
+        },
+        "evidenceRefs": {
+          "const": [
+            "prior_packet_manifest",
+            "prior_packet_receipt"
+          ],
+          "type": "array",
+          "items": {
+            "enum": [
+              "baseline_progress",
+              "baseline_requirements",
+              "day_checkpoint",
+              "day_checkpoint_1431",
+              "root216",
+              "root218",
+              "root219",
+              "root220",
+              "human56741",
+              "forge56744",
+              "human56755",
+              "human56774",
+              "human56774_reply",
+              "warden56763",
+              "pr51_review",
+              "pr51_merge",
+              "pr51_http",
+              "pr51_html_delta",
+              "pr53_review",
+              "pr53_http",
+              "pr54_review",
+              "pr54_seal",
+              "pr54_merge",
+              "pr37_review",
+              "pr37_bootstrap",
+              "pr55_gate",
+              "pr55_gate_seal",
+              "pr55_retention",
+              "pr55_publication",
+              "joint_direction",
+              "gb10_047_review",
+              "gb10_047b_review",
+              "gb10_047b_metrics",
+              "gb10_047b_cleanup",
+              "aneta_report",
+              "aneta_model",
+              "aneta_critique",
+              "aneta_extraction",
+              "aneta_seal",
+              "existing_fields_parent",
+              "existing_fields_independent",
+              "existing_fields_check",
+              "existing_fields_seal",
+              "research_supplement_publication",
+              "nebius_memo",
+              "nebius_sources",
+              "nebius_evidence",
+              "help_kit",
+              "client_matrix",
+              "root_diagnosis",
+              "prior_packet_manifest",
+              "prior_packet_receipt",
+              "pr55_corrective_review",
+              "pr55_corrective_seal",
+              "pr55_corrective_ci",
+              "pr55_corrective_root228",
+              "pr55_corrective_github",
+              "pr55_corrective_root_verification",
+              "pr56_review",
+              "pr56_receipt",
+              "pr56_controls",
+              "pr56_github",
+              "native_gate_proposal",
+              "native_gate_preparation",
+              "human56781",
+              "warden56782",
+              "forge56783",
+              "warden56788",
+              "root56790",
+              "root56791",
+              "forge56794"
+            ]
+          },
+          "uniqueItems": true
+        }
+      }
+    },
+    "nativeGateZero": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "engine",
+        "materialOnlyHotspot7Plan",
+        "oldMaterialPlanCalls",
+        "oldMaterialPlanMaximumExecutions",
+        "oldMaterialPlanCpuSeconds",
+        "prospectiveMaximumRuns",
+        "prospectiveMaximumCpuSeconds",
+        "exactCallAllocationAccepted",
+        "mergedBuildBound",
+        "ownerLedgerReceipt",
+        "effectiveAt",
+        "absoluteStopAt",
+        "executionRelease",
+        "packageSizeMm",
+        "grid",
+        "primaryMetric",
+        "referenceTargetsC",
+        "additionalPublishedVerificationC",
+        "prospectiveComputationalToleranceK",
+        "physicalAccuracyEstablished",
+        "requiredOutputs",
+        "requiredBindings",
+        "evidenceRefs",
+        "note",
+        "designAllocationAccepted",
+        "designAllocation",
+        "additionalPublishedVerificationStatus",
+        "additionalPublishedVerificationIncludedInCurrent12",
+        "unseenStatisticalHoldoutClaim"
+      ],
+      "properties": {
+        "status": {
+          "const": "DESIGN_ALLOCATION_ACCEPTED_EXECUTION_BINDING_PENDING"
+        },
+        "engine": {
+          "const": "TAP-pinned native HotSpot 6.0 under a new identity"
+        },
+        "materialOnlyHotspot7Plan": {
+          "const": "NOT_REQUESTED"
+        },
+        "oldMaterialPlanCalls": {
+          "const": 32
+        },
+        "oldMaterialPlanMaximumExecutions": {
+          "const": 37
+        },
+        "oldMaterialPlanCpuSeconds": {
+          "const": 360
+        },
+        "prospectiveMaximumRuns": {
+          "const": 12
+        },
+        "prospectiveMaximumCpuSeconds": {
+          "const": 1800
+        },
+        "exactCallAllocationAccepted": {
+          "const": false
+        },
+        "mergedBuildBound": {
+          "const": false
+        },
+        "ownerLedgerReceipt": {
+          "const": null
+        },
+        "effectiveAt": {
+          "const": null
+        },
+        "absoluteStopAt": {
+          "const": null
+        },
+        "executionRelease": {
+          "const": false
+        },
+        "packageSizeMm": {
+          "const": 45
+        },
+        "grid": {
+          "const": 64
+        },
+        "primaryMetric": {
+          "const": "native block-centre with explicit 1/2/4-cell values and weights"
+        },
+        "referenceTargetsC": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": 75.48
+            },
+            {
+              "const": 115.94
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "prospectiveComputationalToleranceK": {
+          "const": 1
+        },
+        "physicalAccuracyEstablished": {
+          "const": false
+        },
+        "requiredOutputs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "requiredBindings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        },
+        "evidenceRefs": {
+          "const": [
+            "forge56783",
+            "root56790",
+            "native_gate_proposal",
+            "native_gate_preparation",
+            "forge56794"
+          ],
+          "type": "array",
+          "items": {
+            "enum": [
+              "baseline_progress",
+              "baseline_requirements",
+              "day_checkpoint",
+              "day_checkpoint_1431",
+              "root216",
+              "root218",
+              "root219",
+              "root220",
+              "human56741",
+              "forge56744",
+              "human56755",
+              "human56774",
+              "human56774_reply",
+              "warden56763",
+              "pr51_review",
+              "pr51_merge",
+              "pr51_http",
+              "pr51_html_delta",
+              "pr53_review",
+              "pr53_http",
+              "pr54_review",
+              "pr54_seal",
+              "pr54_merge",
+              "pr37_review",
+              "pr37_bootstrap",
+              "pr55_gate",
+              "pr55_gate_seal",
+              "pr55_retention",
+              "pr55_publication",
+              "joint_direction",
+              "gb10_047_review",
+              "gb10_047b_review",
+              "gb10_047b_metrics",
+              "gb10_047b_cleanup",
+              "aneta_report",
+              "aneta_model",
+              "aneta_critique",
+              "aneta_extraction",
+              "aneta_seal",
+              "existing_fields_parent",
+              "existing_fields_independent",
+              "existing_fields_check",
+              "existing_fields_seal",
+              "research_supplement_publication",
+              "nebius_memo",
+              "nebius_sources",
+              "nebius_evidence",
+              "help_kit",
+              "client_matrix",
+              "root_diagnosis",
+              "prior_packet_manifest",
+              "prior_packet_receipt",
+              "pr55_corrective_review",
+              "pr55_corrective_seal",
+              "pr55_corrective_ci",
+              "pr55_corrective_root228",
+              "pr55_corrective_github",
+              "pr55_corrective_root_verification",
+              "pr56_review",
+              "pr56_receipt",
+              "pr56_controls",
+              "pr56_github",
+              "native_gate_proposal",
+              "native_gate_preparation",
+              "human56781",
+              "warden56782",
+              "forge56783",
+              "warden56788",
+              "root56790",
+              "root56791",
+              "forge56794"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "additionalPublishedVerificationC": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": 75.47
+            },
+            {
+              "const": 94.89
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "designAllocationAccepted": {
+          "const": true
+        },
+        "designAllocation": {
+          "const": {
+            "acceptedBy": "pocket-forge",
+            "sequenceId": 56794,
+            "acceptedAt": "2026-10-31T15:02:23.364Z",
+            "primaryCalls": 8,
+            "freshProcessGrid64Replays": 4,
+            "totalCalls": 12,
+            "primaryDesign": "two 45 mm originals × HS6/HS7 × grids 32/64",
+            "rawAndSnappedSeparate": true,
+            "primaryGeometryChoiceRequiresReason": true
+          }
+        },
+        "additionalPublishedVerificationStatus": {
+          "const": "DEFERRED"
+        },
+        "additionalPublishedVerificationIncludedInCurrent12": {
+          "const": false
+        },
+        "unseenStatisticalHoldoutClaim": {
+          "const": false
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "sentilab-private-content-root-acceptance/1",
+  "recordedAt": "2026-10-31T15:19:20.923Z",
+  "source": "Direct parent /root task instruction to handoff_audit for this publication preparation",
+  "originalProposalManifestSha256": "6ce9316c04f9ee31ac34291afd4fa88040c3a6e4fa6b5ad1495edb4ea1cf87c0",
+  "rootAcceptedOtherFacts": true,
+  "authorizedEditorialCorrections": [
+    "Record Forge #56794 pre-cutoff design acceptance of 8 primary plus 4 fresh grid-64 replays, preserving pending executable binding and explicitly deferred extras.",
+    "Replace out-of-sample terminology with additional published verification; no unseen statistical holdout claim."
+  ],
+  "factCutoff": "2026-10-31T15:05:00Z",
+  "finalPublicationDeltaReviewPending": true,
+  "rendererAcceptance": false,
+  "publicPageOrSubmissionAcceptance": false,
+  "pushAuthorizedByThisPreparation": false,
+  "scientificExecutionReleased": false
+}
