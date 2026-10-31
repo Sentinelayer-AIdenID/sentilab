@@ -25,6 +25,8 @@ from threadpoolctl import threadpool_info
 
 from sundai_controller.controller import Controller, Ed25519PrivateKey, FlightRecord, JevRoutingAdapter, ThermalResult, digest, public_hex, thermal_plate_adapter
 from sundai_controller.experiment import LANE_IDS, OPERATORS, _candidate, _shared_designs, plate_initial_design, run_four_lanes
+from sundai_controller.trust import CERTIFICATE_LIFETIME_SECONDS, certify_lane, load_service_key
+
 DEFAULT_SEEDS = tuple(range(10))
 JEV_INPUT_USD_PER_MILLION_TOKENS = 0.042
 JEV_OUTPUT_USD_PER_MILLION_TOKENS = 0.0
@@ -184,7 +186,7 @@ def _signal_metrics(record: list[dict], signal_mode: str) -> dict:
 
 
 async def _run_fixed_operator(initial, oracle, shared_designs, *, benchmark, seed, operator,
-                              evaluations_per_lane, evaluation_ceiling_microdollars):
+                              evaluations_per_lane, evaluation_ceiling_microdollars, service_key):
     lane_id = f"fixed_{operator}"
     lane_seed = seed + 104729 * (OPERATORS.index(operator) + 1)
     rng = random.Random(lane_seed)
@@ -199,6 +201,8 @@ async def _run_fixed_operator(initial, oracle, shared_designs, *, benchmark, see
         evaluation_ceiling_microdollars=evaluation_ceiling_microdollars,
         max_attempts=1, lane_ids=(lane_id,), minimum_improvement_c=0.05,
     )
+    certificate = certify_lane(service_key, run_id, lane_id, controller.log.public_key,
+                               int(time.time()) + CERTIFICATE_LIFETIME_SECONDS)
     controller.register(agent_id, key)
     controller.bind_lane(lane_id, agent_id)
     await controller.initialize(shared_initial_designs=shared_designs[1:])
@@ -244,6 +248,7 @@ async def _run_fixed_operator(initial, oracle, shared_designs, *, benchmark, see
         "noop_evaluations": noops,
         "wall_time_s": time.perf_counter() - started,
         "record_public_key": controller.log.public_key,
+        "record_certificate": certificate,
         "record_valid": valid,
         "record": controller.log.events,
     }
@@ -382,7 +387,7 @@ def _write_json(path: Path, value) -> None:
     os.replace(temporary, path)
 
 
-async def run_benchmark(benchmark: str, *, seeds=DEFAULT_SEEDS, grid=16, evaluations_per_lane=8,
+async def run_benchmark(benchmark: str, *, service_key, seeds=DEFAULT_SEEDS, grid=16, evaluations_per_lane=8,
                         shared_sample_count=3, evaluation_ceiling_microdollars=1,
                         signal_mode="local", output_dir: Path | None = None) -> dict:
     seeds = tuple(seeds)
@@ -413,7 +418,7 @@ async def run_benchmark(benchmark: str, *, seeds=DEFAULT_SEEDS, grid=16, evaluat
             signal_router = JevRoutingAdapter(max_calls=evaluations_per_lane, timeout_s=5) if signal_mode == "live" else None
             shared_designs = _shared_designs(initial, oracle, seed, shared_sample_count)
             experiment = await run_four_lanes(
-                initial, oracle, run_id=run_id, seed=seed,
+                initial, oracle, service_key=service_key, run_id=run_id, seed=seed,
                 evaluations_per_lane=evaluations_per_lane,
                 evaluation_ceiling_microdollars=evaluation_ceiling_microdollars,
                 shared_sample_count=shared_sample_count,
@@ -427,7 +432,7 @@ async def run_benchmark(benchmark: str, *, seeds=DEFAULT_SEEDS, grid=16, evaluat
             raw_lanes = dict(experiment["lane_results"])
             for operator in OPERATORS:
                 fixed = await _run_fixed_operator(
-                    initial, oracle, shared_designs, benchmark=benchmark, seed=seed,
+                    initial, oracle, shared_designs, service_key=service_key, benchmark=benchmark, seed=seed,
                     operator=operator, evaluations_per_lane=evaluations_per_lane,
                     evaluation_ceiling_microdollars=evaluation_ceiling_microdollars,
                 )
@@ -444,7 +449,8 @@ async def run_benchmark(benchmark: str, *, seeds=DEFAULT_SEEDS, grid=16, evaluat
                 if output_dir is not None:
                     _write_json(output_dir / relative, {
                         "benchmark": benchmark, "grid": benchmark_grid, "seed": seed,
-                        "lane_id": lane_id, "run_id": lane["run_id"],
+                        "lane_id": lane_id, "run_id": lane["record_certificate"]["run_id"],
+                        "record_certificate": lane["record_certificate"],
                         "record_public_key": lane["record_public_key"], "events": lane["record"],
                     })
                 lane_artifacts[lane_id] = _lane_artifact(
@@ -500,7 +506,7 @@ async def run_benchmark(benchmark: str, *, seeds=DEFAULT_SEEDS, grid=16, evaluat
     }
 
 
-async def run_leaderboard(benchmarks, *, seeds=DEFAULT_SEEDS, grid=16, evaluations_per_lane=8,
+async def run_leaderboard(benchmarks, *, service_key, seeds=DEFAULT_SEEDS, grid=16, evaluations_per_lane=8,
                           shared_sample_count=3, signal_mode="local", output_dir=None):
     seeds = tuple(seeds)
     benchmarks = tuple(benchmarks)
@@ -510,7 +516,7 @@ async def run_leaderboard(benchmarks, *, seeds=DEFAULT_SEEDS, grid=16, evaluatio
     summaries = []
     for benchmark in benchmarks:
         summaries.append(await run_benchmark(
-            benchmark, seeds=seeds, grid=grid, evaluations_per_lane=evaluations_per_lane,
+            benchmark, service_key=service_key, seeds=seeds, grid=grid, evaluations_per_lane=evaluations_per_lane,
             shared_sample_count=shared_sample_count, signal_mode=signal_mode,
             output_dir=output_dir,
         ))
@@ -549,7 +555,7 @@ def main() -> None:
     parser.add_argument("--out", type=Path, default=ROOT / "reports" / "tfl08")
     args = parser.parse_args()
     result = asyncio.run(run_leaderboard(
-        args.benchmarks, seeds=args.seeds, grid=args.grid,
+        args.benchmarks, service_key=load_service_key(), seeds=args.seeds, grid=args.grid,
         evaluations_per_lane=args.evaluations,
         shared_sample_count=args.shared_samples,
         signal_mode=args.signal, output_dir=args.out,

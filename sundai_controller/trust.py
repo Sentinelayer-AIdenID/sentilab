@@ -27,8 +27,9 @@ else:
     from controller import FlightRecord, canonical, public_hex
 
 
+_PIN_PATH = Path(__file__).resolve().parents[1] / "web/public/trust-pins.json"
 PINNED_SERVICE_KEYS = MappingProxyType({entry["key_id"]: entry["public_key_hex"] for entry in
-    json.loads((Path(__file__).resolve().parents[1] / "web/public/trust-pins.json").read_text())})
+    (json.loads(_PIN_PATH.read_text()) if _PIN_PATH.is_file() else [])})
 CERTIFICATE_VERSION = "sentilab.lane-certificate.v1"
 CERTIFICATE_LIFETIME_SECONDS = 24 * 60 * 60
 _CERTIFICATE_FIELDS = {"version", "key_id", "run_id", "lane_id", "lane_public_key", "expires_at", "signature"}
@@ -120,6 +121,10 @@ def inspect_record(record, public_key, certificate=None, pinned_service_public_h
                  certificate.get("lane_public_key") == public_key and
                  verify_chain(record, certificate, pinned_service_public_hex, **scope))
     pins = PINNED_SERVICE_KEYS if pinned_service_public_hex is None else pinned_service_public_hex
+    if isinstance(pins, str):
+        pins = {key_id_for(pins): pins}
+    unanchored = certificate is None or not pins or (isinstance(certificate, dict) and
+                                                    certificate.get("key_id") not in pins)
     return {"integrity": integrity, "authentic": bool(authentic),
-            "origin": "authentic" if authentic else "unanchored" if certificate is None or not pins else "invalid",
+            "origin": "authentic" if authentic else "unanchored" if unanchored else "invalid",
             "scientific_validity": "not checked"}

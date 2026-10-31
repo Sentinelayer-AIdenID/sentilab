@@ -199,7 +199,8 @@ export async function verifyChain(events, certificate, pins = PINNED_SERVICE_KEY
 }
 
 async function originVerdict(events, publicKey, certificate, pins, scope, integrity) {
-  if (certificate === undefined || Object.keys(pins).length === 0) return { integrity, authentic: false, origin: "unanchored",
+  if (certificate === undefined || Object.keys(pins).length === 0
+    || (certificate && typeof certificate.key_id === "string" && !Object.hasOwn(pins, certificate.key_id))) return { integrity, authentic: false, origin: "unanchored",
     originReason: Object.keys(pins).length ? "integrity only, unanchored"
       : "integrity only, unanchored; service trust pins unconfigured", scientificValidity: "not checked" };
   const chain = await verifyChain(events, certificate, pins, scope);

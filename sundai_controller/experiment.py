@@ -11,10 +11,10 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 if __package__:
     from .controller import Controller, Design, FlightRecord, ThermalResult, digest, public_hex
-    from .trust import CERTIFICATE_LIFETIME_SECONDS, certify_lane, load_service_key
+    from .trust import CERTIFICATE_LIFETIME_SECONDS, certify_lane
 else:
     from controller import Controller, Design, FlightRecord, ThermalResult, digest, public_hex
-    from trust import CERTIFICATE_LIFETIME_SECONDS, certify_lane, load_service_key
+    from trust import CERTIFICATE_LIFETIME_SECONDS, certify_lane
 
 
 LANE_IDS = ("random", "simulated_annealing", "ucb1", "signal_portfolio")
@@ -222,7 +222,7 @@ def plate_initial_design() -> Design:
 
 
 async def run_four_lanes(initial: Design, oracle: Callable[[Design], Awaitable[ThermalResult]], *,
-                         run_id="tfl05", seed=1, evaluations_per_lane=4,
+                         service_key: Ed25519PrivateKey, run_id="tfl05", seed=1, evaluations_per_lane=4,
                          evaluation_ceiling_microdollars=1, shared_sample_count=3,
                          signal_router=None) -> dict:
     """Run four independently signed lanes against one initial design pool.
@@ -242,8 +242,9 @@ async def run_four_lanes(initial: Design, oracle: Callable[[Design], Awaitable[T
             isinstance(evaluation_ceiling_microdollars, bool) or evaluation_ceiling_microdollars <= 0):
         raise ValueError("evaluation ceiling must be a positive integer")
 
-    # Fail before oracle calls or flight-record creation if signing is unconfigured.
-    service_key = load_service_key()
+    # The entry point supplies signing authority explicitly; the library never reads env.
+    if not isinstance(service_key, Ed25519PrivateKey):
+        raise ValueError("an Ed25519 service_key is required")
     certificate_expiry = int(time.time()) + CERTIFICATE_LIFETIME_SECONDS
 
     shared_designs = _shared_designs(initial, oracle, seed, shared_sample_count)

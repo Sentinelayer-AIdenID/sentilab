@@ -4,6 +4,8 @@ import unittest
 from dataclasses import dataclass, field
 from unittest.mock import patch
 
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
 from controller import Chiplet, Design, FlightRecord, JevRoutingAdapter, ThermalResult
 from experiment import LANE_IDS, run_four_lanes
 
@@ -53,9 +55,12 @@ def small_design():
 
 
 class StrategyExperimentTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.service_key = Ed25519PrivateKey.from_private_bytes(os.urandom(32))
+
     async def test_four_lanes_share_initial_samples_and_verify_equal_budget_records(self):
         oracle = CountingOracle()
-        result = await run_four_lanes(small_design(), oracle, run_id="test-run", seed=7,
+        result = await run_four_lanes(small_design(), oracle, service_key=self.service_key, run_id="test-run", seed=7,
                                       evaluations_per_lane=3, shared_sample_count=2,
                                       evaluation_ceiling_microdollars=10)
 
@@ -105,7 +110,7 @@ class StrategyExperimentTests(unittest.IsolatedAsyncioTestCase):
                     "probabilities": probabilities, "confidence": 0.8, "duration_ms": 12.5,
                     "retry_count": 0, "model": "jev-1.13.0", "api_key": "fixture-secret-value"}
 
-        result = await run_four_lanes(small_design(), oracle, run_id="signal-test", seed=2,
+        result = await run_four_lanes(small_design(), oracle, service_key=self.service_key, run_id="signal-test", seed=2,
                                       evaluations_per_lane=1, shared_sample_count=0,
                                       signal_router=router)
         signal = result["lane_results"]["signal_portfolio"]
@@ -141,7 +146,7 @@ class StrategyExperimentTests(unittest.IsolatedAsyncioTestCase):
                     "input_hash": "c" * 64, "output_hash": "d" * 64,
                     "probabilities": probabilities, "confidence": 0.9, "duration_ms": 4.0}
 
-        result = await run_four_lanes(small_design(), oracle, run_id="signal-stop", seed=4,
+        result = await run_four_lanes(small_design(), oracle, service_key=self.service_key, run_id="signal-stop", seed=4,
                                       evaluations_per_lane=4, shared_sample_count=0,
                                       signal_router=router)
         signal = result["lane_results"]["signal_portfolio"]
@@ -165,7 +170,7 @@ class StrategyExperimentTests(unittest.IsolatedAsyncioTestCase):
                                        "global_resample": 0.0, "stop": 0.0},
                     "confidence": 0.9, "duration_ms": 3.0}
 
-        result = await run_four_lanes(small_design(), oracle, run_id="signal-invalid", seed=6,
+        result = await run_four_lanes(small_design(), oracle, service_key=self.service_key, run_id="signal-invalid", seed=6,
                                       evaluations_per_lane=1, shared_sample_count=0,
                                       signal_router=router)
         signal = result["lane_results"]["signal_portfolio"]
@@ -186,7 +191,7 @@ class StrategyExperimentTests(unittest.IsolatedAsyncioTestCase):
         adapter = JevRoutingAdapter(max_calls=1, timeout_s=0.5)
         with patch.dict(os.environ, {"JEV_ENABLE_REQUESTS": "1", "JEV_API_KEY": "fixture-secret-value"}), \
                 patch("urllib.request.urlopen", return_value=MockJevResponse(provider_response)):
-            result = await run_four_lanes(small_design(), CountingOracle(), run_id="signal-live-mock", seed=7,
+            result = await run_four_lanes(small_design(), CountingOracle(), service_key=self.service_key, run_id="signal-live-mock", seed=7,
                                           evaluations_per_lane=1, shared_sample_count=0,
                                           signal_router=adapter)
         signal = result["lane_results"]["signal_portfolio"]
@@ -209,7 +214,7 @@ class StrategyExperimentTests(unittest.IsolatedAsyncioTestCase):
             states.append(state)
             return "local_move", "test advice"
 
-        result = await run_four_lanes(small_design(), WiredOracle(), run_id="signal-wire", seed=5,
+        result = await run_four_lanes(small_design(), WiredOracle(), service_key=self.service_key, run_id="signal-wire", seed=5,
                                       evaluations_per_lane=1, shared_sample_count=0,
                                       signal_router=router)
         state = states[0]
@@ -233,7 +238,7 @@ class StrategyExperimentTests(unittest.IsolatedAsyncioTestCase):
                                  problem_hash="same-problem-for-all-lanes")
 
         with self.assertRaisesRegex(RuntimeError, "random oracle evaluation failed"):
-            await run_four_lanes(small_design(), failing_oracle, run_id="failure-test", seed=3,
+            await run_four_lanes(small_design(), failing_oracle, service_key=self.service_key, run_id="failure-test", seed=3,
                                  evaluations_per_lane=1, shared_sample_count=0,
                                  evaluation_ceiling_microdollars=10)
 
@@ -249,7 +254,7 @@ class StrategyExperimentTests(unittest.IsolatedAsyncioTestCase):
                                  cost_microdollars=cost, problem_hash="same-problem-for-all-lanes")
 
         with self.assertRaisesRegex(RuntimeError, "random controller stopped: provider exceeded declared cost ceiling"):
-            await run_four_lanes(small_design(), over_ceiling_oracle, run_id="ceiling-test", seed=3,
+            await run_four_lanes(small_design(), over_ceiling_oracle, service_key=self.service_key, run_id="ceiling-test", seed=3,
                                  evaluations_per_lane=1, shared_sample_count=0,
                                  evaluation_ceiling_microdollars=10)
 
