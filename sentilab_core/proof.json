@@ -87,5 +87,138 @@
     "hotspot_calls_in_revision_gates": 4,
     "measurement_limits": "The initial core runner missed two tuple-based worker launches; test_oracle ran two. The corrected final runner counted two further launches. Focused checks and JS/Node subprocess work are not included in the measured Python-gate totals. No certified task-wide CPU total is claimed.",
     "remaining": "Operator carry, exact published head, Docker CI and independent review; no deployment from this box."
+  },
+  "artifact_root": "sentilab_core/proof-artifacts",
+  "review_56167_revision": {
+    "base": "fae2559238cc554dab77749e6c9fa956e2cfab33",
+    "fixes": {
+      "mcp": "3bf20ec",
+      "cursor": "b52c803",
+      "readonly": "00ddde8"
+    },
+    "regressions_failed_before_fix": {
+      "sentilab_core/test_mcp_stdio.py": 4,
+      "app/test_view_cursor.py": 3,
+      "app/test_view_readonly.py": 2
+    },
+    "python_gates": {
+      "core": {
+        "suite": "review-core",
+        "argv": [
+          "discover",
+          "-s",
+          "sentilab_core",
+          "-p",
+          "test_*.py",
+          "-q"
+        ],
+        "tests": 45,
+        "success": true,
+        "elapsed_s": 47.987364287953824,
+        "process_tree_cpu_s": 16.516791,
+        "synthetic_calls": 23,
+        "hotspot_dispatches": 2
+      },
+      "view": {
+        "suite": "review-view",
+        "argv": [
+          "-q",
+          "app.test_view",
+          "app.test_view_cursor",
+          "app.test_view_readonly",
+          "app.test_runs",
+          "sentilab_core.conformance"
+        ],
+        "tests": 23,
+        "success": true,
+        "elapsed_s": 51.80601945600938,
+        "process_tree_cpu_s": 17.720692,
+        "synthetic_calls": 8,
+        "hotspot_dispatches": 0
+      },
+      "controller": {
+        "suite": "review-controller",
+        "argv": [
+          "-q",
+          "test_controller",
+          "test_experiment",
+          "test_trust",
+          "test_tfl08_leaderboard"
+        ],
+        "tests": 75,
+        "success": true,
+        "elapsed_s": 54.2863381219795,
+        "process_tree_cpu_s": 22.041629999999998,
+        "synthetic_calls": 720,
+        "hotspot_dispatches": 0
+      },
+      "thermal": {
+        "suite": "review-thermal",
+        "argv": [
+          "discover",
+          "-s",
+          "sundai_thermal",
+          "-p",
+          "test_*.py",
+          "-q"
+        ],
+        "tests": 2,
+        "success": true,
+        "elapsed_s": 60.024461356922984,
+        "process_tree_cpu_s": 27.570684,
+        "synthetic_calls": 2138,
+        "hotspot_dispatches": 0
+      },
+      "property": {
+        "suite": "review-property",
+        "argv": [
+          "-q",
+          "test_safety_property"
+        ],
+        "tests": 2,
+        "success": true,
+        "elapsed_s": 98.26747570198495,
+        "process_tree_cpu_s": 65.6399,
+        "synthetic_calls": 0,
+        "hotspot_dispatches": 0
+      }
+    },
+    "browser_tests": 64,
+    "contract_checks": [
+      74,
+      113,
+      193
+    ],
+    "contract_manifest_files": 16,
+    "compileall": "pass",
+    "ruff_E9_F": "pass",
+    "make_hotspot_superlu": "pass",
+    "pip_check": "pass",
+    "cursor_reference": {
+      "prefix_end": 0,
+      "chain_ok": false,
+      "pages": 3,
+      "next_cursor": 3,
+      "has_more": false,
+      "sequences": [
+        1,
+        1,
+        2
+      ]
+    },
+    "historical_reference": {
+      "historical_v04_reference": {
+        "prefix_end": 203,
+        "chain_ok": true
+      },
+      "historical_v05_version_rejection": [
+        "bad_version"
+      ]
+    },
+    "measured_python_gate_cpu_s": 149.489697,
+    "counted_synthetic_calls": 2889,
+    "hotspot_test_dispatches": 2,
+    "measurement_limits": "Only the final five instrumented Python gates are counted here; focused checks, browser/Node subprocesses and earlier turns are outside these totals. No new live proof run. No certified task-wide total.",
+    "remaining": "Operator carry, published PR head confirmation, Docker CI and assigned independent review; no deployment."
   }
 }
