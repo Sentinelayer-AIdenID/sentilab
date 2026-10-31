@@ -133,6 +133,7 @@ class LazyContextTests(unittest.IsolatedAsyncioTestCase):
         self.temp.cleanup()
 
     async def start(self, *command, env=None):
+        env = {**(os.environ if env is None else env), "SENTILAB_RESULTCHECK_DIR": self.temp.name}
         self.process = await asyncio.create_subprocess_exec(
             sys.executable, *command, env=env, stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)

@@ -9,6 +9,7 @@ import hashlib
 import json
 import math
 import os
+from pathlib import Path
 import re
 import stat
 import struct
@@ -486,12 +487,24 @@ def check_raw(data):
     return check(request)
 
 
-def check_file(file):
+def check_file(file, *, root=None):
     """Check a stable regular file, reading at most its bounded size plus one.
 
     Unsupported, oversized or changing files raise OSError (a transport error),
     never a contract receipt carrying a misleading partial request hash.
+    With root set, resolve relative paths under it and require the opened
+    descriptor to remain inside it. Restricted intake requires Linux procfs;
+    an unavailable descriptor path fails closed before any bytes are read.
     """
+    if root is not None:
+        try:
+            root = Path(root).resolve(strict=True)
+            if not root.is_dir():
+                raise OSError('ResultCheck root is not a directory')
+            file = (root / file).resolve(strict=True)
+            file.relative_to(root)
+        except (ValueError, RuntimeError) as exc:
+            raise OSError('ResultCheck path outside configured directory') from exc
     digest = hashlib.sha256()
     prefix = bytearray()
     size = 0
@@ -501,6 +514,11 @@ def check_file(file):
         before = os.fstat(fd)
         if not stat.S_ISREG(before.st_mode) or before.st_size > MAX_FILE_BYTES:
             raise OSError('unsupported ResultCheck file')
+        if root is not None:
+            try:
+                Path(f'/proc/self/fd/{fd}').resolve(strict=True).relative_to(root)
+            except (ValueError, RuntimeError) as exc:
+                raise OSError('ResultCheck descriptor outside configured directory') from exc
         while size <= before.st_size:
             chunk = os.read(fd, min(64 * 1024, before.st_size + 1 - size))
             if not chunk:

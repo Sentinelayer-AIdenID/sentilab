@@ -120,7 +120,7 @@ class ResultCheckTests(unittest.TestCase):
                 files.append(file)
                 calls.append(dict(jsonrpc='2.0', id=i, method='tools/call', params={
                     'name': 'sentilab_resultcheck', 'arguments': {'file': str(file)}}))
-            mcp = mcp_exchange(calls)
+            mcp = mcp_exchange(calls, env={**os.environ, 'SENTILAB_RESULTCHECK_DIR': directory})
             self.assertEqual(mcp.stderr, b'')
             replies = [json.loads(line) for line in mcp.stdout.splitlines()]
             self.assertEqual(len(replies), len(self.vectors) + 2)
@@ -146,7 +146,7 @@ class ResultCheckTests(unittest.TestCase):
                     self.assertEqual(cli.stderr, b'')
                     self.assertEqual(cli.stdout, (expected + '\n').encode())
                     self.assertEqual(reply['id'], i)
-                    self.assertEqual(reply['result']['isError'], code != 0)
+                    self.assertEqual(reply['result']['isError'], receipt['status'] == 'rejected')
                     self.assertEqual(reply['result']['content'], [{'type': 'text', 'text': expected}])
                     for banned in vector['banned']:
                         self.assertNotIn(banned, expected)
@@ -215,7 +215,7 @@ class ResultCheckTests(unittest.TestCase):
     def test_transports_without_node_or_live_configuration(self):
         with tempfile.TemporaryDirectory() as directory:
             env = {**os.environ, 'PATH': directory, 'SENTILAB_SIGNER_FACTORY': 'missing:factory',
-                   'SENTILAB_VIEW_PUBLIC_KEYS': 'invalid'}
+                   'SENTILAB_VIEW_PUBLIC_KEYS': 'invalid', 'SENTILAB_RESULTCHECK_DIR': directory}
             file = Path(directory) / 'input.json'
             file.write_text(self.vectors[1]['raw'])
             cli = subprocess.run([sys.executable, str(ROOT / 'sentilab_cli' / 'sentilab'), 'resultcheck', str(file)],

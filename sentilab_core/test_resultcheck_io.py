@@ -128,6 +128,7 @@ class FileStdioTests(unittest.IsolatedAsyncioTestCase):
         self.process = None
         self.lock = None
         self.env = {**os.environ, "SENTILAB_LIVE_DIR": str(self.root / "live"),
+                    "SENTILAB_RESULTCHECK_DIR": str(self.root),
                     "SENTILAB_VIEW_PUBLIC_KEYS": "{}"}
         self.env.pop("SENTILAB_SIGNER_FACTORY", None)
         self.markers = self.root / "workers"

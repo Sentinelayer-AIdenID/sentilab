@@ -1,6 +1,7 @@
 """MCP tool handlers; the host injects the same Context used by the CLI."""
 import asyncio
 import json
+import os
 import sys
 
 
@@ -34,8 +35,11 @@ async def sentilab_resultcheck(context=None, *, file):
     """Run the shared CLI/core in a worker we can kill and reap on cancellation."""
     if not isinstance(file, str):
         raise ValueError("file must be a local path string")
+    root = os.environ.get("SENTILAB_RESULTCHECK_DIR")
+    if not root:
+        raise OSError("ResultCheck directory is not configured")
     creation = asyncio.create_task(asyncio.create_subprocess_exec(
-        sys.executable, "-m", "sentilab_cli", "resultcheck", "--", file,
+        sys.executable, "-m", "sentilab_cli", "resultcheck", "--root", root, "--", file,
         stdin=asyncio.subprocess.DEVNULL, stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.DEVNULL))
 

@@ -15,10 +15,11 @@ def main(conductor=False):
     if not conductor and sys.argv[1:2] == ["resultcheck"]:
         from sentilab_core.resultcheck import canonical, check_file, exit_code
         parser = argparse.ArgumentParser(prog="sentilab resultcheck")
+        parser.add_argument("--root", help="confine file reads to this directory (requires Linux procfs)")
         parser.add_argument("file", help="UTF-8 ResultCheck v2 JSON file")
         args = parser.parse_args(sys.argv[2:])
         try:
-            receipt = check_file(args.file)
+            receipt = check_file(args.file, root=args.root)
         except (OSError, ValueError):
             print(canonical({"error": {"code": "file_unreadable"}}))
             raise SystemExit(2)

@@ -7,12 +7,21 @@ export PATH="$PWD/sentilab_cli:$PATH"
 sentilab resultcheck result.json
 # Equivalent module entry point:
 python -m sentilab_cli resultcheck result.json
-python -m sentilab_mcp
+SENTILAB_RESULTCHECK_DIR=/absolute/path/to/results python -m sentilab_mcp
 ```
 
 The MCP stdio host lists `sentilab_resultcheck`. Its arguments are
-`{"file":"/path/to/result.json"}`: a file on the host, resolved relative to the
-host's working directory if not absolute. Example JSON-RPC call after MCP
+`{"file":"result.json"}`: a file within the host-configured
+`SENTILAB_RESULTCHECK_DIR`. Relative paths resolve under that directory; absolute
+paths and symlinks are accepted only if their resolved target stays inside it.
+The directory must be explicitly configured and exist. Missing/invalid configuration,
+outside paths and missing files all return the same `file_unreadable` error without
+a hash. The worker also checks the opened descriptor's resolved path before reading,
+so a directory/symlink swap after path validation cannot expose outside bytes.
+This restricted mode requires Linux `/proc/self/fd`; it fails closed if descriptor
+resolution is unavailable. Only put files intended for MCP callers in this directory.
+The ordinary local CLI keeps its existing file access; `--root DIRECTORY` opts into
+the same restriction. Example JSON-RPC call after MCP
 initialization:
 
 ```json
@@ -34,7 +43,9 @@ schema is `resultcheck.request.v2`; see
 Neither timestamps nor transport metadata enter the receipt. CLI stdout is
 canonical UTF-8 JSON plus one LF. MCP `content[0].text` is those same canonical
 JSON bytes, without the CLI's line terminator; normal JSON-RPC framing surrounds
-it. MCP `isError` is true for a nonzero ResultCheck outcome.
+it. MCP `isError` is true only for `rejected` receipts or `file_unreadable` transport
+errors. Flags (including `arithmetic_discrepancy`) and insufficient data are completed
+checks with `isError: false`; the CLI exit codes below are unchanged.
 
 | CLI exit | Receipt status | Meaning |
 |---|---|---|
@@ -76,7 +87,7 @@ contract semantics; they do not silently become passes.
 [MANIFEST.json](MANIFEST.json) pins all six v0.2 contract files against
 `contracts/HASHES.txt`, the 39-vector count, and the verdict schema version.
 No contract files are changed. [VERIFICATION.json](VERIFICATION.json) records
-the executed gates and 13 detected mutations on the initial implementation.
+the gates rerun on the final implementation, source hashes, and transport regression proofs.
 [P2-VERIFICATION.json](P2-VERIFICATION.json) records the file-intake/cancellation
 correction, actual stdio regressions, mutation checks and remaining gate scope.
 Independent review remains pending.
@@ -86,6 +97,8 @@ Independent review remains pending.
 python -m unittest -v sentilab_core.test_resultcheck
 # Actual FIFO/device/large-file intake, lock-gated read cancellation and cleanup.
 python -m unittest -v sentilab_core.test_resultcheck_io
+# Configured file boundary, symlink escape and descriptor-swap regression tests.
+python -m unittest -v sentilab_core.test_resultcheck_boundary
 # Mandatory additional CI gate: Python 3.12 and Node 22, no solver/model calls.
 python -m sentilab_core.test_resultcheck --parity
 ```

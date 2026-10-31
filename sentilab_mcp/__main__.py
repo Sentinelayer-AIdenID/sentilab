@@ -51,7 +51,7 @@ async def handle(request, context):
         if name not in TOOLS or set(arguments) - set(schema(name)["properties"]):
             raise ValueError("invalid live operation")
         if name == "sentilab_resultcheck":
-            from sentilab_core.resultcheck import canonical, exit_code
+            from sentilab_core.resultcheck import canonical
             if set(arguments) != {"file"} or not isinstance(arguments["file"], str):
                 raise ValueError("file must be a local path string")
             try:
@@ -60,7 +60,7 @@ async def handle(request, context):
                 return {"content": [{"type": "text", "text": canonical({"error": {"code": "file_unreadable"}})}],
                         "isError": True}
             return {"content": [{"type": "text", "text": canonical(receipt)}],
-                    "isError": exit_code(receipt) != 0}
+                    "isError": receipt["status"] == "rejected"}
         if isinstance(context, LazyLiveContext):
             context = context.get()
         if context is None:
