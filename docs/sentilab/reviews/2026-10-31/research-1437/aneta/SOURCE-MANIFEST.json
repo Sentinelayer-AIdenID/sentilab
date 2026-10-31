@@ -1,0 +1,88 @@
+{
+  "schema": "sentilab-informed-static-review-source-manifest-v1",
+  "createdUtc": "2026-10-31T14:36:08.1191090Z",
+  "sourceHead": "18f0dcaea086c7817990112398d358bcd28dbe07",
+  "originalRootFreezeUnchanged": true,
+  "informedReview": true,
+  "independentSubreview": "baseline_crosswalk: claim rules, native centre mapping, ResultCheck source, factorization limitations",
+  "sourceFiles": [
+    {
+      "id": "ROOT-FREEZE",
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\reports\\SentiLab inconclusive results diagnosis.md",
+      "bytes": 68772,
+      "sha256": "132bf28fc6d962ae159a942084b3a7fe4c17fd52dc65da7a13789939a0460a7d"
+    },
+    {
+      "id": "C7-HISTORICAL",
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\peer-diagnosis-1318\\warden-source\\sundai_hotspot\\temperature_grid.c",
+      "bytes": 275052,
+      "sha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df"
+    },
+    {
+      "id": "C7-PR55",
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\pr55-profile-review\\sundai_hotspot\\temperature_grid.c",
+      "bytes": 275052,
+      "sha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df"
+    },
+    {
+      "id": "C6-UPSTREAM",
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\aneta-informed-review-1430\\HOTSPOT6-temperature_grid.c",
+      "bytes": 186241,
+      "sha256": "19325ad8ee61701818cacd72ad4f85b1afdc2d1d18c8a829731b66ce770a50c9"
+    },
+    {
+      "id": "TAP-GENERATOR",
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\peer-diagnosis-1318\\warden-source\\sundai_tap\\passive_interposer.py",
+      "bytes": 15937,
+      "sha256": "dcbbaaa86a187bac3f1a1b12f49bd0dfc1c6cb3ed4e50ec51583f762adcf0a52"
+    },
+    {
+      "id": "TAP-OPTIMIZER",
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\peer-diagnosis-1318\\warden-source\\sundai_tap\\sim_annealing.py",
+      "bytes": 10914,
+      "sha256": "04b84b02efac83f94768b6097c343f49cae590e2b8c92d51bee1f8051d9e2013"
+    },
+    {
+      "id": "RC-JS",
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\pr55-profile-review\\contracts\\contract-0.3\\resultcheck.mjs",
+      "bytes": 13262,
+      "sha256": "dcc0a957cfde6b219f58ea3940bc3a8f0f2384328f851dd2b54994fa93ad2663"
+    },
+    {
+      "id": "RC-PY",
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\pr55-profile-review\\sentilab_core\\resultcheck.py",
+      "bytes": 23405,
+      "sha256": "2a02b12d8b33e6bb728c9150693bd85dff2ef7f423fb91e1c47da46ad358d982"
+    },
+    {
+      "id": "PAPER-TEXT",
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\research_notes\\SentiLab inconclusive results diagnosis\\human_package_sources\\tap-date2021.pdf.txt",
+      "bytes": 38656,
+      "sha256": "9444d3ff6595f1c3e60269a3d7839777d7d0a0ddd50985d73bdeef3bba50985f"
+    },
+    {
+      "id": "PREVIOUS-COORDINATE-REVIEW",
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\peer-diagnosis-1318\\literature-delta-1347\\FINDINGS.md",
+      "bytes": 4051,
+      "sha256": "ee55599045d8f9dbfa7af85cfe71df2a7d85d0285d8c6d715654704032341626"
+    },
+    {
+      "id": "JOINT-DECISION",
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\peer-diagnosis-1318\\JOINT-DECISION-1334.json",
+      "bytes": 2750,
+      "sha256": "63080f7e8d1ab0e1f024a47f15fb9533f41213dfd580e01501fa9d2883a1dd2b"
+    },
+    {
+      "id": "ROOT-DECISIONS",
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\peer-diagnosis-1318\\ROOT-DECISION-LEDGER.json",
+      "bytes": 4462,
+      "sha256": "cbb3033df5f0bb53f86f8a34e1f25b72bf799a9d0b69e3d9c465389974399652"
+    }
+  ],
+  "modelExecuted": false,
+  "numericalWorkloadsRun": false,
+  "testsRun": 0,
+  "productChanges": false,
+  "externalMessages": false,
+  "readOnlyNetwork": "Only the named upstream commit metadata and temperature_grid.c source were retrieved."
+}

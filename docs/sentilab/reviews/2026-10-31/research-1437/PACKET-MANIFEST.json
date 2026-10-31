@@ -1,0 +1,130 @@
+{
+  "schema": "sentilab-private-research-supplement-v1",
+  "createdUtc": "2026-10-31T14:39:46.452Z",
+  "repo": "Sentinelayer-AIdenID/sentilab",
+  "privateReviewOnly": true,
+  "branch": "codex/diagnosis-20261031",
+  "publicationBase": "105a8e95e4d787273694ef2371bd87c82ad998b8",
+  "scope": "Exact selected copies of root-reviewed Aneta critique and Nebius compatibility research. The original first diagnosis and scientific evidence remain unchanged.",
+  "disposition": "Source findings are bounded; numerical calibration, evaluator replacement, MATCH rules, evidence-status changes and new Nebius workloads remain subject to separate review and admission.",
+  "executionPlusOne": false,
+  "files": [
+    {
+      "path": "aneta/ANETA-REPORT.md",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/research-1437/aneta/ANETA-REPORT.md",
+      "sourcePath": "tasks/sentilab-review-2026-10-30/aneta-informed-review-1430/ANETA-REPORT.md",
+      "bytes": 9520,
+      "sha256": "53565a80ae15a9a78b04c18816f4ed9e83fcb3f9599c107bc5d7569ad055c054",
+      "role": "External author report; numerical results remain author-reported."
+    },
+    {
+      "path": "aneta/thermal-network.mjs",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/research-1437/aneta/thermal-network.mjs",
+      "sourcePath": "tasks/sentilab-review-2026-10-30/aneta-informed-review-1430/thermal-network.mjs",
+      "bytes": 11130,
+      "sha256": "2fedbad94e2644560fcb1555e62d7af87b1d0d9dc0d40b512f058aa82a6b1d39",
+      "role": "Author-submitted sensitivity-model source; preserved without importing or executing."
+    },
+    {
+      "path": "aneta/INFORMED-CRITIQUE.md",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/research-1437/aneta/INFORMED-CRITIQUE.md",
+      "sourcePath": "tasks/sentilab-review-2026-10-30/aneta-informed-review-1430/INFORMED-CRITIQUE.md",
+      "bytes": 14036,
+      "sha256": "781bb04167c9ae11842a692fd79c43a1cb635c21eaf2313f389f0cbe379d009d",
+      "role": "Independent informed static critique; bounded findings do not authorize numerical or claim transitions."
+    },
+    {
+      "path": "aneta/EXTRACTION-MANIFEST.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/research-1437/aneta/EXTRACTION-MANIFEST.json",
+      "sourcePath": "tasks/sentilab-review-2026-10-30/aneta-informed-review-1430/EXTRACTION-MANIFEST.json",
+      "bytes": 6700,
+      "sha256": "ce7328b453b19b3f86966759a9c4498bd64687bd7351810aacd9970d68e2007a",
+      "role": "Exact message-extraction and original byte/hash bindings."
+    },
+    {
+      "path": "aneta/SOURCE-MANIFEST.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/research-1437/aneta/SOURCE-MANIFEST.json",
+      "sourcePath": "tasks/sentilab-review-2026-10-30/aneta-informed-review-1430/SOURCE-MANIFEST.json",
+      "bytes": 4604,
+      "sha256": "e7b2eb46bd4aa64452a1b3dcc7a63f88fa3bf4edc99f9940ef0e301ec2834cd1",
+      "role": "Read-source and unchanged root-freeze bindings."
+    },
+    {
+      "path": "nebius/MEMO.md",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/research-1437/nebius/MEMO.md",
+      "sourcePath": "tasks/sentilab-review-2026-10-30/nebius-gb10-1430/MEMO.md",
+      "bytes": 9112,
+      "sha256": "1328a028cc4da20132030e4a417745316cb61d7b80614588ea4dd850e5c5773e",
+      "role": "Read-only compatibility assessment and concrete admission prerequisites."
+    },
+    {
+      "path": "nebius/FETCHES.jsonl",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/research-1437/nebius/FETCHES.jsonl",
+      "sourcePath": "tasks/sentilab-review-2026-10-30/nebius-gb10-1430/FETCHES.jsonl",
+      "bytes": 6656,
+      "sha256": "cb1bc6a0caf2d906cba127b05a57d4ffeafe3120da10c55fc18b0f68f6bad783",
+      "role": "Official documentation URLs, retrieval times and exact source hashes; pages omitted."
+    },
+    {
+      "path": "nebius/LOCAL-EVIDENCE.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/research-1437/nebius/LOCAL-EVIDENCE.json",
+      "sourcePath": "tasks/sentilab-review-2026-10-30/nebius-gb10-1430/LOCAL-EVIDENCE.json",
+      "bytes": 1991,
+      "sha256": "70421fe0e57f7c82a6781c43c3ba5314e087670e563522a8e82193dd75b745a7",
+      "role": "Retained local evidence bindings; artifacts and model weights omitted."
+    }
+  ],
+  "totalPayloadBytes": 63749,
+  "sourcePacketSeals": [
+    {
+      "sourcePath": "tasks/sentilab-review-2026-10-30/aneta-informed-review-1430/SEAL.json",
+      "bytes": 3127,
+      "sha256": "b260a3be26321b435c94f2ba3a3de355e0c34ca77da2d106b7ebab105ed04da3",
+      "published": false
+    },
+    {
+      "sourcePath": "tasks/sentilab-review-2026-10-30/nebius-gb10-1430/SEAL.json",
+      "bytes": 3619,
+      "sha256": "0641f6687ce80853fa18497da03c15f4dc7f970331e639c1a2060c8a0ec447e6",
+      "published": false
+    }
+  ],
+  "upstreamReferences": [
+    {
+      "repository": "uvahotspot/HotSpot",
+      "commit": "a7a3286e368867c26381e0a23e36b3e273bdeda9",
+      "path": "temperature_grid.c",
+      "url": "https://github.com/uvahotspot/HotSpot/blob/a7a3286e368867c26381e0a23e36b3e273bdeda9/temperature_grid.c",
+      "gitBlob": "c882523d9c02143cf5da2d96d712807fb64f974c",
+      "bytes": 186241,
+      "sha256": "19325ad8ee61701818cacd72ad4f85b1afdc2d1d18c8a829731b66ce770a50c9"
+    },
+    {
+      "repository": "Sentinelayer-AIdenID/sentilab",
+      "commit": "18f0dcaea086c7817990112398d358bcd28dbe07",
+      "url": "https://github.com/Sentinelayer-AIdenID/sentilab/tree/18f0dcaea086c7817990112398d358bcd28dbe07",
+      "binding": "aneta/SOURCE-MANIFEST.json"
+    },
+    {
+      "binding": "nebius/FETCHES.jsonl",
+      "description": "Seventeen official documentation captures; exact HTTPS URLs, UTC retrieval times, sizes and SHA256s."
+    }
+  ],
+  "provenanceAndRights": {
+    "attribution": "Aneta report/model retain aneta-claude authorship and source acknowledgments. INFORMED-CRITIQUE is an informed independent source review. Nebius memo is gpt-astra-carter/handoff_audit research.",
+    "distribution": "Private SentiLab coordination supplement explicitly requested by root. No new license or public-redistribution permission is asserted.",
+    "excluded": "No complete third-party source files/pages, raw whole-room records, credentials, model weights, or device artifacts are included. Upstream URLs and exact pins bind cited sources.",
+    "citations": "Original bytes and citations are unchanged. Absolute local paths and links to omitted evidence are provenance references, not claims that those files are included or portable."
+  },
+  "integrity": "SHA256 binds exact original bytes without line-ending, Unicode or content normalization. Source manifests retain their original scope. This packet manifest excludes itself and is bound by the separate publication receipt.",
+  "noWorkloadAuthorization": {
+    "productChanges": false,
+    "productTests": false,
+    "numericalRuns": false,
+    "modelCalls": false,
+    "deviceWork": false,
+    "provisioning": false,
+    "CIRequested": false,
+    "pullRequestCreated": false
+  }
+}

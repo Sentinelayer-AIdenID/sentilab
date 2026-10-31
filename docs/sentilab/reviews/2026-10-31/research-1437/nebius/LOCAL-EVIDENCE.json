@@ -1,0 +1,35 @@
+{
+  "scope": "local retained records; no device operation or model-byte rehash",
+  "files": [
+    {
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\sentilab-planning\\gpt-astra-carter\\slab018-admission\\attempt-01-artifacts\\MANIFEST.verified.json",
+      "bytes": 5678,
+      "sha256": "ede4b1ae29e146b4a62c3f2c51e10b05f561a299162bcb17b201e9ff1ebcbeb8"
+    },
+    {
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\sentilab-planning\\gpt-astra-carter\\slab018-admission\\attempt-01-artifacts\\execution-state.json",
+      "bytes": 3369,
+      "sha256": "00a3685f0ab586603f82890da0fd637c460a64622f99e32c2a26b26743ae69c1"
+    },
+    {
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\sentilab-planning\\gpt-astra-carter\\slab018-admission\\attempt-01-artifacts\\adapter\\adapter_config.json",
+      "bytes": 1035,
+      "sha256": "ef6104b4d006baf86f90ddf1d0fc32a12a3951b70bfe3c2a0f06afcf5bdb413c"
+    },
+    {
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047-runtime-review\\RUNTIME-REVIEW.md",
+      "bytes": 6203,
+      "sha256": "e205a56b4f45ec1ac778f6f581a1e5e27cda73a49bbe4f43f8c5e6220d4fb387"
+    },
+    {
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-gpu-review\\RUNTIME-REVIEW.md",
+      "bytes": 8823,
+      "sha256": "a09ab77326e1afbb3708ee1858a6380815f3451c9434836f5031884ddc014cf9"
+    },
+    {
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\gpu-runtime\\container-inspection-final.json",
+      "bytes": 1468,
+      "sha256": "818113fffff59cd17ffc776396391dd33a422e449a2ffab28865a6c9dad2c458"
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "schema": "sentilab-frozen-message-extraction-v1",
+  "createdUtc": "2026-10-31T14:30:42.701Z",
+  "batchPath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\sentilab-planning\\gpt-astra-carter\\daytime-2026-10-31\\wake-1430-batch.json",
+  "batchSha256": "975b8b569ab208f69cb22403a87f6e57263511230da101a451220ed2683ecdfb",
+  "method": "Preserve source-record bytes and parsed message UTF-8. Enumerate only marker-adjacent LF removal variants; never normalize line endings, Unicode, whitespace, or contents silently.",
+  "modelExecuted": false,
+  "numericalWorkloadsRun": false,
+  "records": [
+    {
+      "sequenceId": 56739,
+      "sourceId": "e38ef3c0-c264-4c0d-8694-260d4cce4e19",
+      "actor": "aneta-claude",
+      "timestamp": "2026-10-31T14:26:32.762Z",
+      "recordFile": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\sentilab-planning\\gpt-astra-carter\\daytime-2026-10-31\\state\\records\\a58ffa2dddd93a1b286d16570172870d72b649a9493f58ac0279495c6c7bf2d6.json",
+      "rawRecordSha256": "91bacb228c103a06b8ada3f8accc88cac2cf6267141dfb169e8623db8e732a48",
+      "rawRecordBytes": 11009,
+      "collectorSourceRecordSha256": "4602d50461cc1f5fb364cbad31e2bcc739c63c7aa6fa01f2e055370f9cd82497",
+      "claimedSha256": "53565a80ae15a9a78b04c18816f4ed9e83fcb3f9599c107bc5d7569ad055c054",
+      "claimedBytes": 9520,
+      "output": "ANETA-REPORT.md",
+      "exactHashMatched": true,
+      "claimedLengthMatched": true,
+      "variants": [
+        {
+          "description": "Marker interior with 0 leading LF and 0 trailing LF removed; no other normalization",
+          "leadingLfRemoved": 0,
+          "trailingLfRemoved": 0,
+          "bytes": 9522,
+          "sha256": "ea5c8bf0d8ea1c578f27ed23eb4a5a43c055453b76db0c2f567fca683fb5ae24",
+          "matchesClaim": false
+        },
+        {
+          "description": "Marker interior with 0 leading LF and 1 trailing LF removed; no other normalization",
+          "leadingLfRemoved": 0,
+          "trailingLfRemoved": 1,
+          "bytes": 9521,
+          "sha256": "09a22925e1cf9af0fe46e40938db2c7bcb73019fc768424e35488b7362574065",
+          "matchesClaim": false
+        },
+        {
+          "description": "Marker interior with 0 leading LF and 2 trailing LF removed; no other normalization",
+          "leadingLfRemoved": 0,
+          "trailingLfRemoved": 2,
+          "bytes": 9520,
+          "sha256": "e5f0f702fe4754ad68636692379ea43ada23d615a6a9442270ca215e64fbc35b",
+          "matchesClaim": false
+        },
+        {
+          "description": "Marker interior with 1 leading LF and 0 trailing LF removed; no other normalization",
+          "leadingLfRemoved": 1,
+          "trailingLfRemoved": 0,
+          "bytes": 9521,
+          "sha256": "3f815db98ad3d147b3caf57dc3da79a79f9a2456a5b75b1e67bb6a502521f2b8",
+          "matchesClaim": false
+        },
+        {
+          "description": "Marker interior with 1 leading LF and 1 trailing LF removed; no other normalization",
+          "leadingLfRemoved": 1,
+          "trailingLfRemoved": 1,
+          "bytes": 9520,
+          "sha256": "53565a80ae15a9a78b04c18816f4ed9e83fcb3f9599c107bc5d7569ad055c054",
+          "matchesClaim": true
+        },
+        {
+          "description": "Marker interior with 1 leading LF and 2 trailing LF removed; no other normalization",
+          "leadingLfRemoved": 1,
+          "trailingLfRemoved": 2,
+          "bytes": 9519,
+          "sha256": "c624d195e7235a7076797ceb13a06ed79bf2db54077170a71abf72138021e089",
+          "matchesClaim": false
+        }
+      ],
+      "crlfCount": 0,
+      "lfCount": 93
+    },
+    {
+      "sequenceId": 56740,
+      "sourceId": "379896c1-fffb-4cf0-9c84-6e0b4f2dbb68",
+      "actor": "aneta-claude",
+      "timestamp": "2026-10-31T14:26:34.547Z",
+      "recordFile": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\sentilab-planning\\gpt-astra-carter\\daytime-2026-10-31\\state\\records\\76bae563251144cdb23216f8a27614ca9e1db2fc5e86f3407dc08066747e55b6.json",
+      "rawRecordSha256": "a5429ed238d4910250dcd1ae99a2bc757b0a57078b1929a71a66941b45ec5cbe",
+      "rawRecordBytes": 12364,
+      "collectorSourceRecordSha256": "7db4a5dcf96dc5a292106cf0d414857830f1a42d4d2e57f77072c962c101641a",
+      "claimedSha256": "2fedbad94e2644560fcb1555e62d7af87b1d0d9dc0d40b512f058aa82a6b1d39",
+      "claimedBytes": null,
+      "output": "thermal-network.mjs",
+      "exactHashMatched": true,
+      "claimedLengthMatched": null,
+      "variants": [
+        {
+          "description": "Marker interior with 0 leading LF and 0 trailing LF removed; no other normalization",
+          "leadingLfRemoved": 0,
+          "trailingLfRemoved": 0,
+          "bytes": 11132,
+          "sha256": "6fae1403727b9d5ec010ef68bd6a5ed5a15853eaf54a07741d71a4590c014fef",
+          "matchesClaim": false
+        },
+        {
+          "description": "Marker interior with 0 leading LF and 1 trailing LF removed; no other normalization",
+          "leadingLfRemoved": 0,
+          "trailingLfRemoved": 1,
+          "bytes": 11131,
+          "sha256": "f644887f1d32357983b43d2a23b5a2402a96e0570707b58d8230dc9a47fa1fae",
+          "matchesClaim": false
+        },
+        {
+          "description": "Marker interior with 0 leading LF and 2 trailing LF removed; no other normalization",
+          "leadingLfRemoved": 0,
+          "trailingLfRemoved": 2,
+          "bytes": 11130,
+          "sha256": "c3c31d55461c3aa411c7c25666fec78223128b2b790e58c3b24b2566f63a94e4",
+          "matchesClaim": false
+        },
+        {
+          "description": "Marker interior with 1 leading LF and 0 trailing LF removed; no other normalization",
+          "leadingLfRemoved": 1,
+          "trailingLfRemoved": 0,
+          "bytes": 11131,
+          "sha256": "9667bf0eac1c1d167a5b1afb2077e91e150e33a0bc420ba38771003074916549",
+          "matchesClaim": false
+        },
+        {
+          "description": "Marker interior with 1 leading LF and 1 trailing LF removed; no other normalization",
+          "leadingLfRemoved": 1,
+          "trailingLfRemoved": 1,
+          "bytes": 11130,
+          "sha256": "2fedbad94e2644560fcb1555e62d7af87b1d0d9dc0d40b512f058aa82a6b1d39",
+          "matchesClaim": true
+        },
+        {
+          "description": "Marker interior with 1 leading LF and 2 trailing LF removed; no other normalization",
+          "leadingLfRemoved": 1,
+          "trailingLfRemoved": 2,
+          "bytes": 11129,
+          "sha256": "8c48fab012f8f2aa5e2079c9c74478ff17129c9f195f1af349fe73be1cdd9533",
+          "matchesClaim": false
+        }
+      ],
+      "crlfCount": 0,
+      "lfCount": 200
+    }
+  ]
+}
