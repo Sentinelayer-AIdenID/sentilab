@@ -8,7 +8,7 @@
 //        the bytes in web/public;
 //      - the agent pages serve with the asset layer's own types (/llms.txt, /agents.json, /agents/*.md and *.json), and
 //        /agents/ plus the agent versions of / and /sentilab/package/ (Accept: markdown or JSON) serve their files with
-//        the Worker's types; the edge class header is ignored without the trust flag (the human page, with Vary and Link);
+//        the Worker's types; a browser's Accept gets the human page, with Vary, private caching and the Link header;
 //      - /api/view/runs reaches the proxy (503 "API origin not configured": the upstream is off) with no CSP added;
 //      - a write to /api is refused (405 read_only) with no CSP added;
 //      - the runtime logged no error.
@@ -85,13 +85,13 @@ if (ready) {
       r.status === 200 && r.headers.get("content-type") === type && r.headers.get("content-security-policy") === CSP && same(body, file(rel)),
       `${r.status} · ${r.headers.get("content-type")}`);
   }
-  // wrangler dev sets no TRUST_EDGE_CLASS, so the edge class header is ignored: the human page, which varies on both inputs and links its agent version.
-  const human = await fetch(`${BASE}/`, { headers: { "x-aidenid-class": "agent", accept: "text/html,application/xhtml+xml,*/*;q=0.8" } });
+  // A browser's Accept: the human page, byte for byte, varying on Accept, kept out of shared caches, naming its agent version.
+  const human = await fetch(`${BASE}/`, { headers: { accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" } });
   const humanBody = new Uint8Array(await human.arrayBuffer());
-  check("GET / with x-aidenid-class: agent and no trust flag: the human page, with Vary and the Link header",
-    human.status === 200 && same(humanBody, file("index.html")) && human.headers.get("vary") === "Accept, x-aidenid-class"
-      && human.headers.get("link") === '</agents/>; rel="alternate"; type="text/markdown"',
-    `${human.status} · vary ${human.headers.get("vary")} · link ${human.headers.get("link")}`);
+  check("GET / with a browser's Accept: the human page, with Vary: Accept, private caching and the Link header",
+    human.status === 200 && same(humanBody, file("index.html")) && human.headers.get("vary") === "Accept"
+      && human.headers.get("cache-control") === "private, no-cache" && human.headers.get("link") === '</agents/>; rel="alternate"; type="text/markdown"',
+    `${human.status} · vary ${human.headers.get("vary")} · cache-control ${human.headers.get("cache-control")} · link ${human.headers.get("link")}`);
   const api = await fetch(`${BASE}/api/view/runs`);
   const apiText = await api.text();
   check("GET /api/view/runs reaches the proxy (upstream off: 503) with no CSP added", api.status === 503 && apiText === "API origin not configured" && api.headers.get("content-security-policy") === null, `${api.status} ${apiText}`);

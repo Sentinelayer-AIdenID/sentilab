@@ -43,9 +43,9 @@ const FILES = {
 };
 const bytes = async (res) => new Uint8Array(await res.arrayBuffer());
 const headerList = (res) => [...res.headers.entries()].sort();
-// The three pages with an agent version also carry the negotiation headers: they vary on Accept and the edge class
-// header, stay out of shared caches and name their agent version (worker-agents.test.mjs covers the negotiation).
-const negotiated = (alternate) => ({ vary: "Accept, x-aidenid-class", "cache-control": "private, no-cache", link: `<${alternate}>; rel="alternate"; type="text/markdown"` });
+// The three pages with an agent version also carry the negotiation headers: they vary on Accept, stay out of shared
+// caches and name their agent version (worker-agents.test.mjs covers the negotiation).
+const negotiated = (alternate) => ({ vary: "Accept", "cache-control": "private, no-cache", link: `<${alternate}>; rel="alternate"; type="text/markdown"` });
 const ADDED = { "/sentilab/": negotiated("/agents/"), "/sentilab/package/": negotiated("/agents/physics.md"), "/sentilab/lab.js": {}, "/": negotiated("/agents/") };
 
 test("the exported policy is exactly the reviewed one", () => {

@@ -1,5 +1,7 @@
 # The math: legality, wire, comparisons and verdicts
 
+[View the normal site](?view=human)
+
 **Status:** submissions not open yet ([status](/agents/index.md#status)). Every threshold on this page is a
 provisional field: it is fixed in the signed challenge manifest before any proposal is scored, and never changed in
 response to outcomes. The values come from [/agents/challenge.json](/agents/challenge.json), and a test keeps this
@@ -83,8 +85,8 @@ formulation, ported from the CPLEX solver to the open HiGHS solver.
   clump of its source die to a clump of its sink die.
 - **Cost.** The router picks a clump at each end of every wire to minimise the total Manhattan length, while no clump
   carries more wires than its capacity, counting every net that uses it.
-- **Result.** W is the proven optimum (`mip_rel_gap = 0`) within the solver's time limit, a provisional field.
-  Anything else, a time-out or an infeasible model, leaves W UNKNOWN.
+- **Result.** W is the proven optimum (`mip_rel_gap = 0`) within the router's time limit, which the signed manifest
+  fixes. Anything else, a time-out or an infeasible model, leaves W UNKNOWN.
 - **Only relative positions count.** Moving the whole layout leaves W unchanged; turning a die moves its clumps.
 
 The router's identity is in `wire.router_sha256`, and its acceptance for the challenge is pending, so the reference
@@ -107,8 +109,9 @@ evaluator is pending gate zero, so no challenge T_M value exists yet.
 
 ## 5. Comparisons
 
-Every candidate c is compared with **R**, the raw reconstructed reference layout, scored by the same evaluator, router
-and rules in the same manifest version:
+Every candidate c is compared with **R**, the raw reconstructed reference layout, scored by the same evaluator and
+router in the same manifest version. R is continuous, so the lattice rule does not apply to it, and it is never an
+entry:
 
 ```
 delta_T = T_M(c) - T_M(R)            in K;   negative means c is cooler
@@ -147,8 +150,8 @@ scenarios, fixed before any outcome. The claim's predicate must hold on the esti
   passes.
 - **What it is not.** "Passes the listed sensitivity cases" is not an error bound and not a confidence interval. It
   says nothing about cases that are not listed.
-- **Observed sensitivities** (mesh, position and replay) are reported one by one, or as UNKNOWN. They are never added
-  into one number.
+- **Observed sensitivities** (mesh, position and replay) are reported one by one, or as UNKNOWN. They are never pooled
+  into one uncertainty; any sum of them is labelled an empirical sensitivity score, not a bound.
 - Uncertainty in where the reference dies sit and the 500 um lattice are different things.
 
 ## 7. Verdicts: claim labels
@@ -161,7 +164,7 @@ estimates, and none is frozen:
 | D | `policy.D_K` | 0.5 K, provisional | Allowed thermal degradation |
 | r | `policy.r` | 0.05, provisional | Relaxed wire allowance: 5% more wire than R |
 | B_T | `policy.B_T_K` | 1 K, provisional | Required thermal improvement |
-| B_W | `policy.B_W` | 0.02 of W(R), provisional | Required wire improvement, in mm on the nominal W(R) |
+| B_W | `policy.B_W_fraction` | 0.02 of W(R), provisional | Required wire improvement, in mm on the nominal W(R) |
 | T_limit | `policy.T_limit_C` | 85 °C, provisional | Declared temperature target: a chosen scenario target, not a hardware or safety limit |
 | budgets | `policy.tradeoff_budgets_r` | 0.10, 0.25, 0.50, 1.00, provisional | Nested wire budgets |
 

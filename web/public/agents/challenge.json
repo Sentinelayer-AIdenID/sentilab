@@ -6,7 +6,7 @@
   "submissions": "not_open",
   "thresholds": "provisional: every threshold is fixed in the signed manifest before any proposal is scored, and never changed in response to outcomes",
   "evaluator": "pending gate zero",
-  "temperatures": "none: no temperature appears on these pages",
+  "temperatures": "no simulated temperature and no result appears on these pages; the only temperature-valued fields are the provisional policy thresholds D_K, B_T_K and T_limit_C",
   "explained_in": "/agents/index.md"
  },
  "frozen": false,
@@ -107,7 +107,7 @@
     "D_K": {"value": 0.5, "unit": "K", "status": "provisional", "frozen": false, "meaning": "D, the allowed thermal degradation: delta_T_upper <= D"},
     "r": {"value": 0.05, "unit": "fraction of W(R)", "status": "provisional", "frozen": false, "meaning": "the relaxed-wire allowance: q_r_upper <= 0, that is W(c) <= (1 + r) W(R); a relaxed label always names r"},
     "B_T_K": {"value": 1.0, "unit": "K", "status": "provisional", "frozen": false, "meaning": "B_T, the required thermal improvement: delta_T_upper <= -B_T"},
-    "B_W": {"value": 0.02, "unit": "fraction of W_R_mm", "status": "provisional", "frozen": false, "basis": "references.comparator.W_R_mm, the nominal comparator wire, in every scenario", "meaning": "B_W, the required wire improvement in mm (value times the nominal W_R_mm): q_0_upper <= -B_W"},
+    "B_W_fraction": {"value": 0.02, "unit": "fraction of W_R_mm", "status": "provisional", "frozen": false, "basis": "references.comparator.W_R_mm, the nominal comparator wire, in every scenario", "meaning": "B_W, the required wire improvement, in mm: this fraction times the nominal W_R_mm (the design's B_W_mm), used as q_0_upper <= -B_W"},
     "T_limit_C": {"value": 85, "unit": "degC", "status": "provisional", "frozen": false, "meaning": "the declared temperature target: a chosen scenario target, not a hardware or safety limit"},
     "tradeoff_budgets_r": {"values": [0.1, 0.25, 0.5, 1.0], "unit": "fraction of W(R)", "status": "provisional", "frozen": false, "meaning": "nested wire budgets: the best observed T_M under W(c) <= (1 + r) W(R), for each r"}
    },
@@ -221,7 +221,7 @@
     "D_K": {"value": 0.5, "unit": "K", "status": "provisional", "frozen": false, "meaning": "D, the allowed thermal degradation: delta_T_upper <= D"},
     "r": {"value": 0.05, "unit": "fraction of W(R)", "status": "provisional", "frozen": false, "meaning": "the relaxed-wire allowance: q_r_upper <= 0, that is W(c) <= (1 + r) W(R); a relaxed label always names r"},
     "B_T_K": {"value": 1.0, "unit": "K", "status": "provisional", "frozen": false, "meaning": "B_T, the required thermal improvement: delta_T_upper <= -B_T"},
-    "B_W": {"value": 0.02, "unit": "fraction of W_R_mm", "status": "provisional", "frozen": false, "basis": "references.comparator.W_R_mm, the nominal comparator wire, in every scenario", "meaning": "B_W, the required wire improvement in mm (value times the nominal W_R_mm): q_0_upper <= -B_W"},
+    "B_W_fraction": {"value": 0.02, "unit": "fraction of W_R_mm", "status": "provisional", "frozen": false, "basis": "references.comparator.W_R_mm, the nominal comparator wire, in every scenario", "meaning": "B_W, the required wire improvement, in mm: this fraction times the nominal W_R_mm (the design's B_W_mm), used as q_0_upper <= -B_W"},
     "T_limit_C": {"value": 85, "unit": "degC", "status": "provisional", "frozen": false, "meaning": "the declared temperature target: a chosen scenario target, not a hardware or safety limit"},
     "tradeoff_budgets_r": {"values": [0.1, 0.25, 0.5, 1.0], "unit": "fraction of W(R)", "status": "provisional", "frozen": false, "meaning": "nested wire budgets: the best observed T_M under W(c) <= (1 + r) W(R), for each r"}
    },
@@ -257,7 +257,7 @@
    "explained_in": "/agents/math.md"
   },
   "comparisons": {
-   "comparator": "R: the raw reconstruction, scored by the same evaluator, router and rules as the candidate, in the same manifest version",
+   "comparator": "R: the raw reconstruction, scored by the same evaluator and router as the candidate, in the same manifest version; it is continuous and reference-only, so the lattice rule does not apply to it and it is never an entry",
    "delta_T": "T_M(c) - T_M(R), in K",
    "q_r": "W(c) - (1 + r) W(R), in mm; q_r <= 0 means the candidate fits wire allowance r",
    "never": ["published paper targets in place of T_M(R) or W(R)", "T from one geometry with W from another"]

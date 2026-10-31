@@ -3,7 +3,8 @@
 // markdown and JSON only, readable with a plain GET, and:
 //   1. every JSON file parses and has the shape its schema below gives it;
 //   2. every link resolves to a file the Worker serves from web/public, and every link is root-relative, so a page
-//      reads the same whether it is served at /, /sentilab/ or /agents/; a #fragment names a heading of its page;
+//      reads the same whether it is served at /, /sentilab/ or /agents/; a #fragment names a heading of its page; the
+//      one exception is the "?view=human" link every agent page carries, which keeps the URL it was served at;
 //   3. no temperature appears: no absolute temperature except the declared 85 °C scenario target, kelvin values only as
 //      provisional thresholds or invented worked-example numbers, and no withdrawn or published value;
 //   4. every threshold is provisional and not frozen, and the pages quote each one as challenge.json has it;
@@ -26,6 +27,7 @@ const REPO = join(here, "..", "..");
 const PUBLIC = join(here, "..", "public");
 const AGENTS = join(PUBLIC, "agents");
 const read = (rel) => readFileSync(join(PUBLIC, ...rel.split("/")), "utf8");
+const NL = String.fromCharCode(10);
 const json = (rel) => JSON.parse(read(rel));
 function walk(dir) {
   return readdirSync(dir).flatMap((name) => {
@@ -67,11 +69,11 @@ const THRESHOLD = { type: "object", ...PROVISIONAL, required: [...PROVISIONAL.re
 const THRESHOLD_LIST = { type: "object", ...PROVISIONAL, required: [...PROVISIONAL.required, "values"], properties: { ...PROVISIONAL.properties, values: { type: "array", minItems: 1, items: { type: "number" } } } };
 const STATUS = {
   type: "object", additionalProperties: false,
-  required: ["submissions", "learning", "offline_check", "status_and_results", "senti_room_skills", "evaluator", "thresholds", "temperatures_shown", "simulated_not_silicon"],
+  required: ["submissions", "learning", "offline_check", "status_and_results", "senti_room_skills", "evaluator", "thresholds", "simulated_temperatures_shown", "simulated_not_silicon"],
   properties: {
     submissions: { enum: ["not_open", "open"] }, learning: { enum: ["open"] }, offline_check: { enum: ["coming", "available"] },
     status_and_results: { enum: ["not_open", "open"] }, senti_room_skills: { enum: ["coming", "available"] }, evaluator: STR,
-    thresholds: { enum: ["provisional", "frozen"] }, temperatures_shown: { type: "boolean" }, simulated_not_silicon: { const: true },
+    thresholds: { enum: ["provisional", "frozen"] }, simulated_temperatures_shown: { type: "boolean" }, simulated_not_silicon: { const: true },
   },
 };
 const LINK = { type: "object", required: ["rel", "href", "type"], properties: { rel: STR, href: SITE_PATH, type: { enum: ["text/markdown", "application/json", "text/plain"] } } };
@@ -98,8 +100,8 @@ const PROBLEM = {
         properties: { file: SITE_PATH, content_sha256: HEX64, design_hash: HEX64, T_R: { type: "string", pattern: "^UNKNOWN" }, W_R_mm: THRESHOLD, admissible_entry: { const: false } } },
       engineering_variants: { type: "array", minItems: 1, items: { type: "object", required: ["id", "file", "content_sha256", "design_hash"], properties: { file: SITE_PATH, content_sha256: HEX64, design_hash: HEX64, legal_on_fixture: { const: true } } } },
     } },
-    policy: { type: "object", required: ["status", "frozen", "D_K", "r", "B_T_K", "B_W", "T_limit_C", "tradeoff_budgets_r"],
-      properties: { frozen: { const: false }, D_K: THRESHOLD, r: THRESHOLD, B_T_K: THRESHOLD, B_W: THRESHOLD, T_limit_C: THRESHOLD, tradeoff_budgets_r: THRESHOLD_LIST } },
+    policy: { type: "object", required: ["status", "frozen", "D_K", "r", "B_T_K", "B_W_fraction", "T_limit_C", "tradeoff_budgets_r"],
+      properties: { frozen: { const: false }, D_K: THRESHOLD, r: THRESHOLD, B_T_K: THRESHOLD, B_W_fraction: THRESHOLD, T_limit_C: THRESHOLD, tradeoff_budgets_r: THRESHOLD_LIST } },
     bounds: { type: "object", properties: { u_T: { const: "UNKNOWN" }, u_q: { const: "UNKNOWN" }, u_abs: { const: "UNKNOWN" } } },
     screen: { type: "object", required: ["status", "frozen", "claim", "scenarios"], properties: { status: { const: "provisional" }, frozen: { const: false }, scenarios: { type: "array", minItems: 3 } } },
     sources: { type: "object", required: ["dies", "netlist"] },
@@ -109,8 +111,8 @@ const SCHEMAS = {
   "agents.json": { type: "object", additionalProperties: false, required: ["schema", "name", "agents", "llms_txt", "status"],
     properties: { schema: { const: "sentilab-agents-pointer/1" }, name: STR, llms_txt: SITE_PATH, status: STATUS,
       agents: { type: "object", additionalProperties: false, required: ["md", "json", "alias"], properties: { md: SITE_PATH, json: SITE_PATH, alias: SITE_PATH } } } },
-  "agents/index.json": { type: "object", required: ["schema", "name", "entry", "status", "opens_after", "sections"],
-    properties: { schema: { const: "sentilab-agents-index/1" }, entry: { const: "/agents/index.md" }, status: STATUS, opens_after: { type: "array", minItems: 1, items: STR },
+  "agents/index.json": { type: "object", required: ["schema", "name", "entry", "human_view", "status", "opens_after", "sections"],
+    properties: { schema: { const: "sentilab-agents-index/1" }, entry: { const: "/agents/index.md" }, human_view: { const: "?view=human" }, status: STATUS, opens_after: { type: "array", minItems: 1, items: STR },
       sections: { type: "array", minItems: 1, items: { type: "object", required: ["id", "href"], properties: { id: STR, href: SITE_PATH, links: { type: "array", items: LINK } } } } } },
   "agents/challenge.json": { type: "object", required: ["schema", "status", "frozen", "label", "sources", "problems", "definitions"],
     properties: { schema: { const: "sentilab-agents-challenge/0" }, frozen: { const: false },
@@ -182,8 +184,9 @@ function servedFile(path) {
   const target = Object.hasOwn(AGENT_INDEX, clean) ? AGENT_INDEX[clean] : clean.endsWith("/") ? `${clean}index.html` : clean;
   return target.slice(1);
 }
+const HUMAN_VIEW = "?view=human";
 function linkProblems(from, href) {
-  if (/^https?:[/][/]/.test(href)) return [];
+  if (/^https?:[/][/]/.test(href) || href === HUMAN_VIEW) return [];
   if (href.startsWith("#")) return anchors(read(from)).has(href.slice(1)) ? [] : [`${from}: no heading for ${href}`];
   if (!href.startsWith("/")) return [`${from}: ${href} is not root-relative`];
   const rel = servedFile(href);
@@ -214,6 +217,17 @@ test("2. negative control: a missing file, a relative link and a missing heading
   assert.equal(linkProblems("agents/index.md", "/agents/physics.md#no-such-heading").length, 1);
   assert.deepEqual(linkProblems("agents/index.md", "/agents/physics.md#the-evaluator"), []);
   assert.deepEqual(linkProblems("llms.txt", "/agents/"), []);
+  assert.equal(linkProblems("agents/index.md", "?view=other").length, 1, "only the exact human-view link is exempt");
+});
+test("2. every agent page links the normal site with ?view=human, once, right under its title", () => {
+  for (const rel of TEXT.filter((r) => r.startsWith("agents/"))) {
+    const text = read(rel);
+    assert.equal(markdownLinks(text).filter((h) => h === HUMAN_VIEW).length, 1, rel);
+    const lines = text.split(NL).filter((line) => line.trim() !== "");
+    const title = lines.findIndex((line) => line.startsWith("# "));
+    assert.equal(lines[title + 1], `[View the normal site](${HUMAN_VIEW})`, `${rel}: under the title`);
+  }
+  assert.equal(json("agents/index.json").human_view, HUMAN_VIEW);
 });
 
 // ── 3. temperatures ──────────────────────────────────────────────────────────────────────────────────────────────
@@ -294,7 +308,7 @@ function provisionalProblems(value, path = "$", found = []) {
   return found;
 }
 const THRESHOLD_PATHS = ["legality.lattice_um", "legality.margin_um", "legality.min_die_gap_um", "dies[].halo_um", "statistic.grid",
-  "references.comparator.W_R_mm", "policy.D_K", "policy.r", "policy.B_T_K", "policy.B_W", "policy.T_limit_C", "policy.tradeoff_budgets_r"];
+  "references.comparator.W_R_mm", "policy.D_K", "policy.r", "policy.B_T_K", "policy.B_W_fraction", "policy.T_limit_C", "policy.tradeoff_budgets_r"];
 // The threshold objects at a path like "dies[].halo_um", in one problem.
 const at = (problem, path) => path.split(".").reduce((nodes, part) => nodes.flatMap((n) => (part.endsWith("[]") ? n[part.slice(0, -2)] : [n[part]])), [problem]);
 const valuesAt = (path) => [...new Set(challenge.problems.flatMap((p) => at(p, path)).flatMap((t) => ("values" in t ? t.values : [t.value])))].sort((a, b) => a - b);
@@ -346,7 +360,7 @@ test("6. the status agrees everywhere: submissions not open, submit unavailable,
   const index = json("agents/index.json");
   assert.deepEqual(json("agents.json").status, index.status, "agents.json matches agents/index.json");
   assert.equal(index.status.submissions, "not_open");
-  assert.equal(index.status.temperatures_shown, false);
+  assert.equal(index.status.simulated_temperatures_shown, false);
   assert.equal(index.status.thresholds, "provisional");
   assert.equal(index.status.evaluator, "pending gate zero");
   assert.equal(challenge.status.submissions, "not_open");

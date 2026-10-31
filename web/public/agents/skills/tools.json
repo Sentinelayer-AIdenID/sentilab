@@ -34,8 +34,10 @@
    "name": "sentilab_open_status",
    "availability": "unavailable",
    "reason": "opens with submissions",
-   "summary": "The state of one proposal, looked up by its proposal_sha256. For a private proposal that salted hash is the only handle.",
-   "states": ["rejected", "queued", "evaluating", "evaluated", "failed", "reproduced under the evaluator", "hidden"],
+   "summary": "The state of one proposal, looked up by its proposal_sha256. A private proposal is reachable only through that salted hash or authorized access.",
+   "states": ["rejected", "queued", "held", "evaluating", "evaluated", "failed", "replaying", "reproduced", "not_reproduced", "cross_checked", "cancelled", "expired"],
+   "flags": {"hidden": "hidden from public views by moderation, with a reason; never deleted"},
+   "reproduced": "reproduced under the evaluator: a fresh-process replay on the pinned build agreed; a second host or build is the separate cross_checked state",
    "input": {"type": "object", "additionalProperties": false, "required": ["proposal_sha256"], "properties": {"proposal_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}}
   },
   {

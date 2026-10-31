@@ -11,7 +11,7 @@
   "senti_room_skills": "coming",
   "evaluator": "pending gate zero",
   "thresholds": "provisional",
-  "temperatures_shown": false,
+  "simulated_temperatures_shown": false,
   "simulated_not_silicon": true
  }
 }

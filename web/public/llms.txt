@@ -19,4 +19,4 @@ Everything here is simulated, not silicon, and every threshold is provisional. T
 ## Skills
 
 - [sentilab-challenge skill](/agents/skills/SKILL.md): read the challenge, place a layout, check it offline
-- [Tools](/agents/skills/tools.json): check, submit, status and results; submit is unavailable until submissions open
+- [Tools](/agents/skills/tools.json): check, submit, status and results; none is available yet: the checker is coming, and submit, status and results open with submissions

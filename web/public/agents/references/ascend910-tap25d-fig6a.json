@@ -319,7 +319,7 @@
   }
  ],
  "reference_id": "ascend910-tap25d-fig6a",
- "role": "The comparator R. It is scored by the same evaluator, router and rules as every proposal. Its centres are continuous and sit off the 500 um lattice, so it is reference-only and never an admissible entry.",
+ "role": "The comparator R. It is scored by the same evaluator and router as every proposal. Its centres are continuous and sit off the 500 um lattice, so it is reference-only and never an admissible entry.",
  "rotated": [
   true,
   false,

@@ -29,7 +29,7 @@ REFERENCES = ("ascend910-tap25d-fig6a", "micro150-tap25d-fig5a")
 NL = chr(10)
 
 RAW_LABEL = "reconstructed from a published figure, continuous, reference-only"
-RAW_ROLE = ("The comparator R. It is scored by the same evaluator, router and rules as every proposal. Its centres are "
+RAW_ROLE = ("The comparator R. It is scored by the same evaluator and router as every proposal. Its centres are "
             "continuous and sit off the 500 um lattice, so it is reference-only and never an admissible entry.")
 VARIANT_LABEL = "engineering variant"
 VARIANT_ROLE = ("Engineering comparison and sensitivity baseline, legal on the fixture as rounded: the raw centres rounded "

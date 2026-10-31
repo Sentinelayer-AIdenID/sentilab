@@ -1,25 +1,19 @@
-// The agent version of three human pages, and how a request gets it. Pure functions of (request, env), no I/O, so the
-// node tests drive them directly and through the Worker (web/test/worker-agents.test.mjs). A module of its own because
-// worker.js may export nothing but its default handler (see csp.js).
+// The agent version of three human pages: /, /sentilab/ and /sentilab/package/. A module of its own because worker.js
+// may export nothing but its default handler (see csp.js); worker.js imports it, and so can any other part of the
+// Worker. The node tests drive it directly and through the Worker (web/test/worker-agents.test.mjs).
 //
-// A request to one of AGENT_PAGES gets that page's agent version in one of two ways:
-//   1. Plain content negotiation. Its Accept header gives markdown or JSON a higher q-value than HTML. A tie, "*/*", a
-//      missing header and a browser's default Accept all keep the human page. Any client may ask; nothing is detected.
-//   2. The edge's class header says "agent", and only when this Worker is told to trust it: env.TRUST_EDGE_CLASS === "1".
-//      That flag is set only once the edge fronts this Worker through a service binding, sets the header itself and
-//      strips any client-sent copy. With the flag off the header is not read at all, so a client can't flip views by
-//      sending it.
-// Both versions of a negotiated page say they vary on Accept and on the class header, and neither may sit in a shared
-// cache, so no cache hands one version to a request for the other. The human version names its agent version in a Link
-// header. /agents and /agents/ serve /agents/index.md to everyone. Every other path is served unchanged.
+// The seam, for any caller that decides a request should get the agent version:
+//   agentPathFor(pathname)          the file a page's agent version serves, or null: the page has none, serve it as is.
+//   serveAgentVersion(request, env) the agent version of the request's page, typed and with its Vary header (null when
+//                                   the page has none, or the method is not GET or HEAD).
+// This module decides nothing about who is asking. On its own it applies plain content negotiation: an Accept header
+// that gives markdown or JSON a higher q-value than HTML gets the agent version; a browser's Accept, */*, a tie and no
+// Accept all keep the human page. Both versions of these pages vary on Accept and stay out of shared caches, and the
+// human version names its agent version in a Link header. /agents and /agents/ serve /agents/index.md to everyone.
+import { CSP } from "./csp.js";
 
-// The edge's class header and the value that selects the agent version. Provisional: the name and value are confirmed
-// with the edge lane before TRUST_EDGE_CLASS is ever set.
-export const EDGE_CLASS_HEADER = "x-aidenid-class";
-export const EDGE_CLASS_AGENT = "agent";
-
-// Each page with an agent version: the files that version serves (paths under web/public), and the URL the human page
-// names as its alternate.
+// Each page with an agent version: the files that version serves (paths under web/public), markdown first, and the URL
+// the human page names as its alternate.
 export const AGENT_PAGES = Object.freeze({
   "/": Object.freeze({ md: "/agents/index.md", json: "/agents/index.json", alternate: "/agents/" }),
   "/sentilab/": Object.freeze({ md: "/agents/index.md", json: "/agents/index.json", alternate: "/agents/" }),
@@ -30,9 +24,18 @@ export const AGENT_INDEX = Object.freeze({ "/agents": "/agents/index.md", "/agen
 
 export const CONTENT_TYPES = Object.freeze({ md: "text/markdown; charset=utf-8", json: "application/json; charset=utf-8" });
 const MEDIA = Object.freeze({ md: "text/markdown", json: "application/json", html: "text/html" });
-export const VARY = Object.freeze(["Accept", EDGE_CLASS_HEADER]);
+export const VARY = Object.freeze(["Accept"]);
 export const NEGOTIATED_CACHE_CONTROL = "private, no-cache";
 const QVALUE = /^(0([.][0-9]{0,3})?|1([.]0{0,3})?)$/;
+const readOnly = (request) => request.method === "GET" || request.method === "HEAD";
+const pageOf = (pathname) => (Object.hasOwn(AGENT_PAGES, pathname) ? AGENT_PAGES[pathname] : null);
+
+// The seam: the file the agent version of a requested page serves, or null when the page has no agent version (serve
+// it unchanged). "/" and "/sentilab/" map to /agents/index.md, "/sentilab/package/" to /agents/physics.md.
+export function agentPathFor(pathname) {
+  const page = pageOf(pathname);
+  return page ? page.md : null;
+}
 
 // The q-value an Accept header gives one media type: that of the most specific range that matches it (type/subtype,
 // then type/*, then */*), or 0 when none does or the header is missing. A malformed q counts as 0; other parameters
@@ -76,25 +79,11 @@ export function preferredAgentType(accept, page) {
   return best;
 }
 
-// Whether the trusted edge classed this request as an agent. False unless TRUST_EDGE_CLASS is exactly "1"; the header
-// is not even read otherwise.
-export function edgeSaysAgent(request, env) {
-  if (!env || env.TRUST_EDGE_CLASS !== "1") return false;
-  const value = request.headers.get(EDGE_CLASS_HEADER);
-  return value !== null && value.trim().toLowerCase() === EDGE_CLASS_AGENT;
-}
-
-// What the Worker serves for this request. null: not an agent-aware path or method, so serve it unchanged. Otherwise
-// { negotiated, serve, kind, alternate }: serve is the file to fetch instead of the requested one (null keeps the human
-// page), kind its representation ("md" or "json"), alternate the agent URL a human page names.
-export function agentView(request, env) {
-  if (request.method !== "GET" && request.method !== "HEAD") return null;
-  const { pathname } = new URL(request.url);
-  if (Object.hasOwn(AGENT_INDEX, pathname)) return { negotiated: false, serve: AGENT_INDEX[pathname], kind: "md", alternate: null };
-  if (!Object.hasOwn(AGENT_PAGES, pathname)) return null;
-  const page = AGENT_PAGES[pathname];
-  const kind = preferredAgentType(request.headers.get("accept"), page) ?? (edgeSaysAgent(request, env) ? "md" : null);
-  return { negotiated: true, serve: kind ? page[kind] : null, kind, alternate: page.alternate };
+// Whether plain content negotiation picks the agent version for this request: a GET or HEAD for a page that has one,
+// with an Accept header that prefers markdown or JSON to HTML.
+export function prefersAgentVersion(request) {
+  const page = readOnly(request) ? pageOf(new URL(request.url).pathname) : null;
+  return page !== null && preferredAgentType(request.headers.get("accept"), page) !== null;
 }
 
 // A Vary value that keeps every name already there and adds the given ones once each (compared without case).
@@ -108,3 +97,37 @@ export function varyWith(current, names) {
 
 // The Link header a human page sends, naming its agent version.
 export const alternateLink = (href) => `<${href}>; rel="alternate"; type="text/markdown"`;
+
+// The headers a negotiated page's human version adds: Vary, no shared caching, and the Link to its agent version.
+export function addHumanPageHeaders(headers, pathname) {
+  const page = pageOf(pathname);
+  if (!page) return headers;
+  headers.set("vary", varyWith(headers.get("vary"), VARY));
+  headers.set("cache-control", NEGOTIATED_CACHE_CONTROL);
+  headers.set("link", alternateLink(page.alternate));
+  return headers;
+}
+
+// The asset at path, served for this request (same method and headers, so conditional requests reach that file), with
+// the CSP and its type ("md" or "json"). A negotiated response also varies on Accept and stays out of shared caches.
+export async function serveAs(request, env, path, kind, { negotiated = false } = {}) {
+  const res = await env.ASSETS.fetch(new Request(new URL(path, request.url), { method: request.method, headers: request.headers }));
+  const headers = new Headers(res.headers);
+  headers.set("content-security-policy", CSP);
+  if (res.status === 200) headers.set("content-type", CONTENT_TYPES[kind]);
+  if (negotiated) {
+    headers.set("vary", varyWith(headers.get("vary"), VARY));
+    headers.set("cache-control", NEGOTIATED_CACHE_CONTROL);
+  }
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
+// The seam: serve the agent version of the request's page, its JSON when the Accept header prefers JSON and the page
+// has a JSON version, and its markdown otherwise. null when the page has no agent version or the method is not GET or
+// HEAD, so the caller serves the request unchanged.
+export function serveAgentVersion(request, env) {
+  const page = readOnly(request) ? pageOf(new URL(request.url).pathname) : null;
+  if (!page) return Promise.resolve(null);
+  const kind = preferredAgentType(request.headers.get("accept"), page) === "json" ? "json" : "md";
+  return serveAs(request, env, page[kind], kind, { negotiated: true });
+}
