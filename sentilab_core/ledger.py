@@ -80,8 +80,13 @@ def _finite_float(text):
     return value
 
 
-def read_prefix(path, *, run_id, public_keys):
-    """Validate raw lines before parsing, then project only the verified prefix."""
+def read_prefix(path, *, run_id, public_keys, version=None):
+    """Verify original history versions, or require one explicit version profile.
+
+    JSONL is UTF-8 without a leading BOM on any row. Decode strictly before
+    parsing: json.loads(bytes) would silently accept BOMs and UTF-16/32.
+    Raw transport evidence is preserved even when decoding/parsing fails.
+    """
     rows = []
     source_hash = hashlib.sha256()
     with open(path, "rb") as handle:
@@ -99,12 +104,12 @@ def read_prefix(path, *, run_id, public_keys):
                 continue
             row = {"raw": line + b"\n", "prefix_hash": source_hash.hexdigest()}
             try:
-                value = json.loads(line, object_pairs_hook=_object,
+                value = json.loads(line.decode("utf-8", errors="strict"), object_pairs_hook=_object,
                                    parse_float=_finite_float, parse_constant=_finite_float)
                 if not isinstance(value, dict):
                     raise ValueError("envelope is not an object")
                 row["envelope"] = value
-                data = check_envelope(value, run_id)
+                data = check_envelope(value, run_id, version=version)
                 row["canonical_digest"] = hashlib.sha256(data).hexdigest()
             except (ValueError, TypeError, UnicodeError, RecursionError, OverflowError) as exc:
                 row["error"] = str(exc) or "invalid JSONL row"
@@ -150,7 +155,7 @@ def read_prefix(path, *, run_id, public_keys):
         envelope = row.get("envelope")
         if error is None:
             try:
-                verify(envelope, run_id=run_id, public_keys=public_keys)
+                verify(envelope, run_id=run_id, public_keys=public_keys, version=version)
                 if envelope["event"]["seq"] != len(prefix) + 1:
                     raise ValueError("sequence gap or repeat")
                 if envelope["prev_hash"] != previous:

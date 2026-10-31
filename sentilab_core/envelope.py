@@ -15,6 +15,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 VERSION = "view-envelope/0.5"
+SUPPORTED_VERSIONS = ("view-envelope/0.4", VERSION)
 MAX_BYTES = 64 * 1024
 MAX_ITEMS = 64
 MAX_STRING = 512
@@ -170,18 +171,18 @@ def check_caps(value):
     return canonical(value)
 
 
-def check_envelope(envelope, run_id):
+def check_envelope(envelope, run_id, *, version=None):
     """Reject structure and size before any canonicalization, hashing or signing."""
-    _validate_structure(envelope, run_id)
+    _validate_structure(envelope, run_id, version=version)
     return check_caps(envelope)
 
 
-def _validate_structure(envelope, run_id):
+def _validate_structure(envelope, run_id, *, version=None):
     required = {"v", "event", "run", "actor", "prev_hash", "hash", "sig", "ts"}
     if not isinstance(envelope, dict) or not required <= envelope.keys():
         raise ValueError("invalid envelope fields")
-    if not isinstance(envelope["v"], str):
-        raise ValueError("invalid envelope version")
+    if envelope["v"] not in SUPPORTED_VERSIONS or (version is not None and envelope["v"] != version):
+        raise ValueError("bad_version")
     if (not isinstance(envelope["run"], dict) or not isinstance(envelope["actor"], dict) or
             not isinstance(envelope["event"], dict)):
         raise ValueError("invalid envelope structure")
@@ -246,10 +247,15 @@ def build(*, event, run, actor, prev_hash, signer, values=None, ts=None):
     return envelope
 
 
-def verify(envelope, *, run_id, public_keys):
-    """Verify one envelope against caller-pinned keys, never keys from the file."""
+def verify(envelope, *, run_id, public_keys, version=None):
+    """Verify pinned keys and the original version, optionally pinned by the caller.
+
+    Only v0.4 history and v0.5 are supported. They share the hash/signature
+    format; both retain our stricter field, role, Unicode and cap checks.
+    Accepting historical v0.4 does not imply v0.5-only browser acceptance.
+    """
     try:
-        check_envelope(envelope, run_id)
+        check_envelope(envelope, run_id, version=version)
         sig = envelope["sig"]
         body = {k: v for k, v in envelope.items() if k not in ("hash", "sig")}
         computed = digest(body)

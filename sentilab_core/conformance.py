@@ -10,6 +10,8 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from sentilab_core.envelope import canonical, canonical_size, check_caps, digest
 from sentilab_core.ledger import read_prefix
 from sentilab_core import test_conductor
+from sentilab_core import test_ledger
+from sentilab_core.test_history import signed_version
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -108,6 +110,86 @@ console.log(JSON.stringify(JSON.parse(s).map(canonicalSize)));"""
                     check_caps(envelope)
             else:
                 check_caps(envelope)
+
+class HistoryConformance(unittest.TestCase):
+    setUp = test_ledger.LedgerTests.setUp
+    append = test_ledger.LedgerTests.append
+
+    def reference(self, raw, version, *, run_id="test-run", keys=None):
+        script = """import { createPublicKey } from 'node:crypto';
+let s=''; for await (const c of process.stdin) s+=c; const data=JSON.parse(s);
+const directory=data.version==='view-envelope/0.4'?'view-envelope':'view-envelope-v0.5';
+const reference=await import(`./contracts/${directory}/view-envelope.mjs`);
+const keys={}, pins=[];
+for (const [id,hex] of Object.entries(data.keys)) {
+  const key=createPublicKey({key:Buffer.concat([Buffer.from('302a300506032b6570032100','hex'),Buffer.from(hex,'hex')]),format:'der',type:'spki'});
+  keys[id]=key; pins.push({key_id:id,key_sha256:reference.keySha256(key)});
+}
+let result;
+try {
+  // Preserve a leading BOM as U+FEFF so JSON.parse rejects it, and fail on
+  // malformed UTF-8. Hashing/cursors operate on the original bytes separately.
+  const text=new TextDecoder('utf-8',{fatal:true,ignoreBOM:true}).decode(Buffer.from(data.raw,'hex'));
+  const options={runId:data.run_id,keys,pins};
+  result=reference.verifyJsonl ? reference.verifyJsonl(text,options) :
+    reference.verifyChain(text.trimEnd().split('\\n').map(line=>JSON.parse(line)),options);
+} catch { result={prefix_end:0,chain_ok:false}; }
+console.log(JSON.stringify(result));"""
+        result = subprocess.run(["node", "--input-type=module", "-e", script], cwd=ROOT,
+                                input=json.dumps({"version": version, "raw": raw.hex(), "run_id": run_id,
+                                                  "keys": {k: v.hex() for k, v in (keys or self.keys).items()}}),
+                                text=True, capture_output=True, check=True, timeout=30)
+        return json.loads(result.stdout)
+
+    def test_signed_versions_match_the_selected_exact_reference(self):
+        current = self.append(1)[0]
+        for version in ("view-envelope/0.4", "view-envelope/0.5", "unrecognized/999"):
+            value = signed_version(current, version, self.signer)
+            raw = canonical(value) + b"\n"
+            self.ledger.path.write_bytes(raw)
+            native = read_prefix(self.ledger.path, run_id="test-run", public_keys=self.keys)
+            self.assertEqual(native["last_seq"], 0 if version == "unrecognized/999" else 1)
+            for profile in ("view-envelope/0.4", "view-envelope/0.5"):
+                with self.subTest(version=version, profile=profile):
+                    reference = self.reference(raw, profile)
+                    pinned = read_prefix(self.ledger.path, run_id="test-run", public_keys=self.keys,
+                                         version=profile)
+                    self.assertEqual(reference["prefix_end"], int(version == profile))
+                    self.assertEqual(pinned["last_seq"], reference["prefix_end"])
+                    self.assertEqual(pinned["error"] is None, reference["chain_ok"])
+
+    def test_raw_utf8_boundary_matches_exact_v05_reference(self):
+        current = self.append(1)[0]
+        text = canonical(current).decode("utf-8")
+        for encoding in ("utf-8", "utf-8-sig", "utf-16-le", "utf-32-be"):
+            with self.subTest(encoding=encoding):
+                raw = text.encode(encoding) + b"\n"
+                self.ledger.path.write_bytes(raw)
+                native = read_prefix(self.ledger.path, run_id="test-run", public_keys=self.keys)
+                reference = self.reference(raw, "view-envelope/0.5")
+                self.assertEqual(reference["prefix_end"], int(encoding == "utf-8"))
+                self.assertEqual(native["last_seq"], reference["prefix_end"])
+                self.assertEqual(native["error"] is None, reference["chain_ok"])
+
+    def test_retained_history_keeps_v04_profile_and_original_hashes(self):
+        proof = json.loads((ROOT / "sentilab_core/proof.json").read_text())
+        directory = ROOT / proof["artifact_root"]
+        for name, expected in proof["artifacts"].items():
+            self.assertEqual(hashlib.sha256((directory / name).read_bytes()).hexdigest(), expected)
+        pin = json.loads((directory / "public-pin.json").read_text())
+        keys = {key_id: bytes.fromhex(public) for key_id, public in pin.items()}
+        path = directory / "ledger/ascend910-local-proof-v2.jsonl"
+        native = read_prefix(path, run_id=proof["run_id"], public_keys=keys, version="view-envelope/0.4")
+        reference = self.reference(path.read_bytes(), "view-envelope/0.4", run_id=proof["run_id"], keys=keys)
+        self.assertEqual(native["last_seq"], proof["seq"])
+        self.assertEqual(reference["prefix_end"], proof["seq"])
+        self.assertTrue(reference["chain_ok"])
+        self.assertIsNone(native["error"])
+        self.assertTrue(all(row["v"] == "view-envelope/0.4" for row in native["prefix"]))
+        newer = self.reference(path.read_bytes(), "view-envelope/0.5", run_id=proof["run_id"], keys=keys)
+        self.assertEqual(newer["prefix_end"], 0)
+        self.assertIn("bad_version", newer["rows"][0]["reasons"])
+
 
 class ProjectionConformance(unittest.IsolatedAsyncioTestCase):
     asyncSetUp = test_conductor.ConductorTests.asyncSetUp

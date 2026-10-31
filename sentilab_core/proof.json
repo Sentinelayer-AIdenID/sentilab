@@ -229,5 +229,113 @@
     "contract_status": "Frozen v0.4/v0.5 unchanged; proposed extension communicated to Forge under56186, versioned cursor contract and browser integration pending",
     "live_fallback": "Unsupported row cursors require STALE; sequence-only fallback cannot advance LIVE/current",
     "hotspot_calls": 0
+  },
+  "review_56187_revision": {
+    "base": "f8048f9f3c65a27b7fa2de0446aadc641a703dcf",
+    "fixes": [
+      "Enumerate v0.4/v0.5; reject unknown signed versions; allow explicit version-pinned history verification without rewriting bytes.",
+      "Strict UTF-8 JSONL decoding preserves BOM for rejection and retains original raw feed evidence."
+    ],
+    "regression_proof": {
+      "base_tests_failed": 4,
+      "base_assertion_failures": 15,
+      "failure": "verified prefix 1 != expected 0",
+      "unicode_preservation_mutation": "Removing U+FEFF from decoded JSON fails the Unicode content test."
+    },
+    "python_gates": {
+      "core": {
+        "suite": "history-core",
+        "argv": [
+          "discover",
+          "-s",
+          "sentilab_core",
+          "-p",
+          "test_*.py",
+          "-q"
+        ],
+        "tests": 49,
+        "success": true,
+        "elapsed_s": 36.5921499109827,
+        "process_tree_cpu_s": 15.935744,
+        "synthetic_calls": 23,
+        "hotspot_dispatches": 2
+      },
+      "view": {
+        "suite": "history-view",
+        "argv": [
+          "-q",
+          "app.test_view",
+          "app.test_view_cursor",
+          "app.test_view_readonly",
+          "app.test_runs",
+          "sentilab_core.conformance"
+        ],
+        "tests": 28,
+        "success": true,
+        "elapsed_s": 44.32640000898391,
+        "process_tree_cpu_s": 19.702458999999998,
+        "synthetic_calls": 8,
+        "hotspot_dispatches": 0
+      },
+      "controller": {
+        "suite": "history-controller",
+        "argv": [
+          "-q",
+          "test_controller",
+          "test_experiment",
+          "test_trust",
+          "test_tfl08_leaderboard",
+          "test_safety_property"
+        ],
+        "tests": 77,
+        "success": true,
+        "elapsed_s": 105.44610817392822,
+        "process_tree_cpu_s": 84.209378,
+        "synthetic_calls": 720,
+        "hotspot_dispatches": 0
+      },
+      "thermal": {
+        "suite": "history-thermal",
+        "argv": [
+          "discover",
+          "-s",
+          "sundai_thermal",
+          "-p",
+          "test_*.py",
+          "-q"
+        ],
+        "tests": 2,
+        "success": true,
+        "elapsed_s": 49.34179456799757,
+        "process_tree_cpu_s": 27.871738,
+        "synthetic_calls": 2138,
+        "hotspot_dispatches": 0
+      }
+    },
+    "browser_tests": 64,
+    "contract_checks": [
+      74,
+      113,
+      193
+    ],
+    "contract_manifest_files": 16,
+    "historical_reference": {
+      "v04_prefix": 203,
+      "v05_prefix": 0,
+      "v05_reason": "bad_version",
+      "original_artifact_hashes_matched": 5
+    },
+    "other_gates": [
+      "python -m compileall -q sentilab_core sentilab_cli sentilab_mcp app",
+      "ruff check --select E9,F sentilab_core sentilab_cli sentilab_mcp app",
+      "make -C sundai_hotspot -j4 SUPERLU=1",
+      "python -m pip check",
+      "git diff --check"
+    ],
+    "measured_python_gate_cpu_s": 147.71931899999998,
+    "counted_synthetic_calls": 2889,
+    "counted_hotspot_dispatches": 2,
+    "measurement_scope": "Only these four instrumented Python gates. Focused tests, Node and build work are not included; no certified task-wide total. No new live run.",
+    "remaining": "Operator carry and published head confirmation; Forge versioned cursor/client binding; Docker CI and independent review."
   }
 }
