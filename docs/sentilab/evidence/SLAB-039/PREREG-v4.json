@@ -188,13 +188,13 @@
     "timing_source": "docs/sentilab/evidence/micro150/TIMING.json",
     "timing_sha256": "a750a98cbb61fc89a58a6896de19e877b01599feacd66418168c1069b17471ff",
     "policy": "min(45s, (each remaining CPU allowance - H)/Q, remaining wall to noon, remaining 90-minute solving wall); reject below measured p95; meter through reap",
-    "cpu_execution": "Pin every existing runner thread and all inherited worker/solver threads to the declared Q CPU set; subreaper waits for all descendants. Append each metered call to SPEND.runs.jsonl, linked by SPEND.json; charge startup and CPU through confirmed reap."
+    "cpu_execution": "Pin every existing runner thread and all inherited worker/solver threads to a shared set of at most Q available CPUs; subreaper waits for all descendants. Append each metered call to SPEND.runs.jsonl, linked by SPEND.json; charge startup and CPU through confirmed reap."
   },
   "cpu_enforcement": {
     "rate_q": 1,
     "reserve_h_cpu_seconds": 1.0,
     "poll_seconds": 0.01,
-    "meter": "Linux /proc parent and every descendant, including waited children. Subreaper owns orphans; count through confirmed reap. All existing runner threads and newly created descendants confined to Q CPUs. Dedicated process, no pre-existing children.",
+    "meter": "Linux /proc parent and every descendant, including waited children. Subreaper owns orphans; count through confirmed reap. All existing runner threads and newly created descendants confined to at most Q available CPUs. Dedicated process, no pre-existing children.",
     "policy": "Wall bound <= (remaining CPU - H) / Q; stop when measured CPU + H reaches allowance. H covers sampling, startup and kill/reap burst. Record actual metered CPU through reap per call, including CPU after stop. P95 is only an admission floor, never a CPU cap. No partial result acceptance.",
     "remaining_micro150_cpu_seconds": 2879.705435
   }

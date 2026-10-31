@@ -19,6 +19,7 @@ class ProcessBudgetTests(unittest.IsolatedAsyncioTestCase):
             with self.subTest(q=q):
                 scope = p.ProcessTreeScope(q)
                 before_affinity = os.sched_getaffinity(0)
+                expected_cpus = min(q, len(before_affinity))
                 scope.start()
                 try:
                     started_cpu = p.tree_snapshot()[0]
@@ -26,10 +27,10 @@ class ProcessBudgetTests(unittest.IsolatedAsyncioTestCase):
                     process = await asyncio.create_subprocess_exec(
                         sys.executable, '-c',
                         'import hashlib,os,threading,time\n'
-                        f'assert len(os.sched_getaffinity(0)) == {q}\n'
+                        f'assert len(os.sched_getaffinity(0)) == {expected_cpus}\n'
                         'end=time.monotonic()+0.18\n'
                         'def busy():\n'
-                        f' assert len(os.sched_getaffinity(0)) == {q}\n'
+                        f' assert len(os.sched_getaffinity(0)) == {expected_cpus}\n'
                         ' while time.monotonic()<end: hashlib.sha256(b"x"*131072).digest()\n'
                         f'threads=[threading.Thread(target=busy) for _ in range({q})]\n'
                         '[t.start() for t in threads]\n[t.join() for t in threads]\n')

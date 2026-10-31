@@ -78,8 +78,7 @@ class ProcessTreeScope:
         if tree_snapshot()[1]:
             raise RuntimeError('headroom CPU scope requires no pre-existing children')
         available = os.sched_getaffinity(0)
-        if len(available) < self.rate:
-            raise RuntimeError('fewer available CPUs than declared Q')
+        # Q is an upper rate bound; fewer available CPUs are conservative.
         self.mask = set(sorted(available)[:self.rate])
         self._prctl(37, ctypes.byref(self.old_subreaper))  # PR_GET_CHILD_SUBREAPER
         self._prctl(36, 1)  # PR_SET_CHILD_SUBREAPER

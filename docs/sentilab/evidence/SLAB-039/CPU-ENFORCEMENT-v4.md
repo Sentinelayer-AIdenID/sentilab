@@ -8,8 +8,9 @@ Ascend910 charge of 1440.294565 CPU-s. The existing fixture, headroom, aggregate
 restart, call-count, noon-deadline and cumulative-wall limits still apply.
 
 The declared rate Q is 1 CPU-s/wall-s by default (supported rates: 1, 2, 8).
-Every existing runner thread is confined to the same Q-CPU affinity mask; worker
-processes and newly created threads inherit it. A dedicated runner with no
+Every existing runner thread is confined to the same affinity mask of at most Q CPUs; worker
+processes and newly created threads inherit it. Fewer available CPUs keep the
+Q-derived wall bound conservative. A dedicated runner with no
 pre-existing children is required. Unsupported confinement fails closed.
 
 H is 1 CPU-s. Sampling is every 0.01 wall-s, at most 0.08 CPU-s at Q=8 before
