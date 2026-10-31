@@ -262,8 +262,11 @@ function signedFacts(events) {
         temp: num(e.payload.thermal && e.payload.thermal.maximum_temperature_c), id: solverOf(e.payload.thermal) });
     } else if (e.event === "proposal_committed") {
       const t = num(e.payload.temperature_c);
-      const reports = (m) => typeof m.proposal === "string" && m.proposal === e.payload.proposal_id &&
-        typeof m.candidate === "string" && m.candidate === e.payload.candidate_hash &&
+      // The join needs a named proposal and a named candidate: an empty id is a missing one, never provenance. Each is a
+      // non-empty string on the commitment and, being equal, the same string on the result.
+      const p = e.payload.proposal_id, c = e.payload.candidate_hash;
+      const reports = (m) => typeof p === "string" && p !== "" && m.proposal === p &&
+        typeof c === "string" && c !== "" && m.candidate === c &&
         typeof t === "number" && Number.isFinite(t) && m.temp === t;
       const ids = [...new Set(measured.filter(reports).map((m) => m.id))];
       take(e.payload.temperature_c, ids.length === 1 ? ids : [undefined, ...ids]);

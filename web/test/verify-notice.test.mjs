@@ -36,6 +36,9 @@ const FIXTURES = {
   // Two earlier results that both match: the same evaluator (no doubt), or two (ambiguous).
   duplicateSame: { base: FIXTURE, sample: FIXTURE, ops: [oracle("p1", A, 80.0, FIXTURE), oracle("p1", A, 80.0, FIXTURE), commit("p1", A, 80.0)] },
   duplicateAmbiguous: { base: FIXTURE, sample: FIXTURE, ops: [oracle("p1", A, 80.0, HS7), oracle("p1", A, 80.0, FIXTURE), commit("p1", A, 80.0)] },
+  // Empty ids on both sides: a missing id, never provenance (astra's two residual controls, rebuilt here).
+  emptyCandidate: { base: FIXTURE, sample: FIXTURE, ops: [oracle("p1", "", 80.0, FIXTURE), commit("p1", "", 80.0)] },
+  emptyProposal: { base: FIXTURE, sample: FIXTURE, ops: [oracle("", A, 80.0, FIXTURE), commit("", A, 80.0)] },
 };
 
 const signed = JSON.parse(execFileSync(process.env.PYTHON || "python3", ["-c", `
@@ -116,6 +119,16 @@ for (const [name, why] of [
     const { report, lane } = await laneOf(name);
     assert.equal(lane.best, 80, "the page shows the committed 80 °C");
     assert.deepEqual(lane.bestIds, [FIXTURE, FIXTURE, undefined], "no result reports this commitment");
+    assert.equal(labelForAll(lane.bestIds), LABELS.unvalidated);
+    assert.equal(reportNeedsNotice(report), true);
+  });
+}
+
+for (const [name, field] of [["emptyCandidate", "candidate hash"], ["emptyProposal", "proposal id"]]) {
+  test(`regression: an empty ${field} on both the result and the commitment is no join: unvalidated, with the notice`, async () => {
+    const { report, lane } = await laneOf(name);
+    assert.equal(lane.best, 80, "the page shows the committed 80 °C");
+    assert.deepEqual(lane.bestIds, [FIXTURE, FIXTURE, undefined], "an empty id names nothing");
     assert.equal(labelForAll(lane.bestIds), LABELS.unvalidated);
     assert.equal(reportNeedsNotice(report), true);
   });
