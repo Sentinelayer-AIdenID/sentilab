@@ -1,0 +1,872 @@
+{
+  "fixed_tolerance_c": 0.01,
+  "fixture": "ascend910",
+  "fixture_contract": {
+    "ambient_c": 45.0,
+    "bump_halos_mm": [
+      0.09,
+      0.045,
+      0.045,
+      0.045,
+      0.045,
+      0.045
+    ],
+    "config_sha256": "548562a5f49d502f4b9bd03d3a4acc4b42f225056e6d91556416079c291e06d4",
+    "connections": [
+      [
+        0.0,
+        200.0,
+        256.0,
+        256.0,
+        256.0,
+        256.0
+      ],
+      [
+        200.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        256.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        256.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        256.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        256.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "granularity_mm": 1.0,
+    "heights_mm": [
+      31.4,
+      16.0,
+      11.87,
+      11.87,
+      11.87,
+      11.87
+    ],
+    "hotspot_config_sha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc",
+    "hotspot_upstream_commit": "f18831e48cef5d62580585cca0d7fab6c71bc3cc",
+    "interposer_size_mm": 50.0,
+    "link_type": "nppl",
+    "powers_w": [
+      256.0,
+      14.0,
+      20.0,
+      20.0,
+      20.0,
+      20.0
+    ],
+    "tap_upstream_commit": "3a3f4e5a4d019b2d9cda1f72d8d1755238845dbb",
+    "widths_mm": [
+      14.5,
+      10.5,
+      7.75,
+      7.75,
+      7.75,
+      7.75
+    ]
+  },
+  "generator": "seeded-greedy-grid-pool-v1",
+  "layouts": [
+    {
+      "category": "clustered",
+      "centers_mm": [
+        [
+          15.0,
+          30.0
+        ],
+        [
+          40.0,
+          33.0
+        ],
+        [
+          37.0,
+          16.0
+        ],
+        [
+          29.0,
+          11.0
+        ],
+        [
+          45.0,
+          11.0
+        ],
+        [
+          29.0,
+          23.0
+        ]
+      ],
+      "design_hash": "43ab3adaac0f611d2291e9422b641b2d2a7b356cffd2b0616eb16c36a2de29ce",
+      "id": "clustered-01",
+      "mean_pair_distance_mm": 18.85364538416879
+    },
+    {
+      "category": "clustered",
+      "centers_mm": [
+        [
+          42.0,
+          20.0
+        ],
+        [
+          24.0,
+          28.0
+        ],
+        [
+          11.0,
+          15.0
+        ],
+        [
+          9.0,
+          30.0
+        ],
+        [
+          19.0,
+          11.0
+        ],
+        [
+          28.0,
+          12.0
+        ]
+      ],
+      "design_hash": "f2e1d6a44dd9e11218b433e2f3cc106ebf3d414b6ad6f8ae7a9acabbbef1d329",
+      "id": "clustered-02",
+      "mean_pair_distance_mm": 19.478094001785692
+    },
+    {
+      "category": "clustered",
+      "centers_mm": [
+        [
+          42.0,
+          19.0
+        ],
+        [
+          13.0,
+          30.0
+        ],
+        [
+          30.0,
+          19.0
+        ],
+        [
+          8.0,
+          12.0
+        ],
+        [
+          24.0,
+          32.0
+        ],
+        [
+          18.0,
+          15.0
+        ]
+      ],
+      "design_hash": "a95f8c4fa1d3fa5880d61845de17d01450008da203aee871f508482969f2c31b",
+      "id": "clustered-03",
+      "mean_pair_distance_mm": 19.621326606626507
+    },
+    {
+      "category": "clustered",
+      "centers_mm": [
+        [
+          10.0,
+          33.0
+        ],
+        [
+          23.0,
+          21.0
+        ],
+        [
+          37.0,
+          26.0
+        ],
+        [
+          40.0,
+          13.0
+        ],
+        [
+          33.0,
+          38.0
+        ],
+        [
+          25.0,
+          37.0
+        ]
+      ],
+      "design_hash": "6acd7d6048953df6f3989ac473ea8f51b4b3ef6b40ab9cc66e0ced3cc8ccb023",
+      "id": "clustered-04",
+      "mean_pair_distance_mm": 19.653241148656416
+    },
+    {
+      "category": "clustered",
+      "centers_mm": [
+        [
+          40.0,
+          28.0
+        ],
+        [
+          15.0,
+          41.0
+        ],
+        [
+          27.0,
+          26.0
+        ],
+        [
+          14.0,
+          21.0
+        ],
+        [
+          27.0,
+          38.0
+        ],
+        [
+          28.0,
+          11.0
+        ]
+      ],
+      "design_hash": "3e9cb500eb1916984db1411f7debb73923a68dac1e868a0e7fd9615f91a23847",
+      "id": "clustered-05",
+      "mean_pair_distance_mm": 19.756777929831614
+    },
+    {
+      "category": "clustered",
+      "centers_mm": [
+        [
+          34.0,
+          25.0
+        ],
+        [
+          20.0,
+          19.0
+        ],
+        [
+          5.0,
+          33.0
+        ],
+        [
+          13.0,
+          40.0
+        ],
+        [
+          10.0,
+          18.0
+        ],
+        [
+          22.0,
+          42.0
+        ]
+      ],
+      "design_hash": "bb53d7f83c500a2bb346f1091615083929c7bd7d126a6582372491e9598d6714",
+      "id": "clustered-06",
+      "mean_pair_distance_mm": 19.77694467856327
+    },
+    {
+      "category": "clustered",
+      "centers_mm": [
+        [
+          14.0,
+          27.0
+        ],
+        [
+          44.0,
+          9.0
+        ],
+        [
+          37.0,
+          32.0
+        ],
+        [
+          28.0,
+          28.0
+        ],
+        [
+          27.0,
+          14.0
+        ],
+        [
+          45.0,
+          26.0
+        ]
+      ],
+      "design_hash": "2665262b0e9ed173f839030fc30dcb0e33c0e8b9b59d846f06ced23b56eb9053",
+      "id": "clustered-07",
+      "mean_pair_distance_mm": 19.921091338696282
+    },
+    {
+      "category": "clustered",
+      "centers_mm": [
+        [
+          16.0,
+          24.0
+        ],
+        [
+          40.0,
+          15.0
+        ],
+        [
+          31.0,
+          42.0
+        ],
+        [
+          44.0,
+          32.0
+        ],
+        [
+          29.0,
+          13.0
+        ],
+        [
+          29.0,
+          30.0
+        ]
+      ],
+      "design_hash": "2b53e075bb56a27ef82d9bf8a54a5c7816b75b2c7d44cbebccfad5567699c86c",
+      "id": "clustered-08",
+      "mean_pair_distance_mm": 19.94749210483436
+    },
+    {
+      "category": "spread",
+      "centers_mm": [
+        [
+          25.0,
+          23.0
+        ],
+        [
+          41.0,
+          39.0
+        ],
+        [
+          44.0,
+          8.0
+        ],
+        [
+          6.0,
+          16.0
+        ],
+        [
+          8.0,
+          40.0
+        ],
+        [
+          40.0,
+          22.0
+        ]
+      ],
+      "design_hash": "ce04f4fbf1ba55757b272565c11f24fa74133740e9f13788da847f032ccc23d3",
+      "id": "spread-01",
+      "mean_pair_distance_mm": 28.407440904504753
+    },
+    {
+      "category": "spread",
+      "centers_mm": [
+        [
+          22.0,
+          19.0
+        ],
+        [
+          35.0,
+          40.0
+        ],
+        [
+          40.0,
+          12.0
+        ],
+        [
+          5.0,
+          8.0
+        ],
+        [
+          16.0,
+          42.0
+        ],
+        [
+          8.0,
+          42.0
+        ]
+      ],
+      "design_hash": "be952a339340b0d454b32316c3ce761cbb81aa8b8f5aeb37ad6e6abd08492efb",
+      "id": "spread-02",
+      "mean_pair_distance_mm": 28.587861590404433
+    },
+    {
+      "category": "spread",
+      "centers_mm": [
+        [
+          27.0,
+          29.0
+        ],
+        [
+          9.0,
+          10.0
+        ],
+        [
+          12.0,
+          36.0
+        ],
+        [
+          45.0,
+          7.0
+        ],
+        [
+          42.0,
+          25.0
+        ],
+        [
+          41.0,
+          43.0
+        ]
+      ],
+      "design_hash": "3187838f65220c89f3001405ed68e52bbc7eb3c17d6b95ab51b838034c36a0c4",
+      "id": "spread-03",
+      "mean_pair_distance_mm": 28.613537975592294
+    },
+    {
+      "category": "spread",
+      "centers_mm": [
+        [
+          37.0,
+          18.0
+        ],
+        [
+          21.0,
+          13.0
+        ],
+        [
+          8.0,
+          34.0
+        ],
+        [
+          44.0,
+          42.0
+        ],
+        [
+          6.0,
+          10.0
+        ],
+        [
+          18.0,
+          43.0
+        ]
+      ],
+      "design_hash": "f50f5d3d198074d0c50ee487a44c591b28f480a6157c86d9144f2b6a36828a3b",
+      "id": "spread-04",
+      "mean_pair_distance_mm": 28.71239742694803
+    },
+    {
+      "category": "spread",
+      "centers_mm": [
+        [
+          26.0,
+          24.0
+        ],
+        [
+          7.0,
+          21.0
+        ],
+        [
+          41.0,
+          7.0
+        ],
+        [
+          42.0,
+          41.0
+        ],
+        [
+          43.0,
+          22.0
+        ],
+        [
+          5.0,
+          39.0
+        ]
+      ],
+      "design_hash": "c02537629b15a24d90370df60d5aaf38dacd048c4636ffa5f23299807b251b51",
+      "id": "spread-05",
+      "mean_pair_distance_mm": 28.96035729458081
+    },
+    {
+      "category": "spread",
+      "centers_mm": [
+        [
+          20.0,
+          17.0
+        ],
+        [
+          7.0,
+          41.0
+        ],
+        [
+          44.0,
+          40.0
+        ],
+        [
+          34.0,
+          30.0
+        ],
+        [
+          5.0,
+          8.0
+        ],
+        [
+          38.0,
+          11.0
+        ]
+      ],
+      "design_hash": "66d5ca57862b0e0d6505e1e0b5fca9edf592b3de0a5b0c43ecbefb7d8e2ff9e6",
+      "id": "spread-06",
+      "mean_pair_distance_mm": 29.442219216601472
+    },
+    {
+      "category": "spread",
+      "centers_mm": [
+        [
+          31.0,
+          29.0
+        ],
+        [
+          9.0,
+          41.0
+        ],
+        [
+          45.0,
+          27.0
+        ],
+        [
+          43.0,
+          7.0
+        ],
+        [
+          9.0,
+          24.0
+        ],
+        [
+          5.0,
+          8.0
+        ]
+      ],
+      "design_hash": "26f1888400d3cc258e2321d769b0c338077a4cbd968bcd6dfde755ef4ceaa1bc",
+      "id": "spread-07",
+      "mean_pair_distance_mm": 30.014815722958204
+    },
+    {
+      "category": "spread",
+      "centers_mm": [
+        [
+          28.0,
+          28.0
+        ],
+        [
+          7.0,
+          39.0
+        ],
+        [
+          12.0,
+          7.0
+        ],
+        [
+          42.0,
+          8.0
+        ],
+        [
+          45.0,
+          43.0
+        ],
+        [
+          45.0,
+          20.0
+        ]
+      ],
+      "design_hash": "c6f3c7a77bd54519165f63cd728793d5717300dcc45d7b9c03e77232f469d2b8",
+      "id": "spread-08",
+      "mean_pair_distance_mm": 30.709168610973684
+    },
+    {
+      "category": "random",
+      "centers_mm": [
+        [
+          42.0,
+          31.0
+        ],
+        [
+          12.0,
+          11.0
+        ],
+        [
+          22.0,
+          25.0
+        ],
+        [
+          20.0,
+          41.0
+        ],
+        [
+          11.0,
+          37.0
+        ],
+        [
+          30.0,
+          27.0
+        ]
+      ],
+      "design_hash": "1fbd148e8424534fd0c1c92e2bab42dc07000b206edc2d3fafe4663ecc0ba9bd",
+      "id": "random-01",
+      "mean_pair_distance_mm": 20.85706760987468
+    },
+    {
+      "category": "random",
+      "centers_mm": [
+        [
+          39.0,
+          19.0
+        ],
+        [
+          10.0,
+          25.0
+        ],
+        [
+          9.0,
+          9.0
+        ],
+        [
+          23.0,
+          7.0
+        ],
+        [
+          26.0,
+          43.0
+        ],
+        [
+          23.0,
+          27.0
+        ]
+      ],
+      "design_hash": "dba5541ebc33d80ead211ef0dcccd403d73a3ebe3e789ef028e766516bfe3339",
+      "id": "random-02",
+      "mean_pair_distance_mm": 23.283570457587288
+    },
+    {
+      "category": "random",
+      "centers_mm": [
+        [
+          25.0,
+          26.0
+        ],
+        [
+          39.0,
+          36.0
+        ],
+        [
+          8.0,
+          41.0
+        ],
+        [
+          13.0,
+          27.0
+        ],
+        [
+          12.0,
+          10.0
+        ],
+        [
+          42.0,
+          14.0
+        ]
+      ],
+      "design_hash": "79b747e9097c8cc746029afec027a81a99a9c03500a91026dd60467c59c3d8b2",
+      "id": "random-03",
+      "mean_pair_distance_mm": 25.37054842210115
+    },
+    {
+      "category": "random",
+      "centers_mm": [
+        [
+          30.0,
+          23.0
+        ],
+        [
+          13.0,
+          38.0
+        ],
+        [
+          8.0,
+          12.0
+        ],
+        [
+          42.0,
+          29.0
+        ],
+        [
+          45.0,
+          17.0
+        ],
+        [
+          16.0,
+          15.0
+        ]
+      ],
+      "design_hash": "770c3272c2f12a085bdd11e15a059d4651f1ab71f9c0b8be0c93617f5cde768c",
+      "id": "random-04",
+      "mean_pair_distance_mm": 24.40913680162982
+    },
+    {
+      "category": "random",
+      "centers_mm": [
+        [
+          34.0,
+          22.0
+        ],
+        [
+          8.0,
+          14.0
+        ],
+        [
+          22.0,
+          29.0
+        ],
+        [
+          10.0,
+          29.0
+        ],
+        [
+          7.0,
+          43.0
+        ],
+        [
+          20.0,
+          9.0
+        ]
+      ],
+      "design_hash": "dac045c430aa344c78360203ecae69bdd98e8d223b257bb18e7b3d802d2be6a5",
+      "id": "random-05",
+      "mean_pair_distance_mm": 21.518064915082537
+    },
+    {
+      "category": "random",
+      "centers_mm": [
+        [
+          9.0,
+          22.0
+        ],
+        [
+          22.0,
+          35.0
+        ],
+        [
+          45.0,
+          27.0
+        ],
+        [
+          40.0,
+          41.0
+        ],
+        [
+          37.0,
+          15.0
+        ],
+        [
+          24.0,
+          18.0
+        ]
+      ],
+      "design_hash": "b26da1f7bd5870d6dd59beb057893a0e3dd37d1dea339f766ae89abb5ec6b299",
+      "id": "random-06",
+      "mean_pair_distance_mm": 22.7057123597166
+    },
+    {
+      "category": "random",
+      "centers_mm": [
+        [
+          27.0,
+          21.0
+        ],
+        [
+          44.0,
+          25.0
+        ],
+        [
+          14.0,
+          15.0
+        ],
+        [
+          19.0,
+          43.0
+        ],
+        [
+          6.0,
+          38.0
+        ],
+        [
+          33.0,
+          43.0
+        ]
+      ],
+      "design_hash": "4fb597a08f00a42c2ebad0224f67d807158036cf94e86ac2c25dbc2e4628a3f6",
+      "id": "random-07",
+      "mean_pair_distance_mm": 24.71460795326152
+    },
+    {
+      "category": "random",
+      "centers_mm": [
+        [
+          31.0,
+          20.0
+        ],
+        [
+          44.0,
+          23.0
+        ],
+        [
+          5.0,
+          18.0
+        ],
+        [
+          19.0,
+          8.0
+        ],
+        [
+          17.0,
+          38.0
+        ],
+        [
+          7.0,
+          36.0
+        ]
+      ],
+      "design_hash": "df53086a27e3289bb9153b82e59d63c1dd5a0c399bf154c19f3f9c700f91509d",
+      "id": "random-08",
+      "mean_pair_distance_mm": 25.065473815890314
+    }
+  ],
+  "n": 24,
+  "pool_size": 384,
+  "schema": "slab-mesh-layouts-v1",
+  "seed": 1,
+  "selection": "geometry-only mean Euclidean pairwise center distance extremes; random remainder"
+}
