@@ -84,13 +84,17 @@ const RULE = labeller();
 export const labelFor = RULE.labelFor;
 export const labelForAll = RULE.labelForAll;
 
-// ── the run view: a run object (GET /api/runs/{id}, or a replay file of one) ────────────────────────────────
-// The identity of every temperature it can show: one per baseline and per oracle result, in record order.
+// ── the run view and the verify page: flight records ─────────────────────────────────────────────────────
+// A run object (GET /api/runs/{id}, or a replay file of one), or one lane's record document ({ events, ... }, as the
+// verify page and the TFL-08 records carry it). The identity of every temperature it can show: one per baseline and per
+// oracle result, in record order.
 export function runTemperatureIds(run) {
   const ids = [];
-  const lanes = isObj(run) && isObj(run.result) && isObj(run.result.lane_results) ? Object.values(run.result.lane_results) : [];
-  for (const lane of lanes) {
-    for (const e of isObj(lane) && Array.isArray(lane.record) ? lane.record : []) {
+  const records = !isObj(run) ? []
+    : isObj(run.result) && isObj(run.result.lane_results) ? Object.values(run.result.lane_results).map((lane) => (isObj(lane) ? lane.record : null))
+    : [run.events];
+  for (const record of records) {
+    for (const e of Array.isArray(record) ? record : []) {
       if (!isObj(e) || (e.event !== "baseline" && e.event !== "oracle_result")) continue;
       ids.push(isObj(e.payload) && isObj(e.payload.thermal) ? e.payload.thermal.solver_version : undefined);
     }

@@ -231,6 +231,21 @@ test("the run view: every baseline and oracle result names its identity; the rep
   assert.deepEqual(runTemperatureIds(null), []);
 });
 
+test("the verify page: one lane's record document names its identities too (the TFL-08 records)", () => {
+  const record = (rel) => JSON.parse(readFileSync(join(PUBLIC, "tfl08", "records", rel), "utf8"));
+  const affected = runTemperatureIds(record("ascend910/seed-0/random.json"));
+  assert.ok(affected.length > 1);
+  assert.equal(labelForAll(affected), LABELS.withdrawn);
+  assert.equal(labelForAll(runTemperatureIds(record("plate/seed-0/random.json"))), LABELS.unvalidated, "the plate: another evaluator");
+  assert.deepEqual(runTemperatureIds({ events: "not a list" }), []);
+  assert.equal(labelForAll(runTemperatureIds({ events: [{ event: "oracle_result", payload: { thermal: { maximum_temperature_c: 90 } } }] })),
+    LABELS.unvalidated, "a result that names no evaluator");
+  // The leaderboard's batch summary names no evaluator for its temperatures: unvalidated, so its page shows the notice.
+  const batch = JSON.parse(readFileSync(join(PUBLIC, "tfl08", "leaderboard.json"), "utf8"));
+  assert.deepEqual(runTemperatureIds(batch), []);
+  assert.equal(labelForAll([]).notice, true);
+});
+
 // ── live: a signed fixture event through the Lab view's own poller (lab-live.mjs, the code lab.js runs) ─────────
 const LIVE_RUN = { run_id: "live-fixture-0001", arm: "live", family: "ascend910", seed: 11, ticket_id: "ticket-live-fixture" };
 const encoder = new TextEncoder();
@@ -280,17 +295,21 @@ test("live: the same event from another evaluator is unvalidated, with the notic
   assert.equal(needsNotice(fixture.ordered), false);
 });
 
-test("all three pages take their notice and labels from this one module", () => {
+test("every page that shows these temperatures takes its notice and labels from this one module", () => {
   const page = (rel) => readFileSync(join(PUBLIC, rel), "utf8");
   const imports = (rel, from) => assert.match(page(rel), new RegExp(`import \\{[^}]*\\bNOTICE\\b[^}]*\\} from "${from.replace(/[.]/g, "\\.")}";`), rel);
   imports("app.js", "./temperature-label.mjs");
   imports("sentilab/lab.js", "../temperature-label.mjs");
   imports("sentilab/package/package.js", "../../temperature-label.mjs");
-  for (const rel of ["app.js", "sentilab/lab.js", "sentilab/package/package.js"]) {
+  imports("leaderboard.js", "./temperature-label.mjs");
+  imports("verify.js", "./temperature-label.mjs");
+  for (const rel of ["app.js", "sentilab/lab.js", "sentilab/package/package.js", "leaderboard.js", "verify.js"]) {
     assert.doesNotMatch(page(rel), /under review|heat-sink coupling/, `${rel} holds no copy of the notice text`);
   }
-  for (const rel of ["index.html", "sentilab/index.html", "sentilab/package/index.html"]) {
+  for (const rel of ["index.html", "sentilab/index.html", "sentilab/package/index.html", "leaderboard.html", "verify.html"]) {
     assert.match(page(rel), /<p class="wnotice" id="wnotice" role="note" hidden><\/p>/, `${rel} has the notice slot`);
   }
   assert.match(page("index.html"), /<script type="module" src="app\.js"><\/script>/, "app.js loads as a module");
+  assert.match(page("leaderboard.html"), /<script type="module" src="leaderboard\.js"><\/script>/, "leaderboard.js loads as a module");
+  assert.match(page("verify.html"), /<script type="module" src="verify\.js"><\/script>/);
 });

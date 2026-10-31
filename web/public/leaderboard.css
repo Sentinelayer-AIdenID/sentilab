@@ -15,6 +15,8 @@ h2 { font-size: 18px; margin-bottom: 14px; }
 label { color: #abc0d1; font-size: 13px; }
 select { display: block; margin-top: 5px; min-width: 190px; padding: 9px 12px; color: #edf6ff; background: #121d29; border: 1px solid #364b60; border-radius: 7px; }
 .notice { padding: 14px 18px; color: #c4d5e4; background: #111b26; border: 1px solid #273747; border-radius: 9px; }
+/* The temperature notice (temperature-label.mjs NOTICE). The numbers below it stay as recorded. */
+.wnotice { margin: 0 0 18px; padding: 10px 16px; color: #f3d9a4; background: #2a2418; border: 1px solid #7a6334; border-radius: 9px; font-size: 14px; }
 .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin: 18px 0; }
 .summary-grid article, .panel { background: #101821e8; border: 1px solid #253442; border-radius: 10px; }
 .summary-grid article { min-height: 116px; padding: 16px 18px; display: flex; flex-direction: column; }
