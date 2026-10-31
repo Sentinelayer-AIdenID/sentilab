@@ -1,0 +1,203 @@
+{
+  "version": "slab041-freeze/1",
+  "status": "must-fill-before-execution",
+  "source_rows": [
+    "B08",
+    "R01",
+    "Q04",
+    "Q05",
+    "Q06"
+  ],
+  "endpoints": {
+    "sharing": "primary: paired family mean of B2 final J minus B3 final J",
+    "worker": "primary: paired family fixed-corpus geometry-plus-wire success rate, adapter minus base",
+    "thermal_objective": "versioned active-chip-layer grid peak; maximum over all frozen scenarios; lower is better",
+    "centers": "diagnostic only",
+    "parsing": "diagnostic only",
+    "b4_closed_loop": "required secondary: B3 versus B4",
+    "simulator_confirmed_corpus_utility": "required secondary",
+    "best_evaluated_unreproduced": "descriptive only; never accepted evidence"
+  },
+  "families": {
+    "target": 12,
+    "fallback": 8,
+    "fallback_approval": "before any outcome, from frozen stratified order",
+    "descriptive_only": 6,
+    "paired_seeds": 2,
+    "seed_aggregation": "arithmetic mean within family before testing",
+    "primary_dropping": "forbidden after outcomes",
+    "incomplete_required_pair": "apply the frozen final-evidence/loss policy; never drop a family or seed, average over only observed seeds, or treat missingness as a measured tie",
+    "sharing_ties": "absolute family difference <= frozen sharing_tolerance",
+    "worker_ties": "exact equality of rational success rates",
+    "ties": "exclude endpoint-specific ties from that endpoint denominator and report n",
+    "test": "two-sided exact family sign test; beneficial-direction confirmatory p vector frozen before Holm",
+    "multiplicity": "Holm across both sharing and worker using the confirmatory p vector, never raw p values followed by a direction check",
+    "alpha": 0.05,
+    "first_threshold": 0.025,
+    "second_threshold": 0.05,
+    "eight_non_tied_required_wins": 8,
+    "six_non_tied_rule": "6/6 may pass second at .05 only after the other primary passes first at .025; a six-family design stays descriptive",
+    "missing_family_adverse_sign": {
+      "scope": "only a pre-named treatment beneficial-direction primary claim under pins.missing_family_primary_claims; not a harm claim or a secondary endpoint",
+      "retention": "retain all frozen families and both seed positions; endpoint-specific measured ties alone reduce n; never remove unfavorable or missing families",
+      "analysis": "apply adverse family signs for missing required evidence only as preregistered; form confirmatory_p_vector BEFORE two-primary Holm, using raw two-sided p only for wins > losses and otherwise 1 for each named primary; never check direction only after Holm",
+      "report": "report measured wins, losses and ties separately from imputed adverse signs and missing seed/family evidence",
+      "prohibitions": "never invent temperatures, fabricate seed means, convert missingness to a measured failure, or infer harm from imputed losses"
+    },
+    "eleven_of_twelve_two_sided_p": 0.00634765625,
+    "no_loss_probability_caveat": "quoted 2.1452% and 68.1118% assume iid homogeneous failures; not measured reliability",
+    "confirmatory_p_vector": {
+      "endpoints": [
+        "sharing",
+        "worker"
+      ],
+      "favorable_direction": "wins > losses after preregistered adverse-sign imputation; measured endpoint-specific ties excluded",
+      "favorable_p": "raw two-sided exact sign-test p",
+      "otherwise_p": 1,
+      "apply": "before Holm sorting and threshold comparisons",
+      "report": "retain raw two-sided p values descriptively alongside confirmatory p values; measured wins/losses/ties and imputed adverse signs reported separately"
+    }
+  },
+  "arms": {
+    "B0": {
+      "system": "conventional simulated annealing",
+      "labs": 1,
+      "search_per_lab": 28,
+      "reproduction_per_lab": 4,
+      "nomination": "top distinct"
+    },
+    "B1": {
+      "system": "one lab with base worker",
+      "labs": 1,
+      "search_per_lab": 28,
+      "reproduction_per_lab": 4,
+      "nomination": "top distinct"
+    },
+    "B2": {
+      "system": "four isolated labs with base worker",
+      "labs": 4,
+      "search_per_lab": 7,
+      "reproduction_per_lab": 1,
+      "nomination": "best per lab"
+    },
+    "B3": {
+      "system": "four shared-evidence labs with base worker",
+      "labs": 4,
+      "search_per_lab": 7,
+      "reproduction_per_lab": 1,
+      "nomination": "best per lab"
+    },
+    "B4": {
+      "system": "four shared-evidence labs with adapted worker",
+      "labs": 4,
+      "search_per_lab": 7,
+      "reproduction_per_lab": 1,
+      "nomination": "best per lab"
+    }
+  },
+  "budget": {
+    "unit": "all-scenario bundle per family x seed x arm",
+    "search_total": 28,
+    "reproduction_total": 4,
+    "total": 32,
+    "target_total": 3840,
+    "fallback_total": 2560,
+    "descriptive_total": 1920,
+    "transfer": "forbidden between labs, phases, arms, seeds or families",
+    "initialization": "initial reference and refinement charges must be pinned before execution; no free search opportunity",
+    "cache_and_shared_sample": "every requesting lab spends its opportunity using the authoritative measurement; no cross-arm reuse",
+    "invalid_or_failed_search": "spends search slot; no free substitute",
+    "duplicate_nomination": "each lab spends and records its own reproduction slot",
+    "unused_reproduction": "record unused; never transfer",
+    "infrastructure_retry_limit": 1,
+    "retry": "exactly one declared transient infrastructure retry only after proven pre-execution failure; same candidate/context/slot; record all attempts and costs; no substitute",
+    "retry_accounting": "free only on proof solve never started; uncertain or post-start launch consumes slot; at most one pre-execution retry, never another charged attempt in same slot",
+    "cross_architecture": "same reproduction slot only if frozen reproducer policy authorizes it; no free extra evidence",
+    "lost_opportunity": "a consumed search or reproduction loss remains charged and never earns a replacement; preserve reason and execution evidence even if an otherwise valid final board survives",
+    "held_out_no_result_retries": {
+      "scope": "fixed held-out corpus evaluation; not additional chiplet search/reproduction opportunities",
+      "prerequisites": "freeze attempt schedule, seed schedule, idempotency and ordering, symmetric retry limits and every charge before outcomes",
+      "selection": "first complete measurement-valid evaluation in frozen attempt order before any success, nomination margin or favorable-direction test; never retry measured scientific failure for a better result",
+      "accounting": "retain every attempt and charge including no-result attempts; fixed inputs alone do not remove selection bias; chiplet remains at 32 with its existing pre-execution-only retry rule"
+    }
+  },
+  "epoch": {
+    "count_per_run": 1,
+    "reference": "immutable initial reference, shared by all labs for the entire search",
+    "schedule": [
+      "all search",
+      "deterministic nomination",
+      "all reproductions",
+      "rank-order gate"
+    ],
+    "barrier": "every lab search closed before any reproduction in each of B0 through B4; all slots terminal before final gate",
+    "sharing": "B3 and B4 may share evaluated evidence during search; no reproduction or accepted-board updates during search",
+    "demo": "sequential live-loop board is demonstration only, never benchmark evidence",
+    "scope": "family x seed x arm; immutable context binds evaluator, metric, scenarios and physical-layout canonicalization",
+    "missing": "cancelled/no-result and unobserved infrastructure losses remain distinct from measured scientific failures; no free replacement; a consumed loss need not invalidate an otherwise valid final board; apply frozen final-evidence/loss and claim-specific missing-family policies",
+    "final_board_policy": "freeze board fallback, required final evidence, loss counting/limits, and treatment of missing reference, scorer, seed and global STOP before outcomes; unresolved pins block execution"
+  },
+  "nomination": {
+    "ranking": "exact finite evaluated J ascending, then canonical physical-layout hash ascending; no tolerance in comparator",
+    "same_hash": "one authoritative measurement per physical-layout/context; retain separate proposal/lab/slot identities and charges",
+    "eligibility": "filter valid candidates first: positive reference J minus evaluated J >= acceptance_margin + reference uncertainty + candidate uncertainty",
+    "no_substitute": true,
+    "measurement_selection": "select first complete measurement-valid evaluation in frozen attempt order BEFORE testing nomination margin; never first favorable or qualifying result; a margin failure cannot advance to a later repeat",
+    "normalization_evidence": "preserve each slot original independent reproduction and per-slot agreement evidence, B2 isolation, attempt provenance and charge BEFORE duplicate normalization; one authoritative measurement never replaces a slot evidence obligation"
+  },
+  "gate": {
+    "contract": "contract-0.2",
+    "ranking": "exact finite reproduced J ascending, then canonical physical-layout hash; accept the first qualified reproduction",
+    "accepted": "one winner with positive improvement reaching the frozen-reference margin plus both uncertainties; becomes the board",
+    "non_improving_current": "board J minus candidate J <= 0",
+    "within_margin": "0 < board J minus candidate J < acceptance_margin + board uncertainty + candidate uncertainty; exact boundary qualifies",
+    "valid_losers": "retain valid evidence; never stale_parent",
+    "reproduction": "fresh independent worker/process, identical bound inputs and frozen context; absolute J discrepancy <= reproduction_tolerance",
+    "margin_binding": "rank_order_gate rejects null acceptance_margin or a caller margin unequal to the frozen value"
+  },
+  "parameters": {
+    "acceptance_margin": null,
+    "reproduction_tolerance": null,
+    "sharing_tolerance": null
+  },
+  "pins": {
+    "metric_id": null,
+    "evaluator_version": null,
+    "scenario_manifest": null,
+    "active_layer": null,
+    "grid": null,
+    "geometry_and_stack": null,
+    "wire_metric_and_units": null,
+    "wire_connection_matrix": null,
+    "wire_x0": null,
+    "wire_alpha": null,
+    "wire_zero_baseline_absolute_cap": null,
+    "margin_derivation_and_numerical_uncertainty": null,
+    "family_manifest_and_stratified_order": null,
+    "paired_seed_values_and_run_order": null,
+    "hidden_corpus_and_split": null,
+    "models_prompts_tools_and_memory": null,
+    "lab_rosters": null,
+    "reproducer_policy": null,
+    "runtime_token_proposal_and_retry_cost_caps": null,
+    "training_only_headroom_protocol": null,
+    "pre_outcome_release": null,
+    "physical_layout_canonicalization": null,
+    "reference_and_refinement_charges": null,
+    "sharing_round_barriers": null,
+    "evaluation_attempt_order": null,
+    "board_fallback": null,
+    "required_final_evidence": null,
+    "loss_counting_and_limits": null,
+    "missing_reference_policy": null,
+    "missing_scorer_policy": null,
+    "missing_seed_policy": null,
+    "global_stop_policy": null,
+    "missing_family_primary_claims": null,
+    "held_out_attempt_schedule": null,
+    "held_out_seed_schedule": null,
+    "held_out_idempotency_and_ordering": null,
+    "held_out_symmetric_retry_limits": null,
+    "held_out_retry_charges": null
+  }
+}
