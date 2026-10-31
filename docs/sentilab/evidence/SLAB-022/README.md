@@ -59,8 +59,14 @@ MCP arguments use JSON-RPC invalid-params. These transport errors are not
 contract receipts. Invalid UTF-8 bytes produce `not_json` with a raw-byte hash.
 
 The raw cap is **1,048,576 bytes**, checked before JSON parsing. File intake accepts
-regular files up to **16,777,216 bytes**. A nonblocking open followed by descriptor
-validation rejects FIFOs and devices without waiting for a writer or EOF. Files
+regular files up to **16,777,216 bytes**. The open uses `O_RDONLY` plus `O_BINARY`,
+`O_NOFOLLOW` and `O_NONBLOCK` where each is available. Binary mode preserves the
+original CRLF bytes on Windows. Immediately after open, `fstat` must identify a
+regular file before any read. On Linux, nonblocking open also rejects FIFOs without
+waiting for a writer; no equivalent nonblocking-open guarantee is claimed on
+platforms without `O_NONBLOCK`. Where `O_NOFOLLOW` exists, the ordinary CLI rejects
+a final-component symlink. Restricted intake resolves in-root symlinks first and
+then validates the opened descriptor, as described above. Files
 above the intake cap are transport errors; no partial hash is emitted. Reads use
 64 KiB chunks and at most the initial file size plus one byte. Changes in size,
 mtime or ctime during intake also fail as transport errors. For a stable file
@@ -90,6 +96,13 @@ No contract files are changed. [VERIFICATION.json](VERIFICATION.json) records
 the gates rerun on the final implementation, source hashes, and transport regression proofs.
 [P2-VERIFICATION.json](P2-VERIFICATION.json) records the file-intake/cancellation
 correction, actual stdio regressions, mutation checks and remaining gate scope.
+The Windows correction is exercised on Linux by replacing only the core's OS
+dependency: no `O_NONBLOCK`/`O_NOFOLLOW`, an available `O_BINARY`, and simulated
+CRLF translation unless binary mode is selected. Actual CLI subprocesses prove
+four bytes read for `[]\r\n`, receipt parity, and structured exit 2 for nonregular
+descriptors and injected OS exceptions before/during/after reading. Native Windows
+execution was not run in this box. MCP and CLI `--root` still require Linux procfs
+and fail closed elsewhere; ordinary CLI file intake has no procfs dependency.
 Independent review remains pending.
 
 ```sh
@@ -99,6 +112,8 @@ python -m unittest -v sentilab_core.test_resultcheck
 python -m unittest -v sentilab_core.test_resultcheck_io
 # Configured file boundary, symlink escape and descriptor-swap regression tests.
 python -m unittest -v sentilab_core.test_resultcheck_boundary
+# Portable flags, binary bytes, descriptor rejection and intake exception exits.
+python -m unittest -v sentilab_core.test_resultcheck_platform
 # Mandatory additional CI gate: Python 3.12 and Node 22, no solver/model calls.
 python -m sentilab_core.test_resultcheck --parity
 ```

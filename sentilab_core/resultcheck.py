@@ -508,8 +508,11 @@ def check_file(file, *, root=None):
     digest = hashlib.sha256()
     prefix = bytearray()
     size = 0
-    # Nonblocking open matters BEFORE fstat: a FIFO can otherwise block here.
-    fd = os.open(file, os.O_RDONLY | os.O_NONBLOCK)
+    # Binary mode preserves CRLF on Windows. Nonblocking open, where supported,
+    # matters BEFORE fstat: a FIFO can otherwise block waiting for a writer.
+    flags = (os.O_RDONLY | getattr(os, 'O_BINARY', 0)
+             | getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0))
+    fd = os.open(file, flags)
     try:
         before = os.fstat(fd)
         if not stat.S_ISREG(before.st_mode) or before.st_size > MAX_FILE_BYTES:

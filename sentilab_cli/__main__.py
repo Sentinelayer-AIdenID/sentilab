@@ -20,7 +20,9 @@ def main(conductor=False):
         args = parser.parse_args(sys.argv[2:])
         try:
             receipt = check_file(args.file, root=args.root)
-        except (OSError, ValueError):
+        except Exception:
+            # Intake failures, including unavailable platform operations, must
+            # not escape as exit 1: that code denotes a completed flagged check.
             print(canonical({"error": {"code": "file_unreadable"}}))
             raise SystemExit(2)
         print(canonical(receipt))
