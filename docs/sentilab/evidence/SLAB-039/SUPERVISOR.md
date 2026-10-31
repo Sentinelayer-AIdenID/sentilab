@@ -37,9 +37,14 @@ still match the owned snapshot; a reused PID or PGID is not an owned handle.
 No child or successful result escapes accounting on the normal completion path.
 A metering/cleanup failure leaves the durable reservation unresolved.
 
-The operator must install a hard container-level cgroup-v2 `cpu.max` rate cap
-equal to Q (Q = 1, 2 or 8), covering the supervisor and every descendant. For a
-100000-microsecond period, quotas are respectively 100000, 200000 and 800000.
+The operator must install a container-level cgroup-v2 `cpu.max` quota whose
+quota/period ratio equals Q (Q = 1, 2 or 8), covering the supervisor and every
+descendant. For a 100000-microsecond period, quotas are respectively 100000,
+200000 and 800000. This is a quota per period with possible scheduling bursts,
+including across period boundaries and any configured `cpu.max.burst` allowance.
+It does **not** guarantee that every rolling second contains at most Q CPU-seconds,
+and it is not an unconditional cumulative CPU cap. Deployment measurements and
+the declared burst reserve must account for that quota/period behavior.
 Admission checks the current cgroup's live quota/period, refuses an unlimited
 or mismatching cap, and records the observed value in reservation and settlement.
 The operator must keep the cap unchanged throughout the allocation. The runner
@@ -113,9 +118,13 @@ reuse the allowance. The inherited lock remains held by the parent through
 terminal settlement. After every descendant is confirmed reaped, the parent
 replaces partial worker CPU with the maximum of its prior recorded charge and
 the original ledger charge plus whole-parent-lifetime CPU plus T. This includes
-parent imports and supervision, worker setup/output and kill-to-reap CPU.
+parent imports/startup and observation overhead, worker setup/output and
+kill-to-reap CPU. Observation and kill overhead are charged even when they delay
+the next sample; they are not subtracted as supposedly free supervisor work.
 
-Every overshoot is charged and reported, including on failed or stopped attempts.
+Every historical charge is retained. Every measured overshoot is charged and
+reported in the individual lifetime settlement, including failed or stopped
+attempts; the summary maximum does not replace that per-attempt history.
 If a single settlement's overshoot is strictly greater than H, it persists
 `allocation_halted` with the reservation ID, excess and H. Both supervisor
 admission and the shared fixture budget refuse further work against that ledger,

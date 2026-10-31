@@ -89,7 +89,7 @@ def load_policy(path):
 
 
 def verify_cpu_max(policy):
-    """Require the host-installed cgroup-v2 rate cap; never modify the host."""
+    """Require cpu.max quota/period = Q; this permits bursts, not a rolling cap."""
     entries = Path('/proc/self/cgroup').read_text().splitlines()
     groups = [entry[3:] for entry in entries if entry.startswith('0::/')]
     if len(groups) != 1:

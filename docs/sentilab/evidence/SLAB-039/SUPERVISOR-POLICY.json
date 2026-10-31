@@ -6,10 +6,10 @@
   "accept_unbounded_scheduler_and_cleanup_risk": true,
   "latency_measurement_evidence": null,
   "operating_conditions": {
-    "container_rate_cap": "host-installed cgroup v2 cpu.max quota/period equals rate_q",
+    "container_rate_cap": "host-installed cgroup v2 cpu.max quota/period equals rate_q; scheduling bursts are possible, so this does not bound every rolling second or impose an unconditional cumulative CPU cap",
     "reserve_h_cpu_seconds": "2 * rate_q * measured_observation_plus_kill_seconds",
     "stop_at_cpu_seconds": "remaining CPU allowance minus H",
-    "overshoot": "charge and report every overshoot, including kill-to-reap CPU and reserved settlement tail",
+    "overshoot": "retain all historical charges and every measured overshoot; charge startup, observation, kill-to-reap CPU and reserved settlement tail",
     "allocation_halt": "any single overshoot strictly greater than H halts the entire allocation until human review"
   },
   "limits": {
