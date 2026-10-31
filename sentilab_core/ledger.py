@@ -17,7 +17,16 @@ class BrokenLedger(ValueError):
 
 @contextmanager
 def lock(path, *, shared=False, blocking=True):
-    with open(path, "a+b") as handle:
+    try:
+        handle = open(path, "rb" if shared else "a+b")
+    except FileNotFoundError:
+        if not shared:
+            raise
+        # Imported read-only history may have no writer sidecar. A writer
+        # creates its exclusive lock before creating or appending any ledger.
+        yield
+        return
+    with handle:
         flags = fcntl.LOCK_SH if shared else fcntl.LOCK_EX
         fcntl.flock(handle, flags | (0 if blocking else fcntl.LOCK_NB))
         try:
