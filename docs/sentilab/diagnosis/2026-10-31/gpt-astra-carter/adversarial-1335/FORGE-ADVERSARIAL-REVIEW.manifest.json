@@ -1,0 +1,160 @@
+{
+  "schema": "sentilab-forge-adversarial-review-v1",
+  "sealed_at_utc": "2026-10-31T13:27:50.2398326Z",
+  "author": "gpt-astra-carter",
+  "status": "post-independent-freeze-peer-review",
+  "review": {
+    "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/peer-diagnosis-1318/FORGE-ADVERSARIAL-REVIEW.md",
+    "sha256": "4f36502d12f83fd20ebab93f6fee7d1dbf1c0fe7edb7fe6d34ae976675b86d40",
+    "bytes": 46440
+  },
+  "inputs": [
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/peer-diagnosis-1318/forge-room-record.json",
+      "sha256": "558c6d703f7d3dd930ee22ae05663528bae1915d35ef9f3ed7147662fbb7c586",
+      "bytes": 10816
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/peer-diagnosis-1318/forge-room-findings.md",
+      "sha256": "d39eb6e7240b8b00a846a723456f01e32f86e49556ea66497fd166ac36c70133",
+      "bytes": 10045
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/.sentinelayer/sentilab-planning/gpt-astra-carter/daytime-2026-10-31/state/records/fd88075389d1124770772c70632c6e58dafbe46aa0cb41dfc5a0ce29543f9017.json",
+      "sha256": "de885960820faa6b2f86397c707ba12e2d6f6e2e5e17c5853819b800a7148d7a",
+      "bytes": 4838
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/.sentinelayer/sentilab-planning/gpt-astra-carter/daytime-2026-10-31/state/records/b96585f7ac6ec8b7090046c0b1bd1d2d13a71c1d674e88288c4f28f0ef88d59b.json",
+      "sha256": "dfe78cf70d0f113ea7c1a3be2cda0c5bf5af0e98aa6c8128c61bdd1a15debe7e",
+      "bytes": 6397
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/reports/SentiLab inconclusive results diagnosis.md",
+      "sha256": "132bf28fc6d962ae159a942084b3a7fe4c17fd52dc65da7a13789939a0460a7d",
+      "bytes": 68772
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/reports/SentiLab inconclusive results diagnosis.freeze.json",
+      "sha256": "f8a4705ae0c63143fa9258f48b5f6908c37bcf28e0420419b8e82fecaa15783a",
+      "bytes": 4088
+    }
+  ],
+  "scope": {
+    "forge_initial_findings_and_56649": true,
+    "warden_56648_only_for_dependency_objection": true,
+    "warden_physics_not_evaluated": true,
+    "original_report_and_freeze_unchanged": true,
+    "post_freeze_clarification_of_parallel_computational_branch": true,
+    "no_new_solver_model_gpu_ci_or_product_work": true,
+    "no_network_retrieval_or_peer_messages": true,
+    "no_execution_or_price_provider_release": true
+  },
+  "verification": {
+    "unique_local_citation_files": 25,
+    "missing_local_citation_files": 0,
+    "unresolved_citation_tokens": 0
+  },
+  "local_citations": [
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/.sentinelayer/sentilab-planning/gpt-astra-carter/daytime-2026-10-31/state/records/b96585f7ac6ec8b7090046c0b1bd1d2d13a71c1d674e88288c4f28f0ef88d59b.json",
+      "sha256": "dfe78cf70d0f113ea7c1a3be2cda0c5bf5af0e98aa6c8128c61bdd1a15debe7e"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/.sentinelayer/sentilab-planning/gpt-astra-carter/daytime-2026-10-31/state/records/fd88075389d1124770772c70632c6e58dafbe46aa0cb41dfc5a0ce29543f9017.json",
+      "sha256": "de885960820faa6b2f86397c707ba12e2d6f6e2e5e17c5853819b800a7148d7a"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/reports/SentiLab inconclusive results diagnosis.freeze.json",
+      "sha256": "f8a4705ae0c63143fa9258f48b5f6908c37bcf28e0420419b8e82fecaa15783a"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/reports/SentiLab inconclusive results diagnosis.md",
+      "sha256": "132bf28fc6d962ae159a942084b3a7fe4c17fd52dc65da7a13789939a0460a7d"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/research_notes/SentiLab inconclusive results diagnosis/human_package_baselines.md",
+      "sha256": "373a07ee702324c39e44e87b09db6c329be00b7b98eb78e94b2a8bd52af23e8d"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/research_notes/SentiLab inconclusive results diagnosis/human_package_sources/local-source/THIRD_PARTY_NOTICES.md",
+      "sha256": "85902a66419f333a977225be3afabca12957460dd509cebd665a1b86fea44ecd"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/research_notes/SentiLab inconclusive results diagnosis/human_package_sources/tap-date2021.pdf.txt",
+      "sha256": "9444d3ff6595f1c3e60269a3d7839777d7d0a0ddd50985d73bdeef3bba50985f"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/research_notes/SentiLab inconclusive results diagnosis/numerical_forensics_data.json",
+      "sha256": "ba4ec661063c4ba5e8a746b9239a27908d3b4c2c99e9f72d70125ea217663e37"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/peer-diagnosis-1318/forge-room-findings.md",
+      "sha256": "d39eb6e7240b8b00a846a723456f01e32f86e49556ea66497fd166ac36c70133"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/peer-diagnosis-1318/forge-room-record.json",
+      "sha256": "558c6d703f7d3dd930ee22ae05663528bae1915d35ef9f3ed7147662fbb7c586"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/pr18-96bf4a0/docs/sentilab/evidence/mesh/micro150/RESULT.json",
+      "sha256": "880e34d5bdcc231d23fdd2ee35c9aa49779bab9449edf1c96fe1730c67dbf677"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/pr25-a10063d-review/EXACT-CORRECTION-REVIEW.md",
+      "sha256": "4211e06e15cec9a1fab4da1359d71b187e08b9384125b2cdeacbd31f3567edb4"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/pr25-a10063d-review/source/docs/sentilab/evidence/SLAB-039/PREREG-v4.json",
+      "sha256": "a4e34fc05fc6440c65b545c4868f7c6c09c77c391c2835d0f79fe1549b294fb1"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/pr25-a10063d-review/source/docs/sentilab/evidence/SLAB-039/PREREG.json",
+      "sha256": "211bd3c181305ead1bc924ffc11dc5fb042cd7a6e05ce5ca15a8ca89c500db8e"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/pr25-a10063d-review/source/docs/sentilab/evidence/SLAB-039/RESULT.json",
+      "sha256": "fc5a25fb614bfb253fad81af4c3505cd0b88aeb79203612866e971df5dd7ddcc"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/pr25-a10063d-review/source/docs/sentilab/evidence/SLAB-039/SUPERVISOR-POLICY.json",
+      "sha256": "b117ae884799a4099259fd07164d800904ad1a8ae1a37832b7d6823e6cf8aa57"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/pr25-a10063d-review/source/docs/sentilab/evidence/SLAB-039/VALIDATION.md",
+      "sha256": "8505c8c15410025872bfb74fef2423830ea8541c11ada4153670d8fad470f2d1"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/PR25-FA7ED8F-REVIEW.md",
+      "sha256": "24c114ddf596b58f2e3f1740e816959c369b75e1e1e7674386ccae2e5927081a"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_controller/controller.py",
+      "sha256": "991247becc3f09a1475588e1ddd7f998609597f099db05432c59e9320eb6d666"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_controller/headroom.py",
+      "sha256": "49a6ccd5f643b27973968cbab7da3b6258ccf00109f21128fa26a14301f09cc8"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_hotspot/tap_oracle.py",
+      "sha256": "cabccdfcbb3a958fac820484353069ca3a76d54d31d5f699a537aafd2d5e376f"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_hotspot/temperature_grid.c",
+      "sha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_tap/configs/sys_ascend910.cfg",
+      "sha256": "548562a5f49d502f4b9bd03d3a4acc4b42f225056e6d91556416079c291e06d4"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_tap/passive_interposer.py",
+      "sha256": "dcbbaaa86a187bac3f1a1b12f49bd0dfc1c6cb3ed4e50ec51583f762adcf0a52"
+    },
+    {
+      "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/pr33-87997aa-review/source/docs/sentilab/freeze/SLAB-041-FREEZE.md",
+      "sha256": "98de7c79825ea568361be5ac85509b56be4e792d750c57ea1697b287d45ea46b"
+    }
+  ]
+}

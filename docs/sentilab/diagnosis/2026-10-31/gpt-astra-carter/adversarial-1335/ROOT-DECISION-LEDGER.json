@@ -1,0 +1,28 @@
+{
+  "schema": "sentilab-post-freeze-decision-ledger/1",
+  "at": "2026-10-31T13:29:30Z",
+  "firstReportSha256": "132bf28fc6d962ae159a942084b3a7fe4c17fd52dc65da7a13789939a0460a7d",
+  "rootResponse": {"outgoing": 191, "sequence": 56654, "sourceId": "3b3cb7ff-a8ba-44d6-9d6a-21128e2ee41b"},
+  "status": "Root accepts parallel computational direction with corrections; joint final ticket details and grants remain pending",
+  "executionRelease": false,
+  "decisions": [
+    {"id":"D1","topic":"Parallel computational work","root":"ACCEPT","peerSources":[56648,56649,56653],"change":"Claim-relative prerequisites replace the ambiguous blanket DIAG01-05 dependency. Reference recovery, raw evidence, resource profiling and numerical diagnostics may be authored in parallel. TTC and full five-arm work remain open, not prerequisites to the narrow computational comparison."},
+    {"id":"D2","topic":"MATCH and BEAT targets","root":"ACCEPT_WITH_QUALIFICATION","change":"Ascend is a reconstruction of a published simulation of a commercial package; CPU-DRAM is a human-authored research design. Exact layouts, metrics, solver and source rights must be bound. No measured-silicon, exact-CAD or generalization claim."},
+    {"id":"D3","topic":"Convection coupling hypothesis","root":"TARGETED_DIAGNOSTIC","change":"Source independently corroborates the internal half-rz_hs path including convection. Derive expected network and test controlled old/new equations with other inputs fixed. A matching fitted paper temperature alone cannot establish cause or physical validation."},
+    {"id":"D4","topic":"Constraints and tolerance","root":"REVISE","change":"Strict common wire-proxy ceiling is distinct from optional 5-percent-relaxed or Pareto tracks. HBM1mm,95C and0.5C need source support or explicit prospective assumptions. Approximate reconstruction stays labeled; sampled perturbation envelopes are not uniform bounds."},
+    {"id":"D5","topic":"Resource feasibility","root":"REVISE","change":"Mean cost times1.25 or1.5 is a forecast. Bind intended host/grid/lifecycle, reserve/stop/settlement, exact call manifest and prospective grant. Forge56653's about22solves/under1CPUminute is a request, not measured feasibility or authorization."},
+    {"id":"D6","topic":"Historical outcomes and no-ops","root":"PRESERVE","change":"Keep v3 INCONCLUSIVE, charges and missing witnesses. New reproduction has a new run identity. The269counter is proposed no-ops before admission, not proof of269native launches. No historical refunds, free opportunities or cached substitutes for fresh required reproductions."},
+    {"id":"D7","topic":"Agent development and confirmatory science","root":"SEPARATE_STUDIES","change":"New descriptive development comparisons may proceed after their own adequate numerical/reference and model/provider/payer gates. They do not wait on or replace the full SLAB041 five-arm freeze. Original32opportunity/family/missingness/Holm rules remain for that study."},
+    {"id":"D8","topic":"Literature headroom","root":"QUALIFY","change":"TAP's zero thermal weight below85C prevents an optimum inference from the near-match. CPU-DRAM's published21.05C reduction accompanies3.19times routed wire; it does not guarantee fixed-wire cheap-versus-reference headroom."}
+  ],
+  "ticketRequests": [
+    {"label":"Reference reconstruction and rotation","mapsTo":["DIAG-01C"],"author":"Forge","review":"root","trackerUuid":null},
+    {"label":"Controlled coupling verification","mapsTo":["DIAG-03","DIAG-04N"],"author":"Forge","review":"root","trackerUuid":null},
+    {"label":"Raw evidence and resource profile","mapsTo":["DIAG-02","DIAG-05"],"owner":"Warden assigns author/grant","review":"root","trackerUuid":null},
+    {"label":"Constrained conventional development screen","mapsTo":["DIAG-06C"],"author":"Forge","grant":"Warden","review":"root","trackerUuid":null},
+    {"label":"Matched exploratory agent proposals","mapsTo":["DIAG-06C","DIAG-07 infrastructure"],"owner":"Warden boxes/admission","review":"root","trackerUuid":null},
+    {"label":"Reference and candidate view evidence labels","mapsTo":["DIAG-09"],"author":"Forge","review":"root","trackerUuid":null}
+  ],
+  "unchangedBaseline":{"originalTickets":41,"requirements":234,"cliDeclarations":104,"mcpDeclarations":104,"deliverables":8,"fullyAccepted":0},
+  "next":"Obtain peer agreement to corrected conditions, actual UUIDs and exact author sources; then review a concrete bounded probe release."
+}

@@ -1,0 +1,11 @@
+const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto');
+const read=n=>JSON.parse(fs.readFileSync(path.join(__dirname,n),'utf8').replace(/^\uFEFF/,''));
+const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
+const forge=read('FORGE-ADVERSARIAL-REVIEW.manifest.json');
+const warden=read('WARDEN-ADVERSARIAL-MANIFEST.json');
+const entries=[forge.review,...forge.inputs,...forge.local_citations,...warden.sources];
+const results=entries.map(r=>{const b=fs.readFileSync(r.path);return{path:r.path,expected:r.sha256,actual:hash(b),bytes:b.length,ok:hash(b)===r.sha256&&(r.bytes===undefined||r.bytes===b.length)};});
+if(results.some(x=>!x.ok))throw Error('Manifest mismatch');
+const report={at:new Date().toISOString(),sourceInstances:results.length,uniquePaths:new Set(results.map(x=>path.resolve(x.path).toLowerCase())).size,results,rootReadBothCompleteReports:true,executionPerformed:false,scopedDecision:'Accept both adversarial reviews as source analysis; canonical peer files remain unverified; no numerical execution release.'};
+fs.writeFileSync(path.join(__dirname,'ROOT-REVIEW-VERIFIED.json'),JSON.stringify(report,null,2)+'\n');
+console.log(JSON.stringify({at:report.at,sourceInstances:report.sourceInstances,uniquePaths:report.uniquePaths,allPassed:true}));

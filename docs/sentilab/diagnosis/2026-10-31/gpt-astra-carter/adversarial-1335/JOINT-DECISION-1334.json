@@ -1,0 +1,21 @@
+{
+  "schema": "sentilab-joint-decision/1",
+  "at": "2026-10-31T13:34:30Z",
+  "supersedesProposalStatusOnly": "ROOT-DECISION-LEDGER.json",
+  "authority": {"human":[56598,56601],"root":56654,"forge":[56658,56664],"warden":56668},
+  "status": "Joint corrected computational direction accepted; six tickets operator-reported minted and assigned",
+  "executionRelease": false,
+  "trackerVerification": "Authenticated full Warden room message; no independent ticket API read performed yet",
+  "tickets": [
+    {"code":"SLAB-048","label":"REF-RECON","uuid":"c3dcb49a-430a-462e-a446-f532da204c46","owner":"pocket-forge","scope":"Approximate published references, rotation,45mm variant and sampled reconstruction sensitivity"},
+    {"code":"SLAB-049","label":"CAL-COUPLING","uuid":"d41fca43-2e6c-464e-8fbc-0c485e4828dd","owner":"pocket-forge","scope":"Frozen old/new equations, minimal analytical stack, controlled package diagnostics; grant pending"},
+    {"code":"SLAB-050","label":"EVIDENCE-PROFILE","uuid":"c255b91e-d4bf-4e79-afbb-84a838f36a6e","owner":"astra-slab002b-micro150","box":"2816ee68111b","scope":"Measured phases, raw retention, feasible admission, explicit no-op policy preserving fresh witnesses and opportunity records"},
+    {"code":"SLAB-051","label":"SCREEN-CONSTRAINED","uuid":"cf51d3d1-4c47-43c4-9ad3-08123f67cf3f","owner":"astra-slab002b-micro150","box":"2816ee68111b","scope":"Prospective strict same-proxy, relaxed+5percent and declared temperature/wire Pareto development tracks; small strict gap valid"},
+    {"code":"SLAB-052","label":"AGENT-PROPOSALS","uuid":"77e0a0e0-fd4e-4d81-a14c-ebab8a467d63","owner":"astra-slab043-conformance","box":"4a3fe63146a7","scope":"Capability-registry proposal harness now; actual labs only after provider/model/payer/entitlement admission and grant"},
+    {"code":"SLAB-053","label":"VIEW-LABELS","uuid":"afe267b2-2c39-4088-979e-76faa1d8f347","owner":"pocket-forge","scope":"Matched reference/candidate evidence labels visible at1280px and390px; after051"}
+  ],
+  "reviewer":"root independent exact-source/scientific review",
+  "operator":"Warden grants, boxes, merges and accounting",
+  "probeRule":"Every solve awaits a named Warden grant with exact calls, CPU cap, expiry and retained prior charges; source independently reviewed. About22calls/1CPUminute withdrawn as unsupported; wall timing is not CPU.",
+  "preserved":{"firstReportSha256":"132bf28fc6d962ae159a942084b3a7fe4c17fd52dc65da7a13789939a0460a7d","originalTickets":41,"requirements":234,"cliDeclarations":104,"mcpDeclarations":104,"incompleteDeliverables":8,"gb10Attempts":"018,047,047b closed; no restart","originalScience":"Full learning/sharing five-arm and physical validation remain open; no completion or scope deletion"}
+}

@@ -1,0 +1,95 @@
+{
+  "schema": "sentilab-additive-peer-response-publication-v1",
+  "sealed_at_utc": "2026-10-31T13:34:31.3887515Z",
+  "classification": "PRIVATE additive research review evidence",
+  "status": "prepared-not-published",
+  "base_commit": "3fc33383fea6270a9b42a717eda563dc6674686d",
+  "base_report_sha256": "132bf28fc6d962ae159a942084b3a7fe4c17fd52dc65da7a13789939a0460a7d",
+  "files": [
+    {
+      "name": "FORGE-ADVERSARIAL-REVIEW.manifest.json",
+      "bytes": 9859,
+      "sha256": "8c08593b7e126bc25cd700f79c258f3b705d7b2712cb85044e0737a05ad39be2"
+    },
+    {
+      "name": "FORGE-ADVERSARIAL-REVIEW.md",
+      "bytes": 46440,
+      "sha256": "4f36502d12f83fd20ebab93f6fee7d1dbf1c0fe7edb7fe6d34ae976675b86d40"
+    },
+    {
+      "name": "peer-response-sources.zip",
+      "bytes": 80960,
+      "sha256": "8c1ff1cdd3a92fe6b3aea8e2cfb9bf9ca0d0a2756bfbb3c14e474fa36cdb86ac"
+    },
+    {
+      "name": "README.md",
+      "bytes": 3923,
+      "sha256": "a3ed5aa8f520dcfa7f4072014d789079500ffcce48bb87f0cef225562f69e463"
+    },
+    {
+      "name": "ROOT-DECISION-LEDGER.json",
+      "bytes": 4462,
+      "sha256": "cbb3033df5f0bb53f86f8a34e1f25b72bf799a9d0b69e3d9c465389974399652"
+    },
+    {
+      "name": "ROOT-PROPOSAL-COVER.md",
+      "bytes": 1179,
+      "sha256": "b3b432bfec17152832a297840b569528c96d5368e5f89bee7fd16110d5ba82bb"
+    },
+    {
+      "name": "ROOT-REVIEW-VERIFIED.json",
+      "bytes": 28677,
+      "sha256": "7678a53944bc055d3fdfba523bc6d553cba76d957e9433c3554c032cda7b28e8"
+    },
+    {
+      "name": "root-verify.cjs",
+      "bytes": 1303,
+      "sha256": "e4dc739a01c5b0c62aa0c705682f1e37a4856c137f7c6bcfa7c321c40a1c2cdf"
+    },
+    {
+      "name": "SECRET-SCAN.json",
+      "bytes": 2508,
+      "sha256": "ad533e91234f133bdc1ebb191faea4471e713adbc361c5338dae73b45f473c4a"
+    },
+    {
+      "name": "SOURCE-MAP.json",
+      "bytes": 98414,
+      "sha256": "8f86962ee549ae9ef20bcbae9ef9e849725e91dad5555e5e5f3168620d72dd56"
+    },
+    {
+      "name": "WARDEN-ADVERSARIAL-MANIFEST.json",
+      "bytes": 11923,
+      "sha256": "ee5234a8397265a3f9762fbbbd9f48bda7bcd779fe461bb1dfbe412a8bf789d5"
+    },
+    {
+      "name": "WARDEN-ADVERSARIAL-REVIEW.md",
+      "bytes": 32116,
+      "sha256": "873af8c36f07f25966eb99d1178e3ab008c8a98314c81011e5ab3c9d1848e3ac"
+    }
+  ],
+  "file_count_excluding_this_manifest": 12,
+  "self_exclusion": "This manifest does not hash itself; its hash is in the external preparation receipt.",
+  "source_map": {
+    "mapped_sources": 58,
+    "unique_review_citation_files": 47,
+    "citation_occurrences": 111,
+    "new_archive_entries": 23,
+    "old_archive_byte_identical_mappings": 28
+  },
+  "permissions": {
+    "publication_performed": false,
+    "outgoing_peer_messages": false,
+    "pull_request_created": false,
+    "ci_started": false,
+    "gpu_or_solver_or_model_work": false,
+    "product_changes": false,
+    "shared_worktree_changes": false,
+    "original_diagnosis_packet_changed": false
+  },
+  "root_proposal": {
+    "timestamp": "2026-10-31T13:29:30Z",
+    "execution_release": false,
+    "ticket_uuids_pending_in_snapshot": true
+  },
+  "note": "Later agreements/reports belong in a separate additive update; this packet preserves the specified sealed review versions."
+}
