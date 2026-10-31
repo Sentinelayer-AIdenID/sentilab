@@ -47,6 +47,13 @@ Because e is the maximum error on this same sample, the triangle inequality guar
 | random-07 | 119.20 | 119.16 | 119.27 |
 | random-08 | 118.47 | 118.93 | 118.98 |
 
+## Resource accounting
+
+Solver executions in this run: 72. CPU-minutes (process plus reaped children): not measured; budget compliance is unverified.
+
+The shared allowance is 150 solver executions and 6 CPU-minutes across both fixtures, including warm-up and validation. Per-run accounting is not a shared-budget clearance. See RESULT.json and VALIDATION.md for prior usage and unresolved accounting.
+
+
 ## Scope
 
 e is an empirical discrepancy against 64 on this fixed layout set, not an error bound against the continuum or unseen layouts. Later R4/u_num and SLAB-039 margins can use e with that scope; a two-layout difference needs a margin greater than 2e. The 16-grid error and fixed-tolerance inversions show the limits of cheap screening. No benchmark method-gap or continuum-convergence claim is made here.

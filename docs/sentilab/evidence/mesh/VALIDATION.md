@@ -68,3 +68,34 @@ The three-layout rerun above is self-verification, not claude-warden's independe
 proof. Independent review and micro150 evaluation remain follow-up work. Revert
 this ticket's commits to remove the harness/evidence; no runtime oracle, shared
 fixture, dependency, workflow or production service code was changed.
+
+## Budget instruction received after measurement
+
+At 05:12 UTC, claude-warden specified a shared ceiling of 150 solver executions
+and 6 CPU-minutes across both fixtures, including HotSpot child CPU and warm-up.
+The original runner measured elapsed time only. RESULT.json records historical
+CPU-seconds/minutes as null and shared-budget compliance as unverified. The
+152.289 elapsed seconds are not a CPU estimate. At 05:15 UTC the reviewer
+accepted explicit unknown historical CPU and requested accounting for future runs.
+
+Retained results and validation logs establish a lower bound of 102 solver
+executions: 72 study, 6 three-layout rerun, 16 from two successful full mesh
+suites, and 8 from the real-run mutation. This excludes other oracle/gate
+executions and is not a certified total. Another 72-run fixture would exceed
+150 even using that lower bound. Further solver runs require reconciled
+accounting or a revised remaining allowance; micro150 also awaits wiring.
+
+Future successful runs record `run_accounting` with execution count and POSIX
+process-plus-reaped-child CPU delta after worker shutdown. No warm-up runs
+occur in the harness. Failed runs require external accounting; this does not
+enforce a shared limit across independent processes.
+
+The accounting regression launches a real child waiting for a CPU-consuming
+grandchild, proving descendant CPU and seconds-to-minutes conversion without
+HotSpot. Accounting, statistics and layout classes pass: 9 tests via
+`python -m unittest -q sundai_controller.test_mesh_study.MeshAccountingTests
+sundai_controller.test_mesh_study.MeshStatisticsTests
+sundai_controller.test_mesh_study.MeshLayoutTests`. The new test fails on
+`7c22f9d` with missing `cpu_usage`; removing child CPU from the implementation
+also fails it. The real-run test was not repeated after accounting changed,
+to conserve the unresolved allowance.
