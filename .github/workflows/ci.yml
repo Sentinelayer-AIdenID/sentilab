@@ -64,6 +64,7 @@ jobs:
           node --version
           (cd contracts/contract-0.2 && node run-vectors.mjs)
           (cd contracts/view-envelope && node run-view-vectors.mjs)
+          (cd contracts/view-envelope-v0.5 && node run-view-vectors.mjs)
 
   live-conformance:
     permissions:
