@@ -11,6 +11,8 @@ sundai_hotspot6/hotfloorplan
 sundai_hotspot6/*.o
 sundai_hotspot6/*.d
 sundai_hotspot6/*.a
+sundai_hotspot/*.provenance.json
+sundai_hotspot6/*.provenance.json
 sundai_hotspot/*.o
 sundai_hotspot/*.a
 .env

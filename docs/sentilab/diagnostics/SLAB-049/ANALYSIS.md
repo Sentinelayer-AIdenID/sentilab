@@ -4,8 +4,9 @@ Ticket `d41fca43-2e6c-464e-8fbc-0c485e4828dd` (owner pocket-forge). Line numbers
 `sundai_hotspot/` and `sundai_tap/` are unchanged on `origin/main` through `1e6b97e`.
 
 **Status.** Source analysis, code, an analytic check, and a frozen 12-call manifest for gate zero. **No
-thermal solve was run for this ticket.** The pre-declared interpretation is in [CALL-LIST.md](CALL-LIST.md),
-written before any run.
+thermal solve was run for this ticket.** The pre-declared interpretation and the raw-primary manifest are in
+[CALL-LIST-v4.md](CALL-LIST-v4.md), written before any run. The snapped-primary manifest reviewed at `6413a3c`
+([CALL-LIST.md](CALL-LIST.md)) is kept byte-identical as a prior artifact; nothing executes it.
 
 **Room decision (section 8).** The cause is settled from source and saved grids. HotSpot 7 is not patched as the
 path forward. The material-only HotSpot 7 variant below (sections 3, 4 and 7) stays as labelled, bounded
@@ -170,8 +171,8 @@ Read-only web check of `github.com/uvahotspot/HotSpot` and `github.com/bu-icsg/T
 - **No upstream issue mentions this.** None of the 23 upstream issues and PRs discusses convection double counting.
 - **TAP's metric.** HotSpot 6.0 prints `Unit Steady(Kelvin)`, then the steady dump, to stdout (6.0
   `hotspot.c:548-549`). TAP's selector is therefore the maximum over every block of every layer and the package
-  nodes, centre-mapped in TAP's config. Our J is the layer-4 grid maximum. The call record (CALL-LIST.md)
-  captures both.
+  nodes, centre-mapped in TAP's config. Our J is the layer-4 grid maximum. The per-solve record
+  (CALL-LIST-v4.md) captures both.
 
 ## 6. Evidence in committed outputs (read-only; corroborating, not causal)
 
@@ -196,7 +197,7 @@ It ran this source, built without SuperLU, so it also assembled through `find_re
 
 This corroborates that the executed model puts half the convection resistance between the spreader and the sink.
 **It does not show that this term causes the 2.3 to 2.4 times gap against the paper.** Other in-model
-differences are listed in CALL-LIST.md. Only the controlled OLD/NEW comparison can attribute the gap.
+differences are listed in CALL-LIST-v4.md. Only the controlled OLD/NEW comparison can attribute the gap.
 
 ## 7. Implementation
 
@@ -206,13 +207,14 @@ Line numbers in this section are on this branch.
 |---|---|
 | Variant code, compiled only with `-DSENTILAB_SINK_COUPLING_MATERIAL_ONLY=1` | `sundai_hotspot/temperature_grid.c:26-46` (helper and identity tag), `125-129` (the `find_res` branch) |
 | Build target | `sundai_hotspot/Makefile:193-203`: `make SUPERLU=1 hotspot-material-only`. Not in `all`; the default objects are untouched. |
-| Image | `Dockerfile:20-22` builds both binaries. `.gitignore` and `.dockerignore` list the new binary. |
+| Image | `Dockerfile:20-25` builds the binaries and writes each gate-zero evaluator's build provenance. `.gitignore` and `.dockerignore` list the binaries and `*.provenance.json`. |
 | Evaluator identity | `sundai_hotspot/coupling_variant.py`: `MaterialOnlyCouplingOracle`. It requires the tag in the binary bytes it hashed. `solver_version` gets `+SLAB-049:coupling=material_only`. `problem_hash` is a new schema over the base hash, the coupling, the tag and the variant source hashes. The worker re-hashes those sources before every solve, and `evidence_kind` is labelled. |
 | Frozen equations | `coupling_variant.py` `cell_resistances` / `area_resistances` |
-| Tooling (no solves) | `sundai_hotspot/slab049.py`: analytic report, committed-output residuals, slab inputs, frozen reference inputs, the manifest, and the strict per-solve record |
+| Tooling (no solves) | `sundai_hotspot/slab049.py`: analytic report, committed-output residuals, slab inputs, the raw reference layouts and their frozen inputs, the manifest and its check, and the strict per-solve record |
 | C harness (assembly only) | `sundai_hotspot/coupling_assembly_harness.c` |
 | HotSpot 6.0 evaluator | `sundai_hotspot6/` (upstream `a7a3286e`, blob-checked), `scripts/build_hotspot6.sh` (x86_64 and aarch64), `sundai_hotspot/evaluators.py` (`HotSpot6Oracle`, `make_oracle`) |
-| Gate zero | `sundai_hotspot/gate_zero.py` (pinned references, identities, records, refusal) and `sundai_hotspot/reference_validation.py` (`validate-reference`, the bootstrap path) |
+| Gate zero | `sundai_hotspot/gate_zero.py` (raw references, the frozen predicate, identities, ledger-assembled records, refusal), `sundai_hotspot/reference_validation.py` (`validate-reference`, the one enforcement entry, and `record`/`report` by call id) and `sundai_hotspot/provenance.py` (build provenance and runtime library identity) |
+| Raw reference layouts | `docs/sentilab/diagnostics/SLAB-049/references/raw-layouts/`: SLAB-048's raw sections (PR #57 at `063f659`), pinned by their own content hash |
 | Tests | `sundai_hotspot/test_sink_coupling.py`, `sundai_hotspot/test_gate_zero.py`. The container smoke loop picks them up automatically. |
 
 **The default is byte-identical** (author host: gcc 15.2.0, glibc 2.43, SuperLU 7.0.1; WSL Ubuntu):
@@ -228,8 +230,8 @@ Binary hashes depend on the toolchain. The grant host pins its own hashes at run
 source identity of NEW is the SHA-256 of `temperature_grid.c`, `Makefile` and `coupling_variant.py`, as listed
 in `problem.generator_sha256`.
 
-**What the tests show** (61 tests across both modules; the native, fake-solver and built-binary tests run on
-POSIX and in the CI image):
+**What the tests show** (93 tests across both modules; the native, fake-solver and built-binary tests run on
+POSIX and in the CI image; 28 code mutants, each caught by a named test):
 
 - **Default byte-identity.**
   - Stripping the variant blocks from `temperature_grid.c` gives exactly the upstream bytes.
@@ -246,13 +248,15 @@ POSIX and in the CI image):
 - **Identity.** The variant oracle refuses an untagged binary, and its identity never equals the default's.
 - **Generated artifacts.** The committed artifacts are exactly what the code generates.
 - **Gate zero.**
-  - The pinned values, roles and input digest are fixed.
+  - The pinned values, roles, raw layout hashes, predicate and input digest are fixed.
   - Each evaluator kind accepts only its own binary.
-  - A record is refused if it is out of tolerance, forged, references the wrong binary, references a non-64 grid,
-    or comes from stale inputs.
-  - The bootstrap path (`validate-reference`, driven by a fake solver) makes receipts without a prior PASS, and
-    those receipts unlock search.
-  - Search and headroom refuse without a PASS.
+  - A record is built from the ledger by call id. It is FAIL on a completed miss (primary or replay) or a replay
+    that differs; INCOMPLETE, never PASS, when a required outcome is withheld, unsettled or incomplete; and refused
+    when it is forged, binds another binary, manifest, call, grid or layout identity, or comes from stale inputs.
+  - The bootstrap path (`validate-reference`, driven by a fake solver) runs the raw off-lattice references without
+    a prior PASS; the search path still refuses them; the four required receipts unlock search at grid 64 only.
+  - The entry refuses anything off the manifest before reserving it, holds the cumulative count and CPU, sets
+    RLIMIT_CPU, kills the whole process group at the wall deadline, and runs a private copy of the binary.
 - **Strict parser.** Astra's controls are rejected: an extra layer-4 cell, and a duplicate layer 4. So is one
   mutation per rule.
 - **HotSpot 6.0 source.** Every vendored file matches its upstream blob. The SentiLab block touches only the grid
@@ -305,7 +309,14 @@ coordinator]
   - `hotspot-tap-faithful`: `SUPERLU=0`, as TAP built it.
 
   On the author box (WSL, gcc 15.2.0), both build with no source changes. Binary hashes depend on the toolchain
-  and the build path, so each host pins its own through gate zero.
+  and, through the Makefile's `-g`, on the build path, so each host pins its own through gate zero. Each build
+  writes `<binary>.provenance.json` (compiler, make command and flag lines, build path, SuperLU/BLAS/libc package
+  versions, every library the loader resolves with its hash, the binary hash); validate-reference requires it.
+- **What `-ffp-contract=off` does and does not do:** it stops GCC contracting `a*b+c` into one fused multiply-add
+  in the HotSpot sources compiled here (GCC contracts by default where the target has FMA, as aarch64 does; the
+  x86_64 baseline target has none). It does not reach the precompiled SuperLU, BLAS or libm, which may choose FMA
+  or other kernels per CPU. It narrows cross-architecture differences; it does not make results bit-identical
+  across architectures, and no such claim is made. An aarch64 build needs its own gate-zero receipts.
 - **Selector:** `evaluators.make_oracle(evaluator, purpose)`. `HotSpot6Oracle` has its own solver version
   (`HotSpot-6.0:a7a3286e...`) and problem hash. HotSpot 7's class, binary and identity are unchanged.
   - Code that constructs `HotSpotOracle` directly (the live loop and the existing headroom runner) is not
@@ -313,23 +324,40 @@ coordinator]
 - **Licence:** the UVA notices are kept (`sundai_hotspot6/LICENSE`, `THIRD_PARTY_NOTICES.md`, and
   `/licenses/HotSpot-6.0-LICENSE` in the image).
 
-**Gate zero (`gate_zero.py`).**
+**Gate zero (`gate_zero.py`).** Root #56858, forge reply `1ed1c902` and astra's supplement on PR #56 (comment
+6545712065) fixed it to the raw geometry; warden #56856 set the grant prerequisites.
 
-- **The rule:** search and headroom refuse an evaluator identity until a recorded PASS for its exact binary shows
-  the pinned originals reproduced at 45 mm and grid 64, on the block-centre metric, within the prospective
-  computational reference-reproduction tolerance of 1.0 K.
-- **The values:** the gate uses the legal snapped originals, Ascend 910 at 75.48 C and CPU-DRAM at 115.94 C. The
-  out-of-sample TAP points, 75.47 C and 94.89 C, are pinned as verification cases.
-- **The digest:** the references digest covers values, roles, frozen inputs, tolerance and metric, so any change
-  invalidates old records.
-- **Bootstrap:** `reference_validation validate-reference` produces the first receipt and needs no PASS. It
-  writes a fresh config into a fresh directory with TAP's own generator, checks it byte for byte against the
-  frozen inputs, and records its hash and the effective start and stop.
-- **Record check:** a record is accepted only if it binds this binary and was computed from receipts. The
-  verdict is recomputed every time; the stored verdict is never trusted.
+- **The rule:** search and headroom refuse an evaluator identity until a PASS for its exact binary re-derives from
+  the grant's ledger: the pinned originals reproduced at 45 mm and grid 64, on the block-centre metric, within the
+  prospective computational reference-reproduction tolerance of 1.0 K.
+- **The references are raw.** TAP-2.5D's originals as SLAB-048 decoded them (PR #57 at `063f659`), with their
+  continuous centres and rotations: Ascend 910 at 75.48 C and CPU-DRAM at 115.94 C. Each is pinned by its raw
+  layout's own content hash, so a later SLAB-048 commit that leaves raw alone keeps the pin and any change to raw
+  fails. Raw geometry is judged by the continuous rules only (margin, halo, 0.1 mm body spacing); the search
+  lattice never applies to it, and the search path still refuses it.
+- **Snapped variants are other identities.** They are an engineering comparison, carry no paper-match claim, and
+  cannot enter a gate-zero record.
+- **The frozen predicate:** the native6 primary and its fresh-process replay at grid 64 on each reference, four
+  outcomes, each within 1.0 K, each replay byte-identical to its primary. FAIL on a completed miss; INCOMPLETE
+  (STOP, never PASS) when any required outcome is missing, unsettled or incomplete. The native7 comparator and the
+  grid 32 calls are reported, never judged.
+- **Deferred, not omitted:** the TAP-2.5D solutions, 75.47 C and 94.89 C, are declared pending verification for a
+  later allocation, with no calls here. Every record lists them under `pending_verification`.
+- **The digest:** the references digest covers values, roles, raw layout hashes, frozen inputs, the predicate, the
+  tolerance and the metric, so any change invalidates old records.
+- **Bootstrap:** `reference_validation validate-reference` produces the first receipts and needs no PASS. It is the
+  one in-code enforcement entry (CALL-LIST-v4.md lists what it enforces and what the operator supervisor must).
+  It writes fresh inputs into a fresh directory with TAP's own generator, checks them byte for byte against the
+  frozen ones, and records their hashes and the effective start and stop.
+- **Records:** assembled from the ledger by admitted call id, never from caller-chosen directories. Each outcome is
+  re-derived from its raw evidence and bound to its receipt, its settlement, the manifest and the binary. The
+  verdict is recomputed every time; the stored one is never trusted. A PASS covers grid 64 on the block-centre
+  metric only, not the search objective J.
 
-**The 12-call manifest** is in [CALL-LIST.md](CALL-LIST.md):
+**The 12-call manifest** is in [CALL-LIST-v4.md](CALL-LIST-v4.md), a new version beside the unchanged prior one:
 
-- 2 snapped originals x 2 engines (HotSpot 6.0 pinned, HotSpot 7 current) x grids 32 and 64;
-- plus 4 fresh-process grid-64 replays;
-- 10 CPU-min cap, no retries, expiring 2026-11-01T12:00Z.
+- 2 raw 45 mm references x 2 engines (native6 target, native7 comparator) x grids 32 and 64;
+- plus 4 fresh-process grid-64 replays, one per reference and engine;
+- explicit `--call` and `--timeout` on every row; timeouts 8 x 60 s + 4 x 15 s = 540 s plus a 24 CPU-s overhead
+  assumption, a 564 CPU-s forecast (not a CPU guarantee) inside the binding 600 CPU-s manifest cap; no retries,
+  expiring 2026-11-01T12:00Z.

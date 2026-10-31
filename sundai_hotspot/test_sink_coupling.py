@@ -17,7 +17,7 @@ import tempfile
 import unittest
 from unittest import mock
 
-from sundai_hotspot import slab049
+from sundai_hotspot import gate_zero, slab049
 from sundai_hotspot.coupling_variant import (
     NEW, OLD, PRISTINE_TEMPERATURE_GRID_SHA256, VARIANT_BINARY, VARIANT_MACRO, VARIANT_SOURCES, VARIANT_TAG,
     MaterialOnlyCouplingOracle, PackageStack, area_resistances, cell_resistances, strip_variant_blocks,
@@ -290,13 +290,18 @@ class GeneratedArtifactTests(unittest.TestCase):
 
     def test_manifest_slab_and_reference_inputs_are_current(self):
         directory = slab049.EVIDENCE_DIR
-        self.assertEqual((directory / "CALL-LIST.json").read_bytes(), slab049._dump(slab049.build_call_list()))
+        self.assertEqual((directory / slab049.MANIFEST_NAME).read_bytes(), slab049._dump(slab049.build_call_list()))
         for name, data in slab049.slab_files().items():
             self.assertEqual((directory / "slab" / name).read_bytes(), data, name)
-        for layout, variant in slab049.REFERENCE_SETS:
-            folder = REPO_ROOT / slab049.reference_dir(layout, variant)
-            for name, data in slab049.reference_files(layout, variant).items():
-                self.assertEqual((folder / name).read_bytes(), data, (layout, variant, name))
+        for reference in gate_zero.GATE_REFERENCES:
+            folder = REPO_ROOT / reference.inputs
+            files = slab049.reference_files(reference.id)
+            for name, data in files.items():
+                self.assertEqual((folder / name).read_bytes(), data, (reference.id, name))
+            sums = "".join(f"{hashlib.sha256(data).hexdigest()}  {name}\n" for name, data in sorted(files.items()))
+            self.assertEqual((folder / "SHA256SUMS").read_text(encoding="ascii"), sums, reference.id)
+        self.assertEqual(sorted(p.name for p in (directory / "references").iterdir()),
+                         sorted([Path(r.inputs).name for r in gate_zero.GATE_REFERENCES] + ["raw-layouts"]))
 
     def test_frozen_analytic_report_is_current(self):
         committed = json.loads((slab049.EVIDENCE_DIR / "ANALYTIC.json").read_text(encoding="utf-8"))
@@ -304,32 +309,44 @@ class GeneratedArtifactTests(unittest.TestCase):
         committed.pop("assembly_confirmation")
         self.assertEqual(committed, json.loads(slab049._dump(slab049.analytic_report(include_assembly=False))))
 
-    def test_manifest_is_twelve_calls_within_the_cap(self):
+    def test_manifest_is_the_raw_primary_twelve_call_allocation(self):
         manifest = slab049.build_call_list()
         calls = manifest["calls"]
+        raw = ("ascend910-tap25d-fig6a-raw", "micro150-tap25d-fig5a-raw")
         self.assertEqual(len(calls), 12)
         self.assertEqual(len({c["id"] for c in calls}), 12)
-        primary = [c for c in calls if c["replay_of"] is None]
-        replays = [c for c in calls if c["replay_of"] is not None]
-        self.assertEqual(len(primary), 8)
+        primary = [c for c in calls if c["role"] == "primary"]
+        replays = [c for c in calls if c["role"] == "replay"]
         self.assertEqual({(c["kind"], c["reference"], c["grid"]) for c in primary},
-                         {(k, f"{r}-snapped", g) for k in ("hotspot6", "hotspot7_default")
-                          for r in ("ascend910-original", "micro150-original") for g in (32, 64)})
-        self.assertEqual(len(replays), 4)
-        self.assertTrue(all(c["grid"] == 64 and c["replay_of"] in {p["id"] for p in primary} for c in replays))
-        self.assertEqual({c["id"] for c in calls if c["gating"]},
-                         {"p-hs6-ascend910-original-g64", "p-hs6-micro150-original-g64"})
+                         {(k, r, g) for k in ("hotspot6", "hotspot7_default") for r in raw for g in (32, 64)})
+        self.assertEqual(len(primary), 8)
+        self.assertEqual({(c["kind"], c["reference"], c["grid"], c["replay_of"]) for c in replays},
+                         {(k, r, 64, gate_zero.call_id("primary", k, r, 64))
+                          for k in ("hotspot6", "hotspot7_default") for r in raw})
+        self.assertTrue(all(c["layout_identity"] == "raw" for c in calls))
+        self.assertEqual({c["engine_role"] for c in calls if c["kind"] == "hotspot7_default"}, {"native7 comparator"})
+        self.assertEqual({c["id"] for c in calls if c["gating"]}, {row["call"] for row in gate_zero.required_calls()})
         accounting = manifest["accounting"]
         self.assertEqual((accounting["max_runs"], accounting["retries"]), (12, 0))
-        self.assertLessEqual(accounting["cpu_cap_minutes"], 30)
-        self.assertGreaterEqual(accounting["cpu_cap_minutes"] * 60, accounting["worst_case_cpu_s"])
-        for call in calls:
-            folder = REPO_ROOT / call["inputs"]["dir"]
-            self.assertEqual(hashlib.sha256((folder / "SHA256SUMS").read_bytes()).hexdigest(),
-                             call["inputs"]["sha256sums_sha256"])
-        for path, digest in manifest["source"]["files_sha256"].items():
-            self.assertEqual(hashlib.sha256((REPO_ROOT / path).read_bytes()).hexdigest(), digest, path)
+        self.assertLessEqual(accounting["forecast_worst_case_cpu_s"], accounting["manifest_cpu_cap_s"])
+        self.assertEqual(manifest["supersedes"]["sha256"], slab049.PRIOR_MANIFEST["sha256"])
         self.assertIn("not_requested", manifest)
+
+    def test_the_committed_manifest_pins_match_the_tree(self):
+        """Not a fresh object against the files that made it: the committed bytes, checked against the tree."""
+        from sundai_hotspot import reference_validation
+        committed = reference_validation.MANIFEST_PATH.read_bytes()
+        pins = json.loads(committed)["source"]["files_sha256"]
+        self.assertEqual(sorted(pins), sorted(slab049.MANIFEST_SOURCES))
+        for path, digest in pins.items():
+            self.assertEqual(hashlib.sha256((REPO_ROOT / path).read_bytes()).hexdigest(), digest, path)
+        for call in json.loads(committed)["calls"]:
+            self.assertEqual(hashlib.sha256((REPO_ROOT / call["inputs"]["dir"] / "SHA256SUMS").read_bytes()).hexdigest(),
+                             call["inputs"]["sha256sums_sha256"], call["id"])
+        slab049.check_manifest(committed)
+        stale = committed.replace(pins["sundai_hotspot/tap_oracle.py"].encode("ascii"), b"0" * 64)
+        with self.assertRaises(slab049.ManifestMismatch):
+            slab049.check_manifest(stale)
 
     def test_slab_predictions_stay_bounded_diagnostic_evidence(self):
         for kind, drop in ((NEW, 2.4675), ("hotspot6", 1.26)):
@@ -377,9 +394,10 @@ class OracleIdentityTests(unittest.TestCase):
             asyncio.run(variant(design))
 
     def test_variant_result_is_labelled(self):
-        from sundai_hotspot.test_gate_zero import passing_record
-        record = passing_record(self.root / "receipts", "material_only", self.tagged)
-        variant = MaterialOnlyCouplingOracle(4, 4, hotspot_binary=self.tagged, gate_zero_record=record)
+        # The material-only variant can never pass this gate (the predicate judges hotspot6 only), so the labelling
+        # is checked with the gate bypassed.
+        with mock.patch("sundai_hotspot.coupling_variant.require_gate_zero", return_value={"verdict": "PASS"}):
+            variant = MaterialOnlyCouplingOracle(4, 4, hotspot_binary=self.tagged)
         design = variant.design_from_centers(((25, 25), (40, 40), (8, 9), (8, 25), (8, 41), (41, 15)))
         response = {
             "candidate_hash": design.hash, "problem_hash": variant.problem_hash,

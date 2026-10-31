@@ -4,9 +4,10 @@
                                                                            committed-output residuals,
                                                                            C assembly confirmation (POSIX)
     python -m sundai_hotspot.slab049 slab      [--write DIR | --check DIR]   frozen minimal-slab inputs, group (a)
-    python -m sundai_hotspot.slab049 references [--write DIR | --check DIR]  frozen TAP inputs of the published
-                                                                           references at 45 mm
-    python -m sundai_hotspot.slab049 call-list [--write DIR | --check DIR]   the probe call list for the grant
+    python -m sundai_hotspot.slab049 references [--write DIR | --check DIR]  frozen TAP inputs of the two raw
+                                                                           paper-match references at 45 mm
+    python -m sundai_hotspot.slab049 call-list [--write DIR | --check DIR]   the raw-primary manifest
+                                                                           (CALL-LIST-v4.json) for the grant
     python -m sundai_hotspot.slab049 summarize EVALUATION_DIR ...           per-call record, for use after a
                                                                            granted run (reads files only)
 
@@ -29,6 +30,7 @@ import subprocess
 import sys
 import tempfile
 
+from sundai_hotspot import gate_zero
 from sundai_hotspot.coupling_variant import (
     COUPLINGS, NEW, OLD, VARIANT_MACRO, PackageStack, area_resistances, cell_resistances,
 )
@@ -739,71 +741,74 @@ def check_known_answer_slab(run_dir: Path, kind: str) -> dict:
 
 
 # ----------------------------------------------------------------------------------------------
-# Published references: frozen TAP inputs at 45 mm, the paper's frame
+# Paper-match references: SLAB-048's raw decoded geometry and its frozen TAP inputs at 45 mm
 # ----------------------------------------------------------------------------------------------
 
 HOTSPOT6 = "hotspot6"
 PAPER = "Ma et al., TAP-2.5D, DATE 2021 (HotSpot 6.0, 45 mm interposer, grid 64, 45 C ambient)"
-ASCEND_PLACED_DIMS = [[31.4, 14.5], [10.5, 16.0], [11.87, 7.75], [11.87, 7.75], [11.87, 7.75], [11.87, 7.75]]
-REFERENCE_LAYOUTS = {
-    "ascend910-original": {
-        "fixture": "ascend910", "paper_figure": "Fig. 6(a) original layout", "paper_peak_c": 75.48,
-        "centers_mm": [[17.15, 22.60], [38.35, 22.60], [7.34, 11.12], [21.31, 11.12], [7.34, 33.87], [21.31, 33.87]],
-        "placed_dims_mm": ASCEND_PLACED_DIMS,
-        "orientation_note": ("Virtuvian and the HBMs sit rotated 90 degrees from the catalog. TAP's microbump halo "
-                             "depends on the perimeter only (passive_interposer.py compute_ubump_overhead), so it "
-                             "is unchanged."),
-    },
-    "micro150-original": {
-        "fixture": "micro150", "paper_figure": "Fig. 5(a) original placement (Kannan et al., MICRO 2015)",
-        "paper_peak_c": 115.94,
-        "centers_mm": [[17.92, 17.55], [17.92, 27.45], [27.07, 27.45], [27.07, 17.55],
-                       [8.57, 17.55], [8.57, 27.45], [36.42, 27.45], [36.42, 17.55]],
-        "placed_dims_mm": None,
-        "orientation_note": ("Catalog orientation. CPUs 0-3 go around the 2x2 cluster so the 0-1-2-3 ring is "
-                             "adjacent; DRAM 4+i sits beside CPU i. Equal dies carry equal power, so the index "
-                             "assignment changes the wire proxy only."),
-    },
-    "ascend910-tap": {
-        "fixture": "ascend910", "paper_figure": "Fig. 6(c) TAP-2.5D solution", "paper_peak_c": 75.47,
-        "centers_mm": [[17.0, 25.0], [39.0, 25.0], [11.0, 13.0], [24.0, 13.0], [10.0, 37.0], [23.0, 37.0]],
-        "placed_dims_mm": ASCEND_PLACED_DIMS,
-        "orientation_note": "orientations assumed as in the original layout; the paper's panels share its structure",
-    },
-    "micro150-tap": {
-        "fixture": "micro150", "paper_figure": "Fig. 5 TAP-2.5D solution (non-pipelined links)", "paper_peak_c": 94.89,
-        "centers_mm": None, "placed_dims_mm": None,
-        "orientation_note": "pending: the DRAM positions are not decoded; SLAB-048 supplies them",
-    },
-}
-REFERENCE_SOURCE = ("forge-research/repo-forensics.md section 6, decoded from the paper's vector figures; "
-                    "SLAB-048 reference data supersedes it before any run (regenerate the manifest, never swap after)")
-# (layout, variant): raw is the decoded reconstruction; snapped is its legal 1 mm snap. They are separate identities.
-REFERENCE_SETS = (("ascend910-original", "raw"), ("ascend910-original", "snapped"), ("micro150-original", "raw"),
-                  ("micro150-original", "snapped"), ("ascend910-tap", "raw"))
 REFERENCE_INPUTS = ("new_hotspot.config", "samplelayers.lcf", "sample.ptrace", "sampleL0_Substrate.flp",
                     "sampleL1_C4Layer.flp", "sampleL2_Interposer.flp", "sampleL3_UbumpLayer.flp",
                     "sampleL4_ChipLayer.flp", "sampleL5_TIM.flp")
 _GENERATOR = r"""
-import json, sys
+import json, math, sys
 from passive_interposer import PassiveInterposer
 spec, out = json.loads(sys.argv[1]), sys.argv[2]
 system = PassiveInterposer()
 system.set_chiplet_count(len(spec["widths"]))
 system.initialize()
 system.set_interposer_size(spec["interposer_mm"])
-system.set_chiplet_size(spec["widths"], spec["heights"])
+system.set_chiplet_size(list(spec["widths"]), list(spec["heights"]))
 system.set_chiplet_power(spec["powers"])
 system.set_connection_matrix(spec["connections"])
 system.set_granularity(spec["granularity"])
 system.set_link_type(spec["link_type"])
 system.compute_ubump_overhead()
+if any(not math.isclose(a, b, rel_tol=0, abs_tol=1e-12) for a, b in zip(system.hubump, spec["halos"])):
+    sys.exit("TAP microbump halos differ from the fixture")
+for index, turned in enumerate(spec["rotated"]):  # TAP's own rotate: swap the die's width and height
+    if turned:
+        system.rotate(index)
 system.set_path(out + "/")
 system.x, system.y = spec["x"], spec["y"]
 system.gen_flp("sample")
 system.gen_ptrace("sample")
 """
-MARGIN_MM = 0.5  # the oracle's interposer margin, microbump halo included
+GENERATOR_CPU_LIMIT_S = 10   # RLIMIT_CPU on the TAP generator process
+GENERATOR_TIMEOUT_S = 60     # its wall deadline
+MARGIN_MM = 0.5              # the oracle's interposer margin, microbump halo included
+MIN_DIE_GAP_MM = 0.1         # TAP-2.5D Eqn. (10): die bodies at least 0.1 mm apart
+CONTINUOUS_RULES = ("continuous placement rules only: each die with its microbump halo stays 0.5 mm inside the "
+                    "interposer; no two halos overlap (touching allowed); die bodies are at least 0.1 mm apart "
+                    "(TAP-2.5D Eqn. (10)). No centre lattice: raw centres are continuous, and the search path's "
+                    "lattice (HotSpotOracle.centers_for) is never applied to them.")
+
+
+class ReferenceGeometryError(ValueError):
+    """A paper-match reference's raw layout is not the pinned one, or breaks the continuous rules."""
+
+
+def raw_layout_sha256(raw: dict) -> str:
+    """The raw layout's own content hash: SHA-256 of its canonical JSON."""
+    return hashlib.sha256(json.dumps(raw, sort_keys=True, separators=(",", ":"), ensure_ascii=True,
+                                     allow_nan=False).encode("utf-8")).hexdigest()
+
+
+def load_raw_layout(reference, root: Path = REPO_ROOT) -> dict:
+    """The frozen raw layout of a paper-match reference, checked against its pinned content hash.
+
+    The vendored copy (SLAB-048 PR #57 at 063f659) must hash to the pin. Whenever SLAB-048's own record is in the
+    tree, its raw section must hash to the same pin: a later SLAB-048 commit that leaves raw alone keeps the pin,
+    and any change to raw fails.
+    """
+    document = json.loads((root / reference.raw_vendored).read_text(encoding="utf-8"))
+    if raw_layout_sha256(document["raw"]) != reference.raw_layout_sha256:
+        raise ReferenceGeometryError(f"{reference.id}: the frozen raw layout does not match its pinned content hash")
+    record = root / reference.raw_record
+    if record.is_file() and raw_layout_sha256(json.loads(record.read_text(encoding="utf-8"))["raw"]) != \
+            reference.raw_layout_sha256:
+        raise ReferenceGeometryError(f"{reference.id}: SLAB-048's raw section in {reference.raw_record} changed "
+                                     "after it was pinned")
+    return document
 
 
 def _fixture_problem(fixture: str):
@@ -814,67 +819,84 @@ def _fixture_problem(fixture: str):
         return _load_problem(config_path=TAP_CONFIGS[fixture], hotspot_binary=placeholder)
 
 
-def layout_problems(dims: list[list[float]], centers: list[list[float]], halos: list[float], size: float) -> list[str]:
-    """The oracle's legality rules for any orientation: margin with halo, no halo overlap (touching allowed)."""
-    rects = [(x - w / 2 - h, y - d / 2 - h, x + w / 2 + h, y + d / 2 + h)
-             for (w, d), (x, y), h in zip(dims, centers, halos)]
-    problems = [f"die {i} breaks the {MARGIN_MM} mm margin" for i, r in enumerate(rects)
-                if r[0] < MARGIN_MM - 1e-9 or r[1] < MARGIN_MM - 1e-9 or r[2] > size - MARGIN_MM + 1e-9
-                or r[3] > size - MARGIN_MM + 1e-9]
+def continuous_violations(footprints: list, centers: list, halos: list, size: float) -> list[str]:
+    """The continuous rules (CONTINUOUS_RULES): SLAB-048's fixture rules without the centre lattice."""
+    problems, rects = [], []
+    for index, ((width, height), (x, y), halo) in enumerate(zip(footprints, centers, halos)):
+        rect = (x - width / 2 - halo, y - height / 2 - halo, x + width / 2 + halo, y + height / 2 + halo)
+        if (rect[0] < MARGIN_MM - 1e-9 or rect[1] < MARGIN_MM - 1e-9 or rect[2] > size - MARGIN_MM + 1e-9
+                or rect[3] > size - MARGIN_MM + 1e-9):
+            problems.append(f"die {index} with its halo breaks the {MARGIN_MM} mm margin")
+        rects.append(rect)
     for i, a in enumerate(rects):
         for j, b in enumerate(rects[:i]):
             if not (a[2] <= b[0] + 1e-9 or b[2] <= a[0] + 1e-9 or a[3] <= b[1] + 1e-9 or b[3] <= a[1] + 1e-9):
                 problems.append(f"dies {j} and {i} overlap with their halos")
+    bodies = [(r[0] + h, r[1] + h, r[2] - h, r[3] - h) for r, h in zip(rects, halos)]
+    for i, a in enumerate(bodies):
+        for j, b in enumerate(bodies[:i]):
+            gap = max(b[0] - a[2], a[0] - b[2], b[1] - a[3], a[1] - b[3])
+            if gap < MIN_DIE_GAP_MM - 1e-9:
+                problems.append(f"dies {j} and {i} are {gap:.4f} mm apart, under the {MIN_DIE_GAP_MM} mm spacing")
     return problems
 
 
-_SNAP_OFFSETS = sorted(((dx, dy) for dx in range(-3, 4) for dy in range(-3, 4)),
-                       key=lambda d: (abs(d[0]) + abs(d[1]), abs(d[1]), d[0] < 0, d[1] < 0))
-
-
-def snap_legal(dims: list[list[float]], centers: list[list[float]], halos: list[float], size: float) -> list[list[float]]:
-    """Deterministic legal 1 mm snap: round each centre half up; in index order, take the first offset (nearest
-    first, x moves before y, positive before negative) that keeps the margin and clears every die placed so far."""
-    placed: list[list[float]] = []
-    for index, (x, y) in enumerate(centers):
-        base = (math.floor(x + 0.5), math.floor(y + 0.5))
-        for dx, dy in _SNAP_OFFSETS:
-            candidate = [float(base[0] + dx), float(base[1] + dy)]
-            if not layout_problems(dims[:index + 1], placed + [candidate], halos[:index + 1], size):
-                placed.append(candidate)
-                break
-        else:
-            raise ValueError(f"die {index} has no legal 1 mm position within 3 mm of its decoded centre")
-    return placed
-
-
-def reference_spec(layout_id: str, variant: str, interposer_mm: int = 45) -> dict:
-    layout = REFERENCE_LAYOUTS[layout_id]
-    if layout["centers_mm"] is None:
-        raise ValueError(f"{layout_id} is pending: {layout['orientation_note']}")
-    problem = _fixture_problem(layout["fixture"])
-    catalog = [list(d) for d in zip(problem.widths_mm, problem.heights_mm)]
-    dims = layout["placed_dims_mm"] or catalog
-    if sorted(map(sorted, dims)) != sorted(map(sorted, catalog)):
-        raise ValueError(f"{layout_id}: placed dies are not the fixture's catalog dies")
+def spec_from_raw_layout(document: dict, fixture: str) -> dict:
+    """TAP generator inputs for a raw layout, after checking it against the fixture and the continuous rules."""
+    problem = _fixture_problem(fixture)
+    raw = document["raw"]
+    size = float(document["interposer_mm"])
+    count = len(problem.widths_mm)
+    rotated = list(raw["rotated"])
+    centers = [[float(x), float(y)] for x, y in raw["centers_mm"]]
+    if not (len(rotated) == len(centers) == len(document["dies"]) == len(raw["footprints_mm"]) == count):
+        raise ReferenceGeometryError("the raw layout does not give one entry per fixture die")
+    if any(not isinstance(flag, bool) for flag in rotated):
+        raise ReferenceGeometryError("every rotation flag must be a boolean")
+    catalog = list(zip(problem.widths_mm, problem.heights_mm))
+    for index, (die, (width, height), power, halo) in enumerate(
+            zip(document["dies"], catalog, problem.powers_w, problem.bump_halos_mm)):
+        if (not (math.isclose(die["catalog_mm"][0], width, abs_tol=1e-12) and
+                 math.isclose(die["catalog_mm"][1], height, abs_tol=1e-12)) or
+                not math.isclose(die["power_w"], power, abs_tol=1e-12) or
+                not math.isclose(die["halo_mm"], halo, abs_tol=1e-12)):
+            raise ReferenceGeometryError(f"die {index}: SLAB-048's catalog size, power or halo is not the fixture's")
+    footprints = [(height, width) if turned else (width, height) for (width, height), turned in zip(catalog, rotated)]
+    for index, (footprint, decoded) in enumerate(zip(footprints, raw["footprints_mm"])):
+        if not all(math.isclose(a, b, abs_tol=1e-9) for a, b in zip(footprint, decoded)):
+            raise ReferenceGeometryError(f"die {index}: the raw footprint is not the catalog die turned as flagged")
     halos = list(problem.bump_halos_mm)
-    centers = [list(c) for c in layout["centers_mm"]]
-    if variant == "snapped":
-        centers = snap_legal(dims, centers, halos, interposer_mm)
-    elif variant != "raw":
-        raise ValueError(f"unknown variant {variant!r}")
-    return {"interposer_mm": float(interposer_mm), "widths": [d[0] for d in dims], "heights": [d[1] for d in dims],
-            "powers": list(problem.powers_w), "connections": [list(row) for row in problem.connections],
+    problems = continuous_violations(footprints, centers, halos, size)
+    if problems:
+        raise ReferenceGeometryError(f"the raw layout breaks the continuous rules: {problems}")
+    return {"interposer_mm": size, "widths": [w for w, _ in catalog], "heights": [h for _, h in catalog],
+            "rotated": rotated, "powers": list(problem.powers_w), "connections": [list(r) for r in problem.connections],
             "granularity": problem.granularity_mm, "link_type": problem.link_type, "halos": halos,
             "x": [c[0] for c in centers], "y": [c[1] for c in centers],
-            "legality_problems": layout_problems(dims, centers, halos, interposer_mm)}
+            "geometry": {"rules": CONTINUOUS_RULES, "search_lattice_checked": False, "violations": []}}
+
+
+def reference_spec(reference_id: str, root: Path = REPO_ROOT) -> dict:
+    """The pinned raw layout of a gate reference as TAP generator inputs (continuous rules only)."""
+    reference = gate_zero.reference(reference_id)
+    if reference.layout_identity != gate_zero.RAW or reference.inputs is None:
+        raise ReferenceGeometryError(f"{reference_id} has no frozen raw layout ({reference.role})")
+    return spec_from_raw_layout(load_raw_layout(reference, root), reference.fixture)
+
+
+def _cpu_limit(seconds: int):
+    def apply() -> None:
+        import resource
+        resource.setrlimit(resource.RLIMIT_CPU, (seconds, seconds))
+    return apply
 
 
 def generate_reference(spec: dict, directory: Path) -> dict[str, bytes]:
     """Run TAP's own generator for `spec` in `directory`; return the HotSpot inputs with a local, LF-only LCF."""
     from sundai_hotspot.tap_oracle import TAP_ROOT
+    limit = {"preexec_fn": _cpu_limit(GENERATOR_CPU_LIMIT_S)} if os.name == "posix" else {}
     process = subprocess.run([sys.executable, "-c", _GENERATOR, json.dumps(spec), str(directory)], cwd=TAP_ROOT,
-                             capture_output=True, text=True, check=False, timeout=120)
+                             capture_output=True, text=True, check=False, timeout=GENERATOR_TIMEOUT_S, **limit)
     if process.returncode != 0:
         raise RuntimeError(f"TAP generator failed: {process.stderr[-2000:]}")
     # TAP writes in text mode; keep the Linux bytes (LF) the run host produces, whatever generated them.
@@ -887,13 +909,9 @@ def generate_reference(spec: dict, directory: Path) -> dict[str, bytes]:
     return files
 
 
-def reference_files(layout_id: str, variant: str) -> dict[str, bytes]:
+def reference_files(reference_id: str) -> dict[str, bytes]:
     with tempfile.TemporaryDirectory(prefix="slab049-reference-") as directory:
-        return generate_reference(reference_spec(layout_id, variant), Path(directory))
-
-
-def reference_dir(layout_id: str, variant: str) -> str:
-    return f"docs/sentilab/diagnostics/SLAB-049/references/{layout_id}-{variant}-45mm"
+        return generate_reference(reference_spec(reference_id), Path(directory))
 
 
 def tap_argv(binary: str, grid: int = 64) -> list[str]:
@@ -939,162 +957,296 @@ def committed_run1_signature() -> list[dict]:
 
 
 # ----------------------------------------------------------------------------------------------
-# The manifest: one frozen list of at most 12 calls (astra #56794)
+# The manifest: one frozen list of 12 calls on the two raw references (root #56858; astra, PR #56 6545712065)
 # ----------------------------------------------------------------------------------------------
 
-MANIFEST_ENGINES = (("HS6", HOTSPOT6), ("HS7", "hotspot7_default"))
-MANIFEST_REFERENCES = ("ascend910-original", "micro150-original")
-PRIMARY_VARIANT = "snapped"
-PRIMARY_VARIANT_REASON = (
-    "The legal snapped variant passes the same constraint checker that every search candidate must pass (margin, "
-    "halos, 1 mm grid), so a later MATCH compares like with like. The raw reconstruction carries the figure's "
-    "digitizing noise and off-grid positions that search can never reach. Snapping moves no die more than its "
-    "rounding plus the first clear 1 mm offset; on Ascend 910 the paper's three layouts differ by only 0.35 K. "
-    "Risk, declared now: if a snapped reference misses by more than 1.0 K, the raw run in the next allocation "
-    "separates snapping from physics before the evaluator is called wrong.")
+MANIFEST_NAME = "CALL-LIST-v4.json"
+MANIFEST_SCHEMA = "sentilab-slab049-manifest-v4"
+# The snapped-primary manifest astra and warden reviewed at 6413a3c stays in the tree byte-identical, as an
+# artifact. validate-reference never reads it.
+PRIOR_MANIFEST = {
+    "path": "docs/sentilab/diagnostics/SLAB-049/CALL-LIST.json",
+    "schema": "sentilab-slab049-manifest-v3",
+    "sha256": "952c23845599b5536c08a31d9fe77c58556d803c8d3553d568e9099df9c35973",
+    "description": "docs/sentilab/diagnostics/SLAB-049/CALL-LIST.md",
+    "description_sha256": "e2f94ca55482f47f48437b4f84a3369fe7643324c25da80c0058c4c94cc9d665",
+    "reviewed_head": "6413a3c0cc2b6280dc2bf063812374e0c8d3d337",
+    "status": ("prior artifact, kept byte-identical: the snapped-primary manifest as reviewed at 6413a3c; "
+               "superseded by the raw-primary choice and refused by validate-reference"),
+}
+SUCCESSOR_REASON = ("root #56858 and forge reply 1ed1c902 ('gate zero unchanged: 8+4 on the two raw45mm references'): "
+                    "the paper-match comparison uses SLAB-048's raw decoded geometry, and snapped variants are a "
+                    "separate engineering comparison. The allocation stays exactly 12 calls.")
+SLAB048_COMMIT = "063f659368f32b653acf8084f85a0c7926a106ec"
+MANIFEST_ENGINES = (("hs6", HOTSPOT6, "native6 target"), ("hs7", "hotspot7_default", "native7 comparator"))
+SUPERVISOR_POLICY = "docs/sentilab/evidence/SLAB-039/SUPERVISOR-POLICY.json"
 TIMING = {  # micro150/TIMING.json, Azure x86_64 (16 CPU); HotSpot 6.0 SuperLU is unmeasured and assumed alike
     "grid64_expected_wall_s": 4.76,
     "grid32_expected_wall_s": 0.49,
-    "per_call_overhead_cpu_s": 1.5,  # TAP generation, hashing, process start and reap, archive, summary
-    "grid64_cpu_cap_s": 60.0,        # each call is killed at its cap; a failed attempt costs at most that
-    "grid32_cpu_cap_s": 15.0,
+    "grid64_timeout_s": 60.0,
+    "grid32_timeout_s": 15.0,
+    "per_call_overhead_cpu_s": 1.5,  # forecast: TAP generation, hashing, library hashing, staging, record
 }
+MANIFEST_CPU_CAP_S = 600.0    # this manifest's cap, 10 CPU-min since 6413a3c: the tighter one, it binds
+ROOM_ENVELOPE_CPU_S = 1800.0  # the room's earlier prospective envelope, 30 CPU-min: looser, it does not bind
 MANIFEST_SOURCES = (
     "scripts/build_hotspot6.sh", "sundai_hotspot/Makefile", "sundai_hotspot/temperature_grid.c",
     "sundai_hotspot/tap_oracle.py", "sundai_hotspot/tap_oracle_worker.py", "sundai_hotspot/gate_zero.py",
     "sundai_hotspot/evaluators.py", "sundai_hotspot/reference_validation.py", "sundai_hotspot/slab049.py",
-    "sundai_hotspot6/UPSTREAM_COMMIT", "sundai_hotspot6/UPSTREAM_BLOBS.txt", "sundai_hotspot6/temperature_grid.c",
-    "sundai_hotspot6/Makefile", "sundai_tap/passive_interposer.py", "sundai_tap/system.py",
-    "sundai_tap/util/hotspot.config", "sundai_tap/util/fill_space.py", "sundai_tap/configs/sys_ascend910.cfg",
-    "sundai_tap/configs/sys_micro150.cfg",
+    "sundai_hotspot/provenance.py", "sundai_hotspot6/UPSTREAM_COMMIT", "sundai_hotspot6/UPSTREAM_BLOBS.txt",
+    "sundai_hotspot6/temperature_grid.c", "sundai_hotspot6/Makefile", "sundai_tap/passive_interposer.py",
+    "sundai_tap/system.py", "sundai_tap/util/hotspot.config", "sundai_tap/util/fill_space.py",
+    "sundai_tap/configs/sys_ascend910.cfg", "sundai_tap/configs/sys_micro150.cfg",
+    "docs/sentilab/diagnostics/SLAB-049/references/raw-layouts/ascend910-tap25d-fig6a.json",
+    "docs/sentilab/diagnostics/SLAB-049/references/raw-layouts/micro150-tap25d-fig5a.json",
+    SUPERVISOR_POLICY,
+)
+PURPOSES = {
+    (HOTSPOT6, "primary", 64): "gate zero: the block-centre metric within 1.0 K of the paper (native6 target)",
+    (HOTSPOT6, "replay", 64): ("gate zero: fresh-process replay of the native6 primary; byte-identical outputs and "
+                               "within 1.0 K on its own"),
+    (HOTSPOT6, "primary", 32): "reported, not judged: HotSpot 6.0 at grid 32 against grid 64",
+    ("hotspot7_default", "primary", 64): ("reported, not judged: native7 comparator at the paper's grid (simulated; "
+                                          "withdrawn pending the HS6 correction)"),
+    ("hotspot7_default", "replay", 64): "reported, not judged: native7 comparator replay (byte identity)",
+    ("hotspot7_default", "primary", 32): "reported, not judged: native7 comparator at grid 32 against grid 64",
+}
+IN_CODE_AT_ENTRY = (
+    "manifest identity: validate-reference reads only CALL-LIST-v4.json and refuses it unless it is byte-identical "
+    "to what this tree generates (every source pin, reference input, raw layout hash, the predicate and the "
+    "accounting); the prior snapped manifest is refused",
+    "listed calls only: the call id with its listed --timeout, and the engine, reference and grid when given; "
+    "before the window closes; on the listed architecture; on POSIX only, because the CPU limit is RLIMIT_CPU "
+    "(Linux and macOS; Windows has no RLIMIT_CPU, and its equivalent, a Job Object process-time limit, is not "
+    "implemented, so the entry refuses there)",
+    "evaluator identity: identity markers and SHA-256 are read from a private content-addressed copy (mode 0500 in a "
+    "0700 directory), and that copy is the file executed; build provenance must describe exactly those bytes; the "
+    "shared libraries the loader resolves must equal the build's, and are hashed again after the run (a change "
+    "settles the call as runtime_changed)",
+    "raw geometry: the pinned raw layout hash (the vendored copy, and SLAB-048's record whenever it is in the tree) "
+    "and the continuous rules only; the search lattice is never applied",
+    "atomic admission: under an exclusive ledger lock, one manifest per ledger, each call reserved once (O_EXCL, no "
+    "retries), refused when the admitted count would pass 12 or charged plus reserved CPU would pass 600 CPU-s "
+    "(settled calls are charged their measured CPU, unsettled ones their reservation)",
+    "reserve before staging: the reservation and the receipt are on disk (fsync) before inputs are generated or the "
+    "solver starts",
+    "per-process CPU and a separate wall deadline: the solver runs in its own session and process group under "
+    "RLIMIT_CPU equal to its timeout (soft = hard, so SIGKILL at the limit) and a wall deadline equal to its "
+    "timeout; the TAP generator runs under RLIMIT_CPU 10 s and a 60 s deadline",
+    "kill and reap: after the solver exits or times out, its process group is killed and the solver is reaped",
+    "settlement: the receipt and the ledger settlement are written durably on every exit path of this process, "
+    "keeping the raw outputs, the status, the measured CPU (children and self) and any overshoot",
+    "outcomes by admitted call id: record and report read the ledger, never caller-chosen directories; a missing "
+    "required outcome gives INCOMPLETE",
+)
+SUPERVISOR_CONTRACT = (
+    "admission identity: authenticate the operator and the host; keep the ledger append-only and protected from "
+    "deletion or rewrite (deleting a reservation would readmit its call); one ledger per grant",
+    "a cumulative CPU budget over the whole process group, descendants and lifecycle work included, enforced while "
+    "calls run (for example a cgroup v2 budget that kills at the limit); in code, RLIMIT_CPU is per process and the "
+    "ledger's cumulative check acts at admission only",
+    "kill and reap if validate-reference itself dies (SIGKILL, OOM, host loss): settle the call as unknown, charge "
+    "its reservation, and never let it become a free replacement",
+    "a protected runtime image: run the loader and libraries from immutable copies; in code, the executable is a "
+    "private copy, but libraries are hashed before and after the run, which cannot detect a swap-and-restore "
+    "during it",
+    "a trusted clock for the grant window; the code reads the host clock",
+    "the final grant reconciles the 600 CPU-s manifest cap with the room's 1,800 CPU-s envelope; neither is raised "
+    "here",
 )
 
 
+class ManifestMismatch(ValueError):
+    """A manifest that is not exactly the one this tree generates."""
+
+
+def _file_sha256(path: str) -> str:
+    return hashlib.sha256((REPO_ROOT / path).read_bytes()).hexdigest()
+
+
 def _sums_digest(directory: str) -> str:
-    return hashlib.sha256((REPO_ROOT / directory / "SHA256SUMS").read_bytes()).hexdigest()
+    return _file_sha256(f"{directory}/SHA256SUMS")
 
 
-def _manifest_call(call_id: str, label: str, kind: str, layout_id: str, grid: int, purpose: str,
+def _policy_reserves() -> dict:
+    limits = json.loads((REPO_ROOT / SUPERVISOR_POLICY).read_text(encoding="utf-8"))["limits"]
+    return {"reap_s": float(limits["reap_seconds"]), "settlement_tail_s": float(limits["settlement_tail_cpu_seconds"])}
+
+
+def per_call_reserve_s() -> float:
+    """The overhead assumption per call: the generation-hashing-record forecast plus SLAB-039's reap and tail."""
+    reserves = _policy_reserves()
+    return TIMING["per_call_overhead_cpu_s"] + reserves["reap_s"] + reserves["settlement_tail_s"]
+
+
+def _manifest_call(role: str, engine: str, kind: str, engine_role: str, reference, grid: int,
                    replay_of: str | None = None) -> dict:
-    from sundai_hotspot.gate_zero import EVALUATOR_KINDS
-    directory = reference_dir(layout_id, PRIMARY_VARIANT)
-    cap = TIMING[f"grid{grid}_cpu_cap_s"]
+    name = gate_zero.call_id(role, kind, reference.id, grid)
+    timeout = TIMING[f"grid{grid}_timeout_s"]
+    binary = gate_zero.EVALUATOR_KINDS[kind]["binary"]
     return {
-        "id": call_id, "engine": label, "kind": kind, "binary": EVALUATOR_KINDS[kind]["binary"],
-        "reference": f"{layout_id}-{PRIMARY_VARIANT}", "paper_peak_c": REFERENCE_LAYOUTS[layout_id]["paper_peak_c"],
-        "grid": grid, "gating": grid == 64 and kind == HOTSPOT6 and replay_of is None, "purpose": purpose,
-        "replay_of": replay_of,
-        "inputs": {"dir": directory, "sha256sums_sha256": _sums_digest(directory)},
-        "command": (f"python -m sundai_hotspot.reference_validation validate-reference --call {call_id} "
-                    "--out <fresh empty dir> --ledger <the grant's ledger dir>"),
-        "argv": tap_argv(f"<repo>/{EVALUATOR_KINDS[kind]['binary']}", grid),
-        "accounting": {"expected_wall_s": TIMING[f"grid{grid}_expected_wall_s"],
-                       "expected_cpu_s": round(TIMING[f"grid{grid}_expected_wall_s"] + TIMING["per_call_overhead_cpu_s"], 2),
-                       "cpu_cap_s": cap, "solver_timeout_s": cap,
-                       "worst_case_cpu_s": cap + TIMING["per_call_overhead_cpu_s"]},
+        "id": name, "role": role, "replay_of": replay_of, "engine": engine, "engine_role": engine_role, "kind": kind,
+        "binary": binary, "reference": reference.id, "layout_identity": reference.layout_identity,
+        "raw_layout_sha256": reference.raw_layout_sha256, "paper_peak_c": reference.paper_c, "grid": grid,
+        "gating": kind == gate_zero.GATE_ENGINE and grid == gate_zero.GRID, "purpose": PURPOSES[(kind, role, grid)],
+        "inputs": {"dir": reference.inputs, "sha256sums_sha256": _sums_digest(reference.inputs)},
+        "timeout_s": timeout, "cpu_limit_s": math.ceil(timeout),
+        "command": (f"python -m sundai_hotspot.reference_validation validate-reference --call {name} "
+                    f"--timeout {timeout:g} --out <fresh empty dir> --ledger <the grant's ledger dir>"),
+        "argv": tap_argv(f"<private content-addressed copy of {binary}>", grid),
+        "accounting": {"expected_cpu_s": round(TIMING[f"grid{grid}_expected_wall_s"] +
+                                               TIMING["per_call_overhead_cpu_s"], 2),
+                       "reserved_cpu_s": timeout + per_call_reserve_s()},
     }
 
 
 def build_call_list() -> dict:
-    from sundai_hotspot.gate_zero import EVALUATOR_KINDS, PINNED_REFERENCES_SHA256, TOLERANCE_K, TOLERANCE_LABEL
-    calls = []
-    for label, kind in MANIFEST_ENGINES:
-        for layout_id in MANIFEST_REFERENCES:
-            for grid in (64, 32):
-                purpose = ("gate zero: the block-centre metric within 1.0 K of the paper" if kind == HOTSPOT6 and grid == 64
-                           else "numerical evidence, not gating: " + ("current engine at the paper's grid" if grid == 64
-                                                                     else "grid 32 against grid 64"))
-                calls.append(_manifest_call(f"p-{label.lower()}-{layout_id}-g{grid}", label, kind, layout_id, grid,
-                                            purpose))
-    for label, kind in MANIFEST_ENGINES:
-        for layout_id in MANIFEST_REFERENCES:
-            primary = f"p-{label.lower()}-{layout_id}-g64"
-            calls.append(_manifest_call(f"r-{label.lower()}-{layout_id}-g64", label, kind, layout_id, 64,
-                                        "independent fresh-process replay: outputs must be byte-identical",
-                                        replay_of=primary))
-    expected = sum(c["accounting"]["expected_cpu_s"] for c in calls)
-    worst = sum(c["accounting"]["worst_case_cpu_s"] for c in calls)
+    references = gate_zero.GATE_REFERENCES
+    calls = [_manifest_call("primary", engine, kind, role, reference, grid)
+             for engine, kind, role in MANIFEST_ENGINES for reference in references for grid in (64, 32)]
+    calls += [_manifest_call("replay", engine, kind, role, reference, 64,
+                             replay_of=gate_zero.call_id("primary", kind, reference.id, 64))
+              for engine, kind, role in MANIFEST_ENGINES for reference in references]
+    if len({c["id"] for c in calls}) != len(calls):
+        raise ValueError("call ids must be unique")
+    if sorted(row["call"] for row in gate_zero.required_calls()) != sorted(c["id"] for c in calls if c["gating"]):
+        raise ValueError("the gating rows must be exactly the predicate's required calls")
+    reserves, per_call = _policy_reserves(), per_call_reserve_s()
+    grid64, grid32 = sum(c["grid"] == 64 for c in calls), sum(c["grid"] == 32 for c in calls)
+    timeouts = sum(c["timeout_s"] for c in calls)
+    forecast = timeouts + per_call * len(calls)
+    if forecast > MANIFEST_CPU_CAP_S:  # warden #56856: generation fails when the worst case leaves the cap
+        raise ValueError(f"the forecast worst case, {forecast:g} CPU-s, exceeds the manifest cap of "
+                         f"{MANIFEST_CPU_CAP_S:g} CPU-s")
+    arithmetic = (f"{grid64} x {TIMING['grid64_timeout_s']:g} s + {grid32} x {TIMING['grid32_timeout_s']:g} s = "
+                  f"{timeouts:g} s of timeouts, plus {len(calls)} x {per_call:g} CPU-s = {per_call * len(calls):g} "
+                  f"CPU-s of overhead assumption ({TIMING['per_call_overhead_cpu_s']:g} generation, hashing and record; "
+                  f"{reserves['reap_s']:g} reap and {reserves['settlement_tail_s']:g} settlement tail from "
+                  f"SLAB-039's SUPERVISOR-POLICY.json) = {forecast:g} CPU-s")
+    kinds = (HOTSPOT6, "hotspot7_default")
     return {
-        "schema": "sentilab-slab049-manifest-v3",
+        "schema": MANIFEST_SCHEMA,
         "ticket": TICKET,
         "ticket_uuid": TICKET_UUID,
-        "status": ("PROPOSED. Frozen manifest of 12 calls for warden's grant against the merged build. Nothing has "
-                   "been executed; no solve has been run for SLAB-049."),
+        "status": ("PROPOSED. The raw-primary manifest: 12 calls on the two raw 45 mm references, for warden's grant "
+                   "against the merged build. Nothing has been executed; no solve has been run for SLAB-049."),
         "generated_by": "python -m sundai_hotspot.slab049 call-list --write docs/sentilab/diagnostics/SLAB-049",
         "paper": PAPER,
+        "supersedes": {**PRIOR_MANIFEST, "reason": SUCCESSOR_REASON},
+        "allocation": ("exactly 12 calls: 2 raw 45 mm references x {native6 target, native7 comparator} x grids "
+                       "{64, 32}, plus one fresh-process grid-64 replay per reference and engine. Native7 is a "
+                       "comparator, not required to reproduce the native6 targets. The deferred verification points "
+                       "add no call."),
         "grant_window": {"not_before": "warden's grant against the merged build",
                          "not_after_utc": "2026-11-01T12:00:00Z",
-                         "per_call_receipts_record": "effective start and stop (UTC), wall and child CPU seconds"},
-        "source": {"pin": "SHA-256 of every file that builds, stages or judges the calls; the merged build must match",
-                   "files_sha256": {path: hashlib.sha256((REPO_ROOT / path).read_bytes()).hexdigest()
-                                    for path in MANIFEST_SOURCES}},
+                         "per_call_receipts_record": "effective start and stop (UTC), wall and CPU seconds"},
+        "source": {"pin": ("SHA-256 of every file that builds, stages or judges the calls; validate-reference refuses "
+                           "a manifest that is not exactly what the tree generates"),
+                   "files_sha256": {path: _file_sha256(path) for path in MANIFEST_SOURCES}},
         "builds": {
-            kind: {"command": EVALUATOR_KINDS[kind]["build"], "binary": EVALUATOR_KINDS[kind]["binary"],
-                   "upstream": EVALUATOR_KINDS[kind]["upstream"],
-                   "binary_sha256": "recorded at build on the grant host; every receipt binds it",
-                   "identity_markers": {"required": [m.decode("ascii") for m in EVALUATOR_KINDS[kind]["required_markers"]],
-                                        "forbidden": [m.decode("ascii") for m in EVALUATOR_KINDS[kind]["forbidden_markers"]]}}
-            for _, kind in MANIFEST_ENGINES},
-        "references": {f"{layout}-{variant}": {"dir": reference_dir(layout, variant),
-                                               "sha256sums_sha256": _sums_digest(reference_dir(layout, variant)),
-                                               "paper_peak_c": REFERENCE_LAYOUTS[layout]["paper_peak_c"],
-                                               "in_this_manifest": layout in MANIFEST_REFERENCES and variant == PRIMARY_VARIANT}
-                       for layout, variant in REFERENCE_SETS},
-        "reference_layouts": REFERENCE_LAYOUTS,
-        "reference_source": REFERENCE_SOURCE,
-        "primary_variant": PRIMARY_VARIANT,
-        "primary_variant_reason": PRIMARY_VARIANT_REASON,
-        "gate_zero": {"module": "sundai_hotspot/gate_zero.py", "tolerance_k": TOLERANCE_K,
-                      "tolerance_label": TOLERANCE_LABEL, "pinned_references_sha256": PINNED_REFERENCES_SHA256,
-                      "pinned_values_c": {"ascend910-original": 75.48, "micro150-original": 115.94,
-                                          "ascend910-tap (verification, next allocation)": 75.47,
-                                          "micro150-tap (verification, next allocation)": 94.89}},
+            kind: {"command": gate_zero.EVALUATOR_KINDS[kind]["build"], "make": gate_zero.EVALUATOR_KINDS[kind]["make"],
+                   "binary": gate_zero.EVALUATOR_KINDS[kind]["binary"],
+                   "provenance": gate_zero.EVALUATOR_KINDS[kind]["binary"] + ".provenance.json",
+                   "upstream": gate_zero.EVALUATOR_KINDS[kind]["upstream"],
+                   "binary_sha256": "recorded by the build in its provenance file; every receipt binds it",
+                   "identity_markers": {
+                       "required": [m.decode("ascii") for m in gate_zero.EVALUATOR_KINDS[kind]["required_markers"]],
+                       "forbidden": [m.decode("ascii") for m in gate_zero.EVALUATOR_KINDS[kind]["forbidden_markers"]]}}
+            for kind in kinds},
+        "references": {
+            r.id: {"role": r.role, "layout_identity": r.layout_identity, "paper_peak_c": r.paper_c, "source": r.source,
+                   "claim": gate_zero.PAPER_MATCH_CLAIM,
+                   "raw_layout": {"sha256": r.raw_layout_sha256,
+                                  "form": "SHA-256 of the canonical JSON of SLAB-048's raw section "
+                                          "(slab049.raw_layout_sha256)",
+                                  "vendored": r.raw_vendored, "slab048_record": r.raw_record,
+                                  "slab048_pull_request": 57, "slab048_commit": SLAB048_COMMIT},
+                   "geometry_rules": CONTINUOUS_RULES,
+                   "inputs": {"dir": r.inputs, "sha256sums_sha256": _sums_digest(r.inputs)}}
+            for r in references},
+        "deferred": {r.id: {"role": r.role, "paper_peak_c": r.paper_c, "source": r.source,
+                            "status": gate_zero.PENDING, "calls": 0} for r in gate_zero.DEFERRED_REFERENCES},
+        "snapped_variants": (gate_zero.SNAPPED_CLAIM + ". SLAB-048's 0.5 mm variants are a separate "
+                             "engineering-comparison allocation with their own identities."),
+        "gate_zero": {"module": "sundai_hotspot/gate_zero.py", "tolerance_k": gate_zero.TOLERANCE_K,
+                      "tolerance_label": gate_zero.TOLERANCE_LABEL,
+                      "pinned_references_sha256": gate_zero.PINNED_REFERENCES_SHA256,
+                      "predicate": gate_zero.PREDICATE, "required_calls": list(gate_zero.required_calls())},
         "calls": calls,
         "accounting": {
-            "calls": len(calls), "max_runs": len(calls), "retries": 0,
-            "timing_basis": TIMING,
-            "expected_cpu_s": round(expected, 2),
-            "worst_case_cpu_s": round(worst, 2),
-            "cpu_cap_minutes": math.ceil(worst / 60),
-            "cpu_cap_rule": "every call killed at its cap plus its overhead: the sum is the worst case",
-            "failed_attempt_reserve": "inside each call's cap; a failed attempt is not retried under this grant",
+            "calls": len(calls), "grid64_calls": grid64, "grid32_calls": grid32, "max_runs": len(calls), "retries": 0,
+            "timing_basis": TIMING, "policy_reserves": reserves, "per_call_reserve_cpu_s": per_call,
+            "timeouts_s": timeouts,
+            "arithmetic": arithmetic,
+            "forecast_worst_case_cpu_s": forecast,
+            "forecast_label": ("a forecast under declared assumptions, not a CPU guarantee: RLIMIT_CPU bounds each "
+                               "solver process at its timeout and the generator at 10 CPU-s; the parent's own work "
+                               "and any unreaped descendants are measured, not capped; the hard cumulative "
+                               "process-group cap is the supervisor's"),
+            "expected_cpu_s": round(sum(c["accounting"]["expected_cpu_s"] for c in calls), 2),
+            "manifest_cpu_cap_s": MANIFEST_CPU_CAP_S,
+            "room_envelope_cpu_s": ROOM_ENVELOPE_CPU_S,
+            "binding_cap": ("the manifest cap, 600 CPU-s, binds: it is the tighter of the two. The room's 1,800 CPU-s "
+                            "prospective envelope does not bind. Neither is raised here; the final grant reconciles "
+                            "them."),
             "concurrency": 1, "gpu": False,
             "host": "x86_64 Azure host behind the mesh and TIMING evidence; an aarch64 build needs its own receipts",
             "host_architecture": "x86_64",
-            "enforced_at_entry": ("validate-reference runs only a listed call id with its listed engine, reference and "
-                                  "grid; refuses after the window, on another architecture, or a second time (the "
-                                  "ledger reserves each call once); sets RLIMIT_CPU to the call's CPU cap and a wall "
-                                  "timeout of twice the cap; writes the reservation and identity before launch and "
-                                  "settles the receipt on every exit path"),
         },
+        "enforcement": {"in_code_at_entry": list(IN_CODE_AT_ENTRY),
+                        "operator_supervisor_contract": list(SUPERVISOR_CONTRACT)},
         "next_allocation": [
-            "raw reconstructions of both originals on HS6 at grid 64 (a separate reference identity)",
-            "verification cases, not a statistical holdout: ascend910-tap 75.47 C and micro150-tap 94.89 C "
-            "(layout pending SLAB-048)",
-            "HotSpot 6.0 built SUPERLU=0 exactly as TAP-2.5D's util/hotspot (kind hotspot6_tap_faithful) on both "
+            "the deferred verification points, pending: Ascend 910 Fig. 6(c) at 75.47 C and CPU-DRAM Fig. 5(c) at "
+            "94.89 C (SLAB-048 validation_points), with their own calls",
+            "HotSpot 6.0 built SUPERLU=0 exactly as TAP-2.5D's util/hotspot (kind hotspot6_tap_faithful) on both raw "
             "originals: the solver cross-check",
             "the aarch64 (GB10) build's own gate-zero receipts",
+            "SLAB-048's 0.5 mm legal snapped variants, as an engineering comparison that never carries the "
+            "paper-match claim",
             "a 50 mm frame comparison and NEW-evaluator mesh margins",
         ],
         "separate_allocations": [
-            {**KNOWN_ANSWER_SLAB, "calls": 2, "engines": ["hotspot6", "hotspot7_default"],
+            {**KNOWN_ANSWER_SLAB, "calls": 2, "engines": [HOTSPOT6, "hotspot7_default"],
              "in_this_manifest": False, "gate_zero_calls": False,
-             "expected_rise_K": {kind: known_answer_expected(kind)["expected_rise_K"]
-                                 for kind in ("hotspot6", "hotspot7_default")},
+             "expected_rise_K": {kind: known_answer_expected(kind)["expected_rise_K"] for kind in kinds},
              "equations": "slab049.known_answer_expected docstring: geometry, power, area, node and boundary "
                           "equations, the series-resistance derivation, and when the slab result applies"},
             {"id": "24-layout re-score study", "in_this_manifest": False,
              "note": "a later separate allocation; not folded into this manifest"},
         ],
-        "post_run_diagnostics": ("From the 12 calls, with no extra call (reference_validation report): HotSpot 6.0's "
-                                 "grid 32 -> 64 change per fixture (aneta's network model predicts 0.01 K Ascend, "
-                                 "0.18 K CPU-DRAM; the old HotSpot 7 micro150 mesh error was 0.79 K), CPU-s per call "
-                                 "on the HotSpot 6.0 build, replay byte-identity, and the same-index spreader-sink "
-                                 "drop (reported, not asserted). Nothing is frozen on them or on the old mesh error."),
-        "not_requested": ("The v1 and v2 plans (32 calls, 37 executions; later 23) and every material-only HotSpot 7 "
-                          "call. The material-only flag stays as labelled, bounded diagnostic evidence; it is not the "
-                          "MATCH evaluator and inherits no grant."),
+        "post_run_diagnostics": ("From the 12 calls, with no extra call (reference_validation report, by call id from "
+                                 "the ledger): HotSpot 6.0's grid 32 -> 64 change per reference (aneta's network model "
+                                 "predicts 0.01 K Ascend, 0.18 K CPU-DRAM; the old HotSpot 7 micro150 mesh error was "
+                                 "0.79 K), CPU-s per call, replay byte identity, the same-index spreader-sink drop and "
+                                 "the same-index stack at each active-layer argmax (reported, not asserted). Nothing "
+                                 "is frozen on them or on the old mesh error."),
+        "not_requested": ("The prior snapped-primary rows; the v1 and v2 plans (32 calls, 37 executions; later 23); "
+                          "and every material-only HotSpot 7 call. The material-only flag stays as labelled, bounded "
+                          "diagnostic evidence; it is not the MATCH evaluator and inherits no grant."),
     }
+
+
+def check_manifest(manifest_bytes: bytes) -> dict:
+    """The manifest, if and only if it is byte-identical to the one this tree generates. Otherwise a refusal that
+    names what differs: a source pin, a reference input, the predicate or a row."""
+    if hashlib.sha256(manifest_bytes).hexdigest() == PRIOR_MANIFEST["sha256"]:
+        raise ManifestMismatch("the prior snapped manifest (CALL-LIST.json, as reviewed at 6413a3c) is an artifact, "
+                               "not an executable manifest")
+    try:
+        manifest = json.loads(manifest_bytes)
+    except ValueError as exc:
+        raise ManifestMismatch(f"the manifest is not JSON: {exc}") from exc
+    if not isinstance(manifest, dict) or manifest.get("schema") != MANIFEST_SCHEMA:
+        raise ManifestMismatch(f"not a {MANIFEST_SCHEMA} manifest")
+    fresh = _dump(build_call_list())
+    if manifest_bytes == fresh:
+        return manifest
+    regenerated = json.loads(fresh)
+    pins, current = manifest.get("source", {}).get("files_sha256", {}), regenerated["source"]["files_sha256"]
+    drift = sorted(path for path in set(pins) | set(current) if pins.get(path) != current.get(path))
+    sections = sorted(key for key in set(manifest) | set(regenerated) if manifest.get(key) != regenerated.get(key))
+    raise ManifestMismatch(f"the manifest is not what this tree generates: source pins differ for {drift}; "
+                           f"sections differ: {sections}")
 
 
 # ----------------------------------------------------------------------------------------------
@@ -1206,6 +1358,7 @@ def summarize_evaluation(directory: Path, *, lcf: str = "samplelayers.lcf", grid
             "pattern": run1_pattern(max(temperatures[spreader]) - ambient, max(temperatures[sink]) - ambient),
         },
         "spreader_sink_drop_diagnostic": _same_index_drop(temperatures[spreader], temperatures[sink], side, ambient),
+        "same_index_stack_at_active_argmax": same_index_stack(temperatures, layers, side, ambient),
     })
     return record
 
@@ -1217,6 +1370,27 @@ def _same_index_drop(spreader: list[float], sink: list[float], side: int, ambien
     return {"at": {"row": index // side, "col": index % side}, "spreader_K": spreader[index], "sink_K": sink[index],
             "spreader_rise_K": spreader[index] - ambient, "sink_rise_K": sink[index] - ambient,
             "drop_K": spreader[index] - sink[index], "expectation": DROP_EXPECTATION}
+
+
+def same_index_stack(temperatures: dict[int, list[float]], layers: list[dict], side: int, ambient: float) -> list[dict]:
+    """At each active-layer argmax (every tie): the same grid index in every layer from the active one up to the sink,
+    with rises above ambient and the layer-to-layer drops. With TAP's six-layer stack these are layers 4 (chip),
+    5 (TIM), 6 (spreader) and 7 (sink). A reported diagnostic (astra, native6 review); nothing is asserted on it."""
+    powered = [layer["layer"] for layer in layers if layer["power"]]
+    if len(powered) != 1:
+        raise ValueError("expected exactly one powered layer")
+    active = powered[0]
+    names = {layer["layer"]: Path(layer["flp"]).stem for layer in layers}
+    names.update({len(layers): "spreader", len(layers) + 1: "sink"})
+    stacks = []
+    for cell in grid_argmax(temperatures[active], side):
+        index = cell["row"] * side + cell["col"]
+        column = [{"layer": layer, "name": names[layer], "K": temperatures[layer][index],
+                   "rise_K": temperatures[layer][index] - ambient} for layer in range(active, len(layers) + 2)]
+        stacks.append({"at": cell, "layers": column,
+                       "drops": [{"from": upper["name"], "to": lower["name"], "drop_K": upper["K"] - lower["K"]}
+                                 for upper, lower in zip(column, column[1:])]})
+    return stacks
 
 
 # ----------------------------------------------------------------------------------------------
@@ -1281,8 +1455,7 @@ def main(argv: list[str] | None = None) -> int:
         return _write_or_check(target / "ANALYTIC.json", _dump(report), check)
     if args.command in ("slab", "references"):
         bundles = ({"slab": slab_files()} if args.command == "slab" else
-                   {f"references/{layout}-{variant}-45mm": reference_files(layout, variant)
-                    for layout, variant in REFERENCE_SETS})
+                   {f"references/{Path(r.inputs).name}": reference_files(r.id) for r in gate_zero.GATE_REFERENCES})
         status = 0
         for folder, files in bundles.items():
             sums = "".join(f"{hashlib.sha256(data).hexdigest()}  {name}\n" for name, data in sorted(files.items()))
@@ -1290,7 +1463,7 @@ def main(argv: list[str] | None = None) -> int:
                 status |= _write_or_check(target / folder / name, data, check)
             status |= _write_or_check(target / folder / "SHA256SUMS", sums.encode("ascii"), check)
         return status
-    return _write_or_check(target / "CALL-LIST.json", _dump(build_call_list()), check)
+    return _write_or_check(target / MANIFEST_NAME, _dump(build_call_list()), check)
 
 
 if __name__ == "__main__":

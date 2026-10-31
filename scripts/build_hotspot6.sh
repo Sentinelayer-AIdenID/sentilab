@@ -6,10 +6,14 @@
 #   hotspot               the evaluator: SuperLU direct solver plus the all-layer grid dump
 #                         (-DSENTILAB_GRID_DUMP_ALL_LAYERS=1, writer only; the solver is unchanged)
 #   hotspot-tap-faithful  the cross-check: upstream source, SUPERLU=0, as TAP-2.5D's util/hotspot was built
-# -ffp-contract=off stops aarch64 fusing multiply-adds (the x86_64 baseline has no FMA), so both architectures
-# round the same operations the same way.
-# Binary hashes depend on the toolchain and the build path. Every host pins its own through gate zero: an
-# aarch64 build needs its own receipts.
+# -ffp-contract=off stops GCC contracting a*b+c into one fused multiply-add in the HotSpot sources it compiles here
+# (GCC contracts by default where the target has FMA, as aarch64 does; the x86_64 baseline target has none). It
+# does not reach the precompiled SuperLU, BLAS or libm, which may pick FMA or other kernels per CPU. So it narrows
+# cross-architecture differences; it does not make results bit-identical across architectures, and none is claimed.
+# Binary hashes depend on the toolchain and, through the Makefile's -g, on the build path. Every host pins its own
+# through gate zero: an aarch64 build needs its own receipts. sundai_hotspot.provenance writes
+# <binary>.provenance.json for each binary (compiler, flags, build path, SuperLU/BLAS packages, the libraries the
+# loader resolves with their hashes, the binary hash); validate-reference refuses a binary without it.
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root/sundai_hotspot6"
@@ -34,3 +38,5 @@ make cleano >/dev/null
 echo "architecture $arch"
 gcc --version | head -n 1
 sha256sum hotspot hotspot-tap-faithful
+cd "$root"
+python3 -m sundai_hotspot.provenance hotspot6 hotspot6_tap_faithful
