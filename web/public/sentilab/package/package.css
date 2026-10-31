@@ -136,14 +136,16 @@ a { color: var(--cyan); }
 .who .row1 { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
 .who .row1 b { font-size: 24px; font-weight: 600; letter-spacing: -.02em; white-space: nowrap; }
 .who .cid { font: 15px var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.who .fullid { margin-top: 2px; font: 12px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.who .fullid:empty { display: none; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .metrics .j { display: flex; align-items: baseline; gap: 10px; font: 600 44px/1.05 var(--mono); letter-spacing: -.03em; }
 .metrics .j small { font: 14px var(--mono); color: var(--muted); letter-spacing: 0; }
 .metrics .j .stale { color: #b9a77f; }
 .metrics .w { margin-top: 4px; font: 14px var(--mono); color: var(--muted); }
 .metrics .src { margin-top: 6px; font: 13.5px var(--mono); color: var(--muted); }
-.metrics .src.alt { color: var(--amber); }
-.metrics .src.stale { color: var(--amber); }
+.metrics .src .alt { color: var(--amber); }      /* per part: J and the temperatures each carry their own state */
+.metrics .src .stale { color: var(--amber); }
 .scalebar { position: relative; height: 16px; }
 .scalebar .bar { position: absolute; inset: 0; border-radius: 3px; border: 1px solid #0a1317;
   background: linear-gradient(90deg, #112a48 0%, #236b91 20%, #56b6ba 40%, #dfd376 60%, #ec994f 80%, #e45138 100%); }
@@ -155,6 +157,8 @@ a { color: var(--cyan); }
 .ticks2 span:last-child { transform: translateX(-100%); }
 .basis { margin: 6px 0 0; font: 600 13.5px var(--sans); color: var(--text); }
 .fixnote { margin: 6px 0 0; font: 12.5px var(--mono); color: var(--amber); }
+.spannote { margin: 6px 0 0; font: 13px var(--mono); color: #c9d6d9; }
+.spannote:empty { display: none; }
 .keys { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 13px; color: var(--muted); }
 .keys li { display: flex; align-items: center; gap: 9px; }
 .keys i { flex: none; width: 18px; height: 12px; border-radius: 2px; }

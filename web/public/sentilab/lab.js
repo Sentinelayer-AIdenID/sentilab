@@ -13,6 +13,7 @@ import {
 import { initialState, verifyRows, verifyBytes, splitRows, rowText, liveLabel, REASON_TEXT } from "./paging.mjs";
 import { pollLiveOnce, POLL_BACKOFF_MS } from "./lab-live.mjs";
 import { strictJson, MAX_SMALL_JSON } from "./runs-list.mjs";
+import { layoutSpan, spanText } from "./package/scene.mjs";
 import {
   buildView, feedRows, chainSummary, isDrill, isRejected, colorScale, nextScale, heat, frameOf, labInfo, reasonText, rankReasons,
   rowIdentity, resolveRow, shortId, stageOf, STAGES, isObj,
@@ -66,7 +67,7 @@ const S = {
   // paging: paging.mjs state (every raw row received, the cursor and its hash, the latest failure, and "degraded" once
   // the stream was replaced or paging is unsupported) and the mode inputs: caught_up, catching_up, high_k and
   // last_progress_ms, updated by track() (v0.6.2: catching up is not progress).
-  live: { runs: null, runId: params.get("run"), paging: initialState(params.get("run") ?? ""), verification: null, scale: null, frame: null,
+  live: { runs: null, runId: params.get("run"), paging: initialState(params.get("run") ?? ""), verification: null, scale: null, frame: null, span: null,
           connected: null, timer: null, error: "" },
   cursor: 0, cursors: {}, playing: null, following: true,
   // Open dialogs follow the data. inspected: the inspector's subject, by stable identity ({ source, id }), and the
@@ -129,6 +130,8 @@ async function verify(src) {
   // and is rebuilt from what remains when the prefix shrinks (nextScale).
   src.scale = src === S.live ? nextScale(src.scale, previousK, scale, src.verification.prefix_end) : scale;
   src.frame = frameOf(trusted);
+  // The run's layout span, labelled exactly as the Package view labels it (scene.mjs: one definition, one label).
+  src.span = spanText(layoutSpan(trusted));
 }
 
 // ── replay ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -233,7 +236,7 @@ function liveMode(now) {
 function resetLive(runId) {
   // A new object, so a poll still out for the previous run writes only to the old one.
   clearTimeout(S.live.timer);
-  S.live = { ...S.live, runId, paging: initialState(runId), verification: null, scale: null, frame: null, timer: null };
+  S.live = { ...S.live, runId, paging: initialState(runId), verification: null, scale: null, frame: null, span: null, timer: null };
   S.cursor = 0; S.following = true;
 }
 
@@ -407,9 +410,7 @@ function renderCards(src, v, view) {
   box.classList.toggle("many", anyGeometry && view.cards.length > 6);
   if (!anyGeometry) box.append(h("div", { class: "nogeom" }, "No layout geometry in the verified data, so there is nothing to draw. Candidates are listed with J from their measurements."));
   for (const c of view.cards) box.append(cardEl(c, scale, frame, c.id === boardId, anyGeometry));
-  // The layouts' unit, when every card with geometry states the same one; otherwise none is claimed.
-  const units = [...new Set(view.cards.filter((c) => c.geometry.length > 0).map((c) => c.units ?? ""))];
-  renderLegend(scale, anyGeometry ? frame : null, units.length === 1 && units[0] ? units[0] : null);
+  renderLegend(scale, anyGeometry, src.span ?? null);
 }
 
 function cardEl(c, scale, frame, onBoard, draw = true) {
@@ -475,13 +476,12 @@ function drawLayout(c, scale, frame) {
   return svg;
 }
 
-function renderLegend(scale, frame, units) {
+function renderLegend(scale, anyGeometry, span) {
   const lg = $("legend");
   $("p1note").textContent = scale ? "chiplet-center temperatures, not a field" : "layouts only: no temperatures drawn";
-  if (frame) {
-    const size = `${fmt(frame.x1 - frame.x0, 0)} × ${fmt(frame.y1 - frame.y0, 0)}`;
-    lg.append(h("span", { class: "dims", title: "Every card is drawn on one frame: all the layouts in the verified prefix, from 0, lower-left origin." },
-      units ? `layouts in ${units} · frame ${size} ${units}` : `layout units not stated · frame ${size}`));
+  if (anyGeometry) {
+    lg.append(h("span", { class: "dims", title: "Max − min of the chiplet extents in the run's verified layouts, in mm (the Package view's figure). Every card is drawn on one frame from 0, lower-left origin." },
+      span ?? "layout units missing or not supported: no span"));
   }
   if (!scale) {
     const what = "No per-chiplet temperatures in the verified data: chiplets are uncolored; J is the measurement's, not a chiplet's.";

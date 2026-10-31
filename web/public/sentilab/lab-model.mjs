@@ -111,6 +111,39 @@ export function cleanGeometry(geometry) {
 // only, after verification: the signed bytes are checked exactly as they arrived and the inspector shows them raw.
 export const tempUnit = (unit) => (unit === "C" ? "°C" : unit);
 
+// The measurement that gives node `id` its J and W (display values; a producer puts them on measurements). The one
+// rule for both views: the Lab view's cards and the Package view's scene (scene.mjs) call it, and nothing else picks
+// J. Only a node project() calls a measurement, whose values carry J with a finite value, is eligible:
+//   - a measurement: its own J;
+//   - any other node: a member of one of its support sets, chosen as project() marks them: a set it calls valid
+//     first, then a measurement it calls valid, then one it marks reproduced (a verify tier, e.g. "replayed"); the
+//     set order breaks ties. A member of another kind (a candidate in the set, say) never lends its own display J.
+// None: null, and J and W stay empty.
+//   nodes: project()'s nodes; sets: Map node -> [{ set_id, members }]; created: Map node -> { values } (its display
+//   values, or null).
+export function metricFor(id, { nodes, sets, created }) {
+  const eligible = (m) => {
+    const values = created.get(m)?.values;
+    return nodes[m]?.kind === "measurement" && isObj(values) && isObj(values.J) && finite(values.J.value) ? values : null;
+  };
+  if (nodes[id]?.kind === "measurement") {
+    const values = eligible(id);
+    return values ? { id, set_id: null, set_status: null, validity: nodes[id].validity ?? "unverified", values } : null;
+  }
+  const status = nodes[id]?.support_status ?? {};
+  let best = null;
+  for (const set of sets.get(id) ?? []) {
+    for (const m of set.members) {
+      const values = eligible(m);
+      if (!values) continue;
+      const node = nodes[m];
+      const rank = (status[set.set_id] === "valid" ? 4 : 0) + (node.validity === "valid" ? 2 : 0) + ((node.tiers ?? []).length > 0 ? 1 : 0);
+      if (best === null || rank > best.rank) best = { id: m, set_id: set.set_id, set_status: status[set.set_id] ?? "broken", validity: node.validity ?? "unverified", values, rank };
+    }
+  }
+  return best;
+}
+
 const tempsOf = (values) => {
   if (!isObj(values) || !isObj(values.center_temps)) return null;
   const out = {};
@@ -254,8 +287,8 @@ export function buildView(verification, cursor) {
     const geometry = cleanGeometry(made?.values?.geometry);
     const own = node.kind === "measurement" ? { id, set_id: null, setStatus: null, validity: node.validity, values: made?.values, temps: tempsOf(made?.values) } : null;
     const source = own ?? measurementFor(id);
-    // J and W: a measurement's own; a candidate's from metricFor() (which needs no temperatures).
-    const metric = own ?? metricFor(id);
+    // J and W: from the measurement metricFor() picks, the Package view's rule too (it needs no temperatures).
+    const metric = metricFor(id, { nodes, sets, created });
     const J = isObj(metric?.values?.J) && finite(metric.values.J.value) ? { value: metric.values.J.value, unit: tempUnit(str(metric.values.J.unit) ?? "") } : null;
     const W = isObj(metric?.values?.W) && finite(metric.values.W.value) ? { value: metric.values.W.value, metric_id: str(metric.values.W.metric_id) ?? "" } : null;
     return {
@@ -266,25 +299,6 @@ export function buildView(verification, cursor) {
       units: str(made?.values?.units), seq: made?.seq ?? null,
       firstSet: (sets.get(id) ?? [])[0]?.set_id ?? null,
     };
-  };
-
-  // The measurement that gives a candidate its J and W (display values; a producer puts them on measurements): a
-  // member of one of its support sets that carries a finite J, chosen as project() marks them: a set it calls valid
-  // first, then a measurement it calls valid, then one it marks reproduced (a verify tier, e.g. "replayed"); the
-  // set order breaks ties. None: J and W stay empty.
-  const metricFor = (id) => {
-    const status = nodes[id]?.support_status ?? {};
-    const found = [];
-    for (const set of sets.get(id) ?? []) {
-      for (const m of set.members) {
-        const values = created.get(m)?.values;
-        if (!isObj(values) || !isObj(values.J) || !finite(values.J.value)) continue;
-        const node = nodes[m];
-        found.push({ id: m, set_id: set.set_id, validity: node?.validity ?? "unverified", values,
-          rank: (status[set.set_id] === "valid" ? 4 : 0) + (node?.validity === "valid" ? 2 : 0) + ((node?.tiers ?? []).length > 0 ? 1 : 0) });
-      }
-    }
-    return found.reduce((best, m) => (best === null || m.rank > best.rank ? m : best), null);
   };
 
   // Panel 01: every candidate, plus any measurement that carries its own layout (such as an initial layout).
