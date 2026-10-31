@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SLAB-002 regression script: rerun every claim without touching shipped evidence.
 # Fixes applied per warden review of PR #6 (gpt-astra-carter #56118):
-#   (1) PROVENANCE verifies against immutable git blobs from import base 0cd32a4,
+#   (1) PROVENANCE verifies against the immutable import commit 126507d4 (path -> blob -> sha256),
 #       not the working tree; separately reports files that evolved since import.
 #   (2) TFL-14 nonzero exit fails the script (was swallowed by unconditional || echo).
 #   (3) demo.py output is captured and asserted: 93.3423169→92.3143491, receipt_chain_valid=true.
@@ -15,7 +15,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export FLIGHT_SIGNING_SEED_B64="$(python3 -c 'import base64,os;print(base64.b64encode(os.urandom(32)).decode())')"
 FAILED=0
 PASSED=0
-IMPORT_BASE="0cd32a4"
+# The repository import commit (PROVENANCE.json describes exactly its tree; see README).
+IMPORT_BASE="126507d4dbd8cf327aa158c4dd893c436f7cdf8f"
 
 red()   { printf '\033[31m%s\033[0m\n' "$*"; }
 green() { printf '\033[32m%s\033[0m\n' "$*"; }
@@ -36,7 +37,7 @@ echo
 
 # --- PROVENANCE ---
 # Verify every manifest entry against its immutable git blob from the import
-# base (0cd32a4), not the working tree. Separately report which tracked files
+# commit 126507d4, not the working tree. Separately report which tracked files
 # evolved since the import and assert the working tree is clean.
 echo "--- PROVENANCE.json (vs immutable git blobs at $IMPORT_BASE) ---"
 python3 -c "
@@ -51,6 +52,11 @@ for entry in p['files']:
     if r.returncode != 0:
         print(f'BLOB MISSING: {entry[\"path\"]} blob={blob}')
         missing_blobs += 1
+        continue
+    at_import = subprocess.run(['git', 'rev-parse', '$IMPORT_BASE:' + entry['path']], cwd='$ROOT', capture_output=True, text=True)
+    if at_import.returncode != 0 or at_import.stdout.strip() != blob:
+        print(f'IMPORT TREE MISMATCH: {entry[\"path\"]} is not blob {blob} at $IMPORT_BASE')
+        mismatches += 1
         continue
     r = subprocess.run(['git', 'cat-file', 'blob', blob], cwd='$ROOT', capture_output=True, text=False)
     actual = hashlib.sha256(r.stdout).hexdigest()

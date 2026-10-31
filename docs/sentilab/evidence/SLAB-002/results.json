@@ -19,7 +19,7 @@
   "provenance": {
     "total_entries": 494,
     "verified_sha256": 494,
-    "method": "verified against immutable git blobs from import base 0cd32a4",
+    "method": "verified against immutable git blobs from import base 0cd32a4 (box-local snapshot of repository import commit 126507d4, identical tree; the committed script pins 126507d4)",
     "blob_misses": 0,
     "sha256_mismatches": 0,
     "source": "Sentinelayer-AIdenID/thermal-flight-lab@2199612932da142e0057e6162293940b4ea64bba"

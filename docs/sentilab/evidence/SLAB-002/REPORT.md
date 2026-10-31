@@ -16,7 +16,7 @@
 
 ## PROVENANCE.json Verification
 
-- **494/494** files verified against immutable git blobs from import base `0cd32a4`
+- **494/494** files verified against immutable git blobs from import base `0cd32a4` (the box's local snapshot commit of the import, tree-identical to repository commit `126507d4`; the committed script now pins `126507d4`)
   (`Sentinelayer-AIdenID/thermal-flight-lab@2199612932da142e0057e6162293940b4ea64bba`)
 - 0 blob misses, 0 sha256 mismatches
 - **52 files** have legitimately evolved since the import (post-import commits:
