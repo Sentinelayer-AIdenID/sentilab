@@ -1,0 +1,17 @@
+sample: exit 0, 0.012s; /tmp/tmpx6qnyia0/run/sample
+sample: exit 0, 0.012s; /tmp/tmpx6qnyia0/run/sample
+demo: exit 17, 0.025s; /tmp/tmpthsrj82g/run/demo
+missing: exit 127, 0.000s; /tmp/tmp82_83yvu/run/missing
+probe: exit 0, 0.025s; /tmp/tmp0v1wtjqh/run/probe
+======================================================================
+FAIL: test_duplicate_step_cannot_overwrite_evidence (test_evidence_capture.EvidenceCaptureTests.test_duplicate_step_cannot_overwrite_evidence)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/slab002-mutant/docs/sentilab/evidence/SLAB-002/test_evidence_capture.py", line 98, in test_duplicate_step_cannot_overwrite_evidence
+    with self.assertRaises(FileExistsError):
+AssertionError: FileExistsError not raised
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.136s
+
+FAILED (failures=1)

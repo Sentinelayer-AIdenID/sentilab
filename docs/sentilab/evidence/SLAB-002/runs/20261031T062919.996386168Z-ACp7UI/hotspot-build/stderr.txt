@@ -1,0 +1,253 @@
+materials.c: In function ‘materials_add_from_file’:
+materials.c:31:5: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+   31 |     fgets(line, LINE_SIZE, fp);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~
+materials.c:82:5: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+   82 |     fgets(line, LINE_SIZE, fp);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~
+microchannel.c: In function ‘microchannel_build_network’:
+microchannel.c:296:3: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  296 |   fgets(line, MAX_LINE_SIZE, fp);
+      |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+microchannel.c:324:5: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  324 |     fgets(line, MAX_LINE_SIZE, fp);
+      |     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+hotspot.c: In function ‘read_names’:
+hotspot.c:190:7: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  190 |       fgets(line, LINE_SIZE, fp);
+      |       ^~~~~~~~~~~~~~~~~~~~~~~~~~
+hotspot.c: In function ‘read_vals’:
+hotspot.c:224:7: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  224 |       fgets(line, LINE_SIZE, fp);
+      |       ^~~~~~~~~~~~~~~~~~~~~~~~~~
+microchannel.c: In function ‘microchannel_config_to_strs’:
+microchannel.c:150:29: warning: ‘%s’ directive writing up to 514 bytes into a region of size 512 [-Wformat-overflow=]
+  150 |   sprintf(table[13].value, "%s", config->floorplan_file);
+      |                             ^~
+In file included from /usr/include/stdio.h:980,
+                 from util.h:4,
+                 from microchannel.h:4,
+                 from microchannel.c:4:
+In function ‘sprintf’,
+    inlined from ‘microchannel_config_to_strs’ at microchannel.c:150:3:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin_sprintf’ output between 1 and 515 bytes into a destination of size 512
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+temperature_block.c: In function ‘read_temp_block’:
+temperature_block.c:631:25: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  631 |                         fgets(str1, LINE_SIZE, fp);
+      |                         ^~~~~~~~~~~~~~~~~~~~~~~~~~
+temperature_block.c:659:17: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  659 |                 fgets(str1, LINE_SIZE, fp);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+temperature_block.c:677:9: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  677 |         fgets(str1, LINE_SIZE, fp);
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~
+temperature_block.c: In function ‘read_power_block’:
+temperature_block.c:744:17: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  744 |                 fgets(str1, LINE_SIZE, fp);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+temperature_grid.c: In function ‘parse_layer_file’:
+temperature_grid.c:631:7: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  631 |       fgets(line, LINE_SIZE, fp);
+      |       ^~~~~~~~~~~~~~~~~~~~~~~~~~
+temperature_grid.c: In function ‘count_num_layers’:
+temperature_grid.c:770:7: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  770 |       fgets(line, LINE_SIZE, fp);
+      |       ^~~~~~~~~~~~~~~~~~~~~~~~~~
+temperature_grid.c: In function ‘read_temp_grid’:
+temperature_grid.c:1573:11: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 1573 |           fgets(str1, LINE_SIZE, fp);
+      |           ^~~~~~~~~~~~~~~~~~~~~~~~~~
+temperature_grid.c:1605:7: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 1605 |       fgets(str1, LINE_SIZE, fp);
+      |       ^~~~~~~~~~~~~~~~~~~~~~~~~~
+temperature_grid.c:1623:3: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 1623 |   fgets(str1, LINE_SIZE, fp);
+      |   ^~~~~~~~~~~~~~~~~~~~~~~~~~
+temperature_grid.c: In function ‘read_power_grid’:
+temperature_grid.c:1709:17: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 1709 |                 fgets(str1, LINE_SIZE, fp);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+temperature_grid.c:1733:7: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 1733 |       fgets(str1, LINE_SIZE, fp);
+      |       ^~~~~~~~~~~~~~~~~~~~~~~~~~
+temperature_grid.c:1742:11: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 1742 |           fgets(str1, LINE_SIZE, fp);
+      |           ^~~~~~~~~~~~~~~~~~~~~~~~~~
+flp.c: In function ‘flp_count_units’:
+flp.c:1015:17: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 1015 |                 fgets(str1, LINE_SIZE, fp);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+flp.c: In function ‘flp_populate_blks’:
+flp.c:1070:17: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 1070 |                 fgets(str, LINE_SIZE, fp);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~
+flp.c: In function ‘flp_populate_connects’:
+flp.c:1138:17: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+ 1138 |                 fgets(str1, LINE_SIZE, fp);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+flp_desc.c: In function ‘desc_count_units’:
+flp_desc.c:51:17: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+   51 |                 fgets(str1, LINE_SIZE, fp);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+flp_desc.c: In function ‘desc_populate_blks’:
+flp_desc.c:103:17: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  103 |                 fgets(str1, LINE_SIZE, fp);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+flp_desc.c: In function ‘desc_populate_connects’:
+flp_desc.c:155:17: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  155 |                 fgets(str1, LINE_SIZE, fp);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~
+flp_desc.c:30:29: warning: ‘%s’ directive writing up to 511 bytes into a region of size 506 [-Wformat-overflow=]
+   30 |         sprintf(msg, "block %s not found\n", name);
+      |                             ^~
+......
+  172 |                         x = desc_get_blk_index(flp_desc, name1);
+      |                                                          ~~~~~
+In file included from /usr/include/stdio.h:980,
+                 from flp_desc.c:1:
+In function ‘sprintf’,
+    inlined from ‘desc_get_blk_index’ at flp_desc.c:30:2,
+    inlined from ‘desc_get_blk_index’ at flp_desc.c:16:5,
+    inlined from ‘desc_populate_connects’ at flp_desc.c:172:8:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 18 and 529 bytes into a destination of size 512
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+flp_desc.c: In function ‘desc_populate_connects’:
+flp_desc.c:30:29: warning: ‘%s’ directive writing up to 511 bytes into a region of size 506 [-Wformat-overflow=]
+   30 |         sprintf(msg, "block %s not found\n", name);
+      |                             ^~
+......
+  173 |                         y = desc_get_blk_index(flp_desc, name2);
+      |                                                          ~~~~~
+In function ‘sprintf’,
+    inlined from ‘desc_get_blk_index’ at flp_desc.c:30:2,
+    inlined from ‘desc_get_blk_index’ at flp_desc.c:16:5,
+    inlined from ‘desc_populate_connects’ at flp_desc.c:173:8:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 18 and 529 bytes into a destination of size 512
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+flp.c: In function ‘flp_create_grid’:
+flp.c:548:78: warning: ‘%d’ directive writing between 1 and 11 bytes into a region of size between 0 and 511 [-Wformat-overflow=]
+  548 |                                         sprintf(grid->units[count].name, "%s_%d", flp->units[i].name, grid_num);
+      |                                                                              ^~
+In file included from /usr/include/stdio.h:980,
+                 from flp.c:1:
+In function ‘sprintf’,
+    inlined from ‘flp_create_grid’ at flp.c:548:6:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 3 and 524 bytes into a destination of size 512
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+flp.c: In function ‘flp_wrap_rim’:
+flp.c:722:59: warning: ‘%s’ directive writing up to 511 bytes into a region of size 503 [-Wformat-overflow=]
+  722 |                         sprintf(flp->units[n+j].name, "%s_%s",
+      |                                                           ^~
+In function ‘sprintf’,
+    inlined from ‘flp_wrap_rim’ at flp.c:722:4:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 10 and 521 bytes into a destination of size 512
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+flp.c: In function ‘flp_wrap_rim’:
+flp.c:736:59: warning: ‘%s’ directive writing up to 511 bytes into a region of size 502 [-Wformat-overflow=]
+  736 |                         sprintf(flp->units[n+j].name, "%s_%s",
+      |                                                           ^~
+In function ‘sprintf’,
+    inlined from ‘flp_wrap_rim’ at flp.c:736:4:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 11 and 522 bytes into a destination of size 512
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+flp.c: In function ‘flp_wrap_rim’:
+flp.c:752:59: warning: ‘%s’ directive writing up to 511 bytes into a region of size 504 [-Wformat-overflow=]
+  752 |                         sprintf(flp->units[n+j].name, "%s_%s",
+      |                                                           ^~
+In function ‘sprintf’,
+    inlined from ‘flp_wrap_rim’ at flp.c:752:4:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 9 and 520 bytes into a destination of size 512
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+flp.c: In function ‘flp_wrap_rim’:
+flp.c:766:59: warning: ‘%s’ directive writing up to 511 bytes into a region of size 501 [-Wformat-overflow=]
+  766 |                         sprintf(flp->units[n+j].name, "%s_%s",
+      |                                                           ^~
+In function ‘sprintf’,
+    inlined from ‘flp_wrap_rim’ at flp.c:766:4:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 12 and 523 bytes into a destination of size 512
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+util.c: In function ‘read_str_pairs’:
+util.c:334:17: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  334 |                 fgets(str, LINE_SIZE, fp);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~
+util.c: In function ‘count_significant_lines’:
+util.c:540:17: warning: ignoring return value of ‘fgets’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  540 |                 fgets(str, LINE_SIZE, fp);
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~
+flp.c: In function ‘flp_populate_connects’:
+flp.c:1399:29: warning: ‘%s’ directive writing up to 511 bytes into a region of size 506 [-Wformat-overflow=]
+ 1156 |                         x = get_blk_index(flp, name1);
+      |                                                ~~~~~
+......
+ 1399 |         sprintf(msg, "block %s not found\n", name);
+      |                             ^~
+In function ‘sprintf’,
+    inlined from ‘get_blk_index’ at flp.c:1399:2,
+    inlined from ‘get_blk_index’ at flp.c:1385:5,
+    inlined from ‘flp_populate_connects’ at flp.c:1156:8:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 18 and 529 bytes into a destination of size 512
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~
+flp.c: In function ‘flp_populate_connects’:
+flp.c:1399:29: warning: ‘%s’ directive writing up to 511 bytes into a region of size 506 [-Wformat-overflow=]
+ 1157 |                         y = get_blk_index(flp, name2);
+      |                                                ~~~~~
+......
+ 1399 |         sprintf(msg, "block %s not found\n", name);
+      |                             ^~
+In function ‘sprintf’,
+    inlined from ‘get_blk_index’ at flp.c:1399:2,
+    inlined from ‘get_blk_index’ at flp.c:1385:5,
+    inlined from ‘flp_populate_connects’ at flp.c:1157:8:
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:30:10: note: ‘__builtin___sprintf_chk’ output between 18 and 529 bytes into a destination of size 512
+   30 |   return __builtin___sprintf_chk (__s, __USE_FORTIFY_LEVEL - 1,
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   31 |                                   __glibc_objsize (__s), __fmt,
+      |                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   32 |                                   __va_arg_pack ());
+      |                                   ~~~~~~~~~~~~~~~~~

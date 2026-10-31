@@ -2,7 +2,12 @@
 
 **Ticket:** 5ee83372 · **Date:** 2026-10-31 · **Agent:** ds-slab002-source (lifeId 6b23dc5cc8ed)
 
-## Toolchain
+The toolchain, timings and claim tables below preserve the source-box **05:10Z**
+observations. They do not measure the current script. The inherited **06:01Z**
+observation remains separately labeled in `results.json`; its raw logs were not
+retained. A fresh retained run is linked at the end of this report.
+
+## Toolchain (05:10Z source-box observation)
 
 | Component | Version |
 |---|---|
@@ -16,13 +21,16 @@
 
 ## PROVENANCE.json Verification
 
-- **494/494** files verified against immutable git blobs from import base `0cd32a4` (the box's local snapshot commit of the import, tree-identical to repository commit `126507d4`; the committed script now pins `126507d4`)
-  (`Sentinelayer-AIdenID/thermal-flight-lab@2199612932da142e0057e6162293940b4ea64bba`)
-- 0 blob misses, 0 sha256 mismatches
-- **52 files** have legitimately evolved since the import (post-import commits:
-  CI workflow fixes, SLAB-002 evidence, SLAB-040 signing, lab view, contracts, web UI).
-  These are reported separately below; they do not invalidate provenance of the
-  original 494 import files.
+- Original 05:10Z result: **494/494 checkout-file SHA-256 checks**, 0 mismatches,
+  0 missing. The ~0.5 s historical timing does not measure the later blob checker.
+- The current script pins repository import commit
+  `126507d4dbd8cf327aa158c4dd893c436f7cdf8f` and verifies each path → git blob → SHA-256.
+  The retained fresh run below records that independent check and its import delta.
+- Both original sources named in the unchanged `PROVENANCE.json` are
+  `thermal-flight-lab@2199612` (`2199612932da142e0057e6162293940b4ea64bba`) and
+  plan **PR #25@5e47b42a** (`5e47b42a1202cc4889ea74de8c57952e3f679210`).
+- The prior report listed **52** post-import changes. That is a historical count;
+  the fresh run's `import-delta/stdout.txt` is the current list.
 
 ### Files Changed Since Import (`git diff --name-only 0cd32a4 HEAD`)
 
@@ -38,7 +46,7 @@ contracts/HASHES.txt
 
 ---
 
-## Reproduced Here
+## Reproduced in the 05:10Z Source-Box Observation
 
 | # | Claim | Command | Exit | Count | Time (s) |
 |---|-------|---------|------|-------|----------|
@@ -47,12 +55,12 @@ contracts/HASHES.txt
 | 3 | TFL-08 multi-seed fingerprints | `cd sundai_controller && python -m unittest -q test_tfl08_leaderboard.py` | 0 | 8 | ~6.5 |
 | 4 | HotSpot+SuperLU tap oracle tests | `cd sundai_hotspot && python -m unittest -q test_tap_oracle.py` | 0 | 14 | ~5.9 |
 | 5 | 8 HotSpot+SuperLU Ascend910 probes | `cd sundai_hotspot && python run_tap_probe.py --report probe_results/report.json` (in scratch) | 0 | 8 | ~2.2 |
-| 6 | TFL-14 full regression (probe peaks + README artifact check) | `cd sundai_thermal && OPENBLAS_CORETYPE=Haswell TFL_CANONICAL_CONTAINER=1 python -m unittest -q test_tfl14_regression` | 0 | 2 tests | ~0.1 |
-| 7 | Deterministic demo (93.3423169 → 92.3143491 C) | `cd sundai_controller && python demo.py` (in scratch, output asserted) | 0 | 1 | ~1.6 |
+| 6 | TFL-14 probe peaks (single method) | `cd sundai_thermal && TFL_CANONICAL_CONTAINER=1 python -m unittest -q test_tfl14_regression.TFL14RegressionTests.test_eight_published_hotspot_probe_peaks` | 0 | 1 test | ~0.1 |
+| 7 | Deterministic demo (baseline 93.3423169 C → final 92.3143491 C) | `cd sundai_controller && python demo.py` | 0 | 1 | ~1.6 |
 | 8 | TFL-05 plate smoke test | `cd sundai_controller && python tfl05_smoke.py --benchmark plate` (in scratch) | 0 | 4 lanes, seed 11 | ~1.6 |
 | 9 | TFL-05 ascend910 smoke test | `cd sundai_controller && python tfl05_smoke.py --benchmark ascend910` (in scratch) | 0 | 4 lanes, seed 11 | ~2.2 |
 | 10 | TFL-09 run service tests | `python -m unittest -q app.test_runs` | 0 | 6 | ~2.3 |
-| 11 | PROVENANCE.json integrity | Verified all 494 entries against immutable git blobs at 0cd32a4 | 0 | 494 files | ~0.5 |
+| 11 | PROVENANCE.json sha256 integrity | Original checkout-file SHA-256 verification of all 494 entries | 0 | 494 files | ~0.5 |
 
 ### HotSpot Probe Values (all within expected ranges)
 
@@ -91,13 +99,64 @@ contracts/HASHES.txt
 ## Notes
 
 - **No product code was changed.** All findings are reported as-is.
-- All 11 reproduced claims pass with exit code 0.
-- TFL-14 now runs as a single `python -m unittest -q test_tfl14_regression` invocation; both tests
-  (probe peaks and README artifact check) pass on main. The README fix was applied at 29b0c3b.
+- The historical source-box report recorded exit code 0 for these 11 measurements.
+- The current script invokes the full TFL-14 module and propagates failure. That broader
+  scope must not be attributed to the historical single-method ~0.1 s observation.
 - The right_shift_2mm 32×32 probe peak (118.84 C) matches the container_smoke.sh assertion range exactly.
 - The regress script (`scripts/sentilab_regress.sh`) runs all probe/demo/TFL-05 work in a scratch copy,
   captures and asserts demo.py output (93.3423169→92.3143491, receipt_chain_valid=true),
-  and verifies no tracked files were modified.
-- PROVENANCE is verified against immutable git blobs from the import base (0cd32a4), not the working tree.
+  and retains per-step stdout/stderr, artifacts, hashes, commands, exit codes and UTC
+  timestamps in a new `runs/<UTC-timestamp>/` directory on success or failure.
+  Only the newly created run directory is exempt from the clean checkout check.
+  `run.json` records HEAD/tree/script hashes, Python/GCC/SuperLU/BLAS and the HotSpot hash.
+- No product code or `PROVENANCE.json` was changed in these two evidence fixes.
 
 See `results.json` for machine-readable details.
+
+## Fresh retained run (2026-10-31)
+
+The single authorized invocation of `bash scripts/sentilab_regress.sh` exited **0**:
+**14 checks passed, 0 failed**, with 19 recorded steps including setup. This is a
+new surrogate executor box under recorded model substitution; the earlier
+source-box timings above are not attributed to this run.
+
+- Executed HEAD: `44736fb2c584849ffbf43b39ab06cb061cc26483`
+- Executed git tree: `1f0cde65da5a64bff3a5994d80fbaba13a760dd1`
+- Script SHA-256: `8ef8d368d9a955ea9ed36f0a6d92fb70dfd689430550b999295a75b0d45cacc6`
+- [Retained run.json](runs/20261031T062919.996386168Z-ACp7UI/run.json) (SHA-256 `979ba004b3f01ac316112a76c01b89dce7cf1ec53dc3a1faba92c0c8509bf9bf`)
+- Each step links exact argv/cwd, UTC start/end, wall time, exit code, stdout, stderr and artifact hashes. Probe, demo and smoke outputs remain available after scratch cleanup.
+- Fresh toolchain: Python 3.12.3; GCC 13.3.0; SuperLU `6.0.1+dfsg1-1build1`; BLAS `3.12.0-3build1.1`. Exact command outputs are in `run.json`.
+- HotSpot binary SHA-256: `e4358b46794ebc00f07102d13b3ca687507834a1784eba135d26d1d493d334b4`. This local build happens to match the historical hash; hashes may differ on other toolchains.
+
+| Check | Exit | Count | Wall time (s) | Command and logs |
+|---|---|---|---|---|
+| Import path-to-blob-to-SHA-256 verification | 0 | 494 | 2.681 | [step.json](runs/20261031T062919.996386168Z-ACp7UI/provenance/step.json) |
+| HotSpot + SuperLU build | 0 | 2 | 5.438 | [step.json](runs/20261031T062919.996386168Z-ACp7UI/hotspot-build/step.json) |
+| Controller and experiment tests | 0 | 55 | 0.514 | [step.json](runs/20261031T062919.996386168Z-ACp7UI/controller/step.json) |
+| Safety property tests (1,000 generated cases) | 0 | 2 | 26.793 | [step.json](runs/20261031T062919.996386168Z-ACp7UI/safety/step.json) |
+| TFL-08 fingerprint tests | 0 | 8 | 8.317 | [step.json](runs/20261031T062919.996386168Z-ACp7UI/fingerprints/step.json) |
+| HotSpot tap oracle tests | 0 | 14 | 6.392 | [step.json](runs/20261031T062919.996386168Z-ACp7UI/tap-oracle/step.json) |
+| Ascend910 probe cases | 0 | 8 | 2.460 | [step.json](runs/20261031T062919.996386168Z-ACp7UI/probe/step.json) |
+| Full TFL-14 module (probe peaks and README artifacts) | 0 | 2 | 15.314 | [step.json](runs/20261031T062919.996386168Z-ACp7UI/thermal/step.json) |
+| Deterministic demo execution | 0 | 1 | 1.742 | [step.json](runs/20261031T062919.996386168Z-ACp7UI/demo/step.json) |
+| Demo baseline, final and receipt assertions | 0 | 3 | 0.020 | [step.json](runs/20261031T062919.996386168Z-ACp7UI/demo-assertions/step.json) |
+| TFL-05 plate smoke lanes | 0 | 4 | 1.787 | [step.json](runs/20261031T062919.996386168Z-ACp7UI/smoke-plate/step.json) |
+| TFL-05 Ascend910 smoke lanes | 0 | 4 | 1.778 | [step.json](runs/20261031T062919.996386168Z-ACp7UI/smoke-ascend910/step.json) |
+| TFL-09 run service tests | 0 | 6 | 2.354 | [step.json](runs/20261031T062919.996386168Z-ACp7UI/service/step.json) |
+| Checkout unchanged except this run directory | 0 | 1 | 0.009 | [step.json](runs/20261031T062919.996386168Z-ACp7UI/clean-checkout/step.json) |
+
+The full TFL-14 module took **15.314 s** for two tests; the historical **~0.1 s** row covers only the single probe-peaks method. The fresh demo assertions passed, separately from the original demo observation.
+
+Fresh [probe report](runs/20261031T062919.996386168Z-ACp7UI/probe/artifacts/probe_results/report.json) contains eight cases; right_shift_2mm at 32×32 is 118.84 °C. The TFL-08 eight-test suite passed. No Docker, micro150 probe, GPU, inference or deployment was attempted.
+
+Validation: `bash -n scripts/sentilab_regress.sh`, `git diff --check`, and four recorder tests passed. The recorder tests use real subprocesses; the pre-fix revision fails all four, and separate artifact-loss, overwrite and false-success mutations are detected. These targeted tests use no thermal solves.
+
+Retained targeted-test transcripts: [four passing tests](validation/recorder-pass.txt),
+[pre-fix failures](validation/pre-fix-failure.txt),
+[artifact-loss mutation](validation/artifact-loss-mutation.txt),
+[overwrite mutation](validation/overwrite-mutation.txt), and
+[false-success mutation](validation/false-success-mutation.txt).
+All mutations were made in a disposable worktree; no extra regression or thermal
+probe invocation was used. The historical-scope check also rejected the previous
+TFL-14 row and accepted the corrected single-method row. All 82 summary/run hash
+references were checked after writing the final report.

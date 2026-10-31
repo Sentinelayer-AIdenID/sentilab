@@ -1,0 +1,31 @@
+{
+  "name": "hotspot-build",
+  "command": [
+    "make",
+    "-j4",
+    "SUPERLU=1"
+  ],
+  "cwd": "/workspace/sentilab/sundai_hotspot",
+  "started_at": "2026-10-31T06:29:23.853536Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:29:29.292021Z",
+  "wall_time_s": 5.4384839130798355,
+  "artifacts": [
+    {
+      "path": "hotspot-build/artifacts/hotspot",
+      "sha256": "e4358b46794ebc00f07102d13b3ca687507834a1784eba135d26d1d493d334b4"
+    },
+    {
+      "path": "hotspot-build/artifacts/hotfloorplan",
+      "sha256": "314b454c0e235809bf9295ee3202c65a100cca2e69ffe8045ad1eed037519653"
+    }
+  ],
+  "stdout": {
+    "path": "hotspot-build/stdout.txt",
+    "sha256": "0897e20ec8b78ae443005f22beaec31415b58c5f59c592dd5d4b889bc0f214c5"
+  },
+  "stderr": {
+    "path": "hotspot-build/stderr.txt",
+    "sha256": "972464709e65489878bb74d844e3587ec18dffc9c37cb52616ff3ef1de338af4"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "smoke-plate",
+  "command": [
+    "python",
+    "tfl05_smoke.py",
+    "--benchmark",
+    "plate"
+  ],
+  "cwd": "/tmp/tmp.BQCHiVnG6s/sundai_controller",
+  "started_at": "2026-10-31T06:30:31.340743Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:30:33.127364Z",
+  "wall_time_s": 1.7866321300389245,
+  "artifacts": [],
+  "stdout": {
+    "path": "smoke-plate/stdout.txt",
+    "sha256": "6de80598621e037207004b43a993b8e8a425df10cd9b8dda876e1fb58cc002e2"
+  },
+  "stderr": {
+    "path": "smoke-plate/stderr.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

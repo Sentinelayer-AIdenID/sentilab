@@ -1,0 +1,25 @@
+{
+  "name": "safety",
+  "command": [
+    "python",
+    "-m",
+    "unittest",
+    "-q",
+    "test_safety_property.py"
+  ],
+  "cwd": "/workspace/sentilab/sundai_controller",
+  "started_at": "2026-10-31T06:29:29.891007Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:29:56.683974Z",
+  "wall_time_s": 26.792969319038093,
+  "artifacts": [],
+  "stdout": {
+    "path": "safety/stdout.txt",
+    "sha256": "346475fd921c0133e044ebc6bf2e8ceb68eca27faceb25ff9b5fc33075a07baf"
+  },
+  "stderr": {
+    "path": "safety/stderr.txt",
+    "sha256": "9d5f7734523eddcf6bda9cadc8409095097e6d66ad11db23a5a06def0441d867"
+  },
+  "test_count": 2
+}

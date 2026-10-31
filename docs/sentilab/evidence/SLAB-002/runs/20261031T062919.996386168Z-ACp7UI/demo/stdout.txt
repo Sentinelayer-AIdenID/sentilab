@@ -1,0 +1,8 @@
+{
+  "kind": "deterministic replay controller demonstration; not a Jev/model benchmark",
+  "baseline_c": 93.34231692620901,
+  "final_c": 92.31434907982992,
+  "delta_c": -1.0279678463790844,
+  "revision": 1,
+  "receipt_chain_valid": true
+}

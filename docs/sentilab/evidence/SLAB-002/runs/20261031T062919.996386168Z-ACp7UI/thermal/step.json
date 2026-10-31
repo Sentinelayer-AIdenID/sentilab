@@ -1,0 +1,29 @@
+{
+  "name": "thermal",
+  "command": [
+    "env",
+    "OPENBLAS_CORETYPE=Haswell",
+    "TFL_CANONICAL_CONTAINER=1",
+    "TFL_HOTSPOT_PROBE_REPORT=/tmp/tmp.BQCHiVnG6s/sundai_hotspot/probe_results/report.json",
+    "python",
+    "-m",
+    "unittest",
+    "-q",
+    "test_tfl14_regression"
+  ],
+  "cwd": "/workspace/sentilab/sundai_thermal",
+  "started_at": "2026-10-31T06:30:14.145725Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:30:29.459445Z",
+  "wall_time_s": 15.313727437052876,
+  "artifacts": [],
+  "stdout": {
+    "path": "thermal/stdout.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "thermal/stderr.txt",
+    "sha256": "bbfb1bfab6deeb5abd73f15e6fe526450f66cd05fb9cc9e66082c4ae9343cbf2"
+  },
+  "test_count": 2
+}

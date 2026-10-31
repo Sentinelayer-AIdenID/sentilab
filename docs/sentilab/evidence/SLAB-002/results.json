@@ -12,17 +12,15 @@
     "hotfloorplan_binary_sha256": "314b454c0e235809bf9295ee3202c65a100cca2e69ffe8045ad1eed037519653",
     "uname": "Linux respawn-6b23dc5cc8ed 7.0.0-1017-azure #17~24.04.1-Ubuntu SMP PREEMPT Thu Sep 24 18:46:57 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux",
     "cpu_count": 16,
-    "memory_gb": 62,
-    "regress_script_sha256": "b500c73d767e86aa7517c67195e077518309a6ae5b33264570b114f6822fff8d",
-    "regress_head_sha": "a0056cada44cbf1a8fdb43dd6a42e589788f6f7f"
+    "memory_gb": 62
   },
   "provenance": {
     "total_entries": 494,
     "verified_sha256": 494,
-    "method": "verified against immutable git blobs from import base 0cd32a4 (box-local snapshot of repository import commit 126507d4, identical tree; the committed script pins 126507d4)",
-    "blob_misses": 0,
-    "sha256_mismatches": 0,
-    "source": "Sentinelayer-AIdenID/thermal-flight-lab@2199612932da142e0057e6162293940b4ea64bba"
+    "mismatches": [],
+    "missing": [],
+    "source": "Sentinelayer-AIdenID/thermal-flight-lab@2199612932da142e0057e6162293940b4ea64bba",
+    "method": "Original 05:10Z checkout-file SHA-256 verification; not the later path-to-blob import check."
   },
   "claims": {
     "reproduced": [
@@ -67,20 +65,20 @@
         "detail": "baseline_center (16/32), left_shift_2mm (16/32), left_shift_4mm (16/32), right_shift_2mm (16/32); all values within expected ranges"
       },
       {
-        "claim": "TFL-14 full regression (probe peaks + README artifact check)",
-        "command": "cd sundai_thermal && OPENBLAS_CORETYPE=Haswell TFL_CANONICAL_CONTAINER=1 python -m unittest -q test_tfl14_regression",
+        "claim": "TFL-14 probe peaks (single method)",
+        "command": "cd sundai_thermal && TFL_CANONICAL_CONTAINER=1 python -m unittest -q test_tfl14_regression.TFL14RegressionTests.test_eight_published_hotspot_probe_peaks",
         "exit_code": 0,
-        "count": 2,
+        "count": 1,
         "wall_time_s": 0.1,
-        "detail": "test_eight_published_hotspot_probe_peaks + test_seeded_random_annealing_and_recorded_artifacts_are_reproducible; both pass on main (README fix at 29b0c3b)"
+        "detail": "Only test_eight_published_hotspot_probe_peaks; the approximately 0.1 s measurement does not cover the README artifact check."
       },
       {
-        "claim": "Deterministic demo (93.3423169 \u2192 92.3143491 C, receipt_chain_valid=true)",
+        "claim": "Deterministic demo (baseline 93.3423169 C \u2192 final 92.3143491 C)",
         "command": "cd sundai_controller && python demo.py",
         "exit_code": 0,
         "count": 1,
         "wall_time_s": 1.6,
-        "detail": "Output captured and asserted: baseline=93.3423169, final=92.3143491, delta=-1.028 C, receipt_chain_valid=True, revision=1"
+        "detail": "receipt_chain_valid=True, delta=-1.028 C, revision 1"
       },
       {
         "claim": "TFL-05 plate smoke test",
@@ -107,12 +105,12 @@
         "detail": "Start, one-run lock, persisted verifiable result, restart recovery, validation"
       },
       {
-        "claim": "PROVENANCE.json integrity (vs immutable git blobs)",
-        "command": "Verified all 494 entries against git blobs from import base 0cd32a4",
+        "claim": "PROVENANCE.json integrity",
+        "command": "sha256 verification of all 494 entries against workspace files",
         "exit_code": 0,
         "count": 494,
         "wall_time_s": 0.5,
-        "detail": "494/494 verified against immutable git blobs, 0 blob misses, 0 sha256 mismatches"
+        "detail": "494/494 verified, 0 mismatches, 0 missing"
       }
     ],
     "reported_not_reproducible": [
@@ -223,6 +221,359 @@
     "host": "Linux respawn-6b23dc5cc8ed 7.0.0-1017-azure x86_64, 16 cores, 62 GB RAM",
     "runtime_versions": "gcc 13.3.0, python 3.12.3, superlu 6.0.1+dfsg1-1build1, blas 3.12.0-3build1.1",
     "regress_result": "14 passed, 0 failed",
-    "hotspot_binary_sha256": "e4358b46794ebc00f07102d13b3ca687507834a1784eba135d26d1d493d334b4"
-  }
+    "hotspot_binary_sha256": "e4358b46794ebc00f07102d13b3ca687507834a1784eba135d26d1d493d334b4",
+    "evidence_status": "Inherited 06:01Z report; raw step logs were not retained. This is not the current executor run."
+  },
+  "observation_scope": "The top-level toolchain, claims and probe_values describe the source-box 05:10Z observations. They are historical measurements, not timings of the current regression script. Fresh runs are separately linked below by script SHA-256 and retained run.json.",
+  "fresh_observations": [
+    {
+      "started_at": "2026-10-31T06:29:20.030810Z",
+      "ended_at": "2026-10-31T06:30:37.425465Z",
+      "head_sha": "44736fb2c584849ffbf43b39ab06cb061cc26483",
+      "git_tree_sha": "1f0cde65da5a64bff3a5994d80fbaba13a760dd1",
+      "script_sha256": "8ef8d368d9a955ea9ed36f0a6d92fb70dfd689430550b999295a75b0d45cacc6",
+      "toolchain": {
+        "python": {
+          "command": [
+            "/workspace/sentilab/.venv/bin/python3",
+            "--version"
+          ],
+          "exit_code": 0,
+          "stdout": "Python 3.12.3",
+          "stderr": ""
+        },
+        "gcc": {
+          "command": [
+            "gcc",
+            "--version"
+          ],
+          "exit_code": 0,
+          "stdout": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.",
+          "stderr": ""
+        },
+        "superlu": {
+          "command": [
+            "dpkg-query",
+            "-W",
+            "-f=${Version}",
+            "libsuperlu-dev"
+          ],
+          "exit_code": 0,
+          "stdout": "6.0.1+dfsg1-1build1",
+          "stderr": ""
+        },
+        "blas": {
+          "command": [
+            "dpkg-query",
+            "-W",
+            "-f=${Version}",
+            "libblas-dev"
+          ],
+          "exit_code": 0,
+          "stdout": "3.12.0-3build1.1",
+          "stderr": ""
+        }
+      },
+      "hotspot_binary_sha256": "e4358b46794ebc00f07102d13b3ca687507834a1784eba135d26d1d493d334b4",
+      "exit_code": 0,
+      "passed": 14,
+      "failed": 0,
+      "run": {
+        "path": "runs/20261031T062919.996386168Z-ACp7UI/run.json",
+        "sha256": "979ba004b3f01ac316112a76c01b89dce7cf1ec53dc3a1faba92c0c8509bf9bf"
+      },
+      "script_revision_note": "HEAD/tree identify the clean committed script revision executed; this report is appended after that run.",
+      "claims": {
+        "reproduced": [
+          {
+            "claim": "Import path-to-blob-to-SHA-256 verification",
+            "command": [
+              "python3",
+              "-c",
+              "\nimport json, hashlib, subprocess, sys\nwith open('/workspace/sentilab/PROVENANCE.json') as f:\n    p = json.load(f)\nmismatches = 0\nmissing_blobs = 0\nfor entry in p['files']:\n    blob = entry['git_blob']\n    r = subprocess.run(['git', 'cat-file', '-e', blob], cwd='/workspace/sentilab', capture_output=True)\n    if r.returncode != 0:\n        print(f'BLOB MISSING: {entry[\"path\"]} blob={blob}')\n        missing_blobs += 1\n        continue\n    at_import = subprocess.run(['git', 'rev-parse', '126507d4dbd8cf327aa158c4dd893c436f7cdf8f:' + entry['path']], cwd='/workspace/sentilab', capture_output=True, text=True)\n    if at_import.returncode != 0 or at_import.stdout.strip() != blob:\n        print(f'IMPORT TREE MISMATCH: {entry[\"path\"]} is not blob {blob} at 126507d4dbd8cf327aa158c4dd893c436f7cdf8f')\n        mismatches += 1\n        continue\n    r = subprocess.run(['git', 'cat-file', 'blob', blob], cwd='/workspace/sentilab', capture_output=True, text=False)\n    actual = hashlib.sha256(r.stdout).hexdigest()\n    if actual != entry['sha256']:\n        print(f'SHA256 MISMATCH: {entry[\"path\"]} (expected {entry[\"sha256\"][:16]}... got {actual[:16]}...)')\n        mismatches += 1\nif missing_blobs > 0:\n    raise SystemExit(f'PROVENANCE: {missing_blobs} blobs missing from repo')\nif mismatches > 0:\n    raise SystemExit(f'PROVENANCE SHA256 MISMATCHES: {mismatches}')\nprint(f'IMMUTABLE IMPORT VERIFIED: {len(p[\"files\"])} files checked against git blobs at 126507d4dbd8cf327aa158c4dd893c436f7cdf8f, 0 mismatches')\n"
+            ],
+            "cwd": "/workspace/sentilab",
+            "exit_code": 0,
+            "count": 494,
+            "wall_time_s": 2.681088186101988,
+            "evidence": {
+              "path": "runs/20261031T062919.996386168Z-ACp7UI/provenance/step.json",
+              "sha256": "ee553b43fed171f7edea246f24669e64fd1398e81db0e965046674035b534c80"
+            }
+          },
+          {
+            "claim": "HotSpot + SuperLU build",
+            "command": [
+              "make",
+              "-j4",
+              "SUPERLU=1"
+            ],
+            "cwd": "/workspace/sentilab/sundai_hotspot",
+            "exit_code": 0,
+            "count": 2,
+            "wall_time_s": 5.4384839130798355,
+            "evidence": {
+              "path": "runs/20261031T062919.996386168Z-ACp7UI/hotspot-build/step.json",
+              "sha256": "d97eaea266d8a1b346af179bcd6516b1f3b36fc66776ce3261c5bd552709f7ef"
+            }
+          },
+          {
+            "claim": "Controller and experiment tests",
+            "command": [
+              "python",
+              "-m",
+              "unittest",
+              "-q",
+              "test_controller.py",
+              "test_experiment.py"
+            ],
+            "cwd": "/workspace/sentilab/sundai_controller",
+            "exit_code": 0,
+            "count": 55,
+            "wall_time_s": 0.5143133100355044,
+            "evidence": {
+              "path": "runs/20261031T062919.996386168Z-ACp7UI/controller/step.json",
+              "sha256": "6f9e03d9789d1e2e180a6d92f43823a673dbe79c1a42191e6f7018be2886c61e"
+            }
+          },
+          {
+            "claim": "Safety property tests (1,000 generated cases)",
+            "command": [
+              "python",
+              "-m",
+              "unittest",
+              "-q",
+              "test_safety_property.py"
+            ],
+            "cwd": "/workspace/sentilab/sundai_controller",
+            "exit_code": 0,
+            "count": 2,
+            "wall_time_s": 26.792969319038093,
+            "evidence": {
+              "path": "runs/20261031T062919.996386168Z-ACp7UI/safety/step.json",
+              "sha256": "c451ceed984d48a557e136f1a081fc6233099714fa747b06e80019193c607740"
+            }
+          },
+          {
+            "claim": "TFL-08 fingerprint tests",
+            "command": [
+              "python",
+              "-m",
+              "unittest",
+              "-q",
+              "test_tfl08_leaderboard.py"
+            ],
+            "cwd": "/workspace/sentilab/sundai_controller",
+            "exit_code": 0,
+            "count": 8,
+            "wall_time_s": 8.316671014064923,
+            "evidence": {
+              "path": "runs/20261031T062919.996386168Z-ACp7UI/fingerprints/step.json",
+              "sha256": "8c481500087d9351c47a10ea12be67ae5c8afe90525b47c9574a5d6bd81e3d89"
+            }
+          },
+          {
+            "claim": "HotSpot tap oracle tests",
+            "command": [
+              "python",
+              "-m",
+              "unittest",
+              "-q",
+              "test_tap_oracle.py"
+            ],
+            "cwd": "/workspace/sentilab/sundai_hotspot",
+            "exit_code": 0,
+            "count": 14,
+            "wall_time_s": 6.392206442076713,
+            "evidence": {
+              "path": "runs/20261031T062919.996386168Z-ACp7UI/tap-oracle/step.json",
+              "sha256": "a69dc8c95ee16bedd4bca228a862e4a3529aebcee8ba7d6166be73e12619337f"
+            }
+          },
+          {
+            "claim": "Ascend910 probe cases",
+            "command": [
+              "python",
+              "run_tap_probe.py",
+              "--report",
+              "/tmp/tmp.BQCHiVnG6s/sundai_hotspot/probe_results/report.json"
+            ],
+            "cwd": "/tmp/tmp.BQCHiVnG6s/sundai_hotspot",
+            "exit_code": 0,
+            "count": 8,
+            "wall_time_s": 2.4604404299752787,
+            "evidence": {
+              "path": "runs/20261031T062919.996386168Z-ACp7UI/probe/step.json",
+              "sha256": "adcc640310aacd37dce35a60ac2455dff9b0defab324b756c379b2d31f87210a"
+            }
+          },
+          {
+            "claim": "Full TFL-14 module (probe peaks and README artifacts)",
+            "command": [
+              "env",
+              "OPENBLAS_CORETYPE=Haswell",
+              "TFL_CANONICAL_CONTAINER=1",
+              "TFL_HOTSPOT_PROBE_REPORT=/tmp/tmp.BQCHiVnG6s/sundai_hotspot/probe_results/report.json",
+              "python",
+              "-m",
+              "unittest",
+              "-q",
+              "test_tfl14_regression"
+            ],
+            "cwd": "/workspace/sentilab/sundai_thermal",
+            "exit_code": 0,
+            "count": 2,
+            "wall_time_s": 15.313727437052876,
+            "evidence": {
+              "path": "runs/20261031T062919.996386168Z-ACp7UI/thermal/step.json",
+              "sha256": "0a0e7dd94b52b8bce119388daa22d4a8d2752680faf0c51c5fbfcf250deff8a1"
+            }
+          },
+          {
+            "claim": "Deterministic demo execution",
+            "command": [
+              "python",
+              "demo.py"
+            ],
+            "cwd": "/tmp/tmp.BQCHiVnG6s/sundai_controller",
+            "exit_code": 0,
+            "count": 1,
+            "wall_time_s": 1.742063269019127,
+            "evidence": {
+              "path": "runs/20261031T062919.996386168Z-ACp7UI/demo/step.json",
+              "sha256": "9758e9f3a1152d144d2ae95d161988267de37dab2524ff262e5fe1220f0e640d"
+            }
+          },
+          {
+            "claim": "Demo baseline, final and receipt assertions",
+            "command": [
+              "python3",
+              "-c",
+              "\nimport json\nd = json.load(open('/workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/demo/stdout.txt', encoding='utf-8'))\nassert round(d['baseline_c'], 7) == 93.3423169, f\"baseline {d['baseline_c']}\"\nassert round(d['final_c'], 7) == 92.3143491, f\"final {d['final_c']}\"\nassert d['receipt_chain_valid'] is True, d\nprint(f\"demo OK: {d['baseline_c']} \u2192 {d['final_c']} C, receipt_chain_valid={d['receipt_chain_valid']}\")\n"
+            ],
+            "cwd": "/workspace/sentilab",
+            "exit_code": 0,
+            "count": 3,
+            "wall_time_s": 0.020463894004933536,
+            "evidence": {
+              "path": "runs/20261031T062919.996386168Z-ACp7UI/demo-assertions/step.json",
+              "sha256": "dd65fefc01b966e6f5e9e527cf1462702909bf5a96fc7d3b87564f0439e84e62"
+            }
+          },
+          {
+            "claim": "TFL-05 plate smoke lanes",
+            "command": [
+              "python",
+              "tfl05_smoke.py",
+              "--benchmark",
+              "plate"
+            ],
+            "cwd": "/tmp/tmp.BQCHiVnG6s/sundai_controller",
+            "exit_code": 0,
+            "count": 4,
+            "wall_time_s": 1.7866321300389245,
+            "evidence": {
+              "path": "runs/20261031T062919.996386168Z-ACp7UI/smoke-plate/step.json",
+              "sha256": "1b23d78798fe18090047019ad7cba7cd41976127708bd7615a40d7fe08e72558"
+            }
+          },
+          {
+            "claim": "TFL-05 Ascend910 smoke lanes",
+            "command": [
+              "python",
+              "tfl05_smoke.py",
+              "--benchmark",
+              "ascend910"
+            ],
+            "cwd": "/tmp/tmp.BQCHiVnG6s/sundai_controller",
+            "exit_code": 0,
+            "count": 4,
+            "wall_time_s": 1.7775710329879075,
+            "evidence": {
+              "path": "runs/20261031T062919.996386168Z-ACp7UI/smoke-ascend910/step.json",
+              "sha256": "fa316bccbfbdad655c4c39243b13d4c301fae408e3d03056f67659a2fc5c71cd"
+            }
+          },
+          {
+            "claim": "TFL-09 run service tests",
+            "command": [
+              "python",
+              "-m",
+              "unittest",
+              "-q",
+              "app.test_runs"
+            ],
+            "cwd": "/workspace/sentilab",
+            "exit_code": 0,
+            "count": 6,
+            "wall_time_s": 2.354023549007252,
+            "evidence": {
+              "path": "runs/20261031T062919.996386168Z-ACp7UI/service/step.json",
+              "sha256": "0d83686fd72550b8fdba4f7168a4d97df769e28835d7ff989e62cdba18942889"
+            }
+          },
+          {
+            "claim": "Checkout unchanged except this run directory",
+            "command": [
+              "bash",
+              "-c",
+              "\n    dirty=$(git status --porcelain -- . \":(exclude)$1\")\n    [ -z \"$dirty\" ] || { printf \"%s\\n\" \"$dirty\"; exit 1; }\n",
+              "bash",
+              "docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI"
+            ],
+            "cwd": "/workspace/sentilab",
+            "exit_code": 0,
+            "count": 1,
+            "wall_time_s": 0.0093670969363302,
+            "evidence": {
+              "path": "runs/20261031T062919.996386168Z-ACp7UI/clean-checkout/step.json",
+              "sha256": "92b6474c72c9f915ff9b382f737eb1e783e4dcda487a0577464edb21c8e119b6"
+            }
+          }
+        ],
+        "reported_not_reproducible": [
+          {
+            "claim": "114.82 / 105.28 C plan figures",
+            "detail": "No new measurement of these figures in this run; historical report remains above."
+          },
+          {
+            "claim": "TFL-03 deployed-host latency targets",
+            "detail": "This run is not a deployed-host measurement."
+          }
+        ],
+        "not_attempted": [
+          {
+            "claim": "sys_micro150.cfg probe",
+            "detail": "Outside the eight Ascend910 probes authorized for this follow-up."
+          },
+          {
+            "claim": "Docker container_smoke.sh",
+            "detail": "Individual regression steps ran; no Docker invocation."
+          }
+        ]
+      },
+      "probe_report": {
+        "path": "runs/20261031T062919.996386168Z-ACp7UI/probe/artifacts/probe_results/report.json",
+        "sha256": "10ec9ea1aa7a51bd53c45852a9c1ac03781bd0f4b28e9045385e8dfc7c86d3e5"
+      },
+      "demo_stdout": {
+        "path": "runs/20261031T062919.996386168Z-ACp7UI/demo/stdout.txt",
+        "sha256": "50b36339b110db1a282a5d0bd03a7a203b5514b9eb156dab50844a7dd2a0c7aa"
+      },
+      "smoke_reports": [
+        {
+          "path": "runs/20261031T062919.996386168Z-ACp7UI/smoke-plate/stdout.txt",
+          "sha256": "6de80598621e037207004b43a993b8e8a425df10cd9b8dda876e1fb58cc002e2"
+        },
+        {
+          "path": "runs/20261031T062919.996386168Z-ACp7UI/smoke-ascend910/stdout.txt",
+          "sha256": "4f9e355673306de8fbdce18ac54344f53d478c2caf6ea5d74febf2e7dd41979c"
+        }
+      ],
+      "driver_output": {
+        "path": "runs/20261031T062919.996386168Z-ACp7UI/driver-output.txt",
+        "sha256": "8e719cf845388c193da3832f1936ae4380b676fd9c07fdbf6e4412c7302db1ab"
+      }
+    }
+  ]
 }

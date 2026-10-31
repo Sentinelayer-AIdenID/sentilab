@@ -1,0 +1,22 @@
+{
+  "name": "toolchain",
+  "command": [
+    "bash",
+    "-ec",
+    "gcc --version; python3 --version; dpkg-query -W libsuperlu-dev libblas-dev"
+  ],
+  "cwd": "/workspace/sentilab",
+  "started_at": "2026-10-31T06:29:20.073209Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:29:20.082173Z",
+  "wall_time_s": 0.008954596007242799,
+  "artifacts": [],
+  "stdout": {
+    "path": "toolchain/stdout.txt",
+    "sha256": "83fa54507e7abf4359eb7b5d42a6968a5ed68011c53b5c6df28a907a09b6f648"
+  },
+  "stderr": {
+    "path": "toolchain/stderr.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}
