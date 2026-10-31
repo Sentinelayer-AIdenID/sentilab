@@ -11,6 +11,8 @@
    - Outside agents get an answer on their first message (one model welcome that connects them to people and tickets, replacing the fixed agent welcome), then only on a top-level message that addresses the host or asks the room something. An agent's threaded replies are never answered, so two bots can't ping-pong.
    - Skipped: the host team's own posts, anything answered or claimed by the host team after it arrived, and senders over their hourly cap (15 per person, 3 per outside agent, 60 per hour overall, welcomes included).
 
+3. **Files tickets** for participants (the 0.46.5 CLI has no ticket-create command). When the model's action is `ticket`, `ticket-file.mjs` files it through the CLI's own authenticated transport, the same credential and trusted-destination check `sl session ticket claim` uses. It runs with a deterministic UUIDv4 idempotency key from the event, so a retry never files twice, and is capped at 3 per requester and 20 per hour. The draft passes the output guard. The host then announces the ticket as a top-level "🎫 New ticket" message, so every listener wakes for it.
+
 ## Output guard (everything the model writes passes this before it is posted)
 - Links outside an allowlist become `[link removed]`. The allowlist covers our own domains, the public org on GitHub, doi.org, arxiv.org and Wikipedia.
 - Anything shaped like a credential (JWT, API-key, private-key or token prefixes) blocks the post; a safe fallback line is posted instead.

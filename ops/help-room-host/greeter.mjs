@@ -171,11 +171,39 @@ async function respond(e, events, tickets) {
   const r = await cli(["session", "reply", ROOM, String(thread), text, "--agent", "sentilab-host"]);
   const replyMs = Date.now();
   if (!r.err) { state.senderTimes[sender].push(replyMs); state.sentTimes.push(replyMs); }
-  if (out?.action === "ticket" && out.ticket?.title) appendFileSync(`${DIR}/ticket-queue${DRY ? "-dry" : ""}.jsonl`, JSON.stringify({ key, sender, thread, title: out.ticket.title, body: out.ticket.body, at: new Date().toISOString() }) + "\n");
+  if (out?.action === "ticket" && out.ticket?.title) {
+    appendFileSync(`${DIR}/ticket-queue${DRY ? "-dry" : ""}.jsonl`, JSON.stringify({ key, sender, thread, title: out.ticket.title, body: out.ticket.body, at: new Date().toISOString() }) + "\n");
+    if (!r.err && !DRY) await fileTicket(out.ticket, key, sender, thread);
+  }
   settle(key);
   // Usage lives on each attempt's own terminal row; this row only references them.
   log({ key, sender, thread, action: out?.action || "fallback", effort, model: "gpt-6-astra", attempts, claimOk: !claim.err, posted: !r.err, chars: text.length,
     receiveToClaimS: (claimMs - receivedMs) / 1000, modelS: modelMs / 1000, receiveToReplyS: (replyMs - receivedMs) / 1000 });
+}
+
+// Files the drafted ticket right away (the CLI has no `ticket create` yet, so people can't file their own), then
+// announces it as a TOP-LEVEL message so every agent's listener wakes for it. Bounded per requester and overall; the
+// draft passes the same output guard as answers. A deterministic UUIDv4 idempotency key from the event key means a
+// retry can never file the same ask twice.
+const TICKET_HELPER = `${DIR}/ticket-file.mjs`;
+const uuidFrom = (s) => { const h = createHash("sha256").update(s).digest("hex");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${((parseInt(h[16], 16) & 3) | 8).toString(16)}${h.slice(17, 20)}-${h.slice(20, 32)}`; };
+async function fileTicket(draft, key, sender, thread) {
+  const now = Date.now();
+  state.ticketTimes = (state.ticketTimes || []).filter((t) => now - t.at < 3600000);
+  if (state.ticketTimes.length >= 20 || state.ticketTimes.filter((t) => t.sender === sender).length >= 3) return log({ key, sender, ticket: "skipped: rate cap" });
+  const title = String(draft.title || "").replace(/\s+/g, " ").trim().slice(0, 150);
+  const bodyText = String(draft.body || "").trim();
+  if (!title || !bodyText || SECRETISH.test(title + bodyText)) return log({ key, sender, ticket: "skipped: empty or secret-shaped draft" });
+  const body = `${bodyText.replace(/https?:\/\/[^\s)<>\]]+/g, (u) => (LINK_OK.test(u) ? u : "[link removed]"))}\n\nRequested by @${sender} in this room (message #${thread}). Answer under this ticket's announcement with your plan and result, mentioning the requester. Don't post keys or private data.`;
+  const res = await new Promise((resolve) => execFile(process.execPath, [TICKET_HELPER, ROOM, JSON.stringify({ title: `Help wanted (${sender}): ${title}`, body, sourceSequenceId: thread, idempotencyKey: uuidFrom(`ticket:${ROOM}:${key}`) })],
+    { timeout: 60000 }, (err, stdout) => { try { resolve(JSON.parse(String(stdout).trim().split("\n").pop())); } catch { resolve({ ok: false, error: err ? String(err.message).slice(0, 200) : "no output" }); } }));
+  if (!res.ok) return log({ key, sender, ticket: "failed", error: res.error });
+  state.ticketTimes.push({ at: now, sender });
+  appendFileSync(`${DIR}/ticket-filed.jsonl`, JSON.stringify({ key, ticket: res.id, filedAt: new Date().toISOString(), by: "sentilab-host (auto)" }) + "\n");
+  const announce = `🎫 New ticket ${res.id.slice(0, 8)} for @${sender}: ${title}\nAny agent can take it: \`npx -y sentinelayer-cli@0.46.5 session ticket claim ${ROOM} ${res.id} --agent <your-name>\`. Then reply under this message with your plan and result. Full spec: \`npx -y sentinelayer-cli@0.46.5 session ticket list ${ROOM}\`.`;
+  const a = await cli(["session", "say", ROOM, announce, "--agent", "sentilab-host", "--model", "none", "--display-name", "SentiLab host"]);
+  log({ key, sender, ticket: res.id, announced: !a.err });
 }
 
 async function tick() {
