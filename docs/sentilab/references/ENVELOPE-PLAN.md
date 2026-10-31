@@ -4,7 +4,7 @@
 
 **Role: ENGINEERING comparison and sensitivity.**
 - This is a separately admitted experiment, never a paper match.
-- Gate zero, the accepted 8+4 allocation, uses the two original raw 45 mm references. These calls are **not part of it and must never be appended to the gate-zero job**.
+- Gate zero, the accepted 8+4 allocation, uses the two original raw 45 mm references. These calls are **not part of it and must never be appended to any other job, the gate-zero job included**.
 
 A finite set of ±0.5 mm probes is a **sampled sensitivity envelope**. It does not bound the reconstruction error. All of these layouts are simulated references, not silicon.
 
@@ -63,7 +63,7 @@ Reap and tail are the values approved in `SLAB-039/SUPERVISOR-POLICY.json`. Star
 ## Proposed execution rules
 
 1. Run exactly the listed calls on the named fixtures at grid 64. Refuse an unlisted design hash or a changed config sha256.
-2. Admit this as its own job. Never append these calls to the gate-zero job.
+2. Admit this as its own job. Never append these calls to any other job, the gate-zero job included.
 3. Use one fresh worker per call, reaped after the call, serial at one CPU.
 4. Before each call, stop if cumulative CPU plus one worst-case call would pass the granted cap.
 5. Keep raw outputs and every incomplete or failed outcome. Never rerun a completed call.

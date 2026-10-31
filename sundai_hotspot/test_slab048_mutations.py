@@ -228,6 +228,23 @@ class DataMutationTests(unittest.TestCase):
         with self.assertRaises(AssertionError):
             refs.check_envelope_plan_is_the_exact_sampled_list(plan)
 
+    def test_a_no_append_rule_narrowed_to_the_gate_zero_job_is_caught(self):
+        def narrowed(text):
+            changed = text.replace("any other job, the gate-zero job included", "the gate-zero job")
+            self.assertNotEqual(changed, text)
+            return changed
+
+        for field in ("role", "execution_rules"):
+            with self.subTest(field=field):
+                plan = json.loads(tap_references.ENVELOPE_PLAN.read_text(encoding="utf-8"))
+                if field == "role":
+                    plan["role"] = narrowed(plan["role"])
+                else:
+                    plan["execution_rules"] = [narrowed(rule) if "append" in rule else rule
+                                               for rule in plan["execution_rules"]]
+                with self.assertRaises(AssertionError):
+                    refs.check_envelope_plan_is_the_exact_sampled_list(plan)
+
 
 if __name__ == "__main__":
     unittest.main()

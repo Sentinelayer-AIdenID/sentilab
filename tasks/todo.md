@@ -41,5 +41,6 @@ Post-merge repair (astra #56857/#56858, warden review, astra sealed review):
 - [x] Envelope rebased on the 0.5 mm variants: 46 calls, forecast 220.4 CPU-s, proposed cap 321.5 CPU-s; first plan (45 / 215.851 / 316.308) kept as superseded forecasts.
 - [x] Router: refuses non-optimal solves and malformed inputs; solver stack pinned and recorded; change notice and THIRD_PARTY_NOTICES entry.
 - [x] Claims: three named temperature statistics; wire agreement as consistency evidence (translation invariance); reuse of the five panels disclosed; heuristic overhead labelled; no "solver grant" claim; norms named; decoder docstring states what it does.
+- [x] No-append rule widened to the sealed review's words: the envelope is its own job and is never appended to any other job, the gate-zero job included.
 
-24 code mutants and 6 data mutations each fail their checks. Local runs use a refusing stub for HotSpot: the seven existing solve tests fail identically on main, nothing else fails.
+24 code mutants and 7 data mutations each fail their checks. Local runs use a refusing stub for HotSpot: the seven existing solve tests fail identically on main, nothing else fails.

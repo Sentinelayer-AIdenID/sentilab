@@ -694,8 +694,8 @@ def build_envelope_plan(references: list[dict], variants: list[dict]) -> dict:
         "ticket": TICKET,
         "kind": "SAMPLED sensitivity envelope, not a bound",
         "role": ("ENGINEERING comparison and sensitivity: a separately admitted experiment, never a paper match. "
-                 "Nothing here is part of gate zero or may be appended to the gate-zero job; gate zero (the accepted "
-                 "8+4 allocation) uses the two original raw 45 mm references."),
+                 "Nothing here is part of gate zero. These calls are never appended to any other job, the gate-zero "
+                 "job included; gate zero (the accepted 8+4 allocation) uses the two original raw 45 mm references."),
         "status": ("PLAN ONLY. No solve has been run for SLAB-048. Every call below waits for a named warden grant "
                    "that lists these exact calls, a CPU cap, an expiry and the prior charges it keeps."),
         "labels": [*LABELS, "sampled envelope: finite probes, not a bound on reconstruction error",
@@ -758,7 +758,7 @@ def build_envelope_plan(references: list[dict], variants: list[dict]) -> dict:
         "execution_rules": [
             "Run exactly the listed calls on the named 45 mm fixtures at grid 64; refuse any design whose hash is "
             "not listed, and refuse a fixture whose config sha256 differs.",
-            "Admit this as its own job: never append these calls to the gate-zero job.",
+            "Admit this as its own job: never append these calls to any other job, the gate-zero job included.",
             "One fresh worker per call, reaped after the call; serial at one CPU.",
             "Before each call, stop if cumulative CPU plus one worst-case call would pass the granted cap.",
             "Keep raw outputs and every incomplete or failed outcome; never rerun a completed call.",

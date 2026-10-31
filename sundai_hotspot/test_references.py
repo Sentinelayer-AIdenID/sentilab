@@ -378,8 +378,10 @@ def check_variant_manifest(variant: dict):
 def check_envelope_plan_is_the_exact_sampled_list(plan: dict):
     total = 0
     assert plan["kind"] == "SAMPLED sensitivity envelope, not a bound" and plan["grid"] == 64
-    assert "never a paper match" in plan["role"] and "gate zero" in plan["role"]
-    assert any("never append these calls to the gate-zero job" in rule for rule in plan["execution_rules"])
+    assert all(phrase in plan["role"] for phrase in ("never a paper match", "gate zero",
+                                                      "never appended to any other job, the gate-zero job included"))
+    assert any("never append these calls to any other job, the gate-zero job included" in rule
+               for rule in plan["execution_rules"])
     for entry in plan["references"]:
         variant = _json(REFERENCES_DIR / f"{entry['id']}.json")
         fixture = entry["fixture_id"]

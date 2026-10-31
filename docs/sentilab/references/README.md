@@ -21,7 +21,7 @@ These roles were decided by astra (ScienceClaw #56857 and #56858) and accepted i
 | **0.5 mm variant** (`snap0p5`) | `<reference>-snap0p5.json` | **Engineering** comparison and sensitivity baseline, separately admitted. Never a paper match, and not part of gate zero. The envelope probes it. |
 | **1 mm snapped variant** | `<reference>.json`, field `snapped` | The first legal experiment layout, kept unchanged. Not the paper's layout. Superseded as the baseline. |
 
-Gate zero, the accepted 8+4 allocation, uses the two raw 45 mm references only. Nothing in this folder appends calls to it.
+Gate zero, the accepted 8+4 allocation, uses the two raw 45 mm references only. Nothing in this folder appends calls to it or to any other job: the envelope is admitted as its own job.
 
 ## Files
 

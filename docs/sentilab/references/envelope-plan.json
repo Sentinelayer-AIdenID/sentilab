@@ -2,7 +2,7 @@
  "design": "For each reference: its 0.5 mm engineering variant (snap0p5), plus each die moved by +0.5 and by -0.5 mm in x, and separately in y. Moves the fixture gate rejects are listed under 'excluded' and are not run. Every call id names its snap0p5 base, so no call can be mistaken for raw.",
  "execution_rules": [
   "Run exactly the listed calls on the named 45 mm fixtures at grid 64; refuse any design whose hash is not listed, and refuse a fixture whose config sha256 differs.",
-  "Admit this as its own job: never append these calls to the gate-zero job.",
+  "Admit this as its own job: never append these calls to any other job, the gate-zero job included.",
   "One fresh worker per call, reaped after the call; serial at one CPU.",
   "Before each call, stop if cumulative CPU plus one worst-case call would pass the granted cap.",
   "Keep raw outputs and every incomplete or failed outcome; never rerun a completed call.",
@@ -2622,7 +2622,7 @@
    "timing_family": "micro150"
   }
  ],
- "role": "ENGINEERING comparison and sensitivity: a separately admitted experiment, never a paper match. Nothing here is part of gate zero or may be appended to the gate-zero job; gate zero (the accepted 8+4 allocation) uses the two original raw 45 mm references.",
+ "role": "ENGINEERING comparison and sensitivity: a separately admitted experiment, never a paper match. Nothing here is part of gate zero. These calls are never appended to any other job, the gate-zero job included; gate zero (the accepted 8+4 allocation) uses the two original raw 45 mm references.",
  "schema": "sentilab-envelope-plan-v2",
  "sizing": {
   "assumption": "The 45 mm frame keeps the 64x64 grid, so solve time is assumed equal to the measured 50 mm grid-64 time; HotSpot is single-threaded, so CPU is close to wall at one CPU.",
