@@ -164,7 +164,7 @@ def run(directory, admission, command):
     return code
 
 
-def recover(directory):
+def recover(directory, *, root=Path('/sys/fs/cgroup')):
     """Actions always() fallback after supervisor kill; never fabricates a sample."""
     admission = json.loads((directory / 'admission.json').read_text())
     if admission.get('state') != 'admitted':
@@ -173,7 +173,7 @@ def recover(directory):
     if ledger.summary()['state'] != 'in_progress':
         export(ledger, directory)
         return
-    group = Path('/sys/fs/cgroup/ci-allocation-' + admission['identity']['run_id'])
+    group = root / ('ci-allocation-' + admission['identity']['run_id'])
     sample = None
     if group.exists():
         kill_group(group)

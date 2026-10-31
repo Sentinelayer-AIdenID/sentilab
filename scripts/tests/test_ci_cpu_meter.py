@@ -53,3 +53,68 @@ class MeterTests(unittest.TestCase):
             def drained(_):
                 (group / 'cgroup.events').write_text('populated 0\n')
             kill_group(group, clock=lambda: 0, sleep=drained)
+
+    def test_full_runner_enters_group_and_exports_success_and_failure(self):
+        # Fake kernel files replace the unavailable writable cgroup mount; process
+        # launch, enter helper, broker, monitoring, drain and export are shipped code.
+        import json
+        import sys
+        from dataclasses import asdict
+        from unittest.mock import patch
+
+        from scripts.ci_cpu_meter import run
+        from scripts.tests.test_ci_allocation import IDENTITY
+        for exitcode in (0, 7):
+            with self.subTest(exitcode=exitcode), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                group = directory / 'group'
+                (group / 'host').mkdir(parents=True)
+                (group / 'cpu.stat').write_text('usage_usec 0\n')
+                (group / 'cgroup.events').write_text('populated 0\n')
+                admission = {'identity': asdict(IDENTITY), 'state': 'admitted',
+                             'allocation_id': '56314', 'slot': 3,
+                             'launch_reservation': 100, 'cpu_reservation_seconds': 900}
+                command = [sys.executable, '-c',
+                           ('import pathlib,sys; pathlib.Path(sys.argv[1]).write_text("usage_usec 1250000\\n"); '
+                            'sys.exit(int(sys.argv[2]))'), str(group / 'cpu.stat'), str(exitcode)]
+                with patch('scripts.ci_cpu_meter.create_group', return_value=group), \
+                     patch('scripts.ci_cpu_meter.time.time', return_value=1793448000):
+                    actual = run(directory / 'ledger', admission, command)
+                self.assertEqual(actual, exitcode)
+                result = json.loads((directory / 'ledger/settlement.json').read_text())
+                self.assertEqual(result['state'], 'success' if exitcode == 0 else 'failure')
+                self.assertEqual(result['cpu']['cgroup_cpu_seconds'], 1.25)
+                self.assertGreaterEqual(result['cpu']['cpu_seconds'], 1.25)
+                self.assertTrue((group / 'host/cgroup.procs').read_text().strip().isdecimal())
+                self.assertEqual((group / 'cgroup.kill').read_text(), '1')
+
+    def test_recovery_settles_orphans_without_fabricating_total_cpu(self):
+        import json
+        from dataclasses import asdict
+
+        from scripts.ci_allocation import Ledger
+        from scripts.ci_cpu_meter import recover
+        from scripts.tests.test_ci_allocation import IDENTITY
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / 'admission.json').write_text(json.dumps({
+                'state': 'admitted', 'identity': asdict(IDENTITY)}))
+            ledger = Ledger(directory / 'events.jsonl', IDENTITY)
+            ledger.reserve('fake')
+            group = directory / 'ci-allocation-123'
+            group.mkdir()
+            (group / 'cpu.stat').write_text('usage_usec 1250000\n')
+            (group / 'cgroup.events').write_text('populated 0\n')
+            recover(directory, root=directory)
+            result = json.loads((directory / 'settlement.json').read_text())
+            self.assertEqual(result['state'], 'interrupted')
+            self.assertEqual(result['launches_settled'], 1)
+            self.assertIsNone(result['cpu']['cpu_seconds'])
+            self.assertEqual(result['cpu']['charged_cpu_seconds'], 900)
+
+    def test_monitor_expiry_and_bypass_violation_stop_without_starting_more_work(self):
+        for wall, violation, state in ((1793556000, False, 'expired'),
+                                        (1793448000, True, 'launch_violation')):
+            result = monitor(None, Process([]), CPUAccount(0, 0, 0), cancelled=lambda: False,
+                             violated=lambda value=violation: value, wall_clock=lambda value=wall: value)
+            self.assertEqual(result, (state, 1))
