@@ -1,0 +1,39 @@
+{
+  "schema": "sentilab-portable-packet-manifest/1",
+  "at": "2026-10-31T09:23:03.039239+00:00",
+  "publishScope": "internal docs-only review packet; excludes all original source bodies",
+  "files": {
+    "PAGE-COPY.md": {
+      "bytes": 3831,
+      "sha256": "a1168e173b2300fa4fee56cc81dbbfdcd14cc9946b87248c09567e3ac3ebeeaf"
+    },
+    "LEDGER.md": {
+      "bytes": 26988,
+      "sha256": "598fb12b3fbc0b00b429211975abaed3cea747a6afdd42dc3ea6dfe8e52f8581"
+    },
+    "progress.json": {
+      "bytes": 104742,
+      "sha256": "cf75fd2fbaa2a4860d043b02bdfe82abc3052ec655e40ee0f002b8b53faf1b61"
+    },
+    "progress.schema.json": {
+      "bytes": 22422,
+      "sha256": "8102def84c206bfd27e89378e7eb0cfaa9eb032198fb3c9e042bda70aa6093e7"
+    },
+    "SOURCE-CATALOG.json": {
+      "bytes": 26203,
+      "sha256": "689e95c3d37242e07e3a3d403a85923030db7530a4bec21448f1fc79505fd048"
+    },
+    "SOURCE-CATALOG.md": {
+      "bytes": 19517,
+      "sha256": "cb7599ee4c2fa9e4c9c791c45d0c30784a185bcda80806c5fadd464d799dd12c"
+    },
+    "PORTABILITY.md": {
+      "bytes": 3341,
+      "sha256": "2f18d0d7d045200c91f491435d30487ea02cb05023a565ccfd4d3acdf9fbadcb"
+    },
+    "VALIDATION.json": {
+      "bytes": 1764,
+      "sha256": "cfc5b91748887e4bc22ac0d71eb9ac61e234270e0541abf322f29896ca8f0454"
+    }
+  }
+}
