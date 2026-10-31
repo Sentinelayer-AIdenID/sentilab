@@ -92,7 +92,7 @@ def _signal_router(run: dict):
     return JevRoutingAdapter(max_calls=run["proposals"], timeout_s=SIGNAL_TIMEOUT_S)
 
 
-def _execute(run: dict) -> None:
+def _execute(run: dict, service_key) -> None:
     started = time.perf_counter()
     try:
         from sundai_controller.experiment import run_four_lanes
@@ -102,7 +102,7 @@ def _execute(run: dict) -> None:
         async def execute_run():
             try:
                 return await run_four_lanes(
-                    initial, oracle, run_id=run["id"], seed=run["seed"], evaluations_per_lane=run["proposals"],
+                    initial, oracle, service_key=service_key, run_id=run["id"], seed=run["seed"], evaluations_per_lane=run["proposals"],
                     evaluation_ceiling_microdollars=1, shared_sample_count=3,
                     signal_router=_signal_router(run))
             finally:
@@ -125,13 +125,16 @@ def _execute(run: dict) -> None:
 def start(body: dict) -> dict | None:
     """Start a run and return its record, or None when one is already running."""
     request = validate(body)
+    from sundai_controller.trust import load_service_key
+
+    service_key = load_service_key()  # Refuse before a run id, worker, or persisted record exists.
     if not _busy.acquire(blocking=False):
         return None
     try:
         run = {"id": uuid.uuid4().hex, "status": "running", **request, "created_at": time.time(),
                "finished_at": None, "duration_s": None, "error": None, "result": None}
         _write(run)
-        threading.Thread(target=_execute, args=(run,), name=f"run-{run['id'][:8]}", daemon=True).start()
+        threading.Thread(target=_execute, args=(run, service_key), name=f"run-{run['id'][:8]}", daemon=True).start()
     except BaseException:
         _busy.release()
         raise

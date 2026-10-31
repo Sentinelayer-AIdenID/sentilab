@@ -4,12 +4,18 @@ run_stdlib.json / run_fastapi.json: a valid run in both serializations. run_uneq
 evaluation. run_pool.json: one lane signs a different starting pool. Each lane's record mirrors the controller's
 shape: a baseline listing the shared pool, then one oracle_result per evaluation, then run_closed."""
 import json
+import os
+import time
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "sundai_controller"))
-from controller import FlightRecord  # noqa: E402
+from controller import FlightRecord, public_hex  # noqa: E402
+from trust import certify_lane, key_id_for  # noqa: E402
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+SERVICE = Ed25519PrivateKey.from_private_bytes(os.urandom(32))
 
 LANES = ("random", "simulated_annealing", "ucb1", "signal_portfolio")
 POOL = ["ab" * 32, "cd" * 32, "ef" * 32]
@@ -28,7 +34,8 @@ def lane(lane_id, evaluations=3, pool=POOL, run_id="fixture"):
     record.close()
     assert FlightRecord.verify(record.events, record.public_key)
     return {"agent_id": f"lane-{lane_id}", "record_public_key": record.public_key, "evaluation_count": evaluations,
-            "best_temperature_c": 92.0, "record_valid": True, "record": record.events}
+            "best_temperature_c": 92.0, "record_valid": True, "record": record.events,
+            "record_certificate": certify_lane(SERVICE, run_id, lane_id, record.public_key, int(time.time()) + 3600)}
 
 
 def run(lanes):
@@ -36,6 +43,7 @@ def run(lanes):
 
 
 out = Path(sys.argv[1])
+(out / "pins.json").write_text(json.dumps({key_id_for(public_hex(SERVICE)): public_hex(SERVICE)}))
 valid = run({lane_id: lane(lane_id) for lane_id in LANES})
 (out / "run_stdlib.json").write_text(json.dumps(valid), encoding="utf-8")
 (out / "run_fastapi.json").write_text(json.dumps(valid, ensure_ascii=False, allow_nan=False, separators=(",", ":")),
@@ -50,6 +58,7 @@ spliced = run({lane_id: lane(lane_id) for lane_id in LANES})
 spliced["result"]["lane_results"]["signal_portfolio"] = lane("signal_portfolio", run_id="fixture-b")
 (out / "run_spliced.json").write_text(json.dumps(spliced, separators=(",", ":")), encoding="utf-8")
 random_lane = valid["result"]["lane_results"]["random"]
-artifact = {"benchmark": "plate", "grid": 16, "lane_id": "random", "run_id": "fixture:random", "seed": 1,
-            "record_public_key": random_lane["record_public_key"], "events": random_lane["record"]}
+artifact = {"benchmark": "plate", "grid": 16, "lane_id": "random", "run_id": "fixture", "seed": 1,
+            "record_public_key": random_lane["record_public_key"], "events": random_lane["record"],
+            "record_certificate": random_lane["record_certificate"]}
 (out / "lane_artifact.json").write_text(json.dumps(artifact, separators=(",", ":")), encoding="utf-8")
