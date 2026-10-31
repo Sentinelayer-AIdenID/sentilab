@@ -119,16 +119,37 @@ export function reportNeedsNotice(report) {
 }
 
 // ── view envelopes (Lab and Package views) ──────────────────────────────────────────────────────────────────
-// node id -> evaluator identity, from the first node.create of each id (project() rejects a repeat). Only measurements
-// and comparisons declare semantics, so a candidate maps to undefined.
-export function evaluatorIds(envelopes) {
+// node id -> evaluator identity, from the node.create the projector APPLIED for each id: the first one it did not
+// reject, the same event the views take the node's values from. A rejected create (missing semantics, an unknown kind,
+// a repeat) lends no identity. rejected: project()'s rejections ({ event_id, code } entries, or event ids); the pages
+// pass their verification's projection.rejected. Only measurements and comparisons declare semantics, so a candidate
+// maps to undefined.
+export function evaluatorIds(envelopes, rejected = []) {
+  const skip = new Set((Array.isArray(rejected) ? rejected : []).map((r) => (isObj(r) ? r.event_id : r)));
   const ids = new Map();
   for (const env of Array.isArray(envelopes) ? envelopes : []) {
     const body = isObj(env) && isObj(env.event) && env.event.type === "node.create" && isObj(env.event.body) ? env.event.body : null;
-    if (!body || typeof body.id !== "string" || ids.has(body.id)) continue;
+    if (!body || typeof body.id !== "string" || ids.has(body.id) || skip.has(env.event.event_id)) continue;
     ids.set(body.id, isObj(body.semantics) ? body.semantics.evaluator_version : undefined);
   }
   return ids;
+}
+// The qualifiers for a value whose J and centre temperatures may come from different measurements: each keeps its own
+// source's label, never merged. J's first; the temperatures' too when their label differs (or when there is no J).
+export function sourceTags(jLabel, tempsLabel) {
+  const tags = [];
+  if (jLabel) tags.push({ label: jLabel, text: jLabel.short });
+  if (tempsLabel && tempsLabel !== jLabel) tags.push({ label: tempsLabel, text: `temps ${tempsLabel.short}` });
+  return tags;
+}
+// The identities behind a colour scale, as a set: one entry per distinct identity among EXACTLY the rows that view's own
+// scale calculation consumed (each view passes its own inputs: the Lab colorScaleInputs, the Package frameScaleInputs;
+// there is no shared contributor rule here). A live scale that widened keeps the identities it was widened from
+// (previous); any other scale is rebuilt. So it grows with the number of evaluators, never with rows or verifications.
+export function scaleIdentities(contributors, ids, previous = null) {
+  const out = new Set(previous ?? []);
+  for (const env of Array.isArray(contributors) ? contributors : []) out.add(envelopeEvaluator(env, ids));
+  return out;
 }
 // The identity behind one envelope's display values: a node.create's own semantics, or for any other event the node it
 // names (a verify.add's values belong to the measurement it verifies). Anything else has none.
