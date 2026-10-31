@@ -1,180 +1,223 @@
 {
   "schema_version": "sentilab.verification.v1",
-  "implementation_head": "3dae9d3c4b83a2af4d7435a130a4216504a215f4",
-  "implementation_base": "de3fa41c9fe45dd958bc2e06418d993027807448",
-  "tests": [
+  "ticket": "7b99a2b7",
+  "implementation_base": "d4d64ea83bf3ffb43eae789fa97c1b5193b88f76",
+  "implementation_head": "b3241fc63847c8e77b38bf96448c5da6d5185db2",
+  "evidence_commit_policy": "The following commit updates only this evidence file. implementation_head names the exact tested code commit; source hashes bind it to the handoff tree. An external final-head receipt avoids a self-referential Git commit hash.",
+  "final_head_receipt_ref": "/workspace/slab022-transport-handoff.json",
+  "source_sha256": {
+    "sentilab_core/resultcheck.py": "bd10cc8e4da3a0ea90d549fdd2871beb16ecb058e84f90f27edb6e9303766ee4",
+    "sentilab_core/test_resultcheck.py": "a8db6d0282bd8a24dc6225e9e6398f834d39302f787fdd522e5300b7f24f834e",
+    "sentilab_core/test_resultcheck_io.py": "d206fa94bd703708f8bba829a4f2e6f880f1680eef298f4192c43d4021e11c45",
+    "sentilab_core/test_resultcheck_boundary.py": "98e8b15b91edc2aadc20ba5ed1a157a5df40e8f956aa36f72b1762a960ebb648",
+    "sentilab_core/test_mcp_stdio.py": "c184c1edca0dd1e8b6e4d1fc9b7baf5bd7089009a957e8fd040046d9c4a231d2",
+    "sentilab_core/test_cleanup.py": "d99cccf5dc7e36a2a0c751f60620f943ea9b6992733d563ae5c34410314bdfac",
+    "sentilab_cli/__main__.py": "6488673a1bffc572e1fe9e3a8026bba0ba7c5f085664b68eedf6af4f1bf794cf",
+    "sentilab_mcp/__init__.py": "44268f1f9454d02f24ad3d2dae79f5dec0b2fca6a275639a2b069a9bedf6ea36",
+    "sentilab_mcp/__main__.py": "d427dd5bad856ed8e1cb5331ffe602329256a2f3d09db1d5f20175a9b1f51a39",
+    "requirements.txt": "067216658f7d3079687994d1a97695e4c5626c4f87496eed7e816dcb55860de2",
+    "requirements-service.txt": "a722c801dd03599b509cbc4490f69ad7221b6ef0859d6231a8a73a02dae3888e",
+    "docs/sentilab/evidence/SLAB-022/README.md": "fa9df2b98d878516edff6fb46b2e4da2769e12f88c65e2293a32bc90c579b090",
+    "docs/sentilab/evidence/SLAB-022/MANIFEST.json": "02eb4715efe4d98e237ae9115277c84c32944402910c1807295ffe752f1a32a6"
+  },
+  "decisions": [
+    "Preserve immutable v0.2 core semantics, hashes and CLI exit codes, including the separately tracked v0.3 overflow issue.",
+    "MCP isError only for rejected or file_unreadable; flags and insufficient_data are completed checks.",
+    "Require host-configured SENTILAB_RESULTCHECK_DIR; resolve paths under it and validate opened descriptor containment via Linux procfs before any read. Missing/invalid configuration and outside/missing paths return the same hash-free file_unreadable error.",
+    "Retain bounded regular-file intake, 16 MiB file cap, 1 MiB pre-parse cap, 10-second MCP worker deadline, cancellation and kill/drain/reap from the P2 correction."
+  ],
+  "gates": [
     {
-      "command": "python3.12 -m unittest -q sentilab_core.test_resultcheck",
-      "count": 8,
-      "exit": 0
+      "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python -m unittest -q sentilab_core.test_resultcheck sentilab_core.test_resultcheck_boundary sentilab_core.test_resultcheck_io sentilab_core.test_mcp_stdio sentilab_core.test_cleanup",
+      "exit": 0,
+      "seconds": 28.743,
+      "log_ref": "/workspace/slab022-transport-final-0.log",
+      "log_sha256": "283047eb4a7834001a0f58dfdfcabf81136b6172fcdfb6696ef0e26a015d84d7",
+      "count": 35
     },
     {
-      "command": "python3.12 -m sentilab_core.test_resultcheck --parity",
+      "command": ".venv/bin/python -m sentilab_core.test_resultcheck --parity",
+      "exit": 0,
+      "seconds": 12.74,
+      "log_ref": "/workspace/slab022-transport-final-1.log",
+      "log_sha256": "91a31ca03d827512d4f743ff38e06cf06c11acfc68759e8d38f23cf5fbd39183",
       "count": 9,
-      "contract_vectors": 39,
-      "exit": 0
+      "contract_vectors": 39
     },
     {
-      "command": "(cd sundai_controller && python -m unittest -v test_controller.py test_experiment.py)",
-      "count": 55,
-      "exit": 0
+      "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python -m unittest -q sentilab_core.test_budget sentilab_core.test_gate sentilab_core.test_ledger sentilab_core.test_environment sentilab_core.test_signing sentilab_core.test_history sentilab_core.conformance.CanonicalConformance sentilab_core.conformance.HistoryConformance",
+      "exit": 0,
+      "seconds": 2.469,
+      "log_ref": "/workspace/slab022-transport-final-2.log",
+      "log_sha256": "e53a4720c8a53228b65ae65eb025464b3b7270c3f5fb9d21e811ca44bee28587",
+      "count": 45
     },
     {
-      "command": "python -m unittest discover -s sundai_thermal -p 'test_*.py'",
-      "count": 2,
-      "exit": 0
+      "command": "(cd sundai_controller && OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 ../.venv/bin/python -m unittest -q test_controller.py test_experiment.py)",
+      "exit": 0,
+      "seconds": 0.515,
+      "log_ref": "/workspace/slab022-transport-final-3.log",
+      "log_sha256": "58b6024a2efa0a87dcac19fe27e42efea5db71b98c11599515b0ef6f77d3a735",
+      "count": 55
     },
     {
-      "command": "python -m unittest -q sentilab_core.test_budget sentilab_core.test_gate sentilab_core.test_ledger sentilab_core.test_environment sentilab_core.test_signing sentilab_core.conformance.CanonicalConformance",
-      "count": 38,
-      "exit": 0
-    },
-    {
-      "command": "node --test web/test/*.test.mjs",
-      "count": 103,
-      "exit": 0
+      "command": ". .venv/bin/activate && node --test web/test/*.test.mjs",
+      "exit": 0,
+      "seconds": 1.968,
+      "log_ref": "/workspace/slab022-transport-final-4.log",
+      "log_sha256": "0602045b7141caa00d97e105f997ad3a970dfe92b8fdff546beb67b406c10278",
+      "count": 103
     },
     {
       "command": "node contracts/contract-0.2/run-vectors.mjs",
-      "count": 74,
-      "exit": 0
+      "exit": 0,
+      "seconds": 0.465,
+      "log_ref": "/workspace/slab022-transport-final-5.log",
+      "log_sha256": "bba91b23c4e0d8c112d460ce2afbf8bfdf12d0b5cb088288b2e0be7637826892",
+      "count": 74
     },
     {
       "command": "node contracts/view-envelope/run-view-vectors.mjs",
-      "count": 113,
-      "exit": 0
+      "exit": 0,
+      "seconds": 0.264,
+      "log_ref": "/workspace/slab022-transport-final-6.log",
+      "log_sha256": "b0f127ab16e1cf89d476314c0c1cfc50a554011d62f86b05837bc17939509bbe",
+      "count": 113
     },
     {
       "command": "node contracts/view-envelope-v0.5/run-view-vectors.mjs",
-      "count": 193,
-      "exit": 0
+      "exit": 0,
+      "seconds": 1.517,
+      "log_ref": "/workspace/slab022-transport-final-7.log",
+      "log_sha256": "e1e77e340c89b6b5bf4d7427a719d053a1d2f6f528464f537a1e521c693899a4",
+      "count": 193
     },
     {
       "command": "node web/test/make-sentilab-demo.mjs --check",
-      "envelopes": 44,
-      "exit": 0
-    }
-  ],
-  "checks": [
-    {
-      "command": "python3.12 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt",
-      "exit": 0
-    },
-    {
-      "command": "pip install -r requirements-service.txt",
-      "exit": 0
-    },
-    {
-      "command": "pip check",
-      "exit": 0
+      "exit": 0,
+      "seconds": 0.064,
+      "log_ref": "/workspace/slab022-transport-final-8.log",
+      "log_sha256": "fe2a35188861d6e2c38679786899d9aa88ab5217e0088dee260540110458aae1",
+      "count": 44,
+      "count_unit": "envelopes"
     },
     {
       "command": "(cd contracts && sha256sum -c HASHES.txt)",
-      "exit": 0
+      "exit": 0,
+      "seconds": 0.008,
+      "log_ref": "/workspace/slab022-transport-final-9.log",
+      "log_sha256": "f69d5d3f9cf818891c224a3ddab0057eede070482bb42b2395a5c2e8a1e1087d"
     },
     {
       "command": "(cd sundai_hotspot && make -j4 SUPERLU=1)",
-      "exit": 0
+      "exit": 0,
+      "seconds": 0.032,
+      "log_ref": "/workspace/slab022-transport-final-10.log",
+      "log_sha256": "c46c8b4e9d31caff797cdb91aa80285001a99656a5bfd7a7306eb740e6ad7a6f"
     },
     {
-      "command": "python3.12 -m compileall -q sentilab_core/resultcheck.py sentilab_core/test_resultcheck.py sentilab_cli sentilab_mcp",
-      "exit": 0
+      "command": ".venv/bin/python -m compileall -q sentilab_core/resultcheck.py sentilab_core/test_resultcheck.py sentilab_core/test_resultcheck_io.py sentilab_core/test_resultcheck_boundary.py sentilab_core/test_mcp_stdio.py sentilab_cli sentilab_mcp",
+      "exit": 0,
+      "seconds": 0.064,
+      "log_ref": "/workspace/slab022-transport-final-11.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": ".venv/bin/pip check",
+      "exit": 0,
+      "seconds": 0.565,
+      "log_ref": "/workspace/slab022-transport-final-12.log",
+      "log_sha256": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09"
     },
     {
       "command": "git diff --check",
-      "exit": 0
+      "exit": 0,
+      "seconds": 0.264,
+      "log_ref": "/workspace/slab022-transport-final-13.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ],
+  "gate_run_seconds": 49.68,
+  "gate_run_children_cpu_seconds": 40.417,
+  "added_tests_B7": [
+    {
+      "test": "sentilab_core.test_resultcheck_boundary.FileBoundaryTests.test_unconfigured_or_invalid_root_never_discloses_a_file_hash",
+      "fails_on": "c136579f8f28a73845356128f07e1afc45f0375b",
+      "passes_with_fix": "b3241fc63847c8e77b38bf96448c5da6d5185db2"
+    },
+    {
+      "test": "sentilab_core.test_resultcheck_boundary.FileBoundaryTests.test_resolved_boundary_allows_inside_and_hides_every_outside_path",
+      "fails_on": "c136579f8f28a73845356128f07e1afc45f0375b",
+      "passes_with_fix": "b3241fc63847c8e77b38bf96448c5da6d5185db2"
+    },
+    {
+      "test": "sentilab_core.test_resultcheck_boundary.FileBoundaryTests.test_directory_swap_after_resolution_is_rejected_before_descriptor_read",
+      "fails_on": "c136579f8f28a73845356128f07e1afc45f0375b",
+      "passes_with_fix": "b3241fc63847c8e77b38bf96448c5da6d5185db2"
+    }
+  ],
+  "updated_test_B7": {
+    "test": "sentilab_core.test_resultcheck.ResultCheckTests.test_all_contract_vectors_core_cli_mcp",
+    "fails_on": "c136579f8f28a73845356128f07e1afc45f0375b",
+    "passes_with_fix": "b3241fc63847c8e77b38bf96448c5da6d5185db2",
+    "reason": "Corrected MCP error flag assertion fails on 25 contract vectors before the fix; existing CLI exit and byte parity assertions retained."
+  },
+  "base_proof": {
+    "base": "c136579f8f28a73845356128f07e1afc45f0375b",
+    "command": "/workspace/sentilab/.venv/bin/python -m unittest -q sentilab_core.test_resultcheck_boundary sentilab_core.test_resultcheck.ResultCheckTests.test_all_contract_vectors_core_cli_mcp",
+    "cwd": "/tmp/slab022-boundary-before",
+    "exit": 1,
+    "tests": 4,
+    "subtest_failures": 31,
+    "log_ref": "/workspace/slab022-boundary-before.log",
+    "log_sha256": "9dca8c11743ca8c94e37582e9f9e8f366ab9728fe2e1136d9e6e8bcca3eda415",
+    "method": "Final tests copied into detached pre-fix worktree; all three new tests fail, including an actual parent-directory swap before OS open that reads outside bytes on the old code."
+  },
   "mutation_proofs": [
     {
-      "mutation": "size-before-parse",
-      "detected": true,
+      "mutation": "descriptor-containment",
+      "test": "sentilab_core.test_resultcheck_boundary.FileBoundaryTests.test_directory_swap_after_resolution_is_rejected_before_descriptor_read",
       "exit": 1,
-      "seconds": 0.159
+      "seconds": 0.264,
+      "detected": true,
+      "log_ref": "/workspace/slab022-transport-mutation-descriptor-containment.log",
+      "log_sha256": "f62cd06277b9963dae860ce5426975041fe70bf4041a4057f07a8722be983202"
     },
     {
-      "mutation": "depth-bound",
-      "detected": true,
+      "mutation": "required-configuration",
+      "test": "sentilab_core.test_resultcheck_boundary.FileBoundaryTests.test_unconfigured_or_invalid_root_never_discloses_a_file_hash",
       "exit": 1,
-      "seconds": 0.362
+      "seconds": 0.665,
+      "detected": true,
+      "log_ref": "/workspace/slab022-transport-mutation-required-configuration.log",
+      "log_sha256": "7ce0d7382640fe2d75de892ede9080ebba6159d5716fce99839062c75d1f5719"
     },
     {
-      "mutation": "bool-is-not-number",
-      "detected": true,
+      "mutation": "worker-restriction",
+      "test": "sentilab_core.test_resultcheck_boundary.FileBoundaryTests.test_resolved_boundary_allows_inside_and_hides_every_outside_path",
       "exit": 1,
-      "seconds": 0.147
+      "seconds": 0.966,
+      "detected": true,
+      "log_ref": "/workspace/slab022-transport-mutation-worker-restriction.log",
+      "log_sha256": "99d0c462ac3924c8d716c9f3d220619c6dc06126c06dc0d099fec9461ec659f7"
     },
     {
-      "mutation": "notes-are-hashed",
-      "detected": true,
+      "mutation": "mcp-status",
+      "test": "sentilab_core.test_resultcheck.ResultCheckTests.test_all_contract_vectors_core_cli_mcp",
       "exit": 1,
-      "seconds": 0.13
-    },
-    {
-      "mutation": "cli-route",
+      "seconds": 11.491,
       "detected": true,
-      "exit": 1,
-      "seconds": 0.243
-    },
-    {
-      "mutation": "numeric-rounding",
-      "detected": true,
-      "exit": 1,
-      "seconds": 0.146
-    },
-    {
-      "mutation": "manifest-count",
-      "detected": true,
-      "exit": 1,
-      "seconds": 0.166
-    },
-    {
-      "mutation": "mcp-wire-bytes",
-      "detected": true,
-      "exit": 1,
-      "seconds": 8.866
-    },
-    {
-      "mutation": "exit-code",
-      "detected": true,
-      "exit": 1,
-      "seconds": 8.447
-    },
-    {
-      "mutation": "temperature-refusal",
-      "detected": true,
-      "exit": 1,
-      "seconds": 7.857
-    },
-    {
-      "mutation": "tie-rule",
-      "detected": true,
-      "exit": 1,
-      "seconds": 8.536
-    },
-    {
-      "mutation": "cluster-rule",
-      "detected": true,
-      "exit": 1,
-      "seconds": 8.439
-    },
-    {
-      "mutation": "flipped-vector-expectation",
-      "detected": true,
-      "exit": 1
+      "log_ref": "/workspace/slab022-transport-mutation-mcp-status.log",
+      "log_sha256": "edf32c63e26f909360a6687a10953ed9f90d6d51d45b3ac86c5d4db587637c77"
     }
   ],
-  "base_proof": {
-    "bases": [
-      "63c4b711e16ee36093031327d183a9c0ee124da5",
-      "de3fa41c9fe45dd958bc2e06418d993027807448"
-    ],
-    "command": "python3.12 -m unittest sentilab_core.test_resultcheck",
+  "previous_file_intake_evidence": "P2-VERIFICATION.json records the prior FIFO fix and its 10 before/after regressions and 8 mutations; these historical mutation runs are not claimed as rerun here. The full FIFO/cancellation suite passes again at implementation_head.",
+  "corrected_gate_attempt": {
+    "command": "unittest ... sentilab_core.conformance.SignedViewConformance",
     "exit": 1,
-    "reason": "ResultCheck import absent; final test file copied into isolated base worktrees"
+    "reason": "Nonexistent class name; corrected to HistoryConformance in the passing gate above."
   },
-  "additional_proof": "Existing live status CLI and MCP match before and after a ResultCheck tool call; no solver invoked.",
-  "gate_scope": "Repository-defined Python/JS/native-build gates replace the generic npm/TypeScript template: no package.json or TypeScript configuration exists. Native HotSpot execution and full solver-backed suites were not run under the ticket no-solver constraint; the native compile alternative was used.",
-  "independent_review": "Pending; self-run evidence is not independent review or scientific acceptance.",
-  "runtime": "Python 3.12.3; Node 22.23.3 only for tests; ResultCheck runs with Python standard library and no live signer configuration."
+  "gate_scope": "All 14 listed permitted checks pass. Python/JS/native-build repository gates replace generic npm/TypeScript commands: this repo has no package.json or TypeScript configuration. pip check is dependency consistency, not a vulnerability audit. No solver or model calls. Solver-backed ProjectionConformance, thermal/full container suites and GitHub CI/secret-scan were not run in this box and remain operator checks; no full-PR gate clearance is claimed.",
+  "independent_review": "Warden relayed aneta-claude core fidelity +1 in #56311. These new transport changes await assigned review; self-run evidence is not independent review or scientific acceptance.",
+  "runtime": "Python 3.12.3; Node 22.23.3 for reference/browser tests only; ResultCheck runtime uses Python standard library."
 }
