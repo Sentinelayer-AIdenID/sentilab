@@ -7,11 +7,11 @@ import tempfile
 import unittest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
-from sentilab_core.envelope import canonical, canonical_size, check_caps, digest
+from sentilab_core.envelope import build, canonical, canonical_size, check_caps, digest, verify
 from sentilab_core.ledger import read_prefix
 from sentilab_core import test_conductor
 from sentilab_core import test_ledger
-from sentilab_core.memory_conformance import MemoryProjectionConformance
+from sentilab_core.memory_conformance import MemoryProjectionConformance as MemoryProjectionConformance
 from sentilab_core.test_history import signed_version
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -115,6 +115,51 @@ console.log(JSON.stringify(JSON.parse(s).map(canonicalSize)));"""
 class HistoryConformance(unittest.TestCase):
     setUp = test_ledger.LedgerTests.setUp
     append = test_ledger.LedgerTests.append
+
+    def test_optional_values_preserve_existing_canonical_fields_and_history(self):
+        legacy = self.ledger.append("node.create", {"id": "legacy", "kind": "candidate"},
+                                    event_id="legacy")
+        original = self.ledger.path.read_bytes()
+        geometry = [{"id": "chip-a", "xLL": 1.25, "yLL": 2.5, "w": 6, "h": 5, "layer": 0}]
+        new_candidate = self.ledger.append("node.create", {"id": "new", "kind": "candidate"},
+                                           event_id="new", values={"geometry": geometry, "units": "mm"})
+        old_values = {"J": {"value": 118.36, "unit": "°C"},
+                      "W": {"value": 27.7, "metric_id": "weighted-manhattan-mm"}}
+        measured = self.ledger.append("node.create", {"id": "measured", "kind": "measurement"},
+                                      event_id="measured", values=old_values)
+        for old, extra in ((legacy, {"geometry": geometry, "units": "mm"}),
+                           (measured, {"center_temps": {"chip-a": 101.25}})):
+            with self.subTest(fields=list(extra)):
+                original_fields = {k: v for k, v in old.items() if k not in ("hash", "sig")}
+                extended = build(event=old["event"], run=old["run"], actor=old["actor"],
+                                 prev_hash=old["prev_hash"], ts=old["ts"], signer=self.signer,
+                                 values={**old.get("values", {}), **extra})
+                self.assertNotEqual(extended["hash"], old["hash"])
+                verify(extended, run_id="test-run", public_keys=self.keys)
+                chain = [extended] if old is legacy else [legacy, new_candidate, extended]
+                checked = self.reference(b"".join(canonical(e) + b"\n" for e in chain), "view-envelope/0.5")
+                self.assertTrue(checked["chain_ok"])
+                self.assertEqual(checked["prefix_end"], len(chain))
+                existing = {k: v for k, v in extended.items() if k not in ("hash", "sig")}
+                if "values" in old:
+                    existing["values"] = {k: v for k, v in existing["values"].items() if k not in extra}
+                else:
+                    existing.pop("values")
+                self.assertEqual(canonical(existing), canonical(original_fields))
+                self.assertEqual(digest(existing), old["hash"])
+                tampered = {**old, "values": extended["values"]}
+                with self.assertRaises(ValueError):
+                    verify(tampered, run_id="test-run", public_keys=self.keys)
+        raw = self.ledger.path.read_bytes()
+        self.assertTrue(raw.startswith(original))
+        self.assertEqual(new_candidate["prev_hash"], legacy["hash"])
+        native = self.ledger.read()
+        self.assertIsNone(native["error"])
+        self.assertEqual(native["prefix"], [legacy, new_candidate, measured])
+        for data, count in ((original, 1), (raw, 3)):
+            checked = self.reference(data, "view-envelope/0.5")
+            self.assertTrue(checked["chain_ok"])
+            self.assertEqual(checked["prefix_end"], count)
 
     def reference(self, raw, version, *, run_id="test-run", keys=None):
         script = """import { createPublicKey } from 'node:crypto';

@@ -1,6 +1,7 @@
 """Fsynced per-run JSONL, one append transaction and authenticated replay prefix."""
 from contextlib import contextmanager
 from collections import OrderedDict
+import errno
 import fcntl
 import hashlib
 import io
@@ -18,6 +19,10 @@ class BrokenLedger(ValueError):
     pass
 
 
+class LockBusy(BlockingIOError):
+    """A nonblocking flock acquisition found an existing owner."""
+
+
 @contextmanager
 def lock(path, *, shared=False, blocking=True):
     try:
@@ -31,7 +36,15 @@ def lock(path, *, shared=False, blocking=True):
         return
     with handle:
         flags = fcntl.LOCK_SH if shared else fcntl.LOCK_EX
-        fcntl.flock(handle, flags | (0 if blocking else fcntl.LOCK_NB))
+        try:
+            fcntl.flock(handle, flags | (0 if blocking else fcntl.LOCK_NB))
+        except OSError as exc:
+            # CIFS reports EACCES for contention. Only acquisition can classify
+            # it as busy: opening the file, protected work and unlock may fail.
+            if not blocking and (isinstance(exc, BlockingIOError) or
+                                 exc.errno in {errno.EACCES, errno.EAGAIN}):
+                raise LockBusy(exc.errno, "lock is held") from exc
+            raise
         try:
             yield
         finally:

@@ -1,4 +1,4 @@
-"""Run exact v0.6 vectors against HTTP: python -m app.check_view_paging [contract-dir]."""
+"""Run exact v0.6.x vectors against HTTP: python -m app.check_view_paging [contract-dir]."""
 from pathlib import Path
 import subprocess
 import sys
@@ -13,7 +13,7 @@ from app.main import app
 
 def main():
     root = Path(__file__).resolve().parent.parent
-    reference = Path(sys.argv[1]) if len(sys.argv) > 1 else root / "contracts/view-envelope-v0.6"
+    reference = Path(sys.argv[1]) if len(sys.argv) > 1 else root / "contracts/view-envelope-v0.6.1"
     route = next(route for route in app.routes if getattr(route, "path", None) == "/api/view/events")
     endpoint = route.dependant.call
     replay = view.replay

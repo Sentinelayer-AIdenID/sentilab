@@ -335,7 +335,7 @@ class Conductor:
                   "input_hashes": dict(result.input_sha256)}
         semantics = {"task_contract": self.config["task_id"], "metric_id": "peak-chip-c",
                      "evaluator_version": self.config["solver_id"], "coordinate_frame": "lower-left-mm"}
-        values = {"J": {"value": record["j"], "unit": "°C"},
+        values = {"J": {"value": record["j"], "unit": "C"},
                   "W": {"value": record["wire_mm"], "metric_id": "weighted-manhattan-mm"},
                   "scenario_id": "nominal", "artifact_hashes": list(record["input_hashes"].values())}
         self.emit("node.create", {"id": measurement_id, "kind": "measurement", "semantics": semantics,
