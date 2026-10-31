@@ -1,6 +1,6 @@
 // node --test web/test/worker-agents.test.mjs
-// The agent version of three human pages (web/src/agent-view.js, served by web/src/worker.js), against the real files
-// in web/public. Root's rerouting checklist, item by item:
+// The agent version of three human pages (web/src/agent-paths.js maps them, web/src/agent-view.js serves them, through
+// web/src/worker.js), against the real files in web/public. Root's rerouting checklist, item by item:
 //   1. agentPathFor maps "/" and "/sentilab/" to /agents/index.md and "/sentilab/package/" to /agents/physics.md, and
 //      every other path to null (served unchanged); serveAgentVersion serves that file, typed, varying on Accept.
 //   2. A browser's Accept gets the exact human page: the asset layer's bytes, untouched.
@@ -9,7 +9,7 @@
 //      (type/subtype, then type/*, then */*); a missing or malformed q is 1 or 0 respectively. Markdown wins a tie with
 //      JSON, HTML wins any tie with either, and a page without a JSON version never serves JSON.
 //   4. Every response that can differ (both versions of the three pages, 304s included) carries Vary: Accept and
-//      Cache-Control: private, no-cache, so no shared cache hands one visitor's version to the next.
+//      Cache-Control: private, no-store, so no cache hands one visitor's version to the next.
 // Plus: the human page names its agent version in a Link header, /agents/ serves /agents/index.md, every other path is
 // unchanged, and mutants of each guard are caught.
 import { test } from "node:test";
@@ -20,10 +20,12 @@ import { dirname, extname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import realWorker from "../src/worker.js";
+import * as realPaths from "../src/agent-paths.js";
 import * as realView from "../src/agent-view.js";
 import { CSP } from "../src/csp.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
+const NL = String.fromCharCode(10);
 const PUBLIC = join(here, "..", "public");
 const SRC = join(here, "..", "src");
 const BASE = "https://sentilab.aidenid.com";
@@ -34,7 +36,7 @@ const BROWSERS = [
 ];
 const MD = "text/markdown; charset=utf-8";
 const JSON_TYPE = "application/json; charset=utf-8";
-const NO_SHARED_CACHE = "private, no-cache";
+const NO_SHARED_CACHE = "private, no-store";
 const HUMAN = { "/": "index.html", "/sentilab/": "sentilab/index.html", "/sentilab/package/": "sentilab/package/index.html" };
 const AGENT_MD = { "/": "/agents/index.md", "/sentilab/": "/agents/index.md", "/sentilab/package/": "/agents/physics.md" };
 const AGENT_JSON = { "/": "/agents/index.json", "/sentilab/": "/agents/index.json" };
@@ -42,6 +44,7 @@ const ALTERNATE = { "/": "/agents/", "/sentilab/": "/agents/", "/sentilab/packag
 const UNMAPPED = ["/index.html", "/sentilab", "/sentilab/index.html", "/sentilab/package", "/sentilab/package/index.html", "/sentilab/lab.js",
   "/leaderboard.html", "/verify.html", "/licenses.html", "/agents", "/agents/", "/agents/index.md", "/agents/physics.md", "/llms.txt", "/agents.json",
   "/api/view/runs", "/nope", "", "//", "/SENTILAB/", "/constructor", "/__proto__", "/hasOwnProperty", "/sentilab/package/x"];
+const REAL = { paths: realPaths, view: realView };
 const file = (rel) => new Uint8Array(readFileSync(join(PUBLIC, ...rel.split("/").filter(Boolean))));
 const link = (href) => `<${href}>; rel="alternate"; type="text/markdown"`;
 const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
@@ -74,14 +77,14 @@ async function get(worker, path, { headers = {}, method = "GET" } = {}) {
 }
 
 // ── the checks, each a function of (worker, view module), so the mutants below can run them too ──────────────────
-async function mappingIsExact(worker, view) {
+async function mappingIsExact(worker, { paths }) {
   for (const [path, target] of Object.entries(AGENT_MD)) {
-    assert.equal(view.agentPathFor(path), target, `agentPathFor(${JSON.stringify(path)})`);
+    assert.equal(paths.agentPathFor(path), target, `agentPathFor(${JSON.stringify(path)})`);
     assert.ok(existsSync(join(PUBLIC, ...target.split("/").filter(Boolean))), `${target} exists`);
   }
-  for (const path of UNMAPPED) assert.equal(view.agentPathFor(path), null, `agentPathFor(${JSON.stringify(path)}) is null: unchanged`);
+  for (const path of UNMAPPED) assert.equal(paths.agentPathFor(path), null, `agentPathFor(${JSON.stringify(path)}) is null: unchanged`);
 }
-async function serveAgentVersionServesTheMappedFile(worker, view) {
+async function serveAgentVersionServesTheMappedFile(worker, { view }) {
   for (const path of Object.keys(AGENT_MD)) {
     for (const accept of [undefined, BROWSERS[0], "text/markdown"]) {
       const env = envOf();
@@ -165,8 +168,8 @@ async function otherPathsAreUnchanged(worker) {
   }
 }
 
-test("1. agentPathFor maps each page with an agent version to its file, and every other path to null", () => mappingIsExact(realWorker, realView));
-test("1. serveAgentVersion serves the mapped file, typed, varying on Accept, private; JSON when preferred; null otherwise", () => serveAgentVersionServesTheMappedFile(realWorker, realView));
+test("1. agentPathFor maps each page with an agent version to its file, and every other path to null", () => mappingIsExact(realWorker, REAL));
+test("1. serveAgentVersion serves the mapped file, typed, varying on Accept, private; JSON when preferred; null otherwise", () => serveAgentVersionServesTheMappedFile(realWorker, REAL));
 test("2. a browser's Accept gets the exact human page, byte for byte, with its Link to the agent version", () => browsersGetTheExactHumanPage(realWorker));
 test("3. markdown or JSON in Accept gets the agent index; mixed and q-weighted headers resolve by the documented rule", () => acceptNegotiationIsDeterministic(realWorker));
 test("4. every response that can differ varies on Accept and stays out of shared caches (GET, HEAD and 304)", () => everyVaryingResponseIsPrivate(realWorker));
@@ -198,7 +201,9 @@ test("HEAD gets the same choice; other methods are never negotiated; conditional
   assert.ok(same(stale.body, file("agents/index.md")));
 });
 test("acceptQuality, preferredAgentType and varyWith follow the documented rule", () => {
-  const { acceptQuality, preferredAgentType, varyWith, AGENT_PAGES } = realView;
+  const { acceptQuality, preferredAgentType, varyWith } = realView;
+  const INDEX = { md: "/agents/index.md", json: "/agents/index.json" };
+  const PHYSICS = { md: "/agents/physics.md" };
   assert.equal(acceptQuality(BROWSERS[0], "text/html"), 1);
   assert.equal(acceptQuality(BROWSERS[0], "text/markdown"), 0.8);
   assert.equal(acceptQuality("text/*;q=0.4, text/markdown;q=0.7", "text/markdown"), 0.7);
@@ -206,10 +211,10 @@ test("acceptQuality, preferredAgentType and varyWith follow the documented rule"
   assert.equal(acceptQuality("TEXT/Markdown;Q=0.5", "text/markdown"), 0.5);
   assert.equal(acceptQuality("text/markdown;q=abc", "text/markdown"), 0);
   assert.equal(acceptQuality(undefined, "text/html"), 0);
-  assert.equal(preferredAgentType("text/markdown", AGENT_PAGES["/"]), "md");
-  assert.equal(preferredAgentType("application/json;q=0.9, text/markdown;q=0.8", AGENT_PAGES["/"]), "json");
-  assert.equal(preferredAgentType("application/json", AGENT_PAGES["/sentilab/package/"]), null);
-  assert.equal(preferredAgentType("*/*", AGENT_PAGES["/"]), null);
+  assert.equal(preferredAgentType("text/markdown", INDEX), "md");
+  assert.equal(preferredAgentType("application/json;q=0.9, text/markdown;q=0.8", INDEX), "json");
+  assert.equal(preferredAgentType("application/json", PHYSICS), null);
+  assert.equal(preferredAgentType("*/*", INDEX), null);
   assert.equal(varyWith("Accept-Encoding", ["Accept"]), "Accept-Encoding, Accept");
   assert.equal(varyWith("accept", ["Accept"]), "accept");
   assert.equal(varyWith("*", ["Accept"]), "*");
@@ -220,23 +225,29 @@ test("the classification header of an earlier draft is not read: x-aidenid-class
     const res = await realWorker.fetch(new Request(`${BASE}/`, { headers: { "x-aidenid-class": "agent" } }), bound);
     assert.ok(same(new Uint8Array(await res.arrayBuffer()), file("index.html")));
   }
-  assert.doesNotMatch(readFileSync(join(SRC, "agent-view.js"), "utf8") + readFileSync(join(SRC, "worker.js"), "utf8"), /aidenid-class|TRUST_EDGE_CLASS/);
+  assert.doesNotMatch(["agent-paths.js", "agent-view.js", "worker.js"].map((f) => readFileSync(join(SRC, f), "utf8")).join(""), /aidenid-class|TRUST_EDGE_CLASS/);
+});
+test("agent-paths.js exports exactly agentPathFor(pathname), the seam a classifier imports; worker.js exports only its handler", async () => {
+  assert.deepEqual(Object.keys(realPaths), ["agentPathFor"]);
+  assert.equal(realPaths.agentPathFor.length, 1);
+  assert.deepEqual(Object.keys(await import("../src/worker.js")), ["default"]);
 });
 
 // ── mutants: each must make the check named for it fail ──────────────────────────────────────────────────────────
 const MUTANTS = [
-  { name: "the human page stops varying on Accept", file: "agent-view.js", from: '  headers.set("vary", varyWith(headers.get("vary"), VARY));\n  headers.set("cache-control", NEGOTIATED_CACHE_CONTROL);\n  headers.set("link"',
-    to: '  headers.set("cache-control", NEGOTIATED_CACHE_CONTROL);\n  headers.set("link"', caughtBy: everyVaryingResponseIsPrivate },
-  { name: "negotiated responses may sit in shared caches", file: "agent-view.js", from: 'export const NEGOTIATED_CACHE_CONTROL = "private, no-cache";',
+  { name: "the human page stops varying on Accept", file: "agent-view.js",
+    from: '  headers.set("vary", varyWith(headers.get("vary"), VARY));' + NL + '  headers.set("cache-control", NEGOTIATED_CACHE_CONTROL);' + NL + '  headers.set("link"',
+    to: '  headers.set("cache-control", NEGOTIATED_CACHE_CONTROL);' + NL + '  headers.set("link"', caughtBy: everyVaryingResponseIsPrivate },
+  { name: "negotiated responses may be cached and shared", file: "agent-view.js", from: 'export const NEGOTIATED_CACHE_CONTROL = "private, no-store";',
     to: 'export const NEGOTIATED_CACHE_CONTROL = "public, max-age=0, must-revalidate";', caughtBy: everyVaryingResponseIsPrivate },
   { name: "a tie with HTML picks the agent version", file: "agent-view.js", from: "if (quality > bestQuality) {", to: "if (quality >= bestQuality) {", caughtBy: browsersGetTheExactHumanPage },
-  { name: "agentPathFor maps a path without its trailing slash", file: "agent-view.js",
-    from: "const pageOf = (pathname) => (Object.hasOwn(AGENT_PAGES, pathname) ? AGENT_PAGES[pathname] : null);",
-    to: "const pageOf = (pathname) => (Object.hasOwn(AGENT_PAGES, pathname) ? AGENT_PAGES[pathname] : Object.hasOwn(AGENT_PAGES, `${pathname}/`) ? AGENT_PAGES[`${pathname}/`] : null);",
+  { name: "agentPathFor maps a path without its trailing slash", file: "agent-paths.js",
+    from: "return Object.hasOwn(AGENT_PATHS, pathname) ? AGENT_PATHS[pathname] : null;",
+    to: "return Object.hasOwn(AGENT_PATHS, pathname) ? AGENT_PATHS[pathname] : Object.hasOwn(AGENT_PATHS, `${pathname}/`) ? AGENT_PATHS[`${pathname}/`] : null;",
     caughtBy: mappingIsExact },
-  { name: "serveAgentVersion ignores a JSON preference", file: "agent-view.js", from: 'preferredAgentType(request.headers.get("accept"), page) === "json" ? "json" : "md";',
+  { name: "serveAgentVersion ignores a JSON preference", file: "agent-view.js", from: 'preferredAgentType(request.headers.get("accept"), versions) === "json" ? "json" : "md";',
     to: '"md";', caughtBy: serveAgentVersionServesTheMappedFile },
-  { name: "the human page drops its Link header", file: "agent-view.js", from: '  headers.set("link", alternateLink(page.alternate));', to: "", caughtBy: browsersGetTheExactHumanPage },
+  { name: "the human page drops its Link header", file: "agent-view.js", from: '  headers.set("link", alternateLink(Object.hasOwn(PRETTY, md) ? PRETTY[md] : md));', to: "", caughtBy: browsersGetTheExactHumanPage },
 ];
 for (const mutant of MUTANTS) {
   test(`mutant caught: ${mutant.name}`, async () => {
@@ -248,9 +259,9 @@ for (const mutant of MUTANTS) {
       assert.equal(source.split(mutant.from).length - 1, 1, "the mutation applies at exactly one place");
       writeFileSync(path, source.replace(mutant.from, mutant.to));
       const worker = (await import(pathToFileURL(join(dir, "worker.js")).href)).default;
-      const view = await import(pathToFileURL(join(dir, "agent-view.js")).href);
-      await mutant.caughtBy(realWorker, realView);
-      await assert.rejects(() => mutant.caughtBy(worker, view), assert.AssertionError, "the check fails on the mutant");
+      const mods = { paths: await import(pathToFileURL(join(dir, "agent-paths.js")).href), view: await import(pathToFileURL(join(dir, "agent-view.js")).href) };
+      await mutant.caughtBy(realWorker, REAL);
+      await assert.rejects(() => mutant.caughtBy(worker, mods), assert.AssertionError, "the check fails on the mutant");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

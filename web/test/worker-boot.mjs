@@ -90,7 +90,7 @@ if (ready) {
   const humanBody = new Uint8Array(await human.arrayBuffer());
   check("GET / with a browser's Accept: the human page, with Vary: Accept, private caching and the Link header",
     human.status === 200 && same(humanBody, file("index.html")) && human.headers.get("vary") === "Accept"
-      && human.headers.get("cache-control") === "private, no-cache" && human.headers.get("link") === '</agents/>; rel="alternate"; type="text/markdown"',
+      && human.headers.get("cache-control") === "private, no-store" && human.headers.get("link") === '</agents/>; rel="alternate"; type="text/markdown"',
     `${human.status} · vary ${human.headers.get("vary")} · cache-control ${human.headers.get("cache-control")} · link ${human.headers.get("link")}`);
   const api = await fetch(`${BASE}/api/view/runs`);
   const apiText = await api.text();
