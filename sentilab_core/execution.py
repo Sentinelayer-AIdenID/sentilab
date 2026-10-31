@@ -89,6 +89,9 @@ def main():
             if command not in {"build", "render", "replay", "export"}:
                 raise ValueError("unsupported chiplet operation")
             result = getattr(chiplet, command)(context, **request["arguments"])
+        elif namespace == "gb10" and command in {"status", "checkpoint_verify"}:
+            from .gb10_backend import execute
+            result = execute(command, context, **request["arguments"])
         elif namespace == "memory" and command in {"recall", "audit", "route"}:
             from sentilab_mcp import TOOLS
             tool = "sentilab_route" if command == "route" else "sentilab_memory_" + command

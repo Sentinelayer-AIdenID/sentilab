@@ -4,6 +4,7 @@ Mid-call STOP-file creation remains distinct from the proven request-cancellatio
 checks. Pending owner contracts are explicit; see generated COVERAGE.md.
 """
 import json
+from datetime import datetime, timezone
 import os
 from pathlib import Path
 import selectors
@@ -60,6 +61,53 @@ class ExecutionConformance(unittest.TestCase):
                                 OPENBLAS_NUM_THREADS="1", OMP_NUM_THREADS="1")
         self.fixture_context = False
         self.prepare_memory()
+        self.prepare_gb10()
+
+    def prepare_gb10(self):
+        from sentilab_core.test_gb10_backend import status_response, checkpoint_response
+        self.started_at = datetime.now(timezone.utc)
+        self.ssh_bin = self.root / "bin"
+        self.ssh_bin.mkdir()
+        self.ssh_calls = self.ssh_bin / "calls.jsonl"
+        self.ssh_responses = {"status": status_response(), "checkpoint": checkpoint_response()}
+        self.ssh_config = self.ssh_bin / "responses.json"
+        self.ssh_config.write_text(json.dumps(self.ssh_responses))
+        # Substitute the external peer only. Both transports, the worker and
+        # gb10_backend.execute run unmodified; no network client is started.
+        peer = self.ssh_bin / "ssh"
+        peer.write_text(f"#!{sys.executable}\n" + '''
+import json, pathlib, sys
+root = pathlib.Path(__file__).parent
+source = sys.stdin.buffer.read()
+assert b"def probe(" in source
+assert sys.argv[-2] == "gb10"
+assert sys.argv[-1] in ("python3 -I -S -B - status", "python3 -I -S -B - checkpoint")
+with (root / "calls.jsonl").open("a") as calls:
+    calls.write(json.dumps(sys.argv[1:]) + "\\n")
+response = json.loads((root / "responses.json").read_text())[sys.argv[-1].split()[-1]]
+if response == "fail":
+    sys.stderr.write("rejected-value-marker")
+    sys.exit(255)
+print(json.dumps(response))
+''')
+        peer.chmod(0o755)
+        self.environment["PATH"] = str(self.ssh_bin) + os.pathsep + self.environment.get("PATH", os.defpath)
+
+    def assert_gb10_bytes(self, cli_bytes, mcp_bytes):
+        from jsonschema import FormatChecker
+        # Backend receipts intentionally contain a fresh clock reading. Check
+        # each timestamp, then compare every other output byte unchanged.
+        normalized = []
+        for raw in (cli_bytes, mcp_bytes):
+            value = json.loads(raw)
+            stamp = value["checked_at"]
+            FormatChecker().check(stamp, "date-time")
+            checked_at = datetime.fromisoformat(stamp)
+            self.assertEqual(checked_at.utcoffset().total_seconds(), 0)
+            self.assertLessEqual(self.started_at, checked_at)
+            self.assertLessEqual(checked_at, datetime.now(timezone.utc))
+            normalized.append(raw.replace(json.dumps(stamp).encode(), b'"<per-call-UTC>"', 1))
+        self.assertEqual(*normalized)
 
     def prepare_memory(self):
         from sentilab_core.ledger import Ledger
@@ -88,6 +136,10 @@ class ExecutionConformance(unittest.TestCase):
                                 SENTILAB_ROUTING_FIXTURE=str(FIXTURE.with_name("routing-fixtures.json")))
 
     def arguments(self, row):
+        if row.name == "gb10.status":
+            return {}
+        if row.name == "gb10.checkpoint_verify":
+            return {"location": "gb10"}
         if row.name in ("memory.recall", "memory.audit"):
             return {"scope": self.memory_scope}
         if row.name == "memory.route":
@@ -203,9 +255,25 @@ class ExecutionConformance(unittest.TestCase):
                 response = self.mcp(row, arguments)
                 self.assertNotIn("error", response, response)
                 payload = response["result"]["content"][0]["text"].encode()
-                self.assertEqual(cli.stdout, payload + b"\n")
+                if row.name.startswith("gb10."):
+                    self.assert_gb10_bytes(cli.stdout, payload + b"\n")
+                else:
+                    self.assertEqual(cli.stdout, payload + b"\n")
                 value = json.loads(payload)
                 Draft202012Validator(row.output_schema).validate(value)
+                if row.name.startswith("gb10."):
+                    self.assertTrue(value["ok"], value)
+                    self.assertEqual(value["scope_state"], "staged_open")
+                    self.assertEqual(value["serve_state"], "not_observed")
+                    self.assertEqual(value["operation"], row.name.split(".")[1])
+                    if row.name == "gb10.status":
+                        self.assertEqual(value["device"], self.ssh_responses["status"]["device"])
+                        self.assertEqual(value["gpu_readiness"], "not_tested")
+                    else:
+                        self.assertEqual(value["locations"]["gb10"]["artifacts"],
+                                         self.ssh_responses["checkpoint"]["artifacts"])
+                        self.assertEqual(value["claim"], "retained_file_integrity_only")
+                        self.assertFalse(value["held_out_evaluation"])
                 if row.name == "live.run":
                     self.assertEqual(value["status"], "stopped")
                     self.assertEqual(value["spend"]["solves"], 0)
@@ -243,6 +311,8 @@ class ExecutionConformance(unittest.TestCase):
             "memory.recall": {"scope": {**self.memory_scope, "seed": -1}},
             "memory.audit": {"scope": {**self.memory_scope, "tenant": ""}},
             "memory.route": {"task": {"candidate": "rejected-value-marker", "score": 2}},
+            "gb10.status": {"location": "rejected-value-marker"},
+            "gb10.checkpoint_verify": {"location": []},
         }
         self.assertEqual(set(cases), {row.name for row in implemented()})
         for row in implemented():
@@ -255,6 +325,51 @@ class ExecutionConformance(unittest.TestCase):
                 self.assertEqual(response["error"]["code"], -32602)
                 self.assertNotIn("rejected-value-marker", json.dumps(response))
                 self.assertNotIn(b"rejected-value-marker", cli.stdout + cli.stderr)
+
+    def test_gb10_backend_errors_and_checkpoint_locations_match_over_real_transports(self):
+        from copy import deepcopy
+        rows = {row.name: row for row in implemented()}
+        required = {"gb10.status", "gb10.checkpoint_verify"}
+        self.assertTrue(required <= rows.keys(), required - rows.keys())
+        for name, operation in (("gb10.status", "status"), ("gb10.checkpoint_verify", "checkpoint")):
+            for fault, expected in (("fail", "ssh_failed"), ("identity", "device_identity_mismatch"),
+                                    ("shape", "invalid_probe_response")):
+                with self.subTest(capability=name, fault=fault):
+                    data = deepcopy(self.ssh_responses)
+                    if fault == "fail":
+                        data[operation] = "fail"
+                    elif fault == "identity":
+                        data[operation]["identity"]["hostname"] = "rejected-value-marker"
+                    else:
+                        data[operation]["rejected-value-marker"] = True
+                    self.ssh_config.write_text(json.dumps(data))
+                    row = rows[name]
+                    cli = self.cli(row, self.arguments(row))
+                    response = self.mcp(row, self.arguments(row))
+                    self.assertEqual(cli.returncode, 0, cli.stdout)
+                    self.assertEqual(cli.stderr, b"")
+                    payload = response["result"]["content"][0]["text"].encode()
+                    self.assert_gb10_bytes(cli.stdout, payload + b"\n")
+                    value = json.loads(payload)
+                    self.assertFalse(value["ok"])
+                    error = value if operation == "status" else value["locations"]["gb10"]
+                    self.assertEqual(error["error"]["code"], expected)
+                    self.assertIn(expected, row.error_codes)
+                    self.assertNotIn("rejected-value-marker", payload.decode())
+        self.ssh_config.write_text(json.dumps(self.ssh_responses))
+        row = rows["gb10.checkpoint_verify"]
+        for arguments, expected in (({}, {"pc", "gb10"}), ({"location": "both"}, {"pc", "gb10"}),
+                                    ({"location": "pc"}, {"pc"})):
+            with self.subTest(arguments=arguments):
+                before = self.ssh_calls.read_bytes()
+                cli = self.cli(row, arguments)
+                response = self.mcp(row, arguments)
+                self.assertEqual(cli.returncode, 0, cli.stdout)
+                payload = response["result"]["content"][0]["text"].encode()
+                self.assert_gb10_bytes(cli.stdout, payload + b"\n")
+                self.assertEqual(set(json.loads(payload)["locations"]), expected)
+                if expected == {"pc"}:
+                    self.assertEqual(self.ssh_calls.read_bytes(), before, "pc-only must not start SSH")
 
     def test_each_capability_requires_host_granted_scope_before_side_effects(self):
         self.environment["SENTILAB_CAPABILITY_SCOPES"] = "[]"
@@ -352,6 +467,7 @@ class BoundaryConformance(unittest.TestCase):
         flags = (["--ai-off"] if row.name.startswith("live.") else
                  ["--scope", "{}"] if row.name in ("memory.recall", "memory.audit") else
                  ["--calibrate"] if row.name == "memory.route" else
+                 [] if row.name.startswith("gb10.") else
                  ["--fixture", "plate"] if row.name == "chiplet.build" else ["--run-id", "fixture"])
         return subprocess.run([sys.executable, "-m", "sentilab_cli", *row.cli_command,
                                *flags, *extra], capture_output=True, cwd=ROOT, timeout=10)
@@ -388,7 +504,8 @@ class BoundaryConformance(unittest.TestCase):
             with self.subTest(capability=row.name):
                 # Repeated valid flags and JSON whitespace keep these inputs
                 # syntactically valid; a parser error cannot stand in for a cap.
-                extra = (["--ai-off"] * 8200 if row.name.startswith("live.") else
+                extra = (["--help"] * 10000 if row.name.startswith("gb10.") else
+                         ["--ai-off"] * 8200 if row.name.startswith("live.") else
                          ["--fixture", "plate"] * 5000 if row.name == "chiplet.build" else
                          ["--run-id", "fixture"] * 5000)
                 cli = self.cli(row, extra)
@@ -512,11 +629,27 @@ class RegistryConformance(unittest.TestCase):
                 self.assertEqual(row.owner, "gpt-astra-carter (root)")
                 self.assertEqual(row.original_contract, name)
                 self.assertNotIn(row.mcp_tool, advertised)
-        for name in ("gb10.preflight-record", "gb10.status"):
-            row = rows[name]
-            self.assertEqual(row.kind, "evidence_reader")
-            self.assertNotIn(row.original_contract, devices)
+        for row in rows.values():
+            if row.kind == "evidence_reader":
+                self.assertNotIn(row.original_contract, devices)
         self.assertIn("excluded from public-capability counts", coverage_markdown())
+
+    def test_gb10_owner_backend_is_exposed_once_and_serve_stays_pending(self):
+        rows = {row.name: row for row in CAPABILITIES}
+        advertised = {tool["name"]: tool for tool in self.advertised_tools()}
+        for command in ("status", "checkpoint_verify"):
+            row = rows["gb10." + command]
+            self.assertEqual(row.status, "done")
+            self.assertEqual(row.kind, "capability")
+            self.assertEqual(row.owner, "gpt-astra-carter (root)")
+            self.assertEqual(row.cli_command, ("gb10", command.replace("_", "-")))
+            self.assertEqual(row.mcp_tool, "sentilab_gb10_" + command)
+            self.assertEqual(advertised[row.mcp_tool]["inputSchema"], row.input_schema)
+            self.assertEqual(row.original_contract, row.name)
+        self.assertNotIn("gb10.preflight-record", rows)
+        self.assertEqual(rows["gb10.serve"].status, "pending")
+        self.assertEqual(rows["gb10.serve"].owner, "gpt-astra-carter (root)")
+        self.assertNotIn("sentilab_gb10_serve", advertised)
 
     def advertised_tools(self):
         request = {"jsonrpc": "2.0", "id": 1, "method": "tools/list"}
@@ -558,12 +691,13 @@ class RegistryConformance(unittest.TestCase):
                                         capture_output=True, cwd=ROOT, check=True)
                 self.assertIn(b"UTF-8 ResultCheck v2 JSON file", result.stdout)
                 continue
-            branch = {"dataset": dataset_parser, "chiplet": chiplet_parser,
+            from sentilab_cli.__main__ import gb10_parser
+            branch = {"dataset": dataset_parser, "chiplet": chiplet_parser, "gb10": gb10_parser,
                       "research": research_parser}.get(namespace, lambda: parser)()
             command = next(action for action in branch._actions if action.dest == "command")
             observed.update((namespace, choice) for choice in command.choices)
             invocation = [sys.executable, "-m", "sentilab_cli"]
-            if namespace in ("dataset", "chiplet", "research"):
+            if namespace in ("dataset", "chiplet", "research", "gb10"):
                 invocation.append(namespace)
             result = subprocess.run([*invocation, "--help"], text=True, capture_output=True,
                                     cwd=ROOT, timeout=10, check=True)

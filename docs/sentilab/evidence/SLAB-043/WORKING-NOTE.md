@@ -3,6 +3,87 @@
 This implementation is **incomplete**. No all-gates-green or PR-publication claim
 is made. The work is by a surrogate executor under recorded model substitution.
 
+## Round-4 GB10 integration and runtime pins, 2026-10-31
+
+Base: `0d4a6eea17971a0aaaa25992ce5cce7e44cf0a7a` (PR #42). Rebased all prior
+SLAB-043 commits cleanly, retaining the accepted chiplet Node packaging correction.
+GB10 integration is `fab5b5b038f429572226b11d29238adaa7f1669c`; Node runtime
+pinning/provenance is `5f14b9dd5e0577ee9c7fb8d2677acc74452f4d8f`.
+
+`gb10.status` and `gb10.checkpoint_verify` are done rows, with CLI spellings
+`sentilab gb10 status` and `sentilab gb10 checkpoint-verify [--location gb10|pc|both]`,
+and MCP tools `sentilab_gb10_status` / `sentilab_gb10_checkpoint_verify`.
+They call the unchanged `gb10_backend.execute` through shared admission and
+cancellable workers. They retain all backend receipt fields and staged scope;
+backend observations (including `ok: false`) are successful transport receipts.
+Invalid arguments/scopes remain shared transport errors. STOP permits these
+read-only observations; SIGINT/MCP cancellation reaps the worker group.
+`gb10.serve` remains pending with `gpt-astra-carter (root)` for its GPU grant.
+
+The old evidence-reader status placeholder is replaced by the actual backend.
+The unimplemented `gb10.preflight-record` placeholder was removed; no executable
+legacy alias was dropped. The original broader `train.preflight`, `train.status`
+and checkpoint lifecycle contracts remain separately pending. Current inventory:
+18 exposed tools, 14 done rows in the matrix, four pending-conformance rows and
+24 unavailable pending rows. This is not full ticket completion.
+
+The real CLI/MCP tests substitute only the external SSH peer with a local
+executable that consumes the real probe source and supplies bounded fixture
+responses. No real SSH client, network, model, device or solver is invoked.
+Every pre-existing non-GB10 byte assertion, including chiplet.render, remains
+unchanged. GB10's `checked_at` must be valid UTC within the test's call window;
+only that per-call clock value is normalized before comparing every other byte.
+Tests cover successful payloads/pins, scope refusal before peer I/O, malformed
+input, wire bounds, cancellation, peer failure, invalid identity/shape, default
+both-location handling and pc-only operation without SSH.
+
+Fresh checks (all commands listed as passing exited 0). Python test commands
+used `OPENBLAS_CORETYPE=Haswell OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1`:
+
+| Command | Result |
+|---|---|
+| `.venv/bin/python -m unittest -q sentilab_core.test_conformance sentilab_core.test_gb10_backend` | 50 pass |
+| `.venv/bin/python -m unittest -q sentilab_core.test_memory_transports sentilab_core.test_mcp_stdio sentilab_core.test_dataset_mcp sentilab_core.test_cleanup sentilab_core.test_research_transports sentilab_core.test_resultcheck sentilab_core.test_resultcheck_boundary sentilab_core.test_resultcheck_io sentilab_core.test_resultcheck_platform sentilab_core.test_memory sentilab_core.test_routing sentilab_core.memory_conformance` | 89 pass |
+| `/workspace/sentilab/.venv/bin/python -m unittest -q sentilab_core.test_conformance sentilab_core.test_mcp_stdio sentilab_core.test_gb10_backend` from disposable `/app` | 59 pass |
+| `.venv/bin/python -m unittest -q sentilab_core.test_build_info` | 1 pass |
+| `(cd sundai_controller && ../.venv/bin/python -m unittest -q test_controller.py test_experiment.py)` | 55 pass |
+| `.venv/bin/python -m unittest -q sentilab_core.test_dataset sentilab_core.test_ledger sentilab_core.test_history sentilab_core.test_environment sentilab_core.test_signing sentilab_core.test_budget sentilab_core.test_gate sentilab_core.test_labs` | 73 pass |
+| `PATH="$PWD/.venv/bin:$PATH" node --test web/test/*.test.mjs` | 216 pass |
+| `sha256sum -c HASHES.txt` from `contracts` | All hashes pass |
+| `node run-vectors.mjs` in `contracts/contract-0.2` and `contracts/contract-0.3` | 74 / 83 checks pass |
+| `node run-view-vectors.mjs` in `contracts/view-envelope` and `contracts/view-envelope-v0.5` | 113 / 193 checks pass |
+| `node run-paging-vectors.mjs` in `contracts/view-envelope-v0.6` and `contracts/view-envelope-v0.6.1` | 174 / 222 checks pass |
+| `node web/test/make-sentilab-demo.mjs --check` | 44 envelopes current |
+| `.venv/bin/python -m sentilab_core.capabilities --check docs/sentilab/evidence/SLAB-043/COVERAGE.md` | Pass |
+| `.venv/bin/python -m compileall -q sentilab_core sentilab_cli sentilab_mcp scripts/record_build_info.py` | Pass |
+| `.venv/bin/python -m pip check` | No broken requirements |
+| `make -C sundai_hotspot -j4 SUPERLU=1` | Build pass; no solver execution |
+| `git diff --check` | Pass |
+
+The `/app` check included exactly the two shared browser modules and trust-pins
+under `web/`, as selected by `.dockerignore`; both image requirement files were
+already installed. It is an image-layout test, not a Docker build. The separately
+extracted, checksum-verified Debian Node package reports `v20.19.2` and renders
+seven cards using the unchanged JavaScript fragment. See `NODE-RUNTIME.md` for
+resolved base/package hashes, reproduction details and `/app/build-info.json`.
+
+Regression proof in a disposable worktree at pre-change
+`5e00f0ba1f1f35141f0de7d9ba77d7a96a3abb81`: the two new GB10 tests fail with
+`'pending' != 'done'` and missing `{gb10.status, gb10.checkpoint_verify}`.
+Misrouting the real worker's checkpoint operation to status also causes the
+new error/location test to fail (three failures and three errors). The build-info
+test fails before the recorder exists, and passes after adding it. Regression sources:
+
+- `sentilab_core/test_conformance.py`: fails on `5e00f0ba1f1f35141f0de7d9ba77d7a96a3abb81`, passes with `fab5b5b038f429572226b11d29238adaa7f1669c` (both added tests).
+- `sentilab_core/test_build_info.py`: fails on `5e00f0ba1f1f35141f0de7d9ba77d7a96a3abb81`, passes with `5f14b9dd5e0577ee9c7fb8d2677acc74452f4d8f`.
+
+Full Docker/thermal/live-conformance solver gates remain unrun: Docker is absent,
+and solves remain forbidden for this lane. No npm manifest exists; no dummy npm
+or TypeScript gates were added. The wider ticket's active STOP, labs and remaining
+public-contract integrations remain open. Warden's 10:36 review message for
+published head `86525f3a` contained an empty Verbatim section; a resend and the
+referenced thread were requested before making any claim about those findings.
+
 ## Round-3 container render correction, 2026-10-31
 
 Warden reported the `chiplet.render` valid-input assertion failing at published

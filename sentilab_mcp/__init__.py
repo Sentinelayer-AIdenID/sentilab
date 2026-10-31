@@ -48,11 +48,21 @@ async def sentilab_chiplet_export(context, **arguments):
     return await recorded_call(context, "chiplet.export", arguments, timeout=EXPORT_TIMEOUT_SECONDS)
 
 
+async def sentilab_gb10_status(context, **arguments):
+    return await recorded_call(context, "gb10.status", arguments)
+
+
+async def sentilab_gb10_checkpoint_verify(context, **arguments):
+    return await recorded_call(context, "gb10.checkpoint_verify", arguments)
+
+
 TOOLS = {"sentilab_live_" + name: globals()["sentilab_live_" + name]
          for name in ("run", "status", "stop", "verify")}
 TOOLS["sentilab_dataset_export"] = sentilab_dataset_export
 TOOLS.update({"sentilab_chiplet_" + name: globals()["sentilab_chiplet_" + name]
               for name in ("build", "render", "replay", "export")})
+TOOLS.update(sentilab_gb10_status=sentilab_gb10_status,
+             sentilab_gb10_checkpoint_verify=sentilab_gb10_checkpoint_verify)
 
 
 async def sentilab_resultcheck(context=None, *, file):

@@ -129,6 +129,26 @@ def chiplet_main(*, context=None):
     print(json.dumps(result, allow_nan=False))
 
 
+def gb10_parser():
+    parser = SafeParser(prog="sentilab gb10")
+    parser.add_argument("command", choices=cli_commands("gb10"))
+    parser.add_argument("--location", choices=["gb10", "pc", "both"])
+    return parser
+
+
+def gb10_main(*, context=None):
+    args = gb10_parser().parse_args(sys.argv[2:])
+    arguments = {"location": args.location} if args.location is not None else {}
+    from sentilab_core.execution import admit
+    from sentilab_core.operations import environment_context
+    from sentilab_mcp import TOOLS
+    tool = "sentilab_gb10_" + args.command.replace("-", "_")
+    admit(tool, arguments)
+    context = context if context is not None else environment_context()
+    result = asyncio.run(TOOLS[tool](context, **arguments))
+    print(json.dumps(result, allow_nan=False))
+
+
 def research_parser():
     from sentilab_core import research
 
@@ -217,6 +237,8 @@ def _main(conductor=False, *, context=None):
         return dataset_main(context=context)
     if not conductor and sys.argv[1:2] == ["chiplet"]:
         return chiplet_main(context=context)
+    if not conductor and sys.argv[1:2] == ["gb10"]:
+        return gb10_main(context=context)
     parser = build_parser(conductor)
     args = parser.parse_args()
     from sentilab_core import operations

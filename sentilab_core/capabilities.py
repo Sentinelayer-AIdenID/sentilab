@@ -70,6 +70,28 @@ LIVE_OUTPUTS = {
 }
 ERROR_CODES = (-32602, -32603, -32800, -32000, -32001)
 
+GB10_INPUTS = {
+    "status": object_schema({}),
+    "checkpoint_verify": object_schema({"location": {"enum": ["gb10", "pc", "both"],
+                                                     "default": "both"}}),
+}
+GB10_ERRORS = ("invalid_input", "probe_source_oversize", "ssh_unavailable", "ssh_output_oversize",
+               "ssh_timeout", "ssh_failed", "ssh_io_error", "device_identity_mismatch",
+               "invalid_probe_response", "probe_unavailable")
+
+
+def gb10_output(command):
+    return {"type": "object", "required": ["schema", "operation", "ok", "status", "checked_at", "scope_state"],
+            "properties": {"schema": {"const": "sentilab-gb10-backend/1"},
+                           "operation": {"const": command}, "ok": {"type": "boolean"},
+                           "status": {"enum": ["observed", "verified", "unverified", "unavailable", "refused"]},
+                           "checked_at": {"type": "string", "format": "date-time"},
+                           "scope_state": {"const": "staged_open"}},
+            "if": {"properties": {"ok": {"const": True}}},
+            "then": {"required": (["ssh_alias", "identity", "device", "gpu_readiness", "serve_state"]
+                                   if command == "status" else
+                                   ["locations", "checkpoint", "claim", "held_out_evaluation", "serve_state"])}}
+
 CHIPLET_INPUTS = {
     "build": object_schema({"fixture": {"const": "plate"},
                             "positions": {"type": "array", "minItems": 4, "maxItems": 4,
@@ -179,10 +201,15 @@ CAPABILITIES = tuple(
     pending("lab.propose", "PR #19 labs lane", "ReplayLab and Dispatcher exist; transport contract not registered"),
     pending("lab.review", "PR #19 labs lane", "ReplayLab and Dispatcher exist; transport contract not registered"),
     pending("lab.repair", "PR #19 labs lane", "ReplayLab and Dispatcher exist; transport contract not registered"),
-    pending("gb10.preflight-record", "astra-slab043-conformance", "SLAB-018 manifest and 67 payload hashes verified on c40e6f1; wrapper implementation pending",
-            kind="evidence_reader", mapping_note="SLAB-043 recorded evidence only; does not implement train.preflight"),
-    pending("gb10.status", "astra-slab043-conformance", "SLAB-018 manifest and 67 payload hashes verified on c40e6f1; wrapper implementation pending",
-            kind="evidence_reader", mapping_note="SLAB-043 recorded evidence only; does not implement live device train.status"),
+    *(Capability("gb10." + command, "gb10." + command, ("gb10", command.replace("_", "-")),
+                 "sentilab_gb10_" + command, GB10_INPUTS[command], gb10_output(command),
+                 ERROR_CODES + GB10_ERRORS, "gb10." + command,
+                 "Read-only observation remains available after STOP; cancellation kills the worker process group including SSH",
+                 "gpt-astra-carter (root)",
+                 mapping_note="Calls PR #42 gb10_backend.execute; checked_at is per-call UTC provenance; staged_open is not GPU readiness or serving approval")
+      for command in ("status", "checkpoint_verify")),
+    pending("gb10.serve", "gpt-astra-carter (root)",
+            "PR #42 serve lifecycle is staged; prospective GPU grant required before exposing a runnable surface"),
 ) + tuple(pending(name, "gpt-astra-carter (root)",
                   "Actual GB10 device/checkpoint/serve parity is pending with root; this CPU-only lane has no device access")
           for name in ("doctor", "train.preflight", "train.status", "train.start", "train.cancel",
@@ -247,10 +274,12 @@ def coverage_markdown():
              "`done` records existing CLI/MCP entry points. It does **not** certify the five-check harness.",
              "`pending_conformance` records merged public surfaces awaiting integration into the unified",
              "execution matrix. They are included in discovery/drift checks, with explicit owners and gaps.",
-             "Real-process tests cover exact response bytes, output schemas, invalid input without echoed values,",
-             "host-granted scopes and the 64 KiB wire cap for every done row. The run fixture is already STOPped",
+             "Real-process tests cover response bytes, output schemas, invalid input without echoed values,",
+             "host-granted scopes and the 64 KiB wire cap for every done row.",
+             "GB10 checked_at is validated as per-call UTC provenance before comparing all remaining bytes.",
+             "The run fixture is already STOPped",
              "before it starts and records zero solves; it does not prove active-run STOP parity.",
-             "Eleven recorded operations also exercise CLI SIGINT / MCP cancellation against real OS workers,",
+             "Thirteen recorded operations also exercise CLI SIGINT / MCP cancellation against real OS workers,",
              "asserting workers are reaped before acknowledgement and the MCP connection remains usable.",
              "This is request cancellation, not mid-call creation of a STOP file. That ticket check remains open.",
              "The CLI cap counts UTF-8 argv bytes plus one separator per argument;",
@@ -258,7 +287,12 @@ def coverage_markdown():
              "Pending entries are reserved interfaces with rejecting schemas, not tools.", "",
              "Original contract names are explicit. Reserved aliases do not mark their original contract done.",
              "PR #23 audit/route names are not assumed to cover snapshot, evidence inspection or intent compile.",
-             "GB10 evidence readers are excluded from public-capability counts and cannot satisfy device parity.",
+             "Fixture evidence readers are excluded from public-capability counts and cannot satisfy device parity.",
+             "The unimplemented gb10.preflight-record placeholder is removed; gb10.status now calls the owner",
+             "backend rather than reserving a duplicate evidence reader. No executable legacy aliases existed.",
+             "GB10 status/checkpoint-verify use the PR #42 backend; gb10.serve remains pending with root.",
+             "Their offline conformance uses a local fake SSH peer, never a device; it proves transport parity,",
+             "not actual device readiness, checkpoint presence or a GPU grant.",
              "Device/checkpoint/serve rows retain the original SLAB-004/018/019/032/033/038 contract names",
              "from `docs/sentilab/draft-0.5/TICKETS.json` and remain pending with gpt-astra-carter (root).",
              "Chiplet entry points have the SLAB-043 fixture contract; they do not certify the broader",

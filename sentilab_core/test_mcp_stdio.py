@@ -98,6 +98,8 @@ class StdioTests(unittest.IsolatedAsyncioTestCase):
             "sentilab_chiplet_render": {"run_id"},
             "sentilab_chiplet_replay": {"run_id"},
             "sentilab_chiplet_export": {"run_id"},
+            "sentilab_gb10_status": set(),
+            "sentilab_gb10_checkpoint_verify": set(),
         }
         self.assertCountEqual([tool["name"] for tool in tools], expected)
         for tool in tools:
@@ -270,6 +272,7 @@ host.main()
                          "sentilab_memory_recall", "sentilab_memory_audit", "sentilab_route"))
         expected.update("sentilab_research_" + name for name in ("request", "status", "export"))
         expected.update("sentilab_chiplet_" + name for name in ("build", "render", "replay", "export"))
+        expected.update(("sentilab_gb10_status", "sentilab_gb10_checkpoint_verify"))
         self.assertEqual({tool["name"] for tool in tools}, expected)
         self.assertEqual(len(tools), len(expected), "each tool must be registered once")
         schemas = {tool["name"]: tool["inputSchema"] for tool in tools}
