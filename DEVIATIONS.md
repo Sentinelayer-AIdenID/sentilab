@@ -8,9 +8,16 @@
   `sentilab_core/projection.py` maintains the emitted event subset; CI compares it
   to the exact JavaScript reference. Unsupported evidence workflows report an
   explicit projection error and are not silently approximated.
-- While the corrective v0.5 contract is landing, the writer uses v0.4 plus the
-  agreed pre-hash validation and duplicate-group fixes. No v0.4 reference file is
-  edited. Binding to the reviewed v0.5 manifest remains an upstream handoff.
+- The writer emits reviewed v0.5 envelopes; compatible v0.4 history still verifies.
+  Input caps, iterative canonical-size accounting, canonical-identical duplicates,
+  conflict freezing and bounded JSONL pages are implemented. The native verifier
+  keeps stricter existing run/actor/event field and role checks, and reports one
+  diagnostic error rather than the reference's complete reason-code list.
+  An oversized raw ledger line is represented in the feed by a malformed `null`
+  line, preserving a frozen prefix without echoing unbounded input. Replay files
+  over 64 MiB and sequence groups exceeding a page cap fail closed.
+  Forge owns the client-clock LIVE/progress tracker and the browser transport
+  consumer; those are not implemented by this producer change.
 - Baseline operators are imported, but scheduling uses recorded per-proposal
   deterministic substreams, one initial layout, and four interleaved arms. This
   is a live integration baseline, not a replay of the earlier equal-budget

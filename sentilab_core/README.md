@@ -74,9 +74,14 @@ the OS ownership lock enforces this across processes. To release an explicit
 STOP, the service operator removes that file and starts a new finite run.
 
 The read-only routes are `/api/view/runs`,
-`/api/view/events?run_id=...&after=0&limit=500`, and `/api/view/key`. Event responses
-contain `envelopes`, `next_after`, `has_more`, `prefix_end`, `chain_error`, and the
-core projection. Clients fetch one run from genesis through contiguous pages and
+`/api/view/events?run_id=...&after=0&limit=256`, and `/api/view/key`. Event responses
+default to v0.5 JSONL, with at most 256 lines and 4 MiB per page. `x-next-after`
+and `x-has-more` report pagination. Conflicts at the same sequence stay on one
+page; evidence of a break before the requested cursor is sent again. A sequence
+group that cannot fit is a transport error (413).
+An explicit `format=json` returns diagnostic `envelopes`, `next_after`, `has_more`,
+`prefix_end`, `chain_error`, and the core projection, also capped at 4 MiB.
+Clients fetch one run from genesis through contiguous pages and
 verify against their independent pins. A chain break freezes the board even when
 later rows have individually valid signatures. Frontend LIVE labels must refresh
 only on new verified-prefix progress, and claim recency rather than completeness.
@@ -94,7 +99,7 @@ python -m unittest app.test_view
 python -m unittest sentilab_core.conformance
 ```
 
-Only the last command requires Node 22. CI compares the Python canonical bytes
-against aneta's exact merged `canonical()` over the contract vectors, and compares
-a ledger produced with the real synthetic plate solver against the exact
-`project()` reference. The service image remains Python-only.
+Only the last command requires Node 22. CI compares Python canonical bytes and
+sizes with the exact references, all 16 v0.5 chain-vector prefixes, and a ledger
+produced with the real synthetic plate solver against v0.5 `verifyJsonl()` and
+the exact `project()` reference. The service image remains Python-only.

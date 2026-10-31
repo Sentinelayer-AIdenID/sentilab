@@ -3,12 +3,14 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from sentilab_core.envelope import build, canonical, check_caps, genesis, verify
 from sentilab_core.ledger import BrokenLedger, Ledger, read_prefix, replay
+from sentilab_core import envelope as envelope_module
 
 
 class RuntimeSigner:
@@ -161,7 +163,7 @@ class LedgerTests(unittest.TestCase):
         event = {"event_id": "new", "seq": 1, "type": "node.create",
                  "actor_role": "core", "body": {"id": "node"}}
         actor = {"agent_id": None, "life_id": None, "grant_id": None, "lab": "core"}
-        for change in ({"seq": True}, {"body": []}, {"actor_role": "acceptance_gate"},
+        for change in ({"seq": True}, {"seq": 2**53}, {"body": []}, {"actor_role": "acceptance_gate"},
                        {"event_id": ""}, {"type": "lifecycle.transition", "body": {"to": "accepted"}}):
             with self.subTest(change=change):
                 with self.assertRaises(ValueError):
@@ -194,6 +196,63 @@ class LedgerTests(unittest.TestCase):
         body["nested"]["value"] = 2
         self.assertEqual(entry["event"]["body"]["nested"]["value"], 1)
         verify(entry, run_id="test-run", public_keys=self.keys)
+
+    def test_v05_rejections_never_reach_canonical_hash_or_sign(self):
+        valid = self.append(1)[0]
+        invalid = []
+        for body in ({"padding": [1e20] * 12000}, {"surrogate": "\ud800"},
+                     {"\udfff": "key"}, {"number": float("nan")}):
+            item = copy.deepcopy(valid)
+            item["event"]["body"] = body
+            invalid.append(item)
+        nested = []
+        for _ in range(10000):
+            nested = [nested]
+        item = copy.deepcopy(valid)
+        item["event"]["body"] = {"nested": nested}
+        invalid.append(item)
+        with mock.patch.object(envelope_module, "canonical", side_effect=AssertionError("canonical called")), \
+                mock.patch.object(envelope_module, "digest", side_effect=AssertionError("hash called")), \
+                mock.patch.object(self.signer, "sign", side_effect=AssertionError("sign called")):
+            for item in invalid:
+                with self.subTest(body_keys=list(item["event"]["body"])):
+                    with self.assertRaises(ValueError):
+                        verify(item, run_id="test-run", public_keys=self.keys)
+                    with self.assertRaises(ValueError):
+                        build(event=item["event"], run=item["run"], actor=item["actor"],
+                              prev_hash=item["prev_hash"], signer=self.signer, ts=item["ts"])
+
+    def test_raw_cap_is_checked_before_parse_and_whitespace_duplicates_are_idempotent(self):
+        entries = self.append(2)
+        rows = [json.dumps(entries[0]).encode(), canonical(entries[0]), canonical(entries[1])]
+        self.ledger.path.write_bytes(b"\n".join(rows))  # final newline is optional
+        self.assertEqual(self.read()["prefix"], entries)
+        self.assertEqual(len(self.read()["rows"]), 2)
+        self.ledger.path.write_bytes(canonical(entries[0]) + b" " * 65536 + b"\n")
+        with mock.patch("sentilab_core.ledger.json.loads", side_effect=AssertionError("parsed oversized line")):
+            state = read_prefix(self.ledger.path, run_id="test-run", public_keys=self.keys)
+        self.assertEqual(state["last_seq"], 0)
+        self.assertIn("oversize", state["error"])
+
+    def test_idempotent_append_validates_new_content_before_canonicalization(self):
+        self.append(1)
+        invalid_body = {"padding": [1e20] * 12000}
+        real_canonical = envelope_module.canonical
+        def reject_invalid(value):
+            if isinstance(value, dict) and value.get("event", value).get("body") is invalid_body:
+                self.fail("canonicalized rejected append content")
+            return real_canonical(value)
+        with mock.patch.object(envelope_module, "canonical", side_effect=reject_invalid), \
+                mock.patch("sentilab_core.ledger.canonical", side_effect=reject_invalid):
+            with self.assertRaises(ValueError):
+                self.ledger.append("node.create", invalid_body, event_id="event-0")
+
+    def test_replay_file_cap_rejects_before_reading_or_parsing(self):
+        with self.ledger.path.open("wb") as handle:
+            handle.truncate(64 * 1024 * 1024 + 1)
+        with mock.patch("sentilab_core.ledger.json.loads", side_effect=AssertionError("parsed oversized file")):
+            with self.assertRaisesRegex(ValueError, "oversize: replay file"):
+                read_prefix(self.ledger.path, run_id="test-run", public_keys=self.keys)
 
 
 

@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 import tempfile
 
-from .envelope import MAX_BYTES, build, canonical, genesis, validate_run_id, verify
+from .envelope import MAX_BYTES, MAX_REPLAY_BYTES, build, canonical, check_envelope, genesis, validate_run_id, verify
 
 
 class BrokenLedger(ValueError):
@@ -72,49 +72,58 @@ def _finite_float(text):
 
 
 def read_prefix(path, *, run_id, public_keys):
-    """Return all bounded rows for display, but only the verified prefix for project().
-
-    A malformed/oversize line has no reliable sequence; freeze in file order.
-    Valid JSON envelopes order by seq, as required by v0.4, even if shuffled.
-    """
+    """Validate raw lines before parsing, then project only the verified prefix."""
     rows = []
     with open(path, "rb") as handle:
+        if os.fstat(handle.fileno()).st_size > MAX_REPLAY_BYTES:
+            raise ValueError("oversize: replay file")
         while raw := handle.readline(MAX_BYTES + 2):
-            if len(raw) > MAX_BYTES + 1 or not raw.endswith(b"\n"):
+            line = raw[:-1] if raw.endswith(b"\n") else raw
+            if len(line) > MAX_BYTES:
                 while raw and not raw.endswith(b"\n"):
                     raw = handle.readline(MAX_BYTES + 2)
-                rows.append({"error": "oversize or incomplete JSONL row"})
+                rows.append({"error": "oversize JSONL row", "raw": b"null\n"})
                 continue
+            row = {"raw": line + b"\n"}
             try:
-                value = json.loads(raw, object_pairs_hook=_object,
+                value = json.loads(line, object_pairs_hook=_object,
                                    parse_float=_finite_float, parse_constant=_finite_float)
                 if not isinstance(value, dict):
                     raise ValueError("envelope is not an object")
-                rows.append({"envelope": value, "raw_digest": hashlib.sha256(raw).hexdigest()})
-            except (ValueError, UnicodeError, RecursionError):
-                rows.append({"error": "invalid JSONL row"})
+                row["envelope"] = value
+                data = check_envelope(value, run_id)
+                row["canonical_digest"] = hashlib.sha256(data).hexdigest()
+            except (ValueError, TypeError, UnicodeError, RecursionError, OverflowError) as exc:
+                row["error"] = str(exc) or "invalid JSONL row"
+            rows.append(row)
+
     def seq(row):
         event = row.get("envelope", {}).get("event")
-        return event.get("seq") if isinstance(event, dict) else None
-    if all(type(seq(row)) is int for row in rows):
-        rows.sort(key=lambda row: row["envelope"]["event"]["seq"])
-    # Byte-identical retransmissions are no-ops. Conflicting groups freeze before
-    # every member, independent of their delivery order (v0.5 corrective rule).
+        value = event.get("seq") if isinstance(event, dict) else None
+        return value if type(value) is int and value >= 1 else None
+
+    # Canonical-identical retransmissions count once, even with different JSON
+    # whitespace. Rejected input is never canonicalized for duplicate detection.
     unique, seen = [], set()
     for row in rows:
-        raw_digest = row.get("raw_digest")
-        if raw_digest is not None and raw_digest in seen:
-            continue
-        seen.add(raw_digest)
+        fingerprint = row.pop("canonical_digest", None)
+        if fingerprint is not None:
+            if fingerprint in seen:
+                continue
+            seen.add(fingerprint)
         unique.append(row)
-    rows = unique
+    rows = sorted(unique, key=lambda row: (seq(row) if seq(row) is not None else float("inf"),
+                                          0 if "error" in row else 1,
+                                          str(row.get("envelope", {}).get("hash", ""))))
     by_seq, by_id = {}, {}
     for index, row in enumerate(rows):
+        run = row.get("envelope", {}).get("run")
+        run_name = run.get("run_id") if isinstance(run, dict) and isinstance(run.get("run_id"), str) else None
         if type(seq(row)) is int:
-            by_seq.setdefault(seq(row), []).append(index)
+            by_seq.setdefault((run_name, seq(row)), []).append(index)
         event = row.get("envelope", {}).get("event")
         if isinstance(event, dict) and isinstance(event.get("event_id"), str):
-            by_id.setdefault(event["event_id"], []).append(index)
+            by_id.setdefault((run_name, event["event_id"]), []).append(index)
     for indices in list(by_seq.values()) + list(by_id.values()):
         if len(indices) > 1:
             for index in indices:
@@ -245,7 +254,12 @@ class Ledger:
             if old["event"]["event_id"] == event_id:
                 expected = {"event_id": event_id, "seq": old["event"]["seq"],
                             "type": event_type, "actor_role": role, "body": body}
-                if canonical(old["event"]) != canonical(expected) or old.get("values") != values:
+                candidate = {**old, "event": expected}
+                if values is None:
+                    candidate.pop("values", None)
+                else:
+                    candidate["values"] = values
+                if check_envelope(candidate, self.run["run_id"]) != canonical(old):
                     raise ValueError("idempotency conflict")
                 return old
         event = {"event_id": event_id, "seq": state["last_seq"] + 1,

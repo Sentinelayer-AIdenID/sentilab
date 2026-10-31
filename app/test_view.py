@@ -61,22 +61,56 @@ class ViewTests(unittest.TestCase):
         return rows
 
     def get(self, route):
+        if route.startswith("/api/view/events?"):
+            route += "&format=json"
         with urlopen(f"http://127.0.0.1:{self.port}" + route, timeout=10) as response:
             return json.load(response)
 
-    def test_routes_isolate_runs_page_by_seq_and_cap_at_500(self):
-        self.seed_run("first", 501)
+    def test_jsonl_is_default_and_pages_at_256_lines(self):
+        self.seed_run("jsonl", 257)
+        with urlopen(f"http://127.0.0.1:{self.port}/api/view/events?run_id=jsonl", timeout=10) as response:
+            self.assertIn("application/x-ndjson", response.headers["content-type"])
+            lines = response.read().splitlines()
+            self.assertEqual(len(lines), 256)
+            self.assertEqual(response.headers["x-next-after"], "256")
+        self.assertEqual([json.loads(line)["event"]["seq"] for line in lines], list(range(1, 257)))
+        with urlopen(f"http://127.0.0.1:{self.port}/api/view/events?run_id=jsonl&after=256", timeout=10) as response:
+            self.assertEqual(json.loads(response.read())["event"]["seq"], 257)
+
+    def test_jsonl_byte_cap_is_inclusive_and_sequence_conflicts_never_split(self):
+        rows = self.seed_run("bytes", 66)
+        self.root.joinpath("bytes.jsonl").write_bytes(b"".join(
+            canonical(row).ljust(65535, b" ") + b"\n" for row in rows))
+        with urlopen(f"http://127.0.0.1:{self.port}/api/view/events?run_id=bytes", timeout=10) as response:
+            data = response.read()
+            self.assertEqual(len(data), 4 * 1024 * 1024)
+            self.assertEqual(len(data.splitlines()), 64)
+            self.assertEqual(response.headers["x-next-after"], "64")
+        rows = self.seed_run("conflict-page", 256)
+        changed = json.loads(json.dumps(rows[-1]))
+        changed["event"]["body"]["id"] = "conflicting-node"
+        with self.root.joinpath("conflict-page.jsonl").open("ab") as handle:
+            handle.write(canonical(changed) + b"\n")
+        with urlopen(f"http://127.0.0.1:{self.port}/api/view/events?run_id=conflict-page", timeout=10) as response:
+            self.assertEqual(len(response.read().splitlines()), 255)
+            self.assertEqual(response.headers["x-next-after"], "255")
+        with urlopen(f"http://127.0.0.1:{self.port}/api/view/events?run_id=conflict-page&after=256", timeout=10) as response:
+            # The previously seen cursor rewinds to deliver both conflicting rows.
+            self.assertEqual([json.loads(line)["event"]["seq"] for line in response.read().splitlines()], [256, 256])
+
+    def test_routes_isolate_runs_page_by_seq_and_cap_at_256(self):
+        self.seed_run("first", 257)
         self.seed_run("other", 2)
         listed = self.get("/api/view/runs")["runs"]
         self.assertEqual({r["run_id"] for r in listed}, {"first", "other"})
         first = self.get("/api/view/events?run_id=first&after=0")
-        self.assertEqual(len(first["envelopes"]), 500)
+        self.assertEqual(len(first["envelopes"]), 256)
         self.assertTrue(first["has_more"])
-        self.assertEqual(first["next_after"], 500)
-        last = self.get("/api/view/events?run_id=first&after=500")
-        self.assertEqual([e["event"]["seq"] for e in last["envelopes"]], [501])
+        self.assertEqual(first["next_after"], 256)
+        last = self.get("/api/view/events?run_id=first&after=256")
+        self.assertEqual([e["event"]["seq"] for e in last["envelopes"]], [257])
         self.assertTrue(all(e["run"]["run_id"] == "first" for e in first["envelopes"] + last["envelopes"]))
-        for query, code in (("run_id=first&limit=501", 422), ("run_id=first&after=-1", 422),
+        for query, code in (("run_id=first&limit=257", 422), ("run_id=first&after=-1", 422),
                             ("run_id=missing", 404), ("run_id=..%2Foutside", 400)):
             with self.assertRaises(HTTPError) as caught:
                 self.get("/api/view/events?" + query)
