@@ -1,0 +1,302 @@
+{
+ "centers_mm": [
+  [
+   18.0,
+   17.5
+  ],
+  [
+   27.0,
+   17.5
+  ],
+  [
+   27.0,
+   27.5
+  ],
+  [
+   18.0,
+   27.5
+  ],
+  [
+   8.5,
+   17.5
+  ],
+  [
+   36.5,
+   17.5
+  ],
+  [
+   36.5,
+   27.5
+  ],
+  [
+   8.5,
+   27.5
+  ]
+ ],
+ "decision": {
+  "by": "root (ScienceClaw #56857, #56858)",
+  "rationale": "Per root's decision (ScienceClaw #56857, #56858): chosen because plain rounding is legal on the fixture with zero repair moves and moves the dies less than the 1 mm variant; made before any new thermal outcome, and NOT chosen to fit the published routed wire."
+ },
+ "derived_from": {
+  "raw_design_hash": "93ee854b69891474775b6a2ea32c99d868f83066825a05752575584e4742f22b",
+  "raw_identity_sha256": "6e541158ef9cec4e9e8eed469325490d7902e5175e7a41925bad72f900a5fce9",
+  "reference_id": "micro150-tap25d-fig5a"
+ },
+ "design_hash": "0f806acbd50c8847d27509e4e179453cd006444c5adcd7b36413115394d0807f",
+ "displacement_from_raw": {
+  "max_euclidean_mm": 0.090389,
+  "max_per_coordinate_linf_mm": 0.0751,
+  "per_die": [
+   {
+    "die": 0,
+    "dx_mm": 0.0751,
+    "dy_mm": -0.0496,
+    "euclidean_mm": 0.090001
+   },
+   {
+    "die": 1,
+    "dx_mm": -0.0751,
+    "dy_mm": -0.0496,
+    "euclidean_mm": 0.090001
+   },
+   {
+    "die": 2,
+    "dx_mm": -0.0751,
+    "dy_mm": 0.0503,
+    "euclidean_mm": 0.090389
+   },
+   {
+    "die": 3,
+    "dx_mm": 0.0751,
+    "dy_mm": 0.0503,
+    "euclidean_mm": 0.090389
+   },
+   {
+    "die": 4,
+    "dx_mm": -0.0751,
+    "dy_mm": -0.0496,
+    "euclidean_mm": 0.090001
+   },
+   {
+    "die": 5,
+    "dx_mm": 0.0751,
+    "dy_mm": -0.0496,
+    "euclidean_mm": 0.090001
+   },
+   {
+    "die": 6,
+    "dx_mm": 0.0751,
+    "dy_mm": 0.0503,
+    "euclidean_mm": 0.090389
+   },
+   {
+    "die": 7,
+    "dx_mm": -0.0751,
+    "dy_mm": 0.0503,
+    "euclidean_mm": 0.090389
+   }
+  ]
+ },
+ "fixture": {
+  "config": "sundai_tap/configs/sys_micro150_45mm.cfg",
+  "config_sha256": "de6e3edbed848f1bd81758a92f72a1f0b6aa5ffa60aca3153a324cf7a78d9ffd",
+  "fixture_id": "micro150-45mm",
+  "frame_mm": 45.0
+ },
+ "footprints_mm": [
+  [
+   8.25,
+   9.0
+  ],
+  [
+   8.25,
+   9.0
+  ],
+  [
+   8.25,
+   9.0
+  ],
+  [
+   8.25,
+   9.0
+  ],
+  [
+   8.75,
+   8.75
+  ],
+  [
+   8.75,
+   8.75
+  ],
+  [
+   8.75,
+   8.75
+  ],
+  [
+   8.75,
+   8.75
+  ]
+ ],
+ "identity": {
+  "canonical": {
+   "centers_mm": [
+    [
+     18.0,
+     17.5
+    ],
+    [
+     27.0,
+     17.5
+    ],
+    [
+     27.0,
+     27.5
+    ],
+    [
+     18.0,
+     27.5
+    ],
+    [
+     8.5,
+     17.5
+    ],
+    [
+     36.5,
+     17.5
+    ],
+    [
+     36.5,
+     27.5
+    ],
+    [
+     8.5,
+     27.5
+    ]
+   ],
+   "die_order": "TAP fixture config order",
+   "footprints_mm": [
+    [
+     8.25,
+     9.0
+    ],
+    [
+     8.25,
+     9.0
+    ],
+    [
+     8.25,
+     9.0
+    ],
+    [
+     8.25,
+     9.0
+    ],
+    [
+     8.75,
+     8.75
+    ],
+    [
+     8.75,
+     8.75
+    ],
+    [
+     8.75,
+     8.75
+    ],
+    [
+     8.75,
+     8.75
+    ]
+   ],
+   "frame_mm": 45.0,
+   "rotated": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "schema": "sentilab-layout-identity-v1",
+   "units": {
+    "coordinates": "die centres; origin at the interposer's lower-left corner; +x right, +y up",
+    "length": "mm",
+    "rotation": "true = turned 90 degrees from the fixture config's (width, height)"
+   }
+  },
+  "content_sha256": "ecfca7f46fd422f6c35ee35cf7c9ffc97f2a0a627907a69f03891910bc248be9",
+  "hashing": "sha256 of json.dumps(canonical, sort_keys=True, separators=(',', ':'))"
+ },
+ "is_the_paper_layout": false,
+ "label": "0.5 mm snapped variant (plain nearest rounding, no repair): engineering baseline, not the paper's layout",
+ "labels": [
+  "approximate reconstruction from published figure",
+  "simulated reference, not silicon",
+  "engineering comparison and sensitivity baseline, not a paper match"
+ ],
+ "legal_on_fixture": true,
+ "limits": [
+  "A raw layout inside this variant's +/-0.5 mm per-coordinate box is not thereby a sampled point of the envelope: its one-axis stencil moves one die along one axis at a time.",
+  "Finite sensitivity probes do not prove a uniform reconstruction bound."
+ ],
+ "one_mm_snapped_for_comparison": {
+  "all_minimal_1mm_snaps": {
+   "count": 16,
+   "max_per_coordinate_linf_mm_max": 0.5503,
+   "max_per_coordinate_linf_mm_min": 0.5496
+  },
+  "max_euclidean_mm": 0.694694,
+  "max_per_coordinate_linf_mm": 0.5496,
+  "raw_inside_pm0p5_mm_per_coordinate_box": false,
+  "where": "docs/sentilab/references/micro150-tap25d-fig5a.json, field snapped"
+ },
+ "raw_inside_pm0p5_mm_per_coordinate_box": true,
+ "repair_moves": 0,
+ "role": "ENGINEERING comparison and sensitivity baseline, separately admitted (per root's decision, ScienceClaw #56857 and #56858). Never a paper match, and not part of gate zero: gate zero uses the raw 45 mm reference.",
+ "rotated": [
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false
+ ],
+ "rounding_rule": "Each centre coordinate c becomes 0.5 * floor(c / 0.5 + 0.5): the nearest multiple of 0.5 mm. An exact tie (c / 0.5 ends in .5) rounds up, toward +infinity. Rotations are kept. No repair moves.",
+ "routed_wirelength": {
+  "label": "routed (open router), not paper",
+  "router": "sundai_hotspot/tap_router.py",
+  "router_sha256": "2d9bb56c48501891817fb7c4a19c091ea5e6df9174d1afef43f4826aa79312f3",
+  "solver": {
+   "highs": "1.8.0",
+   "highs_status": "reported by the pinned SciPy build and recorded; not pinned, and not an admission of any other binary or host",
+   "scipy": "1.17.0",
+   "scipy_pinned_by": "requirements.txt"
+  },
+  "value_mm": 68867.3,
+  "vs_paper_pct": 1.745
+ },
+ "schema": "sentilab-layout-variant-v1",
+ "sources": {
+  "decode_output": "docs/sentilab/references/tap25d-figure-decode.json",
+  "decode_output_sha256": "b56acf0359b7005050c58b20a32027710a66409d23e67570940a7aa2aef361ce",
+  "decoder": "docs/sentilab/references/decode_tap25d_figures.py",
+  "decoder_sha256": "8bf98272d62c77119c334aec91d0021dc222c3b1ba56a6a1d4d620e1f3a69361",
+  "pdf_sha256": "b209f51aec188e2bcdbf6f4acc3723fb30fbc5c14cca7e70141d478edadec234"
+ },
+ "ticket": {
+  "id": "SLAB-048",
+  "name": "REF-RECON",
+  "uuid": "c3dcb49a-430a-462e-a446-f532da204c46"
+ },
+ "units": {
+  "coordinates": "die centres; origin at the interposer's lower-left corner; +x right, +y up",
+  "length": "mm",
+  "rotation": "true = turned 90 degrees from the fixture config's (width, height)"
+ },
+ "variant_id": "micro150-tap25d-fig5a-snap0p5",
+ "wire_proxy_mm": 9.5
+}

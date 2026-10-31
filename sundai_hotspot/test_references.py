@@ -1,0 +1,759 @@
+"""SLAB-048: 45 mm fixtures, rotation in every geometry consumer, reference layouts and the envelope plan.
+
+Geometry only. HotSpot never runs: the oracle test stops at the worker boundary, and the worker test
+calls TAP's input generator without the solver. The check_* functions take a module bundle so that
+test_slab048_mutations.py can rerun each one against a mutated module and require it to fail.
+"""
+from __future__ import annotations
+
+import asyncio
+import copy
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import re
+import sys
+import tempfile
+import types
+import unittest
+from dataclasses import asdict, replace
+from unittest import mock
+
+from sentilab_core import conductor as real_conductor
+from sundai_hotspot import tap_oracle as real_tap_oracle
+from sundai_hotspot import tap_references
+from sundai_hotspot import tap_router
+from sundai_hotspot.tap_oracle import REPO_ROOT, TAP_CONFIGS, TAP_ROOT, WORKER, TapGeometry
+from sundai_hotspot.tap_router import RoutedWire
+
+REAL = types.SimpleNamespace(tap_oracle=real_tap_oracle, conductor=real_conductor, worker_source=WORKER,
+                             tap_references=tap_references)
+REFERENCES_DIR = tap_references.REFERENCES_DIR
+ASCEND_50_SHA = "548562a5f49d502f4b9bd03d3a4acc4b42f225056e6d91556416079c291e06d4"
+MICRO150_50_SHA = "c31956e38b05fc0d31609656e6c92f29109ec3dee6b148b3b1c28c23c2dd1b18"
+# The Ascend 910 reference (docs/sentilab/references/ascend910-tap25d-fig6a.json).
+RAW = ((17.1501, 22.6003), (38.3497, 22.6003), (7.335, 11.1256), (21.3048, 11.1256),
+       (7.335, 33.8754), (21.3048, 33.8754))
+SNAPPED = ((17, 23), (39, 23), (7, 11), (21, 11), (7, 35), (21, 35))
+ROTATED = (True, False, True, True, True, True)
+NAMES = ("ascend910-tap25d-fig6a", "micro150-tap25d-fig5a")
+# Design hashes as committed at 063f6593 (the head warden and root reviewed); they must never move.
+PRIOR_DESIGN_HASHES = {
+    "ascend910-tap25d-fig6a": {"raw": "b9bfcd232bdbd5c10158fc680512fab874de472077811dc637b5c283e303ebee",
+                               "snapped": "a2b5cac2b8ea201c10ee7a8874d71a6ffa00f3c0116bc53c028617d6c035e03d"},
+    "micro150-tap25d-fig5a": {"raw": "93ee854b69891474775b6a2ea32c99d868f83066825a05752575584e4742f22b", "snapped": "c1d85d5d27038aaeef2fd27a66b0d32a567a278205a067d6009587a86da1623a"},
+}
+# Canonical-JSON sha256 of each record's raw and 1 mm sections as reviewed at 063f6593. SLAB-049 (PR #56) pins
+# the raw values (slab049.raw_layout_sha256) and refuses any change, so neither section may ever move.
+REVIEWED_SECTION_SHA256 = {
+    "ascend910-tap25d-fig6a": {"raw": "15c77bbeecba13a7adece9a2603329d58f33a7b4301025826c1b3c1951547a3c",
+                               "snapped": "2ae6185ca8091bcad7cc6c3b2287c1874ab94cb4e9a539c4d0b483fd16600a10"},
+    "micro150-tap25d-fig5a": {"raw": "6eba70b6307198fef85dbee0ec98055077b55e0fdae5bebb7ffe620556a457a7",
+                              "snapped": "9bf9cf5cbb12ed9e8702e280bb2eb5632dd5a8b079a22a417b27a729291ac31c"},
+}
+# Layout content hashes (tap_references.layout_identity) that the README lists. Any moved die changes them.
+LAYOUT_CONTENT_SHA256 = {
+    "ascend910-tap25d-fig6a": {"raw": "0046e17b3e33feef14e570eb6a2026e17c3eea5c232160a052be62c2ae8e470e",
+                               "snapped": "45b0f7e05b82a5eedad1679d751f5684e98ef35c936db54aeea9b475ae397703",
+                               "snap0p5": "e0c7ce9eb641ee6aea7d2015e5bc0fc5e3f38f1759c2c2252f14ad5104af022a"},
+    "micro150-tap25d-fig5a": {"raw": "6e541158ef9cec4e9e8eed469325490d7902e5175e7a41925bad72f900a5fce9",
+                              "snapped": "9fee13e0b37d830e3ae1e749cb0bc0d84679de1a6dea03e41ad2e5d8aeea6bbb",
+                              "snap0p5": "ecfca7f46fd422f6c35ee35cf7c9ffc97f2a0a627907a69f03891910bc248be9"},
+}
+# The 0.5 mm variants' design hashes; astra's review (PR #57 comment 6545653066) reports the same two values.
+SNAP0P5_DESIGN_HASHES = {"ascend910-tap25d-fig6a": "224f2ea088fc50f5eb209a44f1a82fa3704c06037456dc6976657df105c6c9e0",
+                         "micro150-tap25d-fig5a": "0f806acbd50c8847d27509e4e179453cd006444c5adcd7b36413115394d0807f"}
+# Raw-to-0.5 mm displacement maxima that root computed independently (ScienceClaw #56857).
+ASTRA_MAXIMA = {"ascend910-tap25d-fig6a": (0.1952, 0.232117), "micro150-tap25d-fig5a": (0.0751, 0.090389)}
+# Raw-to-1 mm per-coordinate maxima: the committed variant, and the worst minimal 1 mm alternative.
+ONE_MM_LINF = {"ascend910-tap25d-fig6a": (1.1246, 1.1246), "micro150-tap25d-fig5a": (0.5496, 0.5503)}
+
+
+def _json(path: Path):
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def reference(name: str) -> dict:
+    return _json(REFERENCES_DIR / f"{name}.json")
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _close(a: float, b: float, tolerance: float = 1e-9) -> bool:
+    return abs(a - b) <= tolerance
+
+
+def _lattice_free(mods, geometry):
+    return mods.tap_oracle.TapGeometry(geometry.problem, replace(geometry.legality, center_lattice_mm=None))
+
+
+def _rejects(geometry, design, needle: str) -> None:
+    try:
+        geometry.centers_for(design)
+    except ValueError as exc:  # TapLegalityError, from whichever module built the geometry
+        assert needle in str(exc), f"rejected for another reason: {exc}"
+        return
+    raise AssertionError(f"accepted a layout that breaks: {needle}")
+
+
+# --- fixtures -----------------------------------------------------------------------------------
+
+def check_45mm_fixtures_sit_next_to_unchanged_50mm_ones(mods):
+    for family, sha50 in (("ascend910", ASCEND_50_SHA), ("micro150", MICRO150_50_SHA)):
+        g50 = mods.tap_oracle.TapGeometry.load(family)
+        g45 = mods.tap_oracle.TapGeometry.load(f"{family}-45mm")
+        assert (g50.fixture_id, g45.fixture_id) == (family, f"{family}-45mm"), (g50.fixture_id, g45.fixture_id)
+        assert (g50.problem.interposer_size_mm, g45.problem.interposer_size_mm) == (50.0, 45.0)
+        assert g50.problem.config_sha256 == sha50 and g45.problem.config_sha256 != sha50
+        for field in ("widths_mm", "heights_mm", "powers_w", "connections", "link_type", "granularity_mm",
+                      "bump_halos_mm", "ambient_c"):
+            assert getattr(g45.problem, field) == getattr(g50.problem, field), field
+        assert (g50.legality.rotation, g50.legality.center_lattice_mm, g50.legality.min_die_gap_mm) == \
+            ("catalog", 1.0, 0.0), g50.legality
+        assert (g45.legality.rotation, g45.legality.center_lattice_mm, g45.legality.min_die_gap_mm) == \
+            ("per_die_90", 0.5, 0.1), g45.legality
+
+
+def check_frame_reaches_the_worker_request(mods):
+    request = _captured_request(mods)
+    assert request["tap_parameters"]["interposer_size_mm"] == 45.0, request["tap_parameters"]
+
+
+def check_request_carries_rotation(mods):
+    request = _captured_request(mods)
+    assert request["rotated"] == list(ROTATED), request["rotated"]
+    assert [list(c) for c in request["centers_mm"]] == [[float(v) for v in c] for c in SNAPPED]
+
+
+def _captured_request(mods) -> dict:
+    captured = {}
+
+    class Captured(Exception):
+        pass
+
+    async def capture(request, **_):
+        captured.update(request)
+        raise Captured()
+
+    with tempfile.TemporaryDirectory() as directory:
+        binary = Path(directory) / "hotspot-placeholder"
+        binary.write_bytes(b"placeholder: hashed for identity, never executed")
+        oracle = mods.tap_oracle.HotSpotOracle(16, 16, fixture="ascend910-45mm", hotspot_binary=binary)
+        design = oracle.design_from_centers(SNAPPED, ROTATED)
+
+        async def run():
+            try:
+                await oracle(design)
+            finally:
+                await oracle.aclose()
+
+        with mock.patch.object(mods.tap_oracle, "_run_worker", capture):
+            try:
+                asyncio.run(run())
+            except Captured:
+                pass
+    assert captured, "the oracle never reached the worker boundary"
+    return captured
+
+
+# --- rotation legality and footprint consumers ---------------------------------------------------
+
+def check_orientation_catalog_is_per_fixture(mods):
+    g45 = mods.tap_oracle.TapGeometry.load("ascend910-45mm")
+    g45.centers_for(g45.design_from_centers(SNAPPED, ROTATED))  # turned dies are in the 45 mm catalog
+    g50 = mods.tap_oracle.TapGeometry.load("ascend910")
+    _rejects(g50, g50.design_from_centers(SNAPPED, ROTATED), "TAP fixture chiplet catalog mismatch")
+    micro = mods.tap_oracle.TapGeometry.load("micro150-45mm")
+    assert [len(entry) for entry in micro.legality.orientation_catalog_mm] == [2] * 4 + [1] * 4
+
+
+def check_margin_reads_the_turned_footprint(mods):
+    g45 = mods.tap_oracle.TapGeometry.load("ascend910-45mm")
+    # HBM 3 turned (11.87 mm wide) beside the right edge: its halo crosses the 0.5 mm margin, while the
+    # catalog 7.75 mm footprint at the same centre would be legal there.
+    centers = list(SNAPPED)
+    centers[3] = (39, 8.5)
+    _rejects(g45, g45.design_from_centers(centers, ROTATED), "chiplet 3 violates the 0.5 mm interposer margin")
+    g45.centers_for(g45.design_from_centers(centers, ROTATED[:3] + (False,) + ROTATED[4:]))
+
+
+def check_raw_layout_is_physically_legal_only_as_turned(mods):
+    g45 = mods.tap_oracle.TapGeometry.load("ascend910-45mm")
+    g45.continuous_centers_for(g45.design_from_centers(RAW, ROTATED))
+
+
+def check_continuous_check_skips_only_the_lattice(mods):
+    """Gate zero validates raw geometry with continuous_centers_for: every rule except the search lattice."""
+    g45 = mods.tap_oracle.TapGeometry.load("ascend910-45mm")
+    raw = g45.design_from_centers(RAW, ROTATED)
+    assert g45.continuous_centers_for(raw) == g45._centers(raw)
+    _rejects(g45, raw, "off the 0.5 mm placement grid")  # the search gate keeps the lattice
+    # HBM 4 nudged 0.0754 mm towards Vitruvian: the bodies stay apart, the microbump halos do not.
+    for die, centre, needle in ((4, (7.335, 33.80), "overlap with their microbump halos"),
+                                (1, (39.5, 22.6003), "interposer margin")):  # inside the substrate
+        moved = list(RAW)
+        moved[die] = centre
+        try:
+            g45.continuous_centers_for(g45.design_from_centers(moved, ROTATED))
+        except ValueError as exc:
+            assert needle in str(exc), exc
+        else:
+            raise AssertionError(f"continuous check accepted a layout that breaks: {needle}")
+
+
+def check_halo_overlap_is_refused(mods):
+    g50 = _lattice_free(mods, mods.tap_oracle.TapGeometry.load("ascend910"))
+    # Nimbus 0.05 mm from Vitruvian: the bodies are apart, their microbump halos (0.09 + 0.045) are not.
+    centers = ((25, 25), (25 + 7.25 + 0.05 + 5.25, 25), (8, 8), (8, 22), (8, 36), (42, 8))
+    _rejects(g50, g50.design_from_centers(centers), "chiplets 0 and 1 overlap with their microbump halos")
+
+
+def check_min_spacing_is_a_45mm_rule(mods):
+    # HBMs 2 and 3 sit 0.095 mm apart: clear of their 0.045 mm halos, closer than TAP-2.5D's 0.1 mm gap.
+    centers = ((37, 22.5), (22, 36), (8, 8), (8 + 7.75 + 0.095, 8), (8, 22), (8, 36))
+    g45 = _lattice_free(mods, mods.tap_oracle.TapGeometry.load("ascend910-45mm"))
+    _rejects(g45, g45.design_from_centers(centers), "chiplets 2 and 3 are 0.0950 mm apart, under the 0.1 mm")
+    g50 = _lattice_free(mods, mods.tap_oracle.TapGeometry.load("ascend910"))
+    g50.centers_for(g50.design_from_centers(centers))  # the 50 mm fixture keeps halo clearance as its only gap
+
+
+def check_center_lattice(mods):
+    g45 = mods.tap_oracle.TapGeometry.load("ascend910-45mm")
+    _rejects(g45, g45.design_from_centers(RAW, ROTATED), "off the 0.5 mm placement grid")
+    half_step = list(SNAPPED)
+    half_step[0] = (17.5, 23)
+    g45.centers_for(g45.design_from_centers(half_step, ROTATED))
+
+
+def check_wire_proxy_reproduces_the_human_ascend_layout(mods):
+    physical = _lattice_free(mods, mods.tap_oracle.TapGeometry.load("ascend910-45mm"))
+    centers = physical.centers_for(physical.design_from_centers(RAW, ROTATED))
+    wire = physical.wirelength_mm(centers)
+    assert round(wire, 2) == 18.82, wire
+
+
+def check_view_geometry_uses_the_turned_footprint(mods):
+    geometry = TapGeometry.load("ascend910-45mm")
+    design = geometry.design_from_centers(SNAPPED, ROTATED)
+    rects = mods.conductor.view_geometry(design)
+    for rect, (x, y), turned, width, height in zip(rects, SNAPPED, ROTATED, geometry.problem.widths_mm,
+                                                    geometry.problem.heights_mm):
+        expected = (height, width) if turned else (width, height)
+        assert (rect["w"], rect["h"]) == expected, (rect, expected)
+        assert _close(rect["xLL"] + rect["w"] / 2, x) and _close(rect["yLL"] + rect["h"] / 2, y), rect
+
+
+def generated_inputs(worker_source: Path, geometry, centers, rotated) -> dict[str, str]:
+    """TAP input generation only, in this process. No solver, and no child process.
+
+    The worker source (the real file, or a mutant's copy) runs as a module under the real worker's path, so it
+    resolves TAP exactly as the worker does. TAP reads util/hotspot.config relative to the working directory, so
+    the call runs at TAP_ROOT. The working directory and sys.path are restored afterwards.
+    """
+    problem = geometry.problem
+    params = {"size": problem.interposer_size_mm, "granularity": problem.granularity_mm,
+              "widths": list(problem.widths_mm), "heights": list(problem.heights_mm),
+              "powers": list(problem.powers_w), "connections": [list(row) for row in problem.connections],
+              "link_type": problem.link_type, "halos": list(problem.bump_halos_mm),
+              "points": [[float(v) for v in c] for c in centers], "rotated": list(rotated)}
+    saved_path, previous = list(sys.path), os.getcwd()
+    module = types.ModuleType("tap_oracle_worker_under_test")
+    module.__file__ = str(WORKER)
+    try:
+        exec(compile(Path(worker_source).read_text(encoding="utf-8"), str(WORKER), "exec"), module.__dict__)
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory)
+            os.chdir(TAP_ROOT)
+            try:
+                module.generate_inputs(out, **params)
+            finally:
+                os.chdir(previous)
+            return {path.name: path.read_text(encoding="utf-8") for path in out.iterdir()}
+    finally:
+        sys.path[:] = saved_path
+
+
+def _units(flp: str) -> dict[str, list[float]]:
+    rows = (line.split() for line in flp.splitlines())
+    return {fields[0]: [float(v) for v in fields[1:5]] for fields in rows if fields and not fields[0].startswith("#")}
+
+
+def check_worker_writes_the_turned_floorplan(mods):
+    geometry = TapGeometry.load("ascend910-45mm")
+    units = _units(generated_inputs(mods.worker_source, geometry, SNAPPED, ROTATED)["sampleL4_ChipLayer.flp"])
+    for index, ((x, y), turned) in enumerate(zip(SNAPPED, ROTATED)):
+        width, height = geometry.problem.widths_mm[index], geometry.problem.heights_mm[index]
+        if turned:
+            width, height = height, width
+        w_m, h_m, left_m, bottom_m = units[f"Chiplet_{index}"]
+        assert _close(w_m * 1000, width) and _close(h_m * 1000, height), (index, w_m, h_m)
+        assert _close(left_m * 1000 + width / 2, x) and _close(bottom_m * 1000 + height / 2, y), (index, left_m)
+
+
+def check_worker_writes_the_45mm_package(mods):
+    files = generated_inputs(mods.worker_source, TapGeometry.load("ascend910-45mm"), SNAPPED, ROTATED)
+    substrate = _units(files["sampleL0_Substrate.flp"])["Substrate"]
+    assert _close(substrate[0], 0.045) and _close(substrate[1], 0.045), substrate
+    config = {fields[0]: fields[1] for fields in (line.split() for line in files["new_hotspot.config"].splitlines())
+              if len(fields) >= 2 and fields[0].startswith("-")}
+    # TAP scales the package with the frame: spreader 2x, sink 4x the interposer edge (metres).
+    assert _close(float(config["-s_spreader"]), 0.09) and _close(float(config["-s_sink"]), 0.18), config
+
+
+# --- reference data -----------------------------------------------------------------------------
+
+def check_layouts_keep_their_pinned_content_hashes(ref: dict):
+    """Each layout's content hash, recomputed from its own centres, is the pinned one: a moved die fails."""
+    name = ref["reference_id"]
+    for section in ("raw", "snapped"):
+        layout = ref[section]
+        identity = tap_references.layout_identity(ref["fixture"]["frame_mm"], layout["centers_mm"],
+                                                  layout["rotated"], ref["raw"]["footprints_mm"])
+        assert identity["content_sha256"] == LAYOUT_CONTENT_SHA256[name][section], f"{name}: the {section} layout moved"
+        assert ref[f"{section}_annotations"]["identity"] == identity, f"{name}: stale {section} identity"
+
+
+def check_sections_are_as_reviewed(ref: dict):
+    """raw and snapped are exactly as reviewed at 063f6593 (SLAB-049 pins raw); additions live in annotations."""
+    name = ref["reference_id"]
+    for section in ("raw", "snapped"):
+        actual = tap_references.section_sha256(ref[section])
+        assert actual == REVIEWED_SECTION_SHA256[name][section], f"{name}: the {section} section changed since 063f6593"
+        annotations = ref[f"{section}_annotations"]
+        assert annotations["section_sha256"] == actual and annotations["reviewed_at"] == tap_references.REVIEWED_AT
+
+
+def check_raw_reference_is_stored_exactly(ref: dict):
+    decode = _json(tap_references.DECODE)
+    spec = next(s for s in tap_references.REFERENCES if s["reference_id"] == ref["reference_id"])
+    chiplets = decode["figures"][spec["figure"]]["panels"][spec["panel"]]["chiplets"]
+    assert ref["raw"]["label"] == tap_references.RAW_LABEL
+    assert ref["raw"]["centers_mm"] == [c["decoded_center_mm"] for c in chiplets], "raw centres differ from the decode"
+    assert ref["raw"]["rotated"] == [c["rotated_vs_catalog"] for c in chiplets]
+    assert ref["raw"]["footprints_mm"] == [c["footprint_mm"] for c in chiplets]
+    assert ref["decoding"]["output_sha256"] == _sha256(tap_references.DECODE)
+    assert ref["decoding"]["script_sha256"] == _sha256(tap_references.DECODER) == decode["decoder_sha256"]
+    assert ref["source"]["pdf_sha256"] == decode["paper"]["pdf_sha256"]
+    # The raw layout may be illegal; what is recorded about it must be true.
+    geometry = TapGeometry.load(ref["fixture"]["fixture_id"])
+    design = geometry.design_from_centers(ref["raw"]["centers_mm"], ref["raw"]["rotated"])
+    assert design.hash == ref["raw"]["design_hash"]
+    legal, message = tap_references.legal_on(geometry, ref["raw"]["centers_mm"], ref["raw"]["rotated"])
+    assert (legal, message) == (ref["raw"]["legal_on_fixture"], ref["raw"]["fixture_gate_message"])
+
+
+def check_snapped_reference_is_legal_and_explained(ref: dict):
+    geometry = TapGeometry.load(ref["fixture"]["fixture_id"])
+    snapped = ref["snapped"]
+    rotated = snapped["rotated"]
+    assert snapped["label"] == tap_references.SNAPPED_LABEL and snapped["is_the_paper_layout"] is False
+    assert rotated == ref["raw"]["rotated"]
+    rounded = [[math.floor(v + 0.5) * 1.0 for v in c] for c in ref["raw"]["centers_mm"]]
+    assert snapped["rounded_centers_mm"] == rounded
+    assert [v["message"] for v in snapped["rounded_violations"]] == \
+        [v.message for v in geometry.layout_violations(geometry.design_from_centers(rounded, rotated))]
+    centers = copy.deepcopy(rounded)
+    for adjustment in snapped["adjustments"]:
+        centers[adjustment["die"]][0] += adjustment["dx_mm"]
+        centers[adjustment["die"]][1] += adjustment["dy_mm"]
+    assert centers == snapped["centers_mm"], "rounded centres plus the recorded adjustments are not the snapped layout"
+    design = geometry.design_from_centers(centers, rotated)
+    geometry.centers_for(design)  # the fixture's own gate
+    assert design.hash == snapped["design_hash"]
+    for adjustment in snapped["adjustments"]:
+        dropped = copy.deepcopy(centers)
+        dropped[adjustment["die"]][0] -= adjustment["dx_mm"]
+        dropped[adjustment["die"]][1] -= adjustment["dy_mm"]
+        violations = geometry.layout_violations(geometry.design_from_centers(dropped, rotated))
+        assert violations, f"die {adjustment['die']}'s adjustment is not needed"
+        assert [v.message for v in violations] == adjustment["reason"]
+    assert bool(snapped["adjustments"]) == bool(snapped["rounded_violations"])
+    deltas = [{"die": i, "dx_mm": round(s[0] - r[0], 4) + 0.0, "dy_mm": round(s[1] - r[1], 4) + 0.0}
+              for i, (r, s) in enumerate(zip(ref["raw"]["centers_mm"], centers))]
+    assert ref["raw_to_snapped_mm"] == deltas
+
+
+def check_rounding_rule(mods):
+    """ROUNDING_RULE: nearest multiple of 0.5 mm; an exact tie rounds up, toward +infinity."""
+    rule = mods.tap_references.round_to_lattice
+    cases = {7.25: 7.5, 7.75: 8.0, -0.25: 0.0, 7.2499: 7.0, 7.2501: 7.5, 17.1501: 17.0, 22.6003: 22.5,
+             33.8754: 34.0, 27.4497: 27.5, 8.5751: 8.5, 36.4249: 36.5}
+    for value, expected in cases.items():
+        assert rule(value, 0.5) == expected, (value, rule(value, 0.5), expected)
+    assert "rounds up, toward +infinity" in mods.tap_references.ROUNDING_RULE
+
+
+def _scipy_pin() -> str:
+    return re.search(r"^scipy==(\S+)$", (REPO_ROOT / "requirements.txt").read_text(encoding="utf-8"), re.M).group(1)
+
+
+def check_solver_pin_is_checked_before_any_route(mods):
+    """A SciPy other than requirements.txt's pin is refused before the first optimizer call, in every builder.
+
+    The router is stubbed and counted, and the optimizer itself is trapped, so a route that went around the
+    stub would be seen too. The matching pin is the control: the same builders then make every route and
+    record the versions they checked.
+    """
+    module = mods.tap_references
+    decode = _json(module.DECODE)
+    specs = {spec["reference_id"]: spec for spec in module.REFERENCES}
+    routes = {name: 2 + len(spec["validation_points"]) for name, spec in specs.items()}
+    builders = [(f"build_reference({name})", lambda spec=spec: module.build_reference(spec, decode), routes[name])
+                for name, spec in specs.items()]
+    builders += [(f"build_variant({name})", lambda name=name: module.build_variant(reference(name), decode), 1)
+                 for name in specs]
+    builders.append(("build_all", module.build_all, sum(routes.values()) + len(specs)))
+    for scipy_version in ("0.0.WRONG", _scipy_pin()):
+        matching = scipy_version == _scipy_pin()
+        for name, build, expected_routes in builders:
+            calls, optimizer_calls = [], []
+
+            def route(problem, centers, rotated, *, link_type=None):
+                calls.append(link_type)
+                return RoutedWire(1000.0, 0, link_type)
+
+            versions = {"scipy": scipy_version, "highs": "9.9.9"}
+            with mock.patch.object(module, "solver_versions", return_value=versions), \
+                    mock.patch.object(module, "routed_wirelength", route), \
+                    mock.patch.object(tap_router, "milp", side_effect=lambda *a, **k: optimizer_calls.append(a)):
+                if matching:
+                    built = build()
+                    checked = module.pinned_solver()
+                else:
+                    try:
+                        build()
+                    except RuntimeError as exc:
+                        assert "routed records need scipy==" in str(exc), (name, exc)
+                    else:
+                        raise AssertionError(f"{name} accepted scipy {scipy_version}")
+            assert not optimizer_calls, f"{name} reached the optimizer around the router stub"
+            if not matching:
+                assert not calls, f"{name} routed {len(calls)} times before refusing scipy {scipy_version}"
+                continue
+            assert len(calls) == expected_routes, (name, len(calls), expected_routes)
+            assert checked["highs"] == "9.9.9" and "not pinned" in checked["highs_status"]
+            if name.startswith("build_reference"):
+                assert built["round_trip"]["wire"]["solver"] == checked, name
+            elif name.startswith("build_variant"):
+                assert built["routed_wirelength"]["solver"] == checked, name
+
+
+def check_variant_manifest(variant: dict):
+    ref = reference(variant["derived_from"]["reference_id"])
+    geometry = TapGeometry.load(variant["fixture"]["fixture_id"])
+    assert variant["variant_id"] == f"{ref['reference_id']}-snap0p5"
+    assert variant["is_the_paper_layout"] is False and variant["repair_moves"] == 0
+    assert "not part of gate zero" in variant["role"] and "not a paper match" in " ".join(variant["labels"])
+    assert "NOT chosen to fit the published routed wire" in variant["decision"]["rationale"]
+    assert variant["derived_from"]["raw_identity_sha256"] == ref["raw_annotations"]["identity"]["content_sha256"]
+    assert variant["identity"]["content_sha256"] == LAYOUT_CONTENT_SHA256[ref["reference_id"]]["snap0p5"]
+    assert variant["design_hash"] == SNAP0P5_DESIGN_HASHES[ref["reference_id"]]
+    assert variant["rotated"] == ref["raw"]["rotated"] and variant["footprints_mm"] == ref["raw"]["footprints_mm"]
+    expected = [[tap_references.round_to_lattice(v, 0.5) for v in c] for c in ref["raw"]["centers_mm"]]
+    assert variant["centers_mm"] == expected, "centres are not the documented rounding of the raw layout"
+    design = geometry.design_from_centers(variant["centers_mm"], variant["rotated"])
+    geometry.centers_for(design)  # legal on the fixture as rounded: no repair
+    assert design.hash == variant["design_hash"]
+    identity = tap_references.layout_identity(geometry.problem.interposer_size_mm, variant["centers_mm"],
+                                              variant["rotated"], variant["footprints_mm"])
+    assert identity == variant["identity"]
+    moved = tap_references.displacement(ref["raw"]["centers_mm"], variant["centers_mm"])
+    assert moved == variant["displacement_from_raw"]
+    linf, euclidean = ASTRA_MAXIMA[ref["reference_id"]]
+    assert (moved["max_per_coordinate_linf_mm"], moved["max_euclidean_mm"]) == (linf, euclidean), moved
+    assert variant["raw_inside_pm0p5_mm_per_coordinate_box"] is True
+    one_mm = variant["one_mm_snapped_for_comparison"]
+    committed, worst = ONE_MM_LINF[ref["reference_id"]]
+    assert one_mm["max_per_coordinate_linf_mm"] == committed and one_mm["raw_inside_pm0p5_mm_per_coordinate_box"] is False
+    assert one_mm["all_minimal_1mm_snaps"]["max_per_coordinate_linf_mm_max"] == worst
+    assert variant["routed_wirelength"]["label"] == "routed (open router), not paper"
+    assert variant["routed_wirelength"]["solver"]["scipy"] == tap_references.solver_versions()["scipy"]
+
+
+def check_envelope_plan_is_the_exact_sampled_list(plan: dict):
+    total = 0
+    assert plan["kind"] == "SAMPLED sensitivity envelope, not a bound" and plan["grid"] == 64
+    assert all(phrase in plan["role"] for phrase in ("never a paper match", "gate zero",
+                                                      "never appended to any other job, the gate-zero job included"))
+    assert any("never append these calls to any other job, the gate-zero job included" in rule
+               for rule in plan["execution_rules"])
+    for entry in plan["references"]:
+        variant = _json(REFERENCES_DIR / f"{entry['id']}.json")
+        fixture = entry["fixture_id"]
+        geometry = TapGeometry.load(fixture)
+        assert entry["id"].endswith("-snap0p5") and fixture.endswith("-45mm") and entry["grid"] == 64
+        assert entry["fixture_config_sha256"] == _sha256(TAP_CONFIGS[fixture])
+        assert entry["base_identity_sha256"] == variant["identity"]["content_sha256"]
+        assert entry["base_design_hash"] == variant["design_hash"]
+        base, rotated = variant["centers_mm"], variant["rotated"]
+        expected_calls, expected_excluded = [], []
+        options = [(None, None, 0.0)] + [(die, axis, delta) for die in range(len(base)) for axis in ("x", "y")
+                                         for delta in (0.5, -0.5)]
+        for die, axis, delta in options:
+            centers = copy.deepcopy(base)
+            if die is not None:
+                centers[die][0 if axis == "x" else 1] += delta
+            legal, _ = tap_references.legal_on(geometry, centers, rotated)
+            (expected_calls if legal else expected_excluded).append((die, axis, delta, centers))
+        assert [(c["die"], c["axis"], c["delta_mm"], c["centers_mm"]) for c in entry["calls"]] == expected_calls
+        assert [(e["die"], e["axis"], e["delta_mm"]) for e in entry["excluded"]] == \
+            [item[:3] for item in expected_excluded]
+        for call in entry["calls"] + entry["excluded"]:
+            assert call["call_id"].startswith(f"{entry['id']}/") and "-snap0p5/" in call["call_id"], call["call_id"]
+        for call in entry["calls"]:
+            assert call["rotated"] == rotated
+            assert geometry.design_from_centers(call["centers_mm"], rotated).hash == call["design_hash"]
+        assert entry["considered"] == len(options) == entry["expected_call_count"] + entry["excluded_count"]
+        assert entry["expected_call_count"] == len(entry["calls"])
+        total += len(entry["calls"])
+    assert plan["expected_call_count"] == total
+    superseded = plan["superseded"]
+    assert (superseded["expected_call_count"], superseded["forecast_cpu_s"], superseded["proposed_cap_cpu_s"]) == \
+        (45, 215.851, 316.308), superseded
+    sizing = plan["sizing"]
+    assert sizing["lifecycle_overhead_heuristic_cpu_s_per_call"]["kind"].startswith("heuristic")
+    assert sizing["forecast_cpu_s"] < sizing["reserved_cpu_s"] < sizing["proposed_cap_cpu_s"]
+    reserve = sum(sizing["reserves_cpu_s_per_call"].values())
+    worst_call = sizing["worst_observed_grid64_call_s"] + reserve
+    expected_cap = (sizing["reserved_cpu_s"] + sizing["failed_attempt_reserve"]["cpu_s"] + worst_call +
+                    sizing["settlement_tail_cpu_s"])
+    assert abs(sizing["proposed_cap_cpu_s"] - expected_cap) < 0.01, (sizing["proposed_cap_cpu_s"], expected_cap)
+    assert sizing["failed_attempt_reserve"]["calls"] == math.ceil(0.1 * total)
+    assert plan["grant"]["granted_by"] is None and plan["grant"]["slab048_prior_solves"] == 0
+
+
+class FixtureTests(unittest.TestCase):
+    def test_45mm_fixtures_sit_next_to_unchanged_50mm_ones(self):
+        check_45mm_fixtures_sit_next_to_unchanged_50mm_ones(REAL)
+
+    def test_50mm_physics_contract_equals_the_frozen_mesh_contract(self):
+        for family in ("ascend910", "micro150"):
+            with self.subTest(fixture=family):
+                frozen = _json(REPO_ROOT / f"docs/sentilab/evidence/mesh/{family}/layouts.json")["fixture_contract"]
+                problem = asdict(TapGeometry.load(family).problem)
+                contract = {k: v for k, v in problem.items()
+                            if k not in ("fixture_id", "hotspot_binary_sha256", "generator_sha256")}
+                self.assertEqual(json.loads(json.dumps(contract)), frozen)
+
+    def test_fixture_identity_and_problem_hash_differ_per_frame(self):
+        with tempfile.TemporaryDirectory() as directory:
+            binary = Path(directory) / "hotspot-placeholder"
+            binary.write_bytes(b"placeholder: hashed for identity, never executed")
+            oracles = {fixture: real_tap_oracle.HotSpotOracle(16, 16, fixture=fixture, hotspot_binary=binary)
+                       for fixture in TAP_CONFIGS}
+        self.assertEqual(len({oracle.problem_hash for oracle in oracles.values()}), 4)
+        self.assertEqual(len({oracle.solver_version for oracle in oracles.values()}), 4)
+        for fixture, oracle in oracles.items():
+            self.assertEqual(oracle.fixture_id, fixture)
+            self.assertIn(oracle.problem.config_sha256, oracle.solver_version)
+            design = oracle.design_from_centers(((20, 20),) * len(oracle.problem.widths_mm))
+            self.assertEqual(design.width_mm, oracle.problem.interposer_size_mm)
+
+    def test_fixture_rules_fail_closed(self):
+        problem = TapGeometry.load("ascend910-45mm").problem
+        for line, bad in ((b"center_lattice_mm = 0.5", b"center_lattice_mm = 0"),
+                          (b"center_lattice_mm = 0.5", b"center_lattice_mm = half"),
+                          (b"min_die_gap_mm = 0.1", b"min_die_gap_mm = -1"),
+                          (b"rotation = per_die_90", b"rotation = free"),
+                          (b"rotation = per_die_90", b"rotation = per_die_90\nunknown_rule = 1")):
+            with self.subTest(rule=bad), tempfile.TemporaryDirectory() as directory:
+                source = TAP_CONFIGS["ascend910-45mm"].read_bytes()
+                self.assertEqual(source.count(line), 1)
+                config = Path(directory) / "sys_bad.cfg"
+                config.write_bytes(source.replace(line, bad))
+                with self.assertRaisesRegex(real_tap_oracle.HotSpotOracleError, "SentiLab fixture rule"):
+                    real_tap_oracle._load_legality(config, problem)
+
+    def test_frame_reaches_the_worker_request(self):
+        check_frame_reaches_the_worker_request(REAL)
+
+    def test_request_carries_rotation(self):
+        check_request_carries_rotation(REAL)
+
+    def test_worker_writes_the_45mm_package(self):
+        check_worker_writes_the_45mm_package(REAL)
+
+
+class RotationLegalityTests(unittest.TestCase):
+    def test_orientation_catalog_is_per_fixture(self):
+        check_orientation_catalog_is_per_fixture(REAL)
+
+    def test_margin_reads_the_turned_footprint(self):
+        check_margin_reads_the_turned_footprint(REAL)
+
+    def test_continuous_check_skips_only_the_lattice(self):
+        check_continuous_check_skips_only_the_lattice(REAL)
+        oracle_method = real_tap_oracle.HotSpotOracle.continuous_centers_for
+        self.assertIn("continuous", oracle_method.__doc__)
+
+    def test_raw_layout_is_physically_legal_only_as_turned(self):
+        check_raw_layout_is_physically_legal_only_as_turned(REAL)
+        physical = _lattice_free(REAL, TapGeometry.load("ascend910-45mm"))
+        _rejects(physical, physical.design_from_centers(RAW), "overlap")  # read unturned, it collides
+
+    def test_halo_overlap_is_refused(self):
+        check_halo_overlap_is_refused(REAL)
+
+    def test_min_spacing_is_a_45mm_rule(self):
+        check_min_spacing_is_a_45mm_rule(REAL)
+
+    def test_center_lattice(self):
+        check_center_lattice(REAL)
+
+    def test_wire_proxy_reproduces_the_human_ascend_layout(self):
+        check_wire_proxy_reproduces_the_human_ascend_layout(REAL)
+
+    def test_view_geometry_uses_the_turned_footprint(self):
+        check_view_geometry_uses_the_turned_footprint(REAL)
+        design = TapGeometry.load("ascend910-45mm").design_from_centers(SNAPPED, ROTATED)
+        self.assertEqual(real_conductor.load_design(real_conductor.design_record(design)).hash, design.hash)
+
+    def test_worker_writes_the_turned_floorplan(self):
+        check_worker_writes_the_turned_floorplan(REAL)
+
+    def test_worker_rejects_malformed_rotation_flags(self):
+        from sundai_hotspot.tap_oracle_worker import evaluate
+        geometry = TapGeometry.load("ascend910-45mm")
+        problem = asdict(geometry.problem)
+        request = {"hotspot_binary": str(Path(__file__)), "expected_binary_sha256": _sha256(Path(__file__)),
+                   "expected_source_sha256": {}, "candidate_hash": "0" * 64, "problem_hash": "0" * 64,
+                   "grid_rows": 16, "grid_cols": 16, "solver_timeout_s": 1.0,
+                   "centers_mm": [list(map(float, c)) for c in SNAPPED],
+                   "tap_parameters": {name: problem[name] for name in (
+                       "interposer_size_mm", "widths_mm", "heights_mm", "powers_w", "connections",
+                       "link_type", "granularity_mm", "bump_halos_mm", "ambient_c")}}
+        # The source-hash gate comes first; give it this test file so the request reaches the flags.
+        request["expected_source_sha256"] = {Path(__file__).resolve().relative_to(REPO_ROOT).as_posix():
+                                             _sha256(Path(__file__))}
+        for flags in ([True] * 5, [1] * 6, "all"):
+            with self.subTest(flags=flags), self.assertRaisesRegex(ValueError, "rotation flags are malformed"):
+                evaluate({**request, "rotated": flags})
+        with self.assertRaisesRegex(ValueError, "parent-owned workspace path is missing"):
+            evaluate({**request, "rotated": list(ROTATED)})
+
+
+class ReferenceDataTests(unittest.TestCase):
+    NAMES = ("ascend910-tap25d-fig6a", "micro150-tap25d-fig5a")
+
+    def test_raw_reconstructions_are_stored_exactly_and_may_be_illegal(self):
+        for name in self.NAMES:
+            with self.subTest(reference=name):
+                ref = reference(name)
+                check_raw_reference_is_stored_exactly(ref)
+                self.assertIs(ref["raw"]["legal_on_fixture"], False)
+                self.assertTrue(all(v["rule"] == "lattice" for v in ref["raw"]["violations_on_fixture"]))
+                self.assertEqual(ref["raw"]["violations_without_center_lattice"], [])
+
+    def test_cpu_dram_die_identity_agrees_with_the_netlist(self):
+        # Die identity comes from the figure's drawing order; the netlist checks it independently.
+        centres = reference("micro150-tap25d-fig5a")["raw"]["centers_mm"]
+        connections = TapGeometry.load("micro150-45mm").problem.connections
+        for cpu in range(4):
+            nearest_dram = min(range(4, 8), key=lambda dram: math.dist(centres[cpu], centres[dram]))
+            self.assertEqual(connections[cpu][nearest_dram], 1024.0)
+        ring = [(a, b) for a in range(4) for b in range(a + 1, 4) if connections[a][b]]
+        self.assertEqual(len(ring), 4)
+        for a, b in ring:  # ring links join CPUs in one row or one column, never across the diagonal
+            self.assertTrue(centres[a][0] == centres[b][0] or centres[a][1] == centres[b][1], (a, b))
+
+    def test_snapped_variants_are_legal_and_every_adjustment_is_recorded_and_needed(self):
+        for name in self.NAMES:
+            with self.subTest(reference=name):
+                check_snapped_reference_is_legal_and_explained(reference(name))
+
+    def test_labels_provenance_and_paper_numbers(self):
+        ascend, micro = (reference(name) for name in self.NAMES)
+        for ref in (ascend, micro):
+            self.assertIn("approximate reconstruction from published figure", ref["labels"])
+            self.assertIn("simulated reference, not silicon", ref["labels"])
+            self.assertIn("Not CAD, not silicon, not measured.", ref["claim_label"])
+            self.assertEqual((ref["fixture"]["frame_mm"], ref["interposer_mm"]), (45.0, 45.0))
+            self.assertEqual(ref["decoding"]["precision"]["max_center_offset_from_grid_mm"], 0.0005)
+            self.assertEqual((ref["source"]["page_index"], ref["source"]["page_number"]), (5, 6))
+            self.assertEqual(len(ref["raw"]["how_obtained"]), len(ref["dies"]))
+            for uncertainty in ref["raw"]["center_uncertainty_mm"]:
+                self.assertTrue(all(0 < u < 0.005 for u in uncertainty), uncertainty)
+            self.assertTrue(all(die["power_w"] > 0 for die in ref["dies"]))
+        self.assertTrue(any(label.startswith("SHIPPED product") and "not CAD" in label for label in ascend["labels"]))
+        self.assertTrue(any(label.startswith("human-designed RESEARCH layout") and "not a shipped package" in label
+                            for label in micro["labels"]))
+        self.assertEqual((ascend["track"], micro["track"]), ("MATCH", "BEAT"))
+        self.assertEqual(ascend["paper_reported"]["original"],
+                         {"panel": "a", "peak_temperature_c": 75.48, "routed_wirelength_mm": 16426, "link_type": "nppl"})
+        self.assertEqual(micro["paper_reported"]["original"],
+                         {"panel": "a", "peak_temperature_c": 115.94, "routed_wirelength_mm": 67686, "link_type": "nppl"})
+        self.assertEqual([(p["panel"], p["peak_temperature_c"], p["routed_wirelength_mm"])
+                          for p in ascend["validation_points"]], [("b", 75.13, 23794), ("c", 75.47, 16597)])
+        self.assertEqual([(p["panel"], p["peak_temperature_c"], p["routed_wirelength_mm"])
+                          for p in micro["validation_points"]],
+                         [("b", 113.54, 100864), ("c", 94.89, 216064), ("d", 93.89, 138956)])
+        self.assertTrue(any("dummy dies" in note for note in ascend["model_omissions"]))
+        self.assertEqual((ascend["source"]["figure"], ascend["source"]["panel"]), ("Fig. 6", "a"))
+        self.assertEqual((micro["source"]["figure"], micro["source"]["panel"]), ("Fig. 5", "a"))
+        self.assertEqual(ascend["raw"]["wire_proxy_mm"], 18.8238)
+        # The micro150 row snap (17/27 rather than 18/28) is decided below the decode precision.
+        self.assertTrue(micro["snapped"]["runner_up"]["decided_below_decode_precision"])
+
+    def test_round_trip_record(self):
+        for name in self.NAMES:
+            with self.subTest(reference=name):
+                ref = reference(name)
+                wire, temperature = ref["round_trip"]["wire"], ref["round_trip"]["temperature"]
+                self.assertEqual(wire["layout"], "raw")
+                self.assertEqual(wire["routed_wirelength_mm"], ref["raw"]["routed_wirelength_mm"])
+                self.assertEqual(wire["router_sha256"], _sha256(REPO_ROOT / wire["router"]))
+                self.assertEqual(wire["solver"], tap_references.pinned_solver())
+                self.assertEqual(wire["routed_label"], "routed (open router), not paper")
+                self.assertIn("translation", wire["note"])
+                self.assertTrue(wire["within_tolerance"])
+                self.assertLessEqual(abs(wire["difference_pct"]), wire["tolerance_pct"])
+                self.assertEqual(temperature["tolerance_k"], 1.0)
+                self.assertTrue(temperature["status"].startswith("PLANNED, NOT RUN"))
+                # The snapped variant is an experiment layout, not a wire-faithful stand-in for the paper's.
+                paper = ref["paper_reported"]["original"]["routed_wirelength_mm"]
+                self.assertGreater(abs(ref["snapped"]["routed_wirelength_mm"] - paper) / paper, 0.02)
+
+    def test_envelope_plan_is_the_exact_sampled_list(self):
+        plan = _json(tap_references.ENVELOPE_PLAN)
+        check_envelope_plan_is_the_exact_sampled_list(plan)
+        self.assertEqual(plan["expected_call_count"], 46)
+        self.assertEqual([entry["expected_call_count"] for entry in plan["references"]], [17, 29])
+
+    def test_prior_layout_identities_are_unchanged(self):
+        for name in self.NAMES:
+            with self.subTest(reference=name):
+                ref = reference(name)
+                self.assertEqual(ref["raw"]["design_hash"], PRIOR_DESIGN_HASHES[name]["raw"])
+                self.assertEqual(ref["snapped"]["design_hash"], PRIOR_DESIGN_HASHES[name]["snapped"])
+                check_layouts_keep_their_pinned_content_hashes(ref)
+                check_sections_are_as_reviewed(ref)
+                self.assertIn("gate zero", ref["raw_annotations"]["role"])
+                self.assertIs(ref["raw_annotations"]["continuous_rules_legal"], True)
+                self.assertIn("empirical estimate", ref["raw_annotations"]["uncertainty_statement"])
+                self.assertEqual(ref["raw"]["uncertainty_rule"], tap_references.RAW_UNCERTAINTY_RULE_AS_REVIEWED)
+                self.assertEqual(ref["raw_to_snapped_norms"]["max_per_coordinate_linf_mm"],
+                                 ONE_MM_LINF[name][0])
+
+    def test_rounding_rule_and_its_tie(self):
+        check_rounding_rule(REAL)
+
+    def test_solver_pin_is_checked_before_any_route(self):
+        check_solver_pin_is_checked_before_any_route(REAL)
+
+    def test_engineering_variants(self):
+        for name in self.NAMES:
+            with self.subTest(variant=name):
+                check_variant_manifest(_json(REFERENCES_DIR / f"{name}-snap0p5.json"))
+
+    def test_committed_files_equal_a_fresh_build(self):
+        for path, data in tap_references.build_all().items():
+            with self.subTest(file=path.name):
+                self.assertEqual(path.read_bytes(), data)
+
+
+if __name__ == "__main__":
+    unittest.main()
