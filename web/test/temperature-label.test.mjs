@@ -15,7 +15,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   WITHDRAWN, ILLUSTRATIVE, ACCEPTED, LABELS, NOTICE, labeller, labelFor, labelForAll, evaluatorIds, envelopeEvaluator, hasTemperature,
-  needsNotice, runTemperatureIds,
+  needsNotice, runTemperatureIds, reportNeedsNotice,
 } from "../public/temperature-label.mjs";
 import * as ref from "../../contracts/view-envelope-v0.5/view-envelope.mjs";
 import * as refPaging from "../../contracts/view-envelope-v0.6.2/paging.mjs";
@@ -210,12 +210,14 @@ test("the notice test for envelopes: any temperature that is withdrawn or unvali
   assert.equal(hasTemperature({ values: { W: { value: 1 } } }), false);
 });
 
-test("the run view: every baseline and oracle result names its identity; the replay is all withdrawn", () => {
+test("the run view: every baseline, shared sample and oracle result names its identity; the replay is all withdrawn", () => {
   const replay = JSON.parse(readFileSync(join(PUBLIC, "replay", "ascend910-seed11-32x32.json"), "utf8"));
   const ids = runTemperatureIds(replay);
   const events = Object.values(replay.result.lane_results).flatMap((lane) => lane.record).filter((e) => e.event === "baseline" || e.event === "oracle_result");
-  assert.equal(ids.length, events.length);
+  const samples = events.filter((e) => e.event === "baseline").flatMap((e) => e.payload.shared_initial_samples ?? []);
+  assert.equal(ids.length, events.length + samples.length);
   assert.equal(labelForAll(ids), LABELS.withdrawn);
+  assert.deepEqual(runTemperatureIds(replay.result), ids, "the raw run reads the same identities as the API's wrapped form");
   // A run as GET /api/runs/{id} returns it, live: one lane, a baseline and an oracle result.
   const run = (solver) => ({ id: "r", result: { lane_results: { random: { record: [
     { event: "baseline", payload: { thermal: { maximum_temperature_c: 118.9, solver_version: solver } } },
@@ -229,6 +231,41 @@ test("the run view: every baseline and oracle result names its identity; the rep
   assert.equal(labelForAll(runTemperatureIds(run("synthetic-fvm-plate-v1-grid40"))).notice, true, "the plate shows the notice too");
   assert.deepEqual(runTemperatureIds({ status: "running" }), [], "a run with no results yet shows no temperature");
   assert.deepEqual(runTemperatureIds(null), []);
+  // A baseline's shared samples are temperatures too, each with its own identity (or none).
+  const pooled = { lane_results: { random: { record: [
+    { event: "baseline", payload: { thermal: { solver_version: FIXTURE }, shared_initial_samples: [{ thermal: { solver_version: LIVE_HS7 } }, { design_hash: "x" }, null] } },
+  ] } } };
+  assert.deepEqual(runTemperatureIds(pooled), [FIXTURE, LIVE_HS7, undefined, undefined]);
+  assert.deepEqual(runTemperatureIds({ id: "r", result: pooled }), runTemperatureIds(pooled), "wrapped and raw forms alike");
+});
+
+test("the verify page's notice: a lane showing a best is labelled by every identity it was taken from", () => {
+  const lane = (best, bestIds) => ({ best, ...(bestIds === undefined ? {} : { bestIds }) });
+  assert.equal(reportNeedsNotice({ lanes: [lane(90, [FIXTURE, LIVE_HS7])] }), true, "a withdrawn input");
+  assert.equal(reportNeedsNotice({ lanes: [lane(90, [FIXTURE, CORRECTED])] }), true, "an unvalidated input");
+  assert.equal(reportNeedsNotice({ lanes: [lane(90, [FIXTURE, undefined])] }), true, "an input that names none");
+  assert.equal(reportNeedsNotice({ lanes: [lane(90, [])] }), true, "a best that names no input (fail safe)");
+  assert.equal(reportNeedsNotice({ lanes: [lane(90)] }), true, "a report without identities (fail safe)");
+  assert.equal(reportNeedsNotice({ lanes: [lane(90, [FIXTURE, FIXTURE])] }), false, "only the fixture");
+  assert.equal(reportNeedsNotice({ lanes: [lane(null, [LIVE_HS7]), lane(90, [FIXTURE])] }), false, "a lane that shows no best shows nothing");
+  assert.equal(reportNeedsNotice({ lanes: [lane(90, [FIXTURE]), lane(91, [LIVE_HS7])] }), true, "any shown lane decides");
+  assert.equal(reportNeedsNotice({ lanes: [] }), false);
+  assert.equal(reportNeedsNotice(null), false);
+});
+
+test("the verify page: one lane's record document names its identities too (the TFL-08 records)", () => {
+  const record = (rel) => JSON.parse(readFileSync(join(PUBLIC, "tfl08", "records", rel), "utf8"));
+  const affected = runTemperatureIds(record("ascend910/seed-0/random.json"));
+  assert.ok(affected.length > 1);
+  assert.equal(labelForAll(affected), LABELS.withdrawn);
+  assert.equal(labelForAll(runTemperatureIds(record("plate/seed-0/random.json"))), LABELS.unvalidated, "the plate: another evaluator");
+  assert.deepEqual(runTemperatureIds({ events: "not a list" }), []);
+  assert.equal(labelForAll(runTemperatureIds({ events: [{ event: "oracle_result", payload: { thermal: { maximum_temperature_c: 90 } } }] })),
+    LABELS.unvalidated, "a result that names no evaluator");
+  // The leaderboard's batch summary names no evaluator for its temperatures: unvalidated, so its page shows the notice.
+  const batch = JSON.parse(readFileSync(join(PUBLIC, "tfl08", "leaderboard.json"), "utf8"));
+  assert.deepEqual(runTemperatureIds(batch), []);
+  assert.equal(labelForAll([]).notice, true);
 });
 
 // ── live: a signed fixture event through the Lab view's own poller (lab-live.mjs, the code lab.js runs) ─────────
@@ -280,17 +317,21 @@ test("live: the same event from another evaluator is unvalidated, with the notic
   assert.equal(needsNotice(fixture.ordered), false);
 });
 
-test("all three pages take their notice and labels from this one module", () => {
+test("every page that shows these temperatures takes its notice and labels from this one module", () => {
   const page = (rel) => readFileSync(join(PUBLIC, rel), "utf8");
   const imports = (rel, from) => assert.match(page(rel), new RegExp(`import \\{[^}]*\\bNOTICE\\b[^}]*\\} from "${from.replace(/[.]/g, "\\.")}";`), rel);
   imports("app.js", "./temperature-label.mjs");
   imports("sentilab/lab.js", "../temperature-label.mjs");
   imports("sentilab/package/package.js", "../../temperature-label.mjs");
-  for (const rel of ["app.js", "sentilab/lab.js", "sentilab/package/package.js"]) {
+  imports("leaderboard.js", "./temperature-label.mjs");
+  imports("verify.js", "./temperature-label.mjs");
+  for (const rel of ["app.js", "sentilab/lab.js", "sentilab/package/package.js", "leaderboard.js", "verify.js"]) {
     assert.doesNotMatch(page(rel), /under review|heat-sink coupling/, `${rel} holds no copy of the notice text`);
   }
-  for (const rel of ["index.html", "sentilab/index.html", "sentilab/package/index.html"]) {
+  for (const rel of ["index.html", "sentilab/index.html", "sentilab/package/index.html", "leaderboard.html", "verify.html"]) {
     assert.match(page(rel), /<p class="wnotice" id="wnotice" role="note" hidden><\/p>/, `${rel} has the notice slot`);
   }
   assert.match(page("index.html"), /<script type="module" src="app\.js"><\/script>/, "app.js loads as a module");
+  assert.match(page("leaderboard.html"), /<script type="module" src="leaderboard\.js"><\/script>/, "leaderboard.js loads as a module");
+  assert.match(page("verify.html"), /<script type="module" src="verify\.js"><\/script>/);
 });

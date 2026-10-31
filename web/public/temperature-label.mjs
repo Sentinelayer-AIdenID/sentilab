@@ -84,18 +84,38 @@ const RULE = labeller();
 export const labelFor = RULE.labelFor;
 export const labelForAll = RULE.labelForAll;
 
-// ── the run view: a run object (GET /api/runs/{id}, or a replay file of one) ────────────────────────────────
-// The identity of every temperature it can show: one per baseline and per oracle result, in record order.
+// ── the run view and the verify page: flight records ─────────────────────────────────────────────────────
+// A run (a GET /api/runs/{id} response, a replay file of one, or the raw { run_id, lane_results } it wraps), or one
+// lane's record document ({ events, ... }, as the TFL-08 records carry it). The identity of every temperature it holds,
+// in record order: each baseline, each of its shared initial samples, and each oracle result (a committed proposal's
+// temperature is its oracle result's).
 export function runTemperatureIds(run) {
   const ids = [];
-  const lanes = isObj(run) && isObj(run.result) && isObj(run.result.lane_results) ? Object.values(run.result.lane_results) : [];
-  for (const lane of lanes) {
-    for (const e of isObj(lane) && Array.isArray(lane.record) ? lane.record : []) {
+  const result = isObj(run) && isObj(run.result) ? run.result : run;
+  const records = !isObj(result) ? []
+    : isObj(result.lane_results) ? Object.values(result.lane_results).map((lane) => (isObj(lane) ? lane.record : null))
+    : [result.events];
+  const solverOf = (thermal) => (isObj(thermal) ? thermal.solver_version : undefined);
+  for (const record of records) {
+    for (const e of Array.isArray(record) ? record : []) {
       if (!isObj(e) || (e.event !== "baseline" && e.event !== "oracle_result")) continue;
-      ids.push(isObj(e.payload) && isObj(e.payload.thermal) ? e.payload.thermal.solver_version : undefined);
+      const payload = isObj(e.payload) ? e.payload : {};
+      ids.push(solverOf(payload.thermal));
+      if (e.event === "baseline" && Array.isArray(payload.shared_initial_samples)) {
+        for (const sample of payload.shared_initial_samples) ids.push(isObj(sample) ? solverOf(sample.thermal) : undefined);
+      }
     }
   }
   return ids;
+}
+
+// The verify page's notice, from the verifier's own report (verify-core.js): each lane's shown best peak comes with the
+// identity of every temperature it was taken from (bestIds). A lane showing a best whose inputs need the notice, or that
+// names none, shows it (labelForAll: the most cautious state wins).
+export function reportNeedsNotice(report) {
+  const lanes = isObj(report) && Array.isArray(report.lanes) ? report.lanes : [];
+  return lanes.some((lane) => isObj(lane) && typeof lane.best === "number" && Number.isFinite(lane.best) &&
+    labelForAll(Array.isArray(lane.bestIds) ? lane.bestIds : []).notice);
 }
 
 // ── view envelopes (Lab and Package views) ──────────────────────────────────────────────────────────────────
