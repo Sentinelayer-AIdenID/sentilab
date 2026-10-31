@@ -196,3 +196,40 @@ pass compileall; `make -C sundai_hotspot -j4 SUPERLU=1`, `git diff --check` and 
 historical RESULT checker exit 0. No HotSpot solves or container smoke runs were
 performed for this repair. Historical evidence is unchanged; operator carry and
 container CI on the integrated head remain pending.
+
+## Review 56104: require provenance before evaluation
+
+The later review supersedes acceptance of `unknown` in new CLI evidence. The
+resolver still tolerates absent Git, but the CLI now resolves once and requires
+a full lowercase hexadecimal source revision (40 or 64 characters) before
+starting evaluation or creating the journal. Missing or malformed provenance
+raises an actionable error instructing the caller to supply `BUILD_SHA`. The
+captured revision remains outside evaluator identity. A container study must
+receive the trusted build revision before invocation; Docker integration is
+owned by the operator and was not changed here.
+
+Receipt tests supply explicit synthetic-run provenance, so they do not depend
+on Git or image build metadata. The existing provenance regression retains its
+five cases and now asserts pre-evaluation capture and rejection of unresolved
+provenance. A new regression rejects `unknown`, a branch name, an abbreviated
+revision and nonhexadecimal input without any oracle call or evidence file.
+Both tests, copied into a disposable worktree at
+`7f17847e7f78c9f0b3379cded65b20e6e38d8a64`, fail with **8 assertion failures**:
+provenance is not captured before evaluation, or evaluation starts despite
+unresolved/invalid provenance. The existing HotSpot binary was copied there
+only for oracle construction; its evaluation method was replaced by test
+returns/assertions. No solver was executed.
+
+Validation on the fix:
+
+- `.venv/bin/python -m unittest -q sundai_controller.test_mesh_study.MeshAccountingTests sundai_controller.test_mesh_study.MeshStatisticsTests sundai_controller.test_mesh_study.MeshLayoutTests sundai_controller.test_mesh_study.MeshIdentityTests sundai_controller.test_mesh_study.MeshReceiptTests`: **17 tests pass**.
+- `(cd sundai_controller && ../.venv/bin/python -m unittest -q test_controller.py test_experiment.py test_safety_property.py test_tfl08_leaderboard.py)`: **65 tests pass**, including 1,000 property cases.
+- The **5 receipt tests also pass** with `subprocess.check_output` patched to
+  raise `FileNotFoundError('git')` around the complete class.
+- Compileall on both mesh modules, `make -C sundai_hotspot -j4 SUPERLU=1`,
+  `git diff --check`, and the historical RESULT checker all exit 0.
+
+No new HotSpot solves or container smoke runs. Historical evidence is unchanged.
+The previously recorded baseline thermal failure, integrated container gate,
+publication review and micro150 work remain pending; this is not all-gates-green
+or merge clearance.

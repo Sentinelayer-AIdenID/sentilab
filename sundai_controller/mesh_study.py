@@ -15,6 +15,7 @@ import math
 import os
 from pathlib import Path
 import random
+import re
 import subprocess
 import time
 
@@ -529,9 +530,12 @@ def main(argv=None):
     output = args.output_dir or path.parent
     if (output / 'RESULT.json').exists() or (output / 'REPORT.md').exists():
         raise FileExistsError('results already exist; use a new --output-dir for reruns')
+    revision = execution_commit()
+    if not re.fullmatch(r'(?:[0-9a-f]{40}|[0-9a-f]{64})', revision):
+        raise ValueError('mesh execution requires a full source revision; set BUILD_SHA before evaluation')
     result = asyncio.run(evaluate_layouts(frozen, args.grids, args.layout_ids, evidence_dir=output))
     result['layouts_sha256'] = sha
-    result['execution_commit'] = execution_commit()
+    result['execution_commit'] = revision
     errors = check_result(result, output)
     if errors:
         raise ValueError('; '.join(errors))
