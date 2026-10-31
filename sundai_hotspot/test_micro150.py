@@ -13,13 +13,13 @@ import sys
 import tempfile
 import unittest
 
-from tap_oracle import (
+from sundai_hotspot.tap_oracle import (
     TAP_CONFIG_DEFAULT_ID,
     TAP_CONFIGS,
     HotSpotOracle,
     TapLegalityError,
 )
-from tap_oracle_worker import evaluate
+from sundai_hotspot.tap_oracle_worker import evaluate
 
 BASE_CENTERS = ((25, 25), (40, 40), (8, 9), (8, 25), (8, 41), (41, 15))
 
