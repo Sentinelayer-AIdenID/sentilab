@@ -12,8 +12,10 @@ trusted base-branch code, with a job-scoped `contents: write` permission. It res
 one immutable Git ref before the unprivileged container job may run its workload
 (except for the base-controller rollout path below).
 PR code never runs in the admission job; checkout does not persist credentials.
-Fork PRs without a writable token fail closed. No `pull_request_target` execution
-of PR code is introduced.
+Normal durable admission for fork PRs without a writable token fails closed. The
+inline rollout branch needs no write API; its separate owner authorization below
+applies regardless of token write access. No `pull_request_target` execution of PR
+code is introduced.
 
 `contents: write` is necessary for the Git database API's commit creation and
 atomic create-if-absent slot refs; `contents: read` cannot reserve a durable slot.
@@ -26,7 +28,8 @@ as data, through environment variables. The container job has read permissions.
 The PR introducing this controller cannot run a module absent from its trusted
 base. For that rollout window only, admission inspects `git ls-tree` at the
 verified base SHA. If and only if `scripts/ci_admit.py` is absent from that tree,
-inline isolated Python (stdlib only) emits a successful receipt with
+inline isolated Python (stdlib only) first validates an owner rollout authorization
+and then emits a successful receipt with
 `"mode": "bootstrap"`, `"reason": "controller absent at base <sha>"`, the base SHA,
 full run identity, and the same 100-launch/900-CPU-second local limits. It does
 **not** invent a durable slot or claim global admission was enforced. Errors in
@@ -36,6 +39,51 @@ Once the controller is on the base branch, normal durable admission is mandatory
 The exception is tied to base contents, not a claim that only one workflow can
 run during rollout. Owner accounting must include this rollout window when
 choosing the historical debit; its run artifacts provide the measured evidence.
+
+The repository owner supplies `CI_BOOTSTRAP_AUTHORIZATION` as a repository Actions
+variable. Access to edit this variable must be restricted to the allocation owner.
+It is configuration, never a secret. Missing configuration refuses bootstrap.
+This closed example authorizes **zero** runs; no actual owner approval is invented
+by the controller or this document:
+
+```json
+{
+  "schema": "ci-hotspot-bootstrap-authorization-v1",
+  "allocation_id": "56314",
+  "authorization_id": "owner-assigned-rollout-reference",
+  "approved_by": "owner approval reference",
+  "repository": "OWNER/REPOSITORY",
+  "workflow_path": ".github/workflows/ci.yml",
+  "expires_at": 1793556000,
+  "runs": []
+}
+```
+
+Before an authorized queued run reaches admission, the owner adds an entry with
+`base_sha` and the complete `identity` (repository, run_id, attempt `"1"`, job
+`"container"`, matrix `{}`, head_sha and build_sha). Use owner queue/approval
+controls to hold a run while assigning its known run ID. Every listed identity
+reserves a separate 100 launches and 900 CPU seconds, including lost/failed runs;
+IDs cannot repeat and the list is bounded to 200 entries. Source SHAs, repository,
+workflow path, attempt, and expiry must match before the inline branch runs.
+This is a bounded owner rollout allowance **outside** the durable 200-run counter,
+not global-quota enforcement and not a one-workflow or one-run guarantee.
+The owner must include every authorized rollout identity in the historical debit
+before enabling normal admission; never refund it because an artifact was lost.
+An approval added after execution is retrospective accounting, not proof of
+prospective authorization. No actual rollout authorization has been installed by
+the implementation box.
+
+Admission records the authorization reference, approver reference, expiry,
+allowlist size and SHA-256 of its canonical JSON, plus a `rollout_debit` bound to
+the run/attempt and full reservation. Archive authorization revisions and retain
+the allowlist until all terminal witnesses have been produced. The trusted
+default-branch `workflow_run` job receives the owner variable independently of
+PR artifacts. It reconciles matching bootstrap identities before consulting the
+durable slot store. A valid measured settlement remains measured; a lost or
+malformed settlement remains unknown/full charge with the same rollout debit.
+Absent/unverifiable authorization and no matching durable slot also stay
+unknown/full charge: lack of a slot cannot prove that bootstrap work was zero.
 
 `container` is a required check and has `needs: admission` plus `if: always()`.
 It downloads admission data first; its first shell step validates it **before
@@ -155,8 +203,8 @@ the supervisor or host, unknown CPU is charged at the full 900-second reservatio
   not upload. It reads durable refs and treats downloaded JSON only as data.
 
 Artifacts retain 90 days. A reviewer should archive them before that retention
-expires. The terminal witness binds the workflow conclusion to the durable slot
-and original settlement. If evidence is missing, it reports null measurements and
+expires. The terminal witness binds the workflow conclusion to the durable slot or
+independent owner rollout authorization, and the original settlement. If evidence is missing, it reports null measurements and
 full reserved charges, never an invented zero or an estimate presented as exact.
 Loss of GitHub itself can also prevent a terminal witness; the durable full slot
 reservation still cannot be reused. Exact physical consumption cannot be recovered

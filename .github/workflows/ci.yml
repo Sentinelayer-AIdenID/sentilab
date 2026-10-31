@@ -57,6 +57,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           TRUSTED_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+          CI_BOOTSTRAP_AUTHORIZATION: ${{ vars.CI_BOOTSTRAP_AUTHORIZATION }}
         run: |
           test "$(git rev-parse HEAD)" = "$TRUSTED_BASE_SHA"
           controller_entry="$(git ls-tree "$TRUSTED_BASE_SHA" -- scripts/ci_admit.py)"
@@ -66,17 +67,57 @@ jobs:
             # One-time rollout only: stdlib, no imports from the PR or base tree.
             python3 -I - <<'PY'
           import json
+          import hashlib
           import os
+          import re
+          import time
           from pathlib import Path
 
           base = os.environ['TRUSTED_BASE_SHA']
+          identity = dict(repository=os.environ['GITHUB_REPOSITORY'],
+                          run_id=os.environ['GITHUB_RUN_ID'], attempt=os.environ['GITHUB_RUN_ATTEMPT'],
+                          job='container', matrix={}, head_sha=os.environ['PR_HEAD_SHA'],
+                          build_sha=os.environ['GITHUB_SHA'])
+          authorization = json.loads(os.environ['CI_BOOTSTRAP_AUTHORIZATION'])
+          if (not isinstance(authorization, dict)
+                  or authorization.get('schema') != 'ci-hotspot-bootstrap-authorization-v1'
+                  or authorization.get('allocation_id') != '56314'
+                  or authorization.get('repository') != identity['repository']
+                  or authorization.get('workflow_path') != '.github/workflows/ci.yml'
+                  or not os.environ['GITHUB_WORKFLOW_REF'].startswith(
+                      identity['repository'] + '/.github/workflows/ci.yml@')
+                  or not isinstance(authorization.get('authorization_id'), str)
+                  or not authorization['authorization_id']
+                  or not isinstance(authorization.get('approved_by'), str) or not authorization['approved_by']
+                  or type(authorization.get('expires_at')) is not int
+                  or not time.time() < authorization['expires_at'] <= 1793556000):
+              raise ValueError('missing or invalid owner rollout authorization')
+          runs = authorization.get('runs')
+          if not isinstance(runs, list) or not 1 <= len(runs) <= 200:
+              raise ValueError('owner rollout must have a bounded run allowlist')
+          seen = set()
+          for entry in runs:
+              record = entry['identity']
+              if (record['repository'] != identity['repository'] or record['attempt'] != '1'
+                      or record['job'] != 'container' or record['matrix'] != {}
+                      or not isinstance(record['run_id'], str) or not record['run_id'].isdecimal()
+                      or record['run_id'] in seen
+                      or not all(isinstance(sha, str) and re.fullmatch(r'[a-f0-9]{40}', sha)
+                                 for sha in (entry['base_sha'], record['head_sha'], record['build_sha']))):
+                  raise ValueError('invalid or duplicate owner rollout run')
+              seen.add(record['run_id'])
+          if not any(entry == dict(identity=identity, base_sha=base) for entry in runs):
+              raise ValueError('this run/source is not authorized for bootstrap')
+          provenance = {key: authorization[key] for key in
+                        ('authorization_id', 'approved_by', 'expires_at', 'workflow_path')}
+          provenance.update(authorized_runs=len(runs), sha256=hashlib.sha256(
+              json.dumps(authorization, sort_keys=True, separators=(',', ':')).encode()).hexdigest())
+          debit = dict(run_id=identity['run_id'], attempt='1', charged_launches=100,
+                       charged_cpu_seconds=900, scope='owner rollout; outside durable run counter')
           receipt = dict(mode='bootstrap', reason='controller absent at base ' + base,
                          base_sha=base, state='admitted', allocation_id='56314',
                          launch_reservation=100, cpu_reservation_seconds=900,
-                         identity=dict(repository=os.environ['GITHUB_REPOSITORY'],
-                                       run_id=os.environ['GITHUB_RUN_ID'],
-                                       attempt=os.environ['GITHUB_RUN_ATTEMPT'], job='container', matrix={},
-                                       head_sha=os.environ['PR_HEAD_SHA'], build_sha=os.environ['GITHUB_SHA']))
+                         identity=identity, bootstrap_authorization=provenance, rollout_debit=debit)
           path = Path(os.environ['RUNNER_TEMP']) / 'allocation/admission.json'
           path.parent.mkdir(parents=True, exist_ok=True)
           path.write_text(json.dumps(receipt, indent=2) + '\n')

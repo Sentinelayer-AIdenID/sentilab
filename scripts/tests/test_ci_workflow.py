@@ -33,12 +33,21 @@ def shell_step(job_name, name):
 
 
 class WorkflowTests(unittest.TestCase):
+    def authorization(self, base_sha='c' * 40):
+        return {'schema': 'ci-hotspot-bootstrap-authorization-v1', 'allocation_id': '56314',
+                'authorization_id': 'fake-owner-rollout', 'approved_by': 'fake owner approval',
+                'repository': IDENTITY.repository, 'workflow_path': '.github/workflows/ci.yml',
+                'expires_at': 1793556000,
+                'runs': [{'identity': asdict(IDENTITY), 'base_sha': base_sha}]}
+
     def environment(self, directory):
         return dict(os.environ, RUNNER_TEMP=str(directory),
                     GITHUB_REPOSITORY=IDENTITY.repository, GITHUB_RUN_ID=IDENTITY.run_id,
                     GITHUB_RUN_ATTEMPT='1', GITHUB_SHA=IDENTITY.build_sha,
                     PR_HEAD_SHA=IDENTITY.head_sha, TRUSTED_BASE_SHA='c' * 40,
-                    ADMISSION_RESULT='success')
+                    ADMISSION_RESULT='success',
+                    GITHUB_WORKFLOW_REF=IDENTITY.repository + '/.github/workflows/ci.yml@refs/heads/main',
+                    CI_BOOTSTRAP_AUTHORIZATION=json.dumps(self.authorization()))
 
     def receipt(self):
         return {'state': 'admitted', 'allocation_id': '56314', 'slot': 3,
@@ -100,7 +109,7 @@ class WorkflowTests(unittest.TestCase):
         process = self.validate(json.dumps(self.receipt()))
         self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
 
-    def bootstrap(self, *, controller=None, remove_controller=False):
+    def bootstrap(self, *, controller=None, remove_controller=False, authorization='valid'):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             tree = directory / 'base'
@@ -118,12 +127,34 @@ class WorkflowTests(unittest.TestCase):
                 (tree / 'scripts/ci_admit.py').unlink()
             environment = self.environment(directory)
             environment['TRUSTED_BASE_SHA'] = base_sha
+            environment['CI_BOOTSTRAP_AUTHORIZATION'] = (
+                json.dumps(self.authorization(base_sha)) if authorization == 'valid' else authorization)
+            if callable(authorization):
+                environment['CI_BOOTSTRAP_AUTHORIZATION'] = json.dumps(authorization(self.authorization(base_sha)))
             process = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell_step(
                 'admission', 'Reserve global run slot from trusted allocation controller')],
                 cwd=tree, env=environment, text=True, capture_output=True, check=False)
             path = directory / 'allocation/admission.json'
             receipt = json.loads(path.read_text()) if path.exists() else None
             return process, receipt, base_sha
+
+    def test_bootstrap_requires_bounded_owner_authorization_and_records_run_debit(self):
+        for authorization in ('', '{}', lambda a: dict(a, runs=[]), lambda a: dict(a, expires_at=0),
+                              lambda a: dict(a, workflow_path='other.yml'),
+                              lambda a: dict(a, repository='other/repo'),
+                              lambda a: dict(a, runs=a['runs'] * 2),
+                              lambda a: dict(a, runs=a['runs'] * 201),
+                              lambda a: dict(a, runs=[dict(a['runs'][0], base_sha='d' * 40)])):
+            with self.subTest(authorization=authorization):
+                process, receipt, _ = self.bootstrap(authorization=authorization)
+                self.assertNotEqual(process.returncode, 0)
+                self.assertIsNone(receipt)
+        process, receipt, _ = self.bootstrap()
+        self.assertEqual(process.returncode, 0, process.stderr)
+        self.assertEqual(receipt['bootstrap_authorization']['authorization_id'], 'fake-owner-rollout')
+        self.assertEqual(receipt['rollout_debit']['run_id'], IDENTITY.run_id)
+        self.assertEqual(receipt['rollout_debit']['charged_launches'], 100)
+        self.assertEqual(receipt['rollout_debit']['charged_cpu_seconds'], 900)
 
     def test_absent_controller_at_base_bootstraps_without_pr_imports(self):
         process, receipt, base_sha = self.bootstrap()

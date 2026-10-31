@@ -31,6 +31,7 @@ jobs:
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
+          CI_BOOTSTRAP_AUTHORIZATION: ${{ vars.CI_BOOTSTRAP_AUTHORIZATION }}
         run: python3 -m scripts.ci_reconcile "$RUNNER_TEMP/allocation-terminal"
       - name: Upload terminal witness even after runner loss
         if: always()
