@@ -68,23 +68,61 @@ jobs:
 
   container:
     needs: admission
+    if: always() # required status must fail, never skip, on upstream refusal/failure
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
       actions: read
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          persist-credentials: false
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        continue-on-error: true # the following validator turns absence into an explicit failure
         with:
           name: allocation-admission-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/allocation
+      - name: Validate admission before any workload
+        id: admission-check
+        env:
+          ADMISSION_RESULT: ${{ needs.admission.result }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          TRUSTED_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          try:
+              if os.environ['ADMISSION_RESULT'] != 'success':
+                  raise ValueError('admission job did not succeed')
+              receipt = json.loads((Path(os.environ['RUNNER_TEMP']) / 'allocation/admission.json').read_text())
+              if not isinstance(receipt, dict) or receipt.get('state') != 'admitted':
+                  raise ValueError('missing or refused admission')
+              expected = dict(repository=os.environ['GITHUB_REPOSITORY'], run_id=os.environ['GITHUB_RUN_ID'],
+                              attempt=os.environ['GITHUB_RUN_ATTEMPT'], job='container', matrix={},
+                              head_sha=os.environ['PR_HEAD_SHA'], build_sha=os.environ['GITHUB_SHA'])
+              if receipt.get('identity') != expected or expected['attempt'] != '1':
+                  raise ValueError('invalid admission identity or rerun attempt')
+              if (receipt.get('allocation_id') != '56314' or receipt.get('launch_reservation') != 100
+                      or receipt.get('cpu_reservation_seconds') != 900):
+                  raise ValueError('invalid admission limits')
+              if (receipt.get('mode', 'enforced') != 'enforced' or type(receipt.get('slot')) is not int
+                      or not 1 <= receipt['slot'] <= 200):
+                  raise ValueError('invalid durable admission slot')
+          except (OSError, ValueError, TypeError, KeyError) as exc:
+              print('Container admission failed:', exc, file=sys.stderr)
+              sys.exit(1)
+          print('Container admission validated')
+          PY
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        id: checkout
+        with:
+          persist-credentials: false
       - name: Meter build, required smoke suites, health and origin-lock checks
         run: sudo --preserve-env=GITHUB_RUN_ID python3 -m scripts.ci_cpu_meter run "$RUNNER_TEMP/allocation" bash scripts/ci_container_job.sh
       - name: Settle interrupted reservations after any terminal state
-        if: always()
+        if: always() && steps.admission-check.outcome == 'success' && steps.checkout.outcome == 'success'
         run: sudo python3 -m scripts.ci_cpu_meter recover "$RUNNER_TEMP/allocation"
       - name: Upload append-only launch journal and CPU settlement
         if: always()
