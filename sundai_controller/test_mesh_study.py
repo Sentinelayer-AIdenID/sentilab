@@ -25,7 +25,9 @@ def fake_thermal_result(oracle, design):
         grid_rows=oracle.grid_rows, grid_cols=oracle.grid_cols, ambient_c=40.0,
         solver_seconds=0.05, evaluation_seconds=0.1, input_generation_seconds=0.02,
         input_sha256=(('sample.ptrace', hashlib.sha256(b'synthetic-input').hexdigest()),),
-        all_layers_peak_c=101.0)
+        all_layers_peak_c=101.0,
+        # SLAB-002b: results carry the fixture identity the oracle was built for.
+        fixture_id=oracle.problem.fixture_id, config_sha256=oracle.problem.config_sha256)
 
 
 class MeshAccountingTests(unittest.TestCase):
