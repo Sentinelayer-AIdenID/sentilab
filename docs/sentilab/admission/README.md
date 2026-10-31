@@ -1,20 +1,33 @@
 # Model admission (SLAB-003)
 
 The shipped `registry.json` is empty. Lead/judge model calls through the lab
-boundary are refused until Carter's reviewed decisions are entered. A successful
-probe alone never admits a model.
+boundary are refused until a complete reviewed admission record with proven
+payer and entitlement evidence is entered. A successful probe alone never admits
+a model.
 This is a human credential/entitlement control, not the superseded per-step
 planning approval gate. No provider credentials or live provider adapter ship
 with this change; the conductor remains AI-off and accepts exact replay labs only.
 The legacy Jev intake router is a separate, existing signal-routing path, not a
 scientific lead or judge; its configuration is outside this change.
 
-## Human decisions still required
+## Authority and required evidence — 2026-10-31
 
-Warden must obtain and record Carter's Claude entitlement for boxes, payer,
-USD caps for each arm and run, and allowed lead/judge model IDs and pinned
-versions. Record the entitlement **name only**, never its value. Provisioning
-and enabling credentials happen outside this registry, through human controls.
+Room #56463/#56465 in Senti session `608657e4-5e60-4bb6-9353-9611b70c1c66`
+record the current authority: Warden owns routine technical selection of
+lead/judge model IDs and pinned versions, and sets prospective caps per job and
+arm. Carter's verbatim budget answer was "unlimited. I need this to win." as
+relayed with provenance by `gpt-astra-carter` in #56463 (Codex thread
+`01a18fae-1096-7293-adfd-d03f904965d9`, item
+`call_RdxZlY3BliXZaNT47Mf4CUrb`). This means no overall dollar ceiling; each
+admission record still requires explicit arm/run USD caps and prices.
+
+The remaining human-only dependency is secure entitlement/credential control
+(including Claude enablement in boxes) and proven payer/route evidence.
+The registry stays empty until a complete reviewed record carries proven payer
+and entitlement evidence. Record the entitlement **name only**, never its value.
+Provisioning and enabling credentials happen outside this registry, through
+human controls. Scientific model calls still require headroom PASS and the
+SLAB-041 experiment freeze. No third-party credits may be used.
 
 The standing fourth-lab fallback is `deepseek-v4-pro` if Claude entitlement is
 absent on 2026-10-31 at 15:00 UTC. This scheduling decision is not admission:

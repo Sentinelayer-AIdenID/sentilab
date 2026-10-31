@@ -58,8 +58,15 @@ transport fixtures; admission, pricing and accounting are not mocked.
 | Save raw probe response | ProbeRecorderTests.test_cli_projects_only_nonsecret_evidence |
 | Accept malformed probe input | ProbeRecorderTests.test_failure_status_is_evidence_and_malformed_input_never_overwrites |
 
-Carter's actual credentials, entitlement, payer/caps and model list remain
-unresolved. Production transport enforcement and enabling live labs are outside
+As of 2026-10-31, room #56463/#56465 delegate routine technical model selection
+and prospective job/arm caps to Warden; Carter's budget answer establishes no
+overall dollar ceiling (verbatim quote and relay provenance in
+[README authority](README.md#authority-and-required-evidence--2026-10-31)).
+Secure entitlement/credential control and proven payer/route evidence remain
+required, and the registry stays empty pending complete reviewed admission
+records with that evidence. Scientific model calls still require headroom PASS
+and the SLAB-041 experiment freeze; no third-party credits may be used.
+Production transport enforcement and enabling live labs are outside
 this patch. The fourth-lab fallback does not bypass admission. Warden's independent
 refusal/cap proof and human review remain required before release.
 
