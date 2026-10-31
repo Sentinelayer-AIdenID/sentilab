@@ -118,3 +118,59 @@ class MeterTests(unittest.TestCase):
             result = monitor(None, Process([]), CPUAccount(0, 0, 0), cancelled=lambda: False,
                              violated=lambda value=violation: value, wall_clock=lambda value=wall: value)
             self.assertEqual(result, (state, 1))
+
+    def test_bootstrap_uses_normal_meter_and_preserves_mode_in_settlement(self):
+        import json
+        import sys
+        from unittest.mock import patch
+
+        from scripts.ci_cpu_meter import recover, run
+        from scripts.tests.test_ci_workflow import WorkflowTests
+
+        # The receipt comes from the actual workflow bootstrap shell, not a copy.
+        process, admission, _ = WorkflowTests().bootstrap()
+        self.assertEqual(process.returncode, 0, process.stderr)
+        for exitcode in (0, 7):
+            with self.subTest(exitcode=exitcode), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                group = directory / 'group'
+                (group / 'host').mkdir(parents=True)
+                (group / 'cpu.stat').write_text('usage_usec 0\n')
+                (group / 'cgroup.events').write_text('populated 0\n')
+                ledger_dir = directory / 'ledger'
+                ledger_dir.mkdir()
+                (ledger_dir / 'admission.json').write_text(json.dumps(admission))
+                command = [sys.executable, '-c',
+                           ('import pathlib,sys; pathlib.Path(sys.argv[1]).write_text("usage_usec 1250000\\n"); '
+                            'sys.exit(int(sys.argv[2]))'), str(group / 'cpu.stat'), str(exitcode)]
+                with patch('scripts.ci_cpu_meter.create_group', return_value=group), \
+                     patch('scripts.ci_cpu_meter.time.time', return_value=1793448000):
+                    self.assertEqual(run(ledger_dir, admission, command), exitcode)
+                result = json.loads((ledger_dir / 'settlement.json').read_text())
+                self.assertEqual(result['state'], 'success' if exitcode == 0 else 'failure')
+                self.assertEqual(result['cpu']['cgroup_cpu_seconds'], 1.25)
+                self.assertEqual(result['admission'], admission)
+                self.assertEqual((group / 'cgroup.kill').read_text(), '1')
+                recover(ledger_dir, root=directory)
+                self.assertEqual(json.loads((ledger_dir / 'settlement.json').read_text()), result)
+
+    def test_bootstrap_orphan_recovery_preserves_mode_and_reserved_charge(self):
+        import json
+        from dataclasses import asdict
+
+        from scripts.ci_allocation import Ledger
+        from scripts.ci_cpu_meter import recover
+        from scripts.tests.test_ci_allocation import IDENTITY
+
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            admission = {'state': 'admitted', 'mode': 'bootstrap', 'identity': asdict(IDENTITY)}
+            (directory / 'admission.json').write_text(json.dumps(admission))
+            ledger = Ledger(directory / 'events.jsonl', IDENTITY)
+            ledger.reserve('fake')
+            recover(directory, root=directory)
+            result = json.loads((directory / 'settlement.json').read_text())
+            self.assertEqual(result['state'], 'interrupted')
+            self.assertEqual(result['launches_settled'], 1)
+            self.assertEqual(result['cpu']['charged_cpu_seconds'], 900)
+            self.assertEqual(result['admission'], admission)
