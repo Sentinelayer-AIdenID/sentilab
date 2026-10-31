@@ -1,5 +1,5 @@
-// node --test web/test/deck-data.test.mjs
-// The SentiLab deck (web/public/sentilab/deck/) shows only what the dated progress packet says:
+// node --test scripts/deck-data.test.mjs   (CI: the contracts job)
+// The SentiLab deck (deck/, outside web/public, so it is not published) shows only what the dated progress packet says:
 //   - deck-data.json (and its script copy deck-data.js) is exactly what scripts/build-deck-data.mjs builds from the newest packet;
 //   - every fact has a dated source time, and a missing value is PENDING, never a number;
 //   - every number on a slide (rendered by deck.js's own renderHtml) exists in deck-data.json, and its source time is on that slide;
@@ -9,12 +9,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { join, sep } from "node:path";
+import { pathToFileURL } from "node:url";
 
-import { buildFromPacket, newestPacketId, serialize, PENDING } from "../../scripts/build-deck-data.mjs";
+import { buildFromPacket, newestPacketId, serialize, PENDING, DECK_DIR } from "./build-deck-data.mjs";
 
 const require = createRequire(import.meta.url);
-const Deck = require("../public/sentilab/deck/deck.js");
-const DIR = new URL("../public/sentilab/deck/", import.meta.url);
+const Deck = require(join(DECK_DIR, "deck.js"));
+const DIR = pathToFileURL(DECK_DIR + sep);
 const read = (f) => readFileSync(new URL(f, DIR), "utf8");
 const data = JSON.parse(read("deck-data.json"));
 const html = read("index.html");

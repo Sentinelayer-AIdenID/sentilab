@@ -6,9 +6,10 @@
 //   node scripts/build-deck-data.mjs --check         # exit 1 if the committed files differ from a fresh build
 //
 // Inputs: progress.json (structured facts) and PAGE-COPY.md (the scoped wording, and the GB10 cap it states).
-// Output: web/public/sentilab/deck/deck-data.json, plus deck-data.js (the same object as a script, so the deck also
-// opens from a file:// path). The build is deterministic: no wall-clock time is read, so a rebuild of the same packet
-// gives the same bytes.
+// Output: deck/deck-data.json, plus deck-data.js (the same object as a script, so the deck also opens from a file://
+// path). The build is deterministic: no wall-clock time is read, so a rebuild of the same packet gives the same bytes.
+// The deck lives in deck/ at the repository root, outside web/public, so merging it publishes nothing. DECK_DIR is
+// the one place that names that directory: the export script and the deck test both read it from here.
 //
 // Rules:
 //   - A value the packet does not state is null, and the deck shows PENDING for it. Nothing is estimated or filled in.
@@ -23,7 +24,7 @@ import { fileURLToPath } from "node:url";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PACKETS = join(REPO, "docs", "sentilab");
-const OUT_DIR = join(REPO, "web", "public", "sentilab", "deck");
+export const DECK_DIR = join(REPO, "deck");
 export const PENDING = "— (pending freeze)";
 const DECK = { title: "SentiLab", version: "draft v1", event: "ScienceClaw hackathon" };
 
@@ -297,7 +298,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const at = args.indexOf("--packet");
   const packetId = at >= 0 ? args[at + 1] : newestPacketId();
   const { json, js } = serialize(buildFromPacket(packetId));
-  const jsonPath = join(OUT_DIR, "deck-data.json"), jsPath = join(OUT_DIR, "deck-data.js");
+  const jsonPath = join(DECK_DIR, "deck-data.json"), jsPath = join(DECK_DIR, "deck-data.js");
   if (args.includes("--check")) {
     const same = (p, s) => existsSync(p) && readFileSync(p, "utf8") === s;
     if (!same(jsonPath, json) || !same(jsPath, js)) { console.error(`deck-data is stale for ${packetId}: run node scripts/build-deck-data.mjs`); process.exit(1); }

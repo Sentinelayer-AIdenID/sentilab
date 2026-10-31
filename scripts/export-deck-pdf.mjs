@@ -3,19 +3,21 @@
 //
 //   PLAYWRIGHT_DIR=<dir containing node_modules/playwright> node scripts/export-deck-pdf.mjs [--shots <dir>] [--no-pdf]
 //
-// Run scripts/build-deck-data.mjs first. The deck is served from web/public by a throwaway local server, so it reads
-// deck-data.json exactly as a browser would. Output: docs/sentilab/deck/SentiLab-deck-<UTC date>.pdf.
+// Run scripts/build-deck-data.mjs first. The deck directory (DECK_DIR, deck/) is served by a throwaway local server, so
+// it reads deck-data.json exactly as a browser would. Output: docs/sentilab/deck/SentiLab-deck-<UTC date>.pdf, one page
+// per slide and nothing else: the speaker notes are not printed (they are in deck-data.json and the deck's N panel).
 // --shots <dir> also writes every slide at 1920x1080 and 1280x720 (plus one with the notes panel) and a report.json.
 // Each slide is checked: nothing outside its block or the canvas, no clipped text, smallest font size, pending values.
-// Exit 1 when a check fails or the PDF page count differs from the slide count.
+// Exit 1 when a check fails, the browser logs an error or a request fails, or the PDF page count differs from the slide
+// count.
 import { createServer } from "node:http";
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { DECK_DIR } from "./build-deck-data.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const PUBLIC = join(REPO, "web", "public");
 const OUT_DIR = join(REPO, "docs", "sentilab", "deck");
 const MIN_FONT = 22; // canvas px at 1920x1080
 
@@ -35,8 +37,8 @@ const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": 
 function serve() {
   const server = createServer((req, res) => {
     const url = new URL(req.url, "http://localhost");
-    let p = normalize(join(PUBLIC, decodeURIComponent(url.pathname)));
-    if (!p.startsWith(PUBLIC + sep) && p !== PUBLIC) { res.writeHead(403).end(); return; }
+    let p = normalize(join(DECK_DIR, decodeURIComponent(url.pathname)));
+    if (!p.startsWith(DECK_DIR + sep) && p !== DECK_DIR) { res.writeHead(403).end(); return; }
     if (existsSync(p) && statSync(p).isDirectory()) p = join(p, "index.html");
     if (req.method !== "GET" || !existsSync(p)) { res.writeHead(404).end(); return; }
     res.writeHead(200, { "content-type": TYPES[extname(p)] ?? "application/octet-stream", "cache-control": "no-store" }).end(readFileSync(p));
@@ -90,7 +92,7 @@ function checkSlide(k) {
 
 const { chromium } = await loadPlaywright();
 const server = await serve();
-const base = `http://127.0.0.1:${server.address().port}/sentilab/deck/`;
+const base = `http://127.0.0.1:${server.address().port}/`;
 const browser = await chromium.launch();
 const report = { base, shots: [], slides: [], console: [], pdf: null, failures: [] };
 const fail = (m) => report.failures.push(m);
@@ -100,6 +102,8 @@ async function open(w, h, query = "") {
   const page = await ctx.newPage();
   page.on("console", (m) => { if (["error", "warning"].includes(m.type())) report.console.push(`${w}x${h}: ${m.text()}`); });
   page.on("pageerror", (e) => report.console.push(`${w}x${h}: pageerror ${e.message}`));
+  page.on("requestfailed", (r) => report.console.push(`${w}x${h}: request failed ${r.url()} ${r.failure()?.errorText ?? ""}`));
+  page.on("response", (r) => { if (r.status() >= 400) report.console.push(`${w}x${h}: HTTP ${r.status()} ${r.url()}`); });
   await page.goto(base + query, { waitUntil: "networkidle" });
   await page.waitForFunction(() => window.__deck?.ready === true);
   return { ctx, page };
@@ -149,7 +153,7 @@ try {
   await browser.close();
   server.close();
 }
-if (report.console.length) fail(`browser console: ${report.console.join(" | ")}`);
+if (report.console.length) fail(`browser console or requests: ${report.console.join(" | ")}`);
 if (SHOTS) writeFileSync(join(SHOTS, "report.json"), JSON.stringify(report, null, 2) + "\n");
 for (const s of report.slides) console.log(`${s.id.padEnd(14)} min font ${s.minFont.toFixed(1)}px${s.pending.length ? ` · pending: ${s.pending.join(", ")}` : ""}${s.issues.length ? ` · ${s.issues.length} issue(s)` : ""}`);
 if (report.pdf) console.log(`PDF ${report.pdf.path} · ${report.pdf.pages} pages`);

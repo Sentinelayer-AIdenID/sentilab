@@ -95,6 +95,22 @@ h1.hero { font-size: 76px; line-height: 1.06; margin: 0 0 44px; }
 .hl-banner { left: .6%; top: 12%; width: 98.6%; height: 3.9%; }
 .hl-frozen { left: 91.5%; top: 17.1%; width: 7.2%; height: 3%; border-color: var(--amber); box-shadow: 0 0 0 4px rgba(231, 196, 143, .22), 0 0 18px rgba(231, 196, 143, .35); }
 .hl-row { left: 1.4%; top: 91.4%; width: 97.2%; height: 3.1%; }
+/* Callout: the ringed banner's fine print, enlarged from the same committed screenshot (img/lab-frozen.png, 1920x1080)
+   by CSS crops; no new image. The banner's one line (text at x 36-1190, y 145-160 of the image, 13.5px mono in the
+   Lab view) is cut at word gaps into three windows at scale 1.75 (img width 1920 x 1.75 = 3360px; offsets = crop
+   origin x 1.75), each starting 4px before its first glyph so the lines align; its type reads at about 23.6px on the
+   canvas, above the deck's 22px floor. Windows, all at y 140-164:
+   x 32-399 "chain broken ... seq 6 ·", x 403-748 "seq 8 is unverified ... break.", x 753-1194 "Later envelopes ...".
+   It sits over the panels in the middle of the shot; the three rings stay visible. */
+.zoom { position: absolute; left: 24px; top: 104px; display: flex; flex-direction: column; align-items: flex-start; padding: 8px 14px 12px;
+        border: 2px solid var(--red); border-radius: 10px; background: var(--rd-bg); box-shadow: 0 0 0 4px rgba(240, 147, 122, .22), 0 18px 40px rgba(0, 0, 0, .6); }
+.zoom::before { content: ""; position: absolute; left: 40px; top: -27px; width: 3px; height: 25px; background: var(--red); }
+.zoom .eyebrow { color: #f6c3b2; margin: 0 0 4px 7px; }
+.zoom .zl { border: 0; border-radius: 0; box-shadow: none; background: var(--rd-bg); height: 42px; }
+.zoom .zl img { position: absolute; max-width: none; width: 3360px; top: -245px; }
+.zl-1 { width: 642.25px; } .zl-1 img { left: -56px; }
+.zl-2 { width: 603.75px; } .zl-2 img { left: -705.25px; }
+.zl-3 { width: 771.75px; } .zl-3 img { left: -1317.75px; }
 .shot figcaption b { color: var(--text); }
 .fx { display: block; margin-top: 8px; font: 22px var(--mono); color: var(--amber); }
 
@@ -134,7 +150,9 @@ h1.hero { font-size: 76px; line-height: 1.06; margin: 0 0 44px; }
 .ratio .lbl { font: 600 22px var(--mono); text-transform: uppercase; letter-spacing: .14em; color: var(--eyebrow); margin-top: 4px; }
 .caveat { margin: 0 !important; padding: 12px 18px; border-left: 6px solid var(--amber); background: var(--am-bg); border-radius: 4px 10px 10px 4px; font-size: 26px !important; color: #f3e3c7 !important; }
 .caveat b { color: var(--amber); }
-.verdict { margin: 34px 0 0 !important; font: 700 72px/1.05 var(--display) !important; letter-spacing: -.02em; color: var(--amber) !important; }
+/* One line, with room to spare: at 72px it filled 949 of 956px, so a small font-metric change wrapped it and the
+   two-line verdict pushed the card past the footer in the printed PDF. */
+.verdict { margin: 34px 0 0 !important; font: 700 66px/1.05 var(--display) !important; letter-spacing: -.02em; color: var(--amber) !important; white-space: nowrap; }
 .aud { font-size: 26px !important; margin-top: 14px !important; }
 .side { display: grid; grid-template-rows: repeat(3, 1fr); gap: 18px; min-height: 0; }
 .side .card { padding: 16px 26px 14px; }

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>SentiLab · deck</title>
-<link rel="icon" href="../../favicon.svg">
+<link rel="icon" href="favicon.svg">
 <link rel="stylesheet" href="deck.css">
 </head>
 <body>
@@ -44,7 +44,14 @@
       <p class="chipnote">Chips: each part's tracker ticket and its status.</p>
     </div>
     <figure class="shot s2-shot">
-      <div class="frame"><img src="img/lab-frozen.png" alt="Lab view with a red banner: the chain is broken and the board is frozen at the last verified envelope"><i class="hl hl-banner"></i><i class="hl hl-frozen"></i><i class="hl hl-row"></i></div>
+      <div class="frame"><img src="img/lab-frozen.png" alt="Lab view with a red banner: the chain is broken and the board is frozen at the last verified envelope"><i class="hl hl-banner"></i><i class="hl hl-frozen"></i><i class="hl hl-row"></i>
+        <div class="zoom">
+          <span class="eyebrow">Enlarged · the banner in this screenshot</span>
+          <div class="frame zl zl-1"><img src="img/lab-frozen.png" alt="Banner enlarged, first part: the chain is broken and the board is frozen at the last verified sequence"></div>
+          <div class="frame zl zl-2"><img src="img/lab-frozen.png" alt="Banner enlarged, second part: a later envelope is unverified because of a sequence gap and a broken hash link"></div>
+          <div class="frame zl zl-3"><img src="img/lab-frozen.png" alt="Banner enlarged, third part: later envelopes are listed in the feed and never projected"></div>
+        </div>
+      </div>
       <figcaption><b>Evidence breaks, the board freezes.</b> A dropped event breaks the chain. The view stops at the last verified envelope; later envelopes are listed, never projected.<span class="fx">Lab view · test-key interface fixture · illustrative values</span></figcaption>
     </figure>
   </div>
