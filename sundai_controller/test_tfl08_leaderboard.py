@@ -1,4 +1,5 @@
 import json
+import os
 import hashlib
 import statistics
 import tempfile
@@ -6,21 +7,25 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from controller import FlightRecord
+from controller import FlightRecord, Ed25519PrivateKey, public_hex
+from trust import verify_chain
 import tfl08_leaderboard
 from tfl08_leaderboard import run_benchmark, run_leaderboard, summarize
 
 
 class Tfl08LeaderboardTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.service_key = Ed25519PrivateKey.from_private_bytes(os.urandom(32))
+
     async def test_ten_seed_batch_has_equal_budgets_shared_pool_and_signed_records(self):
         with tempfile.TemporaryDirectory() as temporary:
             output_dir = Path(temporary) / "published"
             first = await run_leaderboard(
-                ("plate",), seeds=range(10), evaluations_per_lane=2,
+                ("plate",), service_key=self.service_key, seeds=range(10), evaluations_per_lane=2,
                 shared_sample_count=1, output_dir=output_dir,
             )
             second = await run_leaderboard(
-                ("plate",), seeds=range(10), evaluations_per_lane=2,
+                ("plate",), service_key=self.service_key, seeds=range(10), evaluations_per_lane=2,
                 shared_sample_count=1,
             )
 
@@ -44,7 +49,7 @@ class Tfl08LeaderboardTests(unittest.IsolatedAsyncioTestCase):
                 fixed_curve = run["hindsight_best_fixed_operator"]["best_so_far_c"]
                 self.assertEqual(len(fixed_curve), 3)
                 self.assertEqual(fixed_curve[-1], run["hindsight_best_fixed_operator"]["best_temperature_c"])
-                for lane in run["lanes"].values():
+                for lane_id, lane in run["lanes"].items():
                     self.assertEqual(lane["evaluation_count"], 2)
                     self.assertEqual(lane["evaluation_admissions"], 2)
                     self.assertEqual(len(lane["best_so_far_c"]), 3)
@@ -52,6 +57,8 @@ class Tfl08LeaderboardTests(unittest.IsolatedAsyncioTestCase):
                     stored = json.loads(record_path.read_text(encoding="utf-8"))
                     self.assertTrue(FlightRecord.verify(stored["events"], stored["record_public_key"]))
                     self.assertTrue(lane["record"]["valid"])
+                    self.assertTrue(verify_chain(stored["events"], stored["record_certificate"],
+                                                 public_hex(self.service_key), run_id=stored["run_id"], lane_id=lane_id))
 
             plate_stats = first_benchmark["statistics"]
             for lane_id in ("random", "simulated_annealing", "ucb1", "signal_portfolio"):
@@ -101,7 +108,7 @@ class Tfl08LeaderboardTests(unittest.IsolatedAsyncioTestCase):
 
         with patch.object(tfl08_leaderboard, "JevRoutingAdapter", TrackingRouter):
             result = await run_benchmark(
-                "plate", seeds=range(10), evaluations_per_lane=1,
+                "plate", service_key=self.service_key, seeds=range(10), evaluations_per_lane=1,
                 shared_sample_count=0, signal_mode="live")
 
         self.assertEqual(len(adapters), 10)
@@ -123,12 +130,18 @@ class Tfl08LeaderboardTests(unittest.IsolatedAsyncioTestCase):
         report = json.loads(summary_path.read_text(encoding="utf-8"))
         self.assertEqual(report["schema"], "tfl08-leaderboard-v1")
         runtime = report["runtime"]
-        self.assertEqual(runtime["runner_source_sha256"], hashlib.sha256(
-            Path(tfl08_leaderboard.__file__).read_bytes()).hexdigest())
-        self.assertEqual(runtime["controller_source_sha256"], hashlib.sha256(
-            Path(tfl08_leaderboard.__file__).with_name("controller.py").read_bytes()).hexdigest())
-        self.assertEqual(runtime["experiment_source_sha256"], hashlib.sha256(
-            Path(tfl08_leaderboard.__file__).with_name("experiment.py").read_bytes()).hexdigest())
+        # Published records describe the imported source, not today's working tree.
+        # Keep their provenance tied to the import manifest and independently check
+        # that newly generated metadata hashes the current sources.
+        imported = {entry["path"]: entry["sha256"] for entry in json.loads(
+            (tfl08_leaderboard.ROOT / "PROVENANCE.json").read_text())["files"]}
+        current = tfl08_leaderboard._runtime_metadata()
+        for field, filename in (("runner_source_sha256", "tfl08_leaderboard.py"),
+                                ("controller_source_sha256", "controller.py"),
+                                ("experiment_source_sha256", "experiment.py")):
+            self.assertEqual(runtime[field], imported[f"sundai_controller/{filename}"])
+            self.assertEqual(current[field], hashlib.sha256(
+                Path(tfl08_leaderboard.__file__).with_name(filename).read_bytes()).hexdigest())
         verified_records = 0
         for benchmark in ("plate", "ascend910"):
             item = report["benchmarks"][benchmark]
@@ -161,7 +174,7 @@ class Tfl08LeaderboardTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_tfl08_refuses_fewer_than_ten_seeds(self):
         with self.assertRaisesRegex(ValueError, "at least 10"):
-            await run_benchmark("plate", seeds=range(9))
+            await run_benchmark("plate", service_key=self.service_key, seeds=range(9))
 
     def test_runner_uses_package_controller_shared_with_hotspot_adapter(self):
         self.assertEqual(tfl08_leaderboard.Controller.__module__, "sundai_controller.controller")
