@@ -37,17 +37,23 @@ sequential diagnostic conductor.
 | Target | 12 independent held-out families; related layout/power variants remain in one family. Two seeds are nested replicates, never independent families. |
 | Fallback | 8 families only under a resource rule approved before any outcome, selected from a frozen stratified order. |
 | Six-family design | 6 is descriptive only, even if an unadjusted p value is small. |
-| Two primary hypotheses | Two-sided exact family-level sign tests; Holm family-wise alpha .05. Favorable direction is additionally required for a benefit claim. No primary is dropped after outcomes. |
+| Two primary hypotheses | Two-sided exact family-level sign tests; freeze the beneficial-direction p vector BEFORE Holm at family-wise alpha .05. Use raw p only for wins > losses, otherwise 1. No primary is dropped after outcomes. |
 | Endpoint ties | Sharing: absolute family difference at or below the frozen sharing tolerance. Worker: exactly equal rational success rates. Exclude ties separately for each endpoint and report its effective n. |
 | Eight non-tied families | **8 of 8** favorable families are necessary, with or without Holm: two-sided p(8/8) = .0078125; p(7/8) = .0703125. |
 | Endpoint reduced to n=6 by ties | A **six-n endpoint** can pass second at .05 only if the other primary passes first at .025: p(6/6) = .03125. This does not turn a six-family design into a confirmatory design. |
 | Missing required paired family | Apply the frozen loss/final-evidence policy and, only for a preregistered named treatment's beneficial-direction primary claim, adverse-sign imputation. Never remove a family or seed or treat missingness as a measured tie. |
 
 Average the two seed outcomes within each family before testing. `sign_test`
-computes a two-sided p from non-tied counts; `holm` applies both thresholds and
-requires both endpoint names. These helpers do not establish favorable direction,
-completeness, family independence or resource-release approval. The analysis runner
-must enforce those prerequisites and record ties and missingness. Q04 headroom
+computes the raw two-sided p from non-tied counts. For each named primary,
+`beneficial_sign_test` keeps that p only when wins > losses (including any
+preregistered adverse signs in losses), and otherwise returns 1. Supply this
+**confirmatory p vector BEFORE Holm**, including both `sharing` and `worker`.
+`holm` remains a generic multiplicity helper: it sorts the supplied vector and
+applies the unchanged .025 then .05 thresholds. Checking direction only after
+Holm is forbidden. Retain raw two-sided p values descriptively alongside the
+confirmatory p values. These helpers do not establish completeness, family
+independence or resource-release approval. The analysis runner must enforce
+those prerequisites and record ties and missingness. Q04 headroom
 checks remain training-only and require the pinned development protocol; no
 held-out outcome may select a margin, family subset or tuning decision.
 
@@ -56,13 +62,23 @@ beneficial-direction primary claim specified before outcomes in
 `pins.missing_family_primary_claims`; this pin is currently null. Retain every
 frozen family and both seed positions. Never average over just the available seed
 or fabricate the missing seed's temperature. Only measured endpoint-specific ties
-reduce that endpoint's n. Apply the two-sided exact sign tests and two-primary
-Holm to the preregistered family signs, and require favorable direction for a
-benefit claim. Report **measured wins/losses/ties separately from imputed adverse
+reduce that endpoint's n. From the preregistered family signs compute each raw
+two-sided exact p, then replace it with 1 unless wins > losses BEFORE applying
+two-primary Holm. A non-favorable endpoint remains in the vector at 1; its small
+raw two-sided p must never release the other primary at the second threshold.
+Report **measured wins/losses/ties separately from imputed adverse
 signs**, including missing-family and missing-seed evidence. Imputed losses cannot
 support a harm claim, a secondary claim, or invented temperatures. The missing
 reference/scorer/seed and global-STOP rules below determine applicability; this
 is not blanket permission to impute any absent observation.
+
+Coupled-endpoint regression: sharing has 6 measured wins and 6 measured ties
+(raw p = .03125); worker has 1 measured win, 10 measured losses and 1 missing
+family. A hypothetical favorable completion gives worker 2/12, raw p =
+.03857421875, and raw Holm rejects neither null. Adverse imputation gives worker
+1/12, raw p = .00634765625. Raw Holm would incorrectly release sharing after
+worker, even if worker benefit were suppressed afterward. The frozen confirmatory
+vector is instead `{sharing: .03125, worker: 1}`: **neither benefit passes**.
 
 For 11 favorable signs of 12, the two-sided exact p is **0.00634765625**.
 The room's quoted 2.1452%/68.1118% no-loss probabilities assume iid homogeneous
@@ -265,7 +281,9 @@ Review input: `SLAB-041-ADMISSION-REVIEW-2026-10-31.md` from PR #31,
 SHA-256 `a96ae18722698a2052d0f133933a195eb8a649d42b8afc68ecf319dfecf6d64f`.
 This file is not copied here. Warden made the three counterexample fixes binding.
 The table retains all seven dispositions and incorporates Warden's later
-qualified policy instructions from the PR #33 review (#56413, restated #56451).
+qualified policy instructions from the PR #33 review (#56413, restated #56451),
+plus the pre-Holm direction correction in #56564. That correction supersedes the
+earlier unrestricted monotone-Holm assertion; no such approval is carried here.
 Undecided execution details remain null and require pre-outcome review.
 
 | Review section | Adoption or explicit limit |
@@ -275,7 +293,7 @@ Undecided execution details remain null and require pre-outcome review.
 | 3: Physical identity/measurement | Adopt separate layout/proposal/slot IDs, immutable context and one authoritative measurement. As qualified by the later review, the adapter selects the first complete measurement-valid evaluation in frozen attempt order BEFORE the margin test, never the first favorable/qualifying result. Preserve each slot's original independent reproduction and agreement evidence, B2 isolation and charge before normalization. The pure API rejects conflicting authorities. Exact physical serialization and attempt order remain must-fill pins. |
 | 4: Opportunities/cache | Adopt distinct eligible B0/B1 nominations, separate duplicate lab charges, cache opportunity charges and no cross-arm reuse. Actual CPU/model/scenario cost and signed-event adaptation remain runner responsibilities. |
 | 5: Retry/reference | Adopt one retry only on durable pre-execution proof; uncertain/post-start consumes the slot with no replacement. Initial-reference and refinement allocation stays null until a preparation-vs-inclusive charging choice is approved. |
-| 6: Failure/missingness | Preserve measured failure versus cancelled/no-result, fixed corpus denominator, both seeds and measured endpoint ties. The later qualified policy supersedes blanket missing-means-inconclusive: consumed losses get no replacements but may leave a valid board; adverse signs apply only to a named beneficial-direction primary claim, reported separately from measured results. Final-evidence/loss/STOP and held-out retry details remain null pins. Analysis runners remain outside this patch. |
+| 6: Failure/missingness | Preserve measured failure versus cancelled/no-result, fixed corpus denominator, both seeds and measured endpoint ties. The later qualified policy supersedes blanket missing-means-inconclusive: consumed losses get no replacements but may leave a valid board; adverse signs apply only to a named beneficial-direction primary claim, reported separately from measured results. Apply the direction filter to both primary p values BEFORE Holm; retain raw p values descriptively and never infer harm from imputed losses. Final-evidence/loss/STOP and held-out retry details remain null pins. Analysis runners remain outside this patch. |
 | 7: Epoch/scheduler | Adopt family × seed × arm scope and both search/reproduction barriers. Seven synchronous sharing rounds are guidance, not a binding release: the exact round schedule remains null and blocks execution. Replay consumes certified search closure and per-lab ledger charge totals; no live scheduler is added. |
 
 ## Machine-readable appendix
@@ -319,8 +337,8 @@ practical and measured numerical uncertainty; no observed outcome can set it.
     "sharing_ties": "absolute family difference <= frozen sharing_tolerance",
     "worker_ties": "exact equality of rational success rates",
     "ties": "exclude endpoint-specific ties from that endpoint denominator and report n",
-    "test": "two-sided exact family sign test; favorable direction required",
-    "multiplicity": "Holm across sharing and worker",
+    "test": "two-sided exact family sign test; beneficial-direction confirmatory p vector frozen before Holm",
+    "multiplicity": "Holm across both sharing and worker using the confirmatory p vector, never raw p values followed by a direction check",
     "alpha": 0.05,
     "first_threshold": 0.025,
     "second_threshold": 0.05,
@@ -329,12 +347,23 @@ practical and measured numerical uncertainty; no observed outcome can set it.
     "missing_family_adverse_sign": {
       "scope": "only a pre-named treatment beneficial-direction primary claim under pins.missing_family_primary_claims; not a harm claim or a secondary endpoint",
       "retention": "retain all frozen families and both seed positions; endpoint-specific measured ties alone reduce n; never remove unfavorable or missing families",
-      "analysis": "apply adverse family signs for missing required evidence only as preregistered; two-sided exact sign tests and two-primary Holm, with favorable direction also required",
+      "analysis": "apply adverse family signs for missing required evidence only as preregistered; form confirmatory_p_vector BEFORE two-primary Holm, using raw two-sided p only for wins > losses and otherwise 1 for each named primary; never check direction only after Holm",
       "report": "report measured wins, losses and ties separately from imputed adverse signs and missing seed/family evidence",
       "prohibitions": "never invent temperatures, fabricate seed means, convert missingness to a measured failure, or infer harm from imputed losses"
     },
     "eleven_of_twelve_two_sided_p": 0.00634765625,
-    "no_loss_probability_caveat": "quoted 2.1452% and 68.1118% assume iid homogeneous failures; not measured reliability"
+    "no_loss_probability_caveat": "quoted 2.1452% and 68.1118% assume iid homogeneous failures; not measured reliability",
+    "confirmatory_p_vector": {
+      "endpoints": [
+        "sharing",
+        "worker"
+      ],
+      "favorable_direction": "wins > losses after preregistered adverse-sign imputation; measured endpoint-specific ties excluded",
+      "favorable_p": "raw two-sided exact sign-test p",
+      "otherwise_p": 1,
+      "apply": "before Holm sorting and threshold comparisons",
+      "report": "retain raw two-sided p values descriptively alongside confirmatory p values; measured wins/losses/ties and imputed adverse signs reported separately"
+    }
   },
   "arms": {
     "B0": {

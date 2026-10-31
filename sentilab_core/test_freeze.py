@@ -332,6 +332,48 @@ class FreezeTests(unittest.TestCase):
         self.assertEqual((rows, attempts, self.freeze), before)
         self.assertEqual(result["gate"]["board"].j, 8.2)
 
+    def test_adverse_imputation_cannot_release_other_primary(self):
+        from sentilab_core.freeze import beneficial_sign_test
+
+        # Twelve families: only measured ties leave the endpoint denominator.
+        measured = {"sharing": (6, 0, 6), "worker": (1, 10, 0)}
+        missing = {"sharing": 0, "worker": 1}
+        for name, counts in measured.items():
+            self.assertEqual(sum(counts) + missing[name], 12)
+        adverse_counts = {name: (wins, losses + missing[name])
+                          for name, (wins, losses, ties) in measured.items()}
+        raw = {name: sign_test(*counts) for name, counts in adverse_counts.items()}
+        self.assertEqual(raw, {"sharing": 0.03125, "worker": 0.00634765625})
+        # Demonstrate why filtering direction only AFTER raw Holm is unsafe.
+        post_holm = {name: passed and adverse_counts[name][0] > adverse_counts[name][1]
+                     for name, passed in holm(raw, freeze=self.freeze).items()}
+        self.assertEqual(post_holm, {"sharing": True, "worker": False})
+
+        confirmatory = {name: beneficial_sign_test(*counts)
+                        for name, counts in adverse_counts.items()}
+        self.assertEqual(holm(confirmatory, freeze=self.freeze),
+                         {"sharing": False, "worker": False})
+        self.assertEqual(confirmatory, {"sharing": 0.03125, "worker": 1})
+        # Even the hypothetical favorable completion rejected neither null.
+        self.assertEqual(sign_test(2, 10), 0.03857421875)
+        self.assertEqual(holm({"sharing": raw["sharing"], "worker": sign_test(2, 10)},
+                              freeze=self.freeze), {"sharing": False, "worker": False})
+
+    def test_beneficial_sign_test_direction_and_validation(self):
+        from sentilab_core.freeze import beneficial_sign_test
+
+        for wins, losses, expected in ((8, 0, 0.0078125), (6, 0, 0.03125),
+                                       (11, 1, 0.00634765625), (0, 8, 1),
+                                       (1, 11, 1), (6, 6, 1), (0, 0, 1)):
+            with self.subTest(wins=wins, losses=losses):
+                self.assertEqual(beneficial_sign_test(wins, losses), expected)
+        for counts in ((-1, 2), (2, -1), (True, 2), (2, 1.5)):
+            with self.subTest(counts=counts), self.assertRaises(ValueError):
+                beneficial_sign_test(*counts)
+        self.assertEqual(holm({"sharing": beneficial_sign_test(8, 0),
+                               "worker": beneficial_sign_test(6, 0)}, freeze=self.freeze),
+                         {"sharing": True, "worker": True})
+
     def test_exact_sign_tests_and_holm_eight_of_eight(self):
         self.assertEqual(sign_test(8, 0), 0.0078125)
         self.assertEqual(sign_test(7, 1), 0.0703125)

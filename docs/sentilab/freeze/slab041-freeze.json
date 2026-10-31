@@ -30,8 +30,8 @@
     "sharing_ties": "absolute family difference <= frozen sharing_tolerance",
     "worker_ties": "exact equality of rational success rates",
     "ties": "exclude endpoint-specific ties from that endpoint denominator and report n",
-    "test": "two-sided exact family sign test; favorable direction required",
-    "multiplicity": "Holm across sharing and worker",
+    "test": "two-sided exact family sign test; beneficial-direction confirmatory p vector frozen before Holm",
+    "multiplicity": "Holm across both sharing and worker using the confirmatory p vector, never raw p values followed by a direction check",
     "alpha": 0.05,
     "first_threshold": 0.025,
     "second_threshold": 0.05,
@@ -40,12 +40,23 @@
     "missing_family_adverse_sign": {
       "scope": "only a pre-named treatment beneficial-direction primary claim under pins.missing_family_primary_claims; not a harm claim or a secondary endpoint",
       "retention": "retain all frozen families and both seed positions; endpoint-specific measured ties alone reduce n; never remove unfavorable or missing families",
-      "analysis": "apply adverse family signs for missing required evidence only as preregistered; two-sided exact sign tests and two-primary Holm, with favorable direction also required",
+      "analysis": "apply adverse family signs for missing required evidence only as preregistered; form confirmatory_p_vector BEFORE two-primary Holm, using raw two-sided p only for wins > losses and otherwise 1 for each named primary; never check direction only after Holm",
       "report": "report measured wins, losses and ties separately from imputed adverse signs and missing seed/family evidence",
       "prohibitions": "never invent temperatures, fabricate seed means, convert missingness to a measured failure, or infer harm from imputed losses"
     },
     "eleven_of_twelve_two_sided_p": 0.00634765625,
-    "no_loss_probability_caveat": "quoted 2.1452% and 68.1118% assume iid homogeneous failures; not measured reliability"
+    "no_loss_probability_caveat": "quoted 2.1452% and 68.1118% assume iid homogeneous failures; not measured reliability",
+    "confirmatory_p_vector": {
+      "endpoints": [
+        "sharing",
+        "worker"
+      ],
+      "favorable_direction": "wins > losses after preregistered adverse-sign imputation; measured endpoint-specific ties excluded",
+      "favorable_p": "raw two-sided exact sign-test p",
+      "otherwise_p": 1,
+      "apply": "before Holm sorting and threshold comparisons",
+      "report": "retain raw two-sided p values descriptively alongside confirmatory p values; measured wins/losses/ties and imputed adverse signs reported separately"
+    }
   },
   "arms": {
     "B0": {

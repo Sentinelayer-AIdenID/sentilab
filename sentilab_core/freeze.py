@@ -364,8 +364,24 @@ def sign_test(wins, losses):
     return float(min(Fraction(1), Fraction(2 * sum(comb(n, k) for k in range(min(wins, losses) + 1)), 2 ** n)))
 
 
+def beneficial_sign_test(wins, losses):
+    """Confirmatory p BEFORE Holm: raw two-sided p if wins > losses, else 1.
+
+    Counts include preregistered adverse signs in losses, never measured ties.
+    Callers retain raw sign_test p and measured/imputed counts descriptively;
+    this transformation does not authorize imputation or establish readiness.
+    """
+    raw_p = sign_test(wins, losses)
+    return raw_p if wins > losses else 1.0
+
+
 def holm(p_values, *, freeze):
-    """Multiplicity only; caller also checks direction, completeness and design."""
+    """Multiplicity only; completeness and design remain caller obligations.
+
+    For beneficial primary claims, supply beneficial_sign_test p values for BOTH
+    named endpoints, not raw two-sided p values. Direction filtering must precede
+    Holm; filtering only its rejections can release another endpoint incorrectly.
+    """
     validate_freeze(freeze)
     if set(p_values) != {"sharing", "worker"}:
         raise ValueError("both primaries required; no endpoint may be dropped")
