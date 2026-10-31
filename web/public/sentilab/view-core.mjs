@@ -550,23 +550,30 @@ export function modeLabel(sourceKind, lastPollOkMs, lastProgressMs, nowMs) {
 // Feed it every poll. ok: the response passed the transport caps and was read. K: the projectable prefix after it.
 // received: how many lines arrived; it is deliberately unused, because arrivals that don't grow K (duplicates,
 // unverified envelopes, envelopes after a break) must never refresh LIVE.
+// Rule 5 as v0.6 words it (stricter than the v0.5 reference tracker, which only looks at growth): LIVE also needs K
+// not below the highest value it has reached. When K falls, because a late conflict or break cut the prefix, LIVE ends
+// at once and the label is "STALE · chain broken"; it stays so until K is back at its highest value.
+export const CHAIN_BROKEN_LABEL = "STALE · chain broken";
 export function progressTracker() {
   let highK = 0;
+  let currentK = 0;
   let lastPollOkMs = null;
   let lastProgressMs = null;
+  const fell = () => currentK < highK;
   return {
-    poll({ nowMs, ok, K = highK, received = 0 }) {
+    poll({ nowMs, ok, K = currentK, received = 0 }) {
       if (!ok) return;
       lastPollOkMs = nowMs;
+      currentK = K;
       const grew = K > highK;
       if (grew) {
         highK = K;
         lastProgressMs = nowMs;
       }
     },
-    mode: (sourceKind, nowMs) => mode(sourceKind, lastPollOkMs, lastProgressMs, nowMs),
-    label: (sourceKind, nowMs) => modeLabel(sourceKind, lastPollOkMs, lastProgressMs, nowMs),
-    state: () => ({ K: highK, last_poll_ok_ms: lastPollOkMs, last_progress_ms: lastProgressMs }),
+    mode: (sourceKind, nowMs) => (sourceKind === "api" && fell() ? "STALE" : mode(sourceKind, lastPollOkMs, lastProgressMs, nowMs)),
+    label: (sourceKind, nowMs) => (sourceKind === "api" && fell() ? CHAIN_BROKEN_LABEL : modeLabel(sourceKind, lastPollOkMs, lastProgressMs, nowMs)),
+    state: () => ({ K: highK, current_K: currentK, last_poll_ok_ms: lastPollOkMs, last_progress_ms: lastProgressMs }),
   };
 }
 

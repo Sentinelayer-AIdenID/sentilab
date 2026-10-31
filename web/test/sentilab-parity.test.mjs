@@ -538,13 +538,48 @@ test("cursor paging: a late, validly signed conflict at a seq already seen still
   assert.deepEqual(r.rows.filter((row) => row.seq === 5).map((row) => row.reasons), [["seq_conflict", "event_id_conflict"], ["seq_conflict", "event_id_conflict"]]);
   assert.ok(same(refFields(r), ref.verifyJsonl(rows, refOptions(v1Chain.view))), "the reference agrees over the same stream");
   assert.equal(state.tracker.state().last_progress_ms, BASE_MS, "K fell; that is never progress");
-  assert.equal(state.tracker.label("api", BASE_MS + 1000), "LIVE · progress 1 s ago", "LIVE still dates from the last growth");
-  await cursorPoll(state, serve, options, BASE_MS + 60_000);
-  assert.equal(state.tracker.label("api", BASE_MS + 60_000), "LIVE · progress 60 s ago");
-  await cursorPoll(state, serve, options, BASE_MS + 60_001);
-  assert.equal(state.tracker.label("api", BASE_MS + 60_001), "STALE", "good polls, but K has not grown for over 60 s");
+  assert.equal(state.tracker.label("api", BASE_MS + 1000), "STALE · chain broken", "K fell below its highest value: LIVE ends at once");
+  await cursorPoll(state, serve, options, BASE_MS + 2000);
+  assert.equal(state.tracker.label("api", BASE_MS + 2000), "STALE · chain broken", "and stays ended while the conflict is in the stream");
   // Paging by seq (after=11) could never have delivered the late seq 5: why the view never pages by seq.
   assert.deepEqual(rows.filter((line) => JSON.parse(line).event.seq > 11), []);
+});
+// C11 (VIEW ENVELOPE v0.6, rule 5): LIVE also needs K not below its highest value. The demo run reaches K = 44; one second
+// later a late, validly signed second seq 10 arrives and freezes the board at 9, so the label is STALE at once, not
+// "LIVE · progress 1 s ago".
+test("C11: K 44, then a conflict at seq 10 freezes at 9 one second later: STALE · chain broken at once", async () => {
+  const rows = readFileSync(DEMO_PATH, "utf8").split("\n").filter(Boolean);
+  const { hash, sig, ...seq10 } = JSON.parse(rows[9]);
+  const late = JSON.stringify(ref.signEnvelope({ ...seq10, ts: new Date(Date.parse(seq10.ts) + 500).toISOString() }, testKey("core").privateKey, sig.key_id));
+  const options = { runId: DEMO_RUN.run_id, pins: testPins, keys: testKeys };
+  const state = liveState();
+  const serve = cursorServer(rows, 256);
+  assert.equal(await cursorPoll(state, serve, options, BASE_MS), null);
+  assert.equal(state.verification.prefix_end, 44);
+  assert.equal(state.tracker.label("api", BASE_MS), "LIVE · progress 0 s ago");
+  rows.push(late);
+  assert.equal(await cursorPoll(state, serve, options, BASE_MS + 1000), null);
+  assert.deepEqual([state.verification.prefix_end, state.verification.label], [9, "chain broken after seq 9; board frozen at seq 9"]);
+  assert.equal(state.tracker.mode("api", BASE_MS + 1000), "STALE");
+  assert.equal(state.tracker.label("api", BASE_MS + 1000), "STALE · chain broken");
+  assert.deepEqual([state.tracker.state().K, state.tracker.state().current_K], [44, 9]);
+  // The pure mode() of the v0.5 reference would still say LIVE here (a good poll 0 s ago, growth 1 s ago): this is the
+  // v0.6 tightening, which only the tracker can apply because only it knows the highest K.
+  assert.equal(core.modeLabel("api", BASE_MS + 1000, BASE_MS, BASE_MS + 1000), "LIVE · progress 1 s ago");
+  // A replay file is REPLAY whatever K did.
+  assert.equal(state.tracker.label("file", BASE_MS + 1000), "REPLAY");
+});
+test("tracker: K back at its highest value ends 'chain broken'; LIVE then still needs growth within 60 s", () => {
+  const tracker = core.progressTracker();
+  tracker.poll({ nowMs: 0, ok: true, K: 5 });
+  tracker.poll({ nowMs: 1_000, ok: true, K: 3 });
+  assert.equal(tracker.label("api", 1_000), "STALE · chain broken");
+  tracker.poll({ nowMs: 2_000, ok: false, K: 5 });
+  assert.equal(tracker.label("api", 2_000), "STALE · chain broken", "a failed poll changes nothing");
+  tracker.poll({ nowMs: 3_000, ok: true, K: 5 });
+  assert.equal(tracker.label("api", 3_000), "LIVE · progress 3 s ago", "progress still dates from the growth at 0 s");
+  tracker.poll({ nowMs: 60_001, ok: true, K: 5 });
+  assert.equal(tracker.label("api", 60_001), "STALE");
 });
 test("cursor paging: malformed rows and duplicates count toward the cursor; the stream verifies as the reference says", async () => {
   const rows = [...buildLines(v1Chain.envelopes, {})[0], "{not json", "", buildLines(v1Chain.envelopes, {})[0][3]];
