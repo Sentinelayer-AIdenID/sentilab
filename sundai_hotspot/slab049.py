@@ -1064,7 +1064,7 @@ LIMITS_LOWERED = ("to fit the true worst case under the 600 CPU-s cap (warden #5
                   "be 642 CPU-s.")
 # The operator's Ed25519 public key (raw, hex). Warden's supervisor holds the private key and pins this before the
 # grant (a reviewed commit, which regenerates the manifest). Until then every admission and every gate check refuses.
-OPERATOR_PUBLIC_KEY: str | None = None
+OPERATOR_PUBLIC_KEY: str | None = "aedce64bbc007b3538c02d302da9cedbce1465c409efac8589477284bdbd2132"
 ANCHOR_REPOSITORY = "Sentinelayer-AIdenID/sentilab"
 # Where the executed pins are read (the tests point it at a copy of the tree).
 EXECUTED_ROOT = REPO_ROOT

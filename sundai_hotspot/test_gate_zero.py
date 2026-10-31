@@ -29,7 +29,7 @@ from unittest import mock
 import urllib.error
 
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
 from sundai_hotspot import gate0_anchor, gate_zero, provenance, reference_validation, slab049, tap_oracle
 from sundai_hotspot.coupling_variant import strip_variant_blocks
@@ -1316,11 +1316,14 @@ class ManifestTests(unittest.TestCase):
             with self.assertRaises(CallRefused):
                 reference_validation.load_manifest()
 
-    def test_the_operator_key_is_pending_and_the_anchor_is_published(self):
+    def test_the_operator_key_is_pinned_and_the_anchor_is_published(self):
         manifest = slab049.check_manifest(slab049.MANIFEST_PATH.read_bytes())
         operator, anchor, ledger = manifest["operator"], manifest["anchor"], manifest["ledger"]
-        self.assertIsNone(operator["public_key_ed25519"])  # warden pins it before the grant
-        self.assertTrue(operator["status"].startswith("pending"))
+        # warden's operator key, pinned by a reviewed commit before the grant: the raw public key in hex
+        pinned = "aedce64bbc007b3538c02d302da9cedbce1465c409efac8589477284bdbd2132"
+        self.assertEqual((slab049.OPERATOR_PUBLIC_KEY, operator["public_key_ed25519"]), (pinned, pinned))
+        Ed25519PublicKey.from_public_bytes(bytes.fromhex(pinned))  # a valid Ed25519 public key
+        self.assertEqual(operator["status"], "pinned")
         self.assertIn("never lives in the repository", operator["custody"])
         self.assertEqual((anchor["repository"], anchor["namespace"], anchor["message_schema"]),
                          ("Sentinelayer-AIdenID/sentilab", "refs/tags/gate0-<grant-id>/", gate0_anchor.TAG_SCHEMA))
