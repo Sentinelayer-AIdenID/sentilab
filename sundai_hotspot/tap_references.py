@@ -10,7 +10,8 @@ Layouts per reference, never confused:
   admitted, never a paper match. The SAMPLED envelope probes it.
 
 Geometry only: this module builds, checks and writes JSON. It runs TAP's wire router (a MILP on a
-real optimizer, no physics) and never a thermal solver.
+real optimizer, no physics) and never a thermal solver. Every route goes through _routed_mm, which
+refuses a SciPy other than requirements.txt's pin before the optimizer runs.
 
     python -m sundai_hotspot.tap_references --check   # committed files equal a fresh build
     python -m sundai_hotspot.tap_references --write   # rebuild them from the committed decode
@@ -56,6 +57,8 @@ PERTURBATION_MM = 0.5
 ENVELOPE_GRID = 64
 ROUND_TRIP = {"temperature_tolerance_k": 1.0, "routed_wire_tolerance_pct": 2.0}
 ROUTED_LABEL = "routed (open router), not paper"
+HIGHS_STATUS = ("reported by the pinned SciPy build and recorded; not pinned, and not an admission of any other "
+                "binary or host")
 WIRE_METRIC = ("wire_proxy_mm is the oracle's W: a connectivity-weighted mean Manhattan centre distance, a proxy, "
                "not comparable with the paper's routed mm. routed_wirelength_mm comes from an open port of TAP's "
                "router (sundai_hotspot/tap_router.py), the same kind of metric the paper reports.")
@@ -195,13 +198,18 @@ def displacement(raw_centers, centers) -> dict:
 
 
 def pinned_solver() -> dict:
-    """The routed numbers are recorded with the solver that produced them, which must be the repo's pin."""
+    """Refuse unless SciPy is the version requirements.txt pins; return the checked versions for the record.
+
+    Only SciPy is pinned. The HiGHS version is whatever this SciPy build reports: it is recorded, not pinned,
+    and it admits no other binary or host.
+    """
     pin = re.search(r"^scipy==(\S+)$", REQUIREMENTS.read_text(encoding="utf-8"), re.M)
     versions = solver_versions()
     if pin is None or versions["scipy"] != pin.group(1):
         raise RuntimeError(f"routed records need scipy=={pin.group(1) if pin else '?'} (requirements.txt); "
                            f"this environment has {versions['scipy']}")
-    return {**versions, "pinned_by": "requirements.txt"}
+    return {"scipy": versions["scipy"], "scipy_pinned_by": "requirements.txt",
+            "highs": versions["highs"], "highs_status": HIGHS_STATUS}
 
 
 def continuous_legal(geometry: TapGeometry, centers, rotated) -> tuple[bool, str | None]:
@@ -339,9 +347,16 @@ def _precision_evidence(decode: dict) -> dict:
                       "independent of each other.")}
 
 
-def _routed_mm(problem, centers, rotated, link_type=None) -> float:
-    # 0.1 mm: every committed value sits at least 0.015 mm from a rounding boundary.
-    return round(routed_wirelength(problem, centers, rotated, link_type=link_type).total_mm, 1)
+def _routed_mm(problem, centers, rotated, link_type) -> tuple[float, dict]:
+    """The builder's only route. The SciPy pin is checked before the optimizer runs, so a mismatched stack is
+    refused with zero optimizer calls.
+
+    Returns the routed total, rounded to 0.1 mm (every committed value sits at least 0.015 mm from a rounding
+    boundary), and the solver versions checked for this route, for the record.
+    """
+    solver = pinned_solver()
+    wire = routed_wirelength(problem, centers, rotated, link_type=link_type)
+    return round(wire.total_mm, 1), solver
 
 
 def _vs_paper(routed_mm: float, paper_mm: float) -> float:
@@ -384,21 +399,20 @@ def build_reference(spec: dict, decode: dict) -> dict:
               for i, (r, s) in enumerate(zip(raw_centers, snapped_centers))]
     config = TAP_CONFIGS[spec["fixture_id"]]
     original = spec["paper_reported"]["original"]
-    raw_routed = _routed_mm(problem, raw_centers, rotated, original["link_type"])
-    snapped_routed = _routed_mm(problem, snapped_centers, rotated, original["link_type"])
+    raw_routed, solver = _routed_mm(problem, raw_centers, rotated, original["link_type"])
+    snapped_routed, _ = _routed_mm(problem, snapped_centers, rotated, original["link_type"])
     validation = []
     for point in spec["validation_points"]:
         chiplets = figure["panels"][point["panel"]]["chiplets"]
         # TAP's own placer output: back onto its 1 mm grid (the decode is within 0.0005 mm of it).
         centers = [[float(round(v)) for v in c["decoded_center_mm"]] for c in chiplets]
-        routed = _routed_mm(problem, centers, [c["rotated_vs_catalog"] for c in chiplets], point["link_type"])
+        routed, _ = _routed_mm(problem, centers, [c["rotated_vs_catalog"] for c in chiplets], point["link_type"])
         validation.append({**point, "figure": spec["figure"].replace("fig", "Fig. "), "centers_mm": centers,
                            "rotated": [c["rotated_vs_catalog"] for c in chiplets], "our_routed_wirelength_mm": routed,
                            "routed_label": ROUTED_LABEL,
                            "routed_vs_paper_pct": _vs_paper(routed, point["routed_wirelength_mm"]),
                            "reuse": "this panel also feeds the decode-precision estimate",
                            "temperature": "paper value only; not evaluated (no thermal solve in SLAB-048)"})
-    solver = pinned_solver()
     raw_identity = layout_identity(problem.interposer_size_mm, raw_centers, rotated, [d["footprint_mm"] for d in dies])
     snapped_identity = layout_identity(problem.interposer_size_mm, snapped_centers, rotated,
                                        [d["footprint_mm"] for d in dies])
@@ -575,7 +589,7 @@ def build_variant(reference: dict, decode: dict) -> dict:
     _, minimal = minimal_snaps(geometry, raw_centers, rotated, SNAP_GRID_MM)
     minimal_linf = [displacement(raw_centers, c)["max_per_coordinate_linf_mm"] for c in minimal.values()]
     original = reference["paper_reported"]["original"]
-    routed = _routed_mm(problem, centers, rotated, original["link_type"])
+    routed, solver = _routed_mm(problem, centers, rotated, original["link_type"])
     variant_id = f"{reference['reference_id']}-{VARIANT_SUFFIX}"
     return {
         "schema": "sentilab-layout-variant-v1",
@@ -621,7 +635,7 @@ def build_variant(reference: dict, decode: dict) -> dict:
         "wire_proxy_mm": _mm(geometry.wirelength_mm(geometry.centers_for(design))),
         "routed_wirelength": {"value_mm": routed, "label": ROUTED_LABEL,
                               "vs_paper_pct": _vs_paper(routed, original["routed_wirelength_mm"]),
-                              "router": _rel(ROUTER), "router_sha256": _sha256(ROUTER), "solver": pinned_solver()},
+                              "router": _rel(ROUTER), "router_sha256": _sha256(ROUTER), "solver": solver},
         "limits": [
             "A raw layout inside this variant's +/-0.5 mm per-coordinate box is not thereby a sampled point of the "
             "envelope: its one-axis stencil moves one die along one axis at a time.",

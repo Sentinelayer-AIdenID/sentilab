@@ -133,6 +133,10 @@ MUTANTS = (
      "return math.floor(value / step + 0.5) * step",
      "return round(value / step) * step",
      refs.check_rounding_rule),
+    ("the SciPy pin is checked before the optimizer runs", "tap_references",
+     "    solver = pinned_solver()\n    wire = routed_wirelength(problem, centers, rotated, link_type=link_type)\n",
+     "    wire = routed_wirelength(problem, centers, rotated, link_type=link_type)\n    solver = pinned_solver()\n",
+     refs.check_solver_pin_is_checked_before_any_route),
 )
 PACKAGES = {"controller": "sundai_controller", "experiment": "sundai_controller", "tap_oracle": "sundai_hotspot",
             "conductor": "sentilab_core", "worker": "sundai_hotspot", "tap_router": "sundai_hotspot",

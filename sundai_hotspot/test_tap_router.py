@@ -100,12 +100,15 @@ class RouterTests(unittest.TestCase):
     def test_refuses_malformed_inputs(self):
         check_router_refuses_malformed_inputs(REAL)
 
-    def test_solver_versions_are_the_pinned_ones(self):
+    def test_scipy_is_pinned_and_highs_is_only_recorded(self):
         pin = re.search(r"^scipy==(\S+)$", (REPO_ROOT / "requirements.txt").read_text(encoding="utf-8"), re.M)
         versions = real_tap_router.solver_versions()
         self.assertEqual(versions["scipy"], pin.group(1))
         self.assertRegex(versions["highs"], r"^\d+\.\d+\.\d+$")
-        self.assertEqual(tap_references.pinned_solver(), {**versions, "pinned_by": "requirements.txt"})
+        self.assertEqual(tap_references.pinned_solver(),
+                         {"scipy": versions["scipy"], "scipy_pinned_by": "requirements.txt",
+                          "highs": versions["highs"], "highs_status": tap_references.HIGHS_STATUS})
+        self.assertIn("not pinned", tap_references.HIGHS_STATUS)
 
     def test_wire_count_matches_taps_directed_nets(self):
         _, problem, centers, rotated, _, _ = _raw_ascend()

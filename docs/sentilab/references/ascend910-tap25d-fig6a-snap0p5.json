@@ -224,8 +224,9 @@
   "router_sha256": "2cb1dc59d7c6cc766085d208b5c140bfc4dfffe98543f81872df08ec799985c8",
   "solver": {
    "highs": "1.8.0",
-   "pinned_by": "requirements.txt",
-   "scipy": "1.17.0"
+   "highs_status": "reported by the pinned SciPy build and recorded; not pinned, and not an admission of any other binary or host",
+   "scipy": "1.17.0",
+   "scipy_pinned_by": "requirements.txt"
   },
   "value_mm": 16672.1,
   "vs_paper_pct": 1.498

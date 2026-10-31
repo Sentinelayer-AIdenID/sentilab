@@ -39,8 +39,9 @@ Post-merge repair (astra #56857/#56858, warden review, astra sealed review):
 - [x] 0.5 mm engineering variants (plain nearest rounding, ties up, no repair) with manifests; raw and 1 mm layouts unchanged and pinned.
 - [x] Frozen raw identities (content hashes) and `TapGeometry.continuous_centers_for` for gate-zero validation without the lattice.
 - [x] Envelope rebased on the 0.5 mm variants: 46 calls, forecast 220.4 CPU-s, proposed cap 321.5 CPU-s; first plan (45 / 215.851 / 316.308) kept as superseded forecasts.
-- [x] Router: refuses non-optimal solves and malformed inputs; solver stack pinned and recorded; change notice and THIRD_PARTY_NOTICES entry.
+- [x] Router: refuses non-optimal solves and malformed inputs; SciPy pinned, HiGHS version recorded (not pinned); change notice and THIRD_PARTY_NOTICES entry.
 - [x] Claims: three named temperature statistics; wire agreement as consistency evidence (translation invariance); reuse of the five panels disclosed; heuristic overhead labelled; no "solver grant" claim; norms named; decoder docstring states what it does.
 - [x] No-append rule widened to the sealed review's words: the envelope is its own job and is never appended to any other job, the gate-zero job included.
+- [x] astra #56951 P2: the SciPy pin is checked before the optimizer runs, at one guarded routing boundary (`_routed_mm`). Under a mismatched SciPy, `build_reference`, `build_variant` and `build_all` make zero optimizer calls; the matching pin still makes every route and records the versions it checked. HiGHS is recorded, not pinned.
 
-24 code mutants and 7 data mutations each fail their checks. Local runs use a refusing stub for HotSpot: the seven existing solve tests fail identically on main, nothing else fails.
+25 code mutants and 7 data mutations each fail their checks. Local runs use a refusing stub for HotSpot: the seven existing solve tests fail identically on main, nothing else fails.

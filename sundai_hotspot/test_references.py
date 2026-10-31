@@ -13,6 +13,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -24,7 +25,9 @@ from unittest import mock
 from sentilab_core import conductor as real_conductor
 from sundai_hotspot import tap_oracle as real_tap_oracle
 from sundai_hotspot import tap_references
+from sundai_hotspot import tap_router
 from sundai_hotspot.tap_oracle import REPO_ROOT, TAP_CONFIGS, TAP_ROOT, WORKER, TapGeometry
+from sundai_hotspot.tap_router import RoutedWire
 
 REAL = types.SimpleNamespace(tap_oracle=real_tap_oracle, conductor=real_conductor, worker_source=WORKER,
                              tap_references=tap_references)
@@ -345,6 +348,61 @@ def check_rounding_rule(mods):
     assert "rounds up, toward +infinity" in mods.tap_references.ROUNDING_RULE
 
 
+def _scipy_pin() -> str:
+    return re.search(r"^scipy==(\S+)$", (REPO_ROOT / "requirements.txt").read_text(encoding="utf-8"), re.M).group(1)
+
+
+def check_solver_pin_is_checked_before_any_route(mods):
+    """A SciPy other than requirements.txt's pin is refused before the first optimizer call, in every builder.
+
+    The router is stubbed and counted, and the optimizer itself is trapped, so a route that went around the
+    stub would be seen too. The matching pin is the control: the same builders then make every route and
+    record the versions they checked.
+    """
+    module = mods.tap_references
+    decode = _json(module.DECODE)
+    specs = {spec["reference_id"]: spec for spec in module.REFERENCES}
+    routes = {name: 2 + len(spec["validation_points"]) for name, spec in specs.items()}
+    builders = [(f"build_reference({name})", lambda spec=spec: module.build_reference(spec, decode), routes[name])
+                for name, spec in specs.items()]
+    builders += [(f"build_variant({name})", lambda name=name: module.build_variant(reference(name), decode), 1)
+                 for name in specs]
+    builders.append(("build_all", module.build_all, sum(routes.values()) + len(specs)))
+    for scipy_version in ("0.0.WRONG", _scipy_pin()):
+        matching = scipy_version == _scipy_pin()
+        for name, build, expected_routes in builders:
+            calls, optimizer_calls = [], []
+
+            def route(problem, centers, rotated, *, link_type=None):
+                calls.append(link_type)
+                return RoutedWire(1000.0, 0, link_type)
+
+            versions = {"scipy": scipy_version, "highs": "9.9.9"}
+            with mock.patch.object(module, "solver_versions", return_value=versions), \
+                    mock.patch.object(module, "routed_wirelength", route), \
+                    mock.patch.object(tap_router, "milp", side_effect=lambda *a, **k: optimizer_calls.append(a)):
+                if matching:
+                    built = build()
+                    checked = module.pinned_solver()
+                else:
+                    try:
+                        build()
+                    except RuntimeError as exc:
+                        assert "routed records need scipy==" in str(exc), (name, exc)
+                    else:
+                        raise AssertionError(f"{name} accepted scipy {scipy_version}")
+            assert not optimizer_calls, f"{name} reached the optimizer around the router stub"
+            if not matching:
+                assert not calls, f"{name} routed {len(calls)} times before refusing scipy {scipy_version}"
+                continue
+            assert len(calls) == expected_routes, (name, len(calls), expected_routes)
+            assert checked["highs"] == "9.9.9" and "not pinned" in checked["highs_status"]
+            if name.startswith("build_reference"):
+                assert built["round_trip"]["wire"]["solver"] == checked, name
+            elif name.startswith("build_variant"):
+                assert built["routed_wirelength"]["solver"] == checked, name
+
+
 def check_variant_manifest(variant: dict):
     ref = reference(variant["derived_from"]["reference_id"])
     geometry = TapGeometry.load(variant["fixture"]["fixture_id"])
@@ -642,6 +700,9 @@ class ReferenceDataTests(unittest.TestCase):
 
     def test_rounding_rule_and_its_tie(self):
         check_rounding_rule(REAL)
+
+    def test_solver_pin_is_checked_before_any_route(self):
+        check_solver_pin_is_checked_before_any_route(REAL)
 
     def test_engineering_variants(self):
         for name in self.NAMES:

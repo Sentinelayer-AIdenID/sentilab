@@ -38,7 +38,8 @@ Rebuilding:
 - `python -m sundai_hotspot.tap_references --check` rebuilds every JSON above, except the extraction output, and compares bytes. `--write` regenerates them.
 - `sundai_hotspot/test_references.py` runs the same check.
 - The build runs the open router (a MILP on HiGHS, a real optimizer) but never a thermal solver.
-- The routed numbers are recorded with the pinned solver stack (scipy 1.17.0, HiGHS 1.8.0). The build refuses any other scipy.
+- Every route goes through one guarded boundary, `_routed_mm` in `sundai_hotspot/tap_references.py`. It checks SciPy against its pin (1.17.0, `requirements.txt`) before the optimizer runs, so a mismatched SciPy is refused with zero optimizer calls.
+- Only SciPy is pinned. The HiGHS version that SciPy reports (1.8.0) is recorded with the routed numbers; it is not pinned, and it does not admit any other binary or host.
 
 ## Frozen identities
 
