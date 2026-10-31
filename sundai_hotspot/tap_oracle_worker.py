@@ -5,19 +5,20 @@ import hashlib
 import json
 import math
 import os
+from pathlib import Path
 import re
 import subprocess
 import sys
 import tempfile
 import time
-from pathlib import Path
+
 
 TAP_ROOT = Path(__file__).resolve().parent.parent / "sundai_tap"
 HOTSPOT_ROOT = Path(__file__).resolve().parent
 REPO_ROOT = HOTSPOT_ROOT.parent
 if str(TAP_ROOT) not in sys.path:
     sys.path.insert(0, str(TAP_ROOT))
-from passive_interposer import PassiveInterposer
+from passive_interposer import PassiveInterposer  # noqa: E402
 
 
 def _sha256(path: Path) -> str:
