@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
-# SLAB-002 regression script: rerun every claim from a clean checkout without touching shipped evidence.
+# SLAB-002 regression script: rerun every claim without touching shipped evidence.
+# Fixes applied per warden review of PR #6 (gpt-astra-carter #56118):
+#   (1) PROVENANCE verifies against immutable git blobs from import base 0cd32a4,
+#       not the working tree; separately reports files that evolved since import.
+#   (2) TFL-14 nonzero exit fails the script (was swallowed by unconditional || echo).
+#   (3) demo.py output is captured and asserted: 93.3423169→92.3143491, receipt_chain_valid=true.
+#   (4) Fresh results written to a separate observation block with runtime hashes
+#       before scratch cleanup; original 05:10Z observations preserved.
 # Exits nonzero on any failure. Requires: python3.12, build-essential, libsuperlu-dev, libblas-dev.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -8,6 +15,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export FLIGHT_SIGNING_SEED_B64="$(python3 -c 'import base64,os;print(base64.b64encode(os.urandom(32)).decode())')"
 FAILED=0
 PASSED=0
+IMPORT_BASE="0cd32a4"
 
 red()   { printf '\033[31m%s\033[0m\n' "$*"; }
 green() { printf '\033[32m%s\033[0m\n' "$*"; }
@@ -27,25 +35,43 @@ dpkg -l libsuperlu-dev libblas-dev 2>/dev/null | grep '^ii' || true
 echo
 
 # --- PROVENANCE ---
-echo "--- PROVENANCE.json ---"
+# Verify every manifest entry against its immutable git blob from the import
+# base (0cd32a4), not the working tree. Separately report which tracked files
+# evolved since the import and assert the working tree is clean.
+echo "--- PROVENANCE.json (vs immutable git blobs at $IMPORT_BASE) ---"
 python3 -c "
-import json, hashlib, os
+import json, hashlib, subprocess, sys
 with open('$ROOT/PROVENANCE.json') as f:
     p = json.load(f)
 mismatches = 0
+missing_blobs = 0
 for entry in p['files']:
-    path = os.path.join('$ROOT', entry['path'])
-    if not os.path.isfile(path):
-        raise SystemExit(f'missing: {entry[\"path\"]}')
-    with open(path, 'rb') as fh:
-        actual = hashlib.sha256(fh.read()).hexdigest()
+    blob = entry['git_blob']
+    r = subprocess.run(['git', 'cat-file', '-e', blob], cwd='$ROOT', capture_output=True)
+    if r.returncode != 0:
+        print(f'BLOB MISSING: {entry[\"path\"]} blob={blob}')
+        missing_blobs += 1
+        continue
+    r = subprocess.run(['git', 'cat-file', 'blob', blob], cwd='$ROOT', capture_output=True, text=False)
+    actual = hashlib.sha256(r.stdout).hexdigest()
     if actual != entry['sha256']:
-        print(f'MISMATCH: {entry[\"path\"]} (expected {entry[\"sha256\"][:16]}... got {actual[:16]}...)')
+        print(f'SHA256 MISMATCH: {entry[\"path\"]} (expected {entry[\"sha256\"][:16]}... got {actual[:16]}...)')
         mismatches += 1
+if missing_blobs > 0:
+    raise SystemExit(f'PROVENANCE: {missing_blobs} blobs missing from repo')
 if mismatches > 0:
-    raise SystemExit(f'PROVENANCE MISMATCHES: {mismatches}')
-print(f'OK: {len(p[\"files\"])} files checked, 0 mismatches')
-" && pass "PROVENANCE.json" || fail "PROVENANCE.json"
+    raise SystemExit(f'PROVENANCE SHA256 MISMATCHES: {mismatches}')
+print(f'IMMUTABLE IMPORT VERIFIED: {len(p[\"files\"])} files checked against git blobs at $IMPORT_BASE, 0 mismatches')
+" && pass "PROVENANCE vs blobs" || fail "PROVENANCE vs blobs"
+
+# --- Delta from import ---
+echo "--- Delta from import base $IMPORT_BASE ---"
+CHANGED_FILES=$(git -C "$ROOT" diff --name-only "$IMPORT_BASE" HEAD | sort)
+if [ -n "$CHANGED_FILES" ]; then
+    CHANGED_COUNT=$(echo "$CHANGED_FILES" | wc -l)
+    echo "  $CHANGED_COUNT files evolved since $IMPORT_BASE (legitimate post-import changes):"
+    echo "$CHANGED_FILES" | while IFS= read -r f; do echo "    $f"; done
+fi
 
 # --- Activate venv ---
 if [ ! -d "$ROOT/.venv" ]; then
@@ -87,28 +113,34 @@ SCRATCH="$(mktemp -d)"
 trap 'rm -rf "$SCRATCH"' EXIT
 cp -r "$ROOT/sundai_controller" "$ROOT/sundai_hotspot" "$ROOT/sundai_tap" "$ROOT/sundai_thermal" "$SCRATCH/"
 
+# Record hashes for the observation block
+SCRIPT_SHA=$(sha256sum "$0" | cut -d' ' -f1)
+HEAD_SHA=$(git -C "$ROOT" rev-parse HEAD)
+
 # HotSpot probe in scratch
 echo "--- HotSpot probe (8 Ascend910 cases) ---"
 (cd "$SCRATCH/sundai_hotspot" && python run_tap_probe.py --report "$SCRATCH/sundai_hotspot/probe_results/report.json" > /dev/null) \
   && pass "HotSpot probe" || fail "HotSpot probe"
 
-# TFL-14 full regression: both tests. probe-peaks must pass; README artifact check is a known
-# failure on base 126507d4 (import defect fixed on main by 29b0c3b). We require the probe-peaks
-# test to pass and note the README test status.
+# TFL-14 full regression: both tests must pass on main (README artifact check
+# was fixed at 29b0c3b). Any nonzero exit fails the script.
 echo "--- TFL-14 regression ---"
 (cd "$ROOT/sundai_thermal" && OPENBLAS_CORETYPE=Haswell TFL_CANONICAL_CONTAINER=1 TFL_HOTSPOT_PROBE_REPORT="$SCRATCH/sundai_hotspot/probe_results/report.json" python -m unittest -q \
-    test_tfl14_regression.TFL14RegressionTests.test_eight_published_hotspot_probe_peaks) \
-  && pass "TFL-14 probe peaks" || fail "TFL-14 probe peaks"
-echo "--- TFL-14 README artifact check (expected fail on base 126507d4) ---"
-(cd "$ROOT/sundai_thermal" && OPENBLAS_CORETYPE=Haswell TFL_CANONICAL_CONTAINER=1 TFL_HOTSPOT_PROBE_REPORT="$SCRATCH/sundai_hotspot/probe_results/report.json" python -m unittest -q \
-    test_tfl14_regression.TFL14RegressionTests.test_seeded_random_annealing_and_recorded_artifacts_are_reproducible 2>&1) \
-  && pass "TFL-14 README artifacts (note: passes on main 29b0c3b)" \
-  || echo "  NOTE: expected failure on base 126507d4 (import defect: rewritten README). Passes on main 29b0c3b."
+    test_tfl14_regression) \
+  && pass "TFL-14 full regression" || fail "TFL-14 full regression"
 
-# Demo in scratch
+# Demo in scratch — capture output and assert the known values
 echo "--- Deterministic demo ---"
-(cd "$SCRATCH/sundai_controller" && python demo.py > /dev/null) \
+(cd "$SCRATCH/sundai_controller" && python demo.py > "$SCRATCH/demo.out" 2>&1) \
   && pass "Demo" || fail "Demo"
+python3 -c "
+import json
+d = json.load(open('$SCRATCH/demo.out', encoding='utf-8'))
+assert round(d['baseline_c'], 7) == 93.3423169, f\"baseline {d['baseline_c']}\"
+assert round(d['final_c'], 7) == 92.3143491, f\"final {d['final_c']}\"
+assert d['receipt_chain_valid'] is True, d
+print(f\"demo OK: {d['baseline_c']} → {d['final_c']} C, receipt_chain_valid={d['receipt_chain_valid']}\")
+" && pass "Demo assertions" || fail "Demo assertions"
 
 # TFL-05 smoke in scratch
 echo "--- TFL-05 smoke ---"
@@ -124,6 +156,15 @@ echo "--- TFL-09 run service ---"
 
 # --- No tracked-file changes ---
 echo "--- Clean checkout check ---"
+# Write fresh observation block with runtime hashes before scratch cleanup
+OBS_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+RUNTIME_VERSIONS="gcc=$(gcc --version 2>/dev/null | head -1) python=$(python3 --version 2>&1) superlu=$(dpkg -l libsuperlu-dev 2>/dev/null | grep '^ii' | awk '{print $3}') blas=$(dpkg -l libblas-dev 2>/dev/null | grep '^ii' | awk '{print $3}')"
+echo "--- Fresh observation block ---"
+echo "  observed_at: $OBS_TIME"
+echo "  head_sha: $HEAD_SHA"
+echo "  script_sha256: $SCRIPT_SHA"
+echo "  host: $(uname -a)"
+echo "  runtime: $RUNTIME_VERSIONS"
 DIRTY=$(git -C "$ROOT" status --porcelain)
 if [ -n "$DIRTY" ]; then
     red "TRACKED FILES MODIFIED:"
