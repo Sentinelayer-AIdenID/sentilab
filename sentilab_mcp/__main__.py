@@ -1,13 +1,28 @@
-"""Minimal stdio MCP host for the four shared live operations."""
+"""Minimal stdio MCP host for the shared live and ResultCheck operations."""
 import asyncio
 import json
 import sys
 
-from sentilab_core.operations import environment_context
 from . import TOOLS
 
 
+class LazyLiveContext:
+    """Share one live context per host, initialized only by a live call."""
+
+    def __init__(self):
+        self.context = None
+
+    def get(self):
+        if self.context is None:
+            from sentilab_core.operations import environment_context
+            self.context = environment_context()
+        return self.context
+
+
 def schema(name):
+    if name == "sentilab_resultcheck":
+        return {"type": "object", "properties": {"file": {"type": "string"}},
+                "required": ["file"], "additionalProperties": False}
     properties = {"ai_off": {"type": "boolean", "const": True}}
     required = ["ai_off"]
     if name != "sentilab_live_stop":
@@ -27,13 +42,30 @@ async def handle(request, context):
         return {"protocolVersion": "2024-11-05", "capabilities": {"tools": {}},
                 "serverInfo": {"name": "sentilab-live", "version": "0.1"}}
     if method == "tools/list":
-        return {"tools": [{"name": name, "description": "AI off live " + name.rsplit("_", 1)[-1],
+        return {"tools": [{"name": name, "description": ("Check local ResultCheck v2 file consistency and arithmetic"
+                                           if name == "sentilab_resultcheck" else "AI off live " + name.rsplit("_", 1)[-1]),
                            "inputSchema": schema(name)} for name in TOOLS]}
     if method == "tools/call":
         params = request["params"]
         name, arguments = params["name"], params.get("arguments", {})
         if name not in TOOLS or set(arguments) - set(schema(name)["properties"]):
             raise ValueError("invalid live operation")
+        if name == "sentilab_resultcheck":
+            from sentilab_core.resultcheck import canonical, exit_code
+            if set(arguments) != {"file"} or not isinstance(arguments["file"], str):
+                raise ValueError("file must be a local path string")
+            try:
+                receipt = TOOLS[name](context, **arguments)
+            except (OSError, ValueError):
+                return {"content": [{"type": "text", "text": canonical({"error": {"code": "file_unreadable"}})}],
+                        "isError": True}
+            return {"content": [{"type": "text", "text": canonical(receipt)}],
+                    "isError": exit_code(receipt) != 0}
+        if isinstance(context, LazyLiveContext):
+            context = context.get()
+        if context is None:
+            from sentilab_core.operations import environment_context
+            context = environment_context()
         result = TOOLS[name](context, **arguments)
         if hasattr(result, "__await__"):
             result = await result
@@ -43,7 +75,9 @@ async def handle(request, context):
     raise ValueError("unknown method")
 
 
-async def serve(context):
+async def serve(context=None):
+    if context is None:
+        context = LazyLiveContext()
     reader = asyncio.StreamReader(limit=65538)
     transport, _ = await asyncio.get_running_loop().connect_read_pipe(
         lambda: asyncio.StreamReaderProtocol(reader), sys.stdin.buffer)
@@ -102,7 +136,7 @@ async def serve(context):
 
 
 def main():
-    asyncio.run(serve(environment_context()))
+    asyncio.run(serve())
 
 
 if __name__ == "__main__":

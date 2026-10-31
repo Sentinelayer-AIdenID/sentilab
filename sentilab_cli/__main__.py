@@ -1,21 +1,34 @@
 import argparse
 import asyncio
 import json
-
-from sentilab_core import operations
-from sentilab_core.budget import Limits
+import sys
 
 
 async def dispatch(command, context, **arguments):
+    from sentilab_core import operations
     operation = getattr(operations, command)
     result = operation(context, **arguments)
     return await result if hasattr(result, "__await__") else result
 
 
 def main(conductor=False):
+    if not conductor and sys.argv[1:2] == ["resultcheck"]:
+        from sentilab_core.resultcheck import canonical, check_file, exit_code
+        parser = argparse.ArgumentParser(prog="sentilab resultcheck")
+        parser.add_argument("file", help="UTF-8 ResultCheck v2 JSON file")
+        args = parser.parse_args(sys.argv[2:])
+        try:
+            receipt = check_file(args.file)
+        except (OSError, ValueError):
+            print(canonical({"error": {"code": "file_unreadable"}}))
+            raise SystemExit(2)
+        print(canonical(receipt))
+        raise SystemExit(exit_code(receipt))
+    from sentilab_core import operations
+    from sentilab_core.budget import Limits
     parser = argparse.ArgumentParser(prog="sentilab" if not conductor else "sentilab_core.conductor")
     if not conductor:
-        parser.add_argument("namespace", choices=["live"])
+        parser.add_argument("namespace", choices=["live"], help="live operations; use resultcheck <file> for offline checking")
         parser.add_argument("command", choices=["run", "status", "stop", "verify"])
     parser.add_argument("--ai-off", action="store_true", default=conductor)
     parser.add_argument("--run-id")
