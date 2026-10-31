@@ -136,12 +136,19 @@ class Ledger:
     def summary(self):
         events = self.events()
         final = next((row for row in events if row['event'] == 'finished'), {})
+        direct_calls = sum(row['event'] == 'violation' for row in events)
+        seconds = (final.get('cpu') or {}).get('cpu_seconds')
+        violations = []
+        if seconds is not None and seconds > CPU_CAP:
+            violations.append('cpu_limit_violated')
+        if direct_calls:
+            violations.append('launch_violation')
         return {'schema': 'ci-hotspot-settlement-v1', 'allocation_id': ALLOCATION_ID,
                 'identity': self.identity, 'launch_limit': LAUNCH_CAP, 'cpu_limit_seconds': CPU_CAP,
                 'launches_reserved': sum(row['event'] == 'reserved' for row in events),
                 'launches_settled': sum(row['event'] == 'settled' for row in events),
                 'executions_started': sum(row['event'] == 'started' for row in events),
-                'direct_call_violations': sum(row['event'] == 'violation' for row in events),
+                'direct_call_violations': direct_calls, 'violations': violations,
                 'state': final.get('state', 'in_progress'), 'cpu': final.get('cpu'),
                 'events': events, 'experiment_allowance_charged': 0,
                 'historic_consumption': 'unknown; not reconstructed from visible run count'}

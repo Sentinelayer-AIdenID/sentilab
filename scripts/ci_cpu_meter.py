@@ -225,7 +225,7 @@ def run(directory, admission, command):
                          cleanup_complete=(helper_reaped and final_populated is False
                                            and (broker is None or broker.quiescent)),
                          kill_within_reserve=kill_within_reserve)
-        if ledger.summary()['direct_call_violations']:
+        if ledger.summary()['direct_call_violations'] and state != 'cpu_limit_violated':
             state, code = 'launch_violation', 1
         if errors or state == 'inconclusive':
             if errors:

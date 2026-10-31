@@ -91,6 +91,59 @@ class ReconcileTests(unittest.TestCase):
                     self.assert_conservative(result)
                     self.assertEqual(result['identity'], asdict(IDENTITY))
 
+    def test_main_preserves_joint_violations_and_known_higher_charge(self):
+        event_path = self.root / 'event.json'
+        event_path.write_text(json.dumps({'workflow_run': {'id': 123, 'run_attempt': 1,
+                                                         'conclusion': 'failure'}}))
+        output = self.root / 'joint'
+        artifact = output / 'download/settlement.json'
+        artifact.parent.mkdir(parents=True)
+        with patch('scripts.ci_reconcile.GitHubRefs') as store, \
+             patch.dict(os.environ, GITHUB_EVENT_PATH=str(event_path),
+                        GITHUB_REPOSITORY=IDENTITY.repository, GH_TOKEN='fake',
+                        CI_BOOTSTRAP_AUTHORIZATION=''), \
+             patch.object(sys, 'argv', ['ci_reconcile', str(output)]):
+            store.return_value.read_slots.return_value = {1: asdict(IDENTITY)}
+            for seconds in (901, 910):
+                for state in ('cpu_limit_violated', 'launch_violation', 'inconclusive'):
+                    for legacy in (False, True):
+                        with self.subTest(seconds=seconds, state=state, legacy=legacy):
+                            value = copy.deepcopy(self.valid)
+                            value.update(state=state, direct_call_violations=1,
+                                         violations=['cpu_limit_violated', 'launch_violation'])
+                            if legacy:
+                                del value['violations']
+                            value['cpu'].update(cpu_seconds=seconds, charged_cpu_seconds=seconds)
+                            artifact.write_text(json.dumps(value))
+                            main()
+                            result = json.loads((output / 'terminal.json').read_text())
+                            self.assertEqual(result['settlement'], value)
+
+    def test_joint_violation_validation_still_refuses_malformed_evidence(self):
+        joint = copy.deepcopy(self.valid)
+        joint.update(state='launch_violation', direct_call_violations=1,
+                     violations=['cpu_limit_violated', 'launch_violation'])
+        joint['cpu'].update(cpu_seconds=910, charged_cpu_seconds=910)
+        for field, invalid in (('violations', None), ('violations', 'cpu_limit_violated'),
+                               ('violations', []), ('violations', ['launch_violation']),
+                               ('violations', ['cpu_limit_violated'] * 2),
+                               ('direct_call_violations', 0), ('state', 'success'),
+                               ('launches_settled', 0), ('executions_started', True)):
+            with self.subTest(field=field, invalid=invalid):
+                value = copy.deepcopy(joint)
+                value[field] = invalid
+                self.assert_conservative(reconcile(asdict(IDENTITY), 'failure', value))
+        for field, invalid in (('cpu_seconds', float('nan')), ('cpu_seconds', '910'),
+                               ('charged_cpu_seconds', 900), ('charged_cpu_seconds', float('inf'))):
+            with self.subTest(field=field, invalid=invalid):
+                value = copy.deepcopy(joint)
+                value['cpu'][field] = invalid
+                self.assert_conservative(reconcile(asdict(IDENTITY), 'failure', value))
+        # Even a below-cap CPU record cannot invent a violation list.
+        value = copy.deepcopy(self.valid)
+        value['violations'] = ['cpu_limit_violated']
+        self.assert_conservative(reconcile(asdict(IDENTITY), 'failure', value))
+
     def check_known_measurement_and_explicit_unknown_full_charge_are_supported(self):
         result = reconcile(asdict(IDENTITY), 'success', self.valid)
         self.assertEqual(result['settlement']['cpu']['cpu_seconds'], 12.5)
