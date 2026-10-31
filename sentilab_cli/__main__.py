@@ -25,7 +25,7 @@ def advisory_main():
             sub.add_argument("--query", default="")
     route = namespaces.add_parser("route", help="fixture-calibrated advisory routing")
     choice = route.add_mutually_exclusive_group(required=True)
-    choice.add_argument("--task", type=json.loads, help="JSON candidate and score")
+    choice.add_argument("--task", type=json.loads, default=argparse.SUPPRESS, help="JSON candidate and score")
     choice.add_argument("--calibrate", action="store_true", help="report frozen held-out fixture results")
     args = parser.parse_args()
     context = operations.environment_context()
@@ -35,7 +35,8 @@ def advisory_main():
         if args.command == "recall":
             parameters["query"] = args.query
     else:
-        command, parameters = "route", {"task": args.task, "calibrate": args.calibrate}
+        command = "route"
+        parameters = {"calibrate": True} if args.calibrate else {"task": args.task}
     try:
         result = asyncio.run(dispatch(command, context, **parameters))
     except (ValueError, TypeError, KeyError, OSError) as exc:

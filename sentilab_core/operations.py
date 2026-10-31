@@ -98,9 +98,12 @@ def memory_audit(context, *, scope):
     return {"scope": scope, "records": _memory_store(context).audit(scope)}
 
 
-def route(context, *, task=None, calibrate=False):
+_MISSING_TASK = object()
+
+
+def route(context, *, task=_MISSING_TASK, calibrate=False):
     from .routing import load_router_fixture
-    if type(calibrate) is not bool or (task is None) != calibrate:
+    if type(calibrate) is not bool or (task is _MISSING_TASK) != calibrate:
         raise ValueError("supply task or calibrate=true, exclusively")
     fixture = context.routing_fixture
     if not fixture:

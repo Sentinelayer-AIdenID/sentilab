@@ -120,6 +120,15 @@ class MemoryTransportTests(unittest.TestCase):
         self.assertEqual(set(schema("sentilab_memory_recall")["properties"]), {"scope", "query"})
         self.assertFalse(self.context.options, "advisory config must not become conductor options")
 
+    def test_calibration_refuses_explicit_null_task_in_cli_and_mcp(self):
+        arguments = {"calibrate": True, "task": None}
+        self.assertIn("error", self.mcp("sentilab_route", arguments))
+        with self.assertRaisesRegex(ValueError, "exclusively"):
+            asyncio.run(dispatch("route", self.context, **arguments))
+        cli = self.cli("route", "--calibrate", "--task", "null")
+        self.assertNotEqual(cli.returncode, 0)
+        self.assertIn("not allowed", cli.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()
