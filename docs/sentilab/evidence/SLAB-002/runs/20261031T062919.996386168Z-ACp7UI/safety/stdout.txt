@@ -1,0 +1,4 @@
+
+TFL-13 bypasses caught (cases needed): place iterates string coordinates: 1; move coerces coordinates with float() again: 108; candidate binding removed: 10; convergence and finiteness check removed: 10; problem contract check removed: 5; surrogate answers in the simulator's seat: 1; parent registry accepts a design before the simulator answers: 1; initialization ignores the shared designs: 1; initialization skips result validation: 14; cost validation removed: 22; initialization trusts a surrogate answer: 1; STOP and staleness recheck after the simulator removed: 23
+
+TFL-13 property held over 1000 cases: 345 commits, 718 non-honest simulator results, 105 STOPs in flight, 92 cancellations, 911 malformed place inputs rejected, 588 advisory outputs claiming commit authority

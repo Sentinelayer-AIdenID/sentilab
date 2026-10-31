@@ -1,0 +1,25 @@
+{
+  "name": "fingerprints",
+  "command": [
+    "python",
+    "-m",
+    "unittest",
+    "-q",
+    "test_tfl08_leaderboard.py"
+  ],
+  "cwd": "/workspace/sentilab/sundai_controller",
+  "started_at": "2026-10-31T06:29:56.725768Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:30:05.042436Z",
+  "wall_time_s": 8.316671014064923,
+  "artifacts": [],
+  "stdout": {
+    "path": "fingerprints/stdout.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "fingerprints/stderr.txt",
+    "sha256": "b522daca18dacd68b5df3c0b711ffa2e256cc844c0b3c3217b353f5201d3064d"
+  },
+  "test_count": 8
+}

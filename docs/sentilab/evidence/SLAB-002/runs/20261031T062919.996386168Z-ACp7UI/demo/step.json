@@ -1,0 +1,30 @@
+{
+  "name": "demo",
+  "command": [
+    "python",
+    "demo.py"
+  ],
+  "cwd": "/tmp/tmp.BQCHiVnG6s/sundai_controller",
+  "started_at": "2026-10-31T06:30:29.499254Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:30:31.241331Z",
+  "wall_time_s": 1.742063269019127,
+  "artifacts": [
+    {
+      "path": "demo/artifacts/demo_results.json",
+      "sha256": "06b7798a13b477b66ebcec5ec5eb8d7cdfb7a7a0c280b8095b6f1d39276d6b97"
+    },
+    {
+      "path": "demo/artifacts/demo_flight_record.json",
+      "sha256": "fbab342f678d4b7443a51711ea5dfe0016c26d345101334104d2b8860efe5bfb"
+    }
+  ],
+  "stdout": {
+    "path": "demo/stdout.txt",
+    "sha256": "50b36339b110db1a282a5d0bd03a7a203b5514b9eb156dab50844a7dd2a0c7aa"
+  },
+  "stderr": {
+    "path": "demo/stderr.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

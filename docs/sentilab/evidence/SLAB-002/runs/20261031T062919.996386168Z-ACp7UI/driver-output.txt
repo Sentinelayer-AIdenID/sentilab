@@ -1,0 +1,56 @@
+=== SLAB-002 regression ===
+ROOT=/workspace/sentilab
+
+--- Toolchain ---
+toolchain: exit 0, 0.009s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/toolchain
+
+--- PROVENANCE.json (vs immutable git blobs at 126507d4dbd8cf327aa158c4dd893c436f7cdf8f) ---
+provenance: exit 0, 2.681s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/provenance
+[32m  PASS: PROVENANCE vs blobs[0m
+--- Delta from import base 126507d4dbd8cf327aa158c4dd893c436f7cdf8f ---
+import-delta: exit 0, 0.003s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/import-delta
+dependencies: exit 0, 0.932s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/dependencies
+--- HotSpot build ---
+hotspot-build: exit 0, 5.438s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/hotspot-build
+[32m  PASS: HotSpot build[0m
+  HotSpot sha256: e4358b46794ebc00f07102d13b3ca687507834a1784eba135d26d1d493d334b4
+--- Controller tests (55: 47 + 8) ---
+controller: exit 0, 0.514s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/controller
+[32m  PASS: Controller tests[0m
+--- Safety property (1,000-case TFL-13) ---
+safety: exit 0, 26.793s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/safety
+[32m  PASS: Safety property[0m
+--- TFL-08 fingerprints ---
+fingerprints: exit 0, 8.317s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/fingerprints
+[32m  PASS: TFL-08 fingerprints[0m
+--- Tap oracle ---
+tap-oracle: exit 0, 6.392s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/tap-oracle
+[32m  PASS: Tap oracle[0m
+scratch-copy: exit 0, 0.034s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/scratch-copy
+scratch-outputs: exit 0, 0.002s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/scratch-outputs
+--- HotSpot probe (8 Ascend910 cases) ---
+probe: exit 0, 2.460s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/probe
+[32m  PASS: HotSpot probe[0m
+--- TFL-14 regression ---
+thermal: exit 0, 15.314s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/thermal
+[32m  PASS: TFL-14 full regression[0m
+--- Deterministic demo ---
+demo: exit 0, 1.742s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/demo
+[32m  PASS: Demo[0m
+demo-assertions: exit 0, 0.020s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/demo-assertions
+[32m  PASS: Demo assertions[0m
+--- TFL-05 smoke ---
+smoke-plate: exit 0, 1.787s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/smoke-plate
+[32m  PASS: TFL-05 plate[0m
+smoke-ascend910: exit 0, 1.778s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/smoke-ascend910
+[32m  PASS: TFL-05 ascend910[0m
+--- TFL-09 run service ---
+service: exit 0, 2.354s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/service
+[32m  PASS: TFL-09 run service[0m
+--- Clean checkout check ---
+clean-checkout: exit 0, 0.009s; /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/clean-checkout
+[32m  PASS: Clean checkout[0m
+
+=== Results: 14 passed, 0 failed ===
+[32mALL CHECKS PASSED[0m
+Run evidence: /workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/run.json

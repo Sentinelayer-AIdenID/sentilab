@@ -1,0 +1,22 @@
+{
+  "name": "provenance",
+  "command": [
+    "python3",
+    "-c",
+    "\nimport json, hashlib, subprocess, sys\nwith open('/workspace/sentilab/PROVENANCE.json') as f:\n    p = json.load(f)\nmismatches = 0\nmissing_blobs = 0\nfor entry in p['files']:\n    blob = entry['git_blob']\n    r = subprocess.run(['git', 'cat-file', '-e', blob], cwd='/workspace/sentilab', capture_output=True)\n    if r.returncode != 0:\n        print(f'BLOB MISSING: {entry[\"path\"]} blob={blob}')\n        missing_blobs += 1\n        continue\n    at_import = subprocess.run(['git', 'rev-parse', '126507d4dbd8cf327aa158c4dd893c436f7cdf8f:' + entry['path']], cwd='/workspace/sentilab', capture_output=True, text=True)\n    if at_import.returncode != 0 or at_import.stdout.strip() != blob:\n        print(f'IMPORT TREE MISMATCH: {entry[\"path\"]} is not blob {blob} at 126507d4dbd8cf327aa158c4dd893c436f7cdf8f')\n        mismatches += 1\n        continue\n    r = subprocess.run(['git', 'cat-file', 'blob', blob], cwd='/workspace/sentilab', capture_output=True, text=False)\n    actual = hashlib.sha256(r.stdout).hexdigest()\n    if actual != entry['sha256']:\n        print(f'SHA256 MISMATCH: {entry[\"path\"]} (expected {entry[\"sha256\"][:16]}... got {actual[:16]}...)')\n        mismatches += 1\nif missing_blobs > 0:\n    raise SystemExit(f'PROVENANCE: {missing_blobs} blobs missing from repo')\nif mismatches > 0:\n    raise SystemExit(f'PROVENANCE SHA256 MISMATCHES: {mismatches}')\nprint(f'IMMUTABLE IMPORT VERIFIED: {len(p[\"files\"])} files checked against git blobs at 126507d4dbd8cf327aa158c4dd893c436f7cdf8f, 0 mismatches')\n"
+  ],
+  "cwd": "/workspace/sentilab",
+  "started_at": "2026-10-31T06:29:20.121590Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:29:22.802680Z",
+  "wall_time_s": 2.681088186101988,
+  "artifacts": [],
+  "stdout": {
+    "path": "provenance/stdout.txt",
+    "sha256": "6971437804fafc096d2dd4399c35709c92d4d6f02e5f6ba106be930dfe0f341c"
+  },
+  "stderr": {
+    "path": "provenance/stderr.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

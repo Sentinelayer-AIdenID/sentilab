@@ -1,0 +1,48 @@
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -c hotspot.c
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -c microchannel.c
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -c materials.c
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -c temperature.c
+gcc -MM -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 materials.c > materials.d
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -c RCutil.c
+gcc -MM -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 hotspot.c > hotspot.d
+gcc -MM -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 microchannel.c > microchannel.d
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -c package.c
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -c temperature_block.c
+gcc -MM -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 temperature.c > temperature.d
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -c temperature_grid.c
+gcc -MM -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 package.c > package.d
+gcc -MM -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 RCutil.c > RCutil.d
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -c flp.c
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -c flp_desc.c
+gcc -MM -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 flp_desc.c > flp_desc.d
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -c npe.c
+gcc -MM -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 temperature_block.c > temperature_block.d
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -c shape.c
+gcc -MM -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 npe.c > npe.d
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -c util.c
+gcc -MM -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 shape.c > shape.d
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -c wire.c
+gcc -MM -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 wire.c > wire.d
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -c hotfloorplan.c
+gcc -MM -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 flp.c > flp.d
+gcc -MM -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 hotfloorplan.c > hotfloorplan.d
+gcc -MM -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 util.c > util.d
+gcc -MM -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 temperature_grid.c > temperature_grid.d
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -o hotspot hotspot.o microchannel.o materials.o temperature.o RCutil.o package.o temperature_block.o temperature_grid.o flp.o flp_desc.o npe.o shape.o util.o wire.o -lm -lblas -lsuperlu
+gcc -O3  -I/usr/include/superlu/  -DVERBOSE=1 -DMATHACCEL=0 -DSUPERLU=1 -o hotfloorplan hotfloorplan.o microchannel.o materials.o temperature.o RCutil.o package.o temperature_block.o temperature_grid.o flp.o flp_desc.o npe.o shape.o util.o wire.o -lm -lblas -lsuperlu
+rm -f libhotspot.a
+ar qcv libhotspot.a microchannel.o materials.o temperature.o RCutil.o package.o temperature_block.o temperature_grid.o flp.o flp_desc.o npe.o shape.o util.o wire.o
+a - microchannel.o
+a - materials.o
+a - temperature.o
+a - RCutil.o
+a - package.o
+a - temperature_block.o
+a - temperature_grid.o
+a - flp.o
+a - flp_desc.o
+a - npe.o
+a - shape.o
+a - util.o
+a - wire.o
+ranlib libhotspot.a

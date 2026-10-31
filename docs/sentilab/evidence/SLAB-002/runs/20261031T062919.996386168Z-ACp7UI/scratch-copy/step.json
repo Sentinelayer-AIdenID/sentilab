@@ -1,0 +1,26 @@
+{
+  "name": "scratch-copy",
+  "command": [
+    "cp",
+    "-r",
+    "/workspace/sentilab/sundai_controller",
+    "/workspace/sentilab/sundai_hotspot",
+    "/workspace/sentilab/sundai_tap",
+    "/workspace/sentilab/sundai_thermal",
+    "/tmp/tmp.BQCHiVnG6s/"
+  ],
+  "cwd": "/workspace/sentilab",
+  "started_at": "2026-10-31T06:30:11.527075Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:30:11.560781Z",
+  "wall_time_s": 0.03370805806480348,
+  "artifacts": [],
+  "stdout": {
+    "path": "scratch-copy/stdout.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "scratch-copy/stderr.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}
