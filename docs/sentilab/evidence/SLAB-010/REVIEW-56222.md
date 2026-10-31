@@ -84,6 +84,39 @@ check or network dependency audit was rerun for this round. The repository has
 no npm/TypeScript manifest; no substitute manifest was added. Local subset success
 is not full CI or independent review approval. Operator carry and review remain.
 
+## Container finding follow-up (2026-10-31, 07:53 UTC)
+
+The repeated missing-Node finding is addressed by the existing `33a294c` fix
+above. Fresh local checks on `aabce39` confirm the placement; no further runtime
+or CI change was needed. With Node absent, **71 tests pass, zero skipped**:
+
+```sh
+PATH=/nonexistent /workspace/sentilab/.venv/bin/python -m unittest -q sentilab_core.test_memory sentilab_core.test_projection_contract sentilab_core.test_memory_transports sentilab_core.test_routing sentilab_core.test_ledger sentilab_core.test_gate sentilab_core.test_budget sentilab_core.test_signing sentilab_core.test_environment sentilab_core.test_history
+.venv/bin/python -m unittest -q sentilab_core.conformance.CanonicalConformance sentilab_core.conformance.HistoryConformance sentilab_core.conformance.MemoryProjectionConformance
+```
+
+The second command passes **11 tests, zero skipped**, with Node present. Loading
+`sentilab_core.conformance` with `unittest.defaultTestLoader.loadTestsFromModule`
+discovers 12 tests, including all three `MemoryProjectionConformance` methods.
+Loading `discover('sentilab_core', pattern='test_*.py', top_level_dir='.')`
+discovers 91 core tests, with no conformance test included. Discovery alone does
+not run the solve-bearing tests. The existing CI job installs Python 3.12 and
+Node 22 and invokes this conformance module; no parity test depends on an
+availability skip. The full 12-test conformance job was not run locally.
+
+A fresh detached worktree at `b6bc110` reproduces the reported error with:
+
+```sh
+PATH=/nonexistent /workspace/sentilab/.venv/bin/python -m unittest -q sentilab_core.test_memory.MemoryTests.test_correction_projection_matches_reviewed_contract_without_solves
+```
+
+Result: one error, `FileNotFoundError: [Errno 2] No such file or directory: 'node'`.
+The three signed P2 probes were also rerun against the pre-fix implementation
+and failed again: missing semantics was admitted, and both support overwrites
+kept withdrawn memory in recall. All three pass in the 71-test run above.
+The 16 contract hashes, `pip check`, compilation and whitespace checks also
+pass again. Full container/solver CI and independent review remain pending.
+
 ## Delivery tracking against ticket 23a5285a
 
 Authorized CLI/MCP **memory write and invalidate** delivery remains outstanding
