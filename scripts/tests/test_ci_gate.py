@@ -218,3 +218,43 @@ int main(int argc, char **argv) {
             self.assertTrue(server.quiescent)
         finally:
             server.server_close()
+
+    def test_fresh_process_oracle_preserves_ci_gate_without_forwarding_credentials(self):
+        import asyncio
+        import importlib.util
+        import sys
+        import types
+
+        # Replace only the numerical base-class dependency; execute the actual
+        # FreshProcessOracle transport and a real nonthermal subprocess/broker.
+        dependency = types.ModuleType('sundai_hotspot.tap_oracle')
+        dependency.HotSpotOracle = object
+        spec = importlib.util.spec_from_file_location('ci_oracle_probe', ROOT / 'sentilab_core/oracle.py')
+        module = importlib.util.module_from_spec(spec)
+        with patch.dict(sys.modules, {'sundai_hotspot.tap_oracle': dependency}):
+            spec.loader.exec_module(module)
+        oracle = module.FreshProcessOracle.__new__(module.FreshProcessOracle)
+        read_fd, write_fd = os.pipe()
+        self.addCleanup(os.close, write_fd)
+        self.addCleanup(os.close, read_fd)
+        oracle.reservation = {'ceiling_s': 5, 'lease_fd': read_fd, 'operation_id': 'fake'}
+        oracle.stop_file = None
+        server = serve(self.ledger, now=lambda: 1793448000)
+        self.addCleanup(server.server_close)
+        spawn = asyncio.create_subprocess_exec
+
+        async def fake_worker(*args, **kwargs):
+            self.assertNotIn('GH_TOKEN', kwargs['env'])
+            self.assertNotIn('GITHUB_TOKEN', kwargs['env'])
+            script = ('import json,sys; from sundai_hotspot.ci_gate import run_hotspot; '
+                      'p=run_hotspot([sys.argv[1]],capture_output=True); '
+                      'assert p.returncode == 0, p.stderr; '
+                      'print(json.dumps(dict(result="fake-result", cpu_s=0.01, process_id="fake")))')
+            return await spawn(sys.executable, '-c', script, str(self.binary), **kwargs)
+
+        with patch.dict(os.environ, CI_ALLOCATION='1', GH_TOKEN='fake', GITHUB_TOKEN='fake'), \
+             patch.object(asyncio, 'create_subprocess_exec', fake_worker):
+            self.assertEqual(asyncio.run(oracle._evaluate({}, worker_timeout_s=5)), 'fake-result')
+        self.assertEqual(self.ledger.summary()['launches_reserved'], 1)
+        self.assertEqual(self.ledger.summary()['launches_settled'], 1)
+        self.assertEqual(self.ledger.summary()['direct_call_violations'], 0)

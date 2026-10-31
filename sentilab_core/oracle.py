@@ -58,6 +58,8 @@ class FreshProcessOracle(HotSpotOracle):
         environment = {key: os.environ[key] for key in ("PATH", "LANG", "LC_ALL", "TMPDIR") if key in os.environ}
         environment.update({"OPENBLAS_NUM_THREADS": "1", "OMP_NUM_THREADS": "1",
                             "MKL_NUM_THREADS": "1", "PYTHONUNBUFFERED": "1", "PYTHONPATH": str(ROOT)})
+        if os.environ.get("CI_ALLOCATION") == "1":
+            environment["CI_ALLOCATION"] = "1"
         # No signer is passed in argv, stdin or environment. This process invokes
         # the imported worker once and exits; it never receives a signing key.
         process = await asyncio.create_subprocess_exec(
