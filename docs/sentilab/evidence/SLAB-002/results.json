@@ -12,7 +12,9 @@
     "hotfloorplan_binary_sha256": "314b454c0e235809bf9295ee3202c65a100cca2e69ffe8045ad1eed037519653",
     "uname": "Linux respawn-6b23dc5cc8ed 7.0.0-1017-azure #17~24.04.1-Ubuntu SMP PREEMPT Thu Sep 24 18:46:57 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux",
     "cpu_count": 16,
-    "memory_gb": 62
+    "memory_gb": 62,
+    "regress_script_sha256": "b500c73d767e86aa7517c67195e077518309a6ae5b33264570b114f6822fff8d",
+    "regress_head_sha": "a0056cada44cbf1a8fdb43dd6a42e589788f6f7f"
   },
   "provenance": {
     "total_entries": 494,
@@ -208,10 +210,12 @@
     ]
   },
   "fresh_observation": {
-    "note": "This block will be populated by the next regress run. Original 05:10Z observations preserved above.",
-    "observed_at": "PENDING_NEXT_RUN",
-    "head_sha": "PENDING",
-    "script_sha256": "PENDING",
-    "runtime_versions": "PENDING"
+    "observed_at": "2026-10-31T06:01:21Z",
+    "head_sha": "a0056cada44cbf1a8fdb43dd6a42e589788f6f7f",
+    "script_sha256": "b500c73d767e86aa7517c67195e077518309a6ae5b33264570b114f6822fff8d",
+    "host": "Linux respawn-6b23dc5cc8ed 7.0.0-1017-azure x86_64, 16 cores, 62 GB RAM",
+    "runtime_versions": "gcc 13.3.0, python 3.12.3, superlu 6.0.1+dfsg1-1build1, blas 3.12.0-3build1.1",
+    "regress_result": "14 passed, 0 failed",
+    "hotspot_binary_sha256": "e4358b46794ebc00f07102d13b3ca687507834a1784eba135d26d1d493d334b4"
   }
 }
