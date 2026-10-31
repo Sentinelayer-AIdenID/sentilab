@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10191e">
+<title>Lab view · SentiLab</title>
+<meta name="description" content="Four labs and a baseline propose chiplet layouts; every status shown comes from the evidence contract over signed, verified events.">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="lab.css">
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="modebox" title="Mode: LIVE needs a poll within 5 s and a verified envelope within 60 s (client clock)">
+      <span class="mode" id="mode"><i></i><b id="modeText">REPLAY</b></span>
+      <span class="drill" id="drill" hidden title="This run contains a seeded correction drill">DRILL</span>
+    </div>
+    <div class="brand"><span class="mark"></span><b>SentiLab</b><span class="sub">Lab view</span></div>
+    <div class="runmeta" id="runMeta"></div>
+    <span class="spacer"></span>
+    <span class="testkeys" id="testKeys" hidden title="Signatures are checked against test keys anyone can derive. Not the production pin.">TEST KEYS</span>
+    <button class="chain" id="chain" type="button" title="Signature and chain check for every envelope; click for details"><i></i><span id="chainText">no envelopes</span></button>
+    <nav class="links"><a href="/">Run view</a><a href="#" id="limitsLink">Honest limits</a></nav>
+  </header>
+
+  <section class="controls">
+    <div class="seg" id="source" role="group" aria-label="Source">
+      <button type="button" data-src="file" class="on">Replay file</button><button type="button" data-src="api">Live feed</button>
+    </div>
+    <select id="runPick" aria-label="Live run" hidden></select>
+    <label class="btn" id="openLabel">Open JSONL<input type="file" id="file" accept=".jsonl,.ndjson,.json,text/plain"></label>
+    <button class="play" id="play" type="button" title="Play / pause (Space)" aria-label="Play">▶</button>
+    <input type="range" id="scrub" min="0" max="0" value="0" aria-label="Envelope position">
+    <span class="pos" id="pos">seq 0 / 0</span>
+    <span class="conn" id="conn"></span>
+    <span class="fixture" id="fixture" hidden>Interface fixture · illustrative values, no solver ran</span>
+  </section>
+
+  <div class="frozen" id="frozen" hidden></div>
+
+  <main class="work" id="work">
+    <section class="panel" id="p1">
+      <header><span class="eyebrow">01 / Chiplet layouts</span><h2>What each lab proposed</h2><span class="spacer"></span>
+        <span class="note">chiplet-center temperatures, not a field</span></header>
+      <div class="body">
+        <div class="cards" id="cards"></div>
+        <div class="legend" id="legend"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="p2">
+      <header><span class="eyebrow">02 / AcceptanceGate</span><h2>Board</h2><span class="spacer"></span><span class="note">status: project() over the verified prefix · J: display value</span><span class="pill" id="boardPill">-</span></header>
+      <div class="body">
+        <div class="best" id="best"></div>
+        <div class="tablewrap"><table class="board" id="board"></table></div>
+        
+      </div>
+    </section>
+
+    <section class="panel" id="p3">
+      <header><span class="eyebrow">03 / Evidence</span><h2>What still stands</h2><span class="spacer"></span><span class="pill" id="evPill">-</span></header>
+      <div class="body">
+        <div class="drillbox" id="drillbox" hidden></div>
+        <div class="tablewrap"><table class="evidence" id="evidence"></table></div>
+      </div>
+    </section>
+
+    <section class="panel" id="p4">
+      <header><span class="eyebrow">04 / Feed</span><h2>Every envelope, in seq order</h2><span class="spacer"></span><span class="pill" id="feedPill">-</span></header>
+      <div class="body">
+        <div class="feedhead"><span>seq</span><span>ts (UTC)</span><span>lab</span><span>event</span><span>outcome</span><span>check</span></div>
+        <div class="feed" id="feed" role="list"></div>
+      </div>
+    </section>
+
+    <div class="offline" id="offline" hidden>
+      <div class="offcard">
+        <span class="eyebrow">Live feed</span>
+        <h3 id="offTitle">Live feed not connected</h3>
+        <p id="offText">The page asks /api/view/runs every 5 s. The core that serves it is not running yet.</p>
+        <button type="button" class="btn primary" id="backToReplay">Show the replay</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="status"><span id="statusLeft">-</span><span class="c">Order is seq. ts is display only. Status comes only from the verified prefix.</span><span>Space play/pause · ←/→ step · click a row to inspect</span></footer>
+</div>
+
+<dialog id="inspector" aria-labelledby="inspTitle">
+  <header><h3 id="inspTitle">Envelope</h3><span class="spacer"></span><button type="button" class="btn" id="inspClose">Close</button></header>
+  <div class="inspbody" id="inspBody"></div>
+</dialog>
+
+<dialog id="chainDlg" aria-labelledby="chainTitle">
+  <header><h3 id="chainTitle">Chain check</h3><span class="spacer"></span><button type="button" class="btn" id="chainClose">Close</button></header>
+  <div class="inspbody" id="chainBody"></div>
+</dialog>
+
+<dialog id="limits" aria-labelledby="limitsTitle">
+  <header><h3 id="limitsTitle">Honest limits</h3><span class="spacer"></span><button type="button" class="btn" id="limitsClose">Close</button></header>
+  <ul>
+    <li>Status shows only what the evidence contract's project() returns over the unbroken, verified prefix of the chain. After the first break the board freezes; later envelopes are listed but never projected.</li>
+    <li>A verified envelope proves the core's key signed it. It does not prove a measurement is physically right.</li>
+    <li>The production key pin is empty until the core's key exists, so nothing verifies on this site yet. TEST KEYS mode uses keys anyone can derive.</li>
+    <li>Colors are chiplet-center temperatures: one number per chiplet. They are not a continuous thermal field.</li>
+    <li>The bundled demo is an interface fixture with illustrative numbers. No solver produced them.</li>
+    <li>The live feed depends on the core's /api/view routes, which are not served yet. A server that withholds its newest envelopes shows as STALE; the page can see silence, not withholding.</li>
+  </ul>
+</dialog>
+
+<script type="module" src="lab.js"></script>
+</body>
+</html>
