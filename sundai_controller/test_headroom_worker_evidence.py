@@ -71,7 +71,7 @@ class WorkerEvidenceTests(unittest.TestCase):
             return original(*args)
         with ExitStack() as stack:
             stack.enter_context(patch.object(worker, 'PassiveInterposer', return_value=self.system))
-            stack.enter_context(patch.object(worker.subprocess, 'run', side_effect=solve or self.solve))
+            stack.enter_context(patch.object(worker, 'run_hotspot', side_effect=solve or self.solve))
             stack.enter_context(patch.object(worker, '_cpu_seconds', side_effect=lambda: self.cpu, create=True))
             stack.enter_context(patch.object(worker.time, 'perf_counter', side_effect=lambda: self.wall))
             stack.enter_context(patch.object(worker, '_worker_startup', return_value={
@@ -180,7 +180,7 @@ class WorkerEvidenceTests(unittest.TestCase):
                              else 'parent-owned workspace is unavailable')
                     with patch.object(worker, '_output_directory') as output, \
                             patch.object(worker, 'PassiveInterposer') as generator, \
-                            patch.object(worker.subprocess, 'run') as native:
+                            patch.object(worker, 'run_hotspot') as native:
                         with self.assertRaisesRegex(ValueError, error):
                             worker.evaluate(self.request)
                         output.assert_not_called()

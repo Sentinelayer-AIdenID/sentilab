@@ -17,7 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt -r requirements-service.txt
 COPY . .
 RUN python scripts/record_build_info.py --base-image "${PYTHON_BASE}" \
     --node-package-version "${NODEJS_VERSION}" --output /app/build-info.json
-RUN cd sundai_hotspot && make -j4 SUPERLU=1 \
+ARG CI_ALLOCATION=0
+ENV CI_ALLOCATION=${CI_ALLOCATION}
+RUN cd sundai_hotspot && make -j4 SUPERLU=1 CI_ALLOCATION=${CI_ALLOCATION} \
  && mkdir -p /licenses \
  && cp /app/sundai_hotspot/LICENSE /licenses/HotSpot-LICENSE \
  && cp /app/sundai_tap/LICENSE /licenses/TAP-2.5D-LICENSE \

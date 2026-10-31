@@ -4,16 +4,15 @@ Request construction, fixture legality, raw input generation, HotSpot execution
 and response validation remain in sundai_hotspot. Each call uses a fresh worker.
 """
 import asyncio
-from contextlib import asynccontextmanager
 import json
 import os
-from pathlib import Path
 import signal
 import sys
 import tempfile
+from contextlib import asynccontextmanager
+from pathlib import Path
 
 from sundai_hotspot.tap_oracle import HotSpotOracle
-
 
 INITIAL_CENTERS = ((25, 25), (40, 40), (8, 9), (8, 25), (8, 41), (41, 15))
 ROOT = Path(__file__).resolve().parent.parent
@@ -60,6 +59,8 @@ class FreshProcessOracle(HotSpotOracle):
         environment = {key: os.environ[key] for key in ("PATH", "LANG", "LC_ALL", "TMPDIR") if key in os.environ}
         environment.update({"OPENBLAS_NUM_THREADS": "1", "OMP_NUM_THREADS": "1",
                             "MKL_NUM_THREADS": "1", "PYTHONUNBUFFERED": "1", "PYTHONPATH": str(ROOT)})
+        if os.environ.get("CI_ALLOCATION") == "1":
+            environment["CI_ALLOCATION"] = "1"
         # No signer is passed in argv, stdin or environment. This process invokes
         # the imported worker once and exits; it never receives a signing key.
         process = await asyncio.create_subprocess_exec(

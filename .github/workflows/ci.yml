@@ -34,26 +34,270 @@ jobs:
       - name: The Worker boots in the Workers runtime and serves the CSP (wrangler dev)
         run: node web/test/worker-boot.mjs
 
-  container:
+  allocation-proof:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Build the image (runs the smoke tests)
-        run: docker build --build-arg BUILD_SHA=${{ github.sha }} -t thermal-api:ci .
-      - name: Health endpoint answers with the build SHA
+        with:
+          persist-credentials: false
+      - name: Prove allocation with fake launches before any numerical suite
+        run: python3 -m unittest discover -s scripts/tests -p 'test_ci_*.py' -v
+
+  admission:
+    needs: allocation-proof
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read # reservation writer lives in the default-branch workflow_run
+    steps:
+      - name: Record runtime context before admission
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          TRUSTED_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
         run: |
-          docker run -d --name api -p 8000:8000 thermal-api:ci
-          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/api/health && break; sleep 1; done
-          curl -sf http://127.0.0.1:8000/api/health | grep -q '"build_sha":"${{ github.sha }}"'
-      - name: Origin lock refuses callers without the token
+          python3 -I - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          context = {key: os.environ[key] for key in ('GITHUB_SHA', 'GITHUB_RUN_ID',
+                     'GITHUB_RUN_ATTEMPT', 'GITHUB_REPOSITORY', 'GITHUB_WORKFLOW_REF')}
+          context.update(job='container', matrix={}, head_sha=os.environ['PR_HEAD_SHA'],
+                         base_sha=os.environ['TRUSTED_BASE_SHA'])
+          raw = json.dumps(context, sort_keys=True, separators=(',', ':')).encode()
+          directory = Path(os.environ['RUNNER_TEMP']) / 'allocation'
+          directory.mkdir(parents=True, exist_ok=True)
+          (directory / 'context.json').write_bytes(raw)
+          digest = hashlib.sha256(raw).hexdigest()
+          (directory / 'context.sha256').write_text(digest + '\n')
+          print('CI runtime context sha256:', digest)
+          PY
+      - name: Preserve runtime context even on refusal
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: allocation-context-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/allocation/context.json
+            ${{ runner.temp }}/allocation/context.sha256
+          if-no-files-found: error
+          retention-days: 90
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          persist-credentials: false
+      - name: Read global run slot from trusted allocation controller
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          TRUSTED_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+          CI_BOOTSTRAP_AUTHORIZATION: ${{ vars.CI_BOOTSTRAP_AUTHORIZATION }}
         run: |
-          token="$(openssl rand -hex 16)"  # per run: no token-shaped literal in the repo
-          docker run -d --name locked -p 8001:8000 -e ORIGIN_SHARED_TOKEN="$token" thermal-api:ci
-          for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:8001/api/health && break; sleep 1; done
-          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8001/api/health)" = 403
-          test "$(curl -s -o /dev/null -w '%{http_code}' -H "x-origin-token: $(openssl rand -hex 16)" http://127.0.0.1:8001/api/health)" = 403
-          test "$(curl -s -o /dev/null -w '%{http_code}' -H "x-origin-token: $token" http://127.0.0.1:8001/api/health)" = 200
+          test "$(git rev-parse HEAD)" = "$TRUSTED_BASE_SHA"
+          controller_entry="$(git ls-tree "$TRUSTED_BASE_SHA" -- scripts/ci_admit.py)"
+          if [[ -n "$controller_entry" ]]; then
+            python3 -m scripts.ci_admit --read-only "$RUNNER_TEMP/allocation/admission.json"
+          else
+            # One-time rollout only: stdlib, no imports from the PR or base tree.
+            python3 -I - <<'PY'
+          import json
+          import hashlib
+          import os
+          import re
+          import time
+          from pathlib import Path
+
+          base = os.environ['TRUSTED_BASE_SHA']
+          identity = dict(repository=os.environ['GITHUB_REPOSITORY'],
+                          run_id=os.environ['GITHUB_RUN_ID'], attempt=os.environ['GITHUB_RUN_ATTEMPT'],
+                          job='container', matrix={}, head_sha=os.environ['PR_HEAD_SHA'],
+                          build_sha=os.environ['GITHUB_SHA'])
+          path = Path(os.environ['RUNNER_TEMP']) / 'allocation/admission.json'
+          path.parent.mkdir(parents=True, exist_ok=True)
+          debit = dict(run_id=identity['run_id'], attempt=identity['attempt'], charged_launches=100,
+                       charged_cpu_seconds=900, scope='owner rollout; outside durable run counter')
+          # Missing/conflicting evidence is charged conservatively. A captured
+          # first attempt without any authorization has a separate zero debit.
+          receipt = dict(mode='bootstrap', state='admission_refused', allocation_id='56314',
+                         reason='bootstrap authorization not admitted', base_sha=base,
+                         identity=identity, rollout_debit=debit)
+          path.write_text(json.dumps(receipt, indent=2) + '\n')
+          context_json = path.with_name('context.json').read_text()
+          context = json.loads(context_json)
+          live = dict(GITHUB_SHA=identity['build_sha'], GITHUB_RUN_ID=identity['run_id'],
+                      GITHUB_RUN_ATTEMPT=identity['attempt'], GITHUB_REPOSITORY=identity['repository'],
+                      GITHUB_WORKFLOW_REF=os.environ['GITHUB_WORKFLOW_REF'], job='container', matrix={},
+                      head_sha=identity['head_sha'], base_sha=base)
+          if context != live or context_json != json.dumps(context, sort_keys=True, separators=(',', ':')):
+              raise ValueError('missing or conflicting runtime context')
+          context_sha256 = hashlib.sha256(context_json.encode()).hexdigest()
+          if path.with_name('context.sha256').read_text() != context_sha256 + '\n':
+              raise ValueError('runtime context digest mismatch')
+          receipt.update(runtime_context_json=context_json, runtime_context_sha256=context_sha256)
+          if not os.environ['CI_BOOTSTRAP_AUTHORIZATION']:
+              debit.update(charged_launches=0, charged_cpu_seconds=0)
+          path.write_text(json.dumps(receipt, indent=2) + '\n')
+          authorization = json.loads(os.environ['CI_BOOTSTRAP_AUTHORIZATION'])
+          if (not isinstance(authorization, dict)
+                  or authorization.get('schema') != 'ci-hotspot-bootstrap-authorization-v1'
+                  or authorization.get('allocation_id') != '56314'
+                  or authorization.get('repository') != identity['repository']
+                  or authorization.get('workflow_path') != '.github/workflows/ci.yml'
+                  or not os.environ['GITHUB_WORKFLOW_REF'].startswith(
+                      identity['repository'] + '/.github/workflows/ci.yml@')
+                  or not isinstance(authorization.get('authorization_id'), str)
+                  or not authorization['authorization_id']
+                  or not isinstance(authorization.get('approved_by'), str) or not authorization['approved_by']
+                  or type(authorization.get('expires_at')) is not int
+                  or not time.time() < authorization['expires_at'] <= 1793556000):
+              raise ValueError('missing or invalid owner rollout authorization')
+          runs = authorization.get('runs')
+          if not isinstance(runs, list) or not 1 <= len(runs) <= 200:
+              raise ValueError('owner rollout must have a bounded run allowlist')
+          seen, matched = set(), None
+          for entry in runs:
+              if not isinstance(entry, dict) or set(entry) != {'identity', 'base_sha', 'context_json', 'context_sha256'}:
+                  raise ValueError('invalid owner rollout entry fields')
+              record = entry['identity']
+              if (not isinstance(record, dict) or set(record) != set(identity)
+                      or record['repository'] != identity['repository']
+                      or not isinstance(record['attempt'], str) or not record['attempt'].isdecimal()
+                      or record['job'] != 'container' or record['matrix'] != {}
+                      or not isinstance(record['run_id'], str) or not record['run_id'].isdecimal()
+                      or record['run_id'] in seen
+                      or not all(isinstance(sha, str) and re.fullmatch(r'[a-f0-9]{40}', sha)
+                                 for sha in (entry['base_sha'], record['head_sha'], record['build_sha']))):
+                  raise ValueError('invalid or duplicate owner rollout run')
+              seen.add(record['run_id'])
+              pinned_json = entry['context_json']
+              pinned = json.loads(pinned_json)
+              if (pinned_json != json.dumps(pinned, sort_keys=True, separators=(',', ':'))
+                      or hashlib.sha256(pinned_json.encode()).hexdigest() != entry['context_sha256']):
+                  raise ValueError('invalid pinned runtime context digest')
+              previous = pinned['GITHUB_RUN_ATTEMPT']
+              if (not isinstance(previous, str) or not previous.isdecimal() or int(previous) < 1
+                      or previous != str(int(previous))
+                      or str(int(previous) + 1) != record['attempt']):
+                  raise ValueError('pinned context must be the immediate predecessor attempt')
+              ref = pinned['GITHUB_WORKFLOW_REF']
+              bound = dict(GITHUB_SHA=record['build_sha'], GITHUB_RUN_ID=record['run_id'],
+                           GITHUB_RUN_ATTEMPT=previous, GITHUB_REPOSITORY=record['repository'],
+                           GITHUB_WORKFLOW_REF=ref, job=record['job'], matrix=record['matrix'],
+                           head_sha=record['head_sha'], base_sha=entry['base_sha'])
+              if (pinned != bound or not isinstance(ref, str)
+                      or not ref.startswith(record['repository'] + '/.github/workflows/ci.yml@')):
+                  raise ValueError('pinned context conflicts with authorized source')
+              if record == identity and entry['base_sha'] == base:
+                  expected = dict(pinned, GITHUB_RUN_ATTEMPT=record['attempt'])
+                  if expected != live:
+                      raise ValueError('live runtime context conflicts with owner pin')
+                  matched = entry
+          if matched is None:
+              raise ValueError('this run/source is not authorized for bootstrap')
+          provenance = {key: authorization[key] for key in
+                        ('authorization_id', 'approved_by', 'expires_at', 'workflow_path')}
+          provenance.update(context_json=matched['context_json'], context_sha256=matched['context_sha256'],
+              authorized_attempt=identity['attempt'], authorized_runs=len(runs), sha256=hashlib.sha256(
+              json.dumps(authorization, sort_keys=True, separators=(',', ':')).encode()).hexdigest())
+          debit.update(charged_launches=100, charged_cpu_seconds=900)
+          receipt = dict(mode='bootstrap', reason='controller absent at base ' + base,
+                         base_sha=base, state='admitted', allocation_id='56314',
+                         launch_reservation=100, cpu_reservation_seconds=900,
+                         identity=identity, bootstrap_authorization=provenance, rollout_debit=debit,
+                         runtime_context_json=context_json, runtime_context_sha256=context_sha256)
+          path.write_text(json.dumps(receipt, indent=2) + '\n')
+          print('CI allocation bootstrap:', receipt['reason'])
+          PY
+          fi
+      - name: Preserve admission or refusal
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: allocation-admission-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/allocation/admission.json
+          if-no-files-found: error
+          retention-days: 90
+
+  container:
+    needs: admission
+    if: always() # required status must fail, never skip, on upstream refusal/failure
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        continue-on-error: true # the following validator turns absence into an explicit failure
+        with:
+          name: allocation-admission-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/allocation
+      - name: Validate admission before any workload
+        id: admission-check
+        env:
+          ADMISSION_RESULT: ${{ needs.admission.result }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          TRUSTED_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+        run: |
+          python3 -I - <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          try:
+              if os.environ['ADMISSION_RESULT'] != 'success':
+                  raise ValueError('admission job did not succeed')
+              receipt = json.loads((Path(os.environ['RUNNER_TEMP']) / 'allocation/admission.json').read_text())
+              if not isinstance(receipt, dict) or receipt.get('state') != 'admitted':
+                  raise ValueError('missing or refused admission')
+              expected = dict(repository=os.environ['GITHUB_REPOSITORY'], run_id=os.environ['GITHUB_RUN_ID'],
+                              attempt=os.environ['GITHUB_RUN_ATTEMPT'], job='container', matrix={},
+                              head_sha=os.environ['PR_HEAD_SHA'], build_sha=os.environ['GITHUB_SHA'])
+              if receipt.get('identity') != expected or not expected['attempt'].isdecimal():
+                  raise ValueError('invalid admission identity or rerun attempt')
+              if (receipt.get('allocation_id') != '56314' or receipt.get('launch_reservation') != 100
+                      or receipt.get('cpu_reservation_seconds') != 900):
+                  raise ValueError('invalid admission limits')
+              mode = receipt.get('mode', 'enforced')
+              if mode == 'bootstrap':
+                  base = os.environ['TRUSTED_BASE_SHA']
+                  if (receipt.get('base_sha') != base or receipt.get('slot') is not None
+                          or receipt.get('reason') != 'controller absent at base ' + base
+                          or receipt.get('bootstrap_authorization', {}).get('authorized_attempt') != expected['attempt']):
+                      raise ValueError('invalid base-controller bootstrap')
+              elif (mode != 'enforced' or expected['attempt'] != '1' or type(receipt.get('slot')) is not int
+                      or not 1 <= receipt['slot'] <= 200):
+                  raise ValueError('invalid durable admission slot')
+          except (OSError, ValueError, TypeError, KeyError) as exc:
+              print('Container admission failed:', exc, file=sys.stderr)
+              sys.exit(1)
+          print('Container admission validated')
+          PY
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        id: checkout
+        with:
+          persist-credentials: false
+      - name: Meter build, required smoke suites, health and origin-lock checks
+        run: sudo --preserve-env=GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT python3 -m scripts.ci_cpu_meter run "$RUNNER_TEMP/allocation" bash scripts/ci_container_job.sh
+      - name: Settle interrupted reservations after any terminal state
+        if: always() && steps.admission-check.outcome == 'success' && steps.checkout.outcome == 'success'
+        run: sudo python3 -m scripts.ci_cpu_meter recover "$RUNNER_TEMP/allocation"
+      - name: Upload append-only launch journal and CPU settlement
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: allocation-settlement-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/allocation/admission.json
+            ${{ runner.temp }}/allocation/events.jsonl
+            ${{ runner.temp }}/allocation/settlement.json
+          if-no-files-found: error
+          retention-days: 90
 
   contracts:
     # The evidence/ResultCheck contracts (v0.2, v0.3) and the view envelopes (v0.4, v0.5) are executable: their vector runners must
@@ -136,6 +380,8 @@ jobs:
           fi
 
   secret-scan:
+    permissions:
+      contents: read
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
