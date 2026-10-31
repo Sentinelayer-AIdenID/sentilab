@@ -58,7 +58,7 @@ still fails on base because its worker remains in `/proc`. No unrelated
 process was signalled. These are existing tests, with stronger synchronization
 and liveness assertions, rather than new test cases.
 
-## Twenty repetitions and the container blocker
+## Container attempts and revised local validation requirement
 
 The requested exact image command was attempted from `/workspace/sentilab`:
 
@@ -74,8 +74,85 @@ sudo -n unshare --pid --fork --mount-proc sh -c 'echo namespace-pid=$$'
 ```
 
 It exits **1: `unshare failed: Operation not permitted`**. Consequently,
-**the required image or `python:3.12` container/PID-1 repetition is blocked,
-not passed**. Warden was informed; a container-capable runner is still needed.
+the image or `python:3.12` container/PID-1 repetition was not run locally.
+At 11:55 UTC Warden accepted these environment limits and requested the same
+unittest command 20 times with plain `python3`. CI's Docker build is the
+container proof after carry; the local container requirement is superseded.
+
+## Plain-python3 proof requested at 11:55 UTC
+
+The tested source is `4d24d348c0116b19746e3fc521c47bce6f108bdf`.
+No implementation or test changed for this follow-up. The initial loop using
+`/usr/bin/python3` without activating the installed dependencies passed 0/20:
+each invocation failed during import with `ModuleNotFoundError: No module
+named 'cryptography'`; none executed the eight tests. After activating the
+existing repository virtual environment, `python3 --version` reports
+**Python 3.12.3**, and `command -v python3` resolves to
+`/workspace/sentilab/.venv/bin/python3`.
+
+The exact successful loop, from `/workspace/sentilab`, was:
+
+```sh
+. .venv/bin/activate
+export OPENBLAS_CORETYPE=Haswell OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1
+passes=0
+for attempt in $(seq 1 20); do
+  if python3 -m unittest -q sentilab_core.test_execution > "/tmp/slab043-round7-plain-venv-${attempt}.log" 2>&1; then
+    passes=$((passes + 1))
+    printf 'run %02d: PASS\n' "$attempt"
+  else
+    printf 'run %02d: FAIL\n' "$attempt"
+    tail -n 16 "/tmp/slab043-round7-plain-venv-${attempt}.log"
+  fi
+done
+printf 'plain python3 with installed dependencies: %s/20 passed (8 tests per run)\n' "$passes"
+test "$passes" -eq 20
+```
+
+Observed: **20/20 pass, 8 tests per run, 160 tests total; exit 0**.
+This invokes unittest directly, with no subreaper or container wrapper.
+
+For fresh base proof, a separate worktree was created at
+`b227c34e08d72f0c80dc5d038c987df0669b765e` in
+`/tmp/slab043-round7-plain-before`. Only the current `test_execution.py` was
+copied into it, byte-identical by SHA-256. From that worktree:
+
+```sh
+. /workspace/sentilab/.venv/bin/activate
+export OPENBLAS_CORETYPE=Haswell OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1
+python3 -m unittest -v \
+ sentilab_core.test_execution.WholeJobCleanupTests.test_closed_pipe_success_removes_descendants \
+ sentilab_core.test_execution.WholeJobCleanupTests.test_closed_pipe_failure_removes_descendants \
+ sentilab_core.test_execution.WholeJobCleanupTests.test_inherited_pipe_timeout_removes_descendants \
+ sentilab_core.test_execution.WholeJobCleanupTests.test_inherited_pipe_cancellation_removes_descendants \
+ sentilab_core.test_execution.WholeJobCleanupTests.test_reap_before_callback_timeout_never_signals_recycled_group \
+ sentilab_core.test_execution.WholeJobCleanupTests.test_reap_before_callback_cancellation_never_signals_recycled_group
+```
+
+Observed: **6 tests, 6 failures, exit 1; no errors or skips**. In the listed
+order, the first four failed the pinned-descendant exit assertion with
+`AssertionError: Lists differ: [] != [7]`; the last two failed with
+`AssertionError: Expected 'killpg' to not have been called. Called 1 times.`
+These are the six witnesses in the table above. The published `4ad3fe63`
+object remains absent locally; equivalence to that published tree is
+Warden-reported, while these failures were executed against `b227c34`.
+
+The handshake still blocks both child and worker until a live child pidfd
+has been opened and checked. ESRCH during pinning fails the test. Only the
+final teardown tolerates an already-dead child, after the assertions have
+run; it cannot turn a failed pin or natural exit into success.
+
+The final source also passed **59 tests, exit 0**, with the same activated
+environment and the direct command:
+
+```sh
+python3 -m unittest -q sentilab_core.test_conformance sentilab_core.test_gb10_backend sentilab_core.test_execution
+```
+
+`git diff --check` passes. This follow-up changes only this evidence file;
+the earlier broad validation below was not repeated.
+
+## Earlier supplemental subreaper proof
 
 As additional local evidence, Python **3.12.3** ran the exact smoke unittest
 invocation under a dedicated Linux child-subreaper. This supervisor reaps
