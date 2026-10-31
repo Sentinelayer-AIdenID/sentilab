@@ -1,28 +1,36 @@
 """validate-reference (SLAB-049): the only path that may run an evaluator before it has passed gate zero.
 
 It produces the gate-zero receipts, so it cannot require a prior PASS; that would be circular. The order of one call,
-as validate_call and _run_call write it:
+as validate_call and _run_call write it. Accounting starts before any work, and admission comes before any process
+(root's round-D review of PR #56):
 
-1. Refuse before anything is written: the manifest must be byte-identical to what this tree generates; only a
-   listed call id with its listed --timeout (and engine, reference and grid if given), inside the manifest's window,
-   on the listed architecture, on POSIX, never under CI allocation (CI_ALLOCATION=1); the operator's key must match
-   the manifest's pinned public key; a launch credential must be present.
-2. The operator's authority: the signed, hash-chained ledger (gate0_anchor) opens with the operator's grant, which
-   must name this manifest, this call, an open window and a cap. The operator's reserve tag must bind the call; no
-   launch or settle tag may exist; the ledger must hold no entry for the call; the anchored aggregate (every claimed
-   or ledgered call at its full envelope, or more if measured) plus this call's envelope must fit the grant's cap.
-3. Geometry (the pinned raw layout by the continuous rules, never the search lattice), the binary's identity on a
-   private content-addressed copy, its build provenance, and the libraries the loader resolves.
-4. A signed reservation is appended to the ledger. From here every exit path settles.
-5. Setup and staging: a fresh output directory, a signed receipt, the TAP inputs written fresh and compared with the
-   frozen ones.
-6. THE CLAIM (claim_launch): the launch tag is CREATED, create-only, immediately before launch. Only a successful
+0. The accounting starts: this invocation's own and its children's CPU counters, before anything else.
+1. Refusals that do no process work, cheapest first: the manifest must be byte-identical to what this tree generates;
+   only a listed call id with its listed --timeout (and engine, reference and grid if given), inside the manifest's
+   window, on the listed architecture, on POSIX, never under CI allocation (CI_ALLOCATION=1); the operator's key must
+   match the manifest's pinned public key (a null pin refuses here); a launch credential must be present.
+2. The operator's grant: the signed, hash-chained ledger (gate0_anchor) must verify, and its grant's cap may not
+   exceed the manifest's.
+3. Prechecks that only read files: the pinned raw layout by the continuous rules (never the search lattice), a fresh
+   output directory, the binary's identity on a private content-addressed copy, its build provenance, and the CI
+   entry guard.
+4. THE ADMISSION (gate0_anchor.admit_and_reserve), one critical section for the grant, the single place where the
+   operator's authority is checked: under the ledger's lock, the grant's window, the call's place in the grant, the
+   operator's reserve tag, no ledger entry and no earlier admission anywhere (the anchored admission chain); every
+   admitted call charged its envelope or its measured CPU, and this call's envelope within the grant's cap; then the
+   next admission tag CREATED (create-only) and the signed reservation appended. From here every exit settles; the
+   call stays consumed and charged, and is never retried, settle tag or not.
+5. Setup: a fresh output directory and a signed receipt.
+6. The process-capable precheck, inside the attempt: the shared libraries the binary's loader resolves for the
+   private copy must equal the build's. A mismatch settles the call as runtime_refused.
+7. Staging: the TAP inputs written fresh and compared with the frozen ones.
+8. THE CLAIM (claim_launch): the launch tag is CREATED, create-only, immediately before launch. Only a successful
    create launches. An existing tag refuses; an uncertain create consumes the call with no launch.
-7. The launch: the private copy in its own process group, under RLIMIT_CPU and a wall deadline both equal to its
+9. The launch: the private copy in its own process group, under RLIMIT_CPU and a wall deadline both equal to its
    timeout; the group is killed while the leader is unreaped, then the solver is reaped. Every other child (the TAP
    generator, the two loader listings) runs under its own RLIMIT_CPU and wall deadline (slab049, provenance).
-8. Settlement: the signed receipt and a signed settlement entry, on every exit path after 4, with the measured CPU.
-   The operator then writes the settle tag (its message is printed).
+10. Settlement: the signed receipt and a signed settlement entry, on every exit path after 4, with the CPU charged
+    since 0. The operator then writes the settle tag (its message is printed).
 
 What this entry cannot do is the operator supervisor's contract (the manifest's enforcement section).
 
@@ -42,7 +50,6 @@ import contextlib
 from datetime import datetime, timezone
 import hashlib
 import json
-import math
 import os
 from pathlib import Path
 import platform
@@ -175,21 +182,11 @@ def operator_key(manifest: dict, key_path: Path | None):
     return key, pinned
 
 
-def anchored_charge(ledger: dict, tags: gate0_anchor.TagReader, grant: dict, manifest: dict,
-                    manifest_sha256: str) -> float:
-    """The grant's CPU already consumed, anchored: every call that has a launch tag or any ledger entry is charged its
-    full per-call envelope, or its measured CPU when that is larger. Unknown or failed work is never free."""
-    calls = {c["id"]: c for c in manifest["calls"]}
-    charged = 0.0
-    for name in grant["calls"]:
-        entries = gate0_anchor.call_entries(ledger, name)
-        launched = tags.read(grant["grant_id"], "launch", name, manifest_sha256) is not None
-        if not entries and not launched:
-            continue
-        measured = (entries.get("settlement") or {}).get("charged_cpu_s")
-        known = isinstance(measured, (int, float)) and not isinstance(measured, bool) and math.isfinite(measured)
-        charged += max(float(calls[name]["accounting"]["reserved_cpu_s"]), float(measured) if known else 0.0)
-    return charged
+def _cpu_counters() -> dict:
+    """This process's own CPU and its reaped children's so far: where an invocation's accounting starts."""
+    if resource is None:  # validate-reference refuses off POSIX (admit)
+        return {"self_s": 0.0, "children_s": 0.0}
+    return {"self_s": _self_cpu_s(), "children_s": _children_cpu_s()}
 
 
 def _private_executable(binary: Path, directory: Path) -> Path:
@@ -246,9 +243,11 @@ def validate_call(call_id: str, out: Path, *, timeout_s: float | None, ledger_ro
     """Admit and run one listed call (the order is in the module docstring). Needs no prior gate-zero PASS.
 
     anchor_request is the operator's GitHub client (gate0_anchor.github_request with SLAB049_ANCHOR_TOKEN): it reads
-    the tags and creates the launch claim. Without it nothing is launched.
+    the tags and creates the admission and launch tags. Without it nothing is admitted and nothing launches.
     """
-    # 1. Manifest, call, operator key and launch credential: refused before anything is written.
+    # 0. The accounting starts before any work of this invocation: every exit after admission is charged from here.
+    baseline, started, clock = _cpu_counters(), _now(), time.perf_counter()
+    # 1. Refusals that do no process work, cheapest first.
     manifest, manifest_sha256 = load_manifest(manifest_path)
     call = admit(call_id, manifest, timeout_s=timeout_s, kind=kind, reference=reference, grid=grid, now=now)
     key, public_hex = operator_key(manifest, operator_key_path)
@@ -257,37 +256,20 @@ def validate_call(call_id: str, out: Path, *, timeout_s: float | None, ledger_ro
         if not token:
             raise CallRefused(f"no launch credential ({ANCHOR_TOKEN_ENV}): without the claim nothing launches")
         anchor_request = gate0_anchor.github_request(manifest["anchor"]["repository"], token)
-    tags = gate0_anchor.TagReader(anchor_request)
     configured_root = ledger_root or os.environ.get("SLAB049_LEDGER_ROOT")
     if not configured_root:
         raise CallRefused("no operator ledger root is configured (SLAB049_LEDGER_ROOT)")
     root = Path(configured_root)
-    # 2. The operator's authority: grant, reserve tag, no earlier trace of this call, the anchored aggregate.
+    # 2. The operator's grant: the signed ledger must verify, and the grant's cap may not exceed the manifest's.
+    #    Everything that can change (the window, the call's place in the grant, the operator's reserve tag, the
+    #    ledger and the admission chain) is checked once, atomically, at admission (step 4).
     try:
-        ledger = gate0_anchor.read_ledger(root, public_hex, manifest_sha256)
-        grant = ledger["grant"]
-        moment = now or _now()
-        if call_id not in grant["calls"]:
-            raise CallRefused(f"the operator's grant does not include {call_id}")
-        if not _utc(grant["not_before_utc"]) <= moment <= _utc(grant["not_after_utc"]):
-            raise CallRefused(f"outside the grant's window {grant['not_before_utc']} .. {grant['not_after_utc']}")
-        if grant["cpu_cap_s"] > manifest["accounting"]["manifest_cpu_cap_s"]:
-            raise CallRefused("the grant's CPU cap exceeds the manifest's binding cap")
-        if tags.read(grant["grant_id"], "reserve", call_id, manifest_sha256) is None:
-            raise CallRefused(f"the operator has not reserved {call_id} (no reserve tag): no launch")
-        for kind_ in ("launch", "settle"):
-            if tags.read(grant["grant_id"], kind_, call_id, manifest_sha256) is not None:
-                raise CallRefused(f"{call_id} already has a {kind_} tag: a consumed call is never retried")
-        if gate0_anchor.call_entries(ledger, call_id):
-            raise CallRefused(f"{call_id} already has ledger entries: calls are not retried")
-        envelope = float(call["accounting"]["reserved_cpu_s"])
-        charged = anchored_charge(ledger, tags, grant, manifest, manifest_sha256)
-        if charged + envelope > grant["cpu_cap_s"] + 1e-9:
-            raise CallRefused(f"{charged:.2f} CPU-s already charged plus this call's {envelope:g} would pass the "
-                              f"grant's {grant['cpu_cap_s']:g} CPU-s cap")
-    except (AuthenticationError, AnchorUnavailable) as exc:  # no launch on uncertainty
+        grant = gate0_anchor.read_ledger(root, public_hex, manifest_sha256)["grant"]
+    except AuthenticationError as exc:
         raise CallRefused(f"{call_id}: {type(exc).__name__}: {exc}") from exc
-    # 3. Geometry, binary identity, build provenance, runtime libraries.
+    if grant["cpu_cap_s"] > manifest["accounting"]["manifest_cpu_cap_s"]:
+        raise CallRefused("the grant's CPU cap exceeds the manifest's binding cap")
+    # 3. Prechecks that only read files: geometry, a fresh directory, identity, build provenance, the CI entry guard.
     pinned = gate_zero.reference(call["reference"])
     try:  # the pinned raw layout, judged by the continuous rules only (never the search lattice)
         spec = slab049.reference_spec(pinned.id)
@@ -309,13 +291,23 @@ def validate_call(call_id: str, out: Path, *, timeout_s: float | None, ledger_ro
             raise CallRefused(f"{call_id}: this binary was built with the CI entry guard (CI_ALLOCATION=1) and runs "
                               "only through sundai_hotspot.ci_gate under a CI reservation; the grant host needs a "
                               "build without CI_ALLOCATION")
-        runtime = provenance.resolved_libraries(executable)
-        if provenance.library_identity(runtime) != provenance.library_identity(build["provenance"]["libraries"]):
-            raise CallRefused(f"{call_id}: the shared libraries the loader resolves now differ from the build's")
+        # 4. THE ADMISSION: balance, admission tag and signed reservation in one critical section for the grant.
+        envelopes = {c["id"]: float(c["accounting"]["reserved_cpu_s"]) for c in manifest["calls"]}
+        try:
+            reservation = gate0_anchor.admit_and_reserve(
+                root, key, public_hex, manifest_sha256, call_id,
+                {"out": out.resolve().as_posix(), "reserved_cpu_s": envelopes[call_id]}, request=anchor_request,
+                envelopes=envelopes, not_after_utc=manifest["grant_window"]["not_after_utc"], now=now)
+        except gate0_anchor.AdmissionUncertain as exc:
+            raise CallRefused(f"{call_id}: {exc}; if its admission tag exists the call is consumed and charged, and "
+                              "the operator reconciles it") from exc
+        except (gate0_anchor.AdmissionRefused, AuthenticationError, AnchorUnavailable, OSError) as exc:
+            raise CallRefused(f"{call_id}: not admitted: {type(exc).__name__}: {exc}") from exc
         context = {"call": call, "pinned": pinned, "spec": spec, "out": out, "root": root, "key": key,
                    "public_hex": public_hex, "grant": grant, "manifest_sha256": manifest_sha256,
                    "anchor_request": anchor_request, "executable": executable, "source": source,
-                   "identity": identity, "build": build, "runtime": runtime, "now": now}
+                   "identity": identity, "build": build, "reservation": reservation, "baseline": baseline,
+                   "started": started, "clock": clock, "now": now}
         return _run_call(context)
     finally:
         shutil.rmtree(private, ignore_errors=True)
@@ -326,9 +318,11 @@ def _sign_receipt(context: dict, receipt: dict) -> bytes:
 
 
 def _run_call(context: dict) -> dict:
+    """Steps 5-10 of an admitted call. Every exit settles (_settle), consumed and charged from step 0."""
     call, pinned, out = context["call"], context["pinned"], context["out"]
     timeout = float(call["timeout_s"])
     argv = slab049.tap_argv(str(context["executable"]), call["grid"])
+    reservation = context["reservation"]
     receipt = {
         "schema": gate_zero.RECEIPT_SCHEMA, "call": call["id"], "role": call["role"], "replay_of": call["replay_of"],
         "manifest_sha256": context["manifest_sha256"], "grant_id": context["grant"]["grant_id"],
@@ -338,39 +332,40 @@ def _run_call(context: dict) -> dict:
         "binary": {"source": context["source"].as_posix(), "executed": "a private content-addressed copy (0500 in a "
                    "0700 directory), removed after the call"},
         "build_provenance": {"path": context["build"]["path"], "sha256": context["build"]["sha256"]},
-        "runtime": context["runtime"], "geometry": context["spec"]["geometry"],
+        "runtime": None, "geometry": context["spec"]["geometry"],
         "temperature_label": gate_zero.TEMPERATURE_LABELS[call["kind"]], "timeout_s": timeout,
         "cpu_limit_s": call["cpu_limit_s"], "solver_environment": SOLVER_ENVIRONMENT,
         "host": {"architecture": platform.machine(), "node": platform.node(), "python": sys.version.split()[0]},
+        "reservation_sha256": gate0_anchor.digest(reservation), "admission": reservation["admission"],
+        "cpu_baseline": context["baseline"],
         "reserved_utc": (context["now"] or _now()).isoformat(), "status": "reserved",
     }
-    # 4. The signed reservation. From here every exit path settles; the call stays consumed and charged.
-    try:
-        reservation = gate0_anchor.append(context["root"], context["key"], context["public_hex"],
-                                          context["manifest_sha256"], "reservation", call["id"],
-                                          {"out": out.resolve().as_posix(),
-                                           "reserved_cpu_s": call["accounting"]["reserved_cpu_s"]})
-    except (AuthenticationError, OSError) as exc:  # nothing reserved, nothing written, nothing launched
-        raise CallRefused(f"{call['id']}: the reservation was refused: {exc}") from exc
-    receipt["reservation_sha256"] = gate0_anchor.digest(reservation)
-    started, clock = _now(), time.perf_counter()
-    self_before, children_before = _self_cpu_s(), _children_cpu_s()
     phase = "setup"
     try:
-        # 5. Setup and staging.
+        # 5. Setup.
         out.mkdir(parents=True, exist_ok=True)
         _write_durably(out / "receipt.json", _sign_receipt(context, receipt))
+        # 6. The process-capable precheck, inside the attempt.
+        phase = "precheck"
+        receipt["runtime"] = provenance.resolved_libraries(context["executable"])
+        if (provenance.library_identity(receipt["runtime"])
+                != provenance.library_identity(context["build"]["provenance"]["libraries"])):
+            receipt["status"], receipt["exit_status"] = "runtime_refused", None
+            receipt["error"] = ("the shared libraries the loader resolves differ from the build's: refused before "
+                                "staging; the call stays consumed and charged")
+            return receipt
+        # 7. Staging.
         phase = "stage"
         receipt["inputs"] = stage(pinned, context["spec"], out)
         receipt["config_sha256"] = receipt["inputs"]["new_hotspot.config"]
         _write_durably(out / "receipt.json", _sign_receipt(context, receipt))
-        # 6. THE CLAIM: create the launch tag; only a successful create may launch.
+        # 8. THE CLAIM: create the launch tag; only a successful create may launch.
         phase = "claim"
         claim = gate0_anchor.claim_launch(context["anchor_request"], context["grant"]["grant_id"],
                                           context["manifest_sha256"], call["id"],
                                           reservation_sha256=receipt["reservation_sha256"])
         receipt["claim"] = {"ref": claim["ref"], "commit_sha": claim["commit_sha"]}
-        # 7. The launch.
+        # 9. The launch.
         phase = "launch"
         solver_before = _children_cpu_s()
         with (out / "stdout.txt").open("wb") as stdout, (out / "stderr.txt").open("wb") as stderr:
@@ -393,7 +388,7 @@ def _run_call(context: dict) -> dict:
                                                    receipt["solver_cpu_s"] >= call["cpu_limit_s"] - 1)
             receipt["status"] = "exited" if code >= 0 else ("cpu_limit" if limited else "signalled")
         receipt["runtime_after"] = provenance.resolved_libraries(context["executable"])
-        if provenance.library_identity(receipt["runtime_after"]) != provenance.library_identity(context["runtime"]):
+        if provenance.library_identity(receipt["runtime_after"]) != provenance.library_identity(receipt["runtime"]):
             receipt["status"] = "runtime_changed"
     except ClaimRefused as exc:  # another request holds the launch, or no reserve tag binds the call: no launch
         receipt["status"], receipt["exit_status"], receipt["error"] = "claim_refused", None, str(exc)
@@ -406,26 +401,28 @@ def _run_call(context: dict) -> dict:
         receipt["status"], receipt["exit_status"] = "stage_error", None
         receipt["error"] = "the TAP generator passed its wall deadline"
     except OSError as exc:
-        receipt["status"] = {"setup": "setup_error", "stage": "stage_error", "launch": "launch_error"}.get(phase,
-                                                                                                      "error")
+        receipt["status"] = {"setup": "setup_error", "precheck": "precheck_error", "stage": "stage_error",
+                             "launch": "launch_error"}.get(phase, "error")
         receipt["exit_status"], receipt["error"] = None, repr(exc)
     except BaseException as exc:  # settle the receipt, then let the caller see the failure
-        receipt["status"] = {"setup": "setup_error", "stage": "stage_error"}.get(phase, "error")
+        receipt["status"] = {"setup": "setup_error", "precheck": "precheck_error", "stage": "stage_error"}.get(
+            phase, "error")
         receipt["exit_status"], receipt["error"] = None, f"{type(exc).__name__}: {exc}"
         raise
     finally:
-        _settle(context, receipt, started, clock, self_before, children_before)
+        _settle(context, receipt)
     return receipt
 
 
-def _settle(context: dict, receipt: dict, started: datetime, clock: float, self_before: float,
-            children_before: float) -> None:
-    """Durable settlement on every exit path after the reservation: the signed receipt when it can be written, then
-    always the signed settlement entry. A call whose receipt cannot be written still settles, with a null receipt
-    digest; it stays consumed and charged, and is never retried."""
-    call, out = context["call"], context["out"]
-    receipt["started_utc"], receipt["finished_utc"] = started.isoformat(), _now().isoformat()
-    receipt["wall_s"] = time.perf_counter() - clock
+def _settle(context: dict, receipt: dict) -> None:
+    """Durable settlement on every exit path after the admission: the signed receipt when it can be written, then
+    always the signed settlement entry. The CPU charged is everything since the invocation's accounting started
+    (step 0): the prechecks, the loader listings, the generator, the solver and the parent's own work. A call whose
+    receipt cannot be written still settles, with a null receipt digest; it stays consumed and charged, and is never
+    retried."""
+    call, out, baseline = context["call"], context["out"], context["baseline"]
+    receipt["started_utc"], receipt["finished_utc"] = context["started"].isoformat(), _now().isoformat()
+    receipt["wall_s"] = time.perf_counter() - context["clock"]
     try:
         receipt["outputs"] = {name: _sha256(out / name) for name in gate_zero.RECEIPT_OUTPUTS
                               if (out / name).is_file()}
@@ -437,8 +434,8 @@ def _settle(context: dict, receipt: dict, started: datetime, clock: float, self_
                 out, grid_size=call["grid"], grid_format=gate_zero.GRID_FORMATS[call["kind"]])
         except Exception as exc:  # the raw outputs stay; the receipt says why the record failed
             receipt["status"], receipt["error"] = "record_error", f"{type(exc).__name__}: {exc}"
-    receipt["children_cpu_s"] = _children_cpu_s() - children_before
-    receipt["self_cpu_s"] = _self_cpu_s() - self_before
+    receipt["children_cpu_s"] = _children_cpu_s() - baseline["children_s"]
+    receipt["self_cpu_s"] = _self_cpu_s() - baseline["self_s"]
     receipt["charged_cpu_s"] = receipt["children_cpu_s"] + receipt["self_cpu_s"]
     receipt["overshoot_cpu_s"] = max(0.0, receipt["charged_cpu_s"] - call["accounting"]["reserved_cpu_s"])
     receipt_sha256 = None
@@ -451,12 +448,12 @@ def _settle(context: dict, receipt: dict, started: datetime, clock: float, self_
                                                  "solver_cpu_s", "children_cpu_s", "self_cpu_s", "charged_cpu_s",
                                                  "overshoot_cpu_s", "outputs", "error", "receipt_error", "claim")}
     payload.update({"reserved_cpu_s": call["accounting"]["reserved_cpu_s"], "out": out.resolve().as_posix(),
-                    "receipt_sha256": receipt_sha256})
+                    "receipt_sha256": receipt_sha256, "cpu_baseline": baseline})
     gate0_anchor.append(context["root"], context["key"], context["public_hex"], context["manifest_sha256"],
                         "settlement", call["id"], payload)
     receipt["settle_tag_message"] = gate0_anchor.tag_message(
         "settle", context["grant"]["grant_id"], context["manifest_sha256"], call["id"], status=receipt["status"],
-        receipt_sha256=receipt_sha256, outputs=receipt["outputs"])
+        receipt_sha256=receipt_sha256, outputs=receipt["outputs"], charged_cpu_s=receipt["charged_cpu_s"])
 
 
 def report(*, ledger_root: Path | None = None, tags: gate0_anchor.TagReader | None = None,

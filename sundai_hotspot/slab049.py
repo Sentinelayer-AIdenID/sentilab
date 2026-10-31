@@ -1103,22 +1103,31 @@ IN_CODE_AT_ENTRY = (
     "RLIMIT_CPU (Linux and macOS; Windows has no RLIMIT_CPU, and its equivalent, a Job Object process-time limit, "
     "is not implemented, so the entry refuses there); never under CI allocation (CI_ALLOCATION=1), where every "
     "native HotSpot launch goes through sundai_hotspot.ci_gate and SLAB-049 solves never run",
-    "the operator's authority, before anything is written: the operator key (SLAB049_OPERATOR_KEY) must be the "
-    "pinned public key's; the launch credential (SLAB049_ANCHOR_TOKEN) must be present; the signed, hash-chained "
-    "ledger at the place derived from this manifest's id must verify, and its grant (entry 0) must name this "
-    "manifest, this call, an open window and a cap no higher than 600 CPU-s, and this very ledger directory (a "
-    "copy elsewhere is refused); the operator's reserve tag must exist and bind the call; no launch or settle tag "
-    "and no ledger entry may exist for it; and the anchored aggregate (every call with a launch tag or a ledger "
-    "entry, charged its full per-call envelope or its measured CPU if larger) plus this call's envelope must fit "
-    "the grant's cap. Any tag that cannot be read refuses: no launch on uncertainty",
-    "evaluator identity: identity markers and SHA-256 are read from a private content-addressed copy (mode 0500 in a "
-    "0700 directory), and that copy is the file executed; build provenance must describe exactly those bytes; a "
-    "binary built with the CI entry guard is refused; the shared libraries its own loader resolves must equal the "
-    "build's, and are listed again after the run (a change settles the call as runtime_changed)",
+    "accounting from the first step: the invocation's own and its children's CPU counters are read before any "
+    "work, and every exit after admission is charged from there: the prechecks, both loader listings, the "
+    "generator, the solver and the parent's own work",
+    "the operator's key and grant, before any work: the operator key (SLAB049_OPERATOR_KEY) must be the pinned "
+    "public key's (a null pin refuses first, with no process work); the launch credential (SLAB049_ANCHOR_TOKEN) "
+    "must be present; the signed, hash-chained ledger at the place derived from this manifest's id must verify, and "
+    "its grant (entry 0) must name this manifest and this very ledger directory (a copy elsewhere is refused), with "
+    "a cap no higher than 600 CPU-s",
+    "prechecks that only read files, before admission: identity markers and SHA-256 are read from a private "
+    "content-addressed copy (mode 0500 in a 0700 directory), and that copy is the file executed; build provenance "
+    "must describe exactly those bytes; a binary built with the CI entry guard is refused",
     "raw geometry: the pinned raw layout hash (the vendored copy, and SLAB-048's record whenever it is in the tree) "
     "and the continuous rules only; the search lattice is never applied",
-    "the signed reservation before staging: appended under the ledger's lock, which refuses a second reservation "
-    "for the call; from then on the call is consumed and charged its full envelope, never reclaimed",
+    "the admission, one critical section for the grant (gate0_anchor.admit_and_reserve) before any process work, "
+    "and the single place where the operator's authority is checked: under the ledger's lock, the grant's window "
+    "(STOP once it has closed), the call's place in the grant, the operator's reserve tag, no ledger entry for the "
+    "call and no earlier admission of it anywhere (the anchored admission chain); every admitted call is charged its "
+    "envelope or its measured CPU if larger, and this call's envelope must fit the grant's cap; then the chain's "
+    "next place, admit-<NN>, is CREATED (create-only: two requests on any ledger or host can never both take one "
+    "place, so no total passes the cap) and the signed reservation that binds it is appended. From then on the call "
+    "is consumed and charged in full, never reclaimed and never retried, settle tag or not; no ledger deletion or "
+    "rollback can readmit it. Any tag that cannot be read refuses: no admission on uncertainty",
+    "the process-capable precheck, inside the attempt: the shared libraries the binary's own loader resolves for the "
+    "private copy must equal the build's (a mismatch settles the call as runtime_refused, charged), and they are "
+    "listed again after the run (a change settles the call as runtime_changed)",
     "the claim, immediately before launch: validate-reference CREATES gate0-<grant>/launch-<call> (create-only). "
     "Only a successful create launches; an existing ref refuses; an uncertain create (no answer after sending) "
     "consumes the call with no launch, for the operator to reconcile; nothing is retried from the absence of a "
@@ -1127,34 +1136,34 @@ IN_CODE_AT_ENTRY = (
     "its own session and process group at RLIMIT_CPU and a wall deadline both equal to its timeout, the group "
     "killed while the solver is unreaped, then the solver reaped; the TAP generator at 3 CPU-s and 30 s; each of "
     "the two loader listings at 1 CPU-s and 10 s, in its own session, killed as a group at its deadline",
-    "settlement: on every exit path after the reservation, the signed receipt and the signed settlement entry, with "
-    "the status, the measured CPU (children and self) and any overshoot; when no receipt can be written, the "
-    "ledger still settles the call (receipt digest null). The settle tag's exact message is printed for the "
-    "operator",
+    "settlement: on every exit path after the admission, the signed receipt and the signed settlement entry, with "
+    "the status, the CPU charged since the first step (children and self) and any overshoot; when no receipt can "
+    "be written, the ledger still settles the call (receipt digest null). The settle tag's exact message, with the "
+    "CPU charged, is printed for the operator",
     "verification (record and report): by admitted call id from the signed ledger, never caller-chosen "
-    "directories; every tag read by its exact name. A missing settle tag gives INCOMPLETE; a tag that cannot be "
-    "read gives ERROR; a ledger, receipt or tag that does not verify or disagrees gives FAIL; a completed call is "
-    "re-derived with the strict evaluator-bound reader. PASS needs all four required outcomes to agree everywhere "
-    "and hold",
+    "directories; every tag read by its exact name; every reservation anchored by its admission tag. A missing "
+    "settle tag gives INCOMPLETE; a tag that cannot be read gives ERROR; a ledger, receipt or tag that does not "
+    "verify or disagrees gives FAIL; a completed call is re-derived with the strict evaluator-bound reader. PASS "
+    "needs all four required outcomes to agree everywhere and hold",
 )
 SUPERVISOR_CONTRACT = (
     "key custody: the operator's Ed25519 private key is generated and held by warden's supervisor and never enters "
     "the repository; its public key is pinned here (OPERATOR_PUBLIC_KEY) by a reviewed commit before the grant",
     "the grant: the signed grant written as ledger entry 0 (gate0_anchor.open_ledger: grant id, call ids, window, "
-    "CPU cap of at most 600 CPU-s) under the operator's ledger root, one ledger per manifest; the root kept on "
-    "storage the operator protects (append-only, backed up). Deleting or rolling it back cannot readmit a call "
-    "(the tags refuse), but it loses the evidence",
+    "CPU cap of at most 600 CPU-s) under the operator's ledger root; one grant per manifest (each grant has its own "
+    "admission chain and cap); the root kept on storage the operator protects (append-only, backed up). Deleting "
+    "or rolling it back cannot readmit an admitted call (the admission chain refuses), but it loses the evidence",
     "the anchor: a repository ruleset on refs/tags/gate0-* that makes the namespace create-only (no update, no "
     "delete, no force-push, no bypass); reserve-<call> created before each launch; settle-<call> created after "
-    "settlement with the printed message, failures included; a claim_uncertain call reconciled by settling it as a "
-    "failure, never relaunched",
+    "settlement with the printed message, failures included; a claim_uncertain call, or an admission whose create "
+    "was uncertain, reconciled by settling it as a failure, never relaunched",
     "credentials: SLAB049_ANCHOR_TOKEN (create tags in this repository) only in the supervisor's environment, never "
     "in the repository; GH_TOKEN with read access for record and report",
     "a cumulative CPU budget over the whole process group, descendants and validate-reference itself included, "
     "enforced while calls run (for example a cgroup v2 budget that kills at the limit); in code, RLIMIT_CPU is per "
     "process and the parent's own CPU is measured and charged, not capped",
-    "kill and reap if validate-reference itself dies (SIGKILL, OOM, host loss): the call stays consumed (its launch "
-    "tag blocks any retry); settle it as unknown and charge its envelope",
+    "kill and reap if validate-reference itself dies (SIGKILL, OOM, host loss): the call stays consumed (its "
+    "admission and launch tags block any retry); settle it as unknown and charge its envelope",
     "a protected runtime image: the loader, the libraries, the Python interpreter and its bytecode caches from "
     "immutable copies; in code, the executable is a private copy, but libraries are listed before and after the "
     "run, which cannot detect a swap-and-restore during it",
@@ -1297,10 +1306,14 @@ def build_call_list() -> dict:
             "repository": ANCHOR_REPOSITORY,
             "namespace": f"refs/{gate0_anchor.TAG_NAMESPACE}<grant-id>/",
             "tags": {"reserve-<call-id>": "created by the operator before launch",
+                     "admit-<NN>": ("created by validate-reference when it admits a call, before any process work: "
+                                    "the grant's admission chain, numbered from 01, binding the call, its envelope, "
+                                    "the running total and the place before; create-only, so it serializes the "
+                                    "grant's balance across every ledger and host"),
                      "launch-<call-id>": ("created by validate-reference immediately before launch: the atomic claim; "
                                           "only a successful create launches"),
-                     "settle-<call-id>": ("created by the operator after settlement: the terminal status and the "
-                                          "receipt and output hashes, failures included")},
+                     "settle-<call-id>": ("created by the operator after settlement: the terminal status, the "
+                                          "receipt and output hashes and the CPU charged, failures included")},
             "message_schema": gate0_anchor.TAG_SCHEMA,
             "ruleset": "create-only: no update, no delete, no force-push, no bypass",
             "reading": ("each tag by its exact name (GET /git/ref/<ref>, then its commit); an authenticated 404 is "

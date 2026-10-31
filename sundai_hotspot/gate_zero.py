@@ -395,9 +395,11 @@ def verify_call(call: dict, ledger: dict, tags, manifest: dict, manifest_sha256:
     """Evidence verification for one call: the operator's settle, reserve and launch tags (each read by its exact
     name), the signed ledger's reservation and settlement, the signed receipt and the raw files must all agree.
 
-    Raises MissingAnchor (no settle tag: INCOMPLETE), NotCompleted (settled as a failure: INCOMPLETE), Disagreement
-    and AuthenticationError (FAIL), EvidenceShapeError (INCOMPLETE) and AnchorUnavailable (ERROR: the tags could not
-    be read; never an absence). Reads only.
+    The reservation must be anchored by its place in the grant's admission chain (admit-<NN> names this call), and
+    the settle tag must bind the ledger's status, hashes and CPU charged. Raises MissingAnchor (no settle tag:
+    INCOMPLETE), NotCompleted (settled as a failure: INCOMPLETE), Disagreement and AuthenticationError (FAIL),
+    EvidenceShapeError (INCOMPLETE) and AnchorUnavailable (ERROR: the tags could not be read; never an absence).
+    Reads only.
     """
     from sundai_hotspot import gate0_anchor
     name, grant = call["id"], ledger["grant"]
@@ -413,13 +415,18 @@ def verify_call(call: dict, ledger: dict, tags, manifest: dict, manifest_sha256:
     if reservation is None or settlement is None:
         raise Disagreement(f"{name}: the operator's settle tag records a call this ledger lacks (rolled back, "
                            "deleted or replaced)")
-    if settle["status"] != settlement["status"] or settle["receipt_sha256"] != settlement["receipt_sha256"] \
-            or settle["outputs"] != settlement["outputs"]:
-        raise Disagreement(f"{name}: the settle tag and the ledger's settlement bind different hashes")
+    if (settle["status"] != settlement["status"] or settle["receipt_sha256"] != settlement["receipt_sha256"]
+            or settle["outputs"] != settlement["outputs"]
+            or settle["charged_cpu_s"] != settlement.get("charged_cpu_s")):
+        raise Disagreement(f"{name}: the settle tag and the ledger's settlement bind different hashes or charges")
     if reserve is None or launch is None:
         raise Disagreement(f"{name}: settled without the operator's reserve tag or the launch claim")
     if launch["reservation_sha256"] != gate0_anchor.digest(reservation):
         raise Disagreement(f"{name}: the launch claim binds another reservation than this ledger's")
+    admission = reservation.get("admission") or {}
+    admitted = tags.admission(grant["grant_id"], admission.get("seq"), manifest_sha256)
+    if admitted is None or admitted[0].get("call") != name or admitted[1]["sha"] != admission.get("commit_sha"):
+        raise Disagreement(f"{name}: the reservation is not anchored by its admission tag")
     if (settlement["status"], settlement["exit_status"]) != ("exited", 0):
         raise NotCompleted(f"{name}: did not complete: settled {settlement['status']!r} with exit status "
                            f"{settlement['exit_status']!r}")

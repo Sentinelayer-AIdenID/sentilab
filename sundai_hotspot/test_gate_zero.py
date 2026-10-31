@@ -101,14 +101,16 @@ class FakeGitHub:
     """GitHub's git-data API as gate0_anchor uses it, in memory (no network). A ref create is atomic and create-only,
     as GitHub's is: a second create of the same ref raises RefExists. Commits are immutable. Failure injection:
     `down` holds (method, path prefix) pairs that fail as an outage would (AnchorUnavailable, before anything
-    happens); `after_create_lost` loses the answer to a ref create that did happen; `before_create` runs before a ref
-    create takes the lock (a barrier makes two claims overlap)."""
+    happens); `fail_create` maps a part of a ref's name to "before" (an outage before its create) or "after" (the
+    create happens and its answer is lost); `before_read(path)` runs before a ref is read and `before_create(ref)`
+    before a ref create takes the lock (a barrier makes two requests overlap)."""
 
     def __init__(self):
         self.refs, self.commits, self.log = {}, {}, []
         self.lock = threading.Lock()
         self.down: set[tuple[str, str]] = set()
-        self.after_create_lost = False
+        self.fail_create: dict[str, str] = {}
+        self.before_read = None
         self.before_create = None
 
     def __call__(self, method: str, path: str, body: dict | None = None):
@@ -117,6 +119,8 @@ class FakeGitHub:
         if any(method == down_method and path.startswith(prefix) for down_method, prefix in self.down):
             raise AnchorUnavailable(f"fake outage: {method} {path}")
         if method == "GET" and path.startswith("/git/ref/"):
+            if self.before_read:
+                self.before_read(path)
             name = "refs/" + path[len("/git/ref/"):]
             with self.lock:
                 sha = self.refs.get(name)
@@ -137,13 +141,16 @@ class FakeGitHub:
                 self.commits[sha] = {"sha": sha, **commit}
             return {"sha": sha}
         if method == "POST" and path == "/git/refs":
+            mode = next((how for part, how in self.fail_create.items() if part in body["ref"]), None)
+            if mode == "before":
+                raise AnchorUnavailable(f"fake outage before creating {body['ref']}")
             if self.before_create:
-                self.before_create()
+                self.before_create(body["ref"])
             with self.lock:
                 if body["ref"] in self.refs:
                     raise RefExists(path)
                 self.refs[body["ref"]] = body["sha"]
-            if self.after_create_lost:
+            if mode == "after":
                 raise AnchorUnavailable("the answer to a create that happened was lost")
             return {"ref": body["ref"], "object": {"type": "commit", "sha": body["sha"]}}
         raise AnchorUnavailable(f"the fake has no {method} {path}")
@@ -160,6 +167,19 @@ class FakeGitHub:
 
     def launch_tags(self) -> list[str]:
         return sorted(name for name in self.refs if "/launch-" in name)
+
+    def admit_ref(self, seq: int, grant_id: str = GRANT_ID) -> str:
+        return "refs/" + gate0_anchor.admit_ref(grant_id, seq)
+
+    def admitted_calls(self) -> list[str]:
+        """The admission chain's calls in order, read straight from the fake's refs."""
+        calls = []
+        for seq in range(1, 100):
+            sha = self.refs.get(self.admit_ref(seq))
+            if sha is None:
+                return calls
+            calls.append(json.loads(self.commits[sha]["message"])["call"])
+        return calls
 
 
 class TempDirCase(unittest.TestCase):
@@ -211,9 +231,16 @@ class OperatorCase(TempDirCase):
         self.manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
         self.manifest_sha256 = _sha256(self.manifest_path)
         self.calls = {c["id"]: c for c in self.manifest["calls"]}
+        self.envelopes = {name: float(c["accounting"]["reserved_cpu_s"]) for name, c in self.calls.items()}
 
     def grant(self, label: str = "grant", **kwargs) -> "Scenario":
         return Scenario(self, label, **kwargs)
+
+    def charged(self, scenario: "Scenario") -> float:
+        """The grant's anchored charge as the admission computes it, read through this scenario's ledger."""
+        ledger = scenario.ledger()
+        chain = scenario.tags.admissions(ledger["grant"], self.manifest_sha256, self.envelopes)
+        return gate0_anchor.admission_charge(chain, ledger, scenario.tags, scenario.grant_id, self.manifest_sha256)
 
     def record(self, scenario: "Scenario", binary: Path | None = None, kind: str = "hotspot6") -> dict:
         return build_record(kind, binary or self.binaries["hotspot6"], ledger_root=scenario.root, tags=scenario.tags)
@@ -265,16 +292,27 @@ class Scenario:
             settlement = self.entries(call)["settlement"]
             self.tag("settle", call, gate0_anchor.tag_message(
                 "settle", self.grant_id, self.case.manifest_sha256, call, status=settlement["status"],
-                receipt_sha256=settlement["receipt_sha256"], outputs=settlement["outputs"]))
+                receipt_sha256=settlement["receipt_sha256"], outputs=settlement["outputs"],
+                charged_cpu_s=settlement["charged_cpu_s"]))
+
+    def admit(self, call: str, out: Path, **kwargs) -> dict:
+        """The real admission (gate0_anchor.admit_and_reserve) for one call, as validate-reference makes it."""
+        if not self.api.has("reserve", call):
+            self.reserve(call)
+        return gate0_anchor.admit_and_reserve(
+            self.root, self.key, self.public, self.case.manifest_sha256, call,
+            {"out": Path(out).resolve().as_posix(), "reserved_cpu_s": self.case.envelopes[call]}, request=self.api,
+            envelopes=self.case.envelopes, now=IN_WINDOW, **kwargs)
 
     def fabricate(self, peaks: dict, *, binary: Path | None = None, settled: dict | None = None,
                   edit: dict | None = None, receipt_signer: Ed25519PrivateKey | None = None,
                   charged_cpu_s: float = 6.0) -> None:
         """Calls exactly as validate-reference and the operator leave them, with synthetic outputs instead of a
-        solve: the reserve tag, the signed reservation, the run directory and its signed receipt, the launch claim,
-        the signed settlement and the settle tag. peaks maps a call id to its peak (C) or to write_outputs keyword
-        arguments; settled maps a call id to a (status, exit_status) other than ("exited", 0); edit maps a call id
-        to a change made to its receipt before it is signed (a key holder's consistent forgery)."""
+        solve: the reserve tag, the admission (its tag and the signed reservation), the run directory and its signed
+        receipt, the launch claim, the signed settlement and the settle tag. peaks maps a call id to its peak (C) or
+        to write_outputs keyword arguments; settled maps a call id to a (status, exit_status) other than
+        ("exited", 0); edit maps a call id to a change made to its receipt before it is signed (a key holder's
+        consistent forgery)."""
         identity = evaluator_identity("hotspot6", binary or self.case.binaries["hotspot6"])
         for name, peak in peaks.items():
             call = self.case.calls[name]
@@ -283,17 +321,13 @@ class Scenario:
             shutil.copytree(REPO_ROOT / reference.inputs, run)
             write_outputs(run, **(peak if isinstance(peak, dict) else {"peak_c": peak}))
             status, exit_status = (settled or {}).get(name, ("exited", 0))
-            if not self.api.has("reserve", name):
-                self.reserve(name)
-            reservation = gate0_anchor.append(self.root, self.key, self.public, self.case.manifest_sha256,
-                                              "reservation", name, {"out": run.resolve().as_posix(),
-                                                                    "reserved_cpu_s": call["accounting"]["reserved_cpu_s"]})
+            reservation = self.admit(name, run)
             claim = gate0_anchor.claim_launch(self.api, self.grant_id, self.case.manifest_sha256, name,
                                               reservation_sha256=gate0_anchor.digest(reservation))
             receipt = {"schema": gate_zero.RECEIPT_SCHEMA, "call": name, "role": call["role"],
                        "replay_of": call["replay_of"], "manifest_sha256": self.case.manifest_sha256,
                        "grant_id": self.grant_id, "reservation_sha256": gate0_anchor.digest(reservation),
-                       "evaluator": identity, "reference": reference.id, "layout_identity": reference.layout_identity,
+                       "admission": reservation["admission"], "evaluator": identity, "reference": reference.id, "layout_identity": reference.layout_identity,
                        "raw_layout_sha256": reference.raw_layout_sha256, "grid": call["grid"], "status": status,
                        "exit_status": exit_status, "inputs": gate_zero.frozen_inputs(reference),
                        "runtime": NO_LIBRARIES, "claim": {"ref": claim["ref"], "commit_sha": claim["commit_sha"]},
@@ -615,27 +649,38 @@ class OperatorLedgerTests(OperatorCase):
             gate0_anchor.open_ledger(scenario.root, self.key, self.manifest_sha256, grant_id="again", calls=[P_ASCEND],
                                      not_before_utc=WINDOW[0], not_after_utc=WINDOW[1], cpu_cap_s=1.0)
 
-    def test_each_call_is_reserved_once_and_settled_once_inside_the_grant(self):
+    def test_each_call_is_admitted_once_and_settled_once_inside_the_grant(self):
         scenario = self.grant(calls=[P_ASCEND, R_ASCEND])
+        out = self.root / "out"
 
-        def append(kind, call, key=self.key):
-            return gate0_anchor.append(scenario.root, key, self.public, self.manifest_sha256, kind, call, {})
+        def settle(call, key=self.key):
+            return gate0_anchor.append(scenario.root, key, self.public, self.manifest_sha256, "settlement", call, {})
         with self.assertRaisesRegex(AuthenticationError, "no open reservation"):
-            append("settlement", P_ASCEND)
-        append("reservation", P_ASCEND)
-        with self.assertRaisesRegex(AuthenticationError, "reserved once"):
-            append("reservation", P_ASCEND)
-        append("settlement", P_ASCEND)
-        for kind in ("reservation", "settlement"):
-            with self.assertRaises(AuthenticationError):
-                append(kind, P_ASCEND)
-        with self.assertRaisesRegex(AuthenticationError, "not in the operator's grant"):
-            append("reservation", P_MICRO)
-        with self.assertRaises(ValueError):
-            append("grant", R_ASCEND)
+            settle(P_ASCEND)
+        scenario.admit(P_ASCEND, out)
+        with self.assertRaisesRegex(gate0_anchor.AdmissionRefused, "admitted once"):
+            scenario.admit(P_ASCEND, out)
+        settle(P_ASCEND)
+        with self.assertRaises(AuthenticationError):
+            settle(P_ASCEND)
+        with self.assertRaises(gate0_anchor.AdmissionRefused):
+            scenario.admit(P_ASCEND, out)
+        with self.assertRaisesRegex(gate0_anchor.AdmissionRefused, "not in the operator's grant"):
+            scenario.admit(P_MICRO, out)
+        with self.assertRaisesRegex(ValueError, "settlements only"):  # reservations come from the admission only
+            gate0_anchor.append(scenario.root, self.key, self.public, self.manifest_sha256, "reservation", R_ASCEND,
+                                {})
         with self.assertRaisesRegex(AuthenticationError, "not the pinned operator key"):
-            append("reservation", R_ASCEND, key=Ed25519PrivateKey.generate())
+            settle(P_ASCEND, key=Ed25519PrivateKey.generate())
+        with self.assertRaisesRegex(AuthenticationError, "not the pinned operator key"):
+            gate0_anchor.admit_and_reserve(scenario.root, Ed25519PrivateKey.generate(), self.public,
+                                           self.manifest_sha256, R_ASCEND, {}, request=scenario.api,
+                                           envelopes=self.envelopes, now=IN_WINDOW)
         self.assertEqual(len(scenario.ledger()["entries"]), 3)
+        self.assertEqual(scenario.api.admitted_calls(), [P_ASCEND])
+        del scenario.api.refs[scenario.api.admit_ref(1)]  # either record alone refuses a repeat: here the ledger
+        with self.assertRaisesRegex(gate0_anchor.AdmissionRefused, "already in the ledger"):
+            scenario.admit(P_ASCEND, out)
 
 
 class AnchorTests(OperatorCase):
@@ -710,14 +755,14 @@ class AnchorTests(OperatorCase):
         self.assertEqual(launch["reservation_sha256"], "1" * 64)
         with self.assertRaisesRegex(ClaimRefused, "no launch"):  # the create-only ref: a second create fails
             claim(P_ASCEND)
-        scenario.api.after_create_lost = True
+        scenario.api.fail_create = {scenario.api.ref("launch", P_MICRO): "after"}
         with self.assertRaises(ClaimUncertain):
             claim(P_MICRO)
         self.assertTrue(scenario.api.has("launch", P_MICRO))  # it was made, and the caller cannot know: consumed
-        scenario.api.after_create_lost = False
-        scenario.api.down = {("POST", "/git/refs")}
+        scenario.api.fail_create = {scenario.api.ref("launch", R_MICRO): "before"}
         with self.assertRaises(ClaimUncertain):
             claim(R_MICRO)
+        scenario.api.fail_create = {}
         scenario.api.down = {("POST", "/git/commits")}
         with self.assertRaises(AnchorUnavailable):  # no ref create was attempted
             claim(R_ASCEND)
@@ -912,16 +957,13 @@ class RecordTests(OperatorCase):
                 if collision.startswith("a copy"):
                     shutil.copytree(primary, primary.with_name("copied-primary"))
                     primary = primary.with_name("copied-primary")
-                scenario.reserve(R_ASCEND)
-                reservation = gate0_anchor.append(scenario.root, self.key, self.public, self.manifest_sha256,
-                                                  "reservation", R_ASCEND, {"out": primary.as_posix(),
-                                                                            "reserved_cpu_s": 58.5})
+                reservation = scenario.admit(R_ASCEND, primary)
                 gate0_anchor.claim_launch(scenario.api, GRANT_ID, self.manifest_sha256, R_ASCEND,
                                           reservation_sha256=gate0_anchor.digest(reservation))
                 settled = scenario.entries(P_ASCEND)["settlement"]
                 gate0_anchor.append(scenario.root, self.key, self.public, self.manifest_sha256, "settlement",
                                     R_ASCEND, {k: settled[k] for k in ("status", "exit_status", "outputs",
-                                                                         "receipt_sha256")})
+                                                                         "receipt_sha256", "charged_cpu_s")})
                 scenario.settle(R_ASCEND)
                 record = self.record(scenario)
                 self.assertEqual(record["verdict"], "FAIL")
@@ -1080,13 +1122,17 @@ class AuthenticityTests(OperatorCase):
             scenario.api.drop("settle", P_ASCEND)
             scenario.tag("settle", P_ASCEND, gate0_anchor.tag_message("settle", GRANT_ID, self.manifest_sha256,
                                                                        P_ASCEND, status="exited",
-                                                                       receipt_sha256="0" * 64, outputs={}))
+                                                                       receipt_sha256="0" * 64, outputs={},
+                                                                       charged_cpu_s=6.0))
 
         def relaunched(scenario):  # a launch tag that binds another reservation
             scenario.api.drop("launch", P_ASCEND)
             scenario.tag("launch", P_ASCEND, gate0_anchor.tag_message("launch", GRANT_ID, self.manifest_sha256,
                                                                        P_ASCEND, reservation_sha256="0" * 64))
+        def unanchored(scenario):  # a reservation whose admission tag is gone
+            del scenario.api.refs["refs/" + scenario.entries(P_ASCEND)["reservation"]["admission"]["ref"]]
         controls = {"valid-prefix rollback": rolled_back, "whole-ledger deletion": lambda s: shutil.rmtree(s.root),
+                    "no admission tag": unanchored,
                     "replaced ledger": replaced, "settle tag rebound": retagged, "launch tag rebound": relaunched,
                     "no launch claim": lambda s: s.api.drop("launch", P_ASCEND),
                     "no reserve tag": lambda s: s.api.drop("reserve", P_ASCEND)}
@@ -1278,7 +1324,8 @@ class ManifestTests(unittest.TestCase):
         self.assertIn("never lives in the repository", operator["custody"])
         self.assertEqual((anchor["repository"], anchor["namespace"], anchor["message_schema"]),
                          ("Sentinelayer-AIdenID/sentilab", "refs/tags/gate0-<grant-id>/", gate0_anchor.TAG_SCHEMA))
-        self.assertEqual(sorted(anchor["tags"]), ["launch-<call-id>", "reserve-<call-id>", "settle-<call-id>"])
+        self.assertEqual(sorted(anchor["tags"]), ["admit-<NN>", "launch-<call-id>", "reserve-<call-id>",
+                                                  "settle-<call-id>"])
         self.assertIn("SLAB049_ANCHOR_TOKEN", anchor["credentials"]["claim"])
         self.assertEqual(ledger["dir"], "<SLAB049_LEDGER_ROOT>/slab049-<this manifest's SHA-256>")
 
@@ -1336,7 +1383,8 @@ class ManifestTests(unittest.TestCase):
         self.assertEqual(enforcement["in_code_at_entry"], list(slab049.IN_CODE_AT_ENTRY))
         in_code = " ".join(enforcement["in_code_at_entry"])
         for rule in ("CREATES gate0-<grant>/launch-<call>", "Only a successful create launches",
-                     "no launch on uncertainty", "never reclaimed", "RLIMIT_CPU", "ERROR", "INCOMPLETE"):
+                     "no admission on uncertainty", "never reclaimed", "admit-<NN>", "before any process work",
+                     "accounting from the first step", "RLIMIT_CPU", "ERROR", "INCOMPLETE"):
             self.assertIn(rule, in_code)
         contract = " ".join(enforcement["operator_supervisor_contract"])
         for duty in ("key custody", "never enters the repository", "create-only", "SLAB049_ANCHOR_TOKEN",
@@ -1469,6 +1517,31 @@ class EntryCase(OperatorCase):
     def launched(self, out: str) -> bool:
         return (self.root / out / "argv0.txt").is_file()  # the fake solver's first act
 
+    def run_together(self, requests: list[tuple]) -> dict:
+        """validate-reference for each (scenario, call, out) at once, each in its own thread: out -> its receipt, or
+        the exception it raised."""
+        results = {}
+
+        def run(scenario, call, out):
+            try:
+                results[out] = self.call(call, out, scenario=scenario)
+            except Exception as exc:  # reported by the caller
+                results[out] = exc
+        threads = [threading.Thread(target=run, args=request) for request in requests]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(180)
+        return results
+
+    @staticmethod
+    def popen_spy(on_spawn):
+        """Every process validate-reference starts passes on_spawn(argv) first, then the real Popen."""
+        def spy(argv, *args, **kwargs):
+            on_spawn(list(argv))
+            return mock.DEFAULT  # the wrapped, real Popen
+        return mock.patch.object(reference_validation.subprocess, "Popen", wraps=subprocess.Popen, side_effect=spy)
+
 
 class ManifestEntryTests(EntryCase):
     """validate-reference: the bootstrap path, bound to the frozen manifest and the operator's grant (astra #56794,
@@ -1525,12 +1598,6 @@ class ManifestEntryTests(EntryCase):
         shutil.copy(self.fake, stale)
         self.write_provenance(stale)
         stale.write_text(stale.read_text() + "# rebuilt\n")
-        other = self.root / "other-libraries"
-        shutil.copy(self.fake, other)
-        claimed = provenance.build_provenance("hotspot6", other)
-        claimed["libraries"] = {"dynamic": True, "libraries": [
-            {"name": "libblas.so.3", "path": "/x", "realpath": "/x", "sha256": "0" * 64}]}
-        provenance.provenance_path(other).write_text(json.dumps(claimed))
         guarded = self.root / "ci-guarded"  # what a CI_ALLOCATION=1 build compiles in (sundai_hotspot/ci_entry.h)
         guarded.write_bytes(self.fake.read_bytes() + b"# " + provenance.CI_ENTRY_GUARD + b"\n")
         guarded.chmod(0o755)
@@ -1545,13 +1612,11 @@ class ManifestEntryTests(EntryCase):
                     self.call(P_ASCEND, "out-host")
             with self.assertRaisesRegex(CallRefused, "provenance"):
                 self.call(P_ASCEND, "out-stale", binary=stale)
-            with self.assertRaisesRegex(CallRefused, "libraries"):
-                self.call(P_ASCEND, "out-libraries", binary=other)
             with self.assertRaisesRegex(CallRefused, "CI entry guard"):
                 self.call(P_ASCEND, "out-guarded", binary=guarded)
             dispatch.assert_not_called()
         self.assertEqual(len(self.scenario.ledger()["entries"]), 1, "a refused call is never reserved")
-        self.assertEqual(self.scenario.api.launch_tags(), [])
+        self.assertEqual((self.scenario.api.admitted_calls(), self.scenario.api.launch_tags()), ([], []))
 
     def test_the_committed_manifest_pins_no_operator_key_so_nothing_is_admitted_or_passed(self):
         committed = REPO_ROOT / "docs/sentilab/diagnostics/SLAB-049" / slab049.MANIFEST_NAME
@@ -1592,6 +1657,8 @@ class ManifestEntryTests(EntryCase):
             self.assertEqual(on_disk["build_provenance"]["sha256"], _sha256(provenance.provenance_path(self.fake)))
             self.assertEqual(on_disk["runtime"], on_disk["runtime_after"])
             self.assertEqual(on_disk["claim"]["ref"], gate0_anchor.tag_ref(GRANT_ID, "launch", name))
+            self.assertEqual(on_disk["admission"]["ref"],
+                             gate0_anchor.admit_ref(GRANT_ID, list(peaks).index(name) + 1))
             executed = Path((run / "argv0.txt").read_text())
             self.assertEqual(executed.name, f"evaluator-{_sha256(self.fake)[:16]}")  # the private copy ran
             self.assertNotEqual(executed, self.fake.resolve())
@@ -1628,14 +1695,14 @@ class ManifestEntryTests(EntryCase):
         self.assertEqual((receipt["status"], receipt["timeout_s"], receipt["cpu_limit_s"]), ("exited", 15.0, 15))
         self.assertEqual((self.root / name / "rlimit_cpu.txt").read_text(), "15 15")
 
-    def test_the_anchored_aggregate_charges_every_claimed_or_ledgered_call_its_full_envelope(self):
-        """astra #57024, #57025: the full envelope is reserved before launch and never reclaimed."""
+    def test_the_anchored_aggregate_charges_every_admitted_call_its_full_envelope(self):
+        """astra #57024, #57025: the full envelope is reserved at admission and never reclaimed."""
         small = self.grant("small", cap=80.0)
         small.reserve(P_ASCEND, G32_ASCEND)
         self.assertEqual(self.call(P_ASCEND, "first", scenario=small)["status"], "exited")  # 58.5 of 80
         with self.assertRaisesRegex(CallRefused, "would pass the grant's 80 CPU-s cap"):
             self.call(G32_ASCEND, "second", scenario=small)  # 58.5 + 23.5 > 80
-        fresh = self.grant("fresh", api=small.api, cap=80.0)  # a fresh ledger still sees P_ASCEND's launch tag
+        fresh = self.grant("fresh", api=small.api, cap=80.0)  # a fresh ledger reads the same admission chain
         with self.assertRaisesRegex(CallRefused, "would pass the grant's 80 CPU-s cap"):
             self.call(G32_ASCEND, "third", scenario=fresh)
         heavy = self.grant("heavy")  # a measured overshoot is charged in full
@@ -1643,12 +1710,9 @@ class ManifestEntryTests(EntryCase):
         heavy.reserve(G32_ASCEND)
         with self.assertRaisesRegex(CallRefused, "590.00 CPU-s already charged"):
             self.call(G32_ASCEND, "overshoot", scenario=heavy)
-        failed = self.grant("failed", cap=600.0)  # failed or unknown work stays charged
+        failed = self.grant("failed")  # failed or unknown work stays charged
         failed.fabricate({P_MICRO: 116.27, R_MICRO: 116.27}, settled={P_MICRO: ("setup_error", None)})
-        failed.reserve(G32_ASCEND)
-        charged = reference_validation.anchored_charge(failed.ledger(), failed.tags, failed.ledger()["grant"],
-                                                       self.manifest, self.manifest_sha256)
-        self.assertEqual(charged, 2 * 58.5)
+        self.assertEqual(self.charged(failed), 2 * 58.5)
 
     def test_the_wall_deadline_kills_the_whole_process_group(self):
         with mock.patch.dict(slab049.TIMING, {"grid64_timeout_s": 3.0}):  # time to start its child
@@ -1703,7 +1767,7 @@ class ManifestEntryTests(EntryCase):
         self.assertIsNone(settlement["receipt_sha256"])  # no receipt could be written, the ledger still settles
         self.assertTrue(settlement["receipt_error"])
         self.assertFalse(self.scenario.api.has("launch", P_ASCEND))  # it never reached its claim
-        with self.assertRaisesRegex(CallRefused, "already has ledger entries"):  # and is never retried
+        with self.assertRaisesRegex(CallRefused, "already in the ledger"):  # and is never retried
             self.call(P_ASCEND, "elsewhere")
         real, writes = reference_validation._write_durably, []
 
@@ -1719,10 +1783,7 @@ class ManifestEntryTests(EntryCase):
         self.assertEqual(settlement["status"], "setup_error")
         self.assertIn("No space left on device", settlement["error"])
         self.assertEqual(settlement["receipt_sha256"], _sha256(self.root / "first-write" / "receipt.json"))
-        charged = reference_validation.anchored_charge(self.scenario.ledger(), self.scenario.tags,
-                                                       self.scenario.ledger()["grant"], self.manifest,
-                                                       self.manifest_sha256)
-        self.assertEqual(charged, 2 * 58.5)  # both stay charged their full envelopes
+        self.assertEqual(self.charged(self.scenario), 2 * 58.5)  # both stay charged their full envelopes
 
     def test_a_truncated_grid_after_exit_zero_keeps_the_raw_outputs_and_is_incomplete(self):
         self.scenario.reserve(P_ASCEND)
@@ -1739,74 +1800,90 @@ class ManifestEntryTests(EntryCase):
 
 class ClaimTests(EntryCase):
     """astra #57031: the atomic launch claim, through the real entrypoint with the create-only fake API. The order of
-    one call is reservation, staging, claim, launch; only a successful create launches."""
+    one call is admission, setup, the precheck, staging, claim, launch; only a successful create launches."""
 
     def solver_popen(self, before_launch):
-        """A spy on the solver's launch (the TAP argv): before_launch runs first, then the real Popen, as for every
-        other process."""
-        def spy(argv, *args, **kwargs):
-            if "-steady_file" in argv:
-                before_launch()
-            return mock.DEFAULT  # the wrapped, real Popen
-        return mock.patch.object(reference_validation.subprocess, "Popen", wraps=subprocess.Popen, side_effect=spy)
+        """A spy on the solver's launch (the TAP argv): before_launch runs first, then the real Popen."""
+        return self.popen_spy(lambda argv: before_launch() if "-steady_file" in argv else None)
 
-    def test_reservation_staging_claim_launch_in_that_order(self):
+    def test_admission_staging_claim_launch_in_that_order(self):
         self.scenario.reserve(P_ASCEND)
-        events, out = [], self.root / "order"
+        events, spawned, out = [], [], self.root / "order"
 
         def staged():
             return sorted(path.name for path in out.iterdir()) if out.exists() else []
 
-        def at_claim():
-            events.append(("claim", "reservation" in self.scenario.entries(P_ASCEND), staged()))
+        def at_create(ref):
+            if "/admit-" in ref:
+                events.append(("admission", len(spawned), staged()))
+            elif "/launch-" in ref:
+                events.append(("claim", "reservation" in self.scenario.entries(P_ASCEND), staged()))
 
-        def at_launch():
-            events.append(("launch", self.scenario.api.has("launch", P_ASCEND), staged()))
-        self.scenario.api.before_create = at_claim
-        with self.solver_popen(at_launch):
+        def on_spawn(argv):
+            spawned.append(argv)
+            if "-steady_file" in argv:
+                events.append(("launch", self.scenario.api.has("launch", P_ASCEND), staged()))
+        self.scenario.api.before_create = at_create
+        with self.popen_spy(on_spawn):
             receipt = self.call(P_ASCEND, "order")
         self.assertEqual(receipt["status"], "exited")
-        self.assertEqual([event[0] for event in events], ["claim", "launch"])
-        (_, reserved, at_claim_files), (_, claimed, at_launch_files) = events
-        self.assertTrue(reserved)  # the signed reservation came first
-        self.assertLessEqual({"receipt.json", *slab049.REFERENCE_INPUTS}, set(at_claim_files))  # then staging
+        self.assertEqual([event[0] for event in events], ["admission", "claim", "launch"])
+        (_, processes, at_admission), (_, reserved, at_claim), (_, claimed, at_launch) = events
+        self.assertEqual((processes, at_admission), (0, []))  # admitted before any process and any file
+        self.assertTrue(reserved)  # the signed reservation, then setup and staging
+        self.assertLessEqual({"receipt.json", *slab049.REFERENCE_INPUTS}, set(at_claim))
         self.assertTrue(claimed)   # then the claim, before the launch
-        self.assertEqual(set(at_launch_files) - set(at_claim_files), {"stdout.txt", "stderr.txt"})  # nothing between
+        self.assertEqual(set(at_launch) - set(at_claim), {"stdout.txt", "stderr.txt"})  # nothing in between
 
     def test_a_sequential_pair_launches_exactly_once(self):
         self.scenario.reserve(P_ASCEND)
         self.assertEqual(self.call(P_ASCEND, "first")["status"], "exited")
         fresh = self.grant("ledger-b", api=self.scenario.api)  # the operator's second ledger for the same grant
-        for scenario, out in ((self.scenario, "again"), (fresh, "elsewhere")):
-            with self.subTest(ledger=out), self.assertRaisesRegex(CallRefused, "already has a launch tag"):
+        for scenario, out, reason in ((self.scenario, "again", "already in the ledger"),
+                                      (fresh, "elsewhere", "already admitted")):
+            with self.subTest(ledger=out), self.assertRaisesRegex(CallRefused, reason):
                 self.call(P_ASCEND, out, scenario=scenario)
         self.assertEqual(self.scenario.api.launch_tags(), [self.scenario.api.ref("launch", P_ASCEND)])
         self.assertEqual([self.launched(out) for out in ("first", "again", "elsewhere")], [True, False, False])
 
     def test_a_concurrent_pair_launches_exactly_once(self):
+        """Two requests for one call on two ledgers at once: the anchored admission takes exactly one before either
+        does any process work; the other is refused and spends nothing."""
         self.scenario.reserve(P_ASCEND)
         other = self.grant("ledger-b", api=self.scenario.api)
-        barrier = threading.Barrier(2, timeout=120)
-        self.scenario.api.before_create = barrier.wait  # both requests are past admission before either creates
-        results = {}
+        rendezvous = threading.Barrier(2)
 
-        def run(scenario, out):
-            try:
-                results[out] = self.call(P_ASCEND, out, scenario=scenario)
-            except Exception as exc:  # reported below
-                results[out] = exc
-        threads = [threading.Thread(target=run, args=(scenario, out)) for scenario, out in ((self.scenario, "a"),
-                                                                                             (other, "b"))]
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join(180)
-        self.assertEqual(sorted(results), ["a", "b"], results)
-        self.assertEqual(sorted(r["status"] for r in results.values()), ["claim_refused", "exited"], results)
+        def meet(path):  # both requests read the admission chain before either takes a place in it
+            if "/admit-" in path:
+                with contextlib.suppress(threading.BrokenBarrierError):
+                    rendezvous.wait(timeout=5)
+        self.scenario.api.before_read = meet
+        results = self.run_together([(self.scenario, P_ASCEND, "a"), (other, P_ASCEND, "b")])
+        self.scenario.api.before_read = None
+        receipts = {out: r for out, r in results.items() if isinstance(r, dict)}
+        refusals = {out: r for out, r in results.items() if isinstance(r, CallRefused)}
+        self.assertEqual((len(receipts), len(refusals)), (1, 1), results)
+        self.assertEqual(next(iter(receipts.values()))["status"], "exited")
+        self.assertRegex(str(next(iter(refusals.values()))), "taken by another request|already admitted")
         self.assertEqual(sum(self.launched(out) for out in ("a", "b")), 1)
-        loser = next(out for out, r in results.items() if r["status"] == "claim_refused")
-        self.assertEqual((other if loser == "b" else self.scenario).entries(P_ASCEND)["settlement"]["status"],
-                         "claim_refused")
+        loser = next(iter(refusals))
+        self.assertEqual(len((other if loser == "b" else self.scenario).ledger()["entries"]), 1)  # nothing spent
+        self.assertEqual(self.scenario.api.admitted_calls(), [P_ASCEND])
+
+    def test_a_launch_ref_taken_first_by_another_request_refuses_the_launch(self):
+        """The claim's create is the atomic step at launch: when the launch ref appears first (another request
+        holding it), the create fails and nothing launches."""
+        self.scenario.reserve(P_ASCEND)
+
+        def rival(ref):
+            if "/launch-" in ref:
+                with self.scenario.api.lock:
+                    self.scenario.api.refs.setdefault(ref, "0" * 40)
+        self.scenario.api.before_create = rival
+        receipt = self.call(P_ASCEND, "raced")
+        self.assertEqual((receipt["status"], receipt["exit_status"]), ("claim_refused", None))
+        self.assertFalse(self.launched("raced"))
+        self.assertEqual(self.scenario.entries(P_ASCEND)["settlement"]["status"], "claim_refused")
 
     def test_a_deleted_or_rolled_back_reservation_never_readmits_a_call(self):
         """warden #56967 P2-2: deleting a reservation would readmit its call without the anchor."""
@@ -1820,7 +1897,7 @@ class ClaimTests(EntryCase):
         for entry in entries[2:]:  # the rest too: a valid prefix holding only the grant
             entry.unlink()
         for name in (P_ASCEND, P_MICRO):
-            with self.subTest(call=name), self.assertRaisesRegex(CallRefused, "already has a launch tag"):
+            with self.subTest(call=name), self.assertRaisesRegex(CallRefused, "already admitted"):
                 self.call(name, f"after-rollback-{name}")
         self.assertFalse(any(self.launched(out) for out in ("after-deletion", f"after-rollback-{P_ASCEND}",
                                                              f"after-rollback-{P_MICRO}")))
@@ -1837,26 +1914,24 @@ class ClaimTests(EntryCase):
         self.assertFalse(self.scenario.api.has("settle", P_ASCEND))
         self.assertEqual(set(self.scenario.entries(P_ASCEND)), {"reservation"})
         fresh = self.grant("ledger-b", api=self.scenario.api)
-        for scenario, out in ((self.scenario, "retry"), (fresh, "retry-b")):
-            with self.subTest(ledger=out), self.assertRaisesRegex(CallRefused, "launch tag"):
+        for scenario, out, reason in ((self.scenario, "retry", "already in the ledger"),
+                                      (fresh, "retry-b", "already admitted")):
+            with self.subTest(ledger=out), self.assertRaisesRegex(CallRefused, reason):
                 self.call(P_ASCEND, out, scenario=scenario)  # never from the absence of a settle tag
         self.assertFalse(any(self.launched(out) for out in ("crashed", "retry", "retry-b")))
         self.assertIn(P_ASCEND, [m["call"] for m in self.record(self.scenario, self.fake)["missing"]])
 
     def test_an_uncertain_create_launches_nothing_and_is_never_retried(self):
-        for label in ("lost-after-create", "failed-before-create"):
+        for label, mode in (("lost-after-create", "after"), ("failed-before-create", "before")):
             with self.subTest(create=label):
                 scenario = self.grant(label)
                 scenario.reserve(P_ASCEND)
-                if label == "lost-after-create":
-                    scenario.api.after_create_lost = True
-                else:
-                    scenario.api.down = {("POST", "/git/refs")}
+                scenario.api.fail_create = {"/launch-": mode}
                 receipt = self.call(P_ASCEND, label + "-run", scenario=scenario)
                 self.assertEqual((receipt["status"], receipt["exit_status"]), ("claim_uncertain", None))
                 self.assertFalse(self.launched(label + "-run"))
                 self.assertEqual(scenario.entries(P_ASCEND)["settlement"]["status"], "claim_uncertain")
-                scenario.api.after_create_lost, scenario.api.down = False, set()
+                scenario.api.fail_create = {}
                 with self.assertRaises(CallRefused):  # consumed in its ledger
                     self.call(P_ASCEND, label + "-again", scenario=scenario)
                 scenario.tag("settle", P_ASCEND, receipt["settle_tag_message"])  # the operator reconciles it
@@ -1878,7 +1953,192 @@ class ClaimTests(EntryCase):
         self.assertEqual(code, 2)
         self.assertIn("no launch credential (SLAB049_ANCHOR_TOKEN)", stderr.getvalue())
         self.assertFalse(self.launched("no-credential") or self.launched("cli"))
-        self.assertEqual((len(self.scenario.ledger()["entries"]), self.scenario.api.launch_tags()), (1, []))
+        self.assertEqual((len(self.scenario.ledger()["entries"]), self.scenario.api.admitted_calls(),
+                          self.scenario.api.launch_tags()), (1, [], []))
+
+
+class AccountingTests(EntryCase):
+    """root's round-D review of PR #56 (P2): accounting starts before any work, and every process an invocation
+    starts belongs to an admitted, anchored attempt that settles and is charged. Each started process counts as one
+    work unit here; these are units and markers, not measured CPU."""
+
+    def setUp(self):
+        super().setUp()
+        # The fake solver is a script, which no loader lists. A stand-in loader (/bin/true's own listing, a real
+        # process) makes the precheck do process work, as the loader does for HotSpot.
+        self.patch(provenance, "elf_interpreter", lambda data: "/bin/true")
+        self.write_provenance(self.fake)
+        self.mismatched = self.root / "mismatched-libraries"
+        shutil.copy(self.fake, self.mismatched)
+        claimed = provenance.build_provenance("hotspot6", self.mismatched)
+        claimed["libraries"] = {"dynamic": True, "libraries": [
+            {"name": "libblas.so.3", "path": "/x", "realpath": "/x", "sha256": "0" * 64}]}
+        provenance.provenance_path(self.mismatched).write_text(json.dumps(claimed), encoding="utf-8")
+
+    def test_every_unit_of_work_belongs_to_an_admitted_attempt_and_is_charged(self):
+        """root's witness: 10 units of child work of which the old order charged 9, and library-mismatch refusals
+        with no ledger entry or anchored charge. Here: two calls that run (4 units each: the precheck's listing, the
+        generator, the solver, the listing after the run) and two library-mismatch refusals (1 unit each)."""
+        runs, refusals = (P_ASCEND, P_MICRO), (R_ASCEND, R_MICRO)
+        self.scenario.reserve(*runs, *refusals)
+        units, current = [], {}
+
+        def on_spawn(argv):
+            call = current["call"]
+            kind = ("listing" if argv[0] == "/bin/true" else "solver" if "-steady_file" in argv
+                    else "generator" if argv[:2] == [sys.executable, "-c"] else "other")
+            units.append((call, kind, call in self.scenario.api.admitted_calls()
+                          and "reservation" in self.scenario.entries(call)))
+        with self.popen_spy(on_spawn):
+            for name in runs:
+                current["call"] = name
+                self.assertEqual(self.call(name, name)["status"], "exited")
+            for name in refusals:
+                current["call"] = name
+                receipt = self.call(name, name, binary=self.mismatched)
+                self.assertEqual((receipt["status"], receipt["exit_status"]), ("runtime_refused", None))
+        self.assertEqual(len(units), 10, units)
+        self.assertEqual([unit for unit in units if not unit[2]], [])  # all 10 inside an admitted, anchored attempt
+        self.assertEqual({name: [kind for call, kind, _ in units if call == name] for name in runs + refusals},
+                         {**{name: ["listing", "generator", "solver", "listing"] for name in runs},
+                          **{name: ["listing"] for name in refusals}})
+        for name in refusals:  # each refusal is in the ledger and the admission chain, settled and charged
+            settlement = self.scenario.entries(name)["settlement"]
+            self.assertEqual(settlement["status"], "runtime_refused")
+            self.assertGreater(settlement["charged_cpu_s"], 0.0)
+            self.assertFalse((self.root / name / "sample.steady").exists())  # refused before staging
+        self.assertEqual(sorted(self.scenario.api.admitted_calls()), sorted(runs + refusals))
+        self.assertEqual(self.charged(self.scenario), 4 * 58.5)
+
+    def test_a_receipt_charges_the_first_check(self):
+        """The accounting starts before the first process-capable check, so a receipt charges it: 0.3 CPU-s of
+        parent work injected at the first listing appears in the receipt and its settlement."""
+        self.scenario.reserve(P_ASCEND)
+        seen = []
+
+        def on_spawn(argv):
+            if argv[0] == "/bin/true" and not seen:
+                seen.append({"self_s": reference_validation._self_cpu_s(),
+                             "children_s": reference_validation._children_cpu_s()})
+                end = time.process_time() + 0.3
+                while time.process_time() < end:  # injected work at the first check
+                    pass
+        with self.popen_spy(on_spawn):
+            receipt = self.call(P_ASCEND, "first-check")
+        self.assertEqual(receipt["status"], "exited")
+        self.assertEqual(receipt["runtime"]["loader"], "/bin/true")  # the first check is in the receipt
+        baseline = receipt["cpu_baseline"]
+        self.assertLessEqual(baseline["self_s"], seen[0]["self_s"])  # the accounting started before it
+        self.assertLessEqual(baseline["children_s"], seen[0]["children_s"])
+        self.assertGreaterEqual(receipt["self_cpu_s"], 0.3)  # and charges it
+        settlement = self.scenario.entries(P_ASCEND)["settlement"]
+        self.assertEqual((settlement["cpu_baseline"], settlement["charged_cpu_s"]), (baseline, receipt["charged_cpu_s"]))
+
+
+class AdmissionTests(EntryCase):
+    """root's round-D review of PR #56 (P2): the grant's balance is checked and the reservation appended atomically,
+    and the admission is anchored, so concurrency, a second ledger or a ledger rollback can never pass the cap or
+    readmit a call."""
+
+    def test_two_requests_cannot_both_spend_the_last_of_the_balance(self):
+        """root's witness: 490 charged under a 600 cap; two distinct 58.5 requests at once used to leave 607."""
+        for label, shared in (("one ledger", True), ("two ledgers", False)):
+            with self.subTest(label):
+                first = self.grant(label.replace(" ", "-") + "-a")
+                second = first if shared else self.grant(label.replace(" ", "-") + "-b", api=first.api)
+                first.fabricate({P_ASCEND: 75.09}, charged_cpu_s=490.0)
+                self.assertEqual(self.charged(first), 490.0)
+                first.reserve(P_MICRO, R_MICRO)
+                rendezvous = threading.Barrier(2)
+
+                def meet(path):  # both requests read the balance at once whenever the code lets them
+                    if "/admit-" in path:
+                        with contextlib.suppress(threading.BrokenBarrierError):
+                            rendezvous.wait(timeout=2)
+                first.api.before_read = meet
+                prefix = label.replace(" ", "-")
+                results = self.run_together([(first, P_MICRO, prefix + "-p"), (second, R_MICRO, prefix + "-r")])
+                first.api.before_read = None
+                ran = [r for r in results.values() if isinstance(r, dict)]
+                refused = [r for r in results.values() if isinstance(r, CallRefused)]
+                self.assertEqual((len(ran), len(refused)), (1, 1), results)
+                self.assertEqual(ran[0]["status"], "exited")
+                self.assertRegex(str(refused[0]), "would pass the grant's 600 CPU-s cap|taken by another request")
+                self.assertEqual(len(first.api.admitted_calls()), 2)
+                for scenario in (first, second):
+                    self.assertEqual(self.charged(scenario), 490.0 + 58.5)  # within 600, the same on every ledger
+
+    def test_an_admitted_call_is_never_readmitted_even_after_a_rollback_before_its_claim(self):
+        """The admission is anchored before any process work, so the work before the launch claim is never free: a
+        crash after admission and a ledger rolled back to its grant cannot readmit the call, here or elsewhere."""
+        self.scenario.reserve(P_ASCEND)
+
+        def crash(*args, **kwargs):
+            raise SystemExit("validate-reference killed after its admission, before its claim")
+        with mock.patch.object(gate0_anchor, "claim_launch", side_effect=crash), \
+                mock.patch.object(reference_validation, "_settle"):  # dead: nothing settles
+            with self.assertRaises(SystemExit):
+                self.call(P_ASCEND, "admitted-then-killed")
+        self.assertEqual((self.scenario.api.admitted_calls(), self.scenario.api.launch_tags()), ([P_ASCEND], []))
+        for entry in sorted(self.scenario.dir.glob("*.json"))[1:]:  # roll the ledger back to its grant
+            entry.unlink()
+        fresh = self.grant("ledger-b", api=self.scenario.api)
+        for scenario, out in ((self.scenario, "readmit"), (fresh, "readmit-b")):
+            with self.subTest(ledger=out), self.assertRaisesRegex(CallRefused, "already admitted"):
+                self.call(P_ASCEND, out, scenario=scenario)
+        self.assertEqual(self.charged(self.scenario), 58.5)  # its envelope stays charged
+        self.assertFalse(any(self.launched(out) for out in ("admitted-then-killed", "readmit", "readmit-b")))
+
+    def test_the_window_is_rechecked_at_the_final_admission_boundary(self):
+        self.scenario.reserve(P_ASCEND)
+        closed = datetime(2026, 11, 1, 12, 0, 1, tzinfo=timezone.utc)
+        with mock.patch.object(reference_validation, "_now", return_value=IN_WINDOW), \
+                mock.patch.object(gate0_anchor, "_now", return_value=closed):
+            with self.assertRaisesRegex(CallRefused, "outside the window at admission"):
+                self.call(P_ASCEND, "late", now=None)
+        self.assertEqual((len(self.scenario.ledger()["entries"]), self.scenario.api.admitted_calls()), (1, []))
+
+    def test_an_uncertain_or_forged_admission_runs_nothing(self):
+        for label, mode in (("lost-after-create", "after"), ("failed-before-create", "before")):
+            with self.subTest(create=label):
+                scenario = self.grant(label)
+                scenario.reserve(P_ASCEND)
+                scenario.api.fail_create = {"/admit-": mode}
+                with self.assertRaisesRegex(CallRefused, "outcome is unknown"):
+                    self.call(P_ASCEND, label + "-run", scenario=scenario)
+                scenario.api.fail_create = {}
+                self.assertEqual(len(scenario.ledger()["entries"]), 1)
+                self.assertFalse(self.launched(label + "-run"))
+                if mode == "after":  # the tag exists: consumed and charged, never readmitted
+                    self.assertEqual((scenario.api.admitted_calls(), self.charged(scenario)), ([P_ASCEND], 58.5))
+                    with self.assertRaisesRegex(CallRefused, "already admitted"):
+                        self.call(P_ASCEND, label + "-again", scenario=scenario)
+                else:  # nothing was created: a later request may still admit it
+                    self.assertEqual(scenario.api.admitted_calls(), [])
+                    self.assertEqual(self.call(P_ASCEND, label + "-again", scenario=scenario)["status"], "exited")
+        valid = {"call": P_MICRO, "envelope_cpu_s": 58.5, "total_cpu_s": 58.5, "previous_sha": None}
+        forged = {"another envelope": [dict(valid, envelope_cpu_s=1.0, total_cpu_s=1.0)],
+                  "a broken total": [dict(valid, total_cpu_s=1.0)],
+                  "a broken link": [dict(valid, previous_sha="f" * 40)],
+                  "a call outside the grant": [valid],
+                  "a call admitted twice": [valid, dict(valid, total_cpu_s=117.0, previous_sha="@")]}
+        for label, places in forged.items():
+            with self.subTest(chain=label):
+                outside = label == "a call outside the grant"
+                scenario = self.grant(label.replace(" ", "-"), calls=[P_ASCEND] if outside else None)
+                scenario.reserve(P_ASCEND)
+                previous = None
+                for seq, place in enumerate(places, start=1):  # written by someone holding the tag credential
+                    fields = dict(place, previous_sha=previous if place["previous_sha"] == "@" else place["previous_sha"])
+                    message = gate0_anchor.admit_message(GRANT_ID, self.manifest_sha256, seq, fields.pop("call"),
+                                                         **fields)
+                    commit = scenario.api("POST", "/git/commits", {"message": message, "tree": EMPTY_TREE,
+                                                                   "parents": []})
+                    scenario.api("POST", "/git/refs", {"ref": scenario.api.admit_ref(seq), "sha": commit["sha"]})
+                    previous = commit["sha"]
+                with self.assertRaisesRegex(CallRefused, "breaks the grant's admission chain"):
+                    self.call(P_ASCEND, label.replace(" ", "-") + "-run", scenario=scenario)
+                self.assertEqual(len(scenario.ledger()["entries"]), 1)
 
 
 @unittest.skipUnless(os.name == "posix", "RLIMIT_CPU is POSIX")

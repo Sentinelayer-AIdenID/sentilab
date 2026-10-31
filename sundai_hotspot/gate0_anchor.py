@@ -8,18 +8,24 @@ Two operator-owned facts make an admitted call authentic (warden #56967 and #570
   with the operator supervisor; nothing here creates, reads from the repository or stores it.
 - **The anchor.** A create-only tag namespace `gate0-<grant-id>/` in this repository, under its own ruleset (no
   update, no delete, no force-push, no bypass). The operator creates `reserve-<call-id>` before launch and
-  `settle-<call-id>` after settlement; validate-reference creates `launch-<call-id>` as its atomic claim. Each
-  tag's commit message is JSON binding the grant, the manifest and the call (launch adds the signed reservation's
-  hash; settle adds the terminal status and the receipt and output hashes). A second create fails, so run-once holds
-  even if a caller's ledger is deleted, truncated or copied elsewhere.
+  `settle-<call-id>` after settlement. validate-reference creates `admit-<NN>`, the grant's admission chain, when it
+  admits a call, and `launch-<call-id>` as its atomic launch claim. Each tag's commit message is JSON binding the
+  grant, the manifest and the call (admit adds its place in the chain, the call's envelope and the running total;
+  launch adds the signed reservation's hash; settle adds the terminal status, the receipt and output hashes and
+  the CPU charged). A second create of any tag fails, so neither admission nor launch can repeat, even if a caller's
+  ledger is deleted, truncated or copied elsewhere.
 
-Two roles, kept apart (astra #57031):
+Three roles, kept apart (astra #57031; root's round-D review of PR #56):
 
-- **Evidence verification** (TagReader): the gate reads reserve, launch and settle tags, each by its exact name
-  (`GET /git/ref/<ref>`, the GitHub client pattern of scripts/ci_admit.py), a fixed allowlist, so no prefix match,
-  pagination or cache can turn an unrelated or missing ref into an accepted call. An authenticated 404 is a
-  confirmed absence; any other API, auth or network failure is AnchorUnavailable (ERROR, retry later), which never
-  counts as absent and never passes.
+- **Admission** (admit_and_reserve): one critical section for the grant, before any process work. Under the ledger's
+  lock it re-reads the ledger, re-checks the window, reads the anchored admission chain, charges every admitted call
+  its envelope (or its measured CPU, if larger), refuses unless this call still fits the cap, CREATES the next
+  admission tag and appends the signed reservation. The create-only chain serializes the balance for the whole grant:
+  two requests, on this host or any other, can never both take the same place in it.
+- **Evidence verification** (TagReader): tags are read one at a time by exact name (`GET /git/ref/<ref>`, the GitHub
+  client pattern of scripts/ci_admit.py), a fixed allowlist, so no prefix match, pagination or cache can turn an
+  unrelated or missing ref into an accepted call. An authenticated 404 is a confirmed absence; any other API, auth
+  or network failure is AnchorUnavailable (ERROR, retry later), which never counts as absent and never passes.
 - **Physical launch admission** (claim_launch): immediately before launch, validate-reference atomically CREATES
   the launch tag. Only the request whose create succeeds launches. An existing ref refuses; an uncertain create
   (no response after sending) consumes the call, with no launch, until the operator reconciles it.
@@ -27,8 +33,10 @@ Two roles, kept apart (astra #57031):
 from __future__ import annotations
 
 import contextlib
+from datetime import datetime, timezone
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -45,6 +53,7 @@ TAG_SCHEMA = "sentilab-slab049-gate0-tag-v1"
 TAG_NAMESPACE = "tags/gate0-"
 KINDS = ("grant", "reservation", "settlement")
 TAG_KINDS = ("reserve", "launch", "settle")
+ADMIT = "admit"
 _HEX64 = re.compile(r"[0-9a-f]{64}")
 _GRANT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
 
@@ -61,8 +70,23 @@ class AnchorUnavailable(RuntimeError):
     """The anchor could not be read (API, auth or network failure): ERROR, retry later. Never an absence."""
 
 
+class CreateUncertain(AnchorUnavailable):
+    """A create-only ref's create was sent and its outcome is unknown: it may exist."""
+
+
 class RefExists(RuntimeError):
     """A create-only ref already exists (GitHub answers 422)."""
+
+
+class AdmissionRefused(RuntimeError):
+    """Not admitted, and nothing consumed: the window is closed, the call is not in the grant or not reserved by the
+    operator, it is already in the ledger or the admission chain, the grant's cap would be passed, or another request
+    took the same place in the chain."""
+
+
+class AdmissionUncertain(RuntimeError):
+    """Not admitted here, and nothing runs: the admission tag's create has an unknown outcome. If the tag exists the
+    call is consumed and charged; the operator reconciles it."""
 
 
 class ClaimRefused(RuntimeError):
@@ -79,6 +103,21 @@ def canonical(value) -> bytes:
 
 def digest(value) -> str:
     return hashlib.sha256(canonical(value)).hexdigest()
+
+
+def _utc(text: str) -> datetime:
+    return datetime.fromisoformat(text.replace("Z", "+00:00"))
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _cpu(value) -> float | None:
+    """A CPU figure from a record, or None when it is not a finite, non-negative number."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+        return None
+    return float(value)
 
 
 # --------------------------------------------------------------------------------------------- keys and signatures
@@ -204,29 +243,31 @@ def _write_once(path: Path, value: dict) -> None:
             os.close(descriptor)
 
 
+def _append_entry(directory: Path, key: Ed25519PrivateKey, ledger: dict, manifest_sha256: str, kind: str, call: str,
+                  payload: dict) -> dict:
+    """Sign and write the next entry of a ledger just verified under its lock."""
+    seq = len(ledger["entries"])
+    entry = sign(key, {"schema": ENTRY_SCHEMA, "seq": seq, "prev_sha256": ledger["head_sha256"], "kind": kind,
+                       "manifest_sha256": manifest_sha256, "call": call, **payload})
+    _write_once(_entry_path(directory, seq), entry)
+    return entry
+
+
 def append(root: Path, key: Ed25519PrivateKey, public_hex: str, manifest_sha256: str, kind: str, call: str,
            payload: dict) -> dict:
-    """Append one signed entry after re-verifying the whole chain, under the ledger's lock. A call is reserved once
-    and settled once, after its reservation; anything else is refused."""
-    if kind not in ("reservation", "settlement"):
-        raise ValueError(f"unknown entry kind {kind!r}")
+    """Append a call's settlement after re-verifying the whole chain, under the ledger's lock. A call is settled once,
+    after its reservation. Reservations are written only by admit_and_reserve."""
+    if kind != "settlement":
+        raise ValueError(f"append writes settlements only, not {kind!r}: reservations are written by "
+                         "admit_and_reserve")
     if public_key_hex(key) != public_hex:
         raise AuthenticationError("the signing key is not the pinned operator key")
     directory = ledger_dir(root, manifest_sha256)
     with _lock(directory):
         ledger = read_ledger(root, public_hex, manifest_sha256)
-        existing = call_entries(ledger, call)
-        if call not in ledger["grant"]["calls"]:
-            raise AuthenticationError(f"{call} is not in the operator's grant")
-        if kind == "reservation" and existing:
-            raise AuthenticationError(f"{call} is already in the ledger: a call is reserved once and never retried")
-        if kind == "settlement" and set(existing) != {"reservation"}:
+        if set(call_entries(ledger, call)) != {"reservation"}:
             raise AuthenticationError(f"{call} has no open reservation to settle")
-        seq = len(ledger["entries"])
-        entry = sign(key, {"schema": ENTRY_SCHEMA, "seq": seq, "prev_sha256": ledger["head_sha256"], "kind": kind,
-                           "manifest_sha256": manifest_sha256, "call": call, **payload})
-        _write_once(_entry_path(directory, seq), entry)
-    return entry
+        return _append_entry(directory, key, ledger, manifest_sha256, kind, call, payload)
 
 
 def call_entries(ledger: dict, call: str) -> dict[str, dict]:
@@ -251,17 +292,36 @@ def tag_ref(grant_id: str, kind: str, call: str) -> str:
     return f"{TAG_NAMESPACE}{grant_id}/{kind}-{call}"
 
 
+def admit_ref(grant_id: str, seq: int) -> str:
+    """The admission chain's place `seq` (admit-01, admit-02, ...)."""
+    if (not _GRANT_ID.fullmatch(grant_id) or isinstance(seq, bool) or not isinstance(seq, int)
+            or not 1 <= seq <= 99):
+        raise ValueError("not an admission tag")
+    return f"{TAG_NAMESPACE}{grant_id}/{ADMIT}-{seq:02d}"
+
+
 def tag_message(kind: str, grant_id: str, manifest_sha256: str, call: str, *, receipt_sha256: str | None = None,
-                outputs: dict | None = None, status: str | None = None, reservation_sha256: str | None = None) -> str:
-    """The exact commit message of a tag (sorted keys, compact JSON). The operator writes reserve and settle (settle
-    records the terminal status and the receipt and output hashes; a failure is settled too); claim_launch writes
-    launch, binding the signed reservation."""
+                outputs: dict | None = None, status: str | None = None, reservation_sha256: str | None = None,
+                charged_cpu_s: float | None = None) -> str:
+    """The exact commit message of a per-call tag (sorted keys, compact JSON). The operator writes reserve and settle
+    (settle records the terminal status, the receipt and output hashes and the CPU charged; a failure is settled
+    too); claim_launch writes launch, binding the signed reservation."""
     body = {"schema": TAG_SCHEMA, "kind": kind, "grant_id": grant_id, "manifest_sha256": manifest_sha256, "call": call}
     if kind == "launch":
         body.update(reservation_sha256=reservation_sha256)
     if kind == "settle":
-        body.update(status=status, receipt_sha256=receipt_sha256, outputs=dict(outputs or {}))
+        body.update(status=status, receipt_sha256=receipt_sha256, outputs=dict(outputs or {}),
+                    charged_cpu_s=charged_cpu_s)
     return canonical(body).decode("ascii")
+
+
+def admit_message(grant_id: str, manifest_sha256: str, seq: int, call: str, *, envelope_cpu_s: float,
+                  total_cpu_s: float, previous_sha: str | None) -> str:
+    """The commit message of the chain's place `seq`: the call admitted there, its envelope, the running total of
+    envelopes, and the commit of the place before it."""
+    return canonical({"schema": TAG_SCHEMA, "kind": ADMIT, "grant_id": grant_id, "manifest_sha256": manifest_sha256,
+                      "seq": seq, "call": call, "envelope_cpu_s": envelope_cpu_s, "total_cpu_s": total_cpu_s,
+                      "previous_sha": previous_sha}).decode("ascii")
 
 
 class TagReader:
@@ -271,15 +331,8 @@ class TagReader:
     def __init__(self, request):
         self.request = request
 
-    def read(self, grant_id: str, kind: str, call: str, manifest_sha256: str) -> dict | None:
-        """The tag's message, None when it is confirmed absent; AuthenticationError when it exists but does not bind
-        this grant, manifest and call; AnchorUnavailable when it cannot be read."""
-        found = self.resolve(grant_id, kind, call, manifest_sha256)
-        return None if found is None else found[0]
-
-    def resolve(self, grant_id: str, kind: str, call: str, manifest_sha256: str) -> tuple[dict, dict] | None:
-        """read(), with the commit the tag points at."""
-        ref = tag_ref(grant_id, kind, call)
+    def _fetch(self, ref: str) -> tuple[dict, dict] | None:
+        """The JSON message and the commit an exact ref points at; None when the ref is confirmed absent."""
         try:
             found = self.request("GET", "/git/ref/" + ref)
         except AnchorAbsent:
@@ -295,18 +348,172 @@ class TagReader:
             raise AnchorUnavailable(f"{ref} points at a commit that cannot be read") from exc
         except (KeyError, TypeError, ValueError) as exc:
             raise AuthenticationError(f"{ref} does not carry a readable JSON message") from exc
-        if (not isinstance(message, dict) or message.get("schema") != TAG_SCHEMA or message.get("kind") != kind
-                or message.get("grant_id") != grant_id or message.get("manifest_sha256") != manifest_sha256
-                or message.get("call") != call):
+        if not isinstance(message, dict) or message.get("schema") != TAG_SCHEMA:
+            raise AuthenticationError(f"{ref} does not carry a gate-zero message")
+        return message, commit
+
+    def read(self, grant_id: str, kind: str, call: str, manifest_sha256: str) -> dict | None:
+        """The tag's message, None when it is confirmed absent; AuthenticationError when it exists but does not bind
+        this grant, manifest and call; AnchorUnavailable when it cannot be read."""
+        found = self.resolve(grant_id, kind, call, manifest_sha256)
+        return None if found is None else found[0]
+
+    def resolve(self, grant_id: str, kind: str, call: str, manifest_sha256: str) -> tuple[dict, dict] | None:
+        """read(), with the commit the tag points at."""
+        ref = tag_ref(grant_id, kind, call)
+        found = self._fetch(ref)
+        if found is None:
+            return None
+        message, commit = found
+        if (message.get("kind") != kind or message.get("grant_id") != grant_id
+                or message.get("manifest_sha256") != manifest_sha256 or message.get("call") != call):
             raise AuthenticationError(f"{ref} binds another grant, manifest or call")
         receipt = message.get("receipt_sha256")
         if kind == "settle" and (not isinstance(message.get("status"), str)
                                  or not isinstance(message.get("outputs"), dict)
-                                 or not (receipt is None or isinstance(receipt, str))):
-            raise AuthenticationError(f"{ref} does not bind the terminal status, receipt and output hashes")
+                                 or not (receipt is None or isinstance(receipt, str))
+                                 or _cpu(message.get("charged_cpu_s")) is None):
+            raise AuthenticationError(f"{ref} does not bind the terminal status, receipt and output hashes and the "
+                                      "CPU charged")
         if kind == "launch" and not isinstance(message.get("reservation_sha256"), str):
             raise AuthenticationError(f"{ref} does not bind the signed reservation")
         return message, commit
+
+    def admission(self, grant_id: str, seq: int, manifest_sha256: str) -> tuple[dict, dict] | None:
+        """The admission chain's place `seq`, by its exact name: (message, commit), or None when confirmed absent."""
+        ref = admit_ref(grant_id, seq)
+        found = self._fetch(ref)
+        if found is None:
+            return None
+        message = found[0]
+        if (message.get("kind") != ADMIT or message.get("grant_id") != grant_id
+                or message.get("manifest_sha256") != manifest_sha256 or message.get("seq") != seq):
+            raise AuthenticationError(f"{ref} binds another grant, manifest or place")
+        return found
+
+    def admissions(self, grant: dict, manifest_sha256: str, envelopes: dict[str, float]) -> dict:
+        """The grant's admission chain, read place by place (admit-01, admit-02, ...) up to its first confirmed
+        absence. Every place must name a granted call not admitted before, at that call's own envelope, link the
+        commit of the place before it and carry the running total; anything else is AuthenticationError."""
+        grant_id, calls = grant["grant_id"], set(grant["calls"])
+        entries, head, total = [], None, 0.0
+        for seq in range(1, len(calls) + 2):
+            found = self.admission(grant_id, seq, manifest_sha256)
+            if found is None:
+                return {"entries": entries, "total_cpu_s": total, "head_sha": head, "next_seq": seq}
+            message, commit = found
+            call, envelope = message.get("call"), _cpu(message.get("envelope_cpu_s"))
+            recorded = _cpu(message.get("total_cpu_s"))
+            if (call not in calls or call in {e["call"] for e in entries} or envelope is None
+                    or envelope != float(envelopes.get(call, -1.0)) or message.get("previous_sha") != head
+                    or recorded is None or abs(recorded - (total + envelope)) > 1e-9):
+                raise AuthenticationError(f"{admit_ref(grant_id, seq)} breaks the grant's admission chain")
+            entries.append({"seq": seq, "call": call, "envelope_cpu_s": envelope, "commit_sha": commit["sha"]})
+            head, total = commit["sha"], recorded
+        raise AuthenticationError("the admission chain is longer than the grant's calls")
+
+
+def admission_charge(chain: dict, ledger: dict, tags: TagReader, grant_id: str, manifest_sha256: str) -> float:
+    """What the grant has consumed: every admitted call at its envelope, or at its measured CPU when that is larger
+    (this ledger's settlement, or the operator's settle tag from wherever it ran). Admitted work that failed, was
+    refused after admission or never settled is charged in full, never reclaimed."""
+    charged = 0.0
+    for admitted in chain["entries"]:
+        name = admitted["call"]
+        figures = [admitted["envelope_cpu_s"]]
+        settlement = call_entries(ledger, name).get("settlement")
+        if settlement is not None and _cpu(settlement.get("charged_cpu_s")) is not None:
+            figures.append(_cpu(settlement["charged_cpu_s"]))
+        settle = tags.read(grant_id, "settle", name, manifest_sha256)
+        if settle is not None:
+            figures.append(_cpu(settle["charged_cpu_s"]))
+        charged += max(figures)
+    return charged
+
+
+def _create_tag(request, ref: str, message: str, *, tree: str, parents: list[str]) -> str:
+    """Create-only: a commit carrying the message, then the ref (POST /git/refs). Returns the commit's sha. Raises
+    AnchorUnavailable when the commit is not confirmed (no ref create was sent), RefExists when the ref exists, and
+    CreateUncertain when the ref create was sent and its outcome is unknown."""
+    try:
+        sha = request("POST", "/git/commits", {"message": message, "tree": tree, "parents": parents})["sha"]
+    except (KeyError, TypeError) as exc:
+        raise AnchorUnavailable(f"{ref}: the commit was not confirmed") from exc
+    try:
+        request("POST", "/git/refs", {"ref": "refs/" + ref, "sha": sha})
+    except RefExists:
+        raise
+    except AnchorUnavailable as exc:
+        raise CreateUncertain(f"{ref}: the create's outcome is unknown") from exc
+    return sha
+
+
+def admit_and_reserve(root: Path, key: Ed25519PrivateKey, public_hex: str, manifest_sha256: str, call: str,
+                      payload: dict, *, request, envelopes: dict[str, float], not_after_utc: str | None = None,
+                      now: datetime | None = None) -> dict:
+    """THE ADMISSION, one critical section for the grant, before any process work (root, PR #56 round-D review):
+
+    1. under the ledger's lock, re-read and verify the ledger, and re-check at this moment the grant's window (and
+       the manifest's not_after_utc, when given), the call's place in the grant, and that the ledger holds nothing
+       for it;
+    2. read the anchored admission chain; refuse a call admitted anywhere before;
+    3. charge every admitted call its envelope or its measured CPU, whichever is larger (admission_charge), and
+       refuse unless this call's envelope still fits the grant's cap;
+    4. CREATE the chain's next place, admit-<NN> (create-only: when another request took it first, this one is
+       refused, never squeezed in);
+    5. append the signed reservation, which binds that place.
+
+    Nothing runs between the balance check and the reservation, and the chain makes the balance one for the whole
+    grant: requests on two ledgers or two hosts cannot both read 490 and both admit 58.5 under a 600 cap. Raises
+    AdmissionRefused (nothing consumed), AdmissionUncertain (the admission tag may exist: nothing runs),
+    AuthenticationError and AnchorUnavailable (no admission)."""
+    if public_key_hex(key) != public_hex:
+        raise AuthenticationError("the signing key is not the pinned operator key")
+    directory = ledger_dir(root, manifest_sha256)
+    with _lock(directory):
+        ledger = read_ledger(root, public_hex, manifest_sha256)
+        grant = ledger["grant"]
+        grant_id, moment = grant["grant_id"], now or _now()
+        closes = _utc(grant["not_after_utc"])
+        if not_after_utc:
+            closes = min(closes, _utc(not_after_utc))
+        if not _utc(grant["not_before_utc"]) <= moment <= closes:
+            raise AdmissionRefused(f"outside the window at admission ({moment.isoformat()}): STOP")
+        if call not in grant["calls"]:
+            raise AdmissionRefused(f"{call} is not in the operator's grant")
+        if call_entries(ledger, call):
+            raise AdmissionRefused(f"{call} is already in the ledger: a call is admitted once and never retried")
+        tags = TagReader(request)
+        chain = tags.admissions(grant, manifest_sha256, envelopes)
+        if call in {admitted["call"] for admitted in chain["entries"]}:
+            raise AdmissionRefused(f"{call} is already admitted under grant {grant_id}: a call is admitted once")
+        charged = admission_charge(chain, ledger, tags, grant_id, manifest_sha256)
+        envelope = float(envelopes[call])
+        if charged + envelope > float(grant["cpu_cap_s"]) + 1e-9:
+            raise AdmissionRefused(f"{charged:.2f} CPU-s already charged plus this call's {envelope:g} would pass "
+                                   f"the grant's {float(grant['cpu_cap_s']):g} CPU-s cap")
+        reserve = tags.resolve(grant_id, "reserve", call, manifest_sha256)
+        if reserve is None:
+            raise AdmissionRefused(f"the operator has not reserved {call} (no reserve tag)")
+        seq, total = chain["next_seq"], chain["total_cpu_s"] + envelope
+        ref = admit_ref(grant_id, seq)
+        message = admit_message(grant_id, manifest_sha256, seq, call, envelope_cpu_s=envelope, total_cpu_s=total,
+                                previous_sha=chain["head_sha"])
+        try:
+            sha = _create_tag(request, ref, message, tree=reserve[1]["tree"]["sha"],
+                              parents=[chain["head_sha"] or reserve[1]["sha"]])
+        except RefExists as exc:
+            raise AdmissionRefused(f"{ref} was taken by another request; nothing consumed, try again") from exc
+        except CreateUncertain as exc:
+            raise AdmissionUncertain(f"{ref}: the admission's outcome is unknown; nothing runs") from exc
+        admission = {"ref": ref, "seq": seq, "commit_sha": sha, "envelope_cpu_s": envelope, "total_cpu_s": total,
+                     "charged_before_cpu_s": charged}
+        try:
+            return _append_entry(directory, key, ledger, manifest_sha256, "reservation", call,
+                                 {**payload, "admission": admission})
+        except OSError as exc:  # admitted and charged in the chain, with no local record: nothing runs
+            raise AdmissionUncertain(f"{ref} was created but the signed reservation could not be written: the call "
+                                     "is consumed and charged; nothing runs") from exc
 
 
 def claim_launch(request, grant_id: str, manifest_sha256: str, call: str, *, reservation_sha256: str) -> dict:
@@ -326,20 +533,13 @@ def claim_launch(request, grant_id: str, manifest_sha256: str, call: str, *, res
     reserve = TagReader(request).resolve(grant_id, "reserve", call, manifest_sha256)
     if reserve is None:
         raise ClaimRefused(f"{reserve_ref} does not exist: the operator has not reserved this call")
-    reserve_commit = reserve[1]
     message = tag_message("launch", grant_id, manifest_sha256, call, reservation_sha256=reservation_sha256)
     try:
-        commit = request("POST", "/git/commits", {"message": message, "tree": reserve_commit["tree"]["sha"],
-                                                   "parents": [reserve_commit["sha"]]})
-        sha = commit["sha"]
-    except (KeyError, TypeError) as exc:
-        raise AnchorUnavailable(f"{launch_ref}: the claim's commit was not confirmed") from exc
-    try:
-        request("POST", "/git/refs", {"ref": "refs/" + launch_ref, "sha": sha})
+        sha = _create_tag(request, launch_ref, message, tree=reserve[1]["tree"]["sha"], parents=[reserve[1]["sha"]])
     except RefExists as exc:
         raise ClaimRefused(f"{launch_ref} could not be created (it exists, or GitHub refused the create): "
                            "no launch") from exc
-    except AnchorUnavailable as exc:
+    except CreateUncertain as exc:
         raise ClaimUncertain(f"{launch_ref}: the create's outcome is unknown; the call is consumed") from exc
     return {"ref": launch_ref, "commit_sha": sha, "message": message}
 

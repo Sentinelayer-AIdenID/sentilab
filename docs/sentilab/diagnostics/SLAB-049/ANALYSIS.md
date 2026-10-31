@@ -233,8 +233,8 @@ Binary hashes depend on the toolchain. The grant host pins its own hashes at run
 source identity of NEW is the SHA-256 of `temperature_grid.c`, `Makefile` and `coupling_variant.py`, as listed
 in `problem.generator_sha256`.
 
-**What the tests show** (126 tests across both modules; the native, fake-solver and built-binary tests run
-on POSIX and in the CI image; 76 code mutants, each caught by a named test):
+**What the tests show** (133 tests across both modules; the native, fake-solver and built-binary tests run
+on POSIX and in the CI image; 88 code mutants, each caught by a named test):
 
 - **Default byte-identity.**
   - Stripping the variant blocks from `temperature_grid.c` gives exactly the upstream bytes.
@@ -262,11 +262,14 @@ on POSIX and in the CI image; 76 code mutants, each caught by a named test):
   - The bootstrap path (`validate-reference`, driven by a fake solver and an in-memory, create-only GitHub API)
     runs the raw off-lattice references without a prior PASS; the search path still refuses them; the four
     required receipts unlock search at grid 64 only.
-  - The entry refuses anything the manifest or the operator does not allow before reserving it (no key, another
+  - The entry refuses anything the manifest or the operator does not allow before admitting it (no key, another
     key, no credential, no grant, an expired window, a call outside the grant, no reserve tag, unreadable tags,
-    an aggregate past the grant's cap). Its launch claim launches exactly once for a sequential pair and for a
-    concurrent pair, never after a crash past the claim, never on an uncertain create, and never without a
-    credential. Every child runs under RLIMIT_CPU and a wall deadline; the whole solver process group is killed at
+    an aggregate past the grant's cap). Its admission is atomic for the grant and anchored before any process
+    work: two requests at once cannot both spend the last of the balance (one ledger or two), a rollback before the
+    claim cannot readmit a call, and every process an invocation starts (root's 10-unit witness) belongs to an
+    admitted attempt that settles and is charged, a library-mismatch refusal included. Its launch claim launches
+    exactly once for a sequential pair and for a concurrent pair, never after a crash past the claim, never on an
+    uncertain create, and never without a credential. Every child runs under RLIMIT_CPU and a wall deadline; the whole solver process group is killed at
     its deadline; a private copy of the binary is what runs.
   - The pinned set is re-derived by tracing the generator; an unrelated edit keeps a PASS, an edit to an executed
     file voids it.
@@ -365,7 +368,9 @@ coordinator]
 - **Bootstrap:** `reference_validation validate-reference` produces the first receipts and needs no PASS. It is the
   one in-code enforcement entry (CALL-LIST-v4.md lists what it enforces and what the operator supervisor must).
   It admits a call only on the operator's signed grant and reserve tag, and launches only after its create-only
-  launch claim succeeds (warden #56967; astra #57024, #57025, #57031).
+  launch claim succeeds (warden #56967; astra #57024, #57025, #57031). Its accounting starts before any work, and
+  the admission (the grant's anchored admission chain and the signed reservation, with the balance checked in the
+  same critical section) comes before the first process (root's round-D review).
   It writes fresh inputs into a fresh directory with TAP's own generator, checks them byte for byte against the
   frozen ones, and records their hashes and the effective start and stop. It never runs under main's CI allocation
   (`CI_ALLOCATION=1`, SLAB-046), where every native HotSpot launch goes through `sundai_hotspot.ci_gate`, and it
