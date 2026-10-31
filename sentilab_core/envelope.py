@@ -97,85 +97,119 @@ def validate_run_id(run_id):
 
 
 def check_caps(value):
-    def visit(item, depth):
-        if depth > MAX_DEPTH:
-            raise ValueError("oversize: nesting")
-        if isinstance(item, str) and len(item) > MAX_STRING:
-            raise ValueError("oversize: string")
-        if isinstance(item, dict):
-            for key, child in item.items():
-                visit(key, depth + 1)
-                if key in ("geometry", "center_temps", "artifact_hashes"):
-                    if not isinstance(child, (dict, list)) or len(child) > MAX_ITEMS:
-                        raise ValueError("oversize: " + key)
-                visit(child, depth + 1)
-        elif isinstance(item, list):
-            for child in item:
-                visit(child, depth + 1)
-    visit(value, 0)
+    # Match the contract: root container is level one; primitives do not
+    # contribute a container level. Validate iteratively before canonical().
+    stack = [(value, 1)]
+    while stack:
+        item, depth = stack.pop()
+        if isinstance(item, str):
+            if len(item) > MAX_STRING:
+                raise ValueError("oversize: string")
+            item.encode("utf-8", errors="strict")
+        elif isinstance(item, (dict, list)):
+            if depth > MAX_DEPTH:
+                raise ValueError("oversize: nesting")
+            if isinstance(item, dict):
+                for key, child in item.items():
+                    if not isinstance(key, str):
+                        raise ValueError("JSON object keys must be strings")
+                    if key in ("geometry", "center_temps", "artifact_hashes"):
+                        if not isinstance(child, (dict, list)) or len(child) > MAX_ITEMS:
+                            raise ValueError("oversize: " + key)
+                    stack.extend(((key, depth + 1), (child, depth + 1)))
+            else:
+                stack.extend((child, depth + 1) for child in item)
+        elif isinstance(item, float):
+            if not math.isfinite(item):
+                raise ValueError("nonfinite JSON number")
+        elif isinstance(item, int):
+            if item.bit_length() > 1024:
+                raise ValueError("JSON number out of range")
+        elif item is not None:
+            raise ValueError("unsupported JSON value")
     data = canonical(value)
     if len(data) > MAX_BYTES:
         raise ValueError("oversize: envelope")
     return data
 
 
-def build(*, event, run, actor, prev_hash, signer, values=None, ts=None):
+def _validate_structure(envelope, run_id):
+    required = {"v", "event", "run", "actor", "prev_hash", "hash", "sig", "ts"}
+    if not isinstance(envelope, dict) or not required <= envelope.keys() or envelope.keys() - required - {"values"}:
+        raise ValueError("invalid envelope fields")
+    if envelope["v"] != VERSION:
+        raise ValueError("invalid envelope version")
+    if (not isinstance(envelope["run"], dict) or not isinstance(envelope["actor"], dict) or
+            not isinstance(envelope["event"], dict)):
+        raise ValueError("invalid envelope structure")
+    run, actor, event = envelope["run"], envelope["actor"], envelope["event"]
+    if set(run) != {"run_id", "arm", "family", "seed", "ticket_id"}:
+        raise ValueError("invalid run fields")
     validate_run_id(run["run_id"])
+    if run["run_id"] != run_id:
+        raise ValueError("run_mismatch")
+    if (any(not isinstance(run[key], str) for key in ("arm", "family", "ticket_id")) or
+            type(run["seed"]) is not int):
+        raise ValueError("invalid run structure")
+    if set(actor) != {"agent_id", "life_id", "lab", "grant_id"} or not isinstance(actor["lab"], str):
+        raise ValueError("invalid actor fields")
+    if any(actor[key] is not None and not isinstance(actor[key], str)
+           for key in ("agent_id", "life_id", "grant_id")):
+        raise ValueError("invalid actor identity")
+    if set(event) != {"event_id", "seq", "type", "actor_role", "body"}:
+        raise ValueError("invalid event fields")
+    if (not isinstance(event["body"], dict) or not isinstance(event["event_id"], str) or
+            not event["event_id"] or not isinstance(event["type"], str)):
+        raise ValueError("invalid event structure")
+    if type(event["seq"]) is not int or event["seq"] < 1:
+        raise ValueError("invalid sequence")
+    if event["actor_role"] not in ("lab", "core", "acceptance_gate"):
+        raise ValueError("invalid actor role")
+    if (actor["lab"] == "gate") != (event["actor_role"] == "acceptance_gate"):
+        raise ValueError("invalid gate actor")
+    if (event["type"] == "lifecycle.transition" and
+            event["body"].get("to") in ("accepted", "non_improving_current", "within_margin") and
+            event["actor_role"] != "acceptance_gate"):
+        raise ValueError("board outcome requires core gate")
+    if "values" in envelope:
+        if not isinstance(envelope["values"], dict) or not (event["type"] == "verify.add" or
+                event["type"] == "node.create" and event["body"].get("kind") in ("candidate", "measurement")):
+            raise ValueError("invalid values event")
+    sig = envelope["sig"]
+    if (not isinstance(sig, dict) or set(sig) != {"key_id", "alg", "value"} or
+            sig["alg"] != "ed25519" or not isinstance(sig["key_id"], str) or not sig["key_id"]):
+        raise ValueError("invalid signature fields")
+    for value, length in ((sig["value"], 128), (envelope["hash"], 64), (envelope["prev_hash"], 64)):
+        if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{%d}" % length, value):
+            raise ValueError("invalid hash or signature encoding")
+    if not isinstance(envelope["ts"], str):
+        raise ValueError("invalid timestamp")
+
+
+def build(*, event, run, actor, prev_hash, signer, values=None, ts=None):
     envelope = {"v": VERSION, "event": event, "run": run, "actor": actor,
                 "prev_hash": prev_hash,
-                "ts": ts or datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")}
+                "ts": ts or datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+                "hash": "0" * 64,
+                "sig": {"key_id": signer.key_id, "alg": "ed25519", "value": "0" * 128}}
     if values is not None:
-        if not (event["type"] == "verify.add" or
-                event["type"] == "node.create" and event["body"].get("kind") in ("candidate", "measurement")):
-            raise ValueError("values are only permitted for node.create and verify.add")
         envelope["values"] = values
-    check_caps(envelope)
-    envelope["hash"] = digest(envelope)
-    envelope["sig"] = {"key_id": signer.key_id, "alg": "ed25519",
-                       "value": signer.sign(envelope["hash"].encode()).hex()}
-    check_caps(envelope)
+    _validate_structure(envelope, run.get("run_id") if isinstance(run, dict) else None)
+    # Fixed-width placeholders enforce the WHOLE envelope cap before signing.
+    # Parsing the validated canonical bytes also detaches mutable caller inputs.
+    envelope = json.loads(check_caps(envelope))
+    envelope["hash"] = digest({k: v for k, v in envelope.items() if k not in ("hash", "sig")})
+    envelope["sig"]["value"] = signer.sign(envelope["hash"].encode()).hex()
+    _validate_structure(envelope, envelope["run"]["run_id"])
     return envelope
 
 
 def verify(envelope, *, run_id, public_keys):
     """Verify one envelope against caller-pinned keys, never keys from the file."""
     try:
+        _validate_structure(envelope, run_id)
         check_caps(envelope)
-        required = {"v", "event", "run", "actor", "prev_hash", "hash", "sig", "ts"}
-        if not isinstance(envelope, dict) or not required <= envelope.keys() or envelope.keys() - required - {"values"}:
-            raise ValueError("invalid envelope fields")
-        if envelope["v"] != VERSION:
-            raise ValueError("invalid envelope version")
-        if (not isinstance(envelope["run"], dict) or not isinstance(envelope["actor"], dict) or
-                not isinstance(envelope["event"], dict)):
-            raise ValueError("invalid envelope structure")
-        if envelope["run"]["run_id"] != run_id:
-            raise ValueError("run_mismatch")
-        event = envelope["event"]
-        if set(event) != {"event_id", "seq", "type", "actor_role", "body"}:
-            raise ValueError("invalid event fields")
-        if (not isinstance(event["body"], dict) or not isinstance(event["event_id"], str) or
-                not event["event_id"] or not isinstance(event["type"], str)):
-            raise ValueError("invalid event structure")
-        if type(event["seq"]) is not int or event["seq"] < 1:
-            raise ValueError("invalid sequence")
-        if event["actor_role"] not in ("lab", "core", "acceptance_gate"):
-            raise ValueError("invalid actor role")
-        if (envelope["actor"].get("lab") == "gate") != (event["actor_role"] == "acceptance_gate"):
-            raise ValueError("invalid gate actor")
-        if (event["type"] == "lifecycle.transition" and
-                event["body"].get("to") in ("accepted", "non_improving_current", "within_margin") and
-                event["actor_role"] != "acceptance_gate"):
-            raise ValueError("board outcome requires core gate")
-        if "values" in envelope:
-            if not isinstance(envelope["values"], dict) or not (event["type"] == "verify.add" or
-                    event["type"] == "node.create" and event["body"].get("kind") in ("candidate", "measurement")):
-                raise ValueError("invalid values event")
         sig = envelope["sig"]
-        if set(sig) != {"key_id", "alg", "value"} or sig["alg"] != "ed25519":
-            raise ValueError("invalid signature fields")
-        if not re.fullmatch(r"[0-9a-f]{128}", sig["value"]):
-            raise ValueError("invalid signature encoding")
         body = {k: v for k, v in envelope.items() if k not in ("hash", "sig")}
         computed = digest(body)
         if envelope["hash"] != computed:

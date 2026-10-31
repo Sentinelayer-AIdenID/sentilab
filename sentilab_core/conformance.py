@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import subprocess
 import unittest
-from sentilab_core.envelope import canonical, digest
+from sentilab_core.envelope import canonical, check_caps, digest
 from sentilab_core import test_conductor
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -39,6 +39,28 @@ console.log(JSON.stringify(JSON.parse(s).map(c)));"""
         for vector in vectors["canonical"]:
             self.assertEqual(canonical(json.loads(vector["raw"])).decode(), vector["canonical"])
         self.assertEqual(canonical({"2": "b", "10": "a"}), b'{"10":"a","2":"b"}')
+
+    def test_exact_canonical_byte_limits_match_contract_vectors(self):
+        vectors = json.loads((ROOT / "contracts/view-envelope/vectors-view.json").read_text())
+        for case in vectors["caps"]:
+            if "target_bytes" not in case:
+                continue
+            envelope = json.loads(json.dumps(vectors["chains"][0]["envelopes"][3]))
+            envelope["values"]["artifact_hashes"] = ["a" * 512 for _ in range(64)]
+            envelope["values"]["geometry"] = [dict(id=f"g{i}", xLL=0, yLL=0, w=1, h=1, layer=0)
+                                               for i in range(64)]
+            missing = case["target_bytes"] - len(canonical(envelope))
+            for entry in envelope["values"]["geometry"]:
+                add = min(missing, 512 - len(entry["id"]))
+                entry["id"] += "x" * add
+                missing -= add
+            self.assertEqual(missing, 0)
+            self.assertEqual(digest(envelope), case["canonical_sha256"])
+            if case["expect"]:
+                with self.assertRaises(ValueError):
+                    check_caps(envelope)
+            else:
+                check_caps(envelope)
 
 class ProjectionConformance(unittest.IsolatedAsyncioTestCase):
     asyncSetUp = test_conductor.ConductorTests.asyncSetUp

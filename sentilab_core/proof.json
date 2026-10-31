@@ -1,0 +1,66 @@
+{
+  "started_at": 1793425502.0407186,
+  "ended_at": 1793426102.5089831,
+  "elapsed_s": 600.4682646129513,
+  "process_tree_cpu_s": 20.440436,
+  "deadline": 1793426220.0,
+  "project_equals_live": true,
+  "run_id": "ascend910-local-proof-v2",
+  "seq": 203,
+  "board": {
+    "candidate_id": "ascend910-local-proof-v2:candidate-0",
+    "j": 118.36000000000001,
+    "seq": 14
+  },
+  "spend": {
+    "solves": 30,
+    "cpu_charged_s": 450,
+    "cpu_actual_s": 2.652977,
+    "cpu_unmeasured": 0,
+    "unsettled": 0
+  },
+  "allocation_spend": {
+    "solves": 38,
+    "cpu_charged_s": 570,
+    "cpu_actual_s": 2.7409909999999997,
+    "cpu_unmeasured": 7,
+    "unsettled": 0
+  },
+  "head_hash": "fc63f960dc4e8f9bc5799321bca1d26799189bcc03c906df532c42bf4a02098a",
+  "chain_error": null,
+  "scope": "AI off; provisional margin; diagnostic integration; same-solver reproduction",
+  "source_revision": "650553d",
+  "artifacts": {
+    "ledger/ascend910-local-proof-v2.jsonl": "5eacf9c8f5b6995edf48173bd6e69120bcb7fbc734745ec7c089346d0772c04f",
+    "public-pin.json": "4a1e8f580d5daffc2d7010f307d1dc9d8dcff2a95ff639bb6f838bfc7122a2f9",
+    "mutation-checks.json": "3f4e9859d60070a31b6f2afbe80c037805dd347d92b4a8f8b69e88a597241baf",
+    "proof-v1.json": "6661f503d73c92158d2f04c50738ecbd0a51a585c6e84d461828da23b46b5a11",
+    "thermal-gate-spend.json": "794e2ae2222a3799c65ccdee7f6a1ff60d54e2c1bd1fff8bfe0ef7f077e3cd0f"
+  },
+  "validation": {
+    "controller_experiment": 55,
+    "thermal_regression": 2,
+    "core": 28,
+    "view": 4,
+    "conformance": 4,
+    "existing_service": 6,
+    "contract_checks": [
+      74,
+      113
+    ],
+    "contract_manifest_files": 11,
+    "mutations_caught": 14,
+    "presign_regression_before_fix": "2 tests failed, 6 failures",
+    "nonfinite_http_before_fix": "HTTP 500; one test failed",
+    "final_affected_ledger_and_view_suite": 16
+  },
+  "limitations": [
+    "Diagnostic AI-off integration with provisional margin and same-solver reproduction.",
+    "Ten-minute proof used source 650553d; later validation and restart fixes have separate tests.",
+    "Public key artifact is a local proof convenience, never a production trust source.",
+    "Raw HotSpot outputs were removed by the imported worker; only input hashes retained.",
+    "Historical total development CPU and synthetic invocation counts were not completely instrumented; no certified task-wide total is claimed. Recorded failed attempts remain retained.",
+    "Docker unavailable: native HotSpot build and named Python gates ran; container build deferred to CI.",
+    "v0.5 contract and SLAB-040 signer module integration await reviewed upstream delivery; browser belongs to Forge."
+  ]
+}

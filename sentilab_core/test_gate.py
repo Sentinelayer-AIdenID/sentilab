@@ -54,7 +54,7 @@ class GateTests(unittest.TestCase):
         before = copy.deepcopy(self.inputs)
         self.assertEqual(self.gate.decide(**self.inputs), self.gate.decide(**self.inputs))
         self.assertEqual(before, self.inputs)
-        for value in (float("nan"), float("inf"), True, "70"):
+        for value in (float("nan"), float("inf"), 10**400, True, "70"):
             for field in ("j", "wire_mm"):
                 with self.subTest(value=value, field=field):
                     args = {**self.inputs, "evaluation": {**self.evaluation, field: value}}

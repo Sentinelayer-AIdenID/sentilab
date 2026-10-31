@@ -3,6 +3,7 @@ from contextlib import contextmanager
 import fcntl
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import tempfile
@@ -63,6 +64,13 @@ def _object(pairs):
     return result
 
 
+def _finite_float(text):
+    value = float(text)
+    if not math.isfinite(value):
+        raise ValueError("nonfinite JSON number")
+    return value
+
+
 def read_prefix(path, *, run_id, public_keys):
     """Return all bounded rows for display, but only the verified prefix for project().
 
@@ -78,7 +86,8 @@ def read_prefix(path, *, run_id, public_keys):
                 rows.append({"error": "oversize or incomplete JSONL row"})
                 continue
             try:
-                value = json.loads(raw, object_pairs_hook=_object)
+                value = json.loads(raw, object_pairs_hook=_object,
+                                   parse_float=_finite_float, parse_constant=_finite_float)
                 if not isinstance(value, dict):
                     raise ValueError("envelope is not an object")
                 rows.append({"envelope": value, "raw_digest": hashlib.sha256(raw).hexdigest()})
@@ -135,6 +144,19 @@ def read_prefix(path, *, run_id, public_keys):
             "error": broken, "head_hash": previous}
 
 
+def _check_head(state, head_path):
+    if head_path.exists():
+        try:
+            head = json.loads(head_path.read_text())
+            seq = head["seq"]
+            if (type(seq) is not int or seq < 1 or seq > len(state["prefix"]) or
+                    state["prefix"][seq - 1]["hash"] != head["hash"]):
+                state["error"] = state["error"] or "durable head missing or changed"
+        except (ValueError, KeyError, TypeError):
+            state["error"] = state["error"] or "invalid durable head"
+    return state
+
+
 class Ledger:
     def __init__(self, root, run, *, public_keys, signer=None):
         self.root = Path(root)
@@ -154,12 +176,7 @@ class Ledger:
                      "head_hash": genesis(self.run["run_id"])}
         else:
             state = read_prefix(self.path, run_id=self.run["run_id"], public_keys=self.public_keys)
-        if self.head_path.exists():
-            head = json.loads(self.head_path.read_text())
-            seq = head["seq"]
-            if seq > len(state["prefix"]) or (seq and state["prefix"][seq - 1]["hash"] != head["hash"]):
-                state["error"] = state["error"] or "durable head missing or changed"
-        return state
+        return _check_head(state, self.head_path)
 
     @staticmethod
     def _require_sound(state):
@@ -250,4 +267,4 @@ def replay(root, run_id, *, public_keys):
     """Read-only replay stays usable when append has correctly been refused."""
     path = run_path(root, run_id)
     with lock(path.with_suffix(".lock"), shared=True):
-        return read_prefix(path, run_id=run_id, public_keys=public_keys)
+        return _check_head(read_prefix(path, run_id=run_id, public_keys=public_keys), path.with_suffix(".head.json"))
