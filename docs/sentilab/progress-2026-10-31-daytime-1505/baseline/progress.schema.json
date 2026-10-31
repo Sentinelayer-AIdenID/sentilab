@@ -1,0 +1,988 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sentilab:progress-portable:1",
+  "title": "SentiLab portable internal progress packet",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "draft",
+    "generatedAt",
+    "title",
+    "owner",
+    "publicationState",
+    "snapshot",
+    "statusLegend",
+    "summary",
+    "milestones",
+    "priorities",
+    "tickets",
+    "deliverables",
+    "gb10",
+    "allocations",
+    "cost",
+    "supersededClaims",
+    "delivery",
+    "integration",
+    "evidence",
+    "packaging"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": "sentilab-progress-portable/1"
+    },
+    "draft": {
+      "const": true
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "owner": {
+      "const": "gpt-astra-carter"
+    },
+    "publicationState": {
+      "const": "portable_internal_review_packet"
+    },
+    "snapshot": {
+      "type": "object",
+      "required": [
+        "coverageFactsThrough",
+        "checkpointAt",
+        "latestRoomReceiptIncludedAt",
+        "gb10CompletedAt",
+        "gb10AuditAt",
+        "note"
+      ],
+      "properties": {
+        "coverageFactsThrough": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "checkpointAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "latestRoomReceiptIncludedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "gb10CompletedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "gb10AuditAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "statusLegend": {
+      "type": "object",
+      "required": [
+        "done",
+        "measured",
+        "open",
+        "superseded"
+      ],
+      "properties": {
+        "done": {
+          "type": "string"
+        },
+        "measured": {
+          "type": "string"
+        },
+        "open": {
+          "type": "string"
+        },
+        "superseded": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "scientificBenefitEstablished",
+        "fullProjectCompletionVerified",
+        "ticketsCovered",
+        "finalDeliverablesCovered",
+        "finalDeliverablesFullyAccepted",
+        "publicProductionVerified",
+        "text"
+      ],
+      "properties": {
+        "scientificBenefitEstablished": {
+          "const": false
+        },
+        "fullProjectCompletionVerified": {
+          "const": false
+        },
+        "ticketsCovered": {
+          "const": 41
+        },
+        "finalDeliverablesCovered": {
+          "const": 8
+        },
+        "finalDeliverablesFullyAccepted": {
+          "const": 0
+        },
+        "publicProductionVerified": {
+          "const": false
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "milestones": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/claim"
+      }
+    },
+    "priorities": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/claim"
+      }
+    },
+    "supersededClaims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/claim"
+      }
+    },
+    "tickets": {
+      "type": "array",
+      "minItems": 41,
+      "maxItems": 41,
+      "items": {
+        "$ref": "#/$defs/ticket"
+      }
+    },
+    "deliverables": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "$ref": "#/$defs/deliverable"
+      }
+    },
+    "gb10": {
+      "type": "object",
+      "required": [
+        "classification",
+        "attempt",
+        "optimizerSteps",
+        "trainRowIdsConsumedOnce",
+        "uniqueSourceCases",
+        "evaluationEntries",
+        "uniqueEvaluationPromptContents",
+        "httpResponses",
+        "checkpointSha256",
+        "stageChargedSeconds",
+        "priorConservativeReservationSeconds",
+        "totalChargedSeconds",
+        "scope",
+        "reloadEvidenceLimit",
+        "evidenceRefs"
+      ],
+      "properties": {
+        "classification": {
+          "const": "fixture_plumbing_only"
+        },
+        "attempt": {
+          "const": 1
+        },
+        "optimizerSteps": {
+          "const": 20
+        },
+        "trainRowIdsConsumedOnce": {
+          "const": 200
+        },
+        "uniqueSourceCases": {
+          "const": 6
+        },
+        "uniqueTrainPromptContents": {
+          "const": 60
+        },
+        "evaluationEntries": {
+          "const": 20
+        },
+        "uniqueEvaluationPromptContents": {
+          "const": 6
+        },
+        "httpResponses": {
+          "const": 40
+        },
+        "checkpointSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "modelRevision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "nemoExactJson": {
+          "$ref": "#/$defs/fixtureScore"
+        },
+        "httpExactJson": {
+          "$ref": "#/$defs/fixtureScore"
+        },
+        "changedOutputPairs": {
+          "const": 20
+        },
+        "checkpointTensors": {
+          "const": 504
+        },
+        "trainableParameters": {
+          "const": 16515072
+        },
+        "stageChargedSeconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "priorConservativeReservationSeconds": {
+          "const": 180
+        },
+        "totalChargedSeconds": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 3600
+        },
+        "completedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "teardownRecorded": {
+          "const": true
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reloadEvidenceLimit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidenceRefs": {
+          "$ref": "#/$defs/refs"
+        }
+      },
+      "additionalProperties": false
+    },
+    "allocations": {
+      "type": "object",
+      "required": [
+        "effectiveAt",
+        "kind",
+        "ci",
+        "experiment",
+        "enforcementStatus",
+        "evidenceRefs"
+      ],
+      "properties": {
+        "effectiveAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "kind": {
+          "const": "prospective_authority_not_usage_or_execution_release"
+        },
+        "ci": {
+          "type": "object",
+          "required": [
+            "maxHotspotPerRun",
+            "maxCpuMinutesPerRun",
+            "maxRuns",
+            "until",
+            "historicalExactCounts",
+            "historicalComplianceVerified",
+            "actualProspectiveRunsConsumed"
+          ],
+          "properties": {
+            "maxHotspotPerRun": {
+              "const": 100
+            },
+            "maxCpuMinutesPerRun": {
+              "const": 15
+            },
+            "maxRuns": {
+              "const": 200
+            },
+            "until": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "historicalApproximateRuns": {
+              "const": 45
+            },
+            "historicalApproximateExecutionsPerRun": {
+              "const": 72
+            },
+            "historicalApproximateExecutions": {
+              "const": 3240
+            },
+            "historicalExactCounts": {
+              "type": "null"
+            },
+            "historicalComplianceVerified": {
+              "const": false
+            },
+            "actualProspectiveRunsConsumed": {
+              "type": "null"
+            }
+          },
+          "additionalProperties": false
+        },
+        "experiment": {
+          "type": "object",
+          "required": [
+            "headroomCpuMinutesMax",
+            "aggregateCpuMinutesMax",
+            "micro150CpuMinutesMax",
+            "retainedAscendCpuSeconds",
+            "micro150CpuSecondsRemainingUpperBound",
+            "headroomSolveCap",
+            "aggregateSolveCap",
+            "deadline",
+            "newMicro150ExecutionReleased"
+          ],
+          "properties": {
+            "headroomCpuMinutesMax": {
+              "const": 72
+            },
+            "aggregateCpuMinutesMax": {
+              "const": 84
+            },
+            "micro150CpuMinutesMax": {
+              "const": 48
+            },
+            "retainedAscendCpuSeconds": {
+              "type": "number"
+            },
+            "micro150CpuSecondsRemainingUpperBound": {
+              "type": "number"
+            },
+            "headroomSolveCap": {
+              "const": 9700
+            },
+            "aggregateSolveCap": {
+              "const": 10000
+            },
+            "deadline": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "newMicro150ExecutionReleased": {
+              "const": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "enforcementStatus": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidenceRefs": {
+          "$ref": "#/$defs/refs"
+        }
+      },
+      "additionalProperties": false
+    },
+    "cost": {
+      "type": "object",
+      "required": [
+        "currentTotalUsd",
+        "invoiceVerified",
+        "lastRetainedEstimateUsd",
+        "lastRetainedEstimateAt",
+        "classification",
+        "displayText",
+        "evidenceRefs"
+      ],
+      "properties": {
+        "currentTotalUsd": {
+          "type": "null"
+        },
+        "invoiceVerified": {
+          "const": false
+        },
+        "lastRetainedEstimateUsd": {
+          "const": 255.79
+        },
+        "lastRetainedEstimateAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "classification": {
+          "const": "historical_operator_estimate"
+        },
+        "displayText": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidenceRefs": {
+          "$ref": "#/$defs/refs"
+        }
+      },
+      "additionalProperties": false
+    },
+    "delivery": {
+      "type": "object",
+      "required": [
+        "progressContentOwnerAccepted",
+        "deckPreparationRequested",
+        "deckCompleted",
+        "humanPresenterCommitted",
+        "anetaFutureTimeCommitted",
+        "deckDueAt",
+        "overnightPauseReportedAt",
+        "status",
+        "evidenceRefs"
+      ],
+      "properties": {
+        "progressContentOwnerAccepted": {
+          "const": true
+        },
+        "deckPreparationRequested": {
+          "const": true
+        },
+        "deckCompleted": {
+          "const": false
+        },
+        "humanPresenterCommitted": {
+          "const": false
+        },
+        "anetaFutureTimeCommitted": {
+          "const": false
+        },
+        "deckDueAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "overnightPauseReportedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string"
+        },
+        "evidenceRefs": {
+          "$ref": "#/$defs/refs"
+        }
+      },
+      "additionalProperties": false
+    },
+    "integration": {
+      "type": "object",
+      "required": [
+        "writeProductUi",
+        "post",
+        "deploy",
+        "createPullRequest",
+        "note",
+        "requiredCli",
+        "requiredMcp",
+        "interfacesImplementedByThisDraft"
+      ],
+      "properties": {
+        "writeProductUi": {
+          "const": false
+        },
+        "post": {
+          "const": false
+        },
+        "deploy": {
+          "const": false
+        },
+        "createPullRequest": {
+          "const": false
+        },
+        "note": {
+          "type": "string"
+        },
+        "requiredCli": {
+          "$ref": "#/$defs/strings"
+        },
+        "requiredMcp": {
+          "$ref": "#/$defs/strings"
+        },
+        "interfacesImplementedByThisDraft": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/evidence"
+      }
+    },
+    "packaging": {
+      "type": "object",
+      "required": [
+        "packagedAt",
+        "reviewedDraftSha256",
+        "reviewedDraftSchemaSha256",
+        "reviewedDraftManifestSha256",
+        "factsRefreshed",
+        "note"
+      ],
+      "properties": {
+        "packagedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reviewedDraftSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "reviewedDraftSchemaSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "reviewedDraftManifestSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "factsRefreshed": {
+          "const": false
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "status": {
+      "enum": [
+        "done",
+        "measured",
+        "open",
+        "superseded"
+      ]
+    },
+    "strings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "refs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "fixtureScore": {
+      "type": "object",
+      "required": [
+        "base",
+        "adapter",
+        "denominator"
+      ],
+      "properties": {
+        "base": {
+          "const": 0
+        },
+        "adapter": {
+          "const": 20
+        },
+        "denominator": {
+          "const": 20
+        }
+      },
+      "additionalProperties": false
+    },
+    "claim": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "status",
+        "summary",
+        "evidenceRefs",
+        "remaining",
+        "sourceAt",
+        "wholeTicketCompletionVerified"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidenceRefs": {
+          "$ref": "#/$defs/refs"
+        },
+        "remaining": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sourceAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "wholeTicketCompletionVerified": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "ticket": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "status",
+        "summary",
+        "evidenceRefs",
+        "remaining",
+        "sourceAt",
+        "wholeTicketCompletionVerified",
+        "baselineStatus",
+        "owners",
+        "dependencies",
+        "cliRequired",
+        "mcpRequired",
+        "interfaceStatus",
+        "fullRemoteTicketIds",
+        "disposition"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^SLAB-0(?:0[1-9]|[1-3][0-9]|4[01])$"
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidenceRefs": {
+          "$ref": "#/$defs/refs"
+        },
+        "remaining": {
+          "$ref": "#/$defs/strings"
+        },
+        "sourceAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "wholeTicketCompletionVerified": {
+          "const": false
+        },
+        "baselineStatus": {
+          "type": "string"
+        },
+        "owners": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cliRequired": {
+          "$ref": "#/$defs/strings"
+        },
+        "mcpRequired": {
+          "$ref": "#/$defs/strings"
+        },
+        "interfaceStatus": {
+          "const": "full_retained_capability_conformance_unverified"
+        },
+        "historicalCliNames": {
+          "$ref": "#/$defs/strings"
+        },
+        "historicalMcpNames": {
+          "$ref": "#/$defs/strings"
+        },
+        "effectiveRequiredCapabilities": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "chiplet build",
+              "chiplet render",
+              "chiplet replay",
+              "chiplet export"
+            ]
+          }
+        },
+        "interfaceNameStatus": {
+          "const": "proposed_effective_names_pending_command_or_alias_review"
+        },
+        "fullRemoteTicketIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "disposition": {
+          "enum": [
+            "retained",
+            "optional_deferred"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "deliverable": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "status",
+        "completionVerified",
+        "summary",
+        "tickets",
+        "sourceAt",
+        "evidenceRefs"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^D0[0-7]$"
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "completionVerified": {
+          "const": false
+        },
+        "summary": {
+          "type": "string"
+        },
+        "tickets": {
+          "$ref": "#/$defs/strings"
+        },
+        "sourceAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "evidenceRefs": {
+          "$ref": "#/$defs/refs"
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "sourceId",
+        "sha256",
+        "bytes",
+        "sourceAt",
+        "kind",
+        "access",
+        "bodyIncluded",
+        "immutableUrl",
+        "repositoryArtifact",
+        "publicAccessibilityVerified"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sourceAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "access": {
+          "enum": [
+            "operator archive required",
+            "repository access required"
+          ]
+        },
+        "bodyIncluded": {
+          "const": false
+        },
+        "immutableUrl": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "repositoryArtifact": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/repositoryArtifact"
+            }
+          ]
+        },
+        "publicAccessibilityVerified": {
+          "const": false
+        },
+        "sourceRecordSha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "access": {
+                "const": "operator archive required"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "immutableUrl": {
+                "type": "null"
+              },
+              "repositoryArtifact": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "access": {
+                "const": "repository access required"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "immutableUrl": {
+                "type": "string",
+                "pattern": "^https://github[.]com/[^/]+/[^/]+/blob/[0-9a-f]{40}/"
+              },
+              "repositoryArtifact": {
+                "$ref": "#/$defs/repositoryArtifact"
+              }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "repositoryArtifact": {
+      "type": "object",
+      "required": [
+        "repository",
+        "commit",
+        "path",
+        "gitBlob",
+        "bindingBasis",
+        "bindingSourceSha256",
+        "bindingSourceAt"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gitBlob": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "bindingBasis": {
+          "type": "string"
+        },
+        "bindingSourceSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "bindingSourceAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
