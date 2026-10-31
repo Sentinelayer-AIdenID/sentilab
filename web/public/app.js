@@ -1,6 +1,8 @@
 // Thermal Flight Lab front end (TFL-10). One renderer for live runs and replays: both are a GET /api/runs/{id} object
 // whose result.lane_results[*].record holds every signed event. Every number on screen comes from those events.
-"use strict";
+// A module (so strict): temperatures are labelled by the one rule in temperature-label.mjs, from the evaluator identity
+// (thermal.solver_version) of the result each came from. Withdrawn values keep their numbers; the page says so on top.
+import { labelFor, labelForAll, runTemperatureIds, NOTICE } from "./temperature-label.mjs";
 
 const LANES = ["random", "simulated_annealing", "ucb1", "signal_portfolio"];
 const LANE_NAME = { random: "Random", simulated_annealing: "Annealing", ucb1: "UCB1 (control)", signal_portfolio: "Signal portfolio" };
@@ -23,7 +25,7 @@ const plain = (t) => String(t == null ? "" : t).replace(/\bjev\b[-\w.]*/gi, "sig
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c]);
 
 const S = { run: null, lanes: {}, k: 0, maxK: 0, playing: null, view: "step", sel: { lane: LANES[0], step: 0 },
-            heatMin: 0, heatMax: 1, liveId: null, mode: "replay" };
+            heatMin: 0, heatMax: 1, liveId: null, mode: "replay", tempIds: [], boardWithdrawn: false };
 
 // ── parse one run into per-lane steps ──────────────────────────────────────────────────────────────────────────
 function parseRun(run) {
@@ -76,10 +78,18 @@ function parseRun(run) {
   return { lanes, lo, hi };
 }
 
+// The notice under the top bar: shown while this run's temperatures, or the runs list's, include a withdrawn one.
+function updateNotice() {
+  const on = (S.tempIds.length > 0 && labelForAll(S.tempIds).withdrawn) || S.boardWithdrawn;
+  $("wnotice").hidden = !on;
+  $("wnotice").textContent = on ? NOTICE : "";
+}
+
 function load(run, mode) {
   stop();
   const parsed = parseRun(run);
-  S.run = run; S.mode = mode; S.lanes = parsed.lanes; S.heatMin = parsed.lo; S.heatMax = parsed.hi;
+  S.run = run; S.mode = mode; S.lanes = parsed.lanes; S.heatMin = parsed.lo; S.heatMax = parsed.hi; S.tempIds = runTemperatureIds(run);
+  updateNotice();
   S.maxK = Math.max(0, ...Object.values(S.lanes).map((L) => L.steps.length));
   // What the signed records prove about the signal layer: provider calls made, fallbacks taken, call latency.
   const sig = Object.values(S.lanes).flatMap((L) => L.steps.map((s) => s.signal).filter(Boolean));
@@ -306,10 +316,13 @@ async function renderBoard() {
       `<td class="num">${fmt(b, 3)} °C</td><td class="num">${fmt(b - init, 3)}</td><td class="num">${Math.min(kNow, L.steps.length)}/${L.steps.length}</td>` +
       `<td class="num">${L.steps.slice(0, kNow).filter((s) => s.outcome && s.outcome.status === "committed").length}</td>` +
       `<td class="${L.valid ? "ok" : "bad"}">${L.valid ? "VALID" : "INVALID"}</td></tr>`).join("") + `</table>`;
+  let listed = false;
   try {
     const r = await fetch("/api/runs", { cache: "no-store" });
     if (r.ok) {
       const j = await r.json();
+      // The runs list names no evaluator for its best temperatures, so they count as withdrawn (the rule's fail safe).
+      listed = (j.runs || []).some((x) => x.best && labelFor(x.best.solver_version).withdrawn);
       html += `<table><tr><th>Recent runs</th><th>Benchmark</th><th>Grid</th><th>Seed</th><th>Best lane</th><th>Best</th><th>Time</th></tr>` +
         (j.runs || []).map((x) => `<tr><td class="num"><a class="dl" href="#" data-run="${esc(x.id)}">${esc(short(x.id, 10))}</a></td><td>${esc(x.benchmark)}</td><td>${esc(x.grid)}</td><td>${esc(x.seed)}</td>` +
           `<td>${esc(x.best ? LANE_NAME[x.best.lane_id] || x.best.lane_id : "-")}</td><td class="num">${x.best ? fmt(x.best.best_temperature_c, 3) : "-"}</td>` +
@@ -318,6 +331,8 @@ async function renderBoard() {
   } catch (_) { /* the run API may not be deployed yet; this run's ranking still stands */ }
   html += `<p class="micro">One seed is descriptive, not a statistical result. The result is stated even when the control (UCB1) wins.</p>`;
   $("board").innerHTML = html;
+  S.boardWithdrawn = !$("board").hidden && listed;
+  updateNotice();
   for (const a of $("board").querySelectorAll("a[data-run]")) a.onclick = (ev) => { ev.preventDefault(); openRun(a.dataset.run); };
 }
 
@@ -347,6 +362,7 @@ for (const t of document.querySelectorAll(".tab")) t.onclick = () => {
   for (const x of document.querySelectorAll(".tab")) x.classList.toggle("on", x === t);
   $("feed").hidden = t.dataset.tab !== "feed"; $("board").hidden = t.dataset.tab !== "board"; $("record2").hidden = t.dataset.tab !== "record";
   if (t.dataset.tab === "board") renderBoard();
+  else { S.boardWithdrawn = false; updateNotice(); }
 };
 $("feed").onclick = (e) => {
   const row = e.target.closest("div[data-lane]");

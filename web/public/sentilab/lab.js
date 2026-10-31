@@ -18,6 +18,9 @@ import {
   buildView, feedRows, chainSummary, isDrill, isRejected, colorScale, nextScale, heat, frameOf, labInfo, reasonText, rankReasons,
   rowIdentity, resolveRow, shortId, stageOf, STAGES, isObj,
 } from "./lab-model.mjs";
+// Temperatures are labelled by the one rule (temperature-label.mjs) from the evaluator identity of the measurement each
+// came from, for replays and the live feed alike. Withdrawn values keep their numbers; the page says so above the panels.
+import { anyWithdrawnTemperature, NOTICE } from "../temperature-label.mjs";
 
 const DEMO = { url: "demo-run.jsonl", runId: "demo-8c-0001", label: "demo-run.jsonl · bundled interface fixture" };
 const TEST_KEY_NAMES = ["core"];                 // ?pins=test: the vectors' "core" test key, derived here at run time
@@ -292,6 +295,10 @@ function render() {
   renderFeed(v, n, view);
   renderOffline(src);
   refreshDialogs();
+  // Every row this source holds, verified or not (the feed lists them all): any withdrawn temperature shows the notice.
+  const withdrawn = Boolean(v) && anyWithdrawnTemperature(v.ordered);
+  $("wnotice").hidden = !withdrawn;
+  $("wnotice").textContent = withdrawn ? NOTICE : "";
 }
 
 function renderTop(src, v) {
