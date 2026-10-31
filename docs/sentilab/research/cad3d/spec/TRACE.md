@@ -1,8 +1,9 @@
 # Package 3D: requirement trace
 
-**Companion to SPEC.md v0.1 (2026-10-31).** Every requirement in SPEC.md, PSEUDOCODE.md and ACCEPTANCE.md, mapped to
+**Companion to SPEC.md v0.2 (2026-10-31).** Every requirement in SPEC.md, PSEUDOCODE.md and ACCEPTANCE.md, mapped to
 the source it comes from. Tags: `L1:` lane 1 and `L3:` lane 3 at `253ee4f74f998f52c06e437acf935f2bf7e63067`;
-`A#57053`, `A#57059` astra's messages; `F#57046` the founder's ask; `main:` origin/main at
+`A#57053`, `A#57059` astra's messages and `A#57218` root's (astra's) review of v0.1; `F#57046` the founder's ask;
+`main:` origin/main at
 `d25046256b4a712b529977f31e10b7e32248a9c0`; `pr66:` PR #66 head `609d339d79cfa0c120806fc5132044b460db5cd3` (open,
 not merged); `task` the brief for this spec. "This spec" marks a design choice made here, with its reason.
 
@@ -13,6 +14,9 @@ not merged); `task` the brief for this spec. "This spec" marks a design choice m
 | Founder's ask (#57046, verbatim) | local `C:/tmp/cad3d-carter-57046.md` | `218c398ee3889c88e1864439755de925f761760ec66e4db37937e078f19c6e23` |
 | astra's #57053 and #57059 (verbatim) | local `C:/tmp/cad3d-astra-lane2.md` | `03b85a1315a94710655d020053d59258f7c02a4bdbd3689ff77cb02bd1b5e5f9` |
 | astra's full independent report | retained by astra, not read | `cccbe9d165fc358a17108e23ab6cbf1d8bdc4739d049e5e2565a90d430614d97` (her stated seal) |
+| Root's review of v0.1, A#57218 (verbatim room text) | local `C:/tmp/cad-w4-work/verbatim/msg-57218-gpt-astra-carter.txt` | `ec1345d39c5108aad558316d3e3c8a8fc1ece9421169d36bb8d2c0f042b538f3` |
+| Root's full review of v0.1 and its seal | retained by root (`TASK/cad-spec-review-2137`), not read | review `a8c13fee0ef5a2824fab7f372f44ddfcf8130212a3d4f05d5c5acbf3182aa249`, seal `dffaec2f5ddf65df659621bc34da77fc37218049506205f65ccbca9b2a0371a8` (her stated values) |
+| The bytes root reviewed | review packet at sentilab `8f76089c`, `docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/cad/source/` | all four files byte-identical to `da9b1ee` (SPEC `f581f57e…`, PSEUDOCODE `0976a6f7…`, ACCEPTANCE `80713adb…`, TRACE `012c9180…`), checked with `git show` |
 | L1 REPORT.md | 253ee4f7 | `d81ddb2a4c2908f5433660b2a020acd654c9515face01fbb3031eef4f8233203` |
 | L1 parts.json | 253ee4f7 | `365dcd0d776b4afca6b17a6ba840ac578b7e99d40e08d0d3b45fa571dc473a60` |
 | L1 thermal_path.md | 253ee4f7 | `ef53402ee53ed858af45671bc009796166d662c3a4f40802cb906deac09e727f` |
@@ -188,6 +192,7 @@ Unchanged and still valid: `source.mjs` (all lines), `playhead.mjs`, `render.mjs
 | 5.3 assembly schema, instances, edges | task rule 3; A#57053 ("stable part-instance IDs and units/transforms") |
 | 5.3 first assembly | L1:REPORT §1 (one or two compute dies, four to eight HBM stacks); L1:parts.json counts (12-high); D11 |
 | 5.3 residual gaps, no stretching | task rule 3; this spec |
+| 5.3 drawn/undrawn union; undrawn parts out of bounds, picking and field association | A#57218 item 1 (R1, section 5) |
 | 5.4 model stack table | main:sundai_tap/passive_interposer.py:22-48, :50-149, :151-165, :182-195; main:sundai_tap/util/hotspot.config:11, :15-35, :48, :78, :82; main:sundai_hotspot/temperature_grid.h:46-48; main:sundai_hotspot/temperature_grid.c:523-552; L1:our_model_mapping.md §2 |
 | 5.4 solver arguments | main:sundai_hotspot/tap_oracle_worker.py:356-369 |
 | 5.4 role map | L1:FACTS thm-007 (TAP Table II); main:docs/sentilab/references/README.md:5-7, :86; main:sundai_tap/configs/sys_ascend910_45mm.cfg:19-28; sys_micro150_45mm.cfg:19-30; main:sundai_hotspot/tap_oracle.py:311 |
@@ -226,7 +231,7 @@ main:web/public/temperature-label.mjs:38-85; L3:PSEUDOCODE §5), PL-3 (A#57059; 
 per-value-provenance.test.mjs), PL-4 (task rule 1; D2), PL-5 and PL-6 (L3:ARCHITECTURE §5.5), PL-7
 (temperature-label.mjs:17-19, :145-153), PL-8 (package.js:297-300; temperature-label.mjs:163-170;
 temperature-label.test.mjs:331-333), PL-9 (A#57059; references README.md:105-119), PL-10 to PL-13 (task rule 3;
-A#57053; A#57059), PL-14 to PL-16 (A#57059; conductor.py:345; our_model_mapping.md §2), PL-17 (task rule 8), PL-18
+A#57053; A#57059; PL-10's undrawn parts: A#57218 item 1), PL-14 to PL-16 (A#57059; conductor.py:345; our_model_mapping.md §2), PL-17 (task rule 8), PL-18
 (task rule 7), PL-19 (task rule 4; L3:ARCHITECTURE §6.4; VIEW-ENVELOPE v0.6.2 rule 5), PL-20 (A#57053 "Display
 animation must distinguish verified replay, new live receipts and illustrative behavior"; L3:RISKS R-08), PL-21
 (A#57059 "no success fallback or fabricated heatmap"; sentilab-scene.mjs:17), PL-22 (task rule 9; L3:ACCEPTANCE A-15),
@@ -304,7 +309,7 @@ PL-23 (L3:RISKS R-02; temperature-label.mjs:52), PL-24 (L1:SOURCES.md "How the f
 | AC-06 | task rule 9; L3:ACCEPTANCE A-15; main:scripts/sentilab-scene.mjs:17 |
 | AC-07 | main:web/test/per-value-provenance.test.mjs:73-91; temperature-label.mjs:139-144 |
 | AC-08, AC-09 | task rule 2; A#57053 |
-| AC-10, AC-11 | task rule 3; L1:REPORT §3.3 (lid thickness not sourced); L1:parts.json `die_side_caps` (no source) |
+| AC-10, AC-11 | task rule 3; L1:REPORT §3.3 (lid thickness not sourced); L1:parts.json `die_side_caps` (no source); A#57218 item 1 (undrawn parts, AC-11) |
 | AC-12 | task rule 3; A#57059; L3:ACCEPTANCE A-13 |
 | AC-13 | A#57059 (0.045 m once) |
 | AC-14 | task rule 3; A#57059 (glTF names) |
@@ -327,3 +332,14 @@ PL-23 (L3:RISKS R-02; temperature-label.mjs:52), PL-24 (L1:SOURCES.md "How the f
 | AC-38 | task rule 6; A#57059 |
 | AC-39 | L3:ACCEPTANCE A-17 |
 | AC-40 | L1:SOURCES.md (176 of 176 verified); L1:SOURCES.md row 58; main:docs/sentilab/references/README.md:79-80 |
+
+## 5. Review findings after v0.1 (`da9b1ee`) and their repairs
+
+"Was" cites the exact draft root reviewed (`da9b1ee`, byte-identical to the review packet's copy: section 1). "Now"
+cites this version. Each commit that moves a cited line refreshes this section, so its lines hold at the branch head.
+
+### 5.1 Root's six specification repairs (A#57218)
+
+| Finding | Was (`da9b1ee`) | Change | Now | ACs |
+|---|---|---|---|---|
+| R1 (item 1): a positive box was required even for `drawn: false`, although unknown dimensions must stay unknown | SPEC:561 (`box` required on every instance), :608-614; PSEUDOCODE:164 (box checked on every instance) | `instance` is a `oneOf` union: `drawnInstance` (box and basis required) or `undrawnInstance` (`dims` required; box, basis and array forbidden). The reader refuses a box on an undrawn part and an undrawn part whose every dimension is drawable. Undrawn parts keep id, parent, edges and null dims, and are left out of boxes, bounds, picking, sections and field association; flows add no point for them | SPEC:569, :603-619 (schema), :634-646 (reader rules), :182-184 (flows), :1141-1143 (picking), :1213 (PL-10); PSEUDOCODE:158-179 (`readAssembly`), :318-325 (RenderModel), :412-416 (`pick`) | AC-11 (rewritten), AC-36 |

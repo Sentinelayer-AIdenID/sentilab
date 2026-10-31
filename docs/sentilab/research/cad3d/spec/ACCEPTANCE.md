@@ -1,6 +1,6 @@
 # Package 3D: acceptance criteria
 
-**Companion to SPEC.md v0.1 (2026-10-31).** Each criterion says how it is tested, what passes, and the adversarial
+**Companion to SPEC.md v0.2 (2026-10-31).** Each criterion says how it is tested, what passes, and the adversarial
 inputs it must survive. It consolidates lane 3's A-01 to A-17 (L3:ACCEPTANCE.md at `253ee4f7`) with astra's criteria
 (A#57053, A#57059) and the separation, quantity and identity rules of SPEC.md. File:line citations are origin/main
 `d25046256b4a712b529977f31e10b7e32248a9c0`.
@@ -100,10 +100,16 @@ code; valid cases accepted.
 
 **AC-11 An unknown dimension renders as unknown** (browser, node). The lid's thickness (no source in lane 1:
 L1:REPORT §3.3) shows `not sourced · drawn at 1.000 mm (display only: …)` with the hint's reason; the die-side
-capacitors' count shows `unknown`; an instance with an unknown size and no hint is listed `not drawn · size unknown` in
-the part tree and absent from the canvas; the twin carries `value: null` with `basis: "unknown"` or the hint with
-`basis: "render_hint"`. Adversarial: a build that silently fills an unknown (for example copies the model's 1 mm
-spreader into the anatomy lid as `sourced`) fails `readAnatomy`. Pass: all.
+capacitors' count shows `unknown`; the twin carries `value: null` with `basis: "unknown"` or the hint with
+`basis: "render_hint"`. An instance with an unknown size and no hint is undrawn (SPEC.md §5.3): it is listed
+`not drawn · size unknown` in the part tree, keeps its id, parent and every edge that names it in the panel and the
+twin (with `dims` null where unknown and no box), and is absent from the canvas, `RenderModel.boxes`, `bounds`,
+`pick()`, `sectionAt()` and every field lookup. Adversarial: a build that silently fills an unknown (for example copies
+the model's 1 mm spreader into the anatomy lid as `sourced`) fails `readAnatomy`; an undrawn instance carrying any
+`box` (a placeholder, a zero-size or a 1 mm cube), `basis` or `array` is refused by the schema and by `readAssembly`;
+a `drawn: true` instance without a box is refused; an undrawn instance whose every dimension is drawable is refused
+(a drawable part is drawn); adding an undrawn part leaves `bounds` unchanged, and a pick ray through the space it
+would occupy returns the drawn part behind it or `null`. Pass: all.
 
 **AC-12 Explode never mutates geometry** (node, browser). After `buildRenderModel()`, `Object.isFrozen` holds for the
 model and every nested object; a write in strict mode throws. Record `geometry_key` (the canonical text of frame and
@@ -302,7 +308,8 @@ sentence; Anatomy and Model draw with the `file check unavailable` chip (D14). P
 ## Agent twin
 
 **AC-36 The twin matches the visual** (node, browser). Node: `twinOf()` on the same inputs as the page's
-`buildRenderModel()` gives the same instance ids, boxes, bases, edges, flows and qualifiers; result twins give the same
+`buildRenderModel()` gives the same instance ids, boxes, bases, edges, flows and qualifiers (undrawn parts: the same
+ids, parents, edges and null dimensions, and no box); result twins give the same
 values, statistics, labels and receipts as `resultView()`; `export3d` run twice gives byte-identical `twin.json`,
 `twin.md` and `twin.glb`; the static `/agents/package3d/` files equal `scripts/package3d.mjs twin --check`'s output.
 Browser: for each mode and a scripted set of states, every instance id, chip text, value text and label state in

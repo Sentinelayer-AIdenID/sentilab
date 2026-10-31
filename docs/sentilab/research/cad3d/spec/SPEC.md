@@ -1,7 +1,8 @@
 # SentiLab chip room (Package 3D): joint spec sheet
 
-**Version 0.1, 2026-10-31. A proposal for sign-off by forge (coordinator), warden (operations) and astra (root
-reviewer). Nothing here is implemented, deployed or agreed.** After all three sign the exact document, warden
+**Version 0.2, 2026-10-31: the corrected successor of v0.1 (`da9b1ee`) after root's review (A#57218). A proposal for
+sign-off by forge (coordinator), warden (operations) and astra (root reviewer). Nothing here is implemented,
+deployed or agreed.** After all three sign the exact document, warden
 provisions one build agent (the "Astra ultra box") that implements it phase by phase (section 9).
 
 Companions in this folder: `PSEUDOCODE.md` (modules and signatures, with integration points), `ACCEPTANCE.md`
@@ -12,7 +13,8 @@ moves since lane 3 was written).
 
 - **Source tags.** `L1:<file> §n` is lane 1 and `L3:<file> §n` is lane 3, both on branch `forge/cad3d-research` at
   `253ee4f74f998f52c06e437acf935f2bf7e63067` (under `docs/sentilab/research/cad3d/`). `A#57053` and `A#57059` are
-  astra's room messages (verbatim copy read from `C:/tmp/cad3d-astra-lane2.md`). `F#57046` is the founder's ask.
+  astra's room messages (verbatim copy read from `C:/tmp/cad3d-astra-lane2.md`); `A#57218` is root's (astra's) review
+  of v0.1, pinned in TRACE.md section 1. `F#57046` is the founder's ask.
   `main:<path>:<line>` is origin/main at `d25046256b4a712b529977f31e10b7e32248a9c0`. `pr66:<path>:<line>` is the
   open PR #66 head `609d339d79cfa0c120806fc5132044b460db5cd3`.
 - **Line numbers moved once.** Lane 3 cited origin/main at `46791be`. Commit `d250462` (#64, per-value labels)
@@ -25,6 +27,10 @@ moves since lane 3 was written).
   not PR #66 merges (section 6.9, D9).
 - **MUST / MUST NOT** are requirements on the build. **Default** marks a starting choice while an open decision
   (section 11) is pending; reviewers may change it. Where two inputs disagree, both are recorded in section 11.
+- **Changes since v0.1** (`da9b1ee60c6b2fd11ab97e66e9384cc44da1a0d7`, the exact draft root reviewed in A#57218). Each
+  item below is one commit; TRACE.md section 5 maps every finding to its change, its lines now and its ACs.
+  - R1 (A#57218 item 1): an instance is drawn or undrawn. An undrawn part keeps its id, parent, connections and null
+    dimensions, carries no box, and is left out of bounds, picking and field association (section 5.3; AC-11).
 
 ## 1. Goals and non-goals
 
@@ -145,8 +151,9 @@ Each screen lists what a person sees and does, what an agent gets for the same t
   connections (L3:ARCHITECTURE §4.4). Labels are DOM text, never canvas text, and never carry temperatures.
 - **Rules.** Explode, readable thickening and section are view transforms over immutable assembled geometry (PL-12).
   Every length shown, every pick and every field lookup uses assembled coordinates.
-- **Agent:** the twin carries assembled boxes only and says: `Explode, readable thickening and section are view
-  transforms. Every coordinate here is assembled.`
+- **Agent:** the twin carries assembled boxes only (an undrawn part carries its id, parent, edges and null
+  dimensions, and no box) and says: `Explode, readable thickening and section are view transforms. Every coordinate
+  here is assembled.`
 
 ### 4.2 Part detail (S2)
 
@@ -172,7 +179,9 @@ between them, dims the rest (L3:ARCHITECTURE §4.5), and fills the detail panel.
 
 - **Rules.** Every overlay shows its qualifier: `Typical path through the parts. Not a solved heat flux, not a routed
   wire, not a measured bandwidth.` (anatomy) or the model's equivalent; no watts or temperatures on arrows; Results
-  draws no arrows at all (PL-14, PL-15; A#57059 "a heat arrow is not solved flux/Watts").
+  draws no arrows at all (PL-14, PL-15; A#57059 "a heat arrow is not solved flux/Watts"). A flow step on an undrawn
+  part (section 5.3) is listed in the legend as `passes through <part> · not drawn`; the drawn path invents no point
+  for it.
 - **Agent:** `flows` and `edges` in the twins carry the same qualifier string.
 
 ### 4.4 Thermal-path view (S4)
@@ -557,7 +566,8 @@ source file in `docs/sentilab/package3d/`.
   },
   "$defs": {
     "drawnBasis": { "enum": ["sourced", "derived", "render_hint"] },
-    "instance": {
+    "instance": { "oneOf": [ { "$ref": "#/$defs/drawnInstance" }, { "$ref": "#/$defs/undrawnInstance" } ] },
+    "drawnInstance": {
       "type": "object", "required": ["id", "type", "parent", "label", "variants", "drawn", "box", "basis"], "additionalProperties": false,
       "properties": {
         "id": { "$ref": "urn:sentilab:package3d:common:1#/$defs/instanceId" },
@@ -565,7 +575,7 @@ source file in `docs/sentilab/package3d/`.
         "parent": { "oneOf": [ { "$ref": "urn:sentilab:package3d:common:1#/$defs/instanceId" }, { "type": "null" } ] },
         "label": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" },
         "variants": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/variant" } },
-        "drawn": { "type": "boolean" },
+        "drawn": { "const": true },
         "box": { "$ref": "urn:sentilab:package3d:common:1#/$defs/box" },
         "basis": {
           "type": "object", "required": ["position", "footprint", "thickness"], "additionalProperties": false,
@@ -590,6 +600,22 @@ source file in `docs/sentilab/package3d/`.
         "note": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" }
       }
     },
+    "undrawnInstance": {
+      "type": "object", "required": ["id", "type", "parent", "label", "variants", "drawn", "dims"], "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "urn:sentilab:package3d:common:1#/$defs/instanceId" },
+        "type": { "$ref": "urn:sentilab:package3d:common:1#/$defs/typeId" },
+        "parent": { "oneOf": [ { "$ref": "urn:sentilab:package3d:common:1#/$defs/instanceId" }, { "type": "null" } ] },
+        "label": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" },
+        "variants": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/variant" } },
+        "drawn": { "const": false },
+        "dims": {
+          "type": "object", "required": ["w", "h", "t"], "additionalProperties": false,
+          "properties": { "w": { "$ref": "urn:sentilab:package3d:anatomy:1#/$defs/aq" }, "h": { "$ref": "urn:sentilab:package3d:anatomy:1#/$defs/aq" }, "t": { "$ref": "urn:sentilab:package3d:anatomy:1#/$defs/aq" } }
+        },
+        "note": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" }
+      }
+    },
     "instanceEdge": {
       "type": "object", "required": ["id", "from", "to", "kinds", "via", "type_edge"], "additionalProperties": false,
       "properties": {
@@ -605,12 +631,18 @@ source file in `docs/sentilab/package3d/`.
 }
 ```
 
-Reader rules beyond the schema: `box` is assembled and in mm with `x0 < x1`, `y0 < y1`, `z0 < z1`; a `drawn: true`
-instance's box agrees with its quantities (a `sourced` thickness is drawn at its value, or inside its range when only a
-range exists; a `render_hint` is drawn at the hint); `drawn: false` instances (size unknown and no hint) appear in the
-part tree as `not drawn · size unknown`; every `type_edge` exists in the anatomy's `type_edges`; children are inside
-their parent's footprint; children that do not sum to their parent's sourced height are not stretched, and the
-residual is shown as a labelled gap (PL-10). `geometry_sha256` covers `frame` and `instances` and is recomputed by
+Reader rules beyond the schema: a drawn instance's `box` is assembled and in mm with `x0 < x1`, `y0 < y1`,
+`z0 < z1`, and agrees with its quantities (a `sourced` thickness is drawn at its value, or inside its range when only a
+range exists; a `render_hint` is drawn at the hint). **Drawn or undrawn is a union, not a flag** (A#57218 item 1). An
+undrawn instance (`drawn: false`: size unknown and no hint) has no `box`, `basis` or `array`; the reader refuses any of
+them on it instead of drawing an invented box. It keeps its id, type, parent, label, variants and every edge that
+names it, and carries `dims` with `value: null` and `basis: "unknown"` wherever the size is unknown. At least one of
+its dimensions has no drawable value (`drawnMm()` returns null); a part whose every dimension can be drawn is drawn.
+Undrawn parts appear in the part tree as `not drawn · size unknown`, keep their connections in the panel and the
+twin, and are left out of the RenderModel's boxes and bounds, picking, section rectangles and every field
+association. Every `type_edge` exists in the anatomy's `type_edges`; a drawn child lies inside the footprint of its
+nearest drawn ancestor; children that do not sum to their parent's sourced height are not stretched, and the residual
+is shown as a labelled gap (PL-10). `geometry_sha256` covers `frame` and `instances` and is recomputed by
 the page.
 
 ### 5.4 Model stack `sentilab-model-stack/1` (what the solver simulates)
@@ -1106,7 +1138,9 @@ Lane 3's architecture (L3:ARCHITECTURE §0-§10) is adopted, with the deltas in 
   0.25 mm and levels restacked), explode offsets (level k rises by `t · gap · k`, gap = 0.18 x the lateral span; inner
   HBM gap 0.04 x; L3:PSEUDOCODE §1-§2 `DRAW`), and the section plane. It returns a new map and never writes to the
   model.
-- **Picking** is analytic (ray against boxes, slab test) on display boxes and returns instance ids; a field lookup
+- **Picking** is analytic (ray against boxes, slab test) on display boxes of drawn instances only (an undrawn
+  instance has no box, so it is never picked, never bounds the view and never maps to a field cell) and returns
+  instance ids; a field lookup
   maps the picked sheet back to its grid layer and the hit's x and y (unchanged by explode and readable, which move
   only z) to a grid cell.
 
@@ -1176,7 +1210,7 @@ small change (D9). Nothing in phases 1-5 needs that.
 | PL-7 | A legend is a derived value: `labelForAll()` over the identities behind its scale. | main:web/public/temperature-label.mjs:17-19, :145-153 |
 | PL-8 | The page notice follows `needsNotice()` over the verified prefix, as the Package view does, and must also fire for field-only measurements once P4 lands. The notice slot markup is the existing one. | main:web/public/sentilab/package/package.js:297-300; temperature-label.mjs:163-170; temperature-label.test.mjs:331-333 |
 | PL-9 | Statistics are named and never mixed (section 5.6 table). | A#57059; main:docs/sentilab/references/README.md:105-119 |
-| PL-10 | Unknown stays unknown: `unknown` or `not sourced · drawn at X (display only: reason)` in the panel; null plus basis in the twin; never filled silently; sourced children that do not add up to a sourced parent leave a labelled gap. | task rule 3; L1:parts.json `conventions.thickness_um` |
+| PL-10 | Unknown stays unknown: `unknown` or `not sourced · drawn at X (display only: reason)` in the panel; null plus basis in the twin; never filled silently; sourced children that do not add up to a sourced parent leave a labelled gap. A part whose size is unknown and has no hint is undrawn: it keeps its id, parent and connections, has no box, and is left out of bounds, picking and field association (section 5.3). | task rule 3; L1:parts.json `conventions.thickness_um`; A#57218 item 1 |
 | PL-11 | Instance ids are stable, unique, authored, never reused; removed ids are listed in `retired_ids`. | task rule 3; A#57053 |
 | PL-12 | Assembled geometry is immutable; explode, readable and section are view transforms; lengths, picks and field lookups use assembled coordinates. | task rule 3; A#57053; A#57059 |
 | PL-13 | Units convert once: µm to mm in `quantity.mjs`, mm to m (and z-up to +Y-up) in the GLB writer. | A#57059 |

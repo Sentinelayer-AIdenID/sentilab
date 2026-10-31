@@ -1,6 +1,6 @@
 # Package 3D: consolidated pseudocode
 
-**Companion to SPEC.md v0.1 (2026-10-31). For review; nothing here is implemented.** It consolidates lane 3's
+**Companion to SPEC.md v0.2 (2026-10-31). For review; nothing here is implemented.** It consolidates lane 3's
 module pseudocode (L3:PSEUDOCODE.md at `253ee4f7`) with the three content kinds, the quantity and id rules, and the
 result binding from SPEC.md. Every integration point cites origin/main at `d25046256b4a712b529977f31e10b7e32248a9c0`
 as `path:line`. Where this file and lane 3 differ, SPEC.md §6.8 says why.
@@ -151,9 +151,10 @@ export function readAnatomy(json) {
 }
 
 // json: the parsed assembly; anatomy: from readAnatomy. Async only because it recomputes geometry_sha256.
-// Refuses: id grammar or duplicates, parent not an ancestor path, type unknown, box inverted, a drawn box that
-// disagrees with its quantities (sourced value or range, or render hint), a child outside its parent's footprint, an
-// edge whose type_edge is not in anatomy.type_edges, geometry_sha256 mismatch, a retired id in use.
+// Refuses: id grammar or duplicates, parent not an ancestor path, type unknown, a drawn box inverted or disagreeing
+// with its quantities (sourced value or range, or render hint), a box, basis or array on an undrawn instance, an
+// undrawn instance whose every dimension is drawable, a drawn child outside its nearest drawn ancestor's footprint,
+// an edge whose type_edge is not in anatomy.type_edges, geometry_sha256 mismatch, a retired id in use.
 export async function readAssembly(json, anatomy) {
   if (json?.schema !== ASSEMBLY_SCHEMA || json.content !== "anatomy") return no("schema");
   if (json.anatomy_sha256 !== anatomy.sha256) return no("binding_mismatch", "assembly built for another anatomy");
@@ -161,14 +162,21 @@ export async function readAssembly(json, anatomy) {
   for (const inst of json.instances) {
     if (!INSTANCE_ID.test(inst.id) || ids.has(inst.id) || typeOfId(inst.id) !== inst.type) return no("malformed", inst.id);
     if (json.retired_ids.includes(inst.id)) return no("id_reused", inst.id);
-    if (!(inst.box.x0 < inst.box.x1 && inst.box.y0 < inst.box.y1 && inst.box.z0 < inst.box.z1)) return no("malformed", `${inst.id}: box`);
     const pt = anatomy.part_types[inst.type]; if (!pt) return no("dangling", inst.type);
-    const t = drawnMm(inst.dims?.t ?? pt.thickness);
-    if (inst.drawn && (t.mm === null || Math.abs((inst.box.z1 - inst.box.z0) - t.mm) > 1e-6)) return no("malformed", `${inst.id}: drawn thickness`);
-    // ... the same for footprint w/h when the instance's basis.footprint is sourced/derived/render_hint
+    const dim = (k) => drawnMm(inst.dims?.[k] ?? (k === "t" ? pt.thickness : pt.footprint[k]));
+    if (inst.drawn === false) {                        // UNDRAWN (SPEC.md §5.3): identity, parent, edges, null dims; no box
+      if ("box" in inst || "basis" in inst || "array" in inst) return no("malformed", `${inst.id}: undrawn part with a box`);
+      if (["w", "h", "t"].every((k) => dim(k).mm !== null)) return no("malformed", `${inst.id}: a drawable part is drawn`);
+    } else if (inst.drawn === true) {                  // DRAWN: an assembled box that agrees with its quantities
+      if (!(inst.box?.x0 < inst.box.x1 && inst.box.y0 < inst.box.y1 && inst.box.z0 < inst.box.z1)) return no("malformed", `${inst.id}: box`);
+      const t = dim("t");
+      if (t.mm === null || Math.abs((inst.box.z1 - inst.box.z0) - t.mm) > 1e-6) return no("malformed", `${inst.id}: drawn thickness`);
+      // ... the same for footprint w/h when the instance's basis.footprint is sourced/derived/render_hint
+    } else return no("malformed", `${inst.id}: drawn must be true or false`);
     ids.add(inst.id);
   }
-  // ... parents exist and are path prefixes; children inside parent footprints; edges resolve
+  // ... parents exist and are path prefixes; a drawn child lies inside its nearest DRAWN ancestor's footprint; edges
+  //     resolve, and an edge may name an undrawn instance (its connections are kept)
   const geometry = canonical({ frame: json.frame, instances: json.instances });
   if ((await sha256Hex(new TextEncoder().encode(geometry))) !== json.geometry_sha256) return no("hash_mismatch", "geometry_sha256");
   return { assembly: deepFreeze(json), error: null };
@@ -307,13 +315,14 @@ export function buildRenderModel({ kind, anatomy = null, assembly = null, varian
     v: MODEL_VERSION, kind,
     status_text: out.status_text,                    // the mode banner, verbatim (SPEC.md §3)
     units: "mm", frame: out.frame,
-    boxes: out.boxes,                                // [{ id, type, parent, level, inner_index, x0..z1, basis: {position, footprint, thickness}, drawn }]
+    boxes: out.boxes,                                // DRAWN instances only: [{ id, type, parent, level, inner_index, x0..z1, basis: {position, footprint, thickness} }]
     arrays: out.arrays,                              // parametric interconnect arrays (anatomy) or none
-    links: out.links,                                // instance edges (anatomy), netlist links (model, result)
+    links: out.links,                                // instance edges (anatomy), netlist links (model, result); a link with an undrawn end is listed, not drawn
     levels: out.levels,                              // explode order, bottom to top
-    bounds: boundsOf(out.boxes),
+    bounds: boundsOf(out.boxes),                     // over drawn boxes only: an undrawn part never widens the view
     notes: out.notes,                                // e.g. "spreader 90 mm and sink 180 mm drawn as outlines"
-    not_drawn: out.not_drawn,                        // instances with unknown size and no hint (SPEC.md §5.3)
+    not_drawn: out.not_drawn,                        // UNDRAWN instances (SPEC.md §5.3): [{ id, type, parent, label, dims, reason: "size unknown and no render hint" }];
+                                                     // the part tree, panel, links and twin use them; bounds, pick(), sectionAt() and fields never do
     geometry_key: out.geometry_key,                  // canonical() text of { frame, boxes } for the immutability test
   }), error: null };
 }
@@ -394,20 +403,24 @@ export function instanceBudget({ triangleBudget, otherTriangles }) {
   return Math.max(0, Math.floor((triangleBudget - otherTriangles) / TRIS_PER_INSTANCE));
 }
 export function interconnectArrays(model, { budget }) { /* L3:PSEUDOCODE §4, with count_basis from the array's count quantity */ }
-// The part, every part it connects to, and the interconnect between them (L3:PSEUDOCODE §4).
+// The part, every part it connects to (undrawn ones too, for the part tree and panel), and the interconnect between
+// them (L3:PSEUDOCODE §4). The renderer highlights only the drawn members.
 export function highlightSet(model, id) { /* -> Set<id> */ }
 ```
 
 ```js
-// pick.mjs (PURE). ray: { origin, dir } in display space (render3d.ray()). Slab test against display boxes; returns the
-// nearest instance id, or null. cellAt maps a hit on a field sheet back to (layer, row, col) using x and y only, which
-// explode and readable never change.
+// pick.mjs (PURE). ray: { origin, dir } in display space (render3d.ray()). Slab test against the display boxes of DRAWN
+// instances (model.boxes; an undrawn part has no box and is never returned); returns the nearest instance id, or null.
+// cellAt maps a hit on a field sheet back to (layer, row, col) using x and y only, which explode and readable never
+// change.
 export function pick(model, display, ray) { /* -> id | null */ }
 export function cellAt(fieldGrid, gridIndex, x, y) { /* -> { layer, row, col } | null, honouring grid.row0 */ }
 ```
 
 ```js
-// flows.mjs (PURE). Overlays per content kind (SPEC.md §4.3). Paths run through instance centroids in DISPLAY space.
+// flows.mjs (PURE). Overlays per content kind (SPEC.md §4.3). Paths run through instance centroids in DISPLAY space;
+// a step on an undrawn part adds no point (no invented centroid) and its legend line reads "passes through <label> ·
+// not drawn".
 export const QUALIFIER = Object.freeze({
   anatomy: "Typical path through the parts. Not a solved heat flux, not a routed wire, not a measured bandwidth.",
   model: "Model structure: conduction paths and inputs as configured. Not results.",
@@ -677,7 +690,7 @@ def test_layers_match_generator(tmp_path):
 |---|---|
 | `web/test/package3d-quantity.test.mjs` | AC-10, AC-13 (lengths), AC-14 (grammar) |
 | `web/test/package3d-data.test.mjs` | AC-03, AC-08, AC-11 (data side), AC-16 (Node side: pins), AC-17, AC-29, AC-30, AC-40; `scripts/package3d.mjs check` |
-| `web/test/package3d-model.test.mjs` | AC-08, AC-12, AC-13, AC-15 |
+| `web/test/package3d-model.test.mjs` | AC-08, AC-11 (undrawn parts: bounds, pick, section), AC-12, AC-13, AC-15 |
 | `web/test/package3d-labels.test.mjs` | AC-01, AC-02, AC-06, AC-07 |
 | `web/test/package3d-results.test.mjs` | AC-18, AC-19, AC-23, AC-24, AC-25, AC-26 (driving source.mjs's poller with injected fetch, as the Package view's live tests do) |
 | `web/test/package3d-field.test.mjs` | AC-20, AC-21, AC-22 |
