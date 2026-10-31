@@ -75,15 +75,16 @@ contracts/HASHES.txt
 
 | # | Claim | Detail |
 |---|-------|--------|
-| 1 | 114.82 / 105.28 C figures | These figures appear only in `docs/sentilab/draft-0.5/` plan documents and TFL-08 seed records, not as assertions in product code or tests. They represent prior reported results, not claims verifiable from the repo. |
-| 2 | TFL-03 latency targets (< 0.1 s at 16×16, < 0.4 s at 32×32) | Per `scripts/container_smoke.sh` comments: these apply only to the deployed container, not a build agent. The SuperLU-in-use check (median < 2.0 s) passes: 16×16 median ~0.045 s, 32×32 median ~0.48 s. |
+| 1 | TFL-14 README assertion (reproducible figures) | failed at 126507d4, import defect (the rewritten README dropped the asserted figures), fixed on main by 29b0c3b; passes on main |
+| 2 | 114.82 / 105.28 C figures | These figures appear only in `docs/sentilab/draft-0.5/` plan documents and TFL-08 seed records, not as assertions in product code or tests. They represent prior reported results, not claims verifiable from the repo. |
+| 3 | TFL-03 latency targets (< 0.1 s at 16×16, < 0.4 s at 32×32) | Per `scripts/container_smoke.sh` comments: these apply only to the deployed container, not a build agent. The SuperLU-in-use check (median < 2.0 s) passes: 16×16 median ~0.045 s, 32×32 median ~0.48 s. |
 
 ## Not Attempted
 
 | # | Claim | Reason |
 |---|-------|--------|
 | 1 | `sys_micro150.cfg` (8 chiplets, 680 W) probe | Ticket states: "nothing uses it yet" — no test or probe references this config. |
-| 2 | Full `scripts/container_smoke.sh` under Docker | Not attempted here; CI runs the full container_smoke.sh and passed on main at 29b0c3b (Actions run 41171258578). All individual components verified separately and pass. |
+| 2 | Full `scripts/container_smoke.sh` under Docker | not run in this box; CI ran the full container_smoke.sh green on main at 29b0c3b (Actions run 41171258578) |
 
 ---
 
