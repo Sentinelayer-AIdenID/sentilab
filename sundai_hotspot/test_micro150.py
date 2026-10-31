@@ -1,6 +1,7 @@
 """Tests for micro150 fixture wiring and cross-fixture identity."""
 from __future__ import annotations
 
+from dataclasses import asdict
 import hashlib
 import json
 import math
@@ -18,6 +19,7 @@ from tap_oracle import (
     HotSpotOracle,
     TapLegalityError,
 )
+from tap_oracle_worker import evaluate
 
 BASE_CENTERS = ((25, 25), (40, 40), (8, 9), (8, 25), (8, 41), (41, 15))
 
@@ -47,6 +49,37 @@ class ContentIdentityTests(unittest.TestCase):
                                     env=environment, capture_output=True, text=True, timeout=30)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(json.loads(result.stdout), expected)
+
+
+class WorkerCardinalityTests(unittest.TestCase):
+    def test_worker_requires_one_center_per_chiplet(self):
+        for fixture in ("ascend910", "micro150"):
+            oracle = HotSpotOracle(fixture=fixture)
+            count = len(oracle.problem.widths_mm)
+            parameters = asdict(oracle.problem)
+            request = {
+                "hotspot_binary": str(oracle.hotspot_binary),
+                "expected_binary_sha256": oracle.problem.hotspot_binary_sha256,
+                "expected_source_sha256": dict(oracle.problem.generator_sha256),
+                "candidate_hash": oracle.design_from_centers([(10, 10)] * count).hash,
+                "problem_hash": oracle.problem_hash,
+                "grid_rows": oracle.grid_rows,
+                "grid_cols": oracle.grid_cols,
+                "solver_timeout_s": oracle.solver_timeout_s,
+                "tap_parameters": {name: parameters[name] for name in (
+                    "interposer_size_mm", "widths_mm", "heights_mm", "powers_w",
+                    "connections", "link_type", "granularity_mm", "bump_halos_mm", "ambient_c",
+                )},
+            }
+            # No workspace: validation must reject mismatches before generation or
+            # a solve, while a matching count reaches the workspace requirement.
+            for supplied in (count - 1, count + 1, count):
+                with self.subTest(fixture=fixture, centers=supplied):
+                    request["centers_mm"] = [[10, 10] for _ in range(supplied)]
+                    error = ("parent-owned workspace path is missing" if supplied == count
+                             else "TAP fixture parameters are inconsistent")
+                    with self.assertRaisesRegex(ValueError, error):
+                        evaluate(request)
 
 
 class DefaultAscend910UnchangedTests(unittest.IsolatedAsyncioTestCase):

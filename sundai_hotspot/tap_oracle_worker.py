@@ -151,7 +151,7 @@ def evaluate(request: dict) -> dict:
     connections = tuple(tuple(_finite_number(value, "connection weight") for value in row)
                         for row in parameters["connections"])
     count = len(widths)
-    if (size <= 0 or granularity <= 0 or len(heights) != count or len(powers) != count or
+    if (size <= 0 or granularity <= 0 or len(points) != count or len(heights) != count or len(powers) != count or
             len(halos) != count or len(connections) != count or any(len(row) != count for row in connections) or
             not isinstance(parameters["link_type"], str)):
         raise ValueError("TAP fixture parameters are inconsistent")
