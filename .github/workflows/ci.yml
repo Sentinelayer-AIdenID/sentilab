@@ -69,6 +69,7 @@ jobs:
         run: |
           node --test web/test/sentilab-parity.test.mjs
           node web/test/make-sentilab-demo.mjs --check
+          node --test web/test/sentilab-scene.test.mjs
 
   secret-scan:
     runs-on: ubuntu-24.04
