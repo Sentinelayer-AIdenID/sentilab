@@ -57,8 +57,13 @@ const S = {
 const active = () => (S.source === "api" ? S.live : S.file);
 
 // ── keys: only the page's pins decide; keys from anywhere are checked against them in verifyChain ──────────────
+// Anyone can derive the test keys, so a public host must never accept them: there they would let a forged file show
+// as verified on our domain. Only a local server honours ?pins=test.
+const TEST_PIN_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
+
 async function setupKeys() {
-  if (params.get("pins") === "test") {
+  const wantsTest = params.get("pins") === "test";
+  if (wantsTest && TEST_PIN_HOSTS.has(location.hostname)) {
     S.testMode = true;
     try {
       for (const name of TEST_KEY_NAMES) {
@@ -72,6 +77,11 @@ async function setupKeys() {
     }
     return;
   }
+  await setupPinnedKeys();
+  if (wantsTest) S.keyNote = `TEST KEYS are only honoured on a local server; ${S.keyNote}`;
+}
+
+async function setupPinnedKeys() {
   S.pins = VIEW_PINS.map((p) => ({ key_id: p.key_id, key_sha256: p.key_sha256 }));
   if (S.pins.length === 0) { S.keyNote = "no production key is pinned in this page yet, so no envelope can verify"; return; }
   // The key may be served by the core; it is used only if its sha256 matches a pin.
@@ -644,12 +654,20 @@ setInterval(() => { if (S.source === "api") renderTop(active(), active()?.verifi
 
 // ── start ───────────────────────────────────────────────────────────────────────────────────────────────────
 for (const b of $("source").querySelectorAll("button")) b.classList.toggle("on", b.dataset.src === S.source);
-await setupKeys();
-const bundle = params.get("bundle");
-const replay = bundle && /^[A-Za-z0-9._-]{1,128}$/.test(bundle)
-  ? { url: `/api/replay/${encodeURIComponent(bundle)}.jsonl`, label: `/api/replay/${bundle}.jsonl`, runId: params.get("run") || null, isDemo: false }
-  : { url: DEMO.url, label: DEMO.label, runId: DEMO.runId, isDemo: true };
-if (params.has("seq")) replay.at = Number(params.get("seq"));
-render();
-if (S.source === "api") pollLive();
-await loadReplay(replay);
+// WebCrypto exists only in a secure context (https or a local server). Without it nothing can be verified, so say
+// that plainly instead of failing on the first hash.
+if (!globalThis.crypto?.subtle) {
+  $("frozen").hidden = false;
+  $("frozen").textContent = "Signatures can't be checked here: this page needs a secure (https) connection. Nothing is shown as verified.";
+  $("chainText").textContent = "cannot verify";
+} else {
+  await setupKeys();
+  const bundle = params.get("bundle");
+  const replay = bundle && /^[A-Za-z0-9._-]{1,128}$/.test(bundle)
+    ? { url: `/api/replay/${encodeURIComponent(bundle)}.jsonl`, label: `/api/replay/${bundle}.jsonl`, runId: params.get("run") || null, isDemo: false }
+    : { url: DEMO.url, label: DEMO.label, runId: DEMO.runId, isDemo: true };
+  if (params.has("seq")) replay.at = Number(params.get("seq"));
+  render();
+  if (S.source === "api") pollLive();
+  await loadReplay(replay);
+}

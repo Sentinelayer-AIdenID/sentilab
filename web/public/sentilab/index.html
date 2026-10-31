@@ -102,7 +102,7 @@
   <ul>
     <li>Status shows only what the evidence contract's project() returns over the unbroken, verified prefix of the chain. After the first break the board freezes; later envelopes are listed but never projected.</li>
     <li>A verified envelope proves the core's key signed it. It does not prove a measurement is physically right.</li>
-    <li>The production key pin is empty until the core's key exists, so nothing verifies on this site yet. TEST KEYS mode uses keys anyone can derive.</li>
+    <li>The production key pin is empty until the core's key exists, so nothing verifies on this site yet. TEST KEYS mode uses keys anyone can derive, so only a local server honours it.</li>
     <li>Colors are chiplet-center temperatures: one number per chiplet. They are not a continuous thermal field.</li>
     <li>The bundled demo is an interface fixture with illustrative numbers. No solver produced them.</li>
     <li>The live feed depends on the core's /api/view routes, which are not served yet. A server that withholds its newest envelopes shows as STALE; the page can see silence, not withholding.</li>
