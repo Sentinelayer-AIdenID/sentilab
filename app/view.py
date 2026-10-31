@@ -7,12 +7,12 @@ from typing import Literal
 import os
 import threading
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
 from sentilab_core import operations
 from sentilab_core.budget import Limits
-from sentilab_core.ledger import replay
+from sentilab_core.ledger import ReplayCache, replay
 from sentilab_core.envelope import MAX_PAGE_BYTES, MAX_PAGE_LINES
 
 router = APIRouter()
@@ -20,11 +20,13 @@ _context = None
 _thread = None
 _failure = None
 _shutdown = None
+_replay_cache = ReplayCache()
 
 
 def configure(context):
-    global _context
+    global _context, _replay_cache
     _context = context
+    _replay_cache = ReplayCache()
 
 
 def context():
@@ -72,17 +74,34 @@ def runs():
 
 
 @router.get("/api/view/events")
-def events(run_id: str, after: int = Query(0, ge=0),
-           limit: int = Query(MAX_PAGE_LINES, ge=1, le=MAX_PAGE_LINES),
+def events(run_id: str, after: str | None = None,
+           limit: str = str(MAX_PAGE_LINES),
            format: Literal["jsonl", "json"] = "jsonl",
-           cursor: int | None = Query(None, ge=0), cursor_hash: str | None = None):
-    if cursor is not None and after != 0:
-        raise HTTPException(400, "use cursor or after, not both")
+           cursor: str | None = None, cursor_hash: str | None = None):
+    # Validate here so bad ranges return the contract's 400 without echoing input.
+    def count(value, minimum=0, maximum=2**53 - 1):
+        try:
+            if not value.isascii() or not value.isdecimal():
+                raise ValueError
+            number = int(value)
+            if not minimum <= number <= maximum:
+                raise ValueError
+            return number
+        except ValueError:
+            raise HTTPException(400, "invalid paging range") from None
+
+    after = count(after) if after is not None else None
+    cursor = count(cursor) if cursor is not None else None
+    limit = count(limit, 1, MAX_PAGE_LINES)
+    if cursor is not None and after is not None:
+        raise HTTPException(422, "use cursor or after, not both")
+    after = after or 0
     if cursor_hash is not None and (cursor is None or len(cursor_hash) != 64 or
                                     any(c not in "0123456789abcdef" for c in cursor_hash)):
-        raise HTTPException(400, "invalid cursor hash")
+        raise HTTPException(422, "invalid cursor hash")
     try:
-        state = replay(context().root, run_id, public_keys=context().public_keys)
+        ctx = context()
+        state = replay(ctx.root, run_id, public_keys=ctx.public_keys, cache=_replay_cache)
     except FileNotFoundError:
         raise HTTPException(404, "run not found") from None
     except ValueError as exc:
@@ -111,9 +130,9 @@ def events(run_id: str, after: int = Query(0, ge=0),
     for group in groups:
         group_bytes = sum(len(row["raw"]) for row in group)
         if len(page) + len(group) > limit or byte_count + group_bytes > MAX_PAGE_BYTES:
-            if not page:
-                raise HTTPException(413, "one sequence group exceeds the view transport caps")
-            break
+            if page:
+                break
+            return Response(status_code=413)
         page.extend(group)
         byte_count += group_bytes
     next_after = max((sequence(row) or after_seq for row in page), default=after_seq)

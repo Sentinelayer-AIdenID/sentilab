@@ -1,0 +1,8 @@
+{
+  "path": "attempt-01/adapter/adapter_model.safetensors",
+  "bytes": 66126768,
+  "sha256": "695581e310def332bd6307527eff6546d95eebb88bec7e6f6ce288a5a61c0f80",
+  "retainedOnGb10": "/home/dell/sentilab/preflight-20261031/attempt-01/adapter/adapter_model.safetensors",
+  "retainedOnPc": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\sentilab-planning\\gpt-astra-carter\\slab018-admission\\attempt-01-artifacts\\adapter\\adapter_model.safetensors",
+  "repositoryStorage": "Binary retained separately; operator artifact storage handoff pending"
+}

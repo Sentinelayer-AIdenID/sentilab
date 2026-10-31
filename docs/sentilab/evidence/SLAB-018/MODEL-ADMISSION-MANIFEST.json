@@ -1,0 +1,131 @@
+{
+  "schema": "sentilab-model-admission/1",
+  "observedAt": "2026-10-31T07:16:03.860Z",
+  "model": "Qwen/Qwen3-4B-Instruct-2507",
+  "revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+  "licensePath": "LICENSE",
+  "licenseSha256": "832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e",
+  "cardLicense": "apache-2.0",
+  "licenseCheck": "Apache-2.0 file and metadata confirmed",
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 1570,
+      "gitBlob": "52373fe24473b1aa44333d318f578ae6bf04b49b",
+      "expectedLfsSha256": null,
+      "downloaded": false,
+      "downloadedSha256": null,
+      "expectedSha256": "34448b82c17d60fec9b65b1f093c115ddbaadc04beb1b0140b6bfed2e012a930"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 11343,
+      "gitBlob": "6634c8cc3133b3848ec74b9f275acaaa1ea618ab",
+      "expectedLfsSha256": null,
+      "downloaded": false,
+      "downloadedSha256": null,
+      "expectedSha256": "832dd9e00a68dd83b3c3fb9f5588dad7dcf337a0db50f7d9483f310cd292e92e"
+    },
+    {
+      "path": "README.md",
+      "bytes": 8168,
+      "gitBlob": "b85879f8e465b5b02bd7ea13dd7ffaf22816bf59",
+      "expectedLfsSha256": null,
+      "downloaded": false,
+      "downloadedSha256": null,
+      "expectedSha256": "8e3dd0c3b5b11897cc71092ccfe517bb7a9783479baa3665aad73c8d1a2041cd"
+    },
+    {
+      "path": "config.json",
+      "bytes": 727,
+      "gitBlob": "6988f134db143052042f2bd6e0c897bc6a605189",
+      "expectedLfsSha256": null,
+      "downloaded": false,
+      "downloadedSha256": null,
+      "expectedSha256": "5beea1a4a34c62782bfb2f911c606741a3bab8f92d80a118fa053c28af12e8ba"
+    },
+    {
+      "path": "generation_config.json",
+      "bytes": 238,
+      "gitBlob": "432531a002c181a19de338313d2375e9d7494d7e",
+      "expectedLfsSha256": null,
+      "downloaded": false,
+      "downloadedSha256": null,
+      "expectedSha256": "835fffe355c9438e7a25be099b3fccaa98350b83451f9fd2d99512e74f1ade48"
+    },
+    {
+      "path": "merges.txt",
+      "bytes": 1671839,
+      "gitBlob": "20024bfe7c83998e9aeaf98a0cd6a2ce6306c2f0",
+      "expectedLfsSha256": null,
+      "downloaded": false,
+      "downloadedSha256": null,
+      "expectedSha256": "599bab54075088774b1733fde865d5bd747cbcc7a547c5bc12610e874e26f5e3"
+    },
+    {
+      "path": "model-00001-of-00003.safetensors",
+      "bytes": 3957900840,
+      "gitBlob": "764efb4175828b8bd28f879958c49b1ac23ad1f9",
+      "expectedLfsSha256": "75311d91bb08cf0b882913da464a1e722a31fb44db35208663487efb7a3d8ed6",
+      "downloaded": false,
+      "downloadedSha256": null,
+      "expectedSha256": "75311d91bb08cf0b882913da464a1e722a31fb44db35208663487efb7a3d8ed6"
+    },
+    {
+      "path": "model-00002-of-00003.safetensors",
+      "bytes": 3987450520,
+      "gitBlob": "3a3ba0f35dfed0f3500d80564496a11a1d19de18",
+      "expectedLfsSha256": "0b48adbb1f60e901153d91907ba11ce63bd4b8b584482e730f48808d055dfba1",
+      "downloaded": false,
+      "downloadedSha256": null,
+      "expectedSha256": "0b48adbb1f60e901153d91907ba11ce63bd4b8b584482e730f48808d055dfba1"
+    },
+    {
+      "path": "model-00003-of-00003.safetensors",
+      "bytes": 99630640,
+      "gitBlob": "a1d2a67eb5cb179e09df3e9cd5d0690e57434fc3",
+      "expectedLfsSha256": "7dd39ccca5e4de123c74c14af44c9bf2eb75df33b4614382af0134528e060d5d",
+      "downloaded": false,
+      "downloadedSha256": null,
+      "expectedSha256": "7dd39ccca5e4de123c74c14af44c9bf2eb75df33b4614382af0134528e060d5d"
+    },
+    {
+      "path": "model.safetensors.index.json",
+      "bytes": 32819,
+      "gitBlob": "4747b0297d3109f14db49886972e3369c9a00b2a",
+      "expectedLfsSha256": null,
+      "downloaded": false,
+      "downloadedSha256": null,
+      "expectedSha256": "d6c42883a895dfef5b0080ed2116a1bcd764f558406b98923d675978a1abf29c"
+    },
+    {
+      "path": "tokenizer.json",
+      "bytes": 11422654,
+      "gitBlob": "cd71f61a15a522601badb3dc960d800d9cb3766c",
+      "expectedLfsSha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+      "downloaded": false,
+      "downloadedSha256": null,
+      "expectedSha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+    },
+    {
+      "path": "tokenizer_config.json",
+      "bytes": 9377,
+      "gitBlob": "51c1be0d9192e7f6e6596de71d0f07d58fbc32ac",
+      "expectedLfsSha256": null,
+      "downloaded": false,
+      "downloadedSha256": null,
+      "expectedSha256": "a62ff0a2472a0fa1b8eaabcb57c59b58afa42a22831dc141400b6e0cf2b65ce3"
+    },
+    {
+      "path": "vocab.json",
+      "bytes": 2776833,
+      "gitBlob": "4783fe10ac3adce15ac8f358ef5462739852c569",
+      "expectedLfsSha256": null,
+      "downloaded": false,
+      "downloadedSha256": null,
+      "expectedSha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+  ],
+  "downloadComplete": false,
+  "trainingApproved": false
+}

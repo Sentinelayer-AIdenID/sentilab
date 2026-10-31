@@ -1,0 +1,93 @@
+{
+  "ticket": "5d7df251",
+  "source_snapshot": "d031c8d25fb581f2355fc632fc8c384ba45cf973",
+  "base": "19147cc5827ecbc7f29b9a6666e81fd94e82f1e4",
+  "tested_source_head": "fb2da7c4d0b586803af3dc71e231d888ab0a261d",
+  "checks": [
+    {
+      "command": "python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt",
+      "tests": null,
+      "exit_code": 0
+    },
+    {
+      "command": ".venv/bin/pip install -r requirements-service.txt",
+      "tests": null,
+      "exit_code": 0
+    },
+    {
+      "command": "(cd sundai_controller && ../.venv/bin/python -m unittest -v test_controller.py test_experiment.py)",
+      "tests": 55,
+      "exit_code": 0
+    },
+    {
+      "command": ".venv/bin/python -m unittest discover -s sundai_thermal -p 'test_*.py'",
+      "tests": 2,
+      "exit_code": 0
+    },
+    {
+      "command": "sudo apt-get update && sudo apt-get install -y build-essential libsuperlu-dev libblas-dev",
+      "tests": null,
+      "exit_code": 0
+    },
+    {
+      "command": "(cd sundai_hotspot && make -j4 SUPERLU=1)",
+      "tests": null,
+      "exit_code": 0
+    },
+    {
+      "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python -m unittest discover -s sentilab_core -p 'test_*.py'",
+      "tests": 115,
+      "exit_code": 0
+    },
+    {
+      "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python -m unittest -q sentilab_core.conformance",
+      "tests": 9,
+      "exit_code": 0
+    },
+    {
+      "command": ".venv/bin/python -m unittest -q app.test_view",
+      "tests": 7,
+      "exit_code": 0
+    },
+    {
+      "command": ". .venv/bin/activate && node --test web/test/*.test.mjs",
+      "tests": 103,
+      "exit_code": 0
+    },
+    {
+      "command": ".venv/bin/python -m compileall -q sentilab_core sentilab_cli sentilab_mcp",
+      "tests": null,
+      "exit_code": 0
+    },
+    {
+      "command": ".venv/bin/pip check",
+      "tests": null,
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "tests": null,
+      "exit_code": 0
+    }
+  ],
+  "source_sha256": {
+    "sentilab_cli/__main__.py": "a56fe45d9dd984d99a81ce46119ca02c47f58764255877ad67e90f64c47603fc",
+    "sentilab_cli/sentilab": "e3247b8ce9e51e05dcc34b6a7afe2caf8bededf902890de5b322b5351c9b2b40",
+    "sentilab_core/gate.py": "42dc4a6762817533c6fa21bdcc675b711a15d5fef0c5463b7bfec47f795e9fb6",
+    "sentilab_core/operations.py": "74f0c2e86620563b393bdbed0676a5474a8d93c7ed43de8117f499a9c9d8da5c",
+    "sentilab_core/research.py": "ad6f184ad3d962636f488bb51d019387fae1a649d20f7201d23916a6c6c674b2",
+    "sentilab_core/test_research.py": "7c2a6d0d463c704e0c4571cc04de91602ea9fd4979b6e82b20378fc05cc4dc8a",
+    "sentilab_core/test_research_transports.py": "5b65429da5103fabae23c317190a2a5f7761a2480b90a9363bfacbc0a69d1153",
+    "sentilab_mcp/__init__.py": "f73cdbbc0df0dece5b243242dcb6b1c27787c5b4e7e03db2cf90a0335bdda518",
+    "sentilab_mcp/__main__.py": "0a46f30e2a99a570b13598c7e6de8e79df3c4f400c6388cc4943bcf4927a631b"
+  },
+  "mutation_proof": "mutation-proof.json",
+  "new_tests": 17,
+  "limits": [
+    "Local gates only; remote CI and independent review have not been observed.",
+    "No package.json or TypeScript project exists. Generic npm typecheck/lint/test/build/audit commands are inapplicable; repository-specific gates used per AGENTS exception.",
+    "Docker is unavailable; the ticket-authorized native SuperLU build was used.",
+    "Dependency installation used network. Research fixture execution performs no network/model/solver calls; legacy regression gates exercise their existing CPU fixtures.",
+    "No real research tool admitted; host-reviewed effective-config/data-flow artifacts remain required."
+  ]
+}

@@ -94,6 +94,13 @@ received evidence and reverify the combined stream. Each cursor also has an
 byte prefix. Echo it as `cursor_hash` with every nonzero `cursor`. A missing or
 changed boundary returns 409 and requires replay from zero, including after
 in-place changes or file replacement. Append-only progress preserves the hash.
+Only LF-terminated rows are counted, hashed or served. An unfinished tail waits
+for its LF; writers still refuse to append onto it. Oversize rows retain their
+original bytes, including invalid UTF-8. A page whose whole rows including LFs
+total exactly 4 MiB is served; further rows wait for the next page. If the first
+row at the cursor exceeds 4 MiB including its LF, the response is 413 with no
+body or paging headers, including in cursor JSONL mode. The v0.6 client keeps
+its prefix, shows "STALE · row too large" and stops polling until manual reload.
 The hash binds a read boundary; envelope verification against pinned keys still
 establishes authenticity. Late conflicting appends
 are delivered at their append position and can retract an earlier verified
@@ -101,12 +108,35 @@ prefix. `has_more=false` describes only the current read; poll the same cursor
 for new appends. Storage is append-only; a cursor beyond its current length
 returns 409 and requires replay from zero.
 
+The events route caches parsed rows and signature results per run in memory.
+Every poll reads one bounded byte snapshot and checks the cached physical prefix
+hash; unchanged rows need no repeated parsing or signature verification. Only
+complete appended rows are parsed and verified, while conflict and chain checks
+run again on append. File replacement, shrink, changed prefix bytes or trust pins
+discard that run's cached verdicts. The durable head is checked on every poll.
+The cache retains at most eight runs and 64 MiB of source bytes; eviction changes
+only performance. `python -m unittest app.test_view_cache` includes a reported
+eight-viewer, 1,000-row empty-poll benchmark without a host-speed assertion.
+
 Legacy `after=seq` remains supported separately. Its conflicting sequence groups
 stay on one page; earlier break evidence is sent again. A group that cannot fit
 returns 413. Clients needing bounded progress through such evidence use `cursor`.
-Do not combine a nonzero `after` with `cursor`. Unsupported row-cursor polling
+Do not combine `after` with `cursor`, even `after=0`. Mixed parameters or malformed
+`cursor_hash` return 422, so clients do not mistake them for unsupported paging.
+Invalid numeric paging ranges return 400 with a fixed error message that never
+echoes submitted values. Counts must be nonnegative safe integers; `limit` is 1–256.
+Unsupported row-cursor polling
 must preserve the prior prefix as STALE/unsupported; incremental sequence-only
 fallback must not advance a LIVE/current claim.
+
+For v0.6 transport conformance, run `python -m app.check_view_paging` after its
+contract lands, or pass the exact `contracts/view-envelope-v0.6` directory from
+PR26 as an argument. It drives the unchanged reducer and C1–C14 vector data
+against a local HTTP server, plus unfinished-tail and oversize-row regressions.
+Fault scenarios deliberately alter responses after fetching from the real route.
+All C7 range statuses and C12/C14 server cases must match the reference exactly.
+The harness also compares each response's status, headers and body with an
+uncached replay and a repeated warm-cache request.
 An explicit `format=json` returns diagnostic `envelopes`, `next_after`, `has_more`,
 `prefix_end`, `chain_error`, and the core projection, also capped at 4 MiB.
 Clients fetch one run from genesis through contiguous pages and
