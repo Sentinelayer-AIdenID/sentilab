@@ -32,6 +32,8 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
         self.temperature = lambda lane, call, design: 100.0
         self.mutate_result = lambda result, lane, call: result
         self.reject_geometry = False
+        self.fake_wire = lambda centers: 1.0
+        self.on_call = lambda: None
 
     async def run_fixture(self):
         case = self
@@ -53,7 +55,11 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
                     raise ValueError('fixture geometry rejected')
                 return design.positions
 
+            def _wirelength_mm(self, centers):
+                return case.fake_wire(centers)
+
             async def __call__(self, design):
+                case.on_call()
                 ledger = json.loads(spend_path.read_text())
                 reservation = ledger['active']
                 case.assertEqual(reservation['design_hash'], design.hash)
@@ -62,7 +68,7 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
                 count = lane_counts[lane]
                 case.calls.append((lane, count, design.hash, len(design.chiplets)))
                 if 'long-sa' in lane:
-                    baseline = case.directory / 'out/CHEAP_BASELINE.json'
+                    baseline = Path(ledger['attempts'][-1]['artifact_directory']) / 'CHEAP_BASELINE.json'
                     # A reference call only has a persisted C if all cheap checks passed.
                     if baseline.exists():
                         case.assertEqual(json.loads(baseline.read_text())['reproductions'], 96)
@@ -121,7 +127,7 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(lane['winner_verified'])
             calls = [row for row in self.calls if row[0] == f"slab039-micro150-long-sa-{lane['seed']}"]
             self.assertEqual(calls[-1][2], lane['best_design_hash'])
-        baseline = self.directory / 'out/CHEAP_BASELINE.json'
+        baseline = Path(result['artifact_directory']) / 'CHEAP_BASELINE.json'
         self.assertEqual(result['cheap_baseline_sha256'], h._compute_prereg_digest(baseline))
         self.assertEqual(result['allocation_spend']['fixtures']['ascend910'], self.spend['fixtures']['ascend910'])
         self.assertEqual(result['allocation_spend']['non_headroom'], self.spend['non_headroom'])
@@ -166,7 +172,7 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(result['cheap_baseline_complete'])
         self.assertIsNone(result['cheap_median_c'])
         self.assertEqual(result['verdict'], 'INCONCLUSIVE')
-        self.assertFalse((self.directory / 'out/CHEAP_BASELINE.json').exists())
+        self.assertFalse(list((self.directory / 'out').glob('attempt-*/CHEAP_BASELINE.json')))
 
     async def test_each_cheap_reproduction_must_agree(self):
         # All four reproduction positions independently exclude their winner.
@@ -257,6 +263,130 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
         path.write_text(json.dumps(self.prereg))
         with self.assertRaisesRegex(ValueError, 'overwrite the retained v3'):
             await h.run_headroom('micro150', 0.79, path, self.directory)
+
+    async def test_wire_ceiling_applies_to_every_lane_and_evaluation(self):
+        self.prereg['allocation']['per_fixture']['total_solves'] = 40
+        self.fake_wire = lambda centers: sum(x * x + y * y for x, y in centers)
+        result = await self.run_fixture()
+        root = Path(result['artifact_directory'])
+        domain = json.loads((root / 'DOMAIN.json').read_text())
+        self.assertEqual(result['wire_limit_mm'], domain['wire_limit_mm'])
+        evaluations = list((root / 'evaluations').glob('*.json'))
+        self.assertEqual(len(evaluations), 40)
+        for path in evaluations:
+            record = json.loads(path.read_text())
+            self.assertLessEqual(self.fake_wire(record['design']['positions']), result['wire_limit_mm'])
+            self.assertTrue(Path(record['raw_output_directory']).is_dir())
+
+    async def test_wire_ceiling_stays_at_initial_and_rejects_excess(self):
+        from sundai_controller.controller import Design, Chiplet
+        class Oracle(CountingOracle):
+            def centers_for(self, design):
+                design.check()
+                return design.positions
+            def _wirelength_mm(self, centers):
+                return sum(x + y for x, y in centers)
+        initial = Design(50, 50, 0, (Chiplet('a', 2, 2),), ((10, 10),))
+        oracle = h._ConstrainedOracle(Oracle(), initial)
+        await oracle(replace(initial, positions=((5, 5),)))
+        await oracle(replace(initial, positions=((7, 7),)))
+        self.assertEqual(oracle.wire_limit, 20)
+        with self.assertRaisesRegex(ValueError, 'fixed initial wirelength'):
+            await oracle(replace(initial, positions=((11, 11),)))
+        self.assertEqual(len(oracle.oracle.calls), 2)
+
+    async def test_start_bytes_are_bound_even_if_live_prereg_changes(self):
+        import hashlib
+        self.prereg['allocation']['per_fixture']['total_solves'] = 1
+        original = json.dumps(self.prereg).encode()
+        def change_prereg():
+            changed = copy.deepcopy(self.prereg)
+            changed['rule']['k'] = 999
+            (self.directory / 'PREREG-v4.json').write_text(json.dumps(changed))
+        self.on_call = change_prereg
+        result = await self.run_fixture()
+        root = Path(result['artifact_directory'])
+        self.assertEqual(result['k'], 5)
+        self.assertEqual(result['prereg_digest_sha256'], hashlib.sha256(original).hexdigest())
+        self.assertEqual((root / 'PREREG.json').read_bytes(), original)
+        self.assertEqual(result['runner_sha256'], hashlib.sha256((root / 'headroom.py').read_bytes()).hexdigest())
+
+    async def test_attempts_preserve_results_and_full_signed_history(self):
+        from sundai_controller.controller import FlightRecord
+        self.prereg['allocation']['per_fixture']['total_solves'] = 6
+        first = await self.run_fixture()
+        root = Path(first['artifact_directory'])
+        original = (root / 'RESULT.json').read_bytes()
+        second = await self.run_fixture()
+        self.assertNotEqual(first['artifact_directory'], second['artifact_directory'])
+        self.assertEqual((root / 'RESULT.json').read_bytes(), original)
+        self.assertEqual(len(second['allocation_spend']['attempts']), 2)
+        lane = json.loads((root / 'lanes/slab039-micro150-random-0.json').read_text())
+        self.assertTrue(FlightRecord.verify(lane['events'], lane['public_key']))
+        persisted = [json.loads(row) for row in (root / 'lanes/slab039-micro150-random-0.ndjson').read_text().splitlines()]
+        self.assertEqual(persisted, lane['events'])
+        self.assertIn('proposal_admitted', {row['event'] for row in persisted})
+
+    def test_raw_worker_directory_retains_output_on_success_and_error(self):
+        from sundai_hotspot.tap_oracle_worker import _output_directory
+        root = self.directory / 'raw'
+        root.mkdir()
+        for fail in (False, True):
+            with self.subTest(fail=fail):
+                try:
+                    with _output_directory(self.directory, str(root)) as name:
+                        output = Path(name)
+                        (output / 'sample.grid.steady').write_text('fake raw grid')
+                        if fail:
+                            raise ValueError('fake solver error')
+                except ValueError:
+                    pass
+                self.assertEqual((output / 'sample.grid.steady').read_text(), 'fake raw grid')
+        with _output_directory(self.directory) as name:
+            transient = Path(name)
+        self.assertFalse(transient.exists())
+
+    async def test_retention_reaches_worker_and_preserves_raw_failure(self):
+        from unittest.mock import MagicMock
+        from types import SimpleNamespace
+        from sundai_hotspot import tap_oracle_worker as worker
+        root = self.directory / 'raw'
+        oracle = tap_oracle.HotSpotOracle(fixture='micro150', retained_output_root=root)
+        design = oracle.design_from_centers(h.MICRO150_INITIAL_CENTERS)
+        captured = {}
+        async def intercept(request, **kwargs):
+            captured.update(request)
+            raise RuntimeError('intercepted before solve')
+        try:
+            with patch.object(tap_oracle, '_run_worker', side_effect=intercept):
+                with self.assertRaisesRegex(RuntimeError, 'intercepted before solve'):
+                    await oracle(design)
+        finally:
+            await oracle.aclose()
+        self.assertEqual(captured['retained_output_root'], str(root))
+        captured['workspace_root'] = str(self.directory)
+        captured = json.loads(json.dumps(captured))  # actual JSON worker protocol
+        system = MagicMock()
+        system.hubump = oracle.problem.bump_halos_mm
+        output = None
+        def set_path(value):
+            nonlocal output
+            output = Path(value)
+        def generate(_):
+            for name in ('new_hotspot.config', 'sampleL4_ChipLayer.flp', 'sample.ptrace'):
+                (output / name).write_text('fake generated input')
+            (output / 'samplelayers.lcf').write_text('sampleL4_ChipLayer.flp\n')
+        system.set_path.side_effect = set_path
+        system.gen_flp.side_effect = generate
+        with patch.object(worker, 'PassiveInterposer', return_value=system), patch.object(
+                worker.subprocess, 'run', return_value=SimpleNamespace(returncode=17, stdout='fake stdout', stderr='fake stderr')):
+            with self.assertRaisesRegex(RuntimeError, 'HotSpot exited 17'):
+                worker.evaluate(captured)
+        self.assertEqual((output / 'stdout.txt').read_text(), 'fake stdout')
+        self.assertEqual((output / 'stderr.txt').read_text(), 'fake stderr')
+        self.assertEqual(json.loads((output / 'REQUEST.json').read_text())['candidate_hash'], design.hash)
+        self.assertEqual(json.loads((output / 'EXIT.json').read_text())['returncode'], 17)
+        self.assertTrue((output / 'sample.ptrace').exists())
 
     async def test_cpu_48_and_72_minute_caps_preserve_prior_actuals(self):
         self.spend['fixtures']['micro150'] = {'calls': 0, 'cpu_seconds': 2879.5}
@@ -360,6 +490,7 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
                 ('reducer_methods', 'seeds', [0]), ('reducer_methods', 'search_evaluations_per_method', 27),
                 ('reducer_methods', 'reproduction_evaluations_per_method', 3),
                 ('long_sa', 'reproduction_evaluations_per_restart', 0),
+                ('domain', 'wire_tolerance_mm', 0.01),
                 ('reproduction', 'absolute_tolerance_c', 0.1)]:
             with self.subTest(section=section, field=field):
                 prereg = copy.deepcopy(self.prereg)

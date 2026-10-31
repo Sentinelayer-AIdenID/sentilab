@@ -20,6 +20,7 @@ import random
 import statistics
 import sys
 import time
+import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -53,13 +54,12 @@ def _compute_prereg_digest(path: str | Path) -> str:
         return hashlib.sha256(fh.read()).hexdigest()
 
 
-def _parse_prereg(path: str | Path) -> dict:
+def _parse_prereg(path: str | Path, *, contents: bytes | None = None) -> dict:
     """Load historical v1-v3 or the fixed prospective micro150 v4 schedule."""
     prereg_path = Path(path)
     if not prereg_path.is_file():
         raise FileNotFoundError(f"prereg file not found: {prereg_path}")
-    with open(prereg_path, encoding="utf-8") as fh:
-        prereg = json.load(fh)
+    prereg = json.loads(prereg_path.read_bytes() if contents is None else contents)
     schema = prereg.get("schema")
     if schema == V4_SCHEMA:
         _validate_v4(prereg)
@@ -79,6 +79,7 @@ def _validate_v4(prereg):
     if (prereg['fixture'] != 'micro150' or prereg['grid'] != 32 or
             prereg['rule']['k'] != 5 or prereg['mesh_error']['micro150']['e_c'] != 0.79 or
             prereg['reproduction']['absolute_tolerance_c'] != REPRODUCTION_ABS_TOLERANCE_C or
+            prereg['domain']['wire_tolerance_mm'] != 0 or
             cheap['methods'] != ['random', 'greedy', 'simulated_annealing'] or
             cheap['seeds'] != list(range(8)) or
             cheap['search_evaluations_per_method'] != 28 or
@@ -141,6 +142,33 @@ def _choose_ucb1(counts: dict[str, int], rewards: dict[str, float],
 
 class BudgetExhausted(RuntimeError):
     """No further oracle calls may be admitted under this allocation."""
+
+
+class _ConstrainedOracle:
+    """One fixed initial-wire domain for initialization, proposals and witnesses."""
+    def __init__(self, oracle, initial):
+        self.oracle = oracle
+        self.wire_limit = oracle._wirelength_mm(oracle.centers_for(initial))
+        if not math.isfinite(self.wire_limit) or self.wire_limit < 0:
+            raise ValueError('invalid initial wirelength ceiling')
+
+    def __getattr__(self, name):
+        return getattr(self.oracle, name)
+
+    def centers_for(self, design):
+        centers = self.oracle.centers_for(design)
+        wire = self.oracle._wirelength_mm(centers)
+        if not math.isfinite(wire) or wire > self.wire_limit:
+            raise ValueError('fixed initial wirelength ceiling exceeded')
+        return centers
+
+    async def __call__(self, design):
+        self.centers_for(design)
+        return await self.oracle(design)
+
+    def retain_evaluation(self, directory):
+        directory.mkdir(parents=True, exist_ok=False)
+        self.oracle.retained_output_root = directory
 
 
 def _cpu_seconds():
@@ -206,6 +234,7 @@ class SolveBudget:
             self.entry.setdefault('solving_wall_seconds', 0.0)
             self.state.setdefault('overshoot', {})
         self.reason = None
+        self.artifact_dir = None
 
     def checkpoint(self):
         now = _cpu_seconds()
@@ -275,11 +304,12 @@ class SolveBudget:
                 (datetime.now(timezone.utc) - deadline).total_seconds(), 0.0)
             _write_json(self.path, self.state)
 
-    def close(self):
+    def close(self, *, release=True):
         try:
             self.checkpoint()
         finally:
-            self.lock.close()
+            if release:
+                self.lock.close()
 
 
 class _LaneOracle:
@@ -310,12 +340,22 @@ class _LaneOracle:
             self.stop_reason = str(exc)
             raise
         self.calls += 1
+        history = {'lane': self.lane, 'call': self.budget.state['total_calls'],
+                   'design_hash': design.hash, 'design': asdict(design)}
         try:
+            if self.budget.artifact_dir is not None:
+                raw_dir = self.budget.artifact_dir / 'raw' / f"{history['call']:05d}"
+                self.oracle.retain_evaluation(raw_dir)
+                history['raw_output_directory'] = str(raw_dir)
             result = await self.oracle(design)
+            history['result'] = asdict(result)
             Controller.validate_result(result, design)
             if self.best_result is None or result.maximum_temperature_c < self.best_result.maximum_temperature_c:
                 self.best_design, self.best_result = design, result
             return result
+        except BaseException as exc:
+            history['error'] = f'{type(exc).__name__}: {exc}'
+            raise
         finally:
             # Warm workers retain descendant CPU until reaped. Closing after each
             # call makes SELF+CHILDREN include solver AND worker startup CPU before
@@ -324,6 +364,8 @@ class _LaneOracle:
             if close is not None:
                 await close()
             self.budget.finish()
+            if self.budget.artifact_dir is not None:
+                _write_json(self.budget.artifact_dir / 'evaluations' / f"{history['call']:05d}.json", history)
 
 
 async def _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs,
@@ -338,6 +380,20 @@ async def _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs,
                             max_cost_microdollars=max(1, evaluations),
                             evaluation_ceiling_microdollars=1, max_attempts=1,
                             lane_ids=(lane_id,), minimum_improvement_c=0)
+    if budget.artifact_dir is not None:
+        append = controller.log.append
+        def retain_event(event, **payload):
+            receipt = append(event, **payload)
+            path = budget.artifact_dir / 'lanes' / f'{run_id}.ndjson'
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open('a', encoding='utf-8') as stream:
+                stream.write(json.dumps(controller.log.events[-1], allow_nan=False) + '\n')
+                stream.flush()
+                os.fsync(stream.fileno())
+            return receipt
+        controller.log.append = retain_event
+        _write_json(budget.artifact_dir / 'lanes' / f'{run_id}-public.json',
+                    {'public_key': controller.log.public_key})
     controller.register(agent_id, signing_identity)
     controller.bind_lane(lane_id, agent_id)
     init_evaluations = search_count = noop_evaluations = 0
@@ -433,6 +489,9 @@ async def _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs,
             search_count = min(counted.calls, evaluations)
     finally:
         controller.log.close()
+        if budget.artifact_dir is not None:
+            _write_json(budget.artifact_dir / 'lanes' / f'{run_id}.json',
+                        {'public_key': controller.log.public_key, 'events': controller.log.events})
     best = frozen_result if frozen_result is not None else counted.best_result
     best_design = frozen_design if frozen_design is not None else counted.best_design
     result = dict(seed=seed, best_temperature_c=None if best is None else best.maximum_temperature_c,
@@ -521,7 +580,11 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
                        j64_values: list[float] | None = None,
                        budget_path: str | Path | None = None) -> dict:
     """Run reducers, long SA, then optional diagnostics under one durable budget."""
-    prereg = _parse_prereg(prereg_path)
+    prereg_bytes = Path(prereg_path).read_bytes()
+    runner_bytes = Path(__file__).read_bytes()
+    prereg = _parse_prereg(prereg_path, contents=prereg_bytes)
+    prereg_digest = hashlib.sha256(prereg_bytes).hexdigest()
+    runner_digest = hashlib.sha256(runner_bytes).hexdigest()
     v4 = prereg['schema'] == V4_SCHEMA
     if fixture != prereg['fixture']:
         raise ValueError('fixture differs from preregistration')
@@ -550,6 +613,17 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
         raise ValueError('v4 output must not overwrite the retained v3 evidence directory')
     output_dir.mkdir(parents=True, exist_ok=True)
     budget = SolveBudget(budget_path or Path(prereg_path).parent / 'SPEND.json', fixture, prereg)
+    attempt = None
+    if v4:
+        output_dir = output_dir / f'attempt-{uuid.uuid4().hex}'
+        output_dir.mkdir(exist_ok=False)
+        budget.artifact_dir = output_dir
+        attempt = {'artifact_directory': str(output_dir.resolve()), 'prereg_digest_sha256': prereg_digest,
+                   'runner_sha256': runner_digest, 'status': 'started', 'starting_calls': budget.state['total_calls']}
+        budget.state.setdefault('attempts', []).append(attempt)
+        (output_dir / 'PREREG.json').write_bytes(prereg_bytes)
+        (output_dir / 'headroom.py').write_bytes(runner_bytes)
+        budget.checkpoint()
     started_at = datetime.now(timezone.utc).isoformat()
     starting_calls = budget.state['total_calls']
     starting_cpu = budget.state['cpu_seconds']
@@ -561,11 +635,17 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
     baseline = None
     try:
         grid = prereg['grid']
-        oracle = HotSpotOracle(grid, grid, fixture=fixture)
+        options = {'retained_output_root': output_dir / 'raw'} if v4 else {}
+        oracle = HotSpotOracle(grid, grid, fixture=fixture, **options)
         initial = oracle.design_from_centers(MICRO150_INITIAL_CENTERS if v4 else TAP_INITIAL_CENTERS)
         if v4:
             initial.check()
             oracle.centers_for(initial)
+            oracle = _ConstrainedOracle(oracle, initial)
+            _write_json(output_dir / 'DOMAIN.json',
+                        {'initial_design': asdict(initial), 'initial_hash': initial.hash,
+                         'wire_limit_mm': oracle.wire_limit, 'wire_tolerance_mm': 0,
+                         'problem': asdict(oracle.problem) if hasattr(oracle, 'problem') else None})
         def shared_initials(seed, count):
             try:
                 budget.check()
@@ -624,7 +704,10 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
                 if close is not None:
                     await close()
         finally:
-            budget.close()
+            failed = sys.exc_info()[0] is not None
+            if attempt is not None and failed:
+                attempt['status'] = 'failed'
+            budget.close(release=not v4 or failed)
 
     reducer_medians, all_method_all_bests = {}, {}
     for method in reducer_methods:
@@ -658,8 +741,8 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
     reducer_bests = [r['best_temperature_c'] for r in all_reducer_results if r['best_temperature_c'] is not None]
     result = {
         'schema': 'slab-039-result-v3', 'prereg_schema': prereg['schema'],
-        'prereg_digest_sha256': _compute_prereg_digest(prereg_path),
-        'runner_sha256': _compute_prereg_digest(__file__),
+        'prereg_digest_sha256': prereg_digest,
+        'runner_sha256': runner_digest,
         'fixture': fixture, 'grid': grid, 'mesh_error_c': mesh_error,
         'mesh_error_source': 'provided' if j32_values is None else 'dynamic from J32/J64',
         'started_at': started_at, 'finished_at': datetime.now(timezone.utc).isoformat(),
@@ -687,8 +770,16 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
                       certification_scope='preregistered observed headroom criterion only; not a universal numerical error bound',
                       paid_scientific_model_authorized=False,
                       reproduction_absolute_tolerance_c=REPRODUCTION_ABS_TOLERANCE_C)
-    _write_json(output_dir / 'RESULT.json', result)
-    _write_report(output_dir / 'REPORT.md', result, prereg, cheap_cfg)
+        result['artifact_directory'] = str(output_dir.resolve())
+        result['wire_limit_mm'] = oracle.wire_limit
+        attempt.update(status='finished', ending_calls=budget.state['total_calls'], verdict=verdict)
+        _write_json(budget.path, budget.state)
+    try:
+        _write_json(output_dir / 'RESULT.json', result)
+        _write_report(output_dir / 'REPORT.md', result, prereg, cheap_cfg)
+    finally:
+        if v4:
+            budget.lock.close()
     return result
 
 
@@ -761,6 +852,8 @@ def _write_report(path: Path, result: dict, prereg: dict, cheap_cfg: dict) -> No
         lines += ['', 'e = 0.79 C is the fixed PR #18 24-layout sample discrepancy, not a universal numerical error bound. '
                   'The 3.95 C threshold certifies only this preregistered observed headroom criterion. '
                   'No paid scientific model release is authorized by this result.',
+                  f"Fixed initial wire proxy ceiling: {result['wire_limit_mm']:.12f} mm; tolerance zero. "
+                  'All initial/shared layouts, proposals and witnesses use this same domain.',
                   f"Frozen cheap baseline complete: {result['cheap_baseline_complete']}; "
                   f"reference complete: {result['reference_complete']}. "
                   'Only feasible winners independently reproduced by fresh same-solver/problem calls within absolute 1e-6 C qualify. '
