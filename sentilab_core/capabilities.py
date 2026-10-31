@@ -17,7 +17,7 @@ class Capability:
     mcp_tool: str
     input_schema: dict
     output_schema: dict
-    error_codes: tuple[int, ...]
+    error_codes: tuple[int | str, ...]
     auth_scope: str
     stop_behaviour: str
     owner: str
@@ -131,13 +131,13 @@ CAPABILITIES = tuple(
     pending("memory.recall", "astra-slab006a-mesh", "PR #23 not merged into supplied main c40e6f1"),
     pending("memory.audit", "astra-slab006a-mesh", "PR #23 not merged; audit is not assumed to implement snapshot or evidence inspection"),
     pending("memory.route", "astra-slab006a-mesh", "PR #23 not merged; compile/evaluate mapping awaits the actual owner contract"),
-    pending("memory.write", "astra-slab043-conformance over PR #23 memory lane", "Authorized write surface awaits the owner module and authorization contract"),
-    pending("memory.invalidate", "astra-slab043-conformance over PR #23 memory lane", "Authorized invalidation surface awaits the owner module and authorization contract",
+    pending("memory.write", "astra-slab043-conformance over astra-slab006a-mesh", "Authorized write surface awaits the owner module and authorization contract"),
+    pending("memory.invalidate", "astra-slab043-conformance over astra-slab006a-mesh", "Authorized invalidation surface awaits the owner module and authorization contract",
             original_contract="evidence.invalidate",
             mapping_note="Reserved memory spelling of SLAB-010 evidence.invalidate; no executable alias or coverage claimed"),
-    pending("memory.snapshot", "PR #23 memory lane", "Owner module and transports absent from supplied snapshot"),
-    pending("evidence.inspect", "PR #23 memory lane", "Owner module and transports absent from supplied snapshot"),
-    pending("evidence.invalidate", "PR #23 memory lane", "Owner module and transports absent from supplied snapshot"),
+    pending("memory.snapshot", "astra-slab043-conformance over astra-slab006a-mesh", "Original SLAB-010 snapshot contract; PR #23 owner module not merged"),
+    pending("evidence.inspect", "astra-slab043-conformance over astra-slab006a-mesh", "Original SLAB-010 evidence-inspection contract; PR #23 owner module not merged"),
+    pending("evidence.invalidate", "astra-slab043-conformance over astra-slab006a-mesh", "Original SLAB-010 evidence-invalidation contract; PR #23 owner module not merged"),
     pending("intent.compile", "astra-slab043-conformance over SLAB-011 routing lane", "Original SLAB-011 contract; PR #23 route mapping must be checked against current main"),
     pending("route.evaluate", "astra-slab043-conformance over SLAB-011 routing lane", "Original SLAB-011 contract; PR #23 route mapping must be checked against current main"),
     Capability("resultcheck", "resultcheck", ("resultcheck",), "sentilab_resultcheck",

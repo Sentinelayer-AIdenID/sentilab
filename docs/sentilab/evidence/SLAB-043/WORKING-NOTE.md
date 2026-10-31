@@ -3,6 +3,78 @@
 This implementation is **incomplete**. No all-gates-green or PR-publication claim
 is made. The work is by a surrogate executor under recorded model substitution.
 
+## Current-main integration, 2026-10-31
+
+Rebased onto `c40e6f12b0d5d94d442f8b4c6fb5edb004ce17ed`, supplied by Warden
+in `/workspace/main-now-c40e6f1.patch`. The bundle advertises
+`refs/remotes/origin/main`, not `main`; its actual ref was fetched. The original
+work remains on `agent/sentilab`; the rebased branch is
+`agent/slab043-current-main`. This is an early coherent partial carry authorized
+by Warden, not full ticket completion or a published PR.
+
+All 13 public CLI/MCP surfaces are included in discovery/drift coverage. Nine
+previous entries retain the execution matrix below. ResultCheck and research
+request/status/export are explicitly `pending_conformance`: they preserve their
+merged lane behavior and tests, while shared scope/active-STOP integration is
+still open. This status never removes them from surface-drift checks. The four
+merged surfaces are not represented as absent or as fully conformant.
+
+The registry exposes original-contract names and explains reserved aliases.
+Memory write/invalidate, snapshot/evidence inspection and intent compile/route
+evaluate remain visible and owned. PR #23 recall/audit/route are pending with
+`astra-slab006a-mesh`, as instructed by Warden. Audit and route are not assumed to
+satisfy snapshot, evidence inspection or intent compile without the owner code.
+Actual GB10 device, train, checkpoint and serving contracts remain pending with
+`gpt-astra-carter (root)`. The two planned GB10 evidence readers are explicitly
+excluded from public-capability counts and cannot satisfy device parity.
+
+SLAB-018 is now present: all 67 files in its committed MANIFEST.json matched
+both recorded size and SHA-256. The manifest SHA-256 is
+`854d8ce70db52deff30f9c77c8eba5a82a5ad5489674ade9a825b7fab66f6bcf`.
+Wrapper implementation and tampered-evidence transport proof remain open.
+No device was contacted and none of the recorded scripts was executed.
+
+Two new audit regressions failed on pre-fix `1962f06` in a disposable worktree
+(2 failures, exit 1), and pass with the inventory fix. The unchanged prior 13
+conformance tests are retained. Registry totals are nine matrix entries,
+four exposed entries pending unified conformance, and 28 unavailable pending
+rows (including the two evidence readers).
+
+Current-main checks, all exit 0:
+
+| Command | Result |
+|---|---|
+| `.venv/bin/python -m unittest -q sentilab_core.test_conformance sentilab_core.test_mcp_stdio sentilab_core.test_dataset_mcp sentilab_core.test_cleanup sentilab_core.test_research_transports sentilab_core.test_resultcheck sentilab_core.test_resultcheck_boundary sentilab_core.test_resultcheck_io sentilab_core.test_resultcheck_platform` | 67 tests pass |
+| `(cd sundai_controller && ../.venv/bin/python -m unittest -q test_controller.py test_experiment.py)` | 55 tests pass |
+| `.venv/bin/python -m unittest -q sentilab_core.test_dataset sentilab_core.test_ledger sentilab_core.test_history sentilab_core.test_environment sentilab_core.test_signing sentilab_core.test_budget sentilab_core.test_gate sentilab_core.test_labs` | 73 tests pass |
+| `PATH="$PWD/.venv/bin:$PATH" node --test web/test/*.test.mjs` | 207 tests pass |
+| `(cd contracts && sha256sum -c HASHES.txt)` | All manifest entries pass |
+| `node run-vectors.mjs` in `contracts/contract-0.2` and `contracts/contract-0.3` | 74 and 83 checks pass |
+| `node run-view-vectors.mjs` in `contracts/view-envelope` and `contracts/view-envelope-v0.5` | 113 and 193 checks pass |
+| `(cd contracts/view-envelope-v0.6 && node run-paging-vectors.mjs)` | 174 checks pass |
+| `node web/test/make-sentilab-demo.mjs --check` | 44 envelopes current |
+| `make -C sundai_hotspot -j4 SUPERLU=1` | Build passes; binary not executed |
+| `.venv/bin/python -m compileall -q sentilab_core/capabilities.py sentilab_core/chiplet.py sentilab_core/execution.py sentilab_core/transport.py sentilab_core/test_conformance.py sentilab_cli sentilab_mcp` | Pass |
+| `.venv/bin/python -m sentilab_core.capabilities --check docs/sentilab/evidence/SLAB-043/COVERAGE.md` and `git diff --check` | Pass |
+
+Five mutations on a disposable current-main worktree were detected: remove
+memory.write, change the GB10 owner (13 failing subtests), count evidence readers
+as capabilities, lose the original invalidation alias, and add an unregistered
+MCP tool. Each exited 1 with the expected assertion failures. These are local
+mutation proofs, not independent reviewer approval.
+
+The thermal suite, full `sentilab_core.conformance` and container smoke gate
+remain unrun because they execute real solvers and this ticket permits zero
+solves. No all-gates-green claim is made. The GB10 wrappers, active STOP matrix,
+remaining lab surfaces, four merged-lane conformance integrations and PR #23
+integration are still required. Warden requested this partial slice for early
+carry; the branch is not a ticket-completion claim.
+
+## Historical proof on the original snapshot
+
+The following records describe the earlier snapshot and its earlier test counts;
+they are not claims about the availability of modules on current main.
+
 The provisioned source is `d031c8d25fb581f2355fc632fc8c384ba45cf973`, represented by
 local snapshot tag `base` (`97b8744`). Earlier upstream history and open PR
 branches are unavailable. The source has no SLAB-018 evidence directory, memory
