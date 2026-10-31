@@ -1,0 +1,509 @@
+{
+  "schema": "sentilab-private-review-archive-verification-v1",
+  "verified_at_utc": "2026-10-31T13:12:16.3519506Z",
+  "status": "verified-private-review-packet",
+  "archive": {
+    "path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/diagnosis-packet-1309/private-review-packet.zip",
+    "sha256": "9f27cd1f299482aec16b175477e26021cfe3209e8ceb18f0e5e20c41ffd92780",
+    "bytes": 315874,
+    "format": "ZIP",
+    "entry_count": 60,
+    "total_uncompressed_bytes": 1269044.0,
+    "entry_order": "sorted full path",
+    "entry_timestamp_utc": "2026-10-31T13:06:04Z"
+  },
+  "verification": {
+    "all_zip_entries_stream_read_and_sha256_compared": true,
+    "all_zip_lengths_match": true,
+    "unsafe_paths": 0,
+    "unexpected_or_duplicate_entries": 0,
+    "manifest_self_hash": "9805d31a15b7d6e154d03eeb19ead2fd5ca8afbb8929daca3cd0931b358fb404",
+    "source_map_sha256": "e1ad9093a49af9f5173ad4e2a8b4dd837b6f1fbde94522d248d2efc45702b634",
+    "portable_copy_sha256": "ac23a64163b6046fbe5aa2327a4f4e1a41127d70c17f3c364da0a3ecb8c3ba49",
+    "canonical_report_sha256": "132bf28fc6d962ae159a942084b3a7fe4c17fd52dc65da7a13789939a0460a7d",
+    "canonical_freeze_sha256": "f8a4705ae0c63143fa9258f48b5f6908c37bcf28e0420419b8e82fecaa15783a",
+    "original_canonical_bytes_unchanged": true,
+    "exact_source_files": 47,
+    "direct_report_citation_targets": 46,
+    "input_notes": 3,
+    "payload_verification": {
+      "schema": "sentilab-review-packet-verification-v1",
+      "verified_at_utc": "2026-10-31T13:11:28.5367561Z",
+      "packet_root": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\diagnosis-packet-1309\\payload",
+      "success": true,
+      "manifest_file_hashes_checked": 59,
+      "source_map_hashes_checked": 47,
+      "direct_citation_targets_mapped": 46,
+      "portable_citation_targets_resolved": 46,
+      "all_three_frozen_note_hashes_checked": true,
+      "canonical_report_sha256": "132bf28fc6d962ae159a942084b3a7fe4c17fd52dc65da7a13789939a0460a7d",
+      "unlisted_files": [],
+      "failures": [],
+      "limitation": "Checks bytes, map coverage and first-level local links; it does not execute source code or certify scientific validity. PACKET-MANIFEST.json excludes itself; verify its hash against the external archive receipt."
+    }
+  },
+  "final_secret_scan": {
+    "scanner": "gitleaks",
+    "version": "8.24.2",
+    "mode": "dir",
+    "explicit_default_rules": true,
+    "empty_ignore_file": true,
+    "inline_allow_comments_ignored": true,
+    "recursive_decode_depth": 2,
+    "redaction_percent": 100,
+    "scope": "Entire final immutable 60-file payload including packet manifest and earlier scan metadata, before archive creation",
+    "exit_code": 0,
+    "finding_count": 0,
+    "redacted_report_path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/diagnosis-packet-1309/gitleaks-final-redacted.json",
+    "redacted_report_sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "log_path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/diagnosis-packet-1309/gitleaks-final.log",
+    "log_sha256": "01db9ad3a74b9ac39385bfbe6e23e1ccd3b383f09961b1126a678c5977e6c227",
+    "synthetic_positive_control_detected": true,
+    "positive_control_rule": "github-pat",
+    "limitation": "No detections under these rules is not proof that all secrets or confidential content are absent."
+  },
+  "scope": {
+    "first_level_citations_only": true,
+    "deeper_note_links_not_recursively_packaged": true,
+    "original_file_bytes_preserved": true,
+    "canonical_links_not_rewritten": true,
+    "reading_copy_is_separate_derivative": true,
+    "agent_author_clarified_in_readme": true,
+    "no_network_upload_ci_gpu_or_source_execution": true
+  },
+  "entries": [
+    {
+      "relative_path": "files/reports/SentiLab inconclusive results diagnosis.freeze.json",
+      "bytes": 4088,
+      "compressed_bytes": 1505,
+      "sha256": "f8a4705ae0c63143fa9258f48b5f6908c37bcf28e0420419b8e82fecaa15783a",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/reports/SentiLab inconclusive results diagnosis.md",
+      "bytes": 68772,
+      "compressed_bytes": 21268,
+      "sha256": "132bf28fc6d962ae159a942084b3a7fe4c17fd52dc65da7a13789939a0460a7d",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/research_notes/SentiLab inconclusive results diagnosis/human_package_baselines.md",
+      "bytes": 27405,
+      "compressed_bytes": 9397,
+      "sha256": "373a07ee702324c39e44e87b09db6c329be00b7b98eb78e94b2a8bd52af23e8d",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/research_notes/SentiLab inconclusive results diagnosis/human_package_sources/LOCAL-SOURCE-MANIFEST.json",
+      "bytes": 3202,
+      "compressed_bytes": 887,
+      "sha256": "f292ac7cfabc2f37fa56351db4cb91213fd79e74483aa8cc48d88625e2c94d78",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/research_notes/SentiLab inconclusive results diagnosis/human_package_sources/local-source/sentilab_core/oracle.py",
+      "bytes": 4886,
+      "compressed_bytes": 1916,
+      "sha256": "c354528e7fa60f0fb4cdde0a4ccc3151f6478f6dd4214f86d289477e492b5a1d",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/research_notes/SentiLab inconclusive results diagnosis/human_package_sources/local-source/THIRD_PARTY_NOTICES.md",
+      "bytes": 1656,
+      "compressed_bytes": 930,
+      "sha256": "85902a66419f333a977225be3afabca12957460dd509cebd665a1b86fea44ecd",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/research_notes/SentiLab inconclusive results diagnosis/human_package_sources/SOURCE-INDEX.json",
+      "bytes": 96798,
+      "compressed_bytes": 16071,
+      "sha256": "4eab87227ac9a2997ce85419d7807db0d0e09646e97d3f27f8e8896487340086",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/research_notes/SentiLab inconclusive results diagnosis/numerical_forensics_data.json",
+      "bytes": 76226,
+      "compressed_bytes": 8678,
+      "sha256": "ba4ec661063c4ba5e8a746b9239a27908d3b4c2c99e9f72d70125ea217663e37",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/research_notes/SentiLab inconclusive results diagnosis/numerical_forensics_source_manifest.json",
+      "bytes": 20514,
+      "compressed_bytes": 4968,
+      "sha256": "49c47e95ae689179a72261ea099fa6e16c6a53a060f318ca083f318ad8eec952",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/research_notes/SentiLab inconclusive results diagnosis/numerical_forensics.md",
+      "bytes": 52928,
+      "compressed_bytes": 19190,
+      "sha256": "5355e30c172189100cf2dcc9443ce5c79b81787a82ac4c6410946a8b040e5003",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/research_notes/SentiLab inconclusive results diagnosis/validation_redesign_verification.json",
+      "bytes": 2490,
+      "compressed_bytes": 784,
+      "sha256": "8ca242a4e6ff2476758f5808f6059f97c4eb08a70354ceb58dbf373ea0aebafc",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/research_notes/SentiLab inconclusive results diagnosis/validation_redesign.md",
+      "bytes": 33268,
+      "compressed_bytes": 10580,
+      "sha256": "c762e64291b4dc4634837af542f02f626d51361b4e4527949cdb8961db33e04c",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/ci-accounting-review/CI-ACCOUNTING-REVIEW.md",
+      "bytes": 11308,
+      "compressed_bytes": 5093,
+      "sha256": "659757523319fdc35ccfb48bc5cf27ea397b2d964fff53f37c66b35a8ebe5875",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/ci-inventory-1225/REPORT.md",
+      "bytes": 5970,
+      "compressed_bytes": 3045,
+      "sha256": "56390965603d546f14e41fa2cc485469d89ef8c97cd17523cea4c5276750525c",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/execution-ledger/delta-1240/COVERAGE-STATUS-RECONCILIATION.md",
+      "bytes": 3591,
+      "compressed_bytes": 1946,
+      "sha256": "823fd92c29fd44fd838ee1be2fda878a47a513a263adc550d91d0ca5bd1ac57a",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr12-73461c3/docs/sentilab/evidence/mesh/ascend910/RESULT.json",
+      "bytes": 52510,
+      "compressed_bytes": 8819,
+      "sha256": "7db34ca96b53f03117baccb4f8e91f3ac4c82dde33c5cc760f3177f3c5f330fc",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/PR18-96BF4A0-REVIEW.md",
+      "bytes": 12334,
+      "compressed_bytes": 5599,
+      "sha256": "63f3093d0c8d51319143b9192583bcbb3a1a65c975d4c27881c339c5aff57a16",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr18-96bf4a0/docs/sentilab/evidence/mesh/micro150/RESULT.json",
+      "bytes": 57263,
+      "compressed_bytes": 8727,
+      "sha256": "880e34d5bdcc231d23fdd2ee35c9aa49779bab9449edf1c96fe1730c67dbf677",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr18-96bf4a0/docs/sentilab/evidence/mesh/micro150/VALIDATION.md",
+      "bytes": 8330,
+      "compressed_bytes": 3961,
+      "sha256": "0e5f05eee56c5712ced16ddfc758f96fd4e0f48636c455e561099fba7ad365d6",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-a10063d-review/EXACT-CORRECTION-REVIEW.md",
+      "bytes": 8135,
+      "compressed_bytes": 3824,
+      "sha256": "4211e06e15cec9a1fab4da1359d71b187e08b9384125b2cdeacbd31f3567edb4",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-a10063d-review/source/docs/sentilab/evidence/SLAB-039/PREREG-v4.json",
+      "bytes": 12100,
+      "compressed_bytes": 4858,
+      "sha256": "a4e34fc05fc6440c65b545c4868f7c6c09c77c391c2835d0f79fe1549b294fb1",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-a10063d-review/source/docs/sentilab/evidence/SLAB-039/PREREG.json",
+      "bytes": 5467,
+      "compressed_bytes": 2191,
+      "sha256": "211bd3c181305ead1bc924ffc11dc5fb042cd7a6e05ce5ca15a8ca89c500db8e",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-a10063d-review/source/docs/sentilab/evidence/SLAB-039/REPORT.md",
+      "bytes": 2042,
+      "compressed_bytes": 1106,
+      "sha256": "9262707ebaa25a85fe7e7c70de3c99b5e560981340681a1d82c29c1df2044645",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-a10063d-review/source/docs/sentilab/evidence/SLAB-039/RESULT.json",
+      "bytes": 52576,
+      "compressed_bytes": 5266,
+      "sha256": "fc5a25fb614bfb253fad81af4c3505cd0b88aeb79203612866e971df5dd7ddcc",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-a10063d-review/source/docs/sentilab/evidence/SLAB-039/SPEND.json",
+      "bytes": 1387,
+      "compressed_bytes": 616,
+      "sha256": "e2cd921395b9ce6a1469ce74ee59359132729d03a35326f8fedf46da7db85149",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-a10063d-review/source/docs/sentilab/evidence/SLAB-039/SUPERVISOR-POLICY.json",
+      "bytes": 1298,
+      "compressed_bytes": 646,
+      "sha256": "b117ae884799a4099259fd07164d800904ad1a8ae1a37832b7d6823e6cf8aa57",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-a10063d-review/source/docs/sentilab/evidence/SLAB-039/VALIDATION.md",
+      "bytes": 4983,
+      "compressed_bytes": 2467,
+      "sha256": "8505c8c15410025872bfb74fef2423830ea8541c11ada4153670d8fad470f2d1",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/PR25-AAAF128-CLOSURE-REVIEW.md",
+      "bytes": 9613,
+      "compressed_bytes": 4420,
+      "sha256": "547dc465511ff8ad3fe63f1b576c1748b23d7e021d0b33f38ffe5cab54b85d17",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/PR25-DE4574-SCIENCE-CLOSURE-REVIEW.md",
+      "bytes": 4208,
+      "compressed_bytes": 2083,
+      "sha256": "171f3516156efb5fd9645ae4fe4f22d6067f1e32f7c3e5b2d92e09d00837249e",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/PR25-FA7ED8F-REVIEW.md",
+      "bytes": 13905,
+      "compressed_bytes": 6054,
+      "sha256": "24c114ddf596b58f2e3f1740e816959c369b75e1e1e7674386ccae2e5927081a",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_controller/headroom.py",
+      "bytes": 32195,
+      "compressed_bytes": 8914,
+      "sha256": "49a6ccd5f643b27973968cbab7da3b6258ccf00109f21128fa26a14301f09cc8",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_hotspot/tap_oracle_worker.py",
+      "bytes": 13461,
+      "compressed_bytes": 3995,
+      "sha256": "d15d65aa06dade2c16df3dc4e96dbfa656f0bccae7d8d3602eb816321837d9eb",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_hotspot/tap_oracle.py",
+      "bytes": 35218,
+      "compressed_bytes": 8553,
+      "sha256": "cabccdfcbb3a958fac820484353069ca3a76d54d31d5f699a537aafd2d5e376f",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_hotspot/temperature_grid.c",
+      "bytes": 275052,
+      "compressed_bytes": 34115,
+      "sha256": "1d50f58de5593b5620dfd26853a49f81a6ce6688218ce525b59af28b182441df",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_hotspot/UPSTREAM_COMMIT",
+      "bytes": 41,
+      "compressed_bytes": 41,
+      "sha256": "3428c1396a6947c2408497b5ecf62587db1de2fb2d2374e5923ad01c8d0d5491",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_tap/configs/sys_ascend910.cfg",
+      "bytes": 628,
+      "compressed_bytes": 319,
+      "sha256": "548562a5f49d502f4b9bd03d3a4acc4b42f225056e6d91556416079c291e06d4",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_tap/configs/sys_micro150.cfg",
+      "bytes": 691,
+      "compressed_bytes": 298,
+      "sha256": "c31956e38b05fc0d31609656e6c92f29109ec3dee6b148b3b1c28c23c2dd1b18",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_tap/passive_interposer.py",
+      "bytes": 15937,
+      "compressed_bytes": 3275,
+      "sha256": "dcbbaaa86a187bac3f1a1b12f49bd0dfc1c6cb3ed4e50ec51583f762adcf0a52",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_tap/README.md",
+      "bytes": 6025,
+      "compressed_bytes": 2505,
+      "sha256": "14e3d6933acf6d559ca3501196a325f2b4a9228dc3773596e653d718884e882b",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_tap/UPSTREAM_COMMIT",
+      "bytes": 41,
+      "compressed_bytes": 42,
+      "sha256": "13097e0fc552c9cf1fee10ec0a3cfadfd3559e2cb40a6dd26973c1d96d52e312",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_tap/util/hotspot.config",
+      "bytes": 4507,
+      "compressed_bytes": 1689,
+      "sha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr33-87997aa-review/EXACT-STATISTICAL-REVIEW.md",
+      "bytes": 4322,
+      "compressed_bytes": 2263,
+      "sha256": "e59e00a6707cfa1f29261f092b35b8d1f5a850ca4f873fc82dd9ccd9ee833203",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr33-87997aa-review/source/docs/sentilab/freeze/SLAB-041-FREEZE.md",
+      "bytes": 36374,
+      "compressed_bytes": 12545,
+      "sha256": "98de7c79825ea568361be5ac85509b56be4e792d750c57ea1697b287d45ea46b",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/pr33-87997aa-review/source/docs/sentilab/freeze/slab041-freeze.json",
+      "bytes": 11427,
+      "compressed_bytes": 4011,
+      "sha256": "8498f9a979b830761b31b9bc5e9c12308abebf86760c48c6af2ebc60cc6556b7",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/SCIENCE-REVIEW.md",
+      "bytes": 14932,
+      "compressed_bytes": 6574,
+      "sha256": "3b8fc8e2b80461849072cdf49421196ab40bd460ec63f8fe4b827c8ac36d880c",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/slab018-result-audit/RESULT-REVIEW.md",
+      "bytes": 8084,
+      "compressed_bytes": 3881,
+      "sha256": "f36c2249962f50b00129ea8ba58a385ea1ac80dc2bdb5ce28e480d4ba867db5c",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "files/tasks/sentilab-review-2026-10-30/slab047b-gpu-review/RUNTIME-REVIEW.md",
+      "bytes": 8823,
+      "compressed_bytes": 4200,
+      "sha256": "a09ab77326e1afbb3708ee1858a6380815f3451c9434836f5031884ddc014cf9",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "INPUT-INSPECTION.json",
+      "bytes": 26898,
+      "compressed_bytes": 3776,
+      "sha256": "75ffecc27a4f5b86e95e581aedfed11d887dbeac5ac839ef2014d85c8ffbc331",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "PACKET-MANIFEST.json",
+      "bytes": 13960,
+      "compressed_bytes": 3972,
+      "sha256": "9805d31a15b7d6e154d03eeb19ead2fd5ca8afbb8929daca3cd0931b358fb404",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "READING-COPY.md",
+      "bytes": 62326,
+      "compressed_bytes": 21178,
+      "sha256": "ac23a64163b6046fbe5aa2327a4f4e1a41127d70c17f3c364da0a3ecb8c3ba49",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "README.md",
+      "bytes": 3304,
+      "compressed_bytes": 1657,
+      "sha256": "4873db7ce7fdb23568a70896703bdb5a64abc88c858e29ec099e4fa8b5e47849",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "SECRET-SCAN.json",
+      "bytes": 3103,
+      "compressed_bytes": 1463,
+      "sha256": "62a5868f002e7a9e606ce355d498592a41651dac3e5bcd9dad0fb360b8003368",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "secret-scan/default-rules.toml",
+      "bytes": 109,
+      "compressed_bytes": 95,
+      "sha256": "7e3c2bb01c0cea1b19719411e769b3f026f83b4feae72fa5fc4548cae3b35710",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "secret-scan/empty.ignore",
+      "bytes": 0,
+      "compressed_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "secret-scan/gitleaks-control-redacted.json",
+      "bytes": 808,
+      "compressed_bytes": 404,
+      "sha256": "a62f3d2008c0366d5e8c28495f4ece26b298ad2b8758a3abc3d092939a21ea3d",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "secret-scan/gitleaks-control.log",
+      "bytes": 78,
+      "compressed_bytes": 69,
+      "sha256": "b8cbaee29e4cb401d5ff0698fa0a6743410c47113f889f2e992f715cd262a46c",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "secret-scan/gitleaks-initial-redacted.json",
+      "bytes": 3,
+      "compressed_bytes": 5,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "secret-scan/gitleaks-initial.log",
+      "bytes": 81,
+      "compressed_bytes": 75,
+      "sha256": "42971e428ff6e3e124e46a06c8e9bd5dbf1188e76d3ac21c1754d69bb664d320",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "SOURCE-MAP.json",
+      "bytes": 27066,
+      "compressed_bytes": 3784,
+      "sha256": "e1ad9093a49af9f5173ad4e2a8b4dd837b6f1fbde94522d248d2efc45702b634",
+      "matched_payload": true
+    },
+    {
+      "relative_path": "verify-packet.ps1",
+      "bytes": 4297,
+      "compressed_bytes": 1515,
+      "sha256": "916d7ea79faece033c8656ab55ee58d322b626c960f6eef4fbfd8ab18e451a77",
+      "matched_payload": true
+    }
+  ],
+  "reproduced_after_extraction": {
+    "archive_extracted_to_fresh_directory": true,
+    "packaged_verifier_executed": true,
+    "success": true,
+    "manifest_hashes_checked": 59,
+    "source_map_hashes_checked": 47,
+    "direct_citation_targets_mapped": 46,
+    "portable_citation_targets_resolved": 46,
+    "unlisted_files": [],
+    "failures": [],
+    "receipt_path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/diagnosis-packet-1309/EXTRACTED-VERIFICATION.json",
+    "receipt_sha256": "1f8a1f6e6629f0747346940e386f11f3d6ac7be971e9dc96daa9dbc5f4d7bfe0"
+  }
+}

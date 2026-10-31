@@ -1,0 +1,36 @@
+{
+  "at": "2026-10-31T13:14:58.894Z",
+  "sourceBase": "3e7c4807bf2fbcf5fcde2c12659e8f35fef69f46",
+  "files": [
+    {
+      "name": "REPORT.md",
+      "source": "reports/SentiLab inconclusive results diagnosis.md",
+      "bytes": 68772,
+      "sha256": "132bf28fc6d962ae159a942084b3a7fe4c17fd52dc65da7a13789939a0460a7d"
+    },
+    {
+      "name": "FREEZE.json",
+      "source": "reports/SentiLab inconclusive results diagnosis.freeze.json",
+      "bytes": 4088,
+      "sha256": "f8a4705ae0c63143fa9258f48b5f6908c37bcf28e0420419b8e82fecaa15783a"
+    },
+    {
+      "name": "ROOT-REVIEW.json",
+      "source": "reports/SentiLab inconclusive results diagnosis.root-review.json",
+      "bytes": 3769,
+      "sha256": "b8d420c8106553496bcc5ceec95cc05a5b0cf595d933f2bda64db16576e3c07b"
+    },
+    {
+      "name": "private-review-packet.zip",
+      "source": "tasks/sentilab-review-2026-10-30/diagnosis-packet-1309/private-review-packet.zip",
+      "bytes": 315874,
+      "sha256": "9f27cd1f299482aec16b175477e26021cfe3209e8ceb18f0e5e20c41ffd92780"
+    },
+    {
+      "name": "ARCHIVE-VERIFICATION.json",
+      "source": "tasks/sentilab-review-2026-10-30/diagnosis-packet-1309/ARCHIVE-VERIFICATION.json",
+      "bytes": 22074,
+      "sha256": "9a10d11339f079ab753a6d459380a26392a2b19e57df7f69ed712bf8630bde33"
+    }
+  ]
+}
