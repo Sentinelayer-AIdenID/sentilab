@@ -1,4 +1,5 @@
 """Conformance tests exercise the reference and the shipped CLI/MCP processes."""
+import asyncio
 import hashlib
 import json
 import os
@@ -34,6 +35,33 @@ for (const v of vectors) {
   console.log(JSON.stringify({name:v.name,raw,expected:v.expect,banned:v.receipt_must_not_contain??[],receipt:canonical(checkRaw(raw))}));
 }
 '''
+
+
+def mcp_exchange(calls, *, env=None):
+    """Keep stdin open until replies arrive; EOF cancels in-flight MCP work."""
+    async def exchange():
+        process = await asyncio.create_subprocess_exec(
+            sys.executable, '-m', 'sentilab_mcp', cwd=ROOT, env=env,
+            stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE)
+        replies = []
+        try:
+            for call in calls:
+                process.stdin.write((json.dumps(call) + '\n').encode())
+                await process.stdin.drain()
+                if 'id' in call:
+                    replies.append(await asyncio.wait_for(process.stdout.readline(), 10))
+            process.stdin.close()
+            tail, stderr = await asyncio.wait_for(process.communicate(), 10)
+            return subprocess.CompletedProcess('sentilab_mcp', process.returncode,
+                                               b''.join(replies) + tail, stderr)
+        finally:
+            if process.returncode is None:
+                process.kill()
+            await process.wait()
+    result = asyncio.run(exchange())
+    result.check_returncode()
+    return result
 
 
 class ResultCheckTests(unittest.TestCase):
@@ -92,10 +120,8 @@ class ResultCheckTests(unittest.TestCase):
                 files.append(file)
                 calls.append(dict(jsonrpc='2.0', id=i, method='tools/call', params={
                     'name': 'sentilab_resultcheck', 'arguments': {'file': str(file)}}))
-            mcp = subprocess.run([sys.executable, '-m', 'sentilab_mcp'], cwd=ROOT,
-                                 input=''.join(json.dumps(x) + '\n' for x in calls),
-                                 capture_output=True, text=True, timeout=30, check=True)
-            self.assertEqual(mcp.stderr, '')
+            mcp = mcp_exchange(calls)
+            self.assertEqual(mcp.stderr, b'')
             replies = [json.loads(line) for line in mcp.stdout.splitlines()]
             self.assertEqual(len(replies), len(self.vectors) + 2)
             replies_by_id = {reply['id']: reply for reply in replies}
@@ -196,8 +222,7 @@ class ResultCheckTests(unittest.TestCase):
                                  env=env, capture_output=True, timeout=10, check=True)
             request = dict(jsonrpc='2.0', id=1, method='tools/call', params={
                 'name': 'sentilab_resultcheck', 'arguments': {'file': str(file)}})
-            mcp = subprocess.run([sys.executable, '-m', 'sentilab_mcp'], cwd=ROOT, env=env,
-                                 input=json.dumps(request).encode() + b'\n', capture_output=True, timeout=10, check=True)
+            mcp = mcp_exchange([request], env=env)
             self.assertEqual(cli.stdout.rstrip(b'\n').decode(), json.loads(mcp.stdout)['result']['content'][0]['text'])
             self.assertEqual(cli.stderr + mcp.stderr, b'')
             file.unlink()
@@ -207,8 +232,7 @@ class ResultCheckTests(unittest.TestCase):
             self.assertEqual(json.loads(missing.stdout), {'error': {'code': 'file_unreadable'}})
             bad_calls = [request, {**request, 'id': 2, 'params': {'name': 'sentilab_resultcheck', 'arguments': {}}},
                          {**request, 'id': 3, 'params': {'name': 'sentilab_resultcheck', 'arguments': {'file': 42}}}]
-            mcp = subprocess.run([sys.executable, '-m', 'sentilab_mcp'], cwd=ROOT, env=env,
-                input=''.join(json.dumps(r) + '\n' for r in bad_calls).encode(), capture_output=True, timeout=10, check=True)
+            mcp = mcp_exchange(bad_calls, env=env)
             responses = [json.loads(line) for line in mcp.stdout.splitlines()]
             self.assertEqual(len(responses), 3)
             responses_by_id = {response['id']: response for response in responses}

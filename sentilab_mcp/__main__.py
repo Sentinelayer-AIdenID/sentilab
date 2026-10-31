@@ -55,7 +55,7 @@ async def handle(request, context):
             if set(arguments) != {"file"} or not isinstance(arguments["file"], str):
                 raise ValueError("file must be a local path string")
             try:
-                receipt = TOOLS[name](context, **arguments)
+                receipt = await TOOLS[name](context, **arguments)
             except (OSError, ValueError):
                 return {"content": [{"type": "text", "text": canonical({"error": {"code": "file_unreadable"}})}],
                         "isError": True}

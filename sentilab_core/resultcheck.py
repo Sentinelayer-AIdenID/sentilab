@@ -8,7 +8,9 @@ from decimal import Decimal, ROUND_HALF_UP, localcontext
 import hashlib
 import json
 import math
+import os
 import re
+import stat
 import struct
 import unicodedata
 
@@ -17,6 +19,9 @@ SCHEMA_VERSION = 'resultcheck.receipt.v2'
 SCOPE = ('Checks submitted-data consistency and arithmetic only. Does not certify '
          'that measurements are authentic or that any model is physically valid.')
 MAX_BYTES = 1024 * 1024
+# Transport intake ceiling, separate from the contract's 1 MiB parsing cap.
+# Bounded oversized files still receive the contract's complete raw-byte hash.
+MAX_FILE_BYTES = 16 * MAX_BYTES
 MAX_PAIRS = 10000
 MAX_DEPTH = 8
 MAX_VALUES = 200000
@@ -482,16 +487,35 @@ def check_raw(data):
 
 
 def check_file(file):
-    """Shared transport operation; bound memory while hashing the entire file."""
+    """Check a stable regular file, reading at most its bounded size plus one.
+
+    Unsupported, oversized or changing files raise OSError (a transport error),
+    never a contract receipt carrying a misleading partial request hash.
+    """
     digest = hashlib.sha256()
     prefix = bytearray()
     size = 0
-    with open(file, 'rb') as stream:
-        while chunk := stream.read(64 * 1024):
+    # Nonblocking open matters BEFORE fstat: a FIFO can otherwise block here.
+    fd = os.open(file, os.O_RDONLY | os.O_NONBLOCK)
+    try:
+        before = os.fstat(fd)
+        if not stat.S_ISREG(before.st_mode) or before.st_size > MAX_FILE_BYTES:
+            raise OSError('unsupported ResultCheck file')
+        while size <= before.st_size:
+            chunk = os.read(fd, min(64 * 1024, before.st_size + 1 - size))
+            if not chunk:
+                break
             digest.update(chunk)
             size += len(chunk)
             if size <= MAX_BYTES:
                 prefix.extend(chunk)
+        after = os.fstat(fd)
+        if (size != before.st_size or after.st_size != before.st_size
+                or after.st_mtime_ns != before.st_mtime_ns
+                or after.st_ctime_ns != before.st_ctime_ns):
+            raise OSError('ResultCheck file changed during intake')
+    finally:
+        os.close(fd)
     if size > MAX_BYTES:
         return _rejected(['request_too_large'], digest.hexdigest())
     return check_raw(bytes(prefix))
