@@ -22,7 +22,8 @@ a { color: var(--cyan); }
 /* ── frame: one screen at projector sizes ────────────────────────────────────────────────────────────────── */
 .shell { display: grid; height: 100dvh; grid-template-columns: minmax(0, 1fr); grid-template-rows: 60px 54px auto minmax(0, 1fr) 30px; gap: 10px; padding: 0 20px;
          grid-template-areas: "top" "controls" "frozen" "work" "status"; }
-.top { grid-area: top; } .controls { grid-area: controls; } .frozen { grid-area: frozen; } .work { grid-area: work; } .status { grid-area: status; }
+.top { grid-area: top; } .controls { grid-area: controls; } .banners { grid-area: frozen; } .work { grid-area: work; } .status { grid-area: status; }
+.banners { display: grid; gap: 8px; min-width: 0; }
 html, body { overflow: hidden; }
 
 .top, .controls, .status { display: flex; align-items: center; gap: 14px; min-width: 0; }
@@ -77,6 +78,8 @@ input[type=range] { flex: 1; min-width: 120px; accent-color: var(--cyan); }
 .frozen { padding: 8px 14px; border-radius: 7px; border: 1px solid var(--red-line); background: var(--red-bg); color: #f6c3b2; font: 600 var(--fs-s) var(--mono); }
 .frozen.cfg { border-color: #6b5a3c; background: #2a2418; color: var(--amber); }
 .frozen span { font-weight: 400; }
+/* The withdrawn-temperature notice (temperature-label.mjs NOTICE). The numbers below it stay as signed. */
+.wnotice { margin: 0; padding: 8px 14px; border-radius: 7px; border: 1px solid #7a6334; background: #2a2418; color: #f3d9a4; font-size: var(--fs-s); }
 
 /* ── panels ─────────────────────────────────────────────────────────────────────────────────────────────── */
 .work { position: relative; display: grid; gap: 10px; min-height: 0;

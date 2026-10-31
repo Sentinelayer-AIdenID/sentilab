@@ -401,7 +401,7 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
         system.set_path.side_effect = set_path
         system.gen_flp.side_effect = generate
         with patch.object(worker, 'PassiveInterposer', return_value=system), patch.object(
-                worker.subprocess, 'run', return_value=SimpleNamespace(returncode=17, stdout='fake stdout', stderr='fake stderr')):
+                worker, 'run_hotspot', return_value=SimpleNamespace(returncode=17, stdout='fake stdout', stderr='fake stderr')):
             with self.assertRaisesRegex(RuntimeError, 'HotSpot exited 17'):
                 worker.evaluate(captured)
         self.assertEqual((output / 'stdout.txt').read_text(), 'fake stdout')
@@ -417,7 +417,7 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
             with self.subTest(stdout_type=type(stdout).__name__):
                 error = worker.subprocess.TimeoutExpired('fake solver', 0.5, output=stdout, stderr=stderr)
                 with patch.object(worker, 'PassiveInterposer', return_value=system), patch.object(
-                        worker.subprocess, 'run', side_effect=error):
+                        worker, 'run_hotspot', side_effect=error):
                     with self.assertRaisesRegex(TimeoutError, 'TFL_ORACLE_TIMEOUT'):
                         worker.evaluate(captured)
                 for name, value in [('stdout', stdout), ('stderr', stderr)]:
