@@ -2,7 +2,7 @@
 
 **GB10 fixture preflight passed. Scientific results remain gated.**
 
-This is a dated review draft: all 41 tickets and eight deliverables are covered through 07:50 UTC, with explicit later decisions and the completed GB10 artifact audit. It is not a live feed. None of the eight final deliverables is fully accepted.
+This is a dated review draft: all 41 tickets and eight deliverables are covered through 2026-10-31 07:50 UTC, with explicit later decisions and the completed GB10 artifact audit. It is not a live feed. None of the eight final deliverables is fully accepted.
 
 | Status | What the evidence supports |
 |---|---|
@@ -20,7 +20,7 @@ Next priorities are to close the existing correctness queue; freeze the scientif
 
 The GB10 attempt used **314.189539 charged seconds**. Including the conservative 180-second prior reservation, its total is **494.189539 seconds**, within the 60-minute cap. Warden’s new CI and experiment allocations are prospective allowances, not usage or execution acceptance. Exact historical CI consumption remains unknown, and no new micro150 execution is released.
 
-**Cost:** no current total or invoice is verified. The last retained room estimate was **USD 255.79 at 07:31:44Z**. It is a historical estimate, not a current total.
+**Cost:** no current total or invoice is verified. The last retained room estimate was **USD 255.79 at 2026-10-31 07:31:44Z**. It is a historical estimate, not a current total.
 
 Root owns this progress content and its evidence links. Forge has been asked to prepare the deck for **2026-11-01 18:00Z**; human presenter availability remains separate. This draft implements no public page, export interface, deployment or submission. The presentation/submission and GB10 CLI/MCP interfaces remain tracked follow-up work. Repository evidence links identify exact commits and may require access. Other sources are retained by opaque ID/hash with operator archive access required. No private source bodies are included.
 

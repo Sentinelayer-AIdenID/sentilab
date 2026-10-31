@@ -1,12 +1,12 @@
 # Evidence source catalog
 
-This catalog preserves the 29 source identities behind the reviewed snapshot. No private message text, original source snapshots or device details are included. Repository links are pinned to exact commits and can require access; a link is not a public-access or current-approval assertion. Other evidence has **access: operator archive required**.
+This catalog preserves the 29 original source identities behind the reviewed snapshot and adds one dated factual-correction observation, for 30 sources total. No private message text, original source snapshots or device details are included. Repository links are pinned to exact commits and can require access; a link is not a public-access or current-approval assertion. Other evidence has **access: operator archive required**.
 
 The underlying source bodies may have their own access restrictions and content. They are referenced, not copied into this packet.
 
 ## source-coverage-delta
 
-**All 41 tickets and eight deliverables: 07:50 coverage delta**
+**All 41 tickets and eight deliverables: 2026-10-31 07:50 coverage delta**
 
 - Source ID: `urn:sha256:aeaefd8dccd5dab2d418e270efab440b7d567cf5605bb686cd0758fd9ebf0370`.
 - SHA256: `aeaefd8dccd5dab2d418e270efab440b7d567cf5605bb686cd0758fd9ebf0370`.
@@ -17,7 +17,7 @@ The underlying source bodies may have their own access restrictions and content.
 
 ## source-coverage-actions
 
-**07:50 proposed action list**
+**2026-10-31 07:50 proposed action list**
 
 - Source ID: `urn:sha256:42083eaefd69532b441d8568bd6edce89f23aab3b7e544cac67e334d8f6abf6c`.
 - SHA256: `42083eaefd69532b441d8568bd6edce89f23aab3b7e544cac67e334d8f6abf6c`.
@@ -218,7 +218,7 @@ The underlying source bodies may have their own access restrictions and content.
 
 ## source-warden-56314
 
-**Warden #56314: prospective allocation, effective 07:56Z**
+**Warden #56314: prospective allocation, effective 2026-10-31 07:56Z**
 
 - Source ID: `88644193-efef-4edd-bf87-9b622b4f8587`.
 - SHA256: `4789c2dbaf1be61e6ad87d3095f5a547516ebbdcb539f6a4218fd69fe8aa83b7`.
@@ -230,7 +230,7 @@ The underlying source bodies may have their own access restrictions and content.
 
 ## source-cost-56231
 
-**Last retained room cost estimate, 07:31:44Z**
+**Last retained room cost estimate, 2026-10-31 07:31:44Z**
 
 - Source ID: `6a2329e0-70d8-46df-bf9f-f2c01cf5a4ec`.
 - SHA256: `32c68b51b317149aa514acd0ba4d5d3fb7fc717e6879a6321d98b7ab4c448bfc`.
@@ -351,3 +351,15 @@ The underlying source bodies may have their own access restrictions and content.
 - Commit: `8e92640f278bc788ff26d2cd5b88d0dcf04fff16`; Git blob: `747a1a63c4d3442a021e09189a551862264a90a9`.
 - Mapping basis: retained frozen packet manifest plus identical source bytes. Public accessibility was not verified.
 
+
+## source-pr31-factual-correction
+
+**PR31 dated factual correction: PR19 merge and unmerged PR22 proposal**
+
+- Source ID: `urn:sha256:cc8730e54118bbed401cfe54059844d5d418a91bfbf94827ffc176f457ac1a72`.
+- SHA256: `cc8730e54118bbed401cfe54059844d5d418a91bfbf94827ffc176f457ac1a72`.
+- Bytes: 2620.
+- Source date: 2026-10-31T09:20:37.5874002+00:00.
+- Access: **operator archive required**. Original body included: no.
+- Retrieval: request this source ID/hash from the operator archive; no repository URL is asserted.
+- Scope: the PR19 merge timestamp corrects the existing cutoff claim; PR22 remains a proposed, unmerged Package view. The snapshot retains its historical corrective-head reference and original coverage dates.

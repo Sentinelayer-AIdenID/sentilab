@@ -12,7 +12,7 @@
     "latestRoomReceiptIncludedAt": "2026-10-31T07:59:37.440Z",
     "gb10CompletedAt": "2026-10-31T07:53:46.147370+00:00",
     "gb10AuditAt": "2026-10-31T07:58:14.724714+00:00",
-    "note": "Dated source snapshot with explicit later overlays. It is not a live status feed, fresh repository-head query, or exhaustive event audit."
+    "note": "Dated source snapshot with explicit later overlays. It is not a live status feed, fresh repository-head query, or exhaustive event audit. The separately dated PR31 factual correction verifies PR19 merge and PR22 proposal wording without advancing these snapshot cutoffs."
   },
   "statusLegend": {
     "done": "The named narrow slice is completed or technically accepted; it does not mark a whole ticket complete.",
@@ -660,9 +660,10 @@
       "id": "SLAB-013",
       "title": "Wire four scientists and bounded worker orchestration",
       "status": "open",
-      "summary": "Scoped +1 at d29c678 extends to exact d04caed054c02d0bc2c777a1e2aba8a8e38f9bce on merged main; 14/15 blobs identical, conductor patch equivalent. No merge observed by cutoff.",
+      "summary": "PR19 merged at 2026-10-31 07:49:16Z before the 2026-10-31 07:50 UTC cutoff. Scoped fixture/core-hook +1 extends from d29c678 to exact d04caed054c02d0bc2c777a1e2aba8a8e38f9bce; 14/15 blobs identical, conductor patch equivalent. Scientific leads, calibrated judges and full CLI/MCP conformance remain open.",
       "evidenceRefs": [
-        "coverage_delta"
+        "coverage_delta",
+        "pr31_factual_correction"
       ],
       "remaining": [
         "Wire actual four-family scientific leads and independent calibrated judges after model admission.",
@@ -702,9 +703,10 @@
       "id": "SLAB-014",
       "title": "Implement adversarial review protocol and calibrated LLM judges",
       "status": "open",
-      "summary": "Scoped +1 at d29c678 extends to exact d04caed054c02d0bc2c777a1e2aba8a8e38f9bce on merged main; 14/15 blobs identical, conductor patch equivalent. No merge observed by cutoff.",
+      "summary": "PR19 merged at 2026-10-31 07:49:16Z before the 2026-10-31 07:50 UTC cutoff. Scoped fixture/core-hook +1 extends from d29c678 to exact d04caed054c02d0bc2c777a1e2aba8a8e38f9bce; 14/15 blobs identical, conductor patch equivalent. Scientific leads, calibrated judges and full CLI/MCP conformance remain open.",
       "evidenceRefs": [
-        "coverage_delta"
+        "coverage_delta",
+        "pr31_factual_correction"
       ],
       "remaining": [
         "Wire actual four-family scientific leads and independent calibrated judges after model admission.",
@@ -1068,9 +1070,10 @@
       "id": "SLAB-024",
       "title": "Inspect NVIDIA reference for our chiplet simulation/visual workflow and feasibility",
       "status": "open",
-      "summary": "Original chiplet Package view is implemented under SLAB026; this does not establish an actual NVIDIA chiplet-reference feasibility audit.",
+      "summary": "The original chiplet Package view is proposed under SLAB026 in open, unmerged PR22; this does not establish an actual NVIDIA chiplet-reference feasibility audit.",
       "evidenceRefs": [
-        "coverage_delta"
+        "coverage_delta",
+        "pr31_factual_correction"
       ],
       "remaining": [
         "Bind corrected reference/feasibility owner and exact tools/assets/hardware provenance.",
@@ -1141,10 +1144,11 @@
       "id": "SLAB-026",
       "title": "Build, render, replay and export our chiplet simulation and thermal visualization",
       "status": "open",
-      "summary": "The original chiplet Package view exists. Root acknowledged a later e250040 corrective head for review; acceptance of that repair is not evidenced in this snapshot.",
+      "summary": "The chiplet Package view is proposed in open, unmerged PR22. Root acknowledged corrective head e250040d9d30c8223473aad1fae538bda6406f16 for review in this snapshot; acceptance of that repair is not evidenced.",
       "evidenceRefs": [
         "coverage_delta",
-        "root_lab_review"
+        "root_lab_review",
+        "pr31_factual_correction"
       ],
       "remaining": [
         "Review the corrected exact head against the prior paused-prefix, units and numeric-bound findings.",
@@ -1656,7 +1660,7 @@
       "id": "SLAB-039",
       "title": "Measure training-family optimization headroom before LLM experiments",
       "status": "measured",
-      "summary": "Ascend v3 remains INCONCLUSIVE. PR25 aaaf128 review closed several source issues but requires a complete frozen baseline before reference calls, retained timeout output, and enforceable remaining-budget CPU semantics. Warden approved prospective 72/84 CPU-minute allocations effective 07:56Z; no new solves released.",
+      "summary": "Ascend v3 remains INCONCLUSIVE. PR25 aaaf128 review closed several source issues but requires a complete frozen baseline before reference calls, retained timeout output, and enforceable remaining-budget CPU semantics. Warden approved prospective 72/84 CPU-minute allocations effective 2026-10-31 07:56Z; no new solves released.",
       "evidenceRefs": [
         "coverage_delta",
         "headroom_review",
@@ -1667,7 +1671,7 @@
       "remaining": [
         "Review the corrected exact implementation before any micro150 execution.",
         "Retain 1440.294565 Ascend CPU seconds: a 72-minute cap leaves at most 2879.705435 seconds before other charges, not a full new 48 minutes.",
-        "Headroom 9700 and aggregate 10000 solve caps and the 12:00Z deadline remain."
+        "Headroom 9700 and aggregate 10000 solve caps and the 2026-10-31 12:00Z deadline remain."
       ],
       "sourceAt": "2026-10-31T07:57:47.554Z",
       "wholeTicketCompletionVerified": false,
@@ -1894,7 +1898,7 @@
       "title": "Replayable visual demonstration",
       "status": "open",
       "completionVerified": false,
-      "summary": "Original Package and Lab views exist. Lab review found two displayed-state P2s; Package repair is awaiting review and producer/consumer transport, replay/export/rebuild and CLI/MCP conformance remain open.",
+      "summary": "The Package view is proposed in open, unmerged PR22; the Lab view has review evidence. Lab review found two displayed-state P2s; Package repair is awaiting review, and producer/consumer transport, replay/export/rebuild and CLI/MCP conformance remain open.",
       "tickets": [
         "SLAB-025",
         "SLAB-026",
@@ -1905,7 +1909,8 @@
       "evidenceRefs": [
         "coverage_delta",
         "lab_review",
-        "root_lab_review"
+        "root_lab_review",
+        "pr31_factual_correction"
       ]
     }
   ],
@@ -1987,7 +1992,7 @@
     "lastRetainedEstimateUsd": 255.79,
     "lastRetainedEstimateAt": "2026-10-31T07:31:44.345Z",
     "classification": "historical_operator_estimate",
-    "displayText": "No current total or invoice is verified. Last retained room estimate: USD 255.79 at 07:31:44Z, an estimate at measured billed rates.",
+    "displayText": "No current total or invoice is verified. Last retained room estimate: USD 255.79 at 2026-10-31 07:31:44Z, an estimate at measured billed rates.",
     "evidenceRefs": [
       "cost_56231"
     ]
@@ -1997,7 +2002,7 @@
       "id": "S01",
       "title": "MicroDuck/Pollen robotics requirement",
       "status": "superseded",
-      "summary": "Replaced by our original chiplet simulation and visual workflow under the human correction at 05:45:27Z. Retain the cancellation history; do not count robotics as unfinished current scope.",
+      "summary": "Replaced by our original chiplet simulation and visual workflow under the human correction at 2026-10-31 05:45:27Z. Retain the cancellation history; do not count robotics as unfinished current scope.",
       "evidenceRefs": [
         "scope_disposition",
         "scope_register"
@@ -2010,7 +2015,7 @@
       "id": "S02",
       "title": "Second plan decision missing",
       "status": "superseded",
-      "summary": "Valid at the 07:50 coverage cutoff; replaced by Aneta #56311 at 07:52:43Z. The returned decision remains technical and scope-limited.",
+      "summary": "Valid at the 2026-10-31 07:50 coverage cutoff; replaced by Aneta #56311 at 2026-10-31 07:52:43Z. The returned decision remains technical and scope-limited.",
       "evidenceRefs": [
         "coverage_delta",
         "aneta_56311"
@@ -2023,7 +2028,7 @@
       "id": "S03",
       "title": "GB10 preflight running or not started",
       "status": "superseded",
-      "summary": "Older checkpoint status and attempt-count fields are stale. Attempt 1 completed at 07:53:46Z and its artifacts passed independent review.",
+      "summary": "Older checkpoint status and attempt-count fields are stale. Attempt 1 completed at 2026-10-31 07:53:46Z and its artifacts passed independent review.",
       "evidenceRefs": [
         "checkpoint",
         "gb10_attempt",
@@ -2037,7 +2042,7 @@
       "id": "S04",
       "title": "Prospective CPU and CI allocation unnamed",
       "status": "superseded",
-      "summary": "Warden #56314 provides the named allocation effective 07:56Z. Historical exact usage, enforcement and technical execution release remain unresolved.",
+      "summary": "Warden #56314 provides the named allocation effective 2026-10-31 07:56Z. Historical exact usage, enforcement and technical execution release remain unresolved.",
       "evidenceRefs": [
         "checkpoint",
         "warden_56314",
@@ -2107,7 +2112,7 @@
   "evidence": {
     "coverage_delta": {
       "id": "coverage_delta",
-      "label": "All 41 tickets and eight deliverables: 07:50 coverage delta",
+      "label": "All 41 tickets and eight deliverables: 2026-10-31 07:50 coverage delta",
       "sourceId": "urn:sha256:aeaefd8dccd5dab2d418e270efab440b7d567cf5605bb686cd0758fd9ebf0370",
       "sha256": "aeaefd8dccd5dab2d418e270efab440b7d567cf5605bb686cd0758fd9ebf0370",
       "bytes": 327072,
@@ -2121,7 +2126,7 @@
     },
     "coverage_actions": {
       "id": "coverage_actions",
-      "label": "07:50 proposed action list",
+      "label": "2026-10-31 07:50 proposed action list",
       "sourceId": "urn:sha256:42083eaefd69532b441d8568bd6edce89f23aab3b7e544cac67e334d8f6abf6c",
       "sha256": "42083eaefd69532b441d8568bd6edce89f23aab3b7e544cac67e334d8f6abf6c",
       "bytes": 10615,
@@ -2409,7 +2414,7 @@
     },
     "warden_56314": {
       "id": "warden_56314",
-      "label": "Warden #56314: prospective allocation, effective 07:56Z",
+      "label": "Warden #56314: prospective allocation, effective 2026-10-31 07:56Z",
       "sourceId": "88644193-efef-4edd-bf87-9b622b4f8587",
       "sha256": "4789c2dbaf1be61e6ad87d3095f5a547516ebbdcb539f6a4218fd69fe8aa83b7",
       "bytes": 2582,
@@ -2424,7 +2429,7 @@
     },
     "cost_56231": {
       "id": "cost_56231",
-      "label": "Last retained room cost estimate, 07:31:44Z",
+      "label": "Last retained room cost estimate, 2026-10-31 07:31:44Z",
       "sourceId": "6a2329e0-70d8-46df-bf9f-f2c01cf5a4ec",
       "sha256": "32c68b51b317149aa514acd0ba4d5d3fb7fc717e6879a6321d98b7ab4c448bfc",
       "bytes": 860,
@@ -2610,14 +2615,28 @@
         "bindingSourceAt": "2026-10-31T07:31:19.613Z"
       },
       "publicAccessibilityVerified": false
+    },
+    "pr31_factual_correction": {
+      "id": "pr31_factual_correction",
+      "label": "PR31 dated factual correction: PR19 merge and unmerged PR22 proposal",
+      "sourceId": "urn:sha256:cc8730e54118bbed401cfe54059844d5d418a91bfbf94827ffc176f457ac1a72",
+      "bytes": 2620,
+      "sha256": "cc8730e54118bbed401cfe54059844d5d418a91bfbf94827ffc176f457ac1a72",
+      "sourceAt": "2026-10-31T09:20:37.5874002+00:00",
+      "kind": "retained_factual_correction_observation",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false
     }
   },
   "packaging": {
-    "packagedAt": "2026-10-31T08:17:50.934398+00:00",
+    "packagedAt": "2026-10-31T09:20:37.5874002+00:00",
     "reviewedDraftSha256": "957f73265f43fb69a84fabf18ebf54693205da3d3267eb06aa90169f36631c1b",
     "reviewedDraftSchemaSha256": "39600226e83db5fc47626bedf094c64a202978d2d7f51b25c0abb7742065ce21",
     "reviewedDraftManifestSha256": "094ad821e6403a3ed6001f9833f285785408557875a12382f63b2d3247253833",
     "factsRefreshed": false,
-    "note": "Portability conversion preserves the reviewed dated content. Later link availability does not refresh status, approval, CI, cost or experiment results."
+    "note": "The historical reviewed draft and source identities are preserved. PR31 factual wording was corrected using a dated observation of PR19 merge and PR22 unmerged proposal status; human-readable times now include dates. factsRefreshed remains false: this is a bounded correction, not a general update of status, approval, CI, cost or experiment results. See pr31_factual_correction."
   }
 }

@@ -1,12 +1,12 @@
 {
   "schema": "sentilab-portable-source-catalog/1",
-  "packagedAt": "2026-10-31T08:17:50.934398+00:00",
+  "packagedAt": "2026-10-31T09:20:37.5874002+00:00",
   "reviewedDraftSha256": "957f73265f43fb69a84fabf18ebf54693205da3d3267eb06aa90169f36631c1b",
-  "note": "No original source bodies are included. Repository destinations are immutable byte-bound references, not public-access or current-approval assertions.",
+  "note": "No original source bodies are included. Repository destinations are immutable byte-bound references, not public-access or current-approval assertions. A separately dated correction observation supports the PR19 merge and PR22 proposal wording; all 29 original source identities are preserved.",
   "sources": {
     "coverage_delta": {
       "id": "coverage_delta",
-      "label": "All 41 tickets and eight deliverables: 07:50 coverage delta",
+      "label": "All 41 tickets and eight deliverables: 2026-10-31 07:50 coverage delta",
       "sourceId": "urn:sha256:aeaefd8dccd5dab2d418e270efab440b7d567cf5605bb686cd0758fd9ebf0370",
       "sha256": "aeaefd8dccd5dab2d418e270efab440b7d567cf5605bb686cd0758fd9ebf0370",
       "bytes": 327072,
@@ -20,7 +20,7 @@
     },
     "coverage_actions": {
       "id": "coverage_actions",
-      "label": "07:50 proposed action list",
+      "label": "2026-10-31 07:50 proposed action list",
       "sourceId": "urn:sha256:42083eaefd69532b441d8568bd6edce89f23aab3b7e544cac67e334d8f6abf6c",
       "sha256": "42083eaefd69532b441d8568bd6edce89f23aab3b7e544cac67e334d8f6abf6c",
       "bytes": 10615,
@@ -308,7 +308,7 @@
     },
     "warden_56314": {
       "id": "warden_56314",
-      "label": "Warden #56314: prospective allocation, effective 07:56Z",
+      "label": "Warden #56314: prospective allocation, effective 2026-10-31 07:56Z",
       "sourceId": "88644193-efef-4edd-bf87-9b622b4f8587",
       "sha256": "4789c2dbaf1be61e6ad87d3095f5a547516ebbdcb539f6a4218fd69fe8aa83b7",
       "bytes": 2582,
@@ -323,7 +323,7 @@
     },
     "cost_56231": {
       "id": "cost_56231",
-      "label": "Last retained room cost estimate, 07:31:44Z",
+      "label": "Last retained room cost estimate, 2026-10-31 07:31:44Z",
       "sourceId": "6a2329e0-70d8-46df-bf9f-f2c01cf5a4ec",
       "sha256": "32c68b51b317149aa514acd0ba4d5d3fb7fc717e6879a6321d98b7ab4c448bfc",
       "bytes": 860,
@@ -508,6 +508,20 @@
         "bindingSourceSha256": "2c051516c49b496bcaeeb065200106fcf4462a6747c9ceeaaa2ebb8c2fabe081",
         "bindingSourceAt": "2026-10-31T07:31:19.613Z"
       },
+      "publicAccessibilityVerified": false
+    },
+    "pr31_factual_correction": {
+      "id": "pr31_factual_correction",
+      "label": "PR31 dated factual correction: PR19 merge and unmerged PR22 proposal",
+      "sourceId": "urn:sha256:cc8730e54118bbed401cfe54059844d5d418a91bfbf94827ffc176f457ac1a72",
+      "bytes": 2620,
+      "sha256": "cc8730e54118bbed401cfe54059844d5d418a91bfbf94827ffc176f457ac1a72",
+      "sourceAt": "2026-10-31T09:20:37.5874002+00:00",
+      "kind": "retained_factual_correction_observation",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
       "publicAccessibilityVerified": false
     }
   }
