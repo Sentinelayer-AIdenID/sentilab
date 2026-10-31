@@ -1,5 +1,6 @@
 """Worker cleanup must not signal a numeric group after its owner is reaped."""
 import asyncio
+import json
 from pathlib import Path
 import os
 import select
@@ -55,6 +56,7 @@ class WholeJobCleanupTests(unittest.IsolatedAsyncioTestCase):
         # teardown. No real broadcast signal, or unrelated victim, is needed.
         with tempfile.TemporaryDirectory() as directory:
             marker = Path(directory) / "child"
+            identity = Path(directory) / "child-identity"
             go = Path(directory) / "go"
             natural_exit = Path(directory) / "natural-exit"
             code = "\n".join([
@@ -70,6 +72,9 @@ class WholeJobCleanupTests(unittest.IsolatedAsyncioTestCase):
                 "child = os.fork()",
                 "if child == 0:",
                 "    os.close(0)",
+                "    with open('/proc/self/stat') as stat: starttime = int(stat.read().rsplit(')', 1)[1].split()[19])",
+                f"    with open({str(identity)!r}, 'w') as record: json.dump([os.getpid(), starttime], record)",
+                # Publish readiness only after the child's identity is complete.
                 f"    with open({str(marker)!r}, 'w') as ready: ready.write(str(os.getpid()))",
                 "    await_pin()",
                 "    os.close(1)" if closed_pipe else "    pass",
@@ -104,6 +109,7 @@ class WholeJobCleanupTests(unittest.IsolatedAsyncioTestCase):
 
             callback = delayed_callback if delayed_reap else process_exited
             child_fd = None
+            child_verified = False
             call = None
             real_signal = signal.pidfd_send_signal
 
@@ -125,10 +131,20 @@ class WholeJobCleanupTests(unittest.IsolatedAsyncioTestCase):
                             await asyncio.sleep(0.005)
                     child = int(marker.read_text())
                     child_fd = os.pidfd_open(child)
-                    # Both fixture processes wait for this release. In
-                    # particular, closed-pipe completion cannot race the pin.
+                    expected = json.loads(identity.read_text())
+                    stat = Path(f"/proc/{child}/stat").read_text()
+                    fields = stat.rsplit(")", 1)[1].split()
+                    self.assertEqual([child, int(fields[19])], expected,
+                                     "fixture identity changed before pin")
+                    # The pidfd must still be live AFTER the procfs read. If
+                    # its process exited/recycled during that read, readiness
+                    # is permanent and rejects the candidate. An alive check
+                    # alone would accept a replacement pinned before the read.
                     self.assertEqual(select.select([child_fd], [], [], 0)[0], [],
                                      "descendant must be alive before release")
+                    child_verified = True
+                    # Both fixture processes wait for this release. In
+                    # particular, closed-pipe completion cannot race the pin.
                     go.touch()
                     if cancel:
                         # A zombie is deliberately still owned by the fixed
@@ -165,15 +181,19 @@ class WholeJobCleanupTests(unittest.IsolatedAsyncioTestCase):
                     if cancel:
                         self.assertGreaterEqual(call.cancelling(), 2)
                 finally:
-                    if call is not None and not call.done():
-                        call.cancel()
+                    if call is not None:
+                        if not call.done():
+                            call.cancel()
                         await asyncio.gather(call, return_exceptions=True)
                     if child_fd is not None:
                         try:
-                            signal.pidfd_send_signal(child_fd, signal.SIGKILL)
-                        except ProcessLookupError:
-                            pass
-                        os.close(child_fd)
+                            if child_verified:
+                                try:
+                                    signal.pidfd_send_signal(child_fd, signal.SIGKILL)
+                                except ProcessLookupError:
+                                    pass
+                        finally:
+                            os.close(child_fd)
 
     async def test_reap_before_callback_timeout_never_signals_recycled_group(self):
         await self.exercise(delayed_reap=True)
@@ -192,6 +212,119 @@ class WholeJobCleanupTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_closed_pipe_failure_removes_descendants(self):
         await self.exercise(closed_pipe=True, failure=True)
+
+
+class FixtureIdentityTests(unittest.IsolatedAsyncioTestCase):
+    async def witness(self, *, reused=False, vanished=False, exited=False,
+                      exited_during_read=False, missing_identity=False, natural_exit=False):
+        # No processes or real signals: model the observer arriving after the
+        # production timeout has expired and the original PID has been reused.
+        pid, fd, starttime = 400001, 900001, 101
+        expired = asyncio.Event()
+        real_sleep = asyncio.sleep
+        real_close = os.close
+        read_text = Path.read_text
+        released = []
+        observations = []
+        calls = []
+        closed = []
+        stat_read = []
+
+        async def fake_call(context, tool, arguments, *, timeout):
+            calls.append(asyncio.current_task())
+            identity = context.root / "child-identity"
+            identity.write_text(json.dumps([pid, starttime]))
+            if missing_identity:
+                identity.unlink()
+            (context.root / "child").write_text(str(pid))
+            if natural_exit:
+                (context.root / "natural-exit").touch()
+            await real_sleep(timeout if reused else 0.02)
+            released.append((context.root / "go").exists())
+            expired.set()
+            raise TimeoutError
+
+        async def observe(delay):
+            if reused:
+                async with asyncio.timeout(1):
+                    await expired.wait()
+            else:
+                await real_sleep(delay)
+
+        def pin(child):
+            self.assertEqual(child, pid)
+            observations.append(expired.is_set())
+            if vanished:
+                raise ProcessLookupError("fixture exited before pin")
+            return fd
+
+        def read(path, *args, **kwargs):
+            if path == Path(f"/proc/{pid}/stat"):
+                stat_read.append(True)
+                fields = ["S"] + ["0"] * 18 + [str(starttime + int(reused))]
+                return f"{pid} (fixture with ) spaces) " + " ".join(fields)
+            return read_text(path, *args, **kwargs)
+
+        def close(descriptor):
+            if descriptor == fd:
+                closed.append(descriptor)
+            else:
+                real_close(descriptor)
+
+        def ready(readers, writers, errors, timeout):
+            self.assertEqual(readers, [fd])
+            dead = exited or (exited_during_read and stat_read)
+            return ([fd] if dead else [], [], [])
+
+        with patch("sentilab_core.test_execution.recorded_call", side_effect=fake_call), \
+                patch("asyncio.sleep", side_effect=observe), \
+                patch("subprocess.Popen", side_effect=AssertionError("no real workers")), \
+                patch("os.pidfd_open", side_effect=pin), \
+                patch.object(Path, "read_text", read), \
+                patch("select.select", side_effect=ready), \
+                patch("signal.pidfd_send_signal") as sent, patch("os.close", side_effect=close):
+            async with asyncio.timeout(2):
+                with self.assertRaises((AssertionError, FileNotFoundError, ProcessLookupError)) as rejection:
+                    await WholeJobCleanupTests().exercise()
+                await asyncio.gather(*calls, return_exceptions=True)
+            self.assertEqual(observations, [reused])
+            self.assertEqual(closed, [] if vanished else [fd])
+            if natural_exit:
+                # The matching live identity is owned even when a later
+                # assertion rejects the fixture's natural-exit evidence.
+                sent.assert_called_once_with(fd, signal.SIGKILL)
+                self.assertEqual(released, [True])
+                self.assertIn("descendant exited naturally", str(rejection.exception))
+            else:
+                sent.assert_not_called()
+                self.assertNotIn(True, released)
+                if vanished:
+                    self.assertIsInstance(rejection.exception, ProcessLookupError)
+                elif missing_identity:
+                    self.assertIsInstance(rejection.exception, FileNotFoundError)
+                elif exited or exited_during_read:
+                    self.assertIn("descendant must be alive before release", str(rejection.exception))
+            if reused:
+                self.assertTrue(expired.is_set(), "observer must span the pre-pin timeout")
+                self.assertIn("fixture identity changed before pin", str(rejection.exception))
+
+    async def test_delayed_observer_rejects_reused_pid_without_signalling(self):
+        await self.witness(reused=True)
+
+    async def test_exited_pidfd_is_rejected_without_signalling(self):
+        await self.witness(exited=True)
+
+    async def test_exit_during_identity_read_is_rejected_without_signalling(self):
+        await self.witness(exited_during_read=True)
+
+    async def test_missing_identity_is_rejected_without_signalling(self):
+        await self.witness(missing_identity=True)
+
+    async def test_pin_esrch_is_a_failure(self):
+        await self.witness(vanished=True)
+
+    async def test_natural_exit_is_a_failure_with_owned_teardown(self):
+        await self.witness(natural_exit=True)
 
 
 if __name__ == "__main__":
