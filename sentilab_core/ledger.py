@@ -83,17 +83,21 @@ def _finite_float(text):
 def read_prefix(path, *, run_id, public_keys):
     """Validate raw lines before parsing, then project only the verified prefix."""
     rows = []
+    source_hash = hashlib.sha256()
     with open(path, "rb") as handle:
         if os.fstat(handle.fileno()).st_size > MAX_REPLAY_BYTES:
             raise ValueError("oversize: replay file")
         while raw := handle.readline(MAX_BYTES + 2):
+            source_hash.update(raw)
             line = raw[:-1] if raw.endswith(b"\n") else raw
             if len(line) > MAX_BYTES:
                 while raw and not raw.endswith(b"\n"):
                     raw = handle.readline(MAX_BYTES + 2)
-                rows.append({"error": "oversize JSONL row", "raw": b"null\n"})
+                    source_hash.update(raw)
+                rows.append({"error": "oversize JSONL row", "raw": b"null\n",
+                             "prefix_hash": source_hash.hexdigest()})
                 continue
-            row = {"raw": line + b"\n"}
+            row = {"raw": line + b"\n", "prefix_hash": source_hash.hexdigest()}
             try:
                 value = json.loads(line, object_pairs_hook=_object,
                                    parse_float=_finite_float, parse_constant=_finite_float)

@@ -17,8 +17,12 @@
   line, preserving a frozen prefix without echoing unbounded input. Replay files
   over 64 MiB fail closed. Legacy sequence groups exceeding a page cap return
   413; append-row cursor pages preserve all evidence and remain within the caps.
-  Append cursors assume append-only storage, include late conflicting appends,
-  and are not snapshot integrity proofs for externally rewritten files.
+  Append cursors include late conflicting appends and bind consumed physical
+  bytes through a required SHA-256 boundary. Changed/truncated prefixes return
+  409 and require replay from zero. This transport extension is coordinated
+  with Forge pending a versioned cursor contract; frozen v0.4/v0.5 bytes stay
+  unchanged. Clients must degrade unsupported row cursors to STALE, never
+  advance LIVE/current claims from a sequence-only fallback.
   Forge owns the client-clock LIVE/progress tracker and the browser transport
   consumer; those are not implemented by this producer change.
 - Baseline operators are imported, but scheduling uses recorded per-proposal

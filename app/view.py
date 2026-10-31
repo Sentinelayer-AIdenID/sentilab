@@ -75,9 +75,12 @@ def runs():
 def events(run_id: str, after: int = Query(0, ge=0),
            limit: int = Query(MAX_PAGE_LINES, ge=1, le=MAX_PAGE_LINES),
            format: Literal["jsonl", "json"] = "jsonl",
-           cursor: int | None = Query(None, ge=0)):
+           cursor: int | None = Query(None, ge=0), cursor_hash: str | None = None):
     if cursor is not None and after != 0:
         raise HTTPException(400, "use cursor or after, not both")
+    if cursor_hash is not None and (cursor is None or len(cursor_hash) != 64 or
+                                    any(c not in "0123456789abcdef" for c in cursor_hash)):
+        raise HTTPException(400, "invalid cursor hash")
     try:
         state = replay(context().root, run_id, public_keys=context().public_keys)
     except FileNotFoundError:
@@ -95,6 +98,10 @@ def events(run_id: str, after: int = Query(0, ge=0),
     if cursor is not None:
         if cursor > len(state["source_rows"]):
             raise HTTPException(409, "ledger shortened; replay from cursor zero")
+        boundary = (state["source_rows"][cursor - 1]["prefix_hash"] if cursor
+                    else hashlib.sha256(b"").hexdigest())
+        if (cursor and cursor_hash is None) or (cursor_hash is not None and cursor_hash != boundary):
+            raise HTTPException(409, "cursor boundary missing or changed; replay from cursor zero")
         rows = state["source_rows"][cursor:]
         groups = ([row] for row in rows)
     else:
@@ -114,8 +121,10 @@ def events(run_id: str, after: int = Query(0, ge=0),
                "x-has-more": str(len(rows) > len(page)).lower()}
     position = {}
     if cursor is not None:
-        position = {"cursor": cursor, "next_cursor": cursor + len(page)}
+        position = {"cursor": cursor, "next_cursor": cursor + len(page),
+                    "next_cursor_hash": page[-1]["prefix_hash"] if page else boundary}
         headers["x-next-cursor"] = str(position["next_cursor"])
+        headers["x-cursor-hash"] = position["next_cursor_hash"]
     if format == "jsonl":
         return Response(b"".join(row["raw"] for row in page), media_type="application/x-ndjson", headers=headers)
 
