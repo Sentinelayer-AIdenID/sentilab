@@ -236,7 +236,7 @@ class IsolatedLabs:
                       "seed": scope["seed"], "scope": scope, "call_id": call_id,
                       "configuration_hash": digest(self.describe()), "context_hash": digest(context)}
         # Detach even trusted mutable caller data before any await.
-        encoded = check_caps(context)
+        encoded = canonical(context)
         context = json.loads(encoded)
         prior = {r["call_id"]: r for r in records if r.get("type") == "lab.adapter_call" and r.get("status") == "reserved"}
         prior.update(self._attempts)
@@ -265,6 +265,7 @@ class IsolatedLabs:
                 raise ValueError("real_calls_disabled")
             if admitted.fixture_only is not True:
                 raise ValueError("pin_mismatch")
+            check_caps(context)
             if len(encoded) > MAX_MESSAGE_BYTES:
                 raise ValueError("context_limit")
             # Meter before invocation, retain charge on failure; never retry.
@@ -280,7 +281,8 @@ class IsolatedLabs:
             emit("missing", "cancelled")
             raise
         except (NotAdmitted, OverCap, ProviderOutage, TimeoutError) as exc:
-            reason = {NotAdmitted: "not_admitted", OverCap: "over_cap", ProviderOutage: "provider_outage", TimeoutError: "timeout"}[type(exc)]
+            reason = next(reason for cls, reason in ((NotAdmitted, "not_admitted"), (OverCap, "over_cap"),
+                          (ProviderOutage, "provider_outage"), (TimeoutError, "timeout")) if isinstance(exc, cls))
             emit("missing", reason)
             return CallResult(None, provenance, context, reason)
         except ValueError as exc:
