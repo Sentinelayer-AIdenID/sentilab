@@ -146,6 +146,22 @@ dialog li { margin: 4px 0; color: #cfd8d6; }
   .desk:has(> .wnotice:not([hidden])) { grid-template-rows: 44px auto 52px 68px minmax(0, 1fr) 26px; }
 }
 .wnotice { margin: 0; padding: 6px 12px; border-radius: 6px; border: 1px solid #7a6334; background: #2a2418; color: #f3d9a4; font-size: 12px; line-height: 1.4; }
+/* The qualifier beside a temperature (tq), and the mark on a withdrawn or unvalidated number (q-*): the number itself is unchanged. */
+.tq { display: inline-block; flex: none; margin-left: 6px; padding: 0 4px; border-radius: 3px; border: 1px solid var(--line); font: 600 9.5px/1.5 var(--mono);
+      letter-spacing: 0; white-space: nowrap; color: var(--muted); }
+.tq.withdrawn { color: #f3d9a4; background: #463a20; border-color: #7a6334; }
+.tq.unvalidated { color: #c9d6e2; background: #233040; border-color: #4a5d73; }
+.q-withdrawn, .q-unvalidated { text-decoration: underline dotted #b9a26f; text-underline-offset: 3px; }
+.q-unvalidated { text-decoration-color: #7f93a8; }
+.feed p.cap { margin: 0 0 2px; padding: 2px 0 4px; border-bottom: 1px solid #1f2e35; color: var(--muted); text-decoration: none; }
+.feed p.cap.q-withdrawn { color: #f3d9a4; }
+.feed p.cap.q-unvalidated { color: #c9d6e2; }
+/* A lane cell too narrow for its name, temperature and qualifier on one line puts the qualifier on a second line. */
+.lanecell { container-type: inline-size; }
+@container (max-width: 330px) {
+  .lanecell .lh { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 8px; row-gap: 1px; }
+  .lanecell .lh .tq { grid-column: 3; justify-self: end; margin-left: 0; }
+}
 
 /* below 1280x720: stacked, scrolling layout */
 @media (max-width: 1279px), (max-height: 719px) {

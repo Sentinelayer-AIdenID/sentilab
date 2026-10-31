@@ -80,6 +80,17 @@ input[type=range] { flex: 1; min-width: 120px; accent-color: var(--cyan); }
 .frozen span { font-weight: 400; }
 /* The withdrawn-temperature notice (temperature-label.mjs NOTICE). The numbers below it stay as signed. */
 .wnotice { margin: 0; padding: 8px 14px; border-radius: 7px; border: 1px solid #7a6334; background: #2a2418; color: #f3d9a4; font-size: var(--fs-s); }
+/* The qualifier beside a temperature (tq), and the mark on a withdrawn or unvalidated number (q-*): the number itself is unchanged. */
+.tq { display: inline-block; flex: none; padding: 0 5px; border-radius: 3px; border: 1px solid var(--line); font: 600 var(--fs-xs)/1.45 var(--mono);
+      letter-spacing: 0; text-transform: none; white-space: nowrap; color: var(--muted); }
+.tq.withdrawn { color: #f3d9a4; background: #463a20; border-color: #7a6334; }
+.tq.unvalidated { color: #c9d6e2; background: #233040; border-color: #4a5d73; }
+.q-withdrawn, .q-unvalidated { text-decoration: underline dotted #b9a26f; text-underline-offset: 3px; }
+.q-unvalidated { text-decoration-color: #7f93a8; }
+.legend .tq { margin-left: -6px; }
+.best .jq { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; flex: none; }
+th .tq { display: block; width: max-content; margin-top: 2px; font-size: 10.5px; padding: 0 4px; }
+.card .cf .tq { margin-right: 2px; }
 
 /* ── panels ─────────────────────────────────────────────────────────────────────────────────────────────── */
 .work { position: relative; display: grid; gap: 10px; min-height: 0;

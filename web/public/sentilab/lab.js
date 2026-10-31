@@ -20,7 +20,7 @@ import {
 } from "./lab-model.mjs";
 // Temperatures are labelled by the one rule (temperature-label.mjs) from the evaluator identity of the measurement each
 // came from, for replays and the live feed alike. The numbers stay as recorded; the page says so above the panels.
-import { needsNotice, NOTICE } from "../temperature-label.mjs";
+import { labelFor, labelForAll, evaluatorIds, envelopeEvaluator, needsNotice, NOTICE } from "../temperature-label.mjs";
 
 const DEMO = { url: "demo-run.jsonl", runId: "demo-8c-0001", label: "demo-run.jsonl · bundled interface fixture" };
 const TEST_KEY_NAMES = ["core"];                 // ?pins=test: the vectors' "core" test key, derived here at run time
@@ -131,7 +131,13 @@ async function verify(src) {
   const scale = colorScale(trusted);
   // A file is one whole run, so its scale is fixed. A live run's scale only widens while its prefix holds or grows,
   // and is rebuilt from what remains when the prefix shrinks (nextScale).
+  const widened = src === S.live && src.scale && scale && src.verification.prefix_end >= previousK;
   src.scale = src === S.live ? nextScale(src.scale, previousK, scale, src.verification.prefix_end) : scale;
+  // Identities for the labels: node id -> identity, and every one behind the colour scale (colorScale's inputs; a
+  // widened live scale keeps the ones it was widened from).
+  src.ids = evaluatorIds(trusted);
+  const scaleIds = trusted.filter((env) => isObj(env.values) && isObj(env.values.center_temps)).map((env) => envelopeEvaluator(env, src.ids));
+  src.scaleIds = widened ? [...(src.scaleIds ?? []), ...scaleIds] : scaleIds;
   src.frame = frameOf(trusted);
   // The run's layout span, labelled exactly as the Package view labels it (scene.mjs: one definition, one label).
   src.span = spanText(layoutSpan(trusted));
@@ -281,6 +287,11 @@ function step(delta) {
 
 // ── rendering ───────────────────────────────────────────────────────────────────────────────────────────────
 
+// Temperature labels (temperature-label.mjs): a withdrawn or unvalidated number is marked (dotted underline, the full
+// sentence on hover) and its qualifier sits beside it or its column. The number itself is never changed.
+const tq = (label) => h("span", { class: `tq ${label.state}`, title: label.title }, label.short);
+const jLabel = (src, c) => labelFor(src?.ids?.get(c.metric?.id));   // J comes from the measurement metricFor() picked
+
 function render() {
   const src = active();
   const v = src?.verification ?? null;
@@ -290,9 +301,9 @@ function render() {
   renderControls(src, v, n);
   renderFrozen(view, v);
   renderCards(src, v, view);
-  renderBoard(v, view);
+  renderBoard(src, v, view);
   renderEvidence(v, view);
-  renderFeed(v, n, view);
+  renderFeed(src, v, n, view);
   renderOffline(src);
   refreshDialogs();
   // Every row this source holds, verified or not (the feed lists them all): any withdrawn or unvalidated temperature
@@ -417,16 +428,21 @@ function renderCards(src, v, view) {
   box.classList.toggle("list", !anyGeometry);
   box.classList.toggle("many", anyGeometry && view.cards.length > 6);
   if (!anyGeometry) box.append(h("div", { class: "nogeom" }, "No layout geometry in the verified data, so there is nothing to draw. Candidates are listed with J from their measurements."));
-  for (const c of view.cards) box.append(cardEl(c, scale, frame, c.id === boardId, anyGeometry));
-  renderLegend(scale, anyGeometry, src.span ?? null);
+  for (const c of view.cards) box.append(cardEl(c, scale, frame, c.id === boardId, anyGeometry, src));
+  renderLegend(scale, anyGeometry, src.span ?? null, scale ? labelForAll(src.scaleIds) : null);
 }
 
-function cardEl(c, scale, frame, onBoard, draw = true) {
+function cardEl(c, scale, frame, onBoard, draw = true, from = null) {
+  // Labels: J by the measurement it came from, the centre temperatures by theirs (they can differ); the card's
+  // qualifier covers both.
+  const jl = c.J ? jLabel(from, c) : null;
+  const tl = c.source?.temps ? labelFor(from?.ids?.get(c.source.id)) : null;
+  const cl = jl || tl ? labelForAll([...(jl ? [from?.ids?.get(c.metric?.id)] : []), ...(tl ? [from?.ids?.get(c.source.id)] : [])]) : null;
   const [, kind] = stageOf(c.lifecycle);
   const chip = c.kind === "candidate" ? h("span", { class: `chip ${kind}` }, c.lifecycle) : h("span", { class: `chip v-${c.validity}` }, c.validity);
   const el = h("div", { class: `card${onBoard ? " board" : ""}${draw ? "" : " compact"}`, style: `--lab:${c.color}` },
     h("div", { class: "ch" }, h("b", { style: `color:${c.color}` }, c.labName), chip));
-  if (draw) el.append(drawLayout(c, scale, frame));
+  if (draw) el.append(drawLayout(c, scale, frame, tl));
   // Where the colors and J come from, in words. The measurements and their set status are project()'s.
   const src = c.source, m = c.metric;
   const metricNote = m && c.kind !== "measurement" ? `J from ${shortId(m.id)}${m.validity === "valid" ? "" : ` · ${m.validity}`}` : null;
@@ -438,19 +454,23 @@ function cardEl(c, scale, frame, onBoard, draw = true) {
   else note = `temps from ${shortId(src.id)} · ${src.validity}`;
   const jTitle = m ? `J from ${m.id} (${m.validity})` : "no measurement with J in the verified prefix";
   el.append(h("div", { class: "cf" },
-    h("span", { class: `j${m && m.validity !== "valid" ? " dim" : ""}`, title: jTitle }, h("small", null, "J"), c.J ? `${fmt(c.J.value)} ${c.J.unit}` : "-"),
+    h("span", { class: `j${m && m.validity !== "valid" ? " dim" : ""}`, title: jl ? `${jTitle} · ${jl.title}` : jTitle }, h("small", null, "J"),
+      c.J ? h("span", { class: `q-${jl.state}` }, `${fmt(c.J.value)} ${c.J.unit}`) : "-"),
     c.W ? h("span", { class: "src", title: `W ${c.W.metric_id}` }, `W ${fmt(c.W.value)} ${c.W.metric_id}`) : null));
-  el.append(h("div", { class: "cf", style: "padding-top:0" }, h("span", { class: `src${alt ? " alt" : ""}`, style: "margin-left:0;text-align:left", title: `${c.id} · ${note}` }, `${shortId(c.id)} · ${note}`),
+  // The qualifier opens the line under J, so the card keeps its J, W and provenance where they were.
+  el.append(h("div", { class: "cf", style: "padding-top:0" }, cl ? tq(cl) : null,
+    h("span", { class: `src${alt ? " alt" : ""}`, style: "margin-left:0;text-align:left", title: `${c.id} · ${note}${cl ? ` · ${cl.title}` : ""}` }, `${shortId(c.id)} · ${note}`),
     onBoard ? h("span", { class: "chip won", style: "margin-left:auto" }, "BOARD") : null));
   return el;
 }
 
-function drawLayout(c, scale, frame) {
+function drawLayout(c, scale, frame, tl = null) {
   const U = 10;                                   // svg units per layout unit
   const f = frame ?? { x0: 0, y0: 0, x1: 10, y1: 10 };
   const W = (f.x1 - f.x0) * U, H = (f.y1 - f.y0) * U;
   const svg = s("svg", { viewBox: `-4 -4 ${W + 8} ${H + 8}`, preserveAspectRatio: "xMidYMid meet", role: "img",
-    "aria-label": `${c.labName} layout${c.source ? ", chiplet-center temperatures" : ", no temperatures"}` });
+    "aria-label": `${c.labName} layout${c.source ? `, chiplet-center temperatures${tl ? `, ${tl.text}` : ""}` : ", no temperatures"}` });
+  if (tl) svg.append(s("title", null, `Chiplet-center temperatures · ${tl.title}`));
   svg.append(s("rect", { x: 0, y: 0, width: W, height: H, rx: 6, fill: "#0e181d", stroke: "#34474f", "stroke-width": 2 }));
   const temps = c.source?.temps ?? null;
   const faded = c.source && c.source.validity !== "valid";
@@ -484,7 +504,7 @@ function drawLayout(c, scale, frame) {
   return svg;
 }
 
-function renderLegend(scale, anyGeometry, span) {
+function renderLegend(scale, anyGeometry, span, scaleLabel = null) {
   const lg = $("legend");
   $("p1note").textContent = scale ? "chiplet-center temperatures, not a field" : "layouts only: no temperatures drawn";
   if (anyGeometry) {
@@ -497,11 +517,14 @@ function renderLegend(scale, anyGeometry, span) {
     return;
   }
   const unit = scale.unit || "";
-  lg.append(h("span", { class: "end" }, `${scale.min} ${unit}`), h("span", { class: "bar" }), h("span", { class: "end" }, `${scale.max} ${unit}`),
+  // The scale's ends come from every centre temperature behind it: withdrawn if any of them is (labelForAll).
+  const sl = scaleLabel ?? labelForAll([]);
+  const end = (text) => h("span", { class: `end q-${sl.state}`, title: sl.title }, text);
+  lg.append(end(`${scale.min} ${unit}`), h("span", { class: "bar" }), end(`${scale.max} ${unit}`), tq(sl),
     h("span", { class: "what" }, S.source === "file" ? "one fixed scale for this run · center value per chiplet" : "one scale for this run, widens only if a value falls outside"));
 }
 
-function renderBoard(v, view) {
+function renderBoard(src, v, view) {
   const best = $("best"), table = $("board"), pill = $("boardPill");
   best.replaceChildren(); table.replaceChildren();
   if (!view || view.trustedCount === 0) {
@@ -517,9 +540,12 @@ function renderBoard(v, view) {
   }
   const cur = view.board.current;
   if (cur) {
+    const jl = cur.J ? jLabel(src, cur) : null;
     best.className = "best";
     best.append(h("div", null, h("div", { class: "lbl" }, "Current board"), h("div", { class: "who", style: `color:${cur.color}` }, cur.labName)),
-      h("div", { class: "j" }, cur.J ? `${fmt(cur.J.value)} ${cur.J.unit}` : "-"),
+      // J with its qualifier under it, so the gate's line beside them keeps its room.
+      h("div", { class: "jq" }, h("div", { class: `j${jl ? ` q-${jl.state}` : ""}`, title: jl?.title ?? null }, cur.J ? `${fmt(cur.J.value)} ${cur.J.unit}` : "-"),
+        jl ? tq(jl) : null),
       h("div", { style: "min-width:0" }, h("span", { class: `chip v-${cur.validity}` }, cur.validity),
         h("div", { class: "meta", title: `${cur.id}, accepted by the gate at seq ${cur.acceptedSeq}` }, `accepted at seq ${cur.acceptedSeq} · ${shortId(cur.id)}`)));
   } else {
@@ -528,15 +554,20 @@ function renderBoard(v, view) {
   }
   pill.className = view.broken ? "pill bad" : "pill ok";
   pill.textContent = view.broken ? `FROZEN AT SEQ ${view.frozenAt}` : `PROJECTED · SEQ 1-${view.frozenAt}`;
-  table.append(h("thead", null, h("tr", null, h("th", null, "Lab"), h("th", { class: "col-wide" }, "Candidate"), h("th", null, "Lifecycle"), h("th", { class: "col-wide" }, "Path"), h("th", { title: "Display value from the envelope; the gate decides from the core's records" }, "J (display)"), h("th", null, "Validity"))));
+  // The J column: each value labelled by its own measurement, the column by all of them (labelForAll).
+  const withJ = view.board.candidates.filter((c) => c.J);
+  const colLabel = withJ.length ? labelForAll(withJ.map((c) => src?.ids?.get(c.metric?.id))) : null;
+  table.append(h("thead", null, h("tr", null, h("th", null, "Lab"), h("th", { class: "col-wide" }, "Candidate"), h("th", null, "Lifecycle"), h("th", { class: "col-wide" }, "Path"),
+    h("th", { title: `Display value from the envelope; the gate decides from the core's records${colLabel ? ` · ${colLabel.title}` : ""}` }, "J (display)", colLabel ? tq(colLabel) : null), h("th", null, "Validity"))));
   const body = h("tbody");
   for (const c of view.board.candidates) {
     const [pos, kind] = stageOf(c.lifecycle);
     const dots = STAGES.map((name, i) => h("i", { title: name, class: pos === null ? "" : i < pos ? "done" : i === pos ? (kind === "open" ? "done" : kind) : "" }));
+    const jl = c.J ? jLabel(src, c) : null;
     body.append(h("tr", { class: cur && cur.id === c.id ? "cur" : "" },
       h("td", null, h("span", { class: "lab", style: `color:${c.color}` }, c.labName)), h("td", { class: "mono col-wide", title: c.id }, shortId(c.id)),
       h("td", null, h("span", { class: `chip ${kind}` }, c.lifecycle)), h("td", { class: "col-wide" }, h("span", { class: "track" }, dots)),
-      h("td", { class: "mono" }, c.J ? `${fmt(c.J.value)}` : "-"), h("td", null, h("span", { class: `chip v-${c.validity}` }, c.validity))));
+      h("td", { class: `mono${jl ? ` q-${jl.state}` : ""}`, title: jl ? `${c.J.unit} · ${jl.text}` : null }, c.J ? `${fmt(c.J.value)}` : "-"), h("td", null, h("span", { class: `chip v-${c.validity}` }, c.validity))));
   }
   table.append(body);
 }
@@ -588,7 +619,14 @@ function checkCell(r) {
   return ["ok", "✓ verified"];
 }
 
-function renderFeed(v, n, view) {
+// A feed row's temperature (a measurement's J, printed in its outcome text): its label, or null when it shows none.
+function feedLabel(src, v, r) {
+  const env = r.kind === "event" ? v.ordered[r.i] : null;
+  const J = env && env.event.type === "node.create" && isObj(env.values) && isObj(env.values.J) ? env.values.J.value : null;
+  return typeof J === "number" && Number.isFinite(J) ? labelFor(envelopeEvaluator(env, src?.ids)) : null;
+}
+
+function renderFeed(src, v, n, view) {
   const feed = $("feed"), pill = $("feedPill");
   feed.replaceChildren();
   if (!v || n === 0) {
@@ -604,13 +642,14 @@ function renderFeed(v, n, view) {
   for (const r of shown) {
     const [cls, text] = checkCell(r);
     const lab = r.kind === "event" ? labInfo(r.lab) : null;
+    const tl = feedLabel(src, v, r);
     const row = h("div", { class: `row${r.i === n - 1 ? " cur" : ""}${r.status !== "verified" ? " unv" : ""}${!r.projected ? " after" : ""}${r.kind !== "event" ? " special" : ""}`,
       role: "listitem", tabindex: 0, "data-i": r.i, title: "Open in the inspector" },
       h("span", { class: "num" }, r.seq == null ? "?" : `#${r.seq}`),
       h("span", null, r.kind === "event" ? tsText(r.ts) : "-"),
       lab ? h("span", { class: "labchip", style: `background:${lab.color}` }, lab.name) : h("span", null, "-"),
       h("span", null, r.kind === "event" ? r.type : r.kind),
-      h("span", { class: r.kind !== "event" ? "out" : "" }, r.text),
+      h("span", { class: r.kind !== "event" ? "out" : "", title: tl ? `${r.text} · ${tl.title}` : null }, tl ? `${r.text} · ${tl.short}` : r.text),
       h("span", { class: cls }, h("span", { class: "check-icon" }, text.slice(0, 1)), h("span", { class: "check-text" }, text.slice(1))));
     feed.append(row);
   }
@@ -678,7 +717,12 @@ function renderInspector() {
       ["§", "run"], ["run id", asText(run.run_id)], ["arm", asText(run.arm)], ["family", asText(run.family)], ["seed", asText(run.seed)], ["ticket id", asText(run.ticket_id)],
       ["§", "hashes"], ["hash", asText(env.hash)], ["prev_hash", asText(env.prev_hash)], ["sig key_id", asText(sig.key_id)], ["sig alg", asText(sig.alg)], ["sig value", short(asText(sig.value), 32)],
       ["§", "body"], ["", h("pre", { class: "json" }, JSON.stringify(env.event.body ?? null, null, 2))]);
-    if (isObj(env.values)) rows.push(["§", "values (display only)"], ["", h("pre", { class: "json" }, JSON.stringify(env.values, null, 2))]);
+    if (isObj(env.values)) {
+      // The values exactly as signed; a temperature among them is labelled by the one rule, never rewritten.
+      const tl = isObj(env.values.J) || isObj(env.values.center_temps) ? labelFor(envelopeEvaluator(env, src.ids)) : null;
+      rows.push(["§", "values (display only)"], ...(tl ? [["temperatures", h("span", { class: `q-${tl.state}`, title: tl.title }, tl.text)]] : []),
+        ["", h("pre", { class: "json" }, JSON.stringify(env.values, null, 2))]);
+    }
   }
   $("inspTitle").textContent = `Envelope ${row.seq == null ? "?" : `seq ${row.seq}`} · ${row.status}`;
   $("inspBody").replaceChildren(kv(rows));
