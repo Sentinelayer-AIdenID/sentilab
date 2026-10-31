@@ -23,6 +23,11 @@ const plain = (t) => String(t == null ? "" : t).replace(/\bjev\b[-\w.]*/gi, "sig
 // Record and run data can arrive from a replay file or a future router: every string from it is escaped before
 // it reaches innerHTML, so a crafted record can never paint a fake verdict into the proof panels.
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c]);
+// Each temperature carries its own label (labelFor / labelForAll): a withdrawn or unvalidated one is marked (dotted
+// underline, the full sentence on hover) and a qualifier sits beside it or above its group. The number never changes.
+const tv = (text, label) => `<span class="q-${label.state}" title="${esc(label.title)}">${esc(text)}</span>`;
+const tq = (label) => `<span class="tq ${label.state}" title="${esc(label.title)}">${esc(label.short)}</span>`;
+const mark = (el, label) => { for (const c of [...el.classList]) if (c.startsWith("q-")) el.classList.remove(c); el.classList.add(`q-${label.state}`); el.title = label.title; };
 
 const S = { run: null, lanes: {}, k: 0, maxK: 0, playing: null, view: "step", sel: { lane: LANES[0], step: 0 },
             heatMin: 0, heatMax: 1, liveId: null, mode: "replay", tempIds: [], boardNotice: false };
@@ -32,7 +37,8 @@ function parseRun(run) {
   const result = run.result || {};
   const lanes = {};
   let lo = Infinity, hi = -Infinity;
-  const seeHeat = (h) => { if (!h) return; for (const row of h) for (const v of row) { if (v < lo) lo = v; if (v > hi) hi = v; } };
+  const heatIds = [];                          // the identity of every grid behind the colour scale's ends
+  const seeHeat = (h, solver) => { if (!h) return; heatIds.push(solver); for (const row of h) for (const v of row) { if (v < lo) lo = v; if (v > hi) hi = v; } };
   for (const lane of LANES) {
     const lr = (result.lane_results || {})[lane];
     if (!lr) continue;
@@ -47,17 +53,17 @@ function parseRun(run) {
                        wireMetric: p.thermal.wire_metric,
                        design: p.design_hash, pool: (p.shared_initial_samples || []).length, seq: e.sequence, hash: e.hash,
                        problem: p.thermal.problem_hash, solver: p.thermal.solver_version };
-        seeHeat(L.baseline.heat);
+        seeHeat(L.baseline.heat, L.baseline.solver);
       } else if (e.event === "lane_decision") decision = p;
       else if (e.event === "signal_decision") signal = p;
       else if (e.event === "proposal_admitted") admitted[p.proposal_id] = { op: p.operation, args: p.args, agent: p.agent_id, seq: e.sequence, cand: p.candidate_hash, parent: p.parent_hash };
       else if (e.event === "oracle_result") {
         const t = p.thermal || {};
-        current = { k: L.steps.length + 1, pid: p.proposal_id, cand: p.candidate_hash, temp: t.maximum_temperature_c,
+        current = { k: L.steps.length + 1, pid: p.proposal_id, cand: p.candidate_hash, temp: t.maximum_temperature_c, solver: t.solver_version,
                     heat: t.heatmap_c || null, wire: t.wirelength_mm, wireMetric: t.wire_metric, solverS: t.solver_seconds, problem: t.problem_hash,
                     seq: e.sequence, hash: e.hash, ts: e.timestamp, decision, signal, admitted: admitted[p.proposal_id] || null,
                     outcome: null, events: [] };
-        seeHeat(current.heat);
+        seeHeat(current.heat, current.solver);
         L.steps.push(current);
         signal = null;
       } else if (e.event.startsWith("proposal_") && current && p.proposal_id === current.pid) {
@@ -67,15 +73,16 @@ function parseRun(run) {
     }
     // lane-best curve: starts at the shared pool's best and moves only on a committed, simulator-verified result
     let best = L.baseline ? L.baseline.temp : null, bestHeat = L.baseline ? L.baseline.heat : null, bestCand = L.baseline && L.baseline.design;
-    L.best = [{ temp: best, heat: bestHeat, cand: bestCand }];
+    let bestSolver = L.baseline ? L.baseline.solver : undefined;
+    L.best = [{ temp: best, heat: bestHeat, cand: bestCand, solver: bestSolver }];
     for (const s of L.steps) {
-      if (s.outcome && s.outcome.status === "committed") { best = s.temp; bestHeat = s.heat; bestCand = s.cand; }
-      L.best.push({ temp: best, heat: bestHeat, cand: bestCand });
+      if (s.outcome && s.outcome.status === "committed") { best = s.temp; bestHeat = s.heat; bestCand = s.cand; bestSolver = s.solver; }
+      L.best.push({ temp: best, heat: bestHeat, cand: bestCand, solver: bestSolver });
     }
     lanes[lane] = L;
   }
   if (lo === Infinity) { lo = 0; hi = 1; }
-  return { lanes, lo, hi };
+  return { lanes, lo, hi, heatLabel: labelForAll(heatIds) };
 }
 
 // The notice under the top bar: shown while this run's temperatures, or the runs list's, include a withdrawn or an
@@ -90,6 +97,7 @@ function load(run, mode) {
   stop();
   const parsed = parseRun(run);
   S.run = run; S.mode = mode; S.lanes = parsed.lanes; S.heatMin = parsed.lo; S.heatMax = parsed.hi; S.tempIds = runTemperatureIds(run);
+  S.heatLabel = parsed.heatLabel;
   updateNotice();
   S.maxK = Math.max(0, ...Object.values(S.lanes).map((L) => L.steps.length));
   // What the signed records prove about the signal layer: provider calls made, fallbacks taken, call latency.
@@ -111,7 +119,8 @@ function load(run, mode) {
   $("legendMin").textContent = `${fmt(S.heatMin, 1)} °C`; $("legendMax").textContent = `${fmt(S.heatMax, 1)} °C`;
   const anyHeat = Object.values(S.lanes).some((L) => L.baseline && L.baseline.heat);
   if (!anyHeat) { $("legendMin").textContent = ""; $("legendMax").textContent = ""; }   // no grid, so no color scale to state
-  $("scaleNote").textContent = anyHeat ? `${run.grid}×${run.grid} HotSpot chip-layer grid · fixed scale for this run · peaks come from the solver`
+  for (const id of ["legendMin", "legendMax", "scaleNote"]) mark($(id), S.heatLabel);
+  $("scaleNote").textContent = anyHeat ? `${S.heatLabel.short} · ${run.grid}×${run.grid} HotSpot chip-layer grid · fixed scale for this run · peaks come from the solver`
                                        : "plate solver reports peaks only (no grid); temperatures come from the solver";
   renderRecords();
   render();
@@ -147,7 +156,7 @@ function renderRace() {
       if (!S.lanes[lane]) continue;
       const cell = document.createElement("div");
       cell.className = "lanecell"; cell.dataset.lane = lane; cell.style.borderColor = laneColor(lane);
-      cell.innerHTML = `<div class="lh"><b class="fg-${laneKey(lane)}">${LANE_NAME[lane]}</b><span class="muted w"></span><span class="t num"></span></div>` +
+      cell.innerHTML = `<div class="lh"><b class="fg-${laneKey(lane)}">${LANE_NAME[lane]}</b><span class="muted w"></span><span class="t num"></span><span class="tq"></span></div>` +
         (S.lanes[lane].baseline && S.lanes[lane].baseline.heat ? `<canvas class="heatcanvas"></canvas>`
                                                                 : `<div class="noheat"></div>`) + `<span class="verdict"></span>`;
       cell.onclick = () => { S.sel = { lane, step: Math.min(S.k, S.lanes[lane].steps.length) }; render(); };
@@ -156,14 +165,17 @@ function renderRace() {
   }
   for (const cell of race.children) {
     const L = S.lanes[cell.dataset.lane], s = stepAt(L, S.k), b = L.best[Math.min(S.k, L.steps.length)];
-    const shown = S.view === "best" ? b : (s ? { temp: s.temp, heat: s.heat } : b);
+    const shown = S.view === "best" ? b : (s ? { temp: s.temp, heat: s.heat, solver: s.solver } : b);
+    const tl = labelFor(shown.solver), bl = labelFor(b.solver);
     cell.classList.toggle("sel", S.sel.lane === L.lane);
     cell.querySelector(".t").textContent = `${fmt(shown.temp)} °C`;
+    mark(cell.querySelector(".t"), tl);
+    cell.querySelector(".tq").outerHTML = tq(tl);
     cell.querySelector(".w").textContent = s && s.wire != null ? `wire proxy ${fmt(s.wire, 1)} mm` : "";
     const canvas = cell.querySelector("canvas");
     if (canvas && shown.heat) drawHeat(canvas, shown.heat);
     const noheat = cell.querySelector(".noheat");
-    if (noheat) noheat.innerHTML = `${S.view === "best" ? "lane best" : "this step"}<br><span class="bigtemp fg-${laneKey(L.lane)}">${fmt(shown.temp)} °C</span><br>best ${fmt(b.temp)} °C`;
+    if (noheat) noheat.innerHTML = `${S.view === "best" ? "lane best" : "this step"}<br><span class="bigtemp fg-${laneKey(L.lane)}">${tv(`${fmt(shown.temp)} °C`, tl)}</span><br>best ${tv(`${fmt(b.temp)} °C`, bl)}`;
     const v = cell.querySelector(".verdict");
     v.textContent = s ? (s.outcome ? `${s.outcome.status}: ${s.outcome.reason}` : "simulated") : "shared pool best";
     v.style.color = s && s.outcome && s.outcome.status === "committed" ? css("--cyan") : css("--muted");
@@ -184,10 +196,15 @@ function renderCurves() {
     const pts = L.best.slice(0, Math.min(S.k, L.steps.length) + 1).map((b, i) => `${x(i)},${y(b.temp)}`).join(" ");
     svg += `<polyline fill="none" stroke="${laneColor(L.lane)}" stroke-width="2.2" vector-effect="non-scaling-stroke" points="${pts}"/>`;
   }
-  chart.innerHTML = svg + `</svg><span class="mono muted axis hi">${fmt(hi)} °C</span>` +
-    `<span class="mono muted axis lo">${fmt(lo)} °C</span>`;
-  $("curveLegend").innerHTML = Object.values(S.lanes).map((L) =>
-    `<span><i class="bg-${laneKey(L.lane)}"></i>${LANE_NAME[L.lane]} ${fmt(L.best[Math.min(S.k, L.steps.length)].temp)}</span>`).join("");
+  const al = labelForAll(Object.values(S.lanes).flatMap((L) => L.best.filter((b) => b.temp != null).map((b) => b.solver)));
+  chart.innerHTML = svg + `</svg><span class="mono muted axis hi">${tv(`${fmt(hi)} °C`, al)}</span>` +
+    `<span class="mono muted axis lo">${tv(`${fmt(lo)} °C`, al)}</span>`;
+  $("curveLegend").innerHTML = Object.values(S.lanes).map((L) => {
+    const b = L.best[Math.min(S.k, L.steps.length)];
+    return `<span><i class="bg-${laneKey(L.lane)}"></i>${LANE_NAME[L.lane]} ${tv(fmt(b.temp), labelFor(b.solver))}</span>`;
+  }).join("");
+  $("chartNote").textContent = `x: charged simulator evaluations per lane · y: lane-best verified worst peak (°C), ${al.text}`;
+  mark($("chartNote"), al);
 }
 
 function renderEvidence() {
@@ -209,7 +226,7 @@ function renderEvidence() {
     ["Proposer identity", `${L.agent} · key ${short(L.key, 10)}`],
     ["Operation", s.admitted ? s.admitted.op : "-"],
     ["Geometry", "PASS (admitted only after legality)"],
-    ["Worst chip-layer peak", `${fmt(s.temp, 3)} °C`],
+    ["Worst chip-layer peak", `${fmt(s.temp, 3)} °C`, labelFor(s.solver)],
     ["Wire proxy (Manhattan, mm)", s.wire != null ? fmt(s.wire, 2) : "n/a (plate)"],
     ...(s.wireMetric ? [["Wire metric (signed)", s.wireMetric]] : []),   // the oracle's own definition; escaped at render
     ["Solver time", s.solverS != null ? `${fmt(s.solverS, 3)} s` : "-"],
@@ -217,13 +234,13 @@ function renderEvidence() {
     ["Problem hash", short(s.problem, 16)],
     ["Event seq · hash", `${s.seq} · ${short(s.hash, 12)}`],
   ] : L.baseline ? [
-    ["Lane", LANE_NAME[L.lane]], ["Pool best peak", `${fmt(L.baseline.temp, 3)} °C`],
+    ["Lane", LANE_NAME[L.lane]], ["Pool best peak", `${fmt(L.baseline.temp, 3)} °C`, labelFor(L.baseline.solver)],
     ["Wire proxy (Manhattan, mm)", L.baseline.wire != null ? fmt(L.baseline.wire, 2) : "n/a (plate)"],
     ...(L.baseline.wireMetric ? [["Wire metric (signed)", L.baseline.wireMetric]] : []),
     ["Design hash", short(L.baseline.design, 16)], ["Problem hash", short(L.baseline.problem, 16)],
     ["Solver", L.baseline.solver || "-"], ["Event seq · hash", `${L.baseline.seq} · ${short(L.baseline.hash, 12)}`],
   ] : [];
-  $("evidence").innerHTML = rows.map(([a, b]) => `<div><span>${esc(a)}</span><span>${esc(b)}</span></div>`).join("");
+  $("evidence").innerHTML = rows.map(([a, b, label]) => `<div><span>${esc(a)}</span>${label ? tv(`${b} · ${label.short}`, label) : `<span>${esc(b)}</span>`}</div>`).join("");
 }
 
 function renderRouting() {
@@ -259,27 +276,33 @@ function renderRouting() {
 }
 
 function renderFeed() {
-  const lines = [];
+  const lines = [], ids = [];
   for (let i = 1; i <= S.k; i++) for (const L of Object.values(S.lanes)) {
     const s = L.steps[i - 1];
     if (!s) continue;
     const verdict = s.outcome ? s.outcome.status : "simulated";
+    ids.push(s.solver);
     lines.push(`<div data-lane="${esc(L.lane)}" data-step="${i}"><span class="num">#${esc(s.seq)}</span><span class="chip bg-${laneKey(L.lane)}">${LANE_NAME[L.lane]}</span>` +
       `<span>${esc(s.decision ? s.decision.operator : "-")} → ${esc(s.admitted ? s.admitted.op : "-")}</span><span>${esc(verdict)}${s.outcome && s.outcome.reason ? ` · ${esc(plain(s.outcome.reason))}` : ""}</span>` +
-      `<span class="num">${fmt(s.temp)} °C</span></div>`);
+      `<span class="num">${tv(`${fmt(s.temp)} °C`, labelFor(s.solver))}</span></div>`);
   }
-  $("feed").innerHTML = lines.reverse().join("") || `<div><span></span><span></span><span class="muted">Shared pool simulated by each lane; press play.</span></div>`;
+  const fl = ids.length ? labelForAll(ids) : null;
+  $("feed").innerHTML = (fl ? `<p class="cap q-${fl.state}" title="${esc(fl.title)}">Peaks (°C): ${esc(fl.text)}</p>` : "") +
+    (lines.reverse().join("") || `<div><span></span><span></span><span class="muted">Shared pool simulated by each lane; press play.</span></div>`);
 }
 
 function renderKpis() {
   const Ls = Object.values(S.lanes);
   if (!Ls.length) return;
   const init = Math.min(...Ls.map((L) => (L.baseline ? L.baseline.temp : Infinity)));
-  const bests = Ls.map((L) => ({ L, b: L.best[Math.min(S.k, L.steps.length)].temp }));
+  const bests = Ls.map((L) => ({ L, b: L.best[Math.min(S.k, L.steps.length)].temp, solver: L.best[Math.min(S.k, L.steps.length)].solver }));
   const top = bests.reduce((a, c) => (c.b < a.b ? c : a));
-  $("kInit").textContent = `${fmt(init)} °C`;
-  $("kBest").textContent = `${fmt(top.b)} °C`;
-  $("kBestS").textContent = `${fmt(init - top.b, 3)} °C lower · ${LANE_NAME[top.L.lane]}`;
+  const initIds = Ls.map((L) => (L.baseline ? L.baseline.solver : undefined));
+  const il = labelForAll(initIds), bl = labelFor(top.solver), dl = labelForAll([...initIds, top.solver]);
+  $("kInit").textContent = `${fmt(init)} °C`; mark($("kInit"), il);
+  $("kInitS").textContent = `${il.short} · shared pool best`; mark($("kInitS"), il);
+  $("kBest").textContent = `${fmt(top.b)} °C`; mark($("kBest"), bl);
+  $("kBestS").textContent = `${dl.short} · ${fmt(init - top.b, 3)} °C lower · ${LANE_NAME[top.L.lane]}`; mark($("kBestS"), dl);
   const used = Ls.reduce((n, L) => n + Math.min(S.k, L.steps.length), 0), total = Ls.reduce((n, L) => n + L.steps.length, 0);
   $("kBudget").textContent = `${used} / ${total}`;
   $("kWall").textContent = S.run.duration_s != null ? `${fmt(S.run.duration_s, 1)} s` : "-";
@@ -310,11 +333,14 @@ function renderRecords() {
 async function renderBoard() {
   const Ls = Object.values(S.lanes);
   const kNow = S.k;
-  const rank = Ls.map((L) => ({ L, b: L.best[Math.min(kNow, L.steps.length)].temp })).sort((a, b) => a.b - b.b);
+  const rank = Ls.map((L) => ({ L, b: L.best[Math.min(kNow, L.steps.length)].temp, solver: L.best[Math.min(kNow, L.steps.length)].solver })).sort((a, b) => a.b - b.b);
   const init = Math.min(...Ls.map((L) => (L.baseline ? L.baseline.temp : Infinity)));
+  const initIds = Ls.map((L) => (L.baseline ? L.baseline.solver : undefined));
+  const boardIds = [];                         // the identity behind every temperature the board shows
+  const lab = (ids) => { boardIds.push(...ids); return labelForAll(ids); };
   let html = `<table><tr><th>This run</th><th>Lane best</th><th>Δ vs pool</th><th>Evals</th><th>Committed</th><th>Record</th></tr>` +
-    rank.map(({ L, b }, i) => `<tr class="${i === 0 ? "best" : ""}"><td class="fg-${laneKey(L.lane)}">${LANE_NAME[L.lane]}</td>` +
-      `<td class="num">${fmt(b, 3)} °C</td><td class="num">${fmt(b - init, 3)}</td><td class="num">${Math.min(kNow, L.steps.length)}/${L.steps.length}</td>` +
+    rank.map(({ L, b, solver }, i) => `<tr class="${i === 0 ? "best" : ""}"><td class="fg-${laneKey(L.lane)}">${LANE_NAME[L.lane]}</td>` +
+      `<td class="num">${tv(`${fmt(b, 3)} °C`, lab([solver]))}</td><td class="num">${tv(fmt(b - init, 3), lab([solver, ...initIds]))}</td><td class="num">${Math.min(kNow, L.steps.length)}/${L.steps.length}</td>` +
       `<td class="num">${L.steps.slice(0, kNow).filter((s) => s.outcome && s.outcome.status === "committed").length}</td>` +
       `<td class="${L.valid ? "ok" : "bad"}">${L.valid ? "VALID" : "INVALID"}</td></tr>`).join("") + `</table>`;
   let listed = false;
@@ -326,11 +352,13 @@ async function renderBoard() {
       listed = (j.runs || []).some((x) => x.best && labelFor(x.best.solver_version).notice);
       html += `<table><tr><th>Recent runs</th><th>Benchmark</th><th>Grid</th><th>Seed</th><th>Best lane</th><th>Best</th><th>Time</th></tr>` +
         (j.runs || []).map((x) => `<tr><td class="num"><a class="dl" href="#" data-run="${esc(x.id)}">${esc(short(x.id, 10))}</a></td><td>${esc(x.benchmark)}</td><td>${esc(x.grid)}</td><td>${esc(x.seed)}</td>` +
-          `<td>${esc(x.best ? LANE_NAME[x.best.lane_id] || x.best.lane_id : "-")}</td><td class="num">${x.best ? fmt(x.best.best_temperature_c, 3) : "-"}</td>` +
+          `<td>${esc(x.best ? LANE_NAME[x.best.lane_id] || x.best.lane_id : "-")}</td><td class="num">${x.best ? tv(fmt(x.best.best_temperature_c, 3), lab([x.best.solver_version])) : "-"}</td>` +
           `<td class="num">${x.duration_s != null ? fmt(x.duration_s, 1) + " s" : esc(x.status)}</td></tr>`).join("") + `</table>`;
     }
   } catch (_) { /* the run API may not be deployed yet; this run's ranking still stands */ }
-  html += `<p class="micro">One seed is descriptive, not a statistical result. The result is stated even when the control (UCB1) wins.</p>`;
+  const all = boardIds.length ? labelForAll(boardIds) : null;
+  html += `<p class="micro">One seed is descriptive, not a statistical result. The result is stated even when the control (UCB1) wins.` +
+    `${all ? ` Temperatures and differences: ${tq(all)}` : ""}</p>`;
   $("board").innerHTML = html;
   S.boardNotice = !$("board").hidden && listed;
   updateNotice();

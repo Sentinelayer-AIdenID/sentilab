@@ -5,12 +5,12 @@
 import { DEMO, CONTRACT_VERSION, MAX_FILE_BYTES, setupTrust, fetchReplayBytes, verifyReplayFile, isDrill, chainSummary, modeNow, runStatusOf, createLiveFeed, reasonText } from "./source.mjs";
 import { viewHref } from "../view-links.mjs";
 import { shortId } from "../lab-model.mjs";
-import { sceneAt, scaleTicks, describeEvent, describeSource, refusalText, spanText, TRACK_ORDER, TRACKS, trackName } from "./scene.mjs";
+import { sceneAt, frameScaleInputs, scaleTicks, describeEvent, describeSource, refusalText, spanText, TRACK_ORDER, TRACKS, trackName } from "./scene.mjs";
 import { reconcile } from "./playhead.mjs";
 import { drawPackage, TrackAnimation, HOME_AZIMUTH, ORBIT_MS, easeInOut } from "./render.mjs";
 // Temperatures are labelled by the one rule (temperature-label.mjs) from the evaluator identity of the measurement each
 // came from, for replays and the live feed alike. The numbers stay as recorded; the page says so above the stage.
-import { needsNotice, NOTICE } from "../../temperature-label.mjs";
+import { labelFor, labelForAll, evaluatorIds, scaleIdentities, needsNotice, NOTICE } from "../../temperature-label.mjs";
 
 const params = new URLSearchParams(location.search);
 const $ = (id) => document.getElementById(id);
@@ -91,15 +91,16 @@ function buildStrip() {
     const canvas = h("canvas", { "aria-hidden": "true" });
     const chip = h("span", { class: "chip" });
     const j = h("span", { class: "j" });
+    const tq = h("span", { class: "tq", hidden: true });
     const id = h("span", { class: "id" });
     const none = h("div", { class: "none" }, "no candidate yet");
     const btn = h("button", { type: "button", class: "tile", style: `--lab:${TRACKS[t].color}`, "data-track": t, title: `Show ${TRACKS[t].name} (${i})`, "aria-label": `Show ${TRACKS[t].name}` },
       h("div", { class: "th" }, h("b", { style: `color:${TRACKS[t].color}` }, TRACKS[t].name), chip),
       h("div", { class: "tc" }, canvas, none),
-      h("div", { class: "tf" }, j, id));
+      h("div", { class: "tf" }, j, tq, id));
     btn.addEventListener("click", () => select(t));
     strip.append(btn);
-    tiles.set(t, { btn, chip, j, id, none, surf: surface(`tile:${t}`, canvas) });
+    tiles.set(t, { btn, chip, j, tq, id, none, surf: surface(`tile:${t}`, canvas) });
   }
   const picker = $("picker");
   picker.replaceChildren(...TRACK_ORDER.map((t) => h("option", { value: t }, TRACKS[t].name)));
@@ -191,6 +192,11 @@ function adoptVerification(src, verification, { active: isActive, following, fre
   }, verification);
   src.verification = verification;
   src.frame = r.frame;
+  // Identities for the labels: node id -> identity from the create the projector applied (a rejected create lends none),
+  // and the set behind the frame's scale (the frame only widens over a prefix that extends the old one, so the current
+  // prefix covers every value behind it). A set, rebuilt per verification.
+  src.ids = evaluatorIds(verification.prefixEnvelopes, verification.projection?.rejected);
+  src.scaleIds = scaleIdentities(frameScaleInputs(verification.prefixEnvelopes, verification.projection), src.ids);
   src.fullScene = sceneAt(r.prefix, verification.prefixCount, r.frame);
   S.gen += 1;
   if (!isActive) return;
@@ -266,6 +272,17 @@ function drawAll(now) {
 }
 
 // ── DOM ─────────────────────────────────────────────────────────────────────────────────────────────────────
+// Temperature labels (temperature-label.mjs): a withdrawn or unvalidated number is marked (dotted underline, the full
+// sentence on hover) and its qualifier sits beside it. The number itself is never changed.
+// J's label: the measurement metricFor() picked (or the layout itself, when it is a measurement with no metric).
+const jLabelOf = (src, L) => labelFor(src?.ids?.get(L.metric?.measurement ?? (L.ref.kind === "measurement" ? L.ref.id : undefined)));
+const setTq = (el, label, text = label?.short) => {
+  el.hidden = !label;
+  el.className = label ? `tq ${label.state}` : "tq";
+  el.textContent = label ? text : "";
+  el.title = label ? label.title : "";
+};
+
 function renderDom() {
   const src = active();
   const v = src?.verification ?? null;
@@ -404,8 +421,12 @@ function renderMain(src, v) {
   $("mainSub").textContent = sub;
   $("mainSub").title = L ? L.ref.id : "";
   const coloured = L ? L.chiplets.some((c) => c.color !== null) : false;
+  // The numbers and colours drawn on the chiplets: labelled beside the title by their measurement's identity.
+  const jl = L?.J ? jLabelOf(src, L) : null;
+  const tl = coloured && L.temps_from ? labelFor(src?.ids?.get(L.temps_from.measurement)) : null;
+  setTq($("mainTq"), tl, tl && `temperatures ${tl.short}`);
   $("mainCanvas").setAttribute("aria-label", L
-    ? `${TRACKS[S.selected].name}: ${shortId(L.ref.id)}, ${L.chiplets.length} chiplets${L.J ? `, J ${fmt(L.J.value)} ${L.J.unit}` : ", no J"}. Isometric drawing; ${coloured ? "colours are chiplet-centre temperatures" : "no chiplet temperatures, so nothing is coloured"}.`
+    ? `${TRACKS[S.selected].name}: ${shortId(L.ref.id)}, ${L.chiplets.length} chiplets${L.J ? `, J ${fmt(L.J.value)} ${L.J.unit} (${jl.text})` : ", no J"}. Isometric drawing; ${coloured ? `colours and numbers are chiplet-centre temperatures${tl ? ` (${tl.text})` : ""}` : "no chiplet temperatures, so nothing is coloured"}.`
     : "No package drawn");
   $("picker").value = S.selected;
 
@@ -448,9 +469,11 @@ function renderInfo(src) {
   // J and the centre temperatures can come from different measurements (scene.mjs describeSource): each part is
   // labelled and styled by its own source, and the J figure only by J's.
   const prov = describeSource(L, shortId);
+  const jl = L?.J ? jLabelOf(src, L) : null;
   $("infoJ").textContent = L?.J ? `${fmt(L.J.value)} ${L.J.unit}` : "-";
-  $("infoJ").className = prov.j_state;
-  $("infoJ").title = L?.metric ? `J from ${L.metric.measurement} (${L.metric.validity})` : "";
+  $("infoJ").className = `${prov.j_state}${jl ? ` q-${jl.state}` : ""}`.trim();
+  $("infoJ").title = L?.metric ? `J from ${L.metric.measurement} (${L.metric.validity})${jl ? ` · ${jl.title}` : ""}` : jl ? jl.title : "";
+  setTq($("infoJq"), jl);
   $("infoW").textContent = L?.W ? `W ${fmt(L.W.value)} ${L.W.metric_id}` : "";
   const srcEl = $("infoSrc");
   srcEl.replaceChildren();
@@ -467,10 +490,14 @@ function renderInfo(src) {
   $("noScale").hidden = !!scale;
   $("basis").hidden = !scale;          // "chiplet-centre temperatures from the solver" only when there are some
   $("scaleUnit").textContent = scale?.unit ? `· ${scale.unit}, fixed` : "";
+  // The scale's ends and the numbers on the chiplets come from every centre temperature behind it (labelForAll).
+  const sl = scale ? labelForAll(src?.scaleIds ?? []) : null;
+  setTq($("scaleTq"), sl);
+  ticks.title = sl ? sl.title : "";
   // The run's layout span, in the legend so every layout shows it (the stack block is hidden on small desktops).
   // One definition and label for both views: scene.mjs layoutSpan and spanText, as the Lab view's legend.
   $("spanNote").textContent = spanText(src?.frame?.footprint?.extent ?? null) ?? "";
-  if (scale) for (const v of scaleTicks(scale)) ticks.append(h("span", { style: `left:${((v - scale.min) / (scale.max - scale.min)) * 100}%` }, String(v)));
+  if (scale) for (const v of scaleTicks(scale)) ticks.append(h("span", { class: `q-${sl.state}`, style: `left:${((v - scale.min) / (scale.max - scale.min)) * 100}%` }, String(v)));
 
   // Drill: what the withdrawal did, straight from project().
   const box = $("drillBox");
@@ -503,6 +530,7 @@ function renderStrip() {
     }
     tile.chip.hidden = !tile.chip.textContent;
     tile.j.replaceChildren(h("small", null, "J"), L?.J ? `${fmt(L.J.value)}` : "-");
+    setTq(tile.tq, L?.J ? jLabelOf(active(), L) : null);
     tile.id.textContent = L ? shortId(L.ref.id) : "";
     tile.id.title = L ? L.ref.id : "";
   }

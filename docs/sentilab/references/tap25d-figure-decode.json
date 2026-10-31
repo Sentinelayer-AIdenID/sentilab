@@ -1,0 +1,1698 @@
+{
+ "decoder_sha256": "8bf98272d62c77119c334aec91d0021dc222c3b1ba56a6a1d4d620e1f3a69361",
+ "figures": {
+  "fig5": {
+   "caption": "Fig. 5: Thermal maps of the CPU-DRAM System: (a) the original placement [14], (b) a placement solution using Compact-2.5D approach, (c) TAP-2.5D solutions using repeaterless non-pipelined link, and (d) using gas-station links.",
+   "panels": {
+    "a": {
+     "chiplets": [
+      {
+       "body_pt": [
+        53.6483,
+        97.9389,
+        63.6795,
+        108.8823
+       ],
+       "decoded_center_mm": [
+        17.9249,
+        17.5496
+       ],
+       "decoded_halo_strips_mm": [
+        0.1801,
+        0.1803
+       ],
+       "decoded_lower_left_mm": [
+        13.8,
+        13.0497
+       ],
+       "decoded_size_mm": [
+        8.2497,
+        8.9999
+       ],
+       "die": 0,
+       "footprint_mm": [
+        8.25,
+        9.0
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0003
+      },
+      {
+       "body_pt": [
+        64.7745,
+        97.9389,
+        74.8057,
+        108.8823
+       ],
+       "decoded_center_mm": [
+        27.0751,
+        17.5496
+       ],
+       "decoded_halo_strips_mm": [
+        0.1801,
+        0.1803
+       ],
+       "decoded_lower_left_mm": [
+        22.9503,
+        13.0497
+       ],
+       "decoded_size_mm": [
+        8.2497,
+        8.9999
+       ],
+       "die": 1,
+       "footprint_mm": [
+        8.25,
+        9.0
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0003
+      },
+      {
+       "body_pt": [
+        64.7745,
+        85.9005,
+        74.8057,
+        96.845
+       ],
+       "decoded_center_mm": [
+        27.0751,
+        27.4497
+       ],
+       "decoded_halo_strips_mm": [
+        0.1794,
+        0.1801,
+        0.1803
+       ],
+       "decoded_lower_left_mm": [
+        22.9503,
+        22.9493
+       ],
+       "decoded_size_mm": [
+        8.2497,
+        9.0008
+       ],
+       "die": 2,
+       "footprint_mm": [
+        8.25,
+        9.0
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0008
+      },
+      {
+       "body_pt": [
+        53.6483,
+        85.9005,
+        63.6795,
+        96.845
+       ],
+       "decoded_center_mm": [
+        17.9249,
+        27.4497
+       ],
+       "decoded_halo_strips_mm": [
+        0.1794,
+        0.1801,
+        0.1803
+       ],
+       "decoded_lower_left_mm": [
+        13.8,
+        22.9493
+       ],
+       "decoded_size_mm": [
+        8.2497,
+        9.0008
+       ],
+       "die": 3,
+       "footprint_mm": [
+        8.25,
+        9.0
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0008
+      },
+      {
+       "body_pt": [
+        41.9758,
+        98.0909,
+        52.6142,
+        108.7304
+       ],
+       "decoded_center_mm": [
+        8.5751,
+        17.5496
+       ],
+       "decoded_halo_strips_mm": [
+        0.1346,
+        0.1355
+       ],
+       "decoded_lower_left_mm": [
+        4.2006,
+        13.1746
+       ],
+       "decoded_size_mm": [
+        8.749,
+        8.75
+       ],
+       "die": 4,
+       "footprint_mm": [
+        8.75,
+        8.75
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.001
+      },
+      {
+       "body_pt": [
+        75.8398,
+        98.0909,
+        86.4782,
+        108.7304
+       ],
+       "decoded_center_mm": [
+        36.4249,
+        17.5496
+       ],
+       "decoded_halo_strips_mm": [
+        0.1346,
+        0.1355
+       ],
+       "decoded_lower_left_mm": [
+        32.0503,
+        13.1746
+       ],
+       "decoded_size_mm": [
+        8.749,
+        8.75
+       ],
+       "die": 5,
+       "footprint_mm": [
+        8.75,
+        8.75
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.001
+      },
+      {
+       "body_pt": [
+        75.8398,
+        86.0535,
+        86.4782,
+        96.6919
+       ],
+       "decoded_center_mm": [
+        36.4249,
+        27.4497
+       ],
+       "decoded_halo_strips_mm": [
+        0.1355
+       ],
+       "decoded_lower_left_mm": [
+        32.0503,
+        23.0751
+       ],
+       "decoded_size_mm": [
+        8.749,
+        8.7491
+       ],
+       "die": 6,
+       "footprint_mm": [
+        8.75,
+        8.75
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.001
+      },
+      {
+       "body_pt": [
+        41.9758,
+        86.0535,
+        52.6142,
+        96.6919
+       ],
+       "decoded_center_mm": [
+        8.5751,
+        27.4497
+       ],
+       "decoded_halo_strips_mm": [
+        0.1355
+       ],
+       "decoded_lower_left_mm": [
+        4.2006,
+        23.0751
+       ],
+       "decoded_size_mm": [
+        8.749,
+        8.7491
+       ],
+       "die": 7,
+       "footprint_mm": [
+        8.75,
+        8.75
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.001
+      }
+     ],
+     "displayed_rotated_90_cw": false,
+     "frame_checks_mm": {
+      "from_die_outlines": 45.0019,
+      "from_edge_strip_length": 44.9544,
+      "from_edge_strip_thickness": 44.9547
+     },
+     "frame_mm": 45,
+     "frame_pt": {
+      "bottom": 124.7501,
+      "left": 36.8681,
+      "right": 91.5859,
+      "top": 70.0325
+     },
+     "halo_strips_drawn": true,
+     "scale_pt_per_mm": {
+      "from_die_outlines": 1.215901,
+      "x": 1.215953,
+      "y": 1.215946
+     },
+     "whitespace_units": 18
+    },
+    "b": {
+     "chiplets": [
+      {
+       "body_pt": [
+        106.5524,
+        77.9365,
+        116.5833,
+        88.8799
+       ],
+       "decoded_center_mm": [
+        10.9999,
+        33.9997
+       ],
+       "decoded_halo_strips_mm": [
+        0.1801,
+        0.1803
+       ],
+       "decoded_lower_left_mm": [
+        6.8751,
+        29.4998
+       ],
+       "decoded_size_mm": [
+        8.2494,
+        8.9999
+       ],
+       "die": 0,
+       "footprint_mm": [
+        8.25,
+        9.0
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0006
+      },
+      {
+       "body_pt": [
+        106.5524,
+        92.5276,
+        116.5833,
+        103.471
+       ],
+       "decoded_center_mm": [
+        10.9999,
+        21.9999
+       ],
+       "decoded_halo_strips_mm": [
+        0.1803
+       ],
+       "decoded_lower_left_mm": [
+        6.8751,
+        17.5
+       ],
+       "decoded_size_mm": [
+        8.2494,
+        8.9999
+       ],
+       "die": 1,
+       "footprint_mm": [
+        8.25,
+        9.0
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0006
+      },
+      {
+       "body_pt": [
+        121.1432,
+        107.1187,
+        131.1755,
+        118.0632
+       ],
+       "decoded_center_mm": [
+        22.9999,
+        9.9997
+       ],
+       "decoded_halo_strips_mm": [
+        0.1792,
+        0.1794
+       ],
+       "decoded_lower_left_mm": [
+        18.8747,
+        5.4993
+       ],
+       "decoded_size_mm": [
+        8.2506,
+        9.0008
+       ],
+       "die": 2,
+       "footprint_mm": [
+        8.25,
+        9.0
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0008
+      },
+      {
+       "body_pt": [
+        118.7116,
+        92.5276,
+        128.7436,
+        103.471
+       ],
+       "decoded_center_mm": [
+        21.0001,
+        21.9999
+       ],
+       "decoded_halo_strips_mm": [
+        0.1794,
+        0.1803
+       ],
+       "decoded_lower_left_mm": [
+        16.8749,
+        17.5
+       ],
+       "decoded_size_mm": [
+        8.2503,
+        8.9999
+       ],
+       "die": 3,
+       "footprint_mm": [
+        8.25,
+        9.0
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0003
+      },
+      {
+       "body_pt": [
+        118.4077,
+        78.0884,
+        129.0475,
+        88.7279
+       ],
+       "decoded_center_mm": [
+        21.0001,
+        33.9997
+       ],
+       "decoded_halo_strips_mm": [
+        0.1344,
+        0.1346
+       ],
+       "decoded_lower_left_mm": [
+        16.625,
+        29.6248
+       ],
+       "decoded_size_mm": [
+        8.7502,
+        8.75
+       ],
+       "die": 4,
+       "footprint_mm": [
+        8.75,
+        8.75
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0002
+      },
+      {
+       "body_pt": [
+        106.2485,
+        107.2718,
+        116.888,
+        117.9102
+       ],
+       "decoded_center_mm": [
+        11.0002,
+        9.9997
+       ],
+       "decoded_halo_strips_mm": [
+        0.1346,
+        0.1353,
+        0.1355
+       ],
+       "decoded_lower_left_mm": [
+        6.6252,
+        5.6251
+       ],
+       "decoded_size_mm": [
+        8.75,
+        8.7491
+       ],
+       "die": 5,
+       "footprint_mm": [
+        8.75,
+        8.75
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0009
+      },
+      {
+       "body_pt": [
+        132.9988,
+        107.2718,
+        143.6384,
+        117.9102
+       ],
+       "decoded_center_mm": [
+        32.9997,
+        9.9997
+       ],
+       "decoded_halo_strips_mm": [
+        0.1346,
+        0.1355
+       ],
+       "decoded_lower_left_mm": [
+        28.6247,
+        5.6251
+       ],
+       "decoded_size_mm": [
+        8.75,
+        8.7491
+       ],
+       "die": 6,
+       "footprint_mm": [
+        8.75,
+        8.75
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0009
+      },
+      {
+       "body_pt": [
+        130.567,
+        92.6795,
+        141.2067,
+        103.3191
+       ],
+       "decoded_center_mm": [
+        30.9998,
+        21.9999
+       ],
+       "decoded_halo_strips_mm": [
+        0.1344,
+        0.1346,
+        0.1353,
+        0.1355
+       ],
+       "decoded_lower_left_mm": [
+        26.6247,
+        17.6249
+       ],
+       "decoded_size_mm": [
+        8.7502,
+        8.75
+       ],
+       "die": 7,
+       "footprint_mm": [
+        8.75,
+        8.75
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0002
+      }
+     ],
+     "displayed_rotated_90_cw": false,
+     "frame_checks_mm": {
+      "from_die_outlines": 45.0005,
+      "from_edge_strip_length": 44.955,
+      "from_edge_strip_thickness": 44.9547
+     },
+     "frame_mm": 45,
+     "frame_pt": {
+      "bottom": 124.7501,
+      "left": 98.1926,
+      "right": 152.9104,
+      "top": 70.0325
+     },
+     "halo_strips_drawn": true,
+     "scale_pt_per_mm": {
+      "from_die_outlines": 1.215938,
+      "x": 1.215952,
+      "y": 1.215946
+     },
+     "whitespace_units": 26
+    },
+    "c": {
+     "chiplets": [
+      {
+       "body_pt": [
+        162.5575,
+        112.4392,
+        173.5009,
+        122.4701
+       ],
+       "decoded_center_mm": [
+        7.0004,
+        5.9998
+       ],
+       "decoded_halo_strips_mm": [
+        0.1792,
+        0.1803,
+        0.1804
+       ],
+       "decoded_lower_left_mm": [
+        2.5005,
+        1.8751
+       ],
+       "decoded_size_mm": [
+        8.9998,
+        8.2495
+       ],
+       "die": 0,
+       "footprint_mm": [
+        9.0,
+        8.25
+       ],
+       "rotated_vs_catalog": true,
+       "size_residual_mm": 0.0005
+      },
+      {
+       "body_pt": [
+        162.5575,
+        72.3124,
+        173.5009,
+        82.3447
+       ],
+       "decoded_center_mm": [
+        7.0004,
+        38.9996
+       ],
+       "decoded_halo_strips_mm": [
+        0.1792,
+        0.1794,
+        0.1804
+       ],
+       "decoded_lower_left_mm": [
+        2.5005,
+        34.8743
+       ],
+       "decoded_size_mm": [
+        8.9998,
+        8.2506
+       ],
+       "die": 1,
+       "footprint_mm": [
+        9.0,
+        8.25
+       ],
+       "rotated_vs_catalog": true,
+       "size_residual_mm": 0.0006
+      },
+      {
+       "body_pt": [
+        196.6033,
+        71.0966,
+        207.5467,
+        81.1289
+       ],
+       "decoded_center_mm": [
+        34.9997,
+        39.9995
+       ],
+       "decoded_halo_strips_mm": [
+        0.1792,
+        0.1794,
+        0.1803,
+        0.1804
+       ],
+       "decoded_lower_left_mm": [
+        30.4997,
+        35.8742
+       ],
+       "decoded_size_mm": [
+        8.9999,
+        8.2506
+       ],
+       "die": 2,
+       "footprint_mm": [
+        9.0,
+        8.25
+       ],
+       "rotated_vs_catalog": true,
+       "size_residual_mm": 0.0006
+      },
+      {
+       "body_pt": [
+        201.9237,
+        104.6868,
+        211.9547,
+        115.6313
+       ],
+       "decoded_center_mm": [
+        39.0,
+        11.9997
+       ],
+       "decoded_halo_strips_mm": [
+        0.1794,
+        0.1804
+       ],
+       "decoded_lower_left_mm": [
+        34.8753,
+        7.4993
+       ],
+       "decoded_size_mm": [
+        8.2494,
+        9.0008
+       ],
+       "die": 3,
+       "footprint_mm": [
+        8.25,
+        9.0
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0008
+      },
+      {
+       "body_pt": [
+        183.3799,
+        96.3273,
+        194.0197,
+        106.9668
+       ],
+       "decoded_center_mm": [
+        23.9999,
+        19.0
+       ],
+       "decoded_halo_strips_mm": [
+        0.1344,
+        0.1355
+       ],
+       "decoded_lower_left_mm": [
+        19.6248,
+        14.6251
+       ],
+       "decoded_size_mm": [
+        8.7502,
+        8.75
+       ],
+       "die": 4,
+       "footprint_mm": [
+        8.75,
+        8.75
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0002
+      },
+      {
+       "body_pt": [
+        163.9253,
+        92.6795,
+        174.5648,
+        103.3191
+       ],
+       "decoded_center_mm": [
+        8.0003,
+        21.9999
+       ],
+       "decoded_halo_strips_mm": [
+        0.1346,
+        0.1355
+       ],
+       "decoded_lower_left_mm": [
+        3.6253,
+        17.6249
+       ],
+       "decoded_size_mm": [
+        8.75,
+        8.75
+       ],
+       "die": 5,
+       "footprint_mm": [
+        8.75,
+        8.75
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0
+      },
+      {
+       "body_pt": [
+        178.5164,
+        74.4407,
+        189.1559,
+        85.0802
+       ],
+       "decoded_center_mm": [
+        20.0001,
+        36.9996
+       ],
+       "decoded_halo_strips_mm": [
+        0.1346,
+        0.1355
+       ],
+       "decoded_lower_left_mm": [
+        15.6251,
+        32.6246
+       ],
+       "decoded_size_mm": [
+        8.75,
+        8.75
+       ],
+       "die": 6,
+       "footprint_mm": [
+        8.75,
+        8.75
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0
+      },
+      {
+       "body_pt": [
+        187.0279,
+        109.7037,
+        197.6674,
+        120.3421
+       ],
+       "decoded_center_mm": [
+        26.9999,
+        7.9997
+       ],
+       "decoded_halo_strips_mm": [
+        0.1346,
+        0.1353,
+        0.1355
+       ],
+       "decoded_lower_left_mm": [
+        22.6249,
+        3.6251
+       ],
+       "decoded_size_mm": [
+        8.75,
+        8.7491
+       ],
+       "die": 7,
+       "footprint_mm": [
+        8.75,
+        8.75
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0009
+      }
+     ],
+     "displayed_rotated_90_cw": false,
+     "frame_checks_mm": {
+      "from_die_outlines": 45.0002,
+      "from_edge_strip_length": 44.9552,
+      "from_edge_strip_thickness": 44.9552
+     },
+     "frame_mm": 45,
+     "frame_pt": {
+      "bottom": 124.7501,
+      "left": 159.517,
+      "right": 214.2349,
+      "top": 70.0325
+     },
+     "halo_strips_drawn": true,
+     "scale_pt_per_mm": {
+      "from_die_outlines": 1.215946,
+      "x": 1.215953,
+      "y": 1.215946
+     },
+     "whitespace_units": 25
+    },
+    "d": {
+     "chiplets": [
+      {
+       "body_pt": [
+        261.5755,
+        113.655,
+        272.5189,
+        123.6862
+       ],
+       "decoded_center_mm": [
+        37.9996,
+        4.9998
+       ],
+       "decoded_halo_strips_mm": [
+        0.3595,
+        0.3598,
+        0.3605,
+        0.3607
+       ],
+       "decoded_lower_left_mm": [
+        33.4996,
+        0.8749
+       ],
+       "decoded_size_mm": [
+        8.9999,
+        8.2497
+       ],
+       "die": 0,
+       "footprint_mm": [
+        9.0,
+        8.25
+       ],
+       "rotated_vs_catalog": true,
+       "size_residual_mm": 0.0003
+      },
+      {
+       "body_pt": [
+        221.9057,
+        110.7664,
+        231.9369,
+        121.7109
+       ],
+       "decoded_center_mm": [
+        5.0,
+        6.9998
+       ],
+       "decoded_halo_strips_mm": [
+        0.3596,
+        0.3598,
+        0.3605
+       ],
+       "decoded_lower_left_mm": [
+        0.8752,
+        2.4994
+       ],
+       "decoded_size_mm": [
+        8.2497,
+        9.0008
+       ],
+       "die": 1,
+       "footprint_mm": [
+        8.25,
+        9.0
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0008
+      },
+      {
+       "body_pt": [
+        261.5755,
+        72.3124,
+        272.5189,
+        82.3447
+       ],
+       "decoded_center_mm": [
+        37.9996,
+        38.9996
+       ],
+       "decoded_halo_strips_mm": [
+        0.3595,
+        0.3596,
+        0.3598,
+        0.3607
+       ],
+       "decoded_lower_left_mm": [
+        33.4996,
+        34.8743
+       ],
+       "decoded_size_mm": [
+        8.9999,
+        8.2506
+       ],
+       "die": 2,
+       "footprint_mm": [
+        9.0,
+        8.25
+       ],
+       "rotated_vs_catalog": true,
+       "size_residual_mm": 0.0006
+      },
+      {
+       "body_pt": [
+        224.3376,
+        73.073,
+        234.3687,
+        84.0161
+       ],
+       "decoded_center_mm": [
+        7.0,
+        37.9996
+       ],
+       "decoded_halo_strips_mm": [
+        0.3598,
+        0.3605
+       ],
+       "decoded_lower_left_mm": [
+        2.8752,
+        33.4998
+       ],
+       "decoded_size_mm": [
+        8.2497,
+        8.9997
+       ],
+       "die": 3,
+       "footprint_mm": [
+        8.25,
+        9.0
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0003
+      },
+      {
+       "body_pt": [
+        247.1363,
+        108.4876,
+        257.7761,
+        119.1263
+       ],
+       "decoded_center_mm": [
+        25.9999,
+        8.9997
+       ],
+       "decoded_halo_strips_mm": [
+        0.27
+       ],
+       "decoded_lower_left_mm": [
+        21.6248,
+        4.625
+       ],
+       "decoded_size_mm": [
+        8.7502,
+        8.7493
+       ],
+       "die": 4,
+       "footprint_mm": [
+        8.75,
+        8.75
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0007
+      },
+      {
+       "body_pt": [
+        233.7613,
+        107.2718,
+        244.4008,
+        117.9102
+       ],
+       "decoded_center_mm": [
+        15.0002,
+        9.9997
+       ],
+       "decoded_halo_strips_mm": [
+        0.27
+       ],
+       "decoded_lower_left_mm": [
+        10.6252,
+        5.6251
+       ],
+       "decoded_size_mm": [
+        8.7499,
+        8.7491
+       ],
+       "die": 5,
+       "footprint_mm": [
+        8.75,
+        8.75
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0009
+      },
+      {
+       "body_pt": [
+        261.7274,
+        85.3841,
+        272.3669,
+        96.0236
+       ],
+       "decoded_center_mm": [
+        37.9996,
+        27.9997
+       ],
+       "decoded_halo_strips_mm": [
+        0.27,
+        0.2702
+       ],
+       "decoded_lower_left_mm": [
+        33.6246,
+        23.6247
+       ],
+       "decoded_size_mm": [
+        8.7499,
+        8.75
+       ],
+       "die": 6,
+       "footprint_mm": [
+        8.75,
+        8.75
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0001
+      },
+      {
+       "body_pt": [
+        244.7044,
+        74.4407,
+        255.3442,
+        85.0802
+       ],
+       "decoded_center_mm": [
+        23.9999,
+        36.9996
+       ],
+       "decoded_halo_strips_mm": [
+        0.27
+       ],
+       "decoded_lower_left_mm": [
+        19.6249,
+        32.6246
+       ],
+       "decoded_size_mm": [
+        8.7502,
+        8.75
+       ],
+       "die": 7,
+       "footprint_mm": [
+        8.75,
+        8.75
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0002
+      }
+     ],
+     "displayed_rotated_90_cw": false,
+     "frame_checks_mm": {
+      "from_die_outlines": 45.0006,
+      "from_edge_strip_length": 44.953,
+      "from_edge_strip_thickness": 44.953
+     },
+     "frame_mm": 45,
+     "frame_pt": {
+      "bottom": 124.7501,
+      "left": 220.8415,
+      "right": 275.5594,
+      "top": 70.0325
+     },
+     "halo_strips_drawn": true,
+     "scale_pt_per_mm": {
+      "from_die_outlines": 1.215937,
+      "x": 1.215953,
+      "y": 1.215946
+     },
+     "whitespace_units": 27
+    }
+   },
+   "system": "micro150"
+  },
+  "fig6": {
+   "caption": "Fig. 6: Thermal maps of the Huawei Ascend 910 System [15]: (a) the original layout, (b) a placement solution using Compact-2.5D approach, and (c) TAP-2.5D solution.",
+   "panels": {
+    "a": {
+     "chiplets": [
+      {
+       "body_pt": [
+        59.2764,
+        190.451,
+        101.1147,
+        209.7704
+       ],
+       "decoded_center_mm": [
+        17.1501,
+        22.6003
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        1.4504,
+        15.3507
+       ],
+       "decoded_size_mm": [
+        31.3994,
+        14.4992
+       ],
+       "die": 0,
+       "footprint_mm": [
+        31.4,
+        14.5
+       ],
+       "rotated_vs_catalog": true,
+       "size_residual_mm": 0.0008
+      },
+      {
+       "body_pt": [
+        101.4474,
+        189.4514,
+        115.4385,
+        210.77
+       ],
+       "decoded_center_mm": [
+        38.3497,
+        22.6003
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        33.0995,
+        14.6005
+       ],
+       "decoded_size_mm": [
+        10.5003,
+        15.9996
+       ],
+       "die": 1,
+       "footprint_mm": [
+        10.5,
+        16.0
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0004
+      },
+      {
+       "body_pt": [
+        59.2095,
+        210.2369,
+        75.0252,
+        220.5635
+       ],
+       "decoded_center_mm": [
+        7.335,
+        11.1256
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        1.4002,
+        7.2505
+       ],
+       "decoded_size_mm": [
+        11.8696,
+        7.7501
+       ],
+       "die": 2,
+       "footprint_mm": [
+        11.87,
+        7.75
+       ],
+       "rotated_vs_catalog": true,
+       "size_residual_mm": 0.0004
+      },
+      {
+       "body_pt": [
+        77.8236,
+        210.2369,
+        93.6393,
+        220.5635
+       ],
+       "decoded_center_mm": [
+        21.3048,
+        11.1256
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        15.37,
+        7.2505
+       ],
+       "decoded_size_mm": [
+        11.8696,
+        7.7501
+       ],
+       "die": 3,
+       "footprint_mm": [
+        11.87,
+        7.75
+       ],
+       "rotated_vs_catalog": true,
+       "size_residual_mm": 0.0004
+      },
+      {
+       "body_pt": [
+        59.2095,
+        179.924,
+        75.0252,
+        190.2506
+       ],
+       "decoded_center_mm": [
+        7.335,
+        33.8754
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        1.4002,
+        30.0003
+       ],
+       "decoded_size_mm": [
+        11.8696,
+        7.7501
+       ],
+       "die": 4,
+       "footprint_mm": [
+        11.87,
+        7.75
+       ],
+       "rotated_vs_catalog": true,
+       "size_residual_mm": 0.0004
+      },
+      {
+       "body_pt": [
+        77.8236,
+        179.924,
+        93.6393,
+        190.2506
+       ],
+       "decoded_center_mm": [
+        21.3048,
+        33.8754
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        15.37,
+        30.0003
+       ],
+       "decoded_size_mm": [
+        11.8696,
+        7.7501
+       ],
+       "die": 5,
+       "footprint_mm": [
+        11.87,
+        7.75
+       ],
+       "rotated_vs_catalog": true,
+       "size_residual_mm": 0.0004
+      }
+     ],
+     "displayed_rotated_90_cw": false,
+     "frame_checks_mm": {
+      "from_die_outlines": 45.0007,
+      "from_edge_strip_length": 44.9543,
+      "from_edge_strip_thickness": 44.9545
+     },
+     "frame_mm": 45,
+     "frame_pt": {
+      "bottom": 230.2244,
+      "left": 57.3438,
+      "right": 117.3042,
+      "top": 170.2643
+     },
+     "halo_strips_drawn": false,
+     "scale_pt_per_mm": {
+      "from_die_outlines": 1.332433,
+      "x": 1.332453,
+      "y": 1.332447
+     },
+     "whitespace_units": 16
+    },
+    "b": {
+     "chiplets": [
+      {
+       "body_pt": [
+        126.2526,
+        188.3393,
+        167.5296,
+        207.3998
+       ],
+       "decoded_center_mm": [
+        21.0001,
+        17.0002
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        13.7502,
+        1.2999
+       ],
+       "decoded_size_mm": [
+        14.4999,
+        31.4005
+       ],
+       "die": 0,
+       "footprint_mm": [
+        14.5,
+        31.4
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0005
+      },
+      {
+       "body_pt": [
+        158.7216,
+        209.372,
+        179.7546,
+        223.1744
+       ],
+       "decoded_center_mm": [
+        35.0004,
+        34.0001
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        29.7504,
+        25.9999
+       ],
+       "decoded_size_mm": [
+        10.4999,
+        16.0004
+       ],
+       "die": 1,
+       "footprint_mm": [
+        10.5,
+        16.0
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0004
+      },
+      {
+       "body_pt": [
+        145.6623,
+        174.3716,
+        161.2659,
+        184.5599
+       ],
+       "decoded_center_mm": [
+        6.9998,
+        22.0004
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        3.1245,
+        16.0654
+       ],
+       "decoded_size_mm": [
+        7.7505,
+        11.8701
+       ],
+       "die": 2,
+       "footprint_mm": [
+        7.75,
+        11.87
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0005
+      },
+      {
+       "body_pt": [
+        144.426,
+        209.7857,
+        154.6143,
+        225.3893
+       ],
+       "decoded_center_mm": [
+        36.0002,
+        19.0002
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        30.0651,
+        15.1249
+       ],
+       "decoded_size_mm": [
+        11.8701,
+        7.7505
+       ],
+       "die": 3,
+       "footprint_mm": [
+        11.87,
+        7.75
+       ],
+       "rotated_vs_catalog": true,
+       "size_residual_mm": 0.0005
+      },
+      {
+       "body_pt": [
+        127.2579,
+        208.5494,
+        142.8615,
+        218.7377
+       ],
+       "decoded_center_mm": [
+        32.9999,
+        7.9997
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        29.1246,
+        2.0647
+       ],
+       "decoded_size_mm": [
+        7.7505,
+        11.8701
+       ],
+       "die": 4,
+       "footprint_mm": [
+        7.75,
+        11.87
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0005
+      },
+      {
+       "body_pt": [
+        127.2579,
+        174.3716,
+        142.8615,
+        184.5599
+       ],
+       "decoded_center_mm": [
+        6.9998,
+        7.9997
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        3.1245,
+        2.0647
+       ],
+       "decoded_size_mm": [
+        7.7505,
+        11.8701
+       ],
+       "die": 5,
+       "footprint_mm": [
+        7.75,
+        11.87
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0005
+      }
+     ],
+     "displayed_rotated_90_cw": true,
+     "frame_checks_mm": {
+      "from_die_outlines": 44.9989,
+      "from_edge_strip_length": 45.0386,
+      "from_edge_strip_thickness": 45.08
+     },
+     "frame_mm": 45,
+     "frame_pt": {
+      "bottom": 229.418,
+      "left": 124.5438,
+      "right": 183.6978,
+      "top": 170.2643
+     },
+     "halo_strips_drawn": false,
+     "scale_pt_per_mm": {
+      "from_die_outlines": 1.314566,
+      "x": 1.314533,
+      "y": 1.314527
+     },
+     "whitespace_units": 19
+    },
+    "c": {
+     "chiplets": [
+      {
+       "body_pt": [
+        193.4526,
+        187.0244,
+        234.7296,
+        206.0849
+       ],
+       "decoded_center_mm": [
+        19.9999,
+        17.0002
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        12.7499,
+        1.2999
+       ],
+       "decoded_size_mm": [
+        14.4999,
+        31.4005
+       ],
+       "die": 0,
+       "footprint_mm": [
+        14.5,
+        31.4
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0005
+      },
+      {
+       "body_pt": [
+        236.1099,
+        186.0389,
+        249.9123,
+        207.0704
+       ],
+       "decoded_center_mm": [
+        19.9999,
+        39.0004
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        12.0002,
+        33.7505
+       ],
+       "decoded_size_mm": [
+        15.9993,
+        10.4998
+       ],
+       "die": 1,
+       "footprint_mm": [
+        16.0,
+        10.5
+       ],
+       "rotated_vs_catalog": true,
+       "size_residual_mm": 0.0007
+      },
+      {
+       "body_pt": [
+        198.4014,
+        207.2357,
+        214.0059,
+        217.4228
+       ],
+       "decoded_center_mm": [
+        32.0001,
+        11.0
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        28.1252,
+        5.0646
+       ],
+       "decoded_size_mm": [
+        7.7496,
+        11.8708
+       ],
+       "die": 2,
+       "footprint_mm": [
+        7.75,
+        11.87
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0008
+      },
+      {
+       "body_pt": [
+        197.0877,
+        175.6865,
+        212.6913,
+        185.8736
+       ],
+       "decoded_center_mm": [
+        7.9996,
+        10.0003
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        4.1248,
+        4.0652
+       ],
+       "decoded_size_mm": [
+        7.7496,
+        11.8701
+       ],
+       "die": 3,
+       "footprint_mm": [
+        7.75,
+        11.87
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0004
+      },
+      {
+       "body_pt": [
+        215.4909,
+        207.2357,
+        231.0942,
+        217.4228
+       ],
+       "decoded_center_mm": [
+        32.0001,
+        24.0
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        28.1252,
+        18.065
+       ],
+       "decoded_size_mm": [
+        7.7496,
+        11.8698
+       ],
+       "die": 4,
+       "footprint_mm": [
+        7.75,
+        11.87
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0004
+      },
+      {
+       "body_pt": [
+        214.176,
+        175.6865,
+        229.7805,
+        185.8736
+       ],
+       "decoded_center_mm": [
+        7.9996,
+        23.0001
+       ],
+       "decoded_halo_strips_mm": [],
+       "decoded_lower_left_mm": [
+        4.1248,
+        17.0648
+       ],
+       "decoded_size_mm": [
+        7.7496,
+        11.8707
+       ],
+       "die": 5,
+       "footprint_mm": [
+        7.75,
+        11.87
+       ],
+       "rotated_vs_catalog": false,
+       "size_residual_mm": 0.0007
+      }
+     ],
+     "displayed_rotated_90_cw": true,
+     "frame_checks_mm": {
+      "from_die_outlines": 45.0006,
+      "from_edge_strip_length": 45.0386,
+      "from_edge_strip_thickness": 45.08
+     },
+     "frame_mm": 45,
+     "frame_pt": {
+      "bottom": 229.418,
+      "left": 191.7438,
+      "right": 250.8978,
+      "top": 170.2643
+     },
+     "halo_strips_drawn": false,
+     "scale_pt_per_mm": {
+      "from_die_outlines": 1.314517,
+      "x": 1.314533,
+      "y": 1.314527
+     },
+     "whitespace_units": 18
+    }
+   },
+   "system": "ascend910"
+  }
+ },
+ "paper": {
+  "citation": "Y. Ma, L. Delshadtehrani, C. Demirkiran, J. L. Abellan, A. Joshi, \"TAP-2.5D: A Thermally-Aware Chiplet Placement Methodology for 2.5D Systems\", DATE 2021, pp. 1246-1251, doi:10.23919/DATE51398.2021.9474011",
+  "page_index": 5,
+  "pdf_sha256": "b209f51aec188e2bcdbf6f4acc3723fb30fbc5c14cca7e70141d478edadec234",
+  "url": "http://people.bu.edu/joshi/files/Ma_TAP-2.5D-DATE2021.pdf"
+ },
+ "pymupdf_version": "1.27.2.3",
+ "schema": "tap25d-figure-decode-v1"
+}
