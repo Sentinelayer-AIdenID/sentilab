@@ -31,6 +31,21 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' -H "x-origin-token: $(openssl rand -hex 16)" http://127.0.0.1:8001/api/health)" = 403
           test "$(curl -s -o /dev/null -w '%{http_code}' -H "x-origin-token: $token" http://127.0.0.1:8001/api/health)" = 200
 
+  contracts:
+    # The evidence/ResultCheck contract (v0.2) and the view envelope (v0.4) are executable: their vector runners must
+    # pass, and every file must still match the hash the reviewers +1'd (contracts/HASHES.txt).
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Files match their reviewed hashes
+        run: cd contracts && sha256sum -c HASHES.txt
+      - name: Contract vectors
+        run: |
+          node --version
+          (cd contracts/contract-0.2 && node run-vectors.mjs)
+          (cd contracts/view-envelope && node run-view-vectors.mjs)
+
   secret-scan:
     runs-on: ubuntu-24.04
     timeout-minutes: 10

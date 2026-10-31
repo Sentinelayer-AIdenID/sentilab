@@ -1,0 +1,406 @@
+{
+  "description": "v0.2. Expected values are worked out by hand from CONTRACTS.md section 1. Each expect block is a subset match. seq defaults to the event's position.",
+  "vectors": [
+    {
+      "name": "one support set fails, another stays intact",
+      "events": [
+        { "type": "node.create", "body": { "id": "R1", "kind": "source" } },
+        { "type": "node.create", "body": { "id": "R2", "kind": "source" } },
+        { "type": "node.create", "body": { "id": "C", "kind": "claim" } },
+        { "type": "support.add", "body": { "node": "C", "set_id": "s1", "members": ["R1"] } },
+        { "type": "support.add", "body": { "node": "C", "set_id": "s2", "members": ["R2"] } },
+        { "type": "withdraw", "body": { "node": "R1", "reason": "drill" } }
+      ],
+      "expect": { "nodes": { "R1": { "validity": "withdrawn" }, "C": { "validity": "valid", "stale_because": [], "support_status": { "s1": "broken", "s2": "valid" } } } }
+    },
+    {
+      "name": "all support sets broken",
+      "events": [
+        { "type": "node.create", "body": { "id": "R1", "kind": "source" } },
+        { "type": "node.create", "body": { "id": "R2", "kind": "source" } },
+        { "type": "node.create", "body": { "id": "C", "kind": "claim" } },
+        { "type": "support.add", "body": { "node": "C", "set_id": "s1", "members": ["R1"] } },
+        { "type": "support.add", "body": { "node": "C", "set_id": "s2", "members": ["R2"] } },
+        { "type": "withdraw", "body": { "node": "R1", "reason": "drill" } },
+        { "type": "withdraw", "body": { "node": "R2", "reason": "drill" } }
+      ],
+      "expect": { "nodes": { "C": { "validity": "stale", "stale_because": ["R1", "R2"], "support_status": { "s1": "broken", "s2": "broken" } } } }
+    },
+    {
+      "name": "one member of an AND set breaks the set",
+      "events": [
+        { "type": "node.create", "body": { "id": "R1", "kind": "source" } },
+        { "type": "node.create", "body": { "id": "R2", "kind": "source" } },
+        { "type": "node.create", "body": { "id": "C", "kind": "claim" } },
+        { "type": "support.add", "body": { "node": "C", "set_id": "s1", "members": ["R1", "R2"] } },
+        { "type": "withdraw", "body": { "node": "R1", "reason": "drill" } }
+      ],
+      "expect": { "nodes": { "R2": { "validity": "valid" }, "C": { "validity": "stale", "stale_because": ["R1"] } } }
+    },
+    {
+      "name": "staleness travels down a chain and names the root",
+      "events": [
+        { "type": "node.create", "body": { "id": "R", "kind": "source" } },
+        { "type": "node.create", "body": { "id": "A", "kind": "claim" } },
+        { "type": "node.create", "body": { "id": "B", "kind": "claim" } },
+        { "type": "node.create", "body": { "id": "C", "kind": "claim" } },
+        { "type": "support.add", "body": { "node": "A", "set_id": "s", "members": ["R"] } },
+        { "type": "support.add", "body": { "node": "B", "set_id": "s", "members": ["A"] } },
+        { "type": "support.add", "body": { "node": "C", "set_id": "s", "members": ["B"] } },
+        { "type": "withdraw", "body": { "node": "R", "reason": "drill" } }
+      ],
+      "expect": { "nodes": { "A": { "validity": "stale", "stale_because": ["R"] }, "B": { "validity": "stale", "stale_because": ["R"] }, "C": { "validity": "stale", "stale_because": ["R"] } } }
+    },
+    {
+      "name": "diamond: two paths from one root under an AND set",
+      "events": [
+        { "type": "node.create", "body": { "id": "R", "kind": "source" } },
+        { "type": "node.create", "body": { "id": "A", "kind": "claim" } },
+        { "type": "node.create", "body": { "id": "B", "kind": "claim" } },
+        { "type": "node.create", "body": { "id": "C", "kind": "claim" } },
+        { "type": "support.add", "body": { "node": "A", "set_id": "s", "members": ["R"] } },
+        { "type": "support.add", "body": { "node": "B", "set_id": "s", "members": ["R"] } },
+        { "type": "support.add", "body": { "node": "C", "set_id": "s", "members": ["A", "B"] } },
+        { "type": "withdraw", "body": { "node": "R", "reason": "drill" } }
+      ],
+      "expect": { "nodes": { "C": { "validity": "stale", "stale_because": ["R"] } } }
+    },
+    {
+      "name": "independent support keeps a finding usable while its neighbor goes stale",
+      "events": [
+        { "type": "node.create", "body": { "id": "R", "kind": "source" } },
+        { "type": "node.create", "body": { "id": "X", "kind": "source" } },
+        { "type": "node.create", "body": { "id": "A", "kind": "claim" } },
+        { "type": "node.create", "body": { "id": "C", "kind": "claim" } },
+        { "type": "support.add", "body": { "node": "A", "set_id": "s", "members": ["R"] } },
+        { "type": "support.add", "body": { "node": "C", "set_id": "via_a", "members": ["A"] } },
+        { "type": "support.add", "body": { "node": "C", "set_id": "via_x", "members": ["X"] } },
+        { "type": "withdraw", "body": { "node": "R", "reason": "drill" } }
+      ],
+      "expect": { "nodes": { "A": { "validity": "stale" }, "C": { "validity": "valid", "support_status": { "via_a": "broken", "via_x": "valid" } } } }
+    },
+    {
+      "name": "a claim with no support is unverified, and so is what depends on it",
+      "events": [
+        { "type": "node.create", "body": { "id": "S", "kind": "source" } },
+        { "type": "node.create", "body": { "id": "C", "kind": "claim" } },
+        { "type": "node.create", "body": { "id": "D", "kind": "claim" } },
+        { "type": "support.add", "body": { "node": "D", "set_id": "s", "members": ["C"] } }
+      ],
+      "expect": { "nodes": { "S": { "validity": "valid" }, "C": { "validity": "unverified", "stale_because": [] }, "D": { "validity": "unverified", "stale_because": [], "support_status": { "s": "broken" } } } }
+    },
+    {
+      "name": "cycles and self-support are rejected",
+      "events": [
+        { "event_id": "create_a", "type": "node.create", "body": { "id": "A", "kind": "claim" } },
+        { "event_id": "create_b", "type": "node.create", "body": { "id": "B", "kind": "claim" } },
+        { "event_id": "a_on_b", "type": "support.add", "body": { "node": "A", "set_id": "s", "members": ["B"] } },
+        { "event_id": "b_on_a", "type": "support.add", "body": { "node": "B", "set_id": "s", "members": ["A"] } },
+        { "event_id": "b_on_b", "type": "support.add", "body": { "node": "B", "set_id": "s2", "members": ["B"] } }
+      ],
+      "expect": { "rejected": [{ "event_id": "b_on_a", "code": "cycle" }, { "event_id": "b_on_b", "code": "cycle" }], "nodes": { "A": { "validity": "unverified" }, "B": { "validity": "unverified", "support_status": {} } } }
+    },
+    {
+      "name": "comparing different metrics or missing semantics is rejected",
+      "events": [
+        { "event_id": "m1", "type": "node.create", "body": { "id": "M1", "kind": "measurement", "semantics": { "task_contract": "t", "metric_id": "grid_peak_c", "evaluator_version": "e1", "coordinate_frame": "lower_left" } } },
+        { "event_id": "m2", "type": "node.create", "body": { "id": "M2", "kind": "measurement", "semantics": { "task_contract": "t", "metric_id": "center_c", "evaluator_version": "e1", "coordinate_frame": "lower_left" } } },
+        { "event_id": "cmp", "type": "node.create", "body": { "id": "CMP", "kind": "comparison", "semantics": { "task_contract": "t", "metric_id": "grid_peak_c", "evaluator_version": "e1", "coordinate_frame": "lower_left" } } },
+        { "event_id": "ok", "type": "support.add", "body": { "node": "CMP", "set_id": "s1", "members": ["M1"] } },
+        { "event_id": "bad", "type": "support.add", "body": { "node": "CMP", "set_id": "s2", "members": ["M2"] } },
+        { "event_id": "no_sem", "type": "node.create", "body": { "id": "M3", "kind": "measurement", "semantics": { "metric_id": "grid_peak_c" } } }
+      ],
+      "expect": { "rejected": [{ "event_id": "bad", "code": "semantics_mismatch" }, { "event_id": "no_sem", "code": "missing_semantics" }] }
+    },
+    {
+      "name": "members of one set must agree even when the node declares nothing, but separate sets may differ",
+      "events": [
+        { "event_id": "m1", "type": "node.create", "body": { "id": "M1", "kind": "measurement", "semantics": { "task_contract": "t", "metric_id": "grid_peak_c", "evaluator_version": "e1", "coordinate_frame": "lower_left" } } },
+        { "event_id": "m2", "type": "node.create", "body": { "id": "M2", "kind": "measurement", "semantics": { "task_contract": "t", "metric_id": "center_c", "evaluator_version": "e1", "coordinate_frame": "lower_left" } } },
+        { "event_id": "c", "type": "node.create", "body": { "id": "C", "kind": "claim" } },
+        { "event_id": "mixed", "type": "support.add", "body": { "node": "C", "set_id": "mixed", "members": ["M1", "M2"] } },
+        { "event_id": "a", "type": "support.add", "body": { "node": "C", "set_id": "a", "members": ["M1"] } },
+        { "event_id": "b", "type": "support.add", "body": { "node": "C", "set_id": "b", "members": ["M2"] } }
+      ],
+      "expect": { "rejected": [{ "event_id": "mixed", "code": "semantics_mismatch" }], "nodes": { "C": { "validity": "valid", "support_status": { "a": "valid", "b": "valid" } } } }
+    },
+    {
+      "name": "support on an unknown node is rejected",
+      "events": [
+        { "event_id": "c", "type": "node.create", "body": { "id": "C", "kind": "claim" } },
+        { "event_id": "bad", "type": "support.add", "body": { "node": "C", "set_id": "s", "members": ["GHOST"] } },
+        { "event_id": "empty", "type": "support.add", "body": { "node": "C", "set_id": "s2", "members": [] } }
+      ],
+      "expect": { "rejected": [{ "event_id": "bad", "code": "unknown_node" }, { "event_id": "empty", "code": "empty_support_set" }], "nodes": { "C": { "validity": "unverified" } } }
+    },
+    {
+      "name": "an accepted candidate can go stale without losing its acceptance",
+      "events": [
+        { "type": "node.create", "body": { "id": "M", "kind": "source" } },
+        { "type": "node.create", "body": { "id": "K", "kind": "candidate" } },
+        { "type": "support.add", "body": { "node": "K", "set_id": "s", "members": ["M"] } },
+        { "type": "lifecycle.transition", "body": { "node": "K", "to": "validated" } },
+        { "type": "lifecycle.transition", "body": { "node": "K", "to": "simulation_pending" } },
+        { "type": "lifecycle.transition", "body": { "node": "K", "to": "evaluated" } },
+        { "type": "lifecycle.transition", "body": { "node": "K", "to": "reproduction_pending" } },
+        { "type": "lifecycle.transition", "body": { "node": "K", "to": "reproduced" } },
+        { "type": "lifecycle.transition", "actor_role": "acceptance_gate", "body": { "node": "K", "to": "accepted" } },
+        { "type": "withdraw", "body": { "node": "M", "reason": "bad measurement" } }
+      ],
+      "expect": { "nodes": { "K": { "lifecycle": "accepted", "accepted_ever": true, "validity": "stale", "stale_because": ["M"] } } }
+    },
+    {
+      "name": "a candidate can't skip checks, and a reproduced one may simply not beat the board",
+      "events": [
+        { "event_id": "k", "type": "node.create", "body": { "id": "K", "kind": "candidate" } },
+        { "event_id": "skip", "type": "lifecycle.transition", "actor_role": "acceptance_gate", "body": { "node": "K", "to": "accepted" } },
+        { "event_id": "v", "type": "lifecycle.transition", "body": { "node": "K", "to": "validated" } },
+        { "event_id": "s", "type": "lifecycle.transition", "body": { "node": "K", "to": "simulation_pending" } },
+        { "event_id": "e", "type": "lifecycle.transition", "body": { "node": "K", "to": "evaluated" } },
+        { "event_id": "p", "type": "lifecycle.transition", "body": { "node": "K", "to": "reproduction_pending" } },
+        { "event_id": "r", "type": "lifecycle.transition", "body": { "node": "K", "to": "reproduced" } },
+        { "event_id": "n", "type": "lifecycle.transition", "body": { "node": "K", "to": "non_improving_current" } }
+      ],
+      "expect": { "rejected": [{ "event_id": "skip", "code": "illegal_transition" }], "nodes": { "K": { "lifecycle": "non_improving_current", "accepted_ever": false, "validity": "unverified" } } }
+    },
+    {
+      "name": "only the acceptance gate can accept",
+      "events": [
+        { "event_id": "m", "type": "node.create", "body": { "id": "M", "kind": "source" } },
+        { "event_id": "k", "type": "node.create", "body": { "id": "K", "kind": "candidate" } },
+        { "event_id": "s", "type": "support.add", "body": { "node": "K", "set_id": "s", "members": ["M"] } },
+        { "event_id": "t1", "type": "lifecycle.transition", "body": { "node": "K", "to": "validated" } },
+        { "event_id": "t2", "type": "lifecycle.transition", "body": { "node": "K", "to": "simulation_pending" } },
+        { "event_id": "t3", "type": "lifecycle.transition", "body": { "node": "K", "to": "evaluated" } },
+        { "event_id": "t4", "type": "lifecycle.transition", "body": { "node": "K", "to": "reproduction_pending" } },
+        { "event_id": "t5", "type": "lifecycle.transition", "body": { "node": "K", "to": "reproduced" } },
+        { "event_id": "none", "type": "lifecycle.transition", "body": { "node": "K", "to": "accepted" } },
+        { "event_id": "lab", "type": "lifecycle.transition", "actor_role": "lab", "body": { "node": "K", "to": "accepted" } }
+      ],
+      "expect": { "rejected": [{ "event_id": "none", "code": "unauthorized_actor" }, { "event_id": "lab", "code": "unauthorized_actor" }], "nodes": { "K": { "lifecycle": "reproduced", "accepted_ever": false } } }
+    },
+    {
+      "name": "a candidate without currently valid support can't be accepted",
+      "events": [
+        { "event_id": "m", "type": "node.create", "body": { "id": "M", "kind": "source" } },
+        { "event_id": "k", "type": "node.create", "body": { "id": "K", "kind": "candidate" } },
+        { "event_id": "s", "type": "support.add", "body": { "node": "K", "set_id": "s", "members": ["M"] } },
+        { "event_id": "t1", "type": "lifecycle.transition", "body": { "node": "K", "to": "validated" } },
+        { "event_id": "t2", "type": "lifecycle.transition", "body": { "node": "K", "to": "simulation_pending" } },
+        { "event_id": "t3", "type": "lifecycle.transition", "body": { "node": "K", "to": "evaluated" } },
+        { "event_id": "t4", "type": "lifecycle.transition", "body": { "node": "K", "to": "reproduction_pending" } },
+        { "event_id": "t5", "type": "lifecycle.transition", "body": { "node": "K", "to": "reproduced" } },
+        { "event_id": "w", "type": "withdraw", "body": { "node": "M", "reason": "bad" } },
+        { "event_id": "accept", "type": "lifecycle.transition", "actor_role": "acceptance_gate", "body": { "node": "K", "to": "accepted" } },
+        { "event_id": "n", "type": "node.create", "body": { "id": "N", "kind": "candidate" } },
+        { "event_id": "n1", "type": "lifecycle.transition", "body": { "node": "N", "to": "validated" } },
+        { "event_id": "n2", "type": "lifecycle.transition", "body": { "node": "N", "to": "simulation_pending" } },
+        { "event_id": "n3", "type": "lifecycle.transition", "body": { "node": "N", "to": "evaluated" } },
+        { "event_id": "n4", "type": "lifecycle.transition", "body": { "node": "N", "to": "reproduction_pending" } },
+        { "event_id": "n5", "type": "lifecycle.transition", "body": { "node": "N", "to": "reproduced" } },
+        { "event_id": "accept_n", "type": "lifecycle.transition", "actor_role": "acceptance_gate", "body": { "node": "N", "to": "accepted" } }
+      ],
+      "expect": { "rejected": [{ "event_id": "accept", "code": "unsupported_acceptance" }, { "event_id": "accept_n", "code": "unsupported_acceptance" }], "nodes": { "K": { "lifecycle": "reproduced" }, "N": { "lifecycle": "reproduced", "validity": "unverified" } } }
+    },
+    {
+      "name": "failure outcomes stay on the record",
+      "events": [
+        { "type": "node.create", "body": { "id": "BAD_SCHEMA", "kind": "candidate" } },
+        { "type": "lifecycle.transition", "body": { "node": "BAD_SCHEMA", "to": "rejected_schema" } },
+        { "type": "node.create", "body": { "id": "BAD_RUN", "kind": "candidate" } },
+        { "type": "lifecycle.transition", "body": { "node": "BAD_RUN", "to": "validated" } },
+        { "type": "lifecycle.transition", "body": { "node": "BAD_RUN", "to": "simulation_pending" } },
+        { "type": "lifecycle.transition", "body": { "node": "BAD_RUN", "to": "failed_run" } }
+      ],
+      "expect": { "nodes": { "BAD_SCHEMA": { "lifecycle": "rejected_schema" }, "BAD_RUN": { "lifecycle": "failed_run" } } }
+    },
+    {
+      "name": "withdrawing a training example reaches the dataset, adapter and results",
+      "events": [
+        { "type": "node.create", "body": { "id": "E1", "kind": "example" } },
+        { "type": "node.create", "body": { "id": "E2", "kind": "example" } },
+        { "type": "node.create", "body": { "id": "DS", "kind": "dataset" } },
+        { "type": "node.create", "body": { "id": "AD", "kind": "adapter" } },
+        { "type": "node.create", "body": { "id": "BM", "kind": "benchmark_result" } },
+        { "type": "link.add", "body": { "from": "DS", "to": "E1", "rel": "contains" } },
+        { "type": "link.add", "body": { "from": "DS", "to": "E2", "rel": "contains" } },
+        { "type": "link.add", "body": { "from": "AD", "to": "DS", "rel": "trained_on" } },
+        { "type": "support.add", "body": { "node": "BM", "set_id": "s", "members": ["AD"] } },
+        { "type": "withdraw", "body": { "node": "E1", "reason": "bad label" } }
+      ],
+      "expect": { "nodes": {
+        "DS": { "validity": "valid", "tainted_by": ["E1"], "review_required": true },
+        "AD": { "validity": "valid", "tainted_by": ["E1"], "review_required": true },
+        "BM": { "validity": "valid", "tainted_by": [], "review_required": true }
+      } }
+    },
+    {
+      "name": "taint follows consumed inputs even when an OR alternative keeps them valid",
+      "events": [
+        { "type": "node.create", "body": { "id": "R", "kind": "source" } },
+        { "type": "node.create", "body": { "id": "X", "kind": "source" } },
+        { "type": "node.create", "body": { "id": "E", "kind": "example" } },
+        { "type": "node.create", "body": { "id": "DS", "kind": "dataset" } },
+        { "type": "node.create", "body": { "id": "AD", "kind": "adapter" } },
+        { "type": "support.add", "body": { "node": "E", "set_id": "via_r", "members": ["R"] } },
+        { "type": "support.add", "body": { "node": "E", "set_id": "via_x", "members": ["X"] } },
+        { "type": "link.add", "body": { "from": "DS", "to": "E", "rel": "contains" } },
+        { "type": "link.add", "body": { "from": "AD", "to": "DS", "rel": "trained_on" } },
+        { "type": "withdraw", "body": { "node": "R", "reason": "bad source" } }
+      ],
+      "expect": { "nodes": {
+        "E": { "validity": "valid", "support_status": { "via_r": "broken", "via_x": "valid" } },
+        "DS": { "tainted_by": ["R"], "review_required": true },
+        "AD": { "tainted_by": ["R"], "review_required": true }
+      } }
+    },
+    {
+      "name": "taint goes through nested datasets and includes a withdrawn dataset itself",
+      "events": [
+        { "type": "node.create", "body": { "id": "E", "kind": "example" } },
+        { "type": "node.create", "body": { "id": "OUTER", "kind": "dataset" } },
+        { "type": "node.create", "body": { "id": "INNER", "kind": "dataset" } },
+        { "type": "node.create", "body": { "id": "OTHER", "kind": "dataset" } },
+        { "type": "node.create", "body": { "id": "AD", "kind": "adapter" } },
+        { "type": "node.create", "body": { "id": "AD2", "kind": "adapter" } },
+        { "type": "link.add", "body": { "from": "OUTER", "to": "INNER", "rel": "contains" } },
+        { "type": "link.add", "body": { "from": "INNER", "to": "E", "rel": "contains" } },
+        { "type": "link.add", "body": { "from": "AD", "to": "OUTER", "rel": "trained_on" } },
+        { "type": "link.add", "body": { "from": "AD2", "to": "OTHER", "rel": "trained_on" } },
+        { "type": "withdraw", "body": { "node": "E", "reason": "bad label" } },
+        { "type": "withdraw", "body": { "node": "OTHER", "reason": "bad manifest" } }
+      ],
+      "expect": { "nodes": { "AD": { "tainted_by": ["E"], "review_required": true }, "AD2": { "tainted_by": ["OTHER"], "review_required": true } } }
+    },
+    {
+      "name": "training link cycles and wrong kinds are rejected",
+      "events": [
+        { "event_id": "d1", "type": "node.create", "body": { "id": "D1", "kind": "dataset" } },
+        { "event_id": "d2", "type": "node.create", "body": { "id": "D2", "kind": "dataset" } },
+        { "event_id": "e", "type": "node.create", "body": { "id": "E", "kind": "example" } },
+        { "event_id": "ad", "type": "node.create", "body": { "id": "AD", "kind": "adapter" } },
+        { "event_id": "self", "type": "link.add", "body": { "from": "D1", "to": "D1", "rel": "contains" } },
+        { "event_id": "ok", "type": "link.add", "body": { "from": "D1", "to": "D2", "rel": "contains" } },
+        { "event_id": "back", "type": "link.add", "body": { "from": "D2", "to": "D1", "rel": "contains" } },
+        { "event_id": "ad_contains", "type": "link.add", "body": { "from": "AD", "to": "E", "rel": "contains" } },
+        { "event_id": "e_trained", "type": "link.add", "body": { "from": "E", "to": "D1", "rel": "trained_on" } },
+        { "event_id": "bad_rel", "type": "link.add", "body": { "from": "D1", "to": "E", "rel": "likes" } }
+      ],
+      "expect": { "rejected": [{ "event_id": "self", "code": "cycle" }, { "event_id": "back", "code": "cycle" }, { "event_id": "ad_contains", "code": "bad_link_kinds" }, { "event_id": "e_trained", "code": "bad_link_kinds" }, { "event_id": "bad_rel", "code": "unknown_rel" }] }
+    },
+    {
+      "name": "a review covers only the examples it names",
+      "events": [
+        { "type": "node.create", "body": { "id": "E1", "kind": "example" } },
+        { "type": "node.create", "body": { "id": "E2", "kind": "example" } },
+        { "type": "node.create", "body": { "id": "DS", "kind": "dataset" } },
+        { "type": "node.create", "body": { "id": "AD", "kind": "adapter" } },
+        { "type": "link.add", "body": { "from": "DS", "to": "E1", "rel": "contains" } },
+        { "type": "link.add", "body": { "from": "DS", "to": "E2", "rel": "contains" } },
+        { "type": "link.add", "body": { "from": "AD", "to": "DS", "rel": "trained_on" } },
+        { "type": "withdraw", "body": { "node": "E1", "reason": "bad label" } },
+        { "type": "review.resolve", "body": { "node": "AD", "decision": "accepted_with_disclosure", "covers": ["E1"] } },
+        { "type": "withdraw", "body": { "node": "E2", "reason": "bad label" } }
+      ],
+      "expect": { "nodes": { "AD": { "tainted_by": ["E1", "E2"], "review_required": true } } }
+    },
+    {
+      "name": "a review that covers every tainted example clears only that node's flag, and taint stays visible",
+      "events": [
+        { "type": "node.create", "body": { "id": "E1", "kind": "example" } },
+        { "type": "node.create", "body": { "id": "DS", "kind": "dataset" } },
+        { "type": "node.create", "body": { "id": "AD", "kind": "adapter" } },
+        { "type": "node.create", "body": { "id": "BM", "kind": "benchmark_result" } },
+        { "type": "link.add", "body": { "from": "DS", "to": "E1", "rel": "contains" } },
+        { "type": "link.add", "body": { "from": "AD", "to": "DS", "rel": "trained_on" } },
+        { "type": "support.add", "body": { "node": "BM", "set_id": "s", "members": ["AD"] } },
+        { "type": "withdraw", "body": { "node": "E1", "reason": "bad label" } },
+        { "type": "review.resolve", "body": { "node": "AD", "decision": "accepted_with_disclosure", "covers": ["E1"] } }
+      ],
+      "expect": { "nodes": {
+        "DS": { "tainted_by": ["E1"], "review_required": true },
+        "AD": { "tainted_by": ["E1"], "review_required": false },
+        "BM": { "review_required": false }
+      } }
+    },
+    {
+      "name": "a review doesn't cover a later withdrawal of the same example",
+      "events": [
+        { "event_id": "e", "type": "node.create", "body": { "id": "E", "kind": "example" } },
+        { "event_id": "ds", "type": "node.create", "body": { "id": "DS", "kind": "dataset" } },
+        { "event_id": "ad", "type": "node.create", "body": { "id": "AD", "kind": "adapter" } },
+        { "event_id": "l1", "type": "link.add", "body": { "from": "DS", "to": "E", "rel": "contains" } },
+        { "event_id": "l2", "type": "link.add", "body": { "from": "AD", "to": "DS", "rel": "trained_on" } },
+        { "event_id": "w1", "type": "withdraw", "body": { "node": "E", "reason": "first" } },
+        { "event_id": "w1b", "type": "withdraw", "body": { "node": "E", "reason": "again" } },
+        { "event_id": "rev", "type": "review.resolve", "body": { "node": "AD", "decision": "retrained", "covers": ["E"] } },
+        { "event_id": "u", "type": "withdraw.retract", "body": { "node": "E", "reason": "was fine" } },
+        { "event_id": "w2", "type": "withdraw", "body": { "node": "E", "reason": "second problem" } }
+      ],
+      "expect": { "rejected": [{ "event_id": "w1b", "code": "already_withdrawn" }], "nodes": { "AD": { "tainted_by": ["E"], "review_required": true } } }
+    },
+    {
+      "name": "a correction of a correction restores validity",
+      "events": [
+        { "event_id": "r", "type": "node.create", "body": { "id": "R", "kind": "source" } },
+        { "event_id": "c", "type": "node.create", "body": { "id": "C", "kind": "claim" } },
+        { "event_id": "s", "type": "support.add", "body": { "node": "C", "set_id": "s", "members": ["R"] } },
+        { "event_id": "w", "type": "withdraw", "body": { "node": "R", "reason": "mistake" } },
+        { "event_id": "u", "type": "withdraw.retract", "body": { "node": "R", "reason": "withdrawn in error" } },
+        { "event_id": "u2", "type": "withdraw.retract", "body": { "node": "R", "reason": "again" } }
+      ],
+      "expect": { "rejected": [{ "event_id": "u2", "code": "not_withdrawn" }], "nodes": { "R": { "validity": "valid" }, "C": { "validity": "valid" } } }
+    },
+    {
+      "name": "support added after a withdrawal is stale immediately",
+      "events": [
+        { "type": "node.create", "body": { "id": "R", "kind": "source" } },
+        { "type": "withdraw", "body": { "node": "R", "reason": "drill" } },
+        { "type": "node.create", "body": { "id": "C", "kind": "claim" } },
+        { "type": "support.add", "body": { "node": "C", "set_id": "s", "members": ["R"] } }
+      ],
+      "expect": { "nodes": { "C": { "validity": "stale", "stale_because": ["R"] } } }
+    },
+    {
+      "name": "a repeated event has no effect, and a changed body under the same id is rejected",
+      "events": [
+        { "event_id": "r", "seq": 1, "type": "node.create", "body": { "id": "R", "kind": "source" } },
+        { "event_id": "r", "seq": 2, "type": "node.create", "body": { "id": "R", "kind": "source" } },
+        { "event_id": "r", "seq": 3, "type": "node.create", "body": { "id": "R2", "kind": "source" } }
+      ],
+      "expect": { "rejected": [{ "event_id": "r", "code": "event_id_conflict" }], "absent_nodes": ["R2"], "nodes": { "R": { "validity": "valid" } } }
+    },
+    {
+      "name": "two events can't share a seq, and the outcome doesn't depend on delivery order",
+      "events": [
+        { "event_id": "a", "seq": 1, "type": "node.create", "body": { "id": "A", "kind": "source" } },
+        { "event_id": "b", "seq": 1, "type": "node.create", "body": { "id": "B", "kind": "source" } }
+      ],
+      "expect": { "rejected": [{ "event_id": "b", "code": "duplicate_seq" }], "absent_nodes": ["B"], "nodes": { "A": { "validity": "valid" } } }
+    },
+    {
+      "name": "a verification tier lapses when its evidence does",
+      "events": [
+        { "type": "node.create", "body": { "id": "M", "kind": "source" } },
+        { "type": "node.create", "body": { "id": "REPLAY", "kind": "source" } },
+        { "type": "node.create", "body": { "id": "ANALYTIC", "kind": "source" } },
+        { "type": "verify.add", "body": { "node": "M", "tier": "replayed", "evidence": ["REPLAY"] } },
+        { "type": "verify.add", "body": { "node": "M", "tier": "analytic", "evidence": ["ANALYTIC"] } },
+        { "type": "withdraw", "body": { "node": "ANALYTIC", "reason": "wrong formula" } }
+      ],
+      "expect": { "nodes": { "M": { "validity": "valid", "tiers": ["replayed"] } } }
+    },
+    {
+      "name": "empty, self-referencing or dependent evidence earns no tier",
+      "events": [
+        { "event_id": "m", "type": "node.create", "body": { "id": "M", "kind": "source" } },
+        { "event_id": "x", "type": "node.create", "body": { "id": "X", "kind": "claim" } },
+        { "event_id": "xs", "type": "support.add", "body": { "node": "X", "set_id": "s", "members": ["M"] } },
+        { "event_id": "empty", "type": "verify.add", "body": { "node": "M", "tier": "analytic", "evidence": [] } },
+        { "event_id": "self", "type": "verify.add", "body": { "node": "M", "tier": "replayed", "evidence": ["M"] } },
+        { "event_id": "dep", "type": "verify.add", "body": { "node": "M", "tier": "cross_solver", "evidence": ["X"] } }
+      ],
+      "expect": { "rejected": [{ "event_id": "empty", "code": "bad_evidence" }, { "event_id": "self", "code": "bad_evidence" }, { "event_id": "dep", "code": "bad_evidence" }], "nodes": { "M": { "tiers": [] } } }
+    }
+  ]
+}
