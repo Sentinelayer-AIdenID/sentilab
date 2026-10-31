@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+from contextlib import contextmanager
 import json
 import math
 import os
@@ -19,6 +20,21 @@ REPO_ROOT = HOTSPOT_ROOT.parent
 if str(TAP_ROOT) not in sys.path:
     sys.path.insert(0, str(TAP_ROOT))
 from passive_interposer import PassiveInterposer  # noqa: E402
+
+
+@contextmanager
+def _output_directory(workspace_root, retained_root=None):
+    if retained_root is None:
+        with tempfile.TemporaryDirectory(prefix='tfl-hotspot-', dir=workspace_root) as directory:
+            yield directory
+        return
+    if not isinstance(retained_root, str) or not Path(retained_root).is_absolute():
+        raise ValueError('retained output root must be an absolute parent-owned directory')
+    root = Path(retained_root).resolve(strict=True)
+    # Only the parent supplies this path; use a fresh child, never a caller-supplied filename.
+    directory = Path(tempfile.mkdtemp(prefix='evaluation-', dir=root)).resolve()
+    directory.relative_to(root)
+    yield str(directory)
 
 
 def _sha256(path: Path) -> str:
@@ -84,6 +100,21 @@ def _request(raw: bytes) -> dict:
     if not isinstance(value, dict):
         raise ValueError("oracle request must be an object")
     return value
+
+
+def _retain_solver_output(output, stdout, stderr, status):
+    """Keep original bytes as well as readable text, including timeout payloads."""
+    for name, value in (('stdout', stdout), ('stderr', stderr)):
+        binary = output / f'{name}.bin'
+        status[f'{name}_payload_type'] = type(value).__name__
+        if value is None:
+            data = binary.read_bytes() if binary.exists() else b''
+        else:
+            data = value if isinstance(value, bytes) else value.encode('utf-8')
+        binary.write_bytes(data)
+        (output / f'{name}.txt').write_text(data.decode('utf-8', errors='replace'), encoding='utf-8')
+        status[f'{name}_bytes'] = len(data)
+    (output / 'EXIT.json').write_text(json.dumps(status) + '\n', encoding='utf-8')
 
 
 def evaluate(request: dict) -> dict:
@@ -168,8 +199,10 @@ def evaluate(request: dict) -> dict:
     if not workspace_root.is_dir():
         raise ValueError("parent-owned workspace is unavailable")
     started_generation = time.perf_counter()
-    with tempfile.TemporaryDirectory(prefix="tfl-hotspot-", dir=workspace_root) as directory:
+    with _output_directory(workspace_root, request.get('retained_output_root')) as directory:
         output = Path(directory)
+        if request.get('retained_output_root') is not None:
+            (output / 'REQUEST.json').write_text(json.dumps(request, sort_keys=True) + '\n')
         system = PassiveInterposer()
         system.set_chiplet_count(len(widths))
         system.initialize()
@@ -220,20 +253,31 @@ def evaluate(request: dict) -> dict:
             "-grid_map_mode", "max",
         ]
         solver_started = time.perf_counter()
+        retained = request.get('retained_output_root') is not None
+        # File-backed streams survive a parent-enforced worker/process-group kill.
+        from contextlib import ExitStack
         try:
-            process = subprocess.run(
-                command,
-                cwd=HOTSPOT_ROOT,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                check=False,
-            )
+            with ExitStack() as streams:
+                outputs = ({name: streams.enter_context((output / f'{name}.bin').open('wb'))
+                            for name in ('stdout', 'stderr')} if retained else {'capture_output': True})
+                process = subprocess.run(command, cwd=HOTSPOT_ROOT, text=True,
+                                         timeout=timeout, check=False, **outputs)
         except subprocess.TimeoutExpired as exc:
+            if retained:
+                _retain_solver_output(output, exc.stdout, exc.stderr,
+                                      {'status': 'timeout', 'returncode': None, 'command': command,
+                                       'timeout_s': timeout,
+                                       'elapsed_s': time.perf_counter() - solver_started})
+                (output / 'TIMEOUT.txt').write_text(str(exc))
             raise TimeoutError(f"TFL_ORACLE_TIMEOUT HotSpot exceeded {timeout:g} seconds") from exc
         solver_seconds = time.perf_counter() - solver_started
+        if retained:
+            _retain_solver_output(output, process.stdout, process.stderr,
+                                  {'status': 'exited', 'returncode': process.returncode, 'command': command})
         if process.returncode != 0:
-            detail = (process.stderr + "\n" + process.stdout)[-4000:].strip()
+            stdout = (output / 'stdout.txt').read_text() if retained else process.stdout
+            stderr = (output / 'stderr.txt').read_text() if retained else process.stderr
+            detail = (stderr + "\n" + stdout)[-4000:].strip()
             raise RuntimeError(f"HotSpot exited {process.returncode}: {detail}")
         if not grid.is_file() or grid.stat().st_size == 0:
             raise RuntimeError("HotSpot completed without a grid steady-state file")

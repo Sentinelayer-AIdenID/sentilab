@@ -1,0 +1,1 @@
+{"capture_cap_bytes_per_stream":8388608,"complete_process_history_claimed":false,"driver_max_files":1,"driver_max_size":"4m","scope":"all logs still retained by the Docker driver; no tail filter"}
