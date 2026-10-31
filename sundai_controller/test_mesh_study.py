@@ -1,12 +1,15 @@
 """Tests call the shipped generator, statistics, checker and real HotSpot runner."""
 import asyncio
 import copy
+from dataclasses import replace
 import json
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
+from types import SimpleNamespace
 
 from sundai_controller import mesh_study as mesh
 
@@ -78,6 +81,9 @@ class MeshStatisticsTests(unittest.TestCase):
         rows = [{'id': str(i), 'J_c': {'16': v + 0.5, '32': v + 0.1, '64': v}}
                 for i, v in enumerate([10., 20., 30.])]
         result = {'grids': [16, 32, 64], 'layouts': rows, 'fixed_tolerance_c': 0.01}
+        identity = {'hotspot_binary_sha256': 'test-binary', 'generator_sha256': [['source', 'test-source']]}
+        result['evaluator_identity'] = identity
+        result['provenance'] = {str(g): {'problem': identity} for g in result['grids']}
         result['summary'] = mesh.summarize(rows, result['grids'], 0.01)
         self.assertEqual(mesh.check_result(result), [])
         altered = copy.deepcopy(result)
@@ -124,6 +130,45 @@ class MeshLayoutTests(unittest.TestCase):
         for n in [0, 2, True]:
             with self.subTest(n=n), self.assertRaises(ValueError):
                 mesh.make_layout_set('ascend910', 1, n)
+
+
+class MeshIdentityTests(unittest.TestCase):
+    def test_rejects_changed_evaluator_before_evaluating_next_grid(self):
+        frozen, _ = mesh.load_layouts(mesh.EVIDENCE_ROOT / 'ascend910/layouts.json')
+        make_oracle = mesh.make_oracle
+        for field, value in [('hotspot_binary_sha256', 'changed-binary'),
+                             ('generator_sha256', (('changed-source', 'changed-hash'),))]:
+            calls = []
+
+            def factory(fixture, grid):
+                oracle = make_oracle(fixture, grid)
+                if grid == 64:
+                    oracle.problem = replace(oracle.problem, **{field: value})
+                return oracle
+
+            async def fake_call(oracle, design):
+                calls.append(oracle.grid_rows)
+                return SimpleNamespace(maximum_temperature_c=100.0, all_layers_peak_c=101.0,
+                                       evaluation_seconds=0.1, solver_seconds=0.05,
+                                       candidate_hash=design.hash)
+
+            with self.subTest(field=field), patch.object(mesh, 'make_oracle', factory), \
+                    patch.object(mesh.HotSpotOracle, '__call__', fake_call):
+                with self.assertRaisesRegex(ValueError, 'evaluator identity changed'):
+                    asyncio.run(mesh.evaluate_layouts(
+                        frozen, [32, 64], ['clustered-01', 'spread-01']))
+                self.assertEqual(calls, [32, 32])
+
+    def test_checker_rejects_cross_grid_identity_changes(self):
+        path = mesh.EVIDENCE_ROOT / 'ascend910/RESULT.json'
+        recorded = json.loads(path.read_text())
+        self.assertEqual(mesh.check_result(recorded), [])
+        for field in ('hotspot_binary_sha256', 'generator_sha256'):
+            altered = copy.deepcopy(recorded)
+            altered['provenance']['64']['problem'][field] = 'changed'
+            with self.subTest(field=field):
+                self.assertTrue(any('evaluator identity' in error
+                                    for error in mesh.check_result(altered)))
 
 
 class MeshRealRunTests(unittest.TestCase):

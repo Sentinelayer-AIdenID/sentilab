@@ -33,10 +33,15 @@ def make_oracle(fixture: str, grid: int) -> HotSpotOracle:
 
 
 def fixture_contract(oracle):
-    # Portable across builds: binary and per-grid problem hashes belong in results.
+    # Geometry freeze is portable across builds; each study separately pins its evaluator.
     problem = asdict(oracle.problem)
     return {key: value for key, value in problem.items()
             if key not in ('hotspot_binary_sha256', 'generator_sha256')}
+
+
+def evaluator_identity(problem):
+    return json.loads(_json_bytes({key: problem[key] for key in
+                                  ('hotspot_binary_sha256', 'generator_sha256')}))
 
 
 def _json_bytes(value):
@@ -221,6 +226,12 @@ def check_result(result: dict) -> list[str]:
             raise ValueError('need distinct grids chosen from 16, 32, 64')
         if any(set(r['J_c']) != {str(g) for g in grids} for r in rows):
             raise ValueError('measurement grids mismatch')
+        provenance = result['provenance']
+        if set(provenance) != {str(g) for g in grids}:
+            raise ValueError('evaluator identity missing for a grid')
+        pinned = result['evaluator_identity']
+        if any(evaluator_identity(provenance[str(g)]['problem']) != pinned for g in grids):
+            errors.append('evaluator identity changed across grids')
         summary = summarize(rows, grids, result['fixed_tolerance_c'])
         if summary != result['summary']:
             errors.append('stored summary differs from measured values')
@@ -274,11 +285,17 @@ async def evaluate_layouts(frozen, grids=(16, 32, 64), layout_ids=None):
     start_cpu = cpu_usage()
     solver_executions = 0
     provenance = {}
+    pinned = None
     for grid in grids:
         oracle = make_oracle(frozen['fixture'], grid)
         try:
             if json.loads(_json_bytes(fixture_contract(oracle))) != frozen['fixture_contract']:
                 raise ValueError('frozen fixture contract changed')
+            identity = evaluator_identity(asdict(oracle.problem))
+            if pinned is None:
+                pinned = identity
+            elif identity != pinned:
+                raise ValueError('evaluator identity changed before next grid')
             provenance[str(grid)] = {'problem_hash': oracle.problem_hash,
                                      'solver_version': oracle.solver_version,
                                      'problem': asdict(oracle.problem)}
@@ -301,7 +318,7 @@ async def evaluate_layouts(frozen, grids=(16, 32, 64), layout_ids=None):
             'objective': 'chip-layer grid peak in Celsius', 'layouts': rows,
             'evaluation_count': len(rows) * len(grids), 'seconds': time.perf_counter() - started,
             'run_accounting': run_accounting(start_cpu, solver_executions),
-            'provenance': provenance, 'summary': summarize(rows, grids, frozen['fixed_tolerance_c'])}
+            'evaluator_identity': pinned, 'provenance': provenance, 'summary': summarize(rows, grids, frozen['fixed_tolerance_c'])}
 
 
 def report(result):
