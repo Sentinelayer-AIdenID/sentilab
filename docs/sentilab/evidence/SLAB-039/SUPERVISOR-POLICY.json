@@ -1,0 +1,15 @@
+{
+  "schema": "slab039-outer-supervisor-policy-v1",
+  "status": "pending",
+  "approved_by": null,
+  "accept_unbounded_scheduler_and_cleanup_risk": false,
+  "limits": {
+    "rate_q": 1,
+    "poll_seconds": 0.01,
+    "observation_delay_seconds": 0.25,
+    "kill_seconds": 0.25,
+    "reap_seconds": 0.25,
+    "burst_cpu_seconds": 0.02,
+    "settlement_tail_cpu_seconds": 0.25
+  }
+}

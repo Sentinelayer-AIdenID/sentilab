@@ -98,7 +98,7 @@ class V4Tests(unittest.IsolatedAsyncioTestCase):
             # Keep real file writes/readbacks (including the pre-call reservation)
             # but omit disk barriers in fake-run tests; legacy budget tests cover fsync.
             stack.enter_context(patch.object(h.os, 'fsync'))
-            return await h.run_headroom('micro150', 0.79, prereg_path, self.directory / 'out')
+            return await h.run_headroom('micro150', 0.79, prereg_path, self.directory / 'out', oracle_factory=Oracle)
 
     def set_micro_calls(self, count):
         self.spend['fixtures']['micro150'] = {'calls': count, 'cpu_seconds': 0.0}

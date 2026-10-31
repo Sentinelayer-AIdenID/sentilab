@@ -42,6 +42,7 @@ V4_P95_SECONDS = 0.524939
 V4_CPU_SECONDS = 2879.705435
 V4_CPU_RESERVE_SECONDS = 1.0
 V4_CPU_POLL_SECONDS = 0.01
+V4_ARITHMETIC = 'IEEE-754 binary64; subtract C-best and compare inclusively to binary64 5*0.79; no rounding or epsilon'
 
 
 def _validate_mesh_error(value: float | None) -> None:
@@ -92,6 +93,8 @@ def _validate_v4(prereg):
             enforcement.get('reserve_h_cpu_seconds') != V4_CPU_RESERVE_SECONDS or
             enforcement.get('poll_seconds') != V4_CPU_POLL_SECONDS):
         raise ValueError('v4 requires declared CPU rate Q, reserve H and polling interval')
+    if prereg['rule'].get('arithmetic') != V4_ARITHMETIC:
+        raise ValueError('v4 requires frozen binary64 threshold arithmetic')
     if (prereg['fixture'] != 'micro150' or prereg['grid'] != 32 or
             prereg['rule']['k'] != 5 or prereg['mesh_error']['micro150']['e_c'] != 0.79 or
             prereg['reproduction']['absolute_tolerance_c'] != REPRODUCTION_ABS_TOLERANCE_C or
@@ -206,9 +209,12 @@ class SolveBudget:
     a crash with an outstanding reservation requires reconciliation, never a reset.
     """
     def __init__(self, path, fixture, prereg):
+        from sundai_controller.headroom_supervisor import WORKER_CONTEXT
+        self.supervised = WORKER_CONTEXT is not None
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.lock = self.path.with_suffix('.lock').open('a')
+        self.lock = (WORKER_CONTEXT['lock'] if self.supervised else
+                     self.path.with_suffix('.lock').open('a'))
         try:
             fcntl.flock(self.lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BaseException:
@@ -323,7 +329,9 @@ class SolveBudget:
         self.entry['calls'] += 1
         self.state['active'] = {'fixture': self.fixture, 'lane': lane, 'design_hash': design.hash}
         if self.v4:
-            self.state['active'].update(timeout_s=timeout, p95_seconds=V4_P95_SECONDS,
+            self.state['active'].update(timeout_s=45.0 if self.supervised else timeout,
+                                        admission_remaining_wall_s=timeout,
+                                        supervised=self.supervised, p95_seconds=V4_P95_SECONDS,
                                         rate_q=self.cpu_rate, reserve_h_cpu_seconds=self.cpu_reserve)
         self.checkpoint()
 
@@ -414,7 +422,7 @@ class _LaneOracle:
         metering = {}
         result = None
         try:
-            if self.budget.v4:
+            if self.budget.v4 and not self.budget.supervised:
                 candidate_scope = ProcessTreeScope(self.budget.cpu_rate)
                 candidate_scope.start()
                 scope = candidate_scope
@@ -422,7 +430,12 @@ class _LaneOracle:
                 raw_dir = self.budget.artifact_dir / 'raw' / f"{history['call']:05d}"
                 self.oracle.retain_evaluation(raw_dir)
                 history['raw_output_directory'] = str(raw_dir)
-            if self.budget.v4:
+            if self.budget.supervised:
+                # The independent parent owns the cumulative CPU/wall limit,
+                # including setup, inter-call work and cleanup. Retain only the
+                # solver's separate malfunction timeout; no asyncio CPU watcher.
+                result = await self.oracle(design, timeout_s=45.0)
+            elif self.budget.v4:
                 from sundai_hotspot.tap_oracle import HotSpotTimeoutError
                 # Recompute after reservation/retention I/O; their CPU/wall is charged.
                 remaining = (None if self.cpu_timeout_s is None else
@@ -740,8 +753,14 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
                        output_dir: str | Path | None = None,
                        j32_values: list[float] | None = None,
                        j64_values: list[float] | None = None,
-                       budget_path: str | Path | None = None) -> dict:
-    """Run reducers, long SA, then optional diagnostics under one durable budget."""
+                       budget_path: str | Path | None = None, *, oracle_factory=None) -> dict:
+    """Worker primitive. Real v4 runs require the outer supervisor.
+
+    oracle_factory supplies synthetic evaluations for in-process tests only;
+    their cooperative accounting makes no independent enforcement claim.
+    """
+    lifetime_cpu = _cpu_seconds()
+    lifetime_wall = time.perf_counter()
     prereg_bytes = Path(prereg_path).read_bytes()
     runner_bytes = Path(__file__).read_bytes()
     prereg = _parse_prereg(prereg_path, contents=prereg_bytes)
@@ -773,8 +792,16 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
     output_dir = Path(output_dir) if output_dir is not None else Path(prereg_path).parent / ('micro150-v4' if v4 else '.')
     if v4 and output_dir.resolve() == Path(prereg_path).parent.resolve():
         raise ValueError('v4 output must not overwrite the retained v3 evidence directory')
+    from sundai_controller.headroom_supervisor import WORKER_CONTEXT
+    if v4 and oracle_factory is None and WORKER_CONTEXT is None:
+        raise RuntimeError('real v4 execution requires the independent headroom_supervisor and operational approval')
+    if WORKER_CONTEXT is not None and prereg_digest != WORKER_CONTEXT['prereg_sha256']:
+        raise ValueError('preregistration changed after supervisor admission')
     output_dir.mkdir(parents=True, exist_ok=True)
     budget = SolveBudget(budget_path or Path(prereg_path).parent / 'SPEND.json', fixture, prereg)
+    starting_cpu = budget.state['cpu_seconds']
+    if v4:
+        budget.last_cpu, budget.last_wall = lifetime_cpu, lifetime_wall
     attempt = None
     if v4:
         output_dir = output_dir / f'attempt-{uuid.uuid4().hex}'
@@ -791,7 +818,6 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
         budget.checkpoint()
     started_at = datetime.now(timezone.utc).isoformat()
     starting_calls = budget.state['total_calls']
-    starting_cpu = budget.state['cpu_seconds']
     from sundai_hotspot.tap_oracle import HotSpotOracle
 
     oracle = None
@@ -802,7 +828,7 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
     try:
         grid = prereg['grid']
         options = {'retained_output_root': output_dir / 'raw'} if v4 else {}
-        oracle = HotSpotOracle(grid, grid, fixture=fixture, **options)
+        oracle = (oracle_factory or HotSpotOracle)(grid, grid, fixture=fixture, **options)
         initial = oracle.design_from_centers(MICRO150_INITIAL_CENTERS if v4 else TAP_INITIAL_CENTERS)
         if v4:
             initial.check()
@@ -815,6 +841,8 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
         def shared_initials(seed, count):
             try:
                 budget.check()
+                if v4:
+                    budget.call_timeout()
             except BudgetExhausted:
                 return [initial]
             return _shared_designs(initial, oracle, seed, min(3, count - 1))
@@ -928,7 +956,7 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
         'aggregate_evaluations': budget.state['total_calls'] - starting_calls,
         'cpu_seconds': budget.state['cpu_seconds'] - starting_cpu,
         'allocation_spend': budget.state,
-        'cpu_accounting': ('Linux /proc whole tree including process threads and waited children; subreaper confirms all descendants reaped; includes startup and kill CPU'
+        'cpu_accounting': ('Provisional worker CPU; authoritative whole-lifetime accounting and acceptance require matching supervisor SETTLEMENT after confirmed reap'
                            if v4 else 'getrusage SELF+CHILDREN; workers reaped after every call; includes startup'),
         'search_evaluations': evaluations, 'reproduction_evaluations': reproduction_evals,
     }
@@ -940,6 +968,9 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
                       certification_scope='preregistered observed headroom criterion only; not a universal numerical error bound',
                       paid_scientific_model_authorized=False,
                       reproduction_absolute_tolerance_c=REPRODUCTION_ABS_TOLERANCE_C)
+        result['threshold_arithmetic'] = V4_ARITHMETIC
+        result['resource_status'] = 'awaiting_supervisor_settlement' if budget.supervised else 'synthetic_cooperative_only'
+        result['supervisor_reservation_id'] = None if WORKER_CONTEXT is None else WORKER_CONTEXT['reservation']
         result['artifact_directory'] = str(output_dir.resolve())
         result['wire_limit_mm'] = oracle.wire_limit
         attempt.update(status='baseline_failed' if baseline is None else 'finished',
@@ -950,7 +981,13 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
         _write_report(output_dir / 'REPORT.md', result, prereg, cheap_cfg)
     finally:
         if v4:
-            budget.lock.close()
+            try:
+                budget.close(release=False)
+                result['cpu_seconds'] = budget.state['cpu_seconds'] - starting_cpu
+                # The parent meters this write and the worker's interpreter exit.
+                _write_json(output_dir / 'RESULT.json', result)
+            finally:
+                budget.lock.close()
     return result
 
 
@@ -1008,7 +1045,9 @@ def _write_report(path: Path, result: dict, prereg: dict, cheap_cfg: dict) -> No
               ('Caps: micro150 4,768 calls / 48 CPU minutes; headroom 9,700 / 72; aggregate 10,000 / 84. '
                'Cumulative solving wall cap: 90 minutes; admission deadline: 2026-10-31 12:00Z. '
                if v4 else 'Caps are 4,768 calls / 24 CPU minutes per fixture and 9,700 calls / 48 CPU minutes across fixtures. ') +
-              ('Each complete call is bounded by the minimum remaining CPU/wall/deadline allowance and 45 seconds; '
+              ('The independent parent supervises all worker phases under an explicitly approved best-effort policy. '
+               'CPU and acceptance here are provisional until the matching outer SETTLEMENT is durable. '
+               'The solver retains its separate 45-second malfunction timeout; '
                'admission requires at least the frozen measured p95. Timeout kills immediately; kill/reap latency is recorded. '
                if v4 else 'An in-flight evaluation may cross the CPU limit; the next call is refused. ') +
               'A crash with an outstanding reservation fails closed pending reconciliation.', '',
@@ -1056,7 +1095,20 @@ def main() -> None:
                         help="output directory (default: docs/sentilab/evidence/SLAB-039)")
     parser.add_argument('--budget', type=Path, default=None,
                         help='shared durable allocation ledger (default: beside prereg)')
+    parser.add_argument('--resource-policy', type=Path,
+                        help='explicit operator decision for best-effort whole-run supervision')
     args = parser.parse_args()
+
+    if args.fixture == 'micro150':
+        if args.resource_policy is None:
+            parser.error('micro150 requires --resource-policy; pending decisions refuse execution')
+        if args.mesh_error not in (None, 0.79) or args.j32 is not None or args.j64 is not None:
+            parser.error('micro150 requires the fixed 0.79 discrepancy')
+        # Discard any native-library threads created while importing this module.
+        # exec preserves this process's accumulated CPU for the outer accounting.
+        os.execv(sys.executable, [sys.executable, '-m', 'sundai_controller.headroom_supervisor',
+            '--prereg', str(args.prereg), '--budget', str(args.budget or args.prereg.parent / 'SPEND.json'),
+            '--out', str(args.out or args.prereg.parent / 'micro150-v4'), '--policy', str(args.resource_policy)])
 
     if args.mesh_error is None and (args.j32 is None or args.j64 is None):
         parser.error("either --mesh-error or both --j32 and --j64 are required")
