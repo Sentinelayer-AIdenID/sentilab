@@ -1,0 +1,248 @@
+{
+  "schema": "slab024a.assets/1",
+  "inspected_at": "2026-10-31T05:32:00Z",
+  "scope": "Robot-asset slice of SLAB-035 (M04/V08/F11/F21/R12/Q11) plus tools named by the NVIDIA MicroDuck article. Not legal clearance. Not a complete SLAB-035 inventory.",
+  "public_demo_meaning": "public_demo=yes means the cited license text allows redistribution of that item, subject to the conditions in notes. It is not permission to ship a commercial product, not a patent clearance, and not a finding that every dependency of that item is redistributable.",
+  "items": [
+    {
+      "id": "nvidia-tech-blog",
+      "kind": "documentation",
+      "name": "Using AI Agents to Teach Robots Like Microduck to Walk in Simulation",
+      "url": "https://developer.nvidia.com/blog/using-ai-agents-to-teach-robots-like-microduck-to-walk-in-simulation/",
+      "version": "datePublished 2026-10-23T14:58:32+00:00; dateModified 2026-10-23T14:58:36+00:00",
+      "license": "NVIDIA page copyright; no open-content license stated on the retrieved article",
+      "public_demo": "no",
+      "notes": "Cite and quote. Do not republish the article, figures, or concept images. AI-Generated Summary is labeled separately from the authored body."
+    },
+    {
+      "id": "youtube-ac6pspFbPsI",
+      "kind": "video",
+      "name": "Nvidia Microduck AI Robots are mind blowing - World Premiere and First Look",
+      "url": "https://www.youtube.com/watch?v=ac6pspFbPsI",
+      "version": "watch-page publishDate.simpleText Oct 22, 2026; oEmbed title/author retrieved 2026-10-31; duration not retrieved",
+      "license": "uploader copyright (REC Anything). Not an NVIDIA license.",
+      "public_demo": "no",
+      "notes": "No captions and no frames retrieved. Player API returned LOGIN_REQUIRED. Description text is third-party narration of GTC Berlin."
+    },
+    {
+      "id": "hermes-agent",
+      "kind": "code",
+      "name": "Nous Research Hermes agent",
+      "url": "https://github.com/NousResearch/hermes-agent",
+      "version": "main 78077b2b8f83ac7d9293d3269df7ef20e3a9a994 (2026-10-31T05:02:01Z)",
+      "license": "MIT (LICENSE at that commit, Copyright (c) 2025 Nous Research)",
+      "public_demo": "yes",
+      "notes": "Blog links https://hermes-agent.nousresearch.com/ and does not pin this commit. MIT requires the copyright and permission notice. Model weights Hermes calls are separate."
+    },
+    {
+      "id": "nemotron-3.5-bolt",
+      "kind": "model",
+      "name": "nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB",
+      "url": "https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Bolt-74B-A9B-24GB",
+      "version": "revision cf2effc5c4b794ee9fb8d34eab3d1d65ce64142f lastModified 2026-10-20T20:02:05Z; 90 safetensor shards",
+      "license": "other / license_name openmdw-1.1 / https://openmdw.ai/license/1-1/",
+      "public_demo": "unresolved",
+      "notes": "Card says 'This model is ready for commercial or non-commercial use.' OpenMDW-1.1 grants use of Model Materials and requires retaining the agreement and notices on distribution. It also says the recipient must clear third-party rights. Hugging Face tag is 'other', not a standard SPDX id. Weights were not downloaded. Not Apache-2.0."
+    },
+    {
+      "id": "astra-assistant",
+      "kind": "tool",
+      "name": "Astra (article assistant)",
+      "url": "https://developer.nvidia.com/blog/using-ai-agents-to-teach-robots-like-microduck-to-walk-in-simulation/",
+      "version": "unspecified",
+      "license": "unresolved \u2014 no repository, model id, or license in the article",
+      "public_demo": "no",
+      "notes": "Not identified as gpt-astra-carter or any SentiLab lab."
+    },
+    {
+      "id": "freecad",
+      "kind": "tool",
+      "name": "FreeCAD",
+      "url": "named only in the NVIDIA article; upstream https://www.freecad.org/",
+      "version": "unspecified",
+      "license": "unresolved in the article (upstream is LGPL-2.0-or-later; not re-verified in this slice)",
+      "public_demo": "unresolved",
+      "notes": "Article: 'Astra directs FreeCAD to construct the base geometry and editable CAD structure' and 'Both applications run locally through programmatic execution.'"
+    },
+    {
+      "id": "blender",
+      "kind": "tool",
+      "name": "Blender",
+      "url": "named only in the NVIDIA article; upstream https://www.blender.org/",
+      "version": "unspecified",
+      "license": "unresolved in the article (upstream is GPL-2.0-or-later; not re-verified in this slice)",
+      "public_demo": "unresolved",
+      "notes": "Article: Blender adds 'fine geometric details and materials'. GPL obligations, if the upstream license is confirmed, apply to Blender and derivative code, not automatically to exported geometry."
+    },
+    {
+      "id": "isaac-lab",
+      "kind": "code",
+      "name": "isaac-sim/IsaacLab",
+      "url": "https://github.com/isaac-sim/IsaacLab",
+      "version": "main=develop a946f38b8899816ce95492dc608c3c5714ee6aec (2026-10-31T05:07:13Z). README badges Python 3.12 and Isaac Sim 6.2.0.",
+      "license": "BSD-3-Clause for the framework (LICENSE). Apache-2.0 for isaaclab_mimic (LICENSE-mimic, not fetched as a separate file in this slice; README states the split).",
+      "public_demo": "yes",
+      "notes": "BSD-3 requires retaining copyright, conditions, and disclaimer, and forbids endorsement. Running Isaac Sim workflows pulls Isaac Sim, whose additional materials are separately licensed. README: 'Assets not explicitly listed in the docs/licenses directory also fall under the terms of the Isaac Sim License.'"
+    },
+    {
+      "id": "isaac-lab-microduck-task",
+      "kind": "code",
+      "name": "Isaac Lab MicroDuck velocity tasks",
+      "url": "https://github.com/isaac-sim/IsaacLab/tree/a946f38b8899816ce95492dc608c3c5714ee6aec/source/isaaclab_tasks/isaaclab_tasks/contrib/microduck",
+      "version": "a946f38b8899816ce95492dc608c3c5714ee6aec",
+      "license": "BSD-3-Clause (SPDX header on __init__.py and microduck.py)",
+      "public_demo": "yes",
+      "notes": "Gym ids IsaacContrib-Velocity-Flat-MicroDuck and IsaacContrib-Velocity-Rough-MicroDuck. Task code only. Training command in docs/source/how-to/train_microduck.rst needs a GPU Isaac Lab install. No checkpoint in this directory."
+    },
+    {
+      "id": "isaac-lab-microduck-usd",
+      "kind": "robot-asset",
+      "name": "Nucleus USD Robots/PollenRobotics/MicroDuck/microduck_walk.usd and siblings",
+      "url": "referenced from source/isaaclab_assets/isaaclab_assets/robots/microduck.py at a946f38 (ISAACLAB_NUCLEUS_DIR). Not a git blob.",
+      "version": "unpinned; path names microduck_walk.usd, microduck_allcollisions.usd, microduck_walk_backlash.usd, microduck_allcollisions_backlash.usd",
+      "license": "unresolved. No matching file under Isaac Lab docs/licenses/assets. README assigns unlisted assets to the Isaac Sim license.",
+      "public_demo": "no",
+      "notes": "Do not treat the Isaac Lab BSD license as covering these meshes. Do not assume Pollen CC BY-NC-SA or Apache either, until the USD and its materials are inspected. Isaac Sim additional-materials PDF is linked from Isaac Lab docs/licenses/dependencies/isaacsim-license.txt as https://docs.nvidia.com/NVIDIA-IsaacSim-Additional-Software-and-Materials-License.pdf and from Isaac Sim LICENSE as https://www.nvidia.com/en-us/agreements/enterprise-software/isaac-sim-additional-software-and-materials-license/. PDF not fetched."
+    },
+    {
+      "id": "isaac-sim",
+      "kind": "code",
+      "name": "isaac-sim/IsaacSim",
+      "url": "https://github.com/isaac-sim/IsaacSim",
+      "version": "release/6.3 5ef464e8d7853d7b937bc9316e999300276454df (2026-10-23T14:17:10Z). Download page lists binaries Isaac Sim 6.2.0, October 2026, Linux x86_64, Linux aarch64, and Windows.",
+      "license": "Apache-2.0 for 'The Isaac Sim software in this repository', plus additional NVIDIA terms for Omniverse Kit SDK, 3D models, and textures",
+      "public_demo": "unresolved",
+      "notes": "Binary installer, Kit, and asset packs were not downloaded. aarch64 support statement is in FEASIBILITY.md. Apache on the git tree does not license Kit or the asset packs."
+    },
+    {
+      "id": "newton",
+      "kind": "code",
+      "name": "newton-physics/newton",
+      "url": "https://github.com/newton-physics/newton",
+      "version": "main 2e20d82d706970a9bb6917eef7f63e0831cb0347 (2026-10-31T00:22:06Z)",
+      "license": "Apache-2.0 (LICENSE.md at that commit)",
+      "public_demo": "yes",
+      "notes": "NVIDIA developer page https://developer.nvidia.com/newton-physics says Newton is open source, built on NVIDIA Warp and OpenUSD, and managed by the Linux Foundation. Warp's own license was not opened in this slice. GPU acceleration is not a CPU MuJoCo substitute."
+    },
+    {
+      "id": "omniverse-rtx",
+      "kind": "tool",
+      "name": "NVIDIA Omniverse libraries and RTX rendering",
+      "url": "https://developer.nvidia.com/omniverse",
+      "version": "unspecified in the article",
+      "license": "unresolved proprietary NVIDIA terms; not the Newton Apache license",
+      "public_demo": "no",
+      "notes": "Article uses Omniverse libraries for rendering and sensor simulation. Not fetched as source."
+    },
+    {
+      "id": "simready-central",
+      "kind": "data",
+      "name": "SimReady Central OpenUSD library",
+      "url": "https://huggingface.co/blog/nvidia/simready-central-assets-robotics-ai-factories",
+      "version": "article dated October 21, 2026; 'more than 2,000' assets",
+      "license": "per-asset, not enumerated. Article says free and ungated.",
+      "public_demo": "unresolved",
+      "notes": "Blog and SimReady article both say free and ungated. That is access, not one license for every mesh, texture, and physics extra. No MicroDuck asset was identified in the article."
+    },
+    {
+      "id": "pollen-microduck-runtime",
+      "kind": "code",
+      "name": "pollen-robotics/microduck",
+      "url": "https://github.com/pollen-robotics/microduck",
+      "version": "main b2b0d213a402caeac492dd662ea891faa17f67c0 (2026-10-30T14:58:39Z)",
+      "license": "Apache-2.0 (LICENSE at that commit)",
+      "public_demo": "yes",
+      "notes": "Runtime, not the NVIDIA agent workflow. Tree at this SHA has no STL/USD/URDF. It does contain ONNX files: duck-control/models/pickup_detector.onnx (36138 bytes), pet-detect/models/pet_detect.onnx (20201 bytes), and test fixtures. Those ONNX files were not opened; their training data and weights license is unresolved even though they sit in an Apache repo. sounds/ and two PNG files exist (spaces/vetbook/pixel-head.png, pixel-head-gb.png); image/audio licenses not separately stated. docs/robot/simulation.md says duck-sim drives MuJoCo bodies from microduck_rl and does not simulate the servo bus, radio, camera ISP, or NPU."
+    },
+    {
+      "id": "pollen-microduck-rl-code",
+      "kind": "code",
+      "name": "pollen-robotics/microduck_rl code, MJCF, and part metadata",
+      "url": "https://github.com/pollen-robotics/microduck_rl",
+      "version": "develop bae39f5900b318f7e87fc485c30a31213cfa14eb (2026-10-27T15:00:04Z). pyproject license field: Apache-2.0 AND CC-BY-NC-SA-4.0",
+      "license": "Apache-2.0 for everything except the STL meshes listed in LICENSE-MODELS.md. LICENSE-MODELS.md explicitly includes MJCF .xml, config_mjcf_*.json, config.json, and Onshape .part under Apache-2.0.",
+      "public_demo": "yes",
+      "notes": "Apache redistribution conditions apply (NOTICE, attribution, no trademark use). README says training requires a CUDA GPU via MuJoCo Warp and names ARM boxes only as a uv timeout note: 'On ARM boxes (DGX Spark / GB10, Jetson)'. scripts/infer_policy.py is the CPU MuJoCo policy playback path and needs an ONNX policy, which this repo does not vendor."
+    },
+    {
+      "id": "pollen-microduck-stl",
+      "kind": "robot-asset",
+      "name": "MicroDuck and XL330 test-bench STL meshes",
+      "url": "https://github.com/pollen-robotics/microduck_rl/blob/bae39f5900b318f7e87fc485c30a31213cfa14eb/LICENSE-MODELS.md",
+      "version": "bae39f5900b318f7e87fc485c30a31213cfa14eb. robot_walk.xml references 38 STL files under assets/.",
+      "license": "CC BY-NC-SA 4.0. Copyright Pollen Robotics.",
+      "public_demo": "no",
+      "notes": "LICENSE-MODELS.md: credit Pollen Robotics, link the license, disclose modifications, and ShareAlike adapted meshes including decimated or converted meshes. NonCommercial is a bar on a commercial public demo. Non-commercial research display still needs those conditions and is not cleared here. Covering paths: src/mjlab_microduck/robot/microduck/assets/*.stl and src/mjlab_microduck/robot/xl330_test_bench/assets/*.stl. No separate texture files in the repo (54 STL, 27 XML, 54 .part, no png/jpg)."
+    },
+    {
+      "id": "pollen-mjcf-walk",
+      "kind": "robot-asset",
+      "name": "scene_walk.xml + robot_walk.xml",
+      "url": "https://github.com/pollen-robotics/microduck_rl/blob/bae39f5900b318f7e87fc485c30a31213cfa14eb/src/mjlab_microduck/robot/microduck/scene_walk.xml",
+      "version": "bae39f5900b318f7e87fc485c30a31213cfa14eb",
+      "license": "Apache-2.0 for the XML. Loading it pulls CC BY-NC-SA STL meshes.",
+      "public_demo": "no",
+      "notes": "Compiler meshdir is assets. A CPU MuJoCo load therefore redistributes or at least fetches the NC meshes. Do not commit the STL into sentilab. Generated header says onshape-to-robot and links an Onshape document URL; Onshape account rights beyond the published XML/STL split were not inspected."
+    },
+    {
+      "id": "bam",
+      "kind": "code",
+      "name": "Rhoban/bam (better-actuator-models)",
+      "url": "https://github.com/Rhoban/bam",
+      "version": "main b9e11118e17fe8ec803d430202f6fcf31d57901e (2026-10-28T17:29:39Z). Isaac Lab comment cites an older fit revision 62bd8ce12154340be97e06f7f41a0ca8f116d967, which was not re-fetched.",
+      "license": "Apache-2.0 (GitHub license API SPDX Apache-2.0)",
+      "public_demo": "yes",
+      "notes": "LICENSE file body was not opened in this slice; SPDX comes from the GitHub repo metadata. PyPI name better-actuator-models. Isaac Lab's fitted constants and BAM's current main are different revisions."
+    },
+    {
+      "id": "mjlab",
+      "kind": "code",
+      "name": "mujocolab/mjlab",
+      "url": "https://github.com/mujocolab/mjlab",
+      "version": "main 8bb2bc9e187797689ec82c78c35019afd2fd0376 (2026-10-18T19:04:39Z). microduck_rl pins mjlab==1.3.0.",
+      "license": "Apache-2.0 (GitHub license API)",
+      "public_demo": "yes",
+      "notes": "LICENSE body not opened. Training path is MuJoCo Warp / CUDA, not the CPU smoke."
+    },
+    {
+      "id": "mujoco",
+      "kind": "code",
+      "name": "MuJoCo Python",
+      "url": "https://github.com/google-deepmind/mujoco",
+      "version": "PyPI mujoco==3.3.5 used for the smoke (latest index at inspect time was 3.17.0)",
+      "license": "Apache-2.0 (upstream; not re-opened in this slice)",
+      "public_demo": "yes",
+      "notes": "CPU smoke imports mujoco._structs and mujoco._functions with MUJOCO_GL=disable. That avoids the EGL/OSMesa import failure observed on this box. It is not Newton and not Isaac."
+    },
+    {
+      "id": "mujoco-menagerie",
+      "kind": "data",
+      "name": "google-deepmind/mujoco_menagerie",
+      "url": "https://github.com/google-deepmind/mujoco_menagerie",
+      "version": "main a662de603224c47123b0783821c58ad4402ad3e3 (2026-10-31T00:08:38Z)",
+      "license": "per-directory. Root LICENSE is a concatenation, not one license. No MicroDuck directory.",
+      "public_demo": "no",
+      "notes": "Searched the full tree for 'duck' and 'micro': zero hits. Menagerie is not a MicroDuck source."
+    },
+    {
+      "id": "locomotion-policy",
+      "kind": "model",
+      "name": "Isaac Lab pretrained MicroDuck locomotion policy and blog adaptation checkpoint",
+      "url": "named in the NVIDIA article; not in the Isaac Lab microduck directory",
+      "version": "unresolved",
+      "license": "unresolved",
+      "public_demo": "no",
+      "notes": "Do not train or download a checkpoint in this slice. Hugging Face tutorial says playback exports policy.pt and policy.onnx. Those outputs inherit the policy's own terms, which are not stated."
+    },
+    {
+      "id": "rtx-spark-and-rtx-pro-6000",
+      "kind": "hardware-software-stack",
+      "name": "RTX Spark local hub and RTX PRO 6000 Blackwell Workstation Edition training GPU",
+      "url": "https://www.nvidia.com/en-us/products/rtx-spark/ and the NVIDIA article",
+      "version": "article does not give OS, driver, or Spark SKU",
+      "license": "proprietary NVIDIA stack",
+      "public_demo": "no",
+      "notes": "Article keeps these as two machines: planning and evaluation on RTX Spark; 4096-env adaptation on RTX PRO 6000 Blackwell Workstation Edition. Not the same device as DGX Spark / GB10 until SLAB-004 measures one."
+    }
+  ]
+}
