@@ -1,10 +1,13 @@
 # Model admission (SLAB-003)
 
-The shipped `registry.json` is empty. Every paid model is refused until Carter's
-reviewed decisions are entered. A successful probe alone never admits a model.
+The shipped `registry.json` is empty. Lead/judge model calls through the lab
+boundary are refused until Carter's reviewed decisions are entered. A successful
+probe alone never admits a model.
 This is a human credential/entitlement control, not the superseded per-step
 planning approval gate. No provider credentials or live provider adapter ship
 with this change; the conductor remains AI-off and accepts exact replay labs only.
+The legacy Jev intake router is a separate, existing signal-routing path, not a
+scientific lead or judge; its configuration is outside this change.
 
 ## Human decisions still required
 
