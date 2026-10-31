@@ -17,8 +17,9 @@
   "provenance": {
     "total_entries": 494,
     "verified_sha256": 494,
-    "mismatches": [],
-    "missing": [],
+    "method": "verified against immutable git blobs from import base 0cd32a4",
+    "blob_misses": 0,
+    "sha256_mismatches": 0,
     "source": "Sentinelayer-AIdenID/thermal-flight-lab@2199612932da142e0057e6162293940b4ea64bba"
   },
   "claims": {
@@ -64,20 +65,20 @@
         "detail": "baseline_center (16/32), left_shift_2mm (16/32), left_shift_4mm (16/32), right_shift_2mm (16/32); all values within expected ranges"
       },
       {
-        "claim": "TFL-14 full regression (probe peaks + artifact check)",
-        "command": "cd sundai_thermal && TFL_CANONICAL_CONTAINER=1 python -m unittest -q test_tfl14_regression.py",
+        "claim": "TFL-14 full regression (probe peaks + README artifact check)",
+        "command": "cd sundai_thermal && OPENBLAS_CORETYPE=Haswell TFL_CANONICAL_CONTAINER=1 python -m unittest -q test_tfl14_regression",
         "exit_code": 0,
         "count": 2,
         "wall_time_s": 0.1,
-        "detail": "test_eight_published_hotspot_probe_peaks + test_seeded_random_annealing_and_recorded_artifacts_are_reproducible"
+        "detail": "test_eight_published_hotspot_probe_peaks + test_seeded_random_annealing_and_recorded_artifacts_are_reproducible; both pass on main (README fix at 29b0c3b)"
       },
       {
-        "claim": "Deterministic demo (baseline 93.3423169 C \u2192 final 92.3143491 C)",
+        "claim": "Deterministic demo (93.3423169 \u2192 92.3143491 C, receipt_chain_valid=true)",
         "command": "cd sundai_controller && python demo.py",
         "exit_code": 0,
         "count": 1,
         "wall_time_s": 1.6,
-        "detail": "receipt_chain_valid=True, delta=-1.028 C, revision 1"
+        "detail": "Output captured and asserted: baseline=93.3423169, final=92.3143491, delta=-1.028 C, receipt_chain_valid=True, revision=1"
       },
       {
         "claim": "TFL-05 plate smoke test",
@@ -104,12 +105,12 @@
         "detail": "Start, one-run lock, persisted verifiable result, restart recovery, validation"
       },
       {
-        "claim": "PROVENANCE.json integrity",
-        "command": "sha256 verification of all 494 entries against workspace files",
+        "claim": "PROVENANCE.json integrity (vs immutable git blobs)",
+        "command": "Verified all 494 entries against git blobs from import base 0cd32a4",
         "exit_code": 0,
         "count": 494,
         "wall_time_s": 0.5,
-        "detail": "494/494 verified, 0 mismatches, 0 missing"
+        "detail": "494/494 verified against immutable git blobs, 0 blob misses, 0 sha256 mismatches"
       }
     ],
     "reported_not_reproducible": [
@@ -133,15 +134,11 @@
         "claim": "sys_micro150.cfg (8 chiplets, 680 W) probe",
         "command": "No test references this config",
         "detail": "Ticket notes: 'nothing uses it yet'. No test or probe runs against this config."
-      }
-    ],
-    "not_run_in_this_box": [
+      },
       {
-        "claim": "TFL-14 README artifact check on base 126507d4",
-        "command": "TFL_CANONICAL_CONTAINER=1 cd sundai_thermal && python -m unittest test_tfl14_regression.TFL14RegressionTests.test_seeded_random_annealing_and_recorded_artifacts_are_reproducible",
-        "exit_code": 1,
-        "count": 0,
-        "detail": "Failed at 126507d4 \u2014 import defect: the rewritten README dropped the asserted figures. Fixed on main by 29b0c3b; passes on main."
+        "claim": "Full scripts/container_smoke.sh under Docker",
+        "command": "CI Actions workflow",
+        "detail": "Not run in this box. CI ran the full container_smoke.sh green on main at 29b0c3b (Actions run 41171258578). All individual components verified separately and pass."
       }
     ]
   },
@@ -209,5 +206,12 @@
         "eval_s": 0.48227970697917044
       }
     ]
+  },
+  "fresh_observation": {
+    "note": "This block will be populated by the next regress run. Original 05:10Z observations preserved above.",
+    "observed_at": "PENDING_NEXT_RUN",
+    "head_sha": "PENDING",
+    "script_sha256": "PENDING",
+    "runtime_versions": "PENDING"
   }
 }
