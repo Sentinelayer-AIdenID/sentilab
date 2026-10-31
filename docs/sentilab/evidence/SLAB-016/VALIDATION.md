@@ -31,7 +31,9 @@ or LLM evaluation was performed for this ticket.
 The new test file fails on the dependency without dataset.py with
 `ModuleNotFoundError: No module named 'sentilab_core.dataset'`. This was checked
 in a separate detached worktree; the working checkout was never stashed/reverted.
+The same failure was reproduced on the original snapshot base
+`a84691364fd04e7538b6624af37e77847144c0f9` in a second detached worktree.
 `mutation-results.json` records targeted changes to the shipped exporter in that
-isolated worktree. Each mutation must exit nonzero, with the original source
+isolated worktree: all 12 mutations exited nonzero, with the original source
 restored after the experiment. These are self-check receipts, not independent
 review or proof of deployment.
