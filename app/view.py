@@ -74,7 +74,10 @@ def runs():
 @router.get("/api/view/events")
 def events(run_id: str, after: int = Query(0, ge=0),
            limit: int = Query(MAX_PAGE_LINES, ge=1, le=MAX_PAGE_LINES),
-           format: Literal["jsonl", "json"] = "jsonl"):
+           format: Literal["jsonl", "json"] = "jsonl",
+           cursor: int | None = Query(None, ge=0)):
+    if cursor is not None and after != 0:
+        raise HTTPException(400, "use cursor or after, not both")
     try:
         state = replay(context().root, run_id, public_keys=context().public_keys)
     except FileNotFoundError:
@@ -88,11 +91,17 @@ def events(run_id: str, after: int = Query(0, ge=0),
         return seq if type(seq) is int and seq >= 1 else None
 
     # Re-send evidence of an earlier break so an existing client can freeze too.
-    cursor = min(after, state["last_seq"]) if state["error"] else after
-    rows = [row for row in state["rows"] if sequence(row) is None or sequence(row) > cursor]
+    after_seq = min(after, state["last_seq"]) if state["error"] else after
+    if cursor is not None:
+        if cursor > len(state["source_rows"]):
+            raise HTTPException(409, "ledger shortened; replay from cursor zero")
+        rows = state["source_rows"][cursor:]
+        groups = ([row] for row in rows)
+    else:
+        rows = [row for row in state["rows"] if sequence(row) is None or sequence(row) > after_seq]
+        groups = (list(group) for _, group in groupby(rows, key=sequence))
     page, byte_count = [], 0
-    for _, group in groupby(rows, key=sequence):
-        group = list(group)
+    for group in groups:
         group_bytes = sum(len(row["raw"]) for row in group)
         if len(page) + len(group) > limit or byte_count + group_bytes > MAX_PAGE_BYTES:
             if not page:
@@ -100,9 +109,13 @@ def events(run_id: str, after: int = Query(0, ge=0),
             break
         page.extend(group)
         byte_count += group_bytes
-    next_after = max((sequence(row) or cursor for row in page), default=cursor)
+    next_after = max((sequence(row) or after_seq for row in page), default=after_seq)
     headers = {"cache-control": "no-store", "x-next-after": str(next_after),
                "x-has-more": str(len(rows) > len(page)).lower()}
+    position = {}
+    if cursor is not None:
+        position = {"cursor": cursor, "next_cursor": cursor + len(page)}
+        headers["x-next-cursor"] = str(position["next_cursor"])
     if format == "jsonl":
         return Response(b"".join(row["raw"] for row in page), media_type="application/x-ndjson", headers=headers)
 
@@ -114,7 +127,8 @@ def events(run_id: str, after: int = Query(0, ge=0),
                           "unrenderable_rows": sum("envelope" not in row for row in state["rows"]),
                           "chain_error": verified["chain_error"], "projection_error": verified["projection_error"],
                           "board": verified["board"], "projection": verified["projection"],
-                          **operations.LABELS}, ensure_ascii=True, allow_nan=False, separators=(",", ":")).encode()
+                          **position, **operations.LABELS},
+                         ensure_ascii=True, allow_nan=False, separators=(",", ":")).encode()
     if len(content) > MAX_PAGE_BYTES:
         raise HTTPException(413, "diagnostic view exceeds the response byte cap")
     return Response(content, media_type="application/json", headers=headers)
