@@ -1,0 +1,113 @@
+{
+  "kind": "deterministic replay controller demonstration; not a Jev/model benchmark",
+  "thermal_scope": "synthetic steady-state conductive plate; not silicon junction sign-off",
+  "baseline_c": 93.34231692620901,
+  "final_c": 92.31434907982992,
+  "delta_c": -1.0279678463790844,
+  "oracle_calls_excluding_baseline": 5,
+  "evaluation_admissions_excluding_baseline": 5,
+  "revision": 1,
+  "final_design": {
+    "width_mm": 25,
+    "height_mm": 25,
+    "gap_mm": 0.5,
+    "chiplets": [
+      {
+        "id": "compute-a",
+        "width_mm": 6,
+        "height_mm": 6
+      },
+      {
+        "id": "compute-b",
+        "width_mm": 6,
+        "height_mm": 6
+      },
+      {
+        "id": "memory-a",
+        "width_mm": 5,
+        "height_mm": 5
+      },
+      {
+        "id": "memory-b",
+        "width_mm": 5,
+        "height_mm": 5
+      }
+    ],
+    "positions": [
+      [
+        9,
+        2
+      ],
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        10
+      ],
+      [
+        9,
+        10
+      ]
+    ]
+  },
+  "outcomes": [
+    {
+      "status": "rejected",
+      "reason": "invalid geometry or operation",
+      "receipt_hash": "a49a95a4eac1f6f19521b89109789671d737dd7c2c616f88e4fbcfbc9228e203",
+      "temperature_c": null
+    },
+    {
+      "status": "rejected",
+      "reason": "no verified improvement",
+      "receipt_hash": "1af37ec2eee929bb0f16192d2c7ec36a319a08bcd908e92c6562ae642474f85b",
+      "temperature_c": 118.22123084662172
+    },
+    {
+      "status": "rejected",
+      "reason": "no verified improvement",
+      "receipt_hash": "1d15343f9856135785dfc1e8171116133be86dab87434e9140a8fd611ae1bd4c",
+      "temperature_c": 99.06175225148756
+    },
+    {
+      "status": "rejected",
+      "reason": "no verified improvement",
+      "receipt_hash": "9e0522162cd6e1c205e15a5129c94a59a4a62fd8f0705737c17e2bd82ba54820",
+      "temperature_c": 120.69146667567506
+    },
+    {
+      "status": "rejected",
+      "reason": "no verified improvement",
+      "receipt_hash": "1192fb932c3d75a744ca714f82c553f08d3b693780941fcfc37e1b752b0d2385",
+      "temperature_c": 126.96873424712352
+    },
+    {
+      "status": "rejected",
+      "reason": "invalid geometry or operation",
+      "receipt_hash": "a6a421c0f116cadc723494b9fa779adcdbcd1b9f744a0569a639b4a1e2dfdc79",
+      "temperature_c": null
+    },
+    {
+      "status": "committed",
+      "reason": "verified improvement on lane best",
+      "receipt_hash": "2a417a6e1163b5728a20d7ce4b00aa2c4e52ef81077b0c9714b6dd99fa40ed9b",
+      "temperature_c": 92.31434907982992
+    },
+    {
+      "status": "rejected",
+      "reason": "replayed proposal",
+      "receipt_hash": "cd6aea6687b4d7078da408f2661a038dcf144cfee57d6ffb933acfc99ff04a15",
+      "temperature_c": null
+    },
+    {
+      "status": "rejected",
+      "reason": "stopped or invalidated epoch",
+      "receipt_hash": "591aad74620cb663ee443a205fbccd18fa7a36304e9ae845b6c5c00407b403d4",
+      "temperature_c": null
+    }
+  ],
+  "receipt_public_key": "1dd21bab67ad3bfe5f1403325a144f1f5d0c51ebdd1a9ef08d713c6e8e3592cd",
+  "receipt_chain_valid": true
+}

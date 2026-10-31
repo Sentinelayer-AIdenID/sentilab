@@ -1,0 +1,556 @@
+{
+  "certified_remaining_cpu_minutes": null,
+  "certified_remaining_solver_executions": null,
+  "decimal_arithmetic_check": {
+    "16": {
+      "coarse_ties": 0,
+      "e_c": "4.28",
+      "eligible": 276,
+      "inversions": 9,
+      "inverted_layout_pairs": [
+        [
+          "clustered-02",
+          "random-02"
+        ],
+        [
+          "clustered-02",
+          "random-05"
+        ],
+        [
+          "spread-01",
+          "spread-02"
+        ],
+        [
+          "spread-01",
+          "random-01"
+        ],
+        [
+          "spread-01",
+          "random-03"
+        ],
+        [
+          "spread-02",
+          "random-03"
+        ],
+        [
+          "spread-05",
+          "random-03"
+        ],
+        [
+          "random-01",
+          "random-03"
+        ],
+        [
+          "random-04",
+          "random-07"
+        ]
+      ],
+      "largest_misordered_gap_c": "4.66"
+    },
+    "32": {
+      "coarse_ties": 0,
+      "e_c": "0.79",
+      "eligible": 276,
+      "inversions": 1,
+      "inverted_layout_pairs": [
+        [
+          "spread-01",
+          "random-01"
+        ]
+      ],
+      "largest_misordered_gap_c": "0.24"
+    }
+  },
+  "freeze_and_harness_commit": "cd3df8d88d7ba8dda03bff376b6d10ae944a16e5",
+  "known_new_solver_executions": 144,
+  "limitations": [
+    "Historical solver count is a lower bound, not a complete ledger.",
+    "Historical CPU and preliminary non-solver checks/setup were not measured; CPU remainder is an upper bound, not available clearance.",
+    "Smoke CPU is getrusage CHILDREN after the strace subprocess exits, including tracer, tests and descendants; wrapper SELF is excluded.",
+    "Docker image build, HTTP health/origin-lock and full-history gitleaks CI were not run: Docker is unavailable."
+  ],
+  "local_integrated_base": "f6ec4a0ed8a946a1a85cc4810697bc0b53778d2e",
+  "local_smoke": {
+    "children_system_seconds": 31.860241,
+    "children_user_seconds": 93.209438,
+    "command": "bash scripts/container_smoke.sh",
+    "cpu_minutes": 2.0844946500000003,
+    "cpu_seconds": 125.06967900000001,
+    "excluded_fake_solver_execs": 2,
+    "exit_code": 0,
+    "python_tests": 133,
+    "real_solver_execs": [
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47970,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47971,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47972,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47973,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47974,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47975,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47976,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47977,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47980,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47986,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47988,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47990,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47987,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47989,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47991,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47992,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47997,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47999,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 47998,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48000,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48002,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48004,
+        "termination": "+++ killed by SIGKILL +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48047,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48049,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48050,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48051,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48052,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48053,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48054,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48055,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48061,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48062,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48063,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48064,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48065,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48066,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48067,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48068,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48069,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48070,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48071,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48072,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48073,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48074,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48075,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48076,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48077,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48078,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48079,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48080,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48081,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48082,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48083,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48084,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48085,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48086,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48087,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48088,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48089,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48090,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48091,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/tmp/probe/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48092,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/workspace/sentilab/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48194,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/workspace/sentilab/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48195,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/workspace/sentilab/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48196,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/workspace/sentilab/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48197,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/workspace/sentilab/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48199,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/workspace/sentilab/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48200,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/workspace/sentilab/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48201,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/workspace/sentilab/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48202,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/workspace/sentilab/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48444,
+        "termination": "+++ exited with 0 +++"
+      },
+      {
+        "executable": "/workspace/sentilab/sundai_hotspot/hotspot",
+        "execve_exit": 0,
+        "pid": 48446,
+        "termination": "+++ exited with 0 +++"
+      }
+    ],
+    "solver_executions": 72,
+    "test_module_counts": [
+      47,
+      2,
+      8,
+      8,
+      14,
+      2,
+      6,
+      25,
+      12,
+      9
+    ],
+    "wall_seconds": 133.84008767805062,
+    "wrapper": "strace -f -e trace=execve"
+  },
+  "measured_new_cpu_minutes": 4.2477431,
+  "prior_solver_executions_lower_bound": 102,
+  "remaining_cpu_minutes_upper_bound": 3.7522569,
+  "remaining_solver_executions_upper_bound": 4,
+  "reservation": {
+    "cpu_minutes": 8,
+    "solver_executions": 250
+  },
+  "schema": "slab-mesh-validation-v1",
+  "smoke_log_sha256": "d0c3efe4768223535edabf402933706d12c03d9109f325ced9a83e9336605778",
+  "source_patch_sha256": "5ef0ae7a948b9c483ff1200dfbb36fd3772b3a5ab8f0c4c6b24329760a0cf48e",
+  "source_revision": "c6d5b0caa0c33402eaa35012306a098701808f22",
+  "study": {
+    "children_cpu_seconds": 129.390509,
+    "cpu_minutes": 2.1632484499999998,
+    "cpu_seconds": 129.794907,
+    "method": "POSIX getrusage SELF + CHILDREN delta after worker shutdown",
+    "process_cpu_seconds": 0.40439800000000004,
+    "scope": "this evaluation run, including worker startup and shutdown; no warm-up runs",
+    "solver_executions": 72,
+    "warmup_solver_executions": 0
+  },
+  "total_solver_executions_lower_bound": 246,
+  "trace_sha256": "2a41406e0474fbe131e204508294bde26100b04ef0ac8e8691db1ab972fedc3b"
+}

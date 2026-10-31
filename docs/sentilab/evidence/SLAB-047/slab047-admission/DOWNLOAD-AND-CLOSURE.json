@@ -1,0 +1,86 @@
+{
+  "captured_unix": 1793445108.0851207,
+  "files": [
+    {
+      "name": "APPROVED.json",
+      "bytes": 488,
+      "sha256": "fce8e1bc31cfe025eb629f4daef32acb0f3024304cb1b5e84ac4f2c21fd32be1"
+    },
+    {
+      "name": "admission.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "container.stderr.log",
+      "bytes": 18701,
+      "sha256": "33981844d6be0320ceb5c924bdd76e162ee1e43d65bdf78002c5ae540eb21ae1"
+    },
+    {
+      "name": "container.stdout.log",
+      "bytes": 1174,
+      "sha256": "8caf92f237b506ef8233e1e244b28587f3e0df545376f4032807721129ffdfd2"
+    },
+    {
+      "name": "docker.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "input-verification.json",
+      "bytes": 2202,
+      "sha256": "ed3865edb9d7b35e8538891999bbdec54c4d113a19fd67b1b03866a2fb9b61e4"
+    },
+    {
+      "name": "reservation.json",
+      "bytes": 1783,
+      "sha256": "81bc91d6f0fb478db8c43f53a408c295a872e5c2d3b70362cafaf44b0be88947"
+    },
+    {
+      "name": "serve047.py",
+      "bytes": 35412,
+      "sha256": "1e4b901a1b8b65ad8b40afd89637b6b6044e12f8f6df58fd6ae4771309c21eaa"
+    },
+    {
+      "name": "state.json",
+      "bytes": 806,
+      "sha256": "09c3d1a75fcd08b11f63221755ec9536bf627f4ec5fa5d2f8b0db86ffffeccfe"
+    },
+    {
+      "name": "state.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "worker-claimed.json",
+      "bytes": 84,
+      "sha256": "9b97eb976cc39e3619ad7aeed48fb21d7b0bcbb5e584aff7d8cc54285bb2f35f"
+    },
+    {
+      "name": "worker.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "docker_inventory": {
+    "argv": [
+      "/usr/bin/docker",
+      "--host",
+      "unix:///var/run/docker.sock",
+      "ps",
+      "-a",
+      "--no-trunc",
+      "--format",
+      "{{json .}}"
+    ],
+    "exit": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "localhost18047_connect_code": 111,
+  "expected_refused_code": 111,
+  "worker_lock_free": true,
+  "local_started_unix": 1793445107.0287476,
+  "local_finished_unix": 1793445108.060574,
+  "ssh_returncode": 0
+}

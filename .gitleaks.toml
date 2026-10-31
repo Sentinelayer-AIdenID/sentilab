@@ -1,0 +1,50 @@
+# gitleaks: the default rules, plus ONE exact-value exemption: the recorded Ed25519 PUBLIC fixture key in
+# docs/sentilab/evidence/SLAB-016/public-keys.json, which the generic-api-key rule flags. Only this exact value is
+# exempt (anywhere it appears, because a public key is never a secret). Any other value, in that file or elsewhere,
+# is still scanned. gitleaks 8.24.2 ignores `condition = "AND"` and `[[allowlists]]`, so path+value cannot be combined.
+# SLAB-018 adds four more exact values the generic-api-key rule flags in docs/sentilab/evidence/SLAB-018: the GB10
+# attempt's container-ownership label (a uuid4 nonce, also a docker label, never a credential) and three SHA-256 file
+# digests (model/tokenizer.json, model/tokenizer_config.json and a review file). Exact values only, as above.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Exact non-secret values: SLAB-016 public fixture key; SLAB-018 attempt label and file digests"
+regexTarget = "secret"
+regexes = [
+  '''^b0a81ec524864886e38b623b4852200ccd2ea14dc757d9da598bc4244e66d465$''',
+  '''^aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4$''',  # SLAB-018 model/tokenizer.json
+  '''^a62ff0a2472a0fa1b8eaabcb57c59b58afa42a22831dc141400b6e0cf2b65ce3$''',  # SLAB-018 model/tokenizer_config.json
+  '''^46be90708af4438c85ffb5ed210eebd8$''',  # SLAB-018 token
+  '''^86df6c54959797933a9af061eb2b216bda21fa86eef55102f3265b8b8ba19bc8$''',  # SLAB-018 SLAB018-DIRECT-LOOP-API-REVIEW.md
+]
+
+# Consumed SLAB-047 attempt labels: inherited generic-api-key rule only.
+# Rule-specific allowlists support AND in gitleaks 8.24.2; the older global allowlist does not.
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
+description = "Exact reviewed terminal attempt label at its retained evidence paths"
+condition = "AND"
+regexTarget = "secret"
+regexes = ['''^6a11048db3704a84afeaf4289cb360ce$''']
+paths = [
+  '''^docs/sentilab/evidence/SLAB-047/slab047-admission/runtime/reservation\.json$''',
+  '''^docs/sentilab/evidence/SLAB-047/slab047-admission/runtime/worker-claimed\.json$''',
+  '''^docs/sentilab/evidence/SLAB-047/slab047-runtime-review/RUNTIME-REVIEW\.md$''',
+  '''^docs/sentilab/evidence/SLAB-047/slab047-runtime-review/audit-seal\.json$''',
+  '''^docs/sentilab/evidence/SLAB-047/slab047-runtime-review/validation-20261031T111419608092Z/VALIDATION\.json$''',
+]
+
+[[rules.allowlists]]
+description = "Exact reviewed terminal attempt label at its retained evidence paths"
+condition = "AND"
+regexTarget = "secret"
+regexes = ['''^35612fda883c4d2ca7bb0cb82882c8f5$''']
+paths = [
+  '''^docs/sentilab/evidence/SLAB-047/slab047b-admission/START-RESULT\.json$''',
+  '''^docs/sentilab/evidence/SLAB-047/slab047b-admission/gpu-runtime/reservation\.json$''',
+  '''^docs/sentilab/evidence/SLAB-047/slab047b-admission/gpu-runtime/worker-claimed\.json$''',
+  '''^docs/sentilab/evidence/SLAB-047/slab047b-gpu-cleanup-review/EVIDENCE-CHECK\.json$''',
+]

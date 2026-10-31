@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sentilab:lab-review:1",
+  "title": "Advisory lab review v1",
+  "description": "Canonical UTF-8 wire size is capped at 16384 bytes by the core before schema validation. No event-writing authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "v",
+    "kind",
+    "lab_id",
+    "role",
+    "rationale",
+    "target_hash",
+    "judge_role",
+    "verdict",
+    "findings"
+  ],
+  "properties": {
+    "v": {
+      "const": "lab-review/1"
+    },
+    "kind": {
+      "const": "review"
+    },
+    "lab_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+      "maxLength": 32
+    },
+    "role": {
+      "const": "adversarial_judge"
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "target_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "maxLength": 64
+    },
+    "judge_role": {
+      "enum": [
+        "constraint_auditor",
+        "numerical_skeptic",
+        "reproducibility_auditor"
+      ]
+    },
+    "verdict": {
+      "enum": [
+        "concern",
+        "no_concern",
+        "abstain"
+      ]
+    },
+    "findings": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      }
+    }
+  }
+}

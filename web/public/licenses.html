@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Licenses · Thermal Flight Lab</title>
+<link rel="stylesheet" href="licenses.css">
+</head>
+<body>
+<main>
+  <p class="mono muted"><a href="/">← Thermal Flight Lab</a></p>
+  <h1>Licenses and notices</h1>
+  <p class="muted">This lab runs unmodified upstream research software. Their licenses travel with every copy, including the API container image.</p>
+
+  <h2>Third-party components</h2>
+  <div class="wrap"><table>
+    <tr><th>Component</th><th>Upstream</th><th>Commit</th><th>License (full text)</th></tr>
+    <tr><td>HotSpot thermal simulator</td><td><a href="https://github.com/uvahotspot/HotSpot">uvahotspot/HotSpot</a></td>
+      <td class="mono">f18831e48cef</td><td><a href="/licenses/HotSpot-LICENSE.txt">University of Virginia license</a></td></tr>
+    <tr><td>TAP-2.5D chiplet placement</td><td><a href="https://github.com/bu-icsg/TAP-2.5D">bu-icsg/TAP-2.5D</a></td>
+      <td class="mono">3a3f4e5a4d01</td><td><a href="/licenses/TAP-2.5D-LICENSE.txt">Apache License 2.0</a></td></tr>
+    <tr><td>SuperLU (linked by the HotSpot build in the API image)</td><td>Debian libsuperlu7 7.0.1</td>
+      <td class="mono">-</td><td>BSD-style (LBNL); the full notice ships in the image at <span class="mono">/licenses/SuperLU-copyright</span></td></tr>
+  </table></div>
+
+  <h2>What we do to honor them</h2>
+  <ul>
+    <li>HotSpot's copyright line and license paragraphs travel with every copy, source or binary.</li>
+    <li>The Apache-2.0 license travels with every copy of TAP-2.5D. Upstream has no NOTICE file. Any TAP file we modify carries a change notice at its top.</li>
+    <li>SuperLU's notice is reproduced inside the binary distribution (the container image).</li>
+    <li>No GPL code enters this project.</li>
+  </ul>
+
+  <h2>No endorsement</h2>
+  <p>Neither the University of Virginia, the HotSpot contributors, nor the TAP-2.5D authors endorse or promote this lab or its results.
+    Their names appear here only to attribute their software, as their licenses require.</p>
+
+  <h2>Citations requested by the upstream authors</h2>
+  <ul>
+    <li>Y. Ma et al., "TAP-2.5D: A Thermally-Aware Chiplet Placement Methodology for 2.5D Systems," DATE 2021.</li>
+    <li>R. Zhang, M. Stan, K. Skadron, "HotSpot 6.0: Validation, Acceleration and Extension," UVA TR CS-2015-04.</li>
+  </ul>
+
+  <h2>This lab's own code</h2>
+  <p>The lab's own new code carries no open-source license yet; all rights are reserved by its owner until one is chosen.
+    Results are synthetic research outputs (HotSpot 7, research package defaults), not silicon sign-off.</p>
+</main>
+</body>
+</html>

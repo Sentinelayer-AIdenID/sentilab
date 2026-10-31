@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10191e">
+<title>Lab view · SentiLab</title>
+<meta name="description" content="Four labs and a baseline propose chiplet layouts; every status shown comes from the evidence contract over signed, verified events.">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="lab.css">
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="modebox" title="Mode, on this device's clock: LIVE needs a good poll within 5 s, new verified rows within 60 s after the page caught up with the log (loading the backlog is history, not progress), the prefix not cut back, and nothing after it. A run the runs list marks finished shows ENDED. It shows recent progress, never completeness.">
+      <span class="mode" id="mode"><i></i><b id="modeText">REPLAY</b><span class="age" id="modeAge"></span></span>
+      <span class="drill" id="drill" hidden title="This run contains a seeded correction drill">DRILL</span>
+    </div>
+    <div class="brand"><span class="mark"></span><b>SentiLab</b><span class="sub">Lab view</span></div>
+    <div class="runmeta" id="runMeta"></div>
+    <span class="spacer"></span>
+    <span class="testkeys" id="testKeys" hidden title="Signatures are checked against test keys anyone can derive. Not the production pin.">TEST KEYS</span>
+    <button class="chain" id="chain" type="button" title="Signature and chain check for every envelope; click for details"><i></i><span id="chainText">no envelopes</span></button>
+    <nav class="links"><a href="/">Run view</a><a href="package/" id="packageLink" title="The same run as an animated chiplet package">Package view</a><a href="#" id="limitsLink">Honest limits</a></nav>
+  </header>
+
+  <section class="controls">
+    <div class="seg" id="source" role="group" aria-label="Source">
+      <button type="button" data-src="file" class="on">Replay file</button><button type="button" data-src="api">Live feed</button>
+    </div>
+    <select id="runPick" aria-label="Live run" hidden></select>
+    <label class="btn" id="openLabel">Open JSONL<input type="file" id="file" accept=".jsonl,.ndjson,.json,text/plain"></label>
+    <button class="play" id="play" type="button" title="Play / pause (Space)" aria-label="Play">▶</button>
+    <input type="range" id="scrub" min="0" max="0" value="0" aria-label="Envelope position">
+    <span class="pos" id="pos">seq 0 / 0</span>
+    <span class="conn" id="conn"></span>
+    <span class="fixture" id="fixture" hidden>Interface fixture · illustrative values, no solver ran</span>
+  </section>
+
+  <div class="banners">
+    <p class="wnotice" id="wnotice" role="note" hidden></p>
+    <div class="frozen" id="frozen" hidden></div>
+  </div>
+
+  <main class="work" id="work">
+    <section class="panel" id="p1">
+      <header><span class="eyebrow">01 / Chiplet layouts</span><h2>What each lab proposed</h2><span class="spacer"></span>
+        <span class="note" id="p1note">chiplet-center temperatures, not a field</span></header>
+      <div class="body">
+        <div class="cards" id="cards"></div>
+        <div class="legend" id="legend"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="p2">
+      <header><span class="eyebrow">02 / AcceptanceGate</span><h2>Board</h2><span class="spacer"></span><span class="note">status: project() over the verified prefix · J: display value</span><span class="pill" id="boardPill">-</span></header>
+      <div class="body">
+        <div class="best" id="best"></div>
+        <div class="tablewrap"><table class="board" id="board"></table></div>
+        
+      </div>
+    </section>
+
+    <section class="panel" id="p3">
+      <header><span class="eyebrow">03 / Evidence</span><h2>What still stands</h2><span class="spacer"></span><span class="pill" id="evPill">-</span></header>
+      <div class="body">
+        <div class="drillbox" id="drillbox" hidden></div>
+        <div class="tablewrap"><table class="evidence" id="evidence"></table></div>
+      </div>
+    </section>
+
+    <section class="panel" id="p4">
+      <header><span class="eyebrow">04 / Feed</span><h2>Every envelope, in seq order</h2><span class="spacer"></span><span class="pill" id="feedPill">-</span></header>
+      <div class="body">
+        <div class="feedhead"><span>seq</span><span>ts (UTC)</span><span>lab</span><span>event</span><span>outcome</span><span>check</span></div>
+        <div class="feed" id="feed" role="list"></div>
+      </div>
+    </section>
+
+    <div class="offline" id="offline" hidden>
+      <div class="offcard">
+        <span class="eyebrow">Live feed</span>
+        <h3 id="offTitle">Live feed not connected</h3>
+        <p id="offText">The page asks /api/view/runs every 5 s. The core that serves it is not running yet.</p>
+        <button type="button" class="btn primary" id="backToReplay">Show the replay</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="status"><span id="statusLeft">-</span><span class="c">Order is seq. ts is display only. Status comes only from the verified prefix.</span><span>Space play/pause · ←/→ step · click a row to inspect</span></footer>
+</div>
+
+<dialog id="inspector" aria-labelledby="inspTitle">
+  <header><h3 id="inspTitle">Envelope</h3><span class="spacer"></span><button type="button" class="btn" id="inspClose">Close</button></header>
+  <div class="inspbody" id="inspBody"></div>
+</dialog>
+
+<dialog id="chainDlg" aria-labelledby="chainTitle">
+  <header><h3 id="chainTitle">Chain check</h3><span class="spacer"></span><button type="button" class="btn" id="chainClose">Close</button></header>
+  <div class="inspbody" id="chainBody"></div>
+</dialog>
+
+<dialog id="limits" aria-labelledby="limitsTitle">
+  <header><h3 id="limitsTitle">Honest limits</h3><span class="spacer"></span><button type="button" class="btn" id="limitsClose">Close</button></header>
+  <ul>
+    <li>Status shows only what the evidence contract's project() returns over the unbroken, verified prefix of the chain. After the first break, rejected line or conflict, the board freezes; later envelopes are listed but never projected. A junk line can freeze the board too: that can hide progress, but it never shows a state that didn't happen.</li>
+    <li>Every line is checked for size and structure before anything is hashed. A line over 64 KiB, nesting deeper than 8, a string over 512 characters, broken Unicode or more than 64 entries makes one rejected row that is never hashed. A replay file over 64 MiB, or a live response over 256 lines or 4 MiB, is not read at all.</li>
+    <li>A verified envelope proves the core's key signed it. It does not prove a measurement is physically right.</li>
+    <li>Signatures are checked only against keys pinned in this page; an empty pin list verifies nothing. Until the core serves the pinned key, envelopes show as unverified. TEST KEYS mode uses keys anyone can derive, so only a local server honours it.</li>
+    <li>Colors are chiplet-center temperatures: one number per chiplet. They are not a continuous thermal field. A run whose data has no center temperatures draws its chiplets uncolored: J is the measurement's value and is never spread over the chiplets as if it were one of theirs.</li>
+    <li>The bundled demo is an interface fixture with illustrative numbers. No solver produced them.</li>
+    <li>LIVE means a poll succeeded within 5 s, the verified prefix grew within the last 60 s after the page caught up with the log, it hasn't been cut back, and nothing follows it. Catching up is not progress: the rows a page load reads to reach the end of the log are history, so an idle run shows STALE, not LIVE, until a new row arrives. If a late conflict or break cuts the prefix back, or a refused row arrives after it, the board freezes and LIVE ends at once: STALE · chain broken. LIVE never shows next to a frozen board.</li>
+    <li>A run that /api/view/runs lists as finished shows ENDED · run finished. Integrity problems still win: a frozen board shows STALE · chain broken, and a replaced stream, a row too large or unsupported paging keep their STALE label. A missing or unknown status counts as running. It shows recent progress, never completeness. Duplicates, and envelopes that don't extend the verified prefix, never keep it LIVE.</li>
+    <li>Known limit: a server can withhold any suffix, including a final withdrawal, while it keeps releasing earlier envelopes. LIVE stays on and this page can't tell. Only the full history, replayed later, shows the truth.</li>
+    <li>The live feed reads the run's log by cursor and keeps every row, so a late envelope at a seq already seen still freezes the board. Every page carries a hash of the raw bytes of all rows so far, which the page checks, and the page sends its own hash with each request, so a log replaced under it, even at the same length, shows STALE · stream replaced and stops until you reload. A bad page shows STALE · transport or STALE · paging error and keeps the board as it was. So does a failed /api/view/runs refresh (an error status, no answer, or an answer that isn't a runs list): STALE · transport at once, with the rows and the cursor kept. A row too big to page (413) shows STALE · row too large and stops until you reload. A server without cursor paging shows STALE · paging unsupported and is never LIVE. When the /api/view routes don't answer, the page says so and the replay stays available.</li>
+  </ul>
+</dialog>
+
+<script type="module" src="lab.js"></script>
+</body>
+</html>

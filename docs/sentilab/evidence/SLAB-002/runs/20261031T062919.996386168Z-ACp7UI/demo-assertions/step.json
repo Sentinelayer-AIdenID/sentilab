@@ -1,0 +1,22 @@
+{
+  "name": "demo-assertions",
+  "command": [
+    "python3",
+    "-c",
+    "\nimport json\nd = json.load(open('/workspace/sentilab/docs/sentilab/evidence/SLAB-002/runs/20261031T062919.996386168Z-ACp7UI/demo/stdout.txt', encoding='utf-8'))\nassert round(d['baseline_c'], 7) == 93.3423169, f\"baseline {d['baseline_c']}\"\nassert round(d['final_c'], 7) == 92.3143491, f\"final {d['final_c']}\"\nassert d['receipt_chain_valid'] is True, d\nprint(f\"demo OK: {d['baseline_c']} \u2192 {d['final_c']} C, receipt_chain_valid={d['receipt_chain_valid']}\")\n"
+  ],
+  "cwd": "/workspace/sentilab",
+  "started_at": "2026-10-31T06:30:31.281896Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:30:31.302368Z",
+  "wall_time_s": 0.020463894004933536,
+  "artifacts": [],
+  "stdout": {
+    "path": "demo-assertions/stdout.txt",
+    "sha256": "b3b290154999680e13d0b34388ee9e3f024596b113020060ba53b1832505fa30"
+  },
+  "stderr": {
+    "path": "demo-assertions/stderr.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

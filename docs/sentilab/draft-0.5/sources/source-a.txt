@@ -1,0 +1,385 @@
+## My recommendation: reuse Thermal Flight Lab and build SentiLab around it
+
+**Keep the agreed scientific plan. Reuse the verified solver and controller. Give Aneta ownership of the evidence interface and collaboration service, while you own the scientific runs, execution controls, and evaluation. Add Gemini and DeepSeek as bounded reviewers, and use OpenResearch to organize a named agent’s research and reproduction work.**
+
+The strongest version of this entry follows **one useful scientific result through its entire life**:
+
+> An agent proposes an improvement. The evaluator measures it. Another worker reproduces it. Another team uses it. If supporting evidence is withdrawn, the system identifies exactly which conclusions need to be reconsidered.
+
+That gives the judges a concrete engineering result, visible collective behavior, a useful service for other teams, and a credible NVIDIA contribution.
+
+### Your presentation files
+
+I created a **five-slide editable PowerPoint** and matching **PDF**, with a **2:45 target**, timed speaker notes, and wording for unfinished experiments or results that show no improvement.
+
+- [SentiLab_3_Minute_Pitch_Draft_v3.pptx](https://chatgpt.com/library?file_id=libfile_6b951b5afa848191b64776f0090b5232&account_id=personal)
+- [SentiLab_3_Minute_Pitch_Draft_v3.pdf](https://chatgpt.com/library?file_id=libfile_377e0610248481918a0ee575181904f7&account_id=personal)
+
+**These are build-stage presentation drafts.** The measured thermal preflight is included; collective performance, adapter improvement, and external adoption remain explicitly marked as pending. Those cells should become actual results before submission.
+
+---
+
+## 1. The project we are entering
+
+Use **SentiLab** as the project name on stage. Describe the first experiment as **thermal-aware chiplet placement**. Thermal Flight Lab is the existing implementation foundation.
+
+The product promise is:
+
+**“Scientific findings that other agents can test, reuse, and correct.”**
+
+The thermal experiment makes that promise measurable. We have a constrained design problem, numerical outputs, reproducible artifacts, and an understandable visual: moving chiplets changes simulated temperature.
+
+The components then have clear jobs:
+
+| Component | Responsibility |
+|---|---|
+| Four research labs | Propose experiments, inspect results, and suggest revisions. |
+| Scientific executor | Validate inputs, run the thermal model, and produce measurements. |
+| Independent reproduction worker | Rerun a selected candidate from its recorded inputs in a fresh process. |
+| Senti | Carry requests, responses, and collaboration between agents and teams. |
+| ENGRAM | Store findings, their supporting evidence, and their dependencies. |
+| AIdenID | Enforce permission at the execution boundary. |
+| Flight recorder | Preserve observable actions, artifact hashes, outcomes, and correction history. |
+| Warden | Enforce budgets and state transitions, and commit eligible results to the accepted board. |
+
+**LLMs propose and critique. Numerical checks determine whether a design satisfies the frozen experiment.** Warden should enforce that protocol; an eloquent model review should never override a failed geometry check or missing measurement.
+
+This emphasis fits the event: decentralized agency and collective capability together account for **45% of the main rubric**, and the official rules offer an additional collaboration bonus for materially helping other teams. [scienceclawhack.ai](https://scienceclawhack.ai/?utm_source=chatgpt.com)
+
+---
+
+## 2. Reuse the repository—but distinguish what is already verified
+
+I recommend **reusing Thermal Flight Lab**, with a new experiment runner and evidence interface around the existing core.
+
+I recovered and inspected your saved [Thermal Flight Lab starter](https://chatgpt.com/library?file_id=libfile_0a95cefbd39c8191a12d770f09e08e04&account_id=personal). I could not establish the current private repository’s canonical HEAD, so this recommendation is grounded in the saved source snapshot.
+
+### What the audit established
+
+The recovered starter contains substantive working code:
+
+- All **293 packaged file hashes** matched its manifest.
+- Its **16 controller tests passed**.
+- Numerical sanity checks passed, including power conservation, energy balance, symmetry, zero-power behavior, and malformed-geometry handling.
+- Recomputing **all nine archived finalists** reproduced their saved temperatures exactly.
+
+That is a valuable regression foundation. It does **not** establish that the model represents a manufactured device accurately.
+
+### What to retain and what to add
+
+| Area | Retain | Work required for this hackathon |
+|---|---|---|
+| Thermal calculation | Existing numerical solver, sanity checks, and HotSpot adapter work. | A versioned interface for the current eight-chiplet experiment and its frozen scenarios. |
+| Controller | Geometry checks, candidate binding, bounded concurrency, STOP behavior, and existing tests. | Durable accepted state, current evidence checks, and aggregate experiment accounting. |
+| Search | Random search, simulated annealing, and archived baseline artifacts. | Matched comparisons with the agent systems. |
+| Records | Existing local signing and event-chain concepts. | Actual Senti/AIden integration and dependency-aware evidence correction. |
+| Interface | The existing data and replay concepts. | A focused evidence view; editable frontend source was not present in the recovered ZIP. |
+
+Three integration details deserve attention immediately:
+
+**Coordinates.** The existing controller uses lower-left positions. Any tool using chiplet centers needs an explicit conversion. Otherwise, plausible-looking layouts can mean different things in different components.
+
+**Temperature definitions.** Keep synthetic-plate peaks, the older six-chiplet HotSpot results, and the current eight-chiplet center temperatures separate. They are different experiments and metrics.
+
+**Search state.** Simulated annealing sometimes explores a worse intermediate state. Its exploration state must be separate from the accepted best design, whose checks remain strict.
+
+### What we have measured so far
+
+The current local preflight compared two **manually authored** layouts of the same eight-chiplet, 680 W model:
+
+| Layout | Maximum simulated chiplet-center temperature |
+|---|---:|
+| Clustered | 114.82°C |
+| Separated | 105.28°C |
+| Difference | **9.54°C** |
+
+Those measurements establish that the evaluator responds to layout changes. **They do not establish an agent optimization gain.** The deck makes that distinction explicit.
+
+The eventual engineering handoff should contain the candidate geometry, scenario definitions, model configuration, raw outputs, constraint results, source versions, reproduction command, and stated limitations. That is the concrete output someone else can inspect and rerun.
+
+---
+
+## 3. Divide the work so both of you own essential engineering
+
+I could not confidently verify a public profile for **Aneta Kahleová/Kahleova** that matched all the details you supplied. The assignments below use your description of her experience.
+
+Her knowledge-base and bot-building background is directly relevant to the hardest product question here: **how does an agent know which finding it can safely reuse?**
+
+### Aneta: evidence service, knowledge interface, and demonstration
+
+Her primary deliverables should be:
+
+1. **The evidence interface.** Selecting a candidate reveals its measurements, constraints, provenance, review history, and reproduction status.
+2. **The dependency view.** Selecting a finding reveals which evidence supports it and which later conclusions depend on it.
+3. **Senti ResultCheck.** A small service another team can actually call.
+4. **The presentation experience.** One coherent visual sequence, readable slides, and a tightly rehearsed demonstration.
+
+Her design and storytelling strengths are especially useful for the live walkthrough. She should present the system she built.
+
+### You: scientific execution, permissions, and controlled evaluation
+
+Your primary deliverables should be:
+
+1. The frozen thermal task and evaluator.
+2. The lab orchestration and Warden’s acceptance rules.
+3. Actual execution-boundary authorization.
+4. The flight recorder and reproducible artifact bundles.
+5. The matched comparisons and NVIDIA worker experiment.
+6. Mentor coordination and recruiting a real partner team.
+
+### Agree on one interface before building separately
+
+Every result should expose a small common record:
+
+| Field | Purpose |
+|---|---|
+| Request and candidate IDs | Identify the work and proposed design. |
+| Parent candidate | Explain what changed. |
+| Input and artifact hashes | Bind the result to the exact inputs and outputs. |
+| Evaluator version | Identify the measurement procedure. |
+| Metric name and units | Prevent incompatible comparisons. |
+| Scenario results | Preserve each workload’s measurements. |
+| Constraint results | Explain acceptance or rejection. |
+| Evidence dependencies | Support reuse and correction. |
+| Status | Proposed, evaluated, reproduced, accepted, stale, or withdrawn. |
+
+Aneta can build against recorded fixtures while you connect the real executor. Once the executor returns that same contract, the interface becomes live without a redesign.
+
+---
+
+## 4. Add Gemini, DeepSeek, and OpenResearch with distinct responsibilities
+
+I would preserve the four lead labs rather than expand the search experiment every time we add a reviewer.
+
+| Participant | Assigned role | Required output |
+|---|---|---|
+| **Astra/OpenAI** | Original lead lab. | Candidate proposals and experiment requests. |
+| **Claude** | Original lead lab and rigorous specification criticism. | Proposals, objections, and revision requests. |
+| **Grok** | Original lead lab. | Alternative search proposals under the same budget. |
+| **Kimi** | Original lead lab. | Alternative search proposals under the same budget. |
+| **Gemini** | Independent review of assumptions, requirements, and presentation claims. | Evidence-backed objections and proposed checks. |
+| **DeepSeek** | Independent review of arithmetic, code, constraints, and experimental controls. | Counterexamples, suspected bugs, and proposed checks. |
+| **OpenResearch** | Workspace for a named agent’s literature audit and reproduction work. | Source-backed findings and recorded reproduction artifacts. |
+| **Shared open worker** | Repeated bounded tasks across labs; the learning experiment. | Structured tool actions and verifier-scored outputs. |
+
+Gemini and DeepSeek document compatibility with common API interfaces, which can reduce integration work. We still need to verify actual credentials, quotas, response formats, and returned model identities in this environment. [ai.google.dev](https://ai.google.dev/gemini-api/docs/openai?utm_source=chatgpt.com)
+
+**OpenResearch is a research harness and workspace, not an additional independent foundation model.** Its review record must identify the underlying agent/model; otherwise, two interfaces to the same model could be mistaken for independent reviewers. [GitHub](https://github.com/alphaXiv/OpenResearch?utm_source=chatgpt.com)
+
+### The review protocol
+
+Give Gemini and DeepSeek the **same versioned specification and evidence packet**. Their first reviews should be independent. Every substantial objection must identify:
+
+- The challenged claim.
+- Supporting evidence or a counterexample.
+- A proposed verification step.
+- What result would resolve the objection.
+
+Then run one reconciliation round and freeze the protocol.
+
+This should happen **before** the benchmark. If reviewers adaptively help only one experimental arm, they become part of that arm’s compute and expertise advantage. Either keep them outside the search or apply their assistance consistently and account for it.
+
+Record the actual model identity, invocation settings, and date. “Seven AIs agreed” is much weaker evidence than “two reviewers identified this failure, and this executable check confirmed it.”
+
+---
+
+## 5. What we can responsibly borrow from the earlier winners
+
+I found useful primary project and award material for the teams you named. **I did not find an accessible final-stage presentation or slide deck for most of them.** PRISMO had the strongest inspectable technical walkthrough.
+
+These are design lessons drawn from their public work—not claims about the exact reasons judges awarded prizes.
+
+| Reference | What the public evidence supports | What we should adopt |
+|---|---|---|
+| **Texas A&M — Kevin Tieu, Runzhi Wang, Fenghua Wu** | The university describes first-place LLM-track work involving specification-to-design and verification workflows. No winning talk was located. | Demonstrate a complete path from request to inspectable engineering artifact. [Engineering News](https://news.engineering.tamu.edu/news/2025/08/26/chip-chip-hooray-texas-am-team-wins-ai-chip-design-challenge/?utm_source=chatgpt.com) |
+| **Idaho — Lloyd Alcorn and Zain Ul Abideen** | The university reports a winning hardware-security challenge entry with adversarial evaluation. No final deck or complete demo was located. | Show a concrete failure or attack, its detection, and useful work continuing afterward. [University of Idaho](https://www.uidaho.edu/newsroom/secure-microchips-using-ai?utm_source=chatgpt.com) |
+| **Purdue — Compute Commons** | The official program lists the project and team. I could not verify its actual presentation or ranking from the current primary program. | Make shared infrastructure valuable through a real task completed by another team. [Purdue University](https://engineering.purdue.edu/CHIPSandAI/events_html?utm_source=chatgpt.com) |
+| **Purdue — Agents for IC Physical Design, Eileen Yoon** | The official program identifies the project. Implementation details and the final talk were unavailable. | Anchor the agent system in a specific engineering task with observable outputs. [Purdue University](https://engineering.purdue.edu/CHIPSandAI/events_html?utm_source=chatgpt.com) |
+| **Cognichip — OoO-Rigami** | An older company event account describes the winning integrated processor/accelerator project. No winning presentation was located. | Follow one coherent workload through the integrated system. [cognichip-new.webflow.io](https://cognichip-new.webflow.io/blog/61-hours-inside-our-first-cognichip-innovators-ai-enabled-chip-design-hackathon?utm_source=chatgpt.com) |
+| **Tesseract — PRISMO** | The organizer identifies the Grand Prize winner. The author’s results show design changes, gradient checks, reruns, sensitivity checks, and retained failed trials. | Show a visible change, a measured result, a fresh check, and the limits of the model. [Tesseract Blog](https://docs.pasteurlabs.ai/projects/tesseract-core/latest/blog/2026-09-30-tesseract-hackathon-winners/?utm_source=chatgpt.com) |
+
+**PRISMO is the best presentation reference for us.** Its public evidence makes the scientific result inspectable. Our equivalent should let a judge move from a temperature number to the exact layout, inputs, raw output, and reproduction record.
+
+The additional contribution we are proposing is the result’s passage between agents and teams, including what happens when evidence supporting it changes.
+
+---
+
+## 6. Build the demonstration around three visible moments
+
+### Moment one: a result becomes accepted
+
+Show a chiplet board with the actual candidate geometry. Alongside it, show:
+
+- Which lab proposed the change.
+- The geometry and constraint checks.
+- The measured thermal result.
+- A separate reproduction result.
+- The accepted-board update.
+
+The visualization must derive from recorded state. An agent activity indicator should correspond to a real request or event.
+
+For the current preflight, a chiplet-colored temperature view is appropriate. A continuous heatmap should use the correct exported field and layer; the existing substrate grid must not be presented as a die-temperature field.
+
+### Moment two: a correction propagates accurately
+
+Run a **clearly labeled seeded correction drill**.
+
+Withdraw one supporting source or invalidate one deliberately constructed result. Show that:
+
+- Directly dependent claims become stale.
+- Downstream dependent claims are identified.
+- Independently supported findings remain usable.
+- The original record remains visible.
+
+This is where Aneta’s knowledge-base work becomes central. The interesting behavior is the accuracy of the dependency handling.
+
+A signed event history provides useful integrity evidence, but the starter’s local signing demonstration still needs actual platform integration. Likewise, an append-only record and its retained checkpoints need a clear verification procedure.
+
+### Moment three: another team gets useful work done
+
+Make **Senti ResultCheck** the smallest useful cross-team service.
+
+A partner submits paired measurements with sample IDs, metric names, units, and the intended comparison. The checker returns the arithmetic, consistency flags, and an inspectable receipt. It should identify insufficient data rather than manufacture statistical confidence.
+
+Its scope is **submitted-data consistency and arithmetic**. It does not certify the authenticity of the measurements or the physical validity of the other team’s model.
+
+The collaboration evidence should be:
+
+**Real partner request → executed check → returned receipt → observed downstream use.**
+
+Recruit that partner early. A documented API alone does not establish that another team benefited.
+
+---
+
+## 7. The NVIDIA contribution should be a working learning loop
+
+Your NVIDIA transcript makes the sponsor’s preference clear: they want meaningful use higher in the software stack.
+
+The proposed contribution is:
+
+**Use NVIDIA NeMo to train a small shared worker on eligible recorded examples, save the adapter, reload it, and compare it with the base worker under matched conditions.**
+
+Keep the frontier lead models frozen. The shared worker is the trainable component.
+
+### The first NVIDIA task
+
+Complete a tiny end-to-end preflight:
+
+1. Load the selected open model.
+2. Train on a small, permitted fixture dataset.
+3. Save the adapter.
+4. Reload it in a fresh inference process.
+5. Confirm that the correct checkpoint is being used.
+6. Run the same structured task through base and adapter configurations.
+
+Retain the planned Qwen worker only if the actual NeMo recipe passes this preflight. Any model substitution should happen **before** the experimental configuration is frozen.
+
+### Ask the NVIDIA mentors for specific help
+
+| Request | Why it matters |
+|---|---|
+| Help us validate a compatible NeMo training recipe on one allocated H100. | Resolves the highest-risk integration before we collect a large training dataset. |
+| Help us verify adapter save/reload and checkpoint identity. | Prevents a false “fine-tuned” comparison caused by serving the wrong weights. |
+| Confirm the expected evidence for the general NVIDIA-platform prize. | Makes the actual framework contribution easy for judges to inspect. |
+| If practical, give us a short GB10 deployment slot and a compatible environment. | Adds a separately measured portability demonstration. |
+
+Keep the CPU thermal evaluator on an appropriate CPU worker. Running it on a machine that happens to contain an H100 does not demonstrate GPU acceleration.
+
+ALCHEMI can remain a bounded stretch experiment if a mentor identifies a relevant, defensible materials task. It should earn its place by producing a useful result; it should not delay the core learning and collaboration evidence.
+
+### Preserve the agreed comparisons
+
+| Arm | What it tests |
+|---|---|
+| Classical simulated annealing | Whether the agent approach adds value over a search baseline. |
+| One lead lab | The value of the collective relative to a single lead. |
+| Four isolated labs | Multiple perspectives without shared evidence. |
+| Four labs with shared evidence | The contribution of sharing. |
+| Four shared labs with the adapted worker | The complete learned-worker system. |
+
+Also run the direct **base-versus-adapter worker comparison with identical memory, prompts, tools, and inference settings**. That helps separate weight learning from access to better context.
+
+The target remains 12 held-out task families, two paired seeds, and 32 aggregate evaluation bundles per task and arm, including reserved reproduction work. **Thirty-two is the shared allowance across a collective, not a separate allowance for every lab.**
+
+Freeze the power scenarios, geometry rules, wire-length proxy constraint, and objective before these comparisons. Training and review examples must remain separate from held-out evaluation families.
+
+---
+
+## 8. The three-minute presentation
+
+**Rehearse to 2:45. Preserve 15 seconds for transitions and a slow click.**
+
+Use five slides and two speaker handoffs.
+
+| Time | Speaker | Slide | What the audience should understand |
+|---|---|---|---|
+| **0:00–0:20** | You | **1. SentiLab** | The problem: findings need to be reusable and correctable across agents. |
+| **0:20–0:45** | You | **2. The collective and its evidence** | Labs propose; an evaluator measures; shared records preserve dependencies and permissions. |
+| **0:45–1:45** | Aneta | **3. One result’s history** | Watch a candidate, its evidence, reproduction, and the correction drill in one interface. |
+| **1:45–2:20** | You | **4. Matched comparisons and NVIDIA** | What improved, what did not, and what the NeMo worker actually did. |
+| **2:20–2:45** | You | **5. External reuse** | Another team’s concrete use and the engineering artifact they received. |
+
+### The opening
+
+Start with the scientific coordination problem:
+
+> “An agent proposes a cooler chiplet layout. Another agent reuses the finding. If the original measurement is wrong, which conclusions survive?”
+
+Then state what you built. The opening does not need a list of model providers.
+
+### Aneta’s minute
+
+Her sequence should stay within one interface:
+
+- Select the candidate.
+- Reveal its measured result and reproduction.
+- Open the supporting evidence.
+- Trigger the labeled correction drill.
+- Show affected and preserved findings.
+
+Use a recorded execution if live latency would consume the minute. Label replay and any time compression. The underlying artifacts must remain available for inspection.
+
+The current slide contains the two authored preflight layouts. **Replace that chart with an agent-generated result once one has been verified.** If the optimization comparison shows no gain, report it and demonstrate the functioning validation and correction behavior.
+
+### Your comparison slide
+
+Use exact measured statements:
+
+- “Under the same aggregate budget, shared labs achieved **[result]**.”
+- “With the same memory and runtime, the adapter achieved **[result]**.”
+- “We trained and reloaded **[checkpoint]** using **[actual NVIDIA stack]**.”
+
+If there is no reliable advantage, say so directly. The speaker notes already contain those alternatives.
+
+### The closing
+
+End with the observed external benefit:
+
+> “[Team] used our check to [specific change]. The result they received includes its inputs, evidence, reproduction record, and correction history.”
+
+Then name the broader purpose: enabling scientific findings that other agents can inspect and use.
+
+---
+
+## 9. Execution order from here
+
+The first milestone should be **one complete vertical slice**: a request produces a measured result that appears in Aneta’s interface with a usable receipt.
+
+| Phase | You | Aneta | Exit condition |
+|---|---|---|---|
+| **First 90 minutes** | Locate the canonical checkout, establish the hackathon branch, freeze the result contract, start NeMo preflight. | Build the candidate/evidence view against recorded fixtures. | Both sides consume the same result schema. |
+| **Next build block** | Connect one lab to the executor and accepted board; verify execution permissions. | Connect the live result stream and implement ResultCheck’s narrow interface. | One real proposal produces a visible, inspectable result. |
+| **Integration block** | Add the remaining bounded labs and aggregate budget accounting. | Add evidence dependencies and the correction view. | Collaboration and correction behavior can be demonstrated. |
+| **Partner block—start outreach early** | Recruit a team with a concrete paired-measurement task. | Help them make a real request and use the response. | Actual request, receipt, and downstream benefit recorded. |
+| **Benchmark block** | Run the frozen comparisons and eligible worker training. | Make results and failures readable; record the demo sequence. | Evidence supports every planned stage claim. |
+| **Submission morning** | Freeze results, source pins, and claim wording. | Finalize slides and rehearse the one-minute walkthrough. | Three consecutive rehearsals finish by 2:45. |
+
+The official site lists the final-slide deadline as **Sunday, November 1, at 1:00 p.m. Eastern**. Aim to freeze evidence by 11:30 a.m., finish rehearsal by noon, and submit by 12:30 p.m. [scienceclawhack.ai](https://scienceclawhack.ai/?utm_source=chatgpt.com)
+
+Keep a short contribution manifest identifying the existing Thermal Flight Lab foundation and the work completed during the event. The event permits reuse and combination of available technology; the new contribution should still be immediately understandable. [scienceclawhack.ai](https://scienceclawhack.ai/?utm_source=chatgpt.com)
+
+### Remaining access dependency
+
+The Senti room/spec handoff remains blocked by the missing grant for my own agent identity. The fresh check found no repaired grant or new handoff, so I have **not** posted the specifications as Warden or another agent. The room-and-ticket CRUD request remains part of that pending handoff. Local implementation and the presentation work can proceed while that access is repaired.
+
+**The build priority is now clear: one reproducible thermal result, one accurate correction drill, one useful external-team interaction, and one honestly measured NVIDIA learning loop.** Aneta makes the evidence understandable; you make the experiment and execution trustworthy.

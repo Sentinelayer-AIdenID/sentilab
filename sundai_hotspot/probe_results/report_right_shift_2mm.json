@@ -1,0 +1,197 @@
+{
+  "hotspot_commit": "f18831e48cef5d62580585cca0d7fab6c71bc3cc",
+  "tap_commit": "3a3f4e5a4d019b2d9cda1f72d8d1755238845dbb",
+  "tap_config_sha256": "548562a5f49d502f4b9bd03d3a4acc4b42f225056e6d91556416079c291e06d4",
+  "hotspot_binary_sha256": "5c3fcad8ae63144b218d2fc1de28ea862f5c6d3751e7ab381d576e5c00cab4bb",
+  "source_urls": [
+    "https://github.com/bu-icsg/TAP-2.5D",
+    "https://github.com/uvahotspot/HotSpot"
+  ],
+  "meaning": "Hand-authored placement perturbation on published research data using upstream thermal generator and separately compiled HotSpot7. Not a Jev or agent optimization result, no surrogate training, no commercial chip signoff.",
+  "limitations": [
+    "Source uses HotSpot6; this probe uses HotSpot7 without calibration against original output.",
+    "Fixed per-chiplet power, no transient workload or leakage feedback.",
+    "Manhattan center distance is not the original CPLEX routed wirelength.",
+    "Package parameters and bump assumptions are research defaults, not foundry verified.",
+    "Timing is a single local run per case/grid, not a benchmark distribution.",
+    "Initial 64x64 baseline attempt exceeded 45second execution timeout without SuperLU. Final grid comparison is16x16 versus32x32, not a full mesh convergence study."
+  ],
+  "runs": [
+    {
+      "placement": "right_shift_2mm",
+      "grid_rows": 16,
+      "grid_cols": 16,
+      "centers_mm": [
+        [
+          27,
+          25
+        ],
+        [
+          40,
+          40
+        ],
+        [
+          8,
+          9
+        ],
+        [
+          8,
+          25
+        ],
+        [
+          8,
+          41
+        ],
+        [
+          41,
+          15
+        ]
+      ],
+      "microbump_halo_mm": [
+        0.09,
+        0.045,
+        0.045,
+        0.045,
+        0.045,
+        0.045
+      ],
+      "legal_with_microbump_halo": true,
+      "power_W": 350.0,
+      "ambient_C": 45,
+      "chip_layer_peak_C": 118.88,
+      "all_layers_peak_C": 118.88,
+      "weighted_Manhattan_center_distance_mm": 28.209150326797385,
+      "solver_seconds": 2.4952390540001943,
+      "input_generation_seconds": 0.0008983420002550702,
+      "cmd": [
+        "/workspace/scratch/0e39dea81c98/sundai_hotspot/hotspot",
+        "-c",
+        "/workspace/scratch/0e39dea81c98/sundai_hotspot/probe_results/right_shift_2mm_16/new_hotspot.config",
+        "-f",
+        "/workspace/scratch/0e39dea81c98/sundai_hotspot/probe_results/right_shift_2mm_16/sampleL4_ChipLayer.flp",
+        "-p",
+        "/workspace/scratch/0e39dea81c98/sundai_hotspot/probe_results/right_shift_2mm_16/sample.ptrace",
+        "-steady_file",
+        "/workspace/scratch/0e39dea81c98/sundai_hotspot/probe_results/right_shift_2mm_16/sample.steady",
+        "-grid_steady_file",
+        "/workspace/scratch/0e39dea81c98/sundai_hotspot/probe_results/right_shift_2mm_16/sample.grid.steady",
+        "-model_type",
+        "grid",
+        "-detailed_3D",
+        "on",
+        "-grid_layer_file",
+        "/workspace/scratch/0e39dea81c98/sundai_hotspot/probe_results/right_shift_2mm_16/samplelayers.lcf",
+        "-grid_rows",
+        "16",
+        "-grid_cols",
+        "16",
+        "-grid_map_mode",
+        "max"
+      ],
+      "files": {
+        "sampleL5_TIM.flp": "2fc55cd5d81930a572c99e4d8bde26d4f32ecb325b4aa7a938de8fdbfcc4ddb6",
+        "sampleL0_Substrate.flp": "b7eaf7347edd7ada7286652b2cde976dd1d61c268006c38666de4edc24b82228",
+        "new_hotspot.config": "0e6f0ac32d08a511659b2937ac42c3fefc9288a9bed944635f3187416e70e543",
+        "sampleL3_UbumpLayer.flp": "721cecb37f43af24fd3469ff912d53e614432155a156fe1791487a79b6e05351",
+        "sampleL2_Interposer.flp": "12e0a0e9ec6f23fda5e530c3b56169c6ab7322e41486b3360fa9ce0242422ed9",
+        "sample.grid.steady": "4216c0ad26be87b95e421e23568da7312758d28940b7f17eeda54e864579bcdf",
+        "sampleL3.flp": "908bbc49cb0d5595f0c70b0419313d1dbe74706b1d0303eb4c66181abcdcd9d9",
+        "sampleL4_ChipLayer.flp": "9760207ab690651484d7ec3102a924ab859df1b88f2a7ef5cfda0191306fa66c",
+        "samplelayers.lcf": "f66b7d1702ef993361cee340daf8fad9418fda821d801e6149c29f2ccbdc19b6",
+        "samplesim.flp": "37166ec97cda6264ebea5a7745cba6a5a0d14c7193521935f0f79bf4b0cc28cc",
+        "sampleL4.flp": "370fd2cf94fff7045325e75b0c00de4af6e06c4f556c02cdb046d147d008b746",
+        "sample.steady": "267f91b8ee2dc504454d01f607211e31e260f46580eddf992afb1818b1a7770d",
+        "sampleL1_C4Layer.flp": "8d9ad856bbd547a1e2049ac224346e68342229fb2a99147333ea5a45153bbf99",
+        "sample.ptrace": "681b6cb0a09c3db374eb5283bcc5c7414623441fdf93116675d2563cb44de4e2"
+      }
+    },
+    {
+      "placement": "right_shift_2mm",
+      "grid_rows": 32,
+      "grid_cols": 32,
+      "centers_mm": [
+        [
+          27,
+          25
+        ],
+        [
+          40,
+          40
+        ],
+        [
+          8,
+          9
+        ],
+        [
+          8,
+          25
+        ],
+        [
+          8,
+          41
+        ],
+        [
+          41,
+          15
+        ]
+      ],
+      "microbump_halo_mm": [
+        0.09,
+        0.045,
+        0.045,
+        0.045,
+        0.045,
+        0.045
+      ],
+      "legal_with_microbump_halo": true,
+      "power_W": 350.0,
+      "ambient_C": 45,
+      "chip_layer_peak_C": 118.85000000000002,
+      "all_layers_peak_C": 118.85000000000002,
+      "weighted_Manhattan_center_distance_mm": 28.209150326797385,
+      "solver_seconds": 11.21557110799995,
+      "input_generation_seconds": 0.000887397000042256,
+      "cmd": [
+        "/workspace/scratch/0e39dea81c98/sundai_hotspot/hotspot",
+        "-c",
+        "/workspace/scratch/0e39dea81c98/sundai_hotspot/probe_results/right_shift_2mm_32/new_hotspot.config",
+        "-f",
+        "/workspace/scratch/0e39dea81c98/sundai_hotspot/probe_results/right_shift_2mm_32/sampleL4_ChipLayer.flp",
+        "-p",
+        "/workspace/scratch/0e39dea81c98/sundai_hotspot/probe_results/right_shift_2mm_32/sample.ptrace",
+        "-steady_file",
+        "/workspace/scratch/0e39dea81c98/sundai_hotspot/probe_results/right_shift_2mm_32/sample.steady",
+        "-grid_steady_file",
+        "/workspace/scratch/0e39dea81c98/sundai_hotspot/probe_results/right_shift_2mm_32/sample.grid.steady",
+        "-model_type",
+        "grid",
+        "-detailed_3D",
+        "on",
+        "-grid_layer_file",
+        "/workspace/scratch/0e39dea81c98/sundai_hotspot/probe_results/right_shift_2mm_32/samplelayers.lcf",
+        "-grid_rows",
+        "32",
+        "-grid_cols",
+        "32",
+        "-grid_map_mode",
+        "max"
+      ],
+      "files": {
+        "sampleL5_TIM.flp": "2fc55cd5d81930a572c99e4d8bde26d4f32ecb325b4aa7a938de8fdbfcc4ddb6",
+        "sampleL0_Substrate.flp": "b7eaf7347edd7ada7286652b2cde976dd1d61c268006c38666de4edc24b82228",
+        "new_hotspot.config": "0e6f0ac32d08a511659b2937ac42c3fefc9288a9bed944635f3187416e70e543",
+        "sampleL3_UbumpLayer.flp": "721cecb37f43af24fd3469ff912d53e614432155a156fe1791487a79b6e05351",
+        "sampleL2_Interposer.flp": "12e0a0e9ec6f23fda5e530c3b56169c6ab7322e41486b3360fa9ce0242422ed9",
+        "sample.grid.steady": "83897f2bbf97905a996745d4046ead787ae9ef8901f86e303e87eb3011e02b56",
+        "sampleL3.flp": "908bbc49cb0d5595f0c70b0419313d1dbe74706b1d0303eb4c66181abcdcd9d9",
+        "sampleL4_ChipLayer.flp": "9760207ab690651484d7ec3102a924ab859df1b88f2a7ef5cfda0191306fa66c",
+        "samplelayers.lcf": "05f8b9534e554eda42e4457bb63a2442e7254bbb4b23b19c2e753de5f78ecf17",
+        "samplesim.flp": "37166ec97cda6264ebea5a7745cba6a5a0d14c7193521935f0f79bf4b0cc28cc",
+        "sampleL4.flp": "370fd2cf94fff7045325e75b0c00de4af6e06c4f556c02cdb046d147d008b746",
+        "sample.steady": "d9ff9f8d3eb123315e87857d2f44d45eb4948883eaffba7b0174deab8282e14f",
+        "sampleL1_C4Layer.flp": "8d9ad856bbd547a1e2049ac224346e68342229fb2a99147333ea5a45153bbf99",
+        "sample.ptrace": "681b6cb0a09c3db374eb5283bcc5c7414623441fdf93116675d2563cb44de4e2"
+      }
+    }
+  ]
+}

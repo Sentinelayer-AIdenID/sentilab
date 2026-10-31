@@ -1,0 +1,54 @@
+{
+  "schema": "sentilab-slab018-fixtures/1",
+  "source_head": "95e4970fbcd543e26dd0da7aa926f493054c6cc0",
+  "source_dataset_id": "57c3ec2188b7dff4fb5033756b4ac8a0b30af33cae69eed7ea877f6b98fe8416",
+  "source_export": {
+    "dataset_id": "57c3ec2188b7dff4fb5033756b4ac8a0b30af33cae69eed7ea877f6b98fe8416",
+    "directory": "/mnt/c/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/.sentinelayer/sentilab-planning/gpt-astra-carter/slab018-worktree/docs/sentilab/evidence/SLAB-018/fixtures/export/57c3ec2188b7dff4fb5033756b4ac8a0b30af33cae69eed7ea877f6b98fe8416",
+    "schema": "sentilab-dataset/1",
+    "sources": [
+      {
+        "run_id": "fixture",
+        "seq": 53,
+        "envelope_hash": "385cebaee5023c1341c2881766eb46b51598dc3201a1940ae88b447dd57edbee"
+      }
+    ],
+    "policy": {
+      "heldout_families": [],
+      "rights": {
+        "fixture": {
+          "status": "ok",
+          "reason": "Warden56213 synthetic-fixture scaffolding grant"
+        }
+      }
+    },
+    "split_rule": "family-split/1: sha256 modulo 10 = 0 dev; otherwise train; heldout override",
+    "counts": {
+      "records": 48,
+      "candidates": 7,
+      "pairs": 4
+    },
+    "sha256": {
+      "records.jsonl": "edd527453d7b76bc7bdca0487e0a4844ce88b0dcfd3e7438e759ed215d579166",
+      "current.jsonl": "f529b1ece20321212dc022dd2e197d703bfc5d3b7fe907ca36eda6424db565f8",
+      "rlaif.jsonl": "6dd2d0389b0b8ce4c957623d729586c4f99b01c58dc35095f67a7fcd727bc1d4"
+    }
+  },
+  "source_candidates": 7,
+  "verifier_labelled_candidates": 6,
+  "train_rows": 200,
+  "eval_rows": 20,
+  "real_experiments": 0,
+  "claim": "Fixture metadata/label and adapter plumbing only; same-family repeated examples, no held-out scientific generalization.",
+  "snapshot_files": {
+    "current.jsonl": "f529b1ece20321212dc022dd2e197d703bfc5d3b7fe907ca36eda6424db565f8",
+    "manifest.json": "cbe10d036ed07477aabc408c7ee2618c290bf2d02719ddad97f9d332e19b6ac0",
+    "records.jsonl": "edd527453d7b76bc7bdca0487e0a4844ce88b0dcfd3e7438e759ed215d579166",
+    "rlaif.jsonl": "6dd2d0389b0b8ce4c957623d729586c4f99b01c58dc35095f67a7fcd727bc1d4"
+  },
+  "data_files": {
+    "train.jsonl": "cf60653270ee58c68cb87183576207080b595280e0b2bb54ba5af6872ce24aaf",
+    "eval.jsonl": "c2fea4f049385c6f85108d0afc4ffad1ba776be0be6319f46d9086d8564e1231"
+  },
+  "code_sha256": "44841c3c87245d705c5202af497efe112de83e524b8ba133dc59974c3de2d01c"
+}

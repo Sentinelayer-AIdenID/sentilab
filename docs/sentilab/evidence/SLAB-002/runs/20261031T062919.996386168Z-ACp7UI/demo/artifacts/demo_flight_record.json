@@ -1,0 +1,517 @@
+[
+  {
+    "sequence": 0,
+    "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "timestamp": 1793428231.0800147,
+    "event": "identity_registered",
+    "payload": {
+      "agent_id": "fixture-proposer",
+      "public_key": "41b3667d8e69740a1e869aae622caa6ff993e0c089aeda1855fce52eb5930dda",
+      "allowed_tasks": [
+        "replay-0",
+        "replay-1",
+        "replay-2",
+        "replay-3",
+        "replay-4",
+        "replay-5",
+        "replay-6",
+        "replay-7",
+        "replay-8"
+      ],
+      "scope": "local reference identity; no external identity claim"
+    },
+    "hash": "1ad076f324e16e60af4cf3abe69529ecbe01928517df532a8b86932e9b61ce05",
+    "signature": "AlfDZ9WHvdFzTP80GVkmpFLFNs52s1jWB/rDxRvotWx1iCO05oG9EZNT6dHwLWU8SF3B+iK5AzmnFtQIQY84Dw=="
+  },
+  {
+    "sequence": 1,
+    "previous_hash": "1ad076f324e16e60af4cf3abe69529ecbe01928517df532a8b86932e9b61ce05",
+    "timestamp": 1793428231.0828516,
+    "event": "baseline",
+    "payload": {
+      "design_hash": "2653e8c9ef65403c8d052ae7e19ff769c4a50430be78eda4eb754314e3dc43e8",
+      "thermal": {
+        "candidate_hash": "2653e8c9ef65403c8d052ae7e19ff769c4a50430be78eda4eb754314e3dc43e8",
+        "maximum_temperature_c": 93.34231692620901,
+        "solver_version": "synthetic-fvm-plate-v1-grid40",
+        "converged": true,
+        "seed": null,
+        "cost_microdollars": 0,
+        "evidence_kind": "synthetic steady-state plate; not silicon junction signoff",
+        "problem_hash": "5ec0679a8971a8ee5678f52743ddbdb1f79eae9a6232f60408fa72d37aea6766"
+      },
+      "shared_initial_samples": [
+        {
+          "design_hash": "2653e8c9ef65403c8d052ae7e19ff769c4a50430be78eda4eb754314e3dc43e8",
+          "thermal": {
+            "candidate_hash": "2653e8c9ef65403c8d052ae7e19ff769c4a50430be78eda4eb754314e3dc43e8",
+            "maximum_temperature_c": 93.34231692620901,
+            "solver_version": "synthetic-fvm-plate-v1-grid40",
+            "converged": true,
+            "seed": null,
+            "cost_microdollars": 0,
+            "evidence_kind": "synthetic steady-state plate; not silicon junction signoff",
+            "problem_hash": "5ec0679a8971a8ee5678f52743ddbdb1f79eae9a6232f60408fa72d37aea6766"
+          }
+        }
+      ],
+      "proposal_budget": false,
+      "initialization_source": "controller_oracle",
+      "shared_initial_design_count": 0,
+      "minimum_improvement_c": 0.05,
+      "problem_contract_hash": "4867f29f39eb3c0d0a4a5269d47b40a1455b36f39cc70f6c700e7a0d2654fdc7"
+    },
+    "hash": "ef3af9b8e7dc8446bee06647dd9f4ff48a2f586fceb3781587ab38e1a76d460b",
+    "signature": "GEfMALGXOvE6In+dMVkuV/mpeKGklCbV1g+klgGTEwrd7qbjZ1YCgex873jBzemkk8DwMiefflU6LRquMXYWCw=="
+  },
+  {
+    "sequence": 2,
+    "previous_hash": "ef3af9b8e7dc8446bee06647dd9f4ff48a2f586fceb3781587ab38e1a76d460b",
+    "timestamp": 1793428231.0834143,
+    "event": "proposal_rejected",
+    "payload": {
+      "proposal_id": "fixture-0",
+      "agent_id": "fixture-proposer",
+      "task_id": "replay-0",
+      "reason": "invalid geometry or operation"
+    },
+    "hash": "a49a95a4eac1f6f19521b89109789671d737dd7c2c616f88e4fbcfbc9228e203",
+    "signature": "0LefQx5ENd2V7cdO8F3WX9sySFehJMKWvoytxI/Qa/ANDhlWF7Po4/TtvPQe3EDI3NWorhwCgOTFrq+Ai4WHBA=="
+  },
+  {
+    "sequence": 3,
+    "previous_hash": "a49a95a4eac1f6f19521b89109789671d737dd7c2c616f88e4fbcfbc9228e203",
+    "timestamp": 1793428231.0839014,
+    "event": "proposal_admitted",
+    "payload": {
+      "agent_id": "fixture-proposer",
+      "args": {
+        "chiplet": "compute-a",
+        "x_mm": 0,
+        "y_mm": 0
+      },
+      "base_revision": 0,
+      "epoch": 0,
+      "expires_at": 1793428291.0835588,
+      "lane_id": "default",
+      "model_id": "deterministic-replay-NO-MODEL-CALL",
+      "operation": "move",
+      "parent_hash": "2653e8c9ef65403c8d052ae7e19ff769c4a50430be78eda4eb754314e3dc43e8",
+      "problem_contract_hash": "4867f29f39eb3c0d0a4a5269d47b40a1455b36f39cc70f6c700e7a0d2654fdc7",
+      "prompt_hash": "fa322e2f18d0906c6599d4b195f3beaadb198ec92b1e659caa3921933df5cb15",
+      "proposal_id": "fixture-1",
+      "run_id": "sundai-reference",
+      "task_id": "replay-1",
+      "tool_hash": "0b92f6a00e37b26cc5d2f55d6798280752045feea71f3f686866cd75cfd3ad44",
+      "candidate_hash": "d9a94be9f1971aa6f04db65d7747691b80d000c0fbb63de08fd6628113be05c8",
+      "attempt": 1,
+      "evaluation_admission": 1,
+      "reserved_cost_microdollars": 1
+    },
+    "hash": "d0c7682e843a7e71a2cc31195a96c697561dd4a9086cccff9125a5e5cebce7cf",
+    "signature": "4o21IXuXULl1DETOrqF6kjje3tVa4sPIUTYxpRXwHJih2CL8xvRGZ+uMpqEFLGy23YGr2i6RiV0t1i5vSVUUAQ=="
+  },
+  {
+    "sequence": 4,
+    "previous_hash": "d0c7682e843a7e71a2cc31195a96c697561dd4a9086cccff9125a5e5cebce7cf",
+    "timestamp": 1793428231.0849514,
+    "event": "oracle_result",
+    "payload": {
+      "proposal_id": "fixture-1",
+      "agent_id": "fixture-proposer",
+      "candidate_hash": "d9a94be9f1971aa6f04db65d7747691b80d000c0fbb63de08fd6628113be05c8",
+      "thermal": {
+        "candidate_hash": "d9a94be9f1971aa6f04db65d7747691b80d000c0fbb63de08fd6628113be05c8",
+        "maximum_temperature_c": 118.22123084662172,
+        "solver_version": "synthetic-fvm-plate-v1-grid40",
+        "converged": true,
+        "seed": null,
+        "cost_microdollars": 0,
+        "evidence_kind": "synthetic steady-state plate; not silicon junction signoff",
+        "problem_hash": "5ec0679a8971a8ee5678f52743ddbdb1f79eae9a6232f60408fa72d37aea6766"
+      },
+      "duration_ms": 0.9272000752389431
+    },
+    "hash": "3397244453c000877db4bf2f3981eec510ab0036a0ba86840eb3277889fda88b",
+    "signature": "R18Yn2dpkZ8fHAGgdJTYbnaCtGcJ+KMpR1dD6UJLl/huher9aLHkdiBbXYZr+C/MEn1uwe7wp+mF+TQgmQT4CQ=="
+  },
+  {
+    "sequence": 5,
+    "previous_hash": "3397244453c000877db4bf2f3981eec510ab0036a0ba86840eb3277889fda88b",
+    "timestamp": 1793428231.0851927,
+    "event": "proposal_rejected",
+    "payload": {
+      "proposal_id": "fixture-1",
+      "agent_id": "fixture-proposer",
+      "task_id": "replay-1",
+      "reason": "no verified improvement",
+      "temperature_c": 118.22123084662172,
+      "lane_best_hash": "2653e8c9ef65403c8d052ae7e19ff769c4a50430be78eda4eb754314e3dc43e8",
+      "minimum_improvement_c": 0.05
+    },
+    "hash": "1af37ec2eee929bb0f16192d2c7ec36a319a08bcd908e92c6562ae642474f85b",
+    "signature": "Cr4VhDYwmAwyh8XKyl2ApehVjZUl/2r7rB0a1F+PMwqbJldxOB5mro1vMsqmnJ4EuKDqIXActBozEnik14E4DQ=="
+  },
+  {
+    "sequence": 6,
+    "previous_hash": "1af37ec2eee929bb0f16192d2c7ec36a319a08bcd908e92c6562ae642474f85b",
+    "timestamp": 1793428231.0856745,
+    "event": "proposal_admitted",
+    "payload": {
+      "agent_id": "fixture-proposer",
+      "args": {
+        "chiplet": "compute-b",
+        "x_mm": 19,
+        "y_mm": 0
+      },
+      "base_revision": 0,
+      "epoch": 0,
+      "expires_at": 1793428291.085345,
+      "lane_id": "default",
+      "model_id": "deterministic-replay-NO-MODEL-CALL",
+      "operation": "move",
+      "parent_hash": "2653e8c9ef65403c8d052ae7e19ff769c4a50430be78eda4eb754314e3dc43e8",
+      "problem_contract_hash": "4867f29f39eb3c0d0a4a5269d47b40a1455b36f39cc70f6c700e7a0d2654fdc7",
+      "prompt_hash": "fa322e2f18d0906c6599d4b195f3beaadb198ec92b1e659caa3921933df5cb15",
+      "proposal_id": "fixture-2",
+      "run_id": "sundai-reference",
+      "task_id": "replay-2",
+      "tool_hash": "0b92f6a00e37b26cc5d2f55d6798280752045feea71f3f686866cd75cfd3ad44",
+      "candidate_hash": "3924cf68793f908f38e9dcd04ca878db894541aaa1a7e95969d7f811d198f3fa",
+      "attempt": 1,
+      "evaluation_admission": 2,
+      "reserved_cost_microdollars": 1
+    },
+    "hash": "0c67651e868d402ff194e71f464280438d59a6b59f4c4e5c39a334acc6c3a13c",
+    "signature": "Vsy2Tx4NLJBHy/0v7lvPgdkl6B8iSTXAaAIg2oE2K7VZapsnMS8D1FAFcTc3Z+XEcyYPjKdlV1H9J/jY2jEZDQ=="
+  },
+  {
+    "sequence": 7,
+    "previous_hash": "0c67651e868d402ff194e71f464280438d59a6b59f4c4e5c39a334acc6c3a13c",
+    "timestamp": 1793428231.0866413,
+    "event": "oracle_result",
+    "payload": {
+      "proposal_id": "fixture-2",
+      "agent_id": "fixture-proposer",
+      "candidate_hash": "3924cf68793f908f38e9dcd04ca878db894541aaa1a7e95969d7f811d198f3fa",
+      "thermal": {
+        "candidate_hash": "3924cf68793f908f38e9dcd04ca878db894541aaa1a7e95969d7f811d198f3fa",
+        "maximum_temperature_c": 99.06175225148756,
+        "solver_version": "synthetic-fvm-plate-v1-grid40",
+        "converged": true,
+        "seed": null,
+        "cost_microdollars": 0,
+        "evidence_kind": "synthetic steady-state plate; not silicon junction signoff",
+        "problem_hash": "5ec0679a8971a8ee5678f52743ddbdb1f79eae9a6232f60408fa72d37aea6766"
+      },
+      "duration_ms": 0.8491990156471729
+    },
+    "hash": "9c91b92fd6d6aabf6e55930dd086f27e36004ee9f3d111e506ba5169a3686cfa",
+    "signature": "sY4WFBk9vD0ZN2BAze3nGgLOyBKh9l+JPvg9XhaQw94QS9aoRTdVaD6dsJzTsnZEAgxeOeoonzrnOaPUOP4hCg=="
+  },
+  {
+    "sequence": 8,
+    "previous_hash": "9c91b92fd6d6aabf6e55930dd086f27e36004ee9f3d111e506ba5169a3686cfa",
+    "timestamp": 1793428231.086867,
+    "event": "proposal_rejected",
+    "payload": {
+      "proposal_id": "fixture-2",
+      "agent_id": "fixture-proposer",
+      "task_id": "replay-2",
+      "reason": "no verified improvement",
+      "temperature_c": 99.06175225148756,
+      "lane_best_hash": "2653e8c9ef65403c8d052ae7e19ff769c4a50430be78eda4eb754314e3dc43e8",
+      "minimum_improvement_c": 0.05
+    },
+    "hash": "1d15343f9856135785dfc1e8171116133be86dab87434e9140a8fd611ae1bd4c",
+    "signature": "/5hs2kO3G4141SZ1Zr0F7z52JnygGebvK1sZsq2muWWKEYvE68JQbycjKnrLx09sZUHGe3tgQ6Q8zATVcxdqAg=="
+  },
+  {
+    "sequence": 9,
+    "previous_hash": "1d15343f9856135785dfc1e8171116133be86dab87434e9140a8fd611ae1bd4c",
+    "timestamp": 1793428231.0873444,
+    "event": "proposal_admitted",
+    "payload": {
+      "agent_id": "fixture-proposer",
+      "args": {
+        "chiplet": "memory-a",
+        "x_mm": 0,
+        "y_mm": 20
+      },
+      "base_revision": 0,
+      "epoch": 0,
+      "expires_at": 1793428291.086995,
+      "lane_id": "default",
+      "model_id": "deterministic-replay-NO-MODEL-CALL",
+      "operation": "move",
+      "parent_hash": "2653e8c9ef65403c8d052ae7e19ff769c4a50430be78eda4eb754314e3dc43e8",
+      "problem_contract_hash": "4867f29f39eb3c0d0a4a5269d47b40a1455b36f39cc70f6c700e7a0d2654fdc7",
+      "prompt_hash": "fa322e2f18d0906c6599d4b195f3beaadb198ec92b1e659caa3921933df5cb15",
+      "proposal_id": "fixture-3",
+      "run_id": "sundai-reference",
+      "task_id": "replay-3",
+      "tool_hash": "0b92f6a00e37b26cc5d2f55d6798280752045feea71f3f686866cd75cfd3ad44",
+      "candidate_hash": "477d0394e8c2feaea15b4bd376c5c80ba72f13c9bee4aef163a1db4ff0405c3a",
+      "attempt": 1,
+      "evaluation_admission": 3,
+      "reserved_cost_microdollars": 1
+    },
+    "hash": "3a6694d424532e8a09a476444b68be28238d1680023a17666f9b8ca9533ae84f",
+    "signature": "5n0sZg2BoepunY2Tu0QMQMEgIhhE6pBaFx6bWHW8P4XaOks/uWNBRERCX8UZrxaikgk1T+cLzx3MPzEYBP5hAg=="
+  },
+  {
+    "sequence": 10,
+    "previous_hash": "3a6694d424532e8a09a476444b68be28238d1680023a17666f9b8ca9533ae84f",
+    "timestamp": 1793428231.088286,
+    "event": "oracle_result",
+    "payload": {
+      "proposal_id": "fixture-3",
+      "agent_id": "fixture-proposer",
+      "candidate_hash": "477d0394e8c2feaea15b4bd376c5c80ba72f13c9bee4aef163a1db4ff0405c3a",
+      "thermal": {
+        "candidate_hash": "477d0394e8c2feaea15b4bd376c5c80ba72f13c9bee4aef163a1db4ff0405c3a",
+        "maximum_temperature_c": 120.69146667567506,
+        "solver_version": "synthetic-fvm-plate-v1-grid40",
+        "converged": true,
+        "seed": null,
+        "cost_microdollars": 0,
+        "evidence_kind": "synthetic steady-state plate; not silicon junction signoff",
+        "problem_hash": "5ec0679a8971a8ee5678f52743ddbdb1f79eae9a6232f60408fa72d37aea6766"
+      },
+      "duration_ms": 0.8159000426530838
+    },
+    "hash": "3285f8eae263ba4e787d586d6a1d2af5a4f2ed55f9856e35e5692e69b37a9a90",
+    "signature": "BXLzxUs2UtzukadOG+rxFN7WOQZjG/wOhCSOcAW7FcoR/0Pg8wRC29WFBjc9E5NgCYK+MqmXUqq4Gtiqk+cIDA=="
+  },
+  {
+    "sequence": 11,
+    "previous_hash": "3285f8eae263ba4e787d586d6a1d2af5a4f2ed55f9856e35e5692e69b37a9a90",
+    "timestamp": 1793428231.0885124,
+    "event": "proposal_rejected",
+    "payload": {
+      "proposal_id": "fixture-3",
+      "agent_id": "fixture-proposer",
+      "task_id": "replay-3",
+      "reason": "no verified improvement",
+      "temperature_c": 120.69146667567506,
+      "lane_best_hash": "2653e8c9ef65403c8d052ae7e19ff769c4a50430be78eda4eb754314e3dc43e8",
+      "minimum_improvement_c": 0.05
+    },
+    "hash": "9e0522162cd6e1c205e15a5129c94a59a4a62fd8f0705737c17e2bd82ba54820",
+    "signature": "24MkRxJfODqvMQIiHUXmSnlykApqz9sMyZ/Wdj4qqWPD0UhuJw5LXhZCC1GrgOOal/6g6SFx6rbUnnMpFRIhAA=="
+  },
+  {
+    "sequence": 12,
+    "previous_hash": "9e0522162cd6e1c205e15a5129c94a59a4a62fd8f0705737c17e2bd82ba54820",
+    "timestamp": 1793428231.0889626,
+    "event": "proposal_admitted",
+    "payload": {
+      "agent_id": "fixture-proposer",
+      "args": {
+        "chiplet": "memory-b",
+        "x_mm": 20,
+        "y_mm": 20
+      },
+      "base_revision": 0,
+      "epoch": 0,
+      "expires_at": 1793428291.0886397,
+      "lane_id": "default",
+      "model_id": "deterministic-replay-NO-MODEL-CALL",
+      "operation": "move",
+      "parent_hash": "2653e8c9ef65403c8d052ae7e19ff769c4a50430be78eda4eb754314e3dc43e8",
+      "problem_contract_hash": "4867f29f39eb3c0d0a4a5269d47b40a1455b36f39cc70f6c700e7a0d2654fdc7",
+      "prompt_hash": "fa322e2f18d0906c6599d4b195f3beaadb198ec92b1e659caa3921933df5cb15",
+      "proposal_id": "fixture-4",
+      "run_id": "sundai-reference",
+      "task_id": "replay-4",
+      "tool_hash": "0b92f6a00e37b26cc5d2f55d6798280752045feea71f3f686866cd75cfd3ad44",
+      "candidate_hash": "5fddf08073ec3d1c2c532fc55bb2c28e26b032f4323a5e74b86413136c8625b4",
+      "attempt": 1,
+      "evaluation_admission": 4,
+      "reserved_cost_microdollars": 1
+    },
+    "hash": "d3ef2c652da1c2a1e6825e41e694371a27719a4b395918c14970c61b75d02794",
+    "signature": "MCIDPrZrtTywaPr2jGsALT8XUmeHqPQbaGvAjqRH/IzrZVPZgphHXhme6TtIQc9XxqPciP9i5g/NXXBj+H00Ag=="
+  },
+  {
+    "sequence": 13,
+    "previous_hash": "d3ef2c652da1c2a1e6825e41e694371a27719a4b395918c14970c61b75d02794",
+    "timestamp": 1793428231.0899673,
+    "event": "oracle_result",
+    "payload": {
+      "proposal_id": "fixture-4",
+      "agent_id": "fixture-proposer",
+      "candidate_hash": "5fddf08073ec3d1c2c532fc55bb2c28e26b032f4323a5e74b86413136c8625b4",
+      "thermal": {
+        "candidate_hash": "5fddf08073ec3d1c2c532fc55bb2c28e26b032f4323a5e74b86413136c8625b4",
+        "maximum_temperature_c": 126.96873424712352,
+        "solver_version": "synthetic-fvm-plate-v1-grid40",
+        "converged": true,
+        "seed": null,
+        "cost_microdollars": 0,
+        "evidence_kind": "synthetic steady-state plate; not silicon junction signoff",
+        "problem_hash": "5ec0679a8971a8ee5678f52743ddbdb1f79eae9a6232f60408fa72d37aea6766"
+      },
+      "duration_ms": 0.8886989671736956
+    },
+    "hash": "2d3f1397e9af3e51151d935cc13c07f91068555d0f97504822c74c31823323a1",
+    "signature": "PXOF8WPkI8OFG1K2BmZEE9Bd7ZZqCQPLxk7eyy/rPD7514QXFWjVzsCXW+yTZNEL9DNr69n/E1Ev2Ux/byPEDQ=="
+  },
+  {
+    "sequence": 14,
+    "previous_hash": "2d3f1397e9af3e51151d935cc13c07f91068555d0f97504822c74c31823323a1",
+    "timestamp": 1793428231.0901968,
+    "event": "proposal_rejected",
+    "payload": {
+      "proposal_id": "fixture-4",
+      "agent_id": "fixture-proposer",
+      "task_id": "replay-4",
+      "reason": "no verified improvement",
+      "temperature_c": 126.96873424712352,
+      "lane_best_hash": "2653e8c9ef65403c8d052ae7e19ff769c4a50430be78eda4eb754314e3dc43e8",
+      "minimum_improvement_c": 0.05
+    },
+    "hash": "1192fb932c3d75a744ca714f82c553f08d3b693780941fcfc37e1b752b0d2385",
+    "signature": "6rnxH82YsNng8sqySmV0aUAShwLoB/CL76PX7byoRTxoZ+s1wDXW96p/4Vb8mwE8GkNj0cETgLSQ1GpxivaACA=="
+  },
+  {
+    "sequence": 15,
+    "previous_hash": "1192fb932c3d75a744ca714f82c553f08d3b693780941fcfc37e1b752b0d2385",
+    "timestamp": 1793428231.0906405,
+    "event": "proposal_rejected",
+    "payload": {
+      "proposal_id": "fixture-5",
+      "agent_id": "fixture-proposer",
+      "task_id": "replay-5",
+      "reason": "invalid geometry or operation"
+    },
+    "hash": "a6a421c0f116cadc723494b9fa779adcdbcd1b9f744a0569a639b4a1e2dfdc79",
+    "signature": "zK0i+p1SNybZ+xYMP1zsAQ+IdbNVnJfKoV/6MtJv2K0CIFZCrly2im3j6jmTrjtT4zvIbjc3FmyGtZkcIxwiBQ=="
+  },
+  {
+    "sequence": 16,
+    "previous_hash": "a6a421c0f116cadc723494b9fa779adcdbcd1b9f744a0569a639b4a1e2dfdc79",
+    "timestamp": 1793428231.0910823,
+    "event": "proposal_admitted",
+    "payload": {
+      "agent_id": "fixture-proposer",
+      "args": {
+        "a": "compute-a",
+        "b": "compute-b"
+      },
+      "base_revision": 0,
+      "epoch": 0,
+      "expires_at": 1793428291.0907698,
+      "lane_id": "default",
+      "model_id": "deterministic-replay-NO-MODEL-CALL",
+      "operation": "swap",
+      "parent_hash": "2653e8c9ef65403c8d052ae7e19ff769c4a50430be78eda4eb754314e3dc43e8",
+      "problem_contract_hash": "4867f29f39eb3c0d0a4a5269d47b40a1455b36f39cc70f6c700e7a0d2654fdc7",
+      "prompt_hash": "fa322e2f18d0906c6599d4b195f3beaadb198ec92b1e659caa3921933df5cb15",
+      "proposal_id": "fixture-6",
+      "run_id": "sundai-reference",
+      "task_id": "replay-6",
+      "tool_hash": "0b92f6a00e37b26cc5d2f55d6798280752045feea71f3f686866cd75cfd3ad44",
+      "candidate_hash": "da798c495d5116dd31101d64a8b95f93e42a990087fbc35cc7261d96c2a95049",
+      "attempt": 1,
+      "evaluation_admission": 5,
+      "reserved_cost_microdollars": 1
+    },
+    "hash": "89e7b08c5eae2b20d42ea51bec102bfc254404190489389aa139e2f3f51dbc2c",
+    "signature": "LZv9H8XOueLD3Ced/ZdHHieLNoiN7lM2TNtzqxeDBzqG4XVELltU9hJAFVLyJI3jJs/2GEht+UOJNRUtvcG8DA=="
+  },
+  {
+    "sequence": 17,
+    "previous_hash": "89e7b08c5eae2b20d42ea51bec102bfc254404190489389aa139e2f3f51dbc2c",
+    "timestamp": 1793428231.0920062,
+    "event": "oracle_result",
+    "payload": {
+      "proposal_id": "fixture-6",
+      "agent_id": "fixture-proposer",
+      "candidate_hash": "da798c495d5116dd31101d64a8b95f93e42a990087fbc35cc7261d96c2a95049",
+      "thermal": {
+        "candidate_hash": "da798c495d5116dd31101d64a8b95f93e42a990087fbc35cc7261d96c2a95049",
+        "maximum_temperature_c": 92.31434907982992,
+        "solver_version": "synthetic-fvm-plate-v1-grid40",
+        "converged": true,
+        "seed": null,
+        "cost_microdollars": 0,
+        "evidence_kind": "synthetic steady-state plate; not silicon junction signoff",
+        "problem_hash": "5ec0679a8971a8ee5678f52743ddbdb1f79eae9a6232f60408fa72d37aea6766"
+      },
+      "duration_ms": 0.80289994366467
+    },
+    "hash": "19a67cfb0753744674d10cf55f24fc95b96dc7d2478b0dbf662d4b90e20e7d01",
+    "signature": "fQ2wUTRbDZL+VwWpjUNIv2+7cLPOvV5CxIxRGX9YiEYZIUzan7lX7DEewH5bZRP5rYuzQqFhuafQd5dZ1lb6Cw=="
+  },
+  {
+    "sequence": 18,
+    "previous_hash": "19a67cfb0753744674d10cf55f24fc95b96dc7d2478b0dbf662d4b90e20e7d01",
+    "timestamp": 1793428231.0922341,
+    "event": "proposal_committed",
+    "payload": {
+      "proposal_id": "fixture-6",
+      "agent_id": "fixture-proposer",
+      "task_id": "replay-6",
+      "reason": "verified improvement on lane best",
+      "temperature_c": 92.31434907982992,
+      "revision": 1,
+      "candidate_hash": "da798c495d5116dd31101d64a8b95f93e42a990087fbc35cc7261d96c2a95049",
+      "lane_id": "default"
+    },
+    "hash": "2a417a6e1163b5728a20d7ce4b00aa2c4e52ef81077b0c9714b6dd99fa40ed9b",
+    "signature": "JFaKZ3tXR5+cKaqRQiFUvlfxEIxwlRF/UGLjfxfOAS1bz+IpMo6HTqkNLmrl9tDf67yRe+kfKhmzS31AqzYuCA=="
+  },
+  {
+    "sequence": 19,
+    "previous_hash": "2a417a6e1163b5728a20d7ce4b00aa2c4e52ef81077b0c9714b6dd99fa40ed9b",
+    "timestamp": 1793428231.092513,
+    "event": "proposal_rejected",
+    "payload": {
+      "proposal_id": "fixture-0",
+      "agent_id": "fixture-proposer",
+      "task_id": "replay-0",
+      "reason": "replayed proposal"
+    },
+    "hash": "cd6aea6687b4d7078da408f2661a038dcf144cfee57d6ffb933acfc99ff04a15",
+    "signature": "ZB2nRkK5mOKAkjgi/QJcAbOMIQcbRHRajRFSS+t1fRW8z8h8DMUQkHcMQtpVAElNLMdMwG/3nP+bau0lrtPVCA=="
+  },
+  {
+    "sequence": 20,
+    "previous_hash": "cd6aea6687b4d7078da408f2661a038dcf144cfee57d6ffb933acfc99ff04a15",
+    "timestamp": 1793428231.0925908,
+    "event": "stopped",
+    "payload": {
+      "epoch": 1,
+      "reason": "demonstrate STOP after replay"
+    },
+    "hash": "e650ccdaae4b64d08a23b15a13f05f3f4c016781e3af6106d1d94857c85855e3",
+    "signature": "Z06Ifn9cRTVFTljrvrSmsdxfNRIDuZpw6GFghae+yasiKqvLVGY5b1Byizh4akVqfmr0S8MAIjCTPCrO88ZhDQ=="
+  },
+  {
+    "sequence": 21,
+    "previous_hash": "e650ccdaae4b64d08a23b15a13f05f3f4c016781e3af6106d1d94857c85855e3",
+    "timestamp": 1793428231.0929618,
+    "event": "proposal_rejected",
+    "payload": {
+      "proposal_id": "1128ee63-8409-4607-86e6-def2d161d26d",
+      "agent_id": "fixture-proposer",
+      "task_id": "replay-8",
+      "reason": "stopped or invalidated epoch"
+    },
+    "hash": "591aad74620cb663ee443a205fbccd18fa7a36304e9ae845b6c5c00407b403d4",
+    "signature": "r7J4ZuP7CkasfDbzAP8KRQHkTN52DmjX0Di/Z4r4suQRGuyzzW5y5QYc6fefLARgjKkA9pzCpiKoFD+ItZqnDw=="
+  },
+  {
+    "sequence": 22,
+    "previous_hash": "591aad74620cb663ee443a205fbccd18fa7a36304e9ae845b6c5c00407b403d4",
+    "timestamp": 1793428231.0930393,
+    "event": "run_closed",
+    "payload": {
+      "event_count": 23,
+      "final_hash": "591aad74620cb663ee443a205fbccd18fa7a36304e9ae845b6c5c00407b403d4"
+    },
+    "hash": "8ceebe0a751aa6cfa30d208f7115c4821426905d8e4bc56a6a58a6198ee91563",
+    "signature": "CF4jkyCOd/UklBrEdK4pSEvASf7YUclephhP/zAB6bvAI7RuRuPFfxecdFHLCvgI6OSSFcH7lqb73vJZWbcgBw=="
+  }
+]

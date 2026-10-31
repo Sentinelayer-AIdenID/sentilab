@@ -1,0 +1,24 @@
+{
+  "checkedAtUtc": "2026-10-31T04:15:47.130Z",
+  "revision": "draft-0.5",
+  "requirements": 234,
+  "tickets": 41,
+  "checks": [
+    "frozen core hashes",
+    "forward and reverse requirement mappings",
+    "acyclic dependencies",
+    "D00-D07 coverage",
+    "CLI and MCP per ticket",
+    "acceptance evidence per ticket",
+    "HOLD and no execution per ticket",
+    "incidental dependency separation",
+    "model-routing coverage"
+  ],
+  "problems": [],
+  "hashes": {
+    "PLAN.md": "e15174b8040d40b0675d8821586c2725ba84b79419393fe2a42e405218410f1a",
+    "REQUIREMENTS.md": "cef6ca1268486238be1a98c2fdf2634b2ff8cd7d1004d8b9f5bd61d0b30f658b",
+    "TICKETS.json": "e5acf2ec49c53407b3918c37c9ff0eeefe2bd53df3d189b7949add77513144d4"
+  },
+  "scope": "Independent root document-consistency audit only; no product/scientific tests or execution approvals"
+}

@@ -1,0 +1,24 @@
+{
+  "name": "scratch-outputs",
+  "command": [
+    "rm",
+    "-f",
+    "/tmp/tmp.BQCHiVnG6s/sundai_hotspot/probe_results/report.json",
+    "/tmp/tmp.BQCHiVnG6s/sundai_controller/demo_results.json",
+    "/tmp/tmp.BQCHiVnG6s/sundai_controller/demo_flight_record.json"
+  ],
+  "cwd": "/workspace/sentilab",
+  "started_at": "2026-10-31T06:30:11.602861Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:30:11.604690Z",
+  "wall_time_s": 0.0018168980022892356,
+  "artifacts": [],
+  "stdout": {
+    "path": "scratch-outputs/stdout.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stderr": {
+    "path": "scratch-outputs/stderr.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

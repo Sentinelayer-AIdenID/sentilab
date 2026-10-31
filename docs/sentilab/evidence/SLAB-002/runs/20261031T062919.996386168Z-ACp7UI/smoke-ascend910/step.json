@@ -1,0 +1,23 @@
+{
+  "name": "smoke-ascend910",
+  "command": [
+    "python",
+    "tfl05_smoke.py",
+    "--benchmark",
+    "ascend910"
+  ],
+  "cwd": "/tmp/tmp.BQCHiVnG6s/sundai_controller",
+  "started_at": "2026-10-31T06:30:33.169780Z",
+  "exit_code": 0,
+  "ended_at": "2026-10-31T06:30:34.947352Z",
+  "wall_time_s": 1.7775710329879075,
+  "artifacts": [],
+  "stdout": {
+    "path": "smoke-ascend910/stdout.txt",
+    "sha256": "4f9e355673306de8fbdce18ac54344f53d478c2caf6ea5d74febf2e7dd41979c"
+  },
+  "stderr": {
+    "path": "smoke-ascend910/stderr.txt",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

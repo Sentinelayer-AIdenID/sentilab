@@ -1,0 +1,92 @@
+{
+  "head": "3236e23aecafb8e49e31aaec8101d3906f1de2a8",
+  "sealed_at": "2026-10-31T11:40:24.851626+00:00",
+  "inputs": {
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\preflight-runtime\\APPROVED.json": {
+      "sha256": "d3af4760af160a374758229931b54bfe8d745897ef49a774b7ef5d68a35fd918",
+      "bytes": 447
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\preflight-runtime\\inspection-created.json": {
+      "sha256": "47ac1455ce1528534141743d0d8f11ff47d7f5369dffc1ec2cd193a8fd3e58c0",
+      "bytes": 3157
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\preflight-runtime\\inspection-finished.json": {
+      "sha256": "829a42234687008043f5c71f10f07065cbcfa06f8685a6c1869ad115d2e75e57",
+      "bytes": 3175
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\preflight-runtime\\intent.json": {
+      "sha256": "e3994a940adcc72024e6d2b73f3f58cd69895381dce43a8217b61abe58f4b47d",
+      "bytes": 1160
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\preflight-runtime\\preflight047b.py": {
+      "sha256": "ed856df35246a8c1a59459d0e5b197f0921ec893cc2ab1bae047f8e43432a74f",
+      "bytes": 22140
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\preflight-runtime\\probe.stderr.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\preflight-runtime\\probe.stdout.json": {
+      "sha256": "600a5fbd5c6961bddfbc61b07b5be49a0b02b15e06925cbf090ea3ff336335ac",
+      "bytes": 6810
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\preflight-runtime\\probe.stdout.log": {
+      "sha256": "f78d07a739c452d5fb48d1e6a1e842e1390bad1f315baccaa3fa3f102bbef850",
+      "bytes": 6842
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\preflight-runtime\\result.json": {
+      "sha256": "d7bd65d6fbc96b7ed3517ecca14f9275900f176a737761fd4fad8104a91bd620",
+      "bytes": 1268
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\preflight-runtime\\run.lock": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\preflight-runtime\\state.json": {
+      "sha256": "376e31a4f368a3089c17a58cfc01004a1d9dd98964f7ebaf2b2bb64aafc434ea",
+      "bytes": 152
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\PREFLIGHT-DOWNLOAD.json": {
+      "sha256": "8eb2f9b59147dc997de187a3057897711d2ce41d481f2b7cf64bfada471fdeef",
+      "bytes": 1888
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\ROOT-PREFLIGHT-VALIDATION.json": {
+      "sha256": "8f41ace30a9db3badb00f6f150121430dc5f4942c40bb42da859c49a9b3c00f0",
+      "bytes": 3913
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\GPU-APPROVAL-INSTALL.json": {
+      "sha256": "a0b423c9682e117be143be13922480d4b346f1aeac4ecde24af4ec510c516226",
+      "bytes": 408
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\GPU-APPROVED.json": {
+      "sha256": "ed50fbf43c4101059941dce7b5507b01226614a748b871079db0e3c433f6ed2f",
+      "bytes": 527
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\SOURCE-APPROVAL.json": {
+      "sha256": "f60879d0b54c18e7a8f7cefc1ae48ae99c5c6ea51b9778e8adf3b15dda578e94",
+      "bytes": 1360
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\REMOTE-SOURCE-BINDING.json": {
+      "sha256": "3a4e9b944584eab520ab4d747ef2be666542ba3f243e9fc33cde9b122b36a3c9",
+      "bytes": 1331
+    },
+    "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047b-admission\\PREFLIGHT-INVOKE-RESULT.json": {
+      "sha256": "d05f45b4a810ad73cdcd18b7af792b7e569d029aee537ebc141022417d355708",
+      "bytes": 1476
+    }
+  },
+  "outputs": {
+    "VALIDATION.json": {
+      "sha256": "529beed6ce61bd650b36841627f07b352c89edc3e1989488ac666dbb1c2144f4",
+      "bytes": 16041
+    },
+    "PREFLIGHT-REVIEW.md": {
+      "sha256": "25f267065889c947bbfea8f27e86cbbb8e6d015f7c6811c66614aa33f4ce8b36",
+      "bytes": 3320
+    },
+    "validate_offline.py": {
+      "sha256": "4b487903ccc72f66abfb1b56f31261460c2ebd9c0924613fb0c12adbb8506925",
+      "bytes": 15926
+    }
+  }
+}

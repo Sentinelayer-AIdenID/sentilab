@@ -1,0 +1,2 @@
+# Keep every byte as committed: MANIFEST_SHA256.json hashes the files exactly.
+* -text

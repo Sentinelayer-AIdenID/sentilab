@@ -1,0 +1,8 @@
+{
+  "schema": "sentilab-047b-preflight-review/1",
+  "grant_source": "55fe3cab-88b4-4f80-9ae7-2f5ff43c70f7",
+  "preflight_sha256": "ed856df35246a8c1a59459d0e5b197f0921ec893cc2ab1bae047f8e43432a74f",
+  "decision": "+1",
+  "reviewer": "claude-warden",
+  "review_record": "Senti608657e4-5e60-4bb6-9353-9611b70c1c66 #56553 source752b1eae-d5e0-4c5c-a991-a1cd0fc580b8 at2026-10-31T11:32:08.607Z exact3236e23aecafb8e49e31aaec8101d3906f1de2a8 BOTH preflight and GPU startup path"
+}

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10191e">
+<title>Verify a Flight Record · Thermal Flight Lab</title>
+<link rel="stylesheet" href="verify.css">
+</head>
+<body>
+<header>
+  <a class="brand" href="/"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>AIdenID / <strong>Thermal Flight Lab</strong></span></a>
+  <span class="eyebrow flush">OFFLINE RECORD VERIFIER</span>
+</header>
+<main>
+  <section class="panel">
+    <p class="eyebrow">Don't trust the server</p>
+    <h1>Verify a flight record in your browser.</h1>
+    <p>Each lane's record is a hash chain of events, every entry signed with Ed25519. This page recomputes every hash and checks every signature here, with WebCrypto. Nothing is uploaded.</p>
+    <label for="run-id">RUN ID</label>
+    <input type="text" id="run-id" placeholder="paste a run id" autocomplete="off" spellcheck="false">
+    <button id="load">Fetch and verify</button>
+    <div class="drop" id="drop">or drop a downloaded run JSON here<br><input type="file" id="file" accept="application/json,.json"></div>
+    <div class="note"><strong>Integrity:</strong> hashes and signatures agree. <strong>Authentic origin:</strong> the record key has a current certificate under a pinned SentiLab service key. Older records are integrity only, unanchored. <strong>Scientific validity:</strong> not checked; a signature does not validate temperatures or simulator accuracy.</div>
+  </section>
+  <section class="panel">
+    <div class="summary" id="summary"></div>
+    <div class="results" id="results"><div class="empty">Load a run to verify its four lane records.</div></div>
+  </section>
+</main>
+<script type="module" src="verify.js"></script>
+</body>
+</html>

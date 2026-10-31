@@ -1,0 +1,1 @@
+demo OK: 93.34231692620901 → 92.31434907982992 C, receipt_chain_valid=True

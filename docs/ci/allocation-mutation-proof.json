@@ -1,0 +1,223 @@
+{
+  "method": "One valid-source defect injected per new test in an isolated temporary copy; no solver runs.",
+  "base": "b1afe1a5bc14cbc1c6ecc831fdbcdcdae86b5be6",
+  "tests": [
+    {
+      "test": "scripts.tests.test_ci_allocation.LedgerTests.test_reservation_precedes_launch_and_all_terminal_states_consume_slots",
+      "mutation_file": "scripts/ci_allocation.py",
+      "before": "'settled', slot=slot, state=state, returncode=returncode",
+      "after": "'lost-settlement', slot=slot, state=state, returncode=returncode",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_allocation.LedgerTests.test_launch_101_is_refused_even_after_successful_settlement",
+      "mutation_file": "scripts/ci_allocation.py",
+      "before": "LAUNCH_CAP = 100",
+      "after": "LAUNCH_CAP = 101",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_allocation.LedgerTests.test_finalize_settles_orphans_and_binds_both_shas",
+      "mutation_file": "scripts/ci_allocation.py",
+      "before": "if row['event'] == 'reserved' and row['slot'] not in settled:",
+      "after": "if False and row['event'] == 'reserved' and row['slot'] not in settled:",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_allocation.CPUTests.test_cpu_not_wall_time_and_stop_reserve",
+      "mutation_file": "scripts/ci_allocation.py",
+      "before": "STOP_RESERVE = 30",
+      "after": "STOP_RESERVE = 0",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_allocation.CPUTests.test_meter_failure_regression_or_observation_gap_fails_closed",
+      "mutation_file": "scripts/ci_allocation.py",
+      "before": "MAX_OBSERVATION_GAP = 2",
+      "after": "MAX_OBSERVATION_GAP = 10",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_allocation.AdmissionTests.test_expiry_cap_and_missing_counter_fail_closed",
+      "mutation_file": "scripts/ci_allocation.py",
+      "before": "EXPIRY = 1793556000",
+      "after": "EXPIRY = 1893556000",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_allocation.AdmissionTests.test_global_slot_200_and_rerun_rejection",
+      "mutation_file": "scripts/ci_allocation.py",
+      "before": "RUN_CAP = 200",
+      "after": "RUN_CAP = 201",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_allocation.MoreAdmissionTests.test_contention_is_retried_without_overbooking",
+      "mutation_file": "scripts/ci_allocation.py",
+      "before": "except RefConflict:\n                continue",
+      "after": "except RefConflict:\n                raise",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_allocation.MoreAdmissionTests.test_lost_reply_and_duplicate_run_do_not_reset_budget",
+      "mutation_file": "scripts/ci_allocation.py",
+      "before": "if any(row['repository'] == identity.repository",
+      "after": "if False and any(row['repository'] == identity.repository",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_allocation.MoreAdmissionTests.test_invalid_bootstrap_or_slots_are_not_an_empty_counter",
+      "mutation_file": "scripts/ci_allocation.py",
+      "before": "not 0 <= debit <= RUN_CAP",
+      "after": "not -1 <= debit <= RUN_CAP",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_allocation.MoreLedgerTests.test_parallel_reservations_share_one_cap",
+      "mutation_file": "scripts/ci_allocation.py",
+      "before": "LAUNCH_CAP = 100",
+      "after": "LAUNCH_CAP = 101",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_allocation.MoreLedgerTests.test_corruption_identity_mismatch_and_duplicate_settlement_refused",
+      "mutation_file": "scripts/ci_allocation.py",
+      "before": "if any(row['event'] == 'settled' and row['slot'] == slot for row in events):",
+      "after": "if False and any(row['event'] == 'settled' and row['slot'] == slot for row in events):",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_gate.GateTests.test_actual_entry_success_failure_kill_timeout_and_retry",
+      "mutation_file": "sundai_hotspot/ci_gate.py",
+      "before": "('killed' if code < 0 else 'failure')",
+      "after": "('failure' if code < 0 else 'failure')",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_gate.GateTests.test_direct_copied_binary_and_environment_flag_cannot_enter",
+      "mutation_file": "sundai_hotspot/ci_entry.h",
+      "before": "if (!value || !*value) goto refused;",
+      "after": "if (!value || !*value) return;",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_gate.GateTests.test_broker_refusal_prevents_process_and_launch_error_consumes_slot",
+      "mutation_file": "scripts/ci_allocation.py",
+      "before": "LAUNCH_CAP = 100",
+      "after": "LAUNCH_CAP = 101",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_gate.GateTests.test_real_http_broker_routes_ci_wrapper_and_refuses_after_close",
+      "mutation_file": "scripts/ci_allocation.py",
+      "before": "if any(row['event'] in ('finished', 'violation') for row in events):",
+      "after": "if False and any(row['event'] in ('finished', 'violation') for row in events):",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_gate.GateTests.test_shipped_hotspot_call_sites_use_the_gate",
+      "mutation_file": "sundai_hotspot/tap_oracle_worker.py",
+      "before": "process = run_hotspot(",
+      "after": "process = subprocess.run(",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_gate.GateTests.test_ignored_direct_call_still_poisoned_the_job_ledger",
+      "mutation_file": "sundai_hotspot/ci_entry.h",
+      "before": "POST /violation HTTP/1.0",
+      "after": "POST /not-a-violation HTTP/1.0",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_admit.StoreTests.test_store_reads_durable_bootstrap_and_claims_an_immutable_slot",
+      "mutation_file": "scripts/ci_admit.py",
+      "before": "'ref': 'refs/' + PREFIX + f'slot-{slot:03}'",
+      "after": "'ref': 'refs/' + PREFIX + f'slot-{slot + 1:03}'",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_admit.StoreTests.test_invalid_or_changed_lineage_never_reads_as_empty",
+      "mutation_file": "scripts/ci_admit.py",
+      "before": "record['bootstrap_sha'] != self.bootstrap_sha",
+      "after": "False",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_admit.SettlementTests.test_runner_loss_reserves_full_allowance_without_inventing_measurements",
+      "mutation_file": "scripts/ci_reconcile.py",
+      "before": "executions_started=None, cpu_seconds=None",
+      "after": "executions_started=0, cpu_seconds=0",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_admit.SettlementTests.test_settlement_identity_and_complete_terminal_state_are_required",
+      "mutation_file": "scripts/ci_reconcile.py",
+      "before": "if settlement.get('identity') != identity or settlement.get('allocation_id') != '56314':",
+      "after": "if False:",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_admit.WiringTests.test_ci_retains_required_suites_and_meter_wraps_entire_container_job",
+      "mutation_file": ".github/workflows/ci.yml",
+      "before": "needs: admission",
+      "after": "needs: allocation-proof",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_admit.WiringTests.test_write_permission_is_separated_from_pr_code_and_terminal_witness_is_trusted",
+      "mutation_file": ".github/workflows/ci.yml",
+      "before": "ref: ${{ github.event.pull_request.base.sha || github.sha }}",
+      "after": "ref: ${{ github.sha }}",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_cpu_meter.MeterTests.test_monitor_observes_inflight_cpu_and_stops_before_cap",
+      "mutation_file": "scripts/ci_allocation.py",
+      "before": "STOP_RESERVE = 30",
+      "after": "STOP_RESERVE = 0",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_cpu_meter.MeterTests.test_monitor_terminal_states_and_cancellation",
+      "mutation_file": "scripts/ci_cpu_meter.py",
+      "before": "('success' if code == 0 else 'failure')",
+      "after": "('success' if code == 0 else 'success')",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_cpu_meter.MeterTests.test_cpu_stat_is_cpu_and_missing_counter_is_not_wall_fallback",
+      "mutation_file": "scripts/ci_allocation.py",
+      "before": "int(fields['usage_usec']) / 1_000_000",
+      "after": "int(fields['usage_usec']) / 1_000",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_cpu_meter.MeterTests.test_kill_waits_for_descendants_and_bounds_kill_overhead",
+      "mutation_file": "scripts/ci_cpu_meter.py",
+      "before": "(group / 'cgroup.kill').write_text('1')",
+      "after": "(group / 'cgroup.kill').write_text('0')",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_cpu_meter.MeterTests.test_full_runner_enters_group_and_exports_success_and_failure",
+      "mutation_file": "scripts/ci_cpu_meter.py",
+      "before": "('success' if code == 0 else 'failure')",
+      "after": "('success' if code == 0 else 'success')",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_cpu_meter.MeterTests.test_recovery_settles_orphans_without_fabricating_total_cpu",
+      "mutation_file": "scripts/ci_cpu_meter.py",
+      "before": "'measurement': 'supervisor lost; total unknown',\n                                  'charged_cpu_seconds': CPU_CAP",
+      "after": "'measurement': 'supervisor lost; total unknown',\n                                  'charged_cpu_seconds': 0",
+      "detected": true
+    },
+    {
+      "test": "scripts.tests.test_ci_cpu_meter.MeterTests.test_monitor_expiry_and_bypass_violation_stop_without_starting_more_work",
+      "mutation_file": "scripts/ci_cpu_meter.py",
+      "before": "return 'expired', 1",
+      "after": "return 'expired', 0",
+      "detected": true
+    }
+  ]
+}

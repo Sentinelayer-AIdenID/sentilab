@@ -1,0 +1,32 @@
+[
+  {
+    "suite": "core",
+    "tests": 28,
+    "success": true,
+    "cpu_s": 6.954116,
+    "elapsed_s": 9.722073310986161,
+    "synthetic_evaluate_calls": 23,
+    "hotspot_worker_dispatches": 0,
+    "hotspot_solves_confirmed_by_test": 2,
+    "dispatch_trace_incomplete": true,
+    "dispatch_trace_note": "Observer checked list arguments; asyncio used tuples. Zero observed dispatches is not zero HotSpot execution."
+  },
+  {
+    "suite": "view",
+    "tests": 4,
+    "success": true,
+    "cpu_s": 2.7351020000000004,
+    "elapsed_s": 3.7781605650670826,
+    "synthetic_evaluate_calls": 3,
+    "hotspot_worker_dispatches": 0
+  },
+  {
+    "suite": "conformance",
+    "tests": 4,
+    "success": true,
+    "cpu_s": 1.1002370000000017,
+    "elapsed_s": 1.4498810180230066,
+    "synthetic_evaluate_calls": 5,
+    "hotspot_worker_dispatches": 0
+  }
+]

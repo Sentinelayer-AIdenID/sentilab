@@ -1,0 +1,7 @@
+{
+  "status": "TIMEOUT",
+  "seconds": 45,
+  "grid": 64,
+  "completed": false,
+  "explanation": "NoSuperLU; do not treat incomplete outputs as accepted thermal result."
+}

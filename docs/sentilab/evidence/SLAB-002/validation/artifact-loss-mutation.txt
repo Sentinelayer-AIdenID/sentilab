@@ -1,0 +1,46 @@
+======================================================================
+ERROR: test_failed_demo_keeps_streams_artifacts_and_failure_after_cleanup (test_evidence_capture.EvidenceCaptureTests.test_failed_demo_keeps_streams_artifacts_and_failure_after_cleanup)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/slab002-mutant/docs/sentilab/evidence/SLAB-002/test_evidence_capture.py", line 49, in test_failed_demo_keeps_streams_artifacts_and_failure_after_cleanup
+    status = self.api['record_step'](self.run, 'demo', self.scratch, command)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/slab002-mutant/scripts/sentilab_regress.sh", line 73, in record_step
+  File "/tmp/slab002-mutant/scripts/sentilab_regress.sh", line 26, in file_ref
+  File "/tmp/slab002-mutant/scripts/sentilab_regress.sh", line 18, in digest
+    # The repository import commit (PROVENANCE.json describes exactly its tree; see README).
+                              ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1021, in read_bytes
+    with self.open(mode='rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1015, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/tmp8uhjidhn/run/demo/artifacts/demo_results.json'
+
+======================================================================
+ERROR: test_successful_probe_keeps_report_and_distinct_run (test_evidence_capture.EvidenceCaptureTests.test_successful_probe_keeps_report_and_distinct_run)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/slab002-mutant/docs/sentilab/evidence/SLAB-002/test_evidence_capture.py", line 74, in test_successful_probe_keeps_report_and_distinct_run
+    self.assertEqual(self.api['record_step'](self.run, 'probe', self.scratch, command), 0)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/slab002-mutant/scripts/sentilab_regress.sh", line 73, in record_step
+  File "/tmp/slab002-mutant/scripts/sentilab_regress.sh", line 26, in file_ref
+  File "/tmp/slab002-mutant/scripts/sentilab_regress.sh", line 18, in digest
+    # The repository import commit (PROVENANCE.json describes exactly its tree; see README).
+                              ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1021, in read_bytes
+    with self.open(mode='rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/pathlib.py", line 1015, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/tmph53bmci7/run/probe/artifacts/probe_results/report.json'
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.096s
+
+FAILED (errors=2)
+sample: exit 0, 0.013s; /tmp/tmpwzhknw7d/run/sample
+missing: exit 127, 0.001s; /tmp/tmpge20gvzw/run/missing

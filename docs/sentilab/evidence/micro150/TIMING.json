@@ -1,0 +1,81 @@
+{
+  "machine": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+    "processor": "x86_64",
+    "cpu_count": 16
+  },
+  "fixtures": {
+    "ascend910": {
+      "label": "Ascend910",
+      "16x16": {
+        "median_seconds": 0.044466,
+        "max_seconds": 0.083347,
+        "times_seconds": [
+          0.083347,
+          0.045008,
+          0.044466,
+          0.044102,
+          0.043896
+        ]
+      },
+      "32x32": {
+        "median_seconds": 0.493822,
+        "max_seconds": 0.525693,
+        "times_seconds": [
+          0.525693,
+          0.492804,
+          0.483464,
+          0.50167,
+          0.493822
+        ]
+      },
+      "64x64": {
+        "median_seconds": 4.764399,
+        "max_seconds": 4.78092,
+        "times_seconds": [
+          4.778036,
+          4.710168,
+          4.667365,
+          4.78092,
+          4.764399
+        ]
+      }
+    },
+    "micro150": {
+      "label": "micro150",
+      "16x16": {
+        "median_seconds": 0.045216,
+        "max_seconds": 0.082004,
+        "times_seconds": [
+          0.082004,
+          0.045633,
+          0.044731,
+          0.045216,
+          0.04493
+        ]
+      },
+      "32x32": {
+        "median_seconds": 0.481068,
+        "max_seconds": 0.524939,
+        "times_seconds": [
+          0.524939,
+          0.481068,
+          0.486961,
+          0.479501,
+          0.477009
+        ]
+      },
+      "64x64": {
+        "median_seconds": 4.727101,
+        "max_seconds": 4.771279,
+        "times_seconds": [
+          4.753714,
+          4.727101,
+          4.690806,
+          4.771279,
+          4.700651
+        ]
+      }
+    }
+  }
+}

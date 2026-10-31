@@ -1,0 +1,479 @@
+**We should target NVIDIA’s third DGX Spark award—the general challenge using NVIDIA platforms—and make NeMo a central part of the result.**
+
+Your new transcript clarifies that the three Sparks are separate awards:
+
+1. Best use of **BioNeMo**.
+2. Best use of **ALCHEMI**.
+3. A **general challenge award using NVIDIA platforms**.
+
+It also gives us the most important instruction from NVIDIA: **they want to see meaningful use of their software higher in the stack.** Running an ordinary application on a rented GPU would give us a much weaker story than using NVIDIA’s training software to produce a useful, evaluated engineering agent.
+
+Here is the plan I’ve decided on.
+
+# 1. The project: Senti ThermalLab
+
+**A collective of independent AI engineering labs that improves chiplet layouts, verifies every accepted change through simulation, and learns a reusable engineering skill from the verified corrections.**
+
+The project brings together the ideas you already wanted:
+
+- Your four labs: **Astra, Claude, Grok and Kimi**.
+- Smaller workers that each lab can create within a budget.
+- Senti for communication, identity and evidence exchange.
+- A Warden that enforces the engineering rules and controls changes to the accepted design.
+- Real thermal simulation.
+- A visual interface showing proposals, reviews, failures and accepted changes.
+- A shared open model that learns from the work through **NVIDIA NeMo AutoModel**.
+- Deployment of that worker on the **on-site Dell Pro Max GB10**.
+- A service that another hackathon team actually uses through Senti MCP.
+
+The central scientific question is:
+
+> **At the same total resource budget, do independent engineering agents produce better results when they exchange verified findings—and can those findings improve the smaller worker they all use?**
+
+That fits the event’s focus on measurable collective capability. The published rules specifically ask teams to demonstrate what a collective adds compared with a single agent, isolated agents or a conventional workflow. [scienceclawhack.ai](https://scienceclawhack.ai/?utm_source=chatgpt.com)
+
+### The output we will hand to someone
+
+By Sunday, our intended deliverable is an **engineering experiment package** containing:
+
+- A proposed chiplet layout with exact coordinates and constraints.
+- The power scenarios and package assumptions used.
+- Simulator inputs, versions and raw outputs.
+- Independent reproduction results.
+- The complete proposal → review → correction → acceptance history.
+- A comparison against conventional and agent baselines.
+- A trained worker checkpoint or adapter, with its evaluation.
+- A replayable visual demonstration.
+
+This is a concrete package an engineer can inspect and reproduce. A foundry-ready chip would require additional physical design, process-specific checks and manufacturing validation. **Our weekend claim will be the acceleration and verification of a defined engineering task.**
+
+# 2. The NVIDIA stack we will actually use
+
+I’m choosing a small number of NVIDIA components with clear jobs.
+
+| Component | Decision | What it contributes |
+|---|---|---|
+| **NeMo AutoModel** | **Core** | Trains the shared engineering worker from verified examples. |
+| **One allocated NVIDIA H100** | **Core training target** | Runs the training and controlled worker evaluation. |
+| **Dell Pro Max GB10** | **Core deployment target** | Demonstrates the resulting worker running on the on-site desktop system. |
+| **Brev** | **Bounded setup and recovery resource** | Gives us a reproducible GPU workspace and a fallback if the shared allocation is unavailable. |
+| **Nemotron** | Optional mentor-supported integration | A fixed peer critic if NVIDIA has a working endpoint that adds measurable value. |
+| **PhysicsNeMo** | Extension after the main loop works | A learned thermal screening model, evaluated against the reference simulator. |
+| **ALCHEMI / BioNeMo** | Separate domain-specific prize paths | Useful for appropriate materials or biology projects; our primary submission targets the general award. |
+
+The difference between the two domain awards matters. ALCHEMI addresses chemistry and materials workflows, including atomistic simulation. Connecting those calculations to a package-scale thermal model would require a defensible scientific bridge. We already have a thermal engineering problem and a working simulator, so I would preserve that progress. [GitHub](https://github.com/NVIDIA/nvalchemi-toolkit?utm_source=chatgpt.com)
+
+## The worker choice
+
+**Keep `Qwen/Qwen3-4B` as the shared trainable worker, and train it with NVIDIA NeMo AutoModel.**
+
+The NVIDIA contribution is substantive: their framework and GPU create the learned artifact, and their desktop platform serves it. The worker itself can be an openly available model; Qwen3-4B’s model card identifies an Apache 2.0 license. [Hugging Face](https://huggingface.co/Qwen/Qwen3-4B?utm_source=chatgpt.com)
+
+The initial training stack will be:
+
+- NeMo AutoModel **0.7 / 26.10**.
+- The documented `nvcr.io/nvidia/nemo-automodel:26.10.00` container, pinned to its resolved image digest.
+- One allocated H100.
+- BF16 LoRA training.
+- A pinned base-model and tokenizer revision.
+- The same inference runtime and settings for the before/after comparison.
+
+NVIDIA documents the training, adapter export, reload and vLLM deployment workflow. Our exact combination of the 4B chat checkpoint and custom engineering data still needs an integration test. [NVIDIA NeMo AutoModel](https://docs.nvidia.com/nemo/automodel/v0.7/get-started/installation?utm_source=chatgpt.com)
+
+**The first ML milestone is therefore a 20-step train → save → reload → inference test.** That proves the pipeline works. It does not yet prove the model improved.
+
+If the custom 4B configuration blocks us for an hour, we use NVIDIA’s documented smaller Qwen3 example and freeze that worker across the experiment before collecting comparison results. NVIDIA’s current AutoModel documentation includes a public Qwen3-0.6B training example. [NVIDIA NeMo AutoModel](https://docs.nvidia.com/nemo/automodel/latest/index.html?utm_source=chatgpt.com)
+
+One current tooling detail: **NeMo AutoModel and NeMo Agent Toolkit are different products.** The Agent Toolkit documentation now carries an October 2026 deprecation notice. We will use AutoModel for training and retain Senti for coordination. [NVIDIA NeMo Agent Toolkit (1.9)](https://docs.nvidia.com/nemo/agent-toolkit/latest/index.html?utm_source=chatgpt.com)
+
+# 3. Your four-lab architecture, with clear authority
+
+Your original idea works if we distinguish **scientific decisions**, **reviews**, and **acceptance rules**.
+
+| Role | Responsibility | Authority |
+|---|---|---|
+| **Intent agent / Jev** | Turns the human goal into a versioned task contract: objective, constraints, permitted tools and budgets. | Proposes the contract; the benchmark contract is frozen before evaluation. |
+| **Four lab leads** | Choose hypotheses, request experiments, create bounded workers and seek help from peers. | Control their own research trajectory. |
+| **Lab workers** | Propose structured layout changes, repair invalid actions and interpret tool results. | Work within their lab’s permissions and budget. |
+| **Peer reviewers** | Challenge a claim, request missing evidence and attempt independent reproduction. | Can recommend acceptance, revision or rejection. |
+| **Warden** | Enforces schema, budgets, permissions, evidence requirements and design-version consistency. | Controls admission to the accepted design board. |
+| **Engineering evaluator** | Checks geometry and runs the thermal calculation. | Supplies the numerical evidence used by the acceptance rules. |
+
+**The Warden should govern the process without prescribing every experiment.** Each lab chooses what to investigate and which peer to ask for assistance. That gives us distributed decision-making while preserving a reliable design record.
+
+```mermaid
+flowchart TD
+    I["Frozen engineering objective"] --> L["Four independent labs"]
+    L <--> S["Senti evidence exchange"]
+    S <--> P["Other teams"]
+    L --> W["Warden checks"]
+    W -->|Revision required| L
+    W --> E["Simulation and independent replay"]
+    E -->|Verified artifacts| S
+    E -->|Acceptance rules pass| B["Accepted layout and live view"]
+    S --> T["NeMo worker training"]
+    T -->|Versioned worker| L
+```
+
+### How many agents?
+
+Start with:
+
+- Four lead agents.
+- Up to **two active workers per lab**.
+- One intake/evaluation service.
+- One independent reproduction queue.
+
+That gives us enough concurrency to demonstrate collaboration while keeping attribution and costs understandable. The leads can create additional roles when needed, but every role consumes a declared budget.
+
+The workers can share one model-serving process while maintaining separate identities, contexts and task histories. We do not need a separate GPU for every logical agent.
+
+### What happens when a judge says “pass”?
+
+A reviewer’s approval triggers an engineering check. Acceptance requires:
+
+1. A well-formed candidate tied to an exact parent layout.
+2. Valid geometry and compliance with the frozen constraints.
+3. Successful simulation under the required scenarios.
+4. A qualifying result under the declared objective.
+5. Independent reproduction.
+6. A final check that the accepted board has not changed since the proposal’s parent version.
+
+If two agents independently improve the same design, combining their edits produces a **new candidate that must be evaluated again**.
+
+For the leaderboard, show **proposals accepted, reproductions completed, useful corrections, evaluation cost and downstream reuse**. Credit the proposer, reviewer and reproducer separately.
+
+# 4. The engineering task and its judging mathematics
+
+We will keep the current eight-chiplet thermal fixture as our initial domain.
+
+The objective will be:
+
+\[
+J(x)=\max_{s\in S}\max_{i\in\{1,\ldots,8\}} T^{\text{center}}_{i,s}(x)
+\]
+
+Here:
+
+- \(x\) is a proposed layout.
+- \(S\) is the frozen set of power scenarios.
+- \(T^{\text{center}}_{i,s}\) is the simulator’s center-mapped temperature for chiplet \(i\) in scenario \(s\).
+
+**Lower is better, subject to the placement and interconnect constraints.**
+
+Those constraints will include:
+
+- Chiplets and required spacing remain within the interposer.
+- Expanded footprints do not overlap.
+- Coordinates follow the declared placement grid.
+- The package, cooling assumptions and chiplet dimensions remain fixed for a task.
+- A declared interconnect-distance budget prevents the agents from obtaining a trivial thermal improvement by spreading everything without limit.
+
+For the first version, interconnect cost will be an explicitly labeled **weighted Manhattan-distance proxy** using the reference configuration’s connection matrix:
+
+\[
+W(x)=\sum_{i<j} c_{ij}
+\left(|x_i-x_j|+|y_i-y_j|\right)
+\]
+
+We will set the permitted increase relative to each task’s starting layout before evaluation. This proxy is useful for the experiment; it is not a routed interposer or a timing signoff result.
+
+## An important finding already in our work
+
+The current simulator exports require careful interpretation. In the inspected configuration, the raw grid file represents the **substrate layer**, while the usable chiplet readings are center-mapped temperatures in the active chiplet layer.
+
+Therefore:
+
+- The initial objective uses the correctly identified chiplet-center readings.
+- The display labels those readings accurately.
+- An active-die peak-temperature objective would require a verified exporter and a new evaluator version.
+
+This is exactly the kind of error our system should make visible and prevent from propagating into training data.
+
+## What has already run
+
+Our existing feasibility runs produced:
+
+| Authored layout | Maximum chiplet-center temperature |
+|---|---:|
+| Clustered | 114.82°C |
+| Separated | 105.28°C |
+
+Those runs establish that the reference-derived simulation pipeline executes and responds to layout changes. They are **not yet results from the four-lab optimizer**, and routing was not evaluated. The recorded values and assumptions are in the results.json[existing simulator results](sandbox:/workspace/scratch/d681ffd0b7dd/thermal-preflight/results.json).
+
+The remaining build work is the agent loop, acceptance service, controlled comparison, training pipeline and live interface.
+
+# 5. How we prove collaboration and learning
+
+We need to separate two questions:
+
+1. **Did sharing evidence help the collective?**
+2. **Did changing the worker’s weights help?**
+
+The experiment will include these conditions:
+
+| Condition | Purpose |
+|---|---|
+| Conventional simulated annealing | Establish a non-LLM search baseline. |
+| One lab with the base worker | Establish the single-lab baseline. |
+| Four isolated labs with the base worker | Measure parallel search without information sharing. |
+| Four communicating labs with the base worker | Measure the benefit of collaboration. |
+| Four communicating labs with the adapted worker | Measure the additional effect of learned weights. |
+
+The primary collaboration comparison is **four isolated versus four communicating**, using the same models and total budget.
+
+The primary learning comparison is **base worker versus adapted worker**, with the other conditions held fixed.
+
+### The budget contract
+
+For the initial benchmark:
+
+- Target **12 held-out task families**, with two paired evaluation seeds.
+- Allow **32 total candidate-evaluation bundles per condition and task**, shared across the whole collective.
+- Each bundle contains the required power scenarios.
+- Reserve part of that budget for independent reproduction.
+- Count failed evaluations and retries.
+- Record model tokens, wall time and GPU time separately.
+- Keep a fixed proposal ceiling so one condition cannot generate unlimited candidates for free.
+
+The task families should group related power and placement variants before splitting. The conclusion will concern generalization within this declared benchmark domain.
+
+The conventional baseline uses the same simulator budget. The agent conditions also have matched aggregate model budgets. If an API credit limit forces a smaller experiment, reduce it according to a rule established before seeing the final results.
+
+### What the worker learns
+
+Give the small worker a narrow, useful job:
+
+> **Given a layout, constraints, previous evaluator feedback and a requested change, produce a valid structured engineering action or repair.**
+
+That is a better weekend training target than asking it to become a complete chip designer.
+
+Training records should contain:
+
+- The task and evaluator versions.
+- The input state.
+- The proposed action.
+- The actual validation error or measured result.
+- The verified correction.
+- A concise explanation of the correction.
+- References to supporting tool outputs.
+
+Store these as JSONL. Train primarily on our own structured state/action pairs and tool-verified corrections, with provenance for any additional examples.
+
+### Your “same agents tomorrow” idea
+
+We will recreate the same lab roles, prompts, tools, budgets and initial memories. Then we change **one shared worker checkpoint**.
+
+That worker is available inside all four labs. The frontier leads remain frozen. This gives us the adapter-loaded “same boxes” experiment you described without assuming we can install our own adapters into every proprietary frontier model.
+
+Measure:
+
+- First-attempt action validity.
+- Number of repairs needed.
+- Beneficial proposals confirmed by the simulator.
+- Final thermal objective at the fixed budget.
+- Time and cost per accepted improvement.
+
+Show paired outcomes, including ties and regressions. A training-loss curve alone will not be presented as evidence of better engineering.
+
+# 6. The cloud-to-GB10 demonstration
+
+This is the clearest NVIDIA story:
+
+**The collective generates verified engineering examples → NeMo trains a specialist on an H100 → the resulting specialist runs on the on-site GB10 and participates in the same Senti workflow.**
+
+The deployment will have three services:
+
+| Location | Work |
+|---|---|
+| **x86 CPU host** | Trusted thermal evaluator, geometry checks and reproduction jobs. |
+| **Allocated H100** | NeMo training and controlled worker evaluation. |
+| **On-site GB10** | Live worker inference and deployment demonstration. |
+
+The Dell system uses a Grace ARM CPU and NVIDIA’s software stack. Our current HotSpot executable is x86-64, so we will leave that working evaluator on its compatible CPU host and connect the GB10 worker through typed requests. Dell’s deployment documentation confirms the GB10 platform’s ARM-based configuration and local model-serving workflow. [Dell USA](https://www.dell.com/en-us/infohub/articles/dell-pro-max-gb10-deploying-llms?utm_source=chatgpt.com)
+
+For the learning comparison, run both model versions on the **same hardware, runtime, precision and decoding settings**. The GB10 demonstration is a separate portability result.
+
+NVIDIA also publishes a Spark-specific NeMo playbook with a pinned container and source revision. That is a useful fallback and mentor reference if cloud training access fails; we should follow the platform-specific recipe rather than mix environments casually. [build.nvidia.com](https://build.nvidia.com/playbooks/nemo-fine-tune/overview?utm_source=chatgpt.com)
+
+# 7. Exactly what to ask NVIDIA for
+
+Because the badge QR is currently broken, **ask for the direct URLs now**: the resource guide, Brev redemption instructions, agent skills, recommended containers and sponsor-submission instructions.
+
+Then ask the NVIDIA team for a focused setup session.
+
+Here is the wording I would use:
+
+We’re targeting the general NVIDIA-platform DGX Spark award.
+
+We’re building four independent engineering-agent labs that exchange verified thermal-design results through Senti. Their corrections become training examples for a shared open worker. We want NeMo AutoModel to train that worker on an H100, then serve the resulting checkpoint on the on-site GB10.
+
+We already have a reference-derived thermal simulation running. Could you help us with three concrete things?
+
+First, a known-working NeMo container and a 20-step LoRA train/save/reload test for our small worker.
+
+Second, a supported GB10 serving environment and a reserved setup/demo slot.
+
+Third, the direct resource links and the exact submission requirements for the general NVIDIA award.
+
+We’ll bring the model comparison, simulator evidence, checkpoint provenance and a live cross-team use case. Is there any additional software-use requirement we should build into that evidence?
+
+The most valuable help they can give us is:
+
+| Request | What it resolves |
+|---|---|
+| A known-working container and driver combination | Avoids losing hours on CUDA and package compatibility. |
+| Help with the train/export/reload test | Establishes that the learned artifact is usable. |
+| GB10 access, existing images and a demo reservation | Makes the local deployment practical. |
+| Brev credit scope and eligible resources | Establishes the actual fallback budget. |
+| Confirmation of the general award’s submission requirements | Prevents missing a sponsor form or required evidence. |
+| A short review of the before/after experiment | Helps us present the software contribution clearly. |
+
+Brev supports creating and accessing GPU instances through its CLI or console. We can use the supplied agent instructions once the team gives us the correct links, while keeping instance lifetime and spending bounded. [NVIDIA Brev Documentation](https://docs.nvidia.com/brev/latest/getting-started/quickstart?utm_source=chatgpt.com)
+
+Treat the **16 H100s as a shared event pool** until our allocation is confirmed. Request one reliable GPU first. Additional GPUs become useful after we measure a bottleneck.
+
+# 8. The visual experience
+
+The interface should let someone see both **what changed in the design** and **which agent caused the change**.
+
+I would build four connected views:
+
+| View | What the judge sees |
+|---|---|
+| **Chiplet board** | Exact geometry, proposed moves and measured temperatures. |
+| **Lab activity** | Which agent is proposing, reviewing, waiting for simulation or reproducing a result. |
+| **Evidence graph** | The chain from proposal to calculation, correction and acceptance. |
+| **Experiment comparison** | Isolated versus collaborative results, then base versus adapted worker results. |
+
+When an agent proposes a move, show a translucent candidate. When evaluation finishes, show the measured result. When the acceptance rules pass, update the canonical board.
+
+Every animation should come from a real recorded event with an agent ID, artifact ID and timestamp. Recorded sequences should be labeled as replays.
+
+This gives you the visible agent presence you wanted. We can show the same kinds of observable training and evaluation activity that make robotics demonstrations compelling, while using the physics tool appropriate to this engineering problem.
+
+### The PhysicsNeMo extension
+
+After the main experiment works, build a small predictor of the eight chiplet-center temperatures. Use it to order candidate evaluations, and verify every accepted candidate with the reference simulator.
+
+PhysicsNeMo provides neural-network architectures and scientific ML tooling for this kind of surrogate modeling. [NVIDIA PhysicsNeMo Framework](https://docs.nvidia.com/physicsnemo/latest/overview.html?utm_source=chatgpt.com)
+
+This extension requires a separate training/validation/test split and measured prediction errors. It should enter the main search policy only after passing its declared accuracy checks.
+
+# 9. Cross-team collaboration: ship Senti ResultCheck
+
+The fastest useful collaboration is still **Senti ResultCheck**.
+
+Another team sends:
+
+- Baseline and candidate measurements.
+- Trial or task identifiers.
+- Units and whether higher or lower is better.
+- The improvement they plan to claim.
+
+Our worker runs a deterministic check and returns:
+
+- Recomputed statistics.
+- Duplicate or missing-pair flags.
+- Arithmetic discrepancies.
+- A versioned receipt linked to the request.
+
+Its scope is explicit: **arithmetic and submitted-data consistency**. It does not certify that a model is physically correct or that a reported experiment actually happened.
+
+This service is useful to a BioNeMo team, an ALCHEMI team, a robotics team or another agent project.
+
+We’re offering a small Senti MCP service for teams preparing results.
+
+Send your baseline and candidate trial measurements, plus the improvement you intend to claim. Our agent will run an independent calculation and pairing check, then return a machine-readable receipt that your agent can use in its report.
+
+We’re looking for one team to try a complete exchange with us today. You keep your current tools and workflow; we’ll help connect the request and response through a dedicated Senti service room.
+
+The implementation needs an actual intake worker. A Senti message alone does not launch computation.
+
+Our first collaboration milestone is:
+
+**External team request → executed check → returned receipt → observable use in their project.**
+
+The event awards up to **10 additional collaboration points** for capabilities that materially strengthen other teams. One documented useful exchange gives us evidence aligned with that rule. [scienceclawhack.ai](https://scienceclawhack.ai/?utm_source=chatgpt.com)
+
+# 10. Buehler and the other sponsors
+
+Professor Buehler’s ScienceClaw + Infinite work is directly relevant: it describes independent scientific agents exchanging typed artifacts, computational lineage and unmet needs. We should acknowledge and build on that prior work. [arxiv.org](https://arxiv.org/abs/2603.14312?utm_source=chatgpt.com)
+
+Ask him or the maintainers for a short review of:
+
+- Our artifact schema and supported integration path.
+- Whether the isolated-versus-collaborative comparison is convincing.
+- The thermal metric and validation assumptions.
+- How to contribute the simulator skill and a reproducible failure/correction example.
+
+For the other sponsors, these are the jobs I would assign:
+
+| Sponsor/resource | Use in this plan |
+|---|---|
+| **Nebius** | Request the H100 allocation; retain training and runtime evidence for its sponsor submission. |
+| **Google Cloud** | CPU simulation workers, artifact storage and an available Gemini endpoint if a planned lab lacks API access. |
+| **Claude / OpenAI** | Fund the lead-agent work; retain actual model and usage records. |
+| **alphaXiv / OpenResearch** | Literature support and an experiment workspace if onboarding is quick. |
+| **Edison** | A bounded literature and scientific-assumption review. |
+| **Formlabs** | An optional physical model or fixture after the core result is stable. |
+| **MIT mentors** | Review the engineering objective, simulator scope and evaluation method. |
+| **LILA / Romix** | Explore a specific partner need that our evidence service can help with. |
+| **Stifel / E14** | Discuss the commercial value once we have a concrete demonstrated result. |
+
+A Formlabs print could make the presentation tangible. It would represent the package geometry; its material properties would not validate the simulated chip package.
+
+# 11. The build schedule
+
+Use **10 p.m. Friday** for team registration, following the newer onsite announcement. Teams need **2–5 people**.
+
+The published submission deadline is **Sunday at 1 p.m.**, with presentations at 2:30 p.m. Set our internal freeze to **Sunday noon**. All times below are Cambridge local time. [Luma](https://luma.com/scienceclaw?utm_source=chatgpt.com)
+
+| Window | Required outcome |
+|---|---|
+| **Now: first 30 minutes** | Register the human team; obtain direct resource links; request one H100 and a GB10 slot; confirm general NVIDIA submission requirements. |
+| **Friday evening** | Freeze the task contract, connect the four labs, run one proposal through simulation and independent replay. |
+| **Before stopping Friday** | Complete the NeMo train/save/reload test; recruit one external ResultCheck pilot. |
+| **Saturday morning** | Finish the event-driven interface and generate training data from verified experiments. |
+| **Saturday afternoon** | Train the worker; complete a real external-team exchange; obtain mentor feedback on the scientific comparison. |
+| **Saturday evening** | Run the frozen benchmark conditions; deploy the worker on GB10. |
+| **Sunday morning** | Finish comparisons, inspect failures, prepare evidence and record a backup demo. |
+| **Sunday noon** | Freeze code, results, slides and sponsor evidence. |
+| **Sunday 1 p.m.** | Submit. |
+
+### Workstreams
+
+For a four-person team:
+
+1. **You:** Senti integration, NVIDIA contact, partner collaboration and presentation.
+2. **Engineering owner:** thermal evaluator, constraints, metrics and reproduction.
+3. **ML owner:** NeMo, dataset, worker evaluation and GB10 deployment.
+4. **Product owner:** live interface, evidence graph and demo reliability.
+
+With two people, combine the engineering/ML responsibilities and the Senti/interface responsibilities. Agents can perform coding and research tasks, but a human should own each acceptance milestone.
+
+### Scope decisions
+
+The core build ends at **verified thermal optimization, collective comparison, worker training, GB10 deployment and one external service exchange**.
+
+PhysicsNeMo, a physical print and a separate RTL-to-layout demonstration are extensions. Each gets a specific owner and starts only after the core path is working. That preserves the larger vision while keeping the submission complete.
+
+# 12. What we show on stage
+
+Prepare a three-minute version, then adapt to the presentation time the organizers assign.
+
+**First 30 seconds:** State the problem and show the starting package, constraints and thermal objective.
+
+**Next 45 seconds:** Show one real proposal, a peer review, an evaluator response and an accepted change. Let the audience inspect the evidence behind the change.
+
+**Next 45 seconds:** Show the collective comparison at the same total budget, including failures and the conventional baseline.
+
+**Next 40 seconds:** Show the base-versus-adapted worker results and one live action served by the GB10. Identify exactly where NeMo was used.
+
+**Final 20 seconds:** Show another team consuming a Senti result and the engineering package that someone else can reproduce.
+
+Our submission should make this claim only to the extent the measurements support it:
+
+> **Independent engineering agents exchanged verified evidence, produced a measurable result under a fixed budget, and turned their successful corrections into a reusable specialist trained with NVIDIA NeMo.**
+
+**The immediate priority is the NVIDIA table: get the direct links, a working NeMo setup path and a GB10 reservation. The build then proceeds around one complete, measurable loop—from an agent’s proposed design change to a verified result, a learned worker and a useful contribution to another team.**

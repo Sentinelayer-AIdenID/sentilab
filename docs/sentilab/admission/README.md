@@ -1,0 +1,165 @@
+# Model admission (SLAB-003)
+
+The shipped `registry.json` is empty. Lead/judge model calls through the lab
+boundary are refused until a complete reviewed admission record with proven
+payer and entitlement evidence is entered. A successful probe alone never admits
+a model.
+This includes human-controlled credential provisioning and enablement, not the
+superseded per-step planning approval gate. No provider credentials or live
+provider adapter ship with this change; the conductor remains AI-off and accepts
+exact replay labs only.
+The legacy Jev intake router is a separate, existing signal-routing path, not a
+scientific lead or judge; its configuration is outside this change.
+
+## Authority and required evidence — 2026-10-31
+
+Room #56463/#56465 in Senti session `608657e4-5e60-4bb6-9353-9611b70c1c66`
+record the current authority: Warden owns routine technical selection of
+lead/judge model IDs and pinned versions, and sets prospective caps per job and
+arm. Carter's verbatim budget answer was "unlimited. I need this to win." as
+relayed with provenance by `gpt-astra-carter` in #56463 (Codex thread
+`01a18fae-1096-7293-adfd-d03f904965d9`, item
+`call_RdxZlY3BliXZaNT47Mf4CUrb`). This means no overall dollar ceiling; each
+admission record still requires explicit arm/run USD caps and prices.
+
+Secure credential provisioning and enablement remain Carter's dependency.
+Warden must obtain and record payer, route and entitlement evidence before
+completing admission.
+The registry stays empty until a complete reviewed record carries proven payer
+and entitlement evidence. Record the entitlement **name only**, never its value.
+Provisioning and enabling credentials happen outside this registry, through
+human controls. Scientific model calls still require headroom PASS and the
+SLAB-041 experiment freeze. No third-party credits may be used.
+
+The standing fourth-lab fallback is `deepseek-v4-pro` if Claude entitlement is
+absent on 2026-10-31 at 15:00 UTC. This scheduling decision is not admission:
+the fallback also needs its own complete record. No automatic admission,
+provider selection, price estimate or entitlement grant is implemented.
+
+## Registry contract
+
+`MODEL-ADMISSION.schema.json` defines the registry and probe evidence. A record
+binds provider/model/version, allowed roles, run and arm, payer, prices per
+million input/output tokens, arm/run USD caps, entitlement source, approval
+reference, approver (`Carter`), approval/expiry timestamps and successful
+model-list evidence. Monetary strings use exact nonnegative decimal USD (up to
+six fractional digits); unknown properties, missing fields and ambiguous records
+are refused. The probe provider/entitlement/model must match. Its capture must
+precede approval, and approval must be current and unexpired.
+
+All records in a run agree on payer/run cap; all records in an arm agree on its
+cap. Caps aggregate across models and roles. The checker rereads the registry
+on every check and inside each reservation's critical section. An invalid record
+fails the entire registry closed. Registry files and accounting storage are
+trusted, service-owned inputs: labs cannot write them. The `approver` field is
+an audit assertion in a human-reviewed artifact, not proof of human identity or
+a signature. There is no endpoint for labs to submit or approve these records.
+
+## Runtime integration
+
+The agreed interface is `admission.check(model_id) -> AdmissionRecord`, raising
+`NotAdmitted`, and `admission.meter(model_id, usd)`, raising `OverCap` for invalid
+amounts, exhausted caps or corrupt accounting (and `NotAdmitted` for missing
+admission). Bind the module interface in trusted service code:
+
+```python
+from sentilab_core import admission
+
+gate = admission.Admission(
+    run_id="human-approved-run", arm_id="human-approved-arm",
+    spend_path="/durable/service/model-spend.json",
+)
+with admission.bind(gate):
+    record = admission.check("human-approved-model")
+    admission.meter(record.model_id, record.ceiling_usd(1000, 500))
+```
+
+No context defaults to refusal. These example identifiers are not admissions.
+All processes and arms of a run must use the **same durable spend path**. The
+service may create an empty ledger for its first allocation only; never delete,
+replace or relocate it to restart a run. Accounting locks and atomic fsynced
+writes protect concurrent reservations. Restarting against existing storage
+retains every charge; corrupt state refuses calls. Storage integrity and
+ownership are service deployment responsibilities, as for the existing budget.
+
+## Policy publication and reservation ordering
+
+Operators must stage human-reviewed registry changes separately and install them
+with `admission.publish_registry(reviewed_path, registry_path=live_path)`. This
+helper validates and atomically publishes an already approved artifact; it does
+not grant approval or expose a lab-facing endpoint. Never edit/replace a live
+registry directly, deploy over it with a checkout, or replace its lock sidecar.
+Use stable service-owned paths shared by all workers and the operator publisher.
+Keep the reviewed versions as audit artifacts, indexed by their policy hash.
+
+A reservation takes the spend ledger lock, then `<registry_path>.lock`, and
+holds both until the durable spend write finishes. Publication takes that same
+registry lock. Different runs with different spend ledgers still serialize on
+the common registry lock. After both lock waits, the reservation rereads the
+registry, validates entitlement and expiry, and compares the complete current
+record against the adapter's quote (including route, allowed roles, payer,
+prices and caps). It checks aggregate spend and expiry again before committing.
+The SHA256 of the canonical complete registry is stored as `policy_sha256` on
+both the immutable quoted record and every new reservation. Canonical bytes use
+`sentilab_core.envelope.canonical`; even changes to probe evidence invalidate an
+outstanding quote. Old ledger rows without hashes remain charged; no historical
+policy evidence is invented for them.
+
+The successful durable reservation write is the commit point. A publication
+that completes first applies to the waiting request: revoked/expired admission
+or any changed quote refuses it without a reservation or transport call. A
+request committed first may proceed to transport or finish in flight under its
+pinned policy even if publication revokes it or its admission expires afterward.
+Revocation stops subsequent reservations; it does not cancel committed work or
+refund charges. Failed, timed-out and cancelled committed requests also retain
+their full reservation. A new request always needs a fresh check/reservation.
+
+## Transport boundary
+
+Use `sentilab_core.model_calls.AdmittedLab` for live propose (lead), review
+(judge), and repair (lead). It checks the configured provider/version and role,
+then reserves the entire input/output token ceiling at the admitted prices
+before invoking its transport. A changed quote is refused. Reservations remain
+charged on failure, timeout or cancellation. `Dispatcher` accepts only exact
+`ReplayLab` (no model I/O) or `AdmittedLab` instances and reports
+`model_not_admitted` / `model_cost_cap` refusals.
+
+A future **trusted service transport** must implement the pinned route, total
+input/output ceilings including prompt/tool overhead, no hidden billable costs,
+and at most one provider request (no automatic retries). The transport receives
+an immutable `ModelCall` with the admitted record, operation, JSON request and
+ceilings. This is an integration contract, not a sandbox for arbitrary Python.
+No production transport, service enablement, paid request or model probe has
+been added. Provider-specific enforcement must be reviewed before connecting a
+transport; the existing conductor's live-model prohibition remains in place.
+
+## Zero-inference evidence recorder
+
+`python -m sentilab_core.probe --provider NAME --entitlement-source NAME
+--output PATH` reads at most 1 MiB of JSON from stdin. Pipe only the output of an
+**existing configured CLI** whose auth/model-list action is confirmed free;
+never use a completion to check a credential. No such CLI is run by the recorder.
+
+The normalized input contract is `{"status_code":200,"data":[{"id":"model-id"}]}`.
+This is a local recorder format, not a claim about any provider's API. Adapt an
+existing CLI's stdout in memory if necessary; never save raw output. Explicit
+failed HTTP status codes can be recorded with an empty list. The recorder writes
+only provider, entitlement-source name, capture time, status code and model IDs;
+it drops headers, error text and extra response fields and rejects malformed or
+credential-like names. No raw diagnostics are echoed on failure. Inspect every
+artifact before committing; no recorder can establish that an arbitrary name
+chosen by a caller is non-secret. Failed/empty evidence cannot satisfy admission.
+
+## Local proof (no model or native solver calls)
+
+```
+python -m unittest -q sentilab_core.test_admission sentilab_core.test_model_calls sentilab_core.test_probe sentilab_core.test_labs
+```
+
+The real adapter is driven by in-memory transport fixtures. Tests prove refusal
+before transport, role/route binding, pre-call pricing, shared caps, concurrent
+reservations, restart persistence, quote changes, and retained charges after
+failure/cancellation. Real contended `flock` tests cover revocation, expiry,
+quote/route/role/payer/cap changes while waiting, publication blocked by an
+uncommitted reservation, and completion of already committed work after
+revocation. The CLI tests launch the shipped recorder as a subprocess.
