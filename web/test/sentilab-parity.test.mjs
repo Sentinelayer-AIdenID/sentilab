@@ -6,8 +6,9 @@
 //     every chain (V1-V11, V13-V15) in every delivery order, the live timelines (V16, V17), the transport caps (V18),
 //     every input check (V12), mode, hashing and canonical cases. It never canonicalizes, hashes or verifies input
 //     that failed the input checks (instrumented counters);
-//   - paging.mjs (the WebCrypto port of the v0.6 paging reference) gives the recorded trace for every v0.6 scenario,
-//     C1-C6 and C8-C14, and the same bytes-to-rows, cursor-hash and verification answers;
+//   - paging.mjs (the WebCrypto port of the v0.6.1 paging reference) gives the recorded trace for every scenario,
+//     C1-C6 and C8-C15, the recorded label for every rule-5 label case, and the same bytes-to-rows, cursor-hash and
+//     verification answers;
 //   - the production pins hold only the service key (never a derivable test key), and the demo verifies only under TEST keys.
 // The originals are the repo's executable contracts in contracts/ (hashes checked below and in contracts/HASHES.txt).
 import { test } from "node:test";
@@ -20,7 +21,7 @@ import { fileURLToPath } from "node:url";
 import { project as refProject } from "../../contracts/contract-0.2/evidence-projection.mjs";
 import { canonical as refCanonical } from "../../contracts/contract-0.2/resultcheck.mjs";
 import * as ref from "../../contracts/view-envelope-v0.5/view-envelope.mjs";
-import * as refPaging from "../../contracts/view-envelope-v0.6/paging.mjs";
+import * as refPaging from "../../contracts/view-envelope-v0.6.1/paging.mjs";
 import { project } from "../public/sentilab/evidence-projection.mjs";
 import { canonical } from "../public/sentilab/canonical.mjs";
 import * as core from "../public/sentilab/view-core.mjs";
@@ -39,7 +40,7 @@ const bytes = (text) => Buffer.byteLength(text, "utf8");
 const enc = (text) => new TextEncoder().encode(text);
 const evidenceVectors = JSON.parse(contract("contract-0.2", "vectors-evidence.json")).vectors;
 const viewFile = JSON.parse(contract("view-envelope-v0.5", "vectors-view.json"));
-const pagingFile = JSON.parse(contract("view-envelope-v0.6", "vectors-paging.json"));
+const pagingFile = JSON.parse(contract("view-envelope-v0.6.1", "vectors-paging.json"));
 
 // ── the contracts are what their hashes say they are ────────────────────────────────────────────────────────
 const PINNED = {
@@ -52,13 +53,16 @@ const PINNED = {
   "view-envelope-v0.6/VIEW-ENVELOPE.md": "afab6f10c9eba6da5049368780bfea0f6adacdf19a370d983029fcbd4e0a5106",
   "view-envelope-v0.6/paging.mjs": "7e875920117e5a34b49ba37d33028b8577a018d5c72ed847959d929f72cd16b7",
   "view-envelope-v0.6/vectors-paging.json": "2f70c22799edaca88b8399bbc8fa084e81dbd8ac5f1ad68a546b86506ea6302b",
+  "view-envelope-v0.6.1/VIEW-ENVELOPE.md": "cac3f139543821e3c94b98cd4060efdd2181e3d204476166ebdccaa41bb2fce4",
+  "view-envelope-v0.6.1/paging.mjs": "1c1bdd485c15df6ee90169037476ff78129fa3966dbf98475f04d727ed171534",
+  "view-envelope-v0.6.1/vectors-paging.json": "161ba908bc887e710a3a6448f4239c2c865c1b706155957a5207d4e7a5838c94",
 };
 test("the contract files are the hashed originals", () => {
   for (const [path, want] of Object.entries(PINNED)) assert.equal(sha(contract(...path.split("/"))), want, path);
   assert.equal(viewFile.contract_sha256, PINNED["view-envelope-v0.5/VIEW-ENVELOPE.md"], "vectors are for VIEW ENVELOPE v0.5");
   assert.equal(core.VERSION, ref.VERSION);
   assert.equal(core.VERSION, "view-envelope/0.5");
-  assert.equal(pagingFile.contract_sha256, PINNED["view-envelope-v0.6/VIEW-ENVELOPE.md"], "paging vectors are for VIEW ENVELOPE v0.6");
+  assert.equal(pagingFile.contract_sha256, PINNED["view-envelope-v0.6.1/VIEW-ENVELOPE.md"], "paging vectors are for VIEW ENVELOPE v0.6.1");
 });
 test("the browser projection is aneta's evidence-projection.mjs byte for byte", () => {
   assert.equal(sha(read("..", "public", "sentilab", "evidence-projection.mjs")), PINNED["contract-0.2/evidence-projection.mjs"]);
@@ -632,14 +636,15 @@ async function runScenarioBrowser(spec) {
       fetches.push({ request: req, response: response && { status: response.status, headers: response.headers, body_bytes: response.bodyBytes.length, body_rows: runLengths(bodyIds) }, outcome: result.outcome, new_rows: result.newRows.length });
       if (result.outcome !== "ok" || !state.has_more) break;
     }
-    const { verification, K } = await paging.verifyRows(state, PAGING_OPTIONS);
+    const { verification, K, frozen } = await paging.verifyRows(state, PAGING_OPTIONS);
+    assert.equal(frozen, verification.frozen);
     const row_counts = {};
     const rejected = {};
     for (const row of verification.rows) {
       row_counts[row.status] = (row_counts[row.status] ?? 0) + 1;
       if (["malformed", "oversize"].includes(row.status)) rejected[row.reasons.join("+")] = (rejected[row.reasons.join("+")] ?? 0) + 1;
     }
-    trace.push({ t_s: poll.t_s, fetches, after: summary(state), K, board: verification.label, label: paging.liveLabel(state, tracker, nowMs, K), row_counts, rejected });
+    trace.push({ t_s: poll.t_s, fetches, after: summary(state), K, board: verification.label, label: paging.liveLabel(state, tracker, nowMs, K, frozen), row_counts, rejected });
   }
   return { trace, transitions, state };
 }
@@ -703,6 +708,7 @@ for (const spec of pagingFile.scenarios) {
       if (after.degraded) assert.equal(paging.request(after), null, "terminal: no further request");
       if (before.cursor > 0) assert.equal(req.cursor_hash, rawHash(before.rows));
     }
+    for (const step of run.trace) assert.ok(!(step.label.startsWith("LIVE") && step.board !== null), `t = ${step.t_s} s: ${step.label} next to "${step.board}"`);
     // The full verification of the rows held equals the reference's over the same raw rows.
     const mine = (await paging.verifyRows(run.state, PAGING_OPTIONS)).verification;
     assert.ok(same(refFields(mine), refPaging.verifyRows({ ...run.state }, REF_PAGING_OPTIONS).verification));
@@ -715,20 +721,33 @@ test("C11 on the bundled demo: K 44, then a late signed seq 10 one second later 
   const options = { runId: DEMO_RUN.run_id, pins: testPins, keys: testKeys };
   const tracker = core.progressTracker();
   let state = paging.initialState(DEMO_RUN.run_id);
+  let lastFrozen = false;
   const poll = async (log, nowMs) => {
     const result = await paging.step(state, refPaging.servePage(log, paging.request(state)), nowMs);
     state = result.state;
-    const { K } = await paging.verifyRows(state, options);
+    const { K, frozen } = await paging.verifyRows(state, options);
     tracker.poll({ nowMs, ok: result.outcome === "ok", K });
+    lastFrozen = frozen;
     return K;
   };
   assert.equal(await poll(rows, BASE_MS), 44);
-  assert.equal(paging.liveLabel(state, tracker, BASE_MS, 44), "LIVE · progress 0 s ago");
+  assert.equal(paging.liveLabel(state, tracker, BASE_MS, 44, lastFrozen), "LIVE · progress 0 s ago");
   assert.equal(await poll([...rows, late], BASE_MS + 1000), 9);
-  assert.equal(paging.liveLabel(state, tracker, BASE_MS + 1000, 9), "STALE · chain broken");
-  assert.equal(refPaging.liveLabel(state, tracker, BASE_MS + 1000, 9), "STALE · chain broken", "the reference label agrees");
+  assert.equal(paging.liveLabel(state, tracker, BASE_MS + 1000, 9, lastFrozen), "STALE · chain broken");
+  assert.equal(refPaging.liveLabel(state, tracker, BASE_MS + 1000, 9, lastFrozen), "STALE · chain broken", "the reference label agrees");
 });
 
+for (const spec of pagingFile.label_cases) {
+  test(`v0.6.1 label: ${spec.name}`, () => {
+    const tracker = core.progressTracker();
+    tracker.poll({ nowMs: BASE_MS, ok: true, K: spec.high, received: spec.high });
+    tracker.poll({ nowMs: BASE_MS + spec.now_s * 1000, ok: true, K: spec.K, received: 0 });
+    const state = { ...paging.initialState("run-v1"), failure: spec.failure };
+    const nowMs = BASE_MS + spec.now_s * 1000;
+    assert.equal(paging.liveLabel(state, tracker, nowMs, spec.K, spec.frozen), spec.expect);
+    assert.equal(paging.liveLabel(state, tracker, nowMs, spec.K, spec.frozen), refPaging.liveLabel(state, tracker, nowMs, spec.K, spec.frozen));
+  });
+}
 test("v0.6 (amended): a replay file's last line may lack its LF and still counts as a row, as in the reference", async () => {
   const full = refPaging.joinRows(expand(LOGS.v1).map(bytesOf));
   const mine = await paging.verifyReplayBytes(full.subarray(0, full.length - 1), PAGING_OPTIONS);
