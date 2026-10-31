@@ -30,6 +30,11 @@ from sundai_controller.controller import Controller, Ed25519PrivateKey
 from sundai_controller.experiment import OPERATORS, _candidate, _shared_designs, _signal_portfolio
 
 TAP_INITIAL_CENTERS = ((25, 25), (40, 40), (8, 9), (8, 25), (8, 41), (41, 15))
+MICRO150_INITIAL_CENTERS = ((10, 10), (28, 10), (10, 28), (28, 28),
+                            (10, 42), (28, 42), (42, 10), (42, 28))
+V4_SCHEMA = 'slab-039-prereg-v4'
+REPRODUCTION_ABS_TOLERANCE_C = 1e-6
+V4_DEADLINE = datetime(2026, 10, 31, 12, tzinfo=timezone.utc)
 
 
 def _validate_mesh_error(value: float | None) -> None:
@@ -49,13 +54,16 @@ def _compute_prereg_digest(path: str | Path) -> str:
 
 
 def _parse_prereg(path: str | Path) -> dict:
-    """Load and validate the preregistration file (accepts v1, v2, v3)."""
+    """Load historical v1-v3 or the fixed prospective micro150 v4 schedule."""
     prereg_path = Path(path)
     if not prereg_path.is_file():
         raise FileNotFoundError(f"prereg file not found: {prereg_path}")
     with open(prereg_path, encoding="utf-8") as fh:
         prereg = json.load(fh)
     schema = prereg.get("schema")
+    if schema == V4_SCHEMA:
+        _validate_v4(prereg)
+        return prereg
     if schema not in ("slab-039-prereg-v1", "slab-039-prereg-v2", "slab-039-prereg-v3"):
         raise ValueError(f"prereg must have schema slab-039-prereg-v1, v2, or v3, got: {schema}")
     if prereg.get("fixture") != "ascend910":
@@ -63,6 +71,22 @@ def _parse_prereg(path: str | Path) -> dict:
     if prereg.get("rule", {}).get("k") != 5:
         raise ValueError("prereg k must be 5")
     return prereg
+
+
+def _validate_v4(prereg):
+    """The prospective schedule cannot be weakened by editing its input file."""
+    cheap, long = prereg['reducer_methods'], prereg['long_sa']
+    if (prereg['fixture'] != 'micro150' or prereg['grid'] != 32 or
+            prereg['rule']['k'] != 5 or prereg['mesh_error']['micro150']['e_c'] != 0.79 or
+            prereg['reproduction']['absolute_tolerance_c'] != REPRODUCTION_ABS_TOLERANCE_C or
+            cheap['methods'] != ['random', 'greedy', 'simulated_annealing'] or
+            cheap['seeds'] != list(range(8)) or
+            cheap['search_evaluations_per_method'] != 28 or
+            cheap['reproduction_evaluations_per_method'] != 4 or
+            long['seeds'] != [100, 101, 102, 103] or
+            long['max_evaluations_per_restart'] != 1000 or
+            long['reproduction_evaluations_per_restart'] != 1):
+        raise ValueError('v4 requires the fixed micro150 schedule, discrepancy and tolerance')
 
 
 def _gate_pass(cheap_median: float, best: float, mesh_error: float, k: int = 5) -> tuple[bool, float]:
@@ -141,20 +165,46 @@ class SolveBudget:
             self.lock.close()
             raise
         self.fixture = fixture
+        self.v4 = prereg.get('schema') == V4_SCHEMA
+        if self.v4 and fixture != 'micro150':
+            self.lock.close()
+            raise ValueError('v4 is prospective micro150 only')
         allocation = prereg.get('allocation', {})
         per_fixture = allocation.get('per_fixture', {})
         self.solve_limit = min(9700, allocation.get('headroom_solve_limit', 9700))
         self.fixture_limit = min(4768, per_fixture.get('total_solves', 4768))
-        self.cpu_limit = min(48 * 60, allocation.get('headroom_cpu_minutes', 48) * 60)
-        self.fixture_cpu_limit = min(24 * 60, per_fixture.get('cpu_minutes', 24) * 60)
+        total_cpu_minutes, fixture_cpu_minutes = (72, 48) if self.v4 else (48, 24)
+        self.cpu_limit = min(total_cpu_minutes * 60,
+                             allocation.get('headroom_cpu_minutes', total_cpu_minutes) * 60)
+        self.fixture_cpu_limit = min(fixture_cpu_minutes * 60,
+                                     per_fixture.get('cpu_minutes', fixture_cpu_minutes) * 60)
+        self.aggregate_limit = min(10000, allocation.get('aggregate_solve_limit', 10000))
+        self.aggregate_cpu_limit = min(84 * 60, allocation.get('aggregate_cpu_minutes', 84) * 60)
         self.clock = prereg.get('clock', {})
+        self.wall_limit = min(90 * 60, self.clock.get('solving_wall_minutes', 90) * 60)
         self.last_cpu = _cpu_seconds()
+        self.last_wall = time.perf_counter()
         self.state = (json.loads(self.path.read_text()) if self.path.exists() else
                       {'total_calls': 0, 'cpu_seconds': 0.0, 'fixtures': {}, 'active': None})
         if self.state['active'] is not None:
             self.lock.close()
             raise RuntimeError('unreconciled oracle reservation in spend ledger')
+        if self.v4:
+            prior = self.state['fixtures'].get('ascend910', {})
+            if (prior.get('calls', 0) < 2650 or prior.get('cpu_seconds', 0) < 1440.294565 or
+                    self.state['total_calls'] < sum(e['calls'] for e in self.state['fixtures'].values()) or
+                    self.state['cpu_seconds'] + 1e-9 < sum(e['cpu_seconds'] for e in self.state['fixtures'].values()) or
+                    self.state.get('solving_wall_seconds', 0) < 1525.852038):
+                self.lock.close()
+                raise ValueError('v4 requires the retained cumulative spend; prior charges cannot be reset')
         self.entry = self.state['fixtures'].setdefault(fixture, {'calls': 0, 'cpu_seconds': 0.0})
+        if self.v4:
+            # Reserve all non-headroom allocation, even when measured historical
+            # costs are unavailable. Actual charges may increase, never erase it.
+            self.state.setdefault('non_headroom', {})
+            self.state.setdefault('solving_wall_seconds', 0.0)
+            self.entry.setdefault('solving_wall_seconds', 0.0)
+            self.state.setdefault('overshoot', {})
         self.reason = None
 
     def checkpoint(self):
@@ -163,6 +213,21 @@ class SolveBudget:
         self.last_cpu = now
         self.state['cpu_seconds'] += elapsed
         self.entry['cpu_seconds'] += elapsed
+        if self.v4:
+            wall = time.perf_counter()
+            elapsed_wall = max(0.0, wall - self.last_wall)
+            self.last_wall = wall
+            self.state['solving_wall_seconds'] += elapsed_wall
+            self.entry['solving_wall_seconds'] += elapsed_wall
+            other = self.state['non_headroom']
+            self.state['aggregate_calls_charged'] = self.state['total_calls'] + max(300, other.get('calls', 0))
+            self.state['aggregate_cpu_seconds_charged'] = self.state['cpu_seconds'] + max(720, other.get('cpu_seconds', 0))
+            for label, spent, cap in (
+                    ('headroom_cpu_seconds', self.state['cpu_seconds'], self.cpu_limit),
+                    ('fixture_cpu_seconds', self.entry['cpu_seconds'], self.fixture_cpu_limit),
+                    ('aggregate_cpu_seconds', self.state['aggregate_cpu_seconds_charged'], self.aggregate_cpu_limit),
+                    ('solving_wall_seconds', self.state['solving_wall_seconds'], self.wall_limit)):
+                self.state['overshoot'][label] = max(self.state['overshoot'].get(label, 0.0), spent - cap, 0.0)
         _write_json(self.path, self.state)
 
     def check(self):
@@ -171,8 +236,12 @@ class SolveBudget:
         reason = self.reason
         if self.clock.get('released') and now < datetime.fromisoformat(self.clock['released']):
             reason = 'before_release'
+        elif self.v4 and now >= V4_DEADLINE:
+            reason = 'deadline'
         elif self.clock.get('deadline') and now >= datetime.fromisoformat(self.clock['deadline']):
             reason = 'deadline'
+        elif self.v4 and self.state['solving_wall_seconds'] >= self.wall_limit:
+            reason = 'solving_wall_cap'
         elif self.state['cpu_seconds'] >= self.cpu_limit:
             reason = 'total_cpu_cap'
         elif self.entry['cpu_seconds'] >= self.fixture_cpu_limit:
@@ -181,6 +250,10 @@ class SolveBudget:
             reason = 'total_solve_cap'
         elif self.entry['calls'] >= self.fixture_limit:
             reason = 'fixture_solve_cap'
+        elif self.v4 and self.state['aggregate_calls_charged'] >= self.aggregate_limit:
+            reason = 'aggregate_solve_cap'
+        elif self.v4 and self.state['aggregate_cpu_seconds_charged'] >= self.aggregate_cpu_limit:
+            reason = 'aggregate_cpu_cap'
         if reason:
             self.reason = reason
             raise BudgetExhausted(reason)
@@ -195,6 +268,12 @@ class SolveBudget:
     def finish(self):
         self.state['active'] = None
         self.checkpoint()
+        if self.v4:
+            deadline = min(V4_DEADLINE, datetime.fromisoformat(self.clock.get('deadline', V4_DEADLINE.isoformat())))
+            self.state['overshoot']['deadline_seconds'] = max(
+                self.state['overshoot'].get('deadline_seconds', 0.0),
+                (datetime.now(timezone.utc) - deadline).total_seconds(), 0.0)
+            _write_json(self.path, self.state)
 
     def close(self):
         try:
@@ -222,6 +301,9 @@ class _LaneOracle:
             self.stop_reason = 'restart_cpu_cap'
         if self.stop_reason:
             raise BudgetExhausted(self.stop_reason)
+        if self.budget.v4:
+            design.check()
+            self.oracle.centers_for(design)
         try:
             self.budget.reserve(design, self.lane)
         except BudgetExhausted as exc:
@@ -260,6 +342,8 @@ async def _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs,
     controller.bind_lane(lane_id, agent_id)
     init_evaluations = search_count = noop_evaluations = 0
     reproductions = []
+    frozen_design = frozen_result = None
+    reproduction_failure = None
     counts = {op: 0 for op in OPERATORS}
     rewards = {op: 0.0 for op in OPERATORS}
     stagnation = 0
@@ -323,10 +407,25 @@ async def _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs,
         # Four fresh oracle calls of the frozen search winner, not cache reads
         # and not more proposals. The same allocation admits each call.
         winner = counted.best_design
+        if budget.v4:
+            frozen_design, frozen_result = winner, counted.best_result
         for _ in range(reproduction_evaluations):
-            reproduced = await counted(winner)
-            reproductions.append({'design_hash': winner.hash,
-                                  'temperature_c': reproduced.maximum_temperature_c})
+            try:
+                reproduced = await counted(winner)
+            except (TypeError, ValueError) as exc:
+                if not budget.v4:
+                    raise
+                reproduction_failure = str(exc)
+                break
+            record = {'design_hash': winner.hash, 'temperature_c': reproduced.maximum_temperature_c}
+            if budget.v4:
+                delta = abs(reproduced.maximum_temperature_c - frozen_result.maximum_temperature_c)
+                record.update(solver_version=reproduced.solver_version, problem_hash=reproduced.problem_hash,
+                              absolute_difference_c=delta,
+                              agrees=(delta <= REPRODUCTION_ABS_TOLERANCE_C and
+                                      reproduced.solver_version == frozen_result.solver_version and
+                                      reproduced.problem_hash == frozen_result.problem_hash))
+            reproductions.append(record)
     except BudgetExhausted:
         if not init_evaluations:
             init_evaluations = counted.calls
@@ -334,10 +433,11 @@ async def _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs,
             search_count = min(counted.calls, evaluations)
     finally:
         controller.log.close()
-    best = counted.best_result
-    return dict(seed=seed, best_temperature_c=None if best is None else best.maximum_temperature_c,
-                best_design_hash=None if best is None else counted.best_design.hash,
-                best_design=None if best is None else asdict(counted.best_design),
+    best = frozen_result if frozen_result is not None else counted.best_result
+    best_design = frozen_design if frozen_design is not None else counted.best_design
+    result = dict(seed=seed, best_temperature_c=None if best is None else best.maximum_temperature_c,
+                best_design_hash=None if best is None else best_design.hash,
+                best_design=None if best is None else asdict(best_design),
                 current_design_hash=current_design.hash,
                 evaluation_count=counted.calls, evaluation_admissions=controller.calls,
                 search_evaluation_count=search_count, reproduction_evaluation_count=len(reproductions),
@@ -348,6 +448,15 @@ async def _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs,
                 complete=counted.calls == evaluations + reproduction_evaluations,
                 solver_version=None if best is None else best.solver_version,
                 problem_hash=None if best is None else best.problem_hash)
+    if budget.v4:
+        result.update(winner_frozen=frozen_result is not None,
+                      winner_verified=(frozen_result is not None and reproduction_evaluations > 0 and
+                                       len(reproductions) == reproduction_evaluations and
+                                       all(r['agrees'] for r in reproductions) and
+                                       reproduction_failure is None),
+                      reproduction_failure=reproduction_failure)
+        result['complete'] = result['complete'] and result['winner_verified']
+    return result
 
 
 async def _run_reducer_lane(initial, oracle, lane_id, seed, evaluations, shared_designs, run_id,
@@ -363,8 +472,47 @@ async def _run_diagnostic_lane(initial, oracle, lane_id, seed, evaluations, shar
 
 async def _run_long_sa(initial, oracle, seed, max_evaluations, cpu_timeout_s, shared_designs, run_id,
                        *, budget):
-    return await _run_lane(initial, oracle, 'simulated_annealing', seed, max_evaluations,
-                           shared_designs, run_id, budget=budget, cpu_timeout_s=cpu_timeout_s)
+    reproduction = 1 if budget.v4 else 0
+    return await _run_lane(initial, oracle, 'simulated_annealing', seed, max_evaluations - reproduction,
+                           shared_designs, run_id, budget=budget, cpu_timeout_s=cpu_timeout_s,
+                           reproduction_evaluations=reproduction)
+
+
+def _freeze_cheap_baseline(results):
+    expected = {(method, seed) for method in ('random', 'greedy', 'simulated_annealing')
+                for seed in range(8)}
+    identities = {(r['solver_version'], r['problem_hash']) for r in results}
+    complete = (len(results) == 24 and
+                {(r['method'], r['prereg_seed']) for r in results} == expected and
+                len(identities) == 1 and
+                all(r['complete'] and r['winner_verified'] and
+                    r['search_evaluation_count'] == 28 and r['reproduction_evaluation_count'] == 4
+                    for r in results))
+    if not complete:
+        return None
+    medians = {method: statistics.median(r['best_temperature_c'] for r in results if r['method'] == method)
+               for method in ('random', 'greedy', 'simulated_annealing')}
+    return {'cheap_median_c': min(medians.values()), 'method_medians_c': medians,
+            'winners': results, 'solver_version': results[0]['solver_version'],
+            'problem_hash': results[0]['problem_hash'], 'reproductions': 96,
+            'absolute_tolerance_c': REPRODUCTION_ABS_TOLERANCE_C}
+
+
+def _v4_verdict(baseline, references):
+    """Only a completed C and a growing set of verified witnesses can certify PASS."""
+    if baseline is None:
+        return 'INCONCLUSIVE', None, None, [], False
+    eligible = [r for r in baseline['winners'] + references
+                if r['winner_verified'] and r['solver_version'] == baseline['solver_version'] and
+                r['problem_hash'] == baseline['problem_hash']]
+    reference_complete = (len(references) == 4 and {r['seed'] for r in references} == {100, 101, 102, 103} and
+                          all(r['complete'] and r['evaluation_count'] == 1000 and r in eligible
+                              for r in references))
+    best = min((r['best_temperature_c'] for r in eligible), default=None)
+    gap = None if best is None else baseline['cheap_median_c'] - best
+    verdict = ('PASS' if gap is not None and gap >= 5 * 0.79 else
+               'FAIL' if reference_complete else 'INCONCLUSIVE')
+    return verdict, best, gap, eligible, reference_complete
 
 
 async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str | Path,
@@ -374,9 +522,12 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
                        budget_path: str | Path | None = None) -> dict:
     """Run reducers, long SA, then optional diagnostics under one durable budget."""
     prereg = _parse_prereg(prereg_path)
+    v4 = prereg['schema'] == V4_SCHEMA
     if fixture != prereg['fixture']:
         raise ValueError('fixture differs from preregistration')
     if j32_values is not None or j64_values is not None:
+        if v4:
+            raise ValueError('v4 uses fixed PR 18 sample discrepancy, not dynamic mesh error')
         _, _, mesh_error = _gate_pass_dynamic(0, 0, j32_values, j64_values)
     _validate_mesh_error(mesh_error)
     declared_mesh = prereg.get('mesh_error', {}).get(fixture)
@@ -394,7 +545,9 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
     if (not seeds or not long_seeds or not reducer_methods or evaluations < 1 or
             max_evals < 1 or reproduction_evals < 0):
         raise ValueError('empty or invalid declared evaluation schedule')
-    output_dir = Path(output_dir) if output_dir is not None else Path(prereg_path).parent
+    output_dir = Path(output_dir) if output_dir is not None else Path(prereg_path).parent / ('micro150-v4' if v4 else '.')
+    if v4 and output_dir.resolve() == Path(prereg_path).parent.resolve():
+        raise ValueError('v4 output must not overwrite the retained v3 evidence directory')
     output_dir.mkdir(parents=True, exist_ok=True)
     budget = SolveBudget(budget_path or Path(prereg_path).parent / 'SPEND.json', fixture, prereg)
     started_at = datetime.now(timezone.utc).isoformat()
@@ -405,10 +558,14 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
     oracle = None
     all_reducer_results, all_diag_results, long_sa_results = [], [], []
     diagnostic_skip_reason = None
+    baseline = None
     try:
         grid = prereg['grid']
         oracle = HotSpotOracle(grid, grid, fixture=fixture)
-        initial = oracle.design_from_centers(TAP_INITIAL_CENTERS)
+        initial = oracle.design_from_centers(MICRO150_INITIAL_CENTERS if v4 else TAP_INITIAL_CENTERS)
+        if v4:
+            initial.check()
+            oracle.centers_for(initial)
         def shared_initials(seed, count):
             try:
                 budget.check()
@@ -427,6 +584,11 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
                 result.update(method=method, category='reducer', prereg_seed=seed)
                 all_reducer_results.append(result)
 
+        if v4:
+            baseline = _freeze_cheap_baseline(all_reducer_results)
+            if baseline is not None:
+                _write_json(output_dir / 'CHEAP_BASELINE.json', baseline)
+
         # All four declared reference restarts take precedence over diagnostics.
         for seed in long_seeds:
             shared_designs = shared_initials(seed, max_evals)
@@ -436,7 +598,9 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
             long_sa_results.append(result)
 
         declared_complete = all(r['complete'] for r in all_reducer_results + long_sa_results)
-        if declared_complete:
+        if v4:
+            diagnostic_skip_reason = 'v4 reserves all 4768 calls for declared lanes and witness verification'
+        elif declared_complete:
             for method in diag_methods:
                 for seed in seeds:
                     try:
@@ -487,6 +651,10 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
     long_sa_exhausted = any(r['stop_reason'] is not None for r in long_sa_results)
     long_sa_partial = any(not r['complete'] for r in long_sa_results)
     verdict = ('INCONCLUSIVE' if not declared_complete else 'PASS' if numeric_pass else 'FAIL')
+    if v4:
+        verdict, best, gap, eligible, reference_complete = _v4_verdict(baseline, long_sa_results)
+        cheap_median = None if baseline is None else baseline['cheap_median_c']
+        numeric_pass = gap is not None and gap >= 5 * 0.79
     reducer_bests = [r['best_temperature_c'] for r in all_reducer_results if r['best_temperature_c'] is not None]
     result = {
         'schema': 'slab-039-result-v3', 'prereg_schema': prereg['schema'],
@@ -511,6 +679,14 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
         'cpu_accounting': 'getrusage SELF+CHILDREN; workers reaped after every call; includes startup',
         'search_evaluations': evaluations, 'reproduction_evaluations': reproduction_evals,
     }
+    if v4:
+        result.update(schema='slab-039-result-v4', cheap_baseline_complete=baseline is not None,
+                      cheap_baseline_sha256=None if baseline is None else _compute_prereg_digest(output_dir / 'CHEAP_BASELINE.json'),
+                      reference_complete=reference_complete, eligible_reference_witnesses=eligible,
+                      mesh_error_source='PR #18 fixed 24-layout sample discrepancy',
+                      certification_scope='preregistered observed headroom criterion only; not a universal numerical error bound',
+                      paid_scientific_model_authorized=False,
+                      reproduction_absolute_tolerance_c=REPRODUCTION_ABS_TOLERANCE_C)
     _write_json(output_dir / 'RESULT.json', result)
     _write_report(output_dir / 'REPORT.md', result, prereg, cheap_cfg)
     return result
@@ -537,6 +713,7 @@ def _write_report(path: Path, result: dict, prereg: dict, cheap_cfg: dict) -> No
     def number(value):
         return 'unavailable' if value is None else f'{value:.6f}'
 
+    v4 = prereg['schema'] == V4_SCHEMA
     lines = [f"# SLAB-039 Headroom Report: {result['fixture']}", '',
              f"**Verdict: {result['verdict']}**", '',
              f"Run: {result['started_at']} to {result['finished_at']}.",
@@ -565,26 +742,40 @@ def _write_report(path: Path, result: dict, prereg: dict, cheap_cfg: dict) -> No
               f"Actual oracle calls this run: {result['aggregate_evaluations']}; "
               f"CPU: {result['cpu_seconds']:.3f} seconds ({result['cpu_seconds']/60:.3f} minutes).",
               f"Accounting: {result['cpu_accounting']}.",
-              'The durable ledger reserves and fsyncs before every call, including initialization and reproduction. '
-              'Caps are 4,768 calls / 24 CPU minutes per fixture and 9,700 calls / 48 CPU minutes across fixtures. '
+              'The durable ledger reserves and fsyncs before every call, including initialization and reproduction. ' +
+              ('Caps: micro150 4,768 calls / 48 CPU minutes; headroom 9,700 / 72; aggregate 10,000 / 84. '
+               'Cumulative solving wall cap: 90 minutes; admission deadline: 2026-10-31 12:00Z. '
+               if v4 else 'Caps are 4,768 calls / 24 CPU minutes per fixture and 9,700 calls / 48 CPU minutes across fixtures. ') +
               'An in-flight evaluation may cross the CPU limit; the next call is refused. '
               'A crash with an outstanding reservation fails closed pending reconciliation.', '',
               f"Extra diagnostics: {len(result['extra_diagnostic_results'])} runs; "
               f"skip reason: {result['diagnostic_skip_reason'] or 'none'}. "
               'Diagnostics run only after all declared runs and cannot change the reducer median.', '']
     if result['verdict'] == 'INCONCLUSIVE':
-        lines.append('At least one declared run did not complete. This result cannot establish protocol PASS or FAIL.')
+        lines.append('Required completion or witness verification is missing. This result cannot establish protocol PASS or FAIL.')
     elif result['verdict'] == 'FAIL':
         lines.append('The declared search did not establish headroom at this mesh error; no LLM lane is authorized by this result.')
     else:
         lines.append('The declared search established the preregistered headroom threshold.')
-    lines += ['', 'micro150 was not run; its own mesh error is still required.', '']
+    if v4:
+        lines += ['', 'e = 0.79 C is the fixed PR #18 24-layout sample discrepancy, not a universal numerical error bound. '
+                  'The 3.95 C threshold certifies only this preregistered observed headroom criterion. '
+                  'No paid scientific model release is authorized by this result.',
+                  f"Frozen cheap baseline complete: {result['cheap_baseline_complete']}; "
+                  f"reference complete: {result['reference_complete']}. "
+                  'Only feasible winners independently reproduced by fresh same-solver/problem calls within absolute 1e-6 C qualify. '
+                  'Each long-SA restart reserves its 1,000th call for reproduction after 999 search calls.',
+                  'Already-admitted calls may finish across CPU, wall or deadline caps; overshoot is retained in SPEND. '
+                  'Unknown historical CPU and unresolved CI allocation remain separate from known charges. '
+                  'Ascend910 remains INCONCLUSIVE under v3.', '']
+    else:
+        lines += ['', 'micro150 was not run; its own mesh error is still required.', '']
     path.write_text('\n'.join(lines), encoding='utf-8', newline='\n')
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--fixture", choices=("ascend910",), default="ascend910",
+    parser.add_argument("--fixture", choices=("ascend910", "micro150"), default="ascend910",
                         help="benchmark fixture (default: ascend910)")
     parser.add_argument("--mesh-error", type=float, default=None,
                         help="mesh error in C (from SLAB-006a); must be non-negative and finite")
