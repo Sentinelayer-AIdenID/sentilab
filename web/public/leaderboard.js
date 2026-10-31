@@ -82,7 +82,7 @@ function drawCurves(item) {
 function renderBenchmark(name) {
   const item = report.benchmarks[name];
   if (!item || item.seed_count < 10) {
-    $("status").textContent = "This batch is missing or has fewer than 10 seeds; it is not shown as a TFL-08 result.";
+    $("status").textContent = "This batch is missing or has fewer than 10 seeds; it is not shown as a 10-seed result.";
     $("content").hidden = true;
     setNotice(false);
     return;
@@ -168,7 +168,7 @@ async function start() {
       `Runner source SHA-256 ${runtime.runner_source_sha256?.slice(0, 16) || "unavailable"}.`;
     renderBenchmark(select.value);
   } catch (error) {
-    $("status").textContent = `No published 10-seed batch is available yet (${error.message}). Generate one with the TFL-08 runner and publish its leaderboard.json and records under /tfl08/.`;
+    $("status").textContent = `No published 10-seed batch is available yet (${error.message}). Generate one with the 10-seed runner and publish its leaderboard.json and records under /tfl08/.`;
   }
 }
 
