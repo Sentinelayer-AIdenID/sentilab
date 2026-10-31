@@ -320,6 +320,16 @@ class TapGeometry:
                                                        self.problem.heights_mm))
 
     def centers_for(self, candidate: Design) -> tuple[tuple[float, float], ...]:
+        """The search gate: every fixture rule, including the centre lattice."""
+        return self._checked_centers(candidate, lattice=True)
+
+    def continuous_centers_for(self, candidate: Design) -> tuple[tuple[float, float], ...]:
+        """The continuous geometry rules without the search lattice: frame, orientation catalog,
+        margin with halo, halo non-overlap and minimum spacing. For fixed reference layouts such as
+        the raw figure reconstructions (gate zero); search candidates go through centers_for."""
+        return self._checked_centers(candidate, lattice=False)
+
+    def _checked_centers(self, candidate: Design, *, lattice: bool) -> tuple[tuple[float, float], ...]:
         if not isinstance(candidate, Design):
             raise TapLegalityError("TAP oracle requires a controller Design")
         try:
@@ -335,7 +345,7 @@ class TapGeometry:
         size = self.problem.interposer_size_mm
         if not _same_mm(candidate.width_mm, size) or not _same_mm(candidate.height_mm, size):
             raise TapLegalityError("TAP fixture interposer size mismatch")
-        violations = self.layout_violations(candidate)
+        violations = self.layout_violations(candidate, lattice=lattice)
         if violations:
             raise TapLegalityError(violations[0].message)
         return self._centers(candidate)
@@ -346,9 +356,10 @@ class TapGeometry:
         return tuple((float(x + chiplet.width_mm / 2), float(y + chiplet.height_mm / 2))
                      for chiplet, (x, y) in zip(candidate.chiplets, candidate.positions))
 
-    def layout_violations(self, candidate: Design) -> tuple[LayoutViolation, ...]:
-        """Every placement-rule miss, in the order centers_for reports them: margins, lattice,
-        halo overlaps, then minimum spacing. Reads each die's own (possibly turned) footprint."""
+    def layout_violations(self, candidate: Design, *, lattice: bool = True) -> tuple[LayoutViolation, ...]:
+        """Every placement-rule miss, in the order centers_for reports them: margins, lattice (unless
+        lattice=False), halo overlaps, then minimum spacing. Reads each die's own (possibly turned)
+        footprint."""
         size = self.problem.interposer_size_mm
         centers = self._centers(candidate)
         found = []
@@ -366,7 +377,7 @@ class TapGeometry:
                              f"chiplet {index} violates the {margin:g} mm interposer margin with its microbump halo"))
             rectangles.append(rect)
 
-        step = self.legality.center_lattice_mm
+        step = self.legality.center_lattice_mm if lattice else None
         if step is not None:
             for index, (center_x, center_y) in enumerate(centers):
                 off = max(abs(center_x / step - round(center_x / step)), abs(center_y / step - round(center_y / step)))
@@ -912,6 +923,11 @@ class HotSpotOracle:
 
     def centers_for(self, candidate: Design) -> tuple[tuple[float, float], ...]:
         return self.geometry.centers_for(candidate)
+
+    def continuous_centers_for(self, candidate: Design) -> tuple[tuple[float, float], ...]:
+        """Validation only: the continuous rules without the search lattice. A call still applies
+        centers_for, lattice included."""
+        return self.geometry.continuous_centers_for(candidate)
 
     def _wirelength_mm(self, centers: tuple[tuple[float, float], ...]) -> float:
         return self.geometry.wirelength_mm(centers)

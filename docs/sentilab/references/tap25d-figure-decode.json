@@ -1,5 +1,5 @@
 {
- "decoder_sha256": "c86c34d78f1399959317525ed56df22e0b376a1bed69b46c0be336099f06e825",
+ "decoder_sha256": "8bf98272d62c77119c334aec91d0021dc222c3b1ba56a6a1d4d620e1f3a69361",
  "figures": {
   "fig5": {
    "caption": "Fig. 5: Thermal maps of the CPU-DRAM System: (a) the original placement [14], (b) a placement solution using Compact-2.5D approach, (c) TAP-2.5D solutions using repeaterless non-pipelined link, and (d) using gas-station links.",

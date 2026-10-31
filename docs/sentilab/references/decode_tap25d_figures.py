@@ -1,25 +1,20 @@
-"""Decode chiplet outlines from TAP-2.5D (DATE 2021) Fig. 5 and Fig. 6.
+"""Vector figure extraction from the TAP-2.5D PDF (sha256 b209f51a...), mapped to TAP's floorplan grid.
 
-Approximate reconstruction from a published figure. Not CAD, not silicon.
+What it does, and nothing more:
+1. Reads the stroked single-line segments in two bands of page index 5 (Fig. 5 and Fig. 6) of the
+   PDF given on the command line, and records that file's sha256.
+2. Groups consecutive segments into closed axis-aligned rectangles.
+3. Splits each figure into panels at four frame strips, and reads each panel's frame and scale from
+   them (TAP's 1 mm granularity sets the strip width).
+4. Takes the die-sized rectangles of each panel in drawing order as TAP dies 0..n-1. It checks
+   each outline against that die's catalog size from the repo's TAP config, in either orientation.
+5. Maps the outlines to millimetres in the panel's frame. A panel whose strips and line order
+   show it was drawn rotated 90 degrees clockwise is rotated back.
 
-The thermal maps in the paper were drawn by TAP's util/grid_thermal_map.pl from the
-generated chip-layer floorplan (<name>L4_ChipLayer.flp). That script draws every
-floorplan unit as four line segments in the order top, left, right, bottom, and it
-keeps the floorplan's unit order. TAP's generator writes the units as
-
-    Edge_0, Edge_1, Edge_2, Edge_3       interposer frame strips (Edge_0/1 horizontal
-                                         and g/2 thick; Edge_2/3 vertical, full height)
-    [Ubump strips,] Chiplet_i            for i = 0..n-1, in die order
-    WS_*                                 whitespace filler
-
-so the i-th die-sized rectangle in a panel is TAP die i, and the edge strips fix the
-frame. A panel whose units are drawn right, top, bottom, left (and whose first two edge
-strips are vertical) was rotated 90 degrees clockwise for display; it is mapped back to
-its floorplan frame by x_native = S - y_display, y_native = x_display.
-
-Nothing is fitted. The frame size S is read three ways (edge-strip thickness with TAP's
-1 mm granularity, edge-strip length, and the die bodies against the catalog) and each
-die outline must match its catalog entry within SIZE_TOLERANCE_MM in one orientation.
+Assumptions, not established by the paper: the drawing order and the frame strips are those of TAP's
+util/grid_thermal_map.pl over its generated chip-layer floorplan. The checks above are consistent with
+that, but they do not prove it. The output is an approximate reconstruction from a published figure:
+not CAD, not silicon, and not a figure-to-silicon error bound.
 
 Usage (PyMuPDF required; the paper PDF is not committed to this repository):
     python -I decode_tap25d_figures.py <tap25d.pdf> <repo-root> <output.json>

@@ -27,7 +27,8 @@ from sundai_hotspot import test_references as refs
 from sundai_hotspot import test_tap_router as router
 
 REAL_MODULES = {"controller": real_controller, "experiment": real_experiment, "tap_oracle": real_tap_oracle,
-                "conductor": real_conductor, "worker": real_worker, "tap_router": real_tap_router}
+                "conductor": real_conductor, "worker": real_worker, "tap_router": real_tap_router,
+                "tap_references": tap_references}
 
 # (rule, module, anchor, replacement, check)
 MUTANTS = (
@@ -112,9 +113,30 @@ MUTANTS = (
      "xc.append((b / 2, w / 2 + b, w + b * 1.5, w / 2 + b))",
      "xc.append((w / 2 + b,) * 4)",
      router.check_round_trip_wire_on_the_raw_references),
+    ("the router refuses any solve that is not a proven optimum", "tap_router",
+     "if result.status != 0 or result.fun is None:",
+     "if result.fun is None:",
+     router.check_router_refuses_any_solve_that_is_not_a_proven_optimum),
+    ("the router needs exactly one centre per die", "tap_router",
+     "if not isinstance(centers, (list, tuple)) or len(centers) != count:",
+     "if not isinstance(centers, (list, tuple)):",
+     router.check_router_refuses_malformed_inputs),
+    ("the router's rotation flags must be booleans", "tap_router",
+     "            any(not isinstance(flag, bool) for flag in rotated)):",
+     "            False):",
+     router.check_router_refuses_malformed_inputs),
+    ("the continuous check drops only the search lattice", "tap_oracle",
+     "step = self.legality.center_lattice_mm if lattice else None",
+     "step = self.legality.center_lattice_mm",
+     refs.check_continuous_check_skips_only_the_lattice),
+    ("the 0.5 mm rounding rule sends an exact tie up", "tap_references",
+     "return math.floor(value / step + 0.5) * step",
+     "return round(value / step) * step",
+     refs.check_rounding_rule),
 )
 PACKAGES = {"controller": "sundai_controller", "experiment": "sundai_controller", "tap_oracle": "sundai_hotspot",
-            "conductor": "sentilab_core", "worker": "sundai_hotspot", "tap_router": "sundai_hotspot"}
+            "conductor": "sentilab_core", "worker": "sundai_hotspot", "tap_router": "sundai_hotspot",
+            "tap_references": "sundai_hotspot"}
 
 
 def mutated_source(module, anchor: str, replacement: str) -> str:
@@ -185,6 +207,18 @@ class DataMutationTests(unittest.TestCase):
         ref["snapped"]["adjustments"].pop()
         with self.assertRaisesRegex(AssertionError, "recorded adjustments are not the snapped layout"):
             refs.check_snapped_reference_is_legal_and_explained(ref)
+
+    def test_a_variant_centre_off_the_rounding_rule_is_caught(self):
+        variant = json.loads((tap_references.REFERENCES_DIR / "ascend910-tap25d-fig6a-snap0p5.json").read_text())
+        variant["centers_mm"][0][1] += 0.5
+        with self.assertRaisesRegex(AssertionError, "documented rounding"):
+            refs.check_variant_manifest(variant)
+
+    def test_an_altered_displacement_maximum_is_caught(self):
+        variant = json.loads((tap_references.REFERENCES_DIR / "micro150-tap25d-fig5a-snap0p5.json").read_text())
+        variant["displacement_from_raw"]["max_euclidean_mm"] = 0.08
+        with self.assertRaises(AssertionError):
+            refs.check_variant_manifest(variant)
 
     def test_an_excluded_probe_listed_as_a_call_is_caught(self):
         plan = json.loads(tap_references.ENVELOPE_PLAN.read_text(encoding="utf-8"))

@@ -1,22 +1,32 @@
 """Routed inter-chiplet wirelength: TAP-2.5D's MILP router on an open solver. Geometry only, no thermal solve.
 
-Change notice (Apache-2.0 section 4(b)): ported for SLAB-048 from bu-icsg/TAP-2.5D 3a3f4e5,
-sundai_tap/routing.py (get_input and solve_Cplex). The pin-clump geometry and capacities, the
-integer flow variables, constraints (Eq. 12-15 and 18) and objective are TAP's. What changed:
-- scipy.optimize.milp (HiGHS, proven optimum) replaces IBM CPLEX;
-- the function returns the total routed wirelength in mm (TAP prints it and returns the per-wire mean);
-- an unsolved model raises instead of returning TAP's placeholder 100.
+Derived from TAP-2.5D (https://github.com/bu-icsg/TAP-2.5D, commit 3a3f4e5), sundai_tap/routing.py,
+Copyright the TAP-2.5D authors, Apache License 2.0 (sundai_tap/LICENSE).
 
-Published-number check (sundai_hotspot/test_tap_router.py): on the decoded TAP-2.5D figures it
-reproduces all seven routed wirelengths the paper reports within 0.2%.
+Change notice (Apache-2.0 section 4(b)): ported for SLAB-048 from routing.py (get_input and
+solve_Cplex). The pin-clump geometry and capacities, the integer flow variables, the constraints
+(Eq. 12-15 and 18) and the objective are TAP's. What changed:
+- the solver: scipy.optimize.milp (HiGHS) replaces IBM CPLEX;
+- the solver settings: TAP ran CPLEX with threads=1, a 500 s time limit and CPLEX's default MIP gap.
+  This runs HiGHS with mip_rel_gap=0 (a proven optimum) and a 60 s time limit by default. scipy
+  exposes no thread setting, so HiGHS uses its own default;
+- the result: the total routed wirelength in mm. TAP prints that and returns the per-wire mean;
+- failure: any solve that is not a proven optimum (time limit, infeasible, other) raises, where TAP
+  returned a placeholder 100. Malformed inputs are refused before the model is built.
+
+Published-number check (sundai_hotspot/test_tap_router.py): on the decoded TAP-2.5D figures its
+totals are within 0.1% of all seven routed wirelengths the paper reports.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
+import math
+import numbers
 from pathlib import Path
 import sys
 
 import numpy as np
+import scipy
 from scipy.optimize import Bounds, LinearConstraint, milp
 from scipy.sparse import coo_matrix
 
@@ -29,11 +39,43 @@ UBUMP_PITCH_MM = 0.045  # routing.py: "ubump_pitch = 0.045 # 45um in unit of mm"
 CLUMPS = 4              # one pin clump per die edge
 
 
+LINK_TYPES = ("nppl", "ppl")
+
+
 @dataclass(frozen=True)
 class RoutedWire:
     total_mm: float
     wires: int  # TAP's wire_count: every directed net's wires (each link is routed both ways)
     link_type: str
+
+
+def solver_versions() -> dict:
+    """The solver stack behind a routed number: scipy and the HiGHS build it bundles."""
+    versions = {"scipy": scipy.__version__, "highs": "unavailable"}
+    try:  # scipy has no public HiGHS version API; this private module is read, never relied on
+        from scipy.optimize._highspy import _core
+        versions["highs"] = f"{_core.HIGHS_VERSION_MAJOR}.{_core.HIGHS_VERSION_MINOR}.{_core.HIGHS_VERSION_PATCH}"
+    except (ImportError, AttributeError):
+        pass
+    return versions
+
+
+def _validated(problem, centers, rotated, link_type):
+    count = len(problem.widths_mm)
+    if link_type not in LINK_TYPES:
+        raise ValueError(f"link type must be one of {LINK_TYPES}")
+    if not isinstance(centers, (list, tuple)) or len(centers) != count:
+        raise ValueError(f"routing needs exactly one centre per die ({count})")
+    points = []
+    for center in centers:
+        if (not isinstance(center, (list, tuple)) or len(center) != 2 or
+                any(isinstance(v, bool) or not isinstance(v, numbers.Real) or not math.isfinite(v) for v in center)):
+            raise ValueError("each centre must be a pair of finite numbers (mm)")
+        points.append((float(center[0]), float(center[1])))
+    if (not isinstance(rotated, (list, tuple)) or len(rotated) != count or
+            any(not isinstance(flag, bool) for flag in rotated)):
+        raise ValueError(f"routing needs exactly one boolean rotation flag per die ({count})")
+    return points, tuple(rotated)
 
 
 def _tap_system(problem, centers, rotated, link_type):
@@ -73,7 +115,8 @@ def _pin_clumps(system):
 
 def routed_wirelength(problem, centers, rotated, *, link_type: str | None = None,
                       time_limit_s: float = 60.0) -> RoutedWire:
-    link_type = link_type or problem.link_type
+    link_type = problem.link_type if link_type is None else link_type
+    centers, rotated = _validated(problem, centers, rotated, link_type)
     system = _tap_system(problem, centers, rotated, link_type)
     xl, yl, xc, yc, pmax, hop_max = _pin_clumps(system)
     R = system.connection_matrix
