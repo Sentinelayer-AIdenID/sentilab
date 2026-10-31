@@ -41,7 +41,9 @@ class AcceptanceGate:
             return {**result, "outcome": reason}
 
         def valid(measurement):
-            return (isinstance(measurement, dict) and measurement.get("success") is True and
+            return (isinstance(measurement, dict) and
+                    measurement.get("type") != "untrusted_source_evidence" and
+                    measurement.get("success") is True and
                     _number(measurement.get("j")) and _number(measurement.get("wire_mm")) and
                     measurement["wire_mm"] >= 0 and
                     isinstance(measurement.get("process_id"), str) and bool(measurement["process_id"]))
