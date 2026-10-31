@@ -3,7 +3,7 @@
 //
 // Input is ONLY the projectable prefix (VIEW ENVELOPE rule 1): the unbroken run of verified, non-oversize envelopes
 // from seq 1, as the verifier returns it. Status (lifecycle, validity, support sets, acceptance) is never computed
-// here: it is read from aneta's project() over that prefix. Geometry, temperatures, J and W are the display-only
+// here: it is read from the contract's project() over that prefix. Geometry, temperatures, J and W are the display-only
 // `values` of envelopes in the prefix that project() applied. Nothing after the prefix can move or colour anything.
 //
 // Everything drawn comes from our own data: chiplet footprints from values.geometry, colours from values.center_temps

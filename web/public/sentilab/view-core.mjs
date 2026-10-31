@@ -1,5 +1,5 @@
-// Browser port of the SentiLab view-envelope reference (VIEW ENVELOPE v0.5; reference view-envelope.mjs by
-// pocket-forge, sha256 54b24823...). The view half follows the reference line for line: the same input checks in
+// Browser port of the SentiLab view-envelope reference (VIEW ENVELOPE v0.5; reference view-envelope.mjs,
+// sha256 54b24823...). The view half follows the reference line for line: the same input checks in
 // the same order (raw size, parse, iterative structure, canonical size measured without serializing), and only then
 // the duplicate and conflict policy, the hash, chain and signature checks, and the projectable prefix. Rejected input
 // never reaches canonical(), a hash or a signature check. The core's writer (makeChain) is not ported: the page never
