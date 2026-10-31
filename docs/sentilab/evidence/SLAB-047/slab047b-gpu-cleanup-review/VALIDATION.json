@@ -1,0 +1,18 @@
+{
+  "head": "3236e23aecafb8e49e31aaec8101d3906f1de2a8",
+  "sealed_at": "2026-10-31T11:45:02.514498+00:00",
+  "artifacts": {
+    "audit_cleanup.py": {
+      "bytes": 16254,
+      "sha256": "b9b037fe19f84f6bc0decd7c8f977c5894a98e2516bbd1adcdc73090b726c7d9"
+    },
+    "EVIDENCE-CHECK.json": {
+      "bytes": 8097,
+      "sha256": "cc8b29f042960baf2856710a57ab1a023a757dd5baa39c44c10e077935fe6646"
+    },
+    "CLEANUP-REVIEW.md": {
+      "bytes": 4539,
+      "sha256": "c0d40704ecd8b8c38d8be7dbb75019b4031eb4ed55ff5b77fa005000a4bb7f9a"
+    }
+  }
+}
