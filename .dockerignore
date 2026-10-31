@@ -16,5 +16,6 @@ web/
 # chiplet.render calls the shared browser model through Node.
 !web/public/sentilab/lab-model.mjs
 !web/public/sentilab/evidence-projection.mjs
+deck/
 **/*.pem
 **/*.key

@@ -194,10 +194,10 @@ CAPABILITIES = tuple(
     Capability("resultcheck", "resultcheck", ("resultcheck",), "sentilab_resultcheck",
                object_schema({"file": {"type": "string"}}, ["file"]),
                {"type": "object", "required": ["status"]}, ERROR_CODES + ("file_unreadable",),
-               "CLI local file authority; MCP host SENTILAB_RESULTCHECK_DIR confinement",
+               "Host resultcheck scope; CLI local file authority; MCP host SENTILAB_RESULTCHECK_DIR confinement",
                "Read-only check; MCP cancellation kills and reaps its existing lane worker",
                "astra-slab043-conformance over PR #21", "pending_conformance",
-               "Both surfaces exist on main; lane tests retained. Unified scope/STOP/five-check integration pending"),
+               "Both surfaces enforce shared host grants; lane tests retained. Unified STOP/five-check integration pending"),
     pending("lab.propose", "PR #19 labs lane", "ReplayLab and Dispatcher exist; transport contract not registered"),
     pending("lab.review", "PR #19 labs lane", "ReplayLab and Dispatcher exist; transport contract not registered"),
     pending("lab.repair", "PR #19 labs lane", "ReplayLab and Dispatcher exist; transport contract not registered"),
@@ -226,10 +226,10 @@ CAPABILITIES = tuple(
                "sentilab_research_" + command, research_input(command),
                {"type": "object", "required": ["ok"]},
                ERROR_CODES + ("invalid_input", "ai_off_required", "namespace_not_authorized", "stopped", "oversize"),
-               "Host SENTILAB_RESEARCH_NAMESPACE; lane checks exact namespace and AI-off",
+               "Host research command scope and SENTILAB_RESEARCH_NAMESPACE; lane checks exact namespace and AI-off",
                "Request checks STOP before dispatch and after backend; status/export remain readable",
                "astra-slab043-conformance over PR #34", "pending_conformance",
-               "Both surfaces exist on main; lane tests retained. Unified scope/STOP/five-check integration pending")
+               "Both surfaces enforce shared host grants; lane tests retained. Unified STOP/five-check integration pending")
     for command in ("request", "status", "export"))
 
 
@@ -299,6 +299,7 @@ def coverage_markdown():
              "SLAB-026 simulation/training contract or count private helper methods as capabilities.", "",
              "`SENTILAB_CAPABILITY_SCOPES` is a host-configured JSON array of exact capability names.",
              "Unset retains the local-operator trust boundary; an empty array denies all calls (-32001).",
+             "The grant check includes research and ResultCheck while retaining their lane input/error contracts.",
              "Requests cannot grant themselves scopes. Existing AI-off and signer/pin checks still apply.",
              "CLI-only signer and solver configuration flags remain host options, not MCP arguments.", "",
              "Chiplet build validates the existing plate fixture; render returns the existing browser view model;",

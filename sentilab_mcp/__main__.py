@@ -54,6 +54,9 @@ async def handle(request, context):
         if not isinstance(params, dict) or not isinstance(params.get("name"), str):
             raise ValueError("invalid tool parameters")
         name, arguments = params["name"], params.get("arguments", {})
+        if name in TOOLS:
+            from sentilab_core.execution import authorize
+            authorize(name)
         if name in TOOLS and name.startswith("sentilab_research_"):
             from sentilab_core.research import dumps
             if isinstance(context, LazyLiveContext):

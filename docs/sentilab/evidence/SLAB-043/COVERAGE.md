@@ -32,6 +32,7 @@ SLAB-026 simulation/training contract or count private helper methods as capabil
 
 `SENTILAB_CAPABILITY_SCOPES` is a host-configured JSON array of exact capability names.
 Unset retains the local-operator trust boundary; an empty array denies all calls (-32001).
+The grant check includes research and ResultCheck while retaining their lane input/error contracts.
 Requests cannot grant themselves scopes. Existing AI-off and signer/pin checks still apply.
 CLI-only signer and solver configuration flags remain host options, not MCP arguments.
 
@@ -55,7 +56,7 @@ replay verifies history; export calls the existing immutable dataset exporter. N
 | evidence.invalidate | evidence.invalidate | capability | `sentilab evidence invalidate` | `sentilab_evidence_invalidate` | pending | astra-slab043-conformance over astra-slab006a-mesh | Original SLAB-010 invalidation transport remains absent; memory owner code is available |
 | intent.compile | intent.compile | capability | `sentilab intent compile` | `sentilab_intent_compile` | pending | astra-slab043-conformance over SLAB-011 routing lane | Original SLAB-011 contract; PR #23 route mapping must be checked against current main |
 | route.evaluate | route.evaluate | capability | `sentilab route evaluate` | `sentilab_route_evaluate` | pending | astra-slab043-conformance over SLAB-011 routing lane | Original SLAB-011 contract; PR #23 route mapping must be checked against current main |
-| resultcheck | resultcheck | capability | `sentilab resultcheck` | `sentilab_resultcheck` | pending_conformance | astra-slab043-conformance over PR #21 | Both surfaces exist on main; lane tests retained. Unified scope/STOP/five-check integration pending |
+| resultcheck | resultcheck | capability | `sentilab resultcheck` | `sentilab_resultcheck` | pending_conformance | astra-slab043-conformance over PR #21 | Both surfaces enforce shared host grants; lane tests retained. Unified STOP/five-check integration pending |
 | lab.propose | lab.propose | capability | `sentilab lab propose` | `sentilab_lab_propose` | pending | PR #19 labs lane | ReplayLab and Dispatcher exist; transport contract not registered |
 | lab.review | lab.review | capability | `sentilab lab review` | `sentilab_lab_review` | pending | PR #19 labs lane | ReplayLab and Dispatcher exist; transport contract not registered |
 | lab.repair | lab.repair | capability | `sentilab lab repair` | `sentilab_lab_repair` | pending | PR #19 labs lane | ReplayLab and Dispatcher exist; transport contract not registered |
@@ -79,9 +80,9 @@ replay verifies history; export calls the existing immutable dataset exporter. N
 | chiplet.render | chiplet.render | capability | `sentilab chiplet render` | `sentilab_chiplet_render` | done | SLAB-043 over existing controller/ledger/browser/dataset lanes | — |
 | chiplet.replay | chiplet.replay | capability | `sentilab chiplet replay` | `sentilab_chiplet_replay` | done | SLAB-043 over existing controller/ledger/browser/dataset lanes | — |
 | chiplet.export | chiplet.export | capability | `sentilab chiplet export` | `sentilab_chiplet_export` | done | SLAB-043 over existing controller/ledger/browser/dataset lanes | — |
-| research.request | research.request | capability | `sentilab research request` | `sentilab_research_request` | pending_conformance | astra-slab043-conformance over PR #34 | Both surfaces exist on main; lane tests retained. Unified scope/STOP/five-check integration pending |
-| research.status | research.status | capability | `sentilab research status` | `sentilab_research_status` | pending_conformance | astra-slab043-conformance over PR #34 | Both surfaces exist on main; lane tests retained. Unified scope/STOP/five-check integration pending |
-| research.export | research.export | capability | `sentilab research export` | `sentilab_research_export` | pending_conformance | astra-slab043-conformance over PR #34 | Both surfaces exist on main; lane tests retained. Unified scope/STOP/five-check integration pending |
+| research.request | research.request | capability | `sentilab research request` | `sentilab_research_request` | pending_conformance | astra-slab043-conformance over PR #34 | Both surfaces enforce shared host grants; lane tests retained. Unified STOP/five-check integration pending |
+| research.status | research.status | capability | `sentilab research status` | `sentilab_research_status` | pending_conformance | astra-slab043-conformance over PR #34 | Both surfaces enforce shared host grants; lane tests retained. Unified STOP/five-check integration pending |
+| research.export | research.export | capability | `sentilab research export` | `sentilab_research_export` | pending_conformance | astra-slab043-conformance over PR #34 | Both surfaces enforce shared host grants; lane tests retained. Unified STOP/five-check integration pending |
 
 Full schemas, current authorization requirements, errors and STOP behavior are in
 `sentilab_core/capabilities.py`; `python -m sentilab_core.capabilities` prints the inventory.

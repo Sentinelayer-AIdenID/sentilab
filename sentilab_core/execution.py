@@ -14,9 +14,8 @@ import sys
 from .capabilities import CAPABILITIES, for_tool
 
 
-def admit(tool, arguments):
-    from jsonschema import Draft202012Validator
-
+def authorize(tool):
+    """Apply the host grant even to lanes with their own input/error contract."""
     row = for_tool(tool)
     configured = os.environ.get("SENTILAB_CAPABILITY_SCOPES")
     if configured is not None:
@@ -28,6 +27,13 @@ def admit(tool, arguments):
                 raise ValueError
         except (TypeError, ValueError):
             raise PermissionError("capability scope refused") from None
+
+
+def admit(tool, arguments):
+    from jsonschema import Draft202012Validator
+
+    authorize(tool)
+    row = for_tool(tool)
     if not Draft202012Validator(row.input_schema).is_valid(arguments):
         raise ValueError("invalid capability input")
 
@@ -59,10 +65,13 @@ async def recorded_call(context, capability, arguments, *, timeout=30):
     finally:
         if process is None:
             process = await spawn
-        try:
-            os.killpg(process.pid, signal.SIGKILL)
-        except ProcessLookupError:
-            pass
+        # communicate() already reaps completed workers. Their numeric group
+        # may now belong to someone else; signal only a still-owned live worker.
+        if process.returncode is None:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
         await process.wait()
 
 

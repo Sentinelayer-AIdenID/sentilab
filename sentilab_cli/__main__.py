@@ -169,7 +169,9 @@ def research_parser():
 
 def research_main(*, context=None):
     from sentilab_core import operations, research
+    from sentilab_core.execution import authorize
     args = research_parser().parse_args(sys.argv[2:])
+    authorize("sentilab_research_" + args.command)
     try:
         if len(args.namespace) > research.MAX_BYTES:
             raise ValueError()
@@ -221,7 +223,9 @@ def _main(conductor=False, *, context=None):
         return advisory_main(context=context)
     if not conductor and sys.argv[1:2] == ["resultcheck"]:
         from sentilab_core.resultcheck import canonical, check_file, exit_code
+        from sentilab_core.execution import authorize
         args = resultcheck_parser().parse_args(sys.argv[2:])
+        authorize("sentilab_resultcheck")
         try:
             receipt = check_file(args.file, root=args.root)
         except Exception:

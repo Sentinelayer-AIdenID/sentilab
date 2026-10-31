@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10191e">
+<title>Package view · SentiLab</title>
+<meta name="description" content="The chiplet package each lab proposed, drawn from signed, verified evidence only: footprints from the run's geometry, colours from chiplet-centre temperatures on one fixed scale.">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="package.css">
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="modebox" title="Mode (client clock): LIVE needs a poll within 5 s, the verified prefix K growing within 60 s, and K not below its high. A drop in K is STALE · chain broken at once.">
+      <span class="mode replay" id="mode"><i></i><b id="modeText">REPLAY</b></span>
+      <span class="drill" id="drill" hidden title="This run contains a seeded correction drill">DRILL</span>
+    </div>
+    <div class="brand"><span class="mark"></span><b>SentiLab</b><span class="sub">Package view</span></div>
+    <div class="runmeta" id="runMeta"></div>
+    <span class="spacer"></span>
+    <span class="testkeys" id="testKeys" hidden title="Signatures are checked against test keys anyone can derive. Not the production pin.">TEST KEYS</span>
+    <button class="chain" id="chain" type="button" title="Signature and chain check for every envelope; click for details"><i></i><span id="chainText">no envelopes</span></button>
+    <nav class="links"><a href="../" id="labLink">Lab view</a><a href="#" id="limitsLink">Honest limits</a></nav>
+  </header>
+
+  <section class="controls">
+    <div class="seg" id="source" role="group" aria-label="Source">
+      <button type="button" data-src="file" class="on">Replay</button><button type="button" data-src="api">Live</button>
+    </div>
+    <label class="btn openbtn" id="openLabel" title="Open a JSONL replay file">Open<input type="file" id="file" accept=".jsonl,.ndjson,.json,text/plain"></label>
+    <button class="play" id="play" type="button" title="Play / pause (Space)" aria-label="Play">▶</button>
+    <div class="scrub" id="scrubWrap">
+      <div class="ticks" id="ticks" aria-hidden="true"></div>
+      <input type="range" id="scrub" min="0" max="0" value="0" aria-label="Playhead: envelope position">
+    </div>
+    <span class="pos" id="pos">seq 0 / 0</span>
+    <span class="fixture" id="fixture" hidden>Interface fixture · illustrative values, no solver ran</span>
+    <div class="cam" role="group" aria-label="Camera">
+      <button type="button" class="icon" id="rotL" title="Rotate 90° (Shift+R)" aria-label="Rotate left">⟲</button>
+      <button type="button" class="icon" id="rotR" title="Rotate 90° (R)" aria-label="Rotate right">⟳</button>
+      <button type="button" class="tog" id="orbit" aria-pressed="false" title="Slow orbit in 90° steps (O)">Orbit</button>
+      <button type="button" class="tog" id="lid" aria-pressed="true" title="Lid outline, cut away (L)">Lid</button>
+    </div>
+  </section>
+
+  <div class="banners">
+    <div class="frozen" id="frozen" hidden></div>
+    <div class="valerr" id="valerr" hidden></div>
+  </div>
+
+  <main class="stage">
+    <section class="panel main" id="mainPanel">
+      <div class="canvaswrap" id="mainWrap">
+        <canvas id="mainCanvas" role="img" aria-label="Isometric drawing of the selected chiplet package"></canvas>
+        <header class="mainhead">
+          <h2 id="mainTitle">Board</h2>
+          <span class="chip" id="mainChip" hidden></span>
+          <select id="picker" aria-label="Show package"></select>
+          <span class="brk"></span>
+          <span class="sub" id="mainSub"></span>
+        </header>
+        <div class="empty" id="mainEmpty" hidden><div><b id="emptyTitle"></b><span id="emptyText"></span></div></div>
+        <div class="refusednote" id="refusedNote" hidden></div>
+        <div class="caption" id="caption"></div>
+      </div>
+    </section>
+
+    <aside class="panel info" id="info">
+      <div class="block who">
+        <div class="lbl" id="infoLbl">Selected</div>
+        <div class="row1"><b id="infoName">-</b><span class="cid" id="infoId"></span></div>
+        <div class="chips" id="infoChips"></div>
+      </div>
+      <div class="block metrics" id="metrics">
+        <div class="j"><small>J</small><span id="infoJ">-</span></div>
+        <div class="w" id="infoW"></div>
+        <div class="src" id="infoSrc"></div>
+      </div>
+      <div class="block legend" id="legend">
+        <div class="lbl">Colour = one value per chiplet <span id="scaleUnit"></span></div>
+        <div class="scalebar" id="scaleBarBox"><span class="bar" id="scaleBar"></span></div>
+        <div class="ticks2" id="scaleTicks"></div>
+        <p class="noscale" id="noScale" hidden>No temperatures in the verified prefix, so nothing is coloured.</p>
+        <p class="basis" id="basis">chiplet-centre temperatures from the solver; not a field</p>
+        <p class="fixnote" id="fixNote" hidden>This replay is an interface fixture: the values are illustrative and no solver ran.</p>
+        <ul class="keys">
+          <li title="Not simulated, or no measurement yet"><i class="k-none"></i>no temperature</li>
+          <li title="Its measurement was withdrawn or its support broke"><i class="k-stale"></i>stale value</li>
+          <li title="Chiplets overlap in the proposed geometry"><i class="k-overlap"></i>geometry overlap</li>
+          <li title="The board's accepted package"><i class="k-accept"></i>accepted (board)</li>
+        </ul>
+      </div>
+      <div class="block drillbox" id="drillBox" hidden></div>
+      <div class="block stack">
+        <div class="lbl">Schematic stack</div>
+        <p id="stackNote">Substrate, interposer, heights and lid are nominal drawing constants, not to scale. Chiplet footprints are from the evidence, in mm, to scale.</p>
+      </div>
+    </aside>
+  </main>
+
+  <nav class="strip" id="strip" aria-label="Packages: the board and each lab"></nav>
+
+  <footer class="status"><span id="statusLeft">-</span><span class="c">Only the verified prefix moves or colours anything. Order is seq; ts is display only.</span><span class="hotkeys">Space play · ←/→ step · R rotate · O orbit · L lid · 0-5 package</span></footer>
+</div>
+
+<div class="offline" id="offline" hidden>
+  <div class="offcard">
+    <span class="eyebrow">Live feed</span>
+    <h3 id="offTitle">Live feed not connected</h3>
+    <p id="offText">The page asks /api/view/runs every 5 s. The core that serves it is not running yet.</p>
+    <button type="button" class="btn primary" id="backToReplay">Show the replay</button>
+  </div>
+</div>
+
+<dialog id="chainDlg" aria-labelledby="chainTitle">
+  <header><h3 id="chainTitle">Chain check</h3><span class="spacer"></span><button type="button" class="btn" id="chainClose">Close</button></header>
+  <div class="dlgbody" id="chainBody"></div>
+</dialog>
+
+<dialog id="limits" aria-labelledby="limitsTitle">
+  <header><h3 id="limitsTitle">Honest limits</h3><span class="spacer"></span><button type="button" class="btn" id="limitsClose">Close</button></header>
+  <ul>
+    <li>Everything drawn here comes from the unbroken, verified prefix of the chain, with the same check and pins as the Lab view. After the first break the drawing freezes; unverified or later envelopes never move or colour anything.</li>
+    <li>Each chiplet's top face is one colour: its centre temperature, on one fixed scale for the run. It is not a thermal field, and nothing is interpolated across a die. Side faces are the same colour, shaded only for depth.</li>
+    <li>The stack is schematic. Substrate, interposer, die heights and the lid are drawing constants. Only the chiplet footprints come from the evidence.</li>
+    <li>A glide is display only: chiplets move from the layout the package showed before (a lab's previous candidate, else the initial layout) to the new candidate. Status (proposed, accepted, stale) comes only from the evidence contract's project().</li>
+    <li>A verified envelope proves the core's key signed it. It does not prove a temperature is physically right.</li>
+    <li>The bundled demo is an interface fixture with illustrative numbers. No solver produced them.</li>
+    <li>TEST KEYS mode uses keys anyone can derive, so only a local server honours it.</li>
+  </ul>
+</dialog>
+
+<script type="module" src="package.js"></script>
+</body>
+</html>

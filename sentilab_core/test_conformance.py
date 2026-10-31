@@ -386,6 +386,48 @@ print(json.dumps(response))
                 self.assertEqual(response["error"], {"code": -32001, "message": "capability scope refused"})
         self.assertEqual(before, snapshot())
 
+    def test_pending_conformance_surfaces_cannot_bypass_empty_or_invalid_grants(self):
+        from sentilab_core.capabilities import exposed
+        from sentilab_core.test_research import NS
+        self.environment["SENTILAB_RESEARCH_NAMESPACE"] = json.dumps(NS)
+        self.environment["SENTILAB_RESULTCHECK_DIR"] = str(self.root)
+        intake = self.root / "intake.json"
+        intake.write_text("{}")
+        cases = {
+            "resultcheck": ({"file": str(intake)}, [str(intake)]),
+            "research.request": ({"ai_off": True, "namespace": NS, "question": "fixture only"},
+                                 ["--ai-off", "--namespace", json.dumps(NS), "--question", "fixture only"]),
+            **{"research." + command: (
+                {"ai_off": True, "namespace": NS, "request_id": "0" * 64},
+                ["--ai-off", "--namespace", json.dumps(NS), "--request-id", "0" * 64])
+               for command in ("status", "export")},
+        }
+        rows = {row.name: row for row in exposed() if row.status == "pending_conformance"}
+        self.assertEqual(set(rows), set(cases))
+        for name, row in rows.items():
+            arguments, flags = cases[name]
+            command = [sys.executable, "-m", "sentilab_cli", *row.cli_command, *flags]
+            self.environment["SENTILAB_CAPABILITY_SCOPES"] = json.dumps([name])
+            # A matching grant still reaches the owner's fixture/read contract.
+            allowed = self.mcp(row, arguments)
+            self.assertIn("result", allowed)
+            cli = subprocess.run(command, env=self.environment, cwd=ROOT, capture_output=True, timeout=10)
+            self.assertEqual(cli.stdout.decode().strip(), allowed["result"]["content"][0]["text"])
+            before = {str(path): path.read_bytes() for path in self.root.rglob("*") if path.is_file()}
+            for policy in ("[]", "null", "", '["live.status"]'):
+                with self.subTest(capability=name, policy=policy):
+                    self.environment["SENTILAB_CAPABILITY_SCOPES"] = policy
+                    response = self.mcp(row, arguments)
+                    cli = subprocess.run(command, env=self.environment, cwd=ROOT,
+                                         capture_output=True, timeout=10)
+                    self.assertEqual(cli.returncode, 2)
+                    self.assertEqual(cli.stderr, b"")
+                    expected = {"code": -32001, "message": "capability scope refused"}
+                    self.assertEqual(response.get("error"), expected)
+                    self.assertEqual(json.loads(cli.stdout).get("error"), expected)
+                    self.assertEqual(before, {str(path): path.read_bytes() for path in self.root.rglob("*")
+                                              if path.is_file()})
+
     def freeze_worker(self, process):
         # Stop the real OS child after dispatch, before its result can race the
         # cancellation. This changes scheduling, not any shipped function.
