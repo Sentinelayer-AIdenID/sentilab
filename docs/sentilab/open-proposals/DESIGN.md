@@ -3,12 +3,13 @@
 Ticket `e76b348f`. Agents and people from other teams propose 2.5D chiplet layouts. SentiLab scores each one with the
 same admitted engine, comparator, statistic and labels as its own frozen baseline, and shows the results to the judges.
 
-**Status: DRAFT for review, revision 2.** This is a design only: no code, no deploys, no solves and no room posts. It
-applies four inputs:
+**Status: DRAFT for review, revision 3.** This is a design only: no code, no deploys, no solves and no room posts. It
+applies five inputs:
 - root's decisions on revision 1's open questions (room #56902);
 - root's challenge-math review and provisional contract (`[review]` below);
-- astra's review of revision 1 at `28ecd6f` (room #56918): six corrections, mapped in Appendix C;
-- warden's provisional operations decisions (room #56897, corrected by #56899).
+- astra's review of revision 1 at `28ecd6f` (room #56918), checked in revision 3 against the exact review files (`[#59-review]`): six corrections and the gaps revision 2 missed, mapped in Appendix C;
+- astra's review of revision 2 at `6e6e110` (room #56957): groups 1, 2, 3 and 6 and the core of group 4 closed; the accounting correction and decisions A10 to A13, mapped in Appendix C. The review file (SHA-256 `cf575bfa…1a1c`) was not in any ref I could fetch, so it is applied from the room text;
+- warden's provisional operations decisions (room #56897, corrected by #56899; the 5 s whole-check wall in #56952, accepted in room #56957).
 
 Policy thresholds and the call allocation are **provisional manifest fields**, not constants. They are fixed in the
 signed manifest before any candidate is scored. Nothing here releases an intake, solver, cloud model or load execution.
@@ -27,6 +28,8 @@ signed manifest before any candidate is scored. Nothing here releases an intake,
 | `[#57]` | sentilab PR #57 at `063f659` (SLAB-048). The PR has since merged `main` at `6dd4dd0`: cited `tap_oracle.py` lines shift by 1 to 2 with identical code, and the other cited files are unchanged |
 | `[#56]` | sentilab PR #56 head `6413a3c` (SLAB-049: HotSpot 6.0, gate zero, per-solve record) |
 | `[review]` | sentilab `2f69727`, `docs/sentilab/reviews/2026-10-31/challenge-math-1606/`. `REVIEW.md` SHA-256 `0d427674…f48b`; `PROVISIONAL-CONTRACT.md` SHA-256 `480c2e37…0032`. Both verified |
+| `[#57b]` | sentilab PR #57 at `7de7d01`: the 0.5 mm `snap0p5` engineering variants, frozen layout identities, the 46-call envelope and the hardened router. The raw and 1 mm layouts are byte-identical to `063f659` (`README.md:62`) |
+| `[#59-review]` | sentilab `b7bd8bd`, `docs/sentilab/reviews/2026-10-31/pr59-design-1627/`: astra's review of revision 1. `REVIEW.md` SHA-256 `4b2dd6f8…22d9`; `ROOT-DECISION-OPTIONS.md` SHA-256 `d960dc99…f6c2`. Both verified and read in full |
 | `[cli]` | sentinelayer-cli 0.46.5; paths are relative to the npm package |
 | `[api]` | sentinelayer-api `origin/main` `6f8058f5`. `R` = `src/services/session_relay_service.py`, `S` = `src/routes/sessions.py` |
 
@@ -38,7 +41,7 @@ Room messages are cited by number; room ids are never cited.
 |---|---|---|
 | 1 | Transport and identity | **(a), room-native.** A proposal is a threaded reply in the challenge thread, stamped by Senti with the author's account id (`actorUserId`). An outbound-only intake reads replies in `created_at,id` order and persists its cursor only after durable processing. Every client derives a **bounded transport idempotency key** from room, account, actor slot, manifest, logical key and content hash. No new inbound endpoint. |
 | 2 | Actor kinds | Agents post through the `sl` CLI (`--agent`), the `sl` MCP, the hosted MCP or REST with an agent claim. People post through REST without one. Each has a truthful recipe, and quotas bind to the account. |
-| 3 | Confidentiality | `private` proposals are sealed to the intake's published key. Room members see only ciphertext (open question A10). |
+| 3 | Confidentiality | Private submissions **and** private routed checks are sealed with `age` to the intake's recipient, bound to the signed manifest (A10, adopted). There is no plaintext fallback. Private status is reachable only through an unguessable per-request handle. |
 | 4 | Identity in public | Per-challenge keyed pseudonyms plus voluntary, moderated team names. Account ids stay in the restricted ledger. Public display requires explicit, versioned submission terms. |
 | 5 | The math | One versioned manifest per problem, aligned with root's contract. The raw comparator `R` is measured by the same fixed evaluator; published targets are separate. `T_M` = the maximum native centre-map value over **explicitly enumerated** real chiplets. Claims are strict, relaxed and Pareto predicates. With no accepted bounds, a claim can only "pass the listed sensitivity cases". |
 | 6 | Checks | An offline local checker for anyone. An **authenticated, sponsored remote routed-wire check** for the account-limited tier, which runs through the room. There are no anonymous remote checks. |
@@ -168,6 +171,7 @@ route at the edge. Rejected.
 **Two keys.**
 - The **logical key** is `(account, manifest_id, proposal_key)`, owned by the contract.
 - The **transport key** is Senti's `idempotencyKey`, which is room-global and never compares the note (section 3.1). So the two must differ.
+- The actor slot is in the derivation because one account's agents have distinct server replay slots ([#59-review] `REVIEW.md:17`).
 
 Every client derives the transport key:
 
@@ -186,14 +190,14 @@ transport_key = "so1-" + hex(sha256(JCS({"schema": "sentilab-open-transport-key/
 - **Recipes always pass `--agent` and `--idempotency-key` explicitly** on the CLI, and `agentId` and `idempotencyKey` on MCP.
 
 **Order.**
-- Within a room, submissions are ordered by numeric `createdAt`, then the full action id. Across rooms, the room id is an explicit tiebreak.
+- Within a room, submissions are ordered by numeric `createdAt`, then the full action id. Across rooms, the room id is an explicit tiebreak. This cross-room order is a contract choice, not a total order the server provides ([#59-review] `REVIEW.md:23`).
 - The target sequence orders nothing; it only identifies the root.
 - "First submission" means the earliest under this order.
 
 **Consumption.**
 - The intake reads the `auditWindow` pages in `created_at,id` order ([api] `R:12926-12930`).
 - It persists `nextCursor` only after every row of the page is durably processed.
-- It dedupes by action id and revision.
+- It dedupes by action id and revision, re-reading an overlap after a restart. Rejected replies keep their evidence.
 - An outage or a crash never advances consumption. The intake re-reads from the last persisted cursor and dedupes.
 
 ### 3.5 Actor kinds and truthful recipes (astra 3)
@@ -208,10 +212,16 @@ transport_key = "so1-" + hex(sha256(JCS({"schema": "sentilab-open-transport-key/
 | An agent | REST `POST …/actions` with `metadata.agentId` (a granted agent) or a scoped agent token | agent |
 | A person | REST `POST …/actions` with an account token and no agent claim | human |
 
+**Each agent path needs its own admission or grant.** Signing in and joining the room proves none of them ([#59-review] `REVIEW.md:31-36`):
+- the CLI resolves the authoring agent and runs the action inside `withAgentAdmission` ([cli] `src/commands/session.js:4309-4317`);
+- the `sl` MCP refuses without a stored admission and an `agentId` ([cli] `src/mcp/session-stdio-server.js:928-943`);
+- the hosted MCP authorizes the agent and writes `actor_kind="agent"` ([api] `src/routes/mcp.py:4595-4678`);
+- REST takes the granted-agent branch only for a validated `metadata.agentId` or a scoped agent credential ([api] `S:878-951`).
+
 **Rules for recipes.**
-- Each recipe is published separately and truthfully.
-- No recipe ever tells anyone to omit identity so as to appear human.
-- The restricted ledger records `actorKind` and the actor slot. Pages show "submitted as an agent" or "as a person", exactly as stamped.
+- Agent and person recipes are published separately and truthfully. Integration tests cover each of them and keep the admission and role differences visible.
+- No recipe tells an agent to omit its identity, or to let the CLI fall back to its generic `cli-user` actor ([cli] `src/commands/session.js:1083, 2132-2135`), so as to appear human.
+- Quotas bind to `actorUserId`. The restricted ledger keeps `actorKind` and `actorId` for provenance. Pages show "submitted as an agent" or "as a person", exactly as stamped.
 
 ### 3.6 "Anyone from anywhere": free authenticated accounts
 
@@ -225,19 +235,32 @@ transport_key = "so1-" + hex(sha256(JCS({"schema": "sentilab-open-transport-key/
 **The abuse trade-off.** Several accounts per person are possible. Sign-in, per-account quotas, team mapping, global and
 seat caps, and warden's pause rule bound them (section 12).
 
-### 3.7 Sealed replies for private proposals
+### 3.7 Sealed private submissions and private checks (A10, adopted: room #56957)
 
-**The problem.** Every member reads every reply (section 3.1). Without sealing, `private` would mean only "not on our
-public pages".
+**Why.** Every room member reads every reply (section 3.1). Without sealing, `private` would mean only "not on our public pages".
 
-**The recommendation (open question A10).**
-- The manifest publishes an `age` X25519 recipient for the intake.
-- `"visibility": "private"` proposals are encrypted to it and posted as `sentilab-open-sealed/1 <manifest_id>` followed by ASCII-armoured ciphertext.
-- `public` proposals may be plaintext. A plaintext `private` reply is rejected with `private_requires_sealed`.
-- The intake decrypts with the key held in Key Vault (OP-W2). The identity is still `actorUserId`.
-- Receipts bind the ciphertext `body_sha256` and the plaintext `proposal_sha256`.
+**The decision.** Private submissions **and** private routed checks are sealed. This is a design decision, not a runtime privacy acceptance.
 
-There is no new endpoint and no participant credential. The only new secret is the decryption key.
+**Format.**
+- Standard `age` with an X25519 recipient, ASCII-armoured, bound to the signed manifest. The manifest pins the recipient and its key version.
+- The note's first line is `sentilab-open-sealed/1 <manifest_id> <key_version>`, followed by the armour.
+- Forge owns the pinned format, the adapters and the test vectors. Warden owns key custody and read access (OP-W2).
+
+**Frozen rules.**
+- **Size caps.** Plaintext at most 4,096 bytes; a sealed note at most 8,192 bytes.
+- **Key version and rotation.** A new key means a new key version and a new manifest version. Old private keys stay in custody to decrypt earlier entries, and are never reused.
+- **Decryptability.** A sealed note must decrypt, with the key version it names, to exactly one JSON object of an allowed schema. Anything else is rejected with `unsealable`.
+- **No plaintext fallback.** A note that fails to decrypt is never re-read as plaintext. A plaintext reply that declares `private` is rejected with `private_requires_sealed`. `public` items may be plaintext.
+
+**Retry identity and receipts.**
+- The canonical **salted** plaintext defines the retry identity. Its `proposal_sha256` or `request_sha256` is the content hash in the transport key (section 3.4), so re-encrypting the same plaintext retries identically.
+- The server-returned action row for the ciphertext is preserved as the transport receipt, by the participant and in the restricted journal (section 7.4).
+
+**Private access.**
+- Status, outcomes and receipts for private items need authorized access, or an unguessable per-request handle: the salted `proposal_sha256` or `request_sha256`.
+- They are never exposed through an unauthenticated lookup by unsalted geometry hash, a public index, or a room pointer. Private read handles never appear in public pointers.
+
+**Publication.** Public results need the participant's chosen publication consent under the versioned terms (section 5.6): evaluation, evidence and display only, with no training or lab-memory rights.
 
 ### 3.8 One contract, and adapters
 
@@ -254,7 +277,7 @@ There is no new endpoint and no participant credential. The only new secret is t
 | Routed-wire check (sponsored) | Reply `sentilab-open-check-request/1` | same | `check-request.schema.json` |
 | Submit | Reply with a sealed or public proposal | same | `proposal.schema.json`, `terms` |
 | Team name (optional) | Reply `sentilab-open-team/1` | same | `team.schema.json` |
-| Status | `GET /api/open/v1/status?…`; pointer via `read_history`, `sl session read` or `sessions_actions_list` | `GET` | `status.schema.json` |
+| Status | `GET /api/open/v1/status?…` with the salted handle; for public items, also a pointer via `read_history`, `sl session read` or `sessions_actions_list` | `GET` | `status.schema.json` |
 | Results | `GET /api/open/v1/results?…` | same | `results.schema.json` |
 
 **Adapters are deliverables (OP-F9).** `tools.json` alone registers no tools in any client (astra 3). Reference adapters
@@ -265,6 +288,18 @@ for Python and JS implement:
 - check, submit, status and results.
 
 The skill documents how to wire them into common agent frameworks. A local MCP shim is optional.
+
+**Which component provides which operation** ([#59-review] `REVIEW.md:38`). A table cell saying "fetch" is not a native tool:
+
+| Operation | Native `sl` CLI, `sl` MCP and hosted MCP | OP-F9 adapters | Our operator CLI/MCP (SLAB-043 registry) |
+|---|---|---|---|
+| Offline legality and proxy | none | yes | `open.check` |
+| Routed-wire check request | posts the reply only | composes, keys, seals and posts | `open.check` |
+| Submit | posts the reply only | composes, keys, seals and posts | none |
+| Status and results | room pointers, for public items only | the public GETs and private handles | `open.status`, `open.results` |
+| Manifest | none | yes | `open.manifest` |
+
+Until OP-F9 ships and passes T14, no client is claimed to provide these operations natively.
 
 ### 3.9 Identity rules
 
@@ -336,15 +371,16 @@ This section follows root's provisional contract ([review] `PROVISIONAL-CONTRACT
 
 **Geometry rationale.** Thresholds need a stated rationale ([review] `PROVISIONAL-CONTRACT.md:5`).
 - The 0.1 mm gap is TAP-2.5D Eqn. (10) ([#57] `sys_ascend910_45mm.cfg:35-36`).
-- The 0.5 mm lattice's stated reason is a convenience: it makes the sampled probes legal (`:32-34`). The lattice is not reference-position uncertainty ([review] `REVIEW.md:5`). Its declared rationale is open question A11.
+- The 500 µm candidate lattice is a **declared finite engineering benchmark choice** (root, A11, room #56957). It is not CAD precision, a manufacturing tolerance, or an uncertainty estimate, and it is not reference-position uncertainty ([review] `REVIEW.md:5`). The config comment that it makes the sampled probes legal (`:32-34`) is history, not the rationale.
+- Raw `R` stays continuous and reference-only. The lattice applies to candidates.
 
 ### 4.2 Reference identities and published targets
 
 | Identity | What | Status |
 |---|---|---|
-| `R` = `ascend910-tap25d-fig6a/raw` | The raw reconstruction ([#57] `README.md:86-88`) | Off-lattice, so not legal on the fixture ([#57] `ascend910-tap25d-fig6a.json:246`). **The comparator; never an admissible entry** ([review] `REVIEW.md:7`) |
-| `…/snapped-1mm` | The 1 mm engineering variant ([#57] `README.md:90-98`) | Legal (`ascend910-tap25d-fig6a.json:518`); shown separately |
-| `…/rounded-0.5mm` | Plain 0.5 mm rounding ([#57] `README.md:174-177`) | Legal per the README; not yet built |
+| `R` = `ascend910-tap25d-fig6a/raw` | The raw reconstruction ([#57] `README.md:86-88`); continuous and reference-only (A11) | Off-lattice, so not legal on the fixture ([#57] `ascend910-tap25d-fig6a.json:246`). **The comparator; never an admissible entry** ([review] `REVIEW.md:7`). `content_sha256` `0046e17b…470e`, design hash `b9bfcd23…` ([#57b] `README.md:55`) |
+| `ascend910-tap25d-fig6a-snap0p5` | The 0.5 mm engineering variant: plain nearest rounding, no repair ([#57b] `README.md:21`; `ascend910-tap25d-fig6a-snap0p5.json:37, 251`) | Legal. The engineering comparison and sensitivity baseline, separately admitted; never a paper match. `content_sha256` `e0c7ce9e…022a`, design hash `224f2ea0…c9e0` ([#57b] `README.md:56`) |
+| `…/snapped-1mm` (field `snapped`) | The first legal experiment layout, kept unchanged ([#57b] `README.md:22`) | Legal; superseded as the baseline and kept as history. `content_sha256` `45b0f7e0…7703`, design hash `a2b5cac2…` ([#57b] `README.md:57`) |
 | Published targets | 75.48 °C and 16,426 mm; 115.94 °C and 67,686 mm ([#57] `README.md:134-136`) | Separate fields, never overwritten ([review] `REVIEW.md:7`). A separately named paper-target diagnostic only |
 
 **The comparator pair, by root's decision.**
@@ -354,6 +390,16 @@ This section follows root's provisional contract ([review] `PROVISIONAL-CONTRACT
 
 **Limits.** No reference result calibrates new layouts or validates the wire metric. Gate zero's own contract stays
 separate ([review] `REVIEW.md:7`; `PROVISIONAL-CONTRACT.md:35`).
+
+**CPU-DRAM identities** ([#57b] `README.md:58-60`): raw `6e541158…fce9` (design `93ee854b…`), `snap0p5` `ecfca7f4…8be9` (design `0f806acb…807f`, `micro150-tap25d-fig5a-snap0p5.json:45`), 1 mm `9fee13e0…6bbb` (design `c1d85d5d…`).
+
+**Records are kept.**
+- The raw and 1 mm histories are kept unchanged: they are byte-for-byte those at `063f659` ([#57b] `README.md:62`). The `snap0p5` variant never replaces or deletes the 1 mm record ([#59-review] `ROOT-DECISION-OPTIONS.md:10`).
+- A snapped variant is a different experiment with its own identity, useful in its own right, but not a paper-faithful replacement ([#59-review] `REVIEW.md:49`).
+
+**Gate-zero binding.**
+- Gate zero, the accepted 8+4 allocation, uses the two raw 45 mm references only ([#57b] `README.md:24`).
+- PR #56's head `6413a3c` is cited here for interfaces only. Admission binds the eventual corrected gate-zero record and reference set, not that head ([#59-review] `REVIEW.md:52`).
 
 ### 4.3 Legality
 
@@ -382,7 +428,7 @@ The model assumes uniform power and steady state ([review] `REVIEW.md:9`).
 **`T_M`.**
 - `T_M` is the maximum native centre-map value over the real chiplets **enumerated explicitly in the manifest**: Ascend `Chiplet_0` to `Chiplet_5`; CPU-DRAM `Chiplet_0` to `Chiplet_7`.
 - PR #56's record computes `chiplet_centre_mapping.max_C` ([#56] `slab049.py:1079-1080`) over units matched by the pattern `Chiplet_\d+` (`:1003, 1025`). OP-F4 replaces the pattern with the manifest list. A record whose chiplet set differs from the list gives `T_M = UNKNOWN`.
-- The GRID_CENTER value is a mean of 1, 2 or 4 cells (`:242-251`). It is not a pointwise maximum, and is never called the true peak.
+- The GRID_CENTER value is a mean of 1, 2 or 4 cells (`:242-251`). The manifest pins this mapping (`statistic.centre_mapping`). It is not a pointwise maximum, and is never called the true peak.
 
 **Retained separately, never asserted equivalent:**
 - `active_layer_grid_peak` with argmax (`:1077-1078`);
@@ -432,13 +478,23 @@ summed `U`.
 - A missing or failed case makes the claim `INCOMPLETE` or `INCONCLUSIVE`.
 - Scenarios are never chosen after outcomes ([review] `PROVISIONAL-CONTRACT.md:37`).
 
-**Provisional list:**
-- `nominal` (both, grid 64);
-- `mesh-32` (both);
-- R's position cases.
+**Scenario pairs** (root, A12, room #56957):
 
-PR #57's envelope perturbs the snapped variant ([#57] `ENVELOPE-PLAN.md:9`), so the raw comparator needs its own cases
-(A12).
+| Scenario | Candidate | Comparator | Values compared |
+|---|---|---|---|
+| `nominal` | `c` at grid 64 | `R` at grid 64 | `T_M` and `W` |
+| `mesh-32` | `c` at grid 32 | `R` at grid 32 | `T_M` |
+| R-only position cases | nominal `c` at grid 64 | the exact perturbed `R` at grid 64 | `T_M` **and** routed `W` of the perturbed `R` |
+
+The policy thresholds keep their frozen nominal basis: `B_W` stays defined on nominal `W_R` in every case.
+
+**The raw-R position inventory (A12)** is a declared stress step, distinct from every existing call list:
+- **Moves.** One die, one axis, ±500 µm. All other dies and every rotation are fixed.
+- **Exclusions.** Moves that break continuous legality, meaning every fixture rule except the lattice ([#57b] `README.md:65`), are enumerated before any outcome.
+- **Freezing.** Transforms and hashes are frozen.
+- **Accounting.** It is counted, profiled and granted separately. It adds nothing to gate zero's 8+4 ([#57b] `README.md:24`) or to the 46-call `snap0p5` envelope ([#57b] `ENVELOPE-PLAN.md:18-22`).
+- **No repairs**, no outcome-selected omissions, and no pass on an empty set. A missing required case leaves the claim `INCOMPLETE`.
+- **Implementation** is a separate PR in the references lane (OP-F10). This design only specifies it.
 
 ### 4.8 Claim labels
 
@@ -480,22 +536,34 @@ PR #57's envelope perturbs the snapped variant ([#57] `ENVELOPE-PLAN.md:9`), so 
 **Ties and records.** Ties sort by `T_M`, then the geometry hash (`docs/sentilab/SLAB-041-ADMISSION-REVIEW-2026-10-31.md:11`).
 Every result is retained.
 
-### 4.10 Discrimination fixtures (forge proposal; not in the provisional contract)
+### 4.10 Predicate fixtures, scientific diagnostics and claim suppression (A13, room #56957)
 
-**What they are.** A diagnostic, offered to OP-A1. Before the window opens, the frozen predicates are run on published
-layouts with known relations, using **our** `T_M` and `W`.
+The review separates two things that revision 1 mixed ([#59-review] `REVIEW.md:48`).
 
-| Fixture | Expected | Why |
+**Pure predicate fixtures** test the label code, not the science.
+- They are synthetic numeric inputs: `T_M`, `W` and per-scenario values for `c` and `R`.
+- Each outcome follows from the predicate's algebra.
+- There are positive and negative cases for every label in section 4.8, including `INCOMPLETE` and `UNKNOWN`.
+- `R` against itself cancels **only** here, with identical measurements. Fresh replays and R-position screens need not pass by identity.
+- They are part of T13 and must always pass.
+
+**Scientific diagnostics** apply the frozen predicates to published layouts under our reconstructed model. Each expectation is a **hypothesis about a specific predicate**, not a forced label:
+
+| Diagnostic layout | Hypothesis | Basis |
 |---|---|---|
-| `R` re-evaluated | Strict-wire thermal tolerance (`q_0 = 0`); no improvement label | Identity |
-| Ascend TAP-2.5D, Fig. 6(c) | r-relaxed (r = 0.05) thermal tolerance; **not** strict-wire; not strict thermal improvement | Our routed wire is 16,613.5 mm, 1.2% above `W_R` ([#57] `README.md:59, 75`). Paper temperatures 75.47 and 75.48 °C ([#56] `gate_zero.py:65-66`) |
-| Ascend Compact-2.5D, Fig. 6(b) | Within the 0.50 and 1.00 budgets; outside 0.25 and below | Routed +45% ([#57] `README.md:74`) |
+| `R` against itself under the screen | Passes strict-wire thermal tolerance only if every R-only position case moves `T_M` by no more than `D` | Section 4.7 |
+| Ascend TAP-2.5D, Fig. 6(c) | r-relaxed (r = 0.05) thermal tolerance; not strict-wire; not strict thermal improvement | Our routed wire is 16,613.5 mm, 1.2% above `W_R` ([#57] `README.md:59, 75`). Paper temperatures 75.47 and 75.48 °C ([#56] `gate_zero.py:65-66`) |
+| Ascend Compact-2.5D, Fig. 6(b) | Within the 0.50 and 1.00 budgets only | Routed +45% ([#57] `README.md:74`) |
 | CPU-DRAM TAP-2.5D, Fig. 5(c) and 5(d) | Outside every budget up to 1.00; no label | Routed +219% and +105% ([#57] `README.md:77-78`) |
 
-**A mismatch is a diagnostic, not a gate** (astra 4).
-- A mismatch is recorded and shown as a diagnostic result.
-- It is **never** a reason to tune thresholds, scenarios or the evaluator "until the reference passes".
-- Whether claims display beside a mismatched fixture is root's call (A13).
+**What decides whether a claim is shown** (A13):
+- **Unexpected diagnostic.** Valid candidate claims may still appear beside it. The mismatch and its raw values are retained and published as a diagnostic.
+- **Failed requirement.** Any of these suppresses the affected claims:
+  - a required gate-zero check;
+  - a source, input or statistic binding;
+  - predicate correctness (a pure fixture);
+  - a required scenario.
+- **No tuning.** Thresholds, scenarios, the evaluator and the reference are never tuned toward expected paper classifications.
 
 ### 4.11 Draft manifest v0 (Ascend 910)
 
@@ -521,18 +589,23 @@ This draft has provisional fields and is not a signed manifest.
                          [256,0,0,0,0,0],[256,0,0,0,0,0],[256,0,0,0,0,0]],
               "counting": {"routed": "each ordered pair with R[i][j]>0 is a directed net of R[i][j] wires",
                            "proxy": "each unordered pair once"}},
-  "legality": {"units": "um", "anchor": "die-centre", "lattice_um": 500, "lattice_rationale": "<root, A11>",
+  "legality": {"units": "um", "anchor": "die-centre", "lattice_um": 500, "lattice_rationale": "declared finite engineering benchmark choice (A11)",
                "margin_um": 500, "min_die_gap_um": 100, "min_die_gap_rationale": "TAP-2.5D Eqn. (10)",
                "halo": "uniform ring per die; rotation-invariant", "keepouts": [], "rotation": "per_die_90"},
   "references": {"file_sha256": "<reference file bytes>",
-    "comparator": {"id": "ascend910-tap25d-fig6a/raw", "geometry_sha256": "<raw>", "legal_on_fixture": false,
-                   "T_R": "UNKNOWN", "W_R_mm": 16417.5},
-    "engineering_variants": [{"id": "ascend910-tap25d-fig6a/snapped-1mm", "legal_on_fixture": true},
-                             {"id": "ascend910-tap25d-fig6a/rounded-0.5mm", "legal_on_fixture": true, "built": false}],
+    "comparator": {"id": "ascend910-tap25d-fig6a/raw", "continuous": true, "legal_on_fixture": false,
+                   "content_sha256": "0046e17b3e33feef14e570eb6a2026e17c3eea5c232160a052be62c2ae8e470e",
+                   "T_R": "UNKNOWN", "T_R_measurement_id": "<receipt>", "W_R_mm": 16417.5},
+    "engineering_variants": [{"id": "ascend910-tap25d-fig6a-snap0p5", "role": "engineering baseline",
+                              "content_sha256": "e0c7ce9eb641ee6aea7d2015e5bc0fc5e3f38f1759c2c2252f14ad5104af022a",
+                              "design_hash": "224f2ea088fc50f5eb209a44f1a82fa3704c06037456dc6976657df105c6c9e0"},
+                             {"id": "ascend910-tap25d-fig6a/snapped-1mm", "role": "history; superseded as baseline",
+                              "content_sha256": "45b0f7e05b82a5eedad1679d751f5684e98ef35c936db54aeea9b475ae397703"}],
     "published_targets": {"source": "Ma et al., DATE 2021, Fig. 6(a)", "T_c": 75.48, "W_mm": 16426,
                           "use": "paper-target diagnostic only"}},
   "statistic": {"id": "M", "definition": "max native GRID_CENTER value over the enumerated real chiplets",
                 "real_chiplets": ["Chiplet_0", "Chiplet_1", "Chiplet_2", "Chiplet_3", "Chiplet_4", "Chiplet_5"],
+                "centre_mapping": "GRID_CENTER: mean of 1, 2 or 4 central cells (pinned)",
                 "record_field": "chiplet_centre_mapping.max_C", "grid": 64,
                 "retained_separately": ["active_layer_grid_peak", "historical_tap_stdout_selector.literal_on_stdout"],
                 "evaluator": {"kind": "hotspot6", "upstream": "a7a3286e368867c26381e0a23e36b3e273bdeda9",
@@ -546,28 +619,47 @@ This draft has provisional fields and is not a signed manifest.
              "proposed_in_draft": {"D_K": 0.5, "r": 0.05, "B_T_K": 1.0, "B_W_fraction": 0.02, "T_limit_C": 85},
              "tradeoff_budgets_r": [0.10, 0.25, 0.50, 1.00]},
   "bounds": {"u_T": "UNKNOWN", "u_q": "UNKNOWN", "u_abs": "UNKNOWN"},
-  "screen": {"claim": "passes the listed sensitivity cases", "missing": "INCOMPLETE",
+  "claims": {"display_order": ["declared temperature target", "strict-wire thermal tolerance",
+             "r-relaxed-wire thermal tolerance", "strict thermal improvement", "strict wire improvement",
+             "wire improvement with allowed thermal degradation", "robust dominance over R"],
+             "suppressed_by": ["failed gate zero", "failed binding", "failed predicate fixture", "failed required scenario"]},
+  "screen": {"claim": "passes the listed sensitivity cases", "missing": "INCOMPLETE", "failed": "INCONCLUSIVE",
              "scenarios": [{"id": "nominal", "applies_to": "both", "grid": 64},
                            {"id": "mesh-32", "applies_to": "both", "grid": 32},
-                           {"id": "position-<case>", "applies_to": "R", "cases": "<root, A12>"}]},
+                           {"id": "position-<die>-<axis>-<sign>", "applies_to": "R",
+                            "cases": "raw-R inventory (A12): separately counted, profiled and granted"}]},
   "evaluation_bundle": {"status": "provisional",
                         "per_entry": [{"phase": "evaluate", "grid": 64, "suballocation": "native.evaluate"},
                                       {"phase": "replay", "grid": 64, "suballocation": "native.replay"},
                                       {"phase": "mesh", "grid": 32, "suballocation": "native.mesh"},
                                       {"phase": "route", "suballocation": "routing"}],
                         "per_manifest": "R's scenario cases", "lifecycle_suballocation": "lifecycle",
+                        "intake_suballocation": "intake",
                         "ceilings_cpu_s": "<warden>"},
-  "checks": {"solver_time_limit_s": "<warden; provisional 2>", "process_deadline_s": "<warden>",
-             "suballocation": "checks"},
+  "checks": {"solver_time_limit_s": "<warden; provisional 2; elapsed HiGHS time, not CPU>",
+             "check_wall_s": "<warden; provisional 5; from worker start, queue excluded>",
+             "cleanup_headroom_s": "<warden>", "cpu_reserve_s": "<warden; reserved before runtime>",
+             "status_access": "salted request_sha256 handle or authorized access", "suballocation": "checks"},
   "ties": "ascending T_M, then geometry hash", "failures": "retained; no automatic retry",
   "limits": {"status": "provisional (warden, room #56897)", "eval_per_account_hour": 3, "eval_per_account_day": 12,
-             "eval_room_hour": 20, "eval_room_day": 120, "queue_max": 30, "code_backstop_calls_hour": 40,
+             "eval_room_hour": 20, "eval_room_day": 120, "queue_max": 30, "warden_call_policy_hour": 40,
+             "code_cpu_s_per_hour_per_root": 600, "code_default_solve_reserve_cpu_s": 15,
              "check_per_account_hour": 30, "check_room_hour": 600},
-  "terms": {"accepted_versions": ["<sentilab-open-terms/1@sha256>"]},
+  "terms": {"accepted_versions": ["<sentilab-open-terms/1@sha256>"], "retention": "<root, A3>"},
+  "intake": {"order": ["createdAt", "action_id", "room_id"],
+             "cursor": "auditWindow.nextCursor, saved after durable processing", "revision": "1 only"},
+  "transport_key": {"schema": "sentilab-open-transport-key/1", "prefix": "so1-", "hex_chars": 48,
+                    "fields": ["room", "account", "actor_slot", "manifest_id", "logical_key", "content_sha256"]},
+  "disclosure": {"at_opening": ["reference geometry", "frozen SentiLab baseline"],
+                 "entries": "public only by explicit choice; private sealed; revealed only by a logged publish choice"},
+  "pseudonym": {"rule": "HMAC-SHA256(k_challenge, account_id)", "scope": "per challenge"},
   "exposure": {"sources": ["TAP-2.5D paper PDF b209f51a…", "Fig. 6(a)-(c)", "Fig. 5(a)-(d)",
                            "sys_ascend910_45mm.cfg", "sys_micro150_45mm.cfg"],
                "note": "exposed families: mark when building any future held-out split"},
-  "sealing": {"format": "age X25519, ASCII armour", "recipient": "<intake public key>"},
+  "sealing": {"format": "age X25519, ASCII armour", "recipient": "<intake public key>", "key_version": "<n>",
+              "applies_to": ["private proposals", "private routed checks"], "plaintext_max_bytes": 4096,
+              "sealed_note_max_bytes": 8192, "plaintext_fallback": false,
+              "rotation": "new key version and new manifest version; old keys kept in custody, never reused"},
   "example": {"label": "invented numbers", "inputs": "<chosen at freeze>"},
   "window": {"opens_at": null, "closes_at": null},
   "refs": {"grant": "<warden grant>", "claim_rules": "<astra record>", "checker_sha256": "<…>"},
@@ -608,7 +700,7 @@ chiplets are `Chiplet_0` to `Chiplet_7`. `W_R_mm` is 67,688.4, and the published
 No binary, host, grid, timeout, statistic, reference, budget or grant fields.
 
 **Other objects:**
-- the check request (`sentilab-open-check-request/1`): `manifest_id`, `request_key`, `units`, `anchor`, `dies`, `geometry_sha256`;
+- the check request (`sentilab-open-check-request/1`): `manifest_id`, `request_key`, `visibility`, `salt`, `units`, `anchor`, `dies`, `geometry_sha256`. Its salted `request_sha256` is the private status handle (section 3.7);
 - the team object (section 3.9).
 
 ### 5.2 Canonical form and hashes
@@ -653,7 +745,14 @@ No binary, host, grid, timeout, statistic, reference, budget or grant fields.
 - It covers evaluation, retention of evidence, and display **only if** `visibility` is `public`.
 - It grants **no** training, lab-memory or study use.
 
+**What else the terms state** ([#59-review] `REVIEW.md:72`): the moderation visibility semantics (section 12) and the retention period.
+
 **Changing the terms.** A change makes a new version. The manifest lists the accepted versions.
+
+**The reveal rule, frozen before ingestion** ([#59-review] `REVIEW.md:66`; `ROOT-DECISION-OPTIONS.md:12`).
+- A private entry's signed run is never served publicly. It is not merely hidden behind a picture while public rows exist.
+- It becomes public only through the participant's explicit, logged choice: a `sentilab-open-publish/1` reply naming the `proposal_sha256`, from the same account, under accepted terms.
+- Its full signed run is then released. We never publish a private entry on our own.
 
 **Records.**
 - The originals of every proposal are retained, whatever their visibility.
@@ -672,10 +771,12 @@ the router.
 **How to use it.** It runs on the participant's own hardware at their own cost. It gives the same answers as the
 intake, proven by contract vectors T12.
 
+**Licences.** The published checker keeps its dependencies' notices pinned: TAP-2.5D's Apache-2.0 change notice ([#57b] `tap_router.py:1-15`) and the entries in `THIRD_PARTY_NOTICES.md` ([#59-review] `REVIEW.md:72`).
+
 ### 6.2 Authenticated, sponsored remote routed-wire check (account)
 
-**Request.** A `sentilab-open-check-request/1` reply to the challenge root, sealed or plaintext, with a derived transport
-key. The intake checks legality, then routes a legal layout.
+**Request.** A `sentilab-open-check-request/1` reply to the challenge root, with a derived transport key. A private check must be sealed (section 3.7).
+The intake checks legality, then routes a legal layout.
 
 **Charging.** Each check is charged to the **`checks` suballocation** of the global journal (section 8.4), reserved
 before launch and settled on every exit.
@@ -685,15 +786,28 @@ before launch and settled on every exit.
 - a check that doesn't finish counts against the account;
 - warden confirms after OP-F7 has measured the cost.
 
-**The time-limit boundary.**
-- **`solver_time_limit_s`** (provisionally 2 s) is HiGHS's own `time_limit` inside `scipy.optimize.milp` ([#57] `tap_router.py:138-140`). It starts after the model is built.
-- **Not covered by it:** model construction, the Python loops over `C·K·C·K·N` variables (`:84-137`); worker start; and serialization. For scale, that is 6·4·6·4·10 = 5,760 variables for Ascend 910 and 8·4·8·4·16 = 16,384 for CPU-DRAM.
-- **`process_deadline_s`** bounds the whole check and kills the worker group.
-- **Both the solve and the lifecycle are charged.** Hitting either limit counts as unfinished.
+**Four separate limits** (astra, room #56957). None stands in for another:
+
+| Limit | What it bounds | Value | Owner |
+|---|---|---|---|
+| Solver elapsed limit, `solver_time_limit_s` | HiGHS's own `time_limit` inside `scipy.optimize.milp`, from after model construction to the end of the solve. HiGHS picks its own thread count, so this is **not** a CPU cap ([#57b] `tap_router.py:10-15, 116-117, 181-183`) | Provisionally 2 s | warden |
+| Whole-check wall deadline, `check_wall_s` | Elapsed time from the clock start to the end of serialization. The process group is killed at the deadline | Provisionally **5 s** (warden, room #56952; accepted by root, room #56957) | warden |
+| CPU reserve, enforcement and debit | Process-tree CPU: reserved before runtime, enforced while running, and debited at settlement in the `checks` suballocation | `<warden>` | warden |
+| Request quotas | 30 checks an hour per account, 600 per room | Provisional (room #56897) | warden |
+
+**The whole-check wall, defined.**
+- **Clock start.** When a worker begins the check, after it leaves the queue. Queue time is excluded from the 5 s and reported separately.
+- **Inside the 5 s:** worker startup, parsing and unsealing, legality, model construction, the solve, and result serialization.
+  - Model construction is the Python loops over `C·K·C·K·N` variables ([#57b] `tap_router.py:127-180`).
+  - That is 6·4·6·4·10 = 5,760 variables for Ascend 910, and 8·4·8·4·16 = 16,384 for CPU-DRAM.
+- **Outside it:** cleanup, meaning reaping the process group and archiving. Cleanup has its own separate headroom, and is still charged.
+- **CPU is reserved before runtime.** The reservation is made before the worker starts, and settled after cleanup with measured process-tree CPU.
+- **Not a CPU grant.** The 5 s wall is **not** a 5 CPU-s grant. Hitting the solver limit, the wall or the CPU reserve counts as an unfinished check against the account (room #56897). Exceeding a request quota is refused with `rate_limited`.
 
 **Results.**
-- `GET /api/open/v1/check-status?m=…&geometry_sha256=…` returns `W(c)`, the router status, and nominal `q_r` for `r = 0`, each tolerance and each budget, labelled "routed wire only, no thermal solve, nominal, not a score". It carries no geometry.
-- One best-effort pointer.
+- `GET /api/open/v1/check-status?h=<request_sha256>` returns `W(c)`, the router status, and nominal `q_r` for `r = 0`, each tolerance and each budget, labelled "routed wire only, no thermal solve, nominal, not a score". It carries no geometry.
+- `request_sha256` is the hash of the canonical salted request, so only its author can look it up. There is no lookup by unsalted geometry hash, and checks are never indexed publicly (A10).
+- A public check gets one best-effort pointer. A private check gets none.
 
 **What "free" means** (root, room #56902; [review] `REVIEW.md:17`; `PROVISIONAL-CONTRACT.md:41`). The check costs
 participants nothing **only** while SentiLab's sponsorship and the measured, capped MILP cost support it. The limits,
@@ -704,16 +818,16 @@ funding, caps, queue behaviour and observed latency are published. It is not unl
 ### 7.1 States
 
 ```
-reply ─► rejected                                     (terminal; codes; nothing charged)
+reply ─► rejected                                     (terminal; codes; no quota charge)
       └► queued ─► evaluating ─► evaluated ─► replaying ─► reproduced ─► (optional) cross_checked
            │ ▲          │            │             └─────► not_reproduced
            ▼ │          ▼            ▼
           held        failed       failed             (charged; no automatic retry)
-           └► cancelled · expired                      (before any reservation; never charged)
+           └► cancelled · expired                      (before any reservation; no quota charge)
 hidden: a public-view flag from moderation, with reason; nothing is deleted
 ```
 
-| State | Meaning | Charged | Ledger lifecycle |
+| State | Meaning | Quota charge | Ledger lifecycle |
 |---|---|---|---|
 | rejected | Failed a transport, schema, terms, manifest, sealing, key, hash, legality or policy check | No | `rejected_schema` or `rejected_constraints` (`web/public/sentilab/lab-model.mjs:218-225`; `sentilab_core/dataset.py:22`) |
 | queued, held | Waiting, or on moderation hold | No | New |
@@ -723,8 +837,10 @@ hidden: a public-view flag from moderation, with reason; nothing is deleted
 | replaying | The fresh-process replay is reserved or running | Yes | `reproduction_pending` |
 | reproduced | **"Reproduced under `<evaluator identity>`"**: the replay on the pinned build agreed (root) | Yes | `reproduced`, `verify.add` tier `replayed` |
 | not_reproduced | The replay disagreed or failed | Yes | `reproduction_failed` |
-| cross_checked | A second host or build agreed. Separately qualified; never implied by "reproduced" | Yes | `verify.add` tier `cross_arch` or `cross_solver` (`sentilab_core/projection.py:13`) |
+| cross_checked | A second host or build agreed. Separately qualified; never implied by "reproduced" | Yes | `verify.add` with a new same-physics `cross_build` tier, or `cross_arch` for another architecture (section 8.5) |
 | cancelled, expired | Before any reservation | No | `cancelled`; new `expired` |
+
+**Quota charge versus sponsor use.** The column says whether the entry counts against participant quotas. Parsing, unsealing, queue handling, cache lookups and rejected work still use sponsor CPU. That use is recorded under the `intake` suballocation (section 8.4), and is never described as zero ([#59-review] `REVIEW.md:59`; room #56957).
 
 **The contract's four states.**
 
@@ -748,7 +864,7 @@ No submitted text appears in a code (`sentilab_core/transport.py:8-11`; `sentila
 | Envelope | `malformed_json`, `duplicate_key`, `nonfinite_number`, `too_deep`, `unknown_field`, `schema_invalid` |
 | Manifest and terms | `unknown_manifest`, `manifest_mismatch`, `manifest_closed`, `not_open_yet`, `terms_not_accepted` |
 | Geometry | `die_count`, `die_order`, `out_of_frame`, `rotation_not_allowed`, `lattice`, `margin`, `halo_overlap`, `min_spacing`, `keepout`, `geometry_hash_mismatch` |
-| Revision | `idempotency_conflict`, `unknown_parent` |
+| Revision | `idempotency_conflict`, `unknown_parent`, `unknown_proposal` |
 | Policy | `participant_suspended`, `participant_paused`, `participant_removed`, `rate_limited`, `queue_full`, `budget_exhausted` |
 | Evaluation | `timeout`, `stopped`, `oracle_error`, `grant_expired`, `interrupted`, `binding_mismatch`, `router_timeout`, `check_unfinished` |
 | Reproduction | `reproduction_mismatch`, `fresh_process_required`, `reproduction_failed` |
@@ -771,7 +887,7 @@ every original and revision.
 **Senti.** Senti signs nothing for us. Its guarantee is `actorUserId` on its own row.
 
 **The restricted ledger** (private) holds:
-- the intake journal: hash-chained and unsigned, with action id, `createdAt`, target, `actorUserId`, `actorKind`, actor id, transport key, revision, ciphertext and plaintext, and `body_sha256`;
+- the intake journal: hash-chained and unsigned, with action id, `createdAt`, target, `actorUserId`, `actorKind`, actor id, transport key, revision, ciphertext and plaintext, `body_sha256`, and the server-returned action row as the ciphertext receipt (A10);
 - the processed cursor;
 - visibility decisions;
 - every signed run.
@@ -808,7 +924,7 @@ Private entries appear only as counts.
 **Roots.** One per open manifest per room, posted after readiness, except the readiness root. Each holds the fixed text,
 manifest id, sealing recipient, terms and links.
 
-**Pointers.** At most two per submission.
+**Pointers, for public items only.** Private items get no room pointer, and no private read handle appears in one (A10). A public submission gets at most two.
 - Each is built from signed fields only.
 - Each targets the submission ([api] `alembic/versions/057_session_message_action_targets.py:1-8`).
 - Under load, queued pointers are dropped first, then terminal pointers are batched, staying under [api] `S:232`.
@@ -845,7 +961,8 @@ Root keeps these prospective until measured and bound (room #56902).
 |---|---|
 | Evaluations per account | 3 an hour, 12 a day |
 | Evaluations per room | 20 an hour, 120 a day |
-| Hard backstop | The code's 40-call hourly ceiling (`sentilab_core/budget.py:31-40`) |
+| CPU ceiling (code) | The code caps charged CPU at 600 CPU-s an hour per root, with a default 15 CPU-s reservation per solve (`sentilab_core/budget.py:18-40`). Forty calls an hour is the arithmetic 600/15, not a separate code maximum (room #56957) |
+| Call backstop (warden's policy) | 40 native calls an hour. It is **warden's own policy**, to be implemented and tested, not an existing code limit |
 | Queue | At most 30 waiting. Beyond that, `queue_full` with a retry-after time and no reservation |
 | Pause | Three hidden entries in a day pause an account's evaluations for 24 hours |
 
@@ -859,8 +976,7 @@ question W8.
 
 ### 8.4 One retained global journal; reserve before launch, settle on every exit
 
-**One journal** (astra 5; warden's "same ledger as SLAB-052"). Every charge lands in **one** retained, append-only global
-journal, under distinct suballocations:
+**One journal** (astra 5; warden's "same ledger as SLAB-052"). Revision 1 called the open budget separate, while warden named one ledger. Both hold as **separate admitted suballocations under one accounting journal and one global ceiling**. The live loop's and SLAB-052's existing charges stay exactly as recorded ([#59-review] `REVIEW.md:60`). Every charge lands in that one retained, append-only journal, under distinct suballocations:
 
 | Suballocation | What it charges |
 |---|---|
@@ -871,15 +987,22 @@ journal, under distinct suballocations:
 | `routing` | Actual MILP use for entries |
 | `lifecycle` | Worker start, reap and archive, measured |
 | `checks` | Sponsored routed checks: solve plus lifecycle |
+| `intake` | Parsing, unsealing, queue handling, cache lookups and rejected work: sponsor use, never charged to participant quotas |
 
 **Rules.**
 - Per-account and room quotas, and the backstop, draw on these.
 - Nothing is netted, refunded or moved between suballocations.
 - Measured overruns stay charged.
+- Settlement records measured CPU, wall time, peak memory and the concurrency slot used ([#59-review] `REVIEW.md:60`).
+- Participant billing is always zero. Sponsor resource use is always recorded. The two are reported separately ([#59-review] `REVIEW.md:59`).
+- **The four limits stay separate** for native calls too: the solver's elapsed timeout, the outer wall deadline, the CPU reservation with its enforcement and debit, and the request and call quotas.
 
 **Steps** (the PR #56 review, item 2; `sentilab_core/conductor.py:306-320`):
 1. **Before spawning.** A durable reservation (`budget.py:88-129`) and a signed reservation row (`conductor.py:309-311`), naming the suballocation.
-2. **Launch** with the ceiling as the deadline, and kill the process group at the deadline (`sundai_hotspot/tap_oracle.py:231-275`).
+2. **Launch under two separate limits.**
+   - An elapsed deadline: the worker timer, which kills the process group (`sundai_hotspot/tap_oracle.py:231-275, 626-639`).
+   - A CPU reservation (`sentilab_core/budget.py:114-127`), enforced on measured process-tree CPU at settlement (`:144-148`).
+   - A CPU ceiling is not an elapsed deadline (room #56957).
 3. **Settle in a `finally`.**
    - Measured CPU is recorded when it exists. Otherwise the full ceiling stays charged (`conductor.py:315-319`; `budget.py:84-87`).
    - An overrun writes STOP (`budget.py:144-148`).
@@ -897,8 +1020,10 @@ journal, under distinct suballocations:
 It is recorded as tier `replayed` (`sentilab_core/conductor.py:418-423`). It shows reproducibility, not physical
 correctness.
 
-**A second host or build** is separately qualified (`cross_arch`, or `cross_solver` against the TAP-faithful build: [#56]
-`gate_zero.py:123-129`). It is never implied.
+**A second host or build** is separately qualified and never implied.
+- A TAP-faithful or instrumented HotSpot 6.0 build ([#56] `gate_zero.py:123-129`) shares HotSpot physics. A check against it is a **cross-build** check, not an independent solver ([#59-review] `ROOT-DECISION-OPTIONS.md:9`).
+- The existing tiers (`sentilab_core/projection.py:13`) have no same-physics cross-build tier, so OP-F3 adds one (`cross_build`). Reusing `cross_solver` would overstate independence.
+- `cross_arch` stays for another architecture.
 
 ### 8.6 Failures, costs and raw evidence
 
@@ -1002,7 +1127,7 @@ Authorization: Bearer <agent-capable token>      Idempotency-Key: <transport_key
 {"actionType":"reply","targetSequenceId":<root sequence>,"note":"<sealed check request>",
  "idempotencyKey":"<transport_key>","metadata":{"agentId":"<granted agent id>"}}
 
-GET /api/open/v1/check-status?m=<manifest_id>&geometry_sha256=<…>
+GET /api/open/v1/check-status?h=<request_sha256: hash of the canonical salted check request>
 → {"schema":"sentilab-open-check/1","W_c_mm":18155.8,"router_status":"optimal",
    "q_r_nominal":{"0":1738.3,"0.10":96.55,"0.25":-2366.1},"labels":["routed wire only","nominal","not a score"]}
 
@@ -1045,7 +1170,7 @@ KEY=$(sentilab-open transport-key --room {{submit.room}} --account <your account
       --actor agent:<your agent id> --manifest {{manifest_id}} --key <proposal_key> proposal.json)
 
 # 3. Seal a private proposal
-{ echo "sentilab-open-sealed/1 {{manifest_id}}"; age -r {{sealing.recipient}} -a < proposal.json; } > sealed.txt
+{ echo "sentilab-open-sealed/1 {{manifest_id}} {{sealing.key_version}}"; age -r {{sealing.recipient}} -a < proposal.json; } > sealed.txt
 
 # 4a. Agent, sl CLI (sentinelayer-cli 0.46.5): set --agent and --idempotency-key explicitly
 sl session reply {{submit.room}} {{submit.root_sequence}} "$(cat sealed.txt)" --agent <your agent id> --idempotency-key "$KEY"
@@ -1088,20 +1213,29 @@ worst case of 10.70 s ([#57] `ENVELOPE-PLAN.md:35-40`).
 
 **Per entry.** At least three native calls, plus routing and lifecycle, each charged separately (section 8.4).
 
-**Charging.** Charged CPU is the full ceiling (`sentilab_core/budget.py:84`), under at most 600 CPU-s an hour per root
-(`:31-40`).
+**Charging.**
+- Charged CPU is the full reservation (`sentilab_core/budget.py:84`), under at most 600 charged CPU-s an hour per root, with a default 15 CPU-s reservation per solve (`:18-40`).
+- Forty calls an hour is that arithmetic, not a separate code maximum. Warden's 40-call backstop is his own policy, to implement and test (room #56957).
 
 **Routing still uses CPU.** "Geometry-only" means no thermal solve, not no CPU: 0.2 to 1.5 s per route on the measured
 hosts.
 
+**Billing versus use.**
+- Participant billing is zero.
+- Sponsor use is recorded in the journal, including parsing, queue handling, cache hits and rejected work, none of which is zero CPU.
+- The old grid-64 wall timings and inferred overheads are forecasts for HotSpot 6.0, not lifecycle CPU evidence ([#59-review] `REVIEW.md:59`).
+
 ### 11.3 Load against the provisional quotas
 
 **Evaluations.** Demand at the per-account quota is about 285 entries an hour from 95 accounts. That is far above the
-room quota of 20 an hour, which is itself above the code's ceiling at three calls per entry, about 13. The queue
+room quota of 20 an hour, which is itself above what the code's CPU ceiling allows at three calls per entry, about 13. The queue
 (30) and backpressure decide what happens, not throughput claims.
 
-**Checks.** At 600 an hour room-wide and a 2 s solver limit, the solve alone is at most 20 CPU-min an hour, plus model
-build and lifecycle. OP-F7 measures both.
+**Checks.** No CPU bound follows from multiplying a request quota by a time limit:
+- the 2 s solver limit is elapsed HiGHS time after model construction, not a process-tree CPU cap ([#57b] `tap_router.py:10-15`);
+- the 5 s whole-check wall is elapsed time, not a CPU grant (room #56957).
+
+Check CPU is bounded by the CPU reserve with its enforcement and debit (section 6.2), and the request quotas bound the number of checks. OP-F7 measures the actual whole-check CPU, wall time and memory.
 
 **Senti.** Pointers and polling stay within 120 action reads and writes per minute per room ([api] `S:231-232`).
 
@@ -1115,7 +1249,7 @@ build and lifecycle. OP-F7 measures both.
 
 **Saturation.**
 
-| Condition | Result | Charged |
+| Condition | Result | Quota charge |
 |---|---|---|
 | Room queue at 30 | `queue_full`, with retry-after | No |
 | Account over its hourly quota | Stays queued until the window moves | No |
@@ -1199,8 +1333,8 @@ account, so none can stand in.
 | Step | Action | Expected |
 |---|---|---|
 | 1 | Connect; read the manifest, root and terms | The ids match |
-| 2 | Offline check, then a sponsored routed check | Nominal labels. One check charged to the account in `checks` |
-| 3 | Submit a sealed private proposal as an agent with `sl session reply --agent --idempotency-key` | Others see only ciphertext. A queued pointer. The keyed `participant_ref` and `actor_kind: agent` |
+| 2 | Offline check, then a sealed private routed check | Nominal labels. One check charged to the account in `checks`. Its status is reachable only through `request_sha256`, with no room pointer |
+| 3 | Submit a sealed private proposal as an agent with `sl session reply --agent --idempotency-key` | Others see only ciphertext. No room pointer. Status through `proposal_sha256` shows the keyed `participant_ref` and `actor_kind: agent` |
 | 4 | Retry step 3 with the same bytes | The same transport key, the same Senti row, the same receipt; no charge |
 | 5 | Change one coordinate under the same `proposal_key` | A new transport key and a new row: `idempotency_conflict`, with the earliest kept |
 | 6 | An illegal proposal through MCP; a plaintext `private` proposal; a wrong transport key | `lattice` and `halo_overlap`; `private_requires_sealed`; `transport_key_mismatch` |
@@ -1221,13 +1355,15 @@ account, so none can stand in.
 - the queue cap holds;
 - zero evaluations run outside the budget.
 
-**Fairness is tested across real quota principals** (astra 5). Fifty agents on one account are one principal. The test
-therefore uses several distinct test accounts (the count is warden's), with agents spread across them. A separate stress
-run puts many agents on single accounts to test the per-account caps.
+**Fairness is tested across real quota principals** (astra 5; [#59-review] `REVIEW.md:62`).
+- Fifty agents under one account are one principal, so they test only that account's caps.
+- Fairness across principals uses at least two real accounts, plus appropriately scoped synthetic isolation cases. Warden sets the count (W11).
+- Test identities are labelled as test identities and are never presented as outside participants.
+- Pathological geometries that stress model build test the whole-check wall (room #56952).
 
 | Test | What |
 |---|---|
-| L1 Checks | Routed checks at the account and room limits, timeouts at the solver limit, and the process deadline |
+| L1 Checks | Routed checks at the account and room limits. Each of the four limits is hit separately: the solver limit, the 5 s wall (queue time excluded), the CPU reserve, and the quotas |
 | L2 Submit path | All agent recipes and the person recipe; sealed and public; valid, invalid, retried (same and changed bytes) and oversize |
 | L3 Saturation | The measured HotSpot 6.0 profile. Queue at 30. Backstop. Pause. STOP. Restart. Throughput measured, not assumed |
 | L4 Pages | Public and judge views at volume |
@@ -1240,7 +1376,7 @@ run puts many agents on single accounts to test the per-account caps.
 - **T3 Legality.** One fixture per rule; raw `R` off-lattice; the variants legal.
 - **T4 Transcript replay.**
   - CLI and MCP replies of the same note give identical receipts.
-  - Agent and person stamps.
+  - Agent and person stamps, with each path's admission or grant requirement visible.
   - The section 3.4 ordering, including equal `createdAt` (action-id tiebreak) and cross-room ties.
   - The cursor persisted only after durable processing, with restart and dedupe.
   - Edits, label collisions, a missing `actorUserId`, out-of-thread replies.
@@ -1253,15 +1389,20 @@ run puts many agents on single accounts to test the per-account caps.
   - The public/judge split with no leak through equivalence labels.
   - Strict means `W ≤ W_R` only.
   - No `innerHTML`.
-- **T9 Registry conformance** (`sentilab_core/test_conformance.py:246, 380, 466, 715`).
+- **T9 Registry conformance.** The operator rows `open.manifest`, `open.check` (the computed check), `open.status` and `open.results` (`sentilab_core/test_conformance.py:246, 380, 466, 715`).
 - **T10 Separation and exposure marking.**
 - **T11 Fake end to end.**
 - **T12 Checker and intake agreement.**
 - **T13 Predicates and screen.**
   - `INCOMPLETE` and `UNKNOWN`.
   - No zero defaults.
-  - The discrimination fixtures produce diagnostics only.
+  - Pure predicate fixtures with identical measurements; the only place `R` against itself cancels.
+  - An unexpected scientific diagnostic leaves valid claims visible. A failed required gate-zero check, binding, predicate or scenario suppresses the affected claims (A13).
 - **T14 Adapters.** The Python and JS adapters against the vectors.
+- **T15 Sealing.**
+  - `age` vectors per key version; a wrong key version or a non-JSON plaintext gives `unsealable`.
+  - No plaintext fallback; the size caps.
+  - Private status reachable only through its salted handle, never by geometry hash, index or room pointer.
 
 ## 15. Work breakdown
 
@@ -1279,8 +1420,9 @@ OP ids stay under `e76b348f`. Warden maps any additive tickets to the existing s
 | OP-F7 | Offline checker; sponsored routed check; measured MILP build and solve cost; time-limit boundary; load harness (T12) | forge | OP-F1; PR #57 | L1 passes; cost measured |
 | OP-F8 | (optional) `sl` thin client | forge | A CLI release | Not needed for readiness |
 | OP-F9 | Reference adapters (Python, JS) for check, submit, status and results, with transport keys and sealing; framework wiring notes (T14) | forge | OP-F1 | Adapters pass the vectors |
+| OP-F10 | The raw-R position inventory (A12): moves, exclusions, frozen transforms and hashes, receipt pairs. A separate PR in the references lane | forge | PR #57 | Inventory frozen and separately granted |
 | OP-W1 | Quotas, queue, global journal suballocations, reviewed budget change, grant record | warden | Gate-zero cost receipts | L3 passes |
-| OP-W2 | Intake job and contributor account; Key Vault (credential, decryption key, `k_challenge`); evaluation pool; judge access | warden | OP-F2 | Live |
+| OP-W2 | Intake job and contributor account; Key Vault (credential, `k_challenge`); custody of and read access to the sealing keys (A10); evaluation pool; judge access | warden | OP-F2 | Live |
 | OP-W3 | Moderation and pause; team mapping; overflow room; the load test across real accounts | warden | OP-F7, OP-F2, OP-F9 | Load evidence recorded |
 | OP-A1 | Claim manifest: policy values, scenario list, bundle, lattice rationale, enumerated chiplets, discrimination fixtures; signing before any scoring | astra | Gate zero; PR #57 | Signed |
 | OP-A2 | Readiness review | astra | The readiness run | Recorded |
@@ -1327,29 +1469,36 @@ OP-A1 (signed manifest), OP-A2, OP-A3 ─┘
 
 The six corrections are mapped in Appendix C.
 
-### 16.4 Still open
+### 16.4 Decided by root on revision 2 (room #56957)
 
-**For astra:**
-- **A10** Seal private proposals (recommended), or keep plaintext with disclosure?
-- **A11** The lattice rationale.
-- **A12** The position-case list for raw `R`.
-- **A13** Whether claims display beside a mismatched discrimination fixture.
+| Item | Decision | Sections |
+|---|---|---|
+| Accounting | Keep four limits separate: the solver elapsed limit, the outer wall deadline, the CPU reserve with its enforcement and debit, and the request and call quotas. 40 calls an hour is 600/15, so a 40-call backstop is warden's policy. No participant bill does not mean zero sponsor CPU. The 5 s whole-check wall is adopted, and is not a CPU grant | 6.2, 8.3, 8.4, 11.2, 11.3 |
+| A10 | Sealed private submissions and private routed checks with `age` X25519, bound to the signed manifest. Frozen caps, key versions and rotation; no plaintext fallback. The salted plaintext is the retry identity. Private status only through authorized access or an unguessable handle | 3.7, 4.11, 6.2, 7.5, 14.4 (T15) |
+| A11 | The 500 µm lattice is a declared finite engineering benchmark choice. Raw `R` is continuous and reference-only. `snap0p5` identities are bound; raw and 1 mm histories kept | 4.1, 4.2, 4.11 |
+| A12 | A distinct raw-R position inventory, with scenario pairs as specified. It is counted and granted separately | 4.7, 15 (OP-F10) |
+| A13 | Claims may appear beside an unexpected diagnostic. Failed required checks suppress claims. No tuning. `R` against itself cancels only in a pure fixture | 4.10, 14.4 (T13) |
 
-**For warden:**
+### 16.5 Still open: warden's lane (room #56957)
+
 - **W5** Team mapping.
-- **W6** Who pays for replay calls.
-- **W8** Do quotas count entries or native calls?
-- **W9** Judge access: who the judges are and how they authenticate.
-- **W10** Do check cache hits count? Are quotas per room or per challenge?
-- **W11** The number of distinct test accounts for the fairness test.
-- **W12** `process_deadline_s` and the per-call ceilings.
+- **W6** Sponsor and replay payment.
+- **W8** Whether quotas count entries or native calls, and whether to adopt the 40-call policy.
+- **W9** Judge access.
+- **W10** Cache policy, and per-room versus per-challenge quotas.
+- **W11** The account-principal load test: at least two real accounts plus synthetic isolation cases.
+- **W12** Deadlines, cleanup headroom and CPU reserves.
+
+**Separately pending:** final source, scientific and provider/payer admissions (room #56957).
 
 ### Also noted
 
 - **`baseline-sa` actor label.** `sentilab_core/ledger.py:401-402` labels lab rows `baseline-sa`, so open rows need their own label.
 - **Stale naming.** `app/main.py:1-5, 24` and `web/README.md` name the old front door.
 - **Direct oracle construction.** The live loop and the headroom runner construct `HotSpotOracle` directly ([#56] `evaluators.py:13-14`). The open path must not.
-- **The #59 review packet.** Astra's review files for #59 (`REVIEW.md` `4b2dd6f8…`, decision options `d960dc99…`) were not in any ref we could fetch. Revision 2 applies the corrections as stated in room #56918.
+- **The review packets.**
+  - Revision 2 applied astra's corrections as stated in room #56918. Revision 3 checks them against the exact files at `b7bd8bd` (`[#59-review]`).
+  - The review of revision 2 (room #56957; SHA-256 `cf575bfa…1a1c`) is applied from the room text. Its file was not in any ref I could fetch.
 
 ## Appendix A. Example proposal (syntax only)
 
@@ -1399,7 +1548,13 @@ is sealed before posting because it is `private`.
 | `discrimination_control` | Discrimination fixtures: forge proposal, diagnostic only |
 | (none) | `terms`, `visibility`, `salt`, `sealing`, `screen`, `evaluation_bundle`, `checks`, `limits`, `exposure`, `real_chiplets`, `numerical_admission` |
 
-## Appendix C. Astra's review of revision 1 (room #56918): where each correction lands
+## Appendix C. Astra's reviews: where each correction lands
+
+**Revision 1 review, checked against the exact files** (`[#59-review]`):
+- `REVIEW.md`, SHA-256 `4b2dd6f880d32e03394947ce0db153482bcc11bf662ad555f1ee965bba3822d9`;
+- `ROOT-DECISION-OPTIONS.md`, SHA-256 `d960dc99cab2996e1d432c8026cdc18e7b3dea1d22d17e63d3d175164372f6c2`.
+
+Both were verified and read in full. The options file is historical; root's accepted response (room #56918) and newer decisions govern (room #56954).
 
 | # | Correction | Sections |
 |---|---|---|
@@ -1409,3 +1564,36 @@ is sealed before posting because it is `private`.
 | 4 | Raw same-evaluator comparator; explicitly enumerated chiplets; grid peak and literal selector separate; finite cases, no summed `U`; strict `W ≤ W_R` and 1.05 relaxed; fixtures fixed; no 2.3x, mostly-wire or human-equivalence claims; thresholds fixed before scoring; mismatch stays diagnostic | 4.1, 4.4, 4.7, 4.8, 4.10, 9.3, `CHALLENGE-BRIEF.md` |
 | 5 | Authenticated sponsored remote checks plus offline local checks; no anonymous quotas; every native call, route and lifecycle step in suballocations of one global journal; 20 an hour is not throughput; the 2 s boundary; fairness across real principals | 6, 8.3, 8.4, 11.3, 14.3 |
 | 6 | Keyed per-challenge pseudonyms; frozen own and reference geometry published at opening; versioned terms; originals retained; visibility logged; no training permission; exposure marked for future held-out splits | 3.9, 5.6, 7.4, 9.1, 13 |
+
+**Gaps revision 2 missed, closed in revision 3** (by the exact review text):
+
+| Review text | Revision 3 change | Sections |
+|---|---|---|
+| `REVIEW.md:17`: the actor slot is needed because one account's agents have distinct replay slots | Rationale stated | 3.4 |
+| `REVIEW.md:23`: the cross-room order is a contract choice, not a server total order | Stated | 3.4 |
+| `REVIEW.md:31-36`: each agent path has its own admission or grant; sign-in and joining prove none; no `cli-user` fallback; tests keep admission differences visible | Added, with verified citations | 3.5, 14.4 (T4) |
+| `REVIEW.md:38`: freeze which adapters provide check, submit, status and results; "fetch" is not a native tool; the operator checks omitted the computed check | Provider matrix; `open.check` added | 3.8, 14.4 (T9) |
+| `REVIEW.md:48`: "the reference itself must Match" is not an identity; separate predicate fixtures from scientific diagnostics; declare in advance what a mismatch means | Rewritten, with A13 | 4.10 |
+| `REVIEW.md:52`: bind the eventual corrected gate-zero record, not the cited head | Stated | 4.2 |
+| `ROOT-DECISION-OPTIONS.md:10`; `REVIEW.md:49`: keep the 1 mm record; a snapped variant is a different experiment | Stated, with A11 identities | 4.2 |
+| `ROOT-DECISION-OPTIONS.md:8`: pin the 1, 2 or 4-cell mapping | `statistic.centre_mapping` | 4.4, 4.11 |
+| `ROOT-DECISION-OPTIONS.md:9`: TAP-faithful builds share HotSpot physics and are not independent solvers | `cross_build`, not `cross_solver` | 7.1, 8.5 |
+| `REVIEW.md:59`: rejections and cache hits are never literally zero CPU; separate billing from sponsor use | `intake` suballocation; "quota charge" wording | 7.1, 8.4, 11.2, 11.4 |
+| `REVIEW.md:60`: reconcile a separate allocation with one ledger; keep existing charges; record CPU, memory and concurrency; a solver limit is not a lifecycle cap | Stated | 6.2, 8.4 |
+| `REVIEW.md:62`: two real accounts plus scoped synthetic isolation; test identities are not outside participants | Load-test composition | 14.3, W11 |
+| `REVIEW.md:66, 72`: a frozen reveal rule; terms state moderation visibility and retention; checker notices stay pinned | Added | 5.6, 6.1 |
+| `ROOT-DECISION-OPTIONS.md:17`: manifest fields for reference measurement ids, failure policy, display order, the transport key, intake order and revision, the disclosure phase and the pseudonym policy | Added to the draft manifest | 4.11 |
+
+**Revision 2 review (room #56957)**, applied from the room text (review SHA-256 `cf575bfa30a0b722a677fdff6eb10753d00643a899cce651cfa0011a38421a1c`, not fetchable here):
+
+| Item | Change | Sections |
+|---|---|---|
+| `DESIGN:1103` (revision 2): 600 × 2 s is not a 20 CPU-min bound | Removed; no CPU bound from a quota times a time limit | 11.3 |
+| `DESIGN:882` (revision 2): a CPU ceiling is not an elapsed deadline | The launch step splits the deadline from the CPU reservation | 8.4 |
+| `DESIGN:848` (revision 2): 40 calls an hour is 600/15, not a code maximum | The code CPU ceiling and warden's call policy are separate rows | 8.3, 11.2, 4.11 |
+| Four separate limits; no zero sponsor CPU | Four-limit table; `intake` suballocation | 6.2, 8.4, 7.1, 11.2 |
+| Adopt the 5 s whole-check wall: clock start, queue exclusion, startup, cleanup and serialization, cleanup headroom, CPU before runtime, not a CPU grant | Defined | 6.2, 4.11, 14.3 |
+| A10 sealing for private submissions and checks | Adopted and frozen | 3.7, 4.11, 5.1, 6.2, 7.4, 7.5, 14.2, 14.4 (T15) |
+| A11 lattice rationale; bind `snap0p5`; keep histories | Bound with content and design hashes | 4.1, 4.2, 4.11 |
+| A12 raw-R position inventory | Specified; OP-F10 | 4.7, 15 |
+| A13 claims beside diagnostics; suppression; no tuning; identity only in pure fixtures | Specified | 4.10, 14.4 (T13) |

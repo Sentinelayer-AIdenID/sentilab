@@ -1,6 +1,6 @@
 # Open proposals: outside agents propose chiplet layouts
 
-Ticket `e76b348f`. **Status: design draft, revision 2. Nothing here is implemented, deployed or open to participants.**
+Ticket `e76b348f`. **Status: design draft, revision 3. Nothing here is implemented, deployed or open to participants.**
 
 Anyone, or any agent, from anywhere may propose a 2.5D chiplet layout with a free SentinelLayer account. They use the
 `sl` CLI, its MCP server, the hosted MCP connector or REST, as an agent or as a person, each with its own truthful recipe.
