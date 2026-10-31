@@ -18,6 +18,14 @@ Because e is the maximum error on this same sample, the triangle inequality guar
 | 16 | 0.860000 | 1.720000 | 55 / 276 | 0 | True | 273 | 16 |
 | 32 | 0.160000 | 0.320000 | 220 / 276 | 0 | True | 273 | 5 |
 
+## Observed ranking resolution
+
+Grid 16: largest reference-grid gap reversed or left tied is 0.390000 C.
+Grid 32: largest reference-grid gap reversed or left tied is 0.110000 C.
+
+This statistic compares all unequal reference pairs (zero tie tolerance, with the same roundoff guard). It measures gaps on the reference grid, not coarse-grid differences, and is an observation on these layouts, not a guaranteed threshold for unseen layouts.
+
+
 ## Measured peaks (C)
 
 | Layout | J16 | J32 | J64 |
