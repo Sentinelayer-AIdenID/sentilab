@@ -15,6 +15,201 @@ class Process:
 
 
 class MeterTests(unittest.TestCase):
+    def fake_run(self, directory, *, reason='cancelled', wait_timeout=False, kill=None):
+        """Drive run() with a helper paused before its entry code can execute."""
+        import json
+        import signal
+        import subprocess
+        from dataclasses import asdict
+        from unittest.mock import patch
+
+        from scripts.ci_allocation import EXPIRY
+        from scripts.ci_cpu_meter import run
+        from scripts.tests.test_ci_allocation import IDENTITY
+
+        group = directory / 'ci-allocation-123'
+        (group / 'host').mkdir(parents=True)
+        (group / 'cpu.stat').write_text('usage_usec 1250000\n')
+        (group / 'cgroup.events').write_text('populated 0\n')
+        admission = {'identity': asdict(IDENTITY), 'state': 'admitted', 'allocation_id': '56314',
+                     'slot': 3, 'launch_reservation': 100, 'cpu_reservation_seconds': 900}
+        ledger_dir = directory / 'ledger'
+        ledger_dir.mkdir()
+        (ledger_dir / 'admission.json').write_text(json.dumps(admission))
+        expired = [False]
+
+        class DelayedHelper:
+            pid = 4321
+            alive = True
+            workload_started = False
+            reaped = False
+
+            polls = 0
+
+            def poll(self):
+                self.polls += 1
+                if self.polls > 10:
+                    raise RuntimeError("fake helper poll bound exceeded")
+                return None if self.alive else -9
+
+            def kill(self):
+                self.alive = False
+
+            def wait(self, timeout):
+                # In the old protocol, joining and exec happen after the empty
+                # drain. Finite fake avoids leaving any real workload behind.
+                if self.alive:
+                    (group / 'cgroup.events').write_text('populated 1\n')
+                    self.workload_started = True
+                if wait_timeout:
+                    raise subprocess.TimeoutExpired('delayed helper', timeout)
+                self.reaped = True
+                return -9 if not self.alive else 0
+
+        process = DelayedHelper()
+
+        def spawn(*args, **kwargs):
+            if reason == 'cancelled':
+                signal.getsignal(signal.SIGTERM)(signal.SIGTERM, None)
+            else:
+                expired[0] = True
+            return process
+
+        with patch('scripts.ci_cpu_meter.create_group', return_value=group), \
+             patch('scripts.ci_cpu_meter.subprocess.Popen', side_effect=spawn), \
+             patch('scripts.ci_cpu_meter.time.time', side_effect=lambda: EXPIRY if expired[0] else EXPIRY - 1), \
+             patch('scripts.ci_cpu_meter.monitor', side_effect=lambda *args, **kwargs: monitor(
+                 *args, **kwargs, wall_clock=lambda: EXPIRY if expired[0] else EXPIRY - 1)):
+            if kill is None:
+                code = run(ledger_dir, admission, ['fake-workload'])
+            else:
+                with patch('scripts.ci_cpu_meter.kill_group', side_effect=lambda g: kill(g)):
+                    code = run(ledger_dir, admission, ['fake-workload'])
+        return code, json.loads((ledger_dir / 'settlement.json').read_text()), process, group
+
+    def test_early_stop_or_expiry_cannot_repopulate_after_drain(self):
+        from scripts.ci_cpu_meter import populated
+        for reason in ('cancelled', 'expired'):
+            with self.subTest(reason=reason), tempfile.TemporaryDirectory() as temporary:
+                code, result, process, group = self.fake_run(Path(temporary), reason=reason)
+                self.assertNotEqual(code, 0)
+                self.assertFalse(process.workload_started, 'helper started workload after cgroup drain')
+                self.assertFalse(process.alive)
+                self.assertTrue(process.reaped)
+                self.assertEqual(result['state'], reason)
+                self.assertEqual(result['cpu']['final_populated'], populated(group))
+                self.assertTrue(result['cpu']['cleanup_complete'])
+
+    def test_wait_timeout_kills_helper_and_keeps_cleanup_reconcilable(self):
+        import json
+
+        from scripts.ci_cpu_meter import recover
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            code, result, process, group = self.fake_run(directory, wait_timeout=True)
+            self.assertFalse(process.alive, 'full charge must not leave helper running')
+            self.assertFalse(process.workload_started)
+            self.assertEqual(code, 1)
+            self.assertEqual(result['state'], 'inconclusive')
+            self.assertFalse(result['cpu']['cleanup_complete'])
+            self.assertGreaterEqual(result['cpu']['charged_cpu_seconds'], 900)
+            # Recovery must retry even though a terminal ledger already exists.
+            (group / 'cgroup.kill').unlink()
+            recover(directory / 'ledger', root=directory)
+            self.assertEqual((group / 'cgroup.kill').read_text(), '1')
+            after = json.loads((directory / 'ledger/settlement.json').read_text())
+            self.assertTrue(any(row['event'] == 'cleanup' for row in after['events']))
+
+    def test_final_population_is_observed_and_recovery_retries_terminal_ledger(self):
+        import json
+        from unittest.mock import patch
+
+        from scripts.ci_cpu_meter import recover
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+
+            def repopulate(group):
+                (group / 'cgroup.events').write_text('populated 1\n')
+
+            code, result, _, group = self.fake_run(directory, kill=repopulate)
+            self.assertEqual(code, 1)
+            self.assertEqual(result['state'], 'inconclusive')
+            self.assertTrue(result['cpu']['final_populated'])
+            self.assertFalse(result['cpu']['cleanup_complete'])
+            write = Path.write_text
+
+            def drain(path, *args, **kwargs):
+                result = write(path, *args, **kwargs)
+                if path.name == 'cgroup.kill':
+                    write(group / 'cgroup.events', 'populated 0\n')
+                return result
+
+            with patch.object(Path, 'write_text', drain):
+                recover(directory / 'ledger', root=directory)
+            after = json.loads((directory / 'ledger/settlement.json').read_text())
+            cleanup = [row for row in after['events'] if row['event'] == 'cleanup'][-1]
+            self.assertFalse(cleanup['final_populated'])
+            self.assertTrue(cleanup['cleanup_complete'])
+
+    def test_late_empty_drain_preserves_cpu_sample_but_invalidates_timing(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            def late_drain(group):
+                (group / 'cpu.stat').write_text('usage_usec 2500000\n')
+                ticks = iter((0, 6))
+                kill_group(group, clock=lambda: next(ticks), sleep=lambda _: None)
+
+            code, result, _, _ = self.fake_run(Path(temporary), kill=late_drain)
+            self.assertEqual(code, 1)
+            self.assertEqual(result['state'], 'inconclusive')
+            self.assertEqual(result['cpu']['cgroup_cpu_seconds'], 1.25)
+            self.assertFalse(result['cpu']['final_populated'])
+            self.assertFalse(result['cpu']['kill_within_reserve'])
+            self.assertGreaterEqual(result['cpu']['charged_cpu_seconds'], 900)
+
+    def test_workload_waits_for_parent_attachment_and_attach_failure_cancels_it(self):
+        import json
+        import sys
+        import time
+        from dataclasses import asdict
+        from unittest.mock import patch
+
+        from scripts.ci_cpu_meter import run
+        from scripts.tests.test_ci_allocation import IDENTITY
+
+        for attach_fails in (False, True):
+            with self.subTest(attach_fails=attach_fails), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                group = directory / 'group'
+                (group / 'host').mkdir(parents=True)
+                (group / 'cpu.stat').write_text('usage_usec 0\n')
+                (group / 'cgroup.events').write_text('populated 0\n')
+                marker = directory / 'workload-started'
+                attached = []
+                write = Path.write_text
+
+                def attach(path, *args, marker=marker, attached=attached,
+                           fails=attach_fails, write=write, **kwargs):
+                    if path.name == 'cgroup.procs':
+                        time.sleep(.1)  # allow the actual nonthermal helper to reach its gate
+                        self.assertFalse(marker.exists(), 'workload ran before parent attachment')
+                        attached.append(True)
+                        if fails:
+                            raise OSError('fake attach failure')
+                    return write(path, *args, **kwargs)
+
+                admission = {'identity': asdict(IDENTITY), 'state': 'admitted', 'allocation_id': '56314',
+                             'slot': 3, 'launch_reservation': 100, 'cpu_reservation_seconds': 900}
+                with patch('scripts.ci_cpu_meter.create_group', return_value=group), \
+                     patch('scripts.ci_cpu_meter.time.time', return_value=1793448000), \
+                     patch.object(Path, 'write_text', attach):
+                    code = run(directory / 'ledger', admission, [sys.executable, '-c',
+                               'import pathlib,sys; pathlib.Path(sys.argv[1]).touch()', str(marker)])
+                self.assertEqual(attached, [True])
+                self.assertEqual(marker.exists(), not attach_fails)
+                self.assertEqual(code, 1 if attach_fails else 0)
+                result = json.loads((directory / 'ledger/settlement.json').read_text())
+                self.assertTrue(result['cpu']['helper_reaped'])
+
     def test_monitor_observes_inflight_cpu_and_stops_before_cap(self):
         usage = iter((0, 400, 870))
         clock = iter((0, .05, .1))
