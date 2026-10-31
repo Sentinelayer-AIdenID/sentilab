@@ -7,6 +7,9 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from sentilab_core.admission import Admission
+from sentilab_core.model_calls import AdmittedLab
+from sentilab_core.test_admission import registry_record, write_registry
 from sentilab_core.envelope import canonical, digest
 from sentilab_core.labs import FAMILIES, ReplayLab, Request, materialize, schema_validator, validate_message
 from sentilab_core.dispatch import Dispatcher, LabBudget, Registration
@@ -18,6 +21,24 @@ FIXTURES = Path(__file__).parent / "fixtures" / "labs"
 def replay_dispatcher(budget=LabBudget(), **kwargs):
     return Dispatcher([Registration(family, family, ReplayLab(FIXTURES / f"{family}.json"), budget)
                        for family in FAMILIES], **kwargs)
+
+
+def guarded_fixture(case, lab):
+    """Keep exercising malformed/slow fixture responses through live admission."""
+    temporary = tempfile.TemporaryDirectory()
+    case.addCleanup(temporary.cleanup)
+    root = Path(temporary.name)
+    write_registry(root / "registry.json", [registry_record()])
+    gate = Admission(root / "registry.json", run_id="fixture-run", arm_id="arm-a",
+                     spend_path=root / "spend.json")
+
+    async def transport(call):
+        wire = json.loads(call.request_json)
+        request = Request(context=json.dumps(wire.pop("context")).encode(), **wire)
+        return await getattr(lab, call.operation)(request)
+
+    return AdmittedLab("fixture-model", "fixture-provider", "fixture-version", gate,
+                       transport, 16384, 16384)
 
 
 class ResponseLab:
@@ -54,7 +75,7 @@ class LabBoundaryTests(unittest.IsolatedAsyncioTestCase):
         for outcome in ("accepted", "non_improving_current", "within_margin"):
             lab = ForgedLab()
             lab.outcome = outcome
-            dispatcher = Dispatcher([Registration("openai", "openai", lab)])
+            dispatcher = Dispatcher([Registration("openai", "openai", guarded_fixture(self, lab))])
             self.assertIsNone(await dispatcher.call("openai", "propose", Request()))
             self.assertEqual(dispatcher.events[-1]["reason"], "invalid_response")
 
@@ -77,7 +98,7 @@ class LabBoundaryTests(unittest.IsolatedAsyncioTestCase):
             {"geometry": [{"id": "compute-a", "x_mm": float("nan"), "y_mm": 2}]},
             {"geometry": [{"id": "compute-a", "x_mm": True, "y_mm": 2}]})]
         for response in variants:
-            dispatcher = Dispatcher([Registration("openai", "openai", ResponseLab(response))])
+            dispatcher = Dispatcher([Registration("openai", "openai", guarded_fixture(self, ResponseLab(response)))])
             with self.subTest(response=list(response)):
                 self.assertIsNone(await dispatcher.call("openai", "propose", Request()))
                 self.assertEqual(dispatcher.events[-1]["reason"], "invalid_response")
@@ -189,7 +210,7 @@ class DispatchBudgetTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_timeout_is_charged_and_other_labs_continue(self):
         slow = WaitingLab({})
-        dispatcher = Dispatcher([Registration("openai", "openai", slow, LabBudget(call_timeout=0.01)),
+        dispatcher = Dispatcher([Registration("openai", "openai", guarded_fixture(self, slow), LabBudget(call_timeout=0.01)),
                                  Registration("claude", "claude", ReplayLab(FIXTURES / "claude.json"))])
         result = await dispatcher.round("propose", {"openai": Request(), "claude": Request()})
         self.assertIsNone(result["openai"])
@@ -208,7 +229,7 @@ class DispatchBudgetTests(unittest.IsolatedAsyncioTestCase):
         class BrokenLab:
             async def propose(self, request):
                 raise RuntimeError("fixture failure")
-        broken = Dispatcher([Registration("openai", "openai", BrokenLab(), LabBudget(calls=1))])
+        broken = Dispatcher([Registration("openai", "openai", guarded_fixture(self, BrokenLab()), LabBudget(calls=1))])
         self.assertIsNone(await broken.call("openai", "propose", Request()))
         self.assertEqual(broken.events[-1]["reason"], "lab_error")
         self.assertIsNone(await broken.call("openai", "propose", Request()))
@@ -217,8 +238,8 @@ class DispatchBudgetTests(unittest.IsolatedAsyncioTestCase):
     async def test_concurrency_caps_and_cancellation_release_slots_without_refund(self):
         slow = WaitingLab({})
         other = WaitingLab({})
-        dispatcher = Dispatcher([Registration("openai", "openai", slow),
-                                 Registration("claude", "claude", other)], concurrency=1)
+        dispatcher = Dispatcher([Registration("openai", "openai", guarded_fixture(self, slow)),
+                                 Registration("claude", "claude", guarded_fixture(self, other))], concurrency=1)
         active = asyncio.create_task(dispatcher.call("openai", "propose", Request()))
         await slow.started.wait()
         self.assertIsNone(await dispatcher.call("openai", "propose", Request()))

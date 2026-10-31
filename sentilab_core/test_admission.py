@@ -1,7 +1,5 @@
 """Exercise admission and durable accounting using synthetic, non-secret records."""
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
@@ -45,6 +43,9 @@ class AdmissionTests(unittest.TestCase):
         for model in ("fixture-model", "deepseek-v4-pro", ""):
             with self.subTest(model=model), self.assertRaises(admission.NotAdmitted):
                 admission.check(model)
+        with self.assertRaises(admission.NotAdmitted):
+            admission.Admission(run_id="fixture-run", arm_id="arm-a",
+                                spend_path=self.root / "default-spend.json").check("fixture-model")
         write_registry(self.registry, [])
         with self.assertRaises(admission.NotAdmitted):
             self.gate().check("fixture-model")
@@ -71,6 +72,7 @@ class AdmissionTests(unittest.TestCase):
             {"arm_cap_usd": True}, {"expires_at": "yesterday"},
             {"expires_at": "2000-01-01T00:00:00Z"},
             {"approved_at": "2999-01-01T00:00:00Z"},
+            {"payer": "fixture-payer\n"},
             {"credential_value": "forbidden-fixture"})]
         for change in ({"status_code": 401}, {"models": []}, {"provider": "wrong-provider"},
                        {"entitlement_source": "wrong-entitlement"},
@@ -101,6 +103,14 @@ class AdmissionTests(unittest.TestCase):
         write_registry(self.registry, [])
         with self.assertRaises(admission.NotAdmitted):
             gate.meter("fixture-model", 0)
+
+    def test_changed_quote_is_refused_before_reservation(self):
+        gate = self.gate()
+        record = gate.check("fixture-model")
+        write_registry(self.registry, [registry_record(input_usd_per_million="10")])
+        with self.assertRaises(admission.NotAdmitted):
+            gate.meter("fixture-model", record.ceiling_usd(1000, 500), expected_record=record)
+        self.assertEqual(gate.spent()["run_usd"], "0")
 
     def test_arm_and_run_caps_aggregate_across_models_and_restart(self):
         write_registry(self.registry, [registry_record(), registry_record("second"),

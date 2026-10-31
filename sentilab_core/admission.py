@@ -55,6 +55,14 @@ def _identifier(value):
     return value
 
 
+def public_name(value):
+    """Only non-secret identifiers belong in admission/probe artifacts."""
+    _identifier(value)
+    if re.search(r"(?i)(?:^|/)(?:sk[-_]|gh[pousr]_|xox[baprs]-|AKIA|eyJ)", value):
+        raise ValueError("credential-like identifier")
+    return value
+
+
 def _usd(value):
     if isinstance(value, bool) or not isinstance(value, (str, int, float, Decimal)):
         raise OverCap("invalid USD amount")
@@ -122,6 +130,11 @@ def _records(path):
         for raw in data["records"]:
             row = dict(raw)
             probe = row.pop("probe")
+            for field in ("provider", "model_id", "model_version", "run_id", "arm_id",
+                          "payer", "entitlement_source", "approval_ref"):
+                public_name(row[field])
+            for value in (probe["provider"], probe["entitlement_source"], *probe["models"]):
+                public_name(value)
             if not (_time(probe["checked_at"]) <= _time(row["approved_at"]) <= now < _time(row["expires_at"])):
                 raise ValueError("admission dates invalid")
             if (probe["status_code"] != 200 or row["model_id"] not in probe["models"] or
@@ -197,10 +210,12 @@ class Admission:
         return (sum((_usd(r["usd"]) for r in run if r["arm_id"] == self.arm_id), Decimal(0)),
                 sum((_usd(r["usd"]) for r in run), Decimal(0)))
 
-    def meter(self, model_id, usd):
+    def meter(self, model_id, usd, *, expected_record=None):
         """Reserve a conservative USD ceiling atomically BEFORE any paid I/O."""
         amount = _usd(usd)
         record = self.check(model_id)
+        if expected_record is not None and record != expected_record:
+            raise NotAdmitted("admission changed since the cost quote")
         try:
             with lock(self.lock_path):
                 state = self._ledger()
