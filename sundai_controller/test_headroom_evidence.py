@@ -149,6 +149,55 @@ class EvidenceRunnerTests(unittest.IsolatedAsyncioTestCase):
                 stack.enter_context(patch.object(h, '_write_report', side_effect=OSError('report disk failure')))
             return await h.run_headroom('ascend910', mesh, path, self.root / 'out', oracle_factory=CountingOracle)
 
+    async def test_one_search_unknown_methods_refuse_before_initialization_calls_or_spend(self):
+        import hashlib
+        from sundai_controller.test_evidence_profile import identity, record
+        from sundai_controller.evidence_profile import build_profile
+        class ProductionMarker(CountingOracle):
+            requires_evidence_profile = True
+        current = dict(identity(), fixture='ascend910')
+        profile = self.root / 'profile.json'
+        profile.write_text(json.dumps(build_profile([record(sample_identity=current)], current)))
+        self.prereg['reducer_methods'].update(search_evaluations_per_method=1,
+                                              reproduction_evaluations_per_method=1)
+        self.prereg['long_sa'].update(search_evaluations_per_restart=1,
+                                     reproduction_evaluations_per_restart=1)
+        self.prereg['evidence_profile'] = {'path': profile.name,
+            'sha256': hashlib.sha256(profile.read_bytes()).hexdigest(),
+            'reserve_cpu_seconds': 2, 'reserve_reason': 'synthetic setup and settlement'}
+        for section, category in (('reducer_methods', 'reducer'), ('cheap_methods', 'reducer'),
+                                  ('extra_diagnostics', 'diagnostic')):
+            with self.subTest(section=section):
+                declaration = json.loads(json.dumps(self.prereg))
+                if section == 'cheap_methods':
+                    declaration[section] = declaration.pop('reducer_methods')
+                declaration.setdefault(section, {})['methods'] = ['typo']
+                path = self.root / f'{section}.json'
+                path.write_text(json.dumps(declaration))
+                budget, output = self.root / f'{section}-SPEND.json', self.root / f'{section}-out'
+                oracle = ProductionMarker()
+                with patch.object(e, 'execution_identity', return_value=current), \
+                        patch.object(ProductionMarker, '__new__', return_value=oracle) as constructor, \
+                        patch.object(h, '_shared_designs', wraps=h._shared_designs) as initialize, \
+                        patch.object(h.os, 'fsync'):
+                    error = None
+                    try:
+                        result = await h.run_headroom('ascend910', 0, path, output,
+                            budget_path=budget, oracle_factory=ProductionMarker)
+                    except AdmissionRefused as exc:
+                        error = exc
+                    if error is None:
+                        self.fail(f'{section} typo admitted: {result["aggregate_evaluations"]} calls, '
+                                  f'{result["verdict"]}, ledger exists={budget.exists()}')
+                self.assertIn(f'unsupported {category} method', str(error))
+                constructor.assert_not_called()
+                initialize.assert_not_called()
+                self.assertEqual(oracle.calls, [])
+                self.assertFalse(budget.exists())
+                self.assertFalse(budget.with_suffix('.lock').exists())
+                self.assertFalse(budget.with_suffix('.runs.jsonl').exists())
+                self.assertFalse(output.exists())
+
     async def test_new_v3_executes_declared_long_search_and_fresh_reproduction(self):
         result = await self.run_partition_case()
         lane = result['long_sa_results'][0]
@@ -272,6 +321,33 @@ class EvidenceRunnerTests(unittest.IsolatedAsyncioTestCase):
 
 
 class SupervisorAdmissionTests(unittest.TestCase):
+    def test_unknown_methods_refuse_before_supervisor_initialization_or_reservation(self):
+        evidence = h.ROOT / 'docs/sentilab/evidence/SLAB-039'
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            budget = root / 'SPEND.json'
+            before = (evidence / 'SPEND.json').read_bytes()
+            budget.write_bytes(before)
+            for section, category in (('reducer_methods', 'reducer'), ('extra_diagnostics', 'diagnostic')):
+                with self.subTest(section=section):
+                    declaration = json.loads((evidence / 'PREREG-v4.json').read_bytes())
+                    declaration.setdefault(section, {})['methods'] = ['typo']
+                    path = root / 'prereg.json'
+                    path.write_text(json.dumps(declaration))
+                    policy = s.Policy(measured_observation_plus_kill_seconds=.6)
+                    with patch.object(s, 'load_policy', return_value=(policy, {}, 'synthetic')), \
+                            patch.object(s, 'verify_cpu_max') as verify, \
+                            patch('sundai_hotspot.tap_oracle.HotSpotOracle') as constructor, \
+                            patch.object(s, 'supervise') as launch:
+                        with self.assertRaisesRegex(AdmissionRefused, f'unsupported {category} method'):
+                            s.run(path, budget, root / 'out', root / 'policy.json')
+                    verify.assert_not_called()
+                    constructor.assert_not_called()
+                    launch.assert_not_called()
+                    self.assertEqual(budget.read_bytes(), before)
+                    self.assertFalse(budget.with_suffix('.lock').exists())
+                    self.assertFalse((root / 'out').exists())
+
     def test_missing_profile_refuses_before_reservation_or_launch(self):
         from dataclasses import asdict
         evidence = h.ROOT / 'docs/sentilab/evidence/SLAB-039'

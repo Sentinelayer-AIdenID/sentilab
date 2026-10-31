@@ -102,6 +102,12 @@ def declared_calls(prereg):
                                    (diagnostics, 'diagnostic methods', False)):
         if not isinstance(value, list) or (required and not value):
             raise AdmissionRefused(f'{label} must be {"a nonempty" if required else "a"} list')
+    for values, category, supported in (
+            (methods, 'reducer', ('random', 'greedy', 'simulated_annealing')),
+            (diagnostics, 'diagnostic', ('ucb1', 'signal_portfolio'))):
+        for method in values:
+            if not isinstance(method, str) or method not in supported:
+                raise AdmissionRefused(f'unsupported {category} method: {method!r}')
     search = _count(cheap.get('search_evaluations_per_method', cheap.get('evaluations_per_method')),
                     'cheap search evaluations', positive=True)
     reproduction = _count(cheap.get('reproduction_evaluations_per_method', 0),

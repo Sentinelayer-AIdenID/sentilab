@@ -53,13 +53,14 @@ def freeze_declaration(prereg_path, budget_path, output_path):
     prereg_path, budget_path = Path(prereg_path), Path(budget_path)
     contents = prereg_path.read_bytes()
     prereg = json.loads(contents)
+    schedule = declared_calls(prereg)
     oracle = HotSpotOracle(prereg['grid'], prereg['grid'], fixture=prereg['fixture'])
     identity = execution_identity(oracle)
     # Do not freeze against a ledger that an active run can be changing.
     with budget_path.with_suffix('.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         state = json.loads(budget_path.read_bytes())
-        check_declared_calls(prereg, state, declared_calls(prereg)['declared_calls'])
+        check_declared_calls(prereg, state, schedule['declared_calls'])
         frozen = freeze(prereg_path, output_path, available_cpu(prereg, state),
                         identity=identity, contents=contents)
     return frozen['evidence_profile_admission']

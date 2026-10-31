@@ -330,6 +330,8 @@ def run(prereg_path, budget_path, output_dir, policy_path):
         raise ValueError('supervisor is for prospective micro150 v4 only')
     if policy.rate_q != prereg['cpu_enforcement']['rate_q']:
         raise ValueError('supervisor Q differs from preregistration')
+    from sundai_controller.evidence_profile import declared_calls, load_admission
+    declared_calls(prereg)
     rate_cap = verify_cpu_max(policy)
     budget_path = Path(budget_path)
     with budget_path.with_suffix('.lock').open('a') as lock:
@@ -337,7 +339,6 @@ def run(prereg_path, budget_path, output_dir, policy_path):
         before = json.loads(budget_path.read_text())
         from sundai_controller.headroom_evidence import available_cpu, execution_identity, check_declared_calls
         allowance = available_cpu(prereg, before)
-        from sundai_controller.evidence_profile import load_admission
         from sundai_hotspot.tap_oracle import HotSpotOracle
         identity = execution_identity(HotSpotOracle(prereg['grid'], prereg['grid'], fixture=prereg['fixture']))
         profile_admission = load_admission(prereg, prereg_path, allowance, identity=identity)

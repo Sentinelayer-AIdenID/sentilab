@@ -210,6 +210,20 @@ class EvidenceProfileTests(unittest.TestCase):
         path = Path(__file__).resolve().parents[1] / 'docs/sentilab/evidence/SLAB-039/PREREG-v4.json'
         self.assertEqual(ep.declared_calls(json.loads(path.read_bytes()))['declared_calls'], 4768)
 
+    def test_declaration_and_admission_reject_unsupported_method_identifiers(self):
+        for section, category, misplaced in (('reducer_methods', 'reducer', 'ucb1'),
+                                             ('extra_diagnostics', 'diagnostic', 'random')):
+            for method in ('typo', '', None, 7, {}, misplaced):
+                for check in ('declaration', 'admission'):
+                    with self.subTest(section=section, method=method, check=check):
+                        self.prereg = prereg()
+                        self.prereg[section]['methods'][0] = method
+                        with self.assertRaisesRegex(ep.AdmissionRefused, f'unsupported {category} method'):
+                            if check == 'declaration':
+                                ep.declared_calls(self.prereg)
+                            else:
+                                self.admit()
+
     def test_edited_summary_or_raw_record_cannot_understate_measured_cost(self):
         self.profile['phase_means']['solve']['mean_cpu_seconds'] = 0.1
         with self.assertRaisesRegex(ep.AdmissionRefused, 'phase_means differs from measured'):
@@ -307,6 +321,27 @@ class ProfileFileTests(unittest.TestCase):
         with self.assertRaisesRegex(ep.AdmissionRefused, 'SHA-256 differs'):
             ep.freeze(self.prereg_path, output, 90, identity=self.identity)
         self.assertFalse(output.exists())
+
+    def test_freeze_rejects_unknown_methods_before_initialization_or_ledger_lock(self):
+        for section, category in (('reducer_methods', 'reducer'), ('extra_diagnostics', 'diagnostic')):
+            with self.subTest(section=section):
+                declaration = json.loads(json.dumps(self.prereg))
+                declaration['schema'] = 'slab-039-prereg-v3'
+                declaration[section]['methods'][0] = 'typo'
+                self.prereg_path.write_text(json.dumps(declaration))
+                budget = self.root / f'{section}-SPEND.json'
+                output = self.root / f'{section}-FROZEN.json'
+                historical = Path(__file__).resolve().parents[1] / 'docs/sentilab/evidence/SLAB-039/SPEND.json'
+                budget.write_bytes(historical.read_bytes())
+                before = budget.read_bytes()
+                with patch('sundai_hotspot.tap_oracle.HotSpotOracle') as constructor, \
+                        patch('sundai_controller.headroom_evidence.execution_identity', return_value=self.identity):
+                    with self.assertRaisesRegex(ep.AdmissionRefused, f'unsupported {category} method'):
+                        cli.freeze_declaration(self.prereg_path, budget, output)
+                constructor.assert_not_called()
+                self.assertEqual(budget.read_bytes(), before)
+                self.assertFalse(budget.with_suffix('.lock').exists())
+                self.assertFalse(output.exists())
 
     def test_missing_profile_requires_explicit_synthetic_opt_out(self):
         self.prereg.pop('evidence_profile')
