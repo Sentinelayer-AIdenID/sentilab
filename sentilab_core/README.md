@@ -20,6 +20,8 @@ refuses writes. Read-only replay and the view expose the verified prefix and a
 chain error; they never skip a gap to project later events. Byte-identical
 retransmissions are ignored; conflicting ID/sequence groups freeze before every
 member. Signed `values` are display data; the gate reads core records.
+Only writers create lock sidecars. Readers open existing locks read-only and
+can replay imported history without a sidecar; public GETs create no files.
 
 The service records a reservation before each worker starts and retains it after
 failure or interruption. Live ceilings are 600 solves and 600 charged CPU seconds
