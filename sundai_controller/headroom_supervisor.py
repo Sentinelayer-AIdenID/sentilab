@@ -63,14 +63,15 @@ class Policy:
 
 
 def load_policy(path):
-    declaration = json.loads(Path(path).read_text())
+    admitted_bytes = Path(path).read_bytes()
+    declaration = json.loads(admitted_bytes)
     policy = Policy(**declaration['limits'])
     if (declaration.get('status') != 'approved' or
             not isinstance(declaration.get('approved_by'), str) or
             not declaration['approved_by'].strip() or
             declaration.get('accept_unbounded_scheduler_and_cleanup_risk') is not True):
         raise RuntimeError('operational approval required: unconditional overshoot is unbounded')
-    return policy, declaration
+    return policy, declaration, hashlib.sha256(admitted_bytes).hexdigest()
 
 
 def _write(path, value):
@@ -279,7 +280,7 @@ def settle(state, before, receipt, policy, allowance):
 def run(prereg_path, budget_path, output_dir, policy_path):
     """Only production entry point: pending risk decisions fail before worker start."""
     global WORKER_CONTEXT
-    policy, declaration = load_policy(policy_path)
+    policy, declaration, policy_sha256 = load_policy(policy_path)
     # Parent lifetime CPU includes this parsing, validation and all final output.
     prereg_bytes = Path(prereg_path).read_bytes()
     prereg = json.loads(prereg_bytes)
@@ -297,6 +298,7 @@ def run(prereg_path, budget_path, output_dir, policy_path):
         backend = LinuxTree(policy)
         reservation = {'id': uuid.uuid4().hex, 'reserved_cpu_seconds': allowance,
                        'policy': declaration, 'status': 'running',
+                       'policy_sha256': policy_sha256,
                        'prereg_sha256': hashlib.sha256(prereg_bytes).hexdigest(),
                        'supervisor_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
         state['outer_active'] = reservation
@@ -323,7 +325,7 @@ def run(prereg_path, budget_path, output_dir, policy_path):
         receipt['reservation_id'] = reservation['id']
         receipt['supervisor_sha256'] = reservation['supervisor_sha256']
         receipt['prereg_sha256'] = reservation['prereg_sha256']
-        receipt['policy_sha256'] = hashlib.sha256(Path(policy_path).read_bytes()).hexdigest()
+        receipt['policy_sha256'] = reservation['policy_sha256']
         receipt = settle(state, before, receipt, policy, allowance)
         _write(budget_path, state)
         # Authoritative acceptance record lives outside the worker's provisional RESULT.
