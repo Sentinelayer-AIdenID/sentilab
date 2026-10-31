@@ -33,4 +33,13 @@ The controller uses a new 0700 root, immutable reservation and atomic state; a d
 
 ## Review
 
-45 envelope calls (Ascend 24, CPU-DRAM 21); forecast 215.9 CPU-s, proposed cap 316.3 CPU-s, awaiting a warden grant. The routed-wire round trip passes on both raw references (-0.05% and +0.004% against the paper), and the five out-of-sample panels land within 0.10%; the temperature half is planned, not run. Local runs used a refusing stub in place of the HotSpot binary: the seven existing solve tests fail identically on main and on this branch, and nothing else fails. Open: the micro150 row snap is decided below decode precision; the 1 mm snapped variants miss the paper's routed wire by +10.5% and -4.3% (a 0.5 mm snap stays within 2%).
+Merged main (#55) into the PR as a pure merge commit; the only hand resolution is in `tap_oracle_worker.py` (both sides kept).
+
+Post-merge repair (astra #56857/#56858, warden review, astra sealed review):
+- [x] 0.5 mm engineering variants (plain nearest rounding, ties up, no repair) with manifests; raw and 1 mm layouts unchanged and pinned.
+- [x] Frozen raw identities (content hashes) and `TapGeometry.continuous_centers_for` for gate-zero validation without the lattice.
+- [x] Envelope rebased on the 0.5 mm variants: 46 calls, forecast 220.4 CPU-s, proposed cap 321.5 CPU-s; first plan (45 / 215.851 / 316.308) kept as superseded forecasts.
+- [x] Router: refuses non-optimal solves and malformed inputs; solver stack pinned and recorded; change notice and THIRD_PARTY_NOTICES entry.
+- [x] Claims: three named temperature statistics; wire agreement as consistency evidence (translation invariance); reuse of the five panels disclosed; heuristic overhead labelled; no "solver grant" claim; norms named; decoder docstring states what it does.
+
+24 code mutants and 6 data mutations each fail their checks. Local runs use a refusing stub for HotSpot: the seven existing solve tests fail identically on main, nothing else fails.
