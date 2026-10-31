@@ -126,6 +126,62 @@ class EvidenceRunnerTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue((attempt / 'PHASE_PROFILE.json').exists())
         self.assertEqual(json.loads((attempt / 'PHASE_PROFILE.json').read_bytes())['record_count'], 7)
 
+    async def run_partition_case(self, *, mesh=0, noops=False, report_error=False):
+        from contextlib import ExitStack
+        from sundai_controller.evidence_profile import declared_calls
+        self.prereg['reducer_methods'].update(search_evaluations_per_method=3,
+                                              reproduction_evaluations_per_method=1)
+        self.prereg['long_sa'].update(max_evaluations_per_restart=5,
+                                     search_evaluations_per_restart=4,
+                                     reproduction_evaluations_per_restart=1)
+        self.prereg['evidence_profile'] = {'synthetic': 'admission isolated in execution test'}
+        path = self.root / 'partition.json'
+        path.write_text(json.dumps(self.prereg))
+        with ExitStack() as stack:
+            stack.enter_context(patch('sundai_controller.evidence_profile.load_admission',
+                                      return_value=declared_calls(self.prereg)))
+            stack.enter_context(patch.object(h.os, 'fsync'))
+            if noops:
+                stack.enter_context(patch.object(h, '_shared_designs', side_effect=lambda initial, *a: [initial]))
+                stack.enter_context(patch.object(h, '_candidate', side_effect=lambda parent, *a: (parent, 'move', {})))
+            if report_error:
+                stack.enter_context(patch.object(h, '_write_report', side_effect=OSError('report disk failure')))
+            return await h.run_headroom('ascend910', mesh, path, self.root / 'out', oracle_factory=CountingOracle)
+
+    async def test_new_v3_executes_declared_long_search_and_fresh_reproduction(self):
+        result = await self.run_partition_case()
+        lane = result['long_sa_results'][0]
+        self.assertEqual(result['aggregate_evaluations'], 9)
+        self.assertEqual(lane['search_evaluation_count'], 4)
+        self.assertEqual(lane['reproduction_evaluation_count'], 1)
+        self.assertEqual(lane['reproductions'][0]['design_hash'], lane['best_design_hash'])
+        records = [json.loads(path.read_bytes()) for path in
+                   sorted((Path(result['artifact_directory']) / 'evaluations').glob('*.json'))]
+        self.assertEqual(records[-1]['design_hash'], lane['best_design_hash'])
+        self.assertEqual(records[-1]['call'], 9)
+        self.assertTrue(lane['complete'])
+
+    async def test_new_v3_verdicts_have_durable_terminal_attempts(self):
+        for verdict, mesh, noops in (('PASS', 0, False), ('FAIL', 1000000, False), ('INCONCLUSIVE', 0, True)):
+            with self.subTest(verdict=verdict):
+                result = await self.run_partition_case(mesh=mesh, noops=noops)
+                self.assertEqual(result['verdict'], verdict)
+                state = json.loads((self.root / 'SPEND.json').read_bytes())
+                attempt = state['attempts'][-1]
+                self.assertEqual(attempt['status'], 'finished')
+                self.assertEqual(attempt['verdict'], verdict)
+                self.assertEqual(attempt['ending_calls'], state['total_calls'])
+                self.assertEqual(result['allocation_spend']['attempts'][-1], attempt)
+                self.assertIsNone(state['active'])
+
+    async def test_result_persistence_failure_closes_attempt_and_releases_ledger(self):
+        with self.assertRaisesRegex(OSError, 'report disk failure'):
+            await self.run_partition_case(report_error=True)
+        state = json.loads((self.root / 'SPEND.json').read_bytes())
+        self.assertEqual(state['attempts'][-1]['status'], 'failed')
+        self.assertEqual(state['attempts'][-1]['ending_calls'], 9)
+        self.budget()  # A second owner can acquire the released ledger lock.
+
     async def test_start_rechecks_capacity_after_acquiring_ledger_lock(self):
         from sundai_controller.test_evidence_profile import identity, record
         from sundai_controller.evidence_profile import build_profile

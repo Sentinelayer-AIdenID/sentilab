@@ -756,8 +756,8 @@ async def _run_diagnostic_lane(initial, oracle, lane_id, seed, evaluations, shar
 
 
 async def _run_long_sa(initial, oracle, seed, max_evaluations, cpu_timeout_s, shared_designs, run_id,
-                       *, budget):
-    reproduction = 1 if budget.v4 else 0
+                       *, budget, reproduction_evaluations=None):
+    reproduction = (1 if budget.v4 else 0) if reproduction_evaluations is None else reproduction_evaluations
     return await _run_lane(initial, oracle, 'simulated_annealing', seed, max_evaluations - reproduction,
                            shared_designs, run_id, budget=budget, cpu_timeout_s=cpu_timeout_s,
                            reproduction_evaluations=reproduction)
@@ -851,7 +851,8 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
         raise ValueError('preregistration changed after supervisor admission')
     from sundai_hotspot.tap_oracle import HotSpotOracle
     from sundai_controller.headroom_evidence import execution_identity, available_cpu, check_declared_calls
-    from sundai_controller.evidence_profile import load_admission
+    from sundai_controller.evidence_profile import declared_calls, load_admission
+    declared_calls(prereg)  # Reject an invalid search/reproduction split before any reservation.
     oracle_type = oracle_factory or HotSpotOracle
     requires_profile = getattr(oracle_type, 'requires_evidence_profile', False)
     identity = admission = None
@@ -969,7 +970,8 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
             shared_designs = shared_initials(seed, max_evals)
             result = await _run_long_sa(initial, oracle, seed, max_evals,
                                         long_cfg['max_cpu_minutes'] * 60, shared_designs,
-                                        f'slab039-{fixture}-long-sa-{seed}', budget=budget)
+                                        f'slab039-{fixture}-long-sa-{seed}', budget=budget,
+                                        reproduction_evaluations=long_cfg.get('reproduction_evaluations_per_restart', 0))
             long_sa_results.append(result)
 
         declared_complete = all(r['complete'] for r in all_reducer_results + long_sa_results)
@@ -1007,94 +1009,100 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
                     from sundai_controller.evidence_profile import build_profile
                     records = [json.loads(path.read_bytes()) for path in sorted((output_dir / 'evaluations').glob('*.json'))]
                     _write_json(output_dir / 'PHASE_PROFILE.json', build_profile(records, identity))
+            except BaseException:
+                if attempt is not None:
+                    attempt['status'] = 'failed'
+                raise
             finally:
-                budget.close(release=not v4 or failed or sys.exc_info()[0] is not None)
+                budget.close(release=failed or sys.exc_info()[0] is not None)
 
-    reducer_medians, all_method_all_bests = {}, {}
-    for method in reducer_methods:
-        bests = [r['best_temperature_c'] for r in all_reducer_results
-                 if r['method'] == method and r['best_temperature_c'] is not None]
-        all_method_all_bests[method] = bests
-        reducer_medians[method] = statistics.median(bests) if bests else None
-    finite_medians = [v for v in reducer_medians.values() if v is not None]
-    cheap_median = min(finite_medians) if finite_medians else None
-    all_results = all_reducer_results + long_sa_results + all_diag_results
-    all_bests = [r['best_temperature_c'] for r in all_results if r['best_temperature_c'] is not None]
-    best = min(all_bests) if all_bests else None
-    all_method_medians = dict(reducer_medians)
-    for method in diag_methods:
-        bests = [r['best_temperature_c'] for r in all_diag_results
-                 if r['method'] == method and r['best_temperature_c'] is not None]
-        if bests:
-            all_method_all_bests[method] = bests
-            all_method_medians[method] = statistics.median(bests)
-    numeric_pass = False
-    gap = None
-    if cheap_median is not None and best is not None:
-        numeric_pass, gap = _gate_pass(cheap_median, best, mesh_error, prereg['rule']['k'])
-    long_sa_exhausted = any(r['stop_reason'] is not None for r in long_sa_results)
-    long_sa_partial = any(not r['complete'] for r in long_sa_results)
-    verdict = ('INCONCLUSIVE' if not declared_complete else 'PASS' if numeric_pass else 'FAIL')
-    if v4:
-        verdict, best, gap, eligible, reference_complete = _v4_verdict(baseline, long_sa_results)
-        cheap_median = None if baseline is None else baseline['cheap_median_c']
-        numeric_pass = gap is not None and gap >= 5 * 0.79
-    reducer_bests = [r['best_temperature_c'] for r in all_reducer_results if r['best_temperature_c'] is not None]
-    result = {
-        'schema': 'slab-039-result-v3', 'prereg_schema': prereg['schema'],
-        'prereg_digest_sha256': prereg_digest,
-        'runner_sha256': runner_digest,
-        'evidence_profile_admission': admission,
-        'artifact_directory': str(output_dir.resolve()) if retain_evidence else None,
-        'fixture': fixture, 'grid': grid, 'mesh_error_c': mesh_error,
-        'mesh_error_source': 'provided' if j32_values is None else 'dynamic from J32/J64',
-        'started_at': started_at, 'finished_at': datetime.now(timezone.utc).isoformat(),
-        'k': prereg['rule']['k'], 'verdict': verdict, 'passed': verdict == 'PASS',
-        'numeric_threshold_met': numeric_pass, 'gap_c': gap,
-        'threshold_c': prereg['rule']['k'] * mesh_error,
-        'cheap_median_c': cheap_median, 'best_c': best,
-        'spread_across_seeds_c': max(reducer_bests)-min(reducer_bests) if reducer_bests else None,
-        'reducer_methods': list(reducer_methods), 'extra_diagnostics': list(diag_methods),
-        'cheap_method_medians_c': all_method_medians, 'cheap_method_all_bests_c': all_method_all_bests,
-        'reducer_results': all_reducer_results, 'extra_diagnostic_results': all_diag_results,
-        'diagnostic_skip_reason': diagnostic_skip_reason, 'long_sa_results': long_sa_results,
-        'reference_skip_reason': reference_skip_reason,
-        'long_sa_exhausted': long_sa_exhausted, 'long_sa_partial': long_sa_partial,
-        'aggregate_evaluations': budget.state['total_calls'] - starting_calls,
-        'cpu_seconds': budget.state['cpu_seconds'] - starting_cpu,
-        'allocation_spend': budget.state,
-        'cpu_accounting': ('Provisional worker CPU; authoritative whole-lifetime accounting and acceptance require matching supervisor SETTLEMENT after confirmed reap'
-                           if v4 else 'getrusage SELF+CHILDREN; workers reaped after every call; includes startup'),
-        'search_evaluations': evaluations, 'reproduction_evaluations': reproduction_evals,
-    }
-    if v4:
-        result.update(schema='slab-039-result-v4', cheap_baseline_complete=baseline is not None,
-                      cheap_baseline_sha256=None if baseline is None else _compute_prereg_digest(output_dir / 'CHEAP_BASELINE.json'),
-                      reference_complete=reference_complete, eligible_reference_witnesses=eligible,
-                      mesh_error_source='PR #18 fixed 24-layout sample discrepancy',
-                      certification_scope='preregistered observed headroom criterion only; not a universal numerical error bound',
-                      paid_scientific_model_authorized=False,
-                      reproduction_absolute_tolerance_c=REPRODUCTION_ABS_TOLERANCE_C)
-        result['threshold_arithmetic'] = V4_ARITHMETIC
-        result['resource_status'] = 'awaiting_supervisor_settlement' if budget.supervised else 'synthetic_cooperative_only'
-        result['supervisor_reservation_id'] = None if WORKER_CONTEXT is None else WORKER_CONTEXT['reservation']
-        result['artifact_directory'] = str(output_dir.resolve())
-        result['wire_limit_mm'] = oracle.wire_limit
-        attempt.update(status='baseline_failed' if baseline is None else 'finished',
-                       ending_calls=budget.state['total_calls'], verdict=verdict)
-        _write_json(budget.path, budget.state)
     try:
+        reducer_medians, all_method_all_bests = {}, {}
+        for method in reducer_methods:
+            bests = [r['best_temperature_c'] for r in all_reducer_results
+                     if r['method'] == method and r['best_temperature_c'] is not None]
+            all_method_all_bests[method] = bests
+            reducer_medians[method] = statistics.median(bests) if bests else None
+        finite_medians = [v for v in reducer_medians.values() if v is not None]
+        cheap_median = min(finite_medians) if finite_medians else None
+        all_results = all_reducer_results + long_sa_results + all_diag_results
+        all_bests = [r['best_temperature_c'] for r in all_results if r['best_temperature_c'] is not None]
+        best = min(all_bests) if all_bests else None
+        all_method_medians = dict(reducer_medians)
+        for method in diag_methods:
+            bests = [r['best_temperature_c'] for r in all_diag_results
+                     if r['method'] == method and r['best_temperature_c'] is not None]
+            if bests:
+                all_method_all_bests[method] = bests
+                all_method_medians[method] = statistics.median(bests)
+        numeric_pass = False
+        gap = None
+        if cheap_median is not None and best is not None:
+            numeric_pass, gap = _gate_pass(cheap_median, best, mesh_error, prereg['rule']['k'])
+        long_sa_exhausted = any(r['stop_reason'] is not None for r in long_sa_results)
+        long_sa_partial = any(not r['complete'] for r in long_sa_results)
+        verdict = ('INCONCLUSIVE' if not declared_complete else 'PASS' if numeric_pass else 'FAIL')
+        if v4:
+            verdict, best, gap, eligible, reference_complete = _v4_verdict(baseline, long_sa_results)
+            cheap_median = None if baseline is None else baseline['cheap_median_c']
+            numeric_pass = gap is not None and gap >= 5 * 0.79
+        reducer_bests = [r['best_temperature_c'] for r in all_reducer_results if r['best_temperature_c'] is not None]
+        result = {
+            'schema': 'slab-039-result-v3', 'prereg_schema': prereg['schema'],
+            'prereg_digest_sha256': prereg_digest,
+            'runner_sha256': runner_digest,
+            'evidence_profile_admission': admission,
+            'artifact_directory': str(output_dir.resolve()) if retain_evidence else None,
+            'fixture': fixture, 'grid': grid, 'mesh_error_c': mesh_error,
+            'mesh_error_source': 'provided' if j32_values is None else 'dynamic from J32/J64',
+            'started_at': started_at, 'finished_at': datetime.now(timezone.utc).isoformat(),
+            'k': prereg['rule']['k'], 'verdict': verdict, 'passed': verdict == 'PASS',
+            'numeric_threshold_met': numeric_pass, 'gap_c': gap,
+            'threshold_c': prereg['rule']['k'] * mesh_error,
+            'cheap_median_c': cheap_median, 'best_c': best,
+            'spread_across_seeds_c': max(reducer_bests)-min(reducer_bests) if reducer_bests else None,
+            'reducer_methods': list(reducer_methods), 'extra_diagnostics': list(diag_methods),
+            'cheap_method_medians_c': all_method_medians, 'cheap_method_all_bests_c': all_method_all_bests,
+            'reducer_results': all_reducer_results, 'extra_diagnostic_results': all_diag_results,
+            'diagnostic_skip_reason': diagnostic_skip_reason, 'long_sa_results': long_sa_results,
+            'reference_skip_reason': reference_skip_reason,
+            'long_sa_exhausted': long_sa_exhausted, 'long_sa_partial': long_sa_partial,
+            'aggregate_evaluations': budget.state['total_calls'] - starting_calls,
+            'cpu_seconds': budget.state['cpu_seconds'] - starting_cpu,
+            'allocation_spend': budget.state,
+            'cpu_accounting': ('Provisional worker CPU; authoritative whole-lifetime accounting and acceptance require matching supervisor SETTLEMENT after confirmed reap'
+                               if v4 else 'getrusage SELF+CHILDREN; workers reaped after every call; includes startup'),
+            'search_evaluations': evaluations, 'reproduction_evaluations': reproduction_evals,
+        }
+        if v4:
+            result.update(schema='slab-039-result-v4', cheap_baseline_complete=baseline is not None,
+                          cheap_baseline_sha256=None if baseline is None else _compute_prereg_digest(output_dir / 'CHEAP_BASELINE.json'),
+                          reference_complete=reference_complete, eligible_reference_witnesses=eligible,
+                          mesh_error_source='PR #18 fixed 24-layout sample discrepancy',
+                          certification_scope='preregistered observed headroom criterion only; not a universal numerical error bound',
+                          paid_scientific_model_authorized=False,
+                          reproduction_absolute_tolerance_c=REPRODUCTION_ABS_TOLERANCE_C)
+            result['threshold_arithmetic'] = V4_ARITHMETIC
+            result['resource_status'] = 'awaiting_supervisor_settlement' if budget.supervised else 'synthetic_cooperative_only'
+            result['supervisor_reservation_id'] = None if WORKER_CONTEXT is None else WORKER_CONTEXT['reservation']
+            result['artifact_directory'] = str(output_dir.resolve())
+            result['wire_limit_mm'] = oracle.wire_limit
+        if attempt is not None:
+            attempt.update(status='baseline_failed' if v4 and baseline is None else 'finished',
+                           ending_calls=budget.state['total_calls'], verdict=verdict)
         _write_json(output_dir / 'RESULT.json', result)
         _write_report(output_dir / 'REPORT.md', result, prereg, cheap_cfg)
+        budget.close(release=False)
+        result['cpu_seconds'] = budget.state['cpu_seconds'] - starting_cpu
+        # The parent meters this final write and interpreter exit for supervised runs.
+        _write_json(output_dir / 'RESULT.json', result)
+    except BaseException:
+        if attempt is not None:
+            attempt.update(status='failed', ending_calls=budget.state['total_calls'])
+        raise
     finally:
-        if v4:
-            try:
-                budget.close(release=False)
-                result['cpu_seconds'] = budget.state['cpu_seconds'] - starting_cpu
-                # The parent meters this write and the worker's interpreter exit.
-                _write_json(output_dir / 'RESULT.json', result)
-            finally:
-                budget.lock.close()
+        budget.close()
+
     return result
 
 
