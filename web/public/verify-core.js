@@ -242,19 +242,33 @@ function signedFacts(events) {
   const samples = baseline && Array.isArray(baseline.payload.shared_initial_samples)
     ? baseline.payload.shared_initial_samples.map((s) => (s && typeof s.design_hash === "string" ? s.design_hash : "?")).sort()
     : null;
-  // bestIds: the evaluator identity behind every temperature the best is taken from, in the same order. The page labels
-  // the best by all of them (temperature-label.mjs, the most cautious state wins). A committed proposal's temperature is
-  // its oracle result's, so it carries that result's identity; one without a matching result names none.
+  // bestIds: the evaluator identity behind every temperature the best is taken from, in record order. The page labels
+  // the best by all of them (temperature-label.mjs, the most cautious state wins).
   const temps = [], bestIds = [];
   const solverOf = (thermal) => (thermal && typeof thermal === "object" && typeof thermal.solver_version === "string" ? thermal.solver_version : undefined);
-  const take = (v, id) => { const n = num(v); if (typeof n === "number" && Number.isFinite(n)) { temps.push(n); bestIds.push(id); } };
+  const take = (v, ids) => { const n = num(v); if (typeof n === "number" && Number.isFinite(n)) { temps.push(n); bestIds.push(...ids); } };
   if (baseline) {
-    take(baseline.payload.thermal && baseline.payload.thermal.maximum_temperature_c, solverOf(baseline.payload.thermal));
-    for (const sample of baseline.payload.shared_initial_samples || []) take(sample && sample.thermal && sample.thermal.maximum_temperature_c, solverOf(sample && sample.thermal));
+    take(baseline.payload.thermal && baseline.payload.thermal.maximum_temperature_c, [solverOf(baseline.payload.thermal)]);
+    for (const sample of baseline.payload.shared_initial_samples || []) take(sample && sample.thermal && sample.thermal.maximum_temperature_c, [solverOf(sample && sample.thermal)]);
   }
-  const resultIds = new Map();
-  for (const e of events) if (e.event === "oracle_result" && typeof e.payload.proposal_id === "string") resultIds.set(e.payload.proposal_id, solverOf(e.payload.thermal));
-  for (const e of events) if (e.event === "proposal_committed") take(e.payload.temperature_c, resultIds.get(e.payload.proposal_id));
+  // A committed temperature carries the identity of the oracle result it reports: one EARLIER in the record with the same
+  // proposal id, the same candidate hash and the same finite temperature, joined by event order and exact match. No such
+  // result: it names none (unvalidated). Several that name different evaluators: unvalidated, plus every one of them (the
+  // most cautious wins). A later result never relabels an earlier commitment.
+  const measured = [];
+  for (const e of events) {
+    if (e.event === "oracle_result") {
+      measured.push({ proposal: e.payload.proposal_id, candidate: e.payload.candidate_hash,
+        temp: num(e.payload.thermal && e.payload.thermal.maximum_temperature_c), id: solverOf(e.payload.thermal) });
+    } else if (e.event === "proposal_committed") {
+      const t = num(e.payload.temperature_c);
+      const reports = (m) => typeof m.proposal === "string" && m.proposal === e.payload.proposal_id &&
+        typeof m.candidate === "string" && m.candidate === e.payload.candidate_hash &&
+        typeof t === "number" && Number.isFinite(t) && m.temp === t;
+      const ids = [...new Set(measured.filter(reports).map((m) => m.id))];
+      take(e.payload.temperature_c, ids.length === 1 ? ids : [undefined, ...ids]);
+    }
+  }
   return {
     evaluations,
     pool: samples ? samples.join(",") : null,
