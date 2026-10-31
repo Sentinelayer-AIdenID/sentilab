@@ -46,7 +46,7 @@ class HotSpot6Oracle(HotSpotOracle):
     evaluator = "hotspot6"
 
     def __init__(self, grid_rows: int = GRID, grid_cols: int = GRID, *, hotspot_binary: Path = HOTSPOT6_BINARY,
-                 gate_zero_record: Path | dict | None = None, **kwargs):
+                 gate_zero_record: Path | dict | None = None, ledger_root: Path | None = None, tags=None, **kwargs):
         binary = Path(hotspot_binary).resolve()
         try:
             identity = evaluator_identity("hotspot6", binary)
@@ -77,7 +77,8 @@ class HotSpot6Oracle(HotSpotOracle):
         try:
             if self.grid_cols != self.grid_rows:
                 raise GateZeroRefusal(f"a gate-zero PASS covers a {GRID} x {GRID} grid only")
-            self.gate_zero = require_gate_zero(self.evaluator, binary, gate_zero_record, grid=self.grid_rows)
+            self.gate_zero = require_gate_zero(self.evaluator, binary, gate_zero_record, grid=self.grid_rows,
+                                               ledger_root=ledger_root, tags=tags)
         except GateZeroRefusal as exc:
             self._gate_zero_refusal = str(exc)
 
@@ -95,7 +96,8 @@ class HotSpot6Oracle(HotSpotOracle):
 
 
 def make_oracle(evaluator: str, purpose: str, grid_rows: int = GRID, grid_cols: int = GRID, *,
-                gate_zero_record: Path | dict | None = None, **kwargs) -> HotSpotOracle:
+                gate_zero_record: Path | dict | None = None, ledger_root: Path | None = None, tags=None,
+                **kwargs) -> HotSpotOracle:
     """Pick an evaluator for search or headroom. Refuses any evaluator without a gate-zero PASS for its binary, and
     any grid the PASS does not cover (it covers grid 64 on the block-centre metric)."""
     if evaluator not in EVALUATORS:
@@ -105,10 +107,12 @@ def make_oracle(evaluator: str, purpose: str, grid_rows: int = GRID, grid_cols: 
     if (grid_rows, grid_cols) != (GRID, GRID):
         raise GateZeroRefusal(f"a gate-zero PASS covers a {GRID} x {GRID} grid only, not {grid_rows} x {grid_cols}")
     if evaluator == "hotspot6":
-        oracle = HotSpot6Oracle(grid_rows, grid_cols, gate_zero_record=gate_zero_record, **kwargs)
+        oracle = HotSpot6Oracle(grid_rows, grid_cols, gate_zero_record=gate_zero_record, ledger_root=ledger_root,
+                                tags=tags, **kwargs)
         if oracle.gate_zero is None:
             raise GateZeroRefusal(oracle._gate_zero_refusal)
         return oracle
     oracle = HotSpotOracle(grid_rows, grid_cols, **kwargs)
-    require_gate_zero(EVALUATORS[evaluator], oracle.hotspot_binary, gate_zero_record, grid=grid_rows)
+    require_gate_zero(EVALUATORS[evaluator], oracle.hotspot_binary, gate_zero_record, grid=grid_rows,
+                      ledger_root=ledger_root, tags=tags)
     return oracle

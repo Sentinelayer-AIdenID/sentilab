@@ -1,36 +1,59 @@
 {
   "accounting": {
-    "arithmetic": "8 x 60 s + 4 x 15 s = 540 s of timeouts, plus 12 x 2 CPU-s = 24 CPU-s of overhead assumption (1.5 generation, hashing and record; 0.25 reap and 0.25 settlement tail from SLAB-039's SUPERVISOR-POLICY.json) = 564 CPU-s",
+    "arithmetic": "per call, the solver's RLIMIT_CPU (its timeout) plus 8.5 CPU-s: 3 generator RLIMIT_CPU + 2 x 1 loader-listing RLIMIT_CPU + 3 declared parent allowance + 0.25 reap + 0.25 settlement tail (the last two from SLAB-039's SUPERVISOR-POLICY.json). 8 x (50 + 8.5) + 4 x (15 + 8.5) = 460 + 102 = 562 CPU-s",
     "binding_cap": "the manifest cap, 600 CPU-s, binds: it is the tighter of the two. The room's 1,800 CPU-s prospective envelope does not bind. Neither is raised here; the final grant reconciles them.",
     "calls": 12,
     "concurrency": 1,
     "expected_cpu_s": 58.04,
-    "forecast_label": "a forecast under declared assumptions, not a CPU guarantee: RLIMIT_CPU bounds each solver process at its timeout and the generator at 10 CPU-s; the parent's own work and any unreaped descendants are measured, not capped; the hard cumulative process-group cap is the supervisor's",
-    "forecast_worst_case_cpu_s": 564.0,
     "gpu": false,
     "grid32_calls": 4,
     "grid64_calls": 8,
     "host": "x86_64 Azure host behind the mesh and TIMING evidence; an aarch64 build needs its own receipts",
     "host_architecture": "x86_64",
-    "manifest_cpu_cap_s": 600.0,
-    "max_runs": 12,
-    "per_call_reserve_cpu_s": 2.0,
-    "policy_reserves": {
+    "limits": {
+      "generator_cpu_s": 3.0,
+      "generator_wall_s": 30.0,
+      "loader_listing_cpu_s": 1.0,
+      "loader_listing_wall_s": 10.0,
+      "loader_listings": 2,
+      "parent_allowance_cpu_s": 3.0,
       "reap_s": 0.25,
       "settlement_tail_s": 0.25
     },
+    "limits_lowered": "to fit the true worst case under the 600 CPU-s cap (warden #56967 P2-3): the grid-64 timeout, and with it the solver's RLIMIT_CPU and wall deadline, from 60 to 50 s; the TAP generator's RLIMIT_CPU from 10 to 3 CPU-s and its wall deadline from 60 to 30 s. At 60 s the worst case would be 642 CPU-s.",
+    "manifest_cpu_cap_s": 600.0,
+    "max_runs": 12,
+    "per_call_reserve_cpu_s": 8.5,
     "retries": 0,
     "room_envelope_cpu_s": 1800.0,
-    "timeouts_s": 540.0,
+    "solver_cpu_limits_s": 460,
     "timing_basis": {
+      "expected_overhead_cpu_s": 1.5,
       "grid32_expected_wall_s": 0.49,
       "grid32_timeout_s": 15.0,
       "grid64_expected_wall_s": 4.76,
-      "grid64_timeout_s": 60.0,
-      "per_call_overhead_cpu_s": 1.5
-    }
+      "grid64_timeout_s": 50.0
+    },
+    "worst_case_cpu_s": 562.0,
+    "worst_case_label": "the true worst case from the limits: every child process (solver, generator, loader listings) runs under RLIMIT_CPU with soft = hard, so the kernel kills it at its limit; the parent's own CPU is a declared allowance, measured in every receipt and charged in full if exceeded; the hard cumulative process-group cap is the supervisor's"
   },
   "allocation": "exactly 12 calls: 2 raw 45 mm references x {native6 target, native7 comparator} x grids {64, 32}, plus one fresh-process grid-64 replay per reference and engine. Native7 is a comparator, not required to reproduce the native6 targets. The deferred verification points add no call.",
+  "anchor": {
+    "credentials": {
+      "claim": "SLAB049_ANCHOR_TOKEN, from the supervisor's environment; without it nothing launches",
+      "read": "GH_TOKEN, for record and report"
+    },
+    "message_schema": "sentilab-slab049-gate0-tag-v1",
+    "namespace": "refs/tags/gate0-<grant-id>/",
+    "reading": "each tag by its exact name (GET /git/ref/<ref>, then its commit); an authenticated 404 is absent, any other failure is ERROR, never absent and never PASS",
+    "repository": "Sentinelayer-AIdenID/sentilab",
+    "ruleset": "create-only: no update, no delete, no force-push, no bypass",
+    "tags": {
+      "launch-<call-id>": "created by validate-reference immediately before launch: the atomic claim; only a successful create launches",
+      "reserve-<call-id>": "created by the operator before launch",
+      "settle-<call-id>": "created by the operator after settlement: the terminal status and the receipt and output hashes, failures included"
+    }
+  },
   "builds": {
     "hotspot6": {
       "binary": "sundai_hotspot6/hotspot",
@@ -73,7 +96,7 @@
     {
       "accounting": {
         "expected_cpu_s": 6.26,
-        "reserved_cpu_s": 62.0
+        "reserved_cpu_s": 58.5
       },
       "argv": [
         "<private content-addressed copy of sundai_hotspot6/hotspot>",
@@ -95,8 +118,8 @@
         "samplelayers.lcf"
       ],
       "binary": "sundai_hotspot6/hotspot",
-      "command": "python -m sundai_hotspot.reference_validation validate-reference --call p-hs6-ascend910-tap25d-fig6a-raw-g64 --timeout 60 --out <fresh empty dir> --ledger <the grant's ledger dir>",
-      "cpu_limit_s": 60,
+      "command": "python -m sundai_hotspot.reference_validation validate-reference --call p-hs6-ascend910-tap25d-fig6a-raw-g64 --timeout 50 --out <fresh empty dir> --ledger-root <operator ledger root> --operator-key <operator key file>",
+      "cpu_limit_s": 50,
       "engine": "hs6",
       "engine_role": "native6 target",
       "gating": true,
@@ -114,12 +137,12 @@
       "reference": "ascend910-tap25d-fig6a-raw",
       "replay_of": null,
       "role": "primary",
-      "timeout_s": 60.0
+      "timeout_s": 50.0
     },
     {
       "accounting": {
         "expected_cpu_s": 1.99,
-        "reserved_cpu_s": 17.0
+        "reserved_cpu_s": 23.5
       },
       "argv": [
         "<private content-addressed copy of sundai_hotspot6/hotspot>",
@@ -145,7 +168,7 @@
         "32"
       ],
       "binary": "sundai_hotspot6/hotspot",
-      "command": "python -m sundai_hotspot.reference_validation validate-reference --call p-hs6-ascend910-tap25d-fig6a-raw-g32 --timeout 15 --out <fresh empty dir> --ledger <the grant's ledger dir>",
+      "command": "python -m sundai_hotspot.reference_validation validate-reference --call p-hs6-ascend910-tap25d-fig6a-raw-g32 --timeout 15 --out <fresh empty dir> --ledger-root <operator ledger root> --operator-key <operator key file>",
       "cpu_limit_s": 15,
       "engine": "hs6",
       "engine_role": "native6 target",
@@ -169,7 +192,7 @@
     {
       "accounting": {
         "expected_cpu_s": 6.26,
-        "reserved_cpu_s": 62.0
+        "reserved_cpu_s": 58.5
       },
       "argv": [
         "<private content-addressed copy of sundai_hotspot6/hotspot>",
@@ -191,8 +214,8 @@
         "samplelayers.lcf"
       ],
       "binary": "sundai_hotspot6/hotspot",
-      "command": "python -m sundai_hotspot.reference_validation validate-reference --call p-hs6-micro150-tap25d-fig5a-raw-g64 --timeout 60 --out <fresh empty dir> --ledger <the grant's ledger dir>",
-      "cpu_limit_s": 60,
+      "command": "python -m sundai_hotspot.reference_validation validate-reference --call p-hs6-micro150-tap25d-fig5a-raw-g64 --timeout 50 --out <fresh empty dir> --ledger-root <operator ledger root> --operator-key <operator key file>",
+      "cpu_limit_s": 50,
       "engine": "hs6",
       "engine_role": "native6 target",
       "gating": true,
@@ -210,12 +233,12 @@
       "reference": "micro150-tap25d-fig5a-raw",
       "replay_of": null,
       "role": "primary",
-      "timeout_s": 60.0
+      "timeout_s": 50.0
     },
     {
       "accounting": {
         "expected_cpu_s": 1.99,
-        "reserved_cpu_s": 17.0
+        "reserved_cpu_s": 23.5
       },
       "argv": [
         "<private content-addressed copy of sundai_hotspot6/hotspot>",
@@ -241,7 +264,7 @@
         "32"
       ],
       "binary": "sundai_hotspot6/hotspot",
-      "command": "python -m sundai_hotspot.reference_validation validate-reference --call p-hs6-micro150-tap25d-fig5a-raw-g32 --timeout 15 --out <fresh empty dir> --ledger <the grant's ledger dir>",
+      "command": "python -m sundai_hotspot.reference_validation validate-reference --call p-hs6-micro150-tap25d-fig5a-raw-g32 --timeout 15 --out <fresh empty dir> --ledger-root <operator ledger root> --operator-key <operator key file>",
       "cpu_limit_s": 15,
       "engine": "hs6",
       "engine_role": "native6 target",
@@ -265,7 +288,7 @@
     {
       "accounting": {
         "expected_cpu_s": 6.26,
-        "reserved_cpu_s": 62.0
+        "reserved_cpu_s": 58.5
       },
       "argv": [
         "<private content-addressed copy of sundai_hotspot/hotspot>",
@@ -287,8 +310,8 @@
         "samplelayers.lcf"
       ],
       "binary": "sundai_hotspot/hotspot",
-      "command": "python -m sundai_hotspot.reference_validation validate-reference --call p-hs7-ascend910-tap25d-fig6a-raw-g64 --timeout 60 --out <fresh empty dir> --ledger <the grant's ledger dir>",
-      "cpu_limit_s": 60,
+      "command": "python -m sundai_hotspot.reference_validation validate-reference --call p-hs7-ascend910-tap25d-fig6a-raw-g64 --timeout 50 --out <fresh empty dir> --ledger-root <operator ledger root> --operator-key <operator key file>",
+      "cpu_limit_s": 50,
       "engine": "hs7",
       "engine_role": "native7 comparator",
       "gating": false,
@@ -306,12 +329,12 @@
       "reference": "ascend910-tap25d-fig6a-raw",
       "replay_of": null,
       "role": "primary",
-      "timeout_s": 60.0
+      "timeout_s": 50.0
     },
     {
       "accounting": {
         "expected_cpu_s": 1.99,
-        "reserved_cpu_s": 17.0
+        "reserved_cpu_s": 23.5
       },
       "argv": [
         "<private content-addressed copy of sundai_hotspot/hotspot>",
@@ -337,7 +360,7 @@
         "32"
       ],
       "binary": "sundai_hotspot/hotspot",
-      "command": "python -m sundai_hotspot.reference_validation validate-reference --call p-hs7-ascend910-tap25d-fig6a-raw-g32 --timeout 15 --out <fresh empty dir> --ledger <the grant's ledger dir>",
+      "command": "python -m sundai_hotspot.reference_validation validate-reference --call p-hs7-ascend910-tap25d-fig6a-raw-g32 --timeout 15 --out <fresh empty dir> --ledger-root <operator ledger root> --operator-key <operator key file>",
       "cpu_limit_s": 15,
       "engine": "hs7",
       "engine_role": "native7 comparator",
@@ -361,7 +384,7 @@
     {
       "accounting": {
         "expected_cpu_s": 6.26,
-        "reserved_cpu_s": 62.0
+        "reserved_cpu_s": 58.5
       },
       "argv": [
         "<private content-addressed copy of sundai_hotspot/hotspot>",
@@ -383,8 +406,8 @@
         "samplelayers.lcf"
       ],
       "binary": "sundai_hotspot/hotspot",
-      "command": "python -m sundai_hotspot.reference_validation validate-reference --call p-hs7-micro150-tap25d-fig5a-raw-g64 --timeout 60 --out <fresh empty dir> --ledger <the grant's ledger dir>",
-      "cpu_limit_s": 60,
+      "command": "python -m sundai_hotspot.reference_validation validate-reference --call p-hs7-micro150-tap25d-fig5a-raw-g64 --timeout 50 --out <fresh empty dir> --ledger-root <operator ledger root> --operator-key <operator key file>",
+      "cpu_limit_s": 50,
       "engine": "hs7",
       "engine_role": "native7 comparator",
       "gating": false,
@@ -402,12 +425,12 @@
       "reference": "micro150-tap25d-fig5a-raw",
       "replay_of": null,
       "role": "primary",
-      "timeout_s": 60.0
+      "timeout_s": 50.0
     },
     {
       "accounting": {
         "expected_cpu_s": 1.99,
-        "reserved_cpu_s": 17.0
+        "reserved_cpu_s": 23.5
       },
       "argv": [
         "<private content-addressed copy of sundai_hotspot/hotspot>",
@@ -433,7 +456,7 @@
         "32"
       ],
       "binary": "sundai_hotspot/hotspot",
-      "command": "python -m sundai_hotspot.reference_validation validate-reference --call p-hs7-micro150-tap25d-fig5a-raw-g32 --timeout 15 --out <fresh empty dir> --ledger <the grant's ledger dir>",
+      "command": "python -m sundai_hotspot.reference_validation validate-reference --call p-hs7-micro150-tap25d-fig5a-raw-g32 --timeout 15 --out <fresh empty dir> --ledger-root <operator ledger root> --operator-key <operator key file>",
       "cpu_limit_s": 15,
       "engine": "hs7",
       "engine_role": "native7 comparator",
@@ -457,7 +480,7 @@
     {
       "accounting": {
         "expected_cpu_s": 6.26,
-        "reserved_cpu_s": 62.0
+        "reserved_cpu_s": 58.5
       },
       "argv": [
         "<private content-addressed copy of sundai_hotspot6/hotspot>",
@@ -479,8 +502,8 @@
         "samplelayers.lcf"
       ],
       "binary": "sundai_hotspot6/hotspot",
-      "command": "python -m sundai_hotspot.reference_validation validate-reference --call r-hs6-ascend910-tap25d-fig6a-raw-g64 --timeout 60 --out <fresh empty dir> --ledger <the grant's ledger dir>",
-      "cpu_limit_s": 60,
+      "command": "python -m sundai_hotspot.reference_validation validate-reference --call r-hs6-ascend910-tap25d-fig6a-raw-g64 --timeout 50 --out <fresh empty dir> --ledger-root <operator ledger root> --operator-key <operator key file>",
+      "cpu_limit_s": 50,
       "engine": "hs6",
       "engine_role": "native6 target",
       "gating": true,
@@ -498,12 +521,12 @@
       "reference": "ascend910-tap25d-fig6a-raw",
       "replay_of": "p-hs6-ascend910-tap25d-fig6a-raw-g64",
       "role": "replay",
-      "timeout_s": 60.0
+      "timeout_s": 50.0
     },
     {
       "accounting": {
         "expected_cpu_s": 6.26,
-        "reserved_cpu_s": 62.0
+        "reserved_cpu_s": 58.5
       },
       "argv": [
         "<private content-addressed copy of sundai_hotspot6/hotspot>",
@@ -525,8 +548,8 @@
         "samplelayers.lcf"
       ],
       "binary": "sundai_hotspot6/hotspot",
-      "command": "python -m sundai_hotspot.reference_validation validate-reference --call r-hs6-micro150-tap25d-fig5a-raw-g64 --timeout 60 --out <fresh empty dir> --ledger <the grant's ledger dir>",
-      "cpu_limit_s": 60,
+      "command": "python -m sundai_hotspot.reference_validation validate-reference --call r-hs6-micro150-tap25d-fig5a-raw-g64 --timeout 50 --out <fresh empty dir> --ledger-root <operator ledger root> --operator-key <operator key file>",
+      "cpu_limit_s": 50,
       "engine": "hs6",
       "engine_role": "native6 target",
       "gating": true,
@@ -544,12 +567,12 @@
       "reference": "micro150-tap25d-fig5a-raw",
       "replay_of": "p-hs6-micro150-tap25d-fig5a-raw-g64",
       "role": "replay",
-      "timeout_s": 60.0
+      "timeout_s": 50.0
     },
     {
       "accounting": {
         "expected_cpu_s": 6.26,
-        "reserved_cpu_s": 62.0
+        "reserved_cpu_s": 58.5
       },
       "argv": [
         "<private content-addressed copy of sundai_hotspot/hotspot>",
@@ -571,8 +594,8 @@
         "samplelayers.lcf"
       ],
       "binary": "sundai_hotspot/hotspot",
-      "command": "python -m sundai_hotspot.reference_validation validate-reference --call r-hs7-ascend910-tap25d-fig6a-raw-g64 --timeout 60 --out <fresh empty dir> --ledger <the grant's ledger dir>",
-      "cpu_limit_s": 60,
+      "command": "python -m sundai_hotspot.reference_validation validate-reference --call r-hs7-ascend910-tap25d-fig6a-raw-g64 --timeout 50 --out <fresh empty dir> --ledger-root <operator ledger root> --operator-key <operator key file>",
+      "cpu_limit_s": 50,
       "engine": "hs7",
       "engine_role": "native7 comparator",
       "gating": false,
@@ -590,12 +613,12 @@
       "reference": "ascend910-tap25d-fig6a-raw",
       "replay_of": "p-hs7-ascend910-tap25d-fig6a-raw-g64",
       "role": "replay",
-      "timeout_s": 60.0
+      "timeout_s": 50.0
     },
     {
       "accounting": {
         "expected_cpu_s": 6.26,
-        "reserved_cpu_s": 62.0
+        "reserved_cpu_s": 58.5
       },
       "argv": [
         "<private content-addressed copy of sundai_hotspot/hotspot>",
@@ -617,8 +640,8 @@
         "samplelayers.lcf"
       ],
       "binary": "sundai_hotspot/hotspot",
-      "command": "python -m sundai_hotspot.reference_validation validate-reference --call r-hs7-micro150-tap25d-fig5a-raw-g64 --timeout 60 --out <fresh empty dir> --ledger <the grant's ledger dir>",
-      "cpu_limit_s": 60,
+      "command": "python -m sundai_hotspot.reference_validation validate-reference --call r-hs7-micro150-tap25d-fig5a-raw-g64 --timeout 50 --out <fresh empty dir> --ledger-root <operator ledger root> --operator-key <operator key file>",
+      "cpu_limit_s": 50,
       "engine": "hs7",
       "engine_role": "native7 comparator",
       "gating": false,
@@ -636,7 +659,7 @@
       "reference": "micro150-tap25d-fig5a-raw",
       "replay_of": "p-hs7-micro150-tap25d-fig5a-raw-g64",
       "role": "replay",
-      "timeout_s": 60.0
+      "timeout_s": 50.0
     }
   ],
   "deferred": {
@@ -657,22 +680,25 @@
   },
   "enforcement": {
     "in_code_at_entry": [
-      "manifest identity: validate-reference reads only CALL-LIST-v4.json and refuses it unless it is byte-identical to what this tree generates (every source pin, reference input, raw layout hash, the predicate and the accounting); the prior snapped manifest is refused",
-      "listed calls only: the call id with its listed --timeout, and the engine, reference and grid when given; before the window closes; on the listed architecture; on POSIX only, because the CPU limit is RLIMIT_CPU (Linux and macOS; Windows has no RLIMIT_CPU, and its equivalent, a Job Object process-time limit, is not implemented, so the entry refuses there); never under CI allocation (CI_ALLOCATION=1), where every native HotSpot launch goes through sundai_hotspot.ci_gate and SLAB-049 solves never run",
-      "evaluator identity: identity markers and SHA-256 are read from a private content-addressed copy (mode 0500 in a 0700 directory), and that copy is the file executed; build provenance must describe exactly those bytes; a binary built with the CI entry guard is refused; the shared libraries the loader resolves must equal the build's, and are hashed again after the run (a change settles the call as runtime_changed)",
+      "manifest identity: validate-reference reads only CALL-LIST-v4.json and refuses it unless it is byte-identical to what this tree generates (the executed pins, every reference input and raw layout hash, the predicate, the limits, the accounting, the operator key and the anchor); the prior snapped manifest is refused",
+      "listed calls only: the call id with its listed --timeout, and the engine, reference and grid when given; before the manifest's window closes; on the listed architecture; on POSIX only, because the CPU limit is RLIMIT_CPU (Linux and macOS; Windows has no RLIMIT_CPU, and its equivalent, a Job Object process-time limit, is not implemented, so the entry refuses there); never under CI allocation (CI_ALLOCATION=1), where every native HotSpot launch goes through sundai_hotspot.ci_gate and SLAB-049 solves never run",
+      "the operator's authority, before anything is written: the operator key (SLAB049_OPERATOR_KEY) must be the pinned public key's; the launch credential (SLAB049_ANCHOR_TOKEN) must be present; the signed, hash-chained ledger at the place derived from this manifest's id must verify, and its grant (entry 0) must name this manifest, this call, an open window and a cap no higher than 600 CPU-s, and this very ledger directory (a copy elsewhere is refused); the operator's reserve tag must exist and bind the call; no launch or settle tag and no ledger entry may exist for it; and the anchored aggregate (every call with a launch tag or a ledger entry, charged its full per-call envelope or its measured CPU if larger) plus this call's envelope must fit the grant's cap. Any tag that cannot be read refuses: no launch on uncertainty",
+      "evaluator identity: identity markers and SHA-256 are read from a private content-addressed copy (mode 0500 in a 0700 directory), and that copy is the file executed; build provenance must describe exactly those bytes; a binary built with the CI entry guard is refused; the shared libraries its own loader resolves must equal the build's, and are listed again after the run (a change settles the call as runtime_changed)",
       "raw geometry: the pinned raw layout hash (the vendored copy, and SLAB-048's record whenever it is in the tree) and the continuous rules only; the search lattice is never applied",
-      "atomic admission: under an exclusive ledger lock, one manifest per ledger, each call reserved once (O_EXCL, no retries), refused when the admitted count would pass 12 or charged plus reserved CPU would pass 600 CPU-s (a reservation is never freed: every admitted call, settled or not, failed or not, is charged at least its reservation, and a measured overshoot is charged in full)",
-      "reserve before staging: the reservation and the receipt are on disk (fsync) before inputs are generated or the solver starts",
-      "per-process CPU and a separate wall deadline: the solver runs in its own session and process group under RLIMIT_CPU equal to its timeout (soft = hard, so SIGKILL at the limit) and a wall deadline equal to its timeout; the TAP generator runs under RLIMIT_CPU 10 s and a 60 s deadline",
-      "kill and reap: after the solver exits or times out, its process group is killed and the solver is reaped",
-      "settlement: the receipt and the ledger settlement are written durably on every exit path of this process after admission, setup failures included; when no output directory or receipt can be written, the ledger still settles the call (receipt digest null), keeping the status, the measured CPU (children and self) and any overshoot",
-      "outcomes by admitted call id: record and report read the ledger, never caller-chosen directories, verify every binding and re-derive each result with the strict evaluator-bound reader; a missing or unusable required outcome gives INCOMPLETE"
+      "the signed reservation before staging: appended under the ledger's lock, which refuses a second reservation for the call; from then on the call is consumed and charged its full envelope, never reclaimed",
+      "the claim, immediately before launch: validate-reference CREATES gate0-<grant>/launch-<call> (create-only). Only a successful create launches; an existing ref refuses; an uncertain create (no answer after sending) consumes the call with no launch, for the operator to reconcile; nothing is retried from the absence of a settle tag",
+      "per-process CPU and wall limits on every child, soft = hard, so the kernel kills at the limit: the solver in its own session and process group at RLIMIT_CPU and a wall deadline both equal to its timeout, the group killed while the solver is unreaped, then the solver reaped; the TAP generator at 3 CPU-s and 30 s; each of the two loader listings at 1 CPU-s and 10 s, in its own session, killed as a group at its deadline",
+      "settlement: on every exit path after the reservation, the signed receipt and the signed settlement entry, with the status, the measured CPU (children and self) and any overshoot; when no receipt can be written, the ledger still settles the call (receipt digest null). The settle tag's exact message is printed for the operator",
+      "verification (record and report): by admitted call id from the signed ledger, never caller-chosen directories; every tag read by its exact name. A missing settle tag gives INCOMPLETE; a tag that cannot be read gives ERROR; a ledger, receipt or tag that does not verify or disagrees gives FAIL; a completed call is re-derived with the strict evaluator-bound reader. PASS needs all four required outcomes to agree everywhere and hold"
     ],
     "operator_supervisor_contract": [
-      "admission identity: authenticate the operator and the host; keep the ledger append-only and protected from deletion or rewrite (deleting a reservation would readmit its call); one ledger per grant",
-      "a cumulative CPU budget over the whole process group, descendants and lifecycle work included, enforced while calls run (for example a cgroup v2 budget that kills at the limit); in code, RLIMIT_CPU is per process and the ledger's cumulative check acts at admission only",
-      "kill and reap if validate-reference itself dies (SIGKILL, OOM, host loss): settle the call as unknown, charge its reservation, and never let it become a free replacement",
-      "a protected runtime image: run the loader and libraries from immutable copies; in code, the executable is a private copy, but libraries are hashed before and after the run, which cannot detect a swap-and-restore during it",
+      "key custody: the operator's Ed25519 private key is generated and held by warden's supervisor and never enters the repository; its public key is pinned here (OPERATOR_PUBLIC_KEY) by a reviewed commit before the grant",
+      "the grant: the signed grant written as ledger entry 0 (gate0_anchor.open_ledger: grant id, call ids, window, CPU cap of at most 600 CPU-s) under the operator's ledger root, one ledger per manifest; the root kept on storage the operator protects (append-only, backed up). Deleting or rolling it back cannot readmit a call (the tags refuse), but it loses the evidence",
+      "the anchor: a repository ruleset on refs/tags/gate0-* that makes the namespace create-only (no update, no delete, no force-push, no bypass); reserve-<call> created before each launch; settle-<call> created after settlement with the printed message, failures included; a claim_uncertain call reconciled by settling it as a failure, never relaunched",
+      "credentials: SLAB049_ANCHOR_TOKEN (create tags in this repository) only in the supervisor's environment, never in the repository; GH_TOKEN with read access for record and report",
+      "a cumulative CPU budget over the whole process group, descendants and validate-reference itself included, enforced while calls run (for example a cgroup v2 budget that kills at the limit); in code, RLIMIT_CPU is per process and the parent's own CPU is measured and charged, not capped",
+      "kill and reap if validate-reference itself dies (SIGKILL, OOM, host loss): the call stays consumed (its launch tag blocks any retry); settle it as unknown and charge its envelope",
+      "a protected runtime image: the loader, the libraries, the Python interpreter and its bytecode caches from immutable copies; in code, the executable is a private copy, but libraries are listed before and after the run, which cannot detect a swap-and-restore during it",
       "a trusted clock for the grant window; the code reads the host clock",
       "the final grant reconciles the 600 CPU-s manifest cap with the room's 1,800 CPU-s envelope; neither is raised here"
     ]
@@ -732,6 +758,22 @@
     "not_before": "warden's grant against the merged build",
     "per_call_receipts_record": "effective start and stop (UTC), wall and CPU seconds"
   },
+  "ledger": {
+    "derivation": "from this manifest's id under the operator's configured root, never from a record",
+    "dir": "<SLAB049_LEDGER_ROOT>/slab049-<this manifest's SHA-256>",
+    "entries": "000000.json, 000001.json, ...: canonical JSON, each signed with the operator key and naming the SHA-256 of the entry before it; entry 0 is the grant, every other a reservation or a settlement of one call",
+    "entry_schema": "sentilab-slab049-ledger-entry-v1",
+    "grant_fields": [
+      "grant_id",
+      "manifest_sha256",
+      "calls",
+      "not_before_utc",
+      "not_after_utc",
+      "cpu_cap_s",
+      "ledger_dir"
+    ],
+    "grant_schema": "sentilab-slab049-grant-v1"
+  },
   "next_allocation": [
     "the deferred verification points, pending: Ascend 910 Fig. 6(c) at 75.47 C and CPU-DRAM Fig. 5(c) at 94.89 C (SLAB-048 validation_points), with their own calls",
     "HotSpot 6.0 built SUPERLU=0 exactly as TAP-2.5D's util/hotspot (kind hotspot6_tap_faithful) on both raw originals: the solver cross-check",
@@ -740,6 +782,16 @@
     "a 50 mm frame comparison and NEW-evaluator mesh margins"
   ],
   "not_requested": "The prior snapped-primary rows; the v1 and v2 plans (32 calls, 37 executions; later 23); and every material-only HotSpot 7 call. The material-only flag stays as labelled, bounded diagnostic evidence; it is not the MATCH evaluator and inherits no grant.",
+  "operator": {
+    "custody": "the private key belongs to the operator supervisor (warden) and never lives in the repository; validate-reference reads it from SLAB049_OPERATOR_KEY, a PEM file outside it",
+    "public_key_ed25519": null,
+    "signs": [
+      "the grant (ledger entry 0)",
+      "each reservation and settlement entry",
+      "each receipt"
+    ],
+    "status": "pending: warden pins the operator's public key before the grant; until then every admission and every gate check refuses"
+  },
   "paper": "Ma et al., TAP-2.5D, DATE 2021 (HotSpot 6.0, 45 mm interposer, grid 64, 45 C ambient)",
   "post_run_diagnostics": "From the 12 calls, with no extra call (reference_validation report, by call id from the ledger): HotSpot 6.0's grid 32 -> 64 change per reference (aneta's network model predicts 0.01 K Ascend, 0.18 K CPU-DRAM; the old HotSpot 7 micro150 mesh error was 0.79 K), CPU-s per call, replay byte identity, the same-index spreader-sink drop and the same-index stack at each active-layer argmax (reported, not asserted). Nothing is frozen on them or on the old mesh error.",
   "references": {
@@ -815,32 +867,19 @@
   ],
   "snapped_variants": "not claimed: a legal snapped variant is an engineering comparison, not the paper's layout, and carries no paper-match claim. SLAB-048's 0.5 mm variants are a separate engineering-comparison allocation with their own identities.",
   "source": {
-    "files_sha256": {
-      "docs/sentilab/diagnostics/SLAB-049/references/raw-layouts/ascend910-tap25d-fig6a.json": "a6f69047fc60a6d3406973284798963dd96828640ed5b1e4e3086dfd72992bf4",
-      "docs/sentilab/diagnostics/SLAB-049/references/raw-layouts/micro150-tap25d-fig5a.json": "c753e301f886873d0834dd7f6f4e3f3d3dd822ec47813db79c8bbf0f7793c1cb",
-      "docs/sentilab/evidence/SLAB-039/SUPERVISOR-POLICY.json": "b117ae884799a4099259fd07164d800904ad1a8ae1a37832b7d6823e6cf8aa57",
-      "scripts/build_hotspot6.sh": "617ad089784c5a2141fdd2978b579df24ab0727149f5240978cc66836c7b6581",
-      "sundai_hotspot/Makefile": "a23c84c1c9e16e62f3502e08f11237260384c9f113f36d17a1402eddbb5991b4",
-      "sundai_hotspot/evaluators.py": "5823e89ffa52c80cf31698d4da4d7efa2c3e94f98e13d37d4cc8e2f6be078541",
-      "sundai_hotspot/gate_zero.py": "e58e0585b5af06f8cd6c486df7a3c56a4e149a87e1d64a989243aca52934805c",
-      "sundai_hotspot/provenance.py": "9acee299938ef8af4043e15c9fb64acca9829d1f1fb2ac9ab20b840a3c130271",
-      "sundai_hotspot/reference_validation.py": "22364b2bcaacacce72b969816ef64d6e78fb73feed5a3f33b238f5f8886aa599",
-      "sundai_hotspot/slab049.py": "098bd90f72a2fbf29921a039f7bbb0813f6e775e5966269564cdf7406c92b89f",
-      "sundai_hotspot/tap_oracle.py": "43eeb93ccc6ef6a89876c1efbefc02d43c2262b9b1068307474e69915043fe60",
-      "sundai_hotspot/tap_oracle_worker.py": "bf0266dba03d980565d337b7092f0ec0589e6f8438045c9860d1af8ea5e145dd",
-      "sundai_hotspot/temperature_grid.c": "80e60bf7f32cc69ec9d46f3704d2d9541975d174f8bcda6b14ecb9fcfa900375",
-      "sundai_hotspot6/Makefile": "6dea60a98bc35e376cb0899bad2345dd90592a79834fb6c067b8365b64e58af4",
-      "sundai_hotspot6/UPSTREAM_BLOBS.txt": "25a1fc87a67b7405eaf011d2d3680f0c87ba3a30f798df984ceab69b1935d93a",
-      "sundai_hotspot6/UPSTREAM_COMMIT": "98beb05d8182ba824df6443e67804639945722d2c0ec7e78f09ad3f74371acf2",
-      "sundai_hotspot6/temperature_grid.c": "3ffb58e102cae8e8c844b7758ffce1491c833ed75c8ab78758960caff61c25ad",
-      "sundai_tap/configs/sys_ascend910.cfg": "548562a5f49d502f4b9bd03d3a4acc4b42f225056e6d91556416079c291e06d4",
-      "sundai_tap/configs/sys_micro150.cfg": "c31956e38b05fc0d31609656e6c92f29109ec3dee6b148b3b1c28c23c2dd1b18",
+    "derivation": "Pinned: only what a call executes or reads (warden #56967 P2-4). (1) The TAP generator's repository files: slab049.trace_generator runs the generator exactly as validate-reference does, for both gate references, under a Python audit hook (sys.addaudithook) and lists every repository module it imports and every repository file it opens for reading; it starts no process. That list is GENERATOR_SOURCES plus GENERATOR_DATA, and ExecutedSetTests re-derives it on every run, so a new import or read fails the tests until it is pinned. (2) The config: TAP's util/hotspot.config (read by the generator) and the frozen new_hotspot.config it becomes, which is one of (3) the inputs: each reference's frozen inputs (their SHA256SUMS digest) and raw layout hash, under references and calls. (4) The solver binary, by identity rather than by path (with -g its bytes depend on the build directory): each call hashes the private copy it executes, binds that hash and the build provenance in its signed receipt, and the gate admits only the binary with that hash. Not pinned: the validate-reference, gate and record code. What it decides (the predicate, tolerance, metric, references, calls, limits, accounting, operator key and anchor) is written into this manifest, so a change to any of it changes the manifest; edits anywhere else leave the manifest and every PASS intact. The interpreter and its standard library are the host's (each receipt records the Python version).",
+    "generator_sha256": {
+      "sundai_tap/block_occupation.py": "3867b5e6716b9f89576e4c18b54e036a9788217426cbfb44f93caff41b108305",
+      "sundai_tap/bstree.py": "0d94fc22a436b52038cd1c95b66538fd2fad353040088fd7d0f7a44b375e6618",
+      "sundai_tap/fastSA.py": "653617b1853f9b6bfe90696e20a5bf961a4d0c329f37f9dfb5e1095be4e1d800",
+      "sundai_tap/init_placement.py": "92e40af2f5d56030cfae1fc35de6a5673fef55ceecd68319f6799d56d77946ce",
       "sundai_tap/passive_interposer.py": "cecc5b85f7dd8e6a3816c635879eb06193a270595f6bdbc71b76e4ef96f227df",
       "sundai_tap/system.py": "22adcc1c5b9228b21b1264ee8f1b31bac916a3f5fb1f9f06d5428d04d11a5acf",
       "sundai_tap/util/fill_space.py": "645c0c372509577a77476878ddfac236fd9a0d523133af40011c7bb84db96a82",
       "sundai_tap/util/hotspot.config": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc"
     },
-    "pin": "SHA-256 of every file that builds, stages or judges the calls; validate-reference refuses a manifest that is not exactly what the tree generates"
+    "pin": "only what the calls execute or read; validate-reference and the gate refuse a manifest that is not exactly what the tree generates",
+    "solver": "by identity: the SHA-256 of the private copy each call executes, bound in its signed receipt with the build provenance; the gate admits only that binary"
   },
   "status": "PROPOSED. The raw-primary manifest: 12 calls on the two raw 45 mm references, for warden's grant against the merged build. Nothing has been executed; no solve has been run for SLAB-049.",
   "supersedes": {

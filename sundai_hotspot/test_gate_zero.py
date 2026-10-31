@@ -1,6 +1,8 @@
-"""Gate zero (SLAB-049): raw paper-match references, identities, ledger-assembled records, the manifest-bound
-bootstrap entry and the selector. No solves: the "binaries" are placeholders or a tiny fake that writes synthetic
-outputs.
+"""Gate zero (SLAB-049): raw paper-match references, identities, the operator's signed ledger and tags, records built
+from them, the manifest-bound bootstrap entry with its atomic launch claim, and the selector. No solves: the
+"binaries" are placeholders or a tiny fake that writes synthetic outputs. The operator's Ed25519 key is generated at
+run time in each test (no key material in the repository), and the GitHub tag API is an in-memory fake that
+implements create-only, atomic refs (never the network).
 """
 from __future__ import annotations
 
@@ -13,18 +15,28 @@ import json
 import os
 from pathlib import Path
 import platform
+import secrets
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from unittest import mock
+import urllib.error
 
-from sundai_hotspot import gate_zero, provenance, reference_validation, slab049, tap_oracle
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+from sundai_hotspot import gate0_anchor, gate_zero, provenance, reference_validation, slab049, tap_oracle
 from sundai_hotspot.coupling_variant import strip_variant_blocks
 from sundai_hotspot.evaluators import EVIDENCE_PREFIX, HotSpot6Oracle, make_oracle
+from sundai_hotspot.gate0_anchor import (
+    AnchorAbsent, AnchorUnavailable, AuthenticationError, ClaimRefused, ClaimUncertain, RefExists, TagReader,
+)
 from sundai_hotspot.gate_zero import (
     DEFERRED, GATE, HOTSPOT6_TAG, PINNED_REFERENCES_SHA256, REFERENCES, TOLERANCE_K, TOLERANCE_LABEL, VARIANT_TAG,
     GateZeroRefusal, build_record, call_id, evaluator_identity, references_sha256, require_gate_zero, required_calls,
@@ -44,9 +56,15 @@ ASCEND, MICRO = "ascend910-tap25d-fig6a-raw", "micro150-tap25d-fig5a-raw"
 REQUIRED = [row["call"] for row in required_calls()]
 P_ASCEND, R_ASCEND = call_id("primary", "hotspot6", ASCEND, 64), call_id("replay", "hotspot6", ASCEND, 64)
 P_MICRO, R_MICRO = call_id("primary", "hotspot6", MICRO, 64), call_id("replay", "hotspot6", MICRO, 64)
+G32_ASCEND = call_id("primary", "hotspot6", ASCEND, 32)
 GOOD = {P_ASCEND: 75.09, R_ASCEND: 75.09, P_MICRO: 116.27, R_MICRO: 116.27}
+GRANT_ID = "g49-test"
+WINDOW = ("2026-10-31T00:00:00+00:00", "2026-11-01T12:00:00+00:00")
 IN_WINDOW = datetime(2026, 10, 31, 16, 0, tzinfo=timezone.utc)
 NO_LIBRARIES = {"dynamic": False, "libraries": [], "note": "synthetic"}
+EMPTY_TREE = hashlib.sha1(b"tree 0\0").hexdigest()  # git's empty tree object, computed here
+OPERATOR_ENVIRONMENT = ("SLAB049_LEDGER_ROOT", "SLAB049_OPERATOR_KEY", "SLAB049_ANCHOR_TOKEN", "GH_TOKEN",
+                        "CI_ALLOCATION")
 
 
 def _sha256(path: Path) -> str:
@@ -79,62 +97,69 @@ def write_outputs(run: Path, peak_c: float, drop_k: float = 1.0, *, grid: int = 
     (run / "sample.grid.steady").write_text("".join(parts), encoding="utf-8")
 
 
-def fabricate_ledger(root: Path, binary: Path, peaks: dict, *, kind: str = "hotspot6",
-                     settled: dict[str, tuple] | None = None) -> Path:
-    """A ledger and run directories exactly as validate-reference leaves them, with synthetic outputs instead of a
-    solve. peaks maps a call id to its peak (C) or to write_outputs keyword arguments; settled maps a call id to a
-    (status, exit_status) other than ("exited", 0)."""
-    manifest_bytes = reference_validation.MANIFEST_PATH.read_bytes()
-    manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
-    calls = {c["id"]: c for c in json.loads(manifest_bytes)["calls"]}
-    identity = evaluator_identity(kind, binary)
-    ledger = root / "ledger"
-    ledger.mkdir(parents=True, exist_ok=True)
-    for name, peak in peaks.items():
-        call = calls[name]
-        reference = gate_zero.reference(call["reference"])
-        run = root / "runs" / name
-        shutil.copytree(REPO_ROOT / reference.inputs, run)
-        write_outputs(run, **(peak if isinstance(peak, dict) else {"peak_c": peak}))
-        status, exit_status = (settled or {}).get(name, ("exited", 0))
-        receipt = {"schema": gate_zero.RECEIPT_SCHEMA, "call": name, "role": call["role"],
-                   "replay_of": call["replay_of"], "manifest_sha256": manifest_sha256, "evaluator": identity,
-                   "reference": reference.id, "layout_identity": reference.layout_identity,
-                   "raw_layout_sha256": reference.raw_layout_sha256, "grid": call["grid"],
-                   "status": status, "exit_status": exit_status, "inputs": gate_zero.frozen_inputs(reference),
-                   "runtime": NO_LIBRARIES,
-                   "outputs": {output: _sha256(run / output) for output in gate_zero.RECEIPT_OUTPUTS}}
-        (run / "receipt.json").write_text(json.dumps(receipt), encoding="utf-8")
-        (ledger / f"{name}.reserved.json").write_text(json.dumps({
-            "call": name, "manifest_sha256": manifest_sha256, "out": run.as_posix(),
-            "reserved_cpu_s": call["accounting"]["reserved_cpu_s"]}), encoding="utf-8")
-        (ledger / f"{name}.settled.json").write_text(json.dumps({
-            "call": name, "manifest_sha256": manifest_sha256, "status": status, "exit_status": exit_status,
-            "charged_cpu_s": 6.0, "receipt_sha256": _sha256(run / "receipt.json")}), encoding="utf-8")
-    return ledger
+class FakeGitHub:
+    """GitHub's git-data API as gate0_anchor uses it, in memory (no network). A ref create is atomic and create-only,
+    as GitHub's is: a second create of the same ref raises RefExists. Commits are immutable. Failure injection:
+    `down` holds (method, path prefix) pairs that fail as an outage would (AnchorUnavailable, before anything
+    happens); `after_create_lost` loses the answer to a ref create that did happen; `before_create` runs before a ref
+    create takes the lock (a barrier makes two claims overlap)."""
 
+    def __init__(self):
+        self.refs, self.commits, self.log = {}, {}, []
+        self.lock = threading.Lock()
+        self.down: set[tuple[str, str]] = set()
+        self.after_create_lost = False
+        self.before_create = None
 
-def rebind(ledger: Path, name: str, edit) -> None:
-    """A consistent forgery of one receipt: edit it and rebind its settlement, so the deeper checks must act."""
-    run = Path(json.loads((ledger / f"{name}.reserved.json").read_text())["out"])
-    receipt = json.loads((run / "receipt.json").read_text())
-    edit(receipt)
-    (run / "receipt.json").write_text(json.dumps(receipt), encoding="utf-8")
-    settled = json.loads((ledger / f"{name}.settled.json").read_text())
-    settled["receipt_sha256"] = _sha256(run / "receipt.json")
-    (ledger / f"{name}.settled.json").write_text(json.dumps(settled), encoding="utf-8")
+    def __call__(self, method: str, path: str, body: dict | None = None):
+        with self.lock:
+            self.log.append((method, path))
+        if any(method == down_method and path.startswith(prefix) for down_method, prefix in self.down):
+            raise AnchorUnavailable(f"fake outage: {method} {path}")
+        if method == "GET" and path.startswith("/git/ref/"):
+            name = "refs/" + path[len("/git/ref/"):]
+            with self.lock:
+                sha = self.refs.get(name)
+            if sha is None:
+                raise AnchorAbsent(path)
+            return {"ref": name, "object": {"type": "commit", "sha": sha}}
+        if method == "GET" and path.startswith("/git/commits/"):
+            with self.lock:
+                commit = self.commits.get(path[len("/git/commits/"):])
+            if commit is None:
+                raise AnchorUnavailable("HTTP 404")  # github_request: only a ref's 404 can be an absence
+            return json.loads(json.dumps(commit))
+        if method == "POST" and path == "/git/commits":
+            commit = {"message": body["message"], "tree": {"sha": body["tree"]},
+                      "parents": [{"sha": parent} for parent in body["parents"]]}
+            sha = hashlib.sha1(json.dumps(commit, sort_keys=True).encode("utf-8")).hexdigest()
+            with self.lock:
+                self.commits[sha] = {"sha": sha, **commit}
+            return {"sha": sha}
+        if method == "POST" and path == "/git/refs":
+            if self.before_create:
+                self.before_create()
+            with self.lock:
+                if body["ref"] in self.refs:
+                    raise RefExists(path)
+                self.refs[body["ref"]] = body["sha"]
+            if self.after_create_lost:
+                raise AnchorUnavailable("the answer to a create that happened was lost")
+            return {"ref": body["ref"], "object": {"type": "commit", "sha": body["sha"]}}
+        raise AnchorUnavailable(f"the fake has no {method} {path}")
 
+    def ref(self, kind: str, call: str, grant_id: str = GRANT_ID) -> str:
+        return "refs/" + gate0_anchor.tag_ref(grant_id, kind, call)
 
-def reshape(ledger: Path, name: str, **outputs) -> None:
-    """Rewrite one run's raw outputs (write_outputs arguments) and rebind every digest to them: the bindings hold,
-    so only the strict evaluator-bound reader can tell."""
-    run = Path(json.loads((ledger / f"{name}.reserved.json").read_text())["out"])
-    write_outputs(run, **outputs)
-    rebind(ledger, name, lambda r: r.update(outputs={o: _sha256(run / o) for o in gate_zero.RECEIPT_OUTPUTS}))
+    def has(self, kind: str, call: str) -> bool:
+        return self.ref(kind, call) in self.refs
 
+    def drop(self, kind: str, call: str) -> None:
+        """Only a test can delete in the create-only namespace."""
+        del self.refs[self.ref(kind, call)]
 
-def passing_record(root: Path, binary: Path) -> dict:
-    return build_record("hotspot6", binary, fabricate_ledger(root, binary, GOOD))
+    def launch_tags(self) -> list[str]:
+        return sorted(name for name in self.refs if "/launch-" in name)
 
 
 class TempDirCase(unittest.TestCase):
@@ -149,6 +174,142 @@ class TempDirCase(unittest.TestCase):
 
     def tearDown(self):
         self._directory.cleanup()
+
+
+@unittest.skipUnless(os.name == "posix", "the operator's ledger is POSIX (flock, read-only entries); "
+                     "validate-reference refuses elsewhere")
+class OperatorCase(TempDirCase):
+    """The operator's side in miniature: an Ed25519 key generated at run time (never stored in the repository) and
+    pinned into a manifest generated for this test, which validate-reference, record and report then read. The
+    operator's environment is cleared and the network is unreachable."""
+
+    def setUp(self):
+        super().setUp()
+        environment = mock.patch.dict(os.environ)
+        environment.start()
+        self.addCleanup(environment.stop)
+        for name in OPERATOR_ENVIRONMENT:
+            os.environ.pop(name, None)
+        self.patch(gate0_anchor.urllib.request, "urlopen", mock.Mock(side_effect=AssertionError("network used")))
+        self.key = Ed25519PrivateKey.generate()
+        self.public = gate0_anchor.public_key_hex(self.key)
+        self.key_file = self.root / "operator.pem"
+        self.key_file.write_bytes(self.key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                                                         serialization.NoEncryption()))
+        self.manifest_path = self.root / slab049.MANIFEST_NAME
+        self.patch(slab049, "OPERATOR_PUBLIC_KEY", self.public)
+        self.patch(slab049, "MANIFEST_PATH", self.manifest_path)
+        self.regenerate_manifest()
+
+    def patch(self, target, attribute, value):
+        patcher = mock.patch.object(target, attribute, value)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def regenerate_manifest(self) -> None:
+        self.manifest_path.write_bytes(slab049._dump(slab049.build_call_list()))
+        self.manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        self.manifest_sha256 = _sha256(self.manifest_path)
+        self.calls = {c["id"]: c for c in self.manifest["calls"]}
+
+    def grant(self, label: str = "grant", **kwargs) -> "Scenario":
+        return Scenario(self, label, **kwargs)
+
+    def record(self, scenario: "Scenario", binary: Path | None = None, kind: str = "hotspot6") -> dict:
+        return build_record(kind, binary or self.binaries["hotspot6"], ledger_root=scenario.root, tags=scenario.tags)
+
+    def require(self, scenario: "Scenario", record, binary: Path | None = None, **kwargs) -> dict:
+        return require_gate_zero("hotspot6", binary or self.binaries["hotspot6"], record, ledger_root=scenario.root,
+                                 tags=scenario.tags, **kwargs)
+
+
+class Scenario:
+    """One operator ledger root opened with a signed grant (gate0_anchor.open_ledger), the tag API it is read
+    through, and the operator's reserve and settle tags. `signer` signs everything; any signer other than the case's
+    key is an attacker without the operator's key."""
+
+    def __init__(self, case: OperatorCase, label: str, *, api: FakeGitHub | None = None, calls=None,
+                 window=WINDOW, cap: float = 600.0, grant_id: str = GRANT_ID, signer: Ed25519PrivateKey | None = None):
+        self.case, self.grant_id, self.key = case, grant_id, signer or case.key
+        self.public = gate0_anchor.public_key_hex(self.key)
+        self.api = api or FakeGitHub()
+        self.tags = TagReader(self.api)
+        base = case.root / label
+        self.root, self.runs = base / "ledger-root", base / "runs"
+        self.grant_entry = gate0_anchor.open_ledger(self.root, self.key, case.manifest_sha256, grant_id=grant_id,
+                                                    calls=calls or sorted(case.calls), not_before_utc=window[0],
+                                                    not_after_utc=window[1], cpu_cap_s=cap)
+
+    @property
+    def dir(self) -> Path:
+        return gate0_anchor.ledger_dir(self.root, self.case.manifest_sha256)
+
+    def ledger(self) -> dict:
+        return gate0_anchor.read_ledger(self.root, self.public, self.case.manifest_sha256)
+
+    def entries(self, call: str) -> dict:
+        return gate0_anchor.call_entries(self.ledger(), call)
+
+    def tag(self, kind: str, call: str, message: str) -> None:
+        commit = self.api("POST", "/git/commits", {"message": message, "tree": EMPTY_TREE, "parents": []})
+        self.api("POST", "/git/refs", {"ref": self.api.ref(kind, call, self.grant_id), "sha": commit["sha"]})
+
+    def reserve(self, *calls: str) -> None:
+        for call in calls:
+            self.tag("reserve", call, gate0_anchor.tag_message("reserve", self.grant_id, self.case.manifest_sha256,
+                                                               call))
+
+    def settle(self, *calls: str) -> None:
+        """The settle tag from the ledger's own settlement: the message validate-reference prints."""
+        for call in calls:
+            settlement = self.entries(call)["settlement"]
+            self.tag("settle", call, gate0_anchor.tag_message(
+                "settle", self.grant_id, self.case.manifest_sha256, call, status=settlement["status"],
+                receipt_sha256=settlement["receipt_sha256"], outputs=settlement["outputs"]))
+
+    def fabricate(self, peaks: dict, *, binary: Path | None = None, settled: dict | None = None,
+                  edit: dict | None = None, receipt_signer: Ed25519PrivateKey | None = None,
+                  charged_cpu_s: float = 6.0) -> None:
+        """Calls exactly as validate-reference and the operator leave them, with synthetic outputs instead of a
+        solve: the reserve tag, the signed reservation, the run directory and its signed receipt, the launch claim,
+        the signed settlement and the settle tag. peaks maps a call id to its peak (C) or to write_outputs keyword
+        arguments; settled maps a call id to a (status, exit_status) other than ("exited", 0); edit maps a call id
+        to a change made to its receipt before it is signed (a key holder's consistent forgery)."""
+        identity = evaluator_identity("hotspot6", binary or self.case.binaries["hotspot6"])
+        for name, peak in peaks.items():
+            call = self.case.calls[name]
+            reference = gate_zero.reference(call["reference"])
+            run = self.runs / name
+            shutil.copytree(REPO_ROOT / reference.inputs, run)
+            write_outputs(run, **(peak if isinstance(peak, dict) else {"peak_c": peak}))
+            status, exit_status = (settled or {}).get(name, ("exited", 0))
+            if not self.api.has("reserve", name):
+                self.reserve(name)
+            reservation = gate0_anchor.append(self.root, self.key, self.public, self.case.manifest_sha256,
+                                              "reservation", name, {"out": run.resolve().as_posix(),
+                                                                    "reserved_cpu_s": call["accounting"]["reserved_cpu_s"]})
+            claim = gate0_anchor.claim_launch(self.api, self.grant_id, self.case.manifest_sha256, name,
+                                              reservation_sha256=gate0_anchor.digest(reservation))
+            receipt = {"schema": gate_zero.RECEIPT_SCHEMA, "call": name, "role": call["role"],
+                       "replay_of": call["replay_of"], "manifest_sha256": self.case.manifest_sha256,
+                       "grant_id": self.grant_id, "reservation_sha256": gate0_anchor.digest(reservation),
+                       "evaluator": identity, "reference": reference.id, "layout_identity": reference.layout_identity,
+                       "raw_layout_sha256": reference.raw_layout_sha256, "grid": call["grid"], "status": status,
+                       "exit_status": exit_status, "inputs": gate_zero.frozen_inputs(reference),
+                       "runtime": NO_LIBRARIES, "claim": {"ref": claim["ref"], "commit_sha": claim["commit_sha"]},
+                       "outputs": {output: _sha256(run / output) for output in gate_zero.RECEIPT_OUTPUTS}}
+            if edit and name in edit:
+                edit[name](receipt)
+            (run / "receipt.json").write_bytes(reference_validation._json(gate0_anchor.sign(receipt_signer or self.key,
+                                                                                            receipt)))
+            gate0_anchor.append(self.root, self.key, self.public, self.case.manifest_sha256, "settlement", name, {
+                "status": status, "exit_status": exit_status, "outputs": receipt["outputs"],
+                "receipt_sha256": _sha256(run / "receipt.json"), "charged_cpu_s": charged_cpu_s,
+                "reserved_cpu_s": call["accounting"]["reserved_cpu_s"], "out": run.resolve().as_posix()})
+            self.settle(name)
+
+    def run_dir(self, call: str) -> Path:
+        return Path(self.entries(call)["reservation"]["out"])
 
 
 class PinnedReferenceTests(unittest.TestCase):
@@ -370,26 +531,295 @@ class SelectorTests(unittest.TestCase):
                     gate_zero.read_steady_values(steady)
 
 
-class RecordTests(TempDirCase):
-    """Records come from the ledger by admitted call id (astra supplement 6545712065; warden #56856)."""
+class OperatorLedgerTests(OperatorCase):
+    """gate0_anchor's signed ledger (warden #56967 P2-1, P2-2; astra #57024): only the operator's key writes it, the
+    entries form one chain, the grant binds the ledger's own place, and each call is reserved and settled once."""
+
+    def test_entries_are_signed_chained_and_bound_to_their_place(self):
+        scenario = self.grant()
+        scenario.fabricate({P_ASCEND: 75.09})
+        ledger = scenario.ledger()
+        self.assertEqual([entry["kind"] for entry in ledger["entries"]], ["grant", "reservation", "settlement"])
+        for previous, entry in zip(ledger["entries"], ledger["entries"][1:]):
+            self.assertEqual(entry["prev_sha256"], gate0_anchor.digest(previous))
+        self.assertEqual(ledger["dir"], (self.root / "grant" / "ledger-root").resolve() / f"slab049-{self.manifest_sha256}")
+        grant = ledger["grant"]
+        self.assertEqual((grant["grant_id"], grant["manifest_sha256"], grant["cpu_cap_s"], grant["not_before_utc"],
+                          grant["not_after_utc"], grant["ledger_dir"]),
+                         (GRANT_ID, self.manifest_sha256, 600.0, WINDOW[0], WINDOW[1], ledger["dir"].as_posix()))
+        self.assertEqual(grant["calls"], sorted(self.calls))
+
+    def test_edited_unsigned_foreign_gapped_or_missing_entries_never_verify(self):
+        attacker = Ed25519PrivateKey.generate()
+
+        def rewrite(scenario, seq, change):
+            path = scenario.dir / f"{seq:06d}.json"
+            data = json.loads(path.read_text(encoding="utf-8"))
+            change(data)
+            path.chmod(0o644)
+            path.write_text(json.dumps(data), encoding="utf-8")
+
+        def resign(data):
+            data.update(gate0_anchor.sign(attacker, {k: v for k, v in data.items() if k != "signature"}))
+        cases = {
+            "an edited field": lambda s: rewrite(s, 1, lambda d: d.update(reserved_cpu_s=1.0)),
+            "a stripped signature": lambda s: rewrite(s, 2, lambda d: d.pop("signature")),
+            "an attacker's signature": lambda s: rewrite(s, 2, resign),
+            "a deleted middle entry": lambda s: (s.dir / "000001.json").unlink(),
+            "a deleted grant": lambda s: (s.dir / "000000.json").unlink(),
+            "an emptied entry": lambda s: rewrite(s, 2, lambda d: d.clear()),
+            "an unreadable entry": lambda s: ((s.dir / "000002.json").chmod(0o644)
+                                              or (s.dir / "000002.json").write_text("{", encoding="utf-8")),
+            "a deleted ledger": lambda s: shutil.rmtree(s.root),
+        }
+        for label, change in cases.items():
+            with self.subTest(case=label):
+                scenario = self.grant(label.replace(" ", "-").replace("'", ""))
+                scenario.fabricate({P_ASCEND: 75.09})
+                change(scenario)
+                with self.assertRaises(AuthenticationError):
+                    scenario.ledger()
+        forged = self.grant("forged", signer=attacker)  # a whole ledger written without the operator's key
+        with self.assertRaisesRegex(AuthenticationError, "does not verify"):
+            gate0_anchor.read_ledger(forged.root, self.public, self.manifest_sha256)
+        first, second = self.grant("splice-a"), self.grant("splice-b")  # both signed by the operator's own key
+        first.fabricate({P_ASCEND: 75.09})
+        second.fabricate({P_ASCEND: 75.09})
+        target = second.dir / "000002.json"
+        target.chmod(0o644)
+        shutil.copy(first.dir / "000002.json", target)  # a valid entry, from another ledger's chain
+        with self.assertRaisesRegex(AuthenticationError, "breaks the chain"):
+            second.ledger()
+
+    def test_a_ledger_copied_elsewhere_or_a_replayed_grant_is_refused(self):
+        scenario = self.grant()
+        scenario.fabricate({P_ASCEND: 75.09})
+        elsewhere = self.root / "elsewhere"
+        shutil.copytree(scenario.root, elsewhere)
+        with self.assertRaisesRegex(AuthenticationError, "another ledger directory"):
+            gate0_anchor.read_ledger(elsewhere, self.public, self.manifest_sha256)
+        replayed = gate0_anchor.ledger_dir(self.root / "replayed", self.manifest_sha256)
+        replayed.mkdir(parents=True)
+        shutil.copy(scenario.dir / "000000.json", replayed / "000000.json")
+        with self.assertRaisesRegex(AuthenticationError, "another ledger directory"):
+            gate0_anchor.read_ledger(self.root / "replayed", self.public, self.manifest_sha256)
+        other = hashlib.sha256(b"another manifest").hexdigest()
+        target = gate0_anchor.ledger_dir(self.root / "other-manifest", other)
+        target.mkdir(parents=True)
+        shutil.copy(scenario.dir / "000000.json", target / "000000.json")
+        with self.assertRaises(AuthenticationError):
+            gate0_anchor.read_ledger(self.root / "other-manifest", self.public, other)
+        with self.assertRaises(AuthenticationError):
+            gate0_anchor.ledger_dir(self.root, "../not-a-manifest-id")
+        with self.assertRaises(FileExistsError):  # one grant per ledger
+            gate0_anchor.open_ledger(scenario.root, self.key, self.manifest_sha256, grant_id="again", calls=[P_ASCEND],
+                                     not_before_utc=WINDOW[0], not_after_utc=WINDOW[1], cpu_cap_s=1.0)
+
+    def test_each_call_is_reserved_once_and_settled_once_inside_the_grant(self):
+        scenario = self.grant(calls=[P_ASCEND, R_ASCEND])
+
+        def append(kind, call, key=self.key):
+            return gate0_anchor.append(scenario.root, key, self.public, self.manifest_sha256, kind, call, {})
+        with self.assertRaisesRegex(AuthenticationError, "no open reservation"):
+            append("settlement", P_ASCEND)
+        append("reservation", P_ASCEND)
+        with self.assertRaisesRegex(AuthenticationError, "reserved once"):
+            append("reservation", P_ASCEND)
+        append("settlement", P_ASCEND)
+        for kind in ("reservation", "settlement"):
+            with self.assertRaises(AuthenticationError):
+                append(kind, P_ASCEND)
+        with self.assertRaisesRegex(AuthenticationError, "not in the operator's grant"):
+            append("reservation", P_MICRO)
+        with self.assertRaises(ValueError):
+            append("grant", R_ASCEND)
+        with self.assertRaisesRegex(AuthenticationError, "not the pinned operator key"):
+            append("reservation", R_ASCEND, key=Ed25519PrivateKey.generate())
+        self.assertEqual(len(scenario.ledger()["entries"]), 3)
+
+
+class AnchorTests(OperatorCase):
+    """The operator's tags, each read by its exact name (astra #57025), and the launch claim (astra #57031)."""
+
+    def test_tags_are_read_by_exact_name_and_must_bind_their_grant_manifest_and_call(self):
+        scenario = self.grant()
+        read = scenario.tags.read
+        self.assertIsNone(read(GRANT_ID, "reserve", P_ASCEND, self.manifest_sha256))
+        scenario.reserve(P_ASCEND, P_ASCEND.replace("-g64", "-g640"))  # a near name exists too
+        message = read(GRANT_ID, "reserve", P_ASCEND, self.manifest_sha256)
+        self.assertEqual((message["kind"], message["grant_id"], message["call"]), ("reserve", GRANT_ID, P_ASCEND))
+        reads = [path for method, path in scenario.api.log if method == "GET"]
+        self.assertIn("/git/ref/" + gate0_anchor.tag_ref(GRANT_ID, "reserve", P_ASCEND), reads)
+        self.assertFalse(any("matching-refs" in path or path.endswith("/") for path in reads))  # no listing, no prefix
+        self.assertIsNone(read(GRANT_ID, "reserve", R_ASCEND, self.manifest_sha256))
+        sha = self.manifest_sha256
+        wrong = {
+            "another call": gate0_anchor.tag_message("reserve", GRANT_ID, sha, R_MICRO),
+            "another manifest": gate0_anchor.tag_message("reserve", GRANT_ID, "0" * 64, P_MICRO),
+            "another grant": gate0_anchor.tag_message("reserve", "g-other", sha, P_MICRO),
+            "another kind": gate0_anchor.tag_message("settle", GRANT_ID, sha, P_MICRO, status="exited", outputs={}),
+            "no JSON": "reserve " + P_MICRO,
+        }
+        for label, text in wrong.items():
+            with self.subTest(message=label):
+                api = FakeGitHub()
+                commit = api("POST", "/git/commits", {"message": text, "tree": EMPTY_TREE, "parents": []})
+                api("POST", "/git/refs", {"ref": api.ref("reserve", P_MICRO), "sha": commit["sha"]})
+                with self.assertRaises(AuthenticationError):
+                    TagReader(api).read(GRANT_ID, "reserve", P_MICRO, sha)
+        settle = gate0_anchor.tag_message("settle", GRANT_ID, sha, P_MICRO, status="exited", outputs={})
+        unbound = json.loads(settle)
+        unbound.pop("outputs")
+        scenario.tag("settle", P_MICRO, json.dumps(unbound))
+        with self.assertRaisesRegex(AuthenticationError, "terminal status"):
+            read(GRANT_ID, "settle", P_MICRO, sha)
+        scenario.tag("launch", P_MICRO, json.dumps({**json.loads(gate0_anchor.tag_message("launch", GRANT_ID, sha,
+                                                                                          P_MICRO)),
+                                                    "reservation_sha256": None}))
+        with self.assertRaisesRegex(AuthenticationError, "signed reservation"):
+            read(GRANT_ID, "launch", P_MICRO, sha)
+
+    def test_a_tag_that_cannot_be_read_is_never_an_absence(self):
+        scenario = self.grant()
+        scenario.reserve(P_ASCEND)
+        for down in ({("GET", "/git/ref/")}, {("GET", "/git/commits/")}):
+            with self.subTest(down=down):
+                scenario.api.down = down
+                with self.assertRaises(AnchorUnavailable):
+                    scenario.tags.read(GRANT_ID, "reserve", P_ASCEND, self.manifest_sha256)
+        scenario.api.down = {("GET", "/git/ref/")}
+        with self.assertRaises(AnchorUnavailable):  # during an outage a missing tag is not confirmed absent either
+            scenario.tags.read(GRANT_ID, "settle", P_ASCEND, self.manifest_sha256)
+        scenario.api.down = set()
+        scenario.api.refs[scenario.api.ref("settle", P_ASCEND)] = "f" * 40  # a ref whose commit cannot be read
+        with self.assertRaises(AnchorUnavailable):
+            scenario.tags.read(GRANT_ID, "settle", P_ASCEND, self.manifest_sha256)
+
+    def test_the_claim_creates_once_and_never_succeeds_on_uncertainty(self):
+        scenario = self.grant()
+
+        def claim(call):
+            return gate0_anchor.claim_launch(scenario.api, GRANT_ID, self.manifest_sha256, call,
+                                             reservation_sha256="1" * 64)
+        with self.assertRaisesRegex(ClaimRefused, "has not reserved"):
+            claim(P_ASCEND)
+        scenario.reserve(P_ASCEND, R_ASCEND, P_MICRO, R_MICRO)
+        made = claim(P_ASCEND)
+        self.assertEqual(made["ref"], gate0_anchor.tag_ref(GRANT_ID, "launch", P_ASCEND))
+        launch = scenario.tags.read(GRANT_ID, "launch", P_ASCEND, self.manifest_sha256)
+        self.assertEqual(launch["reservation_sha256"], "1" * 64)
+        with self.assertRaisesRegex(ClaimRefused, "no launch"):  # the create-only ref: a second create fails
+            claim(P_ASCEND)
+        scenario.api.after_create_lost = True
+        with self.assertRaises(ClaimUncertain):
+            claim(P_MICRO)
+        self.assertTrue(scenario.api.has("launch", P_MICRO))  # it was made, and the caller cannot know: consumed
+        scenario.api.after_create_lost = False
+        scenario.api.down = {("POST", "/git/refs")}
+        with self.assertRaises(ClaimUncertain):
+            claim(R_MICRO)
+        scenario.api.down = {("POST", "/git/commits")}
+        with self.assertRaises(AnchorUnavailable):  # no ref create was attempted
+            claim(R_ASCEND)
+        self.assertEqual(scenario.api.launch_tags(), [scenario.api.ref("launch", P_ASCEND),
+                                                      scenario.api.ref("launch", P_MICRO)])
+
+
+class GitHubClientTests(unittest.TestCase):
+    """gate0_anchor.github_request against fixture responses: urlopen is replaced, so nothing reaches the network.
+    An authenticated 404 for a ref is an absence; every other failure, including a 404 for a credential that cannot
+    read the repository, is AnchorUnavailable; a 422 on a ref create is RefExists."""
+
+    REPOSITORY = "Sentinelayer-AIdenID/sentilab"
+    REF = "/git/ref/" + gate0_anchor.tag_ref("g", "settle", "c-1")
+
+    def setUp(self):
+        self.credential = "fixture-" + secrets.token_hex(8)  # made at run time
+        self.seen = []
+
+    def client(self, table: dict):
+        def urlopen(req, timeout):
+            self.seen.append((req.get_method(), req.full_url, req.get_header("Authorization"), timeout))
+            answer = table.get((req.get_method(), req.full_url.split("/repos/" + self.REPOSITORY, 1)[1]), 500)
+            if isinstance(answer, BaseException):
+                raise answer
+            if isinstance(answer, int):
+                raise urllib.error.HTTPError(req.full_url, answer, "fixture", {}, None)
+            return io.BytesIO(answer if isinstance(answer, bytes) else json.dumps(answer).encode("utf-8"))
+        patcher = mock.patch.object(gate0_anchor.urllib.request, "urlopen", urlopen)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        return gate0_anchor.github_request(self.REPOSITORY, self.credential)
+
+    def test_a_ref_is_read_by_its_exact_name_with_the_credential_in_the_header_only(self):
+        found = {"ref": "refs/tags/gate0-g/settle-c-1", "object": {"type": "commit", "sha": "a" * 40}}
+        request = self.client({("GET", self.REF): found})
+        self.assertEqual(request("GET", self.REF), found)
+        self.assertEqual(self.seen, [("GET", f"https://api.github.com/repos/{self.REPOSITORY}/git/ref/tags/gate0-g/"
+                                             "settle-c-1", "Bearer " + self.credential, 15)])
+
+    def test_only_an_authenticated_404_is_an_absence(self):
+        visible = {"full_name": self.REPOSITORY}
+        with self.assertRaises(AnchorAbsent):
+            self.client({("GET", self.REF): 404, ("GET", ""): visible})("GET", self.REF)
+        for label, repository in (("unreadable repository", 404), ("another repository", {"full_name": "a/b"}),
+                                  ("repository unavailable", 500)):
+            with self.subTest(case=label), self.assertRaises(AnchorUnavailable):
+                self.client({("GET", self.REF): 404, ("GET", ""): repository})("GET", self.REF)
+        for failure in (401, 403, 429, 500, 502, TimeoutError("timed out"), socket.timeout("timed out"),
+                        urllib.error.URLError("no route"), ConnectionResetError(), b"not json"):
+            with self.subTest(failure=failure):
+                with self.assertRaises(AnchorUnavailable) as caught:
+                    self.client({("GET", self.REF): failure, ("GET", ""): visible})("GET", self.REF)
+                self.assertNotIn(self.credential, str(caught.exception))
+        commit = "/git/commits/" + "a" * 40
+        with self.assertRaises(AnchorUnavailable):  # only a ref's 404 can be an absence
+            self.client({("GET", commit): 404, ("GET", ""): visible})("GET", commit)
+
+    def test_a_ref_create_conflict_is_refused_and_every_other_failure_is_uncertain(self):
+        body = {"ref": "refs/tags/gate0-g/launch-c-1", "sha": "b" * 40}
+        with self.assertRaises(RefExists):
+            self.client({("POST", "/git/refs"): 422})("POST", "/git/refs", body)
+        for failure in (500, 502, 403, TimeoutError("timed out")):
+            with self.subTest(failure=failure), self.assertRaises(AnchorUnavailable):
+                self.client({("POST", "/git/refs"): failure})("POST", "/git/refs", body)
+        reserve = gate0_anchor.tag_ref("g", "reserve", "c-1")
+        table = {("GET", "/git/ref/" + reserve): {"ref": "refs/" + reserve, "object": {"type": "commit", "sha": "c" * 40}},
+                 ("GET", "/git/commits/" + "c" * 40): {"sha": "c" * 40, "tree": {"sha": EMPTY_TREE},
+                                                       "message": gate0_anchor.tag_message("reserve", "g", "0" * 64, "c-1")},
+                 ("POST", "/git/commits"): {"sha": "d" * 40}}
+        for answer, outcome in ((422, ClaimRefused), (500, ClaimUncertain), (TimeoutError("lost"), ClaimUncertain)):
+            with self.subTest(create=answer), self.assertRaises(outcome):
+                gate0_anchor.claim_launch(self.client({**table, ("POST", "/git/refs"): answer}), "g", "0" * 64, "c-1",
+                                          reservation_sha256="1" * 64)
+
+
+class RecordTests(OperatorCase):
+    """Records come from the operator's signed ledger and tags by admitted call id (astra supplement 6545712065;
+    warden #56856, #56967)."""
+
+    def passing(self, label: str = "pass"):
+        scenario = self.grant(label)
+        scenario.fabricate(GOOD)
+        return scenario, self.record(scenario)
 
     def test_four_required_outcomes_within_tolerance_pass_and_bind_the_binary(self):
-        binary = self.binaries["hotspot6"]
-        record = passing_record(self.root, binary)
-        self.assertEqual(record["verdict"], "PASS")
+        scenario, record = self.passing()
+        self.assertEqual(record["verdict"], "PASS", (record["failures"], record["errors"], record["missing"]))
         self.assertEqual(sorted(record["calls"]), sorted(REQUIRED))
-        self.assertEqual(record["missing"], [])
+        self.assertEqual((record["missing"], record["failures"], record["errors"]), ([], [], []))
         self.assertTrue(all(r["byte_identical"] for r in record["replays"]))
-        self.assertEqual(record["manifest"]["sha256"], _sha256(reference_validation.MANIFEST_PATH))
+        self.assertEqual((record["manifest"]["sha256"], record["grant_id"]), (self.manifest_sha256, GRANT_ID))
         self.assertEqual(record["pass_scope"]["grid"], 64)
-        self.assertEqual(require_gate_zero("hotspot6", binary, record)["verdict"], "PASS")
+        self.assertEqual(record["calls"][P_ASCEND]["settle_tag"]["status"], "exited")
+        self.assertEqual(self.require(scenario, record)["verdict"], "PASS")
         rebuilt = self.root / "rebuilt"
         rebuilt.write_bytes(FAKE_BINARIES["hotspot6"] + b" rebuilt")
         with self.assertRaises(GateZeroRefusal):
-            require_gate_zero("hotspot6", rebuilt, record)
+            self.require(scenario, record, binary=rebuilt)
 
     def test_deferred_points_are_pending_verification_in_every_record(self):
-        record = passing_record(self.root, self.binaries["hotspot6"])
+        _, record = self.passing()
         pending = {p["reference"]: (p["paper_c"], p["status"]) for p in record["claim_scope"]["pending_verification"]}
         self.assertEqual(pending, {"ascend910-tap25d-fig6c": (75.47, "pending verification"),
                                    "micro150-tap25d-fig5c": (94.89, "pending verification")})
@@ -397,187 +827,172 @@ class RecordTests(TempDirCase):
         self.assertIn("not claimed", record["claim_scope"]["snapped_variants"])
 
     def test_a_completed_miss_fails_for_a_primary_or_a_replay_on_its_own(self):
-        binary = self.binaries["hotspot6"]
         for name in (P_MICRO, R_MICRO):
             with self.subTest(call=name):
-                ledger = fabricate_ledger(self.root / name, binary, {**GOOD, name: 115.94 + 1.01})
-                record = build_record("hotspot6", binary, ledger)
+                scenario = self.grant(name)
+                scenario.fabricate({**GOOD, name: 115.94 + 1.01})
+                record = self.record(scenario)
                 self.assertEqual(record["verdict"], "FAIL")
                 self.assertEqual(record["claim_scope"]["paper_match"], [])
                 with self.assertRaises(GateZeroRefusal):
-                    require_gate_zero("hotspot6", binary, record)
+                    self.require(scenario, record)
 
     def test_a_replay_that_differs_from_its_primary_fails(self):
-        binary = self.binaries["hotspot6"]
-        ledger = fabricate_ledger(self.root, binary, {**GOOD, R_ASCEND: {"peak_c": 75.09, "drop_k": 2.0}})
-        record = build_record("hotspot6", binary, ledger)
+        scenario = self.grant()
+        scenario.fabricate({**GOOD, R_ASCEND: {"peak_c": 75.09, "drop_k": 2.0}})
+        record = self.record(scenario)
         self.assertEqual(record["verdict"], "FAIL")
         self.assertEqual({r["replay"]: r["byte_identical"] for r in record["replays"]}, {R_ASCEND: False, R_MICRO: True})
 
     def test_a_declared_grid_64_of_any_other_shape_is_never_pass(self):
         """astra (#56982 P2-1): matching digests over a 4x4x8, 64x64x1 or 64x64x7 grid used to PASS."""
-        binary = self.binaries["hotspot6"]
         shapes = {"4x4x8": dict(grid=4), "64x64x1": dict(layers=1), "64x64x7": dict(layers=7),
                   "64x64x8 headerless": dict(headered=False),
                   "a block missing from the steady file": dict(omit_block="layer_3_Ubump_0")}
         for label, shape in shapes.items():
             with self.subTest(shape=label):
-                ledger = fabricate_ledger(self.root / label.replace(" ", "-"), binary, GOOD)
-                for name in (P_ASCEND, R_ASCEND):  # both, so the replay still matches its primary byte for byte
-                    reshape(ledger, name, peak_c=GOOD[name], **shape)
-                record = build_record("hotspot6", binary, ledger)
+                scenario = self.grant(label.replace(" ", "-"))
+                # both, so the replay still matches its primary byte for byte
+                scenario.fabricate({**GOOD, P_ASCEND: {"peak_c": GOOD[P_ASCEND], **shape},
+                                    R_ASCEND: {"peak_c": GOOD[R_ASCEND], **shape}})
+                record = self.record(scenario)
                 self.assertIn(record["verdict"], ("INCOMPLETE", "FAIL"))
                 self.assertEqual({m["call"] for m in record["missing"]}, {P_ASCEND, R_ASCEND})
                 self.assertTrue(all("strict evaluator-bound reader" in m["reason"] for m in record["missing"]))
                 with self.assertRaises(GateZeroRefusal):
-                    require_gate_zero("hotspot6", binary, record)
-        control = fabricate_ledger(self.root / "control", binary, GOOD)
-        for name in (P_ASCEND, R_ASCEND):  # the same rewrite at the real shape: 64 x 64, 8 headered layers
-            reshape(control, name, peak_c=GOOD[name])
-        record = build_record("hotspot6", binary, control)
+                    self.require(scenario, record)
+        scenario, record = self.passing("control")  # the same path at the real shape: 64 x 64, 8 headered layers
         self.assertEqual(record["verdict"], "PASS", record["missing"])
         self.assertEqual(record["calls"][P_ASCEND]["diagnostics"]["grid"], {"n": 64, "layers_in_file": list(range(8))})
-        self.assertEqual(require_gate_zero("hotspot6", binary, record)["verdict"], "PASS")
+        self.assertEqual(self.require(scenario, record)["verdict"], "PASS")
 
-    def test_withholding_a_failed_point_gives_incomplete_never_pass(self):
+    def test_withholding_or_failing_a_required_call_gives_incomplete_never_pass(self):
         """astra's control: omitting the failed point used to turn FAIL into PASS."""
-        binary = self.binaries["hotspot6"]
-        ledger = fabricate_ledger(self.root / "fail", binary, {**GOOD, P_ASCEND: 80.0})
-        self.assertEqual(build_record("hotspot6", binary, ledger)["verdict"], "FAIL")
-        for withheld in ("reserved", "settled"):
-            with self.subTest(withheld=withheld):
-                ledger = fabricate_ledger(self.root / withheld, binary, {**GOOD, P_ASCEND: 80.0})
-                (ledger / f"{P_ASCEND}.settled.json").unlink()
-                if withheld == "reserved":
-                    (ledger / f"{P_ASCEND}.reserved.json").unlink()
-                record = build_record("hotspot6", binary, ledger)
-                self.assertEqual(record["verdict"], "INCOMPLETE")
-                self.assertEqual([m["call"] for m in record["missing"]], [P_ASCEND])
-                with self.assertRaises(GateZeroRefusal):
-                    require_gate_zero("hotspot6", binary, record)
-        for status, code in (("wall_timeout", None), ("cpu_limit", -9), ("launch_error", None),
-                             ("record_error", 0), ("runtime_changed", 0), ("setup_error", None), ("exited", 7)):
+        scenario = self.grant("fail")
+        scenario.fabricate({**GOOD, P_ASCEND: 80.0})
+        self.assertEqual(self.record(scenario)["verdict"], "FAIL")
+        scenario = self.grant("withheld")
+        scenario.fabricate({**GOOD, P_ASCEND: 80.0})
+        scenario.api.drop("settle", P_ASCEND)  # the operator never writes the failed call's settle tag
+        record = self.record(scenario)
+        self.assertEqual(record["verdict"], "INCOMPLETE")
+        self.assertEqual([m["call"] for m in record["missing"]], [P_ASCEND])
+        self.assertIn("no settle tag", record["missing"][0]["reason"])
+        with self.assertRaises(GateZeroRefusal):
+            self.require(scenario, record)
+        for status, code in (("wall_timeout", None), ("cpu_limit", -9), ("launch_error", None), ("record_error", 0),
+                             ("runtime_changed", 0), ("setup_error", None), ("claim_uncertain", None),
+                             ("claim_refused", None), ("exited", 7)):
             with self.subTest(settled=status, exit_status=code):
-                ledger = fabricate_ledger(self.root / f"{status}-{code}", binary, GOOD, settled={R_MICRO: (status, code)})
-                record = build_record("hotspot6", binary, ledger)
+                scenario = self.grant(f"{status}-{code}")
+                scenario.fabricate(GOOD, settled={R_MICRO: (status, code)})
+                record = self.record(scenario)
                 self.assertEqual(record["verdict"], "INCOMPLETE")
-                self.assertIn(f"exit status {code!r}", next(m["reason"] for m in record["missing"] if m["call"] == R_MICRO))
-        ledger = fabricate_ledger(self.root / "only-three", binary, {k: v for k, v in GOOD.items() if k != R_ASCEND})
-        self.assertEqual(build_record("hotspot6", binary, ledger)["verdict"], "INCOMPLETE")
+                self.assertIn(f"exit status {code!r}", next(m["reason"] for m in record["missing"]
+                                                            if m["call"] == R_MICRO))
+        scenario = self.grant("only-three")
+        scenario.fabricate({k: v for k, v in GOOD.items() if k != R_ASCEND})
+        self.assertEqual(self.record(scenario)["verdict"], "INCOMPLETE")
+        scenario = self.grant("not-granted", calls=[c for c in self.calls if c != R_MICRO])
+        scenario.fabricate({k: v for k, v in GOOD.items() if k != R_MICRO})
+        record = self.record(scenario)
+        self.assertEqual((record["verdict"], [m["call"] for m in record["missing"]]), ("INCOMPLETE", [R_MICRO]))
 
     def test_a_primary_and_its_replay_keep_separate_identities_and_outcomes(self):
         """astra: keyed by reference, the replay directory silently replaced the primary."""
-        binary = self.binaries["hotspot6"]
-        record = passing_record(self.root / "pass", binary)
+        _, record = self.passing()
         self.assertNotEqual(record["calls"][P_ASCEND]["run_dir"], record["calls"][R_ASCEND]["run_dir"])
         self.assertEqual((record["calls"][P_ASCEND]["role"], record["calls"][R_ASCEND]["role"]), ("primary", "replay"))
         for collision in ("the primary's own directory", "a copy of the primary's directory"):
             with self.subTest(collision=collision):
-                # A consistent forgery: the replay's reservation and settlement both point at the primary's run.
-                ledger = fabricate_ledger(self.root / collision.replace(" ", "-").replace("'", ""), binary, GOOD)
-                primary = Path(json.loads((ledger / f"{P_ASCEND}.reserved.json").read_text())["out"])
+                # A key holder's consistent forgery: the replay is reserved and settled on the primary's run.
+                scenario = self.grant(collision.replace(" ", "-").replace("'", ""))
+                scenario.fabricate({k: v for k, v in GOOD.items() if k != R_ASCEND})
+                primary = scenario.run_dir(P_ASCEND)
                 if collision.startswith("a copy"):
                     shutil.copytree(primary, primary.with_name("copied-primary"))
                     primary = primary.with_name("copied-primary")
-                reservation = json.loads((ledger / f"{R_ASCEND}.reserved.json").read_text())
-                reservation["out"] = primary.as_posix()
-                (ledger / f"{R_ASCEND}.reserved.json").write_text(json.dumps(reservation))
-                settled = json.loads((ledger / f"{R_ASCEND}.settled.json").read_text())
-                settled["receipt_sha256"] = _sha256(primary / "receipt.json")
-                (ledger / f"{R_ASCEND}.settled.json").write_text(json.dumps(settled))
-                with self.assertRaisesRegex(GateZeroRefusal, "does not hold this admitted call's receipt"):
-                    build_record("hotspot6", binary, ledger)
-        ledger = fabricate_ledger(self.root / "mislabel", binary, GOOD)
-        settled = json.loads((ledger / f"{R_MICRO}.settled.json").read_text())
-        settled["call"] = P_MICRO
-        (ledger / f"{R_MICRO}.settled.json").write_text(json.dumps(settled))
-        with self.assertRaisesRegex(GateZeroRefusal, "not the settled ledger entry"):
-            build_record("hotspot6", binary, ledger)
+                scenario.reserve(R_ASCEND)
+                reservation = gate0_anchor.append(scenario.root, self.key, self.public, self.manifest_sha256,
+                                                  "reservation", R_ASCEND, {"out": primary.as_posix(),
+                                                                            "reserved_cpu_s": 58.5})
+                gate0_anchor.claim_launch(scenario.api, GRANT_ID, self.manifest_sha256, R_ASCEND,
+                                          reservation_sha256=gate0_anchor.digest(reservation))
+                settled = scenario.entries(P_ASCEND)["settlement"]
+                gate0_anchor.append(scenario.root, self.key, self.public, self.manifest_sha256, "settlement",
+                                    R_ASCEND, {k: settled[k] for k in ("status", "exit_status", "outputs",
+                                                                         "receipt_sha256")})
+                scenario.settle(R_ASCEND)
+                record = self.record(scenario)
+                self.assertEqual(record["verdict"], "FAIL")
+                self.assertIn("does not hold this admitted call's receipt",
+                              next(f["reason"] for f in record["failures"] if f["call"] == R_ASCEND))
 
     def test_editing_a_fail_record_never_unlocks(self):
         """astra #56837: an edited simulated value or verdict on a FAIL record must not unlock search."""
-        binary = self.binaries["hotspot6"]
-        ledger = fabricate_ledger(self.root, binary, {P_ASCEND: 122.32, R_ASCEND: 122.32, P_MICRO: 229.35,
-                                                      R_MICRO: 229.35})
-        record = build_record("hotspot6", binary, ledger)
+        scenario = self.grant()
+        scenario.fabricate({P_ASCEND: 122.32, R_ASCEND: 122.32, P_MICRO: 229.35, R_MICRO: 229.35})
+        record = self.record(scenario)
         forged = json.loads(json.dumps(record))
         forged["verdict"] = "PASS"
         for result in forged["calls"].values():
             result["simulated_c"], result["delta_k"], result["within_tolerance"] = result["paper_c"], 0.0, True
         with self.assertRaises(GateZeroRefusal):
-            require_gate_zero("hotspot6", binary, forged)
+            self.require(scenario, forged)
         with self.assertRaises(GateZeroRefusal):
-            make_oracle("hotspot6", "search", hotspot_binary=binary, gate_zero_record=forged)
+            make_oracle("hotspot6", "search", hotspot_binary=self.binaries["hotspot6"], gate_zero_record=forged,
+                        ledger_root=scenario.root, tags=scenario.tags)
 
-    def test_raw_evidence_edits_are_refused(self):
-        binary = self.binaries["hotspot6"]
-        record = passing_record(self.root / "a", binary)
-        steady = Path(record["calls"][P_ASCEND]["run_dir"]) / "sample.steady"
+    def test_evidence_edited_after_settlement_is_refused(self):
+        scenario, record = self.passing("output")
+        steady = scenario.run_dir(P_ASCEND) / "sample.steady"
         steady.write_text(steady.read_text() + "layer_4_WS_9\t330.00\n", encoding="utf-8")
-        with self.assertRaises(GateZeroRefusal):  # the output no longer matches its receipt digest
-            require_gate_zero("hotspot6", binary, record)
-        record = passing_record(self.root / "b", binary)
-        receipt = Path(record["calls"][P_ASCEND]["run_dir"]) / "receipt.json"
+        with self.assertRaisesRegex(GateZeroRefusal, "differs from its receipt digest"):
+            self.require(scenario, record)
+        scenario, record = self.passing("receipt")
+        receipt = scenario.run_dir(P_ASCEND) / "receipt.json"
         receipt.write_text(receipt.read_text().replace('"grid": 64', '"grid":  64'), encoding="utf-8")
         with self.assertRaisesRegex(GateZeroRefusal, "changed after the call settled"):
-            require_gate_zero("hotspot6", binary, record)
-        record = passing_record(self.root / "c", binary)
-        rebind(Path(record["ledger"]), P_MICRO, lambda r: r.update(host="elsewhere"))
+            self.require(scenario, record)
+        scenario, record = self.passing("stored")
+        stale = json.loads(json.dumps(record))
+        stale["calls"][P_MICRO]["receipt_sha256"] = "0" * 64
         with self.assertRaisesRegex(GateZeroRefusal, "changed after the record was made"):
-            require_gate_zero("hotspot6", binary, record)
+            self.require(scenario, stale)
 
-    def test_receipts_must_bind_every_digest_the_manifest_and_the_raw_identity(self):
-        binary = self.binaries["hotspot6"]
+    def test_receipts_must_bind_every_digest_the_manifest_the_grant_and_the_raw_identity(self):
         edits = {
-            "drop grid digest": lambda r: r["outputs"].pop("sample.grid.steady"),
-            "wrong steady digest": lambda r: r["outputs"].update({"sample.steady": "0" * 64}),
-            "unbound input": lambda r: r["inputs"].update({"new_hotspot.config": "0" * 64}),
-            "other manifest": lambda r: r.update(manifest_sha256="0" * 64),
-            "snapped identity": lambda r: r.update(layout_identity="snapped"),
-            "other raw layout": lambda r: r.update(raw_layout_sha256="0" * 64),
-            "other binary": lambda r: r["evaluator"].update(binary_sha256="0" * 64),
-            "grid 32": lambda r: r.update(grid=32),
-            "other call": lambda r: r.update(call=R_ASCEND),
+            "drop grid digest": (lambda r: r["outputs"].pop("sample.grid.steady"), "differs from its receipt digest"),
+            "wrong steady digest": (lambda r: r["outputs"].update({"sample.steady": "0" * 64}), "receipt digest"),
+            "unbound input": (lambda r: r["inputs"].update({"new_hotspot.config": "0" * 64}), "does not bind"),
+            "other manifest": (lambda r: r.update(manifest_sha256="0" * 64), "another manifest, grant or reservation"),
+            "other grant": (lambda r: r.update(grant_id="g-other"), "another manifest, grant or reservation"),
+            "other reservation": (lambda r: r.update(reservation_sha256="0" * 64), "another manifest, grant"),
+            "snapped identity": (lambda r: r.update(layout_identity="snapped"), "only the pinned raw layout"),
+            "other raw layout": (lambda r: r.update(raw_layout_sha256="0" * 64), "only the pinned raw layout"),
+            "other binary": (lambda r: r["evaluator"].update(binary_sha256="0" * 64), "different evaluator binary"),
+            "grid 32": (lambda r: r.update(grid=32), "another engine or grid"),
+            "other call": (lambda r: r.update(call=R_ASCEND), "does not hold this admitted call's receipt"),
+            "other status": (lambda r: r.update(status="wall_timeout"), "receipt and its settlement disagree"),
         }
-        for edit, change in edits.items():
-            with self.subTest(edit=edit):
-                ledger = fabricate_ledger(self.root / edit.replace(" ", "-"), binary, GOOD)
-                rebind(ledger, P_ASCEND, change)
-                with self.assertRaises(GateZeroRefusal):
-                    build_record("hotspot6", binary, ledger)
-        ledger = fabricate_ledger(self.root / "stale-config", binary, GOOD)
-        run = Path(json.loads((ledger / f"{P_ASCEND}.reserved.json").read_text())["out"])
-        config = run / "new_hotspot.config"
+        for label, (change, reason) in edits.items():
+            with self.subTest(edit=label):
+                scenario = self.grant(label.replace(" ", "-"))
+                scenario.fabricate(GOOD, edit={P_ASCEND: change})
+                record = self.record(scenario)
+                self.assertEqual(record["verdict"], "FAIL")
+                self.assertIn(reason, next(f["reason"] for f in record["failures"] if f["call"] == P_ASCEND))
+        scenario = self.grant("stale-config")
+        scenario.fabricate(GOOD)
+        config = scenario.run_dir(P_ASCEND) / "new_hotspot.config"
         config.write_text(config.read_text().replace("0.011111111111111112", "0.1"))
-        with self.assertRaises(GateZeroRefusal):
-            build_record("hotspot6", binary, ledger)
-
-    def test_a_snapped_run_never_inherits_the_paper_match_claim(self):
-        binary = self.binaries["hotspot6"]
-        ledger = fabricate_ledger(self.root, binary, GOOD)
-        rebind(ledger, P_MICRO, lambda r: r.update(layout_identity="snapped"))
-        with self.assertRaisesRegex(GateZeroRefusal, "only the pinned raw layout carries the paper-match claim"):
-            build_record("hotspot6", binary, ledger)
-
-    def test_records_bind_their_manifest_and_ledgers_hold_one_manifest(self):
-        binary = self.binaries["hotspot6"]
-        record = passing_record(self.root / "a", binary)
-        other = json.loads(json.dumps(record))
-        other["manifest"]["sha256"] = "0" * 64
-        with self.assertRaisesRegex(GateZeroRefusal, "another manifest"):
-            require_gate_zero("hotspot6", binary, other)
-        ledger = fabricate_ledger(self.root / "b", binary, GOOD)
-        reservation = json.loads((ledger / f"{P_MICRO}.reserved.json").read_text())
-        reservation["manifest_sha256"] = "0" * 64
-        (ledger / f"{P_MICRO}.reserved.json").write_text(json.dumps(reservation))
-        with self.assertRaisesRegex(GateZeroRefusal, "reserved under another manifest"):
-            build_record("hotspot6", binary, ledger)
+        self.assertEqual(self.record(scenario)["verdict"], "FAIL")
 
     def test_the_drop_and_the_stack_are_reported_not_asserted(self):
-        binary = self.binaries["hotspot6"]
-        ledger = fabricate_ledger(self.root, binary, {**GOOD, P_ASCEND: {"peak_c": 75.09, "drop_k": 51.0},
-                                                      R_ASCEND: {"peak_c": 75.09, "drop_k": 51.0}})
-        record = build_record("hotspot6", binary, ledger)
+        scenario = self.grant()
+        scenario.fabricate({**GOOD, P_ASCEND: {"peak_c": 75.09, "drop_k": 51.0},
+                            R_ASCEND: {"peak_c": 75.09, "drop_k": 51.0}})
+        record = self.record(scenario)
         self.assertEqual(record["verdict"], "PASS")
         diagnostics = record["calls"][P_ASCEND]["diagnostics"]
         drop = diagnostics["spreader_sink_drop"]
@@ -590,26 +1005,130 @@ class RecordTests(TempDirCase):
         self.assertAlmostEqual(stack["drops"][-1]["drop_K"], 0.5 + 51.0, places=6)
 
     def test_only_the_native6_engine_can_pass_and_only_at_grid_64(self):
-        binary = self.binaries["hotspot6"]
-        record = passing_record(self.root, binary)
+        scenario, record = self.passing()
         with self.assertRaisesRegex(GateZeroRefusal, "covers grid 64 only"):
-            require_gate_zero("hotspot6", binary, record, grid=32)
+            self.require(scenario, record, grid=32)
         for kind in ("hotspot7_default", "material_only"):
             with self.assertRaisesRegex(GateZeroRefusal, "judges hotspot6 only"):
-                build_record(kind, self.binaries[kind], Path(record["ledger"]))
+                self.record(scenario, self.binaries[kind], kind=kind)
         with self.assertRaises(GateZeroRefusal):
-            require_gate_zero("hotspot6", binary, None)
+            self.require(scenario, None)
+        other = json.loads(json.dumps(record))
+        other["manifest"]["sha256"] = "0" * 64
+        with self.assertRaisesRegex(GateZeroRefusal, "another manifest"):
+            self.require(scenario, other)
 
 
-class ReportTests(TempDirCase):
+class AuthenticityTests(OperatorCase):
+    """warden #56967 P2-1 and the anchor (warden and astra #57024, #57025): without the operator's key nothing
+    verifies; the tags and the ledger must agree; a missing tag is INCOMPLETE and an unreadable one ERROR."""
+
+    def test_a_ledger_fabricated_without_the_operator_key_never_passes(self):
+        attacker = Ed25519PrivateKey.generate()
+        forged = self.grant("forged", signer=attacker)  # every file and every tag, but the attacker's key
+        forged.fabricate(GOOD)
+        record = self.record(forged)
+        self.assertEqual(record["verdict"], "FAIL")
+        self.assertIn("cannot be verified", record["failures"][0]["reason"])
+        self.assertEqual(record["calls"], {})
+        with self.assertRaises(GateZeroRefusal):
+            self.require(forged, record)
+        receipts = self.grant("receipts")  # the operator's ledger, receipts signed by someone else
+        receipts.fabricate(GOOD, receipt_signer=attacker)
+        record = self.record(receipts)
+        self.assertEqual(record["verdict"], "FAIL")
+        self.assertEqual({f["call"] for f in record["failures"]}, set(REQUIRED))
+        unsigned = self.grant("unsigned")
+        unsigned.fabricate(GOOD)
+        for path in unsigned.dir.glob("*.json"):
+            data = json.loads(path.read_text(encoding="utf-8"))
+            data.pop("signature")
+            path.chmod(0o644)
+            path.write_text(json.dumps(data), encoding="utf-8")
+        self.assertEqual(self.record(unsigned)["verdict"], "FAIL")
+
+    def test_a_missing_settle_tag_is_incomplete_and_an_unreadable_tag_is_error(self):
+        scenario = self.grant()
+        scenario.fabricate(GOOD)
+        self.assertEqual(self.record(scenario)["verdict"], "PASS")
+        for down in ({("GET", "/git/ref/")}, {("GET", "/git/commits/")}):
+            with self.subTest(down=down):
+                scenario.api.down = down
+                record = self.record(scenario)
+                self.assertEqual(record["verdict"], "ERROR")
+                self.assertEqual({e["call"] for e in record["errors"]}, set(REQUIRED))
+                self.assertEqual((record["missing"], record["claim_scope"]["paper_match"]), ([], []))
+                with self.assertRaisesRegex(GateZeroRefusal, "is ERROR"):
+                    self.require(scenario, record)
+        scenario.api.down = set()
+        scenario.api.drop("settle", R_MICRO)
+        record = self.record(scenario)
+        self.assertEqual((record["verdict"], [m["call"] for m in record["missing"]]), ("INCOMPLETE", [R_MICRO]))
+        scenario.fabricate({P_MICRO.replace("p-hs6", "p-hs7"): 116.0})  # a comparator call settles; nothing changes
+        self.assertEqual(self.record(scenario)["verdict"], "INCOMPLETE")
+
+    def test_a_ledger_that_disagrees_with_the_tags_fails(self):
+        def rolled_back(scenario):  # a valid prefix: the last settlement removed
+            last = sorted(scenario.dir.glob("*.json"))[-1]
+            last.unlink()
+
+        def replaced(scenario):  # the operator's own key reopens an identical grant on an empty ledger
+            shutil.rmtree(scenario.root)
+            Scenario(self, "replaced", api=scenario.api)
+
+        def retagged(scenario):  # a settle tag that binds other hashes
+            scenario.api.drop("settle", P_ASCEND)
+            scenario.tag("settle", P_ASCEND, gate0_anchor.tag_message("settle", GRANT_ID, self.manifest_sha256,
+                                                                       P_ASCEND, status="exited",
+                                                                       receipt_sha256="0" * 64, outputs={}))
+
+        def relaunched(scenario):  # a launch tag that binds another reservation
+            scenario.api.drop("launch", P_ASCEND)
+            scenario.tag("launch", P_ASCEND, gate0_anchor.tag_message("launch", GRANT_ID, self.manifest_sha256,
+                                                                       P_ASCEND, reservation_sha256="0" * 64))
+        controls = {"valid-prefix rollback": rolled_back, "whole-ledger deletion": lambda s: shutil.rmtree(s.root),
+                    "replaced ledger": replaced, "settle tag rebound": retagged, "launch tag rebound": relaunched,
+                    "no launch claim": lambda s: s.api.drop("launch", P_ASCEND),
+                    "no reserve tag": lambda s: s.api.drop("reserve", P_ASCEND)}
+        for label, change in controls.items():
+            with self.subTest(control=label):
+                scenario = self.grant("replaced" if label == "replaced ledger" else label.replace(" ", "-"))
+                scenario.fabricate(GOOD)
+                change(scenario)
+                record = self.record(scenario)
+                self.assertEqual(record["verdict"], "FAIL", record["missing"])
+                self.assertEqual(record["claim_scope"]["paper_match"], [])
+                if label in ("no launch claim", "no reserve tag"):
+                    self.assertIn("without the operator's reserve tag or the launch claim",
+                                  next(f["reason"] for f in record["failures"] if f["call"] == P_ASCEND))
+        scenario = self.grant("copied")
+        scenario.fabricate(GOOD)
+        elsewhere = self.root / "copied-elsewhere"
+        shutil.copytree(scenario.root, elsewhere)  # cross-directory reuse
+        record = build_record("hotspot6", self.binaries["hotspot6"], ledger_root=elsewhere, tags=scenario.tags)
+        self.assertEqual(record["verdict"], "FAIL")
+        self.assertIn("another ledger directory", record["failures"][0]["reason"])
+
+    def test_the_record_needs_the_operators_ledger_root_and_tag_credential(self):
+        with self.assertRaisesRegex(GateZeroRefusal, "not configured"):
+            build_record("hotspot6", self.binaries["hotspot6"], tags=TagReader(FakeGitHub()))
+        scenario = self.grant()
+        with self.assertRaisesRegex(GateZeroRefusal, "GH_TOKEN"):
+            build_record("hotspot6", self.binaries["hotspot6"], ledger_root=scenario.root)
+        with self.assertRaises(GateZeroRefusal):
+            make_oracle("hotspot6", "search", hotspot_binary=self.binaries["hotspot6"], gate_zero_record={
+                "schema": gate_zero.RECORD_SCHEMA, "references_sha256": PINNED_REFERENCES_SHA256})
+
+
+class ReportTests(OperatorCase):
     """astra (#56982 P2-3): report verifies every binding first and derives its diagnostics from the raw files."""
 
     def test_report_derives_diagnostics_from_verified_raw_evidence_not_a_stored_record(self):
-        ledger = fabricate_ledger(self.root, self.binaries["hotspot6"], GOOD)
+        scenario = self.grant()
         fabricated = {"active_layer_grid_peak": {"peak_C": 999.0}, "spreader_sink_drop_diagnostic": {"drop_K": 0.0},
                       "same_index_stack_at_active_argmax": []}
-        rebind(ledger, P_ASCEND, lambda r: r.update(solve_record=fabricated))  # bound, so only derivation can tell
-        report = reference_validation.report(ledger)
+        scenario.fabricate(GOOD, edit={P_ASCEND: lambda r: r.update(solve_record=fabricated)})  # signed, bound
+        report = reference_validation.report(ledger_root=scenario.root, tags=scenario.tags)
         entry = next(e for e in report["calls"] if e["call"] == P_ASCEND)
         self.assertTrue(entry["usable"])
         self.assertAlmostEqual(entry["grid_peak_c"], 379.0 - 273.15, places=6)  # the raw grid, not the 999.0 stored
@@ -617,26 +1136,32 @@ class ReportTests(TempDirCase):
         self.assertEqual(entry["stack"][0]["at"], {"row": 16, "col": 16})
         row = next(r for r in report["rows"] if r["kind"] == "hotspot6" and r["reference"] == ASCEND)
         self.assertTrue(row["replay_byte_identical"])
+        self.assertEqual(report["grant_id"], GRANT_ID)
 
     def test_every_unusable_call_is_listed_with_its_reason(self):
-        ledger = fabricate_ledger(self.root, self.binaries["hotspot6"], GOOD, settled={R_MICRO: ("exited", 7)})
-        rebind(ledger, P_MICRO, lambda r: r["outputs"].update({"sample.steady": "0" * 64}))
-        reshape(ledger, R_ASCEND, peak_c=GOOD[R_ASCEND], grid=4)
-        receipt = Path(json.loads((ledger / f"{P_ASCEND}.reserved.json").read_text())["out"]) / "receipt.json"
+        scenario = self.grant()
+        scenario.fabricate({**GOOD, R_ASCEND: {"peak_c": GOOD[R_ASCEND], "grid": 4}}, settled={R_MICRO: ("exited", 7)},
+                           edit={P_MICRO: lambda r: r["outputs"].update({"sample.steady": "0" * 64})})
+        receipt = scenario.run_dir(P_ASCEND) / "receipt.json"
         receipt.write_text(receipt.read_text().replace('"grid": 64', '"grid":  64'), encoding="utf-8")  # unbound edit
-        report = reference_validation.report(ledger)
+        report = reference_validation.report(ledger_root=scenario.root, tags=scenario.tags)
         reasons = {item["call"]: item["reason"] for item in report["not_completed"]}
-        self.assertEqual(len(reasons), 12)  # nothing usable: four unusable, eight never admitted
+        self.assertEqual(len(reasons), 12)  # nothing usable: four unusable, eight never settled
         self.assertIn("changed after the call settled", reasons[P_ASCEND])
         self.assertIn("differs from its receipt digest", reasons[P_MICRO])
         self.assertIn("exit status 7", reasons[R_MICRO])
         self.assertIn("strict evaluator-bound reader", reasons[R_ASCEND])
-        self.assertEqual(sum(reason == "not admitted" for reason in reasons.values()), 8)
+        self.assertEqual(sum("no settle tag" in reason for reason in reasons.values()), 8)
         self.assertFalse(any(e["usable"] for e in report["calls"]))
         self.assertTrue(all(row["block_centre_c"]["64"] is None for row in report["rows"]))
+        manifest = json.loads(self.manifest_path.read_text())
+        manifest["operator"]["public_key_ed25519"] = gate0_anchor.public_key_hex(Ed25519PrivateKey.generate())
+        self.manifest_path.write_bytes(slab049._dump(manifest))  # a swapped key in the file is never trusted
+        with self.assertRaisesRegex(CallRefused, "not what this tree generates"):
+            reference_validation.report(ledger_root=scenario.root, tags=scenario.tags)
 
 
-class SelectorAndOracleTests(TempDirCase):
+class SelectorAndOracleTests(OperatorCase):
     """Search and headroom need a PASS at grid 64; the selector keeps HotSpot 7's oracle unchanged."""
 
     def test_search_and_headroom_refuse_without_a_pass_or_off_grid_64(self):
@@ -645,16 +1170,22 @@ class SelectorAndOracleTests(TempDirCase):
                 make_oracle("hotspot6", purpose, hotspot_binary=self.binaries["hotspot6"])
             with self.assertRaises(GateZeroRefusal):
                 make_oracle("hotspot7", purpose, hotspot_binary=self.binaries["hotspot7_default"])
-        record = passing_record(self.root, self.binaries["hotspot6"])
+        scenario = self.grant()
+        scenario.fabricate(GOOD)
+        record = self.record(scenario)
         with self.assertRaisesRegex(GateZeroRefusal, "covers a 64 x 64 grid only"):
-            make_oracle("hotspot6", "search", 32, 32, hotspot_binary=self.binaries["hotspot6"], gate_zero_record=record)
+            make_oracle("hotspot6", "search", 32, 32, hotspot_binary=self.binaries["hotspot6"], gate_zero_record=record,
+                        ledger_root=scenario.root, tags=scenario.tags)
         with self.assertRaises(ValueError):
             make_oracle("hotspot6", "validate-reference", hotspot_binary=self.binaries["hotspot6"])
 
     def test_a_pass_unlocks_search_with_a_new_identity_and_hotspot7_stays_locked(self):
         binary = self.binaries["hotspot6"]
-        record = passing_record(self.root, binary)
-        oracle = make_oracle("hotspot6", "search", hotspot_binary=binary, gate_zero_record=record)
+        scenario = self.grant()
+        scenario.fabricate(GOOD)
+        record = self.record(scenario)
+        oracle = make_oracle("hotspot6", "search", hotspot_binary=binary, gate_zero_record=record,
+                             ledger_root=scenario.root, tags=scenario.tags)
         self.assertIsInstance(oracle, HotSpot6Oracle)
         self.assertEqual((oracle.grid_rows, oracle.grid_cols), (64, 64))
         base = HotSpotOracle(64, 64, hotspot_binary=binary)
@@ -664,7 +1195,7 @@ class SelectorAndOracleTests(TempDirCase):
         self.assertTrue(base.solver_version.startswith("HotSpot-7:"))
         with self.assertRaises(GateZeroRefusal):  # native7 is the comparator: no record can pass it here
             make_oracle("hotspot7", "headroom", hotspot_binary=self.binaries["hotspot7_default"],
-                        gate_zero_record=record)
+                        gate_zero_record=record, ledger_root=scenario.root, tags=scenario.tags)
 
     def test_hotspot6_oracle_refuses_evaluations_and_the_wrong_binary(self):
         oracle = HotSpot6Oracle(16, 16, hotspot_binary=self.binaries["hotspot6"])
@@ -705,7 +1236,8 @@ class SelectorAndOracleTests(TempDirCase):
 
 
 class ManifestTests(unittest.TestCase):
-    """warden #56856 (2), (3) and astra's supplement: the manifest is the tree's, every row explicit, the cap held."""
+    """warden #56856, #56967 and astra's supplement: the manifest is the tree's, every row explicit, the true worst
+    case inside the binding cap, and the code-versus-supervisor split published."""
 
     def test_the_prior_snapped_manifest_is_byte_identical_and_never_executable(self):
         prior = REPO_ROOT / slab049.PRIOR_MANIFEST["path"]
@@ -715,76 +1247,153 @@ class ManifestTests(unittest.TestCase):
         self.assertEqual(json.loads(prior.read_text())["schema"], slab049.PRIOR_MANIFEST["schema"])
         with self.assertRaisesRegex(slab049.ManifestMismatch, "prior snapped manifest"):
             slab049.check_manifest(prior.read_bytes())
-        self.assertNotEqual(reference_validation.MANIFEST_PATH.resolve(), prior.resolve())
+        self.assertNotEqual(slab049.MANIFEST_PATH.resolve(), prior.resolve())
 
     def test_the_committed_manifest_is_what_the_tree_generates_and_drift_is_refused(self):
-        committed = reference_validation.MANIFEST_PATH.read_bytes()
+        committed = slab049.MANIFEST_PATH.read_bytes()
         manifest = slab049.check_manifest(committed)  # the committed bytes, not a fresh object against itself
-        for path, digest in manifest["source"]["files_sha256"].items():
+        self.assertEqual(sorted(manifest["source"]["generator_sha256"]),
+                         sorted(slab049.GENERATOR_SOURCES + slab049.GENERATOR_DATA))
+        for path, digest in manifest["source"]["generator_sha256"].items():
             self.assertEqual(_sha256(REPO_ROOT / path), digest, path)
         altered = json.loads(committed)
-        altered["source"]["files_sha256"]["sundai_hotspot/tap_oracle.py"] = "0" * 64
-        with self.assertRaisesRegex(slab049.ManifestMismatch, "tap_oracle.py"):
+        altered["source"]["generator_sha256"]["sundai_tap/fastSA.py"] = "0" * 64
+        with self.assertRaisesRegex(slab049.ManifestMismatch, "fastSA.py"):
             slab049.check_manifest(slab049._dump(altered))
         real = slab049._file_sha256
 
-        def drifted(path):
-            return "f" * 64 if path == "sundai_hotspot/tap_oracle_worker.py" else real(path)
+        def drifted(path, root=REPO_ROOT):
+            return "f" * 64 if path == "sundai_tap/passive_interposer.py" else real(path, root)
         with mock.patch.object(slab049, "_file_sha256", side_effect=drifted):
-            with self.assertRaisesRegex(slab049.ManifestMismatch, "tap_oracle_worker.py"):
+            with self.assertRaisesRegex(slab049.ManifestMismatch, "passive_interposer.py"):
                 slab049.check_manifest(committed)
             with self.assertRaises(CallRefused):
                 reference_validation.load_manifest()
 
-    def test_every_row_carries_its_call_id_and_its_own_timeout_on_the_cli(self):
+    def test_the_operator_key_is_pending_and_the_anchor_is_published(self):
+        manifest = slab049.check_manifest(slab049.MANIFEST_PATH.read_bytes())
+        operator, anchor, ledger = manifest["operator"], manifest["anchor"], manifest["ledger"]
+        self.assertIsNone(operator["public_key_ed25519"])  # warden pins it before the grant
+        self.assertTrue(operator["status"].startswith("pending"))
+        self.assertIn("never lives in the repository", operator["custody"])
+        self.assertEqual((anchor["repository"], anchor["namespace"], anchor["message_schema"]),
+                         ("Sentinelayer-AIdenID/sentilab", "refs/tags/gate0-<grant-id>/", gate0_anchor.TAG_SCHEMA))
+        self.assertEqual(sorted(anchor["tags"]), ["launch-<call-id>", "reserve-<call-id>", "settle-<call-id>"])
+        self.assertIn("SLAB049_ANCHOR_TOKEN", anchor["credentials"]["claim"])
+        self.assertEqual(ledger["dir"], "<SLAB049_LEDGER_ROOT>/slab049-<this manifest's SHA-256>")
+
+    def test_every_row_carries_its_call_id_its_own_timeout_and_the_operator_arguments(self):
         manifest = slab049.build_call_list()
-        parser_main = reference_validation.main
         for call in manifest["calls"]:
-            argv = call["command"].split("reference_validation ", 1)[1].replace("<fresh empty dir>", "OUT")
-            argv = argv.replace("<the grant's ledger dir>", "LEDGER").split()
+            argv = call["command"].split("reference_validation ", 1)[1]
+            for placeholder, value in (("<fresh empty dir>", "OUT"), ("<operator ledger root>", "ROOT"),
+                                       ("<operator key file>", "KEY")):
+                argv = argv.replace(placeholder, value)
             with mock.patch.object(reference_validation, "validate_call") as run, \
                     contextlib.redirect_stdout(io.StringIO()):
                 run.return_value = {"status": "exited", "exit_status": 0}
-                self.assertEqual(parser_main(argv), 0)
+                self.assertEqual(reference_validation.main(argv.split()), 0)
             self.assertEqual(run.call_args.args[0], call["id"])
             self.assertEqual(run.call_args.kwargs["timeout_s"], call["timeout_s"])
-            self.assertEqual(call["timeout_s"], {64: 60.0, 32: 15.0}[call["grid"]])
+            self.assertEqual((run.call_args.kwargs["ledger_root"], run.call_args.kwargs["operator_key_path"]),
+                             (Path("ROOT"), Path("KEY")))
+            self.assertEqual(call["timeout_s"], {64: 50.0, 32: 15.0}[call["grid"]])
             self.assertEqual(call["cpu_limit_s"], int(call["timeout_s"]))
-        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):  # no default timeout any more
-            parser_main(["validate-reference", "--call", REQUIRED[0], "--out", "OUT", "--ledger", "LEDGER"])
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):  # no default timeout
+            reference_validation.main(["validate-reference", "--call", REQUIRED[0], "--out", "OUT"])
 
-    def test_the_forecast_is_inside_the_binding_cap_and_generation_fails_outside_it(self):
+    def test_the_true_worst_case_comes_from_the_limits_and_fits_the_binding_cap(self):
+        """warden #56967 P2-3: every child under RLIMIT_CPU and a wall limit; the worst case is computed from them."""
         accounting = slab049.build_call_list()["accounting"]
         self.assertEqual((accounting["calls"], accounting["grid64_calls"], accounting["grid32_calls"]), (12, 8, 4))
-        self.assertEqual(accounting["timeouts_s"], 8 * 60 + 4 * 15)
-        self.assertEqual(accounting["forecast_worst_case_cpu_s"], 540 + 12 * 2.0)
-        self.assertTrue(accounting["arithmetic"].startswith("8 x 60 s + 4 x 15 s = 540 s of timeouts"))
-        self.assertIn("not a CPU guarantee", accounting["forecast_label"])
+        limits = accounting["limits"]
+        self.assertEqual(limits, {"generator_cpu_s": slab049.GENERATOR_CPU_LIMIT_S,
+                                  "generator_wall_s": slab049.GENERATOR_TIMEOUT_S, "loader_listings": 2,
+                                  "loader_listing_cpu_s": provenance.LOADER_CPU_LIMIT_S,
+                                  "loader_listing_wall_s": provenance.LOADER_TIMEOUT_S,
+                                  "parent_allowance_cpu_s": slab049.PARENT_ALLOWANCE_CPU_S, "reap_s": 0.25,
+                                  "settlement_tail_s": 0.25})
+        self.assertEqual((limits["generator_cpu_s"], limits["generator_wall_s"]), (3, 30))
+        self.assertEqual(accounting["per_call_reserve_cpu_s"], 3 + 2 * 1 + 3 + 0.25 + 0.25)
+        self.assertEqual(accounting["worst_case_cpu_s"], 8 * (50 + 8.5) + 4 * (15 + 8.5))
+        self.assertEqual(accounting["worst_case_cpu_s"], 562.0)
+        self.assertTrue(accounting["arithmetic"].endswith("= 460 + 102 = 562 CPU-s"), accounting["arithmetic"])
+        self.assertIn("from 60 to 50 s", accounting["limits_lowered"])
+        self.assertIn("soft = hard", accounting["worst_case_label"])
         self.assertEqual((accounting["manifest_cpu_cap_s"], accounting["room_envelope_cpu_s"]), (600.0, 1800.0))
         self.assertIn("600 CPU-s, binds", accounting["binding_cap"])
-        with mock.patch.dict(slab049.TIMING, {"grid64_timeout_s": 70.0}):
+        rows = slab049.build_call_list()["calls"]
+        self.assertEqual(sum(c["accounting"]["reserved_cpu_s"] for c in rows), 562.0)
+        with mock.patch.dict(slab049.TIMING, {"grid64_timeout_s": 60.0}):  # the old timeout: 642 CPU-s
+            with self.assertRaisesRegex(ValueError, "642 CPU-s, exceeds the manifest cap"):
+                slab049.build_call_list()
+        with mock.patch.object(slab049, "GENERATOR_CPU_LIMIT_S", 10):  # the old generator limit: 646 CPU-s
             with self.assertRaisesRegex(ValueError, "exceeds the manifest cap"):
                 slab049.build_call_list()
 
     def test_the_enforcement_split_is_published(self):
         enforcement = slab049.build_call_list()["enforcement"]
-        self.assertEqual(len(enforcement["in_code_at_entry"]), len(slab049.IN_CODE_AT_ENTRY))
+        self.assertEqual(enforcement["in_code_at_entry"], list(slab049.IN_CODE_AT_ENTRY))
+        in_code = " ".join(enforcement["in_code_at_entry"])
+        for rule in ("CREATES gate0-<grant>/launch-<call>", "Only a successful create launches",
+                     "no launch on uncertainty", "never reclaimed", "RLIMIT_CPU", "ERROR", "INCOMPLETE"):
+            self.assertIn(rule, in_code)
         contract = " ".join(enforcement["operator_supervisor_contract"])
-        for duty in ("append-only", "cumulative CPU budget", "process group", "protected runtime image",
-                     "trusted clock", "1,800 CPU-s"):
+        for duty in ("key custody", "never enters the repository", "create-only", "SLAB049_ANCHOR_TOKEN",
+                     "cumulative CPU budget", "process group", "protected runtime image", "trusted clock",
+                     "1,800 CPU-s"):
             self.assertIn(duty, contract)
+
+
+class ExecutedSetTests(OperatorCase):
+    """warden #56967 P2-4: the manifest pins only what the calls execute or read, derived by tracing, so an unrelated
+    edit keeps a PASS and an edit to an executed file voids it."""
+
+    def test_the_pinned_set_is_exactly_what_the_generator_imports_and_reads(self):
+        for reference in gate_zero.GATE_REFERENCES:
+            with self.subTest(reference=reference.id):
+                traced = slab049.trace_generator(slab049.reference_spec(reference.id))
+                self.assertEqual(traced, {"imports": sorted(slab049.GENERATOR_SOURCES),
+                                          "reads": sorted(slab049.GENERATOR_DATA), "spawns": [],
+                                          "rlimit_cpu": [slab049.GENERATOR_CPU_LIMIT_S] * 2})
+        self.assertEqual(sorted(self.manifest["source"]["generator_sha256"]),
+                         sorted(slab049.GENERATOR_SOURCES + slab049.GENERATOR_DATA))
+        self.assertIn("trace_generator", self.manifest["source"]["derivation"])
+
+    def test_an_unrelated_edit_keeps_a_pass_and_an_edit_to_an_executed_file_voids_it(self):
+        scenario = self.grant()
+        scenario.fabricate(GOOD)
+        record = self.record(scenario)
+        self.assertEqual(record["verdict"], "PASS")
+        tree = self.root / "tree"  # a tree holding the executed files and nothing else generates the same manifest
+        for path in slab049.GENERATOR_SOURCES + slab049.GENERATOR_DATA + ("sundai_tap/routing.py",
+                                                                        "sundai_hotspot/evaluators.py"):
+            (tree / path).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(REPO_ROOT / path, tree / path)
+        with mock.patch.object(slab049, "EXECUTED_ROOT", tree):
+            self.assertEqual(slab049._dump(slab049.build_call_list()), self.manifest_path.read_bytes())
+            for unrelated in ("sundai_tap/routing.py", "sundai_hotspot/evaluators.py"):  # evaluators.py was pinned
+                with (tree / unrelated).open("a", encoding="utf-8") as handle:
+                    handle.write("\n# an unrelated edit\n")
+            self.assertEqual(self.require(scenario, record)["verdict"], "PASS")
+            with (tree / "sundai_tap/fastSA.py").open("a", encoding="utf-8") as handle:  # imported by the generator
+                handle.write("\n# an edit to an executed file\n")
+            with self.assertRaisesRegex(GateZeroRefusal, r"source pins differ for \['sundai_tap/fastSA.py'\]"):
+                self.require(scenario, record)
+            with self.assertRaisesRegex(CallRefused, "fastSA.py"):
+                reference_validation.load_manifest()
 
 
 FAKE_SOLVER = r'''#!PYTHON
 # Test-only stand-in for a HotSpot binary: identity markers in this comment, synthetic outputs, no physics.
 # markers: Unit	Steady(Kelvin) dgssv SENTILAB_EVALUATOR=hotspot6@a7a3286e;grid_dump=all_layers;ticket=SLAB-049
 import json, os, resource, subprocess, sys, time
+open("argv0.txt", "w").write(os.path.realpath(sys.argv[0]))
 case = json.load(open("CONTROL")).get(os.path.basename(os.getcwd()), {})
 args = sys.argv[1:]
 grid = int(args[args.index("-grid_rows") + 1]) if "-grid_rows" in args else 64
 peak = float(case.get("peak_c", 75.3)) + 273.15
 open("rlimit_cpu.txt", "w").write("%d %d" % resource.getrlimit(resource.RLIMIT_CPU))
-open("argv0.txt", "w").write(os.path.realpath(sys.argv[0]))
 if case.get("sleep"):
     child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(120)"])
     open("child.pid", "w").write(str(child.pid))
@@ -822,20 +1431,13 @@ def _process_gone(pid: int) -> bool:
 
 @unittest.skipUnless(os.name == "posix" and platform.machine() == "x86_64",
                      "the manifest lists an x86_64 POSIX host; the fake solver is a POSIX script")
-class ManifestEntryTests(TempDirCase):
-    """validate-reference: the bootstrap path, bound to the frozen manifest (astra #56794, #56837, #56858).
-
-    These tests stand in for warden's grant host, so CI_ALLOCATION is removed from their environment: the CI image
-    sets it, and validate-reference refuses to run under it (test_ci_allocation_refuses_before_anything_runs). The
-    "solver" is a Python script; no HotSpot binary is launched.
-    """
+class EntryCase(OperatorCase):
+    """validate-reference, the real admission and launch entrypoint, on a grant host in miniature: the operator's
+    runtime key and ledger, the in-memory tag API, and a Python script standing in for HotSpot (no solver runs).
+    CI_ALLOCATION is cleared here: the CI image sets it, and validate-reference refuses to run under it."""
 
     def setUp(self):
         super().setUp()
-        environment = mock.patch.dict(os.environ)
-        environment.start()
-        self.addCleanup(environment.stop)
-        os.environ.pop("CI_ALLOCATION", None)
         self.fake = self.root / "fake-hotspot6"
         self.control = self.root / "control.json"
         self.fake.write_text(FAKE_SOLVER.replace("PYTHON", sys.executable).replace("CONTROL", str(self.control)),
@@ -843,8 +1445,7 @@ class ManifestEntryTests(TempDirCase):
         self.fake.chmod(0o755)
         self.control.write_text("{}", encoding="utf-8")
         self.write_provenance(self.fake)
-        self.ledger = self.root / "ledger"
-        self.timeouts = {c["id"]: c["timeout_s"] for c in slab049.build_call_list()["calls"]}
+        self.scenario = self.grant()
 
     def write_provenance(self, binary: Path, kind: str = "hotspot6") -> None:
         record = provenance.build_provenance(kind, binary)
@@ -855,17 +1456,45 @@ class ManifestEntryTests(TempDirCase):
         cases[out] = case
         self.control.write_text(json.dumps(cases), encoding="utf-8")
 
-    def call(self, name: str, out: str, **kwargs) -> dict:
-        kwargs.setdefault("timeout_s", self.timeouts.get(name, 60.0))
-        return validate_call(name, self.root / out, self.ledger, binary=kwargs.pop("binary", self.fake),
-                             now=kwargs.pop("now", IN_WINDOW), **kwargs)
+    def call(self, name: str, out: str, *, scenario: Scenario | None = None, **kwargs) -> dict:
+        scenario = scenario or self.scenario
+        kwargs.setdefault("timeout_s", self.calls[name]["timeout_s"] if name in self.calls else 50.0)
+        kwargs.setdefault("ledger_root", scenario.root)
+        kwargs.setdefault("operator_key_path", self.key_file)
+        kwargs.setdefault("anchor_request", scenario.api)
+        kwargs.setdefault("binary", self.fake)
+        kwargs.setdefault("now", IN_WINDOW)
+        return validate_call(name, self.root / out, **kwargs)
 
-    def test_anything_not_in_the_manifest_is_refused_before_dispatch(self):
+    def launched(self, out: str) -> bool:
+        return (self.root / out / "argv0.txt").is_file()  # the fake solver's first act
+
+
+class ManifestEntryTests(EntryCase):
+    """validate-reference: the bootstrap path, bound to the frozen manifest and the operator's grant (astra #56794,
+    #56837, #56858; warden #56967 P2-2)."""
+
+    def test_anything_the_manifest_or_the_operator_does_not_allow_is_refused_before_dispatch(self):
         drifted = self.root / "drifted.json"
-        manifest = json.loads(reference_validation.MANIFEST_PATH.read_text())
-        manifest["source"]["files_sha256"]["sundai_hotspot/tap_oracle.py"] = "0" * 64
+        manifest = json.loads(self.manifest_path.read_text())
+        manifest["source"]["generator_sha256"]["sundai_tap/fastSA.py"] = "0" * 64
         drifted.write_bytes(slab049._dump(manifest))
-        g32 = call_id("primary", "hotspot6", ASCEND, 32)
+        stranger = self.root / "stranger.pem"
+        stranger.write_bytes(Ed25519PrivateKey.generate().private_bytes(
+            serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()))
+        garbled = self.root / "garbled.pem"
+        garbled.write_text("not a key", encoding="utf-8")
+        self.scenario.reserve(*self.calls)
+        expired = self.grant("expired", api=self.scenario.api, window=("2026-10-01T00:00:00+00:00",
+                                                                        "2026-10-02T00:00:00+00:00"))
+        narrow = self.grant("narrow", api=self.scenario.api, calls=[R_ASCEND])
+        greedy = self.grant("greedy", api=self.scenario.api, cap=700.0)
+        unreserved = self.grant("unreserved", grant_id="g-unreserved")
+        unreadable = self.grant("unreadable")
+        unreadable.reserve(P_ASCEND)
+        unreadable.api.down = {("GET", "/git/ref/")}
+        empty = self.root / "empty-root"
+        gate0_anchor.ledger_dir(empty, self.manifest_sha256).mkdir(parents=True)
         refusals = {
             "unlisted call": dict(name="u-hs6-ascend910-tap25d-fig6a-raw-g64"),
             "snapped identity": dict(name="p-hs6-ascend910-tap25d-fig6a-snapped-g64"),
@@ -873,11 +1502,24 @@ class ManifestEntryTests(TempDirCase):
             "grid 128": dict(name=P_ASCEND, grid=128),
             "other engine": dict(name=P_ASCEND, kind="hotspot6_tap_faithful"),
             "no timeout": dict(name=P_ASCEND, timeout_s=None),
-            "the old 60 s default on a 15 s row": dict(name=g32, timeout_s=60.0),
+            "the old 60 s grid-64 timeout": dict(name=P_ASCEND, timeout_s=60.0),
+            "a 50 s timeout on a 15 s row": dict(name=G32_ASCEND, timeout_s=50.0),
             "timeout 1e6": dict(name=P_ASCEND, timeout_s=1e6),
-            "after the window": dict(name=P_ASCEND, now=datetime(2026, 11, 1, 12, 0, 1, tzinfo=timezone.utc)),
+            "after the manifest window": dict(name=P_ASCEND, now=datetime(2026, 11, 1, 12, 0, 1, tzinfo=timezone.utc)),
             "the prior manifest": dict(name=P_ASCEND, manifest_path=REPO_ROOT / slab049.PRIOR_MANIFEST["path"]),
-            "a drifted source pin": dict(name=P_ASCEND, manifest_path=drifted),
+            "a drifted executed pin": dict(name=P_ASCEND, manifest_path=drifted),
+            "no operator key": dict(name=P_ASCEND, operator_key_path=None),
+            "another key": dict(name=P_ASCEND, operator_key_path=stranger),
+            "an unreadable key": dict(name=P_ASCEND, operator_key_path=garbled),
+            "no launch credential": dict(name=P_ASCEND, anchor_request=None),
+            "no ledger root": dict(name=P_ASCEND, ledger_root=None),
+            "no ledger": dict(name=P_ASCEND, ledger_root=self.root / "nowhere"),
+            "a missing grant": dict(name=P_ASCEND, ledger_root=empty),
+            "an expired grant window": dict(name=P_ASCEND, scenario=expired),
+            "a call outside the grant": dict(name=P_ASCEND, scenario=narrow),
+            "a grant cap above 600 CPU-s": dict(name=P_ASCEND, scenario=greedy),
+            "no reserve tag": dict(name=P_ASCEND, scenario=unreserved),
+            "unreadable tags": dict(name=P_ASCEND, scenario=unreadable),
         }
         stale = self.root / "stale-provenance"
         shutil.copy(self.fake, stale)
@@ -893,7 +1535,7 @@ class ManifestEntryTests(TempDirCase):
         guarded.write_bytes(self.fake.read_bytes() + b"# " + provenance.CI_ENTRY_GUARD + b"\n")
         guarded.chmod(0o755)
         self.write_provenance(guarded)
-        with mock.patch("sundai_hotspot.reference_validation._run_call") as dispatch:  # admission, staging, launch
+        with mock.patch("sundai_hotspot.reference_validation._run_call") as dispatch:  # reservation and launch
             for rule, arguments in refusals.items():
                 with self.subTest(rule=rule), self.assertRaises(CallRefused):
                     name = arguments.pop("name")
@@ -908,57 +1550,71 @@ class ManifestEntryTests(TempDirCase):
             with self.assertRaisesRegex(CallRefused, "CI entry guard"):
                 self.call(P_ASCEND, "out-guarded", binary=guarded)
             dispatch.assert_not_called()
-        self.assertFalse(self.ledger.exists() and list(self.ledger.glob("*.json")), "a refused call is never reserved")
+        self.assertEqual(len(self.scenario.ledger()["entries"]), 1, "a refused call is never reserved")
+        self.assertEqual(self.scenario.api.launch_tags(), [])
+
+    def test_the_committed_manifest_pins_no_operator_key_so_nothing_is_admitted_or_passed(self):
+        committed = REPO_ROOT / "docs/sentilab/diagnostics/SLAB-049" / slab049.MANIFEST_NAME
+        with mock.patch.object(slab049, "OPERATOR_PUBLIC_KEY", None):
+            with self.assertRaisesRegex(CallRefused, "no operator public key is pinned"):
+                self.call(P_ASCEND, "unpinned", manifest_path=committed)
+            with self.assertRaisesRegex(GateZeroRefusal, "no operator public key is pinned"):
+                build_record("hotspot6", self.fake, ledger_root=self.scenario.root, tags=self.scenario.tags,
+                             manifest_path=committed)
 
     def test_ci_allocation_refuses_before_anything_runs(self):
         """Main's CI allocation (SLAB-046): native HotSpot launches in CI go through ci_gate; SLAB-049 never solves there."""
+        self.scenario.reserve(P_ASCEND)
         with mock.patch.dict(os.environ, {"CI_ALLOCATION": "1"}), \
                 mock.patch("sundai_hotspot.reference_validation._run_call") as dispatch:
             with self.assertRaisesRegex(CallRefused, "never runs under CI allocation"):
                 self.call(P_ASCEND, "ci")
             dispatch.assert_not_called()
-        self.assertFalse(self.ledger.exists())
+        self.assertEqual(len(self.scenario.ledger()["entries"]), 1)
         self.assertFalse((self.root / "ci").exists())
 
     def test_bootstrap_receipts_need_no_pass_bind_every_field_and_unlock_search(self):
         with self.assertRaises(GateZeroRefusal):
             make_oracle("hotspot6", "search", hotspot_binary=self.fake)
         peaks = {P_ASCEND: 75.30, R_ASCEND: 75.30, P_MICRO: 116.50, R_MICRO: 116.50}
-        manifest_sha256 = _sha256(reference_validation.MANIFEST_PATH)
+        self.scenario.reserve(*peaks)
         for name, peak in peaks.items():
             self.control_case(name, peak_c=peak)
             receipt = self.call(name, name)
             self.assertEqual((receipt["status"], receipt["exit_status"]), ("exited", 0), receipt.get("error"))
             run = self.root / name
-            self.assertEqual((run / "rlimit_cpu.txt").read_text(), "60 60")  # RLIMIT_CPU soft = hard = timeout
-            self.assertEqual((receipt["call"], receipt["manifest_sha256"], receipt["layout_identity"]),
-                             (name, manifest_sha256, "raw"))
-            self.assertEqual(receipt["raw_layout_sha256"],
-                             gate_zero.reference(receipt["reference"]).raw_layout_sha256)
-            self.assertFalse(receipt["geometry"]["search_lattice_checked"])
-            self.assertEqual(receipt["build_provenance"]["sha256"], _sha256(provenance.provenance_path(self.fake)))
-            self.assertEqual(receipt["runtime"], receipt["runtime_after"])
+            self.assertEqual((run / "rlimit_cpu.txt").read_text(), "50 50")  # RLIMIT_CPU soft = hard = timeout
+            on_disk = gate0_anchor.verify(self.public, json.loads((run / "receipt.json").read_text()))  # signed
+            self.assertEqual((on_disk["call"], on_disk["manifest_sha256"], on_disk["grant_id"], on_disk["layout_identity"]),
+                             (name, self.manifest_sha256, GRANT_ID, "raw"))
+            self.assertEqual(on_disk["raw_layout_sha256"], gate_zero.reference(on_disk["reference"]).raw_layout_sha256)
+            self.assertFalse(on_disk["geometry"]["search_lattice_checked"])
+            self.assertEqual(on_disk["build_provenance"]["sha256"], _sha256(provenance.provenance_path(self.fake)))
+            self.assertEqual(on_disk["runtime"], on_disk["runtime_after"])
+            self.assertEqual(on_disk["claim"]["ref"], gate0_anchor.tag_ref(GRANT_ID, "launch", name))
             executed = Path((run / "argv0.txt").read_text())
             self.assertEqual(executed.name, f"evaluator-{_sha256(self.fake)[:16]}")  # the private copy ran
             self.assertNotEqual(executed, self.fake.resolve())
             self.assertFalse(executed.parent.exists(), "the private copy is removed after the call")
-            record = receipt["solve_record"]
-            self.assertEqual(record["config_sha256"], receipt["inputs"]["new_hotspot.config"])
+            record = on_disk["solve_record"]
+            self.assertEqual(record["config_sha256"], on_disk["inputs"]["new_hotspot.config"])
             for field in ("active_layer_grid_peak", "chiplet_centre_mapping", "historical_tap_stdout_selector",
                           "spreader_sink_hottest_cell_rises", "spreader_sink_drop_diagnostic",
                           "same_index_stack_at_active_argmax"):
                 self.assertIn(field, record)
-            self.assertNotIn("measured", json.dumps(receipt))
-            settled = json.loads((self.ledger / f"{name}.settled.json").read_text())
-            self.assertEqual(settled["receipt_sha256"], _sha256(run / "receipt.json"))
-            self.assertGreater(settled["charged_cpu_s"], 0.0)
+            self.assertNotIn("measured", json.dumps(on_disk))
+            settlement = self.scenario.entries(name)["settlement"]
+            self.assertEqual(settlement["receipt_sha256"], _sha256(run / "receipt.json"))
+            self.assertGreater(settlement["charged_cpu_s"], 0.0)
+            self.scenario.tag("settle", name, receipt["settle_tag_message"])  # the operator writes what was printed
         with self.assertRaises(CallRefused):  # each call runs once
             self.call(P_ASCEND, "again")
-        result = build_record("hotspot6", self.fake, self.ledger)
-        self.assertEqual(result["verdict"], "PASS", result["missing"])
-        oracle = make_oracle("hotspot6", "search", hotspot_binary=self.fake, gate_zero_record=result)
+        result = self.record(self.scenario, self.fake)
+        self.assertEqual(result["verdict"], "PASS", (result["failures"], result["missing"]))
+        oracle = make_oracle("hotspot6", "search", hotspot_binary=self.fake, gate_zero_record=result,
+                             ledger_root=self.scenario.root, tags=self.scenario.tags)
         self.assertIsNotNone(oracle.gate_zero)
-        report = reference_validation.report(self.ledger)
+        report = reference_validation.report(ledger_root=self.scenario.root, tags=self.scenario.tags)
         self.assertEqual(len(report["calls"]), 12)
         self.assertEqual(len(report["not_completed"]), 8)
         row = next(r for r in report["rows"] if r["kind"] == "hotspot6" and r["reference"] == ASCEND)
@@ -967,52 +1623,41 @@ class ManifestEntryTests(TempDirCase):
 
     def test_a_grid_32_row_runs_under_its_own_15_s_limit(self):
         name = call_id("primary", "hotspot6", MICRO, 32)
+        self.scenario.reserve(name)
         receipt = self.call(name, name)
         self.assertEqual((receipt["status"], receipt["timeout_s"], receipt["cpu_limit_s"]), ("exited", 15.0, 15))
         self.assertEqual((self.root / name / "rlimit_cpu.txt").read_text(), "15 15")
 
-    def test_the_cumulative_ledger_refuses_past_the_call_count_or_the_cpu_cap(self):
-        manifest_sha256 = _sha256(reference_validation.MANIFEST_PATH)
-        self.ledger.mkdir()
-
-        def reserve(name: str, cpu: float, sha: str = manifest_sha256) -> None:
-            (self.ledger / f"{name}.reserved.json").write_text(json.dumps(
-                {"call": name, "manifest_sha256": sha, "out": "/nonexistent", "reserved_cpu_s": cpu}))
-        reserve("p-hs7-ascend910-tap25d-fig6a-raw-g64", 560.0)  # unsettled: charged its reservation
-        with self.assertRaisesRegex(CallRefused, "would pass the 600 CPU-s cap"):
-            self.call(P_ASCEND, "cpu")
-        (self.ledger / "p-hs7-ascend910-tap25d-fig6a-raw-g64.settled.json").write_text(json.dumps(
-            {"call": "p-hs7-ascend910-tap25d-fig6a-raw-g64", "status": "exited", "charged_cpu_s": 5.0}))
-        with self.assertRaisesRegex(CallRefused, "would pass the 600 CPU-s cap"):  # never freed by settling
-            self.call(P_ASCEND, "cpu-after-settlement")
-        self.assertEqual(reference_validation.ledger_totals(self.ledger)["charged_cpu_s"], 560.0)
-        shutil.rmtree(self.ledger)
-        self.ledger.mkdir()
-        reserve("p-hs7-ascend910-tap25d-fig6a-raw-g32", 1.0)
-        (self.ledger / "p-hs7-ascend910-tap25d-fig6a-raw-g32.settled.json").write_text(json.dumps(
-            {"call": "p-hs7-ascend910-tap25d-fig6a-raw-g32", "status": "exited", "charged_cpu_s": 545.0}))
-        self.assertEqual(reference_validation.ledger_totals(self.ledger)["charged_cpu_s"], 545.0)  # overshoot, in full
-        with self.assertRaisesRegex(CallRefused, "would pass the 600 CPU-s cap"):
-            self.call(P_ASCEND, "overshoot")
-        receipt = self.call(call_id("primary", "hotspot6", ASCEND, 32), "fits")  # 545 + 17 <= 600
-        self.assertEqual(receipt["status"], "exited")
-        for index in range(10):
-            reserve(f"synthetic-{index}", 0.0)
-        with self.assertRaisesRegex(CallRefused, "allows 12"):
-            self.call(P_ASCEND, "count")
-        shutil.rmtree(self.ledger)
-        self.ledger.mkdir()
-        reserve("p-hs7-micro150-tap25d-fig5a-raw-g64", 1.0, sha="0" * 64)
-        with self.assertRaisesRegex(CallRefused, "another manifest"):
-            self.call(P_ASCEND, "manifest")
+    def test_the_anchored_aggregate_charges_every_claimed_or_ledgered_call_its_full_envelope(self):
+        """astra #57024, #57025: the full envelope is reserved before launch and never reclaimed."""
+        small = self.grant("small", cap=80.0)
+        small.reserve(P_ASCEND, G32_ASCEND)
+        self.assertEqual(self.call(P_ASCEND, "first", scenario=small)["status"], "exited")  # 58.5 of 80
+        with self.assertRaisesRegex(CallRefused, "would pass the grant's 80 CPU-s cap"):
+            self.call(G32_ASCEND, "second", scenario=small)  # 58.5 + 23.5 > 80
+        fresh = self.grant("fresh", api=small.api, cap=80.0)  # a fresh ledger still sees P_ASCEND's launch tag
+        with self.assertRaisesRegex(CallRefused, "would pass the grant's 80 CPU-s cap"):
+            self.call(G32_ASCEND, "third", scenario=fresh)
+        heavy = self.grant("heavy")  # a measured overshoot is charged in full
+        heavy.fabricate({P_MICRO: 116.27}, charged_cpu_s=590.0)
+        heavy.reserve(G32_ASCEND)
+        with self.assertRaisesRegex(CallRefused, "590.00 CPU-s already charged"):
+            self.call(G32_ASCEND, "overshoot", scenario=heavy)
+        failed = self.grant("failed", cap=600.0)  # failed or unknown work stays charged
+        failed.fabricate({P_MICRO: 116.27, R_MICRO: 116.27}, settled={P_MICRO: ("setup_error", None)})
+        failed.reserve(G32_ASCEND)
+        charged = reference_validation.anchored_charge(failed.ledger(), failed.tags, failed.ledger()["grant"],
+                                                       self.manifest, self.manifest_sha256)
+        self.assertEqual(charged, 2 * 58.5)
 
     def test_the_wall_deadline_kills_the_whole_process_group(self):
         with mock.patch.dict(slab049.TIMING, {"grid64_timeout_s": 3.0}):  # time to start its child
-            manifest = self.root / "short.json"
-            manifest.write_bytes(slab049._dump(slab049.build_call_list()))
+            self.regenerate_manifest()
+            short = self.grant("short")
+            short.reserve(P_ASCEND)
             self.control_case("sleeper", sleep=True)
             started = time.monotonic()
-            receipt = self.call(P_ASCEND, "sleeper", timeout_s=3.0, manifest_path=manifest)
+            receipt = self.call(P_ASCEND, "sleeper", scenario=short, timeout_s=3.0)
         self.assertLess(time.monotonic() - started, 60)
         self.assertEqual((receipt["status"], receipt["exit_status"]), ("wall_timeout", None))
         child = int((self.root / "sleeper" / "child.pid").read_text())
@@ -1020,42 +1665,46 @@ class ManifestEntryTests(TempDirCase):
         while not _process_gone(child) and time.monotonic() < deadline:
             time.sleep(0.05)
         self.assertTrue(_process_gone(child), "the solver's descendant survived the group kill")
-        settled = json.loads((self.ledger / f"{P_ASCEND}.settled.json").read_text())
-        self.assertEqual(settled["status"], "wall_timeout")
+        self.assertEqual(short.entries(P_ASCEND)["settlement"]["status"], "wall_timeout")
 
     def test_rlimit_cpu_enforces_cpu_whatever_the_wall_deadline(self):
         """astra #56858: a wall timeout alone is not CPU enforcement; the per-process CPU limit kills by itself."""
         started = time.monotonic()
         process = subprocess.Popen([sys.executable, "-c", "while True: pass"], start_new_session=True,
-                                   preexec_fn=reference_validation._cpu_limit(1))
-        self.assertEqual(process.wait(timeout=30), -signal.SIGKILL)
+                                   **provenance.cpu_limited(1))
+        try:
+            self.assertEqual(process.wait(timeout=30), -signal.SIGKILL)
+        finally:
+            if process.poll() is None:  # the limit did not act: never leave the loop running
+                process.kill()
+                process.wait()
         self.assertLess(time.monotonic() - started, 30)
 
     def test_a_launch_failure_keeps_a_settled_receipt(self):
         unlaunchable = self.root / "not-executable"
         unlaunchable.write_bytes(FAKE_BINARIES["hotspot6"])
         self.write_provenance(unlaunchable)
+        self.scenario.reserve(P_ASCEND)
         receipt = self.call(P_ASCEND, "launch", binary=unlaunchable)
         self.assertEqual(receipt["status"], "launch_error")
         on_disk = json.loads((self.root / "launch" / "receipt.json").read_text())
         self.assertEqual(on_disk["status"], "launch_error")
         self.assertIn("finished_utc", on_disk)
-        settled = json.loads((self.ledger / f"{P_ASCEND}.settled.json").read_text())
-        self.assertEqual(settled["status"], "launch_error")
+        self.assertEqual(self.scenario.entries(P_ASCEND)["settlement"]["status"], "launch_error")
 
-    def test_every_post_admission_setup_failure_settles_in_the_ledger(self):
+    def test_every_post_reservation_failure_settles_in_the_ledger_and_is_never_retried(self):
         """astra (#56982 P2-2): a failure between admission and staging used to leave the reservation unsettled."""
+        self.scenario.reserve(P_ASCEND, P_MICRO)
         (self.root / "blocker").write_text("a file where the output parent should be", encoding="utf-8")
         receipt = self.call(P_ASCEND, "blocker/run")
         self.assertEqual((receipt["status"], receipt["exit_status"]), ("setup_error", None))
-        settled = json.loads((self.ledger / f"{P_ASCEND}.settled.json").read_text())
-        self.assertEqual(settled["status"], "setup_error")
-        self.assertIsNone(settled["receipt_sha256"])  # no receipt could be written, the ledger still settles
-        self.assertTrue(settled["receipt_error"])
-        self.assertEqual(reference_validation.ledger_totals(self.ledger)["charged_cpu_s"], 62.0)  # stays charged
-        with self.assertRaisesRegex(CallRefused, "already admitted"):  # and is never retried
+        settlement = self.scenario.entries(P_ASCEND)["settlement"]
+        self.assertEqual(settlement["status"], "setup_error")
+        self.assertIsNone(settlement["receipt_sha256"])  # no receipt could be written, the ledger still settles
+        self.assertTrue(settlement["receipt_error"])
+        self.assertFalse(self.scenario.api.has("launch", P_ASCEND))  # it never reached its claim
+        with self.assertRaisesRegex(CallRefused, "already has ledger entries"):  # and is never retried
             self.call(P_ASCEND, "elsewhere")
-        name = call_id("primary", "hotspot6", MICRO, 64)
         real, writes = reference_validation._write_durably, []
 
         def first_write_fails(path, data):
@@ -1064,30 +1713,229 @@ class ManifestEntryTests(TempDirCase):
                 raise OSError(28, "No space left on device")
             return real(path, data)
         with mock.patch.object(reference_validation, "_write_durably", side_effect=first_write_fails):
-            receipt = self.call(name, "first-write")
+            receipt = self.call(P_MICRO, "first-write")
         self.assertEqual(receipt["status"], "setup_error")
-        settled = json.loads((self.ledger / f"{name}.settled.json").read_text())
-        self.assertEqual(settled["status"], "setup_error")
-        self.assertIn("No space left on device", settled["error"])
-        self.assertEqual(settled["receipt_sha256"], _sha256(self.root / "first-write" / "receipt.json"))
-        self.assertEqual(reference_validation.ledger_totals(self.ledger)["charged_cpu_s"], 124.0)
+        settlement = self.scenario.entries(P_MICRO)["settlement"]
+        self.assertEqual(settlement["status"], "setup_error")
+        self.assertIn("No space left on device", settlement["error"])
+        self.assertEqual(settlement["receipt_sha256"], _sha256(self.root / "first-write" / "receipt.json"))
+        charged = reference_validation.anchored_charge(self.scenario.ledger(), self.scenario.tags,
+                                                       self.scenario.ledger()["grant"], self.manifest,
+                                                       self.manifest_sha256)
+        self.assertEqual(charged, 2 * 58.5)  # both stay charged their full envelopes
 
     def test_a_truncated_grid_after_exit_zero_keeps_the_raw_outputs_and_is_incomplete(self):
+        self.scenario.reserve(P_ASCEND)
         self.control_case("truncated", truncate=True)
         receipt = self.call(P_ASCEND, "truncated")
         self.assertEqual((receipt["status"], receipt["exit_status"]), ("record_error", 0))
         self.assertIn("GridFormatError", receipt["error"])
         self.assertEqual(set(receipt["outputs"]), set(gate_zero.RECEIPT_OUTPUTS))
-        record = build_record("hotspot6", self.fake, self.ledger)
+        self.scenario.tag("settle", P_ASCEND, receipt["settle_tag_message"])
+        record = self.record(self.scenario, self.fake)
         self.assertEqual(record["verdict"], "INCOMPLETE")
         self.assertIn("record_error", next(m["reason"] for m in record["missing"] if m["call"] == P_ASCEND))
 
 
-@unittest.skipUnless(os.name == "posix" and shutil.which("ldd"), "glibc ldd")
+class ClaimTests(EntryCase):
+    """astra #57031: the atomic launch claim, through the real entrypoint with the create-only fake API. The order of
+    one call is reservation, staging, claim, launch; only a successful create launches."""
+
+    def solver_popen(self, before_launch):
+        """A spy on the solver's launch (the TAP argv): before_launch runs first, then the real Popen, as for every
+        other process."""
+        def spy(argv, *args, **kwargs):
+            if "-steady_file" in argv:
+                before_launch()
+            return mock.DEFAULT  # the wrapped, real Popen
+        return mock.patch.object(reference_validation.subprocess, "Popen", wraps=subprocess.Popen, side_effect=spy)
+
+    def test_reservation_staging_claim_launch_in_that_order(self):
+        self.scenario.reserve(P_ASCEND)
+        events, out = [], self.root / "order"
+
+        def staged():
+            return sorted(path.name for path in out.iterdir()) if out.exists() else []
+
+        def at_claim():
+            events.append(("claim", "reservation" in self.scenario.entries(P_ASCEND), staged()))
+
+        def at_launch():
+            events.append(("launch", self.scenario.api.has("launch", P_ASCEND), staged()))
+        self.scenario.api.before_create = at_claim
+        with self.solver_popen(at_launch):
+            receipt = self.call(P_ASCEND, "order")
+        self.assertEqual(receipt["status"], "exited")
+        self.assertEqual([event[0] for event in events], ["claim", "launch"])
+        (_, reserved, at_claim_files), (_, claimed, at_launch_files) = events
+        self.assertTrue(reserved)  # the signed reservation came first
+        self.assertLessEqual({"receipt.json", *slab049.REFERENCE_INPUTS}, set(at_claim_files))  # then staging
+        self.assertTrue(claimed)   # then the claim, before the launch
+        self.assertEqual(set(at_launch_files) - set(at_claim_files), {"stdout.txt", "stderr.txt"})  # nothing between
+
+    def test_a_sequential_pair_launches_exactly_once(self):
+        self.scenario.reserve(P_ASCEND)
+        self.assertEqual(self.call(P_ASCEND, "first")["status"], "exited")
+        fresh = self.grant("ledger-b", api=self.scenario.api)  # the operator's second ledger for the same grant
+        for scenario, out in ((self.scenario, "again"), (fresh, "elsewhere")):
+            with self.subTest(ledger=out), self.assertRaisesRegex(CallRefused, "already has a launch tag"):
+                self.call(P_ASCEND, out, scenario=scenario)
+        self.assertEqual(self.scenario.api.launch_tags(), [self.scenario.api.ref("launch", P_ASCEND)])
+        self.assertEqual([self.launched(out) for out in ("first", "again", "elsewhere")], [True, False, False])
+
+    def test_a_concurrent_pair_launches_exactly_once(self):
+        self.scenario.reserve(P_ASCEND)
+        other = self.grant("ledger-b", api=self.scenario.api)
+        barrier = threading.Barrier(2, timeout=120)
+        self.scenario.api.before_create = barrier.wait  # both requests are past admission before either creates
+        results = {}
+
+        def run(scenario, out):
+            try:
+                results[out] = self.call(P_ASCEND, out, scenario=scenario)
+            except Exception as exc:  # reported below
+                results[out] = exc
+        threads = [threading.Thread(target=run, args=(scenario, out)) for scenario, out in ((self.scenario, "a"),
+                                                                                             (other, "b"))]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(180)
+        self.assertEqual(sorted(results), ["a", "b"], results)
+        self.assertEqual(sorted(r["status"] for r in results.values()), ["claim_refused", "exited"], results)
+        self.assertEqual(sum(self.launched(out) for out in ("a", "b")), 1)
+        loser = next(out for out, r in results.items() if r["status"] == "claim_refused")
+        self.assertEqual((other if loser == "b" else self.scenario).entries(P_ASCEND)["settlement"]["status"],
+                         "claim_refused")
+
+    def test_a_deleted_or_rolled_back_reservation_never_readmits_a_call(self):
+        """warden #56967 P2-2: deleting a reservation would readmit its call without the anchor."""
+        self.scenario.reserve(P_ASCEND, P_MICRO)
+        self.assertEqual(self.call(P_ASCEND, "ran")["status"], "exited")
+        self.assertEqual(self.call(P_MICRO, "ran-too")["status"], "exited")
+        entries = sorted(self.scenario.dir.glob("*.json"))  # grant, then P_ASCEND's and P_MICRO's two entries
+        entries[1].unlink()  # P_ASCEND's reservation, from the middle of the chain
+        with self.assertRaisesRegex(CallRefused, "contiguous"):
+            self.call(P_ASCEND, "after-deletion")
+        for entry in entries[2:]:  # the rest too: a valid prefix holding only the grant
+            entry.unlink()
+        for name in (P_ASCEND, P_MICRO):
+            with self.subTest(call=name), self.assertRaisesRegex(CallRefused, "already has a launch tag"):
+                self.call(name, f"after-rollback-{name}")
+        self.assertFalse(any(self.launched(out) for out in ("after-deletion", f"after-rollback-{P_ASCEND}",
+                                                             f"after-rollback-{P_MICRO}")))
+
+    def test_a_crash_after_the_claim_is_never_retried(self):
+        self.scenario.reserve(P_ASCEND)
+
+        def die():
+            raise SystemExit("validate-reference killed between its claim and the launch")
+        with self.solver_popen(die), mock.patch.object(reference_validation, "_settle"):  # dead: nothing settles
+            with self.assertRaises(SystemExit):
+                self.call(P_ASCEND, "crashed")
+        self.assertTrue(self.scenario.api.has("launch", P_ASCEND))
+        self.assertFalse(self.scenario.api.has("settle", P_ASCEND))
+        self.assertEqual(set(self.scenario.entries(P_ASCEND)), {"reservation"})
+        fresh = self.grant("ledger-b", api=self.scenario.api)
+        for scenario, out in ((self.scenario, "retry"), (fresh, "retry-b")):
+            with self.subTest(ledger=out), self.assertRaisesRegex(CallRefused, "launch tag"):
+                self.call(P_ASCEND, out, scenario=scenario)  # never from the absence of a settle tag
+        self.assertFalse(any(self.launched(out) for out in ("crashed", "retry", "retry-b")))
+        self.assertIn(P_ASCEND, [m["call"] for m in self.record(self.scenario, self.fake)["missing"]])
+
+    def test_an_uncertain_create_launches_nothing_and_is_never_retried(self):
+        for label in ("lost-after-create", "failed-before-create"):
+            with self.subTest(create=label):
+                scenario = self.grant(label)
+                scenario.reserve(P_ASCEND)
+                if label == "lost-after-create":
+                    scenario.api.after_create_lost = True
+                else:
+                    scenario.api.down = {("POST", "/git/refs")}
+                receipt = self.call(P_ASCEND, label + "-run", scenario=scenario)
+                self.assertEqual((receipt["status"], receipt["exit_status"]), ("claim_uncertain", None))
+                self.assertFalse(self.launched(label + "-run"))
+                self.assertEqual(scenario.entries(P_ASCEND)["settlement"]["status"], "claim_uncertain")
+                scenario.api.after_create_lost, scenario.api.down = False, set()
+                with self.assertRaises(CallRefused):  # consumed in its ledger
+                    self.call(P_ASCEND, label + "-again", scenario=scenario)
+                scenario.tag("settle", P_ASCEND, receipt["settle_tag_message"])  # the operator reconciles it
+                fresh = self.grant(label + "-b", api=scenario.api)
+                with self.assertRaises(CallRefused):  # and no fresh ledger can relaunch it
+                    self.call(P_ASCEND, label + "-b-run", scenario=fresh)
+                self.assertFalse(self.launched(label + "-b-run"))
+
+    def test_no_credential_means_no_launch(self):
+        self.scenario.reserve(P_ASCEND)
+        with self.assertRaisesRegex(CallRefused, "no launch credential"):
+            self.call(P_ASCEND, "no-credential", anchor_request=None)
+        stderr = io.StringIO()
+        with mock.patch.object(reference_validation, "_now", return_value=IN_WINDOW), \
+                contextlib.redirect_stderr(stderr):
+            code = reference_validation.main(["validate-reference", "--call", P_ASCEND, "--timeout", "50",
+                                              "--out", str(self.root / "cli"), "--ledger-root", str(self.scenario.root),
+                                              "--operator-key", str(self.key_file)])
+        self.assertEqual(code, 2)
+        self.assertIn("no launch credential (SLAB049_ANCHOR_TOKEN)", stderr.getvalue())
+        self.assertFalse(self.launched("no-credential") or self.launched("cli"))
+        self.assertEqual((len(self.scenario.ledger()["entries"]), self.scenario.api.launch_tags()), (1, []))
+
+
+@unittest.skipUnless(os.name == "posix", "RLIMIT_CPU is POSIX")
+class ChildLimitTests(unittest.TestCase):
+    """warden #56967 P2-3: every child SLAB-049 starts has RLIMIT_CPU and a wall deadline. The solver's, the
+    generator's (ExecutedSetTests) and the loader's (RuntimeLibraryTests) are checked on real processes; the
+    analytic harness's gcc and run calls here."""
+
+    def test_the_assembly_harness_compiles_and_runs_under_rlimit_cpu_and_a_wall_deadline(self):
+        done, failed = subprocess.CompletedProcess([], 0, "", ""), subprocess.CompletedProcess([], 1, "", "no")
+        with mock.patch.object(slab049.subprocess, "run", return_value=done) as run, \
+                mock.patch.object(provenance, "cpu_limited", wraps=provenance.cpu_limited) as limited:
+            slab049._run(["gcc", "-c", "x.c"], Path("."))
+        self.assertEqual(run.call_args.kwargs["timeout"], slab049.COMPILE_TIMEOUT_S)
+        self.assertIn("preexec_fn", run.call_args.kwargs)
+        limited.assert_called_once_with(slab049.COMPILE_CPU_LIMIT_S)
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch.object(slab049.subprocess, "run", return_value=failed) as run, \
+                mock.patch.object(provenance, "cpu_limited", wraps=provenance.cpu_limited) as limited:
+            with self.assertRaises(RuntimeError):
+                slab049.AssemblyHarness.run(Path(directory) / "harness", Path(directory), "c", "l", 16, 0.1)
+        self.assertEqual(run.call_args.kwargs["timeout"], slab049.HARNESS_TIMEOUT_S)
+        self.assertIn("preexec_fn", run.call_args.kwargs)
+        limited.assert_called_once_with(slab049.HARNESS_CPU_LIMIT_S)
+
+
+@unittest.skipUnless(os.name == "posix" and Path("/bin/true").is_file(), "a POSIX host with /bin/true")
 class RuntimeLibraryTests(unittest.TestCase):
+    """The loader listing: the binary's own PT_INTERP, under RLIMIT_CPU and a wall deadline; the program never runs."""
+
+    @staticmethod
+    def elf(interpreter: bytes | None) -> bytes:
+        """A minimal little-endian ELF64 header with one program header: PT_INTERP, or PT_LOAD when there is none."""
+        header = bytearray(64 + 56)
+        header[:6] = b"\x7fELF\x02\x01"
+        header[32:40] = (64).to_bytes(8, "little")      # e_phoff
+        header[54:56] = (56).to_bytes(2, "little")      # e_phentsize
+        header[56:58] = (1).to_bytes(2, "little")       # e_phnum
+        header[64:68] = (3 if interpreter else 1).to_bytes(4, "little")
+        if interpreter:
+            header[72:80] = len(header).to_bytes(8, "little")              # p_offset
+            header[96:104] = (len(interpreter) + 1).to_bytes(8, "little")  # p_filesz
+            return bytes(header) + interpreter + b"\0"
+        return bytes(header)
+
+    def test_the_interpreter_is_read_from_the_elf_program_headers(self):
+        self.assertEqual(provenance.elf_interpreter(self.elf(b"/lib/ld-test.so.1")), "/lib/ld-test.so.1")
+        self.assertIsNone(provenance.elf_interpreter(self.elf(None)))
+        for bad in (b"#!/bin/sh\n", self.elf(b"/lib/ld-test.so.1")[:70], b"\x7fELF\x03\x01" + bytes(64)):
+            with self.assertRaises(ValueError):
+                provenance.elf_interpreter(bad)
+        self.assertTrue(provenance.elf_interpreter(Path("/bin/true").resolve().read_bytes()).startswith("/"))
+
     def test_libraries_are_resolved_with_hashes_without_running_the_program(self):
         resolved = provenance.resolved_libraries(Path("/bin/true"))
         self.assertTrue(resolved["dynamic"])
+        self.assertEqual(resolved["loader"], provenance.elf_interpreter(Path("/bin/true").resolve().read_bytes()))
         libc = next(item for item in resolved["libraries"] if item["name"].startswith("libc.so"))
         self.assertEqual(libc["sha256"], _sha256(libc["realpath"]))
         with tempfile.TemporaryDirectory() as directory:
@@ -1095,6 +1943,43 @@ class RuntimeLibraryTests(unittest.TestCase):
             script.write_text("#!/bin/sh\nexit 0\n")
             script.chmod(0o755)
             self.assertEqual(provenance.library_identity(provenance.resolved_libraries(script)), [])
+            static = Path(directory) / "static"
+            static.write_bytes(self.elf(None))
+            self.assertEqual(provenance.resolved_libraries(static)["dynamic"], False)
+
+    def test_the_listing_is_one_process_under_rlimit_cpu_killed_at_its_wall_deadline(self):
+        loader = provenance.elf_interpreter(Path("/bin/true").resolve().read_bytes())
+        with mock.patch.object(provenance.subprocess, "Popen", wraps=subprocess.Popen) as spawn, \
+                mock.patch.object(provenance, "cpu_limited", wraps=provenance.cpu_limited) as limited:
+            provenance.resolved_libraries(Path("/bin/true"))
+        (argv,), options = spawn.call_args
+        self.assertEqual((spawn.call_count, argv), (1, [loader, "/bin/true"]))
+        self.assertTrue(options["start_new_session"])
+        self.assertEqual(options["env"]["LD_TRACE_LOADED_OBJECTS"], "1")
+        limited.assert_called_once_with(provenance.LOADER_CPU_LIMIT_S)
+        self.assertIn("preexec_fn", options)  # RLIMIT_CPU is set in the child before exec
+        with tempfile.TemporaryDirectory() as directory:
+            never = Path(directory) / "never-written"
+            os.mkfifo(never)  # the loader blocks opening it: a listing that never answers
+            started = time.monotonic()
+            with mock.patch.object(provenance, "LOADER_TIMEOUT_S", 0.5):
+                self.assertEqual(provenance._loader_listing(loader, never),
+                                 (None, "the loader passed its 0.5 s deadline"))
+            self.assertLess(time.monotonic() - started, 30)
+
+    def test_packages_and_owners_are_read_in_process_from_dpkgs_database(self):
+        with tempfile.TemporaryDirectory() as directory:
+            admin = Path(directory)
+            (admin / "info").mkdir()
+            (admin / "status").write_text(
+                "Package: libsuperlu7\nStatus: install ok installed\nVersion: 7.0.1\n\n"
+                "Package: libblas3\nStatus: deinstall ok config-files\nVersion: 3.12\n\n"
+                "Package: unrelated\nStatus: install ok installed\nVersion: 1\n", encoding="utf-8")
+            (admin / "info" / "libc6:amd64.list").write_text("/usr/lib/x86_64-linux-gnu/libc.so.6\n", encoding="utf-8")
+            self.assertEqual(provenance._packages(admin), {"libsuperlu7": "7.0.1"})
+            self.assertEqual(provenance._owners(["/usr/lib/x86_64-linux-gnu/libc.so.6", "/nowhere"], admin),
+                             {"/usr/lib/x86_64-linux-gnu/libc.so.6": "libc6"})
+            self.assertEqual(provenance._packages(admin / "absent"), {})
 
 
 class VendoredHotSpot6Tests(unittest.TestCase):

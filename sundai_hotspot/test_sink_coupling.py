@@ -328,23 +328,22 @@ class GeneratedArtifactTests(unittest.TestCase):
         self.assertEqual({c["id"] for c in calls if c["gating"]}, {row["call"] for row in gate_zero.required_calls()})
         accounting = manifest["accounting"]
         self.assertEqual((accounting["max_runs"], accounting["retries"]), (12, 0))
-        self.assertLessEqual(accounting["forecast_worst_case_cpu_s"], accounting["manifest_cpu_cap_s"])
+        self.assertLessEqual(accounting["worst_case_cpu_s"], accounting["manifest_cpu_cap_s"])
         self.assertEqual(manifest["supersedes"]["sha256"], slab049.PRIOR_MANIFEST["sha256"])
         self.assertIn("not_requested", manifest)
 
     def test_the_committed_manifest_pins_match_the_tree(self):
         """Not a fresh object against the files that made it: the committed bytes, checked against the tree."""
-        from sundai_hotspot import reference_validation
-        committed = reference_validation.MANIFEST_PATH.read_bytes()
-        pins = json.loads(committed)["source"]["files_sha256"]
-        self.assertEqual(sorted(pins), sorted(slab049.MANIFEST_SOURCES))
+        committed = slab049.MANIFEST_PATH.read_bytes()
+        pins = json.loads(committed)["source"]["generator_sha256"]
+        self.assertEqual(sorted(pins), sorted(slab049.GENERATOR_SOURCES + slab049.GENERATOR_DATA))
         for path, digest in pins.items():
             self.assertEqual(hashlib.sha256((REPO_ROOT / path).read_bytes()).hexdigest(), digest, path)
         for call in json.loads(committed)["calls"]:
             self.assertEqual(hashlib.sha256((REPO_ROOT / call["inputs"]["dir"] / "SHA256SUMS").read_bytes()).hexdigest(),
                              call["inputs"]["sha256sums_sha256"], call["id"])
         slab049.check_manifest(committed)
-        stale = committed.replace(pins["sundai_hotspot/tap_oracle.py"].encode("ascii"), b"0" * 64)
+        stale = committed.replace(pins["sundai_tap/passive_interposer.py"].encode("ascii"), b"0" * 64)
         with self.assertRaises(slab049.ManifestMismatch):
             slab049.check_manifest(stale)
 

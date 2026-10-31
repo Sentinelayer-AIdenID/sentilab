@@ -278,20 +278,21 @@ RAW_SPAWNS += [('sentilab_core/test_proposals.py', 'subprocess.run',
 
 # SLAB-049 (docs/ci-spawn-review.md, SLAB-049 round). validate-reference is the grant host's one solver entry: it
 # refuses under CI_ALLOCATION=1 before any reservation or launch, refuses binaries built with the CI entry guard,
-# and runs the TAP argv on a private copy of the listed binary in its own process group under RLIMIT_CPU.
+# and runs the TAP argv on a private copy of the listed binary in its own process group under RLIMIT_CPU, only after
+# its create-only launch claim succeeds.
 RAW_SPAWNS += [('sundai_hotspot/reference_validation.py', 'subprocess.Popen', ('argv',))]
 
-# SLAB-049 non-HotSpot sites: fixed ldd/gcc --version/dpkg-query/dpkg -S provenance probes (never the evaluator);
-# TAP's own Python input generator; gcc building the assembly-only harness, which assembles HotSpot's conductance
-# matrix and exits before direct_SLU; gcc --version for the analytic report; a one-second RLIMIT_CPU busy loop.
-RAW_SPAWNS += [('sundai_hotspot/provenance.py', 'subprocess.run', ('argv',)),
+# SLAB-049 non-HotSpot sites, each under RLIMIT_CPU and a wall deadline: the binary's own dynamic loader listing its
+# libraries (LD_TRACE_LOADED_OBJECTS=1, what ldd runs; the program never runs); TAP's own Python input generator;
+# gcc building the assembly-only harness, which assembles HotSpot's conductance matrix and exits before direct_SLU;
+# a one-second RLIMIT_CPU busy loop. Compiler and package identity are read in-process (no gcc --version or dpkg).
+RAW_SPAWNS += [('sundai_hotspot/provenance.py', 'subprocess.Popen', ('[loader, str(executable)]',)),
                ('sundai_hotspot/slab049.py', 'subprocess.run',
-                ("[sys.executable, '-c', _GENERATOR, json.dumps(spec), str(directory)]",)),
+                ("[sys.executable, '-c', script, json.dumps(spec), str(directory), *extra]",)),
                ('sundai_hotspot/slab049.py', 'subprocess.run', ('command',)),
                ('sundai_hotspot/slab049.py', 'subprocess.run',
                 ('[str(binary), config, lcf, str(grid), str(grid), repr(float(r_convec)), str(probe[0]), '
                  'str(probe[1]), str(matrix_path)]',)),
-               ('sundai_hotspot/slab049.py', 'subprocess.run', ("['gcc', '--version']",)),
                ('sundai_hotspot/test_gate_zero.py', 'subprocess.Popen',
                 ("[sys.executable, '-c', 'while True: pass']",))]
 

@@ -23,12 +23,17 @@ Source: Ma et al., "TAP-2.5D", DATE 2021. Conditions: 45 mm interposer, 64x64 gr
 package. The metric is TAP-2.5D's own selector (passive_interposer.py run_hotspot): the maximum over HotSpot's
 centre-mapped block temperatures, which HotSpot 6.0 prints to stdout and every version writes to the steady file.
 
-A record is assembled from the grant's ledger of admitted calls, by call id, never from directories a caller
-chooses, and every result is re-derived from the retained raw evidence with the strict evaluator-bound reader that
-settles a run (grid size, layer count, header format and complete block evidence); bound evidence that fails it is
-unusable, so the record is INCOMPLETE, never PASS. The pinned digest covers the references,
-their roles and pins, the frozen inputs, the predicate, the tolerance and the metric; changing any of them
-invalidates every record.
+A record is assembled by admitted call id from the operator's signed, hash-chained ledger (gate0_anchor), found from
+the manifest id under the operator's configured root, never from a record or a caller's directories. Every required
+call must agree across the operator's settle, reserve and launch tags (create-only, each read by its exact name), its
+signed ledger entries, its signed receipt and its raw files, and each result is re-derived from the retained raw
+evidence with the strict evaluator-bound reader that settles a run (grid size, layer count, header format and
+complete block evidence). Verdicts, most definitive first: FAIL (evidence that does not verify or disagrees, a
+completed miss, a replay that differs), ERROR (a tag that cannot be read), INCOMPLETE (no settle tag, a call that
+did not complete, or bound evidence the strict reader rejects), PASS. Without the operator's private key no grant,
+ledger entry or receipt verifies, so a fabricated ledger gives FAIL, never PASS. The pinned digest covers the
+references, their roles and pins, the frozen inputs, the predicate, the tolerance and the metric; changing any of
+them invalidates every record.
 
 Nothing here runs a solver.
 """
@@ -314,16 +319,30 @@ class EvidenceShapeError(GateZeroRefusal):
     or a stdout selector that does not match. Such an outcome is not usable; it can never count toward a PASS."""
 
 
-def verify_evidence(call: dict, reservation: dict, settled: dict, manifest_sha256: str,
-                    root: Path = REPO_ROOT) -> dict:
-    """Bind one admitted call's retained run to its manifest row, ledger entries, receipt, outputs and frozen inputs,
-    then re-derive its record from the raw files with the strict evaluator-bound reader (slab049.summarize_evaluation,
-    the same reader that settles a run). Nothing stored in a receipt, a settlement or a record is trusted.
+class MissingAnchor(GateZeroRefusal):
+    """No settle tag: the operator has not recorded this call's terminal state (a confirmed absence). INCOMPLETE."""
 
-    Raises GateZeroRefusal on any binding mismatch, and EvidenceShapeError when bound evidence fails the strict
-    reader. Reads files only.
+
+class NotCompleted(GateZeroRefusal):
+    """The call settled, but not as a completed solve (any status other than exited with 0). INCOMPLETE."""
+
+
+class Disagreement(GateZeroRefusal):
+    """The signed ledger, the receipts and the operator's tags disagree (a rolled-back, deleted, copied or replaced
+    ledger, or a tag that binds other hashes). FAIL."""
+
+
+def verify_evidence(call: dict, reservation: dict, settled: dict, manifest_sha256: str, public_hex: str,
+                    grant_id: str, root: Path = REPO_ROOT) -> dict:
+    """Bind one admitted call's retained run to its manifest row, its signed ledger entries, its signed receipt, its
+    outputs and the frozen inputs, then re-derive its record from the raw files with the strict evaluator-bound
+    reader (slab049.summarize_evaluation, the same reader that settles a run). Nothing stored in a receipt, a
+    settlement or a record is trusted.
+
+    Raises GateZeroRefusal on a binding mismatch, AuthenticationError on a receipt the operator did not sign, and
+    EvidenceShapeError when bound evidence fails the strict reader. Reads files only.
     """
-    from sundai_hotspot import slab049
+    from sundai_hotspot import gate0_anchor, slab049
     name, kind = call["id"], call["kind"]
     if reservation.get("call") != name or settled.get("call") != name:
         raise GateZeroRefusal(f"{name}: the ledger entries name another call")
@@ -335,11 +354,12 @@ def verify_evidence(call: dict, reservation: dict, settled: dict, manifest_sha25
         raise GateZeroRefusal(f"{name}: no receipt in {directory}")
     if settled.get("receipt_sha256") != _sha256(receipt_path):
         raise GateZeroRefusal(f"{name}: the receipt changed after the call settled")
-    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt = gate0_anchor.verify(public_hex, json.loads(receipt_path.read_text(encoding="utf-8")))
     if receipt.get("schema") != RECEIPT_SCHEMA or receipt.get("call") != name or receipt.get("reference") != call["reference"]:
         raise GateZeroRefusal(f"{name}: {directory} does not hold this admitted call's receipt")
-    if receipt.get("manifest_sha256") != manifest_sha256:
-        raise GateZeroRefusal(f"{name}: the receipt was admitted under another manifest")
+    if (receipt.get("manifest_sha256") != manifest_sha256 or receipt.get("grant_id") != grant_id
+            or receipt.get("reservation_sha256") != gate0_anchor.digest(reservation)):
+        raise GateZeroRefusal(f"{name}: the receipt binds another manifest, grant or reservation")
     if (receipt.get("layout_identity") != call["layout_identity"] or
             receipt.get("raw_layout_sha256") != call["raw_layout_sha256"]):
         raise GateZeroRefusal(f"{name}: only the pinned raw layout carries the paper-match claim ({SNAPPED_CLAIM})")
@@ -371,15 +391,52 @@ def verify_evidence(call: dict, reservation: dict, settled: dict, manifest_sha25
             "output_sha256": {o: outputs[o] for o in RECEIPT_OUTPUTS}}
 
 
-def _verify_run(kind: str, identity: dict, call: dict, row: dict, reservation: dict, settled: dict,
-                manifest_sha256: str, root: Path) -> dict:
-    """One required gate outcome: verify_evidence, then this binary, a completed grid-64 solve and the tolerance."""
-    evidence = verify_evidence(call, reservation, settled, manifest_sha256, root)
+def verify_call(call: dict, ledger: dict, tags, manifest: dict, manifest_sha256: str, root: Path = REPO_ROOT) -> dict:
+    """Evidence verification for one call: the operator's settle, reserve and launch tags (each read by its exact
+    name), the signed ledger's reservation and settlement, the signed receipt and the raw files must all agree.
+
+    Raises MissingAnchor (no settle tag: INCOMPLETE), NotCompleted (settled as a failure: INCOMPLETE), Disagreement
+    and AuthenticationError (FAIL), EvidenceShapeError (INCOMPLETE) and AnchorUnavailable (ERROR: the tags could not
+    be read; never an absence). Reads only.
+    """
+    from sundai_hotspot import gate0_anchor
+    name, grant = call["id"], ledger["grant"]
+    if name not in grant["calls"]:
+        raise NotCompleted(f"{name} is not in the operator's grant")
+    settle = tags.read(grant["grant_id"], "settle", name, manifest_sha256)
+    if settle is None:
+        raise MissingAnchor(f"{name}: no settle tag (the operator has not recorded a terminal state)")
+    reserve = tags.read(grant["grant_id"], "reserve", name, manifest_sha256)
+    launch = tags.read(grant["grant_id"], "launch", name, manifest_sha256)
+    entries = gate0_anchor.call_entries(ledger, name)
+    reservation, settlement = entries.get("reservation"), entries.get("settlement")
+    if reservation is None or settlement is None:
+        raise Disagreement(f"{name}: the operator's settle tag records a call this ledger lacks (rolled back, "
+                           "deleted or replaced)")
+    if settle["status"] != settlement["status"] or settle["receipt_sha256"] != settlement["receipt_sha256"] \
+            or settle["outputs"] != settlement["outputs"]:
+        raise Disagreement(f"{name}: the settle tag and the ledger's settlement bind different hashes")
+    if reserve is None or launch is None:
+        raise Disagreement(f"{name}: settled without the operator's reserve tag or the launch claim")
+    if launch["reservation_sha256"] != gate0_anchor.digest(reservation):
+        raise Disagreement(f"{name}: the launch claim binds another reservation than this ledger's")
+    if (settlement["status"], settlement["exit_status"]) != ("exited", 0):
+        raise NotCompleted(f"{name}: did not complete: settled {settlement['status']!r} with exit status "
+                           f"{settlement['exit_status']!r}")
+    evidence = verify_evidence(call, reservation, settlement, manifest_sha256,
+                               manifest["operator"]["public_key_ed25519"], grant["grant_id"], root)
+    return {"evidence": evidence, "reservation": reservation, "settlement": settlement,
+            "tags": {"reserve": reserve, "launch": launch, "settle": settle}}
+
+
+def _gate_outcome(kind: str, identity: dict, row: dict, verified: dict) -> dict:
+    """One required gate outcome from verified evidence: this binary, a completed grid-64 solve, the tolerance."""
+    evidence = verified["evidence"]
     receipt, item = evidence["receipt"], reference(row["reference"])
     if (receipt.get("evaluator") or {}).get("binary_sha256") != identity["binary_sha256"]:
-        raise GateZeroRefusal(f"{row['call']}: the receipt was produced by a different evaluator binary")
+        raise Disagreement(f"{row['call']}: the receipt was produced by a different evaluator binary")
     if receipt.get("grid") != GRID or receipt.get("status") != "exited" or receipt.get("exit_status") != 0:
-        raise GateZeroRefusal(f"{row['call']}: gate zero needs a completed grid-{GRID} solve")
+        raise Disagreement(f"{row['call']}: gate zero needs a completed grid-{GRID} solve")
     record, simulated = evidence["record"], evidence["simulated_c"]
     return {"call": row["call"], "role": row["role"], "replay_of": row["replay_of"], "reference": item.id,
             "layout_identity": RAW, "raw_layout_sha256": item.raw_layout_sha256, "paper_c": item.paper_c,
@@ -392,36 +449,30 @@ def _verify_run(kind: str, identity: dict, call: dict, row: dict, reservation: d
                             "same_index_stack": record["same_index_stack_at_active_argmax"]},
             "run_dir": str(evidence["directory"]), "receipt_sha256": evidence["receipt_sha256"],
             "output_sha256": evidence["output_sha256"], "config_sha256": record["config_sha256"],
-            "runtime": receipt.get("runtime"),
+            "runtime": receipt.get("runtime"), "settle_tag": verified["tags"]["settle"],
             "build_provenance_sha256": (receipt.get("build_provenance") or {}).get("sha256")}
 
 
-def _ledger_entry(ledger: Path, name: str, stage: str) -> dict | None:
-    path = Path(ledger) / f"{name}.{stage}.json"
-    if not path.is_file():
-        return None
-    entry = json.loads(path.read_text(encoding="utf-8"))
-    if entry.get("call") != name:
-        raise GateZeroRefusal(f"{path.name} is not the {stage} ledger entry of {name}")
-    return entry
+def build_record(kind: str, binary: Path, *, ledger_root: Path | None = None, tags=None,
+                 manifest_path: Path | None = None, root: Path = REPO_ROOT) -> dict:
+    """Gate-zero record from the operator's signed ledger and tags, by admitted call id (reads only).
 
+    The ledger's place is derived from the manifest id under the operator's configured root, never from a record.
+    Every required call of the frozen predicate must agree across its settle, reserve and launch tags, its signed
+    ledger entries, its signed receipt and its raw files (verify_call). Verdicts, most definitive first:
 
-def build_record(kind: str, binary: Path, ledger: Path, *, manifest_path: Path | None = None,
-                 root: Path = REPO_ROOT) -> dict:
-    """Gate-zero record from the grant's ledger, by admitted call id (reads files only).
-
-    The manifest must be exactly what this tree generates. Every required call of the frozen predicate is looked up
-    in the ledger; its reservation names its run directory, its settlement binds its receipt, and the receipt names
-    exactly that call. So one run can never stand for two calls: a replay pointed at its primary's directory, or at
-    a copy of it, is refused. The verdict is FAIL if a completed required call misses the tolerance or a replay
-    differs, INCOMPLETE if any required outcome is missing, unsettled or incomplete, and PASS only when all four
-    are present and hold.
+    - FAIL: the ledger is not the operator's, or it disagrees with the tags (rolled back, deleted, copied, replaced),
+      a receipt is unsigned or forged, a completed required call misses the tolerance, or a replay differs;
+    - ERROR: a tag could not be read (API, auth or network). Retry later; never an absence, never a PASS;
+    - INCOMPLETE: a required call has no settle tag yet, settled as a failure, or its bound evidence fails the
+      strict evaluator-bound reader;
+    - PASS: all four required outcomes are present, agree everywhere and hold.
     """
-    from sundai_hotspot import slab049
+    from sundai_hotspot import gate0_anchor, slab049
     if kind != GATE_ENGINE:
         raise GateZeroRefusal(f"the frozen predicate judges {GATE_ENGINE} only; {kind} cannot pass this gate "
                               "(native7 is the comparator)")
-    path = Path(manifest_path) if manifest_path is not None else slab049.EVIDENCE_DIR / slab049.MANIFEST_NAME
+    path = Path(manifest_path) if manifest_path is not None else slab049.MANIFEST_PATH
     manifest_bytes = path.read_bytes()
     try:
         manifest = slab049.check_manifest(manifest_bytes)
@@ -430,41 +481,46 @@ def build_record(kind: str, binary: Path, ledger: Path, *, manifest_path: Path |
     manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
     if references_sha256(root) != PINNED_REFERENCES_SHA256:
         raise GateZeroRefusal("gate-zero references are not the pinned set")
+    if not manifest["operator"]["public_key_ed25519"]:
+        raise GateZeroRefusal("no operator public key is pinned in the manifest: warden pins it before the grant")
     identity = evaluator_identity(kind, binary)
+    try:
+        ledger_root, tags = gate0_anchor.configured(manifest, ledger_root=ledger_root, tags=tags)
+    except (gate0_anchor.AuthenticationError, gate0_anchor.AnchorUnavailable) as exc:
+        raise GateZeroRefusal(f"the operator's ledger and tags are not configured: {exc}") from exc
     listed = {c["id"]: c for c in manifest["calls"]}
-    outcomes, missing = {}, []
-    for row in required_calls():
+    outcomes, missing, failures, errors, grant_id = {}, [], [], [], None
+    try:
+        ledger = gate0_anchor.read_ledger(ledger_root, manifest["operator"]["public_key_ed25519"], manifest_sha256)
+        grant_id = ledger["grant"]["grant_id"]
+    except gate0_anchor.AuthenticationError as exc:
+        ledger = None
+        failures.append({"call": None, "reason": f"the signed ledger cannot be verified: {exc}"})
+    for row in required_calls() if ledger is not None else ():
         if row["call"] not in listed or not listed[row["call"]]["gating"]:
             raise GateZeroRefusal(f"the manifest does not list the required call {row['call']}")
-        reservation = _ledger_entry(ledger, row["call"], "reserved")
-        if reservation is None:
-            missing.append({"call": row["call"], "reason": "not admitted: no reservation in the ledger"})
-            continue
-        if reservation.get("manifest_sha256") != manifest_sha256:
-            raise GateZeroRefusal(f"{row['call']}: reserved under another manifest")
-        settled = _ledger_entry(ledger, row["call"], "settled")
-        if settled is None:
-            missing.append({"call": row["call"], "reason": "unsettled: reserved but never settled"})
-            continue
-        if (settled.get("status"), settled.get("exit_status")) != ("exited", 0):
-            missing.append({"call": row["call"], "reason": f"did not complete: settled {settled.get('status')!r} "
-                                                           f"with exit status {settled.get('exit_status')!r}"})
-            continue
         try:
-            outcomes[row["call"]] = _verify_run(kind, identity, listed[row["call"]], row, reservation, settled,
-                                                manifest_sha256, root)
-        except EvidenceShapeError as exc:  # bound but unusable: never PASS
+            verified = verify_call(listed[row["call"]], ledger, tags, manifest, manifest_sha256, root)
+            outcomes[row["call"]] = _gate_outcome(kind, identity, row, verified)
+        except gate0_anchor.AnchorUnavailable as exc:
+            errors.append({"call": row["call"], "reason": f"the operator's tags could not be read: {exc}"})
+        except (MissingAnchor, NotCompleted, EvidenceShapeError) as exc:
             missing.append({"call": row["call"], "reason": str(exc)})
+        except (GateZeroRefusal, gate0_anchor.AuthenticationError, KeyError, TypeError, ValueError) as exc:
+            failures.append({"call": row["call"], "reason": f"{type(exc).__name__}: {exc}"})  # malformed: FAIL too
     if len({_canonical(o["runtime"]) for o in outcomes.values()}) > 1:
-        raise GateZeroRefusal("the required calls ran on different runtime library identities")
+        failures.append({"call": None, "reason": "the required calls ran on different runtime library identities"})
     replays = []
     for row in required_calls():
         if row["role"] == "replay" and row["call"] in outcomes and row["replay_of"] in outcomes:
             first, again = outcomes[row["replay_of"]]["output_sha256"], outcomes[row["call"]]["output_sha256"]
             replays.append({"replay": row["call"], "primary": row["replay_of"],
                             "byte_identical": all(first[name] == again[name] for name in REPLAY_OUTPUTS)})
-    if any(not o["within_tolerance"] for o in outcomes.values()) or any(not r["byte_identical"] for r in replays):
+    if (failures or any(not o["within_tolerance"] for o in outcomes.values())
+            or any(not r["byte_identical"] for r in replays)):
         verdict = "FAIL"
+    elif errors:
+        verdict = "ERROR"
     elif missing:
         verdict = "INCOMPLETE"
     else:
@@ -473,8 +529,8 @@ def build_record(kind: str, binary: Path, ledger: Path, *, manifest_path: Path |
         "schema": RECORD_SCHEMA, "verdict": verdict,
         "manifest": {"path": path.resolve().as_posix(), "sha256": manifest_sha256},
         "references_sha256": PINNED_REFERENCES_SHA256, "predicate": PREDICATE, "evaluator": identity,
-        "ledger": str(Path(ledger).resolve()), "calls": outcomes, "missing": missing, "replays": replays,
-        "tolerance_k": TOLERANCE_K, "tolerance_label": TOLERANCE_LABEL, "metric": METRIC,
+        "grant_id": grant_id, "calls": outcomes, "missing": missing, "failures": failures, "errors": errors,
+        "replays": replays, "tolerance_k": TOLERANCE_K, "tolerance_label": TOLERANCE_LABEL, "metric": METRIC,
         "temperature_label": TEMPERATURE_LABELS[kind],
         "claim_scope": {
             "paper_match": ([{"reference": r.id, "paper_c": r.paper_c, "claim": PAPER_MATCH_CLAIM}
@@ -491,14 +547,16 @@ def build_record(kind: str, binary: Path, ledger: Path, *, manifest_path: Path |
 
 
 def require_gate_zero(kind: str, binary: Path, record: Path | dict | None, *, grid: int = GRID,
-                      root: Path = REPO_ROOT, manifest_path: Path | None = None) -> dict:
-    """Refuse unless a PASS for exactly this evaluator kind, binary and grid re-derives from the record's ledger.
+                      ledger_root: Path | None = None, tags=None, root: Path = REPO_ROOT,
+                      manifest_path: Path | None = None) -> dict:
+    """Refuse unless a PASS for exactly this evaluator kind, binary and grid re-derives from the operator's signed
+    ledger and tags.
 
-    The record is rebuilt from the ledger it names: every required call by id, its receipt, its settlement, its
-    outputs and the frozen inputs, the metric recomputed from the steady file. A record's stored values and verdict
-    are never trusted; an edited FAIL cannot unlock, and evidence that changed after the record was made is refused.
-    This is integrity against edits of the record or of single files. A forger who rewrites raw outputs, receipts,
-    ledger and record consistently needs the authenticated operator boundary (warden's host supervisor).
+    The ledger is found from the manifest id under the operator's configured root (SLAB049_LEDGER_ROOT), never from
+    the record, and every required call is re-verified (verify_call): tags, signed ledger, signed receipt, outputs,
+    frozen inputs and the strict reader. A record's stored values and verdict are never trusted; an edited FAIL
+    cannot unlock, and evidence that changed after the record was made is refused. Without the operator's key no
+    one can write an entry, receipt or tag that verifies.
 
     Search and headroom call this before any evaluation. Producing the first receipts does not (reference_validation).
     """
@@ -512,9 +570,7 @@ def require_gate_zero(kind: str, binary: Path, record: Path | dict | None, *, gr
         raise GateZeroRefusal(f"a gate-zero PASS covers grid {GRID} only; grid {grid} is not covered")
     if data.get("references_sha256") != PINNED_REFERENCES_SHA256:
         raise GateZeroRefusal("gate-zero record names references other than the pinned set")
-    if not data.get("ledger"):
-        raise GateZeroRefusal("gate-zero record does not name its ledger")
-    rebuilt = build_record(kind, binary, Path(data["ledger"]), manifest_path=manifest_path, root=root)
+    rebuilt = build_record(kind, binary, ledger_root=ledger_root, tags=tags, manifest_path=manifest_path, root=root)
     if (data.get("manifest") or {}).get("sha256") != rebuilt["manifest"]["sha256"]:
         raise GateZeroRefusal("gate-zero record names another manifest")
     stored = data.get("calls") or {}
@@ -523,7 +579,9 @@ def require_gate_zero(kind: str, binary: Path, record: Path | dict | None, *, gr
             raise GateZeroRefusal(f"{name}: the evidence changed after the record was made")
     if rebuilt["verdict"] != "PASS":
         misses = [f"{o['call']} {o['delta_k']:+.2f} K" for o in rebuilt["calls"].values() if not o["within_tolerance"]]
-        raise GateZeroRefusal(f"{kind} gate zero is {rebuilt['verdict']}: misses {misses}, missing "
+        raise GateZeroRefusal(f"{kind} gate zero is {rebuilt['verdict']}: misses {misses}, failures "
+                              f"{[f['reason'] for f in rebuilt['failures']]}, errors "
+                              f"{[e['reason'] for e in rebuilt['errors']]}, missing "
                               f"{[m['call'] for m in rebuilt['missing']]}, replays {rebuilt['replays']} "
                               f"(the {TOLERANCE_LABEL} is {TOLERANCE_K} K)")
     return rebuilt

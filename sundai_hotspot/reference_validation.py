@@ -1,36 +1,39 @@
 """validate-reference (SLAB-049): the only path that may run an evaluator before it has passed gate zero.
 
-It produces the gate-zero receipts, so it cannot require a prior PASS; that would be circular. Everything the
-frozen manifest (docs/sentilab/diagnostics/SLAB-049/CALL-LIST-v4.json) does not allow is refused before anything
-is reserved or launched. In code, at this one entry (the manifest's enforcement.in_code_at_entry):
+It produces the gate-zero receipts, so it cannot require a prior PASS; that would be circular. The order of one call,
+as validate_call and _run_call write it:
 
-- the manifest must be byte-identical to what this tree generates (sources, references, raw layout pins, predicate,
-  accounting); the prior snapped manifest, kept as an artifact, is refused;
-- only a listed call id, with its listed --timeout (and engine, reference and grid if given), before the window
-  closes, on the listed architecture, on POSIX (the CPU limit is RLIMIT_CPU), and never under CI allocation
-  (CI_ALLOCATION=1): in CI every native HotSpot launch goes through sundai_hotspot.ci_gate, and SLAB-049 solves
-  run only on the grant host;
-- the binary must identify as the listed kind and match its build provenance, and must not carry the CI entry
-  guard; it runs from a private, content-addressed copy, and the shared libraries the loader resolves must be the
-  build's, hashed before and after;
-- the raw reference geometry is checked with the continuous rules only (margin, halo, spacing), never the search
-  lattice;
-- admission is atomic under the ledger lock: one manifest per ledger, each call reserved once (no retries), and the
-  admitted count and charged CPU must stay inside the manifest's cap; a reservation is never freed;
-- the reservation and receipt are written before staging; the solver runs in its own process group under
-  RLIMIT_CPU (its timeout) and a separate wall deadline (the same timeout); the group is killed and the solver
-  reaped on every path; every exit path after admission settles durably, setup failures included, and the ledger
-  settles a call even when no receipt can be written;
-- record and report re-derive every result from the raw files with the strict evaluator-bound reader.
+1. Refuse before anything is written: the manifest must be byte-identical to what this tree generates; only a
+   listed call id with its listed --timeout (and engine, reference and grid if given), inside the manifest's window,
+   on the listed architecture, on POSIX, never under CI allocation (CI_ALLOCATION=1); the operator's key must match
+   the manifest's pinned public key; a launch credential must be present.
+2. The operator's authority: the signed, hash-chained ledger (gate0_anchor) opens with the operator's grant, which
+   must name this manifest, this call, an open window and a cap. The operator's reserve tag must bind the call; no
+   launch or settle tag may exist; the ledger must hold no entry for the call; the anchored aggregate (every claimed
+   or ledgered call at its full envelope, or more if measured) plus this call's envelope must fit the grant's cap.
+3. Geometry (the pinned raw layout by the continuous rules, never the search lattice), the binary's identity on a
+   private content-addressed copy, its build provenance, and the libraries the loader resolves.
+4. A signed reservation is appended to the ledger. From here every exit path settles.
+5. Setup and staging: a fresh output directory, a signed receipt, the TAP inputs written fresh and compared with the
+   frozen ones.
+6. THE CLAIM (claim_launch): the launch tag is CREATED, create-only, immediately before launch. Only a successful
+   create launches. An existing tag refuses; an uncertain create consumes the call with no launch.
+7. The launch: the private copy in its own process group, under RLIMIT_CPU and a wall deadline both equal to its
+   timeout; the group is killed while the leader is unreaped, then the solver is reaped. Every other child (the TAP
+   generator, the two loader listings) runs under its own RLIMIT_CPU and wall deadline (slab049, provenance).
+8. Settlement: the signed receipt and a signed settlement entry, on every exit path after 4, with the measured CPU.
+   The operator then writes the settle tag (its message is printed).
 
 What this entry cannot do is the operator supervisor's contract (the manifest's enforcement section).
 
     python -m sundai_hotspot.reference_validation validate-reference --call CALL_ID --timeout SECONDS \\
-        --out FRESH_DIR --ledger GRANT_LEDGER_DIR [--binary PATH]
-    python -m sundai_hotspot.reference_validation record --kind hotspot6 --ledger GRANT_LEDGER_DIR --out RECORD.json
-    python -m sundai_hotspot.reference_validation report --ledger GRANT_LEDGER_DIR --out REPORT.json
+        --out FRESH_DIR [--ledger-root DIR] [--operator-key PEM] [--binary PATH]
+    python -m sundai_hotspot.reference_validation record --kind hotspot6 [--ledger-root DIR] --out RECORD.json
+    python -m sundai_hotspot.reference_validation report [--ledger-root DIR] --out REPORT.json
 
-Running validate-reference is a thermal solve. It needs warden's grant. `record` and `report` only read files.
+The ledger root, the operator key and the credentials come from the operator's environment (SLAB049_LEDGER_ROOT,
+SLAB049_OPERATOR_KEY, SLAB049_ANCHOR_TOKEN to claim launches, GH_TOKEN to read tags), never from the repository.
+Running validate-reference is a thermal solve. It needs warden's grant. `record` and `report` only read.
 """
 from __future__ import annotations
 
@@ -50,11 +53,17 @@ import sys
 import tempfile
 import time
 
-from sundai_hotspot import gate_zero, provenance, slab049
+from sundai_hotspot import gate0_anchor, gate_zero, provenance, slab049
+from sundai_hotspot.gate0_anchor import AnchorUnavailable, AuthenticationError, ClaimRefused, ClaimUncertain
 from sundai_hotspot.tap_oracle import REPO_ROOT
 
-MANIFEST_PATH = slab049.EVIDENCE_DIR / slab049.MANIFEST_NAME
-LOCK_NAME = "ledger.lock"
+try:  # CPU accounting (getrusage); Windows has none, and validate-reference refuses there (admit)
+    import resource
+except ImportError:
+    resource = None
+
+ANCHOR_TOKEN_ENV = "SLAB049_ANCHOR_TOKEN"   # the operator's tag-creation credential, supplied by its supervisor
+OPERATOR_SIGNER_ENV = "SLAB049_OPERATOR_KEY"  # path to the operator's Ed25519 private key, outside the repository
 # The solver gets exactly this environment: locale and zone as in production, one BLAS thread with a pinned
 # OpenBLAS dispatch so a replay is byte-identical whichever BLAS the loader resolves.
 SOLVER_ENVIRONMENT = {"LANG": "C", "LC_ALL": "C", "TZ": "UTC", "OPENBLAS_CORETYPE": "Haswell",
@@ -66,7 +75,7 @@ OLD_HOTSPOT7_MESH_ERROR_K = {"ascend910": 0.16, "micro150": 0.79}
 
 
 class CallRefused(RuntimeError):
-    """The requested call is not what the frozen manifest allows."""
+    """The requested call is not what the frozen manifest and the operator allow. Nothing was launched."""
 
 
 def _sha256(path: Path) -> str:
@@ -77,28 +86,18 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _cpu_s(who: int) -> float:
-    import resource
-    usage = resource.getrusage(who)
-    return usage.ru_utime + usage.ru_stime
+def _utc(text: str) -> datetime:
+    return datetime.fromisoformat(text.replace("Z", "+00:00"))
 
 
 def _children_cpu_s() -> float:
-    import resource
-    return _cpu_s(resource.RUSAGE_CHILDREN)
+    usage = resource.getrusage(resource.RUSAGE_CHILDREN)
+    return usage.ru_utime + usage.ru_stime
 
 
 def _self_cpu_s() -> float:
-    import resource
-    return _cpu_s(resource.RUSAGE_SELF)
-
-
-def _fsync_directory(directory: Path) -> None:
-    descriptor = os.open(directory, os.O_RDONLY)
-    try:
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
+    usage = resource.getrusage(resource.RUSAGE_SELF)
+    return usage.ru_utime + usage.ru_stime
 
 
 def _write_durably(path: Path, data: bytes) -> None:
@@ -109,17 +108,11 @@ def _write_durably(path: Path, data: bytes) -> None:
         handle.flush()
         os.fsync(handle.fileno())
     os.replace(temporary, path)
-    _fsync_directory(path.parent)
-
-
-def _create_durably(path: Path, data: bytes) -> None:
-    """Write-once (O_EXCL) with fsync: an existing entry is never replaced."""
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o444)
-    with os.fdopen(descriptor, "wb") as handle:
-        handle.write(data)
-        handle.flush()
-        os.fsync(handle.fileno())
-    _fsync_directory(path.parent)
+    descriptor = os.open(path.parent, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
 
 
 def _json(value) -> bytes:
@@ -128,7 +121,7 @@ def _json(value) -> bytes:
 
 def load_manifest(manifest_path: Path | None = None) -> tuple[dict, str]:
     """The manifest and its SHA-256, refused unless it is exactly what this tree generates."""
-    data = Path(manifest_path or MANIFEST_PATH).read_bytes()
+    data = Path(manifest_path or slab049.MANIFEST_PATH).read_bytes()
     try:
         return slab049.check_manifest(data), hashlib.sha256(data).hexdigest()
     except slab049.ManifestMismatch as exc:
@@ -141,10 +134,10 @@ def admit(call_id: str, manifest: dict, *, timeout_s: float | None, kind: str | 
     if os.environ.get("CI_ALLOCATION") == "1":
         raise CallRefused("validate-reference never runs under CI allocation: SLAB-049 solves run only on warden's "
                           "grant host, and in CI every native HotSpot launch goes through sundai_hotspot.ci_gate")
-    if os.name != "posix":
-        raise CallRefused("validate-reference needs POSIX: the CPU limit is RLIMIT_CPU on the solver process "
-                          "(Linux, macOS). Windows has no RLIMIT_CPU, and its equivalent, a Job Object process-time "
-                          "limit, is not implemented")
+    if os.name != "posix" or resource is None:
+        raise CallRefused("validate-reference needs POSIX: the CPU limit is RLIMIT_CPU on each process (Linux, "
+                          "macOS). Windows has no RLIMIT_CPU, and its equivalent, a Job Object process-time limit, "
+                          "is not implemented")
     calls = {c["id"]: c for c in manifest.get("calls", [])}
     if call_id not in calls:
         raise CallRefused(f"{call_id!r} is not a call in the frozen manifest")
@@ -156,62 +149,47 @@ def admit(call_id: str, manifest: dict, *, timeout_s: float | None, kind: str | 
     if (timeout_s is None or isinstance(timeout_s, bool) or not isinstance(timeout_s, (int, float))
             or float(timeout_s) != float(call["timeout_s"])):
         raise CallRefused(f"{call_id}: --timeout must be the listed {call['timeout_s']:g} s, not {timeout_s!r}")
-    deadline = datetime.fromisoformat(manifest["grant_window"]["not_after_utc"].replace("Z", "+00:00"))
-    if (now or _now()) > deadline:
-        raise CallRefused(f"the grant window closed at {deadline.isoformat()}")
+    if (now or _now()) > _utc(manifest["grant_window"]["not_after_utc"]):
+        raise CallRefused(f"the manifest's window closed at {manifest['grant_window']['not_after_utc']}")
     architecture = manifest["accounting"]["host_architecture"]
     if platform.machine() != architecture:
         raise CallRefused(f"this host is {platform.machine()}; the manifest lists {architecture}")
     return call
 
 
-@contextlib.contextmanager
-def _ledger_lock(ledger: Path):
-    import fcntl
-    ledger.mkdir(parents=True, exist_ok=True)
-    with open(ledger / LOCK_NAME, "a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+def operator_key(manifest: dict, key_path: Path | None):
+    """The operator's private key (from outside the repository) and the manifest's pinned public key; they must
+    match."""
+    pinned = manifest["operator"]["public_key_ed25519"]
+    if not pinned:
+        raise CallRefused("no operator public key is pinned in the manifest: warden pins it before the grant")
+    path = key_path or os.environ.get(OPERATOR_SIGNER_ENV)
+    if not path:
+        raise CallRefused(f"no operator key ({OPERATOR_SIGNER_ENV}): only the operator's supervisor can admit a call")
+    try:
+        key = gate0_anchor.load_private_key(Path(path))
+    except (OSError, ValueError, TypeError, AuthenticationError) as exc:
+        raise CallRefused(f"the operator key cannot be loaded: {type(exc).__name__}") from exc
+    if gate0_anchor.public_key_hex(key) != pinned:
+        raise CallRefused("the operator key is not the one the manifest pins")
+    return key, pinned
 
 
-def ledger_totals(ledger: Path) -> dict:
-    """Admitted calls and the CPU charged so far. A reservation is never freed: every admitted call, settled or not,
-    succeeded or failed, is charged at least its reservation, and a measured overshoot is charged in full."""
-    calls, charged, manifests = [], 0.0, set()
-    for path in sorted(Path(ledger).glob("*.reserved.json")):
-        reservation = json.loads(path.read_text(encoding="utf-8"))
-        calls.append(reservation["call"])
-        manifests.add(reservation["manifest_sha256"])
-        settled = path.with_name(path.name[: -len(".reserved.json")] + ".settled.json")
-        measured = json.loads(settled.read_text(encoding="utf-8")).get("charged_cpu_s") if settled.is_file() else None
+def anchored_charge(ledger: dict, tags: gate0_anchor.TagReader, grant: dict, manifest: dict,
+                    manifest_sha256: str) -> float:
+    """The grant's CPU already consumed, anchored: every call that has a launch tag or any ledger entry is charged its
+    full per-call envelope, or its measured CPU when that is larger. Unknown or failed work is never free."""
+    calls = {c["id"]: c for c in manifest["calls"]}
+    charged = 0.0
+    for name in grant["calls"]:
+        entries = gate0_anchor.call_entries(ledger, name)
+        launched = tags.read(grant["grant_id"], "launch", name, manifest_sha256) is not None
+        if not entries and not launched:
+            continue
+        measured = (entries.get("settlement") or {}).get("charged_cpu_s")
         known = isinstance(measured, (int, float)) and not isinstance(measured, bool) and math.isfinite(measured)
-        charged += max(float(reservation["reserved_cpu_s"]), float(measured) if known else 0.0)
-    return {"calls": calls, "charged_cpu_s": charged, "manifest_sha256": sorted(manifests)}
-
-
-def _admit_to_ledger(ledger: Path, call: dict, manifest: dict, manifest_sha256: str, reservation: dict) -> None:
-    """Atomic admission: under the ledger lock, check the cumulative count and CPU, then reserve exactly once."""
-    accounting = manifest["accounting"]
-    with _ledger_lock(ledger):
-        totals = ledger_totals(ledger)
-        if totals["manifest_sha256"] and totals["manifest_sha256"] != [manifest_sha256]:
-            raise CallRefused("this ledger holds calls admitted under another manifest; one ledger per manifest")
-        if call["id"] in totals["calls"]:
-            raise CallRefused(f"{call['id']} was already admitted in this ledger; calls are not retried")
-        if len(totals["calls"]) + 1 > accounting["calls"]:
-            raise CallRefused(f"the ledger has admitted {len(totals['calls'])} calls; the manifest allows "
-                              f"{accounting['calls']}")
-        reserved = float(call["accounting"]["reserved_cpu_s"])
-        if totals["charged_cpu_s"] + reserved > accounting["manifest_cpu_cap_s"] + 1e-9:
-            raise CallRefused(f"{totals['charged_cpu_s']:.2f} CPU-s charged plus this call's {reserved:g} would pass "
-                              f"the {accounting['manifest_cpu_cap_s']:g} CPU-s cap")
-        try:
-            _create_durably(ledger / f"{call['id']}.reserved.json", _json(reservation))
-        except FileExistsError as exc:
-            raise CallRefused(f"{call['id']} was already reserved in this ledger; calls are not retried") from exc
+        charged += max(float(calls[name]["accounting"]["reserved_cpu_s"]), float(measured) if known else 0.0)
+    return charged
 
 
 def _private_executable(binary: Path, directory: Path) -> Path:
@@ -242,13 +220,6 @@ def _wait_unreaped(pid: int, timeout: float) -> bool:
     return True
 
 
-def _cpu_limit(seconds: int):
-    def apply() -> None:
-        import resource
-        resource.setrlimit(resource.RLIMIT_CPU, (seconds, seconds))  # soft = hard: SIGKILL at the limit
-    return apply
-
-
 def stage(reference: gate_zero.Reference, spec: dict, out: Path) -> dict[str, str]:
     """Write the reference inputs fresh into the call's new directory; they must equal the frozen ones.
 
@@ -268,18 +239,61 @@ def stage(reference: gate_zero.Reference, spec: dict, out: Path) -> dict[str, st
     return staged
 
 
-def validate_call(call_id: str, out: Path, ledger: Path, *, timeout_s: float | None, binary: Path | None = None,
+def validate_call(call_id: str, out: Path, *, timeout_s: float | None, ledger_root: Path | None = None,
+                  operator_key_path: Path | None = None, anchor_request=None, binary: Path | None = None,
                   manifest_path: Path | None = None, kind: str | None = None, reference: str | None = None,
                   grid: int | None = None, now: datetime | None = None) -> dict:
-    """Run one listed call in a fresh process and settle its receipt. Needs no prior gate-zero PASS."""
+    """Admit and run one listed call (the order is in the module docstring). Needs no prior gate-zero PASS.
+
+    anchor_request is the operator's GitHub client (gate0_anchor.github_request with SLAB049_ANCHOR_TOKEN): it reads
+    the tags and creates the launch claim. Without it nothing is launched.
+    """
+    # 1. Manifest, call, operator key and launch credential: refused before anything is written.
     manifest, manifest_sha256 = load_manifest(manifest_path)
     call = admit(call_id, manifest, timeout_s=timeout_s, kind=kind, reference=reference, grid=grid, now=now)
+    key, public_hex = operator_key(manifest, operator_key_path)
+    if anchor_request is None:
+        token = os.environ.get(ANCHOR_TOKEN_ENV)
+        if not token:
+            raise CallRefused(f"no launch credential ({ANCHOR_TOKEN_ENV}): without the claim nothing launches")
+        anchor_request = gate0_anchor.github_request(manifest["anchor"]["repository"], token)
+    tags = gate0_anchor.TagReader(anchor_request)
+    configured_root = ledger_root or os.environ.get("SLAB049_LEDGER_ROOT")
+    if not configured_root:
+        raise CallRefused("no operator ledger root is configured (SLAB049_LEDGER_ROOT)")
+    root = Path(configured_root)
+    # 2. The operator's authority: grant, reserve tag, no earlier trace of this call, the anchored aggregate.
+    try:
+        ledger = gate0_anchor.read_ledger(root, public_hex, manifest_sha256)
+        grant = ledger["grant"]
+        moment = now or _now()
+        if call_id not in grant["calls"]:
+            raise CallRefused(f"the operator's grant does not include {call_id}")
+        if not _utc(grant["not_before_utc"]) <= moment <= _utc(grant["not_after_utc"]):
+            raise CallRefused(f"outside the grant's window {grant['not_before_utc']} .. {grant['not_after_utc']}")
+        if grant["cpu_cap_s"] > manifest["accounting"]["manifest_cpu_cap_s"]:
+            raise CallRefused("the grant's CPU cap exceeds the manifest's binding cap")
+        if tags.read(grant["grant_id"], "reserve", call_id, manifest_sha256) is None:
+            raise CallRefused(f"the operator has not reserved {call_id} (no reserve tag): no launch")
+        for kind_ in ("launch", "settle"):
+            if tags.read(grant["grant_id"], kind_, call_id, manifest_sha256) is not None:
+                raise CallRefused(f"{call_id} already has a {kind_} tag: a consumed call is never retried")
+        if gate0_anchor.call_entries(ledger, call_id):
+            raise CallRefused(f"{call_id} already has ledger entries: calls are not retried")
+        envelope = float(call["accounting"]["reserved_cpu_s"])
+        charged = anchored_charge(ledger, tags, grant, manifest, manifest_sha256)
+        if charged + envelope > grant["cpu_cap_s"] + 1e-9:
+            raise CallRefused(f"{charged:.2f} CPU-s already charged plus this call's {envelope:g} would pass the "
+                              f"grant's {grant['cpu_cap_s']:g} CPU-s cap")
+    except (AuthenticationError, AnchorUnavailable) as exc:  # no launch on uncertainty
+        raise CallRefused(f"{call_id}: {type(exc).__name__}: {exc}") from exc
+    # 3. Geometry, binary identity, build provenance, runtime libraries.
     pinned = gate_zero.reference(call["reference"])
     try:  # the pinned raw layout, judged by the continuous rules only (never the search lattice)
         spec = slab049.reference_spec(pinned.id)
     except slab049.ReferenceGeometryError as exc:
         raise CallRefused(f"{call_id}: {exc}") from exc
-    out, ledger = Path(out), Path(ledger)
+    out = Path(out)
     if out.exists() and any(out.iterdir()):
         raise CallRefused(f"{out} is not empty; every call needs a fresh directory")
     source = Path(binary or REPO_ROOT / call["binary"]).resolve()
@@ -298,50 +312,70 @@ def validate_call(call_id: str, out: Path, ledger: Path, *, timeout_s: float | N
         runtime = provenance.resolved_libraries(executable)
         if provenance.library_identity(runtime) != provenance.library_identity(build["provenance"]["libraries"]):
             raise CallRefused(f"{call_id}: the shared libraries the loader resolves now differ from the build's")
-        return _run_call(call, pinned, spec, out, ledger, manifest, manifest_sha256, executable, source, identity,
-                         build, runtime, now)
+        context = {"call": call, "pinned": pinned, "spec": spec, "out": out, "root": root, "key": key,
+                   "public_hex": public_hex, "grant": grant, "manifest_sha256": manifest_sha256,
+                   "anchor_request": anchor_request, "executable": executable, "source": source,
+                   "identity": identity, "build": build, "runtime": runtime, "now": now}
+        return _run_call(context)
     finally:
         shutil.rmtree(private, ignore_errors=True)
 
 
-def _run_call(call: dict, pinned: gate_zero.Reference, spec: dict, out: Path, ledger: Path, manifest: dict,
-              manifest_sha256: str, executable: Path, source: Path, identity: dict, build: dict, runtime: dict,
-              now: datetime | None) -> dict:
+def _sign_receipt(context: dict, receipt: dict) -> bytes:
+    return _json(gate0_anchor.sign(context["key"], {k: v for k, v in receipt.items() if k != "signature"}))
+
+
+def _run_call(context: dict) -> dict:
+    call, pinned, out = context["call"], context["pinned"], context["out"]
     timeout = float(call["timeout_s"])
-    argv = slab049.tap_argv(str(executable), call["grid"])
+    argv = slab049.tap_argv(str(context["executable"]), call["grid"])
     receipt = {
         "schema": gate_zero.RECEIPT_SCHEMA, "call": call["id"], "role": call["role"], "replay_of": call["replay_of"],
-        "manifest_sha256": manifest_sha256, "evaluator": identity, "reference": pinned.id, "role_in_gate": pinned.role,
+        "manifest_sha256": context["manifest_sha256"], "grant_id": context["grant"]["grant_id"],
+        "evaluator": context["identity"], "reference": pinned.id, "role_in_gate": pinned.role,
         "layout_identity": pinned.layout_identity, "raw_layout_sha256": pinned.raw_layout_sha256,
         "paper_c": pinned.paper_c, "grid": call["grid"], "argv": argv,
-        "binary": {"source": source.as_posix(), "executed": "a private content-addressed copy (0500 in a 0700 "
-                   "directory), removed after the call"},
-        "build_provenance": {"path": build["path"], "sha256": build["sha256"]}, "runtime": runtime,
-        "geometry": spec["geometry"], "temperature_label": gate_zero.TEMPERATURE_LABELS[call["kind"]],
-        "timeout_s": timeout, "cpu_limit_s": call["cpu_limit_s"], "solver_environment": SOLVER_ENVIRONMENT,
+        "binary": {"source": context["source"].as_posix(), "executed": "a private content-addressed copy (0500 in a "
+                   "0700 directory), removed after the call"},
+        "build_provenance": {"path": context["build"]["path"], "sha256": context["build"]["sha256"]},
+        "runtime": context["runtime"], "geometry": context["spec"]["geometry"],
+        "temperature_label": gate_zero.TEMPERATURE_LABELS[call["kind"]], "timeout_s": timeout,
+        "cpu_limit_s": call["cpu_limit_s"], "solver_environment": SOLVER_ENVIRONMENT,
         "host": {"architecture": platform.machine(), "node": platform.node(), "python": sys.version.split()[0]},
-        "reserved_utc": (now or _now()).isoformat(), "status": "reserved",
+        "reserved_utc": (context["now"] or _now()).isoformat(), "status": "reserved",
     }
-    reservation = {key: receipt[key] for key in ("call", "manifest_sha256", "evaluator", "reference", "grid",
-                                                 "reserved_utc")}
-    reservation.update({"out": out.resolve().as_posix(), "reserved_cpu_s": call["accounting"]["reserved_cpu_s"]})
-    _admit_to_ledger(ledger, call, manifest, manifest_sha256, reservation)
-    # From here every exit path settles: the reservation is consumed and stays charged, success or not.
+    # 4. The signed reservation. From here every exit path settles; the call stays consumed and charged.
+    try:
+        reservation = gate0_anchor.append(context["root"], context["key"], context["public_hex"],
+                                          context["manifest_sha256"], "reservation", call["id"],
+                                          {"out": out.resolve().as_posix(),
+                                           "reserved_cpu_s": call["accounting"]["reserved_cpu_s"]})
+    except (AuthenticationError, OSError) as exc:  # nothing reserved, nothing written, nothing launched
+        raise CallRefused(f"{call['id']}: the reservation was refused: {exc}") from exc
+    receipt["reservation_sha256"] = gate0_anchor.digest(reservation)
     started, clock = _now(), time.perf_counter()
     self_before, children_before = _self_cpu_s(), _children_cpu_s()
     phase = "setup"
     try:
+        # 5. Setup and staging.
         out.mkdir(parents=True, exist_ok=True)
-        _write_durably(out / "receipt.json", _json(receipt))  # reserved and identified before anything runs
+        _write_durably(out / "receipt.json", _sign_receipt(context, receipt))
         phase = "stage"
-        receipt["inputs"] = stage(pinned, spec, out)
+        receipt["inputs"] = stage(pinned, context["spec"], out)
         receipt["config_sha256"] = receipt["inputs"]["new_hotspot.config"]
-        _write_durably(out / "receipt.json", _json(receipt))
+        _write_durably(out / "receipt.json", _sign_receipt(context, receipt))
+        # 6. THE CLAIM: create the launch tag; only a successful create may launch.
+        phase = "claim"
+        claim = gate0_anchor.claim_launch(context["anchor_request"], context["grant"]["grant_id"],
+                                          context["manifest_sha256"], call["id"],
+                                          reservation_sha256=receipt["reservation_sha256"])
+        receipt["claim"] = {"ref": claim["ref"], "commit_sha": claim["commit_sha"]}
+        # 7. The launch.
         phase = "launch"
         solver_before = _children_cpu_s()
         with (out / "stdout.txt").open("wb") as stdout, (out / "stderr.txt").open("wb") as stderr:
             process = subprocess.Popen(argv, cwd=out, stdout=stdout, stderr=stderr, env=SOLVER_ENVIRONMENT,
-                                       start_new_session=True, preexec_fn=_cpu_limit(call["cpu_limit_s"]))
+                                       start_new_session=True, **provenance.cpu_limited(call["cpu_limit_s"]))
             phase = "solve"
             try:
                 exited = _wait_unreaped(process.pid, timeout)
@@ -358,9 +392,16 @@ def _run_call(call: dict, pinned: gate_zero.Reference, spec: dict, out: Path, le
             limited = -code == signal.SIGXCPU or (-code == signal.SIGKILL and
                                                    receipt["solver_cpu_s"] >= call["cpu_limit_s"] - 1)
             receipt["status"] = "exited" if code >= 0 else ("cpu_limit" if limited else "signalled")
-        receipt["runtime_after"] = provenance.resolved_libraries(executable)
-        if provenance.library_identity(receipt["runtime_after"]) != provenance.library_identity(runtime):
+        receipt["runtime_after"] = provenance.resolved_libraries(context["executable"])
+        if provenance.library_identity(receipt["runtime_after"]) != provenance.library_identity(context["runtime"]):
             receipt["status"] = "runtime_changed"
+    except ClaimRefused as exc:  # another request holds the launch, or no reserve tag binds the call: no launch
+        receipt["status"], receipt["exit_status"], receipt["error"] = "claim_refused", None, str(exc)
+    except ClaimUncertain as exc:  # consumed, never launched: the operator reconciles it with a failure settle tag
+        receipt["status"], receipt["exit_status"], receipt["error"] = "claim_uncertain", None, str(exc)
+    except (AnchorUnavailable, AuthenticationError) as exc:  # the claim could not be made: no launch
+        receipt["status"], receipt["exit_status"] = "claim_unavailable", None
+        receipt["error"] = f"{type(exc).__name__}: {exc}"
     except subprocess.TimeoutExpired:  # only the TAP generator can raise it here
         receipt["status"], receipt["exit_status"] = "stage_error", None
         receipt["error"] = "the TAP generator passed its wall deadline"
@@ -373,15 +414,16 @@ def _run_call(call: dict, pinned: gate_zero.Reference, spec: dict, out: Path, le
         receipt["exit_status"], receipt["error"] = None, f"{type(exc).__name__}: {exc}"
         raise
     finally:
-        _settle(call, receipt, out, ledger, started, clock, self_before, children_before)
+        _settle(context, receipt, started, clock, self_before, children_before)
     return receipt
 
 
-def _settle(call: dict, receipt: dict, out: Path, ledger: Path, started: datetime, clock: float,
-            self_before: float, children_before: float) -> None:
-    """Durable settlement on every exit path: the receipt when it can be written, then always the write-once ledger
-    entry. A call whose output directory or receipt cannot be written still settles in the ledger, with a null
-    receipt digest; its reservation stays charged and it is never retried."""
+def _settle(context: dict, receipt: dict, started: datetime, clock: float, self_before: float,
+            children_before: float) -> None:
+    """Durable settlement on every exit path after the reservation: the signed receipt when it can be written, then
+    always the signed settlement entry. A call whose receipt cannot be written still settles, with a null receipt
+    digest; it stays consumed and charged, and is never retried."""
+    call, out = context["call"], context["out"]
     receipt["started_utc"], receipt["finished_utc"] = started.isoformat(), _now().isoformat()
     receipt["wall_s"] = time.perf_counter() - clock
     try:
@@ -401,26 +443,30 @@ def _settle(call: dict, receipt: dict, out: Path, ledger: Path, started: datetim
     receipt["overshoot_cpu_s"] = max(0.0, receipt["charged_cpu_s"] - call["accounting"]["reserved_cpu_s"])
     receipt_sha256 = None
     try:
-        _write_durably(out / "receipt.json", _json(receipt))
+        _write_durably(out / "receipt.json", _sign_receipt(context, receipt))
         receipt_sha256 = _sha256(out / "receipt.json")
     except OSError as exc:  # nowhere to write it: the ledger still records the terminal failure
         receipt["receipt_error"] = repr(exc)
-    settled = {key: receipt.get(key) for key in ("call", "manifest_sha256", "status", "exit_status", "started_utc",
-                                                 "finished_utc", "wall_s", "solver_cpu_s", "children_cpu_s",
-                                                 "self_cpu_s", "charged_cpu_s", "overshoot_cpu_s", "outputs", "error",
-                                                 "receipt_error")}
-    settled.update({"reserved_cpu_s": call["accounting"]["reserved_cpu_s"], "out": out.resolve().as_posix(),
+    payload = {key: receipt.get(key) for key in ("status", "exit_status", "started_utc", "finished_utc", "wall_s",
+                                                 "solver_cpu_s", "children_cpu_s", "self_cpu_s", "charged_cpu_s",
+                                                 "overshoot_cpu_s", "outputs", "error", "receipt_error", "claim")}
+    payload.update({"reserved_cpu_s": call["accounting"]["reserved_cpu_s"], "out": out.resolve().as_posix(),
                     "receipt_sha256": receipt_sha256})
-    _create_durably(ledger / f"{call['id']}.settled.json", _json(settled))
+    gate0_anchor.append(context["root"], context["key"], context["public_hex"], context["manifest_sha256"],
+                        "settlement", call["id"], payload)
+    receipt["settle_tag_message"] = gate0_anchor.tag_message(
+        "settle", context["grant"]["grant_id"], context["manifest_sha256"], call["id"], status=receipt["status"],
+        receipt_sha256=receipt_sha256, outputs=receipt["outputs"])
 
 
-def report(ledger: Path, manifest_path: Path | None = None) -> dict:
-    """From the ledger, by admitted call id, with no extra call (reads files only).
+def report(*, ledger_root: Path | None = None, tags: gate0_anchor.TagReader | None = None,
+           manifest_path: Path | None = None) -> dict:
+    """From the authenticated ledger and the operator's tags, by admitted call id, with no extra call (reads only).
 
-    A call is usable only after its manifest row, reservation, settlement, receipt, outputs and frozen inputs bind
-    (gate_zero.verify_evidence) and its raw files pass the strict evaluator-bound reader; its diagnostics are then
-    derived from those raw files, never read from a stored solve record. Every other call is in not_completed with
-    the reason. From the usable calls:
+    A call is usable only after gate_zero.verify_call binds it (signed ledger and receipt, the operator's reserve,
+    launch and settle tags, outputs, frozen inputs) and its raw files pass the strict evaluator-bound reader; its
+    diagnostics are derived from those raw files, never read from a stored solve record. Every other call is in
+    not_completed with the reason. From the usable calls:
 
     - HotSpot 6.0's (and the comparator's) grid 32 -> 64 change per reference, on the block-centre metric and the
       grid peak;
@@ -428,31 +474,26 @@ def report(ledger: Path, manifest_path: Path | None = None) -> dict:
     - whether each replay's outputs are byte-identical to its primary's;
     - the same-index spreader-sink drop and the same-index stack at the active argmax (reported, not asserted).
     """
-    data = Path(manifest_path or MANIFEST_PATH).read_bytes()
-    manifest, manifest_sha256 = json.loads(data), hashlib.sha256(data).hexdigest()
+    manifest, manifest_sha256 = load_manifest(manifest_path)  # the pinned operator key comes from the tree's manifest
+    root, tags = gate0_anchor.configured(manifest, ledger_root=ledger_root, tags=tags)
+    ledger = gate0_anchor.read_ledger(root, manifest["operator"]["public_key_ed25519"], manifest_sha256)
     entries, not_completed = {}, []
     for call in manifest["calls"]:
         entry = {"call": call["id"], "kind": call["kind"], "reference": call["reference"], "grid": call["grid"],
                  "role": call["role"], "replay_of": call["replay_of"], "gating": call["gating"], "usable": False}
         try:
-            reservation = gate_zero._ledger_entry(ledger, call["id"], "reserved")
-            settled = gate_zero._ledger_entry(ledger, call["id"], "settled")
-            if reservation is None or settled is None:
-                raise gate_zero.GateZeroRefusal("not admitted" if reservation is None else "unsettled")
-            entry.update({"settled": settled.get("status"), "exit_status": settled.get("exit_status"),
-                          "charged_cpu_s": settled.get("charged_cpu_s"), "solver_cpu_s": settled.get("solver_cpu_s")})
-            if (settled.get("status"), settled.get("exit_status")) != ("exited", 0):
-                raise gate_zero.GateZeroRefusal(f"did not complete: settled {settled.get('status')!r} with exit "
-                                                f"status {settled.get('exit_status')!r}")
-            evidence = gate_zero.verify_evidence(call, reservation, settled, manifest_sha256)
-        except gate_zero.GateZeroRefusal as exc:  # EvidenceShapeError included
-            entry["reason"] = str(exc)
-            not_completed.append({"call": call["id"], "reason": str(exc)})
+            verified = gate_zero.verify_call(call, ledger, tags, manifest, manifest_sha256)
+        except (gate_zero.GateZeroRefusal, AuthenticationError, AnchorUnavailable, KeyError, TypeError,
+                ValueError) as exc:  # a malformed signed entry is unusable too
+            entry["reason"] = f"{type(exc).__name__}: {exc}"
+            not_completed.append({"call": call["id"], "reason": entry["reason"]})
             entries[call["id"]] = entry
             continue
-        record = evidence["record"]
-        entry.update({"usable": True, "selector_c": evidence["simulated_c"],
-                      "grid_peak_c": record["active_layer_grid_peak"]["peak_C"],
+        evidence, record = verified["evidence"], verified["evidence"]["record"]
+        entry.update({"usable": True, "settled": verified["settlement"]["status"],
+                      "charged_cpu_s": verified["settlement"].get("charged_cpu_s"),
+                      "solver_cpu_s": verified["settlement"].get("solver_cpu_s"),
+                      "selector_c": evidence["simulated_c"], "grid_peak_c": record["active_layer_grid_peak"]["peak_C"],
                       "outputs": evidence["output_sha256"], "drop": record["spreader_sink_drop_diagnostic"],
                       "stack": record["same_index_stack_at_active_argmax"]})
         entries[call["id"]] = entry
@@ -477,8 +518,9 @@ def report(ledger: Path, manifest_path: Path | None = None) -> dict:
                                           if g64.get("usable") and replay.get("usable") else None),
                 "spreader_sink_drop_g64": g64.get("drop"), "same_index_stack_g64": g64.get("stack"),
             })
-    return {"schema": "sentilab-slab049-manifest-report-v3", "manifest_sha256": manifest_sha256,
-            "calls": list(entries.values()), "rows": rows, "not_completed": not_completed,
+    return {"schema": "sentilab-slab049-manifest-report-v4", "manifest_sha256": manifest_sha256,
+            "grant_id": ledger["grant"]["grant_id"], "calls": list(entries.values()), "rows": rows,
+            "not_completed": not_completed,
             "note": "nothing here is frozen as a mesh error; the next protocol sets its own"}
 
 
@@ -490,6 +532,8 @@ def main(argv: list[str] | None = None) -> int:
     summary = sub.add_parser("report")
     run.add_argument("--call", required=True)
     run.add_argument("--timeout", type=float, required=True, help="the call's listed timeout, in seconds")
+    run.add_argument("--operator-key", type=Path,
+                     help=f"the operator's Ed25519 key file (default: ${OPERATOR_SIGNER_ENV})")
     run.add_argument("--binary", type=Path)
     run.add_argument("--kind")
     run.add_argument("--reference")
@@ -497,23 +541,27 @@ def main(argv: list[str] | None = None) -> int:
     record.add_argument("--kind", required=True, choices=sorted(gate_zero.EVALUATOR_KINDS))
     record.add_argument("--binary", type=Path)
     for command in (run, record, summary):
-        command.add_argument("--ledger", type=Path, required=True)
+        command.add_argument("--ledger-root", type=Path,
+                             help="the operator's ledger root (default: $SLAB049_LEDGER_ROOT)")
         command.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.command == "report":
-        args.out.write_text(json.dumps(report(args.ledger), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        args.out.write_text(json.dumps(report(ledger_root=args.ledger_root), indent=2, sort_keys=True) + "\n",
+                            encoding="utf-8")
         return 0
     if args.command == "validate-reference":
         try:
-            receipt = validate_call(args.call, args.out, args.ledger, timeout_s=args.timeout, binary=args.binary,
-                                    kind=args.kind, reference=args.reference, grid=args.grid)
+            receipt = validate_call(args.call, args.out, timeout_s=args.timeout, ledger_root=args.ledger_root,
+                                    operator_key_path=args.operator_key, binary=args.binary, kind=args.kind,
+                                    reference=args.reference, grid=args.grid)
         except CallRefused as exc:
             print(f"refused: {exc}", file=sys.stderr)
             return 2
-        print(json.dumps({k: receipt.get(k) for k in ("call", "status", "exit_status", "wall_s", "charged_cpu_s")}))
+        print(json.dumps({k: receipt.get(k) for k in ("call", "status", "exit_status", "wall_s", "charged_cpu_s",
+                                                      "settle_tag_message")}))
         return 0 if receipt["status"] == "exited" and receipt["exit_status"] == 0 else 1
     binary = args.binary or REPO_ROOT / gate_zero.EVALUATOR_KINDS[args.kind]["binary"]
-    result = gate_zero.build_record(args.kind, binary, args.ledger)
+    result = gate_zero.build_record(args.kind, binary, ledger_root=args.ledger_root)
     args.out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(result["verdict"])
     return 0 if result["verdict"] == "PASS" else 1

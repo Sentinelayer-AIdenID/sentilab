@@ -17,7 +17,6 @@ matrix that direct_SLU() would factorize, then stops. It never calls the solver.
 from __future__ import annotations
 
 import argparse
-import concurrent.futures
 import hashlib
 import json
 import math
@@ -30,7 +29,7 @@ import subprocess
 import sys
 import tempfile
 
-from sundai_hotspot import gate_zero
+from sundai_hotspot import gate0_anchor, gate_zero, provenance
 from sundai_hotspot.coupling_variant import (
     COUPLINGS, NEW, OLD, VARIANT_MACRO, PackageStack, area_resistances, cell_resistances,
 )
@@ -382,8 +381,20 @@ def native_toolchain_problem() -> str | None:
     return None
 
 
+COMPILE_CPU_LIMIT_S = 120    # each gcc compile or link of the assembly harness
+COMPILE_TIMEOUT_S = 600
+HARNESS_CPU_LIMIT_S = 60     # one assembly-only harness run
+HARNESS_TIMEOUT_S = 120
+
+
 def _run(command: list[str], cwd: Path) -> None:
-    process = subprocess.run(command, cwd=cwd, capture_output=True, text=True, check=False)
+    """A fixed gcc compile or link of the assembly harness, under RLIMIT_CPU (gcc's own children inherit it) and a
+    wall deadline. The compiles run one at a time, so the limit is set in the child before exec."""
+    try:
+        process = subprocess.run(command, cwd=cwd, capture_output=True, text=True, check=False,
+                                 timeout=COMPILE_TIMEOUT_S, **provenance.cpu_limited(COMPILE_CPU_LIMIT_S))
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"{' '.join(command)} passed its {COMPILE_TIMEOUT_S} s deadline") from None
     if process.returncode != 0:
         raise RuntimeError(f"{' '.join(command)} failed:\n{process.stderr[-4000:]}")
 
@@ -403,9 +414,8 @@ class AssemblyHarness:
                   str(self.common / (Path(source).stem + ".o"))], self.common) for source in COMMON_SOURCES]
         jobs.append((["gcc", *CFLAGS, *include, "-c", str(HARNESS_SOURCE), "-o", str(self.common / "harness.o")],
                      self.common))
-        with concurrent.futures.ThreadPoolExecutor(max_workers=min(8, os.cpu_count() or 1)) as pool:
-            for future in [pool.submit(_run, command, cwd) for command, cwd in jobs]:
-                future.result()
+        for command, cwd in jobs:
+            _run(command, cwd)
         self.include = include
 
     def build(self, label: str, grid_source: str, defines: tuple[str, ...] = ()) -> Path:
@@ -430,7 +440,8 @@ class AssemblyHarness:
         try:
             process = subprocess.run([str(binary), config, lcf, str(grid), str(grid), repr(float(r_convec)),
                                       str(probe[0]), str(probe[1]), str(matrix_path)],
-                                     cwd=inputs, capture_output=True, text=True, check=False, timeout=120)
+                                     cwd=inputs, capture_output=True, text=True, check=False,
+                                     timeout=HARNESS_TIMEOUT_S, **provenance.cpu_limited(HARNESS_CPU_LIMIT_S))
             if process.returncode != 0:
                 raise RuntimeError(f"assembly harness failed: {process.stderr[-2000:]}")
             matrix = matrix_path.read_bytes()
@@ -525,9 +536,10 @@ def assembly_confirmation(workdir: Path) -> dict:
                 "interior_vertical_K_per_W": {f"{a}-{b}": value for (a, b), value in sorted(run["vertical"].items())},
                 "matrix_sha256": run["matrix"]["sha256"],
             })
-    gcc = subprocess.run(["gcc", "--version"], capture_output=True, text=True, check=False).stdout.splitlines()[0]
-    return {"toolchain": gcc, "platform": sys.platform, "inputs": "sundai_hotspot/probe_results/baseline_center_32",
-            "rows": rows}
+    # The compiler that built the harness, read in-process from its ELF .comment section (no extra process).
+    toolchain = "; ".join(provenance.elf_compilers(old_binary.read_bytes())) or None
+    return {"toolchain": toolchain, "platform": sys.platform,
+            "inputs": "sundai_hotspot/probe_results/baseline_center_32", "rows": rows}
 
 
 def analytic_report(include_assembly: bool) -> dict:
@@ -773,8 +785,38 @@ system.x, system.y = spec["x"], spec["y"]
 system.gen_flp("sample")
 system.gen_ptrace("sample")
 """
-GENERATOR_CPU_LIMIT_S = 10   # RLIMIT_CPU on the TAP generator process
-GENERATOR_TIMEOUT_S = 60     # its wall deadline
+GENERATOR_CPU_LIMIT_S = 3    # RLIMIT_CPU on the TAP generator process (it needs about 0.3 CPU-s)
+GENERATOR_TIMEOUT_S = 30     # its wall deadline
+# What the generator executes and reads in this repository, and nothing else (warden #56967 P2-4). Derived by running
+# it for both gate references under a Python audit hook (trace_generator; ExecutedSetTests re-derives it on every
+# run): it imports these TAP modules, reads util/hotspot.config (the HotSpot config it rewrites into
+# new_hotspot.config) and starts no process.
+GENERATOR_SOURCES = ("sundai_tap/block_occupation.py", "sundai_tap/bstree.py", "sundai_tap/fastSA.py",
+                     "sundai_tap/init_placement.py", "sundai_tap/passive_interposer.py", "sundai_tap/system.py",
+                     "sundai_tap/util/fill_space.py")
+GENERATOR_DATA = ("sundai_tap/util/hotspot.config",)
+# The audit hook trace_generator prepends to the generator: every repository module it imports, every file it opens
+# for reading, every process it starts and the CPU limit it runs under, written to the path in argv[3] at exit.
+_TRACE = r"""
+import atexit, json, os, resource, sys
+_reads, _spawns = set(), []
+def _audit(event, args):
+    if event == "open" and isinstance(args[0], str):
+        mode, flags = args[1], args[2]
+        if ((("r" in mode and not any(c in mode for c in "wax+")) if isinstance(mode, str)
+                else (flags & os.O_ACCMODE) == os.O_RDONLY)):
+            _reads.add(os.path.abspath(args[0]))
+    elif event.startswith(("subprocess.", "os.system", "os.exec", "os.posix_spawn", "os.spawn", "os.fork")):
+        _spawns.append(event)
+sys.addaudithook(_audit)
+def _report():
+    seen = {"modules": sorted({os.path.abspath(m.__file__) for m in list(sys.modules.values())
+                               if getattr(m, "__file__", None)}), "reads": sorted(_reads), "spawns": _spawns,
+            "rlimit_cpu": list(resource.getrlimit(resource.RLIMIT_CPU))}
+    with open(sys.argv[3], "w") as handle:
+        json.dump(seen, handle)
+atexit.register(_report)
+"""
 MARGIN_MM = 0.5              # the oracle's interposer margin, microbump halo included
 MIN_DIE_GAP_MM = 0.1         # TAP-2.5D Eqn. (10): die bodies at least 0.1 mm apart
 CONTINUOUS_RULES = ("continuous placement rules only: each die with its microbump halo stays 0.5 mm inside the "
@@ -804,7 +846,8 @@ def load_raw_layout(reference, root: Path = REPO_ROOT) -> dict:
     if raw_layout_sha256(document["raw"]) != reference.raw_layout_sha256:
         raise ReferenceGeometryError(f"{reference.id}: the frozen raw layout does not match its pinned content hash")
     record = root / reference.raw_record
-    if record.is_file() and raw_layout_sha256(json.loads(record.read_text(encoding="utf-8"))["raw"]) !=             reference.raw_layout_sha256:
+    if (record.is_file() and
+            raw_layout_sha256(json.loads(record.read_text(encoding="utf-8"))["raw"]) != reference.raw_layout_sha256):
         raise ReferenceGeometryError(f"{reference.id}: SLAB-048's raw section in {reference.raw_record} changed "
                                      "after it was pinned")
     return document
@@ -883,19 +926,14 @@ def reference_spec(reference_id: str, root: Path = REPO_ROOT) -> dict:
     return spec_from_raw_layout(load_raw_layout(reference, root), reference.fixture)
 
 
-def _cpu_limit(seconds: int):
-    def apply() -> None:
-        import resource
-        resource.setrlimit(resource.RLIMIT_CPU, (seconds, seconds))
-    return apply
-
-
-def generate_reference(spec: dict, directory: Path) -> dict[str, bytes]:
-    """Run TAP's own generator for `spec` in `directory`; return the HotSpot inputs with a local, LF-only LCF."""
+def generate_reference(spec: dict, directory: Path, *, trace_to: Path | None = None) -> dict[str, bytes]:
+    """Run TAP's own generator for `spec` in `directory`, one Python process under RLIMIT_CPU and a wall deadline;
+    return the HotSpot inputs with a local, LF-only LCF. trace_to (trace_generator only) adds the audit hook."""
     from sundai_hotspot.tap_oracle import TAP_ROOT
-    limit = {"preexec_fn": _cpu_limit(GENERATOR_CPU_LIMIT_S)} if os.name == "posix" else {}
-    process = subprocess.run([sys.executable, "-c", _GENERATOR, json.dumps(spec), str(directory)], cwd=TAP_ROOT,
-                             capture_output=True, text=True, check=False, timeout=GENERATOR_TIMEOUT_S, **limit)
+    script, extra = (_TRACE + _GENERATOR, [str(trace_to)]) if trace_to else (_GENERATOR, [])
+    process = subprocess.run([sys.executable, "-c", script, json.dumps(spec), str(directory), *extra], cwd=TAP_ROOT,
+                             capture_output=True, text=True, check=False, timeout=GENERATOR_TIMEOUT_S,
+                             **provenance.cpu_limited(GENERATOR_CPU_LIMIT_S))
     if process.returncode != 0:
         raise RuntimeError(f"TAP generator failed: {process.stderr[-2000:]}")
     # TAP writes in text mode; keep the Linux bytes (LF) the run host produces, whatever generated them.
@@ -911,6 +949,33 @@ def generate_reference(spec: dict, directory: Path) -> dict[str, bytes]:
 def reference_files(reference_id: str) -> dict[str, bytes]:
     with tempfile.TemporaryDirectory(prefix="slab049-reference-") as directory:
         return generate_reference(reference_spec(reference_id), Path(directory))
+
+
+def trace_generator(spec: dict) -> dict[str, list]:
+    """What TAP's generator imports, reads and starts, and its CPU limit, while it writes one reference's inputs: the
+    derivation of
+    GENERATOR_SOURCES and GENERATOR_DATA. It runs exactly as generate_reference runs it, in a scratch directory, under
+    a Python audit hook (sys.addaudithook). Imports and reads are repository paths; the interpreter's own files
+    (standard library, site-packages) and bytecode caches are left out."""
+    root = REPO_ROOT.resolve()
+    runtime = {Path(prefix).resolve() for prefix in (sys.prefix, sys.base_prefix, sys.exec_prefix)}
+
+    def repository(paths: list[str]) -> list[str]:
+        found = set()
+        for text in paths:
+            path = Path(text).resolve()
+            if (path.is_relative_to(root) and "__pycache__" not in path.parts
+                    and not any(path.is_relative_to(prefix) for prefix in runtime)):
+                found.add(path.relative_to(root).as_posix())
+        return sorted(found)
+
+    with tempfile.TemporaryDirectory(prefix="slab049-trace-") as scratch:
+        out, trace = Path(scratch) / "out", Path(scratch) / "trace.json"
+        out.mkdir()
+        generate_reference(spec, out, trace_to=trace)
+        seen = json.loads(trace.read_text(encoding="utf-8"))
+    return {"imports": repository(seen["modules"]), "reads": repository(seen["reads"]), "spawns": seen["spawns"],
+            "rlimit_cpu": seen["rlimit_cpu"]}
 
 
 def tap_argv(binary: str, grid: int = 64) -> list[str]:
@@ -960,6 +1025,7 @@ def committed_run1_signature() -> list[dict]:
 # ----------------------------------------------------------------------------------------------
 
 MANIFEST_NAME = "CALL-LIST-v4.json"
+MANIFEST_PATH = EVIDENCE_DIR / MANIFEST_NAME  # the one executable manifest: validate-reference, record, report
 MANIFEST_SCHEMA = "sentilab-slab049-manifest-v4"
 # The snapped-primary manifest astra and warden reviewed at 6413a3c stays in the tree byte-identical, as an
 # artifact. validate-reference never reads it.
@@ -982,24 +1048,42 @@ SUPERVISOR_POLICY = "docs/sentilab/evidence/SLAB-039/SUPERVISOR-POLICY.json"
 TIMING = {  # micro150/TIMING.json, Azure x86_64 (16 CPU); HotSpot 6.0 SuperLU is unmeasured and assumed alike
     "grid64_expected_wall_s": 4.76,
     "grid32_expected_wall_s": 0.49,
-    "grid64_timeout_s": 60.0,
+    "grid64_timeout_s": 50.0,  # lowered from 60 (warden #56967 P2-3) so the true worst case fits the binding cap
     "grid32_timeout_s": 15.0,
-    "per_call_overhead_cpu_s": 1.5,  # forecast: TAP generation, hashing, library hashing, staging, record
+    "expected_overhead_cpu_s": 1.5,  # forecast per call: generation, hashing, listings, staging, signing, record
 }
+# validate-reference's own CPU per call (manifest check, ledger and tag reads, identity hashing, staging, the wait,
+# settlement and signing). Declared, measured in every receipt (self_cpu_s) and charged in full if exceeded; the
+# parent is not under RLIMIT_CPU (a limit hit mid-solve would orphan the solver), the supervisor's cgroup is its cap.
+PARENT_ALLOWANCE_CPU_S = 3.0
 MANIFEST_CPU_CAP_S = 600.0    # this manifest's cap, 10 CPU-min since 6413a3c: the tighter one, it binds
 ROOM_ENVELOPE_CPU_S = 1800.0  # the room's earlier prospective envelope, 30 CPU-min: looser, it does not bind
-MANIFEST_SOURCES = (
-    "scripts/build_hotspot6.sh", "sundai_hotspot/Makefile", "sundai_hotspot/temperature_grid.c",
-    "sundai_hotspot/tap_oracle.py", "sundai_hotspot/tap_oracle_worker.py", "sundai_hotspot/gate_zero.py",
-    "sundai_hotspot/evaluators.py", "sundai_hotspot/reference_validation.py", "sundai_hotspot/slab049.py",
-    "sundai_hotspot/provenance.py", "sundai_hotspot6/UPSTREAM_COMMIT", "sundai_hotspot6/UPSTREAM_BLOBS.txt",
-    "sundai_hotspot6/temperature_grid.c", "sundai_hotspot6/Makefile", "sundai_tap/passive_interposer.py",
-    "sundai_tap/system.py", "sundai_tap/util/hotspot.config", "sundai_tap/util/fill_space.py",
-    "sundai_tap/configs/sys_ascend910.cfg", "sundai_tap/configs/sys_micro150.cfg",
-    "docs/sentilab/diagnostics/SLAB-049/references/raw-layouts/ascend910-tap25d-fig6a.json",
-    "docs/sentilab/diagnostics/SLAB-049/references/raw-layouts/micro150-tap25d-fig5a.json",
-    SUPERVISOR_POLICY,
-)
+LIMITS_LOWERED = ("to fit the true worst case under the 600 CPU-s cap (warden #56967 P2-3): the grid-64 timeout, "
+                  "and with it the solver's RLIMIT_CPU and wall deadline, from 60 to 50 s; the TAP generator's "
+                  "RLIMIT_CPU from 10 to 3 CPU-s and its wall deadline from 60 to 30 s. At 60 s the worst case would "
+                  "be 642 CPU-s.")
+# The operator's Ed25519 public key (raw, hex). Warden's supervisor holds the private key and pins this before the
+# grant (a reviewed commit, which regenerates the manifest). Until then every admission and every gate check refuses.
+OPERATOR_PUBLIC_KEY: str | None = None
+ANCHOR_REPOSITORY = "Sentinelayer-AIdenID/sentilab"
+# Where the executed pins are read (the tests point it at a copy of the tree).
+EXECUTED_ROOT = REPO_ROOT
+EXECUTED_DERIVATION = (
+    "Pinned: only what a call executes or reads (warden #56967 P2-4). (1) The TAP generator's repository files: "
+    "slab049.trace_generator runs the generator exactly as validate-reference does, for both gate references, "
+    "under a Python audit hook (sys.addaudithook) and lists every repository module it imports and every "
+    "repository file it opens for reading; it starts no process. That list is GENERATOR_SOURCES plus "
+    "GENERATOR_DATA, and ExecutedSetTests re-derives it on every run, so a new import or read fails the tests "
+    "until it is pinned. (2) The config: TAP's util/hotspot.config (read by the generator) and the frozen "
+    "new_hotspot.config it becomes, which is one of (3) the inputs: each reference's frozen inputs (their "
+    "SHA256SUMS digest) and raw layout hash, under references and calls. (4) The solver binary, by identity "
+    "rather than by path (with -g its bytes depend on the build directory): each call hashes the private copy it "
+    "executes, binds that hash and the build provenance in its signed receipt, and the gate admits only the binary "
+    "with that hash. Not pinned: the validate-reference, gate and record code. What it decides (the predicate, "
+    "tolerance, metric, references, calls, limits, accounting, operator key and anchor) is written into this "
+    "manifest, so a change to any of it changes the manifest; edits anywhere else leave the manifest and every "
+    "PASS intact. The interpreter and its standard library are the host's (each receipt records the Python "
+    "version).")
 PURPOSES = {
     (HOTSPOT6, "primary", 64): "gate zero: the block-centre metric within 1.0 K of the paper (native6 target)",
     (HOTSPOT6, "replay", 64): ("gate zero: fresh-process replay of the native6 primary; byte-identical outputs and "
@@ -1012,48 +1096,68 @@ PURPOSES = {
 }
 IN_CODE_AT_ENTRY = (
     "manifest identity: validate-reference reads only CALL-LIST-v4.json and refuses it unless it is byte-identical "
-    "to what this tree generates (every source pin, reference input, raw layout hash, the predicate and the "
-    "accounting); the prior snapped manifest is refused",
+    "to what this tree generates (the executed pins, every reference input and raw layout hash, the predicate, the "
+    "limits, the accounting, the operator key and the anchor); the prior snapped manifest is refused",
     "listed calls only: the call id with its listed --timeout, and the engine, reference and grid when given; "
-    "before the window closes; on the listed architecture; on POSIX only, because the CPU limit is RLIMIT_CPU "
-    "(Linux and macOS; Windows has no RLIMIT_CPU, and its equivalent, a Job Object process-time limit, is not "
-    "implemented, so the entry refuses there); never under CI allocation (CI_ALLOCATION=1), where every native "
-    "HotSpot launch goes through sundai_hotspot.ci_gate and SLAB-049 solves never run",
+    "before the manifest's window closes; on the listed architecture; on POSIX only, because the CPU limit is "
+    "RLIMIT_CPU (Linux and macOS; Windows has no RLIMIT_CPU, and its equivalent, a Job Object process-time limit, "
+    "is not implemented, so the entry refuses there); never under CI allocation (CI_ALLOCATION=1), where every "
+    "native HotSpot launch goes through sundai_hotspot.ci_gate and SLAB-049 solves never run",
+    "the operator's authority, before anything is written: the operator key (SLAB049_OPERATOR_KEY) must be the "
+    "pinned public key's; the launch credential (SLAB049_ANCHOR_TOKEN) must be present; the signed, hash-chained "
+    "ledger at the place derived from this manifest's id must verify, and its grant (entry 0) must name this "
+    "manifest, this call, an open window and a cap no higher than 600 CPU-s, and this very ledger directory (a "
+    "copy elsewhere is refused); the operator's reserve tag must exist and bind the call; no launch or settle tag "
+    "and no ledger entry may exist for it; and the anchored aggregate (every call with a launch tag or a ledger "
+    "entry, charged its full per-call envelope or its measured CPU if larger) plus this call's envelope must fit "
+    "the grant's cap. Any tag that cannot be read refuses: no launch on uncertainty",
     "evaluator identity: identity markers and SHA-256 are read from a private content-addressed copy (mode 0500 in a "
     "0700 directory), and that copy is the file executed; build provenance must describe exactly those bytes; a "
-    "binary built with the CI entry guard is refused; the shared libraries the loader resolves must equal the "
-    "build's, and are hashed again after the run (a change settles the call as runtime_changed)",
+    "binary built with the CI entry guard is refused; the shared libraries its own loader resolves must equal the "
+    "build's, and are listed again after the run (a change settles the call as runtime_changed)",
     "raw geometry: the pinned raw layout hash (the vendored copy, and SLAB-048's record whenever it is in the tree) "
     "and the continuous rules only; the search lattice is never applied",
-    "atomic admission: under an exclusive ledger lock, one manifest per ledger, each call reserved once (O_EXCL, no "
-    "retries), refused when the admitted count would pass 12 or charged plus reserved CPU would pass 600 CPU-s "
-    "(a reservation is never freed: every admitted call, settled or not, failed or not, is charged at least its "
-    "reservation, and a measured overshoot is charged in full)",
-    "reserve before staging: the reservation and the receipt are on disk (fsync) before inputs are generated or the "
-    "solver starts",
-    "per-process CPU and a separate wall deadline: the solver runs in its own session and process group under "
-    "RLIMIT_CPU equal to its timeout (soft = hard, so SIGKILL at the limit) and a wall deadline equal to its "
-    "timeout; the TAP generator runs under RLIMIT_CPU 10 s and a 60 s deadline",
-    "kill and reap: after the solver exits or times out, its process group is killed and the solver is reaped",
-    "settlement: the receipt and the ledger settlement are written durably on every exit path of this process "
-    "after admission, setup failures included; when no output directory or receipt can be written, the ledger "
-    "still settles the call (receipt digest null), keeping the status, the measured CPU (children and self) and "
-    "any overshoot",
-    "outcomes by admitted call id: record and report read the ledger, never caller-chosen directories, verify every "
-    "binding and re-derive each result with the strict evaluator-bound reader; a missing or unusable required "
-    "outcome gives INCOMPLETE",
+    "the signed reservation before staging: appended under the ledger's lock, which refuses a second reservation "
+    "for the call; from then on the call is consumed and charged its full envelope, never reclaimed",
+    "the claim, immediately before launch: validate-reference CREATES gate0-<grant>/launch-<call> (create-only). "
+    "Only a successful create launches; an existing ref refuses; an uncertain create (no answer after sending) "
+    "consumes the call with no launch, for the operator to reconcile; nothing is retried from the absence of a "
+    "settle tag",
+    "per-process CPU and wall limits on every child, soft = hard, so the kernel kills at the limit: the solver in "
+    "its own session and process group at RLIMIT_CPU and a wall deadline both equal to its timeout, the group "
+    "killed while the solver is unreaped, then the solver reaped; the TAP generator at 3 CPU-s and 30 s; each of "
+    "the two loader listings at 1 CPU-s and 10 s, in its own session, killed as a group at its deadline",
+    "settlement: on every exit path after the reservation, the signed receipt and the signed settlement entry, with "
+    "the status, the measured CPU (children and self) and any overshoot; when no receipt can be written, the "
+    "ledger still settles the call (receipt digest null). The settle tag's exact message is printed for the "
+    "operator",
+    "verification (record and report): by admitted call id from the signed ledger, never caller-chosen "
+    "directories; every tag read by its exact name. A missing settle tag gives INCOMPLETE; a tag that cannot be "
+    "read gives ERROR; a ledger, receipt or tag that does not verify or disagrees gives FAIL; a completed call is "
+    "re-derived with the strict evaluator-bound reader. PASS needs all four required outcomes to agree everywhere "
+    "and hold",
 )
 SUPERVISOR_CONTRACT = (
-    "admission identity: authenticate the operator and the host; keep the ledger append-only and protected from "
-    "deletion or rewrite (deleting a reservation would readmit its call); one ledger per grant",
-    "a cumulative CPU budget over the whole process group, descendants and lifecycle work included, enforced while "
-    "calls run (for example a cgroup v2 budget that kills at the limit); in code, RLIMIT_CPU is per process and the "
-    "ledger's cumulative check acts at admission only",
-    "kill and reap if validate-reference itself dies (SIGKILL, OOM, host loss): settle the call as unknown, charge "
-    "its reservation, and never let it become a free replacement",
-    "a protected runtime image: run the loader and libraries from immutable copies; in code, the executable is a "
-    "private copy, but libraries are hashed before and after the run, which cannot detect a swap-and-restore "
-    "during it",
+    "key custody: the operator's Ed25519 private key is generated and held by warden's supervisor and never enters "
+    "the repository; its public key is pinned here (OPERATOR_PUBLIC_KEY) by a reviewed commit before the grant",
+    "the grant: the signed grant written as ledger entry 0 (gate0_anchor.open_ledger: grant id, call ids, window, "
+    "CPU cap of at most 600 CPU-s) under the operator's ledger root, one ledger per manifest; the root kept on "
+    "storage the operator protects (append-only, backed up). Deleting or rolling it back cannot readmit a call "
+    "(the tags refuse), but it loses the evidence",
+    "the anchor: a repository ruleset on refs/tags/gate0-* that makes the namespace create-only (no update, no "
+    "delete, no force-push, no bypass); reserve-<call> created before each launch; settle-<call> created after "
+    "settlement with the printed message, failures included; a claim_uncertain call reconciled by settling it as a "
+    "failure, never relaunched",
+    "credentials: SLAB049_ANCHOR_TOKEN (create tags in this repository) only in the supervisor's environment, never "
+    "in the repository; GH_TOKEN with read access for record and report",
+    "a cumulative CPU budget over the whole process group, descendants and validate-reference itself included, "
+    "enforced while calls run (for example a cgroup v2 budget that kills at the limit); in code, RLIMIT_CPU is per "
+    "process and the parent's own CPU is measured and charged, not capped",
+    "kill and reap if validate-reference itself dies (SIGKILL, OOM, host loss): the call stays consumed (its launch "
+    "tag blocks any retry); settle it as unknown and charge its envelope",
+    "a protected runtime image: the loader, the libraries, the Python interpreter and its bytecode caches from "
+    "immutable copies; in code, the executable is a private copy, but libraries are listed before and after the "
+    "run, which cannot detect a swap-and-restore during it",
     "a trusted clock for the grant window; the code reads the host clock",
     "the final grant reconciles the 600 CPU-s manifest cap with the room's 1,800 CPU-s envelope; neither is raised "
     "here",
@@ -1064,8 +1168,8 @@ class ManifestMismatch(ValueError):
     """A manifest that is not exactly the one this tree generates."""
 
 
-def _file_sha256(path: str) -> str:
-    return hashlib.sha256((REPO_ROOT / path).read_bytes()).hexdigest()
+def _file_sha256(path: str, root: Path = REPO_ROOT) -> str:
+    return hashlib.sha256((root / path).read_bytes()).hexdigest()
 
 
 def _sums_digest(directory: str) -> str:
@@ -1077,10 +1181,27 @@ def _policy_reserves() -> dict:
     return {"reap_s": float(limits["reap_seconds"]), "settlement_tail_s": float(limits["settlement_tail_cpu_seconds"])}
 
 
-def per_call_reserve_s() -> float:
-    """The overhead assumption per call: the generation-hashing-record forecast plus SLAB-039's reap and tail."""
+def executed_pins(root: Path | None = None) -> dict[str, str]:
+    """SHA-256 of each repository file a call executes or reads through the TAP generator (EXECUTED_DERIVATION)."""
+    return {path: _file_sha256(path, root or EXECUTED_ROOT) for path in GENERATOR_SOURCES + GENERATOR_DATA}
+
+
+def per_call_limits() -> dict:
+    """Every CPU limit a call can spend besides its solver, from the limits themselves (warden #56967 P2-3)."""
     reserves = _policy_reserves()
-    return TIMING["per_call_overhead_cpu_s"] + reserves["reap_s"] + reserves["settlement_tail_s"]
+    return {"generator_cpu_s": float(GENERATOR_CPU_LIMIT_S), "generator_wall_s": float(GENERATOR_TIMEOUT_S),
+            "loader_listings": 2, "loader_listing_cpu_s": float(provenance.LOADER_CPU_LIMIT_S),
+            "loader_listing_wall_s": float(provenance.LOADER_TIMEOUT_S),
+            "parent_allowance_cpu_s": PARENT_ALLOWANCE_CPU_S, "reap_s": reserves["reap_s"],
+            "settlement_tail_s": reserves["settlement_tail_s"]}
+
+
+def per_call_reserve_s() -> float:
+    """A call's worst case beyond its solver's RLIMIT_CPU: the generator's and both loader listings' RLIMIT_CPU, the
+    parent's declared allowance, and SLAB-039's reap and settlement tail."""
+    limits = per_call_limits()
+    return (limits["generator_cpu_s"] + limits["loader_listings"] * limits["loader_listing_cpu_s"]
+            + limits["parent_allowance_cpu_s"] + limits["reap_s"] + limits["settlement_tail_s"])
 
 
 def _manifest_call(role: str, engine: str, kind: str, engine_role: str, reference, grid: int,
@@ -1096,11 +1217,12 @@ def _manifest_call(role: str, engine: str, kind: str, engine_role: str, referenc
         "inputs": {"dir": reference.inputs, "sha256sums_sha256": _sums_digest(reference.inputs)},
         "timeout_s": timeout, "cpu_limit_s": math.ceil(timeout),
         "command": (f"python -m sundai_hotspot.reference_validation validate-reference --call {name} "
-                    f"--timeout {timeout:g} --out <fresh empty dir> --ledger <the grant's ledger dir>"),
+                    f"--timeout {timeout:g} --out <fresh empty dir> --ledger-root <operator ledger root> "
+                    f"--operator-key <operator key file>"),
         "argv": tap_argv(f"<private content-addressed copy of {binary}>", grid),
         "accounting": {"expected_cpu_s": round(TIMING[f"grid{grid}_expected_wall_s"] +
-                                               TIMING["per_call_overhead_cpu_s"], 2),
-                       "reserved_cpu_s": timeout + per_call_reserve_s()},
+                                               TIMING["expected_overhead_cpu_s"], 2),
+                       "reserved_cpu_s": math.ceil(timeout) + per_call_reserve_s()},
     }
 
 
@@ -1115,18 +1237,20 @@ def build_call_list() -> dict:
         raise ValueError("call ids must be unique")
     if sorted(row["call"] for row in gate_zero.required_calls()) != sorted(c["id"] for c in calls if c["gating"]):
         raise ValueError("the gating rows must be exactly the predicate's required calls")
-    reserves, per_call = _policy_reserves(), per_call_reserve_s()
+    limits, per_call = per_call_limits(), per_call_reserve_s()
     grid64, grid32 = sum(c["grid"] == 64 for c in calls), sum(c["grid"] == 32 for c in calls)
-    timeouts = sum(c["timeout_s"] for c in calls)
-    forecast = timeouts + per_call * len(calls)
-    if forecast > MANIFEST_CPU_CAP_S:  # warden #56856: generation fails when the worst case leaves the cap
-        raise ValueError(f"the forecast worst case, {forecast:g} CPU-s, exceeds the manifest cap of "
+    solver_limits = sum(c["cpu_limit_s"] for c in calls)
+    worst = sum(c["accounting"]["reserved_cpu_s"] for c in calls)
+    if worst > MANIFEST_CPU_CAP_S:  # warden #56856 and #56967: generation fails when the worst case leaves the cap
+        raise ValueError(f"the true worst case, {worst:g} CPU-s, exceeds the manifest cap of "
                          f"{MANIFEST_CPU_CAP_S:g} CPU-s")
-    arithmetic = (f"{grid64} x {TIMING['grid64_timeout_s']:g} s + {grid32} x {TIMING['grid32_timeout_s']:g} s = "
-                  f"{timeouts:g} s of timeouts, plus {len(calls)} x {per_call:g} CPU-s = {per_call * len(calls):g} "
-                  f"CPU-s of overhead assumption ({TIMING['per_call_overhead_cpu_s']:g} generation, hashing and record; "
-                  f"{reserves['reap_s']:g} reap and {reserves['settlement_tail_s']:g} settlement tail from "
-                  f"SLAB-039's SUPERVISOR-POLICY.json) = {forecast:g} CPU-s")
+    arithmetic = (f"per call, the solver's RLIMIT_CPU (its timeout) plus {per_call:g} CPU-s: "
+                  f"{limits['generator_cpu_s']:g} generator RLIMIT_CPU + {limits['loader_listings']} x "
+                  f"{limits['loader_listing_cpu_s']:g} loader-listing RLIMIT_CPU + {limits['parent_allowance_cpu_s']:g} "
+                  f"declared parent allowance + {limits['reap_s']:g} reap + {limits['settlement_tail_s']:g} "
+                  f"settlement tail (the last two from SLAB-039's SUPERVISOR-POLICY.json). {grid64} x "
+                  f"({TIMING['grid64_timeout_s']:g} + {per_call:g}) + {grid32} x ({TIMING['grid32_timeout_s']:g} + "
+                  f"{per_call:g}) = {solver_limits:g} + {per_call * len(calls):g} = {worst:g} CPU-s")
     kinds = (HOTSPOT6, "hotspot7_default")
     return {
         "schema": MANIFEST_SCHEMA,
@@ -1144,9 +1268,46 @@ def build_call_list() -> dict:
         "grant_window": {"not_before": "warden's grant against the merged build",
                          "not_after_utc": "2026-11-01T12:00:00Z",
                          "per_call_receipts_record": "effective start and stop (UTC), wall and CPU seconds"},
-        "source": {"pin": ("SHA-256 of every file that builds, stages or judges the calls; validate-reference refuses "
-                           "a manifest that is not exactly what the tree generates"),
-                   "files_sha256": {path: _file_sha256(path) for path in MANIFEST_SOURCES}},
+        "source": {"pin": ("only what the calls execute or read; validate-reference and the gate refuse a manifest "
+                           "that is not exactly what the tree generates"),
+                   "derivation": EXECUTED_DERIVATION,
+                   "generator_sha256": executed_pins(),
+                   "solver": ("by identity: the SHA-256 of the private copy each call executes, bound in its signed "
+                              "receipt with the build provenance; the gate admits only that binary")},
+        "operator": {
+            "public_key_ed25519": OPERATOR_PUBLIC_KEY,
+            "status": ("pinned" if OPERATOR_PUBLIC_KEY else
+                       "pending: warden pins the operator's public key before the grant; until then every admission "
+                       "and every gate check refuses"),
+            "custody": ("the private key belongs to the operator supervisor (warden) and never lives in the "
+                        "repository; validate-reference reads it from SLAB049_OPERATOR_KEY, a PEM file outside it"),
+            "signs": ["the grant (ledger entry 0)", "each reservation and settlement entry", "each receipt"],
+        },
+        "ledger": {
+            "dir": "<SLAB049_LEDGER_ROOT>/slab049-<this manifest's SHA-256>",
+            "derivation": "from this manifest's id under the operator's configured root, never from a record",
+            "entries": ("000000.json, 000001.json, ...: canonical JSON, each signed with the operator key and naming "
+                        "the SHA-256 of the entry before it; entry 0 is the grant, every other a reservation or a "
+                        "settlement of one call"),
+            "grant_schema": gate0_anchor.GRANT_SCHEMA, "entry_schema": gate0_anchor.ENTRY_SCHEMA,
+            "grant_fields": ["grant_id", "manifest_sha256", "calls", "not_before_utc", "not_after_utc", "cpu_cap_s",
+                             "ledger_dir"],
+        },
+        "anchor": {
+            "repository": ANCHOR_REPOSITORY,
+            "namespace": f"refs/{gate0_anchor.TAG_NAMESPACE}<grant-id>/",
+            "tags": {"reserve-<call-id>": "created by the operator before launch",
+                     "launch-<call-id>": ("created by validate-reference immediately before launch: the atomic claim; "
+                                          "only a successful create launches"),
+                     "settle-<call-id>": ("created by the operator after settlement: the terminal status and the "
+                                          "receipt and output hashes, failures included")},
+            "message_schema": gate0_anchor.TAG_SCHEMA,
+            "ruleset": "create-only: no update, no delete, no force-push, no bypass",
+            "reading": ("each tag by its exact name (GET /git/ref/<ref>, then its commit); an authenticated 404 is "
+                        "absent, any other failure is ERROR, never absent and never PASS"),
+            "credentials": {"claim": "SLAB049_ANCHOR_TOKEN, from the supervisor's environment; without it nothing "
+                                     "launches", "read": "GH_TOKEN, for record and report"},
+        },
         "builds": {
             kind: {"command": gate_zero.EVALUATOR_KINDS[kind]["build"], "make": gate_zero.EVALUATOR_KINDS[kind]["make"],
                    "binary": gate_zero.EVALUATOR_KINDS[kind]["binary"],
@@ -1180,14 +1341,16 @@ def build_call_list() -> dict:
         "calls": calls,
         "accounting": {
             "calls": len(calls), "grid64_calls": grid64, "grid32_calls": grid32, "max_runs": len(calls), "retries": 0,
-            "timing_basis": TIMING, "policy_reserves": reserves, "per_call_reserve_cpu_s": per_call,
-            "timeouts_s": timeouts,
+            "timing_basis": TIMING, "limits": limits, "per_call_reserve_cpu_s": per_call,
+            "solver_cpu_limits_s": solver_limits,
             "arithmetic": arithmetic,
-            "forecast_worst_case_cpu_s": forecast,
-            "forecast_label": ("a forecast under declared assumptions, not a CPU guarantee: RLIMIT_CPU bounds each "
-                               "solver process at its timeout and the generator at 10 CPU-s; the parent's own work "
-                               "and any unreaped descendants are measured, not capped; the hard cumulative "
-                               "process-group cap is the supervisor's"),
+            "worst_case_cpu_s": worst,
+            "worst_case_label": ("the true worst case from the limits: every child process (solver, generator, loader "
+                                 "listings) runs under RLIMIT_CPU with soft = hard, so the kernel kills it at its "
+                                 "limit; the parent's own CPU is a declared allowance, measured in every receipt and "
+                                 "charged in full if exceeded; the hard cumulative process-group cap is the "
+                                 "supervisor's"),
+            "limits_lowered": LIMITS_LOWERED,
             "expected_cpu_s": round(sum(c["accounting"]["expected_cpu_s"] for c in calls), 2),
             "manifest_cpu_cap_s": MANIFEST_CPU_CAP_S,
             "room_envelope_cpu_s": ROOM_ENVELOPE_CPU_S,
@@ -1247,7 +1410,7 @@ def check_manifest(manifest_bytes: bytes) -> dict:
     if manifest_bytes == fresh:
         return manifest
     regenerated = json.loads(fresh)
-    pins, current = manifest.get("source", {}).get("files_sha256", {}), regenerated["source"]["files_sha256"]
+    pins, current = manifest.get("source", {}).get("generator_sha256", {}), regenerated["source"]["generator_sha256"]
     drift = sorted(path for path in set(pins) | set(current) if pins.get(path) != current.get(path))
     sections = sorted(key for key in set(manifest) | set(regenerated) if manifest.get(key) != regenerated.get(key))
     raise ManifestMismatch(f"the manifest is not what this tree generates: source pins differ for {drift}; "

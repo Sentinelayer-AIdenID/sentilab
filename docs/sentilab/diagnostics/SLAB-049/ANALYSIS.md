@@ -213,7 +213,7 @@ Line numbers in this section are on this branch.
 | Tooling (no solves) | `sundai_hotspot/slab049.py`: analytic report, committed-output residuals, slab inputs, the raw reference layouts and their frozen inputs, the manifest and its check, and the strict per-solve record |
 | C harness (assembly only) | `sundai_hotspot/coupling_assembly_harness.c` |
 | HotSpot 6.0 evaluator | `sundai_hotspot6/` (upstream `a7a3286e`, blob-checked), `scripts/build_hotspot6.sh` (x86_64 and aarch64), `sundai_hotspot/evaluators.py` (`HotSpot6Oracle`, `make_oracle`) |
-| Gate zero | `sundai_hotspot/gate_zero.py` (raw references, the frozen predicate, identities, ledger-assembled records, refusal), `sundai_hotspot/reference_validation.py` (`validate-reference`, the one enforcement entry, and `record`/`report` by call id) and `sundai_hotspot/provenance.py` (build provenance and runtime library identity) |
+| Gate zero | `sundai_hotspot/gate_zero.py` (raw references, the frozen predicate, identities, records verified against the operator's ledger and tags, refusal), `sundai_hotspot/gate0_anchor.py` (the operator's signed, hash-chained ledger, the create-only tags, the atomic launch claim), `sundai_hotspot/reference_validation.py` (`validate-reference`, the one enforcement entry, and `record`/`report` by call id) and `sundai_hotspot/provenance.py` (build provenance, runtime library identity, and the RLIMIT_CPU setting of every child) |
 | Raw reference layouts | `docs/sentilab/diagnostics/SLAB-049/references/raw-layouts/`: SLAB-048's raw sections (PR #57 at `063f659`), pinned by their own content hash |
 | Tests | `sundai_hotspot/test_sink_coupling.py`, `sundai_hotspot/test_gate_zero.py`. The container smoke loop picks them up automatically. |
 
@@ -233,8 +233,8 @@ Binary hashes depend on the toolchain. The grant host pins its own hashes at run
 source identity of NEW is the SHA-256 of `temperature_grid.c`, `Makefile` and `coupling_variant.py`, as listed
 in `problem.generator_sha256`.
 
-**What the tests show** (99 tests across both modules; the native, fake-solver and built-binary tests run on
-POSIX and in the CI image; 38 code mutants, each caught by a named test):
+**What the tests show** (126 tests across both modules; the native, fake-solver and built-binary tests run
+on POSIX and in the CI image; 76 code mutants, each caught by a named test):
 
 - **Default byte-identity.**
   - Stripping the variant blocks from `temperature_grid.c` gives exactly the upstream bytes.
@@ -253,13 +253,23 @@ POSIX and in the CI image; 38 code mutants, each caught by a named test):
 - **Gate zero.**
   - The pinned values, roles, raw layout hashes, predicate and input digest are fixed.
   - Each evaluator kind accepts only its own binary.
-  - A record is built from the ledger by call id. It is FAIL on a completed miss (primary or replay) or a replay
-    that differs; INCOMPLETE, never PASS, when a required outcome is withheld, unsettled or incomplete; and refused
-    when it is forged, binds another binary, manifest, call, grid or layout identity, or comes from stale inputs.
-  - The bootstrap path (`validate-reference`, driven by a fake solver) runs the raw off-lattice references without
-    a prior PASS; the search path still refuses them; the four required receipts unlock search at grid 64 only.
-  - The entry refuses anything off the manifest before reserving it, holds the cumulative count and CPU, sets
-    RLIMIT_CPU, kills the whole process group at the wall deadline, and runs a private copy of the binary.
+  - A record is built from the operator's signed ledger and tags by call id. It is FAIL on a completed miss
+    (primary or replay), a replay that differs, a ledger or receipt the operator's key did not sign, or a ledger
+    that disagrees with the tags (rolled back, deleted, replaced, copied elsewhere; a tag binding other hashes);
+    ERROR when a tag cannot be read; INCOMPLETE, never PASS, when a required outcome has no settle tag, did not
+    complete, or fails the strict reader; and it binds the binary, manifest, grant, reservation, call, grid and
+    layout identity.
+  - The bootstrap path (`validate-reference`, driven by a fake solver and an in-memory, create-only GitHub API)
+    runs the raw off-lattice references without a prior PASS; the search path still refuses them; the four
+    required receipts unlock search at grid 64 only.
+  - The entry refuses anything the manifest or the operator does not allow before reserving it (no key, another
+    key, no credential, no grant, an expired window, a call outside the grant, no reserve tag, unreadable tags,
+    an aggregate past the grant's cap). Its launch claim launches exactly once for a sequential pair and for a
+    concurrent pair, never after a crash past the claim, never on an uncertain create, and never without a
+    credential. Every child runs under RLIMIT_CPU and a wall deadline; the whole solver process group is killed at
+    its deadline; a private copy of the binary is what runs.
+  - The pinned set is re-derived by tracing the generator; an unrelated edit keeps a PASS, an edit to an executed
+    file voids it.
 - **Strict parser.** Astra's controls are rejected: an extra layer-4 cell, and a duplicate layer 4. So is one
   mutation per rule.
 - **HotSpot 6.0 source.** Every vendored file matches its upstream blob. The SentiLab block touches only the grid
@@ -354,12 +364,15 @@ coordinator]
   tolerance and the metric, so any change invalidates old records.
 - **Bootstrap:** `reference_validation validate-reference` produces the first receipts and needs no PASS. It is the
   one in-code enforcement entry (CALL-LIST-v4.md lists what it enforces and what the operator supervisor must).
+  It admits a call only on the operator's signed grant and reserve tag, and launches only after its create-only
+  launch claim succeeds (warden #56967; astra #57024, #57025, #57031).
   It writes fresh inputs into a fresh directory with TAP's own generator, checks them byte for byte against the
   frozen ones, and records their hashes and the effective start and stop. It never runs under main's CI allocation
   (`CI_ALLOCATION=1`, SLAB-046), where every native HotSpot launch goes through `sundai_hotspot.ci_gate`, and it
   refuses a binary built with the CI entry guard. Its process launches are listed in `docs/ci-spawn-review.md`.
-- **Records:** assembled from the ledger by admitted call id, never from caller-chosen directories. Each outcome is
-  bound to its manifest row, reservation, settlement, receipt, outputs and frozen inputs, and then re-derived from
+- **Records:** assembled from the operator's signed ledger by admitted call id, never from caller-chosen
+  directories. Each outcome is bound to the operator's settle, reserve and launch tags, its manifest row, its signed
+  reservation and settlement, its signed receipt, its outputs and frozen inputs, and then re-derived from
   the raw files by the strict evaluator-bound reader that settles a run: grid size, layer count, header format and
   complete block evidence. Bound evidence that fails it (a 4 x 4 x 8, 64 x 64 x 1 or 64 x 64 x 7 grid declared as
   grid 64, say) is unusable, so the record is INCOMPLETE, never PASS. The verdict is recomputed every time; the
@@ -370,6 +383,6 @@ coordinator]
 
 - 2 raw 45 mm references x 2 engines (native6 target, native7 comparator) x grids 32 and 64;
 - plus 4 fresh-process grid-64 replays, one per reference and engine;
-- explicit `--call` and `--timeout` on every row; timeouts 8 x 60 s + 4 x 15 s = 540 s plus a 24 CPU-s overhead
-  assumption, a 564 CPU-s forecast (not a CPU guarantee) inside the binding 600 CPU-s manifest cap; no retries,
+- explicit `--call` and `--timeout` on every row; a true worst case computed from every child's limit,
+  8 x (50 + 8.5) + 4 x (15 + 8.5) = 562 CPU-s, inside the binding 600 CPU-s manifest cap; no retries,
   expiring 2026-11-01T12:00Z.
