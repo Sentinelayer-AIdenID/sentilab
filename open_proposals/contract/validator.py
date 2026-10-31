@@ -578,14 +578,13 @@ def _receipt_rules(record: dict, ctx: dict) -> list:
 
 def _status_rules(record: dict, ctx: dict) -> list:
     found = []
-    wanted = None
-    if ctx["manifest"] is not None and ctx["proposal_sha256"] is not None:
-        wanted = hashes.run_id(hashes.manifest_id(ctx["manifest"]), ctx["proposal_sha256"])
+    query = ctx["manifest"] is not None and ctx["proposal_sha256"] is not None
     for index, receipt in enumerate(record["receipts"]):
         path = f"/receipts/{index}"
         if (receipt["queue"] is not None) != (receipt["state"] == "queued"):
             found.append(_bad("record_inconsistent", path + "/queue", "status.queue"))
-        if wanted is not None and receipt["run_id"] != wanted:
+        if query and receipt["run_id"] != hashes.run_id(hashes.manifest_id(ctx["manifest"]),
+                                                        receipt["participant_ref"], ctx["proposal_sha256"]):
             found.append(_bad("ref_mismatch", path + "/run_id", "ref.run_id"))
     return found
 

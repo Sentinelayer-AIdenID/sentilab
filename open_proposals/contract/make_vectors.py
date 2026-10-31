@@ -1081,7 +1081,7 @@ def receipt_records() -> list:
 def status_receipt(**edits) -> dict:
     base = {"participant_ref": PREF_HUMAN, "actor_kind": "human", "state": "queued",
             "queue": {"position": 3, "estimated_start": "2026-11-01T10:30:00Z"}, "receipt_hash": fake("receipt"),
-            "run_id": h.run_id(ID["F"], h.proposal_sha256(P_PUB))}
+            "run_id": h.run_id(ID["F"], PREF_HUMAN, h.proposal_sha256(P_PUB))}
     return base | edits
 
 
@@ -1097,13 +1097,17 @@ def status_records() -> list:
             **ctx),
         rec("status", "valid: evaluated, and as the agent", status(
             status_receipt(state="evaluated", queue=None),
-            status_receipt(participant_ref=PREF_AGENT, actor_kind="agent", state="reproduced", queue=None)), **ctx),
+            status_receipt(participant_ref=PREF_AGENT, actor_kind="agent", state="reproduced", queue=None,
+                           run_id=h.run_id(ID["F"], PREF_AGENT, h.proposal_sha256(P_PUB)))), **ctx),
+        rec("status", "the run id is the account's: the same bytes from another account have another run",
+            status(status_receipt(participant_ref=PREF_AGENT, actor_kind="agent", state="evaluated", queue=None)),
+            [R("ref.run_id", "/receipts/0/run_id", "ref_mismatch")], **ctx),
         rec("status", "a queue position only while queued", status(status_receipt(state="evaluating")),
             [R("status.queue", "/receipts/0/queue")], **ctx),
         rec("status", "a queued entry has its position", status(status_receipt(queue=None)),
             [R("status.queue", "/receipts/0/queue")], **ctx),
         rec("status", "the run id is the proposal's", status(status_receipt(
-            run_id=h.run_id(ID["F"], h.proposal_sha256(P_CHILD)))), [R("ref.run_id", "/receipts/0/run_id",
+            run_id=h.run_id(ID["F"], PREF_HUMAN, h.proposal_sha256(P_CHILD)))), [R("ref.run_id", "/receipts/0/run_id",
                                                                          "ref_mismatch")], **ctx),
         rec("status", "the codes are in the receipt, not here", status(status_receipt(codes=[])),
             [{"code": "unknown_field", "path": "/receipts/0"}], **ctx),
@@ -1486,6 +1490,21 @@ NOTE_REFUSALS = [
 ]
 
 
+RUN_CASES = [("one account, a public proposal", "P_PUB", PREF_HUMAN),
+             ("the same bytes from another account: another run, the same evaluation cache key", "P_PUB", PREF_AGENT),
+             ("one account, a private proposal", "P_PRIV", PREF_HUMAN)]
+
+
+def run_id_refusals() -> list:
+    """Inputs both the Python reference and the JavaScript twin refuse: every digest is checked in full."""
+    proposal, manifest = h.proposal_sha256(P_PUB), ID["F"]
+    return [("an upper-case manifest id", manifest.upper(), PREF_HUMAN, proposal),
+            ("a 63-character proposal hash", manifest, PREF_HUMAN, proposal[:63]),
+            ("a valid 16-hex prefix with a non-hex suffix", manifest, PREF_HUMAN, proposal[:16] + "z" * 48),
+            ("a non-hex participant reference", manifest, "g" * 64, proposal),
+            ("a 65-character manifest id", manifest + "0", PREF_HUMAN, proposal)]
+
+
 def vectors() -> dict:
     transport_cases = [("P_PUB", ROOM, HUMAN, "human", None), ("P_PUB", ROOM, AGENT_ACCOUNT, "agent", AGENT_ID),
                        ("P_PUB", OVERFLOW_ROOM, HUMAN, "human", None), ("P_PRIV", ROOM, HUMAN, "human", None),
@@ -1529,8 +1548,15 @@ def vectors() -> dict:
              "transport": h.transport_key_for(OBJECTS[name], room=room, account=account, actor_kind=kind,
                                               actor_id=agent)}
             for name, room, account, kind, agent in transport_cases],
-        "run_id": [{"manifest_id": ID["F"], "proposal_sha256": h.proposal_sha256(OBJECTS[name]),
-                    "run_id": h.run_id(ID["F"], h.proposal_sha256(OBJECTS[name]))} for name in ("P_PUB", "P_PRIV")],
+        "run_id": [{"case": case, "manifest_id": ID["F"], "participant_ref": ref,
+                    "proposal_sha256": h.proposal_sha256(OBJECTS[name]),
+                    "preimage": h.run_id_object(ID["F"], ref, h.proposal_sha256(OBJECTS[name])),
+                    "run_id": h.run_id(ID["F"], ref, h.proposal_sha256(OBJECTS[name])),
+                    "evaluation_cache_key": list(h.evaluation_cache_key(ID["F"], OBJECTS[name]["geometry_sha256"]))}
+                   for case, name, ref in RUN_CASES],
+        "run_id_refused": [{"name": name, "manifest_id": manifest_id, "participant_ref": ref,
+                            "proposal_sha256": proposal_sha256}
+                           for name, manifest_id, ref, proposal_sha256 in run_id_refusals()],
         "sealed_header": [{"manifest_id": ID[key], "key_version": version,
                            "line": h.sealed_header(ID[key], version)} for key, version in (("F", 1), ("F2", 2))],
         "sealed_notes": sealed_cases,

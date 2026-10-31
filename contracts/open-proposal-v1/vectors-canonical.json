@@ -713,14 +713,87 @@
  ],
  "run_id": [
   {
+   "case": "one account, a public proposal",
    "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
+   "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b",
    "proposal_sha256": "6ab46e4f99f1658f0c320ffc5178bd1c40bdca6c25f5300a291254b963aeb0d9",
-   "run_id": "open-6fd328c1-6ab46e4f99f1658f"
+   "preimage": {
+    "schema": "sentilab-open-run/1",
+    "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
+    "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b",
+    "proposal_sha256": "6ab46e4f99f1658f0c320ffc5178bd1c40bdca6c25f5300a291254b963aeb0d9"
+   },
+   "run_id": "open-6fd328c1-fae5e7d87f87e11611b3a9f74aedaf8b",
+   "evaluation_cache_key": [
+    "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
+    "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+   ]
   },
   {
+   "case": "the same bytes from another account: another run, the same evaluation cache key",
    "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
+   "participant_ref": "3076fcfe8bc930a11c4919e4a0a82ec1ab1b939a2de4e0ce8277fe83da4568dd",
+   "proposal_sha256": "6ab46e4f99f1658f0c320ffc5178bd1c40bdca6c25f5300a291254b963aeb0d9",
+   "preimage": {
+    "schema": "sentilab-open-run/1",
+    "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
+    "participant_ref": "3076fcfe8bc930a11c4919e4a0a82ec1ab1b939a2de4e0ce8277fe83da4568dd",
+    "proposal_sha256": "6ab46e4f99f1658f0c320ffc5178bd1c40bdca6c25f5300a291254b963aeb0d9"
+   },
+   "run_id": "open-6fd328c1-63b9713371497a981197f738acba6752",
+   "evaluation_cache_key": [
+    "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
+    "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+   ]
+  },
+  {
+   "case": "one account, a private proposal",
+   "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
+   "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b",
    "proposal_sha256": "946e8112fef9a5638d5aabae346397f22b7df14f791694ccfc6ea1441c38b25c",
-   "run_id": "open-6fd328c1-946e8112fef9a563"
+   "preimage": {
+    "schema": "sentilab-open-run/1",
+    "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
+    "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b",
+    "proposal_sha256": "946e8112fef9a5638d5aabae346397f22b7df14f791694ccfc6ea1441c38b25c"
+   },
+   "run_id": "open-6fd328c1-dbf170fb3ecc0c90fd723c1116241bcb",
+   "evaluation_cache_key": [
+    "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
+    "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+   ]
+  }
+ ],
+ "run_id_refused": [
+  {
+   "name": "an upper-case manifest id",
+   "manifest_id": "6FD328C1E770034204035A8758D1B3D1DD361FA3575E91095CB2B80F3DB0981A",
+   "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b",
+   "proposal_sha256": "6ab46e4f99f1658f0c320ffc5178bd1c40bdca6c25f5300a291254b963aeb0d9"
+  },
+  {
+   "name": "a 63-character proposal hash",
+   "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
+   "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b",
+   "proposal_sha256": "6ab46e4f99f1658f0c320ffc5178bd1c40bdca6c25f5300a291254b963aeb0d"
+  },
+  {
+   "name": "a valid 16-hex prefix with a non-hex suffix",
+   "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
+   "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b",
+   "proposal_sha256": "6ab46e4f99f1658fzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+  },
+  {
+   "name": "a non-hex participant reference",
+   "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
+   "participant_ref": "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+   "proposal_sha256": "6ab46e4f99f1658f0c320ffc5178bd1c40bdca6c25f5300a291254b963aeb0d9"
+  },
+  {
+   "name": "a 65-character manifest id",
+   "manifest_id": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a0",
+   "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b",
+   "proposal_sha256": "6ab46e4f99f1658f0c320ffc5178bd1c40bdca6c25f5300a291254b963aeb0d9"
   }
  ],
  "sealed_header": [

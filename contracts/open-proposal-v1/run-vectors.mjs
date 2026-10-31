@@ -66,7 +66,16 @@ for (const v of vectors.transport_key) {
   expect(`transport key: ${v.object} ${v.actor_kind} ${v.room}`, key, v.transport);
   expect("a transport key is 52 characters", key.length, 52);
 }
-for (const v of vectors.run_id) expect(`run_id ${v.run_id}`, c.runId(v.manifest_id, v.proposal_sha256), v.run_id);
+for (const v of vectors.run_id) {
+  expect(`run id preimage: ${v.case}`, c.runIdObject(v.manifest_id, v.participant_ref, v.proposal_sha256), v.preimage);
+  expect(`run id: ${v.case}`, await c.runId(v.manifest_id, v.participant_ref, v.proposal_sha256), v.run_id);
+}
+expect("the same bytes from two accounts: two runs", vectors.run_id[0].run_id === vectors.run_id[1].run_id, false);
+expect("the same bytes from two accounts: one evaluation", vectors.run_id[0].evaluation_cache_key,
+  vectors.run_id[1].evaluation_cache_key);
+for (const v of vectors.run_id_refused) {
+  refuses(`run id refused: ${v.name}`, () => c.runIdObject(v.manifest_id, v.participant_ref, v.proposal_sha256));
+}
 for (const v of vectors.sealed_header) expect(`sealed header ${v.key_version}`, c.sealedHeader(v.manifest_id, v.key_version), v.line);
 refuses("a key version is a positive integer", () => c.sealedHeader("f".repeat(64), 0));
 for (const v of vectors.sealed_notes) {

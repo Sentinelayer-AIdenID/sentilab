@@ -124,10 +124,22 @@ export async function transportKeyFor(item, { room, account, actorKind, actorId 
     logical_key: logicalKey(item), content_sha256: await contentSha256(item) });
 }
 
-// One signed run per proposal (section 7.4).
-export function runId(manifestId_, proposalSha256_) {
-  if (!/^[0-9a-f]{64}$/.test(manifestId_) || !/^[0-9a-f]{64}$/.test(proposalSha256_)) throw new Error("invalid run id");
-  return `open-${manifestId_.slice(0, 8)}-${proposalSha256_.slice(0, 16)}`;
+const HEX64 = /^[0-9a-f]{64}$/;
+
+// The run id's preimage: the full manifest identity, the server-derived participant reference and the full proposal
+// identity, domain-separated; each exactly 64 lower-case hex characters.
+export function runIdObject(manifestId_, participantRef_, proposalSha256_) {
+  for (const value of [manifestId_, participantRef_, proposalSha256_]) {
+    if (typeof value !== "string" || !HEX64.test(value)) throw new Error("a run id binds three full sha256 hex digests");
+  }
+  return { schema: "sentilab-open-run/1", manifest_id: manifestId_, participant_ref: participantRef_,
+    proposal_sha256: proposalSha256_ };
+}
+
+// One signed run per account and proposal: open-<manifest_id 8 hex>-<32 hex of sha256(JCS(preimage))>.
+export async function runId(manifestId_, participantRef_, proposalSha256_) {
+  const preimage = runIdObject(manifestId_, participantRef_, proposalSha256_);
+  return `open-${manifestId_.slice(0, 8)}-${(await digest(preimage)).slice(0, 32)}`;
 }
 
 // A sealed note's first line (section 3.7); the ASCII-armoured age file follows on the next line.

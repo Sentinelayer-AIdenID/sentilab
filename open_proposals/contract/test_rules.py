@@ -98,7 +98,7 @@ SAMPLES = {
     r"^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$": "ab", r"^[A-Za-z][A-Za-z0-9_]{0,31}$": "ab", r"^[A-Za-z]{1,32}$": "ab",
     r"^[a-z0-9][a-z0-9_-]{0,63}$": "ab", r"^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$": "ab",
     r"^[a-z0-9_-]{1,32}$": "ab", r"^age1[02-9ac-hj-np-z]{58}$": "age1" + "q" * 58,
-    r"^open-[0-9a-f]{8}-[0-9a-f]{16}$": "open-" + "0" * 8 + "-" + "0" * 16,
+    r"^open-[0-9a-f]{8}-[0-9a-f]{32}$": "open-" + "0" * 8 + "-" + "0" * 32,
     r"^position-[0-9]{1,2}-[xy]-(plus|minus)$": "position-0-x-plus",
     r"^sentilab-open-terms/[1-9][0-9]{0,5}@[0-9a-f]{64}$": "sentilab-open-terms/1@" + "0" * 64,
     r"^sha256:[0-9a-f]{64}$": "sha256:" + "0" * 64, r"^so1-[0-9a-f]{48}$": "so1-" + "0" * 48,
@@ -457,6 +457,25 @@ class Keys(unittest.TestCase):
         with self.assertRaises(ValueError):
             h.logical_key({"schema": "sentilab-open-proposal/2"})
 
+    def test_two_accounts_never_share_a_run_and_one_account_always_does(self):
+        """Root's review: identical public bytes from two accounts both validate as new rows; each gets its own run.
+        The evaluation cache stays keyed by geometry, so the second account still reuses the first evaluation."""
+        proposal = h.proposal_sha256(mv.P_PUB)
+        human, agent = (h.run_id(mv.ID["F"], ref, proposal) for ref in (mv.PREF_HUMAN, mv.PREF_AGENT))
+        self.assertNotEqual(human, agent)
+        self.assertEqual(human, h.run_id(mv.ID["F"], mv.PREF_HUMAN, proposal), "a same-account retry deduplicates")
+        cache = h.evaluation_cache_key(mv.ID["F"], mv.P_PUB["geometry_sha256"])
+        self.assertEqual(cache, h.evaluation_cache_key(mv.ID["F"], mv.P_PRIV["geometry_sha256"]),
+                         "the same geometry is one evaluation, whoever posted it")
+        rows = [validate_reply(note(mv.P_PUB), reply=reply_for(mv.P_PUB, actor_user_id=account, actor_kind=kind,
+                                                                  actor_id=agent_id, idempotency_key=h.transport_key_for(
+                                                                      mv.P_PUB, room=mv.ROOM, account=account,
+                                                                      actor_kind=kind, actor_id=agent_id)),
+                               manifests=REGISTRY, thread_manifest_id=mv.ID["F"], admission=OPEN)
+                for account, kind, agent_id in ((mv.HUMAN, "human", None), (mv.AGENT_ACCOUNT, "agent", mv.AGENT_ID))]
+        self.assertEqual(["contract_valid"] * 2, [row.outcome for row in rows])
+        self.assertEqual(rows[0].content_sha256, rows[1].content_sha256)
+
     def test_participant_ref_is_keyed_per_challenge(self):
         ref = h.participant_ref(mv.K_CHALLENGE, mv.HUMAN)
         self.assertNotEqual(ref, hashlib.sha256(mv.HUMAN.encode()).hexdigest())
@@ -465,11 +484,18 @@ class Keys(unittest.TestCase):
             h.participant_ref(b"short", mv.HUMAN)
 
     def test_run_ids_and_headers(self):
-        run = h.run_id(mv.ID["F"], h.proposal_sha256(mv.P_PUB))
+        proposal = h.proposal_sha256(mv.P_PUB)
+        run = h.run_id(mv.ID["F"], mv.PREF_HUMAN, proposal)
         self.assertTrue(RUN_ID.fullmatch(run))
-        self.assertEqual("open-" + mv.ID["F"][:8] + "-" + h.proposal_sha256(mv.P_PUB)[:16], run)
-        with self.assertRaises(ValueError):
-            h.run_id(mv.ID["F"][:8], h.proposal_sha256(mv.P_PUB))
+        self.assertRegex(run, r"^open-[0-9a-f]{8}-[0-9a-f]{32}$")
+        self.assertEqual("open-" + mv.ID["F"][:8] + "-" + h.digest(
+            h.run_id_object(mv.ID["F"], mv.PREF_HUMAN, proposal))[:32], run)
+        self.assertNotIn(proposal[:16], run, "the run id no longer shows the start of the handle")
+        for manifest_id, ref, digest in ((mv.ID["F"][:8], mv.PREF_HUMAN, proposal),
+                                         (mv.ID["F"], mv.PREF_HUMAN, proposal[:16] + "z" * 48),
+                                         (mv.ID["F"], mv.PREF_HUMAN.upper(), proposal)):
+            with self.assertRaises(ValueError):
+                h.run_id(manifest_id, ref, digest)
         self.assertEqual("sentilab-open-sealed/1 " + mv.ID["F"] + " 1", h.sealed_header(mv.ID["F"], 1))
         for bad in (0, True, "1"):
             with self.assertRaises(ValueError):
@@ -518,7 +544,14 @@ class PythonVectors(unittest.TestCase):
                 actor_id=case["actor_id"]))
             self.assertEqual(case["transport"], "so1-" + h.digest(case["preimage"])[:48])
         for case in v["run_id"]:
-            self.assertEqual(case["run_id"], h.run_id(case["manifest_id"], case["proposal_sha256"]))
+            self.assertEqual(case["preimage"], h.run_id_object(case["manifest_id"], case["participant_ref"],
+                                                               case["proposal_sha256"]))
+            self.assertEqual(case["run_id"], h.run_id(case["manifest_id"], case["participant_ref"],
+                                                      case["proposal_sha256"]))
+        for case in v["run_id_refused"]:
+            with self.subTest(case["name"]):
+                with self.assertRaises(ValueError):
+                    h.run_id(case["manifest_id"], case["participant_ref"], case["proposal_sha256"])
         for case in v["sealed_header"]:
             self.assertEqual(case["line"], h.sealed_header(case["manifest_id"], case["key_version"]))
         for case in v["r_key"]:

@@ -51,7 +51,11 @@ participant free text is the moderated team name, `^[A-Za-z0-9][A-Za-z0-9 ._-]{0
 - **`proposal_sha256`, `request_sha256`, team and publish hashes** = sha256(JCS(object)). For a sealed object it is the
   canonical salted plaintext's hash, so re-encryption retries identically (DESIGN.md:255-257).
 - **`body_sha256`** = sha256 of the exact note bytes; for a sealed note, the armoured ciphertext.
-- **`manifest_id`** = sha256(JCS(manifest)). **Run id** = `open-<manifest_id 8 hex>-<proposal_sha256 16 hex>`.
+- **`manifest_id`** = sha256(JCS(manifest)).
+- **Run id** = `open-<manifest_id 8 hex>-<32 hex of sha256(JCS({schema "sentilab-open-run/1", manifest_id,
+  participant_ref, proposal_sha256}))>`, every input a full 64-hex digest (root's review of DESIGN.md:898): one run per
+  account and proposal, so identical bytes from two accounts never share a run, and a same-account retry lands on the
+  same one. Evaluation reuse is keyed apart, by `(manifest_id, geometry_sha256)` (`evaluation_cache_key`, DESIGN.md:737).
 - **`source_ref`** = sha256(`"sentilab-open-source/1:"` + action_id). **`participant_ref`** = HMAC-SHA256(k_challenge,
   account_id) over the account id's UTF-8 bytes (DESIGN.md:311).
 - **`q_r`** = W(c) - (1 + r) W(R), and `delta_T` = T_M(c) - T_M(R), exact in decimal (each number taken as the decimal

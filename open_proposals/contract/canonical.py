@@ -25,6 +25,8 @@ TEAM_SCHEMA = "sentilab-open-team/1"
 PUBLISH_SCHEMA = "sentilab-open-publish/1"
 TEAM_KEY = "team"
 PUBLISH_KEY_PREFIX = "publish:"
+RUN_SCHEMA = "sentilab-open-run/1"
+RUN_DIGEST_HEX_CHARS = 32
 HEX64 = re.compile(r"[0-9a-f]{64}")
 
 
@@ -127,12 +129,38 @@ def transport_key_for(item, *, room: str, account: str, actor_kind: str, actor_i
                          content_sha256=content_sha256(item))
 
 
-def run_id(manifest_id: str, proposal_sha256: str) -> str:
-    """One signed run per proposal: open-<manifest 8 hex>-<proposal_sha256 16 hex> (section 7.4)."""
-    value = "open-" + manifest_id[:8] + "-" + proposal_sha256[:16]
-    if not RUN_ID.fullmatch(value) or len(manifest_id) != 64 or len(proposal_sha256) != 64:
+def run_id_object(manifest_id: str, participant_ref: str, proposal_sha256: str) -> dict:
+    """The run id's preimage: the full manifest identity, the server-derived participant reference and the full
+    proposal identity, domain-separated. Each must be 64 lower-case hex characters, in full."""
+    for value in (manifest_id, participant_ref, proposal_sha256):
+        if not isinstance(value, str) or not HEX64.fullmatch(value):
+            raise ValueError("a run id binds three full sha256 hex digests")
+    return {"schema": RUN_SCHEMA, "manifest_id": manifest_id, "participant_ref": participant_ref,
+            "proposal_sha256": proposal_sha256}
+
+
+def run_id(manifest_id: str, participant_ref: str, proposal_sha256: str) -> str:
+    """One signed run per account and proposal: open-<manifest_id 8 hex>-<32 hex of sha256(JCS(preimage))>.
+
+    Root's review of DESIGN.md:898 (open-<manifest 8 hex>-<proposal_sha256 16 hex>): the same proposal bytes from two
+    accounts must not share a run. The id is bound to the account through participant_ref, so a same-account retry
+    (the same bytes, the same account) still lands on the same run; evaluation reuse across accounts is keyed by the
+    geometry hash (evaluation_cache_key), never by the run id.
+    """
+    value = "open-" + manifest_id[:8] + "-" + digest(run_id_object(manifest_id, participant_ref, proposal_sha256))[
+        :RUN_DIGEST_HEX_CHARS]
+    if not RUN_ID.fullmatch(value):
         raise ValueError("invalid run id")
     return value
+
+
+def evaluation_cache_key(manifest_id: str, geometry_sha256: str) -> tuple:
+    """Section 5.5: the same geometry in the same manifest reuses the first complete evaluation, whoever posted it.
+    The cache is keyed by geometry, apart from the account-bound run id and receipt."""
+    for value in (manifest_id, geometry_sha256):
+        if not isinstance(value, str) or not HEX64.fullmatch(value):
+            raise ValueError("an evaluation cache key binds two full sha256 hex digests")
+    return (manifest_id, geometry_sha256)
 
 
 def sealed_header(manifest_id: str, key_version: int) -> str:
