@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sentilab:package3d:layouts:1",
+  "type": "object",
+  "required": ["schema", "content", "status_text", "layouts", "omitted"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "sentilab-layouts/1" },
+    "content": { "const": "model" },
+    "status_text": { "const": "Reference layouts reconstructed from a published figure. Not CAD, not silicon, not measured." },
+    "layouts": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["variant_id", "reference_id", "fixture_id", "kind", "label", "role", "frame_mm", "centers_mm", "footprints_mm", "rotated", "content_sha256", "source", "wire_proxy_mm", "routed_wire_mm"],
+        "additionalProperties": false,
+        "properties": {
+          "variant_id": { "$ref": "urn:sentilab:package3d:common:1#/$defs/slug" },
+          "reference_id": { "$ref": "urn:sentilab:package3d:common:1#/$defs/slug" },
+          "fixture_id": { "enum": ["ascend910-45mm", "micro150-45mm"] },
+          "kind": { "enum": ["raw", "snap0p5"] },
+          "label": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" },
+          "role": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" },
+          "frame_mm": { "type": "number", "exclusiveMinimum": 0 },
+          "centers_mm": { "type": "array", "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } } },
+          "footprints_mm": { "type": "array", "items": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number", "exclusiveMinimum": 0 } } },
+          "rotated": { "type": "array", "items": { "type": "boolean" } },
+          "content_sha256": { "$ref": "urn:sentilab:package3d:common:1#/$defs/sha256" },
+          "source": { "$ref": "urn:sentilab:package3d:common:1#/$defs/pinnedFile" },
+          "wire_proxy_mm": { "type": ["number", "null"] },
+          "routed_wire_mm": { "type": ["number", "null"] }
+        }
+      }
+    },
+    "omitted": { "type": "array", "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/omission" } }
+  }
+}

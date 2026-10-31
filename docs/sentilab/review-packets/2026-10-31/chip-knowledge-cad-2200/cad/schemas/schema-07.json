@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sentilab:package3d:twin:1",
+  "type": "object",
+  "required": ["schema", "content", "status_text", "built_from", "frame", "view_transforms", "data", "labels", "omitted", "derivatives"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "sentilab-twin/1" },
+    "content": { "enum": ["anatomy", "model", "result"] },
+    "status_text": { "type": "string" },
+    "built_from": { "type": "array", "minItems": 1, "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/pinnedFile" } },
+    "frame": { "type": "object" },
+    "view_transforms": { "const": "Explode, readable thickening and section are view transforms. Every coordinate here is assembled." },
+    "data": { "type": "object" },
+    "labels": { "type": "array", "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/label" } },
+    "omitted": { "type": "array", "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/omission" } },
+    "derivatives": {
+      "type": "array",
+      "items": { "type": "object", "required": ["path", "sha256", "format", "units", "up", "note"], "additionalProperties": false,
+        "properties": { "path": { "type": "string" }, "sha256": { "$ref": "urn:sentilab:package3d:common:1#/$defs/sha256" }, "format": { "const": "glb" }, "units": { "const": "m" }, "up": { "const": "+Y" }, "note": { "const": "Render derivative of the assembled geometry. Not a CAD source." } } }
+    }
+  },
+  "allOf": [
+    { "if": { "properties": { "content": { "const": "anatomy" } } }, "then": { "properties": { "status_text": { "const": "Typical anatomy · a representative reconstruction from public sources. Not any manufacturer's CAD. Not silicon-validated. Arrangement schematic; unknown values are marked." } } } },
+    { "if": { "properties": { "content": { "const": "model" } } }, "then": { "properties": { "status_text": { "const": "Our model · the layers and blocks our thermal solver actually simulates, with its simplifications. Not the real package." } } } },
+    { "if": { "properties": { "content": { "const": "result" } } }, "then": { "properties": { "status_text": { "const": "Results · from signed, verified evidence only. Each value names its run, geometry, evaluator and label. Simulated, not silicon." } } } }
+  ]
+}

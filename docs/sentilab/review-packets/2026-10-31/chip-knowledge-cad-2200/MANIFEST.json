@@ -1,0 +1,251 @@
+{
+  "schema": "sentilab-private-review-packet/1",
+  "preparedAt": "2026-10-31T21:55:44.593Z",
+  "repo": "Sentinelayer-AIdenID/sentilab",
+  "private": true,
+  "existingKnowledgeTicketRef": "2559963e",
+  "ticketRefIsPrefix": true,
+  "relatedExistingRefs": [
+    "6053a93c",
+    "f1e3bdf0"
+  ],
+  "originalCADCommit": "da9b1ee60c6b2fd11ab97e66e9384cc44da1a0d7",
+  "originalCADDirectory": "docs/sentilab/research/cad3d/spec/",
+  "knowledgePacketSealSha256": "aa08841e89d9464a7ad2c0d1bda1f8e700a0a97e209a980803e9480c2368815e",
+  "scope": "Four accepted root knowledge contribution cards with exact source bindings and independent verifier correction; four original proposed CAD documents and seven extracted schemas for scoped review. No whole-KB completion, CAD implementation acceptance, PR or execution release.",
+  "files": [
+    {
+      "path": "knowledge/METHOD.md",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/knowledge/METHOD.md",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\chip-knowledge-root-2145\\METHOD.md",
+      "bytes": 4133,
+      "sha256": "f88fd92b129baa186081e9cb59eab8144c78f870b3baeb8a5a886378535c511c",
+      "kind": "exact-knowledge-packet-file"
+    },
+    {
+      "path": "knowledge/SOURCE-BINDINGS.json",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/knowledge/SOURCE-BINDINGS.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\chip-knowledge-root-2145\\SOURCE-BINDINGS.json",
+      "bytes": 5184,
+      "sha256": "4f9778746ab2222e7a9653e14cdc2d9e8ee0c07c8d2490adb53e8bb780eb5a94",
+      "kind": "exact-knowledge-packet-file"
+    },
+    {
+      "path": "knowledge/SUMMARY.md",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/knowledge/SUMMARY.md",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\chip-knowledge-root-2145\\SUMMARY.md",
+      "bytes": 1747,
+      "sha256": "104ce1090fc22597282127ecfaf94a4082b34b8f6ca1aeb2b20d328ad069e6be",
+      "kind": "exact-knowledge-packet-file"
+    },
+    {
+      "path": "knowledge/VERIFICATION.json",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/knowledge/VERIFICATION.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\chip-knowledge-root-2145\\VERIFICATION.json",
+      "bytes": 6646,
+      "sha256": "ecf2ab14dc7caff47a46c67acb753a4f790f5090949ee30bf377c30d2a5e87ab",
+      "kind": "exact-knowledge-packet-file"
+    },
+    {
+      "path": "knowledge/build-cards.cjs",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/knowledge/build-cards.cjs",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\chip-knowledge-root-2145\\build-cards.cjs",
+      "bytes": 20717,
+      "sha256": "0916dd8e3ef78d1404537f7cfbfb137211ed9fa31b13b3f503a96e9c5a647c6f",
+      "kind": "exact-knowledge-packet-file"
+    },
+    {
+      "path": "knowledge/knowledge.jsonl",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/knowledge/knowledge.jsonl",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\chip-knowledge-root-2145\\knowledge.jsonl",
+      "bytes": 38562,
+      "sha256": "022f40413f4a07d5adccf154af852a9e8c7c36e03b86d1362825cad11d7bb36e",
+      "kind": "exact-knowledge-packet-file"
+    },
+    {
+      "path": "knowledge/verify-and-seal.cjs",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/knowledge/verify-and-seal.cjs",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\chip-knowledge-root-2145\\verify-and-seal.cjs",
+      "bytes": 4066,
+      "sha256": "0f6b6d7a0842ab5ab094a436bbe7bb1ee29ed78c728a93d3e206b39269010d28",
+      "kind": "exact-knowledge-packet-file"
+    },
+    {
+      "path": "knowledge/SEAL.json",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/knowledge/SEAL.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\chip-knowledge-root-2145\\SEAL.json",
+      "bytes": 1115,
+      "sha256": "aa08841e89d9464a7ad2c0d1bda1f8e700a0a97e209a980803e9480c2368815e",
+      "kind": "exact-knowledge-packet-seal"
+    },
+    {
+      "path": "root-review/ROOT-KNOWLEDGE-VERIFICATION-2154.json",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/root-review/ROOT-KNOWLEDGE-VERIFICATION-2154.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\sentilab-planning\\gpt-astra-carter\\daytime-2026-10-31\\ROOT-KNOWLEDGE-VERIFICATION-2154.json",
+      "bytes": 1594,
+      "sha256": "fdd1d3ac293dc57bce20d77c1969372612c85e7365d9fdc27cc87e7c67e605e0",
+      "kind": "exact-independent-root-verification"
+    },
+    {
+      "path": "root-review/ROOT-KNOWLEDGE-VERIFIER-CORRECTION-2154.json",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/root-review/ROOT-KNOWLEDGE-VERIFIER-CORRECTION-2154.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\sentilab-planning\\gpt-astra-carter\\daytime-2026-10-31\\ROOT-KNOWLEDGE-VERIFIER-CORRECTION-2154.json",
+      "bytes": 673,
+      "sha256": "266af2e1df94380741b193807663c0c3a2e59c02f586ac463a8aecb35e236466",
+      "kind": "exact-independent-root-verification"
+    },
+    {
+      "path": "cad/source/ACCEPTANCE.md",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/cad/source/ACCEPTANCE.md",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\cad-spec-review-2137\\source\\ACCEPTANCE.md",
+      "bytes": 27579,
+      "sha256": "80713adb4a405c7201e55d9856b4a7af3a8d0c18807c493f67f96664300e09f7",
+      "kind": "exact-original-CAD-document",
+      "originalRepository": "Sentinelayer-AIdenID/sentilab",
+      "originalCommit": "da9b1ee60c6b2fd11ab97e66e9384cc44da1a0d7",
+      "originalRepositoryPath": "docs/sentilab/research/cad3d/spec/ACCEPTANCE.md",
+      "originalGitBlob": "9a1004db765d575e385f7996f1b1810b1b78f4cf"
+    },
+    {
+      "path": "cad/source/PSEUDOCODE.md",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/cad/source/PSEUDOCODE.md",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\cad-spec-review-2137\\source\\PSEUDOCODE.md",
+      "bytes": 50763,
+      "sha256": "0976a6f77333786ccf108f960e7a5c1eeddd9d9451fcc3efa979ac48b3d58230",
+      "kind": "exact-original-CAD-document",
+      "originalRepository": "Sentinelayer-AIdenID/sentilab",
+      "originalCommit": "da9b1ee60c6b2fd11ab97e66e9384cc44da1a0d7",
+      "originalRepositoryPath": "docs/sentilab/research/cad3d/spec/PSEUDOCODE.md",
+      "originalGitBlob": "fdd982b54b79891bba50bc8076e41fc93cca5597"
+    },
+    {
+      "path": "cad/source/SPEC.md",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/cad/source/SPEC.md",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\cad-spec-review-2137\\source\\SPEC.md",
+      "bytes": 121651,
+      "sha256": "f581f57ea670641df33b60b5e17ee00612458f953544bdb9fac35f00bf7f4c32",
+      "kind": "exact-original-CAD-document",
+      "originalRepository": "Sentinelayer-AIdenID/sentilab",
+      "originalCommit": "da9b1ee60c6b2fd11ab97e66e9384cc44da1a0d7",
+      "originalRepositoryPath": "docs/sentilab/research/cad3d/spec/SPEC.md",
+      "originalGitBlob": "e724e95e4ed4da298923f01a7914801daeb49189"
+    },
+    {
+      "path": "cad/source/TRACE.md",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/cad/source/TRACE.md",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\cad-spec-review-2137\\source\\TRACE.md",
+      "bytes": 28567,
+      "sha256": "012c9180785c26dd24e6cf7dd29a75943682ff09dd1b1505cd6872d3bb75406c",
+      "kind": "exact-original-CAD-document",
+      "originalRepository": "Sentinelayer-AIdenID/sentilab",
+      "originalCommit": "da9b1ee60c6b2fd11ab97e66e9384cc44da1a0d7",
+      "originalRepositoryPath": "docs/sentilab/research/cad3d/spec/TRACE.md",
+      "originalGitBlob": "e6c584b0d429d6dafbe90494df1bff459d2797e7"
+    },
+    {
+      "path": "cad/schemas/schema-01.json",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/cad/schemas/schema-01.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\cad-spec-review-2137\\schemas\\schema-01.json",
+      "bytes": 4868,
+      "sha256": "fa0889f8f2d6c64f1aa09cca15728f8573dfaa347773783dd48620c1e6586483",
+      "kind": "exact-extracted-CAD-schema",
+      "originalRepository": "Sentinelayer-AIdenID/sentilab",
+      "originalCommit": "da9b1ee60c6b2fd11ab97e66e9384cc44da1a0d7",
+      "extractedFrom": "docs/sentilab/research/cad3d/spec/SPEC.md",
+      "sourceSha256": "f581f57ea670641df33b60b5e17ee00612458f953544bdb9fac35f00bf7f4c32",
+      "startLine": 290,
+      "endLine": 361,
+      "schemaId": "urn:sentilab:package3d:common:1"
+    },
+    {
+      "path": "cad/schemas/schema-02.json",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/cad/schemas/schema-02.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\cad-spec-review-2137\\schemas\\schema-02.json",
+      "bytes": 9858,
+      "sha256": "0233ba384a0034aa4c6eda70e6e6b29e6dd8763ee40cdd550da86d81e0460ba6",
+      "kind": "exact-extracted-CAD-schema",
+      "originalRepository": "Sentinelayer-AIdenID/sentilab",
+      "originalCommit": "da9b1ee60c6b2fd11ab97e66e9384cc44da1a0d7",
+      "extractedFrom": "docs/sentilab/research/cad3d/spec/SPEC.md",
+      "sourceSha256": "f581f57ea670641df33b60b5e17ee00612458f953544bdb9fac35f00bf7f4c32",
+      "startLine": 378,
+      "endLine": 521,
+      "schemaId": "urn:sentilab:package3d:anatomy:1"
+    },
+    {
+      "path": "cad/schemas/schema-03.json",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/cad/schemas/schema-03.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\cad-spec-review-2137\\schemas\\schema-03.json",
+      "bytes": 4996,
+      "sha256": "c0efbe6038981aaa4e2f42c9185184bca883c86f1d76d64b41d3539cb391b3a4",
+      "kind": "exact-extracted-CAD-schema",
+      "originalRepository": "Sentinelayer-AIdenID/sentilab",
+      "originalCommit": "da9b1ee60c6b2fd11ab97e66e9384cc44da1a0d7",
+      "extractedFrom": "docs/sentilab/research/cad3d/spec/SPEC.md",
+      "sourceSha256": "f581f57ea670641df33b60b5e17ee00612458f953544bdb9fac35f00bf7f4c32",
+      "startLine": 535,
+      "endLine": 605,
+      "schemaId": "urn:sentilab:package3d:assembly:1"
+    },
+    {
+      "path": "cad/schemas/schema-04.json",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/cad/schemas/schema-04.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\cad-spec-review-2137\\schemas\\schema-04.json",
+      "bytes": 8433,
+      "sha256": "522d1bda56be92f2736dd968d285378d744278fe5b5c7d82431c8f59981c2edc",
+      "kind": "exact-extracted-CAD-schema",
+      "originalRepository": "Sentinelayer-AIdenID/sentilab",
+      "originalCommit": "da9b1ee60c6b2fd11ab97e66e9384cc44da1a0d7",
+      "extractedFrom": "docs/sentilab/research/cad3d/spec/SPEC.md",
+      "sourceSha256": "f581f57ea670641df33b60b5e17ee00612458f953544bdb9fac35f00bf7f4c32",
+      "startLine": 623,
+      "endLine": 750,
+      "schemaId": "urn:sentilab:package3d:model-stack:1"
+    },
+    {
+      "path": "cad/schemas/schema-05.json",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/cad/schemas/schema-05.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\cad-spec-review-2137\\schemas\\schema-05.json",
+      "bytes": 2151,
+      "sha256": "b1fb4f5bbf40a2e1a1f33a6efe4e83cd31670ab6184a1e9c427e480693aa2949",
+      "kind": "exact-extracted-CAD-schema",
+      "originalRepository": "Sentinelayer-AIdenID/sentilab",
+      "originalCommit": "da9b1ee60c6b2fd11ab97e66e9384cc44da1a0d7",
+      "extractedFrom": "docs/sentilab/research/cad3d/spec/SPEC.md",
+      "sourceSha256": "f581f57ea670641df33b60b5e17ee00612458f953544bdb9fac35f00bf7f4c32",
+      "startLine": 793,
+      "endLine": 829,
+      "schemaId": "urn:sentilab:package3d:layouts:1"
+    },
+    {
+      "path": "cad/schemas/schema-06.json",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/cad/schemas/schema-06.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\cad-spec-review-2137\\schemas\\schema-06.json",
+      "bytes": 6585,
+      "sha256": "50a97554d3ed71a68cb31f3bb77a946b66e0698a5b081891d16735b66508e57d",
+      "kind": "exact-extracted-CAD-schema",
+      "originalRepository": "Sentinelayer-AIdenID/sentilab",
+      "originalCommit": "da9b1ee60c6b2fd11ab97e66e9384cc44da1a0d7",
+      "extractedFrom": "docs/sentilab/research/cad3d/spec/SPEC.md",
+      "sourceSha256": "f581f57ea670641df33b60b5e17ee00612458f953544bdb9fac35f00bf7f4c32",
+      "startLine": 845,
+      "endLine": 933,
+      "schemaId": "urn:sentilab:package3d:result:1"
+    },
+    {
+      "path": "cad/schemas/schema-07.json",
+      "repositoryPath": "docs/sentilab/review-packets/2026-10-31/chip-knowledge-cad-2200/cad/schemas/schema-07.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\cad-spec-review-2137\\schemas\\schema-07.json",
+      "bytes": 2324,
+      "sha256": "36156d5934d88306a9103dc0fdd96ecdd2e1a155c5a75891dfe16a0c89aa6364",
+      "kind": "exact-extracted-CAD-schema",
+      "originalRepository": "Sentinelayer-AIdenID/sentilab",
+      "originalCommit": "da9b1ee60c6b2fd11ab97e66e9384cc44da1a0d7",
+      "extractedFrom": "docs/sentilab/research/cad3d/spec/SPEC.md",
+      "sourceSha256": "f581f57ea670641df33b60b5e17ee00612458f953544bdb9fac35f00bf7f4c32",
+      "startLine": 991,
+      "endLine": 1018,
+      "schemaId": "urn:sentilab:package3d:twin:1"
+    }
+  ]
+}

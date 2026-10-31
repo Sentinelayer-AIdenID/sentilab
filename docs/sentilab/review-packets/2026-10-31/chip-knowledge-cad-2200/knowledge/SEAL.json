@@ -1,0 +1,40 @@
+{
+  "sealed_at": "2026-10-31T21:48:23.912Z",
+  "files": [
+    {
+      "name": "METHOD.md",
+      "bytes": 4133,
+      "sha256": "f88fd92b129baa186081e9cb59eab8144c78f870b3baeb8a5a886378535c511c"
+    },
+    {
+      "name": "SOURCE-BINDINGS.json",
+      "bytes": 5184,
+      "sha256": "4f9778746ab2222e7a9653e14cdc2d9e8ee0c07c8d2490adb53e8bb780eb5a94"
+    },
+    {
+      "name": "SUMMARY.md",
+      "bytes": 1747,
+      "sha256": "104ce1090fc22597282127ecfaf94a4082b34b8f6ca1aeb2b20d328ad069e6be"
+    },
+    {
+      "name": "VERIFICATION.json",
+      "bytes": 6646,
+      "sha256": "ecf2ab14dc7caff47a46c67acb753a4f790f5090949ee30bf377c30d2a5e87ab"
+    },
+    {
+      "name": "build-cards.cjs",
+      "bytes": 20717,
+      "sha256": "0916dd8e3ef78d1404537f7cfbfb137211ed9fa31b13b3f503a96e9c5a647c6f"
+    },
+    {
+      "name": "knowledge.jsonl",
+      "bytes": 38562,
+      "sha256": "022f40413f4a07d5adccf154af852a9e8c7c36e03b86d1362825cad11d7bb36e"
+    },
+    {
+      "name": "verify-and-seal.cjs",
+      "bytes": 4066,
+      "sha256": "0f6b6d7a0842ab5ab094a436bbe7bb1ee29ed78c728a93d3e206b39269010d28"
+    }
+  ]
+}

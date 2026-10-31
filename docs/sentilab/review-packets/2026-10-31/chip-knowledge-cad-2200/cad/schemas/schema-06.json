@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sentilab:package3d:result:1",
+  "type": "object",
+  "required": ["schema", "content", "status_text", "run", "prefix", "layout", "model", "values", "field", "receipt_completeness", "refused"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "sentilab-result/1" },
+    "content": { "const": "result" },
+    "status_text": { "const": "Results · from signed, verified evidence only. Each value names its run, geometry, evaluator and label. Simulated, not silicon." },
+    "run": {
+      "type": "object", "required": ["run_id", "family", "arm", "seed"], "additionalProperties": false,
+      "properties": { "run_id": { "type": "string" }, "family": { "type": ["string", "null"] }, "arm": { "type": ["string", "null"] }, "seed": { "type": ["integer", "null"] } }
+    },
+    "prefix": {
+      "type": "object", "required": ["K", "total", "frozen", "mode", "mode_label", "at_seq"], "additionalProperties": false,
+      "properties": {
+        "K": { "type": "integer", "minimum": 0 }, "total": { "type": "integer", "minimum": 0 }, "frozen": { "type": "boolean" },
+        "mode": { "enum": ["REPLAY", "LIVE", "STALE", "ENDED"] }, "mode_label": { "type": "string" }, "at_seq": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "layout": {
+      "oneOf": [ { "type": "null" }, {
+        "type": "object", "required": ["node", "track", "candidate_event", "units", "chiplets", "reference_match"], "additionalProperties": false,
+        "properties": {
+          "node": { "type": "string" }, "track": { "type": "string" },
+          "candidate_event": { "$ref": "#/$defs/receipt" },
+          "units": { "const": "mm" },
+          "chiplets": { "type": "array", "items": { "type": "object", "required": ["id", "x", "y", "w", "h", "layer", "role"], "additionalProperties": false,
+            "properties": { "id": { "type": "string" }, "x": { "type": "number" }, "y": { "type": "number" }, "w": { "type": "number" }, "h": { "type": "number" }, "layer": { "type": "integer" }, "role": { "enum": ["compute", "io", "memory_hbm_block", "memory_dram_block", "unknown"] } } } },
+          "reference_match": { "oneOf": [ { "type": "null" }, { "type": "object", "required": ["variant_id", "content_sha256", "max_abs_diff_mm"], "additionalProperties": false,
+            "properties": { "variant_id": { "type": "string" }, "content_sha256": { "$ref": "urn:sentilab:package3d:common:1#/$defs/sha256" }, "max_abs_diff_mm": { "type": "number", "minimum": 0 } } } ] }
+        }
+      } ]
+    },
+    "model": {
+      "type": "object", "required": ["fixture_id", "model_stack_sha256", "status"], "additionalProperties": false,
+      "properties": { "fixture_id": { "type": ["string", "null"] }, "model_stack_sha256": { "oneOf": [ { "$ref": "urn:sentilab:package3d:common:1#/$defs/sha256" }, { "type": "null" } ] }, "status": { "enum": ["bound", "unknown_family"] } }
+    },
+    "values": { "type": "array", "items": { "$ref": "#/$defs/resultValue" } },
+    "field": { "oneOf": [ { "type": "null" }, { "$ref": "#/$defs/fieldStatus" } ] },
+    "receipt_completeness": {
+      "type": "object", "required": ["evaluator_identity", "geometry_signed", "input_hashes", "argv", "power_trace", "field"], "additionalProperties": false,
+      "properties": {
+        "evaluator_identity": { "type": "boolean" }, "geometry_signed": { "type": "boolean" },
+        "input_hashes": { "enum": ["named", "unnamed", "absent"] }, "argv": { "enum": ["present", "absent"] },
+        "power_trace": { "enum": ["named", "in_unnamed_list", "absent"] }, "field": { "enum": ["verified", "refused", "absent"] }
+      }
+    },
+    "refused": { "type": "array", "items": { "type": "object", "required": ["node", "field", "code", "detail"], "additionalProperties": false,
+      "properties": { "node": { "type": "string" }, "field": { "type": "string" }, "code": { "type": "string" }, "detail": { "type": "string" } } } }
+  },
+  "$defs": {
+    "receipt": {
+      "type": "object", "required": ["seq", "event_id", "hash"], "additionalProperties": false,
+      "properties": { "seq": { "type": "integer", "minimum": 1 }, "event_id": { "type": "string" }, "hash": { "$ref": "urn:sentilab:package3d:common:1#/$defs/sha256" } }
+    },
+    "resultValue": {
+      "type": "object", "required": ["quantity", "statistic", "value", "unit", "declared_unit", "association", "measurement", "evaluator_identity", "label", "validity", "as_of_seq"], "additionalProperties": false,
+      "properties": {
+        "quantity": { "enum": ["J", "W", "center_temp", "field_layer_min", "field_layer_max"] },
+        "statistic": { "enum": ["chip_layer_grid_max", "chiplet_centre", "field_cell", "all_layers_grid_max", "chiplet_unit_native", "tap_selector", "wire_proxy_weighted_manhattan", "routed_wire_open_router"] },
+        "value": { "type": "number" },
+        "unit": { "enum": ["degC", "mm"] },
+        "declared_unit": { "type": ["string", "null"] },
+        "association": { "type": "object", "additionalProperties": false,
+          "properties": { "chiplet": { "type": "string" }, "layer": { "type": "integer", "minimum": 0, "maximum": 15 }, "scope": { "type": "string" } } },
+        "measurement": { "type": "object", "required": ["node", "receipt"], "additionalProperties": false,
+          "properties": { "node": { "type": "string" }, "receipt": { "$ref": "#/$defs/receipt" } } },
+        "evaluator_identity": { "type": ["string", "null"] },
+        "label": { "oneOf": [ { "$ref": "urn:sentilab:package3d:common:1#/$defs/label" }, { "type": "null" } ] },
+        "validity": { "enum": ["valid", "stale"] },
+        "as_of_seq": { "type": "integer", "minimum": 1 }
+      },
+      "if": { "properties": { "unit": { "const": "degC" } } },
+      "then": { "properties": { "label": { "$ref": "urn:sentilab:package3d:common:1#/$defs/label" } } }
+    },
+    "fieldStatus": {
+      "type": "object", "required": ["sha256", "format", "rows", "cols", "layers", "status", "as_of_seq"], "additionalProperties": false,
+      "properties": {
+        "sha256": { "$ref": "urn:sentilab:package3d:common:1#/$defs/sha256" }, "format": { "const": "sentilab-field/0.1" },
+        "rows": { "type": "integer" }, "cols": { "type": "integer" }, "layers": { "type": "integer" },
+        "status": { "enum": ["verified", "refused", "loading", "unavailable"] }, "error": { "type": "string" },
+        "stack_differs_from_manifest": { "type": "array", "items": { "type": "string" } },
+        "as_of_seq": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

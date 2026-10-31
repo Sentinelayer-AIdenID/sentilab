@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sentilab:package3d:model-stack:1",
+  "type": "object",
+  "required": ["schema", "content", "status_text", "code", "materials_as_coded", "layers", "boundary", "fixtures", "not_modelled", "simplifications"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "sentilab-model-stack/1" },
+    "content": { "const": "model" },
+    "status_text": { "const": "Our model · the layers and blocks our thermal solver actually simulates, with its simplifications. Not the real package." },
+    "code": {
+      "type": "object", "required": ["commit", "files"], "additionalProperties": false,
+      "properties": { "commit": { "$ref": "urn:sentilab:package3d:common:1#/$defs/commit" }, "files": { "type": "array", "minItems": 1, "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/pinnedFile" } } }
+    },
+    "materials_as_coded": {
+      "type": "object", "propertyNames": { "$ref": "urn:sentilab:package3d:common:1#/$defs/slug" },
+      "additionalProperties": {
+        "type": "object", "required": ["resistivity_mK_per_W", "heat_capacity_J_per_m3K", "k_W_per_mK", "derivation", "cite"], "additionalProperties": false,
+        "properties": {
+          "resistivity_mK_per_W": { "type": "number", "exclusiveMinimum": 0 },
+          "heat_capacity_J_per_m3K": { "type": "number", "exclusiveMinimum": 0 },
+          "k_W_per_mK": { "type": "number", "exclusiveMinimum": 0 },
+          "derivation": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" },
+          "cite": { "type": "array", "minItems": 1, "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/cite" } }
+        }
+      }
+    },
+    "layers": { "type": "array", "minItems": 8, "maxItems": 8, "items": { "$ref": "#/$defs/modelLayer" } },
+    "boundary": {
+      "type": "object", "required": ["bottom", "top", "temperature_inputs", "cite"], "additionalProperties": false,
+      "properties": {
+        "bottom": { "const": "adiabatic: no heat leaves through the bottom of layer 0 (secondary path off)" },
+        "top": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" },
+        "temperature_inputs": {
+          "type": "array",
+          "items": { "type": "object", "required": ["name", "cite", "rendered", "why"], "additionalProperties": false,
+                     "properties": { "name": { "enum": ["ambient", "initial", "dtm_threshold"] }, "cite": { "$ref": "urn:sentilab:package3d:common:1#/$defs/cite" }, "rendered": { "const": false }, "why": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" } } }
+        },
+        "cite": { "type": "array", "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/cite" } }
+      }
+    },
+    "fixtures": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/fixture" } },
+    "not_modelled": { "type": "array", "uniqueItems": true, "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/typeId" } },
+    "simplifications": {
+      "type": "array",
+      "items": { "type": "object", "required": ["id", "rank", "text", "cite"], "additionalProperties": false,
+                 "properties": { "id": { "type": "string", "pattern": "^S[0-9]{1,2}$" }, "rank": { "type": "integer", "minimum": 1 }, "text": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" }, "cite": { "type": "array", "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/cite" } } } }
+    }
+  },
+  "$defs": {
+    "modelLayer": {
+      "type": "object",
+      "required": ["grid_index", "lcf_index", "name", "role", "thickness_m", "lateral", "material", "units", "powered", "stands_for", "simplifications", "cite", "index_basis"],
+      "additionalProperties": false,
+      "properties": {
+        "grid_index": { "type": "integer", "minimum": 0, "maximum": 7 },
+        "lcf_index": { "oneOf": [ { "type": "integer", "minimum": 0, "maximum": 5 }, { "type": "null" } ] },
+        "name": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" },
+        "role": { "enum": ["lcf", "spreader", "sink"] },
+        "thickness_m": { "type": "number", "exclusiveMinimum": 0 },
+        "lateral": {
+          "type": "object", "required": ["rule", "grid_extent", "note"], "additionalProperties": false,
+          "properties": { "rule": { "enum": ["interposer", "2x_interposer", "4x_interposer"] }, "grid_extent": { "const": "interposer" }, "note": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" } }
+        },
+        "material": { "$ref": "urn:sentilab:package3d:common:1#/$defs/slug" },
+        "units": {
+          "type": "array",
+          "items": { "type": "object", "required": ["pattern", "material", "meaning"], "additionalProperties": false,
+                     "properties": { "pattern": { "type": "string", "pattern": "^(Chiplet|Ubump|Edge|Unit|Substrate|C4Layer|Interposer|TIM|fill)(_\\*)?$" }, "material": { "$ref": "urn:sentilab:package3d:common:1#/$defs/slug" }, "meaning": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" } } }
+        },
+        "powered": { "type": "boolean" },
+        "stands_for": { "type": "array", "uniqueItems": true, "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/typeId" } },
+        "simplifications": { "type": "array", "items": { "type": "string", "pattern": "^S[0-9]{1,2}$" } },
+        "cite": { "type": "array", "minItems": 1, "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/cite" } },
+        "index_basis": { "enum": ["code_reading", "producer_confirmed"] }
+      }
+    },
+    "fixture": {
+      "type": "object",
+      "required": ["fixture_id", "title", "config", "interposer_mm", "spreader_mm", "sink_mm", "dies", "netlist", "legality", "layouts", "role_basis"],
+      "additionalProperties": false,
+      "properties": {
+        "fixture_id": { "enum": ["ascend910", "ascend910-45mm", "micro150", "micro150-45mm"] },
+        "title": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" },
+        "config": { "$ref": "urn:sentilab:package3d:common:1#/$defs/pinnedFile" },
+        "interposer_mm": { "type": "number", "exclusiveMinimum": 0 },
+        "spreader_mm": { "type": "number", "exclusiveMinimum": 0 },
+        "sink_mm": { "type": "number", "exclusiveMinimum": 0 },
+        "dies": {
+          "type": "array", "minItems": 1,
+          "items": {
+            "type": "object", "required": ["index", "chiplet_id", "role", "anatomy_type", "w_mm", "h_mm", "power_W", "halo_mm", "cite"], "additionalProperties": false,
+            "properties": {
+              "index": { "type": "integer", "minimum": 0 },
+              "chiplet_id": { "type": "string", "pattern": "^tap-chiplet-[0-9]+$" },
+              "role": { "enum": ["compute", "io", "memory_hbm_block", "memory_dram_block"] },
+              "anatomy_type": { "oneOf": [ { "$ref": "urn:sentilab:package3d:common:1#/$defs/typeId" }, { "type": "null" } ] },
+              "w_mm": { "type": "number", "exclusiveMinimum": 0 },
+              "h_mm": { "type": "number", "exclusiveMinimum": 0 },
+              "power_W": { "type": "number", "minimum": 0 },
+              "halo_mm": { "type": ["number", "null"], "minimum": 0 },
+              "cite": { "$ref": "urn:sentilab:package3d:common:1#/$defs/cite" }
+            }
+          }
+        },
+        "netlist": {
+          "type": "object", "required": ["matrix", "meaning", "cite"], "additionalProperties": false,
+          "properties": {
+            "matrix": { "type": "array", "items": { "type": "array", "items": { "type": "integer", "minimum": 0 } } },
+            "meaning": { "const": "TAP connection weights between dies, as configured. Not routed wires and not bandwidth." },
+            "cite": { "$ref": "urn:sentilab:package3d:common:1#/$defs/cite" }
+          }
+        },
+        "legality": {
+          "type": "object", "required": ["center_lattice_mm", "min_die_gap_mm", "rotation", "cite"], "additionalProperties": false,
+          "properties": {
+            "center_lattice_mm": { "type": ["number", "null"] },
+            "min_die_gap_mm": { "type": ["number", "null"] },
+            "rotation": { "enum": ["catalog", "per_die_90"] },
+            "cite": { "oneOf": [ { "$ref": "urn:sentilab:package3d:common:1#/$defs/cite" }, { "type": "null" } ] }
+          }
+        },
+        "layouts": { "type": "array", "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/slug" } },
+        "role_basis": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" }
+      }
+    }
+  }
+}

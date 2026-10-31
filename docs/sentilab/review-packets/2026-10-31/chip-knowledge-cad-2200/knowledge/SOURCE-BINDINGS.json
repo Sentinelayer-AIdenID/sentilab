@@ -1,0 +1,88 @@
+{
+  "created_at": "2026-10-31T21:47:10.498Z",
+  "sources": [
+    {
+      "id": "diagnosis",
+      "absolute_path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/reports/SentiLab inconclusive results diagnosis.md",
+      "workspace_relative_path": "reports/SentiLab inconclusive results diagnosis.md",
+      "sha256": "132bf28fc6d962ae159a942084b3a7fe4c17fd52dc65da7a13789939a0460a7d",
+      "bytes": 68772,
+      "expected_sha256": "132bf28fc6d962ae159a942084b3a7fe4c17fd52dc65da7a13789939a0460a7d"
+    },
+    {
+      "id": "fields",
+      "absolute_path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/existing-field-diagnostics-1441/RESULTS.json",
+      "workspace_relative_path": "tasks/sentilab-review-2026-10-30/existing-field-diagnostics-1441/RESULTS.json",
+      "sha256": "d3ac1b66696e979f2d4ba9ff82faa90ddbdccdd174ff277e283ba63cf3f1715c",
+      "bytes": 47691,
+      "expected_sha256": "d3ac1b66696e979f2d4ba9ff82faa90ddbdccdd174ff277e283ba63cf3f1715c"
+    },
+    {
+      "id": "independent",
+      "absolute_path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/existing-field-independent-1444/RESULTS.json",
+      "workspace_relative_path": "tasks/sentilab-review-2026-10-30/existing-field-independent-1444/RESULTS.json",
+      "sha256": "fdf13ffeba948a46bfb758c28c3ddb0d1e11293e2bdf882f247b2c05bd20fd42",
+      "bytes": 11355,
+      "expected_sha256": "fdf13ffeba948a46bfb758c28c3ddb0d1e11293e2bdf882f247b2c05bd20fd42"
+    },
+    {
+      "id": "independent_check",
+      "absolute_path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/existing-field-independent-1444/CHECK.md",
+      "workspace_relative_path": "tasks/sentilab-review-2026-10-30/existing-field-independent-1444/CHECK.md",
+      "sha256": "154815ccd5bf1d2c9b83abd2a55c658fa0e39485e778d85ea89ebee3c25a31b8",
+      "bytes": 2913,
+      "expected_sha256": null
+    },
+    {
+      "id": "combined",
+      "absolute_path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_hotspot/probe_results/combined_report.json",
+      "workspace_relative_path": "tasks/sentilab-review-2026-10-30/pr25-fa7ed8f/source/sundai_hotspot/probe_results/combined_report.json",
+      "sha256": "d09d9619ca6c506da9dc232cad3af64f49cb67951c54615a3a45b6f0bb1576b5",
+      "bytes": 27953,
+      "expected_sha256": "d09d9619ca6c506da9dc232cad3af64f49cb67951c54615a3a45b6f0bb1576b5"
+    },
+    {
+      "id": "geometry",
+      "absolute_path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/peer-diagnosis-1318/literature-delta-1347/FINDINGS.md",
+      "workspace_relative_path": "tasks/sentilab-review-2026-10-30/peer-diagnosis-1318/literature-delta-1347/FINDINGS.md",
+      "sha256": "ee55599045d8f9dbfa7af85cfe71df2a7d85d0285d8c6d715654704032341626",
+      "bytes": 4051,
+      "expected_sha256": "ee55599045d8f9dbfa7af85cfe71df2a7d85d0285d8c6d715654704032341626"
+    },
+    {
+      "id": "vectors",
+      "absolute_path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/peer-diagnosis-1318/literature-delta-1347/FIG6A-VECTORS.json",
+      "workspace_relative_path": "tasks/sentilab-review-2026-10-30/peer-diagnosis-1318/literature-delta-1347/FIG6A-VECTORS.json",
+      "sha256": "45ee7233531332427dfa67b63e125601d9c423587adb613e3a3ed6ce8a1503bf",
+      "bytes": 5007,
+      "expected_sha256": null
+    },
+    {
+      "id": "geometry_manifest",
+      "absolute_path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/peer-diagnosis-1318/literature-delta-1347/SOURCE-MANIFEST.json",
+      "workspace_relative_path": "tasks/sentilab-review-2026-10-30/peer-diagnosis-1318/literature-delta-1347/SOURCE-MANIFEST.json",
+      "sha256": "3bade5147d23e240e2a0f5fdd63f7c869a70bfc0f1b660271f1be735a8cb7577",
+      "bytes": 5566,
+      "expected_sha256": null
+    },
+    {
+      "id": "forensics",
+      "absolute_path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/research_notes/SentiLab inconclusive results diagnosis/numerical_forensics_data.json",
+      "workspace_relative_path": "research_notes/SentiLab inconclusive results diagnosis/numerical_forensics_data.json",
+      "sha256": "ba4ec661063c4ba5e8a746b9239a27908d3b4c2c99e9f72d70125ea217663e37",
+      "bytes": 76226,
+      "expected_sha256": null
+    },
+    {
+      "id": "spend",
+      "absolute_path": "C:/Users/carth/Desktop/projects/PlexAura_Inc/SentinelLayer/AIdenID/tasks/sentilab-review-2026-10-30/pr25-a10063d-review/source/docs/sentilab/evidence/SLAB-039/SPEND.json",
+      "workspace_relative_path": "tasks/sentilab-review-2026-10-30/pr25-a10063d-review/source/docs/sentilab/evidence/SLAB-039/SPEND.json",
+      "sha256": "e2cd921395b9ce6a1469ce74ee59359132729d03a35326f8fedf46da7db85149",
+      "bytes": 1387,
+      "expected_sha256": null
+    }
+  ],
+  "frozen_report_unchanged": true,
+  "card_count": 4,
+  "quote_bindings": 42
+}

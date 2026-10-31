@@ -1,0 +1,8 @@
+{
+  "at": "2026-10-31T21:52:14.232Z",
+  "priorVerifier": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\sentilab-planning\\gpt-astra-carter\\daytime-2026-10-31\\verify-knowledge-2151.cjs",
+  "priorVerifierSha256": "883d1e2eb4430a490ef7519eff9e2a53683f9e75caa3307b16db342f8af979a8",
+  "priorObservedFailure": "AssertionError 9 !== 10 at sources.size === 10 after 42 quote spans. Prior verifier counted quoted sources as all bound sources.",
+  "resolution": "Verify all ten SOURCE-BINDINGS entries separately; verify nine distinct quoted sources and 42 spans. Preserve packet and prior verifier bytes.",
+  "packetChanged": false
+}

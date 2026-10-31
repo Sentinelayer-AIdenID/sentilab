@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sentilab:package3d:common:1",
+  "$defs": {
+    "slug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$" },
+    "typeId": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,47}$" },
+    "instanceId": { "type": "string", "maxLength": 400, "pattern": "^[a-z0-9][a-z0-9-]{0,39}(/[a-z][a-z0-9_]{0,47}#[0-9]{1,4})+$" },
+    "factId": { "type": "string", "pattern": "^(hbm|pkg|prd|thm)-[0-9]{3}$" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "cite": { "type": "string", "maxLength": 200, "pattern": "^[A-Za-z0-9_./-]+:[0-9]+(-[0-9]+)?(, ?[0-9]+(-[0-9]+)?)*$" },
+    "text": { "type": "string", "minLength": 1, "maxLength": 1000 },
+    "basis": { "enum": ["sourced", "derived", "model", "evidence", "render_hint", "unknown"] },
+    "unit": { "enum": ["um", "mm", "m", "mm2", "GB", "count", "fraction", "W", "W/cm2", "A", "A/us", "V", "mF", "nF/mm2", "uOhm", "bit", "Gbit/s", "GT/s", "GB/s", "TB/s", "pJ/bit", "W/(m*K)", "K*mm2/W", "K/W", "W/(m2*K)", "J/(m3*K)", "m*K/W"] },
+    "connection": { "enum": ["thermal", "power", "signal", "mechanical"] },
+    "variant": { "enum": ["all", "lidded", "lidless", "si_interposer", "rdl_interposer", "bridge_interposer", "product_reference", "liquid_cooled", "air_cooled", "vertical_power_delivery"] },
+    "pinnedFile": {
+      "type": "object", "required": ["path", "sha256"], "additionalProperties": false,
+      "properties": { "path": { "type": "string", "maxLength": 300 }, "sha256": { "$ref": "#/$defs/sha256" }, "commit": { "$ref": "#/$defs/commit" } }
+    },
+    "omission": {
+      "type": "object", "required": ["what", "why"], "additionalProperties": false,
+      "properties": { "what": { "$ref": "#/$defs/text" }, "why": { "$ref": "#/$defs/text" }, "from": { "type": "string", "maxLength": 300 } }
+    },
+    "rect": {
+      "type": "object", "required": ["x0", "x1", "y0", "y1"], "additionalProperties": false,
+      "properties": { "x0": { "type": "number" }, "x1": { "type": "number" }, "y0": { "type": "number" }, "y1": { "type": "number" } }
+    },
+    "box": {
+      "type": "object", "required": ["x0", "x1", "y0", "y1", "z0", "z1"], "additionalProperties": false,
+      "properties": { "x0": { "type": "number" }, "x1": { "type": "number" }, "y0": { "type": "number" }, "y1": { "type": "number" }, "z0": { "type": "number" }, "z1": { "type": "number" } }
+    },
+    "quantity": {
+      "type": "object",
+      "required": ["basis", "unit", "value", "min", "max", "facts"],
+      "additionalProperties": false,
+      "properties": {
+        "basis": { "$ref": "#/$defs/basis" },
+        "unit": { "$ref": "#/$defs/unit" },
+        "value": { "type": ["number", "null"] },
+        "min": { "type": ["number", "null"] },
+        "max": { "type": ["number", "null"] },
+        "facts": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/factId" } },
+        "derivation": { "$ref": "#/$defs/text" },
+        "hint_basis": { "$ref": "#/$defs/text" },
+        "model_ref": { "$ref": "#/$defs/cite" },
+        "evidence_ref": { "type": "string", "maxLength": 300 },
+        "note": { "$ref": "#/$defs/text" }
+      },
+      "allOf": [
+        { "if": { "properties": { "basis": { "const": "unknown" } } },
+          "then": { "properties": { "value": { "type": "null" }, "min": { "type": "null" }, "max": { "type": "null" } } } },
+        { "if": { "properties": { "basis": { "const": "render_hint" } } },
+          "then": { "required": ["hint_basis"], "properties": { "value": { "type": "number" }, "min": { "type": "null" }, "max": { "type": "null" } } } },
+        { "if": { "properties": { "basis": { "const": "sourced" } } },
+          "then": { "properties": { "facts": { "minItems": 1 } },
+                    "anyOf": [ { "properties": { "value": { "type": "number" } } }, { "properties": { "min": { "type": "number" } } }, { "properties": { "max": { "type": "number" } } } ] } },
+        { "if": { "properties": { "basis": { "const": "derived" } } },
+          "then": { "required": ["derivation"], "properties": { "facts": { "minItems": 1 }, "value": { "type": "number" } } } },
+        { "if": { "properties": { "basis": { "const": "model" } } }, "then": { "required": ["model_ref"] } },
+        { "if": { "properties": { "basis": { "const": "evidence" } } }, "then": { "required": ["evidence_ref"], "properties": { "value": { "type": "number" } } } }
+      ]
+    },
+    "label": {
+      "type": "object", "required": ["state", "text", "short", "title"], "additionalProperties": false,
+      "properties": {
+        "state": { "enum": ["withdrawn", "unvalidated", "illustrative", "accepted"] },
+        "text": { "type": "string" }, "short": { "type": "string" }, "title": { "type": "string" }
+      }
+    }
+  }
+}

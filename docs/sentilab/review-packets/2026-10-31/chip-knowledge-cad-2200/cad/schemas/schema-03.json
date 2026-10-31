@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:sentilab:package3d:assembly:1",
+  "type": "object",
+  "required": ["schema", "content", "id", "title", "status_text", "names_policy", "anatomy_sha256", "frame", "arrangement", "variants_offered", "instances", "edges", "retired_ids", "omitted", "geometry_sha256"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "sentilab-assembly/1" },
+    "content": { "const": "anatomy" },
+    "id": { "$ref": "urn:sentilab:package3d:common:1#/$defs/slug" },
+    "title": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" },
+    "status_text": { "const": "Typical anatomy · a representative reconstruction from public sources. Not any manufacturer's CAD. Not silicon-validated. Arrangement schematic; unknown values are marked." },
+    "names_policy": { "enum": ["generic", "named"] },
+    "anatomy_sha256": { "$ref": "urn:sentilab:package3d:common:1#/$defs/sha256" },
+    "frame": { "const": { "length_unit": "mm", "origin": "interposer lower-left corner, on the interposer's bottom face", "x": "right", "y": "up in plan view", "z": "out of the board, toward the cooler" } },
+    "arrangement": { "enum": ["schematic", "sourced"] },
+    "variants_offered": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/variant" } },
+    "instances": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/instance" } },
+    "edges": { "type": "array", "items": { "$ref": "#/$defs/instanceEdge" } },
+    "retired_ids": { "type": "array", "uniqueItems": true, "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/instanceId" } },
+    "omitted": { "type": "array", "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/omission" } },
+    "geometry_sha256": { "$ref": "urn:sentilab:package3d:common:1#/$defs/sha256" }
+  },
+  "$defs": {
+    "drawnBasis": { "enum": ["sourced", "derived", "render_hint"] },
+    "instance": {
+      "type": "object", "required": ["id", "type", "parent", "label", "variants", "drawn", "box", "basis"], "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "urn:sentilab:package3d:common:1#/$defs/instanceId" },
+        "type": { "$ref": "urn:sentilab:package3d:common:1#/$defs/typeId" },
+        "parent": { "oneOf": [ { "$ref": "urn:sentilab:package3d:common:1#/$defs/instanceId" }, { "type": "null" } ] },
+        "label": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" },
+        "variants": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/variant" } },
+        "drawn": { "type": "boolean" },
+        "box": { "$ref": "urn:sentilab:package3d:common:1#/$defs/box" },
+        "basis": {
+          "type": "object", "required": ["position", "footprint", "thickness"], "additionalProperties": false,
+          "properties": { "position": { "$ref": "#/$defs/drawnBasis" }, "footprint": { "$ref": "#/$defs/drawnBasis" }, "thickness": { "$ref": "#/$defs/drawnBasis" } }
+        },
+        "dims": {
+          "type": "object", "additionalProperties": false,
+          "properties": { "w": { "$ref": "urn:sentilab:package3d:anatomy:1#/$defs/aq" }, "h": { "$ref": "urn:sentilab:package3d:anatomy:1#/$defs/aq" }, "t": { "$ref": "urn:sentilab:package3d:anatomy:1#/$defs/aq" } }
+        },
+        "array": {
+          "type": "object", "required": ["class", "region", "pitch", "diameter", "height", "count", "lattice"], "additionalProperties": false,
+          "properties": {
+            "class": { "$ref": "urn:sentilab:package3d:common:1#/$defs/slug" },
+            "region": { "$ref": "urn:sentilab:package3d:common:1#/$defs/rect" },
+            "pitch": { "$ref": "urn:sentilab:package3d:anatomy:1#/$defs/aq" },
+            "diameter": { "$ref": "urn:sentilab:package3d:anatomy:1#/$defs/aq" },
+            "height": { "$ref": "urn:sentilab:package3d:anatomy:1#/$defs/aq" },
+            "count": { "$ref": "urn:sentilab:package3d:anatomy:1#/$defs/aq" },
+            "lattice": { "enum": ["square", "staggered", "unknown"] }
+          }
+        },
+        "note": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" }
+      }
+    },
+    "instanceEdge": {
+      "type": "object", "required": ["id", "from", "to", "kinds", "via", "type_edge"], "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "urn:sentilab:package3d:common:1#/$defs/slug" },
+        "from": { "$ref": "urn:sentilab:package3d:common:1#/$defs/instanceId" },
+        "to": { "$ref": "urn:sentilab:package3d:common:1#/$defs/instanceId" },
+        "kinds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/connection" } },
+        "via": { "oneOf": [ { "$ref": "urn:sentilab:package3d:common:1#/$defs/instanceId" }, { "type": "null" } ] },
+        "type_edge": { "type": "string", "pattern": "^[a-z][a-z0-9_]*->[a-z][a-z0-9_]*$" }
+      }
+    }
+  }
+}
