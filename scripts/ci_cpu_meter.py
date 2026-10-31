@@ -192,8 +192,12 @@ def run(directory, admission, command):
             except (OSError, subprocess.TimeoutExpired) as exc:
                 errors.append(str(exc))
         if broker is not None:
-            broker.shutdown()
-            broker.server_close()
+            try:
+                broker.server_close()
+            except (OSError, RuntimeError) as exc:
+                errors.append(str(exc))
+            if not broker.quiescent:
+                errors.append('allocation broker handlers did not drain within reserved overhead')
         final_populated = None
         if group is not None:
             try:
@@ -217,7 +221,9 @@ def run(directory, admission, command):
             except (OSError, RuntimeError, ValueError, KeyError) as exc:
                 errors.append(str(exc))
         final_cpu.update(final_populated=final_populated, helper_reaped=helper_reaped,
-                         cleanup_complete=helper_reaped and final_populated is False,
+                         broker_quiescent=broker is None or broker.quiescent,
+                         cleanup_complete=(helper_reaped and final_populated is False
+                                           and (broker is None or broker.quiescent)),
                          kill_within_reserve=kill_within_reserve)
         if ledger.summary()['direct_call_violations']:
             state, code = 'launch_violation', 1

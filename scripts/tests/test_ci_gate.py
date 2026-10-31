@@ -129,3 +129,92 @@ int main(int argc, char **argv) {
         self.assertEqual(self.ledger.summary()['direct_call_violations'], 1)
         with self.assertRaisesRegex(RuntimeError, 'closed'):
             self.launch()
+
+    def test_finalizer_drains_delayed_compiled_entry_violation_and_cpu(self):
+        self.check_finalizer_delayed_violation(release_during_close=True)
+
+    def test_finalizer_marks_unresolved_broker_handlers_inconclusive(self):
+        self.check_finalizer_delayed_violation(release_during_close=False)
+
+    def check_finalizer_delayed_violation(self, *, release_during_close):
+        import json
+        import sys
+        import threading
+        from dataclasses import asdict
+
+        from scripts.ci_cpu_meter import run
+
+        directory = Path(self.directory.name)
+        group = directory / 'group'
+        (group / 'host').mkdir(parents=True)
+        (group / 'cpu.stat').write_text('usage_usec 0\n')
+        (group / 'cgroup.events').write_text('populated 0\n')
+        entered, release, completed = threading.Event(), threading.Event(), threading.Event()
+        violation = Ledger.violation
+
+        def delayed(ledger):
+            entered.set()
+            if not release.wait(3):
+                raise RuntimeError('fake handler timed out')
+            (group / 'cpu.stat').write_text('usage_usec 1250000\n')
+            violation(ledger)
+            completed.set()
+
+        timers = []
+
+        def broker(ledger):
+            server = serve(ledger, now=lambda: 1793448000)
+            server.drain_timeout = .15 if not release_during_close else 2
+            close = server.server_close
+
+            def delayed_release():
+                self.assertTrue(entered.wait(2), 'compiled entry request was never accepted')
+                if release_during_close:
+                    timer = threading.Timer(.1, release.set)
+                    timers.append(timer)
+                    timer.start()
+                close()
+
+            server.server_close = delayed_release
+            return server
+
+        admission = {'identity': asdict(IDENTITY), 'state': 'admitted', 'allocation_id': '56314',
+                     'slot': 3, 'launch_reservation': 100, 'cpu_reservation_seconds': 900}
+        try:
+            with patch('scripts.ci_cpu_meter.create_group', return_value=group), \
+                 patch('scripts.ci_cpu_meter.time.time', return_value=1793448000), \
+                 patch('scripts.ci_cpu_meter.serve', side_effect=broker), patch.object(Ledger, 'violation', delayed):
+                # Real compiled ci_entry.h refuses 125; caller deliberately ignores it.
+                code = run(directory / 'meter', admission, [sys.executable, '-c',
+                           'import subprocess,sys; p=subprocess.run([sys.argv[1]]); assert p.returncode == 125',
+                           str(self.binary)])
+                result = json.loads((directory / 'meter/settlement.json').read_text())
+            self.assertEqual(code, 1)
+            if release_during_close:
+                self.assertEqual(result['state'], 'launch_violation')
+                self.assertEqual(result['direct_call_violations'], 1)
+                self.assertEqual(result['cpu']['cgroup_cpu_seconds'], 1.25)
+                self.assertTrue(result['cpu']['broker_quiescent'])
+            else:
+                self.assertEqual(result['state'], 'inconclusive')
+                self.assertFalse(result['cpu']['broker_quiescent'])
+                self.assertGreaterEqual(result['cpu']['charged_cpu_seconds'], 900)
+        finally:
+            release.set()
+            self.assertTrue(completed.wait(3))
+            for timer in timers:
+                timer.join()
+
+    def test_broker_close_drains_requests_already_queued_on_listener(self):
+        import socket
+
+        server = serve(self.ledger, port=0)
+        server.shutdown()  # enqueue after the accept loop exits, before final close
+        try:
+            with socket.create_connection(('127.0.0.1', server.server_port), timeout=2) as client:
+                client.sendall(b'POST /violation HTTP/1.0\r\nContent-Length: 2\r\n\r\n{}')
+                server.server_close()
+            self.assertEqual(self.ledger.summary()['direct_call_violations'], 1)
+            self.assertTrue(server.quiescent)
+        finally:
+            server.server_close()
