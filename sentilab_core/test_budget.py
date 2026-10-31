@@ -51,7 +51,7 @@ class BudgetTests(unittest.TestCase):
             raise RuntimeError("crash")
         again = Budget(budget.root, budget.limits, clock=lambda: 100)
         self.assertEqual(again.snapshot(), {"solves": 1, "cpu_charged_s": 15,
-                                           "cpu_actual_s": 0, "unsettled": 1})
+                                           "cpu_actual_s": 0, "cpu_unmeasured": 1, "unsettled": 1})
         with self.assertRaisesRegex(BudgetHalt, "already reserved"), again.reserve("r", "crashed"):
             self.fail("crashed solve repeated")
         with again.reserve("r", "failed"):

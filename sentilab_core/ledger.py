@@ -1,6 +1,7 @@
 """Fsynced per-run JSONL, one append transaction and authenticated replay prefix."""
 from contextlib import contextmanager
 import fcntl
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -80,7 +81,7 @@ def read_prefix(path, *, run_id, public_keys):
                 value = json.loads(raw, object_pairs_hook=_object)
                 if not isinstance(value, dict):
                     raise ValueError("envelope is not an object")
-                rows.append({"envelope": value})
+                rows.append({"envelope": value, "raw_digest": hashlib.sha256(raw).hexdigest()})
             except (ValueError, UnicodeError, RecursionError):
                 rows.append({"error": "invalid JSONL row"})
     def seq(row):
@@ -88,8 +89,16 @@ def read_prefix(path, *, run_id, public_keys):
         return event.get("seq") if isinstance(event, dict) else None
     if all(type(seq(row)) is int for row in rows):
         rows.sort(key=lambda row: row["envelope"]["event"]["seq"])
-    # Refuse the whole duplicate/conflict group before projecting any member.
-    # Exact duplicate envelopes are also refused; ingestion is not deduplication.
+    # Byte-identical retransmissions are no-ops. Conflicting groups freeze before
+    # every member, independent of their delivery order (v0.5 corrective rule).
+    unique, seen = [], set()
+    for row in rows:
+        raw_digest = row.get("raw_digest")
+        if raw_digest is not None and raw_digest in seen:
+            continue
+        seen.add(raw_digest)
+        unique.append(row)
+    rows = unique
     by_seq, by_id = {}, {}
     for index, row in enumerate(rows):
         if type(seq(row)) is int:

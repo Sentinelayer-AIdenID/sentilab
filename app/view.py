@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from sentilab_core import operations
+from sentilab_core.budget import Limits
 from sentilab_core.ledger import replay
 
 router = APIRouter()
@@ -35,6 +36,7 @@ def start_live_service():
     if os.environ.get("SENTILAB_LIVE_ENABLED") != "1":
         return
     ctx = context()
+    ctx.options.setdefault("limits", Limits(development=False))
     if ctx.signer is None:
         raise RuntimeError("live service requires the injected core signer and operator trust pin")
 
@@ -65,18 +67,20 @@ def runs():
 def events(run_id: str, after: int = Query(0, ge=0), limit: int = Query(500, ge=1, le=500)):
     try:
         state = replay(context().root, run_id, public_keys=context().public_keys)
-        verified = operations.verify(context(), ai_off=True, run_id=run_id)
+        verified = operations.verified_state(state, run_id)
     except FileNotFoundError:
         raise HTTPException(404, "run not found") from None
     except ValueError:
         raise HTTPException(400, "invalid run_id") from None
     rows = [row["envelope"] for row in state["rows"] if "envelope" in row and
+            isinstance(row["envelope"].get("run"), dict) and row["envelope"]["run"].get("run_id") == run_id and
             isinstance(row["envelope"].get("event"), dict) and
             type(row["envelope"]["event"].get("seq")) is int and row["envelope"]["event"]["seq"] > after]
     page = rows[:limit]
     return JSONResponse({"run_id": run_id, "envelopes": page, "after": after,
                          "next_after": page[-1]["event"]["seq"] if page else after,
                          "has_more": len(rows) > limit, "prefix_end": verified["prefix_end"],
+                         "unrenderable_rows": sum("envelope" not in row for row in state["rows"]),
                          "chain_error": verified["chain_error"], "projection_error": verified["projection_error"],
                          "board": verified["board"], "projection": verified["projection"],
                          **operations.LABELS}, headers={"cache-control": "no-store"})
