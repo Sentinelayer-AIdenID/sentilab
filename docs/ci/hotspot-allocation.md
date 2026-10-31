@@ -9,10 +9,45 @@ unknown; a visible Actions run count is neither a quota nor a measurement.
 
 The `allocation-proof` job runs fake tests first. `admission` then executes only
 trusted base-branch code, with a job-scoped `contents: write` permission. It reserves
-one immutable Git ref before the unprivileged container job becomes eligible.
+one immutable Git ref before the unprivileged container job may run its workload
+(except for the base-controller rollout path below).
 PR code never runs in the admission job; checkout does not persist credentials.
 Fork PRs without a writable token fail closed. No `pull_request_target` execution
 of PR code is introduced.
+
+`contents: write` is necessary for the Git database API's commit creation and
+atomic create-if-absent slot refs; `contents: read` cannot reserve a durable slot.
+Only admission receives this permission. Its sole checkout is the PR **base SHA**
+(the pushed SHA on `main`), checked against `HEAD` before execution. The module is
+loaded only from that tree; no PR checkout, PR artifact, dependency install, or
+PR-head script runs with the write token. Head/merge SHAs enter the receipt only
+as data, through environment variables. The container job has read permissions.
+
+The PR introducing this controller cannot run a module absent from its trusted
+base. For that rollout window only, admission inspects `git ls-tree` at the
+verified base SHA. If and only if `scripts/ci_admit.py` is absent from that tree,
+inline isolated Python (stdlib only) emits a successful receipt with
+`"mode": "bootstrap"`, `"reason": "controller absent at base <sha>"`, the base SHA,
+full run identity, and the same 100-launch/900-CPU-second local limits. It does
+**not** invent a durable slot or claim global admission was enforced. Errors in
+Git inspection, an existing controller, the store, or owner configuration never
+fall back to bootstrap; even a tracked controller missing from the checkout fails.
+Once the controller is on the base branch, normal durable admission is mandatory.
+The exception is tied to base contents, not a claim that only one workflow can
+run during rollout. Owner accounting must include this rollout window when
+choosing the historical debit; its run artifacts provide the measured evidence.
+
+`container` is a required check and has `needs: admission` plus `if: always()`.
+It downloads admission data first; its first shell step validates it **before
+checkout or workload execution**. An unsuccessful admission job or a missing,
+refused, malformed, mismatched, or out-of-bounds receipt exits 1 with
+`Container admission failed:`. A bootstrap receipt must match the trusted base
+SHA and reason. Only a validated receipt reaches the same meter, launch gate,
+required suites, and terminal recovery. Settlement JSON includes the admission
+receipt, so bootstrap is visible even after interrupted recovery.
+`scripts/tests/test_ci_workflow.py` executes these workflow shell blocks and checks
+that every required job with dependencies uses `always()`; upstream failure must
+produce a failed `container`, never a skipped required check.
 
 The allocation owner must first create a commit whose entire message is JSON:
 
@@ -43,8 +78,8 @@ run for a retry; it consumes a new global slot. The single supported workload is
 job `container`, matrix `{}`. Adding jobs/matrix axes requires a shared accounting
 design first; identity validation refuses unsupported shapes.
 
-Initial rollout needs these trusted scripts on the base branch, the bootstrap,
-and a successful controlled CI run. Until then container admission fails closed.
+After the base-controller rollout, normal operation requires the owner bootstrap
+ref and a successful controlled CI run. Missing owner configuration fails closed.
 Rollback closes admission by exhausting the owner debit **before any slots exist**,
 or disabling new workflow dispatches at the repository level; retain all existing
 refs/artifacts. Do not revert to unmetered HotSpot execution. Workflow changes need

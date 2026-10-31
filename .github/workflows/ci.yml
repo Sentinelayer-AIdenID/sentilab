@@ -56,7 +56,33 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: python3 -m scripts.ci_admit "$RUNNER_TEMP/allocation/admission.json"
+          TRUSTED_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$TRUSTED_BASE_SHA"
+          controller_entry="$(git ls-tree "$TRUSTED_BASE_SHA" -- scripts/ci_admit.py)"
+          if [[ -n "$controller_entry" ]]; then
+            python3 -m scripts.ci_admit "$RUNNER_TEMP/allocation/admission.json"
+          else
+            # One-time rollout only: stdlib, no imports from the PR or base tree.
+            python3 -I - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          base = os.environ['TRUSTED_BASE_SHA']
+          receipt = dict(mode='bootstrap', reason='controller absent at base ' + base,
+                         base_sha=base, state='admitted', allocation_id='56314',
+                         launch_reservation=100, cpu_reservation_seconds=900,
+                         identity=dict(repository=os.environ['GITHUB_REPOSITORY'],
+                                       run_id=os.environ['GITHUB_RUN_ID'],
+                                       attempt=os.environ['GITHUB_RUN_ATTEMPT'], job='container', matrix={},
+                                       head_sha=os.environ['PR_HEAD_SHA'], build_sha=os.environ['GITHUB_SHA']))
+          path = Path(os.environ['RUNNER_TEMP']) / 'allocation/admission.json'
+          path.parent.mkdir(parents=True, exist_ok=True)
+          path.write_text(json.dumps(receipt, indent=2) + '\n')
+          print('CI allocation bootstrap:', receipt['reason'])
+          PY
+          fi
       - name: Preserve admission or refusal
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -87,7 +113,7 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           TRUSTED_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
         run: |
-          python3 - <<'PY'
+          python3 -I - <<'PY'
           import json
           import os
           import sys
@@ -107,7 +133,13 @@ jobs:
               if (receipt.get('allocation_id') != '56314' or receipt.get('launch_reservation') != 100
                       or receipt.get('cpu_reservation_seconds') != 900):
                   raise ValueError('invalid admission limits')
-              if (receipt.get('mode', 'enforced') != 'enforced' or type(receipt.get('slot')) is not int
+              mode = receipt.get('mode', 'enforced')
+              if mode == 'bootstrap':
+                  base = os.environ['TRUSTED_BASE_SHA']
+                  if (receipt.get('base_sha') != base or receipt.get('slot') is not None
+                          or receipt.get('reason') != 'controller absent at base ' + base):
+                      raise ValueError('invalid base-controller bootstrap')
+              elif (mode != 'enforced' or type(receipt.get('slot')) is not int
                       or not 1 <= receipt['slot'] <= 200):
                   raise ValueError('invalid durable admission slot')
           except (OSError, ValueError, TypeError, KeyError) as exc:

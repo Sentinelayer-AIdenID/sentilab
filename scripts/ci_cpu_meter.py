@@ -7,6 +7,7 @@ of the docker CLI alone does not include BuildKit or runtime containers.
 """
 import json
 import os
+import re
 import resource
 import signal
 import subprocess
@@ -60,10 +61,10 @@ def create_group(name, root=Path('/sys/fs/cgroup')):
     return group
 
 
-def export(ledger, directory):
+def export(ledger, directory, admission):
     target = directory / 'settlement.json'
     temporary = directory / 'settlement.tmp'
-    temporary.write_text(json.dumps(ledger.summary(), indent=2) + '\n')
+    temporary.write_text(json.dumps(dict(ledger.summary(), admission=admission), indent=2) + '\n')
     temporary.replace(target)
 
 
@@ -91,15 +92,24 @@ def run(directory, admission, command):
         raise RuntimeError('no valid admission')
     if (admission.get('launch_reservation') != 100
             or admission.get('cpu_reservation_seconds') != CPU_CAP
-            or admission.get('allocation_id') != '56314'
-            or not 1 <= admission.get('slot', 0) <= 200):
+            or admission.get('allocation_id') != '56314'):
+        raise RuntimeError('invalid admission bounds')
+    mode = admission.get('mode', 'enforced')
+    if mode == 'bootstrap':
+        base = admission.get('base_sha', '')
+        if (not isinstance(base, str) or not re.fullmatch(r'[a-f0-9]{40}', base)
+                or admission.get('reason') != 'controller absent at base ' + base
+                or admission.get('slot') is not None):
+            raise RuntimeError('invalid base-controller bootstrap')
+    elif (mode != 'enforced' or type(admission.get('slot')) is not int
+          or not 1 <= admission['slot'] <= 200):
         raise RuntimeError('invalid admission bounds')
     ledger = Ledger(directory / 'events.jsonl', identity)
     # Reentry refuses even if the first process crashed before any solver launch.
     if (directory / 'meter-started').exists():
         raise RuntimeError('meter already started; refusing budget reset')
     (directory / 'meter-started').touch(exist_ok=False)
-    export(ledger, directory)
+    export(ledger, directory, admission)
     group, broker, process = None, None, None
     state, code = 'inconclusive', 1
     final_cpu = {'cpu_seconds': None, 'measurement': 'unavailable',
@@ -157,7 +167,7 @@ def run(directory, admission, command):
         if ledger.summary()['direct_call_violations']:
             state, code = 'launch_violation', 1
         ledger.finish(state, final_cpu)
-        export(ledger, directory)
+        export(ledger, directory, admission)
         for sig, handler in old_handlers.items():
             signal.signal(sig, handler)
     print(json.dumps({'state': state, 'launches': ledger.summary()['launches_reserved'], 'cpu': final_cpu}))
@@ -171,7 +181,7 @@ def recover(directory, *, root=Path('/sys/fs/cgroup')):
         return
     ledger = Ledger(directory / 'events.jsonl', Identity(**admission['identity']))
     if ledger.summary()['state'] != 'in_progress':
-        export(ledger, directory)
+        export(ledger, directory, admission)
         return
     group = root / ('ci-allocation-' + admission['identity']['run_id'])
     sample = None
@@ -181,7 +191,7 @@ def recover(directory, *, root=Path('/sys/fs/cgroup')):
     ledger.finish('interrupted', {'cpu_seconds': None, 'last_cgroup_cpu_seconds': sample,
                                   'measurement': 'supervisor lost; total unknown',
                                   'charged_cpu_seconds': CPU_CAP})
-    export(ledger, directory)
+    export(ledger, directory, admission)
 
 
 def main():

@@ -100,6 +100,67 @@ class WorkflowTests(unittest.TestCase):
         process = self.validate(json.dumps(self.receipt()))
         self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
 
+    def bootstrap(self, *, controller=None, remove_controller=False):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            tree = directory / 'base'
+            tree.mkdir()
+            if controller is not None:
+                (tree / 'scripts').mkdir()
+                (tree / 'scripts/ci_admit.py').write_text(controller)
+            subprocess.run(['git', 'init', '-q', str(tree)], check=True)
+            subprocess.run(['git', 'add', '.'], cwd=tree, check=True)
+            subprocess.run(['git', '-c', 'user.name=CI test', '-c', 'user.email=ci@example.invalid',
+                            '-c', 'commit.gpgsign=false', 'commit', '-qm', 'trusted base', '--allow-empty'],
+                           cwd=tree, check=True)
+            base_sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=tree, text=True).strip()
+            if remove_controller:
+                (tree / 'scripts/ci_admit.py').unlink()
+            environment = self.environment(directory)
+            environment['TRUSTED_BASE_SHA'] = base_sha
+            process = subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell_step(
+                'admission', 'Reserve global run slot from trusted allocation controller')],
+                cwd=tree, env=environment, text=True, capture_output=True, check=False)
+            path = directory / 'allocation/admission.json'
+            receipt = json.loads(path.read_text()) if path.exists() else None
+            return process, receipt, base_sha
+
+    def test_absent_controller_at_base_bootstraps_without_pr_imports(self):
+        process, receipt, base_sha = self.bootstrap()
+        self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
+        self.assertEqual(receipt['mode'], 'bootstrap')
+        self.assertEqual(receipt['reason'], 'controller absent at base ' + base_sha)
+        self.assertEqual(receipt['base_sha'], base_sha)
+        self.assertEqual(receipt['state'], 'admitted')
+        self.assertEqual(receipt['identity'], asdict(IDENTITY))
+        self.assertEqual(receipt['launch_reservation'], 100)
+        self.assertEqual(receipt['cpu_reservation_seconds'], 900)
+        self.assertIsNone(receipt.get('slot'))
+        admission = job('admission')
+        self.assertEqual(admission.count('actions/checkout@'), 1)
+        self.assertIn('ref: ${{ github.event.pull_request.base.sha || github.sha }}', admission)
+        self.assertIn('persist-credentials: false', admission)
+        self.assertNotIn('actions/download-artifact@', admission)
+
+    def test_existing_controller_failure_never_bootstraps(self):
+        for remove in (False, True):
+            with self.subTest(missing_worktree_file=remove):
+                process, receipt, _ = self.bootstrap(controller='raise SystemExit(17)\n',
+                                                      remove_controller=remove)
+                self.assertNotEqual(process.returncode, 0)
+                self.assertIsNone(receipt)
+
+    def test_container_accepts_only_bootstrap_bound_to_trusted_base(self):
+        valid = dict(self.receipt(), mode='bootstrap', slot=None, base_sha='c' * 40,
+                     reason='controller absent at base ' + 'c' * 40)
+        process = self.validate(json.dumps(valid))
+        self.assertEqual(process.returncode, 0, process.stdout + process.stderr)
+        for invalid in (dict(valid, base_sha='d' * 40), dict(valid, reason='controller failed'),
+                        dict(valid, slot=1), dict(valid, state='admission_refused')):
+            with self.subTest(receipt=invalid):
+                process = self.validate(json.dumps(invalid))
+                self.assertEqual(process.returncode, 1)
+
 
 if __name__ == '__main__':
     unittest.main()
