@@ -1,0 +1,1032 @@
+{
+ "claim_label": "Simulated with [evaluator and hash], steady state, uniform power per die. Reference reconstructed from a published figure. Not CAD, not silicon, not measured.",
+ "decoding": {
+  "displayed_rotated_90_cw": false,
+  "frame_checks_mm": {
+   "from_die_outlines": 45.0019,
+   "from_edge_strip_length": 44.9544,
+   "from_edge_strip_thickness": 44.9547
+  },
+  "frame_pt": {
+   "bottom": 124.7501,
+   "left": 36.8681,
+   "right": 91.5859,
+   "top": 70.0325
+  },
+  "origin": "lower-left corner of the interposer frame (outer edge of TAP's Edge_2/Edge_0 strips)",
+  "output": "docs/sentilab/references/tap25d-figure-decode.json",
+  "output_sha256": "65dfbde39685f6985341aa699ccbda31b2c166f061d5621fea4385ed9bfeb312",
+  "precision": {
+   "centers_checked": 36,
+   "max_center_offset_from_grid_mm": 0.0005,
+   "tap_placer_panels": "fig5 b,c,d and fig6 b,c (TAP output, 1 mm grid by construction)"
+  },
+  "pymupdf_version": "1.27.2.3",
+  "scale_pt_per_mm": {
+   "from_die_outlines": 1.215901,
+   "x": 1.215953,
+   "y": 1.215946
+  },
+  "script": "docs/sentilab/references/decode_tap25d_figures.py",
+  "script_sha256": "c86c34d78f1399959317525ed56df22e0b376a1bed69b46c0be336099f06e825"
+ },
+ "dies": [
+  {
+   "catalog_mm": [
+    8.25,
+    9.0
+   ],
+   "die": 0,
+   "halo_mm": 0.18,
+   "name": "CPU, 150 W",
+   "power_w": 150.0
+  },
+  {
+   "catalog_mm": [
+    8.25,
+    9.0
+   ],
+   "die": 1,
+   "halo_mm": 0.18,
+   "name": "CPU, 150 W",
+   "power_w": 150.0
+  },
+  {
+   "catalog_mm": [
+    8.25,
+    9.0
+   ],
+   "die": 2,
+   "halo_mm": 0.18,
+   "name": "CPU, 150 W",
+   "power_w": 150.0
+  },
+  {
+   "catalog_mm": [
+    8.25,
+    9.0
+   ],
+   "die": 3,
+   "halo_mm": 0.18,
+   "name": "CPU, 150 W",
+   "power_w": 150.0
+  },
+  {
+   "catalog_mm": [
+    8.75,
+    8.75
+   ],
+   "die": 4,
+   "halo_mm": 0.135,
+   "name": "DRAM, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    8.75,
+    8.75
+   ],
+   "die": 5,
+   "halo_mm": 0.135,
+   "name": "DRAM, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    8.75,
+    8.75
+   ],
+   "die": 6,
+   "halo_mm": 0.135,
+   "name": "DRAM, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    8.75,
+    8.75
+   ],
+   "die": 7,
+   "halo_mm": 0.135,
+   "name": "DRAM, 20 W",
+   "power_w": 20.0
+  }
+ ],
+ "fixture": {
+  "config": "sundai_tap/configs/sys_micro150_45mm.cfg",
+  "config_sha256": "da94828d683b0d16a243907d51927761892e82f9725f17bc96ab1c867563ed89",
+  "fixture_id": "micro150-45mm",
+  "frame_mm": 45.0
+ },
+ "interposer_mm": 45.0,
+ "labels": [
+  "approximate reconstruction from published figure",
+  "simulated reference, not silicon",
+  "human-designed RESEARCH layout (Kannan et al., MICRO 2015), not a shipped package"
+ ],
+ "max_abs_raw_to_snapped_mm": 0.5496,
+ "model_omissions": [
+  "Kannan et al.'s design is a research proposal; TAP-2.5D's die sizes and powers are its model of it."
+ ],
+ "paper_reported": {
+  "original": {
+   "link_type": "nppl",
+   "panel": "a",
+   "peak_temperature_c": 115.94,
+   "routed_wirelength_mm": 67686
+  },
+  "quote": "The original placement (a) is optimal from the routing perspective (total wirelength of 67,686mm according to our evaluation). However, our HotSpot simulations show that the system operates at 115.94oC, which is thermally infeasible."
+ },
+ "paper_settings": {
+  "ambient_c": 45,
+  "interposer_mm": 45,
+  "placement_grid_mm": 1,
+  "simulator": "HotSpot 6.0 (ours: HotSpot 7)",
+  "temperature_metric": "TAP run_hotspot(): max over HotSpot's steady unit temperatures of the chip-layer floorplan, -grid_map_mode center (sundai_tap/util/hotspot.config). Ours: chip-layer grid peak with -grid_map_mode max. Not the same statistic.",
+  "thermal_grid": "64x64",
+  "wire_metric": "total routed inter-chiplet wirelength from TAP's MILP router (CPLEX); sundai_hotspot/tap_router.py is that router on HiGHS"
+ },
+ "raw": {
+  "center_uncertainty_mm": [
+   [
+    0.0014,
+    0.0014
+   ],
+   [
+    0.0018,
+    0.0014
+   ],
+   [
+    0.0018,
+    0.0018
+   ],
+   [
+    0.0014,
+    0.0018
+   ],
+   [
+    0.001,
+    0.0014
+   ],
+   [
+    0.0022,
+    0.0014
+   ],
+   [
+    0.0022,
+    0.0018
+   ],
+   [
+    0.001,
+    0.0018
+   ]
+  ],
+  "centers_mm": [
+   [
+    17.9249,
+    17.5496
+   ],
+   [
+    27.0751,
+    17.5496
+   ],
+   [
+    27.0751,
+    27.4497
+   ],
+   [
+    17.9249,
+    27.4497
+   ],
+   [
+    8.5751,
+    17.5496
+   ],
+   [
+    36.4249,
+    17.5496
+   ],
+   [
+    36.4249,
+    27.4497
+   ],
+   [
+    8.5751,
+    27.4497
+   ]
+  ],
+  "decoded_size_mm": [
+   [
+    8.2497,
+    8.9999
+   ],
+   [
+    8.2497,
+    8.9999
+   ],
+   [
+    8.2497,
+    9.0008
+   ],
+   [
+    8.2497,
+    9.0008
+   ],
+   [
+    8.749,
+    8.75
+   ],
+   [
+    8.749,
+    8.75
+   ],
+   [
+    8.749,
+    8.7491
+   ],
+   [
+    8.749,
+    8.7491
+   ]
+  ],
+  "design_hash": "93ee854b69891474775b6a2ea32c99d868f83066825a05752575584e4742f22b",
+  "fixture_gate_message": "chiplet 0 center is off the 0.5 mm placement grid",
+  "footprints_mm": [
+   [
+    8.25,
+    9.0
+   ],
+   [
+    8.25,
+    9.0
+   ],
+   [
+    8.25,
+    9.0
+   ],
+   [
+    8.25,
+    9.0
+   ],
+   [
+    8.75,
+    8.75
+   ],
+   [
+    8.75,
+    8.75
+   ],
+   [
+    8.75,
+    8.75
+   ],
+   [
+    8.75,
+    8.75
+   ]
+  ],
+  "how_obtained": [
+   "Die 0: the outline drawn as Chiplet_0 (die-sized unit 1 in the figure's drawing order); centre = midpoint of the outline, outline pt [53.6483, 97.9389, 63.6795, 108.8823], mapped through the panel's edge-strip frame",
+   "Die 1: the outline drawn as Chiplet_1 (die-sized unit 2 in the figure's drawing order); centre = midpoint of the outline, outline pt [64.7745, 97.9389, 74.8057, 108.8823], mapped through the panel's edge-strip frame",
+   "Die 2: the outline drawn as Chiplet_2 (die-sized unit 3 in the figure's drawing order); centre = midpoint of the outline, outline pt [64.7745, 85.9005, 74.8057, 96.845], mapped through the panel's edge-strip frame",
+   "Die 3: the outline drawn as Chiplet_3 (die-sized unit 4 in the figure's drawing order); centre = midpoint of the outline, outline pt [53.6483, 85.9005, 63.6795, 96.845], mapped through the panel's edge-strip frame",
+   "Die 4: the outline drawn as Chiplet_4 (die-sized unit 5 in the figure's drawing order); centre = midpoint of the outline, outline pt [41.9758, 98.0909, 52.6142, 108.7304], mapped through the panel's edge-strip frame",
+   "Die 5: the outline drawn as Chiplet_5 (die-sized unit 6 in the figure's drawing order); centre = midpoint of the outline, outline pt [75.8398, 98.0909, 86.4782, 108.7304], mapped through the panel's edge-strip frame",
+   "Die 6: the outline drawn as Chiplet_6 (die-sized unit 7 in the figure's drawing order); centre = midpoint of the outline, outline pt [75.8398, 86.0535, 86.4782, 96.6919], mapped through the panel's edge-strip frame",
+   "Die 7: the outline drawn as Chiplet_7 (die-sized unit 8 in the figure's drawing order); centre = midpoint of the outline, outline pt [41.9758, 86.0535, 52.6142, 96.6919], mapped through the panel's edge-strip frame"
+  ],
+  "label": "raw reconstruction (approximate, from published figure)",
+  "legal_on_fixture": false,
+  "lower_left_mm": [
+   [
+    13.8,
+    13.0497
+   ],
+   [
+    22.9503,
+    13.0497
+   ],
+   [
+    22.9503,
+    22.9493
+   ],
+   [
+    13.8,
+    22.9493
+   ],
+   [
+    4.2006,
+    13.1746
+   ],
+   [
+    32.0503,
+    13.1746
+   ],
+   [
+    32.0503,
+    23.0751
+   ],
+   [
+    4.2006,
+    23.0751
+   ]
+  ],
+  "rotated": [
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "routed_wirelength_mm": 67688.4,
+  "uncertainty_rule": "decode error measured on TAP's own panels (max offset from its 1 mm grid) + coordinate x relative spread of the panel's three scale estimates + 5e-5 mm storage step, rounded up to 1e-4 mm. Fidelity of the figure to the authors' simulated layout is not measurable from the figure.",
+  "violations_on_fixture": [
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     0
+    ],
+    "message": "chiplet 0 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     1
+    ],
+    "message": "chiplet 1 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     2
+    ],
+    "message": "chiplet 2 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     3
+    ],
+    "message": "chiplet 3 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     4
+    ],
+    "message": "chiplet 4 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     5
+    ],
+    "message": "chiplet 5 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     6
+    ],
+    "message": "chiplet 6 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     7
+    ],
+    "message": "chiplet 7 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   }
+  ],
+  "violations_without_center_lattice": [],
+  "wire_proxy_mm": 9.3849
+ },
+ "raw_to_snapped_mm": [
+  {
+   "die": 0,
+   "dx_mm": 0.0751,
+   "dy_mm": -0.5496
+  },
+  {
+   "die": 1,
+   "dx_mm": -0.0751,
+   "dy_mm": -0.5496
+  },
+  {
+   "die": 2,
+   "dx_mm": -0.0751,
+   "dy_mm": -0.4497
+  },
+  {
+   "die": 3,
+   "dx_mm": 0.0751,
+   "dy_mm": -0.4497
+  },
+  {
+   "die": 4,
+   "dx_mm": 0.4249,
+   "dy_mm": -0.5496
+  },
+  {
+   "die": 5,
+   "dx_mm": -0.4249,
+   "dy_mm": -0.5496
+  },
+  {
+   "die": 6,
+   "dx_mm": -0.4249,
+   "dy_mm": -0.4497
+  },
+  {
+   "die": 7,
+   "dx_mm": 0.4249,
+   "dy_mm": -0.4497
+  }
+ ],
+ "reference_id": "micro150-tap25d-fig5a",
+ "round_trip": {
+  "criteria": "Our evaluator and router on the raw reference reproduce the paper's own numbers: temperature within 1 K and routed wire within 2% (room #56739, item (b)2).",
+  "temperature": {
+   "layout": "raw",
+   "paper_c": 115.94,
+   "prerequisites": [
+    "a named warden grant for the solves",
+    "the paper's statistic: max of chip-layer unit temperatures with -grid_map_mode center at 64x64 (our J, the grid peak with max, stays a diagnostic)",
+    "the paper's package physics: HotSpot 6.0 vertical coupling, or a reviewed fix (SLAB-049 CAL-COUPLING)",
+    "a fixture that accepts the raw centres: the 45 mm fixtures' 0.5 mm lattice refuses them, and the snapped variant moves dies by up to the max_abs_raw_to_snapped_mm below"
+   ],
+   "status": "PLANNED, NOT RUN: SLAB-048 has no solve grant",
+   "tolerance_k": 1.0
+  },
+  "wire": {
+   "difference_pct": 0.004,
+   "layout": "raw",
+   "note": "Routed wire needs no thermal solve. Half a millimetre of digitising error is about 3.7% of Ascend's routed wire (room #56739), so this agreement is what pins the coordinates at the wire level.",
+   "paper_mm": 67686,
+   "routed_wirelength_mm": 67688.4,
+   "router": "sundai_hotspot/tap_router.py",
+   "router_sha256": "bed6fa4ad0035cd67ea2b6bc2f498775767893a601ad2dea855e4f3a4a966568",
+   "tolerance_pct": 2.0,
+   "within_tolerance": true
+  }
+ },
+ "schema": "sentilab-reference-layout-v1",
+ "snapped": {
+  "adjustments": [
+   {
+    "die": 0,
+    "dx_mm": 0.0,
+    "dy_mm": -1.0,
+    "reason": [
+     "chiplets 0 and 3 overlap with their microbump halos",
+     "chiplets 0 and 3 are 0.0000 mm apart, under the 0.1 mm minimum spacing"
+    ],
+    "violations_if_dropped": [
+     {
+      "amount_mm": 0.36,
+      "dies": [
+       0,
+       3
+      ],
+      "message": "chiplets 0 and 3 overlap with their microbump halos",
+      "rule": "halo_overlap"
+     },
+     {
+      "amount_mm": 0.1,
+      "dies": [
+       0,
+       3
+      ],
+      "message": "chiplets 0 and 3 are 0.0000 mm apart, under the 0.1 mm minimum spacing",
+      "rule": "min_spacing"
+     }
+    ]
+   },
+   {
+    "die": 1,
+    "dx_mm": 0.0,
+    "dy_mm": -1.0,
+    "reason": [
+     "chiplets 1 and 2 overlap with their microbump halos",
+     "chiplets 1 and 2 are 0.0000 mm apart, under the 0.1 mm minimum spacing"
+    ],
+    "violations_if_dropped": [
+     {
+      "amount_mm": 0.36,
+      "dies": [
+       1,
+       2
+      ],
+      "message": "chiplets 1 and 2 overlap with their microbump halos",
+      "rule": "halo_overlap"
+     },
+     {
+      "amount_mm": 0.1,
+      "dies": [
+       1,
+       2
+      ],
+      "message": "chiplets 1 and 2 are 0.0000 mm apart, under the 0.1 mm minimum spacing",
+      "rule": "min_spacing"
+     }
+    ]
+   },
+   {
+    "die": 4,
+    "dx_mm": 0.0,
+    "dy_mm": -1.0,
+    "reason": [
+     "chiplets 4 and 7 overlap with their microbump halos"
+    ],
+    "violations_if_dropped": [
+     {
+      "amount_mm": 0.02,
+      "dies": [
+       4,
+       7
+      ],
+      "message": "chiplets 4 and 7 overlap with their microbump halos",
+      "rule": "halo_overlap"
+     }
+    ]
+   },
+   {
+    "die": 5,
+    "dx_mm": 0.0,
+    "dy_mm": -1.0,
+    "reason": [
+     "chiplets 5 and 6 overlap with their microbump halos"
+    ],
+    "violations_if_dropped": [
+     {
+      "amount_mm": 0.02,
+      "dies": [
+       5,
+       6
+      ],
+      "message": "chiplets 5 and 6 overlap with their microbump halos",
+      "rule": "halo_overlap"
+     }
+    ]
+   }
+  ],
+  "alternatives_same_step_count": [
+   {
+    "centers_mm": [
+     [
+      18.0,
+      17.0
+     ],
+     [
+      27.0,
+      17.0
+     ],
+     [
+      27.0,
+      27.0
+     ],
+     [
+      18.0,
+      27.0
+     ],
+     [
+      9.0,
+      17.0
+     ],
+     [
+      36.0,
+      18.0
+     ],
+     [
+      36.0,
+      28.0
+     ],
+     [
+      9.0,
+      27.0
+     ]
+    ],
+    "squared_distance_to_raw_mm2": 2.7633
+   },
+   {
+    "centers_mm": [
+     [
+      18.0,
+      17.0
+     ],
+     [
+      27.0,
+      17.0
+     ],
+     [
+      27.0,
+      27.0
+     ],
+     [
+      18.0,
+      27.0
+     ],
+     [
+      9.0,
+      18.0
+     ],
+     [
+      36.0,
+      17.0
+     ],
+     [
+      36.0,
+      27.0
+     ],
+     [
+      9.0,
+      28.0
+     ]
+    ],
+    "squared_distance_to_raw_mm2": 2.7633
+   },
+   {
+    "centers_mm": [
+     [
+      18.0,
+      17.0
+     ],
+     [
+      27.0,
+      18.0
+     ],
+     [
+      27.0,
+      28.0
+     ],
+     [
+      18.0,
+      27.0
+     ],
+     [
+      9.0,
+      17.0
+     ],
+     [
+      36.0,
+      17.0
+     ],
+     [
+      36.0,
+      27.0
+     ],
+     [
+      9.0,
+      27.0
+     ]
+    ],
+    "squared_distance_to_raw_mm2": 2.7633
+   }
+  ],
+  "centers_mm": [
+   [
+    18.0,
+    17.0
+   ],
+   [
+    27.0,
+    17.0
+   ],
+   [
+    27.0,
+    27.0
+   ],
+   [
+    18.0,
+    27.0
+   ],
+   [
+    9.0,
+    17.0
+   ],
+   [
+    36.0,
+    17.0
+   ],
+   [
+    36.0,
+    27.0
+   ],
+   [
+    9.0,
+    27.0
+   ]
+  ],
+  "design_hash": "c1d85d5d27038aaeef2fd27a66b0d32a567a278205a067d6009587a86da1623a",
+  "grid_mm": 1.0,
+  "grid_steps": 4,
+  "is_the_paper_layout": false,
+  "label": "legal snapped variant (adjusted)",
+  "legal_on_fixture": true,
+  "rotated": [
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "rounded_centers_mm": [
+   [
+    18.0,
+    18.0
+   ],
+   [
+    27.0,
+    18.0
+   ],
+   [
+    27.0,
+    27.0
+   ],
+   [
+    18.0,
+    27.0
+   ],
+   [
+    9.0,
+    18.0
+   ],
+   [
+    36.0,
+    18.0
+   ],
+   [
+    36.0,
+    27.0
+   ],
+   [
+    9.0,
+    27.0
+   ]
+  ],
+  "rounded_violations": [
+   {
+    "amount_mm": 0.36,
+    "dies": [
+     1,
+     2
+    ],
+    "message": "chiplets 1 and 2 overlap with their microbump halos",
+    "rule": "halo_overlap"
+   },
+   {
+    "amount_mm": 0.36,
+    "dies": [
+     0,
+     3
+    ],
+    "message": "chiplets 0 and 3 overlap with their microbump halos",
+    "rule": "halo_overlap"
+   },
+   {
+    "amount_mm": 0.02,
+    "dies": [
+     5,
+     6
+    ],
+    "message": "chiplets 5 and 6 overlap with their microbump halos",
+    "rule": "halo_overlap"
+   },
+   {
+    "amount_mm": 0.02,
+    "dies": [
+     4,
+     7
+    ],
+    "message": "chiplets 4 and 7 overlap with their microbump halos",
+    "rule": "halo_overlap"
+   },
+   {
+    "amount_mm": 0.1,
+    "dies": [
+     1,
+     2
+    ],
+    "message": "chiplets 1 and 2 are 0.0000 mm apart, under the 0.1 mm minimum spacing",
+    "rule": "min_spacing"
+   },
+   {
+    "amount_mm": 0.1,
+    "dies": [
+     0,
+     3
+    ],
+    "message": "chiplets 0 and 3 are 0.0000 mm apart, under the 0.1 mm minimum spacing",
+    "rule": "min_spacing"
+   }
+  ],
+  "routed_wirelength_mm": 64771.3,
+  "rule": "Round every raw centre to the nearest 1 mm grid node, then make the fewest 1 mm moves that make the layout legal on the fixture (margin with halo, halo non-overlap, 0.1 mm minimum body spacing, centre lattice). Ties at that move count go to the layout closest to the raw centres (sum of squared distances), then the lexicographically smallest centres.",
+  "runner_up": {
+   "decided_below_decode_precision": true,
+   "decode_precision_bound_mm2": 0.002,
+   "squared_distance_margin_mm2": 0.0014
+  },
+  "squared_distance_to_raw_mm2": 2.7619,
+  "wire_proxy_mm": 9.1
+ },
+ "source": {
+  "caption": "Fig. 5: Thermal maps of the CPU-DRAM System: (a) the original placement [14], (b) a placement solution using Compact-2.5D approach, (c) TAP-2.5D solutions using repeaterless non-pipelined link, and (d) using gas-station links.",
+  "citation": "Y. Ma, L. Delshadtehrani, C. Demirkiran, J. L. Abellan, A. Joshi, \"TAP-2.5D: A Thermally-Aware Chiplet Placement Methodology for 2.5D Systems\", DATE 2021, pp. 1246-1251, doi:10.23919/DATE51398.2021.9474011",
+  "figure": "Fig. 5",
+  "page_index": 5,
+  "page_number": 6,
+  "panel": "a",
+  "pdf_sha256": "b209f51aec188e2bcdbf6f4acc3723fb30fbc5c14cca7e70141d478edadec234",
+  "url": "http://people.bu.edu/joshi/files/Ma_TAP-2.5D-DATE2021.pdf"
+ },
+ "ticket": {
+  "id": "SLAB-048",
+  "name": "REF-RECON",
+  "uuid": "c3dcb49a-430a-462e-a446-f532da204c46"
+ },
+ "title": "CPU-DRAM original placement (Kannan et al., MICRO 2015) as drawn in TAP-2.5D Fig. 5(a)",
+ "track": "BEAT",
+ "validation_points": [
+  {
+   "centers_mm": [
+    [
+     11.0,
+     34.0
+    ],
+    [
+     11.0,
+     22.0
+    ],
+    [
+     23.0,
+     10.0
+    ],
+    [
+     21.0,
+     22.0
+    ],
+    [
+     21.0,
+     34.0
+    ],
+    [
+     11.0,
+     10.0
+    ],
+    [
+     33.0,
+     10.0
+    ],
+    [
+     31.0,
+     22.0
+    ]
+   ],
+   "figure": "Fig. 5",
+   "link_type": "nppl",
+   "method": "Compact-2.5D",
+   "our_routed_wirelength_mm": 100832.1,
+   "panel": "b",
+   "peak_temperature_c": 113.54,
+   "rotated": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "routed_vs_paper_pct": -0.032,
+   "routed_wirelength_mm": 100864,
+   "temperature": "paper value only; not evaluated (no thermal solve in SLAB-048)"
+  },
+  {
+   "centers_mm": [
+    [
+     7.0,
+     6.0
+    ],
+    [
+     7.0,
+     39.0
+    ],
+    [
+     35.0,
+     40.0
+    ],
+    [
+     39.0,
+     12.0
+    ],
+    [
+     24.0,
+     19.0
+    ],
+    [
+     8.0,
+     22.0
+    ],
+    [
+     20.0,
+     37.0
+    ],
+    [
+     27.0,
+     8.0
+    ]
+   ],
+   "figure": "Fig. 5",
+   "link_type": "nppl",
+   "method": "TAP-2.5D, repeaterless non-pipelined links",
+   "our_routed_wirelength_mm": 216109.7,
+   "panel": "c",
+   "peak_temperature_c": 94.89,
+   "rotated": [
+    true,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "routed_vs_paper_pct": 0.021,
+   "routed_wirelength_mm": 216064,
+   "temperature": "paper value only; not evaluated (no thermal solve in SLAB-048)"
+  },
+  {
+   "centers_mm": [
+    [
+     38.0,
+     5.0
+    ],
+    [
+     5.0,
+     7.0
+    ],
+    [
+     38.0,
+     39.0
+    ],
+    [
+     7.0,
+     38.0
+    ],
+    [
+     26.0,
+     9.0
+    ],
+    [
+     15.0,
+     10.0
+    ],
+    [
+     38.0,
+     28.0
+    ],
+    [
+     24.0,
+     37.0
+    ]
+   ],
+   "figure": "Fig. 5",
+   "link_type": "ppl",
+   "method": "TAP-2.5D, gas-station links",
+   "our_routed_wirelength_mm": 139036.1,
+   "panel": "d",
+   "peak_temperature_c": 93.89,
+   "rotated": [
+    true,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "routed_vs_paper_pct": 0.058,
+   "routed_wirelength_mm": 138956,
+   "temperature": "paper value only; not evaluated (no thermal solve in SLAB-048)"
+  }
+ ],
+ "wire_metric": "wire_proxy_mm is the oracle's W: a connectivity-weighted mean Manhattan centre distance, a proxy, not comparable with the paper's routed mm. routed_wirelength_mm is TAP's router (sundai_hotspot/tap_router.py), the paper's metric."
+}

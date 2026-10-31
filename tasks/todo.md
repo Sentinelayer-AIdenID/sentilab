@@ -19,3 +19,18 @@ Only source authoring and local fake tests are authorized for this agent. Root o
 The fixed grant is source bb58c601-464f-4ebc-89f1-5b6eba9aeb25 / ticket 1509c616-03ee-4d35-b60c-bc70dd18b7fe: one attempt, <=900 seconds including startup/load/cleanup, start before 11:45 UTC and stop by 12:00 UTC on 2026-10-31. Before reservation, the host-owned approval file must bind the exact controller source and policy and name an independent +1 record. The reservation freezes those bytes and consumes the only attempt before spawning. No caller can supply approval, source, paths, hosts, image, commands or new requests.
 
 The controller uses a new 0700 root, immutable reservation and atomic state; a detached worker owns a lock, with no numeric process-group kills. All container operations serialize under a separate lock. Only full container IDs with matching image/name/owner/token/source/policy labels may be stopped/removed. Ambiguous launch/cleanup consumes the attempt and is charged conservatively. An in-container timeout and controller deadlines retain cleanup reserve. Actual cleanup/port closure must be observed before completion; retained SLAB018 teardown is not proof for SLAB047.
+
+# SLAB-048 REF-RECON: reference layouts, rotation, 45 mm fixtures, envelope plan
+
+- [x] Decode TAP-2.5D Fig. 5(a) and Fig. 6(a) from the paper's vector outlines; keep the raw centres exactly, with origin, scale, rotation, script and hashes.
+- [x] Per-die 90-degree rotation: `Design.apply("rotate")`, per-fixture orientation catalog, legality on the turned footprint, worker flags, wire proxy and view geometry.
+- [x] 45 mm fixtures next to the unchanged 50 mm ones; frame read from the fixture.
+- [x] A separate legal snapped variant per reference, every adjustment recorded with its reason.
+- [x] SAMPLED +/-0.5 mm envelope call list on the snapped variants, sized from measured grid-64 timing. No solve run.
+- [x] Reference record per room #56739 (b): SHIPPED / RESEARCH labels, page, per-die provenance and per-coordinate uncertainty, round-trip plan, out-of-sample validation points.
+- [x] TAP-2.5D's router ported to HiGHS (`sundai_hotspot/tap_router.py`); routed-wire round trip on the raw references.
+- [x] Tests, plus one mutation per rule that makes its check fail.
+
+## Review
+
+45 envelope calls (Ascend 24, CPU-DRAM 21); forecast 215.9 CPU-s, proposed cap 316.3 CPU-s, awaiting a warden grant. The routed-wire round trip passes on both raw references (-0.05% and +0.004% against the paper), and the five out-of-sample panels land within 0.10%; the temperature half is planned, not run. Local runs used a refusing stub in place of the HotSpot binary: the seven existing solve tests fail identically on main and on this branch, and nothing else fails. Open: the micro150 row snap is decided below decode precision; the 1 mm snapped variants miss the paper's routed wire by +10.5% and -4.3% (a 0.5 mm snap stays within 2%).

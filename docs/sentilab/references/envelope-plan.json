@@ -1,0 +1,2606 @@
+{
+ "design": "For each reference: the legal snapped variant, plus each die moved by +0.5 and by -0.5 mm in x, and separately in y. Moves the fixture gate rejects are listed under 'excluded' and are not run.",
+ "execution_rules": [
+  "Run exactly the listed calls on the named 45 mm fixtures at grid 64; refuse any design whose hash is not listed, and refuse a fixture whose config sha256 differs.",
+  "One fresh worker per call, reaped after the call; serial at one CPU.",
+  "Before each call, stop if cumulative CPU plus one worst-case call would pass the granted cap.",
+  "Keep raw outputs and every incomplete or failed outcome; never rerun a completed call.",
+  "Report J per call against the base call: a sampled envelope, not a bound."
+ ],
+ "expected_call_count": 45,
+ "grant": {
+  "expiry": null,
+  "grant_id": null,
+  "granted_by": null,
+  "prior_charges_kept": null,
+  "slab048_prior_solves": 0,
+  "status": "awaiting a named warden grant"
+ },
+ "grid": 64,
+ "kind": "SAMPLED sensitivity envelope, not a bound",
+ "labels": [
+  "approximate reconstruction from published figure",
+  "simulated reference, not silicon",
+  "sampled envelope: finite probes, not a bound on reconstruction error"
+ ],
+ "perturbation_mm": 0.5,
+ "references": [
+  {
+   "base_design_hash": "a2b5cac2b8ea201c10ee7a8874d71a6ffa00f3c0116bc53c028617d6c035e03d",
+   "calls": [
+    {
+     "axis": null,
+     "call_id": "ascend910-tap25d-fig6a/base",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": 0.0,
+     "design_hash": "a2b5cac2b8ea201c10ee7a8874d71a6ffa00f3c0116bc53c028617d6c035e03d",
+     "die": null,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.4902
+    },
+    {
+     "axis": "x",
+     "call_id": "ascend910-tap25d-fig6a/die0/x+0.5",
+     "centers_mm": [
+      [
+       17.5,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "d669774c1c3cce492a8fdbb5625cbb212ed6c8b1dec7e2fa6aa011be3f39bd83",
+     "die": 0,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.4085
+    },
+    {
+     "axis": "x",
+     "call_id": "ascend910-tap25d-fig6a/die0/x-0.5",
+     "centers_mm": [
+      [
+       16.5,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "dc05a1b06cad37eaf21f46164f198dc663610437ed4d6bc52125279ad898ffb1",
+     "die": 0,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.5719
+    },
+    {
+     "axis": "y",
+     "call_id": "ascend910-tap25d-fig6a/die0/y+0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.5
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "9521eb7c0473d24d60198ecc7f019f923c1257df42dd9476a167208275fff495",
+     "die": 0,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.5719
+    },
+    {
+     "axis": "y",
+     "call_id": "ascend910-tap25d-fig6a/die0/y-0.5",
+     "centers_mm": [
+      [
+       17.0,
+       22.5
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "2dab703d473b560e0aada3ef21c25d1c057090bd67e135eeb2824ecfc0604c4f",
+     "die": 0,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.5719
+    },
+    {
+     "axis": "x",
+     "call_id": "ascend910-tap25d-fig6a/die1/x-0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       38.5,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "fa10257441f677b5a9ace1b934bcdc34f10083d6ba845574fbc75190936e6fd1",
+     "die": 1,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.4085
+    },
+    {
+     "axis": "y",
+     "call_id": "ascend910-tap25d-fig6a/die1/y+0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.5
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "bc474825ec321fd399083a0e9055086639a80149a8bd417f1449e883bc23f944",
+     "die": 1,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.5719
+    },
+    {
+     "axis": "y",
+     "call_id": "ascend910-tap25d-fig6a/die1/y-0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       22.5
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "63bd307fdb16f19139a7dd0bcc6f4301d5ca5dc64a3e382a9021a7e6ae8eb38f",
+     "die": 1,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.5719
+    },
+    {
+     "axis": "x",
+     "call_id": "ascend910-tap25d-fig6a/die2/x+0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.5,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "db916b0838dcc0eac82e971ebbf573e71d8005731117af55567355bc5bfd443c",
+     "die": 2,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.3856
+    },
+    {
+     "axis": "x",
+     "call_id": "ascend910-tap25d-fig6a/die2/x-0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       6.5,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "a4f542edbb3746e035e43b78fbec5f020067955af35f6b8d10a6da18e06e9ff5",
+     "die": 2,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.5948
+    },
+    {
+     "axis": "y",
+     "call_id": "ascend910-tap25d-fig6a/die2/y+0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.5
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "a5db7a8997fc191266018d53c0757bf936e1387138738ef36b5439164944bae9",
+     "die": 2,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.3856
+    },
+    {
+     "axis": "y",
+     "call_id": "ascend910-tap25d-fig6a/die2/y-0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       10.5
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "51aca1e468505de15c975cf74bab69ed9c4dbf330bd67aaba4a7315f851a3795",
+     "die": 2,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.5948
+    },
+    {
+     "axis": "x",
+     "call_id": "ascend910-tap25d-fig6a/die3/x+0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.5,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "44c791bb6ae17c5cb6389ac59c374ccb84ec671410887c2226be08a95ec211f9",
+     "die": 3,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.5948
+    },
+    {
+     "axis": "x",
+     "call_id": "ascend910-tap25d-fig6a/die3/x-0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       20.5,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "501d585d11cf38fee249ad7846c90bb2338b0f3bf9c07edc451a334ec0772728",
+     "die": 3,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.3856
+    },
+    {
+     "axis": "y",
+     "call_id": "ascend910-tap25d-fig6a/die3/y+0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.5
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "a71e876278833d6ffa7ef5c6b79b265436cc17656402264821919a8c97958a6d",
+     "die": 3,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.3856
+    },
+    {
+     "axis": "y",
+     "call_id": "ascend910-tap25d-fig6a/die3/y-0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       10.5
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "a8c8a179a0b2b0d9dec0d5fbe59ad7ddcdd6fb6f4e780f3961130b2615db581d",
+     "die": 3,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.5948
+    },
+    {
+     "axis": "x",
+     "call_id": "ascend910-tap25d-fig6a/die4/x+0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.5,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "310705a93bbac2d003e805893651501d095138e5effc1de29b706767b9f95cc9",
+     "die": 4,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.3856
+    },
+    {
+     "axis": "x",
+     "call_id": "ascend910-tap25d-fig6a/die4/x-0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       6.5,
+       35.0
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "711feede0ba92f935b815cf3694d8648583fdc338e1252c7b8613327dfaf382d",
+     "die": 4,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.5948
+    },
+    {
+     "axis": "y",
+     "call_id": "ascend910-tap25d-fig6a/die4/y+0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.5
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "a5947e1641d174a05d77578ee07b120aead4bd0503db56d2cdb43613da18b1d3",
+     "die": 4,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.5948
+    },
+    {
+     "axis": "y",
+     "call_id": "ascend910-tap25d-fig6a/die4/y-0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       34.5
+      ],
+      [
+       21.0,
+       35.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "87b4280bf8e7bed023f63e75f16005a5927c1a80540b47c86c4bee7cb9bef44c",
+     "die": 4,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.3856
+    },
+    {
+     "axis": "x",
+     "call_id": "ascend910-tap25d-fig6a/die5/x+0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.5,
+       35.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "bec0fd26db0bb3baf5ceedac09790d2f97a990e8352fe553556580fa3c80b72d",
+     "die": 5,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.5948
+    },
+    {
+     "axis": "x",
+     "call_id": "ascend910-tap25d-fig6a/die5/x-0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       20.5,
+       35.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "c279d6d9aeb7c12b48bc3d3e3142fd12a16b1d84c99d9f9414d5a62a5df5790b",
+     "die": 5,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.3856
+    },
+    {
+     "axis": "y",
+     "call_id": "ascend910-tap25d-fig6a/die5/y+0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       35.5
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "cc9bbc6da2b9766aae4d95d6ca7dac7fd1f00d8083cb309c8641c23632fb13e5",
+     "die": 5,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.5948
+    },
+    {
+     "axis": "y",
+     "call_id": "ascend910-tap25d-fig6a/die5/y-0.5",
+     "centers_mm": [
+      [
+       17.0,
+       23.0
+      ],
+      [
+       39.0,
+       23.0
+      ],
+      [
+       7.0,
+       11.0
+      ],
+      [
+       21.0,
+       11.0
+      ],
+      [
+       7.0,
+       35.0
+      ],
+      [
+       21.0,
+       34.5
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "f7940003f0c9bf97b1b164ff4ad80734b0eec9da59de7e675536fb05a1ce37f2",
+     "die": 5,
+     "rotated": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true
+     ],
+     "wire_proxy_mm": 19.3856
+    }
+   ],
+   "considered": 25,
+   "excluded": [
+    {
+     "axis": "x",
+     "call_id": "ascend910-tap25d-fig6a/die1/x+0.5",
+     "delta_mm": 0.5,
+     "die": 1,
+     "fixture_gate_message": "chiplet 1 violates the 0.5 mm interposer margin with its microbump halo",
+     "violations": [
+      {
+       "amount_mm": 0.295,
+       "dies": [
+        1
+       ],
+       "message": "chiplet 1 violates the 0.5 mm interposer margin with its microbump halo",
+       "rule": "margin"
+      }
+     ]
+    }
+   ],
+   "excluded_count": 1,
+   "expected_call_count": 24,
+   "fixture_config_sha256": "4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c",
+   "fixture_id": "ascend910-45mm",
+   "grid": 64,
+   "layout": "legal snapped variant (adjusted)",
+   "layout_source": "docs/sentilab/references/ascend910-tap25d-fig6a.json",
+   "max_abs_raw_to_snapped_mm": 1.1246,
+   "raw_to_snapped_mm": [
+    {
+     "die": 0,
+     "dx_mm": -0.1501,
+     "dy_mm": 0.3997
+    },
+    {
+     "die": 1,
+     "dx_mm": 0.6503,
+     "dy_mm": 0.3997
+    },
+    {
+     "die": 2,
+     "dx_mm": -0.335,
+     "dy_mm": -0.1256
+    },
+    {
+     "die": 3,
+     "dx_mm": -0.3048,
+     "dy_mm": -0.1256
+    },
+    {
+     "die": 4,
+     "dx_mm": -0.335,
+     "dy_mm": 1.1246
+    },
+    {
+     "die": 5,
+     "dx_mm": -0.3048,
+     "dy_mm": 1.1246
+    }
+   ],
+   "reference_id": "ascend910-tap25d-fig6a",
+   "timing_family": "ascend910"
+  },
+  {
+   "base_design_hash": "c1d85d5d27038aaeef2fd27a66b0d32a567a278205a067d6009587a86da1623a",
+   "calls": [
+    {
+     "axis": null,
+     "call_id": "micro150-tap25d-fig5a/base",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": 0.0,
+     "design_hash": "c1d85d5d27038aaeef2fd27a66b0d32a567a278205a067d6009587a86da1623a",
+     "die": null,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.1
+    },
+    {
+     "axis": "y",
+     "call_id": "micro150-tap25d-fig5a/die0/y+0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.5
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "7d2f39d7ed317fdf6665d92bd90aafc5245d8df145b526e380b350a1a1b58d14",
+     "die": 0,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.2
+    },
+    {
+     "axis": "y",
+     "call_id": "micro150-tap25d-fig5a/die0/y-0.5",
+     "centers_mm": [
+      [
+       18.0,
+       16.5
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "662ffa22b2a0a25a35d05ce8d6db4a0e34876395d1d74d9876d435e815674e40",
+     "die": 0,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.25
+    },
+    {
+     "axis": "y",
+     "call_id": "micro150-tap25d-fig5a/die1/y+0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.5
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "827c70ad101a643a0f0f443696e2bb2f11306a36b1881e508943b090bb1280fd",
+     "die": 1,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.2
+    },
+    {
+     "axis": "y",
+     "call_id": "micro150-tap25d-fig5a/die1/y-0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       16.5
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "ecd81a754a645e518d28d0608f8e96d409811576af10e897ba3f126bb7e75bcd",
+     "die": 1,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.25
+    },
+    {
+     "axis": "y",
+     "call_id": "micro150-tap25d-fig5a/die2/y+0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.5
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "d24339c41dc447c8ab4dec78134942383dfc5683ae735788e5d5cbed5de7262b",
+     "die": 2,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.25
+    },
+    {
+     "axis": "y",
+     "call_id": "micro150-tap25d-fig5a/die2/y-0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       26.5
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "f91d4c18cedaa1228d139e29a4d98decfcec06295b2abda595aebcf2aefb0e18",
+     "die": 2,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.2
+    },
+    {
+     "axis": "y",
+     "call_id": "micro150-tap25d-fig5a/die3/y+0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.5
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "9f7ab2c5d0028b5a3a9250f5980046846d9d8a611ad85a36a4ef4f263fc334bd",
+     "die": 3,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.25
+    },
+    {
+     "axis": "y",
+     "call_id": "micro150-tap25d-fig5a/die3/y-0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       26.5
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "d741dbfe98fa0ff1dac42e695e2386a720e6837f7ee44841aa192e2d00d09f64",
+     "die": 3,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.2
+    },
+    {
+     "axis": "x",
+     "call_id": "micro150-tap25d-fig5a/die4/x-0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       8.5,
+       17.0
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "2db4f71558d2e324eb096e3c31ade73e82090c21e103133ab16f0186fef2e54c",
+     "die": 4,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.2
+    },
+    {
+     "axis": "y",
+     "call_id": "micro150-tap25d-fig5a/die4/y+0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.5
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "6bb31fe154d9be5e50f386ac219a27f6c7b2375a9283c72160de2fe16f27791a",
+     "die": 4,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.2
+    },
+    {
+     "axis": "y",
+     "call_id": "micro150-tap25d-fig5a/die4/y-0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       16.5
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "8c76ee4d6fc29c3a870264978742036694818f192706a734f1c6fd9e71482a65",
+     "die": 4,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.2
+    },
+    {
+     "axis": "x",
+     "call_id": "micro150-tap25d-fig5a/die5/x+0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.5,
+       17.0
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "d17acdb30010f17a8a25c49ca9d9e42beed02064e25738c21e3e4a2e908e81c5",
+     "die": 5,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.2
+    },
+    {
+     "axis": "y",
+     "call_id": "micro150-tap25d-fig5a/die5/y+0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       17.5
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "fd577496807d55a80314fcfcf067cec4358ca97211f3694c81fb7fa9e42e3cbc",
+     "die": 5,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.2
+    },
+    {
+     "axis": "y",
+     "call_id": "micro150-tap25d-fig5a/die5/y-0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       16.5
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "793fdb3f367c3f422f04d023c5c7cb9c4a6e9030b44f83549b80e66856b68518",
+     "die": 5,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.2
+    },
+    {
+     "axis": "x",
+     "call_id": "micro150-tap25d-fig5a/die6/x+0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.5,
+       27.0
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "779565538b4900e5033c6060138bcaf58aefdff168d44d264e3cb1c77c77a6ca",
+     "die": 6,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.2
+    },
+    {
+     "axis": "y",
+     "call_id": "micro150-tap25d-fig5a/die6/y+0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       27.5
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "e5db1af015909d4d287eb5a2d518f9a97054b85419288a30d26b7b3a33b01fb4",
+     "die": 6,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.2
+    },
+    {
+     "axis": "y",
+     "call_id": "micro150-tap25d-fig5a/die6/y-0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       26.5
+      ],
+      [
+       9.0,
+       27.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "68e9d208a34861a5851a250dcefa4a58cdb7f46789e2a1da34d582b73c270c10",
+     "die": 6,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.2
+    },
+    {
+     "axis": "x",
+     "call_id": "micro150-tap25d-fig5a/die7/x-0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       8.5,
+       27.0
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "66afb62566e9b8b031710488eb828ebba4077f361a29ab65bf604f7bc7556207",
+     "die": 7,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.2
+    },
+    {
+     "axis": "y",
+     "call_id": "micro150-tap25d-fig5a/die7/y+0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       27.5
+      ]
+     ],
+     "delta_mm": 0.5,
+     "design_hash": "d513aa50b3cd76e1da295876246b9222f9e97018364c40c70fdd29c623bc39f6",
+     "die": 7,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.2
+    },
+    {
+     "axis": "y",
+     "call_id": "micro150-tap25d-fig5a/die7/y-0.5",
+     "centers_mm": [
+      [
+       18.0,
+       17.0
+      ],
+      [
+       27.0,
+       17.0
+      ],
+      [
+       27.0,
+       27.0
+      ],
+      [
+       18.0,
+       27.0
+      ],
+      [
+       9.0,
+       17.0
+      ],
+      [
+       36.0,
+       17.0
+      ],
+      [
+       36.0,
+       27.0
+      ],
+      [
+       9.0,
+       26.5
+      ]
+     ],
+     "delta_mm": -0.5,
+     "design_hash": "8bcc759894ea95630bfa70d93b81e42d9ae699bcd57c0df3eabe0e096b35f3f3",
+     "die": 7,
+     "rotated": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+     ],
+     "wire_proxy_mm": 9.2
+    }
+   ],
+   "considered": 33,
+   "excluded": [
+    {
+     "axis": "x",
+     "call_id": "micro150-tap25d-fig5a/die0/x+0.5",
+     "delta_mm": 0.5,
+     "die": 0,
+     "fixture_gate_message": "chiplets 0 and 1 overlap with their microbump halos",
+     "violations": [
+      {
+       "amount_mm": 0.11,
+       "dies": [
+        0,
+        1
+       ],
+       "message": "chiplets 0 and 1 overlap with their microbump halos",
+       "rule": "halo_overlap"
+      }
+     ]
+    },
+    {
+     "axis": "x",
+     "call_id": "micro150-tap25d-fig5a/die0/x-0.5",
+     "delta_mm": -0.5,
+     "die": 0,
+     "fixture_gate_message": "chiplets 0 and 4 overlap with their microbump halos",
+     "violations": [
+      {
+       "amount_mm": 0.315,
+       "dies": [
+        0,
+        4
+       ],
+       "message": "chiplets 0 and 4 overlap with their microbump halos",
+       "rule": "halo_overlap"
+      },
+      {
+       "amount_mm": 0.1,
+       "dies": [
+        0,
+        4
+       ],
+       "message": "chiplets 0 and 4 are 0.0000 mm apart, under the 0.1 mm minimum spacing",
+       "rule": "min_spacing"
+      }
+     ]
+    },
+    {
+     "axis": "x",
+     "call_id": "micro150-tap25d-fig5a/die1/x+0.5",
+     "delta_mm": 0.5,
+     "die": 1,
+     "fixture_gate_message": "chiplets 1 and 5 overlap with their microbump halos",
+     "violations": [
+      {
+       "amount_mm": 0.315,
+       "dies": [
+        1,
+        5
+       ],
+       "message": "chiplets 1 and 5 overlap with their microbump halos",
+       "rule": "halo_overlap"
+      },
+      {
+       "amount_mm": 0.1,
+       "dies": [
+        1,
+        5
+       ],
+       "message": "chiplets 1 and 5 are 0.0000 mm apart, under the 0.1 mm minimum spacing",
+       "rule": "min_spacing"
+      }
+     ]
+    },
+    {
+     "axis": "x",
+     "call_id": "micro150-tap25d-fig5a/die1/x-0.5",
+     "delta_mm": -0.5,
+     "die": 1,
+     "fixture_gate_message": "chiplets 0 and 1 overlap with their microbump halos",
+     "violations": [
+      {
+       "amount_mm": 0.11,
+       "dies": [
+        0,
+        1
+       ],
+       "message": "chiplets 0 and 1 overlap with their microbump halos",
+       "rule": "halo_overlap"
+      }
+     ]
+    },
+    {
+     "axis": "x",
+     "call_id": "micro150-tap25d-fig5a/die2/x+0.5",
+     "delta_mm": 0.5,
+     "die": 2,
+     "fixture_gate_message": "chiplets 2 and 6 overlap with their microbump halos",
+     "violations": [
+      {
+       "amount_mm": 0.315,
+       "dies": [
+        2,
+        6
+       ],
+       "message": "chiplets 2 and 6 overlap with their microbump halos",
+       "rule": "halo_overlap"
+      },
+      {
+       "amount_mm": 0.1,
+       "dies": [
+        2,
+        6
+       ],
+       "message": "chiplets 2 and 6 are 0.0000 mm apart, under the 0.1 mm minimum spacing",
+       "rule": "min_spacing"
+      }
+     ]
+    },
+    {
+     "axis": "x",
+     "call_id": "micro150-tap25d-fig5a/die2/x-0.5",
+     "delta_mm": -0.5,
+     "die": 2,
+     "fixture_gate_message": "chiplets 2 and 3 overlap with their microbump halos",
+     "violations": [
+      {
+       "amount_mm": 0.11,
+       "dies": [
+        2,
+        3
+       ],
+       "message": "chiplets 2 and 3 overlap with their microbump halos",
+       "rule": "halo_overlap"
+      }
+     ]
+    },
+    {
+     "axis": "x",
+     "call_id": "micro150-tap25d-fig5a/die3/x+0.5",
+     "delta_mm": 0.5,
+     "die": 3,
+     "fixture_gate_message": "chiplets 2 and 3 overlap with their microbump halos",
+     "violations": [
+      {
+       "amount_mm": 0.11,
+       "dies": [
+        2,
+        3
+       ],
+       "message": "chiplets 2 and 3 overlap with their microbump halos",
+       "rule": "halo_overlap"
+      }
+     ]
+    },
+    {
+     "axis": "x",
+     "call_id": "micro150-tap25d-fig5a/die3/x-0.5",
+     "delta_mm": -0.5,
+     "die": 3,
+     "fixture_gate_message": "chiplets 3 and 7 overlap with their microbump halos",
+     "violations": [
+      {
+       "amount_mm": 0.315,
+       "dies": [
+        3,
+        7
+       ],
+       "message": "chiplets 3 and 7 overlap with their microbump halos",
+       "rule": "halo_overlap"
+      },
+      {
+       "amount_mm": 0.1,
+       "dies": [
+        3,
+        7
+       ],
+       "message": "chiplets 3 and 7 are 0.0000 mm apart, under the 0.1 mm minimum spacing",
+       "rule": "min_spacing"
+      }
+     ]
+    },
+    {
+     "axis": "x",
+     "call_id": "micro150-tap25d-fig5a/die4/x+0.5",
+     "delta_mm": 0.5,
+     "die": 4,
+     "fixture_gate_message": "chiplets 0 and 4 overlap with their microbump halos",
+     "violations": [
+      {
+       "amount_mm": 0.315,
+       "dies": [
+        0,
+        4
+       ],
+       "message": "chiplets 0 and 4 overlap with their microbump halos",
+       "rule": "halo_overlap"
+      },
+      {
+       "amount_mm": 0.1,
+       "dies": [
+        0,
+        4
+       ],
+       "message": "chiplets 0 and 4 are 0.0000 mm apart, under the 0.1 mm minimum spacing",
+       "rule": "min_spacing"
+      }
+     ]
+    },
+    {
+     "axis": "x",
+     "call_id": "micro150-tap25d-fig5a/die5/x-0.5",
+     "delta_mm": -0.5,
+     "die": 5,
+     "fixture_gate_message": "chiplets 1 and 5 overlap with their microbump halos",
+     "violations": [
+      {
+       "amount_mm": 0.315,
+       "dies": [
+        1,
+        5
+       ],
+       "message": "chiplets 1 and 5 overlap with their microbump halos",
+       "rule": "halo_overlap"
+      },
+      {
+       "amount_mm": 0.1,
+       "dies": [
+        1,
+        5
+       ],
+       "message": "chiplets 1 and 5 are 0.0000 mm apart, under the 0.1 mm minimum spacing",
+       "rule": "min_spacing"
+      }
+     ]
+    },
+    {
+     "axis": "x",
+     "call_id": "micro150-tap25d-fig5a/die6/x-0.5",
+     "delta_mm": -0.5,
+     "die": 6,
+     "fixture_gate_message": "chiplets 2 and 6 overlap with their microbump halos",
+     "violations": [
+      {
+       "amount_mm": 0.315,
+       "dies": [
+        2,
+        6
+       ],
+       "message": "chiplets 2 and 6 overlap with their microbump halos",
+       "rule": "halo_overlap"
+      },
+      {
+       "amount_mm": 0.1,
+       "dies": [
+        2,
+        6
+       ],
+       "message": "chiplets 2 and 6 are 0.0000 mm apart, under the 0.1 mm minimum spacing",
+       "rule": "min_spacing"
+      }
+     ]
+    },
+    {
+     "axis": "x",
+     "call_id": "micro150-tap25d-fig5a/die7/x+0.5",
+     "delta_mm": 0.5,
+     "die": 7,
+     "fixture_gate_message": "chiplets 3 and 7 overlap with their microbump halos",
+     "violations": [
+      {
+       "amount_mm": 0.315,
+       "dies": [
+        3,
+        7
+       ],
+       "message": "chiplets 3 and 7 overlap with their microbump halos",
+       "rule": "halo_overlap"
+      },
+      {
+       "amount_mm": 0.1,
+       "dies": [
+        3,
+        7
+       ],
+       "message": "chiplets 3 and 7 are 0.0000 mm apart, under the 0.1 mm minimum spacing",
+       "rule": "min_spacing"
+      }
+     ]
+    }
+   ],
+   "excluded_count": 12,
+   "expected_call_count": 21,
+   "fixture_config_sha256": "da94828d683b0d16a243907d51927761892e82f9725f17bc96ab1c867563ed89",
+   "fixture_id": "micro150-45mm",
+   "grid": 64,
+   "layout": "legal snapped variant (adjusted)",
+   "layout_source": "docs/sentilab/references/micro150-tap25d-fig5a.json",
+   "max_abs_raw_to_snapped_mm": 0.5496,
+   "raw_to_snapped_mm": [
+    {
+     "die": 0,
+     "dx_mm": 0.0751,
+     "dy_mm": -0.5496
+    },
+    {
+     "die": 1,
+     "dx_mm": -0.0751,
+     "dy_mm": -0.5496
+    },
+    {
+     "die": 2,
+     "dx_mm": -0.0751,
+     "dy_mm": -0.4497
+    },
+    {
+     "die": 3,
+     "dx_mm": 0.0751,
+     "dy_mm": -0.4497
+    },
+    {
+     "die": 4,
+     "dx_mm": 0.4249,
+     "dy_mm": -0.5496
+    },
+    {
+     "die": 5,
+     "dx_mm": -0.4249,
+     "dy_mm": -0.5496
+    },
+    {
+     "die": 6,
+     "dx_mm": -0.4249,
+     "dy_mm": -0.4497
+    },
+    {
+     "die": 7,
+     "dx_mm": 0.4249,
+     "dy_mm": -0.4497
+    }
+   ],
+   "reference_id": "micro150-tap25d-fig5a",
+   "timing_family": "micro150"
+  }
+ ],
+ "schema": "sentilab-envelope-plan-v1",
+ "sizing": {
+  "assumption": "The 45 mm frame keeps the 64x64 grid, so solve time is assumed equal to the measured 50 mm grid-64 time; HotSpot is single-threaded, so CPU is close to wall at one CPU.",
+  "basis": "measured grid-64 wall time on the recorded Azure x86_64 host; a forecast, not a bound",
+  "failed_attempt_reserve": {
+   "calls": 5,
+   "cpu_s": 57.245,
+   "each_at": "worst observed call plus reserves",
+   "fraction_of_calls": 0.1
+  },
+  "forecast_cpu_min": 3.598,
+  "forecast_cpu_s": 215.851,
+  "formula": "forecast = sum(median solve + measured overhead); reserved = sum(median solve + startup + reap + archive); cap = reserved + failed-attempt reserve + one worst-case call of stop headroom + settlement tail",
+  "host": {
+   "cpu_count": 16,
+   "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+   "processor": "x86_64"
+  },
+  "measured_lifecycle_overhead_cpu_s_per_call": {
+   "derivation": "SLAB-039: 0.543507 CPU-s per call (getrusage, fresh worker reaped every call) minus the 0.493822 s grid-32 median solve; the SLAB-039 host is not recorded, so this is indicative",
+   "value": 0.049685
+  },
+  "median_solve_wall_s_64x64": {
+   "ascend910": 4.764399,
+   "micro150": 4.727101
+  },
+  "mesh_grid64_evaluation_wall_s": {
+   "ascend910": {
+    "max_s": 10.698955,
+    "median_s": 4.739478,
+    "n": 24
+   },
+   "micro150": {
+    "max_s": 7.839053,
+    "median_s": 4.862874,
+    "n": 24
+   }
+  },
+  "proposed_cap_cpu_min": 5.272,
+  "proposed_cap_cpu_s": 316.308,
+  "reserved_cpu_s": 247.365,
+  "reserves_cpu_s_per_call": {
+   "archive_raw_outputs": 0.25,
+   "reap": 0.25,
+   "startup": 0.25
+  },
+  "settlement_tail_cpu_s": 0.25,
+  "sources": {
+   "docs/sentilab/evidence/SLAB-039/RESULT.json": "fc5a25fb614bfb253fad81af4c3505cd0b88aeb79203612866e971df5dd7ddcc",
+   "docs/sentilab/evidence/SLAB-039/SUPERVISOR-POLICY.json": "b117ae884799a4099259fd07164d800904ad1a8ae1a37832b7d6823e6cf8aa57",
+   "docs/sentilab/evidence/mesh/ascend910/RESULT.json": "7db34ca96b53f03117baccb4f8e91f3ac4c82dde33c5cc760f3177f3c5f330fc",
+   "docs/sentilab/evidence/mesh/micro150/rows.jsonl": "094027ea1d7a7a14156ab090e256f8354646dfc3f1f5c8c742af55c73e427598",
+   "docs/sentilab/evidence/micro150/TIMING.json": "a750a98cbb61fc89a58a6896de19e877b01599feacd66418168c1069b17471ff"
+  },
+  "worst_observed_grid64_call_s": 10.698955
+ },
+ "status": "PLAN ONLY. No solve has been run for SLAB-048. Every call below waits for a named warden grant that lists these exact calls, a CPU cap, an expiry and the prior charges it keeps.",
+ "ticket": {
+  "id": "SLAB-048",
+  "name": "REF-RECON",
+  "uuid": "c3dcb49a-430a-462e-a446-f532da204c46"
+ }
+}
