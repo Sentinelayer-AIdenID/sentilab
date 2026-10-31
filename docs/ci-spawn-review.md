@@ -133,3 +133,26 @@ all other parent settings remain excluded. A real protocol-worker regression
 refuses the old environment omission. The frontend inventory now checks both
 main's `oracle_type = oracle_factory or HotSpotOracle` binding and its calls. The two native-process mocks in the new worker
 evidence tests target `worker.run_hotspot`; all assertions remain intact.
+
+## SLAB-049 round: HotSpot 6.0 gate zero (PR #56)
+
+PR #56 merges main `224fa704` (this allocation controller) into the SLAB-049
+branch. The unchanged inventory assertion refused seven SLAB-049 sites. They are
+listed below with their exact expressions; the assertion and the scan scope are
+unchanged. Six launch no HotSpot. One is the grant-host solver entry, which never
+runs under CI allocation.
+
+| File | Count | Classification |
+| --- | ---: | --- |
+| `sundai_hotspot/reference_validation.py` (`subprocess.Popen(argv)`) | 1 | `validate-reference`, the one entry for SLAB-049's gate-zero solves on warden's grant host. `admit` refuses under `CI_ALLOCATION=1` before any reservation, staging or launch, so CI never reaches this call (`test_ci_allocation_refuses_before_anything_runs`). `argv` is `slab049.tap_argv` (TAP's fixed `run_hotspot` command) on a private content-addressed copy of the listed binary; it runs in its own process group under RLIMIT_CPU and a wall deadline. A binary built with the CI entry guard is refused, because it would run only through `ci_gate`. The tests launch a Python stand-in, never HotSpot. |
+| `sundai_hotspot/provenance.py` (`subprocess.run(argv)`) | 1 | `_run` is called only with fixed argv: `ldd <binary>` (the loader lists libraries; the program does not run), `gcc --version`, `dpkg-query -W` and `dpkg -S <library>`. It never executes the evaluator. |
+| `sundai_hotspot/slab049.py` (TAP generator) | 1 | `sys.executable -c _GENERATOR`: TAP-2.5D's own `gen_flp`/`gen_ptrace` in Python, writing floorplans and the power trace. No solver. |
+| `sundai_hotspot/slab049.py` (`subprocess.run(command)`) | 1 | `_run` is called only by `AssemblyHarness` with fixed `gcc` compile and link commands for the harness and HotSpot's model sources. |
+| `sundai_hotspot/slab049.py` (harness binary) | 1 | The assembly-only C harness (`coupling_assembly_harness.c`, its own `main`). It builds HotSpot's grid model and conductance matrix, writes the matrix and exits before `direct_SLU`; it never solves. It runs in `test_sink_coupling`'s native tests under the container cgroup meter. |
+| `sundai_hotspot/slab049.py` (`['gcc', '--version']`) | 1 | Toolchain string for the analytic report. |
+| `sundai_hotspot/test_gate_zero.py` (busy loop) | 1 | `sys.executable -c 'while True: pass'` under RLIMIT_CPU 1 s: proves the per-process CPU limit kills on its own. About one CPU-second; no solver. |
+
+The SLAB-049 images also build `sundai_hotspot6/` (HotSpot 6.0, vendored upstream,
+no compiled entry guard) and the material-only HotSpot 7 variant (built with the
+same `CI_ALLOCATION` flag as the default binary). No CI step launches either; the
+tests read their bytes only.

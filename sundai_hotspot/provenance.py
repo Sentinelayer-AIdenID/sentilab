@@ -22,6 +22,9 @@ import subprocess
 import sys
 
 SCHEMA = "sentilab-evaluator-build-provenance-v1"
+# Compiled into HotSpot 7 when it is built with CI_ALLOCATION=1 (sundai_hotspot/ci_entry.h): such a binary runs only
+# through sundai_hotspot.ci_gate under a CI reservation, so validate-reference refuses it.
+CI_ENTRY_GUARD = b"CI HotSpot requires a reserved launch through ci_gate.run_hotspot"
 PACKAGE_PATTERNS = ("libsuperlu*", "libblas*", "libopenblas*", "liblapack*", "libgfortran*", "libc6", "libgcc-s1",
                     "gcc", "gcc-[0-9]*")
 _LDD_LINE = re.compile(r"^\s*(\S+)(?:\s+=>\s+(\S+))?\s+\(0x[0-9a-f]+\)\s*$")
@@ -118,6 +121,7 @@ def build_provenance(kind: str, binary: Path) -> dict:
         "make": EVALUATOR_KINDS[kind]["make"],
         "makefile_flag_lines": flags,
         "debug_info": b".debug_info" in data,
+        "ci_entry_guard": CI_ENTRY_GUARD in data,
         "build_dir": binary.parent.as_posix(),
         "build_dir_note": ("with -g the binary embeds its build directory, so its hash depends on that path; "
                            "every host pins its own binary through gate zero"),

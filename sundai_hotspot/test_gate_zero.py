@@ -709,10 +709,19 @@ def _process_gone(pid: int) -> bool:
 @unittest.skipUnless(os.name == "posix" and platform.machine() == "x86_64",
                      "the manifest lists an x86_64 POSIX host; the fake solver is a POSIX script")
 class ManifestEntryTests(TempDirCase):
-    """validate-reference: the bootstrap path, bound to the frozen manifest (astra #56794, #56837, #56858)."""
+    """validate-reference: the bootstrap path, bound to the frozen manifest (astra #56794, #56837, #56858).
+
+    These tests stand in for warden's grant host, so CI_ALLOCATION is removed from their environment: the CI image
+    sets it, and validate-reference refuses to run under it (test_ci_allocation_refuses_before_anything_runs). The
+    "solver" is a Python script; no HotSpot binary is launched.
+    """
 
     def setUp(self):
         super().setUp()
+        environment = mock.patch.dict(os.environ)
+        environment.start()
+        self.addCleanup(environment.stop)
+        os.environ.pop("CI_ALLOCATION", None)
         self.fake = self.root / "fake-hotspot6"
         self.control = self.root / "control.json"
         self.fake.write_text(FAKE_SOLVER.replace("PYTHON", sys.executable).replace("CONTROL", str(self.control)),
@@ -766,6 +775,10 @@ class ManifestEntryTests(TempDirCase):
         claimed["libraries"] = {"dynamic": True, "libraries": [
             {"name": "libblas.so.3", "path": "/x", "realpath": "/x", "sha256": "0" * 64}]}
         provenance.provenance_path(other).write_text(json.dumps(claimed))
+        guarded = self.root / "ci-guarded"  # what a CI_ALLOCATION=1 build compiles in (sundai_hotspot/ci_entry.h)
+        guarded.write_bytes(self.fake.read_bytes() + b"# " + provenance.CI_ENTRY_GUARD + b"\n")
+        guarded.chmod(0o755)
+        self.write_provenance(guarded)
         with mock.patch("sundai_hotspot.reference_validation._run_call") as dispatch:  # admission, staging, launch
             for rule, arguments in refusals.items():
                 with self.subTest(rule=rule), self.assertRaises(CallRefused):
@@ -778,8 +791,20 @@ class ManifestEntryTests(TempDirCase):
                 self.call(P_ASCEND, "out-stale", binary=stale)
             with self.assertRaisesRegex(CallRefused, "libraries"):
                 self.call(P_ASCEND, "out-libraries", binary=other)
+            with self.assertRaisesRegex(CallRefused, "CI entry guard"):
+                self.call(P_ASCEND, "out-guarded", binary=guarded)
             dispatch.assert_not_called()
         self.assertFalse(self.ledger.exists() and list(self.ledger.glob("*.json")), "a refused call is never reserved")
+
+    def test_ci_allocation_refuses_before_anything_runs(self):
+        """Main's CI allocation (SLAB-046): native HotSpot launches in CI go through ci_gate; SLAB-049 never solves there."""
+        with mock.patch.dict(os.environ, {"CI_ALLOCATION": "1"}), \
+                mock.patch("sundai_hotspot.reference_validation._run_call") as dispatch:
+            with self.assertRaisesRegex(CallRefused, "never runs under CI allocation"):
+                self.call(P_ASCEND, "ci")
+            dispatch.assert_not_called()
+        self.assertFalse(self.ledger.exists())
+        self.assertFalse((self.root / "ci").exists())
 
     def test_bootstrap_receipts_need_no_pass_bind_every_field_and_unlock_search(self):
         with self.assertRaises(GateZeroRefusal):

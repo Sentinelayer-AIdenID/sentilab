@@ -7,9 +7,12 @@ is reserved or launched. In code, at this one entry (the manifest's enforcement.
 - the manifest must be byte-identical to what this tree generates (sources, references, raw layout pins, predicate,
   accounting); the prior snapped manifest, kept as an artifact, is refused;
 - only a listed call id, with its listed --timeout (and engine, reference and grid if given), before the window
-  closes, on the listed architecture, on POSIX (the CPU limit is RLIMIT_CPU);
-- the binary must identify as the listed kind and match its build provenance; it runs from a private,
-  content-addressed copy, and the shared libraries the loader resolves must be the build's, hashed before and after;
+  closes, on the listed architecture, on POSIX (the CPU limit is RLIMIT_CPU), and never under CI allocation
+  (CI_ALLOCATION=1): in CI every native HotSpot launch goes through sundai_hotspot.ci_gate, and SLAB-049 solves
+  run only on the grant host;
+- the binary must identify as the listed kind and match its build provenance, and must not carry the CI entry
+  guard; it runs from a private, content-addressed copy, and the shared libraries the loader resolves must be the
+  build's, hashed before and after;
 - the raw reference geometry is checked with the continuous rules only (margin, halo, spacing), never the search
   lattice;
 - admission is atomic under the ledger lock: one manifest per ledger, each call reserved once (no retries), and the
@@ -133,6 +136,9 @@ def load_manifest(manifest_path: Path | None = None) -> tuple[dict, str]:
 def admit(call_id: str, manifest: dict, *, timeout_s: float | None, kind: str | None = None,
           reference: str | None = None, grid: int | None = None, now: datetime | None = None) -> dict:
     """Refuse anything the manifest does not list. The timeout is required and must be the call's own."""
+    if os.environ.get("CI_ALLOCATION") == "1":
+        raise CallRefused("validate-reference never runs under CI allocation: SLAB-049 solves run only on warden's "
+                          "grant host, and in CI every native HotSpot launch goes through sundai_hotspot.ci_gate")
     if os.name != "posix":
         raise CallRefused("validate-reference needs POSIX: the CPU limit is RLIMIT_CPU on the solver process "
                           "(Linux, macOS). Windows has no RLIMIT_CPU, and its equivalent, a Job Object process-time "
@@ -283,6 +289,10 @@ def validate_call(call_id: str, out: Path, ledger: Path, *, timeout_s: float | N
             build = provenance.require_build_provenance(call["kind"], source, identity["binary_sha256"])
         except (gate_zero.GateZeroRefusal, provenance.ProvenanceError) as exc:
             raise CallRefused(f"{call_id}: {exc}") from exc
+        if provenance.CI_ENTRY_GUARD in executable.read_bytes():
+            raise CallRefused(f"{call_id}: this binary was built with the CI entry guard (CI_ALLOCATION=1) and runs "
+                              "only through sundai_hotspot.ci_gate under a CI reservation; the grant host needs a "
+                              "build without CI_ALLOCATION")
         runtime = provenance.resolved_libraries(executable)
         if provenance.library_identity(runtime) != provenance.library_identity(build["provenance"]["libraries"]):
             raise CallRefused(f"{call_id}: the shared libraries the loader resolves now differ from the build's")

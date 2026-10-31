@@ -1018,11 +1018,12 @@ IN_CODE_AT_ENTRY = (
     "listed calls only: the call id with its listed --timeout, and the engine, reference and grid when given; "
     "before the window closes; on the listed architecture; on POSIX only, because the CPU limit is RLIMIT_CPU "
     "(Linux and macOS; Windows has no RLIMIT_CPU, and its equivalent, a Job Object process-time limit, is not "
-    "implemented, so the entry refuses there)",
+    "implemented, so the entry refuses there); never under CI allocation (CI_ALLOCATION=1), where every native "
+    "HotSpot launch goes through sundai_hotspot.ci_gate and SLAB-049 solves never run",
     "evaluator identity: identity markers and SHA-256 are read from a private content-addressed copy (mode 0500 in a "
-    "0700 directory), and that copy is the file executed; build provenance must describe exactly those bytes; the "
-    "shared libraries the loader resolves must equal the build's, and are hashed again after the run (a change "
-    "settles the call as runtime_changed)",
+    "0700 directory), and that copy is the file executed; build provenance must describe exactly those bytes; a "
+    "binary built with the CI entry guard is refused; the shared libraries the loader resolves must equal the "
+    "build's, and are hashed again after the run (a change settles the call as runtime_changed)",
     "raw geometry: the pinned raw layout hash (the vendored copy, and SLAB-048's record whenever it is in the tree) "
     "and the continuous rules only; the search lattice is never applied",
     "atomic admission: under an exclusive ledger lock, one manifest per ledger, each call reserved once (O_EXCL, no "

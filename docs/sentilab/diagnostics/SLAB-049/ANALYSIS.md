@@ -226,12 +226,15 @@ Line numbers in this section are on this branch.
 | `hotspot-material-only` (NEW) | `e59230147e15c54f782ebf94d2aaf7c6f3da3456954553787a221bf2850ed132` |
 | `temperature_grid.o`, pristine and default | identical (`9a766c71...`) |
 
+Both binary hashes are unchanged after merging main's SLAB-046 CI launch gate, built without `CI_ALLOCATION` (the
+gate compiles to nothing then). A `CI_ALLOCATION=1` build, as in the CI image, carries the entry guard and differs.
+
 Binary hashes depend on the toolchain. The grant host pins its own hashes at run time through the oracle. The
 source identity of NEW is the SHA-256 of `temperature_grid.c`, `Makefile` and `coupling_variant.py`, as listed
 in `problem.generator_sha256`.
 
-**What the tests show** (93 tests across both modules; the native, fake-solver and built-binary tests run on
-POSIX and in the CI image; 28 code mutants, each caught by a named test):
+**What the tests show** (94 tests across both modules; the native, fake-solver and built-binary tests run on
+POSIX and in the CI image; 30 code mutants, each caught by a named test):
 
 - **Default byte-identity.**
   - Stripping the variant blocks from `temperature_grid.c` gives exactly the upstream bytes.
@@ -348,7 +351,9 @@ coordinator]
 - **Bootstrap:** `reference_validation validate-reference` produces the first receipts and needs no PASS. It is the
   one in-code enforcement entry (CALL-LIST-v4.md lists what it enforces and what the operator supervisor must).
   It writes fresh inputs into a fresh directory with TAP's own generator, checks them byte for byte against the
-  frozen ones, and records their hashes and the effective start and stop.
+  frozen ones, and records their hashes and the effective start and stop. It never runs under main's CI allocation
+  (`CI_ALLOCATION=1`, SLAB-046), where every native HotSpot launch goes through `sundai_hotspot.ci_gate`, and it
+  refuses a binary built with the CI entry guard. Its process launches are listed in `docs/ci-spawn-review.md`.
 - **Records:** assembled from the ledger by admitted call id, never from caller-chosen directories. Each outcome is
   re-derived from its raw evidence and bound to its receipt, its settlement, the manifest and the binary. The
   verdict is recomputed every time; the stored one is never trusted. A PASS covers grid 64 on the block-centre
