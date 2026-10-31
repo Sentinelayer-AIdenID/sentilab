@@ -195,7 +195,11 @@ class PassiveInterposer(System_25D):
 			Ptrace.write('\n')
 
 	def run_hotspot(self, filename):
-		proc = subprocess.Popen(["./util/hotspot",
+		from pathlib import Path
+		import sys
+		sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "sundai_hotspot"))
+		from ci_gate import run_hotspot
+		proc = run_hotspot(["./util/hotspot",
 			"-c",self.path+"new_hotspot.config",
 			"-f",self.path+filename+"L4_ChipLayer.flp",
 			"-p",self.path+filename+".ptrace",
@@ -205,7 +209,7 @@ class PassiveInterposer(System_25D):
 			"-detailed_3D","on",
 			"-grid_layer_file",self.path+filename+"layers.lcf"], 
 			stdout=subprocess.PIPE, stderr = subprocess.PIPE)
-		stdout, stderr = proc.communicate()
+		stdout, stderr = proc.stdout, proc.stderr
 		outlist = stdout.split()
 		return (max(list(map(float,outlist[3::2])))-273.15)
 
