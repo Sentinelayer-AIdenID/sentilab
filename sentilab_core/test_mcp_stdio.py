@@ -73,6 +73,30 @@ class StdioTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(json.loads(response["result"]["content"][0]["text"]), {"active": True})
         self.assertFalse(self.cleaned.exists(), "status must complete before the run")
 
+    async def test_tool_listing_keeps_live_memory_routing_and_dataset_schemas(self):
+        await self.send({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
+        response = await self.receive()
+        tools = response["result"]["tools"]
+        expected = {
+            "sentilab_live_run": {"ai_off"},
+            "sentilab_live_status": {"ai_off"},
+            "sentilab_live_stop": {"ai_off"},
+            "sentilab_live_verify": {"ai_off", "run_id"},
+            "sentilab_memory_recall": {"scope"},
+            "sentilab_memory_audit": {"scope"},
+            "sentilab_route": set(),
+            "sentilab_dataset_export": {"run_ids"},
+        }
+        self.assertCountEqual([tool["name"] for tool in tools], expected)
+        for tool in tools:
+            with self.subTest(tool=tool["name"]):
+                schema = tool["inputSchema"]
+                self.assertEqual(set(schema.get("required", [])), expected[tool["name"]])
+                self.assertFalse(schema["additionalProperties"])
+                if tool["name"] == "sentilab_route":
+                    self.assertEqual(set(schema["properties"]), {"task", "calibrate"})
+                    self.assertEqual(len(schema["oneOf"]), 2)
+
     async def test_status_and_stop_complete_while_run_is_active(self):
         await self.start_run()
         await self.call(3, "stop")
