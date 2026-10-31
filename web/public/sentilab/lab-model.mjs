@@ -1,5 +1,5 @@
 // Lab view display model (VIEW ENVELOPE v0.5). Pure functions, no DOM, so the node tests can run them.
-// Status (lifecycle, validity, support sets, the board) is never computed here: it is aneta's project() over the
+// Status (lifecycle, validity, support sets, the board) is never computed here: it is the contract's project() over the
 // projectable prefix only (rule 1): the leading run of verified envelopes from seq 1, ending before the first
 // rejected, unverified or conflicting row. This file only arranges that output, plus the display-only `values` from
 // those same envelopes, for the panels. Everything after the prefix appears only as marked feed rows, never in a
