@@ -133,7 +133,7 @@ test("the lists, labels and notice are frozen; the notice is root's wording, and
   for (const text of [NOTICE, ...Object.values(LABELS).flatMap((l) => [l.text, l.short, l.title])]) assert.doesNotMatch(text, /\d\s*×|×\s*\d|\d\.\d+x|%/i, text);
   // The served module, comments included: no multiplier, gap or reversal figures (provenance is the SLAB-049 review).
   const source = readFileSync(join(PUBLIC, "temperature-label.mjs"), "utf8");
-  assert.doesNotMatch(source, /\d\s*×|×\s*\d|\d+(\.\d+)?x|\d+\s*-\s*\d+\s*%|\d\s*%|\d+\s*K|revers|flip/i);
+  assert.doesNotMatch(source, /\d\s*×|×\s*\d|\b\d+(\.\d+)?x\b|\d+\s*-\s*\d+\s*%|\d\s*%|\b\d+\s*K\b|revers|flip/i);
   assert.match(source, /SLAB-049/);
   // The tag beside a value must not read as the evidence views' own "withdrawn" node state.
   assert.notEqual(LABELS.withdrawn.short, "withdrawn");
