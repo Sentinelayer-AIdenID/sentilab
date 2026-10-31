@@ -3,25 +3,26 @@ import asyncio
 import json
 import sys
 
-from sentilab_core import operations
-
-
 EXPORT_TIMEOUT_SECONDS = 30
 
 
 async def sentilab_live_run(context, **arguments):
+    from sentilab_core import operations
     return await operations.run(context, **arguments)
 
 
 def sentilab_live_status(context, **arguments):
+    from sentilab_core import operations
     return operations.status(context, **arguments)
 
 
 def sentilab_live_stop(context, **arguments):
+    from sentilab_core import operations
     return operations.stop(context, **arguments)
 
 
 def sentilab_live_verify(context, **arguments):
+    from sentilab_core import operations
     return operations.verify(context, **arguments)
 
 

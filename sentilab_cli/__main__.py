@@ -4,24 +4,29 @@ import json
 import sys
 from pathlib import Path
 
-from sentilab_core import operations
-from sentilab_core.budget import Limits
+from sentilab_core.capabilities import cli_commands, implemented
 
 
 async def dispatch(command, context, **arguments):
+    from sentilab_core import operations
     operation = getattr(operations, command)
     result = operation(context, **arguments)
     return await result if hasattr(result, "__await__") else result
 
 
-def dataset_main():
-    from sentilab_core.dataset import export
+def dataset_parser():
     parser = argparse.ArgumentParser(prog="sentilab dataset")
-    parser.add_argument("command", choices=["export"])
+    parser.add_argument("command", choices=cli_commands("dataset"))
     parser.add_argument("--run-id", action="append", required=True, dest="run_ids")
     parser.add_argument("--output-dir", help="parent of immutable dataset snapshots")
     parser.add_argument("--policy", help="JSON file with heldout_families and run rights grants")
-    args = parser.parse_args(sys.argv[2:])
+    return parser
+
+
+def dataset_main():
+    args = dataset_parser().parse_args(sys.argv[2:])
+    from sentilab_core import operations
+    from sentilab_core.dataset import export
     context = operations.environment_context()
     policy = json.loads(Path(args.policy).read_text()) if args.policy else None
     result = export(context.root, args.run_ids, public_keys=context.public_keys,
@@ -29,13 +34,12 @@ def dataset_main():
     print(json.dumps(result, allow_nan=False))
 
 
-def main(conductor=False):
-    if not conductor and sys.argv[1:2] == ["dataset"]:
-        return dataset_main()
+def build_parser(conductor=False):
     parser = argparse.ArgumentParser(prog="sentilab" if not conductor else "sentilab_core.conductor")
     if not conductor:
-        parser.add_argument("namespace", choices=["live", "dataset"], help="use dataset --help for export options")
-        parser.add_argument("command", choices=["run", "status", "stop", "verify"])
+        parser.add_argument("namespace", choices=sorted({row.cli_command[0] for row in implemented()}),
+                            help="use dataset --help for export options")
+        parser.add_argument("command", choices=cli_commands("live"))
     parser.add_argument("--ai-off", action="store_true", default=conductor)
     parser.add_argument("--run-id")
     parser.add_argument("--ephemeral", action="store_true", help="explicit local-demo in-memory signer")
@@ -49,7 +53,16 @@ def main(conductor=False):
     parser.add_argument("--max-evals-per-hour", type=int, default=600)
     parser.add_argument("--max-evals-per-run", type=int, default=200)
     parser.add_argument("--export", help="verified run exported as JSONL (verify only)")
+    return parser
+
+
+def main(conductor=False):
+    if not conductor and sys.argv[1:2] == ["dataset"]:
+        return dataset_main()
+    parser = build_parser(conductor)
     args = parser.parse_args()
+    from sentilab_core import operations
+    from sentilab_core.budget import Limits
     command = "run" if conductor else args.command
     context = operations.environment_context(ephemeral=args.ephemeral)
     context.options = {"fixture": args.fixture, "margin": args.margin, "grid": args.grid,

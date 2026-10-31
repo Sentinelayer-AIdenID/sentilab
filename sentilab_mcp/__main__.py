@@ -3,34 +3,15 @@ import asyncio
 import json
 import sys
 
-from sentilab_core.operations import environment_context
+from sentilab_core.capabilities import for_tool
 from . import TOOLS
 
 
 def schema(name):
-    if name == "sentilab_dataset_export":
-        return {"type": "object", "properties": {
-            "run_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-            "output_dir": {"type": "string"},
-            "policy": {"type": "object", "properties": {
-                "heldout_families": {"type": "array", "items": {"type": "string"}},
-                "rights": {"type": "object", "additionalProperties": {
-                    "type": "object", "properties": {
-                        "status": {"enum": ["ok", "blocked"]}, "reason": {"type": "string", "minLength": 1}},
-                    "required": ["status", "reason"], "additionalProperties": False}}},
-                "additionalProperties": False}},
-            "required": ["run_ids"], "additionalProperties": False}
-    properties = {"ai_off": {"type": "boolean", "const": True}}
-    required = ["ai_off"]
-    if name != "sentilab_live_stop":
-        properties["run_id"] = {"type": "string"}
-    if name == "sentilab_live_verify":
-        required.append("run_id")
-    if name == "sentilab_live_run":
-        properties.update(duration={"type": "number", "minimum": 0, "maximum": 86400},
-                          interval={"type": "number", "minimum": 0, "maximum": 3600},
-                          renew={"type": "boolean"})
-    return {"type": "object", "properties": properties, "required": required, "additionalProperties": False}
+    try:
+        return for_tool(name).input_schema
+    except StopIteration:
+        raise ValueError("unregistered MCP tool") from None
 
 
 async def handle(request, context):
@@ -56,7 +37,7 @@ async def handle(request, context):
     raise ValueError("unknown method")
 
 
-async def serve(context):
+async def serve(context=None):
     reader = asyncio.StreamReader(limit=65538)
     transport, _ = await asyncio.get_running_loop().connect_read_pipe(
         lambda: asyncio.StreamReaderProtocol(reader), sys.stdin.buffer)
@@ -66,7 +47,11 @@ async def serve(context):
         return {"jsonrpc": "2.0", "id": id, "error": {"code": code, "message": message}}
 
     async def dispatch(request):
+        nonlocal context
         try:
+            if request.get("method") == "tools/call" and context is None:
+                from sentilab_core.operations import environment_context
+                context = environment_context()
             result = await handle(request, context)
             response = {"jsonrpc": "2.0", "id": request["id"], "result": result}
         except asyncio.CancelledError:
@@ -115,7 +100,7 @@ async def serve(context):
 
 
 def main():
-    asyncio.run(serve(environment_context()))
+    asyncio.run(serve())
 
 
 if __name__ == "__main__":

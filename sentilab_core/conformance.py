@@ -218,5 +218,12 @@ console.log(JSON.stringify(verifyJsonl(data.jsonl,{runId:data.run_id,pins:[{key_
         self.assertEqual(checked["projection"], result["projection"])
 
 
+def load_tests(loader, tests, pattern):
+    # The existing CI entry point also owns the cross-surface inventory gate.
+    from sentilab_core import test_conformance
+    tests.addTests(loader.loadTestsFromModule(test_conformance))
+    return tests
+
+
 if __name__ == "__main__":
     unittest.main()
