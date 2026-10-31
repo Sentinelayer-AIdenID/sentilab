@@ -1,9 +1,9 @@
 // Offline record verifier (verify.html). A file, not an inline <script>: the page's Content-Security-Policy
 // (script-src 'self') runs only this site's own script files. Markup built here carries no style="" attributes.
 import { verifyDocument } from "./verify-core.js";
-// The page notice comes from the one rule (temperature-label.mjs), over the evaluator identity of every temperature in
-// the records shown: any withdrawn or unvalidated one (or none named) shows it above the panels.
-import { labelForAll, runTemperatureIds, NOTICE } from "./temperature-label.mjs";
+// The page notice comes from the one rule (temperature-label.mjs), over the identity of every temperature each shown
+// best peak was taken from, as the verifier reports it: any withdrawn or unvalidated one (or none named) shows it.
+import { reportNeedsNotice, NOTICE } from "./temperature-label.mjs";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" })[c]);
@@ -61,10 +61,7 @@ async function verifyText(text, source) {
   try {
     const report = await verifyDocument(text);
     render(report, source);
-    // A best peak on screen shows the notice unless every temperature in the file names an evaluator that needs none.
-    let doc = null;
-    try { doc = JSON.parse(text); } catch { /* no identity can be read here: the rule's fail safe */ }
-    setNotice(report.lanes.some((l) => Number.isFinite(l.best)) && labelForAll(runTemperatureIds(doc)).notice);
+    setNotice(reportNeedsNotice(report));
   } catch (e) { fail(e.message || String(e)); }
 }
 
