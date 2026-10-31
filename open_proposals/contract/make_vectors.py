@@ -309,6 +309,8 @@ C_PRIV = check_request("F", TEST_LAYOUT, key="c-2", visibility="private", salt=S
 TEAM = {"schema": "sentilab-open-team/1", "manifest_id": ID["F"], "name": "Team Example 7"}
 PUBLISH = {"schema": "sentilab-open-publish/1", "manifest_id": ID["F"], "terms": TERMS_VERSION,
            "proposal_sha256": h.proposal_sha256(P_PRIV)}
+PRIV_HANDLE = h.proposal_sha256(P_PRIV)         # the private entry's read handle: a bearer secret
+PRIV_B64URL = base64.urlsafe_b64encode(bytes.fromhex(PRIV_HANDLE)).decode().rstrip("=")
 
 
 def changed(value: dict, **edits) -> dict:
@@ -827,11 +829,12 @@ def apply_edits(value, edits):
     return out
 
 
-def mrec(name, base, edits=(), expect_=()) -> dict:
+def mrec(name, base, edits=(), expect_=(), **context) -> dict:
     """A manifest case as its base and edits: the full record is applied by the tests (test_golden.record_of)."""
     changes = [{"path": path, "delete": True} if value is DELETE else {"path": path, "value": value}
                for path, value in edits]
-    return {"kind": "manifest", "name": name, "base": base, "edits": changes, "context": {}, "expect": list(expect_)}
+    return {"kind": "manifest", "name": name, "base": base, "edits": changes, "context": context,
+            "expect": list(expect_)}
 
 
 def manifest_records() -> list:
@@ -889,7 +892,11 @@ def manifest_records() -> list:
         ("schema: a lattice in micrometres, an integer", [("/legality/lattice_um", 500.0)],
          [S("/legality/lattice_um", "type")]),
     ]
-    return out + [mrec(name, "F", edits, expected) for name, edits, expected in bad]
+    out += [mrec(name, "F", edits, expected) for name, edits, expected in bad]
+    out.append(mrec("a private handle in a public manifest field, as base64url", "F",
+                    [("/refs/grant", "grant-" + PRIV_B64URL)], [R("privacy.handle", "")],
+                    private_handles=[PRIV_HANDLE]))
+    return out
 
 
 def terms_records() -> list:
@@ -1203,6 +1210,7 @@ def results_records() -> list:
             [R("results.comparator", "/comparator"), R("results.delta_t", "/rows/0/delta_T")], manifest="F"),
         rec("results", "an entry not evaluated has no values", results(outside(state="queued")),
             [R("results.state", "/rows/0/state")], manifest="F"),
+        *privacy_cases(),
         rec("results", "q_r follows W(c)", results(outside(q_r=Q_F | {"1.00": -100.0})),
             [R("results.q_r_values", "/rows/0/q_r")], manifest="F"),
         rec("results", "q_r keys: r = 0, the tolerance and every budget", results(outside(
@@ -1213,6 +1221,24 @@ def results_records() -> list:
         rec("results", "a published target is never our evaluation", results(target | {"use": "comparison"}),
             [S("/rows/0", "oneOf")]),
     ]
+
+
+def privacy_cases() -> list:
+    """A private handle hidden anywhere in a public string is refused (privacy.handle): behind a prefix, before a
+    suffix, in the middle, in upper case, broken up by separators, or as base64url. The public entry's own hash in
+    the same place is fine."""
+    spelled = ":".join(PRIV_HANDLE[index:index + 2] for index in range(0, 64, 2))
+    variants = [("behind a prefix", "hotspot6:" + PRIV_HANDLE), ("before a suffix", PRIV_HANDLE + ":grid:64"),
+                ("in the middle", "hotspot6:" + PRIV_HANDLE + ":grid:64"),
+                ("in upper case", "hotspot6:" + PRIV_HANDLE.upper()), ("broken up by separators", "hotspot6:" + spelled),
+                ("as base64url", "hotspot6:" + PRIV_B64URL)]
+    cases = [rec("results", f"a private handle {name} in a public string", results(outside(
+        evaluator=evaluator, temperature_label="unvalidated")), [R("privacy.handle", "")], manifest="F",
+        private_handles=[PRIV_HANDLE]) for name, evaluator in variants]
+    cases.append(rec("results", "valid: a public entry's own hash in a public string", results(outside(
+        evaluator="hotspot6:" + h.proposal_sha256(P_PUB), temperature_label="unvalidated")), manifest="F",
+        private_handles=[PRIV_HANDLE]))
+    return cases
 
 
 def other_records() -> list:

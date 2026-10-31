@@ -88,8 +88,10 @@ content, and rejects a mismatch with `transport_key_mismatch`. Logical keys are 
 A private entry's salted `proposal_sha256`, and a private check's `request_sha256`, are the per-request handles that
 reach its status, receipt and check result without signing in (DESIGN.md:259-261, 808-811). Each is a bearer secret:
 whoever holds it can read that entry; it proves nothing about who posted it. It is never logged, never put in a public
-record, index or room pointer, and never derived from the unsalted geometry (`validate_record(...,
-private_handles=...)` refuses any record that carries one). The server can revoke a handle, after which only
+record, index or room pointer, and never derived from the unsalted geometry. `validate_record(...,
+private_handles=...)` refuses a record that carries one anywhere (`exposes_handle`): as a whole string or key, behind a
+prefix, before a suffix, in the middle, in any letter case, broken up by separators, or as the base64 or base64url text
+of its 32 bytes. The server can revoke a handle, after which only
 authorized access reads the entry. A handle cannot be re-keyed in place, because it is the content hash: a new handle
 means a new salt, which is new content and so a new revision under a new `proposal_key`. A publish reply names the
 handle in plaintext (DESIGN.md:754); once published, the entry is public anyway.

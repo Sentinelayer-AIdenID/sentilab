@@ -25,6 +25,7 @@ whose header is valid is "sealed_unopened".
 """
 from __future__ import annotations
 
+import base64
 import json
 import math
 import re
@@ -658,7 +659,7 @@ def validate_record(kind: str, record, *, manifest=None, item=None, action_id=No
     The keyword arguments enable the rules that need them (the manifest, the parsed proposal, the restricted row's
     action and account ids with k_challenge, the status query); without them those rules are skipped.
     private_handles are salted proposal_sha256 and request_sha256 values of private items: bearer secrets that no
-    record may carry, checked on every record kind.
+    record may carry in any form (exposes_handle), checked on every record kind.
     """
     if kind not in RECORD_SCHEMAS:
         raise ValueError("unknown record kind")
@@ -668,10 +669,31 @@ def validate_record(kind: str, record, *, manifest=None, item=None, action_id=No
     ctx = {"manifest": manifest, "item": item, "action_id": action_id, "k_challenge": k_challenge,
            "account_id": account_id, "proposal_sha256": proposal_sha256, "lists": lists}
     found = RULES.get(kind, lambda _record, _ctx: [])(record, ctx)
-    handles = set(private_handles)
-    if handles and any(text in handles for text in _strings(record)):
+    if private_handles and exposes_handle(record, private_handles):
         found.append(_bad("record_inconsistent", "", "privacy.handle"))
     return canonical_list(found)
+
+
+NOT_HEX = re.compile(r"[^0-9a-f]")
+
+
+def exposes_handle(value, handles) -> bool:
+    """Whether any one string or key in value carries a private handle whole: bare, behind a prefix, before a suffix,
+    in the middle, in any letter case, broken up by separators, or as the base64 or base64url text of its 32 bytes.
+    Each string is read as its hex digits alone, so neither case nor separators hide a handle."""
+    hexes, encoded = [], []
+    for handle in handles:
+        if not isinstance(handle, str) or not hashes.HEX64.fullmatch(handle):
+            raise ValueError("a private handle is 64 lower-case hex characters")
+        raw = bytes.fromhex(handle)
+        hexes.append(handle)
+        encoded += [base64.b64encode(raw).decode("ascii").rstrip("="),
+                    base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")]
+    for text in _strings(value):
+        digits = NOT_HEX.sub("", text.lower())
+        if any(handle in digits for handle in hexes) or any(form in text for form in encoded):
+            return True
+    return False
 
 
 def label_ok(value, evaluator, label, lists=LISTS) -> bool:

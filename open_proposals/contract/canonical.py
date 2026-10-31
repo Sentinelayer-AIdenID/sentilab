@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import re
 from decimal import Decimal
 
 from sentilab_core.envelope import RUN_ID, canonical
@@ -24,6 +25,7 @@ TEAM_SCHEMA = "sentilab-open-team/1"
 PUBLISH_SCHEMA = "sentilab-open-publish/1"
 TEAM_KEY = "team"
 PUBLISH_KEY_PREFIX = "publish:"
+HEX64 = re.compile(r"[0-9a-f]{64}")
 
 
 def sha256_hex(data: bytes) -> str:

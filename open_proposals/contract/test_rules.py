@@ -546,6 +546,30 @@ class PythonVectors(unittest.TestCase):
         self.assertEqual(["unsealable"], [item["code"] for item in outcome.violations], "no recipient, no seal")
 
 
+class Handles(unittest.TestCase):
+    """Root's review: a private handle is refused anywhere in a public record, not only as a whole string."""
+
+    def test_every_spelling_and_place(self):
+        import base64
+        from .validator import exposes_handle
+        handle = mv.PRIV_HANDLE
+        raw = bytes.fromhex(handle)
+        spellings = {"bare": handle, "prefix": "x:" + handle, "suffix": handle + ":x", "middle": "x" + handle + "x",
+                     "upper case": handle.upper(), "mixed case": handle[:32].upper() + handle[32:],
+                     "separators": "-".join(handle[index:index + 4] for index in range(0, 64, 4)),
+                     "base64": base64.b64encode(raw).decode(), "base64 unpadded": base64.b64encode(raw).decode()
+                     .rstrip("="), "base64url": "x" + base64.urlsafe_b64encode(raw).decode().rstrip("=") + "x"}
+        for name, text in spellings.items():
+            with self.subTest(name):
+                self.assertTrue(exposes_handle({"value": text}, [handle]))
+                self.assertTrue(exposes_handle({text: 1}, [handle]), "in a key")
+                self.assertTrue(exposes_handle([{"deep": [text]}], [handle]), "nested")
+        for text in (handle[:63], h.proposal_sha256(mv.P_PUB), "x" * 64, handle[1:]):
+            self.assertFalse(exposes_handle({"value": text}, [handle]))
+        with self.assertRaises(ValueError):
+            exposes_handle({}, [handle.upper()])
+
+
 class Limits(unittest.TestCase):
     def test_the_four_check_limits_are_separate_fields(self):
         """Section 6.2: the solver limit, the whole-check wall, the CPU reserve and the request quotas."""
