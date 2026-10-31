@@ -178,6 +178,8 @@ def rank_agreement(coarse, reference, tolerance_c: float) -> dict:
     return {'tolerance_c': tolerance_c, 'total_pairs': total, 'eligible_pairs': eligible,
             'excluded_pairs': total - eligible, 'violations': len(violations),
             'violation_pairs': violations, 'passes': not violations,
+            'max_misordered_reference_gap_c': max(
+                (abs(reference[i] - reference[j]) for i, j in violations), default=0.0),
             'agreement_fraction': (eligible - len(violations)) / eligible if eligible else None}
 
 
@@ -191,6 +193,8 @@ def summarize(rows, grids, fixed_tolerance_c):
         coarse = [r['J_c'][str(grid)] for r in rows]
         error = mesh_error(coarse, reference)
         comparisons[str(grid)] = {'max_abs_error_c': error,
+                                 'max_misordered_reference_gap_c': rank_agreement(
+                                     coarse, reference, 0)['max_misordered_reference_gap_c'],
                                  'rank_2e': rank_agreement(coarse, reference, 2 * error),
                                  'rank_fixed': rank_agreement(coarse, reference, fixed_tolerance_c)}
     return {'reference_grid': reference_grid,
@@ -322,6 +326,14 @@ def report(result):
         lines.append(f'| {grid} | {comparison["max_abs_error_c"]:.6f} | {rank["tolerance_c"]:.6f} | '
                      f'{rank["eligible_pairs"]} / {rank["total_pairs"]} | {rank["violations"]} | '
                      f'{rank["passes"]} | {fixed["eligible_pairs"]} | {fixed["violations"]} |')
+    lines += ['', '## Observed ranking resolution', '']
+    for grid, comparison in summary['comparisons'].items():
+        gap = comparison['max_misordered_reference_gap_c']
+        lines.append(f'Grid {grid}: largest reference-grid gap reversed or left tied is {gap:.6f} C.')
+    lines += ['', 'This statistic compares all unequal reference pairs (zero tie tolerance, '
+              'with the same roundoff guard). It measures gaps on the reference grid, not '
+              'coarse-grid differences, and is an observation on these layouts, not a '
+              'guaranteed threshold for unseen layouts.', '']
     lines += ['', '## Measured peaks (C)', '',
               '| Layout | ' + ' | '.join(f'J{grid}' for grid in result['grids']) + ' |',
               '| --- | ' + ' | '.join('---:' for _ in result['grids']) + ' |']

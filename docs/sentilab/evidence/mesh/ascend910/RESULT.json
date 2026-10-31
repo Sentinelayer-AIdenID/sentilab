@@ -1864,6 +1864,12 @@
     "scope": "both fixtures including warm-up, validation and HotSpot child CPU",
     "status": "unverified; historical CPU and additional gate/warm-up executions not captured"
   },
+  "resolution_analysis": {
+    "base_commit": "eca68f61ef3d267dc458053b92f0bea1a6eed5f8",
+    "method": "reanalysis of recorded J values; no solver executions",
+    "source_sha256": "12f7204bacaa15d96ee295e0f934081e16807a32d3f6cf7331c3729827f22869",
+    "uncommitted_source_changes": true
+  },
   "run_accounting": {
     "children_cpu_seconds": null,
     "cpu_minutes": null,
@@ -1880,10 +1886,12 @@
     "comparisons": {
       "16": {
         "max_abs_error_c": 0.8600000000000136,
+        "max_misordered_reference_gap_c": 0.38999999999998636,
         "rank_2e": {
           "agreement_fraction": 1.0,
           "eligible_pairs": 55,
           "excluded_pairs": 221,
+          "max_misordered_reference_gap_c": 0.0,
           "passes": true,
           "tolerance_c": 1.7200000000000273,
           "total_pairs": 276,
@@ -1894,6 +1902,7 @@
           "agreement_fraction": 0.9413919413919414,
           "eligible_pairs": 273,
           "excluded_pairs": 3,
+          "max_misordered_reference_gap_c": 0.38999999999998636,
           "passes": false,
           "tolerance_c": 0.01,
           "total_pairs": 276,
@@ -1968,10 +1977,12 @@
       },
       "32": {
         "max_abs_error_c": 0.160000000000025,
+        "max_misordered_reference_gap_c": 0.11000000000001364,
         "rank_2e": {
           "agreement_fraction": 1.0,
           "eligible_pairs": 220,
           "excluded_pairs": 56,
+          "max_misordered_reference_gap_c": 0.0,
           "passes": true,
           "tolerance_c": 0.32000000000005,
           "total_pairs": 276,
@@ -1982,6 +1993,7 @@
           "agreement_fraction": 0.9816849816849816,
           "eligible_pairs": 273,
           "excluded_pairs": 3,
+          "max_misordered_reference_gap_c": 0.11000000000001364,
           "passes": false,
           "tolerance_c": 0.01,
           "total_pairs": 276,

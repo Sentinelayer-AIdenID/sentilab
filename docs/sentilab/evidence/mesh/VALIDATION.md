@@ -99,3 +99,18 @@ sundai_controller.test_mesh_study.MeshLayoutTests`. The new test fails on
 `7c22f9d` with missing `cpu_usage`; removing child CPU from the implementation
 also fails it. The real-run test was not repeated after accounting changed,
 to conserve the unresolved allowance.
+
+## Requested ranking resolution
+
+Reanalysis of the unchanged measurements yields a largest reference-grid gap
+reversed or left tied of 0.11 C for grid 32 and 0.39 C for grid 16. In the grid-32
+case, spread-07 and random-02 both return 118.25 C at 32, but their J64 values
+are 118.41 C and 118.30 C. This is a lost distinction of 0.11 C on the reference
+grid, not a guarantee about differences measured at 32 or unseen layouts.
+
+The new resolution test failed before the fix with a missing summary key;
+removing coarse ties from the shipped rank function in a disposable checkout
+fails it with `AssertionError: 2 != 4`. Final accounting/statistics/layout tests:
+10 pass, no HotSpot runs. Resolution analysis has separate source-hash/base
+provenance in RESULT.json; original execution and roundoff-analysis commits and
+all measured temperatures remain unchanged.

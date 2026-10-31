@@ -50,6 +50,11 @@ zero violations, so eligible/excluded pair counts and fixed-0.01 C diagnostics
 must accompany any interpretation. The fixed tolerance excludes small reference
 gaps; it does not round coarse values or make approximate ties transitive.
 
+Each comparison also reports the largest reference-grid gap that the coarse
+grid reverses or leaves tied, considering all unequal reference pairs. For this
+Ascend910 set it is 0.11 C at grid 32 and 0.39 C at grid 16. These are observed
+reference gaps, not guaranteed thresholds on coarse-grid differences.
+
 For independent reruns of three frozen layouts:
 
 ```sh

@@ -32,6 +32,17 @@ class MeshAccountingTests(unittest.TestCase):
 
 
 class MeshStatisticsTests(unittest.TestCase):
+    def test_resolution_uses_reference_gaps_including_coarse_ties(self):
+        rows = [{'id': str(i), 'J_c': {'32': coarse, '64': fine}}
+                for i, (coarse, fine) in enumerate(zip([2, 1, 6, 6], [0, 2, 5, 9]))]
+        summary = mesh.summarize(rows, [32, 64], 0.01)
+        # The reversal spans 2 C; the coarse tie loses a larger 4 C fine gap.
+        self.assertEqual(summary['comparisons']['32']['max_misordered_reference_gap_c'], 4)
+        for row in rows:
+            row['J_c']['32'] = row['J_c']['64']
+        ordered = mesh.summarize(rows, [32, 64], 0.01)
+        self.assertEqual(ordered['comparisons']['32']['max_misordered_reference_gap_c'], 0)
+
     def test_mesh_error_uses_maximum_absolute_difference(self):
         self.assertEqual(mesh.mesh_error([8, 14, 9], [10, 10, 10]), 4)
 
