@@ -37,8 +37,12 @@ def _hash(value):
 
 def _bounded(value):
     # Bound traversal before serialization, including cycles and huge integers.
+    visited = 0
+
     def walk(item, depth=0):
-        if depth > 8:
+        nonlocal visited
+        visited += 1
+        if depth > 8 or visited > 1024:
             raise ResearchError("oversize")
         if type(item) is dict:
             if len(item) > 32:
@@ -144,7 +148,10 @@ def admit(backend: ResearchBackend, admission_record):
         raise ResearchError("invalid_admission")
     if hashes["effective_config"] != _hash(config):
         raise ResearchError("config_evidence_mismatch")
-    return {"backend": identity, "admission_sha256": _hash(record), "fixture": False}
+    return {"backend": identity, "admission_sha256": _hash(record), "fixture": False,
+            "admission": {"approver": record["approver"], "namespace": dict(record["namespace"]),
+                          "telemetry_setting": setting, "effective_telemetry": "off",
+                          "evidence_hashes": dict(hashes)}}
 
 
 def _notes(value, provenance):
