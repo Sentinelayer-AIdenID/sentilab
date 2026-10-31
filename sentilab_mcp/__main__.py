@@ -43,21 +43,64 @@ async def handle(request, context):
     raise ValueError("unknown method")
 
 
-def main():
-    context = environment_context()
-    while raw := sys.stdin.buffer.readline(65538):
-        if len(raw) > 65537 or not raw.endswith(b"\n"):
-            raise ValueError("MCP request exceeds 64 KiB")
-        request = json.loads(raw)
-        if "id" not in request:
-            continue
+async def serve(context):
+    reader = asyncio.StreamReader(limit=65538)
+    transport, _ = await asyncio.get_running_loop().connect_read_pipe(
+        lambda: asyncio.StreamReaderProtocol(reader), sys.stdin.buffer)
+    pending = {}
+
+    def error(id, code, message):
+        return {"jsonrpc": "2.0", "id": id, "error": {"code": code, "message": message}}
+
+    async def dispatch(request):
         try:
-            result = asyncio.run(handle(request, context))
+            result = await handle(request, context)
             response = {"jsonrpc": "2.0", "id": request["id"], "result": result}
+        except asyncio.CancelledError:
+            response = error(request["id"], -32800, "request cancelled")
         except (ValueError, TypeError, KeyError, OSError) as exc:
-            response = {"jsonrpc": "2.0", "id": request["id"],
-                        "error": {"code": -32602, "message": type(exc).__name__}}
+            response = error(request["id"], -32602, type(exc).__name__)
         print(json.dumps(response), flush=True)
+
+    def finished(id, task):
+        pending.pop(id, None)
+        # Observe task errors, and close a peer that no longer reads responses.
+        if not task.cancelled() and task.exception() is not None:
+            transport.close()
+
+    try:
+        while raw := await reader.readline():
+            if len(raw) > 65537 or not raw.endswith(b"\n"):
+                raise ValueError("MCP request exceeds 64 KiB")
+            request = json.loads(raw)
+            if "id" not in request:
+                if request.get("method") == "notifications/cancelled":
+                    task = pending.get(request.get("params", {}).get("requestId"))
+                    if task is not None and not task.cancelling():
+                        task.cancel()
+                continue
+            id = request["id"]
+            if type(id) not in (str, int):
+                raise ValueError("invalid request id")
+            if id in pending or len(pending) >= 8:
+                print(json.dumps(error(id, -32000, "request already active or server busy")), flush=True)
+                continue
+            task = asyncio.create_task(dispatch(request))
+            pending[id] = task
+            task.add_done_callback(lambda task, id=id: finished(id, task))
+            # Dispatch buffered requests promptly without waiting for completion.
+            await asyncio.sleep(0)
+    finally:
+        transport.close()
+        tasks = list(pending.values())
+        for task in tasks:
+            if not task.cancelling():
+                task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+
+def main():
+    asyncio.run(serve(environment_context()))
 
 
 if __name__ == "__main__":

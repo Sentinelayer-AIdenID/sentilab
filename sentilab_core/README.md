@@ -90,6 +90,10 @@ CLI and MCP handlers call the same four operations. The MCP stdio host publishes
 `sentilab_live_run`, `sentilab_live_status`, `sentilab_live_stop` and
 `sentilab_live_verify`. Only a host holding the injected signer can start work;
 no lab/UI transport accepts an actor role or writes a gate outcome.
+The stdio host uses one persistent event loop with at most eight in-flight
+requests, so status and STOP can complete while a run is active. Excess requests
+receive a busy error. `notifications/cancelled` cancels the matching request;
+disconnect cancels pending work and awaits cleanup before the host exits.
 
 ## Checks
 
