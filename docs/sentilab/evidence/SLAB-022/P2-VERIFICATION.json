@@ -1,0 +1,256 @@
+{
+  "schema_version": "sentilab.verification.v1",
+  "ticket": "7b99a2b7",
+  "finding": "PR21 P2 bounded file intake and responsive cancellation",
+  "implementation_base": "d4d64ea83bf3ffb43eae789fa97c1b5193b88f76",
+  "implementation_head": "93427b9a2c2d1fcecba8c5d9084ee04d674266f9",
+  "source_sha256": {
+    "docs/sentilab/evidence/SLAB-022/README.md": "9e73ed4b8dc67dfe94b9e45032eda246fca11afc3fde76ac58923eb096aee6d9",
+    "sentilab_core/resultcheck.py": "bec693425b166b935a47777295a82fbe628318ded1eb3f7cf24ab64a5453ba93",
+    "sentilab_core/test_resultcheck.py": "866fa31145294502ee5273080af8aa6dfe379968f08111352c8fb1021e59c58d",
+    "sentilab_core/test_resultcheck_io.py": "6a78755c08956e817d4d97c09d18640015bdb0d2dc58e6a49c3b6e0cd32bb597",
+    "sentilab_mcp/__init__.py": "07e3e872d0b4384b3f4b68de20b93a360d57a78e72e53bb0a528d11942bad3c0",
+    "sentilab_mcp/__main__.py": "de1bcb05e805ea6d1c89a639e2e10dbff4ce7e180bf2ac1fba2ede6fffc94e6b"
+  },
+  "decisions": [
+    "Regular opened descriptors only; O_NONBLOCK before fstat.",
+    "Transport file cap 16777216 bytes; contract parse cap 1048576 bytes unchanged. Fully hash supported stable files, including 10 MiB rejection; no partial receipt for transport failures.",
+    "At most initial size plus one byte read; size/mtime/ctime changes fail file_unreadable.",
+    "MCP awaits shared CLI/core in a Python child: 10-second timeout, kill/drain/reap on cancellation or EOF, ownership preserved during process creation.",
+    "Parity clients keep stdin open through responses. Existing verdict/count assertions retained."
+  ],
+  "gates": [
+    {
+      "command": "OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python -m unittest -q sentilab_core.test_resultcheck sentilab_core.test_resultcheck_io sentilab_core.test_mcp_stdio sentilab_core.test_cleanup",
+      "exit": 0,
+      "log_ref": "/workspace/slab022-fifo-committed-tests.log",
+      "log_sha256": "bdab48837abb28b510e629966764a89cba302600d8df727b0134ac515173761e",
+      "count": 32
+    },
+    {
+      "command": ".venv/bin/python -m sentilab_core.test_resultcheck --parity",
+      "exit": 0,
+      "log_ref": "/workspace/slab022-fifo-final-gate-0.log",
+      "log_sha256": "525311be8759482c896df1b4a08a024aa9de1dee48e1bdc21f84949d7090faba",
+      "count": 9,
+      "contract_vectors": 39
+    },
+    {
+      "command": "node contracts/contract-0.2/run-vectors.mjs",
+      "exit": 0,
+      "log_ref": "/workspace/slab022-fifo-final-gate-1.log",
+      "log_sha256": "bba91b23c4e0d8c112d460ce2afbf8bfdf12d0b5cb088288b2e0be7637826892",
+      "count": 74
+    },
+    {
+      "command": "node contracts/view-envelope/run-view-vectors.mjs",
+      "exit": 0,
+      "log_ref": "/workspace/slab022-fifo-final-gate-2.log",
+      "log_sha256": "b0f127ab16e1cf89d476314c0c1cfc50a554011d62f86b05837bc17939509bbe",
+      "count": 113
+    },
+    {
+      "command": "node contracts/view-envelope-v0.5/run-view-vectors.mjs",
+      "exit": 0,
+      "log_ref": "/workspace/slab022-fifo-final-gate-3.log",
+      "log_sha256": "e1e77e340c89b6b5bf4d7427a719d053a1d2f6f528464f537a1e521c693899a4",
+      "count": 193
+    },
+    {
+      "command": "(cd sundai_controller && OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 ../.venv/bin/python -m unittest -q test_controller.py test_experiment.py)",
+      "exit": 0,
+      "log_ref": "/workspace/slab022-fifo-controller.log",
+      "log_sha256": "07c63ccda8bbf6ccc3e92d456957ee4b97c7104eecaf8cf8a0c6b2c5f9a7e58d",
+      "count": 55
+    },
+    {
+      "command": ". .venv/bin/activate && node --test web/test/*.test.mjs",
+      "exit": 0,
+      "log_ref": "/workspace/slab022-fifo-browser-final.log",
+      "log_sha256": "df7f6a8a476e8b0a5416715b73f4687cb5b0a2211ab03c2ae3a0c0d907562447",
+      "count": 103
+    },
+    {
+      "command": "node web/test/make-sentilab-demo.mjs --check",
+      "exit": 0,
+      "log_ref": "/workspace/slab022-fifo-demo.log",
+      "log_sha256": "fe2a35188861d6e2c38679786899d9aa88ab5217e0088dee260540110458aae1",
+      "count": 44,
+      "count_unit": "envelopes"
+    },
+    {
+      "command": "(cd contracts && sha256sum -c HASHES.txt)",
+      "exit": 0,
+      "log_ref": "/workspace/slab022-fifo-contract-hashes.log",
+      "log_sha256": "f69d5d3f9cf818891c224a3ddab0057eede070482bb42b2395a5c2e8a1e1087d"
+    },
+    {
+      "command": "(cd sundai_hotspot && make -j4 SUPERLU=1)",
+      "exit": 0,
+      "log_ref": "/workspace/slab022-fifo-build.log",
+      "log_sha256": "c46c8b4e9d31caff797cdb91aa80285001a99656a5bfd7a7306eb740e6ad7a6f"
+    },
+    {
+      "command": ".venv/bin/python -m compileall -q sentilab_core/resultcheck.py sentilab_core/test_resultcheck.py sentilab_core/test_resultcheck_io.py sentilab_cli sentilab_mcp",
+      "exit": 0,
+      "log_ref": "/workspace/slab022-fifo-final-gate-4.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": ".venv/bin/pip check",
+      "exit": 0,
+      "log_ref": "/workspace/slab022-fifo-final-gate-5.log",
+      "log_sha256": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09"
+    },
+    {
+      "command": "git diff --check",
+      "exit": 0,
+      "log_ref": "/workspace/slab022-fifo-final-gate-6.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "added_tests_B7": [
+    {
+      "test": "sentilab_core.test_resultcheck_io.FileIntakeTests.test_descriptor_is_checked_even_when_path_names_a_regular_file",
+      "fails_on": "d4d64ea83bf3ffb43eae789fa97c1b5193b88f76",
+      "passes_with_fix": "93427b9a2c2d1fcecba8c5d9084ee04d674266f9"
+    },
+    {
+      "test": "sentilab_core.test_resultcheck_io.FileIntakeTests.test_read_budget_does_not_follow_a_growing_regular_file",
+      "fails_on": "d4d64ea83bf3ffb43eae789fa97c1b5193b88f76",
+      "passes_with_fix": "93427b9a2c2d1fcecba8c5d9084ee04d674266f9"
+    },
+    {
+      "test": "sentilab_core.test_resultcheck_io.FileIntakeTests.test_same_size_rewrite_is_not_sealed_as_a_stable_file",
+      "fails_on": "d4d64ea83bf3ffb43eae789fa97c1b5193b88f76",
+      "passes_with_fix": "93427b9a2c2d1fcecba8c5d9084ee04d674266f9"
+    },
+    {
+      "test": "sentilab_core.test_resultcheck_io.FileStdioTests.test_cli_rejects_fifo_unbounded_and_oversized_inputs",
+      "fails_on": "d4d64ea83bf3ffb43eae789fa97c1b5193b88f76",
+      "passes_with_fix": "93427b9a2c2d1fcecba8c5d9084ee04d674266f9"
+    },
+    {
+      "test": "sentilab_core.test_resultcheck_io.FileStdioTests.test_mcp_rejects_fifo_unbounded_and_oversized_inputs_and_stays_usable",
+      "fails_on": "d4d64ea83bf3ffb43eae789fa97c1b5193b88f76",
+      "passes_with_fix": "93427b9a2c2d1fcecba8c5d9084ee04d674266f9"
+    },
+    {
+      "test": "sentilab_core.test_resultcheck_io.FileStdioTests.test_cancel_reaps_reader_while_ping_status_and_stop_remain_responsive",
+      "fails_on": "d4d64ea83bf3ffb43eae789fa97c1b5193b88f76",
+      "passes_with_fix": "93427b9a2c2d1fcecba8c5d9084ee04d674266f9"
+    },
+    {
+      "test": "sentilab_core.test_resultcheck_io.FileStdioTests.test_eof_cancels_and_reaps_file_worker_before_host_exits",
+      "fails_on": "d4d64ea83bf3ffb43eae789fa97c1b5193b88f76",
+      "passes_with_fix": "93427b9a2c2d1fcecba8c5d9084ee04d674266f9"
+    },
+    {
+      "test": "sentilab_core.test_resultcheck_io.FileStdioTests.test_deadline_reaps_file_worker_and_keeps_host_usable",
+      "fails_on": "d4d64ea83bf3ffb43eae789fa97c1b5193b88f76",
+      "passes_with_fix": "93427b9a2c2d1fcecba8c5d9084ee04d674266f9"
+    },
+    {
+      "test": "sentilab_core.test_resultcheck_io.FileStdioTests.test_worker_concurrency_is_bounded_and_eof_reaps_all",
+      "fails_on": "d4d64ea83bf3ffb43eae789fa97c1b5193b88f76",
+      "passes_with_fix": "93427b9a2c2d1fcecba8c5d9084ee04d674266f9"
+    },
+    {
+      "test": "sentilab_core.test_resultcheck_io.FileStdioTests.test_cancel_during_worker_creation_drains_full_stdout_and_reaps",
+      "fails_on": "d4d64ea83bf3ffb43eae789fa97c1b5193b88f76",
+      "passes_with_fix": "93427b9a2c2d1fcecba8c5d9084ee04d674266f9"
+    }
+  ],
+  "mutation_proofs": [
+    {
+      "mutation": "blocking-open",
+      "test": "FileStdioTests.test_cli_rejects_fifo_unbounded_and_oversized_inputs",
+      "exit": 1,
+      "seconds": 2.51,
+      "log": "/workspace/slab022-fifo-mutation-blocking-open.log",
+      "log_sha256": "e5de3a25bead7e1b0c1d2afda67e7a230161d569b8fefd23502f6fef427ab90e"
+    },
+    {
+      "mutation": "no-descriptor-type-check",
+      "test": "FileIntakeTests.test_descriptor_is_checked_even_when_path_names_a_regular_file",
+      "exit": 1,
+      "seconds": 0.101,
+      "log": "/workspace/slab022-fifo-mutation-no-descriptor-type-check.log",
+      "log_sha256": "86d3b18751b909d0ff461105107ce4a89277b34ecd1d82855c1a15eccb70c3af"
+    },
+    {
+      "mutation": "no-file-cap",
+      "test": "FileStdioTests.test_cli_rejects_fifo_unbounded_and_oversized_inputs",
+      "exit": 1,
+      "seconds": 0.605,
+      "log": "/workspace/slab022-fifo-mutation-no-file-cap.log",
+      "log_sha256": "937e9c312f2850a9022b692823e7605dca0a8d3b828a09b40a840a76c40f3b2a"
+    },
+    {
+      "mutation": "unbounded-read-size",
+      "test": "FileIntakeTests.test_read_budget_does_not_follow_a_growing_regular_file",
+      "exit": 1,
+      "seconds": 0.105,
+      "log": "/workspace/slab022-fifo-mutation-unbounded-read-size.log",
+      "log_sha256": "a295d21d5eac7eac1ee87326addb29e234ad391356132223e1c2b9c5e00bd3d8"
+    },
+    {
+      "mutation": "no-metadata-check",
+      "test": "FileIntakeTests.test_same_size_rewrite_is_not_sealed_as_a_stable_file",
+      "exit": 1,
+      "seconds": 0.105,
+      "log": "/workspace/slab022-fifo-mutation-no-metadata-check.log",
+      "log_sha256": "bbac2bde1f54503670f7143b6fa1524c2bc42e77da6f4199c88cb94fbffa1034"
+    },
+    {
+      "mutation": "no-worker-kill",
+      "test": "FileStdioTests.test_cancel_reaps_reader_while_ping_status_and_stop_remain_responsive",
+      "exit": 1,
+      "seconds": 5.378,
+      "log": "/workspace/slab022-fifo-mutation-no-worker-kill.log",
+      "log_sha256": "7db45c841b4f692d3850edfcd5b7c18e6caa65297ba953f35712e43e0486d8fe"
+    },
+    {
+      "mutation": "no-worker-deadline",
+      "test": "FileStdioTests.test_deadline_reaps_file_worker_and_keeps_host_usable",
+      "exit": 1,
+      "seconds": 12.266,
+      "log": "/workspace/slab022-fifo-mutation-no-worker-deadline.log",
+      "log_sha256": "50994d2fd9365793deec5b2631032092274aa77301cd7c6db81b69bdb94f7ba8"
+    },
+    {
+      "mutation": "no-stdout-drain",
+      "test": "FileStdioTests.test_cancel_during_worker_creation_drains_full_stdout_and_reaps",
+      "exit": 1,
+      "seconds": 6.618,
+      "log": "/workspace/slab022-fifo-mutation-no-stdout-drain.log",
+      "log_sha256": "53dd10ac5721b119e7e427e5d7833ebbbbf1506e6ce6c9b573edc16083af74a7"
+    }
+  ],
+  "base_proof": {
+    "command": "python -m unittest -q sentilab_core.test_resultcheck_io",
+    "exit": 1,
+    "tests": 10,
+    "failures": 7,
+    "errors": 11,
+    "note": "All ten tests fail; counts include subtests. Final descriptor fixture adjustment also rerun on base (three unit tests fail) and fixed source (ten intake tests pass).",
+    "logs": [
+      "/workspace/slab022-fifo-before-final.log",
+      "/workspace/slab022-fifo-intake-before-final.log",
+      "/workspace/slab022-fifo-final-io.log"
+    ]
+  },
+  "additional_runs": {
+    "no_solver_regression_tests": 62,
+    "exit": 0,
+    "log": "/workspace/slab022-fifo-regression.log",
+    "scope": "Earlier same-round run before full-stdout cleanup correction; overlaps with focused gate."
+  },
+  "test_refinements": [
+    "Full-stdout creation barrier detected a wait-only cleanup deadlock; communicate() drains after kill and test passes.",
+    "Initial descriptor mutation survived because a held writer produced incidental BlockingIOError. Read-only FIFO with no writer now exposes missing fstat validation; mutation fails."
+  ],
+  "gate_scope": "Python/JS/native-build repository gates apply; no package.json or TypeScript config exists. No solver execution, thermal reruns or model calls. Full container/native-solver smoke and full live-conformance (one synthetic solver projection test) not rerun under the no-solver instruction. The eight solver-free conformance tests passed in the supplemental regression run. Full-history secret scan, published head/CI, operator export verification and independent review remain pending.",
+  "runtime": "Python 3.12.3; Node 22.23.3 in tests only; runtime Python standard library.",
+  "independent_review": "Pending; self-run evidence does not constitute review clearance or scientific acceptance."
+}

@@ -4,11 +4,31 @@ from pathlib import Path
 import subprocess
 import sys
 import unittest
+from unittest.mock import patch
 
 from sentilab_cli.__main__ import dispatch
-from sentilab_core.operations import Context
+from sentilab_core.operations import Context, environment_context
 from sentilab_core import test_conductor
 from sentilab_mcp import TOOLS
+
+
+class EnvironmentContextTests(unittest.TestCase):
+    def test_research_and_memory_host_options_survive_together(self):
+        namespace = {"run_id": "fixture", "arm": "baseline", "family": "plate",
+                     "seed": 7, "lab": "thermal"}
+        environment = {"SENTILAB_LIVE_DIR": "local-ledgers", "SENTILAB_VIEW_PUBLIC_KEYS": "{}",
+                       "SENTILAB_RESEARCH_NAMESPACE": json.dumps(namespace),
+                       "SENTILAB_MEMORY_TENANT": "local-tenant",
+                       "SENTILAB_MEMORY_HELD_OUT": '["held-out"]',
+                       "SENTILAB_ROUTING_FIXTURE": "routing-fixture.json"}
+        for research_value, expected in ((json.dumps(namespace), namespace), ("malformed", {})):
+            with self.subTest(research_value=research_value), patch.dict(
+                    os.environ, {**environment, "SENTILAB_RESEARCH_NAMESPACE": research_value}, clear=True):
+                context = environment_context()
+                self.assertEqual(context.options, {"research_namespace": expected})
+                self.assertEqual(context.memory_tenant, "local-tenant")
+                self.assertEqual(context.held_out_families, ["held-out"])
+                self.assertEqual(context.routing_fixture, "routing-fixture.json")
 
 
 class TransportTests(unittest.IsolatedAsyncioTestCase):

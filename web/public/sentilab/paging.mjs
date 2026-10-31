@@ -1,11 +1,11 @@
-// Browser port of contracts/view-envelope-v0.6/paging.mjs (DRAFT v0.6 as amended, rule 4; reference sha256 7e875920...,
-// text afab6f10...): live paging by a physical-row cursor, bound by a cursor hash. The logic follows the reference line
-// for line. The only changes are the platform calls: SHA-256 comes from WebCrypto, so cursorHash(), step(),
-// verifyBytes(), verifyReplayBytes() and verifyRows() are async; v0.5 verification comes from ./view-core.mjs (the
-// browser port of the v0.5 reference) instead of the node reference; and the empty-log hash is the SHA-256 of nothing,
-// written out, so initialState() stays synchronous. The server side (logRowsFromFile, servePage) is not ported: the
-// page is only a client. web/test/sentilab-parity.test.mjs runs the reference's paging scenarios (C1-C6, C8-C14)
-// through this file and compares every trace with the recorded one.
+// Browser port of contracts/view-envelope-v0.6.1/paging.mjs (DRAFT v0.6.1, rules 4 and 5; reference sha256
+// 1c1bdd48..., text cac3f139...): live paging by a physical-row cursor, bound by a cursor hash. The logic follows the
+// reference line for line. The only changes are the platform calls: SHA-256 comes from WebCrypto, so cursorHash(),
+// step(), verifyBytes(), verifyReplayBytes() and verifyRows() are async; v0.5 verification comes from ./view-core.mjs
+// (the browser port of the v0.5 reference) instead of the node reference; and the empty-log hash is the SHA-256 of
+// nothing, written out, so initialState() stays synchronous. The server side (logRowsFromFile, servePage) is not
+// ported: the page is only a client. web/test/sentilab-parity.test.mjs runs the reference's paging scenarios (C1-C6,
+// C8-C15) and label cases through this file and compares every trace and label with the recorded one.
 // Pure: no clock, network, randomness or shared state. Every input is an argument, and states are never mutated.
 // Rows are raw bytes (Uint8Array) throughout; text appears only when a row is handed to v0.5 verification.
 import { checkLine, verifyJsonl, sha256Hex } from "./view-core.mjs";
@@ -179,17 +179,21 @@ export async function verifyReplayBytes(fileBytes, options) {
 }
 
 // Re-runs the full v0.5 verification over every row the client holds. options: { pins, keys, runId? }.
+// frozen is true when anything follows the projectable prefix.
 export async function verifyRows(state, options = {}) {
   const verification = await verifyBytes(state.rows, { ...options, runId: options.runId ?? state.run_id });
-  return { verification, K: verification.prefix_end };
+  return { verification, K: verification.prefix_end, frozen: verification.frozen };
 }
 
-// The mode label (rule 5). K is the projectable prefix now. A failed latest poll shows STALE with its reason.
-// Otherwise, K below the highest value it has reached means a late conflict or break froze the board at an
-// earlier seq: "STALE · chain broken", at once. Otherwise the v0.5 progress tracker decides (fed only with valid
-// pages, so LIVE needs a valid cursor page within 5 s and growth of K within 60 s).
-export function liveLabel(state, tracker, nowMs, K) {
+// The mode label (rule 5). K is the projectable prefix now, and frozen says whether anything follows it.
+// A failed latest poll shows STALE with its reason. Otherwise the board is frozen in either of two ways, and both
+// give "STALE · chain broken" at once: K fell below the highest value it has reached (a late conflict or break at
+// an earlier seq), or a refused row sits after the prefix while K stays put. LIVE never shows while the board is
+// frozen. Otherwise the v0.5 progress tracker decides (fed only with valid pages, so LIVE needs a valid cursor page
+// within 5 s and growth of K within 60 s).
+export function liveLabel(state, tracker, nowMs, K, frozen) {
   if (state.failure) return `STALE · ${REASON_TEXT[state.failure]}`;
   if (K < tracker.state().K) return "STALE · chain broken";
+  if (frozen) return "STALE · chain broken";
   return tracker.label("api", nowMs);
 }

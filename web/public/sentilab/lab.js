@@ -5,6 +5,7 @@
 // and signature checks. Live paging and the mode label are paging.mjs, the port of the v0.6 reference.
 // Every string from an envelope reaches the page through textContent, never innerHTML.
 import { VIEW_PINS } from "./view-pins.js";
+import { viewHref } from "./view-links.mjs";
 import {
   checkLine, readBodyCapped, progressTracker, parseKeyResponse, publicKeyFromSeedText, sha256Hex,
   MAX_LINE_BYTES, MAX_FILE_BYTES, MAX_API_BYTES,
@@ -272,7 +273,8 @@ async function pollLive() {
 // "STALE · paging error".
 function liveMode(now) {
   const L = S.live;
-  const label = liveLabel(L.paging, L.tracker, now, L.verification ? L.verification.prefix_end : 0);
+  // frozen: anything follows the projectable prefix (rule 5, v0.6.1): LIVE never shows next to a frozen board.
+  const label = liveLabel(L.paging, L.tracker, now, L.verification ? L.verification.prefix_end : 0, L.verification ? L.verification.frozen : false);
   const mode = label.startsWith("LIVE") ? "LIVE" : "STALE";
   return { mode, detail: label.slice(mode.length) };
 }
@@ -347,6 +349,8 @@ function renderTop(src, v) {
   $("modeText").textContent = m;
   $("modeAge").textContent = detail;
   $("drill").hidden = !(v && isDrill(v.ordered));
+  // The Package view link keeps the context (view-links.mjs): source, run, bundle, test-key request, replay playhead.
+  $("packageLink").href = viewHref("package/", { source: S.source, runId: src?.runId ?? null, seq: v && S.cursor > 0 ? v.rows[Math.min(S.cursor, v.rows.length) - 1]?.seq ?? null : null, search: location.search });
   $("testKeys").hidden = !S.testMode;
 
   // Run facts come only from the verified prefix; before anything verifies, only the requested run id is shown.

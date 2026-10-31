@@ -1,0 +1,206 @@
+{
+  "schema": "slab010-interface-proof/1",
+  "model_calls": 0,
+  "solves": 0,
+  "memory_fixture_digest": "9d5c53c65dc6315bac412685be05b8c507d1497f21420c78906a5f20ef48557a",
+  "routing_fixture_digest": "280dbd067dc476dcef28f99e769eba4e50529fd6f5e6d2d6ba2c1acf968efce3",
+  "memory": {
+    "before": [
+      "direct",
+      "transitive",
+      "alternative"
+    ],
+    "after_withdrawal": [
+      "alternative"
+    ],
+    "audit": [
+      "direct",
+      "transitive",
+      "alternative"
+    ],
+    "invalidated": [
+      {
+        "id": "direct",
+        "invalid_evidence": {
+          "measurement-a": "withdrawn"
+        }
+      },
+      {
+        "id": "transitive",
+        "invalid_evidence": {
+          "claim-a": "stale"
+        }
+      }
+    ],
+    "heldout_write": "held-out family writes are refused",
+    "cross_run_recall": []
+  },
+  "unknown_route": "unknown route: unregistered",
+  "routing": {
+    "advisory": true,
+    "method": "per-route empirical score buckets",
+    "score_bucket_edges": [
+      0.0,
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ],
+    "threshold": 0.75,
+    "fitting_count": 9,
+    "count": 8,
+    "candidate_accuracy": 0.75,
+    "decision_accuracy": 0.625,
+    "selective_accuracy": 0.8,
+    "abstention_rate": 0.375,
+    "answered": 5,
+    "buckets": [
+      {
+        "lower": 0.0,
+        "upper": 0.25,
+        "upper_inclusive": false,
+        "count": 1,
+        "correct": 1,
+        "abstained": 1,
+        "accuracy": 1.0,
+        "mean_confidence": 0.0
+      },
+      {
+        "lower": 0.25,
+        "upper": 0.5,
+        "upper_inclusive": false,
+        "count": 0,
+        "correct": 0,
+        "abstained": 0,
+        "accuracy": null,
+        "mean_confidence": null
+      },
+      {
+        "lower": 0.5,
+        "upper": 0.75,
+        "upper_inclusive": false,
+        "count": 2,
+        "correct": 1,
+        "abstained": 2,
+        "accuracy": 0.5,
+        "mean_confidence": 0.5
+      },
+      {
+        "lower": 0.75,
+        "upper": 1.0,
+        "upper_inclusive": true,
+        "count": 5,
+        "correct": 4,
+        "abstained": 0,
+        "accuracy": 0.8,
+        "mean_confidence": 0.85
+      }
+    ],
+    "predictions": [
+      {
+        "id": "held-thermal-high-1",
+        "expected": "thermal-lab",
+        "choice": "thermal-lab",
+        "candidate": "thermal-lab",
+        "confidence": 0.75,
+        "raw_score": 0.8,
+        "calibration_samples": 4,
+        "threshold": 0.75,
+        "abstained": false,
+        "reason": "suggested",
+        "advisory": true
+      },
+      {
+        "id": "held-thermal-high-2",
+        "expected": "thermal-lab",
+        "choice": "thermal-lab",
+        "candidate": "thermal-lab",
+        "confidence": 0.75,
+        "raw_score": 0.9,
+        "calibration_samples": 4,
+        "threshold": 0.75,
+        "abstained": false,
+        "reason": "suggested",
+        "advisory": true
+      },
+      {
+        "id": "held-thermal-high-3",
+        "expected": "proof-check",
+        "choice": "thermal-lab",
+        "candidate": "thermal-lab",
+        "confidence": 0.75,
+        "raw_score": 0.99,
+        "calibration_samples": 4,
+        "threshold": 0.75,
+        "abstained": false,
+        "reason": "suggested",
+        "advisory": true
+      },
+      {
+        "id": "held-thermal-low-1",
+        "expected": "thermal-lab",
+        "choice": null,
+        "candidate": "thermal-lab",
+        "confidence": 0.5,
+        "raw_score": 0.3,
+        "calibration_samples": 2,
+        "threshold": 0.75,
+        "abstained": true,
+        "reason": "below_threshold",
+        "advisory": true
+      },
+      {
+        "id": "held-thermal-low-2",
+        "expected": null,
+        "choice": null,
+        "candidate": "thermal-lab",
+        "confidence": 0.5,
+        "raw_score": 0.4,
+        "calibration_samples": 2,
+        "threshold": 0.75,
+        "abstained": true,
+        "reason": "below_threshold",
+        "advisory": true
+      },
+      {
+        "id": "held-proof-high-1",
+        "expected": "proof-check",
+        "choice": "proof-check",
+        "candidate": "proof-check",
+        "confidence": 1.0,
+        "raw_score": 0.8,
+        "calibration_samples": 2,
+        "threshold": 0.75,
+        "abstained": false,
+        "reason": "suggested",
+        "advisory": true
+      },
+      {
+        "id": "held-proof-high-2",
+        "expected": "proof-check",
+        "choice": "proof-check",
+        "candidate": "proof-check",
+        "confidence": 1.0,
+        "raw_score": 1.0,
+        "calibration_samples": 2,
+        "threshold": 0.75,
+        "abstained": false,
+        "reason": "suggested",
+        "advisory": true
+      },
+      {
+        "id": "held-literature-1",
+        "expected": "literature-lab",
+        "choice": null,
+        "candidate": "literature-lab",
+        "confidence": 0.0,
+        "raw_score": 0.95,
+        "calibration_samples": 0,
+        "threshold": 0.75,
+        "abstained": true,
+        "reason": "uncalibrated",
+        "advisory": true
+      }
+    ]
+  }
+}

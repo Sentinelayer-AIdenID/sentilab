@@ -1,0 +1,104 @@
+{
+  "schema": "sentilab-gb10-root-readonly-probe/1",
+  "source_commit": "22a38bb7e2483a6eeb7a95bae27a43c4f9c10965",
+  "source_sha256": {
+    "sentilab_core/gb10_backend.py": "a742288675d36cc704d56edff6472dece6a0a6d637c13a5ada977e4695b30a7e",
+    "sentilab_core/gb10_readonly.py": "2fe0f2b537b01b58bec8d966e107aaa957d2ed5fd8447e20cba244924098e8d9"
+  },
+  "started_at": "2026-10-31T10:11:54.292101+00:00",
+  "finished_at": "2026-10-31T10:11:56.402226+00:00",
+  "local_wall_seconds": 2.110000000015134,
+  "local_process_cpu_seconds": 0.28125,
+  "observations": [
+    {
+      "schema": "sentilab-gb10-backend/1",
+      "operation": "status",
+      "ok": true,
+      "status": "observed",
+      "checked_at": "2026-10-31T10:11:55.227122+00:00",
+      "scope_state": "staged_open",
+      "ssh_alias": "gb10",
+      "identity": {
+        "hostname": "promaxgb10-9a1e",
+        "architecture": "aarch64",
+        "login": "dell"
+      },
+      "device": {
+        "python": "3.12.3",
+        "driver": "580.178.04",
+        "gpu_model": null,
+        "memory_bytes": 130594140160
+      },
+      "gpu_readiness": "not_tested",
+      "serve_state": "not_observed"
+    },
+    {
+      "schema": "sentilab-gb10-backend/1",
+      "operation": "checkpoint_verify",
+      "ok": true,
+      "status": "verified",
+      "checked_at": "2026-10-31T10:11:56.402226+00:00",
+      "scope_state": "staged_open",
+      "locations": {
+        "pc": {
+          "artifacts": [
+            {
+              "name": "adapter/adapter_model.safetensors",
+              "status": "verified",
+              "bytes": 66126768,
+              "sha256": "695581e310def332bd6307527eff6546d95eebb88bec7e6f6ce288a5a61c0f80"
+            },
+            {
+              "name": "adapter/adapter_config.json",
+              "status": "verified",
+              "bytes": 1035,
+              "sha256": "ef6104b4d006baf86f90ddf1d0fc32a12a3951b70bfe3c2a0f06afcf5bdb413c"
+            },
+            {
+              "name": "execution-inputs.json",
+              "status": "verified",
+              "bytes": 2361,
+              "sha256": "230fd89ad116537c30cfd2c934d0ccae28dd4acec5d7b3361e1bd16bbecf1357"
+            }
+          ]
+        },
+        "gb10": {
+          "artifacts": [
+            {
+              "name": "adapter/adapter_model.safetensors",
+              "status": "verified",
+              "bytes": 66126768,
+              "sha256": "695581e310def332bd6307527eff6546d95eebb88bec7e6f6ce288a5a61c0f80"
+            },
+            {
+              "name": "adapter/adapter_config.json",
+              "status": "verified",
+              "bytes": 1035,
+              "sha256": "ef6104b4d006baf86f90ddf1d0fc32a12a3951b70bfe3c2a0f06afcf5bdb413c"
+            },
+            {
+              "name": "execution-inputs.json",
+              "status": "verified",
+              "bytes": 2361,
+              "sha256": "230fd89ad116537c30cfd2c934d0ccae28dd4acec5d7b3361e1bd16bbecf1357"
+            }
+          ],
+          "identity": {
+            "hostname": "promaxgb10-9a1e",
+            "architecture": "aarch64",
+            "login": "dell"
+          }
+        }
+      },
+      "checkpoint": "SLAB-018/attempt-01",
+      "claim": "retained_file_integrity_only",
+      "held_out_evaluation": false,
+      "serve_state": "not_observed"
+    }
+  ],
+  "scope": "Read-only metadata and SHA256 verification, no training/container/model/GPU/server/solver invocation or remote file write.",
+  "remote_cpu_seconds": null,
+  "remote_cpu_note": "Not independently metered; no experiment allocation claimed.",
+  "slab018_rerun": false,
+  "full_capability_complete": false
+}

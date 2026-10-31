@@ -1,13 +1,45 @@
-"""Stdio MCP host for shared live operations and recorded dataset export."""
+"""Stdio MCP host for live, ResultCheck, datasets, research, memory and advisory operations."""
 import asyncio
 import json
 import sys
 
-from sentilab_core.operations import environment_context
 from . import TOOLS
 
 
+class LazyLiveContext:
+    """Share one live context per host, initialized only by a live call."""
+
+    def __init__(self):
+        self.context = None
+
+    def get(self):
+        if self.context is None:
+            from sentilab_core.operations import environment_context
+            self.context = environment_context()
+        return self.context
+
+
 def schema(name):
+    if name in ("sentilab_memory_recall", "sentilab_memory_audit"):
+        fields = {key: {"type": "string", "minLength": 1} for key in ("tenant", "run", "arm", "family")}
+        fields["seed"] = {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+        properties = {"scope": {"type": "object", "properties": fields,
+                                "required": list(fields), "additionalProperties": False}}
+        if name == "sentilab_memory_recall":
+            properties["query"] = {"type": "string", "default": ""}
+        return {"type": "object", "properties": properties, "required": ["scope"], "additionalProperties": False}
+    if name == "sentilab_route":
+        return {"type": "object", "properties": {
+            "task": {"type": "object", "properties": {"candidate": {"type": "string"},
+                     "score": {"type": "number", "minimum": 0, "maximum": 1}},
+                     "required": ["candidate", "score"], "additionalProperties": False},
+            "calibrate": {"type": "boolean", "default": False}},
+            "oneOf": [{"required": ["task"], "properties": {"calibrate": {"const": False}}},
+                      {"required": ["calibrate"], "properties": {"calibrate": {"const": True}},
+                       "not": {"required": ["task"]}}], "additionalProperties": False}
+    if name == "sentilab_resultcheck":
+        return {"type": "object", "properties": {"file": {"type": "string"}},
+                "required": ["file"], "additionalProperties": False}
     if name.startswith("sentilab_research_"):
         from sentilab_core.research import MAX_QUESTION_BYTES
         names = {key: {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"}
@@ -51,21 +83,44 @@ async def handle(request, context):
         return {"protocolVersion": "2024-11-05", "capabilities": {"tools": {}},
                 "serverInfo": {"name": "sentilab-live", "version": "0.1"}}
     if method == "tools/list":
-        return {"tools": [{"name": name, "description": ("Export recorded verifier datasets" if name == "sentilab_dataset_export"
-                                                        else "Untrusted research evidence " + name.rsplit("_", 1)[-1]
-                                                        if name.startswith("sentilab_research_")
-                                                        else "AI off live " + name.rsplit("_", 1)[-1]),
+        return {"tools": [{"name": name, "description": ("Check local ResultCheck v2 file consistency and arithmetic"
+                                           if name == "sentilab_resultcheck" else
+                                           "Export recorded verifier datasets" if name == "sentilab_dataset_export" else
+                                           "Untrusted research evidence " + name.rsplit("_", 1)[-1]
+                                           if name.startswith("sentilab_research_") else
+                                           "Local deterministic " + name),
                            "inputSchema": schema(name)} for name in TOOLS]}
     if method == "tools/call":
         params = request["params"]
         name, arguments = params["name"], params.get("arguments", {})
         if name in TOOLS and name.startswith("sentilab_research_"):
             from sentilab_core.research import dumps
+            if isinstance(context, LazyLiveContext):
+                context = context.get()
+            if context is None:
+                from sentilab_core.operations import environment_context
+                context = environment_context()
             result = (TOOLS[name](context, **arguments) if type(arguments) is dict else
                       {"ok": False, "error": {"code": "invalid_input"}})
             return {"content": [{"type": "text", "text": dumps(result)}], "isError": not result["ok"]}
-        if name not in TOOLS or set(arguments) - set(schema(name)["properties"]):
+        if name not in TOOLS or not isinstance(arguments, dict) or set(arguments) - set(schema(name)["properties"]):
             raise ValueError("invalid live operation")
+        if name == "sentilab_resultcheck":
+            from sentilab_core.resultcheck import canonical
+            if set(arguments) != {"file"} or not isinstance(arguments["file"], str):
+                raise ValueError("file must be a local path string")
+            try:
+                receipt = await TOOLS[name](context, **arguments)
+            except (OSError, ValueError):
+                return {"content": [{"type": "text", "text": canonical({"error": {"code": "file_unreadable"}})}],
+                        "isError": True}
+            return {"content": [{"type": "text", "text": canonical(receipt)}],
+                    "isError": receipt["status"] == "rejected"}
+        if isinstance(context, LazyLiveContext):
+            context = context.get()
+        if context is None:
+            from sentilab_core.operations import environment_context
+            context = environment_context()
         result = TOOLS[name](context, **arguments)
         if hasattr(result, "__await__"):
             result = await result
@@ -75,7 +130,9 @@ async def handle(request, context):
     raise ValueError("unknown method")
 
 
-async def serve(context):
+async def serve(context=None):
+    if context is None:
+        context = LazyLiveContext()
     reader = asyncio.StreamReader(limit=65538)
     transport, _ = await asyncio.get_running_loop().connect_read_pipe(
         lambda: asyncio.StreamReaderProtocol(reader), sys.stdin.buffer)
@@ -134,7 +191,7 @@ async def serve(context):
 
 
 def main():
-    asyncio.run(serve(environment_context()))
+    asyncio.run(serve())
 
 
 if __name__ == "__main__":
