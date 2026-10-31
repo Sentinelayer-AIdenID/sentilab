@@ -103,6 +103,7 @@ SAMPLES = {
     r"^sentilab-open-terms/[1-9][0-9]{0,5}@[0-9a-f]{64}$": "sentilab-open-terms/1@" + "0" * 64,
     r"^sha256:[0-9a-f]{64}$": "sha256:" + "0" * 64, r"^so1-[0-9a-f]{48}$": "so1-" + "0" * 48,
     r"^tap-chiplet-[0-9]{1,2}$": "tap-chiplet-0",
+    r"^/sentilab/open/terms/[1-9][0-9]{0,5}@[0-9a-f]{64}[.]md$": "/sentilab/open/terms/1@" + "0" * 64 + ".md",
 }
 DANGEROUS = "<>&\"'`\\" + "".join(chr(code) for code in (0, 9, 10, 13, 0x7F, 0x2028))
 # Maps keyed by data (q_r, CPU ceilings, example inputs) are closed by propertyNames instead; the measured-row mixin
@@ -476,6 +477,13 @@ class Keys(unittest.TestCase):
         self.assertEqual(["contract_valid"] * 2, [row.outcome for row in rows])
         self.assertEqual(rows[0].content_sha256, rows[1].content_sha256)
 
+    def test_terms_paths(self):
+        version = mv.TERMS_VERSION
+        self.assertEqual("/sentilab/open/terms/" + version.split("/", 1)[1] + ".md", h.terms_path(version))
+        for bad in ("sentilab-open-terms/1", "sentilab-open-terms/0@" + "0" * 64, None):
+            with self.assertRaises(ValueError):
+                h.terms_path(bad)
+
     def test_participant_ref_is_keyed_per_challenge(self):
         ref = h.participant_ref(mv.K_CHALLENGE, mv.HUMAN)
         self.assertNotEqual(ref, hashlib.sha256(mv.HUMAN.encode()).hexdigest())
@@ -552,6 +560,11 @@ class PythonVectors(unittest.TestCase):
             with self.subTest(case["name"]):
                 with self.assertRaises(ValueError):
                     h.run_id(case["manifest_id"], case["participant_ref"], case["proposal_sha256"])
+        for case in v["terms_path"]:
+            self.assertEqual(case["path"], h.terms_path(case["version"]))
+        for version in v["terms_path_refused"]:
+            with self.assertRaises(ValueError):
+                h.terms_path(version)
         for case in v["sealed_header"]:
             self.assertEqual(case["line"], h.sealed_header(case["manifest_id"], case["key_version"]))
         for case in v["r_key"]:

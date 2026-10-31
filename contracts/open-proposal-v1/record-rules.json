@@ -10,7 +10,7 @@
   "violation.fields", "state.codes", "record.manifest", "privacy.handle",
   "manifest.die_index", "manifest.square_rotation", "manifest.real_chiplets", "manifest.netlist", "manifest.r_values",
   "manifest.check_limits", "manifest.quota_windows", "manifest.window", "manifest.scenarios", "manifest.signed_pins",
-  "terms.version_hash",
+  "terms.version_hash", "terms.path",
   "check.codes", "check.q_r_keys", "check.q_r_values",
   "receipt.proposal_fields", "receipt.design_hash",
   "ref.proposal", "ref.geometry", "ref.values", "ref.source", "ref.participant", "ref.run_id",

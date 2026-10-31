@@ -27,7 +27,9 @@ TEAM_KEY = "team"
 PUBLISH_KEY_PREFIX = "publish:"
 RUN_SCHEMA = "sentilab-open-run/1"
 RUN_DIGEST_HEX_CHARS = 32
+TERMS_PATH = "/sentilab/open/terms/"
 HEX64 = re.compile(r"[0-9a-f]{64}")
+TERMS_VERSION = re.compile(r"sentilab-open-terms/([1-9][0-9]{0,5}@[0-9a-f]{64})")
 
 
 def sha256_hex(data: bytes) -> str:
@@ -152,6 +154,15 @@ def run_id(manifest_id: str, participant_ref: str, proposal_sha256: str) -> str:
     if not RUN_ID.fullmatch(value):
         raise ValueError("invalid run id")
     return value
+
+
+def terms_path(version: str) -> str:
+    """The canonical URL path of a terms version (DESIGN.md:1111, root's answer): the fixed prefix dropped, so
+    sentilab-open-terms/<n>@<sha256> is published at /sentilab/open/terms/<n>@<sha256>.md. One version, one path."""
+    match = TERMS_VERSION.fullmatch(version) if isinstance(version, str) else None
+    if not match:
+        raise ValueError("not a terms version")
+    return TERMS_PATH + match.group(1) + ".md"
 
 
 def evaluation_cache_key(manifest_id: str, geometry_sha256: str) -> tuple:

@@ -261,7 +261,7 @@ def signed_test(key_version: int = 1) -> dict:
 A, M, F, F2 = draft_ascend(), draft_micro150(), signed_test(1), signed_test(2)
 MANIFESTS = {"A": A, "M": M, "F": F, "F2": F2}
 ID = {key: h.manifest_id(value) for key, value in MANIFESTS.items()}
-TERMS = {"schema": "sentilab-open-terms/1", "version": TERMS_VERSION,
+TERMS = {"schema": "sentilab-open-terms/1", "version": TERMS_VERSION, "path": h.terms_path(TERMS_VERSION),
          "text_sha256": hashlib.sha256(TERMS_TEXT.encode()).hexdigest(),
          "covers": ["evaluation", "retention of evidence", "display only if public"],
          "grants": {"training": False, "lab_memory": False, "study": False},
@@ -926,6 +926,9 @@ def terms_records() -> list:
                 [S("/grants/training", "const")]),
             rec("terms", "display only if public", edit(TERMS, "/covers", ["evaluation", "retention of evidence"]),
                 [S("/covers", "const")]),
+            rec("terms", "the path is the version's canonical path", edit(TERMS, "/path",
+                                                                          "/sentilab/open/terms/2@" + "0" * 64 + ".md"),
+                [R("terms.path", "/path")]),
             rec("terms", "a retention period is a duration", edit(TERMS, "/retention", "two years"),
                 [S("/retention", "pattern")])]
 
@@ -1568,6 +1571,9 @@ def vectors() -> dict:
         "run_id_refused": [{"name": name, "manifest_id": manifest_id, "participant_ref": ref,
                             "proposal_sha256": proposal_sha256}
                            for name, manifest_id, ref, proposal_sha256 in run_id_refusals()],
+        "terms_path": [{"version": version, "path": h.terms_path(version)} for version in (TERMS_VERSION, OTHER_TERMS)],
+        "terms_path_refused": ["sentilab-open-terms/0@" + "0" * 64, "sentilab-open-terms/1@" + "0" * 63,
+                               "sentilab-open-terms/1", "open-terms/1@" + "0" * 64],
         "sealed_header": [{"manifest_id": ID[key], "key_version": version,
                            "line": h.sealed_header(ID[key], version)} for key, version in (("F", 1), ("F2", 2))],
         "sealed_notes": sealed_cases,

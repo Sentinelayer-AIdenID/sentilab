@@ -142,6 +142,13 @@ export async function runId(manifestId_, participantRef_, proposalSha256_) {
   return `open-${manifestId_.slice(0, 8)}-${(await digest(preimage)).slice(0, 32)}`;
 }
 
+// The canonical URL path of a terms version: sentilab-open-terms/<n>@<sha256> -> /sentilab/open/terms/<n>@<sha256>.md.
+export function termsPath(version) {
+  const match = typeof version === "string" ? /^sentilab-open-terms[/]([1-9][0-9]{0,5}@[0-9a-f]{64})$/.exec(version) : null;
+  if (!match) throw new Error("not a terms version");
+  return `/sentilab/open/terms/${match[1]}.md`;
+}
+
 // A sealed note's first line (section 3.7); the ASCII-armoured age file follows on the next line.
 export function sealedHeader(manifestId_, keyVersion) {
   if (!Number.isSafeInteger(keyVersion) || keyVersion < 1) throw new Error("the key version is a positive integer");

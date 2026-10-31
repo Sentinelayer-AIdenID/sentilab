@@ -76,6 +76,8 @@ expect("the same bytes from two accounts: one evaluation", vectors.run_id[0].eva
 for (const v of vectors.run_id_refused) {
   refuses(`run id refused: ${v.name}`, () => c.runIdObject(v.manifest_id, v.participant_ref, v.proposal_sha256));
 }
+for (const v of vectors.terms_path) expect(`terms path ${v.version.slice(0, 22)}`, c.termsPath(v.version), v.path);
+for (const version of vectors.terms_path_refused) refuses(`terms path refused ${version.slice(0, 24)}`, () => c.termsPath(version));
 for (const v of vectors.sealed_header) expect(`sealed header ${v.key_version}`, c.sealedHeader(v.manifest_id, v.key_version), v.line);
 refuses("a key version is a positive integer", () => c.sealedHeader("f".repeat(64), 0));
 for (const v of vectors.sealed_notes) {

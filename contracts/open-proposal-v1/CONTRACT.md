@@ -101,10 +101,9 @@ whoever holds it can read that entry; it proves nothing about who posted it. It 
 record, index or room pointer, and never derived from the unsalted geometry. `validate_record(...,
 private_handles=...)` refuses a record that carries one anywhere (`exposes_handle`): as a whole string or key, behind a
 prefix, before a suffix, in the middle, in any letter case, broken up by separators, or as the base64 or base64url text
-of its 32 bytes. The server can revoke a handle, after which only
-authorized access reads the entry. A handle cannot be re-keyed in place, because it is the content hash: a new handle
-means a new salt, which is new content and so a new revision under a new `proposal_key`. The publish command that names
-a handle travels sealed.
+of its 32 bytes. The server can revoke a handle, after which only authorized access reads the entry. Handles do not
+rotate: a handle is the content hash, so it cannot change in place, and this contract implements no rotation. The
+publish command that names a handle travels sealed.
 
 ## Validation (DESIGN.md:714-733)
 
@@ -191,7 +190,9 @@ receipts bind `actor_kind` and the keyed `participant_ref`, never a label; golde
 1. `<...>` placeholders in the DESIGN.md:568-672 draft are `null` until decided; a `signed` manifest has none
    (`manifest.signed_pins`). The draft's status text is kept verbatim; a signed manifest's status is `signed`.
 2. The draft's terms placeholder (DESIGN.md:648) becomes an empty `accepted_versions` in the drafts; a terms version is
-   `sentilab-open-terms/<n>@<sha256 of the text>`, and the retention period an ISO 8601 duration.
+   `sentilab-open-terms/<n>@<sha256 of the text>`, and the retention period an ISO 8601 duration. Its canonical URL
+   path (DESIGN.md:1111) drops the fixed prefix: `/sentilab/open/terms/<n>@<sha256>.md` (`terms_path`, the terms
+   record's `path`, rule `terms.path`).
 3. `submission.threads` is `null` in the hashed manifest: the roots carry the manifest id, so they cannot be inside it
    (DESIGN.md:666).
 4. Publish has no logical key in DESIGN.md:179-181; it is `"publish:<proposal_sha256>"`, one per published proposal.
@@ -215,6 +216,11 @@ receipts bind `actor_kind` and the keyed `participant_ref`, never a label; golde
     requirement: `checks.cpu_enforcement`, with its evidence pinned in `checks.cpu_enforcement_evidence_sha256` before a
     manifest is signed or opened. It is separate from settlement overrun detection (DESIGN.md:1004,
     `checks.cpu_overrun`) and from the wall's elapsed cutoff (`check_wall_s`).
+
+Root's review of this package (PR #65 at `3528315`) also changed three explicit rev-3 rules: publication of a private
+entry is a sealed command (`sealing.applies_to` adds publish commands); the run id binds the account (above); and the
+integer field `limits.warden_call_policy_hour` keeps its name (it is not a credential; a rename needs a new schema
+version and vectors).
 
 ## Regenerating and testing
 

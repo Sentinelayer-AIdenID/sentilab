@@ -507,9 +507,12 @@ def _missing_pins(record: dict) -> list:
 
 
 def _terms_rules(record: dict, ctx: dict) -> list:
+    found = []
     if not record["version"].endswith("@" + record["text_sha256"]):
-        return [_bad("record_inconsistent", "/version", "terms.version_hash")]
-    return []
+        found.append(_bad("record_inconsistent", "/version", "terms.version_hash"))
+    if record["path"] != hashes.terms_path(record["version"]):
+        found.append(_bad("record_inconsistent", "/path", "terms.path"))
+    return found
 
 
 def check_codes_ok(status: str, codes) -> bool:

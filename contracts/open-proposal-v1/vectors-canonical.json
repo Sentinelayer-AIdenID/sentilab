@@ -796,6 +796,22 @@
    "proposal_sha256": "9835c490e1010beaef32ed826f6d14e07eaa1119ddf2fa15835d53bd0fc04ece"
   }
  ],
+ "terms_path": [
+  {
+   "version": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
+   "path": "/sentilab/open/terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175.md"
+  },
+  {
+   "version": "sentilab-open-terms/2@ac2ddc6d075abcebaae543c027080e328b45f3a912c74f96372a0b0167a1dce2",
+   "path": "/sentilab/open/terms/2@ac2ddc6d075abcebaae543c027080e328b45f3a912c74f96372a0b0167a1dce2.md"
+  }
+ ],
+ "terms_path_refused": [
+  "sentilab-open-terms/0@0000000000000000000000000000000000000000000000000000000000000000",
+  "sentilab-open-terms/1@000000000000000000000000000000000000000000000000000000000000000",
+  "sentilab-open-terms/1",
+  "open-terms/1@0000000000000000000000000000000000000000000000000000000000000000"
+ ],
  "sealed_header": [
   {
    "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
