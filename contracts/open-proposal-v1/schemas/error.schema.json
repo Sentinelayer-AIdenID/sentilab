@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/error.schema.json",
+  "title": "sentilab-open-error/1",
+  "description": "The body of a refused GET (check, status, results): reason codes only, never the request's text. Senti's own transport errors (403, 413, 429) pass through unchanged and are not this object.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "codes"],
+  "properties": {
+    "schema": {"const": "sentilab-open-error/1"},
+    "codes": {"type": "array", "minItems": 1, "maxItems": 64, "items": {"$ref": "common.schema.json#/$defs/violation"}}
+  }
+}

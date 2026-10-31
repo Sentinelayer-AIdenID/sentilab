@@ -1,0 +1,50 @@
+{
+ "schema": "sentilab-open-limits/1",
+ "version": 1,
+ "status": "provisional",
+ "requests": {
+  "submissions_per_account_per_hour": null,
+  "checks_per_account_per_hour": 30,
+  "checks_per_room_per_hour": 600,
+  "checks_per_ip_per_hour": null
+ },
+ "evaluations": {
+  "per_account_per_hour": 3,
+  "per_account_per_day": 12,
+  "per_room_per_hour": 20,
+  "per_room_per_day": 120
+ },
+ "calls": {
+  "policy_per_hour": 40
+ },
+ "queue": {
+  "max_waiting": 30,
+  "max_waiting_per_account": null
+ },
+ "check": {
+  "solver_elapsed_limit_s": 2,
+  "wall_deadline_s": 5,
+  "wall_clock_start": "on_admission",
+  "queue_time_counted": false,
+  "timeout_counts": true,
+  "sponsored": true,
+  "no_participant_charge": true
+ },
+ "cpu": {
+  "evaluation_call": {
+   "reservation_s": null,
+   "enforcement_s": null,
+   "cleanup_headroom_s": null
+  },
+  "check": {
+   "reservation_s": null,
+   "enforcement_s": null,
+   "cleanup_headroom_s": null
+  },
+  "debit": null
+ },
+ "moderation": {
+  "flags_per_day_to_pause": 3,
+  "pause_hours": 24
+ }
+}

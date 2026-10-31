@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/status.schema.json",
+  "title": "sentilab-open-status/1",
+  "description": "GET /api/open/v1/status?proposal_sha256=...: every receipt for that canonical proposal (one per principal). Public: pseudonym and optional moderated team name only. A hidden receipt is still listed here, with its reason, so its participant can see it; it is hidden from the public pages, never deleted.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "manifest_id", "proposal_sha256", "receipts"],
+  "properties": {
+    "schema": {"const": "sentilab-open-status/1"},
+    "manifest_id": {"$ref": "common.schema.json#/$defs/sha256"},
+    "proposal_sha256": {"$ref": "common.schema.json#/$defs/sha256"},
+    "receipts": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["participant_ref", "team_name", "state", "codes", "queue", "hidden", "hidden_reason",
+                     "receipt_hash", "run_id", "seq", "sealed"],
+        "properties": {
+          "participant_ref": {"$ref": "common.schema.json#/$defs/participant_ref"},
+          "team_name": {"$ref": "common.schema.json#/$defs/team_name"},
+          "state": {"$ref": "common.schema.json#/$defs/public_state"},
+          "codes": {"$ref": "common.schema.json#/$defs/violations"},
+          "queue": {"type": ["object", "null"], "additionalProperties": false,
+                    "required": ["position", "estimated_start"],
+                    "properties": {"position": {"type": "integer", "minimum": 1, "maximum": 1000000},
+                                   "estimated_start": {"anyOf": [{"type": "null"},
+                                                                 {"$ref": "common.schema.json#/$defs/utc"}]}}},
+          "hidden": {"type": "boolean"},
+          "hidden_reason": {"anyOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/visibility_reason"}]},
+          "receipt_hash": {"$ref": "common.schema.json#/$defs/sha256"},
+          "run_id": {"$ref": "common.schema.json#/$defs/run_id"},
+          "seq": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+          "sealed": {"type": "boolean"}
+        },
+        "allOf": [
+          {"if": {"properties": {"hidden": {"const": true}}},
+           "then": {"properties": {"hidden_reason": {"type": "string"}}},
+           "else": {"properties": {"hidden_reason": {"type": "null"}}}},
+          {"if": {"properties": {"state": {"enum": ["queued", "held"]}}},
+           "then": {"properties": {"queue": {"type": "object"}}},
+           "else": {"properties": {"queue": {"type": "null"}}}}
+        ]
+      }
+    }
+  }
+}

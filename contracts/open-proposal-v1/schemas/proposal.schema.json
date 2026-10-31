@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/proposal.schema.json",
+  "title": "sentilab-open-proposal/1",
+  "description": "The JSON a participant posts as one threaded reply. Data only: no note, explanation or prompt fields, and nothing that can name a binary, host, grid, timeout, metric, budget or grant. Integers mean JSON integer literals (no fraction, no exponent). Manifest-dependent rules (die count and order, frame, rotation set, the declared lattice and every centre on it, track and terms admission, the geometry hash) are checked by the validator, not here. lattice_um declares the engineering benchmark lattice the layout was made on. salt is present exactly when the proposal travels sealed: it makes the canonical hash of the plaintext unguessable.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "manifest_id", "problem", "reference_id", "wire_track", "proposal_key", "parent", "units",
+               "anchor", "lattice_um", "dies", "geometry_sha256", "terms"],
+  "properties": {
+    "schema": {"const": "sentilab-open-proposal/1"},
+    "manifest_id": {"$ref": "common.schema.json#/$defs/sha256"},
+    "problem": {"$ref": "common.schema.json#/$defs/id"},
+    "reference_id": {"$ref": "common.schema.json#/$defs/id"},
+    "wire_track": {"$ref": "common.schema.json#/$defs/wire_track"},
+    "proposal_key": {"$ref": "common.schema.json#/$defs/id"},
+    "parent": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
+    "units": {"const": "um"},
+    "anchor": {"const": "die-centre"},
+    "lattice_um": {"type": "integer", "minimum": 1, "maximum": 1000000},
+    "dies": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["die", "x_um", "y_um", "rot_deg"],
+        "properties": {
+          "die": {"type": "integer", "minimum": 0, "maximum": 31},
+          "x_um": {"type": "integer", "minimum": 0, "maximum": 1000000},
+          "y_um": {"type": "integer", "minimum": 0, "maximum": 1000000},
+          "rot_deg": {"type": "integer", "enum": [0, 90]}
+        }
+      }
+    },
+    "geometry_sha256": {"$ref": "common.schema.json#/$defs/sha256"},
+    "terms": {"$ref": "common.schema.json#/$defs/terms_id"},
+    "salt": {"$ref": "common.schema.json#/$defs/salt"},
+    "client": {
+      "description": "Optional. Kept privately and never rendered.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,32}$"},
+        "version": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,32}$"}
+      }
+    }
+  }
+}

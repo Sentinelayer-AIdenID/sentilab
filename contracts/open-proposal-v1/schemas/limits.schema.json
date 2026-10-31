@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/limits.schema.json",
+  "title": "sentilab-open-limits/1",
+  "description": "The operational limits (OP-W1/W3), kept out of the manifest so a reviewed budget change can freeze or change them without re-versioning the math. Every count binds to the account (Senti actorUserId), whatever actor kind posted. null means not yet set. Quotas on requests, quotas on evaluations, the named call policy, the check's time limits and the CPU reservation, enforcement and debit are separate fields and never stand in for each other.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "status", "requests", "evaluations", "calls", "queue", "check", "cpu",
+               "moderation"],
+  "properties": {
+    "schema": {"const": "sentilab-open-limits/1"},
+    "version": {"type": "integer", "minimum": 1, "maximum": 1000000},
+    "status": {"enum": ["provisional", "frozen"]},
+    "requests": {
+      "description": "Request quotas: API requests, per account, room or IP, per hour. A check that hits its deadline still counts.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["submissions_per_account_per_hour", "checks_per_account_per_hour", "checks_per_room_per_hour",
+                   "checks_per_ip_per_hour"],
+      "properties": {
+        "submissions_per_account_per_hour": {"$ref": "#/$defs/quota"},
+        "checks_per_account_per_hour": {"$ref": "#/$defs/quota"},
+        "checks_per_room_per_hour": {"$ref": "#/$defs/quota"},
+        "checks_per_ip_per_hour": {"$ref": "#/$defs/quota"}
+      }
+    },
+    "evaluations": {
+      "description": "Thermal evaluation quotas. Each evaluation is reserved and debited before its solve.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["per_account_per_hour", "per_account_per_day", "per_room_per_hour", "per_room_per_day"],
+      "properties": {
+        "per_account_per_hour": {"$ref": "#/$defs/quota"},
+        "per_account_per_day": {"$ref": "#/$defs/quota"},
+        "per_room_per_hour": {"$ref": "#/$defs/quota"},
+        "per_room_per_day": {"$ref": "#/$defs/quota"}
+      }
+    },
+    "calls": {
+      "description": "Call quota: native solver calls per hour for the whole open root. A named policy value, not a code maximum.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy_per_hour"],
+      "properties": {"policy_per_hour": {"$ref": "#/$defs/quota"}}
+    },
+    "queue": {
+      "description": "Beyond max_waiting a submission is refused with queue_full and a retry_after, and nothing is reserved.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_waiting", "max_waiting_per_account"],
+      "properties": {
+        "max_waiting": {"$ref": "#/$defs/quota"},
+        "max_waiting_per_account": {"$ref": "#/$defs/quota"}
+      }
+    },
+    "check": {
+      "description": "The check's time limits and charge. solver_elapsed_limit_s bounds the MILP solve; wall_deadline_s bounds the whole check, on a clock that starts when the check is admitted (after the rate limiter) and excludes queue time. no_participant_charge depends on sponsorship and on both limits being set; it never means the sponsor spends no CPU.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["solver_elapsed_limit_s", "wall_deadline_s", "wall_clock_start", "queue_time_counted",
+                   "timeout_counts", "sponsored", "no_participant_charge"],
+      "properties": {
+        "solver_elapsed_limit_s": {"type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 3600},
+        "wall_deadline_s": {"type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 3600},
+        "wall_clock_start": {"const": "on_admission"},
+        "queue_time_counted": {"const": false},
+        "timeout_counts": {"type": "boolean"},
+        "sponsored": {"type": "boolean"},
+        "no_participant_charge": {"type": "boolean"}
+      }
+    },
+    "cpu": {
+      "description": "CPU per native call: reserved before launch; enforced live (the process is stopped in flight at enforcement_s), with cleanup headroom on top; debited at settlement by the debit policy. Overrun detection is separate and after the fact: a measured overrun found at settlement was not prevented, and it stops new reservations.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evaluation_call", "check", "debit"],
+      "properties": {
+        "evaluation_call": {"$ref": "#/$defs/cpu_budget"},
+        "check": {"$ref": "#/$defs/cpu_budget"},
+        "debit": {"enum": ["reservation", "measured_else_reservation", null]}
+      }
+    },
+    "moderation": {
+      "description": "An account flagged (hidden as spam or not a layout) this many times in a day has its evaluations paused for pause_hours: participant_paused, with a retry_after.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["flags_per_day_to_pause", "pause_hours"],
+      "properties": {
+        "flags_per_day_to_pause": {"type": ["integer", "null"], "minimum": 1, "maximum": 1000000},
+        "pause_hours": {"type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 8760}
+      }
+    }
+  },
+  "$defs": {
+    "quota": {"type": ["integer", "null"], "minimum": 0, "maximum": 1000000},
+    "cpu_budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reservation_s", "enforcement_s", "cleanup_headroom_s"],
+      "properties": {
+        "reservation_s": {"type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 1000000},
+        "enforcement_s": {"type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 1000000},
+        "cleanup_headroom_s": {"type": ["number", "null"], "minimum": 0, "maximum": 1000000}
+      }
+    }
+  }
+}

@@ -1,0 +1,623 @@
+{
+ "lifecycle": [
+  "queued",
+  "held",
+  "evaluating",
+  "evaluated",
+  "failed",
+  "reproducing",
+  "reproduced",
+  "verifying",
+  "rejected",
+  "not_reproduced",
+  "verified",
+  "not_verified",
+  "cancelled",
+  "expired"
+ ],
+ "allowed": {
+  "none": {
+   "accept": "queued",
+   "reject": "rejected"
+  },
+  "queued": {
+   "hold": "held",
+   "start": "evaluating",
+   "cancel": "cancelled",
+   "expire": "expired"
+  },
+  "held": {
+   "release": "queued",
+   "cancel": "cancelled",
+   "expire": "expired"
+  },
+  "evaluating": {
+   "complete": "evaluated",
+   "fail": "failed"
+  },
+  "evaluated": {
+   "reproduce": "reproducing"
+  },
+  "failed": {
+   "requeue": "queued"
+  },
+  "reproducing": {
+   "reproduced": "reproduced",
+   "not_reproduced": "not_reproduced"
+  },
+  "reproduced": {
+   "verify": "verifying"
+  },
+  "verifying": {
+   "verified": "verified",
+   "not_verified": "not_verified"
+  },
+  "rejected": {},
+  "not_reproduced": {},
+  "verified": {},
+  "not_verified": {},
+  "cancelled": {},
+  "expired": {}
+ },
+ "good_payload": {
+  "accept": {},
+  "reject": {
+   "codes": [
+    "lattice"
+   ]
+  },
+  "hold": {
+   "operator": true
+  },
+  "release": {
+   "operator": true
+  },
+  "start": {
+   "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+  },
+  "complete": {
+   "settled": true
+  },
+  "fail": {
+   "settled": true,
+   "code": "timeout"
+  },
+  "requeue": {
+   "operator": true
+  },
+  "reproduce": {
+   "reservation_id": "00000000-0000-4000-8000-0000000000e2"
+  },
+  "reproduced": {
+   "settled": true,
+   "fresh_process": true
+  },
+  "not_reproduced": {
+   "settled": true,
+   "code": "reproduction_mismatch"
+  },
+  "verify": {
+   "reservation_id": "00000000-0000-4000-8000-0000000000e3"
+  },
+  "verified": {
+   "settled": true,
+   "tier": "cross_host"
+  },
+  "not_verified": {
+   "settled": true,
+   "code": "verification_failed"
+  },
+  "cancel": {
+   "codes": [
+    "participant_removed"
+   ]
+  },
+  "expire": {},
+  "withdraw": {
+   "operator": true
+  },
+  "restore": {
+   "operator": true
+  },
+  "hide": {
+   "operator": true,
+   "reason": "spam"
+  },
+  "unhide": {
+   "operator": true,
+   "reason": "reinstated"
+  }
+ },
+ "guards": [
+  {
+   "event": "reject",
+   "from": "none",
+   "payload": {},
+   "expect": "refused"
+  },
+  {
+   "event": "reject",
+   "from": "none",
+   "payload": {
+    "codes": []
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "reject",
+   "from": "none",
+   "payload": {
+    "codes": [
+     "timeout"
+    ]
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "reject",
+   "from": "none",
+   "payload": {
+    "codes": [
+     "lattice",
+     "spam"
+    ]
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "start",
+   "from": "queued",
+   "payload": {},
+   "expect": "refused"
+  },
+  {
+   "event": "start",
+   "from": "queued",
+   "payload": {
+    "reservation_id": "r-1"
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "complete",
+   "from": "evaluating",
+   "payload": {},
+   "expect": "refused"
+  },
+  {
+   "event": "complete",
+   "from": "evaluating",
+   "payload": {
+    "settled": false
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "fail",
+   "from": "evaluating",
+   "payload": {
+    "settled": true
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "fail",
+   "from": "evaluating",
+   "payload": {
+    "settled": true,
+    "code": "router_timeout"
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "fail",
+   "from": "evaluating",
+   "payload": {
+    "code": "timeout"
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "reproduce",
+   "from": "evaluated",
+   "payload": {},
+   "expect": "refused"
+  },
+  {
+   "event": "reproduced",
+   "from": "reproducing",
+   "payload": {
+    "settled": true
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "reproduced",
+   "from": "reproducing",
+   "payload": {
+    "settled": true,
+    "fresh_process": false
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "reproduced",
+   "from": "reproducing",
+   "payload": {
+    "fresh_process": true
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "not_reproduced",
+   "from": "reproducing",
+   "payload": {
+    "settled": true,
+    "code": "timeout"
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "verify",
+   "from": "reproduced",
+   "payload": {},
+   "expect": "refused"
+  },
+  {
+   "event": "verified",
+   "from": "verifying",
+   "payload": {
+    "settled": true,
+    "tier": "replayed"
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "verified",
+   "from": "verifying",
+   "payload": {
+    "tier": "cross_build"
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "not_verified",
+   "from": "verifying",
+   "payload": {
+    "settled": true,
+    "code": "reproduction_mismatch"
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "cancel",
+   "from": "queued",
+   "payload": {
+    "codes": [
+     "lattice"
+    ]
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "hold",
+   "from": "queued",
+   "payload": {},
+   "expect": "refused"
+  },
+  {
+   "event": "release",
+   "from": "held",
+   "payload": {
+    "operator": false
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "requeue",
+   "from": "failed",
+   "payload": {},
+   "expect": "refused"
+  },
+  {
+   "event": "withdraw",
+   "from": "queued",
+   "payload": {},
+   "expect": "refused"
+  },
+  {
+   "event": "restore",
+   "from": "queued",
+   "payload": {},
+   "expect": "refused"
+  },
+  {
+   "event": "hide",
+   "from": "queued",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "hide",
+   "from": "queued",
+   "payload": {
+    "operator": true
+   },
+   "expect": "refused"
+  },
+  {
+   "event": "hide",
+   "from": "queued",
+   "payload": {
+    "reason": "spam"
+   },
+   "expect": "refused"
+  }
+ ],
+ "overlays": [
+  {
+   "name": "withdraw then restore",
+   "from": "evaluated",
+   "events": [
+    [
+     "withdraw",
+     {
+      "operator": true
+     }
+    ],
+    [
+     "restore",
+     {
+      "operator": true
+     }
+    ]
+   ],
+   "expect": {
+    "lifecycle": "evaluated",
+    "withdrawn": false,
+    "hidden": null
+   }
+  },
+  {
+   "name": "work in flight still settles while withdrawn",
+   "from": "evaluating",
+   "events": [
+    [
+     "withdraw",
+     {
+      "operator": true
+     }
+    ],
+    [
+     "complete",
+     {
+      "settled": true
+     }
+    ]
+   ],
+   "expect": {
+    "lifecycle": "evaluated",
+    "withdrawn": true,
+    "hidden": null
+   }
+  },
+  {
+   "name": "no new work starts while withdrawn",
+   "from": "queued",
+   "events": [
+    [
+     "withdraw",
+     {
+      "operator": true
+     }
+    ],
+    [
+     "start",
+     {
+      "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+     }
+    ]
+   ],
+   "expect": "refused"
+  },
+  {
+   "name": "no requeue while withdrawn",
+   "from": "failed",
+   "events": [
+    [
+     "withdraw",
+     {
+      "operator": true
+     }
+    ],
+    [
+     "requeue",
+     {
+      "operator": true
+     }
+    ]
+   ],
+   "expect": "refused"
+  },
+  {
+   "name": "withdraw twice",
+   "from": "queued",
+   "events": [
+    [
+     "withdraw",
+     {
+      "operator": true
+     }
+    ],
+    [
+     "withdraw",
+     {
+      "operator": true
+     }
+    ]
+   ],
+   "expect": "refused"
+  },
+  {
+   "name": "restore without a withdrawal",
+   "from": "queued",
+   "events": [
+    [
+     "restore",
+     {
+      "operator": true
+     }
+    ]
+   ],
+   "expect": "refused"
+  },
+  {
+   "name": "hide as spam, then reinstate",
+   "from": "rejected",
+   "events": [
+    [
+     "hide",
+     {
+      "operator": true,
+      "reason": "spam"
+     }
+    ],
+    [
+     "unhide",
+     {
+      "operator": true,
+      "reason": "reinstated"
+     }
+    ]
+   ],
+   "expect": {
+    "lifecycle": "rejected",
+    "withdrawn": false,
+    "hidden": null
+   }
+  },
+  {
+   "name": "hidden entries keep evaluating",
+   "from": "queued",
+   "events": [
+    [
+     "hide",
+     {
+      "operator": true,
+      "reason": "not_a_layout"
+     }
+    ],
+    [
+     "start",
+     {
+      "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+     }
+    ]
+   ],
+   "expect": {
+    "lifecycle": "evaluating",
+    "withdrawn": false,
+    "hidden": "not_a_layout"
+   }
+  },
+  {
+   "name": "hide twice",
+   "from": "queued",
+   "events": [
+    [
+     "hide",
+     {
+      "operator": true,
+      "reason": "spam"
+     }
+    ],
+    [
+     "hide",
+     {
+      "operator": true,
+      "reason": "spam"
+     }
+    ]
+   ],
+   "expect": "refused"
+  },
+  {
+   "name": "unhide what is visible",
+   "from": "queued",
+   "events": [
+    [
+     "unhide",
+     {
+      "operator": true,
+      "reason": "reinstated"
+     }
+    ]
+   ],
+   "expect": "refused"
+  },
+  {
+   "name": "unhide with a hiding reason",
+   "from": "queued",
+   "events": [
+    [
+     "hide",
+     {
+      "operator": true,
+      "reason": "spam"
+     }
+    ],
+    [
+     "unhide",
+     {
+      "operator": true,
+      "reason": "spam"
+     }
+    ]
+   ],
+   "expect": "refused"
+  },
+  {
+   "name": "no overlay before ingest",
+   "from": "none",
+   "events": [
+    [
+     "withdraw",
+     {
+      "operator": true
+     }
+    ]
+   ],
+   "expect": "refused"
+  },
+  {
+   "name": "an unknown event",
+   "from": "queued",
+   "events": [
+    [
+     "evaluate",
+     {}
+    ]
+   ],
+   "expect": "refused"
+  }
+ ],
+ "summary": {
+  "rejected": "rejected",
+  "queued": "queued",
+  "held": "queued",
+  "evaluating": "queued",
+  "evaluated": "evaluated",
+  "failed": "evaluated",
+  "reproducing": "evaluated",
+  "reproduced": "evaluated",
+  "not_reproduced": "evaluated",
+  "verifying": "evaluated",
+  "not_verified": "evaluated",
+  "verified": "independently_verified",
+  "cancelled": null,
+  "expired": null
+ }
+}

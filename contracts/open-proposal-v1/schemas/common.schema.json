@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/common.schema.json",
+  "title": "Open-proposal contract v1: shared definitions",
+  "description": "Every string is a const, an enum or a pattern over a safe charset; no definition admits free text. Every object that carries a measured temperature or wire value also carries its evaluator identity and a SLAB-053 label state.",
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "sha256_or_null": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"},
+    "uuid": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"},
+    "id_or_null": {"type": ["string", "null"], "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"},
+    "agent_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$"},
+    "identity": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}$"},
+    "source_text": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._:()/+-]{0,127}$"},
+    "label_state": {"enum": ["withdrawn", "unvalidated", "illustrative", "accepted"]},
+    "utc": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z$"},
+    "senti_time": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?(Z|[+-][0-9]{2}:[0-9]{2})$"},
+    "terms_id": {"type": "string", "pattern": "^sentilab-open-terms/[1-9][0-9]{0,5}$"},
+    "wire_track": {"enum": ["strict", "relaxed"]},
+    "lifecycle_state": {"enum": ["rejected", "queued", "held", "evaluating", "evaluated", "failed", "reproducing",
+                                 "reproduced", "not_reproduced", "verifying", "verified", "not_verified", "cancelled",
+                                 "expired"]},
+    "public_state": {"enum": ["rejected", "queued", "held", "evaluating", "evaluated", "failed", "reproducing",
+                              "reproduced", "not_reproduced", "verifying", "verified", "not_verified", "cancelled",
+                              "expired", "withdrawn"]},
+    "visibility_reason": {"enum": ["spam", "not_a_layout"]},
+    "participant_ref": {"type": "string", "pattern": "^([0-9a-f]{64}|sentilab)$"},
+    "team_name": {"type": ["string", "null"], "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9 ._-]{0,30}[A-Za-z0-9])?$"},
+    "run_id": {"type": "string", "pattern": "^open-[0-9a-f]{8}-([0-9a-f]{16}|sentilab)$"},
+    "transport_id": {"type": "string", "pattern": "^open-tk1-[0-9a-f]{64}$"},
+    "salt": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "capability": {
+      "description": "A BEARER capability for one sealed submission's private status, results and receipt: whoever holds it can read them. It is not authentication and does not prove authorship. It is a secret: never logged, never in any record (records keep only its sha256), and rotated to a new epoch or revoked when exposed. Only a private request carries it.",
+      "type": "string", "pattern": "^opencap1-[0-9a-f]{64}$"},
+    "age_recipient": {"type": "string", "pattern": "^age1[02-9ac-hj-np-z]{58}$"},
+    "base64": {"type": "string", "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"},
+    "seconds": {"type": "number", "minimum": 0, "maximum": 1000000},
+    "count": {"type": "integer", "minimum": 0, "maximum": 1000000},
+    "reason_code": {"enum": [
+      "oversize", "not_utf8", "edited_before_ingest", "unattributable",
+      "malformed_json", "duplicate_key", "nonfinite_number", "too_deep", "unknown_field", "schema_invalid",
+      "sealed_format", "sealed_key_version", "sealed_undecryptable", "salt_required", "salt_forbidden",
+      "unknown_manifest", "manifest_mismatch", "manifest_closed", "not_open_yet", "wire_track_not_admitted",
+      "terms_mismatch",
+      "die_count", "die_order", "out_of_frame", "rotation_not_allowed", "lattice", "margin", "halo_overlap",
+      "min_spacing", "geometry_hash_mismatch",
+      "revision_conflict", "unknown_parent",
+      "participant_suspended", "participant_removed", "participant_paused", "rate_limited", "queue_full",
+      "capacity_full", "budget_exhausted",
+      "check_rate_limited", "check_timeout",
+      "timeout", "stopped", "oracle_error", "grant_expired", "interrupted", "binding_mismatch", "router_timeout",
+      "reproduction_mismatch", "fresh_process_required", "reproduction_failed",
+      "verification_mismatch", "independence_required", "verification_failed",
+      "gate_failed", "binding_failed", "predicate_failed", "scenario_failed",
+      "spam", "not_a_layout", "reinstated",
+      "label_mismatch", "ref_mismatch", "record_inconsistent", "manifest_not_frozen"]},
+    "violation": {
+      "description": "One reason code. Only codes, schema-known paths, die indices and amounts: never submitted text.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code"],
+      "properties": {
+        "code": {"$ref": "#/$defs/reason_code"},
+        "path": {"type": "string", "maxLength": 256, "pattern": "^(/[A-Za-z0-9_]{1,64})*$"},
+        "keyword": {"type": "string", "pattern": "^[A-Za-z]{1,32}$"},
+        "dies": {"type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true,
+                 "items": {"type": "integer", "minimum": 0, "maximum": 31}},
+        "amount_um": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "size_bytes": {"type": "integer", "minimum": 0, "maximum": 1000000000},
+        "count": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "retry_after": {"$ref": "#/$defs/utc"},
+        "rule": {"type": "string", "pattern": "^[a-z_]{1,32}\\.[a-z_]{1,32}$"}
+      }
+    },
+    "violations": {"type": "array", "maxItems": 64, "items": {"$ref": "#/$defs/violation"}},
+    "temperature": {
+      "description": "One evaluation's temperatures, in degrees C. T_M_c is the challenge statistic M: the maximum native centre-map value across the real chiplets. The active-layer grid peak, its argmax and the historical TAP positional selector are separate diagnostics and are never interchangeable with M.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["statistic", "T_M_c", "grid_peak_c", "grid_argmax", "tap_selector_c", "evaluator", "label"],
+      "properties": {
+        "statistic": {"const": "chiplet-centre-max"},
+        "T_M_c": {"type": "number", "minimum": -273.15, "maximum": 10000},
+        "grid_peak_c": {"type": ["number", "null"], "minimum": -273.15, "maximum": 10000},
+        "grid_argmax": {"type": ["object", "null"], "additionalProperties": false, "required": ["row", "col"],
+                        "properties": {"row": {"type": "integer", "minimum": 0, "maximum": 4095},
+                                       "col": {"type": "integer", "minimum": 0, "maximum": 4095}}},
+        "tap_selector_c": {"type": ["number", "null"], "minimum": -273.15, "maximum": 10000},
+        "evaluator": {"$ref": "#/$defs/identity"},
+        "label": {"$ref": "#/$defs/label_state"}
+      }
+    },
+    "wire": {
+      "description": "Routed wire (the judged metric) and the centre-distance proxy (a diagnostic), in mm, in separate fields.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["routed_mm", "routed_status", "proxy_mm", "evaluator", "label"],
+      "properties": {
+        "routed_mm": {"type": ["number", "null"], "minimum": 0, "maximum": 10000000},
+        "routed_status": {"enum": ["optimal", "timeout", "skipped_illegal"]},
+        "proxy_mm": {"type": ["number", "null"], "minimum": 0, "maximum": 1000000},
+        "evaluator": {"$ref": "#/$defs/identity"},
+        "label": {"$ref": "#/$defs/label_state"}
+      },
+      "if": {"properties": {"routed_status": {"const": "optimal"}}},
+      "then": {"properties": {"routed_mm": {"type": "number"}}},
+      "else": {"properties": {"routed_mm": {"type": "null"}}}
+    },
+    "paper": {
+      "description": "A published target, reference-only: never substituted for the same-model value.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["t_c", "w_mm", "source", "evaluator", "label"],
+      "properties": {
+        "t_c": {"type": "number", "minimum": -273.15, "maximum": 10000},
+        "w_mm": {"type": "number", "minimum": 0, "maximum": 10000000},
+        "source": {"$ref": "#/$defs/source_text"},
+        "evaluator": {"$ref": "#/$defs/identity"},
+        "label": {"$ref": "#/$defs/label_state"}
+      }
+    },
+    "case_observation": {
+      "description": "This row's statistic M under one predeclared sensitivity case.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case", "status", "T_M_c", "evaluator", "label"],
+      "properties": {
+        "case": {"$ref": "#/$defs/id"},
+        "status": {"enum": ["observed", "missing", "failed"]},
+        "T_M_c": {"type": ["number", "null"], "minimum": -273.15, "maximum": 10000},
+        "evaluator": {"$ref": "#/$defs/identity"},
+        "label": {"$ref": "#/$defs/label_state"}
+      },
+      "if": {"properties": {"status": {"const": "observed"}}},
+      "then": {"properties": {"T_M_c": {"type": "number"}}},
+      "else": {"properties": {"T_M_c": {"type": "null"}}}
+    },
+    "comparison": {
+      "description": "Nominal paired differences against the named comparator R in the same manifest: delta_T = T_M(c) - T_M(R), in K; q_r = W(c) - (1 + r) W(R), in mm. Not bounds.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["delta_T_k", "q", "evaluators", "label"],
+      "properties": {
+        "delta_T_k": {"type": "number", "minimum": -10000, "maximum": 10000},
+        "q": {"type": "array", "minItems": 1, "maxItems": 16,
+              "items": {"type": "object", "additionalProperties": false, "required": ["r", "q_mm"],
+                        "properties": {"r": {"type": "number", "minimum": 0, "maximum": 10},
+                                       "q_mm": {"type": "number", "minimum": -100000000, "maximum": 100000000}}}},
+        "evaluators": {"type": "array", "minItems": 1, "maxItems": 16, "items": {"$ref": "#/$defs/identity"}},
+        "label": {"$ref": "#/$defs/label_state"}
+      }
+    },
+    "claim": {
+      "description": "One claim type, evaluated only under a frozen manifest. Strict, relaxed and Pareto claims are separate types. A failed required gate, binding, predicate or scenario suppresses the claim: outcome suppressed, with the code in suppressed_by.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "r", "outcome", "evaluators", "label"],
+      "properties": {
+        "type": {"enum": ["temperature_target", "strict_wire_thermal_tolerance", "relaxed_wire_thermal_tolerance",
+                          "strict_thermal_improvement", "strict_wire_improvement",
+                          "wire_improvement_thermal_tolerance", "robust_dominance", "nondominated"]},
+        "r": {"type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 10},
+        "outcome": {"enum": ["passes_listed_cases", "fails_listed_cases", "incomplete", "inconclusive", "unknown",
+                             "suppressed"]},
+        "suppressed_by": {"anyOf": [{"type": "null"},
+                                    {"enum": ["gate_failed", "binding_failed", "predicate_failed", "scenario_failed"]}]},
+        "evaluators": {"type": "array", "minItems": 1, "maxItems": 16, "items": {"$ref": "#/$defs/identity"}},
+        "label": {"$ref": "#/$defs/label_state"}
+      },
+      "allOf": [
+        {"if": {"properties": {"type": {"const": "relaxed_wire_thermal_tolerance"}}},
+         "then": {"properties": {"r": {"type": "number"}}},
+         "else": {"properties": {"r": {"type": "null"}}}},
+        {"if": {"properties": {"outcome": {"const": "suppressed"}}},
+         "then": {"properties": {"suppressed_by": {"type": "string"}}},
+         "else": {"properties": {"suppressed_by": {"type": "null"}}}}
+      ]
+    },
+    "diagnostic": {
+      "description": "An unexpected scientific observation kept beside the claims, with its raw values, its own evaluator and its own label. It never suppresses or replaces a claim or another value's label: a high-wire diagnostic leaves the temperature's label as it is.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "values", "evaluator", "label"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "values": {"type": "array", "minItems": 1, "maxItems": 16,
+                   "items": {"type": "object", "additionalProperties": false, "required": ["name", "value", "unit"],
+                             "properties": {"name": {"$ref": "#/$defs/id"},
+                                            "value": {"type": "number", "minimum": -100000000, "maximum": 100000000},
+                                            "unit": {"enum": ["c", "k", "mm", "um", "s", "w", "1"]}}}},
+        "evaluator": {"$ref": "#/$defs/identity"},
+        "label": {"$ref": "#/$defs/label_state"}
+      }
+    }
+  }
+}

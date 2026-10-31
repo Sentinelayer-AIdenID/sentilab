@@ -1,0 +1,73 @@
+{
+ "rows": [
+  {
+   "label": "whole second",
+   "createdAt": "2026-10-31T16:05:12+00:00",
+   "id": "00000000-0000-4000-8000-0000000000a2",
+   "sessionId": "00000000-0000-4000-8000-0000000000c1"
+  },
+  {
+   "label": "one microsecond later, but sorts first as text",
+   "createdAt": "2026-10-31T16:05:12.000001+00:00",
+   "id": "00000000-0000-4000-8000-0000000000a1",
+   "sessionId": "00000000-0000-4000-8000-0000000000c1"
+  },
+  {
+   "label": "the same instant as Z, later action id",
+   "createdAt": "2026-10-31T16:05:12Z",
+   "id": "00000000-0000-4000-8000-0000000000a3",
+   "sessionId": "00000000-0000-4000-8000-0000000000c1"
+  },
+  {
+   "label": "a second earlier, written in another zone",
+   "createdAt": "2026-10-31T17:05:11+01:00",
+   "id": "00000000-0000-4000-8000-0000000000a4",
+   "sessionId": "00000000-0000-4000-8000-0000000000c1"
+  },
+  {
+   "label": "the same instant and action, overflow room",
+   "createdAt": "2026-10-31T16:05:12Z",
+   "id": "00000000-0000-4000-8000-0000000000a3",
+   "sessionId": "00000000-0000-4000-8000-0000000000c2"
+  }
+ ],
+ "expect_order": [
+  "a second earlier, written in another zone",
+  "whole second",
+  "the same instant as Z, later action id",
+  "the same instant and action, overflow room",
+  "one microsecond later, but sorts first as text"
+ ],
+ "expect_ns": [
+  {
+   "createdAt": "1970-01-01T00:00:00Z",
+   "ns": 0
+  },
+  {
+   "createdAt": "1970-01-01T00:00:00.000000001Z",
+   "ns": 1
+  },
+  {
+   "createdAt": "2026-10-31T16:05:12.5+00:00",
+   "ns": 1793462712500000000
+  },
+  {
+   "createdAt": "2026-10-31T17:05:12.5+01:00",
+   "ns": 1793462712500000000
+  },
+  {
+   "createdAt": "2026-10-31T11:05:12.5-05:00",
+   "ns": 1793462712500000000
+  }
+ ],
+ "invalid": [
+  "2026-02-30T00:00:00Z",
+  "2026-10-31T16:05:12",
+  "2026-10-31 16:05:12Z",
+  "2026-10-31T24:00:00Z",
+  "2026-10-31T16:05:60Z",
+  "2026-10-31T16:05:12+24:00",
+  "2026-10-31T16:05:12.1234567890Z",
+  "2026-10-31T16:05:12z"
+ ]
+}

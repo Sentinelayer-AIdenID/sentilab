@@ -1,0 +1,802 @@
+{
+ "schema": "sentilab-open-vectors/1",
+ "test_phrases": {
+  "pseudonym_key": "sentilab-open-proposal-v1 test pseudonym key, not a secret",
+  "client_secret": "sentilab-open-proposal-v1 test client secret, not a secret",
+  "derivation": "sha256 of the UTF-8 phrase gives the 32 bytes"
+ },
+ "canonical": [
+  {
+   "name": "keys sort",
+   "value": {
+    "b": 1,
+    "a": 2
+   },
+   "canonical": "{\"a\":2,\"b\":1}",
+   "sha256": "d3626ac30a87e6f7a6428233b3c68299976865fa5508e4267c5415c76af7a772"
+  },
+  {
+   "name": "nested objects and arrays keep array order",
+   "value": {
+    "z": [
+     3,
+     {
+      "y": null,
+      "x": true
+     }
+    ],
+    "a": "s"
+   },
+   "canonical": "{\"a\":\"s\",\"z\":[3,{\"x\":true,\"y\":null}]}",
+   "sha256": "0c77cd2ea9d13f0318f50c089a91dde66c67ec7646673981ae9d83b78a76212a"
+  },
+  {
+   "name": "numbers in ECMAScript form",
+   "value": [
+    0,
+    -0.0,
+    1,
+    -1,
+    1.5,
+    0.1,
+    16417.5,
+    75.48,
+    1e+20,
+    1e+21,
+    1e-06,
+    1e-07
+   ],
+   "canonical": "[0,0,1,-1,1.5,0.1,16417.5,75.48,100000000000000000000,1e+21,0.000001,1e-7]",
+   "sha256": "be39658725a2befb7d0a7e0b58d1f73ce106332ca73b1d6332ef331a1322028d"
+  },
+  {
+   "name": "keys sort by UTF-16 code units, not code points",
+   "value": {
+    "ﬁ": 1,
+    "😀": 2,
+    "z": 3
+   },
+   "canonical": "{\"z\":3,\"😀\":2,\"ﬁ\":1}",
+   "sha256": "ab6100d253cb4c4150785e30d4faa3022ed6910e357e0352cf32ad674e107e7f"
+  },
+  {
+   "name": "strings escape only quote, backslash and control characters",
+   "value": {
+    "s": "say \"hi\" \\ é 😀\n\t\u001f"
+   },
+   "canonical": "{\"s\":\"say \\\"hi\\\" \\\\ é 😀\\n\\t\\u001f\"}",
+   "sha256": "f47d48695693c84440924c04f1ddb66ac11d028eba8d8fe080d20f3f74ac6780"
+  },
+  {
+   "name": "an empty object differs from a null field",
+   "value": {
+    "present": null
+   },
+   "canonical": "{\"present\":null}",
+   "sha256": "924c481da1aca4bbd856f20e4aaef20f67c34fccd0b5e27cb2647b8c45ee21ac"
+  }
+ ],
+ "manifest_id": [
+  {
+   "manifest": "A",
+   "manifest_id": "5f69e7d3e2a5d83bbeec0367a5798bc1952ed3f9c3b1500722d29baaa15d4f3e"
+  },
+  {
+   "manifest": "M",
+   "manifest_id": "17e2bee830e33d08afe2cffa3c4c2609e0449e019dcd69c5bf943d126b809fe2"
+  },
+  {
+   "manifest": "F",
+   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0"
+  }
+ ],
+ "geometry": [
+  {
+   "name": "the Ascend 910 snap0p5 copy",
+   "manifest": "A",
+   "proposal": {
+    "schema": "sentilab-open-proposal/1",
+    "manifest_id": "5f69e7d3e2a5d83bbeec0367a5798bc1952ed3f9c3b1500722d29baaa15d4f3e",
+    "problem": "ascend910",
+    "reference_id": "ascend910-tap25d-fig6a",
+    "wire_track": "relaxed",
+    "proposal_key": "example-1",
+    "parent": null,
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 17000,
+      "y_um": 22500,
+      "rot_deg": 90
+     },
+     {
+      "die": 1,
+      "x_um": 38500,
+      "y_um": 22500,
+      "rot_deg": 0
+     },
+     {
+      "die": 2,
+      "x_um": 7500,
+      "y_um": 11000,
+      "rot_deg": 90
+     },
+     {
+      "die": 3,
+      "x_um": 21500,
+      "y_um": 11000,
+      "rot_deg": 90
+     },
+     {
+      "die": 4,
+      "x_um": 7500,
+      "y_um": 34000,
+      "rot_deg": 90
+     },
+     {
+      "die": 5,
+      "x_um": 21500,
+      "y_um": 34000,
+      "rot_deg": 90
+     }
+    ],
+    "geometry_sha256": "1abaac6abbb300053cd233e92c3570650171b7d66769eb32760cfbaa0bb0500a",
+    "terms": "sentilab-open-terms/1",
+    "client": {
+     "name": "example-agent",
+     "version": "0.1.0"
+    }
+   },
+   "object": {
+    "schema": "sentilab-open-geometry/1",
+    "problem": "ascend910",
+    "fixture_config_sha256": "4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c",
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 17000,
+      "y_um": 22500,
+      "rot_deg": 90
+     },
+     {
+      "die": 1,
+      "x_um": 38500,
+      "y_um": 22500,
+      "rot_deg": 0
+     },
+     {
+      "die": 2,
+      "x_um": 7500,
+      "y_um": 11000,
+      "rot_deg": 90
+     },
+     {
+      "die": 3,
+      "x_um": 21500,
+      "y_um": 11000,
+      "rot_deg": 90
+     },
+     {
+      "die": 4,
+      "x_um": 7500,
+      "y_um": 34000,
+      "rot_deg": 90
+     },
+     {
+      "die": 5,
+      "x_um": 21500,
+      "y_um": 34000,
+      "rot_deg": 90
+     }
+    ]
+   },
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":90,\"x_um\":17000,\"y_um\":22500},{\"die\":1,\"rot_deg\":0,\"x_um\":38500,\"y_um\":22500},{\"die\":2,\"rot_deg\":90,\"x_um\":7500,\"y_um\":11000},{\"die\":3,\"rot_deg\":90,\"x_um\":21500,\"y_um\":11000},{\"die\":4,\"rot_deg\":90,\"x_um\":7500,\"y_um\":34000},{\"die\":5,\"rot_deg\":90,\"x_um\":21500,\"y_um\":34000}],\"fixture_config_sha256\":\"4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c\",\"lattice_um\":500,\"problem\":\"ascend910\",\"schema\":\"sentilab-open-geometry/1\",\"units\":\"um\"}",
+   "geometry_sha256": "1abaac6abbb300053cd233e92c3570650171b7d66769eb32760cfbaa0bb0500a"
+  },
+  {
+   "name": "the two-die layout",
+   "manifest": "F",
+   "proposal": {
+    "schema": "sentilab-open-proposal/1",
+    "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
+    "problem": "test-two-die",
+    "reference_id": "test-two-die-ref",
+    "wire_track": "strict",
+    "proposal_key": "t-1",
+    "parent": null,
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 3000,
+      "y_um": 5000,
+      "rot_deg": 0
+     },
+     {
+      "die": 1,
+      "x_um": 7000,
+      "y_um": 5000,
+      "rot_deg": 0
+     }
+    ],
+    "geometry_sha256": "990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33",
+    "terms": "sentilab-open-terms/1",
+    "client": {
+     "name": "example-agent",
+     "version": "0.1.0"
+    }
+   },
+   "object": {
+    "schema": "sentilab-open-geometry/1",
+    "problem": "test-two-die",
+    "fixture_config_sha256": "6e65b16a67ed5ab2daee8bb02a6787ed6a582fe92ad74fdd846660ec55eebae9",
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 3000,
+      "y_um": 5000,
+      "rot_deg": 0
+     },
+     {
+      "die": 1,
+      "x_um": 7000,
+      "y_um": 5000,
+      "rot_deg": 0
+     }
+    ]
+   },
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"fixture_config_sha256\":\"6e65b16a67ed5ab2daee8bb02a6787ed6a582fe92ad74fdd846660ec55eebae9\",\"lattice_um\":500,\"problem\":\"test-two-die\",\"schema\":\"sentilab-open-geometry/1\",\"units\":\"um\"}",
+   "geometry_sha256": "990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33"
+  },
+  {
+   "name": "a sealed plaintext: same geometry, unsalted hash",
+   "manifest": "F",
+   "proposal": {
+    "schema": "sentilab-open-proposal/1",
+    "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
+    "problem": "test-two-die",
+    "reference_id": "test-two-die-ref",
+    "wire_track": "strict",
+    "proposal_key": "t-2",
+    "parent": null,
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 3000,
+      "y_um": 5000,
+      "rot_deg": 0
+     },
+     {
+      "die": 1,
+      "x_um": 7000,
+      "y_um": 5000,
+      "rot_deg": 0
+     }
+    ],
+    "geometry_sha256": "990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33",
+    "terms": "sentilab-open-terms/1",
+    "salt": "0b047534ee6da57a261e10b31bd7d82db71e3d4fb5a71ad316da4024e3827c81",
+    "client": {
+     "name": "example-agent",
+     "version": "0.1.0"
+    }
+   },
+   "object": {
+    "schema": "sentilab-open-geometry/1",
+    "problem": "test-two-die",
+    "fixture_config_sha256": "6e65b16a67ed5ab2daee8bb02a6787ed6a582fe92ad74fdd846660ec55eebae9",
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 3000,
+      "y_um": 5000,
+      "rot_deg": 0
+     },
+     {
+      "die": 1,
+      "x_um": 7000,
+      "y_um": 5000,
+      "rot_deg": 0
+     }
+    ]
+   },
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"fixture_config_sha256\":\"6e65b16a67ed5ab2daee8bb02a6787ed6a582fe92ad74fdd846660ec55eebae9\",\"lattice_um\":500,\"problem\":\"test-two-die\",\"schema\":\"sentilab-open-geometry/1\",\"units\":\"um\"}",
+   "geometry_sha256": "990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33"
+  }
+ ],
+ "proposal": [
+  {
+   "name": "the Ascend 910 snap0p5 copy",
+   "proposal": {
+    "schema": "sentilab-open-proposal/1",
+    "manifest_id": "5f69e7d3e2a5d83bbeec0367a5798bc1952ed3f9c3b1500722d29baaa15d4f3e",
+    "problem": "ascend910",
+    "reference_id": "ascend910-tap25d-fig6a",
+    "wire_track": "relaxed",
+    "proposal_key": "example-1",
+    "parent": null,
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 17000,
+      "y_um": 22500,
+      "rot_deg": 90
+     },
+     {
+      "die": 1,
+      "x_um": 38500,
+      "y_um": 22500,
+      "rot_deg": 0
+     },
+     {
+      "die": 2,
+      "x_um": 7500,
+      "y_um": 11000,
+      "rot_deg": 90
+     },
+     {
+      "die": 3,
+      "x_um": 21500,
+      "y_um": 11000,
+      "rot_deg": 90
+     },
+     {
+      "die": 4,
+      "x_um": 7500,
+      "y_um": 34000,
+      "rot_deg": 90
+     },
+     {
+      "die": 5,
+      "x_um": 21500,
+      "y_um": 34000,
+      "rot_deg": 90
+     }
+    ],
+    "geometry_sha256": "1abaac6abbb300053cd233e92c3570650171b7d66769eb32760cfbaa0bb0500a",
+    "terms": "sentilab-open-terms/1",
+    "client": {
+     "name": "example-agent",
+     "version": "0.1.0"
+    }
+   },
+   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":90,\"x_um\":17000,\"y_um\":22500},{\"die\":1,\"rot_deg\":0,\"x_um\":38500,\"y_um\":22500},{\"die\":2,\"rot_deg\":90,\"x_um\":7500,\"y_um\":11000},{\"die\":3,\"rot_deg\":90,\"x_um\":21500,\"y_um\":11000},{\"die\":4,\"rot_deg\":90,\"x_um\":7500,\"y_um\":34000},{\"die\":5,\"rot_deg\":90,\"x_um\":21500,\"y_um\":34000}],\"geometry_sha256\":\"1abaac6abbb300053cd233e92c3570650171b7d66769eb32760cfbaa0bb0500a\",\"lattice_um\":500,\"manifest_id\":\"5f69e7d3e2a5d83bbeec0367a5798bc1952ed3f9c3b1500722d29baaa15d4f3e\",\"parent\":null,\"problem\":\"ascend910\",\"proposal_key\":\"example-1\",\"reference_id\":\"ascend910-tap25d-fig6a\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1\",\"units\":\"um\",\"wire_track\":\"relaxed\"}",
+   "proposal_sha256": "0f6e3a7d1d1aada899673d86fede71b17c32adcd75bb2dc83a7b99c1476f8d43"
+  },
+  {
+   "name": "the two-die layout",
+   "proposal": {
+    "schema": "sentilab-open-proposal/1",
+    "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
+    "problem": "test-two-die",
+    "reference_id": "test-two-die-ref",
+    "wire_track": "strict",
+    "proposal_key": "t-1",
+    "parent": null,
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 3000,
+      "y_um": 5000,
+      "rot_deg": 0
+     },
+     {
+      "die": 1,
+      "x_um": 7000,
+      "y_um": 5000,
+      "rot_deg": 0
+     }
+    ],
+    "geometry_sha256": "990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33",
+    "terms": "sentilab-open-terms/1",
+    "client": {
+     "name": "example-agent",
+     "version": "0.1.0"
+    }
+   },
+   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33\",\"lattice_um\":500,\"manifest_id\":\"7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0\",\"parent\":null,\"problem\":\"test-two-die\",\"proposal_key\":\"t-1\",\"reference_id\":\"test-two-die-ref\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1\",\"units\":\"um\",\"wire_track\":\"strict\"}",
+   "proposal_sha256": "c7095572b48b0c2458f86af3b180a1e0e88119a8eb654838d0f9f956b055701d"
+  },
+  {
+   "name": "a sealed plaintext: salted, so its hash is unguessable",
+   "proposal": {
+    "schema": "sentilab-open-proposal/1",
+    "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
+    "problem": "test-two-die",
+    "reference_id": "test-two-die-ref",
+    "wire_track": "strict",
+    "proposal_key": "t-2",
+    "parent": null,
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 3000,
+      "y_um": 5000,
+      "rot_deg": 0
+     },
+     {
+      "die": 1,
+      "x_um": 7000,
+      "y_um": 5000,
+      "rot_deg": 0
+     }
+    ],
+    "geometry_sha256": "990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33",
+    "terms": "sentilab-open-terms/1",
+    "salt": "0b047534ee6da57a261e10b31bd7d82db71e3d4fb5a71ad316da4024e3827c81",
+    "client": {
+     "name": "example-agent",
+     "version": "0.1.0"
+    }
+   },
+   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33\",\"lattice_um\":500,\"manifest_id\":\"7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0\",\"parent\":null,\"problem\":\"test-two-die\",\"proposal_key\":\"t-2\",\"reference_id\":\"test-two-die-ref\",\"salt\":\"0b047534ee6da57a261e10b31bd7d82db71e3d4fb5a71ad316da4024e3827c81\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1\",\"units\":\"um\",\"wire_track\":\"strict\"}",
+   "proposal_sha256": "b647fbbc07c6c00248a9d8e1d83312650a03ea25c702bbc89e1876e560f3ab95"
+  },
+  {
+   "name": "without the optional client",
+   "proposal": {
+    "schema": "sentilab-open-proposal/1",
+    "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
+    "problem": "test-two-die",
+    "reference_id": "test-two-die-ref",
+    "wire_track": "strict",
+    "proposal_key": "t-1",
+    "parent": null,
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 3000,
+      "y_um": 5000,
+      "rot_deg": 0
+     },
+     {
+      "die": 1,
+      "x_um": 7000,
+      "y_um": 5000,
+      "rot_deg": 0
+     }
+    ],
+    "geometry_sha256": "990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33",
+    "terms": "sentilab-open-terms/1"
+   },
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33\",\"lattice_um\":500,\"manifest_id\":\"7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0\",\"parent\":null,\"problem\":\"test-two-die\",\"proposal_key\":\"t-1\",\"reference_id\":\"test-two-die-ref\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1\",\"units\":\"um\",\"wire_track\":\"strict\"}",
+   "proposal_sha256": "737578eb0f75b53491c915f1cf02416ef6265e4207aeb688ceddc0f548229f2a"
+  }
+ ],
+ "body_sha256": [
+  {
+   "note_b64": "eyJzY2hlbWEiOiAic2VudGlsYWItb3Blbi1wcm9wb3NhbC8xIiwgIm1hbmlmZXN0X2lkIjogIjc1MDdkZGZiNzc3NDdlMzQzOTMyYzk3MWI0ZDdmMDJkMDc4ZmI1ZGQ0NTQ0YzhkODQ3OWIzNjE4N2MwOWZhYTAiLCAicHJvYmxlbSI6ICJ0ZXN0LXR3by1kaWUiLCAicmVmZXJlbmNlX2lkIjogInRlc3QtdHdvLWRpZS1yZWYiLCAid2lyZV90cmFjayI6ICJzdHJpY3QiLCAicHJvcG9zYWxfa2V5IjogInQtMSIsICJwYXJlbnQiOiBudWxsLCAidW5pdHMiOiAidW0iLCAiYW5jaG9yIjogImRpZS1jZW50cmUiLCAibGF0dGljZV91bSI6IDUwMCwgImRpZXMiOiBbeyJkaWUiOiAwLCAieF91bSI6IDMwMDAsICJ5X3VtIjogNTAwMCwgInJvdF9kZWciOiAwfSwgeyJkaWUiOiAxLCAieF91bSI6IDcwMDAsICJ5X3VtIjogNTAwMCwgInJvdF9kZWciOiAwfV0sICJnZW9tZXRyeV9zaGEyNTYiOiAiOTkwNTY2ZjdjOWQ3YTc2ZWFkMmNlNjI3NThkZGUyZWI2ZWFlOGE0ZmRmZmRmYmU3NTY0YTAxMTVhM2RiZmMzMyIsICJ0ZXJtcyI6ICJzZW50aWxhYi1vcGVuLXRlcm1zLzEiLCAiY2xpZW50IjogeyJuYW1lIjogImV4YW1wbGUtYWdlbnQiLCAidmVyc2lvbiI6ICIwLjEuMCJ9fQ==",
+   "body_sha256": "f2571c18c868d7ba5a04e103148971a3bca181bc227b8c725e43bb47a8df9616"
+  },
+  {
+   "note_b64": "eyJzY2hlbWEiOiAic2VudGlsYWItb3Blbi1wcm9wb3NhbC8xIiwgIm1hbmlmZXN0X2lkIjogIjc1MDdkZGZiNzc3NDdlMzQzOTMyYzk3MWI0ZDdmMDJkMDc4ZmI1ZGQ0NTQ0YzhkODQ3OWIzNjE4N2MwOWZhYTAiLCAicHJvYmxlbSI6ICJ0ZXN0LXR3by1kaWUiLCAicmVmZXJlbmNlX2lkIjogInRlc3QtdHdvLWRpZS1yZWYiLCAid2lyZV90cmFjayI6ICJzdHJpY3QiLCAicHJvcG9zYWxfa2V5IjogInQtMSIsICJwYXJlbnQiOiBudWxsLCAidW5pdHMiOiAidW0iLCAiYW5jaG9yIjogImRpZS1jZW50cmUiLCAibGF0dGljZV91bSI6IDUwMCwgImRpZXMiOiBbeyJkaWUiOiAwLCAieF91bSI6IDMwMDAsICJ5X3VtIjogNTAwMCwgInJvdF9kZWciOiAwfSwgeyJkaWUiOiAxLCAieF91bSI6IDcwMDAsICJ5X3VtIjogNTAwMCwgInJvdF9kZWciOiAwfV0sICJnZW9tZXRyeV9zaGEyNTYiOiAiOTkwNTY2ZjdjOWQ3YTc2ZWFkMmNlNjI3NThkZGUyZWI2ZWFlOGE0ZmRmZmRmYmU3NTY0YTAxMTVhM2RiZmMzMyIsICJ0ZXJtcyI6ICJzZW50aWxhYi1vcGVuLXRlcm1zLzEiLCAiY2xpZW50IjogeyJuYW1lIjogImV4YW1wbGUtYWdlbnQiLCAidmVyc2lvbiI6ICIwLjEuMCJ9fQo=",
+   "body_sha256": "95f1cc2b803de36e48a488b0173fa7f13c33162ac60f9370f4d498b15f33f154"
+  },
+  {
+   "note_b64": "YGBganNvbgp7InNjaGVtYSI6ICJzZW50aWxhYi1vcGVuLXByb3Bvc2FsLzEiLCAibWFuaWZlc3RfaWQiOiAiNzUwN2RkZmI3Nzc0N2UzNDM5MzJjOTcxYjRkN2YwMmQwNzhmYjVkZDQ1NDRjOGQ4NDc5YjM2MTg3YzA5ZmFhMCIsICJwcm9ibGVtIjogInRlc3QtdHdvLWRpZSIsICJyZWZlcmVuY2VfaWQiOiAidGVzdC10d28tZGllLXJlZiIsICJ3aXJlX3RyYWNrIjogInN0cmljdCIsICJwcm9wb3NhbF9rZXkiOiAidC0xIiwgInBhcmVudCI6IG51bGwsICJ1bml0cyI6ICJ1bSIsICJhbmNob3IiOiAiZGllLWNlbnRyZSIsICJsYXR0aWNlX3VtIjogNTAwLCAiZGllcyI6IFt7ImRpZSI6IDAsICJ4X3VtIjogMzAwMCwgInlfdW0iOiA1MDAwLCAicm90X2RlZyI6IDB9LCB7ImRpZSI6IDEsICJ4X3VtIjogNzAwMCwgInlfdW0iOiA1MDAwLCAicm90X2RlZyI6IDB9XSwgImdlb21ldHJ5X3NoYTI1NiI6ICI5OTA1NjZmN2M5ZDdhNzZlYWQyY2U2Mjc1OGRkZTJlYjZlYWU4YTRmZGZmZGZiZTc1NjRhMDExNWEzZGJmYzMzIiwgInRlcm1zIjogInNlbnRpbGFiLW9wZW4tdGVybXMvMSIsICJjbGllbnQiOiB7Im5hbWUiOiAiZXhhbXBsZS1hZ2VudCIsICJ2ZXJzaW9uIjogIjAuMS4wIn19CmBgYA==",
+   "body_sha256": "2ea4aba308a06b1f0895acb35c59c57bcb0a59758bc6ff288ea22bcebb98e0db"
+  },
+  {
+   "note_b64": "eyJzY2hlbWEiOiAic2VudGlsYWItb3Blbi1zZWFsZWQvMSIsICJtYW5pZmVzdF9pZCI6ICI3NTA3ZGRmYjc3NzQ3ZTM0MzkzMmM5NzFiNGQ3ZjAyZDA3OGZiNWRkNDU0NGM4ZDg0NzliMzYxODdjMDlmYWEwIiwgImtleV92ZXJzaW9uIjogMSwgImZvcm1hdCI6ICJhZ2UtZW5jcnlwdGlvbi5vcmcvdjEiLCAiY2lwaGVydGV4dCI6ICJZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2c9PSJ9",
+   "body_sha256": "57bb01992bebb185aabe3dda8c691edf1ee4bc8748c1a52feb6302e211741846"
+  }
+ ],
+ "source_ref": [
+  {
+   "action_id": "00000000-0000-4000-8000-0000000000a1",
+   "source_ref": "a2b6db150d932e9ffe339817c3b881e6fcb2cf9408254df615b8a4078ea5d67e"
+  },
+  {
+   "action_id": "00000000-0000-4000-8000-0000000000a2",
+   "source_ref": "327d7186157c8b364bdb4a8b7e714bb5663e75bf7ad6c7ad91ca2326a3606354"
+  }
+ ],
+ "participant_ref": [
+  {
+   "challenge": "test-challenge",
+   "account_id": "00000000-0000-4000-8000-00000000000a",
+   "participant_ref": "036f226d71a70f5dc18cc7cbd0c0866ed04b4839348180e4f850e1d900561594"
+  },
+  {
+   "challenge": "test-challenge",
+   "account_id": "00000000-0000-4000-8000-00000000000b",
+   "participant_ref": "9c3f668996d01f2c6e0f6292e47ef6bd871591e5f08e370af03fda5e1ce33e7d"
+  },
+  {
+   "challenge": "sentilab-open-1",
+   "account_id": "00000000-0000-4000-8000-00000000000a",
+   "participant_ref": "0e9bb0eafd068667349749e272d04aa032316e133bb22c5265a6289b9e68370a"
+  }
+ ],
+ "transport_id": [
+  {
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account_id": "00000000-0000-4000-8000-00000000000a",
+   "actor_kind": "human",
+   "actor_agent_id": null,
+   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
+   "proposal_key": "t-1",
+   "proposal_sha256": "c7095572b48b0c2458f86af3b180a1e0e88119a8eb654838d0f9f956b055701d",
+   "transport_id": "open-tk1-5498fa55031dfe97e158565de4a074faa54f456d2c00d1d2d5ee2661caf9e46f"
+  },
+  {
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account_id": "00000000-0000-4000-8000-00000000000b",
+   "actor_kind": "agent",
+   "actor_agent_id": "example-agent",
+   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
+   "proposal_key": "t-1",
+   "proposal_sha256": "c7095572b48b0c2458f86af3b180a1e0e88119a8eb654838d0f9f956b055701d",
+   "transport_id": "open-tk1-220c122fbf0f4b94178ad7c8fb45d94ffc651e8cee1c996a1bb54d3dad48b420"
+  },
+  {
+   "room": "00000000-0000-4000-8000-0000000000c2",
+   "account_id": "00000000-0000-4000-8000-00000000000a",
+   "actor_kind": "human",
+   "actor_agent_id": null,
+   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
+   "proposal_key": "t-1",
+   "proposal_sha256": "c7095572b48b0c2458f86af3b180a1e0e88119a8eb654838d0f9f956b055701d",
+   "transport_id": "open-tk1-c624f470930510b6cb105d3b647f39d2ec553a20c8b3153b075b40f093501409"
+  },
+  {
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account_id": "00000000-0000-4000-8000-00000000000a",
+   "actor_kind": "human",
+   "actor_agent_id": null,
+   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
+   "proposal_key": "t-1",
+   "proposal_sha256": "b647fbbc07c6c00248a9d8e1d83312650a03ea25c702bbc89e1876e560f3ab95",
+   "transport_id": "open-tk1-c5307c311ca4e020f8101a65ed8134d797cc43f8c981e1cd06582697b01111bc"
+  }
+ ],
+ "run_id": [
+  {
+   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
+   "participant_ref": "036f226d71a70f5dc18cc7cbd0c0866ed04b4839348180e4f850e1d900561594",
+   "run_id": "open-7507ddfb-036f226d71a70f5d"
+  },
+  {
+   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
+   "participant_ref": "sentilab",
+   "run_id": "open-7507ddfb-sentilab"
+  }
+ ],
+ "salt": [
+  {
+   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
+   "proposal_key": "t-2",
+   "salt": "0b047534ee6da57a261e10b31bd7d82db71e3d4fb5a71ad316da4024e3827c81"
+  }
+ ],
+ "capability": [
+  {
+   "salt": "0b047534ee6da57a261e10b31bd7d82db71e3d4fb5a71ad316da4024e3827c81",
+   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
+   "proposal_sha256": "b647fbbc07c6c00248a9d8e1d83312650a03ea25c702bbc89e1876e560f3ab95",
+   "epoch": 1,
+   "capability": "opencap1-683c6a8bc38551d482006217ae857154cc6907d7248a79b0df06def14a9da54f",
+   "capability_sha256": "913b4719c218cb6aec80ab3b5a3b48afd27a5f01913056c97785ed32b0144bf6"
+  },
+  {
+   "salt": "0b047534ee6da57a261e10b31bd7d82db71e3d4fb5a71ad316da4024e3827c81",
+   "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
+   "proposal_sha256": "b647fbbc07c6c00248a9d8e1d83312650a03ea25c702bbc89e1876e560f3ab95",
+   "epoch": 2,
+   "capability": "opencap1-937c8a843141393bb4521511d84c44c7f1f45368cd7f78f9f958ded36e18f56f",
+   "capability_sha256": "be16e5ba9cefea2c12e8fa03d1fe2777a431928b48b09aecd87ebc92b25c012f"
+  }
+ ],
+ "ciphertext_ref": [
+  {
+   "age_file_b64": "YWdlLWVuY3J5cHRpb24ub3JnL3YxCg==",
+   "ciphertext_ref": "66c2c08ff126324347b09d35bf079722bacf8db334372cfdf61bd9573acbce0e"
+  }
+ ],
+ "conductor_geometry": [
+  {
+   "manifest": "A",
+   "proposal": {
+    "schema": "sentilab-open-proposal/1",
+    "manifest_id": "5f69e7d3e2a5d83bbeec0367a5798bc1952ed3f9c3b1500722d29baaa15d4f3e",
+    "problem": "ascend910",
+    "reference_id": "ascend910-tap25d-fig6a",
+    "wire_track": "relaxed",
+    "proposal_key": "example-1",
+    "parent": null,
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 17000,
+      "y_um": 22500,
+      "rot_deg": 90
+     },
+     {
+      "die": 1,
+      "x_um": 38500,
+      "y_um": 22500,
+      "rot_deg": 0
+     },
+     {
+      "die": 2,
+      "x_um": 7500,
+      "y_um": 11000,
+      "rot_deg": 90
+     },
+     {
+      "die": 3,
+      "x_um": 21500,
+      "y_um": 11000,
+      "rot_deg": 90
+     },
+     {
+      "die": 4,
+      "x_um": 7500,
+      "y_um": 34000,
+      "rot_deg": 90
+     },
+     {
+      "die": 5,
+      "x_um": 21500,
+      "y_um": 34000,
+      "rot_deg": 90
+     }
+    ],
+    "geometry_sha256": "1abaac6abbb300053cd233e92c3570650171b7d66769eb32760cfbaa0bb0500a",
+    "terms": "sentilab-open-terms/1",
+    "client": {
+     "name": "example-agent",
+     "version": "0.1.0"
+    }
+   },
+   "values": {
+    "geometry": [
+     {
+      "id": "tap-chiplet-0",
+      "xLL": 1.3,
+      "yLL": 15.25,
+      "w": 31.4,
+      "h": 14.5,
+      "layer": 0
+     },
+     {
+      "id": "tap-chiplet-1",
+      "xLL": 33.25,
+      "yLL": 14.5,
+      "w": 10.5,
+      "h": 16.0,
+      "layer": 0
+     },
+     {
+      "id": "tap-chiplet-2",
+      "xLL": 1.565,
+      "yLL": 7.125,
+      "w": 11.87,
+      "h": 7.75,
+      "layer": 0
+     },
+     {
+      "id": "tap-chiplet-3",
+      "xLL": 15.565,
+      "yLL": 7.125,
+      "w": 11.87,
+      "h": 7.75,
+      "layer": 0
+     },
+     {
+      "id": "tap-chiplet-4",
+      "xLL": 1.565,
+      "yLL": 30.125,
+      "w": 11.87,
+      "h": 7.75,
+      "layer": 0
+     },
+     {
+      "id": "tap-chiplet-5",
+      "xLL": 15.565,
+      "yLL": 30.125,
+      "w": 11.87,
+      "h": 7.75,
+      "layer": 0
+     }
+    ],
+    "units": "mm",
+    "scenario_id": "nominal"
+   }
+  },
+  {
+   "manifest": "F",
+   "proposal": {
+    "schema": "sentilab-open-proposal/1",
+    "manifest_id": "7507ddfb77747e343932c971b4d7f02d078fb5dd4544c8d8479b36187c09faa0",
+    "problem": "test-two-die",
+    "reference_id": "test-two-die-ref",
+    "wire_track": "strict",
+    "proposal_key": "t-1",
+    "parent": null,
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 3000,
+      "y_um": 5000,
+      "rot_deg": 0
+     },
+     {
+      "die": 1,
+      "x_um": 7000,
+      "y_um": 5000,
+      "rot_deg": 0
+     }
+    ],
+    "geometry_sha256": "990566f7c9d7a76ead2ce62758dde2eb6eae8a4fdffdfbe7564a0115a3dbfc33",
+    "terms": "sentilab-open-terms/1",
+    "client": {
+     "name": "example-agent",
+     "version": "0.1.0"
+    }
+   },
+   "values": {
+    "geometry": [
+     {
+      "id": "tap-chiplet-0",
+      "xLL": 2.0,
+      "yLL": 3.5,
+      "w": 2.0,
+      "h": 3.0,
+      "layer": 0
+     },
+     {
+      "id": "tap-chiplet-1",
+      "xLL": 6.0,
+      "yLL": 4.0,
+      "w": 2.0,
+      "h": 2.0,
+      "layer": 0
+     }
+    ],
+    "units": "mm",
+    "scenario_id": "nominal"
+   }
+  }
+ ],
+ "age": {
+  "format": "age-encryption.org/v1",
+  "vectors": [],
+  "todo": "TODO: no age implementation (age, rage or a library) was available offline, so no ciphertext vector exists yet. Before sealed submissions are relied on (OP-F3, OP-F7), generate (identity phrase, recipient, ciphertext, plaintext) vectors with age or rage and add them here. Nothing in this contract is an age ciphertext."
+ }
+}

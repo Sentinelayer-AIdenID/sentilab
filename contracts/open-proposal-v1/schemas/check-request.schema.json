@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/check-request.schema.json",
+  "title": "Check request: GET /api/open/v1/check?m=<manifest_id>&p=<base64url(proposal JSON)>",
+  "description": "The query parameters as an object. p is unpadded base64url (RFC 4648 section 5) of the proposal note bytes; the decoded bytes go through exactly the intake's checks, so the check and the intake agree on every vector. p must be the canonical encoding of its bytes. Longer than 8192 characters is refused here; a decoded note over 4096 bytes is refused as oversize.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["m", "p"],
+  "properties": {
+    "m": {"$ref": "common.schema.json#/$defs/sha256"},
+    "p": {"type": "string", "minLength": 2, "maxLength": 8192, "pattern": "^[A-Za-z0-9_-]+$"}
+  }
+}

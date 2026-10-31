@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/check.schema.json",
+  "title": "sentilab-open-check/1",
+  "description": "The check response: geometry only, no thermal solve, not a score. geometry_sha256 is the server's recomputation and proposal_sha256 the canonical hash of the submitted proposal; both are null when the proposal did not get far enough to compute them. fits_tracks lists the manifest's tracks whose wire limit the routed wire meets (W <= factor x W_ref). no_participant_charge is true only while the check is sponsored and its MILP solve is capped; it is never assumed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "manifest_id", "geometry_sha256", "proposal_sha256", "legal", "violations", "wire",
+               "fits_tracks", "no_participant_charge", "sealed", "labels"],
+  "properties": {
+    "schema": {"const": "sentilab-open-check/1"},
+    "manifest_id": {"$ref": "common.schema.json#/$defs/sha256"},
+    "geometry_sha256": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
+    "proposal_sha256": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
+    "legal": {"type": "boolean"},
+    "violations": {"$ref": "common.schema.json#/$defs/violations"},
+    "wire": {"$ref": "common.schema.json#/$defs/wire"},
+    "fits_tracks": {"type": "array", "maxItems": 2, "uniqueItems": true,
+                    "items": {"$ref": "common.schema.json#/$defs/wire_track"}},
+    "no_participant_charge": {"type": "boolean"},
+    "sealed": {"description": "A sealed check: this response goes to its requester only and is never cached publicly.", "type": "boolean"},
+    "labels": {"const": ["geometry only", "no thermal solve", "not a score"]}
+  }
+}

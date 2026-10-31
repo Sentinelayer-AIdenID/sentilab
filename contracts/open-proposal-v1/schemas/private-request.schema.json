@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/private-request.schema.json",
+  "title": "Private request: one sealed submission's status, results or receipt, addressed by its capability",
+  "description": "The only object that carries a capability: a bearer secret, so this request is never logged. Sealed entries are never addressed by a geometry hash and never appear in a public record; the server looks them up by capability_sha256 = sha256 of the capability text, accepting only the current epoch of a capability that is not revoked.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["cap"],
+  "properties": {
+    "cap": {"$ref": "common.schema.json#/$defs/capability"}
+  }
+}

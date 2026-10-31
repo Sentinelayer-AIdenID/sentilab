@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/sealed.schema.json",
+  "title": "sentilab-open-sealed/1",
+  "description": "A sealed (private) proposal or check. ciphertext is the proposal note's bytes as an age v1 binary file (header line age-encryption.org/v1) to the manifest's X25519 recipient, in padded standard base64. There is no plaintext fallback field. The whole note stays within the 4096-byte note cap, so a sealed plaintext is smaller than a public note. The plaintext must carry a salt; its canonical hash is the retry identity. ciphertext_ref = sha256 of the decoded age file bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "manifest_id", "key_version", "format", "ciphertext"],
+  "properties": {
+    "schema": {"const": "sentilab-open-sealed/1"},
+    "manifest_id": {"$ref": "common.schema.json#/$defs/sha256"},
+    "key_version": {"type": "integer", "minimum": 1, "maximum": 1000000},
+    "format": {"const": "age-encryption.org/v1"},
+    "ciphertext": {"$ref": "common.schema.json#/$defs/base64", "minLength": 4, "maxLength": 4000}
+  }
+}

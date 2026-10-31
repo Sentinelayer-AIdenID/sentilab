@@ -1,0 +1,79 @@
+"""The contract's JSON Schemas (draft 2020-12), validated offline, with errors mapped to reason codes.
+
+Schemas resolve only against each other through a local registry; nothing is ever fetched. "integer" means a JSON
+integer literal: Python's json parses 17000.0 and 1e4 as floats, which this checker refuses (JSON Schema's own
+"integer" would accept them). Errors become unknown_field (the containing object's path) or schema_invalid (the path
+and the failing keyword). Paths are built only from schema-declared property names and array indices, so no
+submitted text is ever echoed.
+"""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from jsonschema import Draft202012Validator
+from jsonschema.validators import extend
+from referencing import Registry, Resource
+from referencing.jsonschema import DRAFT202012
+
+CONTRACT_DIR = Path(__file__).resolve().parents[2] / "contracts" / "open-proposal-v1"
+SCHEMA_DIR = CONTRACT_DIR / "schemas"
+NAMES = ("common", "manifest", "proposal", "geometry", "sealed", "check-request", "check", "receipt",
+         "restricted-receipt", "status", "results", "error", "limits", "usage", "cursor", "current", "private-request",
+         "reason-codes")
+
+
+def _is_integer(_checker, instance):
+    return isinstance(instance, int) and not isinstance(instance, bool)
+
+
+def _is_number(_checker, instance):
+    return isinstance(instance, (int, float)) and not isinstance(instance, bool)
+
+
+StrictValidator = extend(Draft202012Validator, type_checker=Draft202012Validator.TYPE_CHECKER.redefine_many(
+    {"integer": _is_integer, "number": _is_number}))
+
+
+def load_schemas(schema_dir: Path = SCHEMA_DIR) -> dict:
+    return {name: json.loads((schema_dir / f"{name}.schema.json").read_bytes()) for name in NAMES}
+
+
+def build_registry(schemas: dict) -> Registry:
+    return Registry().with_resources(
+        (schema["$id"], Resource.from_contents(schema, default_specification=DRAFT202012))
+        for schema in schemas.values())
+
+
+SCHEMAS = load_schemas()
+REGISTRY = build_registry(SCHEMAS)
+VALIDATORS = {name: StrictValidator(schema, registry=REGISTRY) for name, schema in SCHEMAS.items()}
+# One shared definition on its own, e.g. a violation handed back through the layout seam.
+_DEF_VALIDATORS = {name: StrictValidator({"$ref": SCHEMAS["common"]["$id"] + "#/$defs/" + name}, registry=REGISTRY)
+                   for name in ("violation",)}
+
+
+def def_is_valid(name: str, instance) -> bool:
+    return _DEF_VALIDATORS[name].is_valid(instance)
+
+
+def pointer(path) -> str:
+    return "".join("/" + str(part) for part in path)
+
+
+def schema_violations(name: str, instance) -> list:
+    """Every schema error as a violation, deduplicated, in a stable order."""
+    found = []
+    for error in VALIDATORS[name].iter_errors(instance):
+        path = list(error.absolute_path)
+        if error.validator == "additionalProperties":
+            found.append({"code": "unknown_field", "path": pointer(path)})
+        elif error.validator == "required":
+            present = error.instance if isinstance(error.instance, dict) else {}
+            for missing in error.validator_value:
+                if missing not in present:
+                    found.append({"code": "schema_invalid", "path": pointer(path + [missing]), "keyword": "required"})
+        else:
+            found.append({"code": "schema_invalid", "path": pointer(path), "keyword": str(error.validator)})
+    unique = {json.dumps(item, sort_keys=True): item for item in found}
+    return [unique[key] for key in sorted(unique)]
