@@ -20,6 +20,10 @@ if str(TAP_ROOT) not in sys.path:
     sys.path.insert(0, str(TAP_ROOT))
 from passive_interposer import PassiveInterposer  # noqa: E402
 
+if str(HOTSPOT_ROOT) not in sys.path:
+    sys.path.insert(0, str(HOTSPOT_ROOT))
+from ci_gate import run_hotspot  # noqa: E402
+
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -221,7 +225,7 @@ def evaluate(request: dict) -> dict:
         ]
         solver_started = time.perf_counter()
         try:
-            process = subprocess.run(
+            process = run_hotspot(
                 command,
                 cwd=HOTSPOT_ROOT,
                 capture_output=True,

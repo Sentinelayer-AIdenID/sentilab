@@ -125,6 +125,10 @@ endif
 
 CFLAGS	= $(OFLAGS) $(EXTRAFLAGS) $(INCDIRFLAG) $(LIBDIRFLAG) -DVERBOSE=$(VERBOSE) -DMATHACCEL=$(ACCELNUM) -DSUPERLU=$(SUPERLU)
 
+ifeq ($(CI_ALLOCATION), 1)
+CFLAGS += -DCI_ALLOCATION=1
+endif
+
 # sources, objects, headers and inputs
 
 # Microchannel Files
