@@ -6,7 +6,7 @@ deployed or agreed.** After all three sign the exact document, warden
 provisions one build agent (the "Astra ultra box") that implements it phase by phase (section 9).
 
 Companions in this folder: `PSEUDOCODE.md` (modules and signatures, with integration points), `ACCEPTANCE.md`
-(testable criteria, AC-01 to AC-44), `TRACE.md` (every requirement mapped to its source, input hashes, and the line
+(testable criteria, AC-01 to AC-45), `TRACE.md` (every requirement mapped to its source, input hashes, and the line
 moves since lane 3 was written).
 
 ## 0. How to read this
@@ -63,6 +63,9 @@ moves since lane 3 was written).
     (paused presentation, AC-42), W-C04 kept for W16 (AC-43), and the terminal and late-result, 100-switch cleanup,
     asymmetric field-basis and MCP cases tightened (AC-24, AC-26, AC-35, AC-21, AC-44). No v0.1 AC id is removed or
     renumbered (4.5, 9, D16; ACCEPTANCE.md crosswalk section).
+  - W4 fixture pack (C#57232, sha256 `908655f7…`): its vocabulary is mapped onto this schema, its synthetic
+    provenance kept, its 20 field cases mapped to this spec's outcomes (P1-only rows marked) and its geometry
+    vectors bound to AC-13, AC-16 and AC-21; its code is never run (5.10, W0.4, W4, W13; AC-45).
 
 ## 1. Goals and non-goals
 
@@ -1300,6 +1303,41 @@ Against lane 3's assumed `sentilab-parts/0.1` (L3:PSEUDOCODE §1): `solver_layer
 footprints only from signed geometry"; scalar `thickness` becomes a quantity; the twin moves from
 `sentilab-twin/0.1` to `sentilab-twin/1` (three content kinds, markdown, `omitted`).
 
+### 5.10 The W4 review fixture pack (C#57232): vocabulary, frame and where each case lands
+
+The W4 review (C#57232) posted `SentiLab_CAD_Fixture_Pack_v1.zip` (23,220 bytes, sha256
+`908655f72f4128856b316f0baa0d71609fcaf1c7815935b13139c15321107fb9`) as six base64 parts under room message #57232.
+Reassembled, it matches that hash; its 10 files include a `SHA256SUMS.txt` whose nine entries all verify (TRACE.md
+section 1), and root reconstructed it independently (A#57246). It holds 20 field cases (4 accept, 12 reject, 4
+no-association) and geometry vectors. **Its provenance is synthetic and stays so:** every grid value is a hand-chosen
+marker, not a simulation, a measurement or a result; its source references are the reviewer's own paths and hashes;
+its two contributed checkers are never run, and a pass of its own consistency checks is not a pass of any AC here.
+Only its JSON and text are adopted, as review inputs adapted to this schema (AC-45). Fixtures derived from it keep
+`origin: "C#57232 SentiLab_CAD_Fixture_Pack_v1 (sha256 908655f7…), case <id>; synthetic marker values"`.
+
+| The pack's term | This spec |
+|---|---|
+| `producer_profile`: `official_hotspot6_headerless`, `historical_1bdf584b_all_layer`, `unknown` | `producer.native_format` of the field artifact (section 5.7): `hotspot6-headerless-layer0`, `hotspot7-all-layers`, `null` |
+| `manifest.rows`, `columns` | `grid.rows`, `grid.cols` of the artifact, and the pointer's `rows`, `cols` |
+| `temperature_unit` | the artifact's `unit` and the pointer's `unit`, compared (gate 4) |
+| `expected_emitted_layer_ids` | `producer.emitted_layer_ids`, equal to the layer records' `index` set (gate 5) |
+| `grid_extent` `{ x_min, y_min, width, height }` in m | `grid.extent_mm` `{ x0, y0, x1, y1 }` in mm (x1 = x_min + width), converted once |
+| `coordinate_frame.raster_row_zero: north` | `grid.row0: "top"` |
+| `synthetic_package_roles` `{6: spreader, 7: sink}`, `package_extents` | model-stack layers 6 and 7 (`role`), and their outlines (`spreader_mm`, `sink_mm`); the grid domain is `grid_extent: interposer` (section 5.4) |
+| `request.target_layer_id` | the field layer the page draws (`F`; `fieldTexels(field, id)`) |
+| `request.paint_extent`, `outline_extent` | the coloured extent (the verified central grid domain only) and the uncoloured `unmeasured` outline |
+| outcome `accept` | the artifact passes the gates of section 5.7 and its association holds: `verified` |
+| outcome `reject` | a refusal with this spec's code (`dims`, `layer_ids`, `out_of_range`, `extent`, ...) |
+| outcome `no_association` | `unassociated` with this spec's reason; never drawn, never exported as numbers |
+| geometry `z` from the substrate's outer face, in m | this spec's frame puts z = 0 on the interposer's bottom face, in mm: z(here) = z(pack) × 1000 − 0.27 |
+
+Where the cases land: the native-format cases (headerless and headed text, per-layer index sequences, layer headers)
+are acceptance inputs for P1's converter, which is owned elsewhere; each is also wrapped, as P1 would write it, into
+a `sentilab-field/0.1` artifact and a TEST-key measurement envelope for `checkFieldArtifact` and `associateField`
+(W13), with a synthetic verified domain equal to the case's grid extent. The geometry vectors test the W4 Python
+check (centre to lower-left in metres, the six explicit layers, a region's material) and the page's own conversions
+(the RenderModel's mm, the GLB's metres, `cellAt()`). Rows that only a native file can express are marked P1 only.
+
 ## 6. Rendering architecture
 
 Lane 3's architecture (L3:ARCHITECTURE §0-§10) is adopted, with the deltas in 6.8.
@@ -1518,7 +1556,7 @@ screenshots. No item deploys, runs a solver, or touches the producer, the API, t
 | W0.1 | forge, warden and astra sign this exact document (section 5 schemas at version 1, the operation names in PSEUDOCODE §0, the no-result behaviour in sections 4.5 and 7, the AC list). | three sign-offs naming the commit |
 | W0.2 | Root's crosswalk of her 41 source cases (30 web, 11 anatomy; A#57059) maps v0.1 as 10 direct, 29 partial and 2 missing, zero executed (A#57218); this version adds W-E12 (AC-42), keeps W-C04 for W16 (AC-43) and tightens the terminal and late-result, 100-switch, asymmetric field-basis and MCP cases (ACCEPTANCE.md crosswalk section). Root's 41-row table is committed next to ACCEPTANCE.md. | the table committed, with no row missing |
 | W0.3 | The decisions settle with this document (section 11: root-proposed, forge-adopted, warden co-sign pending); warden resolves D5; no separate human decision is needed (A#57278). Carter approves the rendered page before any deploy. | warden's co-sign names the commit |
-| W0.4 | warden provisions the box: a branch with push rights only (no deploy credentials, no secrets, no solver or GB10 access); Node 22; Python with the repo's requirements for the W4 check (TAP's floorplan writer only); Playwright with Chromium via `PLAYWRIGHT_DIR` (the pattern of main:scripts/export-deck-pdf.mjs:4); the pinned wrangler for a local Worker (main:web/test/worker-boot.mjs:5-11, :22); gitleaks; access to the reference phone named under D4. | warden's admission record |
+| W0.4 | warden provisions the box: a branch with push rights only (no deploy credentials, no secrets, no solver or GB10 access); Node 22; Python with the repo's requirements for the W4 check (TAP's floorplan writer only); Playwright with Chromium via `PLAYWRIGHT_DIR` (the pattern of main:scripts/export-deck-pdf.mjs:4); the pinned wrangler for a local Worker (main:web/test/worker-boot.mjs:5-11, :22); gitleaks; access to the reference phone named under D4; the W4 review fixture pack placed read-only, its sha256 `908655f7…` checked (section 5.10; contributed code is never run). | warden's admission record |
 
 ### Phase 1: data and validators (no page)
 
@@ -1527,7 +1565,7 @@ screenshots. No item deploys, runs a solver, or touches the producer, the API, t
 | W1 | M | `quantity.mjs`, `ids.mjs`, the common schema checks, refusal codes (section 5.1). | AC-10, AC-14 (grammar) |
 | W2 | L | Anatomy content: the reviewed overlay (generic names, rewritten claims, explanations for all 44 part types, content fixes listed in 5.9) in `docs/sentilab/package3d/`; `scripts/package3d.mjs data` writes `web/public/sentilab/package3d/data/anatomy.json` from L1 `parts.json` pinned by sha256; `--check` mode for CI. forge reviews content, astra reviews evidence. | AC-03, AC-08, AC-10, AC-29, AC-30, AC-40 |
 | W3 | M | Assembly `typ-1c4m` (lidded and lidless) as a reviewed source; `geometry_sha256`; id stability across builds. | AC-11, AC-12 (hash), AC-14 |
-| W4 | M | Model stack manifest (section 5.4) and `layouts.json` (5.5); `sundai_hotspot/test_package3d_model_stack.py` regenerates each fixture's LCF, floorplans and config with TAP's writer (never HotSpot) and compares; layout identities recomputed Python-canonically. | AC-16, AC-17 |
+| W4 | M | Model stack manifest (section 5.4) and `layouts.json` (5.5); `sundai_hotspot/test_package3d_model_stack.py` regenerates each fixture's LCF, floorplans and config with TAP's writer (never HotSpot) and compares; layout identities recomputed Python-canonically; the W4 fixture pack's geometry vectors adapted as data (section 5.10). | AC-16, AC-17, AC-45 |
 | W5 | S | Static scanners: bare temperatures (strings, keys, units), infrastructure names, generic-names policy, over `web/public/sentilab/package3d/**` and `web/public/agents/package3d/**`. | AC-02, AC-03, AC-29 |
 
 ### Phase 2: pure view modules
@@ -1557,7 +1595,7 @@ screenshots. No item deploys, runs a solver, or touches the producer, the API, t
 | Item | Size | Scope | Acceptance |
 |---|---|---|---|
 | W12 | M | Results mode on replay and live through `source.mjs`: J, W and centre temperatures with per-value labels and statistics, as-of stamps, solve status, simulated-time line, STALE and ENDED, K drops, paused presentation; the demo replay as the default, as in the Package view. | AC-04, AC-18, AC-19, AC-23, AC-24, AC-26, AC-41, AC-42 |
-| W13 | M | `field.mjs` and `stream.mjs`, tested only on fixtures signed with the TEST key; in production the field path reports "no field in this run's receipts" until P1-P4 land. | AC-05, AC-20, AC-21, AC-22, AC-25, AC-41 |
+| W13 | M | `field.mjs` and `stream.mjs`, tested only on fixtures signed with the TEST key; in production the field path reports "no field in this run's receipts" until P1-P4 land; the W4 fixture pack's 20 field cases wrapped as TEST-key artifacts (section 5.10). | AC-05, AC-20, AC-21, AC-22, AC-25, AC-41, AC-45 |
 
 ### Phase 6: gated items
 

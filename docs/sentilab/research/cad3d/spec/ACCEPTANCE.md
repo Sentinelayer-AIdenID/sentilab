@@ -155,8 +155,10 @@ and orbit session. Pass: all.
 **AC-13 Units convert exactly once** (node). The model-mode interposer edge of 45 mm appears as `0.045` m in the GLB
 accessor bounds (x and the glTF z axis), and a 150 µm chip layer as 0.00015 m in y; the RenderModel holds 45 and 0.15
 (mm). A static scan finds no `* 1000`, `/ 1000`, `1e-3` or `1e3` length conversion outside `quantity.mjs` and
-`scripts/lib/glb.mjs`. Adversarial: a test double that converts twice (0.000045) or never (45 in the GLB) fails.
-Pass: all (A#57059).
+`scripts/lib/glb.mjs`. The W4 vector (C#57232; AC-45 (a)): a chiplet with centre (12.5, 17.25) mm and size 8 x 5.5 mm
+sits at lower-left (8.5, 14.5) mm in the RenderModel, and its GLB node at x = 0.0085 m and glTF z = -0.0145 m (the +Y-up
+rotation). Adversarial: a test double that converts twice (0.000045) or never (45 in the GLB) fails. Pass: all
+(A#57059).
 
 **AC-14 Stable instance ids and an order-free geometry hash** (node). Every id matches the grammar of SPEC.md §5.0
 and is unique; every id of the previous release is present or in `retired_ids`; no retired id is reused; GLB node
@@ -206,8 +208,8 @@ own expression and `-model_secondary 0` (:151-165; main:sundai_tap/util/hotspot.
 thickness, conductivity and volumetric capacity of manifest layers 6 and 7; each fixture's config sha256 equals its
 own pin, checked inside the loop; the generated LCF and resolved config hashes equal `expected_inputs`. A second test
 writes another fixture into a reused directory: the retained config's hash differs from that fixture's
-`expected_inputs` (the stale case AC-41 (c) relies on). A process spy shows no HotSpot binary ran. Pass: all equal;
-zero solver processes.
+`expected_inputs` (the stale case AC-41 (c) relies on). The W4 geometry vectors (C#57232; AC-45 (a)-(d)) run as unit
+cases of the same comparison. A process spy shows no HotSpot binary ran. Pass: all equal; zero solver processes.
 
 **AC-17 Layout identities and separation** (node). For each served layout, `scripts/package3d.mjs data` recomputes
 `content_sha256` from the source's `identity.canonical` with verify-core.js `parseRaw` and `canonical`
@@ -275,8 +277,11 @@ The orientation case uses an asymmetric basis, so that a swapped or flipped mapp
 unequal to columns, a non-square extent, and one marked cell off both diagonals and away from every corner. Declared
 `row0: "top"`, the cell renders, and `cellAt()` picks it, at its expected centre; declared `row0: "bottom"`, at the
 vertically mirrored centre; a transposed (rows for columns), flipped or corner-for-centre mapping lands elsewhere and
-fails; a row index equal to `rows` is out of range (L3:ACCEPTANCE A-04, made asymmetric). Pass: every row, plus the
-orientation case.
+fails; a row index equal to `rows` is out of range (L3:ACCEPTANCE A-04, made asymmetric). The W4 fixture
+`asymmetric_zero_origin_mapper` supplies the numbers (C#57232): 3 rows by 5 columns over 20 x 9 mm (cells 4 x 3 mm);
+the cell at row 0, column 3 has centre (14, 7.5) mm and lower-left (12, 6) mm under `row0: "top"`, and centre
+(14, 1.5) mm under `row0: "bottom"`; row 2, column 1 has centre (6, 1.5) mm; a vertical flip, (14, 1.5) under `top`,
+or the corner (12, 6) given as the centre fails; row 3 is out of range. Pass: every row, plus the orientation case.
 
 **AC-22 The field is the solver's grid on the solver's layer, on one declared scale** (node, browser). `colourLut()` is
 built only from `heatColor()` and stays within 1/255 of it over 200,000 temperatures on scales 10, 80 and 400 wide;
@@ -495,6 +500,49 @@ anything the CLI cannot (no solver, no write route: AC-31); tool descriptions ca
 "Simulated, not silicon" verbatim; every temperature in a tool result keeps its serialized label, resolved as AC-06
 requires. Not required for the first page; required before any MCP tool for the room ships. Pass: all
 (main:scripts/sentilab-scene.mjs:6-7; A#57059; A#57218).
+
+**AC-45 The W4 review fixtures, adapted** (node, python; synthetic inputs from C#57232, SPEC.md §5.10). W13 runs every
+field case below in its wrapped form (a `sentilab-field/0.1` artifact as P1 would write it, under a TEST-key
+measurement) and expects this spec's outcome; rows marked P1 only test P1's converter and are listed for its owner. No
+grid value of the pack is ever shown or exported as a temperature.
+
+| Case | Pack outcome | This spec's outcome |
+|---|---|---|
+| `hs6_01_bound_layer0` | accept | `verified`, as layer 0, the substrate (SPEC.md §5.7); never shown as layer 4 |
+| `hs6_02_branch_unknown` | no_association | `unassociated` (`producer_layer_unbound`): the secondary-path branch is not bound |
+| `hs6_03_unknown_producer` | no_association | `unassociated` (`producer_unbound`, `producer_layer_unbound`) |
+| `hs6_04_wrong_layer_request` | reject | asking for layer 4 of a layer-0 field is refused (`layer_not_emitted`); nothing is relabelled |
+| `hs6_05_truncated` | reject | `dims` (a layer one value short) |
+| `hs6_06_duplicate_index` | reject | P1 only: P1 refuses a repeated cell index |
+| `hist_01_all_layers` | accept | `verified`, ids 0 to 7 kept |
+| `hist_02_select_layer4` | accept | `verified`; layer 4 is selected by its id after the whole document passed, never the first layer as a proxy |
+| `hist_03_truncated_last_layer` | reject | `dims` |
+| `hist_04_missing_layer4` | reject | `layer_ids` (C3) |
+| `hist_05_duplicate_layer3` | reject | `layer_ids` (C3) |
+| `hist_06_indexes_do_not_reset` | reject | P1 only: P1 refuses indices that do not restart in each layer |
+| `hist_07_unexpected_layer8` | reject | `layer_ids` (C3) |
+| `hist_08_malformed_header` | reject | P1 refuses the header; the wrapped analogue, a non-integer `index` such as `"four"`, is `layer_ids` |
+| `hist_09_same_count_wrong_shape` | reject | `dims` (a 3 x 2 artifact under a 2 x 3 pointer: C4) |
+| `hist_10_shape_missing` | no_association | `unassociated` (`grid_shape_unbound`) |
+| `hist_11_nonnumeric_value` | reject | `out_of_range` (a string value) |
+| `hist_12_reject_package_stretch` | reject | `extent` (an `extent_mm` equal to the spreader outline: C4) |
+| `hist_13_core_field_with_package_outline` | accept | `verified`; layer 6 coloured over the central grid only, its 40 x 40 mm outline uncoloured and labelled `unmeasured` |
+| `hist_14_units_missing` | no_association | `unassociated` (`unit_unbound`); never labelled K or C |
+
+Added beside the pack, from the same review's field-contract findings (C1, C2): an artifact whose `candidate_hash` or
+`problem_hash` is missing → `unassociated` (`candidate_unbound`, `problem_unbound`), or contradicts the signed
+expectation → `binding_mismatch`; a pointer in C over an artifact in K → `unit_conflict`.
+
+Geometry vectors: (a) centre (12.5, 17.25) mm with an 8 x 5.5 mm size → lower-left (8.5, 14.5) mm in the RenderModel
+and (0.0085, 0.0145) m in the writer's floorplan; centre (4, 3) mm with 8 x 6 mm → (0, 0); a centre used as a
+lower-left (0.0125, 0.01725 m) or millimetres labelled metres (8.5, 14.5 "m") fail (AC-13, AC-16); (b) a 10 x 4 mm
+die at centre (12, 8) mm with a 0.5 mm halo → die lower-left (7, 6) mm and a halo envelope with lower-left (6.5, 5.5)
+mm, 11 x 5 mm; no vertical thickness is taken from the halo width (AC-16); (c) the six explicit layers are 200, 70,
+110, 10, 150 and 20 µm (0.56 mm in all), only layer 4 has power, and the model RenderModel places them at z = -0.27 to
+-0.07, -0.07 to 0, 0 to 0.11, 0.11 to 0.12, 0.12 to 0.27 and 0.27 to 0.29 mm; a chip layer of 0.15 m, all six layers
+powered, or "every layer-4 region is silicon because the layer default is" fail (AC-16); (d) layer 4's `Ubump_0` is
+silicon with zero block power, and a copper assignment inferred from its name fails (AC-16); (e) the asymmetric
+mapper of AC-21. Pass: every row and vector, with each fixture's synthetic origin recorded.
 
 ## Crosswalk to astra's 41 source cases (W0.2)
 

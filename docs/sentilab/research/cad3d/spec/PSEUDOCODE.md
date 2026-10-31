@@ -676,8 +676,10 @@ export function associateField(field, result) {
 export function fieldScale(fields, previous = null) { /* ... */ }
 // 1,024-entry table built from heatColor() at bin centres; within 1/255 per channel (L3:evidence/extra-05).
 export function colourLut(scale) { /* L3:PSEUDOCODE §6, unchanged */ }
-// RGBA8 texels for one layer in the declared row order; NEAREST only (L3:PSEUDOCODE §6, unchanged).
-export function fieldTexels(field, layerIndex, { scale, lut }) { /* ... */ }
+// RGBA8 texels for one layer in the declared row order; NEAREST only (L3:PSEUDOCODE §6, unchanged). layerId is a SOURCE
+// id the field holds (gate 5); any other id is refused ({ error: "layer_not_emitted" }), never mapped to a position, so a
+// layer-0 field is never drawn as layer 4 (SPEC.md §5.7; AC-45 hs6_04).
+export function fieldTexels(field, layerId, { scale, lut }) { /* ... */ }
 ```
 
 ## 10. `stream.mjs`: field feed, solve status, doorbell
@@ -866,20 +868,29 @@ def test_reused_directory_keeps_a_stale_config(tmp_path):            # (C5) the 
     write_floorplans(a["config"]["path"], raw_reference_centres(a), tmp_path)
     files = write_floorplans(b["config"]["path"], raw_reference_centres(b), tmp_path)   # same directory: a's config kept
     assert sha256(files["new_hotspot.config"]) != b["expected_inputs"]["new_hotspot.config"]   # what AC-41 (c) relies on
+
+def test_w4_geometry_vectors():                                    # C#57232 vectors as DATA (AC-45); its checker is never run
+    v = load_json(W4_GEOMETRY_VECTORS)                                # w4_geometry_vectors.json, sha256-pinned, synthetic origin kept
+    for case in v["center_to_lower_left_vectors"]:                    # centre in mm -> lower-left in m, through the writer's own rule
+        assert_close(floorplan_lower_left(case["synthetic_input"]), case["expected"], abs=1e-12)
+    for bad in v["coordinate_counterexamples"]:                       # centre used as lower-left; mm labelled m
+        assert not close(floorplan_lower_left(input_of(v, bad)), bad["deliberately_wrong_observation"])
+    assert_six_layers(v["explicit_lcf_stack_fixture"], manifest["layers"][:6])   # 0.56 mm, power on layer 4 only
+    assert_region(v["region_material_counterexample"], generated_l4_regions())   # Ubump_0 silicon, zero power
 ```
 
 ## 15. Test files and what they cover
 
 | File | Covers |
 |---|---|
-| `web/test/package3d-quantity.test.mjs` | AC-10, AC-13 (lengths), AC-14 (grammar) |
+| `web/test/package3d-quantity.test.mjs` | AC-10, AC-13 (lengths, with the W4 centre vector), AC-14 (grammar) |
 | `web/test/package3d-data.test.mjs` | AC-03, AC-08, AC-11 (data side), AC-16 (Node side: pins), AC-17, AC-29, AC-30, AC-40; `scripts/package3d.mjs check` |
 | `web/test/package3d-model.test.mjs` | AC-08, AC-11 (undrawn parts: bounds, pick, section), AC-12, AC-13, AC-15 |
 | `web/test/package3d-labels.test.mjs` | AC-01, AC-02, AC-05 (static: no `toDataURL`/`toBlob`), AC-06, AC-07 |
 | `web/test/package3d-results.test.mjs` | AC-18, AC-19, AC-23, AC-24 (with the terminal states), AC-25, AC-26 (with late results), AC-41, AC-42 (driving source.mjs's poller with injected fetch, as the Package view's live tests do) |
-| `web/test/package3d-field.test.mjs` | AC-20, AC-21, AC-22, AC-41 (association) |
+| `web/test/package3d-field.test.mjs` | AC-20, AC-21 (with the W4 asymmetric mapper), AC-22, AC-41 (association), AC-45 (the 20 wrapped W4 field cases) |
 | `web/test/package3d-twin.test.mjs` | AC-06 (result → JSON bytes → `readTwin` → markdown, and every altered identity, state and text), AC-36, AC-37 |
 | existing `worker-csp.test.mjs`, `worker-boot.mjs`, `temperature-label.test.mjs`, `public-names.test.mjs`, `control-bytes.test.mjs` | AC-27, AC-28 (the page added to their lists) |
-| `sundai_hotspot/test_package3d_model_stack.py` | AC-16 |
+| `sundai_hotspot/test_package3d_model_stack.py` | AC-16, AC-45 (the W4 geometry vectors, as data) |
 | `scripts/package3d-browser-check.mjs` (manual or a later CI job; needs Playwright) | AC-04, AC-05, AC-09, AC-11, AC-12, AC-27, AC-31 to AC-35 (AC-35 with 100 mode switches), AC-42 |
 | W16 and W19 tests (only when those items are scheduled) | AC-43 (nested transforms), AC-44 (MCP conformance) |
