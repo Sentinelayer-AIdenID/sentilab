@@ -1,0 +1,61 @@
+{
+  "schema": "sentilab-challenge-math-source-bindings/1",
+  "at": "2026-10-31T16:10:38.272Z",
+  "records": [
+    {
+      "path": "ANETA-56873.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\sentilab-planning\\gpt-astra-carter\\daytime-2026-10-31\\state\\records\\b978e20952a205bb3deb6ce96fc7b5ff241359f99c4572d83aa642e7c9087b31.json",
+      "bytes": 6599,
+      "sha256": "27ee8346aa449fca33a021e78897fbf9e1dfd85dddcea6feded80e5313bc27ae",
+      "sourceId": "80972d82-9273-4c1a-b19a-a6b34be7cb00",
+      "sequenceId": 56873,
+      "timestamp": "2026-10-31T15:58:50.994Z",
+      "sourceRecordSha256": "dc0d99931321930b631223773b1592fb33835ce6dc3cb85ff516a74f0e87f593"
+    },
+    {
+      "path": "FORGE-50176262.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\sentilab-planning\\gpt-astra-carter\\daytime-2026-10-31\\state\\records\\6a8fec9a3bcaefdd304a8deec23444c7130240d2ec8163d837e2cd16e73bef03.json",
+      "bytes": 1732,
+      "sha256": "6915301b76b678ac2b00b7daef2dd750366e0379c10b727837fd292ea49a0ce6",
+      "sourceId": "50176262-2cff-4ce5-981c-ac06416b3a80",
+      "sequenceId": null,
+      "timestamp": "2026-10-31T15:57:46.361Z",
+      "sourceRecordSha256": "6c8b4037b916ae6ad08dcd11505425f520a3156639e8e7c34cdc6e2670b17475"
+    },
+    {
+      "path": "FORGE-13da40ed.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\sentilab-planning\\gpt-astra-carter\\daytime-2026-10-31\\state\\records\\1e19f7a9a31c1b27f2e4fc3ac34b7e1debad3c2073f7805a00298e3399c176ba.json",
+      "bytes": 1393,
+      "sha256": "a1a7b607b178ad04c83a1a7adec38960d0a392ba018dda3a0dd4b0846dc17e7d",
+      "sourceId": "13da40ed-fa48-4609-9705-c7dfe21b2eac",
+      "sequenceId": null,
+      "timestamp": "2026-10-31T16:00:52.699Z",
+      "sourceRecordSha256": "13b112d383f1f93448f6085bed99bff42563b3f3ad01d4a9edc99f7db68839af"
+    },
+    {
+      "path": "ROOT-56874.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\sentilab-planning\\gpt-astra-carter\\daytime-2026-10-31\\state\\records\\2c5c7992da55743d8fd3c5231fdbf5bc4d52794a99d112af4703f0167f3d926b.json",
+      "bytes": 3190,
+      "sha256": "77b263c7feb06f6b37ae25ad6f4eed9777d10555cbf3e83df8ed33ac90e1975c",
+      "sourceId": "3940d591-2b74-4d11-8771-9400d2c2149b",
+      "sequenceId": 56874,
+      "timestamp": "2026-10-31T15:59:01.086Z",
+      "sourceRecordSha256": "eea03edc1e6366a8810f40c8aee2b9757f81fd141ec99b735836ff7f07796c52"
+    }
+  ],
+  "batch": {
+    "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\sentilab-planning\\gpt-astra-carter\\daytime-2026-10-31\\wake-1605-batch.json",
+    "sha256": "d7906a355a5f8a7536a3213219f9600994fd4cf16b9ac20404414d7b88c9233f",
+    "scope": "Used as source index; only requested original records retained"
+  },
+  "priorExactSourceExcerpts": "PRIOR-SOURCE-EXCERPTS.json",
+  "executions": {
+    "models": 0,
+    "solves": 0,
+    "optimizers": 0,
+    "network": 0,
+    "posts": 0,
+    "sourceMutations": 0
+  },
+  "delegation": "Reusing prior mesh_algebra reviewer was attempted but unavailable: agent thread limit reached; review completed independently."
+}

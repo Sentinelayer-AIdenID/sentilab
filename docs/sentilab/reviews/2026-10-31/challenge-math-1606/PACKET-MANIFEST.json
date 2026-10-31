@@ -1,0 +1,122 @@
+{
+  "schema": "sentilab-private-challenge-math-packet/1",
+  "at": "2026-10-31T16:17:30.009Z",
+  "repo": "Sentinelayer-AIdenID/sentilab",
+  "private": true,
+  "branch": "codex/diagnosis-20261031",
+  "publicationBase": "405332861cfc2303019523c831b35c9b2b89da2d",
+  "packetPath": "docs/sentilab/reviews/2026-10-31/challenge-math-1606",
+  "scope": "Exact sealed review/provisional authoring guidance accepted by root; not a frozen numerical manifest or execution grant",
+  "sourceSealSha256": "b5946291872b71da19b9ff38fa5fe89ac931031c7e59766b6a1444c359e0ef62",
+  "sourcePacket": "tasks/sentilab-review-2026-10-30/challenge-math-review-1606",
+  "files": [
+    {
+      "path": "ANETA-56873.json",
+      "bytes": 6599,
+      "sha256": "27ee8346aa449fca33a021e78897fbf9e1dfd85dddcea6feded80e5313bc27ae",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\challenge-math-review-1606\\ANETA-56873.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/challenge-math-1606/ANETA-56873.json"
+    },
+    {
+      "path": "ANETA-DRAFT.md",
+      "bytes": 5852,
+      "sha256": "940a50132ea20d7ba8de7428173e3f73d9435c3b0e3532bb76b4669e52ccee6e",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\challenge-math-review-1606\\ANETA-DRAFT.md",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/challenge-math-1606/ANETA-DRAFT.md"
+    },
+    {
+      "path": "FORGE-13da40ed.json",
+      "bytes": 1393,
+      "sha256": "a1a7b607b178ad04c83a1a7adec38960d0a392ba018dda3a0dd4b0846dc17e7d",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\challenge-math-review-1606\\FORGE-13da40ed.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/challenge-math-1606/FORGE-13da40ed.json"
+    },
+    {
+      "path": "FORGE-50176262.json",
+      "bytes": 1732,
+      "sha256": "6915301b76b678ac2b00b7daef2dd750366e0379c10b727837fd292ea49a0ce6",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\challenge-math-review-1606\\FORGE-50176262.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/challenge-math-1606/FORGE-50176262.json"
+    },
+    {
+      "path": "PRIOR-SOURCE-EXCERPTS.json",
+      "bytes": 4595,
+      "sha256": "95c102e65869e698c02f75698289adf7fb43a83dc8dde5609a70a90d249700d6",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\challenge-math-review-1606\\PRIOR-SOURCE-EXCERPTS.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/challenge-math-1606/PRIOR-SOURCE-EXCERPTS.json"
+    },
+    {
+      "path": "PROVISIONAL-CONTRACT.md",
+      "bytes": 5263,
+      "sha256": "480c2e371a2b289f8b513254d273c5a4131ad28d221bc8d2f2925b3d4dfb0032",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\challenge-math-review-1606\\PROVISIONAL-CONTRACT.md",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/challenge-math-1606/PROVISIONAL-CONTRACT.md"
+    },
+    {
+      "path": "REVIEW.md",
+      "bytes": 8093,
+      "sha256": "0d427674d313f0e514bde0a81503831a6563fc2c3fd6849b2a2e05d70365f48b",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\challenge-math-review-1606\\REVIEW.md",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/challenge-math-1606/REVIEW.md"
+    },
+    {
+      "path": "ROOT-56874.json",
+      "bytes": 3190,
+      "sha256": "77b263c7feb06f6b37ae25ad6f4eed9777d10555cbf3e83df8ed33ac90e1975c",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\challenge-math-review-1606\\ROOT-56874.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/challenge-math-1606/ROOT-56874.json"
+    },
+    {
+      "path": "SOURCE-BINDINGS.json",
+      "bytes": 3362,
+      "sha256": "2c938e984cec3cb5aa8ec0b6637eebf8c6e53acef94562528ecdc6224ddbf1c3",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\challenge-math-review-1606\\SOURCE-BINDINGS.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/challenge-math-1606/SOURCE-BINDINGS.json"
+    },
+    {
+      "path": "SUMMARY.json",
+      "bytes": 1500,
+      "sha256": "284cb18d53a0ebb24ae5809915f55d7f6e01944bf8b04baf27bf96775c478421",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\challenge-math-review-1606\\SUMMARY.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/challenge-math-1606/SUMMARY.json"
+    },
+    {
+      "path": "capture.cjs",
+      "bytes": 2768,
+      "sha256": "2f8387fe9e646f8b39f7f4d34187a108fd9571cf826047822134d69245326f6e",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\challenge-math-review-1606\\capture.cjs",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/challenge-math-1606/capture.cjs"
+    },
+    {
+      "path": "seal.cjs",
+      "bytes": 2664,
+      "sha256": "be17a206bbc90d69a68b7efb12215488b1a4441f9a1163d3ecb415cc5875b1f7",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\challenge-math-review-1606\\seal.cjs",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/challenge-math-1606/seal.cjs"
+    },
+    {
+      "path": "SEAL.json",
+      "bytes": 2038,
+      "sha256": "b5946291872b71da19b9ff38fa5fe89ac931031c7e59766b6a1444c359e0ef62",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\challenge-math-review-1606\\SEAL.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/challenge-math-1606/SEAL.json"
+    }
+  ],
+  "sourcePayloadFiles": 13,
+  "payloadBytes": 49049,
+  "acceptedReviewSha256": "0d427674d313f0e514bde0a81503831a6563fc2c3fd6849b2a2e05d70365f48b",
+  "acceptedContractSha256": "480c2e371a2b289f8b513254d273c5a4131ad28d221bc8d2f2925b3d4dfb0032",
+  "rightsAndAttribution": "Private user-authorized SentiLab coordination packet; original Aneta, Forge and root authorship/provenance retained. No new public-redistribution license asserted. Source scripts are retained as evidence, not executed from the publication.",
+  "scopeLimits": {
+    "numericalAdmission": "UNKNOWN",
+    "modelsRun": 0,
+    "thermalSolves": 0,
+    "optimizerRuns": 0,
+    "executionGrant": false,
+    "publicInvitation": false,
+    "productSourceChanges": false,
+    "PRCreated": false,
+    "CIRequested": false
+  },
+  "integrity": "All thirteen sealed packet files, including SEAL.json, copied byte-for-byte. This publication manifest is additional and excludes itself; its hash is in the publication receipt. Prior tree contents are preserved."
+}

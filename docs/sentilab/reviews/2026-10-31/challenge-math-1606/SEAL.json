@@ -1,0 +1,69 @@
+{
+  "schema": "sentilab-challenge-math-seal/1",
+  "at": "2026-10-31T16:13:04.531Z",
+  "reviewer": "/root/science_redteam",
+  "sourceId": "80972d82-9273-4c1a-b19a-a6b34be7cb00",
+  "executionGrant": false,
+  "artifacts": [
+    {
+      "path": "ANETA-56873.json",
+      "bytes": 6599,
+      "sha256": "27ee8346aa449fca33a021e78897fbf9e1dfd85dddcea6feded80e5313bc27ae"
+    },
+    {
+      "path": "ANETA-DRAFT.md",
+      "bytes": 5852,
+      "sha256": "940a50132ea20d7ba8de7428173e3f73d9435c3b0e3532bb76b4669e52ccee6e"
+    },
+    {
+      "path": "FORGE-13da40ed.json",
+      "bytes": 1393,
+      "sha256": "a1a7b607b178ad04c83a1a7adec38960d0a392ba018dda3a0dd4b0846dc17e7d"
+    },
+    {
+      "path": "FORGE-50176262.json",
+      "bytes": 1732,
+      "sha256": "6915301b76b678ac2b00b7daef2dd750366e0379c10b727837fd292ea49a0ce6"
+    },
+    {
+      "path": "PRIOR-SOURCE-EXCERPTS.json",
+      "bytes": 4595,
+      "sha256": "95c102e65869e698c02f75698289adf7fb43a83dc8dde5609a70a90d249700d6"
+    },
+    {
+      "path": "PROVISIONAL-CONTRACT.md",
+      "bytes": 5263,
+      "sha256": "480c2e371a2b289f8b513254d273c5a4131ad28d221bc8d2f2925b3d4dfb0032"
+    },
+    {
+      "path": "REVIEW.md",
+      "bytes": 8093,
+      "sha256": "0d427674d313f0e514bde0a81503831a6563fc2c3fd6849b2a2e05d70365f48b"
+    },
+    {
+      "path": "ROOT-56874.json",
+      "bytes": 3190,
+      "sha256": "77b263c7feb06f6b37ae25ad6f4eed9777d10555cbf3e83df8ed33ac90e1975c"
+    },
+    {
+      "path": "SOURCE-BINDINGS.json",
+      "bytes": 3362,
+      "sha256": "2c938e984cec3cb5aa8ec0b6637eebf8c6e53acef94562528ecdc6224ddbf1c3"
+    },
+    {
+      "path": "SUMMARY.json",
+      "bytes": 1500,
+      "sha256": "284cb18d53a0ebb24ae5809915f55d7f6e01944bf8b04baf27bf96775c478421"
+    },
+    {
+      "path": "capture.cjs",
+      "bytes": 2768,
+      "sha256": "2f8387fe9e646f8b39f7f4d34187a108fd9571cf826047822134d69245326f6e"
+    },
+    {
+      "path": "seal.cjs",
+      "bytes": 2664,
+      "sha256": "be17a206bbc90d69a68b7efb12215488b1a4441f9a1163d3ecb415cc5875b1f7"
+    }
+  ]
+}

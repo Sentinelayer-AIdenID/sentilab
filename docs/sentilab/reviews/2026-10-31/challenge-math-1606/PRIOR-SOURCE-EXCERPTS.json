@@ -1,0 +1,173 @@
+[
+  {
+    "path": "sundai_hotspot6/temperature_grid.c",
+    "exactHead": "6413a3c0cc2b6280dc2bf063812374e0c8d3d337",
+    "sourceSha256": "3ffb58e102cae8e8c844b7758ffce1491c833ed75c8ab78758960caff61c25ad",
+    "first": 1783,
+    "last": 1798,
+    "lines": [
+      {
+        "line": 1783,
+        "text": "          if (model->map_mode == GRID_CENTER) {"
+      },
+      {
+        "line": 1784,
+        "text": "              /* center co-ordinates\t*/\t"
+      },
+      {
+        "line": 1785,
+        "text": "              ci1 = (i1 + i2) / 2;"
+      },
+      {
+        "line": 1786,
+        "text": "              cj1 = (j1 + j2) / 2;"
+      },
+      {
+        "line": 1787,
+        "text": "              /* in case of even no. of cells, center "
+      },
+      {
+        "line": 1788,
+        "text": "               * is the average of two central cells"
+      },
+      {
+        "line": 1789,
+        "text": "               */"
+      },
+      {
+        "line": 1790,
+        "text": "              /* ci2 = ci1-1 when even, ci1 otherwise\t*/  "
+      },
+      {
+        "line": 1791,
+        "text": "              ci2 = ci1 - !((i2-i1) % 2);"
+      },
+      {
+        "line": 1792,
+        "text": "              /* cj2 = cj1-1 when even, cj1 otherwise\t*/  "
+      },
+      {
+        "line": 1793,
+        "text": "              cj2 = cj1 - !((j2-j1) % 2);"
+      },
+      {
+        "line": 1794,
+        "text": ""
+      },
+      {
+        "line": 1795,
+        "text": "              b[base+u] = (g->cuboid[n][ci1][cj1] + g->cuboid[n][ci2][cj1] + "
+      },
+      {
+        "line": 1796,
+        "text": "                           g->cuboid[n][ci1][cj2] + g->cuboid[n][ci2][cj2]) / 4;"
+      },
+      {
+        "line": 1797,
+        "text": "              continue;"
+      },
+      {
+        "line": 1798,
+        "text": "          }"
+      }
+    ]
+  },
+  {
+    "path": "sundai_tap/passive_interposer.py",
+    "exactHead": "6413a3c0cc2b6280dc2bf063812374e0c8d3d337",
+    "sourceSha256": "dcbbaaa86a187bac3f1a1b12f49bd0dfc1c6cb3ed4e50ec51583f762adcf0a52",
+    "first": 197,
+    "last": 210,
+    "lines": [
+      {
+        "line": 197,
+        "text": "\tdef run_hotspot(self, filename):"
+      },
+      {
+        "line": 198,
+        "text": "\t\tproc = subprocess.Popen([\"./util/hotspot\","
+      },
+      {
+        "line": 199,
+        "text": "\t\t\t\"-c\",self.path+\"new_hotspot.config\","
+      },
+      {
+        "line": 200,
+        "text": "\t\t\t\"-f\",self.path+filename+\"L4_ChipLayer.flp\","
+      },
+      {
+        "line": 201,
+        "text": "\t\t\t\"-p\",self.path+filename+\".ptrace\","
+      },
+      {
+        "line": 202,
+        "text": "\t\t\t\"-steady_file\",self.path+filename+\".steady\","
+      },
+      {
+        "line": 203,
+        "text": "\t\t\t\"-grid_steady_file\",self.path+filename+\".grid.steady\","
+      },
+      {
+        "line": 204,
+        "text": "\t\t\t\"-model_type\",\"grid\","
+      },
+      {
+        "line": 205,
+        "text": "\t\t\t\"-detailed_3D\",\"on\","
+      },
+      {
+        "line": 206,
+        "text": "\t\t\t\"-grid_layer_file\",self.path+filename+\"layers.lcf\"], "
+      },
+      {
+        "line": 207,
+        "text": "\t\t\tstdout=subprocess.PIPE, stderr = subprocess.PIPE)"
+      },
+      {
+        "line": 208,
+        "text": "\t\tstdout, stderr = proc.communicate()"
+      },
+      {
+        "line": 209,
+        "text": "\t\toutlist = stdout.split()"
+      },
+      {
+        "line": 210,
+        "text": "\t\treturn (max(list(map(float,outlist[3::2])))-273.15)"
+      }
+    ]
+  },
+  {
+    "path": "sundai_hotspot/slab049.py",
+    "exactHead": "6413a3c0cc2b6280dc2bf063812374e0c8d3d337",
+    "sourceSha256": "a1a991dfce68be89ae23d91aed15ffb9f80fe62fde4790fb5aa0687c6f380f8d",
+    "first": 863,
+    "last": 868,
+    "lines": [
+      {
+        "line": 863,
+        "text": "TIMING = {  # micro150/TIMING.json, Azure x86_64 (16 CPU); HotSpot 6.0 SuperLU is unmeasured and assumed alike"
+      },
+      {
+        "line": 864,
+        "text": "    \"grid64_expected_wall_s\": 4.76,"
+      },
+      {
+        "line": 865,
+        "text": "    \"grid32_expected_wall_s\": 0.49,"
+      },
+      {
+        "line": 866,
+        "text": "    \"per_call_overhead_cpu_s\": 1.5,  # TAP generation, hashing, process start and reap, archive, summary"
+      },
+      {
+        "line": 867,
+        "text": "    \"grid64_cpu_cap_s\": 60.0,        # each call is killed at its cap; a failed attempt costs at most that"
+      },
+      {
+        "line": 868,
+        "text": "    \"grid32_cpu_cap_s\": 15.0,"
+      }
+    ]
+  }
+]

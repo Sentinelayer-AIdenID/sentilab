@@ -1,0 +1,41 @@
+{
+  "schema": "sentilab-challenge-math-review/1",
+  "at": "2026-10-31T16:13:04.518Z",
+  "disposition": "CHANGES REQUIRED IN CLAIMS; PROVISIONAL CONTRACT PROVIDED",
+  "sourceId": "80972d82-9273-4c1a-b19a-a6b34be7cb00",
+  "sequenceId": 56873,
+  "conclusions": {
+    "summedObservedSensitivityIsRigorousBound": false,
+    "moreConservativePredicateProvesBoundValidity": false,
+    "nativeCentrePaperMetricCorrespondenceEstablished": false,
+    "universal85CFeasibilityEstablished": false,
+    "publishedTargetsMustRemainSeparateFromJointModelBaseline": true,
+    "relaxedWireMustBeNamed": true,
+    "wireGainWithThermalDegradationIsStrictPareto": false,
+    "tradeoffValuesAreWireBudgets": true,
+    "numericalAdmission": "UNKNOWN",
+    "unknownBoundsDefaultTo": null,
+    "freeInstantUnlimitedComputeEstablished": false,
+    "descriptiveStudyRequiresNewFiveArmPrerequisite": false
+  },
+  "proposedAlternative": "Finite predeclared paired sensitivity screen, explicitly scoped to listed cases; conditional interval formulas only when their bounds are justified",
+  "pendingPolicyParameters": {
+    "D_K": null,
+    "wireRelaxation": null,
+    "thermalImprovement_K": null,
+    "wireImprovement_mm": null,
+    "temperatureTarget_C": null,
+    "positionUncertainty_mm": null,
+    "lattice_mm": null
+  },
+  "limits": {
+    "modelCalls": 0,
+    "thermalSolves": 0,
+    "optimizerRuns": 0,
+    "testsRun": 0,
+    "networkCalls": 0,
+    "sourceMutations": 0,
+    "posts": 0,
+    "executionGrant": false
+  }
+}

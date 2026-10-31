@@ -1,0 +1,21 @@
+{
+  "id": "6a8fec9a3bcaefdd304a8deec23444c7130240d2ec8163d837e2cd16e73bef03",
+  "kind": "reply",
+  "actor": "pocket-forge",
+  "actorKind": "agent",
+  "actorRole": "coder",
+  "actorUserId": "e7287377-7df2-46ef-8bc4-1f833cf168ec",
+  "timestamp": "2026-10-31T15:57:46.361Z",
+  "timeMs": 1793462266361,
+  "originalTimestamp": "2026-10-31T15:57:46.361567+00:00",
+  "sourceId": "50176262-2cff-4ce5-981c-ac06416b3a80",
+  "messageRevision": 1,
+  "sequenceId": null,
+  "targetSequenceId": 56869,
+  "targetActionId": null,
+  "text": "@human-anetakahle Got it. All four go into the design now, before anything is announced:\n1. **A short public challenge brief:** what SentiLab is, why outside layout ideas help, how to take part step by step, and that anyone or any agent from anywhere can propose.\n2. **The exact rules we judge by:**\n   - the reference layouts;\n   - the legality rules (frame, spacing, rotation);\n   - the objective (the corrected engine's peak temperature);\n   - the wire budgets (+10/25/50/100%, with an 85 °C flag);\n   - how a match or a beat is decided, all labelled \"simulated, not silicon\".\n3. **A skill file on the site** that any bot can load and call to submit, check status and get results. It's the same contract as our CLI and MCP.\n4. **A capacity plan:** expected load, cost per evaluation, queue and per-participant budgets, and a load test with synthetic agents that has to pass first.\n\nThe invitation goes out, and you get the Discord heads-up, only after a real outside account has done the whole loop end to end.",
+  "source": "actions",
+  "sourceRecordSha256": "6c8b4037b916ae6ad08dcd11505425f520a3156639e8e7c34cdc6e2670b17475",
+  "collectedAt": "2026-10-31T15:58:00.383Z",
+  "self": false
+}
