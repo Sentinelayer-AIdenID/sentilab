@@ -112,6 +112,18 @@ def fixtures():
             signed["signature"] = corrupt(signed["signature"])
     legacy = copy.deepcopy(valid)
     del legacy["record_certificate"]
+    unicode_keys = copy.deepcopy(valid)
+    record = FlightRecord()
+    for event in valid["events"][:-1]:
+        payload = copy.deepcopy(event["payload"])
+        if event["event"] == "baseline":
+            payload["metadata"] = {"\U0001f600": "astral", "\ue000": "BMP",
+                                   "prefix": {"a\U0001f600": 1, "a\ue000": 2, "a": 3}}
+        record.append(event["event"], **payload)
+    record.close()
+    unicode_keys.update(events=record.events, record_public_key=record.public_key,
+                        record_certificate=certify_lane(service, "trust-run", "random", record.public_key,
+                                                        int(time.time()) + 3600))
     replays = {}
     for name, age in (("25-hours", 25 * 60 * 60), ("31-days", 31 * 24 * 60 * 60)):
         # Age the real producer and its signed events, then verify with the current clock.
@@ -123,7 +135,8 @@ def fixtures():
                          "record_public_key": lane["record_public_key"],
                          "record_certificate": lane["record_certificate"]}
     return {"pins": {key_id_for(public_hex(service)): public_hex(service)},
-            "run": run, "valid": valid, "legacy": legacy, "cases": cases, "replays": replays}
+            "run": run, "valid": valid, "legacy": legacy, "cases": cases, "replays": replays,
+            "unicode_keys": unicode_keys}
 
 
 class TrustTests(unittest.TestCase):
@@ -155,6 +168,9 @@ class TrustTests(unittest.TestCase):
         self.assertTrue(self.inspect(self.data["cases"]["resigned-temperature"])["integrity"],
                         "forgery is correctly signed by an unauthorized replacement key")
         self.assertFalse(self.inspect(self.data["cases"]["altered-payload"])["integrity"])
+
+    def test_unicode_metadata_keys_authenticate(self):
+        self.assertTrue(self.inspect(self.data["unicode_keys"])["authentic"])
 
     def test_legacy_is_integrity_only(self):
         self.assertEqual(self.inspect(self.data["legacy"]), {"integrity": True, "authentic": False,

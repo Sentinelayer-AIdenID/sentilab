@@ -21,6 +21,12 @@ test("real Python experiment authenticates each record under explicitly pinned s
   assert.equal(lane.lanes[0].origin, "authentic");
 });
 
+test("Python-signed Unicode metadata keys retain code-point ordering", async () => {
+  const report = await inspect(data.unicode_keys);
+  assert.equal(report.authentic, true, report.lanes[0].reason);
+  assert.equal(report.allValid, true);
+});
+
 for (const [name, doc] of Object.entries(data.cases)) {
   test(`service trust rejects ${name}`, async () => {
     const report = await inspect(doc);
