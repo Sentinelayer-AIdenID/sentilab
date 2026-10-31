@@ -1,4 +1,4 @@
-"""Fixed-root SLAB047 controller. Deployment and execution require external review.
+"""Fixed-root SLAB047b controller. Deployment and execution require external review.
 
 Only the installed program is executable: start/status/stop. All policy, inputs,
 request bodies and container arguments are fixed; there are no caller overrides.
@@ -22,26 +22,27 @@ import threading
 import time
 import uuid
 
-ROOT = Path('/home/dell/sentilab/serving-20261031')
+ROOT = Path('/home/dell/sentilab/serving-20261031b')
 RETAINED = Path('/home/dell/sentilab/preflight-20261031')
 PROGRAM = 'serve047.py'
 SCHEMA = 'sentilab-gb10-serving/1'
-OWNER = 'sentilab-slab047-20261031'
+OWNER = 'sentilab-slab047b-20261031'
 IMAGE = 'sha256:2e735ffeef26457f8a3ff44a62ae182870b10af37adc06ecbb08baca152365c6'
 PORT = 18047
-START_BY = 1793447100.0  # 2026-10-31T11:45:00Z
-ABSOLUTE_STOP = 1793448000.0  # 2026-10-31T12:00:00Z
+START_BY = 1793448900.0  # 2026-10-31T12:15:00Z
+ABSOLUTE_STOP = 1793449800.0  # 2026-10-31T12:30:00Z
 MAX_SECONDS = 900
 CLEANUP_RESERVE = 60
 MAX_SOURCE = 65536
 MAX_RESPONSE = 1048576
 POLICY = {
     'schema': 'sentilab-slab047-policy/1',
-    'grant_sequence': 56496,
-    'grant_source': 'bb58c601-464f-4ebc-89f1-5b6eba9aeb25',
+    'grant_sequence': 56545,
+    'grant_source': '55fe3cab-88b4-4f80-9ae7-2f5ff43c70f7',
+    'grant_label': 'SLAB-047b',
     'ticket': '1509c616-03ee-4d35-b60c-bc70dd18b7fe',
     'max_attempts': 1, 'max_gpu_seconds_including_startup_cleanup': MAX_SECONDS,
-    'start_before': '2026-10-31T11:45:00Z', 'absolute_stop': '2026-10-31T12:00:00Z',
+    'start_before': '2026-10-31T12:15:00Z', 'absolute_stop': '2026-10-31T12:30:00Z',
     'max_inference_requests': 20, 'image_id': IMAGE, 'localhost_port': PORT,
     'scope': 'six repeated training-source fixture cases with labels; no generalization',
 }
@@ -323,15 +324,24 @@ def cleanup(r):
                     except Refusal:
                         if owned(cid, r)['State']['Running']:
                             docker('kill', cid, timeout=5)
-                if owned(cid, r)['State']['Running']:
+                terminal = owned(cid, r)
+                if terminal['State']['Running']:
                     raise Refusal('owned_container_still_running')
-                rc, out, err = command(docker_argv('logs', '--timestamps', '--tail', '200', cid), timeout=5, limit=1048576)
+                if not (ROOT / 'container-inspection-final.json').exists():
+                    write_exclusive('container-inspection-final.json', encode(terminal))
+                rc, out, err = command(docker_argv('logs', '--timestamps', cid), timeout=5, limit=8388608)
                 if rc:
                     raise Refusal('logs_not_retained')
-                # Raw Docker stdout/stderr bytes, bounded tail; never claim complete unbounded logs.
+                # Keep available early startup and late diagnostics, not only the
+                # last 200 lines. Driver rotation can still remove earlier output.
                 for name, raw in [('container.stdout.log', out), ('container.stderr.log', err)]:
                     if not (ROOT / name).exists():
                         write_exclusive(name, raw)
+                if not (ROOT / 'container-log-scope.json').exists():
+                    write_exclusive('container-log-scope.json', encode({
+                        'scope': 'all logs still retained by the Docker driver; no tail filter',
+                        'driver_max_size': '4m', 'driver_max_files': 1,
+                        'capture_cap_bytes_per_stream': 8388608, 'complete_process_history_claimed': False}))
                 owned(cid, r)
                 docker('rm', cid)
                 if owned(cid, r, absent_ok=True) is not None:
@@ -412,7 +422,16 @@ def container_argv(r):
     # This timeout starts from the reservation's original clocks even after a delayed Docker START.
     wrapper = ('import os,time,math; remaining=min(' + repr(r['deadline_unix'] - 35) + '-time.time(),'
                + repr(r['deadline_monotonic'] - 35) + '-time.monotonic()); '
-               'os._exit(3) if remaining<=5 else None; os.execvp("timeout",["timeout","--signal=TERM",'
+               'os._exit(3) if remaining<=5 else None; '
+               'mi=open("/proc/self/mountinfo").read(65537); assert len(mi)<=65536; '
+               'rows=[line for line in mi.splitlines() if len(line.split())>6 and line.split()[4] in ("/","/tmp")]; '
+               'print("SLAB047B_MOUNTINFO="+repr(rows),flush=True); '
+               'tmp=[line for line in rows if line.split()[4]=="/tmp"]; '
+               'assert len(tmp)==1 and "noexec" not in tmp[0].split()[5].split(","); '
+               'print("SLAB047B_STARTUP="+repr({"uid":os.getuid(),"gid":os.getgid(),'
+               '"cache_env":{key:os.environ.get(key) for key in ("HOME","HF_HOME","TRITON_CACHE_DIR",'
+               '"TORCHINDUCTOR_CACHE_DIR","TORCH_EXTENSIONS_DIR","XDG_CACHE_HOME","CUDA_CACHE_PATH")}}),flush=True); '
+               'os.execvp("timeout",["timeout","--signal=TERM",'
                '"--kill-after=5s",str(math.floor(remaining-5))+"s","python3","-m",'
                '"vllm.entrypoints.openai.api_server","--model","/model","--served-model-name","base",'
                '"--enable-lora","--lora-modules","fixture=/adapter","--max-lora-rank","8",'
@@ -425,7 +444,7 @@ def container_argv(r):
         args += ['--label', name + '=' + value]
     args += ['--gpus', 'all', '--user', '1000:1000', '--memory', '96g', '--cpus', '12', '--shm-size', '2g',
              '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges', '--read-only',
-             '--tmpfs', '/tmp:rw,nosuid,nodev,size=4g,mode=1777', '--log-opt', 'max-size=4m', '--log-opt', 'max-file=1',
+             '--tmpfs', '/tmp:rw,exec,nosuid,nodev,size=4g,mode=1777', '--log-opt', 'max-size=4m', '--log-opt', 'max-file=1',
              '-e', 'HF_HUB_OFFLINE=1', '-e', 'TRANSFORMERS_OFFLINE=1', '-e', 'HF_HOME=/tmp/hf',
              '-e', 'HOME=/tmp', '-e', 'TOKENIZERS_PARALLELISM=false',
              '-e', 'VLLM_NO_USAGE_STATS=1', '-e', 'DO_NOT_TRACK=1',
@@ -555,6 +574,10 @@ def worker(token, source):
                     raise Refusal('create_returned_invalid_id')
                 update(container_id=cid, create_returned=True)
                 owned(cid, r)
+                raw_mounts = docker('inspect', '--format', '{{json .HostConfig.Tmpfs}}', cid)
+                write_exclusive('container-tmpfs.json', raw_mounts)
+                if strict_json(raw_mounts) != {'/tmp': 'rw,exec,nosuid,nodev,size=4g,mode=1777'}:
+                    raise Refusal('scratch_mount_configuration_mismatch')
                 launch_monotonic = time.monotonic()
                 update(container_id=cid, phase='starting_container', launch_intent=True,
                        launch_monotonic=launch_monotonic, launch_intent_at=stamp())

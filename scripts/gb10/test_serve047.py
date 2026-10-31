@@ -3,6 +3,7 @@ from contextlib import contextmanager
 import hashlib
 import importlib.util
 import http.server
+import io
 import json
 from pathlib import Path
 import subprocess
@@ -24,6 +25,7 @@ class FakeDocker:
         self.case, self.objects, self.calls = case, {}, []
         self.cid = 'a' * 64
         self.fail_create = self.fail_rm = False
+        self.noexec = False
 
     def command(self, argv, **kwargs):
         self.case.clock.now += 0.1
@@ -39,6 +41,9 @@ class FakeDocker:
             return 0, self.cid.encode(), b''
         if operation == 'inspect':
             value = self.objects.get(rest[-1])
+            if '.HostConfig.Tmpfs' in str(rest) and value is not None:
+                mode = 'noexec' if self.noexec else 'exec'
+                return 0, s.encode({'/tmp': 'rw,'+mode+',nosuid,nodev,size=4g,mode=1777'}), b''
             return (0, s.encode(value), b'') if value else (1, b'', b'No such container')
         if operation == 'ps':
             return 0, '\n'.join(self.objects).encode(), b''
@@ -376,6 +381,34 @@ class Lifecycle(unittest.TestCase):
         self.assertTrue(all(x.endswith(',readonly') for x in mounts))
         self.assertNotIn('--privileged', args)
         self.assertIn(str(r['deadline_unix']-35), args[-1])
+        self.assertIn('/tmp:rw,exec,nosuid,nodev,size=4g,mode=1777', args)
+
+    def test_observed_noexec_configuration_refuses_before_docker_start(self):
+        r = self.reserve(); self.fake.noexec = True
+        self.run_worker(r)
+        self.assertEqual(s.state()['phase'], 'failed_closed')
+        self.assertEqual(s.state()['error'], 'scratch_mount_configuration_mismatch')
+        self.assertEqual(s.state()['inference_requests_reserved'], 0)
+        self.assertFalse(any(call[3] == 'start' for call in self.fake.calls))
+        self.assertTrue(s.state()['cleanup_verified'])
+        self.assertIn('noexec', (self.root/'container-tmpfs.json').read_text())
+
+    def test_runtime_wrapper_records_mounts_and_refuses_noexec_before_vllm(self):
+        r = self.reserve(); wrapper = s.container_argv(r)[-1]
+        for options, refused in [('rw,nosuid,nodev', False), ('rw,nosuid,nodev,noexec', True)]:
+            mountinfo = '1 0 0:1 / / ro - overlay overlay ro\n2 1 0:2 / /tmp '+options+' - tmpfs tmpfs rw\n'
+            with mock.patch('builtins.open', return_value=io.StringIO(mountinfo)), mock.patch('builtins.print') as output, \
+                 mock.patch('time.time', return_value=r['reserved_unix']), mock.patch('time.monotonic', return_value=r['reserved_monotonic']), \
+                 mock.patch('os.getuid', return_value=1000, create=True), mock.patch('os.getgid', return_value=1000, create=True), \
+                 mock.patch('os.execvp') as execute:
+                if refused:
+                    with self.assertRaises(AssertionError): exec(wrapper, {})
+                    execute.assert_not_called()
+                else:
+                    exec(wrapper, {})
+                    execute.assert_called_once()
+                    self.assertIn('SLAB047B_MOUNTINFO=', output.call_args_list[0].args[0])
+                    self.assertIn('SLAB047B_STARTUP=', output.call_args_list[1].args[0])
 
     def test_expired_inner_timeout_cannot_launch_vllm(self):
         r = self.reserve(); wrapper = s.container_argv(r)[-1]
