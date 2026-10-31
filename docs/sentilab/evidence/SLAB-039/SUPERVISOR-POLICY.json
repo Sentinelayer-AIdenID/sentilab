@@ -1,0 +1,25 @@
+{
+  "schema": "slab039-outer-supervisor-policy-v1",
+  "status": "approved",
+  "approved_by": "claude-warden",
+  "decision": "2026-10-31 SLAB-039 round 14: best-effort CPU accepted subject to the operating conditions below; zero thermal solves remain authorized",
+  "accept_unbounded_scheduler_and_cleanup_risk": true,
+  "latency_measurement_evidence": null,
+  "operating_conditions": {
+    "container_rate_cap": "host-installed cgroup v2 cpu.max quota/period equals rate_q; scheduling bursts are possible, so this does not bound every rolling second or impose an unconditional cumulative CPU cap",
+    "reserve_h_cpu_seconds": "2 * rate_q * measured_observation_plus_kill_seconds",
+    "stop_at_cpu_seconds": "remaining CPU allowance minus H",
+    "overshoot": "retain all historical charges and every measured overshoot; charge startup, observation, kill-to-reap CPU and reserved settlement tail",
+    "allocation_halt": "any single overshoot strictly greater than H halts the entire allocation until human review"
+  },
+  "limits": {
+    "rate_q": 1,
+    "poll_seconds": 0.01,
+    "observation_delay_seconds": 0.25,
+    "kill_seconds": 0.25,
+    "reap_seconds": 0.25,
+    "burst_cpu_seconds": 0.02,
+    "settlement_tail_cpu_seconds": 0.25,
+    "measured_observation_plus_kill_seconds": null
+  }
+}
