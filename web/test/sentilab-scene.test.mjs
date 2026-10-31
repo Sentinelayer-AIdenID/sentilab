@@ -18,7 +18,7 @@ import { canonical } from "../public/sentilab/canonical.mjs";
 import { buildScene, sceneAt, runFrame, heatColor, contiguousPrefix, scaleTicks, describeEvent, STACK, TEMP_BASIS, TRACK_ORDER, LAB_TRACKS, SCENE_VERSION, SUPPORTED_UNITS, BOUNDS, MAX_TICKS, readGeometry, readTemps } from "../public/sentilab/package/scene.mjs";
 import { reconcile, extendsPrefix } from "../public/sentilab/package/playhead.mjs";
 import { TrackAnimation } from "../public/sentilab/package/render.mjs";
-import { makeChain } from "../../contracts/view-envelope/view-envelope.mjs";
+import { makeChain, signEnvelope } from "../../contracts/view-envelope/view-envelope.mjs";
 import * as source from "../public/sentilab/package/source.mjs";
 import { VIEW_PINS } from "../public/sentilab/view-pins.js";
 import { testKey } from "./sentilab-keys.mjs";
@@ -665,4 +665,81 @@ test("CLI: unit-normalised export (0.01 m -> 10 mm), refused values listed not e
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+// ── Rule 5 (VIEW ENVELOPE v0.6): LIVE ends at once when K drops ─────────────────────────────────────────────────
+// A validly signed, different seq 4 (the demo's seq 4 with its ts changed, re-signed by the core test key), as a
+// late conflicting delivery: the verified prefix K falls from 44 to 4.
+async function demoWithLateFork() {
+  const all = source.parseReplay(demoText);
+  const four = all.find((env) => env.event.seq === 4);
+  const { sig, hash, ...unsigned } = structuredClone(four);
+  const fork = signEnvelope({ ...unsigned, ts: "2026-11-01T14:00:06.500Z" }, testKey("core").privateKey, "core");
+  assert.notEqual(fork.hash, four.hash);
+  return source.verifyRun([...all, fork], { runId: DEMO_RUN, trust: testTrust });
+}
+const label = (p, t) => source.liveMode(p, t).label;
+
+test("rule 5: K reaches 44, a late conflict 1 s later drops it to 4: STALE · chain broken at once, and it stays", async () => {
+  const v44 = await demoVerified();
+  const vFork = await demoWithLateFork();
+  assert.equal(v44.prefixEnd, 44);
+  assert.equal(vFork.prefixEnd, 4, "the fork at seq 4 ends the prefix at 4");
+  const p = source.createProgress();
+  source.recordPoll(p, { nowMs: 0, ok: true, K: v44.prefixEnd });
+  assert.equal(label(p, 0), "LIVE · progress 0 s ago");
+  assert.equal(label(p, 900), "LIVE · progress 0 s ago");
+  source.recordPoll(p, { nowMs: 1000, ok: true, K: vFork.prefixEnd });
+  assert.deepEqual(source.liveMode(p, 1000), { mode: "STALE", reason: "chain broken", label: "STALE · chain broken" }, "at once, though K grew 1 s ago");
+  for (let t = 1000; t <= 61000; t += 1000) {
+    source.recordPoll(p, { nowMs: t, ok: true, K: vFork.prefixEnd });
+    assert.equal(label(p, t), "STALE · chain broken", `t=${t}: never LIVE next to a frozen board`);
+  }
+  assert.equal(p.highK, 44, "the high is remembered");
+});
+
+test("rule 5: recovery only when K is back at its high and its last growth is within 60 s; then growth keeps it LIVE", () => {
+  const p = source.createProgress();
+  source.recordPoll(p, { nowMs: 0, ok: true, K: 44 });
+  source.recordPoll(p, { nowMs: 1000, ok: true, K: 4 });
+  assert.equal(label(p, 1000), "STALE · chain broken");
+  source.recordPoll(p, { nowMs: 2000, ok: true, K: 43 });
+  assert.equal(label(p, 2000), "STALE · chain broken", "below the high is still broken");
+  source.recordPoll(p, { nowMs: 3000, ok: true, K: 44 });
+  assert.equal(label(p, 3000), "LIVE · progress 3 s ago", "back at the high, and K last grew 3 s ago");
+  source.recordPoll(p, { nowMs: 60000, ok: true, K: 44 });
+  assert.equal(label(p, 60000), "LIVE · progress 60 s ago", "60 s is inclusive");
+  source.recordPoll(p, { nowMs: 60001, ok: true, K: 44 });
+  assert.equal(label(p, 60001), "STALE", "returning to the high is not growth: no new progress, so STALE after 60 s");
+  source.recordPoll(p, { nowMs: 71000, ok: true, K: 45 });
+  assert.equal(label(p, 71000), "LIVE · progress 0 s ago", "growth above the high is progress");
+
+  // A recovery that comes after the 60 s window is STALE until K grows again.
+  const q = source.createProgress();
+  source.recordPoll(q, { nowMs: 0, ok: true, K: 44 });
+  source.recordPoll(q, { nowMs: 1000, ok: true, K: 9 });
+  source.recordPoll(q, { nowMs: 65000, ok: true, K: 44 });
+  assert.equal(label(q, 65000), "STALE");
+  source.recordPoll(q, { nowMs: 66000, ok: true, K: 46 });
+  assert.equal(label(q, 66000), "LIVE · progress 0 s ago");
+});
+
+test("rule 5: arrivals that don't grow K never refresh LIVE; a failed poll is STALE · transport at once; a file is REPLAY", () => {
+  const p = source.createProgress();
+  assert.equal(label(p, 0), "STALE", "before the first page");
+  source.recordPoll(p, { nowMs: 0, ok: true, K: 10 });
+  for (let t = 1000; t <= 60000; t += 1000) source.recordPoll(p, { nowMs: t, ok: true, K: 10 });
+  assert.equal(label(p, 60000), "LIVE · progress 60 s ago");
+  source.recordPoll(p, { nowMs: 61000, ok: true, K: 10 });
+  assert.equal(label(p, 61000), "STALE", "polls with no growth don't keep it LIVE");
+  source.recordPoll(p, { nowMs: 62000, ok: true, K: 11 });
+  assert.equal(label(p, 62000), "LIVE · progress 0 s ago");
+  source.recordPoll(p, { nowMs: 63000, ok: false });
+  assert.deepEqual(source.liveMode(p, 63000), { mode: "STALE", reason: "transport", label: "STALE · transport" });
+  source.recordPoll(p, { nowMs: 64000, ok: true, K: 11 });
+  assert.equal(label(p, 64000), "LIVE · progress 2 s ago", "a good poll clears the failure");
+  assert.equal(label(p, 70000), "STALE", "no poll within 5 s");
+  assert.equal(source.modeNow("file", null, 0).label, "REPLAY");
+  assert.equal(source.modeNow("api", null, 0).label, "STALE");
+  assert.equal(source.modeNow("api", { progress: p }, 64000).mode, "LIVE");
 });

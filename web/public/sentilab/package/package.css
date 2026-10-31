@@ -39,6 +39,8 @@ a { color: var(--cyan); }
 .mode.live i { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 1.6s ease-in-out infinite; }
 .mode.stale { border-color: #6b5a3c; color: var(--amber); }
 .mode.stale i { background: var(--amber); }
+.mode.stale.broken { border-color: var(--red-line); background: var(--red-bg); color: #f6c3b2; }
+.mode.stale.broken i { background: var(--red); }
 .mode.replay { color: #c9d6d9; }
 @keyframes pulse { 50% { opacity: .35; } }
 .drill { padding: 5px 10px; border-radius: 4px; background: var(--amber); color: #20180c; font: 700 13px var(--mono); letter-spacing: .14em; }

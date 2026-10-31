@@ -6,7 +6,7 @@
 //   - pins come only from view-pins.js (the deployed page), never from a replay file, its manifest or the API;
 //   - ?pins=test (keys anyone can derive) is honoured only on a local server, exactly as lab.js does;
 //   - only the projectable prefix (verified, in-run, unbroken from seq 1) is returned for drawing.
-import { verifyChain, mode as modeLabel, parseJsonl, parseFeedBody, parseKeyResponse, publicKeyFromSeedText, sha256Hex, VERSION } from "../view-core.mjs";
+import { verifyChain, parseJsonl, parseFeedBody, parseKeyResponse, publicKeyFromSeedText, sha256Hex, VERSION } from "../view-core.mjs";
 import { VIEW_PINS } from "../view-pins.js";
 
 export const CONTRACT_VERSION = VERSION;
@@ -151,9 +151,47 @@ export function chainSummary(rows) {
   return { total, verified, ok: total > 0 && verified === total, phrases };
 }
 
-// ── mode (rule 5): client clock only ─────────────────────────────────────────────────────────────────────────
+// ── mode (VIEW ENVELOPE v0.6 rule 5): client clock only, never ts ────────────────────────────────────────────
+// The same rule as the contract's reference, paging.mjs liveLabel() over the v0.5 progressTracker():
+//   1. the latest poll failed: "STALE · transport", at once;
+//   2. K (the projectable prefix) is below the highest value it has reached: a late conflict or break froze the
+//      board at an earlier seq, so "STALE · chain broken", AT ONCE, even if K grew moments before. LIVE never sits
+//      next to a board that just froze;
+//   3. otherwise LIVE when a poll succeeded within 5 s and K grew (rose above its high) within 60 s, both
+//      inclusive; else STALE (including before the first page).
+// Arrivals that don't grow K (duplicates, unverified envelopes, envelopes after a break or conflict) never refresh
+// LIVE. After a drop, LIVE returns only when K is back at its high and its last growth is within 60 s.
+export const POLL_OK_MS = 5_000;
+export const PROGRESS_MS = 60_000;
+export const STALE_REASONS = Object.freeze({ transport: "transport", chain_broken: "chain broken" });
+export function createProgress() {
+  return { K: 0, highK: 0, lastPollOk: null, lastProgress: null, failure: null };
+}
+// Feed it every poll of the event feed: ok (the page arrived and was read) and K after it.
+export function recordPoll(progress, { nowMs, ok, K = progress.K, failure = "transport" }) {
+  if (!ok) { progress.failure = failure; return progress; }
+  progress.failure = null;
+  progress.lastPollOk = nowMs;
+  progress.K = K;
+  if (K > progress.highK) { progress.highK = K; progress.lastProgress = nowMs; }
+  return progress;
+}
+export function liveMode(progress, nowMs) {
+  if (progress.failure) {
+    const reason = STALE_REASONS[progress.failure] ?? String(progress.failure);
+    return { mode: "STALE", reason, label: `STALE · ${reason}` };
+  }
+  if (progress.K < progress.highK) return { mode: "STALE", reason: STALE_REASONS.chain_broken, label: `STALE · ${STALE_REASONS.chain_broken}` };
+  const within = (t, limit) => Number.isFinite(t) && Number.isFinite(nowMs) && t <= nowMs && nowMs - t <= limit;
+  if (within(progress.lastPollOk, POLL_OK_MS) && within(progress.lastProgress, PROGRESS_MS)) {
+    return { mode: "LIVE", reason: null, label: `LIVE · progress ${Math.floor((nowMs - progress.lastProgress) / 1000)} s ago` };
+  }
+  return { mode: "STALE", reason: null, label: "STALE" };
+}
+// { mode, reason, label } for the header. A replay file is always REPLAY.
 export function modeNow(kind, live, nowMs) {
-  return kind === "file" ? modeLabel("file", null, null, nowMs) : modeLabel("api", live.lastPollOk, live.lastVerifiedArrival, nowMs);
+  if (kind === "file") return { mode: "REPLAY", reason: null, label: "REPLAY" };
+  return liveMode(live?.progress ?? createProgress(), nowMs);
 }
 
 // ── live feed: GET /api/view/runs, then GET /api/view/events?run_id=&after= ──────────────────────────────────
@@ -161,7 +199,7 @@ export function modeNow(kind, live, nowMs) {
 export function createLiveFeed({ trust, runId = null, onChange }) {
   const state = {
     runs: null, runsAt: 0, runId, envelopes: [], seen: new Set(), verification: null,
-    lastPollOk: null, lastVerifiedArrival: null, verifiedSeen: new Set(), connected: null, error: "", truncated: false,
+    progress: createProgress(), connected: null, error: "", truncated: false,
   };
   let timer = null, stopped = true;
   const schedule = (ms) => { clearTimeout(timer); if (!stopped) timer = setTimeout(poll, ms); };
@@ -176,7 +214,7 @@ export function createLiveFeed({ trust, runId = null, onChange }) {
         state.runs = (Array.isArray(doc) ? doc : isObj(doc) && Array.isArray(doc.runs) ? doc.runs : [])
           .filter((x) => isObj(x) && typeof x.run_id === "string" && x.run_id.length <= 128).slice(0, 200);
         state.runsAt = Date.now();
-        state.lastPollOk = Date.now();
+        state.progress.failure = null;
         state.connected = true;
         if (!state.runId && state.runs.length) state.runId = state.runs[0].run_id;
         if (!state.runId) { onChange(); return schedule(LIVE_BACKOFF_MS); }
@@ -185,7 +223,6 @@ export function createLiveFeed({ trust, runId = null, onChange }) {
       const r = await fetch(`/api/view/events?run_id=${encodeURIComponent(state.runId)}&after=${after}`, { cache: "no-store" });
       if (!r.ok) throw new Error(`/api/view/events answered ${r.status}`);
       const incoming = parseFeedBody(await r.text());
-      state.lastPollOk = Date.now();
       state.connected = true;
       state.error = "";
       let added = 0;
@@ -197,21 +234,15 @@ export function createLiveFeed({ trust, runId = null, onChange }) {
         state.envelopes.push(env);
         added += 1;
       }
-      if (added) {
-        state.verification = await verifyRun(state.envelopes, { runId: state.runId, trust });
-        let fresh = false;
-        for (const row of state.verification.rows) {
-          if (row.status !== "verified") continue;
-          const id = `${row.seq}:${row.event_id}`;
-          if (!state.verifiedSeen.has(id)) { state.verifiedSeen.add(id); fresh = true; }
-        }
-        if (fresh) state.lastVerifiedArrival = Date.now();
-      }
+      if (added) state.verification = await verifyRun(state.envelopes, { runId: state.runId, trust });
+      // Rule 5 progress: K after this page. Only a rise above K's high is progress; a drop is "chain broken".
+      recordPoll(state.progress, { nowMs: Date.now(), ok: true, K: state.verification?.prefixEnd ?? 0 });
       onChange();
       schedule(LIVE_POLL_MS);
     } catch (error) {
       state.connected = false;
       state.error = String(error?.message ?? error);
+      recordPoll(state.progress, { nowMs: Date.now(), ok: false, failure: "transport" });
       onChange();
       schedule(LIVE_BACKOFF_MS);
     }

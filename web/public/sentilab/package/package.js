@@ -276,9 +276,9 @@ function renderDom() {
 }
 
 function renderTop(src, v) {
-  const m = modeNow(S.source === "api" ? "api" : "file", S.live?.state ?? {}, Date.now());
-  $("mode").className = `mode ${m.toLowerCase()}`;
-  $("modeText").textContent = m;
+  const m = modeNow(S.source === "api" ? "api" : "file", S.live?.state ?? null, Date.now());
+  $("mode").className = `mode ${m.mode.toLowerCase()}${m.reason === "chain broken" ? " broken" : ""}`;
+  $("modeText").textContent = m.label;
   $("drill").hidden = !(src && isDrill(src.envelopes ?? []));
   $("testKeys").hidden = !S.trust?.testMode;
   const meta = $("runMeta");
