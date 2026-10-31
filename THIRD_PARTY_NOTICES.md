@@ -18,7 +18,8 @@ Obligations we follow:
   its change notice:
   - `sundai_hotspot/tap_router.py`: ported from TAP-2.5D `routing.py` (`get_input`, `solve_Cplex`), Copyright the
     TAP-2.5D authors, Apache-2.0. The pin-clump model, constraints and objective are TAP's. The solver (HiGHS
-    through scipy instead of IBM CPLEX), the solver settings, the return value and the failure handling changed.
+    through scipy instead of IBM CPLEX), the solver settings, the return value, the failure handling and the
+    interposer type (passive only: the `intp_type` guard on the hop limit is dropped) changed.
   - `sundai_tap/configs/sys_ascend910_45mm.cfg` and `sys_micro150_45mm.cfg`: derived from the upstream configs, with
     a 45 mm interposer and a SentiLab legality section.
 - SuperLU (if a build links it): its BSD-style LBNL notice is reproduced in any binary distribution.

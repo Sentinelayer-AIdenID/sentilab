@@ -3,11 +3,15 @@
 Layouts per reference, never confused:
 - raw: the die centres exactly as extracted from the paper's vector figure. Approximate. It passes
   the continuous geometry rules; only the 0.5 mm search lattice refuses it. Gate zero (the
-  paper-reconstruction comparison) uses this layout, frozen by its content hash.
+  paper-reconstruction comparison) uses this layout.
 - snapped (1 mm): the first legal experiment layout, kept unchanged. It is NOT the paper's layout.
 - snap0p5: plain nearest-0.5 mm rounding of the raw layout, legal with no repair. It is the
-  ENGINEERING comparison and sensitivity baseline (astra, ScienceClaw #56857/#56858), separately
-  admitted, never a paper match. The SAMPLED envelope probes it.
+  ENGINEERING comparison and sensitivity baseline (per root's decision, ScienceClaw #56857/#56858),
+  separately admitted, never a paper match. The SAMPLED envelope probes it.
+
+The raw and snapped sections of each record stay exactly as reviewed at 063f6593: SLAB-049 (PR #56)
+pins the canonical-JSON sha256 of the raw section and refuses any change. Everything added since lives
+in raw_annotations and snapped_annotations.
 
 Geometry only: this module builds, checks and writes JSON. It runs TAP's wire router (a MILP on a
 real optimizer, no physics) and never a thermal solver. Every route goes through _routed_mm, which
@@ -42,8 +46,18 @@ SNAPPED_LABEL = "legal snapped variant (adjusted)"
 VARIANT_SUFFIX = "snap0p5"
 VARIANT_LATTICE_MM = 0.5
 VARIANT_LABEL = "0.5 mm snapped variant (plain nearest rounding, no repair): engineering baseline, not the paper's layout"
-VARIANT_ROLE = ("ENGINEERING comparison and sensitivity baseline, separately admitted (astra, ScienceClaw #56857 and "
-                "#56858). Never a paper match, and not part of gate zero: gate zero uses the raw 45 mm reference.")
+VARIANT_ROLE = ("ENGINEERING comparison and sensitivity baseline, separately admitted (per root's decision, ScienceClaw "
+                "#56857 and #56858). Never a paper match, and not part of gate zero: gate zero uses the raw 45 mm "
+                "reference.")
+REVIEWED_AT = "063f659368f32b653acf8084f85a0c7926a106ec"
+FROZEN_SECTION = ("This section is kept exactly as reviewed at 063f6593. SLAB-049 (PR #56) pins the canonical-JSON "
+                  "sha256 of the raw section and refuses any change, so later additions live in raw_annotations and "
+                  "snapped_annotations instead.")
+# raw.uncertainty_rule as reviewed; raw_annotations.uncertainty_statement says what the numbers are.
+RAW_UNCERTAINTY_RULE_AS_REVIEWED = (
+    "decode error measured on TAP's own panels (max offset from its 1 mm grid) + coordinate x relative spread of the "
+    "panel's three scale estimates + 5e-5 mm storage step, rounded up to 1e-4 mm. Fidelity of the figure to the "
+    "authors' simulated layout is not measurable from the figure.")
 LABELS = ("approximate reconstruction from published figure", "simulated reference, not silicon")
 CLAIM_LABEL = ("Simulated with [evaluator and hash], steady state, uniform power per die. Reference reconstructed "
                "from a published figure. Not CAD, not silicon, not measured.")
@@ -168,6 +182,12 @@ def _violations(geometry: TapGeometry, centers, rotated):
 def _violation_records(violations):
     return [{"rule": v.rule, "dies": list(v.dies), "amount_mm": _mm(v.amount_mm), "message": v.message}
             for v in violations]
+
+
+def section_sha256(section: dict) -> str:
+    """sha256 of a record section's canonical JSON, the form SLAB-049 pins (slab049.raw_layout_sha256)."""
+    return hashlib.sha256(json.dumps(section, sort_keys=True, separators=(",", ":"), ensure_ascii=True,
+                                     allow_nan=False).encode("utf-8")).hexdigest()
 
 
 def round_to_lattice(value: float, step: float) -> float:
@@ -417,7 +437,7 @@ def build_reference(spec: dict, decode: dict) -> dict:
     snapped_identity = layout_identity(problem.interposer_size_mm, snapped_centers, rotated,
                                        [d["footprint_mm"] for d in dies])
     snapped_norms = displacement(raw_centers, snapped_centers)
-    return {
+    record = {
         "schema": "sentilab-reference-layout-v1",
         "reference_id": spec["reference_id"],
         "ticket": TICKET,
@@ -460,24 +480,30 @@ def build_reference(spec: dict, decode: dict) -> dict:
                 f"Die {d['die']}: the outline drawn as Chiplet_{d['die']} (die-sized unit {d['die'] + 1} in the "
                 f"figure's drawing order); centre = midpoint of the outline, outline pt {d['body_pt']}, mapped "
                 f"through the panel's edge-strip frame" for d in dies],
-            "uncertainty_rule": ("An empirical estimate under stated assumptions, per coordinate (L-infinity): "
-                                 "the decode error measured on TAP's own panels (max offset from its 1 mm grid) + "
-                                 "the coordinate x the relative spread of the panel's three scale estimates + the "
-                                 "5e-5 mm storage step, rounded up to 1e-4 mm. It covers reading the figure only; "
-                                 "it is not a figure-to-silicon error bound, and the figure's fidelity to the "
-                                 "authors' simulated layout is not measurable from the figure."),
-            "identity": raw_identity,
-            "role": ("gate zero: the paper-reconstruction comparison (astra, ScienceClaw #56858). Frozen by "
-                     "identity.content_sha256; use it with its exact continuous geometry and rotations."),
+            "uncertainty_rule": RAW_UNCERTAINTY_RULE_AS_REVIEWED,
             "design_hash": raw_design.hash,
-            "continuous_rules_legal": raw_continuous_legal,
-            "continuous_rules_check": "sundai_hotspot/tap_oracle.py TapGeometry.continuous_centers_for",
             "legal_on_fixture": raw_legal,
             "fixture_gate_message": raw_reason,
             "violations_on_fixture": _violation_records(_violations(geometry, raw_centers, rotated)),
             "violations_without_center_lattice": _violation_records(physical_violations),
             "wire_proxy_mm": _mm(raw_wire),
             "routed_wirelength_mm": raw_routed,
+        },
+        "raw_annotations": {
+            "frozen": FROZEN_SECTION,
+            "reviewed_at": REVIEWED_AT,
+            "section_sha256": None,  # filled below, over the finished raw section
+            "identity": raw_identity,
+            "role": ("gate zero: the paper-reconstruction comparison (per root's decision, ScienceClaw #56857 and "
+                     "#56858). Use it with its exact continuous geometry and rotations."),
+            "continuous_rules_legal": raw_continuous_legal,
+            "continuous_rules_check": "sundai_hotspot/tap_oracle.py TapGeometry.continuous_centers_for",
+            "uncertainty_statement": (
+                "raw.center_uncertainty_mm is an empirical estimate under stated assumptions, per coordinate "
+                "(L-infinity): the decode error measured on TAP's own panels (max offset from its 1 mm grid) + the "
+                "coordinate x the relative spread of the panel's three scale estimates + the 5e-5 mm storage step, "
+                "rounded up to 1e-4 mm. It covers reading the figure only; it is not a figure-to-silicon error bound, "
+                "and the figure's fidelity to the authors' simulated layout is not measurable from the figure."),
         },
         "round_trip": {
             "criteria": (f"Our evaluator and router on the raw reference land within the paper's own numbers: "
@@ -526,10 +552,15 @@ def build_reference(spec: dict, decode: dict) -> dict:
             **snapped,
             "rotated": list(rotated),
             "design_hash": snapped_design.hash,
-            "identity": snapped_identity,
             "legal_on_fixture": True,
             "wire_proxy_mm": _mm(snapped_wire),
             "routed_wirelength_mm": snapped_routed,
+        },
+        "snapped_annotations": {
+            "frozen": FROZEN_SECTION,
+            "reviewed_at": REVIEWED_AT,
+            "section_sha256": None,  # filled below, over the finished snapped section
+            "identity": snapped_identity,
             "routed_label": ROUTED_LABEL,
         },
         "raw_to_snapped_mm": deltas,
@@ -542,6 +573,9 @@ def build_reference(spec: dict, decode: dict) -> dict:
         },
         "wire_metric": WIRE_METRIC,
     }
+    for section in ("raw", "snapped"):
+        record[f"{section}_annotations"]["section_sha256"] = section_sha256(record[section])
+    return record
 
 
 def _timing_inputs() -> dict:
@@ -600,13 +634,13 @@ def build_variant(reference: dict, decode: dict) -> dict:
         "labels": [*LABELS, "engineering comparison and sensitivity baseline, not a paper match"],
         "is_the_paper_layout": False,
         "decision": {
-            "by": "astra (ScienceClaw #56857, #56858); accepted in astra's sealed review of PR #57",
-            "rationale": ("Chosen because plain rounding is legal on the fixture with zero repair moves and moves the "
-                          "dies less than the 1 mm variant. Decided before any new thermal outcome, and NOT chosen "
-                          "to fit the published routed wire."),
+            "by": "root (ScienceClaw #56857, #56858)",
+            "rationale": ("Per root's decision (ScienceClaw #56857, #56858): chosen because plain rounding is legal on "
+                          "the fixture with zero repair moves and moves the dies less than the 1 mm variant; made "
+                          "before any new thermal outcome, and NOT chosen to fit the published routed wire."),
         },
         "derived_from": {"reference_id": reference["reference_id"],
-                         "raw_identity_sha256": raw["identity"]["content_sha256"],
+                         "raw_identity_sha256": reference["raw_annotations"]["identity"]["content_sha256"],
                          "raw_design_hash": raw["design_hash"]},
         "units": UNITS,
         "fixture": reference["fixture"],
@@ -728,7 +762,7 @@ def build_envelope_plan(references: list[dict], variants: list[dict]) -> dict:
         "references": plan["plans"],
         "superseded": {
             "what": "the first plan, which probed the 1 mm snapped variants",
-            "status": "superseded before any grant (astra #56857, warden review P2); never granted, never run",
+            "status": "superseded before any grant (root #56857, warden review P2); never granted, never run",
             "expected_call_count": prior["total"],
             "forecast_cpu_s": round(prior["forecast"], 3),
             "proposed_cap_cpu_s": round(prior["cap"], 3),

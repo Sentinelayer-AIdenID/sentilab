@@ -206,6 +206,19 @@ class DataMutationTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "overlap|minimum spacing|margin"):
                         refs.check_snapped_reference_is_legal_and_explained(ref)
 
+    def test_a_moved_raw_die_fails_its_pinned_content_hash(self):
+        ref = self.reference()
+        ref["raw"]["centers_mm"][2][1] += 0.0001
+        with self.assertRaisesRegex(AssertionError, "the raw layout moved"):
+            refs.check_layouts_keep_their_pinned_content_hashes(ref)
+
+    def test_an_annotation_written_into_the_frozen_raw_section_is_caught(self):
+        ref = self.reference("micro150-tap25d-fig5a")
+        ref["raw"]["role"] = ref["raw_annotations"]["role"]
+        refs.check_layouts_keep_their_pinned_content_hashes(ref)  # the geometry itself is unchanged
+        with self.assertRaisesRegex(AssertionError, "the raw section changed since 063f6593"):
+            refs.check_sections_are_as_reviewed(ref)
+
     def test_an_unrecorded_adjustment_is_caught(self):
         ref = self.reference()
         ref["snapped"]["adjustments"].pop()

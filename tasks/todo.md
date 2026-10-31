@@ -35,13 +35,15 @@ The controller uses a new 0700 root, immutable reservation and atomic state; a d
 
 Merged main (#55) into the PR as a pure merge commit; the only hand resolution is in `tap_oracle_worker.py` (both sides kept).
 
-Post-merge repair (astra #56857/#56858, warden review, astra sealed review):
+Post-merge repair (root #56857/#56858, warden review, astra's PR review comment 6545653066):
 - [x] 0.5 mm engineering variants (plain nearest rounding, ties up, no repair) with manifests; raw and 1 mm layouts unchanged and pinned.
 - [x] Frozen raw identities (content hashes) and `TapGeometry.continuous_centers_for` for gate-zero validation without the lattice.
 - [x] Envelope rebased on the 0.5 mm variants: 46 calls, forecast 220.4 CPU-s, proposed cap 321.5 CPU-s; first plan (45 / 215.851 / 316.308) kept as superseded forecasts.
 - [x] Router: refuses non-optimal solves and malformed inputs; SciPy pinned, HiGHS version recorded (not pinned); change notice and THIRD_PARTY_NOTICES entry.
 - [x] Claims: three named temperature statistics; wire agreement as consistency evidence (translation invariance); reuse of the five panels disclosed; heuristic overhead labelled; no "solver grant" claim; norms named; decoder docstring states what it does.
-- [x] No-append rule widened to the sealed review's words: the envelope is its own job and is never appended to any other job, the gate-zero job included.
+- [x] No-append rule widened to the review's words: the envelope is its own job and is never appended to any other job, the gate-zero job included.
 - [x] astra #56951 P2: the SciPy pin is checked before the optimizer runs, at one guarded routing boundary (`_routed_mm`). Under a mismatched SciPy, `build_reference`, `build_variant` and `build_all` make zero optimizer calls; the matching pin still makes every route and records the versions it checked. HiGHS is recorded, not pinned.
 
-25 code mutants and 7 data mutations each fail their checks. Local runs use a refusing stub for HotSpot: the seven existing solve tests fail identically on main, nothing else fails.
+- [x] Warden #56968: the raw and 1 mm sections are restored exactly as reviewed at 063f6593 (SLAB-049 pins the raw section's canonical-JSON sha256); later additions moved to `raw_annotations`/`snapped_annotations`; section and layout content hashes pinned by tests; TAP input generation in-process (no child process for #37's launch-gate inventory); router notice names the passive-only interposer; micro150 cfg notice drops `path`; README wording (assumption, root's decision, 0.054 mm source); per-base hashes in ENVELOPE-PLAN.md.
+
+25 code mutants and 9 data mutations each fail their checks. Local runs use a refusing stub for HotSpot: the seven existing solve tests fail identically on main, nothing else fails.

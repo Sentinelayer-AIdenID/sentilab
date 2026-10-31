@@ -117,7 +117,7 @@
  ],
  "fixture": {
   "config": "sundai_tap/configs/sys_micro150_45mm.cfg",
-  "config_sha256": "da94828d683b0d16a243907d51927761892e82f9725f17bc96ab1c867563ed89",
+  "config_sha256": "de6e3edbed848f1bd81758a92f72a1f0b6aa5ffa60aca3153a324cf7a78d9ffd",
   "fixture_id": "micro150-45mm",
   "frame_mm": 45.0
  },
@@ -218,8 +218,6 @@
     27.4497
    ]
   ],
-  "continuous_rules_check": "sundai_hotspot/tap_oracle.py TapGeometry.continuous_centers_for",
-  "continuous_rules_legal": true,
   "decoded_size_mm": [
    [
     8.2497,
@@ -300,6 +298,127 @@
    "Die 6: the outline drawn as Chiplet_6 (die-sized unit 7 in the figure's drawing order); centre = midpoint of the outline, outline pt [75.8398, 86.0535, 86.4782, 96.6919], mapped through the panel's edge-strip frame",
    "Die 7: the outline drawn as Chiplet_7 (die-sized unit 8 in the figure's drawing order); centre = midpoint of the outline, outline pt [41.9758, 86.0535, 52.6142, 96.6919], mapped through the panel's edge-strip frame"
   ],
+  "label": "raw reconstruction (approximate, from published figure)",
+  "legal_on_fixture": false,
+  "lower_left_mm": [
+   [
+    13.8,
+    13.0497
+   ],
+   [
+    22.9503,
+    13.0497
+   ],
+   [
+    22.9503,
+    22.9493
+   ],
+   [
+    13.8,
+    22.9493
+   ],
+   [
+    4.2006,
+    13.1746
+   ],
+   [
+    32.0503,
+    13.1746
+   ],
+   [
+    32.0503,
+    23.0751
+   ],
+   [
+    4.2006,
+    23.0751
+   ]
+  ],
+  "rotated": [
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "routed_wirelength_mm": 67688.4,
+  "uncertainty_rule": "decode error measured on TAP's own panels (max offset from its 1 mm grid) + coordinate x relative spread of the panel's three scale estimates + 5e-5 mm storage step, rounded up to 1e-4 mm. Fidelity of the figure to the authors' simulated layout is not measurable from the figure.",
+  "violations_on_fixture": [
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     0
+    ],
+    "message": "chiplet 0 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     1
+    ],
+    "message": "chiplet 1 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     2
+    ],
+    "message": "chiplet 2 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     3
+    ],
+    "message": "chiplet 3 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     4
+    ],
+    "message": "chiplet 4 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     5
+    ],
+    "message": "chiplet 5 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     6
+    ],
+    "message": "chiplet 6 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     7
+    ],
+    "message": "chiplet 7 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   }
+  ],
+  "violations_without_center_lattice": [],
+  "wire_proxy_mm": 9.3849
+ },
+ "raw_annotations": {
+  "continuous_rules_check": "sundai_hotspot/tap_oracle.py TapGeometry.continuous_centers_for",
+  "continuous_rules_legal": true,
+  "frozen": "This section is kept exactly as reviewed at 063f6593. SLAB-049 (PR #56) pins the canonical-JSON sha256 of the raw section and refuses any change, so later additions live in raw_annotations and snapped_annotations instead.",
   "identity": {
    "canonical": {
     "centers_mm": [
@@ -392,123 +511,10 @@
    "content_sha256": "6e541158ef9cec4e9e8eed469325490d7902e5175e7a41925bad72f900a5fce9",
    "hashing": "sha256 of json.dumps(canonical, sort_keys=True, separators=(',', ':'))"
   },
-  "label": "raw reconstruction (approximate, from published figure)",
-  "legal_on_fixture": false,
-  "lower_left_mm": [
-   [
-    13.8,
-    13.0497
-   ],
-   [
-    22.9503,
-    13.0497
-   ],
-   [
-    22.9503,
-    22.9493
-   ],
-   [
-    13.8,
-    22.9493
-   ],
-   [
-    4.2006,
-    13.1746
-   ],
-   [
-    32.0503,
-    13.1746
-   ],
-   [
-    32.0503,
-    23.0751
-   ],
-   [
-    4.2006,
-    23.0751
-   ]
-  ],
-  "role": "gate zero: the paper-reconstruction comparison (astra, ScienceClaw #56858). Frozen by identity.content_sha256; use it with its exact continuous geometry and rotations.",
-  "rotated": [
-   false,
-   false,
-   false,
-   false,
-   false,
-   false,
-   false,
-   false
-  ],
-  "routed_wirelength_mm": 67688.4,
-  "uncertainty_rule": "An empirical estimate under stated assumptions, per coordinate (L-infinity): the decode error measured on TAP's own panels (max offset from its 1 mm grid) + the coordinate x the relative spread of the panel's three scale estimates + the 5e-5 mm storage step, rounded up to 1e-4 mm. It covers reading the figure only; it is not a figure-to-silicon error bound, and the figure's fidelity to the authors' simulated layout is not measurable from the figure.",
-  "violations_on_fixture": [
-   {
-    "amount_mm": 0.0751,
-    "dies": [
-     0
-    ],
-    "message": "chiplet 0 center is off the 0.5 mm placement grid",
-    "rule": "lattice"
-   },
-   {
-    "amount_mm": 0.0751,
-    "dies": [
-     1
-    ],
-    "message": "chiplet 1 center is off the 0.5 mm placement grid",
-    "rule": "lattice"
-   },
-   {
-    "amount_mm": 0.0751,
-    "dies": [
-     2
-    ],
-    "message": "chiplet 2 center is off the 0.5 mm placement grid",
-    "rule": "lattice"
-   },
-   {
-    "amount_mm": 0.0751,
-    "dies": [
-     3
-    ],
-    "message": "chiplet 3 center is off the 0.5 mm placement grid",
-    "rule": "lattice"
-   },
-   {
-    "amount_mm": 0.0751,
-    "dies": [
-     4
-    ],
-    "message": "chiplet 4 center is off the 0.5 mm placement grid",
-    "rule": "lattice"
-   },
-   {
-    "amount_mm": 0.0751,
-    "dies": [
-     5
-    ],
-    "message": "chiplet 5 center is off the 0.5 mm placement grid",
-    "rule": "lattice"
-   },
-   {
-    "amount_mm": 0.0751,
-    "dies": [
-     6
-    ],
-    "message": "chiplet 6 center is off the 0.5 mm placement grid",
-    "rule": "lattice"
-   },
-   {
-    "amount_mm": 0.0751,
-    "dies": [
-     7
-    ],
-    "message": "chiplet 7 center is off the 0.5 mm placement grid",
-    "rule": "lattice"
-   }
-  ],
-  "violations_without_center_lattice": [],
-  "wire_proxy_mm": 9.3849
+  "reviewed_at": "063f659368f32b653acf8084f85a0c7926a106ec",
+  "role": "gate zero: the paper-reconstruction comparison (per root's decision, ScienceClaw #56857 and #56858). Use it with its exact continuous geometry and rotations.",
+  "section_sha256": "6eba70b6307198fef85dbee0ec98055077b55e0fdae5bebb7ffe620556a457a7",
+  "uncertainty_statement": "raw.center_uncertainty_mm is an empirical estimate under stated assumptions, per coordinate (L-infinity): the decode error measured on TAP's own panels (max offset from its 1 mm grid) + the coordinate x the relative spread of the panel's three scale estimates + the 5e-5 mm storage step, rounded up to 1e-4 mm. It covers reading the figure only; it is not a figure-to-silicon error bound, and the figure's fidelity to the authors' simulated layout is not measurable from the figure."
  },
  "raw_to_snapped_mm": [
   {
@@ -581,7 +587,7 @@
    "routed_label": "routed (open router), not paper",
    "routed_wirelength_mm": 67688.4,
    "router": "sundai_hotspot/tap_router.py",
-   "router_sha256": "2cb1dc59d7c6cc766085d208b5c140bfc4dfffe98543f81872df08ec799985c8",
+   "router_sha256": "2d9bb56c48501891817fb7c4a19c091ea5e6df9174d1afef43f4826aa79312f3",
    "solver": {
     "highs": "1.8.0",
     "highs_status": "reported by the pinned SciPy build and recorded; not pinned, and not an admission of any other binary or host",
@@ -842,98 +848,6 @@
   "design_hash": "c1d85d5d27038aaeef2fd27a66b0d32a567a278205a067d6009587a86da1623a",
   "grid_mm": 1.0,
   "grid_steps": 4,
-  "identity": {
-   "canonical": {
-    "centers_mm": [
-     [
-      18.0,
-      17.0
-     ],
-     [
-      27.0,
-      17.0
-     ],
-     [
-      27.0,
-      27.0
-     ],
-     [
-      18.0,
-      27.0
-     ],
-     [
-      9.0,
-      17.0
-     ],
-     [
-      36.0,
-      17.0
-     ],
-     [
-      36.0,
-      27.0
-     ],
-     [
-      9.0,
-      27.0
-     ]
-    ],
-    "die_order": "TAP fixture config order",
-    "footprints_mm": [
-     [
-      8.25,
-      9.0
-     ],
-     [
-      8.25,
-      9.0
-     ],
-     [
-      8.25,
-      9.0
-     ],
-     [
-      8.25,
-      9.0
-     ],
-     [
-      8.75,
-      8.75
-     ],
-     [
-      8.75,
-      8.75
-     ],
-     [
-      8.75,
-      8.75
-     ],
-     [
-      8.75,
-      8.75
-     ]
-    ],
-    "frame_mm": 45.0,
-    "rotated": [
-     false,
-     false,
-     false,
-     false,
-     false,
-     false,
-     false,
-     false
-    ],
-    "schema": "sentilab-layout-identity-v1",
-    "units": {
-     "coordinates": "die centres; origin at the interposer's lower-left corner; +x right, +y up",
-     "length": "mm",
-     "rotation": "true = turned 90 degrees from the fixture config's (width, height)"
-    }
-   },
-   "content_sha256": "9fee13e0b37d830e3ae1e749cb0bc0d84679de1a6dea03e41ad2e5d8aeea6bbb",
-   "hashing": "sha256 of json.dumps(canonical, sort_keys=True, separators=(',', ':'))"
-  },
   "is_the_paper_layout": false,
   "label": "legal snapped variant (adjusted)",
   "legal_on_fixture": true,
@@ -1037,7 +951,6 @@
     "rule": "min_spacing"
    }
   ],
-  "routed_label": "routed (open router), not paper",
   "routed_wirelength_mm": 64771.3,
   "rule": "Round every raw centre to the nearest 1 mm grid node, then make the fewest 1 mm moves that make the layout legal on the fixture (margin with halo, halo non-overlap, 0.1 mm minimum body spacing, centre lattice). Ties at that move count go to the layout closest to the raw centres (sum of squared distances), then the lexicographically smallest centres.",
   "runner_up": {
@@ -1047,6 +960,104 @@
   },
   "squared_distance_to_raw_mm2": 2.7619,
   "wire_proxy_mm": 9.1
+ },
+ "snapped_annotations": {
+  "frozen": "This section is kept exactly as reviewed at 063f6593. SLAB-049 (PR #56) pins the canonical-JSON sha256 of the raw section and refuses any change, so later additions live in raw_annotations and snapped_annotations instead.",
+  "identity": {
+   "canonical": {
+    "centers_mm": [
+     [
+      18.0,
+      17.0
+     ],
+     [
+      27.0,
+      17.0
+     ],
+     [
+      27.0,
+      27.0
+     ],
+     [
+      18.0,
+      27.0
+     ],
+     [
+      9.0,
+      17.0
+     ],
+     [
+      36.0,
+      17.0
+     ],
+     [
+      36.0,
+      27.0
+     ],
+     [
+      9.0,
+      27.0
+     ]
+    ],
+    "die_order": "TAP fixture config order",
+    "footprints_mm": [
+     [
+      8.25,
+      9.0
+     ],
+     [
+      8.25,
+      9.0
+     ],
+     [
+      8.25,
+      9.0
+     ],
+     [
+      8.25,
+      9.0
+     ],
+     [
+      8.75,
+      8.75
+     ],
+     [
+      8.75,
+      8.75
+     ],
+     [
+      8.75,
+      8.75
+     ],
+     [
+      8.75,
+      8.75
+     ]
+    ],
+    "frame_mm": 45.0,
+    "rotated": [
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false,
+     false
+    ],
+    "schema": "sentilab-layout-identity-v1",
+    "units": {
+     "coordinates": "die centres; origin at the interposer's lower-left corner; +x right, +y up",
+     "length": "mm",
+     "rotation": "true = turned 90 degrees from the fixture config's (width, height)"
+    }
+   },
+   "content_sha256": "9fee13e0b37d830e3ae1e749cb0bc0d84679de1a6dea03e41ad2e5d8aeea6bbb",
+   "hashing": "sha256 of json.dumps(canonical, sort_keys=True, separators=(',', ':'))"
+  },
+  "reviewed_at": "063f659368f32b653acf8084f85a0c7926a106ec",
+  "routed_label": "routed (open router), not paper",
+  "section_sha256": "9bf9cf5cbb12ed9e8702e280bb2eb5632dd5a8b079a22a417b27a729291ac31c"
  },
  "source": {
   "caption": "Fig. 5: Thermal maps of the CPU-DRAM System: (a) the original placement [14], (b) a placement solution using Compact-2.5D approach, (c) TAP-2.5D solutions using repeaterless non-pipelined link, and (d) using gas-station links.",

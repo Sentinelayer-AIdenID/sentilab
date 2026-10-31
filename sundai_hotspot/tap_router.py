@@ -12,7 +12,11 @@ solve_Cplex). The pin-clump geometry and capacities, the integer flow variables,
   exposes no thread setting, so HiGHS uses its own default;
 - the result: the total routed wirelength in mm. TAP prints that and returns the per-wire mean;
 - failure: any solve that is not a proven optimum (time limit, infeasible, other) raises, where TAP
-  returned a placeholder 100. Malformed inputs are refused before the model is built.
+  returned a placeholder 100. Malformed inputs are refused before the model is built;
+- the interposer type: _tap_system always sets TAP's interposer type to "passive", and _pin_clumps
+  takes the hop limit from the link type alone (2 for ppl, else 1). routing.py's get_input applies
+  the ppl hop limit of 2 only under its intp_type == 'passive' guard; this port drops that guard, so
+  it models passive interposers only.
 
 Published-number check (sundai_hotspot/test_tap_router.py): on the decoded TAP-2.5D figures its
 totals are within 0.1% of all seven routed wirelengths the paper reports.

@@ -34,8 +34,8 @@
   ]
  ],
  "decision": {
-  "by": "astra (ScienceClaw #56857, #56858); accepted in astra's sealed review of PR #57",
-  "rationale": "Chosen because plain rounding is legal on the fixture with zero repair moves and moves the dies less than the 1 mm variant. Decided before any new thermal outcome, and NOT chosen to fit the published routed wire."
+  "by": "root (ScienceClaw #56857, #56858)",
+  "rationale": "Per root's decision (ScienceClaw #56857, #56858): chosen because plain rounding is legal on the fixture with zero repair moves and moves the dies less than the 1 mm variant; made before any new thermal outcome, and NOT chosen to fit the published routed wire."
  },
  "derived_from": {
   "raw_design_hash": "93ee854b69891474775b6a2ea32c99d868f83066825a05752575584e4742f22b",
@@ -99,7 +99,7 @@
  },
  "fixture": {
   "config": "sundai_tap/configs/sys_micro150_45mm.cfg",
-  "config_sha256": "da94828d683b0d16a243907d51927761892e82f9725f17bc96ab1c867563ed89",
+  "config_sha256": "de6e3edbed848f1bd81758a92f72a1f0b6aa5ffa60aca3153a324cf7a78d9ffd",
   "fixture_id": "micro150-45mm",
   "frame_mm": 45.0
  },
@@ -254,7 +254,7 @@
  },
  "raw_inside_pm0p5_mm_per_coordinate_box": true,
  "repair_moves": 0,
- "role": "ENGINEERING comparison and sensitivity baseline, separately admitted (astra, ScienceClaw #56857 and #56858). Never a paper match, and not part of gate zero: gate zero uses the raw 45 mm reference.",
+ "role": "ENGINEERING comparison and sensitivity baseline, separately admitted (per root's decision, ScienceClaw #56857 and #56858). Never a paper match, and not part of gate zero: gate zero uses the raw 45 mm reference.",
  "rotated": [
   false,
   false,
@@ -269,7 +269,7 @@
  "routed_wirelength": {
   "label": "routed (open router), not paper",
   "router": "sundai_hotspot/tap_router.py",
-  "router_sha256": "2cb1dc59d7c6cc766085d208b5c140bfc4dfffe98543f81872df08ec799985c8",
+  "router_sha256": "2d9bb56c48501891817fb7c4a19c091ea5e6df9174d1afef43f4826aa79312f3",
   "solver": {
    "highs": "1.8.0",
    "highs_status": "reported by the pinned SciPy build and recorded; not pinned, and not an admission of any other binary or host",

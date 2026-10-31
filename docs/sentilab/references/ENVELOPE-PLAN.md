@@ -10,7 +10,7 @@ A finite set of ±0.5 mm probes is a **sampled sensitivity envelope**. It does n
 
 ## Calls
 
-- Each probe starts from the **0.5 mm engineering variant** (`snap0p5`) of each reference, on the 45 mm fixtures at grid 64. The variant is plain nearest-0.5 mm rounding of the raw layout, legal with no repair, as decided by astra in ScienceClaw #56857.
+- Each probe starts from the **0.5 mm engineering variant** (`snap0p5`) of each reference, on the 45 mm fixtures at grid 64. The variant is plain nearest-0.5 mm rounding of the raw layout, legal with no repair, per root's decision in ScienceClaw #56857.
 - The calls are the unperturbed variant, plus each die moved +0.5 and -0.5 mm in x, and separately in y.
 - Every call id names its base, for example `ascend910-tap25d-fig6a-snap0p5/die2/x+0.5`, so no call can be mistaken for the raw layout.
 - A move the fixture gate rejects is listed under `excluded`, with its violations, and is not run.
@@ -21,12 +21,9 @@ A finite set of ±0.5 mm probes is a **sampled sensitivity envelope**. It does n
 | `micro150-tap25d-fig5a-snap0p5` | 33 | **29** | 4 CPU x moves toward the neighbouring CPU (halo overlap) |
 | **Total** | 58 | **46** | 12 |
 
-The JSON pins, for every call:
-- the call id, die, axis and delta;
-- the exact centres and rotation flags;
-- the design hash;
-- the base's content hash;
-- the fixture config sha256.
+The JSON pins:
+- **for every call:** the call id, die, axis and delta, the exact centres and rotation flags, and the design hash;
+- **once per base**, for all of that base's calls: the base's content hash and design hash, and the fixture config sha256.
 
 A runner must refuse any design whose hash is not listed.
 

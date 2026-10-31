@@ -2609,7 +2609,7 @@
    ],
    "excluded_count": 4,
    "expected_call_count": 29,
-   "fixture_config_sha256": "da94828d683b0d16a243907d51927761892e82f9725f17bc96ab1c867563ed89",
+   "fixture_config_sha256": "de6e3edbed848f1bd81758a92f72a1f0b6aa5ffa60aca3153a324cf7a78d9ffd",
    "fixture_id": "micro150-45mm",
    "grid": 64,
    "id": "micro150-tap25d-fig5a-snap0p5",
@@ -2686,7 +2686,7 @@
   "forecast_cpu_s": 215.851,
   "proposed_cap_cpu_s": 316.308,
   "qualifier": "forecasts with the same derivation as below; not measured guarantees",
-  "status": "superseded before any grant (astra #56857, warden review P2); never granted, never run",
+  "status": "superseded before any grant (root #56857, warden review P2); never granted, never run",
   "what": "the first plan, which probed the 1 mm snapped variants"
  },
  "ticket": {

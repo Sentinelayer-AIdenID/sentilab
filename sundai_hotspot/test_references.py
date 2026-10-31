@@ -14,7 +14,6 @@ import math
 import os
 from pathlib import Path
 import re
-import subprocess
 import sys
 import tempfile
 import types
@@ -40,13 +39,33 @@ RAW = ((17.1501, 22.6003), (38.3497, 22.6003), (7.335, 11.1256), (21.3048, 11.12
 SNAPPED = ((17, 23), (39, 23), (7, 11), (21, 11), (7, 35), (21, 35))
 ROTATED = (True, False, True, True, True, True)
 NAMES = ("ascend910-tap25d-fig6a", "micro150-tap25d-fig5a")
-# Layout identities as committed at 063f6593 (warden's and astra's reviewed head); they must never move.
+# Design hashes as committed at 063f6593 (the head warden and root reviewed); they must never move.
 PRIOR_DESIGN_HASHES = {
     "ascend910-tap25d-fig6a": {"raw": "b9bfcd232bdbd5c10158fc680512fab874de472077811dc637b5c283e303ebee",
                                "snapped": "a2b5cac2b8ea201c10ee7a8874d71a6ffa00f3c0116bc53c028617d6c035e03d"},
     "micro150-tap25d-fig5a": {"raw": "93ee854b69891474775b6a2ea32c99d868f83066825a05752575584e4742f22b", "snapped": "c1d85d5d27038aaeef2fd27a66b0d32a567a278205a067d6009587a86da1623a"},
 }
-# Raw-to-0.5 mm displacement maxima that astra computed independently (ScienceClaw #56857).
+# Canonical-JSON sha256 of each record's raw and 1 mm sections as reviewed at 063f6593. SLAB-049 (PR #56) pins
+# the raw values (slab049.raw_layout_sha256) and refuses any change, so neither section may ever move.
+REVIEWED_SECTION_SHA256 = {
+    "ascend910-tap25d-fig6a": {"raw": "15c77bbeecba13a7adece9a2603329d58f33a7b4301025826c1b3c1951547a3c",
+                               "snapped": "2ae6185ca8091bcad7cc6c3b2287c1874ab94cb4e9a539c4d0b483fd16600a10"},
+    "micro150-tap25d-fig5a": {"raw": "6eba70b6307198fef85dbee0ec98055077b55e0fdae5bebb7ffe620556a457a7",
+                              "snapped": "9bf9cf5cbb12ed9e8702e280bb2eb5632dd5a8b079a22a417b27a729291ac31c"},
+}
+# Layout content hashes (tap_references.layout_identity) that the README lists. Any moved die changes them.
+LAYOUT_CONTENT_SHA256 = {
+    "ascend910-tap25d-fig6a": {"raw": "0046e17b3e33feef14e570eb6a2026e17c3eea5c232160a052be62c2ae8e470e",
+                               "snapped": "45b0f7e05b82a5eedad1679d751f5684e98ef35c936db54aeea9b475ae397703",
+                               "snap0p5": "e0c7ce9eb641ee6aea7d2015e5bc0fc5e3f38f1759c2c2252f14ad5104af022a"},
+    "micro150-tap25d-fig5a": {"raw": "6e541158ef9cec4e9e8eed469325490d7902e5175e7a41925bad72f900a5fce9",
+                              "snapped": "9fee13e0b37d830e3ae1e749cb0bc0d84679de1a6dea03e41ad2e5d8aeea6bbb",
+                              "snap0p5": "ecfca7f46fd422f6c35ee35cf7c9ffc97f2a0a627907a69f03891910bc248be9"},
+}
+# The 0.5 mm variants' design hashes; astra's review (PR #57 comment 6545653066) reports the same two values.
+SNAP0P5_DESIGN_HASHES = {"ascend910-tap25d-fig6a": "224f2ea088fc50f5eb209a44f1a82fa3704c06037456dc6976657df105c6c9e0",
+                         "micro150-tap25d-fig5a": "0f806acbd50c8847d27509e4e179453cd006444c5adcd7b36413115394d0807f"}
+# Raw-to-0.5 mm displacement maxima that root computed independently (ScienceClaw #56857).
 ASTRA_MAXIMA = {"ascend910-tap25d-fig6a": (0.1952, 0.232117), "micro150-tap25d-fig5a": (0.0751, 0.090389)}
 # Raw-to-1 mm per-coordinate maxima: the committed variant, and the worst minimal 1 mm alternative.
 ONE_MM_LINF = {"ascend910-tap25d-fig6a": (1.1246, 1.1246), "micro150-tap25d-fig5a": (0.5496, 0.5503)}
@@ -228,35 +247,34 @@ def check_view_geometry_uses_the_turned_footprint(mods):
         assert _close(rect["xLL"] + rect["w"] / 2, x) and _close(rect["yLL"] + rect["h"] / 2, y), rect
 
 
-GENERATE = r'''
-import json, sys, types
-from pathlib import Path
-real, source, params, out = sys.argv[1:5]
-module = types.ModuleType("tap_oracle_worker_under_test")
-module.__file__ = real
-exec(compile(Path(source).read_text(encoding="utf-8"), real, "exec"), module.__dict__)
-module.generate_inputs(Path(out), **json.loads(Path(params).read_text(encoding="utf-8")))
-'''
-
-
 def generated_inputs(worker_source: Path, geometry, centers, rotated) -> dict[str, str]:
-    """TAP input generation only, in a child process at TAP_ROOT (TAP reads util/ relative to cwd)."""
+    """TAP input generation only, in this process. No solver, and no child process.
+
+    The worker source (the real file, or a mutant's copy) runs as a module under the real worker's path, so it
+    resolves TAP exactly as the worker does. TAP reads util/hotspot.config relative to the working directory, so
+    the call runs at TAP_ROOT. The working directory and sys.path are restored afterwards.
+    """
     problem = geometry.problem
     params = {"size": problem.interposer_size_mm, "granularity": problem.granularity_mm,
               "widths": list(problem.widths_mm), "heights": list(problem.heights_mm),
               "powers": list(problem.powers_w), "connections": [list(row) for row in problem.connections],
               "link_type": problem.link_type, "halos": list(problem.bump_halos_mm),
               "points": [[float(v) for v in c] for c in centers], "rotated": list(rotated)}
-    with tempfile.TemporaryDirectory() as directory:
-        root = Path(directory)
-        (root / "out").mkdir()
-        (root / "params.json").write_text(json.dumps(params), encoding="utf-8")
-        result = subprocess.run([sys.executable, "-c", GENERATE, str(WORKER), str(worker_source),
-                                 str(root / "params.json"), str(root / "out")], cwd=TAP_ROOT,
-                                capture_output=True, text=True, timeout=60,
-                                env={**os.environ, "PYTHONPATH": str(REPO_ROOT)})
-        assert result.returncode == 0, result.stderr[-2000:]
-        return {path.name: path.read_text(encoding="utf-8") for path in (root / "out").iterdir()}
+    saved_path, previous = list(sys.path), os.getcwd()
+    module = types.ModuleType("tap_oracle_worker_under_test")
+    module.__file__ = str(WORKER)
+    try:
+        exec(compile(Path(worker_source).read_text(encoding="utf-8"), str(WORKER), "exec"), module.__dict__)
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory)
+            os.chdir(TAP_ROOT)
+            try:
+                module.generate_inputs(out, **params)
+            finally:
+                os.chdir(previous)
+            return {path.name: path.read_text(encoding="utf-8") for path in out.iterdir()}
+    finally:
+        sys.path[:] = saved_path
 
 
 def _units(flp: str) -> dict[str, list[float]]:
@@ -287,6 +305,27 @@ def check_worker_writes_the_45mm_package(mods):
 
 
 # --- reference data -----------------------------------------------------------------------------
+
+def check_layouts_keep_their_pinned_content_hashes(ref: dict):
+    """Each layout's content hash, recomputed from its own centres, is the pinned one: a moved die fails."""
+    name = ref["reference_id"]
+    for section in ("raw", "snapped"):
+        layout = ref[section]
+        identity = tap_references.layout_identity(ref["fixture"]["frame_mm"], layout["centers_mm"],
+                                                  layout["rotated"], ref["raw"]["footprints_mm"])
+        assert identity["content_sha256"] == LAYOUT_CONTENT_SHA256[name][section], f"{name}: the {section} layout moved"
+        assert ref[f"{section}_annotations"]["identity"] == identity, f"{name}: stale {section} identity"
+
+
+def check_sections_are_as_reviewed(ref: dict):
+    """raw and snapped are exactly as reviewed at 063f6593 (SLAB-049 pins raw); additions live in annotations."""
+    name = ref["reference_id"]
+    for section in ("raw", "snapped"):
+        actual = tap_references.section_sha256(ref[section])
+        assert actual == REVIEWED_SECTION_SHA256[name][section], f"{name}: the {section} section changed since 063f6593"
+        annotations = ref[f"{section}_annotations"]
+        assert annotations["section_sha256"] == actual and annotations["reviewed_at"] == tap_references.REVIEWED_AT
+
 
 def check_raw_reference_is_stored_exactly(ref: dict):
     decode = _json(tap_references.DECODE)
@@ -410,7 +449,9 @@ def check_variant_manifest(variant: dict):
     assert variant["is_the_paper_layout"] is False and variant["repair_moves"] == 0
     assert "not part of gate zero" in variant["role"] and "not a paper match" in " ".join(variant["labels"])
     assert "NOT chosen to fit the published routed wire" in variant["decision"]["rationale"]
-    assert variant["derived_from"]["raw_identity_sha256"] == ref["raw"]["identity"]["content_sha256"]
+    assert variant["derived_from"]["raw_identity_sha256"] == ref["raw_annotations"]["identity"]["content_sha256"]
+    assert variant["identity"]["content_sha256"] == LAYOUT_CONTENT_SHA256[ref["reference_id"]]["snap0p5"]
+    assert variant["design_hash"] == SNAP0P5_DESIGN_HASHES[ref["reference_id"]]
     assert variant["rotated"] == ref["raw"]["rotated"] and variant["footprints_mm"] == ref["raw"]["footprints_mm"]
     expected = [[tap_references.round_to_lattice(v, 0.5) for v in c] for c in ref["raw"]["centers_mm"]]
     assert variant["centers_mm"] == expected, "centres are not the documented rounding of the raw layout"
@@ -688,13 +729,12 @@ class ReferenceDataTests(unittest.TestCase):
                 ref = reference(name)
                 self.assertEqual(ref["raw"]["design_hash"], PRIOR_DESIGN_HASHES[name]["raw"])
                 self.assertEqual(ref["snapped"]["design_hash"], PRIOR_DESIGN_HASHES[name]["snapped"])
-                for section in ("raw", "snapped"):
-                    layout = ref[section]
-                    identity = tap_references.layout_identity(45.0, layout["centers_mm"], layout["rotated"],
-                                                              ref["raw"]["footprints_mm"])
-                    self.assertEqual(identity, layout["identity"])
-                self.assertIn("gate zero", ref["raw"]["role"])
-                self.assertIs(ref["raw"]["continuous_rules_legal"], True)
+                check_layouts_keep_their_pinned_content_hashes(ref)
+                check_sections_are_as_reviewed(ref)
+                self.assertIn("gate zero", ref["raw_annotations"]["role"])
+                self.assertIs(ref["raw_annotations"]["continuous_rules_legal"], True)
+                self.assertIn("empirical estimate", ref["raw_annotations"]["uncertainty_statement"])
+                self.assertEqual(ref["raw"]["uncertainty_rule"], tap_references.RAW_UNCERTAINTY_RULE_AS_REVIEWED)
                 self.assertEqual(ref["raw_to_snapped_norms"]["max_per_coordinate_linf_mm"],
                                  ONE_MM_LINF[name][0])
 
