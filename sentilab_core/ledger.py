@@ -1,5 +1,5 @@
 """Fsynced per-run JSONL, one append transaction and authenticated replay prefix."""
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from collections import OrderedDict
 import errno
 import fcntl
@@ -327,11 +327,13 @@ class Ledger:
         with lock(self.lock_path, shared=True):
             return self._read()
 
-    def append(self, event_type, body, *, event_id, values=None):
+    def append(self, event_type, body, *, event_id, values=None, guard=None):
         """Service-internal append. No transport exposes roles or this method.
 
         A repeated event id returns the original envelope only for identical
         content. Roles are assigned by the service operation, not lab input.
+        An optional service guard runs after the ledger wait and soundness read,
+        and holds any authority locks through the signed, durable append.
         """
         if "actor_role" in body:
             raise ValueError("invalid caller role")
@@ -342,7 +344,8 @@ class Ledger:
         with lock(self.lock_path):
             state = self._read()
             self._require_sound(state)
-            return self._append(state, event_type, body, event_id, role, values)
+            with nullcontext() if guard is None else guard(body):
+                return self._append(state, event_type, body, event_id, role, values)
 
     def append_gate(self, gate, candidate_id, *, event_id):
         with lock(self.root / "admission.lock"):

@@ -129,6 +129,28 @@ def chiplet_main(*, context=None):
     print(json.dumps(result, allow_nan=False))
 
 
+def proposal_parser():
+    parser = SafeParser(prog="sentilab proposal")
+    parser.add_argument("command", choices=cli_commands("proposal"))
+    parser.add_argument("--request-id")
+    parser.add_argument("--positions", type=json.loads)
+    return parser
+
+
+def proposal_main(*, context=None):
+    args = vars(proposal_parser().parse_args(sys.argv[2:]))
+    command = args.pop("command")
+    arguments = {key: value for key, value in args.items() if value is not None}
+    from sentilab_core.execution import admit
+    from sentilab_core.operations import environment_context
+    from sentilab_mcp import TOOLS
+    tool = "sentilab_proposal_" + command
+    admit(tool, arguments)
+    context = context if context is not None else environment_context()
+    result = asyncio.run(TOOLS[tool](context, **arguments))
+    print(json.dumps(result, allow_nan=False))
+
+
 def gb10_parser():
     parser = SafeParser(prog="sentilab gb10")
     parser.add_argument("command", choices=cli_commands("gb10"))
@@ -241,6 +263,8 @@ def _main(conductor=False, *, context=None):
         return dataset_main(context=context)
     if not conductor and sys.argv[1:2] == ["chiplet"]:
         return chiplet_main(context=context)
+    if not conductor and sys.argv[1:2] == ["proposal"]:
+        return proposal_main(context=context)
     if not conductor and sys.argv[1:2] == ["gb10"]:
         return gb10_main(context=context)
     parser = build_parser(conductor)
@@ -274,6 +298,9 @@ def _main(conductor=False, *, context=None):
 
 def main(conductor=False, *, context=None):
     try:
+        if getattr(context, "proposal_session", None) is not None:
+            if conductor or sys.argv[1:2] != ["proposal"]:
+                raise PermissionError("capability scope refused")
         return _main(conductor, context=context)
     except PermissionError:
         print(json.dumps(error_receipt(-32001, "capability scope refused")))

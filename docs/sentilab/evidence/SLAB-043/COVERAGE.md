@@ -12,7 +12,10 @@ The run fixture is already STOPped
 before it starts and records zero solves; it does not prove active-run STOP parity.
 Thirteen recorded operations also exercise CLI SIGINT / MCP cancellation against real OS workers,
 asserting workers are reaped before acknowledgement and the MCP connection remains usable.
-This is request cancellation, not mid-call creation of a STOP file. That ticket check remains open.
+This is request cancellation, not mid-call creation of a STOP file. That ticket check remains open for these recorded operations.
+SLAB-052 proposal submission separately proves active-call STOP, CLI SIGINT and MCP cancellation with a fixture adapter,
+including signed retained charges and adapter cleanup. proposal.context is a bounded synchronous read.
+Proposal transports require a host-bound session; default hosts return not_configured. See SLAB-052 harness notes.
 The CLI cap counts UTF-8 argv bytes plus one separator per argument;
 the MCP cap counts frame bytes excluding the newline. Malformed MCP frames fail safely.
 Pending entries are reserved interfaces with rejecting schemas, not tools.
@@ -83,6 +86,8 @@ replay verifies history; export calls the existing immutable dataset exporter. N
 | research.request | research.request | capability | `sentilab research request` | `sentilab_research_request` | pending_conformance | astra-slab043-conformance over PR #34 | Both surfaces enforce shared host grants; lane tests retained. Unified STOP/five-check integration pending |
 | research.status | research.status | capability | `sentilab research status` | `sentilab_research_status` | pending_conformance | astra-slab043-conformance over PR #34 | Both surfaces enforce shared host grants; lane tests retained. Unified STOP/five-check integration pending |
 | research.export | research.export | capability | `sentilab research export` | `sentilab_research_export` | pending_conformance | astra-slab043-conformance over PR #34 | Both surfaces enforce shared host grants; lane tests retained. Unified STOP/five-check integration pending |
+| proposal.context | proposal.context | capability | `sentilab proposal context` | `sentilab_proposal_context` | done | SLAB-052 astra-slab043-conformance | Harness only: no default solver/model transport. Host must inject SLAB-048/051 readiness, admission and grant. Comparator results are operator-only. |
+| proposal.submit | proposal.submit | capability | `sentilab proposal submit` | `sentilab_proposal_submit` | done | SLAB-052 astra-slab043-conformance | Harness only: no default solver/model transport. Host must inject SLAB-048/051 readiness, admission and grant. Comparator results are operator-only. |
 
 Full schemas, current authorization requirements, errors and STOP behavior are in
 `sentilab_core/capabilities.py`; `python -m sentilab_core.capabilities` prints the inventory.

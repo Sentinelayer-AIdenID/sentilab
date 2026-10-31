@@ -48,12 +48,16 @@ async def handle(request, context):
                 "serverInfo": {"name": "sentilab-live", "version": "0.1"}}
     if method == "tools/list":
         return {"tools": [{"name": name, "description": for_tool(name).name,
-                           "inputSchema": schema(name)} for name in TOOLS]}
+                           "inputSchema": schema(name)} for name in TOOLS
+                           if getattr(context, "proposal_session", None) is None
+                           or name.startswith("sentilab_proposal_")]}
     if method == "tools/call":
         params = request.get("params")
         if not isinstance(params, dict) or not isinstance(params.get("name"), str):
             raise ValueError("invalid tool parameters")
         name, arguments = params["name"], params.get("arguments", {})
+        from sentilab_core.execution import authorize_session
+        authorize_session(name, context)
         if name in TOOLS:
             from sentilab_core.execution import authorize
             authorize(name)

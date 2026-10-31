@@ -1,0 +1,83 @@
+[
+  {
+    "mutation": "budget",
+    "file": "sentilab_core/proposals.py",
+    "before": "if len(reservations) >= h.solve_budget:",
+    "after": "if False:",
+    "test": "ProposalHarnessTests.test_signed_reservation_precedes_oracle_and_illegal_layouts_exhaust_budget",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "isolation",
+    "file": "sentilab_core/proposals.py",
+    "before": "if row[\"event\"][\"body\"].get(\"lab_id\") == lab_id]",
+    "after": "if row[\"event\"][\"body\"].get(\"lab_id\") in self.labs]",
+    "test": "ProposalHarnessTests.test_lab_context_is_isolated_and_cannot_select_answers_or_identity",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "reservation_missing",
+    "file": "sentilab_core/proposals.py",
+    "before": "reserved = h.ledger.append(\"proposal.reserved\", {",
+    "after": "reserved = (lambda *args, **kwargs: {\"hash\": \"b\" * 64})(\"proposal.reserved\", {",
+    "test": "ProposalHarnessTests.test_signed_reservation_precedes_oracle_and_illegal_layouts_exhaust_budget",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "post_stop",
+    "file": "sentilab_core/proposals.py",
+    "before": "if h.stop_file.exists():\n                receipt[\"status\"]",
+    "after": "if False:\n                receipt[\"status\"]",
+    "test": "ProposalHarnessTests.test_stop_after_backend_completion_does_not_publish_result",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "admission",
+    "file": "sentilab_core/proposals.py",
+    "before": "if \"lead\" not in record.roles:",
+    "after": "if False:",
+    "test": "ProposalHarnessTests.test_admission_revocation_grant_scope_and_signer_fail_closed",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "transport_isolation",
+    "file": "sentilab_core/execution.py",
+    "before": "if (getattr(context, \"proposal_session\", None) is not None",
+    "after": "if (False",
+    "test": "ProposalTransportTests.test_bound_proposer_cannot_discover_or_call_operator_tools",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "expiry",
+    "file": "sentilab_core/proposals.py",
+    "before": "while not task.done():\n                h.grant.check(h.run[\"run_id\"], h.problem.oracle_id, h.solve_budget, h.labs)",
+    "after": "while not task.done():",
+    "test": "ProposalHarnessTests.test_grant_expiry_during_call_drains_adapter_and_keeps_charge",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "total_bound",
+    "file": "sentilab_core/proposals.py",
+    "before": "or len(labs) * solve_budget > 10000",
+    "after": "or False",
+    "test": "ProposalHarnessTests.test_host_bounds_and_oracle_identity_cannot_change_the_run",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "serialization",
+    "file": "sentilab_core/proposals.py",
+    "before": "return json.loads(canonical(result))",
+    "after": "return result",
+    "test": "ProposalTransportTests.test_real_cli_mcp_signed_submit_replay_context_and_refusal_parity",
+    "exit_code": 1,
+    "caught": true
+  }
+]
