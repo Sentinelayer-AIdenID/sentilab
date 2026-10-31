@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Host broker; only loopback, fixed policy, append-only ledger outside build context."""
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import threading
+import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from scripts.ci_allocation import EXPIRY
-import time
 
 
-def serve(ledger, port=47631):
+def serve(ledger, port=47631, *, now=time.time):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
             pass
@@ -21,12 +21,15 @@ def serve(ledger, port=47631):
                 self.connection.settimeout(2)
                 data = json.loads(self.rfile.read(size))
                 if self.path == '/reserve':
-                    if time.time() >= EXPIRY:
+                    if now() >= EXPIRY:
                         raise RuntimeError('allocation expired')
                     binary = data['binary']
                     if not isinstance(binary, str) or len(binary) != 64:
                         raise ValueError('invalid binary digest')
                     result = {'slot': ledger.reserve(binary)}
+                elif self.path == '/violation':
+                    ledger.violation()
+                    result = {'refused': True}
                 elif self.path == '/started':
                     ledger.started(data['slot'], data['pid'])
                     result = {'started': True}
@@ -39,11 +42,15 @@ def serve(ledger, port=47631):
             except (ValueError, KeyError, RuntimeError, OSError) as exc:
                 status, result = 409, {'error': str(exc)}
             body = json.dumps(result).encode()
-            self.send_response(status)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Content-Length', str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+            try:
+                self.send_response(status)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except (BrokenPipeError, ConnectionResetError):
+                # A killed client cannot undo the fsynced reservation/violation.
+                pass
 
     server = ThreadingHTTPServer(('127.0.0.1', port), Handler)
     server.daemon_threads = True

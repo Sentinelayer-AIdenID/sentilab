@@ -2,10 +2,10 @@
 """GitHub's atomic ref creation supplies durable allocation slots, not a run count."""
 import json
 import os
-from pathlib import Path
 import sys
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 from scripts.ci_allocation import ALLOCATION_ID, Identity, RefAdmission, RefConflict
 
@@ -41,7 +41,7 @@ class GitHubRefs:
     def read_bootstrap(self):
         ref = self.request('GET', '/git/ref/' + PREFIX + 'bootstrap')
         if ref['object']['type'] != 'commit':
-            raise RuntimeError('bootstrap must point to an owner-created commit')
+            raise TypeError('bootstrap must point to an owner-created commit')
         self.bootstrap_sha = ref['object']['sha']
         commit = self.request('GET', '/git/commits/' + self.bootstrap_sha)
         self.tree = commit['tree']['sha']
@@ -52,7 +52,7 @@ class GitHubRefs:
         # returns matching refs (not the Actions list's first/default page).
         refs = self.request('GET', '/git/matching-refs/' + PREFIX + 'slot-')
         if not isinstance(refs, list):
-            raise RuntimeError('unreadable allocation counter')
+            raise TypeError('unreadable allocation counter')
         slots = {}
         for ref in refs:
             name = ref['ref'].removeprefix('refs/' + PREFIX + 'slot-')
@@ -87,7 +87,7 @@ def main():
         receipt = RefAdmission(GitHubRefs(identity.repository, os.environ['GH_TOKEN'])).admit(identity)
         receipt['state'] = 'admitted'
         code = 0
-    except (RuntimeError, ValueError, KeyError) as exc:
+    except (RuntimeError, ValueError, TypeError, KeyError) as exc:
         from dataclasses import asdict
         receipt = {'allocation_id': ALLOCATION_ID, 'identity': asdict(identity),
                    'state': 'admission_refused', 'reason': str(exc),

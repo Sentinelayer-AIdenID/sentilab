@@ -1,13 +1,12 @@
 """Real subprocesses and the shipped C entry guard, using a non-thermal C main."""
 import ast
-import json
 import os
-from pathlib import Path
 import shutil
 import signal
 import subprocess
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from scripts.ci_allocation import Ledger
@@ -71,7 +70,7 @@ int main(int argc, char **argv) {
         for binary in (self.binary, copy):
             for value in ('', '1', '9999999999999999999999999'):
                 env = dict(os.environ, CI_HOTSPOT_ENTRY_FD=value)
-                result = subprocess.run([str(binary)], capture_output=True, env=env)
+                result = subprocess.run([str(binary)], capture_output=True, env=env, check=False)
                 self.assertEqual(result.returncode, 125)
                 self.assertNotIn(b'fake entry', result.stdout)
 
@@ -89,7 +88,7 @@ int main(int argc, char **argv) {
         self.assertEqual(other.events()[-1]['state'], 'launch_error')
 
     def test_real_http_broker_routes_ci_wrapper_and_refuses_after_close(self):
-        server = serve(self.ledger, port=0)
+        server = serve(self.ledger, port=0, now=lambda: 1793448000)
         self.addCleanup(server.server_close)
         self.addCleanup(server.shutdown)
         with patch.object(ci_gate, 'BROKER_PORT', server.server_port), patch.dict(os.environ, CI_ALLOCATION='1'):
@@ -115,3 +114,18 @@ int main(int argc, char **argv) {
         self.assertFalse(any(isinstance(node, ast.Attribute) and node.attr == 'Popen'
                              for node in ast.walk(method)))
         self.assertIn('ci_hotspot_entry();', (ROOT / 'sundai_hotspot/hotspot.c').read_text())
+
+    def test_ignored_direct_call_still_poisoned_the_job_ledger(self):
+        # The compiled entry reports a bypass attempt independently of its caller.
+        server = serve(self.ledger, now=lambda: 1793448000)
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        result = subprocess.run([str(self.binary)], capture_output=True, check=False)
+        self.assertEqual(result.returncode, 125)
+        import time
+        deadline = time.monotonic() + 2
+        while not self.ledger.summary()['direct_call_violations'] and time.monotonic() < deadline:
+            time.sleep(.01)
+        self.assertEqual(self.ledger.summary()['direct_call_violations'], 1)
+        with self.assertRaisesRegex(RuntimeError, 'closed'):
+            self.launch()

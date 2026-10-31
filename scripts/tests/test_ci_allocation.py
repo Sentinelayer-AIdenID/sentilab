@@ -1,11 +1,15 @@
 """Allocation invariants: no thermal solver is executed by this suite."""
-import json
-from pathlib import Path
 import tempfile
 import unittest
+from pathlib import Path
 
-from scripts.ci_allocation import Identity, Ledger, RefAdmission, CPUAccount, RefConflict
-
+from scripts.ci_allocation import (
+    CPUAccount,
+    Identity,
+    Ledger,
+    RefAdmission,
+    RefConflict,
+)
 
 IDENTITY = Identity('example/repo', '123', '1', 'container', {}, 'a' * 40, 'b' * 40)
 
@@ -55,9 +59,8 @@ class CPUTests(unittest.TestCase):
 
     def test_meter_failure_regression_or_observation_gap_fails_closed(self):
         for usage, monitor, clock in ((99, 0, 1), (100, 0, 3), (float('nan'), 0, 1)):
-            with self.subTest(usage=usage, clock=clock):
-                with self.assertRaises(RuntimeError):
-                    CPUAccount(100, 0, 0).observe(usage, monitor, clock)
+            with self.subTest(usage=usage, clock=clock), self.assertRaises(RuntimeError):
+                CPUAccount(100, 0, 0).observe(usage, monitor, clock)
 
 
 class FakeRefs:
@@ -103,10 +106,6 @@ class AdmissionTests(unittest.TestCase):
         rerun = Identity('example/repo', '123', '2', 'container', {}, 'a' * 40, 'b' * 40)
         with self.assertRaisesRegex(RuntimeError, 'attempt'):
             RefAdmission(FakeRefs()).admit(rerun, now=1793448000)
-
-
-if __name__ == '__main__':
-    unittest.main()
 
 
 class MoreAdmissionTests(unittest.TestCase):
@@ -177,3 +176,7 @@ class MoreLedgerTests(unittest.TestCase):
                 stream.write('{')
             with self.assertRaises(RuntimeError):
                 ledger.reserve('fake')
+
+
+if __name__ == '__main__':
+    unittest.main()

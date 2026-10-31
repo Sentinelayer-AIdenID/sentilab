@@ -1,13 +1,13 @@
 """SLAB-046 policy and append-only accounting; stdlib only, no solver imports."""
-from contextlib import contextmanager
-from dataclasses import asdict, dataclass
 import fcntl
 import json
 import math
 import os
-from pathlib import Path
 import re
 import time
+from contextlib import contextmanager
+from dataclasses import asdict, dataclass
+from pathlib import Path
 
 ALLOCATION_ID = '56314'
 EXPIRY = 1793556000  # 2026-11-01T18:00:00Z
@@ -91,7 +91,7 @@ class Ledger:
 
     def reserve(self, binary):
         with self._locked() as (stream, events):
-            if any(row['event'] == 'finished' for row in events):
+            if any(row['event'] in ('finished', 'violation') for row in events):
                 raise RuntimeError('allocation closed')
             count = sum(row['event'] == 'reserved' for row in events)
             if count >= LAUNCH_CAP:
@@ -99,6 +99,10 @@ class Ledger:
             slot = count + 1
             self._append(stream, events, 'reserved', slot=slot, binary=binary)
             return slot
+
+    def violation(self):
+        with self._locked() as (stream, events):
+            self._append(stream, events, 'violation', reason='unguarded HotSpot entry attempted')
 
     def started(self, slot, pid):
         with self._locked() as (stream, events):
@@ -137,6 +141,7 @@ class Ledger:
                 'launches_reserved': sum(row['event'] == 'reserved' for row in events),
                 'launches_settled': sum(row['event'] == 'settled' for row in events),
                 'executions_started': sum(row['event'] == 'started' for row in events),
+                'direct_call_violations': sum(row['event'] == 'violation' for row in events),
                 'state': final.get('state', 'in_progress'), 'cpu': final.get('cpu'),
                 'events': events, 'experiment_allowance_charged': 0,
                 'historic_consumption': 'unknown; not reconstructed from visible run count'}

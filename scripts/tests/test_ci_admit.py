@@ -1,10 +1,10 @@
 """Drive the shipped durable-store adapter, artifact witness and workflow wiring."""
-from dataclasses import asdict
 import json
-from pathlib import Path
 import unittest
+from dataclasses import asdict
+from pathlib import Path
 
-from scripts.ci_admit import GitHubRefs, PREFIX
+from scripts.ci_admit import PREFIX, GitHubRefs
 from scripts.ci_reconcile import reconcile
 from scripts.tests.test_ci_allocation import IDENTITY
 
@@ -64,8 +64,9 @@ class SettlementTests(unittest.TestCase):
         self.assertEqual(result['identity']['build_sha'], 'b' * 40)
 
     def test_settlement_identity_and_complete_terminal_state_are_required(self):
-        from scripts.ci_allocation import Ledger
         import tempfile
+
+        from scripts.ci_allocation import Ledger
         with tempfile.TemporaryDirectory() as directory:
             ledger = Ledger(Path(directory) / 'events.jsonl', IDENTITY)
             self.assertEqual(reconcile(asdict(IDENTITY), 'failure', ledger.summary())['charged_launches'], 100)
