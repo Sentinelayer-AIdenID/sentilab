@@ -23,7 +23,7 @@ from .codes import FIELDS, GROUPS, MAX_VIOLATIONS, ORDER, REASON_CODES, RECORD_C
 from .labels import LISTS, label_for, label_for_all
 from .predicates import apply_suppression, evaluate_labels, record_diagnostic
 from .schemas import NAMES, SCHEMA_DIR, SCHEMAS, VALIDATORS, StrictValidator, ecma_pattern, pattern_matches
-from .states import CHARGED, LEDGER, LIFECYCLE, SUMMARY, ledger_lifecycle
+from .states import CHARGED, LEDGER, LIFECYCLE, SUMMARY, decide, ledger_lifecycle
 from .test_golden import opener
 from .validator import (Reply, Unopenable, check_codes_ok, is_attempt, validate_local, validate_record,
                         validate_reply)
@@ -486,6 +486,21 @@ class Keys(unittest.TestCase):
         for bad in ("sentilab-open-terms/1", "sentilab-open-terms/0@" + "0" * 64, None):
             with self.assertRaises(ValueError):
                 h.terms_path(bad)
+
+    def test_a_retry_after_a_policy_refusal_needs_a_new_salt(self):
+        """Warden's review: Senti replays a row for a repeated transport key, so identical bytes replay a refusal."""
+        refused = h.transport_key_for(mv.P_PUB, room=mv.ROOM, account=mv.HUMAN, actor_kind="human", actor_id=None)
+        same = h.transport_key_for(mv.changed(mv.P_PUB), room=mv.ROOM, account=mv.HUMAN, actor_kind="human",
+                                   actor_id=None)
+        retry = mv.changed(mv.P_PUB, salt=mv.SALTS[7])
+        fresh = h.transport_key_for(retry, room=mv.ROOM, account=mv.HUMAN, actor_kind="human", actor_id=None)
+        self.assertEqual(refused, same, "identical bytes: the same key, so Senti replays the refused row")
+        self.assertNotEqual(refused, fresh, "a new salt: a new key, so a new row")
+        self.assertEqual(h.logical_key(mv.P_PUB), h.logical_key(retry))
+        decision = decide([], kind="proposal", logical_key=h.logical_key(retry),
+                          content_sha256=h.proposal_sha256(retry), parent=None, order=(2,))
+        self.assertEqual(("new", 1, ()), (decision.kind, decision.revision_index, decision.codes),
+                         "the refused row is not history, so the retry is the first revision")
 
     def test_participant_ref_is_keyed_per_challenge(self):
         ref = h.participant_ref(mv.K_CHALLENGE, mv.HUMAN)

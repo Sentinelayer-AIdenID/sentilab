@@ -145,6 +145,11 @@ the account's own earlier proposal geometry hashes in this manifest (`unknown_pa
 proposal must be one of the account's own (`unknown_proposal`). Order: numeric `createdAt`, then the action id, then the
 room id (DESIGN.md:192-194).
 
+A refused row (any rejection, including a policy refusal such as `queue_full` or `rate_limited` with its `retry_after`)
+is not `decide()`'s history and never owns its logical key. Senti returns the same row for the same transport key, so
+resending identical bytes after `retry_after` only replays the refusal: a retry needs a new salt, which gives a new
+`proposal_sha256` and so a new transport key under the same `proposal_key`.
+
 ## The routed check (DESIGN.md:776-811, 639-642)
 
 Four separate limits, each its own field; none stands in for another:

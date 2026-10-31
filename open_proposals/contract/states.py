@@ -207,7 +207,8 @@ def _check_history(history, order) -> list:
 
 def decide(history, *, kind: str, logical_key: str, content_sha256: str, parent: str | None = None,
            order: tuple) -> Decision:
-    """Section 7.3. history: this account's earlier accepted rows in this manifest, in the section 3.4 order.
+    """Section 7.3. history: this account's earlier accepted rows in this manifest, in the section 3.4 order. A refused
+    row (any rejection, a policy refusal with retry_after included) is not history and never owns its logical key.
 
     The same logical key with the same content is a duplicate of the earliest such row: no new record, the same
     receipt. The same logical key with other content is a new row rejected with idempotency_conflict: the earliest
