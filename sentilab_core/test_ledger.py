@@ -1,11 +1,13 @@
 import copy
+import json
+from pathlib import Path
 import tempfile
 import unittest
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
-from sentilab_core.envelope import canonical, check_caps, genesis
+from sentilab_core.envelope import build, canonical, check_caps, genesis, verify
 from sentilab_core.ledger import BrokenLedger, Ledger, read_prefix, replay
 
 
@@ -113,6 +115,28 @@ class LedgerTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "core gate"):
                 self.ledger.append("lifecycle.transition", {"node": "fake", "to": outcome}, event_id=outcome)
 
+    def test_tail_loss_is_detected_against_durable_head(self):
+        entries = self.append(3)
+        self.ledger.path.write_bytes(b"".join(canonical(e) + b"\n" for e in entries[:2]))
+        self.assertEqual(self.read()["last_seq"], 2)
+        self.assertIn("head", self.read()["error"])
+        with self.assertRaises(BrokenLedger):
+            self.ledger.append("node.create", {"id": "next"}, event_id="next")
+
+    def test_contract_depth_unicode_finite_and_collection_cap_vectors(self):
+        root = Path(__file__).resolve().parent.parent
+        vectors = json.loads((root / "contracts/view-envelope/vectors-view.json").read_text())
+        for case in vectors["caps"]:
+            if "build" in case:
+                continue  # byte-boundary cases are constructed in the conformance job
+            value = case.get("envelope", json.loads(case.get("raw", "null")))
+            with self.subTest(name=case["name"]):
+                if case["expect"]:
+                    with self.assertRaises(ValueError):
+                        check_caps(value)
+                else:
+                    check_caps(value)
+
     def test_all_size_caps_and_nonfinite_numbers(self):
         for value in ({"x": "a" * 513}, {"x" * 513: 1}, {"geometry": [{}] * 65},
                       {"center_temps": {str(i): 0 for i in range(65)}},
@@ -129,6 +153,47 @@ class LedgerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.ledger.append("node.create", {"too_big": "x" * 513}, event_id="oversize")
         self.assertFalse(self.ledger.path.exists())
+
+    def test_invalid_structure_is_rejected_before_signer_is_called(self):
+        calls = []
+        sign = self.signer.sign
+        self.signer.sign = lambda value: (calls.append(value), sign(value))[1]
+        event = {"event_id": "new", "seq": 1, "type": "node.create",
+                 "actor_role": "core", "body": {"id": "node"}}
+        actor = {"agent_id": None, "life_id": None, "grant_id": None, "lab": "core"}
+        for change in ({"seq": True}, {"body": []}, {"actor_role": "acceptance_gate"},
+                       {"event_id": ""}, {"type": "lifecycle.transition", "body": {"to": "accepted"}}):
+            with self.subTest(change=change):
+                with self.assertRaises(ValueError):
+                    build(event=event | change, run=run_record(), actor=actor,
+                          prev_hash=genesis("test-run"), signer=self.signer)
+                self.assertEqual(calls, [])
+        valid = build(event=event, run=run_record(), actor=actor,
+                      prev_hash=genesis("test-run"), signer=self.signer)
+        calls.clear()
+        # The unsigned payload fits, but including hash/signature crosses 64 KiB.
+        body = valid["event"]["body"]
+        for i in range(130):
+            body[f"padding-{i}"] = "x" * 480
+        remaining = 65537 - len(canonical(valid))
+        for key in list(body):
+            if key.startswith("padding-"):
+                add = min(remaining, 512 - len(body[key]))
+                body[key] += "x" * add
+                remaining -= add
+        self.assertEqual(remaining, 0)
+        self.assertEqual(len(canonical(valid)), 65537)
+        with self.assertRaisesRegex(ValueError, "oversize"):
+            build(event=valid["event"], run=valid["run"], actor=valid["actor"],
+                  prev_hash=valid["prev_hash"], ts=valid["ts"], signer=self.signer)
+        self.assertEqual(calls, [])
+
+    def test_signed_envelope_does_not_alias_caller_inputs(self):
+        body = {"id": "detached", "nested": {"value": 1}}
+        entry = self.ledger.append("node.create", body, event_id="detached")
+        body["nested"]["value"] = 2
+        self.assertEqual(entry["event"]["body"]["nested"]["value"], 1)
+        verify(entry, run_id="test-run", public_keys=self.keys)
 
 
 

@@ -104,6 +104,12 @@ class ViewTests(unittest.TestCase):
         response = self.get("/api/view/events?run_id=bad&after=0")
         self.assertEqual(response["unrenderable_rows"], 1)
         self.assertEqual(response["prefix_end"], 0)
+        for number in ("NaN", "Infinity", "1e999"):
+            (self.root / "bad.jsonl").write_text(
+                '{"run":{"run_id":"bad"},"event":{"seq":1,"body":{"J":' + number + '}}}\n')
+            response = self.get("/api/view/events?run_id=bad&after=0")
+            self.assertEqual(response["unrenderable_rows"], 1)
+            self.assertEqual(response["prefix_end"], 0)
 
     def test_service_starts_without_post_and_graceful_restart_keeps_progress(self):
         oracle = asyncio.run(PlateOracle().initialize())
