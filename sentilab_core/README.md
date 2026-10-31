@@ -14,6 +14,22 @@ dependent. Arm exploration state is reconstructed from recorded measurements,
 including valid losers. The wire cap is fixed at the initial layout's weighted
 Manhattan wire proxy; it never follows the board.
 
+Candidate `node.create` envelopes include `values.geometry`, taken from that
+candidate's recorded layout: `{id, xLL, yLL, w, h, layer}` for each chiplet.
+Coordinates are lower-left positions and dimensions in millimetres, declared by
+`values.units = "mm"`; `layer = 0` denotes the single chiplet placement plane.
+Measurements publish the chip-layer grid peak as `values.J` with `unit = "C"`
+and the weighted Manhattan wire proxy as `values.W`. The HotSpot evaluator
+returns a chip-layer heatmap and its peak, but does not compute per-chiplet
+center temperatures. Consequently `values.center_temps` is absent; the peak is
+not a substitute for center samples. Views can show J and the layout without a
+center-temperature overlay.
+
+These fields apply to newly appended rows. Historical rows may lack geometry
+or center temperatures, or spell the Celsius unit `°C`; their bytes, hashes and
+signatures remain unchanged. Readers must accept those omissions and must not
+insert defaults or normalize units before verifying a signed envelope.
+
 Every run has an append-only, fsynced JSONL ledger with a run-scoped sequence and
 idempotency keys. Opening or appending verifies the entire chain. A broken ledger
 refuses writes. Read-only replay and the view expose the verified prefix and a
