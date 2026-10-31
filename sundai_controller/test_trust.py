@@ -96,8 +96,18 @@ def fixtures():
     changed("wrong-lane-label")["lane_id"] = "ucb1"
     legacy = copy.deepcopy(valid)
     del legacy["record_certificate"]
+    replays = {}
+    for name, age in (("25-hours", 25 * 60 * 60), ("31-days", 31 * 24 * 60 * 60)):
+        # Age the real producer and its signed events, then verify with the current clock.
+        with patch("time.time", return_value=time.time() - age):
+            replay = asyncio.run(run_four_lanes(design(), Oracle(), service_key=service, run_id="trust-run",
+                                                evaluations_per_lane=1, shared_sample_count=0))
+        lane = replay["lane_results"]["random"]
+        replays[name] = {"run_id": replay["run_id"], "lane_id": "random", "events": lane["record"],
+                         "record_public_key": lane["record_public_key"],
+                         "record_certificate": lane["record_certificate"]}
     return {"pins": {key_id_for(public_hex(service)): public_hex(service)},
-            "run": run, "valid": valid, "legacy": legacy, "cases": cases}
+            "run": run, "valid": valid, "legacy": legacy, "cases": cases, "replays": replays}
 
 
 class TrustTests(unittest.TestCase):
@@ -153,6 +163,16 @@ class TrustTests(unittest.TestCase):
         expiry = doc["record_certificate"]["expires_at"]
         self.assertTrue(verify_chain(doc["events"], doc["record_certificate"], self.data["pins"], now=expiry - 1))
         self.assertFalse(verify_chain(doc["events"], doc["record_certificate"], self.data["pins"], now=expiry))
+
+    def test_25_hour_replay_remains_authentic(self):
+        self.assertEqual(self.inspect(self.data["replays"]["25-hours"]),
+                         {"integrity": True, "authentic": True, "origin": "authentic",
+                          "scientific_validity": "not checked"})
+
+    def test_31_day_replay_is_expired(self):
+        self.assertEqual(self.inspect(self.data["replays"]["31-days"]),
+                         {"integrity": True, "authentic": False, "origin": "invalid",
+                          "scientific_validity": "not checked"})
 
     def test_library_takes_explicit_signer_without_environment(self):
         env = os.environ.copy()
