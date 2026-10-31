@@ -100,6 +100,14 @@ class Ledger:
             self._append(stream, events, 'reserved', slot=slot, binary=binary)
             return slot
 
+    def started(self, slot, pid):
+        with self._locked() as (stream, events):
+            if (not any(row['event'] == 'reserved' and row['slot'] == slot for row in events)
+                    or any(row['event'] in ('started', 'settled') and row.get('slot') == slot
+                           for row in events)):
+                raise RuntimeError('invalid launch start')
+            self._append(stream, events, 'started', slot=slot, pid=pid)
+
     def settle(self, slot, state, returncode):
         if state not in TERMINAL:
             raise ValueError('invalid terminal state')
@@ -128,6 +136,7 @@ class Ledger:
                 'identity': self.identity, 'launch_limit': LAUNCH_CAP, 'cpu_limit_seconds': CPU_CAP,
                 'launches_reserved': sum(row['event'] == 'reserved' for row in events),
                 'launches_settled': sum(row['event'] == 'settled' for row in events),
+                'executions_started': sum(row['event'] == 'started' for row in events),
                 'state': final.get('state', 'in_progress'), 'cpu': final.get('cpu'),
                 'events': events, 'experiment_allowance_charged': 0,
                 'historic_consumption': 'unknown; not reconstructed from visible run count'}

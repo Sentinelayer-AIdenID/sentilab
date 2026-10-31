@@ -30,7 +30,7 @@ def request(event, **fields):
         connection.close()
 
 
-def run_reserved(command, *, reserve, settle, timeout=None, **kwargs):
+def run_reserved(command, *, reserve, settle, started, timeout=None, **kwargs):
     """The fake-test seam is the broker transport, never the launched code.
 
     The fd handshake authorizes exactly one compiled entry. It is an inherited
@@ -45,6 +45,7 @@ def run_reserved(command, *, reserve, settle, timeout=None, **kwargs):
         environment['CI_HOTSPOT_ENTRY_FD'] = str(child.fileno())
         process = subprocess.Popen(command, pass_fds=(child.fileno(),), env=environment, **kwargs)
         child.close()
+        started(slot, process.pid)
         parent.sendall(b'G')
         try:
             stdout, stderr = process.communicate(timeout=timeout)
@@ -73,6 +74,7 @@ def run_hotspot(command, *, capture_output=False, check=False, **kwargs):
     if capture_output:
         kwargs.update(stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     result = run_reserved(command, reserve=lambda binary: request('reserve', binary=binary)['slot'],
+                          started=lambda slot, pid: request('started', slot=slot, pid=pid),
                           settle=lambda slot, state, code: request('settle', slot=slot, state=state,
                                                                   returncode=code), **kwargs)
     if check:

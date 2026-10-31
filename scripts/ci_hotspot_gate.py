@@ -27,6 +27,9 @@ def serve(ledger, port=47631):
                     if not isinstance(binary, str) or len(binary) != 64:
                         raise ValueError('invalid binary digest')
                     result = {'slot': ledger.reserve(binary)}
+                elif self.path == '/started':
+                    ledger.started(data['slot'], data['pid'])
+                    result = {'started': True}
                 elif self.path == '/settle':
                     ledger.settle(data['slot'], data['state'], data['returncode'])
                     result = {'settled': True}
