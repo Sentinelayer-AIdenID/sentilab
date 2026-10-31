@@ -67,10 +67,12 @@ verification tiers, training links, and withdrawal-specific review coverage.
 Rejected events remain in the signed audit but cannot mutate projected evidence.
 Malformed body shapes fail closed. No runtime process executes Node.
 The Python container tests exercise all 29 reviewed evidence vectors. Required
-Node parity lives in `sentilab_core.memory_conformance`, imported by the existing
-`live-conformance` CI stage: every vector prefix, the three signed review probes,
+Node parity lives in `sentilab_core.memory_conformance`, required by the
+`contracts` CI stage and imported by `live-conformance`: every vector prefix, the three signed review probes,
 and the original before/after-withdrawal fixture are compared with the exact
-JavaScript contract. No test is conditionally skipped when Node is unavailable.
+JavaScript contract. These parity tests skip explicitly when Node is unavailable;
+the contracts job requires `node --version` before running them. Pure Python
+memory tests still run in the container without Node.
 
 ## Advisory routing interface
 

@@ -1,6 +1,7 @@
-"""Required Node parity, loaded by live-conformance CI, never Docker discovery."""
+"""Node parity required by contracts CI; safe to load without Node locally."""
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import unittest
 
@@ -10,6 +11,7 @@ from sentilab_core import test_memory
 from sentilab_core.test_projection_contract import evidence_vectors
 
 
+@unittest.skipUnless(shutil.which("node"), "Node parity requires node; enforced in contracts CI")
 class MemoryProjectionConformance(unittest.TestCase):
     setUp = test_memory.MemoryTests.setUp
     run_record = test_memory.MemoryTests.run_record

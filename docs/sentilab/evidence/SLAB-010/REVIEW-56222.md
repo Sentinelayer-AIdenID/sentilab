@@ -1,5 +1,49 @@
 # PR #23 review #56222: contract-valid memory and Python runtime independence
 
+## Latest follow-up: 2026-10-31, 08:24 UTC
+
+Warden requested an explicit `unittest.skipUnless(shutil.which("node"), ...)`
+guard and a complete `HEAD` bundle at `/workspace/slab010.bundle`. The guard now
+applies to all three tests in `MemoryProjectionConformance`. The `contracts` job
+installs Python 3.12 and the pinned signing fixture dependency, requires
+`node --version` to succeed, then executes the module. The existing
+`live-conformance` entry point still includes the same tests. This supersedes
+the earlier no-skip descriptions below; the pure Python container suite and all
+parity assertions are retained. Workflow review requires SWE Excellence
+Framework sections F.2 and O.1; the change adds a gate with read-only permissions
+and a SHA-pinned action. Rollback is a revert of this follow-up commit.
+
+Fresh proof on this checkout:
+
+- Before the guard, `PATH=/nonexistent /workspace/sentilab/.venv/bin/python -m
+  unittest -q sentilab_core.memory_conformance` fails all three tests with
+  `FileNotFoundError: 'node'`. After the guard, the same command exits 0 with
+  **three explicit skips**. With Node present, `node --version` and
+  `.venv/bin/python -m unittest -q sentilab_core.memory_conformance` exit 0:
+  **three tests pass, none skipped**.
+- The 71-test Node-absent command in the 07:53 section below passes again, with
+  zero skips. `.venv/bin/python -m unittest -q
+  sentilab_core.conformance.CanonicalConformance
+  sentilab_core.conformance.HistoryConformance` passes **eight tests**.
+- All three signed P2 probes were rerun in the separate pre-fix worktree at
+  `b6bc110794865460324ef03477f2a195138bc30b`: **three failures** (missing semantics
+  admitted; empty and duplicate support overwrite retain withdrawn memory).
+  All pass in the current 71-test run. Their production fix is already included
+  in `33a294cd00db82dde307ce24155fbf34f5172ac2`.
+- `(cd contracts && sha256sum -c HASHES.txt)` passes **16 hashes**; all three
+  vector runner commands in `.github/workflows/ci.yml` exit 0.
+  `node --test web/test/sentilab-parity.test.mjs` passes **39 tests**;
+  `node web/test/make-sentilab-demo.mjs --check` reports **44 envelopes current**.
+- `.venv/bin/python -m pip check`, `.venv/bin/python -m compileall -q
+  sentilab_core sentilab_cli sentilab_mcp`, and `git diff --check` exit 0.
+
+No solver/container CI or network dependency installation was run. Local
+workflow lint was unavailable (`actionlint` and PyYAML are absent); the small
+workflow change was inspected manually. Full CI and operator export verification
+remain pending. This is a carry candidate, not a published-head or approval claim.
+
+## Earlier implementation and proof
+
 Source: `/workspace/sentilab`, branch `slab010-review`. Main base:
 `200cda7accc0f3c619273178bb4db0232c62f316`. The original memory change was
 cherry-picked as `b6bc110794865460324ef03477f2a195138bc30b`; that is the pre-fix
