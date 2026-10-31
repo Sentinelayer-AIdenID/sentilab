@@ -127,3 +127,23 @@ def sentilab_research_export(context, **arguments):
 
 TOOLS.update({"sentilab_research_" + name: globals()["sentilab_research_" + name]
               for name in ("request", "status", "export")})
+
+
+def sentilab_memory_recall(context, **arguments):
+    from sentilab_core import operations
+    return operations.memory_recall(context, **arguments)
+
+
+def sentilab_memory_audit(context, **arguments):
+    from sentilab_core import operations
+    return operations.memory_audit(context, **arguments)
+
+
+def sentilab_route(context, **arguments):
+    from sentilab_core import operations
+    return operations.route(context, **arguments)
+
+
+TOOLS.update(sentilab_memory_recall=sentilab_memory_recall,
+             sentilab_memory_audit=sentilab_memory_audit,
+             sentilab_route=sentilab_route)

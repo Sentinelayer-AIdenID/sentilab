@@ -11,6 +11,7 @@ from sentilab_core.envelope import canonical, canonical_size, check_caps, digest
 from sentilab_core.ledger import read_prefix
 from sentilab_core import test_conductor
 from sentilab_core import test_ledger
+from sentilab_core.memory_conformance import MemoryProjectionConformance
 from sentilab_core.test_history import signed_version
 
 ROOT = Path(__file__).resolve().parent.parent
