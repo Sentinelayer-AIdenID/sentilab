@@ -127,8 +127,8 @@ def evaluate(request: dict) -> dict:
         raise ValueError("solver timeout must be positive")
 
     centers = request.get("centers_mm")
-    if not isinstance(centers, list) or len(centers) != 6:
-        raise ValueError("TAP Ascend910 requires six chiplet centers")
+    if not isinstance(centers, list) or len(centers) == 0:
+        raise ValueError("TAP fixture requires at least one chiplet center")
     points = []
     for index, point in enumerate(centers):
         if not isinstance(point, list) or len(point) != 2:
@@ -151,10 +151,11 @@ def evaluate(request: dict) -> dict:
     halos = tuple(_finite_number(value, "microbump halo") for value in parameters["bump_halos_mm"])
     connections = tuple(tuple(_finite_number(value, "connection weight") for value in row)
                         for row in parameters["connections"])
-    if (size <= 0 or granularity <= 0 or len(widths) != 6 or len(heights) != 6 or len(powers) != 6 or
-            len(halos) != 6 or len(connections) != 6 or any(len(row) != 6 for row in connections) or
+    count = len(widths)
+    if (size <= 0 or granularity <= 0 or len(points) != count or len(heights) != count or len(powers) != count or
+            len(halos) != count or len(connections) != count or any(len(row) != count for row in connections) or
             not isinstance(parameters["link_type"], str)):
-        raise ValueError("TAP Ascend910 parameters are inconsistent")
+        raise ValueError("TAP fixture parameters are inconsistent")
 
     # TAP's legacy generator reads util/hotspot.config relative to the process
     # startup directory. The worker is launched with TAP_ROOT as cwd; no chdir

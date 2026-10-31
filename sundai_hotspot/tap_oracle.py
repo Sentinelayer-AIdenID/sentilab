@@ -21,7 +21,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TAP_ROOT = REPO_ROOT / "sundai_tap"
 HOTSPOT_ROOT = REPO_ROOT / "sundai_hotspot"
-TAP_CONFIG = TAP_ROOT / "configs" / "sys_ascend910.cfg"
+TAP_CONFIG_DEFAULT_ID = "ascend910"
+TAP_CONFIGS = {
+    "ascend910": TAP_ROOT / "configs" / "sys_ascend910.cfg",
+    "micro150": TAP_ROOT / "configs" / "sys_micro150.cfg",
+}
 TAP_HOTSPOT_CONFIG = TAP_ROOT / "util" / "hotspot.config"
 HOTSPOT_BINARY = HOTSPOT_ROOT / "hotspot"
 WORKER = HOTSPOT_ROOT / "tap_oracle_worker.py"
@@ -57,6 +61,10 @@ class HotSpotTimeoutError(HotSpotOracleError):
 class HotSpotThermalResult(ThermalResult):
     """Controller result plus a Manhattan center-distance wire proxy and chip heatmap."""
 
+    @property
+    def evaluator_version(self) -> str:
+        return self.solver_version
+
     wirelength_mm: float = field(kw_only=True)
     wire_metric: str = field(kw_only=True)
     heatmap_c: tuple[tuple[float, ...], ...] = field(kw_only=True)
@@ -68,10 +76,13 @@ class HotSpotThermalResult(ThermalResult):
     input_generation_seconds: float = field(kw_only=True)
     input_sha256: tuple[tuple[str, str], ...] = field(kw_only=True)
     all_layers_peak_c: float = field(kw_only=True)
+    fixture_id: str = field(kw_only=True)
+    config_sha256: str = field(kw_only=True)
 
 
 @dataclass(frozen=True)
 class TapProblem:
+    fixture_id: str
     interposer_size_mm: float
     widths_mm: tuple[float, ...]
     heights_mm: tuple[float, ...]
@@ -114,14 +125,14 @@ def _parse_float_list(value: str, label: str) -> tuple[float, ...]:
     return values
 
 
-def _load_problem(*, hotspot_binary: Path = HOTSPOT_BINARY) -> TapProblem:
-    if not TAP_CONFIG.is_file() or not TAP_HOTSPOT_CONFIG.is_file():
-        raise HotSpotOracleError("TAP Ascend910 configuration is missing")
+def _load_problem(*, config_path: Path = TAP_CONFIGS[TAP_CONFIG_DEFAULT_ID], hotspot_binary: Path = HOTSPOT_BINARY) -> TapProblem:
+    if not config_path.is_file() or not TAP_HOTSPOT_CONFIG.is_file():
+        raise HotSpotOracleError(f"TAP fixture configuration is missing: {config_path}")
     if not hotspot_binary.is_file():
         raise HotSpotOracleError(f"HotSpot binary is not built: {hotspot_binary}")
 
     parser = configparser.ConfigParser(interpolation=None)
-    parser.read_string(_read_text(TAP_CONFIG))
+    parser.read_string(_read_text(config_path))
     count = parser.getint("chiplets", "chiplet_count")
     widths = _parse_float_list(parser.get("chiplets", "widths"), "widths")
     heights = _parse_float_list(parser.get("chiplets", "heights"), "heights")
@@ -135,11 +146,11 @@ def _load_problem(*, hotspot_binary: Path = HOTSPOT_BINARY) -> TapProblem:
         granularity = parser.getfloat("general", "placer_granularity", fallback=1.0)
         link_type = parser.get("interposer", "link_type", fallback="nppl")
     except (ValueError, configparser.Error) as exc:
-        raise HotSpotOracleError("invalid TAP Ascend910 configuration") from exc
+        raise HotSpotOracleError("invalid TAP fixture configuration") from exc
     if (count != len(widths) or count != len(heights) or count != len(powers) or
             len(connections) != count or any(len(row) != count for row in connections) or
             not math.isfinite(size) or size <= 0 or not math.isfinite(granularity) or granularity <= 0):
-        raise HotSpotOracleError("inconsistent TAP Ascend910 configuration")
+        raise HotSpotOracleError("inconsistent TAP fixture configuration")
 
     ambient_kelvin = None
     for line in _read_text(TAP_HOTSPOT_CONFIG).splitlines():
@@ -160,7 +171,7 @@ def _load_problem(*, hotspot_binary: Path = HOTSPOT_BINARY) -> TapProblem:
     bump_halos = tuple(float(value) for value in system.hubump)
 
     generator_paths = (
-        TAP_CONFIG,
+        config_path,
         TAP_HOTSPOT_CONFIG,
         TAP_ROOT / "UPSTREAM_COMMIT",
         HOTSPOT_ROOT / "UPSTREAM_COMMIT",
@@ -175,7 +186,14 @@ def _load_problem(*, hotspot_binary: Path = HOTSPOT_BINARY) -> TapProblem:
         WORKER,
     )
     generators = tuple((path.relative_to(REPO_ROOT).as_posix(), _sha256(path)) for path in generator_paths)
+    fixture_id = next(
+        (fixture_id for fixture_id, fixture_path in TAP_CONFIGS.items() if fixture_path.resolve() == config_path.resolve()),
+        None,
+    )
+    if fixture_id is None:
+        raise HotSpotOracleError(f"unknown TAP fixture for config path: {config_path}")
     return TapProblem(
+        fixture_id=fixture_id,
         interposer_size_mm=size,
         widths_mm=widths,
         heights_mm=heights,
@@ -185,7 +203,7 @@ def _load_problem(*, hotspot_binary: Path = HOTSPOT_BINARY) -> TapProblem:
         granularity_mm=granularity,
         bump_halos_mm=bump_halos,
         ambient_c=ambient_kelvin - 273.15,
-        config_sha256=_sha256(TAP_CONFIG),
+        config_sha256=_sha256(config_path),
         hotspot_config_sha256=_sha256(TAP_HOTSPOT_CONFIG),
         tap_upstream_commit=_read_upstream_commit(TAP_ROOT / "UPSTREAM_COMMIT"),
         hotspot_upstream_commit=_read_upstream_commit(HOTSPOT_ROOT / "UPSTREAM_COMMIT"),
@@ -484,9 +502,9 @@ class _WarmWorkerPool:
 class HotSpotOracle:
     """Async controller oracle backed by a run-scoped pool of isolated workers."""
 
-    def __init__(self, grid_rows: int = 32, grid_cols: int = 32, *, solver_timeout_s: float = 45.0,
-                 worker_timeout_s: float | None = None, hotspot_binary: Path = HOTSPOT_BINARY,
-                 max_workers: int = DEFAULT_MAX_WORKERS):
+    def __init__(self, grid_rows: int = 32, grid_cols: int = 32, *, fixture: str = TAP_CONFIG_DEFAULT_ID,
+                 solver_timeout_s: float = 45.0, worker_timeout_s: float | None = None,
+                 hotspot_binary: Path = HOTSPOT_BINARY, max_workers: int = DEFAULT_MAX_WORKERS):
         if (isinstance(grid_rows, bool) or not isinstance(grid_rows, int) or not 1 <= grid_rows <= 128 or
                 isinstance(grid_cols, bool) or not isinstance(grid_cols, int) or not 1 <= grid_cols <= 128):
             raise ValueError("grid rows and columns must be integers from 1 through 128")
@@ -499,7 +517,10 @@ class HotSpotOracle:
             raise ValueError("worker_timeout_s must exceed solver_timeout_s")
         if isinstance(max_workers, bool) or not isinstance(max_workers, int) or max_workers < 1:
             raise ValueError("max_workers must be a positive integer")
+        if not isinstance(fixture, str) or fixture not in TAP_CONFIGS:
+            raise ValueError(f"fixture must be one of {sorted(TAP_CONFIGS)}")
 
+        self.fixture_id = fixture
         self.grid_rows = grid_rows
         self.grid_cols = grid_cols
         self.solver_timeout_s = float(solver_timeout_s)
@@ -507,12 +528,16 @@ class HotSpotOracle:
         self.max_workers = max_workers
         self._worker_pool: _WarmWorkerPool | None = None
         self.hotspot_binary = Path(hotspot_binary).resolve()
-        self.problem = _load_problem(hotspot_binary=self.hotspot_binary)
+        self.problem = _load_problem(config_path=TAP_CONFIGS[self.fixture_id], hotspot_binary=self.hotspot_binary)
         self.solver_version = (
-            f"HotSpot-7:{self.problem.hotspot_upstream_commit}:sha256:{self.problem.hotspot_binary_sha256[:16]}"
+            f"HotSpot-7:{self.problem.hotspot_upstream_commit}"
+            f":binary_sha256:{self.problem.hotspot_binary_sha256}"
+            f":config_sha256:{self.problem.config_sha256}"
+            f":grid:{self.grid_rows}x{self.grid_cols}"
         )
         self.problem_hash = _canonical_hash({
             "schema": "tfl-tap-hotspot-problem-v1",
+            "fixture_id": self.problem.fixture_id,
             "tap_config_sha256": self.problem.config_sha256,
             "tap_hotspot_config_sha256": self.problem.hotspot_config_sha256,
             "tap_upstream_commit": self.problem.tap_upstream_commit,
@@ -577,10 +602,10 @@ class HotSpotOracle:
                 any(not (math.isclose(actual[0], expected[0], rel_tol=0, abs_tol=1e-9) and
                          math.isclose(actual[1], expected[1], rel_tol=0, abs_tol=1e-9))
                     for actual, expected in zip(actual_dimensions, expected_dimensions))):
-            raise TapLegalityError("TAP Ascend910 chiplet catalog mismatch")
+            raise TapLegalityError("TAP fixture chiplet catalog mismatch")
         if (not math.isclose(candidate.width_mm, self.problem.interposer_size_mm, rel_tol=0, abs_tol=1e-9) or
                 not math.isclose(candidate.height_mm, self.problem.interposer_size_mm, rel_tol=0, abs_tol=1e-9)):
-            raise TapLegalityError("TAP Ascend910 interposer size mismatch")
+            raise TapLegalityError("TAP fixture interposer size mismatch")
 
         centers = tuple((float(x + chiplet.width_mm / 2), float(y + chiplet.height_mm / 2))
                         for chiplet, (x, y) in zip(candidate.chiplets, candidate.positions))
@@ -702,7 +727,9 @@ class HotSpotOracle:
             self.solver_version,
             converged=True,
             cost_microdollars=0,
-            evidence_kind="HotSpot 7 steady-state TAP Ascend910 grid; Manhattan wire proxy, not CPLEX routing",
+            evidence_kind=f"HotSpot 7 steady-state TAP {self.problem.fixture_id} grid; Manhattan wire proxy, not CPLEX routing",
+            fixture_id=self.problem.fixture_id,
+            config_sha256=self.problem.config_sha256,
             problem_hash=self.problem_hash,
             wirelength_mm=self._wirelength_mm(centers),
             wire_metric="connectivity-weighted Manhattan center distance (mm); not routed CPLEX length",
