@@ -334,7 +334,18 @@ class Conductor:
                 if str(exc) != "service shutdown":
                     self.finish(str(exc))
             finally:
-                await self.oracle.aclose()
+                # Keep ownership until cleanup finishes, even if EOF/cancel
+                # arrives during normal cleanup or cancellation is repeated.
+                cleanup = asyncio.create_task(self.oracle.aclose())
+                cancelled = None
+                while not cleanup.done():
+                    try:
+                        await asyncio.shield(cleanup)
+                    except asyncio.CancelledError as exc:
+                        cancelled = exc
+                cleanup.result()  # observe failures, including self-cancellation
+                if cancelled is not None:
+                    raise cancelled
             return self.snapshot()
 
 

@@ -60,6 +60,8 @@ async def serve(context):
             response = error(request["id"], -32800, "request cancelled")
         except (ValueError, TypeError, KeyError, OSError) as exc:
             response = error(request["id"], -32602, type(exc).__name__)
+        except Exception:
+            response = error(request["id"], -32603, "internal error")
         print(json.dumps(response), flush=True)
 
     def finished(id, task):
