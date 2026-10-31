@@ -184,17 +184,25 @@ class MeshIdentityTests(unittest.TestCase):
 
 
 class MeshReceiptTests(unittest.TestCase):
+    def setUp(self):
+        # Explicit test provenance keeps these synthetic runs independent of Git.
+        self.revision = '248e6e640a9bfecbca04760a9a3f82355e3072bb'
+        environment = patch.dict(mesh.os.environ, {'BUILD_SHA': self.revision})
+        environment.start()
+        self.addCleanup(environment.stop)
+
     def test_execution_commit_is_optional_provenance(self):
         cases = [
-            ('build', {'BUILD_SHA': 'container-revision'}, FileNotFoundError('git'),
-             'container-revision', 0),
-            ('git', {}, 'checkout-revision\n', 'checkout-revision', 1),
-            ('missing-git', {}, FileNotFoundError('git'), 'unknown', 1),
-            ('missing-checkout', {}, subprocess.CalledProcessError(128, ['git']), 'unknown', 1),
-            ('empty-git-output', {}, '', 'unknown', 1),
+            ('build', {'BUILD_SHA': self.revision}, FileNotFoundError('git'), self.revision, 0),
+            ('git', {}, self.revision + '\n', self.revision, 1),
+            ('missing-git', {}, FileNotFoundError('git'), None, 1),
+            ('missing-checkout', {}, subprocess.CalledProcessError(128, ['git']), None, 1),
+            ('empty-git-output', {}, '', None, 1),
         ]
 
         async def fake_call(oracle, design):
+            self.assertIsNotNone(expected, 'unresolved provenance reached evaluation')
+            self.assertEqual(git.call_count, git_calls, 'provenance was not captured before evaluation')
             return fake_thermal_result(oracle, design)
 
         for name, environment, git_result, expected, git_calls in cases:
@@ -208,8 +216,15 @@ class MeshReceiptTests(unittest.TestCase):
                 else:
                     git.return_value = git_result
                 output = Path(directory)
-                self.assertEqual(mesh.main(['--grids', '32', '64', '--layout-ids',
-                    'clustered-01', 'spread-01', '--output-dir', str(output)]), 0)
+                arguments = ['--grids', '32', '64', '--layout-ids',
+                             'clustered-01', 'spread-01', '--output-dir', str(output)]
+                if expected is None:
+                    with self.assertRaisesRegex(ValueError, 'full source revision'):
+                        mesh.main(arguments)
+                    self.assertEqual(git.call_count, git_calls)
+                    self.assertEqual(list(output.iterdir()), [])
+                    continue
+                self.assertEqual(mesh.main(arguments), 0)
                 result = json.loads((output / 'RESULT.json').read_text())
                 self.assertEqual(result['execution_commit'], expected)
                 self.assertEqual(git.call_count, git_calls)
@@ -217,6 +232,19 @@ class MeshReceiptTests(unittest.TestCase):
                 self.assertEqual(set(result['evaluator_identity']),
                                  {'hotspot_binary_sha256', 'generator_sha256'})
                 self.assertEqual(mesh.check_result(result, output), [])
+
+    def test_invalid_build_revision_fails_before_evaluation(self):
+        for revision in ('unknown', 'main', self.revision[:7], 'z' * 40):
+            with self.subTest(revision=revision), tempfile.TemporaryDirectory() as directory, \
+                    patch.dict(mesh.os.environ, {'BUILD_SHA': revision}), \
+                    patch.object(mesh.subprocess, 'check_output', side_effect=FileNotFoundError('git')), \
+                    patch.object(mesh.HotSpotOracle, '__call__',
+                                 side_effect=AssertionError('evaluation must not start')) as evaluate:
+                with self.assertRaisesRegex(ValueError, 'full source revision'):
+                    mesh.main(['--grids', '32', '64', '--layout-ids',
+                               'clustered-01', 'spread-01', '--output-dir', directory])
+                evaluate.assert_not_called()
+                self.assertEqual(list(Path(directory).iterdir()), [])
 
     def test_completed_receipts_survive_failure_and_cancellation(self):
         for failure in (RuntimeError('second call failed'), asyncio.CancelledError()):
