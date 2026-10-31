@@ -41,7 +41,9 @@ class AcceptanceGate:
             return {**result, "outcome": reason}
 
         def valid(measurement):
-            return (isinstance(measurement, dict) and measurement.get("success") is True and
+            return (isinstance(measurement, dict) and
+                    measurement.get("type") != "untrusted_source_evidence" and
+                    measurement.get("success") is True and
                     _number(measurement.get("j")) and _number(measurement.get("wire_mm")) and
                     measurement["wire_mm"] >= 0 and
                     isinstance(measurement.get("process_id"), str) and bool(measurement["process_id"]))
@@ -73,7 +75,8 @@ class AcceptanceGate:
             return outcome("reproduction_mismatch")
         if current is None:
             return outcome("accepted")
-        if not isinstance(current, dict) or not _number(current.get("j")):
+        if (not isinstance(current, dict) or current.get("type") == "untrusted_source_evidence" or
+                not _number(current.get("j"))):
             return outcome("invalid_current")
         improvement = Decimal(str(current["j"])) - Decimal(str(reproduction["j"]))
         result["improvement"] = float(improvement)
