@@ -35,6 +35,8 @@ html, body { overflow: hidden; }
 .mode.stale { border-color: #6b5a3c; color: var(--amber); }
 .mode.stale i { background: var(--amber); }
 .mode.replay { color: #c9d6d9; }
+.mode .age { font: 500 12px var(--mono); letter-spacing: 0; white-space: nowrap; }
+.mode .age:empty { display: none; }
 @keyframes pulse { 50% { opacity: .35; } }
 .drill { padding: 5px 10px; border-radius: 4px; background: var(--amber); color: #20180c; font: 700 13px var(--mono); letter-spacing: .14em; }
 .brand { display: flex; align-items: baseline; gap: 10px; white-space: nowrap; flex: none; }

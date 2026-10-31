@@ -1,31 +1,68 @@
-// Browser port of the SentiLab view-envelope reference (VIEW ENVELOPE v0.4; reference view-envelope.mjs by
-// pocket-forge, sha256 ee37a2f4...). The logic follows the reference line for line. The only changes are the
-// platform calls: WebCrypto replaces node:crypto (so hashing and verify are async), TextEncoder replaces
-// Buffer.byteLength, and keys are raw 32-byte Ed25519 public keys instead of Node KeyObjects.
-// web/test/sentilab-parity.test.mjs runs this file and the reference over the same vectors and compares results.
+// Browser port of the SentiLab view-envelope reference (VIEW ENVELOPE v0.5; reference view-envelope.mjs by
+// pocket-forge, sha256 54b24823...). The view half follows the reference line for line: the same input checks in
+// the same order (raw size, parse, iterative structure, canonical size measured without serializing), and only then
+// the duplicate and conflict policy, the hash, chain and signature checks, and the projectable prefix. Rejected input
+// never reaches canonical(), a hash or a signature check. The core's writer (makeChain) is not ported: the page never
+// signs anything.
+// The only changes are the platform calls: WebCrypto replaces node:crypto (so hashing and verify are async), a UTF-8
+// byte counter replaces Buffer.byteLength, and keys are raw 32-byte Ed25519 public keys instead of Node KeyObjects.
+// web/test/sentilab-parity.test.mjs runs this file and the reference over every v0.5 vector and compares results.
 import { canonical } from "./canonical.mjs";
 import { project } from "./evidence-projection.mjs";
 
-export const VERSION = "view-envelope/0.4";
+export const VERSION = "view-envelope/0.5";
 export const ALG = "ed25519";
-const MAX_BYTES = 64 * 1024;
-const MAX_ENTRIES = 64;
-const MAX_STRING = 512;
+const KIB = 1024;
+export const MAX_LINE_BYTES = 64 * KIB;
+export const MAX_API_LINES = 256;
+export const MAX_API_BYTES = 4 * KIB * KIB;
+export const MAX_FILE_BYTES = 64 * KIB * KIB;
+const MAX_CANONICAL_BYTES = 64 * KIB;
 const MAX_DEPTH = 8;
+const MAX_STRING = 512;
+const MAX_ENTRIES = 64;
 const POLL_OK_MS = 5_000;
-const ARRIVAL_MS = 60_000;
+const PROGRESS_MS = 60_000;
 const CAPPED_FIELDS = ["geometry", "center_temps", "artifact_hashes"];
-const SIG_HEX = /^[0-9a-f]{128}$/;
+const HEX64 = /^[0-9a-f]{64}$/;
+const HEX128 = /^[0-9a-f]{128}$/;
+// Input-check codes that mean "too big". Every other input-check code means "malformed".
+const OVERSIZE = (code) => ["line_too_large", "too_deep", "string_too_long", "too_large"].includes(code) || code.startsWith("too_many_entries:");
 
-const utf8 = (text) => new TextEncoder().encode(text);
+// ---- Instrumentation, as in the reference. Every parse, canonical(), envelope hash and signature verification goes
+// through these counters, so a test can prove that rejected input never reaches them. ----
+export const counters = { parse: 0, canonical: 0, hash: 0, verify: 0 };
+export function resetCounters() {
+  for (const key of Object.keys(counters)) counters[key] = 0;
+}
+const parseLine = (line) => { counters.parse += 1; return JSON.parse(line); };
+const canon = (value) => { counters.canonical += 1; return canonical(value); };
+
+const encoder = new TextEncoder();
 const hex = (buf) => Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
 export const fromHex = (h) => Uint8Array.from(String(h).match(/../g) ?? [], (x) => parseInt(x, 16));
 export async function sha256Hex(data) {
-  return hex(await crypto.subtle.digest("SHA-256", typeof data === "string" ? utf8(data) : data));
+  return hex(await crypto.subtle.digest("SHA-256", typeof data === "string" ? encoder.encode(data) : data));
 }
-const isObject = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
-// Characters are Unicode code points, so an astral character counts once.
-const charCount = (s) => (s.length <= MAX_STRING ? s.length : [...s].length);
+
+// The UTF-8 byte length of a string, as Buffer.byteLength and TextEncoder count it (a lone surrogate becomes U+FFFD,
+// 3 bytes). It allocates nothing. With a limit it may stop early: the result is exact up to the limit, and some
+// number above the limit once the string is longer.
+export function utf8Length(text, limit = Infinity) {
+  if (text.length > limit) return text.length;   // every UTF-16 unit is at least one byte
+  let bytes = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    const unit = text.charCodeAt(i);
+    if (unit < 0x80) bytes += 1;
+    else if (unit < 0x800) bytes += 2;
+    else if (unit >= 0xd800 && unit <= 0xdbff && i + 1 < text.length && (text.charCodeAt(i + 1) & 0xfc00) === 0xdc00) { bytes += 4; i += 1; }
+    else bytes += 3;
+    if (bytes > limit) return bytes;
+  }
+  return bytes;
+}
+
+const isPlainObject = (x) => x !== null && typeof x === "object" && !Array.isArray(x) && [Object.prototype, null].includes(Object.getPrototypeOf(x));
 
 // prev_hash of the first envelope. runId is the run the view requested, never one read from the file.
 export function genesis(runId) {
@@ -33,9 +70,11 @@ export function genesis(runId) {
 }
 
 // hash = sha256(canonical(envelope without "sig" and without "hash")), lowercase hex.
+// Call it only on input that passed the input checks.
 export function hashEnvelope(env) {
+  counters.hash += 1;
   const { sig, hash, ...covered } = env;
-  return sha256Hex(canonical(covered));
+  return sha256Hex(canon(covered));
 }
 
 // key_sha256 is sha256 of the raw 32-byte Ed25519 public key.
@@ -43,53 +82,231 @@ export function keySha256(raw) {
   return sha256Hex(raw);
 }
 
-// Size caps. Returns { ok, reasons } where reasons are cap codes, sorted.
-export function checkCaps(env) {
+// ---- Step 1 (raw size) for transports. Nothing here parses. ----
+export function splitLines(text) {
+  if (text === "") return [];
+  const lines = text.split("\n");
+  if (lines.at(-1) === "") lines.pop();
+  return lines;
+}
+// An API response over 256 lines or 4 MiB is a transport error: drop it, keep the prefix, count the poll as failed.
+export function parseApiResponse(text) {
+  if (typeof text !== "string") return { ok: false, reason: "not_text" };
+  if (utf8Length(text, MAX_API_BYTES) > MAX_API_BYTES) return { ok: false, reason: "response_too_large" };
+  const lines = splitLines(text);
+  if (lines.length > MAX_API_LINES) return { ok: false, reason: "too_many_lines" };
+  return { ok: true, lines };
+}
+export function readReplayFile(text) {
+  if (typeof text !== "string") return { ok: false, reason: "not_text" };
+  if (utf8Length(text, MAX_FILE_BYTES) > MAX_FILE_BYTES) return { ok: false, reason: "file_too_large" };
+  return { ok: true, lines: splitLines(text) };
+}
+
+// Browser transport (not in the reference): read a fetch Response body as text, but stop once it passes maxBytes raw
+// bytes, so an oversize response is never fully read, decoded or parsed. Returns { ok, text } or { ok: false, reason }.
+// The text then still goes through parseApiResponse() or readReplayFile(), exactly as in the reference.
+export async function readBodyCapped(response, maxBytes, reason) {
+  if (!response.body) {
+    const text = await response.text();
+    return utf8Length(text, maxBytes) > maxBytes ? { ok: false, reason } : { ok: true, text };
+  }
+  const reader = response.body.getReader();
+  const chunks = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > maxBytes) {
+      reader.cancel().catch(() => {});
+      return { ok: false, reason };
+    }
+    chunks.push(value);
+  }
+  const all = new Uint8Array(size);
+  let at = 0;
+  for (const chunk of chunks) { all.set(chunk, at); at += chunk.byteLength; }
+  return { ok: true, text: new TextDecoder().decode(all) };
+}
+
+// ---- Step 3 (structure). Iterative, with an explicit stack; never recursive, never canonical(). ----
+function scanString(s, reasons) {
+  let points = 0;
+  let lone = false;
+  for (let i = 0; i < s.length; i += 1) {
+    const unit = s.charCodeAt(i);
+    if (unit >= 0xd800 && unit <= 0xdbff && i + 1 < s.length && s.charCodeAt(i + 1) >= 0xdc00 && s.charCodeAt(i + 1) <= 0xdfff) i += 1;
+    else if (unit >= 0xd800 && unit <= 0xdfff) lone = true;
+    points += 1;
+  }
+  if (lone) reasons.add("lone_surrogate");
+  if (points > MAX_STRING) reasons.add("string_too_long");
+}
+
+function schemaReasons(env, reasons) {
+  if (!isPlainObject(env)) { reasons.add("schema:envelope"); return; }
+  const isString = (x) => typeof x === "string";
+  if (!isString(env.v)) reasons.add("schema:v");
+  const event = env.event;
+  if (!isPlainObject(event)) reasons.add("schema:event");
+  else {
+    if (!isString(event.event_id)) reasons.add("schema:event.event_id");
+    if (!Number.isSafeInteger(event.seq) || event.seq < 1) reasons.add("schema:event.seq");
+    if (!isString(event.type)) reasons.add("schema:event.type");
+    if (!isString(event.actor_role)) reasons.add("schema:event.actor_role");
+    if (!isPlainObject(event.body)) reasons.add("schema:event.body");
+  }
+  if (!isString(env.ts)) reasons.add("schema:ts");
+  if (!isPlainObject(env.actor)) reasons.add("schema:actor");
+  if (!isPlainObject(env.run) || !isString(env.run.run_id)) reasons.add("schema:run");
+  if (!isString(env.prev_hash) || !HEX64.test(env.prev_hash)) reasons.add("schema:prev_hash");
+  if (!isString(env.hash) || !HEX64.test(env.hash)) reasons.add("schema:hash");
+  const sig = env.sig;
+  if (!isPlainObject(sig)) reasons.add("schema:sig");
+  else {
+    if (!isString(sig.key_id)) reasons.add("schema:sig.key_id");
+    if (sig.alg !== ALG) reasons.add("schema:sig.alg");
+    if (!isString(sig.value) || !HEX128.test(sig.value)) reasons.add("schema:sig.value");
+  }
+  if (Object.hasOwn(env, "values") && !isPlainObject(env.values)) reasons.add("schema:values");
+}
+
+function structureReasons(env) {
   const reasons = new Set();
-  // Iterative walk first, so a deep envelope can't overflow the stack. The envelope is level 1 and,
-  // as in ResultCheck's depth limit, an object or array below level 8 is too deep.
-  // Every string (object keys included) and every number is checked.
+  // The envelope is level 1; only objects and arrays count as levels.
   const stack = [[env, 1]];
   while (stack.length > 0) {
     const [item, depth] = stack.pop();
-    if (typeof item === "string") {
-      if (charCount(item) > MAX_STRING) reasons.add("string_too_long");
-    } else if (typeof item === "number") {
-      if (!Number.isFinite(item)) reasons.add("non_finite_number");
-    } else if (item !== null && typeof item === "object") {
+    if (typeof item === "string") scanString(item, reasons);
+    else if (typeof item === "number") { if (!Number.isFinite(item)) reasons.add("non_finite_number"); }
+    else if (item === null || typeof item === "boolean") continue;
+    else if (Array.isArray(item) || isPlainObject(item)) {
       if (depth > MAX_DEPTH) reasons.add("too_deep");
       else if (Array.isArray(item)) for (const child of item) stack.push([child, depth + 1]);
-      else for (const key of Object.keys(item)) stack.push([key, depth + 1], [item[key], depth + 1]);
-    }
+      else for (const key of Object.keys(item)) { scanString(key, reasons); stack.push([item[key], depth + 1]); }
+    } else reasons.add("invalid_value"); // undefined, functions, BigInt, symbols, class instances
   }
-  const values = isObject(env) && isObject(env.values) ? env.values : {};
+  const values = isPlainObject(env) && isPlainObject(env.values) ? env.values : {};
   for (const field of CAPPED_FIELDS) {
     const value = values[field];
-    const entries = Array.isArray(value) ? value.length : isObject(value) ? Object.keys(value).length : 0;
+    const entries = Array.isArray(value) ? value.length : isPlainObject(value) ? Object.keys(value).length : 0;
     if (entries > MAX_ENTRIES) reasons.add(`too_many_entries:${field}`);
   }
-  // The 64 KiB covers the whole envelope, sig and hash included. canonical() is recursive, so it runs
-  // only on an envelope that passed the depth cap.
-  if (!reasons.has("too_deep")) {
-    try {
-      if (utf8(canonical(env)).length > MAX_BYTES) reasons.add("too_large");
-    } catch {
-      reasons.add("malformed");
-    }
-  }
-  return { ok: reasons.size === 0, reasons: [...reasons].sort() };
+  schemaReasons(env, reasons);
+  return reasons;
 }
 
-const wellFormed = (env) =>
-  isObject(env) && isObject(env.event) && Number.isSafeInteger(env.event.seq) && env.event.seq >= 1 &&
-  isObject(env.run) && typeof env.run.run_id === "string" &&
-  typeof env.prev_hash === "string" && typeof env.hash === "string" &&
-  isObject(env.sig) && typeof env.sig.key_id === "string" && typeof env.sig.value === "string";
+// ---- Step 4 (canonical size), measured without calling canonical(): the byte length of canonical(value), computed
+// iteratively and stopping once it passes the limit. ----
+function jsonSize(root, limit) {
+  let total = 0;
+  const stack = [root];
+  while (stack.length > 0) {
+    const item = stack.pop();
+    if (Array.isArray(item)) {
+      total += 2 + Math.max(0, item.length - 1);
+      if (total > limit) return total;
+      for (const child of item) stack.push(child);
+    } else if (item !== null && typeof item === "object") {
+      const keys = Object.keys(item);
+      total += 2 + Math.max(0, keys.length - 1);
+      for (const key of keys) {
+        total += utf8Length(JSON.stringify(key)) + 1;
+        stack.push(item[key]);
+      }
+    } else if (typeof item === "bigint") total += String(item).length;
+    else total += utf8Length(JSON.stringify(item) ?? "null");
+    if (total > limit) return total;
+  }
+  return total;
+}
 
+// The byte length of canonical(value), without calling canonical().
+export function canonicalSize(value) {
+  return jsonSize(value, Infinity);
+}
+
+const rejection = (reasons) => {
+  const list = [...reasons].sort();
+  return { ok: false, status: list.some((code) => !OVERSIZE(code)) ? "malformed" : "oversize", reasons: list };
+};
+
+// Steps 3 and 4 for an already-parsed envelope. Nothing here parses, calls canonical() or hashes.
+export function checkEnvelope(env) {
+  const reasons = structureReasons(env);
+  if (reasons.size === 0 && jsonSize(env, MAX_CANONICAL_BYTES) > MAX_CANONICAL_BYTES) reasons.add("too_large");
+  return reasons.size === 0 ? { ok: true, status: null, reasons: [] } : rejection(reasons);
+}
+
+// Steps 1 to 4 for one JSONL line, in order. A line that fails step 1 is never parsed.
+export function checkLine(line) {
+  if (typeof line !== "string") return { ...rejection(["not_json"]), value: undefined };
+  if (utf8Length(line, MAX_LINE_BYTES) > MAX_LINE_BYTES) return { ...rejection(["line_too_large"]), value: undefined };
+  let value;
+  try { value = parseLine(line); } catch { return { ...rejection(["not_json"]), value: undefined }; }
+  return { ...checkEnvelope(value), value };
+}
+
+// Steps 1 to 4 for every line. The page keeps these results, so a live feed parses each new line once.
+export function checkLines(lines) {
+  return (Array.isArray(lines) ? lines : []).map((line) => checkLine(line));
+}
+
+// The live view's accumulator (page side, not in the reference): every distinct line received, in arrival order, with
+// its input-check result. A byte-identical re-send is a no-op. Past maxLines it stops accepting and says so.
+// The page feeds it only the lines of responses that passed parseApiResponse().
+export function liveFeed(maxLines = Infinity) {
+  const seen = new Set();
+  const items = [];
+  let truncated = false;
+  let repeats = 0;
+  return {
+    items,
+    add(lines) {
+      let added = 0;
+      for (const line of lines) {
+        if (seen.has(line)) { repeats += 1; continue; }
+        if (items.length >= maxLines) { truncated = true; break; }
+        seen.add(line);
+        items.push(checkLine(line));
+        added += 1;
+      }
+      return added;
+    },
+    get truncated() { return truncated; },
+    get repeats() { return repeats; },   // byte-identical re-sends ignored
+  };
+}
+
+// ---- The view. ----
 const lookup = (keys, keyId) => {
   if (keys instanceof Map) return keys.get(keyId);
-  return isObject(keys) && Object.hasOwn(keys, keyId) ? keys[keyId] : undefined;
+  return isPlainObject(keys) && Object.hasOwn(keys, keyId) ? keys[keyId] : undefined;
 };
+// Fields read from rejected input, for display and ordering only. Reading a field is not hashing.
+const readSeq = (value) => (isPlainObject(value) && isPlainObject(value.event) && Number.isSafeInteger(value.event.seq) && value.event.seq >= 1 ? value.event.seq : null);
+const readEventId = (value) => {
+  const id = isPlainObject(value) && isPlainObject(value.event) ? value.event.event_id : undefined;
+  if (typeof id !== "string") return null;
+  const reasons = new Set();
+  scanString(id, reasons);
+  return reasons.size === 0 ? id : null;
+};
+const readHash = (value) => (isPlainObject(value) && typeof value.hash === "string" && HEX64.test(value.hash) ? value.hash : null);
+
+// Steps 1 to 5 for JSONL: a string (split into lines) or an array of lines. Transport caps are checked first,
+// by parseApiResponse() or readReplayFile().
+export function verifyJsonl(input, options) {
+  const lines = typeof input === "string" ? splitLines(input) : Array.isArray(input) ? input : [];
+  return verifyChecked(checkLines(lines), options);
+}
+
+// Steps 3 to 5 for envelopes that are already parsed.
+export function verifyChain(envelopes, options) {
+  const list = Array.isArray(envelopes) ? envelopes : [];
+  return verifyChecked(list.map((value) => ({ ...checkEnvelope(value), value })), options);
+}
 
 // Imported keys are cached per raw key, so a long feed imports each key once.
 const imported = new Map();
@@ -101,157 +318,178 @@ function importKey(raw) {
   return imported.get(id);
 }
 
+async function chainReasons(row, prevSeq, prevHashes, runId, pins, keys) {
+  const env = row.env;
+  const reasons = [];
+  if (env.v !== VERSION) reasons.push("bad_version");
+  if (env.run.run_id !== runId) reasons.push("run_mismatch");
+  if (env.event.seq !== prevSeq + 1) reasons.push("seq_gap");
+  for (const code of ["seq_conflict", "event_id_conflict"]) if (row.conflicts.has(code)) reasons.push(code);
+  if (!prevHashes.has(env.prev_hash)) reasons.push("prev_hash_mismatch");
+  // Step 5: the hash is recomputed from the content, and the signature is checked against it.
+  const actual = await hashEnvelope(env);
+  if (actual !== env.hash) reasons.push("hash_mismatch");
+  const pin = pins.find((p) => p.key_id === env.sig.key_id);
+  const key = lookup(keys, env.sig.key_id);
+  if (!pin) reasons.push("key_not_pinned");
+  else if (!key) reasons.push("key_unavailable");
+  else {
+    let keyHash = null;
+    try { keyHash = key instanceof Uint8Array && key.length === 32 ? await keySha256(key) : null; } catch { keyHash = null; }
+    if (keyHash !== pin.key_sha256) reasons.push("key_hash_mismatch");
+    else {
+      const cryptoKey = await importKey(key);
+      if (cryptoKey === null) reasons.push("ed25519_unsupported");   // browser only: this browser has no WebCrypto Ed25519
+      else {
+        counters.verify += 1;
+        if (!(await crypto.subtle.verify({ name: "Ed25519" }, cryptoKey, fromHex(env.sig.value), encoder.encode(actual)))) reasons.push("bad_sig");
+      }
+    }
+  }
+  return reasons;
+}
+
+// items: checkLine()/checkEnvelope() results, each { ok, status, reasons, value }.
 // runId: the run the view requested. pins: [{ key_id, key_sha256 }], from the deployed page only.
 // keys: Map or object of key_id -> raw public key (Uint8Array), from anywhere (GET /api/view/key, a manifest);
 // a key is used only if its hash matches the pin for that key_id.
-// Every envelope gets a row, in seq order (stable for equal seq). Only the projectable prefix reaches
-// project(); every row after it is shown but never projected, even if it verifies on its own.
-// Beyond the reference's result, this also returns `ordered` (the envelopes in row order) and `prefix` (the
-// prefix's length in rows) for the page; neither changes any verdict.
-export async function verifyChain(envelopes, { runId, pins = [], keys = {} } = {}) {
-  if (typeof runId !== "string") throw new TypeError("verifyChain needs the run_id the view requested");
-  const list = Array.isArray(envelopes) ? envelopes : [];
-  const seqOf = (env) => (wellFormed(env) ? env.event.seq : Infinity);
-  const ordered = list.map((env, index) => ({ env, index }))
-    .sort((a, b) => seqOf(a.env) - seqOf(b.env) || a.index - b.index)
-    .map(({ env }) => env);
-
-  const genesisHash = await genesis(runId);
+// Beyond the reference's result, this returns for the page: `ordered` (per row, the envelope for a row that passed
+// the input checks, null for a rejected row), `meta` (per row, its position in the input and its readable stored
+// hash), `prefix` (the prefix's length in rows) and `duplicates` (copies ignored). None of them changes a verdict.
+export async function verifyChecked(items, { runId, pins = [], keys = {} } = {}) {
+  if (typeof runId !== "string") throw new TypeError("verifying needs the run_id the view requested");
   const rows = [];
-  let prev = null;
-  for (const env of ordered) {
-    const oversize = checkCaps(env).reasons;
-    if (!wellFormed(env)) {
-      rows.push({ seq: isObject(env?.event) ? env.event.seq ?? null : null, event_id: isObject(env?.event) ? env.event.event_id ?? null : null, status: "unverified", reasons: ["malformed"], oversize });
-      prev = env;
-      continue;
+  const seen = new Set();
+  let duplicates = 0;
+  items.forEach((item, index) => {
+    if (!item.ok) {
+      rows.push({ index, passed: false, value: null, seq: readSeq(item.value), event_id: readEventId(item.value), storedHash: readHash(item.value), status: item.status, reasons: item.reasons });
+      return;
     }
-    const reasons = [];
-    const { seq } = env.event;
-    if (env.v !== VERSION) reasons.push("bad_version");
-    if (env.run.run_id !== runId) reasons.push("run_mismatch");
-    if (prev === null ? seq !== 1 : wellFormed(prev) && seq !== prev.event.seq + 1) {
-      reasons.push(prev !== null && seq === prev.event.seq ? "seq_repeat" : "seq_gap");
-    }
-    if (env.prev_hash !== (prev === null ? genesisHash : prev.hash)) reasons.push("prev_hash_mismatch");
-    let actual = null;
-    try { actual = await hashEnvelope(env); } catch { reasons.push("malformed"); }
-    if (actual !== null && actual !== env.hash) reasons.push("hash_mismatch");
+    const env = item.value;
+    // Duplicates: identical canonical bytes, sig and hash included. One copy counts; the others are ignored.
+    const bytes = canon(env);
+    if (seen.has(bytes)) { duplicates += 1; return; }
+    seen.add(bytes);
+    rows.push({ index, passed: true, env, seq: env.event.seq, event_id: env.event.event_id, storedHash: env.hash, conflicts: new Set() });
+  });
 
-    const pin = pins.find((p) => p.key_id === env.sig.key_id);
-    const key = lookup(keys, env.sig.key_id);
-    let keyOk = false;
-    if (!pin) reasons.push("key_not_pinned");
-    else if (!key) reasons.push("key_unavailable");
-    else {
-      let keyHash = null;
-      try { keyHash = key instanceof Uint8Array && key.length === 32 ? await keySha256(key) : null; } catch { keyHash = null; }
-      if (keyHash !== pin.key_sha256) reasons.push("key_hash_mismatch");
-      else keyOk = true;
+  // Conflicts: different envelopes in the same run sharing a seq or an event_id. Every one involved is flagged.
+  const flag = (keyOf, code) => {
+    const groups = new Map();
+    for (const row of rows) if (row.passed) {
+      const groupKey = keyOf(row);
+      if (!groups.has(groupKey)) groups.set(groupKey, []);
+      groups.get(groupKey).push(row);
     }
-    if (env.sig.alg !== ALG) reasons.push("bad_alg");
-    else if (keyOk && actual !== null) {
-      // The signature is checked over the hash recomputed from the content.
-      const cryptoKey = await importKey(key);
-      if (cryptoKey === null) reasons.push("ed25519_unsupported");   // browser-only: no WebCrypto Ed25519
-      else {
-        const sigOk = SIG_HEX.test(env.sig.value) &&
-          (await crypto.subtle.verify({ name: "Ed25519" }, cryptoKey, fromHex(env.sig.value), utf8(actual)));
-        if (!sigOk) reasons.push("bad_sig");
-      }
+    for (const group of groups.values()) if (group.length > 1) for (const row of group) row.conflicts.add(code);
+  };
+  flag((row) => JSON.stringify([row.env.run.run_id, row.seq]), "seq_conflict");
+  flag((row) => JSON.stringify([row.env.run.run_id, row.event_id]), "event_id_conflict");
+
+  // Order by seq. At one seq, rejected rows come first, then envelopes by stored hash, so delivery order
+  // never matters. Rows whose seq can't be read come last.
+  const compare = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+  rows.sort((a, b) => (a.seq ?? Infinity) - (b.seq ?? Infinity) || Number(a.passed) - Number(b.passed) ||
+    (a.passed ? compare(a.storedHash, b.storedHash) : 0) || a.index - b.index);
+
+  // Chain checks, one seq at a time. prev_hash must be the stored hash of an envelope at the previous seq.
+  let prevSeq = 0;
+  let prevHashes = new Set([await genesis(runId)]);
+  for (let i = 0; i < rows.length && rows[i].seq !== null;) {
+    let j = i;
+    while (j < rows.length && rows[j].seq === rows[i].seq) j += 1;
+    const group = rows.slice(i, j);
+    for (const row of group) if (row.passed) {
+      row.reasons = await chainReasons(row, prevSeq, prevHashes, runId, pins, keys);
+      row.status = row.reasons.length === 0 ? "verified" : "unverified";
     }
-    rows.push({ seq, event_id: env.event.event_id ?? null, status: reasons.length === 0 ? "verified" : "unverified", reasons, oversize });
-    prev = env;
+    prevSeq = rows[i].seq;
+    prevHashes = new Set(group.map((row) => row.storedHash).filter(Boolean));
+    i = j;
   }
 
-  // Rule 1: the projectable prefix is the leading run of rows that are verified and not oversize. A verified
-  // row is already in the requested run, with seq one more than the row before it (1 first) and prev_hash
-  // exact (genesis first). K is the prefix's last seq, 0 if none, and the board is project() over it.
-  let prefixLength = 0;
-  while (prefixLength < rows.length && rows[prefixLength].status === "verified" && rows[prefixLength].oversize.length === 0) prefixLength += 1;
-  rows.forEach((row, i) => { row.projected = i < prefixLength; });
-  const prefixEnd = prefixLength === 0 ? 0 : rows[prefixLength - 1].seq;
-  const frozen = prefixLength < rows.length;
+  // Rule 1: the projectable prefix is the leading run of verified rows. It stops at the first rejected,
+  // unverified or conflicting row, so it ends before the earliest conflict. K is its last seq, 0 if none.
+  const prefixRows = [];
+  for (const row of rows) {
+    if (row.status !== "verified") break;
+    prefixRows.push(row);
+  }
+  const inPrefix = new Set(prefixRows);
+  const prefixEnd = prefixRows.length === 0 ? 0 : prefixRows.at(-1).seq;
+  const frozen = prefixRows.length < rows.length;
   // If project() throws, the result is an error state, not a throw.
   let projection = null;
   let projectionError = null;
   try {
-    projection = project(ordered.slice(0, prefixLength).map((env) => env.event));
+    projection = project(prefixRows.map((row) => row.env.event));
   } catch {
     projectionError = "project_threw";
   }
   return {
-    rows,
+    rows: rows.map((row) => ({ seq: row.seq, event_id: row.event_id, status: row.status, reasons: row.reasons, projected: inPrefix.has(row) })),
     chain_ok: rows.every((row) => row.status === "verified"),
     prefix_end: prefixEnd,
     frozen,
     label: frozen ? `chain broken after seq ${prefixEnd}; board frozen at seq ${prefixEnd}` : null,
     projection,
     projection_error: projectionError,
-    ordered,
-    prefix: prefixLength,
+    ordered: rows.map((row) => (row.passed ? row.env : null)),
+    meta: rows.map((row) => ({ index: row.index, hash: row.storedHash })),
+    prefix: prefixRows.length,
+    duplicates,
   };
 }
 
-// Rule 5. Client-clock times only, never ts. sourceKind is "api" or "file". lastPollOkMs is when the last
-// poll succeeded; lastVerifiedArrivalMs is when the last verified envelope arrived; either may be null.
-// "Within" is inclusive. A time later than nowMs isn't a past poll or arrival, so it never counts.
-export function mode(sourceKind, lastPollOkMs, lastVerifiedArrivalMs, nowMs) {
+// ---- Rule 5. Client-clock times only, never ts. ----
+// LIVE: the source is the API, a poll succeeded within 5 s, and the projectable prefix K grew within 60 s.
+// "Within" is inclusive, and a time later than nowMs never counts.
+export function mode(sourceKind, lastPollOkMs, lastProgressMs, nowMs) {
   if (sourceKind === "file") return "REPLAY";
   if (sourceKind !== "api") throw new TypeError(`unknown source kind: ${sourceKind}`);
   const within = (t, limit) => Number.isFinite(t) && Number.isFinite(nowMs) && t <= nowMs && nowMs - t <= limit;
-  return within(lastPollOkMs, POLL_OK_MS) && within(lastVerifiedArrivalMs, ARRIVAL_MS) ? "LIVE" : "STALE";
+  return within(lastPollOkMs, POLL_OK_MS) && within(lastProgressMs, PROGRESS_MS) ? "LIVE" : "STALE";
+}
+// The label shows how long ago K last grew, in whole seconds, and never claims completeness.
+export function modeLabel(sourceKind, lastPollOkMs, lastProgressMs, nowMs) {
+  const current = mode(sourceKind, lastPollOkMs, lastProgressMs, nowMs);
+  return current === "LIVE" ? `LIVE · progress ${Math.floor((nowMs - lastProgressMs) / 1000)} s ago` : current;
 }
 
-// ── Parsing (view side; not in the reference) ─────────────────────────────────────────────────────────────────
-// A JSONL line longer than this is not parsed at all: it is far over the 64 KiB cap, and parsing it would cost
-// the page. It becomes one placeholder.
-export const MAX_LINE_CHARS = 1024 * 1024;
-
-// JSONL text -> array of envelopes. A line that doesn't parse, or is far too large, becomes an object that is
-// not a well-formed envelope, so verifyChain shows it as one malformed, unverified row (never dropped).
-export function parseJsonl(text) {
-  const out = [];
-  String(text).split(/\r?\n/).forEach((line, index) => {
-    if (!line.trim()) return;
-    if (line.length > MAX_LINE_CHARS) { out.push({ unparsed: { line: index + 1, reason: "line_too_large" } }); return; }
-    try {
-      out.push(JSON.parse(line));
-    } catch {
-      out.push({ unparsed: { line: index + 1, reason: "not_json" } });
-    }
-  });
-  return out;
-}
-
-// A live-API response: a JSON array of envelopes, { envelopes: [...] }, or JSONL. Anything else is no envelopes.
-export function parseFeedBody(text) {
-  const trimmed = String(text).trim();
-  if (!trimmed) return [];
-  if (trimmed.startsWith("[")) {
-    try { const list = JSON.parse(trimmed); return Array.isArray(list) ? list : []; } catch { return parseJsonl(trimmed); }
-  }
-  if (trimmed.startsWith("{") && !trimmed.includes("\n")) {
-    try {
-      const doc = JSON.parse(trimmed);
-      if (Array.isArray(doc.envelopes)) return doc.envelopes;
-      if (isObject(doc.event)) return [doc];
-      return [];
-    } catch { return parseJsonl(trimmed); }
-  }
-  return parseJsonl(trimmed);
+// Feed it every poll. ok: the response passed the transport caps and was read. K: the projectable prefix after it.
+// received: how many lines arrived; it is deliberately unused, because arrivals that don't grow K (duplicates,
+// unverified envelopes, envelopes after a break) must never refresh LIVE.
+export function progressTracker() {
+  let highK = 0;
+  let lastPollOkMs = null;
+  let lastProgressMs = null;
+  return {
+    poll({ nowMs, ok, K = highK, received = 0 }) {
+      if (!ok) return;
+      lastPollOkMs = nowMs;
+      const grew = K > highK;
+      if (grew) {
+        highK = K;
+        lastProgressMs = nowMs;
+      }
+    },
+    mode: (sourceKind, nowMs) => mode(sourceKind, lastPollOkMs, lastProgressMs, nowMs),
+    label: (sourceKind, nowMs) => modeLabel(sourceKind, lastPollOkMs, lastProgressMs, nowMs),
+    state: () => ({ K: highK, last_poll_ok_ms: lastPollOkMs, last_progress_ms: lastProgressMs }),
+  };
 }
 
 // ── Keys (view side) ──────────────────────────────────────────────────────────────────────────────────────────
 // GET /api/view/key is not specified beyond "may serve the key". Accepted shapes: { key_id, public_key } or
 // { keys: [...] } or an array of those, where public_key is the raw 32-byte Ed25519 key as 64 hex characters.
-// The result only offers keys; verifyChain uses one only if its sha256 matches the page's pin.
+// The result only offers keys; verifying uses one only if its sha256 matches the page's pin.
 export function parseKeyResponse(doc) {
-  const items = Array.isArray(doc) ? doc : isObject(doc) && Array.isArray(doc.keys) ? doc.keys : isObject(doc) ? [doc] : [];
+  const items = Array.isArray(doc) ? doc : isPlainObject(doc) && Array.isArray(doc.keys) ? doc.keys : isPlainObject(doc) ? [doc] : [];
   const keys = {};
   for (const item of items) {
-    if (!isObject(item) || typeof item.key_id !== "string" || typeof item.public_key !== "string") continue;
-    if (!/^[0-9a-f]{64}$/.test(item.public_key)) continue;
+    if (!isPlainObject(item) || typeof item.key_id !== "string" || typeof item.public_key !== "string") continue;
+    if (!HEX64.test(item.public_key)) continue;
     keys[item.key_id] = fromHex(item.public_key);
   }
   return keys;
@@ -262,7 +500,7 @@ export function parseKeyResponse(doc) {
 // public half is read back from the JWK export. Anyone can derive this key; it is never a production pin.
 const PKCS8_ED25519_PREFIX = Uint8Array.from([0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x04, 0x22, 0x04, 0x20]);
 export async function publicKeyFromSeedText(seedText) {
-  const seed = new Uint8Array(await crypto.subtle.digest("SHA-256", utf8(seedText)));
+  const seed = new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(seedText)));
   const pkcs8 = new Uint8Array(PKCS8_ED25519_PREFIX.length + 32);
   pkcs8.set(PKCS8_ED25519_PREFIX);
   pkcs8.set(seed, PKCS8_ED25519_PREFIX.length);

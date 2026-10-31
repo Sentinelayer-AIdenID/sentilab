@@ -1,15 +1,21 @@
-// SentiLab Lab view (VIEW ENVELOPE v0.4). One input type for both modes: a JSONL replay file or the live
-// /api/view routes both give envelopes, and both go through the same verifyChain() and the same renderer.
+// SentiLab Lab view (VIEW ENVELOPE v0.5). One input type for both modes: a JSONL replay file or the live
+// /api/view/events route both give JSONL lines, and both go through the same input checks, the same verifier and the
+// same renderer. Transport caps come first (a replay file over 64 MiB, or a live response over 256 lines or 4 MiB,
+// is never parsed), then each line's own checks, and only then hashing and signature checks.
 // Every string from an envelope reaches the page through textContent, never innerHTML.
 import { VIEW_PINS } from "./view-pins.js";
-import { verifyChain, mode as modeLabel, parseJsonl, parseFeedBody, parseKeyResponse, publicKeyFromSeedText, sha256Hex } from "./view-core.mjs";
-import { buildView, feedRows, chainSummary, isDrill, colorScale, frameOf, labInfo, reasonText, stageOf, STAGES, isObj } from "./lab-model.mjs";
+import {
+  checkLines, liveFeed, verifyChecked, readReplayFile, parseApiResponse, readBodyCapped, progressTracker,
+  parseKeyResponse, publicKeyFromSeedText, sha256Hex, MAX_FILE_BYTES, MAX_API_BYTES, MAX_API_LINES,
+} from "./view-core.mjs";
+import { buildView, feedRows, chainSummary, isDrill, isRejected, colorScale, frameOf, labInfo, reasonText, rankReasons, stageOf, STAGES, isObj } from "./lab-model.mjs";
 
 const DEMO = { url: "demo-run.jsonl", runId: "demo-8c-0001", label: "demo-run.jsonl · bundled interface fixture" };
 const TEST_KEY_NAMES = ["core"];                 // ?pins=test: the vectors' "core" test key, derived here at run time
 const STEP_MS = matchMedia("(prefers-reduced-motion: reduce)").matches ? 1300 : 800;
 const POLL_OK_MS = 1000, POLL_BACKOFF_MS = 5000;
 const MAX_ENVELOPES = 20000;                     // a live feed past this stops growing and says so
+const MAX_SMALL_JSON = 256 * 1024;               // /api/view/runs and /api/view/key are small; a bigger answer is refused
 const FEED_ROWS_SHOWN = 400;
 const HEAT = [[0x11, 0x2a, 0x48], [0x23, 0x6b, 0x91], [0x56, 0xb6, 0xba], [0xdf, 0xd3, 0x76], [0xec, 0x99, 0x4f], [0xe4, 0x51, 0x38]];
 const params = new URLSearchParams(location.search);
@@ -49,14 +55,16 @@ const tsText = (ts) => {
 const S = {
   pins: [], keys: {}, testMode: false, keyNote: "",
   source: params.get("src") === "live" ? "api" : "file",
-  file: null,                 // { label, runId, runIdFrom, isDemo, envelopes, verification, scale, frame }
-  live: { runs: null, runId: params.get("run"), envelopes: [], seen: new Set(), verification: null, scale: null, frame: null,
-          lastPollOk: null, lastVerifiedArrival: null, verifiedSeen: new Set(), connected: null, timer: null, error: "", truncated: false },
+  file: null,                 // { label, runId, runIdFrom, isDemo, items, verification, scale, frame, error }
+  // feed: every distinct line received with its input-check result (a byte-identical re-send is a no-op).
+  // tracker: rule 5's progress tracker. LIVE needs a good poll within 5 s and growth of K within 60 s.
+  live: { runs: null, runId: params.get("run"), feed: liveFeed(MAX_ENVELOPES), verification: null, scale: null, frame: null,
+          tracker: progressTracker(), lastPoll: "", connected: null, timer: null, error: "" },
   cursor: 0, cursors: {}, playing: null, following: true,
 };
 const active = () => (S.source === "api" ? S.live : S.file);
 
-// ── keys: only the page's pins decide; keys from anywhere are checked against them in verifyChain ──────────────
+// ── keys: only the page's pins decide; keys from anywhere are checked against them in verifyChecked ────────────
 // Anyone can derive the test keys, so a public host must never accept them: there they would let a forged file show
 // as verified on our domain. Only a local server honours ?pins=test.
 const TEST_PIN_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
@@ -83,12 +91,14 @@ async function setupKeys() {
 
 async function setupPinnedKeys() {
   S.pins = VIEW_PINS.map((p) => ({ key_id: p.key_id, key_sha256: p.key_sha256 }));
-  if (S.pins.length === 0) { S.keyNote = "no production key is pinned in this page yet, so no envelope can verify"; return; }
+  if (S.pins.length === 0) { S.keyNote = "this page pins no key, so no envelope can verify"; return; }
   // The key may be served by the core; it is used only if its sha256 matches a pin.
   try {
     const r = await fetch("/api/view/key", { cache: "no-store" });
     if (!r.ok) { S.keyNote = `pinned key not served (/api/view/key answered ${r.status})`; return; }
-    Object.assign(S.keys, parseKeyResponse(await r.json()));
+    const body = await readBodyCapped(r, MAX_SMALL_JSON, "too_large");
+    if (!body.ok) { S.keyNote = "pinned key not served (/api/view/key answered with more than 256 KiB)"; return; }
+    Object.assign(S.keys, parseKeyResponse(JSON.parse(body.text)));
     S.keyNote = "pinned key fetched from /api/view/key and checked against the pin";
   } catch {
     S.keyNote = "pinned key not served (/api/view/key unreachable)";
@@ -96,8 +106,10 @@ async function setupPinnedKeys() {
 }
 
 // ── verification: the same path for both sources ─────────────────────────────────────────────────────────────
+// src.items are checkLine() results (input checks, steps 1 to 4); verifyChecked() does the rest, hashing only what
+// passed them.
 async function verify(src) {
-  src.verification = await verifyChain(src.envelopes, { runId: src.runId, pins: S.pins, keys: S.keys });
+  src.verification = await verifyChecked(src.feed ? src.feed.items : src.items, { runId: src.runId, pins: S.pins, keys: S.keys });
   const trusted = src.verification.ordered.slice(0, src.verification.prefix);
   const scale = colorScale(trusted);
   // A file is one whole run, so its scale is fixed. A live run can only widen its scale, never shift or narrow it.
@@ -106,38 +118,52 @@ async function verify(src) {
 }
 
 // ── replay ──────────────────────────────────────────────────────────────────────────────────────────────────
+const MIB = 1024 * 1024;
+function replayError(label, runId, isDemo, message) {
+  S.file = { label, runId: runId ?? "", runIdFrom: "requested", isDemo, items: [], verification: null, error: message };
+  $("conn").textContent = "";
+  render();
+}
+
+// text: the file's text, already read (a picked file), or undefined to fetch url. Either way the file must pass the
+// 64 MiB replay cap before a single line is parsed.
 async function loadReplay({ url, text, label, runId, isDemo, at = null }) {
   stop();
   $("conn").textContent = "loading…";
+  let read;
   try {
     if (text === undefined) {
       const r = await fetch(url, { cache: "no-store" });
       if (!r.ok) throw new Error(`${url} answered ${r.status}`);
-      text = await r.text();
+      const body = await readBodyCapped(r, MAX_FILE_BYTES, "file_too_large");
+      if (!body.ok) throw new Error(`${url} is over the ${MAX_FILE_BYTES / MIB} MiB replay cap, so it was not read`);
+      text = body.text;
     }
+    read = readReplayFile(text);
+    if (!read.ok) throw new Error(`the file is over the ${MAX_FILE_BYTES / MIB} MiB replay cap, so it was not read`);
   } catch (error) {
-    S.file = { label, runId: runId ?? "", runIdFrom: "requested", isDemo, envelopes: [], verification: null, error: String(error.message ?? error) };
-    $("conn").textContent = "";
-    render();
+    replayError(label, runId, isDemo, String(error.message ?? error));
     return;
   }
-  const envelopes = parseJsonl(text);
-  // The run to check against. For the bundled demo (or ?run=) the page names it. A file the user opened carries no
-  // request, so the view checks it against the run its lowest-seq envelope names, and says so on screen.
+  const items = checkLines(read.lines);
+  // The run to check against. For the bundled demo, or a page opened with ?run=, the page names it. Otherwise a file
+  // the user opened carries no request, so the view checks it against the run named by the lowest-seq line that
+  // passed the input checks, and says so on screen.
   let runIdFrom = "requested";
   if (!runId) {
-    const first = envelopes.filter((e) => isObj(e?.event) && Number.isSafeInteger(e.event.seq) && isObj(e.run) && typeof e.run.run_id === "string")
-      .sort((a, b) => a.event.seq - b.event.seq)[0];
+    let first = null;
+    for (const item of items) if (item.ok && (first === null || item.value.event.seq < first.event.seq)) first = item.value;
     runId = first ? first.run.run_id : "";
     runIdFrom = "file";
   }
-  S.file = { label, runId, runIdFrom, isDemo, envelopes, verification: null };
+  S.file = { label, runId, runIdFrom, isDemo, items, verification: null };
   await verify(S.file);
   $("conn").textContent = "";
   if (S.source !== "file") return;
   // ?seq=N (first load only) opens paused at seq N, for a presenter or a screenshot; otherwise play from the start.
   if (at !== null && Number.isInteger(at) && at >= 0) {
-    S.cursor = Math.min(S.file.verification.ordered.length, S.file.verification.ordered.filter((e, i) => S.file.verification.rows[i].seq !== null && S.file.verification.rows[i].seq <= at).length);
+    const rows = S.file.verification.rows;
+    S.cursor = rows.filter((row) => row.seq !== null && row.seq <= at).length;
     render();
   } else {
     S.cursor = 0;
@@ -151,6 +177,8 @@ function scheduleLive(ms) {
   clearTimeout(S.live.timer);
   if (S.source === "api") S.live.timer = setTimeout(pollLive, ms);
 }
+// Rule 4: GET /api/view/events returns JSONL for one run. The page asks for what follows its verified prefix K, so a
+// gap can still be filled; whatever comes back again is a byte-identical re-send, which is a no-op.
 async function pollLive() {
   const L = S.live;
   if (document.hidden) return scheduleLive(POLL_BACKOFF_MS);
@@ -158,48 +186,50 @@ async function pollLive() {
     if (!L.runs || !L.runId || Date.now() - (L.runsAt ?? 0) > 15000) {
       const r = await fetch("/api/view/runs", { cache: "no-store" });
       if (!r.ok) throw new Error(`/api/view/runs answered ${r.status}`);
-      const doc = await r.json();
+      const body = await readBodyCapped(r, MAX_SMALL_JSON, "too_large");
+      if (!body.ok) throw new Error("/api/view/runs answered with more than 256 KiB");
+      if (S.live !== L) return;   // the run was switched while this poll was out
+      const doc = JSON.parse(body.text);
       const runs = (Array.isArray(doc) ? doc : isObj(doc) && Array.isArray(doc.runs) ? doc.runs : [])
         .filter((x) => isObj(x) && typeof x.run_id === "string" && x.run_id.length <= 128).slice(0, 200);
       L.runs = runs;
       L.runsAt = Date.now();
-      L.lastPollOk = Date.now();
       L.connected = true;
       if (!L.runId && runs.length) L.runId = runs[0].run_id;
       renderRunPicker();
       if (!L.runId) { render(); return scheduleLive(POLL_BACKOFF_MS); }
     }
-    const after = L.envelopes.reduce((m, e) => (isObj(e?.event) && Number.isSafeInteger(e.event.seq) ? Math.max(m, e.event.seq) : m), 0);
+    const after = L.verification ? L.verification.prefix_end : 0;
     const r = await fetch(`/api/view/events?run_id=${encodeURIComponent(L.runId)}&after=${after}`, { cache: "no-store" });
     if (!r.ok) throw new Error(`/api/view/events answered ${r.status}`);
-    const incoming = parseFeedBody(await r.text());
-    L.lastPollOk = Date.now();
+    // Step 1 for the API: over 4 MiB (stopped while reading) or over 256 lines is a transport error. The response
+    // is dropped before any line is parsed, the prefix stays as it was, and the poll counts as failed.
+    const body = await readBodyCapped(r, MAX_API_BYTES, "response_too_large");
+    const response = body.ok ? parseApiResponse(body.text) : body;
+    if (S.live !== L) return;   // the run was switched while this poll was out
     L.connected = true;
-    L.error = "";
-    let added = 0;
-    for (const env of incoming) {
-      if (L.envelopes.length >= MAX_ENVELOPES) { L.truncated = true; break; }
-      const key = JSON.stringify(env);           // an exact re-delivery is not a new envelope; a different one with the same seq is
-      if (L.seen.has(key)) continue;
-      L.seen.add(key);
-      L.envelopes.push(env);
-      added += 1;
+    if (!response.ok) {
+      L.tracker.poll({ nowMs: Date.now(), ok: false });
+      L.lastPoll = response.reason === "too_many_lines" ? `last response dropped: over ${MAX_API_LINES} lines`
+        : `last response dropped: over ${MAX_API_BYTES / MIB} MiB`;
+      render();
+      return scheduleLive(POLL_BACKOFF_MS);
     }
-    if (added) {
+    // Input checks once per distinct line; a byte-identical re-send adds nothing.
+    if (L.feed.add(response.lines) > 0) {
       await verify(L);
-      const v = L.verification;
-      let fresh = false;
-      v.rows.forEach((row) => {
-        if (row.status !== "verified") return;
-        const id = `${row.seq}:${row.event_id}`;
-        if (!L.verifiedSeen.has(id)) { L.verifiedSeen.add(id); fresh = true; }
-      });
-      if (fresh) L.lastVerifiedArrival = Date.now();
-      if (S.following) S.cursor = v.ordered.length;
+      if (S.live !== L) return;   // the run was switched while this poll was out
+      if (S.following) S.cursor = L.verification.rows.length;
     }
+    // Progress is growth of K above its highest value so far; duplicates and rows after a break never count.
+    L.tracker.poll({ nowMs: Date.now(), ok: true, K: L.verification ? L.verification.prefix_end : 0, received: response.lines.length });
+    L.lastPoll = "";
+    L.error = "";
     render();
     scheduleLive(POLL_OK_MS);
   } catch (error) {
+    if (S.live !== L) return;   // the run was switched while this poll was out
+    L.tracker.poll({ nowMs: Date.now(), ok: false });
     L.connected = false;
     L.error = String(error.message ?? error);
     render();
@@ -207,7 +237,9 @@ async function pollLive() {
   }
 }
 function resetLive(runId) {
-  Object.assign(S.live, { runId, envelopes: [], seen: new Set(), verification: null, scale: null, frame: null, lastVerifiedArrival: null, verifiedSeen: new Set(), truncated: false });
+  // A new object, so a poll still out for the previous run writes only to the old one.
+  clearTimeout(S.live.timer);
+  S.live = { ...S.live, runId, feed: liveFeed(MAX_ENVELOPES), verification: null, scale: null, frame: null, tracker: progressTracker(), lastPoll: "", timer: null };
   S.cursor = 0; S.following = true;
 }
 
@@ -272,12 +304,16 @@ function render() {
 }
 
 function renderTop(src, v) {
+  // Rule 5, on the client clock: REPLAY for a file; LIVE only while polls succeed and K keeps growing, with how long
+  // ago it last grew ("LIVE · progress N s ago"); otherwise STALE.
   const now = Date.now();
-  const m = S.source === "file" ? modeLabel("file", null, null, now) : modeLabel("api", S.live.lastPollOk, S.live.lastVerifiedArrival, now);
+  const m = S.source === "file" ? "REPLAY" : S.live.tracker.mode("api", now);
+  const label = S.source === "file" ? "REPLAY" : S.live.tracker.label("api", now);
   const modeEl = $("mode");
   modeEl.className = `mode ${m.toLowerCase()}`;
   $("modeText").textContent = m;
-  $("drill").hidden = !(src && isDrill(src.envelopes));
+  $("modeAge").textContent = label.startsWith(`${m} `) ? label.slice(m.length) : "";
+  $("drill").hidden = !(v && isDrill(v.ordered));
   $("testKeys").hidden = !S.testMode;
 
   // Run facts come only from the verified prefix; before anything verifies, only the requested run id is shown.
@@ -317,9 +353,9 @@ function renderControls(src, v, n) {
   const conn = $("conn");
   if (S.source === "api") {
     const L = S.live;
-    conn.className = `conn${L.connected === false ? " bad" : ""}`;
+    conn.className = `conn${L.connected === false || L.lastPoll ? " bad" : ""}`;
     conn.textContent = L.connected === false ? "not connected · retry in 5 s"
-      : L.connected ? `${S.following ? "following" : "paused"}${L.truncated ? ` · feed capped at ${MAX_ENVELOPES}` : ""}` : "connecting…";
+      : L.connected ? `${S.following ? "following" : "paused"}${L.lastPoll ? ` · ${L.lastPoll}` : ""}${L.feed.truncated ? ` · feed capped at ${MAX_ENVELOPES}` : ""}` : "connecting…";
     $("statusLeft").textContent = `Live · /api/view/events${L.runId ? ` · run ${L.runId}` : ""}`;
   } else {
     conn.className = "conn";
@@ -331,21 +367,22 @@ function renderFrozen(view, v) {
   const el = $("frozen");
   el.replaceChildren();
   if (!view || !view.broken || !v) { el.hidden = true; return; }
-  // The contract label, verbatim, then what broke it: the first row after the prefix.
+  // The contract label, verbatim, then what broke it: the first row after the prefix (never a verified row).
   const first = v.rows[v.prefix];
-  const reasons = first ? (first.oversize.length ? first.oversize.map((r) => `oversize: ${r}`) : first.reasons.map(reasonText)) : [];
-  const keyOnly = first && first.oversize.length === 0 && first.reasons.every((r) => KEY_ONLY.has(r));
+  const reasons = first ? rankReasons(first.reasons).map(reasonText) : [];
+  const keyOnly = first && first.status === "unverified" && first.reasons.every((r) => KEY_ONLY.has(r));
+  const what = !first ? "unverified" : isRejected(first) ? `${first.status}, rejected before hashing` : first.status;
   el.className = `frozen${keyOnly ? " cfg" : ""}`;
   el.hidden = false;
   el.append(v.label ?? `chain broken after seq ${view.broken.afterSeq}; board frozen at seq ${view.broken.afterSeq}`,
-    h("span", null, ` · seq ${first?.seq ?? "?"} is ${first?.status === "verified" ? "not projectable" : "unverified"}: ${reasons.join(", ") || "unknown"}${keyOnly && S.pins.length === 0 ? " (the production pin list is empty until the core key exists)" : ""}. Later envelopes are listed in the feed and never projected.`));
+    h("span", null, ` · ${first?.seq == null ? "a line with no readable seq" : `seq ${first.seq}`} is ${what}: ${reasons.join(", ") || "unknown"}${keyOnly && S.pins.length === 0 ? " (this page pins no key)" : ""}. Later envelopes are listed in the feed and never projected.`));
 }
 const KEY_ONLY = new Set(["key_not_pinned", "key_unavailable", "ed25519_unsupported"]);
 
 function emptyState(src, v, view) {
   if (S.source === "api" && S.live.connected !== true) return null;   // the offline card covers it
   if (src?.error) return ["Replay not loaded", src.error];
-  if (!v || v.ordered.length === 0) return S.source === "api" ? ["Waiting for envelopes", "Connected; this run has no envelopes yet."] : ["Nothing loaded", "Open a JSONL replay file."];
+  if (!v || v.ordered.length === 0) return S.source === "api" ? ["Waiting for envelopes", `Connected; this run has no envelopes yet.${S.live.lastPoll ? ` The ${S.live.lastPoll}.` : ""}`] : ["Nothing loaded", "Open a JSONL replay file."];
   if (v.prefix === 0) {
     return ["Nothing verified to show", `${S.keyNote ? `${S.keyNote[0].toUpperCase()}${S.keyNote.slice(1)}. ` : ""}Panels show only the verified prefix; the feed lists every envelope, marked.`];
   }
@@ -518,17 +555,13 @@ function renderEvidence(v, view) {
 }
 
 function checkCell(r) {
-  if (r.kind === "oversize") return ["warn", "⚠ oversize · not projected"];
-  if (r.status !== "verified") {
-    const worst = [...r.reasons].sort((a, b) => rank(a) - rank(b))[0];
-    return ["bad", `✕ ${reasonText(worst)}`];
-  }
+  if (r.kind === "oversize") return ["warn", "⚠ oversize · never hashed"];
+  if (r.kind === "malformed") return ["bad", "✕ malformed · never hashed"];
+  if (r.status !== "verified") return ["bad", `✕ ${reasonText(rankReasons(r.reasons)[0])}`];
   if (!r.projected) return ["warn", "✓ verified, not projected"];
   if (r.rejected) return ["warn", `✓ verified · rejected: ${r.rejected}`];
   return ["ok", "✓ verified"];
 }
-const RANKS = ["hash_mismatch", "bad_sig", "prev_hash_mismatch", "seq_gap", "seq_repeat", "run_mismatch", "malformed", "bad_version", "bad_alg", "key_hash_mismatch", "key_unavailable", "key_not_pinned"];
-const rank = (code) => { const i = RANKS.indexOf(code); return i < 0 ? 99 : i; };
 
 function renderFeed(v, n, view) {
   const feed = $("feed"), pill = $("feedPill");
@@ -541,7 +574,7 @@ function renderFeed(v, n, view) {
   const rows = feedRows(v, n, view?.rejected);
   const unv = rows.filter((r) => r.status !== "verified").length;
   pill.className = unv ? "pill bad" : "pill ok";
-  pill.textContent = `${n} / ${v.ordered.length} shown${unv ? ` · ${unv} unverified` : ""}`;
+  pill.textContent = `${n} / ${v.ordered.length} shown${unv ? ` · ${unv} not verified` : ""}`;
   const shown = rows.slice(-FEED_ROWS_SHOWN).reverse();
   for (const r of shown) {
     const [cls, text] = checkCell(r);
@@ -564,7 +597,7 @@ function renderOffline(src) {
   off.hidden = false;
   $("offTitle").textContent = S.live.connected === null ? "Connecting to the live feed…" : "Live feed not connected";
   $("offText").textContent = S.live.connected === null ? "Asking /api/view/runs." :
-    `The page asks /api/view/runs every 5 s and gets no answer (${S.live.error || "no response"}). The core that serves the live routes is not running yet. The replay is still available.`;
+    `The page asks /api/view/runs every 5 s and gets no answer (${S.live.error || "no response"}). The core that serves the live routes isn't answering. The replay is still available.`;
 }
 
 function renderRunPicker() {
@@ -581,19 +614,20 @@ function kv(rows) {
 const asText = (x) => (x === null || x === undefined ? "-" : typeof x === "string" ? x : JSON.stringify(x));
 function inspect(i) {
   const v = active()?.verification;
-  if (!v || !v.ordered[i]) return;
+  if (!v || !v.rows[i]) return;
   stop();
-  const env = v.ordered[i], row = v.rows[i];
-  const ok = row.status === "verified";
+  const env = v.ordered[i], row = v.rows[i], meta = v.meta[i];
+  const where = S.source === "api" ? `received line ${meta.index + 1}` : `line ${meta.index + 1} of the file`;
   const rows = [
-    ["status", `${ok ? "verified" : "unverified"}${i < v.prefix ? " · in the projected prefix" : " · not projected"}`],
+    ["status", `${row.status}${i < v.prefix ? " · in the projected prefix" : " · not projected"}`],
     ["reasons", row.reasons.length ? row.reasons.map((r) => `${r} (${reasonText(r)})`).join(", ") : "none"],
-    ["oversize", row.oversize.length ? row.oversize.join(", ") : "within the caps"],
+    ["input checks", isRejected(row) ? "failed: never canonicalized, hashed or verified" : "passed (size, structure, schema)"],
+    ["position", where],
   ];
-  if (row.reasons.includes("malformed") || !isObj(env?.event)) {
-    rows.push(["§", "envelope"], ["content", "malformed: not rendered"]);
-  } else if (row.oversize.length) {
-    rows.push(["§", "envelope"], ["seq", asText(env.event.seq)], ["event_id", asText(env.event.event_id)], ["hash", asText(env.hash)], ["content", "over the size cap: not rendered further"]);
+  if (isRejected(row) || !isObj(env)) {
+    // Only fields that could be read safely; the content itself is never rendered.
+    rows.push(["§", "rejected line"], ["seq", row.seq ?? "unreadable"], ["event_id", row.event_id ?? "unreadable"], ["hash (as stored)", meta.hash ?? "unreadable"],
+      ["content", "not rendered: it failed the input checks"]);
   } else {
     const a = isObj(env.actor) ? env.actor : {}, run = isObj(env.run) ? env.run : {}, sig = isObj(env.sig) ? env.sig : {};
     rows.push(["§", "event"], ["seq", asText(env.event.seq)], ["event_id", asText(env.event.event_id)], ["type", asText(env.event.type)],
@@ -604,18 +638,26 @@ function inspect(i) {
       ["§", "body"], ["", h("pre", { class: "json" }, JSON.stringify(env.event.body ?? null, null, 2))]);
     if (isObj(env.values)) rows.push(["§", "values (display only)"], ["", h("pre", { class: "json" }, JSON.stringify(env.values, null, 2))]);
   }
-  $("inspTitle").textContent = `Envelope ${row.seq == null ? "?" : `seq ${row.seq}`} · ${ok ? "verified" : "unverified"}`;
+  $("inspTitle").textContent = `Envelope ${row.seq == null ? "?" : `seq ${row.seq}`} · ${row.status}`;
   $("inspBody").replaceChildren(kv(rows));
   $("inspector").showModal();
 }
 function showChain() {
   const src = active(), v = src?.verification;
-  const rows = [["pins in this page", S.testMode ? `${S.pins.length} (TEST KEYS)` : `${S.pins.length}${S.pins.length ? "" : " (production list is empty until the core key exists)"}`],
+  const rows = [["pins in this page", S.testMode ? `${S.pins.length} (TEST KEYS)` : `${S.pins.length}${S.pins.length ? "" : " (an empty list verifies nothing)"}`],
     ["key source", S.keyNote || "-"], ["run checked", src?.runId ? `${src.runId} (${src.runIdFrom === "file" ? "from the file you opened" : "requested by the page"})` : "-"]];
+  if (S.source === "api") {
+    const t = S.live.tracker.state();
+    rows.push(["last poll", S.live.connected === false ? `failed: ${S.live.error}` : S.live.lastPoll || (t.last_poll_ok_ms ? "ok" : "-")],
+      ["progress", t.last_progress_ms ? `K reached ${t.K} ${Math.max(0, Math.floor((Date.now() - t.last_progress_ms) / 1000))} s ago` : "K has not grown yet"]);
+  }
   if (v) {
     const sum = chainSummary(v.rows);
-    rows.push(["verified", `${sum.verified} of ${sum.total}`], ["projected prefix", v.prefix ? `seq 1 to ${v.ordered[v.prefix - 1].event.seq} (${v.prefix} envelopes)` : "none"],
-      ["oversize rows", String(sum.oversize)], ["§", "reasons"], ...sum.reasons.map((r) => [r.code, `${reasonText(r.code)} · ${r.count} row${r.count > 1 ? "s" : ""} · first at seq ${r.firstSeq ?? "?"}`]));
+    rows.push(["verified", `${sum.verified} of ${sum.total} rows`], ["projected prefix", v.prefix ? `seq 1 to ${v.prefix_end} (${v.prefix} envelopes)` : "none"],
+      ["rejected rows", `${sum.rejected}${sum.rejected ? " (failed the input checks; never hashed)" : ""}`],
+      ["duplicates ignored", `${v.duplicates}${v.duplicates ? " (identical envelopes; no row)" : ""}`],
+      ...(S.source === "api" ? [["re-sent lines ignored", `${S.live.feed.repeats}${S.live.feed.repeats ? " (byte-identical; never re-checked)" : ""}`]] : []),
+      ["§", "reasons"], ...sum.reasons.map((r) => [r.code, `${reasonText(r.code)} · ${r.count} row${r.count > 1 ? "s" : ""} · first at seq ${r.firstSeq ?? "?"}`]));
   }
   $("chainBody").replaceChildren(kv(rows));
   $("chainDlg").showModal();
@@ -626,14 +668,17 @@ $("play").onclick = () => (S.playing ? stop() : play());
 $("scrub").oninput = (e) => { stop(); if (S.source === "api") S.following = false; S.cursor = Number(e.target.value); render(); };
 for (const b of $("source").querySelectorAll("button")) b.onclick = () => setSource(b.dataset.src);
 $("backToReplay").onclick = () => setSource("file");
-$("runPick").onchange = (e) => { resetLive(e.target.value); clearTimeout(S.live.timer); pollLive(); render(); };
+$("runPick").onchange = (e) => { resetLive(e.target.value); pollLive(); render(); };
+// A picked file is checked against the run the page requests (?run=) if there is one, otherwise against the run its
+// own lowest-seq line names (shown as such). Its raw size is checked before a byte of it is read.
 $("file").onchange = async (e) => {
   const f = e.target.files && e.target.files[0];
   if (!f) return;
-  const text = await f.text();
   e.target.value = "";
   if (S.source !== "file") setSource("file");
-  await loadReplay({ text, label: `${f.name} · opened file`, runId: null, isDemo: false });
+  const label = `${f.name} · opened file`;
+  if (f.size > MAX_FILE_BYTES) { stop(); replayError(label, null, false, `the file is over the ${MAX_FILE_BYTES / MIB} MiB replay cap, so it was not read`); return; }
+  await loadReplay({ text: await f.text(), label, runId: params.get("run") || null, isDemo: false });
 };
 $("feed").onclick = (e) => { const row = e.target.closest(".row[data-i]"); if (row) inspect(Number(row.dataset.i)); };
 $("feed").onkeydown = (e) => { if (e.key === "Enter") { const row = e.target.closest(".row[data-i]"); if (row) inspect(Number(row.dataset.i)); } };

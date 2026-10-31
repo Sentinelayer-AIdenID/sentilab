@@ -1,8 +1,9 @@
-// Lab view display model (VIEW ENVELOPE v0.4). Pure functions, no DOM, so the node tests can run them.
+// Lab view display model (VIEW ENVELOPE v0.5). Pure functions, no DOM, so the node tests can run them.
 // Status (lifecycle, validity, support sets, the board) is never computed here: it is aneta's project() over the
-// projectable prefix only (rule 1): the unbroken run of verified, non-oversize envelopes from seq 1. This file
-// only arranges that output, plus the display-only `values` from those same envelopes, for the panels.
-// Everything after the prefix appears only as marked feed rows, never in a panel.
+// projectable prefix only (rule 1): the leading run of verified envelopes from seq 1, ending before the first
+// rejected, unverified or conflicting row. This file only arranges that output, plus the display-only `values` from
+// those same envelopes, for the panels. Everything after the prefix appears only as marked feed rows, never in a
+// panel. A row that failed the input checks has no envelope here at all: only its readable seq, event_id and hash.
 import { project } from "./evidence-projection.mjs";
 
 export const LABS = Object.freeze({
@@ -20,13 +21,21 @@ export const labInfo = (lab) => (typeof lab === "string" && Object.hasOwn(LABS, 
 export const REASONS = [
   ["hash_mismatch", "content does not match its hash"],
   ["bad_sig", "bad signature"],
+  ["seq_conflict", "two different envelopes share this seq"],
+  ["event_id_conflict", "two different envelopes share this event_id"],
+  // Input checks: the row was rejected before anything was hashed.
+  ["line_too_large", "line over 64 KiB, never parsed"],
+  ["not_json", "not JSON"],
+  ["too_deep", "nested deeper than 8 levels"],
+  ["lone_surrogate", "broken Unicode (lone surrogate)"],
+  ["string_too_long", "string over 512 characters"],
+  ["non_finite_number", "number that is not finite"],
+  ["too_large", "over 64 KiB in canonical form"],
+  ["invalid_value", "not a JSON value"],
   ["prev_hash_mismatch", "prev_hash break"],
   ["seq_gap", "seq gap"],
-  ["seq_repeat", "seq repeat"],
   ["run_mismatch", "envelope from another run"],
-  ["malformed", "malformed envelope"],
   ["bad_version", "unknown envelope version"],
-  ["bad_alg", "unknown signature algorithm"],
   ["key_hash_mismatch", "served key does not match the pin"],
   ["key_unavailable", "pinned key not served"],
   ["key_not_pinned", "no pinned key"],
@@ -34,9 +43,20 @@ export const REASONS = [
 ];
 const REASON_TEXT = new Map(REASONS);
 const REASON_RANK = new Map(REASONS.map(([code], i) => [code, i]));
-export const reasonText = (code) => REASON_TEXT.get(code) ?? String(code);
+// too_many_entries:<field> and schema:<path> carry their field in the code.
+const rankOf = (code) => REASON_RANK.get(code) ?? (String(code).startsWith("too_many_entries:") ? REASON_RANK.get("too_large") : String(code).startsWith("schema:") ? REASON_RANK.get("invalid_value") : 99);
+export const reasonText = (code) => {
+  const c = String(code);
+  if (REASON_TEXT.has(c)) return REASON_TEXT.get(c);
+  if (c.startsWith("too_many_entries:")) return `over 64 entries in ${c.slice("too_many_entries:".length)}`;
+  if (c.startsWith("schema:")) return `schema: ${c.slice("schema:".length)}`;
+  return c;
+};
+export const rankReasons = (codes) => [...codes].sort((a, b) => rankOf(a) - rankOf(b));
 // Per-envelope problems get "at seq N"; a key problem usually affects every row, so it is named once.
-const KEY_REASONS = new Set(["key_not_pinned", "key_unavailable", "key_hash_mismatch", "ed25519_unsupported", "bad_alg", "bad_version"]);
+const KEY_REASONS = new Set(["key_not_pinned", "key_unavailable", "key_hash_mismatch", "ed25519_unsupported", "bad_version"]);
+// A row that failed the input checks (steps 1 to 4): never canonicalized, hashed or verified.
+export const isRejected = (row) => row.status === "oversize" || row.status === "malformed";
 
 export const isObj = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
 const finite = (x) => typeof x === "number" && Number.isFinite(x);
@@ -53,15 +73,16 @@ export function chainSummary(rows) {
       byCode.get(code).count += 1;
     }
   }
-  const reasons = [...byCode.values()].sort((a, b) => (REASON_RANK.get(a.code) ?? 99) - (REASON_RANK.get(b.code) ?? 99));
-  const oversize = rows.filter((r) => r.oversize.length > 0).length;
+  const reasons = [...byCode.values()].sort((a, b) => rankOf(a.code) - rankOf(b.code));
+  const rejected = rows.filter(isRejected).length;
   const phrases = reasons.slice(0, 3).map((r) => (KEY_REASONS.has(r.code) || r.firstSeq == null
     ? reasonText(r.code) : `${reasonText(r.code)} at seq ${r.firstSeq}${r.count > 1 ? ` (+${r.count - 1})` : ""}`));
-  return { total, verified, ok: total > 0 && verified === total, reasons, oversize, phrases };
+  return { total, verified, ok: total > 0 && verified === total, reasons, rejected, phrases };
 }
 
 // A seeded drill is declared by the core in the withdrawal itself: a withdraw whose reason starts "drill".
-// Over-labeling a drill is the safe error, so any well-formed envelope counts, verified or not.
+// Over-labeling a drill is the safe error, so any envelope that passed the input checks counts, verified or not.
+// Rejected rows are null here and never read.
 export function isDrill(envelopes) {
   return envelopes.some((env) => isObj(env) && isObj(env.event) && env.event.type === "withdraw" &&
     isObj(env.event.body) && typeof env.event.body.reason === "string" && /^\s*drill\b/i.test(env.event.body.reason));
@@ -129,9 +150,9 @@ const STAGE = {
 export const STAGES = ["proposed", "validated", "simulated", "evaluated", "reproducing", "reproduced", "board"];
 export const stageOf = (lifecycle) => STAGE[lifecycle] ?? [null, "open"];
 
-// The view at a cursor: the first `cursor` envelopes in seq order.
-// verification: { ordered, rows, prefix } from verifyChain (rows[i] belongs to ordered[i]; prefix is how many
-// envelopes, from the first, form the projectable prefix).
+// The view at a cursor: the first `cursor` rows in seq order.
+// verification: { ordered, rows, prefix } from verifyChecked (rows[i] belongs to ordered[i], which is null for a
+// rejected row; prefix is how many rows, from the first, form the projectable prefix, and all of them have an envelope).
 export function buildView(verification, cursor) {
   const { ordered, prefix } = verification;
   const n = Math.max(0, Math.min(cursor, ordered.length));
@@ -229,17 +250,20 @@ export function buildView(verification, cursor) {
   return { n, trustedCount: trusted.length, frozenAt, broken, projection, projectionError, rejected, cards, board, evidence, drill };
 }
 
-// Panel 04: the feed. Every envelope, verified or not, in seq order, up to the cursor. `projected` is false for
-// everything after the prefix, including envelopes that verify on their own.
+// Panel 04: the feed. Every row, verified or not, in seq order, up to the cursor. `projected` is false for
+// everything after the prefix, including envelopes that verify on their own. A rejected row shows only its reasons:
+// its content failed the input checks, so it is never rendered.
 export function feedRows(verification, cursor, rejected = new Map()) {
   const { ordered, rows, prefix } = verification;
-  const n = Math.max(0, Math.min(cursor, ordered.length));
+  const n = Math.max(0, Math.min(cursor, rows.length));
   const out = [];
   for (let i = 0; i < n; i += 1) {
     const env = ordered[i], row = rows[i];
-    const base = { i, seq: row.seq, status: row.status, reasons: row.reasons, oversize: row.oversize, projected: i < prefix };
-    if (row.reasons.includes("malformed") || !isObj(env?.event)) { out.push({ ...base, kind: "malformed", text: "malformed envelope: not shown" }); continue; }
-    if (row.oversize.length > 0) { out.push({ ...base, kind: "oversize", text: `over the size cap (${row.oversize.join(", ")}): not rendered` }); continue; }
+    const base = { i, seq: row.seq, status: row.status, reasons: row.reasons, projected: i < prefix };
+    if (isRejected(row) || !isObj(env)) {
+      out.push({ ...base, kind: row.status, text: `rejected before hashing: ${row.reasons.map(reasonText).join(", ")}` });
+      continue;
+    }
     const { type, body } = env.event;
     out.push({
       ...base, kind: "event", ts: str(env.ts), lab: str(env.actor?.lab), type: str(type) ?? "?",
