@@ -14,7 +14,10 @@ nulls, never zero, permissive defaults or estimated scientific constants.
 
 This ticket supersedes the open benchmark proposals in draft-0.5 PLAN §§5.2, 5.3,
 8 and REQUIREMENTS, and disposition rows B08, R01, Q04, Q05, Q06. It preserves the
-contract-0.2 lifecycle. It does not change the sequential diagnostic conductor.
+contract-0.2 lifecycle. Warden’s binding amendment delivered 2026-10-31
+(overriding #56377 counterexamples) supersedes tolerance ordering, nomination
+before qualification, and ambiguous retry charging. It does not change the
+sequential diagnostic conductor.
 
 ## Endpoints and claim classes
 
@@ -66,13 +69,13 @@ Equal simulator allowance does not imply equal model or total compute cost.
 
 | Event | Charging and audit rule |
 |---|---|
-| Initial reference evaluation | Charges the search allowance; pin x0 before search. |
-| Cached request or shared initial sample | Each requesting lab spends its search slot; record actual compute and cache provenance separately. Sharing cannot manufacture additional search allowance. |
+| Initial reference and refinement evaluations | Their exact allocation is `pins.reference_and_refinement_charges = null`, must-fill before execution. They cannot create free search or bypass the inclusive 32. Pin x0 before search. |
+| Cached request or shared initial sample | Each requesting lab spends its opportunity, using one authoritative measurement per physical layout/context; record actual compute and cache provenance separately. No cross-arm reuse. Sharing cannot manufacture additional search allowance. |
 | Invalid or failed search | Spends its search slot; no free substitute. |
 | Same layout nominated by two labs | Both spend their own reproduction slot and both remain recorded; no cross-lab deduplication. |
 | Unused reproduction | Record the slot as unused with its nominee if ineligible; never transfer to search, another lab, arm, seed or family. |
-| Reproduction failure | No replacement nominee. Only a declared transient infrastructure failure permits exactly one retry of the same candidate in the same slot. Numerical mismatch or ordinary failure permits no retry. Record both attempts and all actual costs. |
-| Retry charging | **Unresolved: `budget.retry_accounting = null`.** The available decision allows one retry but does not settle its charge against the inclusive 32. This blocks execution. Logical occupied-slot counts and actual attempt counts are reported separately; neither authorizes an extra bundle. Freeze a compatible charging rule and runtime/cost caps before release. |
+| Reproduction failure | No replacement nominee. Only a declared transient infrastructure failure with proof that the solve never started permits one retry of the same candidate/context/slot. Numerical mismatch or ordinary failure permits no retry. Record both attempts and all actual costs. |
+| Retry charging | Only a proven pre-execution failure is free. Unknown or post-start execution consumes the slot and permits no second charged attempt. A cache hit still consumes its opportunity. Each four-lab arm stays at most 8 per lab and 32 total, including retries. |
 | Cross-architecture reproduction | Requires a frozen reproducer policy; no free additional scientific evidence. |
 
 ## Frozen-reference epoch and reproduction barrier
@@ -81,29 +84,42 @@ Equal simulator allowance does not imply equal model or total compute cost.
 |---|---|
 | Before search | Pin one immutable initial reference, all scenarios, geometry/stack, grid/layer/metric/evaluator, wire baseline, margins, lab roster and runtime/memory/model settings. |
 | All search | Exactly one epoch per run. All labs compare to the frozen reference. B3/B4 may share evaluated evidence, but the accepted board cannot advance and no reproduction begins during search. B2 stays isolated. |
-| Nominate | Each lab nominates its best valid evaluated J. B0/B1 nominate their top four distinct layouts. Use each lab's own evaluation; never a model's selection or lab arrival order. |
+| Nominate | Filter qualification first, including both uncertainties. Each lab then nominates its best eligible evaluated J. B0/B1 nominate their top four distinct eligible physical layouts. Use each lab's own evaluation; never a model's selection or lab arrival order. |
 | All reproductions | Start only after every lab closes search. Reproduce eligible nominations with bound inputs, all constraints/scenarios and independent worker/process evidence. Do not substitute if reproduction fails. |
 | Final gate | Wait until every slot is reproduced, failed after its allowed retry, or explicitly unused. Rank all qualifying reproductions once, against the frozen reference, then resolve every loser against the resulting board. |
 | Live demo | The existing sequential live-loop board remains demonstration evidence only. It is not this benchmark schedule. |
 
-Nomination groups are anchored at the minimum remaining J: include all candidates
-whose difference from that minimum is at most `nomination_tolerance`, order that
-group by candidate hash, remove it, and repeat. Do not chain pairwise approximate
-ties: 8.0, 8.1, 8.2 at tolerance .1 would otherwise depend on input order. Within
-one lab, repeated evaluations of the same hash retain the lowest evaluated J,
-then evaluation_id. Duplicate hashes across labs stay separate. Ordering metadata
-for an identical layout cannot confer a distinct-layout advantage.
+Order candidates by **exact finite J, then canonical physical-layout hash**.
+Tolerances govern qualification and endpoint statistics, never ordering. The
+amendment counterexample A=(100,c), B=(100.75,b), C=(101.5,a), with tolerance 1,
+cycles under a pairwise fuzzy comparator; the frozen order is A, B, C for every
+input permutation. Only exact equal J uses the hash tie-break. Physical layout
+identity excludes proposal signatures and lab/slot identity; freeze its canonical
+geometry serialization before execution. Each physical layout/context has one
+authoritative measurement. Conflicting duplicate measurements are rejected,
+never silently selected by best value or input arrival order. Each duplicate lab
+still consumes and records its own opportunity, even when served cached evidence.
 
-Eligibility requires a core-validated complete candidate and
-`reference_J - evaluated_J > acceptance_margin`. The gate uses reproduced J and
-the same strict boundary. **Exactly at the margin is `within_margin`.** First rank
-candidates that clear the reference margin; a hash-first near-tie on the boundary
-cannot suppress an actually qualifying candidate. The winner alone is `accepted`.
-Against that board, a zero/negative improvement is `non_improving_current`; a
-positive improvement up to the margin is `within_margin`. These are valid losers,
-never `stale_parent`. Nomination tolerance must not exceed the acceptance margin.
-Successful reproduction also requires absolute evaluated-versus-reproduced J
-difference at most the independently frozen reproduction tolerance.
+Qualification requires a core-validated complete candidate and
+`reference_J - candidate_J >= acceptance_margin + reference_uncertainty + candidate_uncertainty`.
+The improvement must also be strictly positive. **Exactly at the total margin
+qualifies**, preserving PLAN §5.3; a zero improvement is never accepted. Qualification precedes nomination:
+at reference 100 and margin 1, A=(J 97, uncertainty 3) is ineligible while
+B=(97.5, .1) is eligible when reference uncertainty is zero. The gate ranks by
+**reproduced J**, which can reverse search order within the reproduction tolerance.
+The first qualifying reproduction alone becomes `accepted`. Against that board,
+a zero/negative improvement is `non_improving_current`; a positive improvement
+strictly below the total uncertainty/practical margin is `within_margin`. Losers retain
+valid evidence, never `stale_parent`. Successful reproduction requires absolute
+evaluated-versus-reproduced J difference at most `reproduction_tolerance`.
+
+An epoch is scoped to family × seed × arm. The sharing-round schedule/barriers
+remain `pins.sharing_round_barriers = null` until fixed before execution. The
+search/reproduction barrier is mandatory in every arm. Completed scientific
+failure is an observed outcome and consumes its opportunity. Missing data or an
+unobserved infrastructure result is inconclusive, not a tie, a model fallback or
+a free replacement. Best observed board data may still be reported descriptively
+when the paired family is incomplete; it cannot supply confirmatory success.
 
 ## Replay interface and scope
 
@@ -114,14 +130,27 @@ load. A runner reads the JSON once, verifies its recorded hash and calls
 must validate every filled pin, authorized release, family selection, charging
 policy and actual resource cap; the guard alone is not an authorization verifier.
 
-The normalized ledger schema is `Candidate(candidate_hash, lab, arm, j,
-evaluation_id, valid)` and `Attempt(lab, slot, candidate_hash, attempt, status, j)`.
-Slots/attempts are zero-based. Status is `success`, `failed` or
-`infrastructure_failure`; only success carries finite J. `valid` and success
-must come from core contract validation, including geometry, wire, all scenarios,
-matching hashes/context and fresh independent worker/process evidence, never a
-lab assertion. Retransmissions must first be deduplicated and signatures verified
-using the ledger reader. Keep run/family/seed/epoch boundaries; never pool them.
+The normalized ledger schema is:
+
+- `Reference(j, uncertainty, context)`.
+- `Candidate(candidate_hash, lab, arm, j, evaluation_id, valid, uncertainty, context, measurement_id)`.
+- `Attempt(lab, slot, candidate_hash, attempt, status, j, execution, uncertainty, context, measurement_id)`.
+
+Slots and attempts are zero-based. Candidate hash is the physical-layout identity;
+evaluation_id is the lab opportunity/proposal identity; measurement_id identifies
+the authoritative measurement. The same hash in the same context must use the
+same measurement ID, J and uncertainty. Reproduction authority is separate from
+evaluation authority. Context binds the family/seed/arm/epoch and immutable task,
+metric, evaluator and scenarios. A cross-context record is rejected.
+
+Attempt status is `success`, `failed`, `infrastructure_failure` or `missing`.
+Execution evidence is `not_started`, `started` or `unknown`. Only success carries
+finite J and measurement_id; a known cache hit can succeed without a new start,
+but still spends an opportunity. `failed` means completed scientific failure.
+`valid`, execution proof and success must come from core contract validation,
+including geometry, wire, all scenarios, matching hashes/context and fresh
+independent worker/process evidence, never a lab assertion. Verify signatures and
+deduplicate transport retransmissions first using the ledger reader.
 
 The current ledger stores the arm in its run header and measurements/proposals in
 event bodies; an adapter must join those records into this schema. This ticket
@@ -130,24 +159,48 @@ provides the pure replay API, not a new live runner or signed-event adapter:
 ```python
 from dataclasses import asdict
 import json
-from sentilab_core.freeze import Candidate, Attempt, replay_epoch
+from sentilab_core.freeze import Candidate, Attempt, Reference, replay_epoch
 
 # Caller supplies a verified closed epoch and its pinned config; no simulation.
 result = replay_epoch(
     [Candidate(**row) for row in epoch["candidates"]],
     [Attempt(**row) for row in epoch["attempts"]],
-    epoch["arm"], epoch["reference_j"], freeze=config,
+    epoch["arm"], Reference(**epoch["reference"]), freeze=config,
     labs=epoch["labs"], search_complete=epoch["search_complete"],
+    search_charges=epoch["search_charges"],
 )
 print(json.dumps(result, default=asdict, sort_keys=True))
 ```
 
 `reproduction_slots` records all reserved slots. `replay_epoch` rejects pending
-slots, non-infrastructure retries, third attempts, substitutions and transfers;
-records failures/mismatches; reports physical attempts, occupied slots, unused
-slots and the best evaluated unreproduced layout. `rank_order_gate` alone expects
+slots, retries without pre-execution proof, third attempts, substitutions and transfers;
+records failures/mismatches and marks missing outcomes incomplete; reports
+physical attempts, charged/unused slots, per-lab/total charges and the best
+evaluated unreproduced physical layout. A duplicate successfully reproduced
+elsewhere in the same context is not reported as unreproduced. The supplied
+`search_charges` are verified per-lab ledger totals including initialization,
+refinements, caches and failed/uncertain starts, not just successful candidates.
+The function checks the 7-search/1-reproduction lab caps (28/4 for B0/B1); it does
+not independently reconstruct search-launch accounting or enforce live reservations. `rank_order_gate` alone expects
 already validated successful reproductions. These pure functions do not spend
 resources or mutate the source ledger. The caller records their outputs.
+
+## Admission-review adoption and departures
+
+Review input: `SLAB-041-ADMISSION-REVIEW-2026-10-31.md` from PR #31,
+SHA-256 `a96ae18722698a2052d0f133933a195eb8a649d42b8afc68ecf319dfecf6d64f`.
+This file is not copied here. Warden made the three counterexample fixes binding;
+the remaining recommendations are authoring guidance, pending independent review.
+
+| Review section | Adoption or explicit limit |
+|---|---|
+| 1: Total order | Adopt exact, unrounded finite J then physical-layout hash; no tolerance comparator. |
+| 2: Qualification/decision metric | Adopt eligibility before nomination, inclusive positive uncertainty-adjusted margin, and reproduced-J ordering. Search/decision metric and refinement pins remain null; no refinement is executed. |
+| 3: Physical identity/measurement | Adopt separate layout/proposal/slot IDs, immutable context and one authoritative measurement. The adapter must select the first complete eligible measurement in predetermined attempt order, never a minimum over repeats. The pure API rejects conflicting purported authoritative records. It also requires one authoritative decision measurement for duplicate layouts; independent raw reproduction records remain upstream evidence. Exact physical serialization remains a must-fill pin. |
+| 4: Opportunities/cache | Adopt distinct eligible B0/B1 nominations, separate duplicate lab charges, cache opportunity charges and no cross-arm reuse. Actual CPU/model/scenario cost and signed-event adaptation remain runner responsibilities. |
+| 5: Retry/reference | Adopt one retry only on durable pre-execution proof; uncertain/post-start consumes the slot with no replacement. Initial-reference and refinement allocation stays null until a preparation-vs-inclusive charging choice is approved. |
+| 6: Failure/missingness | Adopt completed scientific failure versus missing/inconclusive distinction, no model fallback or smaller corpus denominator, two-seed family aggregation and endpoint-specific tie handling. The fixed-corpus analysis runner is outside this patch. |
+| 7: Epoch/scheduler | Adopt family × seed × arm scope and both search/reproduction barriers. Seven synchronous sharing rounds are guidance, not a binding release: the exact round schedule remains null and blocks execution. Replay consumes certified search closure and per-lab ledger charge totals; no live scheduler is added. |
 
 ## Machine-readable appendix
 
@@ -161,7 +214,13 @@ practical and measured numerical uncertainty; no observed outcome can set it.
 {
   "version": "slab041-freeze/1",
   "status": "must-fill-before-execution",
-  "source_rows": ["B08", "R01", "Q04", "Q05", "Q06"],
+  "source_rows": [
+    "B08",
+    "R01",
+    "Q04",
+    "Q05",
+    "Q06"
+  ],
   "endpoints": {
     "sharing": "primary: paired family mean of B2 final J minus B3 final J",
     "worker": "primary: paired family fixed-corpus geometry-plus-wire success rate, adapter minus base",
@@ -193,11 +252,41 @@ practical and measured numerical uncertainty; no observed outcome can set it.
     "six_non_tied_rule": "6/6 may pass second at .05 only after the other primary passes first at .025; a six-family design stays descriptive"
   },
   "arms": {
-    "B0": {"system": "conventional simulated annealing", "labs": 1, "search_per_lab": 28, "reproduction_per_lab": 4, "nomination": "top distinct"},
-    "B1": {"system": "one lab with base worker", "labs": 1, "search_per_lab": 28, "reproduction_per_lab": 4, "nomination": "top distinct"},
-    "B2": {"system": "four isolated labs with base worker", "labs": 4, "search_per_lab": 7, "reproduction_per_lab": 1, "nomination": "best per lab"},
-    "B3": {"system": "four shared-evidence labs with base worker", "labs": 4, "search_per_lab": 7, "reproduction_per_lab": 1, "nomination": "best per lab"},
-    "B4": {"system": "four shared-evidence labs with adapted worker", "labs": 4, "search_per_lab": 7, "reproduction_per_lab": 1, "nomination": "best per lab"}
+    "B0": {
+      "system": "conventional simulated annealing",
+      "labs": 1,
+      "search_per_lab": 28,
+      "reproduction_per_lab": 4,
+      "nomination": "top distinct"
+    },
+    "B1": {
+      "system": "one lab with base worker",
+      "labs": 1,
+      "search_per_lab": 28,
+      "reproduction_per_lab": 4,
+      "nomination": "top distinct"
+    },
+    "B2": {
+      "system": "four isolated labs with base worker",
+      "labs": 4,
+      "search_per_lab": 7,
+      "reproduction_per_lab": 1,
+      "nomination": "best per lab"
+    },
+    "B3": {
+      "system": "four shared-evidence labs with base worker",
+      "labs": 4,
+      "search_per_lab": 7,
+      "reproduction_per_lab": 1,
+      "nomination": "best per lab"
+    },
+    "B4": {
+      "system": "four shared-evidence labs with adapted worker",
+      "labs": 4,
+      "search_per_lab": 7,
+      "reproduction_per_lab": 1,
+      "nomination": "best per lab"
+    }
   },
   "budget": {
     "unit": "all-scenario bundle per family x seed x arm",
@@ -208,41 +297,47 @@ practical and measured numerical uncertainty; no observed outcome can set it.
     "fallback_total": 2560,
     "descriptive_total": 1920,
     "transfer": "forbidden between labs, phases, arms, seeds or families",
-    "initialization": "charge search allowance; freeze x0 before search",
-    "cache_and_shared_sample": "each requesting lab spends its search slot; record cache hit and actual compute separately",
+    "initialization": "initial reference and refinement charges must be pinned before execution; no free search opportunity",
+    "cache_and_shared_sample": "every requesting lab spends its opportunity using the authoritative measurement; no cross-arm reuse",
     "invalid_or_failed_search": "spends search slot; no free substitute",
     "duplicate_nomination": "each lab spends and records its own reproduction slot",
     "unused_reproduction": "record unused; never transfer",
     "infrastructure_retry_limit": 1,
-    "retry": "only declared transient infrastructure failure; same candidate and slot; no substitute; record every attempt and cost",
-    "retry_accounting": null,
+    "retry": "exactly one declared transient infrastructure retry only after proven pre-execution failure; same candidate/context/slot; record all attempts and costs; no substitute",
+    "retry_accounting": "free only on proof solve never started; uncertain or post-start launch consumes slot; at most one pre-execution retry, never another charged attempt in same slot",
     "cross_architecture": "same reproduction slot only if frozen reproducer policy authorizes it; no free extra evidence"
   },
   "epoch": {
     "count_per_run": 1,
     "reference": "immutable initial reference, shared by all labs for the entire search",
-    "schedule": ["all search", "deterministic nomination", "all reproductions", "rank-order gate"],
+    "schedule": [
+      "all search",
+      "deterministic nomination",
+      "all reproductions",
+      "rank-order gate"
+    ],
     "barrier": "every lab search closed before any reproduction in each of B0 through B4; all slots terminal before final gate",
     "sharing": "B3 and B4 may share evaluated evidence during search; no reproduction or accepted-board updates during search",
-    "demo": "sequential live-loop board is demonstration only, never benchmark evidence"
+    "demo": "sequential live-loop board is demonstration only, never benchmark evidence",
+    "scope": "family x seed x arm; immutable context binds evaluator, metric, scenarios and physical-layout canonicalization",
+    "missing": "completed scientific failure is observed; missing or unobserved infrastructure result makes confirmatory inference inconclusive, never a tie or free replacement"
   },
   "nomination": {
-    "ranking": "minimum-anchored tolerance groups, candidate hash ascending within group",
-    "same_hash": "retain separate labs; within one lab choose smallest evaluated J then evaluation_id",
-    "eligibility": "core-validated complete candidate and reference J minus evaluated J strictly greater than acceptance_margin",
+    "ranking": "exact finite evaluated J ascending, then canonical physical-layout hash ascending; no tolerance in comparator",
+    "same_hash": "one authoritative measurement per physical-layout/context; retain separate proposal/lab/slot identities and charges",
+    "eligibility": "filter valid candidates first: positive reference J minus evaluated J >= acceptance_margin + reference uncertainty + candidate uncertainty",
     "no_substitute": true
   },
   "gate": {
     "contract": "contract-0.2",
-    "ranking": "reproduced J, with nomination tolerance and hash ordering; consider margin-clearing candidates first",
-    "accepted": "one winner clearing frozen-reference margin; becomes the board",
+    "ranking": "exact finite reproduced J ascending, then canonical physical-layout hash; accept the first qualified reproduction",
+    "accepted": "one winner with positive improvement reaching the frozen-reference margin plus both uncertainties; becomes the board",
     "non_improving_current": "board J minus candidate J <= 0",
-    "within_margin": "0 < board J minus candidate J <= acceptance_margin; includes exact margin",
+    "within_margin": "0 < board J minus candidate J < acceptance_margin + board uncertainty + candidate uncertainty; exact boundary qualifies",
     "valid_losers": "retain valid evidence; never stale_parent",
     "reproduction": "fresh independent worker/process, identical bound inputs and frozen context; absolute J discrepancy <= reproduction_tolerance"
   },
   "parameters": {
-    "nomination_tolerance": null,
     "acceptance_margin": null,
     "reproduction_tolerance": null,
     "sharing_tolerance": null
@@ -268,7 +363,10 @@ practical and measured numerical uncertainty; no observed outcome can set it.
     "reproducer_policy": null,
     "runtime_token_proposal_and_retry_cost_caps": null,
     "training_only_headroom_protocol": null,
-    "pre_outcome_release": null
+    "pre_outcome_release": null,
+    "physical_layout_canonicalization": null,
+    "reference_and_refinement_charges": null,
+    "sharing_round_barriers": null
   }
 }
 ```
