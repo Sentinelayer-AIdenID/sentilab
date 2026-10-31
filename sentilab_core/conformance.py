@@ -1,9 +1,14 @@
 """Node-assisted CI conformance. Never imported by the Python service."""
 import json
+import hashlib
 from pathlib import Path
 import subprocess
+import tempfile
 import unittest
-from sentilab_core.envelope import canonical, check_caps, digest
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from sentilab_core.envelope import canonical, canonical_size, check_caps, digest
+from sentilab_core.ledger import read_prefix
 from sentilab_core import test_conductor
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -40,6 +45,48 @@ console.log(JSON.stringify(JSON.parse(s).map(c)));"""
             self.assertEqual(canonical(json.loads(vector["raw"])).decode(), vector["canonical"])
         self.assertEqual(canonical({"2": "b", "10": "a"}), b'{"10":"a","2":"b"}')
 
+    def test_v05_canonical_sizes_match_the_reviewed_reference(self):
+        vectors = json.loads((ROOT / "contracts/view-envelope-v0.5/vectors-view.json").read_text())
+        values = [json.loads(case["raw"]) for case in vectors["canonical"]]
+        values += vectors["chains"][0]["envelopes"]
+        script = """import { canonicalSize } from './contracts/view-envelope-v0.5/view-envelope.mjs';
+let s=''; for await (const c of process.stdin) s+=c;
+console.log(JSON.stringify(JSON.parse(s).map(canonicalSize)));"""
+        result = subprocess.run(["node", "--input-type=module", "-e", script], cwd=ROOT,
+                                input=json.dumps(values), text=True, capture_output=True, check=True)
+        self.assertEqual([canonical_size(value) for value in values], json.loads(result.stdout))
+        self.assertEqual([canonical_size(value) for value in values], [len(canonical(value)) for value in values])
+
+    def test_v05_replay_prefix_matches_every_reviewed_chain_vector(self):
+        vectors = json.loads((ROOT / "contracts/view-envelope-v0.5/vectors-view.json").read_text())
+        public = {}
+        for name in vectors["test_keys"]:
+            identity = Ed25519PrivateKey.from_private_bytes(hashlib.sha256(
+                ("sentilab-view-test-key:" + name).encode()).digest())
+            public[name] = identity.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "vector.jsonl"
+            for case in vectors["chains"]:
+                keys = {pin["key_id"]: public[pin["test_key"]] for pin in case["view"]["pins"]
+                        if case["view"]["served_keys"].get(pin["key_id"]) == pin["test_key"]}
+                orders = case["send"].get("orders", [[row["event"]["event_id"] for row in case["envelopes"]]])
+                for order in orders:
+                    with self.subTest(vector=case["name"], order=order):
+                        rows = case["envelopes"]
+                        if "orders" in case["send"]:
+                            rows = [next(row for row in rows if row["event"]["event_id"] == name) for name in order]
+                        lines = []
+                        for row in rows:
+                            raw = json.dumps(row, ensure_ascii=True, separators=(",", ":")).encode()
+                            padding = case["send"].get("pad")
+                            if padding and row["event"]["seq"] == padding["seq"]:
+                                raw += b" " * (padding["line_bytes"] - len(raw))
+                            lines.extend([raw] * (2 if case["send"].get("twice") else 1))
+                        path.write_bytes(b"\n".join(lines) + b"\n")
+                        result = read_prefix(path, run_id=case["view"]["run_id"], public_keys=keys)
+                        self.assertEqual(result["last_seq"], case["expect"]["prefix_end"])
+                        self.assertEqual(result["error"] is None, case["expect"]["chain_ok"])
+
     def test_exact_canonical_byte_limits_match_contract_vectors(self):
         vectors = json.loads((ROOT / "contracts/view-envelope/vectors-view.json").read_text())
         for case in vectors["caps"]:
@@ -71,6 +118,22 @@ class ProjectionConformance(unittest.IsolatedAsyncioTestCase):
         actual = subprocess.run(["node", str(adapter)], input=canonical([e["event"] for e in prefix]),
                                 capture_output=True, timeout=30, check=True)
         self.assertEqual(json.loads(actual.stdout), result["projection"])
+        self.assertTrue(all(row["v"] == "view-envelope/0.5" for row in prefix))
+        script = """import { createPublicKey } from 'node:crypto';
+import { verifyJsonl, keySha256, parseApiResponse } from './contracts/view-envelope-v0.5/view-envelope.mjs';
+let s=''; for await (const c of process.stdin) s+=c; const data=JSON.parse(s);
+const key=createPublicKey({key:Buffer.concat([Buffer.from('302a300506032b6570032100','hex'),Buffer.from(data.public,'hex')]),format:'der',type:'spki'});
+if (!parseApiResponse(data.jsonl).ok) throw new Error('transport cap');
+console.log(JSON.stringify(verifyJsonl(data.jsonl,{runId:data.run_id,pins:[{key_id:data.key_id,key_sha256:keySha256(key)}],keys:{[data.key_id]:key}})));"""
+        actual = subprocess.run(["node", "--input-type=module", "-e", script], cwd=ROOT,
+                                input=json.dumps({"jsonl": "".join(canonical(row).decode() + "\n" for row in prefix),
+                                                  "run_id": "test-contract", "key_id": self.signer.key_id,
+                                                  "public": self.signer.public_key.hex()}),
+                                text=True, capture_output=True, timeout=30, check=True)
+        checked = json.loads(actual.stdout)
+        self.assertTrue(checked["chain_ok"])
+        self.assertEqual(checked["prefix_end"], len(prefix))
+        self.assertEqual(checked["projection"], result["projection"])
 
 
 if __name__ == "__main__":

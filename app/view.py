@@ -1,15 +1,19 @@
 """Read-only, run-scoped signed view feed and optional service-owned live loop."""
 import asyncio
 import hashlib
+import json
+from itertools import groupby
+from typing import Literal
 import os
 import threading
 
 from fastapi import APIRouter, HTTPException, Query
-from fastapi.responses import JSONResponse
+from fastapi.responses import Response
 
 from sentilab_core import operations
 from sentilab_core.budget import Limits
 from sentilab_core.ledger import replay
+from sentilab_core.envelope import MAX_PAGE_BYTES, MAX_PAGE_LINES
 
 router = APIRouter()
 _context = None
@@ -68,26 +72,52 @@ def runs():
 
 
 @router.get("/api/view/events")
-def events(run_id: str, after: int = Query(0, ge=0), limit: int = Query(500, ge=1, le=500)):
+def events(run_id: str, after: int = Query(0, ge=0),
+           limit: int = Query(MAX_PAGE_LINES, ge=1, le=MAX_PAGE_LINES),
+           format: Literal["jsonl", "json"] = "jsonl"):
     try:
         state = replay(context().root, run_id, public_keys=context().public_keys)
-        verified = operations.verified_state(state, run_id)
     except FileNotFoundError:
         raise HTTPException(404, "run not found") from None
-    except ValueError:
-        raise HTTPException(400, "invalid run_id") from None
-    rows = [row["envelope"] for row in state["rows"] if "envelope" in row and
-            isinstance(row["envelope"].get("run"), dict) and row["envelope"]["run"].get("run_id") == run_id and
-            isinstance(row["envelope"].get("event"), dict) and
-            type(row["envelope"]["event"].get("seq")) is int and row["envelope"]["event"]["seq"] > after]
-    page = rows[:limit]
-    return JSONResponse({"run_id": run_id, "envelopes": page, "after": after,
-                         "next_after": page[-1]["event"]["seq"] if page else after,
-                         "has_more": len(rows) > limit, "prefix_end": verified["prefix_end"],
-                         "unrenderable_rows": sum("envelope" not in row for row in state["rows"]),
-                         "chain_error": verified["chain_error"], "projection_error": verified["projection_error"],
-                         "board": verified["board"], "projection": verified["projection"],
-                         **operations.LABELS}, headers={"cache-control": "no-store"})
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from None
+
+    def sequence(row):
+        event = row.get("envelope", {}).get("event")
+        seq = event.get("seq") if isinstance(event, dict) else None
+        return seq if type(seq) is int and seq >= 1 else None
+
+    # Re-send evidence of an earlier break so an existing client can freeze too.
+    cursor = min(after, state["last_seq"]) if state["error"] else after
+    rows = [row for row in state["rows"] if sequence(row) is None or sequence(row) > cursor]
+    page, byte_count = [], 0
+    for _, group in groupby(rows, key=sequence):
+        group = list(group)
+        group_bytes = sum(len(row["raw"]) for row in group)
+        if len(page) + len(group) > limit or byte_count + group_bytes > MAX_PAGE_BYTES:
+            if not page:
+                raise HTTPException(413, "one sequence group exceeds the view transport caps")
+            break
+        page.extend(group)
+        byte_count += group_bytes
+    next_after = max((sequence(row) or cursor for row in page), default=cursor)
+    headers = {"cache-control": "no-store", "x-next-after": str(next_after),
+               "x-has-more": str(len(rows) > len(page)).lower()}
+    if format == "jsonl":
+        return Response(b"".join(row["raw"] for row in page), media_type="application/x-ndjson", headers=headers)
+
+    # Optional diagnostic representation retains the server's verified state.
+    verified = operations.verified_state(state, run_id)
+    content = json.dumps({"run_id": run_id, "envelopes": [row["envelope"] for row in page if "envelope" in row],
+                          "after": after, "next_after": next_after, "has_more": len(rows) > len(page),
+                          "prefix_end": verified["prefix_end"],
+                          "unrenderable_rows": sum("envelope" not in row for row in state["rows"]),
+                          "chain_error": verified["chain_error"], "projection_error": verified["projection_error"],
+                          "board": verified["board"], "projection": verified["projection"],
+                          **operations.LABELS}, ensure_ascii=True, allow_nan=False, separators=(",", ":")).encode()
+    if len(content) > MAX_PAGE_BYTES:
+        raise HTTPException(413, "diagnostic view exceeds the response byte cap")
+    return Response(content, media_type="application/json", headers=headers)
 
 
 @router.get("/api/view/key")

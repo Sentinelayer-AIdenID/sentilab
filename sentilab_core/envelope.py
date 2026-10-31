@@ -1,4 +1,4 @@
-"""Forge view-envelope/0.4 hashing and strict, bounded JCS values.
+"""Forge view-envelope/0.5 hashing and strict, bounded JCS values.
 
 The only signer input is an object exposing key_id, public_key and sign(bytes).
 Key material is owned by the service; this module never loads or saves it.
@@ -14,12 +14,51 @@ import re
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
-VERSION = "view-envelope/0.4"
+VERSION = "view-envelope/0.5"
 MAX_BYTES = 64 * 1024
 MAX_ITEMS = 64
 MAX_STRING = 512
 MAX_DEPTH = 8
+MAX_PAGE_LINES = 256
+MAX_PAGE_BYTES = 4 * 1024 * 1024
+MAX_REPLAY_BYTES = 64 * 1024 * 1024
 RUN_ID = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}\Z")
+
+
+def _number_text(item):
+    if isinstance(item, int):
+        if abs(item) <= 9007199254740991:
+            return str(item)
+        if not math.isfinite(float(item)) or int(float(item)) != item:
+            raise ValueError("integer is not exactly representable as a JSON number")
+        item = float(item)
+    if isinstance(item, float):
+        if not math.isfinite(item):
+            raise ValueError("nonfinite JSON number")
+        if item == 0:
+            return "0"
+        sign = "-" if item < 0 else ""
+        number = repr(abs(item)).lower()
+        coefficient, _, exponent = number.partition("e")
+        exponent = int(exponent or "0")
+        left, _, right = coefficient.partition(".")
+        digits = (left + right).lstrip("0").rstrip("0") or "0"
+        # repr uses fixed notation for [1e-4, 1e16); its leading zero is
+        # accounted for by the decimal exponent computed from the value.
+        if left != "0":
+            point = len(left) + exponent
+        else:
+            point = exponent - (len(right) - len(right.lstrip("0")))
+        if 0 < point <= 21:
+            body = (digits + "0" * (point - len(digits)) if point >= len(digits)
+                    else digits[:point] + "." + digits[point:])
+        elif -6 < point <= 0:
+            body = "0." + "0" * (-point) + digits
+        else:
+            exp = point - 1
+            body = digits[0] + ("." + digits[1:] if len(digits) > 1 else "")
+            body += "e" + ("+" if exp >= 0 else "") + str(exp)
+        return sign + body
 
 
 def canonical(value) -> bytes:
@@ -37,39 +76,8 @@ def canonical(value) -> bytes:
         if isinstance(item, str):
             item.encode("utf-8", errors="strict")
             return json.dumps(item, ensure_ascii=False, separators=(",", ":"))
-        if isinstance(item, int):
-            if abs(item) <= 9007199254740991:
-                return str(item)
-            if not math.isfinite(float(item)) or int(float(item)) != item:
-                raise ValueError("integer is not exactly representable as a JSON number")
-            item = float(item)
-        if isinstance(item, float):
-            if not math.isfinite(item):
-                raise ValueError("nonfinite JSON number")
-            if item == 0:
-                return "0"
-            sign = "-" if item < 0 else ""
-            number = repr(abs(item)).lower()
-            coefficient, _, exponent = number.partition("e")
-            exponent = int(exponent or "0")
-            left, _, right = coefficient.partition(".")
-            digits = (left + right).lstrip("0").rstrip("0") or "0"
-            # repr uses fixed notation for [1e-4, 1e16); its leading zero is
-            # accounted for by the decimal exponent computed from the value.
-            if left != "0":
-                point = len(left) + exponent
-            else:
-                point = exponent - (len(right) - len(right.lstrip("0")))
-            if 0 < point <= 21:
-                body = (digits + "0" * (point - len(digits)) if point >= len(digits)
-                        else digits[:point] + "." + digits[point:])
-            elif -6 < point <= 0:
-                body = "0." + "0" * (-point) + digits
-            else:
-                exp = point - 1
-                body = digits[0] + ("." + digits[1:] if len(digits) > 1 else "")
-                body += "e" + ("+" if exp >= 0 else "") + str(exp)
-            return sign + body
+        if isinstance(item, (int, float)):
+            return _number_text(item)
         if isinstance(item, list):
             return "[" + ",".join(encode(v) for v in item) + "]"
         if isinstance(item, dict):
@@ -94,6 +102,36 @@ def genesis(run_id):
 def validate_run_id(run_id):
     if not isinstance(run_id, str) or not RUN_ID.fullmatch(run_id):
         raise ValueError("invalid run_id")
+
+
+def canonical_size(value, *, limit=float("inf")):
+    """Count canonical bytes iteratively without calling the serializer."""
+    total, stack = 0, [value]
+    while stack:
+        item = stack.pop()
+        if isinstance(item, dict):
+            total += 2 + max(0, len(item) - 1) + len(item)
+            stack.extend(item)
+            stack.extend(item.values())
+        elif isinstance(item, list):
+            total += 2 + max(0, len(item) - 1)
+            stack.extend(item)
+        elif isinstance(item, str):
+            total += 2
+            for char in item:
+                total += (2 if char in '\\"\b\t\n\f\r' else 6 if ord(char) < 32
+                          else len(char.encode("utf-8", errors="strict")))
+        elif item is None:
+            total += 4
+        elif isinstance(item, bool):
+            total += 4 if item else 5
+        elif isinstance(item, (int, float)):
+            total += len(_number_text(item))
+        else:
+            raise ValueError("unsupported JSON value")
+        if total > limit:
+            return total
+    return total
 
 
 def check_caps(value):
@@ -127,17 +165,22 @@ def check_caps(value):
                 raise ValueError("JSON number out of range")
         elif item is not None:
             raise ValueError("unsupported JSON value")
-    data = canonical(value)
-    if len(data) > MAX_BYTES:
+    if canonical_size(value, limit=MAX_BYTES) > MAX_BYTES:
         raise ValueError("oversize: envelope")
-    return data
+    return canonical(value)
+
+
+def check_envelope(envelope, run_id):
+    """Reject structure and size before any canonicalization, hashing or signing."""
+    _validate_structure(envelope, run_id)
+    return check_caps(envelope)
 
 
 def _validate_structure(envelope, run_id):
     required = {"v", "event", "run", "actor", "prev_hash", "hash", "sig", "ts"}
-    if not isinstance(envelope, dict) or not required <= envelope.keys() or envelope.keys() - required - {"values"}:
+    if not isinstance(envelope, dict) or not required <= envelope.keys():
         raise ValueError("invalid envelope fields")
-    if envelope["v"] != VERSION:
+    if not isinstance(envelope["v"], str):
         raise ValueError("invalid envelope version")
     if (not isinstance(envelope["run"], dict) or not isinstance(envelope["actor"], dict) or
             not isinstance(envelope["event"], dict)):
@@ -161,7 +204,7 @@ def _validate_structure(envelope, run_id):
     if (not isinstance(event["body"], dict) or not isinstance(event["event_id"], str) or
             not event["event_id"] or not isinstance(event["type"], str)):
         raise ValueError("invalid event structure")
-    if type(event["seq"]) is not int or event["seq"] < 1:
+    if type(event["seq"]) is not int or not 1 <= event["seq"] <= 9007199254740991:
         raise ValueError("invalid sequence")
     if event["actor_role"] not in ("lab", "core", "acceptance_gate"):
         raise ValueError("invalid actor role")
@@ -194,10 +237,9 @@ def build(*, event, run, actor, prev_hash, signer, values=None, ts=None):
                 "sig": {"key_id": signer.key_id, "alg": "ed25519", "value": "0" * 128}}
     if values is not None:
         envelope["values"] = values
-    _validate_structure(envelope, run.get("run_id") if isinstance(run, dict) else None)
     # Fixed-width placeholders enforce the WHOLE envelope cap before signing.
     # Parsing the validated canonical bytes also detaches mutable caller inputs.
-    envelope = json.loads(check_caps(envelope))
+    envelope = json.loads(check_envelope(envelope, run.get("run_id") if isinstance(run, dict) else None))
     envelope["hash"] = digest({k: v for k, v in envelope.items() if k not in ("hash", "sig")})
     envelope["sig"]["value"] = signer.sign(envelope["hash"].encode()).hex()
     _validate_structure(envelope, envelope["run"]["run_id"])
@@ -207,8 +249,7 @@ def build(*, event, run, actor, prev_hash, signer, values=None, ts=None):
 def verify(envelope, *, run_id, public_keys):
     """Verify one envelope against caller-pinned keys, never keys from the file."""
     try:
-        _validate_structure(envelope, run_id)
-        check_caps(envelope)
+        check_envelope(envelope, run_id)
         sig = envelope["sig"]
         body = {k: v for k, v in envelope.items() if k not in ("hash", "sig")}
         computed = digest(body)

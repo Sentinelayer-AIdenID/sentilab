@@ -61,6 +61,31 @@
     "Raw HotSpot outputs were removed by the imported worker; only input hashes retained.",
     "Historical total development CPU and synthetic invocation counts were not completely instrumented; no certified task-wide total is claimed. Recorded failed attempts remain retained.",
     "Docker unavailable: native HotSpot build and named Python gates ran; container build deferred to CI.",
-    "v0.5 contract and SLAB-040 signer module integration await reviewed upstream delivery; browser belongs to Forge."
-  ]
+    "Shared SLAB-040 signer and reviewed v0.5 producer are integrated; Forge owns the browser and client-clock progress tracker. Native verifier keeps stricter field checks and one diagnostic error; see DEVIATIONS.md."
+  ],
+  "service_and_v05_revision": {
+    "base": "2d2d310f11dd2858533ffdca18c59edbb8f1558f",
+    "service_loader_tests": "runtime-generated seed, stable identity, missing/invalid seed fail closed",
+    "historical_203_envelope_proof_still_verifies": true,
+    "core_tests": 41,
+    "api_existing_service_conformance_tests": 18,
+    "controller_trust_leaderboard_tests": 75,
+    "thermal_tests": 2,
+    "property_tests": 2,
+    "property_cases": 1000,
+    "browser_tests": 64,
+    "contract_checks": [
+      74,
+      113,
+      193
+    ],
+    "contract_manifest_files": 16,
+    "reviewed_chain_vectors": 16,
+    "regression_tests_failed_before_v05_fix": 7,
+    "measured_python_gate_process_tree_cpu_s": 148.085594,
+    "counted_synthetic_calls_in_measured_python_gates": 2920,
+    "hotspot_calls_in_revision_gates": 4,
+    "measurement_limits": "The initial core runner missed two tuple-based worker launches; test_oracle ran two. The corrected final runner counted two further launches. Focused checks and JS/Node subprocess work are not included in the measured Python-gate totals. No certified task-wide CPU total is claimed.",
+    "remaining": "Operator carry, exact published head, Docker CI and independent review; no deployment from this box."
+  }
 }
