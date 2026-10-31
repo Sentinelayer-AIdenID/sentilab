@@ -45,6 +45,10 @@ jobs:
           node --version
           (cd contracts/contract-0.2 && node run-vectors.mjs)
           (cd contracts/view-envelope && node run-view-vectors.mjs)
+      - name: Lab view matches the contracts (browser copies, demo fixture)
+        run: |
+          node --test web/test/sentilab-parity.test.mjs
+          node web/test/make-sentilab-demo.mjs --check
 
   secret-scan:
     runs-on: ubuntu-24.04
