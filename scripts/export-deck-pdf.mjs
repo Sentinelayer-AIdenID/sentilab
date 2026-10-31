@@ -1,24 +1,27 @@
 #!/usr/bin/env node
-// Prints the SentiLab deck to PDF (one 1920x1080 page per slide) and, with --shots, screenshots and checks every slide.
+// Prints the SentiLab daytime deck to PDF (one 1920x1080 page per slide) and, with --shots, screenshots and checks every
+// slide.
 //
 //   PLAYWRIGHT_DIR=<dir containing node_modules/playwright> node scripts/export-deck-pdf.mjs [--shots <dir>] [--no-pdf]
 //
-// Run scripts/build-deck-data.mjs first. The deck directory (DECK_DIR, deck/) is served by a throwaway local server, so
-// it reads deck-data.json exactly as a browser would. Output: docs/sentilab/deck/SentiLab-deck-<UTC date>.pdf, one page
-// per slide and nothing else: the speaker notes are not printed (they are in deck-data.json and the deck's N panel).
+// Run scripts/build-deck-data.mjs first. deck/ (DECK_ROOT) is served by a throwaway local server and the deck opens at
+// /daytime/, so it reads deck-data.json exactly as a browser would and loads the shared images from deck/img/. Output:
+// docs/sentilab/deck/SentiLab-deck-<packet date>-daytime-<HHMM>.pdf, named from the packet the data came from (pdfName),
+// one page per slide and nothing else: the speaker notes are not printed (they are in deck-data.json and the N panel).
+// The v1 deck and its date-only PDF are frozen (FROZEN_V1): this script never writes any of those paths.
 // --shots <dir> also writes every slide at 1920x1080 and 1280x720 (plus one with the notes panel) and a report.json.
-// Each slide is checked: nothing outside its block or the canvas, no clipped text, smallest font size, pending values.
+// Each slide is checked: nothing outside its block or the canvas, no clipped text, smallest font size, missing values.
 // Exit 1 when a check fails, the browser logs an error or a request fails, or the PDF page count differs from the slide
 // count.
 import { createServer } from "node:http";
 import { mkdirSync, readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, extname, join, normalize, resolve, sep } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-import { DECK_DIR } from "./build-deck-data.mjs";
+import { extname, join, normalize, relative, resolve, sep } from "node:path";
+import { pathToFileURL } from "node:url";
+import { DECK_DIR, DECK_ROOT, FROZEN_V1, PDF_DIR, REPO_ROOT, pdfName } from "./build-deck-data.mjs";
 
-const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const OUT_DIR = join(REPO, "docs", "sentilab", "deck");
+const OUT_DIR = PDF_DIR;
+const PAGE = `${relative(DECK_ROOT, DECK_DIR).split(sep).join("/")}/`;
 const MIN_FONT = 22; // canvas px at 1920x1080
 
 const args = process.argv.slice(2);
@@ -37,8 +40,8 @@ const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": 
 function serve() {
   const server = createServer((req, res) => {
     const url = new URL(req.url, "http://localhost");
-    let p = normalize(join(DECK_DIR, decodeURIComponent(url.pathname)));
-    if (!p.startsWith(DECK_DIR + sep) && p !== DECK_DIR) { res.writeHead(403).end(); return; }
+    let p = normalize(join(DECK_ROOT, decodeURIComponent(url.pathname)));
+    if (!p.startsWith(DECK_ROOT + sep) && p !== DECK_ROOT) { res.writeHead(403).end(); return; }
     if (existsSync(p) && statSync(p).isDirectory()) p = join(p, "index.html");
     if (req.method !== "GET" || !existsSync(p)) { res.writeHead(404).end(); return; }
     res.writeHead(200, { "content-type": TYPES[extname(p)] ?? "application/octet-stream", "cache-control": "no-store" }).end(readFileSync(p));
@@ -80,7 +83,7 @@ function checkSlide(k) {
         const fs = parseFloat(cs.fontSize);
         if (fs < out.minFont) { out.minFont = fs; out.minFontAt = name(el); }
       }
-      if (el.classList.contains("pending")) out.pending.push(el.dataset.f || name(el));
+      if (el.classList.contains("pending")) out.pending.push(el.dataset.f || name(el)); // a missing value: a failure
     }
   });
   for (const t of slide.querySelectorAll("svg text")) {
@@ -104,7 +107,7 @@ async function open(w, h, query = "") {
   page.on("pageerror", (e) => report.console.push(`${w}x${h}: pageerror ${e.message}`));
   page.on("requestfailed", (r) => report.console.push(`${w}x${h}: request failed ${r.url()} ${r.failure()?.errorText ?? ""}`));
   page.on("response", (r) => { if (r.status() >= 400) report.console.push(`${w}x${h}: HTTP ${r.status()} ${r.url()}`); });
-  await page.goto(base + query, { waitUntil: "networkidle" });
+  await page.goto(base + PAGE + query, { waitUntil: "networkidle" });
   await page.waitForFunction(() => window.__deck?.ready === true);
   return { ctx, page };
 }
@@ -126,6 +129,7 @@ try {
           const c = await page.evaluate(checkSlide, k);
           report.slides.push(c);
           if (c.issues.length) fail(`${c.id}: ${c.issues.join(" | ")}`);
+          if (c.pending.length) fail(`${c.id}: missing values ${c.pending.join(", ")}`);
           if (c.minFont < MIN_FONT - 0.01) fail(`${c.id}: smallest text ${c.minFont.toFixed(1)}px < ${MIN_FONT}px at ${c.minFontAt}`);
         }
       }
@@ -142,7 +146,10 @@ try {
     mkdirSync(OUT_DIR, { recursive: true });
     const { ctx, page } = await open(1920, 1080, "?print=1");
     const count = await page.evaluate(() => window.__deck.count);
-    const path = join(OUT_DIR, `SentiLab-deck-${new Date().toISOString().slice(0, 10)}.pdf`);
+    const { packetId } = JSON.parse(readFileSync(join(DECK_DIR, "deck-data.json"), "utf8")).source;
+    const path = join(OUT_DIR, pdfName(packetId));
+    const rel = relative(REPO_ROOT, path).split(sep).join("/");
+    if (Object.hasOwn(FROZEN_V1, rel)) throw new Error(`refusing to overwrite the frozen v1 export ${rel}`);
     await page.pdf({ path, width: "1920px", height: "1080px", printBackground: true, preferCSSPageSize: true });
     const pages = (readFileSync(path, "latin1").match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;
     report.pdf = { path, pages, slides: count };
