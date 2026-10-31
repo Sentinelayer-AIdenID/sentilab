@@ -172,8 +172,10 @@ class _PhaseTimings:
 def evaluate(request: dict) -> dict:
     phases = _PhaseTimings()
     workspace_root = request.get('workspace_root')
-    if not isinstance(workspace_root, str) or not Path(workspace_root).is_dir():
-        raise ValueError('parent-owned workspace is unavailable')
+    if not isinstance(workspace_root, str) or not workspace_root or not Path(workspace_root).is_dir():
+        # Preserve request-validation precedence when there is nowhere to archive.
+        # _evaluate rejects the workspace before generating any native inputs.
+        return _evaluate(request, None, False, phases)
     retained = request.get('retained_output_root') is not None
     with _output_directory(Path(workspace_root), request.get('retained_output_root')) as directory:
         output = Path(directory)
@@ -213,7 +215,7 @@ def evaluate(request: dict) -> dict:
                 phases.checkpoint(output, status)
 
 
-def _evaluate(request: dict, output: Path, retained: bool, phases: _PhaseTimings) -> dict:
+def _evaluate(request: dict, output: Path | None, retained: bool, phases: _PhaseTimings) -> dict:
     requested_binary = request.get("hotspot_binary")
     if not isinstance(requested_binary, str) or not requested_binary:
         raise ValueError("HotSpot binary path is missing")
@@ -283,6 +285,12 @@ def _evaluate(request: dict, output: Path, retained: bool, phases: _PhaseTimings
             len(halos) != count or len(connections) != count or any(len(row) != count for row in connections) or
             not isinstance(parameters["link_type"], str)):
         raise ValueError("TAP fixture parameters are inconsistent")
+
+    workspace_root = request.get('workspace_root')
+    if not isinstance(workspace_root, str) or not workspace_root:
+        raise ValueError('parent-owned workspace path is missing')
+    if output is None:
+        raise ValueError('parent-owned workspace is unavailable')
 
     # The worker starts in TAP_ROOT for the legacy generator's relative config.
     started_generation = time.perf_counter()

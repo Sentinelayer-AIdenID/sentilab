@@ -168,6 +168,26 @@ class WorkerEvidenceTests(unittest.TestCase):
         self.assertGreaterEqual(first['wall_seconds'], 0.0)
         self.assertEqual(second, {'cpu_seconds': 0.0, 'wall_seconds': 0.0})
 
+    def test_unavailable_workspace_preserves_validation_precedence(self):
+        for workspace in (None, '', 12, str(self.root / 'absent'), str(self.binary)):
+            for centers in ([[10.0, 10.0], [20.0, 20.0]], [[10.0, 10.0]]):
+                with self.subTest(workspace=workspace, centers=len(centers)):
+                    self.request['workspace_root'] = workspace
+                    self.request['centers_mm'] = centers
+                    error = ('TAP fixture parameters are inconsistent' if len(centers) != 1
+                             else 'parent-owned workspace path is missing'
+                             if not isinstance(workspace, str) or not workspace
+                             else 'parent-owned workspace is unavailable')
+                    with patch.object(worker, '_output_directory') as output, \
+                            patch.object(worker, 'PassiveInterposer') as generator, \
+                            patch.object(worker.subprocess, 'run') as native:
+                        with self.assertRaisesRegex(ValueError, error):
+                            worker.evaluate(self.request)
+                        output.assert_not_called()
+                        generator.assert_not_called()
+                        native.assert_not_called()
+        self.assertEqual(list(self.retained.iterdir()), [])
+
     def test_error_protocol_exposes_phase_timings_for_parent_accounting(self):
         error = ValueError('fake worker failure')
         error.phase_timings = {'solve': {'cpu_seconds': 0.4, 'wall_seconds': 0.6}}
