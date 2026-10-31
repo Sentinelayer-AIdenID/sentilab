@@ -21,9 +21,12 @@ a { color: var(--cyan); }
 
 .shell { display: grid; height: 100dvh; padding: 0 20px; gap: 10px;
          grid-template-columns: minmax(0, 1fr);
-         grid-template-rows: 60px 54px auto auto minmax(0, 1fr) var(--strip-h) 28px;
-         grid-template-areas: "top" "controls" "frozen" "valerr" "stage" "strip" "status"; }
-.top { grid-area: top; } .controls { grid-area: controls; } .frozen { grid-area: frozen; } .valerr { grid-area: valerr; } .stage { grid-area: stage; }
+         grid-template-rows: 60px 54px auto minmax(0, 1fr) var(--strip-h) 28px;
+         grid-template-areas: "top" "controls" "banners" "stage" "strip" "status"; }
+.top { grid-area: top; } .controls { grid-area: controls; } .banners { grid-area: banners; } .stage { grid-area: stage; }
+/* The chain banner and the value-check banner share one row: no extra gap when neither shows. */
+.banners { display: grid; gap: 8px; min-width: 0; }
+.banners:not(:has(> :not([hidden]))) { display: none; }
 .strip { grid-area: strip; } .status { grid-area: status; }
 
 /* ── header ── */
@@ -202,7 +205,7 @@ dialog ul { margin: 0; padding: 14px 18px 16px 34px; display: grid; gap: 8px; co
 /* ── 1280x720 and other small desktops ── */
 @media (max-width: 1500px), (max-height: 900px) {
   :root { --strip-h: 136px; --info-w: 330px; }
-  .shell { grid-template-rows: 50px 48px auto auto minmax(0, 1fr) var(--strip-h) 24px; gap: 8px; padding: 0 14px; }
+  .shell { grid-template-rows: 50px 48px auto minmax(0, 1fr) var(--strip-h) 24px; gap: 8px; padding: 0 14px; }
   .runmeta .opt, .status .hotkeys { display: none; }
   .links a#limitsLink { display: none; }
   .brand .sub { display: none; }
