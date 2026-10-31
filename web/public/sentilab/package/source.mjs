@@ -167,10 +167,12 @@ export async function applyPage(live, response, nowMs, trust) {
   }
   return { outcome: result.outcome, newRows: result.newRows.length };
 }
-// Rule 5's label, from paging.mjs liveLabel(): a failed latest poll shows its reason; K below its high is
-// "STALE · chain broken" at once; otherwise the tracker decides (LIVE · progress N s ago, or STALE).
+// Rule 5's label (v0.6.1), from paging.mjs liveLabel(): a failed latest poll shows its reason; a frozen board (anything
+// after the prefix, including K cut back below its high) is "STALE · chain broken" at once; otherwise the tracker
+// decides (LIVE · progress N s ago, or STALE).
 export function liveModeOf(live, nowMs) {
-  const label = liveLabel(live.paging, live.tracker, nowMs, live.verification?.prefixEnd ?? 0);
+  // frozen: anything follows the projectable prefix (v0.6.1 rule 5): LIVE never shows next to a frozen board.
+  const label = liveLabel(live.paging, live.tracker, nowMs, live.verification?.prefixEnd ?? 0, live.verification?.frozen ?? false);
   const mode = label.startsWith("LIVE") ? "LIVE" : "STALE";
   const reason = mode === "STALE" && label.includes(" · ") ? label.slice(label.indexOf(" · ") + 3) : null;
   return { mode, reason, label };

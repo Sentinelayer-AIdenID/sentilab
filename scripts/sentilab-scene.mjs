@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // SentiLab scene CLI: build the Package view's scene from a replay, with the same verification and prefix rule as
 // the page, but using the node REFERENCE verifier: VIEW ENVELOPE v0.5 (contracts/view-envelope-v0.5/view-envelope.mjs),
-// after the v0.6 bytes-to-rows rule (contracts/view-envelope-v0.6/paging.mjs verifyReplayBytes), exactly the path the
+// after the v0.6.1 bytes-to-rows rule (contracts/view-envelope-v0.6.1/paging.mjs verifyReplayBytes), exactly the path the
 // page takes through the browser ports of both.
 // Output is JSON on stdout. This is the CLI half of SLAB-026's CLI+MCP; the MCP half comes later through the
 // generated bridge, so the command table stays small and every result is one JSON object.
@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 
 // ── the verifier: the v0.5 reference, behind the v0.6 reference's bytes-to-rows (no verification of its own) ──────
 import { checkLine, keySha256, VERSION } from "../contracts/view-envelope-v0.5/view-envelope.mjs";
-import { verifyReplayBytes, splitRows, rowText } from "../contracts/view-envelope-v0.6/paging.mjs";
+import { verifyReplayBytes, splitRows, rowText } from "../contracts/view-envelope-v0.6.1/paging.mjs";
 import { canonical } from "../contracts/contract-0.2/resultcheck.mjs";
 import { VIEW_PINS } from "../web/public/sentilab/view-pins.js";
 import { buildScene, sceneAt, runFrame, SCENE_VERSION } from "../web/public/sentilab/package/scene.mjs";

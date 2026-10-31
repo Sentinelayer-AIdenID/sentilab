@@ -5,8 +5,9 @@
 //     padded, lone-surrogate, conflicting and wrong-run vectors from contracts/view-envelope-v0.5/vectors-view.json
 //     never contribute geometry or colour (verification is VIEW ENVELOPE v0.5 over raw rows, through source.mjs);
 //   - the colour scale is fixed per run, and the move timeline exists per lab;
-//   - the live path (source.mjs over paging.mjs: cursor, cursor_hash, 409/413/terminal states, liveLabel) gives the
-//     reference's recorded trace for every v0.6 paging scenario (C1-C14), poll for poll;
+//   - the live path (source.mjs over paging.mjs: cursor, cursor_hash, 409/413/terminal states, liveLabel with
+//     frozen) gives the reference's recorded trace for every v0.6.1 paging scenario (C1-C15), poll for poll, and the
+//     recorded label for every v0.6.1 label case; LIVE never shows next to a frozen board;
 //   - the CLI (v0.5 node reference verifier) builds the same scene as the browser path for the demo.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -23,7 +24,7 @@ import { buildScene, sceneAt, runFrame, heatColor, contiguousPrefix, scaleTicks,
 import { reconcile, extendsPrefix } from "../public/sentilab/package/playhead.mjs";
 import { TrackAnimation } from "../public/sentilab/package/render.mjs";
 import { makeChain, signEnvelope } from "../../contracts/view-envelope-v0.5/view-envelope.mjs";
-import * as refPaging from "../../contracts/view-envelope-v0.6/paging.mjs";
+import * as refPaging from "../../contracts/view-envelope-v0.6.1/paging.mjs";
 import { viewHref } from "../public/sentilab/view-links.mjs";
 import * as source from "../public/sentilab/package/source.mjs";
 import { VIEW_PINS } from "../public/sentilab/view-pins.js";
@@ -35,7 +36,7 @@ const CLI = join(repo, "scripts", "sentilab-scene.mjs");
 const DEMO_FILE = join(repo, "web", "public", "sentilab", "demo-run.jsonl");
 const DEMO_RUN = "demo-8c-0001";
 const viewFile = JSON.parse(readFileSync(join(repo, "contracts", "view-envelope-v0.5", "vectors-view.json"), "utf8"));
-const pagingFile = JSON.parse(readFileSync(join(repo, "contracts", "view-envelope-v0.6", "vectors-paging.json"), "utf8"));
+const pagingFile = JSON.parse(readFileSync(join(repo, "contracts", "view-envelope-v0.6.1", "vectors-paging.json"), "utf8"));
 const demoBytes = () => new Uint8Array(readFileSync(DEMO_FILE));
 const enc = (text) => new TextEncoder().encode(text);
 const lenient = (bytes) => new TextDecoder("utf-8", { fatal: false, ignoreBOM: true }).decode(bytes);
@@ -818,8 +819,8 @@ async function runScenarioPackage(spec) {
   return { trace, transitions, live };
 }
 
-const REQUIRED_SCENARIOS = ["C1", "C2", "C11", "C12a", "C13"];
-test("the package view replays every required v0.6 paging scenario (C1, C2, C11, C12a, C13) and the vector file has them", () => {
+const REQUIRED_SCENARIOS = ["C1", "C2", "C11", "C12a", "C13", "C15a", "C15b", "C15c"];
+test("the package view replays every required paging scenario (C1, C2, C11, C12a, C13; v0.6.1 C15a-c) and the vector file has them", () => {
   const ids = pagingFile.scenarios.map((spec) => spec.name.split(" ")[0]);
   for (const id of REQUIRED_SCENARIOS) assert.ok(ids.includes(id), id);
 });
@@ -830,6 +831,7 @@ for (const spec of pagingFile.scenarios) {
     assert.equal(run.trace.length, spec.trace.length);
     for (const [i, step] of run.trace.entries()) {
       assert.deepEqual(json(step), json(spec.trace[i]), `t = ${step.t_s} s`);
+      assert.ok(!(step.label.startsWith("LIVE") && step.board !== null), `t = ${step.t_s} s: ${step.label} next to "${step.board}"`);
     }
     for (const { before, after, req, outcome } of run.transitions) {
       assert.ok(after.cursor >= before.cursor && after.rows.length >= before.rows.length, "never resets");
@@ -838,6 +840,20 @@ for (const spec of pagingFile.scenarios) {
       if (before.cursor > 0) assert.equal(req.cursor_hash, rawHash(before.rows));
       if (after.degraded) assert.equal(source.liveRequest({ paging: after }), null, "terminal: no further request");
     }
+  });
+}
+
+// The v0.6.1 rule-5 label cases, through the package view's own liveModeOf().
+for (const spec of pagingFile.label_cases) {
+  test(`v0.6.1 label through the package view: ${spec.name}`, () => {
+    const live = source.createLive("run-v1");
+    live.tracker.poll({ nowMs: P_BASE_MS, ok: true, K: spec.high, received: spec.high });
+    live.tracker.poll({ nowMs: P_BASE_MS + spec.now_s * 1000, ok: true, K: spec.K, received: 0 });
+    live.paging = { ...live.paging, failure: spec.failure };
+    live.verification = { prefixEnd: spec.K, frozen: spec.frozen };
+    const nowMs = P_BASE_MS + spec.now_s * 1000;
+    assert.equal(source.liveModeOf(live, nowMs).label, spec.expect);
+    assert.equal(source.liveModeOf(live, nowMs).label, refPaging.liveLabel(live.paging, live.tracker, nowMs, spec.K, spec.frozen), "the reference agrees");
   });
 }
 
