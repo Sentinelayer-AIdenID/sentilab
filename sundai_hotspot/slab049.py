@@ -1120,11 +1120,14 @@ IN_CODE_AT_ENTRY = (
     "and the single place where the operator's authority is checked: under the ledger's lock, the grant's window "
     "(STOP once it has closed), the call's place in the grant, the operator's reserve tag, no ledger entry for the "
     "call and no earlier admission of it anywhere (the anchored admission chain); every admitted call is charged its "
-    "envelope or its measured CPU if larger, and this call's envelope must fit the grant's cap; then the chain's "
-    "next place, admit-<NN>, is CREATED (create-only: two requests on any ledger or host can never both take one "
-    "place, so no total passes the cap) and the signed reservation that binds it is appended. From then on the call "
-    "is consumed and charged in full, never reclaimed and never retried, settle tag or not; no ledger deletion or "
-    "rollback can readmit it. Any tag that cannot be read refuses: no admission on uncertainty",
+    "envelope or its measured CPU if larger, and this call's envelope must fit the grant's cap; the window is checked "
+    "again after those remote reads, before anything is created; then the chain's next place, admit-<NN>, is "
+    "CREATED (create-only: two requests on any ledger or host can never both take one place, so no total passes the "
+    "cap) and the signed reservation that binds it is appended. A create that returns after the cutoff stays "
+    "consumed and charged and settles as window_closed before any process work; a call admitted in time keeps "
+    "running. From then on the call is consumed and charged in full, never reclaimed and never retried, settle tag "
+    "or not; no ledger deletion or rollback can readmit it. Any tag that cannot be read refuses: no admission on "
+    "uncertainty",
     "the process-capable precheck, inside the attempt: the shared libraries the binary's own loader resolves for the "
     "private copy must equal the build's (a mismatch settles the call as runtime_refused, charged), and they are "
     "listed again after the run (a change settles the call as runtime_changed)",
@@ -1249,6 +1252,7 @@ def build_call_list() -> dict:
     limits, per_call = per_call_limits(), per_call_reserve_s()
     grid64, grid32 = sum(c["grid"] == 64 for c in calls), sum(c["grid"] == 32 for c in calls)
     solver_limits = sum(c["cpu_limit_s"] for c in calls)
+    per_grid = {grid: sum(c["accounting"]["reserved_cpu_s"] for c in calls if c["grid"] == grid) for grid in (64, 32)}
     worst = sum(c["accounting"]["reserved_cpu_s"] for c in calls)
     if worst > MANIFEST_CPU_CAP_S:  # warden #56856 and #56967: generation fails when the worst case leaves the cap
         raise ValueError(f"the true worst case, {worst:g} CPU-s, exceeds the manifest cap of "
@@ -1259,7 +1263,8 @@ def build_call_list() -> dict:
                   f"declared parent allowance + {limits['reap_s']:g} reap + {limits['settlement_tail_s']:g} "
                   f"settlement tail (the last two from SLAB-039's SUPERVISOR-POLICY.json). {grid64} x "
                   f"({TIMING['grid64_timeout_s']:g} + {per_call:g}) + {grid32} x ({TIMING['grid32_timeout_s']:g} + "
-                  f"{per_call:g}) = {solver_limits:g} + {per_call * len(calls):g} = {worst:g} CPU-s")
+                  f"{per_call:g}) = {per_grid[64]:g} + {per_grid[32]:g} = {worst:g} CPU-s (by component: "
+                  f"{solver_limits:g} CPU-s of solver limits + {per_call * len(calls):g} CPU-s of per-call reserves)")
     kinds = (HOTSPOT6, "hotspot7_default")
     return {
         "schema": MANIFEST_SCHEMA,

@@ -1364,7 +1364,9 @@ class ManifestTests(unittest.TestCase):
         self.assertEqual(accounting["per_call_reserve_cpu_s"], 3 + 2 * 1 + 3 + 0.25 + 0.25)
         self.assertEqual(accounting["worst_case_cpu_s"], 8 * (50 + 8.5) + 4 * (15 + 8.5))
         self.assertEqual(accounting["worst_case_cpu_s"], 562.0)
-        self.assertTrue(accounting["arithmetic"].endswith("= 460 + 102 = 562 CPU-s"), accounting["arithmetic"])
+        self.assertIn("8 x (50 + 8.5) + 4 x (15 + 8.5) = 468 + 94 = 562 CPU-s", accounting["arithmetic"])
+        self.assertTrue(accounting["arithmetic"].endswith("(by component: 460 CPU-s of solver limits + 102 CPU-s of "
+                                                          "per-call reserves)"), accounting["arithmetic"])
         self.assertIn("from 60 to 50 s", accounting["limits_lowered"])
         self.assertIn("soft = hard", accounting["worst_case_label"])
         self.assertEqual((accounting["manifest_cpu_cap_s"], accounting["room_envelope_cpu_s"]), (600.0, 1800.0))
@@ -2097,6 +2099,60 @@ class AdmissionTests(EntryCase):
             with self.assertRaisesRegex(CallRefused, "outside the window at admission"):
                 self.call(P_ASCEND, "late", now=None)
         self.assertEqual((len(self.scenario.ledger()["entries"]), self.scenario.api.admitted_calls()), (1, []))
+
+    def fake_clock(self) -> dict:
+        """A clock half a minute before the cutoff (the grant's and the manifest's, 2026-11-01T12:00Z), read by
+        validate-reference and the admission alike, and a stand-in loader so that the precheck would start a process
+        if it were ever reached."""
+        self.patch(provenance, "elf_interpreter", lambda data: "/bin/true")
+        self.write_provenance(self.fake)
+        clock = {"now": datetime(2026, 11, 1, 11, 59, 30, tzinfo=timezone.utc)}
+        self.patch(reference_validation, "_now", lambda: clock["now"])
+        self.patch(gate0_anchor, "_now", lambda: clock["now"])
+        return clock
+
+    def test_a_cutoff_crossed_during_the_remote_reads_admits_nothing(self):
+        """root (#57263): the clock advances past the cutoff while the admission reads the anchor."""
+        self.scenario.reserve(P_ASCEND)
+        clock = self.fake_clock()
+
+        def slow_read(path):
+            if "/admit-" in path:
+                clock["now"] = datetime(2026, 11, 1, 12, 0, 1, tzinfo=timezone.utc)
+        self.scenario.api.before_read = slow_read
+        spawned = []
+        with self.popen_spy(spawned.append):
+            with self.assertRaisesRegex(CallRefused, "outside the window at admission"):
+                self.call(P_ASCEND, "late-read", now=None)
+        self.assertEqual(spawned, [])  # no process started
+        self.assertEqual((self.scenario.api.admitted_calls(), len(self.scenario.ledger()["entries"])), ([], 1))
+        self.assertFalse((self.root / "late-read").exists())
+
+    def test_a_create_that_returns_after_the_cutoff_stays_charged_and_runs_nothing(self):
+        """root (#57263): the clock advances past the cutoff during the admission tag's CREATE."""
+        self.scenario.reserve(P_ASCEND)
+        clock = self.fake_clock()
+
+        def slow_create(ref):
+            if "/admit-" in ref:
+                clock["now"] = datetime(2026, 11, 1, 12, 0, 1, tzinfo=timezone.utc)
+        self.scenario.api.before_create = slow_create
+        spawned = []
+        with self.popen_spy(spawned.append):
+            receipt = self.call(P_ASCEND, "late-create", now=None)
+        self.assertEqual(spawned, [])  # no loader listing, no generator, no solver
+        self.assertEqual((receipt["status"], receipt["exit_status"]), ("window_closed", None))
+        self.assertTrue(receipt["admission"]["late"])
+        entries = self.scenario.entries(P_ASCEND)
+        self.assertTrue(entries["reservation"]["admission"]["late"])  # the admission is retained
+        self.assertEqual(entries["settlement"]["status"], "window_closed")
+        self.assertGreater(entries["settlement"]["charged_cpu_s"], 0.0)
+        self.assertEqual(self.scenario.api.admitted_calls(), [P_ASCEND])
+        self.assertEqual(self.charged(self.scenario), 58.5)  # and charged its full envelope
+        self.assertFalse(self.launched("late-create"))
+        clock["now"] = datetime(2026, 11, 1, 11, 59, 30, tzinfo=timezone.utc)  # back in the window: still never again
+        with self.assertRaisesRegex(CallRefused, "already in the ledger"):
+            self.call(P_ASCEND, "late-create-again", now=None)
 
     def test_an_uncertain_or_forged_admission_runs_nothing(self):
         for label, mode in (("lost-after-create", "after"), ("failed-before-create", "before")):

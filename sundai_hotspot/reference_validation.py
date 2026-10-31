@@ -18,8 +18,10 @@ as validate_call and _run_call write it. Accounting starts before any work, and 
    operator's authority is checked: under the ledger's lock, the grant's window, the call's place in the grant, the
    operator's reserve tag, no ledger entry and no earlier admission anywhere (the anchored admission chain); every
    admitted call charged its envelope or its measured CPU, and this call's envelope within the grant's cap; then the
-   next admission tag CREATED (create-only) and the signed reservation appended. From here every exit settles; the
-   call stays consumed and charged, and is never retried, settle tag or not.
+   next admission tag CREATED (create-only) and the signed reservation appended. The window is read on the clock
+   after the remote reads and before the create, and again when the create returns; a create that returns after the
+   cutoff stays consumed and charged and settles as window_closed at step 5, before any process. From here every exit settles; the call stays consumed and charged, and is never retried, settle tag or
+   not.
 5. Setup: a fresh output directory and a signed receipt.
 6. The process-capable precheck, inside the attempt: the shared libraries the binary's loader resolves for the
    private copy must equal the build's. A mismatch settles the call as runtime_refused.
@@ -345,6 +347,11 @@ def _run_call(context: dict) -> dict:
         # 5. Setup.
         out.mkdir(parents=True, exist_ok=True)
         _write_durably(out / "receipt.json", _sign_receipt(context, receipt))
+        if reservation["admission"].get("late"):  # admitted after the cutoff: consumed and charged, nothing runs
+            receipt["status"], receipt["exit_status"] = "window_closed", None
+            receipt["error"] = (f"the admission tag's create returned at {reservation['admission']['created_utc']}, "
+                                "after the window closed: the call stays consumed and charged, and nothing runs")
+            return receipt
         # 6. The process-capable precheck, inside the attempt.
         phase = "precheck"
         receipt["runtime"] = provenance.resolved_libraries(context["executable"])

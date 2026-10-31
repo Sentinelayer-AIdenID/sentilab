@@ -18,10 +18,12 @@ Two operator-owned facts make an admitted call authentic (warden #56967 and #570
 Three roles, kept apart (astra #57031; root's round-D review of PR #56):
 
 - **Admission** (admit_and_reserve): one critical section for the grant, before any process work. Under the ledger's
-  lock it re-reads the ledger, re-checks the window, reads the anchored admission chain, charges every admitted call
-  its envelope (or its measured CPU, if larger), refuses unless this call still fits the cap, CREATES the next
-  admission tag and appends the signed reservation. The create-only chain serializes the balance for the whole grant:
-  two requests, on this host or any other, can never both take the same place in it.
+  lock it re-reads the ledger, checks the window, reads the anchored admission chain, charges every admitted call
+  its envelope (or its measured CPU, if larger), refuses unless this call still fits the cap, checks the window again
+  after those remote reads, CREATES the next admission tag, checks the window once more when the create returns (a
+  late create stays consumed and charged, and nothing runs), and appends the signed reservation. The create-only
+  chain serializes the balance for the whole grant: two requests, on this host or any other, can never both take the
+  same place in it.
 - **Evidence verification** (TagReader): tags are read one at a time by exact name (`GET /git/ref/<ref>`, the GitHub
   client pattern of scripts/ci_admit.py), a fixed allowlist, so no prefix match, pagination or cache can turn an
   unrelated or missing ref into an accepted call. An authenticated 404 is a confirmed absence; any other API, auth
@@ -453,32 +455,37 @@ def admit_and_reserve(root: Path, key: Ed25519PrivateKey, public_hex: str, manif
                       now: datetime | None = None) -> dict:
     """THE ADMISSION, one critical section for the grant, before any process work (root, PR #56 round-D review):
 
-    1. under the ledger's lock, re-read and verify the ledger, and re-check at this moment the grant's window (and
-       the manifest's not_after_utc, when given), the call's place in the grant, and that the ledger holds nothing
-       for it;
+    1. under the ledger's lock, re-read and verify the ledger, and check the call's place in the grant and that the
+       ledger holds nothing for it;
     2. read the anchored admission chain; refuse a call admitted anywhere before;
     3. charge every admitted call its envelope or its measured CPU, whichever is larger (admission_charge), and
        refuse unless this call's envelope still fits the grant's cap;
-    4. CREATE the chain's next place, admit-<NN> (create-only: when another request took it first, this one is
+    4. read the clock after every remote read, since those reads can cross the cutoff: outside the grant's window (or
+       past the manifest's not_after_utc, when given) refuse, with nothing created and nothing consumed;
+    5. CREATE the chain's next place, admit-<NN> (create-only: when another request took it first, this one is
        refused, never squeezed in);
-    5. append the signed reservation, which binds that place.
+    6. read the clock once more, after the CREATE returns: a create that returns after the cutoff stays consumed and
+       charged, and its reservation records it as late, so validate-reference settles the call as window_closed
+       before any process work;
+    7. append the signed reservation, which binds that place.
 
     Nothing runs between the balance check and the reservation, and the chain makes the balance one for the whole
-    grant: requests on two ledgers or two hosts cannot both read 490 and both admit 58.5 under a 600 cap. Raises
-    AdmissionRefused (nothing consumed), AdmissionUncertain (the admission tag may exist: nothing runs),
-    AuthenticationError and AnchorUnavailable (no admission)."""
+    grant: requests on two ledgers or two hosts cannot both read 490 and both admit 58.5 under a 600 cap. `now`
+    fixes the clock (tests); otherwise every check reads the host clock afresh. The window bounds the admission of
+    a new call only; a call admitted in time keeps running. Raises AdmissionRefused (nothing consumed),
+    AdmissionUncertain (the admission tag may exist: nothing runs), AuthenticationError and AnchorUnavailable (no
+    admission)."""
     if public_key_hex(key) != public_hex:
         raise AuthenticationError("the signing key is not the pinned operator key")
+    clock = _now if now is None else (lambda: now)
     directory = ledger_dir(root, manifest_sha256)
     with _lock(directory):
         ledger = read_ledger(root, public_hex, manifest_sha256)
         grant = ledger["grant"]
-        grant_id, moment = grant["grant_id"], now or _now()
-        closes = _utc(grant["not_after_utc"])
+        grant_id = grant["grant_id"]
+        opens, closes = _utc(grant["not_before_utc"]), _utc(grant["not_after_utc"])
         if not_after_utc:
             closes = min(closes, _utc(not_after_utc))
-        if not _utc(grant["not_before_utc"]) <= moment <= closes:
-            raise AdmissionRefused(f"outside the window at admission ({moment.isoformat()}): STOP")
         if call not in grant["calls"]:
             raise AdmissionRefused(f"{call} is not in the operator's grant")
         if call_entries(ledger, call):
@@ -495,6 +502,10 @@ def admit_and_reserve(root: Path, key: Ed25519PrivateKey, public_hex: str, manif
         reserve = tags.resolve(grant_id, "reserve", call, manifest_sha256)
         if reserve is None:
             raise AdmissionRefused(f"the operator has not reserved {call} (no reserve tag)")
+        checked = clock()  # after every remote read (they can cross the cutoff) and before anything is created
+        if not opens <= checked <= closes:
+            raise AdmissionRefused(f"outside the window at admission ({checked.isoformat()}, read after the remote "
+                                   "reads and before the admission tag): nothing created, nothing consumed. STOP")
         seq, total = chain["next_seq"], chain["total_cpu_s"] + envelope
         ref = admit_ref(grant_id, seq)
         message = admit_message(grant_id, manifest_sha256, seq, call, envelope_cpu_s=envelope, total_cpu_s=total,
@@ -506,8 +517,11 @@ def admit_and_reserve(root: Path, key: Ed25519PrivateKey, public_hex: str, manif
             raise AdmissionRefused(f"{ref} was taken by another request; nothing consumed, try again") from exc
         except CreateUncertain as exc:
             raise AdmissionUncertain(f"{ref}: the admission's outcome is unknown; nothing runs") from exc
+        returned = clock()  # the create can return after the cutoff: the call is consumed, and nothing may run
+        late = not opens <= returned <= closes
         admission = {"ref": ref, "seq": seq, "commit_sha": sha, "envelope_cpu_s": envelope, "total_cpu_s": total,
-                     "charged_before_cpu_s": charged}
+                     "charged_before_cpu_s": charged, "checked_utc": checked.isoformat(),
+                     "created_utc": returned.isoformat(), "late": late}
         try:
             return _append_entry(directory, key, ledger, manifest_sha256, "reservation", call,
                                  {**payload, "admission": admission})
