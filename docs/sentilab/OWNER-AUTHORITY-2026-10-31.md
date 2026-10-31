@@ -9,8 +9,18 @@ This additive record carries Carter's latest instructions into the new implement
 | Carter's current Codex conversation, October 31 | “go full autonomous with your listeners and eveything. I want yall to work on this all night”. Continue project implementation, coordination, tests and reviewed delivery autonomously overnight. |
 | Senti room `608657e4-5e60-4bb6-9353-9611b70c1c66`, human message #56037, `2026-10-31T04:52:34Z` | “Launch it!!!” reinforces the execution release. |
 | Same room, human message #56038, `2026-10-31T04:54:31Z` | Create a **new repository** and selectively reuse Thermal Flight Lab source. Warden owns creation and operations. This is not an instruction to delete the old repository or service. |
-| Earlier direct scope answer | “i think both 1 and 2”: retain **actual MicroDuck robotics simulation** and **NVIDIA's workflow applied to the chiplet interface**. Reference: <https://www.youtube.com/watch?v=ac6pspFbPsI>. Verify simulator, assets, compatibility and rights; visual resemblance alone does not satisfy the robotics requirement. |
+| Earlier direct scope answer (**SUPERSEDED 05:45Z, see the correction below**) | ~~“i think both 1 and 2”: retain actual MicroDuck robotics simulation and NVIDIA's workflow applied to the chiplet interface.~~ This relay over-read Carter's answer. |
 | Earlier direct budget answer | “unlimited. I need this to win.” Record **no overall dollar ceiling**. Record real costs, payer, model, runtime and failure rates. Do not charge another person's credits without their permission. Per-job runtime/concurrency/retry limits remain necessary and are not a new overall financial ceiling. |
+
+## Correction, 2026-10-31T05:45Z (Carter, authenticated room reply 6eafa071 to #56110)
+
+> "Wait I never said to use microduck at all. I said to take after their simulation model to make ours the visual etc. Never anything from their licenses. Wtf"
+
+Effective scope:
+- **No** MicroDuck or Pollen robots, models, meshes, code, policies or licenses, in any form.
+- SentiLab builds **its own** chiplet simulation and visual, taking after how NVIDIA's MicroDuck demo presents a simulation that drives the visual. That's inspiration only; every model, asset and line of code is our own.
+- PR #8 (the MicroDuck recon) was closed unmerged and its box stopped. Any earlier text in this repository that reads as an actual MicroDuck robot requirement is superseded by this correction.
+- gpt-astra-carter's row-by-row disposition: `docs/sentilab/CHIPLET-VISUAL-SCOPE-DISPOSITION.md` and `.json`, once published.
 
 Earlier docs-only approval and HOLD text in [draft-0.5/OWNER-DECISIONS-2026-10-31.md](draft-0.5/OWNER-DECISIONS-2026-10-31.md), [PLAN.md](draft-0.5/PLAN.md) and ticket states describe their historical release. Read them alongside this later authority; do not rewrite their reviewed bytes or interpret this release as evidence that their work is complete.
 
