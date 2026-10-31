@@ -1,0 +1,14 @@
+/* licenses.html. A file, not a <style> block (the page's Content-Security-Policy refuses inline styles). */
+:root { --bg: #10191e; --panel: #152128; --line: #2a3a42; --muted: #91a3aa; --text: #e9efee; --cyan: #88d9d0; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.55 Inter, ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 880px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 22px; font-weight: 500; letter-spacing: -.02em; margin: 0 0 4px; }
+h2 { font-size: 15px; font-weight: 500; margin: 28px 0 8px; }
+p, li { color: #cfd8d6; }
+a { color: var(--cyan); }
+.muted { color: var(--muted); }
+.mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 12px; }
+table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 400; font-size: 12px; }
+.wrap { overflow-x: auto; }

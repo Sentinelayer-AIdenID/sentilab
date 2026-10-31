@@ -58,3 +58,56 @@ No new native HotSpot caller was found among these additions. Existing live
 CLI/MCP operations still reach the shared oracle/worker and `run_hotspot` gate.
 This review makes no claim about historical consumption, global admission
 rollout, or measured container CPU usage.
+
+## Round 6: headroom merge
+
+Main `2d9eca2` adds the SLAB-039 headroom supervisor and retained-output worker
+changes. The worker keeps `ExitStack` and file-backed `stdout.bin`/`stderr.bin`
+when retention is requested, or `capture_output=True` otherwise; both paths
+call `run_hotspot`. Its existing keyword forwarding accepts those file handles,
+so neither the reservation wrapper nor its settlement behavior changes.
+
+The complete inventory initially failed on seven unclassified call sites.
+Review also identified the production fork, now explicitly scanned and listed.
+All eight sites are classified below, including identical-call multiplicities.
+Path comparisons use POSIX separators so the inventory is portable.
+
+| File | Count | Classification |
+| --- | ---: | --- |
+| `sundai_controller/headroom.py` | 1 | `os.execv` enters the fixed `sundai_controller.headroom_supervisor` module, preserving the CI environment. It does not execute a native solver itself. |
+| `sundai_controller/headroom_supervisor.py` | 1 | `LinuxTree.start` forks the supplied worker. The production `work` closure calls `run_headroom`, which constructs `HotSpotOracle`; its warm worker executes `tap_oracle_worker.evaluate` through `run_hotspot`. CI environment and the enclosing cgroup are inherited across exec/fork. A failed headroom reservation cannot bypass the independent CI launch reservation. The synthetic test closures use fake oracles or CPU loops. |
+| `sundai_controller/test_headroom_supervisor.py` | 2 | Dedicated Python programs test CPU/reaping with a forked busy loop and the production supervisor with `oracle_factory=Fake`. Neither executes HotSpot. |
+| `sundai_controller/test_process_budget.py` | 3 | Fixed Python programs test sleep, orphan cleanup, and threaded hash work under affinity. Embedded forks create CPU/signal probes, not solvers. |
+| `sentilab_core/test_oracle.py` | 1 | Saved `asyncio.create_subprocess_exec` alias starts a fixed Python cancellation host and sleeping forked descendant. It substitutes the real worker at the process boundary; no solver runs. |
+
+`tap_oracle.py` retains its existing two inventoried process calls: the fixed
+warm Python worker (gated as above) and Windows `taskkill.exe` for cleanup. Its
+new immediate-kill, latency and retained-output paths introduce no launch.
+`sentilab_core/oracle.py` still launches the fixed `sentilab_core.worker`, whose
+`evaluate` path reaches the same gate. Existing GB10 serving additions use the
+reviewed SSH transport; scripts under `scripts/gb10` are outside this inventory
+and do not introduce a HotSpot call.
+
+## Round 7: capability registry and image runtime merge
+
+Main `1e6b97e` brings the SLAB-043 recorded capability worker and conformance
+suite. The unchanged inventory assertion initially refused 21 added raw call
+sites and one removed export-worker call. The removed entry is replaced by
+the shared recorded worker below; the ResultCheck MCP entry remains. All new
+expressions and duplicate counts are listed explicitly, with no scan exclusions
+or assertion changes.
+
+| File | Count | Classification |
+| --- | ---: | --- |
+| `sentilab_core/execution.py` | 1 | `_WorkerJob` starts the fixed `sentilab_core.execution` module. `main` permits recorded live status/stop/verify, dataset export, chiplet geometry/projection/replay/export, GB10 read-only evidence, and memory recall/audit/route. It explicitly excludes `live.run` and does not dispatch an oracle. Its restricted environment therefore needs no solver reservation. Production live execution stays in the original gated oracle path. |
+| `sentilab_core/chiplet.py` | 1 | Fixed Node source imports the shared browser model and projects verified recorded JSON from stdin. The model and its evidence projection import have no child-process or solver calls. `build` validates geometry only; replay/export also operate on records. |
+| `sentilab_core/test_execution.py` | 2 | Saved `Popen` aliases either start the recorded worker with pidfd setup forced to fail before request dispatch, or replace that exact module command with a finite Python fork/pipe/cancellation fixture. The fixture never invokes a solver. |
+| `sentilab_core/test_build_info.py` | 4 | Two fixed commands query the Debian Node package and `/usr/bin/node --version`; two run the fixed build-receipt script with valid or invalid image/package pins. The script only queries `dpkg-query` and Node version before writing public runtime metadata. |
+| `sentilab_core/test_conformance.py` | 13 | CLI/MCP processes exercise recorded capabilities, fake SSH evidence, scope/input refusal, cancellation of recorded workers, help output and registry listing. The successful `live.run` case injects `BarrierOracle` via `FIXTURE_HOST` and creates STOP before execution, asserting zero solves. Other live-run requests fail admission or input validation. Cancellation explicitly excludes `live.run`. All command-building helpers and requests were inspected; repeated CLI, MCP and help expressions keep their exact multiplicities. |
+
+Main's `scripts/record_build_info.py` is also invoked directly by the image
+build. Its two subprocesses only query `dpkg-query` and Node version; scripts
+remain outside the Python source inventory. The Dockerfile preserves main's
+pinned Python base, pinned Debian Node package and build receipt, followed by
+the allocation ARG/ENV and allocation-aware native build. The enclosing cgroup
+still includes these build steps through the existing dedicated Docker daemon.

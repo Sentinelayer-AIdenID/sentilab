@@ -33,7 +33,9 @@ class FreshProcessOracle(HotSpotOracle):
         return self
 
     @asynccontextmanager
-    async def lease(self):
+    async def lease(self, *, immediate_kill=False):
+        # Fresh workers always SIGKILL their group in _evaluate's finally block,
+        # so both ordinary and bounded leases already have immediate cleanup.
         if self.reservation is None:
             raise RuntimeError("worker requires a durable budget reservation")
         yield self

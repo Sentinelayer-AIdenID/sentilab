@@ -1,5 +1,5 @@
 // Lab view display model (VIEW ENVELOPE v0.5). Pure functions, no DOM, so the node tests can run them.
-// Status (lifecycle, validity, support sets, the board) is never computed here: it is aneta's project() over the
+// Status (lifecycle, validity, support sets, the board) is never computed here: it is the contract's project() over the
 // projectable prefix only (rule 1): the leading run of verified envelopes from seq 1, ending before the first
 // rejected, unverified or conflicting row. This file only arranges that output, plus the display-only `values` from
 // those same envelopes, for the panels. Everything after the prefix appears only as marked feed rows, never in a
@@ -60,6 +60,11 @@ const KEY_REASONS = new Set(["key_not_pinned", "key_unavailable", "key_hash_mism
 export const isRejected = (row) => row.status === "oversize" || row.status === "malformed";
 
 export const isObj = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
+// A node id for display: a leading run-id segment (16 or more hex digits, then ":") is dropped, so
+// "35975774fb714bbdaa51972bc39518ec:candidate-0" shows as "candidate-0" and
+// "...:candidate-0:evaluate:measurement" as "candidate-0:evaluate:measurement" (still distinct from its siblings).
+// Ids without that prefix are unchanged. The full id stays in the tooltip and the inspector.
+export const shortId = (id) => (typeof id === "string" ? id.replace(/^[0-9a-f]{16,}:(?=.)/, "") : id);
 const finite = (x) => typeof x === "number" && Number.isFinite(x);
 const str = (x) => (typeof x === "string" ? x : null);
 
@@ -102,6 +107,43 @@ export function cleanGeometry(geometry) {
   return { rects, skipped };
 }
 
+// J's unit, for display. Newer producer rows spell Celsius "C", older signed rows "°C": both show as °C. Display
+// only, after verification: the signed bytes are checked exactly as they arrived and the inspector shows them raw.
+export const tempUnit = (unit) => (unit === "C" ? "°C" : unit);
+
+// The measurement that gives node `id` its J and W (display values; a producer puts them on measurements). The one
+// rule for both views: the Lab view's cards and the Package view's scene (scene.mjs) call it, and nothing else picks
+// J. Only a node project() calls a measurement, whose values carry J with a finite value, is eligible:
+//   - a measurement: its own J;
+//   - any other node: a member of one of its support sets, chosen as project() marks them: a set it calls valid
+//     first, then a measurement it calls valid, then one it marks reproduced (a verify tier, e.g. "replayed"); the
+//     set order breaks ties. A member of another kind (a candidate in the set, say) never lends its own display J.
+// None: null, and J and W stay empty.
+//   nodes: project()'s nodes; sets: Map node -> [{ set_id, members }]; created: Map node -> { values } (its display
+//   values, or null).
+export function metricFor(id, { nodes, sets, created }) {
+  const eligible = (m) => {
+    const values = created.get(m)?.values;
+    return nodes[m]?.kind === "measurement" && isObj(values) && isObj(values.J) && finite(values.J.value) ? values : null;
+  };
+  if (nodes[id]?.kind === "measurement") {
+    const values = eligible(id);
+    return values ? { id, set_id: null, set_status: null, validity: nodes[id].validity ?? "unverified", values } : null;
+  }
+  const status = nodes[id]?.support_status ?? {};
+  let best = null;
+  for (const set of sets.get(id) ?? []) {
+    for (const m of set.members) {
+      const values = eligible(m);
+      if (!values) continue;
+      const node = nodes[m];
+      const rank = (status[set.set_id] === "valid" ? 4 : 0) + (node.validity === "valid" ? 2 : 0) + ((node.tiers ?? []).length > 0 ? 1 : 0);
+      if (best === null || rank > best.rank) best = { id: m, set_id: set.set_id, set_status: status[set.set_id] ?? "broken", validity: node.validity ?? "unverified", values, rank };
+    }
+  }
+  return best;
+}
+
 const tempsOf = (values) => {
   if (!isObj(values) || !isObj(values.center_temps)) return null;
   const out = {};
@@ -117,7 +159,7 @@ export function colorScale(trusted) {
     const temps = tempsOf(env.values);
     if (!temps) continue;
     for (const v of Object.values(temps)) { if (v < lo) lo = v; if (v > hi) hi = v; }
-    if (!unit && isObj(env.values.J) && typeof env.values.J.unit === "string") unit = env.values.J.unit;
+    if (!unit && isObj(env.values.J) && typeof env.values.J.unit === "string") unit = tempUnit(env.values.J.unit);
   }
   if (lo === Infinity) return null;
   let min = Math.floor(lo / 5) * 5, max = Math.ceil(hi / 5) * 5;
@@ -245,11 +287,14 @@ export function buildView(verification, cursor) {
     const geometry = cleanGeometry(made?.values?.geometry);
     const own = node.kind === "measurement" ? { id, set_id: null, setStatus: null, validity: node.validity, values: made?.values, temps: tempsOf(made?.values) } : null;
     const source = own ?? measurementFor(id);
-    const J = isObj(source?.values?.J) && finite(source.values.J.value) ? { value: source.values.J.value, unit: str(source.values.J.unit) ?? "" } : null;
-    const W = isObj(source?.values?.W) && finite(source.values.W.value) ? { value: source.values.W.value, metric_id: str(source.values.W.metric_id) ?? "" } : null;
+    // J and W: from the measurement metricFor() picks, the Package view's rule too (it needs no temperatures).
+    const metric = metricFor(id, { nodes, sets, created });
+    const J = isObj(metric?.values?.J) && finite(metric.values.J.value) ? { value: metric.values.J.value, unit: tempUnit(str(metric.values.J.unit) ?? "") } : null;
+    const W = isObj(metric?.values?.W) && finite(metric.values.W.value) ? { value: metric.values.W.value, metric_id: str(metric.values.W.metric_id) ?? "" } : null;
     return {
       id, kind: node.kind, lab: made?.lab ?? null, labName: lab.name, color: lab.color, lifecycle: node.lifecycle,
       validity: node.validity, geometry: geometry.rects, skipped: geometry.skipped, source, J, W,
+      metric: metric ? { id: metric.id, validity: metric.validity, set_id: metric.set_id ?? null } : null,
       scenario: str(made?.values?.scenario_id) ?? str(source?.values?.scenario_id),
       units: str(made?.values?.units), seq: made?.seq ?? null,
       firstSet: (sets.get(id) ?? [])[0]?.set_id ?? null,
@@ -313,7 +358,7 @@ export function outcomeText(type, body, values) {
   const s = (x) => (typeof x === "string" ? x : Array.isArray(x) ? x.filter((m) => typeof m === "string").join(", ") : "?");
   switch (type) {
     case "node.create": {
-      const J = values && isObj(values.J) && finite(values.J.value) ? ` · J ${fmt1(values.J.value)} ${s(values.J.unit)}` : "";
+      const J = values && isObj(values.J) && finite(values.J.value) ? ` · J ${fmt1(values.J.value)} ${tempUnit(s(values.J.unit))}` : "";
       return `${s(body.kind)} ${s(body.id)}${J}`;
     }
     case "lifecycle.transition": return `${s(body.node)} → ${s(body.to)}`;

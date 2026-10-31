@@ -1,0 +1,447 @@
+{
+  "schema": "sentilab-slab047-offline-evidence-review/1",
+  "reviewed_head": "baf0091b11c6020601b5ce11029307bf034a3953",
+  "expected_source_sha256": "1e4b901a1b8b65ad8b40afd89637b6b6044e12f8f6df58fd6ae4771309c21eaa",
+  "artifact_root": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047-admission\\runtime",
+  "validated_at_utc": "2026-10-31T11:14:19.698221+00:00",
+  "evidence_checks_passed": true,
+  "failed_check_count": 0,
+  "live_device_observation": false,
+  "approval": false,
+  "final_deliverable_accepted": false,
+  "summary": {
+    "reserved_at": "2026-10-31T11:09:50.886416+00:00",
+    "deadline_unix": 1793445890.8864095,
+    "attempt": 1,
+    "token": "6a11048db3704a84afeaf4289cb360ce",
+    "frozen_approval": {
+      "controller_sha256": "1e4b901a1b8b65ad8b40afd89637b6b6044e12f8f6df58fd6ae4771309c21eaa",
+      "decision": "+1",
+      "grant_source": "bb58c601-464f-4ebc-89f1-5b6eba9aeb25",
+      "policy_sha256": "9b49f5149bcab62137dba7515c305a7079364630f74c6a0bab002a430ed944fc",
+      "review_record": "Senti608657e4-5e60-4bb6-9353-9611b70c1c66 source2ca25d30-384e-4d3c-8785-1019fed42c2c #56532 at2026-10-31T11:07:46.793Z exact baf0091b11c6020601b5ce11029307bf034a3953",
+      "reviewer": "pocket-forge",
+      "schema": "sentilab-slab047-review/1"
+    },
+    "input_pin_count": 17,
+    "input_evidence_scope": "Controller attestation checked against pins; multi-gigabyte model/adapter bytes were not independently downloaded or rehashed here.",
+    "fixture": {
+      "rows": 20,
+      "unique_source_records": 6,
+      "unique_prompt_output_triples": 6,
+      "repetition_counts": [
+        3,
+        3,
+        3,
+        3,
+        4,
+        4
+      ],
+      "scope": "six repeated training-source fixture cases with labels; no generalization",
+      "generalization_or_thermal_geometry_quality_claim": false
+    },
+    "artifact_counts": {
+      "request": 0,
+      "response": 0,
+      "inference": 0
+    },
+    "independently_recomputed_exact_matches": 0,
+    "observed_receipt_seconds_total": 0,
+    "wall_timestamp_lifetime_seconds": 79.61758708953857,
+    "monotonic_charge_minus_wall_lifetime_seconds": 1.636464730836451e-06,
+    "phase": "failed_closed",
+    "controller_error": "server_exited",
+    "cleanup_reported_verified": true,
+    "charged_seconds": 79.6175887260033,
+    "charge_kind": "reservation_to_confirmed_removal_and_port_closure",
+    "budget_exceeded": false,
+    "requests_reserved": 0,
+    "launch_to_ready_seconds": null,
+    "final_status_crosscheck": "not supplied",
+    "independent_closure_record": {
+      "path": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\slab047-admission\\DOWNLOAD-AND-CLOSURE.json",
+      "sha256": "ba3b300534d2fc0e531f982ca8742dbae357a99839cd04007271db7f2f361b1a",
+      "captured_unix": 1793445108.0851207,
+      "captured_at_utc": "2026-10-31T11:11:48.085121+00:00",
+      "seconds_after_reserved_unix": 117.19871115684509,
+      "seconds_after_recorded_cleanup": 37.58111763000488,
+      "docker_inventory": "successful empty inventory",
+      "port": "connection refused (111)",
+      "worker_lock": "free",
+      "file_count": 12,
+      "scope": "Independent root-collected device observation bound to downloaded file hashes; this validator made no live calls"
+    }
+  },
+  "checks": [
+    {
+      "check": "download_entries_bounded",
+      "ok": true,
+      "detail": 12
+    },
+    {
+      "check": "download_total_bytes_bounded",
+      "ok": true,
+      "detail": 60650
+    },
+    {
+      "check": "regular_bounded_file:reservation.json",
+      "ok": true
+    },
+    {
+      "check": "one_attempt_expected_token",
+      "ok": true
+    },
+    {
+      "check": "source_policy_binding",
+      "ok": true
+    },
+    {
+      "check": "policy_bytes_exact",
+      "ok": true
+    },
+    {
+      "check": "nonretryable_900s_reservation",
+      "ok": true
+    },
+    {
+      "check": "container_name_binding",
+      "ok": true
+    },
+    {
+      "check": "reservation_clocks_finite",
+      "ok": true
+    },
+    {
+      "check": "start_admitted_before_deadline",
+      "ok": true
+    },
+    {
+      "check": "original_deadlines_preserved",
+      "ok": true
+    },
+    {
+      "check": "reservation_timestamp_consistent",
+      "ok": true
+    },
+    {
+      "check": "frozen_approval_hash",
+      "ok": true
+    },
+    {
+      "check": "frozen_approval_binding",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:APPROVED.json",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:serve047.py",
+      "ok": true
+    },
+    {
+      "check": "downloaded_controller_exact_bytes",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:worker-claimed.json",
+      "ok": true
+    },
+    {
+      "check": "permanent_worker_claim",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:input-verification.json",
+      "ok": true
+    },
+    {
+      "check": "17_input_receipts_match_all_committed_pins",
+      "ok": true
+    },
+    {
+      "check": "13_model_pins_match_admission_manifest",
+      "ok": true
+    },
+    {
+      "check": "twenty_rows_six_repeated_source_cases",
+      "ok": true
+    },
+    {
+      "check": "bounded_indices:request",
+      "ok": true
+    },
+    {
+      "check": "contiguous_prefix:request",
+      "ok": true
+    },
+    {
+      "check": "bounded_indices:response",
+      "ok": true
+    },
+    {
+      "check": "contiguous_prefix:response",
+      "ok": true
+    },
+    {
+      "check": "bounded_indices:inference",
+      "ok": true
+    },
+    {
+      "check": "contiguous_prefix:inference",
+      "ok": true
+    },
+    {
+      "check": "receipts_require_responses_require_requests",
+      "ok": true
+    },
+    {
+      "check": "every_retained_response_has_receipt",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:state.json",
+      "ok": true
+    },
+    {
+      "check": "at_most20_durably_reserved_slots",
+      "ok": true
+    },
+    {
+      "check": "request_files_match_reserved_slots",
+      "ok": true
+    },
+    {
+      "check": "terminal_nonretryable_state",
+      "ok": true
+    },
+    {
+      "check": "no_final_deliverable_acceptance",
+      "ok": true
+    },
+    {
+      "check": "charge_is_finite_nonnegative",
+      "ok": true
+    },
+    {
+      "check": "full_immutable_container_id",
+      "ok": true
+    },
+    {
+      "check": "cleanup_flags_are_coherent",
+      "ok": true
+    },
+    {
+      "check": "cleanup_budget_exceeded_flag_truthful",
+      "ok": true
+    },
+    {
+      "check": "within900_second_grant",
+      "ok": true,
+      "detail": 79.6175887260033
+    },
+    {
+      "check": "cleanup_before_absolute_stop",
+      "ok": true
+    },
+    {
+      "check": "recorded_request_time_within_charge",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:container.stdout.log",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:container.stderr.log",
+      "ok": true
+    },
+    {
+      "check": "download_manifest_exact_file_set",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:APPROVED.json",
+      "ok": true
+    },
+    {
+      "check": "download_manifest_bytes_hash:APPROVED.json",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:admission.lock",
+      "ok": true
+    },
+    {
+      "check": "download_manifest_bytes_hash:admission.lock",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:container.stderr.log",
+      "ok": true
+    },
+    {
+      "check": "download_manifest_bytes_hash:container.stderr.log",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:container.stdout.log",
+      "ok": true
+    },
+    {
+      "check": "download_manifest_bytes_hash:container.stdout.log",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:docker.lock",
+      "ok": true
+    },
+    {
+      "check": "download_manifest_bytes_hash:docker.lock",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:input-verification.json",
+      "ok": true
+    },
+    {
+      "check": "download_manifest_bytes_hash:input-verification.json",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:reservation.json",
+      "ok": true
+    },
+    {
+      "check": "download_manifest_bytes_hash:reservation.json",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:serve047.py",
+      "ok": true
+    },
+    {
+      "check": "download_manifest_bytes_hash:serve047.py",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:state.json",
+      "ok": true
+    },
+    {
+      "check": "download_manifest_bytes_hash:state.json",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:state.lock",
+      "ok": true
+    },
+    {
+      "check": "download_manifest_bytes_hash:state.lock",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:worker-claimed.json",
+      "ok": true
+    },
+    {
+      "check": "download_manifest_bytes_hash:worker-claimed.json",
+      "ok": true
+    },
+    {
+      "check": "regular_bounded_file:worker.lock",
+      "ok": true
+    },
+    {
+      "check": "download_manifest_bytes_hash:worker.lock",
+      "ok": true
+    },
+    {
+      "check": "independent_daemon_inventory_success_empty",
+      "ok": true
+    },
+    {
+      "check": "independent_localhost_refused",
+      "ok": true
+    },
+    {
+      "check": "independent_worker_lock_free",
+      "ok": true
+    },
+    {
+      "check": "download_ssh_returncode_zero",
+      "ok": true
+    },
+    {
+      "check": "independent_observation_after_recorded_cleanup",
+      "ok": true
+    }
+  ],
+  "warnings": [
+    "Approval identity and external Warden56531/Forge56532 authority require root room evidence; local JSON alone cannot authenticate them.",
+    "Cleanup flags/logs are retained controller evidence; this offline check does not contact Docker or independently establish physical closure."
+  ],
+  "recomputed_receipts": [],
+  "download_inventory": [
+    {
+      "name": "admission.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "APPROVED.json",
+      "bytes": 488,
+      "sha256": "fce8e1bc31cfe025eb629f4daef32acb0f3024304cb1b5e84ac4f2c21fd32be1"
+    },
+    {
+      "name": "container.stderr.log",
+      "bytes": 18701,
+      "sha256": "33981844d6be0320ceb5c924bdd76e162ee1e43d65bdf78002c5ae540eb21ae1"
+    },
+    {
+      "name": "container.stdout.log",
+      "bytes": 1174,
+      "sha256": "8caf92f237b506ef8233e1e244b28587f3e0df545376f4032807721129ffdfd2"
+    },
+    {
+      "name": "docker.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "input-verification.json",
+      "bytes": 2202,
+      "sha256": "ed3865edb9d7b35e8538891999bbdec54c4d113a19fd67b1b03866a2fb9b61e4"
+    },
+    {
+      "name": "reservation.json",
+      "bytes": 1783,
+      "sha256": "81bc91d6f0fb478db8c43f53a408c295a872e5c2d3b70362cafaf44b0be88947"
+    },
+    {
+      "name": "serve047.py",
+      "bytes": 35412,
+      "sha256": "1e4b901a1b8b65ad8b40afd89637b6b6044e12f8f6df58fd6ae4771309c21eaa"
+    },
+    {
+      "name": "state.json",
+      "bytes": 806,
+      "sha256": "09c3d1a75fcd08b11f63221755ec9536bf627f4ec5fa5d2f8b0db86ffffeccfe"
+    },
+    {
+      "name": "state.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "worker-claimed.json",
+      "bytes": 84,
+      "sha256": "9b97eb976cc39e3619ad7aeed48fb21d7b0bcbb5e584aff7d8cc54285bb2f35f"
+    },
+    {
+      "name": "worker.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

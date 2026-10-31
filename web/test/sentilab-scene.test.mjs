@@ -5,9 +5,10 @@
 //     padded, lone-surrogate, conflicting and wrong-run vectors from contracts/view-envelope-v0.5/vectors-view.json
 //     never contribute geometry or colour (verification is VIEW ENVELOPE v0.5 over raw rows, through source.mjs);
 //   - the colour scale is fixed per run, and the move timeline exists per lab;
-//   - the live path (source.mjs over paging.mjs: cursor, cursor_hash, 409/413/terminal states, liveLabel with
-//     frozen) gives the reference's recorded trace for every v0.6.1 paging scenario (C1-C15), poll for poll, and the
-//     recorded label for every v0.6.1 label case; LIVE never shows next to a frozen board;
+//   - the live path (source.mjs over paging.mjs: cursor, cursor_hash, 409/413/terminal states, track() and liveLabel
+//     with frozen and the run status) gives the reference's recorded trace for every v0.6.2 paging scenario (C1-C17),
+//     poll for poll, and the recorded label for every v0.6.2 label case; LIVE never shows next to a frozen board or
+//     during catch-up; a finished run shows ENDED;
 //   - the CLI (v0.5 node reference verifier) builds the same scene as the browser path for the demo.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -20,12 +21,14 @@ import { createHash } from "node:crypto";
 import { Worker } from "node:worker_threads";
 
 import { canonical } from "../public/sentilab/canonical.mjs";
-import { buildScene, sceneAt, runFrame, heatColor, contiguousPrefix, scaleTicks, describeEvent, STACK, TEMP_BASIS, TRACK_ORDER, LAB_TRACKS, SCENE_VERSION, SUPPORTED_UNITS, BOUNDS, MAX_TICKS, readGeometry, readTemps } from "../public/sentilab/package/scene.mjs";
+import { buildScene, sceneAt, runFrame, heatColor, contiguousPrefix, scaleTicks, describeEvent, describeSource, layoutSpan, spanText, STACK, TEMP_BASIS, TRACK_ORDER, LAB_TRACKS, SCENE_VERSION, SUPPORTED_UNITS, BOUNDS, MAX_TICKS, readGeometry, readTemps } from "../public/sentilab/package/scene.mjs";
 import { reconcile, extendsPrefix } from "../public/sentilab/package/playhead.mjs";
 import { TrackAnimation } from "../public/sentilab/package/render.mjs";
 import { makeChain, signEnvelope } from "../../contracts/view-envelope-v0.5/view-envelope.mjs";
-import * as refPaging from "../../contracts/view-envelope-v0.6.1/paging.mjs";
+import * as refPaging from "../../contracts/view-envelope-v0.6.2/paging.mjs";
+import * as browserPaging from "../public/sentilab/paging.mjs";
 import { viewHref } from "../public/sentilab/view-links.mjs";
+import { shortId, buildView, metricFor } from "../public/sentilab/lab-model.mjs";
 import * as cliModule from "../../scripts/sentilab-scene.mjs";
 import * as source from "../public/sentilab/package/source.mjs";
 import { VIEW_PINS } from "../public/sentilab/view-pins.js";
@@ -37,7 +40,7 @@ const CLI = join(repo, "scripts", "sentilab-scene.mjs");
 const DEMO_FILE = join(repo, "web", "public", "sentilab", "demo-run.jsonl");
 const DEMO_RUN = "demo-8c-0001";
 const viewFile = JSON.parse(readFileSync(join(repo, "contracts", "view-envelope-v0.5", "vectors-view.json"), "utf8"));
-const pagingFile = JSON.parse(readFileSync(join(repo, "contracts", "view-envelope-v0.6.1", "vectors-paging.json"), "utf8"));
+const pagingFile = JSON.parse(readFileSync(join(repo, "contracts", "view-envelope-v0.6.2", "vectors-paging.json"), "utf8"));
 const demoBytes = () => new Uint8Array(readFileSync(DEMO_FILE));
 const enc = (text) => new TextEncoder().encode(text);
 const lenient = (bytes) => new TextDecoder("utf-8", { fatal: false, ignoreBOM: true }).decode(bytes);
@@ -621,13 +624,149 @@ test("units: refused temperatures leave chiplets placed but uncoloured, with the
   const a = track(scene, "lab-a");
   assert.equal(a.chiplets.length, 2, "geometry is fine, so it is placed");
   assert.ok(a.chiplets.every((c) => c.temp === null && c.color === null && c.temp_state === null), "never coloured");
-  assert.deepEqual(a.temps_error, { code: "unit_not_supported", unit: "°F", detail: 'temperature unit "°F" is not one of °C, K', measurement: "MF" });
+  assert.deepEqual(a.temps_error, { code: "unit_not_supported", unit: "°F", detail: 'temperature unit "°F" is not one of °C, C, K', measurement: "MF" });
   assert.equal(a.temps_from.state, "refused");
   assert.equal(a.J, null);
   assert.equal(scene.scale, null, "nothing accepted, so no scale");
   assert.ok(!dataNumbers(scene).includes(77) && !dataNumbers(scene).includes(80), "the refused numbers are not exported");
 });
 
+// Producer-shaped rows, as on the public run: J and W on measurement nodes and no centre temperatures; J's unit "C"
+// (newer rows) or "°C" (older signed rows); geometry on the candidates, in mm; ids prefixed with the run id.
+const PRUN = "35975774fb714bbdaa51972bc39518ec";
+const peak = (id, unit, J) => ["core", "node.create", { id, kind: "measurement", semantics: SEM }, { J: { value: J, unit }, W: { value: 27.7, metric_id: "weighted-manhattan-mm" } }];
+test("producer rows: J and W from the supporting measurement (C or °C, shown °C), nothing coloured without centre temperatures, nothing invented without a measurement", async () => {
+  const c0 = `${PRUN}:candidate-0`, c1 = `${PRUN}:candidate-1`, c2 = `${PRUN}:candidate-2`;
+  const { scene } = await verifiedScene(signedRun([
+    cand("lab-a", c0, "mm", [["tap-chiplet-0", 17.75, 9.3, 14.5, 31.4], ["tap-chiplet-1", 34.75, 32, 10.5, 16]]),
+    peak(`${c0}:evaluate:measurement`, "C", 118.36),
+    peak(`${c0}:reproduce:measurement`, "°C", 118.36),
+    ["core", "support.add", { node: c0, set_id: "evaluation-and-reproduction", members: [`${c0}:evaluate:measurement`, `${c0}:reproduce:measurement`] }],
+    cand("lab-b", c1, "mm", [["tap-chiplet-0", 0, 0, 10, 10]]),
+    cand("lab-c", c2, "mm", [["tap-chiplet-0", 5, 5, 10, 10]]),
+    peak(`${c2}:evaluate:measurement`, "°C", 119.5),
+    ["core", "support.add", { node: c2, set_id: "evaluation-and-reproduction", members: [`${c2}:evaluate:measurement`] }],
+  ]));
+  assert.deepEqual(scene.errors, [], "C and °C are both accepted");
+  assert.equal(scene.scale, null, "no centre temperatures, so no colour scale");
+  const a = track(scene, "lab-a");
+  assert.deepEqual(a.J, { value: 118.36, unit: "°C", declared_unit: "C" }, "newer rows spell it C");
+  assert.deepEqual(a.W, { value: 27.7, metric_id: "weighted-manhattan-mm" });
+  assert.deepEqual(a.metric, { measurement: `${c0}:evaluate:measurement`, set_id: "evaluation-and-reproduction", validity: "valid", state: "valid" });
+  assert.equal(a.measured, true);
+  assert.equal(a.temps_from, null, "no temperatures to colour with");
+  assert.deepEqual(a.chiplets.map((c) => [c.id, c.x, c.y, c.w, c.h, c.temp, c.color]), [["tap-chiplet-0", 17.75, 9.3, 14.5, 31.4, null, null], ["tap-chiplet-1", 34.75, 32, 10.5, 16, null, null]], "placed in mm from values.geometry; J is never painted onto a chiplet");
+  assert.equal(a.declared_units, "mm");
+  assert.deepEqual(track(scene, "lab-c").J, { value: 119.5, unit: "°C", declared_unit: "°C" }, "older rows spell it °C");
+  const b = track(scene, "lab-b");
+  assert.deepEqual([b.J, b.W, b.metric, b.measured], [null, null, null, false], "no measurement: nothing invented");
+  // Display ids: the page passes lab-model.mjs shortId; the CLI's default keeps them whole.
+  const move = scene.timeline.find((e) => e.kind === "move" && e.to.id === c0);
+  assert.equal(describeEvent(move, shortId), "seq 1 · Lab A proposes candidate-0");
+  assert.equal(describeEvent(move), `seq 1 · Lab A proposes ${c0}`);
+});
+test("the Package view and the Lab view pick the same measurement for J (one shared rule, lab-model.mjs metricFor)", async () => {
+  const v = await demoVerified();
+  const frame = runFrame(v.prefixEnvelopes);
+  // At every step of the demo, for every layout drawn (candidates and the core's initial measurement).
+  for (let k = 1; k <= v.prefixEnvelopes.length; k += 1) {
+    const scene = sceneAt(v.prefixEnvelopes, k, frame);
+    const lab = buildView({ ordered: v.prefixEnvelopes, prefix: v.prefixEnvelopes.length }, k);
+    for (const t of scene.tracks.filter((x) => x.layout)) {
+      const card = lab.cards.find((c) => c.id === t.layout.ref.id);
+      assert.equal(t.layout.metric?.measurement ?? null, card.metric?.id ?? null, `k=${k} ${t.layout.ref.id}`);
+      assert.equal(t.layout.J?.value ?? null, card.J?.value ?? null, `k=${k} ${t.layout.ref.id}`);
+    }
+  }
+});
+
+// ── review #56603: J's provenance, the shared picker, and "measured" ─────────────────────────────────────────────
+// Signed runs as above (signedRun, core TEST key), verified through the page's own path.
+const measJ = (id, J) => ["core", "node.create", { id, kind: "measurement", semantics: SEM }, { J: { value: J, unit: "°C" }, W: { value: 30, metric_id: "hpwl-mm" } }];
+test("review #56603 (1): a current J beside withdrawn older temperatures: J is styled and labelled by its own measurement, the temperatures by theirs", async () => {
+  const { scene } = await verifiedScene(signedRun([
+    cand("lab-a", "K", "mm", [["A", 0, 0, 10, 10], ["B", 12, 0, 10, 10]]),
+    meas("old-temperatures", "°C", { A: 81, B: 95 }),
+    ["core", "support.add", { node: "K", set_id: "old", members: ["old-temperatures"] }],
+    measJ("current-metric", 90),                       // J only: no centre temperatures
+    ["core", "support.add", { node: "K", set_id: "current", members: ["current-metric"] }],
+    ["core", "withdraw", { node: "old-temperatures", reason: "superseded" }],
+  ]));
+  const L = track(scene, "lab-a");
+  assert.deepEqual([L.validity, L.support_status], ["valid", { old: "broken", current: "valid" }], "still valid on the current set");
+  assert.deepEqual([L.J.value, L.metric.measurement, L.metric.state], [90, "current-metric", "valid"], "J is the current metric's");
+  assert.deepEqual([L.temps_from.measurement, L.temps_from.state, L.temps_from.validity], ["old-temperatures", "stale", "withdrawn"], "the temperatures are the withdrawn ones");
+  const src = describeSource(L);
+  assert.equal(src.j_state, "", "the J figure is styled from its own metric's validity, not the temperatures'");
+  assert.deepEqual(src.parts, [
+    { text: "J from current-metric", state: "" },
+    { text: "temperatures from old-temperatures · STALE (withdrawn)", state: "stale" },
+  ], "two sources, two labels: STALE names the temperatures only, never 'values'");
+});
+test("review #56603 (2): Lab and Package pick the same measurement and the same J through the shared picker; a candidate in a support set never lends its own J", async () => {
+  const { v, scene } = await verifiedScene(signedRun([
+    ["lab-b", "node.create", { id: "B", kind: "candidate" }, { ...geo("mm", [["A", 0, 0, 10, 10]]), J: { value: 66, unit: "°C" } }],
+    measJ("MB", 70),
+    ["core", "support.add", { node: "B", set_id: "eval", members: ["MB"] }],
+    measJ("M", 77),
+    cand("lab-a", "K", "mm", [["A", 5, 5, 10, 10]]),
+    ["core", "support.add", { node: "K", set_id: "pair", members: ["B", "M"] }],
+  ]));
+  const nodes = v.projection.nodes;
+  assert.deepEqual([nodes.K.support_status.pair, nodes.B.validity, nodes.M.validity, nodes.B.tiers.length, nodes.M.tiers.length], ["valid", "valid", "valid", 0, 0],
+    "a valid set whose members rank equal, the candidate listed first");
+  const lab = buildView({ ordered: v.prefixEnvelopes, prefix: v.prefixEnvelopes.length }, v.prefixEnvelopes.length);
+  const card = lab.cards.find((c) => c.id === "K");
+  const L = track(scene, "lab-a");
+  assert.deepEqual([card.metric.id, card.J.value], ["M", 77], "Lab view: J from measurement M, not candidate B's own 66");
+  assert.deepEqual([L.metric.measurement, L.J.value], ["M", 77], "Package view: the same measurement and the same J");
+  assert.deepEqual([lab.cards.find((c) => c.id === "B").J.value, track(scene, "lab-b").J.value], [70, 70], "B's own J is its measurement's in both views");
+  // The picker itself, given every node's values unfiltered: eligibility is its own, not the caller's.
+  const created = new Map(v.prefixEnvelopes.filter((env) => env.event.type === "node.create").map((env) => [env.event.body.id, { values: env.values ?? null }]));
+  assert.equal(metricFor("K", { nodes, sets: new Map([["K", [{ set_id: "pair", members: ["B", "M"] }]]]), created }).id, "M");
+  assert.equal(metricFor("K", { nodes, sets: new Map([["K", [{ set_id: "pair", members: ["B"] }]]]), created }), null, "a set with no measurement gives no J");
+});
+test("review #56603 (3): a core measurement with geometry but no J or temperatures is measured, not awaiting simulation; an absent or refused J stays '-' with its reason", async () => {
+  const initial = (vals) => ["core", "node.create", { id: "M0", kind: "measurement", semantics: SEM }, { ...geo("mm", [["A", 0, 0, 10, 10]]), ...vals }];
+  const board = (await verifiedScene(signedRun([initial({})]))).scene.tracks[0];
+  assert.equal(board.showing, "initial");
+  const L = board.layout;
+  assert.deepEqual([L.ref.kind, L.measured, L.J, L.W, L.metric, L.J_error, L.temps_from], ["measurement", true, null, null, null, null, null]);
+  assert.deepEqual(describeSource(L).parts, [{ text: "measured, but no J in the verified data", state: "" }, { text: "no per-chiplet temperatures", state: "" }],
+    "absent J: said so; a measurement is never 'awaiting simulation'");
+  // Refused: a J in a unit the view doesn't convert. Shown as "-" with the reason, never as a number.
+  const refused = (await verifiedScene(signedRun([initial({ J: { value: 194, unit: "°F" } })]))).scene.tracks[0].layout;
+  assert.deepEqual([refused.measured, refused.J, refused.metric.measurement], [true, null, "M0"]);
+  assert.deepEqual(refused.J_error, { code: "unit_not_supported", unit: "°F", detail: 'temperature unit "°F" is not one of °C, C, K', measurement: "M0" });
+  assert.deepEqual(describeSource(refused).parts.map((p) => p.text), ['J refused · unit not supported ("°F")', "no per-chiplet temperatures"]);
+  // Only a candidate with no measurement at all is still awaiting simulation.
+  const k = track((await verifiedScene(signedRun([initial({}), cand("lab-a", "K", "mm", [["A", 3, 3, 4, 4]])]))).scene, "lab-a");
+  assert.deepEqual([k.measured, k.J, k.J_error], [false, null, null]);
+  assert.deepEqual(describeSource(k).parts, [{ text: "no temperatures · awaiting simulation", state: "" }]);
+});
+
+// ── review #56610: one layout span, one label, in both views ─────────────────────────────────────────────────────
+test("review #56610: the Lab view and the Package view label the run's layout span with the identical string (occupied span, one helper)", async () => {
+  // Producer-shaped: chiplets from x 2.125 to 45.875 mm and y 1.065 to 48 mm; one layout declared in m (placed in mm).
+  const rows = signedRun([
+    cand("baseline-sa", "C0", "mm", [["tap-chiplet-0", 2.125, 1.065, 14.5, 31.4], ["tap-chiplet-1", 34.75, 32, 11.125, 16]]),
+    cand("baseline-sa", "C1", "m", [["tap-chiplet-0", 0.01, 0.005, 0.02, 0.03]]),
+  ]);
+  const both = async (bytes, runId) => {
+    // The Lab view's path (lab.js verify): paging.mjs verifyBytes over the rows, then its verified prefix.
+    const lab = await browserPaging.verifyBytes(browserPaging.splitRows(bytes), { runId, pins: testTrust.pins, keys: testTrust.keys });
+    // The Package view's path (package.js): source.mjs verification, then playhead reconcile()'s run frame.
+    const pkg = await source.verifyReplayFile(bytes, { runId, trust: testTrust });
+    const frame = reconcile({ prefix: [], frame: null, cursor: 0, following: true }, pkg.verification).frame;
+    return [spanText(layoutSpan(lab.ordered.slice(0, lab.prefix))), spanText(frame.footprint.extent)];
+  };
+  const [lab, pkg] = await both(enc(rows.map((env) => `${JSON.stringify(env)}\n`).join("")), RUN.run_id);
+  assert.equal(lab, "layouts span 43.8 × 46.9 mm", "max − min of the chiplet extents, not a frame from 0 (47 × 49)");
+  assert.equal(pkg, lab, "the Package view shows the identical string");
+  const [demoLab, demoPkg] = await both(demoBytes(), DEMO_RUN);
+  assert.match(demoLab, /^layouts span \d+\.\d × \d+\.\d mm$/);
+  assert.equal(demoPkg, demoLab, "the demo too");
+});
 test("bounds: 1e20 °C, below absolute zero, 1e308 + 1e308 mm, zero or huge sizes and wild layers are scene errors, never drawn", async () => {
   const { v, scene } = await verifiedScene(signedRun([
     cand("lab-a", "K1", "mm", [["A", 1e308, 0, 1e308, 5]]),          // the sum overflows; each part is out of range
@@ -716,8 +855,28 @@ test("CLI: unit-normalised export (0.01 m -> 10 mm), refused values listed not e
 // limit; never a seq), every outcome, the paging state after each poll, K, the board label and the mode label.
 const pagingTrust = vectorTrust(pagingFile.view);
 const P_BASE_MS = Date.UTC(2026, 9, 31, 12, 0, 0);   // the paging runner's clock (run-paging-vectors.mjs BASE_MS)
+// The vectors' rule-built chain (C16: 273 envelopes), rebuilt as run-paging-vectors.mjs builds it and checked against
+// its recorded rows_sha256.
+const CHAIN_ROWS = (() => {
+  const spec = pagingFile.chains.c16;
+  const v1Chain = viewFile.chains[0];
+  const [labActor, coreActor] = [v1Chain.input.entries[0].actor, v1Chain.input.entries[1].actor];
+  const at = (seconds) => new Date(P_BASE_MS + seconds * 1000).toISOString();
+  const entries = Array.from({ length: spec.count }, (_, i) => {
+    const seq = i + 1;
+    const event = seq === 1
+      ? { event_id: "c16-e001", seq, type: "node.create", actor_role: "lab", body: { id: "K16", kind: "candidate" } }
+      : { event_id: `c16-e${String(seq).padStart(3, "0")}`, seq, type: "node.create", actor_role: "core", body: { id: `U${seq}`, kind: "source" } };
+    return { event, ts: at(seq), actor: seq === 1 ? labActor : coreActor };
+  });
+  const rows = makeChain(v1Chain.input.run, entries, {}, { key_id: "core", privateKey: testKey("core").privateKey }).map((env) => enc(JSON.stringify(env)));
+  assert.equal(createHash("sha256").update(refPaging.joinRows(rows)).digest("hex"), spec.rows_sha256, "C16 chain rebuilt by its rule");
+  return { c16: rows };
+})();
 const pagingBytes = new Map();
 const rowBytes = (rowId) => {
+  const chainRow = /^(\w+):(\d+)$/.exec(rowId);
+  if (chainRow) return CHAIN_ROWS[chainRow[1]][Number(chainRow[2]) - 1];
   if (!pagingBytes.has(rowId)) {
     const spec = pagingFile.rows[rowId];
     assert.ok(spec, `unknown row ${rowId}`);
@@ -725,7 +884,9 @@ const rowBytes = (rowId) => {
   }
   return pagingBytes.get(rowId);
 };
-const expand = (list) => list.flatMap((entry) => (Array.isArray(entry) ? Array(entry[1]).fill(entry[0]) : [entry]));
+// A log entry is a row id, [id, n] for n copies, or { chain, from, to } for that chain's rows seq from..to.
+const expand = (list) => list.flatMap((entry) => (Array.isArray(entry) ? Array(entry[1]).fill(entry[0])
+  : typeof entry === "object" ? Array.from({ length: entry.to - entry.from + 1 }, (_, i) => `${entry.chain}:${entry.from + i}`) : [entry]));
 const runLengths = (ids) => {
   const out = [];
   for (const rowId of ids) {
@@ -788,7 +949,8 @@ function serve(server, req) {
   if (server.strip_final_lf && response.bodyBytes.length > 0) response.bodyBytes = response.bodyBytes.subarray(0, response.bodyBytes.length - 1);
   return { response, bodyIds };
 }
-const summary = (st) => ({ cursor: st.cursor, rows: st.rows.length, cursor_hash: st.cursor_hash, has_more: st.has_more, last_ok_ms: st.last_ok_ms, failure: st.failure, degraded: st.degraded });
+const summary = (st) => ({ cursor: st.cursor, rows: st.rows.length, cursor_hash: st.cursor_hash, has_more: st.has_more, last_ok_ms: st.last_ok_ms, failure: st.failure, degraded: st.degraded,
+  caught_up: st.caught_up, high_k: st.high_k, last_progress_ms: st.last_progress_ms });
 // The package view's live driver, one scripted poll at a time (the reference client loop: up to 16 pages a poll while
 // x-has-more is true).
 async function runScenarioPackage(spec) {
@@ -797,6 +959,7 @@ async function runScenarioPackage(spec) {
   const transitions = [];
   for (const poll of spec.polls) {
     const nowMs = P_BASE_MS + poll.t_s * 1000;
+    const runStatus = poll.run_status ?? "running";
     const fetches = [];
     for (let n = 0; n < 16; n += 1) {
       const req = source.liveRequest(live);
@@ -805,7 +968,8 @@ async function runScenarioPackage(spec) {
       const before = live.paging;
       const { outcome, newRows } = await source.applyPage(live, response, nowMs, pagingTrust);
       transitions.push({ before, after: live.paging, req, outcome });
-      fetches.push({ request: req, response: response && { status: response.status, headers: response.headers, body_bytes: response.bodyBytes.length, body_rows: runLengths(bodyIds) }, outcome, new_rows: newRows });
+      fetches.push({ request: req, response: response && { status: response.status, headers: response.headers, body_bytes: response.bodyBytes.length, body_rows: runLengths(bodyIds) }, outcome, new_rows: newRows,
+        catching_up: live.paging.catching_up, label: source.liveModeOf(live, nowMs, runStatus).label });
       if (outcome !== "ok" || !live.paging.has_more) break;
     }
     const v = live.verification;
@@ -815,13 +979,13 @@ async function runScenarioPackage(spec) {
       row_counts[row.status] = (row_counts[row.status] ?? 0) + 1;
       if (["malformed", "oversize"].includes(row.status)) rejected[row.reasons.join("+")] = (rejected[row.reasons.join("+")] ?? 0) + 1;
     }
-    trace.push({ t_s: poll.t_s, fetches, after: summary(live.paging), K: v?.prefixEnd ?? 0, board: v?.label ?? null, label: source.liveModeOf(live, nowMs).label, row_counts, rejected });
+    trace.push({ t_s: poll.t_s, run_status: runStatus, fetches, after: summary(live.paging), K: v?.prefixEnd ?? 0, board: v?.label ?? null, label: source.liveModeOf(live, nowMs, runStatus).label, row_counts, rejected });
   }
   return { trace, transitions, live };
 }
 
-const REQUIRED_SCENARIOS = ["C1", "C2", "C11", "C12a", "C13", "C15a", "C15b", "C15c"];
-test("the package view replays every required paging scenario (C1, C2, C11, C12a, C13; v0.6.1 C15a-c) and the vector file has them", () => {
+const REQUIRED_SCENARIOS = ["C1", "C2", "C11", "C12a", "C13", "C15a", "C15b", "C15c", "C16", "C17a", "C17b", "C17c"];
+test("the package view replays every required paging scenario (C1, C2, C11, C12a, C13; v0.6.1 C15a-c; v0.6.2 C16, C17a-c) and the vector file has them", () => {
   const ids = pagingFile.scenarios.map((spec) => spec.name.split(" ")[0]);
   for (const id of REQUIRED_SCENARIOS) assert.ok(ids.includes(id), id);
 });
@@ -833,6 +997,7 @@ for (const spec of pagingFile.scenarios) {
     for (const [i, step] of run.trace.entries()) {
       assert.deepEqual(json(step), json(spec.trace[i]), `t = ${step.t_s} s`);
       assert.ok(!(step.label.startsWith("LIVE") && step.board !== null), `t = ${step.t_s} s: ${step.label} next to "${step.board}"`);
+      for (const f of step.fetches) assert.ok(!(f.catching_up && f.label.startsWith("LIVE")), `t = ${step.t_s} s: LIVE during catch-up`);
     }
     for (const { before, after, req, outcome } of run.transitions) {
       assert.ok(after.cursor >= before.cursor && after.rows.length >= before.rows.length, "never resets");
@@ -844,17 +1009,18 @@ for (const spec of pagingFile.scenarios) {
   });
 }
 
-// The v0.6.1 rule-5 label cases, through the package view's own liveModeOf().
+// The v0.6.2 label cases, through the package view's own liveModeOf().
 for (const spec of pagingFile.label_cases) {
-  test(`v0.6.1 label through the package view: ${spec.name}`, () => {
+  test(`v0.6.2 label through the package view: ${spec.name}`, () => {
+    const nowMs = P_BASE_MS + 100_000;
+    const ago = (seconds) => (seconds === null ? null : nowMs - seconds * 1000);
+    // A terminal failure is also the state's degraded reason, as step() sets it.
+    const degraded = ["stream_replaced", "row_too_large", "paging_unsupported"].includes(spec.failure) ? spec.failure : null;
     const live = source.createLive("run-v1");
-    live.tracker.poll({ nowMs: P_BASE_MS, ok: true, K: spec.high, received: spec.high });
-    live.tracker.poll({ nowMs: P_BASE_MS + spec.now_s * 1000, ok: true, K: spec.K, received: 0 });
-    live.paging = { ...live.paging, failure: spec.failure };
+    live.paging = { ...live.paging, failure: spec.failure, degraded, caught_up: true, high_k: spec.high_k, last_ok_ms: ago(spec.ok_age_s), last_progress_ms: ago(spec.progress_age_s) };
     live.verification = { prefixEnd: spec.K, frozen: spec.frozen };
-    const nowMs = P_BASE_MS + spec.now_s * 1000;
-    assert.equal(source.liveModeOf(live, nowMs).label, spec.expect);
-    assert.equal(source.liveModeOf(live, nowMs).label, refPaging.liveLabel(live.paging, live.tracker, nowMs, spec.K, spec.frozen), "the reference agrees");
+    assert.equal(source.liveModeOf(live, nowMs, spec.run_status).label, spec.expect);
+    assert.equal(source.liveModeOf(live, nowMs, spec.run_status).label, refPaging.liveLabel(live.paging, nowMs, spec.K, spec.frozen, spec.run_status), "the reference agrees");
   });
 }
 
@@ -866,7 +1032,7 @@ async function demoLateConflict() {
   const late = enc(JSON.stringify(signEnvelope({ ...seq10, ts: new Date(Date.parse(seq10.ts) + 500).toISOString() }, testKey("core").privateKey, sig.key_id)));
   return { rows, late };
 }
-test("live C11 on the demo: K 44, a late signed seq 10 one second later: STALE · chain broken at once, and the scene drops to 9", async () => {
+test("live C11 on the demo: a 43-row backlog is STALE, row 44 is LIVE, a late signed seq 10 one second later: STALE · chain broken at once, and the scene drops to 9", async () => {
   const { rows, late } = await demoLateConflict();
   const live = source.createLive(DEMO_RUN);
   const poll = async (log, nowMs) => {
@@ -877,9 +1043,12 @@ test("live C11 on the demo: K 44, a late signed seq 10 one second later: STALE �
       if (outcome !== "ok" || !live.paging.has_more) break;
     }
   };
+  await poll(rows.slice(0, 43), P_BASE_MS - 1000);
+  assert.equal(live.verification.prefixEnd, 43);
+  assert.deepEqual(source.liveModeOf(live, P_BASE_MS - 1000), { mode: "STALE", reason: null, label: "STALE" }, "catching up is not progress");
   await poll(rows, P_BASE_MS);
   assert.equal(live.verification.prefixEnd, 44);
-  assert.deepEqual(source.liveModeOf(live, P_BASE_MS), { mode: "LIVE", reason: null, label: "LIVE · progress 0 s ago" });
+  assert.deepEqual(source.liveModeOf(live, P_BASE_MS), { mode: "LIVE", reason: null, label: "LIVE · progress 0 s ago" }, "the first new row is");
   await poll([...rows, late], P_BASE_MS + 1000);
   assert.equal(live.verification.prefixEnd, 9);
   assert.deepEqual(source.liveModeOf(live, P_BASE_MS + 1000), { mode: "STALE", reason: "chain broken", label: "STALE · chain broken" }, "at once, though K grew 1 s ago");
@@ -915,22 +1084,24 @@ test("live: failed and terminal polls show liveLabel's reason; a terminal state 
   }
   assert.deepEqual(source.modeNow("file", null, 0), { mode: "REPLAY", reason: null, label: "REPLAY" });
   assert.equal(source.modeNow("api", null, 0).label, "STALE", "live before any run");
-  // Recovery, as liveLabel decides it: back at the high with the last growth within 60 s is LIVE again.
+  // Recovery, as liveLabel decides it: back at the high with the last growth (after catch-up) within 60 s is LIVE again.
   const live = source.createLive(DEMO_RUN);
-  await source.applyPage(live, refPaging.servePage(rows, source.liveRequest(live)), P_BASE_MS, testTrust);
+  await source.applyPage(live, refPaging.servePage(rows.slice(0, 43), source.liveRequest(live)), P_BASE_MS, testTrust);
+  assert.equal(source.liveModeOf(live, P_BASE_MS).label, "STALE", "the backlog is history, not progress");
+  await source.applyPage(live, refPaging.servePage(rows, source.liveRequest(live)), P_BASE_MS + 3000, testTrust);
   const atHigh = live.verification;
   live.verification = { ...atHigh, prefixEnd: 9 };
-  assert.equal(source.liveModeOf(live, P_BASE_MS + 1000).label, "STALE · chain broken");
+  assert.equal(source.liveModeOf(live, P_BASE_MS + 3000).label, "STALE · chain broken");
   live.verification = atHigh;
-  live.tracker.poll({ nowMs: P_BASE_MS + 3000, ok: true, K: 44 });
-  assert.equal(source.liveModeOf(live, P_BASE_MS + 3000).label, "LIVE · progress 3 s ago");
-  live.tracker.poll({ nowMs: P_BASE_MS + 60_001, ok: true, K: 44 });
-  assert.equal(source.liveModeOf(live, P_BASE_MS + 60_001).label, "STALE", "no growth for over 60 s");
+  assert.equal(source.liveModeOf(live, P_BASE_MS + 6000).label, "LIVE · progress 3 s ago");
+  assert.deepEqual(source.liveModeOf(live, P_BASE_MS + 6000, "finished"), { mode: "ENDED", reason: "run finished", label: "ENDED · run finished" });
+  await source.applyPage(live, refPaging.servePage(rows, source.liveRequest(live)), P_BASE_MS + 63_001, testTrust);
+  assert.equal(source.liveModeOf(live, P_BASE_MS + 63_001).label, "STALE", "no growth for over 60 s");
 });
 
 test("the source adapter uses the shared code and never pages by seq", () => {
   const text = readFileSync(join(repo, "web", "public", "sentilab", "package", "source.mjs"), "utf8");
-  for (const name of ["initialState", "request as pageRequest", "step as pageStep", "verifyRows", "verifyReplayBytes", "liveLabel"]) assert.ok(text.includes(name), name);
+  for (const name of ["initialState", "request as pageRequest", "step as pageStep", "verifyRows", "verifyReplayBytes", "track", "liveLabel"]) assert.ok(text.includes(name), name);
   assert.ok(text.includes('from "../paging.mjs"') && text.includes('from "../view-core.mjs"'));
   assert.ok(!/[?&]after=|after:\s|"after"/.test(text), "no after=seq paging");
   assert.ok(!/function (createProgress|recordPoll|liveMode)\b/.test(text), "no duplicate progress tracker");
@@ -954,42 +1125,62 @@ test("view links carry the run, source, bundle, test-key request and replay play
 
 // ── Review of 861c611: a failed /runs refresh, and the CLI's file intake ─────────────────────────────────────────────
 // 1. The package view's own poller (createLiveFeed), driven with a scripted fetch and clock. Event polls are valid
-//    through t15; at t16 the /runs refresh answers 503. The shared failed-poll transition (paging.mjs step() with no
-//    response, as for a failed events page) runs before the page is told, so the label is "STALE · transport" at once,
-//    and rows and cursor are kept.
+//    through t15; at t16 the /runs refresh fails: a 503, a network throw, a malformed 200 or a non-schema 200. The
+//    shared failed-poll transition (runs-list.mjs refreshRuns: paging.mjs step() with no response, as for a failed
+//    events page; the Lab view's path too) runs before the page is told, so the label is "STALE · transport" at once,
+//    and rows, cursor and cursor hash are kept.
+const RUNS_FAILURES = {
+  503: { answer: () => new Response("unavailable", { status: 503 }), error: /answered 503/ },
+  "network throw": { answer: () => { throw new TypeError("Failed to fetch"); }, error: /Failed to fetch/ },
+  "malformed 200": { answer: () => new Response("{not json", { status: 200, headers: { "content-type": "application/json" } }), error: /aren't JSON/ },
+  "non-schema 200": { answer: () => new Response(JSON.stringify({ items: [{ run_id: DEMO_RUN }] }), { status: 200, headers: { "content-type": "application/json" } }), error: /isn't a runs list/ },
+};
+// The log holds core.released rows (all of them unless a test grows it); /runs lists the run with core.status, or
+// fails as core.runsFail says.
 function scriptedCore(rows) {
-  const core = { runs503: false, calls: [] };
+  const core = { runsFail: null, calls: [], released: rows.length, status: "running" };
   core.fetch = async (url) => {
     core.calls.push(url);
     if (url.startsWith("/api/view/runs")) {
-      if (core.runs503) return new Response("unavailable", { status: 503 });
-      return new Response(JSON.stringify([{ run_id: DEMO_RUN, arm: "live", family: "fixture-8chiplet", seed: 11, last_seq: 44 }]), { status: 200, headers: { "content-type": "application/json" } });
+      if (core.runsFail) return RUNS_FAILURES[core.runsFail].answer();
+      return new Response(JSON.stringify([{ run_id: DEMO_RUN, arm: "live", family: "fixture-8chiplet", seed: 11, last_seq: core.released, status: core.status }]), { status: 200, headers: { "content-type": "application/json" } });
     }
     const q = new URL(url, "http://x").searchParams;
-    const page = refPaging.servePage(rows, { cursor: Number(q.get("cursor")), limit: Number(q.get("limit")), ...(q.has("cursor_hash") ? { cursor_hash: q.get("cursor_hash") } : {}) });
+    const page = refPaging.servePage(rows.slice(0, core.released), { cursor: Number(q.get("cursor")), limit: Number(q.get("limit")), ...(q.has("cursor_hash") ? { cursor_hash: q.get("cursor_hash") } : {}) });
     return new Response(Buffer.from(page.bodyBytes), { status: page.status, headers: page.headers });
   };
   return core;
 }
-test("live: a /runs 503 mid-live gives STALE · transport at once (shared failed-poll transition), with rows and cursor kept", async () => {
+for (const kind of Object.keys(RUNS_FAILURES)) test(`live: a /runs ${kind} mid-live gives STALE · transport at once (shared failed-poll transition), with rows, cursor and hash kept`, async () => {
+  // The core appends one row a second: 29 rows at t0 (the backlog: catch-up, STALE), then 30 at t1 ... 44 at t15.
   const core = scriptedCore(refPaging.splitRows(demoBytes()));
+  core.released = 29;
   let t = P_BASE_MS;
   const seen = [];
   const feed = source.createLiveFeed({ trust: testTrust, fetchImpl: core.fetch, now: () => t,
     onChange: () => seen.push({ t: (t - P_BASE_MS) / 1000, label: feed.state.live ? source.liveModeOf(feed.state.live, t).label : "STALE" }) });
   const label = () => source.liveModeOf(feed.state.live, t).label;
-  for (let s = 0; s <= 15; s += 1) {
+  await feed.pollOnce();
+  assert.equal(label(), "STALE", "t0: the backlog is history, not progress");
+  for (let s = 1; s <= 15; s += 1) {
     t = P_BASE_MS + s * 1000;
+    core.released = 29 + s;
     await feed.pollOnce();
-    assert.equal(label(), `LIVE · progress ${s} s ago`, `t${s}: valid event polls`);
+    assert.equal(label(), "LIVE · progress 0 s ago", `t${s}: a new row after catch-up`);
   }
   assert.equal(core.calls.filter((u) => u.startsWith("/api/view/runs")).length, 1, "/runs is refreshed only after 15 s");
-  core.runs503 = true;
+  const keptHash = feed.state.live.paging.cursor_hash, keptRows = feed.state.live.paging.rows;
+  core.runsFail = kind;
   t = P_BASE_MS + 16_000;
+  const before = core.calls.length;
   await feed.pollOnce();
-  assert.equal(core.calls.filter((u) => u.startsWith("/api/view/runs")).length, 2, "t16: the /runs refresh is due, and answers 503");
+  assert.equal(core.calls.filter((u) => u.startsWith("/api/view/runs")).length, 2, `t16: the /runs refresh is due, and fails (${kind})`);
+  assert.equal(core.calls.length, before + 1, "no events request after the failed refresh");
   assert.equal(feed.state.connected, false);
-  assert.match(feed.state.error, /503/);
+  assert.match(feed.state.error, RUNS_FAILURES[kind].error);
+  assert.equal(feed.state.live.paging.failure, "transport", "the shared failed-poll transition ran");
+  assert.equal(feed.state.live.paging.cursor_hash, keptHash, "the cursor hash is kept");
+  assert.equal(feed.state.live.paging.rows, keptRows, "the rows are kept (the same list)");
   assert.equal(label(), "STALE · transport", "t16: at once, not LIVE");
   assert.deepEqual(seen.at(-1), { t: 16, label: "STALE · transport" }, "the page is told after the transition, never with LIVE");
   assert.equal(feed.state.live.paging.cursor, 44, "the cursor is kept");
@@ -1000,13 +1191,31 @@ test("live: a /runs 503 mid-live gives STALE · transport at once (shared failed
     await feed.pollOnce();
     assert.equal(label(), "STALE · transport", `t${s}: still the transport reason, never a plain STALE`);
   }
-  core.runs503 = false;
+  core.runsFail = null;
   t = P_BASE_MS + 21_000;
   await feed.pollOnce();
   assert.equal(feed.state.connected, true);
-  assert.equal(label(), "LIVE · progress 21 s ago", "a good poll clears the failure; K last grew at t0");
+  assert.equal(label(), "LIVE · progress 6 s ago", "a good poll clears the failure; K last grew at t15");
   assert.equal(feed.state.live.paging.cursor, 44, "no reset: paging resumed from the kept cursor");
   assert.ok(core.calls.every((u) => !/[?&]after=/.test(u)), "never seq paging");
+});
+test("live: a run /api/view/runs lists as finished shows ENDED · run finished after loading, never LIVE (runStatusOf)", async () => {
+  const core = scriptedCore(refPaging.splitRows(demoBytes()));
+  core.status = "finished";
+  let t = P_BASE_MS;
+  const labels = [];
+  const feed = source.createLiveFeed({ trust: testTrust, fetchImpl: core.fetch, now: () => t,
+    onChange: () => labels.push(source.modeNow("api", feed.state.live, t, source.runStatusOf(feed.state)).label) });
+  for (let s = 0; s <= 3; s += 1) {
+    t = P_BASE_MS + s * 1000;
+    await feed.pollOnce();
+  }
+  assert.equal(feed.state.live.verification.prefixEnd, 44);
+  assert.deepEqual(labels, Array(4).fill("ENDED · run finished"));
+  assert.equal(source.runStatusOf(feed.state), "finished");
+  assert.equal(source.runStatusOf({ runs: [{ run_id: DEMO_RUN, status: "paused" }], runId: DEMO_RUN }), "running", "unknown status counts as running");
+  assert.equal(source.runStatusOf({ runs: [{ run_id: "other", status: "finished" }], runId: DEMO_RUN }), "running", "another run's status is not this one's");
+  assert.equal(source.runStatusOf(undefined), "running");
 });
 
 // 2. The CLI refuses a replay over 64 MiB before reading, splitting, decoding or parsing any of it.

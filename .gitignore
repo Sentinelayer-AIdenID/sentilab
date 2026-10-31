@@ -15,3 +15,4 @@ sundai_hotspot/hotfloorplan
 sundai_hotspot/*.o
 sundai_hotspot/*.a
 sundai_hotspot/*.d
+.wrangler/

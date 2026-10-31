@@ -1,0 +1,111 @@
+{
+  "schema": "slab-039-prereg-v3",
+  "ticket": "SLAB-039",
+  "description": "Headroom runner: cheap search (random/greedy/short SA) vs long SA to determine if an LLM has room to beat cheap methods on this task. UCB1 and signal_portfolio run as extra diagnostics only, excluded from the gate criterion C.",
+  "fixture": "ascend910",
+  "grid": 32,
+  "mesh_error": {
+    "ascend910": {"e_c": 0.16, "source": "SLAB-006a mesh freeze (PR #5)", "layouts_sha256": "8740e67a"},
+    "micro150": {"e_c": null, "source": "pending SLAB-002b merge and own mesh run", "note": "never reuse ascend910 mesh error for micro150"}
+  },
+  "clock": {
+    "released": "2026-10-31T05:05:00Z",
+    "deadline": "2026-10-31T12:00:00Z"
+  },
+  "allocation": {
+    "headroom_solve_limit": 9700,
+    "aggregate_solve_limit": 10000,
+    "headroom_cpu_minutes": 48,
+    "aggregate_cpu_minutes": 60,
+    "per_fixture": {
+      "cheap_solves": 768,
+      "long_sa_solves": 4000,
+      "total_solves": 4768,
+      "cpu_minutes": 24
+    },
+    "note": "gpt-astra-carter #56072/#56078 and claude-warden #56067/#56093: 9700 solves / 48 CPU-min total across both fixtures. Per fixture: 3 methods x 8 seeds x (28 search + 4 reproduction) = 768 cheap + 4 restarts x 1000 = 4000 long SA = 4768 solves, at most 24 CPU-min. Counts child CPU (getrusage SELF+CHILDREN), warm-up, initialize() evaluations, and retries. Stop at first limit."
+  },
+  "rule": {
+    "k": 5,
+    "criterion": "pass only if cheap_median - best >= k * mesh_error",
+    "cheap_median": "minimum over reducer methods (random, greedy, simulated_annealing) of the per-method median best J (temperature in C) across seeds. UCB1 and signal_portfolio are extra diagnostics: excluded from cheap_median and gate C.",
+    "best": "the best J seen anywhere (long SA or any run, including extra diagnostics)",
+    "gap": "cheap_median - best",
+    "mesh_error": "0.16 C for ascend910 (SLAB-006a). Dynamic: max|J32 - J64| when J-series values supplied."
+  },
+  "reducer_methods": {
+    "methods": ["random", "greedy", "simulated_annealing"],
+    "search_evaluations_per_method": 28,
+    "reproduction_evaluations_per_method": 4,
+    "total_evaluations_per_method": 32,
+    "seeds": [0, 1, 2, 3, 4, 5, 6, 7],
+    "seed_count": 8,
+    "note": "28 search + 4 reproduction = 32 total per method. gpt-astra-carter #56072/#56078: greedy = first-improvement hill climb from fixture's initial layout, using existing _candidate operators, accepting only strict improvements."
+  },
+  "extra_diagnostics": {
+    "methods": ["ucb1", "signal_portfolio"],
+    "run_after_declared_runs": true,
+    "excluded_from_gate_C": true,
+    "note": "UCB1 and signal_portfolio run only after the declared reducer runs complete, within what remains of the budget. Their results appear in the report but do not affect cheap_median or the PASS/FAIL gate."
+  },
+  "long_sa": {
+    "restarts": 4,
+    "max_evaluations_per_restart": 1000,
+    "max_cpu_minutes": 24,
+    "seeds": [100, 101, 102, 103],
+    "note": "Each restart is a separate seed. Total max evaluations = 4 x 1000 = 4000. CPU cap 24 min per fixture. gpt-astra-carter #56072/#56078 and claude-warden #56067/#56093."
+  },
+  "hard_caps": {
+    "evaluations_per_cheap_lane": 32,
+    "long_sa_max_evaluations_per_restart": 1000,
+    "long_sa_max_cpu_minutes": 24,
+    "enforced_in_code": true
+  },
+  "reporting": {
+    "outputs": ["RESULT.json", "REPORT.md"],
+    "gap_with_spread": true,
+    "plain_verdict": true,
+    "inconclusive_on_exhaustion": true
+  },
+  "amendments": [
+    {
+      "version": 1,
+      "schema": "slab-039-prereg-v1",
+      "changes": ["Initial preregistration: random, SA, UCB1 at 32 evaluations, mesh error from SLAB-006a, k=5 gate"]
+    },
+    {
+      "version": 2,
+      "previous_schema": "slab-039-prereg-v1",
+      "amended_at": "2026-10-31T05:23:00Z",
+      "changes": [
+        "CPU cap reduced from 90 to 50 minutes",
+        "Added signal_portfolio as fourth method",
+        "Split evaluations into 28 search + 4 reproduction",
+        "Added allocation section with aggregate limits",
+        "Schema bumped to v2; no numerical execution"
+      ]
+    },
+    {
+      "version": 3,
+      "previous_schema": "slab-039-prereg-v2",
+      "amended_at": "2026-10-31T06:05:00Z",
+      "changes": [
+        "Corrected attribution: gpt-astra-carter #56072/#56078 and claude-warden #56067/#56093",
+        "Reducer methods: random, greedy, simulated_annealing (greedy = first-improvement hill climb from fixture initial layout)",
+        "UCB1 and signal_portfolio moved to extra_diagnostics, excluded from gate C",
+        "Budget per fixture: 3x8x(28+4)=768 cheap + 4x1000=4000 long SA, ≤24 CPU-min; total 9700 solves / 48 CPU-min",
+        "Clock: released 2026-10-31T05:05Z, deadline 12:00Z",
+        "Mesh error: ascend910 e=0.16 C; micro150 pending own mesh run",
+        "Verdict INCONCLUSIVE on exhausted/partial long SA reference (never protocol PASS)",
+        "Prereg digest hashes file contents for integrity check",
+        "Reject negative or non-finite mesh error inputs",
+        "Pure tests patch the actually imported oracle (sundai_hotspot.tap_oracle.HotSpotOracle)",
+        "Count all initial evaluations (initialize, shared designs) inside search and aggregate budget"
+      ]
+    }
+  ],
+  "committed_at": "2026-10-31T06:05:00Z",
+  "amended_at": "2026-10-31T06:05:00Z",
+  "commit_before_first_result": true,
+  "digest": "PLACEHOLDER_WILL_BE_COMPUTED_FROM_FILE_CONTENTS"
+}

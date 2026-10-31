@@ -1,0 +1,6 @@
+{
+  "exit": 0,
+  "stdout": "{\"gpu_approval_installed\": true, \"approval_sha256\": \"ed50fbf43c4101059941dce7b5507b01226614a748b871079db0e3c433f6ed2f\", \"preflight_result_sha256\": \"d7bd65d6fbc96b7ed3517ecca14f9275900f176a737761fd4fad8104a91bd620\", \"at_unix\": 1793446643.7821174}\n",
+  "stderr": "",
+  "preflight_result_sha256": "d7bd65d6fbc96b7ed3517ecca14f9275900f176a737761fd4fad8104a91bd620"
+}

@@ -1,0 +1,40 @@
+{
+  "head": "3236e23aecafb8e49e31aaec8101d3906f1de2a8",
+  "files": [
+    {
+      "path": "docs/sentilab/GB10-047B-PREFLIGHT.md",
+      "sha256": "fcb4c0f363bda115ecd09cdd07026e8b2abf2a1a38f2682f0cf0f51975a5ba1b",
+      "working_equal": true
+    },
+    {
+      "path": "docs/sentilab/GB10-SLAB047-SERVING.md",
+      "sha256": "3c1ff9433f1130cbf41e6bf8ebea631d4d97a50c230ffa1fd99c4eb206eb15bd",
+      "working_equal": true
+    },
+    {
+      "path": "scripts/gb10/preflight047b.py",
+      "sha256": "ed856df35246a8c1a59459d0e5b197f0921ec893cc2ab1bae047f8e43432a74f",
+      "working_equal": true
+    },
+    {
+      "path": "scripts/gb10/serve047.py",
+      "sha256": "a707a77d4b39836c461b7cacabe17bf1a59efbdcb3938871ea04c077ef32276d",
+      "working_equal": true
+    },
+    {
+      "path": "scripts/gb10/test_preflight047b.py",
+      "sha256": "4bd67e572196b5f9515142e00189e0ed6b79505139bcff6357d8546269544d9d",
+      "working_equal": true
+    },
+    {
+      "path": "scripts/gb10/test_serve047.py",
+      "sha256": "dd615d41bd9e375a2612994ceaf698434d65079c180b2af2632f1dc6620e46a1",
+      "working_equal": true
+    },
+    {
+      "path": "sentilab_core/gb10_serving.py",
+      "sha256": "1db18852fd7e83344a4968396a2dd16afdf6f01da1792b3f0649603d56483f3b",
+      "working_equal": true
+    }
+  ]
+}
