@@ -228,6 +228,29 @@ def check_result(result: dict) -> list[str]:
     return errors
 
 
+def cpu_usage():
+    """POSIX process CPU plus reaped workers and their reaped solver children.
+
+    Read the final sample only after aclose() has waited for every worker.
+    Run this harness in a dedicated process: unrelated child work is included.
+    """
+    import resource
+
+    own = resource.getrusage(resource.RUSAGE_SELF)
+    children = resource.getrusage(resource.RUSAGE_CHILDREN)
+    return (own.ru_utime + own.ru_stime, children.ru_utime + children.ru_stime)
+
+
+def run_accounting(start_cpu, solver_executions):
+    end_cpu = cpu_usage()
+    own, children = (end - start for start, end in zip(start_cpu, end_cpu))
+    return {'solver_executions': solver_executions, 'warmup_solver_executions': 0,
+            'process_cpu_seconds': own, 'children_cpu_seconds': children,
+            'cpu_seconds': own + children, 'cpu_minutes': (own + children) / 60,
+            'method': 'POSIX getrusage SELF + CHILDREN delta after worker shutdown',
+            'scope': 'this evaluation run, including worker startup and shutdown; no warm-up runs'}
+
+
 async def evaluate_layouts(frozen, grids=(16, 32, 64), layout_ids=None):
     if len(set(grids)) != len(grids) or len(grids) < 2 or any(g not in (16, 32, 64) for g in grids):
         raise ValueError('choose at least two distinct grids from 16, 32, 64')
@@ -241,6 +264,8 @@ async def evaluate_layouts(frozen, grids=(16, 32, 64), layout_ids=None):
     rows = [{**r, 'J_c': {}, 'all_layers_peak_c': {}, 'seconds': {},
              'solver_seconds': {}, 'candidate_hash': {}} for r in selected]
     started = time.perf_counter()
+    start_cpu = cpu_usage()
+    solver_executions = 0
     provenance = {}
     for grid in grids:
         oracle = make_oracle(frozen['fixture'], grid)
@@ -256,6 +281,7 @@ async def evaluate_layouts(frozen, grids=(16, 32, 64), layout_ids=None):
                 if design.hash != row['design_hash']:
                     raise ValueError('frozen design hash mismatch')
                 result = await oracle(design)
+                solver_executions += 1
                 row['J_c'][str(grid)] = result.maximum_temperature_c
                 row['all_layers_peak_c'][str(grid)] = result.all_layers_peak_c
                 row['seconds'][str(grid)] = result.evaluation_seconds
@@ -267,6 +293,7 @@ async def evaluate_layouts(frozen, grids=(16, 32, 64), layout_ids=None):
             'grids': list(grids), 'fixed_tolerance_c': frozen['fixed_tolerance_c'],
             'objective': 'chip-layer grid peak in Celsius', 'layouts': rows,
             'evaluation_count': len(rows) * len(grids), 'seconds': time.perf_counter() - started,
+            'run_accounting': run_accounting(start_cpu, solver_executions),
             'provenance': provenance, 'summary': summarize(rows, grids, frozen['fixed_tolerance_c'])}
 
 
@@ -301,6 +328,15 @@ def report(result):
     for row in result['layouts']:
         lines.append('| ' + row['id'] + ' | ' + ' | '.join(
             f'{row["J_c"][str(grid)]:.2f}' for grid in result['grids']) + ' |')
+    accounting = result.get('run_accounting', {})
+    cpu_minutes = accounting.get('cpu_minutes')
+    cpu_label = 'not measured; budget compliance is unverified' if cpu_minutes is None else f'{cpu_minutes:.6f}'
+    lines += ['', '## Resource accounting', '',
+              f'Solver executions in this run: {accounting.get("solver_executions", "not recorded")}. '
+              f'CPU-minutes (process plus reaped children): {cpu_label}.', '',
+              'The shared allowance is 150 solver executions and 6 CPU-minutes across both fixtures, '
+              'including warm-up and validation. Per-run accounting is not a shared-budget clearance. '
+              'See RESULT.json and VALIDATION.md for prior usage and unresolved accounting.', '']
     lines += ['', '## Scope', '',
               'e is an empirical discrepancy against 64 on this fixed layout set, not an error bound '
               'against the continuum or unseen layouts. Later R4/u_num and SLAB-039 margins can use e '

@@ -1836,6 +1836,44 @@
       "solver_version": "HotSpot-7:f18831e48cef5d62580585cca0d7fab6c71bc3cc:sha256:e4358b46794ebc00"
     }
   },
+  "reservation_accounting": {
+    "actual_total_cpu_minutes": null,
+    "actual_total_solver_executions": null,
+    "known_runs": [
+      {
+        "purpose": "committed study",
+        "solver_executions": 72
+      },
+      {
+        "purpose": "three-layout self-verification at 32 and 64",
+        "solver_executions": 6
+      },
+      {
+        "purpose": "two complete nine-test mesh suites, four layouts at two grids each",
+        "solver_executions": 16
+      },
+      {
+        "purpose": "real-run mutation proof, four layouts at two grids",
+        "solver_executions": 8
+      }
+    ],
+    "known_solver_executions_lower_bound": 102,
+    "max_cpu_minutes": 6,
+    "max_solver_executions": 150,
+    "next_action": "No further solver runs until host accounting or a revised remaining allowance is supplied.",
+    "scope": "both fixtures including warm-up, validation and HotSpot child CPU",
+    "status": "unverified; historical CPU and additional gate/warm-up executions not captured"
+  },
+  "run_accounting": {
+    "children_cpu_seconds": null,
+    "cpu_minutes": null,
+    "cpu_seconds": null,
+    "method": "not measured: this run preceded the CPU-accounting instruction",
+    "process_cpu_seconds": null,
+    "scope": "72 successful study evaluations only; elapsed seconds are not CPU seconds",
+    "solver_executions": 72,
+    "warmup_solver_executions": 0
+  },
   "schema": "slab-mesh-result-v1",
   "seconds": 152.28929412097204,
   "summary": {

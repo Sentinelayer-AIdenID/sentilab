@@ -3,10 +3,32 @@ import asyncio
 import copy
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 
 from sundai_controller import mesh_study as mesh
+
+
+class MeshAccountingTests(unittest.TestCase):
+    def test_cpu_accounting_includes_reaped_grandchild(self):
+        # Use real processes, without spending any HotSpot solver executions.
+        burn = 'import time; start = time.process_time()\nwhile time.process_time() - start < 0.15: pass'
+        worker = ('import subprocess, sys\n'
+                  f'subprocess.run([sys.executable, "-c", {burn!r}], check=True)')
+        start = mesh.cpu_usage()
+        subprocess.run([sys.executable, '-c', worker], check=True)
+        accounting = mesh.run_accounting(start, 0)
+        self.assertEqual(accounting['solver_executions'], 0)
+        self.assertEqual(accounting['warmup_solver_executions'], 0)
+        self.assertGreaterEqual(accounting['children_cpu_seconds'], 0.1)
+        self.assertGreaterEqual(accounting['process_cpu_seconds'], 0)
+        self.assertAlmostEqual(accounting['cpu_seconds'], accounting['process_cpu_seconds']
+                               + accounting['children_cpu_seconds'])
+        self.assertAlmostEqual(accounting['cpu_minutes'], accounting['cpu_seconds'] / 60)
+        empty = mesh.run_accounting(mesh.cpu_usage(), 0)
+        self.assertLess(empty['children_cpu_seconds'], 0.01)
 
 
 class MeshStatisticsTests(unittest.TestCase):

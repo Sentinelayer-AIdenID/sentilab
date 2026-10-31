@@ -29,6 +29,20 @@ if evaluation fails. J is the chip-layer grid peak in Celsius. All-layer peaks a
 also recorded for comparison, but do not enter e. Timing includes oracle overhead;
 solver-only and total study times are recorded separately.
 
+On POSIX, new runs record process CPU plus reaped worker/solver child CPU with
+`getrusage` differences, sampled after all workers close. Run the CLI in a
+dedicated process without concurrent child work. No warm-up solver runs are
+performed by this harness; every successful oracle call executes the solver
+once. This is per-run accounting, not a shared enforcement ledger. Failed runs
+do not produce a completed RESULT.json and require external accounting.
+
+The shared reservation is **150 solver executions and 6 CPU-minutes across both
+fixtures**, including warm-up and validation. The committed Ascend910 run
+predates that instruction; its CPU fields are null, not zero or elapsed-time
+estimates. Known study/validation runs account for at least 102 executions,
+with other gate executions unaccounted for. Further reproduction or micro150
+runs require reconciled accounting or a revised remaining allowance.
+
 The mandatory rule compares signs on reference gaps strictly greater than 2e
 (2e16 for grid 16). Exact coarse ties count as violations; gaps equal to the
 threshold are excluded (a 1e-12 C guard absorbs binary roundoff at decimal boundaries). The same-sample max-error bound mathematically guarantees
