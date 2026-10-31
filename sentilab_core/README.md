@@ -99,6 +99,16 @@ and operator pin, startup fails closed. Run one service writer per storage root;
 the OS ownership lock enforces this across processes. To release an explicit
 STOP, the service operator removes that file and starts a new finite run.
 
+During rolling revisions, a busy nonblocking ownership lock (including CIFS
+`EACCES`) retries with exponential backoff and jitter between 5 and 60 seconds.
+Unexpected loop failures are logged and retried with the same backoff. Only
+the lock acquisition classifies contention; file access and run errors remain
+failures. Shutdown interrupts the wait; an operator STOP prevents another run.
+`/api/view/runs` includes `loop_alive`, the most recent unexpected failure's
+type in `service_error`, and its UTC ISO timestamp in `last_failure_at` (both
+null before any failure). Failure evidence remains after recovery; liveness
+reports the service thread, including while waiting, not ledger progress.
+
 The read-only routes are `/api/view/runs`,
 `/api/view/events?run_id=...&cursor=0&limit=256`, and `/api/view/key`. Event responses
 default to v0.5 JSONL, with at most 256 lines and 4 MiB per page. `cursor` is the
@@ -145,9 +155,9 @@ Unsupported row-cursor polling
 must preserve the prior prefix as STALE/unsupported; incremental sequence-only
 fallback must not advance a LIVE/current claim.
 
-For v0.6 transport conformance, run `python -m app.check_view_paging` after its
-contract lands, or pass the exact `contracts/view-envelope-v0.6` directory from
-PR26 as an argument. It drives the unchanged reducer and C1–C14 vector data
+For v0.6.1 transport conformance, run `python -m app.check_view_paging`, or pass
+an exact contract directory (such as `contracts/view-envelope-v0.6`) as an
+argument. It drives the unchanged reducer and the reference vector data
 against a local HTTP server, plus unfinished-tail and oversize-row regressions.
 Fault scenarios deliberately alter responses after fetching from the real route.
 All C7 range statuses and C12/C14 server cases must match the reference exactly.
