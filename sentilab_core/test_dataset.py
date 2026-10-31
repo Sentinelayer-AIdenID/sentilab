@@ -94,6 +94,38 @@ class DatasetTests(unittest.TestCase):
         self.assertEqual(row['stale_because'], ['fixture:accept:reproduce'])
         self.assertFalse(row['eligibility']['preference'])
 
+    def test_alternative_claim_support_cannot_replace_exact_training_measurements(self):
+        self.ledger.append('node.create', {'id': 'fixture:alternative', 'kind': 'source'},
+                           event_id='alternative-source')
+        self.ledger.append('support.add', {'node': 'fixture:accept', 'set_id': 'alternative',
+                                          'members': ['fixture:alternative']}, event_id='alternative-support')
+        self.ledger.append('node.create', {'id': 'fixture:calibration', 'kind': 'source'},
+                           event_id='calibration-source')
+        self.ledger.append('support.add', {'node': 'fixture:accept:reproduce', 'set_id': 'calibration',
+                                          'members': ['fixture:calibration']}, event_id='calibration-support')
+        for target in ('fixture:accept:evaluate', 'fixture:accept:reproduce', 'fixture:calibration'):
+            with self.subTest(target=target):
+                before = self.export()
+                original = (Path(before['directory']) / 'records.jsonl').read_bytes()
+                self.ledger.append('withdraw', {'node': target, 'reason': 'invalid exact evidence'},
+                                   event_id=target + ':withdraw')
+                try:
+                    after = self.export()
+                    row = next(r for r in self.rows(after) if r['candidate'] == 'fixture:accept')
+                    self.assertEqual(row['validity'], 'valid')  # Claim-level OR support survives.
+                    self.assertFalse(row['eligibility']['sft'])
+                    self.assertFalse(row['eligibility']['preference'])
+                    self.assertTrue((Path(after['directory']) / 'records.jsonl').read_bytes().startswith(original))
+                    self.assertEqual(self.rows(after, 'records.jsonl')[-1]['reason'], 'withdraw')
+                    self.assertFalse(any('fixture:accept' in (p['chosen']['candidate'], p['rejected']['candidate'])
+                                         for p in self.rows(after, 'rlaif.jsonl')))
+                finally:
+                    self.ledger.append('withdraw.retract', {'node': target, 'reason': 'evidence corrected'},
+                                       event_id=target + ':retract')
+                restored = next(r for r in self.rows(self.export()) if r['candidate'] == 'fixture:accept')
+                self.assertTrue(restored['eligibility']['sft'])
+                self.assertTrue(restored['eligibility']['preference'])
+
     def test_rights_fail_closed_and_heldout_never_enters_preferences(self):
         self.policy['rights'] = {}
         blocked = self.export()

@@ -80,6 +80,9 @@ def _eligibility(row):
         reasons.append('no_ordered_verifier_outcome')
     if row['lifecycle'] in BOARD and row['validity'] != 'valid':
         reasons.append('unverified_support')
+    if any(evidence is not None and evidence['validity'] != 'valid'
+           for evidence in row['measurement_validity'].values()):
+        reasons.append('invalid_measurement_support')
     return {'preference': not reasons, 'sft': not reasons and row['lifecycle'] == 'accepted',
             'reasons': reasons}
 
@@ -170,6 +173,12 @@ def _journal(prefix, policy):
                    'context': {k: v for k, v in proposal['binding'].items() if k != 'candidate_id'},
                    'run_config': config, 'validity': state[candidate]['validity'],
                    'stale_because': state[candidate]['stale_because'],
+                   # An alternative claim support set cannot replace these
+                   # exact observations bound into the signed gate inputs.
+                   'measurement_validity': {
+                       phase: {key: state[e['event']['body']['id']][key]
+                               for key in ('validity', 'stale_because')} if e else None
+                       for phase, e in measured.items()},
                    'split': _split(run['family'], policy),
                    'rights': policy['rights'].get(run['run_id'], {'status': 'blocked', 'reason': 'no recorded rights grant'}),
                    'lineage': {'proposal': _ref(created), 'parent_candidate': parent,
