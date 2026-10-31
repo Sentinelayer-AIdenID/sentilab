@@ -42,6 +42,11 @@ unauthorized scopes without side effects, real worker cancellation on both
 surfaces, and refusal of tampered chiplet history. The live.run fixture starts
 with STOP already present and confirms its solve count is zero. Private signing
 material for that fixture exists only in process memory/environment, never files.
+The stopped-run test uses the existing no-solve BarrierOracle as a host-injected
+Context through the shipped CLI main and MCP serve entry points. CLI main now
+accepts the same optional host context as MCP; no request can inject one. No
+transport, handler, conductor method or gate is replaced by the fixture driver.
+This keeps the Python-only CI job independent of a compiled HotSpot binary.
 
 For cancellation, the harness pauses the actual child with SIGSTOP after its
 process group exists, cancels through the transport, checks the child is reaped,

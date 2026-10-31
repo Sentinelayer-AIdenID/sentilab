@@ -28,7 +28,7 @@ def dataset_parser():
     return parser
 
 
-def dataset_main():
+def dataset_main(*, context=None):
     args = dataset_parser().parse_args(sys.argv[2:])
     from sentilab_core import operations
     policy = json.loads(Path(args.policy).read_text()) if args.policy else None
@@ -40,7 +40,7 @@ def dataset_main():
     from sentilab_core.execution import admit
     from sentilab_mcp import sentilab_dataset_export
     admit("sentilab_dataset_export", parameters)
-    context = operations.environment_context()
+    context = context if context is not None else operations.environment_context()
     result = asyncio.run(sentilab_dataset_export(context, **parameters))
     print(json.dumps(result, allow_nan=False))
 
@@ -57,7 +57,7 @@ def chiplet_parser():
     return parser
 
 
-def chiplet_main():
+def chiplet_main(*, context=None):
     args = vars(chiplet_parser().parse_args(sys.argv[2:]))
     command = args.pop("command")
     arguments = {key: value for key, value in args.items() if value is not None}
@@ -68,7 +68,8 @@ def chiplet_main():
     from sentilab_mcp import TOOLS
     tool = "sentilab_chiplet_" + command
     admit(tool, arguments)
-    result = asyncio.run(TOOLS[tool](environment_context(), **arguments))
+    context = context if context is not None else environment_context()
+    result = asyncio.run(TOOLS[tool](context, **arguments))
     print(json.dumps(result, allow_nan=False))
 
 
@@ -94,12 +95,12 @@ def build_parser(conductor=False):
     return parser
 
 
-def _main(conductor=False):
+def _main(conductor=False, *, context=None):
     check_cli_size(sys.argv[1:])
     if not conductor and sys.argv[1:2] == ["dataset"]:
-        return dataset_main()
+        return dataset_main(context=context)
     if not conductor and sys.argv[1:2] == ["chiplet"]:
-        return chiplet_main()
+        return chiplet_main(context=context)
     parser = build_parser(conductor)
     args = parser.parse_args()
     from sentilab_core import operations
@@ -112,10 +113,11 @@ def _main(conductor=False):
         parameters.update(duration=args.duration, interval=args.interval, renew=args.renew)
     from sentilab_core.execution import admit
     admit("sentilab_live_" + command, parameters)
-    context = operations.environment_context(ephemeral=args.ephemeral)
+    context = context if context is not None else operations.environment_context(ephemeral=args.ephemeral)
     context.options = {"fixture": args.fixture, "margin": args.margin, "grid": args.grid,
                        "deadline": args.deadline,
-                       "limits": Limits(evals_per_hour=args.max_evals_per_hour, evals_per_run=args.max_evals_per_run)}
+                       "limits": Limits(evals_per_hour=args.max_evals_per_hour, evals_per_run=args.max_evals_per_run),
+                       **context.options}
     result = asyncio.run(dispatch(command, context, **parameters))
     if args.export:
         if command != "verify" or not result["ok"]:
@@ -128,9 +130,9 @@ def _main(conductor=False):
     print(json.dumps(result, allow_nan=False))
 
 
-def main(conductor=False):
+def main(conductor=False, *, context=None):
     try:
-        return _main(conductor)
+        return _main(conductor, context=context)
     except PermissionError:
         print(json.dumps(error_receipt(-32001, "capability scope refused")))
         raise SystemExit(2) from None

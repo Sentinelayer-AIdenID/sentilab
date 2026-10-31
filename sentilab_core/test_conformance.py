@@ -21,6 +21,27 @@ from sentilab_core.capabilities import CAPABILITIES, assert_surfaces, coverage_m
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# Both shipped entry points accept a host-injected Context. The fixture supplies
+# only an oracle configuration/cleanup object; it replaces no transport, handler,
+# conductor method or gate. STOP is present before run, so it cannot measure.
+FIXTURE_HOST = r'''
+import asyncio
+import sys
+from sentilab_core.operations import environment_context
+from sentilab_core.test_cleanup import BarrierOracle
+context = environment_context()
+oracle = BarrierOracle()
+oracle.release.set()
+context.options = {"oracle": oracle, "fixture": "recorded-test"}
+if sys.argv[1] == "cli":
+    from sentilab_cli.__main__ import main
+    sys.argv = sys.argv[1:]
+    main(context=context)
+else:
+    from sentilab_mcp.__main__ import serve
+    asyncio.run(serve(context))
+'''
+
 
 class ExecutionConformance(unittest.TestCase):
     """Actual CLI and stdio processes, signed recorded data, zero solves."""
@@ -36,6 +57,7 @@ class ExecutionConformance(unittest.TestCase):
         self.environment.update(SENTILAB_LIVE_DIR=str(self.root),
                                 SENTILAB_VIEW_PUBLIC_KEYS=(fixture / "public-keys.json").read_text(),
                                 OPENBLAS_NUM_THREADS="1", OMP_NUM_THREADS="1")
+        self.fixture_context = False
 
     def arguments(self, row):
         if row.name == "live.run":
@@ -54,6 +76,8 @@ class ExecutionConformance(unittest.TestCase):
 
     def cli_command(self, row, arguments):
         command = [sys.executable, "-m", "sentilab_cli", *row.cli_command]
+        if row.name == "live.run" and self.fixture_context:
+            command = [sys.executable, "-c", FIXTURE_HOST, "cli", *row.cli_command]
         for name, value in arguments.items():
             if name == "ai_off":
                 if value:
@@ -71,7 +95,9 @@ class ExecutionConformance(unittest.TestCase):
                               cwd=ROOT, capture_output=True, timeout=10)
 
     def start_mcp(self):
-        process = subprocess.Popen([sys.executable, "-m", "sentilab_mcp"], env=self.environment,
+        command = ([sys.executable, "-c", FIXTURE_HOST, "mcp"] if self.fixture_context else
+                   [sys.executable, "-m", "sentilab_mcp"])
+        process = subprocess.Popen(command, env=self.environment,
                                    cwd=ROOT, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE, bufsize=0)
         self.addCleanup(self.close, process)
@@ -127,6 +153,7 @@ class ExecutionConformance(unittest.TestCase):
                                 SENTILAB_SIGNER_FACTORY="sentilab_core.signing:service_signer",
                                 SENTILAB_VIEW_PUBLIC_KEYS=json.dumps(keys))
         (self.root / "STOP").touch()
+        self.fixture_context = True
 
     def test_each_capability_returns_identical_bytes_and_output_schema(self):
         from jsonschema import Draft202012Validator
