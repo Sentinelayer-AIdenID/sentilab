@@ -74,9 +74,27 @@ interrupted reservations, pin changes, admission refusal and spend caps.
 
 ## Execution status
 
-Implementation compile checks and `git diff --check` have passed. Runtime tests
-are not yet validated: offline dependency installation failed because the pinned
-scientific/signing/schema packages are absent. Native SuperLU/BLAS development
-libraries are also absent. The operator has been asked to provide offline
-packages or clarify the ticket's no-network/no-solves restriction for the named
-regression gates. No all-green, independent-proof or PR-publication claim is made.
+Actual local checks on 2026-10-31:
+
+| Command | Result |
+| --- | --- |
+| `python3 -m compileall -q` on the four changed Python files | PASS |
+| `git diff --check` | PASS |
+| `python3.12 -m venv .venv` | PASS |
+| `.venv/bin/pip install --no-index -r requirements.txt` | FAIL: no offline numpy 2.3.5 distribution |
+| Controller `python -m unittest -v test_controller.py test_experiment.py` | BLOCKED: two import errors, missing cryptography |
+| `python -m unittest discover -s sundai_thermal -p 'test_*.py'` | BLOCKED: missing numpy |
+| `python -m unittest -q sentilab_core.test_leads sentilab_core.test_lead_conductor` | BLOCKED: two import errors, missing cryptography |
+| `make -j4 SUPERLU=1` in sundai_hotspot | FAIL: missing slu_ddefs.h |
+
+Import errors are not executed/passing regression tests. The initial new-test
+run failed because `sentilab_core.leads` did not exist; behavior-level mutation
+proof remains pending dependencies. No thermal solves or model calls ran.
+The repository has no npm package manifest; its Python/native gates supersede
+the generic npm template. No manifest was added to manufacture a gate.
+
+The operator has been asked to provide offline Python/native packages or clarify
+the ticket's no-network/no-solves restriction for the named regression gates.
+The installed `senti` wrapper also lacks the underlying executable for say,
+review and PR verbs; room updates use the working `respawn-life say` bridge.
+No all-green, independent-proof or PR-publication claim is made.
