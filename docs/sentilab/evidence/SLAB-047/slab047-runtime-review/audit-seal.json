@@ -1,0 +1,100 @@
+{
+  "schema": "sentilab-slab047-offline-review-seal/1",
+  "sealed_at_utc": "2026-10-31T11:15:51.716740+00:00",
+  "head": "baf0091b11c6020601b5ce11029307bf034a3953",
+  "token": "6a11048db3704a84afeaf4289cb360ce",
+  "status": "75 consistency checks passed; runtime failed_closed/server_exited; zero inference; no retry",
+  "approval": false,
+  "files": [
+    {
+      "path": "slab047-admission/DOWNLOAD-AND-CLOSURE.json",
+      "bytes": 2395,
+      "sha256": "ba3b300534d2fc0e531f982ca8742dbae357a99839cd04007271db7f2f361b1a"
+    },
+    {
+      "path": "slab047-admission/runtime/admission.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "slab047-admission/runtime/APPROVED.json",
+      "bytes": 488,
+      "sha256": "fce8e1bc31cfe025eb629f4daef32acb0f3024304cb1b5e84ac4f2c21fd32be1"
+    },
+    {
+      "path": "slab047-admission/runtime/container.stderr.log",
+      "bytes": 18701,
+      "sha256": "33981844d6be0320ceb5c924bdd76e162ee1e43d65bdf78002c5ae540eb21ae1"
+    },
+    {
+      "path": "slab047-admission/runtime/container.stdout.log",
+      "bytes": 1174,
+      "sha256": "8caf92f237b506ef8233e1e244b28587f3e0df545376f4032807721129ffdfd2"
+    },
+    {
+      "path": "slab047-admission/runtime/docker.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "slab047-admission/runtime/input-verification.json",
+      "bytes": 2202,
+      "sha256": "ed3865edb9d7b35e8538891999bbdec54c4d113a19fd67b1b03866a2fb9b61e4"
+    },
+    {
+      "path": "slab047-admission/runtime/reservation.json",
+      "bytes": 1783,
+      "sha256": "81bc91d6f0fb478db8c43f53a408c295a872e5c2d3b70362cafaf44b0be88947"
+    },
+    {
+      "path": "slab047-admission/runtime/serve047.py",
+      "bytes": 35412,
+      "sha256": "1e4b901a1b8b65ad8b40afd89637b6b6044e12f8f6df58fd6ae4771309c21eaa"
+    },
+    {
+      "path": "slab047-admission/runtime/state.json",
+      "bytes": 806,
+      "sha256": "09c3d1a75fcd08b11f63221755ec9536bf627f4ec5fa5d2f8b0db86ffffeccfe"
+    },
+    {
+      "path": "slab047-admission/runtime/state.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "slab047-admission/runtime/worker-claimed.json",
+      "bytes": 84,
+      "sha256": "9b97eb976cc39e3619ad7aeed48fb21d7b0bcbb5e584aff7d8cc54285bb2f35f"
+    },
+    {
+      "path": "slab047-admission/runtime/worker.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "slab047-runtime-review/RUNTIME-REVIEW.md",
+      "bytes": 6203,
+      "sha256": "e205a56b4f45ec1ac778f6f581a1e5e27cda73a49bbe4f43f8c5e6220d4fb387"
+    },
+    {
+      "path": "slab047-runtime-review/seal_runtime_review.py",
+      "bytes": 2093,
+      "sha256": "b499a51281e182566b24feb419e6e7074c85343bf01ddaa440d86e4dea21b57e"
+    },
+    {
+      "path": "slab047-runtime-review/validate_retained_offline.py",
+      "bytes": 29940,
+      "sha256": "065dcccb73569cbceecb645261332c7ccd0b20f26a025032c8d0d5b479a92b28"
+    },
+    {
+      "path": "slab047-runtime-review/validation-20261031T111419608092Z/REPORT.md",
+      "bytes": 1312,
+      "sha256": "6804368dd511d7c2c6785199a3d785cbe5d545209211c8b4478d9a109e8e41ce"
+    },
+    {
+      "path": "slab047-runtime-review/validation-20261031T111419608092Z/VALIDATION.json",
+      "bytes": 11835,
+      "sha256": "b2b4d5a0c5760aa36b10ec3a3e4cf0dd6c371de854cf3997180b124f4f128151"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "exit": 0,
+  "stdout": "{\"budget_exceeded\":false,\"charged_seconds\":0.6380113449995406,\"cleanup_error\":null,\"cleanup_verified\":true,\"error\":null,\"finished_at\":\"2026-10-31T11:35:44.142891+00:00\",\"gpu_requested\":false,\"grant_source\":\"55fe3cab-88b4-4f80-9ae7-2f5ff43c70f7\",\"hashes\":{\"inspection-created.json\":\"47ac1455ce1528534141743d0d8f11ff47d7f5369dffc1ec2cd193a8fd3e58c0\",\"inspection-finished.json\":\"829a42234687008043f5c71f10f07065cbcfa06f8685a6c1869ad115d2e75e57\",\"intent.json\":\"e3994a940adcc72024e6d2b73f3f58cd69895381dce43a8217b61abe58f4b47d\",\"probe.stderr.log\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\"probe.stdout.json\":\"600a5fbd5c6961bddfbc61b07b5be49a0b02b15e06925cbf090ea3ff336335ac\",\"probe.stdout.log\":\"f78d07a739c452d5fb48d1e6a1e842e1390bad1f315baccaa3fa3f102bbef850\"},\"image\":\"sha256:2e735ffeef26457f8a3ff44a62ae182870b10af37adc06ecbb08baca152365c6\",\"preflight_ok\":true,\"preflight_sha256\":\"ed856df35246a8c1a59459d0e5b197f0921ec893cc2ab1bae047f8e43432a74f\",\"probe_verified\":true,\"retry_allowed\":false,\"schema\":\"sentilab-047b-preflight-result/1\",\"scope\":\"fixed /tmp native mapping and direct script execution only; no vLLM, JIT, GPU or inference readiness claim\",\"tmpfs\":\"rw,exec,nosuid,nodev,size=4g,mode=1777\",\"token\":\"548265aa8b4d42bdb907cc82df444878\"}\n",
+  "stderr": "",
+  "started_unix": 1793446542.7838256,
+  "finished_unix": 1793446544.1809375
+}
