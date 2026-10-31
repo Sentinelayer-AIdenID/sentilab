@@ -117,6 +117,13 @@
     ],
     "reported_not_reproducible": [
       {
+        "claim": "TFL-14 README assertion (reproducible figures in README)",
+        "command": "sundai_thermal/test_tfl14_regression.py::test_seeded_random_annealing_and_recorded_artifacts_are_reproducible (README check)",
+        "exit_code": "N/A",
+        "count": 0,
+        "detail": "failed at 126507d4, import defect (the rewritten README dropped the asserted figures), fixed on main by 29b0c3b; passes on main"
+      },
+      {
         "claim": "TFL-03 latency targets (median < 0.1 s at 16x16, < 0.4 s at 32x32)",
         "command": "container_smoke.sh asserts median < 2.0 s as SuperLU-in-use check; real targets apply only to deployed container",
         "exit_code": "N/A",
@@ -140,7 +147,7 @@
       {
         "claim": "Full scripts/container_smoke.sh under Docker",
         "command": "CI Actions workflow",
-        "detail": "Not run in this box. CI ran the full container_smoke.sh green on main at 29b0c3b (Actions run 41171258578). All individual components verified separately and pass."
+        "detail": "not run in this box; CI ran the full container_smoke.sh green on main at 29b0c3b (Actions run 41171258578)"
       }
     ]
   },
