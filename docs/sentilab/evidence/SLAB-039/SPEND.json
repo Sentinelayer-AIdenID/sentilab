@@ -1,1 +1,35 @@
-{"active":null,"cpu_seconds":1440.2945650000001,"fixtures":{"ascend910":{"calls":2650,"cpu_seconds":1440.2945650000001}},"total_calls":2650}
+{
+  "active": null,
+  "cpu_seconds": 1440.2945650000001,
+  "fixtures": {
+    "ascend910": {
+      "calls": 2650,
+      "cpu_seconds": 1440.2945650000001,
+      "solving_wall_seconds": 1525.852038
+    }
+  },
+  "total_calls": 2650,
+  "solving_wall_seconds": 1525.852038,
+  "non_headroom": {
+    "calls": 62,
+    "cpu_seconds": 0,
+    "reserved_calls": 300,
+    "reserved_cpu_seconds": 720,
+    "known_charges": [
+      {
+        "source": "../micro150/SPEND.md",
+        "timing_calls": 60,
+        "development_test_calls": 2,
+        "actual_cpu_seconds": null
+      }
+    ],
+    "mesh_accounting": "PR #18 sample discrepancy supplied by room; complete solve/CPU receipt not present in this checkout. Covered prospectively by full non-headroom reservation; reconciliation pending.",
+    "unknown_historical_cpu_seconds": null,
+    "unresolved_ci_allocation": null,
+    "note": "cpu_seconds is reconciled known non-headroom CPU only; zero here is not a claim of zero actual spend. Reserve at least 720 CPU-s and 300 calls; use larger reconciled charges if supplied. Unknown historical/CI charges remain unresolved separately."
+  },
+  "prior_overshoot": {
+    "ascend910_v3_cpu_seconds": 0.29456500000014785
+  },
+  "accounting_scope": "Known headroom actuals plus conservative non-headroom reservation; unknown historical CPU and CI allocation unresolved. No all-time compliance claim."
+}
