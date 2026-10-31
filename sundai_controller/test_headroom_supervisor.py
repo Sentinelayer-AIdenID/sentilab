@@ -219,6 +219,10 @@ with tempfile.TemporaryDirectory() as tmp:
     # The box's host-owned cgroup is not this synthetic allocation's rate cap.
     # Test that admission separately; keep the real fork/meter/reap path here.
     s.verify_cpu_max = lambda policy: {'rate_q': policy.rate_q, 'value': 'synthetic-test-only'}
+    # This synthetic harness intentionally reaches a reduced runtime call cap.
+    # Forecast admission has separate over-cap/refusal tests; isolate it here.
+    from sundai_controller import evidence_profile
+    evidence_profile.load_admission = lambda *args, **kwargs: {'declared_calls': 24, 'synthetic': True}
     # Pin clock inside the parent too; no date-dependent prospective test failure.
     from datetime import datetime, timezone
     class Clock(datetime):
