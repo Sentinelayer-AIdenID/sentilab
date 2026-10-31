@@ -156,19 +156,12 @@ exec(compile(source, "<gb10-readonly-stdin>", "exec"), {"__name__": "__main__"})
             result = backend.execute("status", PoisonContext())
         self.assertTrue(result["ok"])
 
-    def test_serve_is_always_pending_or_refused_and_never_reuses_old_grant(self):
-        for action, status, code in [("status", "pending", "prospective_gpu_grant_pending"),
-                                     ("start", "refused", "gpu_grant_required"),
-                                     ("stop", "refused", "no_managed_serve_session")]:
-            with self.subTest(action=action):
-                result = backend.execute("serve", action=action)
-                self.assertFalse(result["ok"])
-                self.assertFalse(result["launched"])
-                self.assertEqual(result["status"], status)
-                self.assertEqual(result["error"]["code"], code)
-                self.assertEqual(result["scope_state"], "staged_open")
-                self.assertEqual(result["live_service_state"], "not_observed")
-                self.assertIsNone(result["managed_session"])
+    def test_serve_dispatches_only_valid_actions_to_separate_gated_lifecycle(self):
+        from sentilab_core import gb10_serving
+        for action in ["status", "start", "stop"]:
+            with self.subTest(action=action), mock.patch.object(gb10_serving, "execute", return_value={"fixture": action}) as call:
+                self.assertEqual(backend.execute("serve", action=action), {"fixture": action})
+                call.assert_called_once_with(action)
 
     def test_remote_checkpoint_validates_every_pin(self):
         with self.fake_ssh(checkpoint_response()):
