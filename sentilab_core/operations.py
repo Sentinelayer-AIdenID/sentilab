@@ -17,6 +17,9 @@ class Context:
     public_keys: dict
     signer: object = None
     options: dict = field(default_factory=dict)
+    memory_tenant: str | None = None
+    held_out_families: tuple = ()
+    routing_fixture: Path | None = None
 
 
 def require_ai_off(ai_off):
@@ -79,6 +82,33 @@ def stop(context, *, ai_off):
     return {"stopped": True, **LABELS}
 
 
+def _memory_store(context):
+    from .memory import MemoryStore
+    return MemoryStore(context.root / "memory", ledger_root=context.root,
+                       public_keys=context.public_keys,
+                       tenant=context.memory_tenant,
+                       held_out_families=context.held_out_families)
+
+
+def memory_recall(context, *, scope, query=""):
+    return {"scope": scope, "items": _memory_store(context).recall(scope, query)}
+
+
+def memory_audit(context, *, scope):
+    return {"scope": scope, "records": _memory_store(context).audit(scope)}
+
+
+def route(context, *, task=None, calibrate=False):
+    from .routing import load_router_fixture
+    if type(calibrate) is not bool or (task is None) != calibrate:
+        raise ValueError("supply task or calibrate=true, exclusively")
+    fixture = context.routing_fixture
+    if not fixture:
+        raise ValueError("host must configure a routing fixture")
+    router, heldout = load_router_fixture(fixture)
+    return router.calibrate(heldout) if calibrate else router.route(task)
+
+
 def environment_context(*, ephemeral=False):
     root = Path(os.environ.get("SENTILAB_LIVE_DIR", "/tmp/sentilab-live"))
     factory = os.environ.get("SENTILAB_SIGNER_FACTORY")
@@ -103,4 +133,7 @@ def environment_context(*, ephemeral=False):
         from .signing import ephemeral_signer
         signer = ephemeral_signer()
         public_keys = {signer.key_id: signer.public_key}
-    return Context(root, public_keys, signer)
+    return Context(root, public_keys, signer,
+                   memory_tenant=os.environ.get("SENTILAB_MEMORY_TENANT"),
+                   held_out_families=json.loads(os.environ.get("SENTILAB_MEMORY_HELD_OUT", "[]")),
+                   routing_fixture=os.environ.get("SENTILAB_ROUTING_FIXTURE"))

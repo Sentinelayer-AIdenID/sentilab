@@ -1,4 +1,4 @@
-"""Minimal stdio MCP host for the four shared live operations."""
+"""Minimal stdio MCP host for shared live, memory and advisory operations."""
 import asyncio
 import json
 import sys
@@ -8,6 +8,23 @@ from . import TOOLS
 
 
 def schema(name):
+    if name in ("sentilab_memory_recall", "sentilab_memory_audit"):
+        fields = {key: {"type": "string", "minLength": 1} for key in ("tenant", "run", "arm", "family")}
+        fields["seed"] = {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+        properties = {"scope": {"type": "object", "properties": fields,
+                                "required": list(fields), "additionalProperties": False}}
+        if name == "sentilab_memory_recall":
+            properties["query"] = {"type": "string", "default": ""}
+        return {"type": "object", "properties": properties, "required": ["scope"], "additionalProperties": False}
+    if name == "sentilab_route":
+        return {"type": "object", "properties": {
+            "task": {"type": "object", "properties": {"candidate": {"type": "string"},
+                     "score": {"type": "number", "minimum": 0, "maximum": 1}},
+                     "required": ["candidate", "score"], "additionalProperties": False},
+            "calibrate": {"type": "boolean", "default": False}},
+            "oneOf": [{"required": ["task"], "properties": {"calibrate": {"const": False}}},
+                      {"required": ["calibrate"], "properties": {"calibrate": {"const": True}},
+                       "not": {"required": ["task"]}}], "additionalProperties": False}
     properties = {"ai_off": {"type": "boolean", "const": True}}
     required = ["ai_off"]
     if name != "sentilab_live_stop":
@@ -27,12 +44,12 @@ async def handle(request, context):
         return {"protocolVersion": "2024-11-05", "capabilities": {"tools": {}},
                 "serverInfo": {"name": "sentilab-live", "version": "0.1"}}
     if method == "tools/list":
-        return {"tools": [{"name": name, "description": "AI off live " + name.rsplit("_", 1)[-1],
+        return {"tools": [{"name": name, "description": "Local deterministic " + name,
                            "inputSchema": schema(name)} for name in TOOLS]}
     if method == "tools/call":
         params = request["params"]
         name, arguments = params["name"], params.get("arguments", {})
-        if name not in TOOLS or set(arguments) - set(schema(name)["properties"]):
+        if name not in TOOLS or not isinstance(arguments, dict) or set(arguments) - set(schema(name)["properties"]):
             raise ValueError("invalid live operation")
         result = TOOLS[name](context, **arguments)
         if hasattr(result, "__await__"):

@@ -19,3 +19,6 @@ def sentilab_live_verify(context, **arguments):
 
 
 TOOLS = {"sentilab_live_" + name: globals()["sentilab_live_" + name] for name in ("run", "status", "stop", "verify")}
+TOOLS.update(sentilab_memory_recall=operations.memory_recall,
+             sentilab_memory_audit=operations.memory_audit,
+             sentilab_route=operations.route)
