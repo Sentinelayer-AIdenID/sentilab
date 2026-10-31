@@ -17,7 +17,7 @@ import time
 import unittest
 
 from sentilab_cli.__main__ import (advisory_parser, build_parser, chiplet_parser, dataset_parser,
-                                 research_parser, resultcheck_parser)
+                                 research_parser, resultcheck_parser, proposal_parser)
 from sentilab_core.capabilities import CAPABILITIES, assert_surfaces, coverage_markdown, implemented
 
 
@@ -136,6 +136,10 @@ print(json.dumps(response))
                                 SENTILAB_ROUTING_FIXTURE=str(FIXTURE.with_name("routing-fixtures.json")))
 
     def arguments(self, row):
+        if row.name == "proposal.context":
+            return {}
+        if row.name == "proposal.submit":
+            return {"request_id": "fixture", "positions": [[1, 1]]}
         if row.name == "gb10.status":
             return {}
         if row.name == "gb10.checkpoint_verify":
@@ -299,6 +303,8 @@ print(json.dumps(response))
 
     def test_each_capability_refuses_wrong_types_or_bounds_without_echo(self):
         cases = {
+            "proposal.context": {"request_id": "rejected-value-marker"},
+            "proposal.submit": {"request_id": "rejected-value-marker", "positions": []},
             "live.run": {"ai_off": True, "duration": -1},
             "live.status": {"ai_off": True, "run_id": ""},
             "live.stop": {"ai_off": False},
@@ -459,8 +465,10 @@ print(json.dumps(response))
 
     def test_recorded_capability_cancellation_reaps_real_workers_on_both_surfaces(self):
         for row in implemented():
-            if row.name == "live.run":
-                # The signer stays in the parent; its lane owns conductor cleanup.
+            if row.name in {"live.run", "proposal.context", "proposal.submit"}:
+                # Signer-owning calls stay in the parent. ProposalTransportTests
+                # proves proposal adapter drain/STOP/SIGINT and MCP cancellation;
+                # proposal.context is a synchronous, bounded local read.
                 continue
             with self.subTest(capability=row.name):
                 arguments = self.arguments(row)
@@ -735,11 +743,11 @@ class RegistryConformance(unittest.TestCase):
                 continue
             from sentilab_cli.__main__ import gb10_parser
             branch = {"dataset": dataset_parser, "chiplet": chiplet_parser, "gb10": gb10_parser,
-                      "research": research_parser}.get(namespace, lambda: parser)()
+                      "research": research_parser, "proposal": proposal_parser}.get(namespace, lambda: parser)()
             command = next(action for action in branch._actions if action.dest == "command")
             observed.update((namespace, choice) for choice in command.choices)
             invocation = [sys.executable, "-m", "sentilab_cli"]
-            if namespace in ("dataset", "chiplet", "research", "gb10"):
+            if namespace in ("dataset", "chiplet", "research", "gb10", "proposal"):
                 invocation.append(namespace)
             result = subprocess.run([*invocation, "--help"], text=True, capture_output=True,
                                     cwd=ROOT, timeout=10, check=True)

@@ -30,6 +30,13 @@ def authorize(tool):
             raise PermissionError("capability scope refused") from None
 
 
+def authorize_session(tool, context):
+    """A host-bound proposer transport cannot read the operator's other lanes."""
+    if (getattr(context, "proposal_session", None) is not None
+            and tool not in {"sentilab_proposal_context", "sentilab_proposal_submit"}):
+        raise PermissionError("capability scope refused")
+
+
 def admit(tool, arguments):
     from jsonschema import Draft202012Validator
 
