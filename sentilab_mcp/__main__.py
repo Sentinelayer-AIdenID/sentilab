@@ -23,6 +23,8 @@ def call_arguments(request):
     if (not isinstance(name, str) or name not in TOOLS or not isinstance(arguments, dict)
             or set(arguments) - set(schema(name)["properties"])):
         raise ValueError("invalid operation")
+    from sentilab_core.execution import admit
+    admit(name, arguments)
     return name, arguments
 
 
@@ -68,6 +70,8 @@ async def serve(context=None):
             response = {"jsonrpc": "2.0", "id": request["id"], "result": result}
         except asyncio.CancelledError:
             response = error(request["id"], -32800, "request cancelled")
+        except PermissionError:
+            response = error(request["id"], -32001, "capability scope refused")
         except (ValueError, TypeError, KeyError, OSError) as exc:
             response = error(request["id"], -32602, type(exc).__name__)
         except Exception:
@@ -88,6 +92,11 @@ async def serve(context=None):
                 print(json.dumps(error(None, -32602, "ValueError")), flush=True)
                 break
             if not raw:
+                # A CLI pipeline closes stdin immediately after its request.
+                # Give finite reads a bounded drain window, then use the same
+                # cancellation/cleanup path for blocked work and disconnects.
+                if pending:
+                    await asyncio.wait(list(pending.values()), timeout=1)
                 break
             if len(raw) > MAX_INPUT_BYTES + 1 or not raw.endswith(b"\n"):
                 print(json.dumps(error(None, -32602, "ValueError")), flush=True)

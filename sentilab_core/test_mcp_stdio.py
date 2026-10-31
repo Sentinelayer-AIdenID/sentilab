@@ -58,9 +58,12 @@ class StdioTests(unittest.IsolatedAsyncioTestCase):
         await self.process.stdin.drain()
 
     async def call(self, id, operation):
+        arguments = {"ai_off": True}
+        if operation == "verify":
+            arguments["run_id"] = "fixture"
         await self.send({"jsonrpc": "2.0", "id": id, "method": "tools/call",
                          "params": {"name": "sentilab_live_" + operation,
-                                    "arguments": {"ai_off": True}}})
+                                    "arguments": arguments}})
 
     async def receive(self):
         return json.loads(await asyncio.wait_for(self.process.stdout.readline(), 5))

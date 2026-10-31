@@ -33,11 +33,11 @@ def live_input(command):
     properties = {"ai_off": {"type": "boolean", "const": True}}
     required = ["ai_off"]
     if command != "stop":
-        properties["run_id"] = {"type": "string"}
+        properties["run_id"] = {"type": "string", "minLength": 1, "maxLength": 128}
     if command == "verify":
         required.append("run_id")
     if command == "run":
-        properties.update(duration={"type": "number", "minimum": 0, "maximum": 86400},
+        properties.update(duration={"type": "number", "exclusiveMinimum": 0, "maximum": 86400},
                           interval={"type": "number", "minimum": 0, "maximum": 3600},
                           renew={"type": "boolean"})
     return object_schema(properties, required)
@@ -65,7 +65,27 @@ LIVE_OUTPUTS = {
     "verify": {"type": "object", "required": ["run_id", "ok", "prefix_end", "head_hash",
                                                  "chain_error", "projection_error", "projection", "board"]},
 }
-ERROR_CODES = (-32602, -32603, -32800, -32000)
+ERROR_CODES = (-32602, -32603, -32800, -32000, -32001)
+
+CHIPLET_INPUTS = {
+    "build": object_schema({"fixture": {"const": "plate"},
+                            "positions": {"type": "array", "minItems": 4, "maxItems": 4,
+                                          "items": {"type": "array", "minItems": 2, "maxItems": 2,
+                                                    "items": {"type": "number"}}}}),
+    "render": object_schema({"run_id": {"type": "string", "minLength": 1, "maxLength": 128},
+                             "cursor": {"type": "integer", "minimum": 0, "maximum": 100000}}, ["run_id"]),
+    "replay": object_schema({"run_id": {"type": "string", "minLength": 1, "maxLength": 128}}, ["run_id"]),
+    "export": object_schema({"run_id": {"type": "string", "minLength": 1, "maxLength": 128},
+                             "output_dir": {"type": "string"},
+                             "policy": DATASET_INPUT["properties"]["policy"]}, ["run_id"]),
+}
+CHIPLET_OUTPUTS = {
+    "build": {"type": "object", "required": ["fixture", "design", "design_hash", "scope"]},
+    "render": {"type": "object", "required": ["run_id", "head_hash", "format", "view"]},
+    "replay": LIVE_OUTPUTS["verify"],
+    "export": {"type": "object", "required": ["dataset_id", "directory", "schema", "sources",
+                                                 "policy", "counts", "sha256"]},
+}
 
 
 def pending(name, owner, reason):
@@ -78,19 +98,19 @@ def pending(name, owner, reason):
 CAPABILITIES = tuple(
     Capability("live." + command, ("live", command), "sentilab_live_" + command,
                live_input(command), LIVE_OUTPUTS[command], ERROR_CODES,
-               "local operator; AI off; injected signer" if command == "run" else "local operator; AI off",
+               "live." + command,
                {"run": "STOP file halts conductor; MCP cancellation awaits cleanup",
-                "status": "read remains available after STOP; synchronous handler",
-                "stop": "writes STOP under admission lock; synchronous handler",
-                "verify": "read remains available after STOP; synchronous handler"}[command],
+                "status": "read remains available after STOP; cancellation reaps worker",
+                "stop": "writes STOP under admission lock; cancellation reaps worker",
+                "verify": "read remains available after STOP; cancellation reaps worker"}[command],
                "PR #15 live lane")
     for command in ("run", "status", "stop", "verify")
 ) + (
     Capability("dataset.export", ("dataset", "export"), "sentilab_dataset_export", DATASET_INPUT,
                {"type": "object", "required": ["dataset_id", "directory", "schema", "sources",
                                                 "policy", "counts", "sha256"]}, ERROR_CODES,
-               "local operator; independently trusted ledger pins",
-               "MCP cancellation reaps export worker; CLI export is synchronous", "PR #20 dataset lane"),
+               "dataset.export",
+               "export remains available after STOP; cancellation reaps worker", "PR #20 dataset lane"),
     pending("memory.recall", "PR #23 memory lane", "Owner module and transports absent from supplied snapshot"),
     pending("memory.snapshot", "PR #23 memory lane", "Owner module and transports absent from supplied snapshot"),
     pending("evidence.inspect", "PR #23 memory lane", "Owner module and transports absent from supplied snapshot"),
@@ -101,11 +121,12 @@ CAPABILITIES = tuple(
     pending("lab.repair", "PR #19 labs lane", "ReplayLab and Dispatcher exist; transport contract not registered"),
     pending("gb10.preflight-record", "SLAB-043 with SLAB-018 evidence owner", "Committed SLAB-018 evidence absent"),
     pending("gb10.status", "SLAB-043 with SLAB-018 evidence owner", "Committed SLAB-018 evidence absent"),
-    pending("chiplet.build", "SLAB-043; existing controller/app lane", "Wrapper not implemented"),
-    pending("chiplet.render", "SLAB-043; existing controller/app lane", "Wrapper not implemented"),
-    pending("chiplet.replay", "SLAB-043; existing controller/app lane", "Wrapper not implemented"),
-    pending("chiplet.export", "SLAB-043; existing controller/app lane", "Wrapper not implemented"),
-)
+) + tuple(Capability("chiplet." + command, ("chiplet", command), "sentilab_chiplet_" + command,
+                     CHIPLET_INPUTS[command], CHIPLET_OUTPUTS[command], ERROR_CODES,
+                     "chiplet." + command,
+                     "read/fixture operation remains available after STOP; cancellation reaps worker",
+                     "SLAB-043 over existing controller/ledger/browser/dataset lanes")
+          for command in ("build", "render", "replay", "export"))
 
 
 def implemented():
@@ -142,11 +163,21 @@ def coverage_markdown():
     lines = ["# SLAB-043 capability coverage", "",
              "Generated by `python -m sentilab_core.capabilities --coverage`; do not edit the table.", "",
              "`done` records existing CLI/MCP entry points. It does **not** certify the five-check harness.",
-             "Real-process tests cover unknown-input refusal without echoed values and the 64 KiB wire cap",
-             "for every done row. The CLI cap counts UTF-8 argv bytes plus one separator per argument;",
+             "Real-process tests cover exact response bytes, output schemas, invalid input without echoed values,",
+             "host-granted scopes and the 64 KiB wire cap for every done row. The run fixture is already STOPped",
+             "before it starts and records zero solves; it does not prove active-run STOP parity.",
+             "Eight recorded operations also exercise CLI SIGINT / MCP cancellation against real OS workers,",
+             "asserting workers are reaped before acknowledgement and the MCP connection remains usable.",
+             "This is request cancellation, not mid-call creation of a STOP file. That ticket check remains open.",
+             "The CLI cap counts UTF-8 argv bytes plus one separator per argument;",
              "the MCP cap counts frame bytes excluding the newline. Malformed MCP frames fail safely.",
-             "Valid execution, scoped authorization, full schema validation and mid-call STOP remain unproved",
-             "in this snapshot. Pending entries are reserved interfaces with rejecting schemas, not tools.", "",
+             "Pending entries are reserved interfaces with rejecting schemas, not tools.", "",
+             "`SENTILAB_CAPABILITY_SCOPES` is a host-configured JSON array of exact capability names.",
+             "Unset retains the local-operator trust boundary; an empty array denies all calls (-32001).",
+             "Requests cannot grant themselves scopes. Existing AI-off and signer/pin checks still apply.",
+             "CLI-only signer and solver configuration flags remain host options, not MCP arguments.", "",
+             "Chiplet build validates the existing plate fixture; render returns the existing browser view model;",
+             "replay verifies history; export calls the existing immutable dataset exporter. No solves occur.", "",
              "| Capability | CLI | MCP | Status | Owner | Pending reason |",
              "|---|---|---|---|---|---|"]
     for row in CAPABILITIES:

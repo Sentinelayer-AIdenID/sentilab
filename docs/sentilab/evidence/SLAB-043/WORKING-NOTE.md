@@ -1,127 +1,109 @@
 # SLAB-043 working evidence
 
-This is an incomplete implementation by the surrogate executor under recorded
-model substitution. No full conformance, CI-green or PR-publication claim is made.
+This implementation is **incomplete**. No all-gates-green or PR-publication claim
+is made. The work is by a surrogate executor under recorded model substitution.
 
-The supplied source is `d031c8d25fb581f2355fc632fc8c384ba45cf973`, represented by
-the local `base` snapshot commit. The snapshot has live/dataset transports and
-ReplayLab/Dispatcher implementations. It has no `SLAB-018` evidence directory,
-memory module or ResultCheck Python transport. Earlier upstream history and the
-open PR branches are not included, so no rebase or historical fix claim is made.
+The provisioned source is `d031c8d25fb581f2355fc632fc8c384ba45cf973`, represented by
+local snapshot tag `base` (`97b8744`). Earlier upstream history and open PR
+branches are unavailable. The source has no SLAB-018 evidence directory, memory
+module or ResultCheck Python transport; no rebase onto owner PRs is claimed.
 
-## Implemented foundation
+## Current implementation
 
-- One registry for five existing executable CLI/MCP capabilities and fourteen
-  explicitly owned pending interfaces. Pending schemas reject all input.
-- MCP input schemas and CLI namespace/command choices consume the registry.
-- Generated `COVERAGE.md` makes unavailable coverage visible.
-- Three tests exercise the shipped parser grammar, real CLI help, real MCP
-  `tools/list`, pending ownership and coverage freshness. The existing
-  `python -m unittest -q sentilab_core.conformance` CI entry loads these tests.
-- Help and tool discovery defer lane imports until execution. Neither operation
-  needs a signer, a solver, or the scientific Python packages.
+- A registry owns nine executable CLI/MCP capabilities and ten owned pending
+  contracts. CLI choices and MCP schemas consume it. The generated COVERAGE.md
+  lists availability separately from proof; adding a surface without registering
+  it fails the real discovery/parser test.
+- A common schema and host-scope check precedes capability execution. The host
+  may set `SENTILAB_CAPABILITY_SCOPES` to a JSON array of exact capability names.
+  Unset retains the existing local-operator boundary, while an empty array denies
+  every call with -32001. Request arguments cannot grant scopes. AI-off, signer
+  and independent public-pin checks remain in the existing lanes.
+- Both transports retain the shared 64 KiB input boundary and safe error receipts.
+  CLI counts UTF-8 argv bytes plus separators; MCP counts bytes before newline.
+- Chiplet build calls the existing plate design and placement validation. Render
+  returns the existing browser panel model, not a screenshot or a thermal solve.
+  Replay verifies the signed ledger. Export calls the existing immutable dataset
+  exporter. Render/replay/export refuse damaged history.
+- Eight recorded operations run in cancellable process groups with public pins
+  only. CLI SIGINT and MCP cancellation kill/reap the child before responding;
+  the browser render child belongs to that same group. The signer-bearing live
+  conductor remains in its existing async lane. EOF has a one-second bounded
+  response drain before the existing cancellation and cleanup path.
+- The existing MCP/cleanup test drivers now supply the required run_id for verify;
+  their assertions remain intact. Their old omitted argument was inconsistent
+  with the production verify contract.
 
-The registry records current local-operator authorization and current STOP
-behavior honestly. It does not invent scoped authorization that the supplied
-dispatch code does not implement. `done` is capability availability, not proof
-that its five execution checks pass.
+## Current proof
 
-## Proof actually run
+The new ExecutionConformance tests drive real CLI processes and real MCP stdio.
+They check response bytes and declared output schemas, wrong input and bounds,
+unauthorized scopes without side effects, real worker cancellation on both
+surfaces, and refusal of tampered chiplet history. The live.run fixture starts
+with STOP already present and confirms its solve count is zero. Private signing
+material for that fixture exists only in process memory/environment, never files.
 
-Before adding the harness, `python3.12 -m unittest sentilab_core.test_conformance`
-exited 1 with `ModuleNotFoundError` for the missing test module.
+For cancellation, the harness pauses the actual child with SIGSTOP after its
+process group exists, cancels through the transport, checks the child is reaped,
+and pings the still-usable MCP connection. It does not replace shipped handlers.
+**This proves request cancellation, not mid-call STOP-file creation.** Active-run
+STOP parity remains outstanding; existing lane STOP behavior is retained.
 
-After the foundation change, `python3.12 -m unittest -v
-sentilab_core.test_conformance` passed all **3 tests**. Python compilation of the
-changed modules and `git diff --check` also exited 0.
+Observed passing commands (Python 3.12.3; Node v22.23.3). Python suites below use
+`OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1`:
 
-Each mutation below was applied independently to a disposable worktree at
-`368c1cf`, followed by its named test. Every mutation exited 1, and the original
-file was restored in that scratch checkout. No working-tree stash was used.
-
-| Mutation of shipped code/data | Test in `RegistryConformance` | Observed failure |
-|---|---|---|
-| Add `sentilab_unregistered` to MCP `TOOLS` | `test_real_surfaces_match_registry` | Real MCP `tools/list` returns error -32602 |
-| Remove `sentilab_live_status` from `TOOLS` | `test_real_surfaces_match_registry` | MCP capability registry drift |
-| Add an unregistered CLI command choice | `test_real_surfaces_match_registry` | CLI capability registry drift |
-| Empty the pending memory owner | `test_pending_capabilities_are_owned_and_not_advertised` | Empty owner assertion fails |
-| Append a stale coverage row | `test_coverage_document_matches_registry` | Generated document comparison fails |
-
-These are worker mutation results, not independent review or the requested
-mid-call STOP/tampered-GB10 proof. Those execution tests remain outstanding.
-
-## Blocked gates and remaining work
-
-The ticket requires zero network. `python3.12 -m venv .venv` succeeded, but
-`.venv/bin/pip install --no-index -r requirements.txt` exited 1: no local
-distribution of `numpy==2.3.5` was available. No dependency downloads were tried.
-
-The requested gate commands were attempted with the created virtual environment:
-
-| Command | Observed result |
+| Command | Result |
 |---|---|
-| `(cd sundai_controller && ../.venv/bin/python -m unittest -q test_controller.py test_experiment.py)` | Exit 1, two import errors: missing cryptography |
-| `.venv/bin/python -m unittest discover -s sundai_thermal -p 'test_*.py'` | Exit 1, missing numpy |
-| `.venv/bin/python -m unittest -q sentilab_core.conformance` | Exit 1, missing cryptography |
-| `(cd sundai_hotspot && make -j4 SUPERLU=1)` | Exit 2, missing SuperLU header slu_ddefs.h |
+| `.venv/bin/pip install -r requirements.txt` | Exit 0, pinned dependencies installed |
+| `sudo apt-get install -y build-essential libsuperlu-dev libblas-dev` | Exit 0 (after apt-get update) |
+| `make -C sundai_hotspot -j4 SUPERLU=1` | Exit 0; compiled only, no execution |
+| `.venv/bin/python -m unittest -q sentilab_core.test_conformance` | 13 tests pass |
+| `.venv/bin/python -m unittest -q sentilab_core.test_mcp_stdio sentilab_core.test_dataset_mcp sentilab_core.test_cleanup` | 15 tests pass |
+| `(cd sundai_controller && ../.venv/bin/python -m unittest -q test_controller.py test_experiment.py)` | 55 tests pass; nonphysical fixture oracles |
+| `.venv/bin/python -m unittest -q sentilab_core.test_dataset sentilab_core.test_ledger sentilab_core.test_history sentilab_core.test_environment sentilab_core.test_signing sentilab_core.test_budget sentilab_core.test_gate sentilab_core.test_labs` | 71 tests pass; recorded/fixture-only |
+| `PATH="$PWD/.venv/bin:$PATH" node --test web/test/*.test.mjs` | 103 tests pass |
 
-This repository has no npm manifest or TypeScript configuration. Its own Python,
-Node contract/browser and native-build gates apply; no dummy npm gate was added.
-The remaining Node and container gates have not been run. No simulation solve,
-model call, device operation, network request or protected publication was made.
+The five newly added execution tests were extracted unchanged into a disposable
+worktree at pre-feature commit `6f130c6` and run against that checkout's modules.
+All five detect missing behavior. The extraction keeps their real process calls
+and avoids an unrelated import failure for the then-absent chiplet parser.
+Observed: 5 tests, 13 failing subtests, exit 1 on the pre-feature checkout.
 
-To finish: provision offline Python wheels and SuperLU/BLAS development files;
-supply committed SLAB-018 evidence and merged lane updates; implement and prove
-the common five execution checks and missing wrappers over the existing code;
-rerun all applicable gates; then request operator draft-PR review. No deterministic
-ticket step is recorded complete while these requirements remain outstanding.
+One intermediate cancellation run timed out because the test paused a child
+between setsid and exec, holding the subprocess startup handshake open. The
+barrier now checks the actual worker command before pausing it. No production
+assertion or timeout was weakened to fix that test scheduling race.
 
-## Additional transport boundary fix
+Earlier foundation proof: the three registry tests passed; independent scratch
+mutations adding/removing an MCP tool, adding a CLI command, removing a pending
+owner, and changing COVERAGE.md were each detected. Five transport-boundary tests
+failed on pre-boundary `09d458a` (23 failing subtests), then passed with the fix.
+Earlier contract checks passed: hashes, 74 v0.2 vectors, 83 v0.3 vectors, 113 v0.4
+view vectors, 193 v0.5 view vectors, and freshness of 44 demo envelopes.
 
-The real CLI now refuses malformed arguments without echoing rejected input,
-using the same safe error object as MCP. Both entry points enforce a 64 KiB wire
-limit before importing lanes. CLI counts UTF-8 argument bytes plus one separator
-per argument; MCP counts frame bytes excluding the newline. MCP rejects malformed
-JSON, wrong request shapes and unsupported tool arguments safely; framed parse
-errors leave `ping` usable. An oversized or unterminated frame closes the stream
-after a safe error and the existing pending-task cleanup.
+## Remaining prerequisites and checks
 
-Five new tests in `sentilab_core/test_conformance.py` exercise shipped processes,
-without replacing handlers or executing a solver. The table-driven tests check
-unknown-input and oversized-wire rejection for all five available capabilities.
-Additional cases cover malformed frames and the 65,535 / 65,536 / 65,537 byte
-boundaries. This does not certify full schema validation or all five ticket checks.
+1. Supply the committed SLAB-018 evidence and its manifest contract. No fabricated
+   GB10 record or guessed manifest format is substituted. GB10 wrappers remain
+   pending; tampered-GB10 refusal cannot yet be proved.
+2. Supply merged owner transports for memory/ResultCheck and lab hooks. Their
+   reserved rows remain explicitly owned and pending. Do not duplicate the lanes.
+3. Complete the requested mid-call STOP matrix, including an active live.run, while
+   retaining the existing lane semantics and the zero-solves constraint.
+4. Resolve the conflict between zero solves and full thermal/live-conformance/
+   container gates: those suites explicitly execute real solvers. They have not
+   been rerun after dependencies became available. A subset is not a full gate pass.
+5. Run all applicable gates, record checklist completion only when genuinely met,
+   and request operator draft publication through the prescribed review/PR route.
 
-`python3.12 -m unittest -q sentilab_core.test_conformance` passes **8 tests**.
-Copying the five new tests to a disposable worktree at pre-fix `09d458a` and
-running `python3.12 -m unittest -q
-sentilab_core.test_conformance.BoundaryConformance` exits 1 with **23 failing
-subtests** across all five tests. This is worker proof, not independent review.
-Compilation of the five changed Python modules and `git diff --check` pass.
+This Python/Node/native repository has no npm manifest or TypeScript configuration;
+no dummy npm gates were added. The earlier offline dependency failures are
+superseded by the latest explicit instruction to install dependencies. Setup used
+network downloads and the environment probe returned HTTP 200; this work is not
+claimed to be zero-network overall. Capability tests make no model/device calls
+or real solver calls.
 
-Additional gate results actually observed:
-
-| Command (working directory where applicable) | Result |
-|---|---|
-| `sha256sum -c HASHES.txt` (`contracts`) | Exit 0 |
-| `node run-vectors.mjs` (`contracts/contract-0.2`) | Exit 0, 74 checks |
-| `node run-vectors.mjs` (`contracts/contract-0.3`) | Exit 0, 83 checks |
-| `node run-view-vectors.mjs` (`contracts/view-envelope`) | Exit 0, 113 checks |
-| `node run-view-vectors.mjs` (`contracts/view-envelope-v0.5`) | Exit 0, 193 checks |
-| `node --test web/test/sentilab-parity.test.mjs` | Exit 0, 39 tests |
-| `node web/test/make-sentilab-demo.mjs --check` | Exit 0, 44 envelopes current |
-| `node --test web/test/*.test.mjs` | Exit 1, 39 passes / 3 failures; signing fixture imports lack cryptography |
-| `.venv/bin/python -m unittest -q sentilab_core.test_mcp_stdio sentilab_core.test_dataset_mcp` | Exit 1, 7 tests, 6 failures / 1 error; context initialization unavailable |
-
-The original MCP regression suites give the same 6 failures / 1 error on
-pre-fix `09d458a`; their valid calls cannot initialize the lane context in this
-environment. The controller, thermal, live-conformance and HotSpot gate commands
-listed above were run again and fail on the same absent cryptography, numpy and
-SuperLU prerequisites. No gate has been skipped, weakened or declared passing.
-No PR is requested while these gates and the remaining ticket work are incomplete.
-
-Audit correction: an external `curl --max-time 5` probe to `example.com` was
-mistakenly attempted during this turn's environment inspection. The earlier
-zero-network statement describes the earlier work only; it cannot be claimed
-for this turn. No dependencies were downloaded and no solve, model call or device
-operation was performed. Further work remains offline.
+Checkpoint capture was previously refused because the nested repository snapshot
+exceeded the 2 MiB patch cap. Source was not deleted or baseline tags changed to
+bypass that guard. `/workspace/slab043-foundation.bundle` holds the local commits
+for operator preservation; a local bundle is not a published PR or proof of carry.

@@ -14,9 +14,8 @@ class SafeParser(argparse.ArgumentParser):
 
 
 async def dispatch(command, context, **arguments):
-    from sentilab_core import operations
-    operation = getattr(operations, command)
-    result = operation(context, **arguments)
+    from sentilab_mcp import TOOLS
+    result = TOOLS["sentilab_live_" + command](context, **arguments)
     return await result if hasattr(result, "__await__") else result
 
 
@@ -32,11 +31,44 @@ def dataset_parser():
 def dataset_main():
     args = dataset_parser().parse_args(sys.argv[2:])
     from sentilab_core import operations
-    from sentilab_core.dataset import export
-    context = operations.environment_context()
     policy = json.loads(Path(args.policy).read_text()) if args.policy else None
-    result = export(context.root, args.run_ids, public_keys=context.public_keys,
-                    output_dir=args.output_dir, policy=policy)
+    parameters = {"run_ids": args.run_ids}
+    if args.output_dir is not None:
+        parameters["output_dir"] = args.output_dir
+    if policy is not None:
+        parameters["policy"] = policy
+    from sentilab_core.execution import admit
+    from sentilab_mcp import sentilab_dataset_export
+    admit("sentilab_dataset_export", parameters)
+    context = operations.environment_context()
+    result = asyncio.run(sentilab_dataset_export(context, **parameters))
+    print(json.dumps(result, allow_nan=False))
+
+
+def chiplet_parser():
+    parser = SafeParser(prog="sentilab chiplet")
+    parser.add_argument("command", choices=cli_commands("chiplet"))
+    parser.add_argument("--run-id")
+    parser.add_argument("--fixture")
+    parser.add_argument("--positions", type=json.loads)
+    parser.add_argument("--cursor", type=int)
+    parser.add_argument("--output-dir")
+    parser.add_argument("--policy", help="JSON file with heldout_families and run rights grants")
+    return parser
+
+
+def chiplet_main():
+    args = vars(chiplet_parser().parse_args(sys.argv[2:]))
+    command = args.pop("command")
+    arguments = {key: value for key, value in args.items() if value is not None}
+    if "policy" in arguments:
+        arguments["policy"] = json.loads(Path(arguments["policy"]).read_text())
+    from sentilab_core.execution import admit
+    from sentilab_core.operations import environment_context
+    from sentilab_mcp import TOOLS
+    tool = "sentilab_chiplet_" + command
+    admit(tool, arguments)
+    result = asyncio.run(TOOLS[tool](environment_context(), **arguments))
     print(json.dumps(result, allow_nan=False))
 
 
@@ -66,20 +98,24 @@ def _main(conductor=False):
     check_cli_size(sys.argv[1:])
     if not conductor and sys.argv[1:2] == ["dataset"]:
         return dataset_main()
+    if not conductor and sys.argv[1:2] == ["chiplet"]:
+        return chiplet_main()
     parser = build_parser(conductor)
     args = parser.parse_args()
     from sentilab_core import operations
     from sentilab_core.budget import Limits
     command = "run" if conductor else args.command
+    parameters = {"ai_off": args.ai_off}
+    if command in ("run", "status", "verify") and args.run_id is not None:
+        parameters["run_id"] = args.run_id
+    if command == "run":
+        parameters.update(duration=args.duration, interval=args.interval, renew=args.renew)
+    from sentilab_core.execution import admit
+    admit("sentilab_live_" + command, parameters)
     context = operations.environment_context(ephemeral=args.ephemeral)
     context.options = {"fixture": args.fixture, "margin": args.margin, "grid": args.grid,
                        "deadline": args.deadline,
                        "limits": Limits(evals_per_hour=args.max_evals_per_hour, evals_per_run=args.max_evals_per_run)}
-    parameters = {"ai_off": args.ai_off}
-    if command in ("run", "status", "verify"):
-        parameters["run_id"] = args.run_id
-    if command == "run":
-        parameters.update(duration=args.duration, interval=args.interval, renew=args.renew)
     result = asyncio.run(dispatch(command, context, **parameters))
     if args.export:
         if command != "verify" or not result["ok"]:
@@ -95,6 +131,12 @@ def _main(conductor=False):
 def main(conductor=False):
     try:
         return _main(conductor)
+    except PermissionError:
+        print(json.dumps(error_receipt(-32001, "capability scope refused")))
+        raise SystemExit(2) from None
+    except KeyboardInterrupt:
+        print(json.dumps(error_receipt(-32800, "request cancelled")))
+        raise SystemExit(130) from None
     except (ValueError, TypeError, KeyError, OSError) as exc:
         print(json.dumps(error_receipt(message=type(exc).__name__)))
         raise SystemExit(2) from None
