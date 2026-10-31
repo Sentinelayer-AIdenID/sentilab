@@ -1,8 +1,10 @@
-"""Stdio MCP host for live, ResultCheck, datasets, research, memory and advisory operations."""
+"""Stdio MCP host for live, ResultCheck, datasets, research, memory and chiplet operations."""
 import asyncio
 import json
 import sys
 
+from sentilab_core.capabilities import for_tool
+from sentilab_core.transport import MAX_INPUT_BYTES, error_receipt, parse_request
 from . import TOOLS
 
 
@@ -20,61 +22,23 @@ class LazyLiveContext:
 
 
 def schema(name):
-    if name in ("sentilab_memory_recall", "sentilab_memory_audit"):
-        fields = {key: {"type": "string", "minLength": 1} for key in ("tenant", "run", "arm", "family")}
-        fields["seed"] = {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
-        properties = {"scope": {"type": "object", "properties": fields,
-                                "required": list(fields), "additionalProperties": False}}
-        if name == "sentilab_memory_recall":
-            properties["query"] = {"type": "string", "default": ""}
-        return {"type": "object", "properties": properties, "required": ["scope"], "additionalProperties": False}
-    if name == "sentilab_route":
-        return {"type": "object", "properties": {
-            "task": {"type": "object", "properties": {"candidate": {"type": "string"},
-                     "score": {"type": "number", "minimum": 0, "maximum": 1}},
-                     "required": ["candidate", "score"], "additionalProperties": False},
-            "calibrate": {"type": "boolean", "default": False}},
-            "oneOf": [{"required": ["task"], "properties": {"calibrate": {"const": False}}},
-                      {"required": ["calibrate"], "properties": {"calibrate": {"const": True}},
-                       "not": {"required": ["task"]}}], "additionalProperties": False}
-    if name == "sentilab_resultcheck":
-        return {"type": "object", "properties": {"file": {"type": "string"}},
-                "required": ["file"], "additionalProperties": False}
-    if name.startswith("sentilab_research_"):
-        from sentilab_core.research import MAX_QUESTION_BYTES
-        names = {key: {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"}
-                 for key in ("run_id", "arm", "family", "lab")}
-        names["seed"] = {"type": "integer", "minimum": 0, "maximum": 2147483647}
-        properties = {"ai_off": {"const": True, "type": "boolean"}, "namespace": {
-            "type": "object", "properties": names, "required": list(names), "additionalProperties": False}}
-        field = "question" if name == "sentilab_research_request" else "request_id"
-        properties[field] = ({"type": "string", "minLength": 1, "maxLength": MAX_QUESTION_BYTES}
-                             if field == "question" else {"type": "string", "pattern": "^[0-9a-f]{64}$"})
-        return {"type": "object", "properties": properties,
-                "required": ["ai_off", "namespace", field], "additionalProperties": False}
-    if name == "sentilab_dataset_export":
-        return {"type": "object", "properties": {
-            "run_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-            "output_dir": {"type": "string"},
-            "policy": {"type": "object", "properties": {
-                "heldout_families": {"type": "array", "items": {"type": "string"}},
-                "rights": {"type": "object", "additionalProperties": {
-                    "type": "object", "properties": {
-                        "status": {"enum": ["ok", "blocked"]}, "reason": {"type": "string", "minLength": 1}},
-                    "required": ["status", "reason"], "additionalProperties": False}}},
-                "additionalProperties": False}},
-            "required": ["run_ids"], "additionalProperties": False}
-    properties = {"ai_off": {"type": "boolean", "const": True}}
-    required = ["ai_off"]
-    if name != "sentilab_live_stop":
-        properties["run_id"] = {"type": "string"}
-    if name == "sentilab_live_verify":
-        required.append("run_id")
-    if name == "sentilab_live_run":
-        properties.update(duration={"type": "number", "minimum": 0, "maximum": 86400},
-                          interval={"type": "number", "minimum": 0, "maximum": 3600},
-                          renew={"type": "boolean"})
-    return {"type": "object", "properties": properties, "required": required, "additionalProperties": False}
+    try:
+        return for_tool(name).input_schema
+    except StopIteration:
+        raise ValueError("unregistered MCP tool") from None
+
+
+def call_arguments(request):
+    params = request.get("params")
+    if not isinstance(params, dict):
+        raise ValueError("invalid tool parameters")
+    name, arguments = params.get("name"), params.get("arguments", {})
+    if (not isinstance(name, str) or name not in TOOLS or not isinstance(arguments, dict)
+            or set(arguments) - set(schema(name)["properties"])):
+        raise ValueError("invalid operation")
+    from sentilab_core.execution import admit
+    admit(name, arguments)
+    return name, arguments
 
 
 async def handle(request, context):
@@ -83,15 +47,12 @@ async def handle(request, context):
         return {"protocolVersion": "2024-11-05", "capabilities": {"tools": {}},
                 "serverInfo": {"name": "sentilab-live", "version": "0.1"}}
     if method == "tools/list":
-        return {"tools": [{"name": name, "description": ("Check local ResultCheck v2 file consistency and arithmetic"
-                                           if name == "sentilab_resultcheck" else
-                                           "Export recorded verifier datasets" if name == "sentilab_dataset_export" else
-                                           "Untrusted research evidence " + name.rsplit("_", 1)[-1]
-                                           if name.startswith("sentilab_research_") else
-                                           "Local deterministic " + name),
+        return {"tools": [{"name": name, "description": for_tool(name).name,
                            "inputSchema": schema(name)} for name in TOOLS]}
     if method == "tools/call":
-        params = request["params"]
+        params = request.get("params")
+        if not isinstance(params, dict) or not isinstance(params.get("name"), str):
+            raise ValueError("invalid tool parameters")
         name, arguments = params["name"], params.get("arguments", {})
         if name in TOOLS and name.startswith("sentilab_research_"):
             from sentilab_core.research import dumps
@@ -103,7 +64,8 @@ async def handle(request, context):
             result = (TOOLS[name](context, **arguments) if type(arguments) is dict else
                       {"ok": False, "error": {"code": "invalid_input"}})
             return {"content": [{"type": "text", "text": dumps(result)}], "isError": not result["ok"]}
-        if name not in TOOLS or not isinstance(arguments, dict) or set(arguments) - set(schema(name)["properties"]):
+        if (name not in TOOLS or not isinstance(arguments, dict)
+                or set(arguments) - set(schema(name)["properties"])):
             raise ValueError("invalid live operation")
         if name == "sentilab_resultcheck":
             from sentilab_core.resultcheck import canonical
@@ -116,6 +78,7 @@ async def handle(request, context):
                         "isError": True}
             return {"content": [{"type": "text", "text": canonical(receipt)}],
                     "isError": receipt["status"] == "rejected"}
+        name, arguments = call_arguments(request)
         if isinstance(context, LazyLiveContext):
             context = context.get()
         if context is None:
@@ -133,13 +96,13 @@ async def handle(request, context):
 async def serve(context=None):
     if context is None:
         context = LazyLiveContext()
-    reader = asyncio.StreamReader(limit=65538)
+    reader = asyncio.StreamReader(limit=MAX_INPUT_BYTES + 2)
     transport, _ = await asyncio.get_running_loop().connect_read_pipe(
         lambda: asyncio.StreamReaderProtocol(reader), sys.stdin.buffer)
     pending = {}
 
     def error(id, code, message):
-        return {"jsonrpc": "2.0", "id": id, "error": {"code": code, "message": message}}
+        return {"jsonrpc": "2.0", "id": id, **error_receipt(code, message)}
 
     async def dispatch(request):
         try:
@@ -147,6 +110,8 @@ async def serve(context=None):
             response = {"jsonrpc": "2.0", "id": request["id"], "result": result}
         except asyncio.CancelledError:
             response = error(request["id"], -32800, "request cancelled")
+        except PermissionError:
+            response = error(request["id"], -32001, "capability scope refused")
         except (ValueError, TypeError, KeyError, OSError) as exc:
             response = error(request["id"], -32602, type(exc).__name__)
         except Exception:
@@ -160,19 +125,37 @@ async def serve(context=None):
             transport.close()
 
     try:
-        while raw := await reader.readline():
-            if len(raw) > 65537 or not raw.endswith(b"\n"):
-                raise ValueError("MCP request exceeds 64 KiB")
-            request = json.loads(raw)
+        while True:
+            try:
+                raw = await reader.readline()
+            except ValueError:
+                print(json.dumps(error(None, -32602, "ValueError")), flush=True)
+                break
+            if not raw:
+                # A CLI pipeline closes stdin immediately after its request.
+                # Give finite reads a bounded drain window, then use the same
+                # cancellation/cleanup path for blocked work and disconnects.
+                if pending:
+                    await asyncio.wait(list(pending.values()), timeout=1)
+                break
+            if len(raw) > MAX_INPUT_BYTES + 1 or not raw.endswith(b"\n"):
+                print(json.dumps(error(None, -32602, "ValueError")), flush=True)
+                break
+            try:
+                request = parse_request(raw)
+            except ValueError:
+                print(json.dumps(error(None, -32602, "ValueError")), flush=True)
+                continue
             if "id" not in request:
                 if request.get("method") == "notifications/cancelled":
-                    task = pending.get(request.get("params", {}).get("requestId"))
+                    request_id = request.get("params", {}).get("requestId")
+                    if type(request_id) not in (str, int):
+                        continue
+                    task = pending.get(request_id)
                     if task is not None and not task.cancelling():
                         task.cancel()
                 continue
             id = request["id"]
-            if type(id) not in (str, int):
-                raise ValueError("invalid request id")
             if id in pending or len(pending) >= 8:
                 print(json.dumps(error(id, -32000, "request already active or server busy")), flush=True)
                 continue
