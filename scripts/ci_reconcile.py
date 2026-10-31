@@ -6,8 +6,8 @@ An absent/unreadable measurement remains unknown and charges the full reservatio
 """
 import json
 import os
-from pathlib import Path
 import sys
+from pathlib import Path
 
 from scripts.ci_admit import GitHubRefs
 from scripts.ci_allocation import CPU_CAP, LAUNCH_CAP
@@ -57,7 +57,7 @@ def main():
             witness.update(measurement='no durable admission; workload forbidden',
                            cpu_seconds=0, executions_started=0,
                            charged_cpu_seconds=0, charged_launches=0)
-    except (OSError, RuntimeError, ValueError, KeyError):
+    except (OSError, RuntimeError, ValueError, TypeError, KeyError):
         # This witness does not unlock further admission and cannot replenish slots.
         pass
     directory.mkdir(parents=True, exist_ok=True)

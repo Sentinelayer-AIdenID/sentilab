@@ -5,17 +5,23 @@ Requires a writable host cgroup-v2 root and cgroup.kill. No CPU fallback exists.
 The Docker daemon uses cgroupfs and this same parent explicitly, because ancestry
 of the docker CLI alone does not include BuildKit or runtime containers.
 """
-from dataclasses import asdict
 import json
 import os
-from pathlib import Path
 import resource
 import signal
 import subprocess
 import sys
 import time
+from pathlib import Path
 
-from scripts.ci_allocation import CPUAccount, CPU_CAP, EXPIRY, Identity, Ledger, read_cpu
+from scripts.ci_allocation import (
+    CPU_CAP,
+    EXPIRY,
+    CPUAccount,
+    Identity,
+    Ledger,
+    read_cpu,
+)
 from scripts.ci_hotspot_gate import serve
 
 
@@ -61,13 +67,15 @@ def export(ledger, directory):
     temporary.replace(target)
 
 
-def monitor(group, process, account, *, cancelled, cpu=read_cpu,
-            own_cpu=supervisor_cpu, clock=time.monotonic, sleep=time.sleep):
+def monitor(group, process, account, *, cancelled, violated=lambda: False, cpu=read_cpu,
+            own_cpu=supervisor_cpu, clock=time.monotonic, sleep=time.sleep, wall_clock=time.time):
     """Fake clocks/counters exercise the same loop used around the Docker job."""
     while True:
         if cancelled():
             return 'cancelled', 130
-        if time.time() >= EXPIRY:
+        if violated():
+            return 'launch_violation', 1
+        if wall_clock() >= EXPIRY:
             return 'expired', 1
         if account.observe(cpu(group), own_cpu(), clock()):
             return 'cpu_exhausted', 1
@@ -111,10 +119,10 @@ def run(directory, admission, command):
         # Authentication belongs to admission only, never Docker or child code.
         environment.pop('GH_TOKEN', None)
         environment.pop('GITHUB_TOKEN', None)
-        def enter():
-            (group / 'host' / 'cgroup.procs').write_text(str(os.getpid()))
-        process = subprocess.Popen(command, env=environment, preexec_fn=enter)
-        state, code = monitor(group, process, account, cancelled=lambda: bool(stop))
+        process = subprocess.Popen([sys.executable, '-m', 'scripts.ci_cpu_meter',
+                                    'enter', str(group), *command], env=environment)
+        state, code = monitor(group, process, account, cancelled=lambda: bool(stop),
+                              violated=lambda: bool(ledger.summary()['direct_call_violations']))
     except (OSError, RuntimeError, ValueError, KeyError) as exc:
         print('CI allocation stopped:', str(exc), file=sys.stderr)
         state, code = 'inconclusive', 1
@@ -124,21 +132,30 @@ def run(directory, admission, command):
                 kill_group(group)
                 if process is not None:
                     process.wait(timeout=5)
-                total = read_cpu(group) - baseline + supervisor_cpu() - own
+                if broker is not None:
+                    broker.shutdown()
+                    broker.server_close()
+                    broker = None
+                group_end, own_end = read_cpu(group), supervisor_cpu()
+                if group_end < account.previous[0] or own_end < account.previous[1]:
+                    raise RuntimeError('final CPU counter regressed')
+                total = group_end - baseline + own_end - own
                 final_cpu = {'cpu_seconds': total, 'measurement': 'cgroup-v2 plus supervisor rusage',
-                             'cgroup_cpu_seconds': read_cpu(group) - baseline,
-                             'supervisor_cpu_seconds': supervisor_cpu() - own,
+                             'cgroup_cpu_seconds': group_end - baseline,
+                             'supervisor_cpu_seconds': own_end - own,
                              'charged_cpu_seconds': total, 'stop_reserve_seconds': 30,
                              'cgroup': str(group), 'cpu_max': '100000 100000',
                              'final_populated': False}
                 if total > CPU_CAP:
                     state, code = 'cpu_limit_violated', 1
-            except (OSError, RuntimeError, subprocess.TimeoutExpired, UnboundLocalError) as exc:
+            except (OSError, RuntimeError, ValueError, KeyError, subprocess.TimeoutExpired, UnboundLocalError) as exc:
                 print('CPU settlement inconclusive:', str(exc), file=sys.stderr)
                 state, code = 'inconclusive', 1
         if broker is not None:
             broker.shutdown()
             broker.server_close()
+        if ledger.summary()['direct_call_violations']:
+            state, code = 'launch_violation', 1
         ledger.finish(state, final_cpu)
         export(ledger, directory)
         for sig, handler in old_handlers.items():
@@ -169,6 +186,9 @@ def recover(directory):
 
 def main():
     directory = Path(sys.argv[2]).resolve()
+    if sys.argv[1] == 'enter':
+        (directory / 'host' / 'cgroup.procs').write_text(str(os.getpid()))
+        os.execvpe(sys.argv[3], sys.argv[3:], os.environ)
     if sys.argv[1] == 'recover':
         recover(directory)
         return 0

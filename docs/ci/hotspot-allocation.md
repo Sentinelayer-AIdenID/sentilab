@@ -56,7 +56,9 @@ CI builds HotSpot with `CI_ALLOCATION=1`. Its compiled `ci_entry.h` guard refuse
 entry unless `sundai_hotspot/ci_gate.py` supplies a one-use inherited socket. This
 check survives `cp` and renaming. Changing a filename or setting an environment
 flag alone cannot authorize entry. Both the TAP worker and legacy TAP caller use
-the wrapper. Example scripts that invoke the binary directly will fail in CI.
+the wrapper. Example scripts that invoke the binary directly will fail in CI. A refused direct
+entry also reports a violation to the broker, closing further admission and failing
+the container job even if a caller ignores the nonzero exit.
 
 The wrapper requests a slot from the host broker before spawning. The broker
 locks and fsyncs the shared append-only JSONL journal before responding. It records
@@ -99,7 +101,8 @@ estimate substitutes for the aggregate meter. Cancellation, expiry, missing or
 regressing counters, excessive observation delay and unsupported cgroups cause
 an immediate stop. Wall time diagnoses a late observation; it is never reported
 as consumed CPU. `cgroup.kill` kills the entire subtree, including BuildKit and
-startup processes. The final CPU read follows `cgroup.events: populated 0`.
+startup processes. The final CPU read follows `cgroup.events: populated 0` and broker shutdown;
+artifact serialization/transfer follows outside that boundary.
 
 The stop reserve assumes a functioning Linux scheduler and kill mechanism within
 those bounds. A stalled host or failure to drain is **inconclusive**, never a pass;

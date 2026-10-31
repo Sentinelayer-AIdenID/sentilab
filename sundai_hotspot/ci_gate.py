@@ -7,11 +7,9 @@ import hashlib
 import http.client
 import json
 import os
-from pathlib import Path
-import signal
 import socket
 import subprocess
-import sys
+from pathlib import Path
 
 BROKER_PORT = 47631
 
