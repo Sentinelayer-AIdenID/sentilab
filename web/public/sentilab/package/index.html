@@ -57,6 +57,7 @@
         <header class="mainhead">
           <h2 id="mainTitle">Board</h2>
           <span class="chip" id="mainChip" hidden></span>
+          <span class="tq" id="mainTq" hidden></span>
           <select id="picker" aria-label="Show package"></select>
           <span class="brk"></span>
           <span class="sub" id="mainSub"></span>
@@ -75,12 +76,12 @@
         <div class="chips" id="infoChips"></div>
       </div>
       <div class="block metrics" id="metrics">
-        <div class="j"><small>J</small><span id="infoJ">-</span></div>
+        <div class="j"><small>J</small><span id="infoJ">-</span><span class="tq" id="infoJq" hidden></span></div>
         <div class="w" id="infoW"></div>
         <div class="src" id="infoSrc"></div>
       </div>
       <div class="block legend" id="legend">
-        <div class="lbl">Colour = one value per chiplet <span id="scaleUnit"></span></div>
+        <div class="lbl">Colour = one value per chiplet <span id="scaleUnit"></span> <span class="tq" id="scaleTq" hidden></span></div>
         <div class="scalebar" id="scaleBarBox"><span class="bar" id="scaleBar"></span></div>
         <div class="ticks2" id="scaleTicks"></div>
         <p class="noscale" id="noScale" hidden>No per-chiplet temperatures in the verified data, so chiplets are not coloured. J is the measurement's value, not a chiplet's.</p>

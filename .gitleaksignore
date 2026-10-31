@@ -3,3 +3,9 @@
 # The same false positive, re-added in full by the parentless owner bootstrap commit behind
 # refs/tags/ci-allocation-56314/bootstrap (its tree is main 224fa704's); gitleaks scans tag history too.
 898982800967ee76621112c61a8dfd6764ec9e8d:docs/sentilab/draft-0.5/PLAN.md:generic-api-key:394
+# False positives on root's immutable evidence branch: JSON fields named "key" whose values are
+# identifiers (slab0xx_retained_*), in the 17:54 deck supplement v2 (commit d3576e32).
+d3576e328e0bdb3ca698aa114b408105d092f017:docs/sentilab/deck/supplement-2026-10-31-1754-v2/SUPPLEMENT.json:generic-api-key:1112
+d3576e328e0bdb3ca698aa114b408105d092f017:docs/sentilab/deck/supplement-2026-10-31-1754-v2/SUPPLEMENT.json:generic-api-key:1122
+d3576e328e0bdb3ca698aa114b408105d092f017:docs/sentilab/deck/supplement-2026-10-31-1754-v2/SUPPLEMENT.json:generic-api-key:1128
+d3576e328e0bdb3ca698aa114b408105d092f017:docs/sentilab/deck/supplement-2026-10-31-1754-v2/SUPPLEMENT.json:generic-api-key:1138
