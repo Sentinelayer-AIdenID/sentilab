@@ -13,7 +13,7 @@ Inspected 2026-10-31 on this x86_64 CPU box. No GPU (`nvidia-smi` not installed)
 
 ## Three columns
 
-| Work | CPU box tonight | GB10 once reachable | Not feasible by Sun 18:00Z (2026-11-02T18:00:00Z) |
+| Work | CPU box tonight | GB10 once reachable | Not feasible by Sun 18:00Z (2026-11-01T18:00:00Z) |
 | --- | --- | --- | --- |
 | Read the NVIDIA article, video metadata, licenses | Done in this slice. | No device needed. | Re-watching the video if YouTube keeps blocking the player API and no human records frames. |
 | Smallest honest robot demo | **Passive physics:** load Pollen `scene_walk.xml` at `bae39f59` and step MuJoCo 1,000 times. No policy, no walking gait, no rendering. Command and timing below. | Same CPU demo, plus a *proposed* next demo only after SLAB-004: `uv run isaaclab list_envs --keyword MicroDuck` if Isaac Sim actually installs. Not run. | Isaac Lab training (`--num_envs 4096`), RTX rendering, or a walking policy. No checkpoint is in the inspected repos. |
