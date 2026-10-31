@@ -1,0 +1,180 @@
+#!/usr/bin/env python3
+"""Enclose the entire dedicated Docker job and all daemon-created containers.
+
+Requires a writable host cgroup-v2 root and cgroup.kill. No CPU fallback exists.
+The Docker daemon uses cgroupfs and this same parent explicitly, because ancestry
+of the docker CLI alone does not include BuildKit or runtime containers.
+"""
+from dataclasses import asdict
+import json
+import os
+from pathlib import Path
+import resource
+import signal
+import subprocess
+import sys
+import time
+
+from scripts.ci_allocation import CPUAccount, CPU_CAP, EXPIRY, Identity, Ledger, read_cpu
+from scripts.ci_hotspot_gate import serve
+
+
+def supervisor_cpu():
+    value = resource.getrusage(resource.RUSAGE_SELF)
+    return value.ru_utime + value.ru_stime
+
+
+def populated(group):
+    fields = dict(line.split() for line in (group / 'cgroup.events').read_text().splitlines())
+    return fields['populated'] == '1'
+
+
+def kill_group(group, *, clock=time.monotonic, sleep=time.sleep):
+    (group / 'cgroup.kill').write_text('1')
+    deadline = clock() + 5
+    while populated(group):
+        if clock() >= deadline:
+            raise RuntimeError('cgroup failed to drain within reserved kill overhead')
+        sleep(.01)
+
+
+def create_group(name, root=Path('/sys/fs/cgroup')):
+    if 'cpu' not in (root / 'cgroup.controllers').read_text().split():
+        raise RuntimeError('cgroup v2 CPU controller unavailable')
+    (root / 'cgroup.subtree_control').write_text('+cpu')
+    group = root / name
+    group.mkdir()  # exclusive: never reset a prior group or counter
+    (group / 'cgroup.subtree_control').write_text('+cpu')
+    (group / 'cpu.max').write_text('100000 100000')
+    if not (group / 'cgroup.kill').is_file():
+        raise RuntimeError('cgroup.kill unavailable')
+    # v2's no-internal-process rule: tasks go in a leaf; Docker creates siblings.
+    (group / 'host').mkdir()
+    read_cpu(group)
+    return group
+
+
+def export(ledger, directory):
+    target = directory / 'settlement.json'
+    temporary = directory / 'settlement.tmp'
+    temporary.write_text(json.dumps(ledger.summary(), indent=2) + '\n')
+    temporary.replace(target)
+
+
+def monitor(group, process, account, *, cancelled, cpu=read_cpu,
+            own_cpu=supervisor_cpu, clock=time.monotonic, sleep=time.sleep):
+    """Fake clocks/counters exercise the same loop used around the Docker job."""
+    while True:
+        if cancelled():
+            return 'cancelled', 130
+        if time.time() >= EXPIRY:
+            return 'expired', 1
+        if account.observe(cpu(group), own_cpu(), clock()):
+            return 'cpu_exhausted', 1
+        code = process.poll()
+        if code is not None:
+            return ('success' if code == 0 else 'failure'), code
+        sleep(.05)
+
+
+def run(directory, admission, command):
+    identity = Identity(**admission['identity'])
+    if admission.get('state') != 'admitted' or identity.attempt != '1':
+        raise RuntimeError('no valid admission')
+    if (admission.get('launch_reservation') != 100
+            or admission.get('cpu_reservation_seconds') != CPU_CAP
+            or admission.get('allocation_id') != '56314'
+            or not 1 <= admission.get('slot', 0) <= 200):
+        raise RuntimeError('invalid admission bounds')
+    ledger = Ledger(directory / 'events.jsonl', identity)
+    # Reentry refuses even if the first process crashed before any solver launch.
+    if (directory / 'meter-started').exists():
+        raise RuntimeError('meter already started; refusing budget reset')
+    (directory / 'meter-started').touch(exist_ok=False)
+    export(ledger, directory)
+    group, broker, process = None, None, None
+    state, code = 'inconclusive', 1
+    final_cpu = {'cpu_seconds': None, 'measurement': 'unavailable',
+                 'charged_cpu_seconds': CPU_CAP}
+    stop = []
+    old_handlers = {sig: signal.signal(sig, lambda *_: stop.append(True))
+                    for sig in (signal.SIGINT, signal.SIGTERM)}
+    try:
+        if time.time() >= EXPIRY:
+            raise RuntimeError('allocation expired before workload start')
+        group = create_group('ci-allocation-' + identity.run_id)
+        baseline, own = read_cpu(group), supervisor_cpu()
+        account = CPUAccount(baseline, own, time.monotonic())
+        broker = serve(ledger)
+        environment = dict(os.environ, CI_ALLOCATION='1', CI_CGROUP=str(group),
+                           CI_RUN_ID=identity.run_id, BUILD_SHA=identity.build_sha)
+        # Authentication belongs to admission only, never Docker or child code.
+        environment.pop('GH_TOKEN', None)
+        environment.pop('GITHUB_TOKEN', None)
+        def enter():
+            (group / 'host' / 'cgroup.procs').write_text(str(os.getpid()))
+        process = subprocess.Popen(command, env=environment, preexec_fn=enter)
+        state, code = monitor(group, process, account, cancelled=lambda: bool(stop))
+    except (OSError, RuntimeError, ValueError, KeyError) as exc:
+        print('CI allocation stopped:', str(exc), file=sys.stderr)
+        state, code = 'inconclusive', 1
+    finally:
+        if group is not None:
+            try:
+                kill_group(group)
+                if process is not None:
+                    process.wait(timeout=5)
+                total = read_cpu(group) - baseline + supervisor_cpu() - own
+                final_cpu = {'cpu_seconds': total, 'measurement': 'cgroup-v2 plus supervisor rusage',
+                             'cgroup_cpu_seconds': read_cpu(group) - baseline,
+                             'supervisor_cpu_seconds': supervisor_cpu() - own,
+                             'charged_cpu_seconds': total, 'stop_reserve_seconds': 30,
+                             'cgroup': str(group), 'cpu_max': '100000 100000',
+                             'final_populated': False}
+                if total > CPU_CAP:
+                    state, code = 'cpu_limit_violated', 1
+            except (OSError, RuntimeError, subprocess.TimeoutExpired, UnboundLocalError) as exc:
+                print('CPU settlement inconclusive:', str(exc), file=sys.stderr)
+                state, code = 'inconclusive', 1
+        if broker is not None:
+            broker.shutdown()
+            broker.server_close()
+        ledger.finish(state, final_cpu)
+        export(ledger, directory)
+        for sig, handler in old_handlers.items():
+            signal.signal(sig, handler)
+    print(json.dumps({'state': state, 'launches': ledger.summary()['launches_reserved'], 'cpu': final_cpu}))
+    return code
+
+
+def recover(directory):
+    """Actions always() fallback after supervisor kill; never fabricates a sample."""
+    admission = json.loads((directory / 'admission.json').read_text())
+    if admission.get('state') != 'admitted':
+        return
+    ledger = Ledger(directory / 'events.jsonl', Identity(**admission['identity']))
+    if ledger.summary()['state'] != 'in_progress':
+        export(ledger, directory)
+        return
+    group = Path('/sys/fs/cgroup/ci-allocation-' + admission['identity']['run_id'])
+    sample = None
+    if group.exists():
+        kill_group(group)
+        sample = read_cpu(group)
+    ledger.finish('interrupted', {'cpu_seconds': None, 'last_cgroup_cpu_seconds': sample,
+                                  'measurement': 'supervisor lost; total unknown',
+                                  'charged_cpu_seconds': CPU_CAP})
+    export(ledger, directory)
+
+
+def main():
+    directory = Path(sys.argv[2]).resolve()
+    if sys.argv[1] == 'recover':
+        recover(directory)
+        return 0
+    admission = json.loads((directory / 'admission.json').read_text())
+    return run(directory, admission, sys.argv[3:])
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

@@ -207,6 +207,11 @@ lib: 	hotspot hotfloorplan
 	$(AR) libhotspot.$(LEXT) $(OBJ)
 	$(RANLIB) libhotspot.$(LEXT)
 
+# Rebuild the tiny entry object when switching CI allocation mode.
+.PHONY: force-ci-entry
+force-ci-entry:
+hotspot.$(OEXT): ci_entry.h force-ci-entry
+
 #pull in dependency info for existing .o files
 -include $(OBJ:.o=.d)
 

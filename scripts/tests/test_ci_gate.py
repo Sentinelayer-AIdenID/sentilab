@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
 
     def launch(self, *args, **kwargs):
         return ci_gate.run_reserved([str(self.binary), *args], reserve=self.ledger.reserve,
-                                    settle=self.ledger.settle, stdout=subprocess.PIPE,
+                                    settle=self.ledger.settle, started=self.ledger.started, stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE, **kwargs)
 
     def test_actual_entry_success_failure_kill_timeout_and_retry(self):
@@ -63,6 +63,7 @@ int main(int argc, char **argv) {
         settled = [row['state'] for row in self.ledger.events() if row['event'] == 'settled']
         self.assertEqual(settled, ['success', 'failure', 'killed', 'timeout', 'success'])
         self.assertEqual(self.ledger.summary()['launches_reserved'], 5)
+        self.assertEqual(self.ledger.summary()['executions_started'], 5)
 
     def test_direct_copied_binary_and_environment_flag_cannot_enter(self):
         copy = Path(self.directory.name) / 'renamed'
@@ -84,7 +85,7 @@ int main(int argc, char **argv) {
         bad = Path(self.directory.name) / 'not-executable'
         bad.write_text('fake')
         with self.assertRaises(PermissionError):
-            ci_gate.run_reserved([str(bad)], reserve=other.reserve, settle=other.settle)
+            ci_gate.run_reserved([str(bad)], reserve=other.reserve, settle=other.settle, started=other.started)
         self.assertEqual(other.events()[-1]['state'], 'launch_error')
 
     def test_real_http_broker_routes_ci_wrapper_and_refuses_after_close(self):

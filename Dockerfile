@@ -12,7 +12,9 @@ COPY requirements.txt requirements-service.txt ./
 RUN pip install --no-cache-dir -r requirements.txt -r requirements-service.txt
 
 COPY . .
-RUN cd sundai_hotspot && make -j4 SUPERLU=1 \
+ARG CI_ALLOCATION=0
+ENV CI_ALLOCATION=${CI_ALLOCATION}
+RUN cd sundai_hotspot && make -j4 SUPERLU=1 CI_ALLOCATION=${CI_ALLOCATION} \
  && mkdir -p /licenses \
  && cp /app/sundai_hotspot/LICENSE /licenses/HotSpot-LICENSE \
  && cp /app/sundai_tap/LICENSE /licenses/TAP-2.5D-LICENSE \
