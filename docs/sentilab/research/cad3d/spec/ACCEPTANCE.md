@@ -271,8 +271,12 @@ the texture updater is never called (spy) and the previous texture bytes are unc
 A layer table that passes the layer-identity gate but differs from the model manifest is accepted and listed in
 `stack_differs_from_manifest`; a malformed or ambiguous one is refused above and never listed as a difference (C3). A
 `null` unit, shape, producer, layer set, candidate or problem is not a refusal: the field is unassociated (AC-41 (h)).
-The orientation pair (one hot cell at row 0 / column 0 declared `row0: "top"` vs `"bottom"`) renders at the upper-left
-vs lower-left (L3:ACCEPTANCE A-04). Pass: every row, plus the pair.
+The orientation case uses an asymmetric basis, so that a swapped or flipped mapping cannot pass (A#57218): rows
+unequal to columns, a non-square extent, and one marked cell off both diagonals and away from every corner. Declared
+`row0: "top"`, the cell renders, and `cellAt()` picks it, at its expected centre; declared `row0: "bottom"`, at the
+vertically mirrored centre; a transposed (rows for columns), flipped or corner-for-centre mapping lands elsewhere and
+fails; a row index equal to `rows` is out of range (L3:ACCEPTANCE A-04, made asymmetric). Pass: every row, plus the
+orientation case.
 
 **AC-22 The field is the solver's grid on the solver's layer, on one declared scale** (node, browser). `colourLut()` is
 built only from `heatColor()` and stays within 1/255 of it over 200,000 temperatures on scales 10, 80 and 400 wide;
@@ -294,7 +298,11 @@ next poll throws (transport). Within that poll: mode `STALE · transport`, solve
 transport)`, never `solving`; the last verified values stay, labelled, with their `as of seq`. After recovery and K
 growth: `LIVE · progress N s ago`, and `solving` again only if the verified lifecycle still says so. No growth for 60 s
 after catch-up: STALE. Catching up a long backlog never shows LIVE. A doorbell (if built) firing repeatedly with no new
-rows never makes the mode LIVE. Pass: the reference trace.
+rows never makes the mode LIVE. Terminal states (A#57218): with the run listed `finished` the chip reads `ENDED · run
+finished`, a candidate still `simulation_pending` reads `no result (run ended)` and never `solving`, and a passing
+transport failure stays ENDED; a frozen board (`STALE · chain broken`) and the terminal paging states (`stream
+replaced`, `row too large`, `paging unsupported`) keep their labels over ENDED, stop polling and never show `solving`
+(main:contracts/view-envelope-v0.6.2/VIEW-ENVELOPE.md:110, :120-123). Pass: the reference trace.
 
 **AC-25 A shrinking prefix takes fields with it** (node, browser). A late signed conflict drops K: within that poll the
 mode is `STALE · chain broken`, fields named after the new K leave the GPU and the cache, in-flight fetches for them
@@ -302,8 +310,12 @@ abort (spy), and `__package3d.facts().fieldAsOf <= K` (L3:ACCEPTANCE A-06). Pass
 
 **AC-26 Real time means completed, signed results only** (node). Every shown value has an `as_of_seq` within the
 verified prefix; the simulated-time line reads `Steady state · no simulated time axis`; pages, keepalives, duplicate
-rows and backlog never change `as_of_seq` or count as a new result; a new verified result is announced once in the live
-region; a field change is a single cut (no intermediate blended frame in a frame-by-frame capture). Pass: all.
+rows and backlog never change `as_of_seq` or count as a new result; a new verified result is announced once in the
+live region; a field change is a single cut (no intermediate blended frame in a frame-by-frame capture). Late results
+(A#57218): a field fetch that completes after its result left the prefix, after a mode switch or after the playhead
+moved to another result is discarded by hash and never drawn; a verified result that arrives after the run is listed
+`finished` is shown with its own `as of seq S` and announced once while the label stays ENDED; a result behind the
+playhead says `behind`; nothing is ordered as newest by arrival time. Pass: all.
 
 ## Site rules
 
@@ -390,7 +402,11 @@ tree, detail panel, legend with its label state and notice appear; zero errors. 
 mid-session: the fallback appears within one frame with the selection and playhead kept, and GL object counts drop to
 zero; `restoreContext()`: the 3D view returns with the same model, explode amount, section and field, with no refetch
 (network log) and no re-verification (counter). An insecure origin: Results draws nothing with the Package view's
-sentence; Anatomy and Model draw with the `file check unavailable` chip (D14). Pass: all.
+sentence; Anatomy and Model draw with the `file check unavailable` chip (D14). Cleanup over 100 switches (A#57218):
+100 consecutive mode switches (Anatomy, Model, Results with a field shown and an explode in each) return, after
+every switch, the GL object count, in-flight fetches (abort spy), event listeners and timers to their baseline
+(`__package3d.facts()`), leave one live RenderModel and no duplicate live-region entries, and keep the JS heap after
+the 100th switch within 5% of its value after the first (forced garbage collection in the test browser). Pass: all.
 
 ## Agent twin
 
@@ -450,3 +466,54 @@ but declares `null` for its `candidate_hash` or `problem_hash`, its `unit` (or t
 its producer's `native_format` or `executable`, or its `emitted_layer_ids` → `unassociated` with `candidate_unbound`,
 `problem_unbound`, `unit_unbound`, `grid_shape_unbound`, `producer_unbound` or `producer_layer_unbound` (C#57177,
 C1-C4): never drawn, never exported as numbers. Pass: all (SPEC.md §5.6, §5.7).
+
+**AC-42 Paused presentation during ingestion** (node, browser; W-E12). Results on a live fixture feed and on a long
+replay load: Pause holds the drawn values, the field and the playhead at seq S while rows keep arriving and verifying
+(K grows; the mode chip still follows `source.mjs` exactly as in AC-23); the chip reads `paused · N new verified
+results`, where N counts verified results after S (pages, keepalives, duplicate rows and backlog never change N, as
+in AC-26); nothing new is drawn or announced while paused; Resume (the button or `P`) moves to the newest verified
+state and announces once. Adversarial: 1,000 keepalive pages while paused → N unchanged; Resume twice → one
+announcement; a late conflict that drops K below S while paused → the view drops to K at once (`STALE · chain
+broken`, AC-25) and N recounts; a field verified while paused is not drawn until Resume; with reduced motion, Resume
+jumps without animation. Pass: all (SPEC.md §4.5; A#57218).
+
+**AC-43 Nested rotated and mirrored transforms** (node, browser; W-C04; gated on W16). Only for authored CAD
+geometry: with a fixture of nested occurrences (an instance inside a parent rotated 90° about z, inside an assembly
+mirrored in x), the composed world transforms equal the expected matrices; mirrored (negative-determinant)
+occurrences flip triangle winding so faces stay outward (normals point out, and back-face culling shows the outside);
+per-instance boxes in the assembled frame match the primitive model within 1 µm (AC-38); `pick()` at known screen
+points returns the right instance id through the nested rotated and mirrored occurrences, before and after explode;
+the GLB node hierarchy and `extras.instance_id` round-trip. The first, original-primitive page has no nested
+transforms (every box is axis-aligned in assembled coordinates), so this criterion does not block it. Pass: all,
+before W16 merges (A#57218).
+
+**AC-44 MCP conformance, when the MCP half exists** (node; owner per D9). The room's MCP tools call the same code
+path as `scripts/package3d.mjs export3d` and add no validation of their own: for a valid replay, a broken prefix and
+a replay with refused values, each tool returns twin JSON and markdown byte-identical to the CLI's, the same refusal
+codes, and outcomes that map one-to-one onto the CLI's exit codes (0, 1, 2, 3); a tool can neither fetch nor start
+anything the CLI cannot (no solver, no write route: AC-31); tool descriptions carry the banners, the label rule and
+"Simulated, not silicon" verbatim; every temperature in a tool result keeps its serialized label, resolved as AC-06
+requires. Not required for the first page; required before any MCP tool for the room ships. Pass: all
+(main:scripts/sentilab-scene.mjs:6-7; A#57059; A#57218).
+
+## Crosswalk to astra's 41 source cases (W0.2)
+
+astra's input binding holds 41 source cases: 30 web cases (7 conversion, 8 interface, 15 evidence and streaming) and
+11 anatomy cases (A#57059). Root's crosswalk of the v0.1 draft preserves every one of them: 10 direct, 29 partial and
+2 missing, with zero executed (A#57218; the case-level table is retained by root with her review, sha256
+`a8c13fee…`, seal `dffaec2f…`: TRACE.md section 1). This version changes the ACs as root asked:
+
+| Case or family (root's id) | Root's request (A#57218) | This version | ACs |
+|---|---|---|---|
+| W-E12 | Add paused presentation during ingestion, with a pending count and an explicit resume | Added (SPEC.md §4.5) | AC-42 |
+| W-C04 | Retain nested rotated and mirrored transform, winding and picking coverage for later W16 | Kept, gated on W16; it does not block the first original-primitive page | AC-43 |
+| Terminal and late results | Tighten | ENDED, the terminal transport states, candidates still pending when the run ends, late fetches and late results (SPEC.md §4.5) | AC-24, AC-26 |
+| 100-switch cleanup | Tighten | 100 consecutive mode switches return GL objects, fetches, listeners, timers, models and heap to their baseline | AC-35 |
+| Asymmetric field basis | Tighten | The orientation case uses rows unequal to columns, a non-square extent and a cell off both diagonals, so a swap or a flip cannot pass | AC-21 |
+| Eventual MCP | Tighten | MCP conformance to the CLI, with an explicit owner (D9) | AC-44 |
+
+**Traceability.** Every AC id of v0.1 (AC-01 to AC-40) keeps its number and meaning: criteria were tightened, never
+removed or renumbered, so every case root's crosswalk maps to them still resolves. New criteria are appended (AC-41
+onward). The case-level table (41 rows: case id, ACs, and direct, partial or missing) is root's; W0.2 commits it next
+to this file, and its exit check is that no row is missing. Deferred CAD cases do not block the first
+original-primitive page.

@@ -6,7 +6,7 @@ deployed or agreed.** After all three sign the exact document, warden
 provisions one build agent (the "Astra ultra box") that implements it phase by phase (section 9).
 
 Companions in this folder: `PSEUDOCODE.md` (modules and signatures, with integration points), `ACCEPTANCE.md`
-(testable criteria, AC-01 to AC-41), `TRACE.md` (every requirement mapped to its source, input hashes, and the line
+(testable criteria, AC-01 to AC-44), `TRACE.md` (every requirement mapped to its source, input hashes, and the line
 moves since lane 3 was written).
 
 ## 0. How to read this
@@ -59,6 +59,10 @@ moves since lane 3 was written).
     draft, with both options' scope (6.10) and the measurement plan (6.11); D4's phone numbers are measured targets,
     not limits. Carter's product gate is approving the rendered page from screenshots before any deploy (section 11;
     AC-03, AC-09, AC-29, AC-34).
+  - Crosswalk (A#57218): root's 41-case crosswalk maps v0.1 as 10 direct, 29 partial and 2 missing; W-E12 is added
+    (paused presentation, AC-42), W-C04 kept for W16 (AC-43), and the terminal and late-result, 100-switch cleanup,
+    asymmetric field-basis and MCP cases tightened (AC-24, AC-26, AC-35, AC-21, AC-44). No v0.1 AC id is removed or
+    renumbered (4.5, 9, D16; ACCEPTANCE.md crosswalk section).
 
 ## 1. Goals and non-goals
 
@@ -169,8 +173,8 @@ Each screen lists what a person sees and does, what an agent gets for the same t
 - **Results only:** playhead strip (scrub, `seq K / total`, play), the solve-status chip, the as-of stamp and the
   simulated-time line (section 4.5).
 - **Keys:** arrows orbit, `+`/`-` zoom, `0` home, `E` explode, `S` section, `O` overlay cycle, `V` variant, `T` true
-  scale, `L` lid, `F` field layer (results), `Esc` clears selection. Space, left and right keep the Package view's
-  playhead meaning in Results (package.js:626-636).
+  scale, `L` lid, `F` field layer (results), `P` pause or resume presentation (results), `Esc` clears selection. Space,
+  left and right keep the Package view's playhead meaning in Results (package.js:626-636).
 - **Agent:** `/agents/package3d/index.md` and `index.json` describe the page, the three modes with their banners, and
   link every twin below.
 
@@ -256,6 +260,9 @@ A `Thermal path` tab beside the part detail: a DOM table plus a simple ladder dr
 | Disconnect | `STALE · transport`, `solve status unknown`, the last verified state stays, labelled. | VIEW-ENVELOPE v0.6.2 rule 4-5 (VIEW-ENVELOPE.md:102-126) |
 | K drops | `STALE · chain broken`; fields named after the new K leave the GPU and the cache at once; fetches for them abort. | L3:ACCEPTANCE A-06; playhead.mjs:43-56 |
 | Doorbell (optional, later) | Only pokes the poller; never data, never progress, never LIVE. | L3:ARCHITECTURE §6.2 |
+| Paused presentation | During ingestion (a replay loading, a long catch-up, or live), Pause holds the drawn values, the field and the playhead at seq S while verification and ingestion continue; the chip reads `paused · N new verified results`, where N counts verified results after S, never pages, keepalives, duplicates or backlog; nothing new is drawn or announced until an explicit Resume (button or `P`), which moves to the newest verified state and announces once. The mode chip still comes from `source.mjs`, and a K drop below S applies at once. | A#57218 (W-E12); AC-42 |
+| Run ended | `ENDED · run finished` from `source.mjs` only; a candidate still pending reads `no result (run ended)`, never `solving`; a frozen board and the terminal paging states keep their labels over ENDED. | main:contracts/view-envelope-v0.6.2/VIEW-ENVELOPE.md:110, :120-123; A#57218; AC-24 |
+| Late result | A field fetch that completes after its result left the prefix, after a mode switch or after the playhead moved is discarded by hash; a verified result arriving after the run is listed finished is shown with its own `as of seq S` and announced once, while the label stays ENDED. | A#57218; section 6.7; AC-26 |
 
 "Real time" means exactly this: results appear within seconds of the core signing them, under the unchanged LIVE
 rule, and every field is a completed, signed solve stamped with its seq. Nothing from inside a solve is shown, and
@@ -293,7 +300,8 @@ nothing about the chip's own operation is implied (L3:ARCHITECTURE §6.4).
 
 The MCP half of SLAB-026's CLI+MCP comes later through the generated bridge and calls this CLI; it adds no
 validation of its own (main:scripts/sentilab-scene.mjs:6-7; A#57059 "CLI/MCP must share validation/artifacts"). Its
-conformance has an explicit owner: forge, until the three owners hand it to the bridge's owner (D9).
+conformance has an explicit owner: forge, until the three owners hand it to the bridge's owner (D9); AC-44 is its
+test (W19).
 
 ### 4.9 SKETCH mode (deferred, D7)
 
@@ -1388,7 +1396,8 @@ WebSocket: the Worker strips `upgrade` (main:web/src/worker.js:7, :26).
 ### 6.7 Lifecycle, disposal, budgets
 
 - Render on demand: zero frames while idle. On mode switch, page hide and `webglcontextlost`, every GL object is
-  deleted and counted (A#57059: "explicitly dispose resources"); the test hook reports live GL object counts.
+  deleted and counted (A#57059: "explicitly dispose resources"); the test hook reports live GL object counts, and
+  AC-35 repeats the cleanup over 100 consecutive switches.
 - Stale fetches are aborted on mode switch and K drop (AbortController), and a late response is discarded by hash.
 - Budgets: ACCEPTANCE AC-34 (both sources' numbers; D4). Interconnect instances are sampled on a regular lattice
   within a budget derived from the triangle budget, and the view says `1 of k² sites drawn · N total`
@@ -1507,7 +1516,7 @@ screenshots. No item deploys, runs a solver, or touches the producer, the API, t
 | Item | Scope | Exit check |
 |---|---|---|
 | W0.1 | forge, warden and astra sign this exact document (section 5 schemas at version 1, the operation names in PSEUDOCODE §0, the no-result behaviour in sections 4.5 and 7, the AC list). | three sign-offs naming the commit |
-| W0.2 | astra maps her 41 source cases (30 web, 11 anatomy; A#57059) to AC ids, or lists the gaps; gaps become ACs before W1. | mapping committed next to ACCEPTANCE.md |
+| W0.2 | Root's crosswalk of her 41 source cases (30 web, 11 anatomy; A#57059) maps v0.1 as 10 direct, 29 partial and 2 missing, zero executed (A#57218); this version adds W-E12 (AC-42), keeps W-C04 for W16 (AC-43) and tightens the terminal and late-result, 100-switch, asymmetric field-basis and MCP cases (ACCEPTANCE.md crosswalk section). Root's 41-row table is committed next to ACCEPTANCE.md. | the table committed, with no row missing |
 | W0.3 | The decisions settle with this document (section 11: root-proposed, forge-adopted, warden co-sign pending); warden resolves D5; no separate human decision is needed (A#57278). Carter approves the rendered page before any deploy. | warden's co-sign names the commit |
 | W0.4 | warden provisions the box: a branch with push rights only (no deploy credentials, no secrets, no solver or GB10 access); Node 22; Python with the repo's requirements for the W4 check (TAP's floorplan writer only); Playwright with Chromium via `PLAYWRIGHT_DIR` (the pattern of main:scripts/export-deck-pdf.mjs:4); the pinned wrangler for a local Worker (main:web/test/worker-boot.mjs:5-11, :22); gitleaks; access to the reference phone named under D4. | warden's admission record |
 
@@ -1547,7 +1556,7 @@ screenshots. No item deploys, runs a solver, or touches the producer, the API, t
 
 | Item | Size | Scope | Acceptance |
 |---|---|---|---|
-| W12 | M | Results mode on replay and live through `source.mjs`: J, W and centre temperatures with per-value labels and statistics, as-of stamps, solve status, simulated-time line, STALE and ENDED, K drops; the demo replay as the default, as in the Package view. | AC-04, AC-18, AC-19, AC-23, AC-24, AC-26, AC-41 |
+| W12 | M | Results mode on replay and live through `source.mjs`: J, W and centre temperatures with per-value labels and statistics, as-of stamps, solve status, simulated-time line, STALE and ENDED, K drops, paused presentation; the demo replay as the default, as in the Package view. | AC-04, AC-18, AC-19, AC-23, AC-24, AC-26, AC-41, AC-42 |
 | W13 | M | `field.mjs` and `stream.mjs`, tested only on fixtures signed with the TEST key; in production the field path reports "no field in this run's receipts" until P1-P4 land. | AC-05, AC-20, AC-21, AC-22, AC-25, AC-41 |
 
 ### Phase 6: gated items
@@ -1556,9 +1565,10 @@ screenshots. No item deploys, runs a solver, or touches the producer, the API, t
 |---|---|---|---|
 | W14 | P1-P4 merged (and P7 for layers 6-7) | Enable fields in production; rerun device budgets. | AC-05, AC-20 to AC-22, AC-25, AC-34 |
 | W15 | P10 | Optional doorbell. | AC-24 (doorbell clause) |
-| W16 | a trial approved by the reviewers (section 10) | Optional scriptable CAD for authored geometry. | AC-38 |
+| W16 | a trial approved by the reviewers (section 10) | Optional scriptable CAD for authored geometry. | AC-38, AC-43 |
 | W17 | D7 | Optional SKETCH mode. | AC-39 |
 | W18 | a new decision | Not planned: D1 resolved generic names with usable citations; a named content variant and a product assembly would need a new decision. | AC-29, AC-40 |
+| W19 | the MCP half is scheduled (its owner: D9) | The room's MCP tools over the same CLI path, adding no validation. | AC-44 |
 
 ## 10. CAD
 
@@ -1633,7 +1643,7 @@ document's text is not that gate.**
 | D13 | Die-internal anatomy ("every intricacy", F#57046). | No public power map or die floorplan was captured (L1:thermal_path.md §4). | A sourced conceptual inset of the compute die (compute arrays, SRAM, on-die interconnect): schematic arrangement (`render_hint`), every block's text sourced, the chip `conceptual · not a floorplan`; no claimed manufacturer floorplan and no power map (NG3). Its facts are new content for W2: lane 1 holds none. | root-proposed, forge-adopted, warden co-sign pending |
 | D14 | Static manifests when WebCrypto is unavailable. | Refuse to draw, or draw with a `file check unavailable` chip. | A useful static fallback: Anatomy and Model draw with the chip `file check unavailable here (needs a secure connection)`; Results draws nothing (package.js:644-648). | root-proposed, forge-adopted, warden co-sign pending |
 | D15 | FreeCAD's latest release. | Lane 3 recorded 1.1.4 from the GitHub releases API on 2026-10-31 (L3:evidence/cad-05-12 §cad-06); astra's review did not establish the latest stable release. FreeCAD is not used. | Informational; no action. | informational |
-| D16 | Test mapping to astra's 41 source cases. | Her full report (sha256 `cccbe9d165fc358a17108e23ab6cbf1d8bdc4739d049e5e2565a90d430614d97`) is retained by her and was not available here. | Phase 0 exit (W0.2). | astra |
+| D16 | Test mapping to astra's 41 source cases. | Her full report (sha256 `cccbe9d165fc358a17108e23ab6cbf1d8bdc4739d049e5e2565a90d430614d97`) and her crosswalk of v0.1 (A#57218: 10 direct, 29 partial, 2 missing, zero executed) are retained by her. | Root's crosswalk is the mapping: W-E12 added (AC-42), W-C04 kept for W16 (AC-43), the terminal and late-result, 100-switch, asymmetric field-basis and MCP cases tightened (AC-24, AC-26, AC-35, AC-21, AC-44); no v0.1 AC id removed or renumbered; root's 41-row table committed at W0.2. | root-proposed, forge-adopted, warden co-sign pending |
 | D17 | Transitions between verified fields. | astra calls a steady-map fade "presentation" (A#57059), which permits a labelled fade; this spec prefers a hard cut so no frame shows colours of no solve. | Hard cut between verified fields (PL-20). | root-proposed, forge-adopted, warden co-sign pending |
 | D18 | Page path and title. | Lane 3's `/sentilab/package3d/` and "Package 3D"; the founder calls it the simulation room. | `/sentilab/package3d/`, "Package 3D", linked from the simulation room (the SentiLab Lab and Package views, G1). | root-proposed, forge-adopted, warden co-sign pending |
 

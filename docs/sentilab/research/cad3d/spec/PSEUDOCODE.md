@@ -818,12 +818,17 @@ import { PINS } from "./pins.mjs";
 // 7b. The figure (SPEC.md §6.5): the chips, the legend and the source line are DOM children of figure#p3d-figure,
 //    positioned inside its box; any image of the view is of the figure; no module of the room calls toDataURL or
 //    toBlob (no canvas-only export).
+// 7c. Paused presentation (SPEC.md §4.5, AC-42): Pause freezes the DRAWN state at seq S; verification, the feed and
+//    field checks keep running; pending = verified results after S (never pages, keepalives, duplicates or backlog);
+//    Resume (button or P) jumps to the newest verified state and announces once; a K drop below S applies at once.
 // 8. Read-only test hook, as package.js:662:
 Object.defineProperty(window, "__package3d", { value: Object.freeze({ facts: () => ({
   kind: S.kind, seq: S.result?.prefix.at_seq ?? 0, mode: S.result?.prefix.mode ?? null, shown: S.shownIds(),
   chips: S.chipTexts(), values: S.valueTexts(), labelStates: S.labelStates(), fieldAsOf: S.field?.as_of_seq ?? null,
   drawCalls: S.stats.calls, triangles: S.stats.triangles, glObjects: S.stats.glObjects, fallback: S.fallback,
   figure: S.figureFacts(),                             // { rect, chips, legend, source }: the figure's DOM texts and boxes (AC-05)
+  paused: S.paused, pending: S.pendingCount(),         // AC-42
+  inFlight: S.feed?.inFlight() ?? 0, listeners: S.listenerCount(), timers: S.timerCount(),   // AC-35 (100-switch cleanup)
   geometryKey: S.model?.geometry_key ?? null }) }) });
 ```
 
@@ -871,9 +876,10 @@ def test_reused_directory_keeps_a_stale_config(tmp_path):            # (C5) the 
 | `web/test/package3d-data.test.mjs` | AC-03, AC-08, AC-11 (data side), AC-16 (Node side: pins), AC-17, AC-29, AC-30, AC-40; `scripts/package3d.mjs check` |
 | `web/test/package3d-model.test.mjs` | AC-08, AC-11 (undrawn parts: bounds, pick, section), AC-12, AC-13, AC-15 |
 | `web/test/package3d-labels.test.mjs` | AC-01, AC-02, AC-05 (static: no `toDataURL`/`toBlob`), AC-06, AC-07 |
-| `web/test/package3d-results.test.mjs` | AC-18, AC-19, AC-23, AC-24, AC-25, AC-26, AC-41 (driving source.mjs's poller with injected fetch, as the Package view's live tests do) |
+| `web/test/package3d-results.test.mjs` | AC-18, AC-19, AC-23, AC-24 (with the terminal states), AC-25, AC-26 (with late results), AC-41, AC-42 (driving source.mjs's poller with injected fetch, as the Package view's live tests do) |
 | `web/test/package3d-field.test.mjs` | AC-20, AC-21, AC-22, AC-41 (association) |
 | `web/test/package3d-twin.test.mjs` | AC-06 (result → JSON bytes → `readTwin` → markdown, and every altered identity, state and text), AC-36, AC-37 |
 | existing `worker-csp.test.mjs`, `worker-boot.mjs`, `temperature-label.test.mjs`, `public-names.test.mjs`, `control-bytes.test.mjs` | AC-27, AC-28 (the page added to their lists) |
 | `sundai_hotspot/test_package3d_model_stack.py` | AC-16 |
-| `scripts/package3d-browser-check.mjs` (manual or a later CI job; needs Playwright) | AC-04, AC-05, AC-09, AC-11, AC-12, AC-27, AC-31 to AC-35 |
+| `scripts/package3d-browser-check.mjs` (manual or a later CI job; needs Playwright) | AC-04, AC-05, AC-09, AC-11, AC-12, AC-27, AC-31 to AC-35 (AC-35 with 100 mode switches), AC-42 |
+| W16 and W19 tests (only when those items are scheduled) | AC-43 (nested transforms), AC-44 (MCP conformance) |
