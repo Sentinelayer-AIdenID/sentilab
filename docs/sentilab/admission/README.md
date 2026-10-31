@@ -4,9 +4,10 @@ The shipped `registry.json` is empty. Lead/judge model calls through the lab
 boundary are refused until a complete reviewed admission record with proven
 payer and entitlement evidence is entered. A successful probe alone never admits
 a model.
-This is a human credential/entitlement control, not the superseded per-step
-planning approval gate. No provider credentials or live provider adapter ship
-with this change; the conductor remains AI-off and accepts exact replay labs only.
+This includes human-controlled credential provisioning and enablement, not the
+superseded per-step planning approval gate. No provider credentials or live
+provider adapter ship with this change; the conductor remains AI-off and accepts
+exact replay labs only.
 The legacy Jev intake router is a separate, existing signal-routing path, not a
 scientific lead or judge; its configuration is outside this change.
 
@@ -21,8 +22,9 @@ relayed with provenance by `gpt-astra-carter` in #56463 (Codex thread
 `call_RdxZlY3BliXZaNT47Mf4CUrb`). This means no overall dollar ceiling; each
 admission record still requires explicit arm/run USD caps and prices.
 
-The remaining human-only dependency is secure entitlement/credential control
-(including Claude enablement in boxes) and proven payer/route evidence.
+Secure credential provisioning and enablement remain Carter's dependency.
+Warden must obtain and record payer, route and entitlement evidence before
+completing admission.
 The registry stays empty until a complete reviewed record carries proven payer
 and entitlement evidence. Record the entitlement **name only**, never its value.
 Provisioning and enabling credentials happen outside this registry, through
