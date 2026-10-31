@@ -1,10 +1,7 @@
 """Real conductor with the existing synthetic plate solver, no HotSpot required."""
-import asyncio
 from dataclasses import asdict
 import json
-from pathlib import Path
 import resource
-import subprocess
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -14,7 +11,6 @@ from sundai_controller.experiment import plate_initial_design
 
 from sentilab_core.budget import Limits
 from sentilab_core.conductor import Conductor
-from sentilab_core.envelope import canonical
 from sentilab_core.ledger import BrokenLedger, replay
 from sentilab_core.projection import project
 from sentilab_core.test_ledger import RuntimeSigner
@@ -107,6 +103,33 @@ class ConductorTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.oracle.calls, 0)
         self.assertEqual(result["spend"]["solves"], 1)
         self.assertEqual(result["projection"]["nodes"]["test-crash:candidate-0"]["lifecycle"], "failed_run")
+
+    async def test_restart_between_evaluation_and_reproduction_reuses_signed_measurement(self):
+        self.conductor.open_run("mid-candidate")
+        transition = self.conductor._transition
+
+        def interrupted(node, to, record=None):
+            result = transition(node, to, record)
+            if to == "evaluated":
+                raise RuntimeError("injected process interruption after durable evaluation")
+            return result
+
+        self.conductor._transition = interrupted
+        with self.assertRaisesRegex(RuntimeError, "injected process"):
+            await self.conductor.tick()
+        self.assertEqual(self.oracle.calls, 1)
+        resumed = Conductor(self.temp.name, **self.options)
+        result = await resumed.run(run_id="mid-candidate", max_ticks=1)
+        self.assertEqual(self.oracle.calls, 2)
+        self.assertEqual(result["spend"]["solves"], 2)
+        self.assertIsNotNone(result["board"])
+        ids = [e["event"]["event_id"] for e in resumed.ledger.read()["prefix"]]
+        self.assertEqual(len(ids), len(set(ids)))
+
+    async def test_renewal_cannot_create_empty_one_solve_runs(self):
+        options = {**self.options, "limits": Limits(evals_per_run=1)}
+        with self.assertRaisesRegex(ValueError, "at least two"):
+            Conductor(self.temp.name, **options)
 
 
 if __name__ == "__main__":

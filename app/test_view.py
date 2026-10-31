@@ -1,5 +1,7 @@
 """Real HTTP requests against the registered FastAPI view routes."""
 import json
+import asyncio
+import os
 import socket
 import tempfile
 import threading
@@ -16,6 +18,8 @@ from app import view
 from sentilab_core.envelope import build, canonical, genesis
 from sentilab_core.operations import Context
 from sentilab_core.test_ledger import RuntimeSigner, run_record
+from sentilab_core.test_conductor import PlateOracle
+from sentilab_core.budget import Limits
 
 
 class ViewTests(unittest.TestCase):
@@ -100,6 +104,45 @@ class ViewTests(unittest.TestCase):
         response = self.get("/api/view/events?run_id=bad&after=0")
         self.assertEqual(response["unrenderable_rows"], 1)
         self.assertEqual(response["prefix_end"], 0)
+
+    def test_service_starts_without_post_and_graceful_restart_keeps_progress(self):
+        oracle = asyncio.run(PlateOracle().initialize())
+        ctx = Context(self.root, {self.signer.key_id: self.signer.public_key}, self.signer,
+                      {"oracle": oracle, "fixture": "synthetic-test", "limits": Limits(evals_per_run=12)})
+        view.configure(ctx)
+        old = os.environ.get("SENTILAB_LIVE_ENABLED")
+        os.environ["SENTILAB_LIVE_ENABLED"] = "1"
+        try:
+            # Invoke the actual startup hook registered on the FastAPI router;
+            # progress is observed over the real server's GET routes.
+            view.start_live_service()
+            deadline = time.monotonic() + 10
+            first = None
+            while time.monotonic() < deadline:
+                runs = self.get("/api/view/runs")["runs"]
+                if runs:
+                    result = self.get("/api/view/events?run_id=" + runs[0]["run_id"])
+                    if result["board"]:
+                        first = result
+                        break
+                time.sleep(0.02)
+            self.assertIsNotNone(first)
+            view.stop_live_service()
+            self.assertFalse((self.root / "STOP").exists(), "ordinary restart must not persist operator STOP")
+            view.start_live_service()
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                result = self.get("/api/view/events?run_id=" + first["run_id"])
+                if result["prefix_end"] > first["prefix_end"]:
+                    break
+                time.sleep(0.02)
+            self.assertGreater(result["prefix_end"], first["prefix_end"])
+        finally:
+            view.stop_live_service()
+            if old is None:
+                os.environ.pop("SENTILAB_LIVE_ENABLED", None)
+            else:
+                os.environ["SENTILAB_LIVE_ENABLED"] = old
 
 
 if __name__ == "__main__":

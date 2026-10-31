@@ -14,7 +14,7 @@ from sundai_controller.controller import Chiplet, Design
 from sundai_controller.experiment import LANE_IDS, OPERATORS, _candidate, _choose_ucb1, _signal_portfolio
 
 from .budget import Budget, BudgetHalt, Limits
-from .envelope import digest, validate_run_id
+from .envelope import validate_run_id
 from .gate import AcceptanceGate
 from .ledger import Ledger, atomic_json, lock
 from .oracle import FreshProcessOracle
@@ -24,6 +24,14 @@ LABELS = {"ai_mode": "AI off", "margin_label": "provisional margin",
           "scope": "diagnostic integration; no scientific acceptance"}
 TERMINAL = {"accepted", "non_improving_current", "within_margin", "rejected_schema",
             "rejected_constraints", "failed_run", "reproduction_failed", "cancelled", "inconclusive"}
+
+
+class StopSignal:
+    def __init__(self, path, cancel_event):
+        self.path, self.cancel_event = path, cancel_event
+
+    def exists(self):
+        return self.path.exists() or self.cancel_event is not None and self.cancel_event.is_set()
 
 
 def design_record(design):
@@ -38,11 +46,17 @@ def load_design(record):
 
 class Conductor:
     def __init__(self, root, *, signer, public_keys, limits=Limits(), deadline=None,
-                 fixture="ascend910", margin=0.32, grid=16, seed=11, oracle=None):
+                 fixture="ascend910", margin=0.32, grid=16, seed=11, oracle=None, cancel_event=None):
         self.root = Path(root)
         self.root.mkdir(parents=True, exist_ok=True)
+        if limits.evals_per_run < 2:
+            raise ValueError("a run needs at least two solves for reproduction")
+        if type(seed) is not int or not 0 <= seed <= 1000000:
+            raise ValueError("seed must be an integer from 0 through 1000000")
         self.signer, self.public_keys = signer, public_keys
         self.budget = Budget(root, limits, deadline=deadline)
+        self.cancel_event = cancel_event
+        self.stop_signal = StopSignal(self.budget.stop_file, cancel_event)
         self.oracle = oracle if oracle is not None else FreshProcessOracle(fixture=fixture, grid=grid)
         self.gate = AcceptanceGate(margin=margin)
         self.config = {"fixture": fixture, "margin": margin, "grid": grid, "seed": seed,
@@ -51,6 +65,11 @@ class Conductor:
                        "initial": design_record(self.oracle.initial)}
         self.ledger = None
         self.meta = None
+
+    def check_stop(self):
+        if getattr(self, "cancel_event", None) is not None and self.cancel_event.is_set():
+            raise BudgetHalt("service shutdown")
+        self.budget.check_stop()
 
     def open_run(self, run_id=None):
         if run_id is None:
@@ -158,14 +177,14 @@ class Conductor:
         for entry in self.ledger.read()["prefix"]:
             if entry["event"]["event_id"] == self.run_id + ":" + operation:
                 return entry["event"]["body"]["record"]
-        self.budget.check_stop()
+        self.check_stop()
         try:
             with self.budget.reserve(self.run_id, operation) as reservation:
                 self.emit("node.create", {"id": operation + ":reservation", "kind": "source",
                                           "record": {k: v for k, v in reservation.items() if k != "lease_fd"}},
                           operation + ":reservation")
                 try:
-                    result, usage = await self.oracle.measure(candidate, reservation, self.budget.stop_file)
+                    result, usage = await self.oracle.measure(candidate, reservation, self.stop_signal)
                     self.budget.settle(operation, actual_cpu_s=usage["cpu_s"], success=True)
                 except BaseException:
                     # The full reservation remains charged when there is no
@@ -178,6 +197,8 @@ class Conductor:
                 raise
             return {"success": False, "error": "interrupted reserved solve; no automatic retry"}
         except Exception as exc:
+            if self.cancel_event is not None and self.cancel_event.is_set():
+                raise BudgetHalt("service shutdown") from exc
             return {"success": False, "error": type(exc).__name__}
         if result.candidate_hash != candidate.hash or result.problem_hash != self.config["task_id"]:
             return {"success": False, "error": "result binding mismatch"}
@@ -196,7 +217,7 @@ class Conductor:
         return record
 
     async def tick(self):
-        self.budget.check_stop()
+        self.check_stop()
         prefix = self.ledger.read()["prefix"]
         projection = project(prefix)
         candidates = [e["event"]["body"] for e in prefix if e["event"]["type"] == "node.create"
@@ -257,9 +278,8 @@ class Conductor:
                                  "evidence": [reproduction["measurement_id"]],
                                  "record": {"label": "same-solver reproduction"}}, node + ":verified")
         self._transition(node, "reproduced")
-        self.budget.check_stop()
-        self.ledger.append_gate(self.gate, node, event_id=self.run_id + ":" + node + ":gate",
-                                stopped=self.budget.stop_file.exists())
+        self.check_stop()
+        self.ledger.append_gate(self.gate, node, event_id=self.run_id + ":" + node + ":gate")
         return self.snapshot()
 
     def finish(self, reason):
@@ -270,7 +290,9 @@ class Conductor:
         atomic_json(self.root / f"{self.run_id}.meta.json", self.meta)
 
     async def run(self, *, run_id=None, duration=600, interval=15, renew=False, max_ticks=None):
-        if not 0 < duration <= 86400 or not 0 <= interval <= 3600:
+        if (isinstance(duration, bool) or not isinstance(duration, (int, float)) or
+                isinstance(interval, bool) or not isinstance(interval, (int, float)) or
+                not 0 < duration <= 86400 or not 0 <= interval <= 3600):
             raise ValueError("invalid duration or interval")
         deadline = time.monotonic() + duration
         ticks = 0
@@ -285,11 +307,17 @@ class Conductor:
                         ticks += 1
                     except BudgetHalt as exc:
                         reason = str(exc)
+                        if reason == "service shutdown":
+                            break
                         if reason == "run solve limit" and renew:
                             self.finish(reason)
                             self.open_run(uuid.uuid4().hex)
                             continue
                         if reason.startswith("hour ") and renew:
+                            self.emit("node.create", {"id": self.run_id + ":wait-" + str(self.budget.snapshot()["solves"]),
+                                                      "kind": "source", "record": {"reason": reason,
+                                                                                   "spend": self.budget.snapshot(self.run_id)}},
+                                      "wait-" + str(self.budget.snapshot()["solves"]))
                             await asyncio.sleep(min(1, max(0, deadline - time.monotonic())))
                             continue
                         self.finish(reason)
@@ -298,12 +326,13 @@ class Conductor:
                         break
                     until = min(deadline, time.monotonic() + interval)
                     while time.monotonic() < until:
-                        self.budget.check_stop()
+                        self.check_stop()
                         await asyncio.sleep(min(0.1, until - time.monotonic()))
                 else:
                     self.finish("duration elapsed")
             except BudgetHalt as exc:
-                self.finish(str(exc))
+                if str(exc) != "service shutdown":
+                    self.finish(str(exc))
             finally:
                 await self.oracle.aclose()
             return self.snapshot()

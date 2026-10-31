@@ -1,15 +1,13 @@
 """The shared live operations used by CLI, MCP and the service owner."""
-import asyncio
 from dataclasses import dataclass, field
 import importlib
 import json
 import os
 from pathlib import Path
 
-from .budget import Limits
 from .conductor import Conductor, LABELS
 from .envelope import validate_run_id
-from .ledger import replay, run_path
+from .ledger import atomic_json, lock, replay
 from .projection import board, project
 
 
@@ -76,9 +74,8 @@ def status(context, *, ai_off, run_id=None):
 def stop(context, *, ai_off):
     require_ai_off(ai_off)
     context.root.mkdir(parents=True, exist_ok=True)
-    with open(context.root / "STOP", "a") as handle:
-        handle.flush()
-        os.fsync(handle.fileno())
+    with lock(context.root / "admission.lock"):
+        atomic_json(context.root / "STOP", {"stopped": True})
     return {"stopped": True, **LABELS}
 
 

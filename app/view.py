@@ -1,7 +1,6 @@
 """Read-only, run-scoped signed view feed and optional service-owned live loop."""
 import asyncio
 import hashlib
-import json
 import os
 import threading
 
@@ -16,6 +15,7 @@ router = APIRouter()
 _context = None
 _thread = None
 _failure = None
+_shutdown = None
 
 
 def configure(context):
@@ -32,18 +32,22 @@ def context():
 
 @router.on_event("startup")
 def start_live_service():
-    global _thread
+    global _thread, _shutdown
     if os.environ.get("SENTILAB_LIVE_ENABLED") != "1":
+        return
+    if _thread is not None and _thread.is_alive():
         return
     ctx = context()
     ctx.options.setdefault("limits", Limits(development=False))
     if ctx.signer is None:
         raise RuntimeError("live service requires the injected core signer and operator trust pin")
+    _shutdown = threading.Event()
+    ctx.options["cancel_event"] = _shutdown
 
     def loop():
         global _failure
         try:
-            while not (ctx.root / "STOP").exists():
+            while not _shutdown.is_set() and not (ctx.root / "STOP").exists():
                 asyncio.run(operations.run(ctx, ai_off=True, duration=3600, renew=True))
         except Exception as exc:
             _failure = type(exc).__name__
@@ -54,7 +58,7 @@ def start_live_service():
 @router.on_event("shutdown")
 def stop_live_service():
     if _thread is not None and _thread.is_alive():
-        operations.stop(context(), ai_off=True)
+        _shutdown.set()
         _thread.join(timeout=20)
 
 

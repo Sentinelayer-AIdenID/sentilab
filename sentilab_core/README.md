@@ -1,0 +1,90 @@
+# AI-off live service
+
+This is a diagnostic integration slice: **AI off**, **provisional margin**, and
+**same-solver reproduction**. It makes no claim of scientific acceptance or
+independent physics confirmation. Ascend910 alone is released here. Its margin
+defaults to 0.32°C (the ticket's provisional 2e); other fixtures need their own
+reviewed configuration.
+
+The conductor imports the existing proposal operators and HotSpot request/result
+validation. It evaluates and reproduces each eligible proposal in separate fresh
+processes, then compares the reproduced objective against the current board while
+holding the ledger lock. A positive margin makes this sequential rule order
+dependent. Arm exploration state is reconstructed from recorded measurements,
+including valid losers. The wire cap is fixed at the initial layout's weighted
+Manhattan wire proxy; it never follows the board.
+
+Every run has an append-only, fsynced JSONL ledger with a run-scoped sequence and
+idempotency keys. Opening or appending verifies the entire chain. A broken ledger
+refuses writes. Read-only replay and the view expose the verified prefix and a
+chain error; they never skip a gap to project later events. Byte-identical
+retransmissions are ignored; conflicting ID/sequence groups freeze before every
+member. Signed `values` are display data; the gate reads core records.
+
+The service records a reservation before each worker starts and retains it after
+failure or interruption. Live ceilings are 600 solves and 600 charged CPU seconds
+per rolling hour, one concurrent solve, and 200 solves per finite run. Development
+allocations additionally cap at 2,000 HotSpot reservations and 1,800 charged CPU
+seconds. A reservation charges its full conservative ceiling (15 seconds by
+default), while measured CPU is recorded separately; missing measurements remain
+explicitly unmeasured. The isolated worker and its native solver share one CPU;
+an independent worker timer kills the entire process group within the reservation.
+An inherited lease prevents overlap if the conductor dies. The `STOP` file is
+durable; normal service shutdown uses transient cancellation so restart can resume.
+
+## Local commands
+
+Install `requirements.txt` and `requirements-service.txt`, and build HotSpot with
+`make -C sundai_hotspot -j4 SUPERLU=1`. Activate that Python environment, then put
+`sentilab_cli/` on `PATH`, or use `python -m sentilab_cli`.
+
+```
+python -m sentilab_core.conductor --fixture ascend910 --margin 0.32 \
+  --max-evals-per-hour 40 --max-evals-per-run 40 --duration 600 \
+  --interval 35 --renew --ephemeral
+sentilab live status --ai-off
+sentilab live stop --ai-off
+sentilab live verify --ai-off --run-id RUN_ID --export replay.jsonl
+python -m sentilab_mcp
+```
+
+`--ephemeral` is an explicit local-only in-memory signer. Restarting a local demo
+requires a newly provisioned signer and trusted public-key configuration; private
+material is never serialized. Production injects one signer exposing `key_id`,
+raw public-key bytes in `public_key`, and `sign(bytes) -> bytes` through the
+service-owned `SENTILAB_SIGNER_FACTORY=module:function`. The signer must match
+`SENTILAB_VIEW_PUBLIC_KEYS`, an operator-provisioned JSON mapping of key IDs to raw
+public-key hex. The browser's deploy-time pin remains independent of `/key` and
+replay artifacts. Do not provision trust from an untrusted replay.
+
+Set `SENTILAB_LIVE_DIR` to durable service storage. `SENTILAB_LIVE_ENABLED=1`
+starts the bounded renewable loop with FastAPI startup. Without a matching signer
+and operator pin, startup fails closed. Run one service writer per storage root;
+the OS ownership lock enforces this across processes. To release an explicit
+STOP, the service operator removes that file and starts a new finite run.
+
+The read-only routes are `/api/view/runs`,
+`/api/view/events?run_id=...&after=0&limit=500`, and `/api/view/key`. Event responses
+contain `envelopes`, `next_after`, `has_more`, `prefix_end`, `chain_error`, and the
+core projection. Clients fetch one run from genesis through contiguous pages and
+verify against their independent pins. A chain break freezes the board even when
+later rows have individually valid signatures. Frontend LIVE labels must refresh
+only on new verified-prefix progress, and claim recency rather than completeness.
+
+CLI and MCP handlers call the same four operations. The MCP stdio host publishes
+`sentilab_live_run`, `sentilab_live_status`, `sentilab_live_stop` and
+`sentilab_live_verify`. Only a host holding the injected signer can start work;
+no lab/UI transport accepts an actor role or writes a gate outcome.
+
+## Checks
+
+```
+python -m unittest discover -s sentilab_core -p 'test_*.py'
+python -m unittest app.test_view
+python -m unittest sentilab_core.conformance
+```
+
+Only the last command requires Node 22. CI compares the Python canonical bytes
+against aneta's exact merged `canonical()` over the contract vectors, and compares
+a ledger produced with the real synthetic plate solver against the exact
+`project()` reference. The service image remains Python-only.
