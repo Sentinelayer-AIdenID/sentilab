@@ -75,3 +75,53 @@ supply committed SLAB-018 evidence and merged lane updates; implement and prove
 the common five execution checks and missing wrappers over the existing code;
 rerun all applicable gates; then request operator draft-PR review. No deterministic
 ticket step is recorded complete while these requirements remain outstanding.
+
+## Additional transport boundary fix
+
+The real CLI now refuses malformed arguments without echoing rejected input,
+using the same safe error object as MCP. Both entry points enforce a 64 KiB wire
+limit before importing lanes. CLI counts UTF-8 argument bytes plus one separator
+per argument; MCP counts frame bytes excluding the newline. MCP rejects malformed
+JSON, wrong request shapes and unsupported tool arguments safely; framed parse
+errors leave `ping` usable. An oversized or unterminated frame closes the stream
+after a safe error and the existing pending-task cleanup.
+
+Five new tests in `sentilab_core/test_conformance.py` exercise shipped processes,
+without replacing handlers or executing a solver. The table-driven tests check
+unknown-input and oversized-wire rejection for all five available capabilities.
+Additional cases cover malformed frames and the 65,535 / 65,536 / 65,537 byte
+boundaries. This does not certify full schema validation or all five ticket checks.
+
+`python3.12 -m unittest -q sentilab_core.test_conformance` passes **8 tests**.
+Copying the five new tests to a disposable worktree at pre-fix `09d458a` and
+running `python3.12 -m unittest -q
+sentilab_core.test_conformance.BoundaryConformance` exits 1 with **23 failing
+subtests** across all five tests. This is worker proof, not independent review.
+Compilation of the five changed Python modules and `git diff --check` pass.
+
+Additional gate results actually observed:
+
+| Command (working directory where applicable) | Result |
+|---|---|
+| `sha256sum -c HASHES.txt` (`contracts`) | Exit 0 |
+| `node run-vectors.mjs` (`contracts/contract-0.2`) | Exit 0, 74 checks |
+| `node run-vectors.mjs` (`contracts/contract-0.3`) | Exit 0, 83 checks |
+| `node run-view-vectors.mjs` (`contracts/view-envelope`) | Exit 0, 113 checks |
+| `node run-view-vectors.mjs` (`contracts/view-envelope-v0.5`) | Exit 0, 193 checks |
+| `node --test web/test/sentilab-parity.test.mjs` | Exit 0, 39 tests |
+| `node web/test/make-sentilab-demo.mjs --check` | Exit 0, 44 envelopes current |
+| `node --test web/test/*.test.mjs` | Exit 1, 39 passes / 3 failures; signing fixture imports lack cryptography |
+| `.venv/bin/python -m unittest -q sentilab_core.test_mcp_stdio sentilab_core.test_dataset_mcp` | Exit 1, 7 tests, 6 failures / 1 error; context initialization unavailable |
+
+The original MCP regression suites give the same 6 failures / 1 error on
+pre-fix `09d458a`; their valid calls cannot initialize the lane context in this
+environment. The controller, thermal, live-conformance and HotSpot gate commands
+listed above were run again and fail on the same absent cryptography, numpy and
+SuperLU prerequisites. No gate has been skipped, weakened or declared passing.
+No PR is requested while these gates and the remaining ticket work are incomplete.
+
+Audit correction: an external `curl --max-time 5` probe to `example.com` was
+mistakenly attempted during this turn's environment inspection. The earlier
+zero-network statement describes the earlier work only; it cannot be claimed
+for this turn. No dependencies were downloaded and no solve, model call or device
+operation was performed. Further work remains offline.

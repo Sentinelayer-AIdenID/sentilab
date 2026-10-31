@@ -5,6 +5,12 @@ import sys
 from pathlib import Path
 
 from sentilab_core.capabilities import cli_commands, implemented
+from sentilab_core.transport import check_cli_size, error_receipt
+
+
+class SafeParser(argparse.ArgumentParser):
+    def error(self, message):
+        raise ValueError("invalid CLI arguments")
 
 
 async def dispatch(command, context, **arguments):
@@ -15,7 +21,7 @@ async def dispatch(command, context, **arguments):
 
 
 def dataset_parser():
-    parser = argparse.ArgumentParser(prog="sentilab dataset")
+    parser = SafeParser(prog="sentilab dataset")
     parser.add_argument("command", choices=cli_commands("dataset"))
     parser.add_argument("--run-id", action="append", required=True, dest="run_ids")
     parser.add_argument("--output-dir", help="parent of immutable dataset snapshots")
@@ -35,7 +41,7 @@ def dataset_main():
 
 
 def build_parser(conductor=False):
-    parser = argparse.ArgumentParser(prog="sentilab" if not conductor else "sentilab_core.conductor")
+    parser = SafeParser(prog="sentilab" if not conductor else "sentilab_core.conductor")
     if not conductor:
         parser.add_argument("namespace", choices=sorted({row.cli_command[0] for row in implemented()}),
                             help="use dataset --help for export options")
@@ -56,7 +62,8 @@ def build_parser(conductor=False):
     return parser
 
 
-def main(conductor=False):
+def _main(conductor=False):
+    check_cli_size(sys.argv[1:])
     if not conductor and sys.argv[1:2] == ["dataset"]:
         return dataset_main()
     parser = build_parser(conductor)
@@ -83,6 +90,17 @@ def main(conductor=False):
         rows = replay(context.root, args.run_id, public_keys=context.public_keys)["prefix"]
         Path(args.export).write_bytes(b"".join(canonical(row) + b"\n" for row in rows))
     print(json.dumps(result, allow_nan=False))
+
+
+def main(conductor=False):
+    try:
+        return _main(conductor)
+    except (ValueError, TypeError, KeyError, OSError) as exc:
+        print(json.dumps(error_receipt(message=type(exc).__name__)))
+        raise SystemExit(2) from None
+    except Exception:
+        print(json.dumps(error_receipt(-32603, "internal error")))
+        raise SystemExit(1) from None
 
 
 if __name__ == "__main__":

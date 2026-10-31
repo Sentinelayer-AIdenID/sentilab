@@ -1,7 +1,7 @@
 """Registry/surface conformance over shipped parsers and real MCP stdio.
 
-The five per-capability execution checks are not implemented yet. This suite
-must not be represented as proof of auth, STOP, errors or bound parity.
+The common invalid-input and wire-bound checks run without importing lanes.
+Valid execution, auth and STOP checks remain outstanding.
 """
 import json
 from pathlib import Path
@@ -10,10 +10,104 @@ import sys
 import unittest
 
 from sentilab_cli.__main__ import build_parser, dataset_parser
-from sentilab_core.capabilities import CAPABILITIES, assert_surfaces, coverage_markdown
+from sentilab_core.capabilities import CAPABILITIES, assert_surfaces, coverage_markdown, implemented
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+class BoundaryConformance(unittest.TestCase):
+    def cli(self, row, extra):
+        flags = ["--run-id", "fixture"] if row.name == "dataset.export" else ["--ai-off"]
+        return subprocess.run([sys.executable, "-m", "sentilab_cli", *row.cli_command,
+                               *flags, *extra], capture_output=True, cwd=ROOT, timeout=10)
+
+    def mcp(self, requests):
+        result = subprocess.run([sys.executable, "-m", "sentilab_mcp"],
+                                input=requests, capture_output=True, cwd=ROOT, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertEqual(result.stderr, b"")
+        return [json.loads(line) for line in result.stdout.splitlines()]
+
+    def call(self, row, arguments):
+        return json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                           "params": {"name": row.mcp_tool, "arguments": arguments}}).encode()
+
+    def assert_refused(self, cli, mcp):
+        self.assertEqual(cli.returncode, 2)
+        self.assertEqual(cli.stderr, b"")
+        self.assertEqual(json.loads(cli.stdout)["error"], mcp["error"])
+        self.assertEqual(mcp["error"], {"code": -32602, "message": "ValueError"})
+
+    def test_each_capability_rejects_unknown_input_without_echo(self):
+        for row in implemented():
+            with self.subTest(capability=row.name):
+                marker = "rejected-value-marker"
+                cli = self.cli(row, ["--unregistered-input", marker])
+                responses = self.mcp(self.call(row, {"unregistered_input": marker}) + b"\n")
+                self.assert_refused(cli, responses[0])
+                self.assertNotIn(marker.encode(), cli.stdout + cli.stderr)
+                self.assertNotIn(marker, json.dumps(responses))
+
+    def test_each_capability_rejects_oversize_wire_input(self):
+        for row in implemented():
+            with self.subTest(capability=row.name):
+                # Repeated valid flags and JSON whitespace keep these inputs
+                # syntactically valid; a parser error cannot stand in for a cap.
+                extra = (["--run-id", "fixture"] * 5000 if row.name == "dataset.export"
+                         else ["--ai-off"] * 8200)
+                cli = self.cli(row, extra)
+                arguments = {"run_ids": ["fixture"]} if row.name == "dataset.export" else {"ai_off": True}
+                wire = self.call(row, arguments) + b" " * 65536 + b"\n"
+                responses = self.mcp(wire)
+                self.assert_refused(cli, responses[0])
+
+    def test_malformed_mcp_frames_refuse_safely_and_leave_ping_usable(self):
+        cases = [b'{"rejected-value-marker":', b'[]', b'null', b'"rejected-value-marker"',
+                 b'{"id":[],"method":"ping"}',
+                 b'{"id":1,"method":"tools/call","params":[]}',
+                 b'{"id":1,"method":"tools/call","params":{"name":[]}}',
+                 b'{"id":1,"method":"tools/call","params":{"name":"sentilab_live_stop","arguments":[]}}',
+                 b'{"id":1,"method":"tools/call","params":{"name":"sentilab_live_run","arguments":{"duration":NaN}}}',
+                 b'\xff', b'[' * 1100 + b']' * 1100]
+        ping = b'{"jsonrpc":"2.0","id":2,"method":"ping"}\n'
+        for raw in cases:
+            with self.subTest(raw=raw):
+                responses = self.mcp(raw + b"\n" + ping)
+                self.assertEqual(len(responses), 2)
+                self.assertEqual(responses[0]["error"], {"code": -32602, "message": "ValueError"})
+                self.assertEqual(responses[1], {"jsonrpc": "2.0", "id": 2, "result": {}})
+                self.assertNotIn("rejected-value-marker", json.dumps(responses))
+
+    def test_mcp_wire_limit_accepts_exactly_64_kib(self):
+        ping = b'{"jsonrpc":"2.0","id":1,"method":"ping"}'
+        for size in (65535, 65536, 65537):
+            with self.subTest(size=size):
+                responses = self.mcp(ping + b" " * (size - len(ping)) + b"\n")
+                self.assertEqual(len(responses), 1)
+                if size <= 65536:
+                    self.assertEqual(responses[0], {"jsonrpc": "2.0", "id": 1, "result": {}})
+                else:
+                    self.assertEqual(responses[0]["error"], {"code": -32602, "message": "ValueError"})
+
+    def test_cli_wire_limit_accepts_exactly_64_kib(self):
+        # --help exits without importing or executing any lane. The otherwise
+        # valid output path fills argv to the requested UTF-8 byte count.
+        prefix = ["live", "verify", "--help", "--export"]
+        prefix_size = sum(len(argument.encode()) + 1 for argument in prefix)
+        for size in (65535, 65536, 65537):
+            with self.subTest(size=size):
+                command = [sys.executable, "-m", "sentilab_cli", *prefix,
+                           "x" * (size - prefix_size - 1)]
+                result = subprocess.run(command, capture_output=True, cwd=ROOT, timeout=10)
+                self.assertEqual(result.stderr, b"")
+                if size <= 65536:
+                    self.assertEqual(result.returncode, 0)
+                    self.assertIn(b"usage: sentilab", result.stdout)
+                else:
+                    self.assertEqual(result.returncode, 2)
+                    self.assertEqual(json.loads(result.stdout)["error"],
+                                     {"code": -32602, "message": "ValueError"})
 
 
 class RegistryConformance(unittest.TestCase):

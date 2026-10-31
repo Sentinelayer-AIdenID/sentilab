@@ -4,6 +4,7 @@ import json
 import sys
 
 from sentilab_core.capabilities import for_tool
+from sentilab_core.transport import MAX_INPUT_BYTES, error_receipt, parse_request
 from . import TOOLS
 
 
@@ -12,6 +13,17 @@ def schema(name):
         return for_tool(name).input_schema
     except StopIteration:
         raise ValueError("unregistered MCP tool") from None
+
+
+def call_arguments(request):
+    params = request.get("params")
+    if not isinstance(params, dict):
+        raise ValueError("invalid tool parameters")
+    name, arguments = params.get("name"), params.get("arguments", {})
+    if (not isinstance(name, str) or name not in TOOLS or not isinstance(arguments, dict)
+            or set(arguments) - set(schema(name)["properties"])):
+        raise ValueError("invalid operation")
+    return name, arguments
 
 
 async def handle(request, context):
@@ -24,10 +36,7 @@ async def handle(request, context):
                                                         else "AI off live " + name.rsplit("_", 1)[-1]),
                            "inputSchema": schema(name)} for name in TOOLS]}
     if method == "tools/call":
-        params = request["params"]
-        name, arguments = params["name"], params.get("arguments", {})
-        if name not in TOOLS or set(arguments) - set(schema(name)["properties"]):
-            raise ValueError("invalid live operation")
+        name, arguments = call_arguments(request)
         result = TOOLS[name](context, **arguments)
         if hasattr(result, "__await__"):
             result = await result
@@ -38,18 +47,21 @@ async def handle(request, context):
 
 
 async def serve(context=None):
-    reader = asyncio.StreamReader(limit=65538)
+    reader = asyncio.StreamReader(limit=MAX_INPUT_BYTES + 2)
     transport, _ = await asyncio.get_running_loop().connect_read_pipe(
         lambda: asyncio.StreamReaderProtocol(reader), sys.stdin.buffer)
     pending = {}
 
     def error(id, code, message):
-        return {"jsonrpc": "2.0", "id": id, "error": {"code": code, "message": message}}
+        return {"jsonrpc": "2.0", "id": id, **error_receipt(code, message)}
 
     async def dispatch(request):
         nonlocal context
         try:
             if request.get("method") == "tools/call" and context is None:
+                # Refuse malformed calls before any signer/solver imports or
+                # environment-dependent work. Discovery needs no lane context.
+                call_arguments(request)
                 from sentilab_core.operations import environment_context
                 context = environment_context()
             result = await handle(request, context)
@@ -69,19 +81,32 @@ async def serve(context=None):
             transport.close()
 
     try:
-        while raw := await reader.readline():
-            if len(raw) > 65537 or not raw.endswith(b"\n"):
-                raise ValueError("MCP request exceeds 64 KiB")
-            request = json.loads(raw)
+        while True:
+            try:
+                raw = await reader.readline()
+            except ValueError:
+                print(json.dumps(error(None, -32602, "ValueError")), flush=True)
+                break
+            if not raw:
+                break
+            if len(raw) > MAX_INPUT_BYTES + 1 or not raw.endswith(b"\n"):
+                print(json.dumps(error(None, -32602, "ValueError")), flush=True)
+                break
+            try:
+                request = parse_request(raw)
+            except ValueError:
+                print(json.dumps(error(None, -32602, "ValueError")), flush=True)
+                continue
             if "id" not in request:
                 if request.get("method") == "notifications/cancelled":
-                    task = pending.get(request.get("params", {}).get("requestId"))
+                    request_id = request.get("params", {}).get("requestId")
+                    if type(request_id) not in (str, int):
+                        continue
+                    task = pending.get(request_id)
                     if task is not None and not task.cancelling():
                         task.cancel()
                 continue
             id = request["id"]
-            if type(id) not in (str, int):
-                raise ValueError("invalid request id")
             if id in pending or len(pending) >= 8:
                 print(json.dumps(error(id, -32000, "request already active or server busy")), flush=True)
                 continue
