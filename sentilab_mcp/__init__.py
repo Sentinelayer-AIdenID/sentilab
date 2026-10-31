@@ -152,3 +152,17 @@ def sentilab_route(context, **arguments):
 TOOLS.update(sentilab_memory_recall=sentilab_memory_recall,
              sentilab_memory_audit=sentilab_memory_audit,
              sentilab_route=sentilab_route)
+
+
+async def sentilab_proposal_context(context, **arguments):
+    from sentilab_core.proposals import execute
+    return await execute("context", context, **arguments)
+
+
+async def sentilab_proposal_submit(context, **arguments):
+    from sentilab_core.proposals import execute
+    return await execute("submit", context, **arguments)
+
+
+TOOLS.update(sentilab_proposal_context=sentilab_proposal_context,
+             sentilab_proposal_submit=sentilab_proposal_submit)
