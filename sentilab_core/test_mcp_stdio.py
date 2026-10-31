@@ -1,6 +1,7 @@
 """Exercise dispatch and cancellation over a single real stdio connection."""
 import asyncio
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -111,6 +112,88 @@ class StdioTests(unittest.IsolatedAsyncioTestCase):
         await self.call(10, "stop")
         responses = [await self.receive() for _ in range(8)]
         self.assertEqual({r["id"] for r in responses}, set(range(2, 9)) | {10})
+
+
+class LazyContextTests(unittest.IsolatedAsyncioTestCase):
+    send = StdioTests.send
+    receive = StdioTests.receive
+    call = StdioTests.call
+
+    async def asyncSetUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.process = None
+        self.file = Path(self.temp.name) / "result.json"
+        self.file.write_bytes(b"[]")
+
+    async def asyncTearDown(self):
+        if self.process is not None:
+            if self.process.returncode is None:
+                self.process.kill()
+            await self.process.communicate()
+        self.temp.cleanup()
+
+    async def start(self, *command, env=None):
+        self.process = await asyncio.create_subprocess_exec(
+            sys.executable, *command, env=env, stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+
+    async def resultcheck(self, id):
+        from sentilab_core.resultcheck import canonical, check_raw
+        await self.send({"id": id, "method": "tools/call", "params": {
+            "name": "sentilab_resultcheck", "arguments": {"file": str(self.file)}}})
+        response = await self.receive()
+        self.assertEqual(response["id"], id)
+        self.assertEqual(response["result"]["content"][0]["text"], canonical(check_raw(b"[]")))
+
+    async def test_real_stdio_offline_calls_survive_failed_live_initialization(self):
+        env = {**os.environ, "PATH": self.temp.name,
+               "SENTILAB_VIEW_PUBLIC_KEYS": "invalid", "SENTILAB_SIGNER_FACTORY": "missing:factory"}
+        await self.start("-m", "sentilab_mcp", env=env)
+        for id, method in enumerate(("initialize", "ping", "tools/list")):
+            await self.send({"id": id, "method": method})
+            response = await self.receive()
+            self.assertEqual(response["id"], id)
+            self.assertIn("result", response)
+        await self.resultcheck(3)
+        await self.call(4, "status")
+        response = await self.receive()
+        self.assertEqual(response["id"], 4)
+        self.assertEqual(response["error"]["code"], -32602)
+        await self.resultcheck(5)
+        self.process.stdin.close()
+        await asyncio.wait_for(self.process.wait(), 5)
+        self.assertEqual(self.process.returncode, 0, (await self.process.stderr.read()).decode())
+
+    async def test_stdio_live_context_is_created_lazily_and_shared(self):
+        marker = Path(self.temp.name) / "context-count"
+        script = r'''
+import sys
+from pathlib import Path
+from sentilab_core import operations
+from sentilab_mcp import __main__ as host
+calls = 0
+context = object()
+def factory():
+    global calls
+    calls += 1
+    Path(sys.argv[1]).write_text(str(calls))
+    return context
+def operation(received, **arguments):
+    assert received is context
+    return {"context_calls": calls}
+operations.environment_context = factory
+host.TOOLS.update(sentilab_live_status=operation, sentilab_live_stop=operation)
+host.main()
+'''
+        await self.start("-c", script, str(marker))
+        await self.resultcheck(1)
+        self.assertFalse(marker.exists(), "offline tools must not initialize a live context")
+        for id, operation in ((2, "status"), (3, "stop")):
+            await self.call(id, operation)
+            response = await self.receive()
+            self.assertEqual(response["id"], id)
+            self.assertEqual(json.loads(response["result"]["content"][0]["text"]), {"context_calls": 1})
+            self.assertEqual(marker.read_text(), "1")
 
 
 if __name__ == "__main__":
