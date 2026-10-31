@@ -39,7 +39,8 @@ by `meter(model_id, usd)` or `OverCap` before execution. The stub admits only tw
 version-1 stand-in identities, rejects nonzero/invalid charges, and records every
 zero-dollar charge. Call counts and timeout reservations bound attempts. A
 verified prior reservation prevents another invocation after restart. Missing
-proposals consume an inconclusive candidate slot without a baseline substitute
+proposals consume a cancelled candidate slot with an explicit inconclusive outcome,
+without a baseline substitute
 or a thermal evaluation. Failed judges record missing advisory evidence and
 leave the deterministic gate unchanged. There is no automatic retry or refund.
 
@@ -72,29 +73,60 @@ model spend is zero. Additional cases compare all three judge verdicts against
 identical gate outcomes, test isolation/memory reset, failure accounting,
 interrupted reservations, pin changes, admission refusal and spend caps.
 
-## Execution status
+## Execution evidence
 
-Actual local checks on 2026-10-31:
+Local execution on 2026-10-31 with Python 3.12.3 and Node 22.23.3:
 
 | Command | Result |
 | --- | --- |
-| `python3 -m compileall -q` on the four changed Python files | PASS |
-| `git diff --check` | PASS |
-| `python3.12 -m venv .venv` | PASS |
-| `.venv/bin/pip install --no-index -r requirements.txt` | FAIL: no offline numpy 2.3.5 distribution |
-| Controller `python -m unittest -v test_controller.py test_experiment.py` | BLOCKED: two import errors, missing cryptography |
-| `python -m unittest discover -s sundai_thermal -p 'test_*.py'` | BLOCKED: missing numpy |
-| `python -m unittest -q sentilab_core.test_leads sentilab_core.test_lead_conductor` | BLOCKED: two import errors, missing cryptography |
-| `make -j4 SUPERLU=1` in sundai_hotspot | FAIL: missing slu_ddefs.h |
+| `python3.12 -m venv .venv` and `.venv/bin/pip install -r requirements.txt -r requirements-service.txt` | PASS |
+| `python -m compileall -q` on the four changed Python files; `git diff --check` | PASS |
+| `(cd sundai_controller && python -m unittest -v test_controller.py test_experiment.py)` | PASS: 55 tests |
+| `python -m unittest discover -s sundai_thermal -p 'test_*.py'` | PASS: 2 tests |
+| `python -m unittest -q sentilab_core.test_leads sentilab_core.test_lead_conductor` | PASS: 15 tests |
+| `make -C sundai_hotspot -j4 SUPERLU=1` | PASS after installing build-essential, libsuperlu-dev, libblas-dev |
+| `python -m unittest -q sentilab_core.conformance` | PASS: 9 tests |
+| `node --test web/test/*.test.mjs` with the Python environment on PATH | PASS: 103 tests |
+| `OPENBLAS_CORETYPE=Haswell bash scripts/container_smoke.sh` | PASS: 259 tests across 30 modules (including all 113 core tests), deterministic demos and 8 HotSpot probes |
 
-Import errors are not executed/passing regression tests. The initial new-test
-run failed because `sentilab_core.leads` did not exist; behavior-level mutation
-proof remains pending dependencies. No thermal solves or model calls ran.
-The repository has no npm package manifest; its Python/native gates supersede
-the generic npm template. No manifest was added to manufacture a gate.
+The smoke script runs directly because Docker is unavailable in this box. Its
+first attempt failed the canonical thermal check because the box used automatic
+OpenBLAS dispatch. The passing rerun used the Dockerfile's existing Haswell setting; no
+check or threshold was changed. Generated demo artifacts stay in the disposable
+checkout. No live experiment or provider call is part of these regression gates.
+The repository has no npm package manifest; its Python/native/browser gates
+supersede the generic npm template. No manifest was added to manufacture a gate.
 
-The operator has been asked to provide offline Python/native packages or clarify
-the ticket's no-network/no-solves restriction for the named regression gates.
-The installed `senti` wrapper also lacks the underlying executable for say,
-review and PR verbs; room updates use the working `respawn-life say` bridge.
-No all-green, independent-proof or PR-publication claim is made.
+Runtime tests exposed two draft defects, now fixed: adapter settings exceeded
+the signed envelope nesting cap, and a missing proposal tried an illegal
+`proposed -> inconclusive` transition. Settings are flattened; missing proposals
+use the existing legal `cancelled` lifecycle and record `outcome: inconclusive`.
+The evidence contract, projection and AcceptanceGate were not weakened.
+
+Both new test files fail on `base` (`d7bdaedc08fcf3be1ca802203a092b4cd5123dcf`)
+because the adapter module is absent. Behavioral mutation checks at code commit
+`002ed50029eaead5130e5702e85de6a24962f12d` independently applied each change below
+in a disposable worktree. Every target test returned a failure/error (16/16):
+
+| Deliberate regression | Test that detected it |
+| --- | --- |
+| Include foreign candidates in lead memory | context isolation/repeatability |
+| Bypass admission | denied/over-cap roles |
+| Skip metering | admission/meter order |
+| Retry a reserved outage | outage/restart reservation |
+| Remove the real-adapter readiness block | real-adapter refusal |
+| Ignore admitted model version | pin/call-budget enforcement |
+| Ignore call budget | pin/call-budget enforcement |
+| Trust unvalidated judge output | acceptance/target/identity schema rejection |
+| Swallow cancellation | timeout/cancellation/error accounting |
+| Report reproduction mismatch as no-concern | stand-in rubric |
+| Allow a nonzero charge | zero-spend stub |
+| Nest settings too deeply | four-lab live loop |
+| Restore illegal missing-data lifecycle | outage without fallback solve |
+| Forget persisted reservations | interrupted-call restart |
+| Let a judge concern cancel a candidate | identical gate outcomes across verdicts |
+| Allow a stand-in subclass through the conductor | provider-subclass refusal |
+
+This is local executor evidence, not independent review. Protected review and
+PR publication are pending. Rollback consists of reverting this ticket's commits;
+the default AI-off conductor path and ReplayLab route retain their existing API.
