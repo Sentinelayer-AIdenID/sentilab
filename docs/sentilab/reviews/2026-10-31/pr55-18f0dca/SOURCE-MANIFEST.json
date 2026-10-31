@@ -1,0 +1,109 @@
+{
+  "schema": "sentilab-independent-review-source-manifest-v1",
+  "createdUtc": "2026-10-31T14:19:21.6831544Z",
+  "reviewer": "science_redteam",
+  "head": "18f0dcaea086c7817990112398d358bcd28dbe07",
+  "base": "1e6b97e2a41fb760154e1bb6f3ba8b2df23a1737",
+  "gitTree": "4d012a0fb8b2be91993e76d6d39f0b5dda7fc812",
+  "checkout": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\pr55-profile-review",
+  "trackedChanges": [],
+  "primaryReviewScope": [
+    "sundai_controller/evidence_profile.py",
+    "sundai_controller/profile_headroom.py",
+    "sundai_controller/headroom.py"
+  ],
+  "supportingSourceReview": [
+    "sundai_controller/headroom_evidence.py"
+  ],
+  "sourceHashScope": "Primary and supporting sources, fixture sources, and selected execution dependencies; hash inclusion does not assert full review of every dependency.",
+  "sourceFiles": [
+    {
+      "path": "sundai_controller/evidence_profile.py",
+      "bytes": 16095,
+      "sha256": "8fe4c9f3615bf26ee5bcada03782deb8393df748bc5f3892dbd776d072fa360a"
+    },
+    {
+      "path": "sundai_controller/profile_headroom.py",
+      "bytes": 4551,
+      "sha256": "bb64870e55671c87d291bdc1b7d168707ac02779e48eb510412e429132e6d586"
+    },
+    {
+      "path": "sundai_controller/headroom.py",
+      "bytes": 69554,
+      "sha256": "4baf11595e62328e2c6b252108af09597f2af9328e77a368a6f994f7f77bd96f"
+    },
+    {
+      "path": "sundai_controller/headroom_evidence.py",
+      "bytes": 8185,
+      "sha256": "fa5b4dc317f32460a8923c78235bf3d2af96cc814367540306b3fd2572f78199"
+    },
+    {
+      "path": "sundai_controller/test_evidence_profile.py",
+      "bytes": 20650,
+      "sha256": "fbcd6be1f9f584fd0f36e92a741c9268fcbaf8af5f8d531bae8217af18d31a21"
+    },
+    {
+      "path": "sundai_controller/test_headroom.py",
+      "bytes": 42152,
+      "sha256": "2210461f49dd4900c61981846433ce79d7aab8a02f2e2514889bdc459b3915ed"
+    },
+    {
+      "path": "sundai_controller/test_headroom_evidence.py",
+      "bytes": 18096,
+      "sha256": "bab9daaaa47e4c9a7563b1d1ac0b03408fc99815f519cb96eaf7c9b9a8c6eb95"
+    },
+    {
+      "path": "sundai_controller/controller.py",
+      "bytes": 42643,
+      "sha256": "991247becc3f09a1475588e1ddd7f998609597f099db05432c59e9320eb6d666"
+    },
+    {
+      "path": "sundai_controller/experiment.py",
+      "bytes": 25731,
+      "sha256": "48c445cadd07015f8a1e01e06c0bdd8a10c5737f2e39edceee94eb9c3579e69e"
+    },
+    {
+      "path": "sundai_controller/process_budget.py",
+      "bytes": 6078,
+      "sha256": "b6a38df3e93f043208174a352d3865a12b477af07f30ce0953768189a6fb1a18"
+    },
+    {
+      "path": "sundai_controller/headroom_supervisor.py",
+      "bytes": 21400,
+      "sha256": "dd13f2b920cf91db4b15578dd4706cee12d02a4e7788178e6c25ece115abdf22"
+    },
+    {
+      "path": "sundai_hotspot/tap_oracle.py",
+      "bytes": 40527,
+      "sha256": "37aafd6bdc7894be134e5ec79b792fe643fd3f715196818b95828c6a9c4a99fa"
+    },
+    {
+      "path": "sundai_hotspot/tap_oracle_worker.py",
+      "bytes": 20604,
+      "sha256": "b8f86f51e4fd111b7434c8406eebcb96e7f1544f19b887bd28dba347f42c07ca"
+    },
+    {
+      "path": "requirements.txt",
+      "bytes": 127,
+      "sha256": "f1b2a4e39a289adb21e7c22784e9fe78a708772f645481a187cb02cb84c5bd04"
+    }
+  ],
+  "tests": {
+    "existingTestsPassed": 53,
+    "failures": 0,
+    "errors": 0,
+    "fixtureKinds": [
+      "measurement_identity_relabel",
+      "declared_long_reproduction_mismatch",
+      "non_v4_attempt_terminal_status",
+      "unsupported_method_short_search"
+    ],
+    "thermalSolves": 0,
+    "profilingRuns": 0,
+    "modelCalls": 0,
+    "gpuWork": 0,
+    "ciRuns": 0,
+    "productEdits": 0,
+    "externalPosts": 0
+  }
+}

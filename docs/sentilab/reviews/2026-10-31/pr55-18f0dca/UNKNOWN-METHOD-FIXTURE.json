@@ -1,0 +1,22 @@
+{
+  "scope": "Nonphysical finite synthetic oracle, not thermal evidence",
+  "methodDeclared": "typo",
+  "admitted": true,
+  "result": {
+    "verdict": "PASS",
+    "passed": true,
+    "aggregate_evaluations": 4,
+    "reducer_methods": [
+      "typo"
+    ]
+  },
+  "lane": {
+    "method": "typo",
+    "evaluation_count": 2,
+    "search_evaluation_count": 1,
+    "reproduction_evaluation_count": 1,
+    "complete": true,
+    "stop_reason": null
+  },
+  "blockedForbiddenAttempts": []
+}

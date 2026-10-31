@@ -1,0 +1,51 @@
+{
+  "schema": "sentilab-independent-review-seal-v1",
+  "createdUtc": "2026-10-31T14:19:41.1072872Z",
+  "disposition": "HOLD",
+  "plusOne": false,
+  "head": "18f0dcaea086c7817990112398d358bcd28dbe07",
+  "base": "1e6b97e2a41fb760154e1bb6f3ba8b2df23a1737",
+  "files": [
+    {
+      "path": "ADVERSARIAL-FIXTURES.json",
+      "bytes": 6375,
+      "sha256": "44b8bc9b1f5218a4a90f779af8f81e30211132029c8ddc49926a60e9a6f47e80"
+    },
+    {
+      "path": "FIXTURE-TESTS.json",
+      "bytes": 561,
+      "sha256": "3f11c35106b1c510098260c516d92b094de1a1fc3d1d2434ce66f484eea9c682"
+    },
+    {
+      "path": "FIXTURE-TESTS.log",
+      "bytes": 8815,
+      "sha256": "3d94a6ac63faa12ea1df93bd791f69dc1984d602f741f7bc9a508b6fcd5d0187"
+    },
+    {
+      "path": "GATE-REVIEW.md",
+      "bytes": 9997,
+      "sha256": "de4037b13e62e2cb7dab43183801da4f1a86a83473adc89bb738b4baacf216f7"
+    },
+    {
+      "path": "run_fixture_review.py",
+      "bytes": 4906,
+      "sha256": "4f98140b52018d5f7c7c40654279c300274d6212f3d59d77e8a781b8c6b81f10"
+    },
+    {
+      "path": "run_method_fixture.py",
+      "bytes": 2666,
+      "sha256": "c7b2156689c26dd6c25f580fcead700c7f47debd4654aaf680e32b695ca4942f"
+    },
+    {
+      "path": "SOURCE-MANIFEST.json",
+      "bytes": 3807,
+      "sha256": "899114ba81b6cf3283a7f64408675149c81bfc2826cb07e7be21ce963e8bfd14"
+    },
+    {
+      "path": "UNKNOWN-METHOD-FIXTURE.json",
+      "bytes": 481,
+      "sha256": "e249bd7d118ff3fb99daad750df85ed8f24d852d1aa736a8b622d1b61853b94f"
+    }
+  ],
+  "note": "SHA-256 integrity manifest, not a cryptographic signature or profiling/execution grant. Does not include itself."
+}

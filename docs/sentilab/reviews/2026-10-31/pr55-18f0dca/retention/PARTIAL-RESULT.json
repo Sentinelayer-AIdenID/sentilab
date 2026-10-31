@@ -1,0 +1,22 @@
+{
+  "head": "18f0dcaea086c7817990112398d358bcd28dbe07",
+  "results": [
+    {
+      "case": "timeout_after_flushed_partial_worker_stdout",
+      "emitted": "{\"ok\":true,\"result\":{\"partial\":",
+      "emittedBytes": 31,
+      "retainedResponseExists": false,
+      "retainedResponseBytes": null,
+      "error": {
+        "type": "HotSpotTimeoutError",
+        "message": "HotSpot worker exceeded 0.3 seconds"
+      },
+      "workerReturnCode": -9,
+      "workspaceRemoved": true,
+      "newWorkerCount": 1,
+      "realSolverCalls": 0,
+      "interpretation": "Peer witness proves bytes flushed before timeout; production exchange writes response only after complete readline"
+    }
+  ],
+  "sourceSha256": "37aafd6bdc7894be134e5ec79b792fe643fd3f715196818b95828c6a9c4a99fa"
+}

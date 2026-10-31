@@ -1,0 +1,96 @@
+{
+  "schema": "sentilab-private-review-packet-v1",
+  "createdUtc": "2026-10-31T14:24:01.988Z",
+  "reviewedSource": {
+    "repository": "Sentinelayer-AIdenID/sentilab",
+    "head": "18f0dcaea086c7817990112398d358bcd28dbe07",
+    "base": "1e6b97e2a41fb760154e1bb6f3ba8b2df23a1737",
+    "gitTree": "4d012a0fb8b2be91993e76d6d39f0b5dda7fc812"
+  },
+  "publicationBase": "3d4448377ba2510eb4f4d7de48cacba14e29a969",
+  "branch": "codex/diagnosis-20261031",
+  "disposition": "HOLD",
+  "plusOne": false,
+  "scope": "Immutable copies of existing independent gate and raw worker-response retention reviews; no product changes, source archives, tests, or execution authorization.",
+  "files": [
+    {
+      "path": "ADVERSARIAL-FIXTURES.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/pr55-18f0dca/ADVERSARIAL-FIXTURES.json",
+      "bytes": 6375,
+      "sha256": "44b8bc9b1f5218a4a90f779af8f81e30211132029c8ddc49926a60e9a6f47e80"
+    },
+    {
+      "path": "FIXTURE-TESTS.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/pr55-18f0dca/FIXTURE-TESTS.json",
+      "bytes": 561,
+      "sha256": "3f11c35106b1c510098260c516d92b094de1a1fc3d1d2434ce66f484eea9c682"
+    },
+    {
+      "path": "FIXTURE-TESTS.log",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/pr55-18f0dca/FIXTURE-TESTS.log",
+      "bytes": 8815,
+      "sha256": "3d94a6ac63faa12ea1df93bd791f69dc1984d602f741f7bc9a508b6fcd5d0187"
+    },
+    {
+      "path": "GATE-REVIEW.md",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/pr55-18f0dca/GATE-REVIEW.md",
+      "bytes": 9997,
+      "sha256": "de4037b13e62e2cb7dab43183801da4f1a86a83473adc89bb738b4baacf216f7"
+    },
+    {
+      "path": "SEAL.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/pr55-18f0dca/SEAL.json",
+      "bytes": 1690,
+      "sha256": "2ef51ef7b39fbaf8dd1217ca810cd444e80d7680704170d67604c0d7466da4d2"
+    },
+    {
+      "path": "SOURCE-MANIFEST.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/pr55-18f0dca/SOURCE-MANIFEST.json",
+      "bytes": 3807,
+      "sha256": "899114ba81b6cf3283a7f64408675149c81bfc2826cb07e7be21ce963e8bfd14"
+    },
+    {
+      "path": "UNKNOWN-METHOD-FIXTURE.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/pr55-18f0dca/UNKNOWN-METHOD-FIXTURE.json",
+      "bytes": 481,
+      "sha256": "e249bd7d118ff3fb99daad750df85ed8f24d852d1aa736a8b622d1b61853b94f"
+    },
+    {
+      "path": "run_fixture_review.py",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/pr55-18f0dca/run_fixture_review.py",
+      "bytes": 4906,
+      "sha256": "4f98140b52018d5f7c7c40654279c300274d6212f3d59d77e8a781b8c6b81f10"
+    },
+    {
+      "path": "run_method_fixture.py",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/pr55-18f0dca/run_method_fixture.py",
+      "bytes": 2666,
+      "sha256": "c7b2156689c26dd6c25f580fcead700c7f47debd4654aaf680e32b695ca4942f"
+    },
+    {
+      "path": "retention/REVIEW.md",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/pr55-18f0dca/retention/REVIEW.md",
+      "bytes": 1821,
+      "sha256": "47b87c20825617020293d8b8b032408f724b5a780d828303c42b2ce518ef3a91"
+    },
+    {
+      "path": "retention/probe_partial_stdout.py",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/pr55-18f0dca/retention/probe_partial_stdout.py",
+      "bytes": 2582,
+      "sha256": "12ca66a2012f29fe3d40d1f4d909e92d2a7aa6010575cff318e3ccbbac3a754b"
+    },
+    {
+      "path": "retention/PARTIAL-RESULT.json",
+      "repositoryPath": "docs/sentilab/reviews/2026-10-31/pr55-18f0dca/retention/PARTIAL-RESULT.json",
+      "bytes": 776,
+      "sha256": "40d975d75a52186bc32e9a3afeaf3c36756ff4fec2be372357a43faf1396b35b"
+    }
+  ],
+  "totalPayloadBytes": 44477,
+  "integrity": "SHA-256 of exact retained file bytes; source references bind the reviewed Git commit. Existing gate SEAL.json is preserved unchanged. This manifest excludes itself.",
+  "contentAudit": {
+    "independentReviewer": "science_redteam/baseline_crosswalk",
+    "filesInspected": 12,
+    "result": "No secret, credential, private-key or token-bearing URL candidates; text and bounded review reproducer scripts only."
+  }
+}

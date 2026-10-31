@@ -1,0 +1,17 @@
+{
+  "testsRun": 53,
+  "failures": 0,
+  "errors": 0,
+  "successful": true,
+  "wallSeconds": 3.0483986190000003,
+  "modules": [
+    "sundai_controller.test_evidence_profile",
+    "sundai_controller.test_headroom.GateFunctionTests",
+    "sundai_controller.test_headroom.GatePassDynamicTests",
+    "sundai_controller.test_headroom.MeshValidationTests",
+    "sundai_controller.test_headroom_evidence.EvidenceRunnerTests"
+  ],
+  "blockedForbiddenAttempts": [],
+  "python": "3.12.3 (main, Mar 23 2026, 19:04:32) [GCC 13.3.0]",
+  "cpuSelfSeconds": 1.5656430000000001
+}

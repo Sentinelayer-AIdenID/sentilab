@@ -1,0 +1,166 @@
+{
+  "foreignRecordRelabel": {
+    "admitted": true,
+    "declaredIdentity": {
+      "fixture": "ascend910",
+      "grid": 32,
+      "binary_sha256": "0184705e7acfe20d60703250ce4f1e52bed97c52150f0345b85b9249966bb38d",
+      "config_sha256": "ec356eea78fb4cbccc9885fa5c4159f62ee2b8d547bd5ee38e7e240d637b1ff5",
+      "source_sha256": "39631bb5e5dc9326b23f8c00bf43440a84ce711315c6b799de554c56aa04d133",
+      "image_identity": {
+        "status": "unavailable",
+        "reason": "synthetic test",
+        "dockerfile_sha256": "ca5c52a3031cb73a4f317471e7e83169d10a97b13785841e62aa8d51e9c0f196"
+      },
+      "problem_hash": "current-ascend-problem"
+    },
+    "embeddedForeignIdentity": {
+      "fixture": "micro150",
+      "grid": 64,
+      "binary_sha256": "0184705e7acfe20d60703250ce4f1e52bed97c52150f0345b85b9249966bb38d",
+      "config_sha256": "ec356eea78fb4cbccc9885fa5c4159f62ee2b8d547bd5ee38e7e240d637b1ff5",
+      "source_sha256": "39631bb5e5dc9326b23f8c00bf43440a84ce711315c6b799de554c56aa04d133",
+      "image_identity": {
+        "status": "unavailable",
+        "reason": "synthetic test",
+        "dockerfile_sha256": "ca5c52a3031cb73a4f317471e7e83169d10a97b13785841e62aa8d51e9c0f196"
+      }
+    },
+    "embeddedForeignResult": {
+      "maximum_temperature_c": 100,
+      "problem_hash": "foreign-micro150-problem",
+      "fixture": "micro150",
+      "grid": 64
+    },
+    "profileIdentity": {
+      "binary_sha256": "0184705e7acfe20d60703250ce4f1e52bed97c52150f0345b85b9249966bb38d",
+      "config_sha256": "ec356eea78fb4cbccc9885fa5c4159f62ee2b8d547bd5ee38e7e240d637b1ff5",
+      "fixture": "ascend910",
+      "grid": 32,
+      "image_identity": {
+        "dockerfile_sha256": "ca5c52a3031cb73a4f317471e7e83169d10a97b13785841e62aa8d51e9c0f196",
+        "reason": "synthetic test",
+        "status": "unavailable"
+      },
+      "problem_hash": "current-ascend-problem",
+      "source_sha256": "39631bb5e5dc9326b23f8c00bf43440a84ce711315c6b799de554c56aa04d133"
+    },
+    "exclusions": []
+  },
+  "declaredReproductionMismatch": {
+    "admission": {
+      "schema": "slab-050-admission-v1",
+      "admitted": true,
+      "reducer_calls": 4,
+      "diagnostic_calls": 0,
+      "long_calls": 5,
+      "declared_calls": 9,
+      "phase_mean_cpu_seconds": {
+        "generate": 0.5,
+        "solve": 0.5,
+        "worker_startup": 0.5,
+        "teardown_reap": 0.5,
+        "archive": 0.5,
+        "overhead": 0.5
+      },
+      "measured_cpu_seconds_per_call": 3.0,
+      "forecast_cpu_seconds": 27.0,
+      "reserve_cpu_seconds": 2.0,
+      "reserve_reason": "synthetic test only",
+      "required_cpu_seconds": 29.0,
+      "available_cpu_seconds": 1440.0,
+      "headroom_cpu_seconds": 1411.0,
+      "identity": {
+        "binary_sha256": "0184705e7acfe20d60703250ce4f1e52bed97c52150f0345b85b9249966bb38d",
+        "config_sha256": "ec356eea78fb4cbccc9885fa5c4159f62ee2b8d547bd5ee38e7e240d637b1ff5",
+        "fixture": "ascend910",
+        "grid": 32,
+        "image_identity": {
+          "dockerfile_sha256": "ca5c52a3031cb73a4f317471e7e83169d10a97b13785841e62aa8d51e9c0f196",
+          "reason": "synthetic test",
+          "status": "unavailable"
+        },
+        "problem_hash": "current-ascend-problem",
+        "source_sha256": "39631bb5e5dc9326b23f8c00bf43440a84ce711315c6b799de554c56aa04d133"
+      },
+      "sample_count": 1,
+      "forecast_is_bound": false,
+      "requires_runtime_stop": true,
+      "profile_sha256": "0aef46a661b481ae11450320180c29245920b8fa09dd9f756dd2d5fb753a0b32",
+      "profile_path": "/tmp/pr55-synthetic-20s89li7/PROFILE.json"
+    },
+    "declaredLong": {
+      "seeds": [
+        100
+      ],
+      "max_evaluations_per_restart": 5,
+      "search_evaluations_per_restart": 4,
+      "reproduction_evaluations_per_restart": 1,
+      "max_cpu_minutes": 1
+    },
+    "observedLong": {
+      "evaluation_count": 5,
+      "search_evaluation_count": 5,
+      "reproduction_evaluation_count": 0,
+      "complete": true,
+      "stop_reason": null
+    },
+    "verdict": "PASS",
+    "passed": true,
+    "aggregateEvaluations": 9,
+    "persistedAttempt": {
+      "artifact_directory": "/tmp/pr55-synthetic-20s89li7/output/attempt-520774b533164f2590e38de06d97c18c",
+      "cpu_enforcement_sha256": "b6a38df3e93f043208174a352d3865a12b477af07f30ce0953768189a6fb1a18",
+      "evidence_profile_admission": {
+        "admitted": true,
+        "available_cpu_seconds": 1440.0,
+        "declared_calls": 9,
+        "diagnostic_calls": 0,
+        "forecast_cpu_seconds": 27.0,
+        "forecast_is_bound": false,
+        "headroom_cpu_seconds": 1411.0,
+        "identity": {
+          "binary_sha256": "0184705e7acfe20d60703250ce4f1e52bed97c52150f0345b85b9249966bb38d",
+          "config_sha256": "ec356eea78fb4cbccc9885fa5c4159f62ee2b8d547bd5ee38e7e240d637b1ff5",
+          "fixture": "ascend910",
+          "grid": 32,
+          "image_identity": {
+            "dockerfile_sha256": "ca5c52a3031cb73a4f317471e7e83169d10a97b13785841e62aa8d51e9c0f196",
+            "reason": "synthetic test",
+            "status": "unavailable"
+          },
+          "problem_hash": "current-ascend-problem",
+          "source_sha256": "39631bb5e5dc9326b23f8c00bf43440a84ce711315c6b799de554c56aa04d133"
+        },
+        "long_calls": 5,
+        "measured_cpu_seconds_per_call": 3.0,
+        "phase_mean_cpu_seconds": {
+          "archive": 0.5,
+          "generate": 0.5,
+          "overhead": 0.5,
+          "solve": 0.5,
+          "teardown_reap": 0.5,
+          "worker_startup": 0.5
+        },
+        "profile_path": "/tmp/pr55-synthetic-20s89li7/PROFILE.json",
+        "profile_sha256": "0aef46a661b481ae11450320180c29245920b8fa09dd9f756dd2d5fb753a0b32",
+        "reducer_calls": 4,
+        "required_cpu_seconds": 29.0,
+        "requires_runtime_stop": true,
+        "reserve_cpu_seconds": 2.0,
+        "reserve_reason": "synthetic test only",
+        "sample_count": 1,
+        "schema": "slab-050-admission-v1"
+      },
+      "prereg_digest_sha256": "98ae5999ff1b4bdb2008eee8765d4e6c6b80c1a80ee88799ab49227cf7b3cc64",
+      "runner_sha256": "4baf11595e62328e2c6b252108af09597f2af9328e77a368a6f994f7f77bd96f",
+      "starting_calls": 0,
+      "status": "started"
+    },
+    "allAttemptStatuses": [
+      "started"
+    ]
+  },
+  "scope": "Synthetic numeric oracle only; not a thermal result or granted experiment.",
+  "blockedForbiddenAttempts": []
+}

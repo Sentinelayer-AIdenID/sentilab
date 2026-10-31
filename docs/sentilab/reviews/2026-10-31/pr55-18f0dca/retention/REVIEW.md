@@ -1,0 +1,9 @@
+# PR55 raw worker-response retention
+
+**P2: partial worker stdout is lost on timeout.** At exact `18f0dcaea086c7817990112398d358bcd28dbe07`, `_WarmWorker._exchange()` writes `worker-response.bin` only after `StreamReader.readline()` completes. When the peer flushes bytes without a terminating newline and the parent times out, cancellation and cleanup discard that prefix.
+
+The independent protocol witness emitted and flushed exactly 31 bytes (`{"ok":true,"result":{"partial":`) before a 0.3-second timeout. It retained a separate witness of emission in the parent-selected directory. The real adapter raised `HotSpotTimeoutError`, killed its owned worker (return code -9), and removed its workspace. `worker-response.bin` did not exist afterward. `PARTIAL-RESULT.json`, `probe_partial_stdout.py` and the request/metadata/emission witness retain the evidence. The peer is a small Python protocol fixture; no HotSpot, provider, GPU, model or network call occurred.
+
+Retain raw worker stdout incrementally through timeout, cancellation, malformed/oversized frame and forced-stop paths, with explicit truncation status if a storage cap is applied. Keep complete response parsing and its size limit separate from retained raw bytes. This is a new worker-protocol retention gap, not a reopening of the repaired native stdout/stderr `.bin` behavior.
+
+All eleven supplied worker and adapter evidence tests pass on this exact source under the existing WSL Ubuntu 24.04 Python runtime. Those tests cover complete/malformed newline-terminated responses, native timeout bytes, startup accounting, stderr and environment filtering; they do not cover this partial stdout witness. This review is scoped to raw retention; gate arithmetic and profile eligibility are under a separate independent review. No execution approval follows.
