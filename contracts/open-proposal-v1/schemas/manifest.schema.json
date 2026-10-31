@@ -22,9 +22,9 @@
     "scenario": {
       "oneOf": [
         {"type": "object", "additionalProperties": false, "required": ["id", "applies_to", "grid"],
-         "properties": {"id": {"const": "nominal"}, "applies_to": {"const": "both"}, "grid": {"const": 64}}},
+         "properties": {"id": {"const": "nominal"}, "applies_to": {"const": "both"}, "grid": {"type": "integer", "const": 64}}},
         {"type": "object", "additionalProperties": false, "required": ["id", "applies_to", "grid"],
-         "properties": {"id": {"const": "mesh-32"}, "applies_to": {"const": "both"}, "grid": {"const": 32}}},
+         "properties": {"id": {"const": "mesh-32"}, "applies_to": {"const": "both"}, "grid": {"type": "integer", "const": 32}}},
         {"description": "A draft's placeholder for the raw-R position inventory (OP-F10); a signed manifest lists its cases.",
          "type": "object", "additionalProperties": false, "required": ["id", "applies_to", "cases"],
          "properties": {"id": {"const": "position-<die>-<axis>-<sign>"}, "applies_to": {"const": "R"},
@@ -32,7 +32,7 @@
         {"description": "One R-only position case: one die, one axis, plus or minus 500 um (section 4.7).",
          "type": "object", "additionalProperties": false, "required": ["id", "applies_to", "grid"],
          "properties": {"id": {"type": "string", "pattern": "^position-[0-9]{1,2}-[xy]-(plus|minus)$"},
-                        "applies_to": {"const": "R"}, "grid": {"const": 64}}}
+                        "applies_to": {"const": "R"}, "grid": {"type": "integer", "const": 64}}}
       ]
     }
   },
@@ -80,7 +80,7 @@
           "h_um": {"type": "integer", "minimum": 1, "maximum": 1000000},
           "power_w": {"type": "number", "minimum": 0, "maximum": 100000},
           "halo_um": {"type": "integer", "minimum": 0, "maximum": 100000},
-          "rot_deg": {"type": "array", "minItems": 1, "maxItems": 2, "uniqueItems": true, "items": {"enum": [0, 90]}}
+          "rot_deg": {"type": "array", "minItems": 1, "maxItems": 2, "uniqueItems": true, "items": {"type": "integer", "enum": [0, 90]}}
         }
       }
     },
@@ -198,7 +198,7 @@
                           "items": {"$ref": "#/$defs/unit"}},
         "centre_mapping": {"const": "GRID_CENTER: mean of 1, 2 or 4 central cells (pinned)"},
         "record_field": {"const": "chiplet_centre_mapping.max_C"},
-        "grid": {"const": 64},
+        "grid": {"type": "integer", "const": 64},
         "retained_separately": {"const": ["active_layer_grid_peak", "historical_tap_stdout_selector.literal_on_stdout"]},
         "evaluator": {
           "type": "object",
@@ -388,7 +388,7 @@
       "properties": {
         "schema": {"const": "sentilab-open-transport-key/1"},
         "prefix": {"const": "so1-"},
-        "hex_chars": {"const": 48},
+        "hex_chars": {"type": "integer", "const": 48},
         "fields": {"const": ["room", "account", "actor_slot", "manifest_id", "logical_key", "content_sha256"]}
       }
     },
@@ -429,8 +429,8 @@
         "recipient": {"anyOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/age_recipient"}]},
         "key_version": {"anyOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/key_version"}]},
         "applies_to": {"const": ["private proposals", "private routed checks", "publish commands"]},
-        "plaintext_max_bytes": {"const": 4096},
-        "sealed_note_max_bytes": {"const": 8192},
+        "plaintext_max_bytes": {"type": "integer", "const": 4096},
+        "sealed_note_max_bytes": {"type": "integer", "const": 8192},
         "plaintext_fallback": {"const": false},
         "rotation": {"const": "new key version and new manifest version; old keys kept in custody, never reused"}
       }

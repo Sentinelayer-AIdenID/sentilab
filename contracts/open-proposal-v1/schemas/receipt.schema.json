@@ -44,7 +44,7 @@
               "yLL": {"type": "number", "minimum": -1000, "maximum": 1000},
               "w": {"type": "number", "exclusiveMinimum": 0, "maximum": 1000},
               "h": {"type": "number", "exclusiveMinimum": 0, "maximum": 1000},
-              "layer": {"const": 0}
+              "layer": {"type": "integer", "const": 0}
             }
           }
         },

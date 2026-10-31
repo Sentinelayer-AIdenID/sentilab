@@ -32,7 +32,7 @@
           "die": {"type": "integer", "minimum": 0, "maximum": 31},
           "x_um": {"type": "integer", "minimum": 0, "maximum": 1000000},
           "y_um": {"type": "integer", "minimum": 0, "maximum": 1000000},
-          "rot_deg": {"enum": [0, 90]}
+          "rot_deg": {"type": "integer", "enum": [0, 90]}
         }
       }
     },

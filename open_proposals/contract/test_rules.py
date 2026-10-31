@@ -167,6 +167,10 @@ class Schemas(unittest.TestCase):
         value["dies"][0]["x_um"] = True
         self.assertFalse(VALIDATORS["proposal"].is_valid(value))
         self.assertTrue(VALIDATORS["proposal"].is_valid(mv.P_PUB))
+        for rotation in (0.0, -0.0, 90.0, True):
+            rotated = copy.deepcopy(mv.P_PUB)
+            rotated["dies"][0]["rot_deg"] = rotation
+            self.assertFalse(VALIDATORS["proposal"].is_valid(rotated), rotation)
 
     def test_the_proposal_fields_are_rev3s(self):
         """Section 5.1 exactly: visibility and salt required, client optional, no wire_track or lattice_um."""

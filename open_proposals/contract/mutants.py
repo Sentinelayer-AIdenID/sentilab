@@ -515,6 +515,8 @@ MUTANTS = [
     # ── schema-level rules ──
     ("fixtures-fresh", "tests: record helpers return fresh objects", PKG + "make_vectors.py",
      '"values": VALUES_PUB}\n    return copy.deepcopy(base | edits)', '"values": VALUES_PUB}\n    return base | edits'),
+    ("schema-rot-integer", "limit: rot_deg is an integer literal", SCH + "common.schema.json",
+     '"rot_deg": {"type": "integer", "enum": [0, 90]}', '"rot_deg": {"enum": [0, 90]}'),
     ("schema-dies", "limit: 32 dies", SCH + "common.schema.json", '"minItems": 1,\n      "maxItems": 32,',
      '"minItems": 1,\n      "maxItems": 33,'),
     ("schema-coordinate", "limit: coordinate range", SCH + "common.schema.json",
