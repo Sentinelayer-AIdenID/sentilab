@@ -102,3 +102,56 @@ class ReconcileTests(unittest.TestCase):
             result = reconcile(asdict(IDENTITY), 'failure', value)
             self.assertEqual(result['settlement']['cpu']['charged_cpu_seconds'], 900)
             self.assertIsNone(result['settlement']['cpu']['cpu_seconds'])
+
+    def test_bootstrap_is_reconciled_from_owner_provenance_without_a_slot(self):
+        from scripts.tests.test_ci_workflow import WorkflowTests
+
+        authorization = WorkflowTests().authorization()
+        ledger = Ledger(self.root / 'bootstrap-events.jsonl', IDENTITY)
+        for _ in range(2):
+            slot = ledger.reserve('fake')
+            ledger.started(slot, 123)
+            ledger.settle(slot, 'success', 0)
+        ledger.finish('success', {'cpu_seconds': 12.5, 'charged_cpu_seconds': 12.5})
+        measured = json.dumps(ledger.summary())
+        event_path = self.root / 'event.json'
+        event_path.write_text(json.dumps({'workflow_run': {'id': 123, 'run_attempt': 1,
+                            'conclusion': 'failure', 'path': '.github/workflows/ci.yml'}}))
+        output = self.root / 'bootstrap'
+        artifact = output / 'download/settlement.json'
+        artifact.parent.mkdir(parents=True)
+        with patch('scripts.ci_reconcile.GitHubRefs') as store, \
+             patch.dict(os.environ, GITHUB_EVENT_PATH=str(event_path), GH_TOKEN='fake',
+                        GITHUB_REPOSITORY=IDENTITY.repository,
+                        CI_BOOTSTRAP_AUTHORIZATION=json.dumps(authorization)), \
+             patch.object(sys, 'argv', ['ci_reconcile', str(output)]):
+            store.return_value.read_slots.return_value = {}
+            for raw in (measured, None, '[]'):
+                with self.subTest(raw=raw):
+                    artifact.unlink(missing_ok=True)
+                    if raw is not None:
+                        artifact.write_text(raw)
+                    main()
+                    result = json.loads((output / 'terminal.json').read_text())
+                    self.assertEqual(result['admission_mode'], 'bootstrap')
+                    self.assertEqual(result['identity'], asdict(IDENTITY))
+                    self.assertEqual(result['rollout_debit']['charged_cpu_seconds'], 900)
+                    self.assertEqual(result['rollout_debit']['charged_launches'], 100)
+                    if raw == measured:
+                        self.assertEqual(result['settlement']['executions_started'], 2)
+                        self.assertEqual(result['settlement']['cpu']['cpu_seconds'], 12.5)
+                    else:
+                        self.assert_conservative(result)
+
+    def test_absent_or_unverifiable_bootstrap_provenance_cannot_claim_zero_usage(self):
+        event_path = self.root / 'event.json'
+        event_path.write_text(json.dumps({'workflow_run': {'id': 123, 'run_attempt': 1,
+                                                         'conclusion': 'cancelled'}}))
+        output = self.root / 'lost-bootstrap'
+        with patch('scripts.ci_reconcile.GitHubRefs') as store, \
+             patch.dict(os.environ, GITHUB_EVENT_PATH=str(event_path), GH_TOKEN='fake',
+                        GITHUB_REPOSITORY=IDENTITY.repository, CI_BOOTSTRAP_AUTHORIZATION=''), \
+             patch.object(sys, 'argv', ['ci_reconcile', str(output)]):
+            store.return_value.read_slots.return_value = {}
+            main()
+        self.assert_conservative(json.loads((output / 'terminal.json').read_text()))
