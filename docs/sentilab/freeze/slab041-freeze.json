@@ -1,0 +1,113 @@
+{
+  "version": "slab041-freeze/1",
+  "status": "must-fill-before-execution",
+  "source_rows": ["B08", "R01", "Q04", "Q05", "Q06"],
+  "endpoints": {
+    "sharing": "primary: paired family mean of B2 final J minus B3 final J",
+    "worker": "primary: paired family fixed-corpus geometry-plus-wire success rate, adapter minus base",
+    "thermal_objective": "versioned active-chip-layer grid peak; maximum over all frozen scenarios; lower is better",
+    "centers": "diagnostic only",
+    "parsing": "diagnostic only",
+    "b4_closed_loop": "required secondary: B3 versus B4",
+    "simulator_confirmed_corpus_utility": "required secondary",
+    "best_evaluated_unreproduced": "descriptive only; never accepted evidence"
+  },
+  "families": {
+    "target": 12,
+    "fallback": 8,
+    "fallback_approval": "before any outcome, from frozen stratified order",
+    "descriptive_only": 6,
+    "paired_seeds": 2,
+    "seed_aggregation": "arithmetic mean within family before testing",
+    "primary_dropping": "forbidden after outcomes",
+    "incomplete_required_pair": "inconclusive; no post-outcome family removal",
+    "sharing_ties": "absolute family difference <= frozen sharing_tolerance",
+    "worker_ties": "exact equality of rational success rates",
+    "ties": "exclude endpoint-specific ties from that endpoint denominator and report n",
+    "test": "two-sided exact family sign test; favorable direction required",
+    "multiplicity": "Holm across sharing and worker",
+    "alpha": 0.05,
+    "first_threshold": 0.025,
+    "second_threshold": 0.05,
+    "eight_non_tied_required_wins": 8,
+    "six_non_tied_rule": "6/6 may pass second at .05 only after the other primary passes first at .025; a six-family design stays descriptive"
+  },
+  "arms": {
+    "B0": {"system": "conventional simulated annealing", "labs": 1, "search_per_lab": 28, "reproduction_per_lab": 4, "nomination": "top distinct"},
+    "B1": {"system": "one lab with base worker", "labs": 1, "search_per_lab": 28, "reproduction_per_lab": 4, "nomination": "top distinct"},
+    "B2": {"system": "four isolated labs with base worker", "labs": 4, "search_per_lab": 7, "reproduction_per_lab": 1, "nomination": "best per lab"},
+    "B3": {"system": "four shared-evidence labs with base worker", "labs": 4, "search_per_lab": 7, "reproduction_per_lab": 1, "nomination": "best per lab"},
+    "B4": {"system": "four shared-evidence labs with adapted worker", "labs": 4, "search_per_lab": 7, "reproduction_per_lab": 1, "nomination": "best per lab"}
+  },
+  "budget": {
+    "unit": "all-scenario bundle per family x seed x arm",
+    "search_total": 28,
+    "reproduction_total": 4,
+    "total": 32,
+    "target_total": 3840,
+    "fallback_total": 2560,
+    "descriptive_total": 1920,
+    "transfer": "forbidden between labs, phases, arms, seeds or families",
+    "initialization": "charge search allowance; freeze x0 before search",
+    "cache_and_shared_sample": "each requesting lab spends its search slot; record cache hit and actual compute separately",
+    "invalid_or_failed_search": "spends search slot; no free substitute",
+    "duplicate_nomination": "each lab spends and records its own reproduction slot",
+    "unused_reproduction": "record unused; never transfer",
+    "infrastructure_retry_limit": 1,
+    "retry": "only declared transient infrastructure failure; same candidate and slot; no substitute; record every attempt and cost",
+    "retry_accounting": null,
+    "cross_architecture": "same reproduction slot only if frozen reproducer policy authorizes it; no free extra evidence"
+  },
+  "epoch": {
+    "count_per_run": 1,
+    "reference": "immutable initial reference, shared by all labs for the entire search",
+    "schedule": ["all search", "deterministic nomination", "all reproductions", "rank-order gate"],
+    "barrier": "every lab search closed before any reproduction in each of B0 through B4; all slots terminal before final gate",
+    "sharing": "B3 and B4 may share evaluated evidence during search; no reproduction or accepted-board updates during search",
+    "demo": "sequential live-loop board is demonstration only, never benchmark evidence"
+  },
+  "nomination": {
+    "ranking": "minimum-anchored tolerance groups, candidate hash ascending within group",
+    "same_hash": "retain separate labs; within one lab choose smallest evaluated J then evaluation_id",
+    "eligibility": "core-validated complete candidate and reference J minus evaluated J strictly greater than acceptance_margin",
+    "no_substitute": true
+  },
+  "gate": {
+    "contract": "contract-0.2",
+    "ranking": "reproduced J, with nomination tolerance and hash ordering; consider margin-clearing candidates first",
+    "accepted": "one winner clearing frozen-reference margin; becomes the board",
+    "non_improving_current": "board J minus candidate J <= 0",
+    "within_margin": "0 < board J minus candidate J <= acceptance_margin; includes exact margin",
+    "valid_losers": "retain valid evidence; never stale_parent",
+    "reproduction": "fresh independent worker/process, identical bound inputs and frozen context; absolute J discrepancy <= reproduction_tolerance"
+  },
+  "parameters": {
+    "nomination_tolerance": null,
+    "acceptance_margin": null,
+    "reproduction_tolerance": null,
+    "sharing_tolerance": null
+  },
+  "pins": {
+    "metric_id": null,
+    "evaluator_version": null,
+    "scenario_manifest": null,
+    "active_layer": null,
+    "grid": null,
+    "geometry_and_stack": null,
+    "wire_metric_and_units": null,
+    "wire_connection_matrix": null,
+    "wire_x0": null,
+    "wire_alpha": null,
+    "wire_zero_baseline_absolute_cap": null,
+    "margin_derivation_and_numerical_uncertainty": null,
+    "family_manifest_and_stratified_order": null,
+    "paired_seed_values_and_run_order": null,
+    "hidden_corpus_and_split": null,
+    "models_prompts_tools_and_memory": null,
+    "lab_rosters": null,
+    "reproducer_policy": null,
+    "runtime_token_proposal_and_retry_cost_caps": null,
+    "training_only_headroom_protocol": null,
+    "pre_outcome_release": null
+  }
+}
