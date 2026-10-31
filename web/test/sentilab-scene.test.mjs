@@ -12,7 +12,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { closeSync, ftruncateSync, mkdtempSync, openSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -26,6 +26,7 @@ import { TrackAnimation } from "../public/sentilab/package/render.mjs";
 import { makeChain, signEnvelope } from "../../contracts/view-envelope-v0.5/view-envelope.mjs";
 import * as refPaging from "../../contracts/view-envelope-v0.6.1/paging.mjs";
 import { viewHref } from "../public/sentilab/view-links.mjs";
+import * as cliModule from "../../scripts/sentilab-scene.mjs";
 import * as source from "../public/sentilab/package/source.mjs";
 import { VIEW_PINS } from "../public/sentilab/view-pins.js";
 import { testKey } from "./sentilab-keys.mjs";
@@ -949,4 +950,108 @@ test("view links carry the run, source, bundle, test-key request and replay play
   const pkgHtml = readFileSync(join(repo, "web", "public", "sentilab", "package", "index.html"), "utf8");
   assert.match(pkgHtml, /<a href="\.\.\/" id="labLink">Lab view<\/a>/);
   assert.match(readFileSync(join(repo, "web", "public", "sentilab", "package", "package.js"), "utf8"), /\$\("labLink"\)\.href = viewHref\("\.\.\/"/);
+});
+
+// ── Review of 861c611: a failed /runs refresh, and the CLI's file intake ─────────────────────────────────────────────
+// 1. The package view's own poller (createLiveFeed), driven with a scripted fetch and clock. Event polls are valid
+//    through t15; at t16 the /runs refresh answers 503. The shared failed-poll transition (paging.mjs step() with no
+//    response, as for a failed events page) runs before the page is told, so the label is "STALE · transport" at once,
+//    and rows and cursor are kept.
+function scriptedCore(rows) {
+  const core = { runs503: false, calls: [] };
+  core.fetch = async (url) => {
+    core.calls.push(url);
+    if (url.startsWith("/api/view/runs")) {
+      if (core.runs503) return new Response("unavailable", { status: 503 });
+      return new Response(JSON.stringify([{ run_id: DEMO_RUN, arm: "live", family: "fixture-8chiplet", seed: 11, last_seq: 44 }]), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    const q = new URL(url, "http://x").searchParams;
+    const page = refPaging.servePage(rows, { cursor: Number(q.get("cursor")), limit: Number(q.get("limit")), ...(q.has("cursor_hash") ? { cursor_hash: q.get("cursor_hash") } : {}) });
+    return new Response(Buffer.from(page.bodyBytes), { status: page.status, headers: page.headers });
+  };
+  return core;
+}
+test("live: a /runs 503 mid-live gives STALE · transport at once (shared failed-poll transition), with rows and cursor kept", async () => {
+  const core = scriptedCore(refPaging.splitRows(demoBytes()));
+  let t = P_BASE_MS;
+  const seen = [];
+  const feed = source.createLiveFeed({ trust: testTrust, fetchImpl: core.fetch, now: () => t,
+    onChange: () => seen.push({ t: (t - P_BASE_MS) / 1000, label: feed.state.live ? source.liveModeOf(feed.state.live, t).label : "STALE" }) });
+  const label = () => source.liveModeOf(feed.state.live, t).label;
+  for (let s = 0; s <= 15; s += 1) {
+    t = P_BASE_MS + s * 1000;
+    await feed.pollOnce();
+    assert.equal(label(), `LIVE · progress ${s} s ago`, `t${s}: valid event polls`);
+  }
+  assert.equal(core.calls.filter((u) => u.startsWith("/api/view/runs")).length, 1, "/runs is refreshed only after 15 s");
+  core.runs503 = true;
+  t = P_BASE_MS + 16_000;
+  await feed.pollOnce();
+  assert.equal(core.calls.filter((u) => u.startsWith("/api/view/runs")).length, 2, "t16: the /runs refresh is due, and answers 503");
+  assert.equal(feed.state.connected, false);
+  assert.match(feed.state.error, /503/);
+  assert.equal(label(), "STALE · transport", "t16: at once, not LIVE");
+  assert.deepEqual(seen.at(-1), { t: 16, label: "STALE · transport" }, "the page is told after the transition, never with LIVE");
+  assert.equal(feed.state.live.paging.cursor, 44, "the cursor is kept");
+  assert.equal(feed.state.live.paging.rows.length, 44, "the rows are kept");
+  assert.equal(feed.state.live.verification.prefixEnd, 44, "the prefix is kept");
+  for (let s = 17; s <= 20; s += 1) {
+    t = P_BASE_MS + s * 1000;
+    await feed.pollOnce();
+    assert.equal(label(), "STALE · transport", `t${s}: still the transport reason, never a plain STALE`);
+  }
+  core.runs503 = false;
+  t = P_BASE_MS + 21_000;
+  await feed.pollOnce();
+  assert.equal(feed.state.connected, true);
+  assert.equal(label(), "LIVE · progress 21 s ago", "a good poll clears the failure; K last grew at t0");
+  assert.equal(feed.state.live.paging.cursor, 44, "no reset: paging resumed from the kept cursor");
+  assert.ok(core.calls.every((u) => !/[?&]after=/.test(u)), "never seq paging");
+});
+
+// 2. The CLI refuses a replay over 64 MiB before reading, splitting, decoding or parsing any of it.
+const sparseFile = (path, size) => {
+  const fd = openSync(path, "w");
+  try { ftruncateSync(fd, size); } finally { closeSync(fd); }
+};
+test("CLI entrypoint: a 64 MiB + 1 file exits non-zero with zero bytes read, zero slices and zero reference work", () => {
+  const dir = mkdtempSync(join(tmpdir(), "sentilab-cap-"));
+  try {
+    const big = join(dir, "over-cap.jsonl"), out = join(dir, "scene.json");
+    sparseFile(big, cliModule.MAX_FILE_BYTES + 1);
+    assert.equal(statSync(big).size, 67_108_865);
+    for (const args of [["build", big, "--pins", "test"], ["export", big, "--out", out, "--pins", "test"], ["build", big, "--pins", "test", "--strict"]]) {
+      const r = cli(...args);
+      assert.notEqual(r.status, 0, args.join(" "));
+      assert.equal(r.status, 1, "an input error");
+      assert.equal(r.stdout, "", "no scene is printed");
+      const err = JSON.parse(r.stderr);
+      assert.deepEqual([err.error, err.reason], ["input", "file_too_large"]);
+      assert.deepEqual(err.intake, { bytes_read: 0, split_calls: 0, rows_split: 0 }, "nothing read or split");
+      assert.deepEqual(err.reference_counters, { parse: 0, canonical: 0, hash: 0, sign: 0, verify: 0 }, "nothing parsed, hashed or verified");
+    }
+    assert.throws(() => statSync(out), "export wrote nothing");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test("CLI intake: type and length are checked before any split; the bounded reader refuses past the cap", () => {
+  const before = { ...cliModule.intake };
+  const trust = cliModule.trustFor({ pins: "test" });
+  assert.throws(() => cliModule.sceneFromReplay(new Uint8Array(cliModule.MAX_FILE_BYTES + 1), { trust }), (e) => e instanceof cliModule.InputError && e.reason === "file_too_large");
+  assert.throws(() => cliModule.sceneFromReplay("text, not bytes", { trust }), (e) => e instanceof cliModule.InputError && e.reason === "not_bytes");
+  assert.deepEqual(cliModule.intake, before, "no split for refused input");
+  const dir = mkdtempSync(join(tmpdir(), "sentilab-read-"));
+  try {
+    const at = join(dir, "at-cap.jsonl"), over = join(dir, "over-cap.jsonl");
+    writeFileSync(at, "x".repeat(32));
+    writeFileSync(over, "x".repeat(33));
+    const read0 = cliModule.intake.bytes_read;
+    assert.equal(cliModule.readReplayCapped(at, { cap: 32 }).length, 32, "exactly at the cap is read");
+    assert.equal(cliModule.intake.bytes_read - read0, 32);
+    assert.throws(() => cliModule.readReplayCapped(over, { cap: 32 }), (e) => e instanceof cliModule.InputError && e.reason === "file_too_large");
+    assert.equal(cliModule.intake.bytes_read - read0, 32, "the over-cap file is refused at the stat, unread");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

@@ -187,62 +187,72 @@ export { REASON_TEXT };
 // The browser poller: GET /api/view/runs, then GET /api/view/events?run_id=&cursor=&limit=[&cursor_hash=], draining up
 // to 16 pages a poll while x-has-more is true, then every 1 s from the last cursor. Terminal states stop it for good;
 // only a reload (a new feed) starts over from cursor 0. onChange() is called after every poll.
-async function fetchPage(runId, req) {
+// fetchImpl and now are injectable so the tests drive this exact poller; the page uses fetch and Date.now.
+async function fetchPage(fetchImpl, runId, req) {
   const query = new URLSearchParams({ run_id: runId, cursor: String(req.cursor), limit: String(req.limit) });
   if (req.cursor_hash !== undefined) query.set("cursor_hash", req.cursor_hash);
   let r;
-  try { r = await fetch(`/api/view/events?${query}`, { cache: "no-store" }); } catch { return null; }   // transport
+  try { r = await fetchImpl(`/api/view/events?${query}`, { cache: "no-store" }); } catch { return null; }   // transport
   if (r.status !== 200) { r.body?.cancel().catch(() => {}); return { status: r.status, headers: r.headers, bodyBytes: new Uint8Array(0) }; }
   // Raw bytes, never decoded whole; reading stops past 4 MiB, and a body that isn't read whole fails as transport.
   const body = await readBodyCapped(r, MAX_API_BYTES, "response_too_large").catch(() => ({ ok: false }));
   return { status: 200, headers: r.headers, bodyBytes: body.ok ? body.bytes : null };
 }
 
-export function createLiveFeed({ trust, runId = null, onChange }) {
+export function createLiveFeed({ trust, runId = null, onChange = () => {}, fetchImpl = (...args) => fetch(...args), now = () => Date.now() }) {
   const state = { runs: null, runsAt: 0, runId, live: runId ? createLive(runId) : null, connected: null, error: "" };
   let timer = null, stopped = true;
-  const schedule = (ms) => { clearTimeout(timer); if (!stopped) timer = setTimeout(poll, ms); };
-  async function poll() {
-    if (stopped) return;
-    if (state.live?.paging.degraded) { onChange(); return; }   // stopped for good; a reload starts over
-    if (typeof document !== "undefined" && document.hidden) return schedule(LIVE_BACKOFF_MS);
+  const schedule = (ms) => { clearTimeout(timer); if (!stopped && ms !== null) timer = setTimeout(poll, ms); };
+  // One poll. Returns the delay before the next one (null: stopped for good).
+  async function pollOnce() {
+    if (state.live?.paging.degraded) { onChange(); return null; }   // stopped for good; a reload starts over
     try {
-      if (!state.runs || !state.runId || Date.now() - state.runsAt > 15000) {
-        const r = await fetch("/api/view/runs", { cache: "no-store" });
+      if (!state.runs || !state.runId || now() - state.runsAt > 15000) {
+        const r = await fetchImpl("/api/view/runs", { cache: "no-store" });
         if (!r.ok) throw new Error(`/api/view/runs answered ${r.status}`);
         const body = await readBodyCapped(r, MAX_SMALL_JSON, "too_large");
         if (!body.ok) throw new Error("/api/view/runs answered with more than 256 KiB");
         const doc = strictJson(body.bytes);
         state.runs = (Array.isArray(doc) ? doc : isObj(doc) && Array.isArray(doc.runs) ? doc.runs : [])
           .filter((x) => isObj(x) && typeof x.run_id === "string" && x.run_id.length <= 128).slice(0, 200);
-        state.runsAt = Date.now();
+        state.runsAt = now();
         state.connected = true;
         if (!state.runId && state.runs.length) state.runId = state.runs[0].run_id;
         if (state.runId && !state.live) state.live = createLive(state.runId);
-        if (!state.runId) { onChange(); return schedule(LIVE_BACKOFF_MS); }
+        if (!state.runId) { onChange(); return LIVE_BACKOFF_MS; }
       }
     } catch (error) {
       state.connected = false;
       state.error = String(error?.message ?? error);
+      // A failed /runs refresh is a failed poll. The shared paging transition records it (paging.mjs step() with no
+      // response: failure "transport", rows and cursor kept) and the tracker counts it as failed, exactly as for a
+      // failed events page, BEFORE the page is told: the label reads "STALE · transport" at once, never LIVE.
+      if (state.live) await applyPage(state.live, null, now(), trust);
       onChange();
-      return schedule(LIVE_BACKOFF_MS);
+      return LIVE_BACKOFF_MS;
     }
     const live = state.live;
     let outcome = "ok";
     for (let pages = 0; pages < MAX_PAGES_PER_POLL; pages += 1) {
       const req = liveRequest(live);
       if (req === null) break;                        // terminal: request() sends nothing more
-      const response = await fetchPage(live.runId, req);
-      ({ outcome } = await applyPage(live, response, Date.now(), trust));
+      const response = await fetchPage(fetchImpl, live.runId, req);
+      ({ outcome } = await applyPage(live, response, now(), trust));
       if (outcome !== "ok" || !live.paging.has_more) break;
     }
     state.connected = outcome !== "transport";
     state.error = outcome === "ok" ? "" : REASON_TEXT[outcome] ?? outcome;
     onChange();
-    if (!live.paging.degraded) schedule(outcome !== "ok" ? LIVE_BACKOFF_MS : live.paging.has_more ? 0 : LIVE_POLL_MS);
+    return live.paging.degraded ? null : outcome !== "ok" ? LIVE_BACKOFF_MS : live.paging.has_more ? 0 : LIVE_POLL_MS;
+  }
+  async function poll() {
+    if (stopped) return;
+    if (typeof document !== "undefined" && document.hidden) return schedule(LIVE_BACKOFF_MS);
+    schedule(await pollOnce());
   }
   return {
     state,
+    pollOnce,
     start() { if (!stopped) return; stopped = false; poll(); },
     stop() { stopped = true; clearTimeout(timer); },
     poke() { if (!stopped) { clearTimeout(timer); poll(); } },
