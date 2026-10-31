@@ -220,6 +220,22 @@ class FreezeTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.replay([candidate("a", 8)], [first, attempt(number=1)])
 
+    def test_exhausted_preexecution_retry_is_inconclusive_and_keeps_reservation(self):
+        first = attempt(j=None, status="infrastructure_failure", execution="not_started")
+        retry = replace(first, attempt=1)
+        result = self.replay([candidate("a", 8)], [retry, first])
+        self.assertFalse(result["complete"])
+        self.assertEqual(result["slots"][0]["status"], "inconclusive")
+        self.assertEqual(result["slots"][0]["reserved_bundles"], 1)
+        self.assertEqual(result["unused_reproduction_bundles"], 3)
+        self.assertEqual(result["physical_attempts"], 2)
+        self.assertEqual(result["reproduction_bundles_spent"], 0)
+        self.assertEqual(result["charged_by_lab"]["lab-a"], 7)
+        self.assertEqual(result["gate"]["board"], self.reference)
+        self.assertEqual(result["best_evaluated_unreproduced"], candidate("a", 8))
+        with self.assertRaises(ValueError):
+            self.replay([candidate("a", 8)], [first, retry, attempt(number=2)])
+
     def test_no_lab_exceeds_eight_including_cache_and_retry(self):
         for bad in (8, -1, True, None):
             with self.assertRaises(ValueError):

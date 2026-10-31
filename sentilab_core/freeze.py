@@ -327,7 +327,7 @@ def replay_epoch(candidates, attempts, arm, reference, *, freeze, labs, search_c
         success = last.status == "success" and abs(_number(last.j) - _number(c.j)) <= tolerance
         if success:
             reproduced.append(replace(c, j=last.j, uncertainty=last.uncertainty, measurement_id=last.measurement_id))
-        missing = last.status == "missing" or (last.status == "infrastructure_failure" and last.execution != "not_started")
+        missing = last.status in {"missing", "infrastructure_failure"}
         complete = complete and not missing
         status = "reproduced" if success else "inconclusive" if missing else "reproduction_failed"
         charged[slot["lab"]] += charge
