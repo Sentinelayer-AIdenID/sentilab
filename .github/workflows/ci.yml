@@ -97,7 +97,7 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
-      - run: pip install -r requirements.txt
+      - run: pip install -r requirements.txt -r requirements-service.txt
       - name: Python canonical and live state match the pinned JavaScript contracts
         env:
           OPENBLAS_NUM_THREADS: '1'
@@ -105,6 +105,16 @@ jobs:
         run: python -m unittest -q sentilab_core.conformance
       - name: ResultCheck vectors match Python, CLI and MCP byte for byte
         run: python -m sentilab_core.test_resultcheck --parity
+      - name: Producer HTTP paging matches the v0.6.1 contract
+        env:
+          OPENBLAS_NUM_THREADS: '1'
+          OMP_NUM_THREADS: '1'
+        run: |
+          if [ -d contracts/view-envelope-v0.6.1 ]; then
+            python -m app.check_view_paging contracts/view-envelope-v0.6.1
+          else
+            echo "Skipping producer HTTP paging: contracts/view-envelope-v0.6.1 is absent"
+          fi
 
   secret-scan:
     runs-on: ubuntu-24.04
