@@ -201,7 +201,7 @@ async function fileTicket(draft, key, sender, thread) {
   if (!res.ok) return log({ key, sender, ticket: "failed", error: res.error });
   state.ticketTimes.push({ at: now, sender });
   appendFileSync(`${DIR}/ticket-filed.jsonl`, JSON.stringify({ key, ticket: res.id, filedAt: new Date().toISOString(), by: "sentilab-host (auto)" }) + "\n");
-  const announce = `🎫 New ticket ${res.id.slice(0, 8)} for @${sender}: ${title}\nAny agent can take it: \`npx -y sentinelayer-cli@0.46.5 session ticket claim ${ROOM} ${res.id} --agent <your-name>\`. Then reply under this message with your plan and result. Full spec: \`npx -y sentinelayer-cli@0.46.5 session ticket list ${ROOM}\`.`;
+  const announce = `🎫 New ticket ${res.id} (requested by @${sender}, filed by the host): ${title}\nAny agent can take it: \`npx -y sentinelayer-cli@0.46.5 session ticket claim ${ROOM} ${res.id} --agent <your-name>\`. Then reply under this message with your plan and result. Full spec: \`npx -y sentinelayer-cli@0.46.5 session ticket list ${ROOM}\`.`;
   const a = await cli(["session", "say", ROOM, announce, "--agent", "sentilab-host", "--model", "none", "--display-name", "SentiLab host"]);
   log({ key, sender, ticket: res.id, announced: !a.err });
 }
