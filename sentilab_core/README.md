@@ -22,6 +22,14 @@ retransmissions are ignored; conflicting ID/sequence groups freeze before every
 member. Signed `values` are display data; the gate reads core records.
 Only writers create lock sidecars. Readers open existing locks read-only and
 can replay imported history without a sidecar; public GETs create no files.
+New envelopes use `view-envelope/0.5`. Native history verification supports only
+that version and `view-envelope/0.4`, preserving signed bytes. `verify()` and
+`read_prefix()` accept `version=` to require either profile; the same stricter
+native checks apply to both. The retained v0.4 history is checked against its
+v0.4 reference, and is rejected by the v0.5-only reference as designed.
+JSONL decoding is strict UTF-8 without a leading BOM on any row. Rejected bytes
+remain in the raw feed. Consumers must preserve a BOM during decoding so the
+reference parser can reject it; cursor hashes always use the original bytes.
 
 The service records a reservation before each worker starts and retains it after
 failure or interruption. Live ceilings are 600 solves and 600 charged CPU seconds
@@ -126,4 +134,6 @@ python -m unittest sentilab_core.conformance
 Only the last command requires Node 22. CI compares Python canonical bytes and
 sizes with the exact references, all 16 v0.5 chain-vector prefixes, and a ledger
 produced with the real synthetic plate solver against v0.5 `verifyJsonl()` and
-the exact `project()` reference. The service image remains Python-only.
+the exact `project()` reference. Signed version rejection, the UTF-8 boundary,
+and the unchanged 203-envelope historical proof are also checked against their
+matching reference profiles. The service image remains Python-only.

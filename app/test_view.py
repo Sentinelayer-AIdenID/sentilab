@@ -18,6 +18,7 @@ from app import view
 from sentilab_core.envelope import build, canonical, genesis
 from sentilab_core.operations import Context
 from sentilab_core.test_ledger import RuntimeSigner, run_record
+from sentilab_core.test_history import signed_version
 from sentilab_core.test_conductor import PlateOracle
 from sentilab_core.budget import Limits
 
@@ -144,6 +145,19 @@ class ViewTests(unittest.TestCase):
             response = self.get("/api/view/events?run_id=bad&after=0")
             self.assertEqual(response["unrenderable_rows"], 1)
             self.assertEqual(response["prefix_end"], 0)
+
+    def test_unknown_version_and_bom_freeze_diagnostics_and_preserve_raw_feed(self):
+        current = self.seed_run("profile", 1)[0]
+        unknown = signed_version(current, "unrecognized/999", self.signer)
+        for raw in (canonical(unknown) + b"\n", b"\xef\xbb\xbf" + canonical(current) + b"\n"):
+            with self.subTest(bom=raw.startswith(b"\xef\xbb\xbf")):
+                (self.root / "profile.jsonl").write_bytes(raw)
+                diagnostic = self.get("/api/view/events?run_id=profile&cursor=0")
+                self.assertEqual(diagnostic["prefix_end"], 0)
+                self.assertIsNotNone(diagnostic["chain_error"])
+                with urlopen(f"http://127.0.0.1:{self.port}/api/view/events?run_id=profile&cursor=0",
+                             timeout=10) as response:
+                    self.assertEqual(response.read(), raw)
 
     def test_service_starts_without_post_and_graceful_restart_keeps_progress(self):
         oracle = asyncio.run(PlateOracle().initialize())

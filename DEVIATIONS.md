@@ -8,7 +8,18 @@
   `sentilab_core/projection.py` maintains the emitted event subset; CI compares it
   to the exact JavaScript reference. Unsupported evidence workflows report an
   explicit projection error and are not silently approximated.
-- The writer emits reviewed v0.5 envelopes; compatible v0.4 history still verifies.
+- The writer emits reviewed v0.5 envelopes. The native verifier enumerates only
+  `view-envelope/0.4` and `view-envelope/0.5`; every other version fails closed.
+  `verify()` and `read_prefix()` can pin `version=` to either profile. Both use
+  the same hash/signature format and the stricter native checks below. Signed
+  history keeps its original version and bytes; the exact v0.4 reference is used
+  for the retained history, which the v0.5-only reference correctly rejects.
+  Native historical compatibility does not claim v0.5-only browser conformance.
+  JSONL rows are strict UTF-8; a leading BOM on any row is rejected by parsing,
+  while U+FEFF inside a JSON string is valid. UTF-16/32 auto-detection is disabled.
+  The raw feed preserves rejected bytes. Consumers must preserve a BOM when
+  decoding (JavaScript `TextDecoder('utf-8', {fatal:true, ignoreBOM:true})`), then
+  pass that text to the exact reference; cursor hashes use original raw bytes.
   Input caps, iterative canonical-size accounting, canonical-identical duplicates,
   conflict freezing and bounded JSONL pages are implemented. The native verifier
   keeps stricter existing run/actor/event field and role checks, and reports one
