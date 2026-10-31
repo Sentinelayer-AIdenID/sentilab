@@ -1,10 +1,18 @@
 {
-  "schema": "slab-039-prereg-v1",
+  "schema": "slab-039-prereg-v2",
   "ticket": "SLAB-039",
-  "description": "Headroom runner: cheap search (random/SA/UCB1) at 32 evaluations vs a long SA to determine if an LLM has room to beat cheap methods on this task",
+  "description": "Headroom runner: cheap search (random/SA/UCB1/signal_portfolio) with 28 search + 4 reproduction evaluations vs a long SA to determine if an LLM has room to beat cheap methods on this task",
   "fixture": "ascend910",
   "grid": 32,
   "mesh_error_source": "SLAB-006a mesh freeze ticket",
+  "allocation": {
+    "headroom_cpu_minutes": 50,
+    "aggregate_cpu_minutes": 60,
+    "aggregate_solve_limit": 10000,
+    "headroom_solve_limit": 9800,
+    "shared_elapsed_deadline_minutes": 90,
+    "note": "Carter #56078: headroom reservation is 50 CPU min within aggregate 60, 9800 actual solves within 10000 aggregate, shared 90 elapsed deadline counting child CPU/warmup/retry/restarts"
+  },
   "rule": {
     "k": 5,
     "criterion": "pass only if cheap_median - best >= k * max|J32 - J64|",
@@ -14,29 +22,49 @@
     "note": "Use the strongest cheap method's median, not the average, as the bar. All temperatures in C; lower is better."
   },
   "cheap_methods": {
-    "methods": ["random", "simulated_annealing", "ucb1"],
-    "evaluations_per_method": 32,
+    "methods": ["random", "simulated_annealing", "ucb1", "signal_portfolio"],
+    "search_evaluations_per_method": 28,
+    "reproduction_evaluations_per_method": 4,
+    "total_evaluations_per_method": 32,
+    "note": "28 search + 4 reproduction = 32 total per method. Carter #56078: distinguish 28+4 benchmark vs 32-search diagnostic/prefix.",
     "seeds": [0, 1, 2, 3, 4, 5, 6, 7],
     "seed_count": 8
   },
   "long_sa": {
     "restarts": 4,
     "max_evaluations_per_restart": 1500,
-    "max_cpu_minutes": 90,
+    "max_cpu_minutes": 50,
     "seeds": [100, 101, 102, 103],
-    "note": "Each restart is a separate seed; total max evaluations = 4 * 1500 = 6000"
+    "note": "Each restart is a separate seed; total max evaluations = 4 * 1500 = 6000. CPU cap per Carter #56078: 50 min (not 90)."
   },
   "hard_caps": {
     "evaluations_per_cheap_lane": 32,
     "long_sa_max_evaluations_per_restart": 1500,
-    "long_sa_max_cpu_minutes": 90,
-    "enforced_in_code": true
+    "long_sa_max_cpu_minutes": 50,
+    "enforced_in_code": true,
+    "note": "CPU cap 50 min per Carter #56078 correction."
   },
   "reporting": {
     "outputs": ["RESULT.json", "REPORT.md"],
     "gap_with_spread": true,
     "plain_verdict": true
   },
+  "amendments": [
+    {
+      "version": 2,
+      "previous_schema": "slab-039-prereg-v1",
+      "amended_at": "2026-10-31T05:23:00Z",
+      "changes": [
+        "CPU cap reduced from 90 to 50 minutes (Carter #56078)",
+        "Added signal_portfolio as fourth cheap method (restore declared cheap heuristic)",
+        "Split evaluations into 28 search + 4 reproduction per method (distinguish benchmark vs diagnostic)",
+        "Added allocation section with aggregate limits (Carter #56078)",
+        "Schema bumped to v2; no numerical execution yet"
+      ],
+      "previous_values_preserved": "Any results obtained under v1 remain labeled as v1 protocol"
+    }
+  ],
   "committed_at": "2026-10-31T05:07:00Z",
+  "amended_at": "2026-10-31T05:23:00Z",
   "commit_before_first_result": true
 }
