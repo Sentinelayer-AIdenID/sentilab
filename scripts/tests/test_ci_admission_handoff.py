@@ -1,5 +1,6 @@
 """Read-only CI/trusted writer handoff against finite fake GitHub responses."""
 import copy
+import hashlib
 import json
 import os
 import sys
@@ -13,6 +14,14 @@ from scripts import ci_admit
 from scripts.ci_allocation import EXPIRY, RefConflict
 from scripts.tests import test_ci_workflow as workflow_fixture
 from scripts.tests.test_ci_allocation import IDENTITY, FakeRefs
+
+
+def git_commit(tree, parents):
+    """A real Git commit ID: it hashes the tree and the ORDERED parents."""
+    data = ''.join(['tree ' + tree + '\n'] + ['parent ' + sha + '\n' for sha in parents]
+                   + ['author CI test <ci@example.invalid> 0 +0000\n',
+                      'committer CI test <ci@example.invalid> 0 +0000\n', '\nMerge\n']).encode()
+    return hashlib.sha1(b'commit ' + str(len(data)).encode() + bytes(1) + data).hexdigest()
 
 
 class GitHubFixture:
@@ -33,21 +42,39 @@ class GitHubFixture:
                      'merge_commit_sha': IDENTITY.build_sha}
         self.merge = {'sha': IDENTITY.build_sha,
                       'parents': [{'sha': 'c' * 40}, {'sha': IDENTITY.head_sha}]}
+        # Default-branch history, oldest first, and the commit its ref points at.
+        self.history, self.tip = ['c' * 40], 'c' * 40
         self.bootstrap = {'allocation_id': '56314', 'historical_runs_debit': 2,
                           'historical_consumption': 'unknown; fake owner debit'}
         self.slots, self.commits, self.calls = {}, {}, []
         self.writable = True
+        # Fake clock for the writer's bounded merge poll; each sleep may change GitHub.
+        self.now, self.slept, self.during_sleep = 0, [], []
 
     def request(self, method, path, body=None):
         self.calls.append((method, path, body))
         if method != 'GET' and not self.writable:
             raise AssertionError('read-only CI attempted a write')
+        # Fresh JSON per call, as from the real API, so a cached response goes stale.
+        return copy.deepcopy(self.respond(method, path, body))
+
+    def respond(self, method, path, body):
         if path == '/actions/runs/123':
             return self.run
         if path == '/pulls/37':
             return self.pull
         if path == '/git/commits/' + IDENTITY.build_sha:
             return self.merge
+        if path == '/git/ref/heads/main':
+            return {'ref': 'refs/heads/main', 'object': {'type': 'commit', 'sha': self.tip}}
+        if path.startswith('/compare/'):
+            older, newer = path.removeprefix('/compare/').split('...')
+            if older == newer:
+                return {'status': 'identical'}
+            if older in self.history and newer in self.history:
+                ahead = self.history.index(older) < self.history.index(newer)
+                return {'status': 'ahead' if ahead else 'behind'}
+            return {'status': 'diverged'}
         if path.endswith('/bootstrap'):
             return {'object': {'type': 'commit', 'sha': 'base-commit'}}
         if path == '/git/commits/base-commit':
@@ -67,6 +94,45 @@ class GitHubFixture:
         if path.startswith('/git/commits/'):
             return self.commits[path.rsplit('/', 1)[1]]
         raise AssertionError((method, path))
+
+    def clock(self):
+        return self.now
+
+    def sleep(self, seconds):
+        # A lost deadline must fail the test, not hang it.
+        if len(self.slept) >= 100:
+            raise AssertionError('unbounded merge poll')
+        self.slept.append(seconds)
+        self.now += seconds
+        if self.during_sleep:
+            self.during_sleep.pop(0)()
+
+    def identity(self, payload=None, **options):
+        store = ci_admit.GitHubRefs(IDENTITY.repository, '', request=self.request)
+        return ci_admit.workflow_identity(store, self.payload if payload is None else payload,
+                                          clock=self.clock, sleep=self.sleep, **options)
+
+    def merged(self, onto, tree='e' * 40):
+        """Register GitHub's merge of the PR head onto `onto`; return its commit ID."""
+        sha = git_commit(tree, [onto, IDENTITY.head_sha])
+        self.commits[sha] = {'sha': sha, 'tree': {'sha': tree},
+                             'parents': [{'sha': onto}, {'sha': IDENTITY.head_sha}]}
+        return sha
+
+
+def run_cli(fixture, directory, mode, **overrides):
+    """Run the shipped CLI as its workflow step does; return the exit code and receipt."""
+    event = directory / 'event.json'
+    event.write_text(json.dumps(fixture.payload))
+    output = directory / 'receipt.json'
+    environment = workflow_fixture.WorkflowTests().environment(directory)
+    environment.update(GH_TOKEN='', GITHUB_EVENT_PATH=str(event), GITHUB_EVENT_NAME=(
+        'workflow_run' if mode == '--workflow-run' else 'pull_request'), **overrides)
+    with patch.dict(os.environ, environment), \
+         patch.object(ci_admit.GitHubRefs, '_request', side_effect=fixture.request), \
+         patch.object(sys, 'argv', ['ci_admit', mode, str(output)]):
+        code = ci_admit.main()
+    return code, output.read_text()
 
 
 class HandoffTests(unittest.TestCase):
@@ -204,8 +270,10 @@ class HandoffTests(unittest.TestCase):
         fixture = GitHubFixture()
         store = ci_admit.GitHubRefs(IDENTITY.repository, '', request=fixture.request)
         self.assertEqual(ci_admit.workflow_identity(store, fixture.payload), IDENTITY)
+        # Up to date: base.sha is the tip, so binding the tip needs no compare call.
         self.assertEqual([path for _, path, _ in fixture.calls], [
-            '/actions/runs/123', '/pulls/37', '/git/commits/' + IDENTITY.build_sha])
+            '/actions/runs/123', '/pulls/37', '/git/commits/' + IDENTITY.build_sha,
+            '/git/ref/heads/main'])
         fixture.payload['workflow_run'].update(event='push', head_branch='main', pull_requests=[])
         fixture.run.update(fixture.payload['workflow_run'])
         fixture.calls.clear()
@@ -238,9 +306,8 @@ class HandoffTests(unittest.TestCase):
             payload = {key: source[key] for key in fixture.payload}
             if path.startswith('workflow_run.'):
                 fixture.run.update(payload['workflow_run'])
-            store = ci_admit.GitHubRefs(IDENTITY.repository, '', request=fixture.request)
             with self.subTest(path=path), self.assertRaises((ValueError, TypeError)):
-                ci_admit.workflow_identity(store, payload)
+                fixture.identity(payload)  # a pending merge polls on the fake clock
             self.assertTrue(all(method == 'GET' for method, _, _ in fixture.calls))
         fixture = GitHubFixture()
         fixture.payload['workflow_run']['event'] = 'push'
@@ -248,6 +315,239 @@ class HandoffTests(unittest.TestCase):
         store = ci_admit.GitHubRefs(IDENTITY.repository, '', request=fixture.request)
         with self.assertRaisesRegex(ValueError, 'default-branch'):
             ci_admit.workflow_identity(store, fixture.payload)
+
+
+class MainHistoryBindingTests(unittest.TestCase):
+    """The admitted build is the PR head merged onto main's CURRENT tip, never base.sha."""
+
+    def test_pr64_stale_base_sha_merged_onto_the_current_tip_is_admitted(self):
+        # Receipts of refused allocation run 41233113186 (upstream CI run 41233110052):
+        # base.sha stayed at 551777a while GitHub merged e8acc48 onto main's tip 46791be.
+        base, middle, tip = ('551777a9516cc81e905ccc2daf4955d32151ac14',
+                             'd298cb007081e9ad9334e3d77d412d789c126b0c',
+                             '46791be360555d0e24b4ad5f906abafb71f07118')
+        head = 'e8acc48a0bbdf12a5722b42956708960f7526e19'
+        build = 'abab075152ae067b1cf154cc87912b8b6c2b4ac5'
+        fixture = GitHubFixture()
+        fixture.payload['workflow_run']['head_sha'] = fixture.run['head_sha'] = head
+        fixture.pull.update(head={'sha': head}, merge_commit_sha=build)
+        fixture.pull['base']['sha'] = base
+        fixture.history, fixture.tip = [base, middle, tip], tip
+        fixture.commits[build] = {'sha': build, 'parents': [{'sha': tip}, {'sha': head}]}
+        self.assertEqual(fixture.identity(), replace(IDENTITY, head_sha=head, build_sha=build))
+        self.assertIn(('GET', '/compare/' + base + '...' + tip, None), fixture.calls)
+        self.assertEqual(fixture.slept, [])
+
+    def test_merge_onto_an_old_tip_or_off_main_is_stale_and_refused_at_the_deadline(self):
+        older, base, newer, tip = '0' * 40, 'c' * 40, '1' * 40, '2' * 40
+        for case, onto in (('older than base.sha', older), ('old tip at base.sha', base),
+                           ('old tip after base.sha', newer), ('diverged from main', '9' * 40)):
+            with self.subTest(case=case):
+                fixture = GitHubFixture()
+                fixture.history, fixture.tip = [older, base, newer, tip], tip
+                build = fixture.pull['merge_commit_sha'] = fixture.merged(onto)
+                with self.assertRaisesRegex(ValueError, 'stale merge commit'):
+                    fixture.identity()
+                self.assertEqual(fixture.now, 60)
+                paths = [path for _, path, _ in fixture.calls]
+                # Every iteration re-read the run, the PR, the merge and the tip.
+                for path in ('/actions/runs/123', '/pulls/37', '/git/commits/' + build,
+                             '/git/ref/heads/main'):
+                    self.assertEqual(paths.count(path), 21, path)
+                self.assertFalse([path for path in paths if path.startswith('/compare/')])
+
+    def test_merged_tip_must_contain_the_recorded_base(self):
+        # Defensive: even a merge onto the current tip is refused when that tip does
+        # not contain base.sha (a rewound or rewritten default branch).
+        tip, later = '1' * 40, '2' * 40
+        for history, base, status in (([tip, later], later, 'behind'), ([tip], '9' * 40, 'diverged')):
+            with self.subTest(status=status):
+                fixture = GitHubFixture()
+                fixture.history, fixture.tip = history, tip
+                fixture.pull['base']['sha'] = base
+                fixture.pull['merge_commit_sha'] = fixture.merged(tip)
+                with self.assertRaisesRegex(ValueError, 'base is not an ancestor of the merged tip'):
+                    fixture.identity()
+                self.assertIn(('GET', '/compare/' + base + '...' + tip, None), fixture.calls)
+
+    def test_merge_must_have_exactly_two_parents_ending_at_the_run_head(self):
+        tip, head, other = 'c' * 40, IDENTITY.head_sha, 'd' * 40
+        for parents in ([tip, other], [tip, 'A' * 40], [head, tip], [head], [],
+                        [tip, head, other], [tip, other, head]):
+            with self.subTest(parents=parents):
+                fixture = GitHubFixture()
+                fixture.merge['parents'] = [{'sha': sha} for sha in parents]
+                with self.assertRaisesRegex(ValueError, 'does not bind the pull request head'):
+                    fixture.identity()
+                self.assertEqual(fixture.slept, [])  # refused at once, never polled
+
+    def test_pending_merge_is_polled_and_admitted_once_github_computes_it(self):
+        for computed_after in (1, 10):
+            with self.subTest(sleeps=computed_after):
+                fixture = GitHubFixture()
+                fixture.pull['merge_commit_sha'] = None
+                fixture.during_sleep = [lambda: None] * (computed_after - 1) + [
+                    lambda fixture=fixture: fixture.pull.update(merge_commit_sha=IDENTITY.build_sha)]
+                self.assertEqual(fixture.identity(), IDENTITY)
+                self.assertEqual(fixture.slept, [3] * computed_after)
+
+    def test_merge_still_pending_at_the_deadline_is_refused_within_60_seconds(self):
+        fixture = GitHubFixture()
+        fixture.pull['merge_commit_sha'] = None
+        with self.assertRaisesRegex(ValueError, 'merge commit still pending'):
+            fixture.identity()
+        self.assertEqual((fixture.slept, fixture.now), ([3] * 20, 60))
+        self.assertFalse([path for _, path, _ in fixture.calls if path.startswith('/git/')])
+        # The last sleep is cut at the deadline, never past it.
+        fixture = GitHubFixture()
+        fixture.pull['merge_commit_sha'] = None
+        with self.assertRaisesRegex(ValueError, 'merge commit still pending'):
+            fixture.identity(merge_timeout=10)
+        self.assertEqual((fixture.slept, fixture.now), ([3, 3, 3, 1], 10))
+
+    def test_pull_request_drift_during_the_poll_is_refused(self):
+        drift = {'head moved': lambda fixture: fixture.pull['head'].update(sha='d' * 40),
+                 'closed': lambda fixture: fixture.pull.update(state='closed'),
+                 'base branch': lambda fixture: fixture.pull['base'].update(ref='other'),
+                 'base repository': lambda fixture: fixture.pull['base']['repo'].update(
+                     full_name='other/repo')}
+        for name, change in drift.items():
+            with self.subTest(drift=name):
+                fixture = GitHubFixture()
+                fixture.pull['merge_commit_sha'] = None
+                fixture.during_sleep = [lambda change=change, fixture=fixture: change(fixture)]
+                with self.assertRaisesRegex(ValueError, 'pull request source or base changed'):
+                    fixture.identity()
+                self.assertEqual(fixture.slept, [3])
+
+    def test_upstream_run_ending_or_changing_during_the_poll_is_refused(self):
+        drift = {'upstream run already terminal': lambda fixture: fixture.run.update(status='completed'),
+                 'upstream run identity changed': lambda fixture: fixture.run.update(run_attempt=2)}
+        for reason, change in drift.items():
+            with self.subTest(reason=reason):
+                fixture = GitHubFixture()
+                fixture.pull['merge_commit_sha'] = None
+                fixture.during_sleep = [lambda change=change, fixture=fixture: change(fixture)]
+                with self.assertRaisesRegex(ValueError, reason):
+                    fixture.identity()
+                self.assertEqual(fixture.slept, [3])
+
+    def test_non_hex_shas_and_branch_names_are_refused_before_any_api_path(self):
+        def branch(fixture, bad):
+            fixture.payload['repository']['default_branch'] = fixture.pull['base']['ref'] = bad
+        cases = [
+            ('invalid or unsupported allocation identity', '../' + 'b' * 37,
+             lambda fixture, bad: fixture.pull.update(merge_commit_sha=bad)),
+            ('invalid merge parent SHA', 'C' * 40, lambda fixture, bad: fixture.merge.update(
+                parents=[{'sha': bad}, {'sha': IDENTITY.head_sha}])),
+            ('invalid merge parent SHA', None, lambda fixture, bad: fixture.merge.update(
+                parents=[{'sha': bad}, {'sha': IDENTITY.head_sha}])),
+            ('invalid default-branch tip SHA', 'c' * 39 + 'x',
+             lambda fixture, bad: setattr(fixture, 'tip', bad)),
+            ('invalid pull request base SHA', '0' * 39,
+             lambda fixture, bad: fixture.pull['base'].update(sha=bad)),
+            ('invalid default branch name', 'main/../tags', branch),
+            ('invalid default branch name', None, branch),
+        ]
+        for reason, bad, inject in cases:
+            with self.subTest(reason=reason, bad=bad):
+                fixture = GitHubFixture()
+                inject(fixture, bad)
+                try:
+                    fixture.identity()
+                except Exception as exc:  # judged below, after the API calls
+                    refusal = exc
+                else:
+                    refusal = None
+                self.assertFalse([path for _, path, _ in fixture.calls if str(bad) in path])
+                self.assertIsInstance(refusal, ValueError)  # never a TypeError or admission
+                self.assertRegex(str(refusal), reason)
+
+    def test_stale_merge_recomputed_inside_the_window_binds_the_fresh_tip(self):
+        old, new, newer = 'c' * 40, '1' * 40, '2' * 40
+        fixture = GitHubFixture()
+        fixture.history, fixture.tip = [old, new], new
+        fixture.pull['merge_commit_sha'] = fixture.merged(old)
+        onto_new, onto_newer = fixture.merged(new), fixture.merged(newer)
+
+        def main_moves_while_github_recomputes():
+            fixture.history.append(newer)
+            fixture.tip = newer
+            fixture.pull['merge_commit_sha'] = onto_new  # already stale again
+
+        fixture.during_sleep = [main_moves_while_github_recomputes,
+                                lambda: fixture.pull.update(merge_commit_sha=onto_newer)]
+        self.assertEqual(fixture.identity(), replace(IDENTITY, build_sha=onto_newer))
+        self.assertEqual(fixture.slept, [3, 3])
+
+    def test_build_sha_binds_tested_tree_base_and_head_so_no_other_checkout_reuses_it(self):
+        tip, head = 'c' * 40, IDENTITY.head_sha
+        fixture = GitHubFixture()
+        tested = fixture.pull['merge_commit_sha'] = fixture.merged(tip)
+        # A commit ID hashes its tree and ORDERED parents: another tree, base, head or
+        # parent order is another build SHA, so it cannot match the admitted receipt.
+        others = {'tree': (git_commit('f' * 40, [tip, head]), head),
+                  'base': (git_commit('e' * 40, ['1' * 40, head]), head),
+                  'head': (git_commit('e' * 40, [tip, 'd' * 40]), 'd' * 40),
+                  'parent order': (git_commit('e' * 40, [head, tip]), head)}
+        self.assertEqual(len({tested} | {build for build, _ in others.values()}), 5)
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            code, receipt = run_cli(fixture, directory, '--workflow-run')
+            self.assertEqual(code, 0, receipt)
+            self.assertEqual(json.loads(receipt)['identity'], asdict(replace(IDENTITY, build_sha=tested)))
+            fixture.writable = False
+            for name, (checkout, checkout_head) in others.items():
+                with self.subTest(differs=name):
+                    actual = {'GITHUB_SHA': checkout, 'PR_HEAD_SHA': checkout_head}
+                    code, receipt = run_cli(fixture, directory, '--read-only', **actual)
+                    self.assertEqual((code, json.loads(receipt).get('reason')),
+                                     (1, 'durable admission identity mismatch'))
+                    self.assertEqual(workflow_fixture.WorkflowTests().validate(
+                        receipt, environment_overrides=actual).returncode, 1)
+            code, receipt = run_cli(fixture, directory, '--read-only', GITHUB_SHA=tested)
+            self.assertEqual(code, 0, receipt)
+            self.assertEqual(workflow_fixture.WorkflowTests().validate(
+                receipt, environment_overrides={'GITHUB_SHA': tested}).returncode, 0)
+
+    def test_delayed_requested_event_after_main_moved_cannot_run_its_old_checkout(self):
+        old_tip, new_tip = 'c' * 40, '1' * 40
+        fixture = GitHubFixture()
+        checkout = fixture.merged(old_tip)  # the queued run's own GITHUB_SHA
+        recomputed = fixture.pull['merge_commit_sha'] = fixture.merged(new_tip, tree='f' * 40)
+        fixture.history, fixture.tip = [old_tip, new_tip], new_tip
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            # The late writer sees only GitHub's current merge and reserves (charges) it...
+            code, receipt = run_cli(fixture, directory, '--workflow-run')
+            self.assertEqual(code, 0, receipt)
+            self.assertEqual(json.loads(receipt)['identity']['build_sha'], recomputed)
+            fixture.writable = False
+            # ...which the delayed run cannot use for its older checkout.
+            code, receipt = run_cli(fixture, directory, '--read-only', GITHUB_SHA=checkout)
+            self.assertEqual((code, json.loads(receipt).get('reason')),
+                             (1, 'durable admission identity mismatch'))
+            self.assertEqual(workflow_fixture.WorkflowTests().validate(
+                receipt, environment_overrides={'GITHUB_SHA': checkout}).returncode, 1)
+            # Only a run whose own head and merge still bind may execute.
+            code, receipt = run_cli(fixture, directory, '--read-only', GITHUB_SHA=recomputed)
+            self.assertEqual(code, 0, receipt)
+        # Before GitHub recomputes, the old merge is stale: refused, nothing reserved.
+        late = GitHubFixture()
+        late.history, late.tip = [old_tip, new_tip], new_tip
+        late.pull['merge_commit_sha'] = late.merged(old_tip)
+        with self.assertRaisesRegex(ValueError, 'stale merge commit'):
+            late.identity()
+        self.assertFalse([body for method, _, body in late.calls if method != 'GET'])
+        # A late event for a run that already ended, or whose PR moved on, is refused.
+        for reason, change in (('already terminal', lambda late: late.run.update(status='completed')),
+                               ('source or base changed', lambda late: late.pull['head'].update(
+                                   sha='d' * 40))):
+            with self.subTest(reason=reason):
+                late = GitHubFixture()
+                change(late)
+                with self.assertRaisesRegex(ValueError, reason):
+                    late.identity()
 
 
 if __name__ == '__main__':

@@ -27,14 +27,24 @@ refs still supply durable reservation; the PR token cannot write them.
 The writer validates repository, exact workflow path, event, run ID and first
 attempt; re-reads the upstream run to refuse changed or already terminal requests;
 and accepts only default-branch pushes or a single open PR targeting that branch.
-For a PR it resolves the current merge commit through the API and checks its two
-parents against the current base and the upstream run's head. For a push,
-head/build are the pushed SHA. The reader requires exact equality with its own
+For a PR it resolves the current merge commit through the API. Its two parents
+must be exactly the authenticated current default-branch tip (Git ref API) and
+then the upstream run's head. The PR's `base.sha` is not a parent: it keeps the
+PR's older base after the branch moves, while GitHub merges onto the current tip.
+As a defensive check, `base.sha` must be an ancestor of, or equal to, that tip
+(compare API). A pending merge SHA, or a merge onto an older tip, is re-read for
+at most 60 seconds; every re-read first rechecks the upstream run, then the PR
+(open, same head, same base repository and branch), the merge and the tip. Every
+SHA and the branch name are validated before they enter an API path. The build
+SHA content-addresses the merge's tree and ordered parents, so the receipt binds
+the tested base, head and tree: a different tree or base is a different build
+SHA, which the reader refuses as drift. For a push, head/build are the pushed
+SHA. The reader requires exact equality with its own
 repository/run/attempt/job/matrix/head/build identity. If a queued PR's merge ref
 has moved, the slot may be charged but the old run cannot execute against that
 mismatched receipt. Missing/ambiguous PR metadata (including fork events without
-PR association), a pending merge SHA, API denial and source drift all refuse;
-none falls back to a guessed SHA or a run-count estimate.
+PR association), a merge still pending or stale at that deadline, API denial and
+source drift all refuse; none falls back to a guessed SHA or a run-count estimate.
 
 This uses the durable ref as the cross-workflow receipt, not a potentially lost
 or expired Actions artifact as the quota. The writer also uploads
