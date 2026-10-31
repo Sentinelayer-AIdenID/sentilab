@@ -1,6 +1,6 @@
 """SLAB-039: Headroom runner — cheap search vs long SA to measure optimization headroom.
 
-Run random, SA and UCB1 at 32 evaluations over 8 seeds, plus a capped long SA,
+Run random, SA, UCB1 and signal_portfolio at 28 search + 4 reproduction evaluations over 8 seeds, plus a capped long SA,
 and report cheap_median - best against 5x the mesh error.
 """
 from __future__ import annotations
@@ -22,7 +22,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from sundai_controller.controller import Controller, Ed25519PrivateKey, FlightRecord, digest, public_hex
-from sundai_controller.experiment import LANE_IDS, OPERATORS, _candidate, _shared_designs
+from sundai_controller.experiment import LANE_IDS, OPERATORS, SIGNAL_CHOICES, _candidate, _shared_designs, _signal_portfolio
 
 TAP_INITIAL_CENTERS = ((25, 25), (40, 40), (8, 9), (8, 25), (8, 41), (41, 15))
 
@@ -34,8 +34,9 @@ def _parse_prereg(path: str | Path) -> dict:
         raise FileNotFoundError(f"prereg file not found: {prereg_path}")
     with open(prereg_path, encoding="utf-8") as fh:
         prereg = json.load(fh)
-    if prereg.get("schema") != "slab-039-prereg-v1":
-        raise ValueError("prereg must have schema slab-039-prereg-v1")
+    schema = prereg.get("schema")
+    if schema not in ("slab-039-prereg-v1", "slab-039-prereg-v2"):
+        raise ValueError(f"prereg must have schema slab-039-prereg-v1 or v2, got: {schema}")
     if prereg.get("fixture") != "ascend910":
         raise ValueError(f"unsupported fixture: {prereg.get('fixture')}")
     if prereg.get("rule", {}).get("k") != 5:
@@ -122,6 +123,13 @@ async def _run_cheap_lane(initial, oracle, lane_id: str, seed: int, evaluations:
             parent = current_design
         elif lane_id == "ucb1":
             operator, selection_reason = _choose_ucb1(counts, rewards, rng), "UCB1 operator selection"
+            parent = controller.lane_best[lane_id][0]
+        elif lane_id == "signal_portfolio":
+            det_operator, det_reason = _signal_portfolio(state)
+            if det_operator == "stop":
+                operator, selection_reason = rng.choice(OPERATORS), "signal stoppage fallback"
+            else:
+                operator, selection_reason = det_operator, det_reason
             parent = controller.lane_best[lane_id][0]
         else:
             raise ValueError(f"unsupported cheap lane: {lane_id}")
@@ -306,7 +314,13 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
     long_cfg = prereg["long_sa"]
 
     seeds = tuple(cheap_cfg["seeds"])
-    evaluations = cheap_cfg["evaluations_per_method"]
+    # v2 schema: 28 search + 4 reproduction; v1: 32 flat
+    if "search_evaluations_per_method" in cheap_cfg:
+        evaluations = cheap_cfg["search_evaluations_per_method"]
+        reproduction_evals = cheap_cfg.get("reproduction_evaluations_per_method", 0)
+    else:
+        evaluations = cheap_cfg["evaluations_per_method"]
+        reproduction_evals = 0
     methods = tuple(cheap_cfg["methods"])
 
     if mesh_error is None:
@@ -380,7 +394,8 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
     spread = max(cheap_bests) - min(cheap_bests)
 
     result = {
-        "schema": "slab-039-result-v1",
+        "schema": "slab-039-result-v2" if prereg.get("schema") == "slab-039-prereg-v2" else "slab-039-result-v1",
+        "prereg_schema": prereg.get("schema"),
         "fixture": fixture,
         "grid": grid,
         "mesh_error_c": mesh_error,
@@ -399,6 +414,8 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
         "cheap_results": all_cheap_results,
         "long_sa_results": long_sa_results,
         "prereg_sha256": digest({"path": str(prereg_path)}),
+        "search_evaluations": evaluations,
+        "reproduction_evaluations": reproduction_evals,
     }
 
     result_path = output_dir / "RESULT.json"
@@ -440,7 +457,12 @@ def _write_report(path: Path, result: dict, prereg: dict) -> None:
         f"- gap = cheap_median − best = {cheap_median:.6f} − {best:.6f} = {gap:.6f} C",
         f"- pass iff gap ≥ {threshold:.6f} C",
         "",
-        "## Cheap Methods (32 evaluations × 8 seeds each)",
+        "## Cheap Methods",
+        f"- search evaluations per method: {result.get('search_evaluations', 32)}",
+        f"- reproduction evaluations per method: {result.get('reproduction_evaluations', 0)}",
+        f"- total per method: {result.get('search_evaluations', 32) + result.get('reproduction_evaluations', 0)}",
+        f"- seeds: {cheap_cfg.get('seed_count', 8)}",
+        "",
     ]
 
     for method, median_val in result["cheap_method_medians_c"].items():
