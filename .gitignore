@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
+dist/
+.env
+.env.*
+*.log
+!sundai_hotspot/probe_results/*.log
+/data/
+/runs/
+sundai_hotspot/hotspot
+sundai_hotspot/hotfloorplan
+sundai_hotspot/*.o
+sundai_hotspot/*.a
+sundai_hotspot/*.d

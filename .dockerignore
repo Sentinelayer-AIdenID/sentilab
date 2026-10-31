@@ -1,0 +1,16 @@
+.git
+.venv
+**/__pycache__
+**/*.pyc
+sundai_hotspot/hotspot
+sundai_hotspot/hotfloorplan
+sundai_hotspot/*.o
+sundai_hotspot/*.a
+.env
+.env.*
+**/.env
+**/.env.*
+**/.dev.vars
+web/
+**/*.pem
+**/*.key

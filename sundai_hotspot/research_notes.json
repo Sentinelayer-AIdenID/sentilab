@@ -1,0 +1,67 @@
+{
+  "sources": [
+    {
+      "name": "TAP-2.5D",
+      "url": "https://github.com/bu-icsg/TAP-2.5D",
+      "reference": "turn893view0",
+      "license": "Apache-2.0",
+      "published": "DATE2021",
+      "contents": "Placement, material/floorplan generation, three public chiplet system configs, HotSpot6 binary and CPLEX routing",
+      "limitation": "Full routing requires CPLEX. Configfiles use sys_ prefix unlike staleREADMEexamples."
+    },
+    {
+      "name": "HotSpot",
+      "url": "https://github.com/uvahotspot/HotSpot",
+      "reference": "turn893view1",
+      "license": "Custom permissive UVA; preserve LICENSE",
+      "contents": "PreRTL block/grid compact thermal simulator, publicexamples, makebuild",
+      "limitation": "Earlydesign research model, not foundrysignoff."
+    },
+    {
+      "name": "3D-ICE",
+      "url": "https://github.com/esl-epfl/3d-ice",
+      "reference": "turn895view3",
+      "license": "GPL-3.0-or-later",
+      "contents": "Multilayerthermal C code, 4.0 heterogeneous/anisotropic and nonuniformmodeling",
+      "limitation": "More setup; viable secondsolverlater."
+    },
+    {
+      "name": "ATPlace2.5D",
+      "url": "https://github.com/PKU-IDEA/ATPlace_pub",
+      "reference": "turn900view4",
+      "license": "No rootlicense surfaced",
+      "contents": "TenBookshelf cases and thermal config, encryptedplacer",
+      "limitation": "Encryptedkernel/Gurobi preferred; not ideal for reusable starter."
+    },
+    {
+      "name": "IC-ThermBench",
+      "url": "https://github.com/Day333/ThermalBench",
+      "reference": "turn895view5",
+      "license": "MITcode CC-BY4data exceptthirdparty",
+      "contents": "64x64 steadythermal data, fixedsplits and baselines, OODpackages",
+      "limitation": "Preprint; results changed between versions, pinrelease."
+    },
+    {
+      "name": "RedHawk-SC Electrothermal",
+      "url": "https://www.synopsys.com/implementation-and-signoff/signoff/redhawk-sc-electrothermal.html",
+      "reference": "turn902search0",
+      "contents": "Vendorprimarysource: electrical,thermal,mechanical multiphysicssignoff",
+      "limitation": "Commercialengine, no inference that Jev can replace signoff."
+    }
+  ],
+  "recommendation": "Use published geometry/power/package config and deterministic thermal oracle; Jev may route repair/proposal choices, not provephysics.",
+  "manuals_to_index": [
+    "Exact challengeconstraints",
+    "Benchmarkconfiguration with dimensions,power,netlist",
+    "Simulatorfileformat and material/boundarydefinitions",
+    "Machinechecked constraintmanifest",
+    "Solver-derived failureexamples"
+  ],
+  "corrections": [
+    "Chipletplacement globallycoupled; parallelcandidateproposals evaluatedwholelayout.",
+    "Ninetypercent modelgrade cannot override anyhardconstraint.",
+    "Threepromptretries are iterative repair, not RL unlesspolicyupdated.",
+    "Receipts authenticate provenance, not correctness.",
+    "Compare optimizerbaselines at equal time and solvercost; no fastestclaim withoutresults."
+  ]
+}

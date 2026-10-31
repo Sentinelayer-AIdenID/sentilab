@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thermal Flight Lab</title>
+<meta name="description" content="Four strategy lanes place chiplets; a HotSpot simulator decides; every step lands in a signed flight record.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="desk">
+  <header class="topbar">
+    <div class="brand"><span class="mark"></span><b>AIdenID / Thermal Flight Lab</b><span class="tag">Cooler by evidence.</span></div>
+    <span class="mode" id="mode"><i></i><span id="modeText">REPLAY</span></span>
+    <span class="mono muted" id="runId">-</span>
+    <span class="mono muted">SUNDAI · TRACK 02</span>
+    <span class="spacer"></span>
+    <a href="#" id="exportLink" download>Export evidence</a>
+    <a href="/licenses">Licenses</a>
+    <a href="/leaderboard.html">10-seed leaderboard</a>
+    <a href="#" id="limitsLink">Honest limits</a>
+    <span class="mono muted" id="build">build -</span>
+  </header>
+
+  <section class="panel dock-controls">
+    <div class="field"><label for="bench">Benchmark</label>
+      <select id="bench"><option value="ascend910">Ascend910-class 2.5D (TAP, HotSpot)</option><option value="plate">Synthetic plate (instant)</option></select></div>
+    <div class="field"><label for="grid">Grid</label><select id="grid"><option>16</option><option selected>32</option></select></div>
+    <div class="field"><label for="seed">Seed</label><input id="seed" type="number" value="11" min="0"></div>
+    <div class="field"><label for="props">Evals / lane</label><input id="props" type="number" value="8" min="1" max="8"></div>
+    <div class="field"><label for="signal">Signal lane</label><select id="signal"><option value="local">Local policy</option><option value="live">Signal layer (live)</option></select></div>
+    <button class="btn primary" id="start">Start live run</button>
+    <button class="btn" id="replay">Replay 24-eval run</button>
+    <span class="runstate" id="runstate"></span>
+    <span class="objective">Objective: minimize worst chip-layer peak · wire proxy reported beside it</span>
+    <span class="spacer"></span>
+    <button class="scope" id="scope">Synthetic / HotSpot 7 uncalibrated · not silicon signoff</button>
+  </section>
+
+  <section class="panel kpis">
+    <div class="kpi"><span class="eyebrow">Initial worst peak</span><span class="v num" id="kInit">-</span><span class="s" id="kInitS">shared pool best, simulated</span></div>
+    <div class="kpi"><span class="eyebrow">Best verified peak</span><span class="v num cyan" id="kBest">-</span><span class="s" id="kBestS">-</span></div>
+    <div class="kpi"><span class="eyebrow">Simulator budget</span><span class="v num" id="kBudget">-</span><span class="s">evaluations used / total, equal per lane</span></div>
+    <div class="kpi"><span class="eyebrow">Run wall time</span><span class="v num" id="kWall">-</span><span class="s" id="kWallS">all four lanes</span></div>
+    <div class="kpi"><span class="eyebrow">Signal layer</span><span class="v num" id="kSignal">0</span><span class="s" id="kSignalS">calls · local policy run</span></div>
+    <div class="kpi"><span class="eyebrow">Flight record</span><span class="v num" id="kRecord">-</span><span class="s" id="kRecordS">-</span></div>
+  </section>
+
+  <main class="work">
+    <section class="panel win" id="w1">
+      <header><span class="eyebrow">01 / Physical candidate</span><h2>Inside the thermal field</h2>
+        <span class="spacer"></span><div class="seg" id="view"><button data-v="step" class="on">Current step</button><button data-v="best">Lane best</button></div></header>
+      <div class="body">
+        <div class="race" id="race"></div>
+        <div class="legend"><span id="legendMin">-</span><span class="bar"></span><span id="legendMax">-</span>
+          <span id="scaleNote">fixed scale for this run · heatmap is the solver grid; peaks come from the solver</span></div>
+        <div class="replaybar"><button class="play" id="play" title="Space">▶</button>
+          <input type="range" id="scrub" min="0" max="0" value="0"><span class="mono" id="stepLabel">0 / 0</span>
+          <button class="btn" id="reset">Reset</button></div>
+      </div>
+    </section>
+
+    <section class="panel win" id="w2">
+      <header><span class="eyebrow">02 / Evidence inspector</span><h2>What passed the gate?</h2></header>
+      <div class="body"><div class="strip" id="verdict">Select an evaluation</div><div class="kv" id="evidence"></div>
+        <div class="micro">Each lane signs its own flight record (Ed25519, hash-chained, closed by run_closed); verify it offline from Export evidence.</div></div>
+    </section>
+
+    <section class="panel win" id="w3">
+      <header><span class="eyebrow">03 / Routing</span><h2>Signal layer decisions</h2><span class="spacer"></span><span class="pill amber" id="sigPill">LOCAL POLICY</span></header>
+      <div class="body">
+        <div class="rail"><div id="r1">Propose</div><div id="r2">Gate (legality)</div><div id="r3">Simulate</div><div id="r4">Commit / reject</div></div>
+        <div class="reason" id="routeReason">-</div>
+        <div class="opbars" id="sigCard"></div>
+        <div class="opbars" id="opbars"></div>
+        <div class="micro">The signal layer (TypeSafe System One) only chooses the signal-portfolio lane's next operator, and only in runs started with "Signal layer (live)". It never validates physics or commits; the simulator decides.</div>
+      </div>
+    </section>
+
+    <section class="panel win" id="w4">
+      <header><span class="eyebrow">04 / Equal-budget comparison</span><h2>Show the search, not just the winner</h2></header>
+      <div class="body"><div class="legendrow" id="curveLegend"></div><div class="chart" id="chart"></div>
+        <div class="micro">x: charged simulator evaluations per lane · y: lane-best verified worst peak (°C)</div></div>
+    </section>
+
+    <section class="panel win" id="w5">
+      <header><span class="eyebrow">05 / Flight record</span><h2>Proof, per lane</h2><span class="spacer"></span><span class="pill cyan" id="recPill">-</span></header>
+      <div class="body"><div class="table" id="recordTable"></div></div>
+    </section>
+
+    <section class="panel win" id="dock">
+      <header><div class="tabs"><button class="tab on" data-tab="feed">Live feed</button><button class="tab" data-tab="board">Leaderboard</button><button class="tab" data-tab="record">Flight record</button></div>
+        <span class="spacer"></span><span class="pill" id="boardPill">DESCRIPTIVE</span></header>
+      <div class="body"><div class="feed" id="feed"></div><div class="table" id="board" hidden></div><div class="table" id="record2" hidden></div></div>
+    </section>
+  </main>
+
+  <footer class="statusbar"><span id="conn">idle</span><span class="c">Evidence before autonomy. Physics before applause.</span><span>Space play/pause · ←/→ step · 1-4 lane</span></footer>
+</div>
+
+<dialog id="limits"><h3>Honest limits</h3><ul>
+  <li>HotSpot 7 with research package defaults; not calibrated against silicon and not chip sign-off.</li>
+  <li>The wire figure is a connectivity-weighted Manhattan center-distance proxy, not routed CPLEX wirelength.</li>
+  <li>Chiplet powers are fixed; no transient workload or leakage feedback.</li>
+  <li>Only the signal-portfolio lane is routed by the signal layer, and only in live-signal runs; every other lane, and every fallback, uses a deterministic local policy.</li>
+  <li>One seed is a demonstration, not a statistical result; the leaderboard is descriptive until n ≥ 10 seeds.</li>
+  <li>Small temperature differences between meshes are not resolved physical superiority.</li>
+</ul><button class="btn" onclick="this.closest('dialog').close()">Close</button></dialog>
+<script src="app.js"></script>
+</body>
+</html>

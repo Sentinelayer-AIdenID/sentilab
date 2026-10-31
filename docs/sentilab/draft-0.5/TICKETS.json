@@ -1,0 +1,2923 @@
+{
+  "schema_version": "sentilab.draft-tickets.v1",
+  "document_version": "draft-0.5",
+  "planning_date": "2026-10-31",
+  "timezone": "America/New_York",
+  "status": "DRAFT_HOLD",
+  "description": "Planning artifacts only; proposed CLI/MCP names are not a claim of existing functionality. No remote tickets or execution created by this file.",
+  "source_documents": [
+    "PLAN.md",
+    "REQUIREMENTS.md"
+  ],
+  "canonical_repository": {
+    "url": "https://github.com/Sentinelayer-AIdenID/thermal-flight-lab",
+    "ref": "main",
+    "commit": "2199612932da142e0057e6162293940b4ea64bba",
+    "verification": "Root independently verified GitHub and live /api/health build_sha; code/test/artifact reuse still requires inspection."
+  },
+  "approvals": [],
+  "scope_rules": [
+    "Latest user instruction supersedes attachment optionality: GB10 training, OpenResearch, exact Microduck workflow and MCP plus CLI for all capabilities remain requirements.",
+    "aneta-claude requested Aneta authorization; no reviewer, owner, approver or committed worker is assumed until authorization is verified.",
+    "Read-only planning/discussion is authorized; implementation, model deployment, cloud spend, training and submission need explicit scoped +1.",
+    "Actual model IDs and resource caps require verified box catalog and owner approval.",
+    "Deterministic scientific constraints, provenance and reproduction cannot be waived by an LLM preference or narrative approval.",
+    "RLAIF JSONL collection is required; executing a preference-optimization algorithm is a separately bounded decision.",
+    "No H100-only training or generic robot-themed UI silently substitutes for current user requirements.",
+    "G3a fits/selects using train/validation only; G3b freezes exact selected model/memory and evaluates untouched held-out data; G4 serving promotion is separate.",
+    "Peer hands-off/live/AI-off proposal is tracked but does not confer blanket merge/deploy authority.",
+    "R1 primary sharing contrast uses fixed8/lab including reproduction; dynamic reallocation is separate ablation.",
+    "Actual aneta-claude participation authorization is not +1, spend or human Aneta commitment; author cannot provide own independent review.",
+    "Retain two seeds, adapter and exact Isaac/Newton requirements until direct owner approval changes them.",
+    "Lifecycle/validity/verification are distinct; scientific support DNF differs from per-principal visibility and every-input training taint.",
+    "Progress submission and full D00-D07 completion are separate; missing requirements remain incomplete.",
+    "No silent outside-budget reproduction: proposed28+4 total32 and7+1 per lab require freeze approval.",
+    "Scientific current-board candidate comparison retains valid absolute evidence and exact-parent deltas; positive-margin ordering semantics require a G1 choice.",
+    "OpenResearch telemetry controls/effective configuration are verified before nonpublic inputs.",
+    "Single capability registry preserves deterministic result equivalence and legitimate provenance differences between independent runs."
+  ],
+  "resource_rules": {
+    "status": "TBD_BEFORE_EXECUTION",
+    "all_null_caps_mean": "Execution blocked, not unlimited",
+    "benchmark_bundle_interpretation": "Freeze proposal pending approval: 12 families x 2 seeds x 5 arms x32 inclusive bundles=3840. Proposed28 search+4reproduction aggregate; four-lab arms7+1 each. All initialization/cache/failure charging remains to be frozen."
+  },
+  "tickets": [
+    {
+      "id": "SLAB-001",
+      "title": "Reconcile council, peer authority, source packet and explicit +1 gates",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G0",
+      "proposed_owner_role": "Planning lead; authorized independent peer; owner/carther",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Frontier reasoning reviewer; no execution model yet",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [],
+      "scope": "Complete source/council hydration, approval semantics, objections and revision-bound ticket release. Record #55936 participation authorization and #55938 no-approval review. Assign a nonauthor reviewer per seam; owner releases remain required. Canonical specs are hashed files, room posts pointers. A single gate-scoped release may name multiple tickets with one aggregate cap/expiry. Separate truthful deadline reporting from full D00-D07 completion.",
+      "acceptance_evidence": [
+        "Full source packet and council coverage/gaps",
+        "Verified peer authorization; no inferred Aneta commitment",
+        "Named +1 or explicit HOLD per revision; no remote tickets created before release",
+        "Actual reviewer participation distinguished from human time/spend and exact-revision +1; no author approves own seam as independent reviewer."
+      ],
+      "cli_deliverables": [
+        "sentilab plan export",
+        "sentilab approval inspect"
+      ],
+      "mcp_deliverables": [
+        "sentilab_plan_export",
+        "sentilab_approval_inspect"
+      ],
+      "requirements": [
+        "G01",
+        "G02",
+        "G03",
+        "G04",
+        "G05",
+        "G06",
+        "G09",
+        "P01",
+        "A22",
+        "V10",
+        "O01",
+        "O02",
+        "F12",
+        "F27",
+        "N01",
+        "N04",
+        "N05",
+        "N06",
+        "R09",
+        "R10",
+        "R11",
+        "Q01",
+        "Q07"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Scoped gate release naming tickets/cap/expiry plus authorized nonauthor technical and owner approvals as applicable; none granted.",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-002",
+      "title": "Pin canonical Thermal Flight Lab source and reproduce existing claims",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G1",
+      "proposed_owner_role": "Scientific engineering owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Repository/numerical verification worker with independent reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-001"
+      ],
+      "scope": "Inventory canonical checkout, snapshot and previous artifacts; retain verified code and contribution history. Reuse located sys_micro150.cfg8chiplet680W config; oracle is still Ascend910-wired. Treat reported55tests/manifest changes as peer reports until reproduced.",
+      "acceptance_evidence": [
+        "Canonical repo/ref and file manifest",
+        "Fresh controller/numerical regression logs; nine-finalist claim checked if artifacts available",
+        "Reported historical claims clearly separated from current evidence",
+        "Current web frontend reused where appropriate; four/six-chiplet existing domains distinguished from missing requested eight-chiplet680W fixture"
+      ],
+      "cli_deliverables": [
+        "sentilab source inspect",
+        "sentilab regression run"
+      ],
+      "mcp_deliverables": [
+        "sentilab_source_inspect",
+        "sentilab_regression_run"
+      ],
+      "requirements": [
+        "P02",
+        "P03",
+        "P04",
+        "S01",
+        "S11",
+        "S12",
+        "M15",
+        "O18",
+        "F26",
+        "F28",
+        "R07",
+        "C02",
+        "C06"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-003",
+      "title": "Verify box/model catalog and obtain missing Claude capability",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G1",
+      "proposed_owner_role": "Capability/catalog owner; carther supplies authorization",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Infrastructure inspection worker and frontier model-selection reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-001"
+      ],
+      "scope": "Inspect available model endpoints, quotas and tools; request exact Claude model/route from carther without exposing credentials. Gemini is absent from the reported catalog and needs its own authorized route or owner-approved change; do not silently substitute another model family. Calibrate roles on training families only.",
+      "acceptance_evidence": [
+        "Actual returned-model ID, allowed tools, quota and probe results per endpoint",
+        "Claude request/response with exact model/version; no assumed local proprietary weights",
+        "Role-to-capability assignment and approved usage ceilings",
+        "Peer-reported catalog independently probed; cheapest qualifying model selected by per-role calibration; no secret requested in chat",
+        "Separate Claude/Gemini entitlement status and owner decision deadlines; actual Qwen serving endpoint available to authorized boxes."
+      ],
+      "cli_deliverables": [
+        "sentilab model list",
+        "sentilab model probe"
+      ],
+      "mcp_deliverables": [
+        "sentilab_model_list",
+        "sentilab_model_probe"
+      ],
+      "requirements": [
+        "G07",
+        "G08",
+        "A09",
+        "A13",
+        "A15",
+        "A16",
+        "A18",
+        "B14",
+        "B17",
+        "M12",
+        "M17",
+        "V09",
+        "O09",
+        "N03",
+        "R13",
+        "Q10"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-004",
+      "title": "Complete GB10 key access and inventory compatible compute",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G1",
+      "proposed_owner_role": "GB10 platform owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Systems diagnostic worker",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-001"
+      ],
+      "scope": "Verify passwordless access after the user's local authentication step; inventory ARM/GPU/driver/container/disk resources and distinguish rendering from training needs.",
+      "acceptance_evidence": [
+        "Successful authorized login and identity probe or exact blocker",
+        "Hardware/OS/driver/container inventory with versions",
+        "Separate approved training/rendering memory/runtime caps; no assumed H100 rendering compatibility"
+      ],
+      "cli_deliverables": [
+        "sentilab doctor --host gb10"
+      ],
+      "mcp_deliverables": [
+        "sentilab_doctor"
+      ],
+      "requirements": [
+        "M13",
+        "M14",
+        "M15",
+        "M17",
+        "O09",
+        "F10",
+        "R10",
+        "Q09",
+        "C05"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-005",
+      "title": "Freeze geometry, units, thermal objective and fixed wire budget",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G1",
+      "proposed_owner_role": "Scientific contract owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Deterministic engineering worker plus numerical/specification reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-002"
+      ],
+      "scope": "Implement proposed task/geometry contract only after approval; center versus lower-left conversion, grid/gaps, scenario metric and initial-layout Manhattan cap. G1 decides new grid-peak primary/center diagnostics and explicitly pins version; no approved metric switch inferred. Full absolute candidates use fixed task/x0 constraints; deltas materialize exactparent.",
+      "acceptance_evidence": [
+        "Schema and valid/invalid geometry fixtures",
+        "Coordinate/units/rotation/clearance tests and fixed-baseline wire budget proof",
+        "Frozen objective, scenario manifest and zero-baseline/interconnect policy",
+        "G1 chooses sequential threshold semantics with ordering limitation or deterministic batch/epoch selection using common schedule/frozen comparison reference; CAS alone not claimed best-candidate selector."
+      ],
+      "cli_deliverables": [
+        "sentilab contract validate",
+        "sentilab geometry check"
+      ],
+      "mcp_deliverables": [
+        "sentilab_contract_validate",
+        "sentilab_geometry_check"
+      ],
+      "requirements": [
+        "A02",
+        "S01",
+        "S02",
+        "S03",
+        "S04",
+        "S05",
+        "S06",
+        "S07",
+        "S08",
+        "S09",
+        "S10",
+        "S12",
+        "S14",
+        "E05",
+        "E07",
+        "E09",
+        "O03",
+        "D00",
+        "D01",
+        "F15",
+        "F28",
+        "F29",
+        "F30",
+        "N04",
+        "R07",
+        "Q03",
+        "C02",
+        "C03",
+        "C07"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-006",
+      "title": "Version reference thermal evaluator and numerical uncertainty checks",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G1",
+      "proposed_owner_role": "Thermal/numerical owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Numerical engineering worker; independent physics reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-002",
+        "SLAB-005"
+      ],
+      "scope": "Wrap the existing verified evaluator with pinned scenarios, correct temperature layer/statistic, raw artifacts and numerical convergence analysis. Parameterize actual micro150 config rather than recreating unknown powers. Preserve all-layer/chip-layer metric identity; proposed primary switch needs G1. C source enables an ARM preflight but proves no architecture compatibility.",
+      "acceptance_evidence": [
+        "Power/energy/symmetry/zero-power and malformed-input checks",
+        "Convergence/sensitivity evidence and approved acceptance margin/tolerance",
+        "Complete per-scenario raw outputs with correct field/layer labels and no manufactured-device claim",
+        "Existing TAP grid-peak versus new center metric and weighted-mean versus raw-sum wire proxy explicitly reconciled/versioned",
+        "Persist exact generated simulator inputs and raw outputs before TemporaryDirectory cleanup; prove readback after cleanup and fail evidence completeness when files are missing or corrupt.",
+        "Current converged=True indicates output validation only; demonstrate numerical convergence independently using the approved resolution/refinement checks."
+      ],
+      "cli_deliverables": [
+        "sentilab evaluate",
+        "sentilab evaluator inspect"
+      ],
+      "mcp_deliverables": [
+        "sentilab_evaluate",
+        "sentilab_evaluator_inspect"
+      ],
+      "requirements": [
+        "A02",
+        "S01",
+        "S02",
+        "S03",
+        "S06",
+        "S10",
+        "S11",
+        "S13",
+        "S14",
+        "E04",
+        "E06",
+        "E10",
+        "E11",
+        "B09",
+        "B21",
+        "M15",
+        "V13",
+        "D01",
+        "D02",
+        "F01",
+        "F17",
+        "F18",
+        "F28",
+        "F29",
+        "F30",
+        "R04",
+        "R07",
+        "C02",
+        "C03",
+        "C05"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-007",
+      "title": "Implement typed result contract, event recorder and artifact manifests",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G1",
+      "proposed_owner_role": "Evidence-contract owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Schema/storage engineering worker",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-009"
+      ],
+      "scope": "Version result/events with input/parent/model/runtime pins, raw artifact hashes, units, costs and correction lineage. Split lifecycle, validity and verification_tier; add metric_id/evaluator_version/coordinate_frame and immutable correction events. Generic evidence/receipt contracts do not import thermal code. Distinguish internal integrity, externally anchored service origin and scientific verification.",
+      "acceptance_evidence": [
+        "Canonical serialization/hash/schema tests",
+        "Request/candidate/parent/status/scenario completeness checks",
+        "Append-only events and actual signature/checkpoint verification procedure",
+        "Named seam owner; retention or authorized tombstone policy; outbox/event/receipt distinctions",
+        "Artifact manifest binds actual retained generated inputs, raw outputs and stdout/stderr; persistence completes and verifies before temporary-directory cleanup. Hashes, extracted fields or summaries alone do not satisfy D02.",
+        "Golden fixtures express accepted-but-stale with preserved reproduction tier; live and replay use the same pure event projection and reject incompatible contexts.",
+        "Authenticated event writer/admission; equal-position replay deterministic or rejected; withdrawn review covers cannot remain active.",
+        "Verification tier cannot arise from empty/self evidence. Unsupported claims remain unverified; validated atomic evidence types are explicitly defined."
+      ],
+      "cli_deliverables": [
+        "sentilab result inspect",
+        "sentilab event export",
+        "sentilab artifact verify"
+      ],
+      "mcp_deliverables": [
+        "sentilab_result_inspect",
+        "sentilab_event_export",
+        "sentilab_artifact_verify"
+      ],
+      "requirements": [
+        "A07",
+        "A13",
+        "E01",
+        "E02",
+        "E03",
+        "E04",
+        "E05",
+        "E06",
+        "E07",
+        "E08",
+        "E19",
+        "E20",
+        "B12",
+        "B23",
+        "M01",
+        "V06",
+        "O03",
+        "O10",
+        "D02",
+        "D04",
+        "F22",
+        "N04",
+        "R09",
+        "R12",
+        "R14",
+        "Q03",
+        "C01",
+        "C06"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-008",
+      "title": "Enforce deterministic AcceptanceGate permissions, budgets and atomic admission",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G2",
+      "proposed_owner_role": "Execution governance owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Backend/concurrency engineering worker and adversarial reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-007",
+        "SLAB-015"
+      ],
+      "scope": "Implement durable deterministic AcceptanceGate preserving current known-parent materialization and current-best comparison. Complete fixed-task candidate measurements survive board advancement; delta actions materialize their exact parent. Recheck current authority/STOP/context, atomically compare against current board, and retry only the comparison after CAS loss. Retain numeric evidence and lineage; no duplicate simulator charge. Reuse atomic run-JSON/recovery, replace process-local coordination/per-principal authorization gaps. No LLM in AcceptanceGate.",
+      "acceptance_evidence": [
+        "Exact-parent delta versus complete-candidate fixtures; old known parent not rejected merely for newer board",
+        "Current-board CAS/retry with immutable numeric evidence, current grants/STOP and exactly-once job accounting",
+        "G1-selected sequential or batch margin semantics tested; best eligible/reproduced candidate reported separately from robust accepted improvements",
+        "Hard constraints, missing reproduction and stale scientific evidence still block admission; actual per-principal authorization",
+        "Positive minimum margins can make sequential selection order-dependent; never promise current-board CAS chooses globally lowest completed result."
+      ],
+      "cli_deliverables": [
+        "sentilab candidate submit",
+        "sentilab board inspect",
+        "sentilab approval apply",
+        "sentilab job cancel"
+      ],
+      "mcp_deliverables": [
+        "sentilab_candidate_submit",
+        "sentilab_board_inspect",
+        "sentilab_approval_apply",
+        "sentilab_job_cancel"
+      ],
+      "requirements": [
+        "A02",
+        "A04",
+        "A06",
+        "A08",
+        "A12",
+        "A17",
+        "S15",
+        "E02",
+        "E09",
+        "E10",
+        "E11",
+        "E12",
+        "E13",
+        "E14",
+        "E15",
+        "B10",
+        "O05",
+        "F01",
+        "F08",
+        "F15",
+        "F16",
+        "F21",
+        "F31",
+        "R09",
+        "Q03",
+        "C07"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-009",
+      "title": "Provide shared CLI and MCP contract/transport foundation",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G1",
+      "proposed_owner_role": "Tooling/API owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "API/CLI engineering worker",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-001"
+      ],
+      "scope": "One domain implementation and versioned JSON contracts behind CLI and MCP, including auth, errors, status/cancel and idempotency.",
+      "acceptance_evidence": [
+        "Capability registry with both transports",
+        "Shared positive/negative contract fixtures and compatible JSON error codes",
+        "No bypass through alternate transport and no credentials in outputs"
+      ],
+      "cli_deliverables": [
+        "sentilab capabilities",
+        "sentilab job status",
+        "sentilab job cancel"
+      ],
+      "mcp_deliverables": [
+        "sentilab_capabilities",
+        "sentilab_job_status",
+        "sentilab_job_cancel"
+      ],
+      "requirements": [
+        "X08",
+        "X09",
+        "F06",
+        "R11"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-010",
+      "title": "Integrate council-compliant ENGRAM and evidence invalidation",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G2",
+      "proposed_owner_role": "Memory/evidence owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Backend/retrieval engineering worker and independent isolation reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-001",
+        "SLAB-007",
+        "SLAB-009"
+      ],
+      "scope": "Preserve deterministic L3/principal delta design, source refs/ACL epoch/coverage/raw expansion; add required scientific dependency semantics without assuming a new graph-selector/vector/Kafka architecture. Use arm/family/seed namespaces and isolated lab subnamespaces with reset runtime retrieval state but retained audit history. Sufficient supports are ownChecks AND OR-of-AND clauses, with compatible contexts and no cyclic self-proof.",
+      "acceptance_evidence": [
+        "Source-pinned council adopt/change/defer ledger; completeness and recall claims measured",
+        "Isolated namespace/cache/reviewer transcript tests; frozen snapshot restoration",
+        "Direct/transitive stale propagation, alternative support preservation and checkpoint A/B recovery checks",
+        "Maximum validated covered-through, separate delivered/scanned/processed cursors, missing-middle metadata and checkpoint C poison-label validation/quarantine",
+        "Claim scientific validity separate from principal visibility; one entire current authorized support clause is required for audience use, never mixed partial clauses. Taint follows every actual trained_on input independently of alternate claim support.",
+        "Cycle/self-loop-safe trained_on and recursive contains handling; every actual ineligible training input taints descendants regardless of alternate OR support.",
+        "Cross-check context compatibility in each support clause and retain deterministic order without a test harness rewriting source sequence IDs."
+      ],
+      "cli_deliverables": [
+        "sentilab memory recall",
+        "sentilab memory snapshot",
+        "sentilab evidence invalidate",
+        "sentilab evidence inspect"
+      ],
+      "mcp_deliverables": [
+        "sentilab_memory_recall",
+        "sentilab_memory_snapshot",
+        "sentilab_evidence_invalidate",
+        "sentilab_evidence_inspect"
+      ],
+      "requirements": [
+        "G03",
+        "A05",
+        "A21",
+        "A22",
+        "E08",
+        "E15",
+        "E16",
+        "E17",
+        "E18",
+        "E19",
+        "B03",
+        "V03",
+        "D04",
+        "F05",
+        "F07",
+        "F20",
+        "F21",
+        "F22",
+        "F27",
+        "R06",
+        "R14"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-011",
+      "title": "Integrate Jev intent and calibrated capability routing",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G2",
+      "proposed_owner_role": "Intent/routing owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Routing engineering worker; precision/calibration reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-001",
+        "SLAB-003",
+        "SLAB-005",
+        "SLAB-009",
+        "SLAB-010"
+      ],
+      "scope": "Use Jev for versioned intent/routing with abstention and approved model/tool capabilities; preserve mandatory constraints and ACL. Reuse the existing jev-1.13.0/SystemOne seam after actual runtime capability, identity, access and schema proof. Jev compiles goal/contracts and routes intake only; labs choose hypotheses and trajectories, with decision originator recorded. Build tickets never prescribe the scientific search. Initial labs can use deterministic allowlisted routing before Jev integration; this does not remove the required Jev work.",
+      "acceptance_evidence": [
+        "Held-out routing precision/abstention results",
+        "Mandatory-context stripping, unauthorized tools and inferred +1 negative tests",
+        "Frozen route policy and source-backed explanation; OpenResearch role remains distinct",
+        "Canonical Jev seam present is distinguished from a verified endpoint; actual model identity/access/contract/calibration evidence is required."
+      ],
+      "cli_deliverables": [
+        "sentilab intent compile",
+        "sentilab route evaluate"
+      ],
+      "mcp_deliverables": [
+        "sentilab_intent_compile",
+        "sentilab_route_evaluate"
+      ],
+      "requirements": [
+        "G03",
+        "G07",
+        "A12",
+        "A20",
+        "A22",
+        "F08",
+        "R08"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-012",
+      "title": "Run OpenResearch literature, prior-work and reproduction audit",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G1",
+      "proposed_owner_role": "Research owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Source-grounded research model plus numerical reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-001",
+        "SLAB-003"
+      ],
+      "scope": "Make OpenResearch a named-model research workspace; inspect ScienceClaw/Infinite and relevant thermal, experimental and reference-work methods. Verify supported OpenResearch telemetry controls and disable telemetry before any nonpublic inputs under configured approval. Cited notes carry no acceptance authority.",
+      "acceptance_evidence": [
+        "Actual workspace/run/export with underlying model identity",
+        "Primary-source claim/evidence ledger, counterexamples and source limitations",
+        "Artifact/reproduction integration recommendation and documented expert methods",
+        "Document exact telemetry setting, effective configuration and nonpublic data flows; no unsupported assumption that one flag stops every external path."
+      ],
+      "cli_deliverables": [
+        "sentilab research request",
+        "sentilab research status",
+        "sentilab research export"
+      ],
+      "mcp_deliverables": [
+        "sentilab_research_request",
+        "sentilab_research_status",
+        "sentilab_research_export"
+      ],
+      "requirements": [
+        "A14",
+        "A19",
+        "S03",
+        "O07",
+        "O08",
+        "O11",
+        "O12",
+        "F25",
+        "Q08",
+        "Q11"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-013",
+      "title": "Wire four scientists and bounded worker orchestration",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G2",
+      "proposed_owner_role": "Lab orchestration owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Agent orchestration engineering worker; independent reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-003",
+        "SLAB-005",
+        "SLAB-008",
+        "SLAB-010",
+        "SLAB-038",
+        "SLAB-039",
+        "SLAB-037"
+      ],
+      "scope": "Create four authorized lead roles with explicit specialties, two-worker concurrency limit, independent contexts and declared budgets. Deterministic routing supports first labs without waiting for Jev; scientific choices remain in labs.",
+      "acceptance_evidence": [
+        "Astra/Claude/Grok/Kimi exact model manifests and scientific role cards",
+        "Four real proposal/critique/evaluation traces with separate identities",
+        "Concurrency, identity, context and per-arm shared-budget enforcement",
+        "Scientific decision-originator records; training-only model calibration; authenticated shared worker route from actual box.",
+        "Required lab autonomy connects to the already running deterministic conductor; AI-off operation does not wait for lab/model availability."
+      ],
+      "cli_deliverables": [
+        "sentilab lab start",
+        "sentilab lab status",
+        "sentilab candidate propose"
+      ],
+      "mcp_deliverables": [
+        "sentilab_lab_start",
+        "sentilab_lab_status",
+        "sentilab_candidate_propose"
+      ],
+      "requirements": [
+        "A01",
+        "A04",
+        "A09",
+        "A10",
+        "A11",
+        "A12",
+        "A14",
+        "A18",
+        "B11",
+        "B17",
+        "N03",
+        "R06",
+        "R08",
+        "Q08"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-014",
+      "title": "Implement adversarial review protocol and calibrated LLM judges",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G2",
+      "proposed_owner_role": "Independent review owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Frontier scientific/specification judges; bounded Gemini/DeepSeek reviewers",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-003",
+        "SLAB-005",
+        "SLAB-007",
+        "SLAB-012"
+      ],
+      "scope": "Independent first reviews over identical packets, structured objections/resolution criteria, distinct judge/acceptor roles and consistent benchmark assistance.",
+      "acceptance_evidence": [
+        "Independent initial Gemini/DeepSeek and authorized peer review records",
+        "Counterexample-to-executable-check closure and unresolved-objection ledger",
+        "Model/settings/order-bias calibration; no failed constraint overridden by rhetoric",
+        "Role manifest separates nonauthor code review from scientific model-family/provider independence; required Claude/Gemini families not silently substituted."
+      ],
+      "cli_deliverables": [
+        "sentilab review request",
+        "sentilab review reconcile"
+      ],
+      "mcp_deliverables": [
+        "sentilab_review_request",
+        "sentilab_review_reconcile"
+      ],
+      "requirements": [
+        "G04",
+        "A14",
+        "A15",
+        "A16",
+        "A17",
+        "B18",
+        "F04",
+        "N03",
+        "Q10"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-015",
+      "title": "Build fresh-process reproduction service",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G2",
+      "proposed_owner_role": "Independent reproduction owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Numerical reproduction worker separate from proposer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-007"
+      ],
+      "scope": "Reproduce from delivered inputs and declared dependencies in a clean process/environment, labeling operational versus numerical independence. Optional approved cross-architecture reproduction may compile HotSpot C for ARM with independently pinned native dependencies; source availability alone is not compatibility or physical validation.",
+      "acceptance_evidence": [
+        "Input/artifact hash binding and runnable reproduction command",
+        "Separate identity/process/environment provenance",
+        "Frozen tolerance comparison including missing dependencies, corrupt outputs and mismatch failures"
+      ],
+      "cli_deliverables": [
+        "sentilab reproduce",
+        "sentilab reproduction inspect"
+      ],
+      "mcp_deliverables": [
+        "sentilab_reproduce",
+        "sentilab_reproduction_inspect"
+      ],
+      "requirements": [
+        "A03",
+        "E12",
+        "M15",
+        "O05",
+        "D03",
+        "F18",
+        "R04",
+        "C05"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-016",
+      "title": "Build raw experiment and eligible training JSONL datasets",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G2",
+      "proposed_owner_role": "Dataset/provenance owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Data engineering worker and leakage reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-005",
+        "SLAB-007",
+        "SLAB-035"
+      ],
+      "scope": "Retain all outcomes while constructing immutable eligible SFT/repair manifests with family splits, provenance and corrections. Eligibility can operate on immutable verifier receipts before ENGRAM integration; final memory/lineage integration remains required.",
+      "acceptance_evidence": [
+        "Raw success/failure/rejection/cancellation JSONL schema",
+        "Family-level deduplication, leakage and license/eligibility checks",
+        "Frozen train/validation/test manifests and no invalid-action-as-target contamination",
+        "Minimum unique eligible example count/diversity and readiness threshold frozen before fitting; under-threshold pipeline has no learned-engineering claim."
+      ],
+      "cli_deliverables": [
+        "sentilab dataset export",
+        "sentilab dataset validate",
+        "sentilab dataset freeze"
+      ],
+      "mcp_deliverables": [
+        "sentilab_dataset_export",
+        "sentilab_dataset_validate",
+        "sentilab_dataset_freeze"
+      ],
+      "requirements": [
+        "B06",
+        "B16",
+        "M01",
+        "M02",
+        "M03",
+        "M04",
+        "M05",
+        "F05",
+        "F15",
+        "F19",
+        "R05",
+        "R12",
+        "R14",
+        "Q08"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-017",
+      "title": "Export RLAIF preference JSONL with verifier-grounded judgments",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G2",
+      "proposed_owner_role": "RLAIF/judge-data owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Data engineering worker; calibrated independent judges",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-014",
+        "SLAB-016"
+      ],
+      "scope": "Persist blinded preference/tie/abstention records with judge identity, rubric and deterministic outcomes; actual preference optimization requires a separate +1.",
+      "acceptance_evidence": [
+        "Versioned chosen/rejected/tie/abstention schema with source hashes",
+        "Order-bias/self-preference/reward-hacking fixtures and disagreement retention",
+        "Hard numerical constraints override preference; no hidden reasoning required",
+        "label_source and verification_scope separate deterministic schema/geometry/wire/simulator evidence from LLM/mixed preferences; geometry-only verification is not a thermal-improvement claim."
+      ],
+      "cli_deliverables": [
+        "sentilab judge compare",
+        "sentilab dataset export --kind rlaif"
+      ],
+      "mcp_deliverables": [
+        "sentilab_judge_compare",
+        "sentilab_dataset_export"
+      ],
+      "requirements": [
+        "A17",
+        "M06",
+        "F04",
+        "R05"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-018",
+      "title": "Prove GB10 NeMo train-save-reload preflight",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G1",
+      "proposed_owner_role": "ML/GB10 owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "ML systems engineering worker; NVIDIA recipe reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-004",
+        "SLAB-035"
+      ],
+      "scope": "Validate an exact approved GB10/NeMo/model recipe on permitted fixtures; do not combine general and Spark recipes or silently replace Qwen3-4B. Standalone tiny permitted-fixture NeMo smoke test does not require thermal code or MCP registry. Final wrapper parity remains required later.",
+      "acceptance_evidence": [
+        "Pinned model/tokenizer/container/source/driver recipe and license",
+        "Approximately 20-step actual GB10 training, adapter save and fresh-process reload/inference",
+        "Checkpoint identity proof and measured resource use; alternatives require scoped +1",
+        "Spark-specific NeMo26.08/source pin/Qwen3-8B reference kept distinct from general26.10/Qwen3-4B; exact chosen recipe requires +1",
+        "Measure inference latency/tokens-per-second, warmup/memory and planned device contention; no training/serving/rendering concurrency assumed."
+      ],
+      "cli_deliverables": [
+        "sentilab train preflight",
+        "sentilab train status",
+        "sentilab checkpoint inspect"
+      ],
+      "mcp_deliverables": [
+        "sentilab_train_preflight",
+        "sentilab_train_status",
+        "sentilab_checkpoint_inspect"
+      ],
+      "requirements": [
+        "M07",
+        "M08",
+        "M09",
+        "M10",
+        "M12",
+        "M13",
+        "M14",
+        "O09",
+        "D06",
+        "F13",
+        "Q08",
+        "Q09"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-019",
+      "title": "Train candidate GB10 adapter and select using validation only",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G3a",
+      "proposed_owner_role": "ML/serving owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "ML training/serving worker and independent evaluation reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-018",
+        "SLAB-016",
+        "SLAB-041"
+      ],
+      "scope": "Fit the candidate adapter on eligible training data and select using validation only; freeze selected artifact before any held-out exposure. Base weights remain unchanged. Held-out evaluation/promotion are separate tickets. Verifier-grounded SFT does not depend on RLAIF judges, preferences or an optimizer; those remain separate required work. Preregister data splits before fitting.",
+      "acceptance_evidence": [
+        "Actual GB10 train/validation logs, resource caps and immutable eligible dataset manifest",
+        "Selected adapter/base/tokenizer/chat-template/module/rank/precision hashes and fresh reload proof",
+        "No held-out data access or test-driven tuning; arbitrary incompatible adapter merges refused"
+      ],
+      "cli_deliverables": [
+        "sentilab train start",
+        "sentilab train cancel",
+        "sentilab checkpoint select",
+        "sentilab checkpoint inspect"
+      ],
+      "mcp_deliverables": [
+        "sentilab_train_start",
+        "sentilab_train_cancel",
+        "sentilab_checkpoint_select",
+        "sentilab_checkpoint_inspect"
+      ],
+      "requirements": [
+        "A11",
+        "B05",
+        "B15",
+        "B17",
+        "B19",
+        "B20",
+        "B24",
+        "M07",
+        "M09",
+        "M11",
+        "M13",
+        "M14",
+        "O15",
+        "D06",
+        "F05",
+        "F14",
+        "F19",
+        "R05",
+        "R14",
+        "Q08"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-020",
+      "title": "Preregister benchmark protocol and implement five-arm runner",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G3a",
+      "proposed_owner_role": "Experimental design/runner owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Experiment engineering worker and statistics reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-010",
+        "SLAB-013",
+        "SLAB-014",
+        "SLAB-016",
+        "SLAB-039",
+        "SLAB-041"
+      ],
+      "scope": "Implement five-arm runner from early preregistration/splits. Keep32 inclusive with proposed28search+4reproduction in B0/B1 and7+1 each lab in B2/B3/B4; no transfer in primary contrast. Retain two seeds and all five arms. Freeze all initialization/cache/failure charges, randomized blocked order and G1-selected admission scheduling. Run held-out only after separate release.",
+      "acceptance_evidence": [
+        "Approved 3840-versus-1920 bundle interpretation with no per-lab multiplier",
+        "Frozen split, seeds, prompts, model/runtime/memory configs and primary contrasts",
+        "B0–B4 runner with failures/retries/reproductions counted and no data leakage",
+        "Starting-layout initialization and shared samples outside existing proposal counters included in frozen aggregate accounting",
+        "Fixed per-lab search/reproduction allocation removes evidence-sharing versus adaptive-budget confound; no owner-unapproved seed/model/adapter cuts.",
+        "B0-B4 equal inclusive allocation table; reproduction is not silently moved outside32. Per-current-board margin order effects or deterministic epoch rule disclosed."
+      ],
+      "cli_deliverables": [
+        "sentilab benchmark validate",
+        "sentilab benchmark freeze",
+        "sentilab benchmark run",
+        "sentilab benchmark status"
+      ],
+      "mcp_deliverables": [
+        "sentilab_benchmark_validate",
+        "sentilab_benchmark_freeze",
+        "sentilab_benchmark_run",
+        "sentilab_benchmark_status"
+      ],
+      "requirements": [
+        "A13",
+        "S14",
+        "S15",
+        "B01",
+        "B02",
+        "B03",
+        "B04",
+        "B05",
+        "B06",
+        "B07",
+        "B08",
+        "B09",
+        "B10",
+        "B11",
+        "B12",
+        "B13",
+        "B14",
+        "B15",
+        "B16",
+        "B17",
+        "B18",
+        "B22",
+        "M05",
+        "M12",
+        "D05",
+        "F02",
+        "F14",
+        "F16",
+        "F31",
+        "N02",
+        "R01",
+        "R02",
+        "R06",
+        "Q05",
+        "Q08",
+        "C07"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-021",
+      "title": "Analyze family-level results and enforce honest claims",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G3b",
+      "proposed_owner_role": "Statistics/claims owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Deterministic analysis worker and statistical reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-032",
+        "SLAB-022"
+      ],
+      "scope": "Analyze paired family-level sharing/weight effects, resource balance, raw outcomes, uncertainty, ties and regressions. Sharing closed-loop B2/B3 and fixed-corpus worker learning have separately declared primary endpoints; closed-loop B4 remains required secondary evidence with multiplicity handling.",
+      "acceptance_evidence": [
+        "Family-level paired results and appropriate small-sample uncertainty",
+        "Validity/repair/useful-proposal/J/time/cost tables with complete failed runs",
+        "Raw-Celsius-percent trap tests and claim ledger bounded by evidence",
+        "Three action tiers under identical decoder: parse, geometry-plus-wire, simulator improvement. Primary contrasts have preregistered multiplicity/tie handling and family-level n=12; two seeds are nested."
+      ],
+      "cli_deliverables": [
+        "sentilab compare",
+        "sentilab claim check"
+      ],
+      "mcp_deliverables": [
+        "sentilab_compare",
+        "sentilab_claim_check"
+      ],
+      "requirements": [
+        "S10",
+        "S12",
+        "B14",
+        "B15",
+        "B19",
+        "B20",
+        "B21",
+        "B22",
+        "B23",
+        "B24",
+        "M16",
+        "V04",
+        "O15",
+        "D05",
+        "F01",
+        "F02",
+        "F03",
+        "R02",
+        "R05",
+        "Q06",
+        "C03"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-022",
+      "title": "Ship deterministic SentiResultCheck core with MCP and CLI",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G2",
+      "proposed_owner_role": "ResultCheck owner; Aneta lane only if authorized",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Numerical/API engineering worker and arithmetic reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-007",
+        "SLAB-009"
+      ],
+      "scope": "Validate paired measurements, units/direction and supported arithmetic/statistics, return versioned receipts with scope limits. Numeric core accepts only typed size-bounded fields. Quarantine optional outside free text; never auto-forward to privileged tools, labs, memory or training. Separately reviewed literature intake remains allowed. Numeric ResultCheck imports no thermal contract or scientific AcceptanceGate. Independent vectors must run without thermal code.",
+      "acceptance_evidence": [
+        "Duplicate/missing-pair/zero-baseline/NaN/unit/insufficient-data fixtures",
+        "Independent arithmetic outputs and unsupported-inference refusals",
+        "Identical CLI/MCP receipt semantics; no certification of authenticity/physics",
+        "Named seam owner; explicit per-pair versus aggregate percent estimand and raw-Celsius refusal",
+        "Oversize/type/instruction-injection fixtures; free text never becomes commands or training automatically; evaluator signing key absent from lab boxes.",
+        "Validate byte/depth limits before canonicalization; reject oversize/deep inputs safely. Unit normalization covers Celsius aliases; tolerance is metric-specific, not a unit-blind default.",
+        "Stable binomial/sign-test at supported large n or explicit approved cap; preserve family/cluster grouping, tie tolerances and numerical error flags. Peer reference-code bug claims require independent verification."
+      ],
+      "cli_deliverables": [
+        "sentilab resultcheck"
+      ],
+      "mcp_deliverables": [
+        "sentilab_resultcheck"
+      ],
+      "requirements": [
+        "X01",
+        "X02",
+        "X03",
+        "X04",
+        "X05",
+        "X06",
+        "X07",
+        "X08",
+        "F03",
+        "F23",
+        "N04",
+        "R12",
+        "Q08",
+        "C06"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-023",
+      "title": "Connect real ResultCheck intake and authorized external pilot",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G2",
+      "proposed_owner_role": "External-service owner; human outreach owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Integration engineering worker; human partner liaison",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-022",
+        "SLAB-009"
+      ],
+      "scope": "Connect request consumers and receipts; recruit/use a real partner only after outreach authorization. Partner intake has its own scoped authorization/limits; it does not mutate scientific accepted state or require thermal AcceptanceGate.",
+      "acceptance_evidence": [
+        "Real authorized request→execution→receipt trace",
+        "Observed downstream use with honest partner attribution",
+        "Timeout/cancel/tenant-separation and idempotency evidence"
+      ],
+      "cli_deliverables": [
+        "sentilab resultcheck submit",
+        "sentilab resultcheck status",
+        "sentilab resultcheck receipt"
+      ],
+      "mcp_deliverables": [
+        "sentilab_resultcheck_submit",
+        "sentilab_resultcheck_status",
+        "sentilab_resultcheck_receipt"
+      ],
+      "requirements": [
+        "A04",
+        "X01",
+        "X10",
+        "X11",
+        "O16",
+        "Q08"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-024",
+      "title": "Inspect exact Microduck reference and freeze fidelity/feasibility scope",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G1",
+      "proposed_owner_role": "Visual simulation research owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Source-grounded simulation/graphics specialist",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-001",
+        "SLAB-004",
+        "SLAB-012",
+        "SLAB-035"
+      ],
+      "scope": "Inspect exact YouTube reference and NVIDIA primary pipeline; identify assets, hardware, versions and costs. Exact requirement stays mandatory until any narrowing is approved.",
+      "acceptance_evidence": [
+        "Timestamped video/source pipeline inventory and reproducible references",
+        "RTX Spark versus GB10 distinction, ARM/Dell rendering preflight and no H100 rendering assumption",
+        "Code/STL license manifest and explicit fidelity +1"
+      ],
+      "cli_deliverables": [
+        "sentilab reference inspect",
+        "sentilab simulation doctor"
+      ],
+      "mcp_deliverables": [
+        "sentilab_reference_inspect",
+        "sentilab_simulation_doctor"
+      ],
+      "requirements": [
+        "A18",
+        "V07",
+        "V08",
+        "V09",
+        "V10",
+        "F09",
+        "F10",
+        "F11"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-025",
+      "title": "Build event-derived chiplet, lab, evidence and comparison interface",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G2",
+      "proposed_owner_role": "Evidence/product owner; Aneta conditional on authorization",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Frontend/visualization engineering worker",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-005",
+        "SLAB-007",
+        "SLAB-010"
+      ],
+      "scope": "Render exact geometry, active lab state, raw-measurement/reproduction drilldown, dependencies and comparison artifacts. Base fixtures/evidence view build without robotics feasibility or code; current default replay/finish-only source is not an incremental live conductor.",
+      "acceptance_evidence": [
+        "Coordinate/metric/layer fixture validation with clearly labeled recorded fixtures",
+        "One real candidate→measurement→reproduction→acceptance sequence",
+        "UI transitions bound to agent/artifact/timestamp; no fabricated heatmap/activity",
+        "Common declared color scale and existing canonical web-source reuse decision; final benchmark data connected after SLAB-021"
+      ],
+      "cli_deliverables": [
+        "sentilab view data",
+        "sentilab view export"
+      ],
+      "mcp_deliverables": [
+        "sentilab_view_data",
+        "sentilab_view_export"
+      ],
+      "requirements": [
+        "A18",
+        "S10",
+        "S13",
+        "V01",
+        "V02",
+        "V03",
+        "V04",
+        "V05",
+        "V06",
+        "V09",
+        "V13",
+        "O01",
+        "O04",
+        "O05",
+        "O14",
+        "F24",
+        "F26",
+        "F29",
+        "N02",
+        "R10",
+        "Q02",
+        "Q08",
+        "C03",
+        "C04"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-026",
+      "title": "Implement approved exact Microduck simulation workflow",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G2",
+      "proposed_owner_role": "Robotics/simulation owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Robotics/CAD/USD/Isaac/physics engineering specialists",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-024",
+        "SLAB-003",
+        "SLAB-004",
+        "SLAB-009",
+        "SLAB-035"
+      ],
+      "scope": "After explicit fidelity/resources approval, implement the reference workflow across intent, CAD/materials, USD, physics/rendering, RL and local validation as scoped. Any omission is an explicit approved change.",
+      "acceptance_evidence": [
+        "Pinned Hermes/Nemotron/Astra/FreeCAD/Blender/CAD/USD/Isaac/Omniverse/Newton/Isaac Lab/BAM/domain-randomization scope matrix",
+        "Actual compatible hardware runs and asset-rights proof; no cosmetic substitute claim",
+        "Clear distinction between robot physics and thermal evaluator; authentic replayable artifacts"
+      ],
+      "cli_deliverables": [
+        "sentilab simulation build",
+        "sentilab simulation train",
+        "sentilab simulation replay",
+        "sentilab simulation export"
+      ],
+      "mcp_deliverables": [
+        "sentilab_simulation_build",
+        "sentilab_simulation_train",
+        "sentilab_simulation_replay",
+        "sentilab_simulation_export"
+      ],
+      "requirements": [
+        "A18",
+        "V08",
+        "V09",
+        "V10",
+        "D07",
+        "F09",
+        "F10",
+        "F11",
+        "F24",
+        "Q02"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-027",
+      "title": "Build correction drill and reproducible visual replay",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G2",
+      "proposed_owner_role": "Demo/replay owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Frontend/replay engineering worker",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-010",
+        "SLAB-025"
+      ],
+      "scope": "Replay actual result histories and a labeled seeded evidence withdrawal, preserve unaffected support, create rebuildable backup demonstration.",
+      "acceptance_evidence": [
+        "Deterministic replay from event/artifact bundle with source pins",
+        "Direct/transitive stale propagation and preserved alternative support visible",
+        "Replay/time-compression/drill labels and backup export",
+        "Thermal correction drill and base evidence replay run with no robotics code installed; mandatory robotics lane remains independently required."
+      ],
+      "cli_deliverables": [
+        "sentilab replay render",
+        "sentilab replay export",
+        "sentilab correction drill"
+      ],
+      "mcp_deliverables": [
+        "sentilab_replay_render",
+        "sentilab_replay_export",
+        "sentilab_correction_drill"
+      ],
+      "requirements": [
+        "E16",
+        "E17",
+        "E18",
+        "E19",
+        "V05",
+        "V06",
+        "V11",
+        "V12",
+        "O14",
+        "D07",
+        "R14",
+        "Q02",
+        "Q08"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-028",
+      "title": "Package and independently rebuild D00–D07 engineering handoff",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G5",
+      "proposed_owner_role": "Release/reproducibility owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Artifact/release engineering worker and independent reproducer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-007",
+        "SLAB-015",
+        "SLAB-019",
+        "SLAB-021",
+        "SLAB-027",
+        "SLAB-033",
+        "SLAB-034",
+        "SLAB-026",
+        "SLAB-040"
+      ],
+      "scope": "Build all eight deliverables with manifest, versions, evidence limits and reproducible commands; rebuild from only delivered contents in a fresh location. This is full project completion only: every required D00-D07 and full capability claim needs evidence. A partial deadline packet never marks this ticket complete.",
+      "acceptance_evidence": [
+        "D00–D07 completeness and content-hash manifest",
+        "Fresh-location reconstruction independent of developer checkout",
+        "Full history/contribution/provenance and limitations inspectable through both transports"
+      ],
+      "cli_deliverables": [
+        "sentilab package build",
+        "sentilab package verify",
+        "sentilab package export"
+      ],
+      "mcp_deliverables": [
+        "sentilab_package_build",
+        "sentilab_package_verify",
+        "sentilab_package_export"
+      ],
+      "requirements": [
+        "P04",
+        "A07",
+        "E03",
+        "E20",
+        "M09",
+        "V12",
+        "O16",
+        "O18",
+        "D00",
+        "D01",
+        "D02",
+        "D03",
+        "D04",
+        "D05",
+        "D06",
+        "D07",
+        "F12",
+        "Q01",
+        "C01"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-029",
+      "title": "Prepare truthful deadline progress submission and separately report full-completion status",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G5",
+      "proposed_owner_role": "Human presentation/submission owner; Aneta role conditional",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Presentation/documentation worker plus claims reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-001"
+      ],
+      "scope": "At the approved deadline, collect available verified evidence, source references, failures and explicit D00-D07 omissions into a truthful deck/progress packet. This path must not depend on finishing robotics, adapter, partner or other implementation tickets. Publish only under G5 approval; no partial package is represented as full project completion, successful partnership, service authenticity or unmeasured benefit.",
+      "acceptance_evidence": [
+        "Removing any non-core implementation ticket leaves a path to truthful deadline reporting",
+        "Evidence/claim/omission ledger labels every missing mandatory artifact incomplete and distinguishes source reports from executed results",
+        "Approved deadline/team/sponsor details, honest deck/rehearsal records where available, and G5 release for publication",
+        "A full-completion claim requires SLAB-028; unanchored signatures not advertised as trusted service provenance"
+      ],
+      "cli_deliverables": [
+        "sentilab presentation export",
+        "sentilab submission validate"
+      ],
+      "mcp_deliverables": [
+        "sentilab_presentation_export",
+        "sentilab_submission_validate"
+      ],
+      "requirements": [
+        "G09",
+        "P01",
+        "P04",
+        "B24",
+        "M07",
+        "M17",
+        "V12",
+        "X11",
+        "O01",
+        "O06",
+        "O07",
+        "O08",
+        "O09",
+        "O10",
+        "O11",
+        "O12",
+        "O13",
+        "O14",
+        "O15",
+        "O16",
+        "O17",
+        "O18",
+        "F25",
+        "N06",
+        "R10",
+        "Q01",
+        "C06"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-030",
+      "title": "Evaluate optional PhysicsNeMo screening extension",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G5",
+      "proposed_owner_role": "Scientific ML extension owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Scientific ML worker and numerical reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-006",
+        "SLAB-016",
+        "SLAB-020",
+        "SLAB-028"
+      ],
+      "scope": "Deferred extension: predict chiplet-center temperatures with separate split/error controls and reference-simulator admission retained.",
+      "acceptance_evidence": [
+        "Separate approved scope/resource budget",
+        "Held-out error and screening-benefit evaluation",
+        "Every accepted candidate still verified by reference simulator"
+      ],
+      "cli_deliverables": [
+        "sentilab surrogate train",
+        "sentilab surrogate evaluate"
+      ],
+      "mcp_deliverables": [
+        "sentilab_surrogate_train",
+        "sentilab_surrogate_evaluate"
+      ],
+      "requirements": [
+        "O19"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-031",
+      "title": "Track optional sponsor/domain/physical-design extensions",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G5",
+      "proposed_owner_role": "Extension planning owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Domain specialist selected only after approved scope",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-028",
+        "SLAB-029"
+      ],
+      "scope": "Keep Nemotron critic, ALCHEMI/BioNeMo domain bridge, Formlabs geometry print and RTL-to-layout as explicit deferred tickets/subscopes, not unacknowledged omissions.",
+      "acceptance_evidence": [
+        "Separate owner, budget and +1 per extension",
+        "Defensible scientific task and primary-source/asset rights",
+        "No printed-material thermal-validation claim or core-scope distraction"
+      ],
+      "cli_deliverables": [
+        "sentilab extension plan export"
+      ],
+      "mcp_deliverables": [
+        "sentilab_extension_plan_export"
+      ],
+      "requirements": [
+        "O20",
+        "O21",
+        "O22"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-032",
+      "title": "Freeze selected checkpoint and run untouched held-out comparisons",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G3b",
+      "proposed_owner_role": "Independent benchmark execution owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Deterministic runner plus independent evaluation reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-019",
+        "SLAB-020"
+      ],
+      "scope": "After G3a fitting/validation selection, freeze all model/memory/runtime/prompt/tool settings and execute fixed held-out action corpus plus closed-loop five-arm benchmark. Never tune or select on these results. Fixed held-out action corpus is primary for learning and generated/held by isolated deterministic infrastructure before release. Closed-loop B4 remains required secondary, not silently cut.",
+      "acceptance_evidence": [
+        "Selected artifact hashes, memory snapshot and complete G3b freeze receipt",
+        "Identical fixed-corpus inputs/settings for base and adapter; matched closed-loop starting state/budgets",
+        "Complete per-family/seed/arm raw outcomes, failures/costs and isolation proof; failed test can reject promotion only",
+        "Same decoder for base/adapter; fixed8-per-lab allocation, arm/family/seed namespaces and randomized blocked order; provider failure/rerun and two-contrast multiplicity policies preregistered."
+      ],
+      "cli_deliverables": [
+        "sentilab benchmark freeze",
+        "sentilab benchmark run",
+        "sentilab checkpoint evaluate"
+      ],
+      "mcp_deliverables": [
+        "sentilab_benchmark_freeze",
+        "sentilab_benchmark_run",
+        "sentilab_checkpoint_evaluate"
+      ],
+      "requirements": [
+        "B01",
+        "B02",
+        "B03",
+        "B04",
+        "B05",
+        "B15",
+        "B19",
+        "B20",
+        "B21",
+        "B22",
+        "B24",
+        "M11",
+        "M16",
+        "D05",
+        "D06",
+        "F14",
+        "R01",
+        "R02",
+        "R05",
+        "R06",
+        "Q05",
+        "Q06"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-033",
+      "title": "Approve and serve verified worker checkpoint on GB10",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G4",
+      "proposed_owner_role": "Warden/GB10 serving owner under explicit owner release",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "ML serving engineering worker and release reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-019",
+        "SLAB-021",
+        "SLAB-032"
+      ],
+      "scope": "Promote the exact evaluated artifact on GB10 after explicit release; verify actual serving identity and maintain rollback/quarantine lineage.",
+      "acceptance_evidence": [
+        "Exact adapter/base/tokenizer/config hashes and serving identity match",
+        "G4 scoped approval with held-out regressions and resource limits",
+        "Rollback/invalidated-dataset checkpoint quarantine; no claim that deleting memory unlearns weights",
+        "Measured worker call counts/latency and approved overnight availability/resource slots fit the actual benchmark/demo window; no unmeasured contention assumption."
+      ],
+      "cli_deliverables": [
+        "sentilab checkpoint promote",
+        "sentilab checkpoint serve",
+        "sentilab checkpoint rollback"
+      ],
+      "mcp_deliverables": [
+        "sentilab_checkpoint_promote",
+        "sentilab_checkpoint_serve",
+        "sentilab_checkpoint_rollback"
+      ],
+      "requirements": [
+        "A11",
+        "M11",
+        "M13",
+        "M14",
+        "M16",
+        "D06",
+        "F05",
+        "F14",
+        "F19",
+        "R13",
+        "R14",
+        "Q09"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-034",
+      "title": "Audit complete MCP/CLI parity and requirement coverage",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G5",
+      "proposed_owner_role": "Independent conformance owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "API/test engineering worker independent of feature author",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-009",
+        "SLAB-008",
+        "SLAB-010",
+        "SLAB-011",
+        "SLAB-012",
+        "SLAB-017",
+        "SLAB-019",
+        "SLAB-020",
+        "SLAB-022",
+        "SLAB-026",
+        "SLAB-027",
+        "SLAB-032",
+        "SLAB-033",
+        "SLAB-037",
+        "SLAB-038",
+        "SLAB-039",
+        "SLAB-040",
+        "SLAB-041"
+      ],
+      "scope": "Validate both transports for every advertised capability, including errors, authorization, output schema, jobs/cancel and immutable artifacts.",
+      "acceptance_evidence": [
+        "No missing capability row; identical meaningful positive/negative outcomes",
+        "No alternate-transport permission/idempotency/cancel bypass",
+        "Every requirement and D00–D07 maps to implemented ticket and evidence or explicit approved limitation",
+        "Identical deterministic payloads and authorization/errors across transports; byte-identical receipt on same idempotent request only. Independent runs retain legitimate different provenance."
+      ],
+      "cli_deliverables": [
+        "sentilab conformance run",
+        "sentilab coverage validate"
+      ],
+      "mcp_deliverables": [
+        "sentilab_conformance_run",
+        "sentilab_coverage_validate"
+      ],
+      "requirements": [
+        "X08",
+        "X09",
+        "F06",
+        "F12",
+        "C01"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-035",
+      "title": "Review code/model/data/asset licenses and permitted-use provenance",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G1",
+      "proposed_owner_role": "Provenance/licensing owner; human legal review when needed",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Source/license inspection worker; no legal-certification claim",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-001"
+      ],
+      "scope": "Check exact revisions and permitted use of model/dataset outputs, source code, robot assets and redistributable artifacts; clarify additional legal scope if requested.",
+      "acceptance_evidence": [
+        "License/terms manifest with sources and unresolved restrictions",
+        "Apache-2.0 code versus CC BY-NC-SA STL separation and approved use",
+        "Training/distribution eligibility decisions; no invented legal clearance",
+        "Evaluator signing key stays outside lab boxes; public flight records undergo secret scan/redaction; untrusted literature uses reviewed source intake rather than a blanket ban."
+      ],
+      "cli_deliverables": [
+        "sentilab provenance inspect",
+        "sentilab license manifest"
+      ],
+      "mcp_deliverables": [
+        "sentilab_provenance_inspect",
+        "sentilab_license_manifest"
+      ],
+      "requirements": [
+        "M04",
+        "V08",
+        "F11",
+        "F21",
+        "R12",
+        "Q11"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-036",
+      "title": "Verify bounded operations, STOP, recovery and accounting",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G2",
+      "proposed_owner_role": "Runtime/reliability owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Systems/concurrency engineering worker and adversarial tester",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-007",
+        "SLAB-008",
+        "SLAB-010"
+      ],
+      "scope": "Exercise crashes, duplicate delivery, cancellations, quota exhaustion, source withdrawal and checkpoint recovery without broadening execution permissions. Cover listen/thread-reply gap with bounded action reconciliation; verify ticket-scoped admission, actual grant renewal/replacement support and TTL. Canonical contracts use hashes/readback because room filters can rewrite text.",
+      "acceptance_evidence": [
+        "Bounded concurrency/token/time/GPU budget and stop behavior",
+        "Replay/restart/checkpoint A/B integrity with validated coverage order",
+        "Failure/cancel/late-completion/idempotency accounting and observability",
+        "Actual reply wakes waiting worker; UTC grant expiry and monotonic timeout accounting across repeated DST hour; expired/missing-scope grants fail closed. No production dependency on reviewer's laptop."
+      ],
+      "cli_deliverables": [
+        "sentilab runtime status",
+        "sentilab runtime stop",
+        "sentilab runtime recover"
+      ],
+      "mcp_deliverables": [
+        "sentilab_runtime_status",
+        "sentilab_runtime_stop",
+        "sentilab_runtime_recover"
+      ],
+      "requirements": [
+        "A07",
+        "A10",
+        "E20",
+        "B10",
+        "B12",
+        "F06",
+        "F07",
+        "F16",
+        "F20",
+        "F21",
+        "F22",
+        "F31",
+        "R11",
+        "Q07",
+        "C04"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-037",
+      "title": "Build deterministic conductor, AI-off live loop and lab integration seam",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G2",
+      "proposed_owner_role": "Proposed Forge live-design owner and Warden boxops owner; each seam named before release",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Integration/runtime engineering worker plus independent adversarial tester",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-008",
+        "SLAB-022",
+        "SLAB-025",
+        "SLAB-036"
+      ],
+      "scope": "Build durable run/arm state, scheduler, restart recovery and incremental delivery using SSE or safe cursor polling. The deterministic AI-off live loop works without LLM labs, labels its data and respects scope/budget/STOP. Expose the integration seam consumed by SLAB-013 for later required lab autonomy; no model completion is fabricated.",
+      "acceptance_evidence": [
+        "Actual live end-to-end trace and explicit permissions for any merge/deployment",
+        "AI-off mode keeps deterministic placements/evaluator/ResultCheck/live evidence working without fabricated model decisions",
+        "Budget/STOP/cancellation/unapproved-scope tests; replay remains required audit/backup rather than sole demo if adopted"
+      ],
+      "cli_deliverables": [
+        "sentilab live run",
+        "sentilab live status",
+        "sentilab live stop",
+        "sentilab live verify --ai-off"
+      ],
+      "mcp_deliverables": [
+        "sentilab_live_run",
+        "sentilab_live_status",
+        "sentilab_live_stop",
+        "sentilab_live_verify"
+      ],
+      "requirements": [
+        "N01",
+        "N02",
+        "R10",
+        "C04"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-038",
+      "title": "Verify private box-to-GB10 network and shared Qwen serving path",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G1",
+      "proposed_owner_role": "Operations/GB10 owner under scoped human release",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Network/inference integration worker",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-003",
+        "SLAB-004",
+        "SLAB-009"
+      ],
+      "scope": "Prove actual authorized boxes can reach the on-site GB10/shared base-worker endpoint over an approved private authenticated path. Laptop SSH is not this proof. Any tunnel/relay/network change needs its own approved scope; no implicit public exposure.",
+      "acceptance_evidence": [
+        "Source box, destination, authentication and endpoint identity recorded",
+        "Real structured Qwen request/response from box with bounded timeout and no credential disclosure",
+        "Network/privacy/TTL/firewall failure tests and explicit owner resource/route approval",
+        "Named overnight device custodian/access window, actual cloud-to-venue route, throughput/latency and bounded training/serving/rendering contention schedule."
+      ],
+      "cli_deliverables": [
+        "sentilab route doctor --source box --target gb10",
+        "sentilab worker probe"
+      ],
+      "mcp_deliverables": [
+        "sentilab_route_doctor",
+        "sentilab_worker_probe"
+      ],
+      "requirements": [
+        "R10",
+        "R13",
+        "Q09",
+        "C05"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-039",
+      "title": "Measure training-family optimization headroom before LLM experiments",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G1",
+      "proposed_owner_role": "Scientific evaluation owner",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Deterministic CPU search worker plus numerical reviewer",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-002"
+      ],
+      "scope": "After source inventory and an explicit scoped preflight release, approve and pin the minimal fixture, objective/evaluator, search allowance, mesh set, development cases and CPU/elapsed/execution cap. Run the CPU-only headroom diagnostic using the source or a bounded preflight harness permitted by that release; no final production contract SLAB-005, product evaluator SLAB-006 or MCP implementation is a prerequisite. Compare random/heuristic/short-SA methods and a capped empirical reference. No paid inference, held-out access or unapproved 10000-evaluation run is implied.",
+      "acceptance_evidence": [
+        "Pinned training-only cases, equal short-budget/reproduction convention and raw solver artifacts",
+        "Measured seconds per bundle, approved CPU cap and staged stop rule before any long run",
+        "Gap-to-best-known and numerical noise reported without optimum claim; low headroom triggers approved task revision before held-out exposure",
+        "Predeclared median short-budget-random best minus empirical best-found reference threshold k times measured mesh error; k/repetitions/CPU cap fixed before diagnostics. Not merely clustered-versus-spread sensitivity.",
+        "Proposed gap is cheap-method median MINUS best found >=5 times max|J32-J64|; observed discrepancy not certified error. Fixed layouts use tolerance-aware rank/tie checks.",
+        "Preflight release binds the pinned minimal fixture/objective/search/mesh/cap before any CPU diagnostic; source harness scope is explicit and does not require final product implementation."
+      ],
+      "cli_deliverables": [
+        "sentilab headroom run",
+        "sentilab headroom report"
+      ],
+      "mcp_deliverables": [
+        "sentilab_headroom_run",
+        "sentilab_headroom_report"
+      ],
+      "requirements": [
+        "R03",
+        "Q04"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-040",
+      "title": "Anchor service authenticity to an independent trust root",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G1",
+      "proposed_owner_role": "Trust-root/evidence security owner with nonauthor reviewer",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Security/cryptography integration worker",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-001"
+      ],
+      "scope": "Configure issuer/service public trust root outside submitted artifacts; issue scoped delegated signer certificates or direct trusted receipts. Required signing secret absent fails closed. Existing embedded-key consistency remains a separately labeled weak verdict; signing keys stay off lab boxes. Minimal signing/delegation contract can be prepared without the complete evidence/MCP implementation. Certify the actual record_public_key or explicitly bind separate lane identity/record keys. File-carried certified keys are accepted only under external pinned-root validation; CLI/MCP/browser share policy. This blocks stronger authenticity claims, not honest incomplete reporting.",
+      "acceptance_evidence": [
+        "Negative forged/re-signed artifact, replacement root, unknown issuer, wrong task/run/tenant scope and altered payload tests",
+        "Expiry/revocation/rotation/historical-verification policy and both CLI/MCP/browser trust validation",
+        "Separate internal integrity/authenticated origin/scientific verification outcomes; source-only trust-boundary finding not misrepresented as broken Ed25519",
+        "Real record-signing key bound to scoped issuer; untrusted replacement embedded key fails, externally certified embedded key can pass; missing required signer configuration fails closed."
+      ],
+      "cli_deliverables": [
+        "sentilab trust inspect",
+        "sentilab receipt verify"
+      ],
+      "mcp_deliverables": [
+        "sentilab_trust_inspect",
+        "sentilab_receipt_verify"
+      ],
+      "requirements": [
+        "E20",
+        "C01"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    },
+    {
+      "id": "SLAB-041",
+      "title": "Preregister task-family splits, endpoints, budgets and gate scope before runner",
+      "status": "DRAFT_HOLD",
+      "remote_ticket_id": null,
+      "stage_gate": "G1",
+      "proposed_owner_role": "Experimental protocol owner and independent statistics reviewer",
+      "owner_identity": null,
+      "owner_authorization": "PENDING; no participation or ownership inferred",
+      "capability_model_class": "Protocol/data-split planning worker",
+      "actual_model_id": null,
+      "model_selection_status": "PENDING_VERIFIED_BOX_CATALOG",
+      "dependencies": [
+        "SLAB-001",
+        "SLAB-005"
+      ],
+      "scope": "Prepare early immutable family/split manifests, training/validation selection plan, fixed-corpus and sharing primary endpoints, secondary B4, admission-order semantics, inclusive32 proposal and failure/resource-cut rules. This does not require the complete runner, live labs or headroom results to draft; experiment freeze later requires scoped evidence.",
+      "acceptance_evidence": [
+        "No held-out exposure to training/calibration; two seeds/five arms retained absent owner change",
+        "28+4/7+1 proposed table, actual charging, diagnostics k/repetitions/CPU cap and multiplicity/tie rules approved before corresponding runs",
+        "Gate release names ticket sets/cap/expiry/humans; no blanket null-cap execution or required preflight-results approval deadlock"
+      ],
+      "cli_deliverables": [
+        "sentilab protocol validate",
+        "sentilab split inspect",
+        "sentilab protocol freeze"
+      ],
+      "mcp_deliverables": [
+        "sentilab_protocol_validate",
+        "sentilab_split_inspect",
+        "sentilab_protocol_freeze"
+      ],
+      "requirements": [
+        "B08",
+        "R01",
+        "Q04",
+        "Q05",
+        "Q06",
+        "Q07",
+        "Q08",
+        "C07"
+      ],
+      "plus_one_gate": {
+        "status": "NOT_GRANTED",
+        "approver_policy": "Proposed authorized independent peer +1 plus owner/carther +1; approver set requires confirmation",
+        "target_revision_hash": null,
+        "approved_scope": null,
+        "approval_records": []
+      },
+      "resource_cap": {
+        "status": "TBD_BEFORE_EXECUTION",
+        "max_model_tokens": null,
+        "max_wall_time_minutes": null,
+        "max_gpu_minutes": null,
+        "max_simulator_bundles": null,
+        "max_concurrency": null,
+        "max_cloud_spend": null,
+        "execution_permitted": false
+      },
+      "implementation_started": false,
+      "evidence_artifacts": []
+    }
+  ],
+  "stage_gate_semantics": "Target evidence milestone; no ticket has start approval. Dependencies and explicit scoped start +1 are separate. G3a fitting/validation selection precedes G3b untouched held-out execution and G4 promotion.",
+  "peer_proposals": {
+    "source_action_id": "9e9a688f-eca9-4a75-9691-710a31bbe0a8",
+    "source_reply_target": 55918,
+    "status": "NO_EXACT_REVISION_PLUS_ONE",
+    "technical_approvers_proposed": [
+      "claude-warden",
+      "pocket-forge"
+    ],
+    "human_directive_relay": "Peer-reported; does not override direct +1 instruction in this chat.",
+    "catalog_status": "PEER_REPORTED_UNPROBED"
+  },
+  "review_updates": {
+    "participation_authorized_post": 55936,
+    "review_post": 55938,
+    "review_event_id": "692e6796-eb6e-420a-837d-aa53f2bd771f",
+    "technical_plus_one": false,
+    "human_aneta_commitment": "PENDING",
+    "owner_only_cuts_not_applied": [
+      "one paired seed",
+      "drop adapter arm",
+      "replace Isaac/Newton with icons or generic board"
+    ],
+    "reference_fidelity": "Owner clarification pending; retain full requirement until direct answer"
+  },
+  "original_planning_date": "2026-10-30",
+  "approval_semantics": "A scoped gate record may release a named ticket set under one shared cap, expiry and operation allowlist; no per-ticket repetitive prompt is required. None has been granted.",
+  "completion_semantics": "SLAB-029 is a truthful deadline progress submission, not full project completion. SLAB-028 requires all D00-D07; missing mandatory artifacts remain incomplete.",
+  "source_updates": {
+    "canonical_addendum": "CANONICAL-ADDENDUM.md",
+    "micro150": "Existing8chiplet680W configuration; oracle wiring absent and original temperatures not reproduced",
+    "metric": "Proposed G1 grid-peak primary/center diagnostic newversion; notapproved",
+    "service_authenticity": "Embedded-key signature consistency lacks external trust root; not broken Ed25519",
+    "parent_semantics": "Existing exact-known-parent materialization/current-lane-best comparison preserved in future durable CAS"
+  },
+  "numerical_preflight_resource_proposal": {
+    "status": "PROPOSED_NOT_APPROVED",
+    "existing_x86_cpu_workers": 1,
+    "max_cpu_minutes": 60,
+    "max_elapsed_minutes": 90,
+    "max_actual_simulator_scenario_executions": 10000,
+    "max_gpu_minutes": 0,
+    "max_paid_model_calls": 0,
+    "max_incremental_cash_usd": 0,
+    "stop": "First bound reached; includes grid runs/failures/retries",
+    "implementation_boxes": "Separate LLM/model spend requires separate release; not covered",
+    "unknowns": "Measured u_num/delta_min/repetitions/runtime are preflight outputs, not invented values"
+  }
+}

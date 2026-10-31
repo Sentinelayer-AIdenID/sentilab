@@ -1,0 +1,42 @@
+name: CI
+# The container build is the test: it runs the controller tests, the demo numbers and a HotSpot+SuperLU probe
+# (scripts/container_smoke.sh) and fails if any of them fails. The secret scan covers the full history.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  container:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Build the image (runs the smoke tests)
+        run: docker build --build-arg BUILD_SHA=${{ github.sha }} -t thermal-api:ci .
+      - name: Health endpoint answers with the build SHA
+        run: |
+          docker run -d --name api -p 8000:8000 thermal-api:ci
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/api/health && break; sleep 1; done
+          curl -sf http://127.0.0.1:8000/api/health | grep -q '"build_sha":"${{ github.sha }}"'
+      - name: Origin lock refuses callers without the token
+        run: |
+          token="$(openssl rand -hex 16)"  # per run: no token-shaped literal in the repo
+          docker run -d --name locked -p 8001:8000 -e ORIGIN_SHARED_TOKEN="$token" thermal-api:ci
+          for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:8001/api/health && break; sleep 1; done
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8001/api/health)" = 403
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "x-origin-token: $(openssl rand -hex 16)" http://127.0.0.1:8001/api/health)" = 403
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H "x-origin-token: $token" http://127.0.0.1:8001/api/health)" = 200
+
+  secret-scan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - name: gitleaks (full history)
+        run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.24.2 detect --source /repo --no-banner --redact --exit-code 1

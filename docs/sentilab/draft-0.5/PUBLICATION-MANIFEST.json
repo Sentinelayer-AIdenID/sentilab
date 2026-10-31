@@ -1,0 +1,120 @@
+{
+  "schema": "sentilab.docs-publication.v1",
+  "assembledAtUtc": "2026-10-31T04:46:20.168Z",
+  "frozenRevision": "draft-0.5",
+  "baseCommit": "2199612932da142e0057e6162293940b4ea64bba",
+  "ownerRelease": "docs-only private PR; no execution or merge",
+  "files": [
+    {
+      "name": "PLAN.md",
+      "bytes": 82324,
+      "sha256": "e15174b8040d40b0675d8821586c2725ba84b79419393fe2a42e405218410f1a"
+    },
+    {
+      "name": "REQUIREMENTS.md",
+      "bytes": 50872,
+      "sha256": "cef6ca1268486238be1a98c2fdf2634b2ff8cd7d1004d8b9f5bd61d0b30f658b"
+    },
+    {
+      "name": "TICKETS.json",
+      "bytes": 119157,
+      "sha256": "e5acf2ec49c53407b3918c37c9ff0eeefe2bd53df3d189b7949add77513144d4"
+    },
+    {
+      "name": "TICKET-INDEX.md",
+      "bytes": 45795,
+      "sha256": "7c5624076e6fc7a0c866350d74de4e7e1cbd2061e33de2b710fd768b10ddf890"
+    },
+    {
+      "name": "MODEL-ROUTING-PROPOSAL.md",
+      "bytes": 6100,
+      "sha256": "5edd9556afc92473d5577ff389917d5e1f7888334bfe6275ba342aaeba0bf9db"
+    },
+    {
+      "name": "SCIENCE-REVIEW.md",
+      "bytes": 14932,
+      "sha256": "3b8fc8e2b80461849072cdf49421196ab40bd460ec63f8fe4b827c8ac36d880c"
+    },
+    {
+      "name": "COUNCIL-REVIEW.md",
+      "bytes": 129346,
+      "sha256": "e02db00eeebfd61d4ae0a66792664e9f8693eedda5ffac7909494bfc2239a80f"
+    },
+    {
+      "name": "CANONICAL-SOURCE.md",
+      "bytes": 16965,
+      "sha256": "f93f8838110fce1bb9b3e715003b8a1e2b98eb667d48905e3e718a62f92b94ac"
+    },
+    {
+      "name": "CANONICAL-ADDENDUM.md",
+      "bytes": 17897,
+      "sha256": "ee458c90faeae8a2311e3c220f72f6473f6ff6bbe79a74a9b05e1ef6c6dd6d5d"
+    },
+    {
+      "name": "technology-evidence.md",
+      "bytes": 27794,
+      "sha256": "8381e4f14120452934255493660e4da1f137020a0dfbb6b70a766055cc6ba745"
+    },
+    {
+      "name": "REVIEW-STATUS.md",
+      "bytes": 12021,
+      "sha256": "0f292b8eff9238426bc4780d06898bae8c139048a1db945e6f63a64e81ca1783"
+    },
+    {
+      "name": "ANETA-REVIEW-RESPONSE.md",
+      "bytes": 15603,
+      "sha256": "c30d98213fb5b4cb3373df591ee5129f7900a364cc563122d2f1d1e9b4c44e29"
+    },
+    {
+      "name": "VALIDATION.json",
+      "bytes": 851,
+      "sha256": "1643a47b376d68ca9a163d9343e490ae0c9dfac278895d12ff4116ff74c51001"
+    },
+    {
+      "name": "REVIEW-MANIFEST.json",
+      "bytes": 2096,
+      "sha256": "0a0cb69312c1b56095378ca085b4f36a7318c54c0216ed0cca2d652b7904161d"
+    },
+    {
+      "name": "FORGE-REVIEW-RESPONSE.md",
+      "bytes": 11815,
+      "sha256": "8b08171e2ba322cbe51b855930bc207c5cc4b607deb6ffa08804acb17def3d3d"
+    },
+    {
+      "name": "POSTFREEZE-REVIEW.json",
+      "bytes": 601,
+      "sha256": "1c1106afc1352beff84efc8ca47aea4d65d6e8a0d4784ec6c6be509eee5df6ec"
+    },
+    {
+      "name": "OWNER-DECISIONS-2026-10-31.md",
+      "bytes": 4123,
+      "sha256": "3e3541127864a116d8b0f5684f53de1f9fd30f068e60f720e4905867cc997f38"
+    },
+    {
+      "name": "README.md",
+      "bytes": 4659,
+      "sha256": "71f64385787c41815bfaedc3dbda4dc7bb35fce5a0627ceb81af13070246ea2a"
+    },
+    {
+      "name": "sources/PROVENANCE.md",
+      "bytes": 1379,
+      "sha256": "cade4b2eb0a07686966bff9adaa023e28f964e6a1538cf940e35b1da4eed08ec"
+    },
+    {
+      "name": "sources/source-a.txt",
+      "bytes": 26656,
+      "sha256": "594a40f89aec1d0e5683dc166203f7c9c550fc0bbe78f37980cdb2293a3ed36b"
+    },
+    {
+      "name": "sources/source-b.txt",
+      "bytes": 29603,
+      "sha256": "86072de31a5038180079dadd58af5329447cf00000a19d5fcea6ac3a6d4d9ea6"
+    }
+  ],
+  "checks": [
+    "13 frozen file hashes",
+    "original source hashes",
+    "bounded credential-pattern scan"
+  ],
+  "limitations": "Source paths/caches in frozen files are historical; raw operational exports are excluded. No product or simulator tests were run."
+}

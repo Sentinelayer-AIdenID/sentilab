@@ -1,0 +1,34 @@
+TFL-05 review successor verification — 2026-10-18
+
+Controller, lane, and property suite (WSL Python 3.14):
+  python3 -m unittest -q test_controller.py test_experiment.py test_safety_property.py
+  47 tests passed, including controller-owned shared initialization and rejection
+  of caller-supplied baseline results.
+  The 1,000-case TFL-13 property held (470 commits, 782 non-honest simulator
+  results, 133 STOPs in flight, 124 cancellations, 1,000 malformed place inputs
+  rejected, 568 advisory outputs claiming commit authority). All 8 injected
+  bypasses were caught.
+  Lane-runner regressions reject both simulator exceptions and provider costs
+  over the positive evaluation ceiling.
+
+TAP adapter and probe suite (WSL Python 3.14):
+  test_tap_oracle.py: 7 tests passed.
+  run_tap_probe.py: all 8 cases passed; right_shift_2mm 32x32 = 118.8400 C.
+
+TFL-05 four-lane smoke, seed 11, 16x16, 4 shared initial designs and 4 proposal
+evaluations per lane:
+  Synthetic plate: all four lanes completed equal counts and all four signed
+  flight records verified.
+  TAP Ascend910: all four lanes completed equal counts and all four signed flight
+  records verified.
+
+Exact-head container and secret-scan CI, run 39163029307, passed on
+d969eaf0776d4f70dc446223c1a53e2f46773799:
+  In-image: 41 controller tests, 2 TFL-13 property tests (all 8 bypasses caught
+  over 1,000 cases), 4 lane-runner tests, plate and Ascend910 smoke, 7 TAP adapter
+  tests, 8 HotSpot probes, and 2 TFL-14 regressions all passed. Both four-lane
+  smokes verified equal counts and all signed records. Health/build-SHA and
+  origin-lock checks passed.
+  The build-agent probe medians were 0.086 s at 16x16 and 0.373 s at 32x32; these
+  are report-only and do not replace the deployed-host measurement required by
+  TFL-03.

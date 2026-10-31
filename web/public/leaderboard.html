@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-seed leaderboard · Thermal Flight Lab</title>
+<meta name="description" content="Equal-budget strategy results with confidence intervals and signed records.">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="leaderboard.css">
+</head>
+<body>
+<header class="topbar">
+  <a href="/" class="brand">AIdenID / Thermal Flight Lab</a>
+  <span class="spacer"></span>
+  <a href="/">Live lab</a>
+  <a href="/licenses">Licenses</a>
+</header>
+<main>
+  <div class="title-row">
+    <div><p class="eyebrow">TFL-08 · equal proposal budgets</p><h1>Multi-seed leaderboard</h1></div>
+    <label>Benchmark <select id="benchmark" disabled><option>Loading…</option></select></label>
+  </div>
+  <p id="status" role="status" class="notice">Loading signed batch summary…</p>
+  <section id="content" hidden>
+    <div class="summary-grid">
+      <article><span class="eyebrow">Seeds</span><strong id="seedCount">–</strong><small id="protocol">–</small></article>
+      <article><span class="eyebrow">Best median</span><strong id="winner">–</strong><small>Ties are shown together; no significance claim.</small></article>
+      <article class="signal-result"><span id="signalTitle" class="eyebrow">Signal-portfolio lane vs UCB1</span><strong id="signalResult">–</strong><small id="signalMode">–</small></article>
+    </div>
+    <section class="panel">
+      <h2>Best-so-far by charged evaluation</h2>
+      <svg id="curve" viewBox="0 0 900 320" role="img" aria-label="Median best temperature curves across seeds"></svg>
+      <div id="legend" class="legend"></div>
+    </section>
+    <section class="panel table-wrap">
+      <h2>Across-seed results</h2>
+      <p class="subtle">Hindsight reference is an upper bound selected after each seed from three separately signed fixed-operator runs; it is not an online strategy. Lane wall time is report-only: it includes baseline initialization and shared-worker warm/cold effects in fixed lane order.</p>
+      <table>
+        <thead><tr><th>Lane or reference</th><th>Median °C</th><th>IQR °C</th><th>Bootstrap 95% CI of median</th><th>Variance °C²</th><th>Observed median time</th><th>Paired Wilcoxon p vs UCB1</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="signalCosts" class="signal-costs"></div>
+    </section>
+    <section class="panel">
+      <h2>Signed lane records</h2>
+      <p class="subtle">Each record is an independent signed JSON file. Its path and public key are recorded in the run summary.</p>
+      <div id="records"></div>
+    </section>
+    <footer><a id="jsonLink" href="/tfl08/leaderboard.json">Download leaderboard.json</a><span> · Sample variance uses per-seed best temperatures. Estimated list price is not invoice cost.</span><p id="environment"></p></footer>
+  </section>
+</main>
+<script src="leaderboard.js"></script>
+</body>
+</html>
