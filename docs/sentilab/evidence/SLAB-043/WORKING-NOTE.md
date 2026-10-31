@@ -79,7 +79,7 @@ between setsid and exec, holding the subprocess startup handshake open. The
 barrier now checks the actual worker command before pausing it. No production
 assertion or timeout was weakened to fix that test scheduling race.
 
-Four independent mutations of shipped code at `31143f2`, each restored in its
+Four independent mutations of shipped code at `052c93d`, each restored in its
 scratch worktree afterward, were detected with exit 1 by these execution tests:
 
 | Mutation | Test suffix |
@@ -91,6 +91,10 @@ scratch worktree afterward, were detected with exit 1 by these execution tests:
 
 The final 13-test conformance run passed after the scheduling fix. Python
 compilation, generated coverage freshness and `git diff --check` also passed.
+The valid-execution test also passes in a clean worktree without a native binary;
+after that fixture correction, the wrong-design mutation fails only its intended
+chiplet-build assertion. All four mutations and the pre-feature failure proof
+were rerun against the final test source.
 
 Earlier foundation proof: the three registry tests passed; independent scratch
 mutations adding/removing an MCP tool, adding a CLI command, removing a pending
