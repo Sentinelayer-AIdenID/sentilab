@@ -233,8 +233,8 @@ Binary hashes depend on the toolchain. The grant host pins its own hashes at run
 source identity of NEW is the SHA-256 of `temperature_grid.c`, `Makefile` and `coupling_variant.py`, as listed
 in `problem.generator_sha256`.
 
-**What the tests show** (94 tests across both modules; the native, fake-solver and built-binary tests run on
-POSIX and in the CI image; 30 code mutants, each caught by a named test):
+**What the tests show** (99 tests across both modules; the native, fake-solver and built-binary tests run on
+POSIX and in the CI image; 38 code mutants, each caught by a named test):
 
 - **Default byte-identity.**
   - Stripping the variant blocks from `temperature_grid.c` gives exactly the upstream bytes.
@@ -335,9 +335,11 @@ coordinator]
   prospective computational reference-reproduction tolerance of 1.0 K.
 - **The references are raw.** TAP-2.5D's originals as SLAB-048 decoded them (PR #57 at `063f659`), with their
   continuous centres and rotations: Ascend 910 at 75.48 C and CPU-DRAM at 115.94 C. Each is pinned by its raw
-  layout's own content hash, so a later SLAB-048 commit that leaves raw alone keeps the pin and any change to raw
-  fails. Raw geometry is judged by the continuous rules only (margin, halo, 0.1 mm body spacing); the search
-  lattice never applies to it, and the search path still refuses it.
+  section's own content hash (`15c77bbe...`, `6eba70b6...`), checked on the vendored copy and on SLAB-048's record
+  whenever it is in the tree; any change to raw fails. SLAB-048 keeps raw byte-stable and puts later notes in
+  `raw_annotations` and `snapped_annotations`, which are descriptive only and never read by the gate. Raw geometry is
+  judged by the continuous rules only (margin, halo, 0.1 mm body spacing); the search lattice never applies to it,
+  and the search path still refuses it.
 - **Snapped variants are other identities.** They are an engineering comparison, carry no paper-match claim, and
   cannot enter a gate-zero record.
 - **The frozen predicate:** the native6 primary and its fresh-process replay at grid 64 on each reference, four
@@ -355,9 +357,12 @@ coordinator]
   (`CI_ALLOCATION=1`, SLAB-046), where every native HotSpot launch goes through `sundai_hotspot.ci_gate`, and it
   refuses a binary built with the CI entry guard. Its process launches are listed in `docs/ci-spawn-review.md`.
 - **Records:** assembled from the ledger by admitted call id, never from caller-chosen directories. Each outcome is
-  re-derived from its raw evidence and bound to its receipt, its settlement, the manifest and the binary. The
-  verdict is recomputed every time; the stored one is never trusted. A PASS covers grid 64 on the block-centre
-  metric only, not the search objective J.
+  bound to its manifest row, reservation, settlement, receipt, outputs and frozen inputs, and then re-derived from
+  the raw files by the strict evaluator-bound reader that settles a run: grid size, layer count, header format and
+  complete block evidence. Bound evidence that fails it (a 4 x 4 x 8, 64 x 64 x 1 or 64 x 64 x 7 grid declared as
+  grid 64, say) is unusable, so the record is INCOMPLETE, never PASS. The verdict is recomputed every time; the
+  stored one is never trusted. `report` uses the same verification and derivation. A PASS covers grid 64 on the
+  block-centre metric only, not the search objective J.
 
 **The 12-call manifest** is in [CALL-LIST-v4.md](CALL-LIST-v4.md), a new version beside the unchanged prior one:
 

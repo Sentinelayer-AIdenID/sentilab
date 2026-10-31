@@ -53,25 +53,37 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def write_outputs(run: Path, peak_c: float, drop_k: float = 1.0, side: int = 4) -> None:
-    """Synthetic steady, stdout and all-layer grid files, as a HotSpot run would leave them."""
+def write_outputs(run: Path, peak_c: float, drop_k: float = 1.0, *, grid: int = 64, layers: int = 8,
+                  headered: bool = True, omit_block: str | None = None) -> None:
+    """Synthetic outputs with the shape HotSpot writes: one steady line per unit of every LCF layer (also on stdout,
+    as HotSpot 6.0 prints it) plus package nodes, and a grid file of `layers` sections of grid x grid cells.
+    The defaults are the evaluator's real shape (64 x 64, 8 headered layers); other values make shape controls."""
     kelvin = peak_c + 273.15
-    (run / "sample.steady").write_text(f"layer_4_WS_0\t{kelvin - 20:.2f}\nlayer_4_Chiplet_0\t{kelvin:.2f}\n"
-                                       f"hsp_TIM\t{kelvin - 30:.2f}\ninode_0\t{kelvin - 40:.2f}\n", encoding="utf-8")
-    (run / "stdout.txt").write_text("Unit\tSteady(Kelvin)\n" + (run / "sample.steady").read_text(), encoding="utf-8")
+    lines = []
+    for layer in slab049.read_lcf(run / "samplelayers.lcf", run):
+        for unit in slab049.read_flp(layer["flp"]):
+            name = f"layer_{layer['layer']}_{unit['name']}"
+            if name != omit_block:
+                lines.append(f"{name}\t{kelvin if name == 'layer_4_Chiplet_0' else kelvin - 20 - layer['layer']:.2f}")
+    lines += [f"hsp_TIM\t{kelvin - 30:.2f}", f"hsink_TIM\t{kelvin - 40:.2f}", f"inode_0\t{kelvin - 45:.2f}"]
+    (run / "sample.steady").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (run / "stdout.txt").write_text("Unit\tSteady(Kelvin)\n" + "\n".join(lines) + "\n", encoding="utf-8")
     (run / "stderr.txt").write_text("", encoding="utf-8")
-    with (run / "sample.grid.steady").open("w", encoding="utf-8") as grid:
-        for layer in range(8):
-            grid.write(f"Layer {layer}:\n")
-            base = 380.0 - (drop_k if layer == 7 else 0.0) - (0.5 * layer if layer >= 4 else 0.0)
-            for cell in range(side * side):
-                grid.write(f"{cell}\t{base + (1.0 if cell == 5 else 0.0):.2f}\n")
+    hot = (grid // 4) * grid + grid // 4  # one hot cell, inside the grid
+    parts = []
+    for layer in range(layers):
+        if headered:
+            parts.append(f"Layer {layer}:\n")
+        base = 380.0 - (drop_k if layer == 7 else 0.0) - (0.5 * layer if layer >= 4 else 0.0)
+        parts.append("".join(f"{cell}\t{base + (1.0 if cell == hot else 0.0):.2f}\n" for cell in range(grid * grid)))
+    (run / "sample.grid.steady").write_text("".join(parts), encoding="utf-8")
 
 
 def fabricate_ledger(root: Path, binary: Path, peaks: dict, *, kind: str = "hotspot6",
-                     settled: dict[str, str] | None = None) -> Path:
+                     settled: dict[str, tuple] | None = None) -> Path:
     """A ledger and run directories exactly as validate-reference leaves them, with synthetic outputs instead of a
-    solve. peaks maps a call id to its peak (C) or to write_outputs keyword arguments."""
+    solve. peaks maps a call id to its peak (C) or to write_outputs keyword arguments; settled maps a call id to a
+    (status, exit_status) other than ("exited", 0)."""
     manifest_bytes = reference_validation.MANIFEST_PATH.read_bytes()
     manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
     calls = {c["id"]: c for c in json.loads(manifest_bytes)["calls"]}
@@ -84,21 +96,21 @@ def fabricate_ledger(root: Path, binary: Path, peaks: dict, *, kind: str = "hots
         run = root / "runs" / name
         shutil.copytree(REPO_ROOT / reference.inputs, run)
         write_outputs(run, **(peak if isinstance(peak, dict) else {"peak_c": peak}))
+        status, exit_status = (settled or {}).get(name, ("exited", 0))
         receipt = {"schema": gate_zero.RECEIPT_SCHEMA, "call": name, "role": call["role"],
                    "replay_of": call["replay_of"], "manifest_sha256": manifest_sha256, "evaluator": identity,
                    "reference": reference.id, "layout_identity": reference.layout_identity,
-                   "raw_layout_sha256": reference.raw_layout_sha256, "grid": call["grid"], "status": "exited",
-                   "exit_status": 0, "inputs": gate_zero.frozen_inputs(reference), "runtime": NO_LIBRARIES,
+                   "raw_layout_sha256": reference.raw_layout_sha256, "grid": call["grid"],
+                   "status": status, "exit_status": exit_status, "inputs": gate_zero.frozen_inputs(reference),
+                   "runtime": NO_LIBRARIES,
                    "outputs": {output: _sha256(run / output) for output in gate_zero.RECEIPT_OUTPUTS}}
         (run / "receipt.json").write_text(json.dumps(receipt), encoding="utf-8")
         (ledger / f"{name}.reserved.json").write_text(json.dumps({
             "call": name, "manifest_sha256": manifest_sha256, "out": run.as_posix(),
             "reserved_cpu_s": call["accounting"]["reserved_cpu_s"]}), encoding="utf-8")
-        status = (settled or {}).get(name, "exited")
         (ledger / f"{name}.settled.json").write_text(json.dumps({
-            "call": name, "manifest_sha256": manifest_sha256, "status": status,
-            "exit_status": 0 if status == "exited" else None, "charged_cpu_s": 6.0,
-            "receipt_sha256": _sha256(run / "receipt.json")}), encoding="utf-8")
+            "call": name, "manifest_sha256": manifest_sha256, "status": status, "exit_status": exit_status,
+            "charged_cpu_s": 6.0, "receipt_sha256": _sha256(run / "receipt.json")}), encoding="utf-8")
     return ledger
 
 
@@ -111,6 +123,14 @@ def rebind(ledger: Path, name: str, edit) -> None:
     settled = json.loads((ledger / f"{name}.settled.json").read_text())
     settled["receipt_sha256"] = _sha256(run / "receipt.json")
     (ledger / f"{name}.settled.json").write_text(json.dumps(settled), encoding="utf-8")
+
+
+def reshape(ledger: Path, name: str, **outputs) -> None:
+    """Rewrite one run's raw outputs (write_outputs arguments) and rebind every digest to them: the bindings hold,
+    so only the strict evaluator-bound reader can tell."""
+    run = Path(json.loads((ledger / f"{name}.reserved.json").read_text())["out"])
+    write_outputs(run, **outputs)
+    rebind(ledger, name, lambda r: r.update(outputs={o: _sha256(run / o) for o in gate_zero.RECEIPT_OUTPUTS}))
 
 
 def passing_record(root: Path, binary: Path) -> dict:
@@ -184,11 +204,12 @@ class RawGeometryTests(unittest.TestCase):
                              (57, slab049.SLAB048_COMMIT, reference.raw_record, "raw"))
             self.assertEqual(document["raw"]["label"], "raw reconstruction (approximate, from published figure)")
             record = REPO_ROOT / reference.raw_record
-            if record.is_file():  # once SLAB-048 is merged, its own raw section must still carry the pin
+            if record.is_file():  # SLAB-048 (#57) is merged: its own raw section must still carry the pin
                 self.assertEqual(slab049.raw_layout_sha256(json.loads(record.read_text(encoding="utf-8"))["raw"]),
                                  reference.raw_layout_sha256)
 
-    def test_the_pin_survives_slab048_changes_outside_raw_and_fails_on_any_raw_change(self):
+    def test_annotations_never_count_and_any_raw_change_fails(self):
+        """SLAB-048 keeps raw byte-stable and puts its notes in raw_annotations/snapped_annotations: descriptive only."""
         reference = gate_zero.reference(ASCEND)
         vendored = json.loads((REPO_ROOT / reference.raw_vendored).read_text(encoding="utf-8"))
         with tempfile.TemporaryDirectory() as directory:
@@ -197,19 +218,40 @@ class RawGeometryTests(unittest.TestCase):
             shutil.copy(REPO_ROOT / reference.raw_vendored, root / reference.raw_vendored)
             record = root / reference.raw_record
             record.parent.mkdir(parents=True)
-            record.write_text(json.dumps({"raw": vendored["raw"], "snapped": {"variants": "0.5 mm, new commit"}}))
-            self.assertEqual(slab049.load_raw_layout(reference, root)["raw"], vendored["raw"])
-            moved = json.loads(json.dumps(vendored["raw"]))
-            moved["centers_mm"][0][0] += 0.0001
-            record.write_text(json.dumps({"raw": moved}))
-            with self.assertRaisesRegex(slab049.ReferenceGeometryError, "changed after it was pinned"):
-                slab049.load_raw_layout(reference, root)
+
+            def write_record(raw, **sections):
+                record.write_text(json.dumps({"raw": raw, **sections}), encoding="utf-8")
+            annotations = {"raw_annotations": {"identity": {"content_sha256": "0" * 64}, "role": "anything at all",
+                                               "centers_mm": [[0.0, 0.0]] * 6},
+                           "snapped_annotations": {"rotated": [False] * 6}}
+            write_record(vendored["raw"], **annotations)
+            self.assertEqual(slab049.load_raw_layout(reference, root)["raw"], vendored["raw"])  # annotations ignored
+            for field, change in (("centers_mm", lambda raw: raw["centers_mm"][0].__setitem__(0, 17.1502)),
+                                  ("rotated", lambda raw: raw["rotated"].__setitem__(1, True)),
+                                  ("label", lambda raw: raw.__setitem__("label", "relabelled"))):
+                with self.subTest(raw=field):
+                    moved = json.loads(json.dumps(vendored["raw"]))
+                    change(moved)
+                    write_record(moved, **annotations)
+                    with self.assertRaisesRegex(slab049.ReferenceGeometryError, "changed after it was pinned"):
+                        slab049.load_raw_layout(reference, root)
             record.unlink()
             edited = json.loads(json.dumps(vendored))
             edited["raw"]["rotated"][1] = True
-            (root / reference.raw_vendored).write_text(json.dumps(edited))
+            (root / reference.raw_vendored).write_text(json.dumps(edited), encoding="utf-8")
             with self.assertRaisesRegex(slab049.ReferenceGeometryError, "pinned content hash"):
                 slab049.load_raw_layout(reference, root)
+
+    @unittest.skipUnless(hasattr(getattr(tap_oracle, "TapGeometry", None), "continuous_centers_for"),
+                         "SLAB-048's TapGeometry (PR #57) is not merged yet; this cross-check runs once both are in")
+    def test_slab048s_continuous_rules_accept_the_raw_layouts_that_its_lattice_refuses(self):
+        for reference in gate_zero.GATE_REFERENCES:
+            geometry = tap_oracle.TapGeometry.load(f"{reference.fixture}-45mm")
+            raw = slab049.load_raw_layout(reference)["raw"]
+            design = geometry.design_from_centers(raw["centers_mm"], raw["rotated"])
+            geometry.continuous_centers_for(design)
+            with self.assertRaises(TapLegalityError):
+                geometry.centers_for(design)
 
     def test_raw_centres_are_off_the_lattice_yet_pass_the_continuous_rules(self):
         for reference in gate_zero.GATE_REFERENCES:
@@ -303,8 +345,10 @@ class EvaluatorIdentityTests(TempDirCase):
 class SelectorTests(unittest.TestCase):
     def test_steady_selector_is_the_maximum_block(self):
         with tempfile.TemporaryDirectory() as directory:
-            write_outputs(Path(directory), 75.48)
-            value, block = tap_selector_c(Path(directory) / "sample.steady")
+            run = Path(directory) / "run"
+            shutil.copytree(REPO_ROOT / gate_zero.GATE_REFERENCES[0].inputs, run)
+            write_outputs(run, 75.48)
+            value, block = tap_selector_c(run / "sample.steady")
             self.assertAlmostEqual(value, 75.48, places=9)
             self.assertEqual(block, "layer_4_Chiplet_0")
 
@@ -370,6 +414,31 @@ class RecordTests(TempDirCase):
         self.assertEqual(record["verdict"], "FAIL")
         self.assertEqual({r["replay"]: r["byte_identical"] for r in record["replays"]}, {R_ASCEND: False, R_MICRO: True})
 
+    def test_a_declared_grid_64_of_any_other_shape_is_never_pass(self):
+        """astra (#56982 P2-1): matching digests over a 4x4x8, 64x64x1 or 64x64x7 grid used to PASS."""
+        binary = self.binaries["hotspot6"]
+        shapes = {"4x4x8": dict(grid=4), "64x64x1": dict(layers=1), "64x64x7": dict(layers=7),
+                  "64x64x8 headerless": dict(headered=False),
+                  "a block missing from the steady file": dict(omit_block="layer_3_Ubump_0")}
+        for label, shape in shapes.items():
+            with self.subTest(shape=label):
+                ledger = fabricate_ledger(self.root / label.replace(" ", "-"), binary, GOOD)
+                for name in (P_ASCEND, R_ASCEND):  # both, so the replay still matches its primary byte for byte
+                    reshape(ledger, name, peak_c=GOOD[name], **shape)
+                record = build_record("hotspot6", binary, ledger)
+                self.assertIn(record["verdict"], ("INCOMPLETE", "FAIL"))
+                self.assertEqual({m["call"] for m in record["missing"]}, {P_ASCEND, R_ASCEND})
+                self.assertTrue(all("strict evaluator-bound reader" in m["reason"] for m in record["missing"]))
+                with self.assertRaises(GateZeroRefusal):
+                    require_gate_zero("hotspot6", binary, record)
+        control = fabricate_ledger(self.root / "control", binary, GOOD)
+        for name in (P_ASCEND, R_ASCEND):  # the same rewrite at the real shape: 64 x 64, 8 headered layers
+            reshape(control, name, peak_c=GOOD[name])
+        record = build_record("hotspot6", binary, control)
+        self.assertEqual(record["verdict"], "PASS", record["missing"])
+        self.assertEqual(record["calls"][P_ASCEND]["diagnostics"]["grid"], {"n": 64, "layers_in_file": list(range(8))})
+        self.assertEqual(require_gate_zero("hotspot6", binary, record)["verdict"], "PASS")
+
     def test_withholding_a_failed_point_gives_incomplete_never_pass(self):
         """astra's control: omitting the failed point used to turn FAIL into PASS."""
         binary = self.binaries["hotspot6"]
@@ -386,10 +455,13 @@ class RecordTests(TempDirCase):
                 self.assertEqual([m["call"] for m in record["missing"]], [P_ASCEND])
                 with self.assertRaises(GateZeroRefusal):
                     require_gate_zero("hotspot6", binary, record)
-        for status in ("wall_timeout", "cpu_limit", "launch_error", "record_error", "runtime_changed"):
-            with self.subTest(settled=status):
-                ledger = fabricate_ledger(self.root / status, binary, GOOD, settled={R_MICRO: status})
-                self.assertEqual(build_record("hotspot6", binary, ledger)["verdict"], "INCOMPLETE")
+        for status, code in (("wall_timeout", None), ("cpu_limit", -9), ("launch_error", None),
+                             ("record_error", 0), ("runtime_changed", 0), ("setup_error", None), ("exited", 7)):
+            with self.subTest(settled=status, exit_status=code):
+                ledger = fabricate_ledger(self.root / f"{status}-{code}", binary, GOOD, settled={R_MICRO: (status, code)})
+                record = build_record("hotspot6", binary, ledger)
+                self.assertEqual(record["verdict"], "INCOMPLETE")
+                self.assertIn(f"exit status {code!r}", next(m["reason"] for m in record["missing"] if m["call"] == R_MICRO))
         ledger = fabricate_ledger(self.root / "only-three", binary, {k: v for k, v in GOOD.items() if k != R_ASCEND})
         self.assertEqual(build_record("hotspot6", binary, ledger)["verdict"], "INCOMPLETE")
 
@@ -512,7 +584,7 @@ class RecordTests(TempDirCase):
         self.assertAlmostEqual(drop["drop_K"], 51.5, places=6)  # 51 K of link plus the synthetic 0.5 K per layer
         self.assertIn("copper predicts about 1-2 K", drop["expectation"])
         (stack,) = diagnostics["same_index_stack"]
-        self.assertEqual(stack["at"], {"row": 1, "col": 1})
+        self.assertEqual(stack["at"], {"row": 16, "col": 16})
         self.assertEqual([layer["layer"] for layer in stack["layers"]], [4, 5, 6, 7])
         self.assertEqual([layer["name"] for layer in stack["layers"]][2:], ["spreader", "sink"])
         self.assertAlmostEqual(stack["drops"][-1]["drop_K"], 0.5 + 51.0, places=6)
@@ -527,6 +599,41 @@ class RecordTests(TempDirCase):
                 build_record(kind, self.binaries[kind], Path(record["ledger"]))
         with self.assertRaises(GateZeroRefusal):
             require_gate_zero("hotspot6", binary, None)
+
+
+class ReportTests(TempDirCase):
+    """astra (#56982 P2-3): report verifies every binding first and derives its diagnostics from the raw files."""
+
+    def test_report_derives_diagnostics_from_verified_raw_evidence_not_a_stored_record(self):
+        ledger = fabricate_ledger(self.root, self.binaries["hotspot6"], GOOD)
+        fabricated = {"active_layer_grid_peak": {"peak_C": 999.0}, "spreader_sink_drop_diagnostic": {"drop_K": 0.0},
+                      "same_index_stack_at_active_argmax": []}
+        rebind(ledger, P_ASCEND, lambda r: r.update(solve_record=fabricated))  # bound, so only derivation can tell
+        report = reference_validation.report(ledger)
+        entry = next(e for e in report["calls"] if e["call"] == P_ASCEND)
+        self.assertTrue(entry["usable"])
+        self.assertAlmostEqual(entry["grid_peak_c"], 379.0 - 273.15, places=6)  # the raw grid, not the 999.0 stored
+        self.assertAlmostEqual(entry["drop"]["drop_K"], 1.5, places=6)  # the synthetic 1 K link plus 0.5 K
+        self.assertEqual(entry["stack"][0]["at"], {"row": 16, "col": 16})
+        row = next(r for r in report["rows"] if r["kind"] == "hotspot6" and r["reference"] == ASCEND)
+        self.assertTrue(row["replay_byte_identical"])
+
+    def test_every_unusable_call_is_listed_with_its_reason(self):
+        ledger = fabricate_ledger(self.root, self.binaries["hotspot6"], GOOD, settled={R_MICRO: ("exited", 7)})
+        rebind(ledger, P_MICRO, lambda r: r["outputs"].update({"sample.steady": "0" * 64}))
+        reshape(ledger, R_ASCEND, peak_c=GOOD[R_ASCEND], grid=4)
+        receipt = Path(json.loads((ledger / f"{P_ASCEND}.reserved.json").read_text())["out"]) / "receipt.json"
+        receipt.write_text(receipt.read_text().replace('"grid": 64', '"grid":  64'), encoding="utf-8")  # unbound edit
+        report = reference_validation.report(ledger)
+        reasons = {item["call"]: item["reason"] for item in report["not_completed"]}
+        self.assertEqual(len(reasons), 12)  # nothing usable: four unusable, eight never admitted
+        self.assertIn("changed after the call settled", reasons[P_ASCEND])
+        self.assertIn("differs from its receipt digest", reasons[P_MICRO])
+        self.assertIn("exit status 7", reasons[R_MICRO])
+        self.assertIn("strict evaluator-bound reader", reasons[R_ASCEND])
+        self.assertEqual(sum(reason == "not admitted" for reason in reasons.values()), 8)
+        self.assertFalse(any(e["usable"] for e in report["calls"]))
+        self.assertTrue(all(row["block_centre_c"]["64"] is None for row in report["rows"]))
 
 
 class SelectorAndOracleTests(TempDirCase):
@@ -682,8 +789,15 @@ if case.get("sleep"):
     child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(120)"])
     open("child.pid", "w").write(str(child.pid))
     time.sleep(120)
-names = [line.split()[0] for line in open("sampleL4_ChipLayer.flp") if line.strip() and not line.startswith("#")]
-steady = ["layer_4_%s\t%.2f" % (n, peak - (0 if n == "Chiplet_0" else 5)) for n in names]
+tokens = [line.split()[0] for line in open("samplelayers.lcf") if line.split() and not line.startswith("#")]
+steady = []
+for offset in range(0, len(tokens), 7):  # every unit of every LCF layer, as HotSpot writes them
+    number, floorplan = int(tokens[offset]), tokens[offset + 6]
+    for line in open(floorplan):
+        if line.strip() and not line.startswith("#"):
+            name = line.split()[0]
+            hot = number == 4 and name == "Chiplet_0"
+            steady.append("layer_%d_%s\t%.2f" % (number, name, peak - (0 if hot else 5 + number)))
 steady += ["hsp_TIM\t%.2f" % (peak - 30), "hsink_TIM\t%.2f" % (peak - 40), "inode_0\t320.00"]
 open("sample.steady", "w").write("\n".join(steady) + "\n")
 layers = 1 if case.get("truncate") else 8
@@ -819,7 +933,8 @@ class ManifestEntryTests(TempDirCase):
             self.assertEqual((run / "rlimit_cpu.txt").read_text(), "60 60")  # RLIMIT_CPU soft = hard = timeout
             self.assertEqual((receipt["call"], receipt["manifest_sha256"], receipt["layout_identity"]),
                              (name, manifest_sha256, "raw"))
-            self.assertEqual(receipt["raw_layout_sha256"], gate_zero.reference(receipt["reference"]).raw_layout_sha256)
+            self.assertEqual(receipt["raw_layout_sha256"],
+                             gate_zero.reference(receipt["reference"]).raw_layout_sha256)
             self.assertFalse(receipt["geometry"]["search_lattice_checked"])
             self.assertEqual(receipt["build_provenance"]["sha256"], _sha256(provenance.provenance_path(self.fake)))
             self.assertEqual(receipt["runtime"], receipt["runtime_after"])
@@ -868,8 +983,19 @@ class ManifestEntryTests(TempDirCase):
             self.call(P_ASCEND, "cpu")
         (self.ledger / "p-hs7-ascend910-tap25d-fig6a-raw-g64.settled.json").write_text(json.dumps(
             {"call": "p-hs7-ascend910-tap25d-fig6a-raw-g64", "status": "exited", "charged_cpu_s": 5.0}))
-        receipt = self.call(call_id("primary", "hotspot6", ASCEND, 32), "cpu-after-settlement")
-        self.assertEqual(receipt["status"], "exited")  # settled at its measured 5 CPU-s, the cap has room again
+        with self.assertRaisesRegex(CallRefused, "would pass the 600 CPU-s cap"):  # never freed by settling
+            self.call(P_ASCEND, "cpu-after-settlement")
+        self.assertEqual(reference_validation.ledger_totals(self.ledger)["charged_cpu_s"], 560.0)
+        shutil.rmtree(self.ledger)
+        self.ledger.mkdir()
+        reserve("p-hs7-ascend910-tap25d-fig6a-raw-g32", 1.0)
+        (self.ledger / "p-hs7-ascend910-tap25d-fig6a-raw-g32.settled.json").write_text(json.dumps(
+            {"call": "p-hs7-ascend910-tap25d-fig6a-raw-g32", "status": "exited", "charged_cpu_s": 545.0}))
+        self.assertEqual(reference_validation.ledger_totals(self.ledger)["charged_cpu_s"], 545.0)  # overshoot, in full
+        with self.assertRaisesRegex(CallRefused, "would pass the 600 CPU-s cap"):
+            self.call(P_ASCEND, "overshoot")
+        receipt = self.call(call_id("primary", "hotspot6", ASCEND, 32), "fits")  # 545 + 17 <= 600
+        self.assertEqual(receipt["status"], "exited")
         for index in range(10):
             reserve(f"synthetic-{index}", 0.0)
         with self.assertRaisesRegex(CallRefused, "allows 12"):
@@ -916,6 +1042,35 @@ class ManifestEntryTests(TempDirCase):
         self.assertIn("finished_utc", on_disk)
         settled = json.loads((self.ledger / f"{P_ASCEND}.settled.json").read_text())
         self.assertEqual(settled["status"], "launch_error")
+
+    def test_every_post_admission_setup_failure_settles_in_the_ledger(self):
+        """astra (#56982 P2-2): a failure between admission and staging used to leave the reservation unsettled."""
+        (self.root / "blocker").write_text("a file where the output parent should be", encoding="utf-8")
+        receipt = self.call(P_ASCEND, "blocker/run")
+        self.assertEqual((receipt["status"], receipt["exit_status"]), ("setup_error", None))
+        settled = json.loads((self.ledger / f"{P_ASCEND}.settled.json").read_text())
+        self.assertEqual(settled["status"], "setup_error")
+        self.assertIsNone(settled["receipt_sha256"])  # no receipt could be written, the ledger still settles
+        self.assertTrue(settled["receipt_error"])
+        self.assertEqual(reference_validation.ledger_totals(self.ledger)["charged_cpu_s"], 62.0)  # stays charged
+        with self.assertRaisesRegex(CallRefused, "already admitted"):  # and is never retried
+            self.call(P_ASCEND, "elsewhere")
+        name = call_id("primary", "hotspot6", MICRO, 64)
+        real, writes = reference_validation._write_durably, []
+
+        def first_write_fails(path, data):
+            writes.append(path)
+            if len(writes) == 1:
+                raise OSError(28, "No space left on device")
+            return real(path, data)
+        with mock.patch.object(reference_validation, "_write_durably", side_effect=first_write_fails):
+            receipt = self.call(name, "first-write")
+        self.assertEqual(receipt["status"], "setup_error")
+        settled = json.loads((self.ledger / f"{name}.settled.json").read_text())
+        self.assertEqual(settled["status"], "setup_error")
+        self.assertIn("No space left on device", settled["error"])
+        self.assertEqual(settled["receipt_sha256"], _sha256(self.root / "first-write" / "receipt.json"))
+        self.assertEqual(reference_validation.ledger_totals(self.ledger)["charged_cpu_s"], 124.0)
 
     def test_a_truncated_grid_after_exit_zero_keeps_the_raw_outputs_and_is_incomplete(self):
         self.control_case("truncated", truncate=True)

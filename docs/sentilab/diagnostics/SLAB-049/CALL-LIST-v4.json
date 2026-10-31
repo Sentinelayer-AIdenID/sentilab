@@ -661,12 +661,12 @@
       "listed calls only: the call id with its listed --timeout, and the engine, reference and grid when given; before the window closes; on the listed architecture; on POSIX only, because the CPU limit is RLIMIT_CPU (Linux and macOS; Windows has no RLIMIT_CPU, and its equivalent, a Job Object process-time limit, is not implemented, so the entry refuses there); never under CI allocation (CI_ALLOCATION=1), where every native HotSpot launch goes through sundai_hotspot.ci_gate and SLAB-049 solves never run",
       "evaluator identity: identity markers and SHA-256 are read from a private content-addressed copy (mode 0500 in a 0700 directory), and that copy is the file executed; build provenance must describe exactly those bytes; a binary built with the CI entry guard is refused; the shared libraries the loader resolves must equal the build's, and are hashed again after the run (a change settles the call as runtime_changed)",
       "raw geometry: the pinned raw layout hash (the vendored copy, and SLAB-048's record whenever it is in the tree) and the continuous rules only; the search lattice is never applied",
-      "atomic admission: under an exclusive ledger lock, one manifest per ledger, each call reserved once (O_EXCL, no retries), refused when the admitted count would pass 12 or charged plus reserved CPU would pass 600 CPU-s (settled calls are charged their measured CPU, unsettled ones their reservation)",
+      "atomic admission: under an exclusive ledger lock, one manifest per ledger, each call reserved once (O_EXCL, no retries), refused when the admitted count would pass 12 or charged plus reserved CPU would pass 600 CPU-s (a reservation is never freed: every admitted call, settled or not, failed or not, is charged at least its reservation, and a measured overshoot is charged in full)",
       "reserve before staging: the reservation and the receipt are on disk (fsync) before inputs are generated or the solver starts",
       "per-process CPU and a separate wall deadline: the solver runs in its own session and process group under RLIMIT_CPU equal to its timeout (soft = hard, so SIGKILL at the limit) and a wall deadline equal to its timeout; the TAP generator runs under RLIMIT_CPU 10 s and a 60 s deadline",
       "kill and reap: after the solver exits or times out, its process group is killed and the solver is reaped",
-      "settlement: the receipt and the ledger settlement are written durably on every exit path of this process, keeping the raw outputs, the status, the measured CPU (children and self) and any overshoot",
-      "outcomes by admitted call id: record and report read the ledger, never caller-chosen directories; a missing required outcome gives INCOMPLETE"
+      "settlement: the receipt and the ledger settlement are written durably on every exit path of this process after admission, setup failures included; when no output directory or receipt can be written, the ledger still settles the call (receipt digest null), keeping the status, the measured CPU (children and self) and any overshoot",
+      "outcomes by admitted call id: record and report read the ledger, never caller-chosen directories, verify every binding and re-derive each result with the strict evaluator-bound reader; a missing or unusable required outcome gives INCOMPLETE"
     ],
     "operator_supervisor_contract": [
       "admission identity: authenticate the operator and the host; keep the ledger append-only and protected from deletion or rewrite (deleting a reservation would readmit its call); one ledger per grant",
@@ -753,7 +753,7 @@
       "layout_identity": "raw",
       "paper_peak_c": 75.48,
       "raw_layout": {
-        "form": "SHA-256 of the canonical JSON of SLAB-048's raw section (slab049.raw_layout_sha256)",
+        "form": "SHA-256 of the canonical JSON of SLAB-048's raw section (slab049.raw_layout_sha256); raw_annotations and snapped_annotations are descriptive only and never read",
         "sha256": "15c77bbeecba13a7adece9a2603329d58f33a7b4301025826c1b3c1951547a3c",
         "slab048_commit": "063f659368f32b653acf8084f85a0c7926a106ec",
         "slab048_pull_request": 57,
@@ -773,7 +773,7 @@
       "layout_identity": "raw",
       "paper_peak_c": 115.94,
       "raw_layout": {
-        "form": "SHA-256 of the canonical JSON of SLAB-048's raw section (slab049.raw_layout_sha256)",
+        "form": "SHA-256 of the canonical JSON of SLAB-048's raw section (slab049.raw_layout_sha256); raw_annotations and snapped_annotations are descriptive only and never read",
         "sha256": "6eba70b6307198fef85dbee0ec98055077b55e0fdae5bebb7ffe620556a457a7",
         "slab048_commit": "063f659368f32b653acf8084f85a0c7926a106ec",
         "slab048_pull_request": 57,
@@ -822,10 +822,10 @@
       "scripts/build_hotspot6.sh": "617ad089784c5a2141fdd2978b579df24ab0727149f5240978cc66836c7b6581",
       "sundai_hotspot/Makefile": "a23c84c1c9e16e62f3502e08f11237260384c9f113f36d17a1402eddbb5991b4",
       "sundai_hotspot/evaluators.py": "5823e89ffa52c80cf31698d4da4d7efa2c3e94f98e13d37d4cc8e2f6be078541",
-      "sundai_hotspot/gate_zero.py": "1d89bd383e94a54138124e7f0cc1ed68a431970c207c25f3d346ad903d14e08d",
+      "sundai_hotspot/gate_zero.py": "e58e0585b5af06f8cd6c486df7a3c56a4e149a87e1d64a989243aca52934805c",
       "sundai_hotspot/provenance.py": "9acee299938ef8af4043e15c9fb64acca9829d1f1fb2ac9ab20b840a3c130271",
-      "sundai_hotspot/reference_validation.py": "53e7ab2411093d962438c05852fecdbdd3c6bf6258fd2e377cfd7779d2704f5a",
-      "sundai_hotspot/slab049.py": "301aba06ad9351ea2a608fd0dc02aadc41949b11ccd13b4e20becf924f5eb39b",
+      "sundai_hotspot/reference_validation.py": "22364b2bcaacacce72b969816ef64d6e78fb73feed5a3f33b238f5f8886aa599",
+      "sundai_hotspot/slab049.py": "098bd90f72a2fbf29921a039f7bbb0813f6e775e5966269564cdf7406c92b89f",
       "sundai_hotspot/tap_oracle.py": "439cdecd62481b0231f4d67dec6b86c91ea7ce81ba2625ab5ae9baf7e591344e",
       "sundai_hotspot/tap_oracle_worker.py": "d3bb9494f64fe300ff8aa26dfa750ddfcbe02b4bb99f8e927ff5833795c3ffc1",
       "sundai_hotspot/temperature_grid.c": "80e60bf7f32cc69ec9d46f3704d2d9541975d174f8bcda6b14ecb9fcfa900375",

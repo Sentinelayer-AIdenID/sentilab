@@ -16,10 +16,12 @@ is reserved or launched. In code, at this one entry (the manifest's enforcement.
 - the raw reference geometry is checked with the continuous rules only (margin, halo, spacing), never the search
   lattice;
 - admission is atomic under the ledger lock: one manifest per ledger, each call reserved once (no retries), and the
-  admitted count and charged CPU must stay inside the manifest's cap;
+  admitted count and charged CPU must stay inside the manifest's cap; a reservation is never freed;
 - the reservation and receipt are written before staging; the solver runs in its own process group under
   RLIMIT_CPU (its timeout) and a separate wall deadline (the same timeout); the group is killed and the solver
-  reaped on every path; the receipt and the ledger settle durably on every exit path.
+  reaped on every path; every exit path after admission settles durably, setup failures included, and the ledger
+  settles a call even when no receipt can be written;
+- record and report re-derive every result from the raw files with the strict evaluator-bound reader.
 
 What this entry cannot do is the operator supervisor's contract (the manifest's enforcement section).
 
@@ -176,8 +178,8 @@ def _ledger_lock(ledger: Path):
 
 
 def ledger_totals(ledger: Path) -> dict:
-    """Admitted calls and the CPU charged so far. A settled call is charged its measured CPU (its reservation when
-    the measurement is unknown); an unsettled one, its reservation."""
+    """Admitted calls and the CPU charged so far. A reservation is never freed: every admitted call, settled or not,
+    succeeded or failed, is charged at least its reservation, and a measured overshoot is charged in full."""
     calls, charged, manifests = [], 0.0, set()
     for path in sorted(Path(ledger).glob("*.reserved.json")):
         reservation = json.loads(path.read_text(encoding="utf-8"))
@@ -186,7 +188,7 @@ def ledger_totals(ledger: Path) -> dict:
         settled = path.with_name(path.name[: -len(".reserved.json")] + ".settled.json")
         measured = json.loads(settled.read_text(encoding="utf-8")).get("charged_cpu_s") if settled.is_file() else None
         known = isinstance(measured, (int, float)) and not isinstance(measured, bool) and math.isfinite(measured)
-        charged += float(measured) if known and measured >= 0 else float(reservation["reserved_cpu_s"])
+        charged += max(float(reservation["reserved_cpu_s"]), float(measured) if known else 0.0)
     return {"calls": calls, "charged_cpu_s": charged, "manifest_sha256": sorted(manifests)}
 
 
@@ -324,18 +326,23 @@ def _run_call(call: dict, pinned: gate_zero.Reference, spec: dict, out: Path, le
                                                  "reserved_utc")}
     reservation.update({"out": out.resolve().as_posix(), "reserved_cpu_s": call["accounting"]["reserved_cpu_s"]})
     _admit_to_ledger(ledger, call, manifest, manifest_sha256, reservation)
-    out.mkdir(parents=True, exist_ok=True)
-    _write_durably(out / "receipt.json", _json(receipt))  # reserved and identified before anything runs
+    # From here every exit path settles: the reservation is consumed and stays charged, success or not.
     started, clock = _now(), time.perf_counter()
     self_before, children_before = _self_cpu_s(), _children_cpu_s()
+    phase = "setup"
     try:
+        out.mkdir(parents=True, exist_ok=True)
+        _write_durably(out / "receipt.json", _json(receipt))  # reserved and identified before anything runs
+        phase = "stage"
         receipt["inputs"] = stage(pinned, spec, out)
         receipt["config_sha256"] = receipt["inputs"]["new_hotspot.config"]
         _write_durably(out / "receipt.json", _json(receipt))
+        phase = "launch"
         solver_before = _children_cpu_s()
         with (out / "stdout.txt").open("wb") as stdout, (out / "stderr.txt").open("wb") as stderr:
             process = subprocess.Popen(argv, cwd=out, stdout=stdout, stderr=stderr, env=SOLVER_ENVIRONMENT,
                                        start_new_session=True, preexec_fn=_cpu_limit(call["cpu_limit_s"]))
+            phase = "solve"
             try:
                 exited = _wait_unreaped(process.pid, timeout)
             finally:
@@ -354,14 +361,15 @@ def _run_call(call: dict, pinned: gate_zero.Reference, spec: dict, out: Path, le
         receipt["runtime_after"] = provenance.resolved_libraries(executable)
         if provenance.library_identity(receipt["runtime_after"]) != provenance.library_identity(runtime):
             receipt["status"] = "runtime_changed"
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired:  # only the TAP generator can raise it here
         receipt["status"], receipt["exit_status"] = "stage_error", None
         receipt["error"] = "the TAP generator passed its wall deadline"
     except OSError as exc:
-        receipt["status"] = "launch_error" if "inputs" in receipt else "stage_error"
+        receipt["status"] = {"setup": "setup_error", "stage": "stage_error", "launch": "launch_error"}.get(phase,
+                                                                                                      "error")
         receipt["exit_status"], receipt["error"] = None, repr(exc)
     except BaseException as exc:  # settle the receipt, then let the caller see the failure
-        receipt["status"] = "error" if "inputs" in receipt else "stage_error"
+        receipt["status"] = {"setup": "setup_error", "stage": "stage_error"}.get(phase, "error")
         receipt["exit_status"], receipt["error"] = None, f"{type(exc).__name__}: {exc}"
         raise
     finally:
@@ -371,10 +379,16 @@ def _run_call(call: dict, pinned: gate_zero.Reference, spec: dict, out: Path, le
 
 def _settle(call: dict, receipt: dict, out: Path, ledger: Path, started: datetime, clock: float,
             self_before: float, children_before: float) -> None:
-    """Durable settlement on every exit path: the receipt, then the write-once ledger entry that binds it."""
+    """Durable settlement on every exit path: the receipt when it can be written, then always the write-once ledger
+    entry. A call whose output directory or receipt cannot be written still settles in the ledger, with a null
+    receipt digest; its reservation stays charged and it is never retried."""
     receipt["started_utc"], receipt["finished_utc"] = started.isoformat(), _now().isoformat()
     receipt["wall_s"] = time.perf_counter() - clock
-    receipt["outputs"] = {name: _sha256(out / name) for name in gate_zero.RECEIPT_OUTPUTS if (out / name).is_file()}
+    try:
+        receipt["outputs"] = {name: _sha256(out / name) for name in gate_zero.RECEIPT_OUTPUTS
+                              if (out / name).is_file()}
+    except OSError as exc:
+        receipt["outputs"], receipt["outputs_error"] = {}, repr(exc)
     if receipt["status"] == "exited" and receipt["exit_status"] == 0:
         try:
             receipt["solve_record"] = slab049.summarize_evaluation(
@@ -385,19 +399,29 @@ def _settle(call: dict, receipt: dict, out: Path, ledger: Path, started: datetim
     receipt["self_cpu_s"] = _self_cpu_s() - self_before
     receipt["charged_cpu_s"] = receipt["children_cpu_s"] + receipt["self_cpu_s"]
     receipt["overshoot_cpu_s"] = max(0.0, receipt["charged_cpu_s"] - call["accounting"]["reserved_cpu_s"])
-    _write_durably(out / "receipt.json", _json(receipt))
+    receipt_sha256 = None
+    try:
+        _write_durably(out / "receipt.json", _json(receipt))
+        receipt_sha256 = _sha256(out / "receipt.json")
+    except OSError as exc:  # nowhere to write it: the ledger still records the terminal failure
+        receipt["receipt_error"] = repr(exc)
     settled = {key: receipt.get(key) for key in ("call", "manifest_sha256", "status", "exit_status", "started_utc",
                                                  "finished_utc", "wall_s", "solver_cpu_s", "children_cpu_s",
-                                                 "self_cpu_s", "charged_cpu_s", "overshoot_cpu_s", "outputs")}
+                                                 "self_cpu_s", "charged_cpu_s", "overshoot_cpu_s", "outputs", "error",
+                                                 "receipt_error")}
     settled.update({"reserved_cpu_s": call["accounting"]["reserved_cpu_s"], "out": out.resolve().as_posix(),
-                    "receipt_sha256": _sha256(out / "receipt.json")})
+                    "receipt_sha256": receipt_sha256})
     _create_durably(ledger / f"{call['id']}.settled.json", _json(settled))
 
 
 def report(ledger: Path, manifest_path: Path | None = None) -> dict:
-    """From the ledger, by admitted call id, with no extra call (reads receipts and outputs only):
+    """From the ledger, by admitted call id, with no extra call (reads files only).
 
-    - every manifest call's settlement, or that it is missing;
+    A call is usable only after its manifest row, reservation, settlement, receipt, outputs and frozen inputs bind
+    (gate_zero.verify_evidence) and its raw files pass the strict evaluator-bound reader; its diagnostics are then
+    derived from those raw files, never read from a stored solve record. Every other call is in not_completed with
+    the reason. From the usable calls:
+
     - HotSpot 6.0's (and the comparator's) grid 32 -> 64 change per reference, on the block-centre metric and the
       grid peak;
     - CPU seconds per call;
@@ -406,26 +430,31 @@ def report(ledger: Path, manifest_path: Path | None = None) -> dict:
     """
     data = Path(manifest_path or MANIFEST_PATH).read_bytes()
     manifest, manifest_sha256 = json.loads(data), hashlib.sha256(data).hexdigest()
-    entries = {}
+    entries, not_completed = {}, []
     for call in manifest["calls"]:
-        reservation = gate_zero._ledger_entry(ledger, call["id"], "reserved")
-        settled = gate_zero._ledger_entry(ledger, call["id"], "settled")
         entry = {"call": call["id"], "kind": call["kind"], "reference": call["reference"], "grid": call["grid"],
-                 "role": call["role"], "replay_of": call["replay_of"], "gating": call["gating"],
-                 "admitted": reservation is not None, "settled": None if settled is None else settled.get("status"),
-                 "charged_cpu_s": None if settled is None else settled.get("charged_cpu_s"),
-                 "solver_cpu_s": None if settled is None else settled.get("solver_cpu_s")}
-        if reservation is not None and reservation.get("manifest_sha256") != manifest_sha256:
-            entry["settled"] = "admitted under another manifest"
-        elif settled is not None and (settled.get("status"), settled.get("exit_status")) == ("exited", 0):
-            directory = Path(reservation["out"])
-            receipt = json.loads((directory / "receipt.json").read_text(encoding="utf-8"))
-            record = receipt.get("solve_record", {})
-            entry.update({"selector_c": gate_zero.tap_selector_c(directory / "sample.steady")[0],
-                          "grid_peak_c": record.get("active_layer_grid_peak", {}).get("peak_C"),
-                          "outputs": receipt.get("outputs", {}),
-                          "drop": record.get("spreader_sink_drop_diagnostic"),
-                          "stack": record.get("same_index_stack_at_active_argmax")})
+                 "role": call["role"], "replay_of": call["replay_of"], "gating": call["gating"], "usable": False}
+        try:
+            reservation = gate_zero._ledger_entry(ledger, call["id"], "reserved")
+            settled = gate_zero._ledger_entry(ledger, call["id"], "settled")
+            if reservation is None or settled is None:
+                raise gate_zero.GateZeroRefusal("not admitted" if reservation is None else "unsettled")
+            entry.update({"settled": settled.get("status"), "exit_status": settled.get("exit_status"),
+                          "charged_cpu_s": settled.get("charged_cpu_s"), "solver_cpu_s": settled.get("solver_cpu_s")})
+            if (settled.get("status"), settled.get("exit_status")) != ("exited", 0):
+                raise gate_zero.GateZeroRefusal(f"did not complete: settled {settled.get('status')!r} with exit "
+                                                f"status {settled.get('exit_status')!r}")
+            evidence = gate_zero.verify_evidence(call, reservation, settled, manifest_sha256)
+        except gate_zero.GateZeroRefusal as exc:  # EvidenceShapeError included
+            entry["reason"] = str(exc)
+            not_completed.append({"call": call["id"], "reason": str(exc)})
+            entries[call["id"]] = entry
+            continue
+        record = evidence["record"]
+        entry.update({"usable": True, "selector_c": evidence["simulated_c"],
+                      "grid_peak_c": record["active_layer_grid_peak"]["peak_C"],
+                      "outputs": evidence["output_sha256"], "drop": record["spreader_sink_drop_diagnostic"],
+                      "stack": record["same_index_stack_at_active_argmax"]})
         entries[call["id"]] = entry
     rows = []
     for kind in sorted({c["kind"] for c in manifest["calls"]}):
@@ -433,26 +462,23 @@ def report(ledger: Path, manifest_path: Path | None = None) -> dict:
             g64 = entries.get(gate_zero.call_id("primary", kind, reference, 64), {})
             g32 = entries.get(gate_zero.call_id("primary", kind, reference, 32), {})
             replay = entries.get(gate_zero.call_id("replay", kind, reference, 64), {})
-            both = "selector_c" in g64 and "selector_c" in g32
+            both = g64.get("usable") and g32.get("usable")
             fixture = reference.split("-")[0]
             rows.append({
                 "kind": kind, "reference": reference, "temperature_label": gate_zero.TEMPERATURE_LABELS[kind],
                 "block_centre_c": {"64": g64.get("selector_c"), "32": g32.get("selector_c"),
                                    "64 replay": replay.get("selector_c")},
                 "grid32_to_64_block_centre_delta_k": g64["selector_c"] - g32["selector_c"] if both else None,
-                "grid32_to_64_grid_peak_delta_k": (g64["grid_peak_c"] - g32["grid_peak_c"]
-                                                   if both and None not in (g64["grid_peak_c"], g32["grid_peak_c"])
-                                                   else None),
+                "grid32_to_64_grid_peak_delta_k": g64["grid_peak_c"] - g32["grid_peak_c"] if both else None,
                 "network_model_prediction_k": NETWORK_MODEL_MESH_DELTA_K.get(fixture) if kind == "hotspot6" else None,
                 "old_hotspot7_mesh_error_k": OLD_HOTSPOT7_MESH_ERROR_K.get(fixture),
-                "replay_byte_identical": (all(g64["outputs"].get(name) == replay["outputs"].get(name)
+                "replay_byte_identical": (all(g64["outputs"][name] == replay["outputs"][name]
                                               for name in gate_zero.REPLAY_OUTPUTS)
-                                          if "outputs" in g64 and "outputs" in replay else None),
+                                          if g64.get("usable") and replay.get("usable") else None),
                 "spreader_sink_drop_g64": g64.get("drop"), "same_index_stack_g64": g64.get("stack"),
             })
-    missing = [e["call"] for e in entries.values() if e["settled"] != "exited"]
-    return {"schema": "sentilab-slab049-manifest-report-v2", "manifest_sha256": manifest_sha256,
-            "calls": list(entries.values()), "rows": rows, "not_completed": missing,
+    return {"schema": "sentilab-slab049-manifest-report-v3", "manifest_sha256": manifest_sha256,
+            "calls": list(entries.values()), "rows": rows, "not_completed": not_completed,
             "note": "nothing here is frozen as a mesh error; the next protocol sets its own"}
 
 

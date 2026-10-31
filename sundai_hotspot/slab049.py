@@ -788,7 +788,7 @@ class ReferenceGeometryError(ValueError):
 
 
 def raw_layout_sha256(raw: dict) -> str:
-    """The raw layout's own content hash: SHA-256 of its canonical JSON."""
+    """The raw layout's own content hash: SHA-256 of the canonical JSON of SLAB-048's raw section."""
     return hashlib.sha256(json.dumps(raw, sort_keys=True, separators=(",", ":"), ensure_ascii=True,
                                      allow_nan=False).encode("utf-8")).hexdigest()
 
@@ -797,15 +797,14 @@ def load_raw_layout(reference, root: Path = REPO_ROOT) -> dict:
     """The frozen raw layout of a paper-match reference, checked against its pinned content hash.
 
     The vendored copy (SLAB-048 PR #57 at 063f659) must hash to the pin. Whenever SLAB-048's own record is in the
-    tree, its raw section must hash to the same pin: a later SLAB-048 commit that leaves raw alone keeps the pin,
-    and any change to raw fails.
+    tree, its raw section must hash to the same pin: SLAB-048 keeps that section byte-stable and puts later notes in
+    raw_annotations and snapped_annotations, which are descriptive only and never read here. Any change to raw fails.
     """
     document = json.loads((root / reference.raw_vendored).read_text(encoding="utf-8"))
     if raw_layout_sha256(document["raw"]) != reference.raw_layout_sha256:
         raise ReferenceGeometryError(f"{reference.id}: the frozen raw layout does not match its pinned content hash")
     record = root / reference.raw_record
-    if record.is_file() and raw_layout_sha256(json.loads(record.read_text(encoding="utf-8"))["raw"]) != \
-            reference.raw_layout_sha256:
+    if record.is_file() and raw_layout_sha256(json.loads(record.read_text(encoding="utf-8"))["raw"]) !=             reference.raw_layout_sha256:
         raise ReferenceGeometryError(f"{reference.id}: SLAB-048's raw section in {reference.raw_record} changed "
                                      "after it was pinned")
     return document
@@ -1028,17 +1027,21 @@ IN_CODE_AT_ENTRY = (
     "and the continuous rules only; the search lattice is never applied",
     "atomic admission: under an exclusive ledger lock, one manifest per ledger, each call reserved once (O_EXCL, no "
     "retries), refused when the admitted count would pass 12 or charged plus reserved CPU would pass 600 CPU-s "
-    "(settled calls are charged their measured CPU, unsettled ones their reservation)",
+    "(a reservation is never freed: every admitted call, settled or not, failed or not, is charged at least its "
+    "reservation, and a measured overshoot is charged in full)",
     "reserve before staging: the reservation and the receipt are on disk (fsync) before inputs are generated or the "
     "solver starts",
     "per-process CPU and a separate wall deadline: the solver runs in its own session and process group under "
     "RLIMIT_CPU equal to its timeout (soft = hard, so SIGKILL at the limit) and a wall deadline equal to its "
     "timeout; the TAP generator runs under RLIMIT_CPU 10 s and a 60 s deadline",
     "kill and reap: after the solver exits or times out, its process group is killed and the solver is reaped",
-    "settlement: the receipt and the ledger settlement are written durably on every exit path of this process, "
-    "keeping the raw outputs, the status, the measured CPU (children and self) and any overshoot",
-    "outcomes by admitted call id: record and report read the ledger, never caller-chosen directories; a missing "
-    "required outcome gives INCOMPLETE",
+    "settlement: the receipt and the ledger settlement are written durably on every exit path of this process "
+    "after admission, setup failures included; when no output directory or receipt can be written, the ledger "
+    "still settles the call (receipt digest null), keeping the status, the measured CPU (children and self) and "
+    "any overshoot",
+    "outcomes by admitted call id: record and report read the ledger, never caller-chosen directories, verify every "
+    "binding and re-derive each result with the strict evaluator-bound reader; a missing or unusable required "
+    "outcome gives INCOMPLETE",
 )
 SUPERVISOR_CONTRACT = (
     "admission identity: authenticate the operator and the host; keep the ledger append-only and protected from "
@@ -1159,7 +1162,8 @@ def build_call_list() -> dict:
                    "claim": gate_zero.PAPER_MATCH_CLAIM,
                    "raw_layout": {"sha256": r.raw_layout_sha256,
                                   "form": "SHA-256 of the canonical JSON of SLAB-048's raw section "
-                                          "(slab049.raw_layout_sha256)",
+                                          "(slab049.raw_layout_sha256); raw_annotations and snapped_annotations "
+                                          "are descriptive only and never read",
                                   "vendored": r.raw_vendored, "slab048_record": r.raw_record,
                                   "slab048_pull_request": 57, "slab048_commit": SLAB048_COMMIT},
                    "geometry_rules": CONTINUOUS_RULES,
@@ -1300,6 +1304,13 @@ def summarize_evaluation(directory: Path, *, lcf: str = "samplelayers.lcf", grid
     if not chip_units:
         raise ValueError("no chiplet blocks matched")
     steady_values = dict(read_steady(directory / steady))
+    # Complete block evidence: HotSpot (6.0 and 7) writes one layer_<n>_<unit> line per unit of every LCF layer.
+    expected_blocks = {f"layer_{layer['layer']}_{unit['name']}" for layer in layers for unit in read_flp(layer["flp"])}
+    present_blocks = {name for name in steady_values if name.startswith("layer_")}
+    if expected_blocks != present_blocks:
+        missing, unexpected = sorted(expected_blocks - present_blocks), sorted(present_blocks - expected_blocks)
+        raise ValueError(f"the steady file's block evidence does not match the floorplans: {len(missing)} missing "
+                         f"{missing[:3]}, {len(unexpected)} unexpected {unexpected[:3]}")
     selector, selector_block = tap_selector_c(directory / steady)
     literal = {"applicable": False, "value_C": None}
     if stdout and (directory / stdout).is_file():
@@ -1312,6 +1323,8 @@ def summarize_evaluation(directory: Path, *, lcf: str = "samplelayers.lcf", grid
         "schema": "sentilab-slab049-solve-record-v3",
         "files": files,
         "config_sha256": files[config]["sha256"],
+        "block_evidence": {"layer_blocks": len(expected_blocks),
+                           "other_nodes": len(steady_values) - len(expected_blocks)},
         "output_precision": {"grid_decimals_K": _decimals(directory / grid),
                              "steady_decimals_K": _decimals(directory / steady)},
         "effective_package": package_record,

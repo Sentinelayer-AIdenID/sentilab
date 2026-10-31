@@ -6,7 +6,8 @@ before any run (root #56858; astra supplement on PR #56, comment 6545712065):
 
 - **Gate: two raw paper-match references.** TAP-2.5D's two original layouts as SLAB-048 decoded them from the
   paper's vector figures, raw: the continuous centres and the rotations as drawn, never snapped. Ascend 910 at
-  75.48 C (Fig. 6(a)) and CPU-DRAM at 115.94 C (Fig. 5(a)). Each is pinned by its raw layout's own content hash.
+  75.48 C (Fig. 6(a)) and CPU-DRAM at 115.94 C (Fig. 5(a)). Each is pinned by its raw section's own content hash;
+  SLAB-048's raw_annotations and snapped_annotations are descriptive only and never read.
 - **The frozen predicate.** On the native6 target (the HotSpot 6.0 evaluator build) at grid 64, each reference's
   primary call and its fresh-process replay must each reproduce the paper within the prospective computational
   reference-reproduction tolerance of 1.0 K, and each replay's outputs must be byte-identical to its primary's.
@@ -23,7 +24,9 @@ package. The metric is TAP-2.5D's own selector (passive_interposer.py run_hotspo
 centre-mapped block temperatures, which HotSpot 6.0 prints to stdout and every version writes to the steady file.
 
 A record is assembled from the grant's ledger of admitted calls, by call id, never from directories a caller
-chooses, and every result is re-derived from the retained raw evidence. The pinned digest covers the references,
+chooses, and every result is re-derived from the retained raw evidence with the strict evaluator-bound reader that
+settles a run (grid size, layer count, header format and complete block evidence); bound evidence that fails it is
+unusable, so the record is INCOMPLETE, never PASS. The pinned digest covers the references,
 their roles and pins, the frozen inputs, the predicate, the tolerance and the metric; changing any of them
 invalidates every record.
 
@@ -34,7 +37,6 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 import hashlib
 import json
-import math
 from pathlib import Path
 
 from sundai_hotspot.tap_oracle import REPO_ROOT
@@ -306,66 +308,91 @@ DROP_EXPECTATION = ("copper predicts about 1-2 K for this package (HotSpot 6.0 f
                     "about 51 K on the saved grids. Reported, not asserted.")
 
 
-def stack_diagnostics(directory: Path) -> dict:
-    """The same-index spreader-sink drop and the stack at each active-layer argmax (reads files only)."""
+class EvidenceShapeError(GateZeroRefusal):
+    """Bound raw evidence (consistent digests) that the strict evaluator-bound reader rejects: a grid of the wrong
+    size or layer count, a truncated or headerless file where the build writes headers, incomplete block evidence,
+    or a stdout selector that does not match. Such an outcome is not usable; it can never count toward a PASS."""
+
+
+def verify_evidence(call: dict, reservation: dict, settled: dict, manifest_sha256: str,
+                    root: Path = REPO_ROOT) -> dict:
+    """Bind one admitted call's retained run to its manifest row, ledger entries, receipt, outputs and frozen inputs,
+    then re-derive its record from the raw files with the strict evaluator-bound reader (slab049.summarize_evaluation,
+    the same reader that settles a run). Nothing stored in a receipt, a settlement or a record is trusted.
+
+    Raises GateZeroRefusal on any binding mismatch, and EvidenceShapeError when bound evidence fails the strict
+    reader. Reads files only.
+    """
     from sundai_hotspot import slab049
-    directory = Path(directory)
-    layers = slab049.read_lcf(directory / "samplelayers.lcf", directory)
-    config = slab049.read_hotspot_config(directory / "new_hotspot.config")
-    ambient = float(config["ambient"])
-    grid = slab049.read_grid(directory / "sample.grid.steady", ambient_k=ambient)
-    if len(grid) != len(layers) + 2:
-        return {"available": False, "reason": "this build writes only layer 0 to the grid file"}
-    side = math.isqrt(len(grid[0]))
-    return {"available": True,
-            "spreader_sink_drop": slab049._same_index_drop(grid[len(layers)], grid[len(layers) + 1], side, ambient),
-            "same_index_stack": slab049.same_index_stack(grid, layers, side, ambient)}
-
-
-def _verify_run(kind: str, identity: dict, item: Reference, row: dict, directory: Path, manifest_sha256: str,
-                root: Path) -> dict:
-    """Validate one admitted call's retained run against its receipt, the manifest and the frozen inputs, and
-    recompute its result from the raw outputs. Any missing or mismatched field is a refusal; nothing stored in a
-    record is trusted."""
-    directory = Path(directory)
+    name, kind = call["id"], call["kind"]
+    if reservation.get("call") != name or settled.get("call") != name:
+        raise GateZeroRefusal(f"{name}: the ledger entries name another call")
+    if reservation.get("manifest_sha256") != manifest_sha256 or settled.get("manifest_sha256") != manifest_sha256:
+        raise GateZeroRefusal(f"{name}: reserved or settled under another manifest")
+    directory = Path(reservation["out"]).resolve()
     receipt_path = directory / "receipt.json"
-    name = row["call"]
     if not receipt_path.is_file():
         raise GateZeroRefusal(f"{name}: no receipt in {directory}")
+    if settled.get("receipt_sha256") != _sha256(receipt_path):
+        raise GateZeroRefusal(f"{name}: the receipt changed after the call settled")
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-    if receipt.get("schema") != RECEIPT_SCHEMA or receipt.get("call") != name or receipt.get("reference") != item.id:
+    if receipt.get("schema") != RECEIPT_SCHEMA or receipt.get("call") != name or receipt.get("reference") != call["reference"]:
         raise GateZeroRefusal(f"{name}: {directory} does not hold this admitted call's receipt")
     if receipt.get("manifest_sha256") != manifest_sha256:
         raise GateZeroRefusal(f"{name}: the receipt was admitted under another manifest")
-    if receipt.get("layout_identity") != RAW or receipt.get("raw_layout_sha256") != item.raw_layout_sha256:
+    if (receipt.get("layout_identity") != call["layout_identity"] or
+            receipt.get("raw_layout_sha256") != call["raw_layout_sha256"]):
         raise GateZeroRefusal(f"{name}: only the pinned raw layout carries the paper-match claim ({SNAPPED_CLAIM})")
-    evaluator = receipt.get("evaluator") or {}
-    if evaluator.get("kind") != kind or evaluator.get("binary_sha256") != identity["binary_sha256"]:
-        raise GateZeroRefusal(f"{name}: the receipt was produced by a different evaluator binary")
-    if receipt.get("grid") != GRID or receipt.get("status") != "exited" or receipt.get("exit_status") != 0:
-        raise GateZeroRefusal(f"{name}: gate zero needs a completed grid-{GRID} solve")
+    if (receipt.get("evaluator") or {}).get("kind") != kind or receipt.get("grid") != call["grid"]:
+        raise GateZeroRefusal(f"{name}: the receipt names another engine or grid than its manifest row")
+    if (receipt.get("status"), receipt.get("exit_status")) != (settled.get("status"), settled.get("exit_status")):
+        raise GateZeroRefusal(f"{name}: the receipt and its settlement disagree")
     outputs = receipt.get("outputs") or {}
     for output in RECEIPT_OUTPUTS:
         if output not in outputs or not (directory / output).is_file() or _sha256(directory / output) != outputs[output]:
             raise GateZeroRefusal(f"{name}: {output} is missing or differs from its receipt digest")
+    item = reference(call["reference"])
     for input_name, digest in frozen_inputs(item, root).items():
         if not (directory / input_name).is_file() or _sha256(directory / input_name) != digest:
             raise GateZeroRefusal(f"{name}: {input_name} is not the frozen reference input")
         if (receipt.get("inputs") or {}).get(input_name) != digest:
             raise GateZeroRefusal(f"{name}: the receipt does not bind the frozen {input_name}")
-    simulated, block = tap_selector_c(directory / "sample.steady")
-    literal = None
-    if kind.startswith("hotspot6"):
-        literal = tap_stdout_selector_c(directory / "stdout.txt")
-        if abs(literal - simulated) > 1e-9:
-            raise GateZeroRefusal(f"{name}: stdout and steady-file selectors disagree")
-    return {"call": name, "role": row["role"], "replay_of": row["replay_of"], "reference": item.id,
+    try:
+        record = slab049.summarize_evaluation(directory, grid_size=call["grid"], grid_format=GRID_FORMATS[kind])
+        simulated, block = tap_selector_c(directory / "sample.steady")
+        literal = tap_stdout_selector_c(directory / "stdout.txt") if kind.startswith("hotspot6") else None
+    except (ValueError, KeyError, OSError) as exc:  # GridFormatError is a ValueError
+        raise EvidenceShapeError(f"{name}: the raw evidence fails the strict evaluator-bound reader: "
+                                 f"{type(exc).__name__}: {exc}") from exc
+    if literal is not None and abs(literal - simulated) > 1e-9:
+        raise EvidenceShapeError(f"{name}: stdout and steady-file selectors disagree")
+    return {"directory": directory, "receipt": receipt, "receipt_sha256": settled["receipt_sha256"], "record": record,
+            "simulated_c": simulated, "selector_block": block, "stdout_selector_c": literal,
+            "output_sha256": {o: outputs[o] for o in RECEIPT_OUTPUTS}}
+
+
+def _verify_run(kind: str, identity: dict, call: dict, row: dict, reservation: dict, settled: dict,
+                manifest_sha256: str, root: Path) -> dict:
+    """One required gate outcome: verify_evidence, then this binary, a completed grid-64 solve and the tolerance."""
+    evidence = verify_evidence(call, reservation, settled, manifest_sha256, root)
+    receipt, item = evidence["receipt"], reference(row["reference"])
+    if (receipt.get("evaluator") or {}).get("binary_sha256") != identity["binary_sha256"]:
+        raise GateZeroRefusal(f"{row['call']}: the receipt was produced by a different evaluator binary")
+    if receipt.get("grid") != GRID or receipt.get("status") != "exited" or receipt.get("exit_status") != 0:
+        raise GateZeroRefusal(f"{row['call']}: gate zero needs a completed grid-{GRID} solve")
+    record, simulated = evidence["record"], evidence["simulated_c"]
+    return {"call": row["call"], "role": row["role"], "replay_of": row["replay_of"], "reference": item.id,
             "layout_identity": RAW, "raw_layout_sha256": item.raw_layout_sha256, "paper_c": item.paper_c,
-            "simulated_c": simulated, "temperature_label": TEMPERATURE_LABELS[kind], "selector_block": block,
-            "stdout_selector_c": literal, "delta_k": simulated - item.paper_c, "within_tolerance": _within(simulated, item),
-            "diagnostics": stack_diagnostics(directory), "run_dir": str(directory.resolve()),
-            "receipt_sha256": _sha256(receipt_path), "output_sha256": {o: outputs[o] for o in RECEIPT_OUTPUTS},
-            "config_sha256": _sha256(directory / "new_hotspot.config"), "runtime": receipt.get("runtime"),
+            "simulated_c": simulated, "temperature_label": TEMPERATURE_LABELS[kind],
+            "selector_block": evidence["selector_block"], "stdout_selector_c": evidence["stdout_selector_c"],
+            "delta_k": simulated - item.paper_c, "within_tolerance": _within(simulated, item),
+            "diagnostics": {"grid": record["grid"], "block_evidence": record["block_evidence"],
+                            "active_layer_grid_peak": record["active_layer_grid_peak"],
+                            "spreader_sink_drop": record["spreader_sink_drop_diagnostic"],
+                            "same_index_stack": record["same_index_stack_at_active_argmax"]},
+            "run_dir": str(evidence["directory"]), "receipt_sha256": evidence["receipt_sha256"],
+            "output_sha256": evidence["output_sha256"], "config_sha256": record["config_sha256"],
+            "runtime": receipt.get("runtime"),
             "build_provenance_sha256": (receipt.get("build_provenance") or {}).get("sha256")}
 
 
@@ -420,13 +447,14 @@ def build_record(kind: str, binary: Path, ledger: Path, *, manifest_path: Path |
             missing.append({"call": row["call"], "reason": "unsettled: reserved but never settled"})
             continue
         if (settled.get("status"), settled.get("exit_status")) != ("exited", 0):
-            missing.append({"call": row["call"], "reason": f"did not complete: settled {settled.get('status')!r}"})
+            missing.append({"call": row["call"], "reason": f"did not complete: settled {settled.get('status')!r} "
+                                                           f"with exit status {settled.get('exit_status')!r}"})
             continue
-        directory = Path(reservation["out"]).resolve()
-        outcome = _verify_run(kind, identity, reference(row["reference"]), row, directory, manifest_sha256, root)
-        if settled.get("receipt_sha256") != outcome["receipt_sha256"]:
-            raise GateZeroRefusal(f"{row['call']}: the receipt changed after the call settled")
-        outcomes[row["call"]] = outcome
+        try:
+            outcomes[row["call"]] = _verify_run(kind, identity, listed[row["call"]], row, reservation, settled,
+                                                manifest_sha256, root)
+        except EvidenceShapeError as exc:  # bound but unusable: never PASS
+            missing.append({"call": row["call"], "reason": str(exc)})
     if len({_canonical(o["runtime"]) for o in outcomes.values()}) > 1:
         raise GateZeroRefusal("the required calls ran on different runtime library identities")
     replays = []
