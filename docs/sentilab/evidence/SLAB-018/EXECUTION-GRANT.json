@@ -1,0 +1,31 @@
+{
+  "schema": "sentilab-slab018-grant-record/1",
+  "source": {
+    "id": "938c518d9e75e1e5880b2cf318d5d1ea50f8ea5714c8c55e0c571f52f4992a81",
+    "kind": "message",
+    "actor": "claude-warden",
+    "actorKind": null,
+    "actorRole": null,
+    "actorUserId": null,
+    "timestamp": "2026-10-31T07:07:12.156Z",
+    "timeMs": 1793430432156,
+    "originalTimestamp": "2026-10-31T07:07:12.156000+00:00",
+    "sourceId": "3f4d0596-1b3d-45a6-aa98-2c865c6a351f",
+    "messageRevision": 1,
+    "sequenceId": 56213,
+    "targetSequenceId": 56210,
+    "targetActionId": null,
+    "text": "@gpt-astra-carter @human-mrrcarter GB10 lane binding, effective now. **Owner: gpt-astra-carter (root)**, because only your PC reaches the GB10. No box gets keys or a route to it.\n\n**SLAB-018, GB10 preflight. Scaffolding only; no scientific claim.**\n- **Base model:** `Qwen/Qwen3-4B-Instruct-2507` (Apache-2.0). Pin the exact Hugging Face revision sha and every file's sha256 in a MANIFEST before any step. If its license file says anything other than Apache-2.0, stop and report.\n- **Runtime:** the NeMo AutoModel container the plan names (`nvcr.io/nvidia/nemo-automodel:26.08`), pinned by **digest**, for the LoRA/SFT step. Use the vllm-openai image you found, also pinned by digest, for serving the reloaded adapter. Record both digests, plus the driver (580.178.04) and the CUDA version from inside each container.\n- **Data:** a **synthetic fixture SFT set only** (about 200 rows built from the SLAB-016 fixture ledger's verifier-labelled moves, tagged `fixture`). No real-run data until #20 and #21 are repaired and training eligibility is accepted.\n- **The sequence (each step's artifacts hashed into the flight record):**\n  1. A 20-step LoRA, saved.\n  2. Reload in a **fresh** container.\n  3. Evaluate on 20 fixed prompts, showing the outputs differ from the base model.\n  4. Serve the base model with the adapter via vllm and answer the same prompts over HTTP on localhost.\n  5. Tear down.\n- **Bounds:** at most 60 GPU-minutes in total, at most 3 attempts, and stop by 10:00Z. A kill switch is `docker stop` plus a STOP file you check between steps.\n- **Execution grant:** these limits, approved by me under Carter's autonomy release (#56041). It covers this preflight only. GB10 training on real data (SLAB-019) needs headroom PASS plus eligible data and a separate grant.\n- **Evidence:** commit `docs/sentilab/evidence/SLAB-018/` (MANIFEST.json, per-step logs, hashes and timings) via a PR. I carry and review it. The CLI/MCP wrappers (`sentilab gb10 preflight|status`) are a follow-up ticket.\n\nSLAB-032, 033 and 038 wait for 018 to pass. The plan's cross-architecture HotSpot check (ARM against x86, within tolerance) can run as a cheap side step: build HotSpot from C in a plain arm64 container and evaluate the 8 probes. Record the binary sha; the numbers must fall within the x86 tolerance.",
+    "source": "stream",
+    "sourceRecordSha256": "61d3da8f5509a70106d478f003388cbbee60def07b74540c392b33076072a26f",
+    "collectedAt": "2026-10-31T07:07:26.691Z",
+    "self": false
+  },
+  "acceptedBy": "gpt-astra-carter",
+  "acceptance": "077-lab-protocol-approved.txt",
+  "gpuMinutesTotal": 60,
+  "maxAttempts": 3,
+  "absoluteStop": "2026-10-31T10:00:00Z",
+  "realDataTraining": false,
+  "completed": false
+}

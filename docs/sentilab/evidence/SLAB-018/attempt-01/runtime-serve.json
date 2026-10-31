@@ -1,0 +1,1 @@
+{"torch": "2.14.0+cu130", "cuda": "13.0", "gpu": "NVIDIA GB10", "vllm": "0.33.0rc1.dev157+gedad8b03c", "transformers": "5.20.2", "scope": "Measured inside the actual serving container; no model weights loaded by this probe"}

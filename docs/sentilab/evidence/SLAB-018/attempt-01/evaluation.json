@@ -1,0 +1,293 @@
+{
+  "base": [
+    {
+      "row_id": "eval-000",
+      "output": "{\n  \"result\": \"accepted\",\n  \"lifecycle\": \"accepted\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"accepted\",\"repair\":null,\"result\":\"success\"}",
+      "exact_json_match": false,
+      "target_nll": 2.2578723430633545
+    },
+    {
+      "row_id": "eval-001",
+      "output": "{\n  \"result\": \"rejected\",\n  \"lifecycle\": \"rejected_constraints\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"rejected_constraints\",\"repair\":null,\"result\":\"rejection\"}",
+      "exact_json_match": false,
+      "target_nll": 2.3090946674346924
+    },
+    {
+      "row_id": "eval-002",
+      "output": "{\n  \"result\": \"rejected_constraints\",\n  \"lifecycle\": \"failed_run\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"failed_run\",\"repair\":null,\"result\":\"failure\"}",
+      "exact_json_match": false,
+      "target_nll": 2.4004344940185547
+    },
+    {
+      "row_id": "eval-003",
+      "output": "{\n  \"result\": \"within_margin\",\n  \"lifecycle\": \"within_margin\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"within_margin\",\"repair\":null,\"result\":\"non_improving\"}",
+      "exact_json_match": false,
+      "target_nll": 3.084590435028076
+    },
+    {
+      "row_id": "eval-004",
+      "output": "{\n  \"result\": \"valid\",\n  \"lifecycle\": \"non_improving_current\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"non_improving_current\",\"repair\":null,\"result\":\"non_improving\"}",
+      "exact_json_match": false,
+      "target_nll": 1.7078996896743774
+    },
+    {
+      "row_id": "eval-005",
+      "output": "{\n  \"result\": \"accepted\",\n  \"lifecycle\": \"accepted\",\n  \"repair\": \"verifier_confirmed\"\n}",
+      "expected": "{\"lifecycle\":\"accepted\",\"repair\":\"verifier_confirmed\",\"result\":\"success\"}",
+      "exact_json_match": false,
+      "target_nll": 1.985412836074829
+    },
+    {
+      "row_id": "eval-006",
+      "output": "{\n  \"result\": \"accepted\",\n  \"lifecycle\": \"accepted\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"accepted\",\"repair\":null,\"result\":\"success\"}",
+      "exact_json_match": false,
+      "target_nll": 2.2578723430633545
+    },
+    {
+      "row_id": "eval-007",
+      "output": "{\n  \"result\": \"rejected\",\n  \"lifecycle\": \"rejected_constraints\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"rejected_constraints\",\"repair\":null,\"result\":\"rejection\"}",
+      "exact_json_match": false,
+      "target_nll": 2.3090946674346924
+    },
+    {
+      "row_id": "eval-008",
+      "output": "{\n  \"result\": \"rejected_constraints\",\n  \"lifecycle\": \"failed_run\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"failed_run\",\"repair\":null,\"result\":\"failure\"}",
+      "exact_json_match": false,
+      "target_nll": 2.4004344940185547
+    },
+    {
+      "row_id": "eval-009",
+      "output": "{\n  \"result\": \"within_margin\",\n  \"lifecycle\": \"within_margin\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"within_margin\",\"repair\":null,\"result\":\"non_improving\"}",
+      "exact_json_match": false,
+      "target_nll": 3.084590435028076
+    },
+    {
+      "row_id": "eval-010",
+      "output": "{\n  \"result\": \"valid\",\n  \"lifecycle\": \"non_improving_current\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"non_improving_current\",\"repair\":null,\"result\":\"non_improving\"}",
+      "exact_json_match": false,
+      "target_nll": 1.7078996896743774
+    },
+    {
+      "row_id": "eval-011",
+      "output": "{\n  \"result\": \"accepted\",\n  \"lifecycle\": \"accepted\",\n  \"repair\": \"verifier_confirmed\"\n}",
+      "expected": "{\"lifecycle\":\"accepted\",\"repair\":\"verifier_confirmed\",\"result\":\"success\"}",
+      "exact_json_match": false,
+      "target_nll": 1.985412836074829
+    },
+    {
+      "row_id": "eval-012",
+      "output": "{\n  \"result\": \"accepted\",\n  \"lifecycle\": \"accepted\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"accepted\",\"repair\":null,\"result\":\"success\"}",
+      "exact_json_match": false,
+      "target_nll": 2.2578723430633545
+    },
+    {
+      "row_id": "eval-013",
+      "output": "{\n  \"result\": \"rejected\",\n  \"lifecycle\": \"rejected_constraints\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"rejected_constraints\",\"repair\":null,\"result\":\"rejection\"}",
+      "exact_json_match": false,
+      "target_nll": 2.3090946674346924
+    },
+    {
+      "row_id": "eval-014",
+      "output": "{\n  \"result\": \"rejected_constraints\",\n  \"lifecycle\": \"failed_run\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"failed_run\",\"repair\":null,\"result\":\"failure\"}",
+      "exact_json_match": false,
+      "target_nll": 2.4004344940185547
+    },
+    {
+      "row_id": "eval-015",
+      "output": "{\n  \"result\": \"within_margin\",\n  \"lifecycle\": \"within_margin\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"within_margin\",\"repair\":null,\"result\":\"non_improving\"}",
+      "exact_json_match": false,
+      "target_nll": 3.084590435028076
+    },
+    {
+      "row_id": "eval-016",
+      "output": "{\n  \"result\": \"valid\",\n  \"lifecycle\": \"non_improving_current\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"non_improving_current\",\"repair\":null,\"result\":\"non_improving\"}",
+      "exact_json_match": false,
+      "target_nll": 1.7078996896743774
+    },
+    {
+      "row_id": "eval-017",
+      "output": "{\n  \"result\": \"accepted\",\n  \"lifecycle\": \"accepted\",\n  \"repair\": \"verifier_confirmed\"\n}",
+      "expected": "{\"lifecycle\":\"accepted\",\"repair\":\"verifier_confirmed\",\"result\":\"success\"}",
+      "exact_json_match": false,
+      "target_nll": 1.985412836074829
+    },
+    {
+      "row_id": "eval-018",
+      "output": "{\n  \"result\": \"accepted\",\n  \"lifecycle\": \"accepted\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"accepted\",\"repair\":null,\"result\":\"success\"}",
+      "exact_json_match": false,
+      "target_nll": 2.2578723430633545
+    },
+    {
+      "row_id": "eval-019",
+      "output": "{\n  \"result\": \"rejected\",\n  \"lifecycle\": \"rejected_constraints\",\n  \"repair\": null\n}",
+      "expected": "{\"lifecycle\":\"rejected_constraints\",\"repair\":null,\"result\":\"rejection\"}",
+      "exact_json_match": false,
+      "target_nll": 2.3090946674346924
+    }
+  ],
+  "adapter": [
+    {
+      "row_id": "eval-000",
+      "output": "{\"lifecycle\":\"accepted\",\"repair\":null,\"result\":\"success\"}",
+      "expected": "{\"lifecycle\":\"accepted\",\"repair\":null,\"result\":\"success\"}",
+      "exact_json_match": true,
+      "target_nll": 1.914794665935915e-06
+    },
+    {
+      "row_id": "eval-001",
+      "output": "{\"lifecycle\":\"rejected_constraints\",\"repair\":null,\"result\":\"rejection\"}",
+      "expected": "{\"lifecycle\":\"rejected_constraints\",\"repair\":null,\"result\":\"rejection\"}",
+      "exact_json_match": true,
+      "target_nll": 5.231895556789823e-06
+    },
+    {
+      "row_id": "eval-002",
+      "output": "{\"lifecycle\":\"failed_run\",\"repair\":null,\"result\":\"failure\"}",
+      "expected": "{\"lifecycle\":\"failed_run\",\"repair\":null,\"result\":\"failure\"}",
+      "exact_json_match": true,
+      "target_nll": 3.078385134358541e-06
+    },
+    {
+      "row_id": "eval-003",
+      "output": "{\"lifecycle\":\"within_margin\",\"repair\":null,\"result\":\"non_improving\"}",
+      "expected": "{\"lifecycle\":\"within_margin\",\"repair\":null,\"result\":\"non_improving\"}",
+      "exact_json_match": true,
+      "target_nll": 1.8477390995030873e-06
+    },
+    {
+      "row_id": "eval-004",
+      "output": "{\"lifecycle\":\"non_improving_current\",\"repair\":null,\"result\":\"non_improving\"}",
+      "expected": "{\"lifecycle\":\"non_improving_current\",\"repair\":null,\"result\":\"non_improving\"}",
+      "exact_json_match": true,
+      "target_nll": 1.5238022115227068e-06
+    },
+    {
+      "row_id": "eval-005",
+      "output": "{\"lifecycle\":\"accepted\",\"repair\":\"verifier_confirmed\",\"result\":\"success\"}",
+      "expected": "{\"lifecycle\":\"accepted\",\"repair\":\"verifier_confirmed\",\"result\":\"success\"}",
+      "exact_json_match": true,
+      "target_nll": 2.2335982521326514e-06
+    },
+    {
+      "row_id": "eval-006",
+      "output": "{\"lifecycle\":\"accepted\",\"repair\":null,\"result\":\"success\"}",
+      "expected": "{\"lifecycle\":\"accepted\",\"repair\":null,\"result\":\"success\"}",
+      "exact_json_match": true,
+      "target_nll": 1.914794665935915e-06
+    },
+    {
+      "row_id": "eval-007",
+      "output": "{\"lifecycle\":\"rejected_constraints\",\"repair\":null,\"result\":\"rejection\"}",
+      "expected": "{\"lifecycle\":\"rejected_constraints\",\"repair\":null,\"result\":\"rejection\"}",
+      "exact_json_match": true,
+      "target_nll": 5.231895556789823e-06
+    },
+    {
+      "row_id": "eval-008",
+      "output": "{\"lifecycle\":\"failed_run\",\"repair\":null,\"result\":\"failure\"}",
+      "expected": "{\"lifecycle\":\"failed_run\",\"repair\":null,\"result\":\"failure\"}",
+      "exact_json_match": true,
+      "target_nll": 3.078385134358541e-06
+    },
+    {
+      "row_id": "eval-009",
+      "output": "{\"lifecycle\":\"within_margin\",\"repair\":null,\"result\":\"non_improving\"}",
+      "expected": "{\"lifecycle\":\"within_margin\",\"repair\":null,\"result\":\"non_improving\"}",
+      "exact_json_match": true,
+      "target_nll": 1.8477390995030873e-06
+    },
+    {
+      "row_id": "eval-010",
+      "output": "{\"lifecycle\":\"non_improving_current\",\"repair\":null,\"result\":\"non_improving\"}",
+      "expected": "{\"lifecycle\":\"non_improving_current\",\"repair\":null,\"result\":\"non_improving\"}",
+      "exact_json_match": true,
+      "target_nll": 1.5238022115227068e-06
+    },
+    {
+      "row_id": "eval-011",
+      "output": "{\"lifecycle\":\"accepted\",\"repair\":\"verifier_confirmed\",\"result\":\"success\"}",
+      "expected": "{\"lifecycle\":\"accepted\",\"repair\":\"verifier_confirmed\",\"result\":\"success\"}",
+      "exact_json_match": true,
+      "target_nll": 2.2335982521326514e-06
+    },
+    {
+      "row_id": "eval-012",
+      "output": "{\"lifecycle\":\"accepted\",\"repair\":null,\"result\":\"success\"}",
+      "expected": "{\"lifecycle\":\"accepted\",\"repair\":null,\"result\":\"success\"}",
+      "exact_json_match": true,
+      "target_nll": 1.914794665935915e-06
+    },
+    {
+      "row_id": "eval-013",
+      "output": "{\"lifecycle\":\"rejected_constraints\",\"repair\":null,\"result\":\"rejection\"}",
+      "expected": "{\"lifecycle\":\"rejected_constraints\",\"repair\":null,\"result\":\"rejection\"}",
+      "exact_json_match": true,
+      "target_nll": 5.231895556789823e-06
+    },
+    {
+      "row_id": "eval-014",
+      "output": "{\"lifecycle\":\"failed_run\",\"repair\":null,\"result\":\"failure\"}",
+      "expected": "{\"lifecycle\":\"failed_run\",\"repair\":null,\"result\":\"failure\"}",
+      "exact_json_match": true,
+      "target_nll": 3.078385134358541e-06
+    },
+    {
+      "row_id": "eval-015",
+      "output": "{\"lifecycle\":\"within_margin\",\"repair\":null,\"result\":\"non_improving\"}",
+      "expected": "{\"lifecycle\":\"within_margin\",\"repair\":null,\"result\":\"non_improving\"}",
+      "exact_json_match": true,
+      "target_nll": 1.8477390995030873e-06
+    },
+    {
+      "row_id": "eval-016",
+      "output": "{\"lifecycle\":\"non_improving_current\",\"repair\":null,\"result\":\"non_improving\"}",
+      "expected": "{\"lifecycle\":\"non_improving_current\",\"repair\":null,\"result\":\"non_improving\"}",
+      "exact_json_match": true,
+      "target_nll": 1.5238022115227068e-06
+    },
+    {
+      "row_id": "eval-017",
+      "output": "{\"lifecycle\":\"accepted\",\"repair\":\"verifier_confirmed\",\"result\":\"success\"}",
+      "expected": "{\"lifecycle\":\"accepted\",\"repair\":\"verifier_confirmed\",\"result\":\"success\"}",
+      "exact_json_match": true,
+      "target_nll": 2.2335982521326514e-06
+    },
+    {
+      "row_id": "eval-018",
+      "output": "{\"lifecycle\":\"accepted\",\"repair\":null,\"result\":\"success\"}",
+      "expected": "{\"lifecycle\":\"accepted\",\"repair\":null,\"result\":\"success\"}",
+      "exact_json_match": true,
+      "target_nll": 1.914794665935915e-06
+    },
+    {
+      "row_id": "eval-019",
+      "output": "{\"lifecycle\":\"rejected_constraints\",\"repair\":null,\"result\":\"rejection\"}",
+      "expected": "{\"lifecycle\":\"rejected_constraints\",\"repair\":null,\"result\":\"rejection\"}",
+      "exact_json_match": true,
+      "target_nll": 5.231895556789823e-06
+    }
+  ],
+  "changed_outputs": 20,
+  "base_exact": 0,
+  "adapter_exact": 20,
+  "base_mean_target_nll": 2.290144020318985,
+  "adapter_mean_target_nll": 2.7318667491726956e-06,
+  "elapsed_seconds": 54.123790933001146,
+  "scope": "Same-family fixture plumbing/label evaluation; no scientific generalization claim"
+}
