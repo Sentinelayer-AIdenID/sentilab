@@ -68,6 +68,119 @@ RAW_SPAWNS = [('sentilab_core/conformance.py', 'subprocess.run', ("['node', '--i
  ('sundai_tap/passive_interposer.py', 'os.system',
   ("'rm ' + self.path + filename + '{*.flp,*.lcf,*.ptrace,*.steady}'",))]
 
+# Non-HotSpot sites reviewed after the main merge; see docs/ci-spawn-review.md.
+# Node paging reducer against local recorded-ledger HTTP fixture; no run endpoint.
+RAW_SPAWNS += [('app/check_view_paging.py',
+  'subprocess.run',
+  (("['node', str(Path(__file__).with_suffix('.mjs')), str(reference.resolve()), "
+    "f'http://127.0.0.1:{fixture.port}', str(fixture.root)]"),))]
+
+# Fixed SSH argv from _remote; stdin is gb10_readonly.py (file/proc inspection only).
+RAW_SPAWNS += [('sentilab_core/gb10_backend.py', 'subprocess.Popen', ('argv',))]
+
+# Node projection adapters consume recorded JSON; no oracle or child process calls.
+RAW_SPAWNS += [('sentilab_core/memory_conformance.py',
+  'subprocess.run',
+  ("['node', '--input-type=module', '-e', script]",)),
+ ('sentilab_core/memory_conformance.py',
+  'subprocess.run',
+  ("['node', str(Path(__file__).with_name('projection.mjs'))]",)),
+ ('sentilab_core/memory_conformance.py',
+  'subprocess.run',
+  ("['node', str(Path(__file__).with_name('projection.mjs'))]",))]
+
+# MCP host scripts: recorded-data/advisory calls and refused live runs, no solver.
+RAW_SPAWNS += [('sentilab_core/test_mcp_stdio.py',
+  'asyncio.create_subprocess_exec',
+  ('sys.executable', '*command'))]
+
+# Saved Popen alias launches this interpreter as a fake SSH peer, never ssh/HotSpot.
+RAW_SPAWNS += [('sentilab_core/test_gb10_backend.py', 'subprocess.Popen',
+  ("[sys.executable, '-I', '-S', '-B', '-c', behavior]",))]
+
+# CLI/MCP memory and advisory route requests only; no live.run request.
+RAW_SPAWNS += [('sentilab_core/test_memory_transports.py',
+  'subprocess.run',
+  ("[sys.executable, '-m', 'sentilab_cli', *args]",)),
+ ('sentilab_core/test_memory_transports.py',
+  'subprocess.run',
+  ("[sys.executable, '-m', 'sentilab_mcp']",))]
+
+# Python probe parses supplied model-list JSON and writes evidence; no model or solver call.
+RAW_SPAWNS += [('sentilab_core/test_probe.py',
+  'subprocess.run',
+  (("[sys.executable, '-m', 'sentilab_core.probe', '--provider', 'fixture-provider', "
+    "'--entitlement-source', 'fixture-entitlement', '--output', str(output)]"),))]
+
+# CLI/MCP research request/status/export uses the offline fixture backend; no solver.
+RAW_SPAWNS += [('sentilab_core/test_research_transports.py',
+  'subprocess.run',
+  ("[sys.executable, '-m', 'sentilab_cli', 'research', command, *flags]",)),
+ ('sentilab_core/test_research_transports.py',
+  'subprocess.run',
+  ("[sys.executable, '-m', 'sentilab_mcp']",)),
+ ('sentilab_core/test_research_transports.py', 'subprocess.run', ('command',))]
+
+# CLI/MCP offline ResultCheck and Node reference checker; recorded input only.
+RAW_SPAWNS += [('sentilab_core/test_resultcheck.py',
+  'asyncio.create_subprocess_exec',
+  ('sys.executable', "'-m'", "'sentilab_mcp'")),
+ ('sentilab_core/test_resultcheck.py',
+  'subprocess.run',
+  ("[sys.executable, str(ROOT / 'sentilab_cli' / 'sentilab'), 'resultcheck', str(file)]",)),
+ ('sentilab_core/test_resultcheck.py',
+  'subprocess.run',
+  ("[sys.executable, '-m', 'sentilab_cli', 'resultcheck', str(file)]",)),
+ ('sentilab_core/test_resultcheck.py',
+  'subprocess.run',
+  ("['node', '--input-type=module', '-e', REFERENCE]",)),
+ ('sentilab_core/test_resultcheck.py',
+  'subprocess.run',
+  ("['node', '--input-type=module', '-e', script]",)),
+ ('sentilab_core/test_resultcheck.py',
+  'subprocess.run',
+  ("[sys.executable, '-m', 'sentilab_cli', 'resultcheck', str(file)]",))]
+
+# CLI ResultCheck file containment refusal; no evaluation.
+RAW_SPAWNS += [('sentilab_core/test_resultcheck_boundary.py',
+  'subprocess.run',
+  ("[sys.executable, '-m', 'sentilab_cli', 'resultcheck', str(outside)]",))]
+
+# CLI/MCP ResultCheck I/O and cancellation workers; supplied scripts only delay the host.
+RAW_SPAWNS += [('sentilab_core/test_resultcheck_io.py',
+  'asyncio.create_subprocess_exec',
+  ('sys.executable', "*(command or ('-m', 'sentilab_mcp'))")),
+ ('sentilab_core/test_resultcheck_io.py',
+  'asyncio.create_subprocess_exec',
+  ('sys.executable', "'-m'", "'sentilab_cli'", "'resultcheck'", 'str(file)'))]
+
+# CLI ResultCheck plus fixed OS/stdio hooks; no evaluation.
+RAW_SPAWNS += [('sentilab_core/test_resultcheck_platform.py',
+  'subprocess.run',
+  ("[sys.executable, '-c', CRLF_STDIO + OS_HOOK, 'resultcheck', str(file)]",)),
+ ('sentilab_core/test_resultcheck_platform.py',
+  'subprocess.run',
+  ("[sys.executable, '-c', (CRLF_STDIO if crlf else '') + CLI_HOOK, 'resultcheck', *arguments]",)),
+ ('sentilab_core/test_resultcheck_platform.py',
+  'subprocess.run',
+  ("[sys.executable, '-m', 'sentilab_cli', 'resultcheck', str(file)]",))]
+
+# Export worker replays recorded data; ResultCheck CLI checks files. Neither evaluates HotSpot.
+RAW_SPAWNS += [('sentilab_mcp/__init__.py',
+  'asyncio.create_subprocess_exec',
+  ('sys.executable', "'-m'", "'sentilab_mcp.export_worker'")),
+ ('sentilab_mcp/__init__.py',
+  'asyncio.create_subprocess_exec',
+  ('sys.executable',
+   "'-m'",
+   "'sentilab_cli'",
+   "'resultcheck'",
+   "'--root'",
+   'root',
+   "'--'",
+   'file'))]
+
+
 
 class GateTests(unittest.TestCase):
     @classmethod
@@ -168,8 +281,9 @@ int main(int argc, char **argv) {
         self.assertIn('ci_hotspot_entry();', (ROOT / 'sundai_hotspot/hotspot.c').read_text())
 
         # Walk every module, including tests, rather than only the two known
-        # native callers. Resolve ordinary import aliases as well as module calls.
-        paths = [path for area in ('sundai_hotspot', 'sundai_controller', 'sentilab_core', 'app')
+        # native callers. Resolve import aliases and saved process functions too.
+        paths = [path for area in ('sundai_hotspot', 'sundai_controller', 'sentilab_core', 'app',
+                                  'sentilab_mcp', 'sentilab_cli')
                  for path in (ROOT / area).rglob('*.py')]
         paths.append(ROOT / 'sundai_tap/passive_interposer.py')
         raw_spawns = []
@@ -182,6 +296,11 @@ int main(int argc, char **argv) {
                 elif isinstance(node, ast.ImportFrom):
                     imports.update((alias.asname or alias.name, f'{node.module}.{alias.name}')
                                    for alias in node.names)
+                elif isinstance(node, ast.Assign) and isinstance(node.value, (ast.Name, ast.Attribute)):
+                    prefix, dot, suffix = ast.unparse(node.value).partition('.')
+                    name = imports.get(prefix, prefix) + (dot + suffix if dot else '')
+                    imports.update((target.id, name) for target in node.targets
+                                   if isinstance(target, ast.Name))
             for node in ast.walk(tree):
                 if not isinstance(node, ast.Call):
                     continue
