@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>SentiLab · deck</title>
+<link rel="icon" href="../../favicon.svg">
+<link rel="stylesheet" href="deck.css">
+</head>
+<body>
+<main id="deck" aria-live="polite">
+
+<section class="slide" id="s-problem" data-label="1 / 5" data-title="The problem" data-notes="problem">
+  <header class="bar"><span class="brand"><i class="mark"></i><b>SentiLab</b><span>ScienceClaw hackathon</span></span><span class="kicker">The problem</span></header>
+  <div class="s1">
+    <div class="s1-left">
+      <h1 class="hero">AI agents produce engineering findings faster than anyone can check them.</h1>
+      <ul class="probs">
+        <li><b>Lost</b><span>Findings scatter across chats, logs and branches.</span></li>
+        <li><b>Unchecked</b><span>Nobody can see what actually ran, or on which inputs.</span></li>
+        <li><b>Uncorrectable</b><span>When an input proves wrong, nothing shows what else it broke.</span></li>
+      </ul>
+    </div>
+    <figure class="s1-art"><svg class="iso" viewBox="-374 -94 747 524" role="img" aria-label="An isometric chiplet package: memory stacks, compute and IO dies on an interposer, coloured by temperature"><polygon points="-363.7,184.8 0.0,394.8 0.0,420.0 -363.7,210.0" fill="#12251e" stroke="#2f5a4a" stroke-width="1.2"/><polygon points="363.7,184.8 0.0,394.8 0.0,420.0 363.7,210.0" fill="#172e26" stroke="#2f5a4a" stroke-width="1.2"/><polygon points="0.0,-25.2 363.7,184.8 0.0,394.8 -363.7,184.8" fill="#1d3b31" stroke="#2f5a4a" stroke-width="1.2"/><polygon points="-298.3,174.3 0.0,346.5 0.0,357.0 -298.3,184.8" fill="#18232a" stroke="#3a4f59" stroke-width="1.2"/><polygon points="298.3,174.3 0.0,346.5 0.0,357.0 298.3,184.8" fill="#1e2c34" stroke="#3a4f59" stroke-width="1.2"/><polygon points="0.0,2.1 298.3,174.3 0.0,346.5 -298.3,174.3" fill="#273943" stroke="#3a4f59" stroke-width="1.2"/><polygon points="-80.0,35.7 -21.8,69.3 -21.8,98.7 -80.0,65.1" fill="#245b68" stroke="#43a9c1" stroke-width="1.2"/><polygon points="58.2,23.1 -21.8,69.3 -21.8,98.7 58.2,52.5" fill="#2d7383" stroke="#43a9c1" stroke-width="1.2"/><polygon points="0.0,-10.5 58.2,23.1 -21.8,69.3 -80.0,35.7" fill="#3a93a8" stroke="#43a9c1" stroke-width="1.2"/><text x="-10.9" y="37.4" class="iso-l">HBM</text><polygon points="47.3,90.3 120.0,132.3 120.0,147.0 47.3,105.0" fill="#8d8047" stroke="#105ee83" stroke-width="1.2"/><polygon points="167.3,105.0 120.0,132.3 120.0,147.0 167.3,119.7" fill="#b1a159" stroke="#105ee83" stroke-width="1.2"/><polygon points="94.6,63.0 167.3,105.0 120.0,132.3 47.3,90.3" fill="#e3cf72" stroke="#105ee83" stroke-width="1.2"/><text x="107.3" y="105.6" class="iso-l">NPU</text><polygon points="-101.8,147.0 -43.6,180.6 -43.6,195.3 -101.8,161.7" fill="#945f35" stroke="#113b162" stroke-width="1.2"/><polygon points="32.7,136.5 -43.6,180.6 -43.6,195.3 32.7,151.2" fill="#ba7842" stroke="#113b162" stroke-width="1.2"/><polygon points="-25.5,102.9 32.7,136.5 -43.6,180.6 -101.8,147.0" fill="#ef9a55" stroke="#113b162" stroke-width="1.2"/><text x="-34.6" y="149.7" class="iso-l">CPU</text><polygon points="-269.2,144.9 -211.0,178.5 -211.0,207.9 -269.2,174.3" fill="#215263" stroke="#3d98b8" stroke-width="1.2"/><polygon points="-130.9,132.3 -211.0,178.5 -211.0,207.9 -130.9,161.7" fill="#29677d" stroke="#3d98b8" stroke-width="1.2"/><polygon points="-189.1,98.7 -130.9,132.3 -211.0,178.5 -269.2,144.9" fill="#3584a0" stroke="#3d98b8" stroke-width="1.2"/><text x="-200.1" y="146.6" class="iso-l">HBM</text><polygon points="130.9,157.5 189.1,191.1 189.1,220.5 130.9,186.9" fill="#2e636e" stroke="#55b8cc" stroke-width="1.2"/><polygon points="269.2,144.9 189.1,191.1 189.1,220.5 269.2,174.3" fill="#3a7d8a" stroke="#55b8cc" stroke-width="1.2"/><polygon points="211.0,111.3 269.2,144.9 189.1,191.1 130.9,157.5" fill="#4aa0b1" stroke="#55b8cc" stroke-width="1.2"/><text x="200.1" y="159.2" class="iso-l">HBM</text><polygon points="-36.4,184.8 21.8,218.4 21.8,233.1 -36.4,199.5" fill="#914e2f" stroke="#10d9057" stroke-width="1.2"/><polygon points="98.2,174.3 21.8,218.4 21.8,233.1 98.2,189.0" fill="#b7623b" stroke="#10d9057" stroke-width="1.2"/><polygon points="40.0,140.7 98.2,174.3 21.8,218.4 -36.4,184.8" fill="#ea7d4c" stroke="#10d9057" stroke-width="1.2"/><text x="30.9" y="187.5" class="iso-l">CPU</text><polygon points="-156.4,210.0 -83.7,252.0 -83.7,264.6 -156.4,222.6" fill="#1d435e" stroke="#367cae" stroke-width="1.2"/><polygon points="-43.6,228.9 -83.7,252.0 -83.7,264.6 -43.6,241.5" fill="#255476" stroke="#367cae" stroke-width="1.2"/><polygon points="-116.4,186.9 -43.6,228.9 -83.7,252.0 -156.4,210.0" fill="#2f6c97" stroke="#367cae" stroke-width="1.2"/><text x="-100.0" y="227.4" class="iso-l">IO</text><polygon points="-58.2,266.7 0.0,300.3 0.0,329.7 -58.2,296.1" fill="#2a636b" stroke="#4db8c7" stroke-width="1.2"/><polygon points="80.0,254.1 0.0,300.3 0.0,329.7 80.0,283.5" fill="#347d87" stroke="#4db8c7" stroke-width="1.2"/><polygon points="21.8,220.5 80.0,254.1 0.0,300.3 -58.2,266.7" fill="#43a0ad" stroke="#4db8c7" stroke-width="1.2"/><text x="10.9" y="268.4" class="iso-l">HBM</text></svg><figcaption>Our own chiplet simulation and visuals. First domain: chiplet layouts under thermal limits.</figcaption></figure>
+  </div>
+  <div class="answer">
+    <span class="eyebrow">SentiLab</span>
+    <p>A lab where every result is <em class="a1">signed</em>, <em class="a2">reproduced</em> and <em class="a3">correctable later</em>.</p>
+  </div>
+</section>
+
+<section class="slide" id="s-how" data-label="2 / 5" data-title="How it works" data-notes="how">
+  <header class="bar"><span class="brand"><i class="mark"></i><b>SentiLab</b><span>ScienceClaw hackathon</span></span><span class="kicker">How it works</span></header>
+  <div class="head"><h1>A deterministic gate decides. A signed log remembers.</h1></div>
+  <div class="s2">
+    <div class="s2-left">
+      <ol class="pipe">
+        <li class="stage st-labs"><div class="st-top"><b>Labs propose</b><span class="tkchip" data-f="stage.labs"></span></div><p>Several labs and a baseline submit candidate layouts.</p></li>
+        <li class="stage st-gate"><div class="st-top"><b>The gate accepts</b><span class="tkchip" data-f="stage.gate"></span><span class="tkchip" data-f="stage.repro"></span></div><p>Only reproduced, verified results. No model decides.</p></li>
+        <li class="stage st-log"><div class="st-top"><b>The log records</b><span class="tkchip" data-f="stage.log"></span><span class="tkchip" data-f="stage.signer"></span></div><p>Append-only. Each event hashed, chained and signed.</p></li>
+        <li class="stage st-view"><div class="st-top"><b>The Lab view shows</b><span class="tkchip" data-f="stage.view"></span></div><p>Only the verified prefix. It freezes when evidence breaks.</p></li>
+      </ol>
+      <p class="chipnote">Chips: each part's tracker ticket and its status.</p>
+    </div>
+    <figure class="shot s2-shot">
+      <div class="frame"><img src="img/lab-frozen.png" alt="Lab view with a red banner: the chain is broken and the board is frozen at the last verified envelope"><i class="hl hl-banner"></i><i class="hl hl-frozen"></i><i class="hl hl-row"></i></div>
+      <figcaption><b>Evidence breaks, the board freezes.</b> A dropped event breaks the chain. The view stops at the last verified envelope; later envelopes are listed, never projected.<span class="fx">Lab view · test-key interface fixture · illustrative values</span></figcaption>
+    </figure>
+  </div>
+  <footer class="src" data-gen="sources"></footer>
+</section>
+
+<section class="slide" id="s-correction" data-label="3 / 5" data-title="Correction walkthrough" data-notes="correction">
+  <header class="bar"><span class="brand"><i class="mark"></i><b>SentiLab</b><span>ScienceClaw hackathon</span></span><span class="kicker">Correction walkthrough</span></header>
+  <div class="head"><h1>Withdraw a measurement. See what falls and what stands.</h1></div>
+  <ol class="flow">
+    <li class="f-c"><b>Candidate</b><span>A lab proposes a layout.</span></li>
+    <li class="f-r"><b>Reproduction</b><span>Re-run in a fresh process.</span></li>
+    <li class="f-a"><b>Acceptance</b><span>The gate accepts it.</span></li>
+    <li class="f-w"><b>Withdrawal</b><span>A measurement is withdrawn in a seeded-fault drill.</span></li>
+    <li class="f-s"><b>Propagation</b><span>Its dependents go stale. Independently supported results stand.</span></li>
+  </ol>
+  <div class="s3-shots">
+    <figure class="shot crop-lab">
+      <div class="frame"><img src="img/lab-drill.png" alt="Lab view evidence panel after the drill: a measurement withdrawn, a claim stale, the accepted candidate still valid through its reproduction"></div>
+      <figcaption><b>Lab view</b> · The measurement is withdrawn, the claim built on it is stale, and the accepted candidate stays valid through its reproduction.</figcaption>
+    </figure>
+    <figure class="shot crop-pkg">
+      <div class="frame"><img src="img/package-drill.png" alt="Package view of the accepted chiplet board after the drill, values kept through the reproduction"><span class="review">Package view · <span data-f="packageView.state"></span> · open PR <span data-f="packageView.pr"></span></span></div>
+      <figcaption><b>Package view</b> · After the drill the accepted board keeps its values, now carried by the reproduction.</figcaption>
+    </figure>
+  </div>
+  <p class="fxline">Both views replay a test-key interface fixture: illustrative values, no solver ran.</p>
+  <footer class="src" data-gen="sources"></footer>
+</section>
+
+<section class="slide" id="s-measured" data-label="4 / 5" data-title="What we measured, with limits" data-notes="measured">
+  <header class="bar"><span class="brand"><i class="mark"></i><b>SentiLab</b><span>ScienceClaw hackathon</span></span><span class="kicker">What we measured</span></header>
+  <div class="head"><h1>What we measured, scoped exactly.</h1></div>
+  <div class="s4">
+    <div class="card gb">
+      <div class="eyebrow">GB10 fixture preflight · attempt <span data-f="gb10.attempt"></span></div>
+      <ol class="steps">
+        <li><b data-f="gb10.steps"></b> training steps</li>
+        <li>adapter saved</li>
+        <li>reloaded in a fresh container</li>
+        <li><b data-f="gb10.httpResponses"></b> HTTP responses</li>
+        <li>teardown <span data-f="gb10.teardown"></span></li>
+      </ol>
+      <div class="result">
+        <div class="ratio"><span class="big" data-f="gb10.adapterExact"></span><span class="lbl">adapter</span></div>
+        <div class="ratio base"><span class="big" data-f="gb10.baseExact"></span><span class="lbl">base</span></div>
+      </div>
+      <div class="claim">
+        <p class="caveat">Exact JSON on both evaluation paths, on <b data-f="gb10.sourceCases"></b> source cases already seen in training, with label metadata supplied in the prompts.</p>
+      </div>
+      <p class="verdict">Plumbing, not generalization.</p>
+      <p class="aud"><b data-f="gb10.auditChecks"></b> independent artifact checks passed.</p>
+      <span class="stamp" data-asof="gb10.steps gb10.auditChecks"></span>
+    </div>
+    <div class="side">
+      <div class="card">
+        <div class="eyebrow">Charged GB10 time</div>
+        <div class="big2" data-f="gb10.chargedSeconds"></div>
+        <p><span data-f="gb10.totalSeconds"></span> including a <span data-f="gb10.reservationSeconds"></span> conservative prior reservation, within the <span data-f="gb10.capMinutes"></span> cap.</p>
+        <span class="stamp" data-asof="gb10.chargedSeconds gb10.capMinutes"></span>
+      </div>
+      <div class="card">
+        <div class="eyebrow">Headroom study</div>
+        <div class="big2 amber" data-f="headroom.verdict"></div>
+        <p>No rerun result is claimed.</p>
+        <span class="stamp" data-asof="headroom.verdict"></span>
+      </div>
+      <div class="card">
+        <div class="eyebrow">Mesh study · <span data-f="mesh.layouts"></span> layouts</div>
+        <p class="mesh">Max gap to <span data-f="mesh.gridFine"></span>: <b data-f="mesh.gapA"></b> at <span data-f="mesh.gridA"></span>, <b data-f="mesh.gapB"></b> at <span data-f="mesh.gridB"></span>.</p>
+        <p>At a fixed <span data-f="mesh.tolerance"></span> tolerance: <span data-f="mesh.inversionsA"></span> and <span data-f="mesh.inversionsB"></span> ranking inversions.</p>
+        <p class="lim">A fixed-sample result, not a universal error bound.</p>
+        <span class="stamp" data-asof="mesh.layouts"></span>
+      </div>
+    </div>
+  </div>
+  <footer class="src" data-gen="sources"></footer>
+</section>
+
+<section class="slide" id="s-status" data-label="5 / 5" data-title="Where it stands and what's next" data-notes="status">
+  <header class="bar"><span class="brand"><i class="mark"></i><b>SentiLab</b><span>ScienceClaw hackathon</span></span><span class="kicker">Where it stands</span></header>
+  <div class="head"><h1 data-f="status.acceptance"></h1></div>
+  <div class="s5">
+    <div class="col"><h2>Deliverables</h2><ul class="dls" data-gen="deliverables"></ul></div>
+    <div class="col"><h2>Progress</h2><div class="pgs" data-gen="progress"></div></div>
+    <div class="col nextc"><h2>Next</h2><ul class="nx" data-gen="priorities"></ul></div>
+  </div>
+  <p class="flags"><span>Scientific benefit <b data-f="status.scientificBenefit"></b></span><span>Full completion <b data-f="status.fullCompletion"></b></span><span>Public runtime <b data-f="status.publicRuntime"></b></span></p>
+  <footer class="src" data-gen="sources"></footer>
+</section>
+
+<section class="slide backup" id="s-rules" data-label="B1" data-title="Evidence rules" data-notes="rules">
+  <header class="bar"><span class="brand"><i class="mark"></i><b>SentiLab</b><span>ScienceClaw hackathon</span></span><span class="kicker">Backup · evidence rules</span></header>
+  <div class="head"><h1>The evidence rules</h1></div>
+  <div class="b1">
+    <div class="rule"><span class="eyebrow">Signed envelopes</span><p>The core is the only writer. Each event becomes a canonical envelope: hashed, chained to the previous hash, and signed.</p></div>
+    <div class="rule"><span class="eyebrow">Verified prefix</span><p>The view projects only the prefix that verifies. At the first gap, bad hash or conflict it stops; later envelopes are listed, never projected.</p></div>
+    <div class="rule"><span class="eyebrow">LIVE / STALE</span><p>LIVE needs verified progress, not just arrivals. A stall, a failed poll or a broken chain turns the label STALE and holds the board.</p></div>
+    <div class="rule"><span class="eyebrow">Corrections propagate</span><p>Withdrawing a measurement makes everything that depends on it stale. A result with another valid support set stays valid.</p></div>
+  </div>
+  <p class="limit"><b>Known limit</b><span>A server can hold back its newest envelopes while it keeps releasing older ones, and the view cannot tell. Only a later full replay shows the truth. Order is by sequence; timestamps are display only.</span></p>
+  <footer class="src"><span class="src-h">Source</span><span class="src-i">the view-envelope contract and its executable vectors in this repository</span></footer>
+</section>
+
+<section class="slide backup" id="s-coverage" data-label="B2" data-title="Ticket coverage" data-notes="coverage">
+  <header class="bar"><span class="brand"><i class="mark"></i><b>SentiLab</b><span>ScienceClaw hackathon</span></span><span class="kicker">Backup · ticket coverage</span></header>
+  <div class="head"><h1><span data-f="coverage.tickets"></span> tickets, <span data-f="coverage.deliverables"></span> deliverables</h1></div>
+  <div class="b2">
+    <p class="cv-sum"><span class="pill st-open"><b data-f="tickets.open"></b> open</span><span class="pill st-measured"><b data-f="tickets.measured"></b> measured</span><span class="cv-n"><b data-f="tickets.complete"></b> verified complete</span><span class="cv-n"><b data-f="tickets.optional"></b> optional, deferred (dashed)</span></p>
+    <div class="cv" data-gen="coverage"></div>
+    <div class="legend" data-gen="legend"></div>
+  </div>
+  <footer class="src" data-gen="sources"></footer>
+</section>
+
+</main>
+
+<aside id="notes" hidden>
+  <div class="n-head"><span class="n-pos"></span><span class="n-target"></span><span class="n-clock"></span><span class="n-keys">N notes · R reset clock · F fullscreen</span></div>
+  <p class="n-text"></p>
+</aside>
+
+<script src="deck-data.js"></script>
+<script src="deck.js"></script>
+</body>
+</html>

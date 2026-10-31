@@ -1,0 +1,967 @@
+{
+  "schema": "sentilab-deck-data/1",
+  "deck": {
+    "title": "SentiLab",
+    "version": "draft v1",
+    "event": "ScienceClaw hackathon"
+  },
+  "pending": "— (pending freeze)",
+  "source": {
+    "packetId": "progress-2026-10-31",
+    "progressSchema": "sentilab-progress-portable/1",
+    "progressSha256": "cf75fd2fbaa2a4860d043b02bdfe82abc3052ec655e40ee0f002b8b53faf1b61",
+    "pageCopySha256": "a1168e173b2300fa4fee56cc81dbbfdcd14cc9946b87248c09567e3ac3ebeeaf",
+    "progressGeneratedAt": "2026-10-31 08:05 UTC",
+    "coverageThrough": "2026-10-31 07:50 UTC",
+    "latestUpdate": "2026-10-31 07:59 UTC",
+    "packagedAt": "2026-10-31 09:20 UTC",
+    "draft": true,
+    "factsRefreshed": false
+  },
+  "facts": {
+    "coverage.tickets": {
+      "value": 41,
+      "display": "41",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "coverage snapshot"
+    },
+    "coverage.deliverables": {
+      "value": 8,
+      "display": "8",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "coverage snapshot"
+    },
+    "coverage.deliverablesWord": {
+      "value": 8,
+      "display": "eight",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "coverage snapshot"
+    },
+    "status.acceptance": {
+      "value": 0,
+      "display": "None of the eight deliverables is fully accepted.",
+      "asOf": "2026-10-31 07:59 UTC",
+      "source": "progress record summary"
+    },
+    "status.scientificBenefit": {
+      "value": false,
+      "display": "not established",
+      "asOf": "2026-10-31 07:59 UTC",
+      "source": "progress record summary"
+    },
+    "status.fullCompletion": {
+      "value": false,
+      "display": "not verified",
+      "asOf": "2026-10-31 07:59 UTC",
+      "source": "progress record summary"
+    },
+    "status.publicRuntime": {
+      "value": false,
+      "display": "not verified",
+      "asOf": "2026-10-31 07:59 UTC",
+      "source": "progress record summary"
+    },
+    "gb10.attempt": {
+      "value": 1,
+      "display": "1",
+      "asOf": "2026-10-31 07:53 UTC",
+      "source": "GB10 attempt record"
+    },
+    "gb10.steps": {
+      "value": 20,
+      "display": "20",
+      "asOf": "2026-10-31 07:53 UTC",
+      "source": "GB10 attempt record"
+    },
+    "gb10.trainRows": {
+      "value": 200,
+      "display": "200",
+      "asOf": "2026-10-31 07:53 UTC",
+      "source": "GB10 attempt record"
+    },
+    "gb10.sourceCases": {
+      "value": 6,
+      "display": "six",
+      "asOf": "2026-10-31 07:53 UTC",
+      "source": "GB10 attempt record"
+    },
+    "gb10.evalEntries": {
+      "value": 20,
+      "display": "20",
+      "asOf": "2026-10-31 07:53 UTC",
+      "source": "GB10 attempt record"
+    },
+    "gb10.evalDistinct": {
+      "value": 6,
+      "display": "six",
+      "asOf": "2026-10-31 07:53 UTC",
+      "source": "GB10 attempt record"
+    },
+    "gb10.httpResponses": {
+      "value": 40,
+      "display": "40",
+      "asOf": "2026-10-31 07:53 UTC",
+      "source": "GB10 attempt record"
+    },
+    "gb10.tensors": {
+      "value": 504,
+      "display": "504",
+      "asOf": "2026-10-31 07:53 UTC",
+      "source": "GB10 attempt record"
+    },
+    "gb10.adapterExact": {
+      "value": {
+        "exact": 20,
+        "of": 20
+      },
+      "display": "20/20",
+      "asOf": "2026-10-31 07:53 UTC",
+      "source": "GB10 attempt record"
+    },
+    "gb10.baseExact": {
+      "value": {
+        "exact": 0,
+        "of": 20
+      },
+      "display": "0/20",
+      "asOf": "2026-10-31 07:53 UTC",
+      "source": "GB10 attempt record"
+    },
+    "gb10.teardown": {
+      "value": true,
+      "display": "recorded",
+      "asOf": "2026-10-31 07:53 UTC",
+      "source": "GB10 attempt record"
+    },
+    "gb10.chargedSeconds": {
+      "value": 314.189539,
+      "display": "314.2 s",
+      "asOf": "2026-10-31 07:53 UTC",
+      "source": "GB10 attempt record"
+    },
+    "gb10.reservationSeconds": {
+      "value": 180,
+      "display": "180 s",
+      "asOf": "2026-10-31 07:53 UTC",
+      "source": "GB10 attempt record"
+    },
+    "gb10.totalSeconds": {
+      "value": 494.189539,
+      "display": "494.2 s",
+      "asOf": "2026-10-31 07:53 UTC",
+      "source": "GB10 attempt record"
+    },
+    "gb10.totalMinutes": {
+      "value": 8.236492,
+      "display": "8.2 min",
+      "asOf": "2026-10-31 07:53 UTC",
+      "source": "GB10 attempt record"
+    },
+    "gb10.capMinutes": {
+      "value": 60,
+      "display": "60-minute",
+      "asOf": "2026-10-31 07:53 UTC",
+      "source": "page copy (GB10 grant cap)"
+    },
+    "gb10.auditChecks": {
+      "value": 112,
+      "display": "112",
+      "asOf": "2026-10-31 07:58 UTC",
+      "source": "GB10 artifact audit"
+    },
+    "mesh.layouts": {
+      "value": 24,
+      "display": "24",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "mesh study review"
+    },
+    "mesh.receipts": {
+      "value": 72,
+      "display": "72",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "mesh study review"
+    },
+    "mesh.gridFine": {
+      "value": "grid64",
+      "display": "grid64",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "mesh study review"
+    },
+    "mesh.gridA": {
+      "value": "grid32",
+      "display": "grid32",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "mesh study review"
+    },
+    "mesh.gapA": {
+      "value": 0.79,
+      "display": "0.79 °C",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "mesh study review"
+    },
+    "mesh.gridB": {
+      "value": "grid16",
+      "display": "grid16",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "mesh study review"
+    },
+    "mesh.gapB": {
+      "value": 4.28,
+      "display": "4.28 °C",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "mesh study review"
+    },
+    "mesh.tolerance": {
+      "value": 0.01,
+      "display": "0.01 °C",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "mesh study review"
+    },
+    "mesh.inversionsA": {
+      "value": 1,
+      "display": "1",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "mesh study review"
+    },
+    "mesh.inversionsB": {
+      "value": 9,
+      "display": "9",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "mesh study review"
+    },
+    "headroom.verdict": {
+      "value": "INCONCLUSIVE",
+      "display": "INCONCLUSIVE",
+      "asOf": "2026-10-31 07:57 UTC",
+      "source": "headroom review"
+    },
+    "packageView.pr": {
+      "value": 22,
+      "display": "#22",
+      "asOf": "2026-10-31 09:20 UTC",
+      "source": "deliverable ledger (dated correction)"
+    },
+    "packageView.state": {
+      "value": "in review",
+      "display": "in review",
+      "asOf": "2026-10-31 09:20 UTC",
+      "source": "deliverable ledger (dated correction)"
+    },
+    "tickets.total": {
+      "value": 41,
+      "display": "41",
+      "asOf": "2026-10-31 09:20 UTC",
+      "source": "ticket ledger"
+    },
+    "tickets.open": {
+      "value": 33,
+      "display": "33",
+      "asOf": "2026-10-31 09:20 UTC",
+      "source": "ticket ledger"
+    },
+    "tickets.measured": {
+      "value": 8,
+      "display": "8",
+      "asOf": "2026-10-31 09:20 UTC",
+      "source": "ticket ledger"
+    },
+    "tickets.done": {
+      "value": 0,
+      "display": "0",
+      "asOf": "2026-10-31 09:20 UTC",
+      "source": "ticket ledger"
+    },
+    "tickets.complete": {
+      "value": 0,
+      "display": "0",
+      "asOf": "2026-10-31 09:20 UTC",
+      "source": "ticket ledger"
+    },
+    "tickets.optional": {
+      "value": 2,
+      "display": "2",
+      "asOf": "2026-10-31 09:20 UTC",
+      "source": "ticket ledger"
+    },
+    "stage.labs": {
+      "value": "open",
+      "display": "SLAB-013 · open",
+      "asOf": "2026-10-31 09:20 UTC",
+      "source": "ticket ledger"
+    },
+    "stage.gate": {
+      "value": "open",
+      "display": "SLAB-008 · open",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "ticket ledger"
+    },
+    "stage.repro": {
+      "value": "measured",
+      "display": "SLAB-015 · measured",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "ticket ledger"
+    },
+    "stage.log": {
+      "value": "measured",
+      "display": "SLAB-007 · measured",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "ticket ledger"
+    },
+    "stage.signer": {
+      "value": "open",
+      "display": "SLAB-040 · open",
+      "asOf": "2026-10-31 07:50 UTC",
+      "source": "ticket ledger"
+    },
+    "stage.view": {
+      "value": "open",
+      "display": "SLAB-025 · open",
+      "asOf": "2026-10-31 07:59 UTC",
+      "source": "ticket ledger"
+    }
+  },
+  "lists": {
+    "statusLegend": {
+      "done": "The named narrow slice is completed or technically accepted; it does not mark a whole ticket complete.",
+      "measured": "Retained observations exist with the stated scope; success or scientific validity is not implied.",
+      "open": "Required acceptance work remains, or no completion evidence is retained.",
+      "superseded": "A dated earlier claim or scope was replaced by cited later authority/evidence."
+    },
+    "deliverables": [
+      {
+        "id": "D00",
+        "title": "Exact chiplet layout and constraints",
+        "status": "open",
+        "completionVerified": false,
+        "tickets": [
+          "SLAB-005",
+          "SLAB-006",
+          "SLAB-028"
+        ],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "D01",
+        "title": "Power scenarios and package assumptions",
+        "status": "open",
+        "completionVerified": false,
+        "tickets": [
+          "SLAB-005",
+          "SLAB-006",
+          "SLAB-028"
+        ],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "D02",
+        "title": "Simulator inputs, versions and raw outputs",
+        "status": "open",
+        "completionVerified": false,
+        "tickets": [
+          "SLAB-002",
+          "SLAB-006",
+          "SLAB-007",
+          "SLAB-028"
+        ],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "D03",
+        "title": "Independent reproduction results",
+        "status": "open",
+        "completionVerified": false,
+        "tickets": [
+          "SLAB-015",
+          "SLAB-028"
+        ],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "D04",
+        "title": "Complete proposal-review-correction-acceptance history",
+        "status": "open",
+        "completionVerified": false,
+        "tickets": [
+          "SLAB-007",
+          "SLAB-010",
+          "SLAB-028"
+        ],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "D05",
+        "title": "Conventional and agent baseline comparison",
+        "status": "open",
+        "completionVerified": false,
+        "tickets": [
+          "SLAB-020",
+          "SLAB-021",
+          "SLAB-028",
+          "SLAB-032"
+        ],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "D06",
+        "title": "Trained worker checkpoint/adapter with evaluation",
+        "status": "measured",
+        "completionVerified": false,
+        "tickets": [
+          "SLAB-018",
+          "SLAB-019",
+          "SLAB-028",
+          "SLAB-032",
+          "SLAB-033"
+        ],
+        "asOf": "2026-10-31 07:58 UTC"
+      },
+      {
+        "id": "D07",
+        "title": "Replayable visual demonstration",
+        "status": "open",
+        "completionVerified": false,
+        "tickets": [
+          "SLAB-025",
+          "SLAB-026",
+          "SLAB-027",
+          "SLAB-028"
+        ],
+        "asOf": "2026-10-31 09:20 UTC"
+      }
+    ],
+    "milestones": [
+      {
+        "id": "M01",
+        "title": "Second technical plan review recorded",
+        "status": "done",
+        "asOf": "2026-10-31 07:57 UTC"
+      },
+      {
+        "id": "M02",
+        "title": "GB10 fixture train/save/reload/serve sequence passed",
+        "status": "measured",
+        "asOf": "2026-10-31 07:58 UTC"
+      },
+      {
+        "id": "M03",
+        "title": "Source and stored mesh evidence slices accepted",
+        "status": "done",
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "M04",
+        "title": "Fixed-sample numerical discrepancy measured",
+        "status": "measured",
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "M05",
+        "title": "Headroom remains inconclusive",
+        "status": "measured",
+        "asOf": "2026-10-31 07:57 UTC"
+      },
+      {
+        "id": "M06",
+        "title": "Dataset fixture export accepted with cleanup debt",
+        "status": "done",
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "M07",
+        "title": "Runtime, views and scientific gates remain open",
+        "status": "open",
+        "asOf": "2026-10-31 07:57 UTC"
+      },
+      {
+        "id": "M08",
+        "title": "Robotics scope superseded",
+        "status": "superseded",
+        "asOf": "2026-10-31 07:31 UTC"
+      }
+    ],
+    "priorities": [
+      {
+        "id": "P01",
+        "title": "Close the current correctness queue",
+        "status": "open",
+        "asOf": "2026-10-31 07:57 UTC"
+      },
+      {
+        "id": "P02",
+        "title": "Freeze the scientific protocol and enforce allocations",
+        "status": "open",
+        "asOf": "2026-10-31 07:57 UTC"
+      },
+      {
+        "id": "P03",
+        "title": "Complete model admission and the research harness",
+        "status": "open",
+        "asOf": "2026-10-31 07:57 UTC"
+      },
+      {
+        "id": "P04",
+        "title": "Assign complete CLI/MCP capability conformance",
+        "status": "open",
+        "asOf": "2026-10-31 07:57 UTC"
+      },
+      {
+        "id": "P05",
+        "title": "Publish reviewable evidence and prove runtime identity",
+        "status": "open",
+        "asOf": "2026-10-31 07:58 UTC"
+      }
+    ],
+    "tickets": [
+      {
+        "id": "SLAB-001",
+        "n": "001",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:57 UTC"
+      },
+      {
+        "id": "SLAB-002",
+        "n": "002",
+        "status": "measured",
+        "optional": false,
+        "complete": false,
+        "deliverables": [
+          "D02"
+        ],
+        "asOf": "2026-10-31 07:54 UTC"
+      },
+      {
+        "id": "SLAB-003",
+        "n": "003",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-004",
+        "n": "004",
+        "status": "measured",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:58 UTC"
+      },
+      {
+        "id": "SLAB-005",
+        "n": "005",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [
+          "D00",
+          "D01"
+        ],
+        "asOf": "2026-10-31 07:57 UTC"
+      },
+      {
+        "id": "SLAB-006",
+        "n": "006",
+        "status": "measured",
+        "optional": false,
+        "complete": false,
+        "deliverables": [
+          "D00",
+          "D01",
+          "D02"
+        ],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-007",
+        "n": "007",
+        "status": "measured",
+        "optional": false,
+        "complete": false,
+        "deliverables": [
+          "D02",
+          "D04"
+        ],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-008",
+        "n": "008",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-009",
+        "n": "009",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:57 UTC"
+      },
+      {
+        "id": "SLAB-010",
+        "n": "010",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [
+          "D04"
+        ],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-011",
+        "n": "011",
+        "status": "measured",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-012",
+        "n": "012",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-013",
+        "n": "013",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 09:20 UTC"
+      },
+      {
+        "id": "SLAB-014",
+        "n": "014",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 09:20 UTC"
+      },
+      {
+        "id": "SLAB-015",
+        "n": "015",
+        "status": "measured",
+        "optional": false,
+        "complete": false,
+        "deliverables": [
+          "D03"
+        ],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-016",
+        "n": "016",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-017",
+        "n": "017",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-018",
+        "n": "018",
+        "status": "measured",
+        "optional": false,
+        "complete": false,
+        "deliverables": [
+          "D06"
+        ],
+        "asOf": "2026-10-31 07:58 UTC"
+      },
+      {
+        "id": "SLAB-019",
+        "n": "019",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [
+          "D06"
+        ],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-020",
+        "n": "020",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [
+          "D05"
+        ],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-021",
+        "n": "021",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [
+          "D05"
+        ],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-022",
+        "n": "022",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:52 UTC"
+      },
+      {
+        "id": "SLAB-023",
+        "n": "023",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-024",
+        "n": "024",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 09:20 UTC"
+      },
+      {
+        "id": "SLAB-025",
+        "n": "025",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [
+          "D07"
+        ],
+        "asOf": "2026-10-31 07:59 UTC"
+      },
+      {
+        "id": "SLAB-026",
+        "n": "026",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [
+          "D07"
+        ],
+        "asOf": "2026-10-31 09:20 UTC"
+      },
+      {
+        "id": "SLAB-027",
+        "n": "027",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [
+          "D07"
+        ],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-028",
+        "n": "028",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [
+          "D00",
+          "D01",
+          "D02",
+          "D03",
+          "D04",
+          "D05",
+          "D06",
+          "D07"
+        ],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-029",
+        "n": "029",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:57 UTC"
+      },
+      {
+        "id": "SLAB-030",
+        "n": "030",
+        "status": "open",
+        "optional": true,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-031",
+        "n": "031",
+        "status": "open",
+        "optional": true,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-032",
+        "n": "032",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [
+          "D05",
+          "D06"
+        ],
+        "asOf": "2026-10-31 07:58 UTC"
+      },
+      {
+        "id": "SLAB-033",
+        "n": "033",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [
+          "D06"
+        ],
+        "asOf": "2026-10-31 07:58 UTC"
+      },
+      {
+        "id": "SLAB-034",
+        "n": "034",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-035",
+        "n": "035",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-036",
+        "n": "036",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:58 UTC"
+      },
+      {
+        "id": "SLAB-037",
+        "n": "037",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-038",
+        "n": "038",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:58 UTC"
+      },
+      {
+        "id": "SLAB-039",
+        "n": "039",
+        "status": "measured",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:57 UTC"
+      },
+      {
+        "id": "SLAB-040",
+        "n": "040",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:50 UTC"
+      },
+      {
+        "id": "SLAB-041",
+        "n": "041",
+        "status": "open",
+        "optional": false,
+        "complete": false,
+        "deliverables": [],
+        "asOf": "2026-10-31 07:57 UTC"
+      }
+    ]
+  },
+  "notes": [
+    {
+      "slide": "problem",
+      "target": "30–35 s",
+      "text": "Many AI agents now produce engineering findings. Most of those findings get lost in chats and logs. Nobody can check what actually ran. And when an input turns out wrong, nothing tells you what else it broke. SentiLab is a lab built around that problem. Every result is signed. A result is reproduced before it is accepted. And any result can be corrected later, with the damage traced. Our first domain is chiplet layout under thermal limits."
+    },
+    {
+      "slide": "how",
+      "target": "30–35 s",
+      "text": "Here is how it works. Several labs propose candidate layouts. A deterministic gate, with no model in the decision, accepts only results that were reproduced and verified. Every event goes into an append-only log. Each entry is hash-chained and signed. The Lab view shows only the verified prefix of that log. If an event is missing or forged, the view freezes right there. It shows less rather than something false. The small chips are tracker status. The gate ticket is open."
+    },
+    {
+      "slide": "correction",
+      "target": "30–35 s",
+      "text": "This is a correction, end to end. A lab proposes a candidate. It is re-run in a fresh process. The gate accepts it. Then we withdraw a measurement on purpose. That is a seeded-fault drill. Everything that depended only on that measurement goes stale. The accepted candidate stands, because the independent reproduction still supports it. Left is the Lab view. Right is the Package view, which is in review as pull request #22. Both run on a test-key fixture with illustrative values."
+    },
+    {
+      "slide": "measured",
+      "target": "30–35 s",
+      "text": "On the GB10 we ran one fixture preflight: 20 training steps, adapter saved, reloaded in a fresh container, and served. Exact JSON went from 0/20 for the base to 20/20 for the adapter, but on six source cases already seen in training. So this is plumbing, not generalization. It used 314.2 s of charged GB10 time. Our headroom study is INCONCLUSIVE. The mesh study is a fixed sample of 24 layouts, not a universal error bound."
+    },
+    {
+      "slide": "status",
+      "target": "30–35 s",
+      "text": "Where we stand. None of the eight deliverables is fully accepted. The middle column shows what is done as a scoped slice, what is measured, and what is open. Next, we close the correctness queue and freeze the scientific protocol. Then model admission, the research harness, full CLI and MCP coverage, and reviewable evidence. Every number on these slides is generated from our dated progress record, and shows its time. Thank you."
+    },
+    {
+      "slide": "rules",
+      "target": "backup",
+      "text": "Backup: the evidence rules. The core is the only writer. Each event is a signed envelope chained to the previous one. The view projects only the verified prefix. At the first break it stops. LIVE needs verified progress, not just arrivals. Otherwise the label says STALE. Known limit: a server can withhold a suffix. Only a later full replay shows that."
+    },
+    {
+      "slide": "coverage",
+      "target": "backup",
+      "text": "Backup: ticket coverage. 41 tickets map to 8 deliverables. 33 are open and 8 have measured slices. 0 are verified complete. Measured means retained observations with a stated scope. It is not acceptance."
+    }
+  ]
+}
