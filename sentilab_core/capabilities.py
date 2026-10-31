@@ -112,6 +112,26 @@ def research_input(command):
                          ["ai_off", "namespace", field])
 
 
+def memory_input(command):
+    fields = {key: {"type": "string", "minLength": 1} for key in ("tenant", "run", "arm", "family")}
+    fields["seed"] = {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+    properties = {"scope": object_schema(fields, fields)}
+    if command == "recall":
+        properties["query"] = {"type": "string", "default": ""}
+    return object_schema(properties, ["scope"])
+
+
+ROUTE_INPUT = {
+    "type": "object", "properties": {
+        "task": object_schema({"candidate": {"type": "string"},
+                               "score": {"type": "number", "minimum": 0, "maximum": 1}},
+                              ["candidate", "score"]),
+        "calibrate": {"type": "boolean", "default": False}},
+    "oneOf": [{"required": ["task"], "properties": {"calibrate": {"const": False}}},
+              {"required": ["calibrate"], "properties": {"calibrate": {"const": True}},
+               "not": {"required": ["task"]}}], "additionalProperties": False}
+
+
 CAPABILITIES = tuple(
     Capability("live." + command, "live." + command, ("live", command), "sentilab_live_" + command,
                live_input(command), LIVE_OUTPUTS[command], ERROR_CODES,
@@ -128,16 +148,25 @@ CAPABILITIES = tuple(
                                                 "policy", "counts", "sha256"]}, ERROR_CODES,
                "dataset.export",
                "export remains available after STOP; cancellation reaps worker", "PR #20 dataset lane"),
-    pending("memory.recall", "astra-slab006a-mesh", "PR #23 not merged into supplied main c40e6f1"),
-    pending("memory.audit", "astra-slab006a-mesh", "PR #23 not merged; audit is not assumed to implement snapshot or evidence inspection"),
-    pending("memory.route", "astra-slab006a-mesh", "PR #23 not merged; compile/evaluate mapping awaits the actual owner contract"),
-    pending("memory.write", "astra-slab043-conformance over astra-slab006a-mesh", "Authorized write surface awaits the owner module and authorization contract"),
-    pending("memory.invalidate", "astra-slab043-conformance over astra-slab006a-mesh", "Authorized invalidation surface awaits the owner module and authorization contract",
+    *(Capability("memory." + command, "memory." + command, ("memory", command),
+                 "sentilab_memory_" + command, memory_input(command),
+                 {"type": "object", "required": ["scope", "items" if command == "recall" else "records"]},
+                 ERROR_CODES, "memory." + command,
+                 "Read remains available after STOP; cancellation reaps worker; host tenant and held-out policy apply",
+                 "astra-slab006a-mesh") for command in ("recall", "audit")),
+    Capability("memory.route", "route", ("route",), "sentilab_route", ROUTE_INPUT,
+               {"oneOf": [{"type": "object", "required": ["choice", "abstained", "advisory"]},
+                          {"type": "object", "required": ["count", "predictions", "advisory"]}]},
+               ERROR_CODES, "memory.route",
+               "Advisory fixture operation remains available after STOP; cancellation reaps worker",
+               "astra-slab006a-mesh", mapping_note="PR #23 route contract: sentilab route / sentilab_route; task suggests or abstains, calibrate reports held-out fixtures; no intent.compile or route.evaluate coverage claimed"),
+    pending("memory.write", "astra-slab043-conformance over astra-slab006a-mesh", "Owner module is merged; authorized write transport and authorization contract remain pending"),
+    pending("memory.invalidate", "astra-slab043-conformance over astra-slab006a-mesh", "Owner module is merged; authorized invalidation transport and authorization contract remain pending",
             original_contract="evidence.invalidate",
             mapping_note="Reserved memory spelling of SLAB-010 evidence.invalidate; no executable alias or coverage claimed"),
-    pending("memory.snapshot", "astra-slab043-conformance over astra-slab006a-mesh", "Original SLAB-010 snapshot contract; PR #23 owner module not merged"),
-    pending("evidence.inspect", "astra-slab043-conformance over astra-slab006a-mesh", "Original SLAB-010 evidence-inspection contract; PR #23 owner module not merged"),
-    pending("evidence.invalidate", "astra-slab043-conformance over astra-slab006a-mesh", "Original SLAB-010 evidence-invalidation contract; PR #23 owner module not merged"),
+    pending("memory.snapshot", "astra-slab043-conformance over astra-slab006a-mesh", "Original SLAB-010 snapshot transport contract remains absent after PR #23"),
+    pending("evidence.inspect", "astra-slab043-conformance over astra-slab006a-mesh", "Original SLAB-010 evidence-inspection transport contract remains absent after PR #23"),
+    pending("evidence.invalidate", "astra-slab043-conformance over astra-slab006a-mesh", "Original SLAB-010 invalidation transport remains absent; memory owner code is available"),
     pending("intent.compile", "astra-slab043-conformance over SLAB-011 routing lane", "Original SLAB-011 contract; PR #23 route mapping must be checked against current main"),
     pending("route.evaluate", "astra-slab043-conformance over SLAB-011 routing lane", "Original SLAB-011 contract; PR #23 route mapping must be checked against current main"),
     Capability("resultcheck", "resultcheck", ("resultcheck",), "sentilab_resultcheck",
@@ -221,7 +250,7 @@ def coverage_markdown():
              "Real-process tests cover exact response bytes, output schemas, invalid input without echoed values,",
              "host-granted scopes and the 64 KiB wire cap for every done row. The run fixture is already STOPped",
              "before it starts and records zero solves; it does not prove active-run STOP parity.",
-             "Eight recorded operations also exercise CLI SIGINT / MCP cancellation against real OS workers,",
+             "Eleven recorded operations also exercise CLI SIGINT / MCP cancellation against real OS workers,",
              "asserting workers are reaped before acknowledgement and the MCP connection remains usable.",
              "This is request cancellation, not mid-call creation of a STOP file. That ticket check remains open.",
              "The CLI cap counts UTF-8 argv bytes plus one separator per argument;",

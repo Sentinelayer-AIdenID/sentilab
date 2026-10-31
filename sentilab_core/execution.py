@@ -35,6 +35,9 @@ def admit(tool, arguments):
 async def recorded_call(context, capability, arguments, *, timeout=30):
     payload = json.dumps({"root": str(context.root), "capability": capability,
                           "public_keys": {key: value.hex() for key, value in context.public_keys.items()},
+                          "memory_tenant": context.memory_tenant,
+                          "held_out_families": context.held_out_families,
+                          "routing_fixture": str(context.routing_fixture) if context.routing_fixture else None,
                           "arguments": arguments}, allow_nan=False).encode()
     environment = {key: os.environ[key] for key in ("PATH", "LANG", "LC_ALL", "TMPDIR") if key in os.environ}
     environment.update(OPENBLAS_NUM_THREADS="1", OMP_NUM_THREADS="1")
@@ -68,7 +71,9 @@ def main():
 
     request = json.load(sys.stdin)
     context = Context(Path(request["root"]), {key: bytes.fromhex(value)
-                      for key, value in request["public_keys"].items()})
+                      for key, value in request["public_keys"].items()},
+                      memory_tenant=request["memory_tenant"], held_out_families=request["held_out_families"],
+                      routing_fixture=Path(request["routing_fixture"]) if request["routing_fixture"] else None)
     namespace, command = request["capability"].split(".")
     try:
         if namespace == "live":
@@ -84,6 +89,10 @@ def main():
             if command not in {"build", "render", "replay", "export"}:
                 raise ValueError("unsupported chiplet operation")
             result = getattr(chiplet, command)(context, **request["arguments"])
+        elif namespace == "memory" and command in {"recall", "audit", "route"}:
+            from sentilab_mcp import TOOLS
+            tool = "sentilab_route" if command == "route" else "sentilab_memory_" + command
+            result = TOOLS[tool](context, **request["arguments"])
         else:
             raise ValueError("unsupported recorded namespace")
         print(json.dumps({"result": result}, allow_nan=False))

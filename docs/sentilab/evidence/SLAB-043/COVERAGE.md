@@ -8,7 +8,7 @@ execution matrix. They are included in discovery/drift checks, with explicit own
 Real-process tests cover exact response bytes, output schemas, invalid input without echoed values,
 host-granted scopes and the 64 KiB wire cap for every done row. The run fixture is already STOPped
 before it starts and records zero solves; it does not prove active-run STOP parity.
-Eight recorded operations also exercise CLI SIGINT / MCP cancellation against real OS workers,
+Eleven recorded operations also exercise CLI SIGINT / MCP cancellation against real OS workers,
 asserting workers are reaped before acknowledgement and the MCP connection remains usable.
 This is request cancellation, not mid-call creation of a STOP file. That ticket check remains open.
 The CLI cap counts UTF-8 argv bytes plus one separator per argument;
@@ -38,14 +38,14 @@ replay verifies history; export calls the existing immutable dataset exporter. N
 | live.stop | live.stop | capability | `sentilab live stop` | `sentilab_live_stop` | done | PR #15 live lane | — |
 | live.verify | live.verify | capability | `sentilab live verify` | `sentilab_live_verify` | done | PR #15 live lane | — |
 | dataset.export | dataset.export | capability | `sentilab dataset export` | `sentilab_dataset_export` | done | PR #20 dataset lane | — |
-| memory.recall | memory.recall | capability | `sentilab memory recall` | `sentilab_memory_recall` | pending | astra-slab006a-mesh | PR #23 not merged into supplied main c40e6f1 |
-| memory.audit | memory.audit | capability | `sentilab memory audit` | `sentilab_memory_audit` | pending | astra-slab006a-mesh | PR #23 not merged; audit is not assumed to implement snapshot or evidence inspection |
-| memory.route | memory.route | capability | `sentilab memory route` | `sentilab_memory_route` | pending | astra-slab006a-mesh | PR #23 not merged; compile/evaluate mapping awaits the actual owner contract |
-| memory.write | memory.write | capability | `sentilab memory write` | `sentilab_memory_write` | pending | astra-slab043-conformance over astra-slab006a-mesh | Authorized write surface awaits the owner module and authorization contract |
-| memory.invalidate | evidence.invalidate | capability | `sentilab memory invalidate` | `sentilab_memory_invalidate` | pending | astra-slab043-conformance over astra-slab006a-mesh | Authorized invalidation surface awaits the owner module and authorization contract; Reserved memory spelling of SLAB-010 evidence.invalidate; no executable alias or coverage claimed |
-| memory.snapshot | memory.snapshot | capability | `sentilab memory snapshot` | `sentilab_memory_snapshot` | pending | astra-slab043-conformance over astra-slab006a-mesh | Original SLAB-010 snapshot contract; PR #23 owner module not merged |
-| evidence.inspect | evidence.inspect | capability | `sentilab evidence inspect` | `sentilab_evidence_inspect` | pending | astra-slab043-conformance over astra-slab006a-mesh | Original SLAB-010 evidence-inspection contract; PR #23 owner module not merged |
-| evidence.invalidate | evidence.invalidate | capability | `sentilab evidence invalidate` | `sentilab_evidence_invalidate` | pending | astra-slab043-conformance over astra-slab006a-mesh | Original SLAB-010 evidence-invalidation contract; PR #23 owner module not merged |
+| memory.recall | memory.recall | capability | `sentilab memory recall` | `sentilab_memory_recall` | done | astra-slab006a-mesh | — |
+| memory.audit | memory.audit | capability | `sentilab memory audit` | `sentilab_memory_audit` | done | astra-slab006a-mesh | — |
+| memory.route | route | capability | `sentilab route` | `sentilab_route` | done | astra-slab006a-mesh | PR #23 route contract: sentilab route / sentilab_route; task suggests or abstains, calibrate reports held-out fixtures; no intent.compile or route.evaluate coverage claimed |
+| memory.write | memory.write | capability | `sentilab memory write` | `sentilab_memory_write` | pending | astra-slab043-conformance over astra-slab006a-mesh | Owner module is merged; authorized write transport and authorization contract remain pending |
+| memory.invalidate | evidence.invalidate | capability | `sentilab memory invalidate` | `sentilab_memory_invalidate` | pending | astra-slab043-conformance over astra-slab006a-mesh | Owner module is merged; authorized invalidation transport and authorization contract remain pending; Reserved memory spelling of SLAB-010 evidence.invalidate; no executable alias or coverage claimed |
+| memory.snapshot | memory.snapshot | capability | `sentilab memory snapshot` | `sentilab_memory_snapshot` | pending | astra-slab043-conformance over astra-slab006a-mesh | Original SLAB-010 snapshot transport contract remains absent after PR #23 |
+| evidence.inspect | evidence.inspect | capability | `sentilab evidence inspect` | `sentilab_evidence_inspect` | pending | astra-slab043-conformance over astra-slab006a-mesh | Original SLAB-010 evidence-inspection transport contract remains absent after PR #23 |
+| evidence.invalidate | evidence.invalidate | capability | `sentilab evidence invalidate` | `sentilab_evidence_invalidate` | pending | astra-slab043-conformance over astra-slab006a-mesh | Original SLAB-010 invalidation transport remains absent; memory owner code is available |
 | intent.compile | intent.compile | capability | `sentilab intent compile` | `sentilab_intent_compile` | pending | astra-slab043-conformance over SLAB-011 routing lane | Original SLAB-011 contract; PR #23 route mapping must be checked against current main |
 | route.evaluate | route.evaluate | capability | `sentilab route evaluate` | `sentilab_route_evaluate` | pending | astra-slab043-conformance over SLAB-011 routing lane | Original SLAB-011 contract; PR #23 route mapping must be checked against current main |
 | resultcheck | resultcheck | capability | `sentilab resultcheck` | `sentilab_resultcheck` | pending_conformance | astra-slab043-conformance over PR #21 | Both surfaces exist on main; lane tests retained. Unified scope/STOP/five-check integration pending |

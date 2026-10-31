@@ -94,6 +94,10 @@ class StdioTests(unittest.IsolatedAsyncioTestCase):
             "sentilab_research_request": {"ai_off", "namespace", "question"},
             "sentilab_research_status": {"ai_off", "namespace", "request_id"},
             "sentilab_research_export": {"ai_off", "namespace", "request_id"},
+            "sentilab_chiplet_build": set(),
+            "sentilab_chiplet_render": {"run_id"},
+            "sentilab_chiplet_replay": {"run_id"},
+            "sentilab_chiplet_export": {"run_id"},
         }
         self.assertCountEqual([tool["name"] for tool in tools], expected)
         for tool in tools:

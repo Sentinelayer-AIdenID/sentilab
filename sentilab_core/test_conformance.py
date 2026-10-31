@@ -15,7 +15,7 @@ import tempfile
 import time
 import unittest
 
-from sentilab_cli.__main__ import (build_parser, chiplet_parser, dataset_parser,
+from sentilab_cli.__main__ import (advisory_parser, build_parser, chiplet_parser, dataset_parser,
                                  research_parser, resultcheck_parser)
 from sentilab_core.capabilities import CAPABILITIES, assert_surfaces, coverage_markdown, implemented
 
@@ -59,8 +59,39 @@ class ExecutionConformance(unittest.TestCase):
                                 SENTILAB_VIEW_PUBLIC_KEYS=(fixture / "public-keys.json").read_text(),
                                 OPENBLAS_NUM_THREADS="1", OMP_NUM_THREADS="1")
         self.fixture_context = False
+        self.prepare_memory()
+
+    def prepare_memory(self):
+        from sentilab_core.ledger import Ledger
+        from sentilab_core.memory import MemoryStore
+        from sentilab_core.test_ledger import RuntimeSigner
+        from sentilab_core.test_memory import FIXTURE
+        fixture = json.loads(FIXTURE.read_text())
+        self.memory_scope = fixture["scope"]
+        self.memory_expected = fixture["expected_before"]
+        signer = RuntimeSigner()
+        keys = {signer.key_id: signer.public_key}
+        run = {"run_id": self.memory_scope["run"], "ticket_id": "23a5285a",
+               **{key: self.memory_scope[key] for key in ("arm", "family", "seed")}}
+        ledger = Ledger(self.root, run, public_keys=keys, signer=signer)
+        for index, event in enumerate(fixture["events"]):
+            ledger.append(event["type"], event["body"], event_id=f"fixture-{index}")
+        store = MemoryStore(self.root / "memory", ledger_root=self.root, public_keys=keys,
+                            tenant=self.memory_scope["tenant"], held_out_families=fixture["held_out_families"])
+        for memory in fixture["memories"]:
+            store.write(self.memory_scope, **memory)
+        public_keys = json.loads(self.environment["SENTILAB_VIEW_PUBLIC_KEYS"])
+        public_keys[signer.key_id] = signer.public_key.hex()
+        self.environment.update(SENTILAB_VIEW_PUBLIC_KEYS=json.dumps(public_keys),
+                                SENTILAB_MEMORY_TENANT=self.memory_scope["tenant"],
+                                SENTILAB_MEMORY_HELD_OUT=json.dumps(fixture["held_out_families"]),
+                                SENTILAB_ROUTING_FIXTURE=str(FIXTURE.with_name("routing-fixtures.json")))
 
     def arguments(self, row):
+        if row.name in ("memory.recall", "memory.audit"):
+            return {"scope": self.memory_scope}
+        if row.name == "memory.route":
+            return {"task": {"candidate": "thermal-lab", "score": .9}}
         if row.name == "live.run":
             return {"ai_off": True, "run_id": "stopped-fixture"}
         if row.name == "live.stop":
@@ -178,6 +209,13 @@ class ExecutionConformance(unittest.TestCase):
                 if row.name == "live.run":
                     self.assertEqual(value["status"], "stopped")
                     self.assertEqual(value["spend"]["solves"], 0)
+                if row.name in ("memory.recall", "memory.audit"):
+                    records = value["items" if row.name == "memory.recall" else "records"]
+                    self.assertEqual([record["item"]["id"] for record in records], self.memory_expected)
+                if row.name == "memory.route":
+                    self.assertEqual(value["choice"], "thermal-lab")
+                    self.assertFalse(value["abstained"])
+                    self.assertTrue(value["advisory"])
                 if row.name == "chiplet.render":
                     self.assertTrue(value["view"]["cards"])
                 if row.name == "chiplet.build":
@@ -202,6 +240,9 @@ class ExecutionConformance(unittest.TestCase):
             "chiplet.render": {"run_id": "fixture", "cursor": -1},
             "chiplet.replay": {"run_id": ""},
             "chiplet.export": {"run_id": ""},
+            "memory.recall": {"scope": {**self.memory_scope, "seed": -1}},
+            "memory.audit": {"scope": {**self.memory_scope, "tenant": ""}},
+            "memory.route": {"task": {"candidate": "rejected-value-marker", "score": 2}},
         }
         self.assertEqual(set(cases), {row.name for row in implemented()})
         for row in implemented():
@@ -309,6 +350,8 @@ class ExecutionConformance(unittest.TestCase):
 class BoundaryConformance(unittest.TestCase):
     def cli(self, row, extra):
         flags = (["--ai-off"] if row.name.startswith("live.") else
+                 ["--scope", "{}"] if row.name in ("memory.recall", "memory.audit") else
+                 ["--calibrate"] if row.name == "memory.route" else
                  ["--fixture", "plate"] if row.name == "chiplet.build" else ["--run-id", "fixture"])
         return subprocess.run([sys.executable, "-m", "sentilab_cli", *row.cli_command,
                                *flags, *extra], capture_output=True, cwd=ROOT, timeout=10)
@@ -403,6 +446,34 @@ class BoundaryConformance(unittest.TestCase):
 
 
 class RegistryConformance(unittest.TestCase):
+    def test_rebased_surfaces_keep_all_tools_and_merged_memory_contracts(self):
+        rows = {row.name: row for row in CAPABILITIES}
+        advertised = {tool["name"]: tool for tool in self.advertised_tools()}
+        required_tools = {
+            "sentilab_live_run", "sentilab_live_status", "sentilab_live_stop", "sentilab_live_verify",
+            "sentilab_dataset_export", "sentilab_resultcheck", "sentilab_research_request",
+            "sentilab_research_status", "sentilab_research_export", "sentilab_memory_recall",
+            "sentilab_memory_audit", "sentilab_route", "sentilab_chiplet_build",
+            "sentilab_chiplet_render", "sentilab_chiplet_replay", "sentilab_chiplet_export",
+        }
+        self.assertTrue(required_tools <= advertised.keys(), required_tools - advertised.keys())
+        expected = {
+            "memory.recall": (("memory", "recall"), "sentilab_memory_recall"),
+            "memory.audit": (("memory", "audit"), "sentilab_memory_audit"),
+            "memory.route": (("route",), "sentilab_route"),
+        }
+        for name, (cli, tool) in expected.items():
+            with self.subTest(capability=name):
+                row = rows[name]
+                self.assertEqual(row.status, "done")
+                self.assertEqual(row.owner, "astra-slab006a-mesh")
+                self.assertEqual(row.cli_command, cli)
+                self.assertEqual(row.mcp_tool, tool)
+                self.assertEqual(advertised[tool]["inputSchema"], row.input_schema)
+        self.assertEqual(rows["memory.route"].original_contract, "route")
+        self.assertTrue(rows["memory.route"].mapping_note)
+        self.assertNotIn("sentilab_memory_route", advertised)
+
     def test_audited_public_contracts_remain_visible(self):
         # These are public ticket contracts, not a reflection of private methods
         # or a list derived from the inventory being checked.
@@ -465,6 +536,21 @@ class RegistryConformance(unittest.TestCase):
         actions = {action.dest: action for action in parser._actions}
         observed = set()
         for namespace in actions["namespace"].choices:
+            if namespace in ("memory", "route"):
+                advisory = advisory_parser()
+                branches = next(action for action in advisory._actions if action.dest == "namespace")
+                if namespace == "route":
+                    advisory.parse_args(["route", "--calibrate"])
+                    observed.add((namespace,))
+                else:
+                    commands = next(action for action in branches.choices[namespace]._actions
+                                    if action.dest == "command")
+                    observed.update((namespace, choice) for choice in commands.choices)
+                result = subprocess.run([sys.executable, "-m", "sentilab_cli", namespace, "--help"],
+                                        capture_output=True, cwd=ROOT, timeout=10, check=True)
+                self.assertEqual(result.stderr, b"")
+                self.assertIn(b"--calibrate" if namespace == "route" else b"{recall,audit}", result.stdout)
+                continue
             if namespace == "resultcheck":
                 resultcheck_parser().parse_args(["fixture.json"])
                 observed.add((namespace,))

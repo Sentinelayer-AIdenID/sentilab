@@ -21,6 +21,8 @@ class _ResultCheckParser(argparse.ArgumentParser):
 
 class SafeParser(argparse.ArgumentParser):
     def error(self, message):
+        if "not allowed with argument" in message:
+            _write_utf8("arguments not allowed together\n", sys.stderr)
         raise ValueError("invalid CLI arguments")
 
 
@@ -36,13 +38,12 @@ async def dispatch(command, context, **arguments):
     return await result if hasattr(result, "__await__") else result
 
 
-def advisory_main():
-    from sentilab_core import operations
-    parser = argparse.ArgumentParser(prog="sentilab")
+def advisory_parser():
+    parser = SafeParser(prog="sentilab")
     namespaces = parser.add_subparsers(dest="namespace", required=True)
     memory = namespaces.add_parser("memory", help="scoped ledger-backed memory")
     commands = memory.add_subparsers(dest="command", required=True)
-    for command in ("recall", "audit"):
+    for command in cli_commands("memory"):
         sub = commands.add_parser(command)
         sub.add_argument("--scope", type=json.loads, required=True, help="exact JSON scope object")
         if command == "recall":
@@ -51,20 +52,26 @@ def advisory_main():
     choice = route.add_mutually_exclusive_group(required=True)
     choice.add_argument("--task", type=json.loads, default=argparse.SUPPRESS, help="JSON candidate and score")
     choice.add_argument("--calibrate", action="store_true", help="report frozen held-out fixture results")
-    args = parser.parse_args()
-    context = operations.environment_context()
+    return parser
+
+
+def advisory_main(*, context=None):
+    from sentilab_core import operations
+    from sentilab_core.execution import admit, recorded_call
+    args = advisory_parser().parse_args()
     if args.namespace == "memory":
-        command = "memory_" + args.command
+        capability = "memory." + args.command
+        tool = "sentilab_memory_" + args.command
         parameters = {"scope": args.scope}
         if args.command == "recall":
             parameters["query"] = args.query
     else:
-        command = "route"
+        capability = "memory.route"
+        tool = "sentilab_route"
         parameters = {"calibrate": True} if args.calibrate else {"task": args.task}
-    try:
-        result = asyncio.run(dispatch(command, context, **parameters))
-    except (ValueError, TypeError, KeyError, OSError) as exc:
-        parser.error(str(exc))
+    admit(tool, parameters)
+    context = context if context is not None else operations.environment_context()
+    result = asyncio.run(recorded_call(context, capability, parameters))
     print(json.dumps(result, allow_nan=False))
 
 
@@ -191,7 +198,7 @@ def build_parser(conductor=False):
 def _main(conductor=False, *, context=None):
     check_cli_size(sys.argv[1:])
     if not conductor and sys.argv[1:2] in (["memory"], ["route"]):
-        return advisory_main()
+        return advisory_main(context=context)
     if not conductor and sys.argv[1:2] == ["resultcheck"]:
         from sentilab_core.resultcheck import canonical, check_file, exit_code
         args = resultcheck_parser().parse_args(sys.argv[2:])

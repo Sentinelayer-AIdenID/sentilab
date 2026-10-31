@@ -3,7 +3,74 @@
 This implementation is **incomplete**. No all-gates-green or PR-publication claim
 is made. The work is by a surrogate executor under recorded model substitution.
 
-## Current-main integration, 2026-10-31
+## Round-2 integration on main 780427a, 2026-10-31
+
+Rebased the two partial commits onto supplied main
+`780427afcf372591cd99fbd0998b188a9f807f1b` (#23 memory and #39 view included).
+The supplied bundle again advertises `refs/remotes/origin/main`, not `main`.
+Both dispatcher conflicts were resolved; all 12 main tools and all four chiplet
+tools are present exactly once. No existing test assertion was removed. The
+stdio schema inventory now includes the four chiplet entries alongside all
+12 main entries. The memory owner handlers and direct dispatch remain available.
+
+Memory recall, audit and route are now `done` and run through the shared
+real-process execution matrix. `memory.route` explicitly maps to the existing
+`route` contract, CLI `sentilab route`, and MCP `sentilab_route`. Its task mode
+suggests or abstains; calibration reports held-out fixture results. It does not
+silently claim the original intent compiler or route-evaluation contract.
+The memory workers call the merged owner handlers with public pins and the
+host-configured tenant, held-out policy and routing fixture. They receive no
+signer. Shared admission precedes work; cancellation kills and reaps the worker.
+The CLI retains a fixed, input-free diagnostic for mutually exclusive arguments.
+
+Current inventory: 16 exposed surfaces, comprising 12 done rows in the execution
+matrix and four pending-conformance rows; 25 unavailable pending rows remain
+visible and owned. Memory write/invalidate owner code is now present, while its
+authorized public transports remain pending. No memory lane is reimplemented.
+
+Fresh checks on this round, all listed commands exit 0. Python commands use
+`OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1`:
+
+| Command | Result |
+|---|---|
+| `.venv/bin/python -m unittest -q sentilab_core.test_conformance sentilab_core.test_memory_transports` | 21 tests pass |
+| `.venv/bin/python -m unittest -q sentilab_core.test_conformance.RegistryConformance` | 6 tests pass after final inventory assertions |
+| `.venv/bin/python -m unittest -q sentilab_core.test_mcp_stdio sentilab_core.test_dataset_mcp sentilab_core.test_cleanup sentilab_core.test_research_transports sentilab_core.test_resultcheck sentilab_core.test_resultcheck_boundary sentilab_core.test_resultcheck_io sentilab_core.test_resultcheck_platform sentilab_core.test_memory sentilab_core.test_routing sentilab_core.memory_conformance` | 84 tests pass |
+| `(cd sundai_controller && ../.venv/bin/python -m unittest -q test_controller.py test_experiment.py)` | 55 tests pass |
+| `.venv/bin/python -m unittest -q sentilab_core.test_dataset sentilab_core.test_ledger sentilab_core.test_history sentilab_core.test_environment sentilab_core.test_signing sentilab_core.test_budget sentilab_core.test_gate sentilab_core.test_labs` | 73 tests pass |
+| `PATH="$PWD/.venv/bin:$PATH" node --test web/test/*.test.mjs` | 216 tests pass |
+| `(cd contracts && sha256sum -c HASHES.txt)` | All manifest entries pass |
+| `node run-vectors.mjs` in `contracts/contract-0.2` and `contracts/contract-0.3` | 74 and 83 checks pass |
+| `node run-view-vectors.mjs` in `contracts/view-envelope` and `contracts/view-envelope-v0.5` | 113 and 193 checks pass |
+| `node run-paging-vectors.mjs` in `contracts/view-envelope-v0.6` and `contracts/view-envelope-v0.6.1` | 174 and 222 checks pass |
+| `node web/test/make-sentilab-demo.mjs --check` | 44 envelopes current |
+| `make -C sundai_hotspot -j4 SUPERLU=1` | Build passes; binary not executed |
+| `.venv/bin/python -m compileall -q sentilab_core sentilab_cli sentilab_mcp` | Pass |
+| `.venv/bin/python -m sentilab_core.capabilities --check docs/sentilab/evidence/SLAB-043/COVERAGE.md` and `git diff --check` | Pass |
+
+The new registry regression fails against pre-fix rebased commit
+`17f39efbbeaeaef654125a1abc5d8d2a2f1c5c1e` in a disposable worktree:
+MCP `tools/list` returned `-32603` instead of the inventory (one test, one failure).
+With the fix it passes. Three independent mutations of shipped modules are also
+caught: audit downgraded to pending-conformance, removal of a main memory tool,
+and removal of a chiplet tool. Each returns exit 1 with the intended assertion.
+The existing memory transport assertions, including withdrawal and calibration
+refusals, remain intact.
+
+The initial 84-test run found only the stale exact stdio inventory (four missing
+chiplet expectations). Adding those expectations preserves every existing schema
+assertion; the complete 84-test rerun above passes.
+
+**Full container smoke is not run:** `scripts/container_smoke.sh` executes
+HotSpot solves. The ticket's zero-solves constraint remains in force; clarification
+was requested. The thermal suite and solver-running live conformance gate are
+also unrun. These are not green gates or a completed ticket. Remaining feature
+work is GB10 evidence wrappers, active STOP-file parity, lab transports, the four
+merged lanes pending unified conformance, and the additional owned pending
+contracts. This is a committed partial carry for Warden, with bundle
+`/workspace/slab043-v2.bundle`, not a published PR or verified operator export.
+
+## Historical current-main integration on c40e6f1, 2026-10-31
 
 Rebased onto `c40e6f12b0d5d94d442f8b4c6fb5edb004ce17ed`, supplied by Warden
 in `/workspace/main-now-c40e6f1.patch`. The bundle advertises

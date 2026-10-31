@@ -84,7 +84,11 @@ async def handle(request, context):
         if context is None:
             from sentilab_core.operations import environment_context
             context = environment_context()
-        result = TOOLS[name](context, **arguments)
+        if name in ("sentilab_memory_recall", "sentilab_memory_audit", "sentilab_route"):
+            from sentilab_core.execution import recorded_call
+            result = recorded_call(context, for_tool(name).name, arguments)
+        else:
+            result = TOOLS[name](context, **arguments)
         if hasattr(result, "__await__"):
             result = await result
         return {"content": [{"type": "text", "text": json.dumps(result, allow_nan=False)}]}
