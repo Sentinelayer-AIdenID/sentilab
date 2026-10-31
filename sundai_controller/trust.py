@@ -31,7 +31,7 @@ _PIN_PATH = Path(__file__).resolve().parents[1] / "web/public/trust-pins.json"
 PINNED_SERVICE_KEYS = MappingProxyType({entry["key_id"]: entry["public_key_hex"] for entry in
     (json.loads(_PIN_PATH.read_text()) if _PIN_PATH.is_file() else [])})
 CERTIFICATE_VERSION = "sentilab.lane-certificate.v1"
-CERTIFICATE_LIFETIME_SECONDS = 24 * 60 * 60
+CERTIFICATE_LIFETIME_SECONDS = 30 * 24 * 60 * 60
 _CERTIFICATE_FIELDS = {"version", "key_id", "run_id", "lane_id", "lane_public_key", "expires_at", "signature"}
 
 

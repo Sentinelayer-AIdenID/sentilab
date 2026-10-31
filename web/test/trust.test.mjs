@@ -56,3 +56,18 @@ test("certificate expiry uses verifier time and fails at the boundary", async ()
   assert.equal((await verifyChain(doc.events, doc.record_certificate, data.pins, { now: expiry - 1 })).ok, true);
   assert.equal((await verifyChain(doc.events, doc.record_certificate, data.pins, { now: expiry })).ok, false);
 });
+
+test("25-hour replay remains authentic under the pinned service root", async () => {
+  const report = await inspect(data.replays["25-hours"]);
+  assert.equal(report.recordsValid, true);
+  assert.equal(report.authentic, true);
+  assert.equal(report.lanes[0].origin, "authentic");
+});
+
+test("31-day replay retains integrity but is refused as expired", async () => {
+  const report = await inspect(data.replays["31-days"]);
+  assert.equal(report.recordsValid, true);
+  assert.equal(report.authentic, false);
+  assert.equal(report.lanes[0].origin, "invalid");
+  assert.equal(report.lanes[0].originReason, "service certificate expired");
+});
