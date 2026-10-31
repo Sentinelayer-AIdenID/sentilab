@@ -108,7 +108,15 @@ export function canonical(v) {
 
 const hex = (buf) => Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
 const fromHex = (h) => Uint8Array.from(h.match(/../g).map((x) => parseInt(x, 16)));
-const fromB64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+function fromB64(s) {
+  // Match Python's strict decoding for signatures: alphabet and required padding,
+  // with no whitespace (atob itself silently accepts whitespace/missing padding).
+  if (typeof s !== "string" || /[^A-Za-z0-9+/=]/.test(s)
+    || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(s)) {
+    throw new TypeError("signature is not base64");
+  }
+  return Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+}
 const num = (v) => (v instanceof RawNumber ? Number(v.text) : v);
 const isInt = (v) => v instanceof RawNumber && /^-?(?:0|[1-9]\d*)$/.test(v.text);
 
