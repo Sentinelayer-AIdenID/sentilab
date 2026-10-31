@@ -103,4 +103,11 @@ def environment_context(*, ephemeral=False):
         from .signing import ephemeral_signer
         signer = ephemeral_signer()
         public_keys = {signer.key_id: signer.public_key}
-    return Context(root, public_keys, signer)
+    options = {}
+    research_scope = os.environ.get("SENTILAB_RESEARCH_NAMESPACE")
+    if research_scope is not None:
+        try:
+            options["research_namespace"] = json.loads(research_scope)
+        except (ValueError, RecursionError):
+            options["research_namespace"] = {}  # malformed host scope fails closed
+    return Context(root, public_keys, signer, options)

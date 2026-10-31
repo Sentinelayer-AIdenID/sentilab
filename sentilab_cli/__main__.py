@@ -9,6 +9,9 @@ from sentilab_core.budget import Limits
 
 
 async def dispatch(command, context, **arguments):
+    if command.startswith("research_"):
+        from sentilab_core.research import execute
+        return execute(command.removeprefix("research_"), context, **arguments)
     operation = getattr(operations, command)
     result = operation(context, **arguments)
     return await result if hasattr(result, "__await__") else result
@@ -29,12 +32,46 @@ def dataset_main():
     print(json.dumps(result, allow_nan=False))
 
 
+def research_main():
+    from sentilab_core import research
+
+    class Parser(argparse.ArgumentParser):
+        def error(self, message):
+            # argparse's default diagnostic includes caller-supplied text.
+            print(research.dumps({"ok": False, "error": {"code": "invalid_input"}}))
+            raise SystemExit(2)
+
+    parser = Parser(prog="sentilab research")
+    parser.add_argument("command", choices=["request", "status", "export"])
+    parser.add_argument("--ai-off", action="store_true")
+    parser.add_argument("--namespace", required=True, help="JSON run_id/arm/family/seed/lab scope")
+    parser.add_argument("--question")
+    parser.add_argument("--request-id")
+    args = parser.parse_args(sys.argv[2:])
+    try:
+        if len(args.namespace) > research.MAX_BYTES:
+            raise ValueError()
+        parameters = {"ai_off": args.ai_off, "namespace": json.loads(args.namespace)}
+        if args.question is not None:
+            parameters["question"] = args.question
+        if args.request_id is not None:
+            parameters["request_id"] = args.request_id
+        context = operations.environment_context()
+        result = asyncio.run(dispatch("research_" + args.command, context, **parameters))
+    except (ValueError, TypeError, OSError, RecursionError):
+        result = {"ok": False, "error": {"code": "invalid_input"}}
+    print(research.dumps(result))
+    return 0 if result["ok"] else 2
+
+
 def main(conductor=False):
+    if not conductor and sys.argv[1:2] == ["research"]:
+        return research_main()
     if not conductor and sys.argv[1:2] == ["dataset"]:
         return dataset_main()
     parser = argparse.ArgumentParser(prog="sentilab" if not conductor else "sentilab_core.conductor")
     if not conductor:
-        parser.add_argument("namespace", choices=["live", "dataset"], help="use dataset --help for export options")
+        parser.add_argument("namespace", choices=["live", "dataset", "research"], help="use dataset --help for export options")
         parser.add_argument("command", choices=["run", "status", "stop", "verify"])
     parser.add_argument("--ai-off", action="store_true", default=conductor)
     parser.add_argument("--run-id")
@@ -73,4 +110,4 @@ def main(conductor=False):
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
