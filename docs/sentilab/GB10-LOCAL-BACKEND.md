@@ -70,7 +70,8 @@ cases establish adapter plumbing, not held-out learning or chiplet results.
 - [x] Implement fixed read-only probes and checkpoint verification.
 - [x] Implement a non-launching serve boundary.
 - [x] Run guarded fake SSH, parser, argument, path and replacement tests.
-- [ ] Root reviews the local diff and, separately, may run a live read-only probe.
+- [x] Root reviews the local diff and separately runs a live read-only probe.
+- [ ] An authorized nonauthor reviews the proposed change before merge.
 
 Run the offline tests from the repository root:
 
@@ -80,8 +81,8 @@ python -m unittest sentilab_core.test_gb10_backend
 
 The test suite must not use the real SSH executable or the retained checkpoint.
 Live inspection is a separate operator action; no live result is claimed by
-the implementation tests. No PR, shared registration or prospective GPU grant
-is included in this slice.
+the implementation tests. Shared registration and a prospective GPU grant are
+not included in this slice.
 
 Validation on 2026-10-31: 32 tests passed under WSL Ubuntu 24.04/Python 3.12.3.
 On native Windows, 32 tests ran with 29 passing and three platform skips (FIFO,
@@ -89,5 +90,22 @@ POSIX directory traversal race, and creating a symlink without the required
 Windows privilege). The Windows reparse-point rejection was tested separately.
 The suite executes the actual transmitted stdin source against a guarded fake
 host and reaps fake subprocesses after timeout/flood cases. No live GB10 probe
-or retained checkpoint read was performed by these tests. Independent root
-review and shared CLI/MCP registration remain pending.
+or retained checkpoint read was performed by these tests. Shared CLI/MCP
+registration remains pending.
+
+## Separate root observation on 2026-10-31
+
+At 10:11:54–10:11:56 UTC, root ran the two read-only operations against the
+exact implementation at `22a38bb7e2483a6eeb7a95bae27a43c4f9c10965`.
+Hostname, login and architecture matched the pins; Python 3.12.3 and driver
+580.178.04 were observed. The optional GPU model proc entry was unavailable,
+so it remains null. The reported 130,594,140,160 memory bytes are OS-visible
+system memory, not a measurement of separate VRAM or free GPU capacity.
+
+All three pinned files matched on both the PC and GB10. This confirms the
+retained adapter/config/input-manifest bytes at that time, not their scientific
+quality or future path availability. The observation took 2.110 seconds of
+local wall time and 0.28125 seconds of local Python CPU; remote CPU and money
+were not measured. No historical attempt, container, model, GPU workload,
+solver or serving session was started. The full receipt is
+`docs/sentilab/evidence/SLAB-043/GB10-READONLY-2026-10-31.json`.
