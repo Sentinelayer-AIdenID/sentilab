@@ -61,11 +61,10 @@ Import rules (static test, AC-02):
   LIVE or STALE itself (source.mjs:172-182).
 
 Frozen operation names (W0.1): `geometryPreimage`, `readAnatomy`, `readAssembly`, `readModelStack`, `readLayouts`,
-`fixtureFor`,
-`standsForIndex`, `resultView`, `receiptCompleteness`, `matchReference`, `buildRenderModel`, `displayBoxes`,
-`explodeOffsets`, `sectionAt`, `interconnectArrays`, `instanceBudget`, `pick`, `overlayFor`, `formatTemp`,
-`tempNode`, `serializeLabel`, `resolveLabel`, `resolveValueLabel`, `findBareTemperatures`, `fieldRefs`,
-`checkFieldArtifact`, `fieldScale`,
+`fixtureFor`, `inputsVerification`, `standsForIndex`, `resultView`, `signedInputsOf`, `receiptCompleteness`,
+`matchReference`, `buildRenderModel`, `displayBoxes`, `explodeOffsets`, `sectionAt`, `interconnectArrays`,
+`instanceBudget`, `pick`, `overlayFor`, `formatTemp`, `tempNode`, `serializeLabel`, `resolveLabel`,
+`resolveValueLabel`, `findBareTemperatures`, `fieldRefs`, `checkFieldArtifact`, `associateField`, `fieldScale`,
 `colourLut`, `fieldTexels`, `createFieldFeed`, `solveStatus`, `twinOf`, `readTwin`, `twinMarkdown`, `writeGlb`; CLI
 `scripts/package3d.mjs data|twin|export3d|check`.
 
@@ -236,8 +235,24 @@ export function readModelStack(json, { anatomyTypes = null } = {}) { /* -> { sta
 // SPEC.md §5.0); scripts/package3d.mjs data recomputes it at build time with verify-core.js parseRaw/canonical.
 export function readLayouts(json, stack) { /* -> { layouts, error } */ }
 
-// The fixture a signed run was evaluated on: run.family as the producer writes it (sentilab_core/conductor.py:116).
+// The manifest fixture whose id equals the run's signed family (sentilab_core/conductor.py:116): REFERENCE CONTEXT ONLY
+// (family_match). It does not say the run used this configuration; inputsVerification() decides that (SPEC.md §5.6;
+// A#57218 item 6).
 export const fixtureFor = (stack, family) => stack.fixtures.find((f) => f.fixture_id === family) ?? null;
+
+// run_inputs_verified. signed: what the VERIFIED measurement envelope signs about its inputs, read by results.mjs:
+//   { named: env.event.body.record.input_hashes ({ file name: sha256 }) | null, list: env.values.artifact_hashes | null,
+//     flags: the signed model-selecting solver flags (P5) | null }
+// Today, by code reading (conductor.py:337-347): named and list present, flags null -> not verified. Nothing is assumed.
+export function inputsVerification(fixture, signed) {
+  const inputs_evidence = isObj(signed?.named) ? "named_map" : Array.isArray(signed?.list) && signed.list.length ? "unnamed_list" : "absent";
+  const flags_evidence = isObj(signed?.flags) ? "signed" : "absent";
+  if (!fixture || inputs_evidence !== "named_map") return { inputs_evidence, flags_evidence, run_inputs_verified: false, input_differences: null };
+  const want = fixture.expected_inputs, differences = [];                 // every expected input different or unsigned
+  for (const name of ["samplelayers.lcf", "new_hotspot.config"]) if (signed.named[name] !== want[name]) differences.push(name);
+  for (const [flag, value] of Object.entries(want.solver_flags)) if (signed.flags?.[flag] !== value) differences.push(flag);
+  return { inputs_evidence, flags_evidence, run_inputs_verified: differences.length === 0, input_differences: differences };
+}
 
 // part type -> [{ grid_index, name }]: the inverse of stands_for, for the anatomy panel's "In our model" line.
 export function standsForIndex(stack) { /* -> Map<typeId, Array<{ grid_index, name }>> */ }
@@ -251,7 +266,7 @@ export function standsForIndex(stack) { /* -> Map<typeId, Array<{ grid_index, na
 // labels from temperature-label.mjs, the mode from source.mjs.
 import { labelFor } from "../../temperature-label.mjs";           // web/public/temperature-label.mjs:38-53, :84
 import { serializeLabel } from "./temps.mjs";                      // labels leave as records (SPEC.md §7 PL-2)
-import { fixtureFor } from "./modelstack.mjs";
+import { fixtureFor, inputsVerification } from "./modelstack.mjs";
 
 export const STATISTICS = Object.freeze({
   chip_layer_grid_max: "J: the chip layer's grid maximum (-grid_map_mode max)",
@@ -270,6 +285,11 @@ const BY_METRIC = Object.freeze({ "peak-chip-c": "chip_layer_grid_max", "weighte
 // contracts/view-envelope-v0.5/VIEW-ENVELOPE.md:31). A rejected create lends nothing (temperature-label.mjs:122-136).
 export function receiptOf(prefixEnvelopes, rejected, nodeId) { /* -> { seq, event_id, hash } | null */ }
 
+// The verified measurement's signed statements about its inputs (SPEC.md §5.6): { named, list, flags }. named =
+// env.event.body.record.input_hashes ({ file name: sha256 }: conductor.py:337-341), list = env.values.artifact_hashes
+// (:346), flags = the signed model-selecting solver flags (none today: P5). From the verified prefix only.
+export function signedInputsOf(verification, measurementNode) { /* -> { named, list, flags } */ }
+
 // inputs:
 //   verification  source.mjs normalize() result (source.mjs:82-106): prefixEnvelopes, prefixCount, projection, total, frozen
 //   scene         scene.mjs sceneAt() at the playhead (scene.mjs:540-544); layout = scene.tracks[i].layout (scene.mjs:387-411)
@@ -279,7 +299,8 @@ export function receiptOf(prefixEnvelopes, rejected, nodeId) { /* -> { seq, even
 export function resultView({ verification, scene, track, ids, mode, stack, layouts, fieldStatus = null }) {
   const L = scene?.tracks.find((t) => t.track === track)?.layout ?? null;
   const run = scene?.run ?? null;
-  const fixture = fixtureFor(stack, run?.family);
+  const fixture = fixtureFor(stack, run?.family);                               // REFERENCE context only (family_match)
+  const inputs = inputsVerification(fixture, signedInputsOf(verification, L?.metric?.measurement ?? null));   // A#57218 item 6
   const values = [], refused = [];
   if (L?.J) {
     const m = L.metric?.measurement ?? (L.ref.kind === "measurement" ? L.ref.id : null);
@@ -298,7 +319,11 @@ export function resultView({ verification, scene, track, ids, mode, stack, layou
     run: { run_id: run?.run_id ?? verification.runId, family: run?.family ?? null, arm: run?.arm ?? null, seed: run?.seed ?? null },
     prefix: { K: verification.prefixEnd ?? 0, total: verification.total, frozen: verification.frozen, mode: mode.mode, mode_label: mode.label, at_seq: scene?.at.seq ?? 0 },
     layout: L && !L.geometry_error ? layoutBlock(L, fixture, layouts, verification) : null,
-    model: { fixture_id: fixture?.fixture_id ?? null, model_stack_sha256: fixture ? stack.sha256 : null, status: fixture ? "bound" : "unknown_family" },
+    model: { family: run?.family ?? null,
+             family_match: run?.family == null ? "family_absent" : fixture ? "match" : "no_match",   // reference context; binds nothing
+             reference: fixture ? { fixture_id: fixture.fixture_id, model_stack_sha256: stack.sha256 } : null,
+             ...inputs,                                                                            // run_inputs_verified and its evidence
+             stack_basis: inputs.run_inputs_verified ? "run_inputs" : "schematic" },
     values, field: fieldStatus, receipt_completeness: receiptCompleteness(verification, L), refused,
   });
 }
@@ -363,10 +388,12 @@ export function buildRenderModel({ kind, anatomy = null, assembly = null, varian
 }
 
 // result kind: chiplet footprints ONLY from the signed geometry (layout.chiplets, from scene.mjs readGeometry,
-// scene.mjs:107-132); interposer = [0, fixture.interposer_mm]^2 and layer thicknesses from the model stack when the
-// run's family is known; otherwise the Package view's schematic rule (interposer = extent + 1.5 mm, scene.mjs:239-244;
-// heights from STACK) with every such box basis "render_hint" and the note "model stack unknown for family <f>;
-// drawn schematic". NEVER a thickness from the anatomy (X4).
+// scene.mjs:107-132), in every case. Only when result.model.run_inputs_verified: interposer = [0, fixture.interposer_mm]^2
+// and layer thicknesses from the model stack (the run's own verified inputs). Otherwise the Package view's schematic
+// rule (interposer = extent + 1.5 mm, scene.mjs:239-244; heights from STACK) with every such box basis "render_hint"
+// and the note "this run's layer inputs are not verified; schematic stack" (plus "no model for family <f>" when
+// family_match is not "match"). NEVER a thickness from the anatomy, and NEVER the family's current manifest without
+// verified inputs (X3, X4; A#57218 item 6).
 function resultBoxes(stack, result) { /* ... */ }
 
 // model kind: grid layers 0..5 as interposer-sized slabs (lcf), layer 4 split into Chiplet_i (silicon), halo strips
@@ -597,6 +624,15 @@ export async function checkFieldArtifact(bytes, ref, { stack = null } = {}) {
   return { ok: true, field: Object.freeze({ ref, grid: Object.freeze({ rows, cols, extent_mm: doc.grid.extent_mm, row0 }), layers, differs }) };
 }
 
+// Validity is not association (SPEC.md §5.7; A#57218 item 6). A field that passed checkFieldArtifact is drawn
+// ("verified") only when its association holds; otherwise it is "unassociated" with its reasons, nothing is drawn, no
+// scale comes from it and no number is exported, while its existence and receipt are listed.
+export function associateField(field, result) {
+  const reasons = [];
+  if (!result.model.run_inputs_verified) reasons.push("run_inputs_unverified");
+  return reasons.length ? { status: "unassociated", reasons } : { status: "verified", reasons: [] };
+}
+
 // One fixed scale per run over every accepted field value, rounded out to 5 and at least 10 wide (the rule runFrame
 // applies, scene.mjs:230-233); live runs only widen it (playhead.mjs:28-38).
 export function fieldScale(fields, previous = null) { /* ... */ }
@@ -621,7 +657,8 @@ import { fieldRefs, checkFieldArtifact, FIELD_CAPS } from "./field.mjs";
 export function createFieldFeed({ fetchImpl = (...a) => fetch(...a), onChange = () => {}, now = () => Date.now(),
                                    artifactUrl = (h) => `/api/view/artifacts/${h}`, enabled = false, maxInFlight = 2,
                                    cacheBytes = 32 << 20, stack = null }) {
-  /* adopt(verification), request(seq, pickRef), status(ref), dispose()  (L3:PSEUDOCODE §7) */
+  /* adopt(verification), request(seq, pickRef), status(ref), dispose()  (L3:PSEUDOCODE §7); status(ref) is one of
+     loading | verified | unassociated (with reasons, from associateField) | refused (with its error) | unavailable */
 }
 
 // Solve status from the verified lifecycle only (evidence-projection.mjs:11-12 lists simulation_pending):
@@ -767,6 +804,9 @@ def test_layers_match_generator(tmp_path):
         cfg = parse_config(files["new_hotspot.config"])               # s_spreader, s_sink, r_convec rewritten
         assert cfg["s_spreader"] == 2 * fixture["interposer_mm"] / 1000 and cfg["s_sink"] == 2 * cfg["s_spreader"]
         assert cfg["model_secondary"] == 0                             # bottom adiabatic (sundai_tap/util/hotspot.config:48)
+        want = fixture["expected_inputs"]                             # what run_inputs_verified compares (SPEC.md §5.4, §5.6)
+        assert sha256(files["samplelayers.lcf"]) == want["samplelayers.lcf"] and sha256(files["new_hotspot.config"]) == want["new_hotspot.config"]
+        assert want["solver_flags"] == {"-model_type": "grid", "-detailed_3D": "on", "-grid_map_mode": "max"}   # tap_oracle_worker.py:362-369
     assert sha256(config_bytes) == fixture["config"]["sha256"]        # the pinned config files
 ```
 
@@ -778,8 +818,8 @@ def test_layers_match_generator(tmp_path):
 | `web/test/package3d-data.test.mjs` | AC-03, AC-08, AC-11 (data side), AC-16 (Node side: pins), AC-17, AC-29, AC-30, AC-40; `scripts/package3d.mjs check` |
 | `web/test/package3d-model.test.mjs` | AC-08, AC-11 (undrawn parts: bounds, pick, section), AC-12, AC-13, AC-15 |
 | `web/test/package3d-labels.test.mjs` | AC-01, AC-02, AC-05 (static: no `toDataURL`/`toBlob`), AC-06, AC-07 |
-| `web/test/package3d-results.test.mjs` | AC-18, AC-19, AC-23, AC-24, AC-25, AC-26 (driving source.mjs's poller with injected fetch, as the Package view's live tests do) |
-| `web/test/package3d-field.test.mjs` | AC-20, AC-21, AC-22 |
+| `web/test/package3d-results.test.mjs` | AC-18, AC-19, AC-23, AC-24, AC-25, AC-26, AC-41 (driving source.mjs's poller with injected fetch, as the Package view's live tests do) |
+| `web/test/package3d-field.test.mjs` | AC-20, AC-21, AC-22, AC-41 (association) |
 | `web/test/package3d-twin.test.mjs` | AC-06 (result → JSON bytes → `readTwin` → markdown, and every altered identity, state and text), AC-36, AC-37 |
 | existing `worker-csp.test.mjs`, `worker-boot.mjs`, `temperature-label.test.mjs`, `public-names.test.mjs`, `control-bytes.test.mjs` | AC-27, AC-28 (the page added to their lists) |
 | `sundai_hotspot/test_package3d_model_stack.py` | AC-16 |

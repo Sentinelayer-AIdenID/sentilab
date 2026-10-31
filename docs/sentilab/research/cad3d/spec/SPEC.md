@@ -6,7 +6,7 @@ deployed or agreed.** After all three sign the exact document, warden
 provisions one build agent (the "Astra ultra box") that implements it phase by phase (section 9).
 
 Companions in this folder: `PSEUDOCODE.md` (modules and signatures, with integration points), `ACCEPTANCE.md`
-(testable criteria, AC-01 to AC-40), `TRACE.md` (every requirement mapped to its source, input hashes, and the line
+(testable criteria, AC-01 to AC-41), `TRACE.md` (every requirement mapped to its source, input hashes, and the line
 moves since lane 3 was written).
 
 ## 0. How to read this
@@ -39,6 +39,9 @@ moves since lane 3 was written).
     test only hatching and stippling, and no claim rests on a canvas-only crop (6.5, PL-5; AC-05).
   - R5 (item 5): a sourced range keeps `value: null`; the number drawn for it is a separate `display` representative,
     a render hint with its derivation; `drawnMm()` never invents a midpoint (5.0, 5.1, 5.3; AC-10, AC-11).
+  - R6 (item 6): `family_match` (reference context) is separate from `run_inputs_verified` (the run's signed inputs
+    equal the fixture's `expected_inputs`); only the latter permits the exact stack or a field registration, and
+    every current run reads unverified, with honest completeness states (X3, 5.4, 5.6, 5.7; AC-08, AC-19, AC-41).
 
 ## 1. Goals and non-goals
 
@@ -80,7 +83,7 @@ moves since lane 3 was written).
 | The Package view is hand-written Canvas 2D: one flat colour per chiplet ("not a field"), a schematic stack of drawing constants, the interposer drawn as the layout extent plus 1.5 mm. | main:web/public/sentilab/package/render.mjs:1-9; scene.mjs:18, :23-35, :235-246 |
 | One label rule for every temperature: withdrawn, illustrative (exactly `fixture-no-solver`), accepted (none), unvalidated (everything else); HotSpot-7 at `f18831e` is withdrawn; each value carries its own label. | main:web/public/temperature-label.mjs:12-28, :38-53; main:web/test/per-value-provenance.test.mjs:1-5 |
 | LIVE only with a poll within 5 s, K grown within 60 s after catch-up, nothing after the prefix; otherwise STALE with a reason, or ENDED, or REPLAY for files. Catching up is not progress. | main:contracts/view-envelope-v0.6.2/VIEW-ENVELOPE.md:113-130; main:web/public/sentilab/package/source.mjs:172-182 |
-| The live producer's measurement carries `J` (unit "C"), `W` (metric `weighted-manhattan-mm`), `scenario_id` and `artifact_hashes` (the solver's input hashes as an unnamed list). No centre temperatures, no field. | main:sentilab_core/conductor.py:342-346 |
+| The live producer's measurement carries `J` (unit "C"), `W` (metric `weighted-manhattan-mm`), `scenario_id` and `artifact_hashes` (the solver's input hashes as an unnamed list). No centre temperatures, no field. By code reading (not yet observed in a live envelope) its signed body also carries `record.input_hashes`, the same hashes keyed by file name, and `semantics.task_contract`, the producer's problem hash; the solver argv is not signed. | main:sentilab_core/conductor.py:337-347, :140-142; main:sentilab_core/envelope.py:233; main:sundai_hotspot/tap_oracle_worker.py:346-348, :372-375; main:sundai_hotspot/tap_oracle.py:874-895 |
 | The solver writes 8 grid layers; the worker keeps only layer 4 (chip) as `heatmap_c`; J is that layer's grid maximum with `-grid_map_mode max`. | main:sundai_hotspot/tap_oracle_worker.py:91-100, :356-369, :417-431 |
 | API routes: `/api/health`, `GET` and `POST /api/runs`, `/api/runs/{id}`, `/api/view/runs`, `/api/view/events`, `/api/view/key`. No artifact route, no SSE route, no `/api/replay/` route (the Package view builds that URL anyway). | main:app/main.py:28, :38, :54, :59; main:app/view.py:90, :97, :186; main:web/public/sentilab/package/package.js:652-654 |
 | Signed flight records with a chip-layer grid do exist: the served run-view replay holds `oracle_result` events whose `thermal.heatmap_c` is a 32 x 32 chip-layer grid from the withdrawn HotSpot-7 build, and the run view draws them with labels. No view envelope carries any field. | main:web/public/replay/ascend910-seed11-32x32.json (`result.lane_results.*.record[*].payload.thermal`); main:web/public/app.js:52, :63, :119-123, :139; see D3 |
@@ -96,7 +99,7 @@ moves since lane 3 was written).
 |---|---|---|---|
 | What it is | What a 2.5D AI accelerator package is made of and how its parts connect | What HotSpot/TAP actually simulates, with its simplifications | Values a signed run produced, on the exact geometry they were produced for |
 | Data | `sentilab-anatomy/1` and `sentilab-assembly/1` (section 5.2-5.3), converted from L1 `parts.json` plus a reviewed overlay | `sentilab-model-stack/1` (5.4), transcribed from the solver code at a pinned commit and checked by running TAP's floorplan writer; `sentilab-layouts/1` (5.5) from the reviewed reference manifests | The verified projectable prefix only, through `source.mjs`; field artifacts once P1-P4 land (section 8) |
-| Geometry | Schematic arrangement; sourced sizes where they exist; render hints otherwise | The model's layer table, floorplan rules and reference layouts | Footprints from the signed candidate geometry; stack from the model manifest of the run's fixture |
+| Geometry | Schematic arrangement; sourced sizes where they exist; render hints otherwise | The model's layer table, floorplan rules and reference layouts | Footprints from the signed candidate geometry; the stack from the run's verified inputs, else schematic (the family's current manifest is reference context only) |
 | Temperatures | None (PL-4) | None; the ambient is a temperature-valued input and is not rendered (PL-4, D2) | Only through `temperature-label.mjs`, per value (PL-2) |
 | Banner (exact) | `Typical anatomy · a representative reconstruction from public sources. Not any manufacturer's CAD. Not silicon-validated. Arrangement schematic; unknown values are marked.` | `Our model · the layers and blocks our thermal solver actually simulates, with its simplifications. Not the real package.` | `Results · from signed, verified evidence only. Each value names its run, geometry, evaluator and label. Simulated, not silicon.` |
 | Chip inside the figure (DOM, over the canvas) | `Typical anatomy · not manufacturer CAD` | `Our model · not the real package` | the legend's label-state chip and `Simulated · not silicon` |
@@ -107,12 +110,17 @@ Crossing rules (MUST):
 - **X2.** Anatomy to model goes only through the model manifest's `stands_for` (which model layer a part type is
   lumped into). The anatomy panel shows "In our model: …" or "Not in the thermal model". No model number sits in
   the anatomy dataset and no anatomy number sits in the model dataset.
-- **X3.** Model to results goes through the run's fixture id (signed `run.family`, main:sentilab_core/conductor.py:116)
-  and the signed candidate geometry. Model mode never shows result values. Results mode never draws anatomy-only
-  parts as if simulated; when a field is shown they are listed as "not in the thermal model" (L3:ARCHITECTURE §5.3).
+- **X3.** Model to results goes through two separate predicates (section 5.6; A#57218 item 6). `family_match`: the
+  signed `run.family` (main:sentilab_core/conductor.py:116) names a fixture of the current model manifest; that is
+  reference context only (role names, the reference-layout comparison, the manifest's stack shown as a labelled
+  reference) and binds nothing. `run_inputs_verified`: the run's signed inputs equal the fixture's `expected_inputs`
+  (section 5.4); only that permits drawing the model stack as the run's stack or registering a field to it. The
+  signed candidate geometry is drawn either way. Model mode never shows result values. Results mode never draws
+  anatomy-only parts as if simulated; when a field is shown they are listed as "not in the thermal model"
+  (L3:ARCHITECTURE §5.3).
 - **X4.** No value from one kind fills a gap in another. Results-mode thickness never falls back to anatomy nominal
-  thickness (lane 3 proposed that fallback: L3:PSEUDOCODE §1 step 3; see D6). A missing model value is shown as
-  unknown or schematic, labelled.
+  thickness (lane 3 proposed that fallback: L3:PSEUDOCODE §1 step 3; see D6), nor to the family's current model
+  manifest when the run's inputs are not verified. A missing model value is shown as unknown or schematic, labelled.
 - **X5.** Lane 1's `in_our_model` blocks and model-valued entries (the heat sink's 6,900 µm and 180 mm, every
   `our_model*` conductivity) move to the model manifest; the anatomy dataset keeps none (section 5.9).
 - **X6.** Raw and 0.5 mm reference layouts keep distinct identities (`content_sha256`) and results; they are never
@@ -174,7 +182,7 @@ between them, dims the rest (L3:ARCHITECTURE §4.5), and fills the detail panel.
 |---|---|
 | Typical anatomy | name (generic, D1); content chip; kind; what it is and why it is there (reviewed text with fact ids); material (name, class, conductivity "near room temperature" with basis); dimensions (thickness, footprint, area, count), each with its basis tag: `sourced [fact ids]`, `min–max · sourced [fact ids] · drawn at X (display only: derivation)` for a range, `derived (inputs)`, `not sourced · drawn at X (display only: basis)`, or `unknown`; connections (kinds and via); `In our model: lumped into layer 4, chip layer (150 µm silicon block, uniform power)` or `Not in the thermal model`; sources (fact claims, source type and year; titles and URLs only under D1 "named"); confidence. |
 | Our model | layer name as coded; grid index; thickness (model, `file:line@commit`); material as coded (resistivity and the k it implies, with the bump-mix derivation where it applies); lateral rule (interposer, 2 x, 4 x); powered or not; `Stands for` (anatomy part types, linking back); the ranked simplifications that apply; for a die: role, size, rotation, power input in W, halo width. |
-| Results | chiplet id and role (from the fixture's role map); footprint (evidence: run, seq); J and W from the measurement `metricFor()` picks (main:web/public/sentilab/lab-model.mjs:124), each with its statistic name and label; centre temperature with its own label; evidence validity (valid or stale); the receipt (measurement seq, event id, envelope hash, evaluator identity); receipt completeness (section 5.6). |
+| Results | chiplet id and role (from the fixture's role map); footprint (evidence: run, seq); J and W from the measurement `metricFor()` picks (main:web/public/sentilab/lab-model.mjs:124), each with its statistic name and label; centre temperature with its own label; evidence validity (valid or stale); the receipt (measurement seq, event id, envelope hash, evaluator identity); receipt completeness (section 5.6); model association side by side: `family_match` with its fixture as labelled reference context, and `run_inputs_verified` with its differences (section 5.6). |
 
 - **Agent:** `anatomy.json` (part types, facts, sources, materials, edges) and `anatomy.md` (one section per part
   type with the same text); `model-<fixture>.json`/`.md`; for results, the result twin (section 4.8).
@@ -768,7 +776,7 @@ fixture and compares (W4, AC-16).
     },
     "fixture": {
       "type": "object",
-      "required": ["fixture_id", "title", "config", "interposer_mm", "spreader_mm", "sink_mm", "dies", "netlist", "legality", "layouts", "role_basis"],
+      "required": ["fixture_id", "title", "config", "interposer_mm", "spreader_mm", "sink_mm", "dies", "netlist", "legality", "layouts", "role_basis", "expected_inputs"],
       "additionalProperties": false,
       "properties": {
         "fixture_id": { "enum": ["ascend910", "ascend910-45mm", "micro150", "micro150-45mm"] },
@@ -812,7 +820,16 @@ fixture and compares (W4, AC-16).
           }
         },
         "layouts": { "type": "array", "items": { "$ref": "urn:sentilab:package3d:common:1#/$defs/slug" } },
-        "role_basis": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" }
+        "role_basis": { "$ref": "urn:sentilab:package3d:common:1#/$defs/text" },
+        "expected_inputs": {
+          "type": "object", "required": ["samplelayers.lcf", "new_hotspot.config", "solver_flags", "recorded_by"], "additionalProperties": false,
+          "properties": {
+            "samplelayers.lcf": { "$ref": "urn:sentilab:package3d:common:1#/$defs/sha256" },
+            "new_hotspot.config": { "$ref": "urn:sentilab:package3d:common:1#/$defs/sha256" },
+            "solver_flags": { "type": "object", "minProperties": 1, "propertyNames": { "pattern": "^-[A-Za-z0-9_]+$" }, "additionalProperties": { "type": "string" } },
+            "recorded_by": { "$ref": "urn:sentilab:package3d:common:1#/$defs/pinnedFile" }
+          }
+        }
       }
     }
   }
@@ -847,6 +864,12 @@ Fixture role map (for the model and for results): `ascend910*`: die 0 compute, d
 TAP-2.5D Table II (thm-007), main:docs/sentilab/references/README.md:5-7 and :86, and the configs
 (main:sundai_tap/configs/sys_ascend910_45mm.cfg:19-28; sys_micro150_45mm.cfg:19-30). Halo widths come from the
 floorplan writer's output (`Ubump_*` units, passive_interposer.py:102-113), recorded by the W4 check, never guessed.
+
+Each fixture's `expected_inputs` (A#57218 item 6) are the sha256 of the `samplelayers.lcf` and of the resolved
+`new_hotspot.config` that TAP's writer produces for it at the manifest's code commit, and the solver flags that select
+the model as the warm worker passes them (`-model_type grid`, `-detailed_3D on`, `-grid_map_mode max`:
+main:sundai_hotspot/tap_oracle_worker.py:356-369). The W4 check records them (`recorded_by`); nobody types them. They
+are what a run's signed inputs must equal for `run_inputs_verified` (section 5.6): sharing a family name is not enough.
 
 Simplifications S1-S9 are lane 1's ranked list, verbatim in meaning, with its citations (L1:our_model_mapping.md §4);
 the panel shows them where they apply (for example S1 on every HBM block: "a 150 µm, 20 W silicon block; the real
@@ -947,8 +970,23 @@ result twins.
       } ]
     },
     "model": {
-      "type": "object", "required": ["fixture_id", "model_stack_sha256", "status"], "additionalProperties": false,
-      "properties": { "fixture_id": { "type": ["string", "null"] }, "model_stack_sha256": { "oneOf": [ { "$ref": "urn:sentilab:package3d:common:1#/$defs/sha256" }, { "type": "null" } ] }, "status": { "enum": ["bound", "unknown_family"] } }
+      "type": "object",
+      "required": ["family", "family_match", "reference", "inputs_evidence", "flags_evidence", "run_inputs_verified", "input_differences", "stack_basis"],
+      "additionalProperties": false,
+      "properties": {
+        "family": { "type": ["string", "null"] },
+        "family_match": { "enum": ["match", "no_match", "family_absent"] },
+        "reference": { "oneOf": [ { "type": "null" }, { "type": "object", "required": ["fixture_id", "model_stack_sha256"], "additionalProperties": false,
+          "properties": { "fixture_id": { "type": "string" }, "model_stack_sha256": { "$ref": "urn:sentilab:package3d:common:1#/$defs/sha256" } } } ] },
+        "inputs_evidence": { "enum": ["named_map", "unnamed_list", "absent"] },
+        "flags_evidence": { "enum": ["signed", "absent"] },
+        "run_inputs_verified": { "type": "boolean" },
+        "input_differences": { "oneOf": [ { "type": "null" }, { "type": "array", "uniqueItems": true, "items": { "type": "string" } } ] },
+        "stack_basis": { "enum": ["run_inputs", "schematic"] }
+      },
+      "if": { "properties": { "run_inputs_verified": { "const": true } } },
+      "then": { "properties": { "family_match": { "const": "match" }, "inputs_evidence": { "const": "named_map" }, "flags_evidence": { "const": "signed" }, "input_differences": { "type": "array", "maxItems": 0 }, "stack_basis": { "const": "run_inputs" } } },
+      "else": { "properties": { "stack_basis": { "const": "schematic" } } }
     },
     "values": { "type": "array", "items": { "$ref": "#/$defs/resultValue" } },
     "field": { "oneOf": [ { "type": "null" }, { "$ref": "#/$defs/fieldStatus" } ] },
@@ -957,7 +995,7 @@ result twins.
       "properties": {
         "evaluator_identity": { "type": "boolean" }, "geometry_signed": { "type": "boolean" },
         "input_hashes": { "enum": ["named", "unnamed", "absent"] }, "argv": { "enum": ["present", "absent"] },
-        "power_trace": { "enum": ["named", "in_unnamed_list", "absent"] }, "field": { "enum": ["verified", "refused", "absent"] }
+        "power_trace": { "enum": ["named", "in_unnamed_list", "absent"] }, "field": { "enum": ["verified", "unassociated", "refused", "absent"] }
       }
     },
     "refused": { "type": "array", "items": { "type": "object", "required": ["node", "field", "code", "detail"], "additionalProperties": false,
@@ -993,10 +1031,13 @@ result twins.
       "properties": {
         "sha256": { "$ref": "urn:sentilab:package3d:common:1#/$defs/sha256" }, "format": { "const": "sentilab-field/0.1" },
         "rows": { "type": "integer" }, "cols": { "type": "integer" }, "layers": { "type": "integer" },
-        "status": { "enum": ["verified", "refused", "loading", "unavailable"] }, "error": { "type": "string" },
+        "status": { "enum": ["verified", "unassociated", "refused", "loading", "unavailable"] }, "error": { "type": "string" },
+        "reasons": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
         "stack_differs_from_manifest": { "type": "array", "items": { "type": "string" } },
         "as_of_seq": { "type": "integer", "minimum": 1 }
-      }
+      },
+      "if": { "properties": { "status": { "const": "unassociated" } } },
+      "then": { "required": ["reasons"], "properties": { "reasons": { "minItems": 1 } } }
     }
   }
 }
@@ -1017,11 +1058,32 @@ Statistics (PL-9), each with where it comes from today:
 
 Rules: a value's statistic comes from its `metric_id` and source field, never from a caption; values with different
 statistics are never compared, ranked, differenced or put in one column. A value's `label` is the serialized record
-of `labelFor(evaluator_identity)`; wherever it is read back it is recomputed and compared, never trusted (PL-2). `receipt_completeness` is shown as a chip on
-every result (for today's live rows: evaluator identity yes, geometry signed yes, input hashes `unnamed`
-(conductor.py:346), argv `absent`, power trace `in_unnamed_list`, field `absent`), so the binding astra asks for
-(A#57059: geometry, material, power, layer, config, argv and executable identity) is shown as partial rather than
-implied (P5, D12).
+of `labelFor(evaluator_identity)`; wherever it is read back it is recomputed and compared, never trusted (PL-2).
+`receipt_completeness` is shown as a chip on every result and computed from the verified envelopes: input hashes
+`named` when the signed measurement body carries `record.input_hashes`, `unnamed` when only `values.artifact_hashes`
+exists; power trace `named` when `sample.ptrace` is in the named map, `in_unnamed_list` when only the list exists;
+argv `absent` unless signed. By code reading, today's producer rows would read evaluator identity yes, geometry
+signed yes, input hashes `named`, argv `absent`, power trace `named`, field `absent` (conductor.py:337-347); that is
+confirmed on a real envelope (P5), not assumed. Either way the binding astra asks for (A#57059: geometry, material,
+power, layer, config, argv and executable identity) is shown as partial rather than implied (P5, D12).
+
+**Family match is not input verification** (A#57218 item 6). `family_match` and `reference` say only that the
+current model manifest describes a fixture with the run's signed family name (`run.family`, conductor.py:116). A
+shared family does not bind an old run to the current configuration: the manifest may be newer than the run, and a
+reused output directory can keep an older resolved config (section 5.4). `run_inputs_verified` is true only when the
+verified measurement's signed body names its inputs (`inputs_evidence: named_map`), the named `samplelayers.lcf` and
+`new_hotspot.config` hashes equal the fixture's `expected_inputs`, and the model-selecting solver flags are signed
+with the measurement (`flags_evidence: signed`) and equal theirs; `input_differences` lists every expected input that
+is different or unsigned. Only then is the model stack drawn as this run's stack (`stack_basis: run_inputs`) or a
+field registered to it (section 5.7). Otherwise the run's signed chiplet geometry is still drawn and its values still
+shown with their labels, statistics and receipts, while the stack is schematic: the Package view's constants as
+render hints, with the note `this run's layer inputs are not verified; schematic stack` (X4). The family's manifest
+appears only as labelled reference context (`reference: current model for family <f>; not verified as this run's
+inputs`), never as the run's thicknesses. Today, by code reading: the signed body names the inputs, but the flags are
+not signed with the measurement (the worker keeps its command line only in retained output,
+tap_oracle_worker.py:372-375; the producer's problem hash binds them, tap_oracle.py:874-895, but only as a hash). So
+`run_inputs_verified` is false for every current run, and any run's actual producer and config receipt is
+confirmed, not assumed (P5).
 
 Geometry identity of a result is the candidate envelope's receipt (run, seq, event id, envelope hash): the envelope
 hash already covers its `values.geometry` (main:contracts/view-envelope-v0.5/VIEW-ENVELOPE.md:31). A match to a
@@ -1054,6 +1116,13 @@ and the caps (at most 128 x 128, the worker's bound at tap_oracle_worker.py:283-
 finite and inside scene.mjs `BOUNDS` after conversion (scene.mjs:92-98). A layer table that differs from the model
 manifest is not refused: the artifact's table is the authority for that result, and the difference is listed
 (`stack_differs_from_manifest`).
+
+**Validity is not association** (A#57218 item 6). An artifact that passes every check above exists and is valid; it
+is drawn (`status: verified`) only when its association also holds, starting with `run_inputs_verified` (section
+5.6), which registers its layers to the run's stack and its grid to the run's geometry. Otherwise its status is
+`unassociated` with its reasons (here `run_inputs_unverified`): nothing is drawn, no legend scale comes from it, and
+no number is exported; its existence and receipt are listed. Field existence and field eligibility are separate
+predicates.
 
 ### 5.8 Agent twin `sentilab-twin/1`
 
@@ -1231,7 +1300,7 @@ WebSocket: the Worker strips `upgrade` (main:web/src/worker.js:7, :26).
 | Lane 3 | This spec | Why |
 |---|---|---|
 | One RenderModel from parts.json plus verified scene plus solver stack | One RenderModel per content kind; mixed input refused | rule 2, A#57053 (X1) |
-| Modelled-part thickness falls back to parts.json nominal without a field (PSEUDOCODE §1 step 3) | Falls back to the model manifest, else "schematic", never anatomy | X4, D6 |
+| Modelled-part thickness falls back to parts.json nominal without a field (PSEUDOCODE §1 step 3) | The run's verified inputs, else schematic; never anatomy, and never the family's current manifest | X3, X4, D6; A#57218 item 6 |
 | RenderModel carries display thickness next to true (`z0`, `z0_true`, `thickened`) | RenderModel is assembled only; display boxes come from `view.mjs` | rule 3, A#57059 (immutable assembled geometry) |
 | `checkFieldArtifact` binds run, measurement, evaluator | also checks input-source hashes against the signed `artifact_hashes`, and lists layer-table differences | L3:ARCHITECTURE §5.2 item 1 says those hashes are signed; this makes the check explicit |
 | Twin JSON (+ GLB) at `/agents/package3d/<id>.json`, catalogue at `/agents/index.json` | JSON plus markdown per content kind under `/agents/package3d/`; catalogue `/agents/package3d/index.json` | rule 9; PR #66 owns `/agents/index.json` (D9) |
@@ -1282,7 +1351,7 @@ small change (D9). Nothing in phases 1-5 needs that.
 | P2 | **Measurement pointer:** `values.field = { sha256, format, rows, cols, layers, unit }` in the measurement envelope, and documented in the VIEW-ENVELOPE contract. | TBD (producer and contract owners) | W14 | values are J, W, scenario_id, artifact_hashes (main:sentilab_core/conductor.py:344-346; VIEW-ENVELOPE v0.5:23-25) |
 | P3 | **API route:** `GET /api/view/artifacts/<sha256>`: read-only, immutable, capped at 4 MiB, serving only hashes a run's log names. The Worker passes upstream `cache-control` through, so no Worker change. | TBD (API owner) | W14 | no such route (main:app/view.py:90, :97, :186) |
 | P4 | **Label rule:** `hasTemperature()` counts `values.field`, with a test, so a field-only measurement raises the notice. | TBD (label-rule owner) | W14 | J and centre temperatures only (main:web/public/temperature-label.mjs:163) |
-| P5 | **Receipt completeness:** named input hashes and the solver argv in the measurement (and the field artifact). | TBD (producer owner) | the `receipt_completeness` chip turning green (never blocks display) | unnamed list (conductor.py:346); names and argv exist in the worker (tap_oracle_worker.py:346-348, :356-369) |
+| P5 | **Receipt completeness:** the solver argv (at least the model-selecting flags) signed with the measurement, the named input-hash map confirmed on a real envelope, and both carried by the field artifact. | TBD (producer owner) | `run_inputs_verified` (exact stack and field registration) and the `receipt_completeness` chip turning green; diagnostic display never waits for it | by code reading the signed body names the inputs (conductor.py:337-341) beside the unnamed `values` copy (:346); the argv stays in retained output only (tap_oracle_worker.py:372-375); no live envelope inspected |
 | P6 | **Replay artifacts:** serve fields next to replay bundles (`/api/replay/<bundle>/artifacts/<sha256>` or static files). | TBD (API owner) | fields in replays | the page builds `/api/replay/…` (package.js:652-654); not served |
 | P7 | **Grid layer order and extent** for layers 6 and 7 confirmed by the producer (section 5.4). | TBD (producer owner) | drawing fields on spreader and sink | code reading only |
 | P8 | **Evaluator acceptance:** an ACCEPTED entry for an exact identity. | label-rule owner with the SLAB-049 review | any "accepted" label (never blocks the build) | ACCEPTED is empty (temperature-label.mjs:28) |
@@ -1340,8 +1409,8 @@ screenshots. No item deploys, runs a solver, or touches the producer, the API, t
 
 | Item | Size | Scope | Acceptance |
 |---|---|---|---|
-| W12 | M | Results mode on replay and live through `source.mjs`: J, W and centre temperatures with per-value labels and statistics, as-of stamps, solve status, simulated-time line, STALE and ENDED, K drops; the demo replay as the default, as in the Package view. | AC-04, AC-18, AC-19, AC-23, AC-24, AC-26 |
-| W13 | M | `field.mjs` and `stream.mjs`, tested only on fixtures signed with the TEST key; in production the field path reports "no field in this run's receipts" until P1-P4 land. | AC-05, AC-20, AC-21, AC-22, AC-25 |
+| W12 | M | Results mode on replay and live through `source.mjs`: J, W and centre temperatures with per-value labels and statistics, as-of stamps, solve status, simulated-time line, STALE and ENDED, K drops; the demo replay as the default, as in the Package view. | AC-04, AC-18, AC-19, AC-23, AC-24, AC-26, AC-41 |
+| W13 | M | `field.mjs` and `stream.mjs`, tested only on fixtures signed with the TEST key; in production the field path reports "no field in this run's receipts" until P1-P4 land. | AC-05, AC-20, AC-21, AC-22, AC-25, AC-41 |
 
 ### Phase 6: gated items
 
@@ -1406,9 +1475,9 @@ pinned, no CAD in the display path.
 | D3 | Signed chip-layer grids that already exist. | **Contradiction.** The task's rule 5 says no signed record carries a temperature field today. Lane 3's finding is narrower: no verified view envelope carries a field (L3:ARCHITECTURE §0 and §5.1). On origin/main, the served run-view replay holds signed flight records with a 32 x 32 chip-layer `heatmap_c` from the withdrawn HotSpot-7 build, drawn by the run view (main:web/public/app.js:52, :63, :139). Use them in the room (through the flight-record verifier, main:web/public/verify-core.js), or not. | not used; the Results path is view envelopes only; P1-P4 stay required for any 3D field | founder and reviewers |
 | D4 | Phone performance budgets and the reference phone. | **Inputs differ.** Lane 3: at most 300,000 triangles, 60 draw calls, 6,000 interconnect instances, p95 frame 33 ms, DPR 2 (L3:ACCEPTANCE A-10). astra: at most 50,000 triangles, 100 draw calls, a 2 MiB derivative, a 1-megapixel buffer, p95 interaction frame 33 ms on a named tested phone; proposed and unmeasured (A#57059). | the stricter value per row, plus both sources' extra rows (ACCEPTANCE AC-34) | reviewers; warden names the phone |
 | D5 | Renderer. | Own WebGL2 (lane 3's recommendation) or vendored three.js r187 (lane 3's alternative: 2,133,699 B raw, 419,212 B gzip, a public-names exception needed; L3:ARCHITECTURE §2.2-§2.3). | own WebGL2 | reviewers |
-| D6 | Thickness in results mode without a field artifact. | **Inputs differ.** Lane 3 falls back to the parts list's nominal thickness (L3:PSEUDOCODE §1 step 3); astra and rule 2 keep anatomy separate from the computational references (A#57053). | the model manifest, else "schematic"; never anatomy | reviewers |
+| D6 | Thickness in results mode without a field artifact. | **Inputs differ.** Lane 3 falls back to the parts list's nominal thickness (L3:PSEUDOCODE §1 step 3); astra and rule 2 keep anatomy separate from the computational references (A#57053). | the run's verified inputs (`run_inputs_verified`), else schematic; never anatomy, and never the family's current manifest (X3, X4; A#57218 item 6) | reviewers |
 | D7 | Build SKETCH mode at all, and a label state for its numbers. | L3:ARCHITECTURE §6.3; rule 4. | not built | founder and label-rule owner |
-| D8 | Which model content is shown by default. | The 45 mm raw references are gate zero (README.md:24; A#57059: the retained references are on a 45 mm interposer); the live service's default fixture is the 50 mm `ascend910` (main:sentilab_core/conductor.py:55; tap_oracle.py:25). | Model mode opens on `ascend910-45mm` raw, with the 0.5 mm variant and the other fixtures selectable; Results always uses the run's own `run.family` | forge and astra |
+| D8 | Which model content is shown by default. | The 45 mm raw references are gate zero (README.md:24; A#57059: the retained references are on a 45 mm interposer); the live service's default fixture is the 50 mm `ascend910` (main:sentilab_core/conductor.py:55; tap_oracle.py:25). | Model mode opens on `ascend910-45mm` raw, with the 0.5 mm variant and the other fixtures selectable; Results draws each run's signed geometry, with its family's manifest as reference context only (X3) | forge and astra |
 | D9 | Agent catalogue location and negotiation. | Lane 3 put a catalogue at `/agents/index.json` (L3:ARCHITECTURE §8); PR #66 uses that path for its own index (`sentilab-agents-index/1`, pr66:web/public/agents/index.json:2). | `/agents/package3d/index.json` and `index.md`; linked from PR #66's index only if it merges; Accept negotiation for the room only after PR #66 | forge |
 | D10 | Scope of the infrastructure-names scan (rule 8). | A room-scoped test now, or extend the global `NAMES` list (main:web/test/public-names.test.mjs:20-26). | room-scoped (AC-29) | site test owner |
 | D11 | The first typical assembly. | One compute die and four HBM stacks on a silicon interposer (within lane 1's "one or two compute dies and four to eight HBM stacks", L1:REPORT §1), 12-high HBM (lane 1's FEM stack), lidded with a lidless variant; lane 1's `generic_hbm3e_two_die` (two dies, eight stacks, bridge-class interposer) as the second. | as stated | forge |

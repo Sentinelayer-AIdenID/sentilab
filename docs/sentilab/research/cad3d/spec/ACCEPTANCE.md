@@ -15,7 +15,7 @@ Test kinds:
 - **device**: manual on the reference phone (D4), recording and traces attached to the PR.
 
 Gate: no phase is done until its listed ACs pass (SPEC.md §9). The top gate for any public release of the page is
-AC-01 to AC-06, AC-12, AC-20 to AC-27, AC-32, AC-34 and AC-36.
+AC-01 to AC-06, AC-12, AC-20 to AC-27, AC-32, AC-34, AC-36 and AC-41.
 
 ## Temperatures and labels
 
@@ -73,8 +73,8 @@ scan finds no `toDataURL(` or `toBlob(` in the room's modules (no canvas-only im
 and the dialog), the full path runs for each identity of AC-04 (withdrawn HotSpot-7, the corrected evaluator, the
 fixture, none): `resultView()` → `twinOf()` → `twinJsonText()` → UTF-8 bytes → `readTwin()` → `twinMarkdown()`. In the
 JSON every value with `unit: "degC"` carries `evaluator_identity` and a `label` record with exactly the keys `state`,
-`text`, `short` and `title`, each equal to `labelFor(evaluator_identity)`'s; after reading, `resolveLabel()` returns an
-object `===` `LABELS[state]` (the canonical in-process object, not a copy); the markdown shows each temperature as
+`text`, `short` and `title`, each equal to `labelFor(evaluator_identity)`'s; after reading, `resolveLabel()` returns
+an object `===` `LABELS[state]` (the canonical in-process object, not a copy); the markdown shows each temperature as
 `<value> °C <short>` in one cell; refused values appear only in `refused`, never as numbers
 (main:scripts/sentilab-scene.mjs:17); the same inputs give byte-identical JSON and markdown. Adversarial, each refused
 with `label_mismatch` (the value never formatted; `readTwin` all or nothing): `state` changed (withdrawn to
@@ -96,10 +96,12 @@ Pass: the same labels the Package view computes for the same prefix (per-value-p
 **AC-08 Separation in data and models** (node, static). `buildRenderModel()` refuses any call that supplies inputs of
 two kinds (`mixed_content`). `anatomy.json` and the assembly contain no key matching `our_model`, `in_our_model` or
 `solver_layer`, and no quantity with basis `model` or `evidence`; `model-stack.json` contains no anatomy quantity
-(only `stands_for` ids); a result RenderModel built without a model stack for its family draws a schematic stack with
-every box `render_hint` and the note "model stack unknown for family <f>; drawn schematic", and never an anatomy
-thickness. Adversarial: delete the model stack file → the result RenderModel shows the schematic note, not lane-1
-numbers; inject an anatomy thickness into a result build → refused. Pass: all (X1 to X5).
+(only `stands_for` ids); a result RenderModel whose run inputs are not verified (`run_inputs_verified: false`,
+SPEC.md §5.6) draws a schematic stack with every box `render_hint` and the note "this run's layer inputs are not
+verified; schematic stack" (and "no model for family <f>" without a family match), and never an anatomy thickness or
+the family manifest's thicknesses. Adversarial: delete the model stack file → the schematic note, not lane-1 numbers;
+inject an anatomy thickness into a result build → refused; a family match with unverified inputs → schematic, not
+the manifest's thicknesses. Pass: all (X1 to X5).
 
 **AC-09 Banners and chips match their kind** (browser, node). In each mode the content banner and the canvas chip are
 the exact strings of SPEC.md §3, and the twin's `status_text` for that kind is the same string (schema const). Model
@@ -139,13 +141,13 @@ without `display` returns `null` (no midpoint is invented), so that part is undr
 
 **AC-12 Explode never mutates geometry** (node, browser). After `buildRenderModel()`, `Object.isFrozen` holds for the
 model and every nested object; a write in strict mode throws. Record `geometry_key` (the geometry preimage of SPEC.md
-§5.0 over the model's instances), then apply 1,000 random view operations (explode t in [0, 1], readable on/off, section x/y at random positions,
-overlay changes, selections, variant toggles that rebuild a new model) and check that every model's `geometry_key` equals
-a fresh build from the same inputs and that the original's is unchanged. Picking the same screen point at t = 0 and
-t = 1 returns the same instance id when that instance is under the point in both; a field lookup returns the same cell
-at any t. The page recomputes the assembly's `geometry_sha256` and refuses a mismatch. In the browser,
-`__package3d.facts().geometryKey` is identical before and after a scripted explode, section and orbit session. Pass:
-all.
+§5.0 over the model's instances), then apply 1,000 random view operations (explode t in [0, 1], readable on/off,
+section x/y at random positions, overlay changes, selections, variant toggles that rebuild a new model) and check that
+every model's `geometry_key` equals a fresh build from the same inputs and that the original's is unchanged. Picking
+the same screen point at t = 0 and t = 1 returns the same instance id when that instance is under the point in both; a
+field lookup returns the same cell at any t. The page recomputes the assembly's `geometry_sha256` and refuses a
+mismatch. In the browser, `__package3d.facts().geometryKey` is identical before and after a scripted explode, section
+and orbit session. Pass: all.
 
 **AC-13 Units convert exactly once** (node). The model-mode interposer edge of 45 mm appears as `0.045` m in the GLB
 accessor bounds (x and the glTF z axis), and a 150 µm chip layer as 0.00015 m in y; the RenderModel holds 45 and 0.15
@@ -208,18 +210,21 @@ copy → the build refuses. Pass: all.
 **AC-18 Every result value names its statistic, receipt and label** (node). For a signed replay: J has statistic
 `chip_layer_grid_max` (metric `peak-chip-c`), W has `wire_proxy_weighted_manhattan` (metric `weighted-manhattan-mm`)
 and is shown as `wire proxy (mm)`, centre temperatures have `chiplet_centre`; each value carries the measurement's
-receipt (seq, event id, envelope hash), the evaluator identity, validity and `as_of_seq`; `receipt_completeness` reads
-evaluator identity yes, geometry signed yes, input hashes `unnamed`, argv `absent`, power trace `in_unnamed_list`, field
-`absent` for producer rows of today (main:sentilab_core/conductor.py:342-346). Adversarial: an unknown `metric_id` →
+receipt (seq, event id, envelope hash), the evaluator identity, validity and `as_of_seq`; for a row shaped as today's
+producer code writes it (a named `record.input_hashes` in the signed body, the unnamed `values.artifact_hashes`, no
+argv: main:sentilab_core/conductor.py:337-347) `receipt_completeness` reads evaluator identity yes, geometry signed
+yes, input hashes `named`, argv `absent`, power trace `named`, field `absent`; for a row with only the unnamed list it
+reads input hashes `unnamed` and power trace `in_unnamed_list`. Adversarial: an unknown `metric_id` →
 the value is refused (`statistic_unknown`), never shown; W and J are never put in one column, compared or differenced;
 a caption calling W "routed" is impossible because captions come from `STATISTICS`. Pass: all.
 
 **AC-19 Results sit only on the geometry they were signed with** (node, browser). The result RenderModel's chiplet
-boxes equal the signed `values.geometry` of the candidate (scene.mjs readGeometry), on the stack of the run's own
-`run.family`; `matchReference()` reports a reference only when every centre and footprint is within 1e-6 mm and every
+boxes equal the signed `values.geometry` of the candidate (scene.mjs readGeometry) in every case; the vertical stack is
+the run's own only when `run_inputs_verified` (AC-41), and `family_match` is reported separately as reference
+context; `matchReference()` reports a reference only when every centre and footprint is within 1e-6 mm and every
 rotation equal. Adversarial: a candidate 0.0001 mm off the raw reference → no match; a candidate equal to the 0.5 mm
 variant → matched to `snap0p5`, never to `raw`; a run whose family is `ascend910` (50 mm) is never drawn on the 45 mm
-stack. Pass: all (X6).
+stack. Pass: all (X3, X6).
 
 ## Fields (fixtures until P1-P4 land)
 
@@ -391,3 +396,20 @@ record (at `253ee4f7`) with a verbatim quote; every number in a served claim occ
 (number-preservation); the TAP-2.5D source record is completed (URL and the PDF sha256 shared by
 main:docs/sentilab/references/README.md:79-80 and the lane-1 sealed manifest); the anatomy heat sink carries no model
 value; forge signs the content review and astra the evidence review. Pass: all, with the two sign-offs recorded.
+
+## Added in v0.2 (after root's review, A#57218)
+
+**AC-41 Family match is not input verification; validity is not association** (node). With TEST-key replays: (a) a
+row shaped as today's producer writes it (a named `record.input_hashes`, no signed flags) whose family matches →
+`family_match: match`, `reference` set, `inputs_evidence: named_map`, `flags_evidence: absent`,
+`run_inputs_verified: false`, `stack_basis: schematic`; its J, W and centre values still show with their labels,
+statistics and receipts, and the panel and twin label the family's manifest as reference context; (b) the same row
+with signed flags, and `samplelayers.lcf`, `new_hotspot.config` and flags equal to the fixture's `expected_inputs` →
+`run_inputs_verified: true`, `stack_basis: run_inputs`, the stack drawn from the run's inputs; (c) as (b) but with a
+`new_hotspot.config` resolved for an older package size in a reused directory (same family, stale config) →
+`input_differences: ["new_hotspot.config"]`, not verified, schematic; (d) as (b) with `-detailed_3D off` → that flag
+listed, not verified; (e) a row with only `values.artifact_hashes` → `inputs_evidence: unnamed_list`, not verified;
+(f) a family the manifest lacks → `family_match: no_match`, `reference: null`, schematic with "no model for family
+<f>"; (g) a field artifact that passes every AC-21 check, on a run of (a), (c), (e) or (f) → status `unassociated`
+with reason `run_inputs_unverified`: no texture, no legend scale from it, no number in the twin, while its existence
+and receipt are listed; on a run of (b) → `verified`. Pass: all (SPEC.md §5.6, §5.7).
