@@ -1,14 +1,15 @@
 // sentilab.aidenid.com: static assets from ./public, and read-only /api/* proxied to the sentilab-api Azure Container App
 // (API_ORIGIN). The upstream body streams through, so server-sent events work unchanged.
+// This module's only export is the default handler: the Workers runtime treats every named export of the main module
+// as an entry point and refuses to start on anything else (web/test/worker-boot.mjs boots it in CI).
+import { CSP } from "./csp.js";
+
 const HOP = ["connection", "keep-alive", "transfer-encoding", "upgrade", "host"];
 
-// Every static asset response (the pages, their scripts and styles, the data files) carries this policy, so only our
-// own scripts run on the verifier pages: a script the edge injects into the HTML on its way out (its analytics script),
-// any inline script or inline style, eval, and any other origin are all refused by the browser. The pages hold no
-// inline code (no <script> or <style> blocks, no on* or style="" attributes; styles set from script use the CSSOM).
-// /api/* responses are passed through untouched. wrangler.jsonc sends every request through this Worker
-// (assets.run_worker_first: true); without that the asset layer would answer first and this header would never be set.
-export const CSP = "default-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
+// Every static asset response (the pages, their scripts and styles, the data files) carries the CSP (csp.js), so only
+// our own scripts run on the verifier pages. /api/* responses are passed through untouched. wrangler.jsonc sends every
+// request through this Worker (assets.run_worker_first: true); without that the asset layer would answer first and
+// this header would never be set.
 
 async function asset(request, env) {
   const res = await env.ASSETS.fetch(request);

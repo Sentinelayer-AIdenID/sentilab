@@ -13,7 +13,7 @@ permissions:
 jobs:
   browser-verifier:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -28,6 +28,11 @@ jobs:
         run: python -m pip install "$(grep '^cryptography==' requirements.txt)"
       - name: Verify browser trust and Python record compatibility (ephemeral keys)
         run: node --test web/test/*.test.mjs
+      # The unit tests import worker.js as a plain module; only the Workers runtime refuses what it can't start (a
+      # named export of the main module, for one). Bundle it, boot it with wrangler dev (no credentials; the /api
+      # upstream is off), and check the pages carry the exact CSP and /api still reaches the proxy.
+      - name: The Worker boots in the Workers runtime and serves the CSP (wrangler dev)
+        run: node web/test/worker-boot.mjs
 
   container:
     runs-on: ubuntu-24.04

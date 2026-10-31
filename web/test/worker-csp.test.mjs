@@ -10,7 +10,10 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import worker, { CSP } from "../src/worker.js";
+import * as workerModule from "../src/worker.js";
+import { CSP } from "../src/csp.js";
+
+const worker = workerModule.default;
 
 const here = dirname(fileURLToPath(import.meta.url));
 // The policy, written out here on purpose: the test pins the exact header value, not whatever the module exports.
@@ -43,6 +46,12 @@ const headerList = (res) => [...res.headers.entries()].sort();
 
 test("the exported policy is exactly the reviewed one", () => {
   assert.equal(CSP, EXACT);
+});
+test("worker.js exports only its default handler (the Workers runtime refuses any other named export)", () => {
+  assert.deepEqual(Object.keys(workerModule), ["default"]);
+  assert.equal(typeof worker.fetch, "function");
+  const source = readFileSync(join(here, "..", "src", "worker.js"), "utf8");
+  assert.deepEqual(source.match(/^[ \t]*export\b.*$/gm), ["export default {"], "the only export statement");
 });
 
 for (const path of ["/sentilab/", "/sentilab/package/", "/sentilab/lab.js", "/"]) {
