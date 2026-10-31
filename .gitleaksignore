@@ -1,0 +1,2 @@
+# False positive: the generic-api-key rule matches ordinary words in a PLAN.md table row (P9).
+126507d4dbd8cf327aa158c4dd893c436f7cdf8f:docs/sentilab/draft-0.5/PLAN.md:generic-api-key:394

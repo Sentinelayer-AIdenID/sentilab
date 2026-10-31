@@ -26,6 +26,17 @@ docker build .   # builds HotSpot with SuperLU and runs scripts/container_smoke.
 Without Docker, build HotSpot with `apt-get install build-essential libsuperlu-dev libblas-dev` and
 `(cd sundai_hotspot && make -j4 SUPERLU=1)`.
 
+## Imported results (regression-tested)
+
+These figures come from thermal-flight-lab and are checked to seven decimals by
+`sundai_thermal/test_tfl14_regression.py`:
+
+- Independent synthetic search, equal evaluation budget, three-seed mean best objective:
+  random 79.9564865°C; local annealing 78.7703960°C; surrogate-screened 79.8820836°C.
+  Local annealing beat this surrogate setup. This says nothing about LLM labs.
+- TFL-08 on Ascend910 (16x16, 10 seeds): random and the local-policy lane tie for the best median, which is why
+  SentiLab gates every LLM lab on a headroom check first (SLAB-039).
+
 ## Rules
 
 - Work arrives as SLAB tickets in the SentiLab room; each PR names its ticket.
