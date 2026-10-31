@@ -1,0 +1,20 @@
+{
+  "started_at": 1793425159.634809,
+  "ended_at": 1793425348.2295184,
+  "elapsed_s": 188.594709040015,
+  "process_tree_cpu_s": 1.1433430000000002,
+  "deadline": 1793425860.0,
+  "project_equals_live": true,
+  "run_id": "ascend910-local-proof",
+  "seq": 35,
+  "board": null,
+  "spend": {
+    "solves": 6,
+    "cpu_charged_s": 90,
+    "cpu_actual_s": 90,
+    "unsettled": 0
+  },
+  "head_hash": "47e1e15daa9bdf63512cf1bb777a81dfe45282d3b8170636dab961f91ecb1899",
+  "chain_error": null,
+  "scope": "AI off; provisional margin; diagnostic integration; same-solver reproduction"
+}
