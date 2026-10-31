@@ -9,11 +9,14 @@ from __future__ import annotations
 import argparse
 import asyncio
 import hashlib
+import fcntl
+import resource
+from dataclasses import asdict
+from datetime import datetime, timezone
 import json
 import math
 import os
 import random
-import signal
 import statistics
 import sys
 import time
@@ -23,8 +26,8 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from sundai_controller.controller import Controller, Ed25519PrivateKey, FlightRecord, digest, public_hex
-from sundai_controller.experiment import OPERATORS, SIGNAL_CHOICES, _candidate, _shared_designs, _signal_portfolio
+from sundai_controller.controller import Controller, Ed25519PrivateKey
+from sundai_controller.experiment import OPERATORS, _candidate, _shared_designs, _signal_portfolio
 
 TAP_INITIAL_CENTERS = ((25, 25), (40, 40), (8, 9), (8, 25), (8, 41), (41, 15))
 
@@ -112,549 +115,404 @@ def _choose_ucb1(counts: dict[str, int], rewards: dict[str, float],
     return best_op, f"ucb1 score = {best_score:.6f}"
 
 
-async def _run_reducer_lane(initial, oracle, lane_id: str, seed: int, evaluations: int,
-                            shared_designs: list, run_id: str) -> dict:
-    """Run a single reducer lane (random, greedy, or simulated_annealing).
+class BudgetExhausted(RuntimeError):
+    """No further oracle calls may be admitted under this allocation."""
 
-    Counts initialize() evaluations by recording actual_oracle_calls before and after init.
+
+def _cpu_seconds():
+    usages = (resource.getrusage(resource.RUSAGE_SELF),
+              resource.getrusage(resource.RUSAGE_CHILDREN))
+    return sum(usage.ru_utime + usage.ru_stime for usage in usages)
+
+
+class SolveBudget:
+    """One durable allocation shared by fixtures and all evaluation phases.
+
+    Hold the lock for the run. Reserve and fsync before starting each oracle call;
+    a crash with an outstanding reservation requires reconciliation, never a reset.
     """
-    lane_started_at = time.perf_counter()
-    rng = random.Random(seed)
-    agent_id = f"{run_id}:{lane_id}"
-    key = Ed25519PrivateKey.generate()
-    controller = Controller(
-        initial, oracle, run_id=f"{run_id}:{lane_id}",
-        max_oracle_calls=evaluations + 10,
-        max_cost_microdollars=(evaluations + 10) * 1,
-        evaluation_ceiling_microdollars=1,
-        max_attempts=1, lane_ids=(lane_id,), minimum_improvement_c=0.05,
-    )
-    controller.register(agent_id, key)
-    controller.bind_lane(lane_id, agent_id)
-    calls_before_init = controller.actual_oracle_calls
-    await controller.initialize(shared_initial_designs=shared_designs[1:])
-    init_evaluations = controller.actual_oracle_calls - calls_before_init
+    def __init__(self, path, fixture, prereg):
+        self.path = Path(path)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.lock = self.path.with_suffix('.lock').open('a')
+        try:
+            fcntl.flock(self.lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BaseException:
+            self.lock.close()
+            raise
+        self.fixture = fixture
+        allocation = prereg.get('allocation', {})
+        per_fixture = allocation.get('per_fixture', {})
+        self.solve_limit = min(9700, allocation.get('headroom_solve_limit', 9700))
+        self.fixture_limit = min(4768, per_fixture.get('total_solves', 4768))
+        self.cpu_limit = min(48 * 60, allocation.get('headroom_cpu_minutes', 48) * 60)
+        self.fixture_cpu_limit = min(24 * 60, per_fixture.get('cpu_minutes', 24) * 60)
+        self.clock = prereg.get('clock', {})
+        self.last_cpu = _cpu_seconds()
+        self.state = (json.loads(self.path.read_text()) if self.path.exists() else
+                      {'total_calls': 0, 'cpu_seconds': 0.0, 'fixtures': {}, 'active': None})
+        if self.state['active'] is not None:
+            self.lock.close()
+            raise RuntimeError('unreconciled oracle reservation in spend ledger')
+        self.entry = self.state['fixtures'].setdefault(fixture, {'calls': 0, 'cpu_seconds': 0.0})
+        self.reason = None
 
-    current_design = controller.design
-    current_temperature = controller.best_temperature
+    def checkpoint(self):
+        now = _cpu_seconds()
+        elapsed = max(0.0, now - self.last_cpu)
+        self.last_cpu = now
+        self.state['cpu_seconds'] += elapsed
+        self.entry['cpu_seconds'] += elapsed
+        _write_json(self.path, self.state)
+
+    def check(self):
+        self.checkpoint()
+        now = datetime.now(timezone.utc)
+        reason = self.reason
+        if self.clock.get('released') and now < datetime.fromisoformat(self.clock['released']):
+            reason = 'before_release'
+        elif self.clock.get('deadline') and now >= datetime.fromisoformat(self.clock['deadline']):
+            reason = 'deadline'
+        elif self.state['cpu_seconds'] >= self.cpu_limit:
+            reason = 'total_cpu_cap'
+        elif self.entry['cpu_seconds'] >= self.fixture_cpu_limit:
+            reason = 'fixture_cpu_cap'
+        elif self.state['total_calls'] >= self.solve_limit:
+            reason = 'total_solve_cap'
+        elif self.entry['calls'] >= self.fixture_limit:
+            reason = 'fixture_solve_cap'
+        if reason:
+            self.reason = reason
+            raise BudgetExhausted(reason)
+
+    def reserve(self, design, lane):
+        self.check()
+        self.state['total_calls'] += 1
+        self.entry['calls'] += 1
+        self.state['active'] = {'fixture': self.fixture, 'lane': lane, 'design_hash': design.hash}
+        self.checkpoint()
+
+    def finish(self):
+        self.state['active'] = None
+        self.checkpoint()
+
+    def close(self):
+        try:
+            self.checkpoint()
+        finally:
+            self.lock.close()
+
+
+class _LaneOracle:
+    def __init__(self, oracle, budget, lane, limit, cpu_timeout_s=None):
+        self.oracle, self.budget, self.lane = oracle, budget, lane
+        self.limit, self.calls, self.best_design, self.best_result = limit, 0, None, None
+        self.stop_reason = None
+        self.started_cpu = _cpu_seconds()
+        self.cpu_timeout_s = cpu_timeout_s
+
+    def __getattr__(self, name):
+        return getattr(self.oracle, name)
+
+    async def __call__(self, design):
+        if self.calls >= self.limit:
+            self.stop_reason = 'lane_solve_cap'
+        elif (self.cpu_timeout_s is not None and
+              _cpu_seconds() - self.started_cpu >= self.cpu_timeout_s):
+            self.stop_reason = 'restart_cpu_cap'
+        if self.stop_reason:
+            raise BudgetExhausted(self.stop_reason)
+        try:
+            self.budget.reserve(design, self.lane)
+        except BudgetExhausted as exc:
+            self.stop_reason = str(exc)
+            raise
+        self.calls += 1
+        try:
+            result = await self.oracle(design)
+            Controller.validate_result(result, design)
+            if self.best_result is None or result.maximum_temperature_c < self.best_result.maximum_temperature_c:
+                self.best_design, self.best_result = design, result
+            return result
+        finally:
+            # Warm workers retain descendant CPU until reaped. Closing after each
+            # call makes SELF+CHILDREN include solver AND worker startup CPU before
+            # the next admission. No hidden warm-up or uncounted retry is allowed.
+            close = getattr(self.oracle, 'aclose', None)
+            if close is not None:
+                await close()
+            self.budget.finish()
+
+
+async def _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs,
+                    run_id, *, budget, reproduction_evaluations=0, cpu_timeout_s=None):
+    started = time.perf_counter()
+    rng = random.Random(seed)
+    counted = _LaneOracle(oracle, budget, run_id, evaluations + reproduction_evaluations, cpu_timeout_s)
+    agent_id = f'{run_id}:{seed}'
+    signing_identity = Ed25519PrivateKey.generate()
+    controller = Controller(initial, counted, run_id=agent_id,
+                            max_oracle_calls=max(1, evaluations),
+                            max_cost_microdollars=max(1, evaluations),
+                            evaluation_ceiling_microdollars=1, max_attempts=1,
+                            lane_ids=(lane_id,), minimum_improvement_c=0)
+    controller.register(agent_id, signing_identity)
+    controller.bind_lane(lane_id, agent_id)
+    init_evaluations = search_count = noop_evaluations = 0
+    reproductions = []
+    counts = {op: 0 for op in OPERATORS}
+    rewards = {op: 0.0 for op in OPERATORS}
     stagnation = 0
     improved_last = False
-    noop_evaluations = 0
-    proposal_attempts = 0
-    max_proposal_attempts = evaluations * 128
-
-    while controller.actual_oracle_calls < init_evaluations + evaluations:
-        proposal_attempts += 1
-        if proposal_attempts > max_proposal_attempts:
-            raise RuntimeError(f"{lane_id} could not fill its equal evaluation budget")
-        state = {
-            "lane_id": lane_id,
-            "seed": seed,
-            "evaluations_completed": controller.actual_oracle_calls - init_evaluations,
-            "evaluations_remaining": evaluations - (controller.actual_oracle_calls - init_evaluations),
-            "best_temperature_c": controller.lane_best[lane_id][1],
-            "current_temperature_c": current_temperature,
-            "stagnation": stagnation,
-            "improved_last": improved_last,
-        }
-        if lane_id == "simulated_annealing":
-            progress = (1.0 if evaluations == 1 else
-                        (controller.actual_oracle_calls - init_evaluations) / (evaluations - 1))
-            state["temperature_scale_c"] = 0.5 * (0.05 / 0.5) ** progress
-
-        if lane_id == "random":
-            operator = rng.choice(OPERATORS)
-            selection_reason = "uniform operator selection"
-            parent = controller.lane_best[lane_id][0]
-        elif lane_id == "greedy":
-            operator = rng.choice(OPERATORS)
-            selection_reason = "greedy first-improvement hill climb"
-            parent = current_design
-        elif lane_id == "simulated_annealing":
-            operator = rng.choices(OPERATORS, (7, 2, 1))[0]
-            selection_reason = f"SA proposal (T scale {state.get('temperature_scale_c', 0):.4f})"
-            parent = current_design
-        else:
-            raise ValueError(f"unknown reducer lane: {lane_id}")
-
-        candidate, operation, args = _candidate(parent, operator, rng, oracle)
-        is_noop = candidate.hash == parent.hash
-        noop_evaluations += int(is_noop)
-        before_best = controller.lane_best[lane_id][1]
-        controller.log.append("lane_decision", lane_id=lane_id, agent_id=agent_id,
-                              policy=lane_id, operator=operator,
-                              reason=selection_reason, state=state,
-                              parent_hash=parent.hash, candidate_hash=candidate.hash, noop=is_noop)
-        task_id = controller.mint_task(agent_id)
-        proposal = controller.proposal(agent_id, key, task_id, operation, args,
-                                       model_id="slab039-reducer", lane_id=lane_id,
-                                       parent_hash=parent.hash,
-                                       tool_hash=controller.problem_contract_hash)
-        outcome = await controller.submit(proposal)
-        candidate_temperature = outcome.temperature_c
-        if candidate_temperature is not None:
-            if lane_id == "greedy":
-                if candidate_temperature < current_temperature:
-                    current_design, current_temperature = candidate, candidate_temperature
-            elif lane_id == "simulated_annealing":
-                delta = candidate_temperature - current_temperature
-                if delta <= 0 or rng.random() < math.exp(-delta / state.get("temperature_scale_c", 0.5)):
-                    current_design, current_temperature = candidate, candidate_temperature
+    current_design = initial
+    try:
+        # Greedy starts at the fixture layout. Other lanes share up to four
+        # initial designs; ALL of these calls are inside the 28-search budget.
+        shared = [] if lane_id == 'greedy' else shared_designs[1:evaluations]
+        await controller.initialize(shared_initial_designs=shared)
+        init_evaluations = counted.calls
+        current_design, current_temperature = controller.design, controller.best_temperature
+        attempts = 0
+        while counted.calls < evaluations:
+            attempts += 1
+            if attempts > evaluations * 128:
+                raise RuntimeError(f'{lane_id} could not fill its search budget')
+            before_calls = counted.calls
+            before_best = counted.best_result.maximum_temperature_c
+            progress = counted.calls / max(1, evaluations - 1)
+            scale = 0.5 * (0.05 / 0.5) ** progress
+            state = dict(lane_id=lane_id, seed=seed, evaluations_completed=counted.calls,
+                         evaluations_remaining=evaluations-counted.calls,
+                         best_temperature_c=before_best, current_temperature_c=current_temperature,
+                         stagnation=stagnation, improved_last=improved_last,
+                         temperature_scale_c=scale, counts=counts, rewards=rewards)
+            if lane_id == 'simulated_annealing':
+                operator = rng.choices(OPERATORS, (7, 2, 1))[0]
+            elif lane_id == 'ucb1':
+                operator, _ = _choose_ucb1(counts, rewards, counted.calls + 1, rng)
+            elif lane_id == 'signal_portfolio':
+                operator, _ = _signal_portfolio(state)
+                if operator == 'stop':
+                    break
+            elif lane_id in ('random', 'greedy'):
+                operator = rng.choice(OPERATORS)
             else:
-                pass
-        improved_last = controller.lane_best[lane_id][1] < before_best
-        if improved_last:
-            stagnation = 0
-        else:
-            stagnation += 1
-        controller.log.append("lane_step_result", lane_id=lane_id, agent_id=agent_id,
-                              task_id=task_id, proposal_id=proposal.payload["proposal_id"],
-                              status=outcome.status, reason=outcome.reason,
-                              oracle_calls=controller.actual_oracle_calls - init_evaluations,
-                              evaluation_admissions=controller.calls,
-                              spent_microdollars=controller.spent, noop=is_noop)
-        if outcome.status == "failed":
-            raise RuntimeError(f"lane {lane_id} oracle evaluation failed: {outcome.reason}")
-        if controller.stopped:
-            raise RuntimeError(f"lane {lane_id} controller stopped: {outcome.reason}")
-
-    controller.log.close()
-    wall_time = time.perf_counter() - lane_started_at
-    return {
-        "seed": seed,
-        "best_temperature_c": controller.best_temperature,
-        "best_design_hash": controller.design.hash,
-        "evaluation_count": controller.actual_oracle_calls - init_evaluations,
-        "evaluation_admissions": controller.calls,
-        "wall_time_s": wall_time,
-        "noop_evaluations": noop_evaluations,
-        "init_evaluations": init_evaluations,
-        "total_evaluations_including_init": controller.actual_oracle_calls,
-    }
-
-
-async def _run_diagnostic_lane(initial, oracle, lane_id: str, seed: int, evaluations: int,
-                               shared_designs: list, run_id: str) -> dict:
-    """Run a single extra diagnostic lane (ucb1 or signal_portfolio).
-
-    These are excluded from the gate criterion C but reported in the output.
-    """
-    lane_started_at = time.perf_counter()
-    rng = random.Random(seed)
-    agent_id = f"{run_id}:{lane_id}"
-    key = Ed25519PrivateKey.generate()
-    controller = Controller(
-        initial, oracle, run_id=f"{run_id}:{lane_id}",
-        max_oracle_calls=evaluations + 10,
-        max_cost_microdollars=(evaluations + 10) * 1,
-        evaluation_ceiling_microdollars=1,
-        max_attempts=1, lane_ids=(lane_id,), minimum_improvement_c=0.05,
-    )
-    controller.register(agent_id, key)
-    controller.bind_lane(lane_id, agent_id)
-    calls_before_init = controller.actual_oracle_calls
-    await controller.initialize(shared_initial_designs=shared_designs[1:])
-    init_evaluations = controller.actual_oracle_calls - calls_before_init
-
-    current_design = controller.design
-    current_temperature = controller.best_temperature
-    counts = {operator: 0 for operator in OPERATORS}
-    rewards = {operator: 0.0 for operator in OPERATORS}
-    stagnation = 0
-    improved_last = False
-    noop_evaluations = 0
-    proposal_attempts = 0
-    max_proposal_attempts = evaluations * 128
-
-    while controller.actual_oracle_calls < init_evaluations + evaluations:
-        proposal_attempts += 1
-        if proposal_attempts > max_proposal_attempts:
-            raise RuntimeError(f"{lane_id} could not fill its equal evaluation budget")
-        state = {
-            "lane_id": lane_id,
-            "seed": seed,
-            "evaluations_completed": controller.actual_oracle_calls - init_evaluations,
-            "evaluations_remaining": evaluations - (controller.actual_oracle_calls - init_evaluations),
-            "best_temperature_c": controller.lane_best[lane_id][1],
-            "current_temperature_c": current_temperature,
-            "stagnation": stagnation,
-            "improved_last": improved_last,
-        }
-        if lane_id == "ucb1":
-            operator, selection_reason = _choose_ucb1(counts, rewards,
-                                                      controller.actual_oracle_calls - init_evaluations + 1, rng)
-            parent = controller.lane_best[lane_id][0]
-        elif lane_id == "signal_portfolio":
-            signal_state = {
-                "lane_id": lane_id,
-                "seed": seed,
-                "evaluations_completed": controller.actual_oracle_calls - init_evaluations,
-                "evaluations_remaining": evaluations - (controller.actual_oracle_calls - init_evaluations),
-                "best_temperature_c": controller.lane_best[lane_id][1],
-                "current_temperature_c": current_temperature,
-                "stagnation": stagnation,
-                "improved_last": improved_last,
-                "temperature_scale_c": 0.1,
-                "counts": counts,
-                "rewards": rewards,
-            }
-            choice = _signal_portfolio(signal_state)
-            if choice[0] == "stop":
-                break
-            operator, selection_reason = choice
-            parent = current_design
-        else:
-            raise ValueError(f"unknown diagnostic lane: {lane_id}")
-
-        candidate, operation, args = _candidate(parent, operator, rng, oracle)
-        is_noop = candidate.hash == parent.hash
-        noop_evaluations += int(is_noop)
-        before_best = controller.lane_best[lane_id][1]
-        controller.log.append("lane_decision", lane_id=lane_id, agent_id=agent_id,
-                              policy=lane_id, operator=operator,
-                              reason=selection_reason, state=state,
-                              parent_hash=parent.hash, candidate_hash=candidate.hash, noop=is_noop)
-        task_id = controller.mint_task(agent_id)
-        proposal = controller.proposal(agent_id, key, task_id, operation, args,
-                                       model_id="slab039-diagnostic", lane_id=lane_id,
-                                       parent_hash=parent.hash,
-                                       tool_hash=controller.problem_contract_hash)
-        outcome = await controller.submit(proposal)
-        candidate_temperature = outcome.temperature_c
-        if candidate_temperature is not None:
-            counts[operator] += 1
-            delta = before_best - candidate_temperature
-            rewards[operator] += delta if delta > 0 else 0
-            if lane_id == "ucb1":
-                pass
-            elif lane_id == "signal_portfolio":
-                if candidate_temperature < current_temperature:
-                    current_design, current_temperature = candidate, candidate_temperature
-        improved_last = controller.lane_best[lane_id][1] < before_best
-        if improved_last:
-            stagnation = 0
-        else:
-            stagnation += 1
-        controller.log.append("lane_step_result", lane_id=lane_id, agent_id=agent_id,
-                              task_id=task_id, proposal_id=proposal.payload["proposal_id"],
-                              status=outcome.status, reason=outcome.reason,
-                              oracle_calls=controller.actual_oracle_calls - init_evaluations,
-                              evaluation_admissions=controller.calls,
-                              spent_microdollars=controller.spent, noop=is_noop)
-        if outcome.status == "failed":
-            raise RuntimeError(f"lane {lane_id} oracle evaluation failed: {outcome.reason}")
-        if controller.stopped:
-            raise RuntimeError(f"lane {lane_id} controller stopped: {outcome.reason}")
-
-    controller.log.close()
-    wall_time = time.perf_counter() - lane_started_at
-    return {
-        "seed": seed,
-        "best_temperature_c": controller.best_temperature,
-        "best_design_hash": controller.design.hash,
-        "evaluation_count": controller.actual_oracle_calls - init_evaluations,
-        "evaluation_admissions": controller.calls,
-        "wall_time_s": wall_time,
-        "noop_evaluations": noop_evaluations,
-        "init_evaluations": init_evaluations,
-        "total_evaluations_including_init": controller.actual_oracle_calls,
-    }
+                raise ValueError(f'unknown lane: {lane_id}')
+            parent = controller.design if lane_id in ('random', 'ucb1') else current_design
+            candidate, operation, args = _candidate(parent, operator, rng, oracle)
+            noop_evaluations += int(candidate.hash == parent.hash)
+            proposal = controller.proposal(agent_id, signing_identity, controller.mint_task(agent_id),
+                                           operation, args, lane_id=lane_id, parent_hash=parent.hash,
+                                           model_id='slab039', tool_hash=controller.problem_contract_hash)
+            outcome = await controller.submit(proposal)
+            if counted.stop_reason:
+                raise BudgetExhausted(counted.stop_reason)
+            if outcome.status == 'failed' or controller.stopped:
+                raise RuntimeError(f'{lane_id} oracle/controller failure: {outcome.reason}')
+            temperature = outcome.temperature_c
+            if temperature is not None:
+                counts[operator] += counted.calls - before_calls
+                rewards[operator] += max(0, before_best - temperature)
+                delta = temperature - current_temperature
+                if delta < 0 or (lane_id == 'simulated_annealing' and
+                                 (delta == 0 or rng.random() < math.exp(-delta / scale))):
+                    current_design, current_temperature = candidate, temperature
+            improved_last = counted.best_result.maximum_temperature_c < before_best
+            stagnation = 0 if improved_last else stagnation + 1
+        search_count = counted.calls
+        # Four fresh oracle calls of the frozen search winner, not cache reads
+        # and not more proposals. The same allocation admits each call.
+        winner = counted.best_design
+        for _ in range(reproduction_evaluations):
+            reproduced = await counted(winner)
+            reproductions.append({'design_hash': winner.hash,
+                                  'temperature_c': reproduced.maximum_temperature_c})
+    except BudgetExhausted:
+        if not init_evaluations:
+            init_evaluations = counted.calls
+        if not search_count:
+            search_count = min(counted.calls, evaluations)
+    finally:
+        controller.log.close()
+    best = counted.best_result
+    return dict(seed=seed, best_temperature_c=None if best is None else best.maximum_temperature_c,
+                best_design_hash=None if best is None else counted.best_design.hash,
+                best_design=None if best is None else asdict(counted.best_design),
+                current_design_hash=current_design.hash,
+                evaluation_count=counted.calls, evaluation_admissions=controller.calls,
+                search_evaluation_count=search_count, reproduction_evaluation_count=len(reproductions),
+                reproductions=reproductions, init_evaluations=init_evaluations,
+                total_evaluations_including_init=counted.calls, noop_evaluations=noop_evaluations,
+                wall_time_s=time.perf_counter()-started, cpu_seconds=_cpu_seconds()-counted.started_cpu,
+                cpu_exhausted='cpu' in (counted.stop_reason or ''), stop_reason=counted.stop_reason,
+                complete=counted.calls == evaluations + reproduction_evaluations,
+                solver_version=None if best is None else best.solver_version,
+                problem_hash=None if best is None else best.problem_hash)
 
 
-async def _run_long_sa(initial, oracle, seed: int, max_evaluations: int,
-                       cpu_timeout_s: float, shared_designs: list, run_id: str) -> dict:
-    """Run a single long simulated annealing restart."""
-    lane_started_at = time.perf_counter()
-    rng = random.Random(seed)
-    agent_id = f"{run_id}:{seed}"
-    key = Ed25519PrivateKey.generate()
-    controller = Controller(
-        initial, oracle, run_id=f"{run_id}:{seed}",
-        max_oracle_calls=max_evaluations + 10,
-        max_cost_microdollars=(max_evaluations + 10) * 1,
-        evaluation_ceiling_microdollars=1,
-        max_attempts=1, lane_ids=("simulated_annealing",), minimum_improvement_c=0.05,
-    )
-    controller.register(agent_id, key)
-    controller.bind_lane("simulated_annealing", agent_id)
-    calls_before_init = controller.actual_oracle_calls
-    await controller.initialize(shared_initial_designs=shared_designs[1:])
-    init_evaluations = controller.actual_oracle_calls - calls_before_init
+async def _run_reducer_lane(initial, oracle, lane_id, seed, evaluations, shared_designs, run_id,
+                            *, budget, reproduction_evaluations=0):
+    return await _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs, run_id,
+                           budget=budget, reproduction_evaluations=reproduction_evaluations)
 
-    current_design = controller.design
-    current_temperature = controller.best_temperature
-    noop_evaluations = 0
-    proposal_attempts = 0
-    max_proposal_attempts = max_evaluations * 128
 
-    while controller.actual_oracle_calls < init_evaluations + max_evaluations:
-        elapsed = time.perf_counter() - lane_started_at
-        if elapsed > cpu_timeout_s:
-            break
-        proposal_attempts += 1
-        if proposal_attempts > max_proposal_attempts:
-            raise RuntimeError("long SA could not fill its evaluation budget")
-        progress = (1.0 if max_evaluations == 1 else
-                    (controller.actual_oracle_calls - init_evaluations) / (max_evaluations - 1))
-        temperature_scale_c = 0.5 * (0.05 / 0.5) ** progress
-        operator = rng.choices(("local_move", "swap", "global_resample"), (7, 2, 1))[0]
+async def _run_diagnostic_lane(initial, oracle, lane_id, seed, evaluations, shared_designs, run_id,
+                               *, budget):
+    return await _run_lane(initial, oracle, lane_id, seed, evaluations, shared_designs, run_id, budget=budget)
 
-        state = {
-            "lane_id": "simulated_annealing",
-            "seed": seed,
-            "evaluations_completed": controller.actual_oracle_calls - init_evaluations,
-            "evaluations_remaining": max_evaluations - (controller.actual_oracle_calls - init_evaluations),
-            "best_temperature_c": controller.lane_best["simulated_annealing"][1],
-            "current_temperature_c": current_temperature,
-            "stagnation": 0,
-            "improved_last": False,
-            "temperature_scale_c": temperature_scale_c,
-        }
 
-        parent = current_design
-        candidate, operation, args = _candidate(parent, operator, rng, oracle)
-        is_noop = candidate.hash == parent.hash
-        noop_evaluations += int(is_noop)
-        before_best = controller.lane_best["simulated_annealing"][1]
-        controller.log.append("lane_decision", lane_id="simulated_annealing", agent_id=agent_id,
-                              policy="simulated_annealing", operator=operator,
-                              reason="long SA proposal", state=state,
-                              parent_hash=parent.hash, candidate_hash=candidate.hash, noop=is_noop)
-        task_id = controller.mint_task(agent_id)
-        proposal = controller.proposal(agent_id, key, task_id, operation, args,
-                                       model_id="slab039-long-sa", lane_id="simulated_annealing",
-                                       parent_hash=parent.hash,
-                                       tool_hash=controller.problem_contract_hash)
-        outcome = await controller.submit(proposal)
-        candidate_temperature = outcome.temperature_c
-        if candidate_temperature is not None:
-            delta = candidate_temperature - current_temperature
-            if delta <= 0 or rng.random() < math.exp(-delta / temperature_scale_c):
-                current_design, current_temperature = candidate, candidate_temperature
-        controller.log.append("lane_step_result", lane_id="simulated_annealing", agent_id=agent_id,
-                              task_id=task_id, proposal_id=proposal.payload["proposal_id"],
-                              status=outcome.status, reason=outcome.reason,
-                              oracle_calls=controller.actual_oracle_calls - init_evaluations,
-                              evaluation_admissions=controller.calls,
-                              spent_microdollars=controller.spent, noop=is_noop)
-        if outcome.status == "failed":
-            raise RuntimeError(f"long SA oracle evaluation failed: {outcome.reason}")
-        if controller.stopped:
-            raise RuntimeError(f"long SA controller stopped: {outcome.reason}")
-
-    controller.log.close()
-    wall_time = time.perf_counter() - lane_started_at
-    cpu_exhausted = wall_time > cpu_timeout_s
-    return {
-        "seed": seed,
-        "best_temperature_c": controller.best_temperature,
-        "best_design_hash": controller.design.hash,
-        "evaluation_count": controller.actual_oracle_calls - init_evaluations,
-        "evaluation_admissions": controller.calls,
-        "wall_time_s": wall_time,
-        "cpu_exhausted": cpu_exhausted,
-        "cpu_timeout_s": cpu_timeout_s,
-        "noop_evaluations": noop_evaluations,
-        "init_evaluations": init_evaluations,
-        "total_evaluations_including_init": controller.actual_oracle_calls,
-    }
+async def _run_long_sa(initial, oracle, seed, max_evaluations, cpu_timeout_s, shared_designs, run_id,
+                       *, budget):
+    return await _run_lane(initial, oracle, 'simulated_annealing', seed, max_evaluations,
+                           shared_designs, run_id, budget=budget, cpu_timeout_s=cpu_timeout_s)
 
 
 async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str | Path,
                        output_dir: str | Path | None = None,
                        j32_values: list[float] | None = None,
-                       j64_values: list[float] | None = None) -> dict:
-    """Run the full headroom experiment.
-
-    Reducer methods: random, greedy, simulated_annealing (determine the gate).
-    Extra diagnostics: ucb1, signal_portfolio (run after declared runs, excluded from C).
-
-    If mesh_error is provided as a float, it is validated (non-negative, finite).
-    If j32_values and j64_values are provided, the mesh error is computed as max|J32 - J64|.
-    """
+                       j64_values: list[float] | None = None,
+                       budget_path: str | Path | None = None) -> dict:
+    """Run reducers, long SA, then optional diagnostics under one durable budget."""
     prereg = _parse_prereg(prereg_path)
-    schema = prereg.get("schema", "slab-039-prereg-v1")
-
+    if fixture != prereg['fixture']:
+        raise ValueError('fixture differs from preregistration')
+    if j32_values is not None or j64_values is not None:
+        _, _, mesh_error = _gate_pass_dynamic(0, 0, j32_values, j64_values)
     _validate_mesh_error(mesh_error)
-
-    # Determine reducer methods and extra diagnostics from prereg
-    if schema == "slab-039-prereg-v3":
-        cheap_cfg = prereg.get("reducer_methods", {})
-        diag_cfg = prereg.get("extra_diagnostics", {})
-        reducer_methods = tuple(cheap_cfg.get("methods", ["random", "greedy", "simulated_annealing"]))
-        diag_methods = tuple(diag_cfg.get("methods", ["ucb1", "signal_portfolio"]))
-    elif "reducer_methods" in prereg:
-        cheap_cfg = prereg["reducer_methods"]
-        reducer_methods = tuple(cheap_cfg.get("methods", ["random", "greedy", "simulated_annealing"]))
-        diag_cfg = prereg.get("extra_diagnostics", {})
-        diag_methods = tuple(diag_cfg.get("methods", ["ucb1", "signal_portfolio"]))
-    else:
-        cheap_cfg = prereg.get("cheap_methods", {})
-        reducer_methods = tuple(cheap_cfg.get("methods", ["random", "simulated_annealing", "ucb1"]))
-        # v1/v2: UCB1 and signal_portfolio were mixed in; for compatibility treat as reducer
-        diag_methods = ()
-        diag_cfg = {}
-
-    long_cfg = prereg["long_sa"]
-    seeds = tuple(cheap_cfg["seeds"])
-
-    if "search_evaluations_per_method" in cheap_cfg:
-        evaluations = cheap_cfg["search_evaluations_per_method"]
-        reproduction_evals = cheap_cfg.get("reproduction_evaluations_per_method", 0)
-    else:
-        evaluations = cheap_cfg["evaluations_per_method"]
-        reproduction_evals = 0
-
-    output_dir = Path(output_dir) if output_dir is not None else Path("docs/sentilab/evidence/SLAB-039")
+    declared_mesh = prereg.get('mesh_error', {}).get(fixture)
+    if declared_mesh is not None and declared_mesh.get('e_c') != mesh_error:
+        raise ValueError('mesh error is pending or differs from fixture preregistration')
+    cheap_cfg = prereg.get('reducer_methods', prereg.get('cheap_methods', {}))
+    reducer_methods = tuple(cheap_cfg['methods'])
+    diag_methods = tuple(prereg.get('extra_diagnostics', {}).get('methods', []))
+    seeds = tuple(cheap_cfg['seeds'])
+    evaluations = cheap_cfg.get('search_evaluations_per_method', cheap_cfg.get('evaluations_per_method'))
+    reproduction_evals = cheap_cfg.get('reproduction_evaluations_per_method', 0)
+    long_cfg = prereg['long_sa']
+    long_seeds = tuple(long_cfg['seeds'])
+    max_evals = long_cfg['max_evaluations_per_restart']
+    if (not seeds or not long_seeds or not reducer_methods or evaluations < 1 or
+            max_evals < 1 or reproduction_evals < 0):
+        raise ValueError('empty or invalid declared evaluation schedule')
+    output_dir = Path(output_dir) if output_dir is not None else Path(prereg_path).parent
     output_dir.mkdir(parents=True, exist_ok=True)
+    budget = SolveBudget(budget_path or Path(prereg_path).parent / 'SPEND.json', fixture, prereg)
+    started_at = datetime.now(timezone.utc).isoformat()
+    starting_calls = budget.state['total_calls']
+    starting_cpu = budget.state['cpu_seconds']
+    from sundai_hotspot.tap_oracle import HotSpotOracle
 
-    sys.path.insert(0, str(ROOT / "sundai_hotspot"))
-    from tap_oracle import HotSpotOracle
-
-    grid = prereg["grid"]
-    oracle = HotSpotOracle(grid, grid)
-    initial = oracle.design_from_centers(TAP_INITIAL_CENTERS)
-
-    all_reducer_results: list[dict] = []
-    all_diag_results: list[dict] = []
-    long_sa_results: list[dict] = []
-    aggregate_evaluations = 0
-
+    oracle = None
+    all_reducer_results, all_diag_results, long_sa_results = [], [], []
+    diagnostic_skip_reason = None
     try:
-        # Phase 1: Reducer methods (determine gate)
+        grid = prereg['grid']
+        oracle = HotSpotOracle(grid, grid, fixture=fixture)
+        initial = oracle.design_from_centers(TAP_INITIAL_CENTERS)
+        def shared_initials(seed, count):
+            try:
+                budget.check()
+            except BudgetExhausted:
+                return [initial]
+            return _shared_designs(initial, oracle, seed, min(3, count - 1))
+
         for method in reducer_methods:
             for seed in seeds:
                 lane_seed = seed + 7919 * (list(reducer_methods).index(method) + 1)
-                rng = random.Random(seed)
-                shared_designs = _shared_designs(initial, oracle, seed, 3)
-                run_id = f"slab039-{fixture}-{method}"
+                shared_designs = shared_initials(seed, evaluations)
                 result = await _run_reducer_lane(
-                    initial, oracle, method, lane_seed, evaluations, shared_designs, run_id,
-                )
-                result["method"] = method
-                result["category"] = "reducer"
+                    initial, oracle, method, lane_seed, evaluations, shared_designs,
+                    f'slab039-{fixture}-{method}-{seed}', budget=budget,
+                    reproduction_evaluations=reproduction_evals)
+                result.update(method=method, category='reducer', prereg_seed=seed)
                 all_reducer_results.append(result)
-                aggregate_evaluations += result["total_evaluations_including_init"]
 
-        # Phase 2: Extra diagnostics (after declared runs)
-        for method in diag_methods:
-            for seed in seeds:
-                lane_seed = seed + 7919 * (len(reducer_methods) + list(diag_methods).index(method) + 1)
-                rng = random.Random(seed)
-                shared_designs = _shared_designs(initial, oracle, seed, 3)
-                run_id = f"slab039-{fixture}-{method}"
-                result = await _run_diagnostic_lane(
-                    initial, oracle, method, lane_seed, evaluations, shared_designs, run_id,
-                )
-                result["method"] = method
-                result["category"] = "extra_diagnostic"
-                all_diag_results.append(result)
-                aggregate_evaluations += result["total_evaluations_including_init"]
-
-        # Phase 3: Long SA
-        long_seeds = tuple(long_cfg["seeds"])
-        max_evals = long_cfg["max_evaluations_per_restart"]
-        cpu_minutes = long_cfg["max_cpu_minutes"]
-        cpu_timeout_s = cpu_minutes * 60.0
-
-        for sa_seed in long_seeds:
-            rng = random.Random(sa_seed)
-            shared_designs = _shared_designs(initial, oracle, sa_seed, 3)
-            run_id = f"slab039-{fixture}-long-sa"
-            result = await _run_long_sa(
-                initial, oracle, sa_seed, max_evals, cpu_timeout_s, shared_designs, run_id,
-            )
+        # All four declared reference restarts take precedence over diagnostics.
+        for seed in long_seeds:
+            shared_designs = shared_initials(seed, max_evals)
+            result = await _run_long_sa(initial, oracle, seed, max_evals,
+                                        long_cfg['max_cpu_minutes'] * 60, shared_designs,
+                                        f'slab039-{fixture}-long-sa-{seed}', budget=budget)
             long_sa_results.append(result)
-            aggregate_evaluations += result["total_evaluations_including_init"]
+
+        declared_complete = all(r['complete'] for r in all_reducer_results + long_sa_results)
+        if declared_complete:
+            for method in diag_methods:
+                for seed in seeds:
+                    try:
+                        budget.check()
+                    except BudgetExhausted as exc:
+                        diagnostic_skip_reason = str(exc)
+                        break
+                    lane_seed = seed + 7919 * (len(reducer_methods) + list(diag_methods).index(method) + 1)
+                    shared_designs = shared_initials(seed, evaluations)
+                    result = await _run_diagnostic_lane(
+                        initial, oracle, method, lane_seed, evaluations, shared_designs,
+                        f'slab039-{fixture}-{method}-{seed}', budget=budget)
+                    result.update(method=method, category='extra_diagnostic', prereg_seed=seed)
+                    all_diag_results.append(result)
+        else:
+            diagnostic_skip_reason = 'declared_runs_incomplete'
     finally:
-        close = getattr(oracle, "aclose", None)
-        if close is not None:
-            await close()
+        try:
+            if oracle is not None:
+                close = getattr(oracle, 'aclose', None)
+                if close is not None:
+                    await close()
+        finally:
+            budget.close()
 
-    # Compute reducer method medians (gate C uses only reducer methods)
-    reducer_medians = {}
-    reducer_all_bests = {}
+    reducer_medians, all_method_all_bests = {}, {}
     for method in reducer_methods:
-        method_results = [r for r in all_reducer_results if r["method"] == method]
-        bests = [r["best_temperature_c"] for r in method_results]
-        reducer_all_bests[method] = bests
-        reducer_medians[method] = statistics.median(bests)
-
-    cheap_median = min(reducer_medians.values())
-
-    # Best from anywhere: reducer + diagnostics + long SA
-    all_bests = [r["best_temperature_c"] for r in all_reducer_results]
-    all_bests += [r["best_temperature_c"] for r in all_diag_results]
-    all_bests += [r["best_temperature_c"] for r in long_sa_results]
-    best = min(all_bests)
-
-    # Combine all method medians for reporting (including diagnostics)
+        bests = [r['best_temperature_c'] for r in all_reducer_results
+                 if r['method'] == method and r['best_temperature_c'] is not None]
+        all_method_all_bests[method] = bests
+        reducer_medians[method] = statistics.median(bests) if bests else None
+    finite_medians = [v for v in reducer_medians.values() if v is not None]
+    cheap_median = min(finite_medians) if finite_medians else None
+    all_results = all_reducer_results + long_sa_results + all_diag_results
+    all_bests = [r['best_temperature_c'] for r in all_results if r['best_temperature_c'] is not None]
+    best = min(all_bests) if all_bests else None
     all_method_medians = dict(reducer_medians)
-    all_method_all_bests = dict(reducer_all_bests)
     for method in diag_methods:
-        method_results = [r for r in all_diag_results if r["method"] == method]
-        if method_results:
-            bests = [r["best_temperature_c"] for r in method_results]
+        bests = [r['best_temperature_c'] for r in all_diag_results
+                 if r['method'] == method and r['best_temperature_c'] is not None]
+        if bests:
             all_method_all_bests[method] = bests
             all_method_medians[method] = statistics.median(bests)
-
-    # Gate computation
-    passed, gap = _gate_pass(cheap_median, best, mesh_error, k=prereg["rule"]["k"])
-
-    # Check long SA exhaustion: if ALL long SA runs were cpu_exhausted or partial,
-    # verdict is INCONCLUSIVE, not PASS/FAIL
-    long_sa_exhausted = all(r.get("cpu_exhausted", False) for r in long_sa_results)
-    long_sa_partial = any(r.get("evaluation_count", 0) < 1 for r in long_sa_results)
-    if long_sa_exhausted or long_sa_partial:
-        verdict = "INCONCLUSIVE"
-    elif passed:
-        verdict = "PASS"
-    else:
-        verdict = "FAIL"
-
-    # Spread across reducer seeds
-    reducer_bests = [r["best_temperature_c"] for r in all_reducer_results]
-    spread = max(reducer_bests) - min(reducer_bests) if reducer_bests else 0.0
-
-    # Compute prereg digest
-    prereg_digest = _compute_prereg_digest(prereg_path)
-
+    numeric_pass = False
+    gap = None
+    if cheap_median is not None and best is not None:
+        numeric_pass, gap = _gate_pass(cheap_median, best, mesh_error, prereg['rule']['k'])
+    long_sa_exhausted = any(r['stop_reason'] is not None for r in long_sa_results)
+    long_sa_partial = any(not r['complete'] for r in long_sa_results)
+    verdict = ('INCONCLUSIVE' if not declared_complete else 'PASS' if numeric_pass else 'FAIL')
+    reducer_bests = [r['best_temperature_c'] for r in all_reducer_results if r['best_temperature_c'] is not None]
     result = {
-        "schema": "slab-039-result-v3",
-        "prereg_schema": schema,
-        "prereg_digest_sha256": prereg_digest,
-        "fixture": fixture,
-        "grid": grid,
-        "mesh_error_c": mesh_error,
-        "mesh_error_source": "provided" if j32_values is None else "dynamic from J32/J64",
-        "k": prereg["rule"]["k"],
-        "verdict": verdict,
-        "passed": passed,
-        "gap_c": gap,
-        "threshold_c": prereg["rule"]["k"] * mesh_error,
-        "cheap_median_c": cheap_median,
-        "best_c": best,
-        "spread_across_seeds_c": spread,
-        "reducer_methods": list(reducer_methods),
-        "extra_diagnostics": list(diag_methods),
-        "cheap_method_medians_c": all_method_medians,
-        "cheap_method_all_bests_c": all_method_all_bests,
-        "reducer_results": all_reducer_results,
-        "extra_diagnostic_results": all_diag_results,
-        "long_sa_results": long_sa_results,
-        "long_sa_exhausted": long_sa_exhausted,
-        "long_sa_partial": long_sa_partial,
-        "aggregate_evaluations": aggregate_evaluations,
-        "search_evaluations": evaluations,
-        "reproduction_evaluations": reproduction_evals,
+        'schema': 'slab-039-result-v3', 'prereg_schema': prereg['schema'],
+        'prereg_digest_sha256': _compute_prereg_digest(prereg_path),
+        'runner_sha256': _compute_prereg_digest(__file__),
+        'fixture': fixture, 'grid': grid, 'mesh_error_c': mesh_error,
+        'mesh_error_source': 'provided' if j32_values is None else 'dynamic from J32/J64',
+        'started_at': started_at, 'finished_at': datetime.now(timezone.utc).isoformat(),
+        'k': prereg['rule']['k'], 'verdict': verdict, 'passed': verdict == 'PASS',
+        'numeric_threshold_met': numeric_pass, 'gap_c': gap,
+        'threshold_c': prereg['rule']['k'] * mesh_error,
+        'cheap_median_c': cheap_median, 'best_c': best,
+        'spread_across_seeds_c': max(reducer_bests)-min(reducer_bests) if reducer_bests else None,
+        'reducer_methods': list(reducer_methods), 'extra_diagnostics': list(diag_methods),
+        'cheap_method_medians_c': all_method_medians, 'cheap_method_all_bests_c': all_method_all_bests,
+        'reducer_results': all_reducer_results, 'extra_diagnostic_results': all_diag_results,
+        'diagnostic_skip_reason': diagnostic_skip_reason, 'long_sa_results': long_sa_results,
+        'long_sa_exhausted': long_sa_exhausted, 'long_sa_partial': long_sa_partial,
+        'aggregate_evaluations': budget.state['total_calls'] - starting_calls,
+        'cpu_seconds': budget.state['cpu_seconds'] - starting_cpu,
+        'allocation_spend': budget.state,
+        'cpu_accounting': 'getrusage SELF+CHILDREN; workers reaped after every call; includes startup',
+        'search_evaluations': evaluations, 'reproduction_evaluations': reproduction_evals,
     }
-
-    result_path = output_dir / "RESULT.json"
-    _write_json(result_path, result)
-
-    report_path = output_dir / "REPORT.md"
-    _write_report(report_path, result, prereg, cheap_cfg)
-
+    _write_json(output_dir / 'RESULT.json', result)
+    _write_report(output_dir / 'REPORT.md', result, prereg, cheap_cfg)
     return result
 
 
@@ -662,94 +520,66 @@ def _write_json(path: Path, value) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     data = json.dumps(value, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
     temporary = path.with_name(path.name + ".tmp")
-    temporary.write_text(data, encoding="utf-8", newline="\n")
+    with temporary.open('w', encoding='utf-8', newline='\n') as stream:
+        stream.write(data)
+        stream.flush()
+        os.fsync(stream.fileno())
     os.replace(temporary, path)
+    directory = os.open(path.parent, os.O_DIRECTORY)
+    try:
+        os.fsync(directory)
+    finally:
+        os.close(directory)
+
 
 
 def _write_report(path: Path, result: dict, prereg: dict, cheap_cfg: dict) -> None:
-    verdict = result["verdict"]
-    gap = result["gap_c"]
-    threshold = result["threshold_c"]
-    cheap_median = result["cheap_median_c"]
-    best = result["best_c"]
-    spread = result["spread_across_seeds_c"]
-    mesh = result["mesh_error_c"]
-    k = result["k"]
+    def number(value):
+        return 'unavailable' if value is None else f'{value:.6f}'
 
-    lines = [
-        f"# SLAB-039 Headroom Report: {result['fixture']}",
-        "",
-        f"**Verdict: {verdict}**",
-        "",
-        "## Rule",
-        f"- k = {k}",
-        f"- mesh error = {mesh:.6f} C",
-        f"- threshold = k × mesh error = {threshold:.6f} C",
-        f"- gap = cheap_median − best = {cheap_median:.6f} − {best:.6f} = {gap:.6f} C",
-        f"- pass iff gap ≥ {threshold:.6f} C",
-        "",
-        "## Reducer Methods (gate C)",
-        f"- search evaluations per method: {result.get('search_evaluations', 32)}",
-        f"- reproduction evaluations per method: {result.get('reproduction_evaluations', 0)}",
-        f"- total per method: {result.get('search_evaluations', 32) + result.get('reproduction_evaluations', 0)}",
-        f"- seeds: {cheap_cfg.get('seed_count', 8)}",
-        "",
-    ]
-
-    for method, median_val in result["cheap_method_medians_c"].items():
-        bests = result["cheap_method_all_bests_c"][method]
-        category = "reducer" if method in result.get("reducer_methods", []) else "extra diagnostic"
-        lines.append(f"- **{method}** ({category}): median = {median_val:.6f} C, "
-                     f"range = [{min(bests):.6f}, {max(bests):.6f}] C")
-
-    lines += [
-        "",
-        f"**cheap_median** (min over reducer methods) = {cheap_median:.6f} C",
-        "",
-        "## Long SA",
-    ]
-    for i, sa in enumerate(result["long_sa_results"]):
-        lines.append(f"- restart {i}: best = {sa['best_temperature_c']:.6f} C, "
-                     f"evals = {sa['evaluation_count']}, "
-                     f"wall = {sa['wall_time_s']:.1f}s, "
-                     f"cpu_exhausted = {sa.get('cpu_exhausted', False)}")
-
-    lines += [
-        "",
-        f"**best** (any method) = {best:.6f} C",
-        "",
-        "## Spread",
-        f"- spread across all reducer seeds = {spread:.6f} C",
-        "",
-        "## Verdict",
-        f"- {verdict}: gap ({gap:.6f} C) {'≥' if result['passed'] else '<'} threshold ({threshold:.6f} C)",
-    ]
-
-    if result.get("long_sa_exhausted"):
-        lines.append("")
-        lines.append("**Long SA was exhausted or partial — verdict is INCONCLUSIVE. "
-                     "The protocol does not permit PASS when the reference run did not complete.**")
-
-    if not result["passed"] and verdict != "INCONCLUSIVE":
-        lines.append("")
-        lines.append("**The task may be too flat for any method to win. "
-                     "Consider revising the task before the benchmark.**")
-
-    if result.get("extra_diagnostic_results"):
-        lines += [
-            "",
-            "## Extra Diagnostics (excluded from gate C)",
-        ]
-        diag_methods = set(r["method"] for r in result["extra_diagnostic_results"])
-        for method in sorted(diag_methods):
-            method_results = [r for r in result["extra_diagnostic_results"] if r["method"] == method]
-            bests_diag = [r["best_temperature_c"] for r in method_results]
-            if bests_diag:
-                lines.append(f"- **{method}**: median = {statistics.median(bests_diag):.6f} C, "
-                             f"range = [{min(bests_diag):.6f}, {max(bests_diag):.6f}] C")
-
-    report = "\n".join(lines) + "\n"
-    path.write_text(report, encoding="utf-8", newline="\n")
+    lines = [f"# SLAB-039 Headroom Report: {result['fixture']}", '',
+             f"**Verdict: {result['verdict']}**", '',
+             f"Run: {result['started_at']} to {result['finished_at']}.",
+             f"Preregistration SHA256: `{result['prereg_digest_sha256']}`.", '',
+             f"Mesh error: {number(result['mesh_error_c'])} C; k = {result['k']}; "
+             f"threshold = {number(result['threshold_c'])} C.",
+             f"Gap = cheap median {number(result['cheap_median_c'])} minus best "
+             f"{number(result['best_c'])} = {number(result['gap_c'])} C.",
+             f"Reducer spread across seeds: {number(result['spread_across_seeds_c'])} C.", '',
+             '## Reducer methods', '',
+             '| Method | Median best C | Min C | Max C |', '|---|---:|---:|---:|']
+    for method in result['reducer_methods']:
+        bests = result['cheap_method_all_bests_c'][method]
+        lines.append(f"| {method} | {number(result['cheap_method_medians_c'][method])} | "
+                     f"{number(min(bests) if bests else None)} | {number(max(bests) if bests else None)} |")
+    lines += ['', 'The gate uses the lowest reducer median. Each seed receives '
+              f"{result['search_evaluations']} search calls, including initialize() and any shared designs, "
+              f"then {result['reproduction_evaluations']} fresh evaluations of the frozen search winner. "
+              'Greedy starts at the fixture initial layout and accepts only strict improvements.', '',
+              '## Long SA', '', '| Seed | Calls | Best C | CPU seconds | Stop reason |',
+              '|---|---:|---:|---:|---|']
+    for sa in result['long_sa_results']:
+        lines.append(f"| {sa['seed']} | {sa['evaluation_count']} | {number(sa['best_temperature_c'])} | "
+                     f"{sa['cpu_seconds']:.3f} | {sa['stop_reason'] or 'completed'} |")
+    lines += ['', '## Spend', '',
+              f"Actual oracle calls this run: {result['aggregate_evaluations']}; "
+              f"CPU: {result['cpu_seconds']:.3f} seconds ({result['cpu_seconds']/60:.3f} minutes).",
+              f"Accounting: {result['cpu_accounting']}.",
+              'The durable ledger reserves and fsyncs before every call, including initialization and reproduction. '
+              'Caps are 4,768 calls / 24 CPU minutes per fixture and 9,700 calls / 48 CPU minutes across fixtures. '
+              'An in-flight evaluation may cross the CPU limit; the next call is refused. '
+              'A crash with an outstanding reservation fails closed pending reconciliation.', '',
+              f"Extra diagnostics: {len(result['extra_diagnostic_results'])} runs; "
+              f"skip reason: {result['diagnostic_skip_reason'] or 'none'}. "
+              'Diagnostics run only after all declared runs and cannot change the reducer median.', '']
+    if result['verdict'] == 'INCONCLUSIVE':
+        lines.append('At least one declared run did not complete. This result cannot establish protocol PASS or FAIL.')
+    elif result['verdict'] == 'FAIL':
+        lines.append('The declared search did not establish headroom at this mesh error; no LLM lane is authorized by this result.')
+    else:
+        lines.append('The declared search established the preregistered headroom threshold.')
+    lines += ['', 'micro150 was not run; its own mesh error is still required.', '']
+    path.write_text('\n'.join(lines), encoding='utf-8', newline='\n')
 
 
 def main() -> None:
@@ -766,6 +596,8 @@ def main() -> None:
                         help="path to PREREG.json")
     parser.add_argument("--out", type=Path, default=None,
                         help="output directory (default: docs/sentilab/evidence/SLAB-039)")
+    parser.add_argument('--budget', type=Path, default=None,
+                        help='shared durable allocation ledger (default: beside prereg)')
     args = parser.parse_args()
 
     if args.mesh_error is None and (args.j32 is None or args.j64 is None):
@@ -786,6 +618,7 @@ def main() -> None:
         output_dir=args.out,
         j32_values=args.j32,
         j64_values=args.j64,
+        budget_path=args.budget,
     ))
 
     verdict = result["verdict"]

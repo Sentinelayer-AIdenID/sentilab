@@ -24,7 +24,7 @@ from sundai_controller.headroom import (
     _compute_prereg_digest,
     run_headroom,
 )
-from controller import Chiplet, Design, ThermalResult
+from sundai_controller.controller import Chiplet, Design, ThermalResult
 
 
 class CountingOracle:
@@ -35,7 +35,7 @@ class CountingOracle:
 
     def design_from_centers(self, centers):
         """Build a Design matching the TAP centers (mocked for tests)."""
-        from controller import Chiplet, Design
+        from sundai_controller.controller import Chiplet, Design
         chiplets = tuple(Chiplet(f"tap-chiplet-{i}", 2.0, 2.0) for i in range(len(centers)))
         positions = tuple((float(x) - 1.0, float(y) - 1.0) for x, y in centers)
         return Design(50.0, 50.0, 0.0, chiplets, positions)
@@ -804,6 +804,211 @@ class HeadroomRunnerTests(unittest.IsolatedAsyncioTestCase):
                     mesh_error=float("inf"),
                     prereg_path=prereg_path,
                 )
+
+
+class BudgetRegressionTests(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.directory = Path(self.tmp.name)
+        self.prereg = {
+            'schema': 'slab-039-prereg-v3', 'fixture': 'ascend910', 'grid': 32, 'rule': {'k': 5},
+            'reducer_methods': {'methods': ['random'], 'seeds': [0],
+                                'search_evaluations_per_method': 2,
+                                'reproduction_evaluations_per_method': 0},
+            'extra_diagnostics': {'methods': []},
+            'long_sa': {'seeds': [100, 101], 'restarts': 2,
+                        'max_evaluations_per_restart': 2, 'max_cpu_minutes': 24},
+        }
+        self.oracles = []
+        self.cpu = 0.0
+
+    async def run_fixture(self, *, cpu_per_call=0, wall_jump=False):
+        from types import SimpleNamespace
+        from sundai_hotspot import tap_oracle
+        case = self
+
+        class RecordedOracle(CountingOracle):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.fixture = kwargs.get('fixture')
+                self.reaped_calls = 0
+                case.oracles.append(self)
+
+            async def __call__(self, design):
+                # The solve is already durable when the actual oracle starts.
+                ledger = case.directory / 'SPEND.json'
+                if ledger.exists():
+                    entry = json.loads(ledger.read_text())
+                    case.assertIsNotNone(entry['active'])
+                    case.assertEqual(entry['active']['design_hash'], design.hash)
+                    case.assertGreater(entry['total_calls'], 0)
+                return await super().__call__(design)
+
+            async def aclose(self):
+                # Like a warm worker: child CPU becomes visible only on reap.
+                case.cpu += cpu_per_call * (len(self.calls) - self.reaped_calls)
+                self.reaped_calls = len(self.calls)
+                await super().aclose()
+
+        def usage(who):
+            from sundai_controller.headroom import resource
+            return SimpleNamespace(ru_utime=case.cpu if who == resource.RUSAGE_CHILDREN else 0,
+                                   ru_stime=0)
+
+        path = self.directory / 'PREREG.json'
+        path.write_text(json.dumps(self.prereg))
+        from contextlib import ExitStack
+        with ExitStack() as stack:
+            stack.enter_context(patch.object(tap_oracle, 'HotSpotOracle', RecordedOracle))
+            # Also intercept the inherited runner's incorrect bare import on the
+            # disposable pre-fix worktree: this proof must never run HotSpot.
+            stack.enter_context(patch.dict(sys.modules, {'tap_oracle': tap_oracle}))
+            stack.enter_context(patch('resource.getrusage', side_effect=usage))
+            if wall_jump:
+                stack.enter_context(patch('sundai_controller.headroom.time.perf_counter',
+                                          side_effect=iter(range(0, 100000000, 10000))))
+            return await run_headroom('ascend910', 0.16, path, self.directory / 'out')
+
+    async def test_28_search_including_initialization_then_four_fresh_reproductions(self):
+        self.prereg['reducer_methods'].update(search_evaluations_per_method=28,
+                                              reproduction_evaluations_per_method=4)
+        result = await self.run_fixture()
+        lane = result['reducer_results'][0]
+        self.assertEqual(len(self.oracles[0].calls), 36)  # 32 cheap + 2 + 2 long
+        self.assertEqual(lane['evaluation_count'], 32)
+        self.assertEqual(lane['search_evaluation_count'], 28)
+        self.assertEqual(lane['init_evaluations'], 4)
+        self.assertEqual(lane['reproduction_evaluation_count'], 4)
+        self.assertEqual(self.oracles[0].calls[28:32], [lane['best_design_hash']] * 4)
+        self.assertEqual(result['aggregate_evaluations'], 36)
+
+    async def test_fixture_is_explicitly_selected(self):
+        await self.run_fixture()
+        self.assertEqual(self.oracles[0].fixture, 'ascend910')
+
+    async def test_child_cpu_stops_before_second_initial_evaluation(self):
+        self.prereg['allocation'] = {'per_fixture': {'cpu_minutes': 1 / 60}}
+        result = await self.run_fixture(cpu_per_call=1)
+        self.assertEqual(len(self.oracles[0].calls), 1)
+        self.assertEqual(result['aggregate_evaluations'], 1)
+        self.assertEqual(result['cpu_seconds'], 1)
+        self.assertEqual(result['verdict'], 'INCONCLUSIVE')
+        self.assertFalse(result['passed'])
+
+    async def test_wall_time_does_not_consume_cpu_allocation(self):
+        result = await self.run_fixture(wall_jump=True)
+        self.assertEqual(len(self.oracles[0].calls), 6)
+        self.assertTrue(all(r['complete'] for r in result['long_sa_results']))
+        self.assertEqual(result['cpu_seconds'], 0)
+
+    async def test_one_partial_restart_makes_verdict_inconclusive(self):
+        self.prereg['allocation'] = {'per_fixture': {'cpu_minutes': 5 / 60}}
+        result = await self.run_fixture(cpu_per_call=1)
+        self.assertEqual([r['evaluation_count'] for r in result['long_sa_results']], [2, 1])
+        self.assertEqual(result['verdict'], 'INCONCLUSIVE')
+        self.assertTrue(result['long_sa_partial'])
+        self.assertTrue(result['long_sa_exhausted'])
+        self.assertFalse(result['passed'])
+        self.assertEqual(len(self.oracles[0].calls), 5)
+
+    async def test_solve_cap_stops_a_nonempty_partial_restart(self):
+        self.prereg['allocation'] = {'per_fixture': {'total_solves': 5}}
+        result = await self.run_fixture()
+        self.assertEqual([r['evaluation_count'] for r in result['long_sa_results']], [2, 1])
+        self.assertEqual(result['long_sa_results'][1]['stop_reason'], 'fixture_solve_cap')
+        self.assertEqual(result['verdict'], 'INCONCLUSIVE')
+        self.assertEqual(len(self.oracles[0].calls), 5)
+
+    def seed_ledger(self, fixture_calls, total_calls, total_cpu=0):
+        (self.directory / 'SPEND.json').write_text(json.dumps({
+            'total_calls': total_calls, 'cpu_seconds': total_cpu, 'active': None,
+            'fixtures': {'ascend910': {'calls': fixture_calls, 'cpu_seconds': 0},
+                         'micro150': {'calls': total_calls-fixture_calls, 'cpu_seconds': total_cpu}},
+        }))
+
+    async def test_durable_4768_fixture_cap_survives_a_second_invocation(self):
+        self.seed_ledger(4767, 4767)
+        first = await self.run_fixture()
+        second = await self.run_fixture()
+        self.assertEqual([len(o.calls) for o in self.oracles], [1, 0])
+        self.assertEqual(first['aggregate_evaluations'], 1)
+        self.assertEqual(second['aggregate_evaluations'], 0)
+        self.assertEqual(second['allocation_spend']['fixtures']['ascend910']['calls'], 4768)
+
+    async def test_total_9700_cap_counts_other_fixture(self):
+        self.seed_ledger(0, 9699)
+        result = await self.run_fixture()
+        self.assertEqual(len(self.oracles[0].calls), 1)
+        self.assertEqual(result['allocation_spend']['total_calls'], 9700)
+        self.assertEqual(result['long_sa_results'][0]['stop_reason'], 'total_solve_cap')
+
+    async def test_total_48_minute_cpu_cap_counts_other_fixture(self):
+        self.seed_ledger(0, 0, total_cpu=2879)
+        result = await self.run_fixture(cpu_per_call=1)
+        self.assertEqual(len(self.oracles[0].calls), 1)
+        self.assertEqual(result['allocation_spend']['cpu_seconds'], 2880)
+        self.assertEqual(result['long_sa_results'][0]['stop_reason'], 'total_cpu_cap')
+
+    async def test_diagnostics_wait_until_long_sa_and_respect_remaining_cap(self):
+        self.prereg['extra_diagnostics']['methods'] = ['ucb1', 'signal_portfolio']
+        self.prereg['allocation'] = {'per_fixture': {'total_solves': 6}}
+        result = await self.run_fixture()
+        self.assertEqual(result['extra_diagnostic_results'], [])
+        self.assertTrue(all(r['complete'] for r in result['long_sa_results']))
+        self.assertEqual(result['diagnostic_skip_reason'], 'fixture_solve_cap')
+        self.assertEqual(len(self.oracles[0].calls), 6)
+
+    async def test_deadline_refuses_initialization(self):
+        self.prereg['clock'] = {'deadline': '2000-01-01T00:00:00Z'}
+        result = await self.run_fixture()
+        self.assertEqual(len(self.oracles[0].calls), 0)
+        self.assertEqual(result['verdict'], 'INCONCLUSIVE')
+
+    async def test_greedy_rejects_ties_and_accepts_sub_threshold_strict_improvement(self):
+        from sundai_controller import headroom
+        oracle = CountingOracle()
+        initial = oracle.design_from_centers(headroom.TAP_INITIAL_CENTERS)
+        parents, candidates = [], []
+        temperatures = iter([100, 100, 99.999, 100, 100])
+
+        class GreedyOracle(CountingOracle):
+            async def __call__(self, design):
+                self.calls.append(design.hash)
+                return ThermalResult(design.hash, next(temperatures), 'NONPHYSICAL-test')
+
+        def candidate(parent, operator, rng, oracle):
+            parents.append(parent.hash)
+            args = {'chiplet': parent.chiplets[0].id, 'x_mm': 23-len(parents), 'y_mm': 24}
+            design = parent.apply('move', args)
+            candidates.append(design)
+            return design, 'move', args
+
+        budget = (headroom.SolveBudget(self.directory / 'SPEND.json', 'ascend910', self.prereg)
+                  if hasattr(headroom, 'SolveBudget') else None)
+        budget_args = {'budget': budget} if budget is not None else {}
+        try:
+            with patch.object(headroom, '_candidate', side_effect=candidate):
+                result = await headroom._run_reducer_lane(initial, GreedyOracle(), 'greedy', 1, 4,
+                                                          [initial], 'greedy-test', **budget_args)
+        finally:
+            if budget is not None:
+                budget.close()
+        self.assertEqual(result['best_temperature_c'], 99.999)
+        self.assertEqual(parents, [initial.hash, initial.hash, candidates[1].hash])
+        self.assertEqual(result['best_temperature_c'], 99.999)
+        self.assertEqual(result['best_design_hash'], candidates[1].hash)
+        self.assertEqual(result['current_design_hash'], candidates[1].hash)
+
+    async def test_unfinished_reservation_cannot_silently_reset_budget(self):
+        self.seed_ledger(1, 1)
+        path = self.directory / 'SPEND.json'
+        ledger = json.loads(path.read_text())
+        ledger['active'] = {'fixture': 'ascend910', 'lane': 'interrupted', 'design_hash': 'interrupted-design'}
+        path.write_text(json.dumps(ledger))
+        with self.assertRaisesRegex(RuntimeError, 'unreconciled'):
+            await self.run_fixture()
+        self.assertEqual(self.oracles, [])
 
 
 if __name__ == "__main__":
