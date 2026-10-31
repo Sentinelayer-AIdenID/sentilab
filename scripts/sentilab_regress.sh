@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+# SLAB-002 regression script: rerun every claim from a clean checkout.
+# Exits nonzero on any failure. Requires: python3.12, build-essential, libsuperlu-dev, libblas-dev.
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+FAILED=0
+PASSED=0
+
+red()   { printf '\033[31m%s\033[0m\n' "$*"; }
+green() { printf '\033[32m%s\033[0m\n' "$*"; }
+
+pass() { green "  PASS: $1"; PASSED=$((PASSED+1)); }
+fail() { red   "  FAIL: $1"; FAILED=$((FAILED+1)); }
+
+echo "=== SLAB-002 regression ==="
+echo "ROOT=$ROOT"
+echo
+
+# --- Toolchain ---
+echo "--- Toolchain ---"
+gcc --version | head -1
+python3 --version
+dpkg -l libsuperlu-dev libblas-dev 2>/dev/null | grep '^ii' || true
+echo
+
+# --- PROVENANCE ---
+echo "--- PROVENANCE.json ---"
+python3 -c "
+import json, hashlib, os
+with open('$ROOT/PROVENANCE.json') as f:
+    p = json.load(f)
+for entry in p['files']:
+    path = os.path.join('$ROOT', entry['path'])
+    if not os.path.isfile(path):
+        raise SystemExit(f'missing: {entry[\"path\"]}')
+    with open(path, 'rb') as fh:
+        actual = hashlib.sha256(fh.read()).hexdigest()
+    if actual != entry['sha256']:
+        raise SystemExit(f'mismatch: {entry[\"path\"]}')
+print(f'OK: {len(p[\"files\"])} files verified')
+" && pass "PROVENANCE.json" || fail "PROVENANCE.json"
+
+# --- Activate venv ---
+if [ ! -d "$ROOT/.venv" ]; then
+    python3.12 -m venv "$ROOT/.venv"
+fi
+. "$ROOT/.venv/bin/activate"
+pip install -q -r "$ROOT/requirements.txt" -r "$ROOT/requirements-service.txt"
+
+# --- Build HotSpot ---
+echo "--- HotSpot build ---"
+make -C "$ROOT/sundai_hotspot" -j4 SUPERLU=1 >/dev/null 2>&1 && pass "HotSpot build" || fail "HotSpot build"
+HOTSPOT_SHA=$(sha256sum "$ROOT/sundai_hotspot/hotspot" | cut -d' ' -f1)
+echo "  HotSpot sha256: $HOTSPOT_SHA"
+
+# --- Controller tests ---
+echo "--- Controller tests (55: 47 + 8) ---"
+(cd "$ROOT/sundai_controller" && python -m unittest -q test_controller.py test_experiment.py) \
+  && pass "Controller tests" || fail "Controller tests"
+
+# --- Safety property ---
+echo "--- Safety property (1,000-case TFL-13) ---"
+(cd "$ROOT/sundai_controller" && python -m unittest -q test_safety_property.py) \
+  && pass "Safety property" || fail "Safety property"
+
+# --- TFL-08 fingerprints ---
+echo "--- TFL-08 fingerprints ---"
+(cd "$ROOT/sundai_controller" && python -m unittest -q test_tfl08_leaderboard.py) \
+  && pass "TFL-08 fingerprints" || fail "TFL-08 fingerprints"
+
+# --- Tap oracle ---
+echo "--- Tap oracle ---"
+(cd "$ROOT/sundai_hotspot" && python -m unittest -q test_tap_oracle.py) \
+  && pass "Tap oracle" || fail "Tap oracle"
+
+# --- HotSpot probe ---
+echo "--- HotSpot probe (8 Ascend910 cases) ---"
+(cd "$ROOT/sundai_hotspot" && python run_tap_probe.py --report probe_results/report.json > /dev/null) \
+  && pass "HotSpot probe" || fail "HotSpot probe"
+
+# --- TFL-14 probe peak check ---
+echo "--- TFL-14 probe peaks ---"
+TFL_CANONICAL_CONTAINER=1 TFL_HOTSPOT_PROBE_REPORT="$ROOT/sundai_hotspot/probe_results/report.json" \
+  python -m unittest -q "$ROOT/sundai_thermal/test_tfl14_regression.py" \
+  TFL14RegressionTests.test_eight_published_hotspot_probe_peaks \
+  && pass "TFL-14 probe peaks" || fail "TFL-14 probe peaks"
+
+# --- Demo ---
+echo "--- Deterministic demo ---"
+(cd "$ROOT/sundai_controller" && python demo.py > /dev/null) \
+  && pass "Demo" || fail "Demo"
+
+# --- TFL-05 smoke ---
+echo "--- TFL-05 smoke ---"
+(cd "$ROOT/sundai_controller" && python tfl05_smoke.py --benchmark plate > /dev/null) \
+  && pass "TFL-05 plate" || fail "TFL-05 plate"
+(cd "$ROOT/sundai_controller" && python tfl05_smoke.py --benchmark ascend910 > /dev/null) \
+  && pass "TFL-05 ascend910" || fail "TFL-05 ascend910"
+
+# --- TFL-09 run service ---
+echo "--- TFL-09 run service ---"
+python -m unittest -q app.test_runs \
+  && pass "TFL-09 run service" || fail "TFL-09 run service"
+
+# --- Summary ---
+echo
+echo "=== Results: $PASSED passed, $FAILED failed ==="
+if [ "$FAILED" -gt 0 ]; then
+    red "REGRESSION FAILED"
+    exit 1
+fi
+green "ALL CHECKS PASSED"

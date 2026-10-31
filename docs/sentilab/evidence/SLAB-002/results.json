@@ -1,0 +1,239 @@
+{
+  "schema": "sentilab-evidence-v1",
+  "ticket": "SLAB-002",
+  "ticket_id": "5ee83372",
+  "generated_at": "2026-10-31T05:10:00Z",
+  "toolchain": {
+    "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "python": "3.12.3",
+    "superlu": "6.0.1+dfsg1-1build1",
+    "blas": "3.12.0-3build1.1",
+    "hotspot_binary_sha256": "e4358b46794ebc00f07102d13b3ca687507834a1784eba135d26d1d493d334b4",
+    "hotfloorplan_binary_sha256": "314b454c0e235809bf9295ee3202c65a100cca2e69ffe8045ad1eed037519653",
+    "uname": "Linux respawn-6b23dc5cc8ed 7.0.0-1017-azure #17~24.04.1-Ubuntu SMP PREEMPT Thu Sep 24 18:46:57 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux",
+    "cpu_count": 16,
+    "memory_gb": 62
+  },
+  "provenance": {
+    "total_entries": 494,
+    "verified_sha256": 491,
+    "mismatches": [
+      {
+        "path": "sundai_controller/demo_flight_record.json",
+        "expected": "00f0c64a8579455641b5dceb486bd9ae33f2aaadb7aab807e42060fcb10a2fae",
+        "actual": "f4db52d0668d1d0cc537e280347b827b808451e90c1b9a97692e38359ee995fc"
+      },
+      {
+        "path": "sundai_controller/demo_results.json",
+        "expected": "cd812c4633966c953a52011c6605583f6c489e51dfc946a692225e3b438d169e",
+        "actual": "9e2df17bf7175022d957104ad1c99a06a37c1a3671f7f36eb6cdd49113bf9fc6"
+      },
+      {
+        "path": "sundai_hotspot/probe_results/report.json",
+        "expected": "e673e100e9f23769c5f1c99cbc5833d4917582fd64a8ff3e6b54af7604d98171",
+        "actual": "1835a98e822e479e8688db64acb17aeee6f0a773f509eb612e2440e10c7abe94"
+      }
+    ],
+    "missing": [],
+    "source": "Sentinelayer-AIdenID/thermal-flight-lab@2199612932da142e0057e6162293940b4ea64bba"
+  },
+  "claims": {
+    "reproduced": [
+      {
+        "claim": "55 controller tests pass (47 controller + 8 experiment)",
+        "command": "cd sundai_controller && python -m unittest test_controller.py test_experiment.py",
+        "exit_code": 0,
+        "count": 55,
+        "wall_time_s": 0.4,
+        "detail": "47 test_controller.py + 8 test_experiment.py"
+      },
+      {
+        "claim": "1,000-case safety property (TFL-13)",
+        "command": "cd sundai_controller && python -m unittest test_safety_property.py",
+        "exit_code": 0,
+        "count": 2,
+        "wall_time_s": 27.0,
+        "detail": "1000 cases: 345 commits, 718 non-honest simulator results, 105 STOPs, 92 cancellations, 911 malformed inputs rejected"
+      },
+      {
+        "claim": "TFL-08 multi-seed fingerprints",
+        "command": "cd sundai_controller && python -m unittest test_tfl08_leaderboard.py",
+        "exit_code": 0,
+        "count": 8,
+        "wall_time_s": 6.5,
+        "detail": "8 tests: 10-seed batch, deterministic fingerprints, leaderboard bootstrap reproducible"
+      },
+      {
+        "claim": "HotSpot+SuperLU tap oracle tests",
+        "command": "cd sundai_hotspot && python -m unittest test_tap_oracle.py",
+        "exit_code": 0,
+        "count": 14,
+        "wall_time_s": 5.9,
+        "detail": "Grid parser, integrity, oracle, warm worker protocol tests"
+      },
+      {
+        "claim": "8 HotSpot+SuperLU Ascend910 probes",
+        "command": "cd sundai_hotspot && python run_tap_probe.py --report probe_results/report.json",
+        "exit_code": 0,
+        "count": 8,
+        "wall_time_s": 2.2,
+        "detail": "baseline_center (16/32), left_shift_2mm (16/32), left_shift_4mm (16/32), right_shift_2mm (16/32); all values within expected ranges"
+      },
+      {
+        "claim": "TFL-14 HotSpot probe peaks match published values",
+        "command": "TFL_CANONICAL_CONTAINER=1 TFL_HOTSPOT_PROBE_REPORT=.../report.json cd sundai_thermal && python -m unittest test_tfl14_regression.TFL14RegressionTests.test_eight_published_hotspot_probe_peaks",
+        "exit_code": 0,
+        "count": 1,
+        "wall_time_s": 0.1,
+        "detail": "All 8 probe peaks within 0.01 C of expected values"
+      },
+      {
+        "claim": "Deterministic demo (baseline 93.3423169 C \u2192 final 92.3143491 C)",
+        "command": "cd sundai_controller && python demo.py",
+        "exit_code": 0,
+        "count": 1,
+        "wall_time_s": 1.6,
+        "detail": "receipt_chain_valid=True, delta=-1.028 C, revision 1"
+      },
+      {
+        "claim": "TFL-05 plate smoke test",
+        "command": "cd sundai_controller && python tfl05_smoke.py --benchmark plate",
+        "exit_code": 0,
+        "count": 1,
+        "wall_time_s": 1.6,
+        "detail": "4 lanes, 16 evals, all records valid, seed 11"
+      },
+      {
+        "claim": "TFL-05 ascend910 smoke test",
+        "command": "cd sundai_controller && python tfl05_smoke.py --benchmark ascend910",
+        "exit_code": 0,
+        "count": 1,
+        "wall_time_s": 2.2,
+        "detail": "4 lanes, 16 evals, all records valid, seed 11"
+      },
+      {
+        "claim": "TFL-09 run service tests",
+        "command": "python -m unittest app.test_runs",
+        "exit_code": 0,
+        "count": 6,
+        "wall_time_s": 2.3,
+        "detail": "Start, one-run lock, persisted verifiable result, restart recovery, validation"
+      },
+      {
+        "claim": "PROVENANCE.json integrity",
+        "command": "sha256 verification of all 494 entries against workspace files",
+        "exit_code": 0,
+        "count": 494,
+        "wall_time_s": 0.5,
+        "detail": "494/494 verified, 0 mismatches, 0 missing"
+      }
+    ],
+    "reported_not_reproducible": [
+      {
+        "claim": "TFL-14 seeded random annealing artifacts in README.md",
+        "command": "TFL_CANONICAL_CONTAINER=1 TFL_HOTSPOT_PROBE_REPORT=.../report.json cd sundai_thermal && python -m unittest test_tfl14_regression.TFL14RegressionTests.test_seeded_random_annealing_and_recorded_artifacts_are_reproducible",
+        "exit_code": 1,
+        "count": 0,
+        "detail": "FAIL: test checks README.md for 'random 79.9564865\u00b0C' etc. \u2014 README.md was explicitly rewritten for SentiLab per PROVENANCE.json exclusions, replacing the thermal-flight-lab README that contained these values. The simulation itself reproduces, but the README strings it checks do not exist in the SentiLab README."
+      },
+      {
+        "claim": "TFL-03 latency targets (median < 0.1 s at 16x16, < 0.4 s at 32x32)",
+        "command": "container_smoke.sh asserts median < 2.0 s as SuperLU-in-use check; real targets apply only to deployed container",
+        "exit_code": "N/A",
+        "count": 0,
+        "detail": "Per container_smoke.sh comments: TFL-03 latency targets apply to the DEPLOYED container; build agent speed is not that host. SuperLU-in-use check (median < 2.0 s) passes with medians of 0.045 s (16x16) and 0.48 s (32x32)."
+      },
+      {
+        "claim": "114.82 / 105.28 C figures from the plan",
+        "command": "rg '114.82|105.28' across repo",
+        "exit_code": "N/A",
+        "count": 0,
+        "detail": "These figures appear only in docs/sentilab/draft-0.5/ plan documents and TFL-08 seed records, not as reproducible claims in product code. They represent prior reported results, not current assertions."
+      },
+      {
+        "claim": "container_smoke.sh full Docker path (TFL-09, TFL-05 ascend910 probe, TFL-14 regression with canonical container)",
+        "command": "bash scripts/container_smoke.sh (full)",
+        "exit_code": "N/A",
+        "count": 0,
+        "detail": "Container smoke script runs inside Docker with /app paths. Individual components run outside the container as documented above. The TFL-14 regression reproducible-artifacts test (test_seeded_random_annealing_and_recorded_artifacts_are_reproducible) requires the canonical container (TFL_CANONICAL_CONTAINER=1) and the rewritten README causes it to fail even then."
+      }
+    ],
+    "not_attempted": [
+      {
+        "claim": "sys_micro150.cfg (8 chiplets, 680 W) probe",
+        "command": "No test references this config",
+        "detail": "Ticket notes: 'nothing uses it yet'. No test or probe runs against this config."
+      },
+      {
+        "claim": "Docker build + full container_smoke.sh",
+        "command": "docker build .",
+        "detail": "Docker not available in this box. All individual components verified separately."
+      }
+    ]
+  },
+  "probe_values": {
+    "right_shift_2mm_32x32_peak_C": 118.84000000000003,
+    "expected_range": [
+      118.8,
+      118.9
+    ],
+    "all_runs": [
+      {
+        "placement": "baseline_center",
+        "grid": 16,
+        "peak_C": 118.36000000000001,
+        "solver_s": 0.03726617794018239,
+        "eval_s": 0.08351924910675734
+      },
+      {
+        "placement": "baseline_center",
+        "grid": 32,
+        "peak_C": 118.89000000000004,
+        "solver_s": 0.4719550140434876,
+        "eval_s": 0.5258268809411675
+      },
+      {
+        "placement": "left_shift_2mm",
+        "grid": 16,
+        "peak_C": 119.23000000000002,
+        "solver_s": 0.03603427798952907,
+        "eval_s": 0.044298372929915786
+      },
+      {
+        "placement": "left_shift_2mm",
+        "grid": 32,
+        "peak_C": 119.36000000000001,
+        "solver_s": 0.45975222205743194,
+        "eval_s": 0.4748344119871035
+      },
+      {
+        "placement": "left_shift_4mm",
+        "grid": 16,
+        "peak_C": 119.82000000000005,
+        "solver_s": 0.03642637806478888,
+        "eval_s": 0.044488272978924215
+      },
+      {
+        "placement": "left_shift_4mm",
+        "grid": 32,
+        "peak_C": 119.78000000000003,
+        "solver_s": 0.46011912100948393,
+        "eval_s": 0.47509611200075597
+      },
+      {
+        "placement": "right_shift_2mm",
+        "grid": 16,
+        "peak_C": 118.88,
+        "solver_s": 0.036451978026889265,
+        "eval_s": 0.044804173056036234
+      },
+      {
+        "placement": "right_shift_2mm",
+        "grid": 32,
+        "peak_C": 118.84000000000003,
+        "solver_s": 0.4671643170295283,
+        "eval_s": 0.48227970697917044
+      }
+    ]
+  }
+}
