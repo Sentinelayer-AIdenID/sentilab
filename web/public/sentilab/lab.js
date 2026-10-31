@@ -5,7 +5,7 @@
 // Every string from an envelope reaches the page through textContent, never innerHTML.
 import { VIEW_PINS } from "./view-pins.js";
 import {
-  checkLines, liveFeed, verifyChecked, readReplayFile, parseApiResponse, readBodyCapped, progressTracker,
+  checkRows, liveFeed, pagingStart, applyPage, verifyChecked, readReplayBytes, readBodyCapped, progressTracker,
   parseKeyResponse, publicKeyFromSeedText, sha256Hex, MAX_FILE_BYTES, MAX_API_BYTES, MAX_API_LINES,
 } from "./view-core.mjs";
 import { buildView, feedRows, chainSummary, isDrill, isRejected, colorScale, frameOf, labInfo, reasonText, rankReasons, stageOf, STAGES, isObj } from "./lab-model.mjs";
@@ -16,6 +16,7 @@ const STEP_MS = matchMedia("(prefers-reduced-motion: reduce)").matches ? 1300 : 
 const POLL_OK_MS = 1000, POLL_BACKOFF_MS = 5000;
 const MAX_ENVELOPES = 20000;                     // a live feed past this stops growing and says so
 const MAX_SMALL_JSON = 256 * 1024;               // /api/view/runs and /api/view/key are small; a bigger answer is refused
+const strictJson = (bytes) => JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes));
 const FEED_ROWS_SHOWN = 400;
 const HEAT = [[0x11, 0x2a, 0x48], [0x23, 0x6b, 0x91], [0x56, 0xb6, 0xba], [0xdf, 0xd3, 0x76], [0xec, 0x99, 0x4f], [0xe4, 0x51, 0x38]];
 const params = new URLSearchParams(location.search);
@@ -56,10 +57,11 @@ const S = {
   pins: [], keys: {}, testMode: false, keyNote: "",
   source: params.get("src") === "live" ? "api" : "file",
   file: null,                 // { label, runId, runIdFrom, isDemo, items, verification, scale, frame, error }
-  // feed: every distinct line received with its input-check result (a byte-identical re-send is a no-op).
-  // tracker: rule 5's progress tracker. LIVE needs a good poll within 5 s and growth of K within 60 s.
-  live: { runs: null, runId: params.get("run"), feed: liveFeed(MAX_ENVELOPES), verification: null, scale: null, frame: null,
-          tracker: progressTracker(), lastPoll: "", connected: null, timer: null, error: "" },
+  // feed: every row received, with its input-check result. paging: the cursor reducer's state (rows consumed, and a
+  // terminal failure if any). failure: why the last poll failed, if it did. tracker: rule 5's progress tracker; LIVE
+  // needs a good poll within 5 s and growth of K within 60 s.
+  live: { runs: null, runId: params.get("run"), feed: liveFeed(MAX_ENVELOPES), paging: pagingStart(), failure: null, verification: null, scale: null, frame: null,
+          tracker: progressTracker(), connected: null, timer: null, error: "" },
   cursor: 0, cursors: {}, playing: null, following: true,
 };
 const active = () => (S.source === "api" ? S.live : S.file);
@@ -98,7 +100,7 @@ async function setupPinnedKeys() {
     if (!r.ok) { S.keyNote = `pinned key not served (/api/view/key answered ${r.status})`; return; }
     const body = await readBodyCapped(r, MAX_SMALL_JSON, "too_large");
     if (!body.ok) { S.keyNote = "pinned key not served (/api/view/key answered with more than 256 KiB)"; return; }
-    Object.assign(S.keys, parseKeyResponse(JSON.parse(body.text)));
+    Object.assign(S.keys, parseKeyResponse(strictJson(body.bytes)));
     S.keyNote = "pinned key fetched from /api/view/key and checked against the pin";
   } catch {
     S.keyNote = "pinned key not served (/api/view/key unreachable)";
@@ -106,8 +108,8 @@ async function setupPinnedKeys() {
 }
 
 // ── verification: the same path for both sources ─────────────────────────────────────────────────────────────
-// src.items are checkLine() results (input checks, steps 1 to 4); verifyChecked() does the rest, hashing only what
-// passed them.
+// src.items are checkRowBytes() results (input checks, steps 1 to 4, on raw rows); verifyChecked() does the rest,
+// hashing only what passed them.
 async function verify(src) {
   src.verification = await verifyChecked(src.feed ? src.feed.items : src.items, { runId: src.runId, pins: S.pins, keys: S.keys });
   const trusted = src.verification.ordered.slice(0, src.verification.prefix);
@@ -125,27 +127,27 @@ function replayError(label, runId, isDemo, message) {
   render();
 }
 
-// text: the file's text, already read (a picked file), or undefined to fetch url. Either way the file must pass the
-// 64 MiB replay cap before a single line is parsed.
-async function loadReplay({ url, text, label, runId, isDemo, at = null }) {
+// bytes: the file's raw bytes, already read (a picked file), or undefined to fetch url. Either way the file must pass
+// the 64 MiB replay cap before a single row is decoded or parsed, and it is never decoded whole: each row on its own.
+async function loadReplay({ url, bytes, label, runId, isDemo, at = null }) {
   stop();
   $("conn").textContent = "loading…";
   let read;
   try {
-    if (text === undefined) {
+    if (bytes === undefined) {
       const r = await fetch(url, { cache: "no-store" });
       if (!r.ok) throw new Error(`${url} answered ${r.status}`);
       const body = await readBodyCapped(r, MAX_FILE_BYTES, "file_too_large");
       if (!body.ok) throw new Error(`${url} is over the ${MAX_FILE_BYTES / MIB} MiB replay cap, so it was not read`);
-      text = body.text;
+      bytes = body.bytes;
     }
-    read = readReplayFile(text);
+    read = readReplayBytes(bytes);
     if (!read.ok) throw new Error(`the file is over the ${MAX_FILE_BYTES / MIB} MiB replay cap, so it was not read`);
   } catch (error) {
     replayError(label, runId, isDemo, String(error.message ?? error));
     return;
   }
-  const items = checkLines(read.lines);
+  const items = checkRows(read.rows);
   // The run to check against. For the bundled demo, or a page opened with ?run=, the page names it. Otherwise a file
   // the user opened carries no request, so the view checks it against the run named by the lowest-seq line that
   // passed the input checks, and says so on screen.
@@ -177,10 +179,27 @@ function scheduleLive(ms) {
   clearTimeout(S.live.timer);
   if (S.source === "api") S.live.timer = setTimeout(pollLive, ms);
 }
-// Rule 4: GET /api/view/events returns JSONL for one run. The page asks for what follows its verified prefix K, so a
-// gap can still be filled; whatever comes back again is a byte-identical re-send, which is a no-op.
+// Rule 4: GET /api/view/events returns JSONL for one run, paged by cursor (the count of physical rows already
+// consumed). applyPage() applies each page: the transport caps (256 lines, 4 MiB, before parsing), then the cursor
+// checks. The page keeps every row it accepted and re-verifies the whole stream when rows arrive, so a late envelope at
+// a seq it already has (a conflict) still reaches it and freezes the board. A failed page keeps nothing and leaves the
+// cursor, so the prefix stays; the mode shows STALE with the reason. "paging unsupported" and "stream replaced" are
+// terminal: polling stops, the view is never LIVE again, and only a reload starts over from 0.
+const MAX_PAGES_PER_POLL = 40;
+const PAGING_TEXT = {
+  paging_unsupported: "paging unsupported", stream_replaced: "stream replaced", paging_error: "paging error",
+  over_cap: "response over the caps", http_error: "server error",
+};
+async function fetchPage(L) {
+  const r = await fetch(`/api/view/events?run_id=${encodeURIComponent(L.runId)}&cursor=${L.paging.cursor}&limit=${MAX_API_LINES}`, { cache: "no-store" });
+  const response = { status: r.status, bytes: new Uint8Array(0), nextCursor: r.headers.get("x-next-cursor"), hasMore: r.headers.get("x-has-more") };
+  if (r.status !== 200) { r.body?.cancel().catch(() => {}); return response; }
+  const body = await readBodyCapped(r, MAX_API_BYTES, "response_too_large");   // raw bytes; stops reading past 4 MiB
+  return { ...response, bytes: body.ok ? body.bytes : null };
+}
 async function pollLive() {
   const L = S.live;
+  if (L.paging.terminal) return;   // stopped for good; a reload starts over
   if (document.hidden) return scheduleLive(POLL_BACKOFF_MS);
   try {
     if (!L.runs || !L.runId || Date.now() - (L.runsAt ?? 0) > 15000) {
@@ -189,7 +208,7 @@ async function pollLive() {
       const body = await readBodyCapped(r, MAX_SMALL_JSON, "too_large");
       if (!body.ok) throw new Error("/api/view/runs answered with more than 256 KiB");
       if (S.live !== L) return;   // the run was switched while this poll was out
-      const doc = JSON.parse(body.text);
+      const doc = strictJson(body.bytes);
       const runs = (Array.isArray(doc) ? doc : isObj(doc) && Array.isArray(doc.runs) ? doc.runs : [])
         .filter((x) => isObj(x) && typeof x.run_id === "string" && x.run_id.length <= 128).slice(0, 200);
       L.runs = runs;
@@ -199,34 +218,30 @@ async function pollLive() {
       renderRunPicker();
       if (!L.runId) { render(); return scheduleLive(POLL_BACKOFF_MS); }
     }
-    const after = L.verification ? L.verification.prefix_end : 0;
-    const r = await fetch(`/api/view/events?run_id=${encodeURIComponent(L.runId)}&after=${after}`, { cache: "no-store" });
-    if (!r.ok) throw new Error(`/api/view/events answered ${r.status}`);
-    // Step 1 for the API: over 4 MiB (stopped while reading) or over 256 lines is a transport error. The response
-    // is dropped before any line is parsed, the prefix stays as it was, and the poll counts as failed.
-    const body = await readBodyCapped(r, MAX_API_BYTES, "response_too_large");
-    const response = body.ok ? parseApiResponse(body.text) : body;
-    if (S.live !== L) return;   // the run was switched while this poll was out
-    L.connected = true;
-    if (!response.ok) {
-      L.tracker.poll({ nowMs: Date.now(), ok: false });
-      L.lastPoll = response.reason === "too_many_lines" ? `last response dropped: over ${MAX_API_LINES} lines`
-        : `last response dropped: over ${MAX_API_BYTES / MIB} MiB`;
-      render();
-      return scheduleLive(POLL_BACKOFF_MS);
-    }
-    // Input checks once per distinct line; a byte-identical re-send adds nothing.
-    if (L.feed.add(response.lines) > 0) {
-      await verify(L);
+    // Drain: keep asking from the next cursor while the server says there is more (bounded per poll).
+    let failure = null, added = 0, more = false;
+    for (let pages = 0; pages < MAX_PAGES_PER_POLL; pages += 1) {
+      const response = await fetchPage(L);
       if (S.live !== L) return;   // the run was switched while this poll was out
+      const step = applyPage(L.paging, response);
+      L.paging = step.state;
+      if (step.failure) { failure = step.failure; break; }
+      added += L.feed.add(step.rows);
+      more = step.more;
+      if (!more) break;
+    }
+    L.connected = true;
+    if (added) {
+      await verify(L);              // the whole stream, every time new rows arrive
+      if (S.live !== L) return;
       if (S.following) S.cursor = L.verification.rows.length;
     }
     // Progress is growth of K above its highest value so far; duplicates and rows after a break never count.
-    L.tracker.poll({ nowMs: Date.now(), ok: true, K: L.verification ? L.verification.prefix_end : 0, received: response.lines.length });
-    L.lastPoll = "";
+    L.tracker.poll({ nowMs: Date.now(), ok: failure === null, K: L.verification ? L.verification.prefix_end : 0, received: added });
+    L.failure = failure;
     L.error = "";
     render();
-    scheduleLive(POLL_OK_MS);
+    if (!L.paging.terminal) scheduleLive(failure !== null ? POLL_BACKOFF_MS : more ? 0 : POLL_OK_MS);
   } catch (error) {
     if (S.live !== L) return;   // the run was switched while this poll was out
     L.tracker.poll({ nowMs: Date.now(), ok: false });
@@ -236,10 +251,19 @@ async function pollLive() {
     scheduleLive(POLL_BACKOFF_MS);   // calm back-off; one request every 5 s, nothing written to the console
   }
 }
+// What the mode pill shows. Never more than the tracker allows; a failed or stopped poll shows STALE at once, with why.
+function liveMode(now) {
+  const L = S.live;
+  const why = L.paging.terminal ?? L.failure;
+  if (why) return { mode: "STALE", detail: ` · ${PAGING_TEXT[why] ?? why}` };
+  const mode = L.tracker.mode("api", now);
+  const label = L.tracker.label("api", now);
+  return { mode, detail: label.startsWith(`${mode} `) ? label.slice(mode.length) : "" };
+}
 function resetLive(runId) {
   // A new object, so a poll still out for the previous run writes only to the old one.
   clearTimeout(S.live.timer);
-  S.live = { ...S.live, runId, feed: liveFeed(MAX_ENVELOPES), verification: null, scale: null, frame: null, tracker: progressTracker(), lastPoll: "", timer: null };
+  S.live = { ...S.live, runId, feed: liveFeed(MAX_ENVELOPES), paging: pagingStart(), failure: null, verification: null, scale: null, frame: null, tracker: progressTracker(), timer: null };
   S.cursor = 0; S.following = true;
 }
 
@@ -307,12 +331,11 @@ function renderTop(src, v) {
   // Rule 5, on the client clock: REPLAY for a file; LIVE only while polls succeed and K keeps growing, with how long
   // ago it last grew ("LIVE · progress N s ago"); otherwise STALE.
   const now = Date.now();
-  const m = S.source === "file" ? "REPLAY" : S.live.tracker.mode("api", now);
-  const label = S.source === "file" ? "REPLAY" : S.live.tracker.label("api", now);
+  const { mode: m, detail } = S.source === "file" ? { mode: "REPLAY", detail: "" } : liveMode(now);
   const modeEl = $("mode");
   modeEl.className = `mode ${m.toLowerCase()}`;
   $("modeText").textContent = m;
-  $("modeAge").textContent = label.startsWith(`${m} `) ? label.slice(m.length) : "";
+  $("modeAge").textContent = detail;
   $("drill").hidden = !(v && isDrill(v.ordered));
   $("testKeys").hidden = !S.testMode;
 
@@ -353,9 +376,10 @@ function renderControls(src, v, n) {
   const conn = $("conn");
   if (S.source === "api") {
     const L = S.live;
-    conn.className = `conn${L.connected === false || L.lastPoll ? " bad" : ""}`;
+    const stopped = L.paging.terminal ? " · stopped; reload to start over" : L.failure ? " · retry in 5 s" : "";
+    conn.className = `conn${L.connected === false || L.paging.terminal || L.failure ? " bad" : ""}`;
     conn.textContent = L.connected === false ? "not connected · retry in 5 s"
-      : L.connected ? `${S.following ? "following" : "paused"}${L.lastPoll ? ` · ${L.lastPoll}` : ""}${L.feed.truncated ? ` · feed capped at ${MAX_ENVELOPES}` : ""}` : "connecting…";
+      : L.connected ? `${S.following ? "following" : "paused"}${stopped}${L.feed.truncated ? ` · feed capped at ${MAX_ENVELOPES}` : ""}` : "connecting…";
     $("statusLeft").textContent = `Live · /api/view/events${L.runId ? ` · run ${L.runId}` : ""}`;
   } else {
     conn.className = "conn";
@@ -382,9 +406,15 @@ const KEY_ONLY = new Set(["key_not_pinned", "key_unavailable", "ed25519_unsuppor
 function emptyState(src, v, view) {
   if (S.source === "api" && S.live.connected !== true) return null;   // the offline card covers it
   if (src?.error) return ["Replay not loaded", src.error];
-  if (!v || v.ordered.length === 0) return S.source === "api" ? ["Waiting for envelopes", `Connected; this run has no envelopes yet.${S.live.lastPoll ? ` The ${S.live.lastPoll}.` : ""}`] : ["Nothing loaded", "Open a JSONL replay file."];
+  if (!v || v.ordered.length === 0) {
+    const why = S.live.paging.terminal ?? S.live.failure;
+    return S.source === "api" ? ["Waiting for envelopes", why ? `Connected, but the last poll failed: ${PAGING_TEXT[why] ?? why}.` : "Connected; this run has no envelopes yet."] : ["Nothing loaded", "Open a JSONL replay file."];
+  }
   if (v.prefix === 0) {
-    return ["Nothing verified to show", `${S.keyNote ? `${S.keyNote[0].toUpperCase()}${S.keyNote.slice(1)}. ` : ""}Panels show only the verified prefix; the feed lists every envelope, marked.`];
+    // The key note explains the empty board only when the first row failed on its key; otherwise the banner says why.
+    const first = v.rows[0];
+    const keyWhy = first && first.status === "unverified" && first.reasons.every((r) => KEY_ONLY.has(r) || r === "key_hash_mismatch") && S.keyNote;
+    return ["Nothing verified to show", `${keyWhy ? `${S.keyNote[0].toUpperCase()}${S.keyNote.slice(1)}. ` : ""}Panels show only the verified prefix; the feed lists every envelope, marked.`];
   }
   if (view.n === 0) return ["Ready", "Press Space to play, or → to step one envelope."];
   return null;
@@ -648,7 +678,8 @@ function showChain() {
     ["key source", S.keyNote || "-"], ["run checked", src?.runId ? `${src.runId} (${src.runIdFrom === "file" ? "from the file you opened" : "requested by the page"})` : "-"]];
   if (S.source === "api") {
     const t = S.live.tracker.state();
-    rows.push(["last poll", S.live.connected === false ? `failed: ${S.live.error}` : S.live.lastPoll || (t.last_poll_ok_ms ? "ok" : "-")],
+    const why = S.live.paging.terminal ?? S.live.failure;
+    rows.push(["last poll", S.live.connected === false ? `failed: ${S.live.error}` : why ? `failed: ${PAGING_TEXT[why] ?? why}${S.live.paging.terminal ? " (stopped; reload to start over)" : ""}` : t.last_poll_ok_ms ? "ok" : "-"],
       ["progress", t.last_progress_ms ? `K reached ${t.K} ${Math.max(0, Math.floor((Date.now() - t.last_progress_ms) / 1000))} s ago` : "K has not grown yet"]);
   }
   if (v) {
@@ -656,7 +687,8 @@ function showChain() {
     rows.push(["verified", `${sum.verified} of ${sum.total} rows`], ["projected prefix", v.prefix ? `seq 1 to ${v.prefix_end} (${v.prefix} envelopes)` : "none"],
       ["rejected rows", `${sum.rejected}${sum.rejected ? " (failed the input checks; never hashed)" : ""}`],
       ["duplicates ignored", `${v.duplicates}${v.duplicates ? " (identical envelopes; no row)" : ""}`],
-      ...(S.source === "api" ? [["re-sent lines ignored", `${S.live.feed.repeats}${S.live.feed.repeats ? " (byte-identical; never re-checked)" : ""}`]] : []),
+      ...(S.source === "api" ? [["paging", `by cursor: ${S.live.paging.cursor} rows read`],
+        ["repeated lines", `${S.live.feed.repeats}${S.live.feed.repeats ? " (byte-identical rows; checked once)" : ""}`]] : []),
       ["§", "reasons"], ...sum.reasons.map((r) => [r.code, `${reasonText(r.code)} · ${r.count} row${r.count > 1 ? "s" : ""} · first at seq ${r.firstSeq ?? "?"}`]));
   }
   $("chainBody").replaceChildren(kv(rows));
@@ -678,7 +710,7 @@ $("file").onchange = async (e) => {
   if (S.source !== "file") setSource("file");
   const label = `${f.name} · opened file`;
   if (f.size > MAX_FILE_BYTES) { stop(); replayError(label, null, false, `the file is over the ${MAX_FILE_BYTES / MIB} MiB replay cap, so it was not read`); return; }
-  await loadReplay({ text: await f.text(), label, runId: params.get("run") || null, isDemo: false });
+  await loadReplay({ bytes: new Uint8Array(await f.arrayBuffer()), label, runId: params.get("run") || null, isDemo: false });
 };
 $("feed").onclick = (e) => { const row = e.target.closest(".row[data-i]"); if (row) inspect(Number(row.dataset.i)); };
 $("feed").onkeydown = (e) => { if (e.key === "Enter") { const row = e.target.closest(".row[data-i]"); if (row) inspect(Number(row.dataset.i)); } };

@@ -26,6 +26,7 @@ export const REASONS = [
   // Input checks: the row was rejected before anything was hashed.
   ["line_too_large", "line over 64 KiB, never parsed"],
   ["not_json", "not JSON"],
+  ["invalid_utf8", "not valid UTF-8"],
   ["too_deep", "nested deeper than 8 levels"],
   ["lone_surrogate", "broken Unicode (lone surrogate)"],
   ["string_too_long", "string over 512 characters"],

@@ -103,12 +103,12 @@
     <li>Status shows only what the evidence contract's project() returns over the unbroken, verified prefix of the chain. After the first break, rejected line or conflict, the board freezes; later envelopes are listed but never projected. A junk line can freeze the board too: that can hide progress, but it never shows a state that didn't happen.</li>
     <li>Every line is checked for size and structure before anything is hashed. A line over 64 KiB, nesting deeper than 8, a string over 512 characters, broken Unicode or more than 64 entries makes one rejected row that is never hashed. A replay file over 64 MiB, or a live response over 256 lines or 4 MiB, is not read at all.</li>
     <li>A verified envelope proves the core's key signed it. It does not prove a measurement is physically right.</li>
-    <li>Only keys pinned in this page at deploy can verify; an empty pin list verifies nothing. TEST KEYS mode uses keys anyone can derive, so only a local server honours it.</li>
+    <li>Signatures are checked only against keys pinned in this page; an empty pin list verifies nothing. Until the core serves the pinned key, envelopes show as unverified. TEST KEYS mode uses keys anyone can derive, so only a local server honours it.</li>
     <li>Colors are chiplet-center temperatures: one number per chiplet. They are not a continuous thermal field.</li>
     <li>The bundled demo is an interface fixture with illustrative numbers. No solver produced them.</li>
     <li>LIVE means a poll succeeded within 5 s and the verified prefix grew within the last 60 s. It shows recent progress, never completeness. Duplicates, and envelopes that don't extend the verified prefix, never keep it LIVE.</li>
     <li>Known limit: a server can withhold any suffix, including a final withdrawal, while it keeps releasing earlier envelopes. LIVE stays on and this page can't tell. Only the full history, replayed later, shows the truth.</li>
-    <li>The live feed needs the core's /api/view routes. When they don't answer, the page says so and the replay stays available.</li>
+    <li>The live feed reads the run's stream by cursor and keeps every row, so a late envelope at a seq already seen still freezes the board. A server without cursor paging shows STALE · paging unsupported and is never LIVE. If the stream is truncated or replaced under the page, it shows STALE · stream replaced and stops until you reload. When the /api/view routes don't answer, the page says so and the replay stays available.</li>
   </ul>
 </dialog>
 
