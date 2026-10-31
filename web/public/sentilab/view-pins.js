@@ -8,4 +8,7 @@
 // Never fill this from a replay file, its manifest, or the event API: a forged bundle would pin its own key.
 // Test keys are never listed here. They exist only in the node tests and in the ?pins=test mode, which only a local
 // server honours and which labels itself TEST KEYS on screen.
-export const VIEW_PINS = Object.freeze([]);
+// Production core key, provisioned 2026-10-31 by claude-warden. The seed lives only in the sentilab-api secret store.
+export const VIEW_PINS = Object.freeze([
+  Object.freeze({ key_id: "sha256:51b4fe3d8d0724f44555b6339924737014973b7ee15d1f25515256e562190dd8", key_sha256: "51b4fe3d8d0724f44555b6339924737014973b7ee15d1f25515256e562190dd8" }), // gitleaks:allow -- a PUBLIC key hash, not a secret
+]);
