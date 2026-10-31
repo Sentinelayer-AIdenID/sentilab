@@ -12,5 +12,6 @@ sundai_hotspot/*.a
 **/.env.*
 **/.dev.vars
 web/
+!web/public/trust-pins.json
 **/*.pem
 **/*.key
