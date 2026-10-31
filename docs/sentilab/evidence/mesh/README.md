@@ -24,7 +24,10 @@ J. The 0.01 C diagnostic tolerance is also frozen before evaluation.
 
 The harness reads the frozen file, verifies its SHA-256 and geometry/config
 contract, and refuses to overwrite it or existing results. Each grid has a fresh
-oracle and records its problem, source and binary hashes; workers are closed even
+oracle and records its problem, source and binary hashes. The first grid pins the
+binary and generator hashes; subsequent grids must match before evaluation. The
+checker rejects mixed identities too. Independent rebuilds require a separate
+named run; per-grid problem and input hashes may differ. Workers are closed even
 if evaluation fails. J is the chip-layer grid peak in Celsius. All-layer peaks are
 also recorded for comparison, but do not enter e. Timing includes oracle overhead;
 solver-only and total study times are recorded separately.

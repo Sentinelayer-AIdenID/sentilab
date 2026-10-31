@@ -1,6 +1,64 @@
 {
   "analysis_commit": "8f4760fab7e5b6114bb6ac2803e4829a7c6cbae8",
   "evaluation_count": 72,
+  "evaluator_identity": {
+    "generator_sha256": [
+      [
+        "sundai_tap/configs/sys_ascend910.cfg",
+        "548562a5f49d502f4b9bd03d3a4acc4b42f225056e6d91556416079c291e06d4"
+      ],
+      [
+        "sundai_tap/util/hotspot.config",
+        "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc"
+      ],
+      [
+        "sundai_tap/UPSTREAM_COMMIT",
+        "13097e0fc552c9cf1fee10ec0a3cfadfd3559e2cb40a6dd26973c1d96d52e312"
+      ],
+      [
+        "sundai_hotspot/UPSTREAM_COMMIT",
+        "3428c1396a6947c2408497b5ecf62587db1de2fb2d2374e5923ad01c8d0d5491"
+      ],
+      [
+        "sundai_tap/passive_interposer.py",
+        "dcbbaaa86a187bac3f1a1b12f49bd0dfc1c6cb3ed4e50ec51583f762adcf0a52"
+      ],
+      [
+        "sundai_tap/system.py",
+        "22adcc1c5b9228b21b1264ee8f1b31bac916a3f5fb1f9f06d5428d04d11a5acf"
+      ],
+      [
+        "sundai_tap/init_placement.py",
+        "92e40af2f5d56030cfae1fc35de6a5673fef55ceecd68319f6799d56d77946ce"
+      ],
+      [
+        "sundai_tap/block_occupation.py",
+        "3867b5e6716b9f89576e4c18b54e036a9788217426cbfb44f93caff41b108305"
+      ],
+      [
+        "sundai_tap/fastSA.py",
+        "653617b1853f9b6bfe90696e20a5bf961a4d0c329f37f9dfb5e1095be4e1d800"
+      ],
+      [
+        "sundai_tap/bstree.py",
+        "0d94fc22a436b52038cd1c95b66538fd2fad353040088fd7d0f7a44b375e6618"
+      ],
+      [
+        "sundai_tap/util/fill_space.py",
+        "645c0c372509577a77476878ddfac236fd9a0d523133af40011c7bb84db96a82"
+      ],
+      [
+        "sundai_hotspot/tap_oracle.py",
+        "d4afb0b7b7367691ea67bb9e4cbe13a74986d8ddd6897e9f319e77a37b2b7c61"
+      ],
+      [
+        "sundai_hotspot/tap_oracle_worker.py",
+        "2c7abb4fe04ec7d7e3f1a48891a775e464373464c8e9c13d114dbb6cb13767b5"
+      ]
+    ],
+    "hotspot_binary_sha256": "e4358b46794ebc00f07102d13b3ca687507834a1784eba135d26d1d493d334b4"
+  },
+  "evaluator_identity_basis": "Retrospective equality check of recorded per-grid hashes; original runner did not enforce a study pin.",
   "execution_commit": "ba39fe4785ac0cd1bc5464c018188a6a83c82edf",
   "fixed_tolerance_c": 0.01,
   "fixture": "ascend910",

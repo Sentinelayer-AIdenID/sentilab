@@ -123,3 +123,15 @@ these changes (`True is not None` and missing inversion-count key), then all
 10 non-solver tests passed. All 24 frozen layouts are retained; no observed
 subset is described as a preregistered independent check set. Ascend910 is
 interim evidence and the combined fixture study remains inconclusive.
+
+
+## Review 56079: evaluator identity
+
+The runner now pins binary and generator source hashes on the first grid and
+rejects a changed evaluator before evaluating the next grid. The result checker
+also rejects mixed per-grid identities. Two regression tests fail on pre-fix
+`f9a96b3` in a disposable worktree: `ValueError not raised` in the runner and
+`False is not true` in the checker, for binary and source mutations independently.
+All 12 non-solver mesh tests pass after the fix. No HotSpot calls were made.
+The historical per-grid identities compare equal; the new RESULT identity field
+explicitly records retrospective equality, not enforcement by the original run.
