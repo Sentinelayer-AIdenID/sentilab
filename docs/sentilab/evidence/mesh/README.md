@@ -31,7 +31,7 @@ solver-only and total study times are recorded separately.
 
 The mandatory rule compares signs on reference gaps strictly greater than 2e
 (2e16 for grid 16). Exact coarse ties count as violations; gaps equal to the
-threshold are excluded. The same-sample max-error bound mathematically guarantees
+threshold are excluded (a 1e-12 C guard absorbs binary roundoff at decimal boundaries). The same-sample max-error bound mathematically guarantees
 zero violations, so eligible/excluded pair counts and fixed-0.01 C diagnostics
 must accompany any interpretation. The fixed tolerance excludes small reference
 gaps; it does not round coarse values or make approximate ties transitive.
