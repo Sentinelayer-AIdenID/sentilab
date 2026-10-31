@@ -25,6 +25,11 @@ dd89497f756453751776aa149923bbe2135f5bf489427e36cdf959e0891885ce  view-envelope-
 60446063972a2997a340b9580bea7bfd798c5393d29e4109cc508889aea0b827  view-envelope-v0.6.1/run-paging-vectors.mjs
 161ba908bc887e710a3a6448f4239c2c865c1b706155957a5207d4e7a5838c94  view-envelope-v0.6.1/vectors-paging.json
 cac3f139543821e3c94b98cd4060efdd2181e3d204476166ebdccaa41bb2fce4  view-envelope-v0.6.1/VIEW-ENVELOPE.md
+43fb20fa9b016a4f7fa4d111119161d2447daea830601239b4d44ebdfd96776c  view-envelope-v0.6.2/paging.mjs
+db078bef445775f5abfeae15e1da5b00b98ab26e7a29898e071e6e2673ab8998  view-envelope-v0.6.2/README.md
+3fb0d54786e94055a17053c8735f5dc6de8e7914e3934244cc66abe9d6f376af  view-envelope-v0.6.2/run-paging-vectors.mjs
+f321cf279c165934c9f7703f6a40c6b2b90966cb4b0e64f99382819186d5bbae  view-envelope-v0.6.2/vectors-paging.json
+a5a04e9c7207ced732889dd4cc06915c15c20a445f7f03e13e4ac2f05edce040  view-envelope-v0.6.2/VIEW-ENVELOPE.md
 7e875920117e5a34b49ba37d33028b8577a018d5c72ed847959d929f72cd16b7  view-envelope-v0.6/paging.mjs
 66f077b558711988af9577e1bbc6e0be56569eedd3177f5952a660377300cad1  view-envelope-v0.6/README.md
 b7581800c493065f6b3ff75215054d4123a9f9427e84488145518ff3bef8e631  view-envelope-v0.6/run-paging-vectors.mjs

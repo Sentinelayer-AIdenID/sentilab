@@ -2,7 +2,7 @@
 // Data comes only through source.mjs (the same verifier and pins as the Lab view); the scene through scene.mjs
 // (pure, also used by the CLI); the drawing through render.mjs (hand-written Canvas 2D). Every string from an
 // envelope reaches the page through textContent, never innerHTML.
-import { DEMO, CONTRACT_VERSION, MAX_FILE_BYTES, setupTrust, fetchReplayBytes, verifyReplayFile, isDrill, chainSummary, modeNow, createLiveFeed, reasonText } from "./source.mjs";
+import { DEMO, CONTRACT_VERSION, MAX_FILE_BYTES, setupTrust, fetchReplayBytes, verifyReplayFile, isDrill, chainSummary, modeNow, runStatusOf, createLiveFeed, reasonText } from "./source.mjs";
 import { viewHref } from "../view-links.mjs";
 import { sceneAt, scaleTicks, describeEvent, TRACK_ORDER, TRACKS, trackName } from "./scene.mjs";
 import { reconcile } from "./playhead.mjs";
@@ -276,7 +276,7 @@ function renderDom() {
 }
 
 function renderTop(src, v) {
-  const m = modeNow(S.source === "api" ? "api" : "file", S.live?.state.live ?? null, Date.now());
+  const m = modeNow(S.source === "api" ? "api" : "file", S.live?.state.live ?? null, Date.now(), runStatusOf(S.live?.state));
   $("mode").className = `mode ${m.mode.toLowerCase()}${m.reason === "chain broken" ? " broken" : ""}`;
   $("modeText").textContent = m.label;
   $("drill").hidden = !(src && isDrill(src.verification));
