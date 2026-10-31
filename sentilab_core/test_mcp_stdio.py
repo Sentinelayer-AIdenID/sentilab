@@ -59,9 +59,12 @@ class StdioTests(unittest.IsolatedAsyncioTestCase):
         await self.process.stdin.drain()
 
     async def call(self, id, operation):
+        arguments = {"ai_off": True}
+        if operation == "verify":
+            arguments["run_id"] = "fixture"
         await self.send({"jsonrpc": "2.0", "id": id, "method": "tools/call",
                          "params": {"name": "sentilab_live_" + operation,
-                                    "arguments": {"ai_off": True}}})
+                                    "arguments": arguments}})
 
     async def receive(self):
         return json.loads(await asyncio.wait_for(self.process.stdout.readline(), 5))
@@ -91,6 +94,12 @@ class StdioTests(unittest.IsolatedAsyncioTestCase):
             "sentilab_research_request": {"ai_off", "namespace", "question"},
             "sentilab_research_status": {"ai_off", "namespace", "request_id"},
             "sentilab_research_export": {"ai_off", "namespace", "request_id"},
+            "sentilab_chiplet_build": set(),
+            "sentilab_chiplet_render": {"run_id"},
+            "sentilab_chiplet_replay": {"run_id"},
+            "sentilab_chiplet_export": {"run_id"},
+            "sentilab_gb10_status": set(),
+            "sentilab_gb10_checkpoint_verify": set(),
         }
         self.assertCountEqual([tool["name"] for tool in tools], expected)
         for tool in tools:
@@ -262,6 +271,8 @@ host.main()
         expected.update(("sentilab_dataset_export", "sentilab_resultcheck",
                          "sentilab_memory_recall", "sentilab_memory_audit", "sentilab_route"))
         expected.update("sentilab_research_" + name for name in ("request", "status", "export"))
+        expected.update("sentilab_chiplet_" + name for name in ("build", "render", "replay", "export"))
+        expected.update(("sentilab_gb10_status", "sentilab_gb10_checkpoint_verify"))
         self.assertEqual({tool["name"] for tool in tools}, expected)
         self.assertEqual(len(tools), len(expected), "each tool must be registered once")
         schemas = {tool["name"]: tool["inputSchema"] for tool in tools}

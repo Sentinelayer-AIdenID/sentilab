@@ -1,8 +1,11 @@
 # Thermal Flight Lab API image: the starter, HotSpot built with SuperLU, and the FastAPI service.
-FROM python:3.12-slim
+ARG PYTHON_BASE=python:3.12-slim@sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159
+FROM ${PYTHON_BASE}
+ARG PYTHON_BASE
+ARG NODEJS_VERSION=20.19.2+dfsg-1+deb13u3
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends build-essential libsuperlu-dev libblas-dev \
+ && apt-get install -y --no-install-recommends build-essential libsuperlu-dev libblas-dev "nodejs=${NODEJS_VERSION}" \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -12,6 +15,8 @@ COPY requirements.txt requirements-service.txt ./
 RUN pip install --no-cache-dir -r requirements.txt -r requirements-service.txt
 
 COPY . .
+RUN python scripts/record_build_info.py --base-image "${PYTHON_BASE}" \
+    --node-package-version "${NODEJS_VERSION}" --output /app/build-info.json
 RUN cd sundai_hotspot && make -j4 SUPERLU=1 \
  && mkdir -p /licenses \
  && cp /app/sundai_hotspot/LICENSE /licenses/HotSpot-LICENSE \
