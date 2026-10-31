@@ -7,9 +7,12 @@
 // `values` of envelopes in the prefix that project() applied. Nothing after the prefix can move or colour anything.
 //
 // Everything drawn comes from our own data: chiplet footprints from values.geometry, colours from values.center_temps
-// on one fixed scale per run. The vertical stack (substrate, interposer, die heights, lid) is schematic: nominal
+// on one fixed scale per run (a run without centre temperatures draws its chiplets uncoloured; J is the measurement's
+// value and never colours a chiplet), J and W from the supporting measurement the Lab view picks (lab-model.mjs
+// metricFor). The vertical stack (substrate, interposer, die heights, lid) is schematic: nominal
 // constants below, declared as such in the scene and on screen.
 import { project } from "../evidence-projection.mjs";
+import { metricFor, tempUnit } from "../lab-model.mjs";
 
 export const SCENE_VERSION = "sentilab-scene/0.1";
 export const TEMP_BASIS = "chiplet-centre temperatures from the solver; not a field";
@@ -76,10 +79,11 @@ export function contiguousPrefix(envelopes) {
 // Every length is placed in mm and every temperature coloured in °C. Only the units below are converted; a missing
 // or unsupported unit is REFUSED: the value is never placed, coloured or exported as a number, and the scene lists
 // it in `errors` with the unit as declared. Centre temperatures carry no unit of their own, so they are read in the
-// unit of the same measurement's J (the only temperature unit an envelope declares).
+// unit of the same measurement's J (the only temperature unit an envelope declares). Producers spell Celsius "°C"
+// (older signed rows) or "C" (newer rows): both are °C (lab-model.mjs tempUnit, the Lab view's rule).
 export const SUPPORTED_UNITS = Object.freeze({
   length: Object.freeze({ canonical: "mm", accepted: Object.freeze(["mm", "m", "µm", "μm", "um"]), declared_in: "values.units" }),
-  temperature: Object.freeze({ canonical: "°C", accepted: Object.freeze(["°C", "K"]), declared_in: "values.J.unit (centre temperatures use their measurement's J unit)" }),
+  temperature: Object.freeze({ canonical: "°C", accepted: Object.freeze(["°C", "C", "K"]), declared_in: "values.J.unit (centre temperatures use their measurement's J unit)" }),
 });
 const LENGTH_TO_MM = Object.freeze({ mm: null, m: (v) => v * 1000, "µm": (v) => v / 1000, "μm": (v) => v / 1000, um: (v) => v / 1000 });
 const TEMP_TO_C = Object.freeze({ "°C": null, K: (v) => v - 273.15 });
@@ -131,8 +135,9 @@ export function readGeometry(values) {
 function toCelsius(v, unit, what) {
   if (typeof v !== "number") return { error: { code: "malformed", detail: `${what}: not a number` } };
   if (typeof unit !== "string") return { error: { code: "unit_missing", detail: `${what}: no temperature unit declared (values.J.unit)` } };
-  if (!Object.hasOwn(TEMP_TO_C, unit)) return { error: { code: "unit_not_supported", detail: `temperature unit "${unitText(unit)}" is not one of ${SUPPORTED_UNITS.temperature.accepted.join(", ")}` } };
-  const conv = TEMP_TO_C[unit];
+  const u = tempUnit(unit);
+  if (!Object.hasOwn(TEMP_TO_C, u)) return { error: { code: "unit_not_supported", detail: `temperature unit "${unitText(unit)}" is not one of ${SUPPORTED_UNITS.temperature.accepted.join(", ")}` } };
+  const conv = TEMP_TO_C[u];
   const c = conv ? tidy(conv(v)) : v;
   const { min, max } = BOUNDS.temperature_c;
   if (!inRange(c, min, max)) return { error: { code: "out_of_range", detail: `${what}: ${numText(v)} ${unitText(unit)} is outside ${min} to ${max} °C` } };
@@ -351,9 +356,15 @@ export function buildScene(prefixEnvelopes, projection = null, { frame = null } 
         if (ox1 > ox0 && oy1 > oy0) overlaps.push({ a: a.id, b: b.id, x0: ox0, y0: oy0, x1: ox1, y1: oy1 });
       }
     }
-    const sv = source?.values;
-    const J = readJ(sv).J, W = readW(sv).W;
+    // J and W: a measurement's own; a candidate's from the supporting measurement metricFor() picks (it needs no
+    // centre temperatures). It is never painted onto a chiplet.
+    const metric = node.kind === "measurement"
+      ? (isObj(made.values?.J) ? { id, set_id: null, set_status: null, validity: node.validity, values: made.values } : null)
+      : metricFor(id, { nodes, sets, valuesOf: (m) => (created.get(m)?.kind === "measurement" ? created.get(m).values : null) });
+    const J = readJ(metric?.values).J, W = readW(metric?.values).W;
     const firstSet = (sets.get(id) ?? [])[0]?.set_id ?? null;
+    // Whether any support set holds a measurement at all (with or without J): then the candidate was simulated.
+    const measured = (sets.get(id) ?? []).some((set) => set.members.some((m) => created.get(m)?.kind === "measurement"));
     return {
       ref: ref(id),
       lifecycle: node.kind === "candidate" ? node.lifecycle : null,
@@ -361,7 +372,7 @@ export function buildScene(prefixEnvelopes, projection = null, { frame = null } 
       support_status: { ...node.support_status },
       units: SUPPORTED_UNITS.length.canonical,
       declared_units: str(made.values?.units),
-      scenario_id: str(made.values?.scenario_id) ?? str(sv?.scenario_id),
+      scenario_id: str(made.values?.scenario_id) ?? str(source?.values?.scenario_id) ?? str(metric?.values?.scenario_id),
       chiplets, overlaps,
       // A refused field is never placed or coloured; the reason is shown on screen and listed in scene.errors.
       geometry_error: geometryError ? { code: geometryError.code, unit: geometryError.unit, detail: geometryError.detail } : null,
@@ -372,6 +383,11 @@ export function buildScene(prefixEnvelopes, projection = null, { frame = null } 
         broken_sets: Object.entries(node.support_status).filter(([, st]) => st === "broken").map(([k]) => k),
       } : null,
       J, W,
+      metric: metric ? {
+        measurement: metric.id, set_id: metric.set_id, validity: metric.validity,
+        state: metric.validity === "valid" && (metric.set_id === null || metric.set_status === "valid") ? "valid" : "stale",
+      } : null,
+      measured,
     };
   };
 
@@ -507,19 +523,20 @@ export function sceneAt(prefixEnvelopes, count, frame) {
   return buildScene(slice, project(slice.map((env) => env.event)), { frame: frame ?? runFrame(prefix) });
 }
 
-// A short line for a timeline event, for captions and scrubber titles.
-export function describeEvent(e) {
+// A short line for a timeline event, for captions and scrubber titles. name(id) shortens ids for display (the page
+// passes lab-model.mjs shortId and keeps the full line in the title); the default keeps them whole (the CLI).
+export function describeEvent(e, name = (id) => id) {
   const who = (lab) => trackName(lab);
   switch (e.kind) {
-    case "initial": return `seq ${e.seq} · initial layout ${e.node} (core measurement)`;
+    case "initial": return `seq ${e.seq} · initial layout ${name(e.node)} (core measurement)`;
     case "move": return e.track === "board"
-      ? `seq ${e.seq} · board moves to ${e.to.id}${e.from ? ` from ${e.from.id}` : ""}`
-      : `seq ${e.seq} · ${who(e.track)} proposes ${e.to.id}${e.from ? ` (from ${e.from.id})` : ""}`;
-    case "accept": return `seq ${e.seq} · AcceptanceGate accepts ${e.candidate} (${who(e.lab)})`;
-    case "gate": return `seq ${e.seq} · AcceptanceGate: ${e.candidate} ${e.outcome}`;
-    case "out": return `seq ${e.seq} · ${e.candidate} ${e.outcome}`;
-    case "measured": return `seq ${e.seq} · ${e.candidate} gets temperatures from ${e.measurement}`;
-    case "withdraw": return `seq ${e.seq} · ${e.node} withdrawn${e.reason ? ` (${e.reason})` : ""}`;
+      ? `seq ${e.seq} · board moves to ${name(e.to.id)}${e.from ? ` from ${name(e.from.id)}` : ""}`
+      : `seq ${e.seq} · ${who(e.track)} proposes ${name(e.to.id)}${e.from ? ` (from ${name(e.from.id)})` : ""}`;
+    case "accept": return `seq ${e.seq} · AcceptanceGate accepts ${name(e.candidate)} (${who(e.lab)})`;
+    case "gate": return `seq ${e.seq} · AcceptanceGate: ${name(e.candidate)} ${e.outcome}`;
+    case "out": return `seq ${e.seq} · ${name(e.candidate)} ${e.outcome}`;
+    case "measured": return `seq ${e.seq} · ${name(e.candidate)} gets temperatures from ${name(e.measurement)}`;
+    case "withdraw": return `seq ${e.seq} · ${name(e.node)} withdrawn${e.reason ? ` (${e.reason})` : ""}`;
     default: return `seq ${e.seq}`;
   }
 }

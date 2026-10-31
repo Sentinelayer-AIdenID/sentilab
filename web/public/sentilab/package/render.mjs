@@ -428,7 +428,7 @@ function drawCallouts(ctx, cam, g) {
   ctx.font = `500 13.5px ${SANS}`;
   ctx.fillStyle = "#95aab1";
   ctx.fillText("schematic stack · heights not to scale", labelX, lowest + 34);
-  ctx.fillText("footprints from the evidence, to scale", labelX, lowest + 54);
+  ctx.fillText("footprints from the evidence, in mm, to scale", labelX, lowest + 54);
   ctx.restore();
 }
 

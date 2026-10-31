@@ -27,6 +27,7 @@ import { TrackAnimation } from "../public/sentilab/package/render.mjs";
 import { makeChain, signEnvelope } from "../../contracts/view-envelope-v0.5/view-envelope.mjs";
 import * as refPaging from "../../contracts/view-envelope-v0.6.2/paging.mjs";
 import { viewHref } from "../public/sentilab/view-links.mjs";
+import { shortId, buildView } from "../public/sentilab/lab-model.mjs";
 import * as cliModule from "../../scripts/sentilab-scene.mjs";
 import * as source from "../public/sentilab/package/source.mjs";
 import { VIEW_PINS } from "../public/sentilab/view-pins.js";
@@ -622,13 +623,57 @@ test("units: refused temperatures leave chiplets placed but uncoloured, with the
   const a = track(scene, "lab-a");
   assert.equal(a.chiplets.length, 2, "geometry is fine, so it is placed");
   assert.ok(a.chiplets.every((c) => c.temp === null && c.color === null && c.temp_state === null), "never coloured");
-  assert.deepEqual(a.temps_error, { code: "unit_not_supported", unit: "°F", detail: 'temperature unit "°F" is not one of °C, K', measurement: "MF" });
+  assert.deepEqual(a.temps_error, { code: "unit_not_supported", unit: "°F", detail: 'temperature unit "°F" is not one of °C, C, K', measurement: "MF" });
   assert.equal(a.temps_from.state, "refused");
   assert.equal(a.J, null);
   assert.equal(scene.scale, null, "nothing accepted, so no scale");
   assert.ok(!dataNumbers(scene).includes(77) && !dataNumbers(scene).includes(80), "the refused numbers are not exported");
 });
 
+// Producer-shaped rows, as on the public run: J and W on measurement nodes and no centre temperatures; J's unit "C"
+// (newer rows) or "°C" (older signed rows); geometry on the candidates, in mm; ids prefixed with the run id.
+const PRUN = "35975774fb714bbdaa51972bc39518ec";
+const peak = (id, unit, J) => ["core", "node.create", { id, kind: "measurement", semantics: SEM }, { J: { value: J, unit }, W: { value: 27.7, metric_id: "weighted-manhattan-mm" } }];
+test("producer rows: J and W from the supporting measurement (C or °C, shown °C), nothing coloured without centre temperatures, nothing invented without a measurement", async () => {
+  const c0 = `${PRUN}:candidate-0`, c1 = `${PRUN}:candidate-1`, c2 = `${PRUN}:candidate-2`;
+  const { scene } = await verifiedScene(signedRun([
+    cand("lab-a", c0, "mm", [["tap-chiplet-0", 17.75, 9.3, 14.5, 31.4], ["tap-chiplet-1", 34.75, 32, 10.5, 16]]),
+    peak(`${c0}:evaluate:measurement`, "C", 118.36),
+    peak(`${c0}:reproduce:measurement`, "°C", 118.36),
+    ["core", "support.add", { node: c0, set_id: "evaluation-and-reproduction", members: [`${c0}:evaluate:measurement`, `${c0}:reproduce:measurement`] }],
+    cand("lab-b", c1, "mm", [["tap-chiplet-0", 0, 0, 10, 10]]),
+    cand("lab-c", c2, "mm", [["tap-chiplet-0", 5, 5, 10, 10]]),
+    peak(`${c2}:evaluate:measurement`, "°C", 119.5),
+    ["core", "support.add", { node: c2, set_id: "evaluation-and-reproduction", members: [`${c2}:evaluate:measurement`] }],
+  ]));
+  assert.deepEqual(scene.errors, [], "C and °C are both accepted");
+  assert.equal(scene.scale, null, "no centre temperatures, so no colour scale");
+  const a = track(scene, "lab-a");
+  assert.deepEqual(a.J, { value: 118.36, unit: "°C", declared_unit: "C" }, "newer rows spell it C");
+  assert.deepEqual(a.W, { value: 27.7, metric_id: "weighted-manhattan-mm" });
+  assert.deepEqual(a.metric, { measurement: `${c0}:evaluate:measurement`, set_id: "evaluation-and-reproduction", validity: "valid", state: "valid" });
+  assert.equal(a.measured, true);
+  assert.equal(a.temps_from, null, "no temperatures to colour with");
+  assert.deepEqual(a.chiplets.map((c) => [c.id, c.x, c.y, c.w, c.h, c.temp, c.color]), [["tap-chiplet-0", 17.75, 9.3, 14.5, 31.4, null, null], ["tap-chiplet-1", 34.75, 32, 10.5, 16, null, null]], "placed in mm from values.geometry; J is never painted onto a chiplet");
+  assert.equal(a.declared_units, "mm");
+  assert.deepEqual(track(scene, "lab-c").J, { value: 119.5, unit: "°C", declared_unit: "°C" }, "older rows spell it °C");
+  const b = track(scene, "lab-b");
+  assert.deepEqual([b.J, b.W, b.metric, b.measured], [null, null, null, false], "no measurement: nothing invented");
+  // Display ids: the page passes lab-model.mjs shortId; the CLI's default keeps them whole.
+  const move = scene.timeline.find((e) => e.kind === "move" && e.to.id === c0);
+  assert.equal(describeEvent(move, shortId), "seq 1 · Lab A proposes candidate-0");
+  assert.equal(describeEvent(move), `seq 1 · Lab A proposes ${c0}`);
+});
+test("the Package view and the Lab view pick the same measurement for J (one shared rule, lab-model.mjs metricFor)", async () => {
+  const v = await demoVerified();
+  const scene = sceneOf(v);
+  const lab = buildView({ ordered: v.prefixEnvelopes, prefix: v.prefixEnvelopes.length }, v.prefixEnvelopes.length);
+  for (const t of scene.tracks.filter((x) => x.layout?.ref.kind === "candidate")) {
+    const card = lab.cards.find((c) => c.id === t.layout.ref.id);
+    assert.equal(t.layout.metric?.measurement ?? null, card.metric?.id ?? null, t.layout.ref.id);
+    assert.equal(t.layout.J?.value ?? null, card.J?.value ?? null, t.layout.ref.id);
+  }
+});
 test("bounds: 1e20 °C, below absolute zero, 1e308 + 1e308 mm, zero or huge sizes and wild layers are scene errors, never drawn", async () => {
   const { v, scene } = await verifiedScene(signedRun([
     cand("lab-a", "K1", "mm", [["A", 1e308, 0, 1e308, 5]]),          // the sum overflows; each part is out of range

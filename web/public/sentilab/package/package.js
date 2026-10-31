@@ -4,6 +4,7 @@
 // envelope reaches the page through textContent, never innerHTML.
 import { DEMO, CONTRACT_VERSION, MAX_FILE_BYTES, setupTrust, fetchReplayBytes, verifyReplayFile, isDrill, chainSummary, modeNow, runStatusOf, createLiveFeed, reasonText } from "./source.mjs";
 import { viewHref } from "../view-links.mjs";
+import { shortId } from "../lab-model.mjs";
 import { sceneAt, scaleTicks, describeEvent, TRACK_ORDER, TRACKS, trackName } from "./scene.mjs";
 import { reconcile } from "./playhead.mjs";
 import { drawPackage, TrackAnimation, HOME_AZIMUTH, ORBIT_MS, easeInOut } from "./render.mjs";
@@ -339,7 +340,7 @@ function renderValueErrors() {
   if (!errs.length) { el.hidden = true; return; }
   el.hidden = false;
   el.append(`Value check: ${errs.length} verified value${errs.length === 1 ? "" : "s"} refused, not drawn`,
-    h("span", null, ` · ${errs.slice(0, 3).map((e) => `${e.node} ${FIELD[e.field] ?? e.field}: ${refusalText(e)}`).join(" · ")}${errs.length > 3 ? ` · +${errs.length - 3} more` : ""}. Supported units: mm, m, µm; °C, K.`));
+    h("span", null, ` · ${errs.slice(0, 3).map((e) => `${shortId(e.node)} ${FIELD[e.field] ?? e.field}: ${refusalText(e)}`).join(" · ")}${errs.length > 3 ? ` · +${errs.length - 3} more` : ""}. Supported units: mm, m, µm; °C (also written C), K.`));
 }
 
 function renderFrozen(v) {
@@ -365,7 +366,7 @@ function emptyState(src, v) {
   }
   if (!S.scene || S.scene.at.count === 0) return ["Ready", "Press Space to play, or → to step one envelope."];
   const t = S.scene.tracks.find((x) => x.track === S.selected);
-  if (t?.layout?.geometry_error) return ["Not drawn: geometry refused", `${t.layout.ref.id}: ${refusalText(t.layout.geometry_error)}. ${t.layout.geometry_error.detail}. The envelope verified; this value can't be placed, so nothing is drawn for it.`];
+  if (t?.layout?.geometry_error) return ["Not drawn: geometry refused", `${shortId(t.layout.ref.id)}: ${refusalText(t.layout.geometry_error)}. ${t.layout.geometry_error.detail}. The envelope verified; this value can't be placed, so nothing is drawn for it.`];
   if (!t?.layout) return S.selected === "board" ? ["No layout yet", "The board shows the initial layout once the core's first measurement is verified."] : [`${TRACKS[S.selected].name} has no candidate yet`, "Its package appears when the lab proposes a layout."];
   return null;
 }
@@ -383,35 +384,39 @@ function renderMain(src, v) {
   let sub = "";
   if (L && S.selected === "board") {
     if (t.showing === "accepted") {
-      sub = `${L.ref.id} · ${trackName(L.ref.lab)} · accepted by the gate at seq ${t.accepted.seq}`;
+      sub = `${shortId(L.ref.id)} · ${trackName(L.ref.lab)} · accepted by the gate at seq ${t.accepted.seq}`;
       chip.className = "chip won"; chip.textContent = "ACCEPTED"; chip.hidden = false;
     } else {
-      sub = `initial layout ${L.ref.id} (core measurement) · nothing accepted yet`;
+      sub = `initial layout ${shortId(L.ref.id)} (core measurement) · nothing accepted yet`;
       chip.className = "chip init"; chip.textContent = "INITIAL"; chip.hidden = false;
     }
   } else if (L) {
-    sub = `${L.ref.id} · proposed at seq ${L.ref.seq}${t.on_board ? " · on the board" : ""}`;
+    sub = `${shortId(L.ref.id)} · proposed at seq ${L.ref.seq}${t.on_board ? " · on the board" : ""}`;
     chip.className = `chip ${lifeKind(L.lifecycle)}`; chip.textContent = L.lifecycle ?? ""; chip.hidden = !L.lifecycle;
   } else chip.hidden = true;
   $("mainSub").textContent = sub;
+  $("mainSub").title = L ? L.ref.id : "";
+  const coloured = L ? L.chiplets.some((c) => c.color !== null) : false;
   $("mainCanvas").setAttribute("aria-label", L
-    ? `${TRACKS[S.selected].name}: ${L.ref.id}, ${L.chiplets.length} chiplets${L.J ? `, J ${fmt(L.J.value)} ${L.J.unit}` : ", no temperatures"}. Isometric drawing; colours are chiplet-centre temperatures.`
+    ? `${TRACKS[S.selected].name}: ${shortId(L.ref.id)}, ${L.chiplets.length} chiplets${L.J ? `, J ${fmt(L.J.value)} ${L.J.unit}` : ", no J"}. Isometric drawing; ${coloured ? "colours are chiplet-centre temperatures" : "no chiplet temperatures, so nothing is coloured"}.`
     : "No package drawn");
   $("picker").value = S.selected;
 
   const note = $("refusedNote");
   note.hidden = !(L && L.temps_error && !L.geometry_error);
-  if (!note.hidden) note.textContent = `Temperatures not drawn: ${refusalText(L.temps_error)} · from ${L.temps_error.measurement}`;
+  if (!note.hidden) note.textContent = `Temperatures not drawn: ${refusalText(L.temps_error)} · from ${shortId(L.temps_error.measurement)}`;
 
   // Caption: what the playhead just did (from the prefix's timeline), or why the package is not moving.
   const cap = $("caption");
   cap.replaceChildren();
+  cap.title = "";
   if (v && S.cursor > v.prefixCount && v.prefixCount > 0) {
     cap.append(h("b", null, `seq ${v.rows[S.cursor - 1]?.seq ?? "?"} is after the break`), " · not drawn; the package stays at seq ", String(v.prefixEnd));
   } else if (S.scene && S.scene.timeline.length) {
     const last = S.scene.timeline[S.scene.timeline.length - 1];
     const stepSeq = S.scene.at.seq;
-    cap.append(last.seq === stepSeq ? h("b", null, describeEvent(last)) : describeEvent(last));
+    cap.append(last.seq === stepSeq ? h("b", null, describeEvent(last, shortId)) : describeEvent(last, shortId));
+    cap.title = describeEvent(last);   // full ids
   }
 }
 
@@ -420,7 +425,9 @@ function renderInfo(src) {
   const L = t?.layout ?? null;
   const nothing = (src?.verification?.prefixCount ?? 0) === 0;
   $("infoLbl").textContent = nothing ? `${TRACKS[S.selected].name} · nothing verified` : S.selected === "board" ? (t?.showing === "accepted" ? "Board · accepted package" : "Board · before any acceptance") : `${TRACKS[S.selected].name} · current candidate`;
-  $("infoName").textContent = L ? L.ref.id : nothing ? "Nothing drawn" : "No package yet";
+  $("infoName").textContent = L ? shortId(L.ref.id) : nothing ? "Nothing drawn" : "No package yet";
+  $("infoName").title = L ? L.ref.id : "";
+  $("infoFull").textContent = L && shortId(L.ref.id) !== L.ref.id ? L.ref.id : "";   // the full id, in the inspector
   $("metrics").hidden = !L;
   $("infoName").style.color = L && L.ref.lab && TRACKS[L.ref.lab] ? TRACKS[L.ref.lab].color : "";
   $("infoId").textContent = L ? (L.ref.kind === "measurement" ? "core measurement" : `by ${trackName(L.ref.lab)}`) : "";
@@ -432,16 +439,25 @@ function renderInfo(src) {
     if (L.scenario_id) chips.append(h("span", { class: "chip lost" }, L.scenario_id));
   }
   $("infoJ").textContent = L?.J ? `${fmt(L.J.value)} ${L.J.unit}` : "-";
-  $("infoJ").className = L?.temps_from?.state === "stale" ? "stale" : "";
+  $("infoJ").className = L?.metric?.state === "stale" || L?.temps_from?.state === "stale" ? "stale" : "";
+  $("infoJ").title = L?.metric ? `J from ${L.metric.measurement} (${L.metric.validity})` : "";
   $("infoW").textContent = L?.W ? `W ${fmt(L.W.value)} ${L.W.metric_id}` : "";
   const srcEl = $("infoSrc");
   srcEl.className = "src";
   if (!L) srcEl.textContent = "";
-  else if (!L.temps_from) srcEl.textContent = `no temperatures · ${NO_TEMPS[L.lifecycle] ?? "awaiting simulation"}`;
-  else if (L.temps_error) { srcEl.className = "src stale"; srcEl.textContent = `temperatures from ${L.temps_from.measurement} not drawn · ${refusalText(L.temps_error)}`; }
-  else if (L.temps_from.state === "stale") { srcEl.className = "src stale"; srcEl.textContent = `values from ${L.temps_from.measurement} · STALE (${L.temps_from.validity})`; }
-  else if (L.temps_from.via_alternative) { srcEl.className = "src alt"; srcEl.textContent = `values via ${L.temps_from.measurement} (set ${L.temps_from.set_id}) · set ${L.temps_from.broken_sets.join(", ")} broken`; }
-  else srcEl.textContent = L.temps_from.set_id ? `values from ${L.temps_from.measurement} · support set ${L.temps_from.set_id}` : `values from ${L.temps_from.measurement} (its own)`;
+  else if (!L.temps_from) {
+    // No centre temperatures for this layout. J, when a supporting measurement has one, is that measurement's value:
+    // it is shown as J and never painted onto a chiplet. Only a candidate with no measurement at all is "awaiting".
+    if (L.metric) {
+      if (L.metric.state === "stale") srcEl.className = "src stale";
+      srcEl.textContent = `${L.metric.set_id === null ? "J: its own value" : `J from ${shortId(L.metric.measurement)}`}${L.metric.state === "stale" ? ` · STALE (${L.metric.validity})` : ""} · no per-chiplet temperatures`;
+    } else srcEl.textContent = L.measured ? "measured, but no J in the verified data · no per-chiplet temperatures" : `no temperatures · ${NO_TEMPS[L.lifecycle] ?? "awaiting simulation"}`;
+  }
+  else if (L.temps_error) { srcEl.className = "src stale"; srcEl.textContent = `temperatures from ${shortId(L.temps_from.measurement)} not drawn · ${refusalText(L.temps_error)}`; }
+  else if (L.temps_from.state === "stale") { srcEl.className = "src stale"; srcEl.textContent = `values from ${shortId(L.temps_from.measurement)} · STALE (${L.temps_from.validity})`; }
+  else if (L.temps_from.via_alternative) { srcEl.className = "src alt"; srcEl.textContent = `values via ${shortId(L.temps_from.measurement)} (set ${L.temps_from.set_id}) · set ${L.temps_from.broken_sets.join(", ")} broken`; }
+  else srcEl.textContent = L.temps_from.set_id ? `values from ${shortId(L.temps_from.measurement)} · support set ${L.temps_from.set_id}` : `values from ${shortId(L.temps_from.measurement)} (its own)`;
+  srcEl.title = L ? [L.metric ? `J from ${L.metric.measurement}` : null, L.temps_from ? `temperatures from ${L.temps_from.measurement}` : null].filter(Boolean).join(" · ") : "";
   if (L && L.overlaps.length) srcEl.textContent += ` · overlap: ${L.overlaps.map((o) => `${o.a}/${o.b}`).join(", ")}`;
 
   // Legend: the run's one fixed scale.
@@ -451,7 +467,11 @@ function renderInfo(src) {
   $("scaleBarBox").hidden = !scale;
   ticks.hidden = !scale;
   $("noScale").hidden = !!scale;
+  $("basis").hidden = !scale;          // "chiplet-centre temperatures from the solver" only when there are some
   $("scaleUnit").textContent = scale?.unit ? `· ${scale.unit}, fixed` : "";
+  // The footprints' unit and extent: the layouts are placed in mm from values.geometry.
+  const ext = S.scene?.footprint?.extent ?? null;
+  $("stackNote").textContent = `Substrate, interposer, heights and lid are nominal drawing constants, not to scale. Chiplet footprints are from the evidence (values.geometry), in mm, to scale${ext ? `: the run's layouts span ${fmt(ext.x1 - ext.x0)} × ${fmt(ext.y1 - ext.y0)} mm` : ""}.`;
   if (scale) for (const v of scaleTicks(scale)) ticks.append(h("span", { style: `left:${((v - scale.min) / (scale.max - scale.min)) * 100}%` }, String(v)));
 
   // Drill: what the withdrawal did, straight from project().
@@ -461,9 +481,9 @@ function renderInfo(src) {
   if (!d) { box.hidden = true; return; }
   box.hidden = false;
   box.append(h("div", { class: "lbl" }, "Correction drill"));
-  for (const w of d.withdrawn) box.append(h("p", null, h("b", null, w.node), ` withdrawn at seq ${w.seq ?? "?"}${w.reason ? ` · ${w.reason}` : ""}`));
-  box.append(h("p", null, "went stale: ", d.stale.length ? d.stale.map((s) => s.node).join(", ") : "none"));
-  if (d.survived.length) box.append(h("p", null, "still valid on another support set: ", d.survived.join(", ")));
+  for (const w of d.withdrawn) box.append(h("p", null, h("b", { title: w.node }, shortId(w.node)), ` withdrawn at seq ${w.seq ?? "?"}${w.reason ? ` · ${w.reason}` : ""}`));
+  box.append(h("p", null, "went stale: ", d.stale.length ? d.stale.map((s) => shortId(s.node)).join(", ") : "none"));
+  if (d.survived.length) box.append(h("p", null, "still valid on another support set: ", d.survived.map(shortId).join(", ")));
 }
 
 function renderStrip() {
@@ -485,7 +505,8 @@ function renderStrip() {
     }
     tile.chip.hidden = !tile.chip.textContent;
     tile.j.replaceChildren(h("small", null, "J"), L?.J ? `${fmt(L.J.value)}` : "-");
-    tile.id.textContent = L ? L.ref.id : "";
+    tile.id.textContent = L ? shortId(L.ref.id) : "";
+    tile.id.title = L ? L.ref.id : "";
   }
 }
 

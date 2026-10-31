@@ -136,6 +136,8 @@ a { color: var(--cyan); }
 .who .row1 { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
 .who .row1 b { font-size: 24px; font-weight: 600; letter-spacing: -.02em; white-space: nowrap; }
 .who .cid { font: 15px var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.who .fullid { margin-top: 2px; font: 12px var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.who .fullid:empty { display: none; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .metrics .j { display: flex; align-items: baseline; gap: 10px; font: 600 44px/1.05 var(--mono); letter-spacing: -.03em; }
 .metrics .j small { font: 14px var(--mono); color: var(--muted); letter-spacing: 0; }
