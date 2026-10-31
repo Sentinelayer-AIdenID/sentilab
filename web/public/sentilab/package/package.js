@@ -2,7 +2,8 @@
 // Data comes only through source.mjs (the same verifier and pins as the Lab view); the scene through scene.mjs
 // (pure, also used by the CLI); the drawing through render.mjs (hand-written Canvas 2D). Every string from an
 // envelope reaches the page through textContent, never innerHTML.
-import { DEMO, CONTRACT_VERSION, setupTrust, parseReplay, runIdFromFile, isDrill, verifyRun, chainSummary, modeNow, createLiveFeed, reasonText } from "./source.mjs";
+import { DEMO, CONTRACT_VERSION, MAX_FILE_BYTES, setupTrust, fetchReplayBytes, verifyReplayFile, isDrill, chainSummary, modeNow, createLiveFeed, reasonText } from "./source.mjs";
+import { viewHref } from "../view-links.mjs";
 import { sceneAt, scaleTicks, describeEvent, TRACK_ORDER, TRACKS, trackName } from "./scene.mjs";
 import { reconcile } from "./playhead.mjs";
 import { drawPackage, TrackAnimation, HOME_AZIMUTH, ORBIT_MS, easeInOut } from "./render.mjs";
@@ -43,9 +44,9 @@ const NO_TEMPS = { rejected_schema: "not simulated (schema rejected)", rejected_
 const S = {
   trust: null,
   source: params.get("src") === "live" ? "api" : "file",
-  file: null,            // { label, runId, runIdFrom, isDemo, envelopes, verification, frame, fullScene, error }
+  file: null,            // { label, runId, runIdFrom, isDemo, verification, frame, fullScene, error }
   live: null,            // created on first switch to live
-  liveSrc: { verification: null, frame: null, fullScene: null, envelopes: [] },
+  liveSrc: { verification: null, frame: null, fullScene: null },
   gen: 0,                // bumps on every verification change (ticks, banners and the scene are rebuilt)
   cursor: 0, cursors: {}, following: true,
   scene: null,
@@ -110,26 +111,25 @@ function select(track) {
 }
 
 // ── keys and loading ────────────────────────────────────────────────────────────────────────────────────────
-async function loadReplay({ url, text, label, runId, isDemo, at = null }) {
+// bytes: a picked file's raw bytes, or undefined to fetch url. Either way the 64 MiB replay cap is checked before a
+// single row is decoded, and the file is never decoded whole (source.mjs, the Lab view's path).
+async function loadReplay({ url, bytes, label, runId, isDemo, at = null }) {
   stop();
+  let result;
   try {
-    if (text === undefined) {
-      const r = await fetch(url, { cache: "no-store" });
-      if (!r.ok) throw new Error(`${url} answered ${r.status}`);
-      text = await r.text();
-    }
+    if (bytes === undefined) bytes = await fetchReplayBytes(url);
+    result = await verifyReplayFile(bytes, { runId, trust: S.trust });
+    if (!result.ok) throw new Error(result.error);
   } catch (error) {
-    S.file = { label, runId: runId ?? "", runIdFrom: "requested", isDemo, envelopes: [], verification: null, error: String(error.message ?? error) };
+    S.file = { label, runId: runId ?? "", runIdFrom: "requested", isDemo, verification: null, error: String(error.message ?? error) };
     applyScene(null);
     return;
   }
-  const envelopes = parseReplay(text);
-  let runIdFrom = "requested";
-  if (!runId) { runId = runIdFromFile(envelopes); runIdFrom = "file"; }
-  const verification = await verifyRun(envelopes, { runId, trust: S.trust });
+  const { verification, runIdFrom } = result;
+  runId = result.runId;
   // A new file is a verification change like any other: one frame for the run (scale and footprint from its whole
   // verified prefix, fixed while the playhead moves), the playhead clamped to K, every animation cut.
-  S.file = { label, runId, runIdFrom, isDemo, envelopes, verification: null, frame: null, fullScene: null };
+  S.file = { label, runId, runIdFrom, isDemo, verification: null, frame: null, fullScene: null };
   adoptVerification(S.file, verification, { active: S.source === "file", following: false, fresh: true });
   if (S.source !== "file") return;
   if (verification.prefixCount === 0) {
@@ -276,10 +276,12 @@ function renderDom() {
 }
 
 function renderTop(src, v) {
-  const m = modeNow(S.source === "api" ? "api" : "file", S.live?.state ?? null, Date.now());
+  const m = modeNow(S.source === "api" ? "api" : "file", S.live?.state.live ?? null, Date.now());
   $("mode").className = `mode ${m.mode.toLowerCase()}${m.reason === "chain broken" ? " broken" : ""}`;
   $("modeText").textContent = m.label;
-  $("drill").hidden = !(src && isDrill(src.envelopes ?? []));
+  $("drill").hidden = !(src && isDrill(src.verification));
+  // The Lab view link keeps the context: source, run, bundle, test-key request and (replay) the playhead.
+  $("labLink").href = viewHref("../", { source: S.source, runId: S.source === "api" ? S.live?.state.runId : src?.runId, seq: S.scene?.at.seq ?? null, search: location.search });
   $("testKeys").hidden = !S.trust?.testMode;
   const meta = $("runMeta");
   meta.replaceChildren();
@@ -347,9 +349,10 @@ function renderFrozen(v) {
   if (!v || !v.frozen || !v.firstBreak) { el.hidden = true; return; }
   const fb = v.firstBreak;
   el.className = `frozen${fb.keyOnly ? " cfg" : ""}`;
+  const what = fb.rejected ? `rejected (${fb.status})` : fb.status === "verified" ? "not projectable" : "unverified";
   el.hidden = false;
   el.append(v.label ?? `chain broken after seq ${v.prefixEnd}; board frozen at seq ${v.prefixEnd}`,
-    h("span", null, ` · seq ${fb.seq ?? "?"} is ${fb.status === "verified" ? "not projectable" : "unverified"}: ${fb.text || "unknown"}${fb.keyOnly && S.trust.pins.length === 0 ? " (the production pin list is empty until the core key exists)" : ""}. Nothing from it or after it is drawn.`));
+    h("span", null, ` · ${fb.seq == null ? "a row whose seq can't be read" : `seq ${fb.seq}`} is ${what}: ${fb.text || "unknown"}${fb.keyOnly && S.trust.pins.length === 0 ? " (the production pin list is empty until the core key exists)" : ""}. Nothing from it or after it is drawn.`));
 }
 
 function emptyState(src, v) {
@@ -499,8 +502,7 @@ function renderOffline() {
 // ── live ────────────────────────────────────────────────────────────────────────────────────────────────────
 function onLive() {
   const st = S.live.state;
-  const v = st.verification;
-  S.liveSrc.envelopes = st.envelopes;
+  const v = st.live?.verification ?? null;
   // Any new verification, paused or following: the same rule as a replay (a live run's frame only widens while
   // its prefix grows; a shrinking or rewritten prefix recomputes it).
   if (v && v !== S.liveSrc.verification) { adoptVerification(S.liveSrc, v, { active: S.source === "api", following: S.following }); return; }
@@ -538,8 +540,12 @@ function showChain() {
     ["key source", S.trust.note || "-"],
     ["run checked", src?.runId ? `${src.runId} (${src.runIdFrom === "file" ? "from the file you opened" : "requested by the page"})` : "-"],
   ];
+  if (S.source === "api" && S.live?.state.live) {
+    const pg = S.live.state.live.paging;
+    rows.push(["paging", `by cursor: ${pg.cursor} rows read${pg.degraded ? ` · stopped (${pg.degraded.replace(/_/g, " ")})` : ""}`], ["cursor hash", `${pg.cursor_hash.slice(0, 16)}…`]);
+  }
   if (v) {
-    rows.push(["verified", `${v.verified} of ${v.total}`], ["drawn prefix", v.prefixCount ? `seq 1 to ${v.prefixEnd} (${v.prefixCount} envelopes)` : "none"],
+    rows.push(["verified", `${v.verified} of ${v.total}${v.duplicates ? ` · ${v.duplicates} duplicate${v.duplicates === 1 ? "" : "s"} ignored` : ""}`], ["drawn prefix", v.prefixCount ? `seq 1 to ${v.prefixEnd} (${v.prefixCount} envelopes)` : "none"],
       ["first break", v.firstBreak ? `seq ${v.firstBreak.seq ?? "?"}: ${v.firstBreak.text}` : "none"],
       ["reasons", [...new Set(v.rows.flatMap((r) => r.reasons))].map((c) => `${c} (${reasonText(c)})`).join(", ") || "none"]);
   }
@@ -555,11 +561,12 @@ $("backToReplay").onclick = () => setSource("file");
 $("file").onchange = async (e) => {
   const f = e.target.files && e.target.files[0];
   if (!f) return;
-  const text = await f.text();
   e.target.value = "";
   if (S.source !== "file") setSource("file");
   ticksFor = null;
-  await loadReplay({ text, label: `${f.name} · opened file`, runId: null, isDemo: false });
+  // Over the replay cap, the file is not even read.
+  const bytes = f.size > MAX_FILE_BYTES ? null : new Uint8Array(await f.arrayBuffer());   // null: refused by the cap
+  await loadReplay({ bytes, label: `${f.name} · opened file`, runId: null, isDemo: false });
 };
 $("rotL").onclick = () => rotate(-90);
 $("rotR").onclick = () => rotate(90);

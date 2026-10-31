@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // SentiLab scene CLI: build the Package view's scene from a replay, with the same verification and prefix rule as
-// the page, but using the node REFERENCE verifier (contracts/view-envelope/view-envelope.mjs, VIEW ENVELOPE v0.4).
+// the page, but using the node REFERENCE verifier: VIEW ENVELOPE v0.5 (contracts/view-envelope-v0.5/view-envelope.mjs),
+// after the v0.6 bytes-to-rows rule (contracts/view-envelope-v0.6/paging.mjs verifyReplayBytes), exactly the path the
+// page takes through the browser ports of both.
 // Output is JSON on stdout. This is the CLI half of SLAB-026's CLI+MCP; the MCP half comes later through the
 // generated bridge, so the command table stays small and every result is one JSON object.
 //
@@ -18,35 +20,36 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// ── the verifier (switch to contracts/view-envelope-v0.5/ here when v0.5 lands) ──────────────────────────────
-import { verifyChain, keySha256, VERSION } from "../contracts/view-envelope/view-envelope.mjs";
+// ── the verifier: the v0.5 reference, behind the v0.6 reference's bytes-to-rows (no verification of its own) ──────
+import { checkLine, keySha256, VERSION } from "../contracts/view-envelope-v0.5/view-envelope.mjs";
+import { verifyReplayBytes, splitRows, rowText } from "../contracts/view-envelope-v0.6/paging.mjs";
+import { canonical } from "../contracts/contract-0.2/resultcheck.mjs";
 import { VIEW_PINS } from "../web/public/sentilab/view-pins.js";
 import { buildScene, sceneAt, runFrame, SCENE_VERSION } from "../web/public/sentilab/package/scene.mjs";
 
-// The reference verifier sorts envelopes by seq (malformed last), stably; it returns rows, not envelopes. This is
-// its exact ordering rule, so the prefix envelopes can be read back. Every prefix row is then checked against its
-// envelope (seq and event_id); any mismatch fails closed with an empty prefix.
-const isObject = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
-const wellFormed = (env) =>
-  isObject(env) && isObject(env.event) && Number.isSafeInteger(env.event.seq) && env.event.seq >= 1 &&
-  isObject(env.run) && typeof env.run.run_id === "string" &&
-  typeof env.prev_hash === "string" && typeof env.hash === "string" &&
-  isObject(env.sig) && typeof env.sig.key_id === "string" && typeof env.sig.value === "string";
-function referenceOrder(envelopes) {
-  const seqOf = (env) => (wellFormed(env) ? env.event.seq : Infinity);
-  return envelopes.map((env, index) => ({ env, index }))
-    .sort((a, b) => seqOf(a.env) - seqOf(b.env) || a.index - b.index)
-    .map(({ env }) => env);
-}
-
-// JSONL -> envelopes. A line that doesn't parse becomes a placeholder the verifier marks malformed (never dropped).
-export function parseJsonl(text) {
+// The reference returns rows ({ seq, event_id, status, reasons, projected }), not envelopes. The prefix envelopes are
+// read back from the rows that pass the input checks: for each projected row, the envelopes with its seq and event_id.
+// Byte-identical duplicates count once and conflicts are never projected, so each projected row must map to exactly
+// one envelope (by canonical bytes); anything else fails closed with an empty prefix.
+const MAX_LINE_BYTES = 64 * 1024;
+function checkedEnvelopes(rows) {
   const out = [];
-  String(text).split(/\r?\n/).forEach((line, index) => {
-    if (!line.trim()) return;
-    try { out.push(JSON.parse(line)); } catch { out.push({ unparsed: { line: index + 1, reason: "not_json" } }); }
-  });
+  for (const row of rows) {
+    const text = row.length <= MAX_LINE_BYTES ? rowText(row) : null;
+    const checked = text === null ? null : checkLine(text);
+    if (checked?.ok) out.push(checked.value);
+  }
   return out;
+}
+function prefixFromRows(envelopes, verification) {
+  const projected = verification.rows.filter((r) => r.projected);
+  const prefix = [];
+  for (const row of projected) {
+    const found = envelopes.filter((e) => e.event.seq === row.seq && e.event.event_id === row.event_id);
+    if (found.length === 0 || new Set(found.map((e) => canonical(e))).size !== 1) return null;
+    prefix.push(found[0]);
+  }
+  return prefix;
 }
 
 // The vectors' test-key rule: seed = sha256("sentilab-view-test-key:" + name); Ed25519 from that seed (a fixed
@@ -75,23 +78,23 @@ export function trustFor({ pins = "production", served = [] } = {}) {
 }
 
 // Verify, take the projectable prefix, build the scene. Same prefix rule as the page (VIEW ENVELOPE rule 1).
-export function sceneFromReplay(text, { runId = null, trust, at = null } = {}) {
-  const envelopes = parseJsonl(text);
+// bytes: the replay file's raw bytes (Uint8Array). Over 64 MiB, nothing is split or decoded.
+export function sceneFromReplay(bytes, { runId = null, trust, at = null } = {}) {
+  const rows = splitRows(bytes);
+  const envelopes = checkedEnvelopes(rows);
   let runFrom = "requested";
   if (!runId) {
-    const first = envelopes.filter((e) => wellFormed(e)).sort((a, b) => a.event.seq - b.event.seq)[0];
+    const first = [...envelopes].sort((a, b) => a.event.seq - b.event.seq)[0];
     runId = first ? first.run.run_id : "";
     runFrom = "file";
   }
-  const v = verifyChain(envelopes, { runId, pins: trust.pins, keys: trust.keys });
-  const ordered = referenceOrder(envelopes);
-  let count = v.rows.filter((r) => r.projected).length;
-  for (let i = 0; i < count; i += 1) {
-    const env = ordered[i], row = v.rows[i];
-    if (!wellFormed(env) || env.event.seq !== row.seq || (env.event.event_id ?? null) !== row.event_id) { count = 0; break; }
-  }
-  const prefix = ordered.slice(0, count);
-  const projection = count === v.rows.filter((r) => r.projected).length ? v.projection : null;
+  const read = verifyReplayBytes(bytes, { runId, pins: trust.pins, keys: trust.keys });
+  if (!read.ok) throw new UsageError(`the replay file is over the 64 MiB cap (${read.reason}), so it was not read`);
+  const v = read.verification;
+  const recovered = prefixFromRows(envelopes, v);
+  const prefix = recovered ?? [];
+  const count = prefix.length;
+  const projection = recovered ? v.projection : null;
   let scene;
   if (at !== null) {
     const upTo = prefix.filter((env) => env.event.seq <= at).length;
@@ -111,7 +114,8 @@ export function sceneFromReplay(text, { runId = null, trust, at = null } = {}) {
       prefix_end: v.prefix_end,
       frozen: v.frozen,
       label: v.label,
-      first_break: after ? { seq: after.seq, reasons: after.reasons, oversize: after.oversize } : null,
+      first_break: after ? { seq: after.seq, status: after.status, reasons: after.reasons } : null,
+      duplicates: v.duplicates ?? 0,
       projection_error: v.projection_error,
     },
     // Not chain validity: values in verified envelopes that the scene refused to place or colour.
@@ -171,10 +175,10 @@ export function run(argv) {
   });
   const at = opts.at === undefined ? null : Number(opts.at);
   if (at !== null && !(Number.isSafeInteger(at) && at >= 0)) throw new UsageError("--at needs a seq (integer >= 0)");
-  let text;
-  try { text = readFileSync(file, "utf8"); } catch (error) { throw new UsageError(`cannot read ${file}: ${error.code ?? error.message}`); }
+  let bytes;
+  try { bytes = new Uint8Array(readFileSync(file)); } catch (error) { throw new UsageError(`cannot read ${file}: ${error.code ?? error.message}`); }
   const trust = trustFor({ pins: opts.pins === "test" ? "test" : "production", served });
-  const result = { command, input: basename(file), ...sceneFromReplay(text, { runId: opts.run ?? null, trust, at }) };
+  const result = { command, input: basename(file), ...sceneFromReplay(bytes, { runId: opts.run ?? null, trust, at }) };
   const code = !opts.strict ? 0 : result.verification.frozen ? 2 : result.value_errors > 0 ? 3 : 0;
   if (command === "export") {
     const body = `${JSON.stringify(result, null, 2)}\n`;

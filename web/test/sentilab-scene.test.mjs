@@ -1,10 +1,13 @@
 // node --test web/test/sentilab-scene.test.mjs
 // The Package view's scene (web/public/sentilab/package/scene.mjs) and its CLI (scripts/sentilab-scene.mjs):
 //   - buildScene is deterministic;
-//   - only the verified projectable prefix moves or colours anything: the tampered, forged, dropped-event, oversize
-//     and wrong-run vectors from contracts/view-envelope/vectors-view.json never contribute geometry or colour;
+//   - only the verified projectable prefix moves or colours anything: the tampered, forged, dropped-event, oversize,
+//     padded, lone-surrogate, conflicting and wrong-run vectors from contracts/view-envelope-v0.5/vectors-view.json
+//     never contribute geometry or colour (verification is VIEW ENVELOPE v0.5 over raw rows, through source.mjs);
 //   - the colour scale is fixed per run, and the move timeline exists per lab;
-//   - the CLI (node reference verifier) builds the same scene as the browser path (view-core.mjs) for the demo.
+//   - the live path (source.mjs over paging.mjs: cursor, cursor_hash, 409/413/terminal states, liveLabel) gives the
+//     reference's recorded trace for every v0.6 paging scenario (C1-C14), poll for poll;
+//   - the CLI (v0.5 node reference verifier) builds the same scene as the browser path for the demo.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -12,13 +15,16 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { createHash } from "node:crypto";
 import { Worker } from "node:worker_threads";
 
 import { canonical } from "../public/sentilab/canonical.mjs";
 import { buildScene, sceneAt, runFrame, heatColor, contiguousPrefix, scaleTicks, describeEvent, STACK, TEMP_BASIS, TRACK_ORDER, LAB_TRACKS, SCENE_VERSION, SUPPORTED_UNITS, BOUNDS, MAX_TICKS, readGeometry, readTemps } from "../public/sentilab/package/scene.mjs";
 import { reconcile, extendsPrefix } from "../public/sentilab/package/playhead.mjs";
 import { TrackAnimation } from "../public/sentilab/package/render.mjs";
-import { makeChain, signEnvelope } from "../../contracts/view-envelope/view-envelope.mjs";
+import { makeChain, signEnvelope } from "../../contracts/view-envelope-v0.5/view-envelope.mjs";
+import * as refPaging from "../../contracts/view-envelope-v0.6/paging.mjs";
+import { viewHref } from "../public/sentilab/view-links.mjs";
 import * as source from "../public/sentilab/package/source.mjs";
 import { VIEW_PINS } from "../public/sentilab/view-pins.js";
 import { testKey } from "./sentilab-keys.mjs";
@@ -28,8 +34,12 @@ const repo = join(here, "..", "..");
 const CLI = join(repo, "scripts", "sentilab-scene.mjs");
 const DEMO_FILE = join(repo, "web", "public", "sentilab", "demo-run.jsonl");
 const DEMO_RUN = "demo-8c-0001";
-const viewFile = JSON.parse(readFileSync(join(repo, "contracts", "view-envelope", "vectors-view.json"), "utf8"));
-const demoText = readFileSync(DEMO_FILE, "utf8");
+const viewFile = JSON.parse(readFileSync(join(repo, "contracts", "view-envelope-v0.5", "vectors-view.json"), "utf8"));
+const pagingFile = JSON.parse(readFileSync(join(repo, "contracts", "view-envelope-v0.6", "vectors-paging.json"), "utf8"));
+const demoBytes = () => new Uint8Array(readFileSync(DEMO_FILE));
+const enc = (text) => new TextEncoder().encode(text);
+const lenient = (bytes) => new TextDecoder("utf-8", { fatal: false, ignoreBOM: true }).decode(bytes);
+const demoEnvelopes = () => refPaging.splitRows(demoBytes()).map((row) => JSON.parse(lenient(row)));
 
 // Trust as the page builds it under ?pins=test (the vectors' rule), and per vector from its own pins and served keys.
 const testTrust = { pins: [{ key_id: "core", key_sha256: testKey("core").sha256 }], keys: { core: testKey("core").raw }, testMode: true };
@@ -41,8 +51,30 @@ const json = (x) => JSON.parse(JSON.stringify(x));
 const sceneOf = (v) => buildScene(v.prefixEnvelopes, v.projection);
 const allChiplets = (scene) => scene.tracks.flatMap((t) => t.layout?.chiplets ?? []);
 
-async function demoVerified() {
-  return source.verifyRun(source.parseReplay(demoText), { runId: DEMO_RUN, trust: testTrust });
+// Every verification goes through the page's own path: raw bytes into source.verifyReplayFile().
+async function verifyLines(lines, runId, trust) {
+  const r = await source.verifyReplayFile(enc(lines.map((line) => `${line}\n`).join("")), { runId, trust });
+  assert.ok(r.ok, r.error);
+  return r.verification;
+}
+const verifyEnvs = (envelopes, runId, trust) => verifyLines(envelopes.map((env) => JSON.stringify(env)), runId, trust);
+async function demoVerified(trust = testTrust) {
+  const r = await source.verifyReplayFile(demoBytes(), { runId: DEMO_RUN, trust });
+  assert.ok(r.ok);
+  return r.verification;
+}
+// The v0.5 vectors' delivery recipe (padding, delivery orders, every line twice), as the parity test builds it.
+const utf8Bytes = (text) => Buffer.byteLength(text, "utf8");
+function buildLines(envelopes, send) {
+  const line = (env) => {
+    const text = JSON.stringify(env);
+    return send.pad && env.event.seq === send.pad.seq ? `{${" ".repeat(send.pad.line_bytes - utf8Bytes(text))}${text.slice(1)}` : text;
+  };
+  const lists = send.orders ? send.orders.map((list) => list.map((eid) => envelopes.find((env) => env.event.event_id === eid))) : [envelopes];
+  return lists.map((list) => {
+    const lines = list.map(line);
+    return send.twice ? [...lines, ...lines] : lines;
+  });
 }
 
 // ── determinism ───────────────────────────────────────────────────────────────────────────────────────────────
@@ -68,6 +100,11 @@ test("buildScene is deterministic: same prefix, same scene; delivery order and r
 // not move (a changed envelope after it can't join it), and nothing tainted may reach the scene.
 const TAINT_ID = "TAINTCHIP";
 const TAINT_T = 987.6;
+function taintLine(line) {
+  let env;
+  try { env = JSON.parse(line); } catch { return line; }
+  return env && typeof env === "object" && env.event ? JSON.stringify(taint(env)) : line;
+}
 function taint(env) {
   const out = structuredClone(env);
   if (out && typeof out === "object" && out.event && typeof out.event === "object") {
@@ -88,13 +125,16 @@ for (const chain of viewFile.chains) {
   const label = chain.name.split(":")[0];
   test(`${label}: the scene comes only from the verified prefix (K=${chain.expect.prefix_end}); nothing after it moves or colours anything`, async () => {
     const trust = vectorTrust(chain.view);
-    const v = await source.verifyRun(structuredClone(chain.envelopes), { runId: chain.view.run_id, trust });
+    const lines = buildLines(chain.envelopes, chain.send)[0];
+    const v = await verifyLines(lines, chain.view.run_id, trust);
     assert.equal(v.prefixEnd, chain.expect.prefix_end);
     const clean = sceneOf(v);
     assert.equal(clean.at.seq, chain.expect.prefix_end, "the scene ends at K");
 
-    const tainted = v.ordered.map((env, i) => (i < v.prefixCount ? structuredClone(env) : taint(env)));
-    const tv = await source.verifyRun(tainted, { runId: chain.view.run_id, trust });
+    const inPrefix = new Set(v.inputIndex.slice(0, v.prefixCount));
+    const afterPrefix = new Set(v.inputIndex.slice(v.prefixCount));
+    const tainted = lines.map((line, i) => (afterPrefix.has(i) && !inPrefix.has(i) ? taintLine(line) : line));
+    const tv = await verifyLines(tainted, chain.view.run_id, trust);
     assert.equal(tv.prefixEnd, v.prefixEnd, "tainting envelopes after the prefix doesn't change the prefix");
     const scene = sceneOf(tv);
     assert.equal(hasTaint(scene), false, "no tainted geometry, temperature, J or W in the scene");
@@ -116,7 +156,7 @@ for (const chain of viewFile.chains) {
 test("forged and wrong-run replays (V5a, V5b, V9) draw nothing at all", async () => {
   for (const name of ["V5a", "V5b", "V9"]) {
     const chain = viewFile.chains.find((c) => c.name.startsWith(name));
-    const v = await source.verifyRun(structuredClone(chain.envelopes), { runId: chain.view.run_id, trust: vectorTrust(chain.view) });
+    const v = await verifyLines(buildLines(chain.envelopes, chain.send)[0], chain.view.run_id, vectorTrust(chain.view));
     const scene = sceneOf(v);
     assert.equal(v.prefixEnvelopes.length, 0, name);
     assert.equal(scene.footprint, null, `${name}: no footprint`);
@@ -128,7 +168,7 @@ test("forged and wrong-run replays (V5a, V5b, V9) draw nothing at all", async ()
 
 test("tampered (V3) and dropped-event (V8) chains: the frozen scene is exactly the prefix's", async () => {
   const v3 = viewFile.chains.find((c) => c.name.startsWith("V3"));
-  const r3 = await source.verifyRun(structuredClone(v3.envelopes), { runId: v3.view.run_id, trust: vectorTrust(v3.view) });
+  const r3 = await verifyLines(buildLines(v3.envelopes, v3.send)[0], v3.view.run_id, vectorTrust(v3.view));
   const s3 = sceneOf(r3);
   assert.equal(r3.prefixEnd, 3);
   assert.equal(s3.tracks.find((t) => t.track === "lab-a").layout.ref.id, "K1", "the candidate before the break is drawn");
@@ -136,7 +176,7 @@ test("tampered (V3) and dropped-event (V8) chains: the frozen scene is exactly t
   assert.equal(s3.scale, null);
 
   const v8 = viewFile.chains.find((c) => c.name.startsWith("V8"));
-  const r8 = await source.verifyRun(structuredClone(v8.envelopes), { runId: v8.view.run_id, trust: vectorTrust(v8.view) });
+  const r8 = await verifyLines(buildLines(v8.envelopes, v8.send)[0], v8.view.run_id, vectorTrust(v8.view));
   const s8 = sceneOf(r8);
   assert.equal(r8.prefixEnd, 6);
   assert.equal(r8.label, "chain broken after seq 6; board frozen at seq 6");
@@ -147,7 +187,7 @@ test("tampered (V3) and dropped-event (V8) chains: the frozen scene is exactly t
 
 test("buildScene keeps only the contiguous run from seq 1, even if a caller passes more", async () => {
   const v8 = viewFile.chains.find((c) => c.name.startsWith("V8"));
-  const r8 = await source.verifyRun(structuredClone(v8.envelopes), { runId: v8.view.run_id, trust: vectorTrust(v8.view) });
+  const r8 = await verifyLines(buildLines(v8.envelopes, v8.send)[0], v8.view.run_id, vectorTrust(v8.view));
   const overreach = r8.ordered;                         // seq 1..6, then 8..10 after the dropped seq 7
   assert.deepEqual(contiguousPrefix(overreach).map((e) => e.event.seq), [1, 2, 3, 4, 5, 6]);
   assert.equal(canonical(buildScene(overreach, null)), canonical(sceneOf(r8)));
@@ -274,7 +314,7 @@ test("demo story on the package: board = initial layout until seq 32, then cand-
 
 test("a withdrawn measurement turns its values stale (V2 correction drill)", async () => {
   const v2 = viewFile.chains.find((c) => c.name.startsWith("V2"));
-  const r = await source.verifyRun(structuredClone(v2.envelopes), { runId: v2.view.run_id, trust: vectorTrust(v2.view) });
+  const r = await verifyLines(buildLines(v2.envelopes, v2.send)[0], v2.view.run_id, vectorTrust(v2.view));
   const frame = runFrame(r.prefixEnvelopes);
   const before = sceneAt(r.prefixEnvelopes, 9, frame).tracks.find((t) => t.track === "lab-a").layout;
   const after = sceneAt(r.prefixEnvelopes, 10, frame).tracks.find((t) => t.track === "lab-a").layout;
@@ -301,7 +341,7 @@ test("?pins=test is honoured on exactly the Lab view's local hosts, and never wi
   const local = await source.setupTrust({ hostname: "127.0.0.1", wantsTest: true });
   assert.equal(local.testMode, true);
   assert.deepEqual(local.pins, testTrust.pins);
-  const v = await source.verifyRun(source.parseReplay(demoText), { runId: DEMO_RUN, trust: refused });
+  const v = await demoVerified(refused);
   assert.equal(v.prefixEnd, 0, "the demo verifies nothing under the production pins");
   assert.equal(sceneOf(v).footprint, null);
 });
@@ -381,7 +421,7 @@ const positions = (layout) => (layout?.chiplets ?? []).map((c) => `${c.id}@${c.x
 test("paused at seq 38, K drops from 44 to 3: playhead clamped to K, scene and frame rebuilt from the new prefix", async () => {
   const { v44, view } = await demoAt38();
   assert.equal(sceneAt(v44.prefixEnvelopes, 38, view.frame).board.candidate, "cand-b", "before: the accepted package is drawn");
-  const v3 = await source.verifyRun(tamperAt(source.parseReplay(demoText), 4), { runId: DEMO_RUN, trust: testTrust });
+  const v3 = await verifyEnvs(tamperAt(demoEnvelopes(), 4), DEMO_RUN, testTrust);
   assert.equal(v3.prefixCount, 3, "a changed seq 4 ends the prefix at 3");
   const r = reconcile(view, v3);
   assert.equal(r.cursor, 3, "the playhead is clamped to K");
@@ -401,7 +441,7 @@ test("paused at seq 38, K drops from 44 to 3: playhead clamped to K, scene and f
 
 test("K drops to 0 (nothing verifies any more): the playhead goes to 0 and nothing is drawn", async () => {
   const { view } = await demoAt38();
-  const v0 = await source.verifyRun(source.parseReplay(demoText), { runId: DEMO_RUN, trust: productionTrust });
+  const v0 = await demoVerified(productionTrust);
   assert.equal(v0.prefixCount, 0);
   const r = reconcile(view, v0);
   assert.equal(r.cursor, 0);
@@ -427,7 +467,7 @@ test("K drops mid-glide: the glide, its ghosts and the acceptance pulse are cut;
   const cpu1 = mid.chiplets.find((c) => c.id === "CPU1");
   assert.ok(cpu1.x !== 22 && cpu1.x !== 23, "CPU1 is between the initial layout and cand-b");
 
-  const v3 = await source.verifyRun(tamperAt(source.parseReplay(demoText), 4), { runId: DEMO_RUN, trust: testTrust });
+  const v3 = await verifyEnvs(tamperAt(demoEnvelopes(), 4), DEMO_RUN, testTrust);
   const r = reconcile({ ...view, cursor: 32 }, v3);
   assert.equal(r.reset, true);
   anim.reset(r.scene.tracks[0].layout, { accepted: r.scene.tracks[0].showing === "accepted", now: 1350 });
@@ -449,9 +489,9 @@ test("K drops mid-glide: the glide, its ghosts and the acceptance pulse are cut;
 });
 
 test("a growing prefix keeps a paused playhead, widens the frame, and animates only a single followed step", async () => {
-  const all = source.parseReplay(demoText);
-  const v20 = await source.verifyRun(all.slice(0, 20), { runId: DEMO_RUN, trust: testTrust });
-  const v21 = await source.verifyRun(all.slice(0, 21), { runId: DEMO_RUN, trust: testTrust });
+  const all = demoEnvelopes();
+  const v20 = await verifyEnvs(all.slice(0, 20), DEMO_RUN, testTrust);
+  const v21 = await verifyEnvs(all.slice(0, 21), DEMO_RUN, testTrust);
   const v44 = await demoVerified();
   assert.equal(extendsPrefix(v20.prefixEnvelopes, v44.prefixEnvelopes), true);
   const base = reconcile({ prefix: [], frame: null, cursor: 0, following: false }, v20);
@@ -492,7 +532,7 @@ const meas = (id, unit, temps, J = Math.max(...Object.values(temps))) => ["core"
 const cand = (lab, id, units, rects) => [lab, "node.create", { id, kind: "candidate" }, geo(units, rects)];
 const support = (node, m) => ["core", "support.add", { node, set_id: "eval", members: [m] }];
 async function verifiedScene(envelopes) {
-  const v = await source.verifyRun(structuredClone(envelopes), { runId: RUN.run_id, trust: testTrust });
+  const v = await verifyEnvs(envelopes, RUN.run_id, testTrust);
   assert.equal(v.chainOk, true, "the chain itself verifies: refusals are not chain errors");
   return { v, scene: sceneOf(v) };
 }
@@ -667,79 +707,230 @@ test("CLI: unit-normalised export (0.01 m -> 10 mm), refused values listed not e
   }
 });
 
-// ── Rule 5 (VIEW ENVELOPE v0.6): LIVE ends at once when K drops ─────────────────────────────────────────────────
-// A validly signed, different seq 4 (the demo's seq 4 with its ts changed, re-signed by the core test key), as a
-// late conflicting delivery: the verified prefix K falls from 44 to 4.
-async function demoWithLateFork() {
-  const all = source.parseReplay(demoText);
-  const four = all.find((env) => env.event.seq === 4);
-  const { sig, hash, ...unsigned } = structuredClone(four);
-  const fork = signEnvelope({ ...unsigned, ts: "2026-11-01T14:00:06.500Z" }, testKey("core").privateKey, "core");
-  assert.notEqual(fork.hash, four.hash);
-  return source.verifyRun([...all, fork], { runId: DEMO_RUN, trust: testTrust });
-}
-const label = (p, t) => source.liveMode(p, t).label;
-
-test("rule 5: K reaches 44, a late conflict 1 s later drops it to 4: STALE · chain broken at once, and it stays", async () => {
-  const v44 = await demoVerified();
-  const vFork = await demoWithLateFork();
-  assert.equal(v44.prefixEnd, 44);
-  assert.equal(vFork.prefixEnd, 4, "the fork at seq 4 ends the prefix at 4");
-  const p = source.createProgress();
-  source.recordPoll(p, { nowMs: 0, ok: true, K: v44.prefixEnd });
-  assert.equal(label(p, 0), "LIVE · progress 0 s ago");
-  assert.equal(label(p, 900), "LIVE · progress 0 s ago");
-  source.recordPoll(p, { nowMs: 1000, ok: true, K: vFork.prefixEnd });
-  assert.deepEqual(source.liveMode(p, 1000), { mode: "STALE", reason: "chain broken", label: "STALE · chain broken" }, "at once, though K grew 1 s ago");
-  for (let t = 1000; t <= 61000; t += 1000) {
-    source.recordPoll(p, { nowMs: t, ok: true, K: vFork.prefixEnd });
-    assert.equal(label(p, t), "STALE · chain broken", `t=${t}: never LIVE next to a frozen board`);
+// ── The live path: source.mjs over the shared v0.6 cursor reducer (paging.mjs) and liveLabel() ─────────────────────
+// Every v0.6 paging scenario is replayed through the package view's own live driver (createLive / liveRequest /
+// applyPage / liveModeOf) against the reference server, with the same scripted server as the reference runner and the
+// Lab view's parity test, and compared with the recorded trace poll for poll: every request (cursor, cursor_hash,
+// limit; never a seq), every outcome, the paging state after each poll, K, the board label and the mode label.
+const pagingTrust = vectorTrust(pagingFile.view);
+const P_BASE_MS = Date.UTC(2026, 9, 31, 12, 0, 0);   // the paging runner's clock (run-paging-vectors.mjs BASE_MS)
+const pagingBytes = new Map();
+const rowBytes = (rowId) => {
+  if (!pagingBytes.has(rowId)) {
+    const spec = pagingFile.rows[rowId];
+    assert.ok(spec, `unknown row ${rowId}`);
+    pagingBytes.set(rowId, spec.text !== undefined ? enc(spec.text) : spec.base64 !== undefined ? new Uint8Array(Buffer.from(spec.base64, "base64")) : new Uint8Array(spec.bytes).fill(spec.fill.charCodeAt(0)));
   }
-  assert.equal(p.highK, 44, "the high is remembered");
+  return pagingBytes.get(rowId);
+};
+const expand = (list) => list.flatMap((entry) => (Array.isArray(entry) ? Array(entry[1]).fill(entry[0]) : [entry]));
+const runLengths = (ids) => {
+  const out = [];
+  for (const rowId of ids) {
+    const last = out.at(-1);
+    if (Array.isArray(last) && last[0] === rowId) last[1] += 1;
+    else if (last === rowId) out[out.length - 1] = [rowId, 2];
+    else out.push(rowId);
+  }
+  return out;
+};
+const rawHash = (rows) => createHash("sha256").update(Buffer.concat(rows.flatMap((row) => [Buffer.from(row), Buffer.from([0x0a])]))).digest("hex");
+const LOGS = pagingFile.logs;
+const FILES = {
+  "c14v-tail": { rows: expand(LOGS.v1).slice(0, 5), tail: "v1-06" },
+  "c14v-done": { rows: expand(LOGS.v1).slice(0, 6), tail: null },
+};
+const fileBytesOf = (spec) => Buffer.concat([refPaging.joinRows(spec.rows.map(rowBytes)), spec.tail ? rowBytes(spec.tail) : new Uint8Array(0)]);
+function legacyRows(logName, after) {
+  return expand(LOGS[logName]).filter((rowId) => {
+    try { return JSON.parse(lenient(rowBytes(rowId))).event.seq > after; } catch { return false; }
+  });
+}
+// The scripted server of run-paging-vectors.mjs (and the Lab view's parity test).
+function serve(server, req) {
+  if (server.network_error) return { response: null, bodyIds: [] };
+  if (server.status !== undefined && server.status !== 200) {
+    if (server.legacy && req.after !== undefined) {
+      const ids = legacyRows(server.legacy, req.after);
+      return { response: { status: 200, headers: {}, bodyBytes: refPaging.joinRows(ids.map(rowBytes)) }, bodyIds: ids };
+    }
+    return { response: { status: server.status, headers: {}, bodyBytes: new Uint8Array(0) }, bodyIds: [] };
+  }
+  if (server.file) {
+    const spec = FILES[server.file];
+    const response = refPaging.servePage(refPaging.logRowsFromFile(new Uint8Array(fileBytesOf(spec))), req);
+    const ids = [...spec.rows, ...(spec.tail ? [spec.tail] : [])];
+    return { response, bodyIds: response.status === 200 ? ids.slice(req.cursor, Number(response.headers["x-next-cursor"])) : [] };
+  }
+  if (server.page) {
+    const before = expand(LOGS[server.page.log]);
+    const rows = expand(server.page.rows);
+    const next = req.cursor + rows.length;
+    const headers = { "x-next-cursor": String(next), "x-has-more": "false", "x-cursor-hash": rawHash([...before, ...rows].slice(0, next).map(rowBytes)) };
+    return { response: { status: 200, headers, bodyBytes: refPaging.joinRows(rows.map(rowBytes)) }, bodyIds: rows };
+  }
+  const ids = expand(LOGS[server.log]);
+  const response = refPaging.servePage(ids.map(rowBytes), req);
+  let bodyIds = response.status === 200 ? ids.slice(req.cursor, Number(response.headers["x-next-cursor"])) : [];
+  for (const [name, value] of Object.entries(server.headers ?? {})) {
+    if (value === null) delete response.headers[name];
+    else response.headers[name] = value;
+  }
+  if (server.tamper) {
+    const at = server.tamper.index - req.cursor;
+    if (at >= 0 && at < bodyIds.length) {
+      bodyIds = bodyIds.with(at, server.tamper.row);
+      response.bodyBytes = refPaging.joinRows(bodyIds.map(rowBytes));
+    }
+  }
+  if (server.strip_final_lf && response.bodyBytes.length > 0) response.bodyBytes = response.bodyBytes.subarray(0, response.bodyBytes.length - 1);
+  return { response, bodyIds };
+}
+const summary = (st) => ({ cursor: st.cursor, rows: st.rows.length, cursor_hash: st.cursor_hash, has_more: st.has_more, last_ok_ms: st.last_ok_ms, failure: st.failure, degraded: st.degraded });
+// The package view's live driver, one scripted poll at a time (the reference client loop: up to 16 pages a poll while
+// x-has-more is true).
+async function runScenarioPackage(spec) {
+  const live = source.createLive(pagingFile.view.run_id, { limit: spec.limit });
+  const trace = [];
+  const transitions = [];
+  for (const poll of spec.polls) {
+    const nowMs = P_BASE_MS + poll.t_s * 1000;
+    const fetches = [];
+    for (let n = 0; n < 16; n += 1) {
+      const req = source.liveRequest(live);
+      if (req === null) break;
+      const { response, bodyIds } = serve(poll.server, req);
+      const before = live.paging;
+      const { outcome, newRows } = await source.applyPage(live, response, nowMs, pagingTrust);
+      transitions.push({ before, after: live.paging, req, outcome });
+      fetches.push({ request: req, response: response && { status: response.status, headers: response.headers, body_bytes: response.bodyBytes.length, body_rows: runLengths(bodyIds) }, outcome, new_rows: newRows });
+      if (outcome !== "ok" || !live.paging.has_more) break;
+    }
+    const v = live.verification;
+    const row_counts = {};
+    const rejected = {};
+    for (const row of v?.rows ?? []) {
+      row_counts[row.status] = (row_counts[row.status] ?? 0) + 1;
+      if (["malformed", "oversize"].includes(row.status)) rejected[row.reasons.join("+")] = (rejected[row.reasons.join("+")] ?? 0) + 1;
+    }
+    trace.push({ t_s: poll.t_s, fetches, after: summary(live.paging), K: v?.prefixEnd ?? 0, board: v?.label ?? null, label: source.liveModeOf(live, nowMs).label, row_counts, rejected });
+  }
+  return { trace, transitions, live };
+}
+
+const REQUIRED_SCENARIOS = ["C1", "C2", "C11", "C12a", "C13"];
+test("the package view replays every required v0.6 paging scenario (C1, C2, C11, C12a, C13) and the vector file has them", () => {
+  const ids = pagingFile.scenarios.map((spec) => spec.name.split(" ")[0]);
+  for (const id of REQUIRED_SCENARIOS) assert.ok(ids.includes(id), id);
+});
+for (const spec of pagingFile.scenarios) {
+  const id = spec.name.split(" ")[0];
+  test(`live ${id}: the package view's live path gives the reference's recorded trace, poll for poll`, async () => {
+    const run = await runScenarioPackage(spec);
+    assert.equal(run.trace.length, spec.trace.length);
+    for (const [i, step] of run.trace.entries()) {
+      assert.deepEqual(json(step), json(spec.trace[i]), `t = ${step.t_s} s`);
+    }
+    for (const { before, after, req, outcome } of run.transitions) {
+      assert.ok(after.cursor >= before.cursor && after.rows.length >= before.rows.length, "never resets");
+      if (outcome !== "ok") assert.ok(after.rows === before.rows && after.cursor === before.cursor, "a failed poll keeps nothing");
+      assert.deepEqual(Object.keys(req).sort(), before.cursor > 0 ? ["cursor", "cursor_hash", "limit"] : ["cursor", "limit"], "cursor_hash above cursor 0; never a seq parameter");
+      if (before.cursor > 0) assert.equal(req.cursor_hash, rawHash(before.rows));
+      if (after.degraded) assert.equal(source.liveRequest({ paging: after }), null, "terminal: no further request");
+    }
+  });
+}
+
+// C11 on the bundled demo, through the same driver, ending in the package scene: K 44, then a late, validly signed seq
+// 10 one second later. The label is STALE · chain broken at once and stays so; the scene follows K down to 9.
+async function demoLateConflict() {
+  const rows = refPaging.splitRows(demoBytes());
+  const { hash, sig, ...seq10 } = JSON.parse(lenient(rows[9]));
+  const late = enc(JSON.stringify(signEnvelope({ ...seq10, ts: new Date(Date.parse(seq10.ts) + 500).toISOString() }, testKey("core").privateKey, sig.key_id)));
+  return { rows, late };
+}
+test("live C11 on the demo: K 44, a late signed seq 10 one second later: STALE · chain broken at once, and the scene drops to 9", async () => {
+  const { rows, late } = await demoLateConflict();
+  const live = source.createLive(DEMO_RUN);
+  const poll = async (log, nowMs) => {
+    for (let n = 0; n < 16; n += 1) {
+      const req = source.liveRequest(live);
+      if (req === null) break;
+      const { outcome } = await source.applyPage(live, refPaging.servePage(log, req), nowMs, testTrust);
+      if (outcome !== "ok" || !live.paging.has_more) break;
+    }
+  };
+  await poll(rows, P_BASE_MS);
+  assert.equal(live.verification.prefixEnd, 44);
+  assert.deepEqual(source.liveModeOf(live, P_BASE_MS), { mode: "LIVE", reason: null, label: "LIVE · progress 0 s ago" });
+  await poll([...rows, late], P_BASE_MS + 1000);
+  assert.equal(live.verification.prefixEnd, 9);
+  assert.deepEqual(source.liveModeOf(live, P_BASE_MS + 1000), { mode: "STALE", reason: "chain broken", label: "STALE · chain broken" }, "at once, though K grew 1 s ago");
+  for (let t = 2; t <= 61; t += 1) {
+    await poll([...rows, late], P_BASE_MS + t * 1000);
+    assert.equal(source.liveModeOf(live, P_BASE_MS + t * 1000).label, "STALE · chain broken", `t = ${t} s: never LIVE next to a frozen board`);
+  }
+  // The package scene adopts the drop: paused at 38, the playhead clamps to K = 9 and cand-b's acceptance is gone.
+  const before = reconcile({ prefix: [], frame: null, cursor: 0, following: false }, (await source.verifyReplayFile(refPaging.joinRows(rows), { runId: DEMO_RUN, trust: testTrust })).verification);
+  const r = reconcile({ prefix: before.prefix, frame: before.frame, cursor: 38, following: false }, live.verification);
+  assert.equal(r.cursor, 9);
+  assert.equal(r.scene.board, null);
+  assert.equal(r.reset, true);
 });
 
-test("rule 5: recovery only when K is back at its high and its last growth is within 60 s; then growth keeps it LIVE", () => {
-  const p = source.createProgress();
-  source.recordPoll(p, { nowMs: 0, ok: true, K: 44 });
-  source.recordPoll(p, { nowMs: 1000, ok: true, K: 4 });
-  assert.equal(label(p, 1000), "STALE · chain broken");
-  source.recordPoll(p, { nowMs: 2000, ok: true, K: 43 });
-  assert.equal(label(p, 2000), "STALE · chain broken", "below the high is still broken");
-  source.recordPoll(p, { nowMs: 3000, ok: true, K: 44 });
-  assert.equal(label(p, 3000), "LIVE · progress 3 s ago", "back at the high, and K last grew 3 s ago");
-  source.recordPoll(p, { nowMs: 60000, ok: true, K: 44 });
-  assert.equal(label(p, 60000), "LIVE · progress 60 s ago", "60 s is inclusive");
-  source.recordPoll(p, { nowMs: 60001, ok: true, K: 44 });
-  assert.equal(label(p, 60001), "STALE", "returning to the high is not growth: no new progress, so STALE after 60 s");
-  source.recordPoll(p, { nowMs: 71000, ok: true, K: 45 });
-  assert.equal(label(p, 71000), "LIVE · progress 0 s ago", "growth above the high is progress");
-
-  // A recovery that comes after the 60 s window is STALE until K grows again.
-  const q = source.createProgress();
-  source.recordPoll(q, { nowMs: 0, ok: true, K: 44 });
-  source.recordPoll(q, { nowMs: 1000, ok: true, K: 9 });
-  source.recordPoll(q, { nowMs: 65000, ok: true, K: 44 });
-  assert.equal(label(q, 65000), "STALE");
-  source.recordPoll(q, { nowMs: 66000, ok: true, K: 46 });
-  assert.equal(label(q, 66000), "LIVE · progress 0 s ago");
+test("live: failed and terminal polls show liveLabel's reason; a terminal state stops requests; a file is REPLAY", async () => {
+  const rows = refPaging.splitRows(demoBytes());
+  const fresh = async (response, nowMs = P_BASE_MS) => {
+    const live = source.createLive(DEMO_RUN);
+    await source.applyPage(live, refPaging.servePage(rows.slice(0, 5), source.liveRequest(live)), nowMs, testTrust);
+    const { outcome } = await source.applyPage(live, response, nowMs + 1000, testTrust);
+    return { live, outcome, mode: source.liveModeOf(live, nowMs + 1000) };
+  };
+  const transport = await fresh(null);
+  assert.equal(transport.mode.label, "STALE · transport");
+  assert.notEqual(source.liveRequest(transport.live), null, "a transport failure is retried");
+  for (const [status, label, outcome] of [[409, "STALE · stream replaced", "stream_replaced"], [413, "STALE · row too large", "row_too_large"], [404, "STALE · paging unsupported", "paging_unsupported"]]) {
+    const r = await fresh({ status, headers: {}, bodyBytes: new Uint8Array(0) });
+    assert.equal(r.outcome, outcome);
+    assert.deepEqual(r.mode, { mode: "STALE", reason: label.slice("STALE · ".length), label });
+    assert.equal(source.liveRequest(r.live), null, `${status}: terminal, no further request`);
+    assert.equal(r.live.verification.prefixEnd, 5, `${status}: the prefix is kept`);
+  }
+  assert.deepEqual(source.modeNow("file", null, 0), { mode: "REPLAY", reason: null, label: "REPLAY" });
+  assert.equal(source.modeNow("api", null, 0).label, "STALE", "live before any run");
+  // Recovery, as liveLabel decides it: back at the high with the last growth within 60 s is LIVE again.
+  const live = source.createLive(DEMO_RUN);
+  await source.applyPage(live, refPaging.servePage(rows, source.liveRequest(live)), P_BASE_MS, testTrust);
+  const atHigh = live.verification;
+  live.verification = { ...atHigh, prefixEnd: 9 };
+  assert.equal(source.liveModeOf(live, P_BASE_MS + 1000).label, "STALE · chain broken");
+  live.verification = atHigh;
+  live.tracker.poll({ nowMs: P_BASE_MS + 3000, ok: true, K: 44 });
+  assert.equal(source.liveModeOf(live, P_BASE_MS + 3000).label, "LIVE · progress 3 s ago");
+  live.tracker.poll({ nowMs: P_BASE_MS + 60_001, ok: true, K: 44 });
+  assert.equal(source.liveModeOf(live, P_BASE_MS + 60_001).label, "STALE", "no growth for over 60 s");
 });
 
-test("rule 5: arrivals that don't grow K never refresh LIVE; a failed poll is STALE · transport at once; a file is REPLAY", () => {
-  const p = source.createProgress();
-  assert.equal(label(p, 0), "STALE", "before the first page");
-  source.recordPoll(p, { nowMs: 0, ok: true, K: 10 });
-  for (let t = 1000; t <= 60000; t += 1000) source.recordPoll(p, { nowMs: t, ok: true, K: 10 });
-  assert.equal(label(p, 60000), "LIVE · progress 60 s ago");
-  source.recordPoll(p, { nowMs: 61000, ok: true, K: 10 });
-  assert.equal(label(p, 61000), "STALE", "polls with no growth don't keep it LIVE");
-  source.recordPoll(p, { nowMs: 62000, ok: true, K: 11 });
-  assert.equal(label(p, 62000), "LIVE · progress 0 s ago");
-  source.recordPoll(p, { nowMs: 63000, ok: false });
-  assert.deepEqual(source.liveMode(p, 63000), { mode: "STALE", reason: "transport", label: "STALE · transport" });
-  source.recordPoll(p, { nowMs: 64000, ok: true, K: 11 });
-  assert.equal(label(p, 64000), "LIVE · progress 2 s ago", "a good poll clears the failure");
-  assert.equal(label(p, 70000), "STALE", "no poll within 5 s");
-  assert.equal(source.modeNow("file", null, 0).label, "REPLAY");
-  assert.equal(source.modeNow("api", null, 0).label, "STALE");
-  assert.equal(source.modeNow("api", { progress: p }, 64000).mode, "LIVE");
+test("the source adapter uses the shared code and never pages by seq", () => {
+  const text = readFileSync(join(repo, "web", "public", "sentilab", "package", "source.mjs"), "utf8");
+  for (const name of ["initialState", "request as pageRequest", "step as pageStep", "verifyRows", "verifyReplayBytes", "liveLabel"]) assert.ok(text.includes(name), name);
+  assert.ok(text.includes('from "../paging.mjs"') && text.includes('from "../view-core.mjs"'));
+  assert.ok(!/[?&]after=|after:\s|"after"/.test(text), "no after=seq paging");
+  assert.ok(!/function (createProgress|recordPoll|liveMode)\b/.test(text), "no duplicate progress tracker");
+});
+
+// ── links between the views ─────────────────────────────────────────────────────────────────────────────────────────
+test("view links carry the run, source, bundle, test-key request and replay playhead, and nothing else", () => {
+  assert.equal(viewHref("package/", { source: "file", search: "" }), "package/");
+  assert.equal(viewHref("package/", { source: "api", runId: "demo-8c-0001", search: "?src=live&pins=test&track=lab-b" }), "package/?src=live&run=demo-8c-0001&pins=test");
+  assert.equal(viewHref("../", { source: "file", runId: "run-a", seq: 32, search: "?bundle=run-a&pins=test" }), "../?bundle=run-a&run=run-a&pins=test&seq=32");
+  assert.equal(viewHref("../", { source: "file", runId: "demo-8c-0001", seq: 12, search: "" }), "../?seq=12", "the demo's own run id is not carried");
+  assert.equal(viewHref("../", { source: "api", runId: "x\"><script>", search: "?bundle=../../etc&pins=prod" }), "../?src=live", "junk is dropped, not escaped into the URL");
+  const labHtml = readFileSync(join(repo, "web", "public", "sentilab", "index.html"), "utf8");
+  assert.match(labHtml, /<a href="package\/" id="packageLink"[^>]*>Package view<\/a>/);
+  assert.match(labHtml, /<a href="\/">Run view<\/a>.*Package view.*Honest limits/s);
+  assert.match(readFileSync(join(repo, "web", "public", "sentilab", "lab.js"), "utf8"), /\$\("packageLink"\)\.href = viewHref\("package\/"/);
+  const pkgHtml = readFileSync(join(repo, "web", "public", "sentilab", "package", "index.html"), "utf8");
+  assert.match(pkgHtml, /<a href="\.\.\/" id="labLink">Lab view<\/a>/);
+  assert.match(readFileSync(join(repo, "web", "public", "sentilab", "package", "package.js"), "utf8"), /\$\("labLink"\)\.href = viewHref\("\.\.\/"/);
 });
