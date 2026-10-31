@@ -102,10 +102,10 @@ for (const scenario of vectors.scenarios) {
     for (const [field, value] of Object.entries(expected.after)) {
       assert.deepEqual(field === "rows" ? state.rows.length : state[field], value, `${scenario.name}: ${field}`);
     }
-    const { verification, K } = verifyRows(state, options);
+    const { verification, K, frozen } = verifyRows(state, options);
     assert.equal(K, expected.K, scenario.name);
     assert.equal(verification.label, expected.board, scenario.name);
-    assert.equal(liveLabel(state, tracker, now, K), expected.label, scenario.name);
+    assert.equal(liveLabel(state, tracker, now, K, frozen), expected.label, scenario.name);
     const rowCounts = {}, rejected = {};
     for (const row of verification.rows) {
       rowCounts[row.status] = (rowCounts[row.status] ?? 0) + 1;

@@ -1,4 +1,4 @@
-"""Stdio MCP host for live operations, ResultCheck, datasets and research."""
+"""Stdio MCP host for live, ResultCheck, datasets, research, memory and advisory operations."""
 import asyncio
 import json
 import sys
@@ -20,6 +20,23 @@ class LazyLiveContext:
 
 
 def schema(name):
+    if name in ("sentilab_memory_recall", "sentilab_memory_audit"):
+        fields = {key: {"type": "string", "minLength": 1} for key in ("tenant", "run", "arm", "family")}
+        fields["seed"] = {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+        properties = {"scope": {"type": "object", "properties": fields,
+                                "required": list(fields), "additionalProperties": False}}
+        if name == "sentilab_memory_recall":
+            properties["query"] = {"type": "string", "default": ""}
+        return {"type": "object", "properties": properties, "required": ["scope"], "additionalProperties": False}
+    if name == "sentilab_route":
+        return {"type": "object", "properties": {
+            "task": {"type": "object", "properties": {"candidate": {"type": "string"},
+                     "score": {"type": "number", "minimum": 0, "maximum": 1}},
+                     "required": ["candidate", "score"], "additionalProperties": False},
+            "calibrate": {"type": "boolean", "default": False}},
+            "oneOf": [{"required": ["task"], "properties": {"calibrate": {"const": False}}},
+                      {"required": ["calibrate"], "properties": {"calibrate": {"const": True}},
+                       "not": {"required": ["task"]}}], "additionalProperties": False}
     if name == "sentilab_resultcheck":
         return {"type": "object", "properties": {"file": {"type": "string"}},
                 "required": ["file"], "additionalProperties": False}
@@ -71,7 +88,7 @@ async def handle(request, context):
                                            "Export recorded verifier datasets" if name == "sentilab_dataset_export" else
                                            "Untrusted research evidence " + name.rsplit("_", 1)[-1]
                                            if name.startswith("sentilab_research_") else
-                                           "AI off live " + name.rsplit("_", 1)[-1]),
+                                           "Local deterministic " + name),
                            "inputSchema": schema(name)} for name in TOOLS]}
     if method == "tools/call":
         params = request["params"]
@@ -86,7 +103,7 @@ async def handle(request, context):
             result = (TOOLS[name](context, **arguments) if type(arguments) is dict else
                       {"ok": False, "error": {"code": "invalid_input"}})
             return {"content": [{"type": "text", "text": dumps(result)}], "isError": not result["ok"]}
-        if name not in TOOLS or set(arguments) - set(schema(name)["properties"]):
+        if name not in TOOLS or not isinstance(arguments, dict) or set(arguments) - set(schema(name)["properties"]):
             raise ValueError("invalid live operation")
         if name == "sentilab_resultcheck":
             from sentilab_core.resultcheck import canonical

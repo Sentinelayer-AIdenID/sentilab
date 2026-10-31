@@ -12,7 +12,7 @@ from fastapi.responses import Response
 
 from sentilab_core import operations
 from sentilab_core.budget import Limits
-from sentilab_core.ledger import replay
+from sentilab_core.ledger import ReplayCache, replay
 from sentilab_core.envelope import MAX_PAGE_BYTES, MAX_PAGE_LINES
 
 router = APIRouter()
@@ -20,11 +20,13 @@ _context = None
 _thread = None
 _failure = None
 _shutdown = None
+_replay_cache = ReplayCache()
 
 
 def configure(context):
-    global _context
+    global _context, _replay_cache
     _context = context
+    _replay_cache = ReplayCache()
 
 
 def context():
@@ -98,7 +100,8 @@ def events(run_id: str, after: str | None = None,
                                     any(c not in "0123456789abcdef" for c in cursor_hash)):
         raise HTTPException(422, "invalid cursor hash")
     try:
-        state = replay(context().root, run_id, public_keys=context().public_keys)
+        ctx = context()
+        state = replay(ctx.root, run_id, public_keys=ctx.public_keys, cache=_replay_cache)
     except FileNotFoundError:
         raise HTTPException(404, "run not found") from None
     except ValueError as exc:
