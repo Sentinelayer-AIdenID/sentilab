@@ -14,7 +14,8 @@ import statistics
 
 SCHEMA = 'slab-050-phase-profile-v1'
 PHASES = ('generate', 'solve', 'worker_startup', 'teardown_reap', 'archive', 'overhead')
-IDENTITY_FIELDS = ('fixture', 'grid', 'binary_sha256', 'config_sha256', 'source_sha256', 'image_identity')
+IDENTITY_FIELDS = ('fixture', 'grid', 'binary_sha256', 'config_sha256', 'source_sha256', 'image_identity',
+                   'problem_hash', 'solver_version')
 
 
 class AdmissionRefused(ValueError):
@@ -50,7 +51,9 @@ def _identity(value):
     def digest(item):
         return (isinstance(item, str) and len(item) == 64 and
                 all(character in '0123456789abcdef' for character in item))
-    for field in ('binary_sha256', 'config_sha256'):
+    if not isinstance(value['solver_version'], str):
+        raise AdmissionRefused('identity solver_version must be a string')
+    for field in ('binary_sha256', 'config_sha256', 'problem_hash'):
         if not digest(value[field]):
             raise AdmissionRefused(f'identity {field} must be a SHA-256 digest')
     source = value['source_sha256']
@@ -63,6 +66,21 @@ def _identity(value):
         return json.loads(_json_bytes(value))
     except (TypeError, ValueError) as exc:
         raise AdmissionRefused('identity must contain finite JSON values') from exc
+
+
+def _sample_identity(record, bound):
+    """Cross-check measured result fields as well as the captured execution ID."""
+    if _identity(record.get('identity')) != bound:
+        raise AdmissionRefused('sample identity differs from profile identity')
+    result = record.get('result')
+    if not isinstance(result, dict):
+        raise AdmissionRefused('sample has no result identity')
+    expected = {'fixture_id': bound['fixture'], 'grid_rows': bound['grid'],
+                'grid_cols': bound['grid'], 'problem_hash': bound['problem_hash'],
+                'config_sha256': bound['config_sha256'], 'solver_version': bound['solver_version']}
+    for field, value in expected.items():
+        if type(result.get(field)) is not type(value) or result.get(field) != value:
+            raise AdmissionRefused(f'sample result {field} identity differs from profile identity')
 
 
 def declared_calls(prereg):
@@ -123,6 +141,10 @@ def build_profile(records, identity):
         retained.append({'record_sha256': hashlib.sha256(_json_bytes(record)).hexdigest(),
                          'raw_artifact_refs': refs, 'record': record})
         reasons = []
+        try:
+            _sample_identity(record, bound_identity)
+        except AdmissionRefused as exc:
+            reasons.append(str(exc))
         try:
             charge = _number(record.get('metered_cpu_seconds'), f'record {index} metered CPU')
             total_charge += charge

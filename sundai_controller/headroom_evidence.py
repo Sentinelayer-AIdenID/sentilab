@@ -55,6 +55,7 @@ def execution_identity(oracle):
         image['base_image_digest'] = json.loads(build.read_bytes()).get('base_image_digest')
         # A base-image pin is not the final runtime-image identity.
     return {'fixture': oracle.fixture_id, 'grid': oracle.grid_rows,
+            'solver_version': oracle.solver_version,
             'binary_sha256': oracle.problem.hotspot_binary_sha256,
             'config_sha256': oracle.problem.config_sha256, 'problem_hash': oracle.problem_hash,
             'hotspot_upstream_commit': oracle.problem.hotspot_upstream_commit,

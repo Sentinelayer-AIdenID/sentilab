@@ -13,6 +13,8 @@ from sundai_controller import profile_headroom as cli
 
 def identity():
     return {'fixture': 'micro150', 'grid': 32,
+            'problem_hash': hashlib.sha256(b'synthetic problem').hexdigest(),
+            'solver_version': 'NONPHYSICAL-test',
             'binary_sha256': hashlib.sha256(b'synthetic binary').hexdigest(),
             'config_sha256': hashlib.sha256(b'synthetic config').hexdigest(),
             'source_sha256': hashlib.sha256(b'synthetic source').hexdigest(),
@@ -20,8 +22,13 @@ def identity():
                                'dockerfile_sha256': hashlib.sha256(b'synthetic build').hexdigest()}}
 
 
-def record(call=1):
-    return {'call': call, 'result': {'maximum_temperature_c': 100},
+def record(call=1, *, sample_identity=None):
+    current = identity() if sample_identity is None else sample_identity
+    return {'call': call, 'identity': current,
+            'result': {'maximum_temperature_c': 100, 'fixture_id': current['fixture'],
+                       'grid_rows': current['grid'], 'grid_cols': current['grid'],
+                       'problem_hash': current['problem_hash'], 'config_sha256': current['config_sha256'],
+                       'solver_version': current['solver_version']},
             'reaping_confirmed': True, 'metered_cpu_seconds': 3.0,
             'raw_directory': f'raw/{call}',
             'phase_timings': {phase: {'cpu_seconds': 0.5, 'wall_seconds': 1.0}
@@ -216,6 +223,57 @@ class EvidenceProfileTests(unittest.TestCase):
         for field in ('binary_sha256', 'config_sha256', 'source_sha256'):
             with self.subTest(field=field), self.assertRaisesRegex(ep.AdmissionRefused, field):
                 ep.build_profile([record()], dict(self.identity, **{field: 'unknown'}))
+
+    def test_foreign_samples_are_excluded_without_erasing_charges(self):
+        current = dict(self.identity, fixture='ascend910')
+        declaration = dict(self.prereg, fixture='ascend910')
+        mutations = (('fixture_id', 'micro150'), ('grid_rows', 64), ('grid_cols', 64),
+                     ('problem_hash', hashlib.sha256(b'foreign problem').hexdigest()),
+                     ('config_sha256', hashlib.sha256(b'foreign config').hexdigest()),
+                     ('solver_version', 'foreign solver'))
+        for field, value in mutations:
+            with self.subTest(field=field):
+                foreign = record(2, sample_identity=current)
+                foreign['result'][field] = value
+                profile = ep.build_profile([record(sample_identity=current), foreign], current)
+                self.assertEqual(profile['sample_count'], 1)
+                self.assertEqual(profile['excluded_count'], 1)
+                self.assertEqual(profile['metered_cpu_seconds'], 6)
+                self.assertEqual(profile['records'][1]['record'], foreign)
+                self.assertIn(field, ' '.join(profile['excluded_records'][0]['reasons']))
+                with self.assertRaises(ep.AdmissionRefused):
+                    ep.admission(declaration, profile, 1000, identity=current)
+
+    def test_relabelled_aggregate_with_rehashed_foreign_sample_cannot_admit(self):
+        for field, value in (('fixture', 'ascend910'), ('grid', 64),
+                             ('problem_hash', hashlib.sha256(b'foreign problem').hexdigest()),
+                             ('binary_sha256', hashlib.sha256(b'foreign binary').hexdigest()),
+                             ('source_sha256', hashlib.sha256(b'foreign source').hexdigest()),
+                             ('solver_version', 'foreign solver'),
+                             ('image_identity', {'status': 'foreign image'})):
+            with self.subTest(field=field):
+                # A caller edits the embedded sample and rehashes it. All cost
+                # summary fields and the aggregate identity still look valid.
+                profile = json.loads(json.dumps(self.profile))
+                foreign = record(sample_identity=dict(self.identity, **{field: value}))
+                entry = profile['records'][0]
+                entry['record'] = foreign
+                entry['record_sha256'] = hashlib.sha256(ep._json_bytes(foreign)).hexdigest()
+                with self.assertRaises(ep.AdmissionRefused):
+                    ep.admission(self.prereg, profile, 90, identity=self.identity)
+
+    def test_sample_identity_is_required_and_bound_to_actual_result(self):
+        for changed in ('missing', 'problem_hash', 'solver_version'):
+            with self.subTest(changed=changed):
+                sample = record()
+                if changed == 'missing':
+                    sample.pop('identity')
+                else:
+                    sample['identity'].pop(changed)
+                profile = ep.build_profile([sample], self.identity)
+                self.assertEqual(profile['sample_count'], 0)
+                self.assertEqual(profile['metered_cpu_seconds'], 3)
+                self.assertFalse(profile['usable_for_admission'])
 
 
 class ProfileFileTests(unittest.TestCase):

@@ -427,6 +427,8 @@ class _LaneOracle:
         result = None
         raw_dir = None
         history['status'] = 'started'
+        if getattr(self.budget, 'execution_identity', None) is not None:
+            history['identity'] = self.budget.execution_identity
         try:
             if self.budget.v4 and not self.budget.supervised:
                 candidate_scope = ProcessTreeScope(self.budget.cpu_rate)
@@ -887,6 +889,7 @@ async def run_headroom(fixture: str, mesh_error: float | None, prereg_path: str 
         if not budget.supervised:
             budget.lock.close()
         raise
+    budget.execution_identity = identity
     attempt = None
     try:
         output_dir.mkdir(parents=True, exist_ok=True)

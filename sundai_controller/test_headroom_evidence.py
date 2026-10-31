@@ -106,7 +106,7 @@ class EvidenceRunnerTests(unittest.IsolatedAsyncioTestCase):
             requires_evidence_profile = True
         current = dict(identity(), fixture='ascend910')
         profile = self.root / 'profile.json'
-        profile.write_text(json.dumps(build_profile([record()], current)))
+        profile.write_text(json.dumps(build_profile([record(sample_identity=current)], current)))
         self.prereg['evidence_profile'] = {'path': profile.name,
             'sha256': hashlib.sha256(profile.read_bytes()).hexdigest(),
             'reserve_cpu_seconds': 2, 'reserve_reason': 'synthetic setup and settlement'}
@@ -123,6 +123,7 @@ class EvidenceRunnerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(list((attempt / 'evaluations').glob('*.json'))), 7)
         first = json.loads((attempt / 'evaluations/00001.json').read_bytes())
         self.assertTrue(Path(first['raw_output_directory']).is_absolute())
+        self.assertEqual(first['identity'], current)
         self.assertTrue((attempt / 'PHASE_PROFILE.json').exists())
         self.assertEqual(json.loads((attempt / 'PHASE_PROFILE.json').read_bytes())['record_count'], 7)
 
@@ -190,7 +191,7 @@ class EvidenceRunnerTests(unittest.IsolatedAsyncioTestCase):
             requires_evidence_profile = True
         current = dict(identity(), fixture='ascend910')
         profile = self.root / 'profile.json'
-        profile.write_text(json.dumps(build_profile([record()], current)))
+        profile.write_text(json.dumps(build_profile([record(sample_identity=current)], current)))
         self.prereg['evidence_profile'] = {'path': profile.name,
             'sha256': hashlib.sha256(profile.read_bytes()).hexdigest(),
             'reserve_cpu_seconds': 2, 'reserve_reason': 'synthetic setup and settlement'}
@@ -294,7 +295,7 @@ class SupervisorAdmissionTests(unittest.TestCase):
 
     def test_forced_stop_rebuilds_incomplete_profile_and_preserves_settlement_charge(self):
         from dataclasses import asdict
-        from sundai_controller.test_evidence_profile import record
+        from sundai_controller.test_evidence_profile import record, identity
         evidence = h.ROOT / 'docs/sentilab/evidence/SLAB-039'
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -319,7 +320,8 @@ class SupervisorAdmissionTests(unittest.TestCase):
                 budget.write_text(json.dumps(state))
                 return {'status': 'stopped', 'returncode': -9, 'metered_cpu_seconds': 7,
                         'reaping_confirmed': True, 'latency_assumptions_met': True}
-            with patch.object(s, 'verify_cpu_max', return_value={'rate_q': 1}), \
+            with patch.object(e, 'execution_identity', return_value=identity()), \
+                    patch.object(s, 'verify_cpu_max', return_value={'rate_q': 1}), \
                     patch('sundai_controller.evidence_profile.load_admission', return_value={'declared_calls': 4768}), \
                     patch.object(s, 'supervise', side_effect=stopped), patch.object(s.LinuxTree, 'cpu', return_value=7):
                 receipt = s.run(evidence / 'PREREG-v4.json', budget, out, policy)
