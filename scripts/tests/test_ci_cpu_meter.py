@@ -166,6 +166,31 @@ class MeterTests(unittest.TestCase):
             self.assertFalse(result['cpu']['kill_within_reserve'])
             self.assertGreaterEqual(result['cpu']['charged_cpu_seconds'], 900)
 
+    def test_joint_cpu_and_launch_violations_survive_finalization_and_reconciliation(self):
+        from unittest.mock import patch
+
+        from scripts.ci_allocation import Ledger
+        from scripts.ci_reconcile import reconcile
+        from scripts.tests.test_ci_allocation import IDENTITY
+
+        for seconds in (901, 910):
+            with self.subTest(seconds=seconds), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+
+                def joint_failure(group, seconds=seconds, directory=directory):
+                    (group / 'cpu.stat').write_text(f'usage_usec {int((seconds + 1.25) * 1000000)}\n')
+                    Ledger(directory / 'ledger/events.jsonl', IDENTITY).violation()
+
+                with patch('scripts.ci_cpu_meter.supervisor_cpu', return_value=0):
+                    code, result, _, _ = self.fake_run(directory, kill=joint_failure)
+                self.assertEqual(code, 1)
+                self.assertEqual(result['state'], 'cpu_limit_violated')
+                self.assertEqual(result['violations'], ['cpu_limit_violated', 'launch_violation'])
+                self.assertEqual(result['cpu']['cpu_seconds'], seconds)
+                self.assertEqual(result['cpu']['charged_cpu_seconds'], seconds)
+                terminal = reconcile(result['identity'], 'failure', result)
+                self.assertEqual(terminal['settlement'], result)
+
     def test_workload_waits_for_parent_attachment_and_attach_failure_cancels_it(self):
         import json
         import sys

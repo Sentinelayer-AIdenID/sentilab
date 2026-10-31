@@ -62,7 +62,18 @@ def valid_settlement(value):
             return False
     if value['state'] in ('inconclusive', 'interrupted') and charge < CPU_CAP:
         return False
-    if seconds is not None and seconds > CPU_CAP and value['state'] not in ('cpu_limit_violated', 'inconclusive'):
+    over_cap = seconds is not None and seconds > CPU_CAP
+    expected_violations = (['cpu_limit_violated'] if over_cap else []) + (
+        ['launch_violation'] if violations else [])
+    # Older artifacts did not have the list; both facts remain independently
+    # supported by their counters. New lists must agree with those counters.
+    if 'violations' in value and value['violations'] != expected_violations:
+        return False
+    if value['state'] == 'cpu_limit_violated' and not over_cap:
+        return False
+    if value['state'] == 'launch_violation' and not violations:
+        return False
+    if over_cap and value['state'] not in ('cpu_limit_violated', 'inconclusive', 'launch_violation'):
         return False
     try:
         # No nonstandard NaN/Infinity anywhere in forwarded artifact evidence.
