@@ -335,8 +335,10 @@ coordinator]
   prospective computational reference-reproduction tolerance of 1.0 K.
 - **The references are raw.** TAP-2.5D's originals as SLAB-048 decoded them (PR #57 at `063f659`), with their
   continuous centres and rotations: Ascend 910 at 75.48 C and CPU-DRAM at 115.94 C. Each is pinned by its raw
-  section's own content hash (`15c77bbe...`, `6eba70b6...`), checked on the vendored copy and on SLAB-048's record
-  whenever it is in the tree; any change to raw fails. SLAB-048 keeps raw byte-stable and puts later notes in
+  section's own content hash (`15c77bbe...`, `6eba70b6...`), checked on the vendored copy and on SLAB-048's record,
+  now in the tree (#57 merged at `a48ceec5`, main `d298cb0`); any change to raw fails. SLAB-048's own continuous
+  rules (`TapGeometry.continuous_centers_for`) are cross-checked on both raw layouts, which its search lattice still
+  refuses. SLAB-048 keeps raw byte-stable and puts later notes in
   `raw_annotations` and `snapped_annotations`, which are descriptive only and never read by the gate. Raw geometry is
   judged by the continuous rules only (margin, halo, 0.1 mm body spacing); the search lattice never applies to it,
   and the search path still refuses it.
