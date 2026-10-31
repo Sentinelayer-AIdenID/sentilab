@@ -118,7 +118,10 @@ remain `pins.sharing_round_barriers = null` until fixed before execution. The
 search/reproduction barrier is mandatory in every arm. Completed scientific
 failure is an observed outcome and consumes its opportunity. Missing data or an
 unobserved infrastructure result is inconclusive, not a tie, a model fallback or
-a free replacement. Best observed board data may still be reported descriptively
+a free replacement. Two proven pre-execution failures exhaust the declared retry
+without a scientific observation: the slot remains reserved and inconclusive,
+both attempts are recorded, neither consumes a solve, and no third attempt or
+replacement is allowed. Best observed board data may still be reported descriptively
 when the paired family is incomplete; it cannot supply confirmatory success.
 
 ## Replay interface and scope
