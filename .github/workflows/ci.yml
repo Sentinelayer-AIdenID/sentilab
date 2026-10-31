@@ -67,6 +67,7 @@ jobs:
           (cd contracts/view-envelope && node run-view-vectors.mjs)
           (cd contracts/view-envelope-v0.5 && node run-view-vectors.mjs)
           (cd contracts/view-envelope-v0.6 && node run-paging-vectors.mjs)
+          (cd contracts/view-envelope-v0.6.1 && node run-paging-vectors.mjs)
       - name: Lab view matches the contracts (browser copies, demo fixture)
         run: |
           node --test web/test/sentilab-parity.test.mjs
