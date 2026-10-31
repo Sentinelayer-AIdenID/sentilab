@@ -1,4 +1,4 @@
-// thermal.aidenid.com: static assets from ./public, and /api/* proxied to the thermal-api Azure Container App
+// sentilab.aidenid.com: static assets from ./public, and read-only /api/* proxied to the sentilab-api Azure Container App
 // (API_ORIGIN). The upstream body streams through, so server-sent events work unchanged.
 const HOP = ["connection", "keep-alive", "transfer-encoding", "upgrade", "host"];
 
@@ -32,6 +32,12 @@ async function allowRunStart(request, env) {
 export default {
   async fetch(request, env) {
     const { pathname } = new URL(request.url);
+    // SentiLab is hands-off: the service runs its own loop, so the public edge is read-only. No caller can start
+    // runs or reach any write route from outside.
+    if ((pathname === "/api" || pathname.startsWith("/api/")) && !["GET", "HEAD"].includes(request.method)) {
+      return new Response(JSON.stringify({ error: "read_only", detail: "The public SentiLab API is read-only." }),
+        { status: 405, headers: { "content-type": "application/json", allow: "GET, HEAD", "cache-control": "no-store" } });
+    }
     if (request.method === "POST" && pathname === "/api/runs" && !(await allowRunStart(request, env))) {
       return new Response(JSON.stringify({ error: "rate_limited", detail: "Too many runs started; wait a minute." }),
         { status: 429, headers: { "content-type": "application/json", "retry-after": "60", "cache-control": "no-store" } });
