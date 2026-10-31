@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.request
@@ -129,7 +130,15 @@ def read_admission(store, identity, *, timeout=180, now=time.time,
         sleep(min(5, max(0, deadline - clock())))
 
 
-def workflow_identity(store, payload):
+def _sha(value, name):
+    """Validate a GitHub-supplied commit SHA before any API path can contain it."""
+    if type(value) is not str or not re.fullmatch(r'[a-f0-9]{40}', value):
+        raise ValueError('invalid ' + name + ' SHA')
+    return value
+
+
+def workflow_identity(store, payload, *, merge_timeout=60, clock=time.monotonic,
+                      sleep=time.sleep):
     """Resolve GitHub-authenticated upstream metadata, never PR-supplied code/data.
 
     The current merge may differ from an older queued run. The PR-side reader
@@ -143,14 +152,18 @@ def workflow_identity(store, payload):
             or type(event['id']) is not int or event['id'] <= 0
             or type(event['run_attempt']) is not int or event['run_attempt'] != 1):
         raise ValueError('untrusted workflow or rerun request')
-    # Recheck the upstream run: a delayed event cannot authorize an already
-    # cancelled/completed run or a later attempt under its former identity.
-    run = store.request('GET', '/actions/runs/' + str(event['id']))
-    for key in ('id', 'run_attempt', 'workflow_id', 'head_sha', 'event', 'path'):
-        if run[key] != event[key]:
-            raise ValueError('upstream run identity changed')
-    if run['status'] not in ('queued', 'in_progress', 'waiting', 'pending', 'requested'):
-        raise ValueError('upstream run already terminal')
+
+    def recheck_run():
+        # Recheck the upstream run: a delayed event cannot authorize an already
+        # cancelled/completed run or a later attempt under its former identity.
+        run = store.request('GET', '/actions/runs/' + str(event['id']))
+        for key in ('id', 'run_attempt', 'workflow_id', 'head_sha', 'event', 'path'):
+            if run[key] != event[key]:
+                raise ValueError('upstream run identity changed')
+        if run['status'] not in ('queued', 'in_progress', 'waiting', 'pending', 'requested'):
+            raise ValueError('upstream run already terminal')
+
+    recheck_run()
     head = event['head_sha']
     if event['event'] == 'push':
         if event['head_branch'] != repository['default_branch']:
@@ -163,18 +176,47 @@ def workflow_identity(store, payload):
         number = pulls[0]['number']
         if type(number) is not int or number <= 0:
             raise ValueError('invalid upstream pull request')
-        pull = store.request('GET', '/pulls/' + str(number))
-        if (pull['state'] != 'open' or pull['head']['sha'] != head
-                or pull['base']['repo']['full_name'] != store.repository
-                or pull['base']['ref'] != repository['default_branch']):
-            raise ValueError('pull request source or base changed')
-        build = pull['merge_commit_sha']
-        # Validate before interpolating an API path, including a pending merge.
-        Identity(store.repository, str(event['id']), '1', 'container', {}, head, build)
-        commit = store.request('GET', '/git/commits/' + build)
-        if (commit['sha'] != build
-                or [parent['sha'] for parent in commit['parents']] != [pull['base']['sha'], head]):
-            raise ValueError('merge commit does not bind the expected base and head')
+        branch = repository['default_branch']
+        if type(branch) is not str or not re.fullmatch(r'[\w-]+(?:[./][\w-]+)*', branch, re.ASCII):
+            raise ValueError('invalid default branch name')
+        # GitHub merges onto the default branch's CURRENT tip, while base.sha keeps
+        # the PR's older base after that branch moves. Bind the merge to the tip; a
+        # merge onto an older tip is stale. GitHub computes merges asynchronously, so
+        # wait a bounded time, re-reading the run, PR, merge and tip every iteration.
+        deadline = clock() + merge_timeout
+        while True:
+            pull = store.request('GET', '/pulls/' + str(number))
+            if (pull['state'] != 'open' or pull['head']['sha'] != head
+                    or pull['base']['repo']['full_name'] != store.repository
+                    or pull['base']['ref'] != repository['default_branch']):
+                raise ValueError('pull request source or base changed')
+            build = pull['merge_commit_sha']
+            if build is None:
+                pending = 'merge commit still pending'
+            else:
+                # Validate before interpolating an API path.
+                Identity(store.repository, str(event['id']), '1', 'container', {}, head, build)
+                commit = store.request('GET', '/git/commits/' + build)
+                parents = [parent['sha'] for parent in commit['parents']]
+                if commit['sha'] != build or len(parents) != 2 or parents[1] != head:
+                    raise ValueError('merge commit does not bind the pull request head')
+                onto = _sha(parents[0], 'merge parent')
+                tip = _sha(store.request('GET', '/git/ref/heads/' + branch)['object']['sha'],
+                           'default-branch tip')
+                if onto == tip:
+                    break
+                pending = 'stale merge commit: not onto the current default-branch tip'
+            if clock() >= deadline:
+                raise ValueError(pending)
+            sleep(min(3, max(0, deadline - clock())))
+            recheck_run()
+        # Defensive: the merged tip never predates the PR's recorded base.
+        base = _sha(pull['base']['sha'], 'pull request base')
+        if base != onto:
+            # BASE...HEAD is 'ahead' only when HEAD's history contains BASE.
+            compare = store.request('GET', '/compare/' + base + '...' + onto)
+            if compare['status'] not in ('identical', 'ahead'):
+                raise ValueError('pull request base is not an ancestor of the merged tip')
     else:
         raise ValueError('unsupported upstream event')
     return Identity(store.repository, str(event['id']), '1', 'container', {}, head, build)
