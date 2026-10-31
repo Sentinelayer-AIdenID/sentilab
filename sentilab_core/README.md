@@ -108,6 +108,16 @@ prefix. `has_more=false` describes only the current read; poll the same cursor
 for new appends. Storage is append-only; a cursor beyond its current length
 returns 409 and requires replay from zero.
 
+The events route caches parsed rows and signature results per run in memory.
+Every poll reads one bounded byte snapshot and checks the cached physical prefix
+hash; unchanged rows need no repeated parsing or signature verification. Only
+complete appended rows are parsed and verified, while conflict and chain checks
+run again on append. File replacement, shrink, changed prefix bytes or trust pins
+discard that run's cached verdicts. The durable head is checked on every poll.
+The cache retains at most eight runs and 64 MiB of source bytes; eviction changes
+only performance. `python -m unittest app.test_view_cache` includes a reported
+eight-viewer, 1,000-row empty-poll benchmark without a host-speed assertion.
+
 Legacy `after=seq` remains supported separately. Its conflicting sequence groups
 stay on one page; earlier break evidence is sent again. A group that cannot fit
 returns 413. Clients needing bounded progress through such evidence use `cursor`.
@@ -125,6 +135,8 @@ PR26 as an argument. It drives the unchanged reducer and C1–C14 vector data
 against a local HTTP server, plus unfinished-tail and oversize-row regressions.
 Fault scenarios deliberately alter responses after fetching from the real route.
 All C7 range statuses and C12/C14 server cases must match the reference exactly.
+The harness also compares each response's status, headers and body with an
+uncached replay and a repeated warm-cache request.
 An explicit `format=json` returns diagnostic `envelopes`, `next_after`, `has_more`,
 `prefix_end`, `chain_error`, and the core projection, also capped at 4 MiB.
 Clients fetch one run from genesis through contiguous pages and
