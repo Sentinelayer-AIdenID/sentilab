@@ -221,6 +221,10 @@ class ResearchTests(unittest.TestCase):
         import asyncio
         from sentilab_core import operations
         from sentilab_core.signing import ephemeral_signer
+        from sentilab_core.test_cleanup import BarrierOracle
+        oracle = BarrierOracle()
+        oracle.release.set()
+        self.context.options["oracle"] = oracle
         signer = ephemeral_signer()
         self.context.signer = signer
         self.context.public_keys = {signer.key_id: signer.public_key}
