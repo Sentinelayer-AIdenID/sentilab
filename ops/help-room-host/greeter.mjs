@@ -4,7 +4,7 @@
 //    only writes text that this process posts). Keys on server sequence ids and event ids; state survives restarts.
 import { execFile } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 const ROOM = "32a841e5-308b-411a-87f7-6454082d72fe";
 const DIR = "H:/sl-temp/rooms/hackathon-room/greeter";
 const DRY = process.env.DRY === "1"; // dry run: generate answers, post nothing, separate state
@@ -244,5 +244,10 @@ if (!existsSync(STATE)) { state.lastSeq = 56684; writeFileSync(STATE, JSON.strin
 for (const [key, since] of Object.entries(state.pending || {})) log({ key, outcome: "unknown", pendingSince: since, note: "process ended mid-answer; not retried" });
 state.pending = {};
 writeFileSync(STATE, JSON.stringify(state));
+// Runtime receipt: when this process started and exactly which bytes it loaded, so reviewers can bind the running host
+// to a committed source and facts hash instead of an approximate restart time.
+const sha = (b) => createHash("sha256").update(b).digest("hex");
+log({ event: "process_start", pid: process.pid, startedAt: new Date(Date.now() - process.uptime() * 1000).toISOString(),
+  sourceSha256: sha(readFileSync(new URL(import.meta.url))), factsSha256: sha(FACTS), node: process.version, dry: DRY, responder: Boolean(KEY) });
 console.log("host up; lastSeq", state.lastSeq, "responder", KEY ? `on since ${state.responderSince}` : "OFF (no key)");
 while (Date.now() < UNTIL) { try { await tick(); } catch (e) { console.log("tick error", e.message); } await new Promise((r) => setTimeout(r, TICK_MS)); }
