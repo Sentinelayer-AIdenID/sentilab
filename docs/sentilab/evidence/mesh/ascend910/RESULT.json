@@ -59,6 +59,12 @@
     "hotspot_binary_sha256": "e4358b46794ebc00f07102d13b3ca687507834a1784eba135d26d1d493d334b4"
   },
   "evaluator_identity_basis": "Retrospective equality check of recorded per-grid hashes; original runner did not enforce a study pin.",
+  "evidence_status": {
+    "D02_complete": false,
+    "limitation": "Historical raw solver files, per-evaluation input hashes and heatmaps were not retained. New journaling does not reconstruct them; no replacement solves were performed.",
+    "parsed_receipts_retained": false,
+    "raw_artifacts_retained": false
+  },
   "execution_commit": "ba39fe4785ac0cd1bc5464c018188a6a83c82edf",
   "fixed_tolerance_c": 0.01,
   "fixture": "ascend910",

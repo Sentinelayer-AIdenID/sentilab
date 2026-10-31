@@ -62,6 +62,12 @@ Solver executions in this run: 72. CPU-minutes (process plus reaped children): n
 The shared allowance is 150 solver executions and 6 CPU-minutes across both fixtures, including warm-up and validation. Per-run accounting is not a shared-budget clearance. See RESULT.json and VALIDATION.md for prior usage and unresolved accounting.
 
 
+## Retained evidence
+
+Raw HotSpot inputs and outputs are not retained; D02 is incomplete.
+The historical run also discarded per-evaluation input hashes and heatmaps. These cannot be reconstructed from the retained peak values.
+
+
 ## Scope
 
 e is an empirical discrepancy against 64 on this fixed layout set, not an error bound against the continuum or unseen layouts. Later R4/u_num and SLAB-039 margins can use e with that scope; a two-layout difference needs a margin greater than 2e. The fixed 0.01 C tolerance is a sensitivity diagnostic, not measured numerical uncertainty or a practical minimum effect. The 16-grid error and fixed-tolerance inversions show the limits of cheap screening. No benchmark method-gap or continuum-convergence claim is made here.

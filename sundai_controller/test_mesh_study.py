@@ -1,17 +1,31 @@
 """Tests call the shipped generator, statistics, checker and real HotSpot runner."""
 import asyncio
 import copy
-from dataclasses import replace
+from contextlib import redirect_stdout
+import io
+from dataclasses import asdict, replace
 import json
+import hashlib
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
 from unittest.mock import patch
-from types import SimpleNamespace
 
 from sundai_controller import mesh_study as mesh
+from sundai_hotspot.tap_oracle import HotSpotThermalResult
+
+
+def fake_thermal_result(oracle, design):
+    return HotSpotThermalResult(
+        design.hash, 100.0, oracle.solver_version, converged=True, cost_microdollars=0,
+        problem_hash=oracle.problem_hash, wirelength_mm=10.0, wire_metric='test-only',
+        heatmap_c=tuple((100.0,) * oracle.grid_cols for _ in range(oracle.grid_rows)),
+        grid_rows=oracle.grid_rows, grid_cols=oracle.grid_cols, ambient_c=40.0,
+        solver_seconds=0.05, evaluation_seconds=0.1, input_generation_seconds=0.02,
+        input_sha256=(('sample.ptrace', hashlib.sha256(b'synthetic-input').hexdigest()),),
+        all_layers_peak_c=101.0)
 
 
 class MeshAccountingTests(unittest.TestCase):
@@ -148,15 +162,13 @@ class MeshIdentityTests(unittest.TestCase):
 
             async def fake_call(oracle, design):
                 calls.append(oracle.grid_rows)
-                return SimpleNamespace(maximum_temperature_c=100.0, all_layers_peak_c=101.0,
-                                       evaluation_seconds=0.1, solver_seconds=0.05,
-                                       candidate_hash=design.hash)
+                return fake_thermal_result(oracle, design)
 
             with self.subTest(field=field), patch.object(mesh, 'make_oracle', factory), \
-                    patch.object(mesh.HotSpotOracle, '__call__', fake_call):
+                    patch.object(mesh.HotSpotOracle, '__call__', fake_call), tempfile.TemporaryDirectory() as directory:
                 with self.assertRaisesRegex(ValueError, 'evaluator identity changed'):
                     asyncio.run(mesh.evaluate_layouts(
-                        frozen, [32, 64], ['clustered-01', 'spread-01']))
+                        frozen, [32, 64], ['clustered-01', 'spread-01'], evidence_dir=Path(directory)))
                 self.assertEqual(calls, [32, 32])
 
     def test_checker_rejects_cross_grid_identity_changes(self):
@@ -171,10 +183,88 @@ class MeshIdentityTests(unittest.TestCase):
                                     for error in mesh.check_result(altered)))
 
 
+class MeshReceiptTests(unittest.TestCase):
+    def test_completed_receipts_survive_failure_and_cancellation(self):
+        for failure in (RuntimeError('second call failed'), asyncio.CancelledError()):
+            with self.subTest(failure=type(failure).__name__), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory)
+                calls = []
+
+                async def fake_call(oracle, design):
+                    if calls:
+                        records = [json.loads(line) for line in (output / 'rows.jsonl').read_text().splitlines()]
+                        self.assertEqual(sum(r['kind'] == 'evaluation' for r in records), 1)
+                        raise failure
+                    result = fake_thermal_result(oracle, design)
+                    calls.append(result)
+                    return result
+
+                with patch.object(mesh.HotSpotOracle, '__call__', fake_call):
+                    with self.assertRaises(type(failure)):
+                        mesh.main(['--grids', '32', '64', '--layout-ids',
+                            'clustered-01', 'spread-01', '--output-dir', str(output)])
+                records = [json.loads(line) for line in (output / 'rows.jsonl').read_text().splitlines()]
+                self.assertEqual(records[0]['status'], 'incomplete')
+                self.assertFalse(any(r['kind'] == 'completion' for r in records))
+                receipt = next(r for r in records if r['kind'] == 'evaluation')
+                self.assertEqual(receipt['parsed_receipt'], json.loads(mesh._json_bytes(asdict(calls[0]))))
+                self.assertEqual(receipt['heatmap_sha256'], hashlib.sha256(mesh._json_bytes(calls[0].heatmap_c)).hexdigest())
+                self.assertEqual(receipt['layout_id'], 'clustered-01')
+                self.assertEqual(receipt['grid'], 32)
+                self.assertFalse((output / 'RESULT.json').exists())
+
+    def test_complete_journal_binds_summary_and_refuses_reuse(self):
+        frozen, _ = mesh.load_layouts(mesh.EVIDENCE_ROOT / 'ascend910/layouts.json')
+        calls = []
+
+        async def fake_call(oracle, design):
+            calls.append(design.hash)
+            return fake_thermal_result(oracle, design)
+
+        with tempfile.TemporaryDirectory() as directory, patch.object(mesh.HotSpotOracle, '__call__', fake_call):
+            output = Path(directory)
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(mesh.main(['--grids', '32', '64', '--layout-ids',
+                    'clustered-01', 'spread-01', '--output-dir', str(output)]), 0)
+            result = json.loads((output / 'RESULT.json').read_text())
+            journal = (output / 'rows.jsonl').read_bytes()
+            self.assertIn('D02 is incomplete', (output / 'REPORT.md').read_text())
+            records = [json.loads(line) for line in journal.splitlines()]
+            self.assertEqual(result['rows_evidence']['sha256'], hashlib.sha256(journal).hexdigest())
+            self.assertEqual(records[-1]['status'], 'complete')
+            self.assertEqual(records[-1]['evaluation_count'], 4)
+            self.assertEqual([r['sequence'] for r in records if r['kind'] == 'evaluation'], [1, 2, 3, 4])
+            self.assertEqual([r['receipt_sequence'] for r in result['layouts']], [{'32': 1, '64': 3}, {'32': 2, '64': 4}])
+            self.assertEqual(mesh.check_result(result, output), [])
+            changed = copy.deepcopy(result)
+            changed['layouts'][0]['seconds']['32'] = 9.0
+            self.assertTrue(any('receipt differs' in e for e in mesh.check_result(changed, output)))
+            with self.assertRaises(FileExistsError):
+                asyncio.run(mesh.evaluate_layouts(frozen, [32, 64],
+                    ['clustered-01', 'spread-01'], evidence_dir=output))
+            self.assertEqual(len(calls), 4)
+            self.assertEqual((output / 'rows.jsonl').read_bytes(), journal)
+            (output / 'rows.jsonl').write_bytes(journal + b' ')
+            self.assertTrue(any('sha256 mismatch' in e for e in mesh.check_result(result, output)))
+            with redirect_stdout(io.StringIO()):
+                self.assertEqual(mesh.main(['--check', str(output / 'RESULT.json')]), 1)
+
+    def test_oversized_receipt_is_rejected_before_append(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'rows.jsonl'
+            with path.open('xb') as stream:
+                mesh.append_receipt(stream, {'kind': 'run', 'status': 'incomplete'})
+                before = path.read_bytes()
+                with self.assertRaisesRegex(ValueError, 'exceeds 1 MiB'):
+                    mesh.append_receipt(stream, {'oversized': 'x' * mesh.MAX_RECEIPT_BYTES})
+            self.assertEqual(path.read_bytes(), before)
+
+
 class MeshRealRunTests(unittest.TestCase):
     def test_four_real_layouts_at_16_and_32(self):
         frozen = mesh.make_layout_set('ascend910', 1, 4)
-        result = asyncio.run(mesh.evaluate_layouts(frozen, [16, 32]))
+        with tempfile.TemporaryDirectory() as directory:
+            result = asyncio.run(mesh.evaluate_layouts(frozen, [16, 32], evidence_dir=Path(directory)))
         self.assertEqual(len(result['layouts']), 4)
         self.assertEqual(result['evaluation_count'], 8)
         self.assertIsNone(result['summary']['e_c'])
