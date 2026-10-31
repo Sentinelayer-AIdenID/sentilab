@@ -102,6 +102,9 @@ def read_prefix(path, *, run_id, public_keys):
         value = event.get("seq") if isinstance(event, dict) else None
         return value if type(value) is int and value >= 1 else None
 
+    # Keep physical append order for transport cursors, including retransmissions
+    # and malformed evidence. Verification separately sorts and deduplicates.
+    source_rows = rows.copy()
     # Canonical-identical retransmissions count once, even with different JSON
     # whitespace. Rejected input is never canonicalized for duplicate detection.
     unique, seen = [], set()
@@ -149,7 +152,7 @@ def read_prefix(path, *, run_id, public_keys):
             previous = envelope["hash"]
         else:
             row["error"] = error or "after broken prefix"
-    return {"prefix": prefix, "rows": rows, "last_seq": len(prefix),
+    return {"prefix": prefix, "rows": rows, "source_rows": source_rows, "last_seq": len(prefix),
             "error": broken, "head_hash": previous}
 
 

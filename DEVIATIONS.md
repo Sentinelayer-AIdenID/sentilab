@@ -15,7 +15,10 @@
   diagnostic error rather than the reference's complete reason-code list.
   An oversized raw ledger line is represented in the feed by a malformed `null`
   line, preserving a frozen prefix without echoing unbounded input. Replay files
-  over 64 MiB and sequence groups exceeding a page cap fail closed.
+  over 64 MiB fail closed. Legacy sequence groups exceeding a page cap return
+  413; append-row cursor pages preserve all evidence and remain within the caps.
+  Append cursors assume append-only storage, include late conflicting appends,
+  and are not snapshot integrity proofs for externally rewritten files.
   Forge owns the client-clock LIVE/progress tracker and the browser transport
   consumer; those are not implemented by this producer change.
 - Baseline operators are imported, but scheduling uses recorded per-proposal
