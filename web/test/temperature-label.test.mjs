@@ -15,7 +15,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   WITHDRAWN, ILLUSTRATIVE, ACCEPTED, LABELS, NOTICE, labeller, labelFor, labelForAll, evaluatorIds, envelopeEvaluator, hasTemperature,
-  needsNotice, runTemperatureIds,
+  needsNotice, runTemperatureIds, reportNeedsNotice,
 } from "../public/temperature-label.mjs";
 import * as ref from "../../contracts/view-envelope-v0.5/view-envelope.mjs";
 import * as refPaging from "../../contracts/view-envelope-v0.6.2/paging.mjs";
@@ -210,12 +210,14 @@ test("the notice test for envelopes: any temperature that is withdrawn or unvali
   assert.equal(hasTemperature({ values: { W: { value: 1 } } }), false);
 });
 
-test("the run view: every baseline and oracle result names its identity; the replay is all withdrawn", () => {
+test("the run view: every baseline, shared sample and oracle result names its identity; the replay is all withdrawn", () => {
   const replay = JSON.parse(readFileSync(join(PUBLIC, "replay", "ascend910-seed11-32x32.json"), "utf8"));
   const ids = runTemperatureIds(replay);
   const events = Object.values(replay.result.lane_results).flatMap((lane) => lane.record).filter((e) => e.event === "baseline" || e.event === "oracle_result");
-  assert.equal(ids.length, events.length);
+  const samples = events.filter((e) => e.event === "baseline").flatMap((e) => e.payload.shared_initial_samples ?? []);
+  assert.equal(ids.length, events.length + samples.length);
   assert.equal(labelForAll(ids), LABELS.withdrawn);
+  assert.deepEqual(runTemperatureIds(replay.result), ids, "the raw run reads the same identities as the API's wrapped form");
   // A run as GET /api/runs/{id} returns it, live: one lane, a baseline and an oracle result.
   const run = (solver) => ({ id: "r", result: { lane_results: { random: { record: [
     { event: "baseline", payload: { thermal: { maximum_temperature_c: 118.9, solver_version: solver } } },
@@ -229,6 +231,26 @@ test("the run view: every baseline and oracle result names its identity; the rep
   assert.equal(labelForAll(runTemperatureIds(run("synthetic-fvm-plate-v1-grid40"))).notice, true, "the plate shows the notice too");
   assert.deepEqual(runTemperatureIds({ status: "running" }), [], "a run with no results yet shows no temperature");
   assert.deepEqual(runTemperatureIds(null), []);
+  // A baseline's shared samples are temperatures too, each with its own identity (or none).
+  const pooled = { lane_results: { random: { record: [
+    { event: "baseline", payload: { thermal: { solver_version: FIXTURE }, shared_initial_samples: [{ thermal: { solver_version: LIVE_HS7 } }, { design_hash: "x" }, null] } },
+  ] } } };
+  assert.deepEqual(runTemperatureIds(pooled), [FIXTURE, LIVE_HS7, undefined, undefined]);
+  assert.deepEqual(runTemperatureIds({ id: "r", result: pooled }), runTemperatureIds(pooled), "wrapped and raw forms alike");
+});
+
+test("the verify page's notice: a lane showing a best is labelled by every identity it was taken from", () => {
+  const lane = (best, bestIds) => ({ best, ...(bestIds === undefined ? {} : { bestIds }) });
+  assert.equal(reportNeedsNotice({ lanes: [lane(90, [FIXTURE, LIVE_HS7])] }), true, "a withdrawn input");
+  assert.equal(reportNeedsNotice({ lanes: [lane(90, [FIXTURE, CORRECTED])] }), true, "an unvalidated input");
+  assert.equal(reportNeedsNotice({ lanes: [lane(90, [FIXTURE, undefined])] }), true, "an input that names none");
+  assert.equal(reportNeedsNotice({ lanes: [lane(90, [])] }), true, "a best that names no input (fail safe)");
+  assert.equal(reportNeedsNotice({ lanes: [lane(90)] }), true, "a report without identities (fail safe)");
+  assert.equal(reportNeedsNotice({ lanes: [lane(90, [FIXTURE, FIXTURE])] }), false, "only the fixture");
+  assert.equal(reportNeedsNotice({ lanes: [lane(null, [LIVE_HS7]), lane(90, [FIXTURE])] }), false, "a lane that shows no best shows nothing");
+  assert.equal(reportNeedsNotice({ lanes: [lane(90, [FIXTURE]), lane(91, [LIVE_HS7])] }), true, "any shown lane decides");
+  assert.equal(reportNeedsNotice({ lanes: [] }), false);
+  assert.equal(reportNeedsNotice(null), false);
 });
 
 test("the verify page: one lane's record document names its identities too (the TFL-08 records)", () => {
