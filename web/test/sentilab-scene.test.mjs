@@ -987,16 +987,24 @@ test("view links carry the run, source, bundle, test-key request and replay play
 
 // ── Review of 861c611: a failed /runs refresh, and the CLI's file intake ─────────────────────────────────────────────
 // 1. The package view's own poller (createLiveFeed), driven with a scripted fetch and clock. Event polls are valid
-//    through t15; at t16 the /runs refresh answers 503. The shared failed-poll transition (paging.mjs step() with no
-//    response, as for a failed events page) runs before the page is told, so the label is "STALE · transport" at once,
-//    and rows and cursor are kept.
-// The log holds core.released rows (all of them unless a test grows it); /runs lists the run with core.status.
+//    through t15; at t16 the /runs refresh fails: a 503, a network throw, a malformed 200 or a non-schema 200. The
+//    shared failed-poll transition (runs-list.mjs refreshRuns: paging.mjs step() with no response, as for a failed
+//    events page; the Lab view's path too) runs before the page is told, so the label is "STALE · transport" at once,
+//    and rows, cursor and cursor hash are kept.
+const RUNS_FAILURES = {
+  503: { answer: () => new Response("unavailable", { status: 503 }), error: /answered 503/ },
+  "network throw": { answer: () => { throw new TypeError("Failed to fetch"); }, error: /Failed to fetch/ },
+  "malformed 200": { answer: () => new Response("{not json", { status: 200, headers: { "content-type": "application/json" } }), error: /aren't JSON/ },
+  "non-schema 200": { answer: () => new Response(JSON.stringify({ items: [{ run_id: DEMO_RUN }] }), { status: 200, headers: { "content-type": "application/json" } }), error: /isn't a runs list/ },
+};
+// The log holds core.released rows (all of them unless a test grows it); /runs lists the run with core.status, or
+// fails as core.runsFail says.
 function scriptedCore(rows) {
-  const core = { runs503: false, calls: [], released: rows.length, status: "running" };
+  const core = { runsFail: null, calls: [], released: rows.length, status: "running" };
   core.fetch = async (url) => {
     core.calls.push(url);
     if (url.startsWith("/api/view/runs")) {
-      if (core.runs503) return new Response("unavailable", { status: 503 });
+      if (core.runsFail) return RUNS_FAILURES[core.runsFail].answer();
       return new Response(JSON.stringify([{ run_id: DEMO_RUN, arm: "live", family: "fixture-8chiplet", seed: 11, last_seq: core.released, status: core.status }]), { status: 200, headers: { "content-type": "application/json" } });
     }
     const q = new URL(url, "http://x").searchParams;
@@ -1005,7 +1013,7 @@ function scriptedCore(rows) {
   };
   return core;
 }
-test("live: a /runs 503 mid-live gives STALE · transport at once (shared failed-poll transition), with rows and cursor kept", async () => {
+for (const kind of Object.keys(RUNS_FAILURES)) test(`live: a /runs ${kind} mid-live gives STALE · transport at once (shared failed-poll transition), with rows, cursor and hash kept`, async () => {
   // The core appends one row a second: 29 rows at t0 (the backlog: catch-up, STALE), then 30 at t1 ... 44 at t15.
   const core = scriptedCore(refPaging.splitRows(demoBytes()));
   core.released = 29;
@@ -1023,12 +1031,18 @@ test("live: a /runs 503 mid-live gives STALE · transport at once (shared failed
     assert.equal(label(), "LIVE · progress 0 s ago", `t${s}: a new row after catch-up`);
   }
   assert.equal(core.calls.filter((u) => u.startsWith("/api/view/runs")).length, 1, "/runs is refreshed only after 15 s");
-  core.runs503 = true;
+  const keptHash = feed.state.live.paging.cursor_hash, keptRows = feed.state.live.paging.rows;
+  core.runsFail = kind;
   t = P_BASE_MS + 16_000;
+  const before = core.calls.length;
   await feed.pollOnce();
-  assert.equal(core.calls.filter((u) => u.startsWith("/api/view/runs")).length, 2, "t16: the /runs refresh is due, and answers 503");
+  assert.equal(core.calls.filter((u) => u.startsWith("/api/view/runs")).length, 2, `t16: the /runs refresh is due, and fails (${kind})`);
+  assert.equal(core.calls.length, before + 1, "no events request after the failed refresh");
   assert.equal(feed.state.connected, false);
-  assert.match(feed.state.error, /503/);
+  assert.match(feed.state.error, RUNS_FAILURES[kind].error);
+  assert.equal(feed.state.live.paging.failure, "transport", "the shared failed-poll transition ran");
+  assert.equal(feed.state.live.paging.cursor_hash, keptHash, "the cursor hash is kept");
+  assert.equal(feed.state.live.paging.rows, keptRows, "the rows are kept (the same list)");
   assert.equal(label(), "STALE · transport", "t16: at once, not LIVE");
   assert.deepEqual(seen.at(-1), { t: 16, label: "STALE · transport" }, "the page is told after the transition, never with LIVE");
   assert.equal(feed.state.live.paging.cursor, 44, "the cursor is kept");
@@ -1039,7 +1053,7 @@ test("live: a /runs 503 mid-live gives STALE · transport at once (shared failed
     await feed.pollOnce();
     assert.equal(label(), "STALE · transport", `t${s}: still the transport reason, never a plain STALE`);
   }
-  core.runs503 = false;
+  core.runsFail = null;
   t = P_BASE_MS + 21_000;
   await feed.pollOnce();
   assert.equal(feed.state.connected, true);

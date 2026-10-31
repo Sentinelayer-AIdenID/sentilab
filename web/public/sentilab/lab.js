@@ -8,9 +8,11 @@ import { VIEW_PINS } from "./view-pins.js";
 import { viewHref } from "./view-links.mjs";
 import {
   checkLine, readBodyCapped, parseKeyResponse, publicKeyFromSeedText, sha256Hex,
-  MAX_LINE_BYTES, MAX_FILE_BYTES, MAX_API_BYTES,
+  MAX_LINE_BYTES, MAX_FILE_BYTES,
 } from "./view-core.mjs";
-import { initialState, request as pageRequest, step as pageStep, track, verifyRows, verifyBytes, splitRows, rowText, liveLabel, REASON_TEXT } from "./paging.mjs";
+import { initialState, verifyRows, verifyBytes, splitRows, rowText, liveLabel, REASON_TEXT } from "./paging.mjs";
+import { pollLiveOnce, POLL_BACKOFF_MS } from "./lab-live.mjs";
+import { strictJson, MAX_SMALL_JSON } from "./runs-list.mjs";
 import {
   buildView, feedRows, chainSummary, isDrill, isRejected, colorScale, nextScale, heat, frameOf, labInfo, reasonText, rankReasons,
   rowIdentity, resolveRow, shortId, stageOf, STAGES, isObj,
@@ -19,9 +21,6 @@ import {
 const DEMO = { url: "demo-run.jsonl", runId: "demo-8c-0001", label: "demo-run.jsonl · bundled interface fixture" };
 const TEST_KEY_NAMES = ["core"];                 // ?pins=test: the vectors' "core" test key, derived here at run time
 const STEP_MS = matchMedia("(prefers-reduced-motion: reduce)").matches ? 1300 : 800;
-const POLL_OK_MS = 1000, POLL_BACKOFF_MS = 5000;
-const MAX_SMALL_JSON = 256 * 1024;               // /api/view/runs and /api/view/key are small; a bigger answer is refused
-const strictJson = (bytes) => JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes));
 const FEED_ROWS_SHOWN = 400;
 const params = new URLSearchParams(location.search);
 const $ = (id) => document.getElementById(id);
@@ -186,92 +185,34 @@ async function loadReplay({ url, bytes, label, runId, isDemo, at = null }) {
   }
 }
 
-// ── live: GET /api/view/runs, then GET /api/view/events?run_id=&after= ───────────────────────────────────────
+// ── live: GET /api/view/runs, then GET /api/view/events?run_id=&cursor= ──────────────────────────────────────
 function scheduleLive(ms) {
   clearTimeout(S.live.timer);
   if (S.source === "api") S.live.timer = setTimeout(pollLive, ms);
 }
-// Rule 4 (v0.6): GET /api/view/events?run_id=&cursor=<n>&limit=256[&cursor_hash=<hash of rows 0..n-1>] returns the
-// run's log rows n.. as JSONL, with x-next-cursor, x-has-more and x-cursor-hash. paging.mjs step() applies each page:
-// the caps before anything is split, then the cursor and the cursor hash over the raw bytes. The page keeps every raw
-// row it accepted and re-verifies the whole stream when rows arrive, so a late envelope at a seq it already has (a
-// conflict) still reaches it and freezes the board. A failed page keeps nothing and leaves the cursor and the prefix.
-// "stream replaced" (409) and "paging unsupported" (400, 404, 501) are terminal: polling stops, the view is never LIVE
-// again, and only a reload starts over from cursor 0. The view never pages by seq.
-const MAX_PAGES_PER_POLL = 16;   // as the reference client loop
-async function fetchPage(runId, req) {
-  const query = new URLSearchParams({ run_id: runId, cursor: String(req.cursor), limit: String(req.limit) });
-  if (req.cursor_hash !== undefined) query.set("cursor_hash", req.cursor_hash);
-  let r;
-  try { r = await fetch(`/api/view/events?${query}`, { cache: "no-store" }); } catch { return null; }   // transport
-  if (r.status !== 200) { r.body?.cancel().catch(() => {}); return { status: r.status, headers: r.headers, bodyBytes: new Uint8Array(0) }; }
-  // Raw bytes, never decoded whole; reading stops past 4 MiB, and a body that isn't read whole fails as transport.
-  const body = await readBodyCapped(r, MAX_API_BYTES, "response_too_large").catch(() => ({ ok: false }));
-  return { status: 200, headers: r.headers, bodyBytes: body.ok ? body.bytes : null };
-}
+// One poll is lab-live.mjs pollLiveOnce() (no DOM, so the node tests drive the same code): the runs list, then the
+// events drain by cursor, then track(). A failed /api/view/runs refresh goes through the shared failed-poll
+// transition before this page renders, so the label leaves LIVE at once with the transport reason.
 async function pollLive() {
   const L = S.live;
   if (L.paging.degraded) return;   // stopped for good; a reload starts over
   if (document.hidden) return scheduleLive(POLL_BACKOFF_MS);
-  try {
-    if (!L.runs || !L.runId || Date.now() - (L.runsAt ?? 0) > 15000) {
-      const r = await fetch("/api/view/runs", { cache: "no-store" });
-      if (!r.ok) throw new Error(`/api/view/runs answered ${r.status}`);
-      const body = await readBodyCapped(r, MAX_SMALL_JSON, "too_large");
-      if (!body.ok) throw new Error("/api/view/runs answered with more than 256 KiB");
-      if (S.live !== L) return;   // the run was switched while this poll was out
-      const doc = strictJson(body.bytes);
-      const runs = (Array.isArray(doc) ? doc : isObj(doc) && Array.isArray(doc.runs) ? doc.runs : [])
-        .filter((x) => isObj(x) && typeof x.run_id === "string" && x.run_id.length <= 128).slice(0, 200);
-      L.runs = runs;
-      L.runsAt = Date.now();
-      L.connected = true;
-      if (!L.runId && runs.length) { L.runId = runs[0].run_id; L.paging = initialState(L.runId); }
-      renderRunPicker();
-      if (!L.runId) { render(); return scheduleLive(POLL_BACKOFF_MS); }
-    }
-  } catch (error) {
-    if (S.live !== L) return;
-    L.connected = false;
-    L.error = String(error.message ?? error);
-    render();
-    return scheduleLive(POLL_BACKOFF_MS);   // calm back-off; one request every 5 s, nothing written to the console
-  }
-  // Drain: keep fetching while x-has-more is true (at most 16 pages a poll), then poll every 1 s from the last cursor.
-  let outcome = "ok", added = 0, anyOk = false;
-  for (let pages = 0; pages < MAX_PAGES_PER_POLL; pages += 1) {
-    const req = pageRequest(L.paging);
-    if (req === null) break;     // terminal: request() sends nothing more
-    const response = await fetchPage(L.runId, req);
-    if (S.live !== L) return;   // the run was switched while this poll was out
-    const result = await pageStep(L.paging, response, Date.now());
-    if (S.live !== L) return;
-    L.paging = result.state;
-    outcome = result.outcome;
-    anyOk ||= outcome === "ok";
-    added += result.newRows.length;
-    if (outcome !== "ok" || !L.paging.has_more) break;
-  }
-  L.connected = true;
-  L.error = "";
-  if (added) {
-    const anchor = !S.following && L.verification && S.cursor > 0 ? rowIdentity(L.verification, Math.min(S.cursor, L.verification.rows.length) - 1) : null;
-    await verify(L);              // the whole stream, every time new rows arrive
-    if (S.live !== L) return;
-    if (S.following) S.cursor = L.verification.rows.length;
-    else if (anchor) {
-      // Paused: stay on the same envelope, even if a late row was sorted in before it.
-      const at = resolveRow(L.verification, anchor);
-      if (at >= 0) S.cursor = at + 1;
-    }
-  }
-  // Progress (rule 5, v0.6.2): after valid pages, track() with the K they give. Pages up to and including the first
-  // with no more to fetch are history (catch-up): they raise the high-water mark but are never progress, so a page
-  // load of a long log never shows LIVE. The whole drain is verified once; the outcome is the reference's, whose
-  // pages within one drain are all catch-up or all after it.
-  if (anyOk) L.paging = track(L.paging, L.verification ? L.verification.prefix_end : 0, Date.now());
+  const result = await pollLiveOnce(L, { fetchImpl: (...args) => fetch(...args), now: () => Date.now(), current: () => S.live === L, verify: verifyLive, onRuns: renderRunPicker });
+  if (result === null) return;     // the run was switched while this poll was out
   render();
-  if (!L.paging.degraded) scheduleLive(outcome !== "ok" ? POLL_BACKOFF_MS : L.paging.has_more ? 0 : POLL_OK_MS);
+  if (result.delay !== null) scheduleLive(result.delay);
+}
+// New rows arrived: verify the whole stream, then keep the playhead where the viewer left it.
+async function verifyLive(L) {
+  const anchor = !S.following && L.verification && S.cursor > 0 ? rowIdentity(L.verification, Math.min(S.cursor, L.verification.rows.length) - 1) : null;
+  await verify(L);
+  if (S.live !== L) return;
+  if (S.following) S.cursor = L.verification.rows.length;
+  else if (anchor) {
+    // Paused: stay on the same envelope, even if a late row was sorted in before it.
+    const at = resolveRow(L.verification, anchor);
+    if (at >= 0) S.cursor = at + 1;
+  }
 }
 // The run's status as GET /api/view/runs lists it: "running" or "finished"; missing or unknown counts as running.
 const runStatusOf = (L) => {

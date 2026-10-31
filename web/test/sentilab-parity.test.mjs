@@ -26,6 +26,8 @@ import { project } from "../public/sentilab/evidence-projection.mjs";
 import { canonical } from "../public/sentilab/canonical.mjs";
 import * as core from "../public/sentilab/view-core.mjs";
 import * as paging from "../public/sentilab/paging.mjs";
+import { pollLiveOnce, POLL_BACKOFF_MS, POLL_OK_MS, RUNS_REFRESH_MS } from "../public/sentilab/lab-live.mjs";
+import { fetchRunsList } from "../public/sentilab/runs-list.mjs";
 import { VIEW_PINS } from "../public/sentilab/view-pins.js";
 import { buildView, feedRows, chainSummary, isDrill, colorScale, nextScale, heat, rowIdentity, resolveRow, shortId, tempUnit, frameOf, outcomeText } from "../public/sentilab/lab-model.mjs";
 import { testKey } from "./sentilab-keys.mjs";
@@ -1093,4 +1095,130 @@ test("the feed shows a rejected row by its reasons only, and the badge counts it
   const sum = chainSummary(r.rows);
   assert.equal(sum.rejected, 1);
   assert.equal(sum.verified, 9);
+});
+
+// ── The Lab view's live poller (lab-live.mjs pollLiveOnce, the code lab.js runs every poll) ──────────────────────────
+// Driven with a scripted core (the v0.6.2 reference server over the bundled demo) and clock. A failed discovery poll
+// (GET /api/view/runs: a 503, a network throw, a malformed 200 or a non-schema 200) goes through the shared failed-poll
+// transition (runs-list.mjs refreshRuns: paging.mjs step() with no response) before the page is told, so the label
+// leaves LIVE at once and shows "STALE · transport", with the rows, the cursor and the cursor hash kept, while the
+// events route itself stays valid. The Package view uses the same path (sentilab-scene.test.mjs).
+const LL_RUN = "demo-8c-0001";
+const LL_ROWS = refPaging.splitRows(new Uint8Array(readFileSync(DEMO_PATH)));
+const LL_OPTIONS = { runId: LL_RUN, pins: [{ key_id: "core", key_sha256: testKey("core").sha256 }], keys: { core: testKey("core").raw } };
+const LL_T0 = Date.UTC(2026, 10, 1, 14, 0, 0);
+const RUNS_FAILURES = {
+  503: { answer: () => new Response("unavailable", { status: 503 }), error: /answered 503/ },
+  "network throw": { answer: () => { throw new TypeError("Failed to fetch"); }, error: /Failed to fetch/ },
+  "malformed 200": { answer: () => new Response("{not json", { status: 200, headers: { "content-type": "application/json" } }), error: /aren't JSON/ },
+  "non-schema 200": { answer: () => new Response(JSON.stringify({ items: [{ run_id: LL_RUN }] }), { status: 200, headers: { "content-type": "application/json" } }), error: /isn't a runs list/ },
+};
+// The core: /api/view/runs (or the failure in core.runsFail) and /api/view/events over the first `released` rows.
+function labCore(rows) {
+  const core = { runsFail: null, released: rows.length, calls: [] };
+  core.fetch = async (url) => {
+    core.calls.push(url);
+    if (url.startsWith("/api/view/runs")) {
+      if (core.runsFail) return RUNS_FAILURES[core.runsFail].answer();
+      return new Response(JSON.stringify([{ run_id: LL_RUN, arm: "live", family: "fixture-8chiplet", seed: 11, last_seq: core.released, status: "running" }]), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    const q = new URL(url, "http://x").searchParams;
+    assert.ok(!q.has("after"), "never seq paging");
+    const page = refPaging.servePage(rows.slice(0, core.released), { cursor: Number(q.get("cursor")), limit: Number(q.get("limit")), ...(q.has("cursor_hash") ? { cursor_hash: q.get("cursor_hash") } : {}) });
+    return new Response(Buffer.from(page.bodyBytes), { status: page.status, headers: page.headers });
+  };
+  return core;
+}
+// The page's live state as lab.js builds it for ?src=live&run=demo-8c-0001, and the verify lab.js passes.
+const freshLabLive = () => ({ runs: null, runsAt: 0, runId: LL_RUN, paging: paging.initialState(LL_RUN), verification: null, connected: null, error: "" });
+const labVerify = async (L) => { L.verification = (await paging.verifyRows(L.paging, LL_OPTIONS)).verification; };
+const labLabel = (L, t) => paging.liveLabel(L.paging, t, L.verification?.prefix_end ?? 0, L.verification?.frozen ?? false, "running");
+
+for (const kind of Object.keys(RUNS_FAILURES)) {
+  test(`Lab poller: a /api/view/runs ${kind} while event polls stay valid: STALE · transport at once, rows, cursor and hash kept; recovery resumes from the cursor`, async () => {
+    // One new row a second: 29 rows at t0 (the backlog: catch-up), then 30 at t1 ... 44 at t15.
+    const core = labCore(LL_ROWS);
+    core.released = 29;
+    const L = freshLabLive();
+    let t = LL_T0;
+    const poll = () => pollLiveOnce(L, { fetchImpl: core.fetch, now: () => t, verify: labVerify });
+    assert.deepEqual(await poll(), { delay: POLL_OK_MS });
+    assert.equal(labLabel(L, t), "STALE", "t0: the backlog is history, not progress");
+    for (let s = 1; s <= 15; s += 1) {
+      t = LL_T0 + s * 1000;
+      core.released = 29 + s;
+      await poll();
+      assert.equal(labLabel(L, t), "LIVE · progress 0 s ago", `t${s}: a new row after catch-up`);
+    }
+    const runsCalls = () => core.calls.filter((u) => u.startsWith("/api/view/runs")).length;
+    assert.equal(runsCalls(), 1, `/runs is asked again only after ${RUNS_REFRESH_MS / 1000} s`);
+    const kept = { cursor: L.paging.cursor, rows: L.paging.rows, cursor_hash: L.paging.cursor_hash, K: L.verification.prefix_end };
+    assert.deepEqual([kept.cursor, kept.rows.length, kept.K], [44, 44, 44]);
+
+    // t16: the /runs refresh is due and fails. The events route would still answer; the poll must not use it.
+    core.runsFail = kind;
+    t = LL_T0 + 16_000;
+    const before = core.calls.length;
+    assert.deepEqual(await poll(), { delay: POLL_BACKOFF_MS });
+    assert.equal(runsCalls(), 2, "t16: the refresh was asked and failed");
+    assert.equal(core.calls.length, before + 1, "no events request after the failed refresh");
+    assert.equal(L.connected, false);
+    assert.match(L.error, RUNS_FAILURES[kind].error);
+    assert.equal(L.paging.failure, "transport", "the shared failed-poll transition ran");
+    assert.equal(labLabel(L, t), "STALE · transport", "at once: K grew 1 s ago and the last events poll was 1 s ago, yet not LIVE");
+    assert.equal(L.paging.cursor, kept.cursor, "the cursor is kept");
+    assert.equal(L.paging.rows, kept.rows, "the rows are kept (the same list)");
+    assert.equal(L.paging.cursor_hash, kept.cursor_hash, "the cursor hash is kept");
+    assert.equal(L.verification.prefix_end, kept.K, "the prefix is kept");
+    for (let s = 17; s <= 20; s += 1) {
+      t = LL_T0 + s * 1000;
+      await poll();
+      assert.equal(labLabel(L, t), "STALE · transport", `t${s}: still the transport reason, never LIVE`);
+    }
+
+    // t21: /runs answers again; the events poll succeeds from the kept cursor (no new rows). The failure clears and
+    // the label is LIVE again, as rule 5 decides it: K last grew at t15, 6 s ago.
+    core.runsFail = null;
+    t = LL_T0 + 21_000;
+    await poll();
+    assert.equal(L.connected, true);
+    assert.equal(L.paging.failure, null);
+    assert.equal(labLabel(L, t), "LIVE · progress 6 s ago");
+    const lastEvents = new URL(core.calls.at(-1), "http://x").searchParams;
+    assert.deepEqual([lastEvents.get("cursor"), lastEvents.get("cursor_hash")], ["44", kept.cursor_hash], "resumed from the kept cursor and hash");
+  });
+}
+test("Lab poller: a /api/view/runs failure before any run is known is a failed poll too; the poll that follows recovers", async () => {
+  const core = labCore(LL_ROWS);
+  core.runsFail = "503";
+  const L = { ...freshLabLive(), runId: null, paging: paging.initialState("") };
+  let t = LL_T0;
+  assert.deepEqual(await pollLiveOnce(L, { fetchImpl: core.fetch, now: () => t, verify: labVerify }), { delay: POLL_BACKOFF_MS });
+  assert.equal(labLabel(L, t), "STALE · transport");
+  core.runsFail = null;
+  t += 5000;
+  await pollLiveOnce(L, { fetchImpl: core.fetch, now: () => t, verify: labVerify });
+  assert.equal(L.runId, LL_RUN, "the first listed run");
+  assert.equal(L.verification.prefix_end, 44);
+  assert.equal(labLabel(L, t), "STALE", "a page load's backlog is catch-up, not progress");
+});
+test("Lab poller: a poll whose run was switched while it was out is dropped; nothing is written to the old state", async () => {
+  const core = labCore(LL_ROWS);
+  const L = freshLabLive();
+  let switched = false;
+  const fetchImpl = async (url) => { const r = await core.fetch(url); if (url.startsWith("/api/view/runs")) switched = true; return r; };
+  assert.equal(await pollLiveOnce(L, { fetchImpl, now: () => LL_T0, current: () => !switched, verify: labVerify }), null);
+  assert.deepEqual([L.runs, L.paging.cursor, L.paging.failure], [null, 0, null]);
+});
+test("runs-list.mjs: a runs list is an array or { runs: [...] }; anything else throws; bad entries are skipped", async () => {
+  const answer = (body, status = 200) => async () => new Response(typeof body === "string" ? body : JSON.stringify(body), { status });
+  assert.deepEqual((await fetchRunsList(answer([{ run_id: "a" }, { id: 1 }, { run_id: "x".repeat(129) }, "junk"]))).map((r) => r.run_id), ["a"]);
+  assert.deepEqual((await fetchRunsList(answer({ runs: [{ run_id: "b", status: "finished" }] }))).map((r) => r.run_id), ["b"]);
+  assert.deepEqual(await fetchRunsList(answer([])), [], "an empty list is a valid answer");
+  for (const [body, status, why] of [[{ items: [] }, 200, /isn't a runs list/], [{ runs: {} }, 200, /isn't a runs list/], ["null", 200, /isn't a runs list/], ['"runs"', 200, /isn't a runs list/],
+    ["{not json", 200, /aren't JSON/], ["[]", 503, /answered 503/], ["[]", 404, /answered 404/]]) {
+    await assert.rejects(fetchRunsList(answer(body, status)), why, `${status} ${typeof body === "string" ? body : JSON.stringify(body)}`);
+  }
+  await assert.rejects(fetchRunsList(async () => { throw new TypeError("Failed to fetch"); }), /Failed to fetch/);
+  await assert.rejects(fetchRunsList(answer(`[${"{\"run_id\":\"r\"},".repeat(20_000)}{}]`)), /more than 256 KiB/);
 });
