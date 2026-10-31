@@ -1,11 +1,11 @@
-// Browser port of contracts/view-envelope-v0.6/paging.mjs (DRAFT v0.6, rule 4; reference sha256 39247b6d...): live
-// paging by a physical-row cursor, bound by a cursor hash. The logic follows the reference line for line. The only
-// changes are the platform calls: SHA-256 comes from WebCrypto, so cursorHash(), step(), verifyBytes(),
-// verifyReplayBytes() and verifyRows() are async; v0.5 verification comes from ./view-core.mjs (the browser port of
-// the v0.5 reference) instead of the node reference; and the empty-log hash is the SHA-256 of nothing, written out,
-// so initialState() stays synchronous. The reference server (servePage) is not ported: the page is only a client.
-// web/test/sentilab-parity.test.mjs runs the reference's paging scenarios (C1-C11) through this file and compares
-// every trace with the recorded one.
+// Browser port of contracts/view-envelope-v0.6/paging.mjs (DRAFT v0.6 as amended, rule 4; reference sha256 7e875920...,
+// text afab6f10...): live paging by a physical-row cursor, bound by a cursor hash. The logic follows the reference line
+// for line. The only changes are the platform calls: SHA-256 comes from WebCrypto, so cursorHash(), step(),
+// verifyBytes(), verifyReplayBytes() and verifyRows() are async; v0.5 verification comes from ./view-core.mjs (the
+// browser port of the v0.5 reference) instead of the node reference; and the empty-log hash is the SHA-256 of nothing,
+// written out, so initialState() stays synchronous. The server side (logRowsFromFile, servePage) is not ported: the
+// page is only a client. web/test/sentilab-parity.test.mjs runs the reference's paging scenarios (C1-C6, C8-C14)
+// through this file and compares every trace with the recorded one.
 // Pure: no clock, network, randomness or shared state. Every input is an argument, and states are never mutated.
 // Rows are raw bytes (Uint8Array) throughout; text appears only when a row is handed to v0.5 verification.
 import { checkLine, verifyJsonl, sha256Hex } from "./view-core.mjs";
@@ -19,7 +19,7 @@ const LF = 0x0a;
 const UNSUPPORTED = [400, 404, 501];
 const COUNT = /^(0|[1-9][0-9]*)$/;
 // The reason a failed poll shows after "STALE · ".
-export const REASON_TEXT = { transport: "transport", paging_error: "paging error", stream_replaced: "stream replaced", paging_unsupported: "paging unsupported" };
+export const REASON_TEXT = { transport: "transport", paging_error: "paging error", stream_replaced: "stream replaced", row_too_large: "row too large", paging_unsupported: "paging unsupported" };
 
 // SHA-256, lowercase hex, over the raw bytes of each row followed by one LF (that is, over joinRows(rows)).
 export function cursorHash(rows) {
@@ -78,37 +78,46 @@ const header = (headers, name) => {
 // ---- The client. ----
 // rows: every accepted raw row; cursor: how many rows were accepted; cursor_hash: their hash; has_more: the last
 // page's x-has-more; last_ok_ms: client time of the last valid page; failure: why the latest poll failed, or null;
-// degraded: "stream_replaced" or "paging_unsupported" once either happens, and it stays until a manual reload.
+// degraded: "stream_replaced", "row_too_large" or "paging_unsupported" once one happens. Each is terminal: the
+// client stops polling and the state stays until a manual reload (a new initialState).
 export function initialState(runId, { limit = MAX_LIMIT } = {}) {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_LIMIT) throw new RangeError("limit must be 1 to 256");
   return { run_id: runId, limit, rows: [], cursor: 0, cursor_hash: EMPTY_CURSOR_HASH, has_more: true, last_ok_ms: null, failure: null, degraded: null };
 }
 
-// The next request. cursor_hash is sent with every cursor above 0. There is never a seq parameter.
+// The next request, or null in a terminal state. cursor_hash is sent with every cursor above 0. There is never a
+// seq parameter.
 export function request(state) {
+  if (state.degraded) return null;
   const req = { cursor: state.cursor, limit: state.limit };
   if (state.cursor > 0) req.cursor_hash = state.cursor_hash;
   return req;
 }
 
 // One response to request(state). response: { status, headers, bodyBytes } or null for a failed transport.
-// Returns { state, outcome, newRows }. outcome is ok, transport, paging_error, stream_replaced or paging_unsupported.
+// Returns { state, outcome, newRows }. outcome is ok, transport, paging_error, stream_replaced, row_too_large or
+// paging_unsupported.
 // A failed poll changes only failure (and degraded): no rows from it are kept, and the cursor never resets.
 export async function step(state, response, nowMs) {
   if (state.degraded) return { state, outcome: state.degraded, newRows: [] };
   const fail = (reason, extra = {}) => ({ state: { ...state, ...extra, failure: reason }, outcome: reason, newRows: [] });
   const status = response?.status;
   if (status === 409) return fail("stream_replaced", { degraded: "stream_replaced" });
+  // 413: the next row can never be paged. Terminal, so the same cursor is never asked for again.
+  if (status === 413) return fail("row_too_large", { degraded: "row_too_large" });
   if (UNSUPPORTED.includes(status)) return fail("paging_unsupported", { degraded: "paging_unsupported" });
   if (status !== 200 || !(response.bodyBytes instanceof Uint8Array)) return fail("transport");
   // The v0.5 response caps, before anything is split or decoded.
   const body = response.bodyBytes;
   if (body.length > MAX_PAGE_BYTES || countLines(body) > MAX_PAGE_LINES) return fail("transport");
+  // A conforming server ends every row with LF, so a non-empty body that doesn't end with LF is a paging error.
+  if (body.length > 0 && body[body.length - 1] !== LF) return fail("paging_error");
   const rows = splitRows(body);
   const nextText = header(response.headers, "x-next-cursor");
   const next = typeof nextText === "string" && COUNT.test(nextText) ? Number(nextText) : NaN;
   if (!Number.isSafeInteger(next)) return fail("paging_error");
   if (next !== state.cursor + rows.length) return fail("paging_error");
+  if (rows.length > state.limit) return fail("paging_error");
   // The client's own hash of every row it would now hold, over raw bytes.
   const combined = [...state.rows, ...rows];
   const ownHash = await cursorHash(combined);

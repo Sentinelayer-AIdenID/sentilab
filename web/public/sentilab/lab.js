@@ -10,7 +10,10 @@ import {
   MAX_LINE_BYTES, MAX_FILE_BYTES, MAX_API_BYTES,
 } from "./view-core.mjs";
 import { initialState, request as pageRequest, step as pageStep, verifyRows, verifyBytes, splitRows, rowText, liveLabel, REASON_TEXT } from "./paging.mjs";
-import { buildView, feedRows, chainSummary, isDrill, isRejected, colorScale, frameOf, labInfo, reasonText, rankReasons, stageOf, STAGES, isObj } from "./lab-model.mjs";
+import {
+  buildView, feedRows, chainSummary, isDrill, isRejected, colorScale, nextScale, heat, frameOf, labInfo, reasonText, rankReasons,
+  rowIdentity, resolveRow, stageOf, STAGES, isObj,
+} from "./lab-model.mjs";
 
 const DEMO = { url: "demo-run.jsonl", runId: "demo-8c-0001", label: "demo-run.jsonl · bundled interface fixture" };
 const TEST_KEY_NAMES = ["core"];                 // ?pins=test: the vectors' "core" test key, derived here at run time
@@ -19,7 +22,6 @@ const POLL_OK_MS = 1000, POLL_BACKOFF_MS = 5000;
 const MAX_SMALL_JSON = 256 * 1024;               // /api/view/runs and /api/view/key are small; a bigger answer is refused
 const strictJson = (bytes) => JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes));
 const FEED_ROWS_SHOWN = 400;
-const HEAT = [[0x11, 0x2a, 0x48], [0x23, 0x6b, 0x91], [0x56, 0xb6, 0xba], [0xdf, 0xd3, 0x76], [0xec, 0x99, 0x4f], [0xe4, 0x51, 0x38]];
 const params = new URLSearchParams(location.search);
 const $ = (id) => document.getElementById(id);
 
@@ -63,6 +65,9 @@ const S = {
   live: { runs: null, runId: params.get("run"), paging: initialState(params.get("run") ?? ""), verification: null, scale: null, frame: null,
           tracker: progressTracker(), connected: null, timer: null, error: "" },
   cursor: 0, cursors: {}, playing: null, following: true,
+  // Open dialogs follow the data. inspected: the inspector's subject, by stable identity ({ source, id }), and the
+  // verification it was last drawn from; chainFor: what the chain dialog was last drawn from.
+  inspected: null, chainFor: null,
 };
 const active = () => (S.source === "api" ? S.live : S.file);
 
@@ -112,11 +117,13 @@ async function setupPinnedKeys() {
 // only what passed the input checks.
 async function verify(src) {
   const options = { runId: src.runId, pins: S.pins, keys: S.keys };
+  const previousK = src.verification ? src.verification.prefix_end : 0;
   src.verification = src === S.live ? (await verifyRows(src.paging, options)).verification : await verifyBytes(src.rows, options);
   const trusted = src.verification.ordered.slice(0, src.verification.prefix);
   const scale = colorScale(trusted);
-  // A file is one whole run, so its scale is fixed. A live run can only widen its scale, never shift or narrow it.
-  src.scale = src === S.live && src.scale && scale ? { min: Math.min(src.scale.min, scale.min), max: Math.max(src.scale.max, scale.max), unit: src.scale.unit || scale.unit } : scale;
+  // A file is one whole run, so its scale is fixed. A live run's scale only widens while its prefix holds or grows,
+  // and is rebuilt from what remains when the prefix shrinks (nextScale).
+  src.scale = src === S.live ? nextScale(src.scale, previousK, scale, src.verification.prefix_end) : scale;
   src.frame = frameOf(trusted);
 }
 
@@ -231,7 +238,9 @@ async function pollLive() {
   // Drain: keep fetching while x-has-more is true (at most 16 pages a poll), then poll every 1 s from the last cursor.
   let outcome = "ok", added = 0;
   for (let pages = 0; pages < MAX_PAGES_PER_POLL; pages += 1) {
-    const response = await fetchPage(L.runId, pageRequest(L.paging));
+    const req = pageRequest(L.paging);
+    if (req === null) break;     // terminal: request() sends nothing more
+    const response = await fetchPage(L.runId, req);
     if (S.live !== L) return;   // the run was switched while this poll was out
     const result = await pageStep(L.paging, response, Date.now());
     if (S.live !== L) return;
@@ -243,9 +252,15 @@ async function pollLive() {
   L.connected = true;
   L.error = "";
   if (added) {
+    const anchor = !S.following && L.verification && S.cursor > 0 ? rowIdentity(L.verification, Math.min(S.cursor, L.verification.rows.length) - 1) : null;
     await verify(L);              // the whole stream, every time new rows arrive
     if (S.live !== L) return;
     if (S.following) S.cursor = L.verification.rows.length;
+    else if (anchor) {
+      // Paused: stay on the same envelope, even if a late row was sorted in before it.
+      const at = resolveRow(L.verification, anchor);
+      if (at >= 0) S.cursor = at + 1;
+    }
   }
   // The tracker is fed only valid pages (rule 5); a failed latest poll shows its reason through liveLabel().
   if (outcome === "ok") L.tracker.poll({ nowMs: Date.now(), ok: true, K: L.verification ? L.verification.prefix_end : 0, received: added });
@@ -305,13 +320,6 @@ function step(delta) {
 }
 
 // ── rendering ───────────────────────────────────────────────────────────────────────────────────────────────
-function heat(v, scale) {
-  const t = Math.max(0, Math.min(1, (v - scale.min) / ((scale.max - scale.min) || 1))) * (HEAT.length - 1);
-  const i = Math.min(HEAT.length - 2, Math.floor(t)), f = t - i, a = HEAT[i], b = HEAT[i + 1];
-  const c = [0, 1, 2].map((k) => Math.round(a[k] + (b[k] - a[k]) * f));
-  const lum = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
-  return { fill: `rgb(${c[0]},${c[1]},${c[2]})`, ink: lum > 0.5 ? "#0b1418" : "#f4f7f6" };
-}
 
 function render() {
   const src = active();
@@ -326,6 +334,7 @@ function render() {
   renderEvidence(v, view);
   renderFeed(v, n, view);
   renderOffline(src);
+  refreshDialogs();
 }
 
 function renderTop(src, v) {
@@ -477,7 +486,7 @@ function drawLayout(c, scale, frame) {
     const x = (r.x - f.x0) * U, y = (f.y1 - (r.y + r.h)) * U, w = r.w * U, hh = r.h * U;   // lower-left origin, y up
     const t = temps && Object.hasOwn(temps, r.id) ? temps[r.id] : null;
     const col = t !== null && scale ? heat(t, scale) : { fill: "#2c4049", ink: "#d3dee2" };
-    svg.append(s("rect", { x, y, width: w, height: hh, rx: 3, fill: col.fill, "fill-opacity": t === null ? 0.55 : faded ? 0.45 : 1,
+    svg.append(s("rect", { "data-chip": r.id, x, y, width: w, height: hh, rx: 3, fill: col.fill, "fill-opacity": t === null ? 0.55 : faded ? 0.45 : 1,
       stroke: r.layer > 0 ? "#dfe8e6" : t === null ? "#8fa5ad" : "#0a1317", "stroke-width": r.layer > 0 ? 2.5 : 2, "stroke-dasharray": r.layer > 0 ? "8 5" : null }));
     const label = r.layer > 0 ? `${r.id} L${r.layer}` : r.id;
     // Fit the id over the value on two lines, or both on one line for a short, wide chiplet: whichever is larger.
@@ -643,12 +652,29 @@ function kv(rows) {
   return h("div", { class: "kv" }, rows.map(([k, val]) => (k === "§" ? h("div", { class: "sect" }, val) : [h("div", { class: "k" }, k), h("div", { class: "v" }, val ?? "-")])));
 }
 const asText = (x) => (x === null || x === undefined ? "-" : typeof x === "string" ? x : JSON.stringify(x));
+// The inspector's subject is an envelope identity (event_id and stored hash), not a row index: a late row at an old
+// seq is sorted in before others and shifts every index after it.
 function inspect(i) {
   const v = active()?.verification;
   if (!v || !v.rows[i]) return;
   stop();
+  S.inspected = { source: S.source, id: rowIdentity(v, i) };
+  renderInspector();
+  $("inspector").showModal();
+}
+function renderInspector() {
+  const src = S.inspected.source === "api" ? S.live : S.file;
+  const v = src?.verification ?? null;
+  S.inspected.drawnFrom = v;
+  const i = v ? resolveRow(v, S.inspected.id) : -1;
+  if (i < 0) {
+    $("inspTitle").textContent = "Envelope no longer in view";
+    $("inspBody").replaceChildren(kv([["status", "The rows changed and this envelope no longer resolves. Close this and pick a row again."],
+      ["event_id", S.inspected.id.event_id ?? "unreadable"], ["hash (as stored)", S.inspected.id.hash ?? "unreadable"]]));
+    return;
+  }
   const env = v.ordered[i], row = v.rows[i], meta = v.meta[i];
-  const where = S.source === "api" ? `received line ${meta.index + 1}` : `line ${meta.index + 1} of the file`;
+  const where = S.inspected.source === "api" ? `received line ${meta.index + 1}` : `line ${meta.index + 1} of the file`;
   const rows = [
     ["status", `${row.status}${i < v.prefix ? " · in the projected prefix" : " · not projected"}`],
     ["reasons", row.reasons.length ? row.reasons.map((r) => `${r} (${reasonText(r)})`).join(", ") : "none"],
@@ -671,10 +697,14 @@ function inspect(i) {
   }
   $("inspTitle").textContent = `Envelope ${row.seq == null ? "?" : `seq ${row.seq}`} · ${row.status}`;
   $("inspBody").replaceChildren(kv(rows));
-  $("inspector").showModal();
 }
 function showChain() {
+  renderChain();
+  $("chainDlg").showModal();
+}
+function renderChain() {
   const src = active(), v = src?.verification;
+  S.chainFor = { v, paging: S.source === "api" ? S.live.paging : null, tracker: S.source === "api" ? S.live.tracker.state() : null };
   const rows = [["pins in this page", S.testMode ? `${S.pins.length} (TEST KEYS)` : `${S.pins.length}${S.pins.length ? "" : " (an empty list verifies nothing)"}`],
     ["key source", S.keyNote || "-"], ["run checked", src?.runId ? `${src.runId} (${src.runIdFrom === "file" ? "from the file you opened" : "requested by the page"})` : "-"]];
   if (S.source === "api") {
@@ -692,7 +722,23 @@ function showChain() {
       ["§", "reasons"], ...sum.reasons.map((r) => [r.code, `${reasonText(r.code)} · ${r.count} row${r.count > 1 ? "s" : ""} · first at seq ${r.firstSeq ?? "?"}`]));
   }
   $("chainBody").replaceChildren(kv(rows));
-  $("chainDlg").showModal();
+}
+// Called on every render: an open dialog is redrawn from the current data whenever what it shows has changed, so it
+// never contradicts the board behind it. Its scroll position is kept.
+function refreshDialogs() {
+  const keepScroll = (el, draw) => { const top = el.scrollTop; draw(); el.scrollTop = top; };
+  if ($("inspector").open && S.inspected) {
+    const src = S.inspected.source === "api" ? S.live : S.file;
+    if ((src?.verification ?? null) !== S.inspected.drawnFrom) keepScroll($("inspBody"), renderInspector);
+  }
+  if ($("chainDlg").open && S.chainFor) {
+    const src = active();
+    const live = S.source === "api";
+    const t = live ? S.live.tracker.state() : null;
+    const changed = (src?.verification ?? undefined) !== S.chainFor.v || (live && (S.live.paging !== S.chainFor.paging ||
+      t.K !== S.chainFor.tracker.K || t.last_poll_ok_ms !== S.chainFor.tracker.last_poll_ok_ms));
+    if (changed) keepScroll($("chainBody"), renderChain);
+  }
 }
 
 // ── wiring ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -717,6 +763,8 @@ $("feed").onkeydown = (e) => { if (e.key === "Enter") { const row = e.target.clo
 $("chain").onclick = showChain;
 $("inspClose").onclick = () => $("inspector").close();
 $("chainClose").onclick = () => $("chainDlg").close();
+$("inspector").addEventListener("close", () => { S.inspected = null; });
+$("chainDlg").addEventListener("close", () => { S.chainFor = null; });
 $("limitsLink").onclick = (e) => { e.preventDefault(); $("limits").showModal(); };
 $("limitsClose").onclick = () => $("limits").close();
 document.addEventListener("keydown", (e) => {

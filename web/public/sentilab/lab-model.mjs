@@ -125,6 +125,39 @@ export function colorScale(trusted) {
   return { min, max, unit: unit ?? "" };
 }
 
+// A live run's colour scale after a verification. While the verified prefix holds or grows, the scale only widens,
+// so colours already on screen never shift. When the prefix shrinks (a late conflict or break cut it back), the scale
+// is rebuilt from the prefix that remains, so no colour carries a value from the discarded suffix.
+export function nextScale(previous, previousK, scale, K) {
+  if (!previous || !scale || K < previousK) return scale;
+  return { min: Math.min(previous.min, scale.min), max: Math.max(previous.max, scale.max), unit: previous.unit || scale.unit };
+}
+
+// The chip colour for a centre temperature on a scale: a six-stop ramp, and a dark or light label to match.
+const HEAT = [[0x11, 0x2a, 0x48], [0x23, 0x6b, 0x91], [0x56, 0xb6, 0xba], [0xdf, 0xd3, 0x76], [0xec, 0x99, 0x4f], [0xe4, 0x51, 0x38]];
+export function heat(v, scale) {
+  const t = Math.max(0, Math.min(1, (v - scale.min) / ((scale.max - scale.min) || 1))) * (HEAT.length - 1);
+  const i = Math.min(HEAT.length - 2, Math.floor(t)), f = t - i, a = HEAT[i], b = HEAT[i + 1];
+  const c = [0, 1, 2].map((k) => Math.round(a[k] + (b[k] - a[k]) * f));
+  const lum = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
+  return { fill: `rgb(${c[0]},${c[1]},${c[2]})`, ink: lum > 0.5 ? "#0b1418" : "#f4f7f6" };
+}
+
+// A row's stable identity across re-verifications: its event_id and stored hash (a conflict shares an event_id or a
+// seq, never both with the same hash), plus its position in the input, which is stable because a live stream only
+// grows and a file doesn't change. Row indexes are not stable: a late row at an old seq is sorted in before them.
+export function rowIdentity(verification, i) {
+  return { event_id: verification.rows[i].event_id, hash: verification.meta[i].hash, index: verification.meta[i].index };
+}
+// The row index of an identity in a (newer) verification, or -1 if it no longer resolves. A row with a readable
+// event_id and hash is found by those; one without (an unreadable rejected line) by its input position.
+export function resolveRow(verification, id) {
+  if (id.event_id !== null && id.hash !== null) {
+    return verification.rows.findIndex((row, i) => row.event_id === id.event_id && verification.meta[i].hash === id.hash);
+  }
+  return verification.rows.findIndex((row, i) => verification.meta[i].index === id.index && row.event_id === id.event_id && verification.meta[i].hash === id.hash);
+}
+
 // One package frame per run, so every card is drawn at the same scale: the union of all geometry, from 0.
 export function frameOf(trusted) {
   let x1 = 0, y1 = 0, x0 = 0, y0 = 0, any = false;

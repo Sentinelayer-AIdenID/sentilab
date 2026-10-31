@@ -7,7 +7,7 @@
 //     every input check (V12), mode, hashing and canonical cases. It never canonicalizes, hashes or verifies input
 //     that failed the input checks (instrumented counters);
 //   - paging.mjs (the WebCrypto port of the v0.6 paging reference) gives the recorded trace for every v0.6 scenario,
-//     C1-C6 and C8-C11, and the same bytes-to-rows, cursor-hash and verification answers;
+//     C1-C6 and C8-C14, and the same bytes-to-rows, cursor-hash and verification answers;
 //   - the production pins hold only the service key (never a derivable test key), and the demo verifies only under TEST keys.
 // The originals are the repo's executable contracts in contracts/ (hashes checked below and in contracts/HASHES.txt).
 import { test } from "node:test";
@@ -26,7 +26,7 @@ import { canonical } from "../public/sentilab/canonical.mjs";
 import * as core from "../public/sentilab/view-core.mjs";
 import * as paging from "../public/sentilab/paging.mjs";
 import { VIEW_PINS } from "../public/sentilab/view-pins.js";
-import { buildView, feedRows, chainSummary, isDrill } from "../public/sentilab/lab-model.mjs";
+import { buildView, feedRows, chainSummary, isDrill, colorScale, nextScale, heat, rowIdentity, resolveRow } from "../public/sentilab/lab-model.mjs";
 import { testKey } from "./sentilab-keys.mjs";
 import { buildDemo, DEMO_PATH, DEMO_RUN } from "./make-sentilab-demo.mjs";
 
@@ -49,9 +49,9 @@ const PINNED = {
   "view-envelope-v0.5/VIEW-ENVELOPE.md": "7a92d88aca1e4911a5119dbdff15ad096922dc238a67349e087030d45ad53df6",
   "view-envelope-v0.5/view-envelope.mjs": "54b248236ff93e249c7638a0dbeb4533fc7d9f15915e9b1895d1709d348f1ea7",
   "view-envelope-v0.5/vectors-view.json": "6149b9b131be50e2f4affa6badfa832435a457a6fa306bf137585608dbe54d88",
-  "view-envelope-v0.6/VIEW-ENVELOPE.md": "933868490e7f3cc3598f9e0266b65eedf75a00331e33604b5e8a08a0ee941bfe",
-  "view-envelope-v0.6/paging.mjs": "39247b6da066c2330962e2e5f279bd14a3a4a4b1986c482f4a136954f04dc343",
-  "view-envelope-v0.6/vectors-paging.json": "5dcc2a6eb55b55b1588da19478f603be9b24e74393c36c51666b3a6c474f1cc2",
+  "view-envelope-v0.6/VIEW-ENVELOPE.md": "afab6f10c9eba6da5049368780bfea0f6adacdf19a370d983029fcbd4e0a5106",
+  "view-envelope-v0.6/paging.mjs": "7e875920117e5a34b49ba37d33028b8577a018d5c72ed847959d929f72cd16b7",
+  "view-envelope-v0.6/vectors-paging.json": "2f70c22799edaca88b8399bbc8fa084e81dbd8ac5f1ad68a546b86506ea6302b",
 };
 test("the contract files are the hashed originals", () => {
   for (const [path, want] of Object.entries(PINNED)) assert.equal(sha(contract(...path.split("/"))), want, path);
@@ -560,6 +560,12 @@ const lenient = (bytes) => new TextDecoder("utf-8", { fatal: false, ignoreBOM: t
 const splitRowsOf = (buffer) => paging.splitRows(new Uint8Array(buffer));
 const rawHash = (rows) => createHash("sha256").update(Buffer.concat(rows.flatMap((row) => [Buffer.from(row), Buffer.from([0x0a])]))).digest("hex");
 const LOGS = pagingFile.logs;
+// The runner's C14 log files: complete rows, each with its LF, then an optional tail that has no LF yet.
+const FILES = {
+  "c14v-tail": { rows: expand(LOGS.v1).slice(0, 5), tail: "v1-06" },
+  "c14v-done": { rows: expand(LOGS.v1).slice(0, 6), tail: null },
+};
+const fileBytesOf = (spec) => Buffer.concat([refPaging.joinRows(spec.rows.map(bytesOf)), spec.tail ? bytesOf(spec.tail) : new Uint8Array(0)]);
 function legacyRows(logName, after) {
   return expand(LOGS[logName]).filter((rowId) => {
     try { return JSON.parse(lenient(bytesOf(rowId))).event.seq > after; } catch { return false; }
@@ -573,6 +579,12 @@ function serve(server, req) {
       return { response: { status: 200, headers: {}, bodyBytes: refPaging.joinRows(ids.map(bytesOf)) }, bodyIds: ids };
     }
     return { response: { status: server.status, headers: {}, bodyBytes: new Uint8Array(0) }, bodyIds: [] };
+  }
+  if (server.file) {
+    const spec = FILES[server.file];
+    const response = refPaging.servePage(refPaging.logRowsFromFile(new Uint8Array(fileBytesOf(spec))), req);
+    const ids = [...spec.rows, ...(spec.tail ? [spec.tail] : [])];
+    return { response, bodyIds: response.status === 200 ? ids.slice(req.cursor, Number(response.headers["x-next-cursor"])) : [] };
   }
   if (server.page) {
     const before = expand(LOGS[server.page.log]);
@@ -595,6 +607,7 @@ function serve(server, req) {
       response.bodyBytes = refPaging.joinRows(bodyIds.map(bytesOf));
     }
   }
+  if (server.strip_final_lf && response.bodyBytes.length > 0) response.bodyBytes = response.bodyBytes.subarray(0, response.bodyBytes.length - 1);
   return { response, bodyIds };
 }
 const summary = (state) => ({ cursor: state.cursor, rows: state.rows.length, cursor_hash: state.cursor_hash, has_more: state.has_more, last_ok_ms: state.last_ok_ms, failure: state.failure, degraded: state.degraded });
@@ -608,6 +621,7 @@ async function runScenarioBrowser(spec) {
     const fetches = [];
     for (let n = 0; n < 16; n += 1) {
       const req = paging.request(state);
+      if (req === null) break;   // terminal: no request
       const { response, bodyIds } = serve(poll.server, req);
       const before = state;
       const result = await paging.step(state, response, nowMs);
@@ -615,7 +629,7 @@ async function runScenarioBrowser(spec) {
       transitions.push({ before, after: state, req, outcome: result.outcome });
       if (result.outcome === "ok") tracker.poll({ nowMs, ok: true, K: (await paging.verifyRows(state, PAGING_OPTIONS)).K, received: result.newRows.length });
       else tracker.poll({ nowMs, ok: false });
-      fetches.push({ request: req, response: response && { status: response.status, headers: response.headers, body_rows: runLengths(bodyIds) }, outcome: result.outcome, new_rows: result.newRows.length });
+      fetches.push({ request: req, response: response && { status: response.status, headers: response.headers, body_bytes: response.bodyBytes.length, body_rows: runLengths(bodyIds) }, outcome: result.outcome, new_rows: result.newRows.length });
       if (result.outcome !== "ok" || !state.has_more) break;
     }
     const { verification, K } = await paging.verifyRows(state, PAGING_OPTIONS);
@@ -686,6 +700,7 @@ for (const spec of pagingFile.scenarios) {
       if (outcome !== "ok") assert.ok(after.rows === before.rows && after.cursor === before.cursor && after.cursor_hash === before.cursor_hash, "a failed poll keeps nothing");
       assert.equal(after.cursor, after.rows.length);
       assert.deepEqual(Object.keys(req).sort(), before.cursor > 0 ? ["cursor", "cursor_hash", "limit"] : ["cursor", "limit"], "cursor_hash with every cursor above 0; never a seq parameter");
+      if (after.degraded) assert.equal(paging.request(after), null, "terminal: no further request");
       if (before.cursor > 0) assert.equal(req.cursor_hash, rawHash(before.rows));
     }
     // The full verification of the rows held equals the reference's over the same raw rows.
@@ -712,6 +727,52 @@ test("C11 on the bundled demo: K 44, then a late signed seq 10 one second later 
   assert.equal(await poll([...rows, late], BASE_MS + 1000), 9);
   assert.equal(paging.liveLabel(state, tracker, BASE_MS + 1000, 9), "STALE · chain broken");
   assert.equal(refPaging.liveLabel(state, tracker, BASE_MS + 1000, 9), "STALE · chain broken", "the reference label agrees");
+});
+
+test("v0.6 (amended): a replay file's last line may lack its LF and still counts as a row, as in the reference", async () => {
+  const full = refPaging.joinRows(expand(LOGS.v1).map(bytesOf));
+  const mine = await paging.verifyReplayBytes(full.subarray(0, full.length - 1), PAGING_OPTIONS);
+  assert.ok(mine.ok && mine.verification.rows.length === 11 && mine.verification.prefix_end === 11);
+  assert.ok(same(refFields(mine.verification), refPaging.verifyReplayBytes(full.subarray(0, full.length - 1), REF_PAGING_OPTIONS).verification));
+});
+
+// ── retained UI state across a K drop (review #56333): the colour scale and row identity ──────────────────────────
+async function demoWithLateConflict() {
+  const rows = splitRowsOf(readFileSync(DEMO_PATH));
+  const { hash, sig, ...seq10 } = JSON.parse(lenient(rows[9]));
+  const late = enc(JSON.stringify(ref.signEnvelope({ ...seq10, ts: new Date(Date.parse(seq10.ts) + 500).toISOString() }, testKey("core").privateKey, sig.key_id)));
+  const options = { runId: DEMO_RUN.run_id, pins: testPins, keys: testKeys };
+  return { before: await paging.verifyBytes(rows, options), after: await paging.verifyBytes([...rows, late], options) };
+}
+const trustedOf = (v) => v.ordered.slice(0, v.prefix);
+test("colour scale: widen-only while the prefix grows; rebuilt from what remains when it shrinks (44 -> 9: 65-100 -> 70-100)", async () => {
+  const { before, after } = await demoWithLateConflict();
+  const at44 = colorScale(trustedOf(before));
+  const at9 = colorScale(trustedOf(after));
+  assert.deepEqual([before.prefix_end, after.prefix_end], [44, 9]);
+  assert.deepEqual([at44.min, at44.max, at9.min, at9.max], [65, 100, 70, 100]);
+  const shrunk = nextScale(at44, 44, at9, 9);
+  assert.deepEqual([shrunk.min, shrunk.max], [70, 100], "K fell: rebuilt from the remaining prefix");
+  const grown = nextScale(at9, 9, at44, 44);
+  assert.deepEqual([grown.min, grown.max], [65, 100], "K grew: widened");
+  const held = nextScale({ min: 60, max: 100, unit: "°C" }, 44, at44, 44);
+  assert.deepEqual([held.min, held.max], [60, 100], "K held: never narrowed");
+  // The 71.2 °C chip (meas-init's IO0) is coloured from the rebuilt scale, not the one with the discarded suffix in it.
+  assert.notEqual(heat(71.2, shrunk).fill, heat(71.2, at44).fill);
+  assert.equal(heat(71.2, shrunk).fill, heat(71.2, { min: 70, max: 100 }).fill);
+});
+test("row identity: an envelope resolves to its new row after a late row is sorted in before it; a gone one resolves to -1", async () => {
+  const { before, after } = await demoWithLateConflict();
+  const i32 = before.rows.findIndex((row) => row.seq === 32);
+  const id = rowIdentity(before, i32);
+  const j = resolveRow(after, id);
+  assert.notEqual(j, i32, "the row index moved (a second seq 10 was sorted in)");
+  assert.deepEqual([after.rows[j].seq, after.rows[j].event_id, after.meta[j].hash], [32, before.rows[i32].event_id, before.meta[i32].hash]);
+  assert.deepEqual([before.rows[i32].projected, after.rows[j].projected, after.rows[j].status], [true, false, "verified"], "seq 32 is still verified, but no longer projected");
+  // Two rows at seq 10 share the seq and event_id but not the hash: each resolves to itself.
+  const tens = after.rows.map((row, i) => [row, i]).filter(([row]) => row.seq === 10).map(([, i]) => i);
+  assert.deepEqual(tens.map((i) => resolveRow(after, rowIdentity(after, i))), tens);
+  assert.equal(resolveRow(after, { event_id: "demo-e99", hash: "0".repeat(64), index: 99 }), -1);
 });
 
 // ── mode, hashing ─────────────────────────────────────────────────────────────────────────────────────────────
