@@ -74,7 +74,7 @@ async def _run_cheap_lane(initial, oracle, lane_id: str, seed: int, evaluations:
     lane_started_at = time.perf_counter()
     rng = random.Random(seed)
     agent_id = f"{run_id}:{lane_id}"
-    key = Ed25519PrivateKey.generate()
+    identity = Ed25519PrivateKey.generate()
     controller = Controller(
         initial, oracle, run_id=f"{run_id}:{lane_id}",
         max_oracle_calls=evaluations,
@@ -82,7 +82,7 @@ async def _run_cheap_lane(initial, oracle, lane_id: str, seed: int, evaluations:
         evaluation_ceiling_microdollars=1,
         max_attempts=1, lane_ids=(lane_id,), minimum_improvement_c=0.05,
     )
-    controller.register(agent_id, key)
+    controller.register(agent_id, identity)
     controller.bind_lane(lane_id, agent_id)
     await controller.initialize(shared_initial_designs=shared_designs[1:])
 
@@ -143,7 +143,7 @@ async def _run_cheap_lane(initial, oracle, lane_id: str, seed: int, evaluations:
                               state=state, parent_hash=parent.hash, candidate_hash=candidate.hash,
                               noop=is_noop)
         task_id = controller.mint_task(agent_id)
-        proposal = controller.proposal(agent_id, key, task_id, operation, args,
+        proposal = controller.proposal(agent_id, identity, task_id, operation, args,
                                       model_id=f"slab039-{lane_id}", lane_id=lane_id,
                                       parent_hash=parent.hash,
                                       tool_hash=controller.problem_contract_hash)
@@ -211,7 +211,7 @@ async def _run_long_sa(initial, oracle, seed: int, max_evaluations: int,
     lane_started_at = time.perf_counter()
     rng = random.Random(seed)
     agent_id = f"{run_id}:long-sa"
-    key = Ed25519PrivateKey.generate()
+    identity = Ed25519PrivateKey.generate()
     controller = Controller(
         initial, oracle, run_id=f"{run_id}:long-sa",
         max_oracle_calls=max_evaluations,
@@ -219,7 +219,7 @@ async def _run_long_sa(initial, oracle, seed: int, max_evaluations: int,
         evaluation_ceiling_microdollars=1,
         max_attempts=1, lane_ids=("simulated_annealing",), minimum_improvement_c=0.05,
     )
-    controller.register(agent_id, key)
+    controller.register(agent_id, identity)
     controller.bind_lane("simulated_annealing", agent_id)
     await controller.initialize(shared_initial_designs=shared_designs[1:])
 
@@ -263,7 +263,7 @@ async def _run_long_sa(initial, oracle, seed: int, max_evaluations: int,
                               reason="long SA proposal", state=state,
                               parent_hash=parent.hash, candidate_hash=candidate.hash, noop=is_noop)
         task_id = controller.mint_task(agent_id)
-        proposal = controller.proposal(agent_id, key, task_id, operation, args,
+        proposal = controller.proposal(agent_id, identity, task_id, operation, args,
                                       model_id="slab039-long-sa", lane_id="simulated_annealing",
                                       parent_hash=parent.hash,
                                       tool_hash=controller.problem_contract_hash)
