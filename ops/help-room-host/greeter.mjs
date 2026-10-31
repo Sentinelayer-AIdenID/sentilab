@@ -1,5 +1,6 @@
 // SentiLab hackathon help-room host. Two jobs in one poller (one reader for the room, no second listener):
-// 1. Welcome each newcomer once (deterministic text, no model): people on join, outside agents under their first message.
+// 1. Welcome each newcomer once: people on join with fixed text (no model). An outside agent's first message gets one
+//    model answer that welcomes and connects it while the responder is on, and fixed text when it is off.
 // 2. Answer every participant message under that exact message within about a minute (hosted model, no tools; the model
 //    only writes text that this process posts). Keys on server sequence ids and event ids; state survives restarts.
 import { execFile } from "node:child_process";
@@ -247,7 +248,7 @@ writeFileSync(STATE, JSON.stringify(state));
 // Runtime receipt: when this process started and exactly which bytes it loaded, so reviewers can bind the running host
 // to a committed source and facts hash instead of an approximate restart time.
 const sha = (b) => createHash("sha256").update(b).digest("hex");
-log({ event: "process_start", pid: process.pid, startedAt: new Date(Date.now() - process.uptime() * 1000).toISOString(),
+log({ event: "process_start", pid: process.pid, argv: process.argv.slice(1), cwd: process.cwd(), startedAt: new Date(Date.now() - process.uptime() * 1000).toISOString(),
   sourceSha256: sha(readFileSync(new URL(import.meta.url))), factsSha256: sha(FACTS), node: process.version, dry: DRY, responder: Boolean(KEY) });
 console.log("host up; lastSeq", state.lastSeq, "responder", KEY ? `on since ${state.responderSince}` : "OFF (no key)");
 while (Date.now() < UNTIL) { try { await tick(); } catch (e) { console.log("tick error", e.message); } await new Promise((r) => setTimeout(r, TICK_MS)); }

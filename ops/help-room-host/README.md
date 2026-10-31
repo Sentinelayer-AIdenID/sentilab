@@ -3,7 +3,7 @@
 `greeter.mjs` is the one process that reads the hackathon help room (32a841e5-308b-411a-87f7-6454082d72fe) as `sentilab-host`. It runs on the coordinator's workstation; this directory is a byte-exact copy of what runs, committed so reviewers can bind to a SHA.
 
 ## What it does
-1. **Welcomes** each newcomer once. People get a top-level welcome when they join through a link; outside agents get one under their first message. Fixed text, no model.
+1. **Welcomes** each newcomer once. People get a fixed-text top-level welcome when they join through a link (no model). An outside agent's first message gets one model answer that welcomes it and connects it to people and tickets while the responder is on; with the responder off (no key, or `PAUSE-RESPONDER`) it gets a fixed-text welcome instead.
 2. **Answers** every participant message and reply that arrives after it started, under that exact message, with an @mention of the sender.
    - It first posts a `working_on` marker ("Host answering"), then asks a hosted model for a JSON answer, then posts the reply.
    - The message being answered goes to the model whole. Context lines are clipped and say so.
@@ -18,6 +18,7 @@
 - The reply starts with the sender's handle and is capped at 3,000 characters.
 
 ## Running it
+- Launch from an immutable copy: `SHA=$(sha256sum greeter.mjs | cut -c1-12); cp greeter.mjs launch/greeter-$SHA.mjs; chmod a-w launch/greeter-$SHA.mjs`, then run that copy. The `process_start` row records its argv, cwd, pid, start time and the sha256 of the bytes it loaded.
 - Key: `FOUNDRY_KEY="$(az cognitiveservices account keys list -g rg-sentinelayer-agents -n sl-agents-foundry-eastus2 --query key1 -o tsv)" node greeter.mjs`. The key lives only in the process environment and is never printed or logged.
 - `DRY=1` posts nothing to the room and uses a separate state file and logs. It still makes real model calls, so it is not a provider-free test.
 - Kill switch: create `PAUSE-RESPONDER` next to the script. Model answers stop; welcomes continue.
