@@ -20,7 +20,7 @@ import {
 } from "./lab-model.mjs";
 // Temperatures are labelled by the one rule (temperature-label.mjs) from the evaluator identity of the measurement each
 // came from, for replays and the live feed alike. The numbers stay as recorded; the page says so above the panels.
-import { labelFor, labelForAll, evaluatorIds, envelopeEvaluator, needsNotice, NOTICE } from "../temperature-label.mjs";
+import { labelFor, labelForAll, evaluatorIds, envelopeEvaluator, scaleIdentities, sourceTags, needsNotice, NOTICE } from "../temperature-label.mjs";
 
 const DEMO = { url: "demo-run.jsonl", runId: "demo-8c-0001", label: "demo-run.jsonl · bundled interface fixture" };
 const TEST_KEY_NAMES = ["core"];                 // ?pins=test: the vectors' "core" test key, derived here at run time
@@ -133,11 +133,11 @@ async function verify(src) {
   // and is rebuilt from what remains when the prefix shrinks (nextScale).
   const widened = src === S.live && src.scale && scale && src.verification.prefix_end >= previousK;
   src.scale = src === S.live ? nextScale(src.scale, previousK, scale, src.verification.prefix_end) : scale;
-  // Identities for the labels: node id -> identity, and every one behind the colour scale (colorScale's inputs; a
-  // widened live scale keeps the ones it was widened from).
-  src.ids = evaluatorIds(trusted);
-  const scaleIds = trusted.filter((env) => isObj(env.values) && isObj(env.values.center_temps)).map((env) => envelopeEvaluator(env, src.ids));
-  src.scaleIds = widened ? [...(src.scaleIds ?? []), ...scaleIds] : scaleIds;
+  // Identities for the labels: node id -> identity from the create the projector applied (a rejected create lends none),
+  // and the set behind the colour scale (colorScale's inputs; a widened live scale keeps the identities it was widened
+  // from). A set, rebuilt per verification: it never grows with rows or polls.
+  src.ids = evaluatorIds(trusted, src.verification.projection?.rejected);
+  src.scaleIds = scaleIdentities(trusted, src.ids, widened ? src.scaleIds : null);
   src.frame = frameOf(trusted);
   // The run's layout span, labelled exactly as the Package view labels it (scene.mjs: one definition, one label).
   src.span = spanText(layoutSpan(trusted));
@@ -289,7 +289,7 @@ function step(delta) {
 
 // Temperature labels (temperature-label.mjs): a withdrawn or unvalidated number is marked (dotted underline, the full
 // sentence on hover) and its qualifier sits beside it or its column. The number itself is never changed.
-const tq = (label) => h("span", { class: `tq ${label.state}`, title: label.title }, label.short);
+const tq = (label, text = label.short) => h("span", { class: `tq ${label.state}`, title: label.title }, text);
 const jLabel = (src, c) => labelFor(src?.ids?.get(c.metric?.id));   // J comes from the measurement metricFor() picked
 
 function render() {
@@ -433,11 +433,11 @@ function renderCards(src, v, view) {
 }
 
 function cardEl(c, scale, frame, onBoard, draw = true, from = null) {
-  // Labels: J by the measurement it came from, the centre temperatures by theirs (they can differ); the card's
-  // qualifier covers both.
+  // Labels: J by the measurement it came from, the centre temperatures by theirs. They can differ, and each keeps its
+  // own label (sourceTags): never merged under one.
   const jl = c.J ? jLabel(from, c) : null;
   const tl = c.source?.temps ? labelFor(from?.ids?.get(c.source.id)) : null;
-  const cl = jl || tl ? labelForAll([...(jl ? [from?.ids?.get(c.metric?.id)] : []), ...(tl ? [from?.ids?.get(c.source.id)] : [])]) : null;
+  const tags = sourceTags(jl, tl);
   const [, kind] = stageOf(c.lifecycle);
   const chip = c.kind === "candidate" ? h("span", { class: `chip ${kind}` }, c.lifecycle) : h("span", { class: `chip v-${c.validity}` }, c.validity);
   const el = h("div", { class: `card${onBoard ? " board" : ""}${draw ? "" : " compact"}`, style: `--lab:${c.color}` },
@@ -458,8 +458,9 @@ function cardEl(c, scale, frame, onBoard, draw = true, from = null) {
       c.J ? h("span", { class: `q-${jl.state}` }, `${fmt(c.J.value)} ${c.J.unit}`) : "-"),
     c.W ? h("span", { class: "src", title: `W ${c.W.metric_id}` }, `W ${fmt(c.W.value)} ${c.W.metric_id}`) : null));
   // The qualifier opens the line under J, so the card keeps its J, W and provenance where they were.
-  el.append(h("div", { class: "cf", style: "padding-top:0" }, cl ? tq(cl) : null,
-    h("span", { class: `src${alt ? " alt" : ""}`, style: "margin-left:0;text-align:left", title: `${c.id} · ${note}${cl ? ` · ${cl.title}` : ""}` }, `${shortId(c.id)} · ${note}`),
+  // Two different qualifiers (J's and the temperatures') may not fit beside the provenance: that line wraps, never clips.
+  el.append(h("div", { class: `cf${tags.length > 1 ? " wrap" : ""}`, style: "padding-top:0" }, tags.map((t) => tq(t.label, t.text)),
+    h("span", { class: `src${alt ? " alt" : ""}`, style: "margin-left:0;text-align:left", title: [`${c.id} · ${note}`, ...tags.map((t) => `${t.text}: ${t.label.title}`)].join(" · ") }, `${shortId(c.id)} · ${note}`),
     onBoard ? h("span", { class: "chip won", style: "margin-left:auto" }, "BOARD") : null));
   return el;
 }

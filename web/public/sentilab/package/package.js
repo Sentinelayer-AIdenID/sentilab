@@ -10,7 +10,7 @@ import { reconcile } from "./playhead.mjs";
 import { drawPackage, TrackAnimation, HOME_AZIMUTH, ORBIT_MS, easeInOut } from "./render.mjs";
 // Temperatures are labelled by the one rule (temperature-label.mjs) from the evaluator identity of the measurement each
 // came from, for replays and the live feed alike. The numbers stay as recorded; the page says so above the stage.
-import { labelFor, labelForAll, evaluatorIds, envelopeEvaluator, needsNotice, NOTICE } from "../../temperature-label.mjs";
+import { labelFor, labelForAll, evaluatorIds, scaleIdentities, needsNotice, NOTICE } from "../../temperature-label.mjs";
 
 const params = new URLSearchParams(location.search);
 const $ = (id) => document.getElementById(id);
@@ -192,11 +192,11 @@ function adoptVerification(src, verification, { active: isActive, following, fre
   }, verification);
   src.verification = verification;
   src.frame = r.frame;
-  // Identities for the labels: node id -> identity, and every centre temperature behind the frame's scale (the frame
-  // only widens over a prefix that extends the old one, so the current prefix covers every value behind it).
-  src.ids = evaluatorIds(verification.prefixEnvelopes);
-  src.scaleIds = verification.prefixEnvelopes.filter((env) => env?.event?.type === "node.create" && env.event.body?.kind === "measurement" &&
-    env.values !== null && typeof env.values === "object" && env.values.center_temps !== undefined).map((env) => envelopeEvaluator(env, src.ids));
+  // Identities for the labels: node id -> identity from the create the projector applied (a rejected create lends none),
+  // and the set behind the frame's scale (the frame only widens over a prefix that extends the old one, so the current
+  // prefix covers every value behind it). A set, rebuilt per verification.
+  src.ids = evaluatorIds(verification.prefixEnvelopes, verification.projection?.rejected);
+  src.scaleIds = scaleIdentities(verification.prefixEnvelopes, src.ids);
   src.fullScene = sceneAt(r.prefix, verification.prefixCount, r.frame);
   S.gen += 1;
   if (!isActive) return;
