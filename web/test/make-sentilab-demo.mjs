@@ -1,6 +1,7 @@
-// Builds web/public/sentilab/demo-run.jsonl, the Lab view's bundled replay, with the reference makeChain() and the
-// "core" TEST key (web/test/sentilab-keys.mjs). Deterministic: fixed ids and timestamps, and Ed25519 signatures
-// are deterministic, so a rerun is byte-identical.
+// Builds web/public/sentilab/demo-run.jsonl, the Lab view's bundled replay, with the VIEW ENVELOPE v0.5 reference
+// makeChain() (so every entry passes the core's input checks and append rules before it is signed) and the "core" TEST
+// key (web/test/sentilab-keys.mjs). Deterministic: fixed ids and timestamps, and Ed25519 signatures are
+// deterministic, so a rerun is byte-identical.
 //   node web/test/make-sentilab-demo.mjs          write the file
 //   node web/test/make-sentilab-demo.mjs --check  exit 1 if the committed file differs from a fresh build
 //
@@ -11,7 +12,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { makeChain } from "../../contracts/view-envelope/view-envelope.mjs";
+import { makeChain } from "../../contracts/view-envelope-v0.5/view-envelope.mjs";
 import { testKey } from "./sentilab-keys.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
