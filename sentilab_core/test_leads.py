@@ -1,5 +1,7 @@
 """SLAB-044: exercise shipped isolation/admission paths with zero model spend."""
+import asyncio
 import unittest
+from unittest.mock import patch
 
 from sentilab_core.leads import (
     AdmissionRecord, DeterministicJudge, DeterministicLead, IsolatedLabs,
@@ -25,8 +27,24 @@ class LeadTests(unittest.IsolatedAsyncioTestCase):
         admission = StandInAdmission()
         labs = fleet(admission)
         records = []
-        proposal = await labs.propose("openai", RUN, INITIAL, [], 0, sink=records.append)
-        review = await labs.review("openai", RUN, proposal.message, [], "a" * 64, 0, sink=records.append)
+        propose, review_call = DeterministicLead.propose, DeterministicJudge.review
+
+        async def checked_propose(adapter, context):
+            self.assertEqual(admission.checks, [adapter.model_id])
+            self.assertEqual(admission.charges, [(adapter.model_id, 0.0)])
+            self.assertEqual(records[-1]["status"], "reserved")
+            return await propose(adapter, context)
+
+        async def checked_review(adapter, candidate, evidence):
+            self.assertEqual(admission.checks[-1], adapter.model_id)
+            self.assertEqual(admission.charges[-1], (adapter.model_id, 0.0))
+            self.assertEqual(records[-1]["status"], "reserved")
+            return await review_call(adapter, candidate, evidence)
+
+        with patch.object(DeterministicLead, "propose", checked_propose), \
+                patch.object(DeterministicJudge, "review", checked_review):
+            proposal = await labs.propose("openai", RUN, INITIAL, [], 0, sink=records.append)
+            review = await labs.review("openai", RUN, proposal.message, [], "a" * 64, 0, sink=records.append)
         self.assertEqual(len(admission.checks), 2)
         self.assertEqual(admission.charges, [(DeterministicLead.model_id, 0.0),
                                              (DeterministicJudge.model_id, 0.0)])
@@ -46,13 +64,19 @@ class LeadTests(unittest.IsolatedAsyncioTestCase):
                 raise OverCap("exhausted")
         for admission, reason in ((Denied(), "not_admitted"), (Capped(), "over_cap")):
             labs, records = fleet(admission), []
-            result = await labs.propose("openai", RUN, INITIAL, [], 0, sink=records.append)
-            self.assertIsNone(result.message)
-            self.assertEqual(result.reason, reason)
-            again = await labs.propose("openai", RUN, INITIAL, records, 0, sink=records.append)
-            self.assertIsNone(again.message)
-            self.assertEqual(again.reason, "already_attempted")
-            self.assertFalse(any(r["status"] == "completed" for r in records))
+            for operation in ("propose", "review"):
+                async def invoke():
+                    if operation == "propose":
+                        return await labs.propose("openai", RUN, INITIAL, records, 0, sink=records.append)
+                    return await labs.review("openai", RUN, INITIAL, [], "a" * 64, 0,
+                                             records=records, sink=records.append)
+                result = await invoke()
+                self.assertIsNone(result.message)
+                self.assertEqual(result.reason, reason)
+                again = await invoke()
+                self.assertIsNone(again.message)
+                self.assertEqual(again.reason, "already_attempted")
+                self.assertFalse(any(r["status"] == "completed" for r in records))
 
     async def test_context_memory_and_outputs_are_isolated_and_repeatable(self):
         own = {"node": "own", "lane": "openai", "design": INITIAL, "index": 1}
@@ -112,6 +136,59 @@ class LeadTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ValueError):
             Readiness(missing_data_policy="retry")
         self.assertNotEqual(fleet().describe(), fleet(call_limit=1).describe())
+
+    async def test_judge_schema_refuses_acceptance_and_wrong_evidence_bindings(self):
+        normal = await fleet().review("openai", RUN, INITIAL, [], "a" * 64, 0)
+        for change in ({"verdict": "accepted"}, {"accepted": True}, {"target_hash": "b" * 64},
+                       {"lab_id": "kimi"}, {"judge_role": "constraint_auditor"}):
+            with patch.object(DeterministicJudge, "review", return_value={**normal.message, **change}):
+                result = await fleet().review("openai", RUN, INITIAL, [], "a" * 64, 0)
+            self.assertIsNone(result.message)
+            self.assertEqual(result.reason, "invalid_response")
+
+    async def test_timeout_cancellation_and_errors_retain_consumed_calls(self):
+        for failure in ("timeout", "cancelled", "provider_error"):
+            labs, records, entered = fleet(timeout=0.01), [], asyncio.Event()
+
+            async def fail(adapter, context):
+                entered.set()
+                if failure == "provider_error":
+                    raise RuntimeError("fixture failure")
+                await asyncio.Event().wait()
+
+            with patch.object(DeterministicLead, "propose", fail):
+                task = asyncio.create_task(labs.propose("openai", RUN, INITIAL, [], 0, sink=records.append))
+                await entered.wait()
+                if failure == "cancelled":
+                    task.cancel()
+                    with self.assertRaises(asyncio.CancelledError):
+                        await task
+                else:
+                    self.assertEqual((await task).reason, failure)
+            self.assertEqual(records[-1]["reason"], failure)
+            self.assertEqual(labs.admission.charges, [(DeterministicLead.model_id, 0.0)])
+            retry = await fleet().propose("openai", RUN, INITIAL, records, 0)
+            self.assertEqual(retry.reason, "already_attempted")
+
+    async def test_stand_in_rubric_abstains_or_reports_reproduction_concerns(self):
+        matching = {"binding": {"candidate_id": "fixture"}, "success": True, "j": 50.0}
+        for evidence, verdict in (([], "abstain"), ([matching, matching], "no_concern"),
+                                  ([matching, {**matching, "j": 51}], "concern"),
+                                  ([matching, {**matching, "success": False}], "concern"),
+                                  ([matching, {**matching, "binding": {}}], "concern")):
+            result = await fleet().review("openai", RUN, INITIAL, evidence, "a" * 64, 0)
+            self.assertEqual(result.message["verdict"], verdict)
+
+    def test_spending_stub_rejects_unknown_models_and_every_nonzero_or_invalid_charge(self):
+        admission = StandInAdmission()
+        with self.assertRaises(NotAdmitted):
+            admission.check("unadmitted-provider")
+        with self.assertRaises(NotAdmitted):
+            admission.meter("unadmitted-provider", 0)
+        for amount in (0.01, -0.01, True, float("inf"), float("nan"), "0"):
+            with self.assertRaises(OverCap):
+                admission.meter(DeterministicLead.model_id, amount)
+        self.assertEqual(admission.charges, [])
 
 
 if __name__ == "__main__":
