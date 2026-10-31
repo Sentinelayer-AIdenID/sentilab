@@ -242,19 +242,43 @@ function signedFacts(events) {
   const samples = baseline && Array.isArray(baseline.payload.shared_initial_samples)
     ? baseline.payload.shared_initial_samples.map((s) => (s && typeof s.design_hash === "string" ? s.design_hash : "?")).sort()
     : null;
-  const temps = [];
-  const take = (v) => { const n = num(v); if (typeof n === "number" && Number.isFinite(n)) temps.push(n); };
+  // bestIds: the evaluator identity behind every temperature the best is taken from, in record order. The page labels
+  // the best by all of them (temperature-label.mjs, the most cautious state wins).
+  const temps = [], bestIds = [];
+  const solverOf = (thermal) => (thermal && typeof thermal === "object" && typeof thermal.solver_version === "string" ? thermal.solver_version : undefined);
+  const take = (v, ids) => { const n = num(v); if (typeof n === "number" && Number.isFinite(n)) { temps.push(n); bestIds.push(...ids); } };
   if (baseline) {
-    take(baseline.payload.thermal && baseline.payload.thermal.maximum_temperature_c);
-    for (const sample of baseline.payload.shared_initial_samples || []) take(sample && sample.thermal && sample.thermal.maximum_temperature_c);
+    take(baseline.payload.thermal && baseline.payload.thermal.maximum_temperature_c, [solverOf(baseline.payload.thermal)]);
+    for (const sample of baseline.payload.shared_initial_samples || []) take(sample && sample.thermal && sample.thermal.maximum_temperature_c, [solverOf(sample && sample.thermal)]);
   }
-  for (const e of events) if (e.event === "proposal_committed") take(e.payload.temperature_c);
+  // A committed temperature carries the identity of the oracle result it reports: one EARLIER in the record with the same
+  // proposal id, the same candidate hash and the same finite temperature, joined by event order and exact match. No such
+  // result: it names none (unvalidated). Several that name different evaluators: unvalidated, plus every one of them (the
+  // most cautious wins). A later result never relabels an earlier commitment.
+  const measured = [];
+  for (const e of events) {
+    if (e.event === "oracle_result") {
+      measured.push({ proposal: e.payload.proposal_id, candidate: e.payload.candidate_hash,
+        temp: num(e.payload.thermal && e.payload.thermal.maximum_temperature_c), id: solverOf(e.payload.thermal) });
+    } else if (e.event === "proposal_committed") {
+      const t = num(e.payload.temperature_c);
+      // The join needs a named proposal and a named candidate: an empty id is a missing one, never provenance. Each is a
+      // non-empty string on the commitment and, being equal, the same string on the result.
+      const p = e.payload.proposal_id, c = e.payload.candidate_hash;
+      const reports = (m) => typeof p === "string" && p !== "" && m.proposal === p &&
+        typeof c === "string" && c !== "" && m.candidate === c &&
+        typeof t === "number" && Number.isFinite(t) && m.temp === t;
+      const ids = [...new Set(measured.filter(reports).map((m) => m.id))];
+      take(e.payload.temperature_c, ids.length === 1 ? ids : [undefined, ...ids]);
+    }
+  }
   return {
     evaluations,
     pool: samples ? samples.join(",") : null,
     laneId: bound && typeof bound.payload.lane_id === "string" ? bound.payload.lane_id : null,
     agentId: bound && typeof bound.payload.agent_id === "string" ? bound.payload.agent_id : null,
     best: temps.length ? Math.min(...temps) : null,
+    bestIds,
   };
 }
 
@@ -277,12 +301,12 @@ export async function verifyDocument(text, pins = PINNED_SERVICE_KEYS) {
   if (result.lane_results) return { kind: "run", ...(await verifyRunDoc(doc, pins)) };
   if (Array.isArray(doc.events) && typeof doc.record_public_key === "string") {
     const checked = await verifyRecord(doc.events, doc.record_public_key);
-    const facts = checked.ok ? signedFacts(doc.events) : { evaluations: null, pool: null, laneId: null, agentId: null, best: null };
+    const facts = checked.ok ? signedFacts(doc.events) : { evaluations: null, pool: null, laneId: null, agentId: null, best: null, bestIds: [] };
     const verdict = bindLabel(checked, facts, typeof doc.lane_id === "string" ? doc.lane_id : undefined);
     const origin = await originVerdict(doc.events, doc.record_public_key, doc.record_certificate, pins,
       { runId: doc.run_id, laneId: doc.lane_id }, verdict.ok);
     const lane = { laneId: facts.laneId || "lane", agentId: facts.agentId, publicKey: doc.record_public_key,
-      evaluations: facts.evaluations, claimedEvaluations: facts.evaluations, best: facts.best,
+      evaluations: facts.evaluations, claimedEvaluations: facts.evaluations, best: facts.best, bestIds: facts.bestIds,
       claimedValid: undefined, pool: facts.pool, ...verdict, ...origin };
     return { kind: "lane", runId: typeof doc.run_id === "string" ? doc.run_id : null, runIdUnsigned: !origin.authentic,
       lanes: [lane], missing: [], extra: [], laneSet: null, recordsValid: verdict.ok, equalCounts: null,
@@ -316,7 +340,7 @@ async function verifyRunDoc(doc, pins) {
   for (const laneId of present) {
     const lane = lanes[laneId];
     const checked = await verifyRecord(lane.record, lane.record_public_key);
-    const facts = checked.ok ? signedFacts(lane.record) : { evaluations: null, pool: null, laneId: null, agentId: null, best: null };
+    const facts = checked.ok ? signedFacts(lane.record) : { evaluations: null, pool: null, laneId: null, agentId: null, best: null, bestIds: [] };
     let verdict = bindLabel(checked, facts, laneId);
     if (verdict.ok && (runId === null || facts.agentId !== `${runId}:${laneId}`)) {
       verdict = { ...verdict, ok: false,
@@ -331,6 +355,7 @@ async function verifyRunDoc(doc, pins) {
       evaluations: facts.evaluations,
       claimedEvaluations: num(lane.evaluation_count),
       best: facts.best,
+      bestIds: facts.bestIds,
       claimedBest: num(lane.best_temperature_c),
       claimedValid: lane.record_valid,
       pool: facts.pool,
