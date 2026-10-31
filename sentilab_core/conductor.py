@@ -170,7 +170,8 @@ class Conductor:
                 except BaseException:
                     # The full reservation remains charged when there is no
                     # completed process-tree CPU measurement.
-                    self.budget.settle(operation, actual_cpu_s=reservation["ceiling_s"], success=False)
+                    if self.budget._read()["reservations"][-1]["status"] == "reserved":
+                        self.budget.settle(operation, actual_cpu_s=None, success=False)
                     raise
         except BudgetHalt as exc:
             if str(exc) != "operation already reserved":

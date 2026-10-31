@@ -37,6 +37,10 @@ async def run(context, *, ai_off, run_id=None, duration=600, interval=15, renew=
 def verify(context, *, ai_off, run_id):
     require_ai_off(ai_off)
     state = replay(context.root, run_id, public_keys=context.public_keys)
+    return verified_state(state, run_id)
+
+
+def verified_state(state, run_id):
     try:
         projection = project(state["prefix"])
         current = board(state["prefix"], projection)

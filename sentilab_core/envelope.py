@@ -146,11 +146,17 @@ def verify(envelope, *, run_id, public_keys):
             raise ValueError("invalid envelope fields")
         if envelope["v"] != VERSION:
             raise ValueError("invalid envelope version")
+        if (not isinstance(envelope["run"], dict) or not isinstance(envelope["actor"], dict) or
+                not isinstance(envelope["event"], dict)):
+            raise ValueError("invalid envelope structure")
         if envelope["run"]["run_id"] != run_id:
             raise ValueError("run_mismatch")
         event = envelope["event"]
         if set(event) != {"event_id", "seq", "type", "actor_role", "body"}:
             raise ValueError("invalid event fields")
+        if (not isinstance(event["body"], dict) or not isinstance(event["event_id"], str) or
+                not event["event_id"] or not isinstance(event["type"], str)):
+            raise ValueError("invalid event structure")
         if type(event["seq"]) is not int or event["seq"] < 1:
             raise ValueError("invalid sequence")
         if event["actor_role"] not in ("lab", "core", "acceptance_gate"):
@@ -161,8 +167,10 @@ def verify(envelope, *, run_id, public_keys):
                 event["body"].get("to") in ("accepted", "non_improving_current", "within_margin") and
                 event["actor_role"] != "acceptance_gate"):
             raise ValueError("board outcome requires core gate")
-        if "values" in envelope and event["type"] not in ("node.create", "verify.add"):
-            raise ValueError("invalid values event")
+        if "values" in envelope:
+            if not isinstance(envelope["values"], dict) or not (event["type"] == "verify.add" or
+                    event["type"] == "node.create" and event["body"].get("kind") in ("candidate", "measurement")):
+                raise ValueError("invalid values event")
         sig = envelope["sig"]
         if set(sig) != {"key_id", "alg", "value"} or sig["alg"] != "ed25519":
             raise ValueError("invalid signature fields")

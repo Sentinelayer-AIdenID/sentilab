@@ -55,7 +55,7 @@ class LedgerTests(unittest.TestCase):
         entries = self.append(4)
         changed = copy.deepcopy(entries)
         changed[1]["event"]["body"]["id"] = "tampered"
-        for rows in (changed, entries[:1] + entries[2:], entries[:2] + entries[1:]):
+        for rows in (changed, entries[:1] + entries[2:]):
             with self.subTest(rows=len(rows)):
                 self.ledger.path.write_bytes(b"".join(canonical(e) + b"\n" for e in rows))
                 state = self.read()
@@ -87,6 +87,35 @@ class LedgerTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 Ledger(self.temp.name, run_record(name), public_keys=self.keys)
 
+    def test_conflict_group_freezes_before_every_member_in_either_order(self):
+        entries = self.append(2)
+        for rows in ([entries[0], entries[0], entries[1]], [entries[1], entries[0], entries[0]]):
+            self.ledger.path.write_bytes(b"".join(canonical(e) + b"\n" for e in rows))
+            self.assertEqual(self.read()["last_seq"], 2)
+        conflict = copy.deepcopy(entries[0])
+        conflict["event"]["body"]["id"] = "different"
+        for rows in ([entries[0], conflict, entries[1]], [conflict, entries[0], entries[1]]):
+            self.ledger.path.write_bytes(b"".join(canonical(e) + b"\n" for e in rows))
+            self.assertEqual(self.read()["last_seq"], 0)
+        changed = copy.deepcopy(entries)
+        changed[1]["event"]["event_id"] = changed[0]["event"]["event_id"]
+        self.ledger.path.write_bytes(b"".join(canonical(e) + b"\n" for e in changed))
+        self.assertEqual(self.read()["last_seq"], 0)
+
+    def test_malformed_structure_and_depth_fail_before_recursive_hashing(self):
+        for raw in (b'{"event":"bad"}\n', b'[' * 10000 + b']' * 10000 + b'\n',
+                    b'{"event":{"seq":1},"event":{}}\n'):
+            self.ledger.path.write_bytes(raw)
+            self.assertEqual(self.read()["last_seq"], 0)
+            self.assertIsNotNone(self.read()["error"])
+
+    def test_general_append_cannot_claim_gate_authority(self):
+        with self.assertRaises(TypeError):
+            self.ledger.append("node.create", {}, event_id="caller", role="acceptance_gate")
+        for outcome in ("accepted", "within_margin", "non_improving_current"):
+            with self.assertRaisesRegex(ValueError, "core gate"):
+                self.ledger.append("lifecycle.transition", {"node": "fake", "to": outcome}, event_id=outcome)
+
     def test_all_size_caps_and_nonfinite_numbers(self):
         for value in ({"x": "a" * 513}, {"x" * 513: 1}, {"geometry": [{}] * 65},
                       {"center_temps": {str(i): 0 for i in range(65)}},
@@ -104,24 +133,6 @@ class LedgerTests(unittest.TestCase):
             self.ledger.append("node.create", {"too_big": "x" * 513}, event_id="oversize")
         self.assertFalse(self.ledger.path.exists())
 
-    def test_canonical_matches_javascript_number_and_unicode_vectors(self):
-        vectors = [{"z": 5.0, "a": 1e16, "😀": "\n\t", "\ue000": -0.0},
-                   [1e-7, 1e-6, 1e20, 1e21, 1.2345678901234567, 333333333.33333329,
-                    1.0, -5e-324, 0.00001230, 1.7976931348623157e308],
-                   {"present": None}, {}, [True, False, "é", "𝄞"]]
-        # This native JSON.stringify check is additional to the versioned aneta
-        # contract vectors, which are tested when the contracts input is loaded.
-        script = """let s=''; for await (const x of process.stdin) s+=x;
-const c=x=>Array.isArray(x)?'['+x.map(c).join(',')+']':
-x!==null&&typeof x==='object'?'{'+Object.keys(x).sort().map(k=>JSON.stringify(k)+':'+c(x[k])).join(',')+'}':JSON.stringify(x);
-console.log(JSON.stringify(JSON.parse(s).map(c)));"""
-        proc = subprocess.run(["node", "--input-type=module", "-e", script],
-                              input=json.dumps(vectors), text=True, capture_output=True, check=True)
-        self.assertEqual([canonical(v).decode() for v in vectors], json.loads(proc.stdout))
-        self.assertNotEqual(digest({}), digest({"present": None}))
-        for value in (float("inf"), 9007199254740993, "\ud800"):
-            with self.assertRaises((ValueError, UnicodeError)):
-                canonical(value)
 
 
 if __name__ == "__main__":

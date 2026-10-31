@@ -5,10 +5,12 @@ and response validation remain in sundai_hotspot. Each call uses a fresh worker.
 """
 import asyncio
 from contextlib import asynccontextmanager
+import json
 import os
 from pathlib import Path
 import signal
 import sys
+import tempfile
 
 from sundai_hotspot.tap_oracle import HotSpotOracle
 
@@ -42,19 +44,27 @@ class FreshProcessOracle(HotSpotOracle):
         pass  # each evaluate call closes and reaps its entire worker group
 
     async def evaluate(self, request, *, worker_timeout_s):
+        with tempfile.TemporaryDirectory(prefix="sentilab-fresh-worker-") as workspace:
+            return await self._evaluate({**request, "workspace_root": workspace}, worker_timeout_s=worker_timeout_s)
+
+    async def _evaluate(self, request, *, worker_timeout_s):
         reservation = self.reservation
         ceiling = reservation["ceiling_s"]
         request = {**request, "solver_timeout_s": max(0.01, ceiling - 2)}
-        environment = {**os.environ, "OPENBLAS_NUM_THREADS": "1", "OMP_NUM_THREADS": "1",
-                       "MKL_NUM_THREADS": "1", "PYTHONUNBUFFERED": "1"}
+        payload = json.dumps(request, separators=(",", ":"), allow_nan=False).encode() + b"\n"
+        if len(payload) > 65537:
+            raise ValueError("oversize worker request")
+        environment = {key: os.environ[key] for key in ("PATH", "LANG", "LC_ALL", "TMPDIR") if key in os.environ}
+        environment.update({"OPENBLAS_NUM_THREADS": "1", "OMP_NUM_THREADS": "1",
+                            "MKL_NUM_THREADS": "1", "PYTHONUNBUFFERED": "1", "PYTHONPATH": str(ROOT)})
         # No signer is passed in argv, stdin or environment. This process invokes
         # the imported worker once and exits; it never receives a signing key.
         process = await asyncio.create_subprocess_exec(
-            sys.executable, "-m", "sentilab_core.worker", str(ceiling), cwd=ROOT, env=environment,
+            sys.executable, "-m", "sentilab_core.worker", str(ceiling), cwd=ROOT / "sundai_tap", env=environment,
             stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE, start_new_session=True,
             pass_fds=(reservation["lease_fd"],), limit=65536)
-        exchange = asyncio.create_task(process.communicate(canonical(request) + b"\n"))
+        exchange = asyncio.create_task(process.communicate(payload))
         deadline = asyncio.get_running_loop().time() + ceiling
         self.last_usage = None
         try:
@@ -66,8 +76,7 @@ class FreshProcessOracle(HotSpotOracle):
                 await asyncio.wait({exchange}, timeout=0.05)
             stdout, stderr = await exchange
             if process.returncode != 0 or len(stdout) > 65536:
-                raise RuntimeError(f"fresh HotSpot worker failed: exit {process.returncode}")
-            import json
+                raise RuntimeError(f"fresh HotSpot worker failed: exit {process.returncode}: {stderr[-300:].decode(errors='replace')}")
             response = json.loads(stdout)
             self.last_usage = {"cpu_s": response["cpu_s"],
                                "process_id": response["process_id"] + ":" + reservation["operation_id"]}

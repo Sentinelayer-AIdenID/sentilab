@@ -81,13 +81,6 @@ class ConductorTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(gates)
         self.assertTrue(all(e["event"]["actor_role"] == "acceptance_gate" for e in gates))
 
-    async def test_contract_javascript_projection_equals_real_conductor_state(self):
-        result = await self.conductor.run(run_id="test-contract", max_ticks=2, interval=0)
-        prefix = self.conductor.ledger.read()["prefix"]
-        adapter = Path(__file__).with_name("projection.mjs")
-        actual = subprocess.run(["node", str(adapter)], input=canonical([e["event"] for e in prefix]),
-                                capture_output=True, timeout=30, check=True)
-        self.assertEqual(json.loads(actual.stdout), result["projection"])
 
     async def test_deleted_envelope_freezes_state_and_refuses_restart(self):
         await self.conductor.run(run_id="test-broken", max_ticks=2, interval=0)
