@@ -94,6 +94,22 @@ def fixtures():
     changed("unknown-version")["record_certificate"]["version"] = "unknown"
     changed("wrong-run-label")["run_id"] = "other-run"
     changed("wrong-lane-label")["lane_id"] = "ucb1"
+    for name, corrupt in (
+        ("leading-whitespace", lambda s: " " + s),
+        ("interior-whitespace", lambda s: s[:8] + "\t" + s[8:]),
+        ("trailing-newline", lambda s: s + "\n"),
+        ("trailing-whitespace", lambda s: s + "\r\n"),
+        ("missing-padding", lambda s: s.rstrip("=")),
+        ("excess-padding", lambda s: s + "="),
+        ("interior-padding", lambda s: s[:8] + "=" + s[8:]),
+        ("non-alphabet", lambda s: "*" + s[1:]),
+        ("non-ascii", lambda s: "\u00a0" + s),
+        ("non-string", lambda s: None),
+    ):
+        for target in ("certificate", "event"):
+            doc = changed(f"{target}-signature-{name}")
+            signed = doc["record_certificate"] if target == "certificate" else doc["events"][0]
+            signed["signature"] = corrupt(signed["signature"])
     legacy = copy.deepcopy(valid)
     del legacy["record_certificate"]
     replays = {}
