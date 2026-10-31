@@ -153,12 +153,17 @@ Four separate limits, each its own field; none stands in for another:
 | `checks.solver_time_limit_s` | HiGHS's elapsed `time_limit`; not a CPU cap | 2 s |
 | `checks.check_wall_s` | From the moment a worker begins the check (queue excluded) to the end of serialization | 5 s |
 | `checks.cleanup_headroom_s` | Cleanup's own headroom, outside the wall, still charged | unset |
-| `checks.cpu_reserve_s` | Process-tree CPU reserved before runtime, debited at settlement in `checks` | unset |
+| `checks.cpu_reserve_s` | Process-tree CPU reserved before runtime and debited at settlement in `checks` | unset |
+| `checks.cpu_enforcement` | The reserve is enforced on live process-tree CPU while the check runs (DESIGN.md:795): an admission requirement | const |
+| `checks.cpu_enforcement_evidence_sha256` | The evidence that live enforcement is in place; a signed manifest pins it and the intake opens no manifest without it | unset |
+| `checks.cpu_overrun` | Measured CPU above the reserve at settlement (DESIGN.md:1004): detected after the fact and charged, never called enforcement | const |
 | `limits.check_per_account_hour`, `limits.check_room_hour` | Request quotas; over them is `rate_limited` | 30, 600 |
 
-A check that hits the solver limit reads `router_status` `time_limit`; the wall or the CPU reserve, `not_routed`; each
-with one `check_unfinished` naming its limit, and each counts against the account. The wall is enforced in flight
-(the process group is killed); a CPU-reserve overrun is detected at settlement and recorded as itself. The response
+A check that hits the solver limit reads `router_status` `time_limit`; the wall or the live CPU enforcement,
+`not_routed`; each with one `check_unfinished` naming its limit, and each counts against the account. Three controls
+stay apart: the wall is the elapsed cutoff (the process group is killed at `check_wall_s`); live CPU enforcement stops a
+check whose process tree reaches `cpu_reserve_s` while it runs; settlement then measures the CPU actually used, and an
+overrun found there is detected and charged. OP-F1 does not implement the supervisor; it keeps the requirement. The response
 carries no geometry and the fixed labels `routed wire only`, `no thermal solve`, `nominal`, `not a score`.
 
 ## Labels (DESIGN.md:462-566, 1071-1092)
@@ -206,8 +211,10 @@ receipts bind `actor_kind` and the keyed `participant_ref`, never a label; golde
 12. A `parent` must be one of the account's own proposal geometry hashes in the same manifest.
 13. Robust dominance's "published tie and margin rule" (DESIGN.md:514) is not published; the predicate uses margin 0.
 14. A raw-R position case is `position-<die>-<x|y>-<plus|minus>` at grid 64 (DESIGN.md:485-492).
-15. The CPU reserve is "enforced while running" in DESIGN.md:795 but "enforced on measured process-tree CPU at
-    settlement" in DESIGN.md:1004; the contract records a settlement finding as detection, not in-flight enforcement.
+15. Live process-tree CPU enforcement while a check runs (DESIGN.md:795, accepted rev 3) is an admission
+    requirement: `checks.cpu_enforcement`, with its evidence pinned in `checks.cpu_enforcement_evidence_sha256` before a
+    manifest is signed or opened. It is separate from settlement overrun detection (DESIGN.md:1004,
+    `checks.cpu_overrun`) and from the wall's elapsed cutoff (`check_wall_s`).
 
 ## Regenerating and testing
 

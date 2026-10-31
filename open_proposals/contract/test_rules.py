@@ -570,6 +570,13 @@ class PythonVectors(unittest.TestCase):
         outcome = validate_reply(note(mv.P_PUB), reply=reply_for(mv.P_PUB), manifests=REGISTRY,
                                  thread_manifest_id=mv.ID["F"], admission={})
         self.assertEqual(["not_open_yet"], [item["code"] for item in outcome.violations], "unlisted is not open")
+        unenforced = mv.edit(mv.F, "/checks/cpu_enforcement_evidence_sha256", None)
+        unenforced_id = h.manifest_id(unenforced)
+        item = mv.changed(mv.P_PUB, manifest_id=unenforced_id)
+        outcome = validate_reply(note(item), reply=reply_for(item), manifests={unenforced_id: unenforced},
+                                 thread_manifest_id=unenforced_id, admission={unenforced_id: "open"})
+        self.assertEqual(["not_open_yet"], [entry["code"] for entry in outcome.violations],
+                         "admission needs the evidence of live process-tree CPU enforcement")
         manifest = mv.edit(mv.F, "/sealing/recipient", None)
         manifest_id = h.manifest_id(manifest)
         sealed = mv.sealed("private proposal").replace(mv.ID["F"].encode(), manifest_id.encode(), 1)

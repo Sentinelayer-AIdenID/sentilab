@@ -124,6 +124,9 @@ def manifest_shape(*, problem, fixture, dies, matrix, comparator, variants, targ
                               "lifecycle_suballocation": "lifecycle", "intake_suballocation": "intake",
                               "ceilings_cpu_s": None},
         "checks": {"solver_time_limit_s": 2, "check_wall_s": 5, "cleanup_headroom_s": None, "cpu_reserve_s": None,
+                   "cpu_enforcement": "live process-tree CPU, enforced while running",
+                   "cpu_enforcement_evidence_sha256": None,
+                   "cpu_overrun": "detected at settlement on measured process-tree CPU; charged",
                    "status_access": "salted request_sha256 handle or authorized access", "suballocation": "checks"},
         "ties": "ascending T_M, then geometry hash", "failures": "retained; no automatic retry",
         "limits": {"status": "provisional (OP-W1)", "eval_per_account_hour": 3, "eval_per_account_day": 12,
@@ -243,7 +246,8 @@ def signed_test(key_version: int = 1) -> dict:
     manifest["evaluation_bundle"].update({"status": "frozen", "ceilings_cpu_s": {
         "native.evaluate": 15, "native.replay": 15, "native.mesh": 15, "native.reference": 60, "routing": 5,
         "lifecycle": 2, "checks": 6, "intake": 1}})
-    manifest["checks"].update({"cleanup_headroom_s": 1, "cpu_reserve_s": 6})
+    manifest["checks"].update({"cleanup_headroom_s": 1, "cpu_reserve_s": 6,
+                               "cpu_enforcement_evidence_sha256": fake("live CPU enforcement evidence")})
     manifest["limits"]["status"] = "frozen (test)"
     manifest["terms"] = {"accepted_versions": [TERMS_VERSION], "retention": "P2Y"}
     manifest["exposure"]["sources"] = ["illustrative fixture: no paper"]
@@ -881,6 +885,13 @@ def manifest_records() -> list:
          [R("manifest.signed_pins", "/statistic/numerical_admission")]),
         ("signed: a check limit unset", [("/checks/cpu_reserve_s", None)],
          [R("manifest.signed_pins", "/checks/cpu_reserve_s")]),
+        ("signed: no evidence of live CPU enforcement (an admission requirement)",
+         [("/checks/cpu_enforcement_evidence_sha256", None)],
+         [R("manifest.signed_pins", "/checks/cpu_enforcement_evidence_sha256")]),
+        ("schema: live CPU enforcement is required, not optional", [("/checks/cpu_enforcement", "at settlement")],
+         [S("/checks/cpu_enforcement", "const")]),
+        ("schema: overrun detection is its own field", [("/checks/cpu_overrun", DELETE)],
+         [S("/checks/cpu_overrun", "required")]),
         ("signed: no accepted terms", [("/terms/accepted_versions", [])],
          [R("manifest.signed_pins", "/terms/accepted_versions")]),
         ("schema: plaintext_fallback is false", [("/sealing/plaintext_fallback", True)],

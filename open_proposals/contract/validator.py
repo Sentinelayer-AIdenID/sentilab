@@ -236,6 +236,8 @@ def _admission(manifest: dict, manifest_id: str, admission) -> list:
         return [violation("manifest_closed")]
     if state != "open" or manifest["status"] != "signed":
         return [violation("not_open_yet")]                  # only a signed manifest can ever be open
+    if manifest["checks"]["cpu_enforcement_evidence_sha256"] is None:
+        return [violation("not_open_yet")]                  # admission: live CPU enforcement must be in place
     return []
 
 
@@ -481,7 +483,8 @@ def _missing_pins(record: dict) -> list:
         pins["/statistic/evaluator/" + name] = statistic["evaluator"][name]
     for name in ("D_K", "r", "B_T_K", "B_W_mm", "T_limit_C"):
         pins["/policy/" + name] = policy[name]
-    for name in ("solver_time_limit_s", "check_wall_s", "cleanup_headroom_s", "cpu_reserve_s"):
+    for name in ("solver_time_limit_s", "check_wall_s", "cleanup_headroom_s", "cpu_reserve_s",
+                 "cpu_enforcement_evidence_sha256"):
         pins["/checks/" + name] = checks[name]
     for name in ("opens_at", "closes_at"):
         pins["/window/" + name] = record["window"][name]

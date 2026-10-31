@@ -331,6 +331,9 @@
     "check_wall_s": 5,
     "cleanup_headroom_s": null,
     "cpu_reserve_s": null,
+    "cpu_enforcement": "live process-tree CPU, enforced while running",
+    "cpu_enforcement_evidence_sha256": null,
+    "cpu_overrun": "detected at settlement on measured process-tree CPU; charged",
     "status_access": "salted request_sha256 handle or authorized access",
     "suballocation": "checks"
    },
@@ -814,6 +817,9 @@
     "check_wall_s": 5,
     "cleanup_headroom_s": null,
     "cpu_reserve_s": null,
+    "cpu_enforcement": "live process-tree CPU, enforced while running",
+    "cpu_enforcement_evidence_sha256": null,
+    "cpu_overrun": "detected at settlement on measured process-tree CPU; charged",
     "status_access": "salted request_sha256 handle or authorized access",
     "suballocation": "checks"
    },
@@ -1147,6 +1153,9 @@
     "check_wall_s": 5,
     "cleanup_headroom_s": 1,
     "cpu_reserve_s": 6,
+    "cpu_enforcement": "live process-tree CPU, enforced while running",
+    "cpu_enforcement_evidence_sha256": "9b3908465b77c771709cc3c5612125c00a7e24ce2fb6157ae485ebe23054748e",
+    "cpu_overrun": "detected at settlement on measured process-tree CPU; charged",
     "status_access": "salted request_sha256 handle or authorized access",
     "suballocation": "checks"
    },
@@ -1480,6 +1489,9 @@
     "check_wall_s": 5,
     "cleanup_headroom_s": 1,
     "cpu_reserve_s": 6,
+    "cpu_enforcement": "live process-tree CPU, enforced while running",
+    "cpu_enforcement_evidence_sha256": "9b3908465b77c771709cc3c5612125c00a7e24ce2fb6157ae485ebe23054748e",
+    "cpu_overrun": "detected at settlement on measured process-tree CPU; charged",
     "status_access": "salted request_sha256 handle or authorized access",
     "suballocation": "checks"
    },
@@ -1578,10 +1590,10 @@
   }
  },
  "manifest_id": {
-  "A": "2b62dabf7b0e995328e4caef1c80f9f6d6a26c285e225390de26f58f61711664",
-  "M": "938d710ccb65c56518ab5afd927f087d790e23b3d77a01a543dc134e699032b7",
-  "F": "6fd328c1e770034204035a8758d1b3d1dd361fa3575e91095cb2b80f3db0981a",
-  "F2": "e7be12fb7780aa6a4f93152d81335763bbe5f3afbf384a25263a4b8dad593897"
+  "A": "c545a303c550ab6e6caaadb8d67eae97978e9382c0f938ef8ac591e51fd67932",
+  "M": "6b79a83791536b726785cbf8e73c8bab11311d6fc22f9f057b35546118d02e55",
+  "F": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+  "F2": "c79ced6e6d66406bc560f9b6b8fab6755034ee99792f4c0c0aae7225cf93ef6e"
  },
  "terms": {
   "schema": "sentilab-open-terms/1",

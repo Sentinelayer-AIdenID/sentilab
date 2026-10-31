@@ -318,16 +318,22 @@
       }
     },
     "checks": {
-      "description": "The sponsored routed check's separate limits (section 6.2). solver_time_limit_s is HiGHS's own elapsed time_limit, not a CPU cap. check_wall_s runs from the moment a worker begins the check, queue excluded, to the end of serialization. cleanup_headroom_s is cleanup's own, outside the wall. cpu_reserve_s is process-tree CPU reserved before runtime, enforced while running and debited at settlement in the checks suballocation. The request quotas are limits.check_per_account_hour and limits.check_room_hour. None stands in for another.",
+      "description": "The sponsored routed check's separate limits (section 6.2). solver_time_limit_s is HiGHS's own elapsed time_limit, not a CPU cap. check_wall_s runs from the moment a worker begins the check, queue excluded, to the end of serialization; the process group is killed at it. cleanup_headroom_s is cleanup's own, outside the wall. cpu_reserve_s is process-tree CPU reserved before runtime, enforced on live CPU while running (cpu_enforcement, an admission requirement with its evidence pinned) and debited at settlement, where an overrun is detected and charged (cpu_overrun). The request quotas are limits.check_per_account_hour and limits.check_room_hour. None stands in for another.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["solver_time_limit_s", "check_wall_s", "cleanup_headroom_s", "cpu_reserve_s", "status_access",
-                   "suballocation"],
+      "required": ["solver_time_limit_s", "check_wall_s", "cleanup_headroom_s", "cpu_reserve_s", "cpu_enforcement",
+                   "cpu_enforcement_evidence_sha256", "cpu_overrun", "status_access", "suballocation"],
       "properties": {
         "solver_time_limit_s": {"$ref": "#/$defs/positive_or_null"},
         "check_wall_s": {"$ref": "#/$defs/positive_or_null"},
         "cleanup_headroom_s": {"$ref": "#/$defs/positive_or_null"},
         "cpu_reserve_s": {"$ref": "#/$defs/positive_or_null"},
+        "cpu_enforcement": {"description": "An admission requirement (DESIGN.md:795): the supervisor enforces cpu_reserve_s on live process-tree CPU while the check runs. Not the wall's elapsed cutoff, and not settlement.",
+                            "const": "live process-tree CPU, enforced while running"},
+        "cpu_enforcement_evidence_sha256": {"description": "The admission evidence that live enforcement is in place (the supervisor's tested record); null until it exists. A signed manifest pins it, and the intake opens no manifest without it.",
+                                            "$ref": "common.schema.json#/$defs/sha256_or_null"},
+        "cpu_overrun": {"description": "Settlement (DESIGN.md:1004): measured process-tree CPU above the reserve is detected after the fact and stays charged. Detection, never enforcement.",
+                        "const": "detected at settlement on measured process-tree CPU; charged"},
         "status_access": {"const": "salted request_sha256 handle or authorized access"},
         "suballocation": {"const": "checks"}
       }
