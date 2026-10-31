@@ -95,6 +95,14 @@ class ResearchTransportTests(unittest.TestCase):
         self.assertNotIn(b"private submitted text", cli.stdout + cli.stderr)
         self.assertEqual(list(self.root.iterdir()), [])
 
+    def test_executable_cli_propagates_research_error_exit_code(self):
+        command = [sys.executable, "sentilab_cli/sentilab", "research", "request",
+                   "--namespace", json.dumps(NS), "--question", "private submitted text"]
+        result = subprocess.run(command, env=self.environment, capture_output=True, timeout=10)
+        self.assertEqual(result.returncode, 2)
+        self.assertEqual(json.loads(result.stdout)["error"]["code"], "ai_off_required")
+        self.assertEqual(result.stderr, b"")
+
     def test_missing_or_malformed_host_scope_refuses_both_transports(self):
         for value in (None, "malformed", "{}"):
             if value is None:
