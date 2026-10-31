@@ -16,24 +16,8 @@
   },
   "provenance": {
     "total_entries": 494,
-    "verified_sha256": 491,
-    "mismatches": [
-      {
-        "path": "sundai_controller/demo_flight_record.json",
-        "expected": "00f0c64a8579455641b5dceb486bd9ae33f2aaadb7aab807e42060fcb10a2fae",
-        "actual": "f4db52d0668d1d0cc537e280347b827b808451e90c1b9a97692e38359ee995fc"
-      },
-      {
-        "path": "sundai_controller/demo_results.json",
-        "expected": "cd812c4633966c953a52011c6605583f6c489e51dfc946a692225e3b438d169e",
-        "actual": "9e2df17bf7175022d957104ad1c99a06a37c1a3671f7f36eb6cdd49113bf9fc6"
-      },
-      {
-        "path": "sundai_hotspot/probe_results/report.json",
-        "expected": "e673e100e9f23769c5f1c99cbc5833d4917582fd64a8ff3e6b54af7604d98171",
-        "actual": "1835a98e822e479e8688db64acb17aeee6f0a773f509eb612e2440e10c7abe94"
-      }
-    ],
+    "verified_sha256": 494,
+    "mismatches": [],
     "missing": [],
     "source": "Sentinelayer-AIdenID/thermal-flight-lab@2199612932da142e0057e6162293940b4ea64bba"
   },
