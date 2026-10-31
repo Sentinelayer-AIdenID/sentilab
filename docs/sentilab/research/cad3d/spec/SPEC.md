@@ -35,6 +35,8 @@ moves since lane 3 was written).
     identity, compares the four strings and resolves the canonical in-process `LABELS` object (PL-2; AC-06).
   - R3 (item 3): `geometry_sha256` has a frozen, versioned preimage (`sentilab-geometry/1`) sorted by stable id, with
     parent and box associations and no view state; reordering keeps the hash, changed geometry changes it (5.0; AC-14).
+  - R4 (item 4): the qualified figure (canvas or SVG, chips, legend, source line) is the export boundary; pixel probes
+    test only hatching and stippling, and no claim rests on a canvas-only crop (6.5, PL-5; AC-05).
 
 ## 1. Goals and non-goals
 
@@ -95,7 +97,7 @@ moves since lane 3 was written).
 | Geometry | Schematic arrangement; sourced sizes where they exist; render hints otherwise | The model's layer table, floorplan rules and reference layouts | Footprints from the signed candidate geometry; stack from the model manifest of the run's fixture |
 | Temperatures | None (PL-4) | None; the ambient is a temperature-valued input and is not rendered (PL-4, D2) | Only through `temperature-label.mjs`, per value (PL-2) |
 | Banner (exact) | `Typical anatomy · a representative reconstruction from public sources. Not any manufacturer's CAD. Not silicon-validated. Arrangement schematic; unknown values are marked.` | `Our model · the layers and blocks our thermal solver actually simulates, with its simplifications. Not the real package.` | `Results · from signed, verified evidence only. Each value names its run, geometry, evaluator and label. Simulated, not silicon.` |
-| Chip inside the canvas | `Typical anatomy · not manufacturer CAD` | `Our model · not the real package` | the legend's label-state chip and `Simulated · not silicon` |
+| Chip inside the figure (DOM, over the canvas) | `Typical anatomy · not manufacturer CAD` | `Our model · not the real package` | the legend's label-state chip and `Simulated · not silicon` |
 
 Crossing rules (MUST):
 
@@ -129,9 +131,11 @@ Each screen lists what a person sees and does, what an agent gets for the same t
   (the markup the notice test pins: main:web/test/temperature-label.test.mjs:331-333; main:web/public/sentilab/package/index.html:48);
   the frozen-chain banner and value-check banner (Results only, as the Package view: package.js:358-381); then the
   content banner of the current mode (section 3, exact text).
-- **Stage:** canvas left (desktop) with in-canvas chips (content chip; `exploded · spacing not to scale` when
-  exploded; `thin layers thickened for visibility` in readable mode; `1 of k² sites drawn · N total` for sampled
-  arrays; the label-state chip in Results). Right panel: part tree, part detail, legend.
+- **Stage:** the qualified figure (section 6.5), left on desktop: the canvas (or its SVG fallback) with DOM chips
+  overlaid inside the figure (content chip; `exploded · spacing not to scale` when exploded; `thin layers thickened
+  for visibility` in readable mode; `1 of k² sites drawn · N total` for sampled arrays; the label-state chip in
+  Results), and below the canvas, still inside the figure, the legend and the source line. Right panel: part tree,
+  part detail.
 - **Controls under the canvas:** Explode slider with `Assembled` / `Exploded`; Section (`off`, `X`, `Y`, position);
   Overlay (`none`, `heat`, `power`, `signal`); Variant (`lidded`, `lidless`; anatomy only); `True scale` / `Readable`;
   `Lid` (anatomy) or `Spreader and sink` (model, results); Layer (results, when a field exists).
@@ -1181,6 +1185,16 @@ program (L3:ARCHITECTURE §4.4). The part tree is the keyboard and screen-reader
 `role="img"` and a summary `aria-label` (as main:web/public/sentilab/package/package.js:428-430); a polite live region
 announces mode changes and new verified results.
 
+**The qualified figure is the export boundary** (A#57218 item 4). One `<figure id="p3d-figure">` holds the canvas or
+its SVG fallback; the DOM chips overlaid on it (content chip, label-state chip, and the exploded, thickened and sampled
+chips); the legend (scale and ticks, the grid size and solver layer when a field is shown, the label state with its
+pattern key); and the source line (in Results the mode chip's text, the run id and `as of seq S`; in Anatomy and Model
+the content banner's short form). Any image of the view (UI-PR screenshots, the browser checks, any later save-image
+action) is of the whole figure, never of the canvas alone, and the room ships no canvas-only image export (no
+`toDataURL` or `toBlob`). The canvas pixels carry only what pixels can: the hatch (withdrawn) and stipple
+(unvalidated) of field sheets. A canvas-only crop therefore separates those states from unpatterned sheets but
+carries no words, and nothing in this spec claims more for it.
+
 ### 6.6 Live transport
 
 Cursor paging through `source.mjs` `createLiveFeed()` is the only data path (source.mjs:205-258). Field artifacts are
@@ -1224,7 +1238,7 @@ small change (D9). Nothing in phases 1-5 needs that.
 | PL-2 | A temperature becomes text only through `temps.mjs` `formatTemp(valueC, label)`, which refuses any label that is not one of the frozen `LABELS` objects (identity, not shape) and any non-finite value; the value and its qualifier sit in one DOM element. Labels that travel as data (result values, twins, the Twin JSON dialog, CLI output) are serialized records `{ state, text, short, title }` (the rule's `notice` flag is not serialized; it follows from the state), because a JSON round trip cannot keep object identity. A record reaches `formatTemp` only through `resolveLabel(record, identity)`, which recomputes `labelFor(identity)` from the value's verified evaluator identity, requires exactly those four keys with strings equal to the recomputed label's, and returns the canonical in-process `LABELS` object; any difference is `label_mismatch` and the value is refused (PSEUDOCODE §8). This holds for DOM text, `title`, `aria-label`, the twin JSON and markdown, and the Twin JSON dialog. No canvas text exists. | task rule 1; main:web/public/temperature-label.mjs:38-85; L3:PSEUDOCODE §5; A#57218 item 2 |
 | PL-3 | Labels are per value. A global badge or the page notice never replaces a value's own label. J and centre temperatures from different measurements keep separate labels. | A#57059; main:web/public/temperature-label.mjs:137-144; main:web/test/per-value-provenance.test.mjs |
 | PL-4 | Static content (anatomy, assembly, model stack, layouts, static twins) contains no temperature number in any string, key or unit (absolute or difference), until D2 is decided. Literature limits, model boundary temperatures and temperature-conditioned material values are listed in `omitted` with the reason. | task rule 1; D2 |
-| PL-5 | Withdrawn and unvalidated field sheets carry pixel patterns (hatch, stipple); the state chip sits inside the canvas wrapper, so a canvas-only crop still shows the state. | L3:ARCHITECTURE §5.5 |
+| PL-5 | Withdrawn and unvalidated field sheets carry pixel patterns (hatch, stipple), so the canvas pixels alone separate them from unpatterned sheets. Words (the content chip, the label-state chip, the legend and the source context) are DOM inside the qualified figure (section 6.5), which is the export boundary; a canvas-only crop is never claimed to show them. | L3:ARCHITECTURE §5.5; A#57218 item 4 |
 | PL-6 | A field's label is `labelFor()` of the verified envelope's evaluator identity, never the artifact's claim; a mismatch refuses the artifact. | L3:ARCHITECTURE §5.5; main:web/public/temperature-label.mjs:156-161 |
 | PL-7 | A legend is a derived value: `labelForAll()` over the identities behind its scale. | main:web/public/temperature-label.mjs:17-19, :145-153 |
 | PL-8 | The page notice follows `needsNotice()` over the verified prefix, as the Package view does, and must also fire for field-only measurements once P4 lands. The notice slot markup is the existing one. | main:web/public/sentilab/package/package.js:297-300; temperature-label.mjs:163-170; temperature-label.test.mjs:331-333 |

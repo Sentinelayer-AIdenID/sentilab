@@ -14,7 +14,8 @@ render.mjs:1-9 show the pattern; this page writes per CSSOM property, never `css
 
 ```
 web/public/sentilab/package3d/
-  index.html          shell: notice slot, banners, canvas wrapper, part tree, detail panel, legend, fallback slot
+  index.html          shell: notice slot, banners, figure#p3d-figure (the export boundary: canvas or SVG fallback, DOM
+                      chips, legend, source line: SPEC.md §6.5), part tree, detail panel
   package3d.js        page controller (the only module that touches the DOM broadly)
   package3d.css
   quantity.mjs        PURE  quantities, bases, unit conversion (the ONLY lengths conversion in the page)
@@ -722,11 +723,15 @@ import { PINS } from "./pins.mjs";
 //    through describeQuantity(); never toFixed() elsewhere.
 // 7. WebGL2 available -> lazy import("./render3d.mjs") after the first model is built; else fallback2d. Context lost ->
 //    fallback2d at once; restored -> rebuild from the cached model and texels (no refetch, no re-verify).
+// 7b. The figure (SPEC.md §6.5): the chips, the legend and the source line are DOM children of figure#p3d-figure,
+//    positioned inside its box; any image of the view is of the figure; no module of the room calls toDataURL or
+//    toBlob (no canvas-only export).
 // 8. Read-only test hook, as package.js:662:
 Object.defineProperty(window, "__package3d", { value: Object.freeze({ facts: () => ({
   kind: S.kind, seq: S.result?.prefix.at_seq ?? 0, mode: S.result?.prefix.mode ?? null, shown: S.shownIds(),
   chips: S.chipTexts(), values: S.valueTexts(), labelStates: S.labelStates(), fieldAsOf: S.field?.as_of_seq ?? null,
   drawCalls: S.stats.calls, triangles: S.stats.triangles, glObjects: S.stats.glObjects, fallback: S.fallback,
+  figure: S.figureFacts(),                             // { rect, chips, legend, source }: the figure's DOM texts and boxes (AC-05)
   geometryKey: S.model?.geometry_key ?? null }) }) });
 ```
 
@@ -757,7 +762,7 @@ def test_layers_match_generator(tmp_path):
 | `web/test/package3d-quantity.test.mjs` | AC-10, AC-13 (lengths), AC-14 (grammar) |
 | `web/test/package3d-data.test.mjs` | AC-03, AC-08, AC-11 (data side), AC-16 (Node side: pins), AC-17, AC-29, AC-30, AC-40; `scripts/package3d.mjs check` |
 | `web/test/package3d-model.test.mjs` | AC-08, AC-11 (undrawn parts: bounds, pick, section), AC-12, AC-13, AC-15 |
-| `web/test/package3d-labels.test.mjs` | AC-01, AC-02, AC-06, AC-07 |
+| `web/test/package3d-labels.test.mjs` | AC-01, AC-02, AC-05 (static: no `toDataURL`/`toBlob`), AC-06, AC-07 |
 | `web/test/package3d-results.test.mjs` | AC-18, AC-19, AC-23, AC-24, AC-25, AC-26 (driving source.mjs's poller with injected fetch, as the Package view's live tests do) |
 | `web/test/package3d-field.test.mjs` | AC-20, AC-21, AC-22 |
 | `web/test/package3d-twin.test.mjs` | AC-06 (result → JSON bytes → `readTwin` → markdown, and every altered identity, state and text), AC-36, AC-37 |

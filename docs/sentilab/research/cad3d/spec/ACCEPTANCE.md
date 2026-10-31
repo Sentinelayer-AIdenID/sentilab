@@ -56,12 +56,18 @@ withdrawn and fixture values is withdrawn (`labelForAll`); a rejected duplicate 
 cases of per-value-provenance.test.mjs:59-120). Pass: zero unlabelled temperature strings; every label equals the rule's
 output for the envelope that carries that value.
 
-**AC-05 The canvas shows the state by itself** (browser, pixel probe; fields only, fixtures before W14). With a
-withdrawn field shown, a screenshot of the canvas element alone shows the hatch (luminance alternates with the hatch
-period along a line across a sheet); unvalidated shows the stipple; illustrative and accepted show no pattern;
-unhatched pixels at known cells equal `heatColor(t, scale)` within ±3/255 per channel. The content chip and the
-label-state chip sit inside the canvas wrapper at 390 and 1280 px. Pass: a canvas-only crop still shows the state
-(L3:ACCEPTANCE A-02).
+**AC-05 The figure carries the words; the pixels carry the pattern** (browser; fields only, fixtures before W14). Two
+separate checks. (a) Pixel probes over the canvas pixels only: with a withdrawn field shown, luminance along a line
+across a sheet alternates with the hatch period; unvalidated shows the stipple; illustrative and accepted show no
+pattern; unpatterned pixels at known cells equal `heatColor(t, scale)` within ±3/255 per channel. These probes test
+hatching and stippling and nothing else. (b) The export boundary (SPEC.md §6.5), at 320, 390 and 1280 px and at 200%
+zoom: a screenshot of `figure#p3d-figure` holds the canvas, the content chip, the label-state chip (whose text equals
+the legend's label state), the legend and the source line (mode chip text, run id, `as of seq S`); each of these
+elements' bounding box lies inside the figure's box, is not clipped, and wins a DOM hit test at its centre (the
+canvas does not cover it); `__package3d.facts().figure` reports the same texts. Adversarial: a test double that moves
+the legend or the source line out of the figure, or positions a chip outside the figure's box, fails (b); a static
+scan finds no `toDataURL(` or `toBlob(` in the room's modules (no canvas-only image export). Pass: (a) and (b)
+(L3:ACCEPTANCE A-02, narrowed: no claim rests on a canvas-only crop).
 
 **AC-06 Labels survive serialization; identity is resolved, never assumed** (node). For result twins (CLI `export3d`
 and the dialog), the full path runs for each identity of AC-04 (withdrawn HotSpot-7, the corrected evaluator, the
