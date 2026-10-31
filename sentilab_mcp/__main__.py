@@ -8,6 +8,18 @@ from . import TOOLS
 
 
 def schema(name):
+    if name.startswith("sentilab_research_"):
+        from sentilab_core.research import MAX_QUESTION_BYTES
+        names = {key: {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"}
+                 for key in ("run_id", "arm", "family", "lab")}
+        names["seed"] = {"type": "integer", "minimum": 0, "maximum": 2147483647}
+        properties = {"ai_off": {"const": True, "type": "boolean"}, "namespace": {
+            "type": "object", "properties": names, "required": list(names), "additionalProperties": False}}
+        field = "question" if name == "sentilab_research_request" else "request_id"
+        properties[field] = ({"type": "string", "minLength": 1, "maxLength": MAX_QUESTION_BYTES}
+                             if field == "question" else {"type": "string", "pattern": "^[0-9a-f]{64}$"})
+        return {"type": "object", "properties": properties,
+                "required": ["ai_off", "namespace", field], "additionalProperties": False}
     if name == "sentilab_dataset_export":
         return {"type": "object", "properties": {
             "run_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
@@ -40,11 +52,18 @@ async def handle(request, context):
                 "serverInfo": {"name": "sentilab-live", "version": "0.1"}}
     if method == "tools/list":
         return {"tools": [{"name": name, "description": ("Export recorded verifier datasets" if name == "sentilab_dataset_export"
+                                                        else "Untrusted research evidence " + name.rsplit("_", 1)[-1]
+                                                        if name.startswith("sentilab_research_")
                                                         else "AI off live " + name.rsplit("_", 1)[-1]),
                            "inputSchema": schema(name)} for name in TOOLS]}
     if method == "tools/call":
         params = request["params"]
         name, arguments = params["name"], params.get("arguments", {})
+        if name in TOOLS and name.startswith("sentilab_research_"):
+            from sentilab_core.research import dumps
+            result = (TOOLS[name](context, **arguments) if type(arguments) is dict else
+                      {"ok": False, "error": {"code": "invalid_input"}})
+            return {"content": [{"type": "text", "text": dumps(result)}], "isError": not result["ok"]}
         if name not in TOOLS or set(arguments) - set(schema(name)["properties"]):
             raise ValueError("invalid live operation")
         result = TOOLS[name](context, **arguments)

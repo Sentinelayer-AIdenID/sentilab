@@ -88,21 +88,25 @@ def read_prefix(path, *, run_id, public_keys, version=None):
     Raw transport evidence is preserved even when decoding/parsing fails.
     """
     rows = []
+    incomplete_tail = False
     source_hash = hashlib.sha256()
     with open(path, "rb") as handle:
         if os.fstat(handle.fileno()).st_size > MAX_REPLAY_BYTES:
             raise ValueError("oversize: replay file")
-        while raw := handle.readline(MAX_BYTES + 2):
+        while raw := handle.readline(MAX_REPLAY_BYTES + 1):
+            if handle.tell() > MAX_REPLAY_BYTES:
+                raise ValueError("oversize: replay file")
+            # An append in progress is not an immutable physical row yet.
+            if not raw.endswith(b"\n"):
+                incomplete_tail = True
+                break
             source_hash.update(raw)
-            line = raw[:-1] if raw.endswith(b"\n") else raw
+            line = raw[:-1]
             if len(line) > MAX_BYTES:
-                while raw and not raw.endswith(b"\n"):
-                    raw = handle.readline(MAX_BYTES + 2)
-                    source_hash.update(raw)
-                rows.append({"error": "oversize JSONL row", "raw": b"null\n",
+                rows.append({"error": "oversize JSONL row", "raw": raw,
                              "prefix_hash": source_hash.hexdigest()})
                 continue
-            row = {"raw": line + b"\n", "prefix_hash": source_hash.hexdigest()}
+            row = {"raw": raw, "prefix_hash": source_hash.hexdigest()}
             try:
                 value = json.loads(line.decode("utf-8", errors="strict"), object_pairs_hook=_object,
                                    parse_float=_finite_float, parse_constant=_finite_float)
@@ -171,7 +175,7 @@ def read_prefix(path, *, run_id, public_keys, version=None):
         else:
             row["error"] = error or "after broken prefix"
     return {"prefix": prefix, "rows": rows, "source_rows": source_rows, "last_seq": len(prefix),
-            "error": broken, "head_hash": previous}
+            "error": broken, "head_hash": previous, "incomplete_tail": incomplete_tail}
 
 
 def _check_head(state, head_path):
@@ -212,6 +216,8 @@ class Ledger:
     def _require_sound(state):
         if state["error"]:
             raise BrokenLedger(state["error"])
+        if state.get("incomplete_tail"):
+            raise BrokenLedger("incomplete JSONL tail")
 
     def read(self):
         with lock(self.lock_path, shared=True):

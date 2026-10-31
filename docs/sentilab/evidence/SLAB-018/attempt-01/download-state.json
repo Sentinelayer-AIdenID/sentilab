@@ -1,0 +1,11 @@
+{
+  "schema": "sentilab-slab018-download/1",
+  "status": "verified",
+  "at": "2026-10-31T07:23:23.909239+00:00",
+  "elapsed_seconds": 374.2105251729954,
+  "model": "Qwen/Qwen3-4B-Instruct-2507",
+  "revision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+  "gpu_used": false,
+  "files": 13,
+  "bytes": 8060917568
+}

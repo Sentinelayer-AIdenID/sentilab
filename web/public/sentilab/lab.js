@@ -1,17 +1,27 @@
-// SentiLab Lab view (VIEW ENVELOPE v0.4). One input type for both modes: a JSONL replay file or the live
-// /api/view routes both give envelopes, and both go through the same verifyChain() and the same renderer.
+// SentiLab Lab view (VIEW ENVELOPE v0.5 envelopes, v0.6 live paging). One input type for both modes: a JSONL replay
+// file or the live /api/view/events route both give raw JSONL rows, and both go through the same bytes-to-rows rule,
+// the same input checks, the same verifier and the same renderer. Transport caps come first (a replay file over
+// 64 MiB, or a live page over 256 lines or 4 MiB, is never parsed), then each row's own checks, and only then hashing
+// and signature checks. Live paging and the mode label are paging.mjs, the port of the v0.6 reference.
 // Every string from an envelope reaches the page through textContent, never innerHTML.
 import { VIEW_PINS } from "./view-pins.js";
-import { verifyChain, mode as modeLabel, parseJsonl, parseFeedBody, parseKeyResponse, publicKeyFromSeedText, sha256Hex } from "./view-core.mjs";
-import { buildView, feedRows, chainSummary, isDrill, colorScale, frameOf, labInfo, reasonText, stageOf, STAGES, isObj } from "./lab-model.mjs";
+import {
+  checkLine, readBodyCapped, progressTracker, parseKeyResponse, publicKeyFromSeedText, sha256Hex,
+  MAX_LINE_BYTES, MAX_FILE_BYTES, MAX_API_BYTES,
+} from "./view-core.mjs";
+import { initialState, request as pageRequest, step as pageStep, verifyRows, verifyBytes, splitRows, rowText, liveLabel, REASON_TEXT } from "./paging.mjs";
+import {
+  buildView, feedRows, chainSummary, isDrill, isRejected, colorScale, nextScale, heat, frameOf, labInfo, reasonText, rankReasons,
+  rowIdentity, resolveRow, stageOf, STAGES, isObj,
+} from "./lab-model.mjs";
 
 const DEMO = { url: "demo-run.jsonl", runId: "demo-8c-0001", label: "demo-run.jsonl · bundled interface fixture" };
 const TEST_KEY_NAMES = ["core"];                 // ?pins=test: the vectors' "core" test key, derived here at run time
 const STEP_MS = matchMedia("(prefers-reduced-motion: reduce)").matches ? 1300 : 800;
 const POLL_OK_MS = 1000, POLL_BACKOFF_MS = 5000;
-const MAX_ENVELOPES = 20000;                     // a live feed past this stops growing and says so
+const MAX_SMALL_JSON = 256 * 1024;               // /api/view/runs and /api/view/key are small; a bigger answer is refused
+const strictJson = (bytes) => JSON.parse(new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes));
 const FEED_ROWS_SHOWN = 400;
-const HEAT = [[0x11, 0x2a, 0x48], [0x23, 0x6b, 0x91], [0x56, 0xb6, 0xba], [0xdf, 0xd3, 0x76], [0xec, 0x99, 0x4f], [0xe4, 0x51, 0x38]];
 const params = new URLSearchParams(location.search);
 const $ = (id) => document.getElementById(id);
 
@@ -49,14 +59,19 @@ const tsText = (ts) => {
 const S = {
   pins: [], keys: {}, testMode: false, keyNote: "",
   source: params.get("src") === "live" ? "api" : "file",
-  file: null,                 // { label, runId, runIdFrom, isDemo, envelopes, verification, scale, frame }
-  live: { runs: null, runId: params.get("run"), envelopes: [], seen: new Set(), verification: null, scale: null, frame: null,
-          lastPollOk: null, lastVerifiedArrival: null, verifiedSeen: new Set(), connected: null, timer: null, error: "", truncated: false },
+  file: null,                 // { label, runId, runIdFrom, isDemo, rows, verification, scale, frame, error }
+  // paging: paging.mjs state (every raw row received, the cursor and its hash, the latest failure, and "degraded" once
+  // the stream was replaced or paging is unsupported). tracker: the v0.5 progress tracker, fed only valid pages.
+  live: { runs: null, runId: params.get("run"), paging: initialState(params.get("run") ?? ""), verification: null, scale: null, frame: null,
+          tracker: progressTracker(), connected: null, timer: null, error: "" },
   cursor: 0, cursors: {}, playing: null, following: true,
+  // Open dialogs follow the data. inspected: the inspector's subject, by stable identity ({ source, id }), and the
+  // verification it was last drawn from; chainFor: what the chain dialog was last drawn from.
+  inspected: null, chainFor: null,
 };
 const active = () => (S.source === "api" ? S.live : S.file);
 
-// ── keys: only the page's pins decide; keys from anywhere are checked against them in verifyChain ──────────────
+// ── keys: only the page's pins decide; keys from anywhere are checked against them by the verifier ────────────
 // Anyone can derive the test keys, so a public host must never accept them: there they would let a forged file show
 // as verified on our domain. Only a local server honours ?pins=test.
 const TEST_PIN_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
@@ -83,12 +98,14 @@ async function setupKeys() {
 
 async function setupPinnedKeys() {
   S.pins = VIEW_PINS.map((p) => ({ key_id: p.key_id, key_sha256: p.key_sha256 }));
-  if (S.pins.length === 0) { S.keyNote = "no production key is pinned in this page yet, so no envelope can verify"; return; }
+  if (S.pins.length === 0) { S.keyNote = "this page pins no key, so no envelope can verify"; return; }
   // The key may be served by the core; it is used only if its sha256 matches a pin.
   try {
     const r = await fetch("/api/view/key", { cache: "no-store" });
     if (!r.ok) { S.keyNote = `pinned key not served (/api/view/key answered ${r.status})`; return; }
-    Object.assign(S.keys, parseKeyResponse(await r.json()));
+    const body = await readBodyCapped(r, MAX_SMALL_JSON, "too_large");
+    if (!body.ok) { S.keyNote = "pinned key not served (/api/view/key answered with more than 256 KiB)"; return; }
+    Object.assign(S.keys, parseKeyResponse(strictJson(body.bytes)));
     S.keyNote = "pinned key fetched from /api/view/key and checked against the pin";
   } catch {
     S.keyNote = "pinned key not served (/api/view/key unreachable)";
@@ -96,48 +113,69 @@ async function setupPinnedKeys() {
 }
 
 // ── verification: the same path for both sources ─────────────────────────────────────────────────────────────
+// Both sources hold raw rows; paging.mjs verifyBytes() decodes each row strictly and runs the v0.5 checks, hashing
+// only what passed the input checks.
 async function verify(src) {
-  src.verification = await verifyChain(src.envelopes, { runId: src.runId, pins: S.pins, keys: S.keys });
+  const options = { runId: src.runId, pins: S.pins, keys: S.keys };
+  const previousK = src.verification ? src.verification.prefix_end : 0;
+  src.verification = src === S.live ? (await verifyRows(src.paging, options)).verification : await verifyBytes(src.rows, options);
   const trusted = src.verification.ordered.slice(0, src.verification.prefix);
   const scale = colorScale(trusted);
-  // A file is one whole run, so its scale is fixed. A live run can only widen its scale, never shift or narrow it.
-  src.scale = src === S.live && src.scale && scale ? { min: Math.min(src.scale.min, scale.min), max: Math.max(src.scale.max, scale.max), unit: src.scale.unit || scale.unit } : scale;
+  // A file is one whole run, so its scale is fixed. A live run's scale only widens while its prefix holds or grows,
+  // and is rebuilt from what remains when the prefix shrinks (nextScale).
+  src.scale = src === S.live ? nextScale(src.scale, previousK, scale, src.verification.prefix_end) : scale;
   src.frame = frameOf(trusted);
 }
 
 // ── replay ──────────────────────────────────────────────────────────────────────────────────────────────────
-async function loadReplay({ url, text, label, runId, isDemo, at = null }) {
+const MIB = 1024 * 1024;
+function replayError(label, runId, isDemo, message) {
+  S.file = { label, runId: runId ?? "", runIdFrom: "requested", isDemo, rows: [], verification: null, error: message };
+  $("conn").textContent = "";
+  render();
+}
+
+// bytes: the file's raw bytes, already read (a picked file), or undefined to fetch url. Either way the file must pass
+// the 64 MiB replay cap before a single row is decoded or parsed, and it is never decoded whole: each row on its own.
+async function loadReplay({ url, bytes, label, runId, isDemo, at = null }) {
   stop();
   $("conn").textContent = "loading…";
   try {
-    if (text === undefined) {
+    if (bytes === undefined) {
       const r = await fetch(url, { cache: "no-store" });
       if (!r.ok) throw new Error(`${url} answered ${r.status}`);
-      text = await r.text();
+      const body = await readBodyCapped(r, MAX_FILE_BYTES, "file_too_large");
+      if (!body.ok) throw new Error(`${url} is over the ${MAX_FILE_BYTES / MIB} MiB replay cap, so it was not read`);
+      bytes = body.bytes;
     }
+    if (bytes.length > MAX_FILE_BYTES) throw new Error(`the file is over the ${MAX_FILE_BYTES / MIB} MiB replay cap, so it was not read`);
   } catch (error) {
-    S.file = { label, runId: runId ?? "", runIdFrom: "requested", isDemo, envelopes: [], verification: null, error: String(error.message ?? error) };
-    $("conn").textContent = "";
-    render();
+    replayError(label, runId, isDemo, String(error.message ?? error));
     return;
   }
-  const envelopes = parseJsonl(text);
-  // The run to check against. For the bundled demo (or ?run=) the page names it. A file the user opened carries no
-  // request, so the view checks it against the run its lowest-seq envelope names, and says so on screen.
+  const rows = splitRows(bytes);   // v0.6 bytes-to-rows: split on LF only; each row decoded on its own, later
+  // The run to check against. For the bundled demo, or a page opened with ?run=, the page names it. Otherwise a file
+  // the user opened carries no request, so the view checks it against the run named by the lowest-seq row that
+  // passes the input checks (read, never hashed), and says so on screen.
   let runIdFrom = "requested";
   if (!runId) {
-    const first = envelopes.filter((e) => isObj(e?.event) && Number.isSafeInteger(e.event.seq) && isObj(e.run) && typeof e.run.run_id === "string")
-      .sort((a, b) => a.event.seq - b.event.seq)[0];
+    let first = null;
+    for (const row of rows) {
+      const text = row.length <= MAX_LINE_BYTES ? rowText(row) : null;
+      const checked = text === null ? null : checkLine(text);
+      if (checked?.ok && (first === null || checked.value.event.seq < first.event.seq)) first = checked.value;
+    }
     runId = first ? first.run.run_id : "";
     runIdFrom = "file";
   }
-  S.file = { label, runId, runIdFrom, isDemo, envelopes, verification: null };
+  S.file = { label, runId, runIdFrom, isDemo, rows, verification: null };
   await verify(S.file);
   $("conn").textContent = "";
   if (S.source !== "file") return;
   // ?seq=N (first load only) opens paused at seq N, for a presenter or a screenshot; otherwise play from the start.
   if (at !== null && Number.isInteger(at) && at >= 0) {
-    S.cursor = Math.min(S.file.verification.ordered.length, S.file.verification.ordered.filter((e, i) => S.file.verification.rows[i].seq !== null && S.file.verification.rows[i].seq <= at).length);
+    const rows = S.file.verification.rows;
+    S.cursor = rows.filter((row) => row.seq !== null && row.seq <= at).length;
     render();
   } else {
     S.cursor = 0;
@@ -151,63 +189,97 @@ function scheduleLive(ms) {
   clearTimeout(S.live.timer);
   if (S.source === "api") S.live.timer = setTimeout(pollLive, ms);
 }
+// Rule 4 (v0.6): GET /api/view/events?run_id=&cursor=<n>&limit=256[&cursor_hash=<hash of rows 0..n-1>] returns the
+// run's log rows n.. as JSONL, with x-next-cursor, x-has-more and x-cursor-hash. paging.mjs step() applies each page:
+// the caps before anything is split, then the cursor and the cursor hash over the raw bytes. The page keeps every raw
+// row it accepted and re-verifies the whole stream when rows arrive, so a late envelope at a seq it already has (a
+// conflict) still reaches it and freezes the board. A failed page keeps nothing and leaves the cursor and the prefix.
+// "stream replaced" (409) and "paging unsupported" (400, 404, 501) are terminal: polling stops, the view is never LIVE
+// again, and only a reload starts over from cursor 0. The view never pages by seq.
+const MAX_PAGES_PER_POLL = 16;   // as the reference client loop
+async function fetchPage(runId, req) {
+  const query = new URLSearchParams({ run_id: runId, cursor: String(req.cursor), limit: String(req.limit) });
+  if (req.cursor_hash !== undefined) query.set("cursor_hash", req.cursor_hash);
+  let r;
+  try { r = await fetch(`/api/view/events?${query}`, { cache: "no-store" }); } catch { return null; }   // transport
+  if (r.status !== 200) { r.body?.cancel().catch(() => {}); return { status: r.status, headers: r.headers, bodyBytes: new Uint8Array(0) }; }
+  // Raw bytes, never decoded whole; reading stops past 4 MiB, and a body that isn't read whole fails as transport.
+  const body = await readBodyCapped(r, MAX_API_BYTES, "response_too_large").catch(() => ({ ok: false }));
+  return { status: 200, headers: r.headers, bodyBytes: body.ok ? body.bytes : null };
+}
 async function pollLive() {
   const L = S.live;
+  if (L.paging.degraded) return;   // stopped for good; a reload starts over
   if (document.hidden) return scheduleLive(POLL_BACKOFF_MS);
   try {
     if (!L.runs || !L.runId || Date.now() - (L.runsAt ?? 0) > 15000) {
       const r = await fetch("/api/view/runs", { cache: "no-store" });
       if (!r.ok) throw new Error(`/api/view/runs answered ${r.status}`);
-      const doc = await r.json();
+      const body = await readBodyCapped(r, MAX_SMALL_JSON, "too_large");
+      if (!body.ok) throw new Error("/api/view/runs answered with more than 256 KiB");
+      if (S.live !== L) return;   // the run was switched while this poll was out
+      const doc = strictJson(body.bytes);
       const runs = (Array.isArray(doc) ? doc : isObj(doc) && Array.isArray(doc.runs) ? doc.runs : [])
         .filter((x) => isObj(x) && typeof x.run_id === "string" && x.run_id.length <= 128).slice(0, 200);
       L.runs = runs;
       L.runsAt = Date.now();
-      L.lastPollOk = Date.now();
       L.connected = true;
-      if (!L.runId && runs.length) L.runId = runs[0].run_id;
+      if (!L.runId && runs.length) { L.runId = runs[0].run_id; L.paging = initialState(L.runId); }
       renderRunPicker();
       if (!L.runId) { render(); return scheduleLive(POLL_BACKOFF_MS); }
     }
-    const after = L.envelopes.reduce((m, e) => (isObj(e?.event) && Number.isSafeInteger(e.event.seq) ? Math.max(m, e.event.seq) : m), 0);
-    const r = await fetch(`/api/view/events?run_id=${encodeURIComponent(L.runId)}&after=${after}`, { cache: "no-store" });
-    if (!r.ok) throw new Error(`/api/view/events answered ${r.status}`);
-    const incoming = parseFeedBody(await r.text());
-    L.lastPollOk = Date.now();
-    L.connected = true;
-    L.error = "";
-    let added = 0;
-    for (const env of incoming) {
-      if (L.envelopes.length >= MAX_ENVELOPES) { L.truncated = true; break; }
-      const key = JSON.stringify(env);           // an exact re-delivery is not a new envelope; a different one with the same seq is
-      if (L.seen.has(key)) continue;
-      L.seen.add(key);
-      L.envelopes.push(env);
-      added += 1;
-    }
-    if (added) {
-      await verify(L);
-      const v = L.verification;
-      let fresh = false;
-      v.rows.forEach((row) => {
-        if (row.status !== "verified") return;
-        const id = `${row.seq}:${row.event_id}`;
-        if (!L.verifiedSeen.has(id)) { L.verifiedSeen.add(id); fresh = true; }
-      });
-      if (fresh) L.lastVerifiedArrival = Date.now();
-      if (S.following) S.cursor = v.ordered.length;
-    }
-    render();
-    scheduleLive(POLL_OK_MS);
   } catch (error) {
+    if (S.live !== L) return;
     L.connected = false;
     L.error = String(error.message ?? error);
     render();
-    scheduleLive(POLL_BACKOFF_MS);   // calm back-off; one request every 5 s, nothing written to the console
+    return scheduleLive(POLL_BACKOFF_MS);   // calm back-off; one request every 5 s, nothing written to the console
   }
+  // Drain: keep fetching while x-has-more is true (at most 16 pages a poll), then poll every 1 s from the last cursor.
+  let outcome = "ok", added = 0;
+  for (let pages = 0; pages < MAX_PAGES_PER_POLL; pages += 1) {
+    const req = pageRequest(L.paging);
+    if (req === null) break;     // terminal: request() sends nothing more
+    const response = await fetchPage(L.runId, req);
+    if (S.live !== L) return;   // the run was switched while this poll was out
+    const result = await pageStep(L.paging, response, Date.now());
+    if (S.live !== L) return;
+    L.paging = result.state;
+    outcome = result.outcome;
+    added += result.newRows.length;
+    if (outcome !== "ok" || !L.paging.has_more) break;
+  }
+  L.connected = true;
+  L.error = "";
+  if (added) {
+    const anchor = !S.following && L.verification && S.cursor > 0 ? rowIdentity(L.verification, Math.min(S.cursor, L.verification.rows.length) - 1) : null;
+    await verify(L);              // the whole stream, every time new rows arrive
+    if (S.live !== L) return;
+    if (S.following) S.cursor = L.verification.rows.length;
+    else if (anchor) {
+      // Paused: stay on the same envelope, even if a late row was sorted in before it.
+      const at = resolveRow(L.verification, anchor);
+      if (at >= 0) S.cursor = at + 1;
+    }
+  }
+  // The tracker is fed only valid pages (rule 5); a failed latest poll shows its reason through liveLabel().
+  if (outcome === "ok") L.tracker.poll({ nowMs: Date.now(), ok: true, K: L.verification ? L.verification.prefix_end : 0, received: added });
+  else L.tracker.poll({ nowMs: Date.now(), ok: false });
+  render();
+  if (!L.paging.degraded) scheduleLive(outcome !== "ok" ? POLL_BACKOFF_MS : L.paging.has_more ? 0 : POLL_OK_MS);
+}
+// The mode pill: rule 5's label from paging.mjs liveLabel(), e.g. "LIVE · progress 3 s ago", "STALE · chain broken",
+// "STALE · paging error".
+function liveMode(now) {
+  const L = S.live;
+  const label = liveLabel(L.paging, L.tracker, now, L.verification ? L.verification.prefix_end : 0);
+  const mode = label.startsWith("LIVE") ? "LIVE" : "STALE";
+  return { mode, detail: label.slice(mode.length) };
 }
 function resetLive(runId) {
-  Object.assign(S.live, { runId, envelopes: [], seen: new Set(), verification: null, scale: null, frame: null, lastVerifiedArrival: null, verifiedSeen: new Set(), truncated: false });
+  // A new object, so a poll still out for the previous run writes only to the old one.
+  clearTimeout(S.live.timer);
+  S.live = { ...S.live, runId, paging: initialState(runId), verification: null, scale: null, frame: null, tracker: progressTracker(), timer: null };
   S.cursor = 0; S.following = true;
 }
 
@@ -248,13 +320,6 @@ function step(delta) {
 }
 
 // ── rendering ───────────────────────────────────────────────────────────────────────────────────────────────
-function heat(v, scale) {
-  const t = Math.max(0, Math.min(1, (v - scale.min) / ((scale.max - scale.min) || 1))) * (HEAT.length - 1);
-  const i = Math.min(HEAT.length - 2, Math.floor(t)), f = t - i, a = HEAT[i], b = HEAT[i + 1];
-  const c = [0, 1, 2].map((k) => Math.round(a[k] + (b[k] - a[k]) * f));
-  const lum = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
-  return { fill: `rgb(${c[0]},${c[1]},${c[2]})`, ink: lum > 0.5 ? "#0b1418" : "#f4f7f6" };
-}
 
 function render() {
   const src = active();
@@ -269,15 +334,19 @@ function render() {
   renderEvidence(v, view);
   renderFeed(v, n, view);
   renderOffline(src);
+  refreshDialogs();
 }
 
 function renderTop(src, v) {
+  // Rule 5, on the client clock: REPLAY for a file; LIVE only while polls succeed and K keeps growing, with how long
+  // ago it last grew ("LIVE · progress N s ago"); otherwise STALE.
   const now = Date.now();
-  const m = S.source === "file" ? modeLabel("file", null, null, now) : modeLabel("api", S.live.lastPollOk, S.live.lastVerifiedArrival, now);
+  const { mode: m, detail } = S.source === "file" ? { mode: "REPLAY", detail: "" } : liveMode(now);
   const modeEl = $("mode");
   modeEl.className = `mode ${m.toLowerCase()}`;
   $("modeText").textContent = m;
-  $("drill").hidden = !(src && isDrill(src.envelopes));
+  $("modeAge").textContent = detail;
+  $("drill").hidden = !(v && isDrill(v.ordered));
   $("testKeys").hidden = !S.testMode;
 
   // Run facts come only from the verified prefix; before anything verifies, only the requested run id is shown.
@@ -317,9 +386,10 @@ function renderControls(src, v, n) {
   const conn = $("conn");
   if (S.source === "api") {
     const L = S.live;
-    conn.className = `conn${L.connected === false ? " bad" : ""}`;
+    const stopped = L.paging.degraded ? " · stopped; reload to start over" : L.paging.failure ? " · retry in 5 s" : "";
+    conn.className = `conn${L.connected === false || L.paging.failure ? " bad" : ""}`;
     conn.textContent = L.connected === false ? "not connected · retry in 5 s"
-      : L.connected ? `${S.following ? "following" : "paused"}${L.truncated ? ` · feed capped at ${MAX_ENVELOPES}` : ""}` : "connecting…";
+      : L.connected ? `${S.following ? "following" : "paused"}${stopped}` : "connecting…";
     $("statusLeft").textContent = `Live · /api/view/events${L.runId ? ` · run ${L.runId}` : ""}`;
   } else {
     conn.className = "conn";
@@ -331,23 +401,30 @@ function renderFrozen(view, v) {
   const el = $("frozen");
   el.replaceChildren();
   if (!view || !view.broken || !v) { el.hidden = true; return; }
-  // The contract label, verbatim, then what broke it: the first row after the prefix.
+  // The contract label, verbatim, then what broke it: the first row after the prefix (never a verified row).
   const first = v.rows[v.prefix];
-  const reasons = first ? (first.oversize.length ? first.oversize.map((r) => `oversize: ${r}`) : first.reasons.map(reasonText)) : [];
-  const keyOnly = first && first.oversize.length === 0 && first.reasons.every((r) => KEY_ONLY.has(r));
+  const reasons = first ? rankReasons(first.reasons).map(reasonText) : [];
+  const keyOnly = first && first.status === "unverified" && first.reasons.every((r) => KEY_ONLY.has(r));
+  const what = !first ? "unverified" : isRejected(first) ? `${first.status}, rejected before hashing` : first.status;
   el.className = `frozen${keyOnly ? " cfg" : ""}`;
   el.hidden = false;
   el.append(v.label ?? `chain broken after seq ${view.broken.afterSeq}; board frozen at seq ${view.broken.afterSeq}`,
-    h("span", null, ` · seq ${first?.seq ?? "?"} is ${first?.status === "verified" ? "not projectable" : "unverified"}: ${reasons.join(", ") || "unknown"}${keyOnly && S.pins.length === 0 ? " (the production pin list is empty until the core key exists)" : ""}. Later envelopes are listed in the feed and never projected.`));
+    h("span", null, ` · ${first?.seq == null ? "a line with no readable seq" : `seq ${first.seq}`} is ${what}: ${reasons.join(", ") || "unknown"}${keyOnly && S.pins.length === 0 ? " (this page pins no key)" : ""}. Later envelopes are listed in the feed and never projected.`));
 }
 const KEY_ONLY = new Set(["key_not_pinned", "key_unavailable", "ed25519_unsupported"]);
 
 function emptyState(src, v, view) {
   if (S.source === "api" && S.live.connected !== true) return null;   // the offline card covers it
   if (src?.error) return ["Replay not loaded", src.error];
-  if (!v || v.ordered.length === 0) return S.source === "api" ? ["Waiting for envelopes", "Connected; this run has no envelopes yet."] : ["Nothing loaded", "Open a JSONL replay file."];
+  if (!v || v.ordered.length === 0) {
+    const why = S.live.paging.failure;
+    return S.source === "api" ? ["Waiting for envelopes", why ? `Connected, but the last poll failed: ${REASON_TEXT[why] ?? why}.` : "Connected; this run has no envelopes yet."] : ["Nothing loaded", "Open a JSONL replay file."];
+  }
   if (v.prefix === 0) {
-    return ["Nothing verified to show", `${S.keyNote ? `${S.keyNote[0].toUpperCase()}${S.keyNote.slice(1)}. ` : ""}Panels show only the verified prefix; the feed lists every envelope, marked.`];
+    // The key note explains the empty board only when the first row failed on its key; otherwise the banner says why.
+    const first = v.rows[0];
+    const keyWhy = first && first.status === "unverified" && first.reasons.every((r) => KEY_ONLY.has(r) || r === "key_hash_mismatch") && S.keyNote;
+    return ["Nothing verified to show", `${keyWhy ? `${S.keyNote[0].toUpperCase()}${S.keyNote.slice(1)}. ` : ""}Panels show only the verified prefix; the feed lists every envelope, marked.`];
   }
   if (view.n === 0) return ["Ready", "Press Space to play, or → to step one envelope."];
   return null;
@@ -409,7 +486,7 @@ function drawLayout(c, scale, frame) {
     const x = (r.x - f.x0) * U, y = (f.y1 - (r.y + r.h)) * U, w = r.w * U, hh = r.h * U;   // lower-left origin, y up
     const t = temps && Object.hasOwn(temps, r.id) ? temps[r.id] : null;
     const col = t !== null && scale ? heat(t, scale) : { fill: "#2c4049", ink: "#d3dee2" };
-    svg.append(s("rect", { x, y, width: w, height: hh, rx: 3, fill: col.fill, "fill-opacity": t === null ? 0.55 : faded ? 0.45 : 1,
+    svg.append(s("rect", { "data-chip": r.id, x, y, width: w, height: hh, rx: 3, fill: col.fill, "fill-opacity": t === null ? 0.55 : faded ? 0.45 : 1,
       stroke: r.layer > 0 ? "#dfe8e6" : t === null ? "#8fa5ad" : "#0a1317", "stroke-width": r.layer > 0 ? 2.5 : 2, "stroke-dasharray": r.layer > 0 ? "8 5" : null }));
     const label = r.layer > 0 ? `${r.id} L${r.layer}` : r.id;
     // Fit the id over the value on two lines, or both on one line for a short, wide chiplet: whichever is larger.
@@ -518,17 +595,13 @@ function renderEvidence(v, view) {
 }
 
 function checkCell(r) {
-  if (r.kind === "oversize") return ["warn", "⚠ oversize · not projected"];
-  if (r.status !== "verified") {
-    const worst = [...r.reasons].sort((a, b) => rank(a) - rank(b))[0];
-    return ["bad", `✕ ${reasonText(worst)}`];
-  }
+  if (r.kind === "oversize") return ["warn", "⚠ oversize · never hashed"];
+  if (r.kind === "malformed") return ["bad", "✕ malformed · never hashed"];
+  if (r.status !== "verified") return ["bad", `✕ ${reasonText(rankReasons(r.reasons)[0])}`];
   if (!r.projected) return ["warn", "✓ verified, not projected"];
   if (r.rejected) return ["warn", `✓ verified · rejected: ${r.rejected}`];
   return ["ok", "✓ verified"];
 }
-const RANKS = ["hash_mismatch", "bad_sig", "prev_hash_mismatch", "seq_gap", "seq_repeat", "run_mismatch", "malformed", "bad_version", "bad_alg", "key_hash_mismatch", "key_unavailable", "key_not_pinned"];
-const rank = (code) => { const i = RANKS.indexOf(code); return i < 0 ? 99 : i; };
 
 function renderFeed(v, n, view) {
   const feed = $("feed"), pill = $("feedPill");
@@ -541,7 +614,7 @@ function renderFeed(v, n, view) {
   const rows = feedRows(v, n, view?.rejected);
   const unv = rows.filter((r) => r.status !== "verified").length;
   pill.className = unv ? "pill bad" : "pill ok";
-  pill.textContent = `${n} / ${v.ordered.length} shown${unv ? ` · ${unv} unverified` : ""}`;
+  pill.textContent = `${n} / ${v.ordered.length} shown${unv ? ` · ${unv} not verified` : ""}`;
   const shown = rows.slice(-FEED_ROWS_SHOWN).reverse();
   for (const r of shown) {
     const [cls, text] = checkCell(r);
@@ -564,7 +637,7 @@ function renderOffline(src) {
   off.hidden = false;
   $("offTitle").textContent = S.live.connected === null ? "Connecting to the live feed…" : "Live feed not connected";
   $("offText").textContent = S.live.connected === null ? "Asking /api/view/runs." :
-    `The page asks /api/view/runs every 5 s and gets no answer (${S.live.error || "no response"}). The core that serves the live routes is not running yet. The replay is still available.`;
+    `The page asks /api/view/runs every 5 s and gets no answer (${S.live.error || "no response"}). The core that serves the live routes isn't answering. The replay is still available.`;
 }
 
 function renderRunPicker() {
@@ -579,21 +652,39 @@ function kv(rows) {
   return h("div", { class: "kv" }, rows.map(([k, val]) => (k === "§" ? h("div", { class: "sect" }, val) : [h("div", { class: "k" }, k), h("div", { class: "v" }, val ?? "-")])));
 }
 const asText = (x) => (x === null || x === undefined ? "-" : typeof x === "string" ? x : JSON.stringify(x));
+// The inspector's subject is an envelope identity (event_id and stored hash), not a row index: a late row at an old
+// seq is sorted in before others and shifts every index after it.
 function inspect(i) {
   const v = active()?.verification;
-  if (!v || !v.ordered[i]) return;
+  if (!v || !v.rows[i]) return;
   stop();
-  const env = v.ordered[i], row = v.rows[i];
-  const ok = row.status === "verified";
+  S.inspected = { source: S.source, id: rowIdentity(v, i) };
+  renderInspector();
+  $("inspector").showModal();
+}
+function renderInspector() {
+  const src = S.inspected.source === "api" ? S.live : S.file;
+  const v = src?.verification ?? null;
+  S.inspected.drawnFrom = v;
+  const i = v ? resolveRow(v, S.inspected.id) : -1;
+  if (i < 0) {
+    $("inspTitle").textContent = "Envelope no longer in view";
+    $("inspBody").replaceChildren(kv([["status", "The rows changed and this envelope no longer resolves. Close this and pick a row again."],
+      ["event_id", S.inspected.id.event_id ?? "unreadable"], ["hash (as stored)", S.inspected.id.hash ?? "unreadable"]]));
+    return;
+  }
+  const env = v.ordered[i], row = v.rows[i], meta = v.meta[i];
+  const where = S.inspected.source === "api" ? `received line ${meta.index + 1}` : `line ${meta.index + 1} of the file`;
   const rows = [
-    ["status", `${ok ? "verified" : "unverified"}${i < v.prefix ? " · in the projected prefix" : " · not projected"}`],
+    ["status", `${row.status}${i < v.prefix ? " · in the projected prefix" : " · not projected"}`],
     ["reasons", row.reasons.length ? row.reasons.map((r) => `${r} (${reasonText(r)})`).join(", ") : "none"],
-    ["oversize", row.oversize.length ? row.oversize.join(", ") : "within the caps"],
+    ["input checks", isRejected(row) ? "failed: never canonicalized, hashed or verified" : "passed (size, structure, schema)"],
+    ["position", where],
   ];
-  if (row.reasons.includes("malformed") || !isObj(env?.event)) {
-    rows.push(["§", "envelope"], ["content", "malformed: not rendered"]);
-  } else if (row.oversize.length) {
-    rows.push(["§", "envelope"], ["seq", asText(env.event.seq)], ["event_id", asText(env.event.event_id)], ["hash", asText(env.hash)], ["content", "over the size cap: not rendered further"]);
+  if (isRejected(row) || !isObj(env)) {
+    // Only fields that could be read safely; the content itself is never rendered.
+    rows.push(["§", "rejected line"], ["seq", row.seq ?? "unreadable"], ["event_id", row.event_id ?? "unreadable"], ["hash (as stored)", meta.hash ?? "unreadable"],
+      ["content", "not rendered: it failed the input checks"]);
   } else {
     const a = isObj(env.actor) ? env.actor : {}, run = isObj(env.run) ? env.run : {}, sig = isObj(env.sig) ? env.sig : {};
     rows.push(["§", "event"], ["seq", asText(env.event.seq)], ["event_id", asText(env.event.event_id)], ["type", asText(env.event.type)],
@@ -604,21 +695,50 @@ function inspect(i) {
       ["§", "body"], ["", h("pre", { class: "json" }, JSON.stringify(env.event.body ?? null, null, 2))]);
     if (isObj(env.values)) rows.push(["§", "values (display only)"], ["", h("pre", { class: "json" }, JSON.stringify(env.values, null, 2))]);
   }
-  $("inspTitle").textContent = `Envelope ${row.seq == null ? "?" : `seq ${row.seq}`} · ${ok ? "verified" : "unverified"}`;
+  $("inspTitle").textContent = `Envelope ${row.seq == null ? "?" : `seq ${row.seq}`} · ${row.status}`;
   $("inspBody").replaceChildren(kv(rows));
-  $("inspector").showModal();
 }
 function showChain() {
+  renderChain();
+  $("chainDlg").showModal();
+}
+function renderChain() {
   const src = active(), v = src?.verification;
-  const rows = [["pins in this page", S.testMode ? `${S.pins.length} (TEST KEYS)` : `${S.pins.length}${S.pins.length ? "" : " (production list is empty until the core key exists)"}`],
+  S.chainFor = { v, paging: S.source === "api" ? S.live.paging : null, tracker: S.source === "api" ? S.live.tracker.state() : null };
+  const rows = [["pins in this page", S.testMode ? `${S.pins.length} (TEST KEYS)` : `${S.pins.length}${S.pins.length ? "" : " (an empty list verifies nothing)"}`],
     ["key source", S.keyNote || "-"], ["run checked", src?.runId ? `${src.runId} (${src.runIdFrom === "file" ? "from the file you opened" : "requested by the page"})` : "-"]];
+  if (S.source === "api") {
+    const t = S.live.tracker.state();
+    const why = S.live.paging.failure;
+    rows.push(["last poll", S.live.connected === false ? `failed: ${S.live.error}` : why ? `failed: ${REASON_TEXT[why] ?? why}${S.live.paging.degraded ? " (stopped; reload to start over)" : ""}` : t.last_poll_ok_ms ? "ok" : "-"],
+      ["progress", t.last_progress_ms ? `K reached ${t.K} ${Math.max(0, Math.floor((Date.now() - t.last_progress_ms) / 1000))} s ago` : "K has not grown yet"]);
+  }
   if (v) {
     const sum = chainSummary(v.rows);
-    rows.push(["verified", `${sum.verified} of ${sum.total}`], ["projected prefix", v.prefix ? `seq 1 to ${v.ordered[v.prefix - 1].event.seq} (${v.prefix} envelopes)` : "none"],
-      ["oversize rows", String(sum.oversize)], ["§", "reasons"], ...sum.reasons.map((r) => [r.code, `${reasonText(r.code)} · ${r.count} row${r.count > 1 ? "s" : ""} · first at seq ${r.firstSeq ?? "?"}`]));
+    rows.push(["verified", `${sum.verified} of ${sum.total} rows`], ["projected prefix", v.prefix ? `seq 1 to ${v.prefix_end} (${v.prefix} envelopes)` : "none"],
+      ["rejected rows", `${sum.rejected}${sum.rejected ? " (failed the input checks; never hashed)" : ""}`],
+      ["duplicates ignored", `${v.duplicates}${v.duplicates ? " (identical envelopes; no row)" : ""}`],
+      ...(S.source === "api" ? [["paging", `by cursor: ${S.live.paging.cursor} rows read`], ["cursor hash", short(S.live.paging.cursor_hash, 16)]] : []),
+      ["§", "reasons"], ...sum.reasons.map((r) => [r.code, `${reasonText(r.code)} · ${r.count} row${r.count > 1 ? "s" : ""} · first at seq ${r.firstSeq ?? "?"}`]));
   }
   $("chainBody").replaceChildren(kv(rows));
-  $("chainDlg").showModal();
+}
+// Called on every render: an open dialog is redrawn from the current data whenever what it shows has changed, so it
+// never contradicts the board behind it. Its scroll position is kept.
+function refreshDialogs() {
+  const keepScroll = (el, draw) => { const top = el.scrollTop; draw(); el.scrollTop = top; };
+  if ($("inspector").open && S.inspected) {
+    const src = S.inspected.source === "api" ? S.live : S.file;
+    if ((src?.verification ?? null) !== S.inspected.drawnFrom) keepScroll($("inspBody"), renderInspector);
+  }
+  if ($("chainDlg").open && S.chainFor) {
+    const src = active();
+    const live = S.source === "api";
+    const t = live ? S.live.tracker.state() : null;
+    const changed = (src?.verification ?? undefined) !== S.chainFor.v || (live && (S.live.paging !== S.chainFor.paging ||
+      t.K !== S.chainFor.tracker.K || t.last_poll_ok_ms !== S.chainFor.tracker.last_poll_ok_ms));
+    if (changed) keepScroll($("chainBody"), renderChain);
+  }
 }
 
 // ── wiring ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -626,20 +746,25 @@ $("play").onclick = () => (S.playing ? stop() : play());
 $("scrub").oninput = (e) => { stop(); if (S.source === "api") S.following = false; S.cursor = Number(e.target.value); render(); };
 for (const b of $("source").querySelectorAll("button")) b.onclick = () => setSource(b.dataset.src);
 $("backToReplay").onclick = () => setSource("file");
-$("runPick").onchange = (e) => { resetLive(e.target.value); clearTimeout(S.live.timer); pollLive(); render(); };
+$("runPick").onchange = (e) => { resetLive(e.target.value); pollLive(); render(); };
+// A picked file is checked against the run the page requests (?run=) if there is one, otherwise against the run its
+// own lowest-seq line names (shown as such). Its raw size is checked before a byte of it is read.
 $("file").onchange = async (e) => {
   const f = e.target.files && e.target.files[0];
   if (!f) return;
-  const text = await f.text();
   e.target.value = "";
   if (S.source !== "file") setSource("file");
-  await loadReplay({ text, label: `${f.name} · opened file`, runId: null, isDemo: false });
+  const label = `${f.name} · opened file`;
+  if (f.size > MAX_FILE_BYTES) { stop(); replayError(label, null, false, `the file is over the ${MAX_FILE_BYTES / MIB} MiB replay cap, so it was not read`); return; }
+  await loadReplay({ bytes: new Uint8Array(await f.arrayBuffer()), label, runId: params.get("run") || null, isDemo: false });
 };
 $("feed").onclick = (e) => { const row = e.target.closest(".row[data-i]"); if (row) inspect(Number(row.dataset.i)); };
 $("feed").onkeydown = (e) => { if (e.key === "Enter") { const row = e.target.closest(".row[data-i]"); if (row) inspect(Number(row.dataset.i)); } };
 $("chain").onclick = showChain;
 $("inspClose").onclick = () => $("inspector").close();
 $("chainClose").onclick = () => $("chainDlg").close();
+$("inspector").addEventListener("close", () => { S.inspected = null; });
+$("chainDlg").addEventListener("close", () => { S.chainFor = null; });
 $("limitsLink").onclick = (e) => { e.preventDefault(); $("limits").showModal(); };
 $("limitsClose").onclick = () => $("limits").close();
 document.addEventListener("keydown", (e) => {

@@ -34,7 +34,7 @@ precede approval, and approval must be current and unexpired.
 
 All records in a run agree on payer/run cap; all records in an arm agree on its
 cap. Caps aggregate across models and roles. The checker rereads the registry
-on every check/reservation, so removal revokes admission. An invalid record
+on every check and inside each reservation's critical section. An invalid record
 fails the entire registry closed. Registry files and accounting storage are
 trusted, service-owned inputs: labs cannot write them. The `approver` field is
 an audit assertion in a human-reviewed artifact, not proof of human identity or
@@ -66,6 +66,40 @@ replace or relocate it to restart a run. Accounting locks and atomic fsynced
 writes protect concurrent reservations. Restarting against existing storage
 retains every charge; corrupt state refuses calls. Storage integrity and
 ownership are service deployment responsibilities, as for the existing budget.
+
+## Policy publication and reservation ordering
+
+Operators must stage human-reviewed registry changes separately and install them
+with `admission.publish_registry(reviewed_path, registry_path=live_path)`. This
+helper validates and atomically publishes an already approved artifact; it does
+not grant approval or expose a lab-facing endpoint. Never edit/replace a live
+registry directly, deploy over it with a checkout, or replace its lock sidecar.
+Use stable service-owned paths shared by all workers and the operator publisher.
+Keep the reviewed versions as audit artifacts, indexed by their policy hash.
+
+A reservation takes the spend ledger lock, then `<registry_path>.lock`, and
+holds both until the durable spend write finishes. Publication takes that same
+registry lock. Different runs with different spend ledgers still serialize on
+the common registry lock. After both lock waits, the reservation rereads the
+registry, validates entitlement and expiry, and compares the complete current
+record against the adapter's quote (including route, allowed roles, payer,
+prices and caps). It checks aggregate spend and expiry again before committing.
+The SHA256 of the canonical complete registry is stored as `policy_sha256` on
+both the immutable quoted record and every new reservation. Canonical bytes use
+`sentilab_core.envelope.canonical`; even changes to probe evidence invalidate an
+outstanding quote. Old ledger rows without hashes remain charged; no historical
+policy evidence is invented for them.
+
+The successful durable reservation write is the commit point. A publication
+that completes first applies to the waiting request: revoked/expired admission
+or any changed quote refuses it without a reservation or transport call. A
+request committed first may proceed to transport or finish in flight under its
+pinned policy even if publication revokes it or its admission expires afterward.
+Revocation stops subsequent reservations; it does not cancel committed work or
+refund charges. Failed, timed-out and cancelled committed requests also retain
+their full reservation. A new request always needs a fresh check/reservation.
+
+## Transport boundary
 
 Use `sentilab_core.model_calls.AdmittedLab` for live propose (lead), review
 (judge), and repair (lead). It checks the configured provider/version and role,
@@ -110,4 +144,7 @@ python -m unittest -q sentilab_core.test_admission sentilab_core.test_model_call
 The real adapter is driven by in-memory transport fixtures. Tests prove refusal
 before transport, role/route binding, pre-call pricing, shared caps, concurrent
 reservations, restart persistence, quote changes, and retained charges after
-failure/cancellation. The CLI tests launch the shipped recorder as a subprocess.
+failure/cancellation. Real contended `flock` tests cover revocation, expiry,
+quote/route/role/payer/cap changes while waiting, publication blocked by an
+uncommitted reservation, and completion of already committed work after
+revocation. The CLI tests launch the shipped recorder as a subprocess.

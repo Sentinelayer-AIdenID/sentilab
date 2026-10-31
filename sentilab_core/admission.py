@@ -9,12 +9,14 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from functools import lru_cache
+import hashlib
 import json
 from pathlib import Path
 import re
 
 from jsonschema import Draft202012Validator, FormatChecker
 
+from .envelope import canonical
 from .ledger import atomic_json, lock
 
 DIRECTORY = Path(__file__).resolve().parents[1] / "docs/sentilab/admission"
@@ -112,6 +114,7 @@ class AdmissionRecord:
     arm_cap_usd: Decimal
     run_cap_usd: Decimal
     probe_checked_at: str
+    policy_sha256: str
 
     def ceiling_usd(self, input_tokens, output_tokens):
         for value in (input_tokens, output_tokens):
@@ -121,10 +124,10 @@ class AdmissionRecord:
                 output_tokens * self.output_usd_per_million) / Decimal(1000000)
 
 
-def _records(path):
+def _validated_records(data):
     try:
-        data = _read(path)
         Draft202012Validator(schema(), format_checker=FormatChecker()).validate(data)
+        policy_sha256 = hashlib.sha256(canonical(data)).hexdigest()
         rows, seen, runs, arms = [], set(), {}, {}
         now = datetime.now(timezone.utc)
         for raw in data["records"]:
@@ -154,11 +157,40 @@ def _records(path):
             if arm > row["run_cap_usd"]:
                 raise ValueError("arm cap exceeds run cap")
             row["roles"] = tuple(row["roles"])
-            rows.append(AdmissionRecord(**row, probe_checked_at=probe["checked_at"]))
+            rows.append(AdmissionRecord(**row, probe_checked_at=probe["checked_at"],
+                                        policy_sha256=policy_sha256))
         return rows
     except Exception:
         # Validation errors can embed input values: never surface their content.
         raise NotAdmitted("invalid or unavailable admission registry") from None
+
+
+def _registry_data(path):
+    try:
+        return _read(path)
+    except Exception:
+        raise NotAdmitted("invalid or unavailable admission registry") from None
+
+
+def _registry_lock_path(path):
+    path = Path(path)
+    return path.with_name(path.name + ".lock")
+
+
+def publish_registry(reviewed_path, *, registry_path=DEFAULT_REGISTRY):
+    """Install an already human-reviewed artifact; never approve or provision.
+
+    Every publisher and reservation sharing a registry uses this sidecar lock,
+    even when different runs use different spend ledgers. Never edit a live
+    registry directly or replace its lock file.
+    """
+    try:
+        with lock(_registry_lock_path(registry_path)):
+            data = _registry_data(reviewed_path)
+            _validated_records(data)
+            atomic_json(registry_path, data)
+    except OSError:
+        raise NotAdmitted("admission registry could not be published") from None
 
 
 class Admission:
@@ -169,6 +201,7 @@ class Admission:
     """
     def __init__(self, registry_path=DEFAULT_REGISTRY, *, run_id, arm_id, spend_path):
         self.registry_path = Path(registry_path)
+        self.registry_lock_path = _registry_lock_path(self.registry_path)
         self.run_id, self.arm_id = _identifier(run_id), _identifier(arm_id)
         self.spend_path = Path(spend_path)
         self.lock_path = self.spend_path.with_name(self.spend_path.name + ".lock")
@@ -182,7 +215,7 @@ class Admission:
             _identifier(model_id)
         except ValueError:
             raise NotAdmitted("invalid model id") from None
-        rows = _records(self.registry_path)
+        rows = _validated_records(_registry_data(self.registry_path))
         for row in rows:
             if (row.run_id, row.arm_id, row.model_id) == (self.run_id, self.arm_id, model_id):
                 return row
@@ -196,8 +229,13 @@ class Admission:
                     not isinstance(state["reservations"], list)):
                 raise ValueError("invalid accounting state")
             for row in state["reservations"]:
-                if not isinstance(row, dict) or set(row) != {"run_id", "arm_id", "model_id", "usd"}:
+                fields = {"run_id", "arm_id", "model_id", "usd"}
+                if not isinstance(row, dict) or set(row) not in (fields, fields | {"policy_sha256"}):
                     raise ValueError("invalid accounting row")
+                # Retain charges from older ledgers without inventing policy evidence.
+                if "policy_sha256" in row and (not isinstance(row["policy_sha256"], str) or
+                        not re.fullmatch(r"[0-9a-f]{64}", row["policy_sha256"])):
+                    raise ValueError("invalid reservation policy hash")
                 for field in ("run_id", "arm_id", "model_id"):
                     _identifier(row[field])
                 _usd(row["usd"])
@@ -213,17 +251,23 @@ class Admission:
     def meter(self, model_id, usd, *, expected_record=None):
         """Reserve a conservative USD ceiling atomically BEFORE any paid I/O."""
         amount = _usd(usd)
-        record = self.check(model_id)
-        if expected_record is not None and record != expected_record:
-            raise NotAdmitted("admission changed since the cost quote")
         try:
-            with lock(self.lock_path):
+            # Always spend -> registry; publication takes only the registry lock.
+            # Fresh validation and quote equality bind route, roles, payer, prices,
+            # caps and entitlement to this reservation, after either lock wait.
+            with lock(self.lock_path), lock(self.registry_lock_path):
+                record = self.check(model_id)
+                if expected_record is not None and record != expected_record:
+                    raise NotAdmitted("admission changed since the cost quote")
                 state = self._ledger()
                 arm, run = self._totals(state)
                 if arm + amount > record.arm_cap_usd or run + amount > record.run_cap_usd:
                     raise OverCap("model call exceeds arm or run cap")
+                if datetime.now(timezone.utc) >= _time(record.expires_at):
+                    raise NotAdmitted("admission expired before reservation")
                 state["reservations"].append(dict(run_id=self.run_id, arm_id=self.arm_id,
-                                                  model_id=model_id, usd=_money(amount)))
+                                                  model_id=model_id, usd=_money(amount),
+                                                  policy_sha256=record.policy_sha256))
                 atomic_json(self.spend_path, state)
         except OSError:
             raise OverCap("spend reservation could not be persisted") from None

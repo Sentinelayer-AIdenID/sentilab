@@ -1,0 +1,15 @@
+{
+  "optimizer_steps": 20,
+  "examples_consumed": 200,
+  "trainable_parameters": 16515072,
+  "changed_tensors": 504,
+  "adapter_files": {
+    "adapter_config.json": "ef6104b4d006baf86f90ddf1d0fc32a12a3951b70bfe3c2a0f06afcf5bdb413c",
+    "adapter_model.safetensors": "695581e310def332bd6307527eff6546d95eebb88bec7e6f6ce288a5a61c0f80",
+    "README.md": "2892f901d9db4eac1bf795ca98e17127d41034fbbaf5d43340afe1d48b7bb5b5"
+  },
+  "elapsed_seconds": 59.861824421001074,
+  "loss_first": 2.000029969215393,
+  "loss_last": 3.3144783401439782e-06,
+  "claim": "Fixture-label adapter plumbing only"
+}

@@ -2,10 +2,14 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+import fcntl
+import hashlib
 import json
 from pathlib import Path
 import tempfile
+from threading import Event
 import unittest
+from unittest.mock import patch
 
 from sentilab_core import admission
 
@@ -148,6 +152,86 @@ class AdmissionTests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=8) as pool:
             self.assertEqual(sum(pool.map(reserve, gates)), 3)
         self.assertEqual(self.gate().spent()["arm_usd"], "0.9")
+
+    def test_reservation_pins_full_policy_and_preserves_legacy_charges(self):
+        gate = self.gate()
+        # Existing durable charges remain valid even though they predate policy hashes.
+        gate.spend_path.write_text(json.dumps(dict(schema_version=1, reservations=[dict(
+            run_id="fixture-run", arm_id="arm-a", model_id="fixture-model", usd="0.9")])))
+        record = gate.check("fixture-model")
+        gate.meter("fixture-model", "0.1", expected_record=record)
+        state = json.loads(gate.spend_path.read_text())
+        policy = json.dumps(json.loads(self.registry.read_text()), sort_keys=True,
+                            separators=(",", ":"), ensure_ascii=False).encode()
+        self.assertEqual(state["reservations"][-1]["policy_sha256"], hashlib.sha256(policy).hexdigest())
+        self.assertEqual(state["reservations"][-1]["policy_sha256"], record.policy_sha256)
+        with self.assertRaises(admission.OverCap):
+            self.gate().meter("fixture-model", "0.001")
+        state["reservations"][-1]["policy_sha256"] = "invalid"
+        gate.spend_path.write_text(json.dumps(state))
+        with self.assertRaises(admission.OverCap):
+            gate.meter("fixture-model", "0")
+
+    def test_publication_rejects_invalid_artifact_and_pins_evidence_changes(self):
+        gate = self.gate()
+        record = gate.check("fixture-model")
+        original = self.registry.read_bytes()
+        staged = self.root / "reviewed.json"
+        staged.write_text('{"schema_version":1,"records":[{}]}')
+        with self.assertRaises(admission.NotAdmitted):
+            admission.publish_registry(staged, registry_path=self.registry)
+        self.assertEqual(self.registry.read_bytes(), original)
+        data = json.loads(original)
+        data["records"][0]["probe"]["models"].append("other-proven-model")
+        staged.write_text(json.dumps(data))
+        admission.publish_registry(staged, registry_path=self.registry)
+        self.assertNotEqual(gate.check("fixture-model").policy_sha256, record.policy_sha256)
+        with self.assertRaises(admission.NotAdmitted):
+            gate.meter("fixture-model", "0.002", expected_record=record)
+        self.assertEqual(gate.spent()["run_usd"], "0")
+
+    def test_publication_waits_for_reservation_commit(self):
+        gate = self.gate()
+        quoted = gate.check("fixture-model")
+        staged = self.root / "reviewed.json"
+        write_registry(staged, [])
+        committing, release, publisher_waiting = Event(), Event(), Event()
+        real_write, real_flock = admission.atomic_json, fcntl.flock
+
+        def hold_commit(path, value):
+            if Path(path) == gate.spend_path:
+                committing.set()
+                if not release.wait(5):
+                    raise RuntimeError("test did not release reservation commit")
+            return real_write(path, value)
+
+        def observe_flock(handle, flags):
+            if flags == fcntl.LOCK_EX:
+                try:
+                    return real_flock(handle, flags | fcntl.LOCK_NB)
+                except BlockingIOError:
+                    publisher_waiting.set()
+            return real_flock(handle, flags)
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            with patch("sentilab_core.admission.atomic_json", side_effect=hold_commit), \
+                    patch("sentilab_core.ledger.fcntl.flock", side_effect=observe_flock):
+                reserve = pool.submit(gate.meter, "fixture-model", "0.002", expected_record=quoted)
+                try:
+                    self.assertTrue(committing.wait(5), "reservation did not reach commit")
+                    publish = pool.submit(admission.publish_registry, staged, registry_path=self.registry)
+                    self.assertTrue(publisher_waiting.wait(5), "publisher never contended on real flock")
+                    self.assertFalse(publish.done())
+                    self.assertEqual(gate.check("fixture-model"), quoted)
+                finally:
+                    release.set()
+                reserve.result(timeout=5)
+                publish.result(timeout=5)
+        with self.assertRaises(admission.NotAdmitted):
+            gate.check("fixture-model")
+        state = json.loads(gate.spend_path.read_text())
+        self.assertEqual(state["reservations"][0]["policy_sha256"], quoted.policy_sha256)
+        self.assertEqual(gate.spent()["run_usd"], "0.002")
 
 
 if __name__ == "__main__":

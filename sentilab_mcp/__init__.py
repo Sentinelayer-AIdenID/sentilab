@@ -54,3 +54,22 @@ async def sentilab_dataset_export(context, **arguments):
 
 TOOLS = {"sentilab_live_" + name: globals()["sentilab_live_" + name] for name in ("run", "status", "stop", "verify")}
 TOOLS["sentilab_dataset_export"] = sentilab_dataset_export
+
+
+def sentilab_research_request(context, **arguments):
+    from sentilab_core.research import request
+    return request(context, **arguments)
+
+
+def sentilab_research_status(context, **arguments):
+    from sentilab_core.research import status
+    return status(context, **arguments)
+
+
+def sentilab_research_export(context, **arguments):
+    from sentilab_core.research import export
+    return export(context, **arguments)
+
+
+TOOLS.update({"sentilab_research_" + name: globals()["sentilab_research_" + name]
+              for name in ("request", "status", "export")})
