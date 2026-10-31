@@ -1,7 +1,8 @@
-"""Pure SLAB-041 decisions over validated ledger data; no I/O or solver imports.
+"""Pure SLAB-041 policy over validated, normalized ledger records.
 
-The caller reads the versioned freeze JSON once and passes it explicitly. These
-functions do not authenticate ledger events or replace contract validation.
+No clock, randomness, I/O, solver or model. The caller supplies the pinned JSON
+and verifies ledger signatures, physical hashes, measurement authority and run
+boundaries before calling. Policy validation is not an authentication boundary.
 """
 from dataclasses import dataclass, replace
 from fractions import Fraction
@@ -9,13 +10,23 @@ from math import comb, isfinite
 
 
 @dataclass(frozen=True)
+class Reference:
+    j: float
+    uncertainty: float
+    context: str
+
+
+@dataclass(frozen=True)
 class Candidate:
-    candidate_hash: str
+    candidate_hash: str  # Canonical physical layout, not a signed proposal hash.
     lab: str
     arm: str
     j: float
-    evaluation_id: str
+    evaluation_id: str  # Lab opportunity/proposal identity, distinct from layout.
     valid: bool
+    uncertainty: float
+    context: str  # Pinned family/seed/arm/epoch and evaluator/scenario context.
+    measurement_id: str  # One authoritative evaluated measurement per layout/context.
 
 
 @dataclass(frozen=True)
@@ -26,10 +37,20 @@ class Attempt:
     attempt: int
     status: str
     j: float | None
+    execution: str  # Core evidence: not_started, started, or unknown.
+    uncertainty: float
+    context: str
+    measurement_id: str | None
 
 
 def _number(value, *, nonnegative=False):
-    if type(value) not in (int, float) or not isfinite(value):
+    if type(value) not in (int, float):
+        raise ValueError("finite numeric value required")
+    try:
+        finite = isfinite(value)
+    except OverflowError:
+        finite = False
+    if not finite:
         raise ValueError("finite numeric value required")
     number = Fraction(str(value))
     if nonnegative and number < 0:
@@ -37,15 +58,34 @@ def _number(value, *, nonnegative=False):
     return number
 
 
+def _text(value):
+    return isinstance(value, str) and bool(value)
+
+
 def _parameter(freeze, name):
     return _number(freeze["parameters"][name], nonnegative=True)
 
 
 def validate_freeze(freeze):
-    """Small schema/invariant check; incomplete preregistrations are valid files."""
-    if freeze.get("version") != "slab041-freeze/1":
+    """Small schema/invariant check; null scientific pins are valid draft data."""
+    sections = {"version", "status", "source_rows", "endpoints", "families", "arms",
+                "budget", "epoch", "nomination", "gate", "parameters", "pins"}
+    if not isinstance(freeze, dict) or set(freeze) != sections:
+        raise ValueError("missing or unknown freeze section")
+    if freeze["version"] != "slab041-freeze/1":
         raise ValueError("unknown freeze version")
-    if set(freeze.get("arms", {})) != {"B0", "B1", "B2", "B3", "B4"}:
+    pin_names = {
+        "metric_id", "evaluator_version", "scenario_manifest", "active_layer", "grid",
+        "geometry_and_stack", "wire_metric_and_units", "wire_connection_matrix", "wire_x0",
+        "wire_alpha", "wire_zero_baseline_absolute_cap", "margin_derivation_and_numerical_uncertainty",
+        "family_manifest_and_stratified_order", "paired_seed_values_and_run_order", "hidden_corpus_and_split",
+        "models_prompts_tools_and_memory", "lab_rosters", "reproducer_policy",
+        "runtime_token_proposal_and_retry_cost_caps", "training_only_headroom_protocol",
+        "pre_outcome_release", "physical_layout_canonicalization", "reference_and_refinement_charges",
+        "sharing_round_barriers"}
+    if set(freeze["pins"]) != pin_names:
+        raise ValueError("missing or unknown execution pin")
+    if set(freeze["arms"]) != {"B0", "B1", "B2", "B3", "B4"}:
         raise ValueError("all five arms required")
     budget = freeze["budget"]
     for arm, row in freeze["arms"].items():
@@ -69,22 +109,17 @@ def validate_freeze(freeze):
     if (families["alpha"], families["first_threshold"], families["second_threshold"],
             families["eight_non_tied_required_wins"]) != (0.05, 0.025, 0.05, 8):
         raise ValueError("statistical constants differ from freeze")
-    if set(freeze["parameters"]) != {"nomination_tolerance", "acceptance_margin",
-                                      "reproduction_tolerance", "sharing_tolerance"}:
+    if set(freeze["parameters"]) != {"acceptance_margin", "reproduction_tolerance", "sharing_tolerance"}:
         raise ValueError("required parameters missing or unknown")
     for value in freeze["parameters"].values():
         if value is not None:
             _number(value, nonnegative=True)
-    tie = freeze["parameters"]["nomination_tolerance"]
-    margin = freeze["parameters"]["acceptance_margin"]
-    if tie is not None and margin is not None and _number(tie) > _number(margin):
-        raise ValueError("nomination tolerance must not exceed acceptance margin")
     if freeze["epoch"]["count_per_run"] != 1 or freeze["nomination"]["no_substitute"] is not True:
         raise ValueError("epoch policy differs from freeze")
 
 
 def require_execution_ready(freeze):
-    """Fail closed on any null pin, unknown margin or missing release."""
+    """Reject unresolved pins; caller must still verify the release and pin values."""
     validate_freeze(freeze)
 
     def incomplete(value):
@@ -94,88 +129,106 @@ def require_execution_ready(freeze):
             return not value or any(incomplete(v) for v in value)
         return value is None or value == ""
 
-    if freeze.get("status") != "released" or incomplete(freeze):
+    if freeze["status"] != "released" or incomplete(freeze):
         raise ValueError("must-fill-before-execution: freeze is not released and complete")
 
 
+def _check_reference(reference):
+    if not isinstance(reference, Reference) or not _text(reference.context):
+        raise ValueError("reference requires a pinned context and measured uncertainty")
+    _number(reference.j)
+    _number(reference.uncertainty, nonnegative=True)
+
+
 def _check_candidate(c):
-    if not isinstance(c, Candidate) or any(not isinstance(v, str) or not v for v in
-            (c.candidate_hash, c.lab, c.arm, c.evaluation_id)) or type(c.valid) is not bool:
-        raise ValueError("candidate requires hash, lab, arm, evaluation_id and core validity")
+    if not isinstance(c, Candidate) or any(not _text(v) for v in
+            (c.candidate_hash, c.lab, c.arm, c.evaluation_id, c.context, c.measurement_id)) or type(c.valid) is not bool:
+        raise ValueError("candidate requires physical hash, identities, context and core validity")
     _number(c.j)
+    _number(c.uncertainty, nonnegative=True)
 
 
-def _rank(candidates, tolerance):
-    """Anchoring avoids nontransitive pairwise approximate comparisons."""
-    remaining = sorted(candidates, key=lambda c: (_number(c.j), c.candidate_hash, c.evaluation_id, c.lab))
-    result = []
-    while remaining:
-        anchor = _number(remaining[0].j)
-        group = [c for c in remaining if _number(c.j) - anchor <= tolerance]
-        remaining = remaining[len(group):]
-        result.extend(sorted(group, key=lambda c: (c.candidate_hash, _number(c.j), c.evaluation_id, c.lab)))
-    return tuple(result)
-
-
-def nominate(candidates, arm, *, freeze):
-    """Each lab's evaluated best, or B0/B1's top four distinct layouts."""
-    validate_freeze(freeze)
-    tolerance = _parameter(freeze, "nomination_tolerance")
-    if arm not in freeze["arms"]:
-        raise ValueError("unknown arm")
-    by_lab = {}
-    identities = {}
+def _authoritative(candidates):
+    seen = {}
     for c in candidates:
-        _check_candidate(c)
-        if c.arm != arm:
-            continue
-        key = (c.lab, c.evaluation_id)
-        if key in identities and identities[key] != c:
-            raise ValueError("conflicting evaluation identity")
-        identities[key] = c
-        if c.valid:
-            by_lab.setdefault(c.lab, []).append(c)
-    policy = freeze["arms"][arm]
-    if len(by_lab) > policy["labs"]:
-        raise ValueError("too many labs for arm")
-    nominated = []
-    for rows in by_lab.values():
-        distinct = {}
-        for c in sorted(rows, key=lambda c: (_number(c.j), c.evaluation_id)):
-            distinct.setdefault(c.candidate_hash, c)
-        nominated.extend(_rank(distinct.values(), tolerance)[:policy["reproduction_per_lab"]])
-    return _rank(nominated, tolerance)
+        key = (c.context, c.candidate_hash)
+        measurement = (c.measurement_id, _number(c.j), _number(c.uncertainty))
+        if key in seen and seen[key] != measurement:
+            raise ValueError("conflicting authoritative measurement for physical layout/context")
+        seen[key] = measurement
+
+
+def _rank(candidates):
+    # Exact numeric ordering is total and transitive. Metadata orders only
+    # identical physical layouts with the same authoritative objective.
+    return tuple(sorted(candidates, key=lambda c: (_number(c.j), c.candidate_hash, c.lab, c.evaluation_id)))
 
 
 def eligible_for_reproduction(c, reference, margin):
     _check_candidate(c)
-    difference = _number(reference) - _number(c.j)
-    return c.valid and difference > _number(margin, nonnegative=True)
+    _check_reference(reference)
+    if c.context != reference.context:
+        raise ValueError("candidate/reference context mismatch; cross-arm reuse forbidden")
+    threshold = _number(margin, nonnegative=True) + _number(reference.uncertainty) + _number(c.uncertainty)
+    improvement = _number(reference.j) - _number(c.j)
+    return c.valid and improvement > 0 and improvement >= threshold
+
+
+def nominate(candidates, arm, reference, *, freeze):
+    """Filter qualification first, then nominate by exact evaluated J and hash."""
+    validate_freeze(freeze)
+    _parameter(freeze, "acceptance_margin")
+    _check_reference(reference)
+    if arm not in freeze["arms"]:
+        raise ValueError("unknown arm")
+    rows, identities = [], {}
+    for c in candidates:
+        _check_candidate(c)
+        if c.arm != arm:
+            continue
+        if c.context != reference.context:
+            raise ValueError("candidate/reference context mismatch")
+        key = (c.lab, c.evaluation_id)
+        if key in identities and identities[key] != c:
+            raise ValueError("conflicting evaluation identity")
+        identities[key] = c
+        rows.append(c)
+    _authoritative(rows)
+    policy = freeze["arms"][arm]
+    if len({c.lab for c in rows}) > policy["labs"]:
+        raise ValueError("too many labs for arm")
+    by_lab = {}
+    for c in _rank(rows):
+        if eligible_for_reproduction(c, reference, freeze["parameters"]["acceptance_margin"]):
+            by_lab.setdefault(c.lab, {}).setdefault(c.candidate_hash, c)
+    return _rank(c for distinct in by_lab.values() for c in
+                 tuple(distinct.values())[:policy["reproduction_per_lab"]])
 
 
 def rank_order_gate(reproduced, reference, margin, *, freeze):
-    """One batch winner; every loser resolves against that final board."""
+    """One exact reproduced-J batch winner, then resolve losers against its board."""
     validate_freeze(freeze)
-    tolerance = _parameter(freeze, "nomination_tolerance")
-    _number(reference)
-    if tolerance > _number(margin, nonnegative=True):
-        raise ValueError("nomination tolerance must not exceed acceptance margin")
+    _check_reference(reference)
+    _number(margin, nonnegative=True)
     rows = tuple(reproduced)
     for c in rows:
         _check_candidate(c)
         if not c.valid:
             raise ValueError("gate requires validated reproduced evidence")
-    # Do not let a hash-first tie on the boundary hide a qualifying candidate.
-    qualifying = [c for c in rows if eligible_for_reproduction(c, reference, margin)]
-    winner = _rank(qualifying, tolerance)[0] if qualifying else None
-    ordered = list(_rank(rows, tolerance))
+        if c.context != reference.context:
+            raise ValueError("reproduced/reference context mismatch")
+    if len({c.arm for c in rows}) > 1:
+        raise ValueError("cannot rank multiple arms together")
+    _authoritative(rows)
+    ordered = list(_rank(rows))
+    winner = next((c for c in ordered if eligible_for_reproduction(c, reference, margin)), None)
+    board = winner if winner is not None else reference
     if winner is not None:
         ordered.remove(winner)
         ordered.insert(0, winner)
-    board_j = winner.j if winner is not None else reference
     decisions = []
     for index, c in enumerate(ordered):
-        improvement = _number(board_j) - _number(c.j)
+        improvement = _number(board.j) - _number(c.j)
         if index == 0 and winner is not None:
             outcome = "accepted"
         elif improvement <= 0:
@@ -183,94 +236,115 @@ def rank_order_gate(reproduced, reference, margin, *, freeze):
         else:
             outcome = "within_margin"
         decisions.append({"candidate": c, "outcome": outcome})
-    return {"board": winner if winner is not None else reference, "decisions": tuple(decisions)}
+    return {"board": board, "decisions": tuple(decisions)}
 
 
 def reproduction_slots(candidates, arm, reference, *, freeze, labs, search_complete):
-    """Produce all reserved slots, including unused slots, after the barrier."""
-    nominations = nominate(candidates, arm, freeze=freeze)
-    margin = freeze["parameters"]["acceptance_margin"]
-    _number(margin, nonnegative=True)
-    _number(reference)
+    """Produce all reserved slots after every lab has closed search."""
+    candidates = tuple(candidates)
+    nominations = nominate(candidates, arm, reference, freeze=freeze)
     policy = freeze["arms"][arm]
     labs = tuple(labs)
     if (search_complete is not True or len(labs) != policy["labs"] or
-            any(not isinstance(lab, str) or not lab for lab in labs) or len(set(labs)) != len(labs)):
+            any(not _text(lab) for lab in labs) or len(set(labs)) != len(labs)):
         raise ValueError("search barrier requires the complete unique lab roster")
-    if any(c.lab not in labs for c in nominations):
-        raise ValueError("candidate lab is outside the frozen roster")
+    if any(c.lab not in labs for c in candidates if c.arm == arm):
+        raise ValueError("candidate lab outside frozen roster")
     result = []
     for lab in sorted(labs):
         selected = [c for c in nominations if c.lab == lab]
         for slot in range(policy["reproduction_per_lab"]):
             c = selected[slot] if slot < len(selected) else None
-            eligible = c is not None and eligible_for_reproduction(c, reference, margin)
             result.append({"lab": lab, "slot": slot, "candidate": c,
-                           "status": "nominated" if eligible else "unused",
-                           "reserved_bundles": 1})
+                           "status": "nominated" if c is not None else "unused", "reserved_bundles": 1})
     return tuple(result)
 
 
-def replay_epoch(candidates, attempts, arm, reference, *, freeze, labs, search_complete):
-    """Replay a closed epoch's normalized ledger records without executing work.
+def _settle(rows, c, retry_limit):
+    if not rows:
+        raise ValueError("reproduction barrier: nominated slot still pending")
+    if any(a.candidate_hash != c.candidate_hash or a.context != c.context for a in rows):
+        raise ValueError("attempt substituted candidate or context")
+    if [a.attempt for a in rows] != list(range(len(rows))) or len(rows) > 1 + retry_limit:
+        raise ValueError("exactly one pre-execution infrastructure retry permitted")
+    free = lambda a: a.status == "infrastructure_failure" and a.execution == "not_started"
+    if len(rows) > 1 and not free(rows[0]):
+        raise ValueError("retry requires proof that the first solve never started")
+    if len(rows) == 1 and free(rows[0]):
+        raise ValueError("declared pre-execution retry is still pending")
+    return sum(not free(a) for a in rows)
 
-    Attempt.success means the caller validated bindings, scenarios, geometry,
-    wire limit and independent process evidence. This module also checks J
-    repeatability. Counters distinguish logical slots from physical attempts;
-    the unresolved retry-accounting pin blocks execution, never grants free work.
+
+def replay_epoch(candidates, attempts, arm, reference, *, freeze, labs, search_complete, search_charges):
+    """Replay a closed epoch; counts are opportunities, including cached evidence.
+
+    search_charges is the verified ledger's per-lab aggregate, including initial
+    reference, refinements, failed/uncertain launches and cache opportunities.
+    It must not be a count of only successful candidate rows. Runtime enforces
+    these reservations before launch; this function checks the recorded totals.
     """
-    candidates = tuple(candidates)
-    slots = reproduction_slots(candidates, arm, reference, freeze=freeze, labs=labs,
-                               search_complete=search_complete)
+    candidates, labs = tuple(candidates), tuple(labs)
+    slots = reproduction_slots(candidates, arm, reference, freeze=freeze, labs=labs, search_complete=search_complete)
+    policy = freeze["arms"][arm]
+    if set(search_charges) != set(labs) or any(type(n) is not int or not 0 <= n <= policy["search_per_lab"]
+                                              for n in search_charges.values()):
+        raise ValueError("search charges exceed allowance or omit a lab")
+    for lab in labs:
+        opportunities = {c.evaluation_id for c in candidates if c.arm == arm and c.lab == lab}
+        if len(opportunities) > search_charges[lab]:
+            raise ValueError("candidate opportunities exceed recorded search charges")
     tolerance = _parameter(freeze, "reproduction_tolerance")
     grouped = {}
-    for attempt in attempts:
-        if (not isinstance(attempt, Attempt) or type(attempt.slot) is not int or attempt.slot < 0 or
-                type(attempt.attempt) is not int or attempt.attempt < 0 or
-                attempt.status not in {"success", "failed", "infrastructure_failure"}):
+    for a in attempts:
+        if (not isinstance(a, Attempt) or not _text(a.lab) or not _text(a.candidate_hash) or
+                not _text(a.context) or type(a.slot) is not int or a.slot < 0 or
+                type(a.attempt) is not int or a.attempt < 0 or
+                a.execution not in {"not_started", "started", "unknown"} or
+                a.status not in {"success", "failed", "infrastructure_failure", "missing"}):
             raise ValueError("invalid reproduction attempt")
-        if attempt.status == "success":
-            _number(attempt.j)
-        elif attempt.j is not None:
-            raise ValueError("failed attempt must not carry a numerical result")
-        grouped.setdefault((attempt.lab, attempt.slot), []).append(attempt)
-    results, reproduced, spent, physical = [], [], 0, 0
-    reproduced_hashes = set()
+        _number(a.uncertainty, nonnegative=True)
+        if a.status == "success":
+            _number(a.j)
+            if not _text(a.measurement_id) or a.execution == "unknown":
+                raise ValueError("successful measurement requires known execution and authority")
+        elif a.j is not None or a.measurement_id is not None:
+            raise ValueError("failed/missing attempt cannot carry a numerical measurement")
+        if a.status == "failed" and a.execution != "started":
+            raise ValueError("completed scientific failure requires a started execution")
+        grouped.setdefault((a.lab, a.slot), []).append(a)
+    results, reproduced, spent, physical, complete = [], [], 0, 0, True
+    charged = dict(search_charges)
     for slot in slots:
         c = slot["candidate"]
         rows = sorted(grouped.pop((slot["lab"], slot["slot"]), []), key=lambda a: a.attempt)
-        if slot["status"] == "unused":
+        if c is None:
             if rows:
                 raise ValueError("unused slot cannot be spent or transferred")
             results.append({**slot, "attempts": ()})
             continue
-        if not rows:
-            raise ValueError("reproduction barrier: nominated slot still pending")
-        if any(a.candidate_hash != c.candidate_hash for a in rows):
-            raise ValueError("retry cannot substitute a different candidate")
-        if ([a.attempt for a in rows] != list(range(len(rows))) or
-                len(rows) > 1 + freeze["budget"]["infrastructure_retry_limit"]):
-            raise ValueError("exactly one infrastructure retry permitted")
-        if len(rows) > 1 and rows[0].status != "infrastructure_failure":
-            raise ValueError("retry requires a declared infrastructure failure")
-        if len(rows) == 1 and rows[0].status == "infrastructure_failure":
-            raise ValueError("declared infrastructure retry is still pending")
+        charge = _settle(rows, c, freeze["budget"]["infrastructure_retry_limit"])
         last = rows[-1]
         success = last.status == "success" and abs(_number(last.j) - _number(c.j)) <= tolerance
         if success:
-            reproduced.append(replace(c, j=last.j))
-            reproduced_hashes.add(c.candidate_hash)
-        spent += 1
+            reproduced.append(replace(c, j=last.j, uncertainty=last.uncertainty, measurement_id=last.measurement_id))
+        missing = last.status == "missing" or (last.status == "infrastructure_failure" and last.execution != "not_started")
+        complete = complete and not missing
+        status = "reproduced" if success else "inconclusive" if missing else "reproduction_failed"
+        charged[slot["lab"]] += charge
+        spent += charge
         physical += len(rows)
-        results.append({**slot, "status": "reproduced" if success else "reproduction_failed", "attempts": tuple(rows)})
+        results.append({**slot, "status": status, "attempts": tuple(rows), "charged_bundles": charge})
     if grouped:
         raise ValueError("attempt outside frozen lab/slot roster")
-    remaining = [c for c in candidates if c.arm == arm and c.valid and
-                 c.candidate_hash not in reproduced_hashes]
-    best = _rank(remaining, _parameter(freeze, "nomination_tolerance"))
+    if (any(n > policy["search_per_lab"] + policy["reproduction_per_lab"] for n in charged.values()) or
+            sum(charged.values()) > freeze["budget"]["total"]):
+        raise ValueError("inclusive arm/lab budget exceeded")
+    hashes = {c.candidate_hash for c in reproduced}
+    best = _rank(c for c in candidates if c.arm == arm and c.valid and c.candidate_hash not in hashes)
     return {"slots": tuple(results), "reproduction_bundles_spent": spent,
-            "unused_reproduction_bundles": len(slots) - spent, "physical_attempts": physical,
-            "best_evaluated_unreproduced": best[0] if best else None,
+            "unused_reproduction_bundles": sum(s["status"] == "unused" for s in slots),
+            "physical_attempts": physical, "charged_by_lab": charged, "total_charged": sum(charged.values()),
+            "complete": complete, "best_evaluated_unreproduced": best[0] if best else None,
             "gate": rank_order_gate(reproduced, reference, freeze["parameters"]["acceptance_margin"], freeze=freeze)}
 
 
