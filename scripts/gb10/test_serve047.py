@@ -2,11 +2,13 @@
 from contextlib import contextmanager
 import hashlib
 import importlib.util
+import http.server
 import json
 from pathlib import Path
 import subprocess
 import tempfile
 import threading
+import time
 from types import SimpleNamespace
 import unittest
 from unittest import mock
@@ -263,6 +265,56 @@ class Lifecycle(unittest.TestCase):
         self.assertEqual(s.state()['phase'], 'failed_closed')
         self.assertTrue((self.root / 'request-00.json').exists())
 
+    def reservation_barrier(self, expire):
+        r = self.reserve()
+        original_update = s.update
+        posts = []
+        def update(**fields):
+            original_update(**fields)
+            if fields.get('inference_requests_reserved') == 1:
+                if expire:
+                    self.clock.now = r['deadline_monotonic'] - s.CLEANUP_RESERVE
+                else:
+                    (self.root / 'STOP').touch()
+        def request(path, body, allowance):
+            if body: posts.append(body)
+            return 200, b'{}'
+        with mock.patch.object(s, 'update', side_effect=update):
+            self.run_worker(r, request)
+        self.assertEqual(posts, [])
+        self.assertEqual(s.state()['inference_requests_reserved'], 1)
+        self.assertTrue((self.root / 'request-00.json').exists())
+        self.assertFalse((self.root / 'response-00.json').exists())
+        self.assertEqual(s.state()['phase'], 'failed_closed')
+        self.assertTrue(s.state()['cleanup_verified'])
+
+    def test_stop_during_slot_reservation_prevents_post(self):
+        self.reservation_barrier(False)
+
+    def test_deadline_during_slot_reservation_prevents_post(self):
+        self.reservation_barrier(True)
+
+    def test_malformed_200_retains_status_hashes_and_failure_receipt(self):
+        r = self.reserve(); posts = []
+        def request(path, body, allowance):
+            if body:
+                posts.append(body)
+                return 200, b'{malformed'
+            return 200, b'{}'
+        self.run_worker(r, request)
+        self.assertEqual(len(posts), 1)
+        self.assertEqual(s.state()['inference_requests_reserved'], 1)
+        self.assertEqual(s.state()['error'], 'inference_invalid_json')
+        self.assertEqual(s.state()['phase'], 'failed_closed')
+        receipt = json.loads((self.root / 'inference-00.json').read_bytes())
+        self.assertEqual(receipt['http_status'], 200)
+        self.assertEqual(receipt['request_sha256'], s.digest(posts[0]))
+        self.assertEqual(receipt['response_sha256'], s.digest(b'{malformed'))
+        self.assertEqual(receipt['response_parse_error'], 'JSONDecodeError')
+        self.assertFalse(receipt['exact_json_match'])
+        self.assertEqual((self.root / 'response-00.json').read_bytes(), b'{malformed')
+        self.assertTrue(s.state()['cleanup_verified'])
+
     def test_readiness_and_cleanup_are_inside_original_time_budget(self):
         r = self.reserve()
         def unavailable(path, body, allowance):
@@ -293,6 +345,37 @@ class Lifecycle(unittest.TestCase):
         for allowance in [0, -1, float('nan'), float('inf'), True]:
             with self.assertRaisesRegex(s.Refusal, 'http_deadline_expired'):
                 s.request('/health', b'', allowance)
+
+
+class HttpTransport(unittest.TestCase):
+    def test_slow_local_response_exceeds_old_two_second_timeout(self):
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_POST(self):
+                self.rfile.read(int(self.headers['Content-Length']))
+                time.sleep(2.6)
+                self.send_response(200); self.end_headers()
+                self.wfile.write(b'{"ok":true}')
+            def log_message(self, *args): pass
+        with http.server.HTTPServer(('127.0.0.1', 18047), Handler) as server:
+            thread = threading.Thread(target=server.handle_request, daemon=True)
+            thread.start()
+            started = time.monotonic()
+            try:
+                self.assertEqual(s.request('/v1/chat/completions', b'{}', 5), (200, b'{"ok":true}'))
+                self.assertGreaterEqual(time.monotonic() - started, 2.6)
+            finally:
+                thread.join(timeout=6)
+            self.assertFalse(thread.is_alive())
+
+    def test_socket_and_outer_timeouts_share_bounded_allowance(self):
+        for supplied, expected in [(900, 60), (32.8, 32.8), (3, 3)]:
+            with mock.patch.object(s.subprocess, 'Popen') as spawn:
+                process = spawn.return_value
+                process.communicate.return_value = (b'200\n{}', None)
+                process.returncode = 0
+                s.request('/v1/chat/completions', b'{}', supplied)
+                self.assertEqual(float(spawn.call_args.args[0][-1]), expected)
+                self.assertEqual(process.communicate.call_args.kwargs['timeout'], expected)
 
 
 class InputPins(unittest.TestCase):

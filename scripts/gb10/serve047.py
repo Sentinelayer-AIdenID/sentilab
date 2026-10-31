@@ -443,7 +443,7 @@ body=sys.stdin.buffer.read(16385)
 assert len(body)<=16384
 path=sys.argv[1]
 assert path in ('/health','/v1/chat/completions')
-c=http.client.HTTPConnection('127.0.0.1',18047,timeout=2)
+c=http.client.HTTPConnection('127.0.0.1',18047,timeout=float(sys.argv[2]))
 c.request('POST' if body else 'GET',path,body or None,{'Content-Type':'application/json'})
 r=c.getresponse(); raw=r.read(1048577); assert len(raw)<=1048576
 sys.stdout.buffer.write(str(r.status).encode()+b'\\n'+raw)
@@ -455,11 +455,12 @@ def request(path, body, allowance):
     if type(allowance) not in {int, float} or not math.isfinite(allowance) or allowance <= 0:
         raise Refusal('http_deadline_expired')
     # communicate's response is bounded by the fixed child's explicit 1 MiB read.
-    process = subprocess.Popen([sys.executable, '-I', '-S', '-B', '-c', HTTP_CLIENT, path],
+    allowance = min(60, allowance)
+    process = subprocess.Popen([sys.executable, '-I', '-S', '-B', '-c', HTTP_CLIENT, path, str(allowance)],
                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                                close_fds=True, shell=False)
     try:
-        raw, _ = process.communicate(body, timeout=min(15, allowance))
+        raw, _ = process.communicate(body, timeout=allowance)
         if process.returncode or len(raw) > MAX_RESPONSE + 4:
             raise Refusal('http_failed')
         code, separator, response = raw.partition(b'\n')
@@ -484,10 +485,19 @@ def inference(r, row, index):
     # Durable request slot and raw bytes precede HTTP; ambiguous requests are never retried.
     write_exclusive(f'request-{index:02d}.json', body)
     update(inference_requests_reserved=index + 1)
+    # STOP/deadline may have arrived during the durable reservation. Keep the
+    # consumed slot and body, but recheck before creating an HTTP child.
+    check(r)
     started = time.monotonic()
-    code, raw = request('/v1/chat/completions', body, remaining(r) - CLEANUP_RESERVE)
+    allowance = min(60, remaining(r) - CLEANUP_RESERVE)
+    code, raw = request('/v1/chat/completions', body, allowance)
     write_exclusive(f'response-{index:02d}.json', raw)
-    parsed = strict_json(raw) if code == 200 else None
+    parsed, parse_error = None, None
+    if code == 200:
+        try:
+            parsed = strict_json(raw)
+        except (ValueError, UnicodeError, Refusal, RecursionError) as exc:
+            parse_error = type(exc).__name__
     exact = False
     if parsed is not None:
         try:
@@ -501,12 +511,15 @@ def inference(r, row, index):
     rate = counts['completion_tokens'] / elapsed if 'completion_tokens' in counts and elapsed > 0 else None
     receipt = {'row_id': row['row_id'], 'request_sha256': digest(body), 'response_sha256': digest(raw),
                'http_status': code, 'exact_json_match': exact, 'wall_seconds': elapsed,
+               'request_timeout_seconds': allowance, 'response_parse_error': parse_error,
                'reported_usage': counts or None, 'client_observed_completion_tokens_per_second': rate,
                'timing_scope': 'one serial localhost request including client overhead; no concurrency or decoder-throughput claim',
                'policy_sha256': r['policy_sha256'], 'controller_sha256': r['controller_sha256']}
     write_exclusive(f'inference-{index:02d}.json', encode(receipt))
     if code != 200:
         raise Refusal('inference_http_failure')
+    if parse_error is not None:
+        raise Refusal('inference_invalid_json')
 
 
 def worker(token, source):
