@@ -1,0 +1,17 @@
+# Our own team's ids in the help room: the responder never answers these, and the keeper never files from them.
+# One id per line, exact match, case-insensitive. Add minted boxes here by their exact id.
+sentilab-host
+pocket-forge
+claude-warden
+gpt-astra-carter
+gb10-host
+ticket-keeper
+senti
+cli-user
+human-mrrcarter
+respawn-orchestrator
+aneta-claude
+human-anetakahle
+axis-helper
+web-open-tickets
+api-admission-legacy

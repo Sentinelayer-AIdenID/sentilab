@@ -6,13 +6,18 @@
 import { execFile } from "node:child_process";
 import { readFileSync, writeFileSync, existsSync, appendFileSync } from "node:fs";
 import { randomUUID, createHash } from "node:crypto";
+import { AnthropicFoundry } from "@anthropic-ai/foundry-sdk";
+import { APIConnectionTimeoutError } from "@anthropic-ai/sdk";
 const ROOM = "32a841e5-308b-411a-87f7-6454082d72fe";
 const DIR = "H:/sl-temp/rooms/hackathon-room/greeter";
 const DRY = process.env.DRY === "1"; // dry run: generate answers, post nothing, separate state
 const STATE = DRY ? `${DIR}/state-dry.json` : `${DIR}/state.json`;
 const STAFF = /^(sentilab-host|pocket-forge|claude-warden|gpt-astra.*|astra.*|senti|ticket-keeper|cli-user|human-.*)$/i;
 // The host team: never answered by the responder (people other than Carter are participants and do get answers).
-const HOST_TEAM = /^(sentilab-host|pocket-forge|claude-warden|gpt-astra.*|astra.*|senti|ticket-keeper|cli-user|human-mrrcarter)$/i;
+// Explicit list, re-read every tick so a new team id (a minted box, a new host) takes effect without a restart.
+const TEAM_FILE = `${DIR}/team-ids.txt`;
+const teamIds = () => { try { return new Set(readFileSync(TEAM_FILE, "utf8").split(/\r?\n/).map((l) => l.trim().toLowerCase()).filter((l) => l && !l.startsWith("#"))); } catch { return new Set(["sentilab-host", "pocket-forge", "claude-warden", "gpt-astra-carter", "human-mrrcarter"]); } };
+const HOST_TEAM = { test: (id) => teamIds().has(String(id || "").toLowerCase()) };
 const UNTIL = Date.parse("2026-11-02T13:00:00Z");
 const MAX_PER_HOUR = 60;
 const TICK_MS = 12000;
@@ -34,8 +39,15 @@ const joinWelcome = (who) => `Welcome ${who}! 👋 Tell us what you're building 
 const underCap = (now) => { state.sentTimes = state.sentTimes.filter((t) => now - t < 3600000); return state.sentTimes.length < MAX_PER_HOUR; };
 
 // ── Model (no tools; JSON out) ────────────────────────────────────────────────────────────────────────────────────
-const MODEL_URL = "https://sl-agents-foundry-eastus2.openai.azure.com/openai/v1/responses";
+// Claude Opus 5.5 on the team's own Azure AI Foundry deployment, through the official Foundry SDK (Carter, 20:25Z:
+// "Make it Claude please. Opus 5.5."). Thinking is always on for this model; effort is the only depth control.
+const MODEL = "claude-opus-5-5";
 const KEY = process.env.FOUNDRY_KEY; // piped in at launch, never printed
+const claude = KEY ? new AnthropicFoundry({ apiKey: KEY, resource: "sl-agents-foundry-eastus2", timeout: 75000, maxRetries: 0 }) : null;
+// Effort per attempt, first to last. Default medium, falling back to low on failure.
+const EFFORTS = (process.env.HOST_EFFORTS || "medium,low").split(",").map((x) => x.trim()).filter(Boolean);
+const ANSWER_SCHEMA = { type: "object", additionalProperties: false, required: ["action", "reply", "reason"],
+  properties: { action: { type: "string", enum: ["answer", "skip"] }, reply: { type: "string" }, reason: { type: "string" } } };
 const FACTS = readFileSync(`${DIR}/host-facts.md`, "utf8");
 const SYSTEM = `You are "SentiLab host", the host of an open help room at a science hackathon. Teams and their AI agents come here to get set up, ask questions, find collaborators and post requests that the room's agents pick up as tickets.
 
@@ -54,11 +66,10 @@ Rules:
 - Mention other people only when it truly helps them connect, and never use @all, @everyone or @here.
 
 Choose one action:
-- "answer": you can help directly now.
-- "ticket": the request needs code built, experiments run, a long review or research. Reply with what you understood, that you're filing it as a ticket now for the room's agents, and that the result comes back under the ticket with a mention. Ask for any missing details. Don't promise times. Also draft the ticket: a clear title (under 120 characters) and a body (under 2,500 characters) with goal, inputs, deliverables and acceptance checks.
+- "answer": reply now. If the request needs code built, experiments run, a long review or research, help with what you can, and say the room's ticket keeper turns requests like this into a ticket that the room's agents pick up. Don't file tickets or promise times yourself. Ask for any missing details.
 - "skip": only when the message is clearly addressed to someone else, is a bare acknowledgement of an answer they already got ("ok", "thanks"), or is spam.
 
-Return only a JSON object: {"action":"answer"|"ticket"|"skip","reply":string,"ticket":{"title":string,"body":string}|null,"reason":string}
+Return the action, the reply text, and a one-line reason.
 
 FACTS:
 ${FACTS}`;
@@ -69,26 +80,28 @@ ${FACTS}`;
 async function ask(user, effort, key) {
   const id = randomUUID();
   const t0 = Date.now();
-  log({ attempt: id, key, effort, model: "gpt-6-astra", phase: "started" });
-  const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 75000);
+  log({ attempt: id, key, effort, model: MODEL, phase: "started" });
   let status = "network_error", httpStatus = null, usage = null, out = null;
   try {
-    const r = await fetch(MODEL_URL, { method: "POST", signal: ctl.signal, headers: { "api-key": KEY, "content-type": "application/json" },
-      body: JSON.stringify({ model: "gpt-6-astra", input: [{ role: "system", content: SYSTEM }, { role: "user", content: user }],
-        reasoning: { effort }, max_output_tokens: 6000, text: { format: { type: "json_object" } } }) });
-    httpStatus = r.status;
-    const j = await r.json().catch(() => null);
-    usage = j?.usage ? { in: j.usage.input_tokens, out: j.usage.output_tokens, reasoning: j.usage.output_tokens_details?.reasoning_tokens } : null;
-    if (!r.ok || !j) { status = "http_error"; return { id, ok: false }; }
-    const text = j.output_text || (j.output || []).flatMap((o) => o.content || []).map((c) => c.text || "").join("");
-    try { out = JSON.parse(text); status = "ok"; } catch { status = "parse_error"; }
+    // Structured output keeps the answer schema-valid; the stable system prompt is marked for prompt caching.
+    const msg = await claude.messages.create({
+      model: MODEL, max_tokens: 8000,
+      system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: user }],
+      output_config: { effort, format: { type: "json_schema", schema: ANSWER_SCHEMA } },
+    });
+    httpStatus = 200;
+    usage = msg.usage ? { in: msg.usage.input_tokens, out: msg.usage.output_tokens,
+      cacheRead: msg.usage.cache_read_input_tokens ?? 0, cacheWrite: msg.usage.cache_creation_input_tokens ?? 0 } : null;
+    if (msg.stop_reason === "refusal") { status = "refusal"; return { id, ok: false }; }
+    const text = msg.content.filter((b) => b.type === "text").map((b) => b.text).join("");
+    try { out = JSON.parse(text); status = "ok"; } catch { status = msg.stop_reason === "max_tokens" ? "max_tokens" : "parse_error"; }
     return { id, ok: status === "ok", out };
   } catch (err) {
-    status = err?.name === "AbortError" ? "abort" : "network_error";
+    httpStatus = err?.status ?? null;
+    status = err instanceof APIConnectionTimeoutError ? "abort" : err?.status ? "http_error" : "network_error";
     return { id, ok: false };
   } finally {
-    clearTimeout(timer);
     log({ attempt: id, key, effort, phase: "terminal", status, httpStatus, usage, ms: Date.now() - t0 });
   }
 }
@@ -159,7 +172,7 @@ async function respond(e, events, tickets) {
   let out = null, effort = null;
   const attempts = [];
   const t0 = Date.now();
-  for (const eff of ["medium", "low"]) {
+  for (const eff of EFFORTS) {
     const a = await ask(user, eff, key);
     attempts.push(a.id);
     if (a.ok) { out = a.out; effort = eff; break; }
@@ -167,43 +180,15 @@ async function respond(e, events, tickets) {
   const modelMs = Date.now() - t0;
   if (out?.action === "skip") { settle(key); return log({ key, sender, action: "skip", reason: clip(out.reason, 200), effort, attempts, modelS: modelMs / 1000 }); }
   let text = out ? guard(out.reply, sender, known) : null;
-  if (!text) text = `@${sender} Thanks, I've got this and our team is on it. You'll get the answer right here under your message.`;
+  // No other model as a fallback (Carter dropped Astra for cost): an honest short line, and a teammate follows up.
+  if (!text) text = `@${sender} I can't answer that right now; a teammate will follow up here.`;
   const r = await cli(["session", "reply", ROOM, String(thread), text, "--agent", "sentilab-host"]);
   const replyMs = Date.now();
   if (!r.err) { state.senderTimes[sender].push(replyMs); state.sentTimes.push(replyMs); }
-  if (out?.action === "ticket" && out.ticket?.title) {
-    appendFileSync(`${DIR}/ticket-queue${DRY ? "-dry" : ""}.jsonl`, JSON.stringify({ key, sender, thread, title: out.ticket.title, body: out.ticket.body, at: new Date().toISOString() }) + "\n");
-    if (!r.err && !DRY) await fileTicket(out.ticket, key, sender, thread);
-  }
   settle(key);
   // Usage lives on each attempt's own terminal row; this row only references them.
-  log({ key, sender, thread, action: out?.action || "fallback", effort, model: "gpt-6-astra", attempts, claimOk: !claim.err, posted: !r.err, chars: text.length,
+  log({ key, sender, thread, action: out?.action || "fallback", effort, model: MODEL, answeredBy: out ? MODEL : null, attempts, claimOk: !claim.err, posted: !r.err, chars: text.length,
     receiveToClaimS: (claimMs - receivedMs) / 1000, modelS: modelMs / 1000, receiveToReplyS: (replyMs - receivedMs) / 1000 });
-}
-
-// Files the drafted ticket right away (the CLI has no `ticket create` yet, so people can't file their own), then
-// announces it as a TOP-LEVEL message so every agent's listener wakes for it. Bounded per requester and overall; the
-// draft passes the same output guard as answers. A deterministic UUIDv4 idempotency key from the event key means a
-// retry can never file the same ask twice.
-const TICKET_HELPER = `${DIR}/ticket-file.mjs`;
-const uuidFrom = (s) => { const h = createHash("sha256").update(s).digest("hex");
-  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-${((parseInt(h[16], 16) & 3) | 8).toString(16)}${h.slice(17, 20)}-${h.slice(20, 32)}`; };
-async function fileTicket(draft, key, sender, thread) {
-  const now = Date.now();
-  state.ticketTimes = (state.ticketTimes || []).filter((t) => now - t.at < 3600000);
-  if (state.ticketTimes.length >= 20 || state.ticketTimes.filter((t) => t.sender === sender).length >= 3) return log({ key, sender, ticket: "skipped: rate cap" });
-  const title = String(draft.title || "").replace(/\s+/g, " ").trim().slice(0, 150);
-  const bodyText = String(draft.body || "").trim();
-  if (!title || !bodyText || SECRETISH.test(title + bodyText)) return log({ key, sender, ticket: "skipped: empty or secret-shaped draft" });
-  const body = `${bodyText.replace(/https?:\/\/[^\s)<>\]]+/g, (u) => (LINK_OK.test(u) ? u : "[link removed]"))}\n\nRequested by @${sender} in this room (message #${thread}). Answer under this ticket's announcement with your plan and result, mentioning the requester. Don't post keys or private data.`;
-  const res = await new Promise((resolve) => execFile(process.execPath, [TICKET_HELPER, ROOM, JSON.stringify({ title: `Help wanted (${sender}): ${title}`, body, sourceSequenceId: thread, idempotencyKey: uuidFrom(`ticket:${ROOM}:${key}`) })],
-    { timeout: 60000 }, (err, stdout) => { try { resolve(JSON.parse(String(stdout).trim().split("\n").pop())); } catch { resolve({ ok: false, error: err ? String(err.message).slice(0, 200) : "no output" }); } }));
-  if (!res.ok) return log({ key, sender, ticket: "failed", error: res.error });
-  state.ticketTimes.push({ at: now, sender });
-  appendFileSync(`${DIR}/ticket-filed.jsonl`, JSON.stringify({ key, ticket: res.id, filedAt: new Date().toISOString(), by: "sentilab-host (auto)" }) + "\n");
-  const announce = `🎫 New ticket ${res.id} (requested by @${sender}, filed by the host): ${title}\nAny agent can take it: \`npx -y sentinelayer-cli@0.46.5 session ticket claim ${ROOM} ${res.id} --agent <your-name>\`. Then reply under this message with your plan and result. Full spec: \`npx -y sentinelayer-cli@0.46.5 session ticket list ${ROOM}\`.`;
-  const a = await cli(["session", "say", ROOM, announce, "--agent", "sentilab-host", "--model", "none", "--display-name", "SentiLab host"]);
-  log({ key, sender, ticket: res.id, announced: !a.err });
 }
 
 async function tick() {
