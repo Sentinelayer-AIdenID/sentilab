@@ -227,7 +227,8 @@ Unchanged and still valid: `source.mjs` (all lines), `playhead.mjs`, `render.mjs
 ### Rules PL-1 to PL-24 (SPEC §7)
 
 Each row of SPEC §7 carries its own source column; summary: PL-1 (L3 A-13, A#57059), PL-2 (task rule 1;
-main:web/public/temperature-label.mjs:38-85; L3:PSEUDOCODE §5), PL-3 (A#57059; temperature-label.mjs:137-144;
+main:web/public/temperature-label.mjs:38-85; L3:PSEUDOCODE §5; serialized labels and their resolution: A#57218 item 2),
+PL-3 (A#57059; temperature-label.mjs:137-144;
 per-value-provenance.test.mjs), PL-4 (task rule 1; D2), PL-5 and PL-6 (L3:ARCHITECTURE §5.5), PL-7
 (temperature-label.mjs:17-19, :145-153), PL-8 (package.js:297-300; temperature-label.mjs:163-170;
 temperature-label.test.mjs:331-333), PL-9 (A#57059; references README.md:105-119), PL-10 to PL-13 (task rule 3;
@@ -306,7 +307,7 @@ PL-23 (L3:RISKS R-02; temperature-label.mjs:52), PL-24 (L1:SOURCES.md "How the f
 | AC-03 | task rule 1; PL-4; PSEUDOCODE §8 (pattern checked in Node 22) |
 | AC-04 | L3:ACCEPTANCE A-01 (browser part); main:web/test/temperature-label.test.mjs:28, :41; main:web/test/per-value-provenance.test.mjs:20-21, :59-120; temperature-label.mjs:57 |
 | AC-05 | L3:ACCEPTANCE A-02 |
-| AC-06 | task rule 9; L3:ACCEPTANCE A-15; main:scripts/sentilab-scene.mjs:17 |
+| AC-06 | task rule 9; L3:ACCEPTANCE A-15; main:scripts/sentilab-scene.mjs:17; A#57218 item 2 (serialized labels, full JSON path, altered identity, state and text) |
 | AC-07 | main:web/test/per-value-provenance.test.mjs:73-91; temperature-label.mjs:139-144 |
 | AC-08, AC-09 | task rule 2; A#57053 |
 | AC-10, AC-11 | task rule 3; L1:REPORT §3.3 (lid thickness not sourced); L1:parts.json `die_side_caps` (no source); A#57218 item 1 (undrawn parts, AC-11) |
@@ -342,4 +343,5 @@ cites this version. Each commit that moves a cited line refreshes this section, 
 
 | Finding | Was (`da9b1ee`) | Change | Now | ACs |
 |---|---|---|---|---|
-| R1 (item 1): a positive box was required even for `drawn: false`, although unknown dimensions must stay unknown | SPEC:561 (`box` required on every instance), :608-614; PSEUDOCODE:164 (box checked on every instance) | `instance` is a `oneOf` union: `drawnInstance` (box and basis required) or `undrawnInstance` (`dims` required; box, basis and array forbidden). The reader refuses a box on an undrawn part and an undrawn part whose every dimension is drawable. Undrawn parts keep id, parent, edges and null dims, and are left out of boxes, bounds, picking, sections and field association; flows add no point for them | SPEC:569, :603-619 (schema), :634-646 (reader rules), :182-184 (flows), :1141-1143 (picking), :1213 (PL-10); PSEUDOCODE:158-179 (`readAssembly`), :318-325 (RenderModel), :412-416 (`pick`) | AC-11 (rewritten), AC-36 |
+| R1 (item 1): a positive box was required even for `drawn: false`, although unknown dimensions must stay unknown | SPEC:561 (`box` required on every instance), :608-614; PSEUDOCODE:164 (box checked on every instance) | `instance` is a `oneOf` union: `drawnInstance` (box and basis required) or `undrawnInstance` (`dims` required; box, basis and array forbidden). The reader refuses a box on an undrawn part and an undrawn part whose every dimension is drawable. Undrawn parts keep id, parent, edges and null dims, and are left out of boxes, bounds, picking, sections and field association; flows add no point for them | SPEC:572, :606-622 (schema), :637-649 (reader rules), :184-186 (flows), :1145-1147 (picking), :1217 (PL-10); PSEUDOCODE:160-181 (`readAssembly`), :321-328 (RenderModel), :415-419 (`pick`); ACCEPTANCE:112-123 | AC-11 (rewritten), AC-36 |
+| R2 (item 2): result values carried label copies while `formatTemp` and AC-06 accepted only canonical object identity, which no JSON round trip preserves | PSEUDOCODE:249, :263-264 (copies), :427-431 (identity check); ACCEPTANCE:65-70 (AC-06); SPEC:366-367 (`label_mismatch`), :1171 (PL-2) | Labels travel as serialized records `{state, text, short, title}` (`serializeLabel`, steps S1-S3). `resolveLabel()` recomputes `labelFor()` from the verified evaluator identity (page, CLI) or the recorded one (twin reader), requires exactly the four keys with equal strings, and returns the canonical `LABELS` object, the only input `formatTemp` takes (steps R1-R5); a value whose identity disagrees with its verified provenance is refused. `readTwin()` added; markdown is made from a read twin | SPEC:377-379 (`label_mismatch`), :985-986 (5.6 rule), :1209 (PL-2); PSEUDOCODE:260 (`resultView`), :457-491 (algorithm S1-S3, R1-R5), :627-633 (`readTwin`, `twinMarkdown`), :702-704 (page); ACCEPTANCE:66-81 | AC-06 (rewritten: result → JSON → reader → markdown, altered identity, state and text), AC-01 |

@@ -62,8 +62,10 @@ Import rules (static test, AC-02):
 Frozen operation names (W0.1): `readAnatomy`, `readAssembly`, `readModelStack`, `readLayouts`, `fixtureFor`,
 `standsForIndex`, `resultView`, `receiptCompleteness`, `matchReference`, `buildRenderModel`, `displayBoxes`,
 `explodeOffsets`, `sectionAt`, `interconnectArrays`, `instanceBudget`, `pick`, `overlayFor`, `formatTemp`,
-`tempNode`, `findBareTemperatures`, `fieldRefs`, `checkFieldArtifact`, `fieldScale`, `colourLut`, `fieldTexels`,
-`createFieldFeed`, `solveStatus`, `twinOf`, `twinMarkdown`, `writeGlb`; CLI `scripts/package3d.mjs data|twin|export3d|check`.
+`tempNode`, `serializeLabel`, `resolveLabel`, `resolveValueLabel`, `findBareTemperatures`, `fieldRefs`,
+`checkFieldArtifact`, `fieldScale`,
+`colourLut`, `fieldTexels`, `createFieldFeed`, `solveStatus`, `twinOf`, `readTwin`, `twinMarkdown`, `writeGlb`; CLI
+`scripts/package3d.mjs data|twin|export3d|check`.
 
 ## 1. `quantity.mjs`: quantities, bases, units
 
@@ -216,7 +218,8 @@ export function standsForIndex(stack) { /* -> Map<typeId, Array<{ grid_index, na
 // results.mjs (PURE). Builds sentilab-result/1 (SPEC.md §5.6) for one track's layout at the playhead, from the
 // verified prefix only. It never computes status: lifecycle and validity come from scene.mjs (which runs project()),
 // labels from temperature-label.mjs, the mode from source.mjs.
-import { labelFor, LABELS } from "../../temperature-label.mjs";   // web/public/temperature-label.mjs:38-53, :84
+import { labelFor } from "../../temperature-label.mjs";           // web/public/temperature-label.mjs:38-53, :84
+import { serializeLabel } from "./temps.mjs";                      // labels leave as records (SPEC.md §7 PL-2)
 import { fixtureFor } from "./modelstack.mjs";
 
 export const STATISTICS = Object.freeze({
@@ -254,7 +257,7 @@ export function resultView({ verification, scene, track, ids, mode, stack, layou
     if (!statistic) refused.push({ node: m, field: "J", code: "statistic_unknown", detail: String(metricIdOf(verification, m)) });
     else values.push(freezeValue({ quantity: "J", statistic, value: L.J.value, unit: "degC", declared_unit: L.J.declared_unit,
       association: { layer: 4, scope: "chip layer, all cells" }, measurement: { node: m, receipt: receiptOf(verification.prefixEnvelopes, verification.projection?.rejected, m) },
-      evaluator_identity: identity ?? null, label: labelObject(labelFor(identity)), validity: L.metric.state, as_of_seq: seqOf(verification, m) }));
+      evaluator_identity: identity ?? null, label: serializeLabel(labelFor(identity)), validity: L.metric.state, as_of_seq: seqOf(verification, m) }));
   }
   if (L?.W) { /* statistic from L.W.metric_id ("weighted-manhattan-mm" -> wire_proxy_weighted_manhattan); unit "mm"; label null */ }
   for (const c of L?.chiplets ?? []) if (c.temp !== null) { /* chiplet_centre, association { chiplet: c.id }, label of L.temps_from.measurement */ }
@@ -268,8 +271,8 @@ export function resultView({ verification, scene, track, ids, mode, stack, layou
     values, field: fieldStatus, receipt_completeness: receiptCompleteness(verification, L), refused,
   });
 }
-// A label object copied from the frozen rule (never constructed by hand): { state, text, short, title }.
-const labelObject = (label) => { if (!Object.values(LABELS).includes(label)) throw new TypeError("label not from the rule"); return Object.freeze({ state: label.state, text: label.text, short: label.short, title: label.title }); };
+// A value's label is the SERIALIZED record of the rule's own object (temps.mjs serializeLabel). Object identity is never
+// relied on outside this process: every reader recomputes and compares it (temps.mjs resolveLabel, SPEC.md §7 PL-2).
 
 // What today's receipts bind (SPEC.md §5.6): evaluator identity and signed geometry yes; inputs as an unnamed list
 // (conductor.py:346); no argv; the power trace only inside the unnamed list; no field.
@@ -450,6 +453,43 @@ export function tempNode(h, valueC, label) {
   const t = formatTemp(valueC, label);
   return h("span", { class: `t s-${t.state}`, title: t.title }, t.text, " ", h("em", { class: "q" }, t.qualifier));
 }
+
+// Labels as data (SPEC.md §7 PL-2). Object identity cannot survive a JSON round trip, so a label leaves this process
+// as a plain record and comes back only through resolveLabel(). The exact algorithm:
+//   Serialize S1 identity = evaluatorIds(prefixEnvelopes, rejected).get(measurement node) ?? null, over the VERIFIED
+//               prefix (a rejected create lends nothing: temperature-label.mjs:122-136)
+//             S2 record = serializeLabel(labelFor(identity)): exactly { state, text, short, title }, copied from the
+//               rule's own frozen object (notice is not serialized: it follows from state)
+//             S3 the value carries evaluator_identity = identity and label = record; a twin is written as
+//               canonical(twin) + LF (canonical.mjs:4-10: keys sorted, arrays kept in order, no whitespace), UTF-8
+//   Resolve   R1 bytes -> strictJson (fatal UTF-8, BOM refused: runs-list.mjs:11) -> schema checks (readTwin; the
+//               page and the CLI hold the value in memory and start at R2)
+//             R2 identity = the VERIFIED identity where the caller has one (page, CLI: evaluatorIds() over the verified
+//               prefix), which must equal value.evaluator_identity; otherwise the recorded value.evaluator_identity
+//               (twin reader: the twin's identities are verified by re-running export3d on its pinned replay, AC-36)
+//             R3 expected = labelFor(identity)
+//             R4 label_mismatch unless the record is a plain object whose sorted keys are exactly short, state, text,
+//               title and whose four values are strings === expected's (no trimming, case folding or normalisation)
+//             R5 return expected: the canonical frozen LABELS object, the only thing formatTemp() accepts
+export const LABEL_KEYS = Object.freeze(["short", "state", "text", "title"]);          // sorted, as canonical() writes them
+export function serializeLabel(label) {
+  if (!RULE_LABELS.has(label)) throw new TypeError("label not from the rule");
+  return Object.freeze({ state: label.state, text: label.text, short: label.short, title: label.title });
+}
+export function resolveLabel(record, identity) {
+  const expected = labelFor(identity);
+  const ok = record !== null && typeof record === "object" && !Array.isArray(record)
+    && Object.keys(record).sort().join(",") === LABEL_KEYS.join(",")
+    && LABEL_KEYS.every((k) => typeof record[k] === "string" && record[k] === expected[k]);
+  return ok ? { label: expected, error: null } : { label: null, error: { code: "label_mismatch", detail: `expected ${expected.state}` } };
+}
+// A result value's label. verified: the caller's verified identity for value.measurement.node, with null for "verified:
+// no identity" (pass `ids.get(node) ?? null`); omit it only in the twin reader. Any disagreement is label_mismatch.
+export function resolveValueLabel(value, { verified } = {}) {
+  const recorded = value.evaluator_identity ?? null;
+  if (verified !== undefined && verified !== recorded) return { label: null, error: { code: "label_mismatch", detail: "evaluator identity" } };
+  return resolveLabel(value.label, recorded);
+}
 export const PATTERN = Object.freeze({ withdrawn: 2, unvalidated: 1, illustrative: 0, accepted: 0 });
 export const patternFor = (label) => PATTERN[label.state] ?? PATTERN.unvalidated;
 export const fieldLabel = (env, ids) => labelFor(envelopeEvaluator(env, ids));   // temperature-label.mjs:156-161
@@ -567,23 +607,29 @@ export function createDoorbell({ url, feed }) { /* L3:PSEUDOCODE §7, unchanged 
 ```js
 // twin.mjs (PURE). The same RenderModel and result view the page draws, as data (PL-22). No pixels, no view state.
 import { canonical } from "../canonical.mjs";
+import { formatTemp, resolveValueLabel } from "./temps.mjs";
 export const TWIN_SCHEMA = "sentilab-twin/1";
 export const VIEW_TRANSFORMS = "Explode, readable thickening and section are view transforms. Every coordinate here is assembled.";
 
 // model: from buildRenderModel; ctx: { builtFrom: [{ path, sha256, commit? }], anatomy?, stack?, fixture?, layout?,
-// result?, omitted: [...], derivatives: [...] }. Throws if any temperature-valued value lacks a label object equal to
-// the rule's LABELS[state] (PL-2), and if static content (anatomy, model) contains a bare temperature (PL-4).
+// result?, omitted: [...], derivatives: [...] }. Throws if any degC value's label record differs from
+// serializeLabel(labelFor(value.evaluator_identity)) (PL-2), and if static content (anatomy, model) contains a bare
+// temperature (PL-4).
 export function twinOf(model, ctx) {
   const data = model.kind === "anatomy" ? anatomyData(model, ctx) : model.kind === "model" ? modelData(model, ctx) : ctx.result;
   const twin = { schema: TWIN_SCHEMA, content: model.kind, status_text: model.status_text, built_from: ctx.builtFrom,
     frame: model.frame, view_transforms: VIEW_TRANSFORMS, data, labels: labelsUsed(data), omitted: ctx.omitted, derivatives: ctx.derivatives ?? [] };
-  assertTwinLabels(twin);                      // every { unit: "degC" } value has a label object equal to LABELS[state]
+  assertTwinLabels(twin);                      // every { unit: "degC" } value: resolveValueLabel(v) succeeds (temps.mjs R1-R5)
   return twin;
 }
 // Byte-reproducible text: canonical key order (canonical.mjs:4-10), one trailing LF.
 export const twinJsonText = (twin) => `${canonical(twin)}\n`;
-// Markdown with the same banner, qualifiers and label texts; tables for instances, layers and values; a temperature
-// cell always reads "<value> °C <label.short>" through formatTemp (the only formatter).
+// The reader: bytes -> strictJson -> schema (sentilab-twin/1, SPEC.md §5.8) -> resolveValueLabel(v) for every degC
+// value (temps.mjs R1-R5, without a verified identity). All or nothing: one label_mismatch refuses the twin.
+export function readTwin(bytes) { /* -> { twin, error } */ }
+// Markdown from a twin returned by readTwin(); the CLI and the dialog run result -> twinJsonText -> bytes -> readTwin ->
+// twinMarkdown. Same banner, qualifiers and label texts; tables for instances, layers and values; a temperature cell
+// always reads "<value> °C <short>" through formatTemp(v.value, resolveValueLabel(v).label) (the only formatter).
 export function twinMarkdown(twin) { /* deterministic; LF only */ }
 ```
 
@@ -653,7 +699,9 @@ import { PINS } from "./pins.mjs";
 //    (playhead.mjs:43-56), resultView(), field feed adopt() (when enabled), rebuild the result RenderModel.
 // 4. Notice: needsNotice(v.prefixEnvelopes) as package.js:297-300; the slot is the exact existing markup.
 // 5. Header: modeNow()/liveModeOf() only; refreshed every second on the client clock as package.js:637.
-// 6. Every temperature through tempNode(); every quantity through describeQuantity(); never toFixed() elsewhere.
+// 6. Every temperature through tempNode(h, v.value, label) with label = resolveValueLabel(v, { verified:
+//    ids.get(v.measurement.node) ?? null }).label (temps.mjs R2-R5; a mismatch refuses the value); every quantity
+//    through describeQuantity(); never toFixed() elsewhere.
 // 7. WebGL2 available -> lazy import("./render3d.mjs") after the first model is built; else fallback2d. Context lost ->
 //    fallback2d at once; restored -> rebuild from the cached model and texels (no refetch, no re-verify).
 // 8. Read-only test hook, as package.js:662:
@@ -694,7 +742,7 @@ def test_layers_match_generator(tmp_path):
 | `web/test/package3d-labels.test.mjs` | AC-01, AC-02, AC-06, AC-07 |
 | `web/test/package3d-results.test.mjs` | AC-18, AC-19, AC-23, AC-24, AC-25, AC-26 (driving source.mjs's poller with injected fetch, as the Package view's live tests do) |
 | `web/test/package3d-field.test.mjs` | AC-20, AC-21, AC-22 |
-| `web/test/package3d-twin.test.mjs` | AC-06, AC-36, AC-37 |
+| `web/test/package3d-twin.test.mjs` | AC-06 (result → JSON bytes → `readTwin` → markdown, and every altered identity, state and text), AC-36, AC-37 |
 | existing `worker-csp.test.mjs`, `worker-boot.mjs`, `temperature-label.test.mjs`, `public-names.test.mjs`, `control-bytes.test.mjs` | AC-27, AC-28 (the page added to their lists) |
 | `sundai_hotspot/test_package3d_model_stack.py` | AC-16 |
 | `scripts/package3d-browser-check.mjs` (manual or a later CI job; needs Playwright) | AC-04, AC-05, AC-09, AC-11, AC-12, AC-27, AC-31 to AC-35 |

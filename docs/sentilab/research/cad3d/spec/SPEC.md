@@ -31,6 +31,8 @@ moves since lane 3 was written).
   item below is one commit; TRACE.md section 5 maps every finding to its change, its lines now and its ACs.
   - R1 (A#57218 item 1): an instance is drawn or undrawn. An undrawn part keeps its id, parent, connections and null
     dimensions, carries no box, and is left out of bounds, picking and field association (section 5.3; AC-11).
+  - R2 (item 2): labels travel as serialized records. A reader recomputes `labelFor()` from the verified evaluator
+    identity, compares the four strings and resolves the canonical in-process `LABELS` object (PL-2; AC-06).
 
 ## 1. Goals and non-goals
 
@@ -251,7 +253,7 @@ nothing about the chip's own operation is implied (L3:ARCHITECTURE §6.4).
 | Page and modes | `/agents/package3d/index.md`, `index.json` | Banners verbatim; links to every twin; the label rule explained in words. |
 | Typical anatomy (S1-S4) | `anatomy.json` (`sentilab-twin/1`, content `anatomy`), `anatomy.md` | Assembled instances with true quantities and bases, unknowns as null with basis, edges, flows with qualifiers, facts, `omitted` list. Optional `anatomy.glb` derivative (hashed, metres, +Y up). |
 | Our model (S1-S4) | `model-<fixture>.json`, `model-<fixture>.md` | Layer table, materials as coded, role map, netlist with qualifier, reference layouts (raw and 0.5 mm, separate identities), simplifications, code citations. No temperatures (the ambient is listed in `omitted`). |
-| Results (S2-S5) | `results.md` (how to obtain a result twin and the rules); `replays/<bundle>-at-<seq>.json` for the bundled replays, built by the CLI; for any run, `node scripts/package3d.mjs export3d <replay.jsonl> ...` (same verifier path as `scripts/sentilab-scene.mjs`, main:scripts/sentilab-scene.mjs:1-17); in the page, a `Twin JSON` dialog that shows the current view's twin as text | Every temperature carries its label object; refused values are listed, never exported as numbers (sentilab-scene.mjs:17). No blob or data URLs: the dialog shows text. |
+| Results (S2-S5) | `results.md` (how to obtain a result twin and the rules); `replays/<bundle>-at-<seq>.json` for the bundled replays, built by the CLI; for any run, `node scripts/package3d.mjs export3d <replay.jsonl> ...` (same verifier path as `scripts/sentilab-scene.mjs`, main:scripts/sentilab-scene.mjs:1-17); in the page, a `Twin JSON` dialog that shows the current view's twin as text | Every temperature carries its serialized label record (PL-2); refused values are listed, never exported as numbers (sentilab-scene.mjs:17). No blob or data URLs: the dialog shows text. |
 
 The MCP half of SLAB-026's CLI+MCP comes later through the generated bridge and calls this CLI; it adds no
 validation of its own (main:scripts/sentilab-scene.mjs:6-7; A#57059 "CLI/MCP must share validation/artifacts").
@@ -372,8 +374,9 @@ for the bundled fixture (main:web/public/temperature-label.mjs:24-25, :48-51; L3
 
 Checks the schema language cannot state, enforced by the readers (PSEUDOCODE §1-§3) with these refusal codes:
 `range_order` (min > value or value > max), `not_finite`, `bare_temperature` (any string or key matching the
-temperature pattern of PSEUDOCODE §8), `fact_unknown` (a fact id not in `facts`), `label_mismatch` (a label object
-whose text, short or title differs from `temperature-label.mjs` `LABELS[state]`, main:web/public/temperature-label.mjs:38-53),
+temperature pattern of PSEUDOCODE §8), `fact_unknown` (a fact id not in `facts`), `label_mismatch` (a serialized label
+whose keys are not exactly `state`, `text`, `short` and `title`, or whose strings differ from `labelFor()` of the
+value's verified evaluator identity: PL-2; main:web/public/temperature-label.mjs:38-53, :64-70),
 `dangling` (an id that resolves to nothing), `cycle` (parent loop), `id_reused` (an id in `retired_ids` back in use).
 Every reader is all-or-nothing, like `readGeometry()` (main:web/public/sentilab/package/scene.mjs:105-132): one bad
 entry refuses the file, because a package missing a part is a picture that never existed.
@@ -979,7 +982,8 @@ Statistics (PL-9), each with where it comes from today:
 | `routed_wire_open_router` | routed length from the open router | reference layouts only (README.md:96-108), never from an envelope |
 
 Rules: a value's statistic comes from its `metric_id` and source field, never from a caption; values with different
-statistics are never compared, ranked, differenced or put in one column. `receipt_completeness` is shown as a chip on
+statistics are never compared, ranked, differenced or put in one column. A value's `label` is the serialized record
+of `labelFor(evaluator_identity)`; wherever it is read back it is recomputed and compared, never trusted (PL-2). `receipt_completeness` is shown as a chip on
 every result (for today's live rows: evaluator identity yes, geometry signed yes, input hashes `unnamed`
 (conductor.py:346), argv `absent`, power trace `in_unnamed_list`, field `absent`), so the binding astra asks for
 (A#57059: geometry, material, power, layer, config, argv and executable identity) is shown as partial rather than
@@ -1202,7 +1206,7 @@ small change (D9). Nothing in phases 1-5 needs that.
 | Id | Rule | Source |
 |---|---|---|
 | PL-1 | Every displayed number shows its basis tag beside it (section 5.0). | L3:ACCEPTANCE A-13; A#57059 |
-| PL-2 | A temperature becomes text only through `temps.mjs` `formatTemp(valueC, label)`, which refuses any label that is not one of the frozen `LABELS` objects (identity, not shape) and any non-finite value; the value and its qualifier sit in one DOM element. This holds for DOM text, `title`, `aria-label`, the twin JSON and markdown, and the Twin JSON dialog. No canvas text exists. | task rule 1; main:web/public/temperature-label.mjs:38-85; L3:PSEUDOCODE §5 |
+| PL-2 | A temperature becomes text only through `temps.mjs` `formatTemp(valueC, label)`, which refuses any label that is not one of the frozen `LABELS` objects (identity, not shape) and any non-finite value; the value and its qualifier sit in one DOM element. Labels that travel as data (result values, twins, the Twin JSON dialog, CLI output) are serialized records `{ state, text, short, title }` (the rule's `notice` flag is not serialized; it follows from the state), because a JSON round trip cannot keep object identity. A record reaches `formatTemp` only through `resolveLabel(record, identity)`, which recomputes `labelFor(identity)` from the value's verified evaluator identity, requires exactly those four keys with strings equal to the recomputed label's, and returns the canonical in-process `LABELS` object; any difference is `label_mismatch` and the value is refused (PSEUDOCODE §8). This holds for DOM text, `title`, `aria-label`, the twin JSON and markdown, and the Twin JSON dialog. No canvas text exists. | task rule 1; main:web/public/temperature-label.mjs:38-85; L3:PSEUDOCODE §5; A#57218 item 2 |
 | PL-3 | Labels are per value. A global badge or the page notice never replaces a value's own label. J and centre temperatures from different measurements keep separate labels. | A#57059; main:web/public/temperature-label.mjs:137-144; main:web/test/per-value-provenance.test.mjs |
 | PL-4 | Static content (anatomy, assembly, model stack, layouts, static twins) contains no temperature number in any string, key or unit (absolute or difference), until D2 is decided. Literature limits, model boundary temperatures and temperature-conditioned material values are listed in `omitted` with the reason. | task rule 1; D2 |
 | PL-5 | Withdrawn and unvalidated field sheets carry pixel patterns (hatch, stipple); the state chip sits inside the canvas wrapper, so a canvas-only crop still shows the state. | L3:ARCHITECTURE §5.5 |

@@ -22,7 +22,8 @@ AC-01 to AC-06, AC-12, AC-20 to AC-27, AC-32, AC-34 and AC-36.
 **AC-01 `formatTemp` refuses anything but the rule's labels** (node). `formatTemp(v, label)` throws for any `label`
 that is not one of the frozen `LABELS` objects (main:web/public/temperature-label.mjs:38-53): a structurally identical
 copy, `{ ...LABELS.accepted }`, `null`, a string, `undefined`. It throws for `NaN`, `±Infinity`, a numeric string and
-`null` values. Pass: every case throws; the four real labels format.
+`null` values. Pass: every case throws; the four real labels format. (A serialized record reaches `formatTemp` only
+through `resolveLabel()`: AC-06.)
 
 **AC-02 No temperature text outside `temps.mjs`** (static). In `web/public/sentilab/package3d/*.{js,mjs}`: no
 `toFixed(` outside `temps.mjs` and `quantity.mjs` (non-temperature quantities), no `°C`, `℃` or `degC` literal outside
@@ -62,12 +63,22 @@ unhatched pixels at known cells equal `heatColor(t, scale)` within ±3/255 per c
 label-state chip sit inside the canvas wrapper at 390 and 1280 px. Pass: a canvas-only crop still shows the state
 (L3:ACCEPTANCE A-02).
 
-**AC-06 The twin carries the same labels** (node). For result twins (CLI `export3d` and the dialog): every value with
-`unit: "degC"` has a `label` object whose `state`, `text`, `short` and `title` equal `LABELS[state]` exactly; refused
-values appear only in `refused`, never as numbers (main:scripts/sentilab-scene.mjs:17); the markdown twin shows each
-temperature as `<value> °C <short>` in one cell. Adversarial: `twinOf()` given a value without a label, or with a
-hand-made look-alike label object, throws; a twin whose label text was edited fails the reader (`label_mismatch`).
-Pass: all.
+**AC-06 Labels survive serialization; identity is resolved, never assumed** (node). For result twins (CLI `export3d`
+and the dialog), the full path runs for each identity of AC-04 (withdrawn HotSpot-7, the corrected evaluator, the
+fixture, none): `resultView()` → `twinOf()` → `twinJsonText()` → UTF-8 bytes → `readTwin()` → `twinMarkdown()`. In the
+JSON every value with `unit: "degC"` carries `evaluator_identity` and a `label` record with exactly the keys `state`,
+`text`, `short` and `title`, each equal to `labelFor(evaluator_identity)`'s; after reading, `resolveLabel()` returns an
+object `===` `LABELS[state]` (the canonical in-process object, not a copy); the markdown shows each temperature as
+`<value> °C <short>` in one cell; refused values appear only in `refused`, never as numbers
+(main:scripts/sentilab-scene.mjs:17); the same inputs give byte-identical JSON and markdown. Adversarial, each refused
+with `label_mismatch` (the value never formatted; `readTwin` all or nothing): `state` changed (withdrawn to
+unvalidated); one character of `text`, `short` or `title` changed; a trailing space or a case change (no trimming or
+folding); an extra key (`notice`); a missing key; a non-string field; `evaluator_identity` changed with the label left
+(the withdrawn identity replaced by the fixture's, and the reverse); in the page path, a value whose
+`evaluator_identity` differs from the verified identity of its measurement; `twinOf()` given a value without a label
+throws. A structurally identical copy passed straight to `formatTemp()` still throws (AC-01). A twin whose identity
+and label were both edited consistently is caught by re-running `export3d` on its pinned replay and comparing bytes
+(AC-36), not by the reader. Pass: all.
 
 **AC-07 Identity edge cases** (node). Reuse the per-value provenance vectors through `results.mjs`: J from the applied
 withdrawn create is labelled withdrawn, not illustrative; J and centre temperatures from different measurements keep
