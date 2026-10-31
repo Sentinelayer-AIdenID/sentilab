@@ -1,0 +1,86 @@
+[
+  {
+    "mutation": "margin ignored",
+    "test": "sentilab_core.test_gate.GateTests.test_accept_nonimproving_tie_and_margin",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "geometry ignored",
+    "test": "sentilab_core.test_gate.GateTests.test_geometry_cap_reproduction_binding_and_stop_fail_closed",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "nonfinite accepted",
+    "test": "sentilab_core.test_gate.GateTests.test_nonfinite_bool_negative_and_impure_inputs",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "trust bypass",
+    "test": "sentilab_core.test_ledger.LedgerTests.test_shuffled_rows_verify_but_wrong_run_and_unpinned_key_do_not",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "size cap widened",
+    "test": "sentilab_core.test_ledger.LedgerTests.test_all_size_caps_and_nonfinite_numbers",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "conflict group ignored",
+    "test": "sentilab_core.test_ledger.LedgerTests.test_conflict_group_freezes_before_every_member_in_either_order",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "solve limits ignored",
+    "test": "sentilab_core.test_budget.BudgetTests.test_each_solve_and_cpu_limit_is_enforced_before_work",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "CPU limits ignored",
+    "test": "sentilab_core.test_budget.BudgetTests.test_each_solve_and_cpu_limit_is_enforced_before_work",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "STOP ignored",
+    "test": "sentilab_core.test_budget.BudgetTests.test_stop_deadline_concurrency_and_rollback_clock",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "policy pin ignored",
+    "test": "sentilab_core.test_budget.BudgetTests.test_limits_cannot_be_widened_and_policy_is_pinned",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "hour window shortened",
+    "test": "sentilab_core.test_budget.BudgetTests.test_hour_window_and_new_run_keep_global_spend",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "page repeats cursor",
+    "test": "app.test_view.ViewTests.test_routes_isolate_runs_page_by_seq_and_cap_at_500",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "MCP result differs",
+    "test": "sentilab_core.test_transports.TransportTests.test_real_cli_process_and_mcp_stdio_verify_same_ledger",
+    "exit_code": 1,
+    "caught": true
+  },
+  {
+    "mutation": "core projection differs",
+    "test": "sentilab_core.conformance.ProjectionConformance.test_contract_javascript_projection_equals_real_conductor_state",
+    "exit_code": 1,
+    "caught": true
+  }
+]
