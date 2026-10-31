@@ -218,6 +218,54 @@ class DatasetTests(unittest.TestCase):
         self.assertTrue(any(p['chosen']['candidate'] == 'fixture:repair' and
                             p['rejected']['candidate'] == 'fixture:loser' for p in pairs))
 
+    def test_complete_gate_decision_matches_frozen_config_and_history(self):
+        for mutation in ('margin', 'improvement', 'incumbent', 'wire_cap', 'geometry',
+                         'stopped', 'tolerance', 'process', 'success', 'binding', 'wire'):
+            with self.subTest(mutation=mutation):
+                entries = copy.deepcopy(self.events)
+                record = next(e['event']['body']['record'] for e in entries
+                              if e['event']['body'].get('node') == 'fixture:repair' and
+                              e['event']['body'].get('to') == 'accepted')
+                inputs, decision = record['inputs'], record['decision']
+                measurements = [e['event']['body']['record'] for e in entries
+                                if e['event']['body'].get('kind') == 'measurement' and
+                                e['event']['body']['record']['candidate_node'] == 'fixture:repair']
+                if mutation == 'margin':
+                    # Both numerical observations really improve by .4, but the
+                    # .3 gap to the within-margin candidate is below frozen .32.
+                    for measured in measurements:
+                        measured['j'] = 99.6
+                    inputs['evaluation']['j'] = inputs['reproduction']['j'] = 99.6
+                    decision.update(improvement=.4, margin=.01)
+                elif mutation == 'improvement':
+                    decision['improvement'] = 100
+                elif mutation == 'incumbent':
+                    inputs['current']['j'] = decision['current']['j'] = 200
+                    decision['improvement'] = 110
+                elif mutation == 'wire_cap':
+                    inputs['wire_cap_mm'] = 100
+                elif mutation == 'geometry':
+                    inputs['geometry_valid'] = False
+                elif mutation == 'stopped':
+                    inputs['stopped'] = True
+                else:
+                    reproduction = next(m for m in measurements if m['phase'] == 'reproduce')
+                    if mutation == 'tolerance':
+                        reproduction['j'] = 90.01
+                        decision['improvement'] = 9.99
+                    elif mutation == 'process':
+                        reproduction['process_id'] = inputs['evaluation']['process_id']
+                    elif mutation == 'success':
+                        reproduction['success'] = False
+                    elif mutation == 'binding':
+                        reproduction['binding']['candidate_id'] = 'another-design'
+                    elif mutation == 'wire':
+                        reproduction['wire_mm'] = 11
+                    inputs['reproduction'] = copy.deepcopy(reproduction)
+                self.sign_events(entries)
+                with self.assertRaises(ValueError):
+                    self.export()
+
     def test_later_matching_design_cannot_fabricate_parent_lineage(self):
         entries = copy.deepcopy(self.events)
         first = next(e for e in entries if e['event']['body'].get('id') == 'fixture:accept')

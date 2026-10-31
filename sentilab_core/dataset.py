@@ -13,8 +13,9 @@ import shutil
 import tempfile
 
 from .envelope import canonical, digest, validate_run_id
+from .gate import AcceptanceGate
 from .ledger import BrokenLedger, lock, replay
-from .projection import project
+from .projection import board, project
 
 VERSION = 'sentilab-dataset/1'
 BOARD = {'accepted', 'non_improving_current', 'within_margin'}
@@ -125,6 +126,19 @@ def _journal(prefix, policy):
                             for phase, name in [('evaluation', 'evaluate'), ('reproduction', 'reproduce')]) or
                         inputs.get('evaluation') is None or inputs.get('reproduction') is None):
                     raise ValueError('gate evidence does not match recorded measurements')
+                # Reproduce the pure gate calculation, not a new admission or
+                # solve. A signature authenticates a decision, not its arithmetic.
+                expected_inputs = {
+                    'geometry_valid': proposal.get('geometry_valid'),
+                    'wire_cap_mm': config.get('wire_cap_mm'), 'binding': proposal['binding'],
+                    'evaluation': inputs['evaluation'], 'reproduction': inputs['reproduction'],
+                    'stopped': False, 'current': board(prefix[:index])}
+                verifier = AcceptanceGate(margin=config.get('margin'),
+                                          reproduction_tolerance=config.get('reproduction_tolerance'))
+                expected_decision = verifier.decide(**expected_inputs)
+                if (canonical(inputs) != canonical(expected_inputs) or
+                        canonical(decision) != canonical(expected_decision)):
+                    raise ValueError('gate decision does not match frozen configuration and history')
             if body['to'] in TERMINAL:
                 gates[node] = envelope
         # The shipping projection validates transitions/support and computes
