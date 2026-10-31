@@ -54,7 +54,7 @@ class MeshLayoutTests(unittest.TestCase):
     def test_seeded_legal_balanced_unique_layouts(self):
         frozen = mesh.make_layout_set('ascend910', 1, 24)
         self.assertEqual(frozen, mesh.make_layout_set('ascend910', 1, 24))
-        self.assertNotEqual(frozen, mesh.make_layout_set('ascend910', 2, 24))
+        self.assertNotEqual(frozen['layouts'], mesh.make_layout_set('ascend910', 2, 24)['layouts'])
         oracle = mesh.make_oracle('ascend910', 16)
         self.assertEqual(len({row['design_hash'] for row in frozen['layouts']}), 24)
         for category in mesh.CATEGORIES:
