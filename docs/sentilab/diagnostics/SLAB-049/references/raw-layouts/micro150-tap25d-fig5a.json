@@ -1,0 +1,381 @@
+{
+ "dies": [
+  {
+   "catalog_mm": [
+    8.25,
+    9.0
+   ],
+   "die": 0,
+   "halo_mm": 0.18,
+   "name": "CPU, 150 W",
+   "power_w": 150.0
+  },
+  {
+   "catalog_mm": [
+    8.25,
+    9.0
+   ],
+   "die": 1,
+   "halo_mm": 0.18,
+   "name": "CPU, 150 W",
+   "power_w": 150.0
+  },
+  {
+   "catalog_mm": [
+    8.25,
+    9.0
+   ],
+   "die": 2,
+   "halo_mm": 0.18,
+   "name": "CPU, 150 W",
+   "power_w": 150.0
+  },
+  {
+   "catalog_mm": [
+    8.25,
+    9.0
+   ],
+   "die": 3,
+   "halo_mm": 0.18,
+   "name": "CPU, 150 W",
+   "power_w": 150.0
+  },
+  {
+   "catalog_mm": [
+    8.75,
+    8.75
+   ],
+   "die": 4,
+   "halo_mm": 0.135,
+   "name": "DRAM, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    8.75,
+    8.75
+   ],
+   "die": 5,
+   "halo_mm": 0.135,
+   "name": "DRAM, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    8.75,
+    8.75
+   ],
+   "die": 6,
+   "halo_mm": 0.135,
+   "name": "DRAM, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    8.75,
+    8.75
+   ],
+   "die": 7,
+   "halo_mm": 0.135,
+   "name": "DRAM, 20 W",
+   "power_w": 20.0
+  }
+ ],
+ "fixture": {
+  "config": "sundai_tap/configs/sys_micro150_45mm.cfg",
+  "config_sha256": "da94828d683b0d16a243907d51927761892e82f9725f17bc96ab1c867563ed89",
+  "fixture_id": "micro150-45mm",
+  "frame_mm": 45.0
+ },
+ "interposer_mm": 45.0,
+ "layout_identity": "raw",
+ "paper_reported": {
+  "original": {
+   "link_type": "nppl",
+   "panel": "a",
+   "peak_temperature_c": 115.94,
+   "routed_wirelength_mm": 67686
+  },
+  "quote": "The original placement (a) is optimal from the routing perspective (total wirelength of 67,686mm according to our evaluation). However, our HotSpot simulations show that the system operates at 115.94oC, which is thermally infeasible."
+ },
+ "raw": {
+  "center_uncertainty_mm": [
+   [
+    0.0014,
+    0.0014
+   ],
+   [
+    0.0018,
+    0.0014
+   ],
+   [
+    0.0018,
+    0.0018
+   ],
+   [
+    0.0014,
+    0.0018
+   ],
+   [
+    0.001,
+    0.0014
+   ],
+   [
+    0.0022,
+    0.0014
+   ],
+   [
+    0.0022,
+    0.0018
+   ],
+   [
+    0.001,
+    0.0018
+   ]
+  ],
+  "centers_mm": [
+   [
+    17.9249,
+    17.5496
+   ],
+   [
+    27.0751,
+    17.5496
+   ],
+   [
+    27.0751,
+    27.4497
+   ],
+   [
+    17.9249,
+    27.4497
+   ],
+   [
+    8.5751,
+    17.5496
+   ],
+   [
+    36.4249,
+    17.5496
+   ],
+   [
+    36.4249,
+    27.4497
+   ],
+   [
+    8.5751,
+    27.4497
+   ]
+  ],
+  "decoded_size_mm": [
+   [
+    8.2497,
+    8.9999
+   ],
+   [
+    8.2497,
+    8.9999
+   ],
+   [
+    8.2497,
+    9.0008
+   ],
+   [
+    8.2497,
+    9.0008
+   ],
+   [
+    8.749,
+    8.75
+   ],
+   [
+    8.749,
+    8.75
+   ],
+   [
+    8.749,
+    8.7491
+   ],
+   [
+    8.749,
+    8.7491
+   ]
+  ],
+  "design_hash": "93ee854b69891474775b6a2ea32c99d868f83066825a05752575584e4742f22b",
+  "fixture_gate_message": "chiplet 0 center is off the 0.5 mm placement grid",
+  "footprints_mm": [
+   [
+    8.25,
+    9.0
+   ],
+   [
+    8.25,
+    9.0
+   ],
+   [
+    8.25,
+    9.0
+   ],
+   [
+    8.25,
+    9.0
+   ],
+   [
+    8.75,
+    8.75
+   ],
+   [
+    8.75,
+    8.75
+   ],
+   [
+    8.75,
+    8.75
+   ],
+   [
+    8.75,
+    8.75
+   ]
+  ],
+  "how_obtained": [
+   "Die 0: the outline drawn as Chiplet_0 (die-sized unit 1 in the figure's drawing order); centre = midpoint of the outline, outline pt [53.6483, 97.9389, 63.6795, 108.8823], mapped through the panel's edge-strip frame",
+   "Die 1: the outline drawn as Chiplet_1 (die-sized unit 2 in the figure's drawing order); centre = midpoint of the outline, outline pt [64.7745, 97.9389, 74.8057, 108.8823], mapped through the panel's edge-strip frame",
+   "Die 2: the outline drawn as Chiplet_2 (die-sized unit 3 in the figure's drawing order); centre = midpoint of the outline, outline pt [64.7745, 85.9005, 74.8057, 96.845], mapped through the panel's edge-strip frame",
+   "Die 3: the outline drawn as Chiplet_3 (die-sized unit 4 in the figure's drawing order); centre = midpoint of the outline, outline pt [53.6483, 85.9005, 63.6795, 96.845], mapped through the panel's edge-strip frame",
+   "Die 4: the outline drawn as Chiplet_4 (die-sized unit 5 in the figure's drawing order); centre = midpoint of the outline, outline pt [41.9758, 98.0909, 52.6142, 108.7304], mapped through the panel's edge-strip frame",
+   "Die 5: the outline drawn as Chiplet_5 (die-sized unit 6 in the figure's drawing order); centre = midpoint of the outline, outline pt [75.8398, 98.0909, 86.4782, 108.7304], mapped through the panel's edge-strip frame",
+   "Die 6: the outline drawn as Chiplet_6 (die-sized unit 7 in the figure's drawing order); centre = midpoint of the outline, outline pt [75.8398, 86.0535, 86.4782, 96.6919], mapped through the panel's edge-strip frame",
+   "Die 7: the outline drawn as Chiplet_7 (die-sized unit 8 in the figure's drawing order); centre = midpoint of the outline, outline pt [41.9758, 86.0535, 52.6142, 96.6919], mapped through the panel's edge-strip frame"
+  ],
+  "label": "raw reconstruction (approximate, from published figure)",
+  "legal_on_fixture": false,
+  "lower_left_mm": [
+   [
+    13.8,
+    13.0497
+   ],
+   [
+    22.9503,
+    13.0497
+   ],
+   [
+    22.9503,
+    22.9493
+   ],
+   [
+    13.8,
+    22.9493
+   ],
+   [
+    4.2006,
+    13.1746
+   ],
+   [
+    32.0503,
+    13.1746
+   ],
+   [
+    32.0503,
+    23.0751
+   ],
+   [
+    4.2006,
+    23.0751
+   ]
+  ],
+  "rotated": [
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false,
+   false
+  ],
+  "routed_wirelength_mm": 67688.4,
+  "uncertainty_rule": "decode error measured on TAP's own panels (max offset from its 1 mm grid) + coordinate x relative spread of the panel's three scale estimates + 5e-5 mm storage step, rounded up to 1e-4 mm. Fidelity of the figure to the authors' simulated layout is not measurable from the figure.",
+  "violations_on_fixture": [
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     0
+    ],
+    "message": "chiplet 0 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     1
+    ],
+    "message": "chiplet 1 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     2
+    ],
+    "message": "chiplet 2 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     3
+    ],
+    "message": "chiplet 3 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     4
+    ],
+    "message": "chiplet 4 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     5
+    ],
+    "message": "chiplet 5 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     6
+    ],
+    "message": "chiplet 6 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.0751,
+    "dies": [
+     7
+    ],
+    "message": "chiplet 7 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   }
+  ],
+  "violations_without_center_lattice": [],
+  "wire_proxy_mm": 9.3849
+ },
+ "raw_layout_sha256": "6eba70b6307198fef85dbee0ec98055077b55e0fdae5bebb7ffe620556a457a7",
+ "raw_layout_sha256_form": "sha256 of json.dumps(raw, sort_keys=True, separators=(',', ':'), ensure_ascii=True, allow_nan=False) encoded as UTF-8",
+ "reference_id": "micro150-tap25d-fig5a-raw",
+ "schema": "sentilab-slab049-raw-layout-v1",
+ "source": {
+  "commit": "063f659368f32b653acf8084f85a0c7926a106ec",
+  "path": "docs/sentilab/references/micro150-tap25d-fig5a.json",
+  "pull_request": 57,
+  "record_reference_id": "micro150-tap25d-fig5a",
+  "record_schema": "sentilab-reference-layout-v1",
+  "record_sha256": "ed785b5d61ac884d68e617a669a64122f674677e28316932e57833777f60eaac",
+  "repository": "Sentinelayer-AIdenID/sentilab",
+  "section": "raw"
+ }
+}

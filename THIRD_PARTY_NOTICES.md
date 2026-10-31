@@ -1,13 +1,22 @@
 # Third-party notices
 
-This repository carries unmodified upstream source from two research projects. Their licenses are kept
+This repository carries upstream source from two research projects, in three trees. Their licenses are kept
 unchanged next to the code; read them before redistributing anything, including a container image (an image is
 binary distribution).
 
 | Component | Path | Upstream | Commit | License |
 |---|---|---|---|---|
-| HotSpot thermal simulator | `sundai_hotspot/` | https://github.com/uvahotspot/HotSpot | `f18831e48cef5d62580585cca0d7fab6c71bc3cc` | Custom University of Virginia license, `sundai_hotspot/LICENSE` |
+| HotSpot 7.0 thermal simulator | `sundai_hotspot/` | https://github.com/uvahotspot/HotSpot | `f18831e48cef5d62580585cca0d7fab6c71bc3cc` | Custom University of Virginia license, `sundai_hotspot/LICENSE` |
+| HotSpot 6.0 thermal simulator (TAP-2.5D's version) | `sundai_hotspot6/` | https://github.com/uvahotspot/HotSpot | `a7a3286e368867c26381e0a23e36b3e273bdeda9` | Custom University of Virginia license, `sundai_hotspot6/LICENSE` |
 | TAP-2.5D chiplet placement | `sundai_tap/` | https://github.com/bu-icsg/TAP-2.5D | `3a3f4e5a4d019b2d9cda1f72d8d1755238845dbb` | Apache-2.0, `sundai_tap/LICENSE` |
+
+Each `temperature_grid.c` carries one SentiLab change, behind a macro that is off in the default build. Without
+the macro, the file compiles to the upstream text; a test checks this byte for byte.
+
+- `sundai_hotspot/temperature_grid.c`: `SENTILAB_SINK_COUPLING_MATERIAL_ONLY`, a SLAB-049 diagnostic.
+- `sundai_hotspot6/temperature_grid.c`: `SENTILAB_GRID_DUMP_ALL_LAYERS`, which changes the grid writer only.
+
+`sundai_hotspot6/UPSTREAM_BLOBS.txt` lists the upstream git blob of every vendored HotSpot 6.0 file.
 
 Obligations we follow:
 

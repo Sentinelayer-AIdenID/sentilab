@@ -23,6 +23,27 @@
 #include "slu_ddefs.h"
 #endif
 
+#if SENTILAB_SINK_COUPLING_MATERIAL_ONLY
+/* SentiLab SLAB-049 diagnostic variant, compiled only with -DSENTILAB_SINK_COUPLING_MATERIAL_ONLY=1
+ * (make hotspot-material-only). Without that macro this file preprocesses to the unmodified
+ * HotSpot source, so the default `hotspot` binary is unchanged.
+ *
+ * populate_R_model_grid gives the heatsink layer rz = t_sink/(k_sink*cw*ch) + r_convec*s_sink^2/(cw*ch):
+ * the material term plus this cell's share of the convection resistance. That rz is the right
+ * sink-to-ambient link, but find_res also used it for the interior spreader<->sink link, so half the
+ * convection resistance sat between the spreader and the sink. This variant couples the two cells
+ * through material resistances only; convection stays solely on the sink-to-ambient link. */
+const char sentilab_sink_coupling_identity[] = "SENTILAB_SINK_COUPLING=material_only;ticket=SLAB-049";
+
+static double sentilab_vertical_res_material_only(grid_model_t *model, int n, int i, int j)
+{
+  int hsidx = model->n_layers - DEFAULT_PACK_LAYERS + LAYER_SINK;
+  if (n == hsidx)
+    return getr(model->layers[n].k, model->layers[n].thickness,
+                (model->width / model->cols) * (model->height / model->rows));
+  return find_res_3D(n, i, j, model, 3);
+}
+#endif
 double find_res(grid_model_t *model, int n1, int i1, int j1, int n2, int i2, int j2) {
   double res;
 
@@ -101,7 +122,11 @@ double find_res(grid_model_t *model, int n1, int i1, int j1, int n2, int i2, int
     else if(n2 == 0 && i1 == i2 && j1 == j2)
       res = find_res_3D(n2, i2, j2, model, 3) + (find_res_3D(n1, i1, j1, model, 3) / 2.0);
     else if(n1 != n2 && i1 == i2 && j1 == j2) {
+#if SENTILAB_SINK_COUPLING_MATERIAL_ONLY
+      res = (sentilab_vertical_res_material_only(model, n1, i1, j1) / 2.0) + (sentilab_vertical_res_material_only(model, n2, i2, j2) / 2.0);
+#else
       res = (find_res_3D(n1, i1, j1, model, 3) / 2.0) + (find_res_3D(n2, i2, j2, model, 3) / 2.0);
+#endif
     }
     else if(n1 == n2 && i1 != i2 && j1 == j2) {
       res = (find_res_3D(n1, i1, j1, model, 1) / 2.0) + (find_res_3D(n2, i2, j2, model, 1) / 2.0);

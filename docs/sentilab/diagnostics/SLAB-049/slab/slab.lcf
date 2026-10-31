@@ -1,0 +1,16 @@
+# SLAB-049 minimal slab: layer, lateral, power, specific heat, resistivity, thickness, floorplan
+0
+Y
+Y
+1.75E+06
+0.01
+0.00015
+slab_die.flp
+
+1
+Y
+N
+4.00E+06
+0.25
+2e-05
+slab_tim.flp

@@ -1,0 +1,665 @@
+{
+  "assembly_confirmation": {
+    "inputs": "sundai_hotspot/probe_results/baseline_center_32",
+    "platform": "linux",
+    "rows": [
+      {
+        "assembled_sink_ambient_K_per_W": 75.49439999999998,
+        "assembled_spreader_sink_K_per_W": 37.87519999999999,
+        "bit_identical": true,
+        "coupling": "hotspot7_default",
+        "frozen_equation_sink_ambient_K_per_W": 75.49439999999998,
+        "frozen_equation_spreader_sink_K_per_W": 37.87519999999999,
+        "grid": 16,
+        "h_multiplier": 0.5,
+        "interior_vertical_K_per_W": {
+          "0-1": 68.24904531323597,
+          "1-2": 0.10093102752170108,
+          "2-3": 0.05439608536088079,
+          "3-4": 0.08091037107516649,
+          "4-5": 0.33279999999999993,
+          "5-6": 0.3839999999999999,
+          "6-7": 37.87519999999999
+        },
+        "matrix_sha256": "9391d6e5515b55a75abe27ab0827a693e9324e9bc5b44d950eab088427f345b1"
+      },
+      {
+        "assembled_sink_ambient_K_per_W": 75.49439999999998,
+        "assembled_spreader_sink_K_per_W": 1.0111999999999997,
+        "bit_identical": true,
+        "coupling": "material_only",
+        "frozen_equation_sink_ambient_K_per_W": 75.49439999999998,
+        "frozen_equation_spreader_sink_K_per_W": 1.0111999999999997,
+        "grid": 16,
+        "h_multiplier": 0.5,
+        "interior_vertical_K_per_W": {
+          "0-1": 68.24904531323597,
+          "1-2": 0.10093102752170108,
+          "2-3": 0.05439608536088079,
+          "3-4": 0.08091037107516649,
+          "4-5": 0.33279999999999993,
+          "5-6": 0.3839999999999999,
+          "6-7": 1.0111999999999997
+        },
+        "matrix_sha256": "2cdfa97a90c27bcb6e30ebfaa69e7c3962c83931c15d1f5e48600fd340e9d94a"
+      },
+      {
+        "assembled_sink_ambient_K_per_W": 38.63039999999999,
+        "assembled_spreader_sink_K_per_W": 19.443199999999994,
+        "bit_identical": true,
+        "coupling": "hotspot7_default",
+        "frozen_equation_sink_ambient_K_per_W": 38.63039999999999,
+        "frozen_equation_spreader_sink_K_per_W": 19.443199999999994,
+        "grid": 16,
+        "h_multiplier": 1.0,
+        "interior_vertical_K_per_W": {
+          "0-1": 68.24904531323597,
+          "1-2": 0.10093102752170108,
+          "2-3": 0.05439608536088079,
+          "3-4": 0.08091037107516649,
+          "4-5": 0.33279999999999993,
+          "5-6": 0.3839999999999999,
+          "6-7": 19.443199999999994
+        },
+        "matrix_sha256": "bec4f36142ed7f11a9f012a6804d1901160ae51ff88a8f514d8d4920dd9e4f63"
+      },
+      {
+        "assembled_sink_ambient_K_per_W": 38.63039999999999,
+        "assembled_spreader_sink_K_per_W": 1.0111999999999997,
+        "bit_identical": true,
+        "coupling": "material_only",
+        "frozen_equation_sink_ambient_K_per_W": 38.63039999999999,
+        "frozen_equation_spreader_sink_K_per_W": 1.0111999999999997,
+        "grid": 16,
+        "h_multiplier": 1.0,
+        "interior_vertical_K_per_W": {
+          "0-1": 68.24904531323597,
+          "1-2": 0.10093102752170108,
+          "2-3": 0.05439608536088079,
+          "3-4": 0.08091037107516649,
+          "4-5": 0.33279999999999993,
+          "5-6": 0.3839999999999999,
+          "6-7": 1.0111999999999997
+        },
+        "matrix_sha256": "6c7ff1ee0084fe2a811a16074dab460bde7c73efa47267695382a406b77d3ba4"
+      },
+      {
+        "assembled_sink_ambient_K_per_W": 20.198399999999996,
+        "assembled_spreader_sink_K_per_W": 10.227199999999998,
+        "bit_identical": true,
+        "coupling": "hotspot7_default",
+        "frozen_equation_sink_ambient_K_per_W": 20.198399999999996,
+        "frozen_equation_spreader_sink_K_per_W": 10.227199999999998,
+        "grid": 16,
+        "h_multiplier": 2.0,
+        "interior_vertical_K_per_W": {
+          "0-1": 68.24904531323597,
+          "1-2": 0.10093102752170108,
+          "2-3": 0.05439608536088079,
+          "3-4": 0.08091037107516649,
+          "4-5": 0.33279999999999993,
+          "5-6": 0.3839999999999999,
+          "6-7": 10.227199999999998
+        },
+        "matrix_sha256": "3047d22fe0e5e975ce2a5bcf7f6db3a232989d231174448561a9b705f7b3bd1c"
+      },
+      {
+        "assembled_sink_ambient_K_per_W": 20.198399999999996,
+        "assembled_spreader_sink_K_per_W": 1.0111999999999997,
+        "bit_identical": true,
+        "coupling": "material_only",
+        "frozen_equation_sink_ambient_K_per_W": 20.198399999999996,
+        "frozen_equation_spreader_sink_K_per_W": 1.0111999999999997,
+        "grid": 16,
+        "h_multiplier": 2.0,
+        "interior_vertical_K_per_W": {
+          "0-1": 68.24904531323597,
+          "1-2": 0.10093102752170108,
+          "2-3": 0.05439608536088079,
+          "3-4": 0.08091037107516649,
+          "4-5": 0.33279999999999993,
+          "5-6": 0.3839999999999999,
+          "6-7": 1.0111999999999997
+        },
+        "matrix_sha256": "81c3da8539a9750abc0f7d7d49528274a57a58c808a6bd2500388364c0ec4ce0"
+      }
+    ],
+    "toolchain": "gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0"
+  },
+  "committed_output_residuals": [
+    {
+      "case": "baseline_center_16",
+      "grid": 16,
+      "hotspot7_default": {
+        "cells_checked": 392,
+        "cells_outside_rounding_bound": 0,
+        "max_abs_residual_W": 0.09139279307710779,
+        "median_abs_residual_W": 0.016572032038532414,
+        "worst_residual_over_bound": 0.8248392924965924
+      },
+      "interior_cells_per_layer": 196,
+      "material_only": {
+        "cells_checked": 392,
+        "cells_outside_rounding_bound": 392,
+        "max_abs_residual_W": 47.92863040763859,
+        "median_abs_residual_W": 19.146662447257196,
+        "worst_residual_over_bound": 922.0628573750045
+      }
+    },
+    {
+      "case": "baseline_center_32",
+      "grid": 32,
+      "hotspot7_default": {
+        "cells_checked": 1800,
+        "cells_outside_rounding_bound": 0,
+        "max_abs_residual_W": 0.08156431444258369,
+        "median_abs_residual_W": 0.009858789028275555,
+        "worst_residual_over_bound": 0.7556875166813325
+      },
+      "interior_cells_per_layer": 900,
+      "material_only": {
+        "cells_checked": 1800,
+        "cells_outside_rounding_bound": 1800,
+        "max_abs_residual_W": 12.113659343097675,
+        "median_abs_residual_W": 4.251430379746843,
+        "worst_residual_over_bound": 484.05730752788077
+      }
+    },
+    {
+      "case": "left_shift_2mm_16",
+      "grid": 16,
+      "hotspot7_default": {
+        "cells_checked": 392,
+        "cells_outside_rounding_bound": 0,
+        "max_abs_residual_W": 0.0813198113057273,
+        "median_abs_residual_W": 0.015114511951873577,
+        "worst_residual_over_bound": 0.7681712442974337
+      },
+      "interior_cells_per_layer": 196,
+      "material_only": {
+        "cells_checked": 392,
+        "cells_outside_rounding_bound": 392,
+        "max_abs_residual_W": 48.69190759829255,
+        "median_abs_residual_W": 18.54728921303403,
+        "worst_residual_over_bound": 937.1825799047355
+      }
+    },
+    {
+      "case": "left_shift_2mm_32",
+      "grid": 32,
+      "hotspot7_default": {
+        "cells_checked": 1800,
+        "cells_outside_rounding_bound": 0,
+        "max_abs_residual_W": 0.08673913792356315,
+        "median_abs_residual_W": 0.010006233541820342,
+        "worst_residual_over_bound": 0.8163840464500111
+      },
+      "interior_cells_per_layer": 900,
+      "material_only": {
+        "cells_checked": 1800,
+        "cells_outside_rounding_bound": 1800,
+        "max_abs_residual_W": 12.211435284966951,
+        "median_abs_residual_W": 4.255166666666706,
+        "worst_residual_over_bound": 488.47273168697797
+      }
+    },
+    {
+      "case": "left_shift_4mm_16",
+      "grid": 16,
+      "hotspot7_default": {
+        "cells_checked": 392,
+        "cells_outside_rounding_bound": 0,
+        "max_abs_residual_W": 0.08679098828150589,
+        "median_abs_residual_W": 0.019386226933383766,
+        "worst_residual_over_bound": 0.7815927324999261
+      },
+      "interior_cells_per_layer": 196,
+      "material_only": {
+        "cells_checked": 392,
+        "cells_outside_rounding_bound": 392,
+        "max_abs_residual_W": 49.156698715722314,
+        "median_abs_residual_W": 19.41225387904678,
+        "worst_residual_over_bound": 946.2419638232398
+      }
+    },
+    {
+      "case": "left_shift_4mm_32",
+      "grid": 32,
+      "hotspot7_default": {
+        "cells_checked": 1800,
+        "cells_outside_rounding_bound": 0,
+        "max_abs_residual_W": 0.09534698476097048,
+        "median_abs_residual_W": 0.010129285988607541,
+        "worst_residual_over_bound": 0.8623930552364651
+      },
+      "interior_cells_per_layer": 900,
+      "material_only": {
+        "cells_checked": 1800,
+        "cells_outside_rounding_bound": 1800,
+        "max_abs_residual_W": 12.332659490420802,
+        "median_abs_residual_W": 4.196020181442775,
+        "worst_residual_over_bound": 491.3948772622428
+      }
+    },
+    {
+      "case": "right_shift_2mm_16",
+      "grid": 16,
+      "hotspot7_default": {
+        "cells_checked": 392,
+        "cells_outside_rounding_bound": 0,
+        "max_abs_residual_W": 0.0794094992370275,
+        "median_abs_residual_W": 0.015283914485553163,
+        "worst_residual_over_bound": 0.8264565195385004
+      },
+      "interior_cells_per_layer": 196,
+      "material_only": {
+        "cells_checked": 392,
+        "cells_outside_rounding_bound": 392,
+        "max_abs_residual_W": 48.4316213080169,
+        "median_abs_residual_W": 18.70971130495541,
+        "worst_residual_over_bound": 932.6165080590288
+      }
+    },
+    {
+      "case": "right_shift_2mm_32",
+      "grid": 32,
+      "hotspot7_default": {
+        "cells_checked": 1800,
+        "cells_outside_rounding_bound": 0,
+        "max_abs_residual_W": 0.08685958642271072,
+        "median_abs_residual_W": 0.009591960171154032,
+        "worst_residual_over_bound": 0.785626355143219
+      },
+      "interior_cells_per_layer": 900,
+      "material_only": {
+        "cells_checked": 1800,
+        "cells_outside_rounding_bound": 1800,
+        "max_abs_residual_W": 12.123338142610445,
+        "median_abs_residual_W": 4.174746571729986,
+        "worst_residual_over_bound": 484.6510722070655
+      }
+    }
+  ],
+  "committed_run1_signature": [
+    {
+      "case": "baseline_center_16",
+      "distance_to_ascend_45mm_signatures_K": {
+        "correct (HotSpot 6 form, the paper's)": 43.60097246621918,
+        "r_convec not rescaled": 43.31917358399164,
+        "v7 spreader-sink link": 3.9855739862659245
+      },
+      "drop_over_sink_rise": 2.765151515151514,
+      "pattern": "v7-link",
+      "r_convec": "0.008999999999999998",
+      "r_convec_is_generator_scaled": true,
+      "s_sink": "0.2",
+      "s_spreader": "0.1",
+      "sink_rise_K": 18.480000000000018,
+      "spreader_rise_K": 69.58000000000004
+    },
+    {
+      "case": "baseline_center_32",
+      "distance_to_ascend_45mm_signatures_K": {
+        "correct (HotSpot 6 form, the paper's)": 44.12015639138194,
+        "r_convec not rescaled": 43.38064314875929,
+        "v7 spreader-sink link": 3.459508635630187
+      },
+      "drop_over_sink_rise": 2.787682333873573,
+      "pattern": "v7-link",
+      "r_convec": "0.008999999999999998",
+      "r_convec_is_generator_scaled": true,
+      "s_sink": "0.2",
+      "s_spreader": "0.1",
+      "sink_rise_K": 18.510000000000048,
+      "spreader_rise_K": 70.11000000000001
+    },
+    {
+      "case": "left_shift_2mm_16",
+      "distance_to_ascend_45mm_signatures_K": {
+        "correct (HotSpot 6 form, the paper's)": 44.45864595329016,
+        "r_convec not rescaled": 43.39508267073587,
+        "v7 spreader-sink link": 3.1066380542315795
+      },
+      "drop_over_sink_rise": 2.7963362068965534,
+      "pattern": "v7-link",
+      "r_convec": "0.008999999999999998",
+      "r_convec_is_generator_scaled": true,
+      "s_sink": "0.2",
+      "s_spreader": "0.1",
+      "sink_rise_K": 18.560000000000002,
+      "spreader_rise_K": 70.46000000000004
+    },
+    {
+      "case": "left_shift_2mm_32",
+      "distance_to_ascend_45mm_signatures_K": {
+        "correct (HotSpot 6 form, the paper's)": 44.58421805975745,
+        "r_convec not rescaled": 43.39977534504064,
+        "v7 spreader-sink link": 2.9753151093623282
+      },
+      "drop_over_sink_rise": 2.7992465016146326,
+      "pattern": "v7-link",
+      "r_convec": "0.008999999999999998",
+      "r_convec_is_generator_scaled": true,
+      "s_sink": "0.2",
+      "s_spreader": "0.1",
+      "sink_rise_K": 18.58000000000004,
+      "spreader_rise_K": 70.59000000000003
+    },
+    {
+      "case": "left_shift_4mm_16",
+      "distance_to_ascend_45mm_signatures_K": {
+        "correct (HotSpot 6 form, the paper's)": 45.02049755389206,
+        "r_convec not rescaled": 43.42813834370519,
+        "v7 spreader-sink link": 2.5229347989989455
+      },
+      "drop_over_sink_rise": 2.811158798283254,
+      "pattern": "v7-link",
+      "r_convec": "0.008999999999999998",
+      "r_convec_is_generator_scaled": true,
+      "s_sink": "0.2",
+      "s_spreader": "0.1",
+      "sink_rise_K": 18.640000000000043,
+      "spreader_rise_K": 71.04000000000002
+    },
+    {
+      "case": "left_shift_4mm_32",
+      "distance_to_ascend_45mm_signatures_K": {
+        "correct (HotSpot 6 form, the paper's)": 44.98384598942158,
+        "r_convec not rescaled": 43.43980202533156,
+        "v7 spreader-sink link": 2.566398254363495
+      },
+      "drop_over_sink_rise": 2.813104189044038,
+      "pattern": "v7-link",
+      "r_convec": "0.008999999999999998",
+      "r_convec_is_generator_scaled": true,
+      "s_sink": "0.2",
+      "s_spreader": "0.1",
+      "sink_rise_K": 18.620000000000005,
+      "spreader_rise_K": 71.0
+    },
+    {
+      "case": "right_shift_2mm_16",
+      "distance_to_ascend_45mm_signatures_K": {
+        "correct (HotSpot 6 form, the paper's)": 44.126239359365314,
+        "r_convec not rescaled": 43.420006909257836,
+        "v7 spreader-sink link": 3.4677081768799214
+      },
+      "drop_over_sink_rise": 2.7958852192744943,
+      "pattern": "v7-link",
+      "r_convec": "0.008999999999999998",
+      "r_convec_is_generator_scaled": true,
+      "s_sink": "0.2",
+      "s_spreader": "0.1",
+      "sink_rise_K": 18.470000000000027,
+      "spreader_rise_K": 70.11000000000001
+    },
+    {
+      "case": "right_shift_2mm_32",
+      "distance_to_ascend_45mm_signatures_K": {
+        "correct (HotSpot 6 form, the paper's)": 44.091297327250466,
+        "r_convec not rescaled": 43.44245043733147,
+        "v7 spreader-sink link": 3.513189434118186
+      },
+      "drop_over_sink_rise": 2.799891540130155,
+      "pattern": "v7-link",
+      "r_convec": "0.008999999999999998",
+      "r_convec_is_generator_scaled": true,
+      "s_sink": "0.2",
+      "s_spreader": "0.1",
+      "sink_rise_K": 18.439999999999998,
+      "spreader_rise_K": 70.07000000000005
+    }
+  ],
+  "equations": {
+    "hotspot7_default": "R_sp,hs = rz_sp/2 + (rz_hs,mat + R_conv)/2 ; R_hs,amb = rz_hs,mat + R_conv",
+    "material_only": "R_sp,hs = rz_sp/2 + rz_hs,mat/2 ; R_hs,amb = rz_hs,mat + R_conv",
+    "terms": "rz = t/(k cw ch), R_conv = r_convec s_sink^2/(cw ch); per area: r_conv = 1/h"
+  },
+  "frozen_equations": [
+    {
+      "coupling": "hotspot7_default",
+      "fixture_interposer_mm": 50.0,
+      "h_W_per_m2K": 1388.8888888888891,
+      "h_multiplier": 0.5,
+      "per_area_m2K_per_W": {
+        "convection": 0.0007199999999999998,
+        "convection_inside_interior_link": 0.0003599999999999999,
+        "sink_ambient": 0.0007372499999999998,
+        "spreader_sink": 0.0003698749999999999
+      },
+      "per_cell": {
+        "grid": 64,
+        "sink_ambient_K_per_W": 1207.9103999999998,
+        "sink_ambient_W_per_K": 0.0008278759749067483,
+        "spreader_sink_K_per_W": 606.0031999999999,
+        "spreader_sink_W_per_K": 0.001650156302805002
+      },
+      "r_convec_K_per_W": 0.017999999999999995
+    },
+    {
+      "coupling": "material_only",
+      "fixture_interposer_mm": 50.0,
+      "h_W_per_m2K": 1388.8888888888891,
+      "h_multiplier": 0.5,
+      "per_area_m2K_per_W": {
+        "convection": 0.0007199999999999998,
+        "convection_inside_interior_link": 0.0,
+        "sink_ambient": 0.0007372499999999998,
+        "spreader_sink": 9.875e-06
+      },
+      "per_cell": {
+        "grid": 64,
+        "sink_ambient_K_per_W": 1207.9103999999998,
+        "sink_ambient_W_per_K": 0.0008278759749067483,
+        "spreader_sink_K_per_W": 16.179199999999994,
+        "spreader_sink_W_per_K": 0.061807753164556986
+      },
+      "r_convec_K_per_W": 0.017999999999999995
+    },
+    {
+      "coupling": "hotspot7_default",
+      "fixture_interposer_mm": 50.0,
+      "h_W_per_m2K": 2777.7777777777783,
+      "h_multiplier": 1.0,
+      "per_area_m2K_per_W": {
+        "convection": 0.0003599999999999999,
+        "convection_inside_interior_link": 0.00017999999999999996,
+        "sink_ambient": 0.0003772499999999999,
+        "spreader_sink": 0.00018987499999999997
+      },
+      "per_cell": {
+        "grid": 64,
+        "sink_ambient_K_per_W": 618.0863999999998,
+        "sink_ambient_W_per_K": 0.0016178967859509614,
+        "spreader_sink_K_per_W": 311.0911999999999,
+        "spreader_sink_W_per_K": 0.0032144914417379863
+      },
+      "r_convec_K_per_W": 0.008999999999999998
+    },
+    {
+      "coupling": "material_only",
+      "fixture_interposer_mm": 50.0,
+      "h_W_per_m2K": 2777.7777777777783,
+      "h_multiplier": 1.0,
+      "per_area_m2K_per_W": {
+        "convection": 0.0003599999999999999,
+        "convection_inside_interior_link": 0.0,
+        "sink_ambient": 0.0003772499999999999,
+        "spreader_sink": 9.875e-06
+      },
+      "per_cell": {
+        "grid": 64,
+        "sink_ambient_K_per_W": 618.0863999999998,
+        "sink_ambient_W_per_K": 0.0016178967859509614,
+        "spreader_sink_K_per_W": 16.179199999999994,
+        "spreader_sink_W_per_K": 0.061807753164556986
+      },
+      "r_convec_K_per_W": 0.008999999999999998
+    },
+    {
+      "coupling": "hotspot7_default",
+      "fixture_interposer_mm": 50.0,
+      "h_W_per_m2K": 5555.555555555557,
+      "h_multiplier": 2.0,
+      "per_area_m2K_per_W": {
+        "convection": 0.00017999999999999996,
+        "convection_inside_interior_link": 8.999999999999998e-05,
+        "sink_ambient": 0.00019724999999999994,
+        "spreader_sink": 9.987499999999997e-05
+      },
+      "per_cell": {
+        "grid": 64,
+        "sink_ambient_K_per_W": 323.17439999999993,
+        "sink_ambient_W_per_K": 0.003094304499366287,
+        "spreader_sink_K_per_W": 163.63519999999997,
+        "spreader_sink_W_per_K": 0.006111154568210264
+      },
+      "r_convec_K_per_W": 0.004499999999999999
+    },
+    {
+      "coupling": "material_only",
+      "fixture_interposer_mm": 50.0,
+      "h_W_per_m2K": 5555.555555555557,
+      "h_multiplier": 2.0,
+      "per_area_m2K_per_W": {
+        "convection": 0.00017999999999999996,
+        "convection_inside_interior_link": 0.0,
+        "sink_ambient": 0.00019724999999999994,
+        "spreader_sink": 9.875e-06
+      },
+      "per_cell": {
+        "grid": 64,
+        "sink_ambient_K_per_W": 323.17439999999993,
+        "sink_ambient_W_per_K": 0.003094304499366287,
+        "spreader_sink_K_per_W": 16.179199999999994,
+        "spreader_sink_W_per_K": 0.061807753164556986
+      },
+      "r_convec_K_per_W": 0.004499999999999999
+    },
+    {
+      "coupling": "hotspot7_default",
+      "fixture_interposer_mm": 45.0,
+      "h_W_per_m2K": 1388.888888888889,
+      "h_multiplier": 0.5,
+      "per_area_m2K_per_W": {
+        "convection": 0.0007199999999999999,
+        "convection_inside_interior_link": 0.00035999999999999997,
+        "sink_ambient": 0.00073725,
+        "spreader_sink": 0.000369875
+      },
+      "per_cell": {
+        "grid": 64,
+        "sink_ambient_K_per_W": 1491.2474074074075,
+        "sink_ambient_W_per_K": 0.0006705795396744658,
+        "spreader_sink_K_per_W": 748.1520987654321,
+        "spreader_sink_W_per_K": 0.0013366266052720513
+      },
+      "r_convec_K_per_W": 0.022222222222222223
+    },
+    {
+      "coupling": "material_only",
+      "fixture_interposer_mm": 45.0,
+      "h_W_per_m2K": 1388.888888888889,
+      "h_multiplier": 0.5,
+      "per_area_m2K_per_W": {
+        "convection": 0.0007199999999999999,
+        "convection_inside_interior_link": 0.0,
+        "sink_ambient": 0.00073725,
+        "spreader_sink": 9.875e-06
+      },
+      "per_cell": {
+        "grid": 64,
+        "sink_ambient_K_per_W": 1491.2474074074075,
+        "sink_ambient_W_per_K": 0.0006705795396744658,
+        "spreader_sink_K_per_W": 19.974320987654323,
+        "spreader_sink_W_per_K": 0.05006428006329113
+      },
+      "r_convec_K_per_W": 0.022222222222222223
+    },
+    {
+      "coupling": "hotspot7_default",
+      "fixture_interposer_mm": 45.0,
+      "h_W_per_m2K": 2777.777777777778,
+      "h_multiplier": 1.0,
+      "per_area_m2K_per_W": {
+        "convection": 0.00035999999999999997,
+        "convection_inside_interior_link": 0.00017999999999999998,
+        "sink_ambient": 0.00037725,
+        "spreader_sink": 0.000189875
+      },
+      "per_cell": {
+        "grid": 64,
+        "sink_ambient_K_per_W": 763.0696296296296,
+        "sink_ambient_W_per_K": 0.0013104963966202783,
+        "spreader_sink_K_per_W": 384.0632098765432,
+        "spreader_sink_W_per_K": 0.002603738067807768
+      },
+      "r_convec_K_per_W": 0.011111111111111112
+    },
+    {
+      "coupling": "material_only",
+      "fixture_interposer_mm": 45.0,
+      "h_W_per_m2K": 2777.777777777778,
+      "h_multiplier": 1.0,
+      "per_area_m2K_per_W": {
+        "convection": 0.00035999999999999997,
+        "convection_inside_interior_link": 0.0,
+        "sink_ambient": 0.00037725,
+        "spreader_sink": 9.875e-06
+      },
+      "per_cell": {
+        "grid": 64,
+        "sink_ambient_K_per_W": 763.0696296296296,
+        "sink_ambient_W_per_K": 0.0013104963966202783,
+        "spreader_sink_K_per_W": 19.974320987654323,
+        "spreader_sink_W_per_K": 0.05006428006329113
+      },
+      "r_convec_K_per_W": 0.011111111111111112
+    },
+    {
+      "coupling": "hotspot7_default",
+      "fixture_interposer_mm": 45.0,
+      "h_W_per_m2K": 5555.555555555556,
+      "h_multiplier": 2.0,
+      "per_area_m2K_per_W": {
+        "convection": 0.00017999999999999998,
+        "convection_inside_interior_link": 8.999999999999999e-05,
+        "sink_ambient": 0.00019725,
+        "spreader_sink": 9.987499999999999e-05
+      },
+      "per_cell": {
+        "grid": 64,
+        "sink_ambient_K_per_W": 398.98074074074077,
+        "sink_ambient_W_per_K": 0.0025063866444866916,
+        "spreader_sink_K_per_W": 202.01876543209877,
+        "spreader_sink_W_per_K": 0.004950035200250313
+      },
+      "r_convec_K_per_W": 0.005555555555555556
+    },
+    {
+      "coupling": "material_only",
+      "fixture_interposer_mm": 45.0,
+      "h_W_per_m2K": 5555.555555555556,
+      "h_multiplier": 2.0,
+      "per_area_m2K_per_W": {
+        "convection": 0.00017999999999999998,
+        "convection_inside_interior_link": 0.0,
+        "sink_ambient": 0.00019725,
+        "spreader_sink": 9.875e-06
+      },
+      "per_cell": {
+        "grid": 64,
+        "sink_ambient_K_per_W": 398.98074074074077,
+        "sink_ambient_W_per_K": 0.0025063866444866916,
+        "spreader_sink_K_per_W": 19.974320987654323,
+        "spreader_sink_W_per_K": 0.05006428006329113
+      },
+      "r_convec_K_per_W": 0.005555555555555556
+    }
+  ],
+  "h_definition": "h = 1/(r_convec * s_sink^2); multipliers scale h, i.e. r_convec / multiplier",
+  "schema": "sentilab-slab049-analytic-v1",
+  "solver_runs": 0,
+  "ticket": "SLAB-049",
+  "ticket_uuid": "d41fca43-2e6c-464e-8fbc-0c485e4828dd"
+}

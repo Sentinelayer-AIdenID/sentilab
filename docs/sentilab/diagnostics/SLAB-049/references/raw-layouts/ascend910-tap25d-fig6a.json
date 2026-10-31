@@ -1,0 +1,301 @@
+{
+ "dies": [
+  {
+   "catalog_mm": [
+    14.5,
+    31.4
+   ],
+   "die": 0,
+   "halo_mm": 0.09,
+   "name": "Vitruvian compute die (TAP spells it Virtuvian), 256 W",
+   "power_w": 256.0
+  },
+  {
+   "catalog_mm": [
+    10.5,
+    16.0
+   ],
+   "die": 1,
+   "halo_mm": 0.045,
+   "name": "Nimbus I/O die, 14 W",
+   "power_w": 14.0
+  },
+  {
+   "catalog_mm": [
+    7.75,
+    11.87
+   ],
+   "die": 2,
+   "halo_mm": 0.045,
+   "name": "HBM stack, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    7.75,
+    11.87
+   ],
+   "die": 3,
+   "halo_mm": 0.045,
+   "name": "HBM stack, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    7.75,
+    11.87
+   ],
+   "die": 4,
+   "halo_mm": 0.045,
+   "name": "HBM stack, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    7.75,
+    11.87
+   ],
+   "die": 5,
+   "halo_mm": 0.045,
+   "name": "HBM stack, 20 W",
+   "power_w": 20.0
+  }
+ ],
+ "fixture": {
+  "config": "sundai_tap/configs/sys_ascend910_45mm.cfg",
+  "config_sha256": "4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c",
+  "fixture_id": "ascend910-45mm",
+  "frame_mm": 45.0
+ },
+ "interposer_mm": 45.0,
+ "layout_identity": "raw",
+ "paper_reported": {
+  "original": {
+   "link_type": "nppl",
+   "panel": "a",
+   "peak_temperature_c": 75.48,
+   "routed_wirelength_mm": 16426
+  },
+  "quote": "The original layout of Ascend 910 System (Fig. 6(a)) already achieves minimum wirelength and is thermally-safe when running at the nominal frequency."
+ },
+ "raw": {
+  "center_uncertainty_mm": [
+   [
+    0.0009,
+    0.0009
+   ],
+   [
+    0.0012,
+    0.0009
+   ],
+   [
+    0.0007,
+    0.0008
+   ],
+   [
+    0.0009,
+    0.0008
+   ],
+   [
+    0.0007,
+    0.0011
+   ],
+   [
+    0.0009,
+    0.0011
+   ]
+  ],
+  "centers_mm": [
+   [
+    17.1501,
+    22.6003
+   ],
+   [
+    38.3497,
+    22.6003
+   ],
+   [
+    7.335,
+    11.1256
+   ],
+   [
+    21.3048,
+    11.1256
+   ],
+   [
+    7.335,
+    33.8754
+   ],
+   [
+    21.3048,
+    33.8754
+   ]
+  ],
+  "decoded_size_mm": [
+   [
+    31.3994,
+    14.4992
+   ],
+   [
+    10.5003,
+    15.9996
+   ],
+   [
+    11.8696,
+    7.7501
+   ],
+   [
+    11.8696,
+    7.7501
+   ],
+   [
+    11.8696,
+    7.7501
+   ],
+   [
+    11.8696,
+    7.7501
+   ]
+  ],
+  "design_hash": "b9bfcd232bdbd5c10158fc680512fab874de472077811dc637b5c283e303ebee",
+  "fixture_gate_message": "chiplet 0 center is off the 0.5 mm placement grid",
+  "footprints_mm": [
+   [
+    31.4,
+    14.5
+   ],
+   [
+    10.5,
+    16.0
+   ],
+   [
+    11.87,
+    7.75
+   ],
+   [
+    11.87,
+    7.75
+   ],
+   [
+    11.87,
+    7.75
+   ],
+   [
+    11.87,
+    7.75
+   ]
+  ],
+  "how_obtained": [
+   "Die 0: the outline drawn as Chiplet_0 (die-sized unit 1 in the figure's drawing order); centre = midpoint of the outline, outline pt [59.2764, 190.451, 101.1147, 209.7704], mapped through the panel's edge-strip frame",
+   "Die 1: the outline drawn as Chiplet_1 (die-sized unit 2 in the figure's drawing order); centre = midpoint of the outline, outline pt [101.4474, 189.4514, 115.4385, 210.77], mapped through the panel's edge-strip frame",
+   "Die 2: the outline drawn as Chiplet_2 (die-sized unit 3 in the figure's drawing order); centre = midpoint of the outline, outline pt [59.2095, 210.2369, 75.0252, 220.5635], mapped through the panel's edge-strip frame",
+   "Die 3: the outline drawn as Chiplet_3 (die-sized unit 4 in the figure's drawing order); centre = midpoint of the outline, outline pt [77.8236, 210.2369, 93.6393, 220.5635], mapped through the panel's edge-strip frame",
+   "Die 4: the outline drawn as Chiplet_4 (die-sized unit 5 in the figure's drawing order); centre = midpoint of the outline, outline pt [59.2095, 179.924, 75.0252, 190.2506], mapped through the panel's edge-strip frame",
+   "Die 5: the outline drawn as Chiplet_5 (die-sized unit 6 in the figure's drawing order); centre = midpoint of the outline, outline pt [77.8236, 179.924, 93.6393, 190.2506], mapped through the panel's edge-strip frame"
+  ],
+  "label": "raw reconstruction (approximate, from published figure)",
+  "legal_on_fixture": false,
+  "lower_left_mm": [
+   [
+    1.4504,
+    15.3507
+   ],
+   [
+    33.0995,
+    14.6005
+   ],
+   [
+    1.4002,
+    7.2505
+   ],
+   [
+    15.37,
+    7.2505
+   ],
+   [
+    1.4002,
+    30.0003
+   ],
+   [
+    15.37,
+    30.0003
+   ]
+  ],
+  "rotated": [
+   true,
+   false,
+   true,
+   true,
+   true,
+   true
+  ],
+  "routed_wirelength_mm": 16417.5,
+  "uncertainty_rule": "decode error measured on TAP's own panels (max offset from its 1 mm grid) + coordinate x relative spread of the panel's three scale estimates + 5e-5 mm storage step, rounded up to 1e-4 mm. Fidelity of the figure to the authors' simulated layout is not measurable from the figure.",
+  "violations_on_fixture": [
+   {
+    "amount_mm": 0.1501,
+    "dies": [
+     0
+    ],
+    "message": "chiplet 0 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.1503,
+    "dies": [
+     1
+    ],
+    "message": "chiplet 1 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.165,
+    "dies": [
+     2
+    ],
+    "message": "chiplet 2 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.1952,
+    "dies": [
+     3
+    ],
+    "message": "chiplet 3 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.165,
+    "dies": [
+     4
+    ],
+    "message": "chiplet 4 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   },
+   {
+    "amount_mm": 0.1952,
+    "dies": [
+     5
+    ],
+    "message": "chiplet 5 center is off the 0.5 mm placement grid",
+    "rule": "lattice"
+   }
+  ],
+  "violations_without_center_lattice": [],
+  "wire_proxy_mm": 18.8238
+ },
+ "raw_layout_sha256": "15c77bbeecba13a7adece9a2603329d58f33a7b4301025826c1b3c1951547a3c",
+ "raw_layout_sha256_form": "sha256 of json.dumps(raw, sort_keys=True, separators=(',', ':'), ensure_ascii=True, allow_nan=False) encoded as UTF-8",
+ "reference_id": "ascend910-tap25d-fig6a-raw",
+ "schema": "sentilab-slab049-raw-layout-v1",
+ "source": {
+  "commit": "063f659368f32b653acf8084f85a0c7926a106ec",
+  "path": "docs/sentilab/references/ascend910-tap25d-fig6a.json",
+  "pull_request": 57,
+  "record_reference_id": "ascend910-tap25d-fig6a",
+  "record_schema": "sentilab-reference-layout-v1",
+  "record_sha256": "b5b47fc4d1dbc3fa9d374ea34b0de12d0fcfacb5cb3e19005d6cb28cab9d4b2f",
+  "repository": "Sentinelayer-AIdenID/sentilab",
+  "section": "raw"
+ }
+}

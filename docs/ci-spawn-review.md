@@ -133,3 +133,30 @@ all other parent settings remain excluded. A real protocol-worker regression
 refuses the old environment omission. The frontend inventory now checks both
 main's `oracle_type = oracle_factory or HotSpotOracle` binding and its calls. The two native-process mocks in the new worker
 evidence tests target `worker.run_hotspot`; all assertions remain intact.
+
+## SLAB-049 round: HotSpot 6.0 gate zero (PR #56)
+
+PR #56 merges main `224fa704` (this allocation controller) into the SLAB-049
+branch. The unchanged inventory assertion lists six SLAB-049 sites, down from
+seven: the compiler and package identity (`gcc --version`, `dpkg-query -W`,
+`dpkg -S`) are now read in-process, from the binary's ELF `.comment` section and
+dpkg's status database and file lists. The list is kept to what cannot be done
+in-process, and every entry needs ROOT review. The assertion and the scan scope
+are unchanged. Five launch no HotSpot. One is the grant-host solver entry, which
+never runs under CI allocation. Every child below runs under RLIMIT_CPU (soft =
+hard) and a wall deadline; the manifest's worst case is computed from those
+limits.
+
+| File | Count | Classification |
+| --- | ---: | --- |
+| `sundai_hotspot/reference_validation.py` (`subprocess.Popen(argv)`) | 1 | `validate-reference`, the one entry for SLAB-049's gate-zero solves on warden's grant host. `admit` refuses under `CI_ALLOCATION=1` before any reservation, staging or launch, so CI never reaches this call (`test_ci_allocation_refuses_before_anything_runs`). It launches only after the anchored admission (`gate0_anchor.admit_and_reserve`: the balance check, the grant's next `admit-<NN>` tag and the signed reservation, in one critical section) and its create-only launch claim (`gate0_anchor.claim_launch`) succeed. `argv` is `slab049.tap_argv` (TAP's fixed `run_hotspot` command) on a private content-addressed copy of the listed binary, in its own process group under RLIMIT_CPU and a wall deadline equal to the call's timeout. A binary built with the CI entry guard is refused, because it would run only through `ci_gate`. The tests launch a Python stand-in, never HotSpot. |
+| `sundai_hotspot/provenance.py` (`subprocess.Popen([loader, str(executable)])`) | 1 | The binary's own dynamic loader (its ELF `PT_INTERP`) with `LD_TRACE_LOADED_OBJECTS=1`, which is what `ldd` runs: it maps the libraries, prints where each resolved, and exits; the program never runs. One process in its own session, RLIMIT_CPU 1 s, a 10 s wall deadline at which its group is killed. Twice per call, both inside the admitted attempt (after admission, before and after the solve), and once per build. |
+| `sundai_hotspot/slab049.py` (TAP generator) | 1 | `sys.executable -c script`: TAP-2.5D's own `gen_flp`/`gen_ptrace` in Python, writing floorplans and the power trace. No solver, and it starts no process (`trace_generator`, which adds an audit hook through the same call, shows it). RLIMIT_CPU 3 s, 30 s wall deadline. |
+| `sundai_hotspot/slab049.py` (`subprocess.run(command)`) | 1 | `_run` is called only by `AssemblyHarness`, one at a time, with fixed `gcc` compile and link commands for the harness and HotSpot's model sources. RLIMIT_CPU 120 s (gcc's own children inherit it), 600 s wall deadline. |
+| `sundai_hotspot/slab049.py` (harness binary) | 1 | The assembly-only C harness (`coupling_assembly_harness.c`, its own `main`). It builds HotSpot's grid model and conductance matrix, writes the matrix and exits before `direct_SLU`; it never solves. RLIMIT_CPU 60 s, 120 s wall deadline. It runs in `test_sink_coupling`'s native tests under the container cgroup meter. |
+| `sundai_hotspot/test_gate_zero.py` (busy loop) | 1 | `sys.executable -c 'while True: pass'` under RLIMIT_CPU 1 s: proves the per-process CPU limit kills on its own. About one CPU-second; no solver. |
+
+The SLAB-049 images also build `sundai_hotspot6/` (HotSpot 6.0, vendored upstream,
+no compiled entry guard) and the material-only HotSpot 7 variant (built with the
+same `CI_ALLOCATION` flag as the default binary). No CI step launches either; the
+tests read their bytes only.
