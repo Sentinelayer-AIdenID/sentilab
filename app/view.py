@@ -1,10 +1,13 @@
 """Read-only, run-scoped signed view feed and optional service-owned live loop."""
 import asyncio
+from datetime import datetime, timezone
 import hashlib
 import json
+import logging
 from itertools import groupby
 from typing import Literal
 import os
+import random
 import threading
 
 from fastapi import APIRouter, HTTPException
@@ -12,15 +15,17 @@ from fastapi.responses import Response
 
 from sentilab_core import operations
 from sentilab_core.budget import Limits
-from sentilab_core.ledger import ReplayCache, replay
+from sentilab_core.ledger import LockBusy, ReplayCache, replay
 from sentilab_core.envelope import MAX_PAGE_BYTES, MAX_PAGE_LINES
 
 router = APIRouter()
 _context = None
 _thread = None
 _failure = None
+_last_failure_at = None
 _shutdown = None
 _replay_cache = ReplayCache()
+_logger = logging.getLogger(__name__)
 
 
 def configure(context):
@@ -47,16 +52,30 @@ def start_live_service():
     ctx.options.setdefault("limits", Limits(development=False))
     if ctx.signer is None:
         raise RuntimeError("live service requires the injected core signer and operator trust pin")
-    _shutdown = threading.Event()
-    ctx.options["cancel_event"] = _shutdown
+    _shutdown = shutdown = threading.Event()
+    ctx.options["cancel_event"] = shutdown
 
     def loop():
-        global _failure
-        try:
-            while not _shutdown.is_set() and not (ctx.root / "STOP").exists():
+        global _failure, _last_failure_at
+        backoff = 5
+        while not shutdown.is_set():
+            try:
+                if (ctx.root / "STOP").exists():
+                    break
                 asyncio.run(operations.run(ctx, ai_off=True, duration=3600, renew=True))
-        except Exception as exc:
-            _failure = type(exc).__name__
+            except LockBusy:
+                pass
+            except Exception as exc:
+                _failure = type(exc).__name__
+                _last_failure_at = datetime.now(timezone.utc).isoformat()
+                _logger.error("AI-off live loop failed (%s); retrying", _failure)
+            else:
+                backoff = 5
+                continue
+            # Equal jitter retains a 5 s floor and a 60 s ceiling, even after
+            # prolonged contention. Shutdown interrupts the wait immediately.
+            shutdown.wait(random.uniform(max(5, backoff / 2), backoff))
+            backoff = min(60, backoff * 2)
     _thread = threading.Thread(target=loop, name="sentilab-ai-off", daemon=True)
     _thread.start()
 
@@ -70,7 +89,9 @@ def stop_live_service():
 
 @router.get("/api/view/runs")
 def runs():
-    return {**operations.status(context(), ai_off=True), "service_error": _failure}
+    return {**operations.status(context(), ai_off=True), "service_error": _failure,
+            "last_failure_at": _last_failure_at,
+            "loop_alive": _thread is not None and _thread.is_alive()}
 
 
 @router.get("/api/view/events")

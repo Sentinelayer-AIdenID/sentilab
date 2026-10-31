@@ -14,6 +14,22 @@ dependent. Arm exploration state is reconstructed from recorded measurements,
 including valid losers. The wire cap is fixed at the initial layout's weighted
 Manhattan wire proxy; it never follows the board.
 
+Candidate `node.create` envelopes include `values.geometry`, taken from that
+candidate's recorded layout: `{id, xLL, yLL, w, h, layer}` for each chiplet.
+Coordinates are lower-left positions and dimensions in millimetres, declared by
+`values.units = "mm"`; `layer = 0` denotes the single chiplet placement plane.
+Measurements publish the chip-layer grid peak as `values.J` with `unit = "C"`
+and the weighted Manhattan wire proxy as `values.W`. The HotSpot evaluator
+returns a chip-layer heatmap and its peak, but does not compute per-chiplet
+center temperatures. Consequently `values.center_temps` is absent; the peak is
+not a substitute for center samples. Views can show J and the layout without a
+center-temperature overlay.
+
+These fields apply to newly appended rows. Historical rows may lack geometry
+or center temperatures, or spell the Celsius unit `°C`; their bytes, hashes and
+signatures remain unchanged. Readers must accept those omissions and must not
+insert defaults or normalize units before verifying a signed envelope.
+
 Every run has an append-only, fsynced JSONL ledger with a run-scoped sequence and
 idempotency keys. Opening or appending verifies the entire chain. A broken ledger
 refuses writes. Read-only replay and the view expose the verified prefix and a
@@ -83,6 +99,16 @@ and operator pin, startup fails closed. Run one service writer per storage root;
 the OS ownership lock enforces this across processes. To release an explicit
 STOP, the service operator removes that file and starts a new finite run.
 
+During rolling revisions, a busy nonblocking ownership lock (including CIFS
+`EACCES`) retries with exponential backoff and jitter between 5 and 60 seconds.
+Unexpected loop failures are logged and retried with the same backoff. Only
+the lock acquisition classifies contention; file access and run errors remain
+failures. Shutdown interrupts the wait; an operator STOP prevents another run.
+`/api/view/runs` includes `loop_alive`, the most recent unexpected failure's
+type in `service_error`, and its UTC ISO timestamp in `last_failure_at` (both
+null before any failure). Failure evidence remains after recovery; liveness
+reports the service thread, including while waiting, not ledger progress.
+
 The read-only routes are `/api/view/runs`,
 `/api/view/events?run_id=...&cursor=0&limit=256`, and `/api/view/key`. Event responses
 default to v0.5 JSONL, with at most 256 lines and 4 MiB per page. `cursor` is the
@@ -129,9 +155,9 @@ Unsupported row-cursor polling
 must preserve the prior prefix as STALE/unsupported; incremental sequence-only
 fallback must not advance a LIVE/current claim.
 
-For v0.6 transport conformance, run `python -m app.check_view_paging` after its
-contract lands, or pass the exact `contracts/view-envelope-v0.6` directory from
-PR26 as an argument. It drives the unchanged reducer and C1–C14 vector data
+For v0.6.1 transport conformance, run `python -m app.check_view_paging`, or pass
+an exact contract directory (such as `contracts/view-envelope-v0.6`) as an
+argument. It drives the unchanged reducer and the reference vector data
 against a local HTTP server, plus unfinished-tail and oversize-row regressions.
 Fault scenarios deliberately alter responses after fetching from the real route.
 All C7 range statuses and C12/C14 server cases must match the reference exactly.
