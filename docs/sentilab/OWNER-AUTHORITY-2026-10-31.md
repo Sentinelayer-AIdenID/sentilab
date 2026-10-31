@@ -9,8 +9,18 @@ This additive record carries Carter's latest instructions into the new implement
 | Carter's current Codex conversation, October 31 | “go full autonomous with your listeners and eveything. I want yall to work on this all night”. Continue project implementation, coordination, tests and reviewed delivery autonomously overnight. |
 | Senti room `608657e4-5e60-4bb6-9353-9611b70c1c66`, human message #56037, `2026-10-31T04:52:34Z` | “Launch it!!!” reinforces the execution release. |
 | Same room, human message #56038, `2026-10-31T04:54:31Z` | Create a **new repository** and selectively reuse Thermal Flight Lab source. Warden owns creation and operations. This is not an instruction to delete the old repository or service. |
-| Earlier direct scope answer | “i think both 1 and 2”: retain **actual MicroDuck robotics simulation** and **NVIDIA's workflow applied to the chiplet interface**. Reference: <https://www.youtube.com/watch?v=ac6pspFbPsI>. Verify simulator, assets, compatibility and rights; visual resemblance alone does not satisfy the robotics requirement. |
+| Earlier direct scope answer (**SUPERSEDED 05:45Z, see the correction below**) | ~~“i think both 1 and 2”: retain actual MicroDuck robotics simulation and NVIDIA's workflow applied to the chiplet interface.~~ This relay over-read Carter's answer. |
 | Earlier direct budget answer | “unlimited. I need this to win.” Record **no overall dollar ceiling**. Record real costs, payer, model, runtime and failure rates. Do not charge another person's credits without their permission. Per-job runtime/concurrency/retry limits remain necessary and are not a new overall financial ceiling. |
+
+## Correction, 2026-10-31T05:45Z (Carter, authenticated room reply 6eafa071 to #56110)
+
+> "Wait I never said to use microduck at all. I said to take after their simulation model to make ours the visual etc. Never anything from their licenses. Wtf"
+
+Effective scope:
+- **No** MicroDuck or Pollen robots, models, meshes, code, policies or licenses, in any form.
+- SentiLab builds **its own** chiplet simulation and visual, taking after how NVIDIA's MicroDuck demo presents a simulation that drives the visual. That's inspiration only: nothing from MicroDuck or Pollen is used. This does not change any other authorized reuse already in scope, such as the imported Thermal Flight Lab source with HotSpot and TAP, or the tools and models the plan names.
+- PR #8 (the MicroDuck recon) was closed unmerged and its box stopped. Any earlier text in this repository that reads as an actual MicroDuck robot requirement is superseded by this correction.
+- gpt-astra-carter's row-by-row disposition: [CHIPLET-VISUAL-SCOPE-DISPOSITION.md](CHIPLET-VISUAL-SCOPE-DISPOSITION.md) and [chiplet-visual-scope-disposition.json](chiplet-visual-scope-disposition.json).
 
 Earlier docs-only approval and HOLD text in [draft-0.5/OWNER-DECISIONS-2026-10-31.md](draft-0.5/OWNER-DECISIONS-2026-10-31.md), [PLAN.md](draft-0.5/PLAN.md) and ticket states describe their historical release. Read them alongside this later authority; do not rewrite their reviewed bytes or interpret this release as evidence that their work is complete.
 
@@ -30,7 +40,7 @@ Warden's exact-head, nonauthor technical review of the archived plan is [recorde
 | `claude-warden` | New repository, ticket/box provisioning, secure model-route setup, operations, integration and merges with required checks. |
 | `gpt-astra-carter` | Plan/requirement traceability, exact-source and independent technical/scientific reviews, coordination and overnight handoff. |
 | `aneta-claude` | Evidence/ResultCheck contract seam, subject to nonauthor review. Participation does not authorize charging Aneta's account. |
-| `pocket-forge` | View/replay contracts and interface implementation, including both required simulation experiences. |
+| `pocket-forge` | View/replay contracts and interface implementation, including our own chiplet simulation, visual and replay (see the correction above). |
 
 Coordinate shared-file ownership and use isolated checkouts. Bind reviews to exact commits or artifact hashes. Preserve proposal, review, correction, acceptance, rejection and invalidation history. An LLM judge proposes or critiques; **AcceptanceGate** applies deterministic scientific and permission predicates. The operations agent `claude-warden` is not AcceptanceGate.
 
@@ -40,7 +50,7 @@ Verify actual provider model IDs, endpoint behavior, entitlement, prices and pay
 
 ## Required project scope remains intact
 
-The four scientific lead families remain Astra/OpenAI, Claude, Grok and Kimi, with independent Gemini/DeepSeek review where specified. Preserve the OpenResearch harness, Jev intent/decision routing, scoped ENGRAM memory, success/failure/repair datasets, RLAIF JSONL, and the GB10 train → save → fresh reload → evaluate → serve sequence. The two simulation experiences must use truthful physical models and verified source/asset rights. Every capability, including **SentiResultCheck**, must have both **CLI and MCP** interfaces and parity evidence.
+The four scientific lead families remain Astra/OpenAI, Claude, Grok and Kimi, with independent Gemini/DeepSeek review where specified. Preserve the OpenResearch harness, Jev intent/decision routing, scoped ENGRAM memory, success/failure/repair datasets, RLAIF JSONL, and the GB10 train → save → fresh reload → evaluate → serve sequence. Our chiplet simulation, visual and replay must use truthful physical models and verified source and asset rights. Every capability, including **SentiResultCheck**, must have both **CLI and MCP** interfaces and parity evidence.
 
 All eight final deliverables remain required:
 
