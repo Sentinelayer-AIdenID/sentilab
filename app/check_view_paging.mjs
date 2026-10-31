@@ -27,10 +27,17 @@ async function http(req, physicalRows) {
   const response = await fetch(`${origin}/api/view/events?${new URLSearchParams({ run_id: "run-v1", ...req })}`);
   const page = { status: response.status, headers: Object.fromEntries(response.headers), bodyBytes: new Uint8Array(await response.arrayBuffer()) };
   if (page.status === 200) {
+    assert.ok(page.bodyBytes.length <= 4 * 1024 * 1024, "HTTP never serves a page over 4 MiB");
     const next = Number(page.headers["x-next-cursor"]);
     assert.deepEqual(Buffer.from(page.bodyBytes), Buffer.from(joinRows(physicalRows.slice(req.cursor, next))), "HTTP serves physical bytes");
     assert.equal(page.headers["x-cursor-hash"], sha(joinRows(physicalRows.slice(0, next))), "HTTP prefix hash");
     hashedPages += 1;
+  }
+  if (page.status === 413) {
+    assert.equal(page.bodyBytes.length, 0, "413 has no body");
+    for (const name of ["x-next-cursor", "x-cursor-hash", "x-has-more", "x-next-after"]) {
+      assert.equal(page.headers[name], undefined, "413 has no paging headers");
+    }
   }
   return page;
 }
@@ -43,13 +50,15 @@ const key = createPublicKey(createPrivateKey({
 }));
 const options = { runId: "run-v1", pins: [{ key_id: "core", key_sha256: sha(key.export({ format: "der", type: "spki" }).subarray(12)) }], keys: { core: key } };
 
-// C3/C5/C6/C9 inject the vector's broken network/server behavior after a real
+// C3/C5/C6/C9/C13 inject the vector's broken network/server behavior after a real
 // HTTP fetch; the producer itself must not emit those malformed responses.
 async function serve(server, req) {
-  const physical = server.page ? [...log(server.page.log), ...expand(server.page.rows)] : log(server.log ?? server.legacy ?? "empty");
+  const physical = server.file ? log("v1").slice(0, server.file === "c14v-tail" ? 5 : 6)
+    : server.page ? [...log(server.page.log), ...expand(server.page.rows)] : log(server.log ?? server.legacy ?? "empty");
   write(physical);
+  if (server.file === "c14v-tail") appendFileSync(ledger, bytesOf("v1-06"));
   let page = await http(req, physical);
-  if (server.network_error || server.status || server.page || server.headers || server.tamper) injectedPolls += 1;
+  if (server.network_error || server.status || server.page || server.headers || server.tamper || server.strip_final_lf) injectedPolls += 1;
   if (server.network_error) return null;
   if (server.status) return { ...page, status: server.status, headers: {}, bodyBytes: new Uint8Array() };
   if (server.page) {
@@ -66,6 +75,7 @@ async function serve(server, req) {
     rows[server.tamper.index - req.cursor] = bytesOf(server.tamper.row);
     page.bodyBytes = joinRows(rows);
   }
+  if (server.strip_final_lf && page.bodyBytes.length > 0) page.bodyBytes = page.bodyBytes.subarray(0, -1);
   return page;
 }
 
@@ -77,7 +87,9 @@ for (const scenario of vectors.scenarios) {
     const expected = scenario.trace[index];
     let count = 0;
     for (; count < 16;) {
-      const result = step(state, await serve(poll.server, request(state)), now);
+      const req = request(state);
+      if (req === null) break;
+      const result = step(state, await serve(poll.server, req), now);
       state = result.state;
       const fetch = expected.fetches[count++];
       assert.equal(result.outcome, fetch.outcome, scenario.name);
@@ -112,26 +124,23 @@ const serverLogs = {
   log600: Array.from({ length: 600 }, (_, i) => i % 100 === 7
     ? Buffer.concat([Buffer.from(`{"row":${i},"raw":"`), Buffer.from([255, 254]), Buffer.from('"}')]) : Buffer.from(`{"row":${i}}`)),
   big: Array.from({ length: 100 }, () => Buffer.alloc(65535, "x")),
+  huge1: [Buffer.alloc(4_194_304, "x")],
+  exact65: Array.from({ length: 65 }, () => Buffer.alloc(65535, "x")),
+  "c14-tail": Array.from({ length: 5 }, (_, i) => Buffer.from(`{"row":${i}}`)),
+  "c14-done": Array.from({ length: 6 }, (_, i) => Buffer.from(`{"row":${i}}`)),
 };
-let validationDifferences = 0;
 for (const item of vectors.server_cases) {
-  const physical = serverLogs[item.log];
+  const physical = serverLogs[item.file ?? item.log];
   write(physical);
+  if (item.file === "c14-tail") appendFileSync(ledger, '{"row":5}');
   const page = await http(item.request, physical);
-  // Existing FastAPI validation uses 422 for out-of-range cursor/limit; the
-  // reference uses 400. Keep this explicit, rather than claiming exact parity.
-  if (item.expect.status === 400) {
-    assert.equal(page.status, 422, item.name);
-    validationDifferences += 1;
-  } else {
-    assert.equal(page.status, item.expect.status, item.name);
-    if (page.status === 200) {
-      for (const [name, value] of Object.entries(item.expect.headers)) assert.equal(page.headers[name], value, item.name);
-      assert.equal(sha(page.bodyBytes), item.expect.body_sha256, item.name);
-    }
+  assert.equal(page.status, item.expect.status, item.name);
+  if (page.status === 200) {
+    for (const [name, value] of Object.entries(item.expect.headers)) assert.equal(page.headers[name], value, item.name);
+    assert.equal(sha(page.bodyBytes), item.expect.body_sha256, item.name);
   }
 }
-console.log(`PASS HTTP C7: ${vectors.server_cases.length - validationDifferences} exact status cases; ${validationDifferences} explicit 422/400 validation differences`);
+console.log(`PASS HTTP C7/C12/C14: ${vectors.server_cases.length} exact status cases`);
 
 // The two producer regressions, composed with the actual step() implementation.
 let state = initialState("run-v1");
@@ -151,17 +160,18 @@ assert.equal(result.outcome, "ok");
 assert.equal(result.state.cursor, 6);
 console.log("PASS HTTP incomplete tail through LF completion");
 
-for (const size of [65537, 4 * 1024 * 1024 - 1, 4 * 1024 * 1024 + 1]) {
+for (const size of [65537, 4 * 1024 * 1024 - 1, 4 * 1024 * 1024, 4 * 1024 * 1024 + 1]) {
   const physical = [bytesOf("v1-01"), Buffer.alloc(size, 255), bytesOf("v1-02")];
   write(physical);
   state = initialState("run-v1", { limit: 1 });
   for (let cursor = 0; cursor < physical.length; cursor += 1) {
     result = step(state, await http(request(state), physical), cursor);
-    if (cursor === 1 && size > 4 * 1024 * 1024) {
-      assert.equal(result.outcome, "transport");
+    if (cursor === 1 && size >= 4 * 1024 * 1024) {
+      assert.equal(result.outcome, "row_too_large");
       assert.equal(result.state.cursor, state.cursor);
       assert.equal(result.state.cursor_hash, state.cursor_hash);
       assert.deepEqual(result.state.rows, state.rows);
+      assert.equal(request(result.state), null);
       break;
     }
     assert.equal(result.outcome, "ok");
@@ -171,4 +181,4 @@ for (const size of [65537, 4 * 1024 * 1024 - 1, 4 * 1024 * 1024 + 1]) {
 }
 console.log("PASS HTTP oversize rows below, at and above the page cap");
 console.log(JSON.stringify({ scenarios: vectors.scenarios.length, serverCases: vectors.server_cases.length,
-  validationDifferences, requests, hashedPages, injectedPolls, extraRegressions: 2 }));
+  validationDifferences: 0, requests, hashedPages, injectedPolls, extraRegressions: 2 }));

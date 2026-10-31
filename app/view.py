@@ -7,7 +7,7 @@ from typing import Literal
 import os
 import threading
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
 from sentilab_core import operations
@@ -72,10 +72,25 @@ def runs():
 
 
 @router.get("/api/view/events")
-def events(run_id: str, after: int | None = Query(None, ge=0),
-           limit: int = Query(MAX_PAGE_LINES, ge=1, le=MAX_PAGE_LINES),
+def events(run_id: str, after: str | None = None,
+           limit: str = str(MAX_PAGE_LINES),
            format: Literal["jsonl", "json"] = "jsonl",
-           cursor: int | None = Query(None, ge=0), cursor_hash: str | None = None):
+           cursor: str | None = None, cursor_hash: str | None = None):
+    # Validate here so bad ranges return the contract's 400 without echoing input.
+    def count(value, minimum=0, maximum=2**53 - 1):
+        try:
+            if not value.isascii() or not value.isdecimal():
+                raise ValueError
+            number = int(value)
+            if not minimum <= number <= maximum:
+                raise ValueError
+            return number
+        except ValueError:
+            raise HTTPException(400, "invalid paging range") from None
+
+    after = count(after) if after is not None else None
+    cursor = count(cursor) if cursor is not None else None
+    limit = count(limit, 1, MAX_PAGE_LINES)
     if cursor is not None and after is not None:
         raise HTTPException(422, "use cursor or after, not both")
     after = after or 0
@@ -114,10 +129,7 @@ def events(run_id: str, after: int | None = Query(None, ge=0),
         if len(page) + len(group) > limit or byte_count + group_bytes > MAX_PAGE_BYTES:
             if page:
                 break
-            # Physical cursor transport preserves an over-cap row alone. The
-            # client rejects the poll at its byte cap without losing evidence.
-            if cursor is None or format != "jsonl":
-                raise HTTPException(413, "one sequence group exceeds the view transport caps")
+            return Response(status_code=413)
         page.extend(group)
         byte_count += group_bytes
     next_after = max((sequence(row) or after_seq for row in page), default=after_seq)
