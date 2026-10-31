@@ -51,7 +51,7 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' -H "x-origin-token: $token" http://127.0.0.1:8001/api/health)" = 200
 
   contracts:
-    # The evidence/ResultCheck contract (v0.2) and the view envelope (v0.4) are executable: their vector runners must
+    # The evidence/ResultCheck contracts (v0.2, v0.3) and the view envelopes (v0.4, v0.5) are executable: their vector runners must
     # pass, and every file must still match the hash the reviewers +1'd (contracts/HASHES.txt).
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -63,6 +63,7 @@ jobs:
         run: |
           node --version
           (cd contracts/contract-0.2 && node run-vectors.mjs)
+          (cd contracts/contract-0.3 && node run-vectors.mjs)
           (cd contracts/view-envelope && node run-view-vectors.mjs)
           (cd contracts/view-envelope-v0.5 && node run-view-vectors.mjs)
       - name: Lab view matches the contracts (browser copies, demo fixture)
