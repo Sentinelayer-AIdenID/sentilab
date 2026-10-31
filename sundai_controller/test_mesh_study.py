@@ -27,6 +27,8 @@ class MeshStatisticsTests(unittest.TestCase):
         empty = mesh.rank_agreement([1, 0], [0, 1], 1)
         self.assertIsNone(empty['agreement_fraction'])
         self.assertTrue(empty['passes'])
+        decimal = mesh.rank_agreement([3, 2, 1], [117.17, 117.18, 117.20], 0.01)
+        self.assertEqual(decimal['eligible_pairs'], 2)
 
     def test_invalid_numeric_inputs_fail_closed(self):
         for coarse, fine in [([], []), ([1], [1, 2]), ([float('nan')], [1]),
