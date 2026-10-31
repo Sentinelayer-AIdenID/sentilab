@@ -1,7 +1,10 @@
 # SLAB-010/011: local memory and advisory routing
 
-Ticket `23a5285a`, implemented against PR #15 at
-`de3fa41c9fe45dd958bc2e06418d993027807448`. This is interface evidence from
+Ticket `23a5285a`, initially implemented against PR #15 at
+`de3fa41c9fe45dd958bc2e06418d993027807448`, then carried onto main
+`200cda7accc0f3c619273178bb4db0232c62f316` for PR #23 review fixes.
+See [REVIEW-56222.md](REVIEW-56222.md) for the current proof and open delivery scope.
+This is interface evidence from
 synthetic fixtures: zero model calls, zero solves, and no external memory service.
 
 `memory-fixture.json` fixes the scope, events, correction and expected recall.
@@ -115,7 +118,8 @@ advice/abstention/calibration, and for rejection of unknown routes and tenants.
 
 ## Validation and limits
 
-Recorded local checks (Python 3.12.3, Node 22.23.3):
+Initial submission checks at `38159945f9eaf44a4d810137760b32da10a8982a`
+(Python 3.12.3, Node 22.23.3; current review checks are recorded separately):
 
 ```sh
 .venv/bin/python -m unittest -q sentilab_core.test_memory sentilab_core.test_routing sentilab_core.test_memory_transports sentilab_core.test_ledger sentilab_core.test_gate sentilab_core.test_budget sentilab_core.test_signing sentilab_core.test_environment sentilab_core.conformance.CanonicalConformance
@@ -148,6 +152,5 @@ HTTP container checks and the gitleaks container are unavailable in this box.
 No network dependency/security audit was attempted. Those operator CI checks and
 independent review remain pending; local subset success is not a full CI pass.
 
-Rollback is to revert only the SLAB-010/011 commit(s); PR #15 is the dependency
-and must remain. Existing live command syntax is unchanged. The operator carries
-only commits after the PR #15 base above.
+Rollback is to revert only the SLAB-010/011 commit(s); merged PR #15 must remain.
+The review bundle contains only commits after the current main base above.
