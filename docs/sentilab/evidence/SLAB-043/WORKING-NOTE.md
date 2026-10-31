@@ -74,6 +74,19 @@ between setsid and exec, holding the subprocess startup handshake open. The
 barrier now checks the actual worker command before pausing it. No production
 assertion or timeout was weakened to fix that test scheduling race.
 
+Four independent mutations of shipped code at `31143f2`, each restored in its
+scratch worktree afterward, were detected with exit 1 by these execution tests:
+
+| Mutation | Test suffix |
+|---|---|
+| Ignore configured host scopes | `test_each_capability_requires_host_granted_scope_before_side_effects` |
+| Bypass input schema validation | `test_each_capability_refuses_wrong_types_or_bounds_without_echo` |
+| Return a wrong chiplet design hash | `test_each_capability_returns_identical_bytes_and_output_schema` |
+| Allow an unauthenticated/empty prefix into rendering | `test_chiplet_replay_render_export_refuse_tampered_history` |
+
+The final 13-test conformance run passed after the scheduling fix. Python
+compilation, generated coverage freshness and `git diff --check` also passed.
+
 Earlier foundation proof: the three registry tests passed; independent scratch
 mutations adding/removing an MCP tool, adding a CLI command, removing a pending
 owner, and changing COVERAGE.md were each detected. Five transport-boundary tests
