@@ -2967,6 +2967,16 @@
    }
   },
   {
+   "name": "settled is exactly true, not 1",
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {
+    "settled": 1
+   }
+  },
+  {
    "name": "a rejection needs codes",
    "state": null,
    "hidden": null,

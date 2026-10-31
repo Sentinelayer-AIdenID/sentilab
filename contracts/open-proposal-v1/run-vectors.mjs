@@ -57,6 +57,7 @@ for (const v of vectors.participant_ref) {
 for (const v of vectors.actor_slot) expect(`actor slot ${v.actor_kind}`, c.actorSlot(v.actor_kind, v.actor_id), v.actor_slot);
 refuses("an actor slot that mixes kinds", () => c.actorSlot("human", "example-agent"));
 refuses("an agent slot without its agent", () => c.actorSlot("agent", null));
+refuses("an agent slot with an empty agent id", () => c.actorSlot("agent", ""));
 for (const v of vectors.transport_key) {
   const item = objects[v.object];
   const fields = { room: v.room, account: v.account, actor_slot: c.actorSlot(v.actor_kind, v.actor_id),

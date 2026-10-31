@@ -73,6 +73,14 @@
    },
    "canonical": "{\"present\":null}",
    "sha256": "924c481da1aca4bbd856f20e4aaef20f67c34fccd0b5e27cb2647b8c45ee21ac"
+  },
+  {
+   "name": "supplementary characters stay literal, up to U+10FFFF",
+   "value": {
+    "s": "𐀀􏿿"
+   },
+   "canonical": "{\"s\":\"𐀀􏿿\"}",
+   "sha256": "5f7583fc633c689ae64af5df6b6455456945c934c98395d2ad8b67a7bfa4291e"
   }
  ],
  "manifest_id": [

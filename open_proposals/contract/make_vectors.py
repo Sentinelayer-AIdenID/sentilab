@@ -532,6 +532,8 @@ def note_cases() -> list:
               row_=row(P, account=None, key=None)),
         reply("unattributable: an agent row without its agent id", N,
               expect("rejected", [C("unattributable")], stage="none"), row_=row(P, kind="agent", key=None)),
+        reply("unattributable: an agent row with an empty agent id", N,
+              expect("rejected", [C("unattributable")], stage="none"), row_=row(P, kind="agent", agent="", key=None)),
         reply("edited before ingest: revision 2", N, expect("rejected", [C("edited_before_ingest")], stage="none"),
               row_=row(P, revision=2)),
         reply("edited before ingest: editedAt is set", N,
@@ -634,6 +636,8 @@ def note_cases() -> list:
               expect("rejected", [C("unsealable")], stage="none", is_sealed=True)),
         # 2. envelope and schema
         reply("malformed JSON", b'{"schema": ', expect("rejected", [C("malformed_json")], stage="none")),
+        reply("a trailing no-break space is not JSON whitespace", N + chr(0xA0).encode("utf-8"),
+              expect("rejected", [C("malformed_json")], stage="none"), item=P),
         reply("a fence that never closes", b"```json\n" + N, expect("rejected", [C("malformed_json")], stage="none")),
         reply("only a json fence", b"```\n" + N + b"\n```", expect("rejected", [C("malformed_json")], stage="none")),
         reply("duplicate key", raw_text(P, '"units": "um"', '"units": "um", "units": "um"'),
@@ -1275,6 +1279,9 @@ def results_records() -> list:
         rec("results", "q_r keys: r = 0, the tolerance and every budget", results(outside(
             q_r={key: value for key, value in Q_F.items() if key != "1.00"})),
             [R("results.q_r_keys", "/rows/0/q_r")], manifest="F"),
+        rec("results", "a boolean is not a number", results(outside(), comparator={
+            "id": "test-two-die-ref/raw", "T_R": 60.0, "W_R_mm": True, "evaluator": FIXTURE,
+            "temperature_label": "illustrative"}), [S("/comparator/W_R_mm", "type")]),
         rec("results", "private entries are only counted", results(outside(), private_entries=-1),
             [S("/private_entries", "minimum")], manifest="F"),
         rec("results", "a published target is never our evaluation", results(target | {"use": "comparison"}),
@@ -1392,6 +1399,7 @@ def state_table() -> dict:
         ("check_unfinished is a check's code only", "evaluating", "fail",
          {"settled": True, "codes": ["check_unfinished"]}),
         ("a failure is settled", "evaluating", "fail", {"codes": ["timeout"]}),
+        ("settled is exactly true, not 1", "evaluating", "complete", {"settled": 1}),
         ("a rejection needs codes", None, "reject", {}),
         ("a rejection needs rejection codes", None, "reject", {"codes": ["timeout"]}),
         ("reproduction needs a fresh process", "replaying", "reproduced", {"settled": True}),
@@ -1464,6 +1472,9 @@ def revisions() -> list:
                                                                            prior("proposal", "t-3", P_CHILD, [2])],
          "kind": "proposal", "logical_key": "t-4", "content_sha256": fake("content"), "parent": None, "order": [9],
          "expect": "order_error"},
+        {"name": "the same order decided twice", "decide": "revision", "history": [first], "kind": "proposal",
+         "logical_key": "t-4", "content_sha256": fake("content"), "parent": None, "order": [1],
+         "expect": "order_error"},
         {"name": "a row decided before an earlier one", "decide": "revision", "history": [first], "kind": "proposal",
          "logical_key": "t-4", "content_sha256": fake("content"), "parent": None, "order": [0],
          "expect": "order_error"},
@@ -1515,6 +1526,8 @@ CANONICAL = [
     ("keys sort by UTF-16 code units, not code points", {"ﬁ": 1, "😀": 2, "z": 3}, '{"z":3,"😀":2,"ﬁ":1}'),
     ("strings escape only quote, backslash and control characters", {"s": CONTROL_STRING}, CONTROL_CANONICAL),
     ("an empty object differs from a null field", {"present": None}, '{"present":null}'),
+    ("supplementary characters stay literal, up to U+10FFFF", {"s": chr(0x10000) + chr(0x10FFFF)},
+     '{"s":"' + chr(0x10000) + chr(0x10FFFF) + '"}'),
 ]
 OBJECTS = {"P_A": P_A, "P_PUB": P_PUB, "P_PRIV": P_PRIV, "P_CHILD": P_CHILD, "P_PRIV_F2": P_PRIV_F2, "C_PUB": C_PUB,
            "C_PRIV": C_PRIV, "TEAM": TEAM, "PUBLISH": PUBLISH}

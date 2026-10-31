@@ -167,6 +167,7 @@ class Schemas(unittest.TestCase):
         value["dies"][0]["x_um"] = True
         self.assertFalse(VALIDATORS["proposal"].is_valid(value))
         self.assertTrue(VALIDATORS["proposal"].is_valid(mv.P_PUB))
+        self.assertFalse(VALIDATORS["check"].is_valid(mv.check_record(W_c_mm=True)), "a boolean is not a number")
         for rotation in (0.0, -0.0, 90.0, True):
             rotated = copy.deepcopy(mv.P_PUB)
             rotated["dies"][0]["rot_deg"] = rotation
@@ -455,6 +456,8 @@ class Keys(unittest.TestCase):
         self.assertEqual("team", h.logical_key(mv.TEAM))
         with self.assertRaises(ValueError):
             h.actor_slot("human", "example-agent")
+        with self.assertRaises(ValueError):
+            h.actor_slot("agent", "")
         with self.assertRaises(ValueError):
             h.logical_key({"schema": "sentilab-open-proposal/2"})
 
