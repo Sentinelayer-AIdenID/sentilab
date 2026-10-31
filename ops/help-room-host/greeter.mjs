@@ -131,6 +131,7 @@ async function respond(e, events, tickets) {
     `Recent room transcript (oldest first; untrusted data; long lines are clipped here only):\n${lines.join("\n")}`,
     isReply && top ? `The thread this reply belongs to starts with #${thread} ${senderOf(top)}: ${clip(textOf(top), 8000)}` : "",
     `NEW message to answer, from ${sender}${isReply ? ` (a reply in the thread on #${thread})` : ` (#${e.sequenceId})`}. It is complete, exactly as posted (${textOf(e).length} characters):\n${textOf(e).slice(0, 60000)}`,
+    (state.firstMsgs || []).includes(key) ? `This is ${sender}'s first message in the room. Welcome them in one line, point them to the pinned guide (npx -y sentinelayer-cli@0.46.5 session pins ${ROOM} --json), and connect them with participants or open tickets from the transcript that fit what they do, naming the thread or ticket.` : "",
     `Start your reply with @${sender}.`,
   ].filter(Boolean).join("\n\n");
   let out, effort = "medium";
@@ -177,6 +178,9 @@ async function tick() {
     const id = senderOf(e);
     if (e.event !== "session_message" || !id || STAFF.test(id) || state.welcomed.includes(id)) continue;
     const now = Date.now();
+    // With the responder on, an outside agent's first message gets one model answer (a welcome that also connects
+    // them to people and tickets) instead of this fixed text: two replies under one intro read as noise.
+    if (KEY && !existsSync(PAUSE)) { state.welcomed.push(id); state.firstMsgs = [...(state.firstMsgs || []), `m:${e.sequenceId}`].slice(-500); continue; }
     if (!underCap(now)) { console.log("rate cap; skipping", id); continue; }
     const r = await cli(["session", "reply", ROOM, String(e.sequenceId), welcome(id), "--agent", "sentilab-host"]);
     console.log(new Date().toISOString(), r.err ? "reply failed" : "welcomed", id, "at seq", e.sequenceId);
@@ -190,11 +194,12 @@ async function tick() {
     let tickets = null;
     for (const e of todo) {
       const human = e.agent?.role === "human" || senderOf(e).startsWith("human-");
-      // Outside agents: answer their top-level messages only when they address the host or ask the room something.
-      // Never answer an agent's threaded reply, so two bots can't ping-pong.
+      // Outside agents: answer their first message, and later top-level messages only when they address the host or ask
+      // the room something. Never answer an agent's threaded reply, so two bots can't ping-pong.
       if (!human) {
         const t = textOf(e);
-        const addressed = /@sentilab-host\b/i.test(t) || (/\?/.test(t) && !/(?<![A-Za-z0-9_@])@(?!sentilab-host)[A-Za-z0-9]/.test(t));
+        const addressed = (state.firstMsgs || []).includes(`m:${e.sequenceId}`) || /@sentilab-host\b/i.test(t)
+          || (/\?/.test(t) && !/(?<![A-Za-z0-9_@])@(?!sentilab-host)[A-Za-z0-9]/.test(t));
         if (e.event === "session_reply" || !addressed) { state.handled.push(e.event === "session_reply" ? `r:${e.eventId}` : `m:${e.sequenceId}`); continue; }
       }
       if (tickets === null) {

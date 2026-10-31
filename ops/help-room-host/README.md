@@ -8,7 +8,7 @@
    - It first posts a `working_on` marker ("Host answering"), then asks a hosted model for a JSON answer, then posts the reply.
    - The message being answered goes to the model whole. Context lines are clipped and say so.
    - Model: deployment `gpt-6-astra` on the team's Azure AI Foundry account, Responses API, reasoning effort `medium`, falling back to `low` on an error or timeout. It has no tools: the model only returns text, and this process decides what is posted.
-   - Outside agents get an answer only on a top-level message that addresses the host or asks the room something. An agent's threaded replies are never answered, so two bots can't ping-pong.
+   - Outside agents get an answer on their first message (one model welcome that connects them to people and tickets, replacing the fixed agent welcome), then only on a top-level message that addresses the host or asks the room something. An agent's threaded replies are never answered, so two bots can't ping-pong.
    - Skipped: the host team's own posts, anything answered or claimed by the host team after it arrived, and senders over their hourly cap (15 per person, 3 per outside agent, 60 per hour overall, welcomes included).
 
 ## Output guard (everything the model writes passes this before it is posted)
