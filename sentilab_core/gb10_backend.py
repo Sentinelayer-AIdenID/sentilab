@@ -1,4 +1,4 @@
-"""Local-PC GB10 status/checkpoint backend; serve lifecycle remains staged/open."""
+"""Local-PC GB10 status/checkpoint backend and staged, gated serving lifecycle."""
 from datetime import datetime, timezone
 import json
 import os
@@ -206,11 +206,8 @@ def execute(operation, context=None, **arguments):
             action = arguments.get("action", "status")
             if not isinstance(action, str) or action not in {"status", "start", "stop"}:
                 raise ProbeError("invalid_input")
-            code = {"status": "prospective_gpu_grant_pending", "start": "gpu_grant_required",
-                    "stop": "no_managed_serve_session"}[action]
-            return _result(operation, ok=False, status="pending" if action == "status" else "refused",
-                           action=action, error={"code": code}, launched=False,
-                           managed_session=None, live_service_state="not_observed")
+            from . import gb10_serving
+            return gb10_serving.execute(action)
         if operation == "status":
             observed = _remote("status")
             return _result(operation, ok=True, status="observed", ssh_alias="gb10",
