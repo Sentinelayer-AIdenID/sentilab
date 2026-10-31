@@ -212,6 +212,44 @@ from a lost host. Existing historic consumption likewise remains unknown.
 
 ## Proof and limitations
 
+### First measured run (operator-reported)
+
+Warden reported PR #37 run `41189233388` at published head
+`c5aa4180754c1ce7a4617b6806a9a33b7f0348bb`: admission succeeded and the required
+container job ran, then failed with `state: launch_violation` in
+`FreshOracleTests.test_real_fresh_process_reproduction_is_bound_and_metered`.
+The reported settlement values were:
+
+| Field | Reported value |
+| --- | --- |
+| Launches | 74 |
+| Total CPU seconds | 237.53 |
+| Cgroup CPU seconds | 232.17 |
+| Supervisor CPU seconds | 5.37 |
+| `cpu.max` | `100000 100000` |
+| Final populated | `false` |
+
+These reported counts are within the 100/900 caps, but the run **failed** the
+launch guard. The component CPU figures are rounded and need not sum exactly to
+the reported total. Raw artifact/log inspection and full identity bindings remain
+pending; this is the first operator-reported measurement, not independent
+compliance proof or a measurement of historic consumption. Bootstrap authorization
+and its separate owner debit still require the provenance described above.
+
+The launch inventory in `test_shipped_hotspot_call_sites_use_the_gate` covers all
+Python process-spawn sites in `sundai_hotspot`, `sundai_controller`,
+`sentilab_core`, and `app`, including tests, plus the legacy TAP interposer.
+Only `ci_gate` starts the native solver. The TAP worker and interposer call that
+gate; the warm oracle and `FreshProcessOracle` start Python workers, with the
+latter forwarding the nonsecret `CI_ALLOCATION` selector through its environment
+allowlist. Controller and app entry points use those oracles. The inventory also
+records non-solver subprocesses (Git, JavaScript, CLI/MCP and test helpers), so new
+raw spawn sites require review rather than silently gaining an exception.
+The inventory separately lists eleven direct shell commands in vendored
+`sundai_hotspot/examples/example{1..5}/run.sh` and `example2/newrun.sh`. CI does
+not run these upstream examples; invoking them against a CI binary is refused by
+the same compiled entry guard that rejects copied binaries.
+
 Run the new proof without any thermal solver:
 
 ```sh

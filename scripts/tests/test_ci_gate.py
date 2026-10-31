@@ -1,6 +1,7 @@
 """Real subprocesses and the shipped C entry guard, using a non-thermal C main."""
 import ast
 import os
+import shlex
 import shutil
 import signal
 import subprocess
@@ -15,6 +16,57 @@ from scripts.tests.test_ci_allocation import IDENTITY
 from sundai_hotspot import ci_gate
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+# Reviewed raw spawn inventory; new sites or changed command expressions need review.
+# Native launches go through ci_gate; Python workers delegate to it.
+RAW_SPAWNS = [('sentilab_core/conformance.py', 'subprocess.run', ("['node', '--input-type=module', '-e', script]",)),
+ ('sentilab_core/conformance.py', 'subprocess.run', ("['node', '--input-type=module', '-e', script]",)),
+ ('sentilab_core/conformance.py', 'subprocess.run', ("['node', '--input-type=module', '-e', script]",)),
+ ('sentilab_core/conformance.py', 'subprocess.run', ("['node', '--input-type=module', '-e', script]",)),
+ ('sentilab_core/conformance.py', 'subprocess.run', ("['node', '--input-type=module', '-e', script]",)),
+ ('sentilab_core/conformance.py', 'subprocess.run', ("['node', str(adapter)]",)),
+ ('sentilab_core/oracle.py',
+  'asyncio.create_subprocess_exec',
+  ('sys.executable', "'-m'", "'sentilab_core.worker'", 'str(ceiling)')),
+ ('sentilab_core/test_cleanup.py',
+  'asyncio.create_subprocess_exec',
+  ('sys.executable',
+   "'-c'",
+   'HOST',
+   'directory',
+   'str(release_read)',
+   'str(notice_write)',
+   "'error' if error else 'ok'")),
+ ('sentilab_core/test_dataset.py',
+  'asyncio.create_subprocess_exec',
+  ('sys.executable', "'-m'", "'sentilab_mcp'")),
+ ('sentilab_core/test_dataset.py',
+  'subprocess.run',
+  (("[sys.executable, '-m', 'sentilab_cli', 'dataset', 'export', '--run-id', 'fixture', '--output-dir', "
+    "str(output), '--policy', str(policy_path)]"),)),
+ ('sentilab_core/test_dataset_mcp.py', 'subprocess.Popen', ('command',)),
+ ('sentilab_core/test_mcp_stdio.py',
+  'asyncio.create_subprocess_exec',
+  ('sys.executable', "'-c'", 'HOST', 'str(self.cleaned)')),
+ ('sentilab_core/test_transports.py',
+  'subprocess.run',
+  ("[sys.executable, '-m', 'sentilab_cli', 'live', 'verify', '--ai-off', '--run-id', 'wire-parity']",)),
+ ('sentilab_core/test_transports.py', 'subprocess.run', ("[sys.executable, '-m', 'sentilab_mcp']",)),
+ ('sundai_controller/mesh_study.py', 'subprocess.check_output', ("['git', 'rev-parse', 'HEAD']",)),
+ ('sundai_controller/test_mesh_study.py', 'subprocess.run', ("[sys.executable, '-c', worker]",)),
+ ('sundai_controller/test_trust.py',
+  'subprocess.run',
+  ("[sys.executable, str(ROOT / 'sundai_controller' / command[0]), *command[1:]]",)),
+ ('sundai_hotspot/ci_gate.py', 'subprocess.Popen', ('command',)),
+ ('sundai_hotspot/ci_gate.py', 'subprocess.run', ('command',)),
+ ('sundai_hotspot/tap_oracle.py',
+  'asyncio.create_subprocess_exec',
+  ("'taskkill.exe'", "'/PID'", 'str(process.pid)', "'/T'", "'/F'")),
+ ('sundai_hotspot/tap_oracle.py', 'asyncio.create_subprocess_exec', ('sys.executable', 'str(WORKER)')),
+ ('sundai_hotspot/test_micro150.py', 'subprocess.run', ("[sys.executable, '-c', script]",)),
+ ('sundai_tap/passive_interposer.py', 'os.system',
+  ("'rm ' + self.path + filename + '{*.flp,*.lcf,*.ptrace,*.steady}'",))]
 
 
 class GateTests(unittest.TestCase):
@@ -114,6 +166,63 @@ int main(int argc, char **argv) {
         self.assertFalse(any(isinstance(node, ast.Attribute) and node.attr == 'Popen'
                              for node in ast.walk(method)))
         self.assertIn('ci_hotspot_entry();', (ROOT / 'sundai_hotspot/hotspot.c').read_text())
+
+        # Walk every module, including tests, rather than only the two known
+        # native callers. Resolve ordinary import aliases as well as module calls.
+        paths = [path for area in ('sundai_hotspot', 'sundai_controller', 'sentilab_core', 'app')
+                 for path in (ROOT / area).rglob('*.py')]
+        paths.append(ROOT / 'sundai_tap/passive_interposer.py')
+        raw_spawns = []
+        for path in paths:
+            tree = ast.parse(path.read_text())
+            imports = {}
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    imports.update((alias.asname or alias.name, alias.name) for alias in node.names)
+                elif isinstance(node, ast.ImportFrom):
+                    imports.update((alias.asname or alias.name, f'{node.module}.{alias.name}')
+                                   for alias in node.names)
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                name = ast.unparse(node.func)
+                prefix, dot, suffix = name.partition('.')
+                name = imports.get(prefix, prefix) + (dot + suffix if dot else '')
+                if (name in {f'subprocess.{method}' for method in
+                             ('run', 'Popen', 'call', 'check_call', 'check_output', 'getoutput', 'getstatusoutput')}
+                        or name in ('os.system', 'os.popen')
+                        or name.startswith(('asyncio.create_subprocess_', 'os.exec', 'os.spawn', 'os.posix_spawn'))):
+                    raw_spawns.append((str(path.relative_to(ROOT)), name,
+                                       tuple(ast.unparse(arg) for arg in node.args)))
+        self.assertCountEqual(raw_spawns, RAW_SPAWNS, 'unreviewed direct process launch')
+
+        # Vendored example scripts are outside CI. They retain direct commands,
+        # which the compiled CI entry guard refuses, including copied binaries.
+        example_launches = []
+        for area in ('sundai_hotspot', 'sundai_controller', 'sentilab_core', 'app'):
+            for path in (ROOT / area).rglob('*.sh'):
+                for line in path.read_text().splitlines():
+                    words = shlex.split(line, comments=True)
+                    if words and Path(words[0]).name == 'hotspot':
+                        example_launches.append(str(path.relative_to(ROOT)))
+        self.assertCountEqual(example_launches, [
+            f'sundai_hotspot/examples/example{number}/run.sh'
+            for number in range(1, 6) for _ in range(2)
+        ] + ['sundai_hotspot/examples/example2/newrun.sh'])
+
+        # Frontends do not own a native launch: retain their shared oracle/worker
+        # routing as well as the two gate calls checked above.
+        for filename, callee in (
+            ('sundai_hotspot/run_tap_probe.py', 'HotSpotOracle'),
+            ('sundai_controller/mesh_study.py', 'HotSpotOracle'),
+            ('sundai_controller/tfl08_leaderboard.py', 'HotSpotOracle'),
+            ('app/runs.py', 'HotSpotOracle'),
+            ('sentilab_core/worker.py', 'evaluate'),
+        ):
+            with self.subTest(filename=filename):
+                tree = ast.parse((ROOT / filename).read_text())
+                self.assertTrue(any(isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+                                    and node.func.id == callee for node in ast.walk(tree)))
 
     def test_ignored_direct_call_still_poisoned_the_job_ledger(self):
         # The compiled entry reports a bypass attempt independently of its caller.
