@@ -8,11 +8,11 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { canonical } from "../contract-0.2/resultcheck.mjs";
 import { makeChain, progressTracker } from "../view-envelope-v0.5/view-envelope.mjs";
-import { cursorHash, initialState, joinRows, liveLabel, request, rowText, servePage, splitRows, step, verifyBytes, verifyReplayBytes, verifyRows } from "./paging.mjs";
+import { cursorHash, initialState, joinRows, liveLabel, logRowsFromFile, request, rowText, servePage, splitRows, step, verifyBytes, verifyReplayBytes, verifyRows } from "./paging.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const FILE = join(here, "vectors-paging.json");
-const CONTRACT_SHA256 = "933868490e7f3cc3598f9e0266b65eedf75a00331e33604b5e8a08a0ee941bfe";
+const CONTRACT_SHA256 = "afab6f10c9eba6da5049368780bfea0f6adacdf19a370d983029fcbd4e0a5106";
 const same = (a, b) => canonical(a) === canonical(b);
 const encoder = new TextEncoder();
 // Lenient decoding, used only by the harness (to read seqs for the legacy server, and to show what decoding would do).
@@ -59,6 +59,7 @@ function rowTable() {
   table.filler = { text: "{}" };
   table["x-65535"] = { fill: "x", bytes: 65_535 };
   table["x-65536"] = { fill: "x", bytes: 65_536 };
+  table["x-4194304"] = { fill: "x", bytes: 4_194_304 };
   // C11: a 44-envelope run-v1 chain (a lab proposes K11, then the core creates sources S2..S44), and a validly
   // signed, different seq 10 from the same chain with that entry's ts changed.
   const [labActor, coreActor] = [v1.input.entries[0].actor, v1.input.entries[1].actor];
@@ -107,6 +108,8 @@ const LOGS = {
   "c8-same": V1_IDS.map((rowId, i) => (i === 5 ? "v1-06-fork" : rowId)),
   "c8-longer": [...V1_IDS.map((rowId, i) => (i === 5 ? "v1-06-fork" : rowId)), "v1-03-fork", "junk-text"],
   "fillers-256": [["filler", 256]],
+  "v1-first8+huge": [...V1_IDS.slice(0, 8), "x-4194304"],
+  exact65: [["x-65535", 65]],
   c11: Array.from({ length: 44 }, (_, i) => `c11-${two(i + 1)}`),
   "c11+fork": [...Array.from({ length: 44 }, (_, i) => `c11-${two(i + 1)}`), "c11-10-fork"],
   c10: ["bom-v1-01", "v1-01", "v1-02", "v1-03", "v1-04", "v1-05", "v1-06", "junk-utf8", "v1-07", "v1-08", "v1-09", "v1-10", "v1-11"],
@@ -117,6 +120,12 @@ const LOGS = {
 //   replaces that log row in the body only;  { page: { log, rows } }: exactly those rows after the log, with
 //   consistent headers and no limit;  { status, legacy }: that status for cursor requests, and for a request with
 //   `after` a legacy 200 page of the log's rows with seq > after and no paging headers;  { network_error }: no response. ----
+// Log files for C14: complete rows, each with its LF, then an optional tail that has no LF yet.
+const FILES = {
+  "c14v-tail": { rows: V1_IDS.slice(0, 5), tail: "v1-06" },
+  "c14v-done": { rows: V1_IDS.slice(0, 6), tail: null },
+};
+const fileBytesOf = (spec) => Buffer.concat([joinRows(spec.rows.map(bytesOf)), spec.tail ? bytesOf(spec.tail) : new Uint8Array(0)]);
 function legacyRows(logName, after) {
   return expand(LOGS[logName]).filter((rowId) => {
     try { return JSON.parse(lenient(bytesOf(rowId))).event.seq > after; } catch { return false; }
@@ -138,6 +147,12 @@ function serve(server, req) {
     const headers = { "x-next-cursor": String(next), "x-has-more": "false", "x-cursor-hash": rawHash([...before, ...rows].slice(0, next).map(bytesOf)) };
     return { response: { status: 200, headers, bodyBytes: joinRows(rows.map(bytesOf)) }, bodyIds: rows };
   }
+  if (server.file) {
+    const spec = FILES[server.file];
+    const response = servePage(logRowsFromFile(new Uint8Array(fileBytesOf(spec))), req);
+    const ids = [...spec.rows, ...(spec.tail ? [spec.tail] : [])];
+    return { response, bodyIds: response.status === 200 ? ids.slice(req.cursor, Number(response.headers["x-next-cursor"])) : [] };
+  }
   const ids = expand(LOGS[server.log]);
   const response = servePage(ids.map(bytesOf), req);
   let bodyIds = response.status === 200 ? ids.slice(req.cursor, Number(response.headers["x-next-cursor"])) : [];
@@ -152,10 +167,12 @@ function serve(server, req) {
       response.bodyBytes = joinRows(bodyIds.map(bytesOf));
     }
   }
+  if (server.strip_final_lf && response.bodyBytes.length > 0) response.bodyBytes = response.bodyBytes.subarray(0, response.bodyBytes.length - 1);
   return { response, bodyIds };
 }
 
-// ---- The client loop: each poll fetches while x-has-more is true (at most 16 pages a poll). ----
+// ---- The client loop: each poll fetches while x-has-more is true (at most 16 pages a poll). In a terminal state
+// request() is null and the poll sends nothing. ----
 const summary = (state) => ({ cursor: state.cursor, rows: state.rows.length, cursor_hash: state.cursor_hash, has_more: state.has_more, last_ok_ms: state.last_ok_ms, failure: state.failure, degraded: state.degraded });
 function runScenario(spec) {
   let state = initialState("run-v1", { limit: spec.limit });
@@ -167,6 +184,7 @@ function runScenario(spec) {
     const fetches = [];
     for (let n = 0; n < 16; n += 1) {
       const req = request(state);
+      if (req === null) break;
       const { response, bodyIds } = serve(poll.server, req);
       const before = state;
       const result = step(state, response, nowMs);
@@ -174,7 +192,7 @@ function runScenario(spec) {
       transitions.push({ before, after: state, req, outcome: result.outcome, newRows: result.newRows });
       if (result.outcome === "ok") tracker.poll({ nowMs, ok: true, K: verifyRows(state, OPTIONS).K, received: result.newRows.length });
       else tracker.poll({ nowMs, ok: false });
-      fetches.push({ request: req, response: response && { status: response.status, headers: response.headers, body_rows: runs(bodyIds) }, outcome: result.outcome, new_rows: result.newRows.length });
+      fetches.push({ request: req, response: response && { status: response.status, headers: response.headers, body_bytes: response.bodyBytes.length, body_rows: runs(bodyIds) }, outcome: result.outcome, new_rows: result.newRows.length });
       if (result.outcome !== "ok" || !state.has_more) break;
     }
     const { verification, K } = verifyRows(state, OPTIONS);
@@ -214,14 +232,14 @@ function scenarioSpecs() {
       },
     },
     {
-      name: "C2 truncated log: the log shrinks to 5 rows, so cursor 11 is beyond its end; 409, stream replaced, the prefix is kept and the client doesn't reset",
+      name: "C2 truncated log: the log shrinks to 5 rows, so cursor 11 is beyond its end; 409, stream replaced, the prefix is kept, no reset, no more requests",
       limit: 256,
       polls: polls([[0, v1], [1, { log: "v1-first5" }], [2, v1]]),
       expect: {
         polls: {
           0: { outcome: "ok", cursor: 11, rows: 11, K: 11, label: live(0) },
           1: { outcome: "stream_replaced", cursor: 11, rows: 11, K: 11, degraded: "stream_replaced", label: "STALE · stream replaced" },
-          2: { outcome: "stream_replaced", cursor: 11, rows: 11, K: 11, degraded: "stream_replaced", label: "STALE · stream replaced" },
+          2: { outcome: "no_request", fetches: 0, cursor: 11, rows: 11, K: 11, degraded: "stream_replaced", label: "STALE · stream replaced" },
         },
       },
     },
@@ -284,7 +302,10 @@ function scenarioSpecs() {
       limit: 256,
       polls: polls(range(0, 70).map((t) => [t, { status: 404, legacy: "v1" }])),
       expect: {
-        polls: Object.fromEntries([0, 1, 35, 70].map((t) => [t, { outcome: "paging_unsupported", cursor: 0, rows: 0, K: 0, degraded: "paging_unsupported", label: "STALE · paging unsupported" }])),
+        polls: {
+          0: { outcome: "paging_unsupported", cursor: 0, rows: 0, K: 0, degraded: "paging_unsupported", label: "STALE · paging unsupported" },
+          ...Object.fromEntries([1, 35, 70].map((t) => [t, { outcome: "no_request", fetches: 0, cursor: 0, rows: 0, K: 0, degraded: "paging_unsupported", label: "STALE · paging unsupported" }])),
+        },
         never_live_from_s: 0,
       },
     },
@@ -295,7 +316,8 @@ function scenarioSpecs() {
       expect: {
         polls: {
           0: { outcome: "ok", cursor: 8, rows: 8, K: 8, label: live(0) },
-          ...Object.fromEntries([1, 30, 61].map((t) => [t, { outcome: "paging_unsupported", cursor: 8, rows: 8, K: 8, degraded: "paging_unsupported", label: "STALE · paging unsupported" }])),
+          1: { outcome: "paging_unsupported", cursor: 8, rows: 8, K: 8, degraded: "paging_unsupported", label: "STALE · paging unsupported" },
+          ...Object.fromEntries([30, 61].map((t) => [t, { outcome: "no_request", fetches: 0, cursor: 8, rows: 8, K: 8, degraded: "paging_unsupported", label: "STALE · paging unsupported" }])),
         },
         never_live_from_s: 1,
       },
@@ -304,7 +326,7 @@ function scenarioSpecs() {
       name: "C6c a 400 on the cursor parameters is no cursor support too",
       limit: 256,
       polls: polls([[0, { status: 400, legacy: "v1" }], [1, { status: 400, legacy: "v1" }]]),
-      expect: { polls: { 1: { outcome: "paging_unsupported", cursor: 0, K: 0, label: "STALE · paging unsupported" } }, never_live_from_s: 0 },
+      expect: { polls: { 0: { outcome: "paging_unsupported", cursor: 0, K: 0, label: "STALE · paging unsupported" }, 1: { outcome: "no_request", fetches: 0, cursor: 0, K: 0, label: "STALE · paging unsupported" } }, never_live_from_s: 0 },
     },
     {
       name: "C8a replaced log of the same length (row 5 differs): the old cursor_hash gets 409, stream replaced, the prefix is kept, no reset",
@@ -313,7 +335,7 @@ function scenarioSpecs() {
       expect: {
         polls: {
           1: { outcome: "stream_replaced", cursor: 11, rows: 11, K: 11, degraded: "stream_replaced", label: "STALE · stream replaced" },
-          2: { outcome: "stream_replaced", cursor: 11, rows: 11, K: 11, label: "STALE · stream replaced" },
+          2: { outcome: "no_request", fetches: 0, cursor: 11, rows: 11, K: 11, label: "STALE · stream replaced" },
         },
       },
     },
@@ -357,6 +379,50 @@ function scenarioSpecs() {
         },
       },
     },
+    {
+      name: "C12a row too large: after seq 1..8, the next row is 4,194,304 bytes (4,194,305 with its LF); 413, STALE · row too large, the prefix is kept, and that cursor is never asked for again",
+      limit: 256,
+      polls: polls([[0, { log: "v1-first8" }], [1, { log: "v1-first8+huge" }], [2, { log: "v1-first8+huge" }], [10, { log: "v1-first8+huge" }]]),
+      expect: {
+        polls: {
+          0: { outcome: "ok", cursor: 8, rows: 8, K: 8, label: live(0) },
+          1: { outcome: "row_too_large", fetches: 1, cursor: 8, rows: 8, K: 8, degraded: "row_too_large", label: "STALE · row too large" },
+          2: { outcome: "no_request", fetches: 0, cursor: 8, rows: 8, K: 8, degraded: "row_too_large", label: "STALE · row too large" },
+          10: { outcome: "no_request", fetches: 0, cursor: 8, rows: 8, K: 8, label: "STALE · row too large" },
+        },
+      },
+    },
+    {
+      name: "C12b exactly 4 MiB: 65 rows of 65,535 bytes; the first page holds 64 whole rows (exactly 4,194,304 bytes with their LFs) and the 65th comes on the next page",
+      limit: 256,
+      polls: polls([[0, { log: "exact65" }]]),
+      expect: { polls: { 0: { outcome: "ok", fetches: 2, cursor: 65, rows: 65, K: 0 } }, page_bytes: [4_194_304, 65_536] },
+    },
+    {
+      name: "C13 malformed pages: with limit 1, a response holding 2 rows (headers otherwise consistent) is a paging error and neither row is kept; so is a one-row page whose body lacks its final LF",
+      limit: 1,
+      polls: polls([[0, { log: "v1-first8" }], [1, { page: { log: "v1-first8", rows: ["v1-09", "v1-10"] } }], [2, { log: "v1", strip_final_lf: true }], [3, v1]]),
+      expect: {
+        polls: {
+          0: { outcome: "ok", fetches: 8, cursor: 8, rows: 8, K: 8, label: live(0) },
+          1: { outcome: "paging_error", fetches: 1, cursor: 8, rows: 8, K: 8, label: "STALE · paging error" },
+          2: { outcome: "paging_error", fetches: 1, cursor: 8, rows: 8, K: 8, label: "STALE · paging error" },
+          3: { outcome: "ok", fetches: 3, cursor: 11, rows: 11, K: 11, label: live(0) },
+        },
+      },
+    },
+    {
+      name: "C14 unterminated tail: the log file ends with seq 6 still missing its LF, so the client gets 5 rows; once the LF lands, the next poll gets seq 6 and the earlier cursor hash still holds",
+      limit: 256,
+      polls: polls([[0, { file: "c14v-tail" }], [1, { file: "c14v-tail" }], [2, { file: "c14v-done" }]]),
+      expect: {
+        polls: {
+          0: { outcome: "ok", cursor: 5, rows: 5, K: 5, label: live(0) },
+          1: { outcome: "ok", fetches: 1, cursor: 5, rows: 5, K: 5, label: live(1) },
+          2: { outcome: "ok", fetches: 1, cursor: 6, rows: 6, K: 6, label: live(0) },
+        },
+      },
+    },
   ];
 }
 
@@ -387,12 +453,22 @@ function log600() {
     : encoder.encode(`{"row":${i}}`)));
 }
 const logBig = () => Array.from({ length: 100 }, () => new Uint8Array(65_535).fill(0x78));
-const C7_LOGS = { log600: log600(), big: logBig() };
+const C7_LOGS = { log600: log600(), big: logBig(), huge1: [new Uint8Array(4_194_304).fill(0x78)], exact65: Array.from({ length: 65 }, () => new Uint8Array(65_535).fill(0x78)) };
+const LOG_RULES = { log600: LOG600_RULE, big: LOG_BIG_RULE, huge1: "one row of 4,194,304 bytes of 'x'", exact65: "65 rows, each 65,535 bytes of 'x'" };
+// C14 log files: the ASCII rows {"row":0} to {"row":5}. "c14-tail" ends with {"row":5} and no LF; "c14-done" adds the LF.
+const c14Rows = Array.from({ length: 6 }, (_, i) => encoder.encode(`{"row":${i}}`));
+const withLF = (rows) => rows.flatMap((row) => [Buffer.from(row), Buffer.from([0x0a])]);
+const C14_FILES = {
+  "c14-tail": { complete: c14Rows.slice(0, 5), bytes: new Uint8Array(Buffer.concat([...withLF(c14Rows.slice(0, 5)), Buffer.from(c14Rows[5])])) },
+  "c14-done": { complete: c14Rows, bytes: new Uint8Array(Buffer.concat(withLF(c14Rows))) },
+};
+const FILE_RULES = { "c14-tail": "the rows {\"row\":0} to {\"row\":4}, each followed by LF, then {\"row\":5} with no LF", "c14-done": "the rows {\"row\":0} to {\"row\":5}, each followed by LF" };
+const rowsOf = (key) => C7_LOGS[key] ?? C14_FILES[key].complete;
 function serverSpecs() {
   const L = C7_LOGS.log600;
   const h = (n) => rawHash(L.slice(0, n));
   const other = L.map((row, i) => (i === 3 ? encoder.encode('{"row":3,"replaced":true}') : row));
-  const ok = (log, from, to, more) => ({ status: 200, rows: [from, to], headers: { "x-next-cursor": String(to), "x-has-more": String(more), "x-cursor-hash": rawHash(C7_LOGS[log].slice(0, to)) }, body_sha256: sha256Bytes(Buffer.concat(C7_LOGS[log].slice(from, to).flatMap((row) => [Buffer.from(row), Buffer.from([0x0a])]))) });
+  const ok = (log, from, to, more) => ({ status: 200, rows: [from, to], headers: { "x-next-cursor": String(to), "x-has-more": String(more), "x-cursor-hash": rawHash(rowsOf(log).slice(0, to)) }, body_sha256: sha256Bytes(Buffer.concat(rowsOf(log).slice(from, to).flatMap((row) => [Buffer.from(row), Buffer.from([0x0a])]))) });
   const status = (code) => ({ status: code, rows: [0, 0], headers: {}, body_sha256: sha256Bytes(Buffer.alloc(0)) });
   return [
     { name: "cursor 0, limit 256: rows 0 to 255", log: "log600", request: { cursor: 0, limit: 256 }, expect: ok("log600", 0, 256, true) },
@@ -407,6 +483,14 @@ function serverSpecs() {
     { name: "limit 257: 400", log: "log600", request: { cursor: 0, limit: 257 }, expect: status(400) },
     { name: "cursor -1: 400", log: "log600", request: { cursor: -1, limit: 256 }, expect: status(400) },
     { name: "rows of 65,535 bytes: a page stops at 64 rows, exactly 4 MiB", log: "big", request: { cursor: 0, limit: 256 }, expect: ok("big", 0, 64, true) },
+    { vector: "C12", name: "a first row of 4,194,304 bytes (4,194,305 with its LF): 413, no body, no cursor headers", log: "huge1", request: { cursor: 0, limit: 256 }, expect: status(413) },
+    { vector: "C12", name: "65 rows of 65,535 bytes: whole rows up to exactly 4 MiB (64 rows), the 65th left for the next page", log: "exact65", request: { cursor: 0, limit: 256 }, expect: ok("exact65", 0, 64, true) },
+    { vector: "C12", name: "the next page holds the deferred 65th row", log: "exact65", request: { cursor: 64, limit: 256, cursor_hash: rawHash(rowsOf("exact65").slice(0, 64)) }, expect: ok("exact65", 64, 65, false) },
+    { vector: "C14", name: "a file whose last row has no LF: only the 5 complete rows are served and hashed", file: "c14-tail", request: { cursor: 0, limit: 256 }, expect: ok("c14-tail", 0, 5, false) },
+    { vector: "C14", name: "cursor 5 on that file: 0 rows; the tail is not served", file: "c14-tail", request: { cursor: 5, limit: 256, cursor_hash: rawHash(rowsOf("c14-tail")) }, expect: ok("c14-tail", 5, 5, false) },
+    { vector: "C14", name: "cursor 6 on that file is beyond the end: 409 (the tail is not counted)", file: "c14-tail", request: { cursor: 6, limit: 256, cursor_hash: rawHash(rowsOf("c14-done")) }, expect: status(409) },
+    { vector: "C14", name: "once the LF lands, cursor 5 with the earlier hash gets the sixth row", file: "c14-done", request: { cursor: 5, limit: 256, cursor_hash: rawHash(rowsOf("c14-tail")) }, expect: ok("c14-done", 5, 6, false) },
+    { vector: "C14", name: "after the LF, all 6 rows from cursor 0", file: "c14-done", request: { cursor: 0, limit: 256 }, expect: ok("c14-done", 0, 6, false) },
   ];
 }
 
@@ -429,19 +513,21 @@ function generate() {
       cursor_hash: "lowercase hex SHA-256 over the raw bytes of rows 0..n-1, each followed by one LF; computed on bytes as received, never on decoded text",
       request: "{ cursor, limit } plus cursor_hash for every cursor above 0; never a seq parameter",
       ok: "status 200, body within 256 lines and 4 MiB, x-next-cursor a decimal integer equal to cursor + rows returned, and x-cursor-hash equal to the client's own hash of all rows it would then hold",
-      failures: "transport: no response, a status other than 200, 400, 404, 409 or 501, or a body over the caps; paging_error: a bad x-next-cursor or x-cursor-hash; stream_replaced: 409; paging_unsupported: 400, 404 or 501. A failed poll keeps no rows and never resets the cursor; stream_replaced and paging_unsupported stay until a manual reload",
-      label: "a failed latest poll shows \"STALE · <reason>\" (transport, paging error, stream replaced, paging unsupported); otherwise, if K is below the highest value it has reached, \"STALE · chain broken\" at once; otherwise the v0.5 progress tracker, fed only with valid pages, gives LIVE or STALE",
-      bytes_to_rows: "split raw bytes on LF (0x0A) only; a trailing LF doesn't start a row; decode each row on its own as strict UTF-8 keeping any BOM (TextDecoder(\"utf-8\", { fatal: true, ignoreBOM: true })); a row that isn't valid UTF-8 is malformed (invalid_utf8), a row starting with a BOM is malformed (not_json, since JSON.parse rejects it), and the page continues; the same for replay files; the hash never sees decoded text",
-      server: "400 for a cursor or limit outside the allowed range; 409 for a cursor beyond the end, or above 0 without a cursor_hash or with one that doesn't match; otherwise up to `limit` rows within 4 MiB, with x-next-cursor, x-has-more and x-cursor-hash",
+      failures: "transport: no response, a status other than 200, 400, 404, 409, 413 or 501, or a body over the caps; paging_error: a bad x-next-cursor, more rows than the requested limit, a non-empty body that doesn't end with LF, or a bad x-cursor-hash; stream_replaced: 409; row_too_large: 413; paging_unsupported: 400, 404 or 501. A failed poll keeps no rows and never resets the cursor; stream_replaced, row_too_large and paging_unsupported are terminal: no more requests until a manual reload",
+      label: "a failed latest poll shows \"STALE · <reason>\" (transport, paging error, stream replaced, row too large, paging unsupported); otherwise, if K is below the highest value it has reached, \"STALE · chain broken\" at once; otherwise the v0.5 progress tracker, fed only with valid pages, gives LIVE or STALE",
+      bytes_to_rows: "split raw bytes on LF (0x0A) only; a trailing LF doesn't start a row; decode each row on its own as strict UTF-8 keeping any BOM (TextDecoder(\"utf-8\", { fatal: true, ignoreBOM: true })); a row that isn't valid UTF-8 is malformed (invalid_utf8), a row starting with a BOM is malformed (not_json, since JSON.parse rejects it), and the page continues; the same for replay files, except that a replay file's last line may lack its LF and still counts as a row; the hash never sees decoded text",
+      server: "400 for a cursor or limit outside the allowed range; 409 for a cursor beyond the end, or above 0 without a cursor_hash or with one that doesn't match; 413, with no body and no cursor headers, when the row at the cursor plus its LF is over 4 MiB; otherwise as many whole rows, each with its LF, as fit within 4 MiB, up to limit, with x-next-cursor, x-has-more and x-cursor-hash; never a 200 over 4 MiB",
+      complete_rows: "the log is its complete, LF-terminated rows (logRowsFromFile); a tail with no LF yet is neither served, counted nor hashed until its LF is written",
       rows: "text rows are UTF-8; base64 rows are raw bytes; fill rows are `bytes` copies of `fill`. In logs and bodies, [\"id\", n] means n copies",
-      server_behaviors: "log: servePage() over that log; headers: overrides, null removes; tamper: replace that log row in the body only; page: exactly those rows after the log, consistent headers, no limit; status + legacy: that status for cursor requests, and a legacy 200 page (rows with seq > after, no paging headers) if a request carries after; network_error: no response",
+      server_behaviors: "log: servePage() over that log; headers: overrides, null removes; tamper: replace that log row in the body only; page: exactly those rows after the log, consistent headers, no limit; status + legacy: that status for cursor requests, and a legacy 200 page (rows with seq > after, no paging headers) if a request carries after; strip_final_lf: drop the body's final LF; network_error: no response",
     },
     view: { run_id: "run-v1", pins: [{ key_id: "core", test_key: "core" }], served_keys: { core: "core" } },
     rows: ROWS,
     logs: LOGS,
     bytes_to_rows: bytesToRowsSpecs(),
     cursor_hash_cases: cursorHashSpecs(),
-    server_logs: { log600: LOG600_RULE, big: LOG_BIG_RULE },
+    server_logs: LOG_RULES,
+    server_files: FILE_RULES,
     server_cases: serverSpecs(),
     scenarios: scenarioSpecs().map((spec) => ({ ...spec, trace: runScenario(spec).trace })),
   };
@@ -517,6 +603,11 @@ check("replay bytes: a file over 64 MiB is refused before any row is read; a sma
   const small = verifyReplayBytes(joinRows(V1_IDS.map(bytesOf)), OPTIONS);
   return small.ok && small.verification.prefix_end === 11 ? errors : [...errors, "small file didn't verify to K = 11"];
 });
+check("replay bytes: a replay file's last line may lack its LF and still counts as a row", () => {
+  const full = joinRows(V1_IDS.map(bytesOf));
+  const result = verifyReplayBytes(full.subarray(0, full.length - 1), OPTIONS);
+  return result.ok && result.verification.rows.length === 11 && result.verification.prefix_end === 11 ? [] : [`got ${result.ok ? result.verification.rows.length + " rows, K " + result.verification.prefix_end : result.reason}`];
+});
 for (const [index, spec] of file.cursor_hash_cases.entries()) {
   check(`cursor hash: ${spec.name}`, () => {
     const errors = same(spec, fresh.cursor_hash_cases[index]) ? [] : ["differs from the generator"];
@@ -528,19 +619,33 @@ for (const [index, spec] of file.cursor_hash_cases.entries()) {
 }
 
 for (const [index, spec] of file.server_cases.entries()) {
-  check(`C7 server: ${spec.name}`, () => {
+  check(`${spec.vector ?? "C7"} server: ${spec.name}`, () => {
     const errors = same(spec, fresh.server_cases[index]) ? [] : ["differs from the generator"];
-    const reply = servePage(C7_LOGS[spec.log], spec.request);
+    const reply = servePage(spec.file ? logRowsFromFile(C14_FILES[spec.file].bytes) : C7_LOGS[spec.log], spec.request);
     const want = spec.expect;
     if (reply.status !== want.status) errors.push(`status ${reply.status}, expected ${want.status}`);
     if (!same(reply.headers, want.headers)) errors.push(`headers ${canonical(reply.headers)}, expected ${canonical(want.headers)}`);
     if (sha256Bytes(reply.bodyBytes) !== want.body_sha256) errors.push("body differs");
     const [from, to] = want.rows;
-    const expectedBody = joinRows(C7_LOGS[spec.log].slice(from, to));
+    const expectedBody = joinRows(rowsOf(spec.file ?? spec.log).slice(from, to));
     if (sha256Bytes(expectedBody) !== want.body_sha256) errors.push("the recorded body is not rows from..to");
     return errors;
   });
 }
+
+check("C14 file to rows: only complete, LF-terminated rows count; a tail without its LF is not a row", () => {
+  const errors = [];
+  const hex = (rows) => rows.map((row) => Buffer.from(row).toString("hex"));
+  const cases = [
+    ["the file with a tail", C14_FILES["c14-tail"].bytes, C14_FILES["c14-tail"].complete],
+    ["the file once its LF lands", C14_FILES["c14-done"].bytes, C14_FILES["c14-done"].complete],
+    ["an empty file", new Uint8Array(0), []],
+    ["a file with no LF at all", encoder.encode('{"row":0}'), []],
+    ["a blank complete row", encoder.encode("a\n\n"), [encoder.encode("a"), new Uint8Array(0)]],
+  ];
+  for (const [name, bytes, want] of cases) if (!same(hex(logRowsFromFile(bytes)), hex(want))) errors.push(name);
+  return errors;
+});
 
 const independentRequestHash = (state) => rawHash(state.rows);
 for (const [index, spec] of file.scenarios.entries()) {
@@ -557,7 +662,7 @@ for (const [index, spec] of file.scenarios.entries()) {
   check(`${label}: the hand-written expectations hold`, () => Object.entries(spec.expect.polls).flatMap(([t, want]) => {
     const got = byTime.get(Number(t));
     if (!got) return [`no poll at ${t} s`];
-    const actual = { outcome: got.fetches.at(-1).outcome, fetches: got.fetches.length, cursor: got.after.cursor, rows: got.after.rows, K: got.K, board: got.board, label: got.label, degraded: got.after.degraded, row_counts: got.row_counts, rejected: got.rejected };
+    const actual = { outcome: got.fetches.at(-1)?.outcome ?? "no_request", fetches: got.fetches.length, cursor: got.after.cursor, rows: got.after.rows, K: got.K, board: got.board, label: got.label, degraded: got.after.degraded, row_counts: got.row_counts, rejected: got.rejected };
     return Object.entries(want).filter(([key, value]) => !same(actual[key] ?? null, value)).map(([key, value]) => `at ${t} s ${key}: expected ${JSON.stringify(value)}, got ${JSON.stringify(actual[key])}`);
   }));
   check(`${label}: no reset, no rows kept from a failed poll, cursor = rows held, cursor_hash sent for every cursor above 0, never a seq parameter`, () => run.transitions.flatMap(({ before, after, req, outcome }, i) => {
@@ -569,7 +674,17 @@ for (const [index, spec] of file.scenarios.entries()) {
     if (before.cursor > 0 && req.cursor_hash !== independentRequestHash(before)) errors.push(`fetch ${i}: cursor_hash isn't the hash of the rows held`);
     return errors;
   }));
-  check(`${label}: LIVE only right after a valid page`, () => run.trace.flatMap((s) => (s.label.startsWith("LIVE") && s.fetches.at(-1).outcome !== "ok" ? [`at ${s.t_s} s: ${s.label} after ${s.fetches.at(-1).outcome}`] : [])));
+  check(`${label}: LIVE only right after a valid page`, () => run.trace.flatMap((s) => (s.label.startsWith("LIVE") && s.fetches.at(-1)?.outcome !== "ok" ? [`at ${s.t_s} s: ${s.label} after ${s.fetches.at(-1)?.outcome ?? "no request"}`] : [])));
+  check(`${label}: after a terminal outcome (stream replaced, row too large, paging unsupported) no request is ever sent again`, () => {
+    const at = run.trace.findIndex((s) => s.fetches.some((f) => ["stream_replaced", "row_too_large", "paging_unsupported"].includes(f.outcome)));
+    return at < 0 ? [] : run.trace.slice(at + 1).filter((s) => s.fetches.length > 0).map((s) => `request at ${s.t_s} s`);
+  });
+  if (spec.expect.page_bytes) {
+    check(`${label}: the pages are exactly ${spec.expect.page_bytes.map((b) => b.toLocaleString("en-US")).join(" and ")} bytes`, () => {
+      const sizes = run.trace[0].fetches.map((f) => f.response.body_bytes);
+      return same(sizes, spec.expect.page_bytes) ? [] : [`page sizes ${sizes.join(", ")}`];
+    });
+  }
   check(`${label}: verifying the rows held equals verifying the same bytes as one replay file`, () => {
     const fileRead = verifyReplayBytes(joinRows(run.state.rows), OPTIONS);
     return fileRead.ok && same(verifyRows(run.state, OPTIONS).verification, fileRead.verification) ? [] : ["they differ"];
