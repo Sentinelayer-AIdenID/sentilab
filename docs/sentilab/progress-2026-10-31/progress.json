@@ -1,0 +1,2623 @@
+{
+  "$schema": "./progress.schema.json",
+  "schemaVersion": "sentilab-progress-portable/1",
+  "draft": true,
+  "generatedAt": "2026-10-31T08:05:38.112826+00:00",
+  "title": "SentiLab progress: fixture preflight passed; scientific results remain gated",
+  "owner": "gpt-astra-carter",
+  "publicationState": "portable_internal_review_packet",
+  "snapshot": {
+    "coverageFactsThrough": "2026-10-31T07:50:00Z",
+    "checkpointAt": "2026-10-31T07:50:58.378Z",
+    "latestRoomReceiptIncludedAt": "2026-10-31T07:59:37.440Z",
+    "gb10CompletedAt": "2026-10-31T07:53:46.147370+00:00",
+    "gb10AuditAt": "2026-10-31T07:58:14.724714+00:00",
+    "note": "Dated source snapshot with explicit later overlays. It is not a live status feed, fresh repository-head query, or exhaustive event audit."
+  },
+  "statusLegend": {
+    "done": "The named narrow slice is completed or technically accepted; it does not mark a whole ticket complete.",
+    "measured": "Retained observations exist with the stated scope; success or scientific validity is not implied.",
+    "open": "Required acceptance work remains, or no completion evidence is retained.",
+    "superseded": "A dated earlier claim or scope was replaced by cited later authority/evidence."
+  },
+  "summary": {
+    "scientificBenefitEstablished": false,
+    "fullProjectCompletionVerified": false,
+    "ticketsCovered": 41,
+    "finalDeliverablesCovered": 8,
+    "finalDeliverablesFullyAccepted": 0,
+    "publicProductionVerified": false,
+    "text": "Core infrastructure and a bounded fixture adapter path have concrete evidence. Independent scientific comparison, full D00-D07 packaging, public runtime acceptance and complete CLI/MCP capability coverage remain open."
+  },
+  "milestones": [
+    {
+      "id": "M01",
+      "title": "Second technical plan review recorded",
+      "status": "done",
+      "summary": "Aneta returned the second non-author whole-plan technical +1, bound to six exact plan/authority/scope files. Her review was incremental against draft 0.4; it approves no result, transport, deployment, spend, or commitment of her time.",
+      "evidenceRefs": [
+        "aneta_56311",
+        "packet_manifest",
+        "root_ownership"
+      ],
+      "remaining": [],
+      "sourceAt": "2026-10-31T07:52:43.974Z",
+      "wholeTicketCompletionVerified": false
+    },
+    {
+      "id": "M02",
+      "title": "GB10 fixture train/save/reload/serve sequence passed",
+      "status": "measured",
+      "summary": "Attempt 1 completed 20 optimizer steps, saved a checkpoint, reloaded it in a fresh container, evaluated 20 fixed fixture entries, answered 40 localhost HTTP requests, and tore down. All 112 independent offline artifact checks passed.",
+      "evidenceRefs": [
+        "gb10_review",
+        "gb10_audit",
+        "gb10_flight",
+        "gb10_attempt"
+      ],
+      "remaining": [
+        "Evidence PR and Warden review; required GB10 CLI/MCP wrappers remain follow-up."
+      ],
+      "sourceAt": "2026-10-31T07:53:46.147370+00:00",
+      "wholeTicketCompletionVerified": false
+    },
+    {
+      "id": "M03",
+      "title": "Source and stored mesh evidence slices accepted",
+      "status": "done",
+      "summary": "PR17 source-evidence correction and PR18 fixed-sample mesh evidence were accepted and merged. Their scoped acceptance does not finish raw per-solve archives or independent thermal reproduction.",
+      "evidenceRefs": [
+        "source_review",
+        "mesh_review",
+        "checkpoint"
+      ],
+      "remaining": [],
+      "sourceAt": null,
+      "wholeTicketCompletionVerified": false
+    },
+    {
+      "id": "M04",
+      "title": "Fixed-sample numerical discrepancy measured",
+      "status": "measured",
+      "summary": "For the retained 24 micro150 layouts and 72 receipts, maximum grid32/grid64 discrepancy is 0.79 C and grid16/grid64 is 4.28 C. At a fixed 0.01 C comparison tolerance there are 1 and 9 ranking inversions, respectively. These are sample results, not universal error bounds.",
+      "evidenceRefs": [
+        "mesh_review",
+        "coverage_delta"
+      ],
+      "remaining": [],
+      "sourceAt": null,
+      "wholeTicketCompletionVerified": false
+    },
+    {
+      "id": "M05",
+      "title": "Headroom remains inconclusive",
+      "status": "measured",
+      "summary": "The recorded Ascend v3 verdict remains INCONCLUSIVE. Prospective headroom CPU allocation is now approved, but corrected code and process-tree CPU enforcement still need technical release. No micro150 rerun result is claimed.",
+      "evidenceRefs": [
+        "headroom_review",
+        "warden_56314",
+        "root_ownership"
+      ],
+      "remaining": [],
+      "sourceAt": null,
+      "wholeTicketCompletionVerified": false
+    },
+    {
+      "id": "M06",
+      "title": "Dataset fixture export accepted with cleanup debt",
+      "status": "done",
+      "summary": "Root accepted PR20 be3fa974a11a20048d3bee26f142b59065e0e083 for the reviewed fixture export slice. The export-blocking P2 is closed; an owned .pending-directory cleanup P3 remains. Real-data eligibility remains separate.",
+      "evidenceRefs": [
+        "dataset_acceptance"
+      ],
+      "remaining": [],
+      "sourceAt": null,
+      "wholeTicketCompletionVerified": false
+    },
+    {
+      "id": "M07",
+      "title": "Runtime, views and scientific gates remain open",
+      "status": "open",
+      "summary": "Private production is operator-reported. Independent raw signing/storage/resource proof and public-front-door acceptance remain absent from this snapshot. ResultCheck, view transport and displayed-state repairs, model admission, OpenResearch, and the experiment freeze remain open.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "resultcheck_review",
+        "lab_review",
+        "root_ownership"
+      ],
+      "remaining": [],
+      "sourceAt": null,
+      "wholeTicketCompletionVerified": false
+    },
+    {
+      "id": "M08",
+      "title": "Robotics scope superseded",
+      "status": "superseded",
+      "summary": "The current scope is our own chiplet simulation and truthful thermal visualization. MicroDuck/Pollen robot code, assets, models and meshes are excluded. The cancelled robotics work is historical, not a missing current deliverable.",
+      "evidenceRefs": [
+        "scope_disposition",
+        "scope_register"
+      ],
+      "remaining": [],
+      "sourceAt": null,
+      "wholeTicketCompletionVerified": false
+    }
+  ],
+  "priorities": [
+    {
+      "id": "P01",
+      "title": "Close the current correctness queue",
+      "status": "open",
+      "summary": "Finish existing ResultCheck, memory, producer/view and headroom repairs at exact reviewed heads; retain PR20 cleanup debt. Keep the existing implementers.",
+      "evidenceRefs": [
+        "root_ownership",
+        "aneta_56311",
+        "headroom_review",
+        "lab_review",
+        "dataset_acceptance"
+      ],
+      "remaining": [],
+      "sourceAt": null,
+      "wholeTicketCompletionVerified": false
+    },
+    {
+      "id": "P02",
+      "title": "Freeze the scientific protocol and enforce allocations",
+      "status": "open",
+      "summary": "Name protocol/statistics owners, resolve the six-family Holm and shared-board reproduction issues, freeze metric/admission, and prove remaining-budget process-tree CPU enforcement before new science solves.",
+      "evidenceRefs": [
+        "aneta_56311",
+        "warden_56314",
+        "root_ownership",
+        "freeze_math"
+      ],
+      "remaining": [],
+      "sourceAt": null,
+      "wholeTicketCompletionVerified": false
+    },
+    {
+      "id": "P03",
+      "title": "Complete model admission and OpenResearch",
+      "status": "open",
+      "summary": "Bind actual provider/model/version/entitlement/price/payer and the missing Claude route; implement pinned OpenResearch with research request/status/export interfaces.",
+      "evidenceRefs": [
+        "coverage_actions",
+        "root_ownership"
+      ],
+      "remaining": [],
+      "sourceAt": null,
+      "wholeTicketCompletionVerified": false
+    },
+    {
+      "id": "P04",
+      "title": "Assign complete CLI/MCP capability conformance",
+      "status": "open",
+      "summary": "Cover memory write/invalidate, public lab/review hooks, GB10 preflight/status/checkpoint, chiplet build/render/replay/export, and presentation export/submission validation through the shared transport.",
+      "evidenceRefs": [
+        "coverage_actions",
+        "root_ownership"
+      ],
+      "remaining": [],
+      "sourceAt": null,
+      "wholeTicketCompletionVerified": false
+    },
+    {
+      "id": "P05",
+      "title": "Publish reviewable evidence and prove runtime identity",
+      "status": "open",
+      "summary": "Package the GB10 flight record, obtain private-origin raw signing/storage/resource evidence, and bind independent reproduction, full-package, license and submission owners plus missing full ticket UUIDs.",
+      "evidenceRefs": [
+        "gb10_review",
+        "coverage_actions",
+        "root_ownership"
+      ],
+      "remaining": [],
+      "sourceAt": null,
+      "wholeTicketCompletionVerified": false
+    }
+  ],
+  "tickets": [
+    {
+      "id": "SLAB-001",
+      "title": "Reconcile council, peer authority, source packet and explicit +1 gates",
+      "status": "open",
+      "summary": "The second non-author technical plan +1 is recorded from Aneta; six full file hashes are bound. The scope is incremental document/source review, not outcomes or deployment acceptance.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "aneta_56311",
+        "packet_manifest",
+        "root_ownership"
+      ],
+      "remaining": [
+        "Obtain missing full ticket UUID/revision/gate exports and retain scoped approval boundaries."
+      ],
+      "sourceAt": "2026-10-31T07:57:47.554Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "packet_delivered_second_decision_pending",
+      "owners": [
+        "gpt-astra-carter",
+        "claude-warden",
+        "aneta-claude: invited reviewer"
+      ],
+      "dependencies": [],
+      "cliRequired": [
+        "sentilab plan export",
+        "sentilab approval inspect"
+      ],
+      "mcpRequired": [
+        "sentilab_plan_export",
+        "sentilab_approval_inspect"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-002",
+      "title": "Pin canonical Thermal Flight Lab source and reproduce existing claims",
+      "status": "measured",
+      "summary": "PR17 220a05bb independently accepted; merge 691d79be recorded. Original retention/history defects closed for one full regression evidence bundle.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "source_review",
+        "warden_56314"
+      ],
+      "remaining": [
+        "Complete per-solve raw archives and independent thermal reproduction.",
+        "Prospective CI allocation is named; exact historical CI counts and CPU remain unknown."
+      ],
+      "sourceAt": "2026-10-31T07:54:09.276Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "source_corrective_slice_accepted_and_merged",
+      "owners": [
+        "astra-slab002-evidence: completed slice",
+        "claude-warden: carry"
+      ],
+      "dependencies": [
+        "SLAB-001"
+      ],
+      "cliRequired": [
+        "sentilab source inspect",
+        "sentilab regression run"
+      ],
+      "mcpRequired": [
+        "sentilab_source_inspect",
+        "sentilab_regression_run"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [
+        "5ee83372-43ba-4e19-b74d-963e0fc6f50b",
+        "7dbf369b-aa77-427f-a4e6-8c82b32c5566"
+      ],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-003",
+      "title": "Verify box/model catalog and obtain missing Claude capability",
+      "status": "open",
+      "summary": "No ticket-bound actual scientific provider/model/price/payer/entitlement probes or missing-Claude admission evidenced. GB10 Qwen fixture admission is a separate narrow model use.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Bind an implementer and full ticket UUID for exact model catalog/probes and missing Claude availability.",
+        "Retain Astra/OpenAI, Claude, Grok, Kimi lead families and independent Gemini/DeepSeek judge roles; implementation boxes are not calibrated scientific leads."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "required_model_admission_still_unassigned",
+      "owners": [
+        "claude-warden: secure admission owner; implementer unbound"
+      ],
+      "dependencies": [
+        "SLAB-001"
+      ],
+      "cliRequired": [
+        "sentilab model list",
+        "sentilab model probe"
+      ],
+      "mcpRequired": [
+        "sentilab_model_list",
+        "sentilab_model_probe"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-004",
+      "title": "Complete GB10 key access and inventory compatible compute",
+      "status": "measured",
+      "summary": "Device access and runtime inventory are verified; the later fixture model sequence also passed under root ownership. This does not establish a box-to-device route.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "gb10_audit",
+        "root_ownership"
+      ],
+      "remaining": [
+        "Deliver required inventory/doctor CLI and MCP interfaces; keep local access and shared network reachability distinct."
+      ],
+      "sourceAt": "2026-10-31T07:58:14.724714+00:00",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "ssh_and_primitive_runtime_verified",
+      "owners": [
+        "gpt-astra-carter: local device owner",
+        "claude-warden: operations"
+      ],
+      "dependencies": [
+        "SLAB-001"
+      ],
+      "cliRequired": [
+        "sentilab doctor --host gb10"
+      ],
+      "mcpRequired": [
+        "sentilab_doctor"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-005",
+      "title": "Freeze geometry, units, thermal objective and fixed wire budget",
+      "status": "open",
+      "summary": "A final scientific contract is still not frozen. Aneta identified metric, C07 admission, lifecycle and reproduction-bias corrections before experiment release.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "aneta_56311",
+        "root_ownership"
+      ],
+      "remaining": [
+        "Freeze geometry, units, power, package, objective, fixed wire domain, uncertainty and admission order with named owners."
+      ],
+      "sourceAt": "2026-10-31T07:57:47.554Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "scientific_contract_not_fully_frozen",
+      "owners": [],
+      "dependencies": [
+        "SLAB-002"
+      ],
+      "cliRequired": [
+        "sentilab contract validate",
+        "sentilab geometry check"
+      ],
+      "mcpRequired": [
+        "sentilab_contract_validate",
+        "sentilab_geometry_check"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-006",
+      "title": "Version reference thermal evaluator and numerical uncertainty checks",
+      "status": "measured",
+      "summary": "PR18 96bf4a03 merged as 5d7f71c5. Stored 24 layouts/72 receipts reproduce e32=.79C and e16=4.28C; fixed .01C has 1/9 inversions.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Fixed-sample discrepancy is not a universal error bound or independent physical reproduction.",
+        "Resolve 71 source-supported CI completions/72 expected launches and unknown historical CPU; do not reuse old <=4 remainder as a fresh allowance."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "micro150_stored_evidence_accepted_and_merged",
+      "owners": [
+        "astra-slab006a-mesh: accepted mesh slice; now memory/routing"
+      ],
+      "dependencies": [
+        "SLAB-002",
+        "SLAB-005"
+      ],
+      "cliRequired": [
+        "sentilab evaluate",
+        "sentilab evaluator inspect"
+      ],
+      "mcpRequired": [
+        "sentilab_evaluate",
+        "sentilab_evaluator_inspect"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [
+        "fe2a225a-d7df-438c-b47d-a272553c08e5"
+      ],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-007",
+      "title": "Implement typed result contract, event recorder and artifact manifests",
+      "status": "measured",
+      "summary": "PR15 live/core and PR17 recorder corrections merged; raw signer/storage proof requested for reported private runtime.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Complete durable raw per-solve lineage and original source650553d history reconstruction.",
+        "Resolve versioned producer/consumer paging and independently verify actual production signing/storage/counters."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "live_recorder_and_source_evidence_slices_merged",
+      "owners": [
+        "astra-slab037a-live",
+        "claude-warden",
+        "pocket-forge: consumer seam"
+      ],
+      "dependencies": [
+        "SLAB-009"
+      ],
+      "cliRequired": [
+        "sentilab result inspect",
+        "sentilab event export",
+        "sentilab artifact verify"
+      ],
+      "mcpRequired": [
+        "sentilab_result_inspect",
+        "sentilab_event_export",
+        "sentilab_artifact_verify"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-008",
+      "title": "Enforce deterministic AcceptanceGate permissions, budgets and atomic admission",
+      "status": "open",
+      "summary": "AI-off core accepted; Warden reports private lifecycle transitions under provisional margin. These do not certify scientific AcceptanceGate readiness.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Bind full scientific gate context/grants, wire cap, uncertainty, eligibility and atomic permissions.",
+        "Preserve diagnostic labels and deterministic gate ownership; LLM review never substitutes for these checks."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "provisional_ai_off_gate_only",
+      "owners": [
+        "astra-slab037a-live: AI-off gate slice"
+      ],
+      "dependencies": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-007",
+        "SLAB-015"
+      ],
+      "cliRequired": [
+        "sentilab candidate submit",
+        "sentilab board inspect",
+        "sentilab approval apply",
+        "sentilab job cancel"
+      ],
+      "mcpRequired": [
+        "sentilab_candidate_submit",
+        "sentilab_board_inspect",
+        "sentilab_approval_apply",
+        "sentilab_job_cancel"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-009",
+      "title": "Provide shared CLI and MCP contract/transport foundation",
+      "status": "open",
+      "summary": "Shared PR15 STOP/cleanup is merged. Fixture labs and dataset export have scoped acceptance; ResultCheck intake, memory write/invalidate and full capability conformance remain open.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "dataset_acceptance",
+        "resultcheck_review",
+        "root_ownership"
+      ],
+      "remaining": [
+        "Name one executable capability-conformance owner and preserve shared auth, error, cancellation, STOP and idempotency behavior."
+      ],
+      "sourceAt": "2026-10-31T07:57:47.554Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "shared_live_transport_merged_feature_adapters_in_review",
+      "owners": [
+        "astra-slab037a-live",
+        "astra-slab016-datasets",
+        "astra-slab022-resultcheck",
+        "astra-slab013-labs",
+        "astra-slab006a-mesh"
+      ],
+      "dependencies": [
+        "SLAB-001"
+      ],
+      "cliRequired": [
+        "sentilab capabilities",
+        "sentilab job status",
+        "sentilab job cancel"
+      ],
+      "mcpRequired": [
+        "sentilab_capabilities",
+        "sentilab_job_status",
+        "sentilab_job_cancel"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-010",
+      "title": "Integrate council-compliant ENGRAM and evidence invalidation",
+      "status": "open",
+      "summary": "Memory is no longer undispatched. PR23 reviewed at 400aceec; Warden later reports rebase7741db0. Worker acknowledges repairs, not closure.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Enforce authoritative validation and withdrawal semantics before admission/recall.",
+        "Expose authorized CLI/MCP memory write and invalidation, currently host-only; preserve scope/ACL/support lineage and held-out exclusion.",
+        "Move required Node parity out of Python-only Docker discovery and review the repaired exact head."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "memory_assigned_pr23_changes_requested",
+      "owners": [
+        "astra-slab006a-mesh: combined 010/011, prefix23a5285a"
+      ],
+      "dependencies": [
+        "SLAB-001",
+        "SLAB-007",
+        "SLAB-009"
+      ],
+      "cliRequired": [
+        "sentilab memory recall",
+        "sentilab memory snapshot",
+        "sentilab evidence invalidate",
+        "sentilab evidence inspect"
+      ],
+      "mcpRequired": [
+        "sentilab_memory_recall",
+        "sentilab_memory_snapshot",
+        "sentilab_evidence_invalidate",
+        "sentilab_evidence_inspect"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-011",
+      "title": "Integrate Jev intent and calibrated capability routing",
+      "status": "measured",
+      "summary": "PR23 has deterministic advisory routing and eight synthetic held-out examples; measured fixture metrics are not high-precision production Jev proof.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Repair MCP calibrate/task schema mismatch and verify exact real Jev identity/route.",
+        "Bind development-only calibration, abstention and provider evidence without bypassing permissions, scientific gate or held-out boundaries."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "advisory_router_assigned_fixture_calibration_only",
+      "owners": [
+        "astra-slab006a-mesh: combined010/011, prefix23a5285a"
+      ],
+      "dependencies": [
+        "SLAB-001",
+        "SLAB-003",
+        "SLAB-005",
+        "SLAB-009",
+        "SLAB-010"
+      ],
+      "cliRequired": [
+        "sentilab intent compile",
+        "sentilab route evaluate"
+      ],
+      "mcpRequired": [
+        "sentilab_intent_compile",
+        "sentilab_route_evaluate"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-012",
+      "title": "Run OpenResearch literature, prior-work and reproduction audit",
+      "status": "open",
+      "summary": "No actual OpenResearch harness/version/config/run/export implementation or ticket owner appears by cutoff, although prerequisite wave3 PRs now exist.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Dispatch the actual OpenResearch integration with pinned tool/version/model/config, provenance, citations, telemetry/privacy rules and export.",
+        "Provide research request/status/export through CLI+MCP; literature notes and former robot recon do not meet this requirement."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "required_openresearch_not_dispatched",
+      "owners": [
+        "claude-warden: dispatch owner; implementer unbound"
+      ],
+      "dependencies": [
+        "SLAB-001",
+        "SLAB-003"
+      ],
+      "cliRequired": [
+        "sentilab research request",
+        "sentilab research status",
+        "sentilab research export"
+      ],
+      "mcpRequired": [
+        "sentilab_research_request",
+        "sentilab_research_status",
+        "sentilab_research_export"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-013",
+      "title": "Wire four scientists and bounded worker orchestration",
+      "status": "open",
+      "summary": "Scoped +1 at d29c678 extends to exact d04caed054c02d0bc2c777a1e2aba8a8e38f9bce on merged main; 14/15 blobs identical, conductor patch equivalent. No merge observed by cutoff.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Wire actual four-family scientific leads and independent calibrated judges after model admission.",
+        "Deliver public CLI/MCP lab start/status/propose and review request/reconcile, runtime isolation, token/cost accounting and bounded orchestration.",
+        "Canned fixture families,42 synthetic plate calls and zero model/HotSpot calls are not scientific lab completion."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "fixture_protocol_core_hook_approved_not_full_labs",
+      "owners": [
+        "astra-slab013-labs: combined013/014, prefix0e9d8e8e"
+      ],
+      "dependencies": [
+        "SLAB-003",
+        "SLAB-005",
+        "SLAB-008",
+        "SLAB-010",
+        "SLAB-038",
+        "SLAB-039",
+        "SLAB-037"
+      ],
+      "cliRequired": [
+        "sentilab lab start",
+        "sentilab lab status",
+        "sentilab candidate propose"
+      ],
+      "mcpRequired": [
+        "sentilab_lab_start",
+        "sentilab_lab_status",
+        "sentilab_candidate_propose"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-014",
+      "title": "Implement adversarial review protocol and calibrated LLM judges",
+      "status": "open",
+      "summary": "Scoped +1 at d29c678 extends to exact d04caed054c02d0bc2c777a1e2aba8a8e38f9bce on merged main; 14/15 blobs identical, conductor patch equivalent. No merge observed by cutoff.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Wire actual four-family scientific leads and independent calibrated judges after model admission.",
+        "Deliver public CLI/MCP lab start/status/propose and review request/reconcile, runtime isolation, token/cost accounting and bounded orchestration.",
+        "Canned fixture families,42 synthetic plate calls and zero model/HotSpot calls are not scientific lab completion."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "fixture_protocol_core_hook_approved_not_full_labs",
+      "owners": [
+        "astra-slab013-labs: combined013/014, prefix0e9d8e8e"
+      ],
+      "dependencies": [
+        "SLAB-003",
+        "SLAB-005",
+        "SLAB-007",
+        "SLAB-012"
+      ],
+      "cliRequired": [
+        "sentilab review request",
+        "sentilab review reconcile"
+      ],
+      "mcpRequired": [
+        "sentilab_review_request",
+        "sentilab_review_reconcile"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-015",
+      "title": "Build fresh-process reproduction service",
+      "status": "measured",
+      "summary": "Same-solver fresh-process live path is in merged AI-off core; private reproduced transitions are Warden-reported.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Assign independent rebuild/reproduction service owner, exact artifact boundaries, tolerance and raw receipts.",
+        "No independent physical validation inferred from same-solver replay or signed metadata."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "same_solver_live_slice_only",
+      "owners": [
+        "astra-slab037a-live: limited slice; full owner unassigned"
+      ],
+      "dependencies": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-007"
+      ],
+      "cliRequired": [
+        "sentilab reproduce",
+        "sentilab reproduction inspect"
+      ],
+      "mcpRequired": [
+        "sentilab_reproduce",
+        "sentilab_reproduction_inspect"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-016",
+      "title": "Build raw experiment and eligible training JSONL datasets",
+      "status": "open",
+      "summary": "PR20 be3fa974a11a20048d3bee26f142b59065e0e083 has scoped fixture-export +1; the original integrity and blocking-export defects are closed.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "dataset_acceptance"
+      ],
+      "remaining": [
+        "Resolve the owned .pending-directory cleanup P3.",
+        "Accept real-run eligibility, rights, family splits and held-out isolation before real-data training."
+      ],
+      "sourceAt": "2026-10-31T07:50:24.612Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "integrity_defects_closed_async_export_review_pending",
+      "owners": [
+        "astra-slab016-datasets: combined016/017, prefixc5087dba"
+      ],
+      "dependencies": [
+        "SLAB-005",
+        "SLAB-007",
+        "SLAB-035"
+      ],
+      "cliRequired": [
+        "sentilab dataset export",
+        "sentilab dataset validate",
+        "sentilab dataset freeze"
+      ],
+      "mcpRequired": [
+        "sentilab_dataset_export",
+        "sentilab_dataset_validate",
+        "sentilab_dataset_freeze"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-017",
+      "title": "Export RLAIF preference JSONL with verifier-grounded judgments",
+      "status": "open",
+      "summary": "PR20 be3fa974a11a20048d3bee26f142b59065e0e083 has scoped fixture-export +1; the original integrity and blocking-export defects are closed.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "dataset_acceptance"
+      ],
+      "remaining": [
+        "Resolve the owned .pending-directory cleanup P3.",
+        "Accept real-run eligibility, rights, family splits and held-out isolation before real-data training."
+      ],
+      "sourceAt": "2026-10-31T07:50:24.612Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "integrity_defects_closed_async_export_review_pending",
+      "owners": [
+        "astra-slab016-datasets: combined016/017, prefixc5087dba"
+      ],
+      "dependencies": [
+        "SLAB-014",
+        "SLAB-016"
+      ],
+      "cliRequired": [
+        "sentilab judge compare",
+        "sentilab dataset export --kind rlaif"
+      ],
+      "mcpRequired": [
+        "sentilab_judge_compare",
+        "sentilab_dataset_export"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-018",
+      "title": "Prove GB10 NeMo train-save-reload preflight",
+      "status": "measured",
+      "summary": "Measured fixture preflight passed: 20 steps, 200 distinct row IDs from six repeated cases, saved adapter, fresh reload, 20 evaluation entries, 40 HTTP responses, teardown; 112 artifact checks passed.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "gb10_audit",
+        "gb10_review",
+        "gb10_flight"
+      ],
+      "remaining": [
+        "Package the flight-record PR for Warden review.",
+        "Implement required CLI/MCP preflight/status/checkpoint wrappers; do not rerun training merely to build wrappers."
+      ],
+      "sourceAt": "2026-10-31T07:58:14.724714+00:00",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "grant_bounded_fixture_attempt1_running",
+      "owners": [
+        "gpt-astra-carter: execution and flight record",
+        "claude-warden: evidence PR review"
+      ],
+      "dependencies": [
+        "SLAB-004",
+        "SLAB-035"
+      ],
+      "cliRequired": [
+        "sentilab train preflight",
+        "sentilab train status",
+        "sentilab checkpoint inspect"
+      ],
+      "mcpRequired": [
+        "sentilab_train_preflight",
+        "sentilab_train_status",
+        "sentilab_checkpoint_inspect"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-019",
+      "title": "Train candidate GB10 adapter and select using validation only",
+      "status": "open",
+      "summary": "SLAB018 explicitly excludes real-run training. Headroom PASS, repaired accepted data/ResultCheck and separate grant remain necessary.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Bind eventual GB10 trainer/validation selector now; execute only after eligible data and separate grant.",
+        "Keep failed attempts and lineage; never select using held-out outcomes."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "real_data_training_gated_separate_grant",
+      "owners": [],
+      "dependencies": [
+        "SLAB-018",
+        "SLAB-016",
+        "SLAB-041"
+      ],
+      "cliRequired": [
+        "sentilab train start",
+        "sentilab train cancel",
+        "sentilab checkpoint select",
+        "sentilab checkpoint inspect"
+      ],
+      "mcpRequired": [
+        "sentilab_train_start",
+        "sentilab_train_cancel",
+        "sentilab_checkpoint_select",
+        "sentilab_checkpoint_inspect"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-020",
+      "title": "Preregister benchmark protocol and implement five-arm runner",
+      "status": "open",
+      "summary": "Headroom diagnostics and canned labs do not supply preregistered five-arm/two-seed scientific benchmark execution.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Assign runner/protocol interface owner and independent reviewer.",
+        "Freeze family splits, endpoints, inclusive budgets and numerical readiness before experimental calls."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "five_arm_scientific_runner_unassigned",
+      "owners": [],
+      "dependencies": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-010",
+        "SLAB-013",
+        "SLAB-014",
+        "SLAB-016",
+        "SLAB-039",
+        "SLAB-041"
+      ],
+      "cliRequired": [
+        "sentilab benchmark validate",
+        "sentilab benchmark freeze",
+        "sentilab benchmark run",
+        "sentilab benchmark status"
+      ],
+      "mcpRequired": [
+        "sentilab_benchmark_validate",
+        "sentilab_benchmark_freeze",
+        "sentilab_benchmark_run",
+        "sentilab_benchmark_status"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-021",
+      "title": "Analyze family-level results and enforce honest claims",
+      "status": "open",
+      "summary": "Fixture routing metrics and stored headroom arithmetic are available but do not establish agent benefit or final family-level inference.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Assign statistics/claims owner for primary/secondary estimands and family-level analysis.",
+        "Do not promote diagnostic, repeated fixture or authored-layout differences to held-out efficacy."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "family_statistics_claims_owner_unassigned",
+      "owners": [],
+      "dependencies": [
+        "SLAB-032",
+        "SLAB-022"
+      ],
+      "cliRequired": [
+        "sentilab compare",
+        "sentilab claim check"
+      ],
+      "mcpRequired": [
+        "sentilab_compare",
+        "sentilab_claim_check"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-022",
+      "title": "Ship deterministic SentiResultCheck core with MCP and CLI",
+      "status": "open",
+      "summary": "Aneta issued read-only numeric-core fidelity +1 for the dated c86cdcac snapshot. Later d4d64ea startup is independently closed; bounded file access/cancellation and transport semantics remain open.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "aneta_56311",
+        "resultcheck_review"
+      ],
+      "remaining": [
+        "Bound regular-file/inline intake, restrict file capability, and keep real stdio responsive.",
+        "Use MCP isError for real failures, not completed arithmetic discrepancies; rerun verification at the final head.",
+        "Review forthcoming ResultCheck v0.3 overflow handling before partner use; frozen v0.2 remains unchanged."
+      ],
+      "sourceAt": "2026-10-31T07:52:43.974Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "resultcheck_startup_closed_file_intake_p2_open",
+      "owners": [
+        "astra-slab022-resultcheck: prefix7b99a2b7",
+        "aneta-claude: requested dated fidelity review"
+      ],
+      "dependencies": [
+        "SLAB-007",
+        "SLAB-009"
+      ],
+      "cliRequired": [
+        "sentilab resultcheck"
+      ],
+      "mcpRequired": [
+        "sentilab_resultcheck"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-023",
+      "title": "Connect real ResultCheck intake and authorized external pilot",
+      "status": "open",
+      "summary": "No new external ResultCheck intake/pilot evidence. GitHub PR23 is memory/routing work under SLAB010/011, not this ticket.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Bind intake/status/receipt adapter and authorized pilot owner after core readiness.",
+        "No outreach or partner relationship inferred from the plan."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "external_intake_and_pilot_unassigned",
+      "owners": [],
+      "dependencies": [
+        "SLAB-022",
+        "SLAB-009"
+      ],
+      "cliRequired": [
+        "sentilab resultcheck submit",
+        "sentilab resultcheck status",
+        "sentilab resultcheck receipt"
+      ],
+      "mcpRequired": [
+        "sentilab_resultcheck_submit",
+        "sentilab_resultcheck_status",
+        "sentilab_resultcheck_receipt"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-024",
+      "title": "Inspect NVIDIA reference for our chiplet simulation/visual workflow and feasibility",
+      "status": "open",
+      "summary": "Original chiplet Package view is implemented under SLAB026; this does not establish an actual NVIDIA chiplet-reference feasibility audit.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Bind corrected reference/feasibility owner and exact tools/assets/hardware provenance.",
+        "No MicroDuck/Pollen robotics code/models/meshes; retain historical cancelled ticket separately."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "robotics_superseded_chiplet_reference_scope_retained",
+      "owners": [],
+      "dependencies": [
+        "SLAB-001",
+        "SLAB-004",
+        "SLAB-012",
+        "SLAB-035"
+      ],
+      "cliRequired": [
+        "sentilab reference inspect",
+        "sentilab simulation doctor"
+      ],
+      "mcpRequired": [
+        "sentilab_reference_inspect",
+        "sentilab_simulation_doctor"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [
+        "d9411116-f54f-4f95-b902-c1e425462010"
+      ],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-025",
+      "title": "Build event-derived chiplet, lab, evidence and comparison interface",
+      "status": "open",
+      "summary": "PR27 b189495 was independently reviewed: main board regression works, but open verification dialogs and thermal color-scale state retain invalidated suffix information. No full +1.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "lab_review",
+        "root_lab_review"
+      ],
+      "remaining": [
+        "Fix both displayed-state P2s and retained PR26 producer/consumer transport gaps.",
+        "Complete view data/export CLI and MCP conformance."
+      ],
+      "sourceAt": "2026-10-31T07:59:37.440Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "lab_view_pr27_queued_transport_pr26_changes_requested",
+      "owners": [
+        "pocket-forge"
+      ],
+      "dependencies": [
+        "SLAB-005",
+        "SLAB-007",
+        "SLAB-010"
+      ],
+      "cliRequired": [
+        "sentilab view data",
+        "sentilab view export"
+      ],
+      "mcpRequired": [
+        "sentilab_view_data",
+        "sentilab_view_export"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-026",
+      "title": "Build, render, replay and export our chiplet simulation and thermal visualization",
+      "status": "open",
+      "summary": "The original chiplet Package view exists. Root acknowledged a later e250040 corrective head for review; acceptance of that repair is not evidenced in this snapshot.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "root_lab_review"
+      ],
+      "remaining": [
+        "Review the corrected exact head against the prior paused-prefix, units and numeric-bound findings.",
+        "Complete chiplet build/render/replay/export via CLI and MCP; robotics simulation training is superseded."
+      ],
+      "sourceAt": "2026-10-31T07:59:37.440Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "original_chiplet_package_view_pr22_changes_requested",
+      "owners": [
+        "pocket-forge"
+      ],
+      "dependencies": [
+        "SLAB-024",
+        "SLAB-003",
+        "SLAB-004",
+        "SLAB-009",
+        "SLAB-035"
+      ],
+      "cliRequired": [
+        "sentilab simulation build",
+        "sentilab simulation render",
+        "sentilab simulation replay",
+        "sentilab simulation export"
+      ],
+      "mcpRequired": [
+        "sentilab_simulation_build",
+        "sentilab_simulation_render",
+        "sentilab_simulation_replay",
+        "sentilab_simulation_export"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained",
+      "historicalCliNames": [
+        "sentilab simulation build",
+        "sentilab simulation train",
+        "sentilab simulation replay",
+        "sentilab simulation export"
+      ],
+      "historicalMcpNames": [
+        "sentilab_simulation_build",
+        "sentilab_simulation_train",
+        "sentilab_simulation_replay",
+        "sentilab_simulation_export"
+      ],
+      "effectiveRequiredCapabilities": [
+        "chiplet build",
+        "chiplet render",
+        "chiplet replay",
+        "chiplet export"
+      ],
+      "interfaceNameStatus": "proposed_effective_names_pending_command_or_alias_review"
+    },
+    {
+      "id": "SLAB-027",
+      "title": "Build correction drill and reproducible visual replay",
+      "status": "open",
+      "summary": "Worker reports real-route late signed conflict freezes Lab board atseq9; reference/producer edge gaps remain.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Complete deterministic correction/retraction drill, unaffected-support preservation and reproducible artifact replay/export.",
+        "Label time-compression/drill behavior and retain raw input bytes."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "partial_replay_conflict_demo_not_complete_drill",
+      "owners": [
+        "pocket-forge"
+      ],
+      "dependencies": [
+        "SLAB-010",
+        "SLAB-025"
+      ],
+      "cliRequired": [
+        "sentilab replay render",
+        "sentilab replay export",
+        "sentilab correction drill"
+      ],
+      "mcpRequired": [
+        "sentilab_replay_render",
+        "sentilab_replay_export",
+        "sentilab_correction_drill"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-028",
+      "title": "Package and independently rebuild D00–D07 engineering handoff",
+      "status": "open",
+      "summary": "Review packet reconstruction succeeds but is a source-review handoff, not complete D00-D07 engineering reconstruction.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Assign package manifest/build/verify/export and independent rebuild owner.",
+        "Require each missing deliverable explicitly; preserve corrected SLAB026/034 dependencies."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "full_eight_deliverable_package_unassigned",
+      "owners": [],
+      "dependencies": [
+        "SLAB-007",
+        "SLAB-015",
+        "SLAB-019",
+        "SLAB-021",
+        "SLAB-027",
+        "SLAB-033",
+        "SLAB-034",
+        "SLAB-026",
+        "SLAB-040"
+      ],
+      "cliRequired": [
+        "sentilab package build",
+        "sentilab package verify",
+        "sentilab package export"
+      ],
+      "mcpRequired": [
+        "sentilab_package_build",
+        "sentilab_package_verify",
+        "sentilab_package_export"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-029",
+      "title": "Prepare truthful deadline progress submission and separately report full-completion status",
+      "status": "open",
+      "summary": "Root accepted truthful progress content and evidence-link ownership. This local draft is ready for integration review; no published progress page, submission validation or final presentation is claimed.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "warden_56313",
+        "root_ownership"
+      ],
+      "remaining": [
+        "Root and Forge integrate dated content and access-checked evidence links.",
+        "Complete presentation export/submission validate CLI and MCP; final submission, rehearsal and human presenter commitment remain separate."
+      ],
+      "sourceAt": "2026-10-31T07:57:47.554Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "progress_handoff_partial_final_submission_unassigned",
+      "owners": [
+        "gpt-astra-carter: accepted content/evidence ownership",
+        "pocket-forge: deck preparation requested by root",
+        "claude-warden: verified numbers/links coordination"
+      ],
+      "dependencies": [
+        "SLAB-001"
+      ],
+      "cliRequired": [
+        "sentilab presentation export",
+        "sentilab submission validate"
+      ],
+      "mcpRequired": [
+        "sentilab_presentation_export",
+        "sentilab_submission_validate"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-030",
+      "title": "Evaluate optional PhysicsNeMo screening extension",
+      "status": "open",
+      "summary": "No new dispatch or execution evidence; optional status retained.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Preserve corrected full-package gate and separate bounded scope; do not make optional extensions prerequisites."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "optional_deferred",
+      "owners": [],
+      "dependencies": [
+        "SLAB-006",
+        "SLAB-016",
+        "SLAB-020",
+        "SLAB-028"
+      ],
+      "cliRequired": [
+        "sentilab surrogate train",
+        "sentilab surrogate evaluate"
+      ],
+      "mcpRequired": [
+        "sentilab_surrogate_train",
+        "sentilab_surrogate_evaluate"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "optional_deferred"
+    },
+    {
+      "id": "SLAB-031",
+      "title": "Track optional sponsor/domain/physical-design extensions",
+      "status": "open",
+      "summary": "No new dispatch or execution evidence; optional status retained.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Preserve corrected full-package gate and separate bounded scope; do not make optional extensions prerequisites."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "optional_deferred",
+      "owners": [],
+      "dependencies": [
+        "SLAB-028",
+        "SLAB-029"
+      ],
+      "cliRequired": [
+        "sentilab extension plan export"
+      ],
+      "mcpRequired": [
+        "sentilab_extension_plan_export"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "optional_deferred"
+    },
+    {
+      "id": "SLAB-032",
+      "title": "Freeze selected checkpoint and run untouched held-out comparisons",
+      "status": "open",
+      "summary": "The fixture 018 sequence passed, but its six repeated evaluation cases are not an untouched held-out evaluation. The later scientific evaluation remains unstarted in retained evidence.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "gb10_audit",
+        "root_ownership"
+      ],
+      "remaining": [
+        "Bind independent evaluation ownership and freeze selected checkpoint, sealed families, protocol and grant before execution."
+      ],
+      "sourceAt": "2026-10-31T07:58:14.724714+00:00",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "heldout_evaluation_gated_not_started",
+      "owners": [],
+      "dependencies": [
+        "SLAB-019",
+        "SLAB-020"
+      ],
+      "cliRequired": [
+        "sentilab benchmark freeze",
+        "sentilab benchmark run",
+        "sentilab checkpoint evaluate"
+      ],
+      "mcpRequired": [
+        "sentilab_benchmark_freeze",
+        "sentilab_benchmark_run",
+        "sentilab_checkpoint_evaluate"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-033",
+      "title": "Approve and serve verified worker checkpoint on GB10",
+      "status": "open",
+      "summary": "Fixture base-plus-adapter localhost serving passed. Promotion or service acceptance of a scientific worker checkpoint remains unverified.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "gb10_audit"
+      ],
+      "remaining": [
+        "Bind promote/serve/rollback owner and require the later evaluated artifact and approval."
+      ],
+      "sourceAt": "2026-10-31T07:58:14.724714+00:00",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "verified_worker_serving_gated_not_started",
+      "owners": [
+        "claude-warden: future serving coordination"
+      ],
+      "dependencies": [
+        "SLAB-019",
+        "SLAB-021",
+        "SLAB-032"
+      ],
+      "cliRequired": [
+        "sentilab checkpoint promote",
+        "sentilab checkpoint serve",
+        "sentilab checkpoint rollback"
+      ],
+      "mcpRequired": [
+        "sentilab_checkpoint_promote",
+        "sentilab_checkpoint_serve",
+        "sentilab_checkpoint_rollback"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-034",
+      "title": "Audit complete MCP/CLI parity and requirement coverage",
+      "status": "open",
+      "summary": "Reviewed transport slices expose concrete gaps: memory write/invalidate, public lab/review hooks, GB10 wrappers, corrected visuals and whole registry coverage.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Assign executable registry/conformance owner and map every retained ticket capability to CLI+MCP.",
+        "Verify success/error/auth/cancel/idempotency parity and real stdio responsiveness. Do not substitute HTTP or host-only APIs."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "whole_capability_conformance_owner_unassigned",
+      "owners": [
+        "gpt-astra-carter: audit only"
+      ],
+      "dependencies": [
+        "SLAB-009",
+        "SLAB-008",
+        "SLAB-010",
+        "SLAB-011",
+        "SLAB-012",
+        "SLAB-017",
+        "SLAB-019",
+        "SLAB-020",
+        "SLAB-022",
+        "SLAB-026",
+        "SLAB-027",
+        "SLAB-032",
+        "SLAB-033",
+        "SLAB-037",
+        "SLAB-038",
+        "SLAB-039",
+        "SLAB-040",
+        "SLAB-041"
+      ],
+      "cliRequired": [
+        "sentilab conformance run",
+        "sentilab coverage validate"
+      ],
+      "mcpRequired": [
+        "sentilab_conformance_run",
+        "sentilab_coverage_validate"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-035",
+      "title": "Review code/model/data/asset licenses and permitted-use provenance",
+      "status": "open",
+      "summary": "Exact Qwen Apache2 admission and pinned model/file/runtime inputs recorded for fixture preflight only.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Assign code/model/data/asset license and permitted-use provenance owner for whole project.",
+        "Keep real-data eligibility, missing-Claude terms and corrected chiplet-reference asset provenance unresolved until evidenced."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "qwen_fixture_admission_only_full_provenance_unassigned",
+      "owners": [
+        "gpt-astra-carter: SLAB018 Qwen admission slice"
+      ],
+      "dependencies": [
+        "SLAB-001"
+      ],
+      "cliRequired": [
+        "sentilab provenance inspect",
+        "sentilab license manifest"
+      ],
+      "mcpRequired": [
+        "sentilab_provenance_inspect",
+        "sentilab_license_manifest"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-036",
+      "title": "Verify bounded operations, STOP, recovery and accounting",
+      "status": "open",
+      "summary": "Live cleanup and GB10 teardown have scoped evidence. Warden named prospective CI and experiment CPU allocations; historical exact use and process-tree CPU enforcement remain open.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "gb10_audit",
+        "warden_56314",
+        "root_ownership",
+        "freeze_math"
+      ],
+      "remaining": [
+        "Enforce measured per-run CI counters and whole-process CPU limits.",
+        "Retain unknown historical usage; obtain actual private-runtime storage/signing/counter proof."
+      ],
+      "sourceAt": "2026-10-31T07:58:14.724714+00:00",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "live_cleanup_merged_gb10_guarded_accounting_gaps_open",
+      "owners": [
+        "claude-warden: operations",
+        "gpt-astra-carter: local owner",
+        "astra-slab037a-live"
+      ],
+      "dependencies": [
+        "SLAB-007",
+        "SLAB-008",
+        "SLAB-010"
+      ],
+      "cliRequired": [
+        "sentilab runtime status",
+        "sentilab runtime stop",
+        "sentilab runtime recover"
+      ],
+      "mcpRequired": [
+        "sentilab_runtime_status",
+        "sentilab_runtime_stop",
+        "sentilab_runtime_recover"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-037",
+      "title": "Build deterministic conductor, AI-off live loop and lab integration seam",
+      "status": "open",
+      "summary": "PR15 merged200cda7; Warden reports full-bound ticket d72c9769 done and private revision0000002 with27 verified envelopes.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Independent raw deployment/signing/storage/counters receipt remains requested.",
+        "Complete producer/consumer v0.6 integration and real lab public hook separately; code acceptance is not whole scientific acceptance."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "ai_off_core_merged_private_runtime_operator_reported",
+      "owners": [
+        "astra-slab037a-live",
+        "claude-warden: production operations"
+      ],
+      "dependencies": [
+        "SLAB-008",
+        "SLAB-022",
+        "SLAB-025",
+        "SLAB-036"
+      ],
+      "cliRequired": [
+        "sentilab live run",
+        "sentilab live status",
+        "sentilab live stop",
+        "sentilab live verify --ai-off"
+      ],
+      "mcpRequired": [
+        "sentilab_live_run",
+        "sentilab_live_status",
+        "sentilab_live_stop",
+        "sentilab_live_verify"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [
+        "d72c9769-97d0-4e5a-af97-0f299ddd6b66"
+      ],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-038",
+      "title": "Verify private box-to-GB10 network and shared Qwen serving path",
+      "status": "open",
+      "summary": "Root accepted the GB10 flight-record work. The local fixture run is complete; no private box-to-GB10 route or shared serving-path acceptance is evidenced.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "root_ownership",
+        "gb10_audit"
+      ],
+      "remaining": [
+        "Any later network/worker probe needs its own reviewed scope and authority; preserve route-doctor/worker-probe CLI and MCP requirements."
+      ],
+      "sourceAt": "2026-10-31T07:58:14.724714+00:00",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "private_box_route_deliberately_deferred",
+      "owners": [
+        "claude-warden: routing authority",
+        "gpt-astra-carter: local GB10 access"
+      ],
+      "dependencies": [
+        "SLAB-003",
+        "SLAB-004",
+        "SLAB-009"
+      ],
+      "cliRequired": [
+        "sentilab route doctor --source box --target gb10",
+        "sentilab worker probe"
+      ],
+      "mcpRequired": [
+        "sentilab_route_doctor",
+        "sentilab_worker_probe"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-039",
+      "title": "Measure training-family optimization headroom before LLM experiments",
+      "status": "measured",
+      "summary": "Ascend v3 remains INCONCLUSIVE. PR25 aaaf128 review closed several source issues but requires a complete frozen baseline before reference calls, retained timeout output, and enforceable remaining-budget CPU semantics. Warden approved prospective 72/84 CPU-minute allocations effective 07:56Z; no new solves released.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "headroom_review",
+        "warden_56314",
+        "root_ownership",
+        "freeze_math"
+      ],
+      "remaining": [
+        "Review the corrected exact implementation before any micro150 execution.",
+        "Retain 1440.294565 Ascend CPU seconds: a 72-minute cap leaves at most 2879.705435 seconds before other charges, not a full new 48 minutes.",
+        "Headroom 9700 and aggregate 10000 solve caps and the 12:00Z deadline remain."
+      ],
+      "sourceAt": "2026-10-31T07:57:47.554Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "ascend_v3_inconclusive_v4_source_review_no_release",
+      "owners": [
+        "astra-slab002b-micro150",
+        "claude-warden"
+      ],
+      "dependencies": [
+        "SLAB-002"
+      ],
+      "cliRequired": [
+        "sentilab headroom run",
+        "sentilab headroom report"
+      ],
+      "mcpRequired": [
+        "sentilab_headroom_run",
+        "sentilab_headroom_report"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [
+        "84454999-facc-4422-8685-6b9e79152302"
+      ],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-040",
+      "title": "Anchor service authenticity to an independent trust root",
+      "status": "open",
+      "summary": "Public pins and service signer integrated in merged15; Warden reports private signatures against pinned identity.",
+      "evidenceRefs": [
+        "coverage_delta"
+      ],
+      "remaining": [
+        "Independently inspect hash-bound raw runtime envelopes/key/headers/durable storage and deployment identity.",
+        "Keep signer secrets off lab boxes and origin authenticity separate from physics validity."
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "service_signer_code_integrated_runtime_raw_proof_pending",
+      "owners": [
+        "claude-warden: production provisioning",
+        "astra-slab037a-live: integration"
+      ],
+      "dependencies": [
+        "SLAB-001"
+      ],
+      "cliRequired": [
+        "sentilab trust inspect",
+        "sentilab receipt verify"
+      ],
+      "mcpRequired": [
+        "sentilab_trust_inspect",
+        "sentilab_receipt_verify"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [
+        "df635480-5abb-450b-bf9e-17f32c4ae694"
+      ],
+      "disposition": "retained"
+    },
+    {
+      "id": "SLAB-041",
+      "title": "Preregister task-family splits, endpoints, budgets and gate scope before runner",
+      "status": "open",
+      "summary": "Aneta supplied concrete pre-freeze corrections; root is reviewing them. No final accepted experiment freeze is evidenced.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "aneta_56311",
+        "warden_56313",
+        "root_ownership",
+        "freeze_math"
+      ],
+      "remaining": [
+        "Resolve the impossible six-family/two-primary Holm rung, shared-board reproduction loss, lifecycle alignment, metric and C07 admission.",
+        "Bind accountable protocol/statistics and real-lab/judge owners; freeze families, seeds, endpoints and inclusive costs before science calls."
+      ],
+      "sourceAt": "2026-10-31T07:57:47.554Z",
+      "wholeTicketCompletionVerified": false,
+      "baselineStatus": "scientific_protocol_and_split_owner_unassigned",
+      "owners": [
+        "claude-warden: coordination requested",
+        "gpt-astra-carter: exact math/red-team review",
+        "aneta-claude: future work conditional, not committed"
+      ],
+      "dependencies": [
+        "SLAB-001",
+        "SLAB-005"
+      ],
+      "cliRequired": [
+        "sentilab protocol validate",
+        "sentilab split inspect",
+        "sentilab protocol freeze"
+      ],
+      "mcpRequired": [
+        "sentilab_protocol_validate",
+        "sentilab_split_inspect",
+        "sentilab_protocol_freeze"
+      ],
+      "interfaceStatus": "full_retained_capability_conformance_unverified",
+      "fullRemoteTicketIds": [],
+      "disposition": "retained"
+    }
+  ],
+  "deliverables": [
+    {
+      "id": "D00",
+      "title": "Exact chiplet layout and constraints",
+      "status": "open",
+      "completionVerified": false,
+      "summary": "Stored24-layout micro150 geometry now accepted with the mesh slice, but no final accepted optimized layout/constraint proposal.",
+      "tickets": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-028"
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "evidenceRefs": [
+        "coverage_delta"
+      ]
+    },
+    {
+      "id": "D01",
+      "title": "Power scenarios and package assumptions",
+      "status": "open",
+      "completionVerified": false,
+      "summary": "Fixture assumptions exist; final package/power/objective/wire-domain scientific freeze still unassigned.",
+      "tickets": [
+        "SLAB-005",
+        "SLAB-006",
+        "SLAB-028"
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "evidenceRefs": [
+        "coverage_delta"
+      ]
+    },
+    {
+      "id": "D02",
+      "title": "Simulator inputs, versions and raw outputs",
+      "status": "open",
+      "completionVerified": false,
+      "summary": "PR17 retention/history defects closed and regression bundle merged; per-solve raw simulator inputs/outputs and default-off PR25 retention seam remain incomplete.",
+      "tickets": [
+        "SLAB-002",
+        "SLAB-006",
+        "SLAB-007",
+        "SLAB-028"
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "evidenceRefs": [
+        "coverage_delta"
+      ]
+    },
+    {
+      "id": "D03",
+      "title": "Independent reproduction results",
+      "status": "open",
+      "completionVerified": false,
+      "summary": "AI-off same-solver fresh-process path merged and production reproduction transitions reported; no independent physical reproduction package.",
+      "tickets": [
+        "SLAB-015",
+        "SLAB-028"
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "evidenceRefs": [
+        "coverage_delta"
+      ]
+    },
+    {
+      "id": "D04",
+      "title": "Complete proposal-review-correction-acceptance history",
+      "status": "open",
+      "completionVerified": false,
+      "summary": "Merged live recorder plus reviewed fixture labs/data corrections progress history infrastructure; complete scientific proposal-review-correction-acceptance chain and raw linkage remain.",
+      "tickets": [
+        "SLAB-007",
+        "SLAB-010",
+        "SLAB-028"
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "evidenceRefs": [
+        "coverage_delta"
+      ]
+    },
+    {
+      "id": "D05",
+      "title": "Conventional and agent baseline comparison",
+      "status": "open",
+      "completionVerified": false,
+      "summary": "Ascend headroom v3 remains INCONCLUSIVE; no completed preregistered five-arm/family/held-out comparison. PR23 synthetic router metrics do not fill this gap.",
+      "tickets": [
+        "SLAB-020",
+        "SLAB-021",
+        "SLAB-028",
+        "SLAB-032"
+      ],
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "evidenceRefs": [
+        "coverage_delta"
+      ]
+    },
+    {
+      "id": "D06",
+      "title": "Trained worker checkpoint/adapter with evaluation",
+      "status": "measured",
+      "completionVerified": false,
+      "summary": "The fixture adapter now has train/save/fresh-reload/evaluation/HTTP/teardown evidence. A scientifically trained worker, eligible real data and untouched held-out evaluation remain absent; D06 is not fully accepted.",
+      "tickets": [
+        "SLAB-018",
+        "SLAB-019",
+        "SLAB-028",
+        "SLAB-032",
+        "SLAB-033"
+      ],
+      "sourceAt": "2026-10-31T07:53:46.147370+00:00",
+      "evidenceRefs": [
+        "gb10_audit",
+        "gb10_review"
+      ]
+    },
+    {
+      "id": "D07",
+      "title": "Replayable visual demonstration",
+      "status": "open",
+      "completionVerified": false,
+      "summary": "Original Package and Lab views exist. Lab review found two displayed-state P2s; Package repair is awaiting review and producer/consumer transport, replay/export/rebuild and CLI/MCP conformance remain open.",
+      "tickets": [
+        "SLAB-025",
+        "SLAB-026",
+        "SLAB-027",
+        "SLAB-028"
+      ],
+      "sourceAt": "2026-10-31T07:59:37.440Z",
+      "evidenceRefs": [
+        "coverage_delta",
+        "lab_review",
+        "root_lab_review"
+      ]
+    }
+  ],
+  "gb10": {
+    "classification": "fixture_plumbing_only",
+    "attempt": 1,
+    "optimizerSteps": 20,
+    "trainRowIdsConsumedOnce": 200,
+    "uniqueSourceCases": 6,
+    "uniqueTrainPromptContents": 60,
+    "evaluationEntries": 20,
+    "uniqueEvaluationPromptContents": 6,
+    "httpResponses": 40,
+    "nemoExactJson": {
+      "base": 0,
+      "adapter": 20,
+      "denominator": 20
+    },
+    "httpExactJson": {
+      "base": 0,
+      "adapter": 20,
+      "denominator": 20
+    },
+    "changedOutputPairs": 20,
+    "checkpointTensors": 504,
+    "trainableParameters": 16515072,
+    "checkpointSha256": "695581e310def332bd6307527eff6546d95eebb88bec7e6f6ce288a5a61c0f80",
+    "modelRevision": "cdbee75f17c01a7cc42f958dc650907174af0554",
+    "stageChargedSeconds": 314.18953860500187,
+    "priorConservativeReservationSeconds": 180,
+    "totalChargedSeconds": 494.18953860500187,
+    "completedAt": "2026-10-31T07:53:46.147370+00:00",
+    "teardownRecorded": true,
+    "scope": "Same-family repeated metadata labels; lifecycle and repair are provided in prompts. No held-out efficacy, physical prediction, optimization improvement or scientific worker promotion.",
+    "reloadEvidenceLimit": "Exact equality is asserted by reviewed runtime plus exit-zero receipt; saved tensor bytes were independently hashed. No before-training snapshot or second memory dump was audited.",
+    "evidenceRefs": [
+      "gb10_audit",
+      "gb10_review",
+      "gb10_flight",
+      "gb10_inputs"
+    ]
+  },
+  "allocations": {
+    "effectiveAt": "2026-10-31T07:56:00Z",
+    "kind": "prospective_authority_not_usage_or_execution_release",
+    "ci": {
+      "maxHotspotPerRun": 100,
+      "maxCpuMinutesPerRun": 15,
+      "maxRuns": 200,
+      "until": "2026-11-01T18:00:00Z",
+      "historicalApproximateRuns": 45,
+      "historicalApproximateExecutionsPerRun": 72,
+      "historicalApproximateExecutions": 3240,
+      "historicalExactCounts": null,
+      "historicalComplianceVerified": false,
+      "actualProspectiveRunsConsumed": null
+    },
+    "experiment": {
+      "headroomCpuMinutesMax": 72,
+      "aggregateCpuMinutesMax": 84,
+      "micro150CpuMinutesMax": 48,
+      "retainedAscendCpuSeconds": 1440.294565,
+      "micro150CpuSecondsRemainingUpperBound": 2879.705435,
+      "headroomSolveCap": 9700,
+      "aggregateSolveCap": 10000,
+      "deadline": "2026-10-31T12:00:00Z",
+      "newMicro150ExecutionReleased": false
+    },
+    "enforcementStatus": "Open: a wall timeout equal to remaining CPU seconds is not alone a process-tree CPU bound.",
+    "evidenceRefs": [
+      "warden_56314",
+      "root_ownership",
+      "freeze_math"
+    ]
+  },
+  "cost": {
+    "currentTotalUsd": null,
+    "invoiceVerified": false,
+    "lastRetainedEstimateUsd": 255.79,
+    "lastRetainedEstimateAt": "2026-10-31T07:31:44.345Z",
+    "classification": "historical_operator_estimate",
+    "displayText": "No current total or invoice is verified. Last retained room estimate: USD 255.79 at 07:31:44Z, an estimate at measured billed rates.",
+    "evidenceRefs": [
+      "cost_56231"
+    ]
+  },
+  "supersededClaims": [
+    {
+      "id": "S01",
+      "title": "MicroDuck/Pollen robotics requirement",
+      "status": "superseded",
+      "summary": "Replaced by our original chiplet simulation and visual workflow under the human correction at 05:45:27Z. Retain the cancellation history; do not count robotics as unfinished current scope.",
+      "evidenceRefs": [
+        "scope_disposition",
+        "scope_register"
+      ],
+      "remaining": [],
+      "sourceAt": "2026-10-31T05:45:27.427Z",
+      "wholeTicketCompletionVerified": false
+    },
+    {
+      "id": "S02",
+      "title": "Second plan decision missing",
+      "status": "superseded",
+      "summary": "Valid at the 07:50 coverage cutoff; replaced by Aneta #56311 at 07:52:43Z. The returned decision remains technical and scope-limited.",
+      "evidenceRefs": [
+        "coverage_delta",
+        "aneta_56311"
+      ],
+      "remaining": [],
+      "sourceAt": null,
+      "wholeTicketCompletionVerified": false
+    },
+    {
+      "id": "S03",
+      "title": "GB10 preflight running or not started",
+      "status": "superseded",
+      "summary": "Older checkpoint status and attempt-count fields are stale. Attempt 1 completed at 07:53:46Z and its artifacts passed independent review.",
+      "evidenceRefs": [
+        "checkpoint",
+        "gb10_attempt",
+        "gb10_audit"
+      ],
+      "remaining": [],
+      "sourceAt": null,
+      "wholeTicketCompletionVerified": false
+    },
+    {
+      "id": "S04",
+      "title": "Prospective CPU and CI allocation unnamed",
+      "status": "superseded",
+      "summary": "Warden #56314 provides the named allocation effective 07:56Z. Historical exact usage, enforcement and technical execution release remain unresolved.",
+      "evidenceRefs": [
+        "checkpoint",
+        "warden_56314",
+        "root_ownership"
+      ],
+      "remaining": [],
+      "sourceAt": null,
+      "wholeTicketCompletionVerified": false
+    },
+    {
+      "id": "S05",
+      "title": "Dataset export still blocked; Lab review merely queued",
+      "status": "superseded",
+      "summary": "Root086 accepts the fixture export slice with P3 cleanup debt. Root089 records two Lab displayed-state P2s. Neither update completes the full affected tickets.",
+      "evidenceRefs": [
+        "dataset_acceptance",
+        "root_lab_review"
+      ],
+      "remaining": [],
+      "sourceAt": null,
+      "wholeTicketCompletionVerified": false
+    },
+    {
+      "id": "S06",
+      "title": "SLAB-029 content owner unassigned",
+      "status": "superseded",
+      "summary": "Root088 accepts the progress-content/evidence role. This does not commit a human presenter or Aneta's future time.",
+      "evidenceRefs": [
+        "warden_56313",
+        "root_ownership"
+      ],
+      "remaining": [],
+      "sourceAt": null,
+      "wholeTicketCompletionVerified": false
+    }
+  ],
+  "delivery": {
+    "progressContentOwnerAccepted": true,
+    "deckPreparationRequested": true,
+    "deckCompleted": false,
+    "humanPresenterCommitted": false,
+    "anetaFutureTimeCommitted": false,
+    "deckDueAt": "2026-11-01T18:00:00Z",
+    "overnightPauseReportedAt": "2026-10-31T13:00:00Z",
+    "status": "Preparation proceeds with truthful missing/inconclusive results; no positive outcome is a prerequisite.",
+    "evidenceRefs": [
+      "warden_56313",
+      "root_ownership"
+    ]
+  },
+  "integration": {
+    "writeProductUi": false,
+    "post": false,
+    "deploy": false,
+    "createPullRequest": false,
+    "note": "Portable content-only review packet. Repository evidence is pinned to exact commits and may require access. Unmapped private evidence requires the operator archive by source ID/hash. No source bodies are bundled. Root and Forge own later page/export integration.",
+    "requiredCli": [
+      "sentilab presentation export",
+      "sentilab submission validate"
+    ],
+    "requiredMcp": [
+      "sentilab_presentation_export",
+      "sentilab_submission_validate"
+    ],
+    "interfacesImplementedByThisDraft": false
+  },
+  "evidence": {
+    "coverage_delta": {
+      "id": "coverage_delta",
+      "label": "All 41 tickets and eight deliverables: 07:50 coverage delta",
+      "sourceId": "urn:sha256:aeaefd8dccd5dab2d418e270efab440b7d567cf5605bb686cd0758fd9ebf0370",
+      "sha256": "aeaefd8dccd5dab2d418e270efab440b7d567cf5605bb686cd0758fd9ebf0370",
+      "bytes": 327072,
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "kind": "retained_document",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false
+    },
+    "coverage_actions": {
+      "id": "coverage_actions",
+      "label": "07:50 proposed action list",
+      "sourceId": "urn:sha256:42083eaefd69532b441d8568bd6edce89f23aab3b7e544cac67e334d8f6abf6c",
+      "sha256": "42083eaefd69532b441d8568bd6edce89f23aab3b7e544cac67e334d8f6abf6c",
+      "bytes": 10615,
+      "sourceAt": "2026-10-31T07:50:00Z",
+      "kind": "retained_document",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false
+    },
+    "checkpoint": {
+      "id": "checkpoint",
+      "label": "Latest checkpoint captured for this draft",
+      "sourceId": "urn:sha256:81700c329f8101a414458c997e9bf0bc3a86b3ad3b7e453ef29af9deb6cffc15",
+      "sha256": "81700c329f8101a414458c997e9bf0bc3a86b3ad3b7e453ef29af9deb6cffc15",
+      "bytes": 79516,
+      "sourceAt": "2026-10-31T07:50:58.378Z",
+      "kind": "retained_document",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false
+    },
+    "packet_manifest": {
+      "id": "packet_manifest",
+      "label": "Exact packet identities delivered to Aneta",
+      "sourceId": "urn:sha256:2c051516c49b496bcaeeb065200106fcf4462a6747c9ceeaaa2ebb8c2fabe081",
+      "sha256": "2c051516c49b496bcaeeb065200106fcf4462a6747c9ceeaaa2ebb8c2fabe081",
+      "bytes": 18578,
+      "sourceAt": "2026-10-31T07:31:19.613Z",
+      "kind": "retained_document",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false
+    },
+    "gb10_audit": {
+      "id": "gb10_audit",
+      "label": "112-check independent GB10 fixture artifact audit",
+      "sourceId": "urn:sha256:e33462fafa13f1e9d7f741c081a8561a43f63c59d4b8df26d86199a133f20e96",
+      "sha256": "e33462fafa13f1e9d7f741c081a8561a43f63c59d4b8df26d86199a133f20e96",
+      "bytes": 14724,
+      "sourceAt": "2026-10-31T07:58:14.724714+00:00",
+      "kind": "retained_document",
+      "access": "repository access required",
+      "bodyIncluded": false,
+      "immutableUrl": "https://github.com/Sentinelayer-AIdenID/sentilab/blob/ff5c84233aa14363cbf08be820897a989a59aed0/docs/sentilab/evidence/SLAB-018/review/ARTIFACT-AUDIT.json",
+      "repositoryArtifact": {
+        "repository": "Sentinelayer-AIdenID/sentilab",
+        "commit": "ff5c84233aa14363cbf08be820897a989a59aed0",
+        "path": "docs/sentilab/evidence/SLAB-018/review/ARTIFACT-AUDIT.json",
+        "gitBlob": "5db606c3ed3cdf7fb993a7597b35ef3c92f002ca",
+        "bindingBasis": "retained publication receipt plus identical source bytes",
+        "bindingSourceSha256": "cd847bfbacc7117bf397ed200c9161adffdb4cf65761abfef04dbb5e5382c586",
+        "bindingSourceAt": "2026-10-31T08:06:45.548Z"
+      },
+      "publicAccessibilityVerified": false
+    },
+    "gb10_review": {
+      "id": "gb10_review",
+      "label": "Scoped fixture-plumbing +1",
+      "sourceId": "urn:sha256:f36c2249962f50b00129ea8ba58a385ea1ac80dc2bdb5ce28e480d4ba867db5c",
+      "sha256": "f36c2249962f50b00129ea8ba58a385ea1ac80dc2bdb5ce28e480d4ba867db5c",
+      "bytes": 8084,
+      "sourceAt": "2026-10-31T07:58:14.724714+00:00",
+      "kind": "retained_document",
+      "access": "repository access required",
+      "bodyIncluded": false,
+      "immutableUrl": "https://github.com/Sentinelayer-AIdenID/sentilab/blob/ff5c84233aa14363cbf08be820897a989a59aed0/docs/sentilab/evidence/SLAB-018/review/RESULT-REVIEW.md",
+      "repositoryArtifact": {
+        "repository": "Sentinelayer-AIdenID/sentilab",
+        "commit": "ff5c84233aa14363cbf08be820897a989a59aed0",
+        "path": "docs/sentilab/evidence/SLAB-018/review/RESULT-REVIEW.md",
+        "gitBlob": "71bfd57fd1cbfbb8c28cfa75bfb21bf49b944d5f",
+        "bindingBasis": "retained publication receipt plus identical source bytes",
+        "bindingSourceSha256": "cd847bfbacc7117bf397ed200c9161adffdb4cf65761abfef04dbb5e5382c586",
+        "bindingSourceAt": "2026-10-31T08:06:45.548Z"
+      },
+      "publicAccessibilityVerified": false
+    },
+    "gb10_flight": {
+      "id": "gb10_flight",
+      "label": "Completed attempt artifact manifest",
+      "sourceId": "urn:sha256:69e2d99bee3d7c6ca825aef26741094d1ceb2223bb79a62dca605e8541430a01",
+      "sha256": "69e2d99bee3d7c6ca825aef26741094d1ceb2223bb79a62dca605e8541430a01",
+      "bytes": 4649,
+      "sourceAt": "2026-10-31T07:54:32.741596+00:00",
+      "kind": "retained_document",
+      "access": "repository access required",
+      "bodyIncluded": false,
+      "immutableUrl": "https://github.com/Sentinelayer-AIdenID/sentilab/blob/ff5c84233aa14363cbf08be820897a989a59aed0/docs/sentilab/evidence/SLAB-018/attempt-01/REMOTE-ARTIFACT-MANIFEST.json",
+      "repositoryArtifact": {
+        "repository": "Sentinelayer-AIdenID/sentilab",
+        "commit": "ff5c84233aa14363cbf08be820897a989a59aed0",
+        "path": "docs/sentilab/evidence/SLAB-018/attempt-01/REMOTE-ARTIFACT-MANIFEST.json",
+        "gitBlob": "fb97bc3b9b2303d613a78cd821e75b49c83e957f",
+        "bindingBasis": "retained publication receipt plus identical source bytes",
+        "bindingSourceSha256": "cd847bfbacc7117bf397ed200c9161adffdb4cf65761abfef04dbb5e5382c586",
+        "bindingSourceAt": "2026-10-31T08:06:45.548Z"
+      },
+      "publicAccessibilityVerified": false
+    },
+    "gb10_attempt": {
+      "id": "gb10_attempt",
+      "label": "Train, fresh reload, serving and teardown stage receipt",
+      "sourceId": "urn:sha256:86596d26c928b0df1382313b6b9722b5d63c03f7f613e0748fcffb219694bab7",
+      "sha256": "86596d26c928b0df1382313b6b9722b5d63c03f7f613e0748fcffb219694bab7",
+      "bytes": 2767,
+      "sourceAt": "2026-10-31T07:53:46.147370+00:00",
+      "kind": "retained_document",
+      "access": "repository access required",
+      "bodyIncluded": false,
+      "immutableUrl": "https://github.com/Sentinelayer-AIdenID/sentilab/blob/ff5c84233aa14363cbf08be820897a989a59aed0/docs/sentilab/evidence/SLAB-018/attempt-01/attempt-receipt.json",
+      "repositoryArtifact": {
+        "repository": "Sentinelayer-AIdenID/sentilab",
+        "commit": "ff5c84233aa14363cbf08be820897a989a59aed0",
+        "path": "docs/sentilab/evidence/SLAB-018/attempt-01/attempt-receipt.json",
+        "gitBlob": "faa2c2b9fc31829b4a9ac75070af24450b3fc037",
+        "bindingBasis": "retained publication receipt plus identical source bytes",
+        "bindingSourceSha256": "cd847bfbacc7117bf397ed200c9161adffdb4cf65761abfef04dbb5e5382c586",
+        "bindingSourceAt": "2026-10-31T08:06:45.548Z"
+      },
+      "publicAccessibilityVerified": false
+    },
+    "gb10_inputs": {
+      "id": "gb10_inputs",
+      "label": "Frozen execution inputs",
+      "sourceId": "urn:sha256:230fd89ad116537c30cfd2c934d0ccae28dd4acec5d7b3361e1bd16bbecf1357",
+      "sha256": "230fd89ad116537c30cfd2c934d0ccae28dd4acec5d7b3361e1bd16bbecf1357",
+      "bytes": 2361,
+      "sourceAt": "2026-10-31T07:48:02.668Z",
+      "kind": "retained_document",
+      "access": "repository access required",
+      "bodyIncluded": false,
+      "immutableUrl": "https://github.com/Sentinelayer-AIdenID/sentilab/blob/ff5c84233aa14363cbf08be820897a989a59aed0/docs/sentilab/evidence/SLAB-018/attempt-01/execution-inputs.json",
+      "repositoryArtifact": {
+        "repository": "Sentinelayer-AIdenID/sentilab",
+        "commit": "ff5c84233aa14363cbf08be820897a989a59aed0",
+        "path": "docs/sentilab/evidence/SLAB-018/attempt-01/execution-inputs.json",
+        "gitBlob": "4fd7edc9c554e7c0e0f08d507ac95dca2db6a65a",
+        "bindingBasis": "retained publication receipt plus identical source bytes",
+        "bindingSourceSha256": "cd847bfbacc7117bf397ed200c9161adffdb4cf65761abfef04dbb5e5382c586",
+        "bindingSourceAt": "2026-10-31T08:06:45.548Z"
+      },
+      "publicAccessibilityVerified": false
+    },
+    "gb10_model_admission": {
+      "id": "gb10_model_admission",
+      "label": "Qwen revision, Apache-2.0 license and all model-file hashes",
+      "sourceId": "urn:sha256:ede4b1ae29e146b4a62c3f2c51e10b05f561a299162bcb17b201e9ff1ebcbeb8",
+      "sha256": "ede4b1ae29e146b4a62c3f2c51e10b05f561a299162bcb17b201e9ff1ebcbeb8",
+      "bytes": 5678,
+      "sourceAt": "2026-10-31T07:23:23.909012+00:00",
+      "kind": "retained_document",
+      "access": "repository access required",
+      "bodyIncluded": false,
+      "immutableUrl": "https://github.com/Sentinelayer-AIdenID/sentilab/blob/ff5c84233aa14363cbf08be820897a989a59aed0/docs/sentilab/evidence/SLAB-018/attempt-01/MANIFEST.verified.json",
+      "repositoryArtifact": {
+        "repository": "Sentinelayer-AIdenID/sentilab",
+        "commit": "ff5c84233aa14363cbf08be820897a989a59aed0",
+        "path": "docs/sentilab/evidence/SLAB-018/attempt-01/MANIFEST.verified.json",
+        "gitBlob": "2b6480a8c7d4e33efb33167a7064e897fad40014",
+        "bindingBasis": "retained publication receipt plus identical source bytes",
+        "bindingSourceSha256": "cd847bfbacc7117bf397ed200c9161adffdb4cf65761abfef04dbb5e5382c586",
+        "bindingSourceAt": "2026-10-31T08:06:45.548Z"
+      },
+      "publicAccessibilityVerified": false
+    },
+    "headroom_review": {
+      "id": "headroom_review",
+      "label": "PR25 aaaf128: source closures and remaining execution blockers",
+      "sourceId": "urn:sha256:547dc465511ff8ad3fe63f1b576c1748b23d7e021d0b33f38ffe5cab54b85d17",
+      "sha256": "547dc465511ff8ad3fe63f1b576c1748b23d7e021d0b33f38ffe5cab54b85d17",
+      "bytes": 9613,
+      "sourceAt": null,
+      "kind": "retained_document",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false
+    },
+    "resultcheck_review": {
+      "id": "resultcheck_review",
+      "label": "PR21 d4d64ea: startup closed; file intake remains open",
+      "sourceId": "urn:sha256:4e7c5dc5ef697539c0d7963729eab4d2c77cfe85690364e5a91a660dae50a432",
+      "sha256": "4e7c5dc5ef697539c0d7963729eab4d2c77cfe85690364e5a91a660dae50a432",
+      "bytes": 6293,
+      "sourceAt": null,
+      "kind": "retained_document",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false
+    },
+    "lab_review": {
+      "id": "lab_review",
+      "label": "PR27 b189495: two displayed-state P2s",
+      "sourceId": "urn:sha256:8d78d649688c9893a9076e179474f5fa31e651ed869c2bcb7a1ecad858690781",
+      "sha256": "8d78d649688c9893a9076e179474f5fa31e651ed869c2bcb7a1ecad858690781",
+      "bytes": 8873,
+      "sourceAt": null,
+      "kind": "retained_document",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false
+    },
+    "source_review": {
+      "id": "source_review",
+      "label": "PR17 accepted source-evidence slice",
+      "sourceId": "urn:sha256:2823d28db8676384f1bd4461fbf7d9596a207f7133b156a8c62ca4246e77c5b4",
+      "sha256": "2823d28db8676384f1bd4461fbf7d9596a207f7133b156a8c62ca4246e77c5b4",
+      "bytes": 7022,
+      "sourceAt": null,
+      "kind": "retained_document",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false
+    },
+    "mesh_review": {
+      "id": "mesh_review",
+      "label": "PR18 accepted fixed-sample micro150 mesh evidence",
+      "sourceId": "urn:sha256:63f3093d0c8d51319143b9192583bcbb3a1a65c975d4c27881c339c5aff57a16",
+      "sha256": "63f3093d0c8d51319143b9192583bcbb3a1a65c975d4c27881c339c5aff57a16",
+      "bytes": 12334,
+      "sourceAt": null,
+      "kind": "retained_document",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false
+    },
+    "freeze_math": {
+      "id": "freeze_math",
+      "label": "Exact sign-test and resource arithmetic; no experiment",
+      "sourceId": "urn:sha256:e7ede4b059a78a8476853f591febfe522be0e57bcfe31a316f99fc82047359cb",
+      "sha256": "e7ede4b059a78a8476853f591febfe522be0e57bcfe31a316f99fc82047359cb",
+      "bytes": 9402,
+      "sourceAt": null,
+      "kind": "retained_document",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false
+    },
+    "aneta_56311": {
+      "id": "aneta_56311",
+      "label": "Aneta #56311: second whole-plan technical +1 and separate dated core fidelity",
+      "sourceId": "2c4fafa3-b826-4f77-bcd6-554e23b33f1c",
+      "sha256": "0247700de2a9879c948d74bc7e0a67ac9ee272a4af43652f4d0364a6ef0a5d9d",
+      "bytes": 6333,
+      "sourceAt": "2026-10-31T07:52:43.974Z",
+      "kind": "retained_room_record",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false,
+      "sourceRecordSha256": "13b8af2dc60042febe8ed76103ddd1ff551f1f39a4e3bf87bf39a5d72bc231d7"
+    },
+    "warden_56313": {
+      "id": "warden_56313",
+      "label": "Warden #56313: progress/deck ownership proposal and freeze inputs",
+      "sourceId": "618b442e-d301-4b1e-8999-b3983ad18e95",
+      "sha256": "f25c3073275011ffb21b6f5f19e85abc40214e64412e730fed888220f0e43915",
+      "bytes": 1857,
+      "sourceAt": "2026-10-31T07:53:36.359Z",
+      "kind": "retained_room_record",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false,
+      "sourceRecordSha256": "796b1ec1f41e8e859b985a154896ea06f01b18f3ecdb1e304033fadf8a1ecbb5"
+    },
+    "warden_56314": {
+      "id": "warden_56314",
+      "label": "Warden #56314: prospective allocation, effective 07:56Z",
+      "sourceId": "88644193-efef-4edd-bf87-9b622b4f8587",
+      "sha256": "4789c2dbaf1be61e6ad87d3095f5a547516ebbdcb539f6a4218fd69fe8aa83b7",
+      "bytes": 2582,
+      "sourceAt": "2026-10-31T07:54:09.276Z",
+      "kind": "retained_room_record",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false,
+      "sourceRecordSha256": "9e423e28d45b37a380096b8dab2046a4cf40e99219988d7b57b5091accfc1f8b"
+    },
+    "cost_56231": {
+      "id": "cost_56231",
+      "label": "Last retained room cost estimate, 07:31:44Z",
+      "sourceId": "6a2329e0-70d8-46df-bf9f-f2c01cf5a4ec",
+      "sha256": "32c68b51b317149aa514acd0ba4d5d3fb7fc717e6879a6321d98b7ab4c448bfc",
+      "bytes": 860,
+      "sourceAt": "2026-10-31T07:31:44.345Z",
+      "kind": "retained_room_record",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false,
+      "sourceRecordSha256": "a36707357902d94bd33c0efd02332e7932c04f0a01adc2979303d28ba6e5c46b"
+    },
+    "dataset_acceptance": {
+      "id": "dataset_acceptance",
+      "label": "Root 086: dataset export approved with cleanup followup",
+      "sourceId": "urn:sha256:936873be9fd0679e317505d65843441f96ed070a8619a0213d6c64c4d2ccf53b",
+      "sha256": "936873be9fd0679e317505d65843441f96ed070a8619a0213d6c64c4d2ccf53b",
+      "bytes": 2641,
+      "sourceAt": "2026-10-31T07:50:24.612Z",
+      "kind": "root_post_receipt",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false
+    },
+    "root_ownership": {
+      "id": "root_ownership",
+      "label": "Root 088: plan decisions and execution dispatch",
+      "sourceId": "urn:sha256:def430fcfe4a05d67d32adc608ddd631fae468da25026da8202285d9369c42cd",
+      "sha256": "def430fcfe4a05d67d32adc608ddd631fae468da25026da8202285d9369c42cd",
+      "bytes": 4365,
+      "sourceAt": "2026-10-31T07:57:47.554Z",
+      "kind": "root_post_receipt",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false
+    },
+    "root_lab_review": {
+      "id": "root_lab_review",
+      "label": "Root 089: lab view regression review",
+      "sourceId": "urn:sha256:c9e7bca7e13cb1d688cb9f29795c34cba2ca4e376d69edc7aea215180f7d8405",
+      "sha256": "c9e7bca7e13cb1d688cb9f29795c34cba2ca4e376d69edc7aea215180f7d8405",
+      "bytes": 2168,
+      "sourceAt": "2026-10-31T07:59:37.440Z",
+      "kind": "root_post_receipt",
+      "access": "operator archive required",
+      "bodyIncluded": false,
+      "immutableUrl": null,
+      "repositoryArtifact": null,
+      "publicAccessibilityVerified": false
+    },
+    "frozen_plan": {
+      "id": "frozen_plan",
+      "label": "docs/sentilab/draft-0.5/PLAN.md",
+      "sourceId": "urn:sha256:e15174b8040d40b0675d8821586c2725ba84b79419393fe2a42e405218410f1a",
+      "sha256": "e15174b8040d40b0675d8821586c2725ba84b79419393fe2a42e405218410f1a",
+      "bytes": 82324,
+      "sourceAt": "2026-10-31T07:31:19.613Z",
+      "kind": "frozen_hash_bound_source",
+      "access": "repository access required",
+      "bodyIncluded": false,
+      "immutableUrl": "https://github.com/Sentinelayer-AIdenID/thermal-flight-lab/blob/5e47b42a1202cc4889ea74de8c57952e3f679210/docs/sentilab/draft-0.5/PLAN.md",
+      "repositoryArtifact": {
+        "repository": "Sentinelayer-AIdenID/thermal-flight-lab",
+        "commit": "5e47b42a1202cc4889ea74de8c57952e3f679210",
+        "path": "docs/sentilab/draft-0.5/PLAN.md",
+        "gitBlob": "b01670a617fa4c04463050d07ef43f9ce37e4b0e",
+        "bindingBasis": "retained frozen packet manifest plus identical source bytes",
+        "bindingSourceSha256": "2c051516c49b496bcaeeb065200106fcf4462a6747c9ceeaaa2ebb8c2fabe081",
+        "bindingSourceAt": "2026-10-31T07:31:19.613Z"
+      },
+      "publicAccessibilityVerified": false
+    },
+    "frozen_requirements": {
+      "id": "frozen_requirements",
+      "label": "docs/sentilab/draft-0.5/REQUIREMENTS.md",
+      "sourceId": "urn:sha256:cef6ca1268486238be1a98c2fdf2634b2ff8cd7d1004d8b9f5bd61d0b30f658b",
+      "sha256": "cef6ca1268486238be1a98c2fdf2634b2ff8cd7d1004d8b9f5bd61d0b30f658b",
+      "bytes": 50872,
+      "sourceAt": "2026-10-31T07:31:19.613Z",
+      "kind": "frozen_hash_bound_source",
+      "access": "repository access required",
+      "bodyIncluded": false,
+      "immutableUrl": "https://github.com/Sentinelayer-AIdenID/thermal-flight-lab/blob/5e47b42a1202cc4889ea74de8c57952e3f679210/docs/sentilab/draft-0.5/REQUIREMENTS.md",
+      "repositoryArtifact": {
+        "repository": "Sentinelayer-AIdenID/thermal-flight-lab",
+        "commit": "5e47b42a1202cc4889ea74de8c57952e3f679210",
+        "path": "docs/sentilab/draft-0.5/REQUIREMENTS.md",
+        "gitBlob": "ad6a38f71cbaa6769ed7c2cb236c951cca6d835c",
+        "bindingBasis": "retained frozen packet manifest plus identical source bytes",
+        "bindingSourceSha256": "2c051516c49b496bcaeeb065200106fcf4462a6747c9ceeaaa2ebb8c2fabe081",
+        "bindingSourceAt": "2026-10-31T07:31:19.613Z"
+      },
+      "publicAccessibilityVerified": false
+    },
+    "frozen_tickets": {
+      "id": "frozen_tickets",
+      "label": "docs/sentilab/draft-0.5/TICKETS.json",
+      "sourceId": "urn:sha256:e5acf2ec49c53407b3918c37c9ff0eeefe2bd53df3d189b7949add77513144d4",
+      "sha256": "e5acf2ec49c53407b3918c37c9ff0eeefe2bd53df3d189b7949add77513144d4",
+      "bytes": 119157,
+      "sourceAt": "2026-10-31T07:31:19.613Z",
+      "kind": "frozen_hash_bound_source",
+      "access": "repository access required",
+      "bodyIncluded": false,
+      "immutableUrl": "https://github.com/Sentinelayer-AIdenID/thermal-flight-lab/blob/5e47b42a1202cc4889ea74de8c57952e3f679210/docs/sentilab/draft-0.5/TICKETS.json",
+      "repositoryArtifact": {
+        "repository": "Sentinelayer-AIdenID/thermal-flight-lab",
+        "commit": "5e47b42a1202cc4889ea74de8c57952e3f679210",
+        "path": "docs/sentilab/draft-0.5/TICKETS.json",
+        "gitBlob": "eaf8a3750be437a7382b3c11eab0d56b06858742",
+        "bindingBasis": "retained frozen packet manifest plus identical source bytes",
+        "bindingSourceSha256": "2c051516c49b496bcaeeb065200106fcf4462a6747c9ceeaaa2ebb8c2fabe081",
+        "bindingSourceAt": "2026-10-31T07:31:19.613Z"
+      },
+      "publicAccessibilityVerified": false
+    },
+    "owner_authority": {
+      "id": "owner_authority",
+      "label": "docs/sentilab/OWNER-AUTHORITY-2026-10-31.md",
+      "sourceId": "urn:sha256:25a727cdc20a987626038268d13fed37f7dfc61069cc14d2bd8fbf9c0de0c5f9",
+      "sha256": "25a727cdc20a987626038268d13fed37f7dfc61069cc14d2bd8fbf9c0de0c5f9",
+      "bytes": 9180,
+      "sourceAt": "2026-10-31T07:31:19.613Z",
+      "kind": "frozen_hash_bound_source",
+      "access": "repository access required",
+      "bodyIncluded": false,
+      "immutableUrl": "https://github.com/Sentinelayer-AIdenID/sentilab/blob/c35031b92fa8b25aa89872b71e3add2c10dc4fe8/docs/sentilab/OWNER-AUTHORITY-2026-10-31.md",
+      "repositoryArtifact": {
+        "repository": "Sentinelayer-AIdenID/sentilab",
+        "commit": "c35031b92fa8b25aa89872b71e3add2c10dc4fe8",
+        "path": "docs/sentilab/OWNER-AUTHORITY-2026-10-31.md",
+        "gitBlob": "85ee8b5c152f4108262a718485067f16d8c0837b",
+        "bindingBasis": "retained frozen packet manifest plus identical source bytes",
+        "bindingSourceSha256": "2c051516c49b496bcaeeb065200106fcf4462a6747c9ceeaaa2ebb8c2fabe081",
+        "bindingSourceAt": "2026-10-31T07:31:19.613Z"
+      },
+      "publicAccessibilityVerified": false
+    },
+    "scope_disposition": {
+      "id": "scope_disposition",
+      "label": "docs/sentilab/CHIPLET-VISUAL-SCOPE-DISPOSITION.md",
+      "sourceId": "urn:sha256:ea5db45a4691d3c0b9bb7fe1a940e9d6f835979efd0a332a31cecc0f01a48b8f",
+      "sha256": "ea5db45a4691d3c0b9bb7fe1a940e9d6f835979efd0a332a31cecc0f01a48b8f",
+      "bytes": 12594,
+      "sourceAt": "2026-10-31T07:31:19.613Z",
+      "kind": "frozen_hash_bound_source",
+      "access": "repository access required",
+      "bodyIncluded": false,
+      "immutableUrl": "https://github.com/Sentinelayer-AIdenID/sentilab/blob/8e92640f278bc788ff26d2cd5b88d0dcf04fff16/docs/sentilab/CHIPLET-VISUAL-SCOPE-DISPOSITION.md",
+      "repositoryArtifact": {
+        "repository": "Sentinelayer-AIdenID/sentilab",
+        "commit": "8e92640f278bc788ff26d2cd5b88d0dcf04fff16",
+        "path": "docs/sentilab/CHIPLET-VISUAL-SCOPE-DISPOSITION.md",
+        "gitBlob": "0288958990d5aebb762fd89b945250fdb14574e3",
+        "bindingBasis": "retained frozen packet manifest plus identical source bytes",
+        "bindingSourceSha256": "2c051516c49b496bcaeeb065200106fcf4462a6747c9ceeaaa2ebb8c2fabe081",
+        "bindingSourceAt": "2026-10-31T07:31:19.613Z"
+      },
+      "publicAccessibilityVerified": false
+    },
+    "scope_register": {
+      "id": "scope_register",
+      "label": "docs/sentilab/chiplet-visual-scope-disposition.json",
+      "sourceId": "urn:sha256:da3baf5a238165b913998ee253e06f8cc1c5ae48d961139bf35b751c1e352fd4",
+      "sha256": "da3baf5a238165b913998ee253e06f8cc1c5ae48d961139bf35b751c1e352fd4",
+      "bytes": 145951,
+      "sourceAt": "2026-10-31T07:31:19.613Z",
+      "kind": "frozen_hash_bound_source",
+      "access": "repository access required",
+      "bodyIncluded": false,
+      "immutableUrl": "https://github.com/Sentinelayer-AIdenID/sentilab/blob/8e92640f278bc788ff26d2cd5b88d0dcf04fff16/docs/sentilab/chiplet-visual-scope-disposition.json",
+      "repositoryArtifact": {
+        "repository": "Sentinelayer-AIdenID/sentilab",
+        "commit": "8e92640f278bc788ff26d2cd5b88d0dcf04fff16",
+        "path": "docs/sentilab/chiplet-visual-scope-disposition.json",
+        "gitBlob": "747a1a63c4d3442a021e09189a551862264a90a9",
+        "bindingBasis": "retained frozen packet manifest plus identical source bytes",
+        "bindingSourceSha256": "2c051516c49b496bcaeeb065200106fcf4462a6747c9ceeaaa2ebb8c2fabe081",
+        "bindingSourceAt": "2026-10-31T07:31:19.613Z"
+      },
+      "publicAccessibilityVerified": false
+    }
+  },
+  "packaging": {
+    "packagedAt": "2026-10-31T08:17:50.934398+00:00",
+    "reviewedDraftSha256": "957f73265f43fb69a84fabf18ebf54693205da3d3267eb06aa90169f36631c1b",
+    "reviewedDraftSchemaSha256": "39600226e83db5fc47626bedf094c64a202978d2d7f51b25c0abb7742065ce21",
+    "reviewedDraftManifestSha256": "094ad821e6403a3ed6001f9833f285785408557875a12382f63b2d3247253833",
+    "factsRefreshed": false,
+    "note": "Portability conversion preserves the reviewed dated content. Later link availability does not refresh status, approval, CI, cost or experiment results."
+  }
+}
