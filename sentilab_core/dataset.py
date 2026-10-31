@@ -54,9 +54,9 @@ def _ref(envelope):
 
 
 def _labels(row, parent):
-    state, outcome = row['lifecycle'], row['gate_outcome']
+    state = row['lifecycle']
     terminal = state in TERMINAL
-    result = ('success' if outcome == 'accepted' else 'rejection' if state in NEGATIVE else
+    result = ('success' if state == 'accepted' else 'rejection' if state in NEGATIVE else
               'failure' if state in FAILURE else 'non_improving' if state in BOARD or state == 'non_improving'
               else 'tie' if state == 'tie' else 'pending')
     return {'source': 'verifier' if terminal else None, 'result': result,
@@ -79,7 +79,7 @@ def _eligibility(row):
         reasons.append('no_ordered_verifier_outcome')
     if row['lifecycle'] in BOARD and row['validity'] != 'valid':
         reasons.append('unverified_support')
-    return {'preference': not reasons, 'sft': not reasons and row['gate_outcome'] == 'accepted',
+    return {'preference': not reasons, 'sft': not reasons and row['lifecycle'] == 'accepted',
             'reasons': reasons}
 
 
@@ -181,7 +181,7 @@ def _journal(prefix, policy):
 def _pairs(rows):
     pairs = []
     for chosen in rows:
-        if not chosen['eligibility']['preference'] or chosen['gate_outcome'] != 'accepted':
+        if not chosen['eligibility']['preference'] or chosen['lifecycle'] != 'accepted':
             continue
         for rejected in rows:
             if (not rejected['eligibility']['preference'] or rejected['candidate'] == chosen['candidate'] or

@@ -167,6 +167,22 @@ class DatasetTests(unittest.TestCase):
         self.assertEqual(rows['fixture:failure']['labels']['result'], 'failure')
         self.assertTrue(all(r['rights']['status'] == 'blocked' for r in rows.values()))
 
+    def test_terminal_payload_cannot_promote_rejection_or_failure(self):
+        for candidate, label in [('fixture:reject', 'rejection'), ('fixture:failure', 'failure')]:
+            with self.subTest(candidate=candidate):
+                entries = copy.deepcopy(self.events)
+                terminal = next(i for i, e in enumerate(entries)
+                                if e['event']['body'].get('node') == candidate and
+                                e['event']['body'].get('to') in ('rejected_constraints', 'failed_run'))
+                entries[terminal]['event']['body']['record']['outcome'] = 'accepted'
+                self.sign_events(entries[:terminal + 1])
+                result = self.export()
+                rows = {row['candidate']: row for row in self.rows(result)}
+                self.assertEqual(rows[candidate]['labels']['result'], label)
+                self.assertFalse(rows[candidate]['eligibility']['sft'])
+                self.assertFalse(any(pair['chosen']['candidate'] == candidate
+                                     for pair in self.rows(result, 'rlaif.jsonl')))
+
     def test_signed_inconsistent_gate_or_context_refuses_export(self):
         for mutation in ('outcome', 'measurement', 'run', 'role'):
             entries = copy.deepcopy(self.events)
