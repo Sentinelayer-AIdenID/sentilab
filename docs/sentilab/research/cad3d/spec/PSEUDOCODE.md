@@ -59,7 +59,8 @@ Import rules (static test, AC-02):
 - `package3d.js` gets verified data only through `../package/source.mjs` (source.mjs:1-12) and never computes
   LIVE or STALE itself (source.mjs:172-182).
 
-Frozen operation names (W0.1): `readAnatomy`, `readAssembly`, `readModelStack`, `readLayouts`, `fixtureFor`,
+Frozen operation names (W0.1): `geometryPreimage`, `readAnatomy`, `readAssembly`, `readModelStack`, `readLayouts`,
+`fixtureFor`,
 `standsForIndex`, `resultView`, `receiptCompleteness`, `matchReference`, `buildRenderModel`, `displayBoxes`,
 `explodeOffsets`, `sectionAt`, `interconnectArrays`, `instanceBudget`, `pick`, `overlayFor`, `formatTemp`,
 `tempNode`, `serializeLabel`, `resolveLabel`, `resolveValueLabel`, `findBareTemperatures`, `fieldRefs`,
@@ -117,20 +118,36 @@ export function describeQuantity(q, { digits = 3 } = {}) { /* returns { text, ba
 
 ```js
 // ids.mjs (PURE)
+import { canonical } from "../canonical.mjs";                    // web/public/sentilab/canonical.mjs:4-10
+import { drawnMm } from "./quantity.mjs";
 export const INSTANCE_ID = /^[a-z0-9][a-z0-9-]{0,39}(\/[a-z][a-z0-9_]{0,47}#[0-9]{1,4})+$/;
 export const typeOfId = (id) => id.slice(id.lastIndexOf("/") + 1).split("#")[0];
 export const parentOfId = (id) => (id.split("/").length > 2 ? id.slice(0, id.lastIndexOf("/")) : null);
 // Stability across builds: every id of the previous release is still present or listed in retired_ids, and no retired
 // id is back in use (PL-11). previous: the last released assembly (or null on the first release).
 export function idStability(previous, next) { /* -> { ok, missing: [...], reused: [...] } */ }
+
+// The frozen preimage of geometry_sha256 and of every RenderModel's geometry_key (SPEC.md §5.0; A#57218 item 3).
+// One record per instance, drawn or not, sorted by stable id; parent and box kept; no view state is a parameter, so
+// none can enter. Callers refuse duplicate ids first, so the order is total. A new shape needs a new version string.
+export const GEOMETRY_VERSION = "sentilab-geometry/1";
+const byId = (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);   // ids are ASCII (INSTANCE_ID): code-unit = byte order
+const arrayGeometry = (a) => ({ class: a.class, region: { x0: a.region.x0, x1: a.region.x1, y0: a.region.y0, y1: a.region.y1 },
+  lattice: a.lattice, pitch_mm: drawnMm(a.pitch).mm, diameter_mm: drawnMm(a.diameter).mm, height_mm: drawnMm(a.height).mm });
+export function geometryPreimage(frame, instances) {
+  const rows = instances.map((i) => ({
+    id: i.id, type: i.type, parent: i.parent ?? null, variants: [...i.variants].sort(), drawn: i.drawn === true,
+    box: i.drawn === true ? { x0: i.box.x0, x1: i.box.x1, y0: i.box.y0, y1: i.box.y1, z0: i.box.z0, z1: i.box.z1 } : null,
+    array: i.drawn === true && i.array ? arrayGeometry(i.array) : null }));
+  return canonical({ v: GEOMETRY_VERSION, frame, instances: rows.sort(byId) });   // geometry_sha256 = sha256(UTF-8 of this)
+}
 ```
 
 ```js
 // anatomy.mjs (PURE). All or nothing, like scene.mjs readGeometry (web/public/sentilab/package/scene.mjs:105-132).
 import { readQuantity, drawnMm } from "./quantity.mjs";
 import { findBareTemperatures } from "./temps.mjs";
-import { INSTANCE_ID, typeOfId } from "./ids.mjs";
-import { canonical } from "../canonical.mjs";                    // web/public/sentilab/canonical.mjs:4-10
+import { INSTANCE_ID, typeOfId, geometryPreimage } from "./ids.mjs";
 import { sha256Hex } from "../view-core.mjs";                     // web/public/sentilab/view-core.mjs:44
 
 export const ANATOMY_SCHEMA = "sentilab-anatomy/1";
@@ -179,7 +196,7 @@ export async function readAssembly(json, anatomy) {
   }
   // ... parents exist and are path prefixes; a drawn child lies inside its nearest DRAWN ancestor's footprint; edges
   //     resolve, and an edge may name an undrawn instance (its connections are kept)
-  const geometry = canonical({ frame: json.frame, instances: json.instances });
+  const geometry = geometryPreimage(json.frame, json.instances);    // sorted by id: source order never matters (AC-14)
   if ((await sha256Hex(new TextEncoder().encode(geometry))) !== json.geometry_sha256) return no("hash_mismatch", "geometry_sha256");
   return { assembly: deepFreeze(json), error: null };
 }
@@ -326,7 +343,8 @@ export function buildRenderModel({ kind, anatomy = null, assembly = null, varian
     notes: out.notes,                                // e.g. "spreader 90 mm and sink 180 mm drawn as outlines"
     not_drawn: out.not_drawn,                        // UNDRAWN instances (SPEC.md §5.3): [{ id, type, parent, label, dims, reason: "size unknown and no render hint" }];
                                                      // the part tree, panel, links and twin use them; bounds, pick(), sectionAt() and fields never do
-    geometry_key: out.geometry_key,                  // canonical() text of { frame, boxes } for the immutability test
+    geometry_key: out.geometry_key,                  // geometryPreimage(frame, this model's instances, drawn and not): the frozen
+                                                     // preimage of SPEC.md §5.0, for the immutability test (AC-12)
   }), error: null };
 }
 

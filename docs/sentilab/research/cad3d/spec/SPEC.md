@@ -33,6 +33,8 @@ moves since lane 3 was written).
     dimensions, carries no box, and is left out of bounds, picking and field association (section 5.3; AC-11).
   - R2 (item 2): labels travel as serialized records. A reader recomputes `labelFor()` from the verified evaluator
     identity, compares the four strings and resolves the canonical in-process `LABELS` object (PL-2; AC-06).
+  - R3 (item 3): `geometry_sha256` has a frozen, versioned preimage (`sentilab-geometry/1`) sorted by stable id, with
+    parent and box associations and no view state; reordering keeps the hash, changed geometry changes it (5.0; AC-14).
 
 ## 1. Goals and non-goals
 
@@ -290,10 +292,23 @@ for the bundled fixture (main:web/public/temperature-label.mjs:24-25, :48-51; L3
   assembly, model stack, layouts, static twins) MUST NOT contain a temperature number in any string or key either
   (PL-4); temperature-valued inputs and literature values are listed in `omitted` with the reason.
 - **Hashes.** Files are pinned by sha256 of their exact bytes, never of a re-serialisation (JavaScript re-serialising
-  Python JSON changes numbers such as `45.0`: main:web/public/verify-core.js:5-6). `geometry_sha256` is the sha256 of
-  `canonical()` (main:web/public/sentilab/canonical.mjs:4-10, the evidence contract's form) over the frame and
-  instances. Layout `content_sha256` values are Python-canonical (README.md:53-59) and are recomputed only by a parser
-  that keeps number text (verify-core.js `parseRaw` and `canonical`, :14, :103).
+  Python JSON changes numbers such as `45.0`: main:web/public/verify-core.js:5-6). `geometry_sha256` follows the
+  frozen geometry preimage below. Layout `content_sha256` values are Python-canonical (README.md:53-59) and are
+  recomputed only by a parser that keeps number text (verify-core.js `parseRaw` and `canonical`, :14, :103).
+- **Geometry preimage, version `sentilab-geometry/1`** (A#57218 item 3). `geometry_sha256` is the lowercase hex
+  sha256 of the UTF-8 bytes of `canonical()` (main:web/public/sentilab/canonical.mjs:4-10: object keys sorted, arrays
+  kept in order, numbers in shortest round-trip form, no whitespace) applied to
+  `{ "v": "sentilab-geometry/1", "frame": <the assembly's frame>, "instances": [...] }`. `instances` holds one record
+  per instance, drawn or not, `{ id, type, parent, variants, drawn, box, array }`: `variants` sorted; `box` the six
+  assembled mm values of a drawn instance and `null` for an undrawn one; `array` a drawn interconnect array's geometry
+  only, `{ class, region, lattice, pitch_mm, diameter_mm, height_mm }` (the drawn values, from `drawnMm()`), else
+  `null`. Records are sorted ascending by `id`: the id grammar is ASCII, so code-unit, code-point and byte order agree,
+  and duplicate ids are refused before hashing. Outside the preimage: labels, notes, bases, `dims`, fact lists, edges,
+  `retired_ids`, `omitted`, and every view state (explode, readable thickening, section, the selected variant, the
+  camera), none of which a caller can pass in. Reordering instances or their variants leaves the hash unchanged;
+  moving a box, re-parenting, or changing a type, a variant membership, the drawn state or an array's geometry changes
+  it. Another preimage shape needs another version string. It is computed in JavaScript (the build script and the
+  page) from `JSON.parse`d values, never in Python. ACCEPTANCE AC-14 pins a golden preimage and its hash.
 
 ### 5.1 Common definitions
 
@@ -645,8 +660,8 @@ Undrawn parts appear in the part tree as `not drawn · size unknown`, keep their
 twin, and are left out of the RenderModel's boxes and bounds, picking, section rectangles and every field
 association. Every `type_edge` exists in the anatomy's `type_edges`; a drawn child lies inside the footprint of its
 nearest drawn ancestor; children that do not sum to their parent's sourced height are not stretched, and the residual
-is shown as a labelled gap (PL-10). `geometry_sha256` covers `frame` and `instances` and is recomputed by
-the page.
+is shown as a labelled gap (PL-10). `geometry_sha256` follows the frozen preimage of section 5.0
+(`sentilab-geometry/1`); the page recomputes it and refuses a mismatch (`hash_mismatch`).
 
 ### 5.4 Model stack `sentilab-model-stack/1` (what the solver simulates)
 
@@ -1216,7 +1231,7 @@ small change (D9). Nothing in phases 1-5 needs that.
 | PL-9 | Statistics are named and never mixed (section 5.6 table). | A#57059; main:docs/sentilab/references/README.md:105-119 |
 | PL-10 | Unknown stays unknown: `unknown` or `not sourced · drawn at X (display only: reason)` in the panel; null plus basis in the twin; never filled silently; sourced children that do not add up to a sourced parent leave a labelled gap. A part whose size is unknown and has no hint is undrawn: it keeps its id, parent and connections, has no box, and is left out of bounds, picking and field association (section 5.3). | task rule 3; L1:parts.json `conventions.thickness_um`; A#57218 item 1 |
 | PL-11 | Instance ids are stable, unique, authored, never reused; removed ids are listed in `retired_ids`. | task rule 3; A#57053 |
-| PL-12 | Assembled geometry is immutable; explode, readable and section are view transforms; lengths, picks and field lookups use assembled coordinates. | task rule 3; A#57053; A#57059 |
+| PL-12 | Assembled geometry is immutable; explode, readable and section are view transforms; lengths, picks and field lookups use assembled coordinates. No view state enters the geometry preimage (section 5.0). | task rule 3; A#57053; A#57059; A#57218 item 3 |
 | PL-13 | Units convert once: µm to mm in `quantity.mjs`, mm to m (and z-up to +Y-up) in the GLB writer. | A#57059 |
 | PL-14 | Overlays draw typical or model paths with their qualifier always visible; no watts or temperatures on arrows; Results draws no flow arrows. | A#57059 |
 | PL-15 | A drawn link is not a routed wire and not a bandwidth; the model's netlist weights and W say so (`wire proxy`). | A#57059; main:sentilab_core/conductor.py:345; README.md:105-108 |

@@ -123,8 +123,8 @@ a `drawn: true` instance without a box is refused; an undrawn instance whose eve
 would occupy returns the drawn part behind it or `null`. Pass: all.
 
 **AC-12 Explode never mutates geometry** (node, browser). After `buildRenderModel()`, `Object.isFrozen` holds for the
-model and every nested object; a write in strict mode throws. Record `geometry_key` (the canonical text of frame and
-boxes), then apply 1,000 random view operations (explode t in [0, 1], readable on/off, section x/y at random positions,
+model and every nested object; a write in strict mode throws. Record `geometry_key` (the geometry preimage of SPEC.md
+§5.0 over the model's instances), then apply 1,000 random view operations (explode t in [0, 1], readable on/off, section x/y at random positions,
 overlay changes, selections, variant toggles that rebuild a new model) and check that every model's `geometry_key` equals
 a fresh build from the same inputs and that the original's is unchanged. Picking the same screen point at t = 0 and
 t = 1 returns the same instance id when that instance is under the point in both; a field lookup returns the same cell
@@ -138,11 +138,34 @@ accessor bounds (x and the glTF z axis), and a 150 µm chip layer as 0.00015 m i
 `scripts/lib/glb.mjs`. Adversarial: a test double that converts twice (0.000045) or never (45 in the GLB) fails.
 Pass: all (A#57059).
 
-**AC-14 Stable instance ids** (node). Every id matches the grammar of SPEC.md §5.0 and is unique; every id of the
-previous release is present or in `retired_ids`; no retired id is reused; GLB node names are unique and equal the ids,
-and `extras.instance_id` repeats them (glTF names are not relied on). Adversarial: reorder the instances in the
-source → identical ids and an identical `geometry_sha256` only if boxes are unchanged (ids are authored, not positional);
-duplicate an id → refused. Pass: all.
+**AC-14 Stable instance ids and an order-free geometry hash** (node). Every id matches the grammar of SPEC.md §5.0
+and is unique; every id of the previous release is present or in `retired_ids`; no retired id is reused; GLB node
+names are unique and equal the ids, and `extras.instance_id` repeats them (glTF names are not relied on). The geometry
+preimage is exactly SPEC.md §5.0's (`sentilab-geometry/1`). Golden fixture: the assembly frame of SPEC.md §5.3 and
+these three instances, in this source order (labels, bases and dims take any valid values: they are outside the
+preimage):
+
+```text
+{"id":"golden/interposer_silicon#1/interposer_tsv#1","type":"interposer_tsv","parent":"golden/interposer_silicon#1","variants":["all"],"drawn":true,"box":{"x0":2,"x1":4,"y0":2,"y1":5,"z0":0,"z1":0.1}}
+{"id":"golden/tim1#1","type":"tim1","parent":null,"variants":["lidded"],"drawn":false}
+{"id":"golden/interposer_silicon#1","type":"interposer_silicon","parent":null,"variants":["lidless","lidded"],"drawn":true,"box":{"x0":0,"x1":30,"y0":0,"y1":25,"z0":0,"z1":0.1}}
+```
+
+`geometryPreimage()` returns exactly these 735 bytes, and `geometry_sha256` is
+`0480119fc57ab1c48d8010c11c695ae593bf9b3775c6234a2b3cb1cd23fffbe9`:
+
+```text
+{"frame":{"length_unit":"mm","origin":"interposer lower-left corner, on the interposer's bottom face","x":"right","y":"up in plan view","z":"out of the board, toward the cooler"},"instances":[{"array":null,"box":{"x0":0,"x1":30,"y0":0,"y1":25,"z0":0,"z1":0.1},"drawn":true,"id":"golden/interposer_silicon#1","parent":null,"type":"interposer_silicon","variants":["lidded","lidless"]},{"array":null,"box":{"x0":2,"x1":4,"y0":2,"y1":5,"z0":0,"z1":0.1},"drawn":true,"id":"golden/interposer_silicon#1/interposer_tsv#1","parent":"golden/interposer_silicon#1","type":"interposer_tsv","variants":["all"]},{"array":null,"box":null,"drawn":false,"id":"golden/tim1#1","parent":null,"type":"tim1","variants":["lidded"]}],"v":"sentilab-geometry/1"}
+```
+
+Adversarial, each against the golden fixture: (a) the instances in reverse order, and one instance's `variants`
+reversed → identical bytes and hash; (b) one box face moved by 0.001 mm, an instance re-parented, a drawn instance
+made undrawn, an instance added or removed (drawn or undrawn), a type changed or a variant membership changed → a
+different hash; (c) only a `label`, `note`, `basis`, `dims` or fact list changed → the same hash (the file pin still
+changes); (d) explode, readable thickening, a section plane, a variant switch or an orbit applied to the RenderModel →
+no preimage input changes (the function takes no view state); (e) a duplicated id → refused before hashing. Pass: all
+(the golden bytes and hash were produced with main's `canonical()` while writing this version, and re-hashed
+independently: TRACE.md section 5).
 
 **AC-15 Section parity** (node, browser). For the same model, plane and display state, the 3D cap rectangles and the
 SVG fallback rectangles come from the same `sectionAt()` call: node compares them exactly; the browser compares counts
