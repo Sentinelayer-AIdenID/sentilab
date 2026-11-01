@@ -1,0 +1,1964 @@
+{
+ "manifests": {
+  "A": {
+   "schema": "sentilab-open-manifest/1",
+   "version": 0,
+   "status": "draft: provisional fields; not a signed manifest",
+   "problem": "ascend910",
+   "fixture": {
+    "id": "ascend910-45mm",
+    "config": "sundai_tap/configs/sys_ascend910_45mm.cfg",
+    "config_sha256": "4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c",
+    "frame_um": 45000,
+    "origin": "frame lower-left",
+    "ambient_c": 45,
+    "link_type": "nppl",
+    "package": {
+     "hotspot_config_sha256": null,
+     "assumptions": "steady state, uniform power per die"
+    }
+   },
+   "dies": [
+    {
+     "die": 0,
+     "unit": "Chiplet_0",
+     "name": "compute",
+     "w_um": 14500,
+     "h_um": 31400,
+     "power_w": 256,
+     "halo_um": 90,
+     "rot_deg": [
+      0,
+      90
+     ]
+    },
+    {
+     "die": 1,
+     "unit": "Chiplet_1",
+     "name": "io",
+     "w_um": 10500,
+     "h_um": 16000,
+     "power_w": 14,
+     "halo_um": 45,
+     "rot_deg": [
+      0,
+      90
+     ]
+    },
+    {
+     "die": 2,
+     "unit": "Chiplet_2",
+     "name": "hbm",
+     "w_um": 7750,
+     "h_um": 11870,
+     "power_w": 20,
+     "halo_um": 45,
+     "rot_deg": [
+      0,
+      90
+     ]
+    },
+    {
+     "die": 3,
+     "unit": "Chiplet_3",
+     "name": "hbm",
+     "w_um": 7750,
+     "h_um": 11870,
+     "power_w": 20,
+     "halo_um": 45,
+     "rot_deg": [
+      0,
+      90
+     ]
+    },
+    {
+     "die": 4,
+     "unit": "Chiplet_4",
+     "name": "hbm",
+     "w_um": 7750,
+     "h_um": 11870,
+     "power_w": 20,
+     "halo_um": 45,
+     "rot_deg": [
+      0,
+      90
+     ]
+    },
+    {
+     "die": 5,
+     "unit": "Chiplet_5",
+     "name": "hbm",
+     "w_um": 7750,
+     "h_um": 11870,
+     "power_w": 20,
+     "halo_um": 45,
+     "rot_deg": [
+      0,
+      90
+     ]
+    }
+   ],
+   "netlist": {
+    "matrix": [
+     [
+      0,
+      200,
+      256,
+      256,
+      256,
+      256
+     ],
+     [
+      200,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      256,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      256,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      256,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      256,
+      0,
+      0,
+      0,
+      0,
+      0
+     ]
+    ],
+    "counting": {
+     "routed": "each ordered pair with R[i][j]>0 is a directed net of R[i][j] wires",
+     "proxy": "each unordered pair once"
+    }
+   },
+   "legality": {
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "lattice_rationale": "declared finite engineering benchmark choice (A11)",
+    "margin_um": 500,
+    "min_die_gap_um": 100,
+    "min_die_gap_rationale": "TAP-2.5D Eqn. (10)",
+    "halo": "uniform ring per die; rotation-invariant",
+    "keepouts": [],
+    "rotation": "per_die_90"
+   },
+   "references": {
+    "file_sha256": null,
+    "comparator": {
+     "id": "ascend910-tap25d-fig6a/raw",
+     "continuous": true,
+     "legal_on_fixture": false,
+     "content_sha256": "0046e17b3e33feef14e570eb6a2026e17c3eea5c232160a052be62c2ae8e470e",
+     "T_R": "UNKNOWN",
+     "T_R_measurement_id": null,
+     "W_R_mm": 16417.5
+    },
+    "engineering_variants": [
+     {
+      "id": "ascend910-tap25d-fig6a-snap0p5",
+      "role": "engineering baseline",
+      "content_sha256": "e0c7ce9eb641ee6aea7d2015e5bc0fc5e3f38f1759c2c2252f14ad5104af022a",
+      "design_hash": "224f2ea088fc50f5eb209a44f1a82fa3704c06037456dc6976657df105c6c9e0"
+     },
+     {
+      "id": "ascend910-tap25d-fig6a/snapped-1mm",
+      "role": "history; superseded as baseline",
+      "content_sha256": "45b0f7e05b82a5eedad1679d751f5684e98ef35c936db54aeea9b475ae397703"
+     }
+    ],
+    "published_targets": {
+     "source": "Ma et al., DATE 2021, Fig. 6(a)",
+     "T_c": 75.48,
+     "W_mm": 16426,
+     "use": "paper-target diagnostic only"
+    }
+   },
+   "statistic": {
+    "id": "M",
+    "definition": "max native GRID_CENTER value over the enumerated real chiplets",
+    "real_chiplets": [
+     "Chiplet_0",
+     "Chiplet_1",
+     "Chiplet_2",
+     "Chiplet_3",
+     "Chiplet_4",
+     "Chiplet_5"
+    ],
+    "centre_mapping": "GRID_CENTER: mean of 1, 2 or 4 central cells (pinned)",
+    "record_field": "chiplet_centre_mapping.max_C",
+    "grid": 64,
+    "retained_separately": [
+     "active_layer_grid_peak",
+     "historical_tap_stdout_selector.literal_on_stdout"
+    ],
+    "evaluator": {
+     "kind": "hotspot6",
+     "upstream": "a7a3286e368867c26381e0a23e36b3e273bdeda9",
+     "binary_sha256": null,
+     "gate_zero_record_sha256": null,
+     "build": null,
+     "runtime": null
+    },
+    "numerical_admission": "UNKNOWN"
+   },
+   "wire": {
+    "metric": "routed",
+    "router_sha256": null,
+    "solver": "HiGHS MILP, mip_rel_gap 0",
+    "status_acceptance": "proven optimum within the solver limit",
+    "proxy": "diagnostic only"
+   },
+   "policy": {
+    "status": "provisional; policy choices, not uncertainty; fixed before any candidate is scored",
+    "D_K": null,
+    "r": null,
+    "B_T_K": null,
+    "B_W_mm": null,
+    "B_W_basis": "W_R_mm",
+    "T_limit_C": null,
+    "proposed_in_draft": {
+     "D_K": 0.5,
+     "r": 0.05,
+     "B_T_K": 1.0,
+     "B_W_fraction": 0.02,
+     "T_limit_C": 85
+    },
+    "tradeoff_budgets_r": [
+     0.1,
+     0.25,
+     0.5,
+     1.0
+    ]
+   },
+   "bounds": {
+    "u_T": "UNKNOWN",
+    "u_q": "UNKNOWN",
+    "u_abs": "UNKNOWN"
+   },
+   "claims": {
+    "display_order": [
+     "declared temperature target",
+     "strict-wire thermal tolerance",
+     "r-relaxed-wire thermal tolerance",
+     "strict thermal improvement",
+     "strict wire improvement",
+     "wire improvement with allowed thermal degradation",
+     "robust dominance over R"
+    ],
+    "suppressed_by": [
+     "failed gate zero",
+     "failed binding",
+     "failed predicate fixture",
+     "failed required scenario"
+    ]
+   },
+   "screen": {
+    "claim": "passes the listed sensitivity cases",
+    "missing": "INCOMPLETE",
+    "failed": "INCONCLUSIVE",
+    "scenarios": [
+     {
+      "id": "nominal",
+      "applies_to": "both",
+      "grid": 64
+     },
+     {
+      "id": "mesh-32",
+      "applies_to": "both",
+      "grid": 32
+     },
+     {
+      "id": "position-<die>-<axis>-<sign>",
+      "applies_to": "R",
+      "cases": "raw-R inventory (A12): separately counted, profiled and granted"
+     }
+    ]
+   },
+   "evaluation_bundle": {
+    "status": "provisional",
+    "per_entry": [
+     {
+      "phase": "evaluate",
+      "grid": 64,
+      "suballocation": "native.evaluate"
+     },
+     {
+      "phase": "replay",
+      "grid": 64,
+      "suballocation": "native.replay"
+     },
+     {
+      "phase": "mesh",
+      "grid": 32,
+      "suballocation": "native.mesh"
+     },
+     {
+      "phase": "route",
+      "suballocation": "routing"
+     }
+    ],
+    "per_manifest": "R's scenario cases",
+    "lifecycle_suballocation": "lifecycle",
+    "intake_suballocation": "intake",
+    "ceilings_cpu_s": null
+   },
+   "checks": {
+    "solver_time_limit_s": 2,
+    "check_wall_s": 5,
+    "cleanup_headroom_s": null,
+    "cpu_reserve_s": null,
+    "cpu_enforcement": "live process-tree CPU, enforced while running",
+    "cpu_enforcement_evidence_sha256": null,
+    "cpu_overrun": "detected at settlement on measured process-tree CPU; charged",
+    "status_access": "salted request_sha256 handle or authorized access",
+    "suballocation": "checks"
+   },
+   "ties": "ascending T_M, then geometry hash",
+   "failures": "retained; no automatic retry",
+   "limits": {
+    "status": "provisional (OP-W1)",
+    "eval_per_account_hour": 3,
+    "eval_per_account_day": 12,
+    "eval_room_hour": 20,
+    "eval_room_day": 120,
+    "queue_max": 30,
+    "warden_call_policy_hour": 40,
+    "code_cpu_s_per_hour_per_root": 600,
+    "code_default_solve_reserve_cpu_s": 15,
+    "check_per_account_hour": 30,
+    "check_room_hour": 600
+   },
+   "terms": {
+    "accepted_versions": [],
+    "retention": null
+   },
+   "intake": {
+    "order": [
+     "createdAt",
+     "action_id",
+     "room_id"
+    ],
+    "cursor": "auditWindow.nextCursor, saved after durable processing",
+    "revision": "1 only"
+   },
+   "transport_key": {
+    "schema": "sentilab-open-transport-key/1",
+    "prefix": "so1-",
+    "hex_chars": 48,
+    "fields": [
+     "room",
+     "account",
+     "actor_slot",
+     "manifest_id",
+     "logical_key",
+     "content_sha256"
+    ]
+   },
+   "disclosure": {
+    "at_opening": [
+     "reference geometry",
+     "frozen SentiLab baseline"
+    ],
+    "entries": "public only by explicit choice; private sealed; revealed only by a logged publish choice"
+   },
+   "pseudonym": {
+    "rule": "HMAC-SHA256(k_challenge, account_id)",
+    "scope": "per challenge"
+   },
+   "exposure": {
+    "sources": [
+     "TAP-2.5D paper PDF b209f51a…",
+     "Fig. 6(a)-(c)",
+     "Fig. 5(a)-(d)",
+     "sys_ascend910_45mm.cfg",
+     "sys_micro150_45mm.cfg"
+    ],
+    "note": "exposed families: mark when building any future held-out split"
+   },
+   "sealing": {
+    "format": "age X25519, ASCII armour",
+    "recipient": null,
+    "key_version": null,
+    "applies_to": [
+     "private proposals",
+     "private routed checks",
+     "publish commands"
+    ],
+    "plaintext_max_bytes": 4096,
+    "sealed_note_max_bytes": 8192,
+    "plaintext_fallback": false,
+    "rotation": "new key version and new manifest version; old keys kept in custody, never reused"
+   },
+   "example": {
+    "label": "invented numbers",
+    "inputs": null
+   },
+   "window": {
+    "opens_at": null,
+    "closes_at": null
+   },
+   "refs": {
+    "grant": null,
+    "claim_rules": null,
+    "checker_sha256": null
+   },
+   "submission": {
+    "threads": null
+   }
+  },
+  "M": {
+   "schema": "sentilab-open-manifest/1",
+   "version": 0,
+   "status": "draft: provisional fields; not a signed manifest",
+   "problem": "micro150",
+   "fixture": {
+    "id": "micro150-45mm",
+    "config": "sundai_tap/configs/sys_micro150_45mm.cfg",
+    "config_sha256": "de6e3edbed848f1bd81758a92f72a1f0b6aa5ffa60aca3153a324cf7a78d9ffd",
+    "frame_um": 45000,
+    "origin": "frame lower-left",
+    "ambient_c": 45,
+    "link_type": "nppl",
+    "package": {
+     "hotspot_config_sha256": null,
+     "assumptions": "steady state, uniform power per die"
+    }
+   },
+   "dies": [
+    {
+     "die": 0,
+     "unit": "Chiplet_0",
+     "name": "cpu",
+     "w_um": 8250,
+     "h_um": 9000,
+     "power_w": 150,
+     "halo_um": 180,
+     "rot_deg": [
+      0,
+      90
+     ]
+    },
+    {
+     "die": 1,
+     "unit": "Chiplet_1",
+     "name": "cpu",
+     "w_um": 8250,
+     "h_um": 9000,
+     "power_w": 150,
+     "halo_um": 180,
+     "rot_deg": [
+      0,
+      90
+     ]
+    },
+    {
+     "die": 2,
+     "unit": "Chiplet_2",
+     "name": "cpu",
+     "w_um": 8250,
+     "h_um": 9000,
+     "power_w": 150,
+     "halo_um": 180,
+     "rot_deg": [
+      0,
+      90
+     ]
+    },
+    {
+     "die": 3,
+     "unit": "Chiplet_3",
+     "name": "cpu",
+     "w_um": 8250,
+     "h_um": 9000,
+     "power_w": 150,
+     "halo_um": 180,
+     "rot_deg": [
+      0,
+      90
+     ]
+    },
+    {
+     "die": 4,
+     "unit": "Chiplet_4",
+     "name": "dram",
+     "w_um": 8750,
+     "h_um": 8750,
+     "power_w": 20,
+     "halo_um": 135,
+     "rot_deg": [
+      0
+     ]
+    },
+    {
+     "die": 5,
+     "unit": "Chiplet_5",
+     "name": "dram",
+     "w_um": 8750,
+     "h_um": 8750,
+     "power_w": 20,
+     "halo_um": 135,
+     "rot_deg": [
+      0
+     ]
+    },
+    {
+     "die": 6,
+     "unit": "Chiplet_6",
+     "name": "dram",
+     "w_um": 8750,
+     "h_um": 8750,
+     "power_w": 20,
+     "halo_um": 135,
+     "rot_deg": [
+      0
+     ]
+    },
+    {
+     "die": 7,
+     "unit": "Chiplet_7",
+     "name": "dram",
+     "w_um": 8750,
+     "h_um": 8750,
+     "power_w": 20,
+     "halo_um": 135,
+     "rot_deg": [
+      0
+     ]
+    }
+   ],
+   "netlist": {
+    "matrix": [
+     [
+      0,
+      256,
+      0,
+      256,
+      1024,
+      0,
+      0,
+      0
+     ],
+     [
+      256,
+      0,
+      256,
+      0,
+      0,
+      1024,
+      0,
+      0
+     ],
+     [
+      0,
+      256,
+      0,
+      256,
+      0,
+      0,
+      1024,
+      0
+     ],
+     [
+      256,
+      0,
+      256,
+      0,
+      0,
+      0,
+      0,
+      1024
+     ],
+     [
+      1024,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      1024,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      1024,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     [
+      0,
+      0,
+      0,
+      1024,
+      0,
+      0,
+      0,
+      0
+     ]
+    ],
+    "counting": {
+     "routed": "each ordered pair with R[i][j]>0 is a directed net of R[i][j] wires",
+     "proxy": "each unordered pair once"
+    }
+   },
+   "legality": {
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "lattice_rationale": "declared finite engineering benchmark choice (A11)",
+    "margin_um": 500,
+    "min_die_gap_um": 100,
+    "min_die_gap_rationale": "TAP-2.5D Eqn. (10)",
+    "halo": "uniform ring per die; rotation-invariant",
+    "keepouts": [],
+    "rotation": "per_die_90"
+   },
+   "references": {
+    "file_sha256": null,
+    "comparator": {
+     "id": "micro150-tap25d-fig5a/raw",
+     "continuous": true,
+     "legal_on_fixture": false,
+     "content_sha256": "6e541158ef9cec4e9e8eed469325490d7902e5175e7a41925bad72f900a5fce9",
+     "T_R": "UNKNOWN",
+     "T_R_measurement_id": null,
+     "W_R_mm": 67688.4
+    },
+    "engineering_variants": [
+     {
+      "id": "micro150-tap25d-fig5a-snap0p5",
+      "role": "engineering baseline",
+      "content_sha256": "ecfca7f46fd422f6c35ee35cf7c9ffc97f2a0a627907a69f03891910bc248be9",
+      "design_hash": "0f806acbd50c8847d27509e4e179453cd006444c5adcd7b36413115394d0807f"
+     },
+     {
+      "id": "micro150-tap25d-fig5a/snapped-1mm",
+      "role": "history; superseded as baseline",
+      "content_sha256": "9fee13e0b37d830e3ae1e749cb0bc0d84679de1a6dea03e41ad2e5d8aeea6bbb"
+     }
+    ],
+    "published_targets": {
+     "source": "Ma et al., DATE 2021, Fig. 5(a)",
+     "T_c": 115.94,
+     "W_mm": 67686,
+     "use": "paper-target diagnostic only"
+    }
+   },
+   "statistic": {
+    "id": "M",
+    "definition": "max native GRID_CENTER value over the enumerated real chiplets",
+    "real_chiplets": [
+     "Chiplet_0",
+     "Chiplet_1",
+     "Chiplet_2",
+     "Chiplet_3",
+     "Chiplet_4",
+     "Chiplet_5",
+     "Chiplet_6",
+     "Chiplet_7"
+    ],
+    "centre_mapping": "GRID_CENTER: mean of 1, 2 or 4 central cells (pinned)",
+    "record_field": "chiplet_centre_mapping.max_C",
+    "grid": 64,
+    "retained_separately": [
+     "active_layer_grid_peak",
+     "historical_tap_stdout_selector.literal_on_stdout"
+    ],
+    "evaluator": {
+     "kind": "hotspot6",
+     "upstream": "a7a3286e368867c26381e0a23e36b3e273bdeda9",
+     "binary_sha256": null,
+     "gate_zero_record_sha256": null,
+     "build": null,
+     "runtime": null
+    },
+    "numerical_admission": "UNKNOWN"
+   },
+   "wire": {
+    "metric": "routed",
+    "router_sha256": null,
+    "solver": "HiGHS MILP, mip_rel_gap 0",
+    "status_acceptance": "proven optimum within the solver limit",
+    "proxy": "diagnostic only"
+   },
+   "policy": {
+    "status": "provisional; policy choices, not uncertainty; fixed before any candidate is scored",
+    "D_K": null,
+    "r": null,
+    "B_T_K": null,
+    "B_W_mm": null,
+    "B_W_basis": "W_R_mm",
+    "T_limit_C": null,
+    "proposed_in_draft": {
+     "D_K": 0.5,
+     "r": 0.05,
+     "B_T_K": 1.0,
+     "B_W_fraction": 0.02,
+     "T_limit_C": 85
+    },
+    "tradeoff_budgets_r": [
+     0.1,
+     0.25,
+     0.5,
+     1.0
+    ]
+   },
+   "bounds": {
+    "u_T": "UNKNOWN",
+    "u_q": "UNKNOWN",
+    "u_abs": "UNKNOWN"
+   },
+   "claims": {
+    "display_order": [
+     "declared temperature target",
+     "strict-wire thermal tolerance",
+     "r-relaxed-wire thermal tolerance",
+     "strict thermal improvement",
+     "strict wire improvement",
+     "wire improvement with allowed thermal degradation",
+     "robust dominance over R"
+    ],
+    "suppressed_by": [
+     "failed gate zero",
+     "failed binding",
+     "failed predicate fixture",
+     "failed required scenario"
+    ]
+   },
+   "screen": {
+    "claim": "passes the listed sensitivity cases",
+    "missing": "INCOMPLETE",
+    "failed": "INCONCLUSIVE",
+    "scenarios": [
+     {
+      "id": "nominal",
+      "applies_to": "both",
+      "grid": 64
+     },
+     {
+      "id": "mesh-32",
+      "applies_to": "both",
+      "grid": 32
+     },
+     {
+      "id": "position-<die>-<axis>-<sign>",
+      "applies_to": "R",
+      "cases": "raw-R inventory (A12): separately counted, profiled and granted"
+     }
+    ]
+   },
+   "evaluation_bundle": {
+    "status": "provisional",
+    "per_entry": [
+     {
+      "phase": "evaluate",
+      "grid": 64,
+      "suballocation": "native.evaluate"
+     },
+     {
+      "phase": "replay",
+      "grid": 64,
+      "suballocation": "native.replay"
+     },
+     {
+      "phase": "mesh",
+      "grid": 32,
+      "suballocation": "native.mesh"
+     },
+     {
+      "phase": "route",
+      "suballocation": "routing"
+     }
+    ],
+    "per_manifest": "R's scenario cases",
+    "lifecycle_suballocation": "lifecycle",
+    "intake_suballocation": "intake",
+    "ceilings_cpu_s": null
+   },
+   "checks": {
+    "solver_time_limit_s": 2,
+    "check_wall_s": 5,
+    "cleanup_headroom_s": null,
+    "cpu_reserve_s": null,
+    "cpu_enforcement": "live process-tree CPU, enforced while running",
+    "cpu_enforcement_evidence_sha256": null,
+    "cpu_overrun": "detected at settlement on measured process-tree CPU; charged",
+    "status_access": "salted request_sha256 handle or authorized access",
+    "suballocation": "checks"
+   },
+   "ties": "ascending T_M, then geometry hash",
+   "failures": "retained; no automatic retry",
+   "limits": {
+    "status": "provisional (OP-W1)",
+    "eval_per_account_hour": 3,
+    "eval_per_account_day": 12,
+    "eval_room_hour": 20,
+    "eval_room_day": 120,
+    "queue_max": 30,
+    "warden_call_policy_hour": 40,
+    "code_cpu_s_per_hour_per_root": 600,
+    "code_default_solve_reserve_cpu_s": 15,
+    "check_per_account_hour": 30,
+    "check_room_hour": 600
+   },
+   "terms": {
+    "accepted_versions": [],
+    "retention": null
+   },
+   "intake": {
+    "order": [
+     "createdAt",
+     "action_id",
+     "room_id"
+    ],
+    "cursor": "auditWindow.nextCursor, saved after durable processing",
+    "revision": "1 only"
+   },
+   "transport_key": {
+    "schema": "sentilab-open-transport-key/1",
+    "prefix": "so1-",
+    "hex_chars": 48,
+    "fields": [
+     "room",
+     "account",
+     "actor_slot",
+     "manifest_id",
+     "logical_key",
+     "content_sha256"
+    ]
+   },
+   "disclosure": {
+    "at_opening": [
+     "reference geometry",
+     "frozen SentiLab baseline"
+    ],
+    "entries": "public only by explicit choice; private sealed; revealed only by a logged publish choice"
+   },
+   "pseudonym": {
+    "rule": "HMAC-SHA256(k_challenge, account_id)",
+    "scope": "per challenge"
+   },
+   "exposure": {
+    "sources": [
+     "TAP-2.5D paper PDF b209f51a…",
+     "Fig. 6(a)-(c)",
+     "Fig. 5(a)-(d)",
+     "sys_ascend910_45mm.cfg",
+     "sys_micro150_45mm.cfg"
+    ],
+    "note": "exposed families: mark when building any future held-out split"
+   },
+   "sealing": {
+    "format": "age X25519, ASCII armour",
+    "recipient": null,
+    "key_version": null,
+    "applies_to": [
+     "private proposals",
+     "private routed checks",
+     "publish commands"
+    ],
+    "plaintext_max_bytes": 4096,
+    "sealed_note_max_bytes": 8192,
+    "plaintext_fallback": false,
+    "rotation": "new key version and new manifest version; old keys kept in custody, never reused"
+   },
+   "example": {
+    "label": "invented numbers",
+    "inputs": null
+   },
+   "window": {
+    "opens_at": null,
+    "closes_at": null
+   },
+   "refs": {
+    "grant": null,
+    "claim_rules": null,
+    "checker_sha256": null
+   },
+   "submission": {
+    "threads": null
+   }
+  },
+  "F": {
+   "schema": "sentilab-open-manifest/1",
+   "version": 1,
+   "status": "signed",
+   "problem": "test-two-die",
+   "fixture": {
+    "id": "test-two-die-10mm",
+    "config": "test/two-die-10mm.cfg",
+    "config_sha256": "89ff080af6a70e7ec40ef7917f79a3cabe27ce3a9755b24030aec9577379a6b0",
+    "frame_um": 10000,
+    "origin": "frame lower-left",
+    "ambient_c": 45,
+    "link_type": "nppl",
+    "package": {
+     "hotspot_config_sha256": "b74080c9d3147b003822aae8c6a69bc32b8938c75010f847d26edfeaacc92599",
+     "assumptions": "steady state, uniform power per die"
+    }
+   },
+   "dies": [
+    {
+     "die": 0,
+     "unit": "Chiplet_0",
+     "name": "a",
+     "w_um": 2000,
+     "h_um": 3000,
+     "power_w": 10,
+     "halo_um": 50,
+     "rot_deg": [
+      0,
+      90
+     ]
+    },
+    {
+     "die": 1,
+     "unit": "Chiplet_1",
+     "name": "b",
+     "w_um": 2000,
+     "h_um": 2000,
+     "power_w": 5,
+     "halo_um": 50,
+     "rot_deg": [
+      0
+     ]
+    }
+   ],
+   "netlist": {
+    "matrix": [
+     [
+      0,
+      4
+     ],
+     [
+      4,
+      0
+     ]
+    ],
+    "counting": {
+     "routed": "each ordered pair with R[i][j]>0 is a directed net of R[i][j] wires",
+     "proxy": "each unordered pair once"
+    }
+   },
+   "legality": {
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "lattice_rationale": "declared finite engineering benchmark choice (A11)",
+    "margin_um": 500,
+    "min_die_gap_um": 100,
+    "min_die_gap_rationale": "TAP-2.5D Eqn. (10)",
+    "halo": "uniform ring per die; rotation-invariant",
+    "keepouts": [],
+    "rotation": "per_die_90"
+   },
+   "references": {
+    "file_sha256": "23ae2cd26db9431963e222fcbdfeaafee2457a66688b842d3603f1fd944f0bab",
+    "comparator": {
+     "id": "test-two-die-ref/raw",
+     "continuous": true,
+     "legal_on_fixture": false,
+     "content_sha256": "b2c241a84c91c652c188102cc9ba1412a191474d6b27785c979176199d1ab332",
+     "T_R": 60.0,
+     "T_R_measurement_id": "7be7483076a1c4737b27ed9e3de46e39d04ebb1743c281a70c0a58a4f2d9d6c7",
+     "W_R_mm": 100.0
+    },
+    "engineering_variants": [
+     {
+      "id": "test-two-die-ref-snap0p5",
+      "role": "engineering baseline",
+      "content_sha256": "d99bbb1a57ab522a23b9e86c8741b34f34b14a25c25106133cf9c2e8c21855a9",
+      "design_hash": "aa5091fb0f156f8463567b88612c1554b78bd4be32d98fd42f8597e91007fdde"
+     }
+    ],
+    "published_targets": {
+     "source": "illustrative fixture: no paper",
+     "T_c": 60.5,
+     "W_mm": 101,
+     "use": "paper-target diagnostic only"
+    }
+   },
+   "statistic": {
+    "id": "M",
+    "definition": "max native GRID_CENTER value over the enumerated real chiplets",
+    "real_chiplets": [
+     "Chiplet_0",
+     "Chiplet_1"
+    ],
+    "centre_mapping": "GRID_CENTER: mean of 1, 2 or 4 central cells (pinned)",
+    "record_field": "chiplet_centre_mapping.max_C",
+    "grid": 64,
+    "retained_separately": [
+     "active_layer_grid_peak",
+     "historical_tap_stdout_selector.literal_on_stdout"
+    ],
+    "evaluator": {
+     "kind": "hotspot6",
+     "upstream": "a7a3286e368867c26381e0a23e36b3e273bdeda9",
+     "binary_sha256": "6269f3141239e442cd8c09095554340319a26b282ea610fb8315aedeb2d28f16",
+     "gate_zero_record_sha256": "4babe3499b426d5152d7ce4fa33a53c4c45256c7b643b358bc6fefc34ef3596c",
+     "build": "sha256:b5d979cb9f4e6bdc50ffac0972c8c4f72c2ec12c2ca098f995a0a2771c9be199",
+     "runtime": "fixture-no-solver"
+    },
+    "numerical_admission": "admitted"
+   },
+   "wire": {
+    "metric": "routed",
+    "router_sha256": "5427e2539d2801f20030704f217a1999b090f02c05c8661c703fa64dc53aa2b6",
+    "solver": "HiGHS MILP, mip_rel_gap 0",
+    "status_acceptance": "proven optimum within the solver limit",
+    "proxy": "diagnostic only"
+   },
+   "policy": {
+    "status": "frozen; policy choices, not uncertainty; fixed before any candidate is scored",
+    "D_K": 0.5,
+    "r": 0.05,
+    "B_T_K": 1.0,
+    "B_W_mm": 2.0,
+    "B_W_basis": "W_R_mm",
+    "T_limit_C": 85,
+    "proposed_in_draft": null,
+    "tradeoff_budgets_r": [
+     0.1,
+     0.25,
+     0.5,
+     1.0
+    ]
+   },
+   "bounds": {
+    "u_T": "UNKNOWN",
+    "u_q": "UNKNOWN",
+    "u_abs": "UNKNOWN"
+   },
+   "claims": {
+    "display_order": [
+     "declared temperature target",
+     "strict-wire thermal tolerance",
+     "r-relaxed-wire thermal tolerance",
+     "strict thermal improvement",
+     "strict wire improvement",
+     "wire improvement with allowed thermal degradation",
+     "robust dominance over R"
+    ],
+    "suppressed_by": [
+     "failed gate zero",
+     "failed binding",
+     "failed predicate fixture",
+     "failed required scenario"
+    ]
+   },
+   "screen": {
+    "claim": "passes the listed sensitivity cases",
+    "missing": "INCOMPLETE",
+    "failed": "INCONCLUSIVE",
+    "scenarios": [
+     {
+      "id": "nominal",
+      "applies_to": "both",
+      "grid": 64
+     },
+     {
+      "id": "mesh-32",
+      "applies_to": "both",
+      "grid": 32
+     },
+     {
+      "id": "position-0-x-plus",
+      "applies_to": "R",
+      "grid": 64
+     },
+     {
+      "id": "position-0-x-minus",
+      "applies_to": "R",
+      "grid": 64
+     }
+    ]
+   },
+   "evaluation_bundle": {
+    "status": "frozen",
+    "per_entry": [
+     {
+      "phase": "evaluate",
+      "grid": 64,
+      "suballocation": "native.evaluate"
+     },
+     {
+      "phase": "replay",
+      "grid": 64,
+      "suballocation": "native.replay"
+     },
+     {
+      "phase": "mesh",
+      "grid": 32,
+      "suballocation": "native.mesh"
+     },
+     {
+      "phase": "route",
+      "suballocation": "routing"
+     }
+    ],
+    "per_manifest": "R's scenario cases",
+    "lifecycle_suballocation": "lifecycle",
+    "intake_suballocation": "intake",
+    "ceilings_cpu_s": {
+     "native.evaluate": 15,
+     "native.replay": 15,
+     "native.mesh": 15,
+     "native.reference": 60,
+     "routing": 5,
+     "lifecycle": 2,
+     "checks": 6,
+     "intake": 1
+    }
+   },
+   "checks": {
+    "solver_time_limit_s": 2,
+    "check_wall_s": 5,
+    "cleanup_headroom_s": 1,
+    "cpu_reserve_s": 6,
+    "cpu_enforcement": "live process-tree CPU, enforced while running",
+    "cpu_enforcement_evidence_sha256": "9b3908465b77c771709cc3c5612125c00a7e24ce2fb6157ae485ebe23054748e",
+    "cpu_overrun": "detected at settlement on measured process-tree CPU; charged",
+    "status_access": "salted request_sha256 handle or authorized access",
+    "suballocation": "checks"
+   },
+   "ties": "ascending T_M, then geometry hash",
+   "failures": "retained; no automatic retry",
+   "limits": {
+    "status": "frozen (test)",
+    "eval_per_account_hour": 3,
+    "eval_per_account_day": 12,
+    "eval_room_hour": 20,
+    "eval_room_day": 120,
+    "queue_max": 30,
+    "warden_call_policy_hour": 40,
+    "code_cpu_s_per_hour_per_root": 600,
+    "code_default_solve_reserve_cpu_s": 15,
+    "check_per_account_hour": 30,
+    "check_room_hour": 600
+   },
+   "terms": {
+    "accepted_versions": [
+     "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175"
+    ],
+    "retention": "P2Y"
+   },
+   "intake": {
+    "order": [
+     "createdAt",
+     "action_id",
+     "room_id"
+    ],
+    "cursor": "auditWindow.nextCursor, saved after durable processing",
+    "revision": "1 only"
+   },
+   "transport_key": {
+    "schema": "sentilab-open-transport-key/1",
+    "prefix": "so1-",
+    "hex_chars": 48,
+    "fields": [
+     "room",
+     "account",
+     "actor_slot",
+     "manifest_id",
+     "logical_key",
+     "content_sha256"
+    ]
+   },
+   "disclosure": {
+    "at_opening": [
+     "reference geometry",
+     "frozen SentiLab baseline"
+    ],
+    "entries": "public only by explicit choice; private sealed; revealed only by a logged publish choice"
+   },
+   "pseudonym": {
+    "rule": "HMAC-SHA256(k_challenge, account_id)",
+    "scope": "per challenge"
+   },
+   "exposure": {
+    "sources": [
+     "illustrative fixture: no paper"
+    ],
+    "note": "exposed families: mark when building any future held-out split"
+   },
+   "sealing": {
+    "format": "age X25519, ASCII armour",
+    "recipient": "age1mldu5f39p2ur6dmwel9aq0jvct57a3c7dwyeu278vn403nngcy3qnrk55u",
+    "key_version": 1,
+    "applies_to": [
+     "private proposals",
+     "private routed checks",
+     "publish commands"
+    ],
+    "plaintext_max_bytes": 4096,
+    "sealed_note_max_bytes": 8192,
+    "plaintext_fallback": false,
+    "rotation": "new key version and new manifest version; old keys kept in custody, never reused"
+   },
+   "example": {
+    "label": "invented numbers",
+    "inputs": {
+     "W_c_mm": 98.0
+    }
+   },
+   "window": {
+    "opens_at": "2026-11-01T00:00:00Z",
+    "closes_at": "2026-11-08T00:00:00Z"
+   },
+   "refs": {
+    "grant": "test-grant",
+    "claim_rules": "test-claim-rules",
+    "checker_sha256": "f1689542fc3cdc851b5a0c6fbc6ffe04ddf25e7f837a33ba9caa9dd312a6c165"
+   },
+   "submission": {
+    "threads": null
+   }
+  },
+  "F2": {
+   "schema": "sentilab-open-manifest/1",
+   "version": 2,
+   "status": "signed",
+   "problem": "test-two-die",
+   "fixture": {
+    "id": "test-two-die-10mm",
+    "config": "test/two-die-10mm.cfg",
+    "config_sha256": "89ff080af6a70e7ec40ef7917f79a3cabe27ce3a9755b24030aec9577379a6b0",
+    "frame_um": 10000,
+    "origin": "frame lower-left",
+    "ambient_c": 45,
+    "link_type": "nppl",
+    "package": {
+     "hotspot_config_sha256": "b74080c9d3147b003822aae8c6a69bc32b8938c75010f847d26edfeaacc92599",
+     "assumptions": "steady state, uniform power per die"
+    }
+   },
+   "dies": [
+    {
+     "die": 0,
+     "unit": "Chiplet_0",
+     "name": "a",
+     "w_um": 2000,
+     "h_um": 3000,
+     "power_w": 10,
+     "halo_um": 50,
+     "rot_deg": [
+      0,
+      90
+     ]
+    },
+    {
+     "die": 1,
+     "unit": "Chiplet_1",
+     "name": "b",
+     "w_um": 2000,
+     "h_um": 2000,
+     "power_w": 5,
+     "halo_um": 50,
+     "rot_deg": [
+      0
+     ]
+    }
+   ],
+   "netlist": {
+    "matrix": [
+     [
+      0,
+      4
+     ],
+     [
+      4,
+      0
+     ]
+    ],
+    "counting": {
+     "routed": "each ordered pair with R[i][j]>0 is a directed net of R[i][j] wires",
+     "proxy": "each unordered pair once"
+    }
+   },
+   "legality": {
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "lattice_rationale": "declared finite engineering benchmark choice (A11)",
+    "margin_um": 500,
+    "min_die_gap_um": 100,
+    "min_die_gap_rationale": "TAP-2.5D Eqn. (10)",
+    "halo": "uniform ring per die; rotation-invariant",
+    "keepouts": [],
+    "rotation": "per_die_90"
+   },
+   "references": {
+    "file_sha256": "23ae2cd26db9431963e222fcbdfeaafee2457a66688b842d3603f1fd944f0bab",
+    "comparator": {
+     "id": "test-two-die-ref/raw",
+     "continuous": true,
+     "legal_on_fixture": false,
+     "content_sha256": "b2c241a84c91c652c188102cc9ba1412a191474d6b27785c979176199d1ab332",
+     "T_R": 60.0,
+     "T_R_measurement_id": "7be7483076a1c4737b27ed9e3de46e39d04ebb1743c281a70c0a58a4f2d9d6c7",
+     "W_R_mm": 100.0
+    },
+    "engineering_variants": [
+     {
+      "id": "test-two-die-ref-snap0p5",
+      "role": "engineering baseline",
+      "content_sha256": "d99bbb1a57ab522a23b9e86c8741b34f34b14a25c25106133cf9c2e8c21855a9",
+      "design_hash": "aa5091fb0f156f8463567b88612c1554b78bd4be32d98fd42f8597e91007fdde"
+     }
+    ],
+    "published_targets": {
+     "source": "illustrative fixture: no paper",
+     "T_c": 60.5,
+     "W_mm": 101,
+     "use": "paper-target diagnostic only"
+    }
+   },
+   "statistic": {
+    "id": "M",
+    "definition": "max native GRID_CENTER value over the enumerated real chiplets",
+    "real_chiplets": [
+     "Chiplet_0",
+     "Chiplet_1"
+    ],
+    "centre_mapping": "GRID_CENTER: mean of 1, 2 or 4 central cells (pinned)",
+    "record_field": "chiplet_centre_mapping.max_C",
+    "grid": 64,
+    "retained_separately": [
+     "active_layer_grid_peak",
+     "historical_tap_stdout_selector.literal_on_stdout"
+    ],
+    "evaluator": {
+     "kind": "hotspot6",
+     "upstream": "a7a3286e368867c26381e0a23e36b3e273bdeda9",
+     "binary_sha256": "6269f3141239e442cd8c09095554340319a26b282ea610fb8315aedeb2d28f16",
+     "gate_zero_record_sha256": "4babe3499b426d5152d7ce4fa33a53c4c45256c7b643b358bc6fefc34ef3596c",
+     "build": "sha256:b5d979cb9f4e6bdc50ffac0972c8c4f72c2ec12c2ca098f995a0a2771c9be199",
+     "runtime": "fixture-no-solver"
+    },
+    "numerical_admission": "admitted"
+   },
+   "wire": {
+    "metric": "routed",
+    "router_sha256": "5427e2539d2801f20030704f217a1999b090f02c05c8661c703fa64dc53aa2b6",
+    "solver": "HiGHS MILP, mip_rel_gap 0",
+    "status_acceptance": "proven optimum within the solver limit",
+    "proxy": "diagnostic only"
+   },
+   "policy": {
+    "status": "frozen; policy choices, not uncertainty; fixed before any candidate is scored",
+    "D_K": 0.5,
+    "r": 0.05,
+    "B_T_K": 1.0,
+    "B_W_mm": 2.0,
+    "B_W_basis": "W_R_mm",
+    "T_limit_C": 85,
+    "proposed_in_draft": null,
+    "tradeoff_budgets_r": [
+     0.1,
+     0.25,
+     0.5,
+     1.0
+    ]
+   },
+   "bounds": {
+    "u_T": "UNKNOWN",
+    "u_q": "UNKNOWN",
+    "u_abs": "UNKNOWN"
+   },
+   "claims": {
+    "display_order": [
+     "declared temperature target",
+     "strict-wire thermal tolerance",
+     "r-relaxed-wire thermal tolerance",
+     "strict thermal improvement",
+     "strict wire improvement",
+     "wire improvement with allowed thermal degradation",
+     "robust dominance over R"
+    ],
+    "suppressed_by": [
+     "failed gate zero",
+     "failed binding",
+     "failed predicate fixture",
+     "failed required scenario"
+    ]
+   },
+   "screen": {
+    "claim": "passes the listed sensitivity cases",
+    "missing": "INCOMPLETE",
+    "failed": "INCONCLUSIVE",
+    "scenarios": [
+     {
+      "id": "nominal",
+      "applies_to": "both",
+      "grid": 64
+     },
+     {
+      "id": "mesh-32",
+      "applies_to": "both",
+      "grid": 32
+     },
+     {
+      "id": "position-0-x-plus",
+      "applies_to": "R",
+      "grid": 64
+     },
+     {
+      "id": "position-0-x-minus",
+      "applies_to": "R",
+      "grid": 64
+     }
+    ]
+   },
+   "evaluation_bundle": {
+    "status": "frozen",
+    "per_entry": [
+     {
+      "phase": "evaluate",
+      "grid": 64,
+      "suballocation": "native.evaluate"
+     },
+     {
+      "phase": "replay",
+      "grid": 64,
+      "suballocation": "native.replay"
+     },
+     {
+      "phase": "mesh",
+      "grid": 32,
+      "suballocation": "native.mesh"
+     },
+     {
+      "phase": "route",
+      "suballocation": "routing"
+     }
+    ],
+    "per_manifest": "R's scenario cases",
+    "lifecycle_suballocation": "lifecycle",
+    "intake_suballocation": "intake",
+    "ceilings_cpu_s": {
+     "native.evaluate": 15,
+     "native.replay": 15,
+     "native.mesh": 15,
+     "native.reference": 60,
+     "routing": 5,
+     "lifecycle": 2,
+     "checks": 6,
+     "intake": 1
+    }
+   },
+   "checks": {
+    "solver_time_limit_s": 2,
+    "check_wall_s": 5,
+    "cleanup_headroom_s": 1,
+    "cpu_reserve_s": 6,
+    "cpu_enforcement": "live process-tree CPU, enforced while running",
+    "cpu_enforcement_evidence_sha256": "9b3908465b77c771709cc3c5612125c00a7e24ce2fb6157ae485ebe23054748e",
+    "cpu_overrun": "detected at settlement on measured process-tree CPU; charged",
+    "status_access": "salted request_sha256 handle or authorized access",
+    "suballocation": "checks"
+   },
+   "ties": "ascending T_M, then geometry hash",
+   "failures": "retained; no automatic retry",
+   "limits": {
+    "status": "frozen (test)",
+    "eval_per_account_hour": 3,
+    "eval_per_account_day": 12,
+    "eval_room_hour": 20,
+    "eval_room_day": 120,
+    "queue_max": 30,
+    "warden_call_policy_hour": 40,
+    "code_cpu_s_per_hour_per_root": 600,
+    "code_default_solve_reserve_cpu_s": 15,
+    "check_per_account_hour": 30,
+    "check_room_hour": 600
+   },
+   "terms": {
+    "accepted_versions": [
+     "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175"
+    ],
+    "retention": "P2Y"
+   },
+   "intake": {
+    "order": [
+     "createdAt",
+     "action_id",
+     "room_id"
+    ],
+    "cursor": "auditWindow.nextCursor, saved after durable processing",
+    "revision": "1 only"
+   },
+   "transport_key": {
+    "schema": "sentilab-open-transport-key/1",
+    "prefix": "so1-",
+    "hex_chars": 48,
+    "fields": [
+     "room",
+     "account",
+     "actor_slot",
+     "manifest_id",
+     "logical_key",
+     "content_sha256"
+    ]
+   },
+   "disclosure": {
+    "at_opening": [
+     "reference geometry",
+     "frozen SentiLab baseline"
+    ],
+    "entries": "public only by explicit choice; private sealed; revealed only by a logged publish choice"
+   },
+   "pseudonym": {
+    "rule": "HMAC-SHA256(k_challenge, account_id)",
+    "scope": "per challenge"
+   },
+   "exposure": {
+    "sources": [
+     "illustrative fixture: no paper"
+    ],
+    "note": "exposed families: mark when building any future held-out split"
+   },
+   "sealing": {
+    "format": "age X25519, ASCII armour",
+    "recipient": "age16ks7t9mrcvkrduug6nfz2nxa9y59jsacvn7ey7p3y89xv3enev7ss92aar",
+    "key_version": 2,
+    "applies_to": [
+     "private proposals",
+     "private routed checks",
+     "publish commands"
+    ],
+    "plaintext_max_bytes": 4096,
+    "sealed_note_max_bytes": 8192,
+    "plaintext_fallback": false,
+    "rotation": "new key version and new manifest version; old keys kept in custody, never reused"
+   },
+   "example": {
+    "label": "invented numbers",
+    "inputs": {
+     "W_c_mm": 98.0
+    }
+   },
+   "window": {
+    "opens_at": "2026-11-01T00:00:00Z",
+    "closes_at": "2026-11-08T00:00:00Z"
+   },
+   "refs": {
+    "grant": "test-grant",
+    "claim_rules": "test-claim-rules",
+    "checker_sha256": "f1689542fc3cdc851b5a0c6fbc6ffe04ddf25e7f837a33ba9caa9dd312a6c165"
+   },
+   "submission": {
+    "threads": null
+   }
+  },
+  "S": {
+   "schema": "sentilab-open-manifest/1",
+   "version": 1,
+   "status": "signed",
+   "problem": "test-two-die",
+   "fixture": {
+    "id": "test-two-die-10mm",
+    "config": "test/two-die-10mm.cfg",
+    "config_sha256": "89ff080af6a70e7ec40ef7917f79a3cabe27ce3a9755b24030aec9577379a6b0",
+    "frame_um": 10000,
+    "origin": "frame lower-left",
+    "ambient_c": 45,
+    "link_type": "nppl",
+    "package": {
+     "hotspot_config_sha256": "b74080c9d3147b003822aae8c6a69bc32b8938c75010f847d26edfeaacc92599",
+     "assumptions": "steady state, uniform power per die"
+    }
+   },
+   "dies": [
+    {
+     "die": 0,
+     "unit": "Chiplet_0",
+     "name": "a",
+     "w_um": 2000,
+     "h_um": 3000,
+     "power_w": 10,
+     "halo_um": 50,
+     "rot_deg": [
+      0,
+      90
+     ]
+    },
+    {
+     "die": 1,
+     "unit": "Chiplet_1",
+     "name": "b",
+     "w_um": 2000,
+     "h_um": 2000,
+     "power_w": 5,
+     "halo_um": 50,
+     "rot_deg": [
+      0
+     ]
+    }
+   ],
+   "netlist": {
+    "matrix": [
+     [
+      0,
+      4
+     ],
+     [
+      4,
+      0
+     ]
+    ],
+    "counting": {
+     "routed": "each ordered pair with R[i][j]>0 is a directed net of R[i][j] wires",
+     "proxy": "each unordered pair once"
+    }
+   },
+   "legality": {
+    "units": "um",
+    "anchor": "die-centre",
+    "lattice_um": 500,
+    "lattice_rationale": "declared finite engineering benchmark choice (A11)",
+    "margin_um": 500,
+    "min_die_gap_um": 100,
+    "min_die_gap_rationale": "TAP-2.5D Eqn. (10)",
+    "halo": "uniform ring per die; rotation-invariant",
+    "keepouts": [],
+    "rotation": "per_die_90"
+   },
+   "references": {
+    "file_sha256": "23ae2cd26db9431963e222fcbdfeaafee2457a66688b842d3603f1fd944f0bab",
+    "comparator": {
+     "id": "test-two-die-ref/raw",
+     "continuous": true,
+     "legal_on_fixture": false,
+     "content_sha256": "b2c241a84c91c652c188102cc9ba1412a191474d6b27785c979176199d1ab332",
+     "T_R": 60.0,
+     "T_R_measurement_id": "7be7483076a1c4737b27ed9e3de46e39d04ebb1743c281a70c0a58a4f2d9d6c7",
+     "W_R_mm": 100.0
+    },
+    "engineering_variants": [
+     {
+      "id": "test-two-die-ref-snap0p5",
+      "role": "engineering baseline",
+      "content_sha256": "d99bbb1a57ab522a23b9e86c8741b34f34b14a25c25106133cf9c2e8c21855a9",
+      "design_hash": "aa5091fb0f156f8463567b88612c1554b78bd4be32d98fd42f8597e91007fdde"
+     }
+    ],
+    "published_targets": {
+     "source": "illustrative fixture: no paper",
+     "T_c": 60.5,
+     "W_mm": 101,
+     "use": "paper-target diagnostic only"
+    }
+   },
+   "statistic": {
+    "id": "M",
+    "definition": "max native GRID_CENTER value over the enumerated real chiplets",
+    "real_chiplets": [
+     "Chiplet_0",
+     "Chiplet_1"
+    ],
+    "centre_mapping": "GRID_CENTER: mean of 1, 2 or 4 central cells (pinned)",
+    "record_field": "chiplet_centre_mapping.max_C",
+    "grid": 64,
+    "retained_separately": [
+     "active_layer_grid_peak",
+     "historical_tap_stdout_selector.literal_on_stdout"
+    ],
+    "evaluator": {
+     "kind": "hotspot6",
+     "upstream": "a7a3286e368867c26381e0a23e36b3e273bdeda9",
+     "binary_sha256": "6269f3141239e442cd8c09095554340319a26b282ea610fb8315aedeb2d28f16",
+     "gate_zero_record_sha256": "4babe3499b426d5152d7ce4fa33a53c4c45256c7b643b358bc6fefc34ef3596c",
+     "build": "sha256:b5d979cb9f4e6bdc50ffac0972c8c4f72c2ec12c2ca098f995a0a2771c9be199",
+     "runtime": "fixture-no-solver"
+    },
+    "numerical_admission": "admitted"
+   },
+   "wire": {
+    "metric": "routed",
+    "router_sha256": "5427e2539d2801f20030704f217a1999b090f02c05c8661c703fa64dc53aa2b6",
+    "solver": "HiGHS MILP, mip_rel_gap 0",
+    "status_acceptance": "proven optimum within the solver limit",
+    "proxy": "diagnostic only"
+   },
+   "policy": {
+    "status": "frozen; policy choices, not uncertainty; fixed before any candidate is scored",
+    "D_K": 0.5,
+    "r": 0.05,
+    "B_T_K": 1.0,
+    "B_W_mm": 2.0,
+    "B_W_basis": "W_R_mm",
+    "T_limit_C": 85,
+    "proposed_in_draft": null,
+    "tradeoff_budgets_r": [
+     0.1,
+     0.25,
+     0.5,
+     1.0
+    ]
+   },
+   "bounds": {
+    "u_T": "UNKNOWN",
+    "u_q": "UNKNOWN",
+    "u_abs": "UNKNOWN"
+   },
+   "claims": {
+    "display_order": [
+     "declared temperature target",
+     "strict-wire thermal tolerance",
+     "r-relaxed-wire thermal tolerance",
+     "strict thermal improvement",
+     "strict wire improvement",
+     "wire improvement with allowed thermal degradation",
+     "robust dominance over R"
+    ],
+    "suppressed_by": [
+     "failed gate zero",
+     "failed binding",
+     "failed predicate fixture",
+     "failed required scenario"
+    ]
+   },
+   "screen": {
+    "claim": "passes the listed sensitivity cases",
+    "missing": "INCOMPLETE",
+    "failed": "INCONCLUSIVE",
+    "scenarios": [
+     {
+      "id": "nominal",
+      "applies_to": "both",
+      "grid": 64
+     },
+     {
+      "id": "mesh-32",
+      "applies_to": "both",
+      "grid": 32
+     },
+     {
+      "id": "position-0-x-plus",
+      "applies_to": "R",
+      "grid": 64
+     },
+     {
+      "id": "position-0-x-minus",
+      "applies_to": "R",
+      "grid": 64
+     }
+    ]
+   },
+   "evaluation_bundle": {
+    "status": "frozen",
+    "per_entry": [
+     {
+      "phase": "evaluate",
+      "grid": 64,
+      "suballocation": "native.evaluate"
+     },
+     {
+      "phase": "replay",
+      "grid": 64,
+      "suballocation": "native.replay"
+     },
+     {
+      "phase": "mesh",
+      "grid": 32,
+      "suballocation": "native.mesh"
+     },
+     {
+      "phase": "route",
+      "suballocation": "routing"
+     }
+    ],
+    "per_manifest": "R's scenario cases",
+    "lifecycle_suballocation": "lifecycle",
+    "intake_suballocation": "intake",
+    "ceilings_cpu_s": {
+     "native.evaluate": 15,
+     "native.replay": 15,
+     "native.mesh": 15,
+     "native.reference": 60,
+     "routing": 5,
+     "lifecycle": 2,
+     "checks": 6,
+     "intake": 1
+    }
+   },
+   "checks": {
+    "solver_time_limit_s": 2,
+    "check_wall_s": 5,
+    "cleanup_headroom_s": 1,
+    "cpu_reserve_s": 6,
+    "cpu_enforcement": "live process-tree CPU, enforced while running",
+    "cpu_enforcement_evidence_sha256": "9b3908465b77c771709cc3c5612125c00a7e24ce2fb6157ae485ebe23054748e",
+    "cpu_overrun": "detected at settlement on measured process-tree CPU; charged",
+    "status_access": "salted request_sha256 handle or authorized access",
+    "suballocation": "checks"
+   },
+   "ties": "ascending T_M, then geometry hash",
+   "failures": "retained; no automatic retry",
+   "limits": {
+    "status": "frozen (test)",
+    "eval_per_account_hour": 3,
+    "eval_per_account_day": 12,
+    "eval_room_hour": 20,
+    "eval_room_day": 120,
+    "queue_max": 30,
+    "warden_call_policy_hour": 40,
+    "code_cpu_s_per_hour_per_root": 600,
+    "code_default_solve_reserve_cpu_s": 15,
+    "check_per_account_hour": 30,
+    "check_room_hour": 600
+   },
+   "terms": {
+    "accepted_versions": [
+     "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175"
+    ],
+    "retention": "P2Y"
+   },
+   "intake": {
+    "order": [
+     "createdAt",
+     "action_id",
+     "room_id"
+    ],
+    "cursor": "auditWindow.nextCursor, saved after durable processing",
+    "revision": "1 only"
+   },
+   "transport_key": {
+    "schema": "sentilab-open-transport-key/1",
+    "prefix": "so1-",
+    "hex_chars": 48,
+    "fields": [
+     "room",
+     "account",
+     "actor_slot",
+     "manifest_id",
+     "logical_key",
+     "content_sha256"
+    ]
+   },
+   "disclosure": {
+    "at_opening": [
+     "reference geometry",
+     "frozen SentiLab baseline"
+    ],
+    "entries": "public only by explicit choice; private sealed; revealed only by a logged publish choice"
+   },
+   "pseudonym": {
+    "rule": "HMAC-SHA256(k_challenge, account_id)",
+    "scope": "per challenge"
+   },
+   "exposure": {
+    "sources": [
+     "illustrative fixture: no paper"
+    ],
+    "note": "exposed families: mark when building any future held-out split"
+   },
+   "sealing": {
+    "format": "age X25519, ASCII armour",
+    "recipient": "age1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
+    "key_version": 1,
+    "applies_to": [
+     "private proposals",
+     "private routed checks",
+     "publish commands"
+    ],
+    "plaintext_max_bytes": 4096,
+    "sealed_note_max_bytes": 8192,
+    "plaintext_fallback": false,
+    "rotation": "new key version and new manifest version; old keys kept in custody, never reused"
+   },
+   "example": {
+    "label": "invented numbers",
+    "inputs": {
+     "W_c_mm": 98.0
+    }
+   },
+   "window": {
+    "opens_at": "2026-11-01T00:00:00Z",
+    "closes_at": "2026-11-08T00:00:00Z"
+   },
+   "refs": {
+    "grant": "test-grant",
+    "claim_rules": "test-claim-rules",
+    "checker_sha256": "f1689542fc3cdc851b5a0c6fbc6ffe04ddf25e7f837a33ba9caa9dd312a6c165"
+   },
+   "submission": {
+    "threads": null
+   }
+  }
+ },
+ "manifest_id": {
+  "A": "c545a303c550ab6e6caaadb8d67eae97978e9382c0f938ef8ac591e51fd67932",
+  "M": "6b79a83791536b726785cbf8e73c8bab11311d6fc22f9f057b35546118d02e55",
+  "F": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+  "F2": "c79ced6e6d66406bc560f9b6b8fab6755034ee99792f4c0c0aae7225cf93ef6e",
+  "S": "6134d3262e567f2f892dbb0146a0b57e148e930cf94e0afe217e7bcefe6a6f02"
+ },
+ "terms": {
+  "schema": "sentilab-open-terms/1",
+  "version": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
+  "path": "/sentilab/open/terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175.md",
+  "text_sha256": "e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
+  "covers": [
+   "evaluation",
+   "retention of evidence",
+   "display only if public"
+  ],
+  "grants": {
+   "training": false,
+   "lab_memory": false,
+   "study": false
+  },
+  "moderation": {
+   "hide_reasons": [
+    "spam",
+    "abuse",
+    "not_a_layout"
+   ],
+   "hidden": "hidden from public pages with the reason; nothing is deleted",
+   "pause": {
+    "hidden_per_day": 3,
+    "pause_hours": 24
+   }
+  },
+  "retention": "P2Y"
+ }
+}

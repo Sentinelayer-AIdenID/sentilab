@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/receipt.schema.json",
+  "title": "sentilab-open-receipt/1",
+  "description": "What a receipt binds (DESIGN rev 3 section 7.4): the keyed participant_ref and source_ref = sha256(\"sentilab-open-source/1:\" + action_id); actor_kind as Senti stamped it; body_sha256, proposal_sha256, geometry_sha256 and design_hash; manifest_id, terms, visibility, proposal_key, revision_index and parent; the state and codes; values.geometry as the conductor writes it. The receipt hash is the signed envelope's hash. A reply rejected before its proposal could be read has null proposal fields. Account ids, labels, Senti ids, ciphertext and plaintext stay in the restricted ledger, never here. A private entry's receipt is reachable only by authorized access or its salted proposal_sha256.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "participant_ref", "source_ref", "actor_kind", "body_sha256", "proposal_sha256",
+               "geometry_sha256", "design_hash", "manifest_id", "terms", "visibility", "proposal_key",
+               "revision_index", "parent", "state", "codes", "values"],
+  "properties": {
+    "schema": {"const": "sentilab-open-receipt/1"},
+    "participant_ref": {"$ref": "common.schema.json#/$defs/participant_ref"},
+    "source_ref": {"$ref": "common.schema.json#/$defs/sha256"},
+    "actor_kind": {"$ref": "common.schema.json#/$defs/actor_kind"},
+    "body_sha256": {"$ref": "common.schema.json#/$defs/sha256"},
+    "proposal_sha256": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
+    "geometry_sha256": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
+    "design_hash": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
+    "manifest_id": {"$ref": "common.schema.json#/$defs/sha256"},
+    "terms": {"anyOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/terms_version"}]},
+    "visibility": {"anyOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/visibility"}]},
+    "proposal_key": {"$ref": "common.schema.json#/$defs/key_or_null"},
+    "revision_index": {"type": ["integer", "null"], "minimum": 1, "maximum": 1000000},
+    "parent": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
+    "state": {"$ref": "common.schema.json#/$defs/lifecycle_state"},
+    "codes": {"$ref": "common.schema.json#/$defs/violations"},
+    "values": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["geometry", "units", "scenario_id"],
+      "properties": {
+        "geometry": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "xLL", "yLL", "w", "h", "layer"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^tap-chiplet-[0-9]{1,2}$"},
+              "xLL": {"type": "number", "minimum": -1000, "maximum": 1000},
+              "yLL": {"type": "number", "minimum": -1000, "maximum": 1000},
+              "w": {"type": "number", "exclusiveMinimum": 0, "maximum": 1000},
+              "h": {"type": "number", "exclusiveMinimum": 0, "maximum": 1000},
+              "layer": {"type": "integer", "const": 0}
+            }
+          }
+        },
+        "units": {"const": "mm"},
+        "scenario_id": {"const": "nominal"}
+      }
+    }
+  }
+}

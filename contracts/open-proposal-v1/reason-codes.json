@@ -1,0 +1,63 @@
+{
+ "schema": "sentilab-open-reason-codes/1",
+ "source": "DESIGN.md revision 3, section 7.2: exactly these 48 codes, in these groups and this order",
+ "rule": "No submitted text appears in a code. A violation carries its code and exactly the fields listed for it: schema-known paths and keywords, die indices, whole-micrometre amounts, sizes, counts, times and limit names.",
+ "groups": [
+  {"group": "transport", "title": "Transport", "codes": [
+   {"code": "oversize", "fields": ["size_bytes"]},
+   {"code": "not_utf8", "fields": []},
+   {"code": "edited_before_ingest", "fields": []},
+   {"code": "unattributable", "fields": []},
+   {"code": "private_requires_sealed", "fields": []},
+   {"code": "unsealable", "fields": []},
+   {"code": "transport_key_mismatch", "fields": []}]},
+  {"group": "envelope", "title": "Envelope", "codes": [
+   {"code": "malformed_json", "fields": []},
+   {"code": "duplicate_key", "fields": []},
+   {"code": "nonfinite_number", "fields": []},
+   {"code": "too_deep", "fields": []},
+   {"code": "unknown_field", "fields": ["path"]},
+   {"code": "schema_invalid", "fields": ["path", "keyword"]}]},
+  {"group": "manifest", "title": "Manifest and terms", "codes": [
+   {"code": "unknown_manifest", "fields": []},
+   {"code": "manifest_mismatch", "fields": ["path"]},
+   {"code": "manifest_closed", "fields": []},
+   {"code": "not_open_yet", "fields": []},
+   {"code": "terms_not_accepted", "fields": []}]},
+  {"group": "geometry", "title": "Geometry", "codes": [
+   {"code": "die_count", "fields": ["count"]},
+   {"code": "die_order", "fields": ["dies"]},
+   {"code": "out_of_frame", "fields": ["dies", "amount_um"]},
+   {"code": "rotation_not_allowed", "fields": ["dies"]},
+   {"code": "lattice", "fields": ["dies", "amount_um"]},
+   {"code": "margin", "fields": ["dies", "amount_um"]},
+   {"code": "halo_overlap", "fields": ["dies", "amount_um"]},
+   {"code": "min_spacing", "fields": ["dies", "amount_um"]},
+   {"code": "keepout", "fields": ["dies", "amount_um"]},
+   {"code": "geometry_hash_mismatch", "fields": []}]},
+  {"group": "revision", "title": "Revision", "codes": [
+   {"code": "idempotency_conflict", "fields": []},
+   {"code": "unknown_parent", "fields": []},
+   {"code": "unknown_proposal", "fields": []}]},
+  {"group": "policy", "title": "Policy", "codes": [
+   {"code": "participant_suspended", "fields": []},
+   {"code": "participant_paused", "fields": ["retry_after"]},
+   {"code": "participant_removed", "fields": []},
+   {"code": "rate_limited", "fields": ["retry_after"]},
+   {"code": "queue_full", "fields": ["retry_after"]},
+   {"code": "budget_exhausted", "fields": ["retry_after"]}]},
+  {"group": "evaluation", "title": "Evaluation", "codes": [
+   {"code": "timeout", "fields": []},
+   {"code": "stopped", "fields": []},
+   {"code": "oracle_error", "fields": []},
+   {"code": "grant_expired", "fields": []},
+   {"code": "interrupted", "fields": []},
+   {"code": "binding_mismatch", "fields": []},
+   {"code": "router_timeout", "fields": []},
+   {"code": "check_unfinished", "fields": ["limit"]}]},
+  {"group": "reproduction", "title": "Reproduction", "codes": [
+   {"code": "reproduction_mismatch", "fields": []},
+   {"code": "fresh_process_required", "fields": []},
+   {"code": "reproduction_failed", "fields": []}]}
+ ]
+}

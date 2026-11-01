@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/reason-codes.schema.json",
+  "title": "sentilab-open-reason-codes/1",
+  "description": "reason-codes.json: the 48 codes of DESIGN rev 3 section 7.2 in their groups and canonical order, each with exactly the fields it carries.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "source", "rule", "groups"],
+  "properties": {
+    "schema": {"const": "sentilab-open-reason-codes/1"},
+    "source": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,127}$"},
+    "rule": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,511}$"},
+    "groups": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["group", "title", "codes"],
+        "properties": {
+          "group": {"enum": ["transport", "envelope", "manifest", "geometry", "revision", "policy", "evaluation",
+                             "reproduction"]},
+          "title": {"enum": ["Transport", "Envelope", "Manifest and terms", "Geometry", "Revision", "Policy",
+                             "Evaluation", "Reproduction"]},
+          "codes": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 16,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["code", "fields"],
+              "properties": {
+                "code": {"$ref": "common.schema.json#/$defs/reason_code"},
+                "fields": {"type": "array", "maxItems": 2, "uniqueItems": true,
+                           "items": {"enum": ["path", "keyword", "dies", "amount_um", "size_bytes", "count",
+                                              "retry_after", "limit"]}}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

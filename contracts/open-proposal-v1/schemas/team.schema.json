@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/team.schema.json",
+  "title": "sentilab-open-team/1",
+  "description": "A voluntary team name, posted as a threaded reply (DESIGN rev 3 sections 3.8 and 3.9). The only participant free text in the contract: moderated, shown only after approval and only as text. Its transport key uses the logical key \"team\" and the team hash sha256(JCS(this object)) as content.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "manifest_id", "name"],
+  "properties": {
+    "schema": {"const": "sentilab-open-team/1"},
+    "manifest_id": {"$ref": "common.schema.json#/$defs/sha256"},
+    "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._-]{0,31}$"}
+  }
+}

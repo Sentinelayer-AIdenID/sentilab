@@ -1,0 +1,23 @@
+{
+ "schema": "sentilab-open-record-rules/1",
+ "note": "Codes and rule ids for checking our own records (validate_record). They are never participant-facing reasons and never appear in a receipt; the 48 reason codes are in reason-codes.json.",
+ "codes": [
+  {"code": "record_inconsistent", "fields": ["path", "rule"]},
+  {"code": "label_mismatch", "fields": ["path", "rule"]},
+  {"code": "ref_mismatch", "fields": ["path", "rule"]}
+ ],
+ "rules": [
+  "violation.fields", "state.codes", "record.manifest", "privacy.handle",
+  "manifest.die_index", "manifest.square_rotation", "manifest.real_chiplets", "manifest.netlist", "manifest.r_values",
+  "manifest.check_limits", "manifest.quota_windows", "manifest.window", "manifest.scenarios", "manifest.signed_pins",
+  "manifest.test_key",
+  "terms.version_hash", "terms.path",
+  "check.codes", "check.q_r_keys", "check.q_r_values",
+  "receipt.proposal_fields", "receipt.design_hash",
+  "ref.proposal", "ref.geometry", "ref.values", "ref.source", "ref.participant", "ref.run_id",
+  "status.queue",
+  "results.comparator", "results.delta_t", "results.label_set", "results.label_r", "results.unknown_claim",
+  "results.bounded", "results.state", "results.q_r_keys", "results.q_r_values",
+  "label.temperature", "label.withdrawn_claim"
+ ]
+}

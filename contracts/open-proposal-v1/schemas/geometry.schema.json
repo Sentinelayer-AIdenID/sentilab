@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/geometry.schema.json",
+  "title": "sentilab-open-geometry/1",
+  "description": "The preimage of geometry_sha256 (DESIGN rev 3 section 5.2): sha256(JCS({schema, problem, fixture_config_sha256, units, anchor, dies})). problem and fixture_config_sha256 come from the manifest (problem, fixture.config_sha256); units, anchor and dies from the proposal or check request, each die reduced to die, x_um, y_um and rot_deg. It excludes actor, time, key, salt, terms and client.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "problem", "fixture_config_sha256", "units", "anchor", "dies"],
+  "properties": {
+    "schema": {"const": "sentilab-open-geometry/1"},
+    "problem": {"$ref": "common.schema.json#/$defs/key"},
+    "fixture_config_sha256": {"$ref": "common.schema.json#/$defs/sha256"},
+    "units": {"$ref": "common.schema.json#/$defs/units"},
+    "anchor": {"$ref": "common.schema.json#/$defs/anchor"},
+    "dies": {"$ref": "common.schema.json#/$defs/dies"}
+  }
+}

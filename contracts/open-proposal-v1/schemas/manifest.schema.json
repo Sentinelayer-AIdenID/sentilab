@@ -1,0 +1,478 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/manifest.schema.json",
+  "title": "sentilab-open-manifest/1",
+  "description": "The challenge manifest, in exactly the shape of DESIGN rev 3 section 4.11 (31 top-level fields). manifest_id = sha256(JCS(manifest)); a manifest is published once and never edited (section 4.1). A value the draft shows as a <...> placeholder is null until it is decided; a signed manifest has none left (validate_record rule manifest.signed_pins). Every fixed-rule text of the draft is a const. Missing evidence reads UNKNOWN, never an assumed pass. The four check limits are separate fields and none stands in for another (section 6.2).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "status", "problem", "fixture", "dies", "netlist", "legality", "references",
+               "statistic", "wire", "policy", "bounds", "claims", "screen", "evaluation_bundle", "checks", "ties",
+               "failures", "limits", "terms", "intake", "transport_key", "disclosure", "pseudonym", "exposure",
+               "sealing", "example", "window", "refs", "submission"],
+  "$defs": {
+    "text": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_…-]{0,127}$"},
+    "ref": {"type": ["string", "null"], "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"},
+    "reference_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$"},
+    "unit": {"type": "string", "pattern": "^Chiplet_[0-9]{1,2}$"},
+    "number_or_null": {"type": ["number", "null"], "minimum": -1000000, "maximum": 1000000},
+    "positive_or_null": {"type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 1000000},
+    "count": {"type": "integer", "minimum": 0, "maximum": 1000000},
+    "suballocation": {"enum": ["native.evaluate", "native.replay", "native.mesh", "native.reference", "routing",
+                               "lifecycle", "checks", "intake"]},
+    "scenario": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["id", "applies_to", "grid"],
+         "properties": {"id": {"const": "nominal"}, "applies_to": {"const": "both"}, "grid": {"type": "integer", "const": 64}}},
+        {"type": "object", "additionalProperties": false, "required": ["id", "applies_to", "grid"],
+         "properties": {"id": {"const": "mesh-32"}, "applies_to": {"const": "both"}, "grid": {"type": "integer", "const": 32}}},
+        {"description": "A draft's placeholder for the raw-R position inventory (OP-F10); a signed manifest lists its cases.",
+         "type": "object", "additionalProperties": false, "required": ["id", "applies_to", "cases"],
+         "properties": {"id": {"const": "position-<die>-<axis>-<sign>"}, "applies_to": {"const": "R"},
+                        "cases": {"const": "raw-R inventory (A12): separately counted, profiled and granted"}}},
+        {"description": "One R-only position case: one die, one axis, plus or minus 500 um (section 4.7).",
+         "type": "object", "additionalProperties": false, "required": ["id", "applies_to", "grid"],
+         "properties": {"id": {"type": "string", "pattern": "^position-[0-9]{1,2}-[xy]-(plus|minus)$"},
+                        "applies_to": {"const": "R"}, "grid": {"type": "integer", "const": 64}}}
+      ]
+    }
+  },
+  "properties": {
+    "schema": {"const": "sentilab-open-manifest/1"},
+    "version": {"type": "integer", "minimum": 0, "maximum": 1000000},
+    "status": {"enum": ["draft: provisional fields; not a signed manifest", "signed"]},
+    "problem": {"$ref": "common.schema.json#/$defs/key"},
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "config", "config_sha256", "frame_um", "origin", "ambient_c", "link_type", "package"],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/key"},
+        "config": {"type": "string", "pattern": "^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$"},
+        "config_sha256": {"$ref": "common.schema.json#/$defs/sha256"},
+        "frame_um": {"type": "integer", "minimum": 1, "maximum": 1000000},
+        "origin": {"const": "frame lower-left"},
+        "ambient_c": {"type": "number", "minimum": -273.15, "maximum": 1000},
+        "link_type": {"type": "string", "pattern": "^[a-z0-9_-]{1,32}$"},
+        "package": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["hotspot_config_sha256", "assumptions"],
+          "properties": {
+            "hotspot_config_sha256": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
+            "assumptions": {"const": "steady state, uniform power per die"}
+          }
+        }
+      }
+    },
+    "dies": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["die", "unit", "name", "w_um", "h_um", "power_w", "halo_um", "rot_deg"],
+        "properties": {
+          "die": {"type": "integer", "minimum": 0, "maximum": 31},
+          "unit": {"$ref": "#/$defs/unit"},
+          "name": {"type": "string", "pattern": "^[a-z0-9_-]{1,32}$"},
+          "w_um": {"type": "integer", "minimum": 1, "maximum": 1000000},
+          "h_um": {"type": "integer", "minimum": 1, "maximum": 1000000},
+          "power_w": {"type": "number", "minimum": 0, "maximum": 100000},
+          "halo_um": {"type": "integer", "minimum": 0, "maximum": 100000},
+          "rot_deg": {"type": "array", "minItems": 1, "maxItems": 2, "uniqueItems": true, "items": {"type": "integer", "enum": [0, 90]}}
+        }
+      }
+    },
+    "netlist": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["matrix", "counting"],
+      "properties": {
+        "matrix": {"type": "array", "minItems": 1, "maxItems": 32,
+                   "items": {"type": "array", "minItems": 1, "maxItems": 32,
+                             "items": {"type": "integer", "minimum": 0, "maximum": 1000000}}},
+        "counting": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["routed", "proxy"],
+          "properties": {
+            "routed": {"const": "each ordered pair with R[i][j]>0 is a directed net of R[i][j] wires"},
+            "proxy": {"const": "each unordered pair once"}
+          }
+        }
+      }
+    },
+    "legality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["units", "anchor", "lattice_um", "lattice_rationale", "margin_um", "min_die_gap_um",
+                   "min_die_gap_rationale", "halo", "keepouts", "rotation"],
+      "properties": {
+        "units": {"$ref": "common.schema.json#/$defs/units"},
+        "anchor": {"$ref": "common.schema.json#/$defs/anchor"},
+        "lattice_um": {"type": "integer", "minimum": 1, "maximum": 1000000},
+        "lattice_rationale": {"const": "declared finite engineering benchmark choice (A11)"},
+        "margin_um": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "min_die_gap_um": {"type": "integer", "minimum": 0, "maximum": 1000000},
+        "min_die_gap_rationale": {"const": "TAP-2.5D Eqn. (10)"},
+        "halo": {"const": "uniform ring per die; rotation-invariant"},
+        "keepouts": {
+          "description": "None are declared today (section 4.3). A keepout is a frame rectangle in micrometres; the layout seam (OP-F7) checks it.",
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["x_min_um", "y_min_um", "x_max_um", "y_max_um"],
+            "properties": {
+              "x_min_um": {"type": "integer", "minimum": 0, "maximum": 1000000},
+              "y_min_um": {"type": "integer", "minimum": 0, "maximum": 1000000},
+              "x_max_um": {"type": "integer", "minimum": 0, "maximum": 1000000},
+              "y_max_um": {"type": "integer", "minimum": 0, "maximum": 1000000}
+            }
+          }
+        },
+        "rotation": {"const": "per_die_90"}
+      }
+    },
+    "references": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file_sha256", "comparator", "engineering_variants", "published_targets"],
+      "properties": {
+        "file_sha256": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
+        "comparator": {
+          "description": "Raw R: continuous and reference-only, the comparator and never an admissible entry (section 4.2). T_R is UNKNOWN until R has been run under the admitted evaluator.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "continuous", "legal_on_fixture", "content_sha256", "T_R", "T_R_measurement_id",
+                       "W_R_mm"],
+          "properties": {
+            "id": {"$ref": "#/$defs/reference_id"},
+            "continuous": {"const": true},
+            "legal_on_fixture": {"const": false},
+            "content_sha256": {"$ref": "common.schema.json#/$defs/sha256"},
+            "T_R": {"$ref": "common.schema.json#/$defs/number_or_unknown"},
+            "T_R_measurement_id": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
+            "W_R_mm": {"type": "number", "exclusiveMinimum": 0, "maximum": 10000000}
+          }
+        },
+        "engineering_variants": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "role", "content_sha256"],
+            "properties": {
+              "id": {"$ref": "#/$defs/reference_id"},
+              "role": {"enum": ["engineering baseline", "history; superseded as baseline"]},
+              "content_sha256": {"$ref": "common.schema.json#/$defs/sha256"},
+              "design_hash": {"$ref": "common.schema.json#/$defs/sha256"}
+            }
+          }
+        },
+        "published_targets": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "T_c", "W_mm", "use"],
+          "properties": {
+            "source": {"$ref": "#/$defs/text"},
+            "T_c": {"type": "number", "minimum": -273.15, "maximum": 10000},
+            "W_mm": {"type": "number", "minimum": 0, "maximum": 10000000},
+            "use": {"const": "paper-target diagnostic only"}
+          }
+        }
+      }
+    },
+    "statistic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "definition", "real_chiplets", "centre_mapping", "record_field", "grid",
+                   "retained_separately", "evaluator", "numerical_admission"],
+      "properties": {
+        "id": {"const": "M"},
+        "definition": {"const": "max native GRID_CENTER value over the enumerated real chiplets"},
+        "real_chiplets": {"type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true,
+                          "items": {"$ref": "#/$defs/unit"}},
+        "centre_mapping": {"const": "GRID_CENTER: mean of 1, 2 or 4 central cells (pinned)"},
+        "record_field": {"const": "chiplet_centre_mapping.max_C"},
+        "grid": {"type": "integer", "const": 64},
+        "retained_separately": {"const": ["active_layer_grid_peak", "historical_tap_stdout_selector.literal_on_stdout"]},
+        "evaluator": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "upstream", "binary_sha256", "gate_zero_record_sha256", "build", "runtime"],
+          "properties": {
+            "kind": {"const": "hotspot6"},
+            "upstream": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+            "binary_sha256": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
+            "gate_zero_record_sha256": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
+            "build": {"type": ["string", "null"], "pattern": "^sha256:[0-9a-f]{64}$"},
+            "runtime": {"$ref": "#/$defs/ref"}
+          }
+        },
+        "numerical_admission": {"enum": ["UNKNOWN", "admitted"]}
+      }
+    },
+    "wire": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["metric", "router_sha256", "solver", "status_acceptance", "proxy"],
+      "properties": {
+        "metric": {"const": "routed"},
+        "router_sha256": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
+        "solver": {"const": "HiGHS MILP, mip_rel_gap 0"},
+        "status_acceptance": {"const": "proven optimum within the solver limit"},
+        "proxy": {"const": "diagnostic only"}
+      }
+    },
+    "policy": {
+      "description": "Policy choices, not uncertainty, fixed before any candidate is scored (section 4.8). proposed_in_draft records the draft brief's proposals; they are not the policy values.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "D_K", "r", "B_T_K", "B_W_mm", "B_W_basis", "T_limit_C", "proposed_in_draft",
+                   "tradeoff_budgets_r"],
+      "properties": {
+        "status": {"enum": ["provisional; policy choices, not uncertainty; fixed before any candidate is scored",
+                            "frozen; policy choices, not uncertainty; fixed before any candidate is scored"]},
+        "D_K": {"type": ["number", "null"], "minimum": 0, "maximum": 1000},
+        "r": {"type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 10},
+        "B_T_K": {"type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 1000},
+        "B_W_mm": {"type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 10000000},
+        "B_W_basis": {"const": "W_R_mm"},
+        "T_limit_C": {"type": ["number", "null"], "minimum": -273.15, "maximum": 10000},
+        "proposed_in_draft": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["D_K", "r", "B_T_K", "B_W_fraction", "T_limit_C"],
+          "properties": {
+            "D_K": {"type": "number", "minimum": 0, "maximum": 1000},
+            "r": {"type": "number", "exclusiveMinimum": 0, "maximum": 10},
+            "B_T_K": {"type": "number", "exclusiveMinimum": 0, "maximum": 1000},
+            "B_W_fraction": {"type": "number", "exclusiveMinimum": 0, "maximum": 10},
+            "T_limit_C": {"type": "number", "minimum": -273.15, "maximum": 10000}
+          }
+        },
+        "tradeoff_budgets_r": {"type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true,
+                               "items": {"type": "number", "exclusiveMinimum": 0, "maximum": 10}}
+      }
+    },
+    "bounds": {
+      "description": "None is accepted today, so all are UNKNOWN; no bound defaults to zero (section 4.7).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["u_T", "u_q", "u_abs"],
+      "properties": {
+        "u_T": {"$ref": "common.schema.json#/$defs/unknown"},
+        "u_q": {"$ref": "common.schema.json#/$defs/unknown"},
+        "u_abs": {"$ref": "common.schema.json#/$defs/unknown"}
+      }
+    },
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["display_order", "suppressed_by"],
+      "properties": {
+        "display_order": {"const": ["declared temperature target", "strict-wire thermal tolerance",
+                                    "r-relaxed-wire thermal tolerance", "strict thermal improvement",
+                                    "strict wire improvement", "wire improvement with allowed thermal degradation",
+                                    "robust dominance over R"]},
+        "suppressed_by": {"const": ["failed gate zero", "failed binding", "failed predicate fixture",
+                                    "failed required scenario"]}
+      }
+    },
+    "screen": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claim", "missing", "failed", "scenarios"],
+      "properties": {
+        "claim": {"const": "passes the listed sensitivity cases"},
+        "missing": {"const": "INCOMPLETE"},
+        "failed": {"const": "INCONCLUSIVE"},
+        "scenarios": {"type": "array", "minItems": 1, "maxItems": 256, "items": {"$ref": "#/$defs/scenario"}}
+      }
+    },
+    "evaluation_bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "per_entry", "per_manifest", "lifecycle_suballocation", "intake_suballocation",
+                   "ceilings_cpu_s"],
+      "properties": {
+        "status": {"enum": ["provisional", "frozen"]},
+        "per_entry": {"const": [{"phase": "evaluate", "grid": 64, "suballocation": "native.evaluate"},
+                                {"phase": "replay", "grid": 64, "suballocation": "native.replay"},
+                                {"phase": "mesh", "grid": 32, "suballocation": "native.mesh"},
+                                {"phase": "route", "suballocation": "routing"}]},
+        "per_manifest": {"const": "R's scenario cases"},
+        "lifecycle_suballocation": {"const": "lifecycle"},
+        "intake_suballocation": {"const": "intake"},
+        "ceilings_cpu_s": {
+          "description": "CPU-second ceilings per suballocation of the one global journal (section 8.4); null until set.",
+          "type": ["object", "null"],
+          "minProperties": 1,
+          "propertyNames": {"$ref": "#/$defs/suballocation"},
+          "additionalProperties": {"type": "number", "exclusiveMinimum": 0, "maximum": 1000000}
+        }
+      }
+    },
+    "checks": {
+      "description": "The sponsored routed check's separate limits (section 6.2). solver_time_limit_s is HiGHS's own elapsed time_limit, not a CPU cap. check_wall_s runs from the moment a worker begins the check, queue excluded, to the end of serialization; the process group is killed at it. cleanup_headroom_s is cleanup's own, outside the wall. cpu_reserve_s is process-tree CPU reserved before runtime, enforced on live CPU while running (cpu_enforcement, an admission requirement with its evidence pinned) and debited at settlement, where an overrun is detected and charged (cpu_overrun). The request quotas are limits.check_per_account_hour and limits.check_room_hour. None stands in for another.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["solver_time_limit_s", "check_wall_s", "cleanup_headroom_s", "cpu_reserve_s", "cpu_enforcement",
+                   "cpu_enforcement_evidence_sha256", "cpu_overrun", "status_access", "suballocation"],
+      "properties": {
+        "solver_time_limit_s": {"$ref": "#/$defs/positive_or_null"},
+        "check_wall_s": {"$ref": "#/$defs/positive_or_null"},
+        "cleanup_headroom_s": {"$ref": "#/$defs/positive_or_null"},
+        "cpu_reserve_s": {"$ref": "#/$defs/positive_or_null"},
+        "cpu_enforcement": {"description": "An admission requirement (DESIGN.md:795): the supervisor enforces cpu_reserve_s on live process-tree CPU while the check runs. Not the wall's elapsed cutoff, and not settlement.",
+                            "const": "live process-tree CPU, enforced while running"},
+        "cpu_enforcement_evidence_sha256": {"description": "The admission evidence that live enforcement is in place (the supervisor's tested record); null until it exists. A signed manifest pins it, and the intake opens no manifest without it.",
+                                            "$ref": "common.schema.json#/$defs/sha256_or_null"},
+        "cpu_overrun": {"description": "Settlement (DESIGN.md:1004): measured process-tree CPU above the reserve is detected after the fact and stays charged. Detection, never enforcement.",
+                        "const": "detected at settlement on measured process-tree CPU; charged"},
+        "status_access": {"const": "salted request_sha256 handle or authorized access"},
+        "suballocation": {"const": "checks"}
+      }
+    },
+    "ties": {"const": "ascending T_M, then geometry hash"},
+    "failures": {"const": "retained; no automatic retry"},
+    "limits": {
+      "description": "Quotas and caps (sections 8.3 and 6.2). warden_call_policy_hour is the operator's 40-call backstop policy, not a code limit; code_cpu_s_per_hour_per_root and code_default_solve_reserve_cpu_s are the code's CPU ceiling. They are separate limits and never derived from each other.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "eval_per_account_hour", "eval_per_account_day", "eval_room_hour", "eval_room_day",
+                   "queue_max", "warden_call_policy_hour", "code_cpu_s_per_hour_per_root",
+                   "code_default_solve_reserve_cpu_s", "check_per_account_hour", "check_room_hour"],
+      "properties": {
+        "status": {"type": "string", "pattern": "^(provisional|frozen)( \\([A-Za-z0-9 ,/#-]{1,64}\\))?$"},
+        "eval_per_account_hour": {"$ref": "#/$defs/count"},
+        "eval_per_account_day": {"$ref": "#/$defs/count"},
+        "eval_room_hour": {"$ref": "#/$defs/count"},
+        "eval_room_day": {"$ref": "#/$defs/count"},
+        "queue_max": {"$ref": "#/$defs/count"},
+        "warden_call_policy_hour": {"$ref": "#/$defs/count"},
+        "code_cpu_s_per_hour_per_root": {"$ref": "#/$defs/count"},
+        "code_default_solve_reserve_cpu_s": {"$ref": "#/$defs/count"},
+        "check_per_account_hour": {"$ref": "#/$defs/count"},
+        "check_room_hour": {"$ref": "#/$defs/count"}
+      }
+    },
+    "terms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["accepted_versions", "retention"],
+      "properties": {
+        "accepted_versions": {"type": "array", "maxItems": 16, "uniqueItems": true,
+                              "items": {"$ref": "common.schema.json#/$defs/terms_version"}},
+        "retention": {"type": ["string", "null"], "pattern": "^P(?=[0-9])([0-9]{1,4}Y)?([0-9]{1,4}M)?([0-9]{1,5}D)?$"}
+      }
+    },
+    "intake": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["order", "cursor", "revision"],
+      "properties": {
+        "order": {"const": ["createdAt", "action_id", "room_id"]},
+        "cursor": {"const": "auditWindow.nextCursor, saved after durable processing"},
+        "revision": {"const": "1 only"}
+      }
+    },
+    "transport_key": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "prefix", "hex_chars", "fields"],
+      "properties": {
+        "schema": {"const": "sentilab-open-transport-key/1"},
+        "prefix": {"const": "so1-"},
+        "hex_chars": {"type": "integer", "const": 48},
+        "fields": {"const": ["room", "account", "actor_slot", "manifest_id", "logical_key", "content_sha256"]}
+      }
+    },
+    "disclosure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["at_opening", "entries"],
+      "properties": {
+        "at_opening": {"const": ["reference geometry", "frozen SentiLab baseline"]},
+        "entries": {"const": "public only by explicit choice; private sealed; revealed only by a logged publish choice"}
+      }
+    },
+    "pseudonym": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule", "scope"],
+      "properties": {
+        "rule": {"const": "HMAC-SHA256(k_challenge, account_id)"},
+        "scope": {"const": "per challenge"}
+      }
+    },
+    "exposure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sources", "note"],
+      "properties": {
+        "sources": {"type": "array", "minItems": 1, "maxItems": 32, "items": {"$ref": "#/$defs/text"}},
+        "note": {"const": "exposed families: mark when building any future held-out split"}
+      }
+    },
+    "sealing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "recipient", "key_version", "applies_to", "plaintext_max_bytes",
+                   "sealed_note_max_bytes", "plaintext_fallback", "rotation"],
+      "properties": {
+        "format": {"const": "age X25519, ASCII armour"},
+        "recipient": {"anyOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/age_recipient"}]},
+        "key_version": {"anyOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/key_version"}]},
+        "applies_to": {"const": ["private proposals", "private routed checks", "publish commands"]},
+        "plaintext_max_bytes": {"type": "integer", "const": 4096},
+        "sealed_note_max_bytes": {"type": "integer", "const": 8192},
+        "plaintext_fallback": {"const": false},
+        "rotation": {"const": "new key version and new manifest version; old keys kept in custody, never reused"}
+      }
+    },
+    "example": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "inputs"],
+      "properties": {
+        "label": {"const": "invented numbers"},
+        "inputs": {"type": ["object", "null"], "maxProperties": 16,
+                   "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$"},
+                   "additionalProperties": {"type": "number", "minimum": -10000000, "maximum": 10000000}}
+      }
+    },
+    "window": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["opens_at", "closes_at"],
+      "properties": {
+        "opens_at": {"$ref": "common.schema.json#/$defs/utc_or_null"},
+        "closes_at": {"$ref": "common.schema.json#/$defs/utc_or_null"}
+      }
+    },
+    "refs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["grant", "claim_rules", "checker_sha256"],
+      "properties": {
+        "grant": {"$ref": "#/$defs/ref"},
+        "claim_rules": {"$ref": "#/$defs/ref"},
+        "checker_sha256": {"$ref": "common.schema.json#/$defs/sha256_or_null"}
+      }
+    },
+    "submission": {
+      "description": "The rooms and roots exist only after the manifest is published, and each root carries the manifest id, so they cannot be inside the hashed manifest: threads is null here and rendered at publication (CONTRACT.md).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["threads"],
+      "properties": {
+        "threads": {"type": "null"}
+      }
+    }
+  }
+}

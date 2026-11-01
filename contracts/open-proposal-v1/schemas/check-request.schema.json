@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/check-request.schema.json",
+  "title": "sentilab-open-check-request/1",
+  "description": "A sponsored routed-wire check, posted as a threaded reply to a challenge root (DESIGN rev 3 sections 5.1 and 6.2). request_key is its logical key. request_sha256 = sha256(JCS(this object)) is salted, so only its author can look the result up at GET /api/open/v1/check-status?h=<request_sha256>: a bearer secret, never indexed and never in a pointer. A private check travels sealed (section 3.7). The geometry rules are the proposal's.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "manifest_id", "request_key", "visibility", "salt", "units", "anchor", "dies",
+               "geometry_sha256"],
+  "properties": {
+    "schema": {"const": "sentilab-open-check-request/1"},
+    "manifest_id": {"$ref": "common.schema.json#/$defs/sha256"},
+    "request_key": {"$ref": "common.schema.json#/$defs/key"},
+    "visibility": {"$ref": "common.schema.json#/$defs/visibility"},
+    "salt": {"$ref": "common.schema.json#/$defs/salt"},
+    "units": {"$ref": "common.schema.json#/$defs/units"},
+    "anchor": {"$ref": "common.schema.json#/$defs/anchor"},
+    "dies": {"$ref": "common.schema.json#/$defs/dies"},
+    "geometry_sha256": {"$ref": "common.schema.json#/$defs/sha256"}
+  }
+}

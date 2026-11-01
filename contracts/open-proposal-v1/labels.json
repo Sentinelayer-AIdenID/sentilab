@@ -1,0 +1,8 @@
+{
+  "schema": "sentilab-open-labels/1",
+  "mirrors": "the label rule of web/public/temperature-label.mjs (SLAB-053): states, lists and precedence, unchanged from sha256 b89ba45b5592b0cb586c71a577081f1df8ca61641d83a4a8757ca1881c0aaf2c (PR #58) through 91628b18d48012a6243d39b9f4c663ddc5814f8eb44cdaf121f10b6733101abe (#64, which added view helpers only)",
+  "states": ["withdrawn", "unvalidated", "illustrative", "accepted"],
+  "withdrawn": ["HotSpot-7:f18831e48cef5d62580585cca0d7fab6c71bc3cc"],
+  "illustrative": ["fixture-no-solver"],
+  "accepted": []
+}

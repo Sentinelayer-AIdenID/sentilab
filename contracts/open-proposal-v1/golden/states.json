@@ -1,0 +1,3223 @@
+{
+ "pairs": [
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "accept",
+   "payload": {},
+   "expect": {
+    "state": "queued",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {
+    "codes": [
+     "lattice"
+    ]
+   },
+   "expect": {
+    "state": "rejected",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "hold",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "release",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "start",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {
+    "settled": true
+   },
+   "expect": null
+  },
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "timeout"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "replay",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "reproduced",
+   "payload": {
+    "settled": true,
+    "fresh_process": true
+   },
+   "expect": null
+  },
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "not_reproduced",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "reproduction_mismatch"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": "cross_build"
+   },
+   "expect": null
+  },
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "cancel",
+   "payload": {
+    "codes": [
+     "participant_removed"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "expire",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": null
+  },
+  {
+   "state": null,
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": null
+  },
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": null
+  },
+  {
+   "state": null,
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": null
+  },
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": null
+  },
+  {
+   "state": null,
+   "hidden": null,
+   "visibility": "public",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": null
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "private",
+   "event": "accept",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {
+    "codes": [
+     "lattice"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hold",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "private",
+   "event": "release",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "private",
+   "event": "start",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {
+    "settled": true
+   },
+   "expect": null
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "timeout"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "private",
+   "event": "replay",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reproduced",
+   "payload": {
+    "settled": true,
+    "fresh_process": true
+   },
+   "expect": null
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "private",
+   "event": "not_reproduced",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "reproduction_mismatch"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": "cross_build"
+   },
+   "expect": null
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cancel",
+   "payload": {
+    "codes": [
+     "participant_removed"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "private",
+   "event": "expire",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": {
+    "state": "rejected",
+    "hidden": "spam",
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "rejected",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": null
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": null
+  },
+  {
+   "state": "rejected",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": {
+    "state": "rejected",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "private",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": {
+    "state": "rejected",
+    "hidden": null,
+    "visibility": "public"
+   }
+  },
+  {
+   "state": "rejected",
+   "hidden": null,
+   "visibility": "public",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": null
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "accept",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {
+    "codes": [
+     "lattice"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hold",
+   "payload": {
+    "operator": true
+   },
+   "expect": {
+    "state": "held",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "release",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "start",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": {
+    "state": "evaluating",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {
+    "settled": true
+   },
+   "expect": null
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "timeout"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "replay",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reproduced",
+   "payload": {
+    "settled": true,
+    "fresh_process": true
+   },
+   "expect": null
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "not_reproduced",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "reproduction_mismatch"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": "cross_build"
+   },
+   "expect": null
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cancel",
+   "payload": {
+    "codes": [
+     "participant_removed"
+    ]
+   },
+   "expect": {
+    "state": "cancelled",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "expire",
+   "payload": {},
+   "expect": {
+    "state": "expired",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": {
+    "state": "queued",
+    "hidden": "spam",
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "queued",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": null
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": null
+  },
+  {
+   "state": "queued",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": {
+    "state": "queued",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": {
+    "state": "queued",
+    "hidden": null,
+    "visibility": "public"
+   }
+  },
+  {
+   "state": "queued",
+   "hidden": null,
+   "visibility": "public",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": null
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "private",
+   "event": "accept",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {
+    "codes": [
+     "lattice"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hold",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "private",
+   "event": "release",
+   "payload": {
+    "operator": true
+   },
+   "expect": {
+    "state": "queued",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "private",
+   "event": "start",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {
+    "settled": true
+   },
+   "expect": null
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "timeout"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "private",
+   "event": "replay",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reproduced",
+   "payload": {
+    "settled": true,
+    "fresh_process": true
+   },
+   "expect": null
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "private",
+   "event": "not_reproduced",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "reproduction_mismatch"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": "cross_build"
+   },
+   "expect": null
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cancel",
+   "payload": {
+    "codes": [
+     "participant_removed"
+    ]
+   },
+   "expect": {
+    "state": "cancelled",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "private",
+   "event": "expire",
+   "payload": {},
+   "expect": {
+    "state": "expired",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": {
+    "state": "held",
+    "hidden": "spam",
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "held",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": null
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": null
+  },
+  {
+   "state": "held",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": {
+    "state": "held",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "private",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": {
+    "state": "held",
+    "hidden": null,
+    "visibility": "public"
+   }
+  },
+  {
+   "state": "held",
+   "hidden": null,
+   "visibility": "public",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "accept",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {
+    "codes": [
+     "lattice"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hold",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "release",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "start",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {
+    "settled": true
+   },
+   "expect": {
+    "state": "evaluated",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "timeout"
+    ]
+   },
+   "expect": {
+    "state": "failed",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "replay",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reproduced",
+   "payload": {
+    "settled": true,
+    "fresh_process": true
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "not_reproduced",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "reproduction_mismatch"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": "cross_build"
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cancel",
+   "payload": {
+    "codes": [
+     "participant_removed"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "expire",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": {
+    "state": "evaluating",
+    "hidden": "spam",
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "evaluating",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluating",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": {
+    "state": "evaluating",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": {
+    "state": "evaluating",
+    "hidden": null,
+    "visibility": "public"
+   }
+  },
+  {
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "public",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "accept",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {
+    "codes": [
+     "lattice"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hold",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "release",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "start",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {
+    "settled": true
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "timeout"
+    ]
+   },
+   "expect": {
+    "state": "failed",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "replay",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": {
+    "state": "replaying",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reproduced",
+   "payload": {
+    "settled": true,
+    "fresh_process": true
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "not_reproduced",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "reproduction_mismatch"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": "cross_build"
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cancel",
+   "payload": {
+    "codes": [
+     "participant_removed"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "expire",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": {
+    "state": "evaluated",
+    "hidden": "spam",
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "evaluated",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": null
+  },
+  {
+   "state": "evaluated",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": {
+    "state": "evaluated",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": {
+    "state": "evaluated",
+    "hidden": null,
+    "visibility": "public"
+   }
+  },
+  {
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "public",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": null
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "private",
+   "event": "accept",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {
+    "codes": [
+     "lattice"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hold",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "private",
+   "event": "release",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "private",
+   "event": "start",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {
+    "settled": true
+   },
+   "expect": null
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "timeout"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "private",
+   "event": "replay",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reproduced",
+   "payload": {
+    "settled": true,
+    "fresh_process": true
+   },
+   "expect": null
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "private",
+   "event": "not_reproduced",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "reproduction_mismatch"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": "cross_build"
+   },
+   "expect": null
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cancel",
+   "payload": {
+    "codes": [
+     "participant_removed"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "private",
+   "event": "expire",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": {
+    "state": "failed",
+    "hidden": "spam",
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "failed",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": null
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": null
+  },
+  {
+   "state": "failed",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": {
+    "state": "failed",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "private",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": {
+    "state": "failed",
+    "hidden": null,
+    "visibility": "public"
+   }
+  },
+  {
+   "state": "failed",
+   "hidden": null,
+   "visibility": "public",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": null
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "accept",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {
+    "codes": [
+     "lattice"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hold",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "release",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "start",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {
+    "settled": true
+   },
+   "expect": null
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "timeout"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "replay",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reproduced",
+   "payload": {
+    "settled": true,
+    "fresh_process": true
+   },
+   "expect": {
+    "state": "reproduced",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "not_reproduced",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "reproduction_mismatch"
+    ]
+   },
+   "expect": {
+    "state": "not_reproduced",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": "cross_build"
+   },
+   "expect": null
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cancel",
+   "payload": {
+    "codes": [
+     "participant_removed"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "expire",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": {
+    "state": "replaying",
+    "hidden": "spam",
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "replaying",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": null
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": null
+  },
+  {
+   "state": "replaying",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": {
+    "state": "replaying",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": {
+    "state": "replaying",
+    "hidden": null,
+    "visibility": "public"
+   }
+  },
+  {
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "public",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": null
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "accept",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {
+    "codes": [
+     "lattice"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hold",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "release",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "start",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {
+    "settled": true
+   },
+   "expect": null
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "timeout"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "replay",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reproduced",
+   "payload": {
+    "settled": true,
+    "fresh_process": true
+   },
+   "expect": null
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "not_reproduced",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "reproduction_mismatch"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": "cross_build"
+   },
+   "expect": {
+    "state": "cross_checked",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cancel",
+   "payload": {
+    "codes": [
+     "participant_removed"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "expire",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": {
+    "state": "reproduced",
+    "hidden": "spam",
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "reproduced",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": null
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": null
+  },
+  {
+   "state": "reproduced",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": {
+    "state": "reproduced",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": {
+    "state": "reproduced",
+    "hidden": null,
+    "visibility": "public"
+   }
+  },
+  {
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "public",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": null
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "accept",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {
+    "codes": [
+     "lattice"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hold",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "release",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "start",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {
+    "settled": true
+   },
+   "expect": null
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "timeout"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "replay",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reproduced",
+   "payload": {
+    "settled": true,
+    "fresh_process": true
+   },
+   "expect": null
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "not_reproduced",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "reproduction_mismatch"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": "cross_build"
+   },
+   "expect": null
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cancel",
+   "payload": {
+    "codes": [
+     "participant_removed"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "expire",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": {
+    "state": "not_reproduced",
+    "hidden": "spam",
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": null
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": null
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": {
+    "state": "not_reproduced",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": {
+    "state": "not_reproduced",
+    "hidden": null,
+    "visibility": "public"
+   }
+  },
+  {
+   "state": "not_reproduced",
+   "hidden": null,
+   "visibility": "public",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": null
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "private",
+   "event": "accept",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {
+    "codes": [
+     "lattice"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hold",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "private",
+   "event": "release",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "private",
+   "event": "start",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {
+    "settled": true
+   },
+   "expect": null
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "timeout"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "private",
+   "event": "replay",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reproduced",
+   "payload": {
+    "settled": true,
+    "fresh_process": true
+   },
+   "expect": null
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "private",
+   "event": "not_reproduced",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "reproduction_mismatch"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": "cross_build"
+   },
+   "expect": null
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cancel",
+   "payload": {
+    "codes": [
+     "participant_removed"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "private",
+   "event": "expire",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": {
+    "state": "cross_checked",
+    "hidden": "spam",
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "cross_checked",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": null
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": null
+  },
+  {
+   "state": "cross_checked",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": {
+    "state": "cross_checked",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "private",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": {
+    "state": "cross_checked",
+    "hidden": null,
+    "visibility": "public"
+   }
+  },
+  {
+   "state": "cross_checked",
+   "hidden": null,
+   "visibility": "public",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": null
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "private",
+   "event": "accept",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {
+    "codes": [
+     "lattice"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hold",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "private",
+   "event": "release",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "private",
+   "event": "start",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {
+    "settled": true
+   },
+   "expect": null
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "timeout"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "private",
+   "event": "replay",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reproduced",
+   "payload": {
+    "settled": true,
+    "fresh_process": true
+   },
+   "expect": null
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "private",
+   "event": "not_reproduced",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "reproduction_mismatch"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": "cross_build"
+   },
+   "expect": null
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cancel",
+   "payload": {
+    "codes": [
+     "participant_removed"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "private",
+   "event": "expire",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": {
+    "state": "cancelled",
+    "hidden": "spam",
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "cancelled",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": null
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": null
+  },
+  {
+   "state": "cancelled",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": {
+    "state": "cancelled",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "private",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": {
+    "state": "cancelled",
+    "hidden": null,
+    "visibility": "public"
+   }
+  },
+  {
+   "state": "cancelled",
+   "hidden": null,
+   "visibility": "public",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": null
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "private",
+   "event": "accept",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {
+    "codes": [
+     "lattice"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hold",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "private",
+   "event": "release",
+   "payload": {
+    "operator": true
+   },
+   "expect": null
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "private",
+   "event": "start",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {
+    "settled": true
+   },
+   "expect": null
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "timeout"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "private",
+   "event": "replay",
+   "payload": {
+    "reservation_id": "00000000-0000-4000-8000-0000000000e1"
+   },
+   "expect": null
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reproduced",
+   "payload": {
+    "settled": true,
+    "fresh_process": true
+   },
+   "expect": null
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "private",
+   "event": "not_reproduced",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "reproduction_mismatch"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": "cross_build"
+   },
+   "expect": null
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cancel",
+   "payload": {
+    "codes": [
+     "participant_removed"
+    ]
+   },
+   "expect": null
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "private",
+   "event": "expire",
+   "payload": {},
+   "expect": null
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": {
+    "state": "expired",
+    "hidden": "spam",
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "expired",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   },
+   "expect": null
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": null
+  },
+  {
+   "state": "expired",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "reinstated"
+   },
+   "expect": {
+    "state": "expired",
+    "hidden": null,
+    "visibility": "private"
+   }
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "private",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": {
+    "state": "expired",
+    "hidden": null,
+    "visibility": "public"
+   }
+  },
+  {
+   "state": "expired",
+   "hidden": null,
+   "visibility": "public",
+   "event": "publish",
+   "payload": {
+    "sealed": true
+   },
+   "expect": null
+  }
+ ],
+ "guards": [
+  {
+   "name": "hold needs an operator",
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hold",
+   "payload": {}
+  },
+  {
+   "name": "start needs a reservation",
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "start",
+   "payload": {}
+  },
+  {
+   "name": "a reservation id is a UUID",
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "start",
+   "payload": {
+    "reservation_id": "r-1"
+   }
+  },
+  {
+   "name": "replay needs a reservation",
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "replay",
+   "payload": {}
+  },
+  {
+   "name": "complete needs settlement",
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {}
+  },
+  {
+   "name": "an evaluation carries qualifier codes only",
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "lattice"
+    ]
+   }
+  },
+  {
+   "name": "a failure needs a code",
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true
+   }
+  },
+  {
+   "name": "a failure has one code",
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "timeout",
+     "stopped"
+    ]
+   }
+  },
+  {
+   "name": "router_timeout is not a failure",
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "router_timeout"
+    ]
+   }
+  },
+  {
+   "name": "binding_mismatch is not a failure",
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "binding_mismatch"
+    ]
+   }
+  },
+  {
+   "name": "check_unfinished is a check's code only",
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "check_unfinished"
+    ]
+   }
+  },
+  {
+   "name": "a failure is settled",
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "fail",
+   "payload": {
+    "codes": [
+     "timeout"
+    ]
+   }
+  },
+  {
+   "name": "settled is exactly true, not 1",
+   "state": "evaluating",
+   "hidden": null,
+   "visibility": "private",
+   "event": "complete",
+   "payload": {
+    "settled": 1
+   }
+  },
+  {
+   "name": "a rejection needs codes",
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {}
+  },
+  {
+   "name": "a rejection needs rejection codes",
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {
+    "codes": [
+     "timeout"
+    ]
+   }
+  },
+  {
+   "name": "reproduction needs a fresh process",
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "reproduced",
+   "payload": {
+    "settled": true
+   }
+  },
+  {
+   "name": "a failed reproduction needs its code",
+   "state": "replaying",
+   "hidden": null,
+   "visibility": "private",
+   "event": "not_reproduced",
+   "payload": {
+    "settled": true,
+    "codes": [
+     "timeout"
+    ]
+   }
+  },
+  {
+   "name": "a cross-check is cross_build or cross_arch, never cross_solver",
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": "cross_solver"
+   }
+  },
+  {
+   "name": "replayed is not a cross-check",
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": "replayed"
+   }
+  },
+  {
+   "name": "a cancellation carries policy codes only",
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cancel",
+   "payload": {
+    "codes": [
+     "timeout"
+    ]
+   }
+  },
+  {
+   "name": "accept carries no codes",
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "accept",
+   "payload": {
+    "codes": [
+     "lattice"
+    ]
+   }
+  },
+  {
+   "name": "codes are a list",
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {
+    "codes": "lattice"
+   }
+  },
+  {
+   "name": "codes are code names",
+   "state": null,
+   "hidden": null,
+   "visibility": "private",
+   "event": "reject",
+   "payload": {
+    "codes": [
+     {
+      "code": "lattice"
+     }
+    ]
+   }
+  },
+  {
+   "name": "a tier is a name",
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "cross_checked",
+   "payload": {
+    "settled": true,
+    "tier": [
+     "cross_build"
+    ]
+   }
+  },
+  {
+   "name": "a moderation reason is a name",
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": [
+     "spam"
+    ]
+   }
+  },
+  {
+   "name": "hiding needs a moderation reason",
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "operator": true,
+    "reason": "rude"
+   }
+  },
+  {
+   "name": "restoring needs its reason",
+   "state": "evaluated",
+   "hidden": "spam",
+   "visibility": "private",
+   "event": "restore",
+   "payload": {
+    "operator": true,
+    "reason": "spam"
+   }
+  },
+  {
+   "name": "hiding is an operator's",
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "hide",
+   "payload": {
+    "reason": "spam"
+   }
+  },
+  {
+   "name": "an unknown event",
+   "state": "queued",
+   "hidden": null,
+   "visibility": "private",
+   "event": "requeue",
+   "payload": {
+    "operator": true
+   }
+  },
+  {
+   "name": "publication is a sealed command",
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "publish",
+   "payload": {}
+  },
+  {
+   "name": "a publication refused for its terms changes nothing",
+   "state": "evaluated",
+   "hidden": null,
+   "visibility": "private",
+   "event": "publish",
+   "payload": {
+    "sealed": true,
+    "codes": [
+     "terms_not_accepted"
+    ]
+   }
+  },
+  {
+   "name": "a publication refused for ownership changes nothing",
+   "state": "reproduced",
+   "hidden": null,
+   "visibility": "private",
+   "event": "publish",
+   "payload": {
+    "sealed": true,
+    "codes": [
+     "unknown_proposal"
+    ]
+   }
+  }
+ ],
+ "summary": {
+  "rejected": "rejected",
+  "queued": "queued",
+  "held": "queued",
+  "evaluating": "queued",
+  "evaluated": "evaluated",
+  "failed": "evaluated",
+  "replaying": "evaluated",
+  "not_reproduced": "evaluated",
+  "reproduced": "independently verified",
+  "cross_checked": "independently verified",
+  "cancelled": null,
+  "expired": null
+ },
+ "charged": {
+  "rejected": false,
+  "queued": false,
+  "held": false,
+  "evaluating": true,
+  "evaluated": true,
+  "failed": true,
+  "replaying": true,
+  "reproduced": true,
+  "not_reproduced": true,
+  "cross_checked": true,
+  "cancelled": false,
+  "expired": false
+ }
+}

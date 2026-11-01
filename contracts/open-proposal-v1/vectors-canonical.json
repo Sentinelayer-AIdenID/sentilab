@@ -1,0 +1,2116 @@
+{
+ "schema": "sentilab-open-vectors/1",
+ "test_phrases": {
+  "k_challenge": "sentilab-open-proposal-v1 test k_challenge, not a secret",
+  "derivation": "sha256 of the UTF-8 phrase gives the 32 bytes"
+ },
+ "canonical": [
+  {
+   "name": "keys sort",
+   "value": {
+    "b": 1,
+    "a": 2
+   },
+   "canonical": "{\"a\":2,\"b\":1}",
+   "sha256": "d3626ac30a87e6f7a6428233b3c68299976865fa5508e4267c5415c76af7a772"
+  },
+  {
+   "name": "nested objects and arrays keep array order",
+   "value": {
+    "z": [
+     3,
+     {
+      "y": null,
+      "x": true
+     }
+    ],
+    "a": "s"
+   },
+   "canonical": "{\"a\":\"s\",\"z\":[3,{\"x\":true,\"y\":null}]}",
+   "sha256": "0c77cd2ea9d13f0318f50c089a91dde66c67ec7646673981ae9d83b78a76212a"
+  },
+  {
+   "name": "numbers in ECMAScript form",
+   "value": [
+    0,
+    -0.0,
+    1,
+    -1,
+    1.5,
+    0.1,
+    16417.5,
+    75.48,
+    1e+20,
+    1e+21,
+    1e-06,
+    1e-07
+   ],
+   "canonical": "[0,0,1,-1,1.5,0.1,16417.5,75.48,100000000000000000000,1e+21,0.000001,1e-7]",
+   "sha256": "be39658725a2befb7d0a7e0b58d1f73ce106332ca73b1d6332ef331a1322028d"
+  },
+  {
+   "name": "keys sort by UTF-16 code units, not code points",
+   "value": {
+    "ﬁ": 1,
+    "😀": 2,
+    "z": 3
+   },
+   "canonical": "{\"z\":3,\"😀\":2,\"ﬁ\":1}",
+   "sha256": "ab6100d253cb4c4150785e30d4faa3022ed6910e357e0352cf32ad674e107e7f"
+  },
+  {
+   "name": "strings escape only quote, backslash and control characters",
+   "value": {
+    "s": "say \"hi\" \\ é 😀\n\t\u001f"
+   },
+   "canonical": "{\"s\":\"say \\\"hi\\\" \\\\ é 😀\\n\\t\\u001f\"}",
+   "sha256": "f47d48695693c84440924c04f1ddb66ac11d028eba8d8fe080d20f3f74ac6780"
+  },
+  {
+   "name": "an empty object differs from a null field",
+   "value": {
+    "present": null
+   },
+   "canonical": "{\"present\":null}",
+   "sha256": "924c481da1aca4bbd856f20e4aaef20f67c34fccd0b5e27cb2647b8c45ee21ac"
+  },
+  {
+   "name": "supplementary characters stay literal, up to U+10FFFF",
+   "value": {
+    "s": "𐀀􏿿"
+   },
+   "canonical": "{\"s\":\"𐀀􏿿\"}",
+   "sha256": "5f7583fc633c689ae64af5df6b6455456945c934c98395d2ad8b67a7bfa4291e"
+  }
+ ],
+ "manifest_id": [
+  {
+   "manifest": "A",
+   "manifest_id": "c545a303c550ab6e6caaadb8d67eae97978e9382c0f938ef8ac591e51fd67932"
+  },
+  {
+   "manifest": "M",
+   "manifest_id": "6b79a83791536b726785cbf8e73c8bab11311d6fc22f9f057b35546118d02e55"
+  },
+  {
+   "manifest": "F",
+   "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956"
+  },
+  {
+   "manifest": "F2",
+   "manifest_id": "c79ced6e6d66406bc560f9b6b8fab6755034ee99792f4c0c0aae7225cf93ef6e"
+  },
+  {
+   "manifest": "S",
+   "manifest_id": "6134d3262e567f2f892dbb0146a0b57e148e930cf94e0afe217e7bcefe6a6f02"
+  }
+ ],
+ "objects": {
+  "P_A": {
+   "schema": "sentilab-open-proposal/1",
+   "manifest_id": "c545a303c550ab6e6caaadb8d67eae97978e9382c0f938ef8ac591e51fd67932",
+   "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
+   "proposal_key": "example-1",
+   "parent": null,
+   "visibility": "private",
+   "salt": "00000000000000000000000000000001",
+   "units": "um",
+   "anchor": "die-centre",
+   "dies": [
+    {
+     "die": 0,
+     "x_um": 17000,
+     "y_um": 23000,
+     "rot_deg": 90
+    },
+    {
+     "die": 1,
+     "x_um": 39000,
+     "y_um": 23000,
+     "rot_deg": 0
+    },
+    {
+     "die": 2,
+     "x_um": 7000,
+     "y_um": 11000,
+     "rot_deg": 90
+    },
+    {
+     "die": 3,
+     "x_um": 21000,
+     "y_um": 11000,
+     "rot_deg": 90
+    },
+    {
+     "die": 4,
+     "x_um": 7000,
+     "y_um": 35000,
+     "rot_deg": 90
+    },
+    {
+     "die": 5,
+     "x_um": 21000,
+     "y_um": 35000,
+     "rot_deg": 90
+    }
+   ],
+   "geometry_sha256": "f51eb4ec7db6b5d043eb7da44ba766452031788dc58491f190440a46cd6c0413",
+   "client": {
+    "name": "example-agent",
+    "version": "0.1.0"
+   }
+  },
+  "P_PUB": {
+   "schema": "sentilab-open-proposal/1",
+   "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+   "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
+   "proposal_key": "t-1",
+   "parent": null,
+   "visibility": "public",
+   "salt": "00000000000000000000000000000002",
+   "units": "um",
+   "anchor": "die-centre",
+   "dies": [
+    {
+     "die": 0,
+     "x_um": 3000,
+     "y_um": 5000,
+     "rot_deg": 0
+    },
+    {
+     "die": 1,
+     "x_um": 7000,
+     "y_um": 5000,
+     "rot_deg": 0
+    }
+   ],
+   "geometry_sha256": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488",
+   "client": {
+    "name": "example-agent",
+    "version": "0.1.0"
+   }
+  },
+  "P_PRIV": {
+   "schema": "sentilab-open-proposal/1",
+   "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+   "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
+   "proposal_key": "t-2",
+   "parent": null,
+   "visibility": "private",
+   "salt": "00000000000000000000000000000003",
+   "units": "um",
+   "anchor": "die-centre",
+   "dies": [
+    {
+     "die": 0,
+     "x_um": 3000,
+     "y_um": 5000,
+     "rot_deg": 0
+    },
+    {
+     "die": 1,
+     "x_um": 7000,
+     "y_um": 5000,
+     "rot_deg": 0
+    }
+   ],
+   "geometry_sha256": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+  },
+  "P_CHILD": {
+   "schema": "sentilab-open-proposal/1",
+   "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+   "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
+   "proposal_key": "t-3",
+   "parent": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488",
+   "visibility": "public",
+   "salt": "00000000000000000000000000000004",
+   "units": "um",
+   "anchor": "die-centre",
+   "dies": [
+    {
+     "die": 0,
+     "x_um": 3000,
+     "y_um": 5500,
+     "rot_deg": 0
+    },
+    {
+     "die": 1,
+     "x_um": 7000,
+     "y_um": 5000,
+     "rot_deg": 0
+    }
+   ],
+   "geometry_sha256": "9694b6e92da963988e2db0e2e91fa965382342cecbe2b6d38f6f238fc1ac9152",
+   "client": {
+    "name": "example-agent",
+    "version": "0.1.0"
+   }
+  },
+  "P_PRIV_F2": {
+   "schema": "sentilab-open-proposal/1",
+   "manifest_id": "c79ced6e6d66406bc560f9b6b8fab6755034ee99792f4c0c0aae7225cf93ef6e",
+   "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
+   "proposal_key": "t-2",
+   "parent": null,
+   "visibility": "private",
+   "salt": "00000000000000000000000000000003",
+   "units": "um",
+   "anchor": "die-centre",
+   "dies": [
+    {
+     "die": 0,
+     "x_um": 3000,
+     "y_um": 5000,
+     "rot_deg": 0
+    },
+    {
+     "die": 1,
+     "x_um": 7000,
+     "y_um": 5000,
+     "rot_deg": 0
+    }
+   ],
+   "geometry_sha256": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+  },
+  "C_PUB": {
+   "schema": "sentilab-open-check-request/1",
+   "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+   "request_key": "c-1",
+   "visibility": "public",
+   "salt": "00000000000000000000000000000005",
+   "units": "um",
+   "anchor": "die-centre",
+   "dies": [
+    {
+     "die": 0,
+     "x_um": 3000,
+     "y_um": 5000,
+     "rot_deg": 0
+    },
+    {
+     "die": 1,
+     "x_um": 7000,
+     "y_um": 5000,
+     "rot_deg": 0
+    }
+   ],
+   "geometry_sha256": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+  },
+  "C_PRIV": {
+   "schema": "sentilab-open-check-request/1",
+   "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+   "request_key": "c-2",
+   "visibility": "private",
+   "salt": "00000000000000000000000000000006",
+   "units": "um",
+   "anchor": "die-centre",
+   "dies": [
+    {
+     "die": 0,
+     "x_um": 3000,
+     "y_um": 5000,
+     "rot_deg": 0
+    },
+    {
+     "die": 1,
+     "x_um": 7000,
+     "y_um": 5000,
+     "rot_deg": 0
+    }
+   ],
+   "geometry_sha256": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+  },
+  "TEAM": {
+   "schema": "sentilab-open-team/1",
+   "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+   "name": "Team Example 7"
+  },
+  "PUBLISH": {
+   "schema": "sentilab-open-publish/1",
+   "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+   "terms": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
+   "proposal_sha256": "78d922ef7d0c1e14d382e6f9b08cfb6440d35e6ab2d523e50b8ac92e9d5f8583"
+  }
+ },
+ "geometry": [
+  {
+   "object": "P_A",
+   "manifest": "A",
+   "preimage": {
+    "schema": "sentilab-open-geometry/1",
+    "problem": "ascend910",
+    "fixture_config_sha256": "4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c",
+    "units": "um",
+    "anchor": "die-centre",
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 17000,
+      "y_um": 23000,
+      "rot_deg": 90
+     },
+     {
+      "die": 1,
+      "x_um": 39000,
+      "y_um": 23000,
+      "rot_deg": 0
+     },
+     {
+      "die": 2,
+      "x_um": 7000,
+      "y_um": 11000,
+      "rot_deg": 90
+     },
+     {
+      "die": 3,
+      "x_um": 21000,
+      "y_um": 11000,
+      "rot_deg": 90
+     },
+     {
+      "die": 4,
+      "x_um": 7000,
+      "y_um": 35000,
+      "rot_deg": 90
+     },
+     {
+      "die": 5,
+      "x_um": 21000,
+      "y_um": 35000,
+      "rot_deg": 90
+     }
+    ]
+   },
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":90,\"x_um\":17000,\"y_um\":23000},{\"die\":1,\"rot_deg\":0,\"x_um\":39000,\"y_um\":23000},{\"die\":2,\"rot_deg\":90,\"x_um\":7000,\"y_um\":11000},{\"die\":3,\"rot_deg\":90,\"x_um\":21000,\"y_um\":11000},{\"die\":4,\"rot_deg\":90,\"x_um\":7000,\"y_um\":35000},{\"die\":5,\"rot_deg\":90,\"x_um\":21000,\"y_um\":35000}],\"fixture_config_sha256\":\"4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c\",\"problem\":\"ascend910\",\"schema\":\"sentilab-open-geometry/1\",\"units\":\"um\"}",
+   "geometry_sha256": "f51eb4ec7db6b5d043eb7da44ba766452031788dc58491f190440a46cd6c0413"
+  },
+  {
+   "object": "P_PUB",
+   "manifest": "F",
+   "preimage": {
+    "schema": "sentilab-open-geometry/1",
+    "problem": "test-two-die",
+    "fixture_config_sha256": "89ff080af6a70e7ec40ef7917f79a3cabe27ce3a9755b24030aec9577379a6b0",
+    "units": "um",
+    "anchor": "die-centre",
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 3000,
+      "y_um": 5000,
+      "rot_deg": 0
+     },
+     {
+      "die": 1,
+      "x_um": 7000,
+      "y_um": 5000,
+      "rot_deg": 0
+     }
+    ]
+   },
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"fixture_config_sha256\":\"89ff080af6a70e7ec40ef7917f79a3cabe27ce3a9755b24030aec9577379a6b0\",\"problem\":\"test-two-die\",\"schema\":\"sentilab-open-geometry/1\",\"units\":\"um\"}",
+   "geometry_sha256": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+  },
+  {
+   "object": "P_PRIV",
+   "manifest": "F",
+   "preimage": {
+    "schema": "sentilab-open-geometry/1",
+    "problem": "test-two-die",
+    "fixture_config_sha256": "89ff080af6a70e7ec40ef7917f79a3cabe27ce3a9755b24030aec9577379a6b0",
+    "units": "um",
+    "anchor": "die-centre",
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 3000,
+      "y_um": 5000,
+      "rot_deg": 0
+     },
+     {
+      "die": 1,
+      "x_um": 7000,
+      "y_um": 5000,
+      "rot_deg": 0
+     }
+    ]
+   },
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"fixture_config_sha256\":\"89ff080af6a70e7ec40ef7917f79a3cabe27ce3a9755b24030aec9577379a6b0\",\"problem\":\"test-two-die\",\"schema\":\"sentilab-open-geometry/1\",\"units\":\"um\"}",
+   "geometry_sha256": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+  },
+  {
+   "object": "C_PRIV",
+   "manifest": "F",
+   "preimage": {
+    "schema": "sentilab-open-geometry/1",
+    "problem": "test-two-die",
+    "fixture_config_sha256": "89ff080af6a70e7ec40ef7917f79a3cabe27ce3a9755b24030aec9577379a6b0",
+    "units": "um",
+    "anchor": "die-centre",
+    "dies": [
+     {
+      "die": 0,
+      "x_um": 3000,
+      "y_um": 5000,
+      "rot_deg": 0
+     },
+     {
+      "die": 1,
+      "x_um": 7000,
+      "y_um": 5000,
+      "rot_deg": 0
+     }
+    ]
+   },
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"fixture_config_sha256\":\"89ff080af6a70e7ec40ef7917f79a3cabe27ce3a9755b24030aec9577379a6b0\",\"problem\":\"test-two-die\",\"schema\":\"sentilab-open-geometry/1\",\"units\":\"um\"}",
+   "geometry_sha256": "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+  }
+ ],
+ "content": [
+  {
+   "object": "P_A",
+   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":90,\"x_um\":17000,\"y_um\":23000},{\"die\":1,\"rot_deg\":0,\"x_um\":39000,\"y_um\":23000},{\"die\":2,\"rot_deg\":90,\"x_um\":7000,\"y_um\":11000},{\"die\":3,\"rot_deg\":90,\"x_um\":21000,\"y_um\":11000},{\"die\":4,\"rot_deg\":90,\"x_um\":7000,\"y_um\":35000},{\"die\":5,\"rot_deg\":90,\"x_um\":21000,\"y_um\":35000}],\"geometry_sha256\":\"f51eb4ec7db6b5d043eb7da44ba766452031788dc58491f190440a46cd6c0413\",\"manifest_id\":\"c545a303c550ab6e6caaadb8d67eae97978e9382c0f938ef8ac591e51fd67932\",\"parent\":null,\"proposal_key\":\"example-1\",\"salt\":\"00000000000000000000000000000001\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"private\"}",
+   "content_sha256": "a61effdb994817dcd625a7f07fc1ffa58d5db42560ead8790ad374b84d627408",
+   "logical_key": "example-1"
+  },
+  {
+   "object": "P_PUB",
+   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956\",\"parent\":null,\"proposal_key\":\"t-1\",\"salt\":\"00000000000000000000000000000002\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"public\"}",
+   "content_sha256": "9835c490e1010beaef32ed826f6d14e07eaa1119ddf2fa15835d53bd0fc04ece",
+   "logical_key": "t-1"
+  },
+  {
+   "object": "P_PRIV",
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956\",\"parent\":null,\"proposal_key\":\"t-2\",\"salt\":\"00000000000000000000000000000003\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"private\"}",
+   "content_sha256": "78d922ef7d0c1e14d382e6f9b08cfb6440d35e6ab2d523e50b8ac92e9d5f8583",
+   "logical_key": "t-2"
+  },
+  {
+   "object": "P_CHILD",
+   "canonical": "{\"anchor\":\"die-centre\",\"client\":{\"name\":\"example-agent\",\"version\":\"0.1.0\"},\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5500},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"9694b6e92da963988e2db0e2e91fa965382342cecbe2b6d38f6f238fc1ac9152\",\"manifest_id\":\"73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956\",\"parent\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"proposal_key\":\"t-3\",\"salt\":\"00000000000000000000000000000004\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"public\"}",
+   "content_sha256": "9906238604d140a984fb46c9181d4a9e51aa61c353830a013b2e8dd708cd4f9e",
+   "logical_key": "t-3"
+  },
+  {
+   "object": "P_PRIV_F2",
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"c79ced6e6d66406bc560f9b6b8fab6755034ee99792f4c0c0aae7225cf93ef6e\",\"parent\":null,\"proposal_key\":\"t-2\",\"salt\":\"00000000000000000000000000000003\",\"schema\":\"sentilab-open-proposal/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\",\"units\":\"um\",\"visibility\":\"private\"}",
+   "content_sha256": "53e5853f653d4b1a34b50d213b82273e625177d908295ac15e7c3cfa67e73f01",
+   "logical_key": "t-2"
+  },
+  {
+   "object": "C_PUB",
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956\",\"request_key\":\"c-1\",\"salt\":\"00000000000000000000000000000005\",\"schema\":\"sentilab-open-check-request/1\",\"units\":\"um\",\"visibility\":\"public\"}",
+   "content_sha256": "67c4799d71d149deae867a4ad33bc03deba632b3694fd48fa63e7875c55587cc",
+   "logical_key": "c-1"
+  },
+  {
+   "object": "C_PRIV",
+   "canonical": "{\"anchor\":\"die-centre\",\"dies\":[{\"die\":0,\"rot_deg\":0,\"x_um\":3000,\"y_um\":5000},{\"die\":1,\"rot_deg\":0,\"x_um\":7000,\"y_um\":5000}],\"geometry_sha256\":\"58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488\",\"manifest_id\":\"73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956\",\"request_key\":\"c-2\",\"salt\":\"00000000000000000000000000000006\",\"schema\":\"sentilab-open-check-request/1\",\"units\":\"um\",\"visibility\":\"private\"}",
+   "content_sha256": "529f2991fffae67ef34dbf441a5d68712b7c8d8857ecd5f93d9f4405edbeb8c8",
+   "logical_key": "c-2"
+  },
+  {
+   "object": "TEAM",
+   "canonical": "{\"manifest_id\":\"73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956\",\"name\":\"Team Example 7\",\"schema\":\"sentilab-open-team/1\"}",
+   "content_sha256": "7eb9877f7333abd2ac1791db035e1e4e5805bfcb2980a3631771e4004eb7a3fb",
+   "logical_key": "team"
+  },
+  {
+   "object": "PUBLISH",
+   "canonical": "{\"manifest_id\":\"73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956\",\"proposal_sha256\":\"78d922ef7d0c1e14d382e6f9b08cfb6440d35e6ab2d523e50b8ac92e9d5f8583\",\"schema\":\"sentilab-open-publish/1\",\"terms\":\"sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175\"}",
+   "content_sha256": "ca2e9613aa4b4ce3795cdbf76a7fcb46a7422dc6b2e4247764c9d94820dd626c",
+   "logical_key": "publish:78d922ef7d0c1e14d382e6f9b08cfb6440d35e6ab2d523e50b8ac92e9d5f8583"
+  }
+ ],
+ "body_sha256": [
+  {
+   "note_b64": "eyJzY2hlbWEiOiAic2VudGlsYWItb3Blbi1wcm9wb3NhbC8xIiwgIm1hbmlmZXN0X2lkIjogIjczZmI0ZjIyMDBhNmMzZjdkYThmNTYxNGY2NmQ5YjNiNDUzNGU3MmY1NjgxOTY3MWNmN2E3YmVkMDA1YzU5NTYiLCAidGVybXMiOiAic2VudGlsYWItb3Blbi10ZXJtcy8xQGU5ZDkyYTk5MTk2YzAxMTBlNWRiODg1N2QzZTZhNzgzMGJmOTBiMzlmM2ZjNGViODhhODIzNWVlZWYzOGMxNzUiLCAicHJvcG9zYWxfa2V5IjogInQtMSIsICJwYXJlbnQiOiBudWxsLCAidmlzaWJpbGl0eSI6ICJwdWJsaWMiLCAic2FsdCI6ICIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMiIsICJ1bml0cyI6ICJ1bSIsICJhbmNob3IiOiAiZGllLWNlbnRyZSIsICJkaWVzIjogW3siZGllIjogMCwgInhfdW0iOiAzMDAwLCAieV91bSI6IDUwMDAsICJyb3RfZGVnIjogMH0sIHsiZGllIjogMSwgInhfdW0iOiA3MDAwLCAieV91bSI6IDUwMDAsICJyb3RfZGVnIjogMH1dLCAiZ2VvbWV0cnlfc2hhMjU2IjogIjU4MjI2ZThlMmI1YzZjYjNiODY5OGU3ZWQ1MTk0NTQ3NWZmZWJkMmUzZGUzNTU1ZmI0MzljYWViN2NlMjk0ODgiLCAiY2xpZW50IjogeyJuYW1lIjogImV4YW1wbGUtYWdlbnQiLCAidmVyc2lvbiI6ICIwLjEuMCJ9fQ==",
+   "body_sha256": "00550788471dbe453c0248b97192adc71203f754e4f628b10a0bdd64d1ab9c24"
+  },
+  {
+   "note_b64": "eyJzY2hlbWEiOiAic2VudGlsYWItb3Blbi1wcm9wb3NhbC8xIiwgIm1hbmlmZXN0X2lkIjogIjczZmI0ZjIyMDBhNmMzZjdkYThmNTYxNGY2NmQ5YjNiNDUzNGU3MmY1NjgxOTY3MWNmN2E3YmVkMDA1YzU5NTYiLCAidGVybXMiOiAic2VudGlsYWItb3Blbi10ZXJtcy8xQGU5ZDkyYTk5MTk2YzAxMTBlNWRiODg1N2QzZTZhNzgzMGJmOTBiMzlmM2ZjNGViODhhODIzNWVlZWYzOGMxNzUiLCAicHJvcG9zYWxfa2V5IjogInQtMSIsICJwYXJlbnQiOiBudWxsLCAidmlzaWJpbGl0eSI6ICJwdWJsaWMiLCAic2FsdCI6ICIwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMiIsICJ1bml0cyI6ICJ1bSIsICJhbmNob3IiOiAiZGllLWNlbnRyZSIsICJkaWVzIjogW3siZGllIjogMCwgInhfdW0iOiAzMDAwLCAieV91bSI6IDUwMDAsICJyb3RfZGVnIjogMH0sIHsiZGllIjogMSwgInhfdW0iOiA3MDAwLCAieV91bSI6IDUwMDAsICJyb3RfZGVnIjogMH1dLCAiZ2VvbWV0cnlfc2hhMjU2IjogIjU4MjI2ZThlMmI1YzZjYjNiODY5OGU3ZWQ1MTk0NTQ3NWZmZWJkMmUzZGUzNTU1ZmI0MzljYWViN2NlMjk0ODgiLCAiY2xpZW50IjogeyJuYW1lIjogImV4YW1wbGUtYWdlbnQiLCAidmVyc2lvbiI6ICIwLjEuMCJ9fQo=",
+   "body_sha256": "730011a4608dcb43e0b0ce9fc33af6e89700d8a95e26e8e3cecd3c8cb698af0d"
+  },
+  {
+   "note_b64": "YGBganNvbgp7InNjaGVtYSI6ICJzZW50aWxhYi1vcGVuLXByb3Bvc2FsLzEiLCAibWFuaWZlc3RfaWQiOiAiNzNmYjRmMjIwMGE2YzNmN2RhOGY1NjE0ZjY2ZDliM2I0NTM0ZTcyZjU2ODE5NjcxY2Y3YTdiZWQwMDVjNTk1NiIsICJ0ZXJtcyI6ICJzZW50aWxhYi1vcGVuLXRlcm1zLzFAZTlkOTJhOTkxOTZjMDExMGU1ZGI4ODU3ZDNlNmE3ODMwYmY5MGIzOWYzZmM0ZWI4OGE4MjM1ZWVlZjM4YzE3NSIsICJwcm9wb3NhbF9rZXkiOiAidC0xIiwgInBhcmVudCI6IG51bGwsICJ2aXNpYmlsaXR5IjogInB1YmxpYyIsICJzYWx0IjogIjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAyIiwgInVuaXRzIjogInVtIiwgImFuY2hvciI6ICJkaWUtY2VudHJlIiwgImRpZXMiOiBbeyJkaWUiOiAwLCAieF91bSI6IDMwMDAsICJ5X3VtIjogNTAwMCwgInJvdF9kZWciOiAwfSwgeyJkaWUiOiAxLCAieF91bSI6IDcwMDAsICJ5X3VtIjogNTAwMCwgInJvdF9kZWciOiAwfV0sICJnZW9tZXRyeV9zaGEyNTYiOiAiNTgyMjZlOGUyYjVjNmNiM2I4Njk4ZTdlZDUxOTQ1NDc1ZmZlYmQyZTNkZTM1NTVmYjQzOWNhZWI3Y2UyOTQ4OCIsICJjbGllbnQiOiB7Im5hbWUiOiAiZXhhbXBsZS1hZ2VudCIsICJ2ZXJzaW9uIjogIjAuMS4wIn19CmBgYA==",
+   "body_sha256": "00b1528a69b70396493452e00897c902190bc6627abb7804ec0d26aa85a10cf1"
+  }
+ ],
+ "source_ref": [
+  {
+   "action_id": "00000000-0000-4000-8000-0000000000a1",
+   "source_ref": "a2b6db150d932e9ffe339817c3b881e6fcb2cf9408254df615b8a4078ea5d67e"
+  },
+  {
+   "action_id": "00000000-0000-4000-8000-0000000000a2",
+   "source_ref": "327d7186157c8b364bdb4a8b7e714bb5663e75bf7ad6c7ad91ca2326a3606354"
+  }
+ ],
+ "participant_ref": [
+  {
+   "account_id": "00000000-0000-4000-8000-00000000000a",
+   "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b"
+  },
+  {
+   "account_id": "00000000-0000-4000-8000-00000000000b",
+   "participant_ref": "3076fcfe8bc930a11c4919e4a0a82ec1ab1b939a2de4e0ce8277fe83da4568dd"
+  }
+ ],
+ "actor_slot": [
+  {
+   "actor_kind": "human",
+   "actor_id": null,
+   "actor_slot": "human"
+  },
+  {
+   "actor_kind": "agent",
+   "actor_id": "example-agent",
+   "actor_slot": "agent:example-agent"
+  }
+ ],
+ "transport_key": [
+  {
+   "object": "P_PUB",
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account": "00000000-0000-4000-8000-00000000000a",
+   "actor_kind": "human",
+   "actor_id": null,
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c1",
+    "account": "00000000-0000-4000-8000-00000000000a",
+    "actor_slot": "human",
+    "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+    "logical_key": "t-1",
+    "content_sha256": "9835c490e1010beaef32ed826f6d14e07eaa1119ddf2fa15835d53bd0fc04ece"
+   },
+   "transport": "so1-99cce5d67ec024ffaf2e4febfa1a779f574cc3030313470a"
+  },
+  {
+   "object": "P_PUB",
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account": "00000000-0000-4000-8000-00000000000b",
+   "actor_kind": "agent",
+   "actor_id": "example-agent",
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c1",
+    "account": "00000000-0000-4000-8000-00000000000b",
+    "actor_slot": "agent:example-agent",
+    "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+    "logical_key": "t-1",
+    "content_sha256": "9835c490e1010beaef32ed826f6d14e07eaa1119ddf2fa15835d53bd0fc04ece"
+   },
+   "transport": "so1-5237435f8a78fd23be0fb856c224266343d1bb420be1c421"
+  },
+  {
+   "object": "P_PUB",
+   "room": "00000000-0000-4000-8000-0000000000c2",
+   "account": "00000000-0000-4000-8000-00000000000a",
+   "actor_kind": "human",
+   "actor_id": null,
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c2",
+    "account": "00000000-0000-4000-8000-00000000000a",
+    "actor_slot": "human",
+    "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+    "logical_key": "t-1",
+    "content_sha256": "9835c490e1010beaef32ed826f6d14e07eaa1119ddf2fa15835d53bd0fc04ece"
+   },
+   "transport": "so1-ea628ced1347c368d47bc6d3bf46a320fdbdca82ac565cb6"
+  },
+  {
+   "object": "P_PRIV",
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account": "00000000-0000-4000-8000-00000000000a",
+   "actor_kind": "human",
+   "actor_id": null,
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c1",
+    "account": "00000000-0000-4000-8000-00000000000a",
+    "actor_slot": "human",
+    "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+    "logical_key": "t-2",
+    "content_sha256": "78d922ef7d0c1e14d382e6f9b08cfb6440d35e6ab2d523e50b8ac92e9d5f8583"
+   },
+   "transport": "so1-fcdd246e98fd0c1db60cf90d7915ec4902e0b5df50a386e2"
+  },
+  {
+   "object": "P_CHILD",
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account": "00000000-0000-4000-8000-00000000000a",
+   "actor_kind": "human",
+   "actor_id": null,
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c1",
+    "account": "00000000-0000-4000-8000-00000000000a",
+    "actor_slot": "human",
+    "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+    "logical_key": "t-3",
+    "content_sha256": "9906238604d140a984fb46c9181d4a9e51aa61c353830a013b2e8dd708cd4f9e"
+   },
+   "transport": "so1-3de431c6e4e95857b1dfb860c44b28f9cefcdecbeca59a84"
+  },
+  {
+   "object": "C_PUB",
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account": "00000000-0000-4000-8000-00000000000a",
+   "actor_kind": "human",
+   "actor_id": null,
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c1",
+    "account": "00000000-0000-4000-8000-00000000000a",
+    "actor_slot": "human",
+    "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+    "logical_key": "c-1",
+    "content_sha256": "67c4799d71d149deae867a4ad33bc03deba632b3694fd48fa63e7875c55587cc"
+   },
+   "transport": "so1-1139b9c802098e125a195d086dc16d2e3f80235dbc8898a8"
+  },
+  {
+   "object": "C_PRIV",
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account": "00000000-0000-4000-8000-00000000000b",
+   "actor_kind": "agent",
+   "actor_id": "example-agent",
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c1",
+    "account": "00000000-0000-4000-8000-00000000000b",
+    "actor_slot": "agent:example-agent",
+    "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+    "logical_key": "c-2",
+    "content_sha256": "529f2991fffae67ef34dbf441a5d68712b7c8d8857ecd5f93d9f4405edbeb8c8"
+   },
+   "transport": "so1-5d6add6fa828a17c62c4277a2bfdbe314f235f40f809b883"
+  },
+  {
+   "object": "TEAM",
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account": "00000000-0000-4000-8000-00000000000a",
+   "actor_kind": "human",
+   "actor_id": null,
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c1",
+    "account": "00000000-0000-4000-8000-00000000000a",
+    "actor_slot": "human",
+    "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+    "logical_key": "team",
+    "content_sha256": "7eb9877f7333abd2ac1791db035e1e4e5805bfcb2980a3631771e4004eb7a3fb"
+   },
+   "transport": "so1-0a91cda24223065497baefeb09fd02ca0c4b2d3ab3929807"
+  },
+  {
+   "object": "PUBLISH",
+   "room": "00000000-0000-4000-8000-0000000000c1",
+   "account": "00000000-0000-4000-8000-00000000000a",
+   "actor_kind": "human",
+   "actor_id": null,
+   "preimage": {
+    "schema": "sentilab-open-transport-key/1",
+    "room": "00000000-0000-4000-8000-0000000000c1",
+    "account": "00000000-0000-4000-8000-00000000000a",
+    "actor_slot": "human",
+    "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+    "logical_key": "publish:78d922ef7d0c1e14d382e6f9b08cfb6440d35e6ab2d523e50b8ac92e9d5f8583",
+    "content_sha256": "ca2e9613aa4b4ce3795cdbf76a7fcb46a7422dc6b2e4247764c9d94820dd626c"
+   },
+   "transport": "so1-5b57631508f9ffc91af664fbb740c2afb731a2c6e471b12d"
+  }
+ ],
+ "run_id": [
+  {
+   "case": "one account, a public proposal",
+   "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+   "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b",
+   "proposal_sha256": "9835c490e1010beaef32ed826f6d14e07eaa1119ddf2fa15835d53bd0fc04ece",
+   "preimage": {
+    "schema": "sentilab-open-run/1",
+    "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+    "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b",
+    "proposal_sha256": "9835c490e1010beaef32ed826f6d14e07eaa1119ddf2fa15835d53bd0fc04ece"
+   },
+   "run_id": "open-73fb4f22-fbf058d35dda67855415e1069a30b019",
+   "evaluation_cache_key": [
+    "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+    "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+   ]
+  },
+  {
+   "case": "the same bytes from another account: another run, the same evaluation cache key",
+   "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+   "participant_ref": "3076fcfe8bc930a11c4919e4a0a82ec1ab1b939a2de4e0ce8277fe83da4568dd",
+   "proposal_sha256": "9835c490e1010beaef32ed826f6d14e07eaa1119ddf2fa15835d53bd0fc04ece",
+   "preimage": {
+    "schema": "sentilab-open-run/1",
+    "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+    "participant_ref": "3076fcfe8bc930a11c4919e4a0a82ec1ab1b939a2de4e0ce8277fe83da4568dd",
+    "proposal_sha256": "9835c490e1010beaef32ed826f6d14e07eaa1119ddf2fa15835d53bd0fc04ece"
+   },
+   "run_id": "open-73fb4f22-4973f6d1e1657d8a87d63edd71fae236",
+   "evaluation_cache_key": [
+    "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+    "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+   ]
+  },
+  {
+   "case": "one account, a private proposal",
+   "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+   "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b",
+   "proposal_sha256": "78d922ef7d0c1e14d382e6f9b08cfb6440d35e6ab2d523e50b8ac92e9d5f8583",
+   "preimage": {
+    "schema": "sentilab-open-run/1",
+    "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+    "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b",
+    "proposal_sha256": "78d922ef7d0c1e14d382e6f9b08cfb6440d35e6ab2d523e50b8ac92e9d5f8583"
+   },
+   "run_id": "open-73fb4f22-6d5701e4f503c03b643d4f8f26a7fec8",
+   "evaluation_cache_key": [
+    "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+    "58226e8e2b5c6cb3b8698e7ed51945475ffebd2e3de3555fb439caeb7ce29488"
+   ]
+  }
+ ],
+ "run_id_refused": [
+  {
+   "name": "an upper-case manifest id",
+   "manifest_id": "73FB4F2200A6C3F7DA8F5614F66D9B3B4534E72F56819671CF7A7BED005C5956",
+   "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b",
+   "proposal_sha256": "9835c490e1010beaef32ed826f6d14e07eaa1119ddf2fa15835d53bd0fc04ece"
+  },
+  {
+   "name": "a 63-character proposal hash",
+   "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+   "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b",
+   "proposal_sha256": "9835c490e1010beaef32ed826f6d14e07eaa1119ddf2fa15835d53bd0fc04ec"
+  },
+  {
+   "name": "a valid 16-hex prefix with a non-hex suffix",
+   "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+   "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b",
+   "proposal_sha256": "9835c490e1010beazzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+  },
+  {
+   "name": "a non-hex participant reference",
+   "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+   "participant_ref": "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
+   "proposal_sha256": "9835c490e1010beaef32ed826f6d14e07eaa1119ddf2fa15835d53bd0fc04ece"
+  },
+  {
+   "name": "a 65-character manifest id",
+   "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c59560",
+   "participant_ref": "b806b66e60c2fe62c8b1ccfd1a4ae794ae850066b7d60af8da1eb5a551af332b",
+   "proposal_sha256": "9835c490e1010beaef32ed826f6d14e07eaa1119ddf2fa15835d53bd0fc04ece"
+  }
+ ],
+ "terms_path": [
+  {
+   "version": "sentilab-open-terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175",
+   "path": "/sentilab/open/terms/1@e9d92a99196c0110e5db8857d3e6a7830bf90b39f3fc4eb88a8235eeef38c175.md"
+  },
+  {
+   "version": "sentilab-open-terms/2@ac2ddc6d075abcebaae543c027080e328b45f3a912c74f96372a0b0167a1dce2",
+   "path": "/sentilab/open/terms/2@ac2ddc6d075abcebaae543c027080e328b45f3a912c74f96372a0b0167a1dce2.md"
+  }
+ ],
+ "terms_path_refused": [
+  "sentilab-open-terms/0@0000000000000000000000000000000000000000000000000000000000000000",
+  "sentilab-open-terms/1@000000000000000000000000000000000000000000000000000000000000000",
+  "sentilab-open-terms/1",
+  "open-terms/1@0000000000000000000000000000000000000000000000000000000000000000"
+ ],
+ "sealed_header": [
+  {
+   "manifest_id": "73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956",
+   "key_version": 1,
+   "line": "sentilab-open-sealed/1 73fb4f2200a6c3f7da8f5614f66d9b3b4534e72f56819671cf7a7bed005c5956 1"
+  },
+  {
+   "manifest_id": "c79ced6e6d66406bc560f9b6b8fab6755034ee99792f4c0c0aae7225cf93ef6e",
+   "key_version": 2,
+   "line": "sentilab-open-sealed/1 c79ced6e6d66406bc560f9b6b8fab6755034ee99792f4c0c0aae7225cf93ef6e 2"
+  }
+ ],
+ "sealed_notes": [
+  {
+   "id": "json-key-1",
+   "note": "sentilab-open-sealed/1 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff 1\n-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBVNjNXWmFiekZNUGVsUjBR\nNU5yeEwrVVRRYitObkd4WjNHNTU3Q1RXeG1nCi9NbGFQeHhXTzRCSkRvK2lXNEN0\nMjFIWVR4TkxRVCszNmZBam9CT0duZ28KLT4gIip7dy1ncmVhc2UgU1giOT4KSUh6\neXNvaHdmeEpMR0pLb2FubHlqWm5Gd1hXd3BKU1JuVjFvQ1NXU3Z4ZjdFcWJOdSti\nNGpLNE90eDY5NzVwMgoKLS0tIGcrLzNpMGMxbERTVDliNXYwSTV0RG1CRDBSM0lN\nNENHUTJOeWVhM2Q5MDgK5c+KiEuMzTAl0I1SHfZtqQDi4C9ti0UWlvIsEaYmZNa8\npJZxs0tQb+WUabh1KEw3Apu85XPgDDgCI+PDSTLG+lhcJJpyk4zZVjA4+oXnA5v6\nvLFN6UotPr8wCPnFAxRrG3i152ICjXP4ET7QSlqLNZ+Xwtp5+7fRdWmaOEbwDzcv\naQ==\n-----END AGE ENCRYPTED FILE-----\n",
+   "manifest_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "key_version": 1,
+   "age_file_sha256": "e401ed7e1ef090f8f9c871fa453c72936726451d7a95c5fa13687ad753ea2757"
+  },
+  {
+   "id": "json-key-2",
+   "note": "sentilab-open-sealed/1 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff 2\n-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSAzRUFqQjlnWUhjenpRSG9E\nb09LRWZ4TmZuT1lHL0ZmVU91T0dRN1FPSVFrCmlhOE54dkRpdjN0aTR6SGRPcmFI\ncnE0MHd0MkRNd0VhbW5HWXlvT0VxQU0KLT4gZ20sKzg4LWdyZWFzZSAyQU5UYWt4\nWQoyNEgrYTY4MmxSM2IzNnFZYjN0UDhtdlgxdTNibTRPdEFiOGVyWUJONVVKTjFu\nOVBQanlsOVNHK1JMZ3QyNi81CjdLSVIKLS0tIDY2Z3JLT2hSZmhEZW1xY3FlZDdI\ndFdDRi81bFJoRXFnWUtwekxsZzZ5eFkK+KhiTN/NKNkKDM7qg/IYhzaOJmxmQ21J\n8W6GmZe1fsdYsVGPfjiErgjoffA1rDw8g9MhWLTvGHxZPNST4D4sHfJEGjPofPbH\nyz393FjnQTUCskz9ssSsVK9q5ZcLPloVcWRCsSJ6l+8bUq/tVezcLwHy0lTewP06\nmZTmdzFJulwuHw==\n-----END AGE ENCRYPTED FILE-----\n",
+   "manifest_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "key_version": 2,
+   "age_file_sha256": "9009c1a75d29a0911698961af89d35470c3075d16d4cef5343055434cb479e44"
+  },
+  {
+   "id": "names-key-1-sealed-to-key-2",
+   "note": "sentilab-open-sealed/1 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff 1\n-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBjM0FIcmx0TmloVFgvazJZ\nZHpIaTI5S3RMM1FOQTBFV3hvWkk4VDVGQWhJCjh4Qk1HeG0zd0FtcGZCTkRyaG5n\nZTJLOXBXZ3ovYzNvQlNIT0ZRZDVBcjQKLT4gZTxxbC1ncmVhc2UgOWFlZkJWVlAg\nR0QKeHBPRGgvRHpQR0hEelVkUzhHRjlNK1h1YW9lbzc3ZHF0SCtmdEN2WHhNY2tz\nL3J2MjQ4Ci0tLSBiak1aN2NYVEdjbzV3S1pWenRxR1FnZzJaLzNpRkJGZloyM282\nWmQ1UHVFCnfQWq0q6ABtqeWFHxbMHVBIJiDbz41FbIUnupjuE4yGZOSscCWEvaHY\nwUMlf675vaqhlx7R5KPGfiV7OA4l0FOGFbk3fRBORliL7r9oNLcrYyDvfC2dau4i\nMzQf3ONnQQjCIzs9DgeN9DPZrSVNLlj8H+PzgxC1dOyWwcfHSnhPmUk=\n-----END AGE ENCRYPTED FILE-----\n",
+   "manifest_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "key_version": 1,
+   "age_file_sha256": "979cdd5f60ce3b4633dc15313d7db9f29eac52f0e15c6807286ec85c5e3735b3"
+  },
+  {
+   "id": "not-json-key-1",
+   "note": "sentilab-open-sealed/1 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff 1\n-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB5YzRaaWJOWHBMV0Z2Mm9T\nUHFIVll5cmc2K1JEbjhiaVFMa3Myb0pVZWlnCnBQVTM3b1FUQUpEazJiL0FTNy9m\nNFQ3aTZEck05c1gyb0RFQ3hLVUFrUFUKLT4gZW1mMT5mLWdyZWFzZSBsLlwxL3U8\nLyA7PjVBID1PJzwkIEcKTTlNWUJ3RzQ0UEsrWVo3cXIzSHpWWnpoOUx3Ci0tLSBh\na3hvVFN4Q0NOc2R3aFRYdmM4a2Q1SmNNazEvM2NwTllKdWpDbGtMQk9nCryYXGxm\nP/E21j7NFn+Kjj6ODTfDTOW4jLeMs0KX7LQB5L46gkrFjYaBmr/pthPj1qrqfcd8\n2m6pLF+KzuKY/JYpn20vqDVlddQRYiimW++/pvGcyulq3TXskg==\n-----END AGE ENCRYPTED FILE-----\n",
+   "manifest_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "key_version": 1,
+   "age_file_sha256": "096ad43defa58e43927c84d7c61094f983e24af5e2fc77ea2b47de2b4db0b006"
+  },
+  {
+   "id": "max-plaintext-key-1",
+   "note": "sentilab-open-sealed/1 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff 1\n-----BEGIN AGE ENCRYPTED FILE-----\nYWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB6VGg2bCtpdE9rUUo3T1V4\nZWgrMzZqRUtNNlNvckFaQmVZOEVwSzVmTDFFCm10ZVNmcWdPRTBIRXBhby9hTzl1\nQ2U5U25nS2N4NlBHRXg3eGhTaFpZK1EKLT4gUC1ncmVhc2UKOU5IRHhlMjE5VE9l\nU1JsbmR3Ci0tLSByYWJZVVVCNXM1UmJjbXVKbDdCMWpvUU5BbUM3TmZ5YkVQWGZM\nSFB0a09VCiDX1PC2KX4JMgIhQfL7uZSlmU/LpjvMGEi3QZOtLz49xfaQiZnXsLFL\ni8iy2y3Uq6S0/95XM2MxxBwhhOggHdqVxY7sxJAcqT1EMgmKno09Gu+qy8pplOAS\nP5dh35schUA5OfFg/2MFgACWARIctJ5MrIWmjd+/gFiK6gfdE+3DeHmaf6Nhl7Dg\nWfnmnHzlnEQ1MjaeT9rcJyA5MYbGgn/E480JKYpR7bCIbx//N1BCViJCMgrCk0Rz\nVbHCbth9O4yczkWDvZkseFwyxUc0lXXfddPBPa4J9ZpJfCQX2kGBJkJLwmULeFJE\nBKH/yvG/sT4jsWEup7xRiqoaDNwQU0jr0xCy+66NaCrvE6HWcPXtdoNvMb9Js3cP\nkZftgq87UX+E0FlGFQRAGKLuG4GLQ/+EkEsIASnV7GKV0Dlv4DheI05sRyjKj75g\nki+bi/qSIeaSV1S+DaT33k8Pd0bEzZnkxMHlXMViIhsBDnuSCYAQh+nLLX2C6SjP\nR+a8aS6GyPDHwHTgqkb3BI85lo2Op2dhS+/3gOpt5q15C/8c7jrMhQcsRlCm8E+q\nq/Jt2pH5fETe5oEtOs05hhoYIoHi4NyX9l/73/lgWLKooazOkhLaaEdthxjOOIh7\nLKONCsAiMu0j5QvzELorzQlvwljNBS3Ku+0a3UIvSj77gMDaRUibmQ0JzS1DcoaG\nwYu3BljDy0BlakufMh9smq5rj7BEQMyqRUmDHVCFTQlosNFG1BTZCtQ8mdQtGkA/\nDWjNLWbJvXYJ2zKmynXhz6Lie0cEvxsmtChlJXYqYVU8kaj17GpSx2vdCM7VW5tw\nZiCGukUCtYwbK/ZGmr+H3YcozHT4QSY2eaiV4/IaZWJlU4yeCvxfnug2NNH1jYCr\ncwiPt5XpVTbZaeRW/vEcHp6k63dkYa2TbpkfFmHl4rEO5FSLwmnEe2Ro7Y8UA2x/\n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\nX5hDN2NFkA==\n-----END AGE ENCRYPTED FILE-----\n",
+   "manifest_id": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+   "key_version": 1,
+   "age_file_sha256": "87d9bdcacbec783d0e8c6951afd8ea999620715d929cfcda8976c43b25acf569"
+  }
+ ],
+ "armour_refusals": [
+  {
+   "name": "CRLF line ends",
+   "armour_b64": "LS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQ0KWVdkbExXVnVZM0o1Y0hScGIyNHViM0puTDNZeENpMCtJRmd5TlRVeE9TQlZOak5YV21GaWVrWk5VR1ZzVWpCUg0KTlU1eWVFd3JWVlJSWWl0T2JrZDRXak5ITlRVM1ExUlhlRzFuQ2k5TmJHRlFlSGhYVHpSQ1NrUnZLMmxYTkVOMA0KTWpGSVdWUjRUa3hSVkNzek5tWkJhbTlDVDBkdVoyOEtMVDRnSWlwN2R5MW5jbVZoYzJVZ1UxZ2lPVDRLU1VoNg0KZVhOdmFIZG1lRXBNUjBwTGIyRnViSGxxV201R2QxaFhkM0JLVTFKdVZqRnZRMU5YVTNaNFpqZEZjV0pPZFN0aQ0KTkdwTE5FOTBlRFk1TnpWd01nb0tMUzB0SUdjckx6TnBNR014YkVSVFZEbGlOWFl3U1RWMFJHMUNSREJTTTBsTg0KTkVOSFVUSk9lV1ZoTTJRNU1EZ0s1YytLaUV1TXpUQWwwSTFTSGZadHFRRGk0Qzl0aTBVV2x2SXNFYVltWk5hOA0KcEpaeHMwdFFiK1dVYWJoMUtFdzNBcHU4NVhQZ0REZ0NJK1BEU1RMRytsaGNKSnB5azR6WlZqQTQrb1huQTV2Ng0KdkxGTjZVb3RQcjh3Q1BuRkF4UnJHM2kxNTJJQ2pYUDRFVDdRU2xxTE5aK1h3dHA1KzdmUmRXbWFPRWJ3RHpjdg0KYVE9PQ0KLS0tLS1FTkQgQUdFIEVOQ1JZUFRFRCBGSUxFLS0tLS0NCg=="
+  },
+  {
+   "name": "a missing END line",
+   "armour_b64": "LS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQpZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2kwK0lGZ3lOVFV4T1NCVk5qTlhXbUZpZWtaTlVHVnNVakJSCk5VNXllRXdyVlZSUllpdE9ia2Q0V2pOSE5UVTNRMVJYZUcxbkNpOU5iR0ZRZUhoWFR6UkNTa1J2SzJsWE5FTjAKTWpGSVdWUjRUa3hSVkNzek5tWkJhbTlDVDBkdVoyOEtMVDRnSWlwN2R5MW5jbVZoYzJVZ1UxZ2lPVDRLU1VoNgplWE52YUhkbWVFcE1SMHBMYjJGdWJIbHFXbTVHZDFoWGQzQktVMUp1VmpGdlExTlhVM1o0WmpkRmNXSk9kU3RpCk5HcExORTkwZURZNU56VndNZ29LTFMwdElHY3JMek5wTUdNeGJFUlRWRGxpTlhZd1NUVjBSRzFDUkRCU00wbE4KTkVOSFVUSk9lV1ZoTTJRNU1EZ0s1YytLaUV1TXpUQWwwSTFTSGZadHFRRGk0Qzl0aTBVV2x2SXNFYVltWk5hOApwSlp4czB0UWIrV1VhYmgxS0V3M0FwdTg1WFBnRERnQ0krUERTVExHK2xoY0pKcHlrNHpaVmpBNCtvWG5BNXY2CnZMRk42VW90UHI4d0NQbkZBeFJyRzNpMTUySUNqWFA0RVQ3UVNscUxOWitYd3RwNSs3ZlJkV21hT0Vid0R6Y3YKYVE9PQo="
+  },
+  {
+   "name": "text after END",
+   "armour_b64": "LS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQpZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2kwK0lGZ3lOVFV4T1NCVk5qTlhXbUZpZWtaTlVHVnNVakJSCk5VNXllRXdyVlZSUllpdE9ia2Q0V2pOSE5UVTNRMVJYZUcxbkNpOU5iR0ZRZUhoWFR6UkNTa1J2SzJsWE5FTjAKTWpGSVdWUjRUa3hSVkNzek5tWkJhbTlDVDBkdVoyOEtMVDRnSWlwN2R5MW5jbVZoYzJVZ1UxZ2lPVDRLU1VoNgplWE52YUhkbWVFcE1SMHBMYjJGdWJIbHFXbTVHZDFoWGQzQktVMUp1VmpGdlExTlhVM1o0WmpkRmNXSk9kU3RpCk5HcExORTkwZURZNU56VndNZ29LTFMwdElHY3JMek5wTUdNeGJFUlRWRGxpTlhZd1NUVjBSRzFDUkRCU00wbE4KTkVOSFVUSk9lV1ZoTTJRNU1EZ0s1YytLaUV1TXpUQWwwSTFTSGZadHFRRGk0Qzl0aTBVV2x2SXNFYVltWk5hOApwSlp4czB0UWIrV1VhYmgxS0V3M0FwdTg1WFBnRERnQ0krUERTVExHK2xoY0pKcHlrNHpaVmpBNCtvWG5BNXY2CnZMRk42VW90UHI4d0NQbkZBeFJyRzNpMTUySUNqWFA0RVQ3UVNscUxOWitYd3RwNSs3ZlJkV21hT0Vid0R6Y3YKYVE9PQotLS0tLUVORCBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQp0cmFpbGluZwo="
+  },
+  {
+   "name": "two body lines joined",
+   "armour_b64": "LS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQpZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2kwK0lGZ3lOVFV4T1NCVk5qTlhXbUZpZWtaTlVHVnNVakJSTlU1eWVFd3JWVlJSWWl0T2JrZDRXak5ITlRVM1ExUlhlRzFuQ2k5TmJHRlFlSGhYVHpSQ1NrUnZLMmxYTkVOMApNakZJV1ZSNFRreFJWQ3N6Tm1aQmFtOUNUMGR1WjI4S0xUNGdJaXA3ZHkxbmNtVmhjMlVnVTFnaU9UNEtTVWg2CmVYTnZhSGRtZUVwTVIwcExiMkZ1YkhscVdtNUdkMWhYZDNCS1UxSnVWakZ2UTFOWFUzWjRaamRGY1dKT2RTdGkKTkdwTE5FOTBlRFk1TnpWd01nb0tMUzB0SUdjckx6TnBNR014YkVSVFZEbGlOWFl3U1RWMFJHMUNSREJTTTBsTgpORU5IVVRKT2VXVmhNMlE1TURnSzVjK0tpRXVNelRBbDBJMVNIZlp0cVFEaTRDOXRpMFVXbHZJc0VhWW1aTmE4CnBKWnhzMHRRYitXVWFiaDFLRXczQXB1ODVYUGdERGdDSStQRFNUTEcrbGhjSkpweWs0elpWakE0K29YbkE1djYKdkxGTjZVb3RQcjh3Q1BuRkF4UnJHM2kxNTJJQ2pYUDRFVDdRU2xxTE5aK1h3dHA1KzdmUmRXbWFPRWJ3RHpjdgphUT09Ci0tLS0tRU5EIEFHRSBFTkNSWVBURUQgRklMRS0tLS0tCg=="
+  }
+ ],
+ "sealed_note_refusals": [
+  {
+   "name": "a key version with a leading zero",
+   "note_b64": "c2VudGlsYWItb3Blbi1zZWFsZWQvMSBmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmIDAxCi0tLS0tQkVHSU4gQUdFIEVOQ1JZUFRFRCBGSUxFLS0tLS0KWVdkbExXVnVZM0o1Y0hScGIyNHViM0puTDNZeENpMCtJRmd5TlRVeE9TQlZOak5YV21GaWVrWk5VR1ZzVWpCUgpOVTV5ZUV3clZWUlJZaXRPYmtkNFdqTkhOVFUzUTFSWGVHMW5DaTlOYkdGUWVIaFhUelJDU2tSdksybFhORU4wCk1qRklXVlI0VGt4UlZDc3pObVpCYW05Q1QwZHVaMjhLTFQ0Z0lpcDdkeTFuY21WaGMyVWdVMWdpT1Q0S1NVaDYKZVhOdmFIZG1lRXBNUjBwTGIyRnViSGxxV201R2QxaFhkM0JLVTFKdVZqRnZRMU5YVTNaNFpqZEZjV0pPZFN0aQpOR3BMTkU5MGVEWTVOelZ3TWdvS0xTMHRJR2NyTHpOcE1HTXhiRVJUVkRsaU5YWXdTVFYwUkcxQ1JEQlNNMGxOCk5FTkhVVEpPZVdWaE0yUTVNRGdLNWMrS2lFdU16VEFsMEkxU0hmWnRxUURpNEM5dGkwVVdsdklzRWFZbVpOYTgKcEpaeHMwdFFiK1dVYWJoMUtFdzNBcHU4NVhQZ0REZ0NJK1BEU1RMRytsaGNKSnB5azR6WlZqQTQrb1huQTV2Ngp2TEZONlVvdFByOHdDUG5GQXhSckczaTE1MklDalhQNEVUN1FTbHFMTlorWHd0cDUrN2ZSZFdtYU9FYndEemN2CmFRPT0KLS0tLS1FTkQgQUdFIEVOQ1JZUFRFRCBGSUxFLS0tLS0K"
+  },
+  {
+   "name": "an upper-case manifest id",
+   "note_b64": "c2VudGlsYWItb3Blbi1zZWFsZWQvMSBGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGIDEKLS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQpZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2kwK0lGZ3lOVFV4T1NCVk5qTlhXbUZpZWtaTlVHVnNVakJSCk5VNXllRXdyVlZSUllpdE9ia2Q0V2pOSE5UVTNRMVJYZUcxbkNpOU5iR0ZRZUhoWFR6UkNTa1J2SzJsWE5FTjAKTWpGSVdWUjRUa3hSVkNzek5tWkJhbTlDVDBkdVoyOEtMVDRnSWlwN2R5MW5jbVZoYzJVZ1UxZ2lPVDRLU1VoNgplWE52YUhkbWVFcE1SMHBMYjJGdWJIbHFXbTVHZDFoWGQzQktVMUp1VmpGdlExTlhVM1o0WmpkRmNXSk9kU3RpCk5HcExORTkwZURZNU56VndNZ29LTFMwdElHY3JMek5wTUdNeGJFUlRWRGxpTlhZd1NUVjBSRzFDUkRCU00wbE4KTkVOSFVUSk9lV1ZoTTJRNU1EZ0s1YytLaUV1TXpUQWwwSTFTSGZadHFRRGk0Qzl0aTBVV2x2SXNFYVltWk5hOApwSlp4czB0UWIrV1VhYmgxS0V3M0FwdTg1WFBnRERnQ0krUERTVExHK2xoY0pKcHlrNHpaVmpBNCtvWG5BNXY2CnZMRk42VW90UHI4d0NQbkZBeFJyRzNpMTUySUNqWFA0RVQ3UVNscUxOWitYd3RwNSs3ZlJkV21hT0Vid0R6Y3YKYVE9PQotLS0tLUVORCBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQo="
+  },
+  {
+   "name": "another schema",
+   "note_b64": "c2VudGlsYWItb3Blbi1zZWFsZWQvMiBmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmIDEKLS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQpZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2kwK0lGZ3lOVFV4T1NCVk5qTlhXbUZpZWtaTlVHVnNVakJSCk5VNXllRXdyVlZSUllpdE9ia2Q0V2pOSE5UVTNRMVJYZUcxbkNpOU5iR0ZRZUhoWFR6UkNTa1J2SzJsWE5FTjAKTWpGSVdWUjRUa3hSVkNzek5tWkJhbTlDVDBkdVoyOEtMVDRnSWlwN2R5MW5jbVZoYzJVZ1UxZ2lPVDRLU1VoNgplWE52YUhkbWVFcE1SMHBMYjJGdWJIbHFXbTVHZDFoWGQzQktVMUp1VmpGdlExTlhVM1o0WmpkRmNXSk9kU3RpCk5HcExORTkwZURZNU56VndNZ29LTFMwdElHY3JMek5wTUdNeGJFUlRWRGxpTlhZd1NUVjBSRzFDUkRCU00wbE4KTkVOSFVUSk9lV1ZoTTJRNU1EZ0s1YytLaUV1TXpUQWwwSTFTSGZadHFRRGk0Qzl0aTBVV2x2SXNFYVltWk5hOApwSlp4czB0UWIrV1VhYmgxS0V3M0FwdTg1WFBnRERnQ0krUERTVExHK2xoY0pKcHlrNHpaVmpBNCtvWG5BNXY2CnZMRk42VW90UHI4d0NQbkZBeFJyRzNpMTUySUNqWFA0RVQ3UVNscUxOWitYd3RwNSs3ZlJkV21hT0Vid0R6Y3YKYVE9PQotLS0tLUVORCBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQo="
+  },
+  {
+   "name": "no line feed after the first line",
+   "note_b64": "c2VudGlsYWItb3Blbi1zZWFsZWQvMSBmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmIDEgLS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQpZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2kwK0lGZ3lOVFV4T1NCVk5qTlhXbUZpZWtaTlVHVnNVakJSCk5VNXllRXdyVlZSUllpdE9ia2Q0V2pOSE5UVTNRMVJYZUcxbkNpOU5iR0ZRZUhoWFR6UkNTa1J2SzJsWE5FTjAKTWpGSVdWUjRUa3hSVkNzek5tWkJhbTlDVDBkdVoyOEtMVDRnSWlwN2R5MW5jbVZoYzJVZ1UxZ2lPVDRLU1VoNgplWE52YUhkbWVFcE1SMHBMYjJGdWJIbHFXbTVHZDFoWGQzQktVMUp1VmpGdlExTlhVM1o0WmpkRmNXSk9kU3RpCk5HcExORTkwZURZNU56VndNZ29LTFMwdElHY3JMek5wTUdNeGJFUlRWRGxpTlhZd1NUVjBSRzFDUkRCU00wbE4KTkVOSFVUSk9lV1ZoTTJRNU1EZ0s1YytLaUV1TXpUQWwwSTFTSGZadHFRRGk0Qzl0aTBVV2x2SXNFYVltWk5hOApwSlp4czB0UWIrV1VhYmgxS0V3M0FwdTg1WFBnRERnQ0krUERTVExHK2xoY0pKcHlrNHpaVmpBNCtvWG5BNXY2CnZMRk42VW90UHI4d0NQbkZBeFJyRzNpMTUySUNqWFA0RVQ3UVNscUxOWitYd3RwNSs3ZlJkV21hT0Vid0R6Y3YKYVE9PQotLS0tLUVORCBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQo="
+  },
+  {
+   "name": "a seven-digit key version",
+   "note_b64": "c2VudGlsYWItb3Blbi1zZWFsZWQvMSBmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmIDEwMDAwMDAKLS0tLS1CRUdJTiBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQpZV2RsTFdWdVkzSjVjSFJwYjI0dWIzSm5MM1l4Q2kwK0lGZ3lOVFV4T1NCVk5qTlhXbUZpZWtaTlVHVnNVakJSCk5VNXllRXdyVlZSUllpdE9ia2Q0V2pOSE5UVTNRMVJYZUcxbkNpOU5iR0ZRZUhoWFR6UkNTa1J2SzJsWE5FTjAKTWpGSVdWUjRUa3hSVkNzek5tWkJhbTlDVDBkdVoyOEtMVDRnSWlwN2R5MW5jbVZoYzJVZ1UxZ2lPVDRLU1VoNgplWE52YUhkbWVFcE1SMHBMYjJGdWJIbHFXbTVHZDFoWGQzQktVMUp1VmpGdlExTlhVM1o0WmpkRmNXSk9kU3RpCk5HcExORTkwZURZNU56VndNZ29LTFMwdElHY3JMek5wTUdNeGJFUlRWRGxpTlhZd1NUVjBSRzFDUkRCU00wbE4KTkVOSFVUSk9lV1ZoTTJRNU1EZ0s1YytLaUV1TXpUQWwwSTFTSGZadHFRRGk0Qzl0aTBVV2x2SXNFYVltWk5hOApwSlp4czB0UWIrV1VhYmgxS0V3M0FwdTg1WFBnRERnQ0krUERTVExHK2xoY0pKcHlrNHpaVmpBNCtvWG5BNXY2CnZMRk42VW90UHI4d0NQbkZBeFJyRzNpMTUySUNqWFA0RVQ3UVNscUxOWitYd3RwNSs3ZlJkV21hT0Vid0R6Y3YKYVE9PQotLS0tLUVORCBBR0UgRU5DUllQVEVEIEZJTEUtLS0tLQo="
+  }
+ ],
+ "patterns": [
+  {
+   "pattern": "^(/[A-Za-z0-9_]{1,64})*$",
+   "text": "/ab",
+   "match": true
+  },
+  {
+   "pattern": "^(/[A-Za-z0-9_]{1,64})*$",
+   "text": "/ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^(/[A-Za-z0-9_]{1,64})*$",
+   "text": "/ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^(/[A-Za-z0-9_]{1,64})*$",
+   "text": "/ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^(/[A-Za-z0-9_]{1,64})*$",
+   "text": "/ab ",
+   "match": false
+  },
+  {
+   "pattern": "^(/[A-Za-z0-9_]{1,64})*$",
+   "text": "\n/ab",
+   "match": false
+  },
+  {
+   "pattern": "^(0|[0-9]{1,2}\\.[0-9]{2})$",
+   "text": "0.10",
+   "match": true
+  },
+  {
+   "pattern": "^(0|[0-9]{1,2}\\.[0-9]{2})$",
+   "text": "0.10\n",
+   "match": false
+  },
+  {
+   "pattern": "^(0|[0-9]{1,2}\\.[0-9]{2})$",
+   "text": "0.10\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^(0|[0-9]{1,2}\\.[0-9]{2})$",
+   "text": "0.10\r",
+   "match": false
+  },
+  {
+   "pattern": "^(0|[0-9]{1,2}\\.[0-9]{2})$",
+   "text": "0.10 ",
+   "match": false
+  },
+  {
+   "pattern": "^(0|[0-9]{1,2}\\.[0-9]{2})$",
+   "text": "\n0.10",
+   "match": false
+  },
+  {
+   "pattern": "^([a-z0-9][a-z0-9_-]{0,63}|publish:[0-9a-f]{64})$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^([a-z0-9][a-z0-9_-]{0,63}|publish:[0-9a-f]{64})$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^([a-z0-9][a-z0-9_-]{0,63}|publish:[0-9a-f]{64})$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^([a-z0-9][a-z0-9_-]{0,63}|publish:[0-9a-f]{64})$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^([a-z0-9][a-z0-9_-]{0,63}|publish:[0-9a-f]{64})$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^([a-z0-9][a-z0-9_-]{0,63}|publish:[0-9a-f]{64})$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^(human|agent:[A-Za-z0-9][A-Za-z0-9._-]{0,119})$",
+   "text": "agent:ab",
+   "match": true
+  },
+  {
+   "pattern": "^(human|agent:[A-Za-z0-9][A-Za-z0-9._-]{0,119})$",
+   "text": "agent:ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^(human|agent:[A-Za-z0-9][A-Za-z0-9._-]{0,119})$",
+   "text": "agent:ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^(human|agent:[A-Za-z0-9][A-Za-z0-9._-]{0,119})$",
+   "text": "agent:ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^(human|agent:[A-Za-z0-9][A-Za-z0-9._-]{0,119})$",
+   "text": "agent:ab ",
+   "match": false
+  },
+  {
+   "pattern": "^(human|agent:[A-Za-z0-9][A-Za-z0-9._-]{0,119})$",
+   "text": "\nagent:ab",
+   "match": false
+  },
+  {
+   "pattern": "^(provisional|frozen)( \\([A-Za-z0-9 ,/#-]{1,64}\\))?$",
+   "text": "frozen",
+   "match": true
+  },
+  {
+   "pattern": "^(provisional|frozen)( \\([A-Za-z0-9 ,/#-]{1,64}\\))?$",
+   "text": "frozen\n",
+   "match": false
+  },
+  {
+   "pattern": "^(provisional|frozen)( \\([A-Za-z0-9 ,/#-]{1,64}\\))?$",
+   "text": "frozen\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^(provisional|frozen)( \\([A-Za-z0-9 ,/#-]{1,64}\\))?$",
+   "text": "frozen\r",
+   "match": false
+  },
+  {
+   "pattern": "^(provisional|frozen)( \\([A-Za-z0-9 ,/#-]{1,64}\\))?$",
+   "text": "frozen ",
+   "match": false
+  },
+  {
+   "pattern": "^(provisional|frozen)( \\([A-Za-z0-9 ,/#-]{1,64}\\))?$",
+   "text": "\nfrozen",
+   "match": false
+  },
+  {
+   "pattern": "^Chiplet_[0-9]{1,2}$",
+   "text": "Chiplet_0",
+   "match": true
+  },
+  {
+   "pattern": "^Chiplet_[0-9]{1,2}$",
+   "text": "Chiplet_0\n",
+   "match": false
+  },
+  {
+   "pattern": "^Chiplet_[0-9]{1,2}$",
+   "text": "Chiplet_0\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^Chiplet_[0-9]{1,2}$",
+   "text": "Chiplet_0\r",
+   "match": false
+  },
+  {
+   "pattern": "^Chiplet_[0-9]{1,2}$",
+   "text": "Chiplet_0 ",
+   "match": false
+  },
+  {
+   "pattern": "^Chiplet_[0-9]{1,2}$",
+   "text": "\nChiplet_0",
+   "match": false
+  },
+  {
+   "pattern": "^P(?=[0-9])([0-9]{1,4}Y)?([0-9]{1,4}M)?([0-9]{1,5}D)?$",
+   "text": "P2Y",
+   "match": true
+  },
+  {
+   "pattern": "^P(?=[0-9])([0-9]{1,4}Y)?([0-9]{1,4}M)?([0-9]{1,5}D)?$",
+   "text": "P2Y\n",
+   "match": false
+  },
+  {
+   "pattern": "^P(?=[0-9])([0-9]{1,4}Y)?([0-9]{1,4}M)?([0-9]{1,5}D)?$",
+   "text": "P2Y\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^P(?=[0-9])([0-9]{1,4}Y)?([0-9]{1,4}M)?([0-9]{1,5}D)?$",
+   "text": "P2Y\r",
+   "match": false
+  },
+  {
+   "pattern": "^P(?=[0-9])([0-9]{1,4}Y)?([0-9]{1,4}M)?([0-9]{1,5}D)?$",
+   "text": "P2Y ",
+   "match": false
+  },
+  {
+   "pattern": "^P(?=[0-9])([0-9]{1,4}Y)?([0-9]{1,4}M)?([0-9]{1,5}D)?$",
+   "text": "\nP2Y",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+   "text": "2026-11-01T00:00:00Z",
+   "match": true
+  },
+  {
+   "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+   "text": "2026-11-01T00:00:00Z\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+   "text": "2026-11-01T00:00:00Z\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+   "text": "2026-11-01T00:00:00Z\r",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+   "text": "2026-11-01T00:00:00Z ",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+   "text": "\n2026-11-01T00:00:00Z",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{32}$",
+   "text": "00000000000000000000000000000000",
+   "match": true
+  },
+  {
+   "pattern": "^[0-9a-f]{32}$",
+   "text": "00000000000000000000000000000000\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{32}$",
+   "text": "00000000000000000000000000000000\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{32}$",
+   "text": "00000000000000000000000000000000\r",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{32}$",
+   "text": "00000000000000000000000000000000 ",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{32}$",
+   "text": "\n00000000000000000000000000000000",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{40}$",
+   "text": "0000000000000000000000000000000000000000",
+   "match": true
+  },
+  {
+   "pattern": "^[0-9a-f]{40}$",
+   "text": "0000000000000000000000000000000000000000\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{40}$",
+   "text": "0000000000000000000000000000000000000000\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{40}$",
+   "text": "0000000000000000000000000000000000000000\r",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{40}$",
+   "text": "0000000000000000000000000000000000000000 ",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{40}$",
+   "text": "\n0000000000000000000000000000000000000000",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{64}$",
+   "text": "0000000000000000000000000000000000000000000000000000000000000000",
+   "match": true
+  },
+  {
+   "pattern": "^[0-9a-f]{64}$",
+   "text": "0000000000000000000000000000000000000000000000000000000000000000\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{64}$",
+   "text": "0000000000000000000000000000000000000000000000000000000000000000\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{64}$",
+   "text": "0000000000000000000000000000000000000000000000000000000000000000\r",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{64}$",
+   "text": "0000000000000000000000000000000000000000000000000000000000000000 ",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{64}$",
+   "text": "\n0000000000000000000000000000000000000000000000000000000000000000",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+   "text": "00000000-0000-4000-8000-00000000000a",
+   "match": true
+  },
+  {
+   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+   "text": "00000000-0000-4000-8000-00000000000a\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+   "text": "00000000-0000-4000-8000-00000000000a\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+   "text": "00000000-0000-4000-8000-00000000000a\r",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+   "text": "00000000-0000-4000-8000-00000000000a ",
+   "match": false
+  },
+  {
+   "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+   "text": "\n00000000-0000-4000-8000-00000000000a",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9._-]{1,32}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9._-]{1,32}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9._-]{1,32}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9._-]{1,32}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9._-]{1,32}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9._-]{1,32}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,127}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,127}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,127}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,127}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,127}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,127}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,511}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,511}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,511}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,511}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,511}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()-]{0,511}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_-]{0,127}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_-]{0,127}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_-]{0,127}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_-]{0,127}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_-]{0,127}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_-]{0,127}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_…-]{0,127}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_…-]{0,127}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_…-]{0,127}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_…-]{0,127}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_…-]{0,127}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_…-]{0,127}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._-]{0,31}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._-]{0,31}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._-]{0,31}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._-]{0,31}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._-]{0,31}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._-]{0,31}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._+:=-]{0,319}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z0-9_][A-Za-z0-9_./-]{0,127}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z][A-Za-z0-9_]{0,31}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z]{1,32}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[A-Za-z]{1,32}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z]{1,32}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z]{1,32}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z]{1,32}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[A-Za-z]{1,32}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9_-]{1,32}$",
+   "text": "ab",
+   "match": true
+  },
+  {
+   "pattern": "^[a-z0-9_-]{1,32}$",
+   "text": "ab\n",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9_-]{1,32}$",
+   "text": "ab\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9_-]{1,32}$",
+   "text": "ab\r",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9_-]{1,32}$",
+   "text": "ab ",
+   "match": false
+  },
+  {
+   "pattern": "^[a-z0-9_-]{1,32}$",
+   "text": "\nab",
+   "match": false
+  },
+  {
+   "pattern": "^age1[02-9ac-hj-np-z]{58}$",
+   "text": "age1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
+   "match": true
+  },
+  {
+   "pattern": "^age1[02-9ac-hj-np-z]{58}$",
+   "text": "age1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq\n",
+   "match": false
+  },
+  {
+   "pattern": "^age1[02-9ac-hj-np-z]{58}$",
+   "text": "age1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^age1[02-9ac-hj-np-z]{58}$",
+   "text": "age1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq\r",
+   "match": false
+  },
+  {
+   "pattern": "^age1[02-9ac-hj-np-z]{58}$",
+   "text": "age1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq ",
+   "match": false
+  },
+  {
+   "pattern": "^age1[02-9ac-hj-np-z]{58}$",
+   "text": "\nage1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
+   "match": false
+  },
+  {
+   "pattern": "^open-[0-9a-f]{8}-[0-9a-f]{32}$",
+   "text": "open-00000000-00000000000000000000000000000000",
+   "match": true
+  },
+  {
+   "pattern": "^open-[0-9a-f]{8}-[0-9a-f]{32}$",
+   "text": "open-00000000-00000000000000000000000000000000\n",
+   "match": false
+  },
+  {
+   "pattern": "^open-[0-9a-f]{8}-[0-9a-f]{32}$",
+   "text": "open-00000000-00000000000000000000000000000000\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^open-[0-9a-f]{8}-[0-9a-f]{32}$",
+   "text": "open-00000000-00000000000000000000000000000000\r",
+   "match": false
+  },
+  {
+   "pattern": "^open-[0-9a-f]{8}-[0-9a-f]{32}$",
+   "text": "open-00000000-00000000000000000000000000000000 ",
+   "match": false
+  },
+  {
+   "pattern": "^open-[0-9a-f]{8}-[0-9a-f]{32}$",
+   "text": "\nopen-00000000-00000000000000000000000000000000",
+   "match": false
+  },
+  {
+   "pattern": "^position-[0-9]{1,2}-[xy]-(plus|minus)$",
+   "text": "position-0-x-plus",
+   "match": true
+  },
+  {
+   "pattern": "^position-[0-9]{1,2}-[xy]-(plus|minus)$",
+   "text": "position-0-x-plus\n",
+   "match": false
+  },
+  {
+   "pattern": "^position-[0-9]{1,2}-[xy]-(plus|minus)$",
+   "text": "position-0-x-plus\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^position-[0-9]{1,2}-[xy]-(plus|minus)$",
+   "text": "position-0-x-plus\r",
+   "match": false
+  },
+  {
+   "pattern": "^position-[0-9]{1,2}-[xy]-(plus|minus)$",
+   "text": "position-0-x-plus ",
+   "match": false
+  },
+  {
+   "pattern": "^position-[0-9]{1,2}-[xy]-(plus|minus)$",
+   "text": "\nposition-0-x-plus",
+   "match": false
+  },
+  {
+   "pattern": "^sentilab-open-terms/[1-9][0-9]{0,5}@[0-9a-f]{64}$",
+   "text": "sentilab-open-terms/1@0000000000000000000000000000000000000000000000000000000000000000",
+   "match": true
+  },
+  {
+   "pattern": "^sentilab-open-terms/[1-9][0-9]{0,5}@[0-9a-f]{64}$",
+   "text": "sentilab-open-terms/1@0000000000000000000000000000000000000000000000000000000000000000\n",
+   "match": false
+  },
+  {
+   "pattern": "^sentilab-open-terms/[1-9][0-9]{0,5}@[0-9a-f]{64}$",
+   "text": "sentilab-open-terms/1@0000000000000000000000000000000000000000000000000000000000000000\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^sentilab-open-terms/[1-9][0-9]{0,5}@[0-9a-f]{64}$",
+   "text": "sentilab-open-terms/1@0000000000000000000000000000000000000000000000000000000000000000\r",
+   "match": false
+  },
+  {
+   "pattern": "^sentilab-open-terms/[1-9][0-9]{0,5}@[0-9a-f]{64}$",
+   "text": "sentilab-open-terms/1@0000000000000000000000000000000000000000000000000000000000000000 ",
+   "match": false
+  },
+  {
+   "pattern": "^sentilab-open-terms/[1-9][0-9]{0,5}@[0-9a-f]{64}$",
+   "text": "\nsentilab-open-terms/1@0000000000000000000000000000000000000000000000000000000000000000",
+   "match": false
+  },
+  {
+   "pattern": "^sha256:[0-9a-f]{64}$",
+   "text": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "match": true
+  },
+  {
+   "pattern": "^sha256:[0-9a-f]{64}$",
+   "text": "sha256:0000000000000000000000000000000000000000000000000000000000000000\n",
+   "match": false
+  },
+  {
+   "pattern": "^sha256:[0-9a-f]{64}$",
+   "text": "sha256:0000000000000000000000000000000000000000000000000000000000000000\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^sha256:[0-9a-f]{64}$",
+   "text": "sha256:0000000000000000000000000000000000000000000000000000000000000000\r",
+   "match": false
+  },
+  {
+   "pattern": "^sha256:[0-9a-f]{64}$",
+   "text": "sha256:0000000000000000000000000000000000000000000000000000000000000000 ",
+   "match": false
+  },
+  {
+   "pattern": "^sha256:[0-9a-f]{64}$",
+   "text": "\nsha256:0000000000000000000000000000000000000000000000000000000000000000",
+   "match": false
+  },
+  {
+   "pattern": "^so1-[0-9a-f]{48}$",
+   "text": "so1-000000000000000000000000000000000000000000000000",
+   "match": true
+  },
+  {
+   "pattern": "^so1-[0-9a-f]{48}$",
+   "text": "so1-000000000000000000000000000000000000000000000000\n",
+   "match": false
+  },
+  {
+   "pattern": "^so1-[0-9a-f]{48}$",
+   "text": "so1-000000000000000000000000000000000000000000000000\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^so1-[0-9a-f]{48}$",
+   "text": "so1-000000000000000000000000000000000000000000000000\r",
+   "match": false
+  },
+  {
+   "pattern": "^so1-[0-9a-f]{48}$",
+   "text": "so1-000000000000000000000000000000000000000000000000 ",
+   "match": false
+  },
+  {
+   "pattern": "^so1-[0-9a-f]{48}$",
+   "text": "\nso1-000000000000000000000000000000000000000000000000",
+   "match": false
+  },
+  {
+   "pattern": "^tap-chiplet-[0-9]{1,2}$",
+   "text": "tap-chiplet-0",
+   "match": true
+  },
+  {
+   "pattern": "^tap-chiplet-[0-9]{1,2}$",
+   "text": "tap-chiplet-0\n",
+   "match": false
+  },
+  {
+   "pattern": "^tap-chiplet-[0-9]{1,2}$",
+   "text": "tap-chiplet-0\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^tap-chiplet-[0-9]{1,2}$",
+   "text": "tap-chiplet-0\r",
+   "match": false
+  },
+  {
+   "pattern": "^tap-chiplet-[0-9]{1,2}$",
+   "text": "tap-chiplet-0 ",
+   "match": false
+  },
+  {
+   "pattern": "^tap-chiplet-[0-9]{1,2}$",
+   "text": "\ntap-chiplet-0",
+   "match": false
+  },
+  {
+   "pattern": "^/sentilab/open/terms/[1-9][0-9]{0,5}@[0-9a-f]{64}[.]md$",
+   "text": "/sentilab/open/terms/1@0000000000000000000000000000000000000000000000000000000000000000.md",
+   "match": true
+  },
+  {
+   "pattern": "^/sentilab/open/terms/[1-9][0-9]{0,5}@[0-9a-f]{64}[.]md$",
+   "text": "/sentilab/open/terms/1@0000000000000000000000000000000000000000000000000000000000000000.md\n",
+   "match": false
+  },
+  {
+   "pattern": "^/sentilab/open/terms/[1-9][0-9]{0,5}@[0-9a-f]{64}[.]md$",
+   "text": "/sentilab/open/terms/1@0000000000000000000000000000000000000000000000000000000000000000.md\r\n",
+   "match": false
+  },
+  {
+   "pattern": "^/sentilab/open/terms/[1-9][0-9]{0,5}@[0-9a-f]{64}[.]md$",
+   "text": "/sentilab/open/terms/1@0000000000000000000000000000000000000000000000000000000000000000.md\r",
+   "match": false
+  },
+  {
+   "pattern": "^/sentilab/open/terms/[1-9][0-9]{0,5}@[0-9a-f]{64}[.]md$",
+   "text": "/sentilab/open/terms/1@0000000000000000000000000000000000000000000000000000000000000000.md ",
+   "match": false
+  },
+  {
+   "pattern": "^/sentilab/open/terms/[1-9][0-9]{0,5}@[0-9a-f]{64}[.]md$",
+   "text": "\n/sentilab/open/terms/1@0000000000000000000000000000000000000000000000000000000000000000.md",
+   "match": false
+  }
+ ],
+ "r_key": [
+  {
+   "r": 0,
+   "key": "0"
+  },
+  {
+   "r": 0.05,
+   "key": "0.05"
+  },
+  {
+   "r": 0.1,
+   "key": "0.10"
+  },
+  {
+   "r": 0.25,
+   "key": "0.25"
+  },
+  {
+   "r": 0.5,
+   "key": "0.50"
+  },
+  {
+   "r": 1.0,
+   "key": "1.00"
+  }
+ ],
+ "r_key_refused": [
+  0.125,
+  -0.1
+ ],
+ "q_r": [
+  {
+   "W_c_mm": 18155.8,
+   "W_R_mm": 16417.5,
+   "key": "0",
+   "q_r": 1738.3
+  },
+  {
+   "W_c_mm": 18155.8,
+   "W_R_mm": 16417.5,
+   "key": "0.10",
+   "q_r": 96.55
+  },
+  {
+   "W_c_mm": 18155.8,
+   "W_R_mm": 16417.5,
+   "key": "0.25",
+   "q_r": -2366.075
+  },
+  {
+   "W_c_mm": 18155.8,
+   "W_R_mm": 16417.5,
+   "key": "0.50",
+   "q_r": -6470.45
+  },
+  {
+   "W_c_mm": 18155.8,
+   "W_R_mm": 16417.5,
+   "key": "1.00",
+   "q_r": -14679.2
+  }
+ ],
+ "conductor_geometry": [
+  {
+   "object": "P_A",
+   "manifest": "A",
+   "values": {
+    "geometry": [
+     {
+      "id": "tap-chiplet-0",
+      "xLL": 1.3,
+      "yLL": 15.75,
+      "w": 31.4,
+      "h": 14.5,
+      "layer": 0
+     },
+     {
+      "id": "tap-chiplet-1",
+      "xLL": 33.75,
+      "yLL": 15.0,
+      "w": 10.5,
+      "h": 16.0,
+      "layer": 0
+     },
+     {
+      "id": "tap-chiplet-2",
+      "xLL": 1.065,
+      "yLL": 7.125,
+      "w": 11.87,
+      "h": 7.75,
+      "layer": 0
+     },
+     {
+      "id": "tap-chiplet-3",
+      "xLL": 15.065,
+      "yLL": 7.125,
+      "w": 11.87,
+      "h": 7.75,
+      "layer": 0
+     },
+     {
+      "id": "tap-chiplet-4",
+      "xLL": 1.065,
+      "yLL": 31.125,
+      "w": 11.87,
+      "h": 7.75,
+      "layer": 0
+     },
+     {
+      "id": "tap-chiplet-5",
+      "xLL": 15.065,
+      "yLL": 31.125,
+      "w": 11.87,
+      "h": 7.75,
+      "layer": 0
+     }
+    ],
+    "units": "mm",
+    "scenario_id": "nominal"
+   }
+  },
+  {
+   "object": "P_PUB",
+   "manifest": "F",
+   "values": {
+    "geometry": [
+     {
+      "id": "tap-chiplet-0",
+      "xLL": 2.0,
+      "yLL": 3.5,
+      "w": 2.0,
+      "h": 3.0,
+      "layer": 0
+     },
+     {
+      "id": "tap-chiplet-1",
+      "xLL": 6.0,
+      "yLL": 4.0,
+      "w": 2.0,
+      "h": 2.0,
+      "layer": 0
+     }
+    ],
+    "units": "mm",
+    "scenario_id": "nominal"
+   }
+  }
+ ]
+}

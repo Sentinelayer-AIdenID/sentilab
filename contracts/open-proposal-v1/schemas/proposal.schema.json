@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/proposal.schema.json",
+  "title": "sentilab-open-proposal/1",
+  "description": "One proposal, posted as a threaded reply to a challenge root (DESIGN rev 3 section 5.1). Data only: no free text, and no binary, host, grid, timeout, statistic, reference, budget or grant field. proposal_key is the logical key, scoped to the account and manifest. parent is null or one of the account's own earlier geometry hashes. visibility is the explicit publication choice; a private proposal travels sealed (section 3.7). salt makes proposal_sha256 = sha256(JCS(this object)) unguessable: that hash is the content hash in the transport key and the private status handle, a bearer secret. client is optional, private and never rendered. Manifest-dependent rules (open manifest, accepted terms, die count and order, frame, rotations, lattice, layout, the geometry hash) are checked by the validator.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "manifest_id", "terms", "proposal_key", "parent", "visibility", "salt", "units", "anchor",
+               "dies", "geometry_sha256"],
+  "properties": {
+    "schema": {"const": "sentilab-open-proposal/1"},
+    "manifest_id": {"$ref": "common.schema.json#/$defs/sha256"},
+    "terms": {"$ref": "common.schema.json#/$defs/terms_version"},
+    "proposal_key": {"$ref": "common.schema.json#/$defs/key"},
+    "parent": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
+    "visibility": {"$ref": "common.schema.json#/$defs/visibility"},
+    "salt": {"$ref": "common.schema.json#/$defs/salt"},
+    "units": {"$ref": "common.schema.json#/$defs/units"},
+    "anchor": {"$ref": "common.schema.json#/$defs/anchor"},
+    "dies": {"$ref": "common.schema.json#/$defs/dies"},
+    "geometry_sha256": {"$ref": "common.schema.json#/$defs/sha256"},
+    "client": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,32}$"},
+        "version": {"type": "string", "pattern": "^[A-Za-z0-9._-]{1,32}$"}
+      }
+    }
+  }
+}

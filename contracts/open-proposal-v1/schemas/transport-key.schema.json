@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/transport-key.schema.json",
+  "title": "sentilab-open-transport-key/1",
+  "description": "The preimage of the transport key (DESIGN rev 3 section 3.4): transport_key = \"so1-\" + hex(sha256(JCS(this object)))[0:48], 52 characters. room is the Senti room, account the poster's own account id (Senti's actorUserId), actor_slot \"agent:<agentId>\" or \"human\" as Senti stamps the row. logical_key is the proposal_key, the request_key, \"team\", or \"publish:<proposal_sha256>\" for a publish reply (not specified by rev 3; see CONTRACT.md). content_sha256 is the hash of the canonical salted plaintext (proposal_sha256 or request_sha256), the team hash or the publish hash, so re-sealing the same plaintext retries identically.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "room", "account", "actor_slot", "manifest_id", "logical_key", "content_sha256"],
+  "properties": {
+    "schema": {"const": "sentilab-open-transport-key/1"},
+    "room": {"$ref": "common.schema.json#/$defs/uuid"},
+    "account": {"$ref": "common.schema.json#/$defs/uuid"},
+    "actor_slot": {"type": "string", "pattern": "^(human|agent:[A-Za-z0-9][A-Za-z0-9._-]{0,119})$"},
+    "manifest_id": {"$ref": "common.schema.json#/$defs/sha256"},
+    "logical_key": {"type": "string", "pattern": "^([a-z0-9][a-z0-9_-]{0,63}|publish:[0-9a-f]{64})$"},
+    "content_sha256": {"$ref": "common.schema.json#/$defs/sha256"}
+  }
+}

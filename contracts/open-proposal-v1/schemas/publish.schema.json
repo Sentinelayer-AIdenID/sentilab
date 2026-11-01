@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/publish.schema.json",
+  "title": "sentilab-open-publish/1",
+  "description": "The participant's explicit, logged choice to publish a private entry (DESIGN rev 3 section 5.6): it names the proposal_sha256, comes from the same account, under accepted terms. Because it names the entry's private read handle, the command always travels sealed: a plaintext publish reply is private_requires_sealed and nothing in it is read. Terms (terms_not_accepted) and ownership (unknown_proposal) are checked after opening and before anything is made public; a refused publication changes nothing and is reported only privately.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "manifest_id", "terms", "proposal_sha256"],
+  "properties": {
+    "schema": {"const": "sentilab-open-publish/1"},
+    "manifest_id": {"$ref": "common.schema.json#/$defs/sha256"},
+    "terms": {"$ref": "common.schema.json#/$defs/terms_version"},
+    "proposal_sha256": {"$ref": "common.schema.json#/$defs/sha256"}
+  }
+}

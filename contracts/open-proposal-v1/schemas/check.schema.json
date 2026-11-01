@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/check.schema.json",
+  "title": "sentilab-open-check/1",
+  "description": "GET /api/open/v1/check-status?h=<request_sha256> (DESIGN rev 3 sections 6.2 and 10): the routed wire W(c) in mm, the router status, and nominal q_r = W(c) - (1 + r) W_R for r = 0, the policy tolerance and every tradeoff budget, under the fixed labels \"routed wire only, no thermal solve, nominal, not a score\". It carries no geometry. W_c_mm is a number only for a proven optimum; otherwise it and every q_r read UNKNOWN. codes is empty for a routed result and holds the rejection or check_unfinished codes otherwise (rev 3 shows only the routed shape).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "W_c_mm", "router_status", "q_r_nominal", "labels", "codes"],
+  "properties": {
+    "schema": {"const": "sentilab-open-check/1"},
+    "W_c_mm": {"$ref": "common.schema.json#/$defs/nonnegative_or_unknown"},
+    "router_status": {"description": "optimal: proven by HiGHS with mip_rel_gap 0 within the solver limit (section 4.5). time_limit: the solver limit ended it. not_routed: rejected before routing, or the wall or CPU reserve ended it.",
+                      "enum": ["optimal", "time_limit", "not_routed"]},
+    "q_r_nominal": {"$ref": "common.schema.json#/$defs/q_r"},
+    "labels": {"const": ["routed wire only", "no thermal solve", "nominal", "not a score"]},
+    "codes": {"$ref": "common.schema.json#/$defs/violations"}
+  },
+  "if": {"properties": {"router_status": {"const": "optimal"}}},
+  "then": {"properties": {"W_c_mm": {"type": "number"}, "codes": {"maxItems": 0}}},
+  "else": {"properties": {"W_c_mm": {"const": "UNKNOWN"}, "codes": {"minItems": 1}}}
+}

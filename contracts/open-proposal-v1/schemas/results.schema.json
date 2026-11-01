@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sentilab.invalid/open-proposal/v1/results.schema.json",
+  "title": "sentilab-open-results/1",
+  "description": "GET /api/open/v1/results?m=<manifest_id> (DESIGN rev 3 sections 9.2 and 10): the comparator R, then rows for engineering variants, the published targets, the SentiLab baseline and public outside entries. Private entries appear only as a count. delta_T = T_M(c) - T_M(R) and q_r = W(c) - (1 + r) W(R); either reads UNKNOWN when an input does. Every measured temperature carries its evaluator identity and its SLAB-053 label state (section 9.3); claim labels carry their evidence mode (section 4.8) and suppressed claims their reason (section 4.10). Sensitivities are reported separately, never summed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "comparator", "rows", "private_entries"],
+  "$defs": {
+    "temperature_label": {"anyOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/label_state"}]},
+    "evaluator": {"anyOf": [{"type": "null"}, {"$ref": "common.schema.json#/$defs/evaluator"}]},
+    "label": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "r", "mode"],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/claim_label"},
+        "r": {"type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 10},
+        "mode": {"enum": ["bounded", "passes the listed sensitivity cases", "INCOMPLETE", "INCONCLUSIVE", "UNKNOWN"]}
+      }
+    },
+    "suppressed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "r", "by"],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/claim_label"},
+        "r": {"type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 10},
+        "by": {"enum": ["failed gate zero", "failed binding", "failed predicate fixture", "failed required scenario"]}
+      }
+    },
+    "measured": {
+      "description": "The values every evaluated row carries.",
+      "type": "object",
+      "required": ["T_M", "delta_T", "W_c_mm", "q_r", "labels", "suppressed", "sensitivities", "observables",
+                   "evaluator", "temperature_label"],
+      "properties": {
+        "T_M": {"$ref": "common.schema.json#/$defs/number_or_unknown"},
+        "delta_T": {"$ref": "common.schema.json#/$defs/number_or_unknown"},
+        "W_c_mm": {"$ref": "common.schema.json#/$defs/nonnegative_or_unknown"},
+        "q_r": {"$ref": "common.schema.json#/$defs/q_r"},
+        "labels": {"type": "array", "maxItems": 7, "items": {"$ref": "#/$defs/label"}},
+        "suppressed": {"type": "array", "maxItems": 7, "items": {"$ref": "#/$defs/suppressed"}},
+        "sensitivities": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mesh", "position", "replay"],
+          "properties": {
+            "mesh": {"$ref": "common.schema.json#/$defs/number_or_unknown"},
+            "position": {"$ref": "common.schema.json#/$defs/number_or_unknown"},
+            "replay": {"$ref": "common.schema.json#/$defs/number_or_unknown"}
+          }
+        },
+        "observables": {
+          "description": "Retained separately from T_M and never asserted equivalent (section 4.4); the proxy wire is a diagnostic (section 4.5).",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["active_layer_grid_peak", "literal_on_stdout", "W_proxy_mm"],
+          "properties": {
+            "active_layer_grid_peak": {"$ref": "common.schema.json#/$defs/number_or_unknown"},
+            "literal_on_stdout": {"$ref": "common.schema.json#/$defs/number_or_unknown"},
+            "W_proxy_mm": {"$ref": "common.schema.json#/$defs/nonnegative_or_unknown"}
+          }
+        },
+        "evaluator": {"$ref": "#/$defs/evaluator"},
+        "temperature_label": {"$ref": "#/$defs/temperature_label"}
+      }
+    },
+    "outside": {
+      "allOf": [{"$ref": "#/$defs/measured"}],
+      "type": "object",
+      "required": ["kind", "participant_ref", "actor_kind", "state"],
+      "properties": {
+        "kind": {"const": "outside"},
+        "participant_ref": {"$ref": "common.schema.json#/$defs/participant_ref"},
+        "actor_kind": {"$ref": "common.schema.json#/$defs/actor_kind"},
+        "state": {"$ref": "common.schema.json#/$defs/lifecycle_state"},
+        "T_M": true, "delta_T": true, "W_c_mm": true, "q_r": true, "labels": true, "suppressed": true,
+        "sensitivities": true, "observables": true, "evaluator": true, "temperature_label": true
+      },
+      "additionalProperties": false
+    },
+    "baseline": {
+      "allOf": [{"$ref": "#/$defs/measured"}],
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {"const": "baseline"},
+        "T_M": true, "delta_T": true, "W_c_mm": true, "q_r": true, "labels": true, "suppressed": true,
+        "sensitivities": true, "observables": true, "evaluator": true, "temperature_label": true
+      },
+      "additionalProperties": false
+    },
+    "engineering_variant": {
+      "allOf": [{"$ref": "#/$defs/measured"}],
+      "type": "object",
+      "required": ["kind", "id", "content_sha256", "receipt_hash"],
+      "properties": {
+        "kind": {"const": "engineering_variant"},
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$"},
+        "content_sha256": {"$ref": "common.schema.json#/$defs/sha256"},
+        "receipt_hash": {"$ref": "common.schema.json#/$defs/sha256_or_null"},
+        "T_M": true, "delta_T": true, "W_c_mm": true, "q_r": true, "labels": true, "suppressed": true,
+        "sensitivities": true, "observables": true, "evaluator": true, "temperature_label": true
+      },
+      "additionalProperties": false
+    },
+    "published_target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "source", "T_c", "W_mm", "use"],
+      "properties": {
+        "kind": {"const": "published_target"},
+        "source": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9 .,:;()/+_-]{0,127}$"},
+        "T_c": {"type": "number", "minimum": -273.15, "maximum": 10000},
+        "W_mm": {"type": "number", "minimum": 0, "maximum": 10000000},
+        "use": {"const": "paper target, not our evaluation"}
+      }
+    }
+  },
+  "properties": {
+    "schema": {"const": "sentilab-open-results/1"},
+    "comparator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "T_R", "W_R_mm", "evaluator", "temperature_label"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}(/[a-z0-9][a-z0-9_.-]{0,63})?$"},
+        "T_R": {"$ref": "common.schema.json#/$defs/number_or_unknown"},
+        "W_R_mm": {"type": "number", "exclusiveMinimum": 0, "maximum": 10000000},
+        "evaluator": {"$ref": "#/$defs/evaluator"},
+        "temperature_label": {"$ref": "#/$defs/temperature_label"}
+      }
+    },
+    "rows": {
+      "type": "array",
+      "maxItems": 1000,
+      "items": {
+        "oneOf": [{"$ref": "#/$defs/outside"}, {"$ref": "#/$defs/baseline"}, {"$ref": "#/$defs/engineering_variant"},
+                  {"$ref": "#/$defs/published_target"}]
+      }
+    },
+    "private_entries": {"description": "Private entries appear only as this count (section 7.4).",
+                        "type": "integer", "minimum": 0, "maximum": 1000000}
+  }
+}
