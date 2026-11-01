@@ -77,7 +77,7 @@ test("the wall negotiates: markdown and JSON for agents that prefer them; unclas
 test("the wall says exactly what a visit records and that it is public, in HTML, markdown and JSON", async (t) => {
   const calls = installApi(t);
   const s = setup();
-  const RECORDED = "What we record: your assistant's type and the time of this visit. If you pick a purpose, we also record it and a short visit id. These appear on our public activity feed.";
+  const RECORDED = "What we record: a guess at your assistant's type, and the time of this visit. If you pick a purpose, we also record it and a short visit id. These appear on our public activity feed.";
   const html = await s.go("/", agent(UA.gptbot));
   assert.ok(html.text.includes(`<p class="fine">${RECORDED}</p>`), html.text);
   const md = await s.go("/", agent(UA.gptbot, { accept: "text/markdown" }));
