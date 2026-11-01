@@ -12,6 +12,8 @@ import { webgl2Available, live3d } from "./render3d.mjs";
 // Every door temperature becomes text through temps.mjs with a shared label (PL-2), and the page shows the shared
 // notice whenever a withdrawn or unvalidated temperature is on screen (temperature-label.mjs, the one rule).
 import { formatTemp, tempNode } from "./temps.mjs";
+// A run's state, queue position and codes in plain words, and the scorer chip: only from what the API reported.
+import { stateLine, summaryLine, eventLine, scorerChip, utcTime } from "./status.mjs";
 import { labelFor, NOTICE } from "../../temperature-label.mjs";
 
 const DWELL_MS = 7000;
@@ -217,7 +219,7 @@ export async function startDoor({ params, REDUCED }) {
     if (L.result_refused) return `Score not shown · ${REFUSED_RESULT[L.result_refused] ?? L.result_refused}`;
     if (L.result && D.noCrypto) return "Result not shown · file check unavailable here (needs a secure connection)";
     if (L.result && L.result.field_state !== "verified") return L.result.field_state === "unassociated" ? "Field unassociated · not drawn" : FIELD_NOTE[L.result.field_state];
-    return NOT_SCORED[L.status] ?? (SCORED.includes(L.status) ? "No score in this record" : "Not scored yet");
+    return stateLine(L) ?? NOT_SCORED[L.status] ?? (SCORED.includes(L.status) ? "No score in this record" : "Not scored yet");
   }
 
   // ── 2D drawing (the Package view's renderer) with the field drawn onto the tops ──
@@ -283,6 +285,7 @@ export async function startDoor({ params, REDUCED }) {
     renderInfo(L);
     renderStrip();
     renderArrivals();
+    renderScorer();
     renderStatus(line);
     // The shared notice: shown whenever a withdrawn or unvalidated temperature is on screen (the reference panel's
     // always are, until an evaluator is accepted), worded only in temperature-label.mjs.
@@ -346,7 +349,8 @@ export async function startDoor({ params, REDUCED }) {
         h("span", { class: "meta" }, FIELD_NOTE[L.result.field_state] ?? FIELD_NOTE.unassociated));
     } else {
       cap.classList.add("none");
-      cap.append(h("b", null, notScoredText(L)), h("span", { class: "meta" }, `${ENGINE} · simulated, not silicon · a map appears when a score exists`));
+      const live = D.source === "api" && !D.liveDown;
+      cap.append(h("b", null, notScoredText(L)), h("span", { class: "meta" }, `${ENGINE} · simulated, not silicon · ${live ? "the live feed draws no map (unsigned)" : "a map appears when a score exists"}`));
     }
     const notes = $("vNotes");
     notes.replaceChildren();
@@ -359,6 +363,10 @@ export async function startDoor({ params, REDUCED }) {
     $("dName").textContent = L ? L.label : "-";
     $("dName").style.color = L ? CLASS_COLOR[L.cls] ?? "" : "";
     $("dClsNote").textContent = L ? CLASS_NOTE[L.cls] ?? "" : "";
+    // The run's state as the API reports it: "Queued · position 3", "Failed: the scorer returned an error", and the
+    // contract's own summary of it.
+    $("dState").textContent = L ? [stateLine(L), summaryLine(L)].filter(Boolean).join(" · ") : "";
+    $("dState").hidden = !$("dState").textContent;
     // The board metric: the scorer's value, its name, its claim; distinct statistics apart, by name.
     $("dMetricName").textContent = `${BOARD_METRIC.name} · board metric`;
     const big = $("dValue"), dl = $("dDistinct");
@@ -427,13 +435,8 @@ export async function startDoor({ params, REDUCED }) {
     body.append(h("tr", null, h("td", { colspan: "3" }, "k in W/(m K), the layer default; spreader 90 mm and sink 180 mm square, the rest 45 mm")));
   }
 
-  // The arrivals panel (live only): the newest events of the door's events feed, by class and short id only.
-  function eventText(e) {
-    const codes = e.codes?.length ? e.codes.map(words).join(", ") : "";
-    if (e.kind === "arrival") return "arrived at the door";
-    if (e.kind === "attempt") return `attempt ${e.outcome}${codes ? `: ${codes}` : ""}`;
-    return `${(STATUS_CHIP[e.state] ?? ["", e.state])[1].toLowerCase()}${codes ? ` (${codes})` : ""}`;
-  }
+  // The arrivals panel (live only): the newest events of the door's events feed, by class and short id only, each in
+  // plain words (status.mjs eventLine: "rejected: halos overlap").
   function renderArrivals() {
     const live = D.source === "api" && !D.liveDown && Boolean(D.feed);
     $("dArrivals").hidden = !live;
@@ -449,8 +452,22 @@ export async function startDoor({ params, REDUCED }) {
     list.replaceChildren(...(events.length ? events.map((e) => {
       const b = h("b", null, e.label);
       b.style.color = CLASS_COLOR[e.cls] ?? "";
-      return h("li", null, b, ` ${eventText(e)}`);
+      return h("li", null, b, ` ${eventLine(e)}`);
     }) : [h("li", { class: "none" }, "No arrivals yet")]));
+  }
+
+  // The scorer chip (live only), from the API's scorer snapshot: up, busy, unreachable, or unknown when the API does not
+  // know or the snapshot is older than LIVE_FRESH_MS (status.mjs scorerChip).
+  const SCORER_CHIP = Object.freeze({ up: "won", busy: "open", unreachable: "out", unknown: "init" });
+  function renderScorer() {
+    const el = $("dScorer");
+    el.hidden = D.source !== "api";
+    if (el.hidden) return;
+    const c = scorerChip({ feed: D.feed?.state ?? null, nowMs: Date.now() });
+    el.className = `chip scorer ${SCORER_CHIP[c.word]}`;
+    el.textContent = `Scorer: ${c.word}${c.since !== null ? ` · ${c.word === "busy" ? "up " : ""}since ${utcTime(c.since)}` : ""}`;
+    el.title = c.word === "unknown" ? "The door API's scorer snapshot: the API does not know yet, or it was not read in the last 12 s"
+      : `The door API's scorer snapshot, read ${c.age_s} s ago${c.word === "busy" ? ". Busy: at least one run in the feed is evaluating" : ""}`;
   }
 
   // The arrival strip: one tile per layout, a plan view with the map when there is one.
@@ -638,6 +655,7 @@ export async function startDoor({ params, REDUCED }) {
       line: $("modeText").textContent, overlay: D.overlay, explode: D.explode, geometryKey: D.current?.model.geometry_key ?? null,
       fieldState: L?.result?.field_state ?? null, fieldKey: D.current?.field?.key ?? null, tempLabel: L?.result?.label?.state ?? null,
       evaluator: L?.result?.evaluator ?? null, diagnostic: L?.result?.diagnostic ?? null, events: D.feed?.state.events.length ?? 0,
+      stateLine: L ? stateLine(L) : null, position: L?.position ?? null, scorer: D.source === "api" ? scorerChip({ feed: D.feed?.state ?? null, nowMs: Date.now() }).word : null,
       cursor: D.feed?.state.cursor ?? null, eventsCursor: D.feed?.state.eventsCursor ?? null, refused: { ...(D.feed?.state.refused ?? {}) },
       notice: !$("wnotice").hidden, noCrypto: D.noCrypto, lost: D.lost, live3d: live3d.count,
       figure: { x: Math.round(fig.x), y: Math.round(fig.y), w: Math.round(fig.width), h: Math.round(fig.height) }, ...(st ?? {}) };

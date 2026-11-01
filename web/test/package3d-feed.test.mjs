@@ -123,7 +123,8 @@ test("every status #81 writes, from its own pages; a result only with a score th
 test("an item maps to the layout model: id, the rebuilt label, the status, the dies by TAP index, nothing else", () => {
   const raw = item("results_reproduced");
   const { layout } = door.normalizeItem(raw);
-  assert.deepEqual(Object.keys(layout).sort(), ["arrival", "cls", "dies", "id", "label", "result", "result_refused", "seq", "short", "status"]);
+  assert.deepEqual(Object.keys(layout).sort(), ["arrival", "cls", "codes", "dies", "id", "label", "position", "reason", "result", "result_refused", "seq", "short", "status",
+    "summary"]);
   assert.deepEqual([layout.id, layout.cls, layout.short, layout.label, layout.status, layout.seq, layout.arrival],
     [raw.id, "declared_agent", raw.short_id, `declared_agent · ${raw.short_id}`, "reproduced", raw.seq, raw.arrival]);
   assert.deepEqual(layout.dies, raw.dies.map((d) => ({ die: DIE_IDS[d.die], x_um: d.x_um, y_um: d.y_um, rot_deg: d.rot_deg })), "die i is TAP die i: C0..C3, D0..D3");
@@ -149,7 +150,7 @@ test("an item maps to the layout model: id, the rebuilt label, the status, the d
   assert.equal(dies((d) => { d[0].rot_deg = 90; }), undefined, "a CPU may");
   // Whatever else an item carries is dropped unread.
   const text = JSON.stringify(layout);
-  for (const unread of [raw.geometry_sha256, "wire_proxy_mm", "summary", "independently verified", "per_die_C", "GRID_CENTER", "position", "verdict"]) {
+  for (const unread of [raw.geometry_sha256, "wire_proxy_mm", "per_die_C", "GRID_CENTER", "verdict"]) {
     assert.ok(!text.includes(String(unread)), String(unread));
   }
 });
