@@ -20,6 +20,15 @@ import unittest
 
 REPO = Path(__file__).resolve().parents[1]
 
+# Timing (root #57510: a separate cap control stopped before its marker). Every condition below is either an amount
+# of CPU the stand-ins spend or a marker file. None is a wall-clock race. The wall deadlines are backstops for a broken
+# run only, so a loaded host (slow start-up, little CPU per process) changes how long a test takes, not what it shows.
+# - The supervisor's own CPU is not metered here, because its polling grows with wall time.
+# - The meter failures start only once the solver is up.
+# - The cap leaves 1 CPU-s of workload. Under 16 busy loops sharing one CPU, the stand-ins' own start-up measured
+#   0.17-0.21 CPU-s before the solver's marker. The whole-tree meter used before this hardening counted 0.28-0.34
+#   CPU-s there, and 0.10-0.13 CPU-s with no load at all.
+
 # validate-reference's stand-in. It launches the solver the way reference_validation launches HotSpot (in its own
 # session, with its output going to files), waits until the solver is up, and then either waits for it ("waits") or
 # dies without settling ("dies"). With "preexisting" it starts nothing.
@@ -30,7 +39,7 @@ if mode == "preexisting":
     sys.exit(0)
 solver = subprocess.Popen([sys.executable, "-c", solver_code, str(here)], start_new_session=True,
                           stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-deadline = time.monotonic() + 10
+deadline = time.monotonic() + 60
 while not (here / "solver.pid").exists() and time.monotonic() < deadline:
     time.sleep(0.005)
 if mode == "dies":
@@ -38,9 +47,9 @@ if mode == "dies":
 solver.wait()
 '''
 
-# The solver's stand-in. It runs in its own session (it records pid, session and group), ignores SIGTERM and spins,
-# recording the CPU it has used. It is bounded on its own (RLIMIT_CPU 5 s, a 10 s wall deadline) in case nothing
-# kills it.
+# The solver's stand-in. It runs in its own session (it records pid, session and group before anything else),
+# ignores SIGTERM and spins, recording the CPU it has used. It is bounded on its own by RLIMIT_CPU 5 s, and by a 60 s
+# wall backstop, in case nothing kills it.
 SOLVER = r'''
 import os, pathlib, resource, signal, sys, time
 resource.setrlimit(resource.RLIMIT_CPU, (5, 5))
@@ -48,7 +57,7 @@ signal.signal(signal.SIGTERM, signal.SIG_IGN)
 here = pathlib.Path(sys.argv[1])
 (here / "solver.pid.tmp").write_text(f"{os.getpid()} {os.getsid(0)} {os.getpgrp()}")
 os.replace(here / "solver.pid.tmp", here / "solver.pid")
-end, last = time.monotonic() + 10, 0.0
+end, last = time.monotonic() + 60, 0.0
 while time.monotonic() < end:
     for _ in range(20000):
         pass
@@ -59,11 +68,13 @@ while time.monotonic() < end:
         os.replace(here / "solver.cpu.tmp", here / "solver.cpu")
 '''
 
-# The supervisor: gate0_operator.run_call on the stand-in. It is metered by its own process tree here; in production
-# the meter is the container's cgroup. With meter_failure set, reads start failing once the solver is up: one read only
-# ("transient"; later reads would succeed), or every read from then on, including the one after the reap
-# ("persistent"). The supervisor then reports whether any child or descendant is left, and whether a next run would
-# start.
+# The supervisor: gate0_operator.run_call on the stand-in. Its meter here is the CPU of everything it started (reaped
+# or not), its own excluded, so that its polling, stretched over a slow start-up on a loaded host, cannot spend the
+# cap before the solver is up. In production the meter is the container's cgroup. With meter_failure set, reads start
+# failing:
+# - "transient": one read once the solver is up; later reads would succeed;
+# - "persistent": every read once the solver is up, including the one after the reap.
+# The supervisor then reports whether any child or descendant is left and whether a next run would start.
 SUPERVISOR = r'''
 import json, os, pathlib, subprocess, sys
 from sundai_controller import process_budget
@@ -74,12 +85,17 @@ gate0_operator.CPU_FILE = here / "cpu-used.json"
 failed = []
 
 
+def started_cpu():
+    own = os.times()
+    return process_budget.tree_snapshot()[0] - (own.user + own.system)
+
+
 def meter():
-    if spec["meter_failure"] and (here / "solver.pid").exists():
-        if spec["meter_failure"] == "persistent" or not failed:
-            failed.append(1)
-            raise OSError(5, "synthetic cpu.stat read failure")
-    return process_budget.tree_snapshot()[0]
+    value, up, mode = started_cpu(), (here / "solver.pid").exists(), spec["meter_failure"]
+    if (mode == "transient" and up and not failed) or (mode == "persistent" and up):
+        failed.append(value)
+        raise OSError(5, "synthetic cpu.stat read failure")
+    return value
 
 
 out = here / "run"
@@ -97,7 +113,7 @@ if spec["mode"] == "preexisting":
     other.kill()
     other.wait()
 else:
-    budget = {"cap": spec["cap"], "carried": spec["carried"] - meter()}
+    budget = {"cap": spec["cap"], "carried": spec["carried"] - started_cpu()}
     result = gate0_operator.run_call(call, argv, out, budget, meter=meter, cwd=str(here), poll_s=0.02, stop_s=2.0)
     try:
         os.waitpid(-1, os.WNOHANG)
@@ -126,7 +142,7 @@ class CapPathTests(unittest.TestCase):
         self.addCleanup(self.kill_leftover_solver, here)
         spec = {"dir": str(here), "mode": mode, "cap": cap, "carried": carried, "envelope": envelope,
                 "meter_failure": meter_failure, "parent": PARENT, "solver": SOLVER}
-        done = subprocess.run([sys.executable, "-c", SUPERVISOR, json.dumps(spec)], cwd=REPO, timeout=60,
+        done = subprocess.run([sys.executable, "-c", SUPERVISOR, json.dumps(spec)], cwd=REPO, timeout=180,
                               capture_output=True, text=True)
         self.assertEqual(done.returncode, 0, done.stderr[-2000:])
         result = json.loads((here / "result.json").read_text(encoding="utf-8"))
@@ -149,6 +165,8 @@ class CapPathTests(unittest.TestCase):
             pass
 
     def assert_nothing_owned_is_left(self, result: dict, solver: dict) -> None:
+        self.assertTrue(solver, "the stand-in solver never wrote its marker, so this run did not reach the case "
+                        "under test")
         self.assertEqual((solver["session"], solver["group"]), (solver["pid"], solver["pid"]))  # its own session
         self.assertEqual(result["survivors"], [])
         self.assertIn(solver["pid"], result["reaped"])  # adopted by the supervisor, killed and reaped there
@@ -163,15 +181,15 @@ class CapPathTests(unittest.TestCase):
 
     def test_the_cap_kills_and_reaps_every_group_the_call_owns_and_charges_the_call(self):
         """root (#57395): the cap fires while the solver runs in its own session, ignoring SIGTERM."""
-        result, here, solver = self.supervise("waits", cap=0.6, carried=0.2, envelope=0.25)
-        self.assertRegex(result["killed"] or "", r"^cumulative CPU \d+\.\d\d s passed the cap 0\.6 s$")
+        result, here, solver = self.supervise("waits", cap=1.2, carried=0.2, envelope=0.25)
+        self.assertRegex(result["killed"] or "", r"^cumulative CPU \d+\.\d\d s passed the cap 1\.2 s$")
         self.assertEqual(result["exit"], -signal.SIGKILL)  # validate-reference's stand-in, killed at the cap
         self.assert_nothing_owned_is_left(result, solver)
         # The accounting: the CPU read after the reap, the solver's included, is charged, settled and saved.
         burned = float((here / "solver.cpu").read_text())
         self.assertGreater(burned, 0.0)
         self.assertGreaterEqual(result["cpu_s_this_call"], burned - 0.05)  # /proc counts whole clock ticks
-        self.assertGreater(result["cumulative_cpu_s"], 0.6)
+        self.assertGreater(result["cumulative_cpu_s"], 1.2)
         self.assertEqual((result["meter_errors"], result["usage"]), ([], "measured"))
         self.assertEqual(result["settlement"], {"status": "supervisor_cap", "usage": "measured",
                                                 "charged_cpu_s": round(max(0.25, result["cpu_s_this_call"]), 3)})
