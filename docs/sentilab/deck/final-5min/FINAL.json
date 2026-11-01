@@ -5,7 +5,7 @@
     "event": "ScienceClaw hackathon",
     "talk": "Five-minute slot: talk, then a live demo"
   },
-  "cutoff": "2026-11-01T02:06:00Z",
+  "cutoff": "2026-11-01T02:26:00Z",
   "talk": {
     "maxSeconds": 300,
     "talkCapSeconds": 180,
@@ -1014,7 +1014,7 @@
           "head": "83995e783274c3504a36da4ea170527891a3d903",
           "merge": "bba120dc848b8ae802f474945842bf268ddcfa99",
           "mergedAt": "2026-10-31T23:04:17Z",
-          "checkedAt": "2026-11-01T02:04:00Z"
+          "checkedAt": "2026-11-01T02:24:00Z"
         },
         {
           "number": 73,
@@ -1023,7 +1023,7 @@
           "head": "2d35e9cd5eae33cf0f97574e0a43953b76563e01",
           "merge": "1575556dda2ac77ac49823cce7fad5ed8eaa55b3",
           "mergedAt": "2026-10-31T23:40:43Z",
-          "checkedAt": "2026-11-01T02:04:00Z"
+          "checkedAt": "2026-11-01T02:24:00Z"
         },
         {
           "number": 57,
@@ -1032,7 +1032,7 @@
           "head": "a48ceec587d2e8f0370c170c8e0aedc204646b18",
           "merge": "d298cb007081e9ad9334e3d77d412d789c126b0c",
           "mergedAt": "2026-10-31T18:04:42Z",
-          "checkedAt": "2026-11-01T02:04:00Z"
+          "checkedAt": "2026-11-01T02:24:00Z"
         },
         {
           "number": 58,
@@ -1041,7 +1041,7 @@
           "head": "fd2870e8c381e901af6fc0cef40a1a9628600eea",
           "merge": "568dd397a08d2fca209958d7f011e75346a79e0b",
           "mergedAt": "2026-10-31T16:27:35Z",
-          "checkedAt": "2026-11-01T02:04:00Z"
+          "checkedAt": "2026-11-01T02:24:00Z"
         },
         {
           "number": 60,
@@ -1050,7 +1050,7 @@
           "head": "e2c0cd903a134120a47d70efc93f2e83161a1233",
           "merge": "551777a9516cc81e905ccc2daf4955d32151ac14",
           "mergedAt": "2026-10-31T17:59:15Z",
-          "checkedAt": "2026-11-01T02:04:00Z"
+          "checkedAt": "2026-11-01T02:24:00Z"
         },
         {
           "number": 64,
@@ -1059,7 +1059,7 @@
           "head": "61debcef081c201f1b9fb3cc4d1c1da7b361e712",
           "merge": "d25046256b4a712b529977f31e10b7e32248a9c0",
           "mergedAt": "2026-10-31T19:38:22Z",
-          "checkedAt": "2026-11-01T02:04:00Z"
+          "checkedAt": "2026-11-01T02:24:00Z"
         },
         {
           "number": 61,
@@ -1068,7 +1068,7 @@
           "head": "3513ad709165a6afa43e665929a8e5f10908f885",
           "merge": "a5744f3ac4f1142924368687a6762f8aed696ed9",
           "mergedAt": "2026-10-31T16:48:53Z",
-          "checkedAt": "2026-11-01T02:04:00Z"
+          "checkedAt": "2026-11-01T02:24:00Z"
         },
         {
           "number": 59,
@@ -1077,7 +1077,7 @@
           "head": "259ce51fbbd3fa51dcdb41d2c0c7e78de069d237",
           "merge": "4f6ad0cb7779037287ff522045793943f6c023ba",
           "mergedAt": "2026-10-31T17:53:53Z",
-          "checkedAt": "2026-11-01T02:04:00Z"
+          "checkedAt": "2026-11-01T02:24:00Z"
         },
         {
           "number": 55,
@@ -1086,7 +1086,7 @@
           "head": "70519dd3b45cef2341adf8fdbeeaebeee3b45699",
           "merge": "315bbff4458dd6d033a74549b7f4b89765bf5835",
           "mergedAt": "2026-10-31T15:38:53Z",
-          "checkedAt": "2026-11-01T02:04:00Z"
+          "checkedAt": "2026-11-01T02:24:00Z"
         },
         {
           "number": 37,
@@ -1095,7 +1095,7 @@
           "head": "113c1347cb154c4f909783dde17f531ad1267235",
           "merge": "224fa7044bc7a80991bc9995b829e30c170d9842",
           "mergedAt": "2026-10-31T17:09:11Z",
-          "checkedAt": "2026-11-01T02:04:00Z"
+          "checkedAt": "2026-11-01T02:24:00Z"
         },
         {
           "number": 25,
@@ -1104,7 +1104,7 @@
           "head": "a10063d432d776f3bf43ee6d8b8efbee4d6b5032",
           "merge": "deb24670f53bada97cc965d282f6bcf68c338d1e",
           "mergedAt": "2026-10-31T12:05:13Z",
-          "checkedAt": "2026-11-01T02:04:00Z"
+          "checkedAt": "2026-11-01T02:24:00Z"
         }
       ]
     },
@@ -1298,7 +1298,7 @@
     },
     "scienceclaw": {
       "name": "ScienceClaw",
-      "consent": null
+      "consent": "32a841e5 seq 57532 at 2026-11-01T02:09:48.572Z"
     },
     "quantumswarms": {
       "name": "quantumSwarms",
@@ -1619,12 +1619,28 @@
     },
     "fig6": {
       "file": "fig6-teams.svg",
-      "sha256": "e3d202598e95e72c73308939614cfc38c0807b8673f2f0c012c102bde107d48d",
+      "sha256": "14f0bcda911863e8cad623e54cec18cdcc8d0f7a00bd9bdd7ff0d4cd2d7fb057",
       "width": 1664,
       "height": 760,
       "scale": 0.92,
       "alt": "Map of what travelled between SentiLab and eight outside teams: two used our work and returned a result, three said it helped in their own words, three have not confirmed use yet, and four links run between other teams.",
-      "edits": [],
+      "edits": [
+        {
+          "from": "Built on request. Now runs",
+          "to": "Built on request; it ran through",
+          "why": "root, team room 57540: one proof run, not ongoing use"
+        },
+        {
+          "from": "in the open ScienceClaw platform",
+          "to": "the open-source ScienceClaw",
+          "why": "root, team room 57540: the open-source lamm-mit/scienceclaw platform, not the participant team; short enough for the card"
+        },
+        {
+          "from": "“your matchmaking”, and it used",
+          "to": "“your matchmaking”; it used",
+          "why": "the line ran into the card edge at render (aneta, team room 57541)"
+        }
+      ],
       "teamText": [
         {
           "team": "delfie",
@@ -1640,11 +1656,6 @@
           "team": "scienceclaw",
           "from": "ScienceClaw",
           "anon": "An outside team"
-        },
-        {
-          "team": "scienceclaw",
-          "from": "in ScienceClaw’s executor",
-          "anon": "in the hackathon’s executor"
         },
         {
           "team": "feagent",
@@ -1670,6 +1681,11 @@
           "team": "kiln",
           "from": "Kiln",
           "anon": "An outside team"
+        },
+        {
+          "team": "scienceclaw",
+          "from": "the open-source ScienceClaw",
+          "anon": "the hackathon’s open platform"
         }
       ],
       "records": [
@@ -1750,6 +1766,24 @@
           "ref": "seq 57470",
           "author": "aneta-claude",
           "at": "2026-11-01T01:27:20.312Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "seq 57532",
+          "author": "scienceclaw-claude",
+          "at": "2026-11-01T02:09:48.572Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "seq 57350",
+          "author": "scienceclaw-claude",
+          "at": "2026-10-31T23:22:54.720Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "seq 57538",
+          "author": "aneta-claude",
+          "at": "2026-11-01T02:16:19.876Z"
         }
       ]
     }
@@ -1828,7 +1862,7 @@
     "kicker": "Other teams",
     "title": "Other teams build on it, and with each other.",
     "figure": "fig6",
-    "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 00:37 UTC; a dated snapshot. Teams are not named until they agree. Our own help-room leaderboard is not used as evidence.",
-    "notes": "And the work travels. Eight outside teams got something from us: two used it and returned a result, three said it helped in their own words, and three haven't confirmed. Some now work with each other."
+    "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 02:09 UTC; a dated snapshot. Only teams that agreed are named. Our own help-room leaderboard is not used as evidence.",
+    "notes": "And the work travels. Eight outside teams got something from us: two used it and returned a result, three said it helped in their own words, and three haven't confirmed. {ScienceClaw} credited our matchmaking, and later used our review to fix its package. Our rigidity skill ran through the open-source ScienceClaw registry and executor."
   }
 }

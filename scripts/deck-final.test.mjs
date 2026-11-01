@@ -177,28 +177,45 @@ test("every figure time names a room record that carries its minute, and its dur
 });
 
 // ── 3. outside teams: named only with consent ───────────────────────────────────────────────────────────────────────
-test("with no consent on record, no outside team is named anywhere: slides, notes, figures or generated data", () => {
-  for (const t of Object.values(loaded.final.teams)) assert.equal(t.consent, null, `${t.name}: shipped with its flag off`);
+// The one consent on record: ScienceClaw said yes in the help room (message 57532, 02:09:48 on 1 Nov); root confirmed it
+// in team room 57540. Every other flag is off.
+const SCIENCECLAW = "32a841e5 seq 57532 at 2026-11-01T02:09:48.572Z";
+test("only a team whose consent is on record is named: slides, notes, figures and generated data", () => {
+  assert.deepEqual(Object.entries(loaded.final.teams).filter(([, t]) => t.consent).map(([id, t]) => [id, t.consent]), [["scienceclaw", SCIENCECLAW]]);
   const d = recorded();
   // The event is the ScienceClaw hackathon: its name in the slide header is the deck's, not a team's.
   assert.ok(everything(d).includes("ScienceClaw hackathon"));
   const all = everything(d).replaceAll(d.deck.event, "");
-  for (const name of TEAM_NAMES) {
+  assert.ok(named(all, "ScienceClaw"), "the consenting team is named");
+  for (const name of TEAM_NAMES.filter((n) => n !== "ScienceClaw")) {
     assert.ok(!named(all, name), `${name} appears on a slide`);
     for (const f of readdirSync(FIGURE_OUT_DIR)) assert.ok(!named(read(join(FIGURE_OUT_DIR, f)).replace(/data:image\/\w+;base64,[A-Za-z0-9+/=]+/g, ""), name), `${name} in ${f}`);
     // The served data is checked without regard to case: a lower-case id or handle names a team too.
     assert.doesNotMatch(read(join(FINAL_DECK_DIR, "deck-data.json")).replaceAll(committed.deck.event, ""), new RegExp(`(^|[^\\p{L}\\p{N}])${name}(?![\\p{L}\\p{N}])`, "iu"), `${name} in deck-data.json`);
   }
   assert.doesNotMatch(read(join(FINAL_DECK_DIR, "deck-data.json")), /zucalerega|feagent/i, "no repository name either");
-  assert.deepEqual(committed.teams, { named: [], unnamed: Object.keys(loaded.final.teams).length });
+  assert.deepEqual(committed.teams, { named: [{ name: "ScienceClaw", consent: { room: "32a841e5", seq: 57532, at: "2026-11-01T02:09:48.572Z" } }], unnamed: 7 });
   // The anonymous wording, and the credit kept either way.
   assert.match(slideText(d, "stack"), /An outside team ran both versions with the detailed 3-D mode off: both give 75\.37 C and 115\.29 C, as reported by them\./);
   assert.match(notesOf(d, "gate"), /Two outside teams checked us, as reported by them: an outside team ran both versions, and a second outside team used its own finite-element code\./);
   assert.match(slideText(d, "receipt"), /A second outside team \(public repository, frozen report at commit c73d642b\)/);
-  assert.match(slideText(d, "receipt"), /No outside team is named on these slides until it agrees to be named\./);
+  assert.match(slideText(d, "receipt"), /Named with their consent, on record in the help room: ScienceClaw\. The other 7 teams are not named until they agree\./);
+  // ScienceClaw's card and the narration, in root's words (team room 57540): the run went through the open-source
+  // platform, not through the team, and the 02:09 acknowledgment is the team's own, not backdated.
+  assert.match(figureText(d, "teams"), /Built on request; it ran through \| the open-source ScienceClaw \| ScienceClaw \| “your matchmaking”; it used \| our review to fix its package/);
+  assert.match(notesOf(d, "teams"), /ScienceClaw credited our matchmaking, and later used our review to fix its package\. Our rigidity skill ran through the open-source ScienceClaw registry and executor\.$/);
+  assert.match(slideText(d, "teams"), /Help room, to 1 November 02:09 UTC; a dated snapshot\. Only teams that agreed are named\./);
+  assert.match(figureText(d, "teams"), /blind panel test, running/);
   assert.match(figureText(d, "gate"), /Outside 75\.48 \| 78\.06 Outside/);
   assert.match(figureText(d, "timeline"), /An outside team \| reproduces it: 39 min/);
-  assert.equal((figureText(d, "teams").match(/An outside team/g) ?? []).length, 8);
+  assert.equal((figureText(d, "teams").match(/An outside team/g) ?? []).length, 7);
+  // Without its consent line, the card goes back to "an outside team" and the figure's platform line to "the
+  // hackathon's open-source executor"; the narration names the open-source platform in plain words, which shares the
+  // team's name, so the build stops for a person to reword it rather than guess.
+  const offFig = recorded({}, (f) => { f.teams.scienceclaw.consent = null; f.teamsSlide.notes = f.teamsSlide.notes.replace(/ Our rigidity skill[^.]*\.$/, ""); });
+  assert.ok(!named(everything(offFig).replaceAll(offFig.deck.event, ""), "ScienceClaw"));
+  assert.match(figureText(offFig, "teams"), /the hackathon’s open platform/);
+  assert.throws(() => recorded({}, (f) => { f.teams.scienceclaw.consent = null; }), /ScienceClaw has not consented to be named/);
 });
 test("a consent line switches one team to its name, with a pointer to where it agreed, and nothing else moves", () => {
   // The flag is one line in FINAL.json.
@@ -206,13 +223,14 @@ test("a consent line switches one team to its name, with a pointer to where it a
   const flipped = text.replace(/("delfie": \{\n\s+"name": "Delfie",\n\s+"consent": )null/, `$1"${consentLine(57490)}"`);
   assert.equal(flipped.split("\n").filter((l, i) => l !== text.split("\n")[i]).length, 1, "one changed line");
   const d = buildFinalData({ final: JSON.parse(flipped), hashes: loaded.hashes }, { rederived: true });
-  assert.deepEqual(d.teams, { named: [{ name: "Delfie", consent: { room: "32a841e5", seq: 57490, at: "2026-11-01T01:20:00Z" } }], unnamed: 7 });
+  assert.deepEqual(d.teams, { named: [{ name: "Delfie", consent: { room: "32a841e5", seq: 57490, at: "2026-11-01T01:20:00Z" } },
+    { name: "ScienceClaw", consent: { room: "32a841e5", seq: 57532, at: "2026-11-01T02:09:48.572Z" } }], unnamed: 6 });
   assert.match(slideText(d, "stack"), /Delfie ran both versions with the detailed 3-D mode off: both give 75\.37 C and 115\.29 C, as reported by them\./);
   assert.match(notesOf(d, "gate"), /Delfie ran both versions, and an outside team used its own finite-element code\./);
   assert.match(figureText(d, "gate"), /Delfie 75\.48 \| 78\.06 Outside/);
   assert.match(figureText(d, "timeline"), /Delfie reproduces \| it: 39 min/);
-  assert.match(slideText(d, "receipt"), /Named with their consent, on record in the help room: Delfie\. The other 7 teams are not named until they agree\./);
-  for (const name of TEAM_NAMES.filter((n) => n !== "Delfie")) assert.ok(!named(everything(d).replaceAll(d.deck.event, ""), name), name);
+  assert.match(slideText(d, "receipt"), /Named with their consent, on record in the help room: Delfie, ScienceClaw\. The other 6 teams are not named until they agree\./);
+  for (const name of TEAM_NAMES.filter((n) => n !== "Delfie" && n !== "ScienceClaw")) assert.ok(!named(everything(d).replaceAll(d.deck.event, ""), name), name);
   // No re-layout: the same slides, the same figures, the same text runs.
   const before = recorded();
   assert.deepEqual(d.slides.map((s) => s.id), before.slides.map((s) => s.id));

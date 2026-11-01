@@ -6,7 +6,7 @@ window.DECK_DATA = {
     "title": "SentiLab",
     "event": "ScienceClaw hackathon",
     "talk": "Five-minute slot: talk, then a live demo",
-    "cutoff": "2026-11-01 02:06 UTC",
+    "cutoff": "2026-11-01 02:26 UTC",
     "variant": "pass",
     "variantLabel": "PASS",
     "preview": false,
@@ -16,9 +16,9 @@ window.DECK_DATA = {
   "budget": {
     "checkWordsPerMinute": 150,
     "slowWordsPerSecond": 2.2,
-    "talkWords": 365,
-    "talkSeconds": 146,
-    "talkSlowSeconds": 165.9,
+    "talkWords": 383,
+    "talkSeconds": 153.2,
+    "talkSlowSeconds": 174.1,
     "transitionSeconds": 15,
     "talkCapSeconds": 180,
     "doorWords": 47,
@@ -29,8 +29,17 @@ window.DECK_DATA = {
     "maxSeconds": 300
   },
   "teams": {
-    "named": [],
-    "unnamed": 8
+    "named": [
+      {
+        "name": "ScienceClaw",
+        "consent": {
+          "room": "32a841e5",
+          "seq": 57532,
+          "at": "2026-11-01T02:09:48.572Z"
+        }
+      }
+    ],
+    "unnamed": 7
   },
   "slides": [
     {
@@ -364,17 +373,17 @@ window.DECK_DATA = {
       "main": true,
       "kicker": "Other teams",
       "notes": {
-        "text": "And the work travels. Eight outside teams got something from us: two used it and returned a result, three said it helped in their own words, and three haven't confirmed. Some now work with each other.",
-        "words": 36,
-        "seconds": 14.4,
-        "slowSeconds": 16.4
+        "text": "And the work travels. Eight outside teams got something from us: two used it and returned a result, three said it helped in their own words, and three haven't confirmed. ScienceClaw credited our matchmaking, and later used our review to fix its package. Our rigidity skill ran through the open-source ScienceClaw registry and executor.",
+        "words": 54,
+        "seconds": 21.6,
+        "slowSeconds": 24.5
       },
       "content": {
         "title": "Other teams build on it, and with each other.",
         "figure": {
           "id": "fig6",
           "src": "figures/fig6-teams.svg",
-          "sha256": "236ee9ccf3a9fe8c6e24a84555ddcf0c9f4531e2aed6714ec33673aa12c03828",
+          "sha256": "c531bcff59a29afc3377686dbd59880dfef9ae10a3b1f6b5a425d527fd351338",
           "width": 1664,
           "height": 760,
           "scale": 0.92,
@@ -383,7 +392,7 @@ window.DECK_DATA = {
           "texts": [
             "public test case",
             "rigidity tool",
-            "matchmaking",
+            "matchmaking, review",
             "benchmark, public case",
             "shot-cost points",
             "test harness",
@@ -398,11 +407,11 @@ window.DECK_DATA = {
             "Both versions on our case,",
             "39 min after it went public",
             "An outside team",
-            "Built on request. Now runs",
-            "in the hackathon’s executor",
-            "An outside team",
-            "“What did help was",
-            "your matchmaking.”",
+            "Built on request; it ran through",
+            "the open-source ScienceClaw",
+            "ScienceClaw",
+            "“your matchmaking”; it used",
+            "our review to fix its package",
             "An outside team",
             "Separate solver on our",
             "case, in 1 h 41",
@@ -424,7 +433,7 @@ window.DECK_DATA = {
             "between other teams"
           ]
         },
-        "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 00:37 UTC; a dated snapshot. Teams are not named until they agree. Our own help-room leaderboard is not used as evidence."
+        "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 02:09 UTC; a dated snapshot. Only teams that agreed are named. Our own help-room leaderboard is not used as evidence."
       },
       "label": "6 / 8"
     },
@@ -918,7 +927,7 @@ window.DECK_DATA = {
           "pr": 56,
           "state": "merged",
           "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
-          "checked": "checked 2026-11-01 02:04 UTC"
+          "checked": "checked 2026-11-01 02:24 UTC"
         },
         "result": {
           "label": "PASS",
@@ -1120,84 +1129,84 @@ window.DECK_DATA = {
       "content": {
         "title": "Pull requests behind this talk, with their state at the check time.",
         "repo": "Sentinelayer-AIdenID/sentilab",
-        "checked": "checked 2026-11-01 02:04 UTC",
+        "checked": "checked 2026-11-01 02:24 UTC",
         "rows": [
           {
             "number": "#56",
             "what": "Gate zero: the older simulator version behind the fixed test",
             "state": "merged",
             "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
-            "checked": "checked 2026-11-01 02:04 UTC"
+            "checked": "checked 2026-11-01 02:24 UTC"
           },
           {
             "number": "#73",
             "what": "Gate zero: pin the operator's public key",
             "state": "merged",
             "text": "merged as 1575556d at 2026-10-31 23:40 UTC",
-            "checked": "checked 2026-11-01 02:04 UTC"
+            "checked": "checked 2026-11-01 02:24 UTC"
           },
           {
             "number": "#57",
             "what": "Reference layouts from the paper, plus the paper's wire router",
             "state": "merged",
             "text": "merged as d298cb00 at 2026-10-31 18:04 UTC",
-            "checked": "checked 2026-11-01 02:04 UTC"
+            "checked": "checked 2026-11-01 02:24 UTC"
           },
           {
             "number": "#58",
             "what": "Public notice: pre-correction temperatures withdrawn",
             "state": "merged",
             "text": "merged as 568dd397 at 2026-10-31 16:27 UTC",
-            "checked": "checked 2026-11-01 02:04 UTC"
+            "checked": "checked 2026-11-01 02:24 UTC"
           },
           {
             "number": "#60",
             "what": "Notice on the leaderboard and verify pages",
             "state": "merged",
             "text": "merged as 551777a9 at 2026-10-31 17:59 UTC",
-            "checked": "checked 2026-11-01 02:04 UTC"
+            "checked": "checked 2026-11-01 02:24 UTC"
           },
           {
             "number": "#64",
             "what": "Every temperature carries its own qualifier",
             "state": "merged",
             "text": "merged as d2504625 at 2026-10-31 19:38 UTC",
-            "checked": "checked 2026-11-01 02:04 UTC"
+            "checked": "checked 2026-11-01 02:24 UTC"
           },
           {
             "number": "#61",
             "what": "Test fix: a guard pattern held raw control bytes",
             "state": "merged",
             "text": "merged as a5744f3a at 2026-10-31 16:48 UTC",
-            "checked": "checked 2026-11-01 02:04 UTC"
+            "checked": "checked 2026-11-01 02:24 UTC"
           },
           {
             "number": "#59",
             "what": "Design: outside agents propose layouts",
             "state": "merged",
             "text": "merged as 4f6ad0cb at 2026-10-31 17:53 UTC",
-            "checked": "checked 2026-11-01 02:04 UTC"
+            "checked": "checked 2026-11-01 02:24 UTC"
           },
           {
             "number": "#55",
             "what": "Measured run profiles; refuse to start when calls cannot fit the cap",
             "state": "merged",
             "text": "merged as 315bbff4 at 2026-10-31 15:38 UTC",
-            "checked": "checked 2026-11-01 02:04 UTC"
+            "checked": "checked 2026-11-01 02:24 UTC"
           },
           {
             "number": "#37",
             "what": "Allocation controller for simulator runs in CI",
             "state": "merged",
             "text": "merged as 224fa704 at 2026-10-31 17:09 UTC",
-            "checked": "checked 2026-11-01 02:04 UTC"
+            "checked": "checked 2026-11-01 02:24 UTC"
           },
           {
             "number": "#25",
             "what": "Headroom study runner; its result is INCONCLUSIVE, kept as recorded",
             "state": "merged",
             "text": "merged as deb24670 at 2026-10-31 12:05 UTC",
-            "checked": "checked 2026-11-01 02:04 UTC"
+            "checked": "checked 2026-11-01 02:24 UTC"
           }
         ]
       },
@@ -1243,7 +1252,7 @@ window.DECK_DATA = {
         ],
         "notYet": "Not yet in the record: the finite-element team's slab run through our own evaluator.",
         "notEvidence": "Not counted as evidence: our help-room leaderboard. Our own host's model scores it, so it is not independent.",
-        "names": "No outside team is named on these slides until it agrees to be named."
+        "names": "Named with their consent, on record in the help room: ScienceClaw. The other 7 teams are not named until they agree."
       },
       "label": "B12"
     }
@@ -1251,13 +1260,13 @@ window.DECK_DATA = {
   "build": {
     "gate": "pass",
     "measured": "75.48,115.93",
-    "cutoff": "2026-11-01T02:06:00Z",
+    "cutoff": "2026-11-01T02:26:00Z",
     "preview": false,
     "rederived": true,
     "demoStatus": "staging"
   },
   "source": {
-    "finalSha256": "9d6708c53c816e02b61fb7b682e7bbd9815e70ffcb983c0f68e084b5664c2064",
+    "finalSha256": "ca6ccdb502514f2667ed276ef2b7be96e21c2da3758a70359f6708a99816cd4a",
     "schemaSha256": "d28f0157ab305445a9924de34564c96d349cf2506ef6dc58afc11a00c71fd113"
   }
 };

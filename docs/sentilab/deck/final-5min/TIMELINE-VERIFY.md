@@ -6,8 +6,8 @@ byte for byte (the tests pin every file), together with its own `TIMELINE-VERIFY
 deck (PR #74 at 16b6c37a: the corrected review tally, the completed re-derivation, the outside finite-element result)
 are applied in this one; the three-minute artifact keeps them as published at 00:12 UTC.
 
-Checked between 2026-11-01 00:40 and 02:04 UTC. The reviewed cutoff in `FINAL.json` and the export's cutoff are both
-02:06, after a last sweep of both rooms at 02:04 found no consent answer and no new fact. Times are UTC. The deck shows no room or message numbers, because the public-render rules forbid them; they
+Checked between 2026-11-01 00:40 and 02:24 UTC. The reviewed cutoff in `FINAL.json` and the export's cutoff are both
+02:26, after a last sweep of both rooms at 02:24 found no new consent answer and no new fact. Times are UTC. The deck shows no room or message numbers, because the public-render rules forbid them; they
 are here instead. Rooms: `608657e4` is the team room and `32a841e5` the hackathon help room.
 
 ## Timing (root, team room 57481, 01:33:52)
@@ -19,20 +19,21 @@ are here instead. Rooms: `608657e4` is the team room and `32a841e5` the hackatho
 
 | | Words | At 150 wpm | At 2.2 w/s |
 |---|---:|---:|---:|
-| Talk, slides 1 to 7 | 365 | 146.0 s | 165.9 s |
+| Talk, slides 1 to 7 | 383 | 153.2 s | 174.1 s |
 | Transitions | | 15.0 s | |
-| Talk with transitions, cap 180 s | | 161.0 s | 180.9 s |
+| Talk with transitions, cap 180 s | | 168.2 s | 189.1 s |
 | Door lines, slide 8, inside the demo clock | 47 | 18.8 s | 21.4 s |
 | Left for the live demo, of 120 s | | 101.2 s | 98.6 s |
 
-At the slower pace the talk would run 0.9 s over the cap, so the presenter should rehearse at about 150 words a minute.
+At the slower pace the talk would run 9.1 s over the cap, so the presenter should rehearse at about 150 words a minute.
 
 ## Figures
 
 aneta-claude's figures, applied in order: v1 (team room 57446, 01:02:38, `sentilab-deck-figures-v1.zip`, 211,191 bytes,
 sha256 `c956836e…`), v1.1 (57451, 01:07:30, 15,868 bytes, `1a092339…`), v1.2 (57470, 01:27:20, 88,614 bytes,
 `f1217061…`, members under `deck-figures/`), v1.3 (57475, 01:31:02, 20,712 bytes, `3eac9728…`) and v1.4 (57516,
-01:58:54, 149,918 bytes, `1b351835…`, with root's 57501 and 57511 applied). The archives, the
+01:58:54, 149,918 bytes, `1b351835…`, with root's 57501 and 57511 applied) and v1.5 (57538, 02:16:19, 22,400 bytes,
+`9281f7a2…`, ScienceClaw's requested wording). The archives, the
 overlaid tree and its sha256 list are kept in the evidence folder for this head. `make_figures.py` and `render.mjs` were
 never run. Every SVG was scanned for script, foreignObject, event handlers, external references and active elements:
 none was found, so nothing was stripped, and the build refuses any figure that holds one. The embedded heat maps are
@@ -45,7 +46,7 @@ PNG data inside the SVG. Each figure is shown as an image, so nothing in it can 
 | fig4-timeline | `8c478904…` | 3 | team labels, by consent (below) |
 | fig3-agreement | `4179ee6d…` | 4, with the recorded result only | "Ascend 910" to "Layout A"; team labels, by consent |
 | fig5-waffle | `2edb9c37…` | 5 | none |
-| fig6-teams | `e3d20259…` | 6 | team names, by consent; "in ScienceClaw's executor" to "in the hackathon's executor" while ScienceClaw has not consented |
+| fig6-teams | `14f0bcda…` | 6 | team names, by consent; the InquilineKea card's two lines to "Built on request; it ran through" / "the open-source ScienceClaw" (root, 57540; short enough for the card); ScienceClaw's line to "“your matchmaking”; it used" (it ran into the card edge, aneta 57541) |
 | fig2b-profile | `f052040c…` | backup B5 | "Ascend 910" to "Layout A" |
 
 The root `aria-label` of every figure is replaced by this deck's own reviewed text, so no name or product rides in an
@@ -108,23 +109,28 @@ and "1 h 41" (22:22:08 to 00:03:07, 101.0 min).
 |---|---|
 | Both versions on our case, 39 min after it went public | help seq 57312, 23:01:16 |
 | Separate solver on our case, in 1 h 41 | help reply 161c27f0, 00:03:07 |
-| "What did help was your matchmaking." | help seq 57328, 23:08:23, scienceclaw-claude |
+| ScienceClaw: "your matchmaking"; it used our review to fix its package | help seq 57328, 23:08:23 ("What did help was your matchmaking", when nothing technical had gone in yet); help seq 57532, 02:09:48: since then, chatgpt's review of its c11ac67a package helped it fix the convergence row and add input guards (also 57350, 23:22:54). The two statements keep their own times; the card's snapshot runs to 02:09 |
 | "Thanks, very useful" | help reply aae908b2 to seq 57188, 21:13:28, quantumswarms-claude |
 | "Yes, yours helped." Then it corrected a claim of ours | help replies 028f09e8 (00:08:14) and 37eb0808 (00:04:12) to seq 57270, kiln-claude |
-| Built on request; now runs in the hackathon's executor | help reply 8dd4609d to seq 57005 (23:53:05); team reply 289bcfef to seq 57444 (01:25:26) |
+| Built on request; it ran through the open-source ScienceClaw | help reply 8dd4609d to seq 57005 (23:53:05); team reply 289bcfef to seq 57444 (01:25:26), our own proof run. "ScienceClaw" here is the open-source lamm-mit/scienceclaw platform, which the participant team ScienceClaw had no part in (its own words, 57532; root, 57540). The requester has not confirmed adoption |
 | Asked for it. Use not confirmed yet | help reply 88926f8c to seq 57007, 21:54:20, human-pixlram |
 | Evaluation notes between two other teams | help reply 06911e25 to seq 57007, 20:23:05, axis-claude |
 | Blind panel test, running | help reply 9e9e733a to seq 57262, 00:37:12, feagent-codex |
+
+The FEAgent connector stays "running": ScienceClaw confirms the blind panel run has started, with no results (57532). Any print-bench results are separate from this deck's simulated evidence and are not shown.
 
 Not re-read here: the "glad to have another agent on it" quote on one unconfirmed card, and the "physics anchors" link
 (aneta cites help seq 56949). Both are aneta's, from her source table. Root checked v1.3 in 57501.
 
 ## Outside teams and consent
 
-Every team flag in `FINAL.json` is off: no consent is on record. aneta asked FEAgent (help 57461), Delfie (help 57462)
-and the other six teams (help 57474), and no answer had arrived by 02:04. So every slide, note and figure reads "an
-outside team", or "a second outside team" for the next one on the same slide. fig3 reads "Outside", and every fig6 card
-reads "An outside team". The build refuses any slide, note, figure text or label that still holds an unconsented name.
+One consent is on record: **ScienceClaw**, help seq 57532 (02:09:48, scienceclaw-claude: "yes, the slides may name our
+team"), confirmed by root reading the full event back (team room 57540, 02:16:52). Its flag is
+`"32a841e5 seq 57532 at 2026-11-01T02:09:48.572Z"`. aneta asked FEAgent (help 57461), Delfie (help 57462) and the other
+six teams (help 57474). No other answer had arrived by the final sweep, so every other team reads "an outside team",
+or "a second outside team" for the next one on the same slide. fig3 reads "Outside", and seven fig6 cards read "An
+outside team". Slide 6's notes name ScienceClaw for its own acknowledgment and use root's words for the platform run:
+"Our rigidity skill ran through the open-source ScienceClaw registry and executor." Backup B12 lists the named team. The build refuses any slide, note, figure text or label that still holds an unconsented name.
 The exported PDF's text is checked the same way. The event is the ScienceClaw hackathon, and its name in the header is
 the event's, not a team's.
 
@@ -147,7 +153,7 @@ seq 57323, case A coarse) and 23:08:26 (seq 57329, both cases). They were sent t
 - **Live demo** (slide 8): Carter's seq 57411 and reply dd15a6de; aneta's 57414; the fallback ladder in 57422; staging in
   57436; root's conditional wording in 57456. Root's 57438 keeps real ENGRAM integration as a separate acceptance item.
   The shipped agent view is the custom JSON, so the diagram's "ENGRAM view" is the brief's name for that step.
-- **PR states** (backup B11): re-read with `gh` at 02:04 for this export; the time is printed on the slide.
+- **PR states** (backup B11): re-read with `gh` at export time (02:25) for this export; the time is printed on the slide.
 - **Layer maxima** (backup B6): root's scoped +1 (team room 57511, 01:51:42) for aneta's table (57483, 01:37:56),
   checked by root against the four 64 by 64 grids, both of our full-precision FE fields and the finite-element
   team's pinned summary. Root's sentence and caption are used word for word, with the finite-element team's name
