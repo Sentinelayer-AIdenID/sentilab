@@ -118,6 +118,66 @@ test("the canonical path serves a committed version by its own name, and nothing
   }
 });
 
+test("an encoded spelling of the canonical path gets the same hash check, never the bare copy", async (t) => {
+  installApi(t, { board: async () => Response.json(boardWith([])) });
+  const encoded = CANONICAL.replace("@", "%40");
+  const ok = await setup().go(encoded);
+  assert.equal(ok.status, 200);
+  assert.equal(sha256(ok.bytes), SHA);
+  assert.equal(ok.headers.get("x-terms-version"), VERSION);
+  const s = setup();
+  s.env.ASSETS = assetsWith(s.env, CANONICAL, Buffer.from("Other terms.\n"));
+  const refused = await s.go(encoded);
+  assert.equal(refused.status, 503);
+  assert.deepEqual(JSON.parse(refused.text), { error: "terms_unavailable" });
+});
+
+// An asset layer more liberal than any real one: it resolves every spelling of the canonical path (decoded, decoded
+// again, any case, backslashes, repeated slashes, dot segments) to the copy, and here that copy holds other bytes.
+function liberalAssets(env, bytes) {
+  const real = env.ASSETS;
+  const resolve = (path) => {
+    let decoded = path;
+    for (let round = 0; round < 4; round += 1) { try { decoded = decodeURIComponent(decoded); } catch { break; } }
+    return new URL(decoded.replace(/[\\/]+/g, "/"), "https://x.invalid").pathname.toLowerCase();
+  };
+  return { async fetch(request) {
+    if (resolve(new URL(request.url).pathname) !== CANONICAL.toLowerCase()) return real.fetch(request);
+    return new Response(request.method === "HEAD" ? null : bytes, { status: 200, headers: { "content-type": "text/markdown" } });
+  } };
+}
+const SPELLINGS = [CANONICAL, CANONICAL.replace("@", "%40"), CANONICAL.replace("@", "%2540"), CANONICAL.replace("terms/", "terms%2F"),
+  CANONICAL.toUpperCase(), CANONICAL.replace(SHA, SHA.toUpperCase()), CANONICAL.replace(".md", ".MD"), CANONICAL.replace("terms/", "terms%5C"),
+  `/${CANONICAL}`, CANONICAL.replace("/terms/", "/x/..%2Fterms/"), CANONICAL.replace("/open/", "/%6Fpen/")];
+
+test("no spelling of the static copy's path skips the hash check: other bytes are never served", async (t) => {
+  installApi(t, { board: async () => Response.json(boardWith([VERSION])) });
+  const other = Buffer.from("# Other terms\n\nNot the signed text.\n");
+  for (const path of SPELLINGS) {
+    const s = setup();
+    s.env.ASSETS = liberalAssets(s.env, other);
+    for (const method of ["GET", "HEAD"]) {
+      const r = await s.go(path, { method });
+      assert.equal(r.status, 503, `${method} ${path}`);
+      assert.ok(!r.text.includes("Other terms"), `${method} ${path}: never the other bytes`);
+    }
+  }
+  // The same spellings with the signed bytes behind them: each is served, bound to its pin.
+  for (const path of SPELLINGS) {
+    const s = setup();
+    s.env.ASSETS = liberalAssets(s.env, file(CANONICAL));
+    const r = await s.go(path);
+    assert.equal(r.status, 200, path);
+    assert.equal(sha256(r.bytes), SHA, path);
+    assert.equal(r.headers.get("x-terms-version"), VERSION, path);
+  }
+  // Anything else in that directory names no version: never a text.
+  for (const path of ["/sentilab/open/terms/", "/sentilab/open/terms", "/sentilab/open/terms/index.md", "/sentilab/open/terms/%ZZ"]) {
+    const r = await setup().go(path);
+    assert.equal(r.status, 503, path);
+  }
+});
+
 test("the wall, the agent view, the confirm page and the terms-changed page link the terms", async (t) => {
   installApi(t, { board: async () => Response.json(boardWith([VERSION])) });
   assert.ok(wallHtml(BASE, "open").includes(`<a href="${BASE}/agents/terms">`));
