@@ -8,6 +8,9 @@
   // run_worker_first: true, so static assets go through the Worker too and get its Content-Security-Policy header.
   "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": true },
   "routes": [{ "pattern": "sentilab.aidenid.com", "custom_domain": true }],
-  "vars": { "API_ORIGIN": "https://sentilab-api.graysea-7ff72f94.eastus2.azurecontainerapps.io" },
+  // INGEST_TOKEN is a Worker secret, configured by the operator; never a plain var.
+  "services": [{ "binding": "COLLECTOR", "service": "aidenid-aquarium" }],
+  // Keep observation off until the aquarium accepts and retains SentiLab site/path attribution (EDGE.md).
+  "vars": { "API_ORIGIN": "https://sentilab-api.graysea-7ff72f94.eastus2.azurecontainerapps.io", "AQUARIUM_POST": "off" },
   "observability": { "enabled": true }
 }
