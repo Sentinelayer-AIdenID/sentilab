@@ -6,6 +6,7 @@ import { withEdge } from "./edge.js";
 import { agentPathFor } from "./agent-paths.js";
 import { CSP } from "./csp.js";
 import { addHumanPageHeaders, serveAgentAsset } from "./agent-view.js";
+import { carriesToken, decodedPath, DOOR_FEEDS, doorRoute, handleDoor, protectToken, serveWallOrAgentVersion, tokenBearing, withoutOperators } from "./door/door.js";
 
 const HOP = ["connection", "keep-alive", "transfer-encoding", "upgrade", "host"];
 
@@ -33,8 +34,18 @@ async function proxy(request, env) {
   const origin = String(env.API_ORIGIN || "").replace(/\/+$/, "");
   if (!origin.startsWith("https://")) return new Response("API origin not configured", { status: 503 });
   const url = new URL(request.url);
+  // The API routes a path after percent-decoding it, so the open-feed filter below matches the decoded path (every
+  // spelling of /api/open/v1/door/board is the board), and a path whose escapes do not decode goes no further.
+  const path = decodedPath(url.pathname);
+  if (path === null) {
+    return new Response(JSON.stringify({ error: "bad_path" }), { status: 400, headers: { "content-type": "application/json", "cache-control": "no-store" } });
+  }
   const headers = new Headers(request.headers);
   for (const h of HOP) headers.delete(h);
+  // The agent door's token claims reach the API only from the door's own calls (door/door.js), never from a visitor.
+  for (const name of [...headers.keys()]) if (name.startsWith("x-door-")) headers.delete(name);
+  // A page at a token-bearing URL must not hand its token upstream in a Referer.
+  if (tokenBearing(headers.get("referer"))) headers.delete("referer");
   headers.set("x-forwarded-host", url.host);
   // Only this Worker holds the origin token; the Container App refuses requests without it.
   if (env.ORIGIN_TOKEN) headers.set("x-origin-token", env.ORIGIN_TOKEN);
@@ -44,7 +55,21 @@ async function proxy(request, env) {
   const upstream = await fetch(origin + url.pathname + url.search, init);
   const out = new Headers(upstream.headers);
   if (!out.has("cache-control")) out.set("cache-control", "no-store");
+  if (request.method === "GET" && DOOR_FEEDS.test(path)) return doorFeed(upstream, out);
   return new Response(upstream.body, { status: upstream.status, headers: out });
+}
+
+// The intake's open feeds (board, results, events) name each visitor's declared operator. The door never shows it, so
+// neither does the proxy: the answer is passed on without any "operator" field. A feed answer that is not JSON is not
+// passed on at all.
+async function doorFeed(upstream, headers) {
+  let value;
+  try { value = JSON.parse(await upstream.text()); } catch {
+    return new Response(JSON.stringify({ error: "unreadable_feed" }), { status: 502, headers: { "content-type": "application/json", "cache-control": "no-store" } });
+  }
+  for (const name of ["content-length", "content-encoding", "etag"]) headers.delete(name);
+  headers.set("content-type", "application/json");
+  return new Response(JSON.stringify(withoutOperators(value)), { status: upstream.status, headers });
 }
 
 // Starting a run spends simulator time, so POST /api/runs is limited per client IP at the edge (the API also
@@ -59,8 +84,9 @@ async function allowRunStart(request, env) {
 export default {
   async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
-    // SentiLab is hands-off: the service runs its own loop, so the public edge is read-only. No caller can start
-    // runs or reach any write route from outside.
+    // SentiLab is hands-off: the service runs its own loop, so the public /api is read-only. No caller can start runs
+    // or reach any API write route from outside. The edge's one write route is the agent door's POST /agents/submit
+    // (door/door.js), which reaches the API only after the door's token, format and rate checks.
     if ((pathname === "/api" || pathname.startsWith("/api/")) && !["GET", "HEAD"].includes(request.method)) {
       return new Response(JSON.stringify({ error: "read_only", detail: "The public SentiLab API is read-only." }),
         { status: 405, headers: { "content-type": "application/json", allow: "GET, HEAD", "cache-control": "no-store" } });
@@ -70,6 +96,11 @@ export default {
         { status: 429, headers: { "content-type": "application/json", "retry-after": "60", "cache-control": "no-store" } });
     }
     if (pathname === "/api" || pathname.startsWith("/api/")) return proxy(request, env);
-    return withEdge(request, env, ctx, { agentPathFor, serve: asset, serveHuman: humanAsset });
+    // The agent door (door/door.js): its own routes, and the wall in place of the mapped pages' agent version.
+    const door = doorRoute(pathname);
+    const response = door ? await handleDoor(door, request, env, ctx)
+      : await withEdge(request, env, ctx, { agentPathFor, serve: asset, serveHuman: humanAsset, serveAgent: serveWallOrAgentVersion });
+    // Whatever page answers a URL that can carry a token (mapped, human override, fallback, any asset) never hands it on.
+    return carriesToken(new URL(request.url)) ? protectToken(response) : response;
   },
 };
