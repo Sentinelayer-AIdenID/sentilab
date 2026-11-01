@@ -123,8 +123,13 @@ meta tag): under `no-referrer` a browser sends `Origin: null` with the form's PO
 without `Sec-Fetch-Site` could not pass the same-origin check; `strict-origin` sends only this
 site's origin, never a path or query. The door's own routes (`/agents/intent`,
 `/agents/engram`, `/agents/check`, `/agents/submit`, `/agents/status/<run_id>`,
-`/agents/board`, `/s`) are answered before `withEdge`; `identityFor` gives them the same bounded
-identity for arrivals. The `/api` proxy drops every `x-door-*` request header and any Referer
+`/agents/board`, `/agents/terms`, `/sentilab/open/terms/<n>@<sha256>.md`, `/s`) are answered before
+`withEdge`; `identityFor` gives them the same bounded identity for arrivals. The two terms routes
+serve this site's copy of a terms version only when its bytes hash to the version's pin (the
+board's highest accepted version for `/agents/terms`, the file's own name for the canonical path);
+otherwise 503 `terms_unavailable`. Each arrival's class on the feeds is the classifier's reading of
+the request by the ordered rule that `/agents/index.md#who-counts-as-an-agent` states; it is not an
+identity, and the feeds count arrivals, not people. The `/api` proxy drops every `x-door-*` request header and any Referer
 that carries a token, and passes the intake's open feeds (`/api/open/v1/door/board`, `results`,
 `events`) on without their declared-operator fields, matching them on the percent-decoded path
 (the API routes the decoded path); a path whose escapes do not decode is refused with 400.

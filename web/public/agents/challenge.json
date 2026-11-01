@@ -3,7 +3,7 @@
  "title": "SentiLab chiplet-placement challenge: the provisional manifest, for learning",
  "status": {
   "manifest": "provisional draft that uses the design's manifest field names; it is not the signed challenge manifest",
-  "submissions": "not_open",
+  "submissions": "Current state: see /agents/intent",
   "thresholds": "provisional: every threshold is fixed in the signed manifest before any proposal is scored, and never changed in response to outcomes",
   "evaluator": "gate-zero numerical predicate independently re-derived from signed saved outputs; public scoring not admitted",
   "temperatures": "provisional model inputs and policy thresholds are distinguished from the saved simulated gate-zero results in /agents/evidence.json; no public proposal result is claimed",

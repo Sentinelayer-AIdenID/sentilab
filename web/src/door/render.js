@@ -67,6 +67,8 @@ ${body}
 }
 
 const intentUrl = (origin, id) => `${origin}/agents/intent?purpose=${id}`;
+// The terms a submission accepts, as text (door.js serves only the bytes the signed manifest's pinned version names).
+export const TERMS_PAGE = "/agents/terms";
 
 // ── the wall ──────────────────────────────────────────────────────────────────────────────────────────────────────
 export function wallHtml(origin, submissions) {
@@ -86,6 +88,7 @@ ${radios}
 <button type="submit">Continue</button>
 </form>
 <p class="status">Submissions: ${esc(SUBMISSIONS[submissions] ?? SUBMISSIONS.unknown)}</p>
+<p class="fine">Submitting accepts the challenge terms: <a href="${esc(origin)}${TERMS_PAGE}">read them</a>.</p>
 <p class="fine">${RECORDED}</p>
 <p class="fine">If you can only follow links, follow the one that fits.</p>
 <p class="fine">A person? <a href="${esc(origin)}/?view=human">Open the normal site</a>.</p>`);
@@ -101,6 +104,8 @@ ${PURPOSES.map((p) => `- [I am here to ${p.label}](${intentUrl(origin, p.id)})`)
 
 Submissions: ${SUBMISSIONS[submissions] ?? SUBMISSIONS.unknown}
 
+Submitting accepts the challenge terms: [read them](${origin}${TERMS_PAGE}).
+
 ${RECORDED}
 
 Simulated, not silicon.
@@ -112,7 +117,7 @@ A person? [Open the normal site](${origin}/?view=human).
 export function wallJson(origin, submissions) {
   return { schema: "sentilab-agent-wall/1", question: GATE_QUESTION,
     purposes: PURPOSES.map((p) => ({ id: p.id, label: p.label, href: intentUrl(origin, p.id) })),
-    token: `${TOKEN_WORDING}; 60 minutes`, submissions: SUBMISSIONS[submissions] ? submissions : "unknown",
+    token: `${TOKEN_WORDING}; 60 minutes`, submissions: SUBMISSIONS[submissions] ? submissions : "unknown", terms_url: `${origin}${TERMS_PAGE}`,
     recorded: RECORDED_JSON, label: "simulated, not silicon", human_page: `${origin}/?view=human` };
 }
 
@@ -206,7 +211,7 @@ ${violations.map((v) => `<li>${esc(codeText(v))}</li>`).join("\n")}
       : !terms
       ? `<p class="check illegal">Submissions are not open yet: no challenge terms are published, so nothing can be sent.</p>`
       : `${submitForm({ token, compact, terms, again: false, button: "Submit this layout" })}
-<p class="fine">Submitting accepts the challenge terms <code>${esc(terms)}</code>.</p>`;
+<p class="fine">Submitting accepts the challenge terms <code>${esc(terms)}</code> (<a href="${TERMS_PAGE}">read them</a>).</p>`;
   return page("SentiLab: submit this layout?", `<p class="eyebrow">SentiLab · CPU-DRAM chiplet placement</p>
 <h1>Submit this layout?</h1>
 <p>An assistant made this layout and gave you this link. Nothing has been sent. Press the button only if you want the scorer to simulate it.</p>
@@ -293,7 +298,7 @@ export function termsChangedHtml({ token, compact, terms, again }) {
   return page("SentiLab: terms changed", `<p class="eyebrow">SentiLab · CPU-DRAM chiplet placement</p>
 <h1>Terms changed: please confirm again</h1>
 <p>The challenge terms have changed since this page was shown, so this press was not sent.${again ? " An earlier press of this link may already be queued under the terms shown then." : ""}</p>
-<p>The terms that apply now: <code>${esc(terms)}</code>.</p>
+<p>The terms that apply now: <code>${esc(terms)}</code> (<a href="${TERMS_PAGE}">read them</a>).</p>
 ${submitForm({ token, compact, terms, again, button: "Accept these terms and submit" })}
 <p class="fine">Press the button only if you accept these terms. Simulated, not silicon.</p>`);
 }
@@ -301,7 +306,7 @@ ${submitForm({ token, compact, terms, again, button: "Accept these terms and sub
 // Every state of the contract's lifecycle (schemas/common.schema.json lifecycle_state).
 const STATE_TEXT = Object.freeze({ queued: "queued for the scorer", held: "held", evaluating: "being simulated", evaluated: "simulated",
   replaying: "being replayed in a fresh process", reproduced: "reproduced in a fresh process", not_reproduced: "not reproduced",
-  cross_checked: "independently verified", rejected: "rejected before any solve", failed: "failed", cancelled: "cancelled", expired: "expired" });
+  cross_checked: "reproduced on a second build or host", rejected: "rejected before any solve", failed: "failed", cancelled: "cancelled", expired: "expired" });
 
 // The intake's definite answer to the button (door.js knownOutcome): a run it holds, a refusal before any run, or its
 // token refusal. An answer that names none of these never reaches this page; it gets notConfirmedHtml.

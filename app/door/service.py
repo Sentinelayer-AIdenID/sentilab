@@ -18,9 +18,9 @@ from pathlib import Path
 from open_proposals.contract import canonical as hashes
 from open_proposals.contract.codes import GROUP, violation
 from open_proposals.contract.labels import label_for
-from open_proposals.contract.states import SUMMARY
 
 from . import intake
+from . import terms as door_terms
 from .dispatch import Dispatcher, ScorerState
 from .policy import CASE, NONCE, Policy, parse_utc, principal_for, short_id, utc
 from .scorer import ACTIVE_GUARD_C, METRIC, METRIC_ID, HttpScorer
@@ -53,6 +53,18 @@ PUBLISHED = (
      "statistic": "the paper's HotSpot block selector, not this board's metric", "routed_wire_mm": 216064},
 )
 NOT_CLAIMED = ["beat", "margin", "routed wire", "source acceptance"]
+# The words the open feeds give a state (results, board, status), one literal pair per lifecycle state: the Package view
+# reads exactly these strings (web/public/sentilab/package/source3d.mjs SUMMARIES). The contract's four-state summary
+# (states.py SUMMARY) stays the contract's; the door says what actually ran. A reproduced run is the same pinned build
+# replayed in a fresh process: reproduction, not independent verification (the door never emits cross_checked, which
+# the contract words as reproduced). A failed run has no score. Every other state keeps the contract's word.
+FEED_SUMMARY = {"rejected": "rejected",
+                "queued": "queued", "held": "queued", "evaluating": "queued",
+                "evaluated": "evaluated", "replaying": "evaluated", "not_reproduced": "evaluated",
+                "failed": "no score",
+                "reproduced": "reproduced by a fresh-process replay",
+                "cross_checked": "reproduced by a fresh-process replay",
+                "cancelled": None, "expired": None}
 BEAT = {"available": False,
         "requires": "reproduced by replay, plus the fixed routed-wire predicates and their evidence; "
                     "this API never emits a beat verdict"}
@@ -95,8 +107,10 @@ def front(points: list) -> set:
 
 
 class Door:
-    def __init__(self, policy: Policy, store: Store, scorer=None):
+    def __init__(self, policy: Policy, store: Store, scorer=None, terms: door_terms.Terms | None = None):
         self.policy, self.store, self.scorer = policy, store, scorer
+        # The signed manifest's terms text, bound to its pin when the door is built (terms.py); None: unavailable.
+        self.terms = terms
         self.scorer_state = ScorerState()
         self.dispatcher = Dispatcher(self)
 
@@ -115,7 +129,7 @@ class Door:
                                     binary_sha256=policy.manifest["statistic"]["evaluator"]["binary_sha256"])
             except ValueError:
                 scorer = None
-        return cls(policy, Store(data / "door.sqlite3"), scorer)
+        return cls(policy, Store(data / "door.sqlite3"), scorer, door_terms.from_env(policy.manifest, env))
 
     def start(self, workers: bool = True) -> None:
         self.dispatcher.start(workers)
@@ -237,7 +251,7 @@ class Door:
         codes = [entry["code"] for entry in json.loads(row["codes"])]
         item = {"id": row["run_id"], "label": label(row["class"], row["short_id"]), "class": row["class"],
                 "short_id": row["short_id"], "arrival": row["arrival"],
-                "seq": row["version"], "status": row["state"], "summary": SUMMARY[row["state"]], "codes": codes,
+                "seq": row["version"], "status": row["state"], "summary": FEED_SUMMARY[row["state"]], "codes": codes,
                 "reason": row["reason"], "position": position, "dies": proposal["dies"],
                 "geometry_sha256": row["geometry_sha256"], "wire_proxy_mm": row["wire_proxy_mm"],
                 "metric": METRIC, "result": None, "verdict": None}
