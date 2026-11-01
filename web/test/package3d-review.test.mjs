@@ -8,6 +8,9 @@
 // And root's focused review at 35323889: P2 (the R1 remainder: the pin covers the orientation and every statistic shown,
 // root's two metadata-only controls) and P3 (an explode step queued before a context loss).
 // Each module is imported inside its test, so on a tree without a fix only that test fails, with its own message.
+// AGENT-DOOR Amendment 3 (the follow-up PR): the door feed is #81's own `sentilab-door-results/1`, so C1, C2, C4 and C5
+// read #81's recorded responses (web/test/door-api-d1b09d12.json) instead of the retired page-side shape; the bundled
+// replay is read by normalizeReplay. Each control keeps its finding and its assertions.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -23,8 +26,7 @@ const src = (name) => readFileSync(join(PKG, name), "utf8");
 const labels = () => import(pathToFileURL(join(here, "..", "public", "temperature-label.mjs")).href);
 const FIXTURE = JSON.parse(readFileSync(join(PKG, "door-fixture.json"), "utf8"));
 const sha256 = (text) => createHash("sha256").update(text, "utf8").digest("hex");
-const DIES = () => ["C0", "C1", "C2", "C3", "D0", "D1", "D2", "D3"].map((die, i) =>
-  ({ die, x_um: [18000, 27000, 27000, 18000, 8500, 36500, 36500, 8500][i], y_um: [17500, 17500, 27500, 27500, 17500, 17500, 27500, 27500][i], rot_deg: 0 }));
+const API = JSON.parse(readFileSync(join(here, "door-api-d1b09d12.json"), "utf8"));
 const grid = (f) => Array.from({ length: 4096 }, (_, k) => f(k));
 const counted = () => {
   const c = { digests: 0 };
@@ -32,18 +34,20 @@ const counted = () => {
 };
 
 // ── R1 ────────────────────────────────────────────────────────────────────────────────────────────────────────────
-// C1: a synthetic scored API row with a 4,096-value field, a withdrawn HotSpot 7 identity and invalid signature,
-// producer, model and geometry hashes, read where WebCrypto is absent. Before the fix it came back drawable, with only
-// metric, grid, label and distinct kept and no hash or signature checked.
-const C1_ROW = () => ({
-  id: "open-1a2b3c4d-00112233445566778899aabbccddeeff", label: "declared_agent · 3fa2", status: "evaluated", seq: 4, dies: DIES(),
-  result: { metric_id: "max_chiplet_centre_cell_mean_C", value_C: 101.23, precision_K: 0.01, label: "simulated, not silicon",
-    row0: "bottom", grid64: grid((k) => 60 + (k % 50)), evaluator: "HotSpot-7:f18831e48cef5d62580585cca0d7fab6c71bc3cc:grid:64x64",
-    signature: "A".repeat(86), producer_sha256: "0".repeat(64), model_sha256: "1".repeat(64), geometry_sha256: "2".repeat(64) },
-});
+// C1: a scored door record with a 4,096-value field, read where WebCrypto is absent. Root's control was a synthetic row
+// with a withdrawn identity and invalid signature, producer, model and geometry hashes; before the fix it came back
+// drawable. On the API's contract it is #81's own reproduced item WITH a 64 x 64 grid64, plus the same claims no
+// contract field carries (signature, producer and model hashes). Its evaluator is kept only as the identity it names,
+// for the label rule (C2), never as verified.
+const C1_ITEM = () => {
+  const item = structuredClone(API.responses.results_reproduced_with_grid64.body.items[0]);
+  Object.assign(item.result, { signature: "A".repeat(86), producer_sha256: "0".repeat(64), model_sha256: "1".repeat(64) });
+  return item;
+};
 test("C1 (R1): an unsigned door result with a plausible field is not drawable; its field is unassociated and not kept", async () => {
   const door = await mod("source3d.mjs");
-  const { layouts } = door.normalizeFeed({ schema: door.FEED_SCHEMA, layouts: [C1_ROW()] }, { source: "api" });
+  const { layouts } = door.normalizeResults({ ...API.responses.results_reproduced_with_grid64.body, items: [C1_ITEM()] });
+  assert.equal(C1_ITEM().result.grid64.length, 64, "the record carries a field");
   const r = layouts[0].result;
   assert.equal(r.field_state, "unassociated", "the door feed is unsigned: no admitted association");
   assert.equal(r.grid, null, "an unassociated field is not kept, so it can never be drawn");
@@ -55,20 +59,24 @@ test("C1 (R1): an unsigned door result with a plausible field is not drawable; i
   assert.equal(c.digests, 0, "nothing in the payload is taken as provenance");
   const none = await door.verifyPinnedFields(layouts, { subtle: null });
   assert.equal(none[0].result.grid, null, "without WebCrypto either");
-  // The payload's claims are not carried: neither its hashes, its signature nor its claimed evaluator.
+  // The payload's claims are not carried: neither its hashes nor its signature, nor its grid.
   const kept = JSON.stringify({ ...r, grid: null });
-  for (const claim of ["AAAA", "0000000000", "1111111111", "2222222222", "HotSpot-7"]) assert.ok(!kept.includes(claim), claim);
+  for (const claim of ["AAAA", "0000000000", "1111111111", C1_ITEM().geometry_sha256, "grid64"]) assert.ok(!kept.includes(claim), claim);
 });
 
-// C2: the label rule gives "withdrawn" for that identity, while the door kept only its generic claim string. Now every
-// temperature carries a shared LABELS object; a value without a verified identity is labelFor(undefined), "unvalidated"
-// (PL-6: never the artifact's claim), which shows the notice; and no text is made from a temperature without one.
+// C2: the door kept only its generic claim string. Now every temperature carries a shared LABELS object. A feed result's
+// is labelForAll() over the identity the feed names and no verified one: never more than "unvalidated" (PL-6: never the
+// artifact's claim), which shows the notice; a withdrawn one stays withdrawn; no text is made from a temperature
+// without a label.
 test("C2 (R1): the result's temperatures carry a shared label, never the generic claim alone (PL-2, PL-6)", async () => {
-  const { LABELS, labelFor } = await labels();
-  assert.equal(labelFor(C1_ROW().result.evaluator), LABELS.withdrawn, "the rule itself, for that claimed identity");
+  const { LABELS, labeller } = await labels();
   const door = await mod("source3d.mjs");
-  const r = door.normalizeLayout(C1_ROW()).layout.result;
-  assert.equal(r.label, LABELS.unvalidated, "an unverified identity: labelFor(undefined)");
+  const r = door.normalizeItem(C1_ITEM()).layout.result;
+  assert.equal(r.label, LABELS.unvalidated, "an unverified identity: never more than unvalidated");
+  assert.equal(door.feedLabel(r.evaluator, "accepted", labeller({ accepted: [r.evaluator] })), LABELS.unvalidated, "not even an accepted one, unverified");
+  const withdrawn = C1_ITEM();
+  withdrawn.result.temperature_label = "withdrawn";
+  assert.equal(door.normalizeItem(withdrawn).layout.result.label, LABELS.withdrawn, "the API's label only makes it more cautious");
   assert.ok(r.label.notice, "and the page shows the shared notice");
   assert.equal(r.claim, "simulated, not silicon", "the scorer's claim stays beside it, not instead of it");
   const { formatTemp, tempNode } = await mod("temps.mjs");
@@ -96,7 +104,7 @@ test("C3 (R1, D14): the pinned field is drawn only after both digests check out;
   const door = await mod("source3d.mjs");
   const { FIELD_PINS, GATE_ZERO_EVALUATOR } = await mod("case-cpu-dram.mjs");
   const { LABELS, labelFor } = await labels();
-  const fixture = door.normalizeFeed(FIXTURE, { source: "fixture" }).layouts;
+  const fixture = door.normalizeReplay(FIXTURE).layouts;
   assert.equal(fixture[0].result.field_state, "pending");
   const noCrypto = await door.verifyPinnedFields(fixture, { subtle: null });
   assert.equal(noCrypto[0].result.field_state, "file_check_unavailable");
@@ -115,10 +123,10 @@ test("C3 (R1, D14): the pinned field is drawn only after both digests check out;
   // A changed cell or a moved die breaks the association: no field is drawn.
   const cell = structuredClone(FIXTURE);
   cell.layouts[0].result.grid64[2000] += 0.01;
-  assert.equal((await door.verifyPinnedFields(door.normalizeFeed(cell, { source: "fixture" }).layouts, { subtle: webcrypto.subtle }))[0].result.field_state, "mismatch");
+  assert.equal((await door.verifyPinnedFields(door.normalizeReplay(cell).layouts, { subtle: webcrypto.subtle }))[0].result.field_state, "mismatch");
   const moved = structuredClone(FIXTURE);
   moved.layouts[0].dies[0].x_um += 1;
-  const m = (await door.verifyPinnedFields(door.normalizeFeed(moved, { source: "fixture" }).layouts, { subtle: webcrypto.subtle }))[0].result;
+  const m = (await door.verifyPinnedFields(door.normalizeReplay(moved).layouts, { subtle: webcrypto.subtle }))[0].result;
   assert.deepEqual([m.field_state, m.grid, m.field_key], ["mismatch", null, null]);
   // The door draws only a verified field, and draws no result at all without WebCrypto.
   const d = src("door.mjs");
@@ -136,7 +144,7 @@ async function pinnedRaw(edit) {
   const door = await mod("source3d.mjs");
   const doc = structuredClone(FIXTURE);
   edit(doc.layouts[0].result);
-  const layouts = door.normalizeFeed(doc, { source: "fixture" }).layouts;
+  const layouts = door.normalizeReplay(doc).layouts;
   return { pending: layouts[0].result, checked: (await door.verifyPinnedFields(layouts, { subtle: webcrypto.subtle }))[0].result };
 }
 const f32sha = (g) => createHash("sha256").update(Buffer.from(g.buffer, g.byteOffset, g.byteLength)).digest("hex");
@@ -182,28 +190,30 @@ test("C4 (R2): a live answer that arrives after stop() changes nothing and calls
   });
   feed.start();
   feed.stop();
-  resolve({ ok: true, layouts: [door.normalizeLayout(C1_ROW()).layout], refused: {}, next: "c9", env: "production", more: false });
+  resolve({ ok: true, layouts: [door.normalizeItem(C1_ITEM()).layout], refused: {}, next_after: 9, has_more: false });
   for (let i = 0; i < 5; i += 1) await new Promise((r) => setImmediate(r));
   assert.deepEqual(calls, [], "no callback after stop");
-  assert.deepEqual([feed.state.layouts.length, feed.state.cursor, feed.state.connected, feed.state.polls], [0, null, null, 0], "the state is untouched");
+  assert.deepEqual([feed.state.layouts.length, feed.state.cursor, feed.state.connected, feed.state.polls], [0, 0, null, 0], "the state is untouched");
   assert.ok(seenSignal && seenSignal.aborted, "the request in flight was aborted");
   // And the door ignores any callback for a source that is no longer selected (replay after live).
   assert.match(src("door.mjs"), /function onFeed\(state\) \{\n    if \(D\.source !== "api"\) return;/);
 });
 
 // C5: an older record never replaces a newer one (before the fix a supplied older queued record replaced a scored one).
+// #81's own records of one run: version 3 queued (results_queued_page1), version 10 reproduced (results_reproduced).
 test("C5 (R2): an older version never replaces a newer record; arrival order holds", async () => {
   const door = await mod("source3d.mjs");
-  const scored = door.normalizeLayout({ ...C1_ROW(), id: "a", seq: 7 }).layout;
-  const older = door.normalizeLayout({ ...C1_ROW(), id: "a", seq: 3, status: "queued", result: null }).layout;
-  const unversioned = door.normalizeLayout({ ...C1_ROW(), id: "a", seq: undefined, status: "queued", result: null }).layout;
-  const newer = door.normalizeLayout({ ...C1_ROW(), id: "a", seq: 9, status: "reproduced" }).layout;
-  const b = door.normalizeLayout({ ...C1_ROW(), id: "b", seq: 1, status: "queued", result: null }).layout;
-  assert.equal(door.mergeArrivals([scored], [older])[0].status, "evaluated");
-  assert.equal(door.mergeArrivals([scored], [unversioned])[0].status, "evaluated");
-  assert.equal(door.mergeArrivals([scored], [newer])[0].status, "reproduced");
-  assert.deepEqual(door.mergeArrivals([scored, b], [newer]).map((l) => l.id), ["a", "b"], "a newer version keeps its place");
-  assert.deepEqual(door.mergeArrivals([b], [scored]).map((l) => l.id), ["b", "a"], "order is first arrival, never the version");
+  const at = (page, i = 0) => door.normalizeItem(API.responses[page].body.items[i]).layout;
+  const older = at("results_queued_page1"), scored = at("results_reproduced"), b = at("results_queued_page1", 1);
+  assert.deepEqual([older.id, older.seq, older.status, scored.seq, scored.status], [scored.id, 3, "queued", 10, "reproduced"]);
+  const unversioned = { ...older, seq: null };
+  assert.equal(door.mergeArrivals([scored], [older])[0].status, "reproduced");
+  assert.equal(door.mergeArrivals([scored], [unversioned])[0].status, "reproduced");
+  assert.equal(door.mergeArrivals([older], [scored])[0].status, "reproduced", "a newer version replaces it");
+  assert.deepEqual(door.mergeArrivals([older, b], [scored]).map((l) => l.id), [scored.id, b.id], "a newer version keeps its place");
+  assert.deepEqual(door.mergeArrivals([b], [scored]).map((l) => l.id), [scored.id, b.id], "order is the door's arrival order, never the version");
+  const x = { ...scored, id: "x", arrival: null }, y = { ...b, id: "y", arrival: null };
+  assert.deepEqual(door.mergeArrivals([y], [x]).map((l) => l.id), ["y", "x"], "without arrival numbers (the replay), the order first seen");
 });
 
 // ── R3 ────────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -240,7 +250,7 @@ test("R3: the door keys every field cache by the verified content identity, neve
     const doc = structuredClone(FIXTURE);
     doc.layouts = [doc.layouts[0]];
     doc.layouts[0].result.grid64[100] += bump;
-    return door.normalizeFeed(doc, { source: "fixture" }).layouts;
+    return door.normalizeReplay(doc).layouts;
   };
   const pin = (layouts) => [{ layout_id: "ref-raw", geometry_sha256: sha256(door.geometryText(layouts[0])), field_sha256: sha256(layouts[0].result.grid_text),
     result_sha256: sha256(layouts[0].result.result_text), evaluator_identity: "x" }];
@@ -316,7 +326,7 @@ function explodeRig({ cancelWorks = true } = {}) {
     D, REDUCED: false, EXPLODE_MS: 800, Math, performance: { now: () => 0 },
     requestAnimationFrame: (fn) => { const id = nextId; nextId += 1; frames.set(id, fn); return id; },
     cancelAnimationFrame: (id) => { if (cancelWorks) frames.delete(id); },
-    displayFor: () => [], notScoredText: () => "", renderDom: () => {}, setRenderer: () => {},
+    displayFor: () => [], notScoredText: () => "", tag3d: () => null, renderDom: () => {}, setRenderer: () => {},
     $: () => ({ addEventListener: () => {} }),
   };
   const fns = vm.runInNewContext(`(() => { ${doorFn("onContextLost")}\n${doorFn("setExplode")}\n return { onContextLost, setExplode }; })()`, ctx);

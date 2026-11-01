@@ -1,9 +1,10 @@
-// SentiLab Package view, agent-door feed: CPU-DRAM layouts in 3D, in arrival order, with the scorer's temperature map.
-// Data only through source3d.mjs (fixture today; the API through one seam), geometry only through model.mjs (the
-// RenderModel), drawing through render3d.mjs (three.js) or, without WebGL, with reduced motion or on request, the
-// Package view's own Canvas 2D renderer (render.mjs). Every string from data reaches the page through textContent and
-// is either a fixed word chosen here or a label rebuilt by source3d.mjs (class · short id): never visitor text.
-import { loadFixture, verifyPinnedFields, createDoorFeed, statusLine, BOARD_METRIC, SCORED } from "./source3d.mjs";
+// SentiLab Package view, agent-door feed: CPU-DRAM layouts in 3D, in arrival order, with the scorer's numbers.
+// Data only through source3d.mjs (the bundled replay; live, the door API's results and events through one seam),
+// geometry only through model.mjs (the RenderModel), drawing through render3d.mjs (three.js) or, without WebGL, with
+// reduced motion or on request, the Package view's own Canvas 2D renderer (render.mjs). Every string from data reaches
+// the page through textContent and is either a fixed word chosen here, a label rebuilt by source3d.mjs (class · short
+// id) or a code or identity source3d.mjs checked against a fixed pattern: never visitor text.
+import { loadFixture, verifyPinnedFields, createDoorFeed, statusLine, BOARD_METRIC, SCORED, DOOR_RESULTS_PATH, DOOR_EVENTS_PATH } from "./source3d.mjs";
 import { buildRenderModel, displayBoxes, fieldTexels, viewNotes, SCALE, scaleFraction, formatThickness, dieRects, GRID } from "./model.mjs";
 import { STACK_LAYERS, REFERENCES, ACTIVE_LAYER_GUARD_C, INTERPOSER_MM, CASE_TITLE, GATE_ZERO_EVALUATOR } from "./case-cpu-dram.mjs";
 import { drawPackage, TrackAnimation } from "./render.mjs";
@@ -48,7 +49,9 @@ const NOT_SCORED = Object.freeze({
 const REFUSED_RESULT = Object.freeze({
   result_not_scored_state: "the state is not a score", result_label_unknown: "unknown claim label", metric_unknown: "not the board metric",
   metric_value: "value out of range", precision_missing: "no precision", grid_orientation_missing: "grid orientation not declared",
-  grid_size: "grid is not 64 x 64", grid_value: "grid value out of range", distinct_value: "a statistic out of range", result_malformed: "malformed",
+  grid_size: "grid is not 64 x 64", grid_value: "grid value out of range", distinct_value: "a statistic missing or out of range", result_malformed: "malformed",
+  guard_unknown: "not the board's active-layer guard", guard_inconsistent: "the guard contradicts its own peak",
+  verification_malformed: "verification unreadable", replay_malformed: "replay unreadable",
 });
 const ENGINE = "HotSpot 6.0, grid 64";
 // The labels of the reference panel's temperatures: the gate-zero statistics by their (pinned) evaluator, the paper's
@@ -62,6 +65,19 @@ const FIELD_NOTE = Object.freeze({
   mismatch: "The result does not match its pinned identity (field, orientation or statistics): no map is drawn",
 });
 const fmtMm = (v) => (Math.abs(v) >= 1000 ? Math.round(v).toLocaleString("en-US") : String(v));
+// An evaluator identity, shortened for a line of text (its build hash to 8 hex); the whole string is the title.
+const shortIdentity = (id) => id.replace(/[0-9a-f]{64}/, (x) => `${x.slice(0, 8)}…`);
+const words = (code) => code.replace(/_/g, " ");
+// What the feed says a result was checked for, and what it is not (#81's verification block), as the feed's report.
+function verificationText(v) {
+  const replay = v.replay === "reproduced"
+    ? `replay reproduced${v.distinct_execution ? " in a distinct process" : ""}${v.receipts_bound ? ", receipts bound" : ""}`
+    : `replay not reproduced${v.replay_code ? ` (${words(v.replay_code)})` : ""}`;
+  return [`The feed reports, unsigned: ${replay}`, `selector binding ${v.binding_ok ? "ok" : "not ok"}`,
+    `CPU ${v.cpu === "measured" ? "measured" : "unknown, charged conservatively"}`,
+    v.candidate ? "a candidate (on the front against the raw reference)" : null,
+    v.not_claimed.length ? `not claimed: ${v.not_claimed.join(", ")}` : null].filter(Boolean).join(" · ");
+}
 
 export async function startDoor({ params, REDUCED }) {
   const $ = (id) => document.getElementById(id);
@@ -173,7 +189,7 @@ export async function startDoor({ params, REDUCED }) {
     if (error) { D.current = null; renderDom(); return; }
     const field = drawableField(L);
     D.current = { L, model, field };
-    if (D.r === "3d" && D.v3) D.v3.setDoor(model, displayFor(model), { field, animate, notScored: field ? null : notScoredText(L) });
+    if (D.r === "3d" && D.v3) D.v3.setDoor(model, displayFor(model), { field, animate, notScored: tag3d(L, field) });
     else {
       const rects = dieRects(L.dies);
       D.anim2d.set({ chiplets: rects.map((r) => ({ id: r.id, x: r.x0, y: r.y0, w: r.w, h: r.h, layer: 0, kind: "die", temp: null, temp_state: null, color: KIND_FILL[r.kind] })), overlaps: [] },
@@ -194,6 +210,9 @@ export async function startDoor({ params, REDUCED }) {
     return r && r.field_state === "verified" && r.grid && r.field_key && !D.noCrypto ? fieldTexels(r.grid, r.field_key) : null;
   }
   const resultShown = (L) => Boolean(L?.result) && !D.noCrypto;
+  // The 3D view's tag on the chip layer, for a layout drawn without a value; a shown value's caption says why there is
+  // no map (a feed result is unassociated), so no tag then.
+  const tag3d = (L, field) => (field || resultShown(L) ? null : notScoredText(L));
   function notScoredText(L) {
     if (L.result_refused) return `Score not shown · ${REFUSED_RESULT[L.result_refused] ?? L.result_refused}`;
     if (L.result && D.noCrypto) return "Result not shown · file check unavailable here (needs a secure connection)";
@@ -263,6 +282,7 @@ export async function startDoor({ params, REDUCED }) {
     renderCaption(L);
     renderInfo(L);
     renderStrip();
+    renderArrivals();
     renderStatus(line);
     // The shared notice: shown whenever a withdrawn or unvalidated temperature is on screen (the reference panel's
     // always are, until an evaluator is accepted), worded only in temperature-label.mjs.
@@ -347,19 +367,27 @@ export async function startDoor({ params, REDUCED }) {
       big.className = "big";
       big.replaceChildren(tempNode(h, L.result.metric.value, L.result.label, { digits: 2 }));
       big.title = `${BOARD_METRIC.definition} ${L.result.label.title} Rounded to 0.01 °C for display.`;
-      $("dClaim").textContent = `${ENGINE} · block-centre map mode · simulated, not silicon${L.result.diagnostic ? " · diagnostic: no admitted association" : ""}`;
+      const ev = L.result.evaluator;
+      $("dClaim").textContent = [`${ENGINE} · block-centre map mode · simulated, not silicon`, L.result.diagnostic ? "diagnostic: no admitted association" : null,
+        ev ? `evaluator named by the feed (not checked here): ${shortIdentity(ev)}` : null].filter(Boolean).join(" · ");
+      $("dClaim").title = ev ?? "";
+      const guardWord = L.result.guard ? (L.result.guard.ok ? " · met, per the feed" : " · not met, per the feed") : "";
       for (const d of L.result.distinct) {
         dl.append(h("li", null, `${d.name}: `, tempNode(h, d.value, L.result.label, { digits: 2 }),
-          d.key === "active_layer_peak_C" ? h("span", null, " (guard: strictly below ", tempNode(h, ACTIVE_LAYER_GUARD_C, LABEL_GATE_ZERO, { digits: 2 }), ")") : null));
+          d.key === "active_layer_peak_C" ? h("span", null, " (guard: strictly below ", tempNode(h, ACTIVE_LAYER_GUARD_C, LABEL_GATE_ZERO, { digits: 2 }), `${guardWord})`) : null));
       }
       dl.append(h("li", null, "Not the board metric: shown apart, by name."));
       if (!L.result.distinct.length) dl.lastChild.remove();
+      $("dVerif").textContent = L.result.verification ? verificationText(L.result.verification) : "";
     } else {
       big.className = "big none";
       big.textContent = L ? notScoredText(L) : "-";
       big.title = BOARD_METRIC.definition;
       $("dClaim").textContent = L ? `${ENGINE} · simulated, not silicon` : "";
+      $("dClaim").title = "";
+      $("dVerif").textContent = "";
     }
+    $("dVerif").hidden = !$("dVerif").textContent;
     // Legend: the fixed scale.
     $("dScaleName").textContent = SCALE.stat;
     const guard = $("dGuard");
@@ -399,6 +427,32 @@ export async function startDoor({ params, REDUCED }) {
     body.append(h("tr", null, h("td", { colspan: "3" }, "k in W/(m K), the layer default; spreader 90 mm and sink 180 mm square, the rest 45 mm")));
   }
 
+  // The arrivals panel (live only): the newest events of the door's events feed, by class and short id only.
+  function eventText(e) {
+    const codes = e.codes?.length ? e.codes.map(words).join(", ") : "";
+    if (e.kind === "arrival") return "arrived at the door";
+    if (e.kind === "attempt") return `attempt ${e.outcome}${codes ? `: ${codes}` : ""}`;
+    return `${(STATUS_CHIP[e.state] ?? ["", e.state])[1].toLowerCase()}${codes ? ` (${codes})` : ""}`;
+  }
+  function renderArrivals() {
+    const live = D.source === "api" && !D.liveDown && Boolean(D.feed);
+    $("dArrivals").hidden = !live;
+    const list = $("dArrList");
+    if (!live) { list.replaceChildren(); return; }
+    // Newest first; a run once, at its newest state, so agents arriving and refused attempts stay in view.
+    const events = [], runs = new Set();
+    for (const e of [...D.feed.state.events].reverse()) {
+      if (e.kind === "run") { if (runs.has(e.run_id)) continue; runs.add(e.run_id); }
+      events.push(e);
+      if (events.length === 8) break;
+    }
+    list.replaceChildren(...(events.length ? events.map((e) => {
+      const b = h("b", null, e.label);
+      b.style.color = CLASS_COLOR[e.cls] ?? "";
+      return h("li", null, b, ` ${eventText(e)}`);
+    }) : [h("li", { class: "none" }, "No arrivals yet")]));
+  }
+
   // The arrival strip: one tile per layout, a plan view with the map when there is one.
   const tiles = new Map();
   function renderStrip() {
@@ -432,7 +486,7 @@ export async function startDoor({ params, REDUCED }) {
         chip.className = `chip ${sc[0]}`;
         chip.textContent = sc[1];
         const tf = t.btn.querySelector(".tf");
-        tf.replaceChildren(...(r ? [tempNode(h, r.metric.value, r.label, { digits: 2 }), r.diagnostic ? "diagnostic" : "max chiplet-centre mean"] : [notScoredText(L)]));
+        tf.replaceChildren(...(r ? [tempNode(h, r.metric.value, r.label, { digits: 2 }), h("span", { class: "w" }, r.diagnostic ? "diagnostic" : "max chiplet-centre mean")] : [notScoredText(L)]));
         drawPlan(t.canvas, L);
       }
     });
@@ -466,7 +520,7 @@ export async function startDoor({ params, REDUCED }) {
     g.strokeRect(ox + 0.5, oy + 0.5, side - 1, side - 1);
   }
   function renderStatus(line) {
-    const src = D.source === "api" && !D.liveDown ? `Live · ${"/api/open/v1/door/results"}${D.feed?.state.polls ? ` · ${D.feed.state.polls} polls` : ""}` : "Replay · bundled door fixture (arrival order)";
+    const src = D.source === "api" && !D.liveDown ? `Live · ${DOOR_RESULTS_PATH} and ${DOOR_EVENTS_PATH.split("/").pop()}${D.feed?.state.polls ? ` · ${D.feed.state.polls} requests` : ""}` : "Replay · bundled door fixture (arrival order)";
     $("statusLeft").textContent = `${src}${line === "staging" ? " · staging" : ""}`;
     $("statusMid").textContent = "Layouts are named only by class and a 4-character short id. No visitor text is shown.";
     $("hotkeys").textContent = "Space play · ←/→ step · H halo + lattice · E explode · O orbit · F fit · 2/3 view";
@@ -540,7 +594,7 @@ export async function startDoor({ params, REDUCED }) {
       const t = REDUCED ? 1 : Math.min(1, (now - start) / EXPLODE_MS);
       const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
       D.explode = from + (to - from) * e;
-      if (D.current) D.v3.setDoor(D.current.model, displayFor(D.current.model), { field: D.current.field, animate: false, notScored: D.current.field ? null : notScoredText(D.current.L) });
+      if (D.current) D.v3.setDoor(D.current.model, displayFor(D.current.model), { field: D.current.field, animate: false, notScored: tag3d(D.current.L, D.current.field) });
       if (t < 1) D.explodeAnim = requestAnimationFrame(tick);
       else { D.v3.fit({ animate: true }); renderDom(); }
     };
@@ -583,6 +637,8 @@ export async function startDoor({ params, REDUCED }) {
       label: L?.label ?? null, status: L?.status ?? null, scored: Boolean(L?.result), map: Boolean(D.current?.field),
       line: $("modeText").textContent, overlay: D.overlay, explode: D.explode, geometryKey: D.current?.model.geometry_key ?? null,
       fieldState: L?.result?.field_state ?? null, fieldKey: D.current?.field?.key ?? null, tempLabel: L?.result?.label?.state ?? null,
+      evaluator: L?.result?.evaluator ?? null, diagnostic: L?.result?.diagnostic ?? null, events: D.feed?.state.events.length ?? 0,
+      cursor: D.feed?.state.cursor ?? null, eventsCursor: D.feed?.state.eventsCursor ?? null, refused: { ...(D.feed?.state.refused ?? {}) },
       notice: !$("wnotice").hidden, noCrypto: D.noCrypto, lost: D.lost, live3d: live3d.count,
       figure: { x: Math.round(fig.x), y: Math.round(fig.y), w: Math.round(fig.width), h: Math.round(fig.height) }, ...(st ?? {}) };
   } }) });
