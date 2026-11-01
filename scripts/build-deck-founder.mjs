@@ -386,7 +386,8 @@ export function fillInTable(data) {
       : `The freeze, ${data.deck.cutoff}. Each below had no receipt, so its slide does not show it and its words are not read.`;
   return ["# FILL-IN: the founder deck's placeholders", "", head, "",
     "| Slide | Shows | Metric id | Needed |", "|---|---|---|---|", ...(rows.length ? rows : ["| none | | | |"]), "",
-    ...(data.refresh.length ? ["## Refresh at the freeze", "", "| Slide | Shows | Why |", "|---|---|---|", ...data.refresh.map((r) => `| ${r.slide} | ${r.what} | ${r.why} |`), ""] : []),
+    // A draft's to-do for the freeze; the final is the freeze, so it lists none.
+    ...(data.deck.draft && data.refresh.length ? ["## Refresh at the freeze", "", "| Slide | Shows | Why |", "|---|---|---|", ...data.refresh.map((r) => `| ${r.slide} | ${r.what} | ${r.why} |`), ""] : []),
     ...(data.options.length ? ["## Optional, Carter's call: notes only, not on a slide", "", "| Slide | Line, if Carter asks for it | Numbers | Qualifiers | Source |", "|---|---|---|---|---|",
       ...data.options.map((o) => `| ${o.slide} | ${o.line} | ${o.numbers} | ${o.qualifiers} | ${o.source} |`), ""] : []),
     ...(data.freezeNote ? ["## At the freeze", "", data.freezeNote, ""] : []),
