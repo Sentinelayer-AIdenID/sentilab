@@ -381,7 +381,9 @@ export function fillInTable(data) {
   const rows = data.placeholders.map((p) => `| ${p.where.replace(/^slide /, "")} | ${p.label}${p.dropped ? dropped : ""} | \`${p.id}\` | ${p.need} |`);
   const head = data.deck.draft
     ? `As of ${data.deck.cutoff}. Each shows "measuring…" until docs/sentilab/deck/founder-v4/METRICS.json carries it with its definition, scope, window and source; then rebuild and re-export.`
-    : `The freeze, ${data.deck.cutoff}. Each below had no receipt, so its slide does not show it and its words are not read.`;
+    : data.freezeNote
+      ? `The freeze, ${data.deck.cutoff}. Its slide shows none of these and its words do not read them; the receipt is under "At the freeze".`
+      : `The freeze, ${data.deck.cutoff}. Each below had no receipt, so its slide does not show it and its words are not read.`;
   return ["# FILL-IN: the founder deck's placeholders", "", head, "",
     "| Slide | Shows | Metric id | Needed |", "|---|---|---|---|", ...(rows.length ? rows : ["| none | | | |"]), "",
     ...(data.refresh.length ? ["## Refresh at the freeze", "", "| Slide | Shows | Why |", "|---|---|---|", ...data.refresh.map((r) => `| ${r.slide} | ${r.what} | ${r.why} |`), ""] : []),

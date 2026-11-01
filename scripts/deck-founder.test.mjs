@@ -22,6 +22,7 @@ const pre = (() => {
   const v4 = structuredClone(loaded.v4);
   delete v4.build;
   delete v4.metrics.freezeSha256;
+  delete v4.metrics.freezeNote;
   return { ...loaded, v4, metrics: { ...loadMetrics(), freezeSha256: null } };
 })();
 // The draft, built explicitly: the tests that describe placeholders and the DRAFT tag hold before and after the freeze.
@@ -380,6 +381,7 @@ test("V4.json's build sets the committed build's mode: \"final\" is the freeze, 
   const withNote = fillInTable(buildFounderData({ ...pre, v4: noted }));
   assert.match(withNote, /votes on our Moltbook invitation \(not shown at the freeze: see "At the freeze"\)/);
   assert.ok(withNote.includes("## At the freeze\n\nCounted to 14:30:00Z: none from outside (test).\n"));
+  assert.match(withNote, /^# FILL-IN: the founder deck's placeholders\n\nThe freeze, .*the receipt is under "At the freeze"\./);
   assert.ok(!fillInTable(buildFounderData({ ...pre, v4: noted }, { final: false })).includes("## At the freeze"), "a draft carries no freeze note");
   assert.doesNotMatch(fillInTable(draft), /dropped at the freeze/);
   const odd = structuredClone(loaded.v4);
