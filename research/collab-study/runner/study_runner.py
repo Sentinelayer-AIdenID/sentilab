@@ -326,6 +326,12 @@ class Ledger:
                 unknown = True
                 charged = attempt["prompt_bound"] + attempt["max_tokens"]
                 amount = Decimal(attempt["reserved_usd"])
+        # An ambiguous failed request can include partial usage. Keep it as
+        # evidence, but never let it reduce the conservative reservation.
+        if failure and not failure.safe_to_retry:
+            unknown = True
+            charged = max(charged, attempt["prompt_bound"] + attempt["max_tokens"])
+            amount = max(amount, Decimal(attempt["reserved_usd"]))
         with self._lock:
             if attempt["state"] != "pending":
                 raise RuntimeError("attempt already settled")

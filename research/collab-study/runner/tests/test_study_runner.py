@@ -280,3 +280,23 @@ def test_provider_credential_echo_is_withheld(monkeypatch):
     with pytest.raises(runner.CallFailure, match="credential_in_response") as caught:
         model.complete([], max_tokens=50, timeout=1)
     assert caught.value.request_id is None
+
+
+@pytest.mark.parametrize('prompt,output,charged,usd', [
+    (10, 2, 200, '0.0003'),
+    (200, 100, 300, '0.0004'),
+])
+def test_ambiguous_failure_is_reserved_even_with_partial_usage(prompt, output, charged, usd):
+    ledger = runner.Ledger('1', {'input': '1', 'cached_input': '0.5', 'output': '2'})
+    attempt = ledger.reserve('job', 1, 'study', prompt_bound=100, max_tokens=100)
+    usage = {'prompt_tokens': prompt, 'completion_tokens': output}
+    failure = runner.CallFailure('http_error', status=503, usage=usage, request_id='failed-call')
+    ledger.settle(attempt, usage=usage, failure=failure)
+    report = ledger.report()
+    recorded = report['attempts'][0]
+    assert recorded['unknown_usage'] is True
+    assert recorded['usage'] == usage
+    assert recorded['charged_tokens'] == charged
+    assert recorded['charged_usd'] == usd
+    assert recorded['request_id'] == 'failed-call'
+    assert recorded['http_status'] == 503
