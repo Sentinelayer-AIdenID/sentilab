@@ -129,6 +129,13 @@ class StatsTests(tk.DoorCase, unittest.TestCase):
         self.assertEqual(self.door.stats()[1], recount(self.door))
         self.assertEqual(CACHE_S, 5)
 
+    def test_a_caller_cannot_change_the_cached_answer(self):
+        first = self.door.stats()[1]
+        first["passes"] = 999
+        first["results"]["failed"] = 999
+        again = self.door.stats()[1]
+        self.assertEqual((again["passes"], again["results"]["failed"]), (0, 0))
+
     def test_a_clock_step_back_never_serves_a_stale_answer(self):
         self.door.stats()
         self.arrive(**{"class": "automation", "purpose": "read", "nonce": tk.nonce(2)})

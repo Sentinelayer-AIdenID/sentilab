@@ -290,8 +290,11 @@ test("the token page carries via into the agent view's link only", async (t) => 
   const { go } = setup();
   const token = JSON.parse((await go(intent({ purpose: "place-chiplets", via: "moltbook" }), json())).text);
   assert.equal(new URL(token.next[0].url).searchParams.get("via"), "moltbook");
-  const read = JSON.parse((await go(intent({ purpose: "read", via: "moltbook" }), json())).text);
-  for (const link of read.next) assert.equal(new URL(link.url).searchParams.has("via"), false);
+  for (const purpose of ["read", "review"]) {
+    const other = JSON.parse((await go(intent({ purpose, via: "moltbook" }), json())).text);
+    assert.ok(other.next.length > 0);
+    for (const link of other.next) assert.equal(new URL(link.url).searchParams.has("via"), false, `${purpose}: ${link.url}`);
+  }
   const bad = JSON.parse((await go(intent({ purpose: "place-chiplets", via: "evil" }), json())).text);
   assert.equal(new URL(bad.next[0].url).searchParams.has("via"), false);
 });

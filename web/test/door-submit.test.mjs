@@ -2,7 +2,8 @@
 // The agent door's two write routes and their guards (web/src/door/door.js): POST /agents/submit (JSON, or the confirm
 // page's form) forwards one canonical request to the scorer intake with the origin token and token_claims; the
 // tap-link page GET /s only renders a confirm page and never submits; malformed and hostile bodies never reach the
-// intake; floods hit the per-token and per-IP-prefix limits; no visitor text is reflected anywhere.
+// intake; floods hit the per-token and per-IP-prefix limits; nothing a submission sends is reflected anywhere. (A
+// visitor's opt-in declaration is a separate public record, Amendment 4: web/test/door-a4.test.mjs.)
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
@@ -285,7 +286,7 @@ test("pressing the confirm page's button submits once and shows only whitelisted
   assert.equal(submits(calls)[0].body.layout, REF);
 });
 
-test("no visitor text is reflected anywhere: responses, headers, intake calls and arrivals", async (t) => {
+test("nothing a submission sends is reflected anywhere: responses, headers, intake calls and arrivals", async (t) => {
   const calls = installApi(t);
   const s = setup();
   const token = await mint();

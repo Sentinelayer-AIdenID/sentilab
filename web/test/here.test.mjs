@@ -29,10 +29,12 @@ function world({ visible = true } = {}) {
     },
     send: (path, init) => { sent.push({ at: now, path, init }); return Promise.resolve(new Response(null, { status: 204 })); },
     random: { getRandomValues: (bytes) => { for (let i = 0; i < bytes.length; i += 1) bytes[i] = (counter++ * 37 + 11) & 0xff; return bytes; } },
-    // Run every timer due by now + ms, in order, moving the clock to each.
+    // Run every timer due by now + ms, in order, moving the clock to each. A heartbeat that reschedules itself with no
+    // interval would loop forever here: that is a failure, not a hang.
     advance(ms) {
       const end = now + ms;
-      for (;;) {
+      for (let fired = 0; ; fired += 1) {
+        assert.ok(fired < 10000, "runaway timers: heartbeats with no interval between them");
         const due = [...timers].filter(([, t]) => t.at <= end).sort((a, b) => a[1].at - b[1].at)[0];
         if (!due) break;
         timers.delete(due[0]);
@@ -79,6 +81,7 @@ test("a visible page sends exactly {page, tab} at once, then once a minute, with
 test("a hidden page sends nothing; coming back sends at once only if a minute has passed", () => {
   const w = world({ visible: false });
   start("board", w);
+  assert.equal(w.pending.size, 0, "nothing is scheduled while hidden: no wake-ups");
   w.advance(INTERVAL_MS * 5);
   assert.equal(w.sent.length, 0);
   w.show(true);
@@ -86,6 +89,7 @@ test("a hidden page sends nothing; coming back sends at once only if a minute ha
   assert.equal(w.sent.length, 1);
   w.advance(10000);
   w.show(false);
+  assert.equal(w.pending.size, 0, "hiding cancels the next heartbeat");
   w.advance(INTERVAL_MS * 2);
   assert.equal(w.sent.length, 1, "nothing while hidden");
   w.show(true);                                       // more than a minute since the last: at once
