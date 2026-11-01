@@ -146,7 +146,7 @@ that carries a token, and passes the intake's open feeds (`/api/open/v1/door/boa
 `events`) on without their declared-operator fields, matching them on the percent-decoded path
 (the API routes the decoded path); a path whose escapes do not decode is refused with 400.
 
-**Micro-cache.** The `/api` proxy keeps a GET of exactly `/api/open/v1/door/results`, `/events` or `/board` for 2
+**Micro-cache.** The `/api` proxy keeps a GET of exactly `/api/open/v1/door/results`, `/events`, `/board` or `/visitors` for 2
 seconds in the data center's Workers Cache API (`caches.default`), keyed by the full URL (`?after=0` and `?after=88` are
 separate entries), when the filtered answer is a 200 that sets no cookie (warden P1-2(a): a talk's viewers, polling
 every 3 s, then reach the one API replica about once per feed URL every 2 s per data center). Browsers get exactly the
@@ -154,8 +154,10 @@ headers an uncached answer has (`Cache-Control: no-store`); the stored copy's `p
 `x-microcache-made` (the Worker itself treats an entry 2 s old as a miss) and `x-microcache-headers`, and what the cache
 adds (`cf-cache-status`, `age`) never reach them. HEAD, `Range`, `X-Door-Nonce`, token-bearing URLs, other spellings of
 the paths, non-200 answers and every other path and method are never cached; without `caches.default` nothing is, and a
-failing cache is a miss. `/events` carries declaration events, so **an operator's hide reaches the public `/events`
-(and any other cached feed it touches) through this proxy within the 2-second cache lifetime, not instantly**; to
+failing cache is a miss. `/visitors` joined with the Live Lab's declarations list, which re-reads a window of up to
+about 1,000 records every 3 s from every tab, from a start rounded down to a multiple of 100 so tabs share entries.
+`/events` and `/visitors` carry declarations, so **an operator's hide reaches the public `/events` and `/visitors`
+through this proxy within the 2-second cache lifetime, not instantly**; to
 confirm a hide at once, send any `X-Door-Nonce` header (it bypasses the cache and is still stripped) or wait more than
 2 seconds.
 
