@@ -279,6 +279,9 @@ body.print #notes { display: none; }
 .why-statement { margin: auto 0; max-width: 1600px; }
 .ws-main { font: 750 92px/1.12 var(--display); color: var(--text); letter-spacing: -0.01em; }
 .ws-sub { margin-top: 34px; font: 600 46px/1.3 var(--display); color: var(--body); }
+.why-statement.ws-with-figure { margin: 8px 0 18px; }
+.ws-with-figure .ws-main { font-size: 50px; }
+.ws-with-figure .ws-sub { margin-top: 8px; font-size: 34px; }
 .dcta { margin-top: 22px; padding: 22px 34px 26px; border-left: 10px solid var(--cyan); background: var(--cy-bg); border-radius: 6px 18px 18px 6px; }
 .dcta-url { font: 800 104px/1.05 var(--mono); color: var(--cyan); letter-spacing: -0.02em; overflow-wrap: anywhere; }
 .dcta-inst { margin-top: 14px; font: 650 46px/1.25 var(--display); color: var(--text); }

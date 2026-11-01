@@ -13,9 +13,11 @@ are here instead. Rooms: `608657e4` is the team room and `32a841e5` the hackatho
 
 ## The plain-language main talk (Carter, team room 57563, 02:51)
 
-The nine main slides follow the coordinator's plain-language script v2.3, committed byte for byte as `PLAIN-SCRIPT.md`
-(sha256 `79c648c5…`). It went v2, v2.1, v2.2 and v2.3, with astra's truth fixes, aneta's plain charts and truth check
-(team room 57605) and chatgpt's non-specialist pass (57558). Each slide's title is the script's title, and its speaker
+The nine main slides follow the coordinator's plain-language script v2.5, committed byte for byte as `PLAIN-SCRIPT.md`
+(sha256 `cd1cb889…`). It went v2, v2.1, v2.2, v2.3 and v2.5, with astra's truth fixes, aneta's plain charts and truth check
+(team room 57605), chatgpt's non-specialist pass (57558) and Delfie's one-change result (help seq 57644). v2.5 names
+HotSpot on slide 2, gives slide 3 Delfie's change and ScienceClaw's re-run in place of the mode-off line, and counts
+slide 7's teams as three checked, two other help, three unconfirmed. Each slide's title is the script's title, and its speaker
 notes are the script's "Say" text, word for word; the tests read `PLAIN-SCRIPT.md` and compare. One picture per slide.
 No K, kelvin, formula, `rz`, grid, "statistic", convection, native block or chiplet-centre may appear on a main slide,
 in its notes or in its figure's text; the build refuses one. Every slide of the earlier five-minute deck follows as
@@ -26,22 +28,23 @@ Where the sections below say "slide 1" to "slide 8", they mean that deck's slide
 | Slide | Title | Picture | Caption |
 |---|---|---|---|
 | 1 | AI agents arrange chips. Software predicts the heat. | the package render cut from our 3D view (below), `package-render-35323889.png` (`7ea5c232…`) | the coordinator's: "Simulated heat map of the published reference design. Simulated, not silicon." |
-| 2 | Same design, same files: 119 °C or 241 °C? | plain1 v1.10 (`9d1e00ca…`) | CAPTIONS.md v1.9 plain1, without "on a 64 by 64 grid", and "point" for "cell" |
-| 3 | The answers split at one step: lid to cooler. | plain2 v1.11 (`1b7f851e…`), with root's "In the model: lid to cooler" and "Separate check: hottest point in each part" | v1.9 plain2, with "position" for "grid position", "Separate check" for "Independent check" (the figure's own label since v1.11) and "from two finite-element solvers and the simulator" for "finite element nodal versus HotSpot grid readouts" |
-| 4 | The agents found it, and stopped our own run. | plain4 v1.8 (`672b220c…`), checked against the same records and durations as fig4 | v1.9 plain4 |
-| 5 | We set the bar first. It passed. | plain3 v1.10 (`30cc8680…`) | v1.9 plain3, with "the paper's own temperature reading" for "the frozen gate statistic" (the figure's own words since v1.10) |
-| 6 | A second agent catches what the first approved. | fig5, drawn at 1.4 times its backup size | fig5's caption in plain words |
-| 7 | Other teams build on it. | fig6 v1.9 (`f7da1bd6…`) | fig6's caption, to 02:44 (below) |
-| 8 | Why it matters. | while the numbers line is off, the script's own closer in large type: "An optimizer is only as reliable as the tool grading it." and, smaller, "Independent checks expose disagreements before we build on them."; three numbers when it is on | |
+| 2 | Same design, same files: 119 °C or 241 °C? | plain1 v1.10 (`9d1e00ca…`) | CAPTIONS.md plain1, without "on a 64 by 64 grid", "point" for "cell", and the coordinator's "HotSpot 6.0 and 7.0. Design from TAP-2.5D, DATE 2021." |
+| 3 | The answers split at one step: lid to cooler. | plain2 v1.11 (`1b7f851e…`), with root's "In the model: lid to cooler" and "Separate check: hottest point in each part" | v1.9 plain2, with "position" for "grid position", "Separate check" for "Independent check" (the figure's own label since v1.11) and "from two finite-element solvers and the simulator" for "finite element nodal versus HotSpot grid readouts"; then the mode-off result, "as reported by Delfie (delphisci team)" |
+| 4 | The agents found it, and stopped our own run. | plain4 v1.15 (`03678891…`), one lane per actor; each of its 13 event times has a claim whose room records carry that minute, and "32 min", "39 min" and "1 h 41" are recomputed from them | v1.15's plain4 footer, as written |
+| 5 | We set the bar first. It passed. | plain3 v1.15 (`e4a79736…`, unchanged from v1.14): adds Delfie's one-step change, as they report it, and both published designs zoomed in | v1.15's plain3 footer, plus "Delfie's and ScienceClaw's values are as reported by them." |
+| 6 | A second agent catches what the first approved. | plain5 v1.15 (`c0773bfb…`), served with this deck's own label because aneta's says "Grid" | v1.15's plain5 footer |
+| 7 | Other teams build on it. | fig6 v1.15 (`e9eeadb9…`), drawn for Delfie's and ScienceClaw's consents | fig6's caption, to 04:01 (below) |
+| 8 | Why it matters. | while the numbers line is off, the script's own closer ("An optimizer is only as reliable as the tool grading it." and, smaller, "Independent checks expose disagreements before we build on them.") over plain6 v1.15 (`b47128e9…`), whose third card says "The challenge will use only the build that passed", in the future tense until warden's 18:45Z scorer read-back; three numbers when it is on | v1.15's plain6 footer |
 | 9 | Send your agent. | REPLAY: the same package render, labelled "simulated, not silicon"; LIVE: the address and the instruction in large type, then the six door steps | the door's status line |
 
 The caption edits only take out words a main slide may not show; the full technical captions stay on backup B1 to B6.
-aneta's own accessible labels are served byte for byte, except plain3's: its v1.10 label does not carry the
-figure's new first line, so the deck's label leads with it (root, reply to 57630, 03:31:15). plain4's source is aneta's v1.8 (team room 57603, 02:59:28, 220,655 bytes,
-`e99d0098…`); plain1 and plain3 are her v1.10 (57630, 03:26:08, 82,830 bytes, `8d42da5b…`); plain2 is her v1.11 (57638,
-03:36:10, 138,115 bytes, `74c7b6f9…`, accepted by root at 03:42:40; its `make_figures.py` was neither extracted nor run);
-fig6 is her v1.9 (57605, 03:06:29, 149,568 bytes, `4f71b1a6…`), with CAPTIONS.md (`43b2d4c3…`) and QA.md (`bcfc01e3…`). QA.md is for the presenter and is not part of the
-deck. Every archive was unpacked into a fresh folder and never executed; every SVG passed the inert check, and the build
+aneta's own accessible labels are served byte for byte, except plain3's (this deck's label leads with the figure's
+first line, root's request under 57630) and plain5's. plain1 is aneta's v1.10 (57630, 03:26:08, 82,830 bytes,
+`8d42da5b…`); plain2 is her v1.11 (57638, 03:36:10, 138,115 bytes, `74c7b6f9…`, accepted by root at 03:42:40; its
+`make_figures.py` was neither extracted nor run); plain3 to plain6, fig4 and fig6 are her v1.15 (57691, 04:44:27,
+38,662 bytes, `0e1521b6…`), which replaced v1.14 (57685, 04:35:24, `224a7106…`) with root's two fixes: plain4's break
+is drawn with slashes and no "6 h" label, and fig6 shows 3 checked, 2 other help and 3 unconfirmed. Its CAPTIONS.md
+(`15e67e70…`) and QA.md (`ecd7917c…`) came with it; QA.md is for the presenter and is not part of the deck. Every archive was unpacked into a fresh folder and never executed; every SVG passed the inert check, and the build
 refuses one that does not.
 
 ### Timing (root, team room 57481, 01:33:52)
@@ -53,16 +56,17 @@ refuses one that does not.
 
 | | Words | At 150 wpm | At 135 wpm |
 |---|---:|---:|---:|
-| Talk, slides 1 to 8, numbers line off | 359 | 143.6 s | 159.6 s |
+| Talk, slides 1 to 8, numbers line off | 368 | 147.2 s | 163.6 s |
 | Transitions | | 15.0 s | 15.0 s |
-| Talk with transitions, cap 180 s | | 158.6 s | 174.6 s |
-| The same with the numbers line on | 381 | 167.4 s | 184.3 s |
+| Talk with transitions, cap 180 s | | 162.2 s | 178.6 s |
+| The same with the numbers line on | 390 | 171.0 s | 188.3 s |
 | Door, REPLAY, inside the demo clock | 34 | 13.6 s | 15.1 s |
 | Door, LIVE, inside the demo clock | 61 | 24.4 s | 27.1 s |
 | Left for the live demo, of 120 s | | 106.4 s (REPLAY), 95.6 s (LIVE) | |
 
-Per slide, numbers line off: 48, 37, 43, 78, 63, 30, 37 and 23 words. With the numbers line on, the relaxed pace runs
-4.3 s over the cap, which is one more reason the line is off by default. A timed read-through by Carter is the real
+Per slide, numbers line off: 48, 38, 51, 78, 63, 30, 37 and 23 words. At the relaxed pace the talk leaves 1.4 s of the
+cap; with the numbers line on it runs 8.3 s over, which is one more reason the line is off by default. The script says
+what to cut first if rehearsal runs long. A timed read-through by Carter is the real
 check; these are word counts.
 
 ### Slide 8's numbers (off by default)
@@ -122,10 +126,11 @@ instruction.
 
 ### Other fixes in this export
 
-- fig6 v1.9 draws ScienceClaw's model-against-model comparison (help seq 57566, 02:44:21), so its snapshot runs to
-  02:44 UTC. Slide 7 and backup B6 say so (B6 said 02:09; CAPTIONS.md v1.9 says 02:34).
-- fig6 v1.9's legend reads "2 checked our thermal case", "3 said other help was useful" and "3 haven't confirmed yet",
-  as slide 7's script does. B6's notes now use the same words; fig6's own accessible label still has v1.8's wording.
+- fig6 v1.15 draws ScienceClaw's re-run of our case (help seq 57666, 04:01), so its snapshot runs to 04:01 UTC, as
+  CAPTIONS.md v1.15 says. Slide 7 and backup B6 say so.
+- fig6 v1.15's legend reads "3 checked our thermal case", "2 said other help was useful" and "3 haven't confirmed
+  yet", as slide 7's script v2.5 does. B6's notes use the same words. fig6's own accessible label still groups the
+  teams in its earlier words ("Used it and returned a result", "Said it helped").
 - B7's notes still gave 5,112 dollars after the tile moved to the 02:44 re-read; they now say what the tiles say.
 
 ## Figures
@@ -148,10 +153,10 @@ PNG data inside the SVG. Each figure is shown as an image, so nothing in it can 
 |---|---|---|---|
 | fig1-same-chips | `7072cc76…` | B1 | "Ascend 910 reference" to "Layout A reference" (the shared public-render rules forbid that product name) |
 | fig2-stack | `a430ba49…` | B2 | none (v1.4 adds the separately labelled layer-maxima panel) |
-| fig4-timeline | `8c478904…` | B3 | team labels, by consent (below) |
+| fig4-timeline | `fb3d8ac9…` (v1.15) | B3 | Delfie's label, by consent (below); aneta draws the finite-element team anonymously herself. Its label is this deck's, naming teams by consent |
 | fig3-agreement | `4179ee6d…` | B4, with the recorded result only | "Ascend 910" to "Layout A"; team labels, by consent |
 | fig5-waffle | `2edb9c37…` | B5, and slide 6 at 1.4 times | none |
-| fig6-teams | `f7da1bd6…` | B6 and slide 7 | none: aneta's v1.9 is served byte for byte, its own label included. It is drawn for the consent set {ScienceClaw}, and the build stops if the consent on record is any other set, until she redraws it |
+| fig6-teams | `e9eeadb9…` (v1.15) | B6 and slide 7 | none: aneta's v1.15 is served byte for byte, its own label included. It is drawn for the consent set {Delfie, ScienceClaw}, and the build stops if the consent on record is any other set, until she redraws it |
 | fig2b-profile | `f052040c…` | B14 | "Ascend 910" to "Layout A" |
 
 The root `aria-label` of every figure is replaced by this deck's own reviewed text, so no name or product rides in an
@@ -208,13 +213,13 @@ and "1 h 41" (22:22:08 to 00:03:07, 101.0 min).
   a second reviewer (team seq 57412, 00:18:39).
 - Our own finite-element solve: 78.0423354 and 122.2078371 C on the finest meshes (help seq 57329, 23:08:26).
 
-## fig6, what travelled between teams (help room, to 02:44 UTC)
+## fig6, what travelled between teams (help room, to 04:01 UTC)
 
 | Card | Record |
 |---|---|
-| Both versions on our case, 39 min after it went public | help seq 57312, 23:01:16 |
+| Delfie: both versions on our case in 39 min. Then tested one change | help seq 57312, 23:01:16; help seq 57644, 03:45:39 (its one-change test, as reported by them) |
 | Separate solver on our case, in 1 h 41 | help reply 161c27f0, 00:03:07 |
-| ScienceClaw: "your matchmaking"; it used our review to fix its package | help seq 57328, 23:08:23 ("What did help was your matchmaking", when nothing technical had gone in yet); help seq 57532, 02:09:48: since then, chatgpt's review of its c11ac67a package helped it fix the convergence row and add input guards (also 57350, 23:22:54). The two statements keep their own times |
+| ScienceClaw: re-ran our case, same numbers; used our review on its package | help seq 57666, 04:01 (its re-run on case.json af66bcfc, as reported by them); help seq 57328, 23:08:23 ("What did help was your matchmaking", when nothing technical had gone in yet); help seq 57532, 02:09:48: since then, chatgpt's review of its c11ac67a package helped it fix the convergence row and add input guards (also 57350, 23:22:54). The two statements keep their own times |
 | "Thanks, very useful" | help reply aae908b2 to seq 57188, 21:13:28, quantumswarms-claude |
 | "Yes, yours helped." Then it corrected a claim of ours | help replies 028f09e8 (00:08:14) and 37eb0808 (00:04:12) to seq 57270, kiln-claude |
 | Built on request; it ran through the open-source ScienceClaw | help reply 8dd4609d to seq 57005 (23:53:05); team reply 289bcfef to seq 57444 (01:25:26), our own proof run. "ScienceClaw" here is the open-source lamm-mit/scienceclaw platform, which the participant team ScienceClaw had no part in (its own words, 57532; root, 57540). The requester has not confirmed adoption |
@@ -229,23 +234,23 @@ Not re-read here: the "glad to have another agent on it" quote on one unconfirme
 
 ## Outside teams and consent
 
-One consent is on record: **ScienceClaw**, help seq 57532 (02:09:48, scienceclaw-claude: "yes, the slides may name our
+Two consents are on record. **ScienceClaw**, help seq 57532 (02:09:48, scienceclaw-claude: "yes, the slides may name our
 team"), confirmed by root reading the full event back (team room 57540, 02:16:52). Its flag is
 `"32a841e5 seq 57532 at 2026-11-01T02:09:48.572Z"`. aneta asked FEAgent (help 57461), Delfie (help 57462) and the other
 six teams (help 57474).
 
 **Delfie said yes at 03:45:39** (help seq 57644, delfie-claude: "**Slides:** yes, name us. \"Delfie (delphisci team)\",
-link github.com/fractastical/delphi."). The sweep before the 03:50 review export missed it, because its search phrases did
-not match "yes, name us", so that export's note wrongly said no other answer had arrived; Delfie was still shown as "an
-outside team" there, which its consent allows. Delfie's flag stays off in this export too. fig6 is drawn for
-ScienceClaw alone, and the build stops on any other consent set until the figure is redrawn: aneta's v1.12 and v1.13
-are generated for ScienceClaw and Delfie, and root accepted them at 04:19:55, but they are not part of this export. The
-name's form ("Delfie (delphisci team)") is the coordinator's call. No other team had answered by this export's sweep,
-which also read every help-room message and reply since 23:23 UTC from the teams' own agents. Every other team reads
-"an outside team", or "a second outside team" for the next one on the same slide. fig3 reads "Outside", and seven fig6
-cards read "An outside team". B6's notes name ScienceClaw for its own acknowledgment and use root's words for the
-platform run: "Our rigidity skill ran through the open-source ScienceClaw registry and executor." Backup B21 lists the
-named team. The build refuses any slide, note, figure text or label that still holds an unconsented name.
+link github.com/fractastical/delphi. Everything below is also fine to cite as reported by us."). The sweep before the
+03:50 review export missed it, because its search phrases did not match "yes, name us"; the 03:50 and 04:28 exports kept
+Delfie as "an outside team", which its consent allows. Since this export, at the coordinator's word, its flag is on:
+`"32a841e5 seq 57644 at 2026-11-01T03:45:39.060Z"`, with `credit` "Delfie (delphisci team)", the form it asked for,
+wherever the build names it; its bare name stays the key the leak checks look for. Its results are cited "as reported
+by them", and "bug" stays its word, never ours: the build still refuses it in our text. aneta's v1.15 figures name
+Delfie and ScienceClaw, and fig6 is drawn for exactly those two consents. No other team had answered by this export's
+sweep. Every other team reads "an outside team", or "a second outside team" for the next one on the same slide. fig3
+reads "Outside" for the finite-element team, and six fig6 cards read "An outside team". B6's notes name ScienceClaw
+for its own acknowledgment and use root's words for the platform run: "Our rigidity skill ran through the open-source
+ScienceClaw registry and executor." Backup B21 lists both named teams. The build refuses any slide, note, figure text or label that still holds an unconsented name.
 The exported PDF's text is checked the same way. The event is the ScienceClaw hackathon, and its name in the header is
 the event's, not a team's.
 

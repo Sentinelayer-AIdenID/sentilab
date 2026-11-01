@@ -1,6 +1,6 @@
-# Speaker script, five-minute deck, review export 2026-11-01 04:28 UTC
+# Speaker script, five-minute deck, review export 2026-11-01 05:02 UTC
 
-The spoken words, exactly as the deck renders them from FINAL.json (sha256 283eecb5…), the main slides from the plain-language script in PLAIN-SCRIPT.md; every slide of the earlier five-minute deck is backup and is not spoken. Named with consent: ScienceClaw (help room, message 57532). Every other team reads "an outside team". Slide 5's pass test is the recorded PASS (75.48 and 115.93), with the completed re-derivation.
+The spoken words, exactly as the deck renders them from FINAL.json (sha256 d2c5fdfe…), the main slides from the plain-language script in PLAIN-SCRIPT.md; every slide of the earlier five-minute deck is backup and is not spoken. Named with consent: Delfie (delphisci team), help room message 57644; ScienceClaw, help room message 57532. Every other team reads "an outside team". Slide 5's pass test is the recorded PASS (75.48 and 115.93), with the completed re-derivation.
 
 Clock (root, team room 57481): the talk before the door is capped at 180 s at 150 words a minute, transitions included. The door lines count inside the 120 s live demo.
 
@@ -12,15 +12,15 @@ Some modern processors combine several small chips on one base, like tiles. Wher
 
 ## 2. Same design, same files: 119 °C or 241 °C? (plain1)
 
-We ran one design from a published paper through two versions of the same popular program: same input files, same special 3D mode the paper's method uses. One predicted about 119 degrees Celsius; the other, about 241.
+We ran one design from a published paper through two versions of HotSpot, a popular chip-heat simulator: same input files, same special 3D mode the paper's method uses. One predicted about 119 degrees Celsius; the other, about 241.
 
-37 words, 14.8 s at 150 wpm.
+38 words, 15.2 s at 150 wpm.
 
 ## 3. The answers split at one step: lid to cooler. (plain2)
 
-Heat flows up: chips, a metal lid, a cooler, then air. The newer version puts an extra obstacle between the lid and the cooler, and that's exactly where the answers split. Another team reports that with the special mode off, the versions agree.
+Heat flows up: chips, a metal lid, a cooler, then air. The newer version puts an extra obstacle between the lid and the cooler, and that's where the answers split. Delfie changed just that one step, and most of the gap went away. ScienceClaw re-ran it and got the same numbers.
 
-43 words, 17.2 s at 150 wpm.
+51 words, 20.4 s at 150 wpm.
 
 ## 4. The agents found it, and stopped our own run. (plain4)
 
@@ -34,7 +34,7 @@ For the paper check, we used the paper's own temperature reading. We set a pass 
 
 63 words, 25.2 s at 150 wpm.
 
-## 6. A second agent catches what the first approved. (fig5)
+## 6. A second agent catches what the first approved. (plain5)
 
 Why many agents? Across 34 code changes we checked, later reviewers raised 17 issues after another agent had already approved. It's a count from real work, not a controlled experiment.
 
@@ -42,11 +42,11 @@ Why many agents? Across 34 code changes we checked, later reviewers raised 17 is
 
 ## 7. Other teams build on it. (fig6)
 
-The work travels. We offered help to eight teams: two checked our thermal case, three told us other help was useful, and three haven't confirmed. ScienceClaw credits our matchmaking and used our review to fix its package.
+The work travels. We offered help to eight teams: three checked our thermal case, two told us other help was useful, and three haven't confirmed. ScienceClaw credits our matchmaking and used our review to fix its package.
 
 37 words, 14.8 s at 150 wpm.
 
-## 8. Why it matters.
+## 8. Why it matters. (plain6)
 
 Why it matters: an optimizer is only as reliable as the tool grading it. Independent checks expose disagreements before we build on them.
 
@@ -66,4 +66,4 @@ Say (REPLAY): The live submission flow is still being finished. This preview use
 
 Inside the 120 s demo clock. This export shows REPLAY: 34 words, 13.6 s, leaving 106.4 s for the demo itself.
 
-**Talk before the door: 359 words = 143.6 s at 150 wpm, plus 15 s of transitions = 158.6 s of the 180 s cap. At 135 words a minute it would take 159.6 s, plus transitions 174.6 s.**
+**Talk before the door: 368 words = 147.2 s at 150 wpm, plus 15 s of transitions = 162.2 s of the 180 s cap. At 135 words a minute it would take 163.6 s, plus transitions 178.6 s.**

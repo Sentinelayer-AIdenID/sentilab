@@ -4,7 +4,7 @@
     "title": "SentiLab",
     "event": "ScienceClaw hackathon",
     "talk": "Five-minute slot: talk, then a live demo",
-    "cutoff": "2026-11-01 04:28 UTC",
+    "cutoff": "2026-11-01 05:02 UTC",
     "variant": "pass",
     "variantLabel": "PASS",
     "preview": false,
@@ -16,9 +16,9 @@
   "budget": {
     "checkWordsPerMinute": 150,
     "slowWordsPerSecond": 2.25,
-    "talkWords": 359,
-    "talkSeconds": 143.6,
-    "talkSlowSeconds": 159.6,
+    "talkWords": 368,
+    "talkSeconds": 147.2,
+    "talkSlowSeconds": 163.6,
     "transitionSeconds": 15,
     "talkCapSeconds": 180,
     "doorWords": 34,
@@ -31,6 +31,14 @@
   "teams": {
     "named": [
       {
+        "name": "Delfie (delphisci team)",
+        "consent": {
+          "room": "32a841e5",
+          "seq": 57644,
+          "at": "2026-11-01T03:45:39.060Z"
+        }
+      },
+      {
         "name": "ScienceClaw",
         "consent": {
           "room": "32a841e5",
@@ -39,7 +47,7 @@
         }
       }
     ],
-    "unnamed": 7
+    "unnamed": 6
   },
   "slides": [
     {
@@ -74,10 +82,10 @@
       "main": true,
       "kicker": "The problem",
       "notes": {
-        "text": "We ran one design from a published paper through two versions of the same popular program: same input files, same special 3D mode the paper's method uses. One predicted about 119 degrees Celsius; the other, about 241.",
-        "words": 37,
-        "seconds": 14.8,
-        "slowSeconds": 16.4
+        "text": "We ran one design from a published paper through two versions of HotSpot, a popular chip-heat simulator: same input files, same special 3D mode the paper's method uses. One predicted about 119 degrees Celsius; the other, about 241.",
+        "words": 38,
+        "seconds": 15.2,
+        "slowSeconds": 16.9
       },
       "content": {
         "layout": "talk",
@@ -126,7 +134,7 @@
           ]
         },
         "still": null,
-        "caption": "The CPU-DRAM reference layout. Both versions run in the detailed-3D mode the published method uses. The ring marks the hottest point of the chip layer. Run 2026-10-31 23:41-23:44 UTC. Simulated, not silicon."
+        "caption": "The CPU-DRAM reference layout. HotSpot 6.0 and 7.0. Design from TAP-2.5D, DATE 2021. Both versions run in the detailed-3D mode the published method uses. The ring marks the hottest point of the chip layer. Run 2026-10-31 23:41-23:44 UTC. Simulated, not silicon."
       },
       "label": "2 / 9"
     },
@@ -135,10 +143,10 @@
       "main": true,
       "kicker": "Where it splits",
       "notes": {
-        "text": "Heat flows up: chips, a metal lid, a cooler, then air. The newer version puts an extra obstacle between the lid and the cooler, and that's exactly where the answers split. Another team reports that with the special mode off, the versions agree.",
-        "words": 43,
-        "seconds": 17.2,
-        "slowSeconds": 19.1
+        "text": "Heat flows up: chips, a metal lid, a cooler, then air. The newer version puts an extra obstacle between the lid and the cooler, and that's where the answers split. Delfie changed just that one step, and most of the gap went away. ScienceClaw re-ran it and got the same numbers.",
+        "words": 51,
+        "seconds": 20.4,
+        "slowSeconds": 22.7
       },
       "content": {
         "layout": "talk",
@@ -186,7 +194,7 @@
           ]
         },
         "still": null,
-        "caption": "The hottest chip point, then the same position through the modeled layers. Metal lid: the heat spreader. Cooler: the heat sink, with its fins lumped into one air-cooling number. Separate check: the difference between separately located layer maxima, from two finite-element solvers and the simulator. One configured model, simulated."
+        "caption": "The hottest chip point, then the same position through the modeled layers. Metal lid: the heat spreader. Cooler: the heat sink, with its fins lumped into one air-cooling number. Separate check: the difference between separately located layer maxima, from two finite-element solvers and the simulator. One configured model, simulated. With the detailed-3D mode off, both versions give the same answer, as reported by Delfie (delphisci team)."
       },
       "label": "3 / 9"
     },
@@ -206,54 +214,71 @@
         "figure": {
           "id": "plain4",
           "src": "figures/plain4-timeline.svg",
-          "sha256": "672b220cdc539e2619aeffc009d7d1c5aac292b2db8deb8aac7051b1562f6356",
+          "sha256": "036788919f1a9f8a6138b139e0da55eac6592dc9dd7b7326155682bd7f1fea71",
           "width": 1664,
-          "height": 548,
-          "scale": 1,
+          "height": 690,
+          "scale": 0.92,
           "minFont": 24,
-          "alt": "Timeline: a person's question at 12:43; an agent's source suspect at 13:15, confirmed 13:28; a public-code model at 14:26; saved output at 14:42; agents halt their own public run at 15:56; a public notice read back live at 16:40; public case at 22:22; an outside team reproduces it at 23:01; the test fixed in advance passes at 23:44; an outside team finite-element result at 00:03.",
+          "alt": "One lane per actor. A person asks at 12:43 why the study came out inconclusive. Three agents post sealed notes between 13:08 and 13:15: agent 3 shows the setup heats up far more than the paper, and agent 1, 32 minutes after the question, names a suspect; agent 2 confirms it at 13:28. Agent 4, run by another person, models it from public code at 14:26. Agent 2 shows the gap in saved results at 14:42. At 15:52 agent 1 proposes stopping the group's own public run; agents 3 and 2 agree; it stops under 5 minutes after the proposal. The numbers are taken back in public at 16:40. Agent 3 posts the public test case at 22:22. Delfie reproduces it at 23:01, 39 minutes after. The test set in advance passes at 23:44. A separate solver follows at 00:03, 1 hour 41 after.",
           "texts": [
-            "6 h",
-            "12:43",
-            "A person asks why the",
-            "study was inconclusive",
-            "13:15",
-            "An agent reads the code,",
-            "names a suspect. Another",
-            "confirms it, 13:28",
-            "14:26",
-            "Another agent models it",
-            "from public code",
-            "14:42",
-            "Saved results show the",
-            "gap. Second check, 14:53",
-            "15:56",
-            "Agents stop their own public",
-            "run, under 5 min after one",
-            "proposed it",
-            "16:40",
-            "Numbers taken",
-            "back in public",
-            "22:22",
-            "Public test",
-            "case posted",
-            "23:01",
-            "Outside team",
-            "reproduces: 39 min",
-            "23:44",
-            "Test set in",
-            "advance: PASS",
-            "00:03",
-            "Second team's",
-            "solver: 1 h 41",
             "A person",
-            "Our agents",
+            "Agent 1",
+            "Agent 2",
+            "Agent 3",
+            "Agent 4",
             "Outside teams",
-            "UTC, 2026-10-31 into 11-01. Linear on each side of the break."
+            "Run stopped in under 5 min",
+            "32 min",
+            "16:40 Numbers taken back in public",
+            "12:43",
+            "Why did our study come out inconclusive?",
+            "13:15",
+            "Sealed notes:",
+            "names a suspect",
+            "15:52",
+            "Proposes stopping",
+            "our own public run",
+            "23:44",
+            "Test set in advance:",
+            "PASS",
+            "13:08",
+            "Sealed notes",
+            "13:28",
+            "Confirms the",
+            "suspect",
+            "14:42",
+            "Saved results",
+            "show the gap",
+            "15:54",
+            "Agrees",
+            "13:15",
+            "Sealed notes: heats up",
+            "far more than the paper",
+            "15:52",
+            "Agrees",
+            "22:22",
+            "Posts the public",
+            "test case",
+            "14:26",
+            "Another person's agent",
+            "models it from public code",
+            "23:01",
+            "Delfie reproduces it,",
+            "39 min after",
+            "00:03",
+            "Separate solver,",
+            "1 h 41 after",
+            "13:00",
+            "14:00",
+            "15:00",
+            "16:00",
+            "23:00",
+            "00:00",
+            "UTC"
           ]
         },
         "still": null,
-        "caption": "Times UTC, from the room and run records. Linear on each side of the break."
+        "caption": "UTC, from the room record, 31 October into 1 November. Linear on each side of the break. Notes were sealed before reading each other's; one agent had seen a one-line preview. Agent 4 had read the suspect before modelling it. Lanes show who contributed what in the room record; they don't prove nobody coordinated."
       },
       "label": "4 / 9"
     },
@@ -273,12 +298,12 @@
         "figure": {
           "id": "plain3",
           "src": "figures/plain3-answers.svg",
-          "sha256": "2003d0c0b9cf445eef3d7694b147b24464131ee767ae9380f2259966491f870a",
+          "sha256": "46b8f03746cc6c7169d6d9bfb9853359df3c4c259cc58f11ff0f0def98c68a71",
           "width": 1664,
-          "height": 450,
-          "scale": 1,
+          "height": 730,
+          "scale": 0.92,
           "minFont": 24,
-          "alt": "The paper's own temperature reading, not the hottest spot. One design, every answer on one line: the published answer, our rerun of the older version and another team's rerun all read 116 degrees C, inside the pass mark set in advance. Two independent solvers read 122, close but not identical. The newer version reads 233.",
+          "alt": "The paper's own temperature reading, not the hottest spot. One design, every answer on one line: the published answer, our rerun of the older version and the reruns by Delfie and ScienceClaw all read 116 degrees C, inside the pass mark set in advance. Two independent solvers read 122, close but not identical. The newer version reads 233, and with one step changed, as Delfie reports and ScienceClaw re-ran, it reads 126. Zoomed in, our rerun sits on the published answer for both published designs: 115.93 against 115.94, and 75.48 against 75.48, both within the 1 degree pass mark.",
           "texts": [
             "50 °C",
             "100 °C",
@@ -287,17 +312,29 @@
             "250 °C",
             "The published answer: 116",
             "Our rerun of the older version: 116",
-            "Another team's rerun of it: 116",
+            "Delfie's and ScienceClaw's reruns: 116",
             "2 independent solvers: 122",
             "Close, not identical. That gap is still open.",
+            "Newer version, one step changed: 126",
+            "as Delfie reports; ScienceClaw re-ran it",
             "Newer version: 233",
-            "ours and another team's",
+            "ours, Delfie's, ScienceClaw's",
             "The paper's own temperature reading, not the hottest spot",
-            "Pass mark set in advance: within 1 degree of the published answer"
+            "Zoomed in: the pass mark, set in advance, is 1 degree either side of the published answer",
+            "This design",
+            "PASS",
+            "1° below",
+            "1° above",
+            "published 115.94, ours 115.93",
+            "The paper's other design",
+            "PASS",
+            "1° below",
+            "1° above",
+            "published 75.48, ours 75.48"
           ]
         },
         "still": null,
-        "caption": "The CPU-DRAM reference, rounded. Older and newer version: the paper's own temperature reading, which in the newer version comes from a substrate block. Solvers: die centres. It reproduces published numbers, not physical accuracy. Simulated, not silicon."
+        "caption": "The CPU-DRAM reference, rounded, on one line. Older and newer version: the paper's own temperature reading, which in the newer version comes from a substrate block. Solvers: die centres. Below, the test on both published designs: 115.93 against 115.94, and 75.48 against 75.48. Delfie's and ScienceClaw's values are as reported by them. It reproduces published numbers, not physical accuracy. Simulated, not silicon."
       },
       "label": "5 / 9"
     },
@@ -315,18 +352,24 @@
         "layout": "talk",
         "title": "A second agent catches what the first approved.",
         "figure": {
-          "id": "fig5",
-          "src": "figures/fig5-waffle.svg",
-          "sha256": "ed392e3bc0e97f76e4ccf23841252276cd3f1f664daf237f58f24fa32a6d7422",
-          "width": 678,
-          "height": 472,
-          "scale": 1.4,
-          "minFont": 24,
-          "alt": "A field of 190 squares, one per catalogued finding: 80 where a later agent was first on record, 17 of them at a version another agent had already approved, and 110 others.",
+          "id": "plain5",
+          "src": "figures/plain5-reviews.svg",
+          "sha256": "36618595f72fc9aff22fa2bddd3efa76a4686957600ff53a51377f61e507869b",
+          "width": 1664,
+          "height": 600,
+          "scale": 1,
+          "minFont": 28,
+          "alt": "A field of 190 squares, one per issue raised across 34 code reviews: 17 at a version another agent had already approved, 63 more where a later agent was first on record, and 110 others.",
           "texts": [
-            "17 at a version another agent had approved",
-            "63 more where a later agent was first",
-            "110 others"
+            "190 issues raised across 34 code reviews",
+            "17",
+            "at a version another",
+            "agent had approved",
+            "63",
+            "more where a later",
+            "agent was first",
+            "110",
+            "others"
           ]
         },
         "still": null,
@@ -339,7 +382,7 @@
       "main": true,
       "kicker": "Other teams",
       "notes": {
-        "text": "The work travels. We offered help to eight teams: two checked our thermal case, three told us other help was useful, and three haven't confirmed. ScienceClaw credits our matchmaking and used our review to fix its package.",
+        "text": "The work travels. We offered help to eight teams: three checked our thermal case, two told us other help was useful, and three haven't confirmed. ScienceClaw credits our matchmaking and used our review to fix its package.",
         "words": 37,
         "seconds": 14.8,
         "slowSeconds": 16.4
@@ -350,16 +393,16 @@
         "figure": {
           "id": "fig6",
           "src": "figures/fig6-teams.svg",
-          "sha256": "f7da1bd65d7cbbd2ad72dad4e6e3dcc9ff944a3152bad62a1794b80f10ce6078",
+          "sha256": "e9eeadb9217c9849f47511795058857b685ad8980079575ae02625af82bf5e79",
           "width": 1664,
           "height": 760,
           "scale": 0.92,
           "minFont": 24,
-          "alt": "Map of what travelled between SentiLab and eight outside teams. Used it and returned a result: An outside team, An outside team. Said it helped: ScienceClaw, An outside team, An outside team. Not confirmed yet: An outside team, An outside team, An outside team. Between other teams: An outside team to An outside team: physics anchors; ScienceClaw to An outside team: fracture package; ScienceClaw to An outside team: blind panel solve, compared; An outside team to An outside team: evaluation notes.",
+          "alt": "Map of what travelled between SentiLab and eight outside teams. Used it and returned a result: Delfie, ScienceClaw, An outside team. Said it helped: An outside team, An outside team. Not confirmed yet: An outside team, An outside team, An outside team. Between other teams: Delfie to An outside team: physics anchors; ScienceClaw to An outside team: fracture package; ScienceClaw to An outside team: blind solve, compared; An outside team to An outside team: evaluation notes.",
           "texts": [
             "public test case",
             "rigidity tool",
-            "matchmaking, review",
+            "public case, review",
             "benchmark, public case",
             "shot-cost points",
             "test harness",
@@ -367,18 +410,18 @@
             "answers, knowledge base",
             "physics anchors",
             "fracture package",
-            "blind panel solve, compared",
+            "blind solve, compared",
             "evaluation notes",
             "SentiLab",
-            "An outside team",
-            "Both versions on our case,",
-            "39 min after it went public",
+            "Delfie",
+            "Both versions on our case in",
+            "39 min. Then tested one change",
             "An outside team",
             "Ran through the open-source",
             "ScienceClaw registry, executor",
             "ScienceClaw",
-            "“your matchmaking”, then used",
-            "our review to fix its package",
+            "Re-ran our case: same numbers.",
+            "Used our review on its package",
             "An outside team",
             "Separate solver on our",
             "case, in 1 h 41",
@@ -394,14 +437,14 @@
             "An outside team",
             "“Yes, yours helped.”",
             "Then it corrected a claim of ours",
-            "2 checked our thermal case",
-            "3 said other help was useful",
+            "3 checked our thermal case",
+            "2 said other help was useful",
             "3 haven't confirmed yet",
             "between other teams"
           ]
         },
         "still": null,
-        "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 02:44 UTC. Only teams that agreed are named."
+        "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 04:01 UTC. Only teams that agreed are named."
       },
       "label": "7 / 9"
     },
@@ -422,7 +465,52 @@
         "statement": {
           "text": "An optimizer is only as reliable as the tool grading it.",
           "sub": "Independent checks expose disagreements before we build on them."
-        }
+        },
+        "figure": {
+          "id": "plain6",
+          "src": "figures/plain6-why.svg",
+          "sha256": "b47128e9a4c1b5d153ce9a2da050643ff57931266b0e908857795094bf0381a8",
+          "width": 1664,
+          "height": 600,
+          "scale": 0.92,
+          "minFont": 24,
+          "alt": "Four cards. Three teams, ours, Delfie and ScienceClaw, get the same numbers on their own machines: 116 on the older version, 233 on the newer. One step: changing only that takes the gap to the older version from 117 degrees to 10, as Delfie reports and ScienceClaw re-ran. One test, set in advance, passed within 1 degree; the challenge will use only the build that passed. Zero verified better layouts so far, which is the challenge: your agent?",
+          "texts": [
+            "3 teams",
+            "Same numbers, each on",
+            "its own machine",
+            "1 step",
+            "Change only that, and",
+            "about nine-tenths of",
+            "the gap goes away",
+            "1 test",
+            "Set in advance. The",
+            "challenge will use only",
+            "the build that passed",
+            "0",
+            "verified better layouts",
+            "so far. That's the",
+            "challenge",
+            "116",
+            "233",
+            "Ours",
+            "Delfie",
+            "ScienceClaw",
+            "older",
+            "newer",
+            "Gap to the older version",
+            "Before",
+            "117 degrees",
+            "After",
+            "10 degrees",
+            "as Delfie reports;",
+            "ScienceClaw re-ran it",
+            "within 1 degree",
+            "PASS",
+            "Your agent?"
+          ]
+        },
+        "caption": "Reruns agree to 0.01 °C, as each team reports them. Gap: CPU-DRAM reference, from the reported table, 232.67 to 125.52 against 115.94. One configured model, simulated."
       },
       "label": "8 / 9"
     },
@@ -526,7 +614,7 @@
       "main": false,
       "kicker": "Where it opens",
       "notes": {
-        "text": "Here's where it opens. Follow the hottest cell down through the modeled layers: between the spreader and the sink, the difference is 4 kelvin in 6.0 and 142 in 7.0. The public source computes that link differently. An outside team ran both versions with the detailed 3-D mode off and got the same answer, as reported by them.",
+        "text": "Here's where it opens. Follow the hottest cell down through the modeled layers: between the spreader and the sink, the difference is 4 kelvin in 6.0 and 142 in 7.0. The public source computes that link differently. Delfie (delphisci team) ran both versions with the detailed 3-D mode off and got the same answer, as reported by them.",
         "words": 58,
         "seconds": 23.2,
         "slowSeconds": 25.8
@@ -576,7 +664,7 @@
           ]
         },
         "text": "In public source, the spreader-to-sink link is `rz(n)` in HotSpot 6.0 and `rz(n)/2 + rz(n+1)/2` in 7.0, and the sink's `rz` includes convection. Our old results used 7.0.",
-        "credit": "An outside team ran both versions with the detailed 3-D mode off: both give 75.37 C and 115.29 C, as reported by them.",
+        "credit": "Delfie (delphisci team) ran both versions with the detailed 3-D mode off: both give 75.37 C and 115.29 C, as reported by them.",
         "caption": "The CPU-DRAM layout: each run's hottest chip-layer cell, then the same x/y grid index through the modeled layers, shown exploded. Spreader to sink: 4.04 K in 6.0, 141.77 K in 7.0. Modeled nodes, not a copper layer. This localizes the difference; it does not by itself show a single cause. Panel at right: Difference of independently located layer maxima; FE nodal versus HotSpot grid readouts. One configured model, simulated."
       },
       "label": "B2"
@@ -596,14 +684,13 @@
         "figure": {
           "id": "fig4",
           "src": "figures/fig4-timeline.svg",
-          "sha256": "f7c374dae55b67ec326af096e3bbc716825235a66e0b8043077dbd6ee636d41e",
+          "sha256": "f74e70fdecce3dd16209bbe6308866be2321a1a2a2d7162b351a213c50737c73",
           "width": 1664,
           "height": 548,
           "scale": 1,
           "minFont": 24,
-          "alt": "Timeline, 31 October into 1 November, UTC: a person's question at 12:43; a suspect named at 13:15 and confirmed at 13:28; a model from public code at 14:26; saved output at 14:42, re-read at 14:53; agents halt their own public run at 15:56; the public notice read back at 16:40; the public test case at 22:22; an outside team reproduces it at 23:01; the fixed test passes at 23:44; a second outside team's finite-element result at 00:03.",
+          "alt": "Timeline, 31 October into 1 November, UTC: a person's question at 12:43; a suspect named at 13:15 and confirmed at 13:28; a model from public code at 14:26; saved output at 14:42, re-read at 14:53; agents halt their own public run at 15:56; the public notice read back at 16:40; the public test case at 22:22; Delfie (delphisci team) reproduces it at 23:01; the fixed test passes at 23:44; an outside team's finite-element result at 00:03.",
           "texts": [
-            "6 h",
             "12:43",
             "A person asks why the",
             "result is inconclusive",
@@ -629,14 +716,14 @@
             "Public test",
             "case posted",
             "23:01",
-            "An outside team",
-            "reproduces it: 39 min",
+            "Delfie reproduces",
+            "it: 39 min",
             "23:44",
             "Fixed test:",
             "PASS",
             "00:03",
-            "A second outside",
-            "team’s FE: 1 h 41",
+            "Outside finite-",
+            "element solve: 1 h 41",
             "A person",
             "Our agents",
             "Outside teams",
@@ -666,10 +753,10 @@
       "main": false,
       "kicker": "The test fixed in advance",
       "notes": {
-        "text": "We fixed a test in advance: the older version must reproduce both published numbers within one kelvin. It passed, which reproduces those numbers but does not prove physical accuracy. A second reviewer has independently re-derived it from the signed raw outputs. Two outside teams checked us, as reported by them: an outside team ran both versions, and a second outside team used its own finite-element code.",
-        "words": 66,
-        "seconds": 26.4,
-        "slowSeconds": 29.3
+        "text": "We fixed a test in advance: the older version must reproduce both published numbers within one kelvin. It passed, which reproduces those numbers but does not prove physical accuracy. A second reviewer has independently re-derived it from the signed raw outputs. Two outside teams checked us, as reported by them: Delfie (delphisci team) ran both versions, and an outside team used its own finite-element code.",
+        "words": 65,
+        "seconds": 26,
+        "slowSeconds": 28.9
       },
       "content": {
         "title": "The link differs between versions. We fixed the test first.",
@@ -681,7 +768,7 @@
         "figure": {
           "id": "fig3",
           "src": "figures/fig3-agreement.svg",
-          "sha256": "bae74075a1612dfddb357379982ffe14b964e368afecdb298c69b4faa46082a9",
+          "sha256": "2e8a7acfe1ac2e829afab8ceb74fa232495bf4e198fd168288e0d9220a45aeab",
           "width": 1664,
           "height": 560,
           "scale": 0.92,
@@ -696,21 +783,21 @@
             "Layout A",
             "Paper 75.48",
             "Our run 75.48",
-            "Outside 75.48",
+            "Delfie 75.48",
             "78.06 Outside",
             "78.04 Our solve",
             "123.42 Our run",
-            "123.42 Outside",
+            "123.42 Delfie",
             "2.57×",
             "the rise in 7.0",
             "CPU-DRAM",
             "Paper 115.94",
             "Our run 115.93",
-            "Outside 115.94",
+            "Delfie 115.94",
             "122.25 Outside",
             "122.21 Our solve",
             "Our run 232.67",
-            "Outside 232.67",
+            "Delfie 232.67",
             "2.65×",
             "the rise in 7.0",
             "HotSpot 6.0",
@@ -788,7 +875,7 @@
       "main": false,
       "kicker": "Other teams",
       "notes": {
-        "text": "And the work travels. We offered help to eight outside teams: two checked our thermal case, three told us other help was useful, and three haven't confirmed. ScienceClaw credited our matchmaking, and later used our review to fix its package. Our rigidity skill ran through the open-source ScienceClaw registry and executor.",
+        "text": "And the work travels. We offered help to eight outside teams: three checked our thermal case, two told us other help was useful, and three haven't confirmed. ScienceClaw credited our matchmaking, and later used our review to fix its package. Our rigidity skill ran through the open-source ScienceClaw registry and executor.",
         "words": 51,
         "seconds": 20.4,
         "slowSeconds": 22.7
@@ -798,16 +885,16 @@
         "figure": {
           "id": "fig6",
           "src": "figures/fig6-teams.svg",
-          "sha256": "f7da1bd65d7cbbd2ad72dad4e6e3dcc9ff944a3152bad62a1794b80f10ce6078",
+          "sha256": "e9eeadb9217c9849f47511795058857b685ad8980079575ae02625af82bf5e79",
           "width": 1664,
           "height": 760,
           "scale": 0.92,
           "minFont": 24,
-          "alt": "Map of what travelled between SentiLab and eight outside teams. Used it and returned a result: An outside team, An outside team. Said it helped: ScienceClaw, An outside team, An outside team. Not confirmed yet: An outside team, An outside team, An outside team. Between other teams: An outside team to An outside team: physics anchors; ScienceClaw to An outside team: fracture package; ScienceClaw to An outside team: blind panel solve, compared; An outside team to An outside team: evaluation notes.",
+          "alt": "Map of what travelled between SentiLab and eight outside teams. Used it and returned a result: Delfie, ScienceClaw, An outside team. Said it helped: An outside team, An outside team. Not confirmed yet: An outside team, An outside team, An outside team. Between other teams: Delfie to An outside team: physics anchors; ScienceClaw to An outside team: fracture package; ScienceClaw to An outside team: blind solve, compared; An outside team to An outside team: evaluation notes.",
           "texts": [
             "public test case",
             "rigidity tool",
-            "matchmaking, review",
+            "public case, review",
             "benchmark, public case",
             "shot-cost points",
             "test harness",
@@ -815,18 +902,18 @@
             "answers, knowledge base",
             "physics anchors",
             "fracture package",
-            "blind panel solve, compared",
+            "blind solve, compared",
             "evaluation notes",
             "SentiLab",
-            "An outside team",
-            "Both versions on our case,",
-            "39 min after it went public",
+            "Delfie",
+            "Both versions on our case in",
+            "39 min. Then tested one change",
             "An outside team",
             "Ran through the open-source",
             "ScienceClaw registry, executor",
             "ScienceClaw",
-            "“your matchmaking”, then used",
-            "our review to fix its package",
+            "Re-ran our case: same numbers.",
+            "Used our review on its package",
             "An outside team",
             "Separate solver on our",
             "case, in 1 h 41",
@@ -842,13 +929,13 @@
             "An outside team",
             "“Yes, yours helped.”",
             "Then it corrected a claim of ours",
-            "2 checked our thermal case",
-            "3 said other help was useful",
+            "3 checked our thermal case",
+            "2 said other help was useful",
             "3 haven't confirmed yet",
             "between other teams"
           ]
         },
-        "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 02:44 UTC; a dated snapshot. Only teams that agreed are named. Our own help-room leaderboard is not used as evidence."
+        "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 04:01 UTC; a dated snapshot. Only teams that agreed are named. Our own help-room leaderboard is not used as evidence."
       },
       "label": "B6"
     },
@@ -1059,7 +1146,7 @@
           },
           {
             "at": "23:01",
-            "text": "An outside team runs both simulator versions on that case, 39 minutes later: 75.48 C and 115.94 C in 6.0, 123.42 C and 232.67 C in 7.0, as reported by them."
+            "text": "Delfie (delphisci team) runs both simulator versions on that case, 39 minutes later: 75.48 C and 115.94 C in 6.0, 123.42 C and 232.67 C in 7.0, as reported by them."
           },
           {
             "at": "23:44",
@@ -1067,7 +1154,7 @@
           },
           {
             "at": "00:03",
-            "text": "A second outside team reports its own finite-element result, 1 h 41 after the case went up: 78.060 C and 122.252 C, as reported by them."
+            "text": "An outside team reports its own finite-element result, 1 h 41 after the case went up: 78.060 C and 122.252 C, as reported by them."
           }
         ]
       },
@@ -1372,7 +1459,7 @@
           "pr": 56,
           "state": "merged",
           "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
-          "checked": "checked 2026-11-01 04:26 UTC"
+          "checked": "checked 2026-11-01 05:00 UTC"
         },
         "result": {
           "label": "PASS",
@@ -1574,84 +1661,84 @@
       "content": {
         "title": "Pull requests behind this talk, with their state at the check time.",
         "repo": "Sentinelayer-AIdenID/sentilab",
-        "checked": "checked 2026-11-01 04:26 UTC",
+        "checked": "checked 2026-11-01 05:00 UTC",
         "rows": [
           {
             "number": "#56",
             "what": "Gate zero: the older simulator version behind the fixed test",
             "state": "merged",
             "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
-            "checked": "checked 2026-11-01 04:26 UTC"
+            "checked": "checked 2026-11-01 05:00 UTC"
           },
           {
             "number": "#73",
             "what": "Gate zero: pin the operator's public key",
             "state": "merged",
             "text": "merged as 1575556d at 2026-10-31 23:40 UTC",
-            "checked": "checked 2026-11-01 04:26 UTC"
+            "checked": "checked 2026-11-01 05:00 UTC"
           },
           {
             "number": "#57",
             "what": "Reference layouts from the paper, plus the paper's wire router",
             "state": "merged",
             "text": "merged as d298cb00 at 2026-10-31 18:04 UTC",
-            "checked": "checked 2026-11-01 04:26 UTC"
+            "checked": "checked 2026-11-01 05:00 UTC"
           },
           {
             "number": "#58",
             "what": "Public notice: pre-correction temperatures withdrawn",
             "state": "merged",
             "text": "merged as 568dd397 at 2026-10-31 16:27 UTC",
-            "checked": "checked 2026-11-01 04:26 UTC"
+            "checked": "checked 2026-11-01 05:00 UTC"
           },
           {
             "number": "#60",
             "what": "Notice on the leaderboard and verify pages",
             "state": "merged",
             "text": "merged as 551777a9 at 2026-10-31 17:59 UTC",
-            "checked": "checked 2026-11-01 04:26 UTC"
+            "checked": "checked 2026-11-01 05:00 UTC"
           },
           {
             "number": "#64",
             "what": "Every temperature carries its own qualifier",
             "state": "merged",
             "text": "merged as d2504625 at 2026-10-31 19:38 UTC",
-            "checked": "checked 2026-11-01 04:26 UTC"
+            "checked": "checked 2026-11-01 05:00 UTC"
           },
           {
             "number": "#61",
             "what": "Test fix: a guard pattern held raw control bytes",
             "state": "merged",
             "text": "merged as a5744f3a at 2026-10-31 16:48 UTC",
-            "checked": "checked 2026-11-01 04:26 UTC"
+            "checked": "checked 2026-11-01 05:00 UTC"
           },
           {
             "number": "#59",
             "what": "Design: outside agents propose layouts",
             "state": "merged",
             "text": "merged as 4f6ad0cb at 2026-10-31 17:53 UTC",
-            "checked": "checked 2026-11-01 04:26 UTC"
+            "checked": "checked 2026-11-01 05:00 UTC"
           },
           {
             "number": "#55",
             "what": "Measured run profiles; refuse to start when calls cannot fit the cap",
             "state": "merged",
             "text": "merged as 315bbff4 at 2026-10-31 15:38 UTC",
-            "checked": "checked 2026-11-01 04:26 UTC"
+            "checked": "checked 2026-11-01 05:00 UTC"
           },
           {
             "number": "#37",
             "what": "Allocation controller for simulator runs in CI",
             "state": "merged",
             "text": "merged as 224fa704 at 2026-10-31 17:09 UTC",
-            "checked": "checked 2026-11-01 04:26 UTC"
+            "checked": "checked 2026-11-01 05:00 UTC"
           },
           {
             "number": "#25",
             "what": "Headroom study runner; its result is INCONCLUSIVE, kept as recorded",
             "state": "merged",
             "text": "merged as deb24670 at 2026-10-31 12:05 UTC",
-            "checked": "checked 2026-11-01 04:26 UTC"
+            "checked": "checked 2026-11-01 05:00 UTC"
           }
         ]
       },
@@ -1676,11 +1763,11 @@
           },
           {
             "label": "Reproduction",
-            "text": "An outside team: both simulator versions built from source and run on that case: 75.48 C and 115.94 C in 6.0, 123.42 C and 232.67 C in 7.0; with the detailed 3-D mode off, both give 75.37 C and 115.29 C. As reported by them."
+            "text": "Delfie (delphisci team): both simulator versions built from source and run on that case: 75.48 C and 115.94 C in 6.0, 123.42 C and 232.67 C in 7.0; with the detailed 3-D mode off, both give 75.37 C and 115.29 C. As reported by them."
           },
           {
             "label": "Finite element",
-            "text": "A second outside team (public repository, frozen report at commit c73d642b): second-order elements on the finest mesh, about 1.6 to 1.7 million unknowns: 78.060 C and 122.252 C, +2.58 K and +6.31 K over the paper. As reported by them."
+            "text": "An outside team (public repository, frozen report at commit c73d642b): second-order elements on the finest mesh, about 1.6 to 1.7 million unknowns: 78.060 C and 122.252 C, +2.58 K and +6.31 K over the paper. As reported by them."
           },
           {
             "label": "Exposure",
@@ -1697,7 +1784,7 @@
         ],
         "notYet": "Not yet in the record: the finite-element team's slab run through our own evaluator.",
         "notEvidence": "Not counted as evidence: our help-room leaderboard. Our own host's model scores it, so it is not independent.",
-        "names": "Named with their consent, on record in the help room: ScienceClaw. The other 7 teams are not named here."
+        "names": "Named with their consent, on record in the help room: Delfie (delphisci team), ScienceClaw. The other 6 teams are not named here."
       },
       "label": "B21"
     },
@@ -1729,6 +1816,10 @@
           {
             "q": "Why more than one agent?",
             "a": "Later reviewers caught issues after earlier approvals. That's what our work record shows, not a controlled experiment."
+          },
+          {
+            "q": "What happens with the special 3D mode off?",
+            "a": "Both versions give the same answer, as reported by Delfie (delphisci team)."
           }
         ]
       },
@@ -1738,14 +1829,14 @@
   "build": {
     "gate": "pass",
     "measured": "75.48,115.93",
-    "cutoff": "2026-11-01T04:28:00Z",
+    "cutoff": "2026-11-01T05:02:00Z",
     "preview": false,
     "rederived": true,
     "demoStatus": "replay",
     "demoReview": false
   },
   "source": {
-    "finalSha256": "283eecb5a05984a2eef675e75adbccb0dc5298707ae845077de8d652d278a9e4",
-    "schemaSha256": "18fb84b1b428c9d51a607a0a0132df261bde2f8ac823d78280f01d572ed80f1f"
+    "finalSha256": "d2c5fdfe83b6440ccb83294c155dcfe8eb1e5362aec07dfd6480ee2e13e477d4",
+    "schemaSha256": "8e1122c7e6960e9bca782c2c6d06b59c068e132b77213dbc642392c2a3cd0bd7"
   }
 }

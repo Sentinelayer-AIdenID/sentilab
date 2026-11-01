@@ -5,7 +5,7 @@
     "event": "ScienceClaw hackathon",
     "talk": "Five-minute slot: talk, then a live demo"
   },
-  "cutoff": "2026-11-01T04:28:00Z",
+  "cutoff": "2026-11-01T05:02:00Z",
   "talk": {
     "maxSeconds": 300,
     "talkCapSeconds": 180,
@@ -1052,7 +1052,7 @@
           "head": "83995e783274c3504a36da4ea170527891a3d903",
           "merge": "bba120dc848b8ae802f474945842bf268ddcfa99",
           "mergedAt": "2026-10-31T23:04:17Z",
-          "checkedAt": "2026-11-01T04:26:00Z"
+          "checkedAt": "2026-11-01T05:00:00Z"
         },
         {
           "number": 73,
@@ -1061,7 +1061,7 @@
           "head": "2d35e9cd5eae33cf0f97574e0a43953b76563e01",
           "merge": "1575556dda2ac77ac49823cce7fad5ed8eaa55b3",
           "mergedAt": "2026-10-31T23:40:43Z",
-          "checkedAt": "2026-11-01T04:26:00Z"
+          "checkedAt": "2026-11-01T05:00:00Z"
         },
         {
           "number": 57,
@@ -1070,7 +1070,7 @@
           "head": "a48ceec587d2e8f0370c170c8e0aedc204646b18",
           "merge": "d298cb007081e9ad9334e3d77d412d789c126b0c",
           "mergedAt": "2026-10-31T18:04:42Z",
-          "checkedAt": "2026-11-01T04:26:00Z"
+          "checkedAt": "2026-11-01T05:00:00Z"
         },
         {
           "number": 58,
@@ -1079,7 +1079,7 @@
           "head": "fd2870e8c381e901af6fc0cef40a1a9628600eea",
           "merge": "568dd397a08d2fca209958d7f011e75346a79e0b",
           "mergedAt": "2026-10-31T16:27:35Z",
-          "checkedAt": "2026-11-01T04:26:00Z"
+          "checkedAt": "2026-11-01T05:00:00Z"
         },
         {
           "number": 60,
@@ -1088,7 +1088,7 @@
           "head": "e2c0cd903a134120a47d70efc93f2e83161a1233",
           "merge": "551777a9516cc81e905ccc2daf4955d32151ac14",
           "mergedAt": "2026-10-31T17:59:15Z",
-          "checkedAt": "2026-11-01T04:26:00Z"
+          "checkedAt": "2026-11-01T05:00:00Z"
         },
         {
           "number": 64,
@@ -1097,7 +1097,7 @@
           "head": "61debcef081c201f1b9fb3cc4d1c1da7b361e712",
           "merge": "d25046256b4a712b529977f31e10b7e32248a9c0",
           "mergedAt": "2026-10-31T19:38:22Z",
-          "checkedAt": "2026-11-01T04:26:00Z"
+          "checkedAt": "2026-11-01T05:00:00Z"
         },
         {
           "number": 61,
@@ -1106,7 +1106,7 @@
           "head": "3513ad709165a6afa43e665929a8e5f10908f885",
           "merge": "a5744f3ac4f1142924368687a6762f8aed696ed9",
           "mergedAt": "2026-10-31T16:48:53Z",
-          "checkedAt": "2026-11-01T04:26:00Z"
+          "checkedAt": "2026-11-01T05:00:00Z"
         },
         {
           "number": 59,
@@ -1115,7 +1115,7 @@
           "head": "259ce51fbbd3fa51dcdb41d2c0c7e78de069d237",
           "merge": "4f6ad0cb7779037287ff522045793943f6c023ba",
           "mergedAt": "2026-10-31T17:53:53Z",
-          "checkedAt": "2026-11-01T04:26:00Z"
+          "checkedAt": "2026-11-01T05:00:00Z"
         },
         {
           "number": 55,
@@ -1124,7 +1124,7 @@
           "head": "70519dd3b45cef2341adf8fdbeeaebeee3b45699",
           "merge": "315bbff4458dd6d033a74549b7f4b89765bf5835",
           "mergedAt": "2026-10-31T15:38:53Z",
-          "checkedAt": "2026-11-01T04:26:00Z"
+          "checkedAt": "2026-11-01T05:00:00Z"
         },
         {
           "number": 37,
@@ -1133,7 +1133,7 @@
           "head": "113c1347cb154c4f909783dde17f531ad1267235",
           "merge": "224fa7044bc7a80991bc9995b829e30c170d9842",
           "mergedAt": "2026-10-31T17:09:11Z",
-          "checkedAt": "2026-11-01T04:26:00Z"
+          "checkedAt": "2026-11-01T05:00:00Z"
         },
         {
           "number": 25,
@@ -1142,7 +1142,7 @@
           "head": "a10063d432d776f3bf43ee6d8b8efbee4d6b5032",
           "merge": "deb24670f53bada97cc965d282f6bcf68c338d1e",
           "mergedAt": "2026-10-31T12:05:13Z",
-          "checkedAt": "2026-11-01T04:26:00Z"
+          "checkedAt": "2026-11-01T05:00:00Z"
         }
       ]
     },
@@ -1345,6 +1345,10 @@
         {
           "q": "Why more than one agent?",
           "a": "Later reviewers caught issues after earlier approvals. That's what our work record shows, not a controlled experiment."
+        },
+        {
+          "q": "What happens with the special 3D mode off?",
+          "a": "Both versions give the same answer, as reported by Delfie (delphisci team)."
         }
       ],
       "records": [
@@ -1359,6 +1363,12 @@
           "ref": "reply 785deb6e-634d-480f-8fd9-57ab25fa3333 to seq 57608",
           "author": "gpt-astra-carter",
           "at": "2026-11-01T03:40:48.686Z"
+        },
+        {
+          "room": "32a841e5",
+          "ref": "seq 57312",
+          "author": "delfie-claude",
+          "at": "2026-10-31T23:01:16.766Z"
         }
       ]
     }
@@ -1366,7 +1376,8 @@
   "teams": {
     "delfie": {
       "name": "Delfie",
-      "consent": null
+      "credit": "Delfie (delphisci team)",
+      "consent": "32a841e5 seq 57644 at 2026-11-01T03:45:39.060Z"
     },
     "feagent": {
       "name": "FEAgent",
@@ -1490,11 +1501,11 @@
     },
     "fig4": {
       "file": "fig4-timeline.svg",
-      "sha256": "8c478904194b50bddf4e46204b40c1aad642bbfce5f35b446169bb4c2cc92bbe",
+      "sha256": "fb3d8ac9d55146e7c3566d17bb25b1c6b1f03c81525c81d4831a470eaf57378b",
       "width": 1664,
       "height": 548,
       "scale": 1,
-      "alt": "Timeline, 31 October into 1 November, UTC: a person's question at 12:43; a suspect named at 13:15 and confirmed at 13:28; a model from public code at 14:26; saved output at 14:42, re-read at 14:53; agents halt their own public run at 15:56; the public notice read back at 16:40; the public test case at 22:22; an outside team reproduces it at 23:01; the fixed test passes at 23:44; a second outside team's finite-element result at 00:03.",
+      "alt": "Timeline, 31 October into 1 November, UTC: a person's question at 12:43; a suspect named at 13:15 and confirmed at 13:28; a model from public code at 14:26; saved output at 14:42, re-read at 14:53; agents halt their own public run at 15:56; the public notice read back at 16:40; the public test case at 22:22; {delfie} reproduces it at 23:01; the fixed test passes at 23:44; {feagent}'s finite-element result at 00:03.",
       "edits": [],
       "teamText": [
         {
@@ -1506,16 +1517,6 @@
           "team": "delfie",
           "from": "it: 39 min",
           "anon": "reproduces it: 39 min"
-        },
-        {
-          "team": "feagent",
-          "from": "FEAgent’s finite",
-          "anon": "A second outside"
-        },
-        {
-          "team": "feagent",
-          "from": "element: 1 h 41",
-          "anon": "team’s FE: 1 h 41"
         }
       ],
       "claims": [
@@ -1700,7 +1701,7 @@
     },
     "fig6": {
       "file": "fig6-teams.svg",
-      "sha256": "f7da1bd65d7cbbd2ad72dad4e6e3dcc9ff944a3152bad62a1794b80f10ce6078",
+      "sha256": "e9eeadb9217c9849f47511795058857b685ad8980079575ae02625af82bf5e79",
       "width": 1664,
       "height": 760,
       "scale": 0.92,
@@ -1825,6 +1826,7 @@
       ],
       "keepLabel": true,
       "drawnFor": [
+        "delfie",
         "scienceclaw"
       ]
     },
@@ -1852,25 +1854,24 @@
     },
     "plain3": {
       "file": "plain3-answers.svg",
-      "sha256": "30cc868056af7398749abdccc9d1d99ff956b9395093159dd58ca7f260d8239d",
+      "sha256": "e4a79736d5f841ebc5bc92043e7280bdcb137aea5b44d10dbe85ea7e9390c9e0",
       "width": 1664,
-      "height": 450,
-      "scale": 1,
-      "alt": "The paper's own temperature reading, not the hottest spot. One design, every answer on one line: the published answer, our rerun of the older version and another team's rerun all read 116 degrees C, inside the pass mark set in advance. Two independent solvers read 122, close but not identical. The newer version reads 233.",
+      "height": 730,
+      "scale": 0.92,
+      "alt": "The paper's own temperature reading, not the hottest spot. One design, every answer on one line: the published answer, our rerun of the older version and the reruns by Delfie and ScienceClaw all read 116 degrees C, inside the pass mark set in advance. Two independent solvers read 122, close but not identical. The newer version reads 233, and with one step changed, as Delfie reports and ScienceClaw re-ran, it reads 126. Zoomed in, our rerun sits on the published answer for both published designs: 115.93 against 115.94, and 75.48 against 75.48, both within the 1 degree pass mark.",
       "edits": [],
       "teamText": [],
       "keepLabel": false
     },
     "plain4": {
       "file": "plain4-timeline.svg",
-      "sha256": "672b220cdc539e2619aeffc009d7d1c5aac292b2db8deb8aac7051b1562f6356",
+      "sha256": "036788919f1a9f8a6138b139e0da55eac6592dc9dd7b7326155682bd7f1fea71",
       "width": 1664,
-      "height": 548,
-      "scale": 1,
+      "height": 690,
+      "scale": 0.92,
       "alt": "aneta's own accessible label, served with the figure byte for byte.",
       "edits": [],
       "teamText": [],
-      "keepLabel": true,
       "claims": [
         {
           "label": "12:43",
@@ -1885,6 +1886,18 @@
           ]
         },
         {
+          "label": "13:08",
+          "at": "2026-10-31T13:08:41.715Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56630",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T13:08:41.715Z"
+            }
+          ]
+        },
+        {
           "label": "13:15",
           "at": "2026-10-31T13:15:38.133Z",
           "records": [
@@ -1893,6 +1906,12 @@
               "ref": "seq 56645",
               "author": "claude-warden",
               "at": "2026-10-31T13:15:38.133Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "seq 56643",
+              "author": "pocket-forge",
+              "at": "2026-10-31T13:15:06.262Z"
             }
           ]
         },
@@ -1933,33 +1952,32 @@
           ]
         },
         {
-          "label": "14:53",
-          "at": "2026-10-31T14:53:42.106Z",
+          "label": "15:52",
+          "at": "2026-10-31T15:52:12.966Z",
           "records": [
-            {
-              "room": "608657e4",
-              "ref": "seq 56778",
-              "author": "gpt-astra-carter",
-              "at": "2026-10-31T14:53:42.106Z"
-            }
-          ]
-        },
-        {
-          "label": "15:56",
-          "at": "2026-10-31T15:56:58.678Z",
-          "records": [
-            {
-              "room": "608657e4",
-              "ref": "seq 56870",
-              "author": "claude-warden",
-              "at": "2026-10-31T15:57:47.392Z",
-              "stated": "2026-10-31T15:56:58.678Z"
-            },
             {
               "room": "608657e4",
               "ref": "seq 56865",
               "author": "claude-warden",
               "at": "2026-10-31T15:52:12.966Z"
+            },
+            {
+              "room": "608657e4",
+              "ref": "reply 67f2695a-a23d-4b5c-8ee3-823bd045cf3a to seq 56865",
+              "author": "pocket-forge",
+              "at": "2026-10-31T15:52:59.507Z"
+            }
+          ]
+        },
+        {
+          "label": "15:54",
+          "at": "2026-10-31T15:54:53.253Z",
+          "records": [
+            {
+              "room": "608657e4",
+              "ref": "seq 56866",
+              "author": "gpt-astra-carter",
+              "at": "2026-10-31T15:54:53.253Z"
             }
           ]
         },
@@ -2028,6 +2046,12 @@
       ],
       "durations": [
         {
+          "text": "32 min",
+          "from": "12:43",
+          "to": "13:15",
+          "rule": "round"
+        },
+        {
           "text": "39 min",
           "from": "22:22",
           "to": "23:01",
@@ -2039,7 +2063,30 @@
           "to": "00:03",
           "rule": "round"
         }
-      ]
+      ],
+      "keepLabel": true
+    },
+    "plain5": {
+      "file": "plain5-reviews.svg",
+      "sha256": "c0773bfb8432beaa71d6970a967b3b84ce5b2911517fab2ec2febeb97c38ce3b",
+      "width": 1664,
+      "height": 600,
+      "scale": 1,
+      "alt": "A field of 190 squares, one per issue raised across 34 code reviews: 17 at a version another agent had already approved, 63 more where a later agent was first on record, and 110 others.",
+      "edits": [],
+      "teamText": [],
+      "keepLabel": false
+    },
+    "plain6": {
+      "file": "plain6-why.svg",
+      "sha256": "b47128e9a4c1b5d153ce9a2da050643ff57931266b0e908857795094bf0381a8",
+      "width": 1664,
+      "height": 600,
+      "scale": 0.92,
+      "alt": "aneta's own accessible label, served with the figure byte for byte.",
+      "edits": [],
+      "teamText": [],
+      "keepLabel": true
     }
   },
   "stack": {
@@ -2116,8 +2163,8 @@
     "kicker": "Other teams",
     "title": "Other teams build on it, and with each other.",
     "figure": "fig6",
-    "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 02:44 UTC; a dated snapshot. Only teams that agreed are named. Our own help-room leaderboard is not used as evidence.",
-    "notes": "And the work travels. We offered help to eight outside teams: two checked our thermal case, three told us other help was useful, and three haven't confirmed. {ScienceClaw} credited our matchmaking, and later used our review to fix its package. Our rigidity skill ran through the open-source ScienceClaw registry and executor."
+    "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 04:01 UTC; a dated snapshot. Only teams that agreed are named. Our own help-room leaderboard is not used as evidence.",
+    "notes": "And the work travels. We offered help to eight outside teams: three checked our thermal case, two told us other help was useful, and three haven't confirmed. {ScienceClaw} credited our matchmaking, and later used our review to fix its package. Our rigidity skill ran through the open-source ScienceClaw registry and executor."
   },
   "stills": {
     "view3d": {
@@ -2161,21 +2208,21 @@
         "id": "talk2",
         "kicker": "The problem",
         "title": "Same design, same files: 119 °C or 241 °C?",
-        "say": "We ran one design from a published paper through two versions of the same popular program: same input files, same special 3D mode the paper's method uses. One predicted about 119 degrees Celsius; the other, about 241.",
+        "say": "We ran one design from a published paper through two versions of HotSpot, a popular chip-heat simulator: same input files, same special 3D mode the paper's method uses. One predicted about 119 degrees Celsius; the other, about 241.",
         "picture": {
           "figure": "plain1"
         },
-        "caption": "The CPU-DRAM reference layout. Both versions run in the detailed-3D mode the published method uses. The ring marks the hottest point of the chip layer. Run 2026-10-31 23:41-23:44 UTC. Simulated, not silicon."
+        "caption": "The CPU-DRAM reference layout. HotSpot 6.0 and 7.0. Design from TAP-2.5D, DATE 2021. Both versions run in the detailed-3D mode the published method uses. The ring marks the hottest point of the chip layer. Run 2026-10-31 23:41-23:44 UTC. Simulated, not silicon."
       },
       {
         "id": "talk3",
         "kicker": "Where it splits",
         "title": "The answers split at one step: lid to cooler.",
-        "say": "Heat flows up: chips, a metal lid, a cooler, then air. The newer version puts an extra obstacle between the lid and the cooler, and that's exactly where the answers split. Another team reports that with the special mode off, the versions agree.",
+        "say": "Heat flows up: chips, a metal lid, a cooler, then air. The newer version puts an extra obstacle between the lid and the cooler, and that's where the answers split. Delfie changed just that one step, and most of the gap went away. ScienceClaw re-ran it and got the same numbers.",
         "picture": {
           "figure": "plain2"
         },
-        "caption": "The hottest chip point, then the same position through the modeled layers. Metal lid: the heat spreader. Cooler: the heat sink, with its fins lumped into one air-cooling number. Separate check: the difference between separately located layer maxima, from two finite-element solvers and the simulator. One configured model, simulated."
+        "caption": "The hottest chip point, then the same position through the modeled layers. Metal lid: the heat spreader. Cooler: the heat sink, with its fins lumped into one air-cooling number. Separate check: the difference between separately located layer maxima, from two finite-element solvers and the simulator. One configured model, simulated. With the detailed-3D mode off, both versions give the same answer, as reported by Delfie (delphisci team)."
       },
       {
         "id": "talk4",
@@ -2185,7 +2232,7 @@
         "picture": {
           "figure": "plain4"
         },
-        "caption": "Times UTC, from the room and run records. Linear on each side of the break."
+        "caption": "UTC, from the room record, 31 October into 1 November. Linear on each side of the break. Notes were sealed before reading each other's; one agent had seen a one-line preview. Agent 4 had read the suspect before modelling it. Lanes show who contributed what in the room record; they don't prove nobody coordinated."
       },
       {
         "id": "talk5",
@@ -2195,7 +2242,7 @@
         "picture": {
           "figure": "plain3"
         },
-        "caption": "The CPU-DRAM reference, rounded. Older and newer version: the paper's own temperature reading, which in the newer version comes from a substrate block. Solvers: die centres. It reproduces published numbers, not physical accuracy. Simulated, not silicon."
+        "caption": "The CPU-DRAM reference, rounded, on one line. Older and newer version: the paper's own temperature reading, which in the newer version comes from a substrate block. Solvers: die centres. Below, the test on both published designs: 115.93 against 115.94, and 75.48 against 75.48. Delfie's and ScienceClaw's values are as reported by them. It reproduces published numbers, not physical accuracy. Simulated, not silicon."
       },
       {
         "id": "talk6",
@@ -2203,8 +2250,7 @@
         "title": "A second agent catches what the first approved.",
         "say": "Why many agents? Across 34 code changes we checked, later reviewers raised 17 issues after another agent had already approved. It's a count from real work, not a controlled experiment.",
         "picture": {
-          "figure": "fig5",
-          "scale": 1.4
+          "figure": "plain5"
         },
         "caption": "34 code reviews in the room log, to 31 October 22:57 UTC. Not blind, so a description, not a controlled test."
       },
@@ -2212,11 +2258,11 @@
         "id": "talk7",
         "kicker": "Other teams",
         "title": "Other teams build on it.",
-        "say": "The work travels. We offered help to eight teams: two checked our thermal case, three told us other help was useful, and three haven't confirmed. ScienceClaw credits our matchmaking and used our review to fix its package.",
+        "say": "The work travels. We offered help to eight teams: three checked our thermal case, two told us other help was useful, and three haven't confirmed. ScienceClaw credits our matchmaking and used our review to fix its package.",
         "picture": {
           "figure": "fig6"
         },
-        "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 02:44 UTC. Only teams that agreed are named."
+        "caption": "Only what the receiving team said or did counts as confirmed. Help room, to 1 November 04:01 UTC. Only teams that agreed are named."
       },
       {
         "id": "talk8",
@@ -2241,7 +2287,11 @@
         "statement": {
           "text": "An optimizer is only as reliable as the tool grading it.",
           "sub": "Independent checks expose disagreements before we build on them."
-        }
+        },
+        "picture": {
+          "figure": "plain6"
+        },
+        "caption": "Reruns agree to 0.01 °C, as each team reports them. Gap: CPU-DRAM reference, from the reported table, 232.67 to 125.52 against 115.94. One configured model, simulated."
       },
       {
         "id": "talk9",

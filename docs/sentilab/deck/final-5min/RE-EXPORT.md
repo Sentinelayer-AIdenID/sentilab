@@ -59,7 +59,7 @@ same line:
 "consent": "32a841e5 seq 57490 at 2026-11-01T02:10:00Z"
 ```
 
-This means the help room, the message's sequence number, and its UTC time. fig6 is aneta's drawing for one consent
+This means the help room, the message's sequence number, and its UTC time. If the team asks to be named in a particular form, add it as `"credit"` beside its name (Delfie: `"Delfie (delphisci team)"`); the build uses it wherever it names the team, and the leak checks keep looking for the bare name. fig6 is aneta's drawing for one consent
 set, `drawnFor` in `FINAL.json`. The build stops until she sends a redrawn fig6 for the new set; put it in
 `figures/` and update its sha256 and `drawnFor`. Then export again with a cutoff no earlier than that time. Nothing
 else moves on the slides. That team's name replaces "an outside team" in the text and in the figure

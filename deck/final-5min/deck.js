@@ -43,11 +43,11 @@
       return `<h1 class="ftitle">${esc(c.title)}</h1>${pic}`;
     },
     why(c) {
-      // With its numbers, the tiles take the height of their words; without them, the closer is the picture, in large
-      // type; with neither, the title alone, centred.
+      // With its numbers, the tiles take the height of their words; without them, the closer in large type, over the
+      // figure when there is one; with neither, the title alone, centred.
       const tiles = c.numbers ? `<div class="ngrid why-numbers n${c.numbers.length}">${c.numbers.map((x) => `<div class="ntile"><b class="nval">${esc(x.value)}</b><p class="nlab">${esc(x.label)}</p></div>`).join("")}</div>` : "";
-      const words = !c.numbers && c.statement ? `<div class="why-statement"><p class="ws-main">${esc(c.statement.text)}</p><p class="ws-sub">${esc(c.statement.sub)}</p></div>` : "";
-      return `<h1 class="ftitle${c.numbers || words ? "" : " why-title"}">${esc(c.title)}</h1>${tiles}${words}`;
+      const words = !c.numbers && c.statement ? `<div class="why-statement${c.figure ? " ws-with-figure" : ""}"><p class="ws-main">${esc(c.statement.text)}</p><p class="ws-sub">${esc(c.statement.sub)}</p></div>` : "";
+      return `<h1 class="ftitle${c.numbers || words ? "" : " why-title"}">${esc(c.title)}</h1>${tiles}${words}${!c.numbers && c.figure ? fig(c.figure) : ""}`;
     },
     door(c) {
       if (c.still) return `<h1>${esc(c.title)}</h1>${stillLabel(c.still)}${fitStill(c.still, 1100, 600, "dstill")}<p class="dstat dstat-${esc(c.status)}">${esc(c.statusText)}</p>`;
@@ -180,7 +180,7 @@
   // Footer notes that belong to a slide (the cutoff and the page label are on every slide).
   const LAYOUT_FOOT = {
     talk: (c) => c.caption ?? "",
-    why: (c) => (c.numbers ? "Measured counts; the cost was posted so far when read, and is not the price of this experiment." : ""),
+    why: (c) => (c.numbers ? "Measured counts; the cost was posted so far when read, and is not the price of this experiment." : c.caption ?? ""),
     door: () => "Scores shown in the demo are simulated, not measured on silicon.",
   };
   const FOOT = {

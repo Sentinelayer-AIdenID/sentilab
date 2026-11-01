@@ -14,7 +14,7 @@
 //     door lines fit inside the 120 s demo clock, and the 300 s slot holds both;
 //   - "By the numbers" shows measured values only, each the quant pack's own value and class, with no savings estimate;
 //   - every dated line, figure time and tile names a room record that carries its minute;
-//   - the main talk is the coordinator's plain-language script (PLAIN-SCRIPT.md, v2.3): its titles on the slides, its
+//   - the main talk is the coordinator's plain-language script (PLAIN-SCRIPT.md, v2.5): its titles on the slides, its
 //     "Say" text as the notes, one picture each, no K, formula, grid or "statistic" on a main slide; every slide of the
 //     earlier five-minute deck follows as backup, unchanged. Where an older test says "slide 2" or "slide 4", it means
 //     that deck's slide, now backup B2 or B4.
@@ -30,7 +30,7 @@ import { NOT_PUBLIC, PDF_DIR, REPO_ROOT } from "./build-deck-data.mjs";
 import {
   FIGURE_OUT_DIR, FIGURE_SOURCE_DIR, FINAL3_DECK_DIR, FINAL3_DIR, FINAL_BANNED, FINAL_DECK_DIR, FINAL_DIR, FINAL_SOURCE,
   FROZEN_FINAL_3MIN, FinalError, GATES, MONEY, PLAIN_TALK_BANNED, PLAIN_WORDS, buildFigureFrom, buildFinalData, checkDuration, checkOutcome, cliOptions, countWords,
-  figureDirMatches, finalPdfName, loadFinal, moneyAllowed, parseConsent, refreshPrs, serialize, speech, speakerScript, splitCommon, svgActive, svgTexts,
+  figureDirMatches, finalPdfName, loadFinal, moneyAllowed, parseConsent, refreshPrs, serialize, speech, speakerScript, splitCommon, svgActive, svgTexts, teamResolver,
   SCRIPT_PATH,
 } from "./build-deck-final.mjs";
 
@@ -137,10 +137,10 @@ test("deck, source and figure files are LF-only, with no control bytes", () => {
 // ── 2. the figures ──────────────────────────────────────────────────────────────────────────────────────────────────
 test("the figures are the contributed SVGs byte for byte, inert, with only the declared edits", () => {
   const figs = loaded.final.figures;
-  assert.deepEqual(Object.keys(figs), ["fig1", "fig2", "fig2b", "fig3", "fig4", "fig5", "fig6", "plain1", "plain2", "plain3", "plain4"]);
-  // aneta's files as sent: plain4 from v1.8, fig6 from v1.9, plain1 and plain3 from v1.10, plain2 from v1.11 (team room, 1 Nov).
+  assert.deepEqual(Object.keys(figs), ["fig1", "fig2", "fig2b", "fig3", "fig4", "fig5", "fig6", "plain1", "plain2", "plain3", "plain4", "plain5", "plain6"]);
+  // aneta's files as sent: plain1 from v1.10, plain2 from v1.11, and plain3 to plain6, fig4 and fig6 from v1.15 (team room, 1 Nov).
   assert.deepEqual(Object.fromEntries(Object.entries(figs).filter(([id]) => /^plain|^fig6$/.test(id)).map(([id, f]) => [id, f.sha256.slice(0, 16)])),
-    { fig6: "f7da1bd65d7cbbd2", plain1: "9d1e00cabb836fcb", plain2: "1b7f851e28fda639", plain3: "30cc868056af7398", plain4: "672b220cdc539e26" });
+    { fig6: "e9eeadb9217c9849", plain1: "9d1e00cabb836fcb", plain2: "1b7f851e28fda639", plain3: "e4a79736d5f841eb", plain4: "036788919f1a9f8a", plain5: "c0773bfb8432beaa", plain6: "b47128e9a4c1b5d1" });
   const stills = Object.values(loaded.final.stills).map((s) => s.file);
   assert.deepEqual(readdirSync(FIGURE_SOURCE_DIR).sort(), [...Object.values(figs).map((f) => f.file), ...stills].sort());
   assert.deepEqual(readdirSync(FIGURE_OUT_DIR).sort(), [...Object.values(figs).map((f) => f.file), ...stills].sort());
@@ -166,7 +166,10 @@ test("the figures are the contributed SVGs byte for byte, inert, with only the d
     srcTexts.forEach((t, i) => { if (t !== outTexts[i]) assert.ok(expected.some(([a, b]) => a.replace(/\s+/g, " ") === t && b.replace(/\s+/g, " ") === outTexts[i]), `${id}: undeclared change ${JSON.stringify(t)} -> ${JSON.stringify(outTexts[i])}`); });
     const strip = (s) => s.replace(/<text\b[^>]*>[\s\S]*?<\/text>/g, "").replace(/aria-label="[^"]*"/, "");
     assert.equal(strip(out), strip(src.toString("utf8")), `${id}: nothing but text runs and the label changed`);
-    assert.ok(out.includes(`aria-label="${f.alt.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}"`), `${id}: the label is the reviewed alt text`);
+    // The label is the reviewed alt text, its team tokens resolved by the consent on record, as on the slides.
+    const shownAlt = committed.slides.map((s) => s.content.figure).find((x) => x?.id === id)?.alt ?? f.alt;
+    assert.ok(out.includes(`aria-label="${shownAlt.replace(/&/g, "&amp;").replace(/"/g, "&quot;")}"`), `${id}: the label is the reviewed alt text`);
+    assert.doesNotMatch(out, /\{(?:repo:)?[A-Za-z]+\}/, `${id}: no unresolved team token`);
   }
   assert.ok(svgActive('<svg><script>x()</script></svg>').length && svgActive('<svg><image href="https://example.com/a.png"/></svg>').length
     && svgActive('<svg><foreignObject/></svg>').length && svgActive('<svg onload="x()"/>').length, "the inert check can fail");
@@ -174,7 +177,9 @@ test("the figures are the contributed SVGs byte for byte, inert, with only the d
 test("a figure that is not the reviewed file, names an unconsented team, or shrinks its text below 22 px does not build", () => {
   assert.throws(() => recorded({}, (f) => { f.figures.fig5.sha256 = "0".repeat(64); }), /not the reviewed file/);
   assert.throws(() => recorded({}, (f) => { f.figures.fig3.teamText.pop(); }), /still names FEAgent, who has not consented/);
-  assert.throws(() => recorded({}, (f) => { f.figures.fig4.teamText = f.figures.fig4.teamText.filter((t) => t.team !== "delfie"); }), /still names Delfie/);
+  // Withdrawing Delfie's consent stops the build: fig6 is drawn for it, and aneta's plain figures name it.
+  assert.throws(() => recorded({}, (f) => { f.teams.delfie.consent = null; }), /drawn for the consent set \[delfie, scienceclaw\], but consent is on record for \[scienceclaw\]/);
+  assert.throws(() => recorded({}, (f) => { f.teams.delfie.consent = null; f.figures.fig6.drawnFor = ["scienceclaw"]; }), /still names Delfie, who has not consented/);
   assert.throws(() => recorded({}, (f) => { f.figures.fig1.edits = []; }), /public-render rule/, "the vendor name in the original fig1 label");
   assert.throws(() => recorded({}, (f) => { f.figures.fig4.scale = 0.9; }), /under 22 px/);
   assert.throws(() => recorded({}, (f) => { f.figures.fig6.edits = [{ from: "SentiLab", to: "SentiLab lab", why: "test" }]; }), /must be served byte for byte/);
@@ -203,70 +208,92 @@ test("every figure time names a room record that carries its minute, and its dur
   assert.throws(() => recorded({}, (f) => { f.figures.fig4.claims[0].at = "2026-10-31T12:44:00.000Z"; }), /is not its claim's minute|which no record carries/);
   assert.throws(() => recorded({}, (f) => { f.figures.fig4.claims[0].label = "13:15"; }), /the label 13:15 is not its claim's minute 12:43/);
   assert.throws(() => recorded({}, (f) => { f.figures.fig4.claims[9].records[0].at = "2026-11-02T00:00:00.000Z"; }), /after the cutoff/);
+  // plain4, aneta's lane chart on slide 4: every event time it shows (the hour ticks are its axis) has a claim whose
+  // records carry that minute, and its durations are recomputed from them.
+  const p4 = loaded.final.figures.plain4;
+  const shown = new Set(recorded().slides.find((s) => s.id === "talk4").content.figure.texts.flatMap((t) => t.match(/\b\d\d:\d\d\b/g) ?? []).filter((t) => !t.endsWith(":00")));
+  assert.deepEqual([...shown].sort(), p4.claims.map((c) => c.label).sort());
+  for (const c of p4.claims) assert.ok(c.records.flatMap((r) => [r.at, r.stated].filter(Boolean)).some((t) => t.slice(11, 16) === c.label), c.label);
+  assert.deepEqual(p4.durations.map((x) => x.text), ["32 min", "39 min", "1 h 41"]);
+  assert.throws(() => recorded({}, (f) => { f.figures.plain4.durations[0].text = "31 min"; }), /does not show|not what the records give/);
+  assert.throws(() => recorded({}, (f) => { f.figures.plain4.claims[1].at = "2026-10-31T13:09:00.000Z"; }), /is not its claim's minute/);
   assert.throws(() => recorded({}, (f) => { f.timeline.tiles[0].value = "31 min"; }), /not what the records give/);
   assert.throws(() => recorded({}, (f) => { f.timeline.tiles[2].value = "16:41"; }), /not its record minute/);
 });
 
 // ── 3. outside teams: named only with consent ───────────────────────────────────────────────────────────────────────
-// The one consent on record: ScienceClaw said yes in the help room (message 57532, 02:09:48 on 1 Nov); root confirmed it
-// in team room 57540. Every other flag is off.
+// The consents on record: ScienceClaw said yes in the help room (message 57532, 02:09:48 on 1 Nov; root confirmed it in
+// team room 57540), and Delfie said yes (message 57644, 03:45:39), asking to be named "Delfie (delphisci team)". Every
+// other flag is off.
 const SCIENCECLAW = "32a841e5 seq 57532 at 2026-11-01T02:09:48.572Z";
+const DELFIE = "32a841e5 seq 57644 at 2026-11-01T03:45:39.060Z";
+const CONSENTED = ["Delfie", "ScienceClaw"];
 test("only a team whose consent is on record is named: slides, notes, figures and generated data", () => {
-  assert.deepEqual(Object.entries(loaded.final.teams).filter(([, t]) => t.consent).map(([id, t]) => [id, t.consent]), [["scienceclaw", SCIENCECLAW]]);
+  assert.deepEqual(Object.entries(loaded.final.teams).filter(([, t]) => t.consent).map(([id, t]) => [id, t.consent]), [["delfie", DELFIE], ["scienceclaw", SCIENCECLAW]]);
+  assert.equal(loaded.final.teams.delfie.credit, "Delfie (delphisci team)", "the form Delfie asked for");
   const d = recorded();
   // The event is the ScienceClaw hackathon: its name in the slide header is the deck's, not a team's.
   assert.ok(everything(d).includes("ScienceClaw hackathon"));
   const all = everything(d).replaceAll(d.deck.event, "");
-  assert.ok(named(all, "ScienceClaw"), "the consenting team is named");
-  for (const name of TEAM_NAMES.filter((n) => n !== "ScienceClaw")) {
+  for (const name of CONSENTED) assert.ok(named(all, name), `${name}, who consented, is named`);
+  for (const name of TEAM_NAMES.filter((n) => !CONSENTED.includes(n))) {
     assert.ok(!named(all, name), `${name} appears on a slide`);
     for (const f of readdirSync(FIGURE_OUT_DIR)) assert.ok(!named(read(join(FIGURE_OUT_DIR, f)).replace(/data:image\/\w+;base64,[A-Za-z0-9+/=]+/g, ""), name), `${name} in ${f}`);
     // The served data is checked without regard to case: a lower-case id or handle names a team too.
     assert.doesNotMatch(read(join(FINAL_DECK_DIR, "deck-data.json")).replaceAll(committed.deck.event, ""), new RegExp(`(^|[^\\p{L}\\p{N}])${name}(?![\\p{L}\\p{N}])`, "iu"), `${name} in deck-data.json`);
   }
   assert.doesNotMatch(read(join(FINAL_DECK_DIR, "deck-data.json")), /zucalerega|feagent/i, "no repository name either");
-  assert.deepEqual(committed.teams, { named: [{ name: "ScienceClaw", consent: { room: "32a841e5", seq: 57532, at: "2026-11-01T02:09:48.572Z" } }], unnamed: 7 });
-  // The anonymous wording, and the credit kept either way.
-  assert.match(slideText(d, "stack"), /An outside team ran both versions with the detailed 3-D mode off: both give 75\.37 C and 115\.29 C, as reported by them\./);
-  assert.match(notesOf(d, "gate"), /Two outside teams checked us, as reported by them: an outside team ran both versions, and a second outside team used its own finite-element code\./);
-  assert.match(slideText(d, "receipt"), /A second outside team \(public repository, frozen report at commit c73d642b\)/);
-  assert.match(slideText(d, "receipt"), /Named with their consent, on record in the help room: ScienceClaw\. The other 7 teams are not named here\./);
-  // ScienceClaw's card and the narration, in root's words (team room 57540): the run went through the open-source
-  // platform, not through the team, and the 02:09 acknowledgment is the team's own, not backdated.
-  assert.match(figureText(d, "teams"), /Ran through the open-source \| ScienceClaw registry, executor \| ScienceClaw \| “your matchmaking”, then used \| our review to fix its package/);
-  assert.equal(loaded.final.figures.fig6.sha256, "f7da1bd65d7cbbd2ad72dad4e6e3dcc9ff944a3152bad62a1794b80f10ce6078", "aneta's v1.9, drawn for ScienceClaw's consent");
+  assert.deepEqual(committed.teams, { named: [{ name: "Delfie (delphisci team)", consent: { room: "32a841e5", seq: 57644, at: "2026-11-01T03:45:39.060Z" } },
+    { name: "ScienceClaw", consent: { room: "32a841e5", seq: 57532, at: "2026-11-01T02:09:48.572Z" } }], unnamed: 6 });
+  // Delfie in the form it asked for, its results as reported by them; the next unnamed team is "an outside team".
+  assert.match(slideText(d, "stack"), /Delfie \(delphisci team\) ran both versions with the detailed 3-D mode off: both give 75\.37 C and 115\.29 C, as reported by them\./);
+  assert.match(notesOf(d, "gate"), /Two outside teams checked us, as reported by them: Delfie \(delphisci team\) ran both versions, and an outside team used its own finite-element code\./);
+  assert.match(slideText(d, "receipt"), /Reproduction Delfie \(delphisci team\): both simulator versions built from source/);
+  assert.match(slideText(d, "receipt"), /An outside team \(public repository, frozen report at commit c73d642b\)/);
+  assert.match(slideText(d, "receipt"), /Named with their consent, on record in the help room: Delfie \(delphisci team\), ScienceClaw\. The other 6 teams are not named here\./);
+  assert.match(slideText(d, "talk3"), /With the detailed-3D mode off, both versions give the same answer, as reported by Delfie \(delphisci team\)\./);
+  assert.match(slideText(d, "qa"), /What happens with the special 3D mode off\? Both versions give the same answer, as reported by Delfie \(delphisci team\)\./);
+  // fig6 v1.15: the map after Delfie's consent and ScienceClaw's 04:01 re-run, drawn for exactly these two consents.
+  assert.equal(loaded.final.figures.fig6.sha256, "e9eeadb9217c9849f47511795058857b685ad8980079575ae02625af82bf5e79", "aneta's v1.15, drawn for Delfie and ScienceClaw");
+  assert.deepEqual(loaded.final.figures.fig6.drawnFor, ["delfie", "scienceclaw"]);
+  assert.match(figureText(d, "teams"), /Delfie \| Both versions on our case in \| 39 min\. Then tested one change/);
+  assert.match(figureText(d, "teams"), /Ran through the open-source \| ScienceClaw registry, executor \| ScienceClaw \| Re-ran our case: same numbers\. \| Used our review on its package/);
   assert.match(notesOf(d, "teams"), /ScienceClaw credited our matchmaking, and later used our review to fix its package\. Our rigidity skill ran through the open-source ScienceClaw registry and executor\.$/);
-  // The figure draws ScienceClaw's comparison (help room 57566, 02:44:21), so its snapshot runs to 02:44.
-  assert.match(slideText(d, "teams"), /Help room, to 1 November 02:44 UTC; a dated snapshot\. Only teams that agreed are named\./);
-  assert.match(slideText(d, "talk7"), /Help room, to 1 November 02:44 UTC\. Only teams that agreed are named\./);
-  assert.match(figureText(d, "teams"), /blind panel solve, compared/);
+  assert.match(slideText(d, "teams"), /Help room, to 1 November 04:01 UTC; a dated snapshot\. Only teams that agreed are named\./);
+  assert.match(slideText(d, "talk7"), /Help room, to 1 November 04:01 UTC\. Only teams that agreed are named\./);
+  assert.match(figureText(d, "teams"), /blind solve, compared/);
   assert.equal(figureText(d, "talk7"), figureText(d, "teams"), "slide 7 and its backup show the same drawing");
   assert.match(notesOf(d, "talk7"), /ScienceClaw credits our matchmaking and used our review to fix its package\.$/);
-  assert.match(figureText(d, "gate"), /Outside 75\.48 \| 78\.06 Outside/);
-  assert.match(figureText(d, "timeline"), /An outside team \| reproduces it: 39 min/);
-  assert.equal((figureText(d, "teams").match(/An outside team/g) ?? []).length, 7);
+  assert.match(figureText(d, "gate"), /Delfie 75\.48 \| 78\.06 Outside/);
+  assert.match(figureText(d, "timeline"), /Delfie reproduces \| it: 39 min/);
+  assert.match(figureText(d, "timeline"), /Outside finite- \| element solve: 1 h 41/);
+  assert.equal((figureText(d, "teams").match(/An outside team/g) ?? []).length, 6);
   // fig6 is drawn for exactly this consent set; with any other set the build stops until it is redrawn.
-  assert.throws(() => recorded({}, (f) => { f.teams.scienceclaw.consent = null; }), /drawn for the consent set \[scienceclaw\], but consent is on record for \[\]/);
+  assert.throws(() => recorded({}, (f) => { f.teams.scienceclaw.consent = null; }), /drawn for the consent set \[delfie, scienceclaw\], but consent is on record for \[delfie\]/);
+  // The resolver on its own: two unnamed teams on one slide are "an outside team", then "a second outside team"; a
+  // named team appears in the form it asked for.
+  const line = "{Delfie} ran both versions, and {feagent} used its own finite-element code.";
+  assert.equal(teamResolver(loaded.final.teams, new Set(["scienceclaw"]))([line])(line), "An outside team ran both versions, and a second outside team used its own finite-element code.");
+  assert.equal(teamResolver(loaded.final.teams, new Set(["delfie"]))([line])(line), "Delfie (delphisci team) ran both versions, and an outside team used its own finite-element code.");
 });
 test("a consent line switches one team to its name, with a pointer to where it agreed, and nothing else moves", () => {
   // The flag is one line in FINAL.json.
   const text = read(FINAL_SOURCE);
-  const flipped = text.replace(/("delfie": \{\n\s+"name": "Delfie",\n\s+"consent": )null/, `$1"${consentLine(57490)}"`);
+  const flipped = text.replace(/("feagent": \{\n\s+"name": "FEAgent",\n\s+"repo": "[^"]+",\n\s+"consent": )null/, `$1"${consentLine(57490)}"`);
   assert.equal(flipped.split("\n").filter((l, i) => l !== text.split("\n")[i]).length, 1, "one changed line");
-  // fig6 is aneta's drawing for ScienceClaw alone, so a new consent first stops the build until she redraws it ...
-  assert.throws(() => buildFinalData({ final: JSON.parse(flipped), hashes: loaded.hashes }, { rederived: true }), /drawn for the consent set \[scienceclaw\], but consent is on record for \[delfie, scienceclaw\]/);
+  // fig6 is aneta's drawing for Delfie and ScienceClaw, so a new consent first stops the build until she redraws it ...
+  assert.throws(() => buildFinalData({ final: JSON.parse(flipped), hashes: loaded.hashes }, { rederived: true }), /drawn for the consent set \[delfie, scienceclaw\], but consent is on record for \[delfie, feagent, scienceclaw\]/);
   // ... and with a redrawn fig6 (simulated by its consent set alone) everything else switches by itself.
   const redrawn = JSON.parse(flipped);
-  redrawn.figures.fig6.drawnFor = ["delfie", "scienceclaw"];
+  redrawn.figures.fig6.drawnFor = ["delfie", "feagent", "scienceclaw"];
   const d = buildFinalData({ final: redrawn, hashes: loaded.hashes }, { rederived: true });
-  assert.deepEqual(d.teams, { named: [{ name: "Delfie", consent: { room: "32a841e5", seq: 57490, at: "2026-11-01T01:20:00Z" } },
-    { name: "ScienceClaw", consent: { room: "32a841e5", seq: 57532, at: "2026-11-01T02:09:48.572Z" } }], unnamed: 6 });
-  assert.match(slideText(d, "stack"), /Delfie ran both versions with the detailed 3-D mode off: both give 75\.37 C and 115\.29 C, as reported by them\./);
-  assert.match(notesOf(d, "gate"), /Delfie ran both versions, and an outside team used its own finite-element code\./);
-  assert.match(figureText(d, "gate"), /Delfie 75\.48 \| 78\.06 Outside/);
-  assert.match(figureText(d, "timeline"), /Delfie reproduces \| it: 39 min/);
-  assert.match(slideText(d, "receipt"), /Named with their consent, on record in the help room: Delfie, ScienceClaw\. The other 6 teams are not named here\./);
-  for (const name of TEAM_NAMES.filter((n) => n !== "Delfie" && n !== "ScienceClaw")) assert.ok(!named(everything(d).replaceAll(d.deck.event, ""), name), name);
+  assert.deepEqual(d.teams.named.map((t) => [t.name, t.consent.seq]), [["Delfie (delphisci team)", 57644], ["FEAgent", 57490], ["ScienceClaw", 57532]]);
+  assert.equal(d.teams.unnamed, 5);
+  assert.match(notesOf(d, "gate"), /Delfie \(delphisci team\) ran both versions, and FEAgent used its own finite-element code\./);
+  assert.match(figureText(d, "gate"), /122\.25 FEAgent/);
+  assert.match(slideText(d, "receipt"), /FEAgent \(github\.com\/zucalerega\/feagent, frozen report at commit c73d642b\)/);
+  assert.match(slideText(d, "receipt"), /Named with their consent, on record in the help room: Delfie \(delphisci team\), FEAgent, ScienceClaw\. The other 5 teams are not named here\./);
+  for (const name of TEAM_NAMES.filter((n) => !["Delfie", "FEAgent", "ScienceClaw"].includes(n))) assert.ok(!named(everything(d).replaceAll(d.deck.event, ""), name), name);
   // No re-layout: the same slides, the same figures, the same text runs.
   const before = recorded();
   assert.deepEqual(d.slides.map((s) => s.id), before.slides.map((s) => s.id));
@@ -478,7 +505,7 @@ test("the layer-maxima backup carries root's sentence and caption word for word,
   // independent-peak values stay apart from the same-index exploded view.
   assert.match(figureText(d, "stack"), /Spreader minus sink, \| separate layer maxima \| 3\.25 K \| HotSpot 6\.0 \| about 4\.20 K \| 2 finite-element codes \| 141\.84 K \| HotSpot 7\.0/);
   assert.ok(slideText(d, "stack").includes(`Panel at right: ${CAPTION}`), "root's caption under the panel");
-  const consented = buildFinalData({ final: (() => { const f = clone(loaded.final); f.teams.feagent.consent = consentLine(57495); f.figures.fig6.drawnFor = ["feagent", "scienceclaw"]; return f; })(), hashes: loaded.hashes }, { rederived: true });
+  const consented = buildFinalData({ final: (() => { const f = clone(loaded.final); f.teams.feagent.consent = consentLine(57495); f.figures.fig6.drawnFor = ["delfie", "feagent", "scienceclaw"]; return f; })(), hashes: loaded.hashes }, { rederived: true });
   assert.ok(slideText(consented, "layers").includes(SENTENCE.replace("an outside team's", "FEAgent's")));
   assert.throws(() => recorded({}, (f) => { f.backup.layers.rows[3].values[2] = "15.38"; }), /not within 0\.44 K/);
   assert.throws(() => recorded({}, (f) => { f.backup.layers.rows[1].values[3] = "4.30"; }), /"about" values/);
@@ -498,10 +525,10 @@ test("outside teams: results as reported by them, the blindness note, the open g
     assert.match(m[0], /not (?:used|counted) as evidence|not independent|Notice on the leaderboard/i, `${s.id}: ${m[0]}`);
   }
   assert.match(slideText(d, "teams"), /Only what the receiving team said or did counts as confirmed\./);
-  // fig6 v1.9's legend, and the same words in the backup notes and on slide 7 (script v2.3).
-  assert.match(figureText(d, "teams"), /2 checked our thermal case \| 3 said other help was useful \| 3 haven't confirmed yet/);
-  assert.match(notesOf(d, "teams"), /We offered help to eight outside teams: two checked our thermal case, three told us other help was useful, and three haven't confirmed\./);
-  assert.match(notesOf(d, "talk7"), /We offered help to eight teams: two checked our thermal case, three told us other help was useful, and three haven't confirmed\./);
+  // fig6 v1.15's legend, and the same words in the backup notes and on slide 7 (script v2.5).
+  assert.match(figureText(d, "teams"), /3 checked our thermal case \| 2 said other help was useful \| 3 haven't confirmed yet/);
+  assert.match(notesOf(d, "teams"), /We offered help to eight outside teams: three checked our thermal case, two told us other help was useful, and three haven't confirmed\./);
+  assert.match(notesOf(d, "talk7"), /We offered help to eight teams: three checked our thermal case, two told us other help was useful, and three haven't confirmed\./);
   assert.doesNotMatch(everything(d), /used it and returned a result|said it helped in their own words/);
 });
 
@@ -614,7 +641,7 @@ test("the door's REPLAY variant shows the 3D still as a preview; a LIVE render b
   assert.throws(() => recorded({}, (f) => { f.stills.view3d.width = 1280; }), /must be a 1280x1080 PNG/);
 });
 // ── 7b. the plain-language talk ─────────────────────────────────────────────────────────────────────────────────────
-// Carter presents the main slides in plain language (team room 57563, 02:51). The coordinator's script v2.3 is
+// Carter presents the main slides in plain language (team room 57563, 02:51). The coordinator's script v2.5 is
 // committed byte for byte as PLAIN-SCRIPT.md; the main slides carry its titles and its "Say" text exactly.
 const PLAIN_SCRIPT = join(FINAL_DIR, "PLAIN-SCRIPT.md");
 const scriptSlides = () => read(PLAIN_SCRIPT).split(/\n(?=## \d+\. )/).slice(1).map((sec) => {
@@ -624,7 +651,7 @@ const scriptSlides = () => read(PLAIN_SCRIPT).split(/\n(?=## \d+\. )/).slice(1).
 });
 const numbersOn = (f) => { f.plainTalk.numbersOnStage = true; };
 test("the main slides are the plain script's nine: its titles on the slides and its words in the notes, exactly", () => {
-  assert.equal(sha(readFileSync(PLAIN_SCRIPT)), "79c648c5722c9797c53b9d2e872c6807e4a65ed8adc362fb1f7a276f235661ab", "script v2.3 as sent");
+  assert.equal(sha(readFileSync(PLAIN_SCRIPT)), "cd1cb88934cec18f916cab7862570f9d4d9e19283a5065a83ad17591df36cb67", "script v2.5 as sent");
   const S = scriptSlides();
   assert.equal(S.length, 9);
   const numbersLine = /^\[If on stage: (.*?)\] (.*)$/.exec(S[7].say);
@@ -646,7 +673,7 @@ test("one picture per main slide, the one chosen for it, never below the type fl
   const d = recorded();
   const pic = (s) => s.content.figure?.id ?? s.content.still?.id ?? (s.content.numbers ? "numbers" : s.content.statement ? "statement" : s.content.diagram ? "door steps" : null);
   assert.deepEqual(Object.fromEntries(d.slides.filter((s) => s.main).map((s) => [s.id, pic(s)])),
-    { talk1: "render", talk2: "plain1", talk3: "plain2", talk4: "plain4", talk5: "plain3", talk6: "fig5", talk7: "fig6", talk8: "statement", talk9: "render" });
+    { talk1: "render", talk2: "plain1", talk3: "plain2", talk4: "plain4", talk5: "plain3", talk6: "plain5", talk7: "fig6", talk8: "plain6", talk9: "render" });
   assert.equal(pic(recorded({ demoStatus: "live", demoReview: true }).slides.find((s) => s.id === DOOR)), "door steps");
   assert.equal(pic(recorded({}, numbersOn).slides.find((s) => s.id === "talk8")), "numbers");
   for (const m of Deck.renderSlides(d).matchAll(/<section class="slide main" id="s-([\w-]+)"[^>]*>([\s\S]*?)<\/section>/g)) {
@@ -656,16 +683,22 @@ test("one picture per main slide, the one chosen for it, never below the type fl
   // Slide 1 shows the package render cut from our 3D view, captioned; nothing else of the view's screen.
   assert.equal(d.slides.find((s) => s.id === "talk1").content.caption, "Simulated heat map of the published reference design. Simulated, not silicon.");
   assert.match(slideText(d, "talk1"), /Simulated heat map of the published reference design\. Simulated, not silicon\./);
-  assert.equal(d.slides.find((s) => s.id === "talk6").content.figure.scale, 1.4);
   assert.equal(d.slides.find((s) => s.id === "checks").content.figure.scale, loaded.final.figures.fig5.scale, "the backup keeps its own scale");
   assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[1].picture.scale = 0.5; }), /under 22 px/);
   assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[0].picture.still = "view4d"; }), /names a missing still view4d/);
-  // aneta's short captions (CAPTIONS.md v1.9), in the plain words a main slide allows.
-  assert.match(slideText(d, "talk2"), /The CPU-DRAM reference layout\. Both versions run in the detailed-3D mode the published method uses\. The ring marks the hottest point of the chip layer\. Run 2026-10-31 23:41-23:44 UTC\. Simulated, not silicon\./);
-  assert.match(slideText(d, "talk3"), /Metal lid: the heat spreader\. Cooler: the heat sink, with its fins lumped into one air-cooling number\. Separate check: the difference between separately located layer maxima, from two finite-element solvers and the simulator\. One configured model, simulated\./);
-  assert.match(slideText(d, "talk4"), /Times UTC, from the room and run records\. Linear on each side of the break\./);
-  assert.match(slideText(d, "talk5"), /Older and newer version: the paper's own temperature reading, which in the newer version comes from a substrate block\. Solvers: die centres\. It reproduces published numbers, not physical accuracy\./);
+  // aneta's short captions (CAPTIONS.md v1.15), in the plain words a main slide allows.
+  assert.match(slideText(d, "talk2"), /The CPU-DRAM reference layout\. HotSpot 6\.0 and 7\.0\. Design from TAP-2\.5D, DATE 2021\. Both versions run in the detailed-3D mode the published method uses\. The ring marks the hottest point of the chip layer\. Run 2026-10-31 23:41-23:44 UTC\. Simulated, not silicon\./);
+  assert.match(slideText(d, "talk3"), /Metal lid: the heat spreader\. Cooler: the heat sink, with its fins lumped into one air-cooling number\. Separate check: the difference between separately located layer maxima, from two finite-element solvers and the simulator\. One configured model, simulated\. With the detailed-3D mode off, both versions give the same answer, as reported by Delfie \(delphisci team\)\./);
+  assert.match(slideText(d, "talk4"), /UTC, from the room record, 31 October into 1 November\. Linear on each side of the break\. Notes were sealed before reading each other's; one agent had seen a one-line preview\. Agent 4 had read the suspect before modelling it\. Lanes show who contributed what in the room record; they don't prove nobody coordinated\./);
+  assert.match(slideText(d, "talk5"), /Older and newer version: the paper's own temperature reading, which in the newer version comes from a substrate block\. Solvers: die centres\. Below, the test on both published designs: 115\.93 against 115\.94, and 75\.48 against 75\.48\. Delfie's and ScienceClaw's values are as reported by them\. It reproduces published numbers, not physical accuracy\./);
   assert.match(slideText(d, "talk6"), /34 code reviews in the room log, to 31 October 22:57 UTC\. Not blind, so a description, not a controlled test\./);
+  assert.match(slideText(d, "talk8"), /Reruns agree to 0\.01 °C, as each team reports them\. Gap: CPU-DRAM reference, from the reported table, 232\.67 to 125\.52 against 115\.94\. One configured model, simulated\./);
+  // plain6 says the challenge "will use" the build that passed: future tense until the scorer reads back as that build.
+  const p6 = d.slides.find((s) => s.id === "talk8").content.figure;
+  assert.match(p6.texts.join(" | "), /The \| challenge will use only \| the build that passed/);
+  assert.doesNotMatch(`${p6.texts.join(" ")} ${p6.alt}`, /scored only by/);
+  // plain5 serves this deck's own label: aneta's says "Grid", a word a main slide may not show.
+  assert.match(d.slides.find((s) => s.id === "talk6").content.figure.alt, /^A field of 190 squares/);
   // plain2 v1.11 carries root's two labels (team room 57638, accepted 03:42).
   assert.match(figureText(d, "talk3"), /In the model: \| lid to cooler/);
   assert.match(figureText(d, "talk3"), /Separate check: \| hottest point \| in each part/);
@@ -690,6 +723,8 @@ test("slide 8's numbers are a toggle, off by default; on, three measured numbers
   assert.doesNotMatch(`${slideText(off, "talk8")}\n${notesOf(off, "talk8")}`, /\$|\b90\b|minutes?\b/);
   const on = recorded({}, numbersOn);
   assert.equal(on.slides.find((s) => s.id === "talk8").content.statement, null, "one picture: the numbers replace the closer");
+  assert.equal(on.slides.find((s) => s.id === "talk8").content.figure, null, "and aneta's why figure");
+  assert.equal(off.slides.find((s) => s.id === "talk8").content.figure.id, "plain6");
   assert.deepEqual(on.slides.find((s) => s.id === "talk8").content.numbers.map((x) => `${x.value} ${x.label}`), [
     "about 90 code changes merged, since 31 Oct 00:00 UTC, collected 1 Nov 00:22-00:27 UTC",
     "under 6 min median from ask to first result, 9 asks",
@@ -735,9 +770,12 @@ test("the questions page answers \"unvalidated\" with the evidence, and every 3D
   assert.ok(qa.text.includes("Why does it say unvalidated? That tag is about approving the simulator setup in general. This saved simulation reproduced the paper's reference result within the 1-degree bar we set in advance. It's simulated, not silicon."));
   for (const [q, a] of [["Did you make a better chip?", "Not a verified one yet. That's the open challenge."],
     ["Which version is right?", "We reproduced the published result and compared independent models. Nobody has measured this chip yet."],
-    ["Why more than one agent?", "Later reviewers caught issues after earlier approvals. That's what our work record shows, not a controlled experiment."]]) {
+    ["Why more than one agent?", "Later reviewers caught issues after earlier approvals. That's what our work record shows, not a controlled experiment."],
+    // The mode-off result left slide 3's words for its caption and this page (script v2.5), credited to Delfie.
+    ["What happens with the special 3D mode off?", "Both versions give the same answer, as reported by Delfie (delphisci team)."]]) {
     assert.ok(qa.text.includes(`${q} ${a}`), q);
   }
+  assert.equal(loaded.final.backup.qa.items.length, 5);
   assert.doesNotMatch(qa.text, /hasn't signed off|has not signed off/, "never only \"our reviewer hasn't signed off\"");
   assert.throws(() => recorded({}, (f) => { f.backup.qa.records[1].at = "2026-11-02T00:00:00Z"; }), /after the cutoff/);
   for (const v of [d, recorded({ demoStatus: "live", demoReview: true })]) {
@@ -861,11 +899,11 @@ test("the talk fits 180 s with its transitions at 150 words a minute, the door f
     assert.ok(u.doorSeconds <= 120 && u.liveSeconds > 0, `${g}: door ${u.doorSeconds} s`);
     assert.ok(180 + 120 <= 300);
   }
-  // The coordinator's figures for script v2.3: 359 words with the numbers line off, 381 with it; the door 34 or 61.
+  // The coordinator's figures for script v2.5: 368 words with the numbers line off, 390 with it; the door 34 or 61.
   const u = recorded().budget;
-  assert.deepEqual([u.talkWords, u.talkSeconds, u.talkSlowSeconds, u.doorWords, u.doorSeconds, u.liveSeconds], [359, 143.6, 159.6, 34, 13.6, 106.4]);
-  assert.equal(u.talkSeconds + u.transitionSeconds, 158.6);
-  assert.equal(recorded({}, numbersOn).budget.talkWords, 381);
+  assert.deepEqual([u.talkWords, u.talkSeconds, u.talkSlowSeconds, u.doorWords, u.doorSeconds, u.liveSeconds], [368, 147.2, 163.6, 34, 13.6, 106.4]);
+  assert.equal(u.talkSeconds + u.transitionSeconds, 162.2);
+  assert.equal(recorded({}, numbersOn).budget.talkWords, 390);
   assert.equal(recorded({ demoStatus: "live", demoReview: true }).budget.doorWords, 61);
 });
 test("a talk over its cap, door lines longer than the demo clock, or a cap and demo over the slot stop the build", () => {
@@ -999,7 +1037,8 @@ test("SCRIPT.md is the export's speaker script, word for word, under 16,000 char
   assert.ok(script.includes(`The numbers line is off in this export. With it, the slide would say: "${why.sayNumbers} ${why.say}"`));
   const u = committed.budget;
   assert.ok(script.includes(`Talk before the door: ${u.talkWords} words = ${u.talkSeconds} s at 150 wpm, plus 15 s of transitions = ${u.talkSeconds + u.transitionSeconds} s of the 180 s cap. At 135 words a minute it would take ${u.talkSlowSeconds} s, plus transitions ${Math.round((u.talkSlowSeconds + u.transitionSeconds) * 10) / 10} s.`));
-  for (const name of TEAM_NAMES.filter((n) => n !== "ScienceClaw")) assert.ok(!named(script, name), name);
+  for (const name of TEAM_NAMES.filter((n) => !CONSENTED.includes(n))) assert.ok(!named(script, name), name);
+  assert.match(script, /Named with consent: Delfie \(delphisci team\), help room message 57644; ScienceClaw, help room message 57532\./);
 });
 // Renders beside the export: the backup gate slide in all three outcomes, the door in both stage variants, and slide 8
 // with its numbers on, for Carter's call.

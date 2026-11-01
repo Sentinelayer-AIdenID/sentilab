@@ -268,7 +268,7 @@ export function teamResolver(teams, named) {
     return (s) => s.replace(TOKEN, (_, repo, raw) => {
       const id = raw.toLowerCase();
       if (repo) return named.has(id) ? teams[id].repo : "public repository";
-      if (named.has(id)) return teams[id].name;
+      if (named.has(id)) return teams[id].credit ?? teams[id].name;
       const phrase = `${ORDINAL[anon.indexOf(id)]} outside team`;
       return /^[A-Z]/.test(raw) ? phrase[0].toUpperCase() + phrase.slice(1) : phrase;
     });
@@ -314,8 +314,10 @@ export function buildFigureFrom(bytes, id, fig, { teams, named, cutoffMs }) {
   // figure keeps its author's label, which the checks below and the slide's public rules then read like any text.
   const label = /<svg\b[^>]*?\saria-label="([^"]*)"/.exec(svg);
   if (!label) throw new FinalError(`${where} has no aria-label on its root`);
-  if (!fig.keepLabel) svg = svg.replace(/(<svg\b[^>]*?\saria-label=")[^"]*(")/, `$1${xmlEscape(fig.alt)}$2`);
-  const alt = fig.keepLabel ? xmlText(label[1]) : fig.alt;
+  // This deck's own label may name teams by token ({delfie}), so it follows the consent on record like slide text does.
+  const ownAlt = fig.keepLabel ? null : teamResolver(teams, named)([fig.alt])(fig.alt);
+  if (!fig.keepLabel) svg = svg.replace(/(<svg\b[^>]*?\saria-label=")[^"]*(")/, `$1${xmlEscape(ownAlt)}$2`);
+  const alt = fig.keepLabel ? xmlText(label[1]) : ownAlt;
   for (const [tid, team] of Object.entries(teams)) {
     if (!named.has(tid) && nameIn(team.name, svg.replace(/data:image\/(?:png|jpeg);base64,[A-Za-z0-9+/=]+/g, ""))) throw new FinalError(`${where} still names ${team.name}, who has not consented`);
   }
@@ -381,7 +383,9 @@ export function buildFinalData({ final, hashes }, options = {}) {
   for (const [id, t] of Object.entries(final.teams)) {
     const consent = parseConsent(t.consent, `team ${id} consent`);
     if (consent && time(consent.at, `team ${id} consent`) > cutoffMs) throw new FinalError(`team ${id}'s consent is dated after the cutoff`);
-    if (consent) { named.add(id); teamData.named.push({ name: t.name, consent }); } else teamData.unnamed++;
+    // A named team appears in the form it asked for (Delfie: "Delfie (delphisci team)"); its bare name stays the key the
+    // leak checks look for.
+    if (consent) { named.add(id); teamData.named.push({ name: t.credit ?? t.name, consent }); } else teamData.unnamed++;
   }
   const resolver = teamResolver(final.teams, named);
 
@@ -650,8 +654,11 @@ export function plainTalkSlides(PT, { figureView, stills, demo, demoStatus }) {
       if (t.statement && !(said(t.statement.text) && said(t.statement.sub))) {
         throw new FinalError(`plain slide ${t.id}: its statement must be the script's own words, but ${JSON.stringify(t.statement)} is not in what is said`);
       }
-      return { id: t.id, main: true, kicker: t.kicker, notes: PT.numbersOnStage ? `${t.sayNumbers} ${t.say}` : t.say, content: {
-        layout: "why", title: t.title, numbers: PT.numbersOnStage ? t.numbers : null, statement: PT.numbersOnStage ? null : t.statement ?? null } };
+      // Off, its picture is aneta's "why" figure under the closer, captioned; on, the three numbers take its place.
+      const off = !PT.numbersOnStage;
+      return { id: t.id, main: true, kicker: t.kicker, notes: off ? t.say : `${t.sayNumbers} ${t.say}`, content: {
+        layout: "why", title: t.title, numbers: off ? null : t.numbers, statement: off ? t.statement ?? null : null,
+        figure: off && t.picture?.figure ? figureView(t.picture.figure) : null, caption: off ? t.caption ?? null : null } };
     }
     const st = t.picture?.still ? { ...stills[t.picture.still], label: t.picture.label ?? null } : null;
     if (t.picture?.still && !stills[t.picture.still]) throw new FinalError(`plain slide ${t.id} names a missing still ${t.picture.still}`);
@@ -669,7 +676,7 @@ export function plainTalkSlides(PT, { figureView, stills, demo, demoStatus }) {
 }
 // The backup line on names, from the consent flags alone.
 export function namesLine(teams, named) {
-  const yes = Object.keys(teams).filter((id) => named.has(id)).map((id) => teams[id].name);
+  const yes = Object.keys(teams).filter((id) => named.has(id)).map((id) => teams[id].credit ?? teams[id].name);
   if (!yes.length) return "No outside team is named on these slides until it agrees to be named.";
   const no = Object.keys(teams).length - yes.length;
   // "Not named here", not "until they agree": a team that has agreed stays unnamed until its figures are redrawn.
@@ -720,11 +727,11 @@ export function checkRendered(data, teams = {}, named = new Set()) {
 export function speakerScript(data, final, { label = "review export" } = {}) {
   const u = data.budget;
   const at = (w) => `${tenths(w / (u.checkWordsPerMinute / 60))} s`;
-  const names = data.teams.named.map((t) => `${t.name} (help room, message ${t.consent.seq})`);
+  const names = data.teams.named.map((t) => `${t.name}, help room message ${t.consent.seq}`);
   const out = [
     `# Speaker script, five-minute deck, ${label} ${data.deck.cutoff}`,
     "",
-    `The spoken words, exactly as the deck renders them from FINAL.json (sha256 ${data.source.finalSha256.slice(0, 8)}…)${final.plainTalk ? ", the main slides from the plain-language script in PLAIN-SCRIPT.md; every slide of the earlier five-minute deck is backup and is not spoken" : ""}. ${names.length ? `Named with consent: ${names.join(", ")}.` : "No team has consented yet."} Every other team reads "an outside team". ${final.plainTalk ? "Slide 5's pass test" : "Slide 4"} is the recorded ${data.deck.variantLabel}${data.build.measured ? ` (${data.build.measured.replace(",", " and ")})` : ""}${data.build.rederived ? ", with the completed re-derivation" : ""}.`,
+    `The spoken words, exactly as the deck renders them from FINAL.json (sha256 ${data.source.finalSha256.slice(0, 8)}…)${final.plainTalk ? ", the main slides from the plain-language script in PLAIN-SCRIPT.md; every slide of the earlier five-minute deck is backup and is not spoken" : ""}. ${names.length ? `Named with consent: ${names.join("; ")}.` : "No team has consented yet."} Every other team reads "an outside team". ${final.plainTalk ? "Slide 5's pass test" : "Slide 4"} is the recorded ${data.deck.variantLabel}${data.build.measured ? ` (${data.build.measured.replace(",", " and ")})` : ""}${data.build.rederived ? ", with the completed re-derivation" : ""}.`,
     "",
     `Clock (root, team room 57481): the talk before the door is capped at ${u.talkCapSeconds} s at ${u.checkWordsPerMinute} words a minute, transitions included. The door lines count inside the ${u.demoSeconds} s live demo.`,
   ];
