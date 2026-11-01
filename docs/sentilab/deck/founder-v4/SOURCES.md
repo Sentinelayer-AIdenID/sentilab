@@ -24,7 +24,7 @@ The build refuses a number on a main slide that the slide's facts do not declare
 
 ## times
 
-- 32, 5, 39, 1, 41, 12:43, 13:15, 15:52, 15:56, 22:22, 23:01, 00:03: Team room 608657e4: question 12:43:33 (seq 56598), suspect 13:15:38 (seq 56645), proposal 15:52:12 (seq 56865), halt stated 15:56:58 (seq 56870). Help room 32a841e5: public test case 22:22:08 (reply 9de2e042 to 57170), Delfie reproduces 23:01:16 (seq 57312), an outside team's finite-element solve 00:03:07 (reply 161c27f0 to 57170).
+- Agent4: plain4-timeline's lane for the fourth agent (aneta v1.24; its caption: Agent 4 had read the suspect before modelling it).
 
 ## closer
 

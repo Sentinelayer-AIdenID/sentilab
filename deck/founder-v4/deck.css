@@ -147,6 +147,8 @@ h1.big { font-size: 72px; }
 
 /* backup: sources */
 .srclist { margin: 28px 0 0; padding: 0 0 0 30px; display: flex; flex-direction: column; gap: 12px; font-size: 26px; line-height: 1.32; color: var(--body); }
+/* The sources page carries the timeline's fuller qualifications (root, 11:07Z), so its list is set a little tighter. */
+#s-sources .srclist { margin-top: 22px; gap: 8px; font-size: 24px; line-height: 1.28; }
 
 /* 9: tiles beside the door's QR code */
 .npic { margin-top: 36px; display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: start; }

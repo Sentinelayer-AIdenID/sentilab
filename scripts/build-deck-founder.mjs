@@ -265,7 +265,10 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
       shows: f.shows,
       source: `METRICS.json ${[].concat(f.metric).map((k) => { const m = metrics.byId.get(k); return `${k} = ${m.display}${m.unit ? ` ${m.unit}` : ""} (${m.definition.slice(0, 160)}${m.definition.length > 160 ? "…" : ""}; window ${m.window}; scope ${m.scope.slice(0, 120)})`; }).join(" minus ")}${f.derive && f.derive !== "value" && f.derive !== "minus" ? `, shown as its ${f.derive}` : ""}.`,
     } : f));
-    return { id: s.id, main: s.main, label: s.main ? `${i + 1} / ${main}` : `B${i - main + 1}`, kicker: s.kicker, content, notes, facts };
+    // The script's heading for the slide: its source heading, else its on-screen title, else its kicker; never empty.
+    const heading = [s.heading, content.title, s.kicker].find((x) => typeof x === "string" && x.trim());
+    if (!heading) throw new FounderError(`${where} has no heading, title or kicker for the script`);
+    return { id: s.id, main: s.main, label: s.main ? `${i + 1} / ${main}` : `B${i - main + 1}`, kicker: s.kicker, heading, content, notes, facts };
   });
   const talk = slides.filter((s) => s.main);
   const words = talk.reduce((a, s) => a + s.notes.words, 0);
@@ -319,7 +322,7 @@ export function speakerScript(data, v4) {
     "",
   ];
   for (const s of data.slides.filter((x) => x.main)) {
-    out.push(`## ${s.label.split(" ")[0]}. ${s.content.title ?? s.content.punch} (${s.kicker})`, "", s.notes.text, "", `${s.notes.words} words, ${s.notes.seconds} s at ${u.wordsPerMinute} wpm.${s.notes.cue ? ` Cue: ${s.notes.cue}` : ""}`, "");
+    out.push(`## ${s.label.split(" ")[0]}. ${s.heading} (${s.kicker})`, "", s.notes.text, "", `${s.notes.words} words, ${s.notes.seconds} s at ${u.wordsPerMinute} wpm.${s.notes.cue ? ` Cue: ${s.notes.cue}` : ""}`, "");
   }
   for (const o of data.options) {
     out.push(`## Option, Carter's call: not spoken unless he asks (slide ${o.slide})`, "", o.line, "", `Numbers: ${o.numbers} Qualifiers that travel with it: ${o.qualifiers} Source: ${o.source}`, "");

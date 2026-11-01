@@ -306,3 +306,21 @@ test("slide 9's QR code is read from its pixels: exactly https://sentilab.aideni
   wrong.stills.qr.payload = "https://sentilab.aidenid.com/sentilab/package/?feed=door&src=live";
   assert.throws(() => buildFounderData({ ...loaded, v4: wrong }), (e) => e instanceof FounderError && /encodes "https:\/\/sentilab\.aidenid\.com", not/.test(e.message));
 });
+
+test("root's rev 5 review: the timeline keeps its qualifications, help says refresh at the freeze, and no script heading is undefined", () => {
+  // Page 5: the accepted v1.24 timeline travels with its qualifications; the fuller account sits on the sources page.
+  assert.equal(slide(data, "times").content.footer, "Room posting times, not earlier local freezes. One agent saw a one-line preview; Agent4 had already read the suspect. Lanes show contributions, not independence. No savings baseline.");
+  assert.equal(slide(data, "times").content.figure.id, "plain4");
+  for (const t of ["room posting times, not earlier local freezes", "one agent had seen a one-line preview", "having already read the suspect", "not independence", "No savings figure: there is no baseline", "every plotted time kept"]) assert.ok(shown(data, "sources").includes(t), t);
+  // Page 3: the help count is to be refreshed, not refreshed already.
+  assert.match(shown(data, "room"), /refresh at the freeze\./);
+  assert.doesNotMatch(shown(data, "room") + shown(data, "sources"), /refreshed at the freeze/);
+  // The scripts: every main slide has a real heading, in both cuts.
+  for (const slot of ["3min", "2min"]) {
+    const heads = [...readFileSync(scriptPath(slot), "utf8").matchAll(/^## (\d+)\. (.*) \(([^)]*)\)$/gm)];
+    assert.equal(heads.length, slot === "3min" ? 10 : 6, slot);
+    for (const [, n, h] of heads) assert.ok(h.trim() && !/\bundefined\b|\bnull\b/.test(h), `${slot} slide ${n}: ${JSON.stringify(h)}`);
+  }
+  assert.match(readFileSync(scriptPath("3min"), "utf8"), /^## 8\. Check the grader before celebrating the score\. \(The point\)$/m);
+  assert.match(readFileSync(scriptPath("3min"), "utf8"), /^## 10\. Whoever owns the decision layer on agent traffic\. \(Why it matters\)$/m);
+});

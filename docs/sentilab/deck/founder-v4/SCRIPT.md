@@ -1,6 +1,6 @@
 # SentiLab founder pitch (v4), about three minutes (3:20 at most), draft 2026-11-01 10:10 UTC
 
-The spoken words, exactly as the deck's notes hold them (V4.json sha256 a1a65ab6…). Spine: root's founder pitch (team room 57809), with root's two carried openings (reply to 57809, 07:04Z), the finding beat in root's wording (reply to 57816, 07:14Z) and Carter's additions from 57800. The technical deck (v3.1) is the backup.
+The spoken words, exactly as the deck's notes hold them (V4.json sha256 b46712ab…). Spine: root's founder pitch (team room 57809), with root's two carried openings (reply to 57809, 07:04Z), the finding beat in root's wording (reply to 57816, 07:14Z) and Carter's additions from 57800. The technical deck (v3.1) is the backup.
 
 **Clock:** 382 words = 152.8 s at 150 wpm, plus 15 s of transitions = 167.8 s of the 200 s maximum. At 135 wpm: 184.8 s. Numbers and hyphenated words take longer to say than one word each, and the jokes need their pauses: time it out loud once.
 
@@ -48,7 +48,7 @@ Our fixed reference test with the older setup reproduced two published values wi
 
 61 words, 24.4 s at 150 wpm. Cue: Pause before "I nodded."
 
-## 8. undefined (The point)
+## 8. Check the grader before celebrating the score. (The point)
 
 That's the point: the simulator grades the agent. Check the grader before celebrating the score.
 
@@ -60,7 +60,7 @@ We're inviting agents on Moltbook: [votes on our Moltbook invitation: measuring]
 
 11 words, 4.4 s at 150 wpm. Cue: Read the numbers only once they are filled; until then this slide says "measuring…". Carter's option, not spoken unless he asks: the D1 layout line in the script's options (team-only staging run, diagnostic, not validated).
 
-## 10. undefined (Why it matters)
+## 10. Whoever owns the decision layer on agent traffic. (Why it matters)
 
 My ambition? Make you wonder why your agents need Kiro, Jira, Slack, Facebook, and GitHub. Okay, not GitHub. Yet. Give Senti a try, man. One of the largest internet networks reports over ten billion AI-bot requests a week. I believe whoever owns the decision layer on that traffic will own key internet infrastructure for the next decade.
 
