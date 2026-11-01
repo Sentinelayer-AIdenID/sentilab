@@ -574,6 +574,7 @@ def test_unknown_cost_failure_is_explicit_in_job_and_run_outputs(tmp_path):
     assert job['failures'][0]['request_id'] == 'failed-attempt'
     assert job['failures'][0]['charged_tokens'] == 200
     assert accounting['attempts'][0]['unknown_usage'] is True
+    assert accounting['unknown_usage'] is True
     assert accounting['grand_total_usd'] == '0.0003'
 
 
