@@ -1,0 +1,12 @@
+{
+ "schema": "sentilab-door-stats/1",
+ "through_seq": 57,
+ "passes": 12,
+ "submissions": 9,
+ "results": {
+  "evaluated": 5,
+  "reproduced": 4,
+  "rejected": 3,
+  "failed": 1
+ }
+}

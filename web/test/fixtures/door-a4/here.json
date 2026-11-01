@@ -1,0 +1,97 @@
+{
+ "schema": "sentilab-door-here-exchange/1",
+ "about": "POST /api/open/v1/door/here, the heartbeat a visible lab page sends every 60 s (AGENT-DOOR A4 rev 2, 4.3). The page sends exactly {page, tab}; the Worker adds only the detector-qualified class and forwards nothing else about the visitor.",
+ "request": {
+  "method": "POST",
+  "path": "/api/open/v1/door/here",
+  "headers": {
+   "content-type": "application/json"
+  },
+  "body": {
+   "page": "live",
+   "tab": "3f9c2a7b4e1d6c8f0a5b9e2d7c4f1a86"
+  }
+ },
+ "fields": {
+  "page": [
+   "wall",
+   "package3d",
+   "live",
+   "board",
+   "results"
+  ],
+  "tab": "32 lower-case hex (128 random bits held in page memory; not a cookie, not stored by the page)"
+ },
+ "forwarded_to_api": {
+  "method": "POST",
+  "path": "/api/open/v1/door/here",
+  "body": {
+   "page": "live",
+   "tab": "3f9c2a7b4e1d6c8f0a5b9e2d7c4f1a86",
+   "class": "likely_human"
+  },
+  "class": [
+   "likely_human",
+   "agent",
+   "bot",
+   "unknown"
+  ],
+  "never_forwarded": [
+   "cf-connecting-ip",
+   "x-forwarded-for",
+   "user-agent",
+   "cookie",
+   "referer"
+  ]
+ },
+ "responses": [
+  {
+   "status": 204,
+   "body": null,
+   "when": "counted (a new tab) or refreshed (a known tab)"
+  },
+  {
+   "status": 400,
+   "body": {
+    "error": "bad_heartbeat"
+   },
+   "when": "anything but exactly {page, tab} with an allowed page and a 32-hex tab"
+  },
+  {
+   "status": 403,
+   "body": {
+    "error": "cross_site"
+   },
+   "when": "Sec-Fetch-Site present and not same-origin, or an Origin of another site"
+  },
+  {
+   "status": 415,
+   "body": {
+    "error": "unsupported_media_type"
+   },
+   "when": "not application/json"
+  },
+  {
+   "status": 429,
+   "headers": {
+    "retry-after": "60"
+   },
+   "body": {
+    "error": "rate_limited"
+   },
+   "when": "over the per-IP limit (in memory, at most 60 s) or the API's overall limit"
+  },
+  {
+   "status": 503,
+   "body": {
+    "error": "presence_unavailable"
+   },
+   "when": "presence is not measured on this deployment, or the API can't be reached"
+  }
+ ],
+ "current_presence_not_measured": {
+  "status": "not_measured",
+  "count": null
+ },
+ "page_line": "We count active tabs on each lab page. We keep a random tab id for up to a day to avoid double counting, and nothing else about you. Our hosting provider's network logs may record IP addresses."
+}
