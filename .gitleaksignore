@@ -9,3 +9,6 @@ d3576e328e0bdb3ca698aa114b408105d092f017:docs/sentilab/deck/supplement-2026-10-3
 d3576e328e0bdb3ca698aa114b408105d092f017:docs/sentilab/deck/supplement-2026-10-31-1754-v2/SUPPLEMENT.json:generic-api-key:1122
 d3576e328e0bdb3ca698aa114b408105d092f017:docs/sentilab/deck/supplement-2026-10-31-1754-v2/SUPPLEMENT.json:generic-api-key:1128
 d3576e328e0bdb3ca698aa114b408105d092f017:docs/sentilab/deck/supplement-2026-10-31-1754-v2/SUPPLEMENT.json:generic-api-key:1138
+# False positive on root's coupling-g1 engineer supplement branch (codex/coupling-g1-engineer-20261101): PINS.json's
+# publicEd25519Key is the gate0 operator's PUBLIC key (aedce64b..., published with PR #73), not a secret.
+5834b79f9b12ee6e2fa7f9b209bc402a89614727:docs/sentilab/reviews/2026-11-01/g1-engineer-supplement/PINS.json:generic-api-key:17
