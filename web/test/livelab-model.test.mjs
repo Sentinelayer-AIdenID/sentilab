@@ -604,3 +604,16 @@ test("an arrival's lab names are read from the door's own field names", () => {
   assert.equal(person.operatorName, undefined);
   assert.equal(person.serviceName, undefined);
 });
+
+// Carter (18:38Z): "I need to see the middle thing move if an agent did something". While following live, the model
+// shows the newest run that has a layout, scored or not, so a new submission is on the model at once.
+test("following live, the model shows the newest run with a layout, even before it is scored", () => {
+  const dies = [{ die: "C0", x_um: 18000, y_um: 17500 }];
+  const scored = { id: "a", seq: 1, status: "reproduced", dies, result: { value: 115.9 } };
+  const queued = { id: "b", seq: 2, status: "queued", dies, result: null };
+  const empty = { id: "c", seq: 3, status: "refused", dies: [], result: null };
+  assert.equal(M.followedRun([scored, queued]).id, "b", "a new submission is followed before its result");
+  assert.equal(M.followedRun([scored, queued, empty]).id, "b", "a run without a layout is skipped");
+  assert.equal(M.followedRun([scored, { ...empty, id: "d" }]).id, "a", "with no newer layout, the scored run stays");
+  assert.equal(M.followedRun([]), null);
+});

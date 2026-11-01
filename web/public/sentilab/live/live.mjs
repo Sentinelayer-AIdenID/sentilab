@@ -123,7 +123,7 @@ function shownRun() {
     const L = layouts().find((l) => l.id === at.run_id);
     if (L) return { L, at: { kind: "run", run_id: at.run_id, state: at.state, seq: at.seq, at: at.at } };
   }
-  return { L: M.pickRun(layouts(), S.selectedId), at: null };
+  return { L: S.selectedId == null ? M.followedRun(layouts()) : M.pickRun(layouts(), S.selectedId), at: null };
 }
 
 function render() {
@@ -288,7 +288,14 @@ function renderModel() {
   $("packageCanvas2d").hidden = renderer !== "2d";
   if (!L) { draw2d(null); return; }
   if (renderer === "2d") { draw2d(L); return; }
-  if (S.v3) { if (!S.drawn || S.drawn.key !== drawKey(L, at)) { const first = !S.drawn; drawPackage(L, view, at); if (first) frameCamera(); } }
+  if (S.v3) { if (!S.drawn || S.drawn.key !== drawKey(L, at)) {
+    // A new run while following live drops in: its dies start lifted and settle onto the package (setExplode eases
+    // back to the viewer's own setting), so an agent's action visibly moves the model. Its own geometry and words
+    // from the first frame; nothing glides from the previous run. Reduced motion: drawn at once, as before.
+    const first = !S.drawn, arrived = !first && S.drawn.id !== L.id && S.selectedId == null && S.cursorSeq == null;
+    if (arrived && !REDUCED && S.motion) { const rest = S.explode; S.explode = 1; drawPackage(L, view, at); setExplode(rest, { animate: true }); }
+    else { drawPackage(L, view, at); if (first) frameCamera(); }
+  } }
   else ensure3d().then(() => renderModel());
 }
 // The controls the renderer in use supports; the others are disabled and say why.

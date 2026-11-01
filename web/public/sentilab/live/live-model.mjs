@@ -314,6 +314,13 @@ export function pickRun(layouts, selectedId) {
   const list = layouts ?? [];
   return list.find((l) => l.id === selectedId) ?? [...list].reverse().find((l) => l.result) ?? list.at(-1) ?? null;
 }
+// The run the model follows while the viewer hasn't picked one: the newest run that has a layout, whatever its
+// state, so an agent's new submission is on the model at once (Carter, 18:38Z: "the middle thing moves if an agent
+// did something"); its result fills in when the door has one. Without any layout, the same run pickRun shows.
+export function followedRun(layouts) {
+  const list = layouts ?? [];
+  return [...list].reverse().find((l) => Array.isArray(l.dies) && l.dies.length > 0) ?? pickRun(list, null);
+}
 // What the result panel shows for one run. Bound to this run's own record: when the run changes, every value here
 // changes with it (one object in, one view out); a run without a result in a scored state shows why there is none.
 // at: a replay cursor at one of this run's records ({ kind: "run", run_id, state, seq, at }). A record carries a state
