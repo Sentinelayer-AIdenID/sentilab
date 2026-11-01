@@ -42,7 +42,8 @@
     "The freeze inputs (the coordinator, 14:30Z): cutoff 2026-11-01T14:30:00Z; slide 9 takes its no-numbers fallback on the sealed receipt metrics-freeze-20261101T1430Z (SHA256SUMS 92e56ff5..., zip d4429c38...); slide 3's room counts from that receipt's METRICS.json and METRICS.md (generated 14:31:49.818Z), each number in its own window; CARTER-QA.md v1.36 pinned after root's two receipt checks.",
     "The coordinator (14:42Z-14:46Z): a final build says what slide 9 does, with no \"measuring\" in its cue or the sheet header; and aneta's P2 from her page-by-page read of final cc6ae9cd (14:41:15Z): slide 9's fallback QR code larger, in the free space beside the figure's text, the door's line kept (final-2 at 15:15Z).",
     "Root's content P2 (14:45:47Z), relayed by the coordinator: the cost page's intent-model line from the freeze METRICS (intent_model.calls, 634 recorded successful calls to 14:18:33Z), with its own window and no dollar claim; the other figures from the 07:47 window dated or updated.",
-    "Slide 3's picture (the coordinator, 15:01Z): aneta's plain14-room v4 (ZIP fc371317..., 58095), root's scoped +1 at 14:56:50Z, in place of the five tiles; root's three qualifications in the footer and SOURCES; the sources entry in aneta's words (58095, 14:50:33Z) with them; the help outcomes (4/9/2) kept as separately accepted."
+    "Slide 3's picture (the coordinator, 15:01Z): aneta's plain14-room v4 (ZIP fc371317..., 58095), root's scoped +1 at 14:56:50Z, in place of the five tiles; root's three qualifications in the footer and SOURCES; the sources entry in aneta's words (58095, 14:50:33Z) with them; the help outcomes (4/9/2) kept as separately accepted.",
+    "final-3 (the coordinator, 15:19Z-15:21Z): aneta's read of final-2's page 3 (15:18:01Z), slide 3's title clipped by plain14's box, fixed without editing the SVG; CARTER-QA.md and DEMO-RUN-SHEET.md v1.40 pinned after root's exact +1 at 15:20:14Z."
   ],
   "teams": {
     "named": {
@@ -172,12 +173,12 @@
   },
   "handoff": {
     "CARTER-QA.md": {
-      "sha256": "07edabefbbb5296ae617cd3ea0560952b067d7774a43b23201ffe50a79a22982",
-      "from": "aneta's v1.36 (reply to 58068, 13:57Z; 8,615 bytes), with root's factual +1 at 14:13:14Z and both of root's receipt checks at the 14:30Z freeze (the outside-use row matches the attribution freeze; the authors' tracker has no new issue, so \"theirs to file\" holds), relayed by the coordinator"
+      "sha256": "4dd1e2ae1e957e0aa5d106b7be3224e7b759e007b5755405eee4810fce04a267",
+      "from": "aneta's v1.40 (9,788 bytes), with root's exact +1 at 15:20:14Z (reply to 58137), relayed by the coordinator; it replaces v1.36"
     },
     "DEMO-RUN-SHEET.md": {
-      "sha256": "edd18756a02cf498c4ac5671e4162ecb61623c3924ef0f1b8962405b248c9962",
-      "from": "aneta's v1.31 (ZIP 6813d5e0..., 41,586 bytes), the newest DEMO-RUN-SHEET.md: v1.32 carries none"
+      "sha256": "1567ae683ad57f3b4026213e205db67bb28721196516178715431ee5999c61eb",
+      "from": "aneta's v1.40 (6,500 bytes), with root's exact +1 at 15:20:14Z (reply to 58137), relayed by the coordinator; it replaces the edd18756 pin"
     }
   },
   "slides": [

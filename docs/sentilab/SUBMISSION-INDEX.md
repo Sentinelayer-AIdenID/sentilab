@@ -4,24 +4,24 @@ Exact identities for the ScienceClaw hackathon submission, 1 November 2026. Ever
 length and sha256, to be read back from main. The freeze receipt is listed by its recorded hashes only; the engineer
 packet by commit-qualified links into this private repository, with its byte lengths and hashes. No signed links.
 
-## 1. Final deck, built at `79b6e5ea4bc23e7d2054177094c0c8eba7223773`
+## 1. Final deck, built at `71065f8130d7bd94fa583cbbf67eda053b8adcfd`
 
 | Item | Path | Bytes | sha256 |
 |---|---|---|---|
-| Founder pitch, 3 minutes (v4), final PDF | `docs/sentilab/deck/founder-v4/SentiLab-founder-3min-2026-11-01-1430-final.pdf` | 612,611 | `5fd9adcfc48e0db7a51895e6a8a1cffa09f5fa5b0d454e1134e6b98d04858278` |
-| Founder pitch, 2 minutes (v4-short), final PDF | `docs/sentilab/deck/founder-v4/SentiLab-founder-2min-2026-11-01-1430-final.pdf` | 612,523 | `8c6f39560a884ae36cf61dcf3ac648b76fbc8b84a30a0b7dc9c6872d115a975f` |
-| Contact sheet, 3 minutes | `docs/sentilab/deck/founder-v4/sheet-main.png` | 3,710,861 | `209d75c53173b2f29070cbbd1e03c0605e5d0dd5bd3bb3db602be7a2b51931c3` |
-| Contact sheet, 2 minutes | `docs/sentilab/deck/founder-v4/sheet-main-2min.png` | 2,396,080 | `af1a9077125dd942d35a6a126b5cb334362c78a49bc3c5b4c98aedd7c1fdfb54` |
-| Speaker script, 3 minutes | `docs/sentilab/deck/founder-v4/SCRIPT.md` | 6,815 | `55de265889116170ffdb7b4689b50d052be58c7f532c0f5ebde1e33a55ac99d8` |
-| Speaker script, 2 minutes | `docs/sentilab/deck/founder-v4/SCRIPT-2min.md` | 5,189 | `9537f9cc0c28376d15fad18d6e362f24cc6157e5531d981abba23cfeee4fa4bd` |
+| Founder pitch, 3 minutes (v4), final PDF | `docs/sentilab/deck/founder-v4/SentiLab-founder-3min-2026-11-01-1430-final.pdf` | 612,612 | `49726618416acdcb0224fdb9e3554d1fbe6477bfea036ed022800b99e3fa6779` |
+| Founder pitch, 2 minutes (v4-short), final PDF | `docs/sentilab/deck/founder-v4/SentiLab-founder-2min-2026-11-01-1430-final.pdf` | 612,524 | `63519edd98e4694cb8cbabebbcceeaa2bea9d0f6e338bff3be47cf7dced550f6` |
+| Contact sheet, 3 minutes | `docs/sentilab/deck/founder-v4/sheet-main.png` | 3,711,599 | `eb2f033faa3a933dbdfbfab9cfacc8895e597cc1181f85edd797ed89f7e60d70` |
+| Contact sheet, 2 minutes | `docs/sentilab/deck/founder-v4/sheet-main-2min.png` | 2,399,762 | `694add81777bab73a56817af0d3497abb8c0294ee4c43a04bf2d1b16daba3fad` |
+| Speaker script, 3 minutes | `docs/sentilab/deck/founder-v4/SCRIPT.md` | 6,815 | `dd4b7b2ae4d418b9fd877381d1569343e1da11bbcf834920c739105312c0ba47` |
+| Speaker script, 2 minutes | `docs/sentilab/deck/founder-v4/SCRIPT-2min.md` | 5,189 | `433ac675af6f40deb0519e4845889143ec6025cd1c377bc87fb269f3054c3166` |
 | CUTS.md: a proposed cut, not applied | `docs/sentilab/deck/founder-v4/CUTS.md` | 3,496 | `01fa57a748219bcc28f6abbc33ec2ed9b98b982c70e5313a943e91d50bd5af76` |
 
 ## 2. Carter's handoff files
 
 | Item | Path | Bytes | sha256 |
 |---|---|---|---|
-| CARTER-QA.md, v1.36 | `docs/sentilab/deck/founder-v4/CARTER-QA.md` | 8,615 | `07edabefbbb5296ae617cd3ea0560952b067d7774a43b23201ffe50a79a22982` |
-| DEMO-RUN-SHEET.md | `docs/sentilab/deck/founder-v4/DEMO-RUN-SHEET.md` | 5,490 | `edd18756a02cf498c4ac5671e4162ecb61623c3924ef0f1b8962405b248c9962` |
+| CARTER-QA.md, v1.40 | `docs/sentilab/deck/founder-v4/CARTER-QA.md` | 9,788 | `4dd1e2ae1e957e0aa5d106b7be3224e7b759e007b5755405eee4810fce04a267` |
+| DEMO-RUN-SHEET.md, v1.40 | `docs/sentilab/deck/founder-v4/DEMO-RUN-SHEET.md` | 6,500 | `1567ae683ad57f3b4026213e205db67bb28721196516178715431ee5999c61eb` |
 
 ## 3. Freeze receipt (private packet route; hashes only)
 

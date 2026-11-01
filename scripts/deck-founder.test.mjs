@@ -602,7 +602,7 @@ test("SUBMISSION-INDEX.md: every in-repo entry reads back exactly, and the index
 });
 
 test("Carter's handoff files sit beside the scripts, exactly as received and pinned, and are not slides", () => {
-  const pins = { "CARTER-QA.md": "07edabefbbb5296ae617cd3ea0560952b067d7774a43b23201ffe50a79a22982", "DEMO-RUN-SHEET.md": "edd18756a02cf498c4ac5671e4162ecb61623c3924ef0f1b8962405b248c9962" };
+  const pins = { "CARTER-QA.md": "4dd1e2ae1e957e0aa5d106b7be3224e7b759e007b5755405eee4810fce04a267", "DEMO-RUN-SHEET.md": "1567ae683ad57f3b4026213e205db67bb28721196516178715431ee5999c61eb" };
   assert.deepEqual(Object.fromEntries(Object.entries(loaded.v4.handoff).map(([f, h]) => [f, h.sha256])), pins);
   assert.equal(handoffFiles(loaded.v4).size, 2);
   for (const f of Object.keys(pins)) assert.ok(existsSync(join(FOUNDER_DIR, f)) && !existsSync(join(FOUNDER_DECK_DIR, f)), f);

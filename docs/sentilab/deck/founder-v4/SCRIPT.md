@@ -1,6 +1,6 @@
 # SentiLab founder pitch (v4), about three minutes (3:20 at most), final 2026-11-01 14:30 UTC
 
-The spoken words, exactly as the deck's notes hold them (V4.json sha256 c0f95d52…). Spine: root's founder pitch (team room 57809), with root's two carried openings (reply to 57809, 07:04Z), the finding beat in root's wording (reply to 57816, 07:14Z) and Carter's additions from 57800. The technical deck (v3.1) is the backup.
+The spoken words, exactly as the deck's notes hold them (V4.json sha256 03de2724…). Spine: root's founder pitch (team room 57809), with root's two carried openings (reply to 57809, 07:04Z), the finding beat in root's wording (reply to 57816, 07:14Z) and Carter's additions from 57800. The technical deck (v3.1) is the backup.
 
 **Clock:** 404 words = 161.6 s at 150 wpm, plus 15 s of transitions = 176.6 s of the 200 s maximum. At 135 wpm: 194.6 s. Numbers and hyphenated words take longer to say than one word each, and the jokes need their pauses: time it out loud once.
 
