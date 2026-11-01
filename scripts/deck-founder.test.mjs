@@ -108,7 +108,10 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   assert.deepEqual(slide(data, "room").content.tiles[3], { value: "Four", label: "outside groups reported checks of our test case. We offered help to nine groups in all; two of the other five said it was useful." });
   assert.doesNotMatch(shown(data, "room"), /\b281\b|04:01|we offered help to 8|3 outside groups/);
   assert.match(shown(data, "room"), /Help offered: what the groups themselves reported, to 12:46 UTC\./);
-  assert.match(shown(data, "sources"), new RegExp(`Model-rated, not confirmed usefulness: our intent model rated ${help("helpful.messages")} of the ${help("helpful.scored_messages")}`));
+  assert.match(shown(data, "sources"), new RegExp(`Model-rated, not confirmed usefulness, to 1 Nov \\d\\d:\\d\\d UTC: our intent model rated ${help("helpful.messages")} of the ${help("helpful.scored_messages")}`));
+  // Root's content P2 (14:45:47Z): the cost page's intent-model line is the freeze file's, in its own window, with no dollar claim.
+  assert.ok(shown(data, "cost").includes(`Our intent model: ${help("intent_model.calls")} recorded successful calls (109 dry run, 448 live, 77 host scores), 31 Oct 22:13 to 1 Nov 14:18 UTC; its cost is not measured.`));
+  assert.doesNotMatch(shown(data, "cost"), /\b480 calls\b|hackathon window/);
   assert.match(shown(data, "sources"), /Help offered, to 12:46 UTC: nine outside groups, each counted once\. Four reported checks of our test case: .*; another outside team, after 04:01\. Two of the other five said our help was useful \(21:13:28; 00:04:12 and 00:08:14\)\. Three unconfirmed\./);
   assert.ok(readFileSync(FOUNDER_OUTPUTS.sources, "utf8").includes("Aneta's refreshed help line (team room 58014, 12:46:31Z), with root's scoped +1 and his explicit disjoint wording (reply to 57809, 12:57:04Z)"));
   assert.match(fillInTable(draft), /## Refresh at the freeze/);

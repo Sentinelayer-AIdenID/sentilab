@@ -32,3 +32,8 @@ The build refuses a number on a main slide that the slide's facts do not declare
 ## closer
 
 - 10, 2026, 1,700: blog.cloudflare.com/rethinking-cache-ai-humans/ (April 2026) and blog.cloudflare.com/agentic-web (Sept 2026), cited on the backup page.
+
+## cost
+
+- 634: METRICS.json intent_model.calls = 634 API calls (successful, recorded locally) (Judgment calls to the intent model recorded on disk: helpboard dry run 109 (22:13Z) + helpboard live 448 (to 2026-11-01T14:18:33.973Z) + collab-report host scor…; window 2026-10-31T22:13:05.458Z to 2026-11-01T14:18:33.973Z; scope help room scoring only (helpboard + collab report)).
+- 230.03: The minted-agent orchestrator's proxy delta from 31 Oct 13:30:56 UTC to 1 Nov 06:49:40 UTC, at measured billed rates, not the invoice; it excludes other usage (root, reply to 58054 at 13:55:54Z).
