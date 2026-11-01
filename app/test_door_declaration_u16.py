@@ -11,9 +11,9 @@ scorer or live server is started.
    the Worker's copy to the same table
 """
 import hashlib
-import importlib.util
 import json
 import tempfile
+import types
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -41,6 +41,15 @@ PINNED_NOTICES = {"sentilab-public-visitor/1": "89a0a0672697cebba94fe2918f7fa2a0
 
 def codes_of(ranges):
     return [cp for first, last in ranges for cp in range(first, last + 1)]
+
+
+def load_generator():
+    """web/test/make_declare_unicode.py as a module, without writing its bytecode beside it: web/test is scanned for
+    control bytes (web/test/control-bytes.test.mjs), and a .pyc is full of them."""
+    module = types.ModuleType("make_declare_unicode")
+    module.__file__ = str(GENERATOR)
+    exec(compile(GENERATOR.read_bytes(), str(GENERATOR), "exec"), module.__dict__)
+    return module
 
 
 class DeclarationTextU16Tests(unittest.TestCase):
@@ -115,10 +124,7 @@ class DeclarationTextU16Tests(unittest.TestCase):
 
     # 3 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
     def test_3_the_workers_tables_and_the_verdict_fixture_are_the_generators_output(self):
-        spec = importlib.util.spec_from_file_location("make_declare_unicode", GENERATOR)
-        generator = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(generator)
-        for path, data in generator.generate().items():
+        for path, data in load_generator().generate().items():
             with self.subTest(path.relative_to(REPO).as_posix()):
                 self.assertTrue(path.exists(), "regenerate with python web/test/make_declare_unicode.py")
                 self.assertEqual(path.read_bytes(), data, "regenerate with python web/test/make_declare_unicode.py")
