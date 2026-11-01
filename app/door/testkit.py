@@ -2,7 +2,7 @@
 
 - door_manifest(): the golden CPU-DRAM draft (contracts/open-proposal-v1/golden/manifests.json "M") made `signed`
   the way the contract's own signed test manifest is: every pin an obviously fake hash, except the evaluator's binary,
-  which is the gate-zero HotSpot 6.0 hash the door pins.
+  which is the gate-zero HotSpot 6.0 hash the door pins, and its build, which is the test scorer image (SCORER_IMAGE).
 - TEST_KEY: an Ed25519 key derived from a public phrase. It signs test bindings only; the door's pinned operator key
   is warden's, and a binding signed with this key never verifies against it.
 - FakeScorer: a deterministic stand-in for door-scorer's Score. Its grid is a smooth sum of bumps at the die centres
@@ -52,8 +52,8 @@ def fake(label: str) -> str:
     return hashlib.sha256(("sentilab agent door fake: " + label).encode()).hexdigest()
 
 
-# The scorer image the test grant pins. FakeScorer's receipts name it, as door-scorer's bound receipts always name the
-# grant's image digest (app/door/scorer.py, bound_receipt).
+# The scorer image: the test manifest's statistic.evaluator.build and the test grant pin it, and FakeScorer's receipts
+# name it, as door-scorer's bound receipts always name the grant's image digest (app/door/scorer.py, bound_receipt).
 SCORER_IMAGE = "sha256:" + fake("scorer image")
 
 
@@ -65,7 +65,7 @@ def door_manifest(**edits) -> dict:
     manifest["references"]["file_sha256"] = fake("reference file")
     manifest["statistic"]["evaluator"].update({"binary_sha256": EVALUATOR_BINARY_SHA256,
                                                "gate_zero_record_sha256": fake("gate zero record"),
-                                               "build": "sha256:" + fake("image"), "runtime": "door-test"})
+                                               "build": SCORER_IMAGE, "runtime": "door-test"})
     manifest["statistic"]["numerical_admission"] = "admitted"
     manifest["wire"]["router_sha256"] = fake("router")
     manifest["policy"].update({"status": "frozen; policy choices, not uncertainty; fixed before any candidate is "

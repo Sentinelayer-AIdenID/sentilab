@@ -96,6 +96,7 @@ class EvaluatorIdentityTests(unittest.TestCase):
                                                self.manifest, self.grant),
             "another image digest": (self.receipt | {"image_digest": OTHER}, self.manifest,
                                      Grant.parse(tk.grant(scorer_image_digest=OTHER))),
+            "another manifest build": (self.receipt, manifest(**{"statistic.evaluator.build": OTHER}), self.grant),
             "another engine commit": (self.receipt, manifest(**{"statistic.evaluator.upstream": "0" * 40}),
                                       self.grant),
             "another engine": (self.receipt, manifest(**{"statistic.evaluator.kind": "hotspot7"}), self.grant),
@@ -125,12 +126,12 @@ class EvaluatorIdentityTests(unittest.TestCase):
                 self.assertEqual("unvalidated", label_for(text))
                 self.assertTrue(EVALUATOR.match(text), text)
                 seen.add(text)
-        # No grant, no receipt digest and another image all attest the same thing (no image); every other mismatch is
-        # its own string.
+        # No grant, no receipt digest, another image and another manifest build all attest the same thing (no image);
+        # every other mismatch is its own string.
         no_image = {self.identity(*cases[name]) for name in ("no grant", "no image digest in the receipt",
-                                                             "another image digest")}
+                                                             "another image digest", "another manifest build")}
         self.assertEqual(1, len(no_image))
-        self.assertEqual(len(cases) - 2, len(seen))
+        self.assertEqual(len(cases) - 3, len(seen))
         # The readable fields are what the run attests.
         self.assertIn(":binary_sha256:" + other_binary + ":", self.identity(*cases["another binary"]))
         self.assertIn(":grid:32x32:", self.identity(*cases["another grid"]))
@@ -190,13 +191,23 @@ class ImageDigestTests(unittest.TestCase):
         fields = {} if digest is ABSENT else {"scorer_image_digest": digest}
         return SimpleNamespace(**fields, **({} if tag is ABSENT else {"scorer_image_tag": tag}))
 
-    def identity(self, receipt, grant, registered) -> str:
-        text = evaluator_identity(receipt, self.manifest, grant, registered=registered)
+    @staticmethod
+    def manifest_building(build) -> dict:
+        """The test manifest with statistic.evaluator.build set to `build`, or without it (ABSENT)."""
+        if build is ABSENT:
+            manifest = tk.door_manifest()
+            del manifest["statistic"]["evaluator"]["build"]
+            return manifest
+        return tk.door_manifest(**{"statistic.evaluator.build": build})
+
+    def identity(self, receipt, grant, registered, manifest=None) -> str:
+        text = evaluator_identity(receipt, self.manifest if manifest is None else manifest, grant,
+                                  registered=registered)
         self.assertTrue(EVALUATOR.match(text), text)
         return text
 
-    def assert_unvalidated(self, receipt, grant, registered):
-        text = self.identity(receipt, grant, registered)
+    def assert_unvalidated(self, receipt, grant, registered, manifest=None):
+        text = self.identity(receipt, grant, registered, manifest)
         self.assertNotEqual(BUILD["id"], text)
         self.assertEqual("unvalidated", label_for(text))
 
@@ -257,12 +268,36 @@ class ImageDigestTests(unittest.TestCase):
             for name, receipt, grant in runs:
                 with self.subTest(registry=registered_name, run=name):
                     self.assert_unvalidated(receipt, grant, registered)
+            for build in (None, ABSENT):
+                with self.subTest(registry=registered_name, run="no digest anywhere, the manifest's build too",
+                                  manifest_build=build):
+                    self.assert_unvalidated(self.receipt(None), self.grant(None), registered,
+                                            self.manifest_building(build))
+
+    def test_root_p1_the_signed_manifests_build_must_be_the_recorded_digest(self):
+        """root's P1 on #85 (at ca3fc2be): the signed manifest's statistic.evaluator.build is the fourth digest. With
+        receipt, grant and registry all D, a manifest build that is anything but exactly D reads unvalidated: another
+        well-formed digest, null (a draft placeholder, never a match), absent, upper case, padded, a tag."""
+        hexits = D[len("sha256:"):]
+        builds_named = [("another image's digest", OTHER), ("the 5cedde1 runtime's digest", CDE9), ("null", None),
+                        ("absent", ABSENT), ("upper-case hex", "sha256:" + hexits.upper()),
+                        ("an upper-case prefix", "SHA256:" + hexits), ("a leading space", " " + D),
+                        ("a trailing newline", D + "\n"), ("the gate-zero tag", TAG),
+                        ("the 5cedde1 tag", "sentilab-gate0:5cedde1"), ("bare hex", hexits), ("empty", ""),
+                        ("a list", [D])]
+        for name, value in builds_named:
+            with self.subTest(name):
+                self.assert_unvalidated(self.receipt(D), self.grant(D), registry(D), self.manifest_building(value))
+        # The same run with the manifest's build exactly D is the build: the fourth digest is the only change.
+        text = self.identity(self.receipt(D), self.grant(D), registry(D), self.manifest_building(D))
+        self.assertEqual((BUILD["id"], "reproduction_tested"), (text, label_for(text)))
 
     def test_positive_control_the_recorded_digest_on_both_sides_names_the_build(self):
         """With a test-only registry recording digest D for the build, a run whose receipt and signed grant both
         carry D is the build, whatever tag (if any) is about: the tag never decides."""
         signed = Grant.parse(tk.grant())
-        self.assertEqual(D, signed.scorer_image_digest)
+        self.assertEqual((D, D), (signed.scorer_image_digest, self.manifest["statistic"]["evaluator"]["build"]),
+                         "the test grant and the test manifest pin the test scorer image")
         for grant in (signed, self.grant(D, tag=ABSENT), self.grant(D), self.grant(D, tag="sentilab-gate0:0000000"),
                       self.grant(D, tag=None)):
             with self.subTest(grant=grant):
@@ -319,6 +354,36 @@ class DoorP1Tests(tk.DoorCase, unittest.TestCase):
                 result = scored(self, moved(40 + index), nonce=tk.nonce(70 + index))["result"]
                 self.assertNotEqual(BUILD["id"], result["evaluator"])
                 self.assertEqual("unvalidated", result["temperature_label"])
+
+
+class DoorManifestBuildTests(tk.DoorCase, unittest.TestCase):
+    """root's P1 through the door: the signed manifest names another build (a well-formed digest, as a signed manifest
+    must) while the binding pins, and the receipts name, the image the test registry records. Unvalidated."""
+
+    def policy_kwargs(self):
+        return {"manifest": tk.door_manifest(**{"statistic.evaluator.build": OTHER})}
+
+    def setUp(self):
+        patcher = mock.patch.object(builds, "registered", return_value=registry(D))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        super().setUp()
+
+    def test_a_manifest_naming_another_build_reads_unvalidated(self):
+        self.assertTrue(self.policy.usable, self.policy.problems)
+        result = scored(self, moved(50))["result"]
+        self.assertNotEqual(BUILD["id"], result["evaluator"])
+        self.assertEqual("unvalidated", result["temperature_label"])
+
+    def test_a_manifest_whose_build_is_not_a_digest_keeps_the_door_closed(self):
+        """A signed manifest pins its build as a sha256 digest (schema and record rules): null, upper case or a tag
+        never reaches a run at all."""
+        hexits = D[len("sha256:"):]
+        for build in (None, "sha256:" + hexits.upper(), TAG, " " + D):
+            with self.subTest(build=build):
+                policy = tk.policy(clock=self.clock, manifest=tk.door_manifest(**{"statistic.evaluator.build": build}))
+                self.assertFalse(policy.usable)
+                self.assertIn("manifest fails the contract's record rules", policy.problems)
 
 
 class DoorLabelTests(tk.DoorCase, unittest.TestCase):
