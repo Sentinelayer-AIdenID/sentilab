@@ -97,8 +97,8 @@ const groups = {
   "via": [
     ["via takes any slug", DECLARE, "return values.length === 1 && SOURCES.includes(values[0]) ? values[0] : null;", "return values.length === 1 && /^[a-z0-9-]{1,32}$/.test(values[0]) ? values[0] : null;"],
     ["via takes the first of two", DECLARE, "return values.length === 1 && SOURCES.includes(values[0]) ? values[0] : null;", "return values.length >= 1 && SOURCES.includes(values[0]) ? values[0] : null;"],
-    ["via carried into every next link", RENDER, '[{ name: "board", label: "The board: class, short id and scores", url: `${origin}/agents/board` },',
-      '[{ name: "board", label: "The board: class, short id and scores", url: `${origin}/agents/board${source ? `?via=${source}` : ""}` },'],
+    ["via carried into every next link", RENDER, '{ name: "board", label: "The board: class, short id and scores", url: `${origin}/agents/board` },',
+      '{ name: "board", label: "The board: class, short id and scores", url: `${origin}/agents/board${source ? `?via=${source}` : ""}` },'],
   ],
   "the heartbeat proxy": [
     ["any method", DOOR, '  if (request.method !== "POST") return hereAnswer(request, 405, { error: "method_not_allowed" }, { allow: "POST" });\n', ""],
