@@ -94,6 +94,8 @@ CREATE INDEX IF NOT EXISTS events_by_kind ON events (kind, at);
 CREATE TABLE IF NOT EXISTS counters (name TEXT PRIMARY KEY, value INTEGER NOT NULL);
 """
 LIVE = "state NOT IN ('cancelled', 'expired')"
+# A held or active attempt counts at its envelope, or at the CPU an answer reported for it when that is larger.
+PROMISED = "MAX(amount_cpu_s, COALESCE(lower_bound_cpu_s, 0))"
 QUEUED = ("queued", "held")
 EPSILON = 1e-9
 
@@ -191,8 +193,10 @@ class Store:
                        "ON CONFLICT (name) DO UPDATE SET value = value + excluded.value", (name, delta))
 
     def _cpu_used(self, db, grant_id: str, principal: str | None = None) -> float:
-        """Held and active envelopes plus settled charges: what the grant (or one token) has promised or spent."""
-        sql = ("SELECT COALESCE(SUM(CASE WHEN state IN ('held', 'active') THEN amount_cpu_s "
+        """What the grant (or one token) has promised or spent: each held or active attempt at the larger of its
+        envelope and any CPU an answer reported for it (an open attempt's lower bound), plus settled charges. Intake,
+        the claim and both remaining-CPU views count it this one way."""
+        sql = (f"SELECT COALESCE(SUM(CASE WHEN state IN ('held', 'active') THEN {PROMISED} "
                "WHEN state = 'settled' THEN charged_cpu_s ELSE 0 END), 0) FROM reservations WHERE grant_id = ?")
         args = [grant_id]
         if principal is not None:
@@ -528,7 +532,7 @@ class Store:
     def token_usage(self, *, principal: str, grant, manifest_id: str, now: float) -> dict:
         with self.read() as db:
             used = self._cpu_used(db, grant.grant, principal)
-            row = db.execute("SELECT COALESCE(SUM(CASE WHEN state IN ('held', 'active') THEN amount_cpu_s ELSE 0 "
+            row = db.execute(f"SELECT COALESCE(SUM(CASE WHEN state IN ('held', 'active') THEN {PROMISED} ELSE 0 "
                              "END), 0), COALESCE(SUM(CASE WHEN state = 'settled' THEN charged_cpu_s ELSE 0 END), 0) "
                              "FROM reservations WHERE grant_id = ? AND principal = ?",
                              (grant.grant, principal)).fetchone()
@@ -570,6 +574,6 @@ class Store:
             counters = {row["name"]: row["value"] for row in db.execute("SELECT name, value FROM counters")}
             states = {row[0]: row[1] for row in db.execute("SELECT state, COUNT(*) FROM runs GROUP BY state")}
             grant_rows = {row[0]: row[1] for row in db.execute(
-                "SELECT state, COALESCE(SUM(CASE WHEN state = 'settled' THEN charged_cpu_s ELSE amount_cpu_s END), 0) "
+                f"SELECT state, COALESCE(SUM(CASE WHEN state = 'settled' THEN charged_cpu_s ELSE {PROMISED} END), 0) "
                 "FROM reservations GROUP BY state")}
         return scored, counters, states, grant_rows

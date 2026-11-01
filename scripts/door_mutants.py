@@ -26,7 +26,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKIP = {".git", "deck", "sundai_thermal", "__pycache__", "node_modules"}
-SUITES = ("app.test_door_intake", "app.test_door_dispatch", "app.test_door_feeds", "app.test_door_root_r1")
+SUITES = ("app.test_door_intake", "app.test_door_dispatch", "app.test_door_feeds", "app.test_door_root_r1",
+          "app.test_door_root_r2")
 RUNNER = """
 import json, sys, unittest
 def flat(suite):
@@ -76,8 +77,8 @@ MUTANTS = [
      "            if count > cap:"),
     ("queue-unbounded", "quota: the queue cap is ignored", S, 'if queued >= limits["queue_max"]:', "if False:"),
     ("cpu-held-ignored", "cpu: held envelopes are not counted", S,
-     "THEN amount_cpu_s \"\n               \"WHEN state = 'settled'",
-     "THEN 0 \"\n               \"WHEN state = 'settled'"),
+     "sql = (f\"SELECT COALESCE(SUM(CASE WHEN state IN ('held', 'active') THEN {PROMISED} \"",
+     "sql = (f\"SELECT COALESCE(SUM(CASE WHEN state IN ('active') THEN {PROMISED} \""),
     ("cpu-token-ignored", "cpu: the token's budget is ignored", S,
      "if self._cpu_used(db, grant.grant, principal) + envelope > grant.token_cpu_s + EPSILON:", "if False:"),
     ("cpu-grant-ignored", "cpu: the grant's cap is ignored", S,
@@ -102,6 +103,8 @@ MUTANTS = [
      'if charged_cpu_s < max(held["amount_cpu_s"], held["lower_bound_cpu_s"] or 0.0):', "if False:"),
     ("lower-bound-ignored", "cpu: a reported lower bound is dropped at settlement", S,
      'if held["lower_bound_cpu_s"] is not None and held["lower_bound_cpu_s"] > charged:', "if False:"),
+    ("lower-bound-uncounted", "cpu: an open attempt counts its envelope, not its reported CPU (root r2 P1)", S,
+     'PROMISED = "MAX(amount_cpu_s, COALESCE(lower_bound_cpu_s, 0))"', 'PROMISED = "amount_cpu_s"'),
     ("claim-token-unchecked", "cpu: a token over its cap is activated after an overrun (root P1-3)", S,
      'if "token" in stopped or self._cpu_used(db, grant.grant, principal) > grant.token_cpu_s + EPSILON:',
      "if False:"),
