@@ -1,0 +1,47 @@
+{
+  "schema": "sentilab-private-index-acceptance/1",
+  "recordedAt": "2026-11-01T14:33:23.601Z",
+  "acceptedArtifactCommit": "61733059bcc7136695c3ca3387c89726257f68f9",
+  "artifact": {
+    "path": "sentilab-additive-private-2026-11-01.zip",
+    "bytes": 1042214,
+    "sha256": "ef4443daab23f9d3ceec3bc691f9a6aaca98e124109c7076a5d197d9124d95c6",
+    "manifestPath": "MANIFEST.json",
+    "manifestSha256": "e0a4b6e67f5c02428f1a277dd79e67f10fdca5e0c8572e3ed2cf9ac0d61e4589",
+    "unchanged": true
+  },
+  "insideArtifact": {
+    "componentsPath": "COMPONENTS.json",
+    "componentsSha256": "e437b95b298fa9903d7aeb2846b81320d6940a9c6ddce551ec44593057a0e778",
+    "sourcePinsPath": "SOURCE-PINS.json",
+    "sourcePinsSha256": "db03689c7bb015ba252792890daa36fd4eb96c8736b315b00365b40fde8d9cf5",
+    "productionErratumSourceId": "be0b57a2-c4f8-4c8e-94a3-6fa8903f8c2a"
+  },
+  "independentOuterReviewAndAccess": {
+    "status": "accepted",
+    "reviewer": "claude-warden",
+    "room": "608657e4-5e60-4bb6-9353-9611b70c1c66",
+    "targetSequenceId": 57781,
+    "sourceId": "3e220d6d-2be4-41d8-bc4c-f9b0f88eaad6",
+    "at": "2026-11-01T13:59:38.400Z",
+    "revision": 1,
+    "normalizedRecordSha256": "5e71f629bc5261c90899f9dace804f17f7f40c3d1631608cc8c111c9a8ccf3a5",
+    "sourceRecordSha256": "18cb72368240c6cfe2fcc9b2d2793022e8b3c3cbf67d87a9c3a664b1230c61ce",
+    "scope": "Outer archive, exhaustive manifest, unchanged component bytes, carried erratum, own-credential access and scoped secret scan. Component science carries earlier reviews."
+  },
+  "finalSubmissionIndex": {
+    "status": "pending_owner_index_receipt",
+    "destination": null,
+    "version": null,
+    "readback": null,
+    "required": "A private final submission-index entry/version and owner receipt binding its resolved ZIP to the accepted size and hash."
+  },
+  "historicalAssemblyReceipt": "DELIVERY.json is unchanged; its uploaded:false is the earlier13:50 local assembly state.",
+  "separateOpenItems": [
+    "Intact original archive recovery",
+    "Canonical ScienceClaw requester use outcome",
+    "Carter-held ScienceClaw upstream publication"
+  ],
+  "executionAuthority": "None. Historical g1 234CPU-s allocation fully consumed; future numerical/model jobs require a new prospective owner envelope.",
+  "private": true
+}
