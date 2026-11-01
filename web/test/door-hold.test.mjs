@@ -121,6 +121,25 @@ test("P3-3: the public proxy passes the intake's board, results and events on wi
   assert.equal(JSON.parse((await s.go("/api/view/runs")).text).operator, "openai");
 });
 
+// ── root's rollback finding (18:40Z): the intake's internal pass handles never leave through the proxy ────────────
+test("the public proxy drops pass_handle and visitor_handle at any depth on every open feed", async (t) => {
+  const leaky = { schema: "x", pass_handle: "a".repeat(64), visitor_handle: "b".repeat(64),
+    events: [{ kind: "arrival", class: "declared_agent", operator: "openai", pass_handle: "c".repeat(64),
+      declaration: { name: "n", visitor_handle: "d".repeat(64) } }, { kind: "run", visit_arrival: 3, nested: [{ pass_handle: "e".repeat(64) }] }],
+    items: [{ event_kind: "declaration", visitor_handle: "f".repeat(64), arrival: 1 }] };
+  const paths = ["board", "results", "events", "visitors", "stats"].map((name) => `/api/open/v1/door/${name}`);
+  t.mock.method(globalThis, "fetch", async () => Response.json(leaky));
+  const s = setup();
+  for (const path of paths) {
+    const r = await s.go(`${path}?after=0`);
+    assert.equal(r.status, 200, path);
+    assert.ok(!/pass_handle|visitor_handle|aaaa|bbbb|cccc|dddd|eeee|ffff/.test(r.text), `${path}: ${r.text}`);
+    const value = JSON.parse(r.text);
+    assert.deepEqual([value.events[0].operator, value.events[0].declaration.name, value.events[1].visit_arrival, value.items[0].arrival],
+      ["openai", "n", 3, 1], path);
+  }
+});
+
 // ── P3-4: the seven surviving mutants ──────────────────────────────────────────────────────────────────────────────
 test("P3-4: the read limiter guards status: a refused prefix gets 429 and the intake is not asked", async (t) => {
   const calls = installApi(t);

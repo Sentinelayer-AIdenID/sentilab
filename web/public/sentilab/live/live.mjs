@@ -187,15 +187,20 @@ function renderDoorFacts(st) {
     chip.word === "unreachable" ? "bad" : chip.word === "unknown" ? "na" : "");
 }
 
+// A run's title: by its visit id; by a declared name only through its own record's visit_arrival (exact), with the note.
+function runTitleParts(L, names = namesNow()) {
+  const name = M.runName(L, feed.state.events, names);
+  return name === null ? [M.runTitle(L)] : [h("bdi", null, name), W.namedLayout(L)];
+}
 function runCard(L, selected, { mobile = false } = {}) {
   const v = M.runView(L);
   const btn = h("button", { type: "button", class: mobile ? (selected ? "selected" : "") : `experiment${selected ? " selected" : ""}`, "aria-pressed": selected ? "true" : "false", dataset: { run: L.id } });
   if (mobile) {
-    btn.append(M.runTitle(L), h("small", null, v.metric ? `${v.metric.text} · ${W.tempWord(v.metric, v.verification)}` : (STATUS_TAG[L.status] ?? L.status).toLowerCase()),
+    btn.append(...runTitleParts(L), h("small", null, v.metric ? `${v.metric.text} · ${W.tempWord(v.metric, v.verification)}` : (STATUS_TAG[L.status] ?? L.status).toLowerCase()),
       h("small", { class: "vt" }, W.visitorType(L.cls)));
   } else {
     btn.append(h("span", { class: "experiment-tag" }, STATUS_TAG[L.status] ?? L.status),
-      h("strong", null, M.runTitle(L)), h("small", { class: "vt" }, W.visitorType(L.cls)),
+      h("strong", null, runTitleParts(L)), h("small", { class: "vt" }, W.visitorType(L.cls)),
       h("small", { class: `outcome ${M.runOutcome(L).kind}`, title: M.runOutcome(L).title }, M.runOutcome(L).text),
       h("span", { class: "experiment-bottom" }, h("span", { class: v.metric ? "mint-dot" : "grey-dot" }), v.metric ? "simulated, not silicon" : "no temperature yet"));
   }
@@ -231,10 +236,11 @@ function renderModel() {
   } else empty.hidden = true;
   applyControls(M.viewControls(renderer));
   $("selectionCaption").textContent = renderer === "2d" ? "2D drawing · orbit and explode need the 3D view" : "Drag to orbit · scroll to zoom · arrows when focused";
-  $("modelTitle").textContent = L ? M.runTitle(L) : "A closer look at the package.";
+  const runNamed = L ? M.runName(L, feed.state.events, namesNow()) : null;
+  if (L) $("modelTitle").replaceChildren(...runTitleParts(L)); else $("modelTitle").textContent = "A closer look at the package.";
   $("modelSub").textContent = L ? W.visitorType(L.cls) : "";
   const lastRun = L ? [...feed.state.events].filter((e) => e.kind === "run" && e.run_id === L.id).sort((x, y) => y.seq - x.seq)[0] : null;
-  $("modelCap").textContent = !L ? "" : [W.layoutFrom(L.short), view.metric ? `${W.METRIC_NAME.toLowerCase()} ${view.metric.text} · ${W.tempWord(view.metric, view.verification)}` : null,
+  $("modelCap").textContent = !L ? "" : [runNamed === null ? W.layoutFrom(L.short) : `${runNamed}${W.namedLayout(L)}`, view.metric ? `${W.METRIC_NAME.toLowerCase()} ${view.metric.text} · ${W.tempWord(view.metric, view.verification)}` : null,
     W.RESULT_CHECK[L.status] ?? null, lastRun?.at ? W.when(lastRun.at) : null].filter(Boolean).join(" · ");
   const picked = Boolean(L && S.selectedId === L.id && M.pickRun(layouts(), null)?.id !== L.id);
   $("modelKindText").textContent = !L ? "NO RUN" : view.atRecord ? `REPLAY · ${view.state.toUpperCase()}`
@@ -356,6 +362,8 @@ function drawAtlas(svg, { large = false } = {}) {
       dot.append(s("title", {}, `${W.layoutFrom(r.label.split(" · ")[1] ?? null)} ${W.RUN_STATE[r.status] ?? r.status}`));
       dot.addEventListener("click", () => selectRun(r.id));
       svg.append(dot);
+      const short = r.label.split(" \u00b7 ")[1] ?? null;
+      if (shown && r.id === shown.id && short) svg.append(s("text", { class: "atlas-visit", x: cx.toFixed(1), y: (cy + size / 2 + 8).toFixed(1), "text-anchor": "middle" }, `visit ${short}`));
     });
   });
   return a;
@@ -450,23 +458,33 @@ function avatar(a) {
   else { add("circle", { cx: 52, cy: 14, r: 8, fill: "#1f2a2e", stroke: "#a9b4b4", "stroke-width": 1.5, "stroke-dasharray": "2.6 1.8" }); add("path", { d: "M48.5 14h7", stroke: "#d9e0e0", "stroke-width": 2, "stroke-linecap": "round" }); }
   return svg;
 }
-let cardSeq = null;
+// The declared names, at render time only (live-model.mjs declaredNames); a change re-renders every place that shows one.
+const namesNow = () => M.declaredNames(S.decl, Date.now());
+let namesSeen = "[]";
+function namesChanged() { const k = JSON.stringify([...namesNow()]); if (k === namesSeen) return false; namesSeen = k; return true; }
+// A declared name in text only (bdi, never an attribute), followed by its note, visit id and lab.
+const named = (name, a, cls = "av-name") => h("span", { class: cls }, h("bdi", null, name), W.namedTail(a));
+let cardSeq = null, cardLine = null;
 function renderArrivals() {
   const list = M.arrivalsOf(feed.state.events, 13);
   const now = Date.now();
+  const names = namesNow();
   const newest = list[0];
   const fresh = newest && newest.at && now - Date.parse(newest.at) <= ARRIVAL_HOLD_MS;
   const card = $("arrivalCard");
   card.hidden = !fresh;
-  if (fresh && cardSeq !== newest.seq) {
-    cardSeq = newest.seq;
-    card.replaceChildren(avatar(newest), h("p", null, W.arrivalSentence(newest, now), h("small", null, W.arrivalDetail(newest))));
+  const cardName = fresh ? names.get(newest.seq) ?? null : null;
+  const cardKey = fresh ? JSON.stringify([newest.seq, cardName]) : null;
+  if (fresh && cardSeq !== cardKey) {
+    cardSeq = cardKey;
+    cardLine = h("p", null, W.arrivalSentence(newest, now), h("small", null, W.arrivalDetail(newest)));
+    card.replaceChildren(avatar(newest), h("div", null, cardName === null ? null : named(cardName, newest, "av-name card"), cardLine));
   } else if (fresh) {
-    card.querySelector?.("p")?.firstChild && (card.querySelector("p").firstChild.textContent = W.arrivalSentence(newest, now));
+    cardLine?.firstChild && (cardLine.firstChild.textContent = W.arrivalSentence(newest, now));
   }
   const strip = (fresh ? list.slice(1) : list).slice(0, 12);
-  $("arrivalStrip").replaceChildren(...strip.map((a) => h("div", { class: "av-item", role: "listitem", title: `${W.arrivalSentence(a, now)} · ${W.arrivalDetail(a)}` },
-    avatar(a), h("span", null, a.short ? `visit ${a.short}` : W.visitorType(a.cls)), h("span", null, W.when(a.at, now)))));
+  $("arrivalStrip").replaceChildren(...strip.map((a) => h("div", { class: names.has(a.seq) ? "av-item named" : "av-item", role: "listitem", title: `${W.arrivalSentence(a, now)} · ${W.arrivalDetail(a)}` },
+    avatar(a), names.has(a.seq) ? named(names.get(a.seq), a) : h("span", null, a.short ? `visit ${a.short}` : W.visitorType(a.cls)), h("span", null, W.when(a.at, now)))));
   $("arrivals").hidden = list.length === 0;
   $("arrivalsHead").textContent = W.ARRIVALS_HEAD;
 }
@@ -486,10 +504,13 @@ function renderRecords(list) {
   }
   list.append(tabs);
   const rows = h("div", { class: "rec-list", id: "recordRows" });
+  const names = namesNow();
   if (!shown.length) rows.append(h("p", { class: "rail-empty" }, W.RECORDS.none));
   for (const e of shown) {
     rows.append(h("div", { class: "rec-row", title: `seq ${e.seq}` }, avatar({ cls: e.cls, short: e.short, seq: e.seq, category: e.category, verification: e.verification }),
-      h("span", null, M.recordSentence(e), h("small", null, W.when(e.at)))));
+      e.kind === "arrival" && names.has(e.seq)
+        ? h("span", null, h("bdi", null, names.get(e.seq)), `${W.namedTail(e)} \u00b7 ${e.event_kind === "declaration" ? W.TEXT.declared : W.TEXT.arrived}`, h("small", null, W.when(e.at)))
+        : h("span", null, M.recordSentence(e), h("small", null, W.when(e.at)))));
   }
   list.append(rows);
   const more = h("button", { type: "button", class: "rec-more", id: "recordMore" },
@@ -832,9 +853,10 @@ async function pollVisitors() {
     const latest = Math.max(feed.state.eventsCursor ?? 0, S.decl.through ?? 0);
     const got = await M.fetchVisitorsWindow({ fetchImpl: gate.fetch, latest });
     if (mine !== visitorsEpoch) return;
-    if (got.ok) S.decl = { ok: true, partial: got.partial, list: M.declarationList(got.items), error: "", at: Date.now(), through: got.through ?? S.decl.through };
-    else { S.decl = { ...S.decl, ok: false, list: [], error: got.error }; if (got.error === "answered 404") next = M.VISITORS_SLOW_MS; }
+    if (got.ok) S.decl = { ok: true, partial: got.partial, list: M.declarationList(got.items), items: got.items, error: "", at: Date.now(), through: got.through ?? S.decl.through };
+    else { S.decl = { ...S.decl, ok: false, list: [], items: [], error: got.error }; if (got.error === "answered 404") next = M.VISITORS_SLOW_MS; }
     renderDeclarations();
+    if (namesChanged()) render();
   }
   visitorsTimer = setTimeout(pollVisitors, next);
 }
@@ -874,7 +896,7 @@ feed.start();
 pollBoard();
 pollVisitors();
 // The badge and ages follow the clock even when no answer arrives (a hung request must still turn LIVE into STALE).
-setInterval(() => { renderStatus(); renderDeclarations(); renderArrivals(); }, 1000);
+setInterval(() => { renderStatus(); renderDeclarations(); renderArrivals(); if (namesChanged()) render(); }, 1000);
 // Leaving the page stops every poll (and an answer still in flight cannot restart one: the board's epoch moves on). A
 // page restored from the back/forward cache comes back with them stopped, so pageshow starts again what pagehide
 // stopped; a fresh load gets no pageshow with persisted set.

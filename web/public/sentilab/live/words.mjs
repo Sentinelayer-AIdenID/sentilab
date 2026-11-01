@@ -79,6 +79,17 @@ export function arrivalDetail(a) {
   if (a.short) parts.push(`visit ${a.short}`);
   return parts.join(" · ");
 }
+// A declared name is shown only with this note, and never as proof: the visitor said it; nothing checked it.
+export const SELF_DECLARED = "self-declared, not verified";
+// The lab, only when the door recognised one (its registry), with how it knows.
+export function labWords(a) {
+  if (!a?.operatorName) return "";
+  const how = a.verification === "signature" || a.verification === "network" || a.verification === "inferred" ? VERIFICATION[a.verification] : "its user agent says";
+  return ` \u00b7 ${a.operatorName} (${how})`;
+}
+// What follows a declared name: the note, the visit id and the lab.
+export const namedTail = (a) => ` \u00b7 ${SELF_DECLARED}${a?.short ? ` \u00b7 visit ${a.short}` : ""}${labWords(a)}`;
+export const namedLayout = (L) => `'s layout \u00b7 ${SELF_DECLARED}${L?.short ? ` \u00b7 visit ${L.short}` : ""}`;
 export const ARRIVALS_HEAD = "VISITORS AND THEIR LATEST RECORDED ACTIVITY";
 
 // Temperatures: each number carries the plain word "simulated" (a withdrawn evaluator keeps its own word); one line

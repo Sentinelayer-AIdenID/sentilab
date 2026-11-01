@@ -319,11 +319,11 @@ test("P2-3: a replay cursor shows the state at that record; the latest receipt i
 
 // Copy review (aneta, staging at 16:09Z): "Run unknown · 9c59" read as if the run were unknown. A run is titled by its
 // short id; the class is a separate line, "visitor type: <class>". Records read the same way.
-test("copy: a run is titled by its short id, and its class is a separate visitor-type line", async () => {
+test("copy: a run is titled by its visit id (push 4: matched by eye to that visit, never by name), and its class is a separate visitor-type line", async () => {
   const feed = await liveFeed(recordedFetch());
   await feed.pollOnce();
   for (const L of feed.state.layouts) {
-    assert.equal(M.runTitle(L), `Run ${L.short}`);
+    assert.equal(M.runTitle(L), `The layout from visit ${L.short}`);
     assert.equal(M.visitorType(L.cls), { unknown: "Unresolved", declared_agent: "Automated visitor · declared", automation: "Automation · bot" }[L.cls]);
     assert.equal(M.runTitle(L).includes(L.cls), false, `${M.runTitle(L)} carries no class word`);
   }

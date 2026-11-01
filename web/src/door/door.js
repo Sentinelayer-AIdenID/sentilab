@@ -164,13 +164,16 @@ export function decodedPath(pathname) {
 
 // A copy of a feed answer without any "operator" field, at any depth, except one place: an arrival record (an events
 // record of kind "arrival", or a visitors item) keeps the recognised lab the intake publishes for it (Carter #58250),
-// and only when it is one of OPERATORS. Board, results, status and anything nested still never carry one.
+// and only when it is one of OPERATORS. Board, results, status and anything nested still never carry one. The
+// intake's internal pass handles (pass_handle, visitor_handle) never pass, at any depth, whatever an API revision
+// sends: an API rolled back to before they were filtered would otherwise publish them from newer rows (root, 18:40Z).
 const arrivalRecord = (value) => value.kind === "arrival" || typeof value.event_kind === "string";
+const HANDLES = Object.freeze(["pass_handle", "visitor_handle"]);
 export function withoutOperators(value) {
   if (Array.isArray(value)) return value.map(withoutOperators);
   if (!value || typeof value !== "object") return value;
   const keep = arrivalRecord(value) && OPERATORS.includes(value.operator);
-  return Object.fromEntries(Object.entries(value).filter(([key]) => key !== "operator" || keep)
+  return Object.fromEntries(Object.entries(value).filter(([key]) => !HANDLES.includes(key) && (key !== "operator" || keep))
     .map(([key, item]) => [key, key === "operator" ? item : withoutOperators(item)]));
 }
 

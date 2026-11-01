@@ -61,6 +61,9 @@ export function normalizeEventsTimed(doc) {
   for (const raw of Array.isArray(doc.events) ? doc.events.slice(0, 500) : []) {
     if (!isObj(raw) || !count(raw.seq)) continue;
     at.set(raw.seq, readAt(raw.at));
+    // A run record may one day carry visit_arrival (the exact arrival seq of the visit that sent it). Nothing sends it
+    // yet; when present it is the only way a run is ever shown with a visitor's declared name.
+    if (raw.kind === "run" && count(raw.visit_arrival)) extra.set(raw.seq, { visitArrival: raw.visit_arrival });
     if (raw.kind !== "arrival") continue;
     // An arrival's chosen purpose, and (when a feed carries them, checked by the door against the registry) the
     // operator's name, the service's name and the verification level: each read only in its exact shape.
@@ -230,7 +233,9 @@ export function normalizeVisitors(doc) {
       const d = raw.declaration;
       declaration = { name: typeof d.name === "string" ? d.name : "", reason: typeof d.reason === "string" ? d.reason : "", source: SOURCES.includes(d.source) ? d.source : null };
     }
-    items.push({ seq: raw.seq, at: readAt(raw.at), cls: raw.class, short, label: raw.label, kind: raw.event_kind, hidden, declaration });
+    // arrival: the seq of the arrival event from the same pass (the door's exact relation), on a shown declaration only.
+    const arrival = declaration && count(raw.arrival) ? raw.arrival : null;
+    items.push({ seq: raw.seq, at: readAt(raw.at), cls: raw.class, short, label: raw.label, kind: raw.event_kind, hidden, declaration, arrival });
   }
   const through = isObj(doc.counts) && count(doc.counts.through_seq) ? doc.counts.through_seq : null;
   return { items, next_after: doc.next_after, has_more: doc.has_more, through };
@@ -502,7 +507,33 @@ export function traceModel(events) {
   return { points, first: points[0] ?? null, last: points.at(-1) ?? null };
 }
 // ── copy: a run is titled by its short id; its class is a separate line (a class is a guess at the visitor's type) ──
-export const runTitle = (L) => `Run ${L.short}`;
+// A run is titled by the visit id it came from, so a person can match it by eye to that visit; never a name (a
+// shared 4-hex visit id is not proof of who made a layout).
+export const runTitle = (L) => W.layoutFrom(L.short);
+// The names visitors gave, built at render time and never stored: event seq -> declared name. Only from a visitors
+// read that succeeded and is fresh; otherwise empty, so a hide or a failed or stale read clears every name on the
+// next render. Exact relations only (never a label or a short id): each shown declaration names its own event, and
+// the newest shown declaration that carries `arrival` names that arrival event.
+export function declaredNames(decl, nowMs = Date.now()) {
+  const names = new Map();
+  if (!decl || decl.ok !== true || !decl.at || nowMs - decl.at > VISITORS_FRESH_MS) return names;
+  const nameOf = (x) => { const v = declarationView(x); return v?.kind === "declared" && v.name !== "" ? v.name : null; };
+  const newest = new Map();
+  for (const x of decl.items ?? []) {
+    if (x.kind !== "declaration" || x.hidden || !x.declaration) continue;
+    const own = nameOf(x);
+    if (own !== null) names.set(x.seq, own);
+    if (count(x.arrival) && !(newest.get(x.arrival)?.seq > x.seq)) newest.set(x.arrival, x);
+  }
+  for (const [arrival, x] of newest) { const n = nameOf(x); if (n !== null) names.set(arrival, n); else names.delete(arrival); }
+  return names;
+}
+// A run's declared name: only through its own run records' visit_arrival (keyed on the full run id), else null.
+export function runName(L, events, names) {
+  if (!L || !names?.size) return null;
+  const rec = [...(events ?? [])].filter((e) => e.kind === "run" && e.run_id === L.id && count(e.visitArrival)).sort((a, b) => b.seq - a.seq)[0];
+  return rec ? names.get(rec.visitArrival) ?? null : null;
+}
 export const visitorType = (cls) => W.visitorType(cls);
 // A record's title: a run record by its run's short id, a door record by its visitor's short id and type, an arrival
 // without a token by its class.
@@ -553,16 +584,22 @@ export function runOutcome(L) {
   const why = (L.codes ?? []).map(codeWords).concat(L.reason ? [reasonWords(L.reason)] : []).join(", ");
   const temp = r ? `${W.METRIC_NAME.toLowerCase()} ${formatTemp(r.metric.value, r.label, { digits: 2 }).text} · simulated` : null;
   const replay = r?.verification?.replay === "reproduced" ? "replay matched" : r?.verification?.replay === "not_reproduced" ? "replay did not match" : "replay pending";
+  // The step comes from the run's own state (root, f9cc6ab P2): "Accepted" only once the required result check has
+  // finished; before that the page says which step the run is at.
   switch (L.status) {
-    case "reproduced": case "cross_checked": case "evaluated": case "replaying":
-      return { kind: "accepted", text: temp ? `Accepted · ${temp} · ${L.status === "evaluated" || L.status === "replaying" ? "replay pending" : replay}` : "Accepted · no temperature in the record", title };
+    case "reproduced": case "cross_checked":
+      return { kind: "accepted", text: temp ? `Accepted · ${temp} · ${replay}` : "Accepted · no temperature in the record", title };
+    case "evaluated": case "replaying":
+      return { kind: "waiting", text: temp ? `Re-checking (replay) · ${temp}` : "Re-checking (replay)", title };
+    case "held": return { kind: "waiting", text: "Held", title };
     case "not_reproduced":
       return { kind: "accepted", text: temp ? `Scored · ${temp} · replay did not match` : "Scored · replay did not match", title };
     case "rejected": return { kind: "refused", text: `Refused · ${why || "no reason given"}`, title };
     case "failed": return { kind: "refused", text: `Could not be simulated · ${why || "no reason given"}`, title };
     case "cancelled": case "expired": return { kind: "refused", text: `Stopped · ${why || L.status}`, title };
-    case "evaluating": return { kind: "waiting", text: "Being simulated", title };
-    default: return { kind: "waiting", text: L.position ? `Waiting in line · number ${L.position}` : "Waiting in line", title };
+    case "evaluating": return { kind: "waiting", text: "Simulating", title };
+    case "queued": return { kind: "waiting", text: L.position ? `Waiting in line · number ${L.position}` : "Waiting in line", title };
+    default: return { kind: "waiting", text: String(L.status ?? "unknown").replace(/_/g, " "), title };
   }
 }
 // "15:21:02Z" from a server timestamp; "time not recorded" for none.
