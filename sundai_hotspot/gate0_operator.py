@@ -52,7 +52,8 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, "/app")
+# /app in the deployed image; the mounted checkout when the operator reviews it under /src.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from sundai_controller import process_budget  # noqa: E402
 from sundai_hotspot import gate0_anchor, reference_validation  # noqa: E402
 

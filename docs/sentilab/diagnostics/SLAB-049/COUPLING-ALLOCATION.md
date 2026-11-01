@@ -1,5 +1,10 @@
 # SLAB-049 coupling allocation
 
+Implementation status: allocation and numeric evaluation are implemented. The three exact scientific outcome
+wordings and their selection rules from contract #57399 are absent from the ticket and checkout and have been
+requested. The report currently contains the mechanical PASS/FAIL/INCOMPLETE verdict only. Signing and executing
+the experiment remain pending that contract input and the independent review below.
+
 Ticket 01ac77ac adds the four calls from `coupling-call-list.json` as an explicitly selected allocation. The
 call list stays at SHA-256 `db32a692b749e08324c295e56250f96a9548796aae232ca63f24d2ad4ab3e577`.
 The default gate-zero manifest stays at `23a1a74b9d4fd56e5fa192982d74d9eaa90f6aeaf81d718247d566f12612053b`;
@@ -61,6 +66,10 @@ Warden first reruns the suites and the manifest generator in `sentilab-gate0:5ce
 predicate to show the tests fail, and obtains the independent science/contract review. Only then does Warden sign
 a new grant and run these four calls. No grant was signed and no coupling experiment was executed by the implementer.
 
+Review tests can import the new checkout mounted at `/src`; the operator resolves its imports from that checkout
+instead of the old image's `/app`. Execution still requires the merged operator code deployed at `/app`, as the
+existing supervisor specifies. Recheck the material-only binary hash in that runtime before signing.
+
 Before the grant, the image must retain material-only provenance: the existing Dockerfile builds this target but
 only explicitly writes provenance for the default HS7 and HS6 builds. Run the existing provenance writer for
 `material_only` in that image; this reads the binary and loader metadata and runs no thermal solve.
@@ -75,3 +84,31 @@ python -m sundai_hotspot.gate0_operator report --manifest coupling --out <report
 
 The operator supplies the usual external key, ledger-root and anchor environment. The original gate-zero
 `record` command remains specific to HS6 certification; coupling adds a diagnostic report, not a gate-zero PASS.
+
+## Local implementation proof
+
+The surrogate executor used Python 3.12.3, GCC 13.3.0, glibc 2.39 and SuperLU 6.0.1. Test temporary files were
+placed on executable tmpfs (`TMPDIR=/dev/slab049-test-tmp`) so throwaway signing fixtures never reached disk.
+These commands exited zero:
+
+- `.venv/bin/python -m unittest discover -s sundai_hotspot -p 'test_*.py'`: 228 tests, no skips, including 14
+  coupling tests.
+- `(cd sundai_controller && ../.venv/bin/python -m unittest -v test_controller.py test_experiment.py)`: 55 tests.
+- `.venv/bin/python -m unittest discover -s sundai_thermal -p 'test_*.py'`: 2 tests.
+- `make -j4 SUPERLU=1 -C sundai_hotspot` and `make SUPERLU=1 -C sundai_hotspot hotspot-material-only`.
+- `PATH="$PWD/.venv/bin:$PATH" bash scripts/build_hotspot6.sh`.
+- `git diff --check`.
+
+The initial regression failed on the unmodified code with `load_manifest() got an unexpected keyword argument
+'selection'`. The added test module also fails in a disposable worktree at snapshot base
+`022d5753b96fc2b598ac8a1d8468d3f83dcf156d`, which has no coupling allocation module. Ten deliberate mutations
+were each caught by a named regression: changed binary pin, skipped pin check, skipped identity tag, weakened
+threshold, rounding before comparison, skipped replay bytes, trusted stored evaluation, skipped receipt pin,
+ignored manifest selection, and shared CPU files. A separate import-shadow regression failed before replacing
+the hardcoded `/app` import root and passes with the checkout-derived import root.
+
+This tree generates coupling manifest SHA-256
+`e5dfb0fe7cc36a5b92d9e50d1674790c85f17feee2720dd9ed7621e1cafb4515`.
+The locally built material-only binary is `bb47ba9c0f72170d2bf5460515f1fb8a1e0ced09d9d451ec721bb655405e27a2`;
+its material-only identity was checked, and `--check-binary` correctly refused it against the operator-image pin.
+Docker is unavailable in this box, so the pinned-image suites/build check remain Warden's independent proof.

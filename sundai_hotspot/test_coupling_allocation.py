@@ -8,6 +8,8 @@ import io
 import os
 from pathlib import Path
 import shutil
+import subprocess
+import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -152,6 +154,31 @@ class CouplingEntryTests(fixtures.EntryCase):
         self.assertFalse(report["rows"][0]["replay_byte_identical"])
         self.assertFalse(report["coupling"]["predicate"])
 
+    def test_report_recomputes_instead_of_trusting_a_signed_evaluation(self):
+        sign = reference_validation._sign_receipt
+
+        def forged_evaluation(context, receipt):
+            altered = {**receipt, "coupling": {"threshold_met": False, "fraction_exact": "0"}}
+            return sign(context, altered)
+
+        with mock.patch.object(reference_validation, "_sign_receipt", side_effect=forged_evaluation):
+            report = self.run_pair(0, 82.671)
+        self.assertTrue(report["rows"][0]["predicate"])
+        self.assertEqual(report["calls"][0]["coupling"]["fraction_exact"], "17/20")
+
+    def test_report_refuses_a_signed_receipt_with_another_binary(self):
+        sign = reference_validation._sign_receipt
+
+        def other_binary(context, receipt):
+            altered = {**receipt, "evaluator": {"kind": "material_only", "binary_sha256": "different"}}
+            return sign(context, altered)
+
+        with mock.patch.object(reference_validation, "_sign_receipt", side_effect=other_binary):
+            report = self.run_pair(0, 82.671)
+        self.assertIsNone(report["coupling"]["predicate"])
+        self.assertFalse(report["calls"][0]["usable"])
+        self.assertIn("pinned material-only binary", report["calls"][0]["reason"])
+
 
 class FrozenEvaluationTests(unittest.TestCase):
     def test_both_sides_of_each_exact_threshold_use_the_native_maximum(self):
@@ -201,31 +228,79 @@ class FrozenEvaluationTests(unittest.TestCase):
 
 
 class OperatorSelectionTests(fixtures.OperatorCase):
-    def test_default_run_dispatches_only_the_twelve_gate_calls(self):
+    def test_operator_imports_validation_from_the_checkout_being_reviewed(self):
+        stale = self.root / "stale-image"
+        (stale / "sundai_hotspot").mkdir(parents=True)
+        (stale / "sundai_hotspot/reference_validation.py").write_text("# previous image's validation module\n")
+        code = '''import importlib.util, sys
+from pathlib import Path
+stale, checkout = sys.argv[1:]
+sys.path[:0] = [stale, checkout]
+spec = importlib.util.spec_from_file_location("operator_under_test", Path(checkout)/"sundai_hotspot/gate0_operator.py")
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+print(module.reference_validation.__file__)
+'''
+        result = subprocess.run([sys.executable, "-c", code, str(stale), str(fixtures.REPO_ROOT)],
+                                cwd=self.root, text=True, capture_output=True, check=True)
+        self.assertEqual(Path(result.stdout.strip()).resolve(),
+                         fixtures.REPO_ROOT / "sundai_hotspot/reference_validation.py")
+
+    def run_operator(self, selection="gate0"):
         scenario = self.grant()
+        manifest, digest = reference_validation.load_manifest(selection=selection)
+        args = SimpleNamespace(ledger_root=scenario.root, key=self.key_file, grant_id=scenario.grant_id, only=None)
+        if selection == "coupling":
+            args.manifest, args.grant_id, args.cap = selection, "g49-coupling", None
+            with mock.patch.object(gate0_operator, "LOG", self.root / "operator.log"), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                gate0_operator.cmd_grant(args)
         build = scenario.api("POST", "/git/commits", {"message": "synthetic build", "tree": fixtures.EMPTY_TREE,
                                                      "parents": []})["sha"]
         launched = []
 
         def engine(call, argv, out, budget):
             launched.append(call["id"])
-            self.assertNotIn("--manifest", argv)
+            if selection == "gate0":
+                self.assertNotIn("--manifest", argv)
+            else:
+                self.assertEqual(argv[-2:], ["--manifest", "coupling"])
             return {"survivors": [], "summary": {"status": "exited", "charged_cpu_s": 0,
-                "settle_tag_message": gate0_anchor.tag_message("settle", scenario.grant_id, self.manifest_sha256,
+                "settle_tag_message": gate0_anchor.tag_message("settle", args.grant_id, digest,
                     call["id"], status="exited", receipt_sha256=None, outputs={}, charged_cpu_s=0)},
                 "exit": 0, "cpu_s_this_call": 0, "cumulative_cpu_s": 0, "out": str(out), "meter_errors": [],
                 "killed": None}
 
-        args = SimpleNamespace(ledger_root=scenario.root, key=self.key_file, grant_id=scenario.grant_id, only=None)
+        # This test exercises dispatch and the signed grant. Binary checks have separate prelaunch tests.
         with mock.patch.dict(os.environ, BUILD_SHA=build), mock.patch.object(gate0_operator, "github", return_value=scenario.api), \
                 mock.patch.object(gate0_operator, "cgroup_cpu_s", return_value=0), \
                 mock.patch.object(gate0_operator, "carried_cpu_s", return_value=0), \
                 mock.patch.object(gate0_operator, "RUNS", self.root / "runs"), \
                 mock.patch.object(gate0_operator, "LOG", self.root / "operator.log"), \
+                mock.patch.object(coupling_allocation, "require_binary"), \
                 mock.patch.object(gate0_operator, "run_call", side_effect=engine), contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(gate0_operator.cmd_run(args), 0)
-        self.assertEqual(launched, list(self.calls))
+        self.assertEqual(launched, [row["id"] for row in manifest["calls"]])
+        return launched
+
+    def test_default_run_dispatches_only_the_twelve_gate_calls(self):
+        launched = self.run_operator()
         self.assertEqual(len(launched), 12)
+
+    def test_explicit_run_dispatches_only_the_four_coupling_calls(self):
+        self.assertEqual(len(self.run_operator("coupling")), 4)
+
+    def test_cli_keeps_coupling_cpu_carry_and_logs_separate(self):
+        paths = []
+        with mock.patch.object(gate0_operator, "cmd_grant", side_effect=lambda args: paths.append(
+                (gate0_operator.RUNS, gate0_operator.CPU_FILE, gate0_operator.LOG)) or 0), \
+                mock.patch.object(Path, "mkdir"):
+            gate0_operator.main(["grant", "--manifest", "coupling", "--grant-id", "g49-coupling"])
+            gate0_operator.main(["grant", "--grant-id", "g49-default"])
+        self.assertEqual(paths[0], (Path("/srv/gate0/coupling/runs"),
+            Path("/srv/gate0/coupling/runs/cpu-used.json"), Path("/srv/gate0/coupling/runs/operator-log.jsonl")))
+        self.assertEqual(paths[1], (Path("/srv/gate0/runs"), Path("/srv/gate0/runs/cpu-used.json"),
+                                   Path("/srv/gate0/runs/operator-log.jsonl")))
 
     def test_coupling_grant_preserves_the_consumed_gate_ledger(self):
         gate = self.grant()
