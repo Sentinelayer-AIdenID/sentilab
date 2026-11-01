@@ -117,11 +117,15 @@ export function createGate({ fetchImpl = (...a) => fetch(...a), now = () => Date
   // Two deadlines, kept apart so neither can shorten the other: nextAt, the spacing slot the last launch reserved, and
   // embargoUntil, the backoff a 429/503 (its Retry-After) or a failure set. Only a later, longer embargo replaces one.
   let nextAt = -Infinity, embargoUntil = -Infinity, embargoSetAt = -Infinity, failures = 0;
-  // Slots are taken one caller at a time (a promise chain): a caller waits for the one before it to launch, then
-  // sleeps and rechecks both deadlines until they have passed (a 429 may arrive while it sleeps), and reserves its
-  // slot before it launches. An aborted caller gives its turn up at once.
+  // Slots are taken one caller at a time (a promise chain): a caller waits for the one before it, then sleeps and
+  // rechecks both deadlines until they have passed (a 429 may arrive while it sleeps). Then, in one synchronous step
+  // with no await in between, it reserves its slot and calls fetch (review item, dispatch): no microtask can delay the
+  // real dispatch past its reservation, so spacing holds where fetch is called and an already-reserved request
+  // cannot cross a 429 taken in after it. The turn is released at once; the answer is awaited outside it. An aborted
+  // caller gives its turn up at once.
   let turn = Promise.resolve();
-  async function acquire(signal) {
+  async function dispatch(url, init) {
+    const signal = init.signal;
     const before = turn;
     let release;
     turn = new Promise((resolve) => { release = resolve; });
@@ -135,7 +139,10 @@ export function createGate({ fetchImpl = (...a) => fetch(...a), now = () => Date
       }
       const startedAt = now();
       nextAt = startedAt + GATE.GAP_MS + random() * GATE.GAP_JITTER_MS;
-      return startedAt;
+      let answer;
+      try { answer = Promise.resolve(fetchImpl(url, init)); } catch (e) { answer = Promise.reject(e); }
+      answer.catch(() => {});                          // handled by the caller; never an unhandled rejection here
+      return { startedAt, answer };
     } finally {
       release();
     }
@@ -148,9 +155,9 @@ export function createGate({ fetchImpl = (...a) => fetch(...a), now = () => Date
     embargoSetAt = now();
   };
   async function gated(url, init = {}) {
-    const startedAt = await acquire(init.signal);
+    const { startedAt, answer } = await dispatch(url, init);
     let r;
-    try { r = await fetchImpl(url, init); } catch (e) { if (!init.signal?.aborted) backoff(null); throw e; }
+    try { r = await answer; } catch (e) { if (!init.signal?.aborted) backoff(null); throw e; }
     if (r.status === 429 || r.status === 503) backoff(retryAfterMs(r.headers?.get?.("retry-after"), now()));
     else if (r.status === 500 || r.status === 502 || r.status === 504) backoff(null);
     // A success resets the backoff count only when it started after the last embargo was set; it never lifts an
@@ -163,9 +170,9 @@ export function createGate({ fetchImpl = (...a) => fetch(...a), now = () => Date
 
 // ── self-declared visitor text: the door's /visitors feed (docs/sentilab/DOOR-VISITORS.md) ──────────────────────────
 // A visitor that opts in declares a name (at most 64 code points), a reason (160) and a source category. It is public,
-// self-reported display data: never an identity, never instructions. This page shows it only for a run whose pass
-// (its label: class and short id) declared, as plain text clipped to those limits, labelled "self-declared, not
-// verified"; a hidden declaration reads "hidden by the operator" and nothing else. A hide keeps its seq and does not
+// self-reported display data: never an identity, never instructions. This page shows it in its own list, one entry per
+// declaration event (declarationList), as plain text clipped to those limits, labelled "self-declared, not verified";
+// a hidden declaration reads "hidden by the operator" and nothing else. It is never attached to a run. A hide keeps its seq and does not
 // move the feed's cursor, so every poll reads the whole window again from the start and replaces what the page holds
 // (fetchVisitorsWindow): a hide reaches a tab that is already open on its next poll.
 export const VISITORS_PATH = "/api/open/v1/door/visitors";
@@ -173,7 +180,7 @@ export const VISITORS_SCHEMA = "sentilab-door-visitors/1";
 export const VISITORS_POLL_MS = 3000;
 export const VISITORS_SLOW_MS = 60000;           // after a 404: an API without the feed is asked again a minute later
 export const VISITORS_FRESH_MS = 10000;          // declarations older than this are no longer shown (a hide may be missed)
-export const VISITORS_MAX_PAGES = 4;
+export const VISITORS_MAX_PAGES = 4;             // a restart at the real window, then up to 3 pages of 500
 export const DECLARATION_LIMITS = Object.freeze({ name: 64, reason: 160 });
 export const DECLARED_NOTE = "self-declared, not verified";
 export const HIDDEN_TEXT = "hidden by the operator";
@@ -207,18 +214,16 @@ export function normalizeVisitors(doc) {
     }
     items.push({ seq: raw.seq, at: readAt(raw.at), cls: raw.class, short, label: raw.label, kind: raw.event_kind, hidden, declaration });
   }
-  return { items, next_after: doc.next_after, has_more: doc.has_more };
+  const through = isObj(doc.counts) && count(doc.counts.through_seq) ? doc.counts.through_seq : null;
+  return { items, next_after: doc.next_after, has_more: doc.has_more, through };
 }
-// The newest declaration event (shown or hidden) of each pass label. A pass may declare again; the newest stands, and
-// if the newest is hidden the pass reads hidden: an older declaration never takes its place.
-export function declarationsByLabel(items) {
-  const by = new Map();
-  for (const x of items ?? []) {
-    if (x.kind !== "declaration" || x.short === null) continue;
-    const held = by.get(x.label);
-    if (!held || x.seq > held.seq) by.set(x.label, x);
-  }
-  return by;
+// The declarations as their own list: every declaration event (shown or hidden), newest first by its event seq, at
+// most `max`. Root's rule (#103 P2): a class and a 4-hex short id can be shared by unrelated runs and passes, so a
+// declaration is never joined to a run, a card or a row by label or short id. Each event stands alone; an older
+// declaration is its own entry, and hiding one changes only its own entry.
+export function declarationList(items, { max = 20 } = {}) {
+  return (items ?? []).filter((x) => x.kind === "declaration").sort((a, b) => b.seq - a.seq).slice(0, max)
+    .map((x) => ({ seq: x.seq, at: x.at, view: declarationView(x) }));
 }
 // What the page shows for one declaration event: { kind: "declared", name, reason, source, note, seq },
 // { kind: "hidden", text, seq }, { kind: "unreadable", text, seq }, or null.
@@ -231,20 +236,35 @@ export function declarationView(item) {
   return { kind: "declared", name: clipCodePoints(d.name, DECLARATION_LIMITS.name), reason: clipCodePoints(d.reason, DECLARATION_LIMITS.reason),
     source: d.source, note: DECLARED_NOTE, seq: item.seq };
 }
-// The whole window, from the start, page by page (at most VISITORS_MAX_PAGES of 500), through the page's gate.
-export async function fetchVisitorsWindow({ fetchImpl, signal, maxPages = VISITORS_MAX_PAGES } = {}) {
-  const items = [];
-  let after = 0;
+// The window: the latest VISITORS_WINDOW door records (seqs are shared by every door record, so the window holds the
+// arrivals among them), read to its end on every poll and replacing what the page held, so a hide reaches an open tab
+// on its next poll (root's P2: no fixed page count from the start, which silently missed the newest declarations once
+// the history grew). The start is rounded down to a multiple of VISITORS_ROUND, so tabs ask for the same URLs and share
+// the proxy's 2 s micro-cache; rounding only widens the window. latest: the newest seq the page knows (the events
+// cursor, or the last read's through_seq); when the first page shows the window starts later than that, the read
+// restarts there once. Returns { ok, partial, items, from, through } or { ok: false, error }: a page cap reached with
+// more to read is partial, never a plain ok, and a failed page is an error, never a shorter list.
+export const VISITORS_WINDOW = 1000;
+export const VISITORS_ROUND = 100;
+export const visitorsWindowStart = (latest) => Math.floor(Math.max(0, (Number.isSafeInteger(latest) ? latest : 0) - VISITORS_WINDOW) / VISITORS_ROUND) * VISITORS_ROUND;
+export async function fetchVisitorsWindow({ fetchImpl, signal, latest = 0, maxPages = VISITORS_MAX_PAGES } = {}) {
+  let from = visitorsWindowStart(latest), after = from, items = [], through = null, restarted = false;
   for (let page = 0; page < maxPages; page += 1) {
     const got = await getJson(`${VISITORS_PATH}?after=${after}&limit=500`, { fetchImpl, signal });
     if (!got.ok) return { ok: false, error: got.error };
     const p = normalizeVisitors(got.doc);
     if (!p) return { ok: false, error: "answer is not a door visitors page" };
+    if (through === null && p.through !== null) {
+      through = p.through;
+      const exact = visitorsWindowStart(through);
+      if (!restarted && exact > from) { from = exact; after = exact; items = []; restarted = true; continue; }
+    }
     items.push(...p.items);
-    if (!p.has_more || p.next_after <= after) break;
+    if (!p.has_more) return { ok: true, partial: false, items, from, through: through ?? p.next_after };
+    if (p.next_after <= after) return { ok: false, error: "the visitors cursor did not move" };
     after = p.next_after;
   }
-  return { ok: true, items };
+  return { ok: true, partial: true, items, from, through };
 }
 
 // ── the connection state: the badge never says LIVE unless the door feed's last good answer is fresh ─────────────

@@ -467,3 +467,120 @@ test("root's P1: the gate holds a 429's Retry-After against queued and in-flight
   assert.ok(nextAt >= quickAt + 100 + 60000, `the 429's embargo held through the earlier success: next at ${nextAt}, 429 at ~${quickAt + 100}`);
   assert.ok(t429 > 0);
 });
+
+// Root's dispatch P2 (pr103-gate-dispatch-1733): the request must be dispatched in the same synchronous turn that
+// reserves its slot. Otherwise (a) a long microtask between the reservation and the real fetch call compresses the
+// spacing measured at fetch time, and (b) a 429 processed in between lets an already-reserved request cross its
+// embargo. Fake time throughout: the clock moves only when the test moves it.
+test("root's dispatch P2 (a): a long microtask after the reservation cannot shrink the gap between fetch calls", async () => {
+  let clock = 0;
+  const calls = [];
+  let first = true;
+  const random = () => {
+    // The reservation of the first request: a long microtask queued right here runs before any later continuation.
+    if (first) { first = false; queueMicrotask(() => { clock += 250; }); }
+    return 0;
+  };
+  const sleep = async (ms) => { clock += ms; };
+  const fetchImpl = async (url) => { calls.push({ url, at: clock }); return new Response("{}", { status: 200 }); };
+  const g = M.createGate({ fetchImpl, now: () => clock, random, sleep });
+  await Promise.all([g.fetch("one"), g.fetch("two"), g.fetch("three")]);
+  const at = calls.map((c) => c.at);
+  const gaps = at.slice(1).map((v, i) => v - at[i]);
+  assert.deepEqual(calls.map((c) => c.url), ["one", "two", "three"]);
+  assert.ok(gaps.every((d) => d >= M.GATE.GAP_MS), `gaps measured when fetch is called: ${gaps} (calls at ${at})`);
+});
+
+test("root's dispatch P2 (b): a reserved request is dispatched in its own turn; a later 429 cannot sit in between", async () => {
+  let clock = 0;
+  const sleeps = [];
+  const sleep = (ms) => new Promise((resolve) => sleeps.push({ ms, resolve }));
+  const pending = new Map();
+  const seen = [];
+  let g;
+  const fetchImpl = (url) => {
+    // What the gate holds at the moment this request is really dispatched.
+    seen.push({ url, at: clock, embargoAhead: g.nextAt - clock });
+    return new Promise((resolve) => pending.set(url, resolve));
+  };
+  g = M.createGate({ fetchImpl, now: () => clock, random: () => 0, sleep });
+  const one = g.fetch("one");                          // dispatched at 0; its answer is held
+  const two = g.fetch("two");                          // waits for its 300 ms slot
+  const three = g.fetch("three");
+  for (let i = 0; i < 20; i += 1) await Promise.resolve();
+  assert.equal(sleeps.length, 1, "two is sleeping until its slot");
+  // In one step: two's slot comes due, and one's 429 (Retry-After: 60) arrives right after it.
+  clock = 300;
+  sleeps.shift().resolve();
+  pending.get("one")(new Response("{}", { status: 429, headers: { "retry-after": "60" } }));
+  await one;
+  for (let i = 0; i < 20; i += 1) await Promise.resolve();
+  const two0 = seen.find((s) => s.url === "two");
+  assert.ok(two0, "two was dispatched");
+  assert.equal(two0.at, 300, "at its reserved slot");
+  assert.ok(two0.embargoAhead <= M.GATE.GAP_MS + M.GATE.GAP_JITTER_MS,
+    `two left in the turn that reserved it, before the 429 was taken in (the gate already held ${two0.embargoAhead} ms of embargo)`);
+  // Three, still queued, honours the 429's embargo.
+  while (sleeps.length) { const s = sleeps.shift(); clock += s.ms; s.resolve(); for (let i = 0; i < 20; i += 1) await Promise.resolve(); }
+  const three0 = seen.find((s) => s.url === "three");
+  assert.ok(three0 && three0.at >= 300 + 60000, `three waited out Retry-After: dispatched at ${three0?.at}`);
+  pending.get("two")(new Response("{}", { status: 200 }));
+  pending.get("three")(new Response("{}", { status: 200 }));
+  await Promise.all([two, three]);
+});
+
+// Root's three dispatch witnesses (pr103-gate-dispatch-1733; zip sha256 7cdae9be…, README and dispatch-regression.mjs
+// read as data and ported here against the real createGate). They fail at 6e94dfc and pass from 065b14e. Native
+// microtask order is kept; advancing the injected clock models time spent by unrelated synchronous work.
+function witnessClock() {
+  let time = 0;
+  const sleepers = [];
+  const settle = async () => { for (let i = 0; i < 30; i += 1) await Promise.resolve(); };
+  const due = (at) => { for (const s of [...sleepers].filter((x) => x.at <= at)) { sleepers.splice(sleepers.indexOf(s), 1); s.resolve(); } };
+  return {
+    now: () => time, jump: (v) => { time = v; }, settle, sleepers, due,
+    sleep: (ms) => new Promise((resolve) => sleepers.push({ at: time + ms, resolve })),
+    drain: async () => { for (let i = 0; i < 10 && sleepers.length; i += 1) { time = Math.max(time, Math.min(...sleepers.map((x) => x.at))); due(time); await settle(); } },
+  };
+}
+const witnessOk = () => ({ status: 200, headers: { get: () => null } });
+for (const delay of [137, 500]) {
+  test(`root's witness: actual dispatch stays spaced after an unrelated ${delay} ms microtask`, async () => {
+    const c = witnessClock(), calls = [];
+    const gate = M.createGate({ now: c.now, sleep: c.sleep, random: () => 0,
+      fetchImpl: (url) => { calls.push({ url, at: c.now() }); return Promise.resolve(witnessOk()); } });
+    const first = gate.fetch("first"), second = gate.fetch("second");
+    queueMicrotask(() => c.jump(c.now() + delay));
+    await c.settle();
+    await c.drain();
+    assert.equal(calls.length, 2, "both callers eventually dispatch");
+    await Promise.all([first, second]);
+    assert.ok(calls[1].at - calls[0].at >= 300, `actual starts ${JSON.stringify(calls)} must be at least 300 ms apart`);
+  });
+}
+test("root's witness: a reserved request dispatches before a new 429 is processed, or waits its full embargo", async () => {
+  const c = witnessClock(), calls = [], trace = [];
+  let finishOld;
+  const gate = M.createGate({ now: c.now, sleep: c.sleep, random: () => 0,
+    fetchImpl: (url) => {
+      const row = { kind: "dispatch", url, at: c.now() };
+      calls.push(row); trace.push(row);
+      return url === "old" ? new Promise((resolve) => { finishOld = resolve; }) : Promise.resolve(witnessOk());
+    } });
+  const old = gate.fetch("old");
+  await c.settle();
+  const next = gate.fetch("reserved-next"), third = gate.fetch("still-queued");
+  await c.settle();
+  c.jump(300);
+  // This order: wake the waiting slot, then resolve the older answer (a 429 with Retry-After: 60).
+  c.due(c.now());
+  finishOld({ status: 429, headers: { get: () => { trace.push({ kind: "429 processed", at: c.now(), embargoUntil: c.now() + 60000 }); return "60"; } } });
+  await c.settle();
+  await c.drain();
+  assert.equal(calls.length, 3, "all callers eventually dispatch");
+  await Promise.all([old, next, third]);
+  const i = trace.findIndex((x) => x.kind === "429 processed");
+  assert.ok(i >= 0);
+  const early = trace.slice(i + 1).filter((x) => x.kind === "dispatch" && x.at < trace[i].embargoUntil);
+  assert.deepEqual(early, [], `after the 429 is processed, no queued dispatch before ${trace[i].embargoUntil}; trace=${JSON.stringify(trace)}`);
+});

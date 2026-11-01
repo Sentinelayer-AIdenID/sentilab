@@ -118,7 +118,9 @@ async function doorFeed(upstream, headers) {
 // when its API request started (at 2 s the entry is a miss and is deleted, whatever the cache does with max-age), and
 // SENT, the browser's headers, which a hit replays exactly (no-store, as before), so nothing the cache adds goes out.
 // Without caches.default (node tests, some runtimes) nothing is cached; a cache that fails is a miss.
-const MICRO_CACHED = new Set(["/api/open/v1/door/results", "/api/open/v1/door/events", "/api/open/v1/door/board"]);
+// /visitors too (warden, 17:24Z): the Live Lab's declarations list re-reads a window of up to ~1,000 records every 3 s
+// from every tab, from a start rounded down to a multiple of 100 so tabs ask for the same URLs and share these entries.
+const MICRO_CACHED = new Set(["/api/open/v1/door/results", "/api/open/v1/door/events", "/api/open/v1/door/board", "/api/open/v1/door/visitors"]);
 const MICRO_CACHE_MS = 2000;
 const MADE = "x-microcache-made";
 const SENT = "x-microcache-headers";

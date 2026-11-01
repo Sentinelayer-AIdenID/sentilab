@@ -30,17 +30,21 @@ test("the visitors feed is read strictly: the real staging answer, and the synth
   const bad = M.normalizeVisitors({ ...doc("visitors-declarations.json"), items: [{ seq: 1, class: "unknown", short_id: "abcd", label: "forged label", event_kind: "declaration",
     declaration: { name: "x", reason: "y" } }] });
   assert.equal(bad.items.length, 0, "an item whose label is not rebuilt from its class and short id is dropped");
-  const by = M.declarationsByLabel(page.items);
-  // The newest declaration event per label wins: 5cb8 declared twice.
-  assert.equal(by.get("unknown · 5cb8").seq, 102);
+  // Each declaration event stands on its own, by seq (root's P2: no join by label). bySeq is only this test's index.
+  const bySeqMap = new Map(page.items.map((x) => [x.seq, x]));
+  const by = { get: (label) => [...bySeqMap.values()].filter((x) => x.label === label && x.kind === "declaration").sort((a, b) => b.seq - a.seq)[0] };
+  const list = M.declarationList(page.items);
+  assert.deepEqual(list.map((d) => d.seq), [109, 108, 107, 106, 105, 104, 103, 102, 101], "every declaration event, newest first, one entry each");
+  assert.equal(list.find((d) => d.seq === 101).view.name, "An older name", "an older declaration is its own entry");
   assert.deepEqual(M.declarationView(by.get("unknown · 5cb8")), { kind: "declared", name: "Ortho Placer",
     reason: "Testing whether spreading the DRAM out cools the CPUs", source: "direct", note: NOTE, seq: 102 });
   // Hidden: the tombstone, and nothing else.
   assert.deepEqual(M.declarationView(by.get("unknown · c991")), { kind: "hidden", text: HIDDEN, seq: 103 });
   // A hidden row that wrongly still carries text shows none of it.
-  const leaky = M.declarationsByLabel(M.normalizeVisitors({ ...doc("visitors-declarations.json"), items: [{ seq: 7, at: null, class: "unknown", purpose: null,
+  const leaky = M.declarationList(M.normalizeVisitors({ ...doc("visitors-declarations.json"), items: [{ seq: 7, at: null, class: "unknown", purpose: null,
     short_id: "abcd", label: "unknown · abcd", event_kind: "declaration", declaration: { name: "leak", reason: "leak" }, hidden: "abuse" }] }).items);
-  assert.deepEqual(M.declarationView(leaky.get("unknown · abcd")), { kind: "hidden", text: HIDDEN, seq: 7 });
+  assert.deepEqual(leaky[0].view, { kind: "hidden", text: HIDDEN, seq: 7 });
+  assert.equal(JSON.stringify(leaky).includes("leak"), false, "a hidden entry carries none of the text");
   // HTML-looking text stays a plain string (the DOM path renders it with textContent).
   const html = M.declarationView(by.get("unknown · c2c7"));
   assert.equal(html.name, "<img src=x onerror=alert(1)>");
@@ -124,6 +128,8 @@ function installPage(t, answer) {
   define("fetch", async (input) => {
     const url = new URL(String(input), "https://sentilab.aidenid.com");
     const body = answer(url);
+    if (body === "network") throw new TypeError("network error");
+    if (body === undefined) return new Response("{}", { status: 502 });
     return body === null ? new Response("{}", { status: 404 }) : new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
   });
   t.after(() => { for (const [name, desc] of saved) { if (desc) Object.defineProperty(globalThis, name, desc); else delete globalThis[name]; } });
@@ -154,7 +160,7 @@ test("an open tab shows the declarations as inert text, and a hide reaches it on
   assert.ok(text.includes("Ortho Placer"), "the declared name is on the page");
   assert.ok(text.includes("Testing whether spreading the DRAM out cools the CPUs"), "and the reason");
   assert.ok(text.includes(NOTE), `labelled "${NOTE}"`);
-  assert.equal(text.includes("An older name"), false, "an older declaration of the same pass is not shown");
+  assert.ok(text.includes("An older name"), "an older declaration is its own entry in the list (no collapsing by pass)");
   // Hidden: the tombstone only.
   assert.ok(text.includes(HIDDEN));
   // HTML-looking text is text: present as text, never as markup or in an attribute.
@@ -168,7 +174,7 @@ test("an open tab shows the declarations as inert text, and a hide reaches it on
   assert.equal(text.includes("Ωmega 智能体 агент مرحبا 🧪"), true, "mixed scripts shown as written");
   assert.equal(text.includes("gnp.exe"), false, "a bidi override is not displayed");
   assert.equal(text.includes("example.invalid"), false, "an unknown source is not displayed");
-  assert.equal(text.includes("No run here"), false, "a declaration with no run in the results is not shown");
+  assert.ok(text.includes("No run here"), "a declaration is listed whether or not its pass has a run (it is never joined to one)");
   // The visitors feed is read from the start each poll (after=0): the whole window, replaced.
   assert.ok(asked.filter((a) => a.startsWith("/api/open/v1/door/visitors")).every((a) => /[?&]after=0(&|$)/.test(a)), asked.filter((a) => a.includes("visitors")).join(" "));
   // The operator hides seq 102 in place: same seq, a tombstone, the cursor does not move.
@@ -179,8 +185,51 @@ test("an open tab shows the declarations as inert text, and a hide reaches it on
   const after = [...page.text, ...page.attrs, ...page.html].join("\n");
   assert.equal(after.includes("Ortho Placer"), false, "the hidden name is gone from the whole DOM");
   assert.equal(after.includes("Testing whether spreading the DRAM out cools the CPUs"), false, "and its reason");
-  assert.equal(after.includes("An older name"), false, "and the older declaration does not take its place");
-  assert.ok(page.text.filter((s) => s.includes(HIDDEN)).length >= 2, "the run now reads hidden by the operator");
+  assert.ok(after.includes("An older name"), "the older declaration, a separate event the operator did not hide, stays as its own entry");
+  assert.ok(page.text.filter((s) => s.includes(HIDDEN)).length >= 2, "the hidden entry now reads hidden by the operator (and seq 103 still does)");
+});
+
+// Root's P2 (17:18Z): a class and a 4-hex short id can be shared by unrelated runs, so a declaration is never joined
+// to a run, a card or a row by label or short id. Declarations are their own list, by event seq, newest first.
+test("root's P2: declarations are a separate list by seq; two runs sharing a label never carry one", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: Date.parse("2026-11-01T17:20:00Z") });
+  const results = doc("results.json"), events = doc("events.json"), board = doc("board.json");
+  // A second run with the same label as 5cb8 (a 16-bit collision), but its own full run id.
+  const twin = { ...results.items.find((x) => x.short_id === "5cb8"), id: "open-0000beef-0000000000000000000000000000beef", arrival: 90, seq: 94 };
+  const res = { ...results, items: [...results.items, twin], next_after: 94 };
+  let visitors = { ...doc("visitors-declarations.json") };
+  visitors.items = visitors.items.filter((x) => x.seq !== 101);             // one declaration for that label: seq 102
+  const dom = installPage(t, (url) => {
+    const after = Number(url.searchParams.get("after") ?? 0);
+    if (url.pathname === "/api/open/v1/door/results") return after >= res.next_after ? { ...res, items: [], has_more: false } : res;
+    if (url.pathname === "/api/open/v1/door/events") return after >= events.next_after ? { ...events, events: [], has_more: false } : events;
+    if (url.pathname === "/api/open/v1/door/board") return board;
+    if (url.pathname === "/api/open/v1/door/visitors") return after >= visitors.next_after ? { ...visitors, items: [], has_more: false } : visitors;
+    return null;
+  });
+  await import(`${LIVE}?declarations=separate`);
+  for (let k = 0; k < 6; k += 1) { t.mock.timers.tick(1000); await settle(); }
+  const part = (id) => { const out = dom.part(id); return [...out.text, ...out.attrs, ...out.html].join("\n"); };
+  const runsRail = part("runList") + part("mobileRuns") + part("visitorList") + part("modelTitle") + part("modelSub");
+  assert.equal(runsRail.includes("Ortho Placer"), false, "no run row, card or title carries the declaration");
+  assert.equal(runsRail.includes(NOTE), false, "nor its label");
+  const list = dom.part("declList").text.join("\n");
+  assert.equal(list.split("Ortho Placer").length - 1, 1, "the declaration appears once, in the declarations list");
+  assert.ok(list.includes(NOTE));
+  assert.ok(list.includes("Testing whether spreading the DRAM out cools the CPUs"));
+  // Newest first, by seq: 106 (mixed scripts) before 105 before 102.
+  const order = ["Ωmega", "Spreads the DRAM dies to the corners", "Ortho Placer"].map((s) => list.indexOf(s));
+  assert.ok(order.every((i) => i >= 0) && order[0] < order[1] && order[1] < order[2], `newest first: ${order}`);
+  // Hide seq 102: only that entry changes.
+  const before = list;
+  visitors = { ...visitors, items: visitors.items.map((x) => (x.seq === 102 ? { seq: 102, at: x.at, class: x.class, purpose: x.purpose, short_id: x.short_id,
+    label: x.label, event_kind: "declaration", declaration: null, hidden: "privacy" } : x)) };
+  for (let k = 0; k < 6; k += 1) { t.mock.timers.tick(1000); await settle(); }
+  const afterList = dom.part("declList").text.join("\n");
+  assert.equal(afterList.includes("Ortho Placer"), false, "the hidden entry's text is gone");
+  assert.ok(afterList.includes(HIDDEN), "and reads hidden by the operator");
+  for (const s of ["Ωmega 智能体 агент مرحبا 🧪", N64, "<img src=x onerror=alert(1)>"]) assert.ok(before.includes(s) && afterList.includes(s), `other entries unchanged: ${s.slice(0, 12)}`);
+  assert.equal(part("runList").includes(HIDDEN) || part("visitorList").includes(HIDDEN), false, "the hide does not touch any run");
 });
 
 // Root's P2 (17:21Z): a row without a declaration must not print the word "null" (native append turns null into text).
@@ -202,3 +251,129 @@ test("no run row, card or list prints a literal null", async (t) => {
     assert.deepEqual(bad, [], `#${id} has no literal null or undefined`);
   }
 });
+
+// Root's P2 (17:23Z): a bounded recent window with exact boundaries. Reading from after=0 for a fixed number of pages
+// silently missed the newest declarations once the history passed 2,000 arrivals.
+function history(n, { declareAt = n, hiddenAt = null } = {}) {
+  const items = [];
+  for (let seq = 1; seq <= n; seq += 1) {
+    const base = { seq, at: "2026-11-01T17:00:00Z", class: "unknown", purpose: null, short_id: (seq % 65536).toString(16).padStart(4, "0").slice(-4), event_kind: "passive_arrival", declaration: null };
+    base.label = `unknown · ${base.short_id}`;
+    if (seq === declareAt) Object.assign(base, { event_kind: "declaration", declaration: { notice_version: "sentilab-public-visitor/1", name: "Newest Declarer", reason: "Arrived as record 2001", source: "direct" } });
+    if (seq === hiddenAt) Object.assign(base, { event_kind: "declaration", declaration: null, hidden: "spam" });
+    items.push(base);
+  }
+  return items;
+}
+function pagedVisitors(itemsRef, asked) {
+  return async (url) => {
+    const u = new URL(String(url), "https://x");
+    asked.push(u.search);
+    const after = Number(u.searchParams.get("after")), limit = Number(u.searchParams.get("limit") ?? 100);
+    const rest = itemsRef().filter((x) => x.seq > after);
+    const page = rest.slice(0, limit);
+    const all = itemsRef();
+    return new Response(JSON.stringify({ schema: "sentilab-door-visitors/1", items: page, next_after: page.length ? page.at(-1).seq : after,
+      has_more: rest.length > limit, counts: { through_seq: all.at(-1).seq } }), { status: 200 });
+  };
+}
+
+test("root's P2: the visitors window is the latest records, read to its end; the newest declaration is shown", async () => {
+  let items = history(2001);
+  const asked = [];
+  const fetchImpl = pagedVisitors(() => items, asked);
+  const got = await M.fetchVisitorsWindow({ fetchImpl, latest: 0 });
+  assert.equal(got.ok, true);
+  assert.equal(got.partial, false, "read to the end of the window");
+  assert.deepEqual(M.declarationList(got.items).map((d) => d.seq), [2001]);
+  assert.equal(M.declarationList(got.items)[0].view.name, "Newest Declarer", "the newest declaration (seq 2001) is in the list");
+  assert.ok(got.from === 1000 && got.through === 2001, `the window is the latest records: from ${got.from} through ${got.through}`);
+  // With a known latest seq the first request already starts at the window, rounded down to a multiple of 100 so tabs
+  // ask for the same URLs (and share the proxy's micro-cache); rounding only widens the window.
+  asked.length = 0;
+  await M.fetchVisitorsWindow({ fetchImpl, latest: 2001 });
+  assert.match(asked[0], /after=1000(&|$)/, `starts at latest - 1000, rounded down: ${asked[0]}`);
+  assert.deepEqual([2001, 2050, 2099, 1099, 999, 0, -5].map(M.visitorsWindowStart), [1000, 1000, 1000, 0, 0, 0, 0]);
+  // A hide inside the window reaches the next read.
+  items = history(2001, { hiddenAt: 2001 });
+  const hidden = await M.fetchVisitorsWindow({ fetchImpl, latest: 2001 });
+  assert.deepEqual(M.declarationList(hidden.items).map((d) => d.view.kind), ["hidden"]);
+  // A page cap with has_more still true is an explicit partial read, never a plain ok.
+  items = history(2001);
+  const capped = await M.fetchVisitorsWindow({ fetchImpl, latest: 2001, maxPages: 1 });
+  assert.equal(capped.ok, true);
+  assert.equal(capped.partial, true, "has_more at the cap: partial");
+  // A failed page is an error, not a short list.
+  const failing = await M.fetchVisitorsWindow({ fetchImpl: async () => new Response("{}", { status: 502 }), latest: 2001 });
+  assert.deepEqual([failing.ok, failing.error], [false, "answered 502"]);
+});
+
+test("the declarations list says when it is partial or unavailable", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: Date.parse("2026-11-01T17:30:00Z") });
+  const results = doc("results.json"), events = doc("events.json"), board = doc("board.json");
+  let mode = "error";
+  const dom = installPage(t, (url) => {
+    const after = Number(url.searchParams.get("after") ?? 0);
+    if (url.pathname === "/api/open/v1/door/results") return after >= results.next_after ? { ...results, items: [], has_more: false } : results;
+    if (url.pathname === "/api/open/v1/door/events") return after >= events.next_after ? { ...events, events: [], has_more: false } : events;
+    if (url.pathname === "/api/open/v1/door/board") return board;
+    if (url.pathname === "/api/open/v1/door/visitors") return mode === "error" ? undefined : { schema: "sentilab-door-visitors/1", items: history(3).filter((x) => x.seq > after).slice(0, 1),
+      next_after: Math.min(3, after + 1), has_more: after + 1 < 3, counts: { through_seq: 3 } };
+    return null;
+  });
+  await import(`${LIVE}?declarations=states`);
+  for (let k = 0; k < 6; k += 1) { t.mock.timers.tick(1000); await settle(); }
+  assert.match(dom.part("declList").text.join(" "), /unavailable/i, "a failing feed reads unavailable, not an empty list");
+});
+
+// Root's security P2 (17:47Z): after a failed visitors refresh the page kept the last good names and reasons on screen,
+// unlabelled, until the 10 s freshness limit. Entries show only while the last read succeeded (d.ok) and is fresh; a
+// failed read shows the unavailable state with no declared text at once, and a good read brings them back.
+for (const kind of ["502", "404", "network"]) {
+  test(`root's security P2: good -> failed (${kind}) -> recovered; no declared text while failed, a hide still propagates`, async (t) => {
+    t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: Date.parse("2026-11-01T17:50:00Z") });
+    const results = doc("results.json"), events = doc("events.json"), board = doc("board.json");
+    let visitors = doc("visitors-declarations.json");
+    let mode = "good";
+    const answered = [];
+    const dom = installPage(t, (url) => {
+      const after = Number(url.searchParams.get("after") ?? 0);
+      if (url.pathname === "/api/open/v1/door/results") return after >= results.next_after ? { ...results, items: [], has_more: false } : results;
+      if (url.pathname === "/api/open/v1/door/events") return after >= events.next_after ? { ...events, events: [], has_more: false } : events;
+      if (url.pathname === "/api/open/v1/door/board") return board;
+      if (url.pathname === "/api/open/v1/door/visitors") {
+        answered.push({ mode, at: Date.now() });
+        if (mode === "502") return undefined;
+        if (mode === "404") return null;
+        if (mode === "network") return "network";
+        return after >= visitors.next_after ? { ...visitors, items: [], has_more: false } : visitors;
+      }
+      return null;
+    });
+    const all = () => { const p = dom.page(); return [...p.text, ...p.attrs, ...p.html].join(" | "); };
+    const tickUntil = async (cond, maxMs) => { for (let ms = 0; ms < maxMs && !cond(); ms += 100) { t.mock.timers.tick(100); await settle(); } };
+    await import(`${LIVE}?declarations=ok-${kind}`);
+    await tickUntil(() => all().includes("Ortho Placer"), 8000);
+    assert.ok(all().includes("Ortho Placer"), "good: the declaration is listed");
+    // The feed fails.
+    mode = kind;
+    await tickUntil(() => answered.some((a) => a.mode === kind), 8000);
+    const failedAt = answered.find((a) => a.mode === kind).at;
+    await tickUntil(() => Date.now() >= failedAt + 3000, 4000);
+    const during = all();
+    for (const text of ["Ortho Placer", "Testing whether spreading the DRAM out cools the CPUs", "An older name", "Ωmega", "<img src=x onerror=alert(1)>"]) {
+      assert.equal(during.includes(text), false, `+3 s after a ${kind}: no declared text anywhere (${text.slice(0, 16)})`);
+    }
+    assert.match(dom.part("declList").text.join(" "), kind === "404" ? /NOT AVAILABLE/ : /UNAVAILABLE/, "the unavailable state shows");
+    // The feed recovers: the entries come back.
+    mode = "good";
+    await tickUntil(() => all().includes("Ortho Placer"), 90000);
+    assert.ok(all().includes("Ortho Placer"), "recovered: the entries are back");
+    // A hide still propagates.
+    visitors = { ...visitors, items: visitors.items.map((x) => (x.seq === 102 ? { seq: 102, at: x.at, class: x.class, purpose: x.purpose, short_id: x.short_id,
+      label: x.label, event_kind: "declaration", declaration: null, hidden: "privacy" } : x)) };
+    await tickUntil(() => !all().includes("Ortho Placer"), 15000);
+    assert.equal(all().includes("Ortho Placer"), false, "the hidden declaration is gone");
+    assert.ok(dom.part("declList").text.join(" ").includes(HIDDEN));
+  });
+}
