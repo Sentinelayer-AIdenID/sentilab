@@ -298,7 +298,7 @@ temperature-label.mjs:52), PL-24 (L1:SOURCES.md "How the facts were checked").
 |---|---|
 | Phase 0 freeze | A#57059 ("Freeze schemas, operation names, no-result behavior and test mapping before the proposed Astra ultra author box"; "Forge owns joint spec/content; root independent evidence review; Warden concrete box/grant/ops"); F#57046 ("mint an Astra ultra box") |
 | W0.2 41 cases | A#57059 ("30 web cases … and 11 anatomy cases: 41 source cases … ZERO executed") |
-| W0.4 box | A#57053 ("Warden provisions the requested Astra ultra box"); main:scripts/export-deck-pdf.mjs:4; main:web/test/worker-boot.mjs:5-11, :22 |
+| W0.4 box | A#57053 ("Warden provisions the requested Astra ultra box"); main:scripts/export-deck-pdf.mjs:4; main:web/test/worker-boot.mjs:5-11, :22; the W13 module's bytes for the build: C#57385, A#57404 |
 | W1-W18 scopes | SPEC §5-§8; L3:PSEUDOCODE §0 (module list); L3:ARCHITECTURE §11 (site tests) |
 | W13 field check | C#57385; A#57404 (forge adopts it into the corrected schema, with the verified-prefix resolver, the producer and model identities, labels and the renderer; no duplicate renderer) |
 | UI PRs with screenshots | L3:ACCEPTANCE A-09 ("the house rule for UI PRs: real-browser 1280 + 390 checks") |
