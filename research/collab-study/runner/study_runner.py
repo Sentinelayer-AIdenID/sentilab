@@ -506,7 +506,7 @@ class RequestEngine:
                 return None
             remaining_tokens = agent.cap - agent.charged_tokens
             token_prompt_bound = (agent.prompt_bound if agent.successful_responses
-                                  else agent.initial_prompt_bound)
+                                  else max(agent.initial_prompt_bound, agent.prompt_bound))
             max_tokens = min(self.reply_limit, remaining_tokens)
             if max_tokens <= 0 or token_prompt_bound + max_tokens > remaining_tokens:
                 agent.stop_reason = "token_cap"
