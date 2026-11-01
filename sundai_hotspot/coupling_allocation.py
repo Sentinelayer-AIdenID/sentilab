@@ -20,6 +20,17 @@ CALL_LIST_SHA256 = "db32a692b749e08324c295e56250f96a9548796aae232ca63f24d2ad4ab3
 BINARY_SHA256 = "6ea3b7813412c13d20c92adc6449fbc0bc87c46b521d4d5eaf80b8abc7900609"
 KIND = "material_only"
 SCHEMA = "sentilab-slab049-coupling-manifest-v1"
+REPLAY_OUTPUTS = ("sample.steady", "sample.grid.steady", "stdout.txt", "stderr.txt")
+PERCENTAGE_ROUNDING = "nearest whole percent from the exact rational; ties away from zero"
+PERCENTAGE_REFERENCES = {"x": "ascend910-tap25d-fig6a-raw", "y": "micro150-tap25d-fig5a-raw"}
+OUTCOME_WORDINGS = {
+    "MEETS": ("With only that one link changed in 7.0, [x]% and [y]% of the difference to 6.0 goes away on the "
+              "two references. That localizes it to this term in this configured model. It doesn't tell us "
+              "what the authors intended, or which version matches hardware."),
+    "MISSES": ("That one change accounts for [x]% and [y]% of the difference, below the 85% we fixed. "
+               "Something else also contributes."),
+    "DOESN'T COMPLETE": "The run didn't complete, so we make no claim from it.",
+}
 
 
 def call_list() -> dict:
@@ -66,7 +77,12 @@ def build_manifest() -> dict:
         call_list_sha256=CALL_LIST_SHA256,
         allocation="four calls: two material-only primaries and two fresh-process replays; no gate-zero grant",
         calls=calls,
-        evaluation={key: frozen[key] for key in ("statistic", "fraction", "predicate", "references")},
+        evaluation={**{key: frozen[key] for key in ("statistic", "fraction", "predicate", "references")},
+                    "replay_identity": {"files": list(REPLAY_OUTPUTS), "comparison": "byte-for-byte",
+                                        "excluded": {"receipt.json": "per-call timestamps and accounting"}},
+                    "percentage_rounding": PERCENTAGE_ROUNDING,
+                    "percentage_references": dict(PERCENTAGE_REFERENCES),
+                    "outcome_wordings": dict(OUTCOME_WORDINGS)},
         accounting={"calls": len(calls), "max_runs": len(calls), "retries": 0, "concurrency": 1, "gpu": False,
                     "host_architecture": gate["accounting"]["host_architecture"],
                     "manifest_cpu_cap_s": worst, "worst_case_cpu_s": worst,
@@ -99,6 +115,13 @@ def require_receipt_identity(call: dict, identity: dict) -> None:
         raise gate_zero.GateZeroRefusal("receipt does not bind the pinned material-only binary")
 
 
+def whole_percent(fraction: Fraction) -> int:
+    """Round the exact rational to the nearest whole percent, with ties away from zero."""
+    whole, remainder = divmod(abs(fraction.numerator) * 100, fraction.denominator)
+    magnitude = whole + (2 * remainder >= fraction.denominator)
+    return -magnitude if fraction < 0 else magnitude
+
+
 def evaluate_call(call: dict, directory: Path, record: dict, identity: dict,
                   primary: Path | None = None) -> dict:
     """The gate's native block maximum, with exact decimal input and rational threshold comparison.
@@ -128,10 +151,11 @@ def evaluate_call(call: dict, directory: Path, record: dict, identity: dict,
         "statistic": call_list()["statistic"], "T_variant_C": str(temperature),
         "T_hs7_C": str(hs7), "T_hs6_C": str(hs6), "threshold_C": str(threshold),
         "fraction": str(Decimal(fraction.numerator) / Decimal(fraction.denominator)),
-        "fraction_exact": str(fraction), "threshold_met": fraction >= Fraction(17, 20),
+        "fraction_exact": str(fraction), "fraction_percent": whole_percent(fraction),
+        "threshold_met": fraction >= Fraction(17, 20),
         "maximizing_node": node,
         "replay_byte_identical": (all((directory / name).read_bytes() == (primary / name).read_bytes()
-                                      for name in gate_zero.REPLAY_OUTPUTS) if primary is not None else None),
+                                      for name in REPLAY_OUTPUTS) if primary is not None else None),
         "diagnostics": {key: record[key] for key in (
             "chiplet_block_values_C", "chiplet_centre_mapping", "active_layer_grid_peak",
             "spreader_sink_drop_diagnostic", "same_index_stack_at_active_argmax")},
@@ -181,15 +205,25 @@ def report(manifest: dict, digest: str, ledger: dict, tags) -> dict:
         identical = pair[1].get("replay_byte_identical")
         failed = any(item.get("threshold_met") is False for item in pair) or identical is False
         complete = primary["usable"] and replay["usable"] and identical is not None
+        outcome = ("DOESN'T COMPLETE" if not complete or identical is not True
+                   else "MISSES" if failed else "MEETS")
         rows.append({"reference": call["reference"], "temperature_label": gate_zero.TEMPERATURE_LABELS[KIND],
                      "primary": pair[0], "replay": pair[1], "replay_byte_identical": identical,
-                     "predicate": False if failed else True if complete else None})
+                     "predicate": False if failed else True if complete else None, "outcome": outcome})
     predicate = (False if any(row["predicate"] is False for row in rows)
                  else True if all(row["predicate"] is True for row in rows) else None)
+    outcome = ("DOESN'T COMPLETE" if any(row["outcome"] == "DOESN'T COMPLETE" for row in rows)
+               else "MEETS" if predicate is True else "MISSES")
+    wording = OUTCOME_WORDINGS[outcome]
+    if outcome != "DOESN'T COMPLETE":
+        by_reference = {row["reference"]: row for row in rows}
+        for placeholder, reference in PERCENTAGE_REFERENCES.items():
+            wording = wording.replace(f"[{placeholder}]", str(by_reference[reference]["primary"]["fraction_percent"]))
     return {"schema": "sentilab-slab049-coupling-report-v1", "manifest_sha256": digest,
             "grant_id": ledger["grant"]["grant_id"], "calls": list(entries.values()), "rows": rows,
             "not_completed": missing, "coupling": {"predicate": predicate,
-                "verdict": "PASS" if predicate is True else "FAIL" if predicate is False else "INCOMPLETE"}}
+                "verdict": "PASS" if predicate is True else "FAIL" if predicate is False else "INCOMPLETE",
+                "outcome": outcome, "wording": wording, "percentage_rounding": PERCENTAGE_ROUNDING}}
 
 
 def main(argv: list[str] | None = None) -> int:
