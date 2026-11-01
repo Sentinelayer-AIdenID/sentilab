@@ -317,3 +317,25 @@ test("P2-3: a replay cursor shows the state at that record; the latest receipt i
   assert.equal(live.atRecord, null);
   assert.equal(live.metric.text, "113.23 °C");
 });
+
+// Copy review (aneta, staging at 16:09Z): "Run unknown · 9c59" read as if the run were unknown. A run is titled by its
+// short id; the class is a separate line, "visitor type: <class>". Records read the same way.
+test("copy: a run is titled by its short id, and its class is a separate visitor-type line", async () => {
+  const feed = await liveFeed(recordedFetch());
+  await feed.pollOnce();
+  for (const L of feed.state.layouts) {
+    assert.equal(M.runTitle(L), `Run ${L.short}`);
+    assert.equal(M.visitorType(L.cls), `visitor type: ${L.cls}`);
+    assert.equal(M.runTitle(L).includes(L.cls), false, `${M.runTitle(L)} carries no class word`);
+  }
+  const pts = M.traceModel(feed.state.events).points;
+  const run = pts.find((p) => p.kind === "run"), anon = pts.find((p) => p.kind === "arrival" && !p.label.includes(" · "));
+  assert.match(M.recordTitle(run), /^Run [0-9a-f]{4} /);
+  assert.equal(M.recordTitle(anon), `${anon.label} ${anon.line}`);
+  assert.equal(M.recordTitle({ kind: "arrival", label: "unknown · 7c2e", line: "arrived at the door" }), "Visitor 7c2e (visitor type: unknown) arrived at the door");
+  // The lab-runs line is only worth a line when there is something to count.
+  assert.equal(M.labRunsLine({ ok: true, runs: { total: 0, byStatus: { finished: 0 } } }), null);
+  assert.equal(M.labRunsLine({ ok: true, runs: { total: 8, byStatus: { finished: 7 } } }), "Lab runs: 8 listed · 7 finished");
+  assert.equal(M.labRunsLine({ ok: false, error: "x" }), "Lab runs: list unavailable");
+  assert.equal(M.labRunsLine(null), "Lab runs: checking");
+});

@@ -312,6 +312,24 @@ export function traceModel(events) {
     label: e.label, line: eventLine(e), state: e.state ?? null, run_id: e.run_id ?? null, outcome: e.outcome ?? null }));
   return { points, first: points[0] ?? null, last: points.at(-1) ?? null };
 }
+// ── copy: a run is titled by its short id; its class is a separate line (a class is a guess at the visitor's type) ──
+export const runTitle = (L) => `Run ${L.short}`;
+export const visitorType = (cls) => `visitor type: ${cls}`;
+// A record's title: a run record by its run's short id, a door record by its visitor's short id and type, an arrival
+// without a token by its class.
+export function recordTitle(p) {
+  const [cls, short] = String(p.label).split(" · ");
+  if (!short) return `${p.label} ${p.line}`;
+  return p.kind === "run" ? `Run ${short} ${p.line}` : `Visitor ${short} (${visitorType(cls)}) ${p.line}`;
+}
+// The lab-runs line, or null when there is nothing to count (no line at all rather than "0 listed").
+export function labRunsLine(lr) {
+  if (!lr) return "Lab runs: checking";
+  if (!lr.ok) return "Lab runs: list unavailable";
+  if (lr.runs.total === 0) return null;
+  return `Lab runs: ${lr.runs.total} listed · ${lr.runs.byStatus.finished} finished`;
+}
+
 // "15:21:02Z" from a server timestamp; "time not recorded" for none.
 export const hms = (at) => (at ? `${at.slice(11, 19)}Z` : "time not recorded");
 

@@ -186,10 +186,11 @@ function runCard(L, selected, { mobile = false } = {}) {
   const v = M.runView(L);
   const btn = h("button", { type: "button", class: mobile ? (selected ? "selected" : "") : `experiment${selected ? " selected" : ""}`, "aria-pressed": selected ? "true" : "false", dataset: { run: L.id } });
   if (mobile) {
-    btn.append(L.label, h("small", null, v.metric ? `${v.metric.text} · ${v.metric.qualifier}` : (STATUS_TAG[L.status] ?? L.status).toLowerCase()));
+    btn.append(M.runTitle(L), h("small", null, v.metric ? `${v.metric.text} · ${v.metric.qualifier}` : (STATUS_TAG[L.status] ?? L.status).toLowerCase()),
+      h("small", { class: "vt" }, M.visitorType(L.cls)));
   } else {
     btn.append(h("span", { class: "experiment-tag" }, STATUS_TAG[L.status] ?? L.status),
-      h("strong", null, L.label),
+      h("strong", null, M.runTitle(L)), h("small", { class: "vt" }, M.visitorType(L.cls)),
       h("small", null, v.metric ? [v.metric.text, " ", h("em", null, v.metric.qualifier)] : v.none),
       h("span", { class: "experiment-bottom" }, h("span", { class: v.metric ? "mint-dot" : "grey-dot" }), `arrival ${L.arrival ?? "?"} · record ${L.seq ?? "?"}`));
   }
@@ -210,7 +211,9 @@ function renderRuns() {
   }
   if (focusId) $$(`[data-run]`).find((b) => b.dataset.run === focusId && b.offsetParent !== null)?.focus();
   const lr = S.labRuns;
-  $("labRunsText").textContent = !lr ? "Lab runs: checking" : lr.ok ? `Lab runs: ${lr.runs.total} listed · ${lr.runs.byStatus.finished} finished` : "Lab runs: list unavailable";
+  const line = M.labRunsLine(lr);
+  $("labRuns").hidden = line === null;
+  $("labRunsText").textContent = line ?? "";
 }
 
 function renderModel() {
@@ -227,7 +230,8 @@ function renderModel() {
   } else empty.hidden = true;
   applyControls(M.viewControls(renderer));
   $("selectionCaption").textContent = renderer === "2d" ? "2D drawing · orbit and explode need the 3D view" : "Drag to orbit · scroll to zoom · arrows when focused";
-  $("modelTitle").textContent = L ? `Run ${L.label}` : "A closer look at the package.";
+  $("modelTitle").textContent = L ? M.runTitle(L) : "A closer look at the package.";
+  $("modelSub").textContent = L ? M.visitorType(L.cls) : "";
   $("modelKindText").textContent = !L ? "NO RUN" : view.atRecord ? `AT RECORD ${view.atRecord.seq ?? "?"} · ${view.state.toUpperCase()}`
     : `${STATUS_TAG[L.status] ?? L.status} · RECORD ${L.seq ?? "?"}`;
   // Metrics, bound to this run's own record; at a replay cursor, the state as of that record, and the latest apart.
@@ -271,7 +275,7 @@ function renderModel() {
   $("modelNote").replaceChildren(...(renderer === "2d"
     ? ["2D view: this browser can't run the 3D view", h("br"), "Schematic · not manufacturing CAD"]
     : [`Thin layers drawn ×${VIEW.THIN_Z} in z · cooling stack lifted`, h("br"), S.explode > 0 ? "Exploded · spacing not to scale" : "Schematic · not manufacturing CAD"]));
-  const words = L ? `run ${L.label}, ${view.state.toLowerCase()}${view.atRecord ? " at this record" : ""}. ${view.metric ? `${view.metricName} ${view.metric.text} ${view.metric.qualifier}, simulated, not silicon` : view.none}.` : "";
+  const words = L ? `${M.runTitle(L)} (${M.visitorType(L.cls)}), ${view.state.toLowerCase()}${view.atRecord ? " at this record" : ""}. ${view.metric ? `${view.metricName} ${view.metric.text} ${view.metric.qualifier}, simulated, not silicon` : view.none}.` : "";
   $("packageCanvas").setAttribute("aria-label", L ? `3D view of the ${CASE_TITLE}: ${words} Arrow keys orbit, plus and minus zoom.` : "No run drawn");
   $("packageCanvas2d").setAttribute("aria-label", L ? `2D drawing of the ${CASE_TITLE}: ${words}` : "No run drawn");
   $("packageCanvas").hidden = renderer === "2d";
@@ -331,17 +335,16 @@ function drawAtlas(svg, { large = false } = {}) {
     row.forEach((r, k) => {
       const cx = x - ((row.length - 1) * 7) / 2 + k * 7, cy = y + 17;
       const dot = s("circle", { class: `atlas-dot${shown && r.id === shown.id ? " sel" : ""}`, cx: cx.toFixed(1), cy, r: large ? 3.5 : 2.8, fill: LANE_COLOR.run });
-      dot.append(s("title", {}, `${r.label} · ${(STATUS_TAG[r.status] ?? r.status).toLowerCase()}`));
+      dot.append(s("title", {}, `Run ${r.label.split(" · ")[1] ?? r.label} · ${(STATUS_TAG[r.status] ?? r.status).toLowerCase()}`));
       dot.addEventListener("click", () => selectRun(r.id));
       svg.append(dot);
     });
   });
-  if (a.out.length) svg.append(s("text", { x: 150, y: 158, "text-anchor": "middle", class: "atlas-out", fill: "#8fa398", "font-size": 8, "font-family": "monospace" },
-    `${a.out.length} run(s) out of the flow: rejected, failed, cancelled or expired`));
   return a;
 }
 function renderWork() {
-  drawAtlas($("atlasSvg"));
+  const a = drawAtlas($("atlasSvg"));
+  $("mapLegend").textContent = `A dot is a run at its last reported state, not a screen position${a.out.length ? ` · ${a.out.length} out of the flow (rejected, failed, cancelled or expired)` : ""}`;
   // Keyed on the full run id: two runs with one label are two rows, and door records (no run id) are a qualified label
   // group, never attached to a run (live-model.mjs followWork).
   const { runs, door, anonymous } = M.followWork(feed.state.events, layouts());
@@ -354,7 +357,7 @@ function renderWork() {
     const where = r.submitted ? `submitted ${M.hms(r.submitted.at)}` : "submission not in the newest records";
     const btn = h("button", { type: "button", class: `agent-row${shown && r.run_id === shown.id ? " selected" : ""}`, dataset: { run: r.run_id } },
       h("span", { class: `agent-avatar c-${r.cls}`, "aria-hidden": "true" }, CLASS_MARK[r.cls] ?? "?"),
-      h("span", null, h("strong", null, r.label), h("small", null, r.sameLabel ? `${where} · 1 of ${r.sameLabel + 1} runs with this label` : where)),
+      h("span", null, h("strong", null, `Run ${r.short}`), h("small", null, `${M.visitorType(r.cls)} · ${r.sameLabel ? `${where} · 1 of ${r.sameLabel + 1} runs with this short id` : where}`)),
       h("span", { class: "agent-task" }, task), h("span", { class: `agent-pip ${r.task ? STATE_PIP(r.task.state) : "grey"}` }));
     btn.addEventListener("click", () => { if (layouts().some((l) => l.id === r.run_id)) selectRun(r.run_id); openRun(r); });
     list.append(btn);
@@ -371,7 +374,7 @@ function renderWork() {
   const c = M.clampCursor(S.cursor, pts.length);
   const p = c === null ? pts.at(-1) : pts[c];
   $("selectedEventLabel").textContent = c === null ? "NEWEST RECORD" : `REPLAY · RECORD ${c + 1} OF ${pts.length}`;
-  $("eventTitle").textContent = p ? `${p.label} ${p.line}` : "No record yet";
+  $("eventTitle").textContent = p ? M.recordTitle(p) : "No record yet";
   $("eventSubtitle").textContent = p ? `${p.kind} · seq ${p.seq} · ${M.hms(p.at)}` : "Waiting for the door";
 }
 
@@ -400,7 +403,7 @@ function renderTrace() {
     const cx = xOf(p), cy = ys[p.lane];
     g.append(s("rect", { x: cx - 6, y: cy - 10, width: 12, height: 20, fill: "transparent" }),
       s("circle", { cx, cy, r: c === i ? 4.5 : 3, fill: LANE_COLOR[p.kind], opacity: c !== null && i > c ? 0.3 : 1 }),
-      s("title", {}, `${p.label} ${p.line} · seq ${p.seq} · ${M.hms(p.at)}`));
+      s("title", {}, `${M.recordTitle(p)} · seq ${p.seq} · ${M.hms(p.at)}`));
     g.addEventListener("click", () => { setCursor(i); openRecord(i); });
     svg.append(g);
   });
@@ -425,7 +428,7 @@ function renderTrace() {
   const ml = $("mobileEventList");
   ml.replaceChildren(...pts.slice(-12).reverse().map((p) => {
     const i = pts.indexOf(p);
-    const b = h("button", { type: "button" }, h("span", null, M.hms(p.at), h("small", null, `seq ${p.seq}`)), h("strong", null, `${p.label} ${p.line}`), h("b", { "aria-hidden": "true" }, "↗"));
+    const b = h("button", { type: "button" }, h("span", null, M.hms(p.at), h("small", null, `seq ${p.seq}`)), h("strong", null, M.recordTitle(p)), h("b", { "aria-hidden": "true" }, "↗"));
     b.addEventListener("click", () => { setCursor(i); openRecord(i); });
     return b;
   }));
@@ -527,7 +530,7 @@ function openRecord(i) {
   const p = points()[i];
   if (!p) return;
   const e = feed.state.events.find((x) => x.seq === p.seq);
-  openDialog(`${p.label} ${p.line}`, `RECORD ${i + 1} OF ${points().length} · ${p.kind.toUpperCase()}`,
+  openDialog(M.recordTitle(p), `RECORD ${i + 1} OF ${points().length} · ${p.kind.toUpperCase()}`,
     lead("One record as the door's events feed returned it, after the page's checks. The time is the server's own; the label is a classification and a short id, never a name."),
     table([["Kind", p.kind], ["Server time", p.at ?? "not recorded"], ["Sequence", String(p.seq)], ["Label (class · short id)", p.label],
       ["Page route", "not recorded: the door's events carry no page route", "unknown"], ["Identity", "not established: a class is an observation, not an identity", "unknown"]]),
@@ -535,7 +538,7 @@ function openRecord(i) {
 }
 function openRun(r) {
   const L = layouts().find((l) => l.id === r.run_id) ?? null;
-  openDialog(`Run ${r.label}`, "RUN · KEYED ON ITS FULL RUN ID",
+  openDialog(`Run ${r.short}`, `RUN · ${M.visitorType(r.cls).toUpperCase()} · KEYED ON ITS FULL RUN ID`,
     lead(`${CLASS_NOTE[r.cls] ?? "A classification, not an identity."} The label is a class and a 4-character short id; short ids can repeat, so this page never joins two runs, or a run and the door's other records, on it.`),
     h("div", { class: "modal-grid" },
       h("div", { class: "modal-card" }, h("span", { class: "label" }, "SUBMITTED (WHERE THE DOOR SAW IT ACT)"), h("h3", null, r.submitted ? `submitted · ${r.submitted.state}` : "unknown"),
@@ -554,7 +557,7 @@ function showModal(kind) {
     const rc = M.receiptOf(L);
     const v = M.runView(L);
     const cursorNote = at ? `The replay cursor is at record ${at.seq ?? "?"} (${String(at.state).replace(/_/g, " ")}). This is the run's LATEST receipt, not its state at the cursor.` : "";
-    openDialog(L ? `Run ${L.label}` : "No run selected", at ? "LATEST RECEIPT · NOT THE STATE AT THE CURSOR" : kind === "receipt" ? "RECEIPT · AS THE FEED REPORTS IT" : "EVIDENCE",
+    openDialog(L ? M.runTitle(L) : "No run selected", at ? "LATEST RECEIPT · NOT THE STATE AT THE CURSOR" : kind === "receipt" ? "RECEIPT · AS THE FEED REPORTS IT" : "EVIDENCE",
       at ? note(cursorNote, true) : "",
       lead("Every number here is the scorer's, as the door's results feed reports it, for this run's own record. The page shows it; it does not recompute or verify it."),
       L ? table([["Board metric", v.metric ? `${v.metric.text} · ${v.metric.qualifier}${v.diagnostic ? " · diagnostic" : ""}` : v.none],
@@ -589,7 +592,7 @@ function showModal(kind) {
     const pts = points();
     openDialog("The door's newest records.", "FLIGHT RECORD",
       lead(`The ${pts.length} newest records the door returned, oldest first. Select one to replay from it.`),
-      h("div", null, pts.map((p, i) => { const b = h("button", { type: "button", class: "event-list-row" }, h("span", null, M.hms(p.at)), h("span", null, p.kind), h("strong", null, `${p.label} ${p.line}`)); b.addEventListener("click", () => { setCursor(i); openRecord(i); }); return b; })));
+      h("div", null, pts.map((p, i) => { const b = h("button", { type: "button", class: "event-list-row" }, h("span", null, M.hms(p.at)), h("span", null, p.kind), h("strong", null, M.recordTitle(p))); b.addEventListener("click", () => { setCursor(i); openRecord(i); }); return b; })));
   } else if (kind === "sources") {
     openDialog("What is real on this page?", "SOURCES & SCOPE",
       h("ul", { class: "modal-list" },
