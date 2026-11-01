@@ -1,0 +1,192 @@
+{
+  "at": "2026-11-01T00:32:24.996Z",
+  "baseHead": "609d339d79cfa0c120806fc5132044b460db5cd3",
+  "baseTree": "d751b01791db7826a12244890fdd900ab959c394",
+  "authorship": "root-authored content replacement; independent nonauthor review required before adoption",
+  "files": [
+    {
+      "path": "web/public/agents/challenge.json",
+      "change": "modified",
+      "before": {
+        "bytes": 29385,
+        "sha256": "9c7bf3ea0a3bac59d4db7d27c0265e6a5599ecdbc853028fa7c13ca27c2e5fd6",
+        "blob": "46b8fb928bb980e407373de75a48b317eb1fa0d8"
+      },
+      "after": {
+        "bytes": 30877,
+        "sha256": "594b3d43b4941c9908d1da122d735bcd85089d5d173be92bc8785c4e8dff40f9"
+      }
+    },
+    {
+      "path": "web/public/agents/index.md",
+      "change": "modified",
+      "before": {
+        "bytes": 5992,
+        "sha256": "995dd5e219a1bcbf858212f3610b5aeb67a5f8e3b4cd42cf348ffc167ad7c861",
+        "blob": "0664633c021c9f8c35e2da2fc956e57f2db95556"
+      },
+      "after": {
+        "bytes": 6460,
+        "sha256": "640d17c67efebdf01368c9d30c08fec511319be436e691e80920fe69f2f25d7d"
+      }
+    },
+    {
+      "path": "web/public/agents/index.json",
+      "change": "modified",
+      "before": {
+        "bytes": 3674,
+        "sha256": "c15b3aa4fe0b478b7a407757e45afa3fb4e77435f08da102f3d0bfc23105cb31",
+        "blob": "285b5712a3002f80ea2b6370b4dcae8d9fe1625e"
+      },
+      "after": {
+        "bytes": 3903,
+        "sha256": "db23994ccb012c9039d5a97ba2076e59da204aea8697439dc7e5840bf111e669"
+      }
+    },
+    {
+      "path": "web/public/agents.json",
+      "change": "modified",
+      "before": {
+        "bytes": 498,
+        "sha256": "9c5a94e66dfccff6c859ab2f45c5226955635e07f2dc33abb52035e59a244259",
+        "blob": "70b936ac4d908cd247d0541443b6ea4ea512ffcf"
+      },
+      "after": {
+        "bytes": 627,
+        "sha256": "03b5b385181f3bcddb29646b8e8e2694cb536b229f4884db8800abcd407e1116"
+      }
+    },
+    {
+      "path": "web/public/agents/physics.md",
+      "change": "modified",
+      "before": {
+        "bytes": 8401,
+        "sha256": "c18fe77875f013acce73a45b921aaa4e64e6a5abcaa5a1baa351be290e10aae9",
+        "blob": "f74479863da1d932af931bb67b7eee0c5643be56"
+      },
+      "after": {
+        "bytes": 8999,
+        "sha256": "0d6570fa8730a0daa44148efdecd10656b9b9867df6d4d7f7b4fd09117a1923a"
+      }
+    },
+    {
+      "path": "web/public/agents/math.md",
+      "change": "modified",
+      "before": {
+        "bytes": 14462,
+        "sha256": "df052bf7b1914ea748116ab5628c4b7c021e0d26cdc66cb2096529e2858cca84",
+        "blob": "5edd0f679ada24de9b641bb44cade721f4a0c80d"
+      },
+      "after": {
+        "bytes": 14825,
+        "sha256": "511a4b80a4cb55c68f1689cde165f9c1535de59e287e917f2bf0346f1f29c33a"
+      }
+    },
+    {
+      "path": "web/public/agents/skills/senti-room-skills.md",
+      "change": "modified",
+      "before": {
+        "bytes": 528,
+        "sha256": "510c3cd169803cda8ecb4f3b78e09dcffc27cf5152f1bfed2bf8c08df1c0e36b",
+        "blob": "c405d1dd4bf0ce641769fb2b4d315c8a495a4984"
+      },
+      "after": {
+        "bytes": 360,
+        "sha256": "55674ba6ee10f92e7646636a16ab162f435ab728c7f1122d4f9b30db83d57182"
+      }
+    },
+    {
+      "path": "web/public/agents/skills/tools.json",
+      "change": "modified",
+      "before": {
+        "bytes": 7066,
+        "sha256": "5cf57c9eea70d39862afb12142aa79a67c21e3d3d9e6ebc7bf993d767d201a52",
+        "blob": "12bcb7482838966884c9695c7d1e7b3e7619dbdb"
+      },
+      "after": {
+        "bytes": 7267,
+        "sha256": "a48887b50f291354d71bf9c3df708f102cfaaf64f83bb416cffa35c448e2c3c3"
+      }
+    },
+    {
+      "path": "web/public/agents/skills/SKILL.md",
+      "change": "modified",
+      "before": {
+        "bytes": 7165,
+        "sha256": "77ea2ec56384954a18721c7d841cfca7ba8f77c7197954c74396b3363cc4966d",
+        "blob": "8c96a0320a079304bf613d593233d002838182a1"
+      },
+      "after": {
+        "bytes": 7375,
+        "sha256": "51bcaa285740b382ba5f57e6d155cdc67f4c4988d77721f23193ca712833e48b"
+      }
+    },
+    {
+      "path": "web/public/agents/evidence.json",
+      "change": "added",
+      "before": null,
+      "after": {
+        "bytes": 4229,
+        "sha256": "216272f2c3001491afa0e5b1474415342fa69460c7dc0f537ea1940b5c91ef11"
+      }
+    },
+    {
+      "path": "docs/sentilab/open-proposals/CONTENT-ERRATUM-2026-11-01.md",
+      "change": "added",
+      "before": null,
+      "after": {
+        "bytes": 1245,
+        "sha256": "1ddfcb76fe92c13f03d3baf7debcb2c05f430e9251d1d7a95db49f311b36f203"
+      }
+    }
+  ],
+  "evidenceBindings": [
+    {
+      "path": "sundai_tap/util/hotspot.config",
+      "head": "609d339d79cfa0c120806fc5132044b460db5cd3",
+      "blob": "497fa9913898901bdfa9da7ef8026a902a72be77",
+      "sha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc"
+    },
+    {
+      "path": "sundai_tap/passive_interposer.py",
+      "head": "609d339d79cfa0c120806fc5132044b460db5cd3",
+      "blob": "b51518258f3a4572efb636926bfcd5495c8a3c9b",
+      "sha256": "cecc5b85f7dd8e6a3816c635879eb06193a270595f6bdbc71b76e4ef96f227df"
+    },
+    {
+      "path": "evidence/gate-zero-ROOT-REVIEW.md",
+      "source": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\gate-zero-raw-review-2406\\ROOT-REVIEW.md",
+      "bytes": 6169,
+      "sha256": "afe4eac3456fefddbe253ddec93b5e58c9b76f41339297799b96da65f3b7f75e"
+    },
+    {
+      "path": "evidence/gate-zero-ROOT-VERIFIED.json",
+      "source": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\gate-zero-raw-review-2406\\ROOT-VERIFIED.json",
+      "bytes": 298,
+      "sha256": "e3c8a5670aaf8dc0113bafd35e3d9c5e7cc8c77b0545a3a9435c1ebb8d0d1399"
+    },
+    {
+      "path": "evidence/live-agent-door-review-392.txt",
+      "source": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\.sentinelayer\\sentilab-planning\\gpt-astra-carter\\392-live-agent-door-review.txt",
+      "bytes": 2681,
+      "sha256": "073ba15ef911bd1a50a5598b4736b7461f1b3f436b34ca6725b07ef5d4ba2e75"
+    },
+    {
+      "path": "evidence/frozen-diagnosis.md",
+      "source": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\reports\\SentiLab inconclusive results diagnosis.md",
+      "bytes": 68772,
+      "sha256": "132bf28fc6d962ae159a942084b3a7fe4c17fd52dc65da7a13789939a0460a7d"
+    }
+  ],
+  "preserved": {
+    "referenceProjectionFiles": 4,
+    "dies": true,
+    "netlists": true,
+    "placementRules": true,
+    "policies": true,
+    "wireValues": true,
+    "bounds": true,
+    "sensitivityScenarios": true
+  },
+  "verification": "JSON parsing, exact input bindings and immutable-field comparisons only; no product suite, solver, model, build or CI execution."
+}

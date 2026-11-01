@@ -1,0 +1,473 @@
+{
+  "schema": "sentilab-live-evaluator-binding-draft/1",
+  "at": "2026-11-01T00:33:01.119Z",
+  "status": "OWNER_ADOPTION_AND_NONAUTHOR_REVIEW_PENDING",
+  "root_execution_release": false,
+  "source": {
+    "verified_merged_commit": "5826d8c2cb3ec626709032853a7322cd5cacafb8",
+    "verified_merge_tree": "6e9d72a04832ef239713700bd7a3a2430ff7ccb9",
+    "runtime_source_merge": "1575556dda2ac77ac49823cce7fad5ed8eaa55b3"
+  },
+  "challenge": {
+    "fixture_id": "micro150-45mm",
+    "config_sha256": "de6e3edbed848f1bd81758a92f72a1f0b6aa5ffa60aca3153a324cf7a78d9ffd",
+    "frame_um": 45000,
+    "coordinates": "die centres; lower-left interposer origin; +x right; +y up",
+    "dies": [
+      {
+        "id": 0,
+        "name": "Chiplet_0",
+        "w_um": 8250,
+        "h_um": 9000,
+        "power_W": 150,
+        "halo_um": 180,
+        "rot_deg": [
+          0,
+          90
+        ]
+      },
+      {
+        "id": 1,
+        "name": "Chiplet_1",
+        "w_um": 8250,
+        "h_um": 9000,
+        "power_W": 150,
+        "halo_um": 180,
+        "rot_deg": [
+          0,
+          90
+        ]
+      },
+      {
+        "id": 2,
+        "name": "Chiplet_2",
+        "w_um": 8250,
+        "h_um": 9000,
+        "power_W": 150,
+        "halo_um": 180,
+        "rot_deg": [
+          0,
+          90
+        ]
+      },
+      {
+        "id": 3,
+        "name": "Chiplet_3",
+        "w_um": 8250,
+        "h_um": 9000,
+        "power_W": 150,
+        "halo_um": 180,
+        "rot_deg": [
+          0,
+          90
+        ]
+      },
+      {
+        "id": 4,
+        "name": "Chiplet_4",
+        "w_um": 8750,
+        "h_um": 8750,
+        "power_W": 20,
+        "halo_um": 135,
+        "rot_deg": [
+          0
+        ]
+      },
+      {
+        "id": 5,
+        "name": "Chiplet_5",
+        "w_um": 8750,
+        "h_um": 8750,
+        "power_W": 20,
+        "halo_um": 135,
+        "rot_deg": [
+          0
+        ]
+      },
+      {
+        "id": 6,
+        "name": "Chiplet_6",
+        "w_um": 8750,
+        "h_um": 8750,
+        "power_W": 20,
+        "halo_um": 135,
+        "rot_deg": [
+          0
+        ]
+      },
+      {
+        "id": 7,
+        "name": "Chiplet_7",
+        "w_um": 8750,
+        "h_um": 8750,
+        "power_W": 20,
+        "halo_um": 135,
+        "rot_deg": [
+          0
+        ]
+      }
+    ],
+    "connection_matrix": [
+      [
+        0,
+        256,
+        0,
+        256,
+        1024,
+        0,
+        0,
+        0
+      ],
+      [
+        256,
+        0,
+        256,
+        0,
+        0,
+        1024,
+        0,
+        0
+      ],
+      [
+        0,
+        256,
+        0,
+        256,
+        0,
+        0,
+        1024,
+        0
+      ],
+      [
+        256,
+        0,
+        256,
+        0,
+        0,
+        0,
+        0,
+        1024
+      ],
+      [
+        1024,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        1024,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        1024,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        1024,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "connections_unit": "number of wires, not bytes; unordered pairs once for proxy",
+    "legality": {
+      "center_lattice_um": 500,
+      "edge_margin_including_halo_um": 500,
+      "min_body_gap_um": 100,
+      "halo_rule": "touching permitted; overlap forbidden",
+      "rotation": "per-die 90 degrees; square footprints unchanged",
+      "source_validator": "TapGeometry in sundai_hotspot/tap_oracle.py",
+      "raw_reference_lattice_exemption": "reference-only; never apply exemption to public proposals"
+    }
+  },
+  "evaluator": {
+    "kind": "hotspot6",
+    "binary_sha256": "751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6",
+    "build_provenance_sha256": "842b0c49e9294a14d2417386f32b5d97920313d6af3d0ce89ad82902658e56a7",
+    "upstream": "uvahotspot/HotSpot a7a3286e368867c26381e0a23e36b3e273bdeda9 (HotSpot 6.0, TAP-2.5D's version); SuperLU solver, all-layer grid dump",
+    "grid": 64,
+    "grid_map_mode": "center",
+    "package": {
+      "ambient": "318.15",
+      "grid_map_mode": "center",
+      "k_sink": "400.0",
+      "k_spreader": "400.0",
+      "model_secondary": "0",
+      "r_convec": "0.011111111111111112",
+      "s_sink": "0.18",
+      "s_spreader": "0.09",
+      "t_sink": "0.0069",
+      "t_spreader": "0.001"
+    },
+    "solver_environment": {
+      "LANG": "C",
+      "LC_ALL": "C",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_CORETYPE": "Haswell",
+      "OPENBLAS_NUM_THREADS": "1",
+      "TZ": "UTC"
+    },
+    "runtime_libraries": [
+      {
+        "name": "linux-vdso.so.1",
+        "path": null,
+        "realpath": null,
+        "sha256": null
+      },
+      {
+        "name": "libm.so.6",
+        "path": "/lib/x86_64-linux-gnu/libm.so.6",
+        "realpath": "/usr/lib/x86_64-linux-gnu/libm.so.6",
+        "sha256": "6d567d53e895273ca14a1f9dc164fc6c8d39aed2f60aa46a733c2784228915f3"
+      },
+      {
+        "name": "libsuperlu.so.7",
+        "path": "/lib/x86_64-linux-gnu/libsuperlu.so.7",
+        "realpath": "/usr/lib/x86_64-linux-gnu/libsuperlu.so.7.0.0",
+        "sha256": "d523d5721b52b29d1df4b30fb6c36d21ce3e58c18a4e51773c228b1ceba1f6b0"
+      },
+      {
+        "name": "libc.so.6",
+        "path": "/lib/x86_64-linux-gnu/libc.so.6",
+        "realpath": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+        "sha256": "9792e3cbb541c8f44c7acf5f14f4022ea62998ecc787d326bed4d8b6547dfd92"
+      },
+      {
+        "name": "/lib64/ld-linux-x86-64.so.2",
+        "path": "/lib64/ld-linux-x86-64.so.2",
+        "realpath": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+        "sha256": "c8438e4fde1934e61c88311633f00949ff645d5c04cdb8671fa3d78164d2f307"
+      },
+      {
+        "name": "libblas.so.3",
+        "path": "/lib/x86_64-linux-gnu/libblas.so.3",
+        "realpath": "/usr/lib/x86_64-linux-gnu/blas/libblas.so.3.12.1",
+        "sha256": "2b3fdbf8e9daa85ce62e449b9738cad4c8b50ba220342f51501c9ade19670895"
+      },
+      {
+        "name": "libgcc_s.so.1",
+        "path": "/lib/x86_64-linux-gnu/libgcc_s.so.1",
+        "realpath": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1",
+        "sha256": "30c61ab012a4241bed033725a09b61f5fdd3bb7df95ee852d0b096520524c7af"
+      }
+    ],
+    "base_reference_config_sha256": "5af52c844c0504b5b9bacec5ba0a908a306c4db98655a573919f1e7e65de594a",
+    "prospective_candidate_input_hashes": "generated per layout and retained before launch; reference geometry hashes cannot be reused as candidate geometry",
+    "image_id_or_digest": null,
+    "image_tag_operator_reported": "sentilab-gate0:2d35e9c",
+    "underlying_binary_and_build_artifacts_independently_inspected": false
+  },
+  "metrics": {
+    "gate_statistic": "maximum native steady-output block value; includes non-chiplet modeled blocks",
+    "live_real_chiplet_native_max": "separate named statistic if adopted; enumerate Chiplet_0 through Chiplet_7 explicitly",
+    "chiplet_centre_map": "maximum over per-chiplet means of its 1,2 or4 central cells; averaging rounded cells adds no source precision",
+    "hotspot_guard": "proposed active-layer peak no higher than the bound119.07C raw reference; comparator strictness and precision policy must be frozen prospectively",
+    "wire_proxy": "connectivity-weighted mean Manhattan distance in mm; each unordered pair once",
+    "pareto": "only points computed with this same proxy and temperature selector; routed paper points remain separate",
+    "candidate_state": "fresh-process replay required by the proposed rule; reserve and charge its work too"
+  },
+  "references": {
+    "micro150-tap25d-fig5a": {
+      "layout_id": "micro150-tap25d-fig5a/raw",
+      "design_hash": "93ee854b69891474775b6a2ea32c99d868f83066825a05752575584e4742f22b",
+      "content_sha256": "6e541158ef9cec4e9e8eed469325490d7902e5175e7a41925bad72f900a5fce9",
+      "centers_mm": [
+        [
+          17.9249,
+          17.5496
+        ],
+        [
+          27.0751,
+          17.5496
+        ],
+        [
+          27.0751,
+          27.4497
+        ],
+        [
+          17.9249,
+          27.4497
+        ],
+        [
+          8.5751,
+          17.5496
+        ],
+        [
+          36.4249,
+          17.5496
+        ],
+        [
+          36.4249,
+          27.4497
+        ],
+        [
+          8.5751,
+          27.4497
+        ]
+      ],
+      "rotated": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "admissible_candidate": false,
+      "proxy_weighted_mean_mm": 9.384870000000001,
+      "proxy_unordered_pair_weight": 5120,
+      "proxy_weighted_sum_mm": 48050.534400000004,
+      "native_gate_result": {
+        "call": "p-hs6-micro150-tap25d-fig5a-raw-g64",
+        "native_all_block_max_C": 115.93,
+        "max_of_chiplet_centre_cell_means_C": 115.935,
+        "active_layer_grid_peak_C": 119.07,
+        "active_layer": 4,
+        "raw_precision_K": 0.01
+      },
+      "paper_routed_mm": 67686
+    },
+    "micro150-tap25d-fig5a-snap0p5": {
+      "layout_id": "micro150-tap25d-fig5a-snap0p5",
+      "design_hash": "0f806acbd50c8847d27509e4e179453cd006444c5adcd7b36413115394d0807f",
+      "content_sha256": "ecfca7f46fd422f6c35ee35cf7c9ffc97f2a0a627907a69f03891910bc248be9",
+      "centers_mm": [
+        [
+          18,
+          17.5
+        ],
+        [
+          27,
+          17.5
+        ],
+        [
+          27,
+          27.5
+        ],
+        [
+          18,
+          27.5
+        ],
+        [
+          8.5,
+          17.5
+        ],
+        [
+          36.5,
+          17.5
+        ],
+        [
+          36.5,
+          27.5
+        ],
+        [
+          8.5,
+          27.5
+        ]
+      ],
+      "rotated": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "admissible_candidate": true,
+      "proxy_weighted_mean_mm": 9.5,
+      "proxy_unordered_pair_weight": 5120,
+      "proxy_weighted_sum_mm": 48640,
+      "native_gate_result": null,
+      "paper_routed_mm": null
+    }
+  },
+  "proposed_operator_allocation": {
+    "source_id": "d7115f1c-d867-4af1-951c-1648ce510c05",
+    "name": "slab-demo-20261101",
+    "overall_cpu_s": 3600,
+    "per_token_cpu_s": 30,
+    "max_parallel": 4,
+    "closes_at": "2026-11-01T20:30:00Z",
+    "status": "owner plan; exact signed source/image/host/grant and enforced accounting pending",
+    "additional_requirements": [
+      "reserve globally and per token atomically before dequeue; retries, failures, replays and cleanup charge the same global grant",
+      "grant amendments are prospective and retained; never reset counters when token or worker changes",
+      "bound queued work and expose terminal versus waiting states; no implicit future grant",
+      "repair/test whole-container descendant cutoff before allocating numerical work"
+    ]
+  },
+  "pending_acceptance": [
+    "exact deployed evaluator/source/image/runtime binding",
+    "nonauthor content and code review",
+    "source-only controls for adversarial inputs and quota races",
+    "prospective granted end-to-end demo run and consumer delivery receipts"
+  ],
+  "source_bindings": [
+    {
+      "relative": "sundai_tap/configs/sys_micro150_45mm.cfg",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\pr66-bindings-1932\\source\\sundai_tap\\configs\\sys_micro150_45mm.cfg",
+      "bytes": 1541,
+      "sha256": "de6e3edbed848f1bd81758a92f72a1f0b6aa5ffa60aca3153a324cf7a78d9ffd"
+    },
+    {
+      "relative": "sundai_hotspot/tap_oracle.py",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\pr66-bindings-1932\\source\\sundai_hotspot\\tap_oracle.py",
+      "bytes": 52855,
+      "sha256": "43eeb93ccc6ef6a89876c1efbefc02d43c2262b9b1068307474e69915043fe60"
+    },
+    {
+      "relative": "sundai_hotspot/tap_router.py",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\pr66-bindings-1932\\source\\sundai_hotspot\\tap_router.py",
+      "bytes": 9345,
+      "sha256": "2d9bb56c48501891817fb7c4a19c091ea5e6df9174d1afef43f4826aa79312f3"
+    },
+    {
+      "relative": "signed-reference-receipt.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\gate-zero-raw-review-2406\\extracted\\runs\\p-hs6-micro150-tap25d-fig5a-raw-g64-1793490115\\receipt.json",
+      "bytes": 23055,
+      "sha256": "219b2e058b974f0af8ebbe65d078a6401df7f6cadcac29f3f7a49bd5bee15126"
+    },
+    {
+      "relative": "challenge-source.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\frontdoor-content-0045\\original\\web\\public\\agents\\challenge.json",
+      "bytes": 29385,
+      "sha256": "9c7bf3ea0a3bac59d4db7d27c0265e6a5599ecdbc853028fa7c13ca27c2e5fd6"
+    },
+    {
+      "relative": "micro150-tap25d-fig5a.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\frontdoor-content-0045\\original\\web\\public\\agents\\references\\micro150-tap25d-fig5a.json",
+      "bytes": 10249,
+      "sha256": "a602a5f7862fc5a1e7cdd9bcfa28ad181d27c7195643db3845f0b13db31fc8a8"
+    },
+    {
+      "relative": "micro150-tap25d-fig5a-snap0p5.json",
+      "sourcePath": "C:\\Users\\carth\\Desktop\\projects\\PlexAura_Inc\\SentinelLayer\\AIdenID\\tasks\\sentilab-review-2026-10-30\\frontdoor-content-0045\\original\\web\\public\\agents\\references\\micro150-tap25d-fig5a-snap0p5.json",
+      "bytes": 8711,
+      "sha256": "1a9614f5a4ff6e9b6720ce6e79c357152cd9419cb0eaa0e5795834222ecc1b3d"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "schema": "sentilab-private-frontdoor-review-packet/1",
+  "at": "2026-11-01T00:35:36.516Z",
+  "source_head": "609d339d79cfa0c120806fc5132044b460db5cd3",
+  "authors": "gpt-astra-carter/root and local subagent",
+  "purpose": "Exact content replacements for Forge adoption and Warden independent review; evaluator binding is proposed and gives no compute release",
+  "instructions": "Copy only replacement/ after verifying DELTA before hashes. Preserve historical artifacts. Update narrow content assertions and test new head. Warden independently reviews resulting content. Do not copy local review evidence into public assets.",
+  "files": [
+    {
+      "path": "replacement/web/public/agents/challenge.json",
+      "bytes": 30877,
+      "sha256": "594b3d43b4941c9908d1da122d735bcd85089d5d173be92bc8785c4e8dff40f9"
+    },
+    {
+      "path": "replacement/web/public/agents/index.md",
+      "bytes": 6460,
+      "sha256": "640d17c67efebdf01368c9d30c08fec511319be436e691e80920fe69f2f25d7d"
+    },
+    {
+      "path": "replacement/web/public/agents/index.json",
+      "bytes": 3903,
+      "sha256": "db23994ccb012c9039d5a97ba2076e59da204aea8697439dc7e5840bf111e669"
+    },
+    {
+      "path": "replacement/web/public/agents.json",
+      "bytes": 627,
+      "sha256": "03b5b385181f3bcddb29646b8e8e2694cb536b229f4884db8800abcd407e1116"
+    },
+    {
+      "path": "replacement/web/public/agents/physics.md",
+      "bytes": 8999,
+      "sha256": "0d6570fa8730a0daa44148efdecd10656b9b9867df6d4d7f7b4fd09117a1923a"
+    },
+    {
+      "path": "replacement/web/public/agents/math.md",
+      "bytes": 14825,
+      "sha256": "511a4b80a4cb55c68f1689cde165f9c1535de59e287e917f2bf0346f1f29c33a"
+    },
+    {
+      "path": "replacement/web/public/agents/skills/senti-room-skills.md",
+      "bytes": 360,
+      "sha256": "55674ba6ee10f92e7646636a16ab162f435ab728c7f1122d4f9b30db83d57182"
+    },
+    {
+      "path": "replacement/web/public/agents/skills/tools.json",
+      "bytes": 7267,
+      "sha256": "a48887b50f291354d71bf9c3df708f102cfaaf64f83bb416cffa35c448e2c3c3"
+    },
+    {
+      "path": "replacement/web/public/agents/skills/SKILL.md",
+      "bytes": 7375,
+      "sha256": "51bcaa285740b382ba5f57e6d155cdc67f4c4988d77721f23193ca712833e48b"
+    },
+    {
+      "path": "replacement/web/public/agents/evidence.json",
+      "bytes": 4229,
+      "sha256": "216272f2c3001491afa0e5b1474415342fa69460c7dc0f537ea1940b5c91ef11"
+    },
+    {
+      "path": "replacement/docs/sentilab/open-proposals/CONTENT-ERRATUM-2026-11-01.md",
+      "bytes": 1245,
+      "sha256": "1ddfcb76fe92c13f03d3baf7debcb2c05f430e9251d1d7a95db49f311b36f203"
+    },
+    {
+      "path": "REPORT.md",
+      "bytes": 4661,
+      "sha256": "dd7862431b328f22dbaab73ee59356a07a628daa246e6cbe79c3c74faa14bf6f"
+    },
+    {
+      "path": "DELTA.json",
+      "bytes": 6818,
+      "sha256": "baaedd7ef1a3d3bd8fe64f2c1720cf215f915d1b097f785709f2f15a9817d5bb"
+    },
+    {
+      "path": "PROPOSED-EVALUATOR-BINDING.json",
+      "bytes": 13994,
+      "sha256": "e3281c421bb4ae56b958bca3d8997a73471d16c120fa608b92320f0c78cc67f9"
+    }
+  ]
+}
