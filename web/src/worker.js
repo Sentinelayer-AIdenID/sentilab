@@ -6,6 +6,7 @@ import { withEdge } from "./edge.js";
 import { agentPathFor } from "./agent-paths.js";
 import { CSP } from "./csp.js";
 import { addHumanPageHeaders, serveAgentAsset } from "./agent-view.js";
+import { doorRoute, handleDoor, serveWallOrAgentVersion } from "./door/door.js";
 
 const HOP = ["connection", "keep-alive", "transfer-encoding", "upgrade", "host"];
 
@@ -35,6 +36,8 @@ async function proxy(request, env) {
   const url = new URL(request.url);
   const headers = new Headers(request.headers);
   for (const h of HOP) headers.delete(h);
+  // The agent door's token claims reach the API only from the door's own calls (door/door.js), never from a visitor.
+  for (const name of [...headers.keys()]) if (name.startsWith("x-door-")) headers.delete(name);
   headers.set("x-forwarded-host", url.host);
   // Only this Worker holds the origin token; the Container App refuses requests without it.
   if (env.ORIGIN_TOKEN) headers.set("x-origin-token", env.ORIGIN_TOKEN);
@@ -59,8 +62,9 @@ async function allowRunStart(request, env) {
 export default {
   async fetch(request, env, ctx) {
     const { pathname } = new URL(request.url);
-    // SentiLab is hands-off: the service runs its own loop, so the public edge is read-only. No caller can start
-    // runs or reach any write route from outside.
+    // SentiLab is hands-off: the service runs its own loop, so the public /api is read-only. No caller can start runs
+    // or reach any API write route from outside. The edge's one write route is the agent door's POST /agents/submit
+    // (door/door.js), which reaches the API only after the door's token, format and rate checks.
     if ((pathname === "/api" || pathname.startsWith("/api/")) && !["GET", "HEAD"].includes(request.method)) {
       return new Response(JSON.stringify({ error: "read_only", detail: "The public SentiLab API is read-only." }),
         { status: 405, headers: { "content-type": "application/json", allow: "GET, HEAD", "cache-control": "no-store" } });
@@ -70,6 +74,9 @@ export default {
         { status: 429, headers: { "content-type": "application/json", "retry-after": "60", "cache-control": "no-store" } });
     }
     if (pathname === "/api" || pathname.startsWith("/api/")) return proxy(request, env);
-    return withEdge(request, env, ctx, { agentPathFor, serve: asset, serveHuman: humanAsset });
+    // The agent door (door/door.js): its own routes, and the wall in place of the mapped pages' agent version.
+    const door = doorRoute(pathname);
+    if (door) return handleDoor(door, request, env, ctx);
+    return withEdge(request, env, ctx, { agentPathFor, serve: asset, serveHuman: humanAsset, serveAgent: serveWallOrAgentVersion });
   },
 };

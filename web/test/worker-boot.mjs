@@ -11,6 +11,9 @@
 //        the Worker's types; a browser's Accept gets the human page, with Vary, private caching and the Link header;
 //      - /api/view/runs reaches the proxy (503 "API origin not configured": the upstream is off) with no CSP added;
 //      - a write to /api is refused (405 read_only) with no CSP added;
+//      - the agent door (src/door/door.js), opened with a boot-only DOOR_TOKEN_KEY: a classified agent's wall on /, a
+//        token for a purpose, the ENGRAM view, the preview check, the tap-link confirm page, submit answering honestly
+//        with the API off, the door's 405s and scope refusal, and its stylesheet;
 //      - the runtime logged no error.
 // Exit 0 when every check passes; 1 (with the runtime's log) otherwise. WRANGLER_VERSION pins the CLI (default below).
 import { spawn, spawnSync } from "node:child_process";
@@ -40,7 +43,12 @@ rmSync(out, { recursive: true, force: true });
 
 // 2. The runtime.
 let log = "";
-const dev = spawn(npx, ["--yes", `wrangler@${VERSION}`, "dev", "--ip", "127.0.0.1", "--port", String(PORT), "--var", "API_ORIGIN:none"],
+// A boot-only door key, built here so no literal in this tree looks like a credential.
+const DOOR_KEY = "boot".repeat(10);
+// --local-upstream: the Worker sees this address as its own origin (by default wrangler dev shows it the route's host),
+// so the door's absolute links point back here.
+const dev = spawn(npx, ["--yes", `wrangler@${VERSION}`, "dev", "--ip", "127.0.0.1", "--port", String(PORT), "--local-upstream", `127.0.0.1:${PORT}`,
+  "--var", "API_ORIGIN:none", "--var", `DOOR_TOKEN_KEY:${DOOR_KEY}`],
   { cwd: WEB, env, shell: process.platform === "win32", detached: process.platform !== "win32" });
 dev.stdout.on("data", (d) => { log += d; });
 dev.stderr.on("data", (d) => { log += d; });
@@ -99,6 +107,41 @@ if (ready) {
   const write = await fetch(`${BASE}/api/runs`, { method: "POST", body: "{}" });
   const writeJson = await write.json().catch(() => null);
   check("POST /api/runs is refused read-only (405) with no CSP added", write.status === 405 && writeJson?.error === "read_only" && write.headers.get("content-security-policy") === null, String(write.status));
+  // The agent door, with the API upstream off.
+  const GPTBOT = "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.2; +https://openai.com/gptbot)";
+  const REF = "36.35.0,54.35.0,54.55.0,36.55.0,17.35.0,73.35.0,73.55.0,17.55.0";
+  const wall = await fetch(`${BASE}/`, { headers: { "user-agent": GPTBOT } });
+  const wallText = await wall.text();
+  check("GET / as GPTBot: the wall, its purpose links and form, the exact CSP, private", wall.status === 200 && /what are you here to do\?/.test(wallText)
+    && wallText.includes(`<a href="${BASE}/agents/intent?purpose=place-chiplets">`) && wallText.includes(`<form method="get" action="${BASE}/agents/intent">`)
+    && wall.headers.get("content-security-policy") === CSP && wall.headers.get("cache-control") === "private, no-store", `${wall.status}`);
+  const chosen = await fetch(`${BASE}/agents/intent?purpose=place-chiplets`, { headers: { "user-agent": "curl/8.4.0", accept: "application/json" } });
+  const token = (await chosen.json().catch(() => ({}))).t ?? "";
+  check("GET /agents/intent?purpose=place-chiplets: a scoped purpose token for this host", chosen.status === 200 && /^spt1\.place-chiplets\.cpu-dram\.[0-9]{10}\.[0-9a-f]{16}\.[0-9a-f]{32}$/.test(token), `${chosen.status}`);
+  const engram = await fetch(`${BASE}/agents/engram?t=${token}`);
+  const view = await engram.json().catch(() => ({}));
+  check("GET /agents/engram: sentilab-agent-view/1 on this host, root's record read, the board unavailable with the API off", engram.status === 200
+    && view.schema === "sentilab-agent-view/1" && view.board_status === "unavailable" && view.scoring?.board_metric?.reference_binding?.value_C === 115.935
+    && view.skills?.find((k) => k.name === "tap_link")?.template === `${BASE}/s?t={t}&l={layout}`, `${engram.status} · board ${view.board_status}`);
+  const checked = await (await fetch(`${BASE}/agents/check?t=${token}&l=${REF}`)).json().catch(() => ({}));
+  check("GET /agents/check: legal_preview and the 9.5 mm proxy for the snapped reference", checked.outcome === "legal_preview" && checked.wire_proxy_mm === 9.5, checked.outcome);
+  const confirm = await fetch(`${BASE}/s?t=${token}&l=${REF}`);
+  const confirmText = await confirm.text();
+  check("GET /s: the confirm page, one POST form to /agents/submit, no script, the exact CSP", confirm.status === 200 && /<h1>Submit this layout\?<\/h1>/.test(confirmText)
+    && (confirmText.match(/<form\b/g) ?? []).length === 1 && confirmText.includes('<form method="post" action="/agents/submit">') && !/<script/i.test(confirmText)
+    && confirm.headers.get("content-security-policy") === CSP, `${confirm.status}`);
+  const submitted = await fetch(`${BASE}/agents/submit`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ t: token, layout: REF }) });
+  check("POST /agents/submit with the API off: 503 intake_unavailable, nothing claimed", submitted.status === 503 && (await submitted.json().catch(() => ({}))).error === "intake_unavailable", `${submitted.status}`);
+  for (const [method, path] of [["PUT", "/agents/submit"], ["POST", `/s?t=${token}&l=${REF}`], ["POST", `/agents/check?t=${token}&l=${REF}`], ["DELETE", "/agents/board"]]) {
+    const refused = await fetch(BASE + path, { method, body: "{}" });
+    check(`${method} ${path.split("?")[0]}: 405 read_only`, refused.status === 405 && (await refused.json().catch(() => ({}))).error === "read_only", `${refused.status}`);
+  }
+  const review = (await (await fetch(`${BASE}/agents/intent?purpose=review`, { headers: { accept: "application/json" } })).json().catch(() => ({}))).t ?? "";
+  const scoped = await fetch(`${BASE}/agents/engram?t=${review}`);
+  check("a review token on /agents/engram: 403 token_scope, allowed review", scoped.status === 403 && JSON.stringify(await scoped.json().catch(() => null)) === '{"error":"token_scope","allowed":"review"}', `${scoped.status}`);
+  const css = await fetch(`${BASE}/door.css`);
+  check("GET /door.css: the door's stylesheet, the bytes in web/public/door.css, the exact CSP", css.status === 200 && same(new Uint8Array(await css.arrayBuffer()), file("door.css"))
+    && css.headers.get("content-security-policy") === CSP, `${css.status} · ${css.headers.get("content-type")}`);
   check("the runtime logged no error", !/\[ERROR\]/.test(strip(log)));
 }
 stop();

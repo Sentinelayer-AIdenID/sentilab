@@ -56,6 +56,11 @@ export async function classify(request, env) {
   return audience(await safelyIdentify(request, env, identify));
 }
 
+// The same bounded identity withEdge uses (null on a classifier error or timeout), for the agent door's arrivals.
+export function identityFor(request, env) {
+  return safelyIdentify(request, env, identify);
+}
+
 function privateResponse(response, setHumanCookie) {
   const headers = new Headers(response.headers);
   headers.set("vary", varyWith(headers.get("vary"), VARY));
@@ -114,7 +119,7 @@ export async function withEdge(request, env, ctx, { agentPathFor, serve, serveAg
     forceHuman = identity === null;
     if (audience(identity) === "agent") {
       try {
-        const routed = await serveAgent(request, env);
+        const routed = await serveAgent(request, env, { identity, ctx });
         if (routed?.ok || routed?.status === 304) response = routed;
         else if (routed) {
           forceHuman = true;

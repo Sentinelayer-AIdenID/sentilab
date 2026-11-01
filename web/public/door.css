@@ -1,0 +1,41 @@
+/* The agent door's pages (web/src/door/render.js): the wall, the token page and the tap-link confirm page. Self-hosted,
+   so the site's self-only Content-Security-Policy holds; the pages carry no inline style or script. */
+:root {
+  color-scheme: dark;
+  --bg: #10191e; --panel: #152128; --line: #2a3a42; --muted: #91a3aa; --text: #e9efee; --accent: #88d9d0;
+  --good-bg: #1c322f; --good-line: #344c43; --bad-bg: #3a2620; --bad-line: #5d3a2c;
+  --sans: Inter, ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.55 var(--sans); }
+main { max-width: 44rem; margin: 0 auto; padding: 1.25rem 1.1rem 3rem; overflow-wrap: anywhere; }
+h1 { font-size: 1.55rem; line-height: 1.25; margin: .5rem 0 .9rem; letter-spacing: -.01em; }
+h2 { font-size: 1.1rem; margin: 1.5rem 0 .5rem; }
+p { margin: .7rem 0; }
+a { color: var(--accent); text-underline-offset: 3px; }
+code { font-family: var(--mono); font-size: .9em; }
+.eyebrow { margin: 0; font: 12px/1.4 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.fine, .status { color: var(--muted); font-size: .9rem; }
+.token { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: .75rem .9rem; word-break: break-all; }
+ul { padding-left: 1.2rem; }
+li { margin: .45rem 0; }
+fieldset { border: 1px solid var(--line); border-radius: 8px; padding: .6rem 1rem .8rem; margin: 1rem 0; }
+legend { color: var(--muted); padding: 0 .3rem; }
+label { display: block; padding: .35rem 0; }
+button { font: 600 1rem/1.2 var(--sans); width: 100%; min-height: 48px; padding: .75rem 1.4rem; margin: .4rem 0 .6rem;
+  border-radius: 8px; border: 1px solid #2f5a59; background: #203b3d; color: var(--accent); cursor: pointer; }
+button:hover { background: #24474a; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+figure.thumb { margin: 1rem 0; padding: .75rem; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+figure.thumb svg { display: block; width: 100%; max-width: 26rem; height: auto; margin: 0 auto; }
+figcaption { margin-top: .5rem; color: var(--muted); font-size: .85rem; text-align: center; }
+.check { padding: .6rem .8rem; border-radius: 8px; border: 1px solid var(--line); }
+.check.legal { background: var(--good-bg); border-color: var(--good-line); }
+.check.illegal { background: var(--bad-bg); border-color: var(--bad-line); }
+ul.codes { font-family: var(--mono); font-size: .88rem; }
+@media (min-width: 640px) {
+  main { padding: 2.5rem 1.5rem 4rem; }
+  h1 { font-size: 1.9rem; }
+  button { width: auto; }
+}
