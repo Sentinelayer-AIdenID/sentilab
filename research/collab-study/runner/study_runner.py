@@ -60,6 +60,14 @@ def read_packet(directory: Path) -> tuple[str, dict[str, str]]:
     return "\n\n".join(sections), hashes
 
 
+def protocol_lines(text: str) -> list[str]:
+    """Only LF/CRLF delimit protocol lines; Unicode separators are JSON data."""
+    lines = text.split("\n")
+    if lines[-1] == "":
+        lines.pop()
+    return [line.removesuffix("\r") for line in lines]
+
+
 def parse_final(text: str) -> dict | None:
     if not text.startswith("FINAL"):
         return None
@@ -69,7 +77,7 @@ def parse_final(text: str) -> dict | None:
         body = body[2:]
     elif body.startswith("\n"):
         body = body[1:]
-    for number, line in enumerate(body.splitlines(), start=1):
+    for number, line in enumerate(protocol_lines(body), start=1):
         try:
             finding = json.loads(line)
         except (ValueError, RecursionError):
@@ -91,7 +99,7 @@ def parse_emitted_sets(text: str) -> list[dict]:
         body = "\n".join(lines) + ("\n" if lines else "")
         sets.append({"kind": kind, **parse_final("FINAL\n" + body)})
 
-    for line in text.splitlines():
+    for line in protocol_lines(text):
         if line in {"FINDINGS", "FINAL"}:
             if kind is not None:
                 append_set()
