@@ -51,7 +51,8 @@ async function pass(go, purpose = "place-chiplets") {
   return { t: token.t, key: token.declare.body.declare_key, token };
 }
 const HOSTILE = Object.freeze({ script: "<script>alert(1)</script>", url: "https://evil.example/?t=spt1.x&q=1",
-  quotes: "\"'`<>&", markdown: "[click](javascript:alert(1)) **bold**", emoji: `${cp(0x1f525)}${cp(0x1f9ea)} chip fan ${cp(0x1f321, 0xfe0f)}` });
+  // Bare emoji: a variation selector (U+FE0F) is default-ignorable, so it is refused (door-declaration-u16.test.mjs).
+  quotes: "\"'`<>&", markdown: "[click](javascript:alert(1)) **bold**", emoji: `${cp(0x1f525)}${cp(0x1f9ea)} chip fan ${cp(0x1f321)}` });
 
 // ── the notice: bundled, the API's own, never polled ────────────────────────────────────────────────────────────
 test("the notice is a constant bundled with the Worker, equal to the API's", () => {

@@ -141,7 +141,7 @@ class VisitorTests(unittest.TestCase):
         self.assertNotIn(b'synthetic-c1', Path(self.store.path).read_bytes())
 
         declaration = {'notice_version': intake.VISITOR_NOTICE, 'name': 'Zoë 李',
-                       'reason': 'ΔT\u00a0résumé 🌡️', 'source': 'other'}
+                       'reason': 'ΔT\u00a0résumé 🌡', 'source': 'other'}
         self.assertEqual(self.arrival(declaration=declaration)[0], 204)
         page = self.door.visitors(None, None)[1]
         self.assertEqual(page['counts']['recorded_arrivals'], 1)
