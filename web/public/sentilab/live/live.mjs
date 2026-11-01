@@ -63,7 +63,7 @@ const fmtInt = (n) => Math.round(n).toLocaleString("en-US");
 // ── state ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 const S = {
   selectedId: null, cursorSeq: null, playing: false, playTimer: 0, explode: 0, explodeAnim: 0, orbit: false, motion: true, stage: false,
-  board: { ok: null, board: null, error: "", at: null }, decl: { ok: null, byLabel: new Map(), error: "", at: null }, v3: null, v3Failed: false, v3Pending: null, drawn: null, layer: null,
+  board: { ok: null, board: null, error: "", at: null }, decl: { ok: null, partial: false, list: [], error: "", at: null, through: 0 }, v3: null, v3Failed: false, v3Pending: null, drawn: null, layer: null,
 };
 // One gate for every request the page makes: spacing, Retry-After and jittered backoff (live-model.mjs createGate).
 const gate = M.createGate();
@@ -192,7 +192,7 @@ function runCard(L, selected, { mobile = false } = {}) {
       h("small", { class: "vt" }, M.visitorType(L.cls)));
   } else {
     btn.append(h("span", { class: "experiment-tag" }, STATUS_TAG[L.status] ?? L.status),
-      h("strong", null, M.runTitle(L)), h("small", { class: "vt" }, M.visitorType(L.cls)), ...(selected ? [declBlock(declarationFor(L))].filter(Boolean) : []),
+      h("strong", null, M.runTitle(L)), h("small", { class: "vt" }, M.visitorType(L.cls)),
       h("small", null, v.metric ? [v.metric.text, " ", h("em", null, v.metric.qualifier)] : v.none),
       h("span", { class: "experiment-bottom" }, h("span", { class: v.metric ? "mint-dot" : "grey-dot" }), `arrival ${L.arrival ?? "?"} · record ${L.seq ?? "?"}`));
   }
@@ -230,9 +230,6 @@ function renderModel() {
   $("selectionCaption").textContent = renderer === "2d" ? "2D drawing · orbit and explode need the 3D view" : "Drag to orbit · scroll to zoom · arrows when focused";
   $("modelTitle").textContent = L ? M.runTitle(L) : "A closer look at the package.";
   $("modelSub").textContent = L ? M.visitorType(L.cls) : "";
-  const dv = L ? declarationFor(L) : null;
-  $("modelDecl").replaceChildren(...(dv ? [declBlock(dv)] : []));
-  $("modelDecl").hidden = !dv;
   $("modelKindText").textContent = !L ? "NO RUN" : view.atRecord ? `AT RECORD ${view.atRecord.seq ?? "?"} · ${view.state.toUpperCase()}`
     : `${STATUS_TAG[L.status] ?? L.status} · RECORD ${L.seq ?? "?"}`;
   // Metrics, bound to this run's own record; at a replay cursor, the state as of that record, and the latest apart.
@@ -358,8 +355,7 @@ function renderWork() {
     const where = r.submitted ? `submitted ${M.hms(r.submitted.at)}` : "submission not in the newest records";
     const btn = h("button", { type: "button", class: `agent-row${shown && r.run_id === shown.id ? " selected" : ""}`, dataset: { run: r.run_id } },
       h("span", { class: `agent-avatar c-${r.cls}`, "aria-hidden": "true" }, CLASS_MARK[r.cls] ?? "?"),
-      h("span", null, h("strong", null, `Run ${r.short}`), h("small", null, `${M.visitorType(r.cls)} · ${r.sameLabel ? `${where} · 1 of ${r.sameLabel + 1} runs with this short id` : where}`),
-        declBlock(declarationFor({ label: r.label }))),
+      h("span", null, h("strong", null, `Run ${r.short}`), h("small", null, `${M.visitorType(r.cls)} · ${r.sameLabel ? `${where} · 1 of ${r.sameLabel + 1} runs with this short id` : where}`)),
       h("span", { class: "agent-task" }, task), h("span", { class: `agent-pip ${r.task ? STATE_PIP(r.task.state) : "grey"}` }));
     btn.addEventListener("click", () => { if (layouts().some((l) => l.id === r.run_id)) selectRun(r.run_id); openRun(r); });
     list.append(btn);
@@ -693,26 +689,42 @@ async function pollVisitors() {
   const mine = ++visitorsEpoch;
   let next = M.VISITORS_POLL_MS;
   if (!document.hidden) {
-    const got = await M.fetchVisitorsWindow({ fetchImpl: gate.fetch });
+    const latest = Math.max(feed.state.eventsCursor ?? 0, S.decl.through ?? 0);
+    const got = await M.fetchVisitorsWindow({ fetchImpl: gate.fetch, latest });
     if (mine !== visitorsEpoch) return;
-    if (got.ok) S.decl = { ok: true, byLabel: M.declarationsByLabel(got.items), error: "", at: Date.now() };
-    else { S.decl = { ...S.decl, ok: false, error: got.error }; if (got.error === "answered 404") next = M.VISITORS_SLOW_MS; }
-    renderRuns(); renderModel(); renderWork();
+    if (got.ok) S.decl = { ok: true, partial: got.partial, list: M.declarationList(got.items), error: "", at: Date.now(), through: got.through ?? S.decl.through };
+    else { S.decl = { ...S.decl, ok: false, list: [], error: got.error }; if (got.error === "answered 404") next = M.VISITORS_SLOW_MS; }
+    renderDeclarations();
   }
   visitorsTimer = setTimeout(pollVisitors, next);
 }
-// The declaration the page shows for a run's pass (its label), or null: only from a fresh read of the feed.
-function declarationFor(L) {
-  const d = S.decl;
-  if (!d.at || Date.now() - d.at > M.VISITORS_FRESH_MS) return null;
-  return M.declarationView(d.byLabel.get(L.label));
+// The declarations list (live-model.mjs declarationList): its own list, newest first, never attached to a run, with
+// explicit states: unavailable (the last read failed, or the last good read is too old to show: a hide may be missed,
+// so no declared text is shown or kept), partial (the window was not read to its end), none, or the entries. Entries
+// show only while the last read succeeded AND is fresh (a failed refresh drops the held list at once).
+function renderDeclarations() {
+  const d = S.decl, box = $("declList");
+  const fresh = d.at && Date.now() - d.at <= M.VISITORS_FRESH_MS;
+  const window = `THE LATEST ${M.VISITORS_WINDOW.toLocaleString("en-US")} DOOR RECORDS`;
+  box.hidden = d.ok === null;
+  if (d.ok !== true || !fresh) {
+    box.replaceChildren(h("p", { class: "decl-head" }, d.ok === false && d.error === "answered 404" ? "DECLARATIONS · NOT AVAILABLE ON THIS API"
+      : `DECLARATIONS · UNAVAILABLE${d.error ? ` · ${d.error.toUpperCase()}` : ""}`));
+    return;
+  }
+  const head = d.list.length ? `DECLARATIONS IN ${window} · NEWEST FIRST` : `DECLARATIONS · NONE IN ${window}`;
+  box.replaceChildren(h("p", { class: "decl-head" }, head),
+    ...(d.partial ? [h("p", { class: "decl-head warn" }, "PARTIAL · NOT ALL OF THE WINDOW COULD BE READ; SOME NEWER DECLARATIONS MAY BE MISSING")] : []),
+    ...d.list.map((x) => declBlock(x.view, x)));
 }
-// The declaration as plain text nodes (never markup, never an attribute), bidi-isolated, clipped by live-model.mjs.
-function declBlock(v) {
+// One declaration as plain text nodes (never markup, never an attribute), bidi-isolated, clipped by live-model.mjs,
+// with its own time and seq.
+function declBlock(v, x) {
   if (!v) return null;
-  if (v.kind !== "declared") return h("span", { class: "decl hidden" }, v.text);
-  return h("span", { class: "decl" }, h("b", null, h("bdi", null, v.name === "" ? "(no name given)" : v.name)),
-    v.reason ? h("span", null, h("bdi", null, v.reason)) : null, v.source ? h("span", null, `source: ${v.source}`) : null, h("em", null, v.note));
+  const when = h("small", null, `${M.hms(x.at)} · seq ${x.seq}`);
+  if (v.kind !== "declared") return h("div", { class: "decl hidden" }, v.text, when);
+  return h("div", { class: "decl" }, h("b", null, h("bdi", null, v.name === "" ? "(no name given)" : v.name)),
+    v.reason ? h("span", null, h("bdi", null, v.reason)) : null, v.source ? h("span", null, `source: ${v.source}`) : null, when, h("em", null, v.note));
 }
 
 wire();
@@ -722,7 +734,7 @@ feed.start();
 pollBoard();
 pollVisitors();
 // The badge and ages follow the clock even when no answer arrives (a hung request must still turn LIVE into STALE).
-setInterval(() => { renderStatus(); }, 1000);
+setInterval(() => { renderStatus(); renderDeclarations(); }, 1000);
 // Leaving the page stops every poll (and an answer still in flight cannot restart one: the board's epoch moves on). A
 // page restored from the back/forward cache comes back with them stopped, so pageshow starts again what pagehide
 // stopped; a fresh load gets no pageshow with persisted set.

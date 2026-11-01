@@ -23,7 +23,9 @@ import assert from "node:assert/strict";
 import { BASE, BOARD, setup } from "./door-harness.mjs";
 import worker from "../src/worker.js";
 
-const FEEDS = ["/api/open/v1/door/results", "/api/open/v1/door/events", "/api/open/v1/door/board"];
+// The visitors feed joined the micro-cache with the Live Lab's declarations list (warden, 17:24Z): each tab re-reads a
+// window of up to ~1,000 records every 3 s, from a start rounded down to a multiple of 100 so tabs share the entries.
+const FEEDS = ["/api/open/v1/door/results", "/api/open/v1/door/events", "/api/open/v1/door/board", "/api/open/v1/door/visitors"];
 const T0 = Date.UTC(2026, 10, 1, 17, 0, 0);
 const NONCE = "0123456789abcdef";
 const MADE = "x-microcache-made";
@@ -261,7 +263,7 @@ test("5. different queries are different entries: ?after=0 and ?after=88 each re
 
 test("6. other paths, other spellings, HEAD, Range, token-bearing URLs: the API every time, the cache never read or written", async (t) => {
   const { api, cache, s } = world(t);
-  for (const path of ["/api/open/v1/door/visitors", "/api/open/v1/door/visitors?after=0", "/api/open/v1/door/stats", "/api/view/runs", "/api/runs/x",
+  for (const path of ["/api/open/v1/door/stats", "/api/view/runs", "/api/runs/x", "/api/open/v1/door/v%69sitors?after=0", "/api/open/v1/door/visitors/",
     "/api/runs", "/api/open/v1/door/status/x", "/api/open/v1/door/terms", "/api/open/v1/door/%62oard", "/api/open/v1/door/r%65sults?after=0",
     "/api/open/v1/door/results/", "/api/open/v1/door/board/x"]) {
     const before = await uncached(s, path);
@@ -303,7 +305,7 @@ test("6. other paths, other spellings, HEAD, Range, token-bearing URLs: the API 
 test("6. with the API switched off (no origin, or none) every feed answers 503, never a kept 200, and the cache is untouched", async (t) => {
   const { api, cache, s } = world(t);
   for (const feed of FEEDS) await get(s, feed);
-  assert.equal(cache.entries.size, 3, "fresh entries for all three feeds");
+  assert.equal(cache.entries.size, FEEDS.length, "fresh entries for every cached feed");
   const ops = cache.ops.length;
   for (const origin of [undefined, "none"]) {
     const off = setup({ API_ORIGIN: origin });
@@ -317,7 +319,7 @@ test("6. with the API switched off (no origin, or none) every feed answers 503, 
   // A path whose escapes do not decode: 400 bad_path, before the cache too.
   assert.equal((await get(s, "/api/open/v1/door/%E0%A4%A")).status, 400);
   assert.deepEqual(cache.touched(ops), []);
-  assert.equal(api.calls.length, 3);
+  assert.equal(api.calls.length, FEEDS.length);
 });
 
 test("7. a cache whose match, put or delete throws or rejects still gives the normal upstream answer", async (t) => {
