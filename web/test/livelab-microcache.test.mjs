@@ -51,9 +51,9 @@ function installUpstream(t) {
 }
 
 // A fake caches.default backed by a Map keyed on the request URL. Like the Workers Cache API it keeps a copy only when
-// the copy's own Cache-Control lets a shared cache keep it and it sets no cookie, and a match adds headers of its own
-// (cf-cache-status, age). Unlike it, it ignores max-age, so an entry's expiry is the Worker's own check. faults[op] is
-// "throw" (synchronously) or "reject".
+// the copy's own Cache-Control lets a shared cache keep it and it sets no cookie, and a match adds the headers workerd's
+// match adds (age, cf-cache-status, content-length, date: seen under wrangler dev 4.156.0). Unlike it, it ignores
+// max-age, so an entry's expiry is the Worker's own check. faults[op] is "throw" (synchronously) or "reject".
 function installCache(t, faults = {}) {
   const entries = new Map();
   const ops = [];
@@ -69,8 +69,10 @@ function installCache(t, faults = {}) {
         const entry = entries.get(keyOf(key));
         if (!entry) return undefined;
         const headers = new Headers(entry.headers);
-        headers.set("cf-cache-status", "HIT");
         headers.set("age", "1");
+        headers.set("cf-cache-status", "HIT");
+        headers.set("content-length", String(entry.bytes.byteLength));
+        headers.set("date", new Date().toUTCString());
         return new Response(entry.bytes, { status: entry.status, headers });
       })();
     },
@@ -413,7 +415,7 @@ test("8. nothing private reaches a browser and nothing the cache adds; the opera
     assert.ok(!new TextDecoder().decode(entry.bytes).includes("operator"), `${feed}: the stored copy has no operator either`);
     for (const [why, r] of [["miss", miss], ["hit", hit]]) {
       const names = r.headers.map(([name]) => name);
-      for (const name of [MADE, SENT, "cf-cache-status", "age"]) assert.ok(!names.includes(name), `${feed} ${why}: no ${name}`);
+      for (const name of [MADE, SENT, "age", "cf-cache-status", "content-length", "date"]) assert.ok(!names.includes(name), `${feed} ${why}: no ${name}`);
       // Every header the stored copy has and the browser's answer had not is private: never in the browser's answer.
       for (const name of stored.keys()) if (!miss.headers.some(([n]) => n === name)) assert.ok(!names.includes(name), `${feed} ${why}: no ${name}`);
       assert.ok(!r.text.includes("operator"), `${feed} ${why}: the operator stays stripped`);
