@@ -1,14 +1,17 @@
 """The reproduction-tested build label at the door (contracts/open-proposal-v1/builds.json, app/door/evaluator.py).
 
 Every scored result's evaluator is the full identity string its run attests: the signed manifest's engine commit,
-grid and centre mapping; the bound receipt's binary and every configuration file hash; and the image tag the signed
-binding names. It reads "reproduction_tested" only when all of them are the gate-zero build's; any single field off,
-or no tag, is another string, which reads unvalidated. The broad alias still reads unvalidated. Hard rule: the label
-changes nothing else. A result's own qualifiers (replay status, binding basis and mismatch, a missing grid, the guard,
-the candidate verdict) stay exactly as its verification says.
+grid and centre mapping; the bound receipt's binary and every configuration file hash; and the build's image, attested
+by digest alone (the receipt's image_digest and the signed grant's scorer_image_digest are both the digest builds.json
+records for the build; never a tag). It reads "reproduction_tested" only when all of them are the build's; any single
+field off is another string, which reads unvalidated. builds.json records no digest for the gate-zero image, so the
+real door reads every result unvalidated: the tests that need the build to match use a test-only registry (registry()),
+the build's identity with the test scorer image's digest recorded. The broad alias still reads unvalidated. Hard rule:
+the label changes nothing else. A result's own qualifiers (replay status, binding basis and mismatch, a missing grid,
+the guard, the candidate verdict) stay exactly as its verification says.
 
 The page side reads the same API output: web/test/door-api-build-label.json is this door's results body for a fixed
-sequence (test_the_page_fixture_is_this_apis_output keeps it current; regenerate it with
+sequence under that test registry (test_the_page_fixture_is_this_apis_output keeps it current; regenerate it with
 `python -m app.test_door_build_label --write-fixture`), and web/test/door-build-label.test.mjs runs the page's label
 rule over it.
 """
@@ -38,12 +41,12 @@ TAG = BUILD["identity"]["image"]
 EVALUATOR = re.compile(SCHEMAS["common"]["$defs"]["evaluator"]["pattern"])
 FIXTURE = Path(__file__).resolve().parents[1] / "web" / "test" / "door-api-build-label.json"
 # warden's P1 on #85 (at 3c7b3062): the image is attested by digest, never by tag.
-D = tk.SCORER_IMAGE                                       # the digest the test grant pins and FakeScorer's receipts name
+D = tk.SCORER_IMAGE                     # the digest the test grant pins and FakeScorer's receipts name
 OTHER = "sha256:" + tk.fake("another scorer image")
 # The 5cedde1 runtime's image digest (root's decision on room 608657e4 #57792): another image than gate zero's. A grant
 # pinning it, with the tag sentilab-gate0:2d35e9c, read reproduction_tested at 3c7b3062.
 CDE9 = "sha256:cde9ce804130ba4dd2495f458c67acde74de9307291401e8e92f600812e4e1c7"
-ABSENT = object()                                         # a field left out altogether
+ABSENT = object()                       # a field left out altogether
 
 
 def registry(digest, build=BUILD) -> tuple:
@@ -63,26 +66,36 @@ def scored(case, layout: str, door=None, nonce=tk.NONCE) -> dict:
 
 
 class EvaluatorIdentityTests(unittest.TestCase):
-    """The identity a run attests, over the signed manifest, the bound evaluation receipt and the grant."""
+    """The identity a run attests, over the signed manifest, the bound evaluation receipt and the grant, under the
+    test registry (the build recording the test scorer image's digest)."""
 
     def setUp(self):
         self.manifest = tk.door_manifest()
-        self.grant = Grant.parse(tk.grant(scorer_image_tag=TAG))
-        self.receipt = {"binary_sha256": tk.EVALUATOR_BINARY_SHA256, "input_sha256": dict(tk.GATE0_INPUTS)}
+        self.grant = Grant.parse(tk.grant())
+        self.receipt = {"binary_sha256": tk.EVALUATOR_BINARY_SHA256, "image_digest": D,
+                        "input_sha256": dict(tk.GATE0_INPUTS)}
+        self.registered = registry(D)
+
+    def identity(self, receipt, manifest, grant) -> str:
+        return evaluator_identity(receipt, manifest, grant, registered=self.registered)
 
     def test_the_complete_build_reads_reproduction_tested(self):
-        self.assertEqual(BUILD["identity"], attested(BUILD, self.receipt, self.manifest, self.grant))
-        self.assertEqual(BUILD["id"], evaluator_identity(self.receipt, self.manifest, self.grant))
+        self.assertEqual(BUILD["identity"], attested(self.registered[0], self.receipt, self.manifest, self.grant))
+        self.assertEqual(BUILD["id"], self.identity(self.receipt, self.manifest, self.grant))
         self.assertEqual("reproduction_tested", label_for(BUILD["id"]))
+        # builds.json itself records no digest for the gate-zero image: there, the same run is not the build.
+        self.assertIsNone(BUILD["image_digest"])
+        self.assertNotEqual(BUILD["id"], evaluator_identity(self.receipt, self.manifest, self.grant))
 
     def test_each_single_field_mismatch_is_another_string_and_reads_unvalidated(self):
         inputs = self.receipt["input_sha256"]
         manifest = tk.door_manifest
         other_binary = tk.fake("another binary")
         cases = {
-            "no image tag in the binding": (self.receipt, self.manifest, Grant.parse(tk.grant())),
-            "another image tag": (self.receipt, self.manifest,
-                                  Grant.parse(tk.grant(scorer_image_tag="sentilab-gate0:0000000"))),
+            "no image digest in the receipt": ({k: v for k, v in self.receipt.items() if k != "image_digest"},
+                                               self.manifest, self.grant),
+            "another image digest": (self.receipt | {"image_digest": OTHER}, self.manifest,
+                                     Grant.parse(tk.grant(scorer_image_digest=OTHER))),
             "another engine commit": (self.receipt, manifest(**{"statistic.evaluator.upstream": "0" * 40}),
                                       self.grant),
             "another engine": (self.receipt, manifest(**{"statistic.evaluator.kind": "hotspot7"}), self.grant),
@@ -106,24 +119,27 @@ class EvaluatorIdentityTests(unittest.TestCase):
         seen = set()
         for name, args in cases.items():
             with self.subTest(name):
-                text = evaluator_identity(*args)
+                text = self.identity(*args)
                 self.assertNotEqual(BUILD["id"], text)
                 self.assertNotEqual(ALIAS, text, "the run's own identity, never a constant")
                 self.assertEqual("unvalidated", label_for(text))
                 self.assertTrue(EVALUATOR.match(text), text)
                 seen.add(text)
-        # No grant and a grant without a tag attest the same thing (no image); every other mismatch is its own string.
-        self.assertEqual(evaluator_identity(*cases["no grant"]), evaluator_identity(*cases["no image tag in the binding"]))
-        self.assertEqual(len(cases) - 1, len(seen))
+        # No grant, no receipt digest and another image all attest the same thing (no image); every other mismatch is
+        # its own string.
+        no_image = {self.identity(*cases[name]) for name in ("no grant", "no image digest in the receipt",
+                                                             "another image digest")}
+        self.assertEqual(1, len(no_image))
+        self.assertEqual(len(cases) - 2, len(seen))
         # The readable fields are what the run attests.
-        self.assertIn(":binary_sha256:" + other_binary + ":", evaluator_identity(*cases["another binary"]))
-        self.assertIn(":grid:32x32:", evaluator_identity(*cases["another grid"]))
-        self.assertTrue(evaluator_identity(*cases["another engine commit"]).startswith("HotSpot-6.0:" + "0" * 40 + ":"))
+        self.assertIn(":binary_sha256:" + other_binary + ":", self.identity(*cases["another binary"]))
+        self.assertIn(":grid:32x32:", self.identity(*cases["another grid"]))
+        self.assertTrue(self.identity(*cases["another engine commit"]).startswith("HotSpot-6.0:" + "0" * 40 + ":"))
 
     def test_a_layouts_own_files_are_not_part_of_the_identity(self):
         """A door layout stages its own power trace and die-layer floorplans; the build is the same build."""
         receipt = self.receipt | {"input_sha256": tk.GATE0_INPUTS | {name: tk.fake(name) for name in tk.PER_LAYOUT}}
-        self.assertEqual(BUILD["id"], evaluator_identity(receipt, self.manifest, self.grant))
+        self.assertEqual(BUILD["id"], self.identity(receipt, self.manifest, self.grant))
 
     def test_the_alias_keeps_its_meaning(self):
         self.assertEqual(EVALUATOR_IDENTITY, ALIAS)
@@ -142,15 +158,16 @@ class EvaluatorIdentityTests(unittest.TestCase):
         self.assertEqual(shared, {name: tk.GATE0_INPUTS[name] for name in shared})
         self.assertEqual(set(tk.GATE0_INPUTS) - set(shared), set(tk.PER_LAYOUT))
 
-    def test_the_image_tag_is_optional_and_strict(self):
-        self.assertIsNone(Grant.parse(tk.grant()).scorer_image_tag)
-        self.assertEqual(TAG, Grant.parse(tk.grant(scorer_image_tag=TAG)).scorer_image_tag)
-        for bad in ("", "sentilab-gate0", "Sentilab-Gate0:2d35e9c", "sentilab-gate0: 2d35e9c", "x:" + "y" * 200,
-                    None, 7, ["sentilab-gate0:2d35e9c"]):
-            with self.subTest(repr(bad)), self.assertRaises(ValueError):
-                Grant.parse(tk.grant(scorer_image_tag=bad))
-        with self.assertRaises(ValueError):
-            Grant.parse(tk.grant(scorer_image_tags=TAG))
+    def test_a_grant_names_its_image_by_digest_only(self):
+        """The grant has exactly its fields, as on main: no image tag (warden's P1), and a strict digest."""
+        self.assertFalse(hasattr(Grant.parse(tk.grant()), "scorer_image_tag"))
+        for tag in (TAG, "sentilab-gate0:5cedde1", None):
+            with self.subTest(tag=tag), self.assertRaises(ValueError):
+                Grant.parse(tk.grant(scorer_image_tag=tag))
+        hexits = D[len("sha256:"):]
+        for bad in ("sha256:" + hexits.upper(), " " + D, D + "\n", hexits, "sha256:" + hexits[:-1], TAG, None):
+            with self.subTest(digest=bad), self.assertRaises(ValueError):
+                Grant.parse(tk.grant(scorer_image_digest=bad))
 
 
 class ImageDigestTests(unittest.TestCase):
@@ -305,60 +322,57 @@ class DoorP1Tests(tk.DoorCase, unittest.TestCase):
 
 
 class DoorLabelTests(tk.DoorCase, unittest.TestCase):
-    """Through the door: submit, score, settle and read the results feed, under a binding that names the image tag."""
+    """Through the door: submit, score, settle and read the results feed, under the test registry, with the signed
+    binding pinning the test scorer image and the fake scorer's receipts naming it."""
 
-    def policy_kwargs(self):
-        return {"grant_value": tk.grant(scorer_image_tag=TAG)}
-
-    def scored(self, layout: str, door=None, nonce=tk.NONCE) -> dict:
-        door = door or self.door
-        status, reply, _ = door.submit(json.dumps(self.body(layout, nonce_value=nonce)).encode())
-        self.assertEqual(status, 202, reply)
-        while door.dispatcher.run_once():
-            pass
-        items = {item["id"]: item for item in door.results(None, "20")[1]["items"]}
-        return items[reply["run_id"]]
+    def setUp(self):
+        patcher = mock.patch.object(builds, "registered", return_value=registry(D))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        super().setUp()
 
     def test_an_exact_run_reads_reproduction_tested(self):
-        result = self.scored(moved(0))["result"]
+        result = scored(self, moved(0))["result"]
         self.assertEqual((BUILD["id"], "reproduction_tested"), (result["evaluator"], result["temperature_label"]))
 
     def test_a_run_staging_another_package_file_reads_unvalidated(self):
         self.scorer.inputs = {"sampleL2_Interposer.flp": tk.fake("another interposer")}
-        result = self.scored(moved(1))["result"]
+        result = scored(self, moved(1))["result"]
         self.assertNotEqual(BUILD["id"], result["evaluator"])
         self.assertEqual("unvalidated", result["temperature_label"])
         self.assertEqual(BUILD["id"].split(":config_sha256:")[0], result["evaluator"].split(":config_sha256:")[0])
 
     def test_a_receipt_naming_another_binary_reads_unvalidated(self):
         self.scorer.binary_sha256 = tk.fake("another binary")
-        result = self.scored(moved(2))["result"]
+        result = scored(self, moved(2))["result"]
         self.assertIn(":binary_sha256:" + tk.fake("another binary") + ":", result["evaluator"])
         self.assertEqual("unvalidated", result["temperature_label"])
 
     def test_hard_rule_the_build_label_changes_nothing_else(self):
-        """The same submissions scored the same way under two bindings, one naming the image tag and one not. Every
-        field of every item is identical except result.evaluator and result.temperature_label. The runs cover a score
-        without a grid (per-die and wire basis only), one with its grid, a replay that did not reproduce, one that was
-        not a fresh process, a binding mismatch and a wire mismatch."""
+        """The same submissions scored the same way by two scorer images, each pinned by its door's binding and named
+        by its receipts: the one the registry records for the build, and another. Every field of every item is
+        identical except result.evaluator and result.temperature_label. The runs cover a score without a grid (per-die
+        and wire basis only), one with its grid, a replay that did not reproduce, one that was not a fresh process, a
+        binding mismatch and a wire mismatch."""
         with tempfile.TemporaryDirectory() as folder:
-            policy = tk.policy(clock=self.clock, grant_value=tk.grant())
-            plain = Door(policy, Store(Path(folder) / "plain.sqlite3"), tk.FakeScorer(policy.checker))
-            plain.start(workers=False)
+            policy = tk.policy(clock=self.clock, grant_value=tk.grant(scorer_image_digest=OTHER))
+            other = Door(policy, Store(Path(folder) / "other.sqlite3"),
+                         tk.FakeScorer(policy.checker, image_digest=OTHER))
+            other.start(workers=False)
             try:
                 runs = (("ok", False), ("ok", True), ("mismatch", True), ("not_fresh", False),
                         ("bad_binding", True), ("bad_wire", False))
-                tagged, untagged = [], []
+                built, elsewhere = [], []
                 for index, (mode, with_grid) in enumerate(runs):
-                    for door, out in ((self.door, tagged), (plain, untagged)):
+                    for door, out in ((self.door, built), (other, elsewhere)):
                         door.scorer.mode, door.scorer.with_grid = mode, with_grid
-                        out.append(self.scored(moved(4 + index), door, tk.nonce(20 + index)))
+                        out.append(scored(self, moved(4 + index), door, tk.nonce(20 + index)))
             finally:
-                plain.stop()
-        for item in tagged:
+                other.stop()
+        for item in built:
             self.assertEqual(("reproduction_tested", BUILD["id"]),
                              (item["result"]["temperature_label"], item["result"]["evaluator"]))
-        for item in untagged:
+        for item in elsewhere:
             self.assertEqual("unvalidated", item["result"]["temperature_label"])
             self.assertNotEqual(BUILD["id"], item["result"]["evaluator"])
 
@@ -367,9 +381,9 @@ class DoorLabelTests(tk.DoorCase, unittest.TestCase):
             del item["result"]["temperature_label"], item["result"]["evaluator"]
             return item
 
-        self.assertEqual([without_label(item) for item in untagged], [without_label(item) for item in tagged])
+        self.assertEqual([without_label(item) for item in elsewhere], [without_label(item) for item in built])
         # And the qualifiers are really there, beside the build's label.
-        by_mode = dict(zip((mode for mode, _grid in runs), tagged))
+        by_mode = dict(zip((mode for mode, _grid in runs), built))
         self.assertEqual("reproduced", by_mode["ok"]["status"])
         self.assertEqual(("not_reproduced", "not_reproduced", None), (
             by_mode["mismatch"]["status"], by_mode["mismatch"]["result"]["verification"]["replay"],
@@ -378,21 +392,23 @@ class DoorLabelTests(tk.DoorCase, unittest.TestCase):
         self.assertEqual((False, False), (by_mode["bad_binding"]["result"]["binding_ok"],
                                           by_mode["bad_binding"]["result"]["verification"]["candidate"]))
         self.assertFalse(by_mode["bad_wire"]["result"]["binding_ok"])
-        self.assertIsNone(tagged[0]["result"]["grid64"])
-        self.assertEqual(["per_die", "wire"], tagged[0]["result"]["verification"]["binding_basis"])
-        self.assertEqual(["per_die", "grid", "wire"], tagged[1]["result"]["verification"]["binding_basis"])
-        for item in tagged:
+        self.assertIsNone(built[0]["result"]["grid64"])
+        self.assertEqual(["per_die", "wire"], built[0]["result"]["verification"]["binding_basis"])
+        self.assertEqual(["per_die", "grid", "wire"], built[1]["result"]["verification"]["binding_basis"])
+        for item in built:
             self.assertEqual(["beat", "margin", "routed wire", "source acceptance"],
                              item["result"]["verification"]["not_claimed"])
 
 
-def fixture_body() -> dict:
-    """This door's results body for a fixed sequence under a binding naming the image tag: three runs of the
-    gate-zero build (a reproduced score, a replay that did not reproduce, a binding mismatch), none with a grid, and
-    one run whose receipt staged another package-layer file."""
-    with tempfile.TemporaryDirectory() as folder:
+def fixture_body(registered=None) -> dict:
+    """This door's results body for a fixed sequence under `registered`, by default the test registry (the build
+    recording the test scorer image's digest, which the test binding pins and the fake scorer's receipts name): three
+    runs of the gate-zero build (a reproduced score, a replay that did not reproduce, a binding mismatch), none with a
+    grid, and one run whose receipt staged another package-layer file."""
+    registered = registry(D) if registered is None else registered
+    with tempfile.TemporaryDirectory() as folder, mock.patch.object(builds, "registered", return_value=registered):
         clock = tk.Clock()
-        policy = tk.policy(clock=clock, grant_value=tk.grant(scorer_image_tag=TAG))
+        policy = tk.policy(clock=clock)
         door = Door(policy, Store(Path(folder) / "door.sqlite3"), tk.FakeScorer(policy.checker))
         door.start(workers=False)
         try:
@@ -431,6 +447,12 @@ class PageFixtureTests(unittest.TestCase):
         self.assertEqual(["reproduced", "not_reproduced", "reproduced", "reproduced"], [item["status"] for item in items])
         self.assertEqual([True, True, False, True], [item["result"]["binding_ok"] for item in items])
         self.assertEqual([None] * 4, [item["result"]["grid64"] for item in items])
+
+    def test_under_builds_json_every_fixture_run_reads_unvalidated(self):
+        """builds.json records no digest for the gate-zero image: under it, the same four runs all read unvalidated."""
+        items = fixture_body(builds.load())["items"]
+        self.assertEqual(["unvalidated"] * 4, [item["result"]["temperature_label"] for item in items])
+        self.assertNotIn(BUILD["id"], [item["result"]["evaluator"] for item in items])
 
 
 if __name__ == "__main__":

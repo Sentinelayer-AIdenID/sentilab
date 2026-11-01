@@ -1,6 +1,6 @@
 {
  "schema": "sentilab-evaluator-builds/1",
- "rule": "Exact match only. A build's identity string is <engine>:<engine_commit>:binary_sha256:<binary>:config_sha256:<sha256 of the config file map>:grid:<n>x<n>:build_sha256:<sha256 of the canonical identity>, the identity being schema, engine, engine_commit, binary_sha256, image, config_sha256, grid and centre_mapping. Any other string, the broad alias hotspot6:<binary>:grid:64x64 included, is another evaluator. The label is the build's: it never clears a result's own qualifiers (diagnostic, unassociated, replay status).",
+ "rule": "Exact match only. A build's identity string is <engine>:<engine_commit>:binary_sha256:<binary>:config_sha256:<sha256 of the config file map>:grid:<n>x<n>:build_sha256:<sha256 of the canonical identity>, the identity being schema, engine, engine_commit, binary_sha256, image, config_sha256, grid and centre_mapping. Any other string, the broad alias hotspot6:<binary>:grid:64x64 included, is another evaluator. A run is a build only when its image is proved by digest: its evaluation receipt's image_digest and its signed grant's scorer_image_digest are both the build's recorded image_digest. A tag never counts, and a build whose image_digest is null is never matched. The label is the build's: it never clears a result's own qualifiers (diagnostic, unassociated, replay status).",
  "builds": [
   {
    "id": "HotSpot-6.0:a7a3286e368867c26381e0a23e36b3e273bdeda9:binary_sha256:751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6:config_sha256:2a51fb6cf2b149b29d154371450f5924070fa0d5ab7ad170b7185b929ff9007b:grid:64x64:build_sha256:05a9d9cb9ba06a67123c1b4c9d3da14820429221e23b4882abc82cf49c1a0e74",
@@ -22,13 +22,19 @@
     "grid": 64,
     "centre_mapping": "GRID_CENTER: mean of 1, 2 or 4 central cells (pinned)"
    },
+   "image_digest": null,
    "sources": {
     "engine_commit": "sundai_hotspot6/UPSTREAM_COMMIT (= golden manifest statistic.evaluator.upstream)",
     "binary_sha256": "app/door/scorer.py EVALUATOR_BINARY_SHA256 (door-scorer pins the same binary)",
     "image": {
      "field": "evaluator.image_tag_operator_reported",
      "packet_sha256": "e3281c421bb4ae56b958bca3d8997a73471d16c120fa608b92320f0c78cc67f9",
-     "note": "operator-reported tag; no image digest is recorded for it"
+     "note": "operator-reported tag: it names the build and proves no image (image_digest does)"
+    },
+    "image_digest": {
+     "field": "evaluator.image_id_or_digest",
+     "packet_sha256": "e3281c421bb4ae56b958bca3d8997a73471d16c120fa608b92320f0c78cc67f9",
+     "note": "the packet records no digest for this image (null), so no run is matched to this build until one is recorded"
     },
     "config_sha256": "the input files both gate-zero raw references share: docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/SHA256SUMS, docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/SHA256SUMS",
     "grid": "sundai_hotspot/gate_zero.py GRID (= golden manifest statistic.grid)",
