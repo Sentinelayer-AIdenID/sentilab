@@ -603,6 +603,7 @@ class JobOutputs:
         job = {**self.job, "schema": "collab-study-job-v3", "start_utc": self.start_utc, "end_utc": utc_now(),
                "wall_seconds": max(0, self.clock() - self.start_time), "agents": per_agent,
                "history_complete": self._history_complete and
+                   not any(agent.stop_reason == "dollar_cap" for agent in agents) and
                    all(row["state"] == "response" and row["attempt"] in self._parsed_attempts for row in attempts),
                "provider_request_ids": [row["request_id"] for row in attempts if row["request_id"] is not None],
                "failures": [row for row in attempts if row["state"] == "failed"],
