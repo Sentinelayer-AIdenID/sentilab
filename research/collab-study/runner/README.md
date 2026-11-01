@@ -1,6 +1,6 @@
 # Collaboration study runner
 
-`study_runner.py` runs protocol v2 with Amendments 1–4, using Python 3.12 and
+`study_runner.py` runs protocol v2 with Amendments 1–5, using Python 3.12 and
 `requests`. Packets are UTF-8 text only: the runner never imports or executes
 their `model.py`. The tests and example use synthetic packets exclusively.
 The operator obtains participant packets through the separate private handoff.
@@ -111,7 +111,8 @@ Each arm has one 900-second deadline. Jobs start in order with at most `--parall
 
 Before each attempt, the token prompt bound and bounded output must fit the
 agent's remaining cap. Its first request uses the sealed `initial_prompt_tokens`
-bound. Later requests use its last provider-reported prompt usage, plus reported
+bound plus any peer completion usage already accumulated before its turn. Later
+requests use its last provider-reported prompt usage, plus reported
 completion tokens for its own and all peer replies appended since that request,
 plus the serialized bytes of newly appended framing, labels, separators and
 continue/turn prompts. Earlier text is already covered by the reported prompt
