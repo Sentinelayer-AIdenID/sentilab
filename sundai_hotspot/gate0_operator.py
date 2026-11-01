@@ -106,8 +106,8 @@ def save_cpu(total: float | None, lower_bound: float | None = None) -> None:
     os.replace(tmp, CPU_FILE)
 
 
-def load() -> tuple[dict, str]:
-    manifest, manifest_sha256 = reference_validation.load_manifest()  # refused unless this tree generates it
+def load(selection: str = "gate0") -> tuple[dict, str]:
+    manifest, manifest_sha256 = reference_validation.load_manifest(selection=selection)
     if not manifest["operator"]["public_key_ed25519"]:
         raise SystemExit("the manifest has no pinned operator key")
     return manifest, manifest_sha256
@@ -128,15 +128,18 @@ def github() -> object:
 
 
 def cmd_grant(args) -> int:
-    manifest, manifest_sha256 = load()
+    manifest, manifest_sha256 = load(getattr(args, "manifest", "gate0"))
     key = check_key(manifest, args.key)
     not_after = manifest["grant_window"]["not_after_utc"]
     calls = [call["id"] for call in manifest["calls"]]
+    cap = args.cap if args.cap is not None else manifest["accounting"]["manifest_cpu_cap_s"]
+    if getattr(args, "manifest", "gate0") == "coupling" and cap > manifest["accounting"]["manifest_cpu_cap_s"]:
+        raise SystemExit("the grant's CPU cap exceeds the selected manifest's binding cap")
     entry = gate0_anchor.open_ledger(args.ledger_root, key, manifest_sha256, grant_id=args.grant_id, calls=calls,
-                                     not_before_utc=now(), not_after_utc=not_after, cpu_cap_s=args.cap)
+                                     not_before_utc=now(), not_after_utc=not_after, cpu_cap_s=cap)
     ledger = gate0_anchor.read_ledger(args.ledger_root, manifest["operator"]["public_key_ed25519"], manifest_sha256)
     log("grant_opened", grant_id=args.grant_id, manifest_sha256=manifest_sha256, calls=len(calls),
-        not_after_utc=not_after, cpu_cap_s=args.cap, ledger_dir=str(ledger["dir"]),
+        not_after_utc=not_after, cpu_cap_s=cap, ledger_dir=str(ledger["dir"]),
         entry0_sha256=gate0_anchor.digest(entry))
     return 0
 
@@ -260,6 +263,10 @@ def call_argv(call: dict, args, out: Path) -> list[str]:
     argv = [sys.executable, "-m", "sundai_hotspot.reference_validation", "validate-reference", "--call", call["id"],
             "--timeout", f"{call['timeout_s']:g}", "--out", str(out), "--ledger-root", str(args.ledger_root),
             "--operator-key", str(args.key)]
+    if getattr(args, "manifest", "gate0") == "coupling":
+        from sundai_hotspot import coupling_allocation
+        coupling_allocation.require_binary(call, reference_validation.REPO_ROOT / call["binary"])
+        argv += ["--manifest", "coupling"]
     expected = call["command"].replace("<fresh empty dir>", str(out)).replace(
         "<operator ledger root>", str(args.ledger_root)).replace("<operator key file>", str(args.key))
     if " ".join(["python"] + argv[1:]) != expected:
@@ -341,7 +348,7 @@ def run_call(call: dict, argv: list[str], out: Path, budget: dict, *, meter=None
 
 
 def cmd_run(args) -> int:
-    manifest, manifest_sha256 = load()
+    manifest, manifest_sha256 = load(getattr(args, "manifest", "gate0"))
     check_key(manifest, args.key)
     ledger = gate0_anchor.read_ledger(args.ledger_root, manifest["operator"]["public_key_ed25519"], manifest_sha256)
     grant = ledger["grant"]
@@ -417,6 +424,8 @@ def cmd_run(args) -> int:
 def cmd_readback(args, kind: str) -> int:
     argv = [sys.executable, "-m", "sundai_hotspot.reference_validation", kind, "--out", str(args.out),
             "--ledger-root", str(args.ledger_root)]
+    if getattr(args, "manifest", "gate0") == "coupling":
+        argv += ["--manifest", "coupling"]
     if kind == "record":
         argv[4:4] = ["--kind", "hotspot6"]
     done = subprocess.run(argv, cwd="/app", capture_output=True, text=True)
@@ -425,22 +434,28 @@ def cmd_readback(args, kind: str) -> int:
     return done.returncode
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    global RUNS, CPU_FILE, LOG
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
     for name in ("grant", "run", "record", "report"):
         p = sub.add_parser(name)
+        if name != "record":  # gate-zero certification remains its own frozen predicate
+            p.add_argument("--manifest", choices=("gate0", "coupling"), default="gate0")
         p.add_argument("--ledger-root", type=Path, default=Path("/srv/gate0/ledger"))
         if name in ("grant", "run"):
             p.add_argument("--key", type=Path, default=Path("/srv/gate0/key/operator.pem"))
             p.add_argument("--grant-id", required=True)
         if name == "grant":
-            p.add_argument("--cap", type=float, default=600.0)
+            p.add_argument("--cap", type=float)
         if name == "run":
             p.add_argument("--only", nargs="*")
         if name in ("record", "report"):
             p.add_argument("--out", type=Path, required=True)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    RUNS = (Path("/srv/gate0/coupling/runs") if getattr(args, "manifest", "gate0") == "coupling"
+            else Path("/srv/gate0/runs"))
+    CPU_FILE, LOG = RUNS / "cpu-used.json", RUNS / "operator-log.jsonl"
     RUNS.mkdir(parents=True, exist_ok=True)
     if args.command == "grant":
         return cmd_grant(args)
