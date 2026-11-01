@@ -486,7 +486,7 @@ export async function startDoor({ params, REDUCED }) {
         chip.className = `chip ${sc[0]}`;
         chip.textContent = sc[1];
         const tf = t.btn.querySelector(".tf");
-        tf.replaceChildren(...(r ? [tempNode(h, r.metric.value, r.label, { digits: 2 }), r.diagnostic ? "diagnostic" : "max chiplet-centre mean"] : [notScoredText(L)]));
+        tf.replaceChildren(...(r ? [tempNode(h, r.metric.value, r.label, { digits: 2 }), h("span", { class: "w" }, r.diagnostic ? "diagnostic" : "max chiplet-centre mean")] : [notScoredText(L)]));
         drawPlan(t.canvas, L);
       }
     });
