@@ -128,3 +128,15 @@ def test_blank_malformed_lines_are_preserved_between_markers():
     sets = runner.parse_emitted_sets('FINDINGS\n\nFINAL\n')
     assert sets[0]['malformed'] == [{'line': 1, 'text': ''}]
     assert sets[1]['malformed'] == []
+
+
+def test_unicode_line_separators_stay_inside_one_finding_line(tmp_path):
+    finding = {'file': 'model.py', 'location': '1', 'defect': 'alpha\u2028beta', 'evidence': 'left\u2029right'}
+    text = 'FINAL\r\n' + json.dumps(finding, ensure_ascii=False) + '\r\n'
+    parsed = runner.parse_final(text)
+    assert parsed['findings'] == [finding]
+    assert parsed['malformed'] == []
+    emitted, _, _, output = execute(tmp_path, 'A', [response(text)])
+    assert emitted[0]['findings'] == [finding]
+    assert emitted[0]['malformed'] == []
+    assert len((output / 'job-one/emitted_sets.jsonl').read_text().splitlines()) == 1
