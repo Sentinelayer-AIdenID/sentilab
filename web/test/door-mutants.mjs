@@ -2,10 +2,12 @@
 // Mutants of the agent door: the scoped purpose token's verification and scope (src/door/token.js), the door's token
 // gate, and every repair of the review round at 75aed822 (root's three P2s, warden's P2 and P3s, the seven mutants
 // that survived warden's run, the staging environment) and of root's repair review at df1189c4 (only an outcome the
-// door can name is definite after its POST). Each runs in a disposable copy of web/ (the working checkout
-// is never modified) against the door's tests, and must fail an assertion there: a mutant that survives, or that only
-// breaks an import, fails this script. (Dropping equalHex's length term is an equivalent mutant: TOKEN_PATTERN already
-// fixes the MAC at 32 hex characters, so no input can tell the two apart. It is not listed.)
+// door can name is definite after its POST) and warden's four P3s there (the terms a page showed, a press after an
+// earlier press, every spelling of an open feed, browsers without Sec-Fetch-Site). Each runs in a disposable copy of
+// web/ (the working checkout is never modified) against the door's tests, and must fail an assertion there: a mutant
+// that survives, or that only breaks an import, fails this script. (Dropping equalHex's length term is an equivalent
+// mutant: TOKEN_PATTERN already fixes the MAC at 32 hex characters, so no input can tell the two apart. It is not
+// listed.)
 import assert from "node:assert/strict";
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -19,10 +21,6 @@ const LAYOUT = "src/door/layout.js";
 const RENDER = "src/door/render.js";
 const WORKER = "src/worker.js";
 const WRANGLER = "wrangler.jsonc";
-const RETRY_FORM = `<form method="post" action="/agents/submit">
-<input type="hidden" name="t" value="\${esc(token)}">
-<input type="hidden" name="l" value="\${esc(compact)}">
-<button type="submit">Send the same layout again</button>`;
 
 const groups = {
   "token and scope": [
@@ -52,7 +50,7 @@ const groups = {
   ],
   "root P2-1, token referrer protection": [
     ["token-bearing responses unprotected", WORKER, "    return carriesToken(new URL(request.url)) ? protectToken(response) : response;", "    return response;"],
-    ["protection without no-referrer", DOOR, '  headers.set("referrer-policy", "no-referrer");\n', ""],
+    ["protection without no-referrer", DOOR, '  if (headers.get("referrer-policy") !== "strict-origin") headers.set("referrer-policy", "no-referrer");\n', ""],
     ["protection without no-store", DOOR, '  headers.set("cache-control", AGENT_RESPONSE_CACHE);\n  return new Response(response.body', "  return new Response(response.body"],
     ["token-shaped values in other parameters ignored", DOOR, 'return url.searchParams.has("t") || TOKEN_SHAPE.test(url.search);', 'return url.searchParams.has("t");'],
     ["proxy keeps a token-bearing Referer", WORKER, '  if (tokenBearing(headers.get("referer"))) headers.delete("referer");\n', ""],
@@ -65,10 +63,10 @@ const groups = {
     ["byte-order mark stripped", DOOR, "{ fatal: true, ignoreBOM: true }", "{ fatal: true, ignoreBOM: false }"],
   ],
   "root P2-3, uncertain delivery": [
-    ["uncertain delivery reported as not sent", DOOR, "    return deliveryUnknown(request, format, url, { token: auth.token, compact: parsed.compact, requestKey, cause });", '    return refuse(request, format, 503, { error: "intake_unavailable" });'],
+    ["uncertain delivery reported as not sent", DOOR, "    return deliveryUnknown(request, format, url, { token: auth.token, compact: parsed.compact, terms, requestKey, cause });", '    return refuse(request, format, 503, { error: "intake_unavailable" });'],
     ["a failed fetch counted as never sent", DOOR, 'return { ok: false, attempted: true, reason: controller.signal.aborted ? "timeout" : "unreachable" };', 'return { ok: false, attempted: false, reason: controller.signal.aborted ? "timeout" : "unreachable" };'],
     ["not-confirmed page says nothing was sent", RENDER, '<p class="fine">Sending it again is safe:', '<p class="fine">Nothing was sent. Ask your assistant for a new link. Sending it again is safe:'],
-    ["not-confirmed retry drops the token", RENDER, RETRY_FORM, RETRY_FORM.replace('<input type="hidden" name="t" value="${esc(token)}">\n', "")],
+    ["not-confirmed retry drops the token", RENDER, '<input type="hidden" name="t" value="${esc(token)}">\n', ""],
   ],
   "root repair P2, only a named outcome is definite": [
     ["a schema tag alone is definite (the code at df1189c4)", DOOR, "  const outcome = knownOutcome(answer);\n",
@@ -87,6 +85,25 @@ const groups = {
     ["a refusal page promises the same run", RENDER, '${accepted ? "Pressing the button again returns the same run." : "Nothing was queued."}', "Pressing the button again returns the same run."],
     ["the token refusal page is skipped", RENDER, "  if (outcome.refusal) {\n", "  if (false) {\n"],
   ],
+  "warden P3s at df1189c4 (terms, presses after a press, encoded feeds, old browsers)": [
+    ["the form does not carry the shown terms", RENDER, '<input type="hidden" name="terms" value="${esc(terms)}">\n', ""],
+    ["the shown terms are not checked", DOOR, "  if (form && !live.accepted.includes(fields.terms)) {\n", "  if (false) {\n"],
+    ["a form press is sent under the newest terms", DOOR, "  const terms = form ? fields.terms : live.terms;\n", "  const terms = live.terms;\n"],
+    ["a press after an earlier one says nothing was sent", DOOR, "(earlier ? pressRefused(request, response, { error, codes, held }) : response)", "response"],
+    ["the pages after a press drop the mark", RENDER, '${SUBMIT_FORM}${again ? "?again=1" : ""}">', '${SUBMIT_FORM}">'],
+    ["a prefix-limited press after an earlier one is refused unread", DOOR, "  if (!prefixAllowed && !earlier) return submitLimited(request, format);\n",
+      '  if (!prefixAllowed) return stop(submitLimited(request, format), "rate_limited");\n'],
+    ["the check is never offered", DOOR, '  if (earlier && TERMS_VERSION.test(fields.terms ?? "")) held = { token: auth.token, compact: parsed.compact, terms: fields.terms };\n', ""],
+    ["the feed filter matches the raw path", WORKER, "DOOR_FEEDS.test(path)", "DOOR_FEEDS.test(url.pathname)"],
+    ["escapes decoded once", DOOR, 'round < 4 && path.includes("%")', 'round < 1 && path.includes("%")'],
+    ["a path that does not decode is passed on", DOOR, "    try { path = decodeURIComponent(path); } catch { return null; }", "    try { path = decodeURIComponent(path); } catch { return pathname; }"],
+    ["a page holding the form stays no-referrer", RENDER, 'text.includes(SUBMIT_FORM) ? "strict-origin" : "no-referrer"', '"no-referrer"'],
+    ["the token guard overrides strict-origin", DOOR, '  if (headers.get("referrer-policy") !== "strict-origin") headers.set("referrer-policy", "no-referrer");\n',
+      '  headers.set("referrer-policy", "no-referrer");\n'],
+    ["the meta tag stays no-referrer", RENDER, '<meta name="referrer" content="${referrerPolicyFor(body)}">', '<meta name="referrer" content="no-referrer">'],
+    ["any Origin passes without Sec-Fetch-Site", DOOR, 'return request.headers.get("origin") === url.origin;', 'return request.headers.get("origin") !== null;'],
+    ["no Origin fallback without Sec-Fetch-Site", DOOR, 'return request.headers.get("origin") === url.origin;', "return false;"],
+  ],
   "terms from the intake's board": [
     ["the first accepted version, not the highest", DOOR, "number(v) > number(best)", "false"],
   ],
@@ -97,7 +114,7 @@ const groups = {
     ["cross-site forms accepted", DOOR, '  if (form && !sameSiteForm(request, url)) return refuse(request, format, 403, { error: "cross_site" });\n', ""],
     ["same-site forms accepted", DOOR, 'if (site !== null) return site === "same-origin" || site === "none";', 'if (site !== null) return site !== "cross-site";'],
     ["minting unlimited", DOOR, '  if (!(await allow(env, "DOOR_MINT_LIMITER", `mint:${prefixOf(request)}`))) return limited(request, kind === "json" ? "json" : "html");\n', ""],
-    ["proxy passes the declared operator", WORKER, '  if (request.method === "GET" && DOOR_FEEDS.test(url.pathname)) return doorFeed(upstream, out);\n', ""],
+    ["proxy passes the declared operator", WORKER, '  if (request.method === "GET" && DOOR_FEEDS.test(path)) return doorFeed(upstream, out);\n', ""],
     ["operator stripped only at the top level", DOOR, ".map(([key, item]) => [key, withoutOperators(item)])", ".map(([key, item]) => [key, item])"],
   ],
   "warden P3-4, the seven survivors": [
@@ -120,7 +137,7 @@ const groups = {
 };
 
 const tests = ["door-token.test.mjs", "door-routes.test.mjs", "door-submit.test.mjs", "door-review.test.mjs", "door-hold.test.mjs",
-  "door-json.test.mjs", "door-layout.test.mjs"];
+  "door-warden-p3.test.mjs", "door-json.test.mjs", "door-layout.test.mjs"];
 const web = new URL("../", import.meta.url);
 const repo = new URL("../", web);
 const CONTRACT_FILES = ["contracts/open-proposal-v1/reason-codes.json", "contracts/open-proposal-v1/schemas/common.schema.json"];

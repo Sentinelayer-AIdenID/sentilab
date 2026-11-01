@@ -118,12 +118,16 @@ token of this host (`?t=`), and then the agent version above. Search and link-pr
 exactly as before. Without the key the door is closed and this section does not apply. Every
 response to a URL that can carry a token (a `t` parameter, or a token-shaped value anywhere in
 the query) is `Referrer-Policy: no-referrer` and `private, no-store, no-transform`, whichever
-path served it. The door's own routes (`/agents/intent`,
+path served it, except that a door page holding the submit form is `strict-origin` (header and
+meta tag): under `no-referrer` a browser sends `Origin: null` with the form's POST, and one
+without `Sec-Fetch-Site` could not pass the same-origin check; `strict-origin` sends only this
+site's origin, never a path or query. The door's own routes (`/agents/intent`,
 `/agents/engram`, `/agents/check`, `/agents/submit`, `/agents/status/<run_id>`,
 `/agents/board`, `/s`) are answered before `withEdge`; `identityFor` gives them the same bounded
 identity for arrivals. The `/api` proxy drops every `x-door-*` request header and any Referer
 that carries a token, and passes the intake's open feeds (`/api/open/v1/door/board`, `results`,
-`events`) on without their declared-operator fields.
+`events`) on without their declared-operator fields, matching them on the percent-decoded path
+(the API routes the decoded path); a path whose escapes do not decode is refused with 400.
 
 ## Aquarium and privacy
 

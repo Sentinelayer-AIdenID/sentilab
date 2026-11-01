@@ -16,7 +16,7 @@ import { readFileSync } from "node:fs";
 import { indexOrPreviewCrawler } from "../src/generated/aidenid-intent-gate/agent-resources.js";
 import { LIMITS } from "../src/door/door.js";
 import { verifyToken } from "../src/door/token.js";
-import { BASE, BROWSER, KEY, REF, RUN, UA, agent, file, installApi, mint, postForm, postJson, same, setup } from "./door-harness.mjs";
+import { BASE, BROWSER, KEY, REF, RUN, TERMS, UA, agent, file, installApi, mint, postForm, postJson, same, setup } from "./door-harness.mjs";
 
 const submits = (calls) => calls.filter((c) => c.method === "POST" && c.path === "/api/open/v1/door/submit");
 const arrivals = (calls) => calls.filter((c) => c.path === "/api/open/v1/door/arrival");
@@ -56,7 +56,7 @@ test("P2: search and link-preview crawlers get exactly main's response on the ma
 test("P3-1: a form post must come from this site's own page; a cross-site one is refused before any allowance is spent", async (t) => {
   const calls = installApi(t);
   const token = await mint();
-  const body = `t=${token}&l=${encodeURIComponent(REF)}`;
+  const body = `t=${token}&l=${encodeURIComponent(REF)}&terms=${encodeURIComponent(TERMS)}`;
   const form = (headers) => ({ method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", "user-agent": BROWSER["user-agent"], ...headers }, body });
   for (const headers of [{ "sec-fetch-site": "cross-site", origin: "https://evil.example" }, { "sec-fetch-site": "cross-site", origin: BASE },
     { "sec-fetch-site": "same-site", origin: "https://staging.sentilab.aidenid.com" }, { origin: "https://evil.example" }, {}, { origin: "null" }]) {

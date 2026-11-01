@@ -11,6 +11,26 @@ import { TOKEN_WORDING } from "./token.js";
 
 export const esc = (value) => String(value).replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
 const label = (id) => PURPOSES.find((purpose) => purpose.id === id)?.label ?? "";
+
+// The one form that posts a layout, and the referrer policy of the page that holds it. Under no-referrer a browser
+// sends "Origin: null" with a form's POST (measured in Chrome), so one without Sec-Fetch-Site (Safari before 16.4)
+// could not show the door that the press came from this site's own page (door.js sameSiteForm). A page holding this
+// form is therefore strict-origin, in its header and its meta tag alike: the Origin and the Referer carry this site's
+// origin only, never a path or a query, so the token still stays on the page. Every other page stays no-referrer.
+export const SUBMIT_FORM = '<form method="post" action="/agents/submit';
+export const referrerPolicyFor = (text) => (typeof text === "string" && text.includes(SUBMIT_FORM) ? "strict-origin" : "no-referrer");
+
+// The form carries the token, the layout and the terms the page showed. On the pages that follow a press (not
+// confirmed, refused, terms changed after a press) it posts to /agents/submit?again=1: that earlier press may already
+// be queued, so a refusal of this one says so rather than "Nothing was sent".
+function submitForm({ token, compact, terms, again, button }) {
+  return `${SUBMIT_FORM}${again ? "?again=1" : ""}">
+<input type="hidden" name="t" value="${esc(token)}">
+<input type="hidden" name="l" value="${esc(compact)}">
+<input type="hidden" name="terms" value="${esc(terms)}">
+<button type="submit">${esc(button)}</button>
+</form>`;
+}
 const SUBMISSIONS = Object.freeze({
   open: "open. Submitting needs a place-chiplets token.",
   closed: "closed right now. Reading still works.",
@@ -25,7 +45,7 @@ function page(title, body) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<meta name="referrer" content="no-referrer">
+<meta name="referrer" content="${referrerPolicyFor(body)}">
 <title>${esc(title)}</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/door.css">
@@ -157,6 +177,7 @@ const CODE_TEXT = Object.freeze({
   rotation_not_allowed: "rotation not allowed for this die", out_of_frame: "centre outside the 45 mm frame", die_count: "not eight dies",
   die_order: "dies out of order", lattice: "centre off the 0.5 mm lattice", schema_invalid: "not in the layout format",
   unknown_field: "a field the layout does not have", queue_full: "the scorer's queue is full",
+  idempotency_conflict: "an earlier request with this link and layout already stands, so this one was not queued again",
 });
 export const codeText = (found) => `${found.code}${found.dies ? ` (${found.dies.map((d) => DIES[d]?.id ?? d).join(", ")})` : ""}: ${CODE_TEXT[found.code] ?? "refused"}`;
 
@@ -174,11 +195,7 @@ ${violations.map((v) => `<li>${esc(codeText(v))}</li>`).join("\n")}
       ? `<p class="check illegal">The scorer intake cannot be reached right now, so nothing can be sent. Open this same link again in a minute.</p>`
       : !terms
       ? `<p class="check illegal">Submissions are not open yet: no challenge terms are published, so nothing can be sent.</p>`
-      : `<form method="post" action="/agents/submit">
-<input type="hidden" name="t" value="${esc(token)}">
-<input type="hidden" name="l" value="${esc(compact)}">
-<button type="submit">Submit this layout</button>
-</form>
+      : `${submitForm({ token, compact, terms, again: false, button: "Submit this layout" })}
 <p class="fine">Submitting accepts the challenge terms <code>${esc(terms)}</code>.</p>`;
   return page("SentiLab: submit this layout?", `<p class="eyebrow">SentiLab · CPU-DRAM chiplet placement</p>
 <h1>Submit this layout?</h1>
@@ -230,17 +247,45 @@ ${list}<p class="fine">Nothing was sent. ${esc(NEXT_STEP[error] ?? NEXT_STEP.lay
 // After the POST was attempted with no answer the door can trust: the layout may or may not be queued. The same
 // button repeats the same request (same token and layout, so the same request key): it returns the same run and is
 // charged once. No "nothing was sent", and no new link: a new token would make the retry a second submission.
-export function notConfirmedHtml({ token, compact, cause }) {
+export function notConfirmedHtml({ token, compact, terms, cause }) {
   const what = cause === "timeout" ? "did not answer in time" : cause === "no_answer" ? "did not answer" : "gave an answer the door could not read";
   return page("SentiLab: not confirmed", `<p class="eyebrow">SentiLab · CPU-DRAM chiplet placement</p>
 <h1>Not confirmed</h1>
 <p>This layout was sent to the scorer intake, but the intake ${esc(what)}, so it may or may not be queued.</p>
-<form method="post" action="/agents/submit">
-<input type="hidden" name="t" value="${esc(token)}">
-<input type="hidden" name="l" value="${esc(compact)}">
-<button type="submit">Send the same layout again</button>
-</form>
+${submitForm({ token, compact, terms, again: true, button: "Send the same layout again" })}
 <p class="fine">Sending it again is safe: it repeats this exact request, with the same token and layout, so the intake returns the same run and charges it once. Keep using this page and this link rather than starting over.</p>`);
+}
+
+// A press refused before its POST, when it followed an earlier press (its form posted to /agents/submit?again=1):
+// this press sent nothing, but the earlier one may already be queued, so the page never says "Nothing was sent". The
+// check is the same request again: the intake answers a repeat with the earlier run and its status link when that press
+// was queued, and charges it once. It is offered whenever this press's token and layout still verify (held).
+const AFTER_PRESS = Object.freeze({
+  token: "This link can no longer send or check this layout. If you ask your assistant for a new link, tell it this layout may already be queued: a new link would send it again as a new submission, charged separately.",
+  other: "Open the link your assistant gave you again later, while its token is still valid, and press its button: the same link and layout make the same request, so if the earlier press was queued the intake shows that run and its status link, and charges it once.",
+});
+export function pressRefusedHtml({ error, codes = [], held = null }) {
+  const list = codes.length ? `<ul class="codes">\n${codes.map((c) => `<li>${esc(codeText(c))}</li>`).join("\n")}\n</ul>\n` : "";
+  const check = held
+    ? `${submitForm({ ...held, again: true, button: "Send the same layout again" })}
+<p class="fine">${error === "rate_limited" ? "Wait a minute first. " : ""}It repeats the earlier request with the same link and layout: if that press was queued, the intake shows its run and its status link and charges it once; if it was not, this sends it now.</p>`
+    : `<p class="fine">${esc(/^token_/.test(error) ? AFTER_PRESS.token : AFTER_PRESS.other)}</p>`;
+  return page("SentiLab: not confirmed", `<p class="eyebrow">SentiLab · CPU-DRAM chiplet placement</p>
+<h1>Not confirmed</h1>
+<p>This press was not sent: ${esc(ERROR_TEXT[error] ?? ERROR_TEXT.unsupported)}</p>
+${list}<p>An earlier press of this link may already be queued. Check its status:</p>
+${check}`);
+}
+
+// The terms a press carried are not ones the intake accepts now (or it carried none): nothing is sent, and the person
+// is shown the terms that apply and asked to confirm again. After an earlier press, the form keeps its mark.
+export function termsChangedHtml({ token, compact, terms, again }) {
+  return page("SentiLab: terms changed", `<p class="eyebrow">SentiLab · CPU-DRAM chiplet placement</p>
+<h1>Terms changed: please confirm again</h1>
+<p>The challenge terms have changed since this page was shown, so this press was not sent.${again ? " An earlier press of this link may already be queued under the terms shown then." : ""}</p>
+<p>The terms that apply now: <code>${esc(terms)}</code>.</p>
+${submitForm({ token, compact, terms, again, button: "Accept these terms and submit" })}
+<p class="fine">Press the button only if you accept these terms. Simulated, not silicon.</p>`);
 }
 
 // Every state of the contract's lifecycle (schemas/common.schema.json lifecycle_state).

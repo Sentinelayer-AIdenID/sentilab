@@ -51,7 +51,7 @@ test("identical retries share one request key; the dies form maps to the same re
   await s.go("/agents/submit", postJson({ t: token, layout: REF }));
   await s.go("/agents/submit", postJson({ t: token, layout: REF }));
   await s.go("/agents/submit", postJson({ t: token, layout: DIES_FORM }));
-  await s.go("/agents/submit", postForm(`t=${token}&l=${encodeURIComponent(REF)}`));
+  await s.go("/agents/submit", postForm(`t=${token}&l=${encodeURIComponent(REF)}&terms=${encodeURIComponent(TERMS)}`));
   await s.go("/agents/submit", postJson({ t: token, layout: OVERLAP }));
   await s.go("/agents/submit", postJson({ t: token, layout: REF, request_key: "my-key-1" }));
   const keys = submits(calls).map((c) => c.body.request_key);
@@ -220,12 +220,15 @@ test("the tap-link confirm page never submits on its own: one form, one POST but
   assert.equal((page.text.match(/<button\b/g) ?? []).length, 1);
   assert.ok(page.text.includes(`<input type="hidden" name="t" value="${token}">`));
   assert.ok(page.text.includes(`<input type="hidden" name="l" value="${REF}">`));
+  assert.ok(page.text.includes(`<input type="hidden" name="terms" value="${TERMS}">`), "the terms the page shows");
   for (const forbidden of [/<script/i, /http-equiv/i, /\son[a-z]+=/i, /\sstyle=/i, /<style/i, /formaction/i, /<iframe/i, /<meta[^>]+refresh/i, /autofocus/i]) {
     assert.ok(!forbidden.test(page.text), String(forbidden));
   }
   assert.ok(page.text.includes("Preview check: no placement rule broken."));
   assert.ok(page.text.includes("preview check; the scorer intake decides"));
-  assert.equal(page.headers.get("referrer-policy"), "no-referrer");
+  // It holds the submit form: strict-origin, so the POST names this site in Origin (never a path or query).
+  assert.equal(page.headers.get("referrer-policy"), "strict-origin");
+  assert.ok(page.text.includes('<meta name="referrer" content="strict-origin">'));
   await s.drain();
   assert.deepEqual(submits(calls), [], "61 views, previews and link checks: no submission");
   // An illegal preview lists its reasons and leaves the decision to the intake; a malformed layout gets no button.
@@ -271,7 +274,7 @@ test("pressing the confirm page's button submits once and shows only whitelisted
   const calls = installApi(t, { submit: async () => Response.json(answer, { status: 202 }) });
   const s = setup();
   const token = await mint();
-  const r = await s.go("/agents/submit", postForm(`t=${token}&l=${encodeURIComponent(REF)}`));
+  const r = await s.go("/agents/submit", postForm(`t=${token}&l=${encodeURIComponent(REF)}&terms=${encodeURIComponent(TERMS)}`));
   assert.equal(r.status, 200);
   assert.match(r.text, /<h1>Sent to the scorer<\/h1>/);
   assert.ok(r.text.includes(`<code>${RUN}</code>`) && r.text.includes(`${BASE}/agents/status/${RUN}?t=${token}`));
@@ -300,7 +303,7 @@ test("no visitor text is reflected anywhere: responses, headers, intake calls an
   responses.push(await s.go("/agents/submit", postJson({ t: token, layout: REF, extra: HOSTILE }, hostileHeaders)));
   responses.push(await s.go("/agents/submit", postJson({ t: token, layout: REF }, hostileHeaders)));
   responses.push(await s.go("/agents/submit", postForm(`t=${token}&l=${encodeURIComponent(REF)}&x=${q}`, hostileHeaders)));
-  responses.push(await s.go("/agents/submit", postForm(`t=${token}&l=${encodeURIComponent(REF)}`, hostileHeaders)));
+  responses.push(await s.go("/agents/submit", postForm(`t=${token}&l=${encodeURIComponent(REF)}&terms=${encodeURIComponent(TERMS)}`, hostileHeaders)));
   await s.drain();
   for (const r of responses) {
     assert.ok(!r.text.includes(MARK), r.text.slice(0, 200));
@@ -329,11 +332,11 @@ test("the layout thumbnail is a pure SVG of whole micrometres with fixed labels 
 });
 
 test("the board reader takes admission only from an explicit boolean and drops everything it does not know", () => {
-  assert.deepEqual(readBoard({ ok: false }), { reachable: false, admission: "unknown", board: null, cpuSecondsLeft: null, terms: null });
+  assert.deepEqual(readBoard({ ok: false }), { reachable: false, admission: "unknown", board: null, cpuSecondsLeft: null, terms: null, accepted: [] });
   assert.equal(readBoard({ ok: true, status: 200, json: { door: { open: "yes" } } }).admission, "unknown");
   assert.equal(readBoard({ ok: true, status: 500, json: { door: { open: true } } }).admission, "unknown");
   assert.equal(readBoard({ ok: true, status: 200, json: { door: { open: false } } }).admission, "closed");
   assert.equal(readBoard({ ok: true, status: 200, json: { admission: { open: true } } }).admission, "unknown", "only the intake's own door.open counts");
   assert.deepEqual(readBoard({ ok: true, status: 200, json: { top: [{ class: "automation", short_id: "abcd", status: "nonsense", wire_proxy_mm: -1, verdict: "beat", operator: "openai", extra: 1 }], token: { cpu_s_remaining: -2 } } }),
-    { reachable: true, admission: "unknown", board: [{ rank: 1, class: "automation", short_id: "abcd" }], cpuSecondsLeft: null, terms: null });
+    { reachable: true, admission: "unknown", board: [{ rank: 1, class: "automation", short_id: "abcd" }], cpuSecondsLeft: null, terms: null, accepted: [] });
 });

@@ -133,8 +133,9 @@ function assertNotConfirmedPage(text, token) {
   assert.ok(!/nothing was sent/i.test(text) && !/<h1>Not sent<\/h1>/.test(text), "never claims nothing was sent");
   assert.ok(!/new link/i.test(text), "never sends the person for a new link");
   assert.equal((text.match(/<form\b/g) ?? []).length, 1);
-  assert.ok(text.includes('<form method="post" action="/agents/submit">'));
-  assert.ok(text.includes(`<input type="hidden" name="t" value="${token}">`) && text.includes(`<input type="hidden" name="l" value="${REF}">`), "the same token and layout");
+  assert.ok(text.includes('<form method="post" action="/agents/submit?again=1">'), "a press that follows an earlier one");
+  assert.ok(text.includes(`<input type="hidden" name="t" value="${token}">`) && text.includes(`<input type="hidden" name="l" value="${REF}">`)
+    && text.includes(`<input type="hidden" name="terms" value="${TERMS}">`), "the same token, layout and terms");
   assert.ok(!/<script|http-equiv/i.test(text));
 }
 
@@ -151,7 +152,7 @@ test("3. after the POST is attempted, no answer or an answer the door does not r
     assert.match(body.request_key, /^door-[0-9a-f]{32}$/);
     assert.deepEqual(body.retry, { method: "POST", url: `${BASE}/agents/submit`, content_type: "application/json", body: { t: token, layout: REF, request_key: body.request_key } });
     assert.ok(!/nothing was sent/i.test(r.text) && !/new link/i.test(r.text));
-    const page = await s.go("/agents/submit", postForm(`t=${token}&l=${encodeURIComponent(REF)}`));
+    const page = await s.go("/agents/submit", postForm(`t=${token}&l=${encodeURIComponent(REF)}&terms=${encodeURIComponent(TERMS)}`));
     assert.equal(page.status, status);
     assertNotConfirmedPage(page.text, token);
     // Retrying is the same request: the intake sees the same request key every time.
@@ -168,7 +169,7 @@ test("3. a timeout after the POST is 'not confirmed' too (504), with the key to 
   const calls = installApi(t, { submit: (call) => new Promise((_, reject) => call.signal.addEventListener("abort", () => reject(new Error("aborted")))) });
   for (const form of [false, true]) {
     const before = submits(calls).length;
-    const pending = setup().go("/agents/submit", form ? postForm(`t=${token}&l=${encodeURIComponent(REF)}`) : postJson({ t: token, layout: REF }));
+    const pending = setup().go("/agents/submit", form ? postForm(`t=${token}&l=${encodeURIComponent(REF)}&terms=${encodeURIComponent(TERMS)}`) : postJson({ t: token, layout: REF }));
     for (let i = 0; i < 400 && submits(calls).length === before; i += 1) await new Promise((resolve) => setImmediate(resolve));
     t.mock.timers.tick(8000);
     const r = await pending;
@@ -189,7 +190,7 @@ test("3. refusals before the POST still say nothing was sent, and only they do",
   const pages = [
     [setup(), postForm(`t=${expired}&l=${encodeURIComponent(REF)}`), 401],
     [setup(), postForm(`t=${token}&l=${encodeURIComponent(`${REF},1.1.0`)}`), 422],
-    [setup({ API_ORIGIN: "none" }), postForm(`t=${token}&l=${encodeURIComponent(REF)}`), 503],
+    [setup({ API_ORIGIN: "none" }), postForm(`t=${token}&l=${encodeURIComponent(REF)}&terms=${encodeURIComponent(TERMS)}`), 503],
   ];
   for (const [s, init, status] of pages) {
     const r = await s.go("/agents/submit", init);
@@ -241,7 +242,7 @@ test("3, repair review: an answer naming no outcome the door can stand behind (r
     const body = JSON.parse(r.text);
     assert.deepEqual([r.status, body.error, body.cause], [502, "delivery_unknown", "unrecognized_answer"], name);
     assert.deepEqual(body.retry, { method: "POST", url: `${BASE}/agents/submit`, content_type: "application/json", body: { t: token, layout: REF, request_key: body.request_key } }, name);
-    const page = await s.go("/agents/submit", postForm(`t=${token}&l=${encodeURIComponent(REF)}`));
+    const page = await s.go("/agents/submit", postForm(`t=${token}&l=${encodeURIComponent(REF)}&terms=${encodeURIComponent(TERMS)}`));
     assert.equal(page.status, 502, name);
     assertNotConfirmedPage(page.text, token);
     assert.ok(!/Not queued|State:/.test(page.text), `${name}: never a definite "Not queued", never a state`);
@@ -256,7 +257,7 @@ const named = (text) => /<p>State: (?!unknown\.|undefined\.)[a-z][a-z -]+\.<\/p>
 
 test("3, repair review: the intake's own outcomes stay definite: a run in every lifecycle state, a refusal in every contract code, its token refusals", async (t) => {
   const token = await mint();
-  const form = postForm(`t=${token}&l=${encodeURIComponent(REF)}`);
+  const form = postForm(`t=${token}&l=${encodeURIComponent(REF)}&terms=${encodeURIComponent(TERMS)}`);
   assert.equal(LIFECYCLE.length, 12);
   assert.equal(GROUP_OF.size, 48);
   // A run the intake holds: 202 when new, 200 when the same request comes again, in any state but rejected.

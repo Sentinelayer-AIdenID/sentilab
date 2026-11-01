@@ -18,13 +18,18 @@
 //   POST arrival  {class, operator, purpose?, nonce?}: the intake stamps the time and derives short_id (4 hex of
 //                 sha256(nonce)); nothing else about a visitor is sent
 //   GET  status/<run_id> with x-door-nonce, and board (the board call from the ENGRAM view also sends x-door-nonce)
-// The public /api proxy strips x-door-* from visitors' requests and drops a Referer that carries a token; every response
-// to a request whose URL can carry a token is no-referrer and private, no-store, no-transform (carriesToken,
-// protectToken). The terms version a submission carries is the highest of the intake's board terms.accepted_versions
-// (the signed manifest's); without one the door takes no submissions. The submit body is read by the contract's strict
-// JSON reader (strict-json.js). Refusals before the POST say nothing was sent and use the intake's vocabulary:
-// {schema: "sentilab-door-submit/1", state: "rejected", codes}. Once the POST has been attempted, only the intake's own
-// answer counts: anything else is delivery_unknown, with the same request key and the same idempotent retry.
+// The public /api proxy strips x-door-* from visitors' requests and drops a Referer that carries a token, and filters
+// the intake's open feeds by their decoded path; every response to a request whose URL can carry a token is private,
+// no-store, no-transform and no-referrer (carriesToken, protectToken), except that a page holding the submit form is
+// strict-origin (render.js referrerPolicyFor), which still sends no path or query. A form press carries the terms its
+// page showed and is sent under exactly those while the intake's board (terms.accepted_versions, the signed manifest's)
+// still accepts them, else the person is asked to confirm the current terms; a JSON submission carries the highest
+// accepted version; without one the door takes no submissions. The submit body is read by the contract's strict JSON
+// reader (strict-json.js). Refusals before the POST say nothing was sent and use the intake's vocabulary:
+// {schema: "sentilab-door-submit/1", state: "rejected", codes}; a form press that follows an earlier press
+// (/agents/submit?again=1) says instead that the earlier press may already be queued. Once the POST has been attempted,
+// only the intake's own answer counts: anything else is delivery_unknown, with the same request key and the same
+// idempotent retry.
 // Rate limits: DOOR_NONCE_LIMITER per token and DOOR_IP_LIMITER per client IP prefix on submit, DOOR_READ_LIMITER per
 // prefix on the routes that call the intake; each falls back to an in-memory window per isolate when its binding is
 // absent. The intake's own quotas (CPU-seconds per token, the global grant, the bounded queue) are the hard caps. With
@@ -39,7 +44,8 @@ import { observationFor } from "../vendor/aidenid-registry/agent-registry.mjs";
 import { BOARD_METRIC, DIES, PURPOSE_IDS } from "./case.js";
 import { agentView, gateZeroFrom } from "./engram.js";
 import { parseCompact, parseDies, PREVIEW_LABEL, previewViolations, wireProxyMm } from "./layout.js";
-import { confirmHtml, notConfirmedHtml, problemHtml, resultHtml, tokenHtml, tokenJson, tokenMarkdown, wallHtml, wallJson, wallMarkdown } from "./render.js";
+import { confirmHtml, notConfirmedHtml, pressRefusedHtml, problemHtml, referrerPolicyFor, resultHtml, termsChangedHtml, tokenHtml, tokenJson, tokenMarkdown,
+  wallHtml, wallJson, wallMarkdown } from "./render.js";
 import { strictJson } from "./strict-json.js";
 import { scopeError, sha256Hex, TOKEN_PATTERN, usableKey, verifyToken, mintToken } from "./token.js";
 
@@ -89,7 +95,8 @@ function respond(request, status, body, type, extra = {}) {
   return new Response(request.method === "HEAD" ? null : body, { status, headers: { ...BASE_HEADERS, "content-type": type, ...extra } });
 }
 const json = (request, status, value, extra) => respond(request, status, `${JSON.stringify(value, null, 1)}\n`, "application/json; charset=utf-8", extra);
-const html = (request, status, text, extra) => respond(request, status, text, "text/html; charset=utf-8", extra);
+// A page holding the submit form is strict-origin, header and meta tag alike (render.js referrerPolicyFor).
+const html = (request, status, text, extra) => respond(request, status, text, "text/html; charset=utf-8", { "referrer-policy": referrerPolicyFor(text), ...extra });
 const markdown = (request, status, text) => respond(request, status, text, "text/markdown; charset=utf-8");
 const refuse = (request, format, status, body, extra) => (format === "html"
   ? html(request, status, problemHtml(body.error === "refused" ? "layout" : body.error, (body.codes ?? []).filter((c) => REASON_CODES.has(c.code))), extra)
@@ -126,13 +133,24 @@ export function carriesToken(url) {
 // The status, body and every other header are left as they are.
 export function protectToken(response) {
   const headers = new Headers(response.headers);
-  headers.set("referrer-policy", "no-referrer");
+  // A door page holding the submit form keeps its strict-origin (no path, no query); everything else is no-referrer.
+  if (headers.get("referrer-policy") !== "strict-origin") headers.set("referrer-policy", "no-referrer");
   headers.set("cache-control", AGENT_RESPONSE_CACHE);
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
 // The intake's open feeds that the public /api proxy passes on (the board, results and events the human view reads).
 export const DOOR_FEEDS = /^\/api\/open\/v1\/door\/(board|results|events)$/;
+// A path as the API routes it. The API percent-decodes a path before routing it, so /api/open/v1/door/%62oard is its
+// board and door%2Fboard its board too; the proxy's feed filter matches this decoded form. Escapes are decoded until
+// none is left (a double-encoded spelling only over-matches, which is safe); null when an escape does not decode.
+export function decodedPath(pathname) {
+  let path = pathname;
+  for (let round = 0; round < 4 && path.includes("%"); round += 1) {
+    try { path = decodeURIComponent(path); } catch { return null; }
+  }
+  return path.includes("%") ? null : path;
+}
 
 // A copy of a feed answer without any "operator" field, at any depth: the declared operator stays with the intake, as
 // the door's own routes already keep it.
@@ -150,11 +168,13 @@ export function tokenBearing(referer) {
 }
 
 // The highest of the board's accepted terms versions (the signed manifest's), or null.
+// Every well-formed version the intake's board accepts; terms is the highest of them (what a page shows and a JSON
+// submission carries), accepted the whole list (a form press may carry any one of them: the one its page showed).
 function termsFrom(value) {
   const versions = Array.isArray(value?.terms?.accepted_versions) ? value.terms.accepted_versions : [];
   const valid = versions.filter((v) => typeof v === "string" && TERMS_VERSION.test(v));
   const number = (v) => Number(/^sentilab-open-terms\/([0-9]+)@/.exec(v)[1]);
-  return valid.reduce((best, v) => (best === null || number(v) > number(best) ? v : best), null);
+  return { terms: valid.reduce((best, v) => (best === null || number(v) > number(best) ? v : best), null), accepted: valid };
 }
 
 // ── rate limits ───────────────────────────────────────────────────────────────────────────────────────────────────
@@ -249,7 +269,7 @@ export function readBoard(answer) {
     return [entry];
   }).slice(0, 10).map((entry, index) => ({ rank: index + 1, ...entry }));
   const left = value?.token?.cpu_s_remaining;
-  return { reachable: value !== null, admission, board, cpuSecondsLeft: finite(left, 0, 100000) ? left : null, terms: termsFrom(value) };
+  return { reachable: value !== null, admission, board, cpuSecondsLeft: finite(left, 0, 100000) ? left : null, ...termsFrom(value) };
 }
 
 let boardCache = null;
@@ -481,10 +501,12 @@ function fieldsOf(text, form) {
   if (form) {
     const params = new URLSearchParams(text);
     const keys = [...params.keys()];
-    if (keys.some((k) => k !== "t" && k !== "l")) return { codes: [{ code: "unknown_field", path: "" }] };
+    if (keys.some((k) => !["t", "l", "terms"].includes(k))) return { codes: [{ code: "unknown_field", path: "" }] };
     if (params.getAll("t").length !== 1) return { codes: [fieldError("/t", "required")] };
     if (params.getAll("l").length !== 1) return { codes: [fieldError("/l", "required")] };
-    return { t: params.get("t"), layout: params.get("l"), requestKey: null };
+    if (params.getAll("terms").length > 1) return { codes: [fieldError("/terms", "maxItems")] };
+    // The terms the press's page showed (null when it named none): checked against the intake's board in submit.
+    return { t: params.get("t"), layout: params.get("l"), terms: params.get("terms"), requestKey: null };
   }
   // The contract's strict reader, before any field is chosen: duplicate keys at any depth, too-deep bodies and
   // non-finite numbers are refused with its codes, never resolved by keeping the last value.
@@ -541,13 +563,26 @@ function sameSiteForm(request, url) {
 // response keeps the same token, layout and request key, and offers the same idempotent retry (an identical retry
 // returns the same run and is charged once). It never says nothing was sent and never asks for a new link: a new
 // token is a new principal, and the same layout under it would be a second, separately charged submission.
-function deliveryUnknown(request, format, url, { token, compact, requestKey, cause }) {
+function deliveryUnknown(request, format, url, { token, compact, terms, requestKey, cause }) {
   const status = cause === "timeout" ? 504 : 502;
-  if (format === "html") return html(request, status, notConfirmedHtml({ token, compact, cause }));
+  if (format === "html") return html(request, status, notConfirmedHtml({ token, compact, terms, cause }));
   return json(request, status, { error: "delivery_unknown", cause,
     detail: "The layout may or may not have reached the scorer intake. Send the same request again (same token, layout and request_key): an identical retry returns the same run and is charged once.",
     request_key: requestKey,
     retry: { method: "POST", url: `${url.origin}/agents/submit`, content_type: "application/json", body: { t: token, layout: compact, request_key: requestKey } } });
+}
+
+// A form press that followed an earlier press, refused before its POST (render.js pressRefusedHtml): the refusal's
+// status and Retry-After, and the page that names the earlier press and offers its check.
+function pressRefused(request, response, { error, codes, held }) {
+  const retry = response.headers.get("retry-after");
+  return html(request, response.status, pressRefusedHtml({ error, codes, held }), retry ? { "retry-after": retry } : undefined);
+}
+
+// Which token refusal authorize gave, for that page: the token verified again (cheap), never guessed from a status.
+async function tokenRefusal(env, url, value) {
+  const verdict = await verifyToken(usableKey(env), value, { site: url.host, now: Date.now() });
+  return verdict.ok ? "token_scope" : verdict.error;
 }
 
 async function submit(request, env, ctx, url) {
@@ -556,23 +591,39 @@ async function submit(request, env, ctx, url) {
   const format = form ? "html" : "json";
   if (!form && !/^application\/json(;|$)/.test(type)) return refuse(request, format, 415, { error: "unsupported_media_type", accepted: ["application/json", "application/x-www-form-urlencoded"] });
   if (form && !sameSiteForm(request, url)) return refuse(request, format, 403, { error: "cross_site" });
-  if (!usableKey(env)) return closed(request, format);
-  if (!(await allow(env, "DOOR_IP_LIMITER", `submit:${prefixOf(request)}`))) return submitLimited(request, format);
+  // A form press from a page that follows an earlier press (its form posts to /agents/submit?again=1): that press may
+  // already be queued. A refusal of this press before its POST then says so, never "Nothing was sent", and offers the
+  // same request again whenever this press's token, layout and terms verify (held). For such a press the prefix limit
+  // is decided first but applied after the body is verified, so that the refusal can offer it back.
+  const earlier = form && url.searchParams.get("again") === "1";
+  let held = null;
+  const stop = (response, error, codes = []) => (earlier ? pressRefused(request, response, { error, codes, held }) : response);
+  if (!usableKey(env)) return stop(closed(request, format), "door_closed");
+  const prefixAllowed = await allow(env, "DOOR_IP_LIMITER", `submit:${prefixOf(request)}`);
+  if (!prefixAllowed && !earlier) return submitLimited(request, format);
   const body = await readBody(request, form ? MAX_FORM_BYTES : MAX_JSON_BYTES);
-  if (!("text" in body)) return rejected(request, format, [body.code]);
+  if (!("text" in body)) return stop(rejected(request, format, [body.code]), "layout", [body.code]);
   const fields = fieldsOf(body.text, form);
-  if (fields.codes) return rejected(request, format, fields.codes);
+  if (fields.codes) return stop(rejected(request, format, fields.codes), "layout", fields.codes);
   const auth = await authorize(request, env, url, [fields.t], "place-chiplets", format);
-  if (auth instanceof Response) return auth;
+  if (auth instanceof Response) return stop(auth, earlier ? await tokenRefusal(env, url, fields.t) : null);
   const parsed = typeof fields.layout === "string" ? parseCompact(fields.layout) : parseDies(fields.layout);
-  if (!parsed.ok) return rejected(request, format, parsed.codes);
+  if (!parsed.ok) return stop(rejected(request, format, parsed.codes), "layout", parsed.codes);
+  if (earlier && TERMS_VERSION.test(fields.terms ?? "")) held = { token: auth.token, compact: parsed.compact, terms: fields.terms };
+  if (!prefixAllowed) return stop(submitLimited(request, format), "rate_limited");
   // The terms the intake's board names (the signed manifest's). Unreachable: nothing is sent, and the door says so.
   const live = await sharedBoard(env, url);
-  if (!live.reachable) return refuse(request, format, 503, { error: "intake_unavailable" });
-  const terms = live.terms;
-  if (!terms) return rejected(request, format, [{ code: "not_open_yet" }]);
+  if (!live.reachable) return stop(refuse(request, format, 503, { error: "intake_unavailable" }), "intake_unavailable");
+  if (!live.terms) return stop(rejected(request, format, [{ code: "not_open_yet" }]), "door_closed");
+  // A form press is sent under exactly the terms its page showed, while the intake still accepts them. Otherwise
+  // (other terms, or none) nothing is sent: the person is shown the terms that apply now and asked to confirm again.
+  // A JSON submission carries the highest accepted version, as the ENGRAM view states.
+  if (form && !live.accepted.includes(fields.terms)) {
+    return html(request, 409, termsChangedHtml({ token: auth.token, compact: parsed.compact, terms: live.terms, again: earlier }));
+  }
+  const terms = form ? fields.terms : live.terms;
   // Per token, what counts is what would reach the intake: refusals above cost it nothing (the prefix limit bounds them).
-  if (!(await allow(env, "DOOR_NONCE_LIMITER", `submit:${auth.claims.nonce}`))) return submitLimited(request, format);
+  if (!(await allow(env, "DOOR_NONCE_LIMITER", `submit:${auth.claims.nonce}`))) return stop(submitLimited(request, format), "rate_limited");
   const requestKey = fields.requestKey ?? `door-${(await sha256Hex(`sentilab-door-request/1|${auth.claims.principal}|${parsed.compact}`)).slice(0, 32)}`;
   const who = await identityFor(request, env);
   const { purpose, case: caseId, nonce, exp } = auth.claims;
@@ -580,14 +631,14 @@ async function submit(request, env, ctx, url) {
     class: CLASSES.includes(who?.triage?.class) ? who.triage.class : "unknown", operator: OPERATORS.includes(who?.operator) ? who.operator : "unknown" };
   const answer = await callApi(env, API.submit, { method: "POST", body: payload, host: url.host, timeoutMs: 8000 });
   // Not attempted (no intake configured): nothing was sent.
-  if (!answer.attempted) return refuse(request, format, 503, { error: "intake_unavailable" });
+  if (!answer.attempted) return stop(refuse(request, format, 503, { error: "intake_unavailable" }), "intake_unavailable");
   // Only an outcome the door can name is definite. Anything else after the POST (no answer, a timeout, a crash,
   // another service, or a submit-schema answer that names no known outcome) cannot say whether the layout was queued:
   // delivery is unknown, and the same request is the safe retry.
   const outcome = knownOutcome(answer);
   if (outcome === null) {
     const cause = !answer.ok ? (answer.reason === "timeout" ? "timeout" : "no_answer") : "unrecognized_answer";
-    return deliveryUnknown(request, format, url, { token: auth.token, compact: parsed.compact, requestKey, cause });
+    return deliveryUnknown(request, format, url, { token: auth.token, compact: parsed.compact, terms, requestKey, cause });
   }
   if (form) return html(request, answer.status < 300 ? 200 : answer.status, resultHtml(url.origin, auth.token, outcome));
   return json(request, answer.status, answer.json);

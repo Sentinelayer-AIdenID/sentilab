@@ -6,7 +6,7 @@ import { withEdge } from "./edge.js";
 import { agentPathFor } from "./agent-paths.js";
 import { CSP } from "./csp.js";
 import { addHumanPageHeaders, serveAgentAsset } from "./agent-view.js";
-import { carriesToken, DOOR_FEEDS, doorRoute, handleDoor, protectToken, serveWallOrAgentVersion, tokenBearing, withoutOperators } from "./door/door.js";
+import { carriesToken, decodedPath, DOOR_FEEDS, doorRoute, handleDoor, protectToken, serveWallOrAgentVersion, tokenBearing, withoutOperators } from "./door/door.js";
 
 const HOP = ["connection", "keep-alive", "transfer-encoding", "upgrade", "host"];
 
@@ -34,6 +34,12 @@ async function proxy(request, env) {
   const origin = String(env.API_ORIGIN || "").replace(/\/+$/, "");
   if (!origin.startsWith("https://")) return new Response("API origin not configured", { status: 503 });
   const url = new URL(request.url);
+  // The API routes a path after percent-decoding it, so the open-feed filter below matches the decoded path (every
+  // spelling of /api/open/v1/door/board is the board), and a path whose escapes do not decode goes no further.
+  const path = decodedPath(url.pathname);
+  if (path === null) {
+    return new Response(JSON.stringify({ error: "bad_path" }), { status: 400, headers: { "content-type": "application/json", "cache-control": "no-store" } });
+  }
   const headers = new Headers(request.headers);
   for (const h of HOP) headers.delete(h);
   // The agent door's token claims reach the API only from the door's own calls (door/door.js), never from a visitor.
@@ -49,7 +55,7 @@ async function proxy(request, env) {
   const upstream = await fetch(origin + url.pathname + url.search, init);
   const out = new Headers(upstream.headers);
   if (!out.has("cache-control")) out.set("cache-control", "no-store");
-  if (request.method === "GET" && DOOR_FEEDS.test(url.pathname)) return doorFeed(upstream, out);
+  if (request.method === "GET" && DOOR_FEEDS.test(path)) return doorFeed(upstream, out);
   return new Response(upstream.body, { status: upstream.status, headers: out });
 }
 
