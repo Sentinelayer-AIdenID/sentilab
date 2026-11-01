@@ -132,10 +132,10 @@ def read_json_bytes(data: bytes):
         raise InputError("invalid JSON input") from None
 
 
-def snapshot_inputs(protocol_path: Path, prompt_paths: dict[str, Path], order_path: Path, packets_root: Path) -> Inputs:
+def snapshot_inputs(protocol_path: Path, prompt_paths: dict[str, Path], order_path: Path | None, packets_root: Path | None) -> Inputs:
     """Read input bytes once so every job uses the same review packet."""
     protocol_bytes = protocol_path.read_bytes()
-    order_bytes = order_path.read_bytes()
+    order_bytes = order_path.read_bytes() if order_path is not None else b"[]"
     prompt_bytes = {name: path.read_bytes() for name, path in prompt_paths.items()}
     try:
         prompts = {name: data.decode("utf-8") for name, data in prompt_bytes.items()}
@@ -144,10 +144,10 @@ def snapshot_inputs(protocol_path: Path, prompt_paths: dict[str, Path], order_pa
     protocol, order = read_json_bytes(protocol_bytes), read_json_bytes(order_bytes)
     if not isinstance(protocol, dict) or not isinstance(order, list):
         raise InputError("protocol must be an object and order must be a list")
-    if packets_root.is_symlink() or not packets_root.is_dir():
+    if packets_root is not None and (packets_root.is_symlink() or not packets_root.is_dir()):
         raise InputError("packets root must be a regular directory")
     packets, packet_hashes, tree = {}, {}, {}
-    for directory in sorted(packets_root.iterdir()):
+    for directory in sorted(packets_root.iterdir()) if packets_root is not None else []:
         message, hashes = read_packet(directory)
         packets[directory.name], packet_hashes[directory.name] = message, hashes
         tree.update({f"{directory.name}/{name}": digest for name, digest in hashes.items()})
@@ -735,7 +735,8 @@ FIXED_RULES = {
 }
 
 
-def validate_inputs(inputs: Inputs, prompt_paths: dict[str, Path], *, dry_run: bool, pilot: bool) -> None:
+def validate_inputs(inputs: Inputs, prompt_paths: dict[str, Path], *, dry_run: bool, pilot: bool,
+                    pilot_only: bool = False) -> None:
     protocol = inputs.protocol
     required = set(FIXED_RULES) | {"deployment", "max_tokens_per_reply", "max_usd", "prices_per_million",
                                    "prompt_files", "initial_prompt_tokens", "pilot_arms"}
@@ -754,7 +755,7 @@ def validate_inputs(inputs: Inputs, prompt_paths: dict[str, Path], *, dry_run: b
     arms = protocol["pilot_arms"]
     if not isinstance(arms, list) or any(not isinstance(arm, str) or arm not in {"A", "B", "C"} for arm in arms) or len(set(arms)) != len(arms) or (pilot and not arms):
         raise InputError("pilot arms must be explicitly selected without duplicates")
-    if not inputs.order:
+    if not inputs.order and not pilot_only:
         raise InputError("order must contain study jobs")
     seen, packet_set = set(), set()
     for job in inputs.order:
@@ -769,9 +770,9 @@ def validate_inputs(inputs: Inputs, prompt_paths: dict[str, Path], *, dry_run: b
         if not isinstance(job["arm"], str) or job["arm"] not in {"A", "B", "C"} or not isinstance(job["packet"], str) or job["packet"] not in inputs.packets or type(job["repeat"]) is not int or job["repeat"] < 1:
             raise InputError("order contains an invalid arm, packet or repeat")
         packet_set.add(job["packet"])
-    if packet_set != set(inputs.packets) or (not dry_run and len(packet_set) != 10):
+    if packet_set != set(inputs.packets) or (not dry_run and not pilot_only and len(packet_set) != 10):
         raise InputError("live study requires exactly ten packets; order must cover the packet directory")
-    jobs = inputs.order + ([{"job_id": "pilot-" + arm, "arm": arm} for arm in arms] if pilot else [])
+    jobs = ([] if pilot_only else inputs.order) + ([{"job_id": "pilot-" + arm, "arm": arm} for arm in arms] if pilot else [])
     bounds = protocol["initial_prompt_tokens"]
     if not isinstance(bounds, dict):
         raise InputError("initial prompt bounds must be supplied for each job and agent")
@@ -802,7 +803,7 @@ class DryRunModel:
 
 
 def run_jobs(inputs: Inputs, *, output: Path, engine: RequestEngine, parallel: int,
-             pilot_message: str | None = None) -> None:
+             pilot_message: str | None = None, pilot_only: bool = False) -> None:
     """Start jobs in sealed order, with at most six arm workers in flight."""
     if type(parallel) is not int or not 1 <= parallel <= 6:
         raise InputError("parallel must be between one and six")
@@ -819,6 +820,8 @@ def run_jobs(inputs: Inputs, *, output: Path, engine: RequestEngine, parallel: i
         for arm in inputs.protocol["pilot_arms"]:
             job = {"job_id": "pilot-" + arm, "arm": arm, "packet": "pilot", "repeat": 1}
             run_arm(job, **arguments(job, pilot_message, "pilot"))
+    if pilot_only:
+        return
     active = set()
     with ThreadPoolExecutor(max_workers=parallel) as pool:
         for job in inputs.order:
@@ -839,10 +842,11 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--protocol", type=Path, required=True)
     parser.add_argument("--prompt", action="append", default=[], metavar="NAME=PATH")
-    parser.add_argument("--order", type=Path, required=True)
-    parser.add_argument("--packets", type=Path, required=True)
+    parser.add_argument("--order", type=Path)
+    parser.add_argument("--packets", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--pilot-packet", type=Path)
+    parser.add_argument("--pilot-only", action="store_true")
     parser.add_argument("--parallel", type=int, default=6)
     parser.add_argument("--freeze", type=Path)
     parser.add_argument("--print-freeze", action="store_true")
@@ -851,6 +855,13 @@ def main(argv=None) -> int:
     try:
         if not 1 <= args.parallel <= 6:
             raise InputError("parallel must be between one and six")
+        if args.pilot_only:
+            if args.pilot_packet is None:
+                raise InputError("--pilot-only requires --pilot-packet")
+            if (args.order is None) != (args.packets is None):
+                raise InputError("supply both --order and --packets to check pilot separation")
+        elif args.order is None or args.packets is None:
+            raise InputError("--order and --packets are required for the full study")
         prompts = {}
         for argument in args.prompt:
             name, separator, path = argument.partition("=")
@@ -858,7 +869,8 @@ def main(argv=None) -> int:
                 raise InputError("prompts must be distinct NAME=PATH arguments")
             prompts[name] = Path(path)
         inputs = snapshot_inputs(args.protocol, prompts, args.order, args.packets)
-        validate_inputs(inputs, prompts, dry_run=args.dry_run, pilot=args.pilot_packet is not None)
+        validate_inputs(inputs, prompts, dry_run=args.dry_run, pilot=args.pilot_packet is not None,
+                        pilot_only=args.pilot_only)
         pilot_message, pilot_freeze = None, None
         if args.pilot_packet is not None:
             sealed = [inputs.packet_hashes[job["packet"]] for job in inputs.order]
@@ -879,7 +891,7 @@ def main(argv=None) -> int:
                       "turn_rule": {"order": [1, 2, 3], "writer": 1, "skip_stopped_agents": True},
                       "retry_rule": {"limit": 1, "delay_seconds": 10, "before_first_success_only": True,
                                      "evidenced_presend_only": True},
-                      "dry_run": args.dry_run, "pilot": pilot_freeze}
+                      "dry_run": args.dry_run, "pilot": pilot_freeze, "pilot_only": args.pilot_only}
         credential = os.environ.get("STUDY_API_KEY", "")
         if credential and contains_credential([descriptor, inputs.prompts, inputs.packets, pilot_message], credential):
             raise InputError("credential found in study inputs")
@@ -888,11 +900,11 @@ def main(argv=None) -> int:
         if args.print_freeze:
             print(canonical(descriptor).decode("utf-8"))
             return 0
-        if args.freeze is None:
+        if args.freeze is None and not args.pilot_only:
             raise InputError("a matching --freeze file is required to run")
         if args.output is None:
             raise InputError("--output is required to run")
-        packet_roots = [args.packets] + ([args.pilot_packet] if args.pilot_packet else [])
+        packet_roots = [root for root in (args.packets, args.pilot_packet) if root is not None]
         if any(args.output.resolve().is_relative_to(root.resolve()) for root in packet_roots):
             raise InputError("output must be outside all packet directories")
         model = DryRunModel() if args.dry_run else HTTPModel.from_env()
@@ -900,7 +912,8 @@ def main(argv=None) -> int:
         write_json_exclusive(args.output / "FREEZE.json", descriptor)
         ledger = Ledger(inputs.protocol["max_usd"], inputs.protocol["prices_per_million"])
         engine = RequestEngine(model, ledger, max_tokens_per_reply=inputs.protocol["max_tokens_per_reply"])
-        run_jobs(inputs, output=args.output, engine=engine, parallel=args.parallel, pilot_message=pilot_message)
+        run_jobs(inputs, output=args.output, engine=engine, parallel=args.parallel,
+                 pilot_message=pilot_message, pilot_only=args.pilot_only)
         finish_run(args.output, ledger)
         return 0
     except InputError as error:
