@@ -1,0 +1,3 @@
+PLACEHOLDER ONLY. Replace this text with the operator's approved study prompt.
+The runner reads each prompt from its explicitly named, sealed input file.
+This example is not an approved participant instruction.

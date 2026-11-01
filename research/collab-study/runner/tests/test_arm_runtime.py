@@ -1,0 +1,218 @@
+"""Exercise complete arm loops against the real request engine and output writer."""
+import json
+import threading
+
+import pytest
+
+from test_study_runner import FakeClock, ScriptedModel, job_metadata, response, runner
+
+
+def run_arm(tmp_path, arm, model, *, clock=None, max_usd='10', bounds=None):
+    clock = clock or FakeClock()
+    ledger = runner.Ledger(max_usd, {'input': '1', 'cached_input': '0.5', 'output': '2'})
+    engine = runner.RequestEngine(model, ledger, max_tokens_per_reply=100,
+                                  clock=clock, sleep=clock.sleep)
+    output = tmp_path / 'output'
+    runner.claim_output(output)
+    runner.run_arm(job_metadata(arm), output=output, engine=engine,
+                   system_prompt='sealed system', packet_message='five packet files',
+                   continue_prompt='sealed continue',
+                   initial_prompt_bounds=bounds or {1: 100, 2: 100, 3: 100},
+                   c_turn_prompts={n: f'sealed instruction for agent {n}' for n in (1, 2, 3)})
+    runner.finish_run(output, ledger)
+    job = json.loads((output / 'job-one/job.json').read_text())
+    findings = json.loads((output / 'job-one/findings.json').read_text())
+    return job, findings, ledger.report()
+
+
+def final(evidence):
+    return 'FINAL\n' + json.dumps({'file': 'model.py', 'location': '1',
+                                   'defect': 'fake defect', 'evidence': evidence})
+
+
+def test_a_preserves_own_history_and_sealed_continue_until_final(tmp_path):
+    model = ScriptedModel(response('private thoughts'), response(final('A result')))
+    job, findings, accounting = run_arm(tmp_path, 'A', model)
+    assert findings['findings'][0]['evidence'] == 'A result'
+    assert job['agents']['1']['cap'] == 120000
+    assert job['agents']['1']['charged_tokens'] == 240
+    assert job['agents']['1']['stop_reason'] == 'final'
+    assert model.calls[0]['messages'] == [
+        {'role': 'system', 'content': 'sealed system'},
+        {'role': 'user', 'content': 'five packet files'}]
+    assert model.calls[1]['messages'] == model.calls[0]['messages'] + [
+        {'role': 'assistant', 'content': 'private thoughts'},
+        {'role': 'user', 'content': 'sealed continue'}]
+    assert accounting['scopes']['study']['attempts'] == 2
+
+
+def test_b_agents_are_concurrent_and_never_see_another_agents_text(tmp_path):
+    class IsolatedModel:
+        def __init__(self):
+            self.barrier = threading.Barrier(3)
+            self.lock = threading.Lock()
+            self.conversations = {}
+
+        def complete(self, messages, **kwargs):
+            identity = threading.get_ident()
+            with self.lock:
+                history = self.conversations.setdefault(identity, [])
+                history.append(json.loads(json.dumps(messages)))
+            if len(history) == 1:
+                self.barrier.wait(timeout=5)
+                return response(f'private-{identity}')
+            return response(final(f'result-{identity}'))
+
+    model = IsolatedModel()
+    job, findings, accounting = run_arm(tmp_path, 'B', model)
+    assert set(findings) == {'1', '2', '3'}
+    assert len({value['findings'][0]['evidence'] for value in findings.values()}) == 3
+    assert len(model.conversations) == 3
+    for identity, calls in model.conversations.items():
+        assert len(calls) == 2
+        assert calls[0] == [{'role': 'system', 'content': 'sealed system'},
+                            {'role': 'user', 'content': 'five packet files'}]
+        assert calls[1][2:] == [{'role': 'assistant', 'content': f'private-{identity}'},
+                               {'role': 'user', 'content': 'sealed continue'}]
+    assert [agent['cap'] for agent in job['agents'].values()] == [40000] * 3
+    assert [agent['charged_tokens'] for agent in job['agents'].values()] == [240] * 3
+    assert accounting['scopes']['study']['attempts'] == 6
+    emitted = [json.loads(line) for line in (tmp_path / 'output/job-one/emitted_sets.jsonl').read_text().splitlines()]
+    assert len(emitted) == 3
+    assert {row['agent'] for row in emitted} == {1, 2, 3}
+    assert all(row['set_index'] == 0 and row['kind'] == 'FINAL' for row in emitted)
+    assert job['history_complete'] is True
+
+
+def test_c_round_robin_shares_every_labelled_reply_and_only_writer_final_ends(tmp_path):
+    replies = ['writer analysis', final('nonwriter'), 'third analysis', final('writer')]
+    model = ScriptedModel(*(response(text) for text in replies))
+    job, findings, accounting = run_arm(tmp_path, 'C', model)
+    assert findings['findings'][0]['evidence'] == 'writer'
+    assert [row['agent'] for row in accounting['attempts']] == [1, 2, 3, 1]
+    assert [agent['charged_tokens'] for agent in job['agents'].values()] == [240, 120, 120]
+    for turn, call in enumerate(model.calls):
+        instruction = f'sealed instruction for agent {turn % 3 + 1}'
+        expected = [{'role': 'system', 'content': 'sealed system'}]
+        if turn < 3:
+            shared = [f'Agent {i + 1}:\n{text}' for i, text in enumerate(replies[:turn])]
+            expected.append({'role': 'user', 'content': '\n\n'.join(['five packet files', instruction, *shared])})
+        else:
+            expected.extend([
+                {'role': 'user', 'content': 'five packet files\n\nsealed instruction for agent 1'},
+                {'role': 'assistant', 'content': 'Agent 1:\n' + replies[0]},
+                {'role': 'user', 'content': f'Agent 2:\n{replies[1]}\n\nAgent 3:\n{replies[2]}\n\n{instruction}'}])
+        assert call['messages'] == expected
+
+
+def test_c_skips_exhausted_agents_and_falls_back_without_writer_final(tmp_path):
+    model = ScriptedModel(response('one', prompt=39800, completion=100),
+                          response('two'), response('three', prompt=39800, completion=100),
+                          response(final('nonwriter'), prompt=39800, completion=100))
+    job, findings, accounting = run_arm(tmp_path, 'C', model)
+    assert [row['agent'] for row in accounting['attempts']] == [1, 2, 3, 2]
+    assert findings == runner.parse_final(final('nonwriter'))
+    assert job['selection'] == {'rule': 'last_emitted_set', 'agent': 2, 'set_index': 0, 'kind': 'FINAL'}
+    assert {agent['stop_reason'] for agent in job['agents'].values()} == {'token_cap'}
+
+
+@pytest.mark.parametrize('arm', ['A', 'B', 'C'])
+def test_arm_checks_global_dollar_cap_before_any_model_call(tmp_path, arm):
+    model = ScriptedModel()
+    job, findings, accounting = run_arm(tmp_path, arm, model, max_usd='0.00029')
+    assert model.calls == []
+    assert {agent['stop_reason'] for agent in job['agents'].values()} == {'dollar_cap'}
+    assert accounting['stop_reason'] == 'dollar_cap'
+    assert accounting['grand_total_usd'] == '0'
+
+
+def test_arm_deadline_is_fixed_at_fifteen_minutes_and_late_final_is_empty(tmp_path):
+    clock = FakeClock()
+
+    class LateModel:
+        def complete(self, messages, *, timeout, max_tokens):
+            assert timeout == 900
+            clock.now = 901
+            return response(final('too late'))
+
+    job, findings, accounting = run_arm(tmp_path, 'A', LateModel(), clock=clock)
+    assert findings['findings'] == []
+    assert job['agents']['1']['stop_reason'] == 'wall_time'
+    assert accounting['scopes']['study']['charged_tokens'] == 120
+
+
+def test_arm_does_not_invent_initial_prompt_bounds(tmp_path):
+    with pytest.raises(runner.InputError, match='initial prompt'):
+        run_arm(tmp_path, 'B', ScriptedModel(), bounds={1: 100})
+    assert not (tmp_path / 'output/job-one').exists()
+
+
+def test_c_prompt_reservations_include_all_three_replies_between_turns(tmp_path):
+    # Agent 1's next request would include its own reply and both peers' replies.
+    model = ScriptedModel(*(response('reviewing', prompt=19860 + 100 * turn, completion=100)
+                            for turn in range(6)))
+    job, _, accounting = run_arm(tmp_path, 'C', model, bounds={n: 19860 for n in (1, 2, 3)})
+    assert not job['overspend_limit_exceeded']
+    assert all(agent['charged_tokens'] <= agent['cap'] + 100 for agent in job['agents'].values())
+    assert len(model.calls) == 3
+    assert [row['prompt_bound'] for row in accounting['attempts']] == [19860, 19960, 20060]
+
+
+@pytest.mark.parametrize('arm', ['A', 'B', 'C'])
+@pytest.mark.parametrize('before_first_call', [True, False])
+def test_dollar_stopped_history_is_unobserved_with_stop_reason(tmp_path, arm, before_first_call):
+    model = ScriptedModel(*(response('interim') for _ in range(3)))
+    job, _, _ = run_arm(tmp_path, arm, model, max_usd='0.00029' if before_first_call else '0.0004')
+    assert job['history_complete'] is False
+    assert job['run_stop_reason'] == 'dollar_cap'
+    assert {agent['stop_reason'] for agent in job['agents'].values()} == {'dollar_cap'}
+    assert bool(model.calls) is not before_first_call
+
+
+def test_c_messages_alternate_roles_and_keep_every_shared_reply_once(tmp_path):
+    replies = [f'unique review {n}' for n in range(6)] + [final('writer done')]
+    model = ScriptedModel(*(response(text) for text in replies))
+    run_arm(tmp_path, 'C', model)
+    for turn, call in enumerate(model.calls):
+        messages = call['messages']
+        assert messages[0]['role'] == 'system'
+        assert messages[-1]['role'] == 'user'
+        assert all(left['role'] != right['role'] for left, right in zip(messages, messages[1:]))
+        combined = '\n\n'.join(message['content'] for message in messages)
+        for index, reply in enumerate(replies[:turn]):
+            assert combined.count(f'Agent {index % 3 + 1}:\n{reply}') == 1
+        for message in messages:
+            if message['role'] == 'assistant':
+                assert message['content'].startswith(f'Agent {turn % 3 + 1}:\n')
+
+
+@pytest.mark.parametrize('arm', ['A', 'B', 'C'])
+def test_complete_request_reservation_caps_long_continue_and_turn_prompts(tmp_path, arm):
+    class ByteProvider:
+        def complete(self, messages, *, max_tokens, timeout):
+            # Independent synthetic provider: UTF-8 content plus chat framing.
+            prompt = 3 + sum(8 + len(m['content'].encode('utf-8')) for m in messages)
+            return response('r' * max_tokens, prompt=prompt, completion=max_tokens)
+
+    clock = FakeClock()
+    ledger = runner.Ledger('10', {'input': '1', 'cached_input': '0.5', 'output': '2'})
+    engine = runner.RequestEngine(ByteProvider(), ledger, max_tokens_per_reply=100,
+                                  clock=clock, sleep=clock.sleep)
+    output = tmp_path / 'output'
+    runner.claim_output(output)
+    runner.run_arm(job_metadata(arm), output=output, engine=engine,
+                   system_prompt='system ' * 30, packet_message='packet ' * 100,
+                   continue_prompt=('continue\n' * 100)[:748],
+                   initial_prompt_bounds={n: 1000 for n in (1, 2, 3)},
+                   c_turn_prompts={n: (f'turn {n}\n' * 400)[:2099] for n in (1, 2, 3)})
+    job = json.loads((output / 'job-one/job.json').read_text())
+    attempts = ledger.report()['attempts']
+    for number, agent in job['agents'].items():
+        rows = [row for row in attempts if row['agent'] == int(number)]
+        assert len(rows) >= 3  # Exercise accumulated prompts and multiple C cycles.
+        assert agent['stop_reason'] == 'token_cap'
+        assert agent['charged_tokens'] <= agent['cap'] + 100
+        assert all(row['prompt_bound'] >= row['usage']['prompt_tokens'] for row in rows)
+        assert agent['charged_tokens'] == sum(row['usage']['prompt_tokens'] +
+                                              row['usage']['completion_tokens'] for row in rows)
+    assert not job['overspend_limit_exceeded']
