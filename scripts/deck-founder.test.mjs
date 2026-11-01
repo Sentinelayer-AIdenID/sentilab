@@ -15,6 +15,8 @@ const require = createRequire(import.meta.url);
 const deck = require(join(FOUNDER_DECK_DIR, "deck.js"));
 const loaded = loadFounder();
 const data = buildFounderData(loaded);
+// The draft, built explicitly: the tests that describe placeholders and the DRAFT tag hold before and after the freeze.
+const draft = buildFounderData(loaded, { final: false });
 const committed = JSON.parse(readFileSync(join(FOUNDER_DECK_DIR, "deck-data.json"), "utf8"));
 // A build of a changed copy of the source, for the refusal tests.
 const variant = (mutate, metrics = loaded.metrics) => {
@@ -44,12 +46,13 @@ test("the talk fits three minutes at 150 words a minute, transitions included; m
   const u = data.budget;
   assert.equal(u.talkWords, data.slides.filter((s) => s.main).reduce((a, s) => a + s.notes.words, 0));
   assert.ok(u.totalSeconds <= 200, `${u.totalSeconds} s`); // 3:00 to 3:20, Carter's slot (57411): 3-4 minutes of talk, then the demo
-  assert.deepEqual([u.talkWords, u.talkSeconds, u.transitionSeconds, u.totalSeconds], [382, 152.8, 15, 167.8]);
+  const d = draft.budget;
+  assert.deepEqual([d.talkWords, d.talkSeconds, d.transitionSeconds, d.totalSeconds], [382, 152.8, 15, 167.8]);
   assert.throws(() => variant((v) => { v.slides[0].say += " and then".repeat(50); }), (e) => e instanceof FounderError && /over the 200 s cap/.test(e.message));
   // A placeholder is one word, read or not, so filling it in does not move the clock.
-  assert.equal(slide(data, "invite").notes.words, countWords("We're inviting agents on Moltbook: N votes, N visits, N passed."));
+  assert.equal(slide(draft, "invite").notes.words, countWords("We're inviting agents on Moltbook: N votes, N visits, N passed."));
   // v4-short: two minutes of talk, transitions included, then the demo.
-  const short = buildFounderData(loaded, { slot: "2min" });
+  const short = buildFounderData(loaded, { slot: "2min", final: false });
   assert.deepEqual(short.slides.filter((x) => x.main).map((x) => x.id), SHORT);
   assert.deepEqual([short.budget.talkWords, short.budget.talkSeconds, short.budget.transitionSeconds, short.budget.totalSeconds], [247, 98.8, 10, 108.8]);
   // The cut slides lead the backup, then the backup pages.
@@ -161,13 +164,13 @@ test("claims the talk may not make, and numbers nothing declares, stop the build
 
 test("a number not measured yet shows \"measuring…\" and is listed to fill in; METRICS.json fills it", () => {
   const want = ["moltbook.post_votes", "door.visits", "door.agents_passed", "view.agent_bytes"];
-  assert.deepEqual(data.placeholders.map((p) => p.id).sort(), [...want].sort());
-  assert.equal((html(data).match(/class="measuring"/g) ?? []).length, 4, "four measuring tiles, all on the door slide");
-  assert.equal(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8"), fillInTable(data));
+  assert.deepEqual(draft.placeholders.map((p) => p.id).sort(), [...want].sort());
+  assert.equal((html(draft).match(/class="measuring"/g) ?? []).length, 4, "four measuring tiles, all on the door slide");
+  assert.equal(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8"), fillInTable(data), "FILL-IN is the committed build's");
   for (const id of want) assert.ok(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8").includes(`\`${id}\``), id);
-  assert.match(slide(data, "invite").notes.text, /^We're inviting agents on Moltbook: \[votes on our Moltbook invitation: measuring\]/);
-  assert.doesNotMatch(shown(data, "invite") + slide(data, "invite").notes.text, /\bWe invited\b|\bour (?:Moltbook )?post\b/, "no past tense about Moltbook before the post exists");
-  assert.ok(data.deck.measuring && founderPdfName(data).endsWith("-draft.pdf"));
+  assert.match(slide(draft, "invite").notes.text, /^We're inviting agents on Moltbook: \[votes on our Moltbook invitation: measuring\]/);
+  assert.doesNotMatch(shown(draft, "invite") + slide(draft, "invite").notes.text, /\bWe invited\b|\bour (?:Moltbook )?post\b/, "no past tense about Moltbook before the post exists");
+  assert.ok(draft.deck.measuring && founderPdfName(draft).endsWith("-draft.pdf"));
   // With the metrics on file, the tiles carry them and the words read them out.
   const keys = ["moltbook.post_votes", "door.visits", "door.agents_passed", "door.view_size"];
   const byId = new Map([...loaded.metrics.byId, ...keys.map((id, k) => [id, { id, value: 100 + k, display: String(100 + k), definition: "d", scope: "s", window: "w", source: "x" }])]);
@@ -212,7 +215,7 @@ test("--final drops every number without a receipt, speaks the no-numbers line, 
     assert.ok(fin.budget.totalSeconds <= fin.budget.talkCapSeconds);
   }
   // The draft keeps the placeholders and the tag.
-  assert.match(html(data), /DRAFT · numbers still measuring/);
+  assert.match(html(draft), /DRAFT · numbers still measuring/);
   // A slide whose words need a missing number must say what to speak at the freeze instead.
   const noLine = structuredClone(reviewed);
   delete noLine.slides.find((x) => x.id === "invite").sayIfUnmeasured;
@@ -290,8 +293,8 @@ test("slide 9's QR code is read from its pixels: exactly https://sentilab.aideni
     assert.deepEqual([r.text, r.version, r.ec], ["https://sentilab.aidenid.com", 3, "M"], p);
   }
   // The slide prints the same door, and the image is the one the build checks.
-  assert.ok(slide(data, "invite").content.points.includes("The agent door: sentilab.aidenid.com"));
-  assert.equal(slide(data, "invite").content.still.id, "qr");
+  assert.ok(slide(draft, "invite").content.points.includes("The agent door: sentilab.aidenid.com"));
+  assert.equal(slide(draft, "invite").content.still.id, "qr");
   // A damaged module fails the read instead of returning other text, and a QR that reads otherwise stops the build.
   const img = decodePng(readFileSync(join(FOUNDER_DIR, "figures", Q.file)));
   const flip = { ...img, px: Buffer.from(img.px) };
@@ -323,4 +326,19 @@ test("root's rev 5 review: the timeline keeps its qualifications, help says refr
   }
   assert.match(readFileSync(scriptPath("3min"), "utf8"), /^## 8\. Check the grader before celebrating the score\. \(The point\)$/m);
   assert.match(readFileSync(scriptPath("3min"), "utf8"), /^## 10\. Whoever owns the decision layer on agent traffic\. \(Why it matters\)$/m);
+});
+
+test("V4.json's build sets the committed build's mode: \"final\" is the freeze, anything else but \"draft\" stops the build", () => {
+  const frozen = structuredClone(loaded.v4);
+  frozen.build = "final";
+  const fin = buildFounderData({ ...loaded, v4: frozen });
+  assert.equal(fin.deck.draft, false);
+  assert.doesNotMatch(html(fin), /DRAFT/);
+  assert.ok(founderPdfName(fin).endsWith("-final.pdf"));
+  // At the freeze, a number with no receipt is listed as dropped, not as still measuring.
+  assert.match(fillInTable(fin), /votes on our Moltbook invitation \(dropped at the freeze: no receipt\)/);
+  assert.doesNotMatch(fillInTable(draft), /dropped at the freeze/);
+  const odd = structuredClone(loaded.v4);
+  odd.build = "rehearsal";
+  assert.throws(() => buildFounderData({ ...loaded, v4: odd }), /V4.json build must be "draft" or "final"/);
 });

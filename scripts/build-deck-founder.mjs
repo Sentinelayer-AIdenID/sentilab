@@ -26,6 +26,9 @@ import { readQr } from "./qr-read.mjs";
 export const FOUNDER_DIR = join(PDF_DIR, "founder-v4");
 export const FOUNDER_SOURCE = join(FOUNDER_DIR, "V4.json");
 export const FOUNDER_METRICS = join(FOUNDER_DIR, "METRICS.json");
+// Numbers measured at the freeze (slide 9's door and Moltbook counts, the refreshed help count), in METRICS.json's item
+// schema; when present it is pinned by V4.json metrics.freezeSha256 and its items add to (or replace) METRICS.json's.
+export const FOUNDER_METRICS_FREEZE = join(FOUNDER_DIR, "METRICS-FREEZE.json");
 export const FOUNDER_DECK_DIR = join(DECK_ROOT, "founder-v4");
 export const FOUNDER_FIGURE_DIR = join(FOUNDER_DECK_DIR, "figures");
 export const FOUNDER_OUTPUTS = { script: join(FOUNDER_DIR, "SCRIPT.md"), fillIn: join(FOUNDER_DIR, "FILL-IN.md"), sources: join(FOUNDER_DIR, "SOURCES.md") };
@@ -115,7 +118,12 @@ export function loadFounder() {
   const bytes = readFileSync(FOUNDER_SOURCE);
   const v4 = JSON.parse(bytes.toString("utf8"));
   if (v4.schema !== "sentilab-deck-founder-source/1") throw new FounderError(`unsupported source schema ${JSON.stringify(v4.schema)}`);
-  return { v4, sourceSha256: sha256(bytes), metrics: loadMetrics() };
+  const metrics = loadMetrics();
+  const freeze = loadMetrics(FOUNDER_METRICS_FREEZE);
+  if (freeze.sha256 && v4.metrics.freezeSha256 !== freeze.sha256) throw new FounderError(`METRICS-FREEZE.json is not the file V4.json pins (${String(v4.metrics.freezeSha256).slice(0, 8)}…)`);
+  if (!freeze.sha256 && v4.metrics.freezeSha256) throw new FounderError("V4.json pins a METRICS-FREEZE.json that is not there");
+  for (const [k, m] of freeze.byId) metrics.byId.set(k, m);
+  return { v4, sourceSha256: sha256(bytes), metrics: { ...metrics, freezeSha256: freeze.sha256 } };
 }
 
 const SCIENCE = new Set(["chips", "hook", "link", "scorecard"]);
@@ -149,7 +157,8 @@ function checkTimes(s) {
 export const FOUNDER_SLOTS = ["3min", "2min"];
 // --final is the freeze: a number without a receipt is dropped from its slide (never "measuring…" on stage), and a slide
 // whose words need one speaks its sayIfUnmeasured line instead. Drafts keep the placeholders and the DRAFT tag.
-export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min", final = false } = {}) {
+export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min", final = v4.build === "final" } = {}) {
+  if (![undefined, "draft", "final"].includes(v4.build)) throw new FounderError(`V4.json build must be "draft" or "final", not ${JSON.stringify(v4.build)}`);
   if (!FOUNDER_SLOTS.includes(slot)) throw new FounderError(`--slot must be one of ${FOUNDER_SLOTS.join(", ")}`);
   const S = v4.slots[slot];
   const wanted = v4.metrics.wanted;
@@ -336,7 +345,7 @@ export function speakerScript(data, v4) {
 }
 
 export function fillInTable(data) {
-  const rows = data.placeholders.map((p) => `| ${p.where.replace(/^slide /, "")} | ${p.label} | \`${p.id}\` | ${p.need} |`);
+  const rows = data.placeholders.map((p) => `| ${p.where.replace(/^slide /, "")} | ${p.label}${p.dropped ? " (dropped at the freeze: no receipt)" : ""} | \`${p.id}\` | ${p.need} |`);
   return ["# FILL-IN: the founder deck's placeholders", "", `As of ${data.deck.cutoff}. Each shows "measuring…" until docs/sentilab/deck/founder-v4/METRICS.json carries it with its definition, scope, window and source; then rebuild and re-export.`, "",
     "| Slide | Shows | Metric id | Needed |", "|---|---|---|---|", ...(rows.length ? rows : ["| none | | | |"]), "",
     ...(data.refresh.length ? ["## Refresh at the freeze", "", "| Slide | Shows | Why |", "|---|---|---|", ...data.refresh.map((r) => `| ${r.slide} | ${r.what} | ${r.why} |`), ""] : []),
@@ -400,7 +409,7 @@ function main(args) {
   const loaded = loadFounder();
   const at = args.indexOf("--slot");
   const slot = at >= 0 ? args[at + 1] : "3min";
-  const final = args.includes("--final");
+  const final = args.includes("--final") || loaded.v4.build === "final";
   const data = buildFounderData(loaded, { slot, final });
   if (args.includes("--check")) {
     if (slot !== "3min") throw new FounderError("--check reads the committed build, which is the 3min slot");
