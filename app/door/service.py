@@ -239,13 +239,15 @@ class Door:
         if not legal:
             return refuse(found)
         # The visitor this run belongs to (root, 18:40Z): the latest arrival of the SAME pass at or before this
-        # submission, by the nonce's keyed handle, exactly as a declaration's arrival; never a short-id match.
+        # submission, by the nonce's keyed handle, exactly as a declaration's arrival; never a short-id match. Only
+        # arrivals stamped at or before `now`, the time this submission captured (its created_at), count.
         handle = (self.policy.keyed("public-visitor/1", claims["nonce"])
                   if len(self.policy.k_challenge) >= 32 else None)
         decision = self.store.admit(policy=self.policy, proposal=proposal, klass=klass, operator=operator,
                                     wire_proxy_mm=self.policy.checker.wire_proxy_mm(proposal.item["dies"]),
                                     token_exp=claims["exp"], now=now,
-                                    visit_arrival=self.store.arrival_of_pass(handle) if handle is not None else None)
+                                    visit_arrival=(self.store.arrival_of_pass(handle, at_or_before=now)
+                                                   if handle is not None else None))
         if decision["decision"] in ("rejected", "refused"):
             return self._rejected(decision["codes"], limits=decision.get("limits"), now=now)
         row, position = self.store.run(decision["run_id"])

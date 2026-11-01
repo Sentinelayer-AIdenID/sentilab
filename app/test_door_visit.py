@@ -59,6 +59,36 @@ class VisitTests(tk.DoorCase, unittest.TestCase):
         self.assertEqual([visit, visit], [items[run_id]["visit_arrival"] for run_id in runs])
         self.assertEqual({visit}, {event["visit_arrival"] for run_id in runs for event in self.run_events(run_id)})
 
+    def test_a_same_pass_arrival_stamped_after_the_submission_never_binds(self):
+        """Root's P2 on 016afa23 (his retained probe): a concurrent same-pass arrival recorded after the submission's
+        captured time (created 1793500002) must not bind to the run (created 1793500000). The pass's earlier arrival
+        binds instead, or null when it has none."""
+        def concurrent_arrival(nonce):
+            self.clock.now = tk.NOW + 2                  # recorded while the submission at tk.NOW is in flight
+            seq = self.arrive(nonce)
+            self.clock.now = tk.NOW
+            return seq
+
+        late_only = concurrent_arrival(COLLIDING[1])
+        lone = self.run_for(COLLIDING[1], moved(7))
+        earlier = self.arrive(COLLIDING[0])
+        late = concurrent_arrival(COLLIDING[0])
+        bound = self.run_for(COLLIDING[0], moved(8))
+        self.assertEqual((tk.NOW, tk.NOW), (self.store.run(lone)[0]["created_at"], self.store.run(bound)[0]["created_at"]))
+        items = self.results()
+        self.assertEqual((None, earlier), (items[lone]["visit_arrival"], items[bound]["visit_arrival"]))
+        self.assertNotIn(items[bound]["visit_arrival"], (late, late_only))
+        self.assertEqual({earlier}, {event["visit_arrival"] for event in self.run_events(bound)})
+
+    def test_a_duplicate_submission_keeps_its_original_visit_arrival(self):
+        first = self.arrive(COLLIDING[0])
+        run_id = self.run_for(COLLIDING[0], moved(9))
+        self.clock.advance(5)
+        self.arrive(COLLIDING[0])
+        status, reply = self.submit(self.body(moved(9), nonce_value=COLLIDING[0]))
+        self.assertEqual((200, True, run_id), (status, reply["duplicate"], reply["run_id"]))
+        self.assertEqual(first, self.results()[run_id]["visit_arrival"])
+
     def test_an_arrival_after_the_submission_is_not_its_visit(self):
         run_id = self.run_for(COLLIDING[0], moved(2))
         self.arrive(COLLIDING[0])

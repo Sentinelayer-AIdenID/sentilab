@@ -638,11 +638,16 @@ class Store:
         with self.tx() as db:
             self._event(db, "scorer", {"state": state}, now)
 
-    def arrival_of_pass(self, handle: str):
-        """The seq of the latest passive arrival recorded for this pass (its keyed handle), or None."""
+    def arrival_of_pass(self, handle: str, at_or_before: float | None = None):
+        """The seq of the latest passive arrival recorded for this pass (its keyed handle), or None. With at_or_before,
+        only arrivals stamped at or before that time count: a run's captured submission time, so a concurrent same-pass
+        arrival recorded after it never binds (root's P2 on 016afa23)."""
+        sql = "SELECT seq FROM events WHERE kind = 'arrival' AND json_extract(body, '$.pass_handle') = ?"
+        args = [handle]
+        if at_or_before is not None:
+            sql, args = sql + " AND at <= ?", args + [at_or_before]
         with self.read() as db:
-            row = db.execute("SELECT seq FROM events WHERE kind = 'arrival' AND json_extract(body, '$.pass_handle') = ? "
-                             "ORDER BY seq DESC LIMIT 1", (handle,)).fetchone()
+            row = db.execute(sql + " ORDER BY seq DESC LIMIT 1", args).fetchone()
         return row[0] if row is not None else None
 
     def note_arrival(self, body: dict, *, now: float, per_min: int) -> bool:
