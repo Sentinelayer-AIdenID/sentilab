@@ -5,26 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#10191e">
 <title>Package view · SentiLab</title>
-<meta name="description" content="The chiplet package each lab proposed, drawn from signed, verified evidence only: footprints from the run's geometry, colours from chiplet-centre temperatures on one fixed scale.">
+<meta name="description" content="The chiplet package in 3D: agent-door layouts of the CPU-DRAM case with their simulated temperature maps, and each lab's verified packages. Simulated, not silicon.">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="package.css">
 </head>
 <body>
-<div class="shell">
+<div class="shell" id="shell">
   <header class="top">
-    <div class="modebox" title="Mode (client clock): LIVE needs a poll within 5 s, the verified prefix K growing within 60 s after the page caught up with the log, and K not below its high. Catching up is not progress. A drop in K is STALE · chain broken at once. A run the runs list marks finished shows ENDED · run finished.">
+    <div class="modebox" title="Status. Agent door: REPLAY (a recorded or bundled list), STAGING (live from a staging feed) or LIVE. Lab runs: LIVE needs a poll within 5 s, the verified prefix K growing within 60 s after the page caught up with the log, and K not below its high. Catching up is not progress. A drop in K is STALE · chain broken at once. A run the runs list marks finished shows ENDED · run finished.">
       <span class="mode replay" id="mode"><i></i><b id="modeText">REPLAY</b></span>
       <span class="drill" id="drill" hidden title="This run contains a seeded correction drill">DRILL</span>
     </div>
     <div class="brand"><span class="mark"></span><b>SentiLab</b><span class="sub">Package view</span></div>
-    <div class="runmeta" id="runMeta"></div>
+    <nav class="feeds" aria-label="What to show"><a href="./?feed=door" id="feedDoor">Agent door · CPU-DRAM</a><a href="./?feed=lab" id="feedLab">Lab runs</a></nav>
+    <div class="runmeta" id="runMeta" data-feed="lab"></div>
     <span class="spacer"></span>
+    <span class="claim" data-feed="door" title="Every temperature on this page is simulated by HotSpot 6.0 on the model stack. No chip was built or measured.">simulated, not silicon</span>
     <span class="testkeys" id="testKeys" hidden title="Signatures are checked against test keys anyone can derive. Not the production pin.">TEST KEYS</span>
-    <button class="chain" id="chain" type="button" title="Signature and chain check for every envelope; click for details"><i></i><span id="chainText">no envelopes</span></button>
+    <button class="chain" id="chain" type="button" data-feed="lab" title="Signature and chain check for every envelope; click for details"><i></i><span id="chainText">no envelopes</span></button>
     <nav class="links"><a href="../" id="labLink">Lab view</a><a href="#" id="limitsLink">Honest limits</a></nav>
   </header>
 
-  <section class="controls">
+  <section class="controls" data-feed="lab">
     <div class="seg" id="source" role="group" aria-label="Source">
       <button type="button" data-src="file" class="on">Replay</button><button type="button" data-src="api">Live</button>
     </div>
@@ -37,6 +39,7 @@
     <span class="pos" id="pos">seq 0 / 0</span>
     <span class="fixture" id="fixture" hidden>Interface fixture · illustrative values, no solver ran</span>
     <div class="cam" role="group" aria-label="Camera">
+      <div class="seg rseg" role="group" aria-label="Renderer"><button type="button" data-r="3d" class="r3d">3D</button><button type="button" data-r="2d" class="r2d">2D</button></div>
       <button type="button" class="icon" id="rotL" title="Rotate 90° (Shift+R)" aria-label="Rotate left">⟲</button>
       <button type="button" class="icon" id="rotR" title="Rotate 90° (R)" aria-label="Rotate right">⟳</button>
       <button type="button" class="tog" id="orbit" aria-pressed="false" title="Slow orbit in 90° steps (O)">Orbit</button>
@@ -44,17 +47,44 @@
     </div>
   </section>
 
+  <section class="controls door" data-feed="door">
+    <div class="seg" id="dSource" role="group" aria-label="Source">
+      <button type="button" data-src="fixture" class="on">Replay</button><button type="button" data-src="api">Live</button>
+    </div>
+    <button class="play" id="dPlay" type="button" title="Play / pause the replay (Space)" aria-label="Play">▶</button>
+    <div class="scrub" id="dScrubWrap">
+      <div class="ticks" id="dTicks" aria-hidden="true"></div>
+      <input type="range" id="dScrub" min="0" max="0" value="0" aria-label="Layouts in arrival order">
+    </div>
+    <span class="pos" id="dPos">0 / 0</span>
+    <span class="fixture" id="dFixture" hidden title="The bundled list: the raw and snapped references and two synthetic examples. The raw reference's map is the gate-zero HotSpot 6.0 output for that layout.">Bundled fixture · examples synthetic, never scored</span>
+    <div class="cam" role="group" aria-label="View">
+      <div class="seg rseg" role="group" aria-label="Renderer"><button type="button" data-r="3d" class="r3d">3D</button><button type="button" data-r="2d" class="r2d">2D</button></div>
+      <button type="button" class="tog" id="dOverlay" aria-pressed="false" title="Halos, the 0.5 mm edge clearance and the 0.5 mm centre lattice (H)">Halo + lattice</button>
+      <button type="button" class="tog" id="dExplode" aria-pressed="false" title="Separate every layer of the stack (E)">Explode</button>
+      <button type="button" class="tog" id="dOrbit" aria-pressed="false" title="Slow continuous orbit (O)">Orbit</button>
+      <button type="button" class="tog" id="dFit" title="Fit the package to the view (F)">Fit</button>
+    </div>
+  </section>
+
   <div class="banners">
     <p class="wnotice" id="wnotice" role="note" hidden></p>
     <div class="frozen" id="frozen" hidden></div>
     <div class="valerr" id="valerr" hidden></div>
+    <div class="dbanner" id="dBanner" role="status" hidden></div>
   </div>
 
   <main class="stage">
+   <figure class="fig" id="p3d-figure">
     <section class="panel main" id="mainPanel">
       <div class="canvaswrap" id="mainWrap">
-        <canvas id="mainCanvas" role="img" aria-label="Isometric drawing of the selected chiplet package"></canvas>
-        <header class="mainhead">
+        <div class="vwrap" id="vwrap">
+          <canvas id="mainCanvas" role="img" aria-label="Isometric drawing of the selected chiplet package"></canvas>
+          <canvas id="main3d" class="c3d" role="img" tabindex="0" aria-label="3D view of the chiplet package" hidden></canvas>
+          <svg id="leaders3d" class="leaders3d" aria-hidden="true" hidden></svg>
+          <div id="labels3d" class="labels3d" aria-hidden="true" hidden></div>
+        </div>
+        <header class="mainhead" data-feed="lab">
           <h2 id="mainTitle">Board</h2>
           <span class="chip" id="mainChip" hidden></span>
           <span class="tq" id="mainTq" hidden></span>
@@ -62,13 +92,21 @@
           <span class="brk"></span>
           <span class="sub" id="mainSub"></span>
         </header>
+        <header class="mainhead door" data-feed="door">
+          <h2 id="dTitle">-</h2>
+          <span class="chip" id="dChip" hidden></span>
+          <span class="brk"></span>
+          <span class="sub" id="dSub"></span>
+        </header>
         <div class="empty" id="mainEmpty" hidden><div><b id="emptyTitle"></b><span id="emptyText"></span></div></div>
         <div class="refusednote" id="refusedNote" hidden></div>
-        <div class="caption" id="caption"></div>
+        <div class="caption" id="caption" data-feed="lab"></div>
+        <div class="dcaption" id="dCaption" data-feed="door"></div>
+        <div class="vnotes" id="vNotes"></div>
       </div>
     </section>
 
-    <aside class="panel info" id="info">
+    <aside class="panel info" id="info" data-feed="lab">
       <div class="block who">
         <div class="lbl" id="infoLbl">Selected</div>
         <div class="row1"><b id="infoName">-</b><span class="cid" id="infoId"></span></div>
@@ -101,12 +139,43 @@
         <p id="stackNote">Substrate, interposer, heights and lid are nominal drawing constants, not to scale. Chiplet footprints are from the evidence, in mm, to scale.</p>
       </div>
     </aside>
+
+    <aside class="panel info door" id="dInfo" data-feed="door">
+      <div class="block who">
+        <div class="lbl" id="dWhoLbl">Selected layout</div>
+        <div class="row1"><b id="dName">-</b></div>
+        <p class="clsnote" id="dClsNote"></p>
+      </div>
+      <div class="block score" id="dScore">
+        <div class="lbl" id="dMetricName">Max chiplet-centre mean</div>
+        <div class="big" id="dValue">-</div>
+        <div class="claimline" id="dClaim"></div>
+        <ul class="distinct" id="dDistinct"></ul>
+      </div>
+      <div class="block legend" id="dLegend">
+        <div class="lbl" id="dScaleName">active-layer temperature field (°C)</div>
+        <div class="scalebar"><span class="bar"></span><span class="guard" id="dGuard"></span></div>
+        <div class="ticks2" id="dTicks2"></div>
+        <p class="basis" id="dBasis"></p>
+      </div>
+      <div class="block refs" id="dRefs">
+        <div class="lbl">Reference points · not the live board</div>
+        <div id="dRefList"></div>
+      </div>
+      <div class="block dstack">
+        <div class="lbl">Model stack · true thickness</div>
+        <table class="stacktab" id="dStack"><tbody></tbody></table>
+      </div>
+    </aside>
+   </figure>
   </main>
 
-  <nav class="strip" id="strip" aria-label="Packages: the board and each lab"></nav>
+  <nav class="strip" id="strip" data-feed="lab" aria-label="Packages: the board and each lab"></nav>
+  <nav class="strip dstrip" id="dStrip" data-feed="door" aria-label="Layouts in arrival order"></nav>
 
-  <footer class="status"><span id="statusLeft">-</span><span class="c">Only the verified prefix moves or colours anything. Order is seq; ts is display only.</span><span class="hotkeys">Space play · ←/→ step · R rotate · O orbit · L lid · 0-5 package</span></footer>
+  <footer class="status"><span id="statusLeft">-</span><span class="c" id="statusMid">Only the verified prefix moves or colours anything. Order is seq; ts is display only.</span><span class="hotkeys" id="hotkeys">Space play · ←/→ step · R rotate · O orbit · L lid · 0-5 package</span></footer>
 </div>
+<p class="sr" id="announce" aria-live="polite"></p>
 
 <div class="offline" id="offline" hidden>
   <div class="offcard">
@@ -125,9 +194,16 @@
 <dialog id="limits" aria-labelledby="limitsTitle">
   <header><h3 id="limitsTitle">Honest limits</h3><span class="spacer"></span><button type="button" class="btn" id="limitsClose">Close</button></header>
   <ul>
-    <li>Everything drawn here comes from the unbroken, verified prefix of the chain, with the same check and pins as the Lab view. After the first break the drawing freezes; unverified or later envelopes never move or colour anything.</li>
+    <li><b>Agent door view.</b> Every temperature is simulated by HotSpot 6.0 on the model stack of the TAP-2.5D CPU-DRAM case, grid 64. Simulated, not silicon: no chip was built or measured.</li>
+    <li>The number under each layout is the board's one statistic, the max chiplet-centre mean, as the scorer reports it, rounded to 0.01 °C for display. The page never recomputes it from the map. The native all-block maximum and the active-layer peak are other statistics, shown apart under their own names.</li>
+    <li>The colour map is the active-layer (chip layer) temperature field, one flat colour per grid cell of 45/64 mm, on one fixed scale (45 to 125 °C) for every layout. Nothing is interpolated between cells. Values beyond the scale are clamped and counted.</li>
+    <li>Layers thinner than 1 mm are drawn 10 times thicker so they can be seen; the spreader and sink keep their true thickness. The spreader is 90 mm and the sink 180 mm square, but only their central 45 mm (the extent of the simulation grid) is drawn. The TIM, spreader and sink are lifted above the dies so the map stays visible, and the underfill between the dies is drawn a little lower than the dies so they read as blocks (in the model they are one 150 µm layer); Explode separates every layer. These are view transforms: every coordinate in the model is assembled, in mm.</li>
+    <li>A layout is shown only by its class and a 4-character short id. Classes are classification observations, not identities. No visitor-written text is shown.</li>
+    <li>The bundled fixture holds the raw and snapped references and two synthetic examples that were never submitted or scored. The raw reference's map is layer 4 of the gate-zero HotSpot 6.0 output for that exact layout, reproduced byte for byte. The snapped reference has no temperature: it is not evaluated.</li>
+    <li>Published points and the raw layout's statistics sit in their own reference panel and are never part of the live board.</li>
+    <li><b>Lab runs view.</b> Everything drawn comes from the unbroken, verified prefix of the chain, with the same check and pins as the Lab view. After the first break the drawing freezes; unverified or later envelopes never move or colour anything.</li>
     <li>Each chiplet's top face is one colour: its centre temperature, on one fixed scale for the run. It is not a thermal field, and nothing is interpolated across a die. Side faces are the same colour, shaded only for depth. A run whose data has no centre temperatures draws its chiplets uncoloured: J is its measurement's value and is never spread over the chiplets as if it were one of theirs.</li>
-    <li>The stack is schematic. Substrate, interposer, die heights and the lid are drawing constants. Only the chiplet footprints come from the evidence.</li>
+    <li>The lab stack is schematic. Substrate, interposer, die heights and the lid are drawing constants. Only the chiplet footprints come from the evidence.</li>
     <li>A glide is display only: chiplets move from the layout the package showed before (a lab's previous candidate, else the initial layout) to the new candidate. Status (proposed, accepted, stale) comes only from the evidence contract's project().</li>
     <li>A verified envelope proves the core's key signed it. It does not prove a temperature is physically right.</li>
     <li>The bundled demo is an interface fixture with illustrative numbers. No solver produced them.</li>

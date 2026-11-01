@@ -4,8 +4,8 @@
 // handler, for one); `wrangler deploy --dry-run` only bundles, so it can't either. This script:
 //   1. bundles it: wrangler deploy --dry-run --outdir <tmp> (no credentials, nothing uploaded);
 //   2. runs it: wrangler dev on 127.0.0.1, with the /api upstream switched off (API_ORIGIN=none), and checks
-//      - /sentilab/, /sentilab/package/, /sentilab/lab.js and / answer 200 with the exact Content-Security-Policy and
-//        the bytes in web/public;
+//      - /sentilab/, /sentilab/package/, /sentilab/lab.js and /, and the Package view's 3D assets (render3d.mjs, the
+//        door fixture, the vendored three.js), answer 200 with the exact Content-Security-Policy and the bytes in web/public;
 //      - /api/view/runs reaches the proxy (503 "API origin not configured": the upstream is off) with no CSP added;
 //      - a write to /api is refused (405 read_only) with no CSP added;
 //      - the runtime logged no error.
@@ -59,7 +59,9 @@ check("the Workers runtime starts and answers", ready && !/\[ERROR\]/.test(strip
 if (ready) {
   const file = (rel) => new Uint8Array(readFileSync(join(WEB, "public", rel)));
   const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
-  for (const [path, rel] of [["/sentilab/", "sentilab/index.html"], ["/sentilab/package/", "sentilab/package/index.html"], ["/sentilab/lab.js", "sentilab/lab.js"], ["/", "index.html"]]) {
+  for (const [path, rel] of [["/sentilab/", "sentilab/index.html"], ["/sentilab/package/", "sentilab/package/index.html"], ["/sentilab/lab.js", "sentilab/lab.js"], ["/", "index.html"],
+    ["/sentilab/package/render3d.mjs", "sentilab/package/render3d.mjs"], ["/sentilab/package/door-fixture.json", "sentilab/package/door-fixture.json"],
+    ["/vendor/three/0.187.0/three.module.js", "vendor/three/0.187.0/three.module.js"], ["/vendor/three/0.187.0/three.core.js", "vendor/three/0.187.0/three.core.js"]]) {
     const r = await fetch(BASE + path);
     const body = new Uint8Array(await r.arrayBuffer());
     check(`GET ${path}: 200, the exact CSP, the bytes in web/public/${rel}`, r.status === 200 && r.headers.get("content-security-policy") === CSP && same(body, file(rel)),
