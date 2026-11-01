@@ -56,7 +56,7 @@ def test_print_freeze_binds_actual_request_settings_caps_prices_and_all_files(tm
         'temperature': 0.3, 'top_p': 1, 'max_tokens_per_reply': 100, 'stream': False,
         'allow_redirects': False, 'timeout': 'remaining arm wall time'}
     assert descriptor['protocol'] == protocol
-    assert descriptor['output_schema'] == 'collab-study-output-v3'
+    assert descriptor['output_schema'] == 'collab-study-output-v4'
     assert descriptor['caps'] == {'tokens_per_agent': protocol['caps'], 'wall_seconds': 900,
                                   'max_usd': '10', 'parallel_arms': 6}
     assert descriptor['turn_rule'] == {'order': [1, 2, 3], 'writer': 1, 'skip_stopped_agents': True}
@@ -378,6 +378,8 @@ def test_interrupted_run_checkpoints_cost_and_rerun_continues_ledger(tmp_path, c
     job = json.loads((output / 'case-one-A/job.json').read_text())
     assert job['history_complete'] is False
     assert job['agents']['1']['stop_reason'] == 'interrupted_run'
+    assert job['agent_s'] is None
+    assert job['agents']['1']['agent_s'] is None
     assert job['agents']['1']['charged_tokens'] == 371
     assert (output / 'RUN-MANIFEST.json').is_file()
 
@@ -456,10 +458,12 @@ def test_receipt_write_failure_keeps_settled_usage_and_marks_recovery_incomplete
     assert runner.main(args) == 0
     after = json.loads((output / 'ACCOUNTING.json').read_text())
     assert after['attempts'][0] == before['attempts'][0]
+    assert after['attempts'][0]['request_s'] >= 0
     assert after['grand_total_usd'] == '0.0014'
     job = json.loads((output / 'case-one-A/job.json').read_text())
     assert job['history_complete'] is False
     assert job['wall_seconds'] is None
+    assert job['agent_s'] == job['agents']['1']['agent_s'] == before['attempts'][0]['request_s']
     assert job['start_utc'] == before['attempts'][0]['start_utc']
 
 
