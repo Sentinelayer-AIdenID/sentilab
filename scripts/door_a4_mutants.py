@@ -1,8 +1,12 @@
 """Mutation check for the API side of AGENT-DOOR Amendment 4 rev 2: each mutant injects one real hazard into a fresh
 temporary copy of the tree, and the presence and stats tests must fail.
 
-    python3 -m app.door.a4_mutants              # every mutant; exit 1 if any survives, does not land or breaks the run
-    python3 -m app.door.a4_mutants --only=a,b   # just these (a spot check, not the result)
+    python3 -m scripts.door_a4_mutants              # every mutant; exit 1 if any survives, does not land or breaks
+    python3 -m scripts.door_a4_mutants --only=a,b   # just these (a spot check, not the result)
+
+It lives in scripts/, outside the shipped trees, like scripts/door_mutants.py and open_proposals/contract/mutants.py: it
+launches the test suites in temporary copies, which is a development tool's process launch, not the service's (the CI
+gate's inventory of shipped process launches, scripts/tests/test_ci_gate.py, does not cover it).
 
 The working tree is never touched. A mutant must land (its snippet occurs exactly once and the file changes) or it is
 reported as not landed, never as a survivor; a mutant that stops the suite from importing or running is broken, never a
@@ -18,7 +22,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 COPY = ["app", "open_proposals", "contracts", "sentilab_core", "sundai_hotspot", "sundai_tap", "sundai_controller",
         "sundai_thermal", "docs/sentilab/diagnostics/SLAB-049"]
 SUITES = ("app.test_door_presence", "app.test_door_stats")
