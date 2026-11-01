@@ -404,6 +404,12 @@ test("the deck's own words on the cross-check follow root's P2: never \"their ow
   for (const t of texts) assert.doesNotMatch(t, /own solvers|re-?ran (?:it )?(?:with)?in (?:under )?(?:six|6) minutes/i);
 });
 
+test("a slide with a QR code also prints the address it encodes, on the draft and at the freeze", () => {
+  const noDoor = (v) => { v.slides.find((x) => x.id === "invite").points = []; };
+  assert.throws(() => variant(noDoor), /slide invite shows a QR code without the address it encodes \(sentilab\.aidenid\.com\)/);
+  assert.throws(() => variant((v) => { noDoor(v); v.build = "final"; }), /slide invite shows a QR code without the address it encodes/);
+});
+
 test("a measured tile's time window, as the slide prints it", () => {
   assert.equal(windowShown({ window_start: "2026-11-01T07:13:20.235Z", window_end: "2026-11-01T14:20:05Z" }), "Nov 1, 07:13–14:20 UTC");
   assert.equal(windowShown({ window_start: "2026-10-31T13:46:10.752Z", window_end: "2026-11-01T07:39:30.156Z" }), "Oct 31, 13:46 – Nov 1, 07:39 UTC");
