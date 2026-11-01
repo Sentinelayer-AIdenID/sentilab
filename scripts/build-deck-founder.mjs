@@ -222,10 +222,11 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
       const alt = /<svg\b[^>]*?\saria-label="([^"]*)"/.exec(svg)?.[1];
       const minFont = Math.min(...[...svg.matchAll(/font-size\s*[:=]\s*["']?\s*([\d.]+)/g)].map((m) => Number(m[1])));
       if (!alt || !Number.isFinite(minFont)) throw new FounderError(`${where}: ${f.file} has no label or no text sizes`);
-      const words = [...svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map((m) => m[1].replace(/<[^>]+>/g, "")).join(" \n ");
-      publicRule(words, `${where} figure ${id}`);
-      for (const t of v4.teams.unnamed) if (new RegExp(`\\b${t}\\b`, "i").test(words)) throw new FounderError(`${where} figure ${id} names ${t}, who has not consented`);
-      return { id, src: `figures/${f.file}`, width: f.width, height: f.height, scale: f.scale, minFont, alt: alt.replace(/&quot;/g, '"').replace(/&amp;/g, "&"), pending: f.pending ?? null };
+      // Its drawn words, decoded as they render, face the public-render rule; everything readable in it, the consent rule.
+      publicRule(svgText(svg), `${where} figure ${id}`);
+      const readable = svgReadable(svg, `${where} figure ${id}`);
+      for (const t of v4.teams.unnamed) if (new RegExp(`\\b${t}\\b`, "i").test(readable)) throw new FounderError(`${where} figure ${id} names ${t}, who has not consented`);
+      return { id, src: `figures/${f.file}`, width: f.width, height: f.height, scale: f.scale, minFont, alt: decodeXml(alt), pending: f.pending ?? null };
     };
     if (s.picture?.figure) content.figure = figureContent(s.picture.figure);
     // At the freeze (the coordinator, 11:45Z): each tile with a receipt stays, each without one is dropped and the rest
@@ -441,14 +442,50 @@ export function handoffFiles(v4) {
   }
   return files;
 }
+// XML's five predefined entities and numeric character references: all an SVG without a DTD can hold, and what a markdown
+// renderer decodes too. One pass, as a renderer makes ("&amp;#116;" shows as the text "&#116;"); nothing else is expanded.
+const XML_NAMED = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
+export const decodeXml = (s) => String(s).replace(/&(?:#(\d+)|#x([0-9a-f]+)|(amp|lt|gt|quot|apos));/gi, (m, dec, hex, name) => {
+  if (name) return XML_NAMED[name.toLowerCase()];
+  const cp = dec !== undefined ? Number(dec) : parseInt(hex, 16);
+  return cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : m;
+});
+// Markup inside a text element (tspans, comments, CDATA markers) is dropped, so the pieces join as they render.
+const stripMarkup = (s) => s.replace(/<!--[\s\S]*?-->/g, "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, "");
+// An SVG's drawn words, decoded, one text element per line.
+export const svgText = (svg) => [...String(svg).matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/gi)].map((m) => decodeXml(stripMarkup(m[1]))).join(" \n ");
+// Everything a reader can get from an SVG, decoded (root's P2, 12:55:54Z): the drawn words, titles and descriptions, every
+// attribute value (alt and aria labels among them), the other character data and the raw file. Binary image data (a
+// base64 PNG, JPEG, GIF or WebP data: URI) is not text and is left out; an embedded SVG or text data: URI is decoded and
+// read too. An SVG that declares a DTD or an entity is refused: what it would spell is not known without expanding it.
+const BINARY_IMAGE = /^image\/(?:png|jpe?g|gif|webp|avif|bmp)$/i;
+export function svgReadable(svg, where) {
+  const embedded = [];
+  const s = String(svg).replace(/data:([^;,"')\s]*)((?:;[^;,"')\s]*)*),([^"')\s]*)/gi, (m, type, params, payload) => {
+    const base64 = /;base64$/i.test(params);
+    if (base64 && BINARY_IMAGE.test(type)) return "";
+    let body;
+    try { body = base64 ? Buffer.from(payload, "base64").toString("utf8") : decodeURIComponent(payload); } catch { body = payload; }
+    embedded.push(/svg/i.test(type) ? svgReadable(body, `${where} (an embedded image)`) : body);
+    return "";
+  });
+  if (/<!DOCTYPE|<!ENTITY/i.test(s)) throw new FounderError(`${where} declares a DTD or an entity; it is refused, not expanded`);
+  const inner = (tag) => [...s.matchAll(new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, "gi"))].map((m) => decodeXml(stripMarkup(m[1])));
+  const attrs = [...s.matchAll(/\s[\w:.-]+\s*=\s*(?:"([^"]*)"|'([^']*)')/g)].map((m) => decodeXml(m[1] ?? m[2]));
+  const rest = decodeXml(s.replace(/<!--[\s\S]*?-->/g, " \n ").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, " \n "));
+  return [svgText(s), ...inner("title"), ...inner("desc"), ...attrs, rest, s, ...embedded].join(" \n ");
+}
 // A team that has not consented to be named appears in nothing the deck publishes, in any letter case (the coordinator,
 // 12:31Z: Vortex stays "another team"): the slides and the sources page, a figure's text or alt text, the notes, both
-// scripts, FILL-IN, SOURCES and Carter's handoff files. The PDFs are printed from these. Embedded image data is skipped.
+// scripts, FILL-IN, SOURCES and Carter's handoff files, each read as it renders (an SVG decoded as above; markdown and
+// the deck data with their character references decoded). The PDFs are exported separately; their own bytes get their own
+// scan at the freeze, which this does not replace.
 export function checkUnnamed(files, v4) {
   for (const [path, body] of files) {
     if (!/\.(json|js|md|svg)$/.test(path)) continue;
-    const text = String(body).replace(/data:[^"')\s]+/g, "");
-    for (const t of v4.teams.unnamed) if (new RegExp(`\\b${t}\\b`, "i").test(text)) throw new FounderError(`${relative(REPO_ROOT, path)} names ${t}, who has not consented`);
+    const where = relative(REPO_ROOT, path);
+    const text = path.endsWith(".svg") ? svgReadable(body, where) : `${body} \n ${decodeXml(body)}`;
+    for (const t of v4.teams.unnamed) if (new RegExp(`\\b${t}\\b`, "i").test(text)) throw new FounderError(`${where} names ${t}, who has not consented`);
   }
 }
 

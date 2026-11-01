@@ -431,6 +431,37 @@ test("a team that has not consented to be named appears in nothing the deck publ
   checkUnnamed([[join(FOUNDER_DECK_DIR, "figures", "x.svg"), '<image href="data:image/png;base64,QQ+vortex+QQ"/>']], loaded.v4);
 });
 
+test("root's P2 (12:55:54Z): the unnamed-team scan reads an SVG as it renders, decoded, and a markdown file as it renders", () => {
+  const at = join(FOUNDER_DECK_DIR, "figures", "control.svg");
+  const refused = (body) => assert.throws(() => checkUnnamed([[at, body]], loaded.v4), (e) => e instanceof FounderError && /control\.svg names Vortex, who has not consented/.test(e.message), body);
+  // Root's two controls: a decimal character reference in the drawn text, a hex one in the label.
+  refused('<svg xmlns="http://www.w3.org/2000/svg"><text x="0" y="20">Vor&#116;ex</text></svg>');
+  refused('<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vor&#x74;ex"></svg>');
+  // The same name split by markup, behind a comment or CDATA, or in a title, a description or an alt attribute.
+  refused('<svg><text>Vor<tspan font-weight="700">tex</tspan></text></svg>');
+  refused('<svg><text>Vor<!-- a comment -->tex</text></svg>');
+  refused('<svg><text><![CDATA[Vor]]><![CDATA[tex]]></text></svg>');
+  refused('<svg><title>V&#111;rtex</title></svg>');
+  refused('<svg><desc>VORT&#X45;X</desc></svg>');
+  refused('<svg><image alt="&#86;ortex" href="x.png"/></svg>');
+  // A markdown file renders character references too.
+  assert.throws(() => checkUnnamed([[join(FOUNDER_DIR, "CARTER-QA.md"), "Team Vor&#116;ex re-ran it."]], loaded.v4), /CARTER-QA\.md names Vortex/);
+  // No DTD, so no entity it could declare: refused outright, never expanded.
+  assert.throws(() => checkUnnamed([[at, '<!DOCTYPE svg [<!ENTITY t "x">]><svg><text>&t;</text></svg>']], loaded.v4), /control\.svg declares a DTD or an entity; it is refused, not expanded/);
+  // Binary image data stays out: base64 PNG that happens to spell a name is not a mention.
+  checkUnnamed([[at, '<svg><image href="data:image/png;base64,QQ+Vortex+QQ"/></svg>']], loaded.v4);
+  // An embedded SVG is text, base64 or percent-encoded: it is decoded and read too.
+  refused(`<svg><image href="data:image/svg+xml;base64,${Buffer.from("<svg><text>Vortex</text></svg>").toString("base64")}"/></svg>`);
+  refused('<svg><image href="data:image/svg+xml,%3Csvg%3E%3Ctext%3EVor%74ex%3C/text%3E%3C/svg%3E"/></svg>');
+  // One decoding pass, as a renderer makes: an escaped ampersand stays literal text ("Vor&#116;ex" is what shows).
+  checkUnnamed([[at, '<svg><text>Vor&amp;#116;ex &lt;b&gt; &quot;q&quot; &apos;a&apos;</text></svg>']], loaded.v4);
+});
+
+test("a figure's drawn words are read decoded, as they render, for the public-render rule", async () => {
+  const { svgText } = await import("./build-deck-founder.mjs");
+  assert.equal(svgText('<svg><text>Cloudfl&#97;re <tspan>AI</tspan></text><text>x&lt;y</text></svg>'), "Cloudflare AI \n x<y");
+});
+
 test("Carter's handoff files sit beside the scripts, exactly as received and pinned, and are not slides", () => {
   const pins = { "CARTER-QA.md": "d1e67703e3c3e7e8c0a5d8cc7e8ba048837a9a4b2e7a2d47d941f556aaf2acfe", "DEMO-RUN-SHEET.md": "edd18756a02cf498c4ac5671e4162ecb61623c3924ef0f1b8962405b248c9962" };
   assert.deepEqual(Object.fromEntries(Object.entries(loaded.v4.handoff).map(([f, h]) => [f, h.sha256])), pins);
