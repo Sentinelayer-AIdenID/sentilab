@@ -1,10 +1,10 @@
-#!/usr/bin/python3
 """Synthetic HotSpot file writer. No fake result is a thermal reference."""
 import json
 import os
 from pathlib import Path
 import resource
 import socket
+import sys
 import time
 
 CONTROL = Path('__CONTROL__')
@@ -15,7 +15,8 @@ try:
     socket.socket()
 except PermissionError:
     network_denied = True
-report.write_text(json.dumps({'pid': os.getpid(), 'limits': resource.getrlimit(resource.RLIMIT_CPU),
+report.write_text(json.dumps({'pid': os.getpid(), 'executable': sys.executable,
+                              'limits': resource.getrlimit(resource.RLIMIT_CPU),
                               'network_denied': network_denied, 'environment': sorted(os.environ)}))
 if mode == 'escape':
     child = os.fork()
