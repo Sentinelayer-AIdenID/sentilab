@@ -29,6 +29,9 @@ web/
 !web/public/sentilab/evidence-projection.mjs
 # app/test_door_build_label.py checks that the page tests' fixture is the door API's own output.
 !web/test/door-api-build-label.json
+# app/test_door_a4_fixtures.py holds the A4 fixtures and the Worker's bundled notice to the API's own code.
+!web/test/fixtures/door-a4/*.json
+!web/src/door/declare.js
 deck/
 **/*.pem
 **/*.key
