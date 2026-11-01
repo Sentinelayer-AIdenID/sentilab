@@ -73,7 +73,8 @@ test("the wall negotiates: markdown and JSON for agents that prefer them; unclas
 // Warden's P2 at df831a71: the wall said "Only the purpose you pick is recorded", which was not true. Measured against
 // main's Door.arrival (0888f099), a wall view stores the class and the time, and a pick also the purpose and a short id
 // derived from the token's nonce (never the operator or the nonce); every arrival is published on the intake's
-// /api/open/v1/door/events. The wall now says exactly that, in each of its three forms.
+// /api/open/v1/door/events. The wall now says exactly that, in each of its three forms. Since Amendment 4 the words are
+// the signed terms' (aneta #57813 P3): the class is "a guess at" the assistant's type.
 test("the wall says exactly what a visit records and that it is public, in HTML, markdown and JSON", async (t) => {
   const calls = installApi(t);
   const s = setup();
@@ -83,8 +84,10 @@ test("the wall says exactly what a visit records and that it is public, in HTML,
   const md = await s.go("/", agent(UA.gptbot, { accept: "text/markdown" }));
   assert.ok(md.text.includes(`\n${RECORDED}\n`), md.text);
   const js = JSON.parse((await s.go("/", agent(UA.curl, { accept: "application/json" }))).text);
-  assert.equal(js.recorded, "class and time; plus purpose and a short visit id if you pick one; published on the public activity feed");
-  for (const text of [html.text, md.text, JSON.stringify(js)]) assert.ok(!/purpose you pick is recorded|purpose id only/.test(text), "the old claim is gone");
+  assert.equal(js.recorded, "a guess at your assistant's type (class) and the time; plus the purpose and a short visit id if you pick one; published on the public activity feed");
+  for (const text of [html.text, md.text, JSON.stringify(js)]) {
+    assert.ok(!/purpose you pick is recorded|purpose id only|record: your assistant's type/.test(text), "the old claims are gone");
+  }
   // What those words describe: a wall view sends the class (and the operator, which the intake never keeps); a pick
   // adds the purpose and the token's nonce, of which the intake keeps only a 4-hex short id.
   await s.drain();
@@ -160,7 +163,8 @@ test("choosing a purpose mints a token on the request's own host and links the n
     const page = await s.go("/agents/intent?purpose=place-chiplets", agent(UA.chatgptUser), base);
     assert.equal(page.status, 200);
     assert.equal(page.headers.get("cache-control"), "private, no-store, no-transform");
-    assert.equal(page.headers.get("referrer-policy"), "no-referrer");
+    // The token page holds the declare form (Amendment 4), so, like every page with a POST form, it is strict-origin.
+    assert.equal(page.headers.get("referrer-policy"), "strict-origin");
     const token = /<code>(spt1\.[^<]+)<\/code>/.exec(page.text)[1];
     const host = new URL(base).host;
     const verdict = await verifyToken(KEY, token, { site: host, now: Date.now() });
@@ -214,7 +218,7 @@ test("the ENGRAM view is sentilab-agent-view/1 with Amendments 1 and 2, on the r
     assert.match(r.headers.get("cache-control"), /no-store/);
     const view = JSON.parse(r.text);
     assert.deepEqual(Object.keys(view), ["schema", "purpose", "label", "token", "submissions", "objective", "case", "rules", "scoring",
-      "references", "skills", "layout_format", "board", "board_status", "human_page"]);
+      "references", "skills", "layout_format", "board", "board_status", "declare", "human_page"]);
     assert.equal(view.schema, "sentilab-agent-view/1");
     assert.equal(view.purpose, "place-chiplets");
     assert.equal(view.label, "simulated, not silicon");
@@ -359,13 +363,13 @@ test("token refusals on every token route: 401 missing, invalid or expired; 403 
   assert.deepEqual([submit.status, JSON.parse(submit.text)], [403, { error: "token_scope", allowed: "read" }]);
 });
 
-test("methods: the door's only new write is POST /agents/submit; every other method stays 405 read_only", async (t) => {
+test("methods: the door's writes are POST /agents/submit and POST /agents/declare; every other method stays 405 read_only", async (t) => {
   const calls = installApi(t);
   const s = setup();
   const token = await mint();
   const routes = { "/agents/intent?purpose=read": ["GET", "HEAD"], [`/agents/engram?t=${token}`]: ["GET", "HEAD"],
     [`/agents/check?t=${token}&l=${REF}`]: ["GET", "HEAD"], "/agents/board": ["GET", "HEAD"], [`/s?t=${token}&l=${REF}`]: ["GET", "HEAD"],
-    [`/agents/status/${RUN}?t=${token}`]: ["GET", "HEAD"], "/agents/submit": ["POST"] };
+    [`/agents/status/${RUN}?t=${token}`]: ["GET", "HEAD"], "/agents/submit": ["POST"], "/agents/declare": ["POST"] };
   for (const [path, allowed] of Object.entries(routes)) {
     for (const method of ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]) {
       const r = await s.go(path, { method, headers: { "user-agent": UA.curl, "content-type": "application/json" }, body: ["GET", "HEAD"].includes(method) ? undefined : "{}" });
@@ -373,7 +377,9 @@ test("methods: the door's only new write is POST /agents/submit; every other met
       else {
         assert.equal(r.status, 405, `${method} ${path}`);
         assert.equal(r.headers.get("allow"), allowed.join(", "));
-        if (method !== "HEAD") assert.equal(JSON.parse(r.text).error, "read_only");
+        if (method !== "HEAD") {
+          assert.deepEqual(JSON.parse(r.text), { error: "read_only", detail: "The agent door's write routes are POST /agents/submit and POST /agents/declare." });
+        }
       }
     }
   }

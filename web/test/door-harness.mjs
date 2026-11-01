@@ -65,6 +65,10 @@ export function installApi(t, routes = {}) {
     arrival: async () => new Response(null, { status: 204 }),
     status: async () => Response.json({ schema: "sentilab-door-status/1", id: RUN, label: "automation · ab12", class: "automation",
       operator: "openai", short_id: "ab12", status: "queued" }),
+    // A4 rev 2: the visitors page that carries the notice (none by default, so the wall offers no opt-in), and the
+    // heartbeat.
+    visitors: async () => new Response("not found", { status: 404 }),
+    here: async () => new Response(null, { status: 204 }),
     ...routes,
   };
   t.mock.method(globalThis, "fetch", async (input, init = {}) => {
@@ -74,18 +78,21 @@ export function installApi(t, routes = {}) {
     const call = { method: init.method ?? "GET", origin: url.origin, path: url.pathname + url.search, headers, body, signal: init.signal, redirect: init.redirect };
     calls.push(call);
     const name = url.pathname === "/api/open/v1/door/board" ? "board" : url.pathname === "/api/open/v1/door/submit" ? "submit"
-      : url.pathname === "/api/open/v1/door/arrival" ? "arrival" : url.pathname.startsWith("/api/open/v1/door/status/") ? "status" : null;
+      : url.pathname === "/api/open/v1/door/arrival" ? "arrival" : url.pathname.startsWith("/api/open/v1/door/status/") ? "status"
+      : url.pathname === "/api/open/v1/door/visitors" ? "visitors" : url.pathname === "/api/open/v1/door/here" ? "here" : null;
     if (!name) return new Response("not found", { status: 404 });
     return handlers[name](call);
   });
   return calls;
 }
 
-// A fresh Worker environment and execution context; extra overrides env (undefined values delete keys).
+// A fresh Worker environment and execution context; extra overrides env (undefined values delete keys). Declarations
+// are on here (DOOR_DECLARATIONS "on"), as the paired deploy after root's #97 runs them, so the door's tests exercise
+// them; wrangler.jsonc ships them off, and door-declarations-off.test.mjs checks that default.
 export function setup(extra = {}) {
   resetDoorState();
   const pending = [];
-  const env = { ASSETS: assets(), API_ORIGIN, ORIGIN_TOKEN: "origin-test-token", DOOR_TOKEN_KEY: KEY, AQUARIUM_POST: "off" };
+  const env = { ASSETS: assets(), API_ORIGIN, ORIGIN_TOKEN: "origin-test-token", DOOR_TOKEN_KEY: KEY, AQUARIUM_POST: "off", DOOR_DECLARATIONS: "on" };
   for (const [k, v] of Object.entries(extra)) { if (v === undefined) delete env[k]; else env[k] = v; }
   const ctx = { waitUntil: (promise) => pending.push(promise) };
   const go = async (path, init = {}, base = BASE) => {

@@ -34,7 +34,7 @@ const groups = {
     ["MAC without the purpose", TOKEN, 'JSON.stringify(["sentilab-spt1", ...fields])', 'JSON.stringify(["sentilab-spt1", fields[0], ...fields.slice(2)])'],
     ["MAC without the expiry", TOKEN, 'JSON.stringify(["sentilab-spt1", ...fields])', 'JSON.stringify(["sentilab-spt1", ...fields.slice(0, 3), fields[4]])'],
     ["MAC without the nonce", TOKEN, 'JSON.stringify(["sentilab-spt1", ...fields])', 'JSON.stringify(["sentilab-spt1", ...fields.slice(0, 4)])'],
-    ["MAC truncated to 8 hex", TOKEN, ".slice(0, 32);\n}", ".slice(0, 8).padEnd(32, \"0\");\n}"],
+    ["MAC truncated to 8 hex", TOKEN, '["sentilab-spt1", ...fields])))).slice(0, 32);\n}', '["sentilab-spt1", ...fields])))).slice(0, 8).padEnd(32, "0");\n}'],
     ["expiry not checked", TOKEN, '  if (seconds <= nowSeconds) return { ok: false, status: 401, error: "token_expired" };\n', ""],
     ["expiry off by one second", TOKEN, "if (seconds <= nowSeconds)", "if (seconds < nowSeconds)"],
     ["no lifetime ceiling", TOKEN, '  if (seconds > nowSeconds + TOKEN_SECONDS + SKEW_SECONDS) return { ok: false, status: 401, error: "token_invalid" };\n', ""],
@@ -59,7 +59,7 @@ const groups = {
     ["proxy keeps a token-bearing Referer", WORKER, '  if (tokenBearing(headers.get("referer"))) headers.delete("referer");\n', ""],
   ],
   "root P2-2, strict JSON": [
-    ["submit body read by JSON.parse", DOOR, "  const read = strictJson(text);", "  const read = { value: JSON.parse(text) };"],
+    ["submit body read by JSON.parse", DOOR, "  const read = strictJson(text);\n  if (read.codes) return { codes: read.codes };", "  const read = { value: JSON.parse(text) };\n  if (read.codes) return { codes: read.codes };"],
     ["duplicate keys not flagged", JSON_READER, '      if (keys.has(key)) flags.add("duplicate_key");\n', ""],
     ["depth bound one level too deep", JSON_READER, "      if (depth > MAX_DEPTH) return true;", "      if (depth > MAX_DEPTH + 1) return true;"],
     ["overflowing floats not flagged", JSON_READER, '    if (!Number.isFinite(value)) { flags.add("nonfinite_number"); return 0; }', "    if (!Number.isFinite(value)) return 0;"],
@@ -69,7 +69,7 @@ const groups = {
     ["uncertain delivery reported as not sent", DOOR, "    return deliveryUnknown(request, format, url, { token: auth.token, compact: parsed.compact, terms, requestKey, cause });", '    return refuse(request, format, 503, { error: "intake_unavailable" });'],
     ["a failed fetch counted as never sent", DOOR, 'return { ok: false, attempted: true, reason: controller.signal.aborted ? "timeout" : "unreachable" };', 'return { ok: false, attempted: false, reason: controller.signal.aborted ? "timeout" : "unreachable" };'],
     ["not-confirmed page says nothing was sent", RENDER, '<p class="fine">Sending it again is safe:', '<p class="fine">Nothing was sent. Ask your assistant for a new link. Sending it again is safe:'],
-    ["not-confirmed retry drops the token", RENDER, '<input type="hidden" name="t" value="${esc(token)}">\n', ""],
+    ["not-confirmed retry drops the token", RENDER, '<input type="hidden" name="t" value="${esc(token)}">\n<input type="hidden" name="l"', '<input type="hidden" name="l"'],
   ],
   "root repair P2, only a named outcome is definite": [
     ["a schema tag alone is definite (the code at df1189c4)", DOOR, "  const outcome = knownOutcome(answer);\n",
@@ -100,7 +100,7 @@ const groups = {
     ["the feed filter matches the raw path", WORKER, "DOOR_FEEDS.test(path)", "DOOR_FEEDS.test(url.pathname)"],
     ["escapes decoded once", DOOR, 'round < 4 && path.includes("%")', 'round < 1 && path.includes("%")'],
     ["a path that does not decode is passed on", DOOR, "    try { path = decodeURIComponent(path); } catch { return null; }", "    try { path = decodeURIComponent(path); } catch { return pathname; }"],
-    ["a page holding the form stays no-referrer", RENDER, 'text.includes(SUBMIT_FORM) ? "strict-origin" : "no-referrer"', '"no-referrer"'],
+    ["a page holding the form stays no-referrer", RENDER, "(text.includes(SUBMIT_FORM) || text.includes(DECLARE_FORM))", "(text.includes(DECLARE_FORM))"],
     ["the token guard overrides strict-origin", DOOR, '  if (headers.get("referrer-policy") !== "strict-origin") headers.set("referrer-policy", "no-referrer");\n',
       '  headers.set("referrer-policy", "no-referrer");\n'],
     ["the meta tag stays no-referrer", RENDER, '<meta name="referrer" content="${referrerPolicyFor(body)}">', '<meta name="referrer" content="no-referrer">'],
@@ -135,7 +135,8 @@ const groups = {
     ["r of 2 or more as rotation_not_allowed", LAYOUT, '    if (!ROT_DEG.includes(rot)) { shape.push(code("schema_invalid", { path: `/l/${index}`, keyword: "enum" })); return null; }\n', ""],
   ],
   "deploy, staging of its own": [
-    ["staging reaches the production API", WRANGLER, '      "vars": { "API_ORIGIN": "none", "AQUARIUM_POST": "off" },', '      "vars": { "API_ORIGIN": "https://sentilab-api.graysea-7ff72f94.eastus2.azurecontainerapps.io", "AQUARIUM_POST": "off" },'],
+    ["staging reaches the production API", WRANGLER, '      "vars": { "API_ORIGIN": "none", "AQUARIUM_POST": "off", "DOOR_DECLARATIONS": "off" },',
+      '      "vars": { "API_ORIGIN": "https://sentilab-api.graysea-7ff72f94.eastus2.azurecontainerapps.io", "AQUARIUM_POST": "off", "DOOR_DECLARATIONS": "off" },'],
   ],
   "terms and copy (door-copy-p1)": [
     ["terms served without the hash check", DOOR, '    return hexOf(await crypto.subtle.digest("SHA-256", bytes)) === pin ? bytes : null;', "    return bytes;"],

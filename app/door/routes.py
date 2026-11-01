@@ -102,6 +102,17 @@ def visitors(after: str | None = None, limit: str | None = None) -> Response:
     return _reply(*runtime().visitors(after, limit))
 
 
+@router.post("/here")
+async def here(request: Request) -> Response:
+    raw, declared = await _body(request)
+    return _reply(*await run_in_threadpool(runtime().here, raw, declared))
+
+
+@router.get("/stats")
+def stats() -> Response:
+    return _reply(*runtime().stats())
+
+
 @router.api_route("/terms", methods=["GET", "HEAD"])
 def terms() -> Response:
     """The signed manifest's terms text: exactly the bytes its pin names (terms.py), or 503 terms_unavailable."""

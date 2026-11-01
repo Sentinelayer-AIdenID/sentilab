@@ -198,10 +198,14 @@ must separately verify targeted pass/prefix abuse controls and default-OFF
 deployment behavior before turning declarations ON, alongside the projection and
 refetch checks above. The hide command does not implement those other controls.
 
-`current_presence` is always `{ "status": "not_measured", "count": null }`.
-An arrival is not a heartbeat, live connection or running agent. The live view
-may show human-classified arrivals as arrivals, without calling them currently
-online. Actual presence needs a separately defined heartbeat/expiry contract.
+Without heartbeat presence enabled, `current_presence` is
+`{ "status": "not_measured", "count": null }`. With `DOOR_PRESENCE=on` it is
+`{ "status": "measured", "window_s": 120, "active_tabs": { "total", "by_page", "by_class" }, "tabs_seen_today" }`
+(docs/sentilab/DOOR-PRESENCE-STATS.md). These are accepted heartbeat observations,
+not people or all traffic. An arrival is not a heartbeat, live connection or running
+agent, and a measured zero does not prove page integration. The live view may show
+human-classified arrivals as arrivals, without calling them currently online. Render
+unavailable, not_measured and measured distinctly.
 
 Worker ownership remains with Forge/Warden, renderer ownership with the existing
 live-view author. They must add the public proxy route and prospective notice

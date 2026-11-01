@@ -78,6 +78,18 @@ export async function verifyToken(key, token, { site, now }) {
   return { ok: true, claims: await claimsOf({ purpose, exp: seconds, nonce, site }) };
 }
 
+// The declare_key of a pass (Amendment 4, warden's hold at c078b4fe): the first 32 hex of HMAC-SHA256 under the same
+// key, over JSON ["sentilab-declare/1", site, nonce, notice version], a domain of its own. A pass's own view shows it;
+// POST /agents/declare requires it, so only that pass's view (never a link, another pass or another notice) can publish
+// a declaration.
+export async function declareKey(key, { site, nonce, version }) {
+  const imported = await crypto.subtle.importKey("raw", encoder.encode(key), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  return hex(await crypto.subtle.sign("HMAC", imported, encoder.encode(JSON.stringify(["sentilab-declare/1", site, nonce, version])))).slice(0, 32);
+}
+
+// Constant-time comparison of two hex strings.
+export const sameHex = (a, b) => typeof a === "string" && typeof b === "string" && equalHex(a, b);
+
 // null when the token's purpose covers the route; otherwise the 403 body the contract fixes.
 export function scopeError(claims, required) {
   return claims.purpose === required ? null : { error: "token_scope", allowed: claims.purpose };

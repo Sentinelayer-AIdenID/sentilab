@@ -1,6 +1,7 @@
 """Agent door read views and the scorer adapter (AGENT-DOOR.md section 4, Amendments 1 and 2): the results and events
 cursors, the board on one frozen metric and one proxy scale, status bound to its principal, arrivals with no visitor
-text, and HttpScorer's wire format, failure split and strict parse."""
+text unless the visitor opted in to a public declaration (Amendment 4, #89: app/test_door_visitors.py), and HttpScorer's
+wire format, failure split and strict parse."""
 import http.server
 import json
 import socket

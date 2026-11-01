@@ -24,7 +24,9 @@ from . import terms as door_terms
 from .dispatch import Dispatcher, ScorerState
 from .evaluator import ALIAS
 from .policy import CASE, CLASSES, NONCE, PURPOSES, Policy, parse_utc, principal_for, short_id, utc
+from .presence import HERE, NOT_MEASURED, Presence
 from .scorer import ACTIVE_GUARD_C, METRIC, METRIC_ID, HttpScorer
+from .stats import Totals
 from .store import HIDE_REASONS, Store, label
 
 RUN_ID = re.compile(r"open-[0-9a-f]{8}-[0-9a-f]{32}\Z")
@@ -127,12 +129,16 @@ def front(points: list) -> set:
 
 
 class Door:
-    def __init__(self, policy: Policy, store: Store, scorer=None, terms: door_terms.Terms | None = None):
-        self.policy, self.store, self.scorer = policy, store, scorer
+    presence = None          # measured presence (presence.py); None publishes #89's not_measured state
+
+    def __init__(self, policy: Policy, store: Store, scorer=None, terms: door_terms.Terms | None = None,
+                 presence: Presence | None = None):
+        self.policy, self.store, self.scorer, self.presence = policy, store, scorer, presence
         # The signed manifest's terms text, bound to its pin when the door is built (terms.py); None: unavailable.
         self.terms = terms
         self.scorer_state = ScorerState()
         self.dispatcher = Dispatcher(self)
+        self.totals = Totals()
 
     @classmethod
     def from_env(cls, env=None) -> "Door":
@@ -149,13 +155,19 @@ class Door:
                                     binary_sha256=policy.manifest["statistic"]["evaluator"]["binary_sha256"])
             except ValueError:
                 scorer = None
-        return cls(policy, Store(data / "door.sqlite3"), scorer, door_terms.from_env(policy.manifest, env))
+        # Presence is measured only where the pages send heartbeats, and the deployer says so (AGENT-DOOR A4 rev 2).
+        presence = Presence() if env.get("DOOR_PRESENCE", "") == "on" else None
+        return cls(policy, Store(data / "door.sqlite3"), scorer, door_terms.from_env(policy.manifest, env), presence)
 
     def start(self, workers: bool = True) -> None:
+        if self.presence is not None:
+            self.presence.start()
         self.dispatcher.start(workers)
 
     def stop(self) -> None:
         self.dispatcher.stop()
+        if self.presence is not None:
+            self.presence.stop()
 
     # ── submit ──────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -404,7 +416,7 @@ class Door:
             items.append(item)
         return 200, {"schema": "sentilab-door-visitors/1", "items": items,
                      "next_after": page[-1]["seq"] if page else after, "has_more": len(rows) > limit,
-                     "counts": counts, "current_presence": {"status": "not_measured", "count": None},
+                     "counts": counts, "current_presence": self.current_presence(),
                      "coverage": "recorded_arrivals counts all recorded arrival events, including declarations. "
                                  "passive_arrival_events, declaration_events and unclassified_arrival_events "
                                  "partition that total; repeat declarations remain separate events. "
@@ -412,6 +424,25 @@ class Door:
                                  "These are not unique people, all purpose passes, all HTTP requests or current presence.",
                      "declaration_trust": "self_declared_display_data",
                      "notice": {"version": intake.VISITOR_NOTICE, "text": intake.VISITOR_DISCLOSURE}}, {}
+
+    def current_presence(self) -> dict:
+        """#89's current_presence: measured (presence.py) where heartbeats are on, else not_measured."""
+        return self.presence.snapshot() if self.presence is not None else dict(NOT_MEASURED)
+
+    def here(self, raw: bytes, size: int | None = None) -> tuple:
+        """One page heartbeat {page, tab, class}, forwarded by the Worker (AGENT-DOOR A4 rev 2, 4.3)."""
+        if self.presence is None:
+            return 503, {"error": "presence_not_measured"}, {}
+        value, found = intake.read_object(raw, HERE, size)
+        if found:
+            return 400, {"error": "bad_heartbeat", "codes": found}, {}
+        if self.presence.beat(value["page"], value["tab"], value["class"]) == "limited":
+            return 429, {"error": "rate_limited"}, {"retry-after": "60"}
+        return 204, None, {}
+
+    def stats(self) -> tuple:
+        """Run totals, sentilab-door-stats/1 (stats.py)."""
+        return 200, self.totals.read(self.store, self.policy.clock()), {}
 
     def board(self, nonce=None) -> tuple:
         """The public board. With the verified token's nonce (x-door-nonce), it also carries that token's CPU."""
