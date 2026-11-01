@@ -8,7 +8,10 @@
 //   GET  /s?t=&l=                       the tap-link confirm page: one button that POSTs; a GET never submits
 //   GET  /agents/status/<run_id>?t=     one run's state, bound to the token's principal   place-chiplets token
 //   GET  /agents/board                  the top 10: class, short id and scores
-// Any other method on these paths is 405 read_only; POST /agents/submit is the only new write. Classified agents get
+//   POST /agents/declare                a visitor's opt-in declaration, bound to its pass (Amendment 4): a person's
+//                                       same-origin form from the confirm page, or an agent's JSON with the pass token
+//                                       and the declare_key its pass's view showed; a GET never records one
+// Any other method on these paths is 405 read_only; POST /agents/submit and /agents/declare are the writes. Classified agents get
 // the wall in place of the agent version of the three mapped pages until they hold a valid token. Without a usable
 // DOOR_TOKEN_KEY the door is closed: its routes answer 503 door_closed and the mapped pages keep their agent versions.
 //
@@ -42,13 +45,13 @@ import { CSP } from "../csp.js";
 import { identityFor } from "../edge.js";
 import { observationFor } from "../vendor/aidenid-registry/agent-registry.mjs";
 import { BOARD_METRIC, DIES, PURPOSE_IDS } from "./case.js";
-import { declarationOutcome, declareObject, noticeFrom, readOptIn, viaSource } from "./declare.js";
+import { NOTICE, declarationOutcome, declareObject, linkCarriesDeclaration, prefillFrom, readOptIn, viaSource } from "./declare.js";
 import { agentView, gateZeroFrom } from "./engram.js";
 import { parseCompact, parseDies, PREVIEW_LABEL, previewViolations, wireProxyMm } from "./layout.js";
-import { confirmHtml, notConfirmedHtml, pressRefusedHtml, problemHtml, referrerPolicyFor, resultHtml, termsChangedHtml, tokenHtml, tokenJson, tokenMarkdown,
+import { confirmHtml, declaredHtml, notConfirmedHtml, pressRefusedHtml, problemHtml, referrerPolicyFor, resultHtml, termsChangedHtml, tokenHtml, tokenJson, tokenMarkdown,
   wallHtml, wallJson, wallMarkdown } from "./render.js";
 import { strictJson } from "./strict-json.js";
-import { scopeError, sha256Hex, TOKEN_PATTERN, usableKey, verifyToken, mintToken } from "./token.js";
+import { declareKey, sameHex, scopeError, sha256Hex, TOKEN_PATTERN, usableKey, verifyToken, mintToken } from "./token.js";
 
 export const LIMITS = Object.freeze({
   DOOR_NONCE_LIMITER: { limit: 10, periodMs: 60000 },
@@ -58,7 +61,7 @@ export const LIMITS = Object.freeze({
 });
 export const API = Object.freeze({
   submit: "/api/open/v1/door/submit", status: "/api/open/v1/door/status/", board: "/api/open/v1/door/board",
-  arrival: "/api/open/v1/door/arrival", visitors: "/api/open/v1/door/visitors?limit=1", here: "/api/open/v1/door/here",
+  arrival: "/api/open/v1/door/arrival", here: "/api/open/v1/door/here",
 });
 // The classifier's own enums (src/vendor/aidenid-classifier/src/types.ts): nothing else is ever sent as a class or an
 // operator. "ours" marks SentiLab's own background agents on the board.
@@ -285,23 +288,9 @@ async function sharedBoard(env, url) {
   return value;
 }
 
-// The notice of GET /door/visitors ({version, text}, or null when it can't be read), shared for BOARD_TTL_MS per
-// isolate like the board. The purpose step shows exactly this text, and accepts an opt-in only under its version.
-let noticeCache = null;
-async function sharedNotice(env, url) {
-  const origin = apiOrigin(env);
-  const now = Date.now();
-  if (noticeCache && noticeCache.origin === origin && now - noticeCache.at < BOARD_TTL_MS) return noticeCache.value;
-  const answer = await callApi(env, API.visitors, { host: url.host, timeoutMs: 1500 });
-  const value = answer.ok && answer.status === 200 ? noticeFrom(answer.json) : null;
-  noticeCache = { origin, at: now, value };
-  return value;
-}
-
-// Test hook: forget the isolate's board and notice caches and rate windows.
+// Test hook: forget the isolate's board cache and rate windows.
 export function resetDoorState() {
   boardCache = null;
-  noticeCache = null;
   windows.clear();
 }
 
@@ -404,12 +393,11 @@ async function authorize(request, env, url, values, required, format) {
 }
 
 // ── routes ────────────────────────────────────────────────────────────────────────────────────────────────────────
-// The wall: the purpose links and form, and the opt-in under the notice of GET /door/visitors (none when it can't be
-// read). A landing link's ?via= pre-fills the source and is carried in the purpose links, never recorded.
+// The wall: the purpose links and form. It takes no declaration: that comes after the pick, on the pass's own page. A
+// landing link's ?via= pre-fills the source and is carried in the purpose links, never recorded.
 async function wall(request, env, url) {
-  const head = request.method === "HEAD";
-  const [board, notice] = head ? [{ admission: "unknown" }, null] : await Promise.all([sharedBoard(env, url), sharedNotice(env, url)]);
-  const options = { notice, source: viaSource(url.searchParams) };
+  const board = request.method === "HEAD" ? { admission: "unknown" } : await sharedBoard(env, url);
+  const options = { source: viaSource(url.searchParams) };
   const kind = negotiate(request);
   if (kind === "json") return json(request, 200, wallJson(url.origin, board.admission, options));
   if (kind === "md") return markdown(request, 200, wallMarkdown(url.origin, board.admission, options));
@@ -429,17 +417,17 @@ async function intent(request, env, ctx, url) {
   const now = Date.now();
   const token = await mintToken(key, { purpose, site: url.host, now });
   const { claims } = await verifyToken(key, token, { site: url.host, now });
-  // The opt-in is read only when the visitor sent a notice version, and is checked against the notice the door can
-  // show now. Whatever it says, the pass is minted the same way: a declaration never changes the token. An opt-in's
-  // arrival is delivered before the page answers, so the page says what the intake did with the declaration (recorded,
-  // not recorded, or unconfirmed), never "sent" on a guess; without one the arrival stays in the background.
-  const optIn = readOptIn(url.searchParams, url.searchParams.has("notice_version") ? await sharedNotice(env, url) : null);
+  // A GET never records a declaration (warden's hold at c078b4fe): whatever a link carries, the arrival goes without
+  // one, in the background as before. A link's text at most pre-fills the pass page's confirm form, which shows the
+  // exact notice; only a POST from that form (or an agent's POST with the pass's declare_key) publishes it.
   const { admission } = await sharedBoard(env, url);
-  const arrival = { purpose, nonce: claims.nonce, expiresAt: claims.expires_at };
-  let delivery = null;
-  if (optIn.status === "opted_in") delivery = await deliverArrival(request, env, ctx, url, { ...arrival, declaration: optIn.declaration });
-  else emitArrival(request, env, ctx, url, arrival);
-  const page = { declaration: declarationOutcome(optIn, delivery), source: viaSource(url.searchParams) };
+  emitArrival(request, env, ctx, url, { purpose, nonce: claims.nonce, expiresAt: claims.expires_at });
+  const carried = linkCarriesDeclaration(url.searchParams);
+  const page = {
+    declaration: carried ? declarationOutcome({ status: "not_sent", code: "link_cannot_declare" }) : { status: "not_given" },
+    source: viaSource(url.searchParams),
+    declare: { key: await declareKey(key, { site: url.host, nonce: claims.nonce, version: NOTICE.version }), prefill: prefillFrom(url.searchParams), carried },
+  };
   if (kind === "json") return json(request, 200, tokenJson(url.origin, claims, token, admission, page));
   if (kind === "md") return markdown(request, 200, tokenMarkdown(url.origin, claims, token, admission, page));
   return html(request, 200, tokenHtml(url.origin, claims, token, admission, page));
@@ -450,12 +438,12 @@ async function engram(request, env, ctx, url) {
   if (auth instanceof Response) return auth;
   if (request.method === "HEAD") return json(request, 200, null);
   const reading = await allow(env, "DOOR_READ_LIMITER", `engram:${prefixOf(request)}`);
-  const [live, gate, notice] = await Promise.all([
+  const [live, gate] = await Promise.all([
     reading ? callApi(env, API.board, { nonce: auth.claims.nonce, host: url.host, timeoutMs: 2500 }).then(readBoard) : { admission: "unknown", board: null, cpuSecondsLeft: null, terms: null },
-    gateZero(request, env, url), sharedNotice(env, url)]);
-  // How to opt in (Amendment 4): declaring goes with choosing a purpose, so the template starts a new pass.
-  const declare = { ...declareObject(url.origin, notice, { purpose: auth.claims.purpose, source: viaSource(url.searchParams) }),
-    ...(notice ? { note: "Declaring goes with choosing a purpose: this link gives you a new pass (a new token) that carries your declaration. This token stays valid." } : {}) };
+    gateZero(request, env, url)]);
+  // How to declare on this pass (Amendment 4): one POST with this token and its declare_key.
+  const key = await declareKey(usableKey(env), { site: url.host, nonce: auth.claims.nonce, version: NOTICE.version });
+  const declare = declareObject(url.origin, { token: auth.token, key, source: viaSource(url.searchParams) });
   return json(request, 200, agentView({ origin: url.origin, token: auth.token, claims: auth.claims, submissions: live.admission, terms: live.terms,
     gateZero: gate, board: live.board ?? [], boardStatus: live.board ? "ok" : "unavailable", cpuSecondsLeft: live.cpuSecondsLeft, declare }));
 }
@@ -704,12 +692,81 @@ async function submit(request, env, ctx, url) {
   return json(request, answer.status, answer.json);
 }
 
+// ── POST /agents/declare: a visitor's opt-in declaration, bound to its pass ─────────────────────────────────────────
+// A person: the confirm form on the pass's own page (the token page shows the exact notice and the exact text), posted
+// from this site (Sec-Fetch-Site same-origin, or, without it, an Origin of this site). An agent: JSON with its pass
+// token and the declare_key its pass's view showed. Either way an opt-in (notice_version) must carry the declare_key of
+// this pass and that notice version, so a link, another pass or another notice can't make one. The pass is never
+// changed; refusals send nothing; an opt-in's arrival is delivered and the answer is the intake's own.
+const MAX_DECLARE_BYTES = 2048;
+const DECLARE_FIELDS = Object.freeze(["t", "notice_version", "declare_key", "name", "reason", "source"]);
+
+// The body's fields: a form's own, or a JSON object's string fields after the contract's strict reader.
+function declareFields(text, form) {
+  if (form) {
+    const params = new URLSearchParams(text);
+    return [...params.keys()].every((k) => DECLARE_FIELDS.includes(k)) ? { params } : { error: "unknown_field" };
+  }
+  const read = strictJson(text);
+  if (read.codes) return { error: "malformed_body" };
+  const entries = Object.entries(read.value);
+  if (entries.some(([k]) => !DECLARE_FIELDS.includes(k))) return { error: "unknown_field" };
+  if (entries.some(([, v]) => typeof v !== "string")) return { error: "malformed_body" };
+  return { params: new URLSearchParams(entries) };
+}
+
+// A person's form comes from this site's own page: Sec-Fetch-Site same-origin, or, where a browser sends none, an
+// Origin of this site. (A cross-site JSON body needs a preflight, which this route refuses.)
+function ownPageForm(request, url) {
+  const site = request.headers.get("sec-fetch-site");
+  if (site !== null) return site === "same-origin";
+  return request.headers.get("origin") === url.origin;
+}
+
+async function declare(request, env, ctx, url) {
+  const type = (request.headers.get("content-type") ?? "").toLowerCase();
+  const form = /^application\/x-www-form-urlencoded(;|$)/.test(type);
+  const format = form ? "html" : "json";
+  if (!form && !/^application\/json(;|$)/.test(type)) return refuse(request, "json", 415, { error: "unsupported_media_type", accepted: ["application/json", "application/x-www-form-urlencoded"] });
+  if (form && !ownPageForm(request, url)) return refuse(request, format, 403, { error: "cross_site" });
+  const key = usableKey(env);
+  if (!key) return closed(request, format);
+  if (!(await allow(env, "DOOR_IP_LIMITER", `declare:${prefixOf(request)}`))) return limited(request, format);
+  const body = await readBody(request, MAX_DECLARE_BYTES);
+  if (!("text" in body)) return refuse(request, format, 400, { error: "malformed_body" });
+  const fields = declareFields(body.text, form);
+  if (fields.error) return refuse(request, format, 400, { error: fields.error });
+  const { params } = fields;
+  const tokens = params.getAll("t");
+  const verdict = await verifyToken(key, tokens.length === 1 ? tokens[0] : tokens.length ? "x" : null, { site: url.host, now: Date.now() });
+  if (!verdict.ok) return refuse(request, format, verdict.status, { error: verdict.error });
+  const { claims } = verdict;
+  if (!(await allow(env, "DOOR_NONCE_LIMITER", `declare:${claims.nonce}`))) return limited(request, format);
+  // An opt-in must come from this pass's own view: its declare_key, bound to the pass and the notice version it showed.
+  const versions = params.getAll("notice_version");
+  if (versions.length > 0) {
+    const keys = params.getAll("declare_key");
+    const expected = await declareKey(key, { site: url.host, nonce: claims.nonce, version: versions[0] });
+    if (versions.length !== 1 || keys.length !== 1 || !sameHex(keys[0], expected)) return refuse(request, format, 403, { error: "declare_key_invalid" });
+  }
+  const optIn = readOptIn(params);
+  let delivery = null;
+  if (optIn.status === "opted_in") {
+    delivery = await deliverArrival(request, env, ctx, url, { purpose: claims.purpose, nonce: claims.nonce, expiresAt: claims.expires_at,
+      declaration: optIn.declaration });
+  }
+  const outcome = declarationOutcome(optIn, delivery);
+  if (form) return html(request, 200, declaredHtml(url.origin, claims, outcome));
+  return json(request, 200, { schema: "sentilab-agent-declare/1", declaration: outcome });
+}
+
 const ROUTES = Object.freeze({
   "/agents/intent": { methods: ["GET", "HEAD"], handler: intent },
   "/agents/engram": { methods: ["GET", "HEAD"], handler: engram },
   "/agents/check": { methods: ["GET", "HEAD"], handler: check },
   "/agents/submit": { methods: ["POST"], handler: submit },
   "/agents/board": { methods: ["GET", "HEAD"], handler: board },
+  "/agents/declare": { methods: ["POST"], handler: declare },
   "/s": { methods: ["GET", "HEAD"], handler: confirm },
 });
 const STATUS_ROUTE = Object.freeze({ methods: ["GET", "HEAD"], handler: status });

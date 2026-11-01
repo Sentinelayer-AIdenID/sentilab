@@ -129,6 +129,21 @@ class FixtureTests(unittest.TestCase):
         self.assertEqual(set(here["forwarded_to_api"]["body"]), {"page", "tab", "class"})
         self.assertEqual(json.loads((FIXTURES / "stats.json").read_bytes())["through_seq"], 57)
 
+    def test_the_workers_bundled_notice_is_the_apis_own(self):
+        """The Worker shows NOTICE from a constant (web/src/door/declare.js), never by polling /visitors: it must be
+        exactly the API's version and text, or a person would read one notice and opt in under another."""
+        source = (Path(__file__).resolve().parents[1] / "web" / "src" / "door" / "declare.js").read_text(encoding="utf-8")
+        block = source[source.index("export const NOTICE = Object.freeze({"):]
+        block = block[:block.index("});")]
+        version = block[block.index('version: "') + len('version: "'):]
+        version = version[:version.index('"')]
+        text = block[block.index('text: "') + len('text: "'):]
+        text = text[:text.rindex('"')]
+        self.assertEqual(version, intake.VISITOR_NOTICE)
+        self.assertEqual(text, intake.VISITOR_DISCLOSURE)
+        self.assertEqual(json.loads((FIXTURES / "visitors-measured.json").read_bytes())["notice"],
+                         {"version": intake.VISITOR_NOTICE, "text": intake.VISITOR_DISCLOSURE})
+
     def test_the_visitors_fixture_shows_a_short_id_shared_by_two_passes(self):
         items = json.loads((FIXTURES / "visitors-measured.json").read_bytes())["items"]
         shared = [item for item in items if item["short_id"] == "0f62"]

@@ -14,8 +14,9 @@
 //      - the agent door (src/door/door.js), opened with a boot-only DOOR_TOKEN_KEY: a classified agent's wall on /, a
 //        token for a purpose, the ENGRAM view, the preview check, the tap-link confirm page, submit answering honestly
 //        with the API off, the door's 405s and scope refusal, and its stylesheet;
-//      - Amendment 4: the heartbeat route (503 presence_unavailable with the API off, 405 to a GET), and a wall with no
-//        opt-in while the intake's notice can't be read;
+//      - Amendment 4: the heartbeat route (503 presence_unavailable with the API off, 405 to a GET, 400 to a malformed
+//        body once the rate-limit binding allows it), and the opt-in: no declaration fields on the wall, the token page as
+//        the confirm page (the bundled notice, a POST form, strict-origin), a cross-site declare POST refused, no GET;
 //      - the runtime logged no error.
 // Exit 0 when every check passes; 1 (with the runtime's log) otherwise. WRANGLER_VERSION pins the CLI (default below).
 import { spawn, spawnSync } from "node:child_process";
@@ -170,8 +171,19 @@ if (ready) {
     hereBad.status === 400 && (await hereBad.json().catch(() => ({}))).error === "bad_heartbeat", `${hereBad.status}`);
   const hereGet = await fetch(`${BASE}/api/open/v1/door/here`);
   check("GET /api/open/v1/door/here: 405, allow POST", hereGet.status === 405 && hereGet.headers.get("allow") === "POST", `${hereGet.status}`);
-  check("the wall offers no opt-in without the intake's notice", !wallText.includes('name="notice_version"')
-    && wallText.includes("Telling us who you are isn't available right now."));
+  // Amendment 4 after warden's hold: a GET never records a declaration. The wall takes none; the token page is the
+  // confirm page, with the bundled notice and a POST form to /agents/declare; a cross-site form POST is refused.
+  check("the wall takes no declaration fields", !wallText.includes('name="notice_version"') && !wallText.includes('name="name"'));
+  const tokenPage = await fetch(`${BASE}/agents/intent?purpose=read&name=crafted&notice_version=sentilab-public-visitor%2F1`, { headers: { accept: "text/html" } });
+  const tokenText = await tokenPage.text();
+  check("the token page is the confirm page: the bundled notice, a POST form to /agents/declare, strict-origin, the link flagged",
+    tokenPage.status === 200 && tokenText.includes('<form method="post" action="/agents/declare">') && tokenText.includes("Your visit time, detector classification")
+    && tokenText.includes("A link can't publish a declaration") && tokenPage.headers.get("referrer-policy") === "strict-origin", `${tokenPage.status}`);
+  const crossSite = await fetch(`${BASE}/agents/declare`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", "sec-fetch-site": "cross-site" },
+    body: "t=x&notice_version=sentilab-public-visitor%2F1&name=crafted" });
+  check("POST /agents/declare from another site: 403 cross_site", crossSite.status === 403, `${crossSite.status}`);
+  const declareGet = await fetch(`${BASE}/agents/declare?t=x&notice_version=sentilab-public-visitor%2F1&name=crafted`);
+  check("GET /agents/declare: 405 read_only", declareGet.status === 405 && (await declareGet.json().catch(() => ({}))).error === "read_only", `${declareGet.status}`);
   check("the runtime logged no error", !/\[ERROR\]/.test(strip(log)));
 }
 stop();

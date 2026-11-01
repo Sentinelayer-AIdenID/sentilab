@@ -18,16 +18,19 @@ const WORKER = "src/worker.js";
 const HERE = "public/sentilab/here.mjs";
 const WRANGLER = "wrangler.jsonc";
 const B = String.fromCharCode(92);       // a backslash, so no escape in this file can turn into the character it names
-const refused = (ranges) => `const REFUSED = /[${ranges.map(([a, b]) => `${B}u${a}-${B}u${b}`).join("")}]/u;`;
-const ALL = [["0000", "001f"], ["007f", "009f"], ["202a", "202e"], ["2066", "2069"]];
-const without = (index) => ALL.filter((_, i) => i !== index);
+const NL = String.fromCharCode(10);
+const TOKEN = "src/door/token.js";
+const CATEGORIES = ["Cc", "Cf", "Co", "Cs", "Cn", "Zl", "Zp"];
+const categories = (list) => `const REFUSED_CATEGORY = /[${list.map((c) => `${B}p{${c}}`).join("")}]/u;`;
 
 const groups = {
-  "display text and caps": [
-    ["C0 controls accepted", DECLARE, refused(ALL), refused(without(0))],
-    ["C1 controls accepted (DEL only)", DECLARE, refused(ALL), refused([ALL[0], ["007f", "007f"], ALL[2], ALL[3]])],
-    ["bidi embeddings and overrides accepted", DECLARE, refused(ALL), refused(without(2))],
-    ["bidi isolates accepted", DECLARE, refused(ALL), refused(without(3))],
+  "the character policy (root's shared rule)": [
+    ...CATEGORIES.map((category) => [`${category} accepted`, DECLARE, categories(CATEGORIES), categories(CATEGORIES.filter((c) => c !== category))]),
+    ["categories judged after normalising (a tag payload stripped, then accepted)", DECLARE, "  if (REFUSED_CATEGORY.test(text)) return \"control_character\";",
+      `  if (REFUSED_CATEGORY.test(text.normalize("NFKC").replace(/${B}p{Cf}/gu, ""))) return "control_character";`],
+    ["a run of 9 marks allowed", DECLARE, "export const MAX_MARK_RUN = 8;", "export const MAX_MARK_RUN = 9;"],
+    ["mark runs never reset (a total quota)", DECLARE, "run = MARK.test(char) ? run + 1 : 0;", "run = MARK.test(char) ? run + 1 : run;"],
+    ["mark runs not checked", DECLARE, '    if (run > MAX_MARK_RUN) return "combining_marks";', ""],
     ["length counted in UTF-16 units", DECLARE, "return [...text].length > max ? \"too_long\" : null;", "return text.length > max ? \"too_long\" : null;"],
     ["cap off by one", DECLARE, "return [...text].length > max ? \"too_long\" : null;", "return [...text].length >= max ? \"too_long\" : null;"],
     ["name cap 65", DECLARE, "FIELD_LIMITS = Object.freeze({ name: 64, reason: 160 });", "FIELD_LIMITS = Object.freeze({ name: 65, reason: 160 });"],
@@ -45,35 +48,43 @@ const groups = {
     ["a refusal here reads not_sent", DECLARE, 'if (optIn.status === "not_sent") return { status: "not_recorded", code: optIn.code',
       'if (optIn.status === "not_sent") return { status: "not_sent", code: optIn.code'],
   ],
-  "the opt-in": [
-    ["a stale notice version accepted", DECLARE, '  if (versions[0] !== notice.version) return { status: "not_sent", code: "notice_changed" };\n', ""],
-    ["two notice versions: the first taken", DECLARE, '  if (versions.length > 1) return { status: "not_sent", code: "field_repeated" };\n', ""],
-    ["a repeated field: the first taken", DECLARE, '    if (values.length > 1) return { status: "not_sent", code: "field_repeated" };\n', ""],
+  "the opt-in: only a POST bound to the pass": [
+    ["a GET records a declaration", DOOR, "  emitArrival(request, env, ctx, url, { purpose, nonce: claims.nonce, expiresAt: claims.expires_at });",
+      '  emitArrival(request, env, ctx, url, { purpose, nonce: claims.nonce, expiresAt: claims.expires_at, ...(readOptIn(url.searchParams).status === "opted_in" ? { declaration: readOptIn(url.searchParams).declaration } : {}) });'],
+    ["a cross-site form accepted", DOOR, '  if (form && !ownPageForm(request, url)) return refuse(request, format, 403, { error: "cross_site" });', ""],
+    ["a same-site or user-typed form accepted", DOOR, `  if (site !== null) return site === "same-origin";${NL}  return request.headers.get("origin") === url.origin;`,
+      `  if (site !== null) return site !== "cross-site";${NL}  return request.headers.get("origin") === url.origin;`],
+    ["another site's Origin accepted", DOOR, '  return request.headers.get("origin") === url.origin;', "  return true;"],
+    ["the declare key not checked", DOOR, '    if (versions.length !== 1 || keys.length !== 1 || !sameHex(keys[0], expected)) return refuse(request, format, 403, { error: "declare_key_invalid" });', ""],
+    ["the key not bound to the pass", TOKEN, 'JSON.stringify(["sentilab-declare/1", site, nonce, version])', 'JSON.stringify(["sentilab-declare/1", site, version])'],
+    ["the key not bound to the notice version", TOKEN, 'JSON.stringify(["sentilab-declare/1", site, nonce, version])', 'JSON.stringify(["sentilab-declare/1", site, nonce])'],
+    ["the declaration echoed", DOOR, '  return json(request, 200, { schema: "sentilab-agent-declare/1", declaration: outcome });',
+      '  return json(request, 200, { schema: "sentilab-agent-declare/1", declaration: outcome, echo: optIn.declaration ?? null });'],
+    ["a stale notice version accepted", DECLARE, '  if (versions[0] !== NOTICE.version) return { status: "not_sent", code: "notice_changed" };', ""],
+    ["two notice versions: the first taken", DECLARE, '  if (versions.length > 1) return { status: "not_sent", code: "field_repeated" };', ""],
+    ["a repeated field: the first taken", DECLARE, '    if (values.length > 1) return { status: "not_sent", code: "field_repeated" };', ""],
     ["an empty field kept", DECLARE, '    if (values.length === 0 || values[0] === "") continue;', "    if (values.length === 0) continue;"],
     ["any source accepted", DECLARE, '(SOURCES.includes(values[0]) ? null : "source_unknown")', "null"],
     ["via fills an absent source", DECLARE, '    if (values.length === 0 || values[0] === "") continue;',
       '    if (values.length === 0 || values[0] === "") { if (field === "source" && viaSource(params)) declaration.source = viaSource(params); continue; }'],
-    ["the door declares on the visitor's behalf", DOOR, "  else emitArrival(request, env, ctx, url, arrival);",
-      '  else emitArrival(request, env, ctx, url, { ...arrival, declaration: { notice_version: "sentilab-public-visitor/1" } });'],
-    ["the opt-in accepted without the intake's notice", DOOR, 'url.searchParams.has("notice_version") ? await sharedNotice(env, url) : null',
-      '{ version: url.searchParams.get("notice_version"), text: "x" }'],
-    ["the token page echoes the declaration", DOOR, "const page = { declaration: declarationOutcome(optIn, delivery), source: viaSource(url.searchParams) };",
-      "const page = { declaration: { ...declarationOutcome(optIn, delivery), echo: optIn.declaration ?? null }, source: viaSource(url.searchParams) };"],
-    ["a notice with controls shown", DECLARE, " || text.length > MAX_NOTICE_CHARS || REFUSED.test(text)) return null;", " || text.length > MAX_NOTICE_CHARS) return null;"],
-    ["a notice of version 0 shown", DECLARE, `const NOTICE_VERSION = /^sentilab-public-visitor${B}/[1-9][0-9]{0,5}$/;`, `const NOTICE_VERSION = /^sentilab-public-visitor${B}/[0-9]{1,6}$/;`],
+  ],
+  "the notice and the confirm form": [
+    ["the bundled notice's version drifts", DECLARE, 'version: "sentilab-public-visitor/1",', 'version: "sentilab-public-visitor/2",'],
+    ["the bundled notice's text drifts", DECLARE, "Do not include private information.", "Do not include private data."],
+    ["the confirm page without the notice", RENDER, '<blockquote class="notice">${esc(NOTICE.text)}</blockquote>', ""],
+    ["the opt-in pre-ticked", RENDER, '<input type="checkbox" name="notice_version" value="${esc(NOTICE.version)}">', '<input type="checkbox" name="notice_version" value="${esc(NOTICE.version)}" checked>'],
+    ["a link's text not escaped", RENDER, 'value="${esc(prefill.reason)}"', 'value="${prefill.reason}"'],
+    ["via does not select the source", RENDER, '${s === prefill.source ? " selected" : ""}', ""],
+    ["the pass's key missing from the form", RENDER, '<input type="hidden" name="declare_key" value="${esc(key)}">', ""],
+    ["a crafted link not flagged", RENDER, "${carried ?", "${false ?"],
+    ["the old wall line", RENDER, "export const RECORDED = \"What we record: a guess at your assistant's type, and the time of this visit.",
+      "export const RECORDED = \"What we record: your assistant's type and the time of this visit."],
   ],
   "via": [
     ["via takes any slug", DECLARE, "return values.length === 1 && SOURCES.includes(values[0]) ? values[0] : null;", "return values.length === 1 && /^[a-z0-9-]{1,32}$/.test(values[0]) ? values[0] : null;"],
     ["via takes the first of two", DECLARE, "return values.length === 1 && SOURCES.includes(values[0]) ? values[0] : null;", "return values.length >= 1 && SOURCES.includes(values[0]) ? values[0] : null;"],
-    ["via does not select the source", RENDER, '${s === source ? " selected" : ""}', ""],
     ["via carried into every next link", RENDER, '[{ name: "board", label: "The board: class, short id and scores", url: `${origin}/agents/board` },',
       '[{ name: "board", label: "The board: class, short id and scores", url: `${origin}/agents/board${source ? `?via=${source}` : ""}` },'],
-  ],
-  "the wall's form and copy": [
-    ["the opt-in pre-ticked", RENDER, '<input type="checkbox" name="notice_version" value="${esc(notice.version)}">', '<input type="checkbox" name="notice_version" value="${esc(notice.version)}" checked>'],
-    ["the notice not escaped", RENDER, '<blockquote class="notice">${esc(notice.text)}</blockquote>', '<blockquote class="notice">${notice.text}</blockquote>'],
-    ["the old wall line", RENDER, "export const RECORDED = \"What we record: a guess at your assistant's type, and the time of this visit.",
-      "export const RECORDED = \"What we record: your assistant's type and the time of this visit."],
   ],
   "the heartbeat proxy": [
     ["any method", DOOR, '  if (request.method !== "POST") return hereAnswer(request, 405, { error: "method_not_allowed" }, { allow: "POST" });\n', ""],

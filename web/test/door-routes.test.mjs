@@ -148,7 +148,8 @@ test("choosing a purpose mints a token on the request's own host and links the n
     const page = await s.go("/agents/intent?purpose=place-chiplets", agent(UA.chatgptUser), base);
     assert.equal(page.status, 200);
     assert.equal(page.headers.get("cache-control"), "private, no-store, no-transform");
-    assert.equal(page.headers.get("referrer-policy"), "no-referrer");
+    // The token page holds the declare form (Amendment 4), so, like every page with a POST form, it is strict-origin.
+    assert.equal(page.headers.get("referrer-policy"), "strict-origin");
     const token = /<code>(spt1\.[^<]+)<\/code>/.exec(page.text)[1];
     const host = new URL(base).host;
     const verdict = await verifyToken(KEY, token, { site: host, now: Date.now() });

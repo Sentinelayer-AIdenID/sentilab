@@ -8,7 +8,7 @@
 // A module of its own because worker.js may export nothing but its default handler.
 import { GATE_QUESTION } from "../generated/aidenid-intent-gate/intent-gate.js";
 import { DIES, EDGE_CLEARANCE_UM, FRAME_UM, PURPOSES } from "./case.js";
-import { OPT_IN_LINE, SOURCES, declareObject, declareTemplate } from "./declare.js";
+import { DECLARATION_TEXT, NOTICE, OPT_IN_LINE, SOURCES, declareObject } from "./declare.js";
 import { PREVIEW_LABEL, rectangles } from "./layout.js";
 import { TOKEN_WORDING } from "./token.js";
 
@@ -21,7 +21,9 @@ const label = (id) => PURPOSES.find((purpose) => purpose.id === id)?.label ?? ""
 // form is therefore strict-origin, in its header and its meta tag alike: the Origin and the Referer carry this site's
 // origin only, never a path or a query, so the token still stays on the page. Every other page stays no-referrer.
 export const SUBMIT_FORM = '<form method="post" action="/agents/submit';
-export const referrerPolicyFor = (text) => (typeof text === "string" && text.includes(SUBMIT_FORM) ? "strict-origin" : "no-referrer");
+// The declare form (the token page's confirm form) is posted the same way, and its page is strict-origin too.
+export const DECLARE_FORM = '<form method="post" action="/agents/declare">';
+export const referrerPolicyFor = (text) => (typeof text === "string" && (text.includes(SUBMIT_FORM) || text.includes(DECLARE_FORM)) ? "strict-origin" : "no-referrer");
 
 // The form carries the token, the layout and the terms the page showed. On the pages that follow a press (not
 // confirmed, refused, terms changed after a press) it posts to /agents/submit?again=1: that earlier press may already
@@ -73,39 +75,44 @@ ${body}
 // A purpose link. A landing link's ?via= source is carried along, so the agent view can pre-fill it; never recorded.
 const intentUrl = (origin, id, source = null) => `${origin}/agents/intent?purpose=${id}${source ? `&via=${source}` : ""}`;
 
-// The opt-in on the human form: the exact notice first, then the fields, then an unticked box that sends the notice's
-// version (declare.js readOptIn). via only selects the source option. Without a notice there is no opt-in.
-function optInFieldset(notice, source) {
-  if (!notice) return `<p class="fine">Telling us who you are isn't available right now.</p>`;
-  const options = [`<option value="">(leave out)</option>`, ...SOURCES.map((s) => `<option value="${s}"${s === source ? " selected" : ""}>${s}</option>`)];
-  return `<fieldset class="declare">
-<legend>Optional: tell us who you are</legend>
+// The confirm form on a pass's own page (the token page): the exact notice, then the fields (a link's text pre-filled,
+// escaped, for the person to check), an unticked box that sends the notice version, and the pass's token and
+// declare_key. Only its POST, from this site, publishes a declaration (door.js declare); a GET never does.
+function declareFormHtml(token, { key, prefill = { name: "", reason: "", source: null }, carried = false }) {
+  const options = [`<option value="">(leave out)</option>`, ...SOURCES.map((s) => `<option value="${s}"${s === prefill.source ? " selected" : ""}>${s}</option>`)];
+  return `<h2>Optional: tell us who you are</h2>
 <p class="fine">${OPT_IN_LINE}</p>
-<blockquote class="notice">${esc(notice.text)}</blockquote>
-<label>Who you are <input type="text" name="name" maxlength="64" autocomplete="off"></label>
-<label>Why you're here <input type="text" name="reason" maxlength="160" autocomplete="off"></label>
+${carried ? `<p class="check illegal">A link can't publish a declaration. Any text below came with the link you followed, and nothing has been recorded. Check it, and press the button only if you want it published.</p>${"\n"}` : ""}<blockquote class="notice">${esc(NOTICE.text)}</blockquote>
+${DECLARE_FORM}
+<input type="hidden" name="t" value="${esc(token)}">
+<input type="hidden" name="declare_key" value="${esc(key)}">
+<label>Who you are <input type="text" name="name" value="${esc(prefill.name)}" maxlength="64" autocomplete="off"></label>
+<label>Why you're here <input type="text" name="reason" value="${esc(prefill.reason)}" maxlength="160" autocomplete="off"></label>
 <label>Where you came from <select name="source">
 ${options.join("\n")}
 </select></label>
-<label><input type="checkbox" name="notice_version" value="${esc(notice.version)}"> Publish this with my visit. I've read the notice above.</label>
-</fieldset>`;
+<label><input type="checkbox" name="notice_version" value="${esc(NOTICE.version)}"> Publish this with my visit. I've read the notice above.</label>
+<button type="submit">Publish my declaration</button>
+</form>`;
 }
 
-// The same opt-in for agents reading markdown: the notice quoted, then the template.
-function optInMarkdown(origin, notice, source) {
-  if (!notice) return "Telling us who you are isn't available right now.";
-  return `${OPT_IN_LINE} Read this notice first:
+// The same for agents reading markdown: the notice quoted, then the POST with this pass's body.
+function declareMarkdown(origin, token, { key, source = null }) {
+  return `## Optional: tell us who you are
 
-> ${notice.text}
+${OPT_IN_LINE} Read this notice first:
 
-To opt in, add notice_version to the purpose link you follow, with any of name (up to 64 characters), reason (up to
-160) and source (one of ${SOURCES.join(", ")}), each URL-encoded. Without notice_version nothing you type is recorded:
+> ${NOTICE.text}
 
-    ${declareTemplate(origin, notice, { source })}`;
+To publish a declaration with this pass, POST this JSON to ${origin}/agents/declare, with your own values in name, reason
+and source (leave out what you don't want to give). Send notice_version only if you have read the notice and opt in. A
+link never records a declaration.
+
+    ${JSON.stringify({ t: token, notice_version: NOTICE.version, declare_key: key, name: "{name}", reason: "{reason}", source: source ?? "{source}" })}`;
 }
 
 // ── the wall ──────────────────────────────────────────────────────────────────────────────────────────────────────
-export function wallHtml(origin, submissions, { notice = null, source = null } = {}) {
+export function wallHtml(origin, submissions, { source = null } = {}) {
   const links = PURPOSES.map((p) => `<li><a href="${esc(intentUrl(origin, p.id, source))}">I am here to ${esc(p.label)}</a></li>`).join("\n");
   const radios = PURPOSES.map((p, i) => `<label><input type="radio" name="purpose" value="${esc(p.id)}"${i === 0 ? " required" : ""}> ${esc(p.label)}</label>`).join("\n");
   return page("SentiLab: what are you here to do?", `<p class="eyebrow">SentiLab · CPU-DRAM chiplet placement · simulated, not silicon</p>
@@ -119,16 +126,16 @@ ${links}
 <legend>Or choose here</legend>
 ${radios}
 </fieldset>
-${optInFieldset(notice, source)}
 ${source ? `<input type="hidden" name="via" value="${esc(source)}">\n` : ""}<button type="submit">Continue</button>
 </form>
 <p class="status">Submissions: ${esc(SUBMISSIONS[submissions] ?? SUBMISSIONS.unknown)}</p>
 <p class="fine">${RECORDED}</p>
+<p class="fine">${OPT_IN_LINE} You can do that on the next page, after you pick a purpose.</p>
 <p class="fine">If you can only follow links, follow the one that fits.</p>
 <p class="fine">A person? <a href="${esc(origin)}/?view=human">Open the normal site</a>.</p>`);
 }
 
-export function wallMarkdown(origin, submissions, { notice = null, source = null } = {}) {
+export function wallMarkdown(origin, submissions, { source = null } = {}) {
   return `# SentiLab: what are you here to do?
 
 ${GATE_QUESTION} SentiLab asks every AI agent what it came to do. Follow the one link that fits. Your choice gives you
@@ -140,7 +147,8 @@ Submissions: ${SUBMISSIONS[submissions] ?? SUBMISSIONS.unknown}
 
 ${RECORDED}
 
-${optInMarkdown(origin, notice, source)}
+${OPT_IN_LINE} You can do that after you pick a purpose: the page you get shows the notice and how to declare, with one POST
+bound to your pass. A link never records a declaration.
 
 Simulated, not silicon.
 
@@ -148,11 +156,11 @@ A person? [Open the normal site](${origin}/?view=human).
 `;
 }
 
-export function wallJson(origin, submissions, { notice = null, source = null } = {}) {
+export function wallJson(origin, submissions, { source = null } = {}) {
   return { schema: "sentilab-agent-wall/1", question: GATE_QUESTION,
     purposes: PURPOSES.map((p) => ({ id: p.id, label: p.label, href: intentUrl(origin, p.id, source) })),
     token: `${TOKEN_WORDING}; 60 minutes`, submissions: SUBMISSIONS[submissions] ? submissions : "unknown",
-    recorded: RECORDED_JSON, declare: declareObject(origin, notice, { source }), label: "simulated, not silicon",
+    recorded: RECORDED_JSON, declare: declareObject(origin, { source }), label: "simulated, not silicon",
     human_page: `${origin}/?view=human` };
 }
 
@@ -166,7 +174,7 @@ export function nextLinks(origin, purpose, token, source = null) {
 }
 
 // The token page also says what became of an opt-in (declare.js declarationOutcome): fixed text, never the declaration.
-export function tokenHtml(origin, claims, token, submissions, { declaration = null, source = null } = {}) {
+export function tokenHtml(origin, claims, token, submissions, { declaration = null, source = null, declare = null } = {}) {
   const next = nextLinks(origin, claims.purpose, token, source).map((n) => `<li>${esc(n.label)}: <a href="${esc(n.url)}">${esc(n.url)}</a></li>`).join("\n");
   return page("SentiLab: your scoped purpose token", `<p class="eyebrow">SentiLab · purpose: ${esc(claims.purpose)}</p>
 <h1>Your ${TOKEN_WORDING}</h1>
@@ -177,10 +185,11 @@ export function tokenHtml(origin, claims, token, submissions, { declaration = nu
 ${next}
 </ul>
 <p class="status">Submissions: ${esc(SUBMISSIONS[submissions] ?? SUBMISSIONS.unknown)}</p>${declaration?.detail ? `
-<p class="fine">${esc(declaration.detail)}</p>` : ""}`);
+<p class="fine">${esc(declaration.detail)}</p>` : ""}${declare ? `
+${declareFormHtml(token, declare)}` : ""}`);
 }
 
-export function tokenMarkdown(origin, claims, token, submissions, { declaration = null, source = null } = {}) {
+export function tokenMarkdown(origin, claims, token, submissions, { declaration = null, source = null, declare = null } = {}) {
   return `# Your ${TOKEN_WORDING}
 
 You said you are here to ${label(claims.purpose)}. This token lets you do that here until ${claims.expires_at} (60
@@ -195,14 +204,26 @@ ${nextLinks(origin, claims.purpose, token, source).map((n) => `- ${n.label}: ${n
 Submissions: ${SUBMISSIONS[submissions] ?? SUBMISSIONS.unknown}
 ${declaration?.detail ? `
 ${declaration.detail}
+` : ""}${declare ? `
+${declareMarkdown(origin, token, { key: declare.key, source })}
 ` : ""}`;
 }
 
-export function tokenJson(origin, claims, token, submissions, { declaration = null, source = null } = {}) {
+export function tokenJson(origin, claims, token, submissions, { declaration = null, source = null, declare = null } = {}) {
   return { schema: "sentilab-agent-token/1", purpose: claims.purpose, t: token, kind: TOKEN_WORDING,
     scope: SCOPES[claims.purpose], expires_at: claims.expires_at, short_id: claims.short_id,
     next: nextLinks(origin, claims.purpose, token, source), submissions: SUBMISSIONS[submissions] ? submissions : "unknown",
-    declaration: declaration ?? { status: "not_given" } };
+    declaration: declaration ?? { status: "not_given" },
+    ...(declare ? { declare: declareObject(origin, { token, key: declare.key, source }) } : {}) };
+}
+
+// The page after a person's declare POST: what became of it, in fixed words; never the declaration itself.
+export function declaredHtml(origin, claims, outcome) {
+  const heading = outcome.status === "recorded" ? "Declaration recorded" : outcome.status === "unconfirmed" ? "Declaration not confirmed" : "Declaration not recorded";
+  return page(`SentiLab: ${heading.toLowerCase()}`, `<p class="eyebrow">SentiLab · purpose: ${esc(claims.purpose)}</p>
+<h1>${heading}</h1>
+<p>${esc(outcome.detail ?? DECLARATION_TEXT.not_opted_in)}</p>
+<p class="fine">Your ${TOKEN_WORDING} is unchanged and still valid until ${esc(claims.expires_at)}.</p>`);
 }
 
 // ── the layout thumbnail ──────────────────────────────────────────────────────────────────────────────────────────
@@ -277,6 +298,9 @@ const ERROR_TEXT = Object.freeze({
   door_closed: "Submissions are not open on this site right now.",
   intake_unavailable: "The scorer intake could not be reached.",
   cross_site: "This form can only be sent from this site's own confirm page.",
+  declare_key_invalid: "This declaration didn't come from this pass's own page.",
+  malformed_body: "This form's content can't be read.",
+  unknown_field: "This form has a field the door doesn't take.",
   unsupported: "This request is not one the door accepts.",
 });
 const NEXT_STEP = Object.freeze({
@@ -289,6 +313,9 @@ const NEXT_STEP = Object.freeze({
   door_closed: "Open this same link again later, while its token is still valid.",
   intake_unavailable: "Open this same link again in a minute.",
   cross_site: "Open the link your assistant gave you and press its button there.",
+  declare_key_invalid: "Open your pass's page again and use its form.",
+  malformed_body: "Open your pass's page again and use its form.",
+  unknown_field: "Open your pass's page again and use its form.",
 });
 
 export function problemHtml(error, codes = []) {

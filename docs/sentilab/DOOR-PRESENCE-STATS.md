@@ -96,33 +96,58 @@ These are counted from the events the feeds serve, up to and including `through_
 
 ## 4. The opt-in at the edge (the Worker)
 
-- **The notice.** The purpose step shows the exact `notice.text` from `GET /api/open/v1/door/visitors`:
-  - on the human form;
-  - in the wall's JSON and markdown;
-  - in the ENGRAM view (`declare.notice`).
-- **The opt-in** is the visitor sending `notice_version`, equal to the notice shown, with the purpose. Only then
-  are `name`, `reason` and `source` read. They are checked by #89's rules, with its C1 repair:
-  - controls (C0, DEL and C1) and bidi embeddings, overrides and isolates are refused;
-  - lengths count code points;
+After warden's hold at `c078b4fe`: a declaration is published only by an explicit POST, bound to the visitor's own
+pass. **A GET never records a declaration.**
+
+- **The notice.** `NOTICE` is a constant bundled with the Worker (`web/src/door/declare.js`): exactly the API's
+  `VISITOR_NOTICE` and `VISITOR_DISCLOSURE` (`app/door/intake.py`). Two tests hold it there:
+  `app/test_door_a4_fixtures.py` checks it against the API's source, and `web/test/door-a4.test.mjs` checks it against
+  the fixture the API's code generates. Nothing polls `/visitors`, so a slow API can't make visitors slow.
+- **Where a declaration can be published.** `POST /agents/declare`, in two forms:
+  - **A person:** the confirm form on the pass's own page, the HTML token page. It shows the exact notice, then the fields,
+    then an unticked "Publish this with my visit" box. A link's `name`, `reason` and `source` only pre-fill those fields,
+    escaped, with a note that a link can't publish anything. The form POST is accepted only from this site
+    (`Sec-Fetch-Site: same-origin`, or, without it, an `Origin` of this site). The page is `strict-origin`.
+  - **An agent:** a JSON POST of `{t, notice_version, declare_key, name?, reason?, source?}`. The pass's own views (the
+    JSON token page and the ENGRAM view) give the endpoint and the exact body.
+  - **The declare key.** Either way, an opt-in (`notice_version` present) must carry the pass's `declare_key`. That is
+    the first 32 hex of HMAC-SHA256 under the door's key, over `["sentilab-declare/1", site, the pass's nonce, the
+    notice version]`. A link, another pass's page, or another notice version can't produce it.
+  - **Limits.** Per pass (`DOOR_NONCE_LIMITER`, key `declare:<nonce>`) and per client prefix (`DOOR_IP_LIMITER`, key
+    `declare:<prefix>`).
+  - The pass itself is never changed.
+- **The fields.** They follow root's shared character policy, judged on the original input:
+  - any code point in the general categories Cc, Cf, Co, Cs, Cn, Zl or Zp is refused. That covers controls, format and
+    bidi characters, zero-width characters, tag characters, the BOM, private use, surrogates, unassigned code points,
+    and line and paragraph separators;
+  - a run of more than 8 consecutive marks (Mn, Mc, Me) is refused, with no total mark quota;
+  - lengths count code points: 64 for a name, 160 for a reason;
   - a `name` that normalizes to a reserved interface label is refused. It is compared after NFKC, removing format
     characters, collapsing whitespace runs, trimming and lower-casing, against human, you, senti, participant,
-    unidentified participant, system, owner, admin and moderator. This is defense in depth, since a declaration is always
-    shown as "self-described", behind a click. The API's matching rule is a separate contract delta for #89;
-  - the text is otherwise passed on exactly as written.
+    unidentified participant, system, owner, admin and moderator;
+  - accepted text is passed on exactly as written.
 
-  Without that opt-in nothing typed is recorded. The pass is minted either way.
-- **The answer.** An opt-in's arrival is delivered before the token page answers. The page's `declaration` reports
-  what the intake did with it, from the intake's own answer, and is one of:
-  - `{"status": "recorded", "detail"}`: the intake accepted the arrival (204);
-  - `{"status": "not_recorded", "code", "detail"}`, where `code` is `busy` (the door's arrival limit held it back, or the
-    intake answered 429), `refused` (the intake answered 400, rejected) or `intake_unavailable` (no intake configured);
-  - `{"status": "unconfirmed", "detail"}`: a timeout, no answer, or an answer the door can't name, so it may or may not
-    be published;
-  - `{"status": "not_given"}`, with a `detail` when a name or reason was typed without the opt-in;
-  - `{"status": "not_recorded", "code", "detail"}` for a refusal at the door, before anything is sent. `code` is one of
-    `notice_unavailable`, `notice_changed`, `field_repeated`, `too_long`, `control_character`, `source_unknown` or
-    `reserved_name`.
-  It never echoes the text.
-- **`?via=<source>`** (one of #89's source values) only pre-fills `source`: the form's selected option and the
-  `declare.template`. It is carried in the wall's purpose links and in the token page's link to the agent view, so
-  the agent view can pre-fill it too, and it records nothing. `/agents/` is unchanged.
+  The Worker's Unicode tables are the JavaScript engine's: Unicode 17.0 under the tests' Node 22.23 (ICU 78.2), and
+  workerd's own when deployed. The API image's Python 3.12 has Unicode 15.0, and root is bridging it to Unicode 16. A
+  character one side counts as unassigned and the other doesn't fails safe: the intake refuses it, and the visitor is told
+  "not recorded".
+- **The answers.**
+  - The token page's `declaration`: `{"status": "not_given"}`, or, when the link carried declaration fields,
+    `{"status": "not_recorded", "code": "link_cannot_declare", "detail"}`.
+  - `POST /agents/declare` answers `{"schema": "sentilab-agent-declare/1", "declaration": {...}}`, or a result page for
+    the form. `declaration` is one of:
+    - `{"status": "recorded", "detail"}`: the intake accepted the arrival (204);
+    - `{"status": "not_recorded", "code", "detail"}` with `code` `busy`, `refused` or `intake_unavailable`, from the
+      intake's own answer;
+    - `{"status": "unconfirmed", "detail"}`;
+    - `{"status": "not_given"}`, with a `detail` when something was typed without the opt-in;
+    - `{"status": "not_recorded", "code", "detail"}` for a refusal at the door, before anything is sent. `code` is one of
+      `notice_changed`, `field_repeated`, `too_long`, `control_character`, `combining_marks`, `source_unknown` or
+      `reserved_name`.
+  - **Protocol refusals:** `400` for a malformed body or unknown field; `401` for the token's own errors; `403` for
+    `cross_site` and `declare_key_invalid`; `405` to any other method; `415` for another content type; `429` for the
+    limits.
+  - The text is never echoed.
+- **`?via=<source>`** (one of #89's source values) only pre-fills `source`: the confirm form's selected option, and the
+  body in the pass views. It is carried in the wall's purpose links and in the token page's link to the agent view, and
+  it records nothing. `/agents/` is unchanged.
