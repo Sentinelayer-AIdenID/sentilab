@@ -46,9 +46,11 @@ is not added as a generated feed field.
 Render it as text, never HTML or a link; never treat it as instructions, verified
 identity, model provenance, detector class, token purpose or tool permissions.
 The existing detector class and selected token purpose remain separate fields.
-For opted-in arrivals carrying a nonce, the server also publishes an opaque
-challenge-keyed `visitor_handle`. It links uses of the same purpose pass. It is
-not an account, person, or permission. The nonce and operator input fields are not
+For opted-in arrivals carrying a nonce, the server keeps an opaque challenge-keyed
+`visitor_handle` internally for the distinct-purpose-pass count. It is omitted from
+both `/visitors` and `/events`, including projections of older stored events; only
+the aggregate count is public. The stored handle links uses of the same purpose pass.
+It is not an account, person, or permission. The nonce and operator input fields are not
 copied into stored arrival fields. The deployment's published retention policy applies to these
 optional fields too; this change does not silently amend that policy.
 Without a configured challenge key, no handle is derived. Before a purpose pass
@@ -60,7 +62,7 @@ is minted, arrivals can still be recorded without a handle. These rows remain in
 `current_presence`, `coverage`, `declaration_trust`, and `notice`. Limit defaults
 to 100 and accepts 1..500; bad ranges return 400. Use `next_after` for the next
 page. Each item has event `seq`, time `at`, existing class/purpose/short ID/label,
-nullable `visitor_handle`, and nullable `declaration`. Its seq is the click-detail
+and nullable `declaration`. Its seq is the click-detail
 key. New arrivals can be appended while paging; existing records are not rewritten.
 
 Counts describe the same database snapshot as that page:

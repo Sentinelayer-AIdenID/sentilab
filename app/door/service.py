@@ -330,7 +330,9 @@ class Door:
             return 400, {"error": "invalid paging range"}, {}
         rows = self.store.events(after, limit + 1)
         page = rows[:limit]
-        events = [{"seq": row["seq"], "at": iso(row["at"]), "kind": row["kind"], **json.loads(row["body"])}
+        # Handles stay in the historical store for aggregation, never in an open feed.
+        events = [{"seq": row["seq"], "at": iso(row["at"]), "kind": row["kind"],
+                   **{key: value for key, value in json.loads(row["body"]).items() if key != "visitor_handle"}}
                   for row in page]
         return 200, {"schema": "sentilab-door-events/1", "events": events,
                      "next_after": page[-1]["seq"] if page else after, "has_more": len(rows) > limit,
@@ -347,8 +349,7 @@ class Door:
             body = json.loads(row["body"])
             item = {"seq": row["seq"], "at": iso(row["at"])}
             # Explicit projection: legacy/private fields can never leak through this new view.
-            item.update({key: body.get(key) for key in ("class", "purpose", "short_id", "label",
-                                                        "visitor_handle")})
+            item.update({key: body.get(key) for key in ("class", "purpose", "short_id", "label")})
             declaration = body.get("declaration")
             item["declaration"] = ({key: declaration[key] for key in ("notice_version", "name", "reason", "source")
                                     if key in declaration}
@@ -358,7 +359,7 @@ class Door:
                      "next_after": page[-1]["seq"] if page else after, "has_more": len(rows) > limit,
                      "counts": counts, "current_presence": {"status": "not_measured", "count": None},
                      "coverage": "Recorded Door arrivals, not all HTTP requests or verified people. "
-                                 "Handles identify observed purpose passes, not unique humans or agents.",
+                                 "Counts use internal handles of observed purpose passes, not unique humans or agents.",
                      "declaration_trust": "self_declared_display_data",
                      "notice": {"version": intake.VISITOR_NOTICE, "text": intake.VISITOR_DISCLOSURE}}, {}
 

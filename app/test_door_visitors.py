@@ -150,12 +150,38 @@ class VisitorTests(unittest.TestCase):
         self.assertNotIn('hidden-operator-canary', json.dumps(page))
         self.assertEqual(page['counts']['arrivals_by_class'], {'unknown': 1})
 
-    def test_no_public_handle_is_derived_from_an_unconfigured_challenge_key(self):
+    def test_internal_handles_are_counted_but_never_projected_publicly(self):
+        declaration = {'notice_version': intake.VISITOR_NOTICE, 'name': 'Example bot'}
+        for nonce in ('a' * 16, 'a' * 16, 'b' * 16):
+            self.assertEqual(self.arrival(nonce=nonce, declaration=declaration)[0], 204)
+        self.assertEqual(self.arrival()[0], 204)
+        # An existing record also stays unchanged on disk while its public projection is repaired.
+        self.store.note_arrival({'class': 'unknown', 'visitor_handle': 'legacy-handle-canary',
+                                 'declaration': declaration}, now=1, per_min=600)
+        before = self.store.events(0, 100)
+        handles = [json.loads(row['body']).get('visitor_handle') for row in before]
+        self.assertEqual(handles[:3], [self.door.policy.keyed('public-visitor/1', nonce)
+                                     for nonce in ('a' * 16, 'a' * 16, 'b' * 16)])
+        page = self.door.visitors(None, None)[1]
+        self.door.scorer_state = SimpleNamespace(snapshot=lambda: {'state': 'not_started'})
+        feed = self.door.events(None, None)[1]
+        self.assertTrue(all('visitor_handle' not in row for row in page['items']))
+        self.assertTrue(all('visitor_handle' not in row for row in feed['events']))
+        public = json.dumps([page, feed])
+        self.assertTrue(all(handle not in public for handle in handles if handle))
+        self.assertEqual(page['counts']['unique_observed_handles'], 3)
+        self.assertEqual(page['counts']['arrivals_without_handle'], 1)
+        self.assertEqual(page['items'][0]['declaration'], declaration)
+        self.assertEqual(feed['events'][0]['declaration'], declaration)
+        self.assertEqual(self.store.events(0, 100), before)
+
+    def test_no_handle_is_derived_from_an_unconfigured_challenge_key(self):
         self.door.policy.k_challenge = b''
         self.assertEqual(self.arrival(nonce='a' * 16,
                                      declaration={'notice_version': intake.VISITOR_NOTICE})[0], 204)
         page = self.door.visitors(None, None)[1]
-        self.assertIsNone(page['items'][0]['visitor_handle'])
+        self.assertNotIn('visitor_handle', page['items'][0])
+        self.assertNotIn('visitor_handle', json.loads(self.store.events(0, 1)[0]['body']))
         self.assertEqual(page['counts']['unique_observed_handles'], 0)
 
     def test_passive_http_view_keeps_existing_feed_limits(self):
