@@ -44,14 +44,14 @@ test("the talk fits three minutes at 150 words a minute, transitions included; m
   const u = data.budget;
   assert.equal(u.talkWords, data.slides.filter((s) => s.main).reduce((a, s) => a + s.notes.words, 0));
   assert.ok(u.totalSeconds <= 200, `${u.totalSeconds} s`); // 3:00 to 3:20, Carter's slot (57411): 3-4 minutes of talk, then the demo
-  assert.deepEqual([u.talkWords, u.talkSeconds, u.transitionSeconds, u.totalSeconds], [390, 156, 15, 171]);
-  assert.throws(() => variant((v) => { v.slides[0].say += " and then".repeat(40); }), (e) => e instanceof FounderError && /over the 200 s cap/.test(e.message));
+  assert.deepEqual([u.talkWords, u.talkSeconds, u.transitionSeconds, u.totalSeconds], [379, 151.6, 15, 166.6]);
+  assert.throws(() => variant((v) => { v.slides[0].say += " and then".repeat(50); }), (e) => e instanceof FounderError && /over the 200 s cap/.test(e.message));
   // A placeholder is one word, read or not, so filling it in does not move the clock.
   assert.equal(slide(data, "invite").notes.words, countWords("We're inviting agents on Moltbook: N votes, N visits, N passed."));
   // v4-short: two minutes of talk, transitions included, then the demo.
   const short = buildFounderData(loaded, { slot: "2min" });
   assert.deepEqual(short.slides.filter((x) => x.main).map((x) => x.id), SHORT);
-  assert.deepEqual([short.budget.talkWords, short.budget.talkSeconds, short.budget.transitionSeconds, short.budget.totalSeconds], [255, 102, 10, 112]);
+  assert.deepEqual([short.budget.talkWords, short.budget.talkSeconds, short.budget.transitionSeconds, short.budget.totalSeconds], [244, 97.6, 10, 107.6]);
   // The cut slides lead the backup, then the backup pages.
   assert.deepEqual(short.slides.filter((x) => !x.main).map((x) => x.id), ["senti", "times", "link", "point", "sources", "cost", "solvers"]);
   assert.throws(() => buildFounderData(loaded, { slot: "4min" }), /--slot must be one of 3min, 2min/);
@@ -62,7 +62,7 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   // Root, reply to 57809 at 07:04Z: the two paragraph openings, as written.
   assert.ok(say("hook").startsWith("In detailed 3D mode, two versions of HotSpot gave roughly 119 and 241 degrees at the hottest modeled grid cells, for the same design and input files."));
   // Slide 7, the scorecard: aneta's first sentence (57906), root's preferred wording (reply to 57902, 08:04Z), then the beat.
-  assert.equal(say("scorecard"), "Using the older setup and the paper's own reading, we reproduced two published values within a hundredth of a degree. Our saved older-build result matched the paper but failed this heat-balance check. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.");
+  assert.equal(say("scorecard"), "Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. Our saved older-build result matched the paper but failed this heat-balance check. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.");
   assert.match(slide(data, "scorecard").notes.cue, /Pause before "I nodded\."/);
   assert.equal(slide(data, "scorecard").content.title, "Passing one check isn't passing them all.");
   // Aneta's shortening (57816), with the distinction kept in the footer.
@@ -72,13 +72,16 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   assert.ok(say("chips").endsWith("All I know is a chip package is a few small chips, chiplets, that get hot, and you can't put them too close together or too far apart. But I'll tell you what: my agents know chip design."));
   for (const w of ["recognizes agents", "sets them up", "collaborate", "serves what they need", "keeps a record of what they did.", "Delegation is scoped", "handled gracefully", "only gets what it's allowed to touch", "Shopping, security, and today, science."]) assert.ok(say("senti").includes(w), w);
   assert.doesNotMatch(say("senti") + shown(data, "senti"), /everywhere they went|where it went|3\.8 s|22,900/, "aneta's 57906 items 3 and 4");
-  for (const w of ["most teams had never had their agents talk to another lab's agents", "people watched every agent work", "agents geared each other up and guarded the room", "plain messages became tickets"]) assert.ok(say("room").includes(w), w);
-  assert.match(slide(data, "room").notes.cue, /^Carter's call: "most teams had never had their agents talk to another lab's agents"/);
+  for (const w of ["outside agents worked beside ours in one room", "People watched every agent work", "agents geared each other up and guarded the room", "plain messages became tickets"]) assert.ok(say("room").includes(w), w);
+  // Root (08:40Z): "most teams…" stays out of the narration, as Carter's marked option in the notes only.
+  assert.doesNotMatch(say("room") + shown(data, "room"), /most teams/i);
+  assert.match(slide(data, "room").notes.cue, /^Carter's option, not a verified fact .*"Most teams had never had their agents talk to another lab's agents\."/);
   // The participants line in aneta's wording (57906), with the metrics pass's numbers (root, 07:52Z).
   assert.ok(say("room").endsWith("422 messages from 28 identities: 5 human, 23 agent."));
   assert.match(shown(data, "room"), /11 in the help room, 9 in our team room/);
   assert.doesNotMatch(shown(data, "room") + say("room"), /\b17 people\b/);
-  assert.match(shown(data, "room"), /at least 8 outside teams/);
+  assert.match(shown(data, "room"), /8 outside agent posting groups, plus 3 human-only groups/);
+  assert.doesNotMatch(shown(data, "room") + shown(data, "sources"), /at least 8|outside teams/, "posting groups are not teams (root, 08:40Z)");
   assert.match(shown(data, "room"), /rated helpful by our intent model \(model-rated, not confirmed\)/);
   assert.match(say("closer"), /^My ambition\? Make you wonder why your agents need Kiro, Jira, Slack, Facebook, and GitHub\. Okay, not GitHub\. Yet\./);
   assert.match(slide(data, "closer").notes.cue, /"Okay, not GitHub\. Yet\." is the quiet aside\. Naming the network out loud is Carter's call \(aneta recommends naming it\)/);
@@ -94,6 +97,9 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   for (const t of ["Each column uses its own reading.", "Rounding limit: about 0.43 W, 0.063%; not a total error bound.", "Older: our pinned 6.0 build", "as ScienceClaw reports", "as Delfie reports; ScienceClaw reports too"]) assert.ok(served.includes(t), t);
   assert.ok(!served.includes("re-ran it"), "the participant-report boundary");
   assert.equal(fig.alt, loaded.v4.figures.plain7.alt);
+  // Aneta's expanded description (57915): the selector, rounding and provenance qualifications, with the reported attribution.
+  for (const t of ["The heat check's rounding limit is about 0.43 watts, 0.063 percent, and is not a total error bound.", "The paper column uses the native all-block reading, 232.67 degrees for 7.0.", "The solver column uses the hottest chiplet entry, 224.67 degrees for 7.0", "as Delfie reports and ScienceClaw reports too"]) assert.ok(fig.alt.includes(t), t);
+  assert.ok(served.includes("aria-label=\"Three versions against three checks on the CPU-DRAM design. Older version, our pinned 6.0 build"));
   assert.ok(shown(data, "scorecard").includes("Delfie (delphisci team) reports the one-step change; ScienceClaw reports reproducing it"));
 });
 
@@ -158,6 +164,10 @@ test("the founder PDFs are the exports, 3min and 2min: one page per slide, the o
     assert.equal(pages, d.slides.length, d.deck.slot);
   }
   for (const f of ["sheet-main.png", "sheet-main-2min.png"]) assert.ok(existsSync(join(FOUNDER_DIR, f)), f);
+  // Root's timing note: with the demo, and a real timed rehearsal before the talk.
+  assert.match(readFileSync(scriptPath("3min"), "utf8"), /\*\*With the demo:\*\* 120 s of demo makes 286\.6 s \(4:47\) at 150 wpm, or 303\.4 s \(5:03\) at 135\. Before the talk, do one real timed rehearsal with the actual demo\./);
+  assert.match(readFileSync(scriptPath("2min"), "utf8"), /60 s of demo makes 167\.6 s \(2:48\)/);
+  assert.match(committed.slides[0].notes.cue, /one real timed rehearsal with the actual demo/);
   assert.equal(readFileSync(scriptPath("2min"), "utf8"), speakerScript(short, loaded.v4));
 });
 

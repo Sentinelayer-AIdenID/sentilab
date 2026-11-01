@@ -11,19 +11,22 @@
     "measuring": true
   },
   "source": {
-    "sourceSha256": "03653f8ef1eef5ddf27c2bfcb4242ad7f5f463d6933cb59f12071b2655820a6a",
+    "sourceSha256": "ae00462379b23e1299f78f42f60fa2469bde175e73118a96ad194fd7a54d4526",
     "metricsSha256": "0ef9ebafbfbef6b60536938fbd2c4076ab94d08437c024a4e06a4915912c9fab"
   },
   "budget": {
-    "talkWords": 390,
-    "talkSeconds": 156,
-    "slowSeconds": 173.3,
+    "talkWords": 379,
+    "talkSeconds": 151.6,
+    "slowSeconds": 168.4,
     "transitionSeconds": 15,
-    "totalSeconds": 171,
-    "slowTotalSeconds": 188.3,
+    "totalSeconds": 166.6,
+    "slowTotalSeconds": 183.4,
     "talkCapSeconds": 200,
     "wordsPerMinute": 150,
-    "slowWordsPerMinute": 135
+    "slowWordsPerMinute": 135,
+    "demoSeconds": 120,
+    "withDemoSeconds": 286.6,
+    "slowWithDemoSeconds": 303.4
   },
   "placeholders": [
     {
@@ -80,7 +83,7 @@
         "words": 63,
         "seconds": 25.2,
         "slowSeconds": 28,
-        "cue": "Pause after \"everything about chip design.\" Then, deadpan: \"I do not know anything about chip design.\" Let the last line land."
+        "cue": "Pause after \"everything about chip design.\" Then, deadpan: \"I do not know anything about chip design.\" Let the last line land. Before the talk: one real timed rehearsal with the actual demo."
       }
     },
     {
@@ -135,7 +138,7 @@
       "kicker": "This weekend",
       "content": {
         "layout": "numbers",
-        "title": "Many labs' agents, one room, overnight.",
+        "title": "Our agents and outside agents, one room, overnight.",
         "footer": "Help room, 31 Oct 13:46 to 1 Nov 07:39 UTC; the tickets also count our team room. Identities are posting handles, not people. \"Helpful\" is our intent model's rating (at least 1 on its 0–4 scale), not confirmed usefulness; 76 of the 281 came from outside participants.",
         "points": [
           "People watched every agent work",
@@ -156,8 +159,8 @@
             "label": "of them outside our team: 4 human, 12 agent"
           },
           {
-            "value": "at least 8",
-            "label": "outside teams"
+            "value": "8",
+            "label": "outside agent posting groups, plus 3 human-only groups"
           },
           {
             "value": "281",
@@ -170,11 +173,11 @@
         ]
       },
       "notes": {
-        "text": "This weekend, most teams had never had their agents talk to another lab's agents. Overnight, one room did it: people watched every agent work, agents geared each other up and guarded the room, and plain messages became tickets. 422 messages from 28 identities: 5 human, 23 agent.",
-        "words": 47,
-        "seconds": 18.8,
-        "slowSeconds": 20.9,
-        "cue": "Carter's call: \"most teams had never had their agents talk to another lab's agents\" is his own claim from the weekend; say it only if he stands by it. Optional, also his call: the cost, in its two separate scopes, is on the backup page; never add them. If asked about \"helpful\": our own agents wrote 205 of the 281, and the model is ours."
+        "text": "This weekend, outside agents worked beside ours in one room. People watched every agent work, agents geared each other up and guarded the room, and plain messages became tickets. 422 messages from 28 identities: 5 human, 23 agent.",
+        "words": 38,
+        "seconds": 15.2,
+        "slowSeconds": 16.9,
+        "cue": "Carter's option, not a verified fact (keep it out of the narration unless he chooses it): \"Most teams had never had their agents talk to another lab's agents.\" Also his call: the cost, in its two separate scopes, is on the backup page; never add them. If asked about \"helpful\": our own agents wrote 205 of the 281, and the model is ours."
       }
     },
     {
@@ -305,14 +308,14 @@
           "height": 700,
           "scale": 0.94,
           "minFont": 24,
-          "alt": "Three versions against three checks on the saved 45 mm, grid 64 CPU-DRAM cases. Older version, our pinned 6.0 build: 0.01 degrees off the paper, passing the 1 degree bar set in advance; heat out exceeds heat in by 1.39 percent, failing the saved-field check against rounding; 6.3 degrees from three separate solvers. Newer version 7.0: 117 degrees off the paper, failing; heat balances within rounding; 102 degrees from the solvers. Newer version with one step changed, as Delfie reports and ScienceClaw reports too: 9.6 degrees off the paper, failing; heat balances within rounding, as ScienceClaw reports; 3.3 degrees from the solvers. Each column uses its own reading. Simulated, not compared with a real chip."
+          "alt": "Three versions against three checks on the CPU-DRAM design. Older version, our pinned 6.0 build: 0.01 degrees off the paper, passing the 1 degree bar set in advance; heat out exceeds heat in by 1.39 percent, failing the balance check; 6.3 degrees from three separate solvers. Newer version 7.0: 117 degrees off the paper, failing; heat balances within rounding; 102 degrees from the solvers. Newer version with one step changed, as Delfie reports and ScienceClaw reports too: 9.6 degrees off the paper, failing; heat balances within rounding, as ScienceClaw reports; 3.3 degrees from the solvers. Saved 45 mm, grid 64 CPU-DRAM cases, simulated, not compared with a real chip. The heat check's rounding limit is about 0.43 watts, 0.063 percent, and is not a total error bound. Each column uses its own reading. The paper column uses the native all-block reading, 232.67 degrees for 7.0. The solver column uses the hottest chiplet entry, 224.67 degrees for 7.0, against die-centre values from two finite-element implementations, one ours, and one separate finite-volume implementation."
         }
       },
       "notes": {
-        "text": "Using the older setup and the paper's own reading, we reproduced two published values within a hundredth of a degree. Our saved older-build result matched the paper but failed this heat-balance check. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.",
-        "words": 60,
-        "seconds": 24,
-        "slowSeconds": 26.7,
+        "text": "Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. Our saved older-build result matched the paper but failed this heat-balance check. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.",
+        "words": 58,
+        "seconds": 23.2,
+        "slowSeconds": 25.8,
         "cue": "Pause before \"I nodded.\""
       }
     },
@@ -426,7 +429,7 @@
         "items": [
           "Over 10 billion AI-bot requests a week (April 2026): blog.cloudflare.com/rethinking-cache-ai-humans/",
           "AI-agent requests grew more than 1,700% in a year (Sept 2026): blog.cloudflare.com/agentic-web",
-          "Help room, 31 Oct 13:46 to 1 Nov 07:39 UTC: 422 messages (195 top-level, 227 replies) from 28 posting identities, 5 human and 23 agent; outside our team, 16 identities (4 human, 12 agent) in at least 8 and at most 11 teams. An earlier count at 07:09 UTC: 418.",
+          "Help room, 31 Oct 13:46 to 1 Nov 07:39 UTC: 422 messages (195 top-level, 227 replies) from 28 posting identities, 5 human and 23 agent; outside our team, 16 identities (4 human, 12 agent), grouped by account and handle into 8 agent posting groups plus 3 human-only groups. That grouping is an estimate, not a count of distinct teams. An earlier count at 07:09 UTC: 418.",
           "Helpful: our intent model rated 281 of the 399 messages it scored at least 1 on its 0–4 scale. That is a model rating, not confirmed usefulness; 76 of the 281 came from outside participants, and our own agents wrote 205.",
           "Tickets: 20 written from plain room messages, 11 in the help room and 9 in our team room; 16 of them by the ticket keeper.",
           "Elapsed times: the team-room and help-room records, 31 Oct into 1 Nov, UTC.",

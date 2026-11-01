@@ -264,7 +264,9 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
     schema: "sentilab-deck-founder-data/1",
     deck: { title: v4.title, event: v4.event, talk: S.talk, slot, cutoff, cutoffIso: v4.cutoff, draft: !final, measuring: !final && fills.length > 0 },
     source: { sourceSha256, metricsSha256: metrics.sha256 },
-    budget: { talkWords: words, talkSeconds, slowSeconds, transitionSeconds: c.transitionSeconds, totalSeconds: total, slowTotalSeconds: tenths(slowSeconds + c.transitionSeconds), talkCapSeconds: c.talkCapSeconds, wordsPerMinute: c.wordsPerMinute, slowWordsPerMinute: c.slowWordsPerMinute },
+    budget: { talkWords: words, talkSeconds, slowSeconds, transitionSeconds: c.transitionSeconds, totalSeconds: total, slowTotalSeconds: tenths(slowSeconds + c.transitionSeconds), talkCapSeconds: c.talkCapSeconds, wordsPerMinute: c.wordsPerMinute, slowWordsPerMinute: c.slowWordsPerMinute,
+      // With the demo the slot plans for (Carter's slot, 57411: 3-4 minutes of talk, then 1-2 of demo).
+      demoSeconds: S.demoSeconds ?? 0, withDemoSeconds: tenths(total + (S.demoSeconds ?? 0)), slowWithDemoSeconds: tenths(slowSeconds + c.transitionSeconds + (S.demoSeconds ?? 0)) },
     placeholders: fills,
     slides: slides.map(({ facts, ...s }) => s),
     facts: slides.map((s) => ({ id: s.id, facts: s.facts })),
@@ -279,6 +281,8 @@ export function serialize(data) {
   return { json, js: `window.DECK_DATA = ${JSON.stringify(pub)};\n` };
 }
 
+// Seconds as m:ss, rounded to the second (291 -> "4:51").
+const mss = (s) => `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 60).padStart(2, "0")}`;
 export function speakerScript(data, v4) {
   const u = data.budget;
   const out = [
@@ -287,6 +291,8 @@ export function speakerScript(data, v4) {
     `The spoken words, exactly as the deck's notes hold them (V4.json sha256 ${data.source.sourceSha256.slice(0, 8)}…). Spine: root's founder pitch (team room 57809), with root's two carried openings (reply to 57809, 07:04Z), the finding beat in root's wording (reply to 57816, 07:14Z) and Carter's additions from 57800. The technical deck (v3.1) is the backup.`,
     "",
     `**Clock:** ${u.talkWords} words = ${u.talkSeconds} s at ${u.wordsPerMinute} wpm, plus ${u.transitionSeconds} s of transitions = ${u.totalSeconds} s of the ${u.talkCapSeconds} s maximum. At ${u.slowWordsPerMinute} wpm: ${u.slowTotalSeconds} s. Numbers and hyphenated words take longer to say than one word each, and the jokes need their pauses: time it out loud once.`,
+    "",
+    `**With the demo:** ${u.demoSeconds} s of demo makes ${u.withDemoSeconds} s (${mss(u.withDemoSeconds)}) at ${u.wordsPerMinute} wpm, or ${u.slowWithDemoSeconds} s (${mss(u.slowWithDemoSeconds)}) at ${u.slowWordsPerMinute}. Before the talk, do one real timed rehearsal with the actual demo.`,
     "",
   ];
   for (const s of data.slides.filter((x) => x.main)) {

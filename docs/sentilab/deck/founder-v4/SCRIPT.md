@@ -1,14 +1,16 @@
 # SentiLab founder pitch (v4), about three minutes (3:20 at most), draft 2026-11-01 08:10 UTC
 
-The spoken words, exactly as the deck's notes hold them (V4.json sha256 03653f8e…). Spine: root's founder pitch (team room 57809), with root's two carried openings (reply to 57809, 07:04Z), the finding beat in root's wording (reply to 57816, 07:14Z) and Carter's additions from 57800. The technical deck (v3.1) is the backup.
+The spoken words, exactly as the deck's notes hold them (V4.json sha256 ae004623…). Spine: root's founder pitch (team room 57809), with root's two carried openings (reply to 57809, 07:04Z), the finding beat in root's wording (reply to 57816, 07:14Z) and Carter's additions from 57800. The technical deck (v3.1) is the backup.
 
-**Clock:** 390 words = 156 s at 150 wpm, plus 15 s of transitions = 171 s of the 200 s maximum. At 135 wpm: 188.3 s. Numbers and hyphenated words take longer to say than one word each, and the jokes need their pauses: time it out loud once.
+**Clock:** 379 words = 151.6 s at 150 wpm, plus 15 s of transitions = 166.6 s of the 200 s maximum. At 135 wpm: 183.4 s. Numbers and hyphenated words take longer to say than one word each, and the jokes need their pauses: time it out loud once.
+
+**With the demo:** 120 s of demo makes 286.6 s (4:47) at 150 wpm, or 303.4 s (5:03) at 135. Before the talk, do one real timed rehearsal with the actual demo.
 
 ## 1. Of course I know everything about chip design. (Chip design)
 
 I'm a computer engineer. I took a chip-design class. Of course I know everything about chip design. I do not know anything about chip design. All I know is a chip package is a few small chips, chiplets, that get hot, and you can't put them too close together or too far apart. But I'll tell you what: my agents know chip design.
 
-63 words, 25.2 s at 150 wpm. Cue: Pause after "everything about chip design." Then, deadpan: "I do not know anything about chip design." Let the last line land.
+63 words, 25.2 s at 150 wpm. Cue: Pause after "everything about chip design." Then, deadpan: "I do not know anything about chip design." Let the last line land. Before the talk: one real timed rehearsal with the actual demo.
 
 ## 2. What agents need, and only what they are allowed to touch. (Senti)
 
@@ -16,11 +18,11 @@ I'm building Senti. It recognizes agents, sets them up, lets them collaborate, s
 
 48 words, 19.2 s at 150 wpm.
 
-## 3. Many labs' agents, one room, overnight. (This weekend)
+## 3. Our agents and outside agents, one room, overnight. (This weekend)
 
-This weekend, most teams had never had their agents talk to another lab's agents. Overnight, one room did it: people watched every agent work, agents geared each other up and guarded the room, and plain messages became tickets. 422 messages from 28 identities: 5 human, 23 agent.
+This weekend, outside agents worked beside ours in one room. People watched every agent work, agents geared each other up and guarded the room, and plain messages became tickets. 422 messages from 28 identities: 5 human, 23 agent.
 
-47 words, 18.8 s at 150 wpm. Cue: Carter's call: "most teams had never had their agents talk to another lab's agents" is his own claim from the weekend; say it only if he stands by it. Optional, also his call: the cost, in its two separate scopes, is on the backup page; never add them. If asked about "helpful": our own agents wrote 205 of the 281, and the model is ours.
+38 words, 15.2 s at 150 wpm. Cue: Carter's option, not a verified fact (keep it out of the narration unless he chooses it): "Most teams had never had their agents talk to another lab's agents." Also his call: the cost, in its two separate scopes, is on the backup page; never add them. If asked about "helpful": our own agents wrote 205 of the 281, and the model is ours.
 
 ## 4. Same design, same input files, two answers. (The science)
 
@@ -42,9 +44,9 @@ They localized a difference around the modeled link between the metal lid and co
 
 ## 7. Passing one check isn't passing them all. (The checks)
 
-Using the older setup and the paper's own reading, we reproduced two published values within a hundredth of a degree. Our saved older-build result matched the paper but failed this heat-balance check. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.
+Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. Our saved older-build result matched the paper but failed this heat-balance check. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.
 
-60 words, 24 s at 150 wpm. Cue: Pause before "I nodded."
+58 words, 23.2 s at 150 wpm. Cue: Pause before "I nodded."
 
 ## 8. The simulator grades the agent. (The point)
 
