@@ -162,6 +162,10 @@ const groups = {
       '"public_submission_service": "planned",'],
     ["the known limit drifts from root's words", "public/agents/evidence.json", "(about 1.39%)", "(about 1.4%)"],
     ["robots.txt disallows the site", "public/robots.txt", "Disallow:\n", "Disallow: /\n"],
+    ["the classification docs drift from the classifier", "public/agents/index.md",
+      "| `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36` | `automation` |", "| `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36` | `unknown` |"],
+    ["the classifier drifts from the classification docs", "src/generated/aidenid-classifier/deterministic-triage.js",
+      '  if (vector.family === "other" && INCOMPLETE_WEBKIT_SHELL.test(vector.ua)) {', '  if (false && INCOMPLETE_WEBKIT_SHELL.test(vector.ua)) {'],
   ],
 };
 

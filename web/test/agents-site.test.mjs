@@ -27,7 +27,8 @@ import { dirname, extname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { AGENT_INDEX } from "../src/agent-view.js";
-import { doorRoute } from "../src/door/door.js";
+import { arrivalOf, doorRoute } from "../src/door/door.js";
+import { identityFor } from "../src/edge.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const REPO = join(here, "..", "..");
@@ -569,6 +570,43 @@ test("6. arrivals: the classification rule is stated where agents read it, and a
   assert.match(evidence.interface.arrival_classes, /not an identity/);
   assert.match(evidence.interface.arrival_classes, /\/agents\/index[.]md#who-counts-as-an-agent/);
 });
+// The examples in "Who counts as an agent": each row of its table is [User-Agent, or null for none, documented class].
+function classExamples(text) {
+  const start = text.indexOf("## Who counts as an agent");
+  const section = text.slice(start, text.indexOf("\n## ", start + 1));
+  return [...section.matchAll(/^\| (?:`([^`]+)`|\(none\)) \| `([a-z_]+)` \|$/gm)].map((m) => [m[1] ?? null, m[2]]);
+}
+// The class the door's feeds show for a request with that User-Agent and no other header: the edge's own bounded
+// identity (signature check included, src/edge.js identityFor) through the door's arrival (src/door/door.js arrivalOf).
+async function feedClass(ua) {
+  const request = new Request("https://sentilab.aidenid.com/agents/intent", { headers: ua === null ? {} : { "user-agent": ua } });
+  return arrivalOf(await identityFor(request, {})).class;
+}
+async function classDrift(text) {
+  const wrong = [];
+  for (const [ua, documented] of classExamples(text)) {
+    const actual = await feedClass(ua);
+    if (actual !== documented) wrong.push(`${ua ?? "(none)"}: documented ${documented}, the classifier gives ${actual}`);
+  }
+  return wrong;
+}
+test("6. every example in 'Who counts as an agent' is the class the edge gives that request on the feeds", async () => {
+  const text = read("agents/index.md");
+  const examples = classExamples(text);
+  assert.ok(examples.length >= 9, `the table holds its examples (${examples.length})`);
+  for (const cls of ["declared_agent", "crawler_claimed", "automation", "unknown"]) assert.ok(examples.some(([, c]) => c === cls), `an example of ${cls}`);
+  assert.ok(examples.some(([ua]) => ua === null), "the request with no User-Agent");
+  assert.deepEqual(await classDrift(text), []);
+});
+test("6. negative control: a documented class the classifier does not give is caught", async () => {
+  const text = read("agents/index.md");
+  const row = "| `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36` | `automation` |";
+  assert.ok(text.includes(row), "the bare WebKit row as documented");
+  assert.deepEqual(await classDrift(text.replace(row, row.replace("`automation`", "`unknown`"))),
+    ["Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36: documented unknown, the classifier gives automation"]);
+  assert.equal((await classDrift(text.replace("| (none) | `automation` |", "| (none) | `unknown` |"))).length, 1);
+});
+
 test("6. robots.txt allows the agent pages and names the door", () => {
   const lines = read("robots.txt").split(NL).map((line) => line.trim());
   assert.equal(lines[0], "# Start here: /agents/intent");

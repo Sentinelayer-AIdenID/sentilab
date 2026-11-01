@@ -109,21 +109,48 @@ The door's public feeds (/api/open/v1/door/events, /api/open/v1/door/results and
 class for each arrival. The class is the edge's reading of the request, by these checks in order; the first that
 matches decides it:
 
-1. a valid HTTP message signature: `verified_agent` when its signer is a known operator, `signed_agent` otherwise;
-2. the edge network's verified-crawler flag: `crawler_claimed`;
+1. an HTTP message signature that verifies against its signer's published key: `verified_agent` when the signer is a
+   known operator, `signed_agent` otherwise;
+2. the edge network's verified-bot flag: `crawler_claimed`;
 3. no user agent at all: `automation`;
-4. a user agent that carries the published token of a known AI agent or crawler, from the classifier's fixed list:
-   `declared_agent`, or `crawler_claimed` for a search crawler;
+4. a user agent that carries the published token of an AI agent or crawler on the classifier's fixed list:
+   `declared_agent`, or `crawler_claimed` for a search crawler's token;
 5. a known script or HTTP library (curl, wget, python-requests, httpx, node-fetch and others): `automation`;
-6. HTTP message signature headers that do not verify: `declared_agent`;
-7. any other user agent that is not a browser's, when it holds a word such as bot, crawl, spider, fetch or scanner, or
-   reads "compatible; Name/1.0; +URL": `automation`;
-8. a browser's user agent: `likely_human` when the rest of the request looks like that browser, `automation` when it
-   contradicts it, `unknown` when in doubt;
-9. anything else: `unknown`.
+6. HTTP message signature headers (Signature-Agent or Signature-Input) whose signature was not verified:
+   `declared_agent`;
+7. a user agent that is not a browser's, with a word containing bot, crawl, spider, scrap, fetch, monitor, scanner,
+   probe, validator or archiver (web and e-mail addresses aside): `automation`;
+8. a user agent that is not a browser's and reads "compatible; Name/1.0; +URL": `automation`;
+9. client hints (Sec-CH-UA) that name a headless browser: `automation`;
+10. a user agent that is not a browser's and ends right after "AppleWebKit/" and its version, following "Mozilla/5.0":
+    `automation`;
+11. a browser's user agent (Chromium, Firefox or Safari): `automation` when the edge network scores the request as
+    automated or it shows two or more hard contradictions of that browser (such as missing Sec-Fetch or client-hint
+    headers), `likely_human` when it shows no contradiction or doubt at all, `unknown` otherwise;
+12. anything else: `unknown`.
 
-So a known AI agent's published token reads `declared_agent` (a known search crawler's reads `crawler_claimed`), and
-a self-chosen name such as "my-agent (SentiLab team; ...)" matches none of these and reads `unknown`.
+A request the edge cannot finish reading (the classifier fails or times out, or the signer's key directory cannot be
+reached) also reads `unknown`. The feeds may also show `ours`: SentiLab's own labelled agents. The edge never gives
+that class; it is not a reading of the request.
+
+Examples, each a request with that User-Agent and no other header. This site's tests check every row against the
+classifier:
+
+| User-Agent | Class |
+|---|---|
+| `CCBot/2.0 (https://commoncrawl.org/faq/)` | `declared_agent` |
+| `Mozilla/5.0 (compatible; DuckDuckBot/1.1; +http://duckduckgo.com/duckduckbot.html)` | `crawler_claimed` |
+| `curl/8.4.0` | `automation` |
+| `research-crawler/0.1` | `automation` |
+| `Mozilla/5.0 (compatible; ExampleAgent/1.0; +https://example.com/agent)` | `automation` |
+| `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36` | `automation` |
+| `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36` | `automation` |
+| `my-agent (SentiLab team; ...)` | `unknown` |
+| (none) | `automation` |
+
+So a known AI agent's published token reads `declared_agent` (a known search crawler's reads `crawler_claimed`), a
+self-chosen name that matches none of these checks reads `unknown`, and a browser's user agent sent without a
+browser's other headers reads `automation`.
 
 A class is a reading of the request, not an identity: any client can send any user agent, and a verified signature
 shows who holds the signing key, not who is behind the visit. The feeds count arrivals, one class each:
