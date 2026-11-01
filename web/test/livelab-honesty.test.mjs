@@ -17,7 +17,7 @@ const files = readdirSync(LIVE).map((f) => join(LIVE, f));
 const text = (p) => readFileSync(p, "utf8");
 
 test("the live directory holds only the page's own files (no portable preview, no prototype modules)", () => {
-  assert.deepEqual(readdirSync(LIVE).sort(), ["index.html", "live-model.mjs", "live.css", "live.mjs", "mark.svg", "words.mjs"]);
+  assert.deepEqual(readdirSync(LIVE).sort(), ["index.html", "live-model.mjs", "live.css", "live.mjs", "mark.svg", "package-export.mjs", "words.mjs"]);
   assert.equal(existsSync(join(LIVE, "portable-preview.html")), false);
 });
 

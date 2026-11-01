@@ -12,6 +12,7 @@ import { scorerChip, utcTime, stateLine } from "../package/status.mjs";
 import { NOTICE } from "../../temperature-label.mjs";
 import * as M from "./live-model.mjs";
 import * as W from "./words.mjs";
+import { readBodyCapped, MAX_API_BYTES } from "../view-core.mjs";
 
 const $ = (id) => document.getElementById(id);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -69,7 +70,20 @@ const S = {
 };
 // One gate for every request the page makes: spacing, Retry-After and jittered backoff (live-model.mjs createGate).
 const gate = M.createGate();
-const feed = createDoorFeed({ onChange: () => render(), fetchEvents: M.fetchEventsTimed, fetchImpl: gate.fetch });
+// Each results page the feed reads is also kept as the feed returned it (newest row per run id), so a package for
+// engineers copies the feed exactly; the same gated request, read once more under the same size cap.
+const rawResults = new Map();
+async function feedFetch(url, init) {
+  const r = await gate.fetch(url, init);
+  if (r?.status === 200 && String(url).includes(M.RESULTS_PATH) && typeof r.clone === "function") {
+    try {
+      const body = await readBodyCapped(r.clone(), MAX_API_BYTES, "too_large");
+      if (body.ok) M.keepRawResults(rawResults, JSON.parse(new TextDecoder().decode(body.bytes)));
+    } catch { /* the feed reports its own read errors */ }
+  }
+  return r;
+}
+const feed = createDoorFeed({ onChange: () => render(), fetchEvents: M.fetchEventsTimed, fetchImpl: feedFetch });
 
 // ── the 3D package ─────────────────────────────────────────────────────────────────────────────────────────────────
 const can3d = webgl2Available();
@@ -222,6 +236,34 @@ function renderPresence() {
   el.hidden = !text;
   if (text) el.setAttribute("title", W.PRESENCE.title); else el.removeAttribute("title");
 }
+// Downloads: a Blob and a temporary <a download>; no network call.
+function download(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = h("a", { href: url, download: name, hidden: true });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function downloadPackage(runId) {
+  const raw = rawResults.get(runId);
+  if (!M.packageable(raw)) return;
+  const pkg = M.engineerPackage(raw, { submittedAt: M.proposedAt(runId, [...S.records.values(), ...feed.state.events]),
+    pageUrl: location.href ?? null, generatedAt: new Date().toISOString() });
+  download(M.packageName(raw), `${JSON.stringify(pkg, null, 2)}\n`, "application/json");
+}
+function downloadTop() {
+  const { json, csv } = M.topBundle([...rawResults.values()], { pageUrl: location.href ?? null, generatedAt: new Date().toISOString() });
+  if (!json.layouts.length) return;
+  download("sentilab-top-layouts.json", `${JSON.stringify(json, null, 2)}\n`, "application/json");
+  download("sentilab-top-layouts.csv", csv, "text/csv");
+}
+function renderPackageButton() {
+  const L = shownRun().L, b = $("packageButton");
+  const ok = Boolean(L) && M.packageable(rawResults.get(L.id));
+  b.hidden = !ok;
+  b.setAttribute("title", W.PACKAGE.title);
+}
 function renderProposals() {
   const box = $("proposalList");
   if (!box) return;
@@ -231,7 +273,7 @@ function renderProposals() {
   const shown = shownRun().L;
   const names = namesNow();
   const records = [...S.records.values(), ...feed.state.events];
-  box.replaceChildren(...list.map((L) => {
+  box.replaceChildren(...list.flatMap((L) => {
     const name = M.runName(L, feed.state.events, names);
     const at = M.proposedAt(L.id, records);
     const o = M.runOutcome(L), mark = M.proposalMark(L);
@@ -249,8 +291,16 @@ function renderProposals() {
         h("small", { class: "proposal-when" }, at ? W.when(at, now) : W.TEXT.submittedEarlier),
         shown && shown.id === L.id ? presenceLine(L, now, "proposal-presence") : null));
     row.addEventListener("click", () => selectRun(L.id));
-    return row;
+    // The selected proposal, once accepted with a matching replay, can be packaged for engineers.
+    const raw = rawResults.get(L.id);
+    if (!(shown && shown.id === L.id && M.packageable(raw))) return [row];
+    const pack = h("button", { type: "button", class: "engineer-package text-button", title: W.PACKAGE.title }, W.PACKAGE.button);
+    pack.addEventListener("click", () => downloadPackage(L.id));
+    return [row, pack];
   }));
+  const top = $("topLayouts");
+  top.hidden = ![...rawResults.values()].some(M.packageable);
+  top.setAttribute("title", W.PACKAGE.topTitle);
   if (!list.length) box.append(h("p", { class: "rail-empty" }, W.PROPOSALS.none));
   $("proposalsHead").textContent = W.PROPOSALS.head;
 }
@@ -377,6 +427,7 @@ function renderModel() {
   $("modelSub").textContent = L ? W.visitorType(L.cls) : "";
   const lastRun = L ? [...feed.state.events].filter((e) => e.kind === "run" && e.run_id === L.id).sort((x, y) => y.seq - x.seq)[0] : null;
   renderPresence();
+  renderPackageButton();
   $("modelCap").textContent = !L ? "" : [runNamed === null ? W.layoutFrom(L.short) : `${runNamed}${W.namedLayout(L)}`, view.metric ? `${W.METRIC_NAME.toLowerCase()} ${view.metric.text} · ${W.tempWord(view.metric, view.verification)}` : null,
     W.RESULT_CHECK[L.status] ?? null, lastRun?.at ? W.when(lastRun.at) : null].filter(Boolean).join(" · ");
   const picked = Boolean(L && S.selectedId === L.id && M.pickRun(layouts(), null)?.id !== L.id);
@@ -1020,6 +1071,8 @@ function wire() {
   $("explodeRange").addEventListener("input", (e) => setExplode(Number(e.target.value) / 100));
   $("orbitButton").addEventListener("click", () => setOrbit(!S.orbit));
   $("motionToggle").addEventListener("click", () => setMotion(!S.motion));
+  $("packageButton").addEventListener("click", () => { const L = shownRun().L; if (L) downloadPackage(L.id); });
+  $("topLayouts").addEventListener("click", () => downloadTop());
   $("stageButton").addEventListener("click", () => setStage(!S.stage));
   $("play").addEventListener("click", () => (S.playing ? (stopPlay(), render()) : play()));
   $("rewind").addEventListener("click", () => { stopPlay(); setCursor(0); });

@@ -131,6 +131,30 @@ export const PRESENCE = Object.freeze({
   runOnly: (t) => `This run\u2019s last record: ${t}`,
   title: "Linked visit/run events; not proof the agent remains connected",
 });
+// Packages for engineers (Carter, 22:08Z): a layout and the door's own result for it, copied from the public results
+// feed, downloaded from the page. Nothing here adds a claim the feed does not make.
+export const PACKAGE = Object.freeze({
+  button: "Package for engineers",
+  title: "Download this layout and the door\u2019s result for it as JSON. Simulated, not silicon.",
+  top: "Download top layouts",
+  topTitle: "Download the accepted layouts whose replay matched, lowest board metric first, as JSON and CSV. Simulated, not silicon.",
+  readme: "SentiLab engineer package. One layout proposed through the SentiLab agent door for the case named in case, "
+    + "and the door\u2019s own result for it, copied as the public results feed gives it. layout.dies is the layout as the feed gives it (die, x_um, y_um, "
+    + "rot_deg); layout.compact is the same layout as the door’s compact l= string (x.y.r per die, x and y in 500 um "
+    + "steps, r in 90 degree steps), or null when it is off that lattice. case gives the interposer and die "
+    + "sizes. result.max_chiplet_centre_cell_mean_C is the board metric, defined in result.metric.definition, with the "
+    + "reference in result.metric.reference. result.per_die_C is each die\u2019s value. result.active_layer_peak_C is the "
+    + "hottest active-layer value, and result.active_guard the feed\u2019s own rule on it. result.replay is the fresh-process "
+    + "replay. wire_proxy_mm is the feed\u2019s wire-length proxy; geometry_sha256 the door\u2019s hash of the geometry. "
+    + "verification lists the checks the feed reports, and verification.not_claimed what it does not claim. Every "
+    + "temperature here is simulated, not measured on silicon; labels keeps the feed\u2019s own labels as given. This file "
+    + "adds no claim of its own.",
+  topReadme: "SentiLab top layouts: the accepted layouts whose fresh-process replay matched, as the public results feed "
+    + "gives them, sorted by the board metric (max_chiplet_centre_cell_mean_C, lower first), with wire_proxy_mm alongside. "
+    + "The reference value is shown for comparison only. Every temperature is simulated, not measured on silicon; each "
+    + "layout\u2019s verification.not_claimed lists what the feed does not claim. This file adds no claim of its own.",
+  referenceRow: "reference (for comparison only)",
+});
 export const YOUR_PICK = "your pick";
 
 // A design's steps in plain words, for the newest-event line and the model's caption.

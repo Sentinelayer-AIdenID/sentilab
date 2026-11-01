@@ -17,6 +17,7 @@ import { formatTemp } from "../package/temps.mjs";
 import { dieRects } from "../package/model.mjs";
 import { INTERPOSER_MM } from "../package/case-cpu-dram.mjs";
 import * as W from "./words.mjs";
+export * from "./package-export.mjs";
 import { readBodyCapped, MAX_API_BYTES } from "../view-core.mjs";
 import { strictJson } from "../runs-list.mjs";
 
