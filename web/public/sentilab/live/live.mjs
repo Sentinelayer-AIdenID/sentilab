@@ -143,7 +143,16 @@ function stopWalks() { const had = walks.size > 0; cancelWalks(); if (had) drawM
 // the 3D space and says new proposal): while following live, a change of the followed run to another one
 // shows the badge for NEW_PROPOSAL_MS. The run followed at load is never new; a viewer's own pick never shows it.
 const NEW_PROPOSAL_MS = 15000;
-let followedId = null, newProposalUntil = 0;
+let followedId, newProposalUntil = 0, newProposalTimer = 0;   // followedId: undefined until the first answered read
+// The badge ends at its own deadline: a timer hides it then even if no later render runs, as when reads hang
+// (root, 2aab3e2 P2 2). pagehide ends it too.
+function showNewProposal() {
+  newProposalUntil = Date.now() + NEW_PROPOSAL_MS;
+  $("newProposal").hidden = false;
+  clearTimeout(newProposalTimer);
+  newProposalTimer = setTimeout(endNewProposal, NEW_PROPOSAL_MS);
+}
+function endNewProposal() { clearTimeout(newProposalTimer); newProposalTimer = 0; newProposalUntil = 0; $("newProposal").hidden = true; }
 function planWalks() {
   const ev = feed.state.events;
   if (walkHistory === null) {
@@ -290,7 +299,9 @@ function renderModel() {
   const runNamed = L ? M.runName(L, feed.state.events, namesNow()) : null;
   if (L) $("modelTitle").replaceChildren(...runTitleParts(L)); else $("modelTitle").textContent = "A closer look at the package.";
   const following = S.selectedId == null && S.cursorSeq == null;
-  if (L && following) { if (followedId !== null && L.id !== followedId) newProposalUntil = Date.now() + NEW_PROPOSAL_MS; followedId = L.id; }
+  // The first answered read sets what the page follows, even with no run yet, so the first proposal after an empty
+  // start is new too (root, 2aab3e2 P2 1).
+  if (following && feed.state.lastOkAt) { if (followedId !== undefined && L && L.id !== followedId) showNewProposal(); followedId = L ? L.id : null; }
   $("newProposal").hidden = !(L && following && Date.now() < newProposalUntil);
   $("modelSub").textContent = L ? W.visitorType(L.cls) : "";
   const lastRun = L ? [...feed.state.events].filter((e) => e.kind === "run" && e.run_id === L.id).sort((x, y) => y.seq - x.seq)[0] : null;
@@ -1011,5 +1022,5 @@ setInterval(() => { renderStatus(); renderDeclarations(); renderArrivals(); if (
 // Leaving the page stops every poll (and an answer still in flight cannot restart one: the board's epoch moves on). A
 // page restored from the back/forward cache comes back with them stopped, so pageshow starts again what pagehide
 // stopped; a fresh load gets no pageshow with persisted set.
-window.addEventListener("pagehide", () => { feed.stop(); stopWalks(); recEpoch += 1; S.recLoading = false; boardEpoch += 1; clearTimeout(boardTimer); visitorsEpoch += 1; clearTimeout(visitorsTimer); stopPlay(); });
+window.addEventListener("pagehide", () => { feed.stop(); stopWalks(); endNewProposal(); recEpoch += 1; S.recLoading = false; boardEpoch += 1; clearTimeout(boardTimer); visitorsEpoch += 1; clearTimeout(visitorsTimer); stopPlay(); });
 window.addEventListener("pageshow", (e) => { if (e.persisted) { feed.start(); pollBoard(); pollVisitors(); renderStatus(); } });

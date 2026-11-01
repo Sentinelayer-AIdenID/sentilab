@@ -86,6 +86,7 @@ function installPage(t, answer, { reduced = false } = {}) {
   define("fetch", async (input) => {
     const url = new URL(String(input), "https://sentilab.aidenid.com");
     const body = answer(url);
+    if (body === "hang") return new Promise(() => {});   // a read that never answers
     if (body === "network") throw new TypeError("network error");
     if (body === undefined) return new Response("{}", { status: 502 });
     return body === null ? new Response("{}", { status: 404 }) : new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
@@ -298,4 +299,51 @@ test("walk: a newer poll ends a walk at once, and the ended walk's timer never a
   const steps = runs.filter(([x]) => x !== "-");
   assert.deepEqual(steps.map(([x]) => x), ["0", "1", "2", "3", "4"], `B shows each of its steps once, in order: ${timeline.slice(restart).join(" ")}`);
   for (const [x, n] of steps.slice(0, 4)) assert.ok(n >= 6, `step ${x} stays up its full time (${n * 100} ms): ${timeline.slice(restart).join(" ")}`);
+});
+
+// Root's review of 2aab3e2 (two ordinary P2s): the first proposal after an empty start shows the badge, and a shown badge
+// ends at its own deadline even when later reads never answer.
+function emptyStart(states) {
+  const d = door(states), res0 = doc("results.json");
+  const item = { ...res0.items[0], id: ID, short_id: "beef", label: "unknown · beef", class: "unknown", arrival: 99, seq: res0.next_after + 1 };
+  const state = { hang: false };
+  const answer = (url) => {
+    if (state.hang) return "hang";
+    if (url.pathname === "/api/open/v1/door/results") {
+      const after = Number(url.searchParams.get("after") ?? 0);
+      if (!d.phase.live) return { ...res0, items: [], next_after: 0, has_more: false };
+      return after < item.seq ? { ...res0, items: [item], next_after: item.seq, has_more: false } : { ...res0, items: [], next_after: after, has_more: false };
+    }
+    return d.answer(url);
+  };
+  return { d, answer, state };
+}
+
+test("new proposal: the first proposal after an empty start shows the badge", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: NOW });
+  const { d, answer } = emptyStart(["queued", "evaluating", "evaluated", "replaying", "reproduced"]);
+  installPage(t, answer);
+  await import(`${LIVE}?walk=np-empty`);
+  const badge = () => document.getElementById("newProposal");
+  for (let k = 0; k < 8; k += 1) { t.mock.timers.tick(500); await settle(); }
+  assert.equal(badge().hidden, true, "nothing new at an empty start");
+  d.phase.live = true;
+  let shown = false;
+  for (let k = 0; k < 40; k += 1) { t.mock.timers.tick(100); await settle(); if (badge().hidden === false) shown = true; }
+  assert.equal(shown, true, "the first proposal after an empty start is new");
+});
+
+test("new proposal: a shown badge ends at its deadline even when later reads never answer", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: NOW });
+  const { d, answer, state } = emptyStart(["queued", "evaluating", "evaluated", "replaying", "reproduced"]);
+  installPage(t, answer);
+  await import(`${LIVE}?walk=np-hang`);
+  const badge = () => document.getElementById("newProposal");
+  for (let k = 0; k < 8; k += 1) { t.mock.timers.tick(500); await settle(); }
+  d.phase.live = true;
+  for (let k = 0; k < 40 && badge().hidden; k += 1) { t.mock.timers.tick(100); await settle(); }
+  assert.equal(badge().hidden, false, "the badge is up");
+  state.hang = true;
+  for (let k = 0; k < 40; k += 1) { t.mock.timers.tick(500); await settle(); }
+  assert.equal(badge().hidden, true, "it ends at its deadline, with every read hanging");
 });
