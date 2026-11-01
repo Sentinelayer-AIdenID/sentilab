@@ -39,9 +39,9 @@ web/public/sentilab/package3d/
   twin.mjs            PURE  twinOf(), twinMarkdown()
   labels.mjs          DOM   createLabelLayer() (per-property CSSOM)
   fallback2d.mjs      DOM   renderSectionSvg()
-  mat4.mjs camera.mjs PURE  matrices, orbit reducers (D5 option A)
-  gl.mjs shaders.mjs render3d.mjs   WebGL2 only here (option A; under option B a pinned, vendored core replaces gl, shaders,
-                      mat4 and camera behind the same render3d.mjs contract: SPEC.md §6.10)
+  render3d.mjs        the renderer contract; D5 is option B (warden-resolved): the adapter over a pinned, vendored three.js
+                      core (SPEC.md §6.10). Option A's mat4.mjs, camera.mjs (PURE), gl.mjs and shaders.mjs (WebGL2) only
+                      if W9.5 sends D5 back to the three owners
   pins.mjs            GENERATED: sha256 of each data file (written by scripts/package3d.mjs data)
   data/anatomy.json  data/assembly-typ-1c4m.json  data/model-stack.json  data/layouts.json
 web/public/agents/package3d/
@@ -59,7 +59,8 @@ Import rules (static test, AC-02):
 - PURE modules import only PURE modules of this folder and: `../package/scene.mjs`, `../package/playhead.mjs`,
   `../evidence-projection.mjs`, `../lab-model.mjs`, `../view-core.mjs`, `../canonical.mjs`, `../runs-list.mjs`,
   `../../temperature-label.mjs`. No DOM, no clock, no randomness, no WebGL.
-- Only `render3d.mjs` and `gl.mjs` call WebGL. Only `temps.mjs` turns a temperature into text. No `toFixed(` on a
+- Only `render3d.mjs` and what it wraps call WebGL: the vendored three.js core under option B (D5), `gl.mjs` under
+  option A. Only `temps.mjs` turns a temperature into text. No `toFixed(` on a
   temperature and no `°C` outside `temps.mjs`, except in the adopted `field-validator.mjs` at its pinned hash, where
   `°C` is a unit alias it compares and never text it shows (AC-02, AC-46).
 - `package3d.js` gets verified data only through `../package/source.mjs` (source.mjs:1-12) and never computes
@@ -780,12 +781,12 @@ export function writeGlb(model) { /* -> Uint8Array; the caller records its sha25
   (`el.style.transform = …`), never `cssText`; labels are `aria-hidden`, the part tree is the accessible route.
 - `fallback2d.mjs`: `renderSectionSvg(svg, sectionAt(...), { describe })`: one `<rect>` per section rectangle,
   `<title>` text from the same `describeQuantity()` strings the panel uses; SVG attributes only, no `style=""`.
-- `render3d.mjs`, `gl.mjs`, `shaders.mjs`, `mat4.mjs`, `camera.mjs` (D5 option A; option B keeps `render3d.mjs` as the
-  adapter over the pinned, vendored core, with the same contract: SPEC.md §6.10): lane 3's (L3:PSEUDOCODE §9) with:
-  `dispose()` deletes every program, buffer and texture and returns the counts; `stats` adds `glObjects`;
-  `setModel()` takes a frozen RenderModel plus the display Map from `displayBoxes()` (the renderer never computes
-  offsets); the drawing buffer is capped (`dprCap = 2`, and on phones also at most 1,000,000 pixels: settings chosen
-  to meet D4's buffer target).
+- `render3d.mjs`, `gl.mjs`, `shaders.mjs`, `mat4.mjs`, `camera.mjs` (D5 option A, kept as the fallback scope; option
+  B, the D5 pick, keeps `render3d.mjs` as the adapter over the pinned, vendored core, with the same contract: SPEC.md
+  §6.10): lane 3's (L3:PSEUDOCODE §9) with: `dispose()` deletes every program, buffer and texture and returns the
+  counts; `stats` adds `glObjects`; `setModel()` takes a frozen RenderModel plus the display Map from `displayBoxes()`
+  (the renderer never computes offsets); the drawing buffer is capped (`dprCap = 2`, and on phones also at most
+  1,000,000 pixels: settings chosen to meet D4's buffer target).
 
 ## 13. `package3d.js`: the page controller
 

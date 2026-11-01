@@ -12,7 +12,9 @@ Test kinds:
 - **browser**: Playwright (via `PLAYWRIGHT_DIR`, as scripts/export-deck-pdf.mjs:4) against the real Worker run locally
   the way web/test/worker-boot.mjs:5-11 runs it, so the production CSP header applies. (The deck exporter's own server
   sends no CSP, scripts/export-deck-pdf.mjs:38, so it is not used for these checks.)
-- **device**: manual on the reference phone (D4), recording and traces attached to the PR.
+- **device**: D4's named emulation on the build box (Chromium mobile emulation at 412 x 915 CSS px, DPR 2, 4x CPU
+  throttling), every result labelled "emulated, not a phone" (the GPU is not throttled), traces attached to the PR;
+  Carter's own phone is the real-device check, at the screenshot gate.
 
 Gate: no phase is done until its listed ACs pass (SPEC.md §9). The top gate for any public release of the page is
 AC-01 to AC-06, AC-12, AC-20 to AC-27, AC-32, AC-34, AC-36, AC-41 and AC-46 (a) to (c). The product gate is separate:
@@ -400,13 +402,15 @@ without glides and nothing pulses (L3:ACCEPTANCE A-16). Pass: all.
 
 **AC-34 Budgets, measured against targets** (device, browser traces). Measured by the plan of SPEC.md §6.11: the
 workload (the anatomy assembly with every array, and a results run with 8 layers at 64 x 64 once fields exist), the
-reference phone and its browser, and a desktop are named before measuring; preparation and end-to-present are
-reported separately; the D5 pick is measured as a spike in W9.5 and as built in W11. The phone column is
-root's initial tier (D4): prospective targets, not limits.
+reference device (D4's named emulation) and its browser, and a desktop are named before measuring; preparation and
+end-to-present are reported separately; the D5 pick is measured as a spike in W9.5 and as built in W11. The phone
+column is root's initial tier (D4): prospective targets, not limits, measured on the named emulation (warden, #57424),
+Chromium mobile emulation at 412 x 915 CSS px, DPR 2, with 4x CPU throttling, labelled "emulated, not a phone"; it
+does not throttle the GPU.
 
-| Measure | Lane 3 phone (A-10) | astra phone (A#57059) | Phone target (D4, or lane 3 where D4 sets none) | Desktop (lane 3) |
+| Measure | Lane 3 phone (A-10) | astra phone (A#57059) | Phone target (D4, or lane 3 where D4 sets none), emulated, not a phone | Desktop (lane 3) |
 |---|---|---|---|---|
-| p95 frame time while orbiting or exploding | ≤ 33 ms | ≤ 33 ms (interaction, named phone) | ≤ 33 ms (lane 3, astra) | ≤ 16.7 ms |
+| p95 frame time while orbiting or exploding | ≤ 33 ms | ≤ 33 ms (interaction, named phone) | ≤ 33 ms (D4, #57424; lane 3, astra) | ≤ 16.7 ms |
 | triangles per frame | ≤ 300,000 | ≤ 50,000 | ≤ 50,000 (D4) | ≤ 1,500,000 |
 | draw calls | ≤ 60 | ≤ 100 | ≤ 60 (D4) | ≤ 120 |
 | interconnect instances | ≤ 6,000 | (follows from triangles) | a setting: `instanceBudget()` from the 50,000 target (about 1,600 at 28 triangles each) | ≤ 60,000 |
@@ -421,10 +425,12 @@ root's initial tier (D4): prospective targets, not limits.
 | preparation (fetch to first frame ready) and end-to-present (input or new result to presented frame) | not set | measured separately (A#57218) | reported, p50 and p95 | reported |
 | bytes the renderer adds (raw, gzip, brotli), for the D5 pick | not set | not set | reported | reported |
 
-The reference phone is named by warden before W9.5. Pass: every row measured and reported on both classes against a
-named workload, device and browser, with traces attached; a missed target is recorded with its cause and the three
-owners' disposition (D4), never silently relaxed. The renderer's own caps (DPR 2; 1,000,000 pixels on phones) are
-settings, verified rather than measured.
+The reference device is D4's named emulation (warden, #57424), and every result from it is labelled "emulated, not a
+phone": the GPU is not throttled, so GPU-bound rows are the build box's GPU under a phone's CPU budget. Carter's own
+phone is the real-device check, at the screenshot gate before deploy. Pass: every row measured and reported on both
+classes against a named workload, device and browser, with traces attached; a missed target is recorded with its cause
+and the three owners' disposition (D4), never silently relaxed. The renderer's own caps (DPR 2; 1,000,000 pixels on
+phones) are settings, verified rather than measured.
 
 **AC-35 No WebGL, lost context, no WebCrypto** (browser). Chromium with WebGL disabled: the SVG cross-section, part
 tree, detail panel, legend with its label state and notice appear; zero errors. `WEBGL_lose_context.loseContext()`

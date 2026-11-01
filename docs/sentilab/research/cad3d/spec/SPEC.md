@@ -17,10 +17,11 @@ moves since lane 3 was written).
   of v0.1, pinned in TRACE.md section 1; `A#57278` and `A#57288` are root's notes on the decisions and on the exact
   producer source map (review packet at sentilab `209dad7a`). `C#57177` marks the ChatGPT field-association/W4
   review's replies under room message #57177, and `C#57232` its fixture pack; `C#57385` marks ChatGPT's W13
-  field-check module, delivered under room message #57385, and `A#57404` root's source +1 for it. `pr56:<path>:<line>`
-  is PR #56's successor commit `7f70baf56998cdeea9fcaa56954fc78f8f6c8071`, a source identity separate from the
-  draft-pinned `main:` (pending review, not merged). `F#57046` is the founder's ask. `main:<path>:<line>` is
-  origin/main at `d25046256b4a712b529977f31e10b7e32248a9c0`. `pr66:<path>:<line>` is the open PR #66 head
+  field-check module, delivered under room message #57385, and `A#57404` root's source +1 for it; `#57424` is warden's
+  message with his two decisions (D4, D5). `pr56:<path>:<line>` is PR #56's successor commit
+  `7f70baf56998cdeea9fcaa56954fc78f8f6c8071`, a source identity separate from the draft-pinned `main:` (pending
+  review, not merged). `F#57046` is the founder's ask. `main:<path>:<line>` is origin/main at
+  `d25046256b4a712b529977f31e10b7e32248a9c0`. `pr66:<path>:<line>` is the open PR #66 head
   `609d339d79cfa0c120806fc5132044b460db5cd3`.
 - **Line numbers moved once.** Lane 3 cited origin/main at `46791be`. Commit `d250462` (#64, per-value labels)
   changed `temperature-label.mjs`, `package.js`, `scene.mjs` and a few other web files, so some lane 3 line numbers
@@ -73,6 +74,12 @@ moves since lane 3 was written).
     The artifact keeps the draft's eight keys; producer, model, layer, grid, source and argv identity come from the
     host's verified association record. Root's one nonblocking finding (decorated typed-array inputs) is a follow-up
     case, and no second renderer is built (5.7, 5.10, W13; AC-21, AC-26, AC-41, AC-45, AC-46).
+  - Warden's decisions (#57424; recorded at his request under #57473): D5 is option B, the pinned, locally vendored
+    three.js core behind `render3d.mjs`, as root voted, under the section 6.10 conditions, and W9.5's spike stays;
+    D4's reference device is a named emulation on the build box (Chromium mobile emulation at 412 x 915 CSS px, DPR 2,
+    with 4x CPU throttling, labelled "emulated, not a phone"; it does not throttle the GPU), with Carter's own phone
+    as the real-device check at the screenshot gate, and the targets as root proposed them (G8, 6.1, 6.10, 6.11, 11,
+    W0.3, W0.4, W10, W11; AC-34).
 
 ## 1. Goals and non-goals
 
@@ -87,7 +94,7 @@ moves since lane 3 was written).
 | G5 | Every value shows its provenance; every temperature its label; unknowns stay visible (section 7). | task rules 1, 3; A#57059 |
 | G6 | Usable without WebGL, by keyboard and by touch, at 320, 390 and 1280 CSS px and at 200% zoom. | A#57059; L3:ACCEPTANCE A-09 |
 | G7 | Every visual has an agent-readable twin (JSON plus markdown under `/agents/`) with the same qualifications. | task rule 9; A#57053 |
-| G8 | Same trust posture as today: CSP unchanged, no third-party runtime code unless D5 picks the pinned, vendored option with its license inventory (section 6.10), no Worker change, read-only. | L3:ARCHITECTURE §1-2; main:web/src/csp.js:7 |
+| G8 | Today's trust posture, with one recorded addition: the CSP unchanged, no Worker change, read-only; the only third-party runtime code is D5's option B (warden-resolved), a pinned, locally vendored three.js core, every vendored file pinned by sha256 and reviewed, with its license inventory and narrow names-test exception, and recorded as the first third-party code on a page that verifies signatures in the same realm (section 6.10). | L3:ARCHITECTURE §1-2; main:web/src/csp.js:7 |
 
 ### Non-goals
 
@@ -1412,11 +1419,11 @@ Lane 3's architecture (L3:ARCHITECTURE §0-§10) is adopted, with the deltas in 
 
 ### 6.1 Stack and what the CSP allows
 
-- **Renderer: D5, which warden resolves in this draft** (root votes for option B). Option A is our own WebGL2
-  renderer, the 3D sibling of the hand-written Canvas 2D renderer (render.mjs:1-9); option B is a pinned, locally
-  vendored three.js adapter. Both sit behind the same `render3d.mjs` contract with our own DOM labels, no build step
-  and no CSP change (L3:PSEUDOCODE Appendix A); their scopes are in section 6.10 and the measurement that checks the
-  pick in section 6.11.
+- **Renderer: D5, option B** (warden-resolved, #57424, as root voted): a pinned, locally vendored three.js core behind
+  the `render3d.mjs` adapter. Option A, our own WebGL2 renderer, the 3D sibling of the hand-written Canvas 2D renderer
+  (render.mjs:1-9), stays scoped in section 6.10. Both sit behind the same `render3d.mjs` contract with our own DOM
+  labels, no build step and no CSP change (L3:PSEUDOCODE Appendix A); their scopes are in section 6.10 and the
+  measurement that checks the pick in section 6.11.
 - **CSP consequences** (main:web/src/csp.js:7; L3:ARCHITECTURE §2.1): same-origin module files only; no `eval` or
   `Function`; no WebAssembly (so no Draco, meshopt, KTX2, WASM CAD); no inline script, so no import map; module
   Workers only from our own files; images only from our origin or `data:`; no `<style>` or `style=""`; styles set per
@@ -1531,7 +1538,7 @@ The twins are static files under `web/public/agents/package3d/` and are linked f
 room may also be added to its Accept negotiation (`AGENT_PATHS`, pr66:web/src/agent-paths.js:4-8) as a separate,
 small change (D9). Nothing in phases 1-5 needs that.
 
-### 6.10 Renderer options (D5: warden resolves in this draft)
+### 6.10 Renderer options (D5: option B, warden-resolved)
 
 Both options draw the same frozen RenderModel and display Map through one contract, `render3d.mjs`: `setModel(model,
 display)`, `draw()`, `ray(x, y)` for `pick.mjs`, `setField(texels)`, `dispose()` returning object counts, and `stats`.
@@ -1539,27 +1546,35 @@ Picking stays analytic in `pick.mjs`, labels stay DOM (`labels.mjs`), the SVG cr
 the figure stays the export boundary (section 6.5), and the CSP stays exactly as it is (AC-27). Neither option's
 transfer and parse size in this page, nor its performance, has been measured (section 6.11).
 
-| | Option A: our own WebGL2 renderer | Option B: a pinned, locally vendored three.js adapter (root's vote) |
+| | Option A: our own WebGL2 renderer | Option B: a pinned, locally vendored three.js adapter (root's vote; warden's pick) |
 |---|---|---|
 | What ships | `mat4.mjs`, `camera.mjs`, `gl.mjs`, `shaders.mjs`, `render3d.mjs`: three GLSL programs (instanced lit boxes and cylinders, unlit field sheets, lines) and our orbit and touch camera; estimated 900 to 1,300 lines and 12 to 20 KB gzip (lane 3's estimates, not measured: L3:ARCHITECTURE §2.2) | one pinned three.js release's core as same-origin module files (r187's core is 2,133,699 B raw and 419,212 B gzip, measured by lane 3 from the verified tarball, and ships unminified since r186: L3:ARCHITECTURE §2.2-§2.3), plus `render3d.mjs` as an adapter that maps the RenderModel's original primitives (boxes, cylinders, sheets) to scene objects; no add-ons (they need an import map the CSP cannot host), no loaders, no GLB in the display path |
 | What we maintain | every line: WebGL state, shader errors, context loss and restore, DPR, z-fighting of thin layers, transparent-lid ordering, disposal (L3:ARCHITECTURE §2.3) | the adapter and its tests; upstream maintains the scene graph, camera maths, buffers and disposal; each upgrade is re-pinned, re-hashed and re-reviewed |
 | Site rules | no exception: no third-party code on a verifier page, no names-test exception, no license change | the first third-party code on a page that verifies signatures in the same realm (L3:ARCHITECTURE §2.3 item 1); the vendored files are pinned by sha256 and reviewed; `three.core.js` needs a narrow, named public-names exception (one comment URL: L3:evidence/extra-02); a license inventory lists the MIT text and every vendored file (D10, AC-29) |
 | Main risk | schedule, and GL pitfalls we must handle ourselves | transfer and parse size on the phone, upgrade cadence, and the same-realm trust boundary |
 
-Either way the renderer decides nothing (section 6.2). W10 builds the option warden picks; the other option's scope
-stays recorded here.
+Either way the renderer decides nothing (section 6.2). Warden picked option B (#57424) for schedule: option A would
+put 900 to 1,300 lines of our own GL code (context loss, DPR, z-fighting between thin layers, transparent ordering) on
+the critical path. Its conditions are the table's: one pinned release; every vendored file pinned by sha256 and
+reviewed; no add-ons and no loaders; the license inventory (AC-29); the narrow names-test exception for the one
+comment URL; the CSP unchanged. W10 builds option B; option A's scope stays recorded here for the case where W9.5's
+spike misses the D4 targets and the three owners revisit D5 with the numbers.
 
 ### 6.11 Measurement plan (D4, D5)
 
-D4's phone numbers are prospective targets to measure against, not limits (A#57278). AC-34 records the results.
+D4's phone numbers are prospective targets to measure against, not limits (A#57278). AC-34 records the results. The
+reference device is a named emulation on the build box (warden, #57424): Chromium mobile emulation at 412 x 915 CSS
+px, DPR 2, with 4x CPU throttling, labelled "emulated, not a phone"; it does not throttle the GPU, so GPU-bound
+numbers are the build box's GPU under a phone's CPU budget. Carter's own phone is the real-device check, at the
+screenshot gate before deploy.
 
 1. **Name before measuring:** the workload (the `typ-1c4m` assembly with every array at its sampled budget, assembled
    and fully exploded with a section on; and a TEST-key results run with 8 layers at 64 x 64 once fields exist), the
-   reference phone and its browser version (warden names them), and a desktop (Chromium on the build box). Every
-   result is reported against a named workload, device and browser.
-2. **The D5 pick** (warden resolves D5 in this draft) is measured first as a spike behind the `render3d.mjs`
-   contract on that workload (W9.5), before W10 builds it out; if it misses a target, the three owners revisit D5
-   with the numbers, and the other option's scope is already written out (section 6.10).
+   reference device (the D4 emulation above, its Chromium version recorded), and a desktop (Chromium on the build
+   box). Every result is reported against a named workload, device and browser.
+2. **The D5 pick**, option B, is measured first as a spike behind the `render3d.mjs` contract on that workload
+   (W9.5), before W10 builds it out; if it misses a target, the three owners revisit D5 with the numbers, and
+   option A's scope is already written out (section 6.10).
 3. **Size:** the transferred and parsed bytes of everything each option adds (raw, gzip, brotli).
 4. **Preparation, on its own:** fetch, verification, `buildRenderModel`, `displayBoxes` and the GPU upload, to the
    first frame ready.
@@ -1627,8 +1642,8 @@ screenshots. No item deploys, runs a solver, or touches the producer, the API, t
 |---|---|---|
 | W0.1 | forge, warden and astra sign this exact document (section 5 schemas at version 1, the operation names in PSEUDOCODE §0, the no-result behaviour in sections 4.5 and 7, the AC list). | three sign-offs naming the commit |
 | W0.2 | Root's crosswalk of her 41 source cases (30 web, 11 anatomy; A#57059) maps v0.1 as 10 direct, 29 partial and 2 missing, zero executed (A#57218); this version adds W-E12 (AC-42), keeps W-C04 for W16 (AC-43) and tightens the terminal and late-result, 100-switch, asymmetric field-basis and MCP cases (ACCEPTANCE.md crosswalk section). Root's 41-row table is committed next to ACCEPTANCE.md. | the table committed, with no row missing |
-| W0.3 | The decisions settle with this document (section 11: root-proposed, forge-adopted, warden co-sign pending); warden resolves D5; no separate human decision is needed (A#57278). Carter approves the rendered page, from real-browser screenshots, before any deploy (section 11). | warden's co-sign names the commit |
-| W0.4 | warden provisions the box: a branch with push rights only (no deploy credentials, no secrets, no solver or GB10 access); Node 22; Python with the repo's requirements for the W4 check (TAP's floorplan writer only); Playwright with Chromium via `PLAYWRIGHT_DIR` (the pattern of main:scripts/export-deck-pdf.mjs:4); the pinned wrangler for a local Worker (main:web/test/worker-boot.mjs:5-11, :22); gitleaks; access to the reference phone named under D4; the W4 review fixture pack placed read-only, its sha256 `908655f7…` checked (section 5.10; contributed code is never run); the adopted W13 module's delivery (C#57385, ZIP sha256 `0d614aae…`) placed read-only, with `field-validator-proposal.mjs` checked against `af0d24a7…` before W13 vendors it (section 5.7; its tests are the author's and root's, A#57404). | warden's admission record |
+| W0.3 | The decisions settle with this document (section 11: root-proposed, forge-adopted, warden co-sign pending); warden resolved D5 (option B) and D4's reference device (#57424); no separate human decision is needed (A#57278). Carter approves the rendered page, from real-browser screenshots, before any deploy (section 11). | warden's co-sign names the commit |
+| W0.4 | warden provisions the box: a branch with push rights only (no deploy credentials, no secrets, no solver or GB10 access); Node 22; Python with the repo's requirements for the W4 check (TAP's floorplan writer only); Playwright with Chromium via `PLAYWRIGHT_DIR` (the pattern of main:scripts/export-deck-pdf.mjs:4); the pinned wrangler for a local Worker (main:web/test/worker-boot.mjs:5-11, :22); gitleaks; no physical phone: D4's reference device is Chromium's mobile emulation on this box (section 6.11); the W4 review fixture pack placed read-only, its sha256 `908655f7…` checked (section 5.10; contributed code is never run); the adopted W13 module's delivery (C#57385, ZIP sha256 `0d614aae…`) placed read-only, with `field-validator-proposal.mjs` checked against `af0d24a7…` before W13 vendors it (section 5.7; its tests are the author's and root's, A#57404). | warden's admission record |
 
 ### Phase 1: data and validators (no page)
 
@@ -1659,8 +1674,8 @@ screenshots. No item deploys, runs a solver, or touches the producer, the API, t
 | Item | Size | Scope | Acceptance |
 |---|---|---|---|
 | W9.5 | S | The section 6.11 measurement of the D5 pick as a spike behind the `render3d.mjs` contract (no page integration), against the D4 targets; traces attached; a miss returns D5 to the three owners with the numbers. | AC-34 (measurement protocol) |
-| W10 | L | The renderer warden picks under D5 (section 6.10: option A's `mat4.mjs`, `camera.mjs`, `gl.mjs`, `shaders.mjs`, or option B's pinned vendored core), `render3d.mjs`, `labels.mjs`; picking, explode tween, section caps, overlays, lid and spreader outlines; context loss and restore; disposal; the `window.__package3d.facts()` test hook. | AC-12 (browser), AC-15, AC-27, AC-33, AC-35 |
-| W11 | S | The section 6.11 measurement of the built renderer on the named workload, phone, browser and desktop, against the D4 targets; traces attached. | AC-34 |
+| W10 | L | The D5 renderer, option B: the pinned, vendored three.js core behind `render3d.mjs` (section 6.10; option A's `mat4.mjs`, `camera.mjs`, `gl.mjs` and `shaders.mjs` only if W9.5 sends D5 back to the three owners), `labels.mjs`; picking, explode tween, section caps, overlays, lid and spreader outlines; context loss and restore; disposal; the `window.__package3d.facts()` test hook. | AC-12 (browser), AC-15, AC-27, AC-33, AC-35 |
+| W11 | S | The section 6.11 measurement of the built renderer on the named workload, the D4 emulation ("emulated, not a phone"), browser and desktop, against the D4 targets; traces attached. | AC-34 |
 
 ### Phase 5: results (view envelopes; no fields in production)
 
@@ -1729,9 +1744,10 @@ pinned, no CAD in the display path.
 Root proposed a resolution for every advertised decision under Carter's standing authorization (A#57218, A#57278).
 None needs a new human decision, and Carter already chose Astra ultra for the build after joint agreement. Each is
 recorded here as **root-proposed, forge-adopted, warden co-sign pending**: the existing three-owner sign-off (W0.1)
-settles them with this document, and no fourth signer or new gate is added. D5 is the one shared implementation
-choice still open: root votes for option B and warden resolves it in this draft (section 6.10). D15 is informational;
-D16's resolution is root's crosswalk, whose case table W0.2 commits.
+settles them with this document, and no fourth signer or new gate is added. D4 and D5, the two choices left to warden,
+are warden-resolved (#57424): D5 is option B, as root voted (section 6.10), and D4's reference device is a named
+emulation, with Carter's own phone as the real-device check at the screenshot gate (section 6.11). D15 is
+informational; D16's resolution is root's crosswalk, whose case table W0.2 commits.
 
 **Product gate: Carter approves the rendered page, from real-browser screenshots, before any deploy; this
 document's text is not that gate.**
@@ -1741,8 +1757,8 @@ document's text is not that gate.**
 | D1 | Names in the room's teaching content and citations. | Rule 8. The run view names "Ascend910-class 2.5D (TAP, HotSpot)" (main:web/public/index.html:28) and serves the fixture id `ascend910` in data (main:web/public/replay/ascend910-seed11-32x32.json `benchmark`); PR #66 names "Ascend 910" and "CPU-DRAM" (pr66:web/public/agents/index.json:19). | Generic representative labels in the teaching copy (part names, claims, explanations, labels, flow text, the twins' prose), with usable source citations kept: each source record carries its title, publisher, URL and capture hash (section 5.2). The names scan covers the copy, not the source records (D10). Fixture ids stay identifiers. | root-proposed, forge-adopted, warden co-sign pending |
 | D2 | Temperatures that are not results. | v0.1 recorded a contradiction: the four label states are result states, and none is truthful for a literature limit, a model input or a material condition (main:web/public/temperature-label.mjs:38-53). Lane 1 holds such values (L1:thermal_path.md §3; parts.json `silicon_85C` and others); PR #66 shows qualified policy temperatures (pr66:web/public/agents/math.md:168, :221-225). | Typed roles: a temperature quantity is a `model_input` (for example the ambient), a `material_condition` (the temperature a conductivity is stated at), a `published_limit` (for example a refresh trip point) or a `computed_result`; only computed results use the four result states. Until the role formatter and its tests land with the label-rule owner (P9), non-result temperatures stay unrendered and are listed in `omitted` with their role (PL-4). | root-proposed, forge-adopted, warden co-sign pending |
 | D3 | Signed chip-layer grids that already exist. | v0.1 recorded a contradiction: rule 5 says no signed record carries a field, but the served run-view replay holds signed 32 x 32 chip-layer grids from the withdrawn HotSpot-7 build, drawn by the run view (main:web/public/app.js:52, :63, :139). | The fact that these legacy withdrawn grids exist is retained (section 2). A 3D field is enabled only through an exact supported verifier and association path (section 5.7 with `run_inputs_verified`, section 5.6); the legacy grids have none, so the room does not draw them. | root-proposed, forge-adopted, warden co-sign pending |
-| D4 | Phone budgets, the reference phone, and how they are measured. | Lane 3: 300,000 triangles, 60 draw calls, 6,000 instances, p95 33 ms, DPR 2 (L3:ACCEPTANCE A-10). astra: 50,000 triangles, 100 draw calls, a 2 MiB derivative, a 1-megapixel buffer, p95 interaction 33 ms on a named phone, unmeasured (A#57059). | Initial phone tier: 50,000 triangles, 60 draw calls, a 1-megapixel drawing buffer and a 2 MiB render derivative, as prospective measurement targets, not limits (A#57278). The workload, device and browser are named before measuring, and preparation is measured separately from end-to-present (section 6.11; AC-34). | root-proposed, forge-adopted, warden co-sign pending; warden names the phone |
-| D5 | Renderer. | Option A, our own WebGL2 renderer (lane 3's recommendation); option B, a pinned, locally vendored three.js adapter behind the RenderModel (root's vote). Both scopes are written out in section 6.10; neither option's size in this page nor its performance is measured yet. | Open: root votes option B, with a license inventory; warden resolves it in this draft, with both scopes treated (section 6.10); the measurement plan (section 6.11) then checks the pick against the D4 targets. Nothing outside `render3d.mjs` depends on the choice. | root's vote recorded; warden resolves in this draft |
+| D4 | Phone budgets, the reference phone, and how they are measured. | Lane 3: 300,000 triangles, 60 draw calls, 6,000 instances, p95 33 ms, DPR 2 (L3:ACCEPTANCE A-10). astra: 50,000 triangles, 100 draw calls, a 2 MiB derivative, a 1-megapixel buffer, p95 interaction 33 ms on a named phone, unmeasured (A#57059). | Initial phone tier: 50,000 triangles, 60 draw calls, a 1-megapixel drawing buffer and a 2 MiB render derivative, as prospective measurement targets, not limits (A#57278), with p95 33 ms (#57424). The reference device is a named emulation on the build box: Chromium mobile emulation at 412 x 915 CSS px, DPR 2, with 4x CPU throttling, labelled "emulated, not a phone"; it does not throttle the GPU (#57424). Carter's own phone is the real-device check, at the screenshot gate before deploy. The workload, device and browser are named before measuring, and preparation is measured separately from end-to-present (section 6.11; AC-34). | warden-resolved (#57424) |
+| D5 | Renderer. | Option A, our own WebGL2 renderer (lane 3's recommendation); option B, a pinned, locally vendored three.js adapter behind the RenderModel (root's vote). Both scopes are written out in section 6.10; neither option's size in this page nor its performance is measured yet. | Option B (#57424, as root voted): the pinned, locally vendored three.js core behind `render3d.mjs`, under section 6.10's conditions (one pinned release; every vendored file pinned by sha256 and reviewed; no add-ons and no loaders; the license inventory, AC-29; the narrow names-test exception for the one comment URL; the CSP unchanged). Reason: schedule, since option A puts 900 to 1,300 lines of our own GL code on the critical path. W9.5 stays: if the spike misses the D4 targets, the three owners revisit D5 with the numbers. Nothing outside `render3d.mjs` depends on the choice. | warden-resolved (#57424) |
 | D6 | Thickness in Results without verified inputs. | Lane 3 fell back to the parts list (L3:PSEUDOCODE §1 step 3); astra and rule 2 keep anatomy separate (A#57053). | The run's verified inputs (`run_inputs_verified`), else schematic; never anatomy, and never a newer family manifest (X3, X4; A#57218 item 6). | root-proposed, forge-adopted, warden co-sign pending |
 | D7 | SKETCH mode, and a label state for its numbers. | L3:ARCHITECTURE §6.3; rule 4. | Deferred: not built in this phase; the room ships verified playback only (section 4.9). | root-proposed, forge-adopted, warden co-sign pending |
 | D8 | Which model content is shown by default. | The 45 mm raw references are gate zero (README.md:24; A#57059); the live service's default fixture is the 50 mm `ascend910` (main:sentilab_core/conductor.py:55; tap_oracle.py:25). | Model mode opens on the reviewed 45 mm raw reference (`ascend910-45mm` raw), with the 0.5 mm variant and the other fixtures selectable; Results uses each run's recorded (signed) geometry, its family's manifest being reference context only (X3). | root-proposed, forge-adopted, warden co-sign pending |
