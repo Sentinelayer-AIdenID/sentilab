@@ -62,7 +62,7 @@ const fmtInt = (n) => Math.round(n).toLocaleString("en-US");
 
 // ── state ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 const S = {
-  selectedId: null, cursor: null, playing: false, playTimer: 0, explode: 0, explodeAnim: 0, orbit: false, motion: true, stage: false,
+  selectedId: null, cursorSeq: null, playing: false, playTimer: 0, explode: 0, explodeAnim: 0, orbit: false, motion: true, stage: false,
   board: { ok: null, board: null, error: "", at: null }, decl: { ok: null, byLabel: new Map(), error: "", at: null }, v3: null, v3Failed: false, v3Pending: null, drawn: null, layer: null,
 };
 // One gate for every request the page makes: spacing, Retry-After and jittered backoff (live-model.mjs createGate).
@@ -112,7 +112,7 @@ const layouts = () => feed.state.layouts;
 const points = () => M.traceModel(feed.state.events).points;
 function cursorEvent() {
   const pts = points();
-  const c = M.clampCursor(S.cursor, pts.length);
+  const c = M.cursorIndex(pts, S.cursorSeq);
   return c === null ? null : pts[c];
 }
 function shownRun() {
@@ -134,7 +134,7 @@ function render() {
 
 function renderStatus() {
   const st = M.feedStatus(feed.state, { nowMs: Date.now(), hostname: location.hostname });
-  const replay = S.cursor !== null;
+  const replay = S.cursorSeq !== null;
   const badge = $("liveBadge");
   badge.dataset.state = replay ? "replay" : st.state;
   $("liveWord").textContent = replay ? "REPLAY · RECORDED" : st.word;
@@ -373,7 +373,7 @@ function renderWork() {
   if (!runs.length && !door.length && !anonymous.length) list.append(h("p", { class: "rail-empty" }, M.feedStatus(feed.state, { hostname: location.hostname }).state === "error" ? "No records: the door feed is not answering." : "No records yet."));
   // The newest record, or the replay cursor's.
   const pts = points();
-  const c = M.clampCursor(S.cursor, pts.length);
+  const c = M.cursorIndex(pts, S.cursorSeq);
   const p = c === null ? pts.at(-1) : pts[c];
   $("selectedEventLabel").textContent = c === null ? "NEWEST RECORD" : `REPLAY · RECORD ${c + 1} OF ${pts.length}`;
   $("eventTitle").textContent = p ? M.recordTitle(p) : "No record yet";
@@ -398,7 +398,7 @@ function renderTrace() {
     const [px, py, x, y] = [xOf(p0), ys[p0.lane], xOf(p1), ys[p1.lane]];
     svg.append(s("path", { d: `M${px} ${py} C${px + 18} ${py},${x - 18} ${y},${x} ${y}`, stroke: LANE_COLOR.run, "stroke-width": 0.8, fill: "none", opacity: 0.45 }));
   }
-  const c = M.clampCursor(S.cursor, pts.length);
+  const c = M.cursorIndex(pts, S.cursorSeq);
   pts.forEach((p, i) => {
     const g = s("g", { class: "trace-pt", tabindex: -1, dataset: null });
     g.dataset.index = String(i);
@@ -437,21 +437,25 @@ function renderTrace() {
 }
 
 // ── interaction ────────────────────────────────────────────────────────────────────────────────────────────────────
-function selectRun(id) { S.selectedId = id; if (S.cursor !== null) { S.cursor = null; stopPlay(); } render(); }
-function setCursor(i) { const n = points().length; S.cursor = M.clampCursor(i, n); render(); }
-function followLive() { stopPlay(); S.cursor = null; render(); }
+function selectRun(id) { S.selectedId = id; if (S.cursorSeq !== null) { S.cursorSeq = null; stopPlay(); } render(); }
+// The replay cursor is held as a record's seq (live-model.mjs cursorIndex): new records never move a paused cursor.
+function setCursor(i) { const pts = points(); const c = M.clampCursor(i, pts.length); S.cursorSeq = c === null ? null : pts[c].seq; render(); }
+const cursorIdx = () => M.cursorIndex(points(), S.cursorSeq);
+function followLive() { stopPlay(); S.cursorSeq = null; render(); }
 function stopPlay() { S.playing = false; clearTimeout(S.playTimer); }
 function play() {
   const n = points().length;
   if (!n) return;
   if (!S.motion) setMotion(true);   // choosing to play is choosing motion
-  if (S.cursor === null || S.cursor >= n - 1) S.cursor = 0;
+  const at = cursorIdx();
+  if (at === null || at >= n - 1) S.cursorSeq = points()[0].seq;
   S.playing = true;
   const tick = () => {
     if (!S.playing) return;
     const m = points().length;
-    if (S.cursor >= m - 1) { stopPlay(); render(); return; }
-    S.cursor += 1;
+    const i = cursorIdx();
+    if (i === null || i >= m - 1) { stopPlay(); render(); return; }
+    S.cursorSeq = points()[i + 1].seq;
     render();
     S.playTimer = setTimeout(tick, REDUCED ? 2000 : 1200);
   };
@@ -639,10 +643,10 @@ function wire() {
   $("stageButton").addEventListener("click", () => setStage(!S.stage));
   $("play").addEventListener("click", () => (S.playing ? (stopPlay(), render()) : play()));
   $("rewind").addEventListener("click", () => { stopPlay(); setCursor(0); });
-  $("step").addEventListener("click", () => { stopPlay(); const n = points().length; if (n) setCursor(S.cursor === null ? 0 : Math.min(n - 1, S.cursor + 1)); });
+  $("step").addEventListener("click", () => { stopPlay(); const n = points().length; if (n) { const i = cursorIdx(); setCursor(i === null ? 0 : Math.min(n - 1, i + 1)); } });
   $("replayRange").addEventListener("input", (e) => { stopPlay(); setCursor(Number(e.target.value)); });
   $("followLive").addEventListener("click", followLive);
-  $("selectedEvent").addEventListener("click", () => { const n = points().length; if (n) openRecord(M.clampCursor(S.cursor, n) ?? n - 1); });
+  $("selectedEvent").addEventListener("click", () => { const n = points().length; if (n) openRecord(cursorIdx() ?? n - 1); });
   for (const b of $$("[data-mobile]")) b.addEventListener("click", () => setMobile(b.dataset.mobile));
   $("brand").addEventListener("click", () => showIntro());
   $("replayIntro").addEventListener("click", () => showIntro());

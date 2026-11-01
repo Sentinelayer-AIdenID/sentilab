@@ -402,3 +402,21 @@ test("P1-2(b): the request gate honours Retry-After, backs off with jitter and s
   assert.equal(M.retryAfterMs("12", 0), 12000);
   assert.equal(M.retryAfterMs("soon", 0), null);
 });
+
+// Review item P2-1: the replay cursor is a record's seq, not a position in the newest-40 window, so a paused
+// "RECORD 6 OF 40" stays on its record (seq 66) when new records arrive and the window moves.
+test("P2-1: a paused replay cursor stays on its record's seq when new records arrive", () => {
+  const ev = (seq) => ({ seq, kind: "arrival", cls: "automation", short: null, label: "automation", at: null });
+  const win = (from) => M.traceModel(Array.from({ length: 40 }, (_, i) => ev(from + i))).points;
+  const before = win(61);                                   // seq 61..100
+  const seq = before[5].seq;                                // RECORD 6 OF 40
+  assert.equal(seq, 66);
+  const after = win(64);                                    // three new records: seq 64..103
+  assert.equal(M.cursorIndex(after, seq), 2);
+  assert.equal(after[M.cursorIndex(after, seq)].seq, 66, "still on seq 66, now record 3 of 40");
+  const gone = win(70);                                     // seq 66 has left the window
+  assert.equal(gone[M.cursorIndex(gone, seq)].seq, 70, "the nearest kept record after it");
+  assert.equal(M.cursorIndex(gone, 500), 39, "past the newest: the newest");
+  assert.equal(M.cursorIndex([], 66), null);
+  assert.equal(M.cursorIndex(after, null), null);
+});

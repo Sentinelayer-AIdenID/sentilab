@@ -445,7 +445,17 @@ export function recordTitle(p) {
 export const hms = (at) => (at ? `${at.slice(11, 19)}Z` : "time not recorded");
 
 // ── replay: an explicit selection over the records already received, with their original times ───────────────────
-// cursor: an index into traceModel(events).points, or null for live (follow the newest).
+// The cursor is a record's seq (review item P2-1), never a position in the newest-40 window: when new records arrive
+// and the window moves, a paused cursor stays on its record. cursorIndex finds it in the window; a record that has
+// left the window falls to the nearest kept record after it (the newest when none is after it).
+export function cursorIndex(points, seq) {
+  if (seq === null || seq === undefined || !points?.length) return null;
+  const exact = points.findIndex((p) => p.seq === seq);
+  if (exact >= 0) return exact;
+  const next = points.findIndex((p) => p.seq > seq);
+  return next >= 0 ? next : points.length - 1;
+}
+// clampCursor: an index into traceModel(events).points, or null for live (follow the newest).
 export function clampCursor(cursor, n) {
   if (cursor === null || cursor === undefined || n === 0) return null;
   return Math.max(0, Math.min(n - 1, Math.trunc(cursor)));
