@@ -150,7 +150,7 @@ test("P3-3: no spelling of an open feed's path skips the proxy's operator filter
 });
 
 // ── 4. browsers without Sec-Fetch-Site ─────────────────────────────────────────────────────────────────────────────
-test("P3-4: every page that holds the submit form is strict-origin, so its POST carries this site's Origin; every other door page stays no-referrer", async (t) => {
+test("P3-4: every page that holds a POST form (submit, or Amendment 4's declare) is strict-origin, so its POST carries this site's Origin; every other door page stays no-referrer", async (t) => {
   const token = await mint();
   installApi(t, { submit: UNCERTAIN });
   const s = setup();
@@ -159,11 +159,13 @@ test("P3-4: every page that holds the submit form is strict-origin, so its POST 
   assert.equal(confirm.headers.get("referrer-policy"), "strict-origin", "the confirm page, at its token-bearing URL");
   const notConfirmed = await s.go("/agents/submit", press(token, TERMS));
   assert.equal(notConfirmed.headers.get("referrer-policy"), "strict-origin", "the not-confirmed page's retry");
+  const tokenPage = await s.go("/agents/intent?purpose=place-chiplets", { headers: BROWSER });
+  assert.ok(tokenPage.text.includes('<form method="post" action="/agents/declare">'));
+  assert.equal(tokenPage.headers.get("referrer-policy"), "strict-origin", "the token page, with its declare form");
   // No form, no exception: a refusal, a page without the button, the agents' pages.
   for (const [why, r] of [
     ["a refusal", await s.go("/agents/submit", press("x", TERMS))],
     ["the confirm page with no button", await setup({ API_ORIGIN: "none" }).go(`/s?t=${token}&l=${REF}`, { headers: BROWSER })],
-    ["the token page", await s.go("/agents/intent?purpose=place-chiplets", { headers: BROWSER })],
     ["a mapped page at a token-bearing URL", await s.go(`/?t=${token}`, { headers: { "user-agent": "curl/8.4.0" } })],
   ]) {
     assert.equal(r.headers.get("referrer-policy"), "no-referrer", why);

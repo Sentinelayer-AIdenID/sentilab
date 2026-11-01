@@ -32,7 +32,7 @@ export function knownLimitFrom(evidence) {
   return typeof text === "string" && text.startsWith("Known limit: ") && text.length <= 2000 ? text : null;
 }
 
-export function agentView({ origin, token, claims, submissions, terms, gateZero, knownLimit, board, boardStatus, cpuSecondsLeft }) {
+export function agentView({ origin, token, claims, submissions, terms, gateZero, knownLimit, board, boardStatus, cpuSecondsLeft, declare = null }) {
   const evidenceUrl = `${origin}/agents/evidence.json`;
   return {
     schema: VIEW_SCHEMA,
@@ -100,6 +100,8 @@ export function agentView({ origin, token, claims, submissions, terms, gateZero,
     },
     board,
     board_status: boardStatus,
+    // How to publish a declaration on this pass (Amendment 4 rev 2): the notice, the endpoint, the body and the fields (declare.js).
+    ...(declare ? { declare } : {}),
     human_page: `${origin}/?view=human`,
   };
 }
