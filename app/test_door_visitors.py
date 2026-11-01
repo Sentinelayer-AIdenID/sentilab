@@ -116,23 +116,24 @@ class VisitorTests(unittest.TestCase):
                   'system', 'owner', 'admin', 'moderator')
         for label in labels:
             wide = ''.join('\u3000' if char == ' ' else chr(ord(char) + 0xfee0) for char in label)
-            variants = (label, label.upper(), '  ' + label.title() + '\u00a0', wide,
-                        '\u200b'.join(label), label.replace(' ', '\u2003\u00a0  '))
-            for name in variants:
+            variants = ((label, 'not'), (label.upper(), 'not'), ('  ' + label.title() + '\u00a0', 'not'),
+                        (wide, 'not'), ('\u200b'.join(label), 'pattern'),
+                        (label.replace(' ', '\u2003\u00a0  '), 'not'))
+            for name, keyword in variants:
                 with self.subTest(name=name):
                     declaration = {'notice_version': intake.VISITOR_NOTICE, 'name': name,
                                    'reason': 'reserved-name-storage-canary', 'source': 'senti'}
                     status, body, _ = self.arrival(nonce='a' * 16, declaration=declaration)
                     self.assertEqual(status, 400)
                     self.assertEqual(body['codes'], [
-                        {'code': 'schema_invalid', 'path': '/declaration/name', 'keyword': 'not'}])
+                        {'code': 'schema_invalid', 'path': '/declaration/name', 'keyword': keyword}])
                     self.assertNotIn('reserved-name-storage-canary', json.dumps(body))
         self.assertEqual(self.door.visitors(None, None)[1]['counts']['recorded_arrivals'], 0)
         self.assertNotIn(b'reserved-name-storage-canary', Path(self.store.path).read_bytes())
 
     def test_nonreserved_names_and_reasons_are_preserved_as_written(self):
         names = ('', 'Humane', 'Human bot', 'The System', 'admin2', 'You2', 'Participants',
-                 'Sentinel', 'Mod', 'Ownerless', '  Zoë 李\u00a0', 'Ｓｙｓｔｅｍ bot', 'A\u200bda')
+                 'Sentinel', 'Mod', 'Ownerless', '  Zoë 李\u00a0', 'Ｓｙｓｔｅｍ bot', 'Ada')
         for name in names:
             declaration = {'notice_version': intake.VISITOR_NOTICE, 'name': name,
                            'reason': 'System', 'source': 'senti'}
@@ -150,17 +151,17 @@ class VisitorTests(unittest.TestCase):
         labels = ('human', 'you', 'senti', 'participant', 'unidentified participant',
                   'system', 'owner', 'admin', 'moderator')
         for label in labels:
-            variants = (outlined(label),
-                        ''.join(outlined(char) if index % 2 == 0 else char for index, char in enumerate(label)),
-                        '\u00a0' + '\u200b'.join(outlined(label)).replace(' ', '\u2003  ') + '\u00a0')
-            for name in variants:
+            variants = ((outlined(label), 'not'),
+                        (''.join(outlined(char) if index % 2 == 0 else char for index, char in enumerate(label)), 'not'),
+                        ('\u00a0' + '\u200b'.join(outlined(label)).replace(' ', '\u2003  ') + '\u00a0', 'pattern'))
+            for name, keyword in variants:
                 with self.subTest(codepoints=[hex(ord(char)) for char in name]):
                     status, body, _ = self.arrival(declaration={
                         'notice_version': intake.VISITOR_NOTICE, 'name': name,
                         'reason': 'outlined-reserved-storage-canary'})
                     self.assertEqual(status, 400)
                     self.assertEqual(body['codes'], [
-                        {'code': 'schema_invalid', 'path': '/declaration/name', 'keyword': 'not'}])
+                        {'code': 'schema_invalid', 'path': '/declaration/name', 'keyword': keyword}])
         self.assertEqual(self.door.visitors(None, None)[1]['counts']['recorded_arrivals'], 0)
         self.assertNotIn(b'outlined-reserved-storage-canary', Path(self.store.path).read_bytes())
 
@@ -171,7 +172,7 @@ class VisitorTests(unittest.TestCase):
                            for char in text.upper())
 
         names = (outlined('HELPER'), outlined('SYSTEM BOT'), outlined('ADMIN2'),
-                 outlined('ADMIN') + '\u0301', '\U0001ccd5Admin', 'Admin\U0001ccfa')
+                 outlined('ADMIN') + '\u0301', '\U0001ccd5Admin')
         for name in names:
             declaration = {'notice_version': intake.VISITOR_NOTICE, 'name': name,
                            'reason': outlined('SYSTEM')}
@@ -179,6 +180,11 @@ class VisitorTests(unittest.TestCase):
         page = self.door.visitors(None, None)[1]
         self.assertEqual([row['declaration']['name'] for row in page['items']], list(names))
         self.assertTrue(all(row['declaration']['reason'] == outlined('SYSTEM') for row in page['items']))
+        # The strengthened character policy refuses Cf and Unicode 16 Cn before name comparison.
+        self.assertEqual(self.arrival(declaration={'notice_version': intake.VISITOR_NOTICE,
+                                                  'name': 'A\u200bda'})[0], 400)
+        self.assertEqual(self.arrival(declaration={'notice_version': intake.VISITOR_NOTICE,
+                                                  'name': 'Admin\U0001ccfa'})[0], 400)
 
     def test_new_read_projection_drops_legacy_private_fields(self):
         self.store.note_arrival({'class': 'unknown', 'operator': 'hidden-operator-canary', 'nonce': 'secret',

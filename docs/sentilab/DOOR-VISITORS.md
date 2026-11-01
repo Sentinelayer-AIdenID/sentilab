@@ -25,20 +25,25 @@ The arrival body may now include an **optional** `declaration`:
 Before accepting this opt-in, the Worker/UI must display the exact `notice.text`
 returned by `GET /api/open/v1/door/visitors`. Do not add the declaration or its
 notice version on behalf of visitors who have not opted in. Name is at most 64
-characters, reason 160; controls and bidi overrides are rejected. Source is one
+code points, reason 160. In both fields, Unicode 16 categories Cc, Cf, Co, Cs,
+Cn, Zl and Zp are refused, including format controls, private-use and unassigned
+characters. At most eight consecutive combining marks (Mn, Mc or Me) are allowed;
+a non-mark resets the run, and there is no separate total-mark cap. Source is one
 of `moltbook`, `senti`, `github`, `direct`, `other`. URLs and arbitrary referrer
 text are not accepted as source-category values. The overall 4,096-byte request
 cap is unchanged.
 
 Names that normalize to the interface labels `human`, `you`, `senti`, `participant`,
 `unidentified participant`, `system`, `owner`, `admin` or `moderator` are refused.
-The comparison matches the Worker: NFKC, remove Unicode format characters (Cf),
+After the character checks, the name comparison follows the Worker: NFKC,
 collapse ECMAScript whitespace runs, trim and lowercase. A refused name returns
 `schema_invalid` at `/declaration/name` with keyword `not`, before storage.
 This comparison does not rewrite accepted text or apply to the reason field.
-Python 3.12's Unicode 15 normalizer is supplemented with the Unicode 16 outlined
-ASCII A–Z and 0–9 mappings (U+1CCD6..U+1CCF9) used by the Worker. These mappings
-affect only the comparison key; other unfamiliar characters are not rejected.
+Declaration validation pins `unicodedata2==16.0.0` for categories and NFKC.
+Unicode 16 assigned text, including outlined Latin letters, is not refused merely
+because Python 3.12's built-in Unicode 15 database does not recognize it. Original
+accepted text is preserved; a character-policy refusal uses `schema_invalid` at
+the affected name/reason path with keyword `pattern`, before storage.
 
 The declaration is public self-reported display data, including in `/events`.
 All accepted name and reason text is public, including any URL, query string or

@@ -20,8 +20,9 @@ a request_key is kept only as a keyed digest. Arrival declarations are a separat
 from __future__ import annotations
 
 import re
-import unicodedata
 from dataclasses import dataclass
+
+import unicodedata2 as declaration_unicode
 
 from open_proposals.contract import canonical as hashes
 from open_proposals.contract.codes import canonical_list, violation
@@ -44,11 +45,12 @@ VISITOR_DISCLOSURE = ("Your visit time, detector classification and selected pur
                       "credential is not added as a generated feed field. All text you enter in name or reason "
                       "is public. Do not include private information.")
 DISPLAY_TEXT = r"^[^\x00-\x1f\x7f-\x9f\u202a-\u202e\u2066-\u2069]*$"
+if declaration_unicode.unidata_version != "16.0.0":
+    raise RuntimeError("declaration validation requires Unicode 16.0.0")
+_REFUSED_DECLARATION_CATEGORIES = frozenset(("Cc", "Cf", "Co", "Cs", "Cn", "Zl", "Zp"))
+_MAX_COMBINING_RUN = 8
 # Match the Worker's nameKey rule; Python's \s includes extra C0/C1 characters.
 _NAME_SPACE = re.compile(r"[\u0009-\u000d\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+")
-# Python 3.12 embeds Unicode 15. Supply Unicode 16's outlined ASCII NFKC mappings
-# (U+1CCD6..U+1CCF9) used by the Worker, only when constructing the comparison key.
-_NFKC16_OUTLINED = dict(enumerate("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 0x1ccd6))
 _RESERVED_NAMES = frozenset(("human", "you", "senti", "participant", "unidentified participant",
                              "system", "owner", "admin", "moderator"))
 COMMON = SCHEMAS["common"]["$id"]
@@ -139,14 +141,32 @@ def read_submit(raw: bytes, size: int | None = None) -> tuple:
     return read_object(raw, _SUBMIT, size)
 
 
+def _declaration_text_allowed(text: str) -> bool:
+    """Check original code points using the pinned Unicode 16 contract; never rewrite text."""
+    combining_run = 0
+    for char in text:
+        category = declaration_unicode.category(char)
+        if category in _REFUSED_DECLARATION_CATEGORIES:
+            return False
+        combining_run = combining_run + 1 if category in ("Mn", "Mc", "Me") else 0
+        if combining_run > _MAX_COMBINING_RUN:
+            return False
+    return True
+
+
 def read_arrival(raw: bytes, size: int | None = None) -> tuple:
     value, found = read_object(raw, _ARRIVAL, size)
     if found:
         return None, found
-    name = value.get("declaration", {}).get("name", "")
+    declaration = value.get("declaration", {})
+    found = [violation("schema_invalid", path="/declaration/" + field, keyword="pattern")
+             for field in ("name", "reason") if not _declaration_text_allowed(declaration.get(field, ""))]
+    if found:
+        return None, canonical_list(found)
+    name = declaration.get("name", "")
     # Compare a key only. Accepted declaration text remains exactly as submitted.
-    key = unicodedata.normalize("NFKC", name.translate(_NFKC16_OUTLINED))
-    key = "".join(char for char in key if unicodedata.category(char) != "Cf")
+    key = declaration_unicode.normalize("NFKC", name)
+    key = "".join(char for char in key if declaration_unicode.category(char) != "Cf")
     key = _NAME_SPACE.sub(" ", key).strip(" ").lower()
     if key in _RESERVED_NAMES:
         return None, [violation("schema_invalid", path="/declaration/name", keyword="not")]
