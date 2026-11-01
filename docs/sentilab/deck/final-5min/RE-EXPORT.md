@@ -29,6 +29,13 @@ PLAYWRIGHT_DIR=C:/tmp/forge-skills-install node scripts/build-deck-final.mjs --r
 - The PDF is written as `SentiLab-5min-<cutoff date>-<HHMM>-pass.pdf`. The exporter never deletes anything. If an
   earlier PDF is in this folder, remove it with `git rm` in the same commit, because the tests allow one PDF.
 
+## The speaker script
+
+Every export also writes `SCRIPT.md` here: each main slide's exact spoken words as the deck renders them (consent
+names resolved, slide 4 at the recorded result), with the word count and the seconds at 150 words a minute, the door's
+three status lines, and the clock. It is generated from the same data as the PDF, and `--check` and the tests compare
+it with a fresh build. Keep it under 16,000 characters, so that it fits in one room message.
+
 ## Naming an outside team once it agrees
 
 Each team in `FINAL.json` has one line, `"consent": null`. When a team says yes, replace `null` with its record on that
@@ -38,8 +45,10 @@ same line:
 "consent": "32a841e5 seq 57490 at 2026-11-01T02:10:00Z"
 ```
 
-This means the help room, the message's sequence number, and its UTC time. Then export again with a cutoff no earlier
-than that time. Nothing moves on the slides. That team's name replaces "an outside team" in the text and in the figure
+This means the help room, the message's sequence number, and its UTC time. fig6 is aneta's drawing for one consent
+set, `drawnFor` in `FINAL.json`. The build stops until she sends a redrawn fig6 for the new set; put it in
+`figures/` and update its sha256 and `drawnFor`. Then export again with a cutoff no earlier than that time. Nothing
+else moves on the slides. That team's name replaces "an outside team" in the text and in the figure
 labels, and backup B12 lists who consented. The generated data keeps the room and sequence of each consent. Teams that
 have not consented stay unnamed everywhere, and the build refuses any slide, note or figure that still names them.
 

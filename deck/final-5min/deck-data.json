@@ -4,7 +4,7 @@
     "title": "SentiLab",
     "event": "ScienceClaw hackathon",
     "talk": "Five-minute slot: talk, then a live demo",
-    "cutoff": "2026-11-01 02:26 UTC",
+    "cutoff": "2026-11-01 02:50 UTC",
     "variant": "pass",
     "variantLabel": "PASS",
     "preview": false,
@@ -14,9 +14,9 @@
   "budget": {
     "checkWordsPerMinute": 150,
     "slowWordsPerSecond": 2.2,
-    "talkWords": 383,
-    "talkSeconds": 153.2,
-    "talkSlowSeconds": 174.1,
+    "talkWords": 378,
+    "talkSeconds": 151.2,
+    "talkSlowSeconds": 171.8,
     "transitionSeconds": 15,
     "talkCapSeconds": 180,
     "doorWords": 47,
@@ -333,30 +333,30 @@
       "main": true,
       "kicker": "Checking each other",
       "notes": {
-        "text": "Why many agents? Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already given a +1. The reviews weren't blind, so this is descriptive, not a controlled test.",
-        "words": 44,
-        "seconds": 17.6,
-        "slowSeconds": 20
+        "text": "Why many agents? Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already approved. The reviews weren't blind, so this is descriptive, not a controlled test.",
+        "words": 42,
+        "seconds": 16.8,
+        "slowSeconds": 19.1
       },
       "content": {
         "title": "Agents check each other.",
         "figure": {
           "id": "fig5",
           "src": "figures/fig5-waffle.svg",
-          "sha256": "d92f5214407a0d3b40d8f22fe649819bfe31bc3484b4109e61532d7e82e05cb2",
+          "sha256": "592d07bb3be88f6c9ba4fad4eefce767f77b401163d5cc682843ed65aefeaf42",
           "width": 678,
           "height": 472,
           "scale": 1,
           "minFont": 24,
-          "alt": "Grid of 190 squares, one per catalogued finding: 80 where a later agent was first on record, 17 of them at a version another agent had already given a +1, and 110 others.",
+          "alt": "Grid of 190 squares, one per catalogued finding: 80 where a later agent was first on record, 17 of them at a version another agent had already approved, and 110 others.",
           "texts": [
             "17 at a version another agent had approved",
             "63 more where a later agent was first",
             "110 others"
           ]
         },
-        "line": "Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already given a +1. The reviews weren't blind, so this is descriptive, not a controlled test.",
-        "attribution": "The review author's tally from the room log; its row file has not been independently retrieved. The approver confirms at least 4 as misses.",
+        "line": "Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already approved. The reviews weren't blind, so this is descriptive, not a controlled test.",
+        "attribution": "The review author's tally from the room log; a second reviewer independently retrieved its row file and re-counted it.",
         "caption": "34 code reviews in the room log, to 31 October 22:57 UTC. The approver confirms 4 of the 17 as misses; the rest are not classified.",
         "study": {
           "title": "Controlled test with seeded defects",
@@ -381,12 +381,12 @@
         "figure": {
           "id": "fig6",
           "src": "figures/fig6-teams.svg",
-          "sha256": "c531bcff59a29afc3377686dbd59880dfef9ae10a3b1f6b5a425d527fd351338",
+          "sha256": "b283a065b6fd03acad4cce832c9ce1e2f95edb4ebd0613be3fa56bb8b141c130",
           "width": 1664,
           "height": 760,
           "scale": 0.92,
           "minFont": 24,
-          "alt": "Map of what travelled between SentiLab and eight outside teams: two used our work and returned a result, three said it helped in their own words, three have not confirmed use yet, and four links run between other teams.",
+          "alt": "Map of what travelled between SentiLab and eight outside teams. Used it and returned a result: An outside team, An outside team. Said it helped: ScienceClaw, An outside team, An outside team. Not confirmed yet: An outside team, An outside team, An outside team. Between other teams: An outside team to An outside team: physics anchors; ScienceClaw to An outside team: fracture package; ScienceClaw to An outside team: blind panel test, running; An outside team to An outside team: evaluation notes.",
           "texts": [
             "public test case",
             "rigidity tool",
@@ -405,10 +405,10 @@
             "Both versions on our case,",
             "39 min after it went public",
             "An outside team",
-            "Built on request; it ran through",
-            "the open-source ScienceClaw",
+            "Ran through the open-source",
+            "ScienceClaw registry, executor",
             "ScienceClaw",
-            "“your matchmaking”; it used",
+            "“your matchmaking”, then used",
             "our review to fix its package",
             "An outside team",
             "Separate solver on our",
@@ -440,20 +440,21 @@
       "main": true,
       "kicker": "By the numbers",
       "notes": {
-        "text": "By the numbers: on Saturday we merged 90 pull requests. The cloud bill so far is 5,112 dollars, for the whole account. By our own estimate, people would need 360 to 720 hours for that work.",
-        "words": 36,
-        "seconds": 14.4,
-        "slowSeconds": 16.4
+        "text": "By the numbers, measured: from midnight UTC on Saturday to 00:27 on Sunday we merged 90 pull requests. The cloud bill posted so far for Saturday is 5,112 dollars, for the whole account.",
+        "words": 33,
+        "seconds": 13.2,
+        "slowSeconds": 15
       },
       "content": {
-        "title": "By the numbers: Saturday, 31 October.",
+        "title": "By the numbers, measured.",
         "placeholder": null,
         "items": [
           {
             "n": "1",
             "value": "90",
-            "label": "pull requests merged since 31 Oct 00:00 UTC (121 opened); median 44 min 28 s from open to merge",
+            "label": "pull requests merged from 31 Oct 00:00 UTC to 1 Nov 00:27 UTC, when they were counted (121 opened); median 44 min 28 s from open to merge",
             "class": "MEASURED",
+            "tag": "MEASURED",
             "caveat": "Includes product repositories as well as the hackathon ones; 67 of the 90 are in the SentiLab repository."
           },
           {
@@ -461,6 +462,7 @@
             "value": "5 min 46.2 s",
             "label": "median from a founder's ask to the first delivered result, across 9 asks",
             "class": "MEASURED",
+            "tag": "MEASURED",
             "caveat": "The first post that delivered what was asked; some asks had later steps. Range 46.6 s to 52 min 57.3 s."
           },
           {
@@ -468,14 +470,8 @@
             "value": "$5,112.39",
             "label": "cloud cost posted for 31 October, all projects",
             "class": "MEASURED",
+            "tag": "POSTED SO FAR",
             "caveat": "Still posting, so it can only rise. An operator-reported total for the whole account, not only the hackathon."
-          },
-          {
-            "n": "4",
-            "value": "360–720 h",
-            "label": "engineer-hours the 90 merged pull requests would have taken ($28,800–$72,000): about 5.6× to 14× the day's measured cloud and build-service spend",
-            "class": "ESTIMATE",
-            "caveat": "Assumes 4 to 8 hours per pull request at $80 to $100 an hour, with no matched human baseline; the spend also pays for other work."
           }
         ]
       },
@@ -581,7 +577,7 @@
         "rows": [
           {
             "at": "12:43",
-            "text": "A person asks why the study was inconclusive and how to match a package human engineers built, and asks three agents to research separately, then challenge each other."
+            "text": "A person asks why the study was inconclusive and how to match the published reference design, and asks three agents to research separately, then challenge each other."
           },
           {
             "at": "13:08",
@@ -640,7 +636,7 @@
             "text": "An outside team runs both simulator versions on that case, 39 minutes later: 75.48 C and 115.94 C in 6.0, 123.42 C and 232.67 C in 7.0, as reported by them."
           },
           {
-            "at": "23:45",
+            "at": "23:44",
             "text": "The fixed test runs from 23:41 to 23:44, and the operator reports PASS: 75.48 C and 115.93 C against the paper's 75.48 C and 115.94 C. A second reviewer re-derives it independently by 00:05 on 1 November."
           },
           {
@@ -663,8 +659,8 @@
       },
       "content": {
         "title": "How reviews work here: what a later reviewer was first to record.",
-        "line": "Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already given a +1. The reviews weren't blind, so this is descriptive, not a controlled test.",
-        "attribution": "The review author's descriptive tally from the room log (version 2, corrected at 00:03 UTC on 1 Nov). Its row file has not been independently retrieved.",
+        "line": "Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already approved. The reviews weren't blind, so this is descriptive, not a controlled test.",
+        "attribution": "The review author's descriptive tally from the room log (version 2, corrected at 00:03 UTC on 1 Nov). A second reviewer independently retrieved its row file and re-counted 190, 80 and 17.",
         "rows": [
           {
             "label": "Catalogued findings, in the 34 pull requests with both reviewers visible",
@@ -683,7 +679,7 @@
             "value": "56"
           },
           {
-            "label": "Of the 80, at the same version after a recorded +1",
+            "label": "Of the 80, at the same version after a recorded approval",
             "value": "17, in 7 pull requests"
           },
           {
@@ -692,10 +688,10 @@
           }
         ],
         "caveats": [
-          "Not blind: later reviewers read the earlier reviews. A +1 before a finding fixes the recorded order at that version; it does not show when the later review began, or independence.",
+          "Not blind: later reviewers read the earlier reviews. An approval before a finding fixes the recorded order at that version; it does not show when the later review began, or independence.",
           "Counted as catalogued findings: 33 of the 190, including 19 of the 80, have no recorded fix status.",
           "First on record, not a counterfactual: the log cannot show what would have gone unstated.",
-          "The approver confirms at least 4 as misses, in the approver's own words; the other 13 are not classified yet.",
+          "The approver confirms 4 of the 17 as misses, in the approver's own words; the other 13 are not classified yet.",
           "All 17 follow one reviewer's approvals, often scoped real-run checks. This is not a ranking of reviewers."
         ]
       },
@@ -925,7 +921,7 @@
           "pr": 56,
           "state": "merged",
           "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
-          "checked": "checked 2026-11-01 02:24 UTC"
+          "checked": "checked 2026-11-01 02:48 UTC"
         },
         "result": {
           "label": "PASS",
@@ -1082,15 +1078,15 @@
     {
       "id": "gb10",
       "main": false,
-      "kicker": "Backup · the GB10 box",
+      "kicker": "Backup · local workstation",
       "notes": {
-        "text": "Backup. If asked about the GB10 box, give the wall times and say what they do not show.",
+        "text": "Backup. If asked about our local workstation, give the wall times and say what they do not show.",
         "words": 18,
         "seconds": 7.2,
         "slowSeconds": 8.2
       },
       "content": {
-        "title": "The GB10 box: what ran on 31 October, and for how long.",
+        "title": "Our local workstation: what ran on 31 October, and for how long.",
         "rows": [
           {
             "label": "Train a small adapter",
@@ -1108,7 +1104,7 @@
         "lines": [
           "Runs on 31 October, 07:48 to 11:40 UTC. Wall time in a GPU-enabled container; GPU-busy time, utilization and energy were not recorded.",
           "The adapter was trained for 20 steps on 200 fixture rows, saved, reloaded in a fresh container and served.",
-          "Exact fixture answers went from 0 of 20 to 20 of 20 on cases already seen in training. That shows the pipeline works, not general learning.",
+          "Exact fixture answers went from 0 of 20 to 20 of 20: 20 rows from 6 distinct source cases, all seen in training. That shows the pipeline works, not general learning.",
           "Wall time of automated runs is not human time saved."
         ]
       },
@@ -1127,84 +1123,84 @@
       "content": {
         "title": "Pull requests behind this talk, with their state at the check time.",
         "repo": "Sentinelayer-AIdenID/sentilab",
-        "checked": "checked 2026-11-01 02:24 UTC",
+        "checked": "checked 2026-11-01 02:48 UTC",
         "rows": [
           {
             "number": "#56",
             "what": "Gate zero: the older simulator version behind the fixed test",
             "state": "merged",
             "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
-            "checked": "checked 2026-11-01 02:24 UTC"
+            "checked": "checked 2026-11-01 02:48 UTC"
           },
           {
             "number": "#73",
             "what": "Gate zero: pin the operator's public key",
             "state": "merged",
             "text": "merged as 1575556d at 2026-10-31 23:40 UTC",
-            "checked": "checked 2026-11-01 02:24 UTC"
+            "checked": "checked 2026-11-01 02:48 UTC"
           },
           {
             "number": "#57",
             "what": "Reference layouts from the paper, plus the paper's wire router",
             "state": "merged",
             "text": "merged as d298cb00 at 2026-10-31 18:04 UTC",
-            "checked": "checked 2026-11-01 02:24 UTC"
+            "checked": "checked 2026-11-01 02:48 UTC"
           },
           {
             "number": "#58",
             "what": "Public notice: pre-correction temperatures withdrawn",
             "state": "merged",
             "text": "merged as 568dd397 at 2026-10-31 16:27 UTC",
-            "checked": "checked 2026-11-01 02:24 UTC"
+            "checked": "checked 2026-11-01 02:48 UTC"
           },
           {
             "number": "#60",
             "what": "Notice on the leaderboard and verify pages",
             "state": "merged",
             "text": "merged as 551777a9 at 2026-10-31 17:59 UTC",
-            "checked": "checked 2026-11-01 02:24 UTC"
+            "checked": "checked 2026-11-01 02:48 UTC"
           },
           {
             "number": "#64",
             "what": "Every temperature carries its own qualifier",
             "state": "merged",
             "text": "merged as d2504625 at 2026-10-31 19:38 UTC",
-            "checked": "checked 2026-11-01 02:24 UTC"
+            "checked": "checked 2026-11-01 02:48 UTC"
           },
           {
             "number": "#61",
             "what": "Test fix: a guard pattern held raw control bytes",
             "state": "merged",
             "text": "merged as a5744f3a at 2026-10-31 16:48 UTC",
-            "checked": "checked 2026-11-01 02:24 UTC"
+            "checked": "checked 2026-11-01 02:48 UTC"
           },
           {
             "number": "#59",
             "what": "Design: outside agents propose layouts",
             "state": "merged",
             "text": "merged as 4f6ad0cb at 2026-10-31 17:53 UTC",
-            "checked": "checked 2026-11-01 02:24 UTC"
+            "checked": "checked 2026-11-01 02:48 UTC"
           },
           {
             "number": "#55",
             "what": "Measured run profiles; refuse to start when calls cannot fit the cap",
             "state": "merged",
             "text": "merged as 315bbff4 at 2026-10-31 15:38 UTC",
-            "checked": "checked 2026-11-01 02:24 UTC"
+            "checked": "checked 2026-11-01 02:48 UTC"
           },
           {
             "number": "#37",
             "what": "Allocation controller for simulator runs in CI",
             "state": "merged",
             "text": "merged as 224fa704 at 2026-10-31 17:09 UTC",
-            "checked": "checked 2026-11-01 02:24 UTC"
+            "checked": "checked 2026-11-01 02:48 UTC"
           },
           {
             "number": "#25",
             "what": "Headroom study runner; its result is INCONCLUSIVE, kept as recorded",
             "state": "merged",
             "text": "merged as deb24670 at 2026-10-31 12:05 UTC",
-            "checked": "checked 2026-11-01 02:24 UTC"
+            "checked": "checked 2026-11-01 02:48 UTC"
           }
         ]
       },
@@ -1258,13 +1254,13 @@
   "build": {
     "gate": "pass",
     "measured": "75.48,115.93",
-    "cutoff": "2026-11-01T02:26:00Z",
+    "cutoff": "2026-11-01T02:50:00Z",
     "preview": false,
     "rederived": true,
     "demoStatus": "staging"
   },
   "source": {
-    "finalSha256": "ca6ccdb502514f2667ed276ef2b7be96e21c2da3758a70359f6708a99816cd4a",
-    "schemaSha256": "d28f0157ab305445a9924de34564c96d349cf2506ef6dc58afc11a00c71fd113"
+    "finalSha256": "33abea78ef2646c9eff2da4431c64596d1e9c78e7f8e37517c8343ea21a9af91",
+    "schemaSha256": "696266569c948be32ec708b668c5c456af0616016aed08329ce504b6d53c9980"
   }
 }

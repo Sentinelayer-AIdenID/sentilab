@@ -12,7 +12,7 @@
 //     states the completed independent re-derivation;
 //   - timing (root, team room 57481): the talk before the door at 150 words a minute plus transitions fits 180 s, the
 //     door lines fit inside the 120 s demo clock, and the 300 s slot holds both;
-//   - "By the numbers" shows at most four values, each with the quant pack's own value and MEASURED or ESTIMATE label;
+//   - "By the numbers" shows measured values only, each the quant pack's own value and class, with no savings estimate;
 //   - every dated line, figure time and tile names a room record that carries its minute.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -25,7 +25,8 @@ import { NOT_PUBLIC, PDF_DIR, REPO_ROOT } from "./build-deck-data.mjs";
 import {
   FIGURE_OUT_DIR, FIGURE_SOURCE_DIR, FINAL3_DECK_DIR, FINAL3_DIR, FINAL_BANNED, FINAL_DECK_DIR, FINAL_DIR, FINAL_SOURCE,
   FROZEN_FINAL_3MIN, FinalError, GATES, MONEY, PLAIN_WORDS, buildFigureFrom, buildFinalData, checkDuration, checkOutcome, cliOptions, countWords,
-  figureDirMatches, finalPdfName, loadFinal, parseConsent, refreshPrs, serialize, speech, splitCommon, svgActive, svgTexts,
+  figureDirMatches, finalPdfName, loadFinal, parseConsent, refreshPrs, serialize, speech, speakerScript, splitCommon, svgActive, svgTexts,
+  SCRIPT_PATH,
 } from "./build-deck-final.mjs";
 
 const require = createRequire(import.meta.url);
@@ -70,8 +71,9 @@ const WORDING = {
 };
 // The operator's scope for the PASS, word for word (team room, message 57377, 23:45:43Z).
 const OPERATOR_SCOPE = "this binary, at grid 64, on the block-centre metric only. It doesn't cover other grids or the search objective J.";
-// The review author's corrected slide line, word for word (team room, message 57392, 00:03:42Z on 1 Nov).
-const REVIEW_LINE = "Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already given a +1. The reviews weren't blind, so this is descriptive, not a controlled test.";
+// The review author's corrected slide line (team room, message 57392, 00:03:42Z on 1 Nov), with "approved" for "+1" as
+// she asked in her review of the 02:06 PDF (message 57554): "+1" is banned on public slides (message 56383).
+const REVIEW_LINE = "Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already approved. The reviews weren't blind, so this is descriptive, not a controlled test.";
 // The demo instruction as given for the live-demo slide.
 const INSTRUCTION = "Tell your assistant: go to sentilab.aidenid.com, say you're here to place chiplets, and propose a layout.";
 const MAIN = ["problem", "stack", "timeline", "gate", "checks", "teams", "numbers", "demo"];
@@ -129,6 +131,10 @@ test("the figures are the contributed SVGs byte for byte, inert, with only the d
     assert.deepEqual(svgActive(src.toString("utf8")), [], `${id}: source is inert`);
     const out = read(join(FIGURE_OUT_DIR, f.file));
     assert.deepEqual(svgActive(out), [], `${id}: served copy is inert`);
+    if (f.keepLabel) {
+      assert.ok(readFileSync(join(FIGURE_OUT_DIR, f.file)).equals(src), `${id}: served byte for byte`);
+      continue;
+    }
     // The served copy differs from the source only in declared text and in the accessible label, which is ours.
     const expected = [...f.edits.map((e) => [e.from, e.to]), ...f.teamText.map((t) => [t.from, t.anon])];
     const srcTexts = svgTexts(src.toString("utf8")), outTexts = svgTexts(out);
@@ -144,9 +150,10 @@ test("the figures are the contributed SVGs byte for byte, inert, with only the d
 test("a figure that is not the reviewed file, names an unconsented team, or shrinks its text below 22 px does not build", () => {
   assert.throws(() => recorded({}, (f) => { f.figures.fig5.sha256 = "0".repeat(64); }), /not the reviewed file/);
   assert.throws(() => recorded({}, (f) => { f.figures.fig3.teamText.pop(); }), /still names FEAgent, who has not consented/);
-  assert.throws(() => recorded({}, (f) => { f.figures.fig6.teamText = f.figures.fig6.teamText.filter((t) => t.team !== "kiln"); }), /still names Kiln/);
+  assert.throws(() => recorded({}, (f) => { f.figures.fig4.teamText = f.figures.fig4.teamText.filter((t) => t.team !== "delfie"); }), /still names Delfie/);
   assert.throws(() => recorded({}, (f) => { f.figures.fig1.edits = []; }), /public-render rule/, "the vendor name in the original fig1 label");
   assert.throws(() => recorded({}, (f) => { f.figures.fig4.scale = 0.9; }), /under 22 px/);
+  assert.throws(() => recorded({}, (f) => { f.figures.fig6.edits = [{ from: "SentiLab", to: "SentiLab lab", why: "test" }]; }), /must be served byte for byte/);
   assert.throws(() => recorded({}, (f) => { f.figures.fig3.edits[0].from = "Ascend 911"; }), /must appear exactly once/);
   // The build itself refuses active content, whatever the file's hash.
   const fig5 = loaded.final.figures.fig5;
@@ -202,27 +209,28 @@ test("only a team whose consent is on record is named: slides, notes, figures an
   assert.match(slideText(d, "receipt"), /Named with their consent, on record in the help room: ScienceClaw\. The other 7 teams are not named until they agree\./);
   // ScienceClaw's card and the narration, in root's words (team room 57540): the run went through the open-source
   // platform, not through the team, and the 02:09 acknowledgment is the team's own, not backdated.
-  assert.match(figureText(d, "teams"), /Built on request; it ran through \| the open-source ScienceClaw \| ScienceClaw \| “your matchmaking”; it used \| our review to fix its package/);
+  assert.match(figureText(d, "teams"), /Ran through the open-source \| ScienceClaw registry, executor \| ScienceClaw \| “your matchmaking”, then used \| our review to fix its package/);
+  assert.equal(loaded.final.figures.fig6.sha256, "b283a065b6fd03acad4cce832c9ce1e2f95edb4ebd0613be3fa56bb8b141c130", "aneta's v1.6, drawn for ScienceClaw's consent");
   assert.match(notesOf(d, "teams"), /ScienceClaw credited our matchmaking, and later used our review to fix its package\. Our rigidity skill ran through the open-source ScienceClaw registry and executor\.$/);
   assert.match(slideText(d, "teams"), /Help room, to 1 November 02:09 UTC; a dated snapshot\. Only teams that agreed are named\./);
   assert.match(figureText(d, "teams"), /blind panel test, running/);
   assert.match(figureText(d, "gate"), /Outside 75\.48 \| 78\.06 Outside/);
   assert.match(figureText(d, "timeline"), /An outside team \| reproduces it: 39 min/);
   assert.equal((figureText(d, "teams").match(/An outside team/g) ?? []).length, 7);
-  // Without its consent line, the card goes back to "an outside team" and the figure's platform line to "the
-  // hackathon's open-source executor"; the narration names the open-source platform in plain words, which shares the
-  // team's name, so the build stops for a person to reword it rather than guess.
-  const offFig = recorded({}, (f) => { f.teams.scienceclaw.consent = null; f.teamsSlide.notes = f.teamsSlide.notes.replace(/ Our rigidity skill[^.]*\.$/, ""); });
-  assert.ok(!named(everything(offFig).replaceAll(offFig.deck.event, ""), "ScienceClaw"));
-  assert.match(figureText(offFig, "teams"), /the hackathon’s open platform/);
-  assert.throws(() => recorded({}, (f) => { f.teams.scienceclaw.consent = null; }), /ScienceClaw has not consented to be named/);
+  // fig6 is drawn for exactly this consent set; with any other set the build stops until it is redrawn.
+  assert.throws(() => recorded({}, (f) => { f.teams.scienceclaw.consent = null; }), /drawn for the consent set \[scienceclaw\], but consent is on record for \[\]/);
 });
 test("a consent line switches one team to its name, with a pointer to where it agreed, and nothing else moves", () => {
   // The flag is one line in FINAL.json.
   const text = read(FINAL_SOURCE);
   const flipped = text.replace(/("delfie": \{\n\s+"name": "Delfie",\n\s+"consent": )null/, `$1"${consentLine(57490)}"`);
   assert.equal(flipped.split("\n").filter((l, i) => l !== text.split("\n")[i]).length, 1, "one changed line");
-  const d = buildFinalData({ final: JSON.parse(flipped), hashes: loaded.hashes }, { rederived: true });
+  // fig6 is aneta's drawing for ScienceClaw alone, so a new consent first stops the build until she redraws it ...
+  assert.throws(() => buildFinalData({ final: JSON.parse(flipped), hashes: loaded.hashes }, { rederived: true }), /drawn for the consent set \[scienceclaw\], but consent is on record for \[delfie, scienceclaw\]/);
+  // ... and with a redrawn fig6 (simulated by its consent set alone) everything else switches by itself.
+  const redrawn = JSON.parse(flipped);
+  redrawn.figures.fig6.drawnFor = ["delfie", "scienceclaw"];
+  const d = buildFinalData({ final: redrawn, hashes: loaded.hashes }, { rederived: true });
   assert.deepEqual(d.teams, { named: [{ name: "Delfie", consent: { room: "32a841e5", seq: 57490, at: "2026-11-01T01:20:00Z" } },
     { name: "ScienceClaw", consent: { room: "32a841e5", seq: 57532, at: "2026-11-01T02:09:48.572Z" } }], unnamed: 6 });
   assert.match(slideText(d, "stack"), /Delfie ran both versions with the detailed 3-D mode off: both give 75\.37 C and 115\.29 C, as reported by them\./);
@@ -320,7 +328,9 @@ test("the recorded result is the default export: PASS with its figure, the opera
   assert.match(detail, /PASS 75\.48 C and 115\.93 C Verified by the operator and independently re-derived from signed raw outputs/);
   assert.match(detail, /Version comparison on the same layouts and readout: version 7\.0 gives 123\.42 C and 232\.67 C, 48 to 117 K above the paper\./);
   assert.match(detail, /Compute, for the validation container only: 23\.0 CPU-seconds of 562 reserved \(cap 600\); the solver used 17\.86\. Not the cost of the build, the models or the project\./);
-  assert.match(slideText(d, "chronology"), /23:45 The fixed test runs from 23:41 to 23:44, and the operator reports PASS/);
+  assert.match(slideText(d, "chronology"), /23:44 The fixed test runs from 23:41 to 23:44, and the operator reports PASS/);
+  assert.match(slideText(d, "chronology"), /12:43 A person asks why the study was inconclusive and how to match the published reference design/);
+  assert.doesNotMatch(everything(d), /human engineers built|human design/);
 });
 test("the frozen gate statistic, the chiplet-centre means and the chip-layer and active-grid peaks are never run together", () => {
   const d = recorded();
@@ -393,14 +403,18 @@ test("the review line is the author's corrected wording, attributed, on slide 5 
     assert.equal(decode(sec[1]), REVIEW_LINE, id);
   }
   const checks = slideText(d, "checks");
-  assert.match(checks, /The review author's tally from the room log; its row file has not been independently retrieved\. The approver confirms at least 4 as misses\./);
+  assert.match(checks, /The review author's tally from the room log; a second reviewer independently retrieved its row file and re-counted it\./);
+  assert.doesNotMatch(checks, /at least 4|not been independently retrieved/);
+  assert.equal((checks.match(/4 of the 17/g) ?? []).length, 1, "the approver's four, once");
+  assert.ok(loaded.final.how.evidence.records.some((r) => r.ref === "seq 57559" && r.at === "2026-11-01T02:34:08.150Z"));
   assert.match(checks, /Controlled test with seeded defects Designed to compare agents with defects planted in advance\. It has not run yet; when it does, its result goes here, whatever it shows\./);
   assert.match(figureText(d, "checks"), /17 at a version another agent had approved \| 63 more where a later agent was first \| 110 others/);
   assert.equal(notesOf(d, "checks"), `Why many agents? ${REVIEW_LINE}`);
   const rv = slidesOf(d).find((s) => s.id === "reviews");
   assert.equal(rv.main, false);
   assert.match(rv.text, /First recorded by a later reviewer 80 \(42\.1%\)/);
-  assert.match(rv.text, /Of the 80, at the same version after a recorded \+1 17, in 7 pull requests/);
+  assert.match(rv.text, /Of the 80, at the same version after a recorded approval 17, in 7 pull requests/);
+  assert.doesNotMatch(everything(d), /(^|[\s(])\+1(?!\d|[.,]\d)/m, "no \"+1\" on any slide or note");
   assert.doesNotMatch(everything(d), /\b191\b|\b18 were found|in 8 pull requests|24 of 74|41\.9%/);
   assert.match(slideText(d, "how"), /Three agents sealed their findings before reading each other's; one had seen a one-line preview\./);
 });
@@ -436,7 +450,7 @@ test("the layer-maxima backup carries root's sentence and caption word for word,
   // independent-peak values stay apart from the same-index exploded view.
   assert.match(figureText(d, "stack"), /Spreader minus sink, \| separate layer maxima \| 3\.25 K \| HotSpot 6\.0 \| about 4\.20 K \| 2 finite-element codes \| 141\.84 K \| HotSpot 7\.0/);
   assert.ok(slideText(d, "stack").includes(`Panel at right: ${CAPTION}`), "root's caption under the panel");
-  const consented = buildFinalData({ final: (() => { const f = clone(loaded.final); f.teams.feagent.consent = consentLine(57495); return f; })(), hashes: loaded.hashes }, { rederived: true });
+  const consented = buildFinalData({ final: (() => { const f = clone(loaded.final); f.teams.feagent.consent = consentLine(57495); f.figures.fig6.drawnFor = ["feagent", "scienceclaw"]; return f; })(), hashes: loaded.hashes }, { rederived: true });
   assert.ok(slideText(consented, "layers").includes(SENTENCE.replace("an outside team's", "FEAgent's")));
   assert.throws(() => recorded({}, (f) => { f.backup.layers.rows[3].values[2] = "15.38"; }), /not within 0\.44 K/);
   assert.throws(() => recorded({}, (f) => { f.backup.layers.rows[1].values[3] = "4.30"; }), /"about" values/);
@@ -468,27 +482,29 @@ test("by the numbers: at most four values, each the quant pack's own value and l
   assert.equal(sha(pack), N.source.sha256, "the repository copy is the pack the slide was read from");
   const entries = pack.toString("utf8").split(/\n(?=\*\*\d+\. )/).filter((e) => /^\*\*\d+\. /.test(e));
   assert.equal(entries.length, 8);
-  assert.deepEqual(N.items.map((x) => [x.value, x.class]), [["90", "MEASURED"], ["5 min 46.2 s", "MEASURED"], ["$5,112.39", "MEASURED"], ["360–720 h", "ESTIMATE"]]);
+  assert.deepEqual(N.items.map((x) => [x.value, x.class, x.tag ?? x.class]), [["90", "MEASURED", "MEASURED"], ["5 min 46.2 s", "MEASURED", "MEASURED"], ["$5,112.39", "MEASURED", "POSTED SO FAR"]]);
+  assert.match(N.items[0].label, /from 31 Oct 00:00 UTC to 1 Nov 00:27 UTC, when they were counted/);
   for (const x of N.items) {
     const entry = entries.find((e) => e.replace(/^\*\*\d+\. /, "").startsWith(`${x.value.replace(/ h$/, "")} `));
     assert.ok(entry, `${x.value} opens a headline in the pack`);
     assert.ok(entry.includes(`- ${x.class}.`), `${x.value} is ${x.class} in the pack`);
   }
   assert.match(N.items[2].caveat, /Still posting, so it can only rise\. An operator-reported total for the whole account, not only the hackathon\./);
-  assert.match(N.items[3].value, /^\d+–\d+ h$/, "an estimate is a range");
   const d = recorded();
   const shown = slideText(d, "numbers");
+  // No savings estimate anywhere in the deck (aneta, 57554): no baseline, and it would contradict the backup.
+  assert.doesNotMatch(everything(d), /ESTIMATE|engineer-hours|360–720|28,800|savings figure/);
   N.items.forEach((x, i) => {
-    assert.ok(shown.includes(`${x.class} · ${i + 1} ${x.value} ${x.label}`), `tile ${i + 1}`);
+    assert.ok(shown.includes(`${x.tag ?? x.class} · ${i + 1} ${x.value} ${x.label}`), `tile ${i + 1}`);
     assert.ok(shown.includes(`${i + 1}. ${x.caveat}`), `caveat ${i + 1}`);
   });
 });
 test("the numbers slide refuses values or labels the pack does not have, a fifth number, and an unread pack", () => {
   const refuse = (mutate, re) => assert.throws(() => recorded({}, mutate), (e) => e instanceof FinalError && re.test(e.message));
   refuse((f) => { f.numbers.items[0].value = "91"; }, /is not in the quant pack/);
-  refuse((f) => { f.numbers.items[3].class = "MEASURED"; }, /but the quant pack does not/);
+  refuse((f) => { f.numbers.items[2].class = "ESTIMATE"; }, /but the quant pack does not/);
   refuse((f) => { f.numbers.source.sha256 = "0".repeat(64); }, /is not the one the slide was read from/);
-  refuse((f) => { f.numbers.items.push(clone(f.numbers.items[0])); }, /one to four numbers/);
+  refuse((f) => { f.numbers.items.push(clone(f.numbers.items[0]), clone(f.numbers.items[1])); }, /one to four numbers/);
   refuse((f) => { f.numbers.source.readAt = "2026-11-02T00:00:00Z"; }, /read after the cutoff/);
   refuse((f) => { f.numbers.placeholder = true; }, /carries no numbers/);
   const d = recorded({}, (f) => { f.numbers.placeholder = true; f.numbers.items = []; f.numbers.source = null; });
@@ -525,15 +541,20 @@ test("--demo-status picks one status line; live is refused while the address is 
   for (const s of ["staging", "replay"]) assert.doesNotMatch(everything(recorded({ demoStatus: s })), /\btonight\b/i, s);
 });
 
-// ── 8. the GB10 box ─────────────────────────────────────────────────────────────────────────────────────────────────
+// ── 8. the local workstation ────────────────────────────────────────────────────────────────────────────────────────
 // Wall times as measured and independently checked (team room, message 57413, 00:19:45Z on 1 Nov).
-test("the GB10 backup gives the measured wall times, dated, and names the box only as GB10", () => {
+test("the workstation backup gives the measured wall times, dated, with no hardware model name and the 20 of 20 caveat", () => {
   const d = recorded();
   const b = slideText(d, "gb10");
   assert.match(b, /Train a small adapter 67\.271 s Evaluate it in a fresh container 61\.156 s Serve it locally 185\.763 s/);
   assert.match(b, /Runs on 31 October, 07:48 to 11:40 UTC\./);
   assert.ok(loaded.final.backup.gb10.records.some((r) => r.ref === "seq 57413" && r.at === "2026-11-01T00:19:45.881Z"));
-  assert.throws(() => recorded({}, (f) => { f.backup.gb10.title = "The NVIDIA GB10 box."; }), /public-render rule/);
+  assert.match(b, /Our local workstation: what ran on 31 October, and for how long\./);
+  assert.match(b, /0 of 20 to 20 of 20: 20 rows from 6 distinct source cases, all seen in training\./);
+  assert.doesNotMatch(everything(d), /\bGB10\b/i);
+  assert.throws(() => recorded({}, (f) => { f.backup.gb10.title = "The NVIDIA box."; }), /public-render rule/);
+  assert.throws(() => recorded({}, (f) => { f.backup.gb10.title = "The GB10 box."; }), /not allowed/);
+  assert.throws(() => recorded({}, (f) => { f.checks.caption += " The approver gave a +1."; }), /not allowed/);
 });
 
 // ── 9. timing ───────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -586,7 +607,7 @@ test("every chronology row, tile and how-it-works example names a room record th
   }
   for (const s of f.how.steps) assert.ok(s.records.length >= 1, s.title);
   for (const part of [f.demo, f.backup.receipt, f.backup.gb10, f.backup.reviews, f.how.evidence, f.problem, f.stack, f.checks.study, f.figures.fig6]) assert.ok(part.records.length >= 1);
-  assert.deepEqual(recorded().slides.find((s) => s.id === "chronology").content.rows.map((r) => r.at).slice(-4), ["22:22", "23:01", "23:45", "00:03"]);
+  assert.deepEqual(recorded().slides.find((s) => s.id === "chronology").content.rows.map((r) => r.at).slice(-4), ["22:22", "23:01", "23:44", "00:03"]);
   assert.throws(() => recorded({}, (x) => { x.backup.chronology.rows[0].at = "2026-10-31T12:44:00.000Z"; }), /which no record carries/);
   assert.throws(() => recorded({}, (x) => { x.backup.prs.items[0].checkedAt = "2026-11-02T00:00:00Z"; }), /checked after the cutoff/);
   assert.throws(() => recorded({}, (x) => { x.demo.records[0].at = "2026-11-02T00:00:00.000Z"; }), /after the cutoff/);
@@ -664,11 +685,26 @@ test("the PDF is named from the cutoff and the outcome, sits beside its source, 
   const pages = (readFileSync(pdf, "latin1").match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;
   assert.equal(pages, committed.slides.length, "one PDF page per slide");
   assert.deepEqual(readdirSync(FINAL_DIR).sort(),
-    [finalPdfName(committed).split("/")[1], "FINAL.json", "FINAL.schema.json", "RE-EXPORT.md", "TIMELINE-VERIFY.md", "figures", "quant", "variants"].sort());
+    [finalPdfName(committed).split("/")[1], "FINAL.json", "FINAL.schema.json", "RE-EXPORT.md", "SCRIPT.md", "TIMELINE-VERIFY.md", "figures", "quant", "variants"].sort());
   const exporter = read(join(REPO_ROOT, "scripts", "export-deck-pdf.mjs"));
   assert.match(exporter, /final: \{ dir: FINAL_DECK_DIR, pdf: \(data\) => finalPdfName\(data\), mainMinFont: 28 \}/);
   assert.match(exporter, /const FROZEN = \{ \.\.\.FROZEN_V1, \.\.\.FROZEN_DAYTIME \};/);
   assert.match(exporter, /querySelectorAll\("img\[data-fig\]"\)/, "the exporter holds figure text to the type floor");
+});
+// The speaker script exported with the PDF (aneta, 57554; the coordinator's layout): every main slide's exact words,
+// counts and seconds at 150 words a minute, the door's status lines, the clock, and short enough for one room message.
+test("SCRIPT.md is the export's speaker script, word for word, under 16,000 characters", () => {
+  const script = read(SCRIPT_PATH);
+  assert.equal(script, speakerScript(buildFinalData(loaded, committed.build), loaded.final));
+  assert.ok(script.length < 16000, `${script.length} characters`);
+  assert.match(script, /^# Speaker script, five-minute deck, review export /);
+  for (const s of committed.slides.filter((x) => x.main && x.id !== "demo")) {
+    assert.ok(script.includes(`${s.notes.text}\n\n${s.notes.words} words, ${s.notes.seconds} s at 150 wpm.`), s.id);
+  }
+  for (const st of ["staging", "live", "replay"]) assert.ok(script.includes(`- ${st}: "${loaded.final.demo.statuses[st].notes}"`), st);
+  const u = committed.budget;
+  assert.ok(script.includes(`Talk before the door: ${u.talkWords} words = ${u.talkSeconds} s at 150 wpm, plus 15 s of transitions`));
+  for (const name of TEAM_NAMES.filter((n) => n !== "ScienceClaw")) assert.ok(!named(script, name), name);
 });
 test("slide 4 is rendered for all three outcomes at 1920x1080", () => {
   assert.deepEqual(readdirSync(join(FINAL_DIR, "variants")).sort(), GATES.map((g) => `slide4-${g}-1920x1080.png`).sort());

@@ -90,8 +90,10 @@ export class FinalError extends Error {}
 
 // ── wording rules ───────────────────────────────────────────────────────────────────────────────────────────────────
 // Banned in every rendered string of this deck (on top of the shared NOT_PUBLIC list).
+// "+1" and hardware model names are banned on public slides (team room 56383): say "approved" and "our local workstation".
 export const FINAL_BANNED = [
   /\$\s?\d/, /\bUSD\b/i, /\bdollars?\b/i, /\bdeck due\b/i, /\bsource unknown\b/i, /\bbugs?\b/i,
+  /(^|[\s(])\+1(?!\d|[.,]\d)/, /\bGB10\b/i,
 ];
 // Money may appear only on the "By the numbers" slide, where every value carries a MEASURED or ESTIMATE label and a
 // caveat (Carter asked for money to be quantified; everywhere else a dollar figure still stops the build).
@@ -299,12 +301,20 @@ export function buildFigureFrom(bytes, id, fig, { teams, named, cutoffMs }) {
   let svg = bytes.toString("utf8");
   const active = svgActive(svg);
   if (active.length) throw new FinalError(`${where} is not inert: it holds ${active.join(", ")}`);
+  // A figure its author drew for one consent set (aneta's v1.6 fig6) is served byte for byte, its own label included;
+  // it is only valid while the consent on record is that set, so any change stops the build until it is redrawn.
+  if (fig.drawnFor) {
+    const want = [...fig.drawnFor].sort().join(", "), have = [...named].sort().join(", ");
+    if (want !== have) throw new FinalError(`${where} is drawn for the consent set [${want}], but consent is on record for [${have}]: ask for it redrawn`);
+  }
   for (const e of fig.edits) svg = replaceTextNode(svg, e.from, e.to, where);
   for (const t of fig.teamText) if (!named.has(t.team)) svg = replaceTextNode(svg, t.from, t.anon, where);
-  // The accessible label is always this deck's own reviewed text, so no name or vendor rides in an attribute.
-  const label = /<svg\b[^>]*?\saria-label="[^"]*"/.exec(svg);
-  if (!label) throw new FinalError(`${where} has no aria-label on its root to replace`);
-  svg = svg.replace(/(<svg\b[^>]*?\saria-label=")[^"]*(")/, `$1${xmlEscape(fig.alt)}$2`);
+  // The accessible label is this deck's own reviewed text, so no name or vendor rides in an attribute; a byte-exact
+  // figure keeps its author's label, which the checks below and the slide's public rules then read like any text.
+  const label = /<svg\b[^>]*?\saria-label="([^"]*)"/.exec(svg);
+  if (!label) throw new FinalError(`${where} has no aria-label on its root`);
+  if (!fig.keepLabel) svg = svg.replace(/(<svg\b[^>]*?\saria-label=")[^"]*(")/, `$1${xmlEscape(fig.alt)}$2`);
+  const alt = fig.keepLabel ? xmlText(label[1]) : fig.alt;
   for (const [tid, team] of Object.entries(teams)) {
     if (!named.has(tid) && nameIn(team.name, svg.replace(/data:image\/(?:png|jpeg);base64,[A-Za-z0-9+/=]+/g, ""))) throw new FinalError(`${where} still names ${team.name}, who has not consented`);
   }
@@ -326,7 +336,8 @@ export function buildFigureFrom(bytes, id, fig, { teams, named, cutoffMs }) {
   }
   if (fig.records) checkRecords({ records: fig.records }, where, cutoffMs);
   const out = Buffer.from(svg, "utf8");
-  return { svg: out, meta: { src: `figures/${fig.file}`, sha256: sha256(out), width: fig.width, height: fig.height, scale: fig.scale, minFont, alt: fig.alt, texts } };
+  if (fig.keepLabel && !out.equals(bytes)) throw new FinalError(`${where} must be served byte for byte`);
+  return { svg: out, meta: { src: `figures/${fig.file}`, sha256: sha256(out), width: fig.width, height: fig.height, scale: fig.scale, minFont, alt, texts } };
 }
 
 // ── build ───────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -494,7 +505,8 @@ export function buildFinalData({ final, hashes }, options = {}) {
       title: final.teamsSlide.title, figure: figureView(final.teamsSlide.figure), caption: final.teamsSlide.caption } },
     { id: "numbers", main: true, kicker: N.kicker, notes: N.notes, content: {
       title: N.title, placeholder: N.placeholder ? N.placeholderText : null,
-      items: N.items.map((x, i) => ({ n: String(i + 1), value: x.value, label: x.label, class: x.class, caveat: x.caveat })) } },
+      // The tile shows the pack's class unless the source gives a plainer tag ("POSTED SO FAR" for a total still posting).
+      items: N.items.map((x, i) => ({ n: String(i + 1), value: x.value, label: x.label, class: x.class, tag: x.tag ?? x.class, caveat: x.caveat })) } },
     { id: "demo", main: true, kicker: final.demo.kicker, notes: `${final.demo.notes} ${final.demo.statuses[demoStatus].notes}`, content: {
       title: final.demo.title, instruction: final.demo.instruction, urlNote: final.demo.urlIsPlaceholder ? final.demo.urlNote : null,
       diagram: final.demo.diagram, status: demoStatus, statusText: final.demo.statuses[demoStatus].text } },
@@ -521,7 +533,7 @@ export function buildFinalData({ final, hashes }, options = {}) {
       title: B.status.title, deliverables: B.status.deliverables,
       cards: B.status.cards.map((c) => ({ title: c.title, text: c.text,
         origin: c.originAt ? `origin ${utcStamp(c.originAt)}` : "origin time not recorded", asOf: `as of ${utcStamp(c.asOf)}` })) } },
-    { id: "gb10", main: false, kicker: B.gb10.kicker, notes: "Backup. If asked about the GB10 box, give the wall times and say what they do not show.", content: {
+    { id: "gb10", main: false, kicker: B.gb10.kicker, notes: "Backup. If asked about our local workstation, give the wall times and say what they do not show.", content: {
       title: B.gb10.title, rows: B.gb10.rows, lines: B.gb10.lines } },
     { id: "prs", main: false, kicker: B.prs.kicker, notes: "Backup. Pull request states at the check time; merged ones show their merge commit.", content: {
       title: B.prs.title, repo: B.prs.repo,
@@ -614,6 +626,35 @@ export function checkRendered(data, teams = {}, named = new Set()) {
   }
 }
 
+// The speaker script, word for word as the deck renders it: one section per main slide with its words and seconds at the
+// checked pace, the door's status lines, and the clock. Written beside FINAL.json as SCRIPT.md.
+export function speakerScript(data, final, { label = "review export" } = {}) {
+  const u = data.budget;
+  const at = (w) => `${tenths(w / (u.checkWordsPerMinute / 60))} s`;
+  const names = data.teams.named.map((t) => `${t.name} (help room, message ${t.consent.seq})`);
+  const out = [
+    `# Speaker script, five-minute deck, ${label} ${data.deck.cutoff}`,
+    "",
+    `The spoken words, exactly as the deck renders them from FINAL.json (sha256 ${data.source.finalSha256.slice(0, 8)}…). ${names.length ? `Named with consent: ${names.join(", ")}.` : "No team has consented yet."} Every other team reads "an outside team". Slide 4 is the recorded ${data.deck.variantLabel}${data.build.measured ? ` (${data.build.measured.replace(",", " and ")})` : ""}${data.build.rederived ? ", with the completed re-derivation" : ""}.`,
+    "",
+    `Clock (root, team room 57481): the talk before the door is capped at ${u.talkCapSeconds} s at ${u.checkWordsPerMinute} words a minute, transitions included. The door lines count inside the ${u.demoSeconds} s live demo.`,
+  ];
+  for (const s of data.slides.filter((x) => x.main)) {
+    const n = s.label.split(" ")[0];
+    const fig = s.content.figure ? ` (${s.content.figure.id})` : "";
+    out.push("", `## ${n}. ${s.content.title}${fig}`, "");
+    if (s.id !== "demo") {
+      out.push(s.notes.text, "", `${s.notes.words} words, ${at(s.notes.words)} at ${u.checkWordsPerMinute} wpm.`);
+      continue;
+    }
+    const base = final.demo.notes;
+    out.push(base, "", "Then one status line, whichever is true at the talk:", "");
+    for (const st of DEMO_STATUSES) out.push(`- ${st}: "${final.demo.statuses[st].notes}" (${countWords(final.demo.statuses[st].notes)} words)`);
+    out.push("", `${countWords(base)} words plus the status line, inside the ${u.demoSeconds} s demo clock. This export is at "${data.deck.demoStatus}": ${u.doorWords} words, ${u.doorSeconds} s, leaving ${u.liveSeconds} s live.`);
+  }
+  out.push("", `**Talk before the door: ${u.talkWords} words = ${u.talkSeconds} s at ${u.checkWordsPerMinute} wpm, plus ${u.transitionSeconds} s of transitions = ${tenths(u.talkSeconds + u.transitionSeconds)} s of the ${u.talkCapSeconds} s cap. At ${u.slowWordsPerSecond} words a second the talk would take ${u.talkSlowSeconds} s.**`, "");
+  return out.join("\n");
+}
 export function serialize(data) {
   const json = JSON.stringify(data, null, 2) + "\n";
   const js = "// Generated by scripts/build-deck-final.mjs from docs/sentilab/deck/final-5min/FINAL.json. Do not edit.\n"
@@ -673,22 +714,27 @@ export function figureDirMatches(data) {
   const have = readdirSync(FIGURE_OUT_DIR).sort();
   return JSON.stringify(want) === JSON.stringify(have) && want.every((f) => readFileSync(join(FIGURE_OUT_DIR, f)).equals(data.figureFiles.get(f)));
 }
+export const SCRIPT_PATH = join(FINAL_DIR, "SCRIPT.md");
 function main(args) {
-  const write = (data) => {
+  const write = (data, final) => {
     const { json, js } = serialize(data);
     writeFileSync(join(FINAL_DECK_DIR, "deck-data.json"), json);
     writeFileSync(join(FINAL_DECK_DIR, "deck-data.js"), js);
     mkdirSync(FIGURE_OUT_DIR, { recursive: true });
     for (const f of readdirSync(FIGURE_OUT_DIR)) if (!data.figureFiles.has(f)) throw new FinalError(`deck/final-5min/figures/${f} is not a figure FINAL.json names; remove it by hand`);
     for (const [f, bytes] of data.figureFiles) writeFileSync(join(FIGURE_OUT_DIR, f), bytes);
+    // The script is the export's: a preview or a review render of another outcome leaves it alone.
+    if (!data.deck.preview && !data.deck.reviewOnly) writeFileSync(SCRIPT_PATH, speakerScript(data, final));
   };
   const cli = cliOptions(args);
   if (cli.check) {
     const committed = JSON.parse(readFileSync(join(FINAL_DECK_DIR, "deck-data.json"), "utf8"));
-    const data = buildFinalData(loadFinal(), committed.build);
+    const loaded = loadFinal();
+    const data = buildFinalData(loaded, committed.build);
     const fresh = serialize(data);
-    const same = fresh.json === readFileSync(join(FINAL_DECK_DIR, "deck-data.json"), "utf8") && fresh.js === readFileSync(join(FINAL_DECK_DIR, "deck-data.js"), "utf8") && figureDirMatches(data);
-    if (!same) { console.error("deck/final-5min (data or figures) differs from a fresh build of FINAL.json"); process.exit(1); }
+    const same = fresh.json === readFileSync(join(FINAL_DECK_DIR, "deck-data.json"), "utf8") && fresh.js === readFileSync(join(FINAL_DECK_DIR, "deck-data.js"), "utf8")
+      && figureDirMatches(data) && readFileSync(SCRIPT_PATH, "utf8") === speakerScript(data, loaded.final);
+    if (!same) { console.error("deck/final-5min (data, figures or SCRIPT.md) differs from a fresh build of FINAL.json"); process.exit(1); }
     console.log("deck/final-5min matches a fresh build");
     return;
   }
@@ -698,8 +744,9 @@ function main(args) {
     writeFileSync(FINAL_SOURCE, JSON.stringify(src, null, 2) + "\n");
     console.log(`refreshed ${src.backup.prs.items.length} pull requests at ${at}`);
   }
-  const data = buildFinalData(loadFinal(), cli.build);
-  write(data);
+  const loaded = loadFinal();
+  const data = buildFinalData(loaded, cli.build);
+  write(data, loaded.final);
   const shown = data.slides.find((s) => s.id === "gate").content;
   const u = data.budget;
   console.log(`deck/final-5min: ${data.deck.variantLabel}${data.deck.preview ? " (PREVIEW)" : ""}${data.deck.reviewOnly ? " (REVIEW)" : ""}${data.build.measured ? ` ${data.build.measured}` : ""}${shown.verification ? ` · ${shown.verification}` : ""} · demo ${data.deck.demoStatus}, cutoff ${data.deck.cutoff}`);

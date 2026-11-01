@@ -751,6 +751,9 @@
               },
               "caveat": {
                 "$ref": "#/$defs/text"
+              },
+              "tag": {
+                "$ref": "#/$defs/text"
               }
             }
           }
@@ -1931,6 +1934,15 @@
             },
             "records": {
               "$ref": "#/$defs/records"
+            },
+            "keepLabel": {
+              "type": "boolean"
+            },
+            "drawnFor": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/teamId"
+              }
             }
           }
         },
@@ -2074,6 +2086,15 @@
             },
             "records": {
               "$ref": "#/$defs/records"
+            },
+            "keepLabel": {
+              "type": "boolean"
+            },
+            "drawnFor": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/teamId"
+              }
             }
           }
         },
@@ -2217,6 +2238,15 @@
             },
             "records": {
               "$ref": "#/$defs/records"
+            },
+            "keepLabel": {
+              "type": "boolean"
+            },
+            "drawnFor": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/teamId"
+              }
             }
           }
         },
@@ -2360,6 +2390,15 @@
             },
             "records": {
               "$ref": "#/$defs/records"
+            },
+            "keepLabel": {
+              "type": "boolean"
+            },
+            "drawnFor": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/teamId"
+              }
             }
           }
         },
@@ -2503,6 +2542,15 @@
             },
             "records": {
               "$ref": "#/$defs/records"
+            },
+            "keepLabel": {
+              "type": "boolean"
+            },
+            "drawnFor": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/teamId"
+              }
             }
           }
         },
@@ -2646,6 +2694,15 @@
             },
             "records": {
               "$ref": "#/$defs/records"
+            },
+            "keepLabel": {
+              "type": "boolean"
+            },
+            "drawnFor": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/teamId"
+              }
             }
           }
         },
@@ -2789,6 +2846,15 @@
             },
             "records": {
               "$ref": "#/$defs/records"
+            },
+            "keepLabel": {
+              "type": "boolean"
+            },
+            "drawnFor": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/teamId"
+              }
             }
           }
         }

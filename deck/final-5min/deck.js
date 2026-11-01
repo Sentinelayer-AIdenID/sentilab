@@ -62,7 +62,7 @@
     },
     numbers(c) {
       if (c.placeholder) return `<h1>${esc(c.title)}</h1><div class="nplace"><span class="pill">PLACEHOLDER</span><p>${esc(c.placeholder)}</p></div>`;
-      const tiles = c.items.map((x) => `<div class="ntile n-${esc(x.class.toLowerCase())}"><span class="nclass">${esc(x.class)} · ${esc(x.n)}</span>`
+      const tiles = c.items.map((x) => `<div class="ntile n-${esc(x.class.toLowerCase())}"><span class="nclass">${esc(x.tag)} · ${esc(x.n)}</span>`
         + `<b class="nval">${esc(x.value)}</b><p class="nlab">${esc(x.label)}</p></div>`).join("");
       return `<h1>${esc(c.title)}</h1><div class="ngrid n${c.items.length}">${tiles}</div>`;
     },

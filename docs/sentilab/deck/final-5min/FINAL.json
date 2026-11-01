@@ -5,7 +5,7 @@
     "event": "ScienceClaw hackathon",
     "talk": "Five-minute slot: talk, then a live demo"
   },
-  "cutoff": "2026-11-01T02:26:00Z",
+  "cutoff": "2026-11-01T02:50:00Z",
   "talk": {
     "maxSeconds": 300,
     "talkCapSeconds": 180,
@@ -40,6 +40,12 @@
         "ref": "seq 57456",
         "author": "gpt-astra-carter",
         "at": "2026-11-01T01:13:28.575Z"
+      },
+      {
+        "room": "608657e4",
+        "ref": "seq 57554",
+        "author": "aneta-claude",
+        "at": "2026-11-01T02:29:07.296Z"
       }
     ]
   },
@@ -133,8 +139,8 @@
     "footnote": "Anyone can follow a claim back to its inputs, repeat the check and see what has to change.",
     "notes": "A person sets the goal. Agents take separate pieces and post what they find in one shared room. Others challenge it: across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already given a +1. The reviews weren't blind, so this is descriptive, not a controlled test.",
     "evidence": {
-      "line": "Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already given a +1. The reviews weren't blind, so this is descriptive, not a controlled test.",
-      "attribution": "The review author's tally from the room log; its row file has not been independently retrieved. The approver confirms at least 4 as misses.",
+      "line": "Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already approved. The reviews weren't blind, so this is descriptive, not a controlled test.",
+      "attribution": "The review author's tally from the room log; a second reviewer independently retrieved its row file and re-counted it.",
       "records": [
         {
           "room": "608657e4",
@@ -159,6 +165,12 @@
           "ref": "seq 57392",
           "author": "aneta-claude",
           "at": "2026-11-01T00:03:42.458Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "seq 57559",
+          "author": "gpt-astra-carter",
+          "at": "2026-11-01T02:34:08.150Z"
         }
       ],
       "slide": "checks"
@@ -363,13 +375,13 @@
   },
   "numbers": {
     "kicker": "By the numbers",
-    "title": "By the numbers: Saturday, 31 October.",
+    "title": "By the numbers, measured.",
     "placeholder": false,
     "placeholderText": "PLACEHOLDER: the measured and estimated numbers are not filled in yet.",
     "items": [
       {
         "value": "90",
-        "label": "pull requests merged since 31 Oct 00:00 UTC (121 opened); median 44 min 28 s from open to merge",
+        "label": "pull requests merged from 31 Oct 00:00 UTC to 1 Nov 00:27 UTC, when they were counted (121 opened); median 44 min 28 s from open to merge",
         "class": "MEASURED",
         "caveat": "Includes product repositories as well as the hackathon ones; 67 of the 90 are in the SentiLab repository."
       },
@@ -383,13 +395,8 @@
         "value": "$5,112.39",
         "label": "cloud cost posted for 31 October, all projects",
         "class": "MEASURED",
-        "caveat": "Still posting, so it can only rise. An operator-reported total for the whole account, not only the hackathon."
-      },
-      {
-        "value": "360–720 h",
-        "label": "engineer-hours the 90 merged pull requests would have taken ($28,800–$72,000): about 5.6× to 14× the day's measured cloud and build-service spend",
-        "class": "ESTIMATE",
-        "caveat": "Assumes 4 to 8 hours per pull request at $80 to $100 an hour, with no matched human baseline; the spend also pays for other work."
+        "caveat": "Still posting, so it can only rise. An operator-reported total for the whole account, not only the hackathon.",
+        "tag": "POSTED SO FAR"
       }
     ],
     "source": {
@@ -397,7 +404,7 @@
       "sha256": "bcafa3f09371811ed974acfdfd49f473f9bb8d050ea0e486e4c5b3f52c9cba52",
       "readAt": "2026-11-01T00:51:00Z"
     },
-    "notes": "By the numbers: on Saturday we merged 90 pull requests. The cloud bill so far is 5,112 dollars, for the whole account. By our own estimate, people would need 360 to 720 hours for that work."
+    "notes": "By the numbers, measured: from midnight UTC on Saturday to 00:27 on Sunday we merged 90 pull requests. The cloud bill posted so far for Saturday is 5,112 dollars, for the whole account."
   },
   "demo": {
     "kicker": "Live demo",
@@ -493,7 +500,7 @@
       "rows": [
         {
           "at": "2026-10-31T12:43:33.374Z",
-          "text": "A person asks why the study was inconclusive and how to match a package human engineers built, and asks three agents to research separately, then challenge each other.",
+          "text": "A person asks why the study was inconclusive and how to match the published reference design, and asks three agents to research separately, then challenge each other.",
           "records": [
             {
               "room": "608657e4",
@@ -721,14 +728,15 @@
           ]
         },
         {
-          "at": "2026-10-31T23:45:43.792Z",
+          "at": "2026-10-31T23:44:00.000Z",
           "text": "The fixed test runs from 23:41 to 23:44, and the operator reports PASS: 75.48 C and 115.93 C against the paper's 75.48 C and 115.94 C. A second reviewer re-derives it independently by 00:05 on 1 November.",
           "records": [
             {
               "room": "608657e4",
               "ref": "seq 57377",
               "author": "claude-warden",
-              "at": "2026-10-31T23:45:43.792Z"
+              "at": "2026-10-31T23:45:43.792Z",
+              "stated": "2026-10-31T23:44:00Z"
             },
             {
               "room": "608657e4",
@@ -756,8 +764,8 @@
     "reviews": {
       "kicker": "Backup · how reviews work",
       "title": "How reviews work here: what a later reviewer was first to record.",
-      "line": "Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already given a +1. The reviews weren't blind, so this is descriptive, not a controlled test.",
-      "attribution": "The review author's descriptive tally from the room log (version 2, corrected at 00:03 UTC on 1 Nov). Its row file has not been independently retrieved.",
+      "line": "Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already approved. The reviews weren't blind, so this is descriptive, not a controlled test.",
+      "attribution": "The review author's descriptive tally from the room log (version 2, corrected at 00:03 UTC on 1 Nov). A second reviewer independently retrieved its row file and re-counted 190, 80 and 17.",
       "rows": [
         {
           "label": "Catalogued findings, in the 34 pull requests with both reviewers visible",
@@ -776,7 +784,7 @@
           "value": "56"
         },
         {
-          "label": "Of the 80, at the same version after a recorded +1",
+          "label": "Of the 80, at the same version after a recorded approval",
           "value": "17, in 7 pull requests"
         },
         {
@@ -785,10 +793,10 @@
         }
       ],
       "caveats": [
-        "Not blind: later reviewers read the earlier reviews. A +1 before a finding fixes the recorded order at that version; it does not show when the later review began, or independence.",
+        "Not blind: later reviewers read the earlier reviews. An approval before a finding fixes the recorded order at that version; it does not show when the later review began, or independence.",
         "Counted as catalogued findings: 33 of the 190, including 19 of the 80, have no recorded fix status.",
         "First on record, not a counterfactual: the log cannot show what would have gone unstated.",
-        "The approver confirms at least 4 as misses, in the approver's own words; the other 13 are not classified yet.",
+        "The approver confirms 4 of the 17 as misses, in the approver's own words; the other 13 are not classified yet.",
         "All 17 follow one reviewer's approvals, often scoped real-run checks. This is not a ranking of reviewers."
       ],
       "records": [
@@ -815,6 +823,12 @@
           "ref": "seq 57392",
           "author": "aneta-claude",
           "at": "2026-11-01T00:03:42.458Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "seq 57559",
+          "author": "gpt-astra-carter",
+          "at": "2026-11-01T02:34:08.150Z"
         }
       ]
     },
@@ -971,8 +985,8 @@
       ]
     },
     "gb10": {
-      "kicker": "Backup · the GB10 box",
-      "title": "The GB10 box: what ran on 31 October, and for how long.",
+      "kicker": "Backup · local workstation",
+      "title": "Our local workstation: what ran on 31 October, and for how long.",
       "rows": [
         {
           "label": "Train a small adapter",
@@ -990,7 +1004,7 @@
       "lines": [
         "Runs on 31 October, 07:48 to 11:40 UTC. Wall time in a GPU-enabled container; GPU-busy time, utilization and energy were not recorded.",
         "The adapter was trained for 20 steps on 200 fixture rows, saved, reloaded in a fresh container and served.",
-        "Exact fixture answers went from 0 of 20 to 20 of 20 on cases already seen in training. That shows the pipeline works, not general learning.",
+        "Exact fixture answers went from 0 of 20 to 20 of 20: 20 rows from 6 distinct source cases, all seen in training. That shows the pipeline works, not general learning.",
         "Wall time of automated runs is not human time saved."
       ],
       "records": [
@@ -1014,7 +1028,7 @@
           "head": "83995e783274c3504a36da4ea170527891a3d903",
           "merge": "bba120dc848b8ae802f474945842bf268ddcfa99",
           "mergedAt": "2026-10-31T23:04:17Z",
-          "checkedAt": "2026-11-01T02:24:00Z"
+          "checkedAt": "2026-11-01T02:48:00Z"
         },
         {
           "number": 73,
@@ -1023,7 +1037,7 @@
           "head": "2d35e9cd5eae33cf0f97574e0a43953b76563e01",
           "merge": "1575556dda2ac77ac49823cce7fad5ed8eaa55b3",
           "mergedAt": "2026-10-31T23:40:43Z",
-          "checkedAt": "2026-11-01T02:24:00Z"
+          "checkedAt": "2026-11-01T02:48:00Z"
         },
         {
           "number": 57,
@@ -1032,7 +1046,7 @@
           "head": "a48ceec587d2e8f0370c170c8e0aedc204646b18",
           "merge": "d298cb007081e9ad9334e3d77d412d789c126b0c",
           "mergedAt": "2026-10-31T18:04:42Z",
-          "checkedAt": "2026-11-01T02:24:00Z"
+          "checkedAt": "2026-11-01T02:48:00Z"
         },
         {
           "number": 58,
@@ -1041,7 +1055,7 @@
           "head": "fd2870e8c381e901af6fc0cef40a1a9628600eea",
           "merge": "568dd397a08d2fca209958d7f011e75346a79e0b",
           "mergedAt": "2026-10-31T16:27:35Z",
-          "checkedAt": "2026-11-01T02:24:00Z"
+          "checkedAt": "2026-11-01T02:48:00Z"
         },
         {
           "number": 60,
@@ -1050,7 +1064,7 @@
           "head": "e2c0cd903a134120a47d70efc93f2e83161a1233",
           "merge": "551777a9516cc81e905ccc2daf4955d32151ac14",
           "mergedAt": "2026-10-31T17:59:15Z",
-          "checkedAt": "2026-11-01T02:24:00Z"
+          "checkedAt": "2026-11-01T02:48:00Z"
         },
         {
           "number": 64,
@@ -1059,7 +1073,7 @@
           "head": "61debcef081c201f1b9fb3cc4d1c1da7b361e712",
           "merge": "d25046256b4a712b529977f31e10b7e32248a9c0",
           "mergedAt": "2026-10-31T19:38:22Z",
-          "checkedAt": "2026-11-01T02:24:00Z"
+          "checkedAt": "2026-11-01T02:48:00Z"
         },
         {
           "number": 61,
@@ -1068,7 +1082,7 @@
           "head": "3513ad709165a6afa43e665929a8e5f10908f885",
           "merge": "a5744f3ac4f1142924368687a6762f8aed696ed9",
           "mergedAt": "2026-10-31T16:48:53Z",
-          "checkedAt": "2026-11-01T02:24:00Z"
+          "checkedAt": "2026-11-01T02:48:00Z"
         },
         {
           "number": 59,
@@ -1077,7 +1091,7 @@
           "head": "259ce51fbbd3fa51dcdb41d2c0c7e78de069d237",
           "merge": "4f6ad0cb7779037287ff522045793943f6c023ba",
           "mergedAt": "2026-10-31T17:53:53Z",
-          "checkedAt": "2026-11-01T02:24:00Z"
+          "checkedAt": "2026-11-01T02:48:00Z"
         },
         {
           "number": 55,
@@ -1086,7 +1100,7 @@
           "head": "70519dd3b45cef2341adf8fdbeeaebeee3b45699",
           "merge": "315bbff4458dd6d033a74549b7f4b89765bf5835",
           "mergedAt": "2026-10-31T15:38:53Z",
-          "checkedAt": "2026-11-01T02:24:00Z"
+          "checkedAt": "2026-11-01T02:48:00Z"
         },
         {
           "number": 37,
@@ -1095,7 +1109,7 @@
           "head": "113c1347cb154c4f909783dde17f531ad1267235",
           "merge": "224fa7044bc7a80991bc9995b829e30c170d9842",
           "mergedAt": "2026-10-31T17:09:11Z",
-          "checkedAt": "2026-11-01T02:24:00Z"
+          "checkedAt": "2026-11-01T02:48:00Z"
         },
         {
           "number": 25,
@@ -1104,7 +1118,7 @@
           "head": "a10063d432d776f3bf43ee6d8b8efbee4d6b5032",
           "merge": "deb24670f53bada97cc965d282f6bcf68c338d1e",
           "mergedAt": "2026-10-31T12:05:13Z",
-          "checkedAt": "2026-11-01T02:24:00Z"
+          "checkedAt": "2026-11-01T02:48:00Z"
         }
       ]
     },
@@ -1613,81 +1627,19 @@
       "width": 678,
       "height": 472,
       "scale": 1,
-      "alt": "Grid of 190 squares, one per catalogued finding: 80 where a later agent was first on record, 17 of them at a version another agent had already given a +1, and 110 others.",
+      "alt": "Grid of 190 squares, one per catalogued finding: 80 where a later agent was first on record, 17 of them at a version another agent had already approved, and 110 others.",
       "edits": [],
       "teamText": []
     },
     "fig6": {
       "file": "fig6-teams.svg",
-      "sha256": "14f0bcda911863e8cad623e54cec18cdcc8d0f7a00bd9bdd7ff0d4cd2d7fb057",
+      "sha256": "b283a065b6fd03acad4cce832c9ce1e2f95edb4ebd0613be3fa56bb8b141c130",
       "width": 1664,
       "height": 760,
       "scale": 0.92,
       "alt": "Map of what travelled between SentiLab and eight outside teams: two used our work and returned a result, three said it helped in their own words, three have not confirmed use yet, and four links run between other teams.",
-      "edits": [
-        {
-          "from": "Built on request. Now runs",
-          "to": "Built on request; it ran through",
-          "why": "root, team room 57540: one proof run, not ongoing use"
-        },
-        {
-          "from": "in the open ScienceClaw platform",
-          "to": "the open-source ScienceClaw",
-          "why": "root, team room 57540: the open-source lamm-mit/scienceclaw platform, not the participant team; short enough for the card"
-        },
-        {
-          "from": "“your matchmaking”, and it used",
-          "to": "“your matchmaking”; it used",
-          "why": "the line ran into the card edge at render (aneta, team room 57541)"
-        }
-      ],
-      "teamText": [
-        {
-          "team": "delfie",
-          "from": "Delfie",
-          "anon": "An outside team"
-        },
-        {
-          "team": "inquilinekea",
-          "from": "InquilineKea",
-          "anon": "An outside team"
-        },
-        {
-          "team": "scienceclaw",
-          "from": "ScienceClaw",
-          "anon": "An outside team"
-        },
-        {
-          "team": "feagent",
-          "from": "FEAgent",
-          "anon": "An outside team"
-        },
-        {
-          "team": "quantumswarms",
-          "from": "quantumSwarms",
-          "anon": "An outside team"
-        },
-        {
-          "team": "pixlram",
-          "from": "pixlram",
-          "anon": "An outside team"
-        },
-        {
-          "team": "axis",
-          "from": "Axis",
-          "anon": "An outside team"
-        },
-        {
-          "team": "kiln",
-          "from": "Kiln",
-          "anon": "An outside team"
-        },
-        {
-          "team": "scienceclaw",
-          "from": "the open-source ScienceClaw",
-          "anon": "the hackathon’s open platform"
-        }
-      ],
+      "edits": [],
+      "teamText": [],
       "records": [
         {
           "room": "32a841e5",
@@ -1784,7 +1736,17 @@
           "ref": "seq 57538",
           "author": "aneta-claude",
           "at": "2026-11-01T02:16:19.876Z"
+        },
+        {
+          "room": "608657e4",
+          "ref": "seq 57554",
+          "author": "aneta-claude",
+          "at": "2026-11-01T02:29:07.296Z"
         }
+      ],
+      "keepLabel": true,
+      "drawnFor": [
+        "scienceclaw"
       ]
     }
   },
@@ -1855,7 +1817,7 @@
         }
       ]
     },
-    "notes": "Why many agents? Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already given a +1. The reviews weren't blind, so this is descriptive, not a controlled test.",
+    "notes": "Why many agents? Across 34 code reviews, a later agent was first on record with 80 of 190 findings, 17 of them at a version another agent had already approved. The reviews weren't blind, so this is descriptive, not a controlled test.",
     "caption": "34 code reviews in the room log, to 31 October 22:57 UTC. The approver confirms 4 of the 17 as misses; the rest are not classified."
   },
   "teamsSlide": {
