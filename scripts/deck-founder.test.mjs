@@ -91,11 +91,15 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   assert.match(shown(data, "sources"), /8 agent posting groups plus 3 human-only groups/);
   assert.equal(slide(data, "room").content.tiles.length, 5);
   assert.doesNotMatch(shown(data, "room") + shown(data, "sources"), /at least 8|outside teams/, "posting groups are not teams (root, 08:40Z)");
-  // Rev 4: help offered, in the teams' own words, in place of the model-rated count, which moves to the sources page.
-  assert.match(shown(data, "room"), /3 outside groups checked our test case; we offered help to 8, and 2 said other help was useful/);
-  assert.doesNotMatch(shown(data, "room"), /\b281\b/);
+  // Help offered, in the groups' own reports, in place of the model-rated count, which moves to the sources page. Refreshed
+  // to 12:46 UTC in root's explicit disjoint wording, word for word (aneta 58014; root's +1, reply to 57809 at 12:57:04Z).
+  assert.ok(shown(data, "room").includes("Four outside groups reported checks of our test case. We offered help to nine groups in all; two of the other five said it was useful."));
+  assert.deepEqual(slide(data, "room").content.tiles[3], { value: "Four", label: "outside groups reported checks of our test case. We offered help to nine groups in all; two of the other five said it was useful." });
+  assert.doesNotMatch(shown(data, "room"), /\b281\b|04:01|we offered help to 8|3 outside groups/);
+  assert.match(shown(data, "room"), /Help offered: what the groups themselves reported, to 12:46 UTC\./);
   assert.match(shown(data, "sources"), /Model-rated, not confirmed usefulness: our intent model rated 281 of the 399/);
-  assert.match(shown(data, "sources"), /Help offered, to 04:01 UTC, refresh at the freeze: 8 outside groups\./);
+  assert.match(shown(data, "sources"), /Help offered, to 12:46 UTC: nine outside groups, each counted once\. Four reported checks of our test case: .*; another outside team, after 04:01\. Two of the other five said our help was useful \(21:13:28; 00:04:12 and 00:08:14\)\. Three unconfirmed\./);
+  assert.ok(readFileSync(FOUNDER_OUTPUTS.sources, "utf8").includes("Aneta's refreshed help line (team room 58014, 12:46:31Z), with root's scoped +1 and his explicit disjoint wording (reply to 57809, 12:57:04Z)"));
   assert.match(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8"), /## Refresh at the freeze/);
   assert.match(say("closer"), /^My ambition\? Make you wonder why your agents need Kiro, Jira, Slack, Facebook, and GitHub\. Okay, not GitHub\. Yet\./);
   assert.match(slide(data, "closer").notes.cue, /"Okay, not GitHub\. Yet\." is the quiet aside\. Naming the network out loud is Carter's call \(aneta recommends naming it\)/);
@@ -328,14 +332,16 @@ test("slide 9's QR code is read from its pixels: exactly https://sentilab.aideni
   assert.throws(() => buildFounderData({ ...loaded, v4: wrong }), (e) => e instanceof FounderError && /encodes "https:\/\/sentilab\.aidenid\.com", not/.test(e.message));
 });
 
-test("root's rev 5 review: the timeline keeps its qualifications, help says refresh at the freeze, and no script heading is undefined", () => {
+test("root's rev 5 review: the timeline keeps its qualifications, the help line is dated, and no script heading is undefined", () => {
   // Page 5: the accepted v1.24 timeline travels with its qualifications; the fuller account sits on the sources page.
   assert.equal(slide(data, "times").content.footer, "Room posting times, not earlier local freezes. One agent saw a one-line preview; Agent4 had already read the suspect. Lanes show contributions, not independence. No savings baseline.");
   assert.equal(slide(data, "times").content.figure.id, "plain4");
   for (const t of ["room posting times, not earlier local freezes", "one agent had seen a one-line preview", "having already read the suspect", "not independence", "No savings figure: there is no baseline", "every plotted time kept"]) assert.ok(shown(data, "sources").includes(t), t);
-  // Page 3: the help count is to be refreshed, not refreshed already.
-  assert.match(shown(data, "room"), /refresh at the freeze\./);
-  assert.doesNotMatch(shown(data, "room") + shown(data, "sources"), /refreshed at the freeze/);
+  // Page 3: the help count carries its date (refreshed to 12:46 UTC, root's +1 at 12:57:04Z); aneta's 14:05Z re-check is
+  // on the FILL-IN refresh list, and nothing claims a refresh the build has not made.
+  assert.ok(slide(data, "room").content.footer.endsWith("Help offered: what the groups themselves reported, to 12:46 UTC."));
+  assert.doesNotMatch(shown(data, "room") + shown(data, "sources"), /refresh(?:ed)? at the freeze/);
+  assert.match(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8"), /\| room \| Help offered: four checked, nine offered in all, two of the other five said it was useful \(to 12:46 UTC, root's \+1 at 12:57:04Z\) \| Aneta re-checks at about 14:05Z/);
   // The scripts: every main slide has a real heading, in both cuts.
   for (const slot of ["3min", "2min"]) {
     const heads = [...readFileSync(scriptPath(slot), "utf8").matchAll(/^## (\d+)\. (.*) \(([^)]*)\)$/gm)];

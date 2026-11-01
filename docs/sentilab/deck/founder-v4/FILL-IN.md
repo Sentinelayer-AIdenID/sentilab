@@ -13,7 +13,7 @@ As of 2026-11-01 10:10 UTC. Each shows "measuring…" until docs/sentilab/deck/f
 
 | Slide | Shows | Why |
 |---|---|---|
-| room | Help offered to 8 outside groups: 3 checked our test case, 2 said other help was useful | Root (10:09Z): retain the dated source entries and refresh them at the freeze before presenting a new total. |
+| room | Help offered: four checked, nine offered in all, two of the other five said it was useful (to 12:46 UTC, root's +1 at 12:57:04Z) | Aneta re-checks at about 14:05Z and posts only if the line changes (58014); otherwise it stands. |
 
 ## Optional, Carter's call: notes only, not on a slide
 
