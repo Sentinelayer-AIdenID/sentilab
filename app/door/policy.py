@@ -54,6 +54,7 @@ UTC = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z\Z")
 GRANT_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\Z")
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 IMAGE = re.compile(r"sha256:[0-9a-f]{64}\Z")
+IMAGE_TAG = re.compile(r"[a-z0-9][a-z0-9._/-]{0,127}:[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}\Z")
 
 
 def parse_utc(text) -> float:
@@ -89,7 +90,9 @@ def _number(value, low: float, high: float) -> float:
 @dataclass(frozen=True)
 class Grant:
     """The runtime grant binding (warden): the CPU the door may spend, per token and in total, and when, and the
-    scorer image whose answers count (every receipt and every health answer must name it)."""
+    scorer image whose answers count (every receipt and every health answer must name it). scorer_image_tag is
+    optional: the operator's name for that image digest. A result's evaluator identity needs it to name the
+    reproduction-tested build (evaluator.py); without it every result reads unvalidated."""
     grant: str
     cpu_cap_s: float
     token_cpu_s: float
@@ -99,13 +102,15 @@ class Grant:
     not_after: float
     enforcement_evidence_sha256: str
     scorer_image_digest: str
+    scorer_image_tag: str | None = None
 
     FIELDS = ("grant", "cpu_cap_s", "token_cpu_s", "parallel", "run_reserve_cpu_s", "not_before", "not_after",
               "enforcement_evidence_sha256", "scorer_image_digest")
+    OPTIONAL = ("scorer_image_tag",)
 
     @classmethod
     def parse(cls, value) -> "Grant":
-        if not isinstance(value, dict) or set(value) != set(cls.FIELDS):
+        if not isinstance(value, dict) or not set(cls.FIELDS) <= set(value) <= set(cls.FIELDS + cls.OPTIONAL):
             raise ValueError("the grant binding has exactly its fields")
         if not isinstance(value["grant"], str) or not GRANT_ID.match(value["grant"]):
             raise ValueError("grant id")
@@ -124,7 +129,10 @@ class Grant:
         image = value["scorer_image_digest"]
         if not isinstance(image, str) or not IMAGE.match(image):
             raise ValueError("scorer image")
-        return cls(value["grant"], cap, token, parallel, reserve, not_before, not_after, evidence, image)
+        tag = value.get("scorer_image_tag")
+        if "scorer_image_tag" in value and (not isinstance(tag, str) or not IMAGE_TAG.match(tag)):
+            raise ValueError("scorer image tag")
+        return cls(value["grant"], cap, token, parallel, reserve, not_before, not_after, evidence, image, tag)
 
 
 @dataclass(frozen=True)

@@ -26,6 +26,7 @@ from __future__ import annotations
 import logging
 import threading
 
+from .evaluator import ALIAS, evaluator_identity
 from .scorer import BINDING_TOLERANCE_K, ScorerError, cpu_seconds
 
 _logger = logging.getLogger(__name__)
@@ -78,8 +79,10 @@ def binding(score, dies, checker) -> dict:
     return checks
 
 
-def outcome_for(score, claimed: dict, checker) -> dict:
-    """The settled outcome of a returned score: charged its measured CPU, its binding checked against the selector."""
+def outcome_for(score, claimed: dict, checker, evaluator: str = ALIAS) -> dict:
+    """The settled outcome of a returned score: charged its measured CPU, its binding checked against the selector.
+    evaluator: the identity string this run attests (evaluator.evaluator_identity); its temperature label is read
+    from it."""
     dies = claimed["proposal"]["dies"]
     bound = binding(score, dies, checker)
     reproduced = score.replay_fresh_process and score.replay_match and score.receipts_bound
@@ -94,7 +97,7 @@ def outcome_for(score, claimed: dict, checker) -> dict:
                          "receipts_bound": score.receipts_bound, "code": replay_code},
               "cpu_known": score.cpu_known,
               "binding": bound,
-              "evaluator": {"binary_sha256": score.evaluator_binary_sha256, "grid": 64},
+              "evaluator": evaluator,
               "cpu_s": score.cpu_s, "overrun": score.cpu_s > envelope, "receipt": score.receipt}
     if score.cpu_known:
         usage = "measured" if score.cpu_s <= envelope else "measured_overrun"
@@ -237,7 +240,9 @@ class Dispatcher:
             return self._keep_open(claimed, None)
         else:
             door.scorer_state.set("up", door.policy.clock(), door.store)
-            outcome = outcome_for(score, claimed, door.policy.checker)
+            evaluator = evaluator_identity((score.receipt or {}).get("score"), door.policy.manifest,
+                                           door.policy.grant)
+            outcome = outcome_for(score, claimed, door.policy.checker, evaluator)
         self._retry_at.pop(claimed["run_id"], None)
         return door.store.settle(run_id=claimed["run_id"], reservation_id=claimed["reservation_id"],
                                  outcome=outcome, now=door.policy.clock())

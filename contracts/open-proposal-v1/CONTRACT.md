@@ -19,6 +19,7 @@ solver, no clock.
 | `reason-codes.json` | The 48 codes of DESIGN.md:857-870, in their groups and order, each with the fields it carries |
 | `record-rules.json` | Codes and rule ids for checking our own records; never participant-facing |
 | `labels.json` | SLAB-053's label states and lists, mirrored (not imported) from `web/public/temperature-label.mjs` |
+| `builds.json` | The evaluator builds a label names exactly: the gate-zero build's identity, its sources, its two receipts and its reference values (`python -m open_proposals.contract.builds --check`) |
 | `vectors-canonical.json` | T1: canonical form, hashes, transport keys, pseudonyms, run ids, sealed headers and armour |
 | `vectors-age.json` | T1/T15: real age v1 X25519 vectors per key version (pyrage 1.4.0, wheel SHA-256 verified) |
 | `canonical.mjs`, `run-vectors.mjs` | The JavaScript twin and its vector runner (`node run-vectors.mjs`) |
@@ -180,8 +181,19 @@ carries no geometry and the fixed labels `routed wire only`, `no thermal solve`,
 
 - **Temperatures (SLAB-053):** every measured temperature in a record carries its evaluator identity and the label
   state `label_for(evaluator)` gives: `withdrawn` for every build of the withdrawn engine:commit (case-insensitive),
-  `illustrative` for exactly `fixture-no-solver`, `accepted` for an exact entry on ACCEPTED (empty), otherwise
-  `unvalidated`; derived values take the most cautious state. A withdrawn temperature carries no claim.
+  `illustrative` for exactly `fixture-no-solver`, `accepted` for an exact entry on ACCEPTED (empty),
+  `reproduction_tested` for exactly a build in `builds.json`, otherwise `unvalidated`; derived values take the most
+  cautious state. A withdrawn temperature carries no claim.
+- **The reproduction-tested build:** `builds.json` holds one identity, the build gate zero ran: HotSpot 6.0 at upstream
+  `a7a3286e…`, binary `751b357f…`, image `sentilab-gate0:2d35e9c` (operator-reported tag), the HotSpot config and
+  package-layer files both raw references share (by their SHA256SUMS), grid 64 and the pinned centre mapping. Its
+  identity string is `HotSpot-6.0:<commit>:binary_sha256:<binary>:config_sha256:<sha256 of the config file map>:grid:64x64:build_sha256:<sha256 of the canonical identity>`:
+  readable fields first, then a seal over every field (image and centre mapping included), so any one field changed,
+  the broad alias `hotspot6:<binary>:grid:64x64` and every near spelling read `unvalidated`. The file also records the gate-zero
+  receipt (room message 57377) and its independent re-derivation (57394) by message sha256, and both raw references
+  with the native all-block maximum, the chiplet-centre mean and the active-layer peak kept apart. The label is the
+  build's: it never clears a row's own claims, suppressions or sensitivities. `golden/build-labels.json` is the
+  shared vector set the Python and JavaScript rules both run.
 - **Claims (T13):** `predicates.py` evaluates the seven labels in display order with their modes (`bounded`, `passes
   the listed sensitivity cases`, `INCOMPLETE`, `INCONCLUSIVE`, `UNKNOWN`); a failed gate zero, binding, predicate
   fixture or required scenario suppresses the affected claims; a scientific diagnostic is recorded beside them and never

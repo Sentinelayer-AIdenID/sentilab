@@ -8,7 +8,9 @@
 - FakeScorer: a deterministic stand-in for door-scorer's Score. Its grid is a smooth sum of bumps at the die centres
   printed to 0.01 K; its per-die values are that grid's GRID_CENTER means (the door's own code) and its metric their
   maximum, so its binding holds unless a mode breaks it on purpose. Like the real scorer it returns no grid unless
-  with_grid is set.
+  with_grid is set. Its evaluation receipt names the pinned binary and the inputs a run of the gate-zero build stages:
+  the raw CPU-DRAM reference's pinned input hashes (GATE0_INPUTS), with the three per-layout files replaced by this
+  layout's; `inputs` edits them (a None value drops a file).
 """
 from __future__ import annotations
 
@@ -21,7 +23,7 @@ import time
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from open_proposals.contract.schemas import CONTRACT_DIR
-from sundai_hotspot import gate0_anchor
+from sundai_hotspot import gate0_anchor, gate_zero
 
 from .policy import FloodLimits, Policy
 from .scorer import EVALUATOR_BINARY_SHA256, METRIC, ScorerError, Score
@@ -39,6 +41,10 @@ NOW = 1793500000.0          # 2026-11-01T03:06:40Z, inside the window
 # The legal 0.5 mm snap of the raw CPU-DRAM reference (docs/sentilab/references/micro150-tap25d-fig5a-snap0p5.json),
 # in the compact l= format: wire proxy 9.5 mm.
 SNAPPED = "36.35.0,54.35.0,54.55.0,36.55.0,17.35.0,73.35.0,73.55.0,17.55.0"
+# What a run of the gate-zero build stages: the raw CPU-DRAM reference's pinned inputs (its SHA256SUMS). A door layout
+# stages the same HotSpot config and package-layer files and its own power trace and die-layer floorplans.
+GATE0_INPUTS = gate_zero.frozen_inputs(gate_zero.reference("micro150-tap25d-fig5a-raw"))
+PER_LAYOUT = ("sample.ptrace", "sampleL3_UbumpLayer.flp", "sampleL4_ChipLayer.flp")
 
 
 def fake(label: str) -> str:
@@ -145,9 +151,10 @@ class FakeScorer:
     answer) except ambiguous, whose outcome is unknown."""
 
     def __init__(self, checker, *, mode="ok", healthy=True, cpu_s=2.5, delay_s=0.0, offset=-60.0, with_grid=False,
-                 cpu_known=True):
+                 cpu_known=True, inputs=None, binary_sha256=EVALUATOR_BINARY_SHA256):
         self.checker, self.mode, self.healthy, self.cpu_s, self.delay_s = checker, mode, healthy, cpu_s, delay_s
         self.offset, self.with_grid, self.cpu_known = offset, with_grid, cpu_known
+        self.inputs, self.binary_sha256 = dict(inputs or {}), binary_sha256
         self.calls, self.health_calls = [], 0
         self.started = threading.Event()
         self.release = None          # a threading.Event a test may set to hold a score call open
@@ -189,11 +196,18 @@ class FakeScorer:
         wire = self.checker.wire_proxy_mm(dies) + (0.5 if self.mode == "bad_wire" else 0.0)
         fresh = self.mode not in ("not_fresh", "replay_failed")
         code = "reproduction_failed" if self.mode == "replay_failed" else None
+        staged = dict(GATE0_INPUTS) | {name: fake(name + request["proposal"]["geometry_sha256"]) for name in PER_LAYOUT}
+        for name, value in self.inputs.items():
+            if value is None:
+                staged.pop(name, None)
+            else:
+                staged[name] = value
+        receipt = {"run_id": request["run_id"], "fake": True, "binary_sha256": self.binary_sha256,
+                   "input_sha256": staged}
         return Score(metric, metric - 0.01, max(max(row) for row in grid), per_die,
                      tuple(tuple(row) for row in grid) if self.with_grid else None, wire, fresh,
                      self.mode not in ("mismatch", "replay_failed"), code, self.cpu_s, EVALUATOR_BINARY_SHA256,
-                     {"score": {"run_id": request["run_id"], "fake": True}, "replay": None}, dict(METRIC),
-                     cpu_known=self.cpu_known)
+                     {"score": receipt, "replay": None}, dict(METRIC), cpu_known=self.cpu_known)
 
 
 NONCE = "0123456789abcdef"

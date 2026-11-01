@@ -11,8 +11,11 @@ door would stay closed now; it never prints a key.
 grant.json: {"grant": "<the manifest's refs.grant>", "cpu_cap_s": 3600, "token_cpu_s": 30, "parallel": 4,
 "run_reserve_cpu_s": 20, "not_before": "<UTC>", "not_after": "<UTC>",
 "enforcement_evidence_sha256": "<the scorer's whole-container cutoff evidence>",
-"scorer_image_digest": "sha256:<the scorer's gate-zero image digest>"}
-run_reserve_cpu_s 20 matches door-scorer, which reserves 10 CPU-s for a score and 10 for its replay.
+"scorer_image_digest": "sha256:<the scorer's gate-zero image digest>",
+"scorer_image_tag": "<optional: that image's tag, e.g. sentilab-gate0:2d35e9c>"}
+run_reserve_cpu_s 20 matches door-scorer, which reserves 10 CPU-s for a score and 10 for its replay. Results name the
+reproduction-tested build (contracts/open-proposal-v1/builds.json) only when the tag is that build's image and the
+digest is that image's; without a tag every result reads unvalidated.
 """
 from __future__ import annotations
 

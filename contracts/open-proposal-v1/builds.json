@@ -1,0 +1,94 @@
+{
+ "schema": "sentilab-evaluator-builds/1",
+ "rule": "Exact match only. A build's identity string is <engine>:<engine_commit>:binary_sha256:<binary>:config_sha256:<sha256 of the config file map>:grid:<n>x<n>:build_sha256:<sha256 of the canonical identity>, the identity being schema, engine, engine_commit, binary_sha256, image, config_sha256, grid and centre_mapping. Any other string, the broad alias hotspot6:<binary>:grid:64x64 included, is another evaluator. The label is the build's: it never clears a result's own qualifiers (diagnostic, unassociated, replay status).",
+ "builds": [
+  {
+   "id": "HotSpot-6.0:a7a3286e368867c26381e0a23e36b3e273bdeda9:binary_sha256:751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6:config_sha256:2a51fb6cf2b149b29d154371450f5924070fa0d5ab7ad170b7185b929ff9007b:grid:64x64:build_sha256:05a9d9cb9ba06a67123c1b4c9d3da14820429221e23b4882abc82cf49c1a0e74",
+   "label": "reproduction_tested",
+   "identity": {
+    "schema": "sentilab-evaluator-build/1",
+    "engine": "HotSpot-6.0",
+    "engine_commit": "a7a3286e368867c26381e0a23e36b3e273bdeda9",
+    "binary_sha256": "751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6",
+    "image": "sentilab-gate0:2d35e9c",
+    "config_sha256": {
+     "new_hotspot.config": "5af52c844c0504b5b9bacec5ba0a908a306c4db98655a573919f1e7e65de594a",
+     "sampleL0_Substrate.flp": "b0dea1d76f7fdebcb82193ec632caa8df3ca08548f34b663831501bad2464697",
+     "sampleL1_C4Layer.flp": "a54cd6d3d758ce3fda51f85cb6889549630ee5e379df5d70d34339c090f3357a",
+     "sampleL2_Interposer.flp": "8790535cdf25d343fcae623503323ea348ff03917382c9ae71dc431c319c7690",
+     "sampleL5_TIM.flp": "f63692bffd14fa556517b71ab52601db5a37f384c9bda4ac954ed782bb80ba11",
+     "samplelayers.lcf": "283c59b2c82e40fcfefe55662cfaf1499d558fc4f39453e9f360479388ba3881"
+    },
+    "grid": 64,
+    "centre_mapping": "GRID_CENTER: mean of 1, 2 or 4 central cells (pinned)"
+   },
+   "sources": {
+    "engine_commit": "sundai_hotspot6/UPSTREAM_COMMIT (= golden manifest statistic.evaluator.upstream)",
+    "binary_sha256": "app/door/scorer.py EVALUATOR_BINARY_SHA256 (door-scorer pins the same binary)",
+    "image": {
+     "field": "evaluator.image_tag_operator_reported",
+     "packet_sha256": "e3281c421bb4ae56b958bca3d8997a73471d16c120fa608b92320f0c78cc67f9",
+     "note": "operator-reported tag; no image digest is recorded for it"
+    },
+    "config_sha256": "the input files both gate-zero raw references share: docs/sentilab/diagnostics/SLAB-049/references/ascend910-tap25d-fig6a-raw-45mm/SHA256SUMS, docs/sentilab/diagnostics/SLAB-049/references/micro150-tap25d-fig5a-raw-45mm/SHA256SUMS",
+    "grid": "sundai_hotspot/gate_zero.py GRID (= golden manifest statistic.grid)",
+    "centre_mapping": "golden manifest statistic.centre_mapping"
+   },
+   "receipts": [
+    {
+     "room": "608657e4",
+     "seq": 57377,
+     "author": "claude-warden",
+     "at": "2026-10-31T23:45:43.792Z",
+     "message_sha256": "8addb1f5ee744f404fbc83c3cca3e70f12b292b054b2853a9b62f9ad212d5b53",
+     "verdict": "PASS",
+     "scope": "this binary, at grid 64, on the block-centre metric only. It doesn't cover other grids or the search objective J.",
+     "build": "1575556d",
+     "tree": "a6076a7c",
+     "manifest": "23a1a74b",
+     "grant": "slab049-v4-g1-20261031"
+    },
+    {
+     "room": "608657e4",
+     "seq": 57394,
+     "author": "gpt-astra-carter",
+     "at": "2026-11-01T00:05:37.132Z",
+     "message_sha256": "2a91dcbfd754f5a334a1ba0d538f777c20ffa620c4855330469c2b07da7cf86d",
+     "verdict": "independent saved-artifact re-derivation confirms the numerical PASS",
+     "metric": "maximum native block output under centre mapping",
+     "report_sha256": "afe4eac3456fefddbe253ddec93b5e58c9b76f41339297799b96da65f3b7f75e",
+     "packet_seal_sha256": "fd82f218fb4f2cd7d5026c663b3ff709494b7844d63b71718dab0856d75c137f"
+    }
+   ],
+   "references": [
+    {
+     "case": "ascend910-tap25d-fig6a/raw",
+     "paper_C": 75.48,
+     "native_all_block_max_C": 75.48,
+     "delta_K": 0.0,
+     "replay": "byte-identical",
+     "grid32_native_all_block_max_C": 75.46,
+     "max_chiplet_centre_cell_mean_C": 75.475,
+     "active_layer_peak_C": 75.48
+    },
+    {
+     "case": "micro150-tap25d-fig5a/raw",
+     "paper_C": 115.94,
+     "native_all_block_max_C": 115.93,
+     "delta_K": -0.01,
+     "replay": "byte-identical",
+     "grid32_native_all_block_max_C": 115.28,
+     "max_chiplet_centre_cell_mean_C": 115.935,
+     "active_layer_peak_C": 119.07
+    }
+   ],
+   "tolerance_K": 1.0,
+   "raw_precision_K": 0.01,
+   "statistics": {
+    "native_all_block_max_C": "gate zero's statistic: the maximum native block output under centre mapping, compared with the paper's value within tolerance_K",
+    "max_chiplet_centre_cell_mean_C": "the door board's statistic: the maximum over the real chiplets of the mean of each one's central grid cells; another statistic, recorded beside the first",
+    "active_layer_peak_C": "the active layer's grid maximum; a third statistic"
+   }
+  }
+ ]
+}

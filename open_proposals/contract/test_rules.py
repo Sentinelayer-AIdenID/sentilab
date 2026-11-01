@@ -9,6 +9,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -17,6 +18,7 @@ from jsonschema import Draft202012Validator
 from sentilab_core.envelope import MAX_ITEMS, RUN_ID, check_caps
 
 from . import age_tools
+from . import builds
 from . import canonical as h
 from . import make_vectors as mv
 from .codes import FIELDS, GROUPS, MAX_VIOLATIONS, ORDER, REASON_CODES, RECORD_CODES, RULES, VOCABULARY
@@ -725,6 +727,7 @@ class Labels(unittest.TestCase):
         self.assertEqual("unvalidated", label_for_all(["HotSpot-6.0:x", "fixture-no-solver"], accepted))
         self.assertEqual("withdrawn", label_for(withdrawn, dict(LISTS, accepted=(withdrawn,))),
                          "withdrawn wins over any other list")
+        self.assertEqual("withdrawn", label_for(withdrawn, dict(LISTS, reproduction_tested=(withdrawn,))))
         self.assertEqual((), LISTS["accepted"], "ACCEPTED is empty")
 
     def test_a_high_wire_diagnostic_never_suppresses_a_temperature_label(self):
@@ -745,6 +748,136 @@ class Labels(unittest.TestCase):
                          labels=kept)
         self.assertEqual([], validate_record("results", mv.results(row), manifest=mv.F))
         self.assertEqual("illustrative", row["temperature_label"])
+
+
+class BuildLabels(unittest.TestCase):
+    """The scoped reproduction_tested state: exactly the complete gate-zero build of builds.json, and nothing else.
+    golden/build-labels.json is shared with web/test/temperature-label.test.mjs, so both rules give the same labels."""
+
+    def setUp(self):
+        # Read as stored, so a broken id function fails the tests below rather than the registry load.
+        self.build = json.loads(builds.BUILDS_PATH.read_bytes())["builds"][0]
+        self.vectors = json.loads((CONTRACT / "golden" / "build-labels.json").read_bytes())
+
+    def test_the_registry_refuses_an_id_that_is_not_its_identitys(self):
+        self.assertEqual((self.build,), builds.registered())
+        record = json.loads(builds.BUILDS_PATH.read_bytes())
+        record["builds"][0]["identity"]["image"] = "sentilab-gate0:0000000"
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "builds.json"
+            path.write_bytes(json.dumps(record).encode())
+            with self.assertRaises(ValueError):
+                builds.load(path)
+
+    def test_the_golden_build_labels(self):
+        self.assertEqual(self.build["id"], self.vectors["build"])
+        for case in self.vectors["single"]:
+            with self.subTest(case["name"]):
+                self.assertEqual(case["label"], label_for(case["evaluator"]))
+        for case in self.vectors["derived"]:
+            with self.subTest(case["name"]):
+                self.assertEqual(case["label"], label_for_all(case["evaluators"]))
+        self.assertEqual(1, sum(case["label"] == "reproduction_tested" for case in self.vectors["single"]))
+        names = {case["name"] for case in self.vectors["single"]}
+        for field in ("another engine commit", "another binary", "another image", "another HotSpot config",
+                      "another package layer", "another grid", "another centre mapping", "the door's broad alias"):
+            self.assertIn(field, names, "every single-field mismatch has its vector")
+
+    def test_the_list_is_exactly_the_registered_build(self):
+        data = json.loads((CONTRACT / "labels.json").read_bytes())
+        self.assertEqual((self.build["id"],), LISTS["reproduction_tested"])
+        self.assertEqual(data["states"], SCHEMAS["common"]["$defs"]["label_state"]["enum"])
+        self.assertIn("reproduction_tested", data["states"])
+        self.assertTrue(pattern_matches(SCHEMAS["common"]["$defs"]["evaluator"]["pattern"], self.build["id"]),
+                        "the id is a valid evaluator string")
+
+    def test_the_id_covers_every_field_of_the_identity(self):
+        identity = self.build["identity"]
+        self.assertEqual(self.build["id"], builds.build_id(identity))
+        self.assertEqual(
+            "HotSpot-6.0:a7a3286e368867c26381e0a23e36b3e273bdeda9:binary_sha256:" + identity["binary_sha256"]
+            + ":config_sha256:" + h.digest(identity["config_sha256"]) + ":grid:64x64:build_sha256:" + h.digest(identity),
+            self.build["id"])
+        config = identity["config_sha256"]
+        changed = [identity | {"engine": "HotSpot-6"}, identity | {"engine_commit": "0" * 40},
+                   identity | {"binary_sha256": "0" * 64}, identity | {"image": "sentilab-gate0:0000000"},
+                   identity | {"image": None}, identity | {"grid": 32}, identity | {"centre_mapping": "native"},
+                   identity | {"config_sha256": config | {"new_hotspot.config": "0" * 64}},
+                   identity | {"config_sha256": config | {"sampleL0_Substrate.flp": "0" * 64}},
+                   identity | {"config_sha256": {k: v for k, v in config.items() if k != "samplelayers.lcf"}},
+                   identity | {"config_sha256": config | {"sample.ptrace": "0" * 64}}]
+        ids = {builds.build_id(value) for value in changed}
+        self.assertEqual(len(changed), len(ids))
+        self.assertNotIn(self.build["id"], ids)
+        for broken in ({k: v for k, v in identity.items() if k != "image"}, identity | {"extra": 1},
+                       identity | {"schema": "sentilab-evaluator-build/2"}):
+            with self.assertRaises(ValueError):
+                builds.build_id(broken)
+        # Whatever a run attests, the string is a valid evaluator; an unreadable field reads "unknown".
+        odd = identity | {"engine": None, "engine_commit": "a b", "binary_sha256": True, "grid": "64:64"}
+        text = builds.build_id(odd)
+        self.assertTrue(text.startswith("unknown:unknown:binary_sha256:unknown:config_sha256:"), text)
+        self.assertIn(":grid:unknownxunknown:build_sha256:" + h.digest(odd), text)
+        self.assertTrue(pattern_matches(SCHEMAS["common"]["$defs"]["evaluator"]["pattern"], text))
+
+    def test_builds_json_matches_its_sources(self):
+        """Commit, binary, config, grid and centre mapping re-derived from the repository; the image from the
+        recorded packet; and where web/ is present (the contracts job, not the API image) the receipts and every
+        reference value against the public evidence record."""
+        self.assertEqual([], builds.check())
+        self.assertEqual(sorted(builds.GATE0_CASES), sorted(item["case"] for item in self.build["references"]))
+
+    def test_the_source_check_can_fail(self):
+        record = json.loads(builds.BUILDS_PATH.read_bytes())
+        # The image tag has no in-repository source (an operator-reported value, recorded with its packet's
+        # sha256): changing it breaks the id, and the label lists hold that id.
+        tampered = [("id", lambda b: b["identity"].update(image="sentilab-gate0:0000000")),
+                    ("identity.grid", lambda b: b["identity"].update(grid=32)),
+                    ("tolerance_K", lambda b: b.update(tolerance_K=2.0)),
+                    ("delta_K", lambda b: b["references"][1].update(delta_K=0.0))]
+        if (ROOT / builds.EVIDENCE).exists():
+            tampered += [("references", lambda b: b["references"][1].update(max_chiplet_centre_cell_mean_C=115.93)),
+                         ("receipts", lambda b: b["receipts"][1].update(report_sha256="0" * 64))]
+        with tempfile.TemporaryDirectory() as folder:
+            for expected, change in tampered:
+                value = copy.deepcopy(record)
+                change(value["builds"][0])
+                path = Path(folder) / "builds.json"
+                path.write_bytes(json.dumps(value).encode())
+                with self.subTest(expected):
+                    self.assertTrue(any(expected in item for item in builds.check(path)), expected)
+
+    def test_three_statistics_stay_apart(self):
+        """Gate zero compared the native all-block maximum with the paper; the board's statistic is the chiplet-centre
+        mean, and the active-layer peak is a third. The raw CPU-DRAM layout shows all three differ."""
+        statistics = ("native_all_block_max_C", "max_chiplet_centre_cell_mean_C", "active_layer_peak_C")
+        self.assertEqual(set(statistics), set(self.build["statistics"]))
+        for reference in self.build["references"]:
+            self.assertLessEqual(abs(reference["native_all_block_max_C"] - reference["paper_C"]),
+                                 self.build["tolerance_K"])
+            self.assertEqual("byte-identical", reference["replay"])
+        cpu_dram = next(item for item in self.build["references"] if item["case"] == "micro150-tap25d-fig5a/raw")
+        self.assertEqual(3, len({cpu_dram[name] for name in statistics}))
+        by_case = {(item["case"], item["statistic"]): item for item in self.vectors["references"]}
+        for reference in self.build["references"]:
+            for statistic in statistics[:2]:
+                vector = by_case[(reference["case"], statistic)]
+                self.assertEqual(reference[statistic], vector["value_C"])
+                self.assertEqual(vector["label"], label_for(vector["evaluator"]))
+        gate0, rederivation = self.build["receipts"]
+        self.assertEqual(("PASS", 57377, 57394), (gate0["verdict"], gate0["seq"], rederivation["seq"]))
+        self.assertEqual("maximum native block output under centre mapping", rederivation["metric"])
+
+    def test_the_build_label_never_clears_a_rows_qualifiers(self):
+        """The label is the evaluator's: a reproduction-tested row keeps its suppressed claim, its UNKNOWN
+        sensitivity and its claim modes exactly as they were, and they validate as they are."""
+        row = mv.outside(evaluator=self.build["id"], temperature_label="reproduction_tested",
+                         labels=[{"id": "r-relaxed-wire thermal tolerance", "r": 0.05, "mode": "INCOMPLETE"}],
+                         suppressed=[{"id": "strict-wire thermal tolerance", "r": None, "by": "failed binding"}])
+        before = copy.deepcopy(row)
+        self.assertEqual([], validate_record("results", mv.results(row), manifest=mv.F))
+        self.assertEqual(before, row)
+        self.assertEqual("UNKNOWN", row["sensitivities"]["position"])
 
 
 if __name__ == "__main__":
