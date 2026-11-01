@@ -56,7 +56,9 @@ test("deck/final is a fresh build of FINAL.json under the options it records", (
   assert.equal(read(join(FINAL_DECK_DIR, "deck-data.json")), json, "deck-data.json");
   assert.equal(read(join(FINAL_DECK_DIR, "deck-data.js")), js, "deck-data.js");
   assert.equal(committed.source.finalSha256, sha(readFileSync(join(FINAL_DIR, "FINAL.json"))));
-  assert.equal(committed.build.gate, "not-run", "the committed export is NOT RUN until a reviewed gate result exists");
+  // The committed export is the reviewed result recorded in FINAL.json, never a preview.
+  assert.equal(committed.build.gate, loaded.final.gate.result?.outcome ?? "not-run");
+  assert.equal(committed.build.measured, loaded.final.gate.result?.measured ?? null);
   assert.equal(committed.build.preview, false);
 });
 test("deck and source files are LF-only, with no control bytes", () => {
@@ -104,18 +106,92 @@ test("the --gate flag selects exactly one outcome on slide 4, and the backup lis
   assert.equal(box(variant("pass")), WORDING.pass);
   assert.equal(box(variant("fail")), WORDING.fail.replace("[values]", "77.10 C and 116.02 C"));
   const pass = slideText(variant("pass"), "gate");
-  assert.match(pass, /75\.61 C · within/);
-  assert.match(pass, /116\.02 C · within/);
+  assert.match(pass, /75\.61 C \+0\.13 K · within/);
+  assert.match(pass, /116\.02 C \+0\.08 K · within/);
   const fail = slideText(variant("fail"), "gate");
   assert.match(fail, /It missed: 77\.10 C and 116\.02 C\. Our explanation is incomplete, and the withdrawal stands\./);
-  assert.match(fail, /77\.10 C · outside/);
-  assert.match(slideText(variant("not-run"), "gate"), /not run.*not run/);
+  assert.match(fail, /77\.10 C \+1\.62 K · outside/);
+  assert.match(slideText(variant("not-run"), "gate"), /not run must be within 1\.0 K.*not run must be within 1\.0 K/);
+  // Values that are not the recorded result never carry its comparison, scope or verification state.
+  for (const g of GATES) assert.doesNotMatch(slideText(variant(g), "gate"), /Version comparison|Verified by the operator|Scope of this result/, g);
+});
+
+// The reviewed gate result, as the operator posted it (team room, message 57377, 23:45:43Z): paper 75.48 and 115.94 C,
+// HotSpot 6.0 at a 64 by 64 grid 75.48 and 115.93 C, HotSpot 7.0 default 123.42 and 232.67 C.
+test("the recorded result is the default export: PASS with the operator's values, comparison, scope and state", () => {
+  const r = loaded.final.gate.result;
+  assert.equal(r.outcome, "pass");
+  assert.equal(r.measured, "75.48,115.93");
+  assert.deepEqual(r.comparator.values, ["123.42", "232.67"]);
+  assert.ok(r.records.some((x) => x.ref === "seq 57377" && x.author === "claude-warden" && x.at === "2026-10-31T23:45:43.792Z"));
+  const d = build();
+  assert.deepEqual([d.build.gate, d.build.measured, d.build.rederived], ["pass", "75.48,115.93", false]);
+  const s4 = slideText(d, "gate");
+  assert.match(s4, /Published layout A TAP-2\.5D paper, Fig\. 6\(a\) 75\.48 C 75\.48 C 0\.00 K · within/);
+  assert.match(s4, /Published layout B TAP-2\.5D paper, Fig\. 5\(a\) 115\.94 C 115\.93 C −0\.01 K · within/);
+  assert.ok(s4.includes(WORDING.pass), "the reviewer's PASS wording");
+  assert.match(s4, /Each value was run again in a fresh process, and the outputs match byte for byte\./);
+  assert.match(s4, /Version comparison on the same layouts and readout: version 7\.0 gives 123\.42 C and 232\.67 C, 48 to 117 K above the paper\./);
+  assert.match(s4, /Verified by the operator; independent re-derivation by a second reviewer in progress\./);
+  assert.match(s4, /Scope of this result: this simulator build, on a 64 by 64 grid, reading block-centre temperatures\./);
+  assert.doesNotMatch(s4, /\bbugs?\b|grid ?64|\bJ\b/i);
+  const notes = d.slides.find((s) => s.id === "gate").notes.text;
+  assert.match(notes, /It has now run: 75\.48 C and 115\.93 C, against 75\.48 and 115\.94 published\./);
+  assert.match(notes, /the newer version runs 48 to 117 degrees hotter\. A second reviewer is re-deriving it independently now\.$/);
+  assert.match(slideText(d, "gate-detail"), /PASS 75\.48 C and 115\.93 C Verified by the operator; independent re-derivation/);
+  assert.match(slideText(d, "chronology"), /23:45 The fixed test runs from 23:41 to 23:44, and the operator reports PASS/);
+});
+test("one flag, --rederived, flips the verification state, and only for the recorded result", () => {
+  const d = build({ rederived: true });
+  assert.equal(d.build.rederived, true);
+  const s4 = slideText(d, "gate");
+  assert.match(s4, /Verified by the operator and independently re-derived by a second reviewer\./);
+  assert.doesNotMatch(s4, /in progress/);
+  assert.match(d.slides.find((s) => s.id === "gate").notes.text, /A second reviewer has re-derived it independently\.$/);
+  assert.throws(() => build({ gate: "not-run", rederived: true }), /--rederived applies only/);
+  assert.throws(() => build({ gate: "pass", measured: "75.61,116.02", rederived: true }), /--rederived applies only/);
+  assert.throws(() => build({ gate: "pass", preview: true, rederived: true }), /--rederived applies only/);
+});
+// The review-quality line, in the analysis author's exact wording (team room, reply to message 57388, 00:00:09Z), kept in
+// one paragraph with its "weren't blind" qualifier, with 18 and 4 unrounded.
+test("the review-quality line is the author's exact wording, with its qualifier, on slide 2 and in backup", () => {
+  const LINE = "Across 34 code reviews, a second agent stated 80 of the 191 defects first. 18 were found at a version another agent had already approved. The approver confirms at least 4 as misses. These reviews weren't blind, so this is descriptive, not a controlled test.";
+  assert.equal(loaded.final.backup.reviews.line, LINE);
+  assert.equal(loaded.final.how.evidence.line, LINE);
+  assert.throws(() => build({}, (f) => { f.how.evidence.line = LINE.replace("at least 4", "4"); }), /same review line/);
+  const d = build();
+  const html = Deck.renderSlides(d);
+  for (const id of ["how", "reviews"]) {
+    const sec = new RegExp(`id="s-${id}"[\\s\\S]*?<p class="rline[^"]*">([\\s\\S]*?)<\\/p>`).exec(html);
+    assert.ok(sec, `${id}: the line renders as one paragraph`);
+    assert.equal(decode(sec[1]), LINE, id);
+  }
+  const notes = d.slides.find((s) => s.id === "how").notes.text;
+  assert.ok(notes.includes("18 were found at a version another agent had already approved. The approver confirms at least 4 as misses. These reviews weren't blind"), "spoken word for word, with its qualifier");
+  const rv = slidesOf(d).find((s) => s.id === "reviews");
+  assert.equal(rv.main, false);
+  assert.match(rv.text, /Found at a version another agent had already approved 18, in 8 pull requests/);
+  assert.match(rv.text, /confirmed as misses by the approver at least 4/);
+});
+test("slide 3's number is a difference between matching modeled nodes, never a copper layer", () => {
+  const d = build();
+  const s3 = slideText(d, "timeline");
+  assert.match(s3, /50\+ degrees between corresponding spreader and heat-sink nodes, in our simulator's saved output/);
+  assert.match(s3, /Modeled node values at matching positions, not a calibrated temperature\./);
+  const all = slidesOf(d).map((s) => s.text).join("\n") + d.slides.map((s) => s.notes.text).join("\n");
+  assert.doesNotMatch(all, /copper layers?|across copper|lost between/i);
+});
+test("a recorded result that its own numbers contradict does not build", () => {
+  assert.throws(() => build({}, (f) => { f.gate.result.comparator.text = f.gate.result.comparator.text.replace("48 to 117 K", "48 to 116 K"); }), /must say "48 to 117 K"/);
+  assert.throws(() => build({}, (f) => { f.gate.result.comparator.notes = f.gate.result.comparator.notes.replace("117", "120"); }), /notes must say "48 to 117 degrees"/);
+  assert.throws(() => build({}, (f) => { f.gate.result.measured = "77.48,115.93"; }), /PASS contradicts/);
+  assert.throws(() => build({}, (f) => { f.gate.result.records[0].at = "2026-11-02T00:00:00.000Z"; }), /after the cutoff/);
+  assert.throws(() => build({ gate: "pass" }, (f) => { delete f.gate.result; }), /needs --measured/);
 });
 test("an outcome its values contradict, or one without reviewed wording, does not build", () => {
   const refuse = (o, re) => assert.throws(() => build(o), (e) => e instanceof FinalError && re.test(e.message), JSON.stringify(o));
   refuse({ gate: "pass", measured: "76.61,116.02" }, /PASS contradicts/);
   refuse({ gate: "fail", measured: "75.61,116.02" }, /FAIL contradicts/);
-  refuse({ gate: "pass" }, /needs --measured/);
   refuse({ gate: "fail" }, /needs --measured/);
   refuse({ gate: "not-run", measured: "75.61,116.02" }, /NOT RUN takes no measured values/);
   refuse({ gate: "incomplete" }, /no reviewed wording/);
@@ -149,8 +225,13 @@ test("word count: whitespace tokens holding a letter or digit", () => {
 test("the five main slides fit 165 s of speech at 2.2 words per second, in every outcome, with a 15 s buffer", () => {
   const t = loaded.final.talk;
   assert.deepEqual([t.wordsPerSecond, t.speechBudgetSeconds, t.bufferSeconds, t.maxSeconds], [2.2, 165, 15, 180]);
-  for (const g of [...GATES, "pass-preview", "fail-preview"]) {
-    const d = g.endsWith("preview") ? build({ gate: g.split("-")[0], preview: true }) : variant(g);
+  const builds = {
+    recorded: () => build(), rederived: () => build({ rederived: true }),
+    "pass-preview": () => build({ gate: "pass", preview: true }), "fail-preview": () => build({ gate: "fail", preview: true }),
+    ...Object.fromEntries(GATES.map((g) => [g, () => variant(g)])),
+  };
+  for (const [g, make] of Object.entries(builds)) {
+    const d = make();
     const mains = d.slides.filter((s) => s.main);
     assert.deepEqual(mains.map((s) => s.id), ["problem", "how", "timeline", "gate", "reuse"]);
     for (const s of d.slides) {
@@ -187,9 +268,9 @@ test("every slide-3 line, slide-2 example and chronology row names a room record
 test("a line whose minute no record carries, a record after the cutoff, or a line out of order does not build", () => {
   assert.throws(() => build({}, (f) => { f.timeline.lines[0].at = "2026-10-31T13:16:00.000Z"; }), /which no record carries/);
   assert.throws(() => build({}, (f) => { f.timeline.lines[0].records = []; }), /has no room record/);
-  assert.throws(() => build({}, (f) => { f.timeline.lines[8].records[0].at = "2026-11-01T00:00:00.000Z"; }), /after the cutoff/);
+  assert.throws(() => build({}, (f) => { f.timeline.lines[8].records[0].at = "2026-11-02T00:00:00.000Z"; }), /after the cutoff/);
   assert.throws(() => build({}, (f) => { [f.timeline.lines[1], f.timeline.lines[2]] = [f.timeline.lines[2], f.timeline.lines[1]]; }), /out of time order/);
-  assert.throws(() => build({}, (f) => { f.backup.prs.items[0].checkedAt = "2026-11-01T00:00:00Z"; }), /checked after the cutoff/);
+  assert.throws(() => build({}, (f) => { f.backup.prs.items[0].checkedAt = "2026-11-02T00:00:00Z"; }), /checked after the cutoff/);
 });
 test("the stop line says what happened, without claiming that no person asked", () => {
   const all = slidesOf(variant("not-run")).map((s) => s.text).join("\n") + variant("not-run").slides.map((s) => s.notes.text).join("\n");
@@ -256,7 +337,7 @@ test("other teams: the receipt is FEAgent's public package; our leaderboard appe
 // ── 7. exports ──────────────────────────────────────────────────────────────────────────────────────────────────────
 test("the PDF is named from the cutoff and the outcome, sits beside its source, and has one page per slide", () => {
   const c = committed.build.cutoff;
-  assert.equal(finalPdfName(committed), `final-3min/SentiLab-3min-${c.slice(0, 10)}-${c.slice(11, 13)}${c.slice(14, 16)}-not-run.pdf`);
+  assert.equal(finalPdfName(committed), `final-3min/SentiLab-3min-${c.slice(0, 10)}-${c.slice(11, 13)}${c.slice(14, 16)}-${committed.build.gate}.pdf`);
   const pdf = join(PDF_DIR, finalPdfName(committed));
   assert.ok(existsSync(pdf), `${finalPdfName(committed)} is exported`);
   const pages = (readFileSync(pdf, "latin1").match(/\/Type\s*\/Page(?![s\w])/g) ?? []).length;

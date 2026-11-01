@@ -1,52 +1,63 @@
-# Re-exporting the three-minute deck with the real gate result
+# Re-exporting the three-minute deck
 
-The deck in this folder was exported with slide 4 at **NOT RUN**. The gate window closes 2026-11-01 12:00 UTC and the
-slides are due at 18:00 UTC. Once the gate-zero result is reviewed, one command rebuilds the data, refreshes the pull
-request states, moves the cutoff to now and exports the PDF plus a fresh render of every page.
+The gate ran on 2026-10-31 between 23:41 and 23:44 UTC, and the operator reported **PASS** (team room message 57377):
+75.48 C and 115.93 C against the paper's 75.48 C and 115.94 C. That result is recorded in `FINAL.json` (`gate.result`),
+so a plain build now exports slide 4 as PASS. It quotes those values, the same-layout version comparison and the scope.
+The verification line reads: "Verified by the operator; independent re-derivation by a second reviewer in progress".
 
-## The command
+Each command below is the whole job. It rebuilds the data, re-reads the pull requests, moves the deck's one cutoff to
+now, and exports the PDF plus a fresh render of every page. The new PDF replaces the old one, so this folder always holds
+one PDF.
 
-Run it from the repository root, with Playwright available (`PLAYWRIGHT_DIR` is a folder holding
-`node_modules/playwright`; on the workstation `C:/tmp/forge-skills-install` works).
+Run from the repository root. `PLAYWRIGHT_DIR` must be a folder holding `node_modules/playwright`; on the workstation,
+`C:/tmp/forge-skills-install` works.
 
-**PASS**, with the two measured block-centre values, layout A (published 75.48 C) then layout B (published 115.94 C):
-
-```
-PLAYWRIGHT_DIR=C:/tmp/forge-skills-install node scripts/build-deck-final.mjs --gate pass --measured 75.61,116.02 --refresh-prs --export --shots C:/tmp/deck-final-shots
-```
-
-**FAIL**, the same with `--gate fail`. The values replace `[values]` in the reviewed wording ("It missed: 77.10 C and
-116.02 C."):
+## When the second reviewer confirms the re-derivation (the one-flag change)
 
 ```
-PLAYWRIGHT_DIR=C:/tmp/forge-skills-install node scripts/build-deck-final.mjs --gate fail --measured 77.10,116.02 --refresh-prs --export --shots C:/tmp/deck-final-shots
+PLAYWRIGHT_DIR=C:/tmp/forge-skills-install node scripts/build-deck-final.mjs --rederived --refresh-prs --export --shots C:/tmp/deck-final-shots
 ```
 
-**Still NOT RUN** at the deadline: drop `--gate` and `--measured`, and keep `--refresh-prs --export`.
+`--rederived` changes only the verification line, to "Verified by the operator and independently re-derived by a second
+reviewer", and the matching sentence in the speaker notes. It is refused for anything but the recorded result.
 
-The numbers above are placeholders. Use the values from the reviewed gate record, in C, with up to three decimals.
+## Refreshing the current state
 
-## What the command does, and what it refuses
+```
+PLAYWRIGHT_DIR=C:/tmp/forge-skills-install node scripts/build-deck-final.mjs --refresh-prs --export --shots C:/tmp/deck-final-shots
+```
 
-- `--refresh-prs` re-reads every pull request on the backup slide with `gh pr view`, stamps the check time and makes
-  that minute the deck's one cutoff. Without it, give `--cutoff <UTC time>` instead.
-- `--gate pass` builds only if both values are within 1.0 K of their published references. `--gate fail` builds only if
-  at least one is outside. NOT RUN takes no values.
-- The gate code can also return **ERROR** or **INCOMPLETE**. Neither has reviewed wording, so neither builds. Do not
-  export one of them as NOT RUN: "The test hasn't run" would be false. Write and review the wording first.
-- A FAIL caused by something other than a missed value (a replay that differs, evidence that does not verify) also
-  needs reviewed wording. "It missed" would not describe it.
-- The five main slides must still fit 165 s of speech. The build reports the total; all three outcomes fit today.
-- The export fails on any overflow, clipped text, main-slide text under 28 px, contrast under 4.5:1, or a missing value.
+## If the recorded result changes
 
-## After it runs
+Edit `gate.result` in `FINAL.json`: the outcome, the two measured values, the records, the comparison and the
+verification lines. Have it reviewed, then run the refresh command above. The build checks the new result against the
+fixed rules:
 
-The export replaces the previous PDF in this folder, so it always holds one PDF with one cutoff (the test checks this).
+- **PASS** needs both values within 1.0 K of 75.48 C and 115.94 C.
+- **FAIL** needs at least one value outside 1.0 K. Its values replace `[values]` in the reviewed wording ("It missed:
+  … C and … C.").
+- **The comparison line** must quote both of its values and the rounded gaps to the paper that those values give.
+
+**ERROR and INCOMPLETE** have no reviewed wording, so neither builds. A FAIL caused by something other than a missed
+value (a replay that differs, or evidence that does not verify) also needs reviewed wording first.
+
+## Other outcomes, for review only
+
+- `--gate not-run`: the NOT RUN wording. It is kept for the record and is no longer true.
+- `--gate fail --preview` and `--gate pass --preview`: no values. Every slide is marked "PREVIEW · not a result", and no
+  PDF can be written.
+
+## After any export
 
 1. Look at the new PDF and at slide 4 in the shots folder.
 2. Run `node --test scripts/deck-data.test.mjs`.
 3. Commit `FINAL.json`, `deck/final/deck-data.json`, `deck/final/deck-data.js`, the new PDF and the removal of the old
-   one, and send the head for review.
+   one. Then send the head for review.
 
-To preview PASS or FAIL before a result exists, add `--preview` and leave out `--measured`. Every slide is then marked
-"PREVIEW · not a result", the table shows `[measured]`, and no PDF can be written.
+The five main slides must stay within 165 s of speech. The build prints each slide's words and seconds, and refuses
+anything over the budget. The export fails on any of these:
+
+- overflow or clipped text;
+- main-slide text under 28 px;
+- contrast under 4.5:1;
+- a missing value.

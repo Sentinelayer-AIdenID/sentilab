@@ -6,15 +6,15 @@ window.DECK_DATA = {
     "title": "SentiLab",
     "event": "ScienceClaw hackathon",
     "talk": "Three-minute talk",
-    "cutoff": "2026-10-31 23:25 UTC",
-    "variant": "not-run",
-    "variantLabel": "NOT RUN",
+    "cutoff": "2026-11-01 00:12 UTC",
+    "variant": "pass",
+    "variantLabel": "PASS",
     "preview": false
   },
   "budget": {
     "wordsPerSecond": 2.2,
-    "mainWords": 350,
-    "mainSeconds": 159.1,
+    "mainWords": 355,
+    "mainSeconds": 161.4,
     "speechBudgetSeconds": 165,
     "bufferSeconds": 15,
     "maxSeconds": 180
@@ -44,13 +44,14 @@ window.DECK_DATA = {
       "main": true,
       "kicker": "How the team works",
       "notes": {
-        "text": "A person sets the goal. Agents take separate pieces, read the sources and code, and post what they find in one shared room. Other agents challenge it. Findings carry their inputs, method and status, and missing evidence is marked, not hidden. So anyone can follow a claim back, repeat the check and see what has to change.",
-        "words": 57,
-        "seconds": 25.9
+        "text": "A person sets the goal. Agents take separate pieces, read the sources and code, and post what they find in one shared room. Others challenge it, and it shows: in our code reviews, 18 were found at a version another agent had already approved. The approver confirms at least 4 as misses. These reviews weren't blind, so this is descriptive, not a controlled test.",
+        "words": 64,
+        "seconds": 29.1
       },
       "content": {
         "title": "One goal, separate investigations, open challenge, one record.",
-        "footnote": "Anyone can follow a claim back to its inputs, repeat the check and see exactly what has to change.",
+        "footnote": "Anyone can follow a claim back to its inputs, repeat the check and see what has to change.",
+        "evidence": "Across 34 code reviews, a second agent stated 80 of the 191 defects first. 18 were found at a version another agent had already approved. The approver confirms at least 4 as misses. These reviews weren't blind, so this is descriptive, not a controlled test.",
         "steps": [
           {
             "title": "A person sets the goal",
@@ -81,9 +82,9 @@ window.DECK_DATA = {
       "main": true,
       "kicker": "Our own numbers",
       "notes": {
-        "text": "Then our own results became the test. On Saturday a person asked why our study came out inconclusive. Within an hour, one agent suspected the simulator's link between the heat spreader and the heat sink, and a second confirmed it in the source. A third agent, run by a different person, built a simplified model from the public code. Saved output from our simulator showed more than fifty degrees lost between two copper layers. So we withdrew our own temperatures. An agent proposed stopping the public run, two others agreed, and it stopped within five minutes, with its history kept.",
-        "words": 100,
-        "seconds": 45.5
+        "text": "Then our own results became the test. On Saturday a person asked why our study came out inconclusive. Within an hour, one agent suspected the simulator's link between the heat spreader and the heat sink, and a second confirmed it in the source. A third agent, run by a different person, built a simplified model from the public code. Saved output from our simulator showed a gap of more than fifty degrees between matching spreader and heat-sink nodes. So we withdrew our own temperatures. An agent proposed stopping the public run, two others agreed, and it stopped within five minutes, with its history kept.",
+        "words": 104,
+        "seconds": 47.3
       },
       "content": {
         "title": "We withdrew our own numbers.",
@@ -107,7 +108,7 @@ window.DECK_DATA = {
           },
           {
             "at": "14:42",
-            "text": "Saved simulator output: 51 to 52 degrees lost there, in eight test layouts."
+            "text": "Saved simulator output: 51 to 52 degrees between matching spreader and sink nodes, in eight test layouts."
           },
           {
             "at": "14:53",
@@ -132,8 +133,8 @@ window.DECK_DATA = {
         ],
         "callout": {
           "big": "50+",
-          "label": "degrees lost between the copper heat spreader and the heat sink",
-          "sub": "In our simulator's saved output, across eight hand-written test layouts. A retained observation, not a calibrated temperature."
+          "label": "degrees between corresponding spreader and heat-sink nodes, in our simulator's saved output",
+          "sub": "Eight hand-written test layouts, 51.10 to 52.40 K. Modeled node values at matching positions, not a calibrated temperature."
         },
         "note": "Simplified-model values are not native simulator results. The simulator's authors have not confirmed this. No calibrated temperature is claimed."
       },
@@ -144,34 +145,40 @@ window.DECK_DATA = {
       "main": true,
       "kicker": "The test fixed in advance",
       "notes": {
-        "text": "The link differs between the simulator's versions, and only its authors can say what was intended. So we fixed a test before seeing its answer: the older version must reproduce two published temperatures within one degree. It has not run yet. A pass would reproduce those numbers, not prove physical accuracy, and it would not bring back any old result. A miss would mean our explanation is incomplete. Either way, the old numbers stay withdrawn, and scientific benefit is not established.",
-        "words": 81,
-        "seconds": 36.8
+        "text": "The link differs between the simulator's versions, and only its authors can say what was intended. So we fixed a test before seeing its answer: the older version must reproduce two published temperatures within one degree. It has now run: 75.48 C and 115.93 C, against 75.48 and 115.94 published. That reproduces those numbers. It does not prove physical accuracy, and it does not validate any older result. On the same layouts, the newer version runs 48 to 117 degrees hotter. A second reviewer is re-deriving it independently now.",
+        "words": 89,
+        "seconds": 40.5
       },
       "content": {
         "title": "The link differs between versions. We fixed the test first.",
         "common": "In public source, the spreader-to-sink link is `rz(n)` in HotSpot 6.0 and `rz(n)/2 + rz(n+1)/2` in 7.0, and the sink's `rz` includes convection. Our old results used 7.0. Test fixed in advance: HotSpot 6 must land within 1 K of the published 75.48 C and 115.94 C.",
         "toleranceK": "1.0",
-        "variant": "not-run",
-        "label": "NOT RUN",
-        "text": "The test hasn't run. What we have is a source reading, saved output and a simplified model: 75.34 and 115.83 C, from an agent that had read the hypothesis.",
-        "bottom": "Whatever the result, our old numbers stay withdrawn. Scientific benefit: not established.",
+        "variant": "pass",
+        "label": "PASS",
+        "text": "Both landed within 1 K. That reproduces those published numbers. It doesn't establish physical accuracy, and it doesn't validate any older result.",
+        "bottom": "Our old numbers stay withdrawn. Scientific benefit: not established.",
         "rows": [
           {
             "label": "Published layout A",
             "source": "TAP-2.5D paper, Fig. 6(a)",
             "publishedC": "75.48",
-            "result": "not run",
-            "tone": "muted"
+            "result": "75.48 C",
+            "diff": "0.00 K · within",
+            "tone": "ok"
           },
           {
             "label": "Published layout B",
             "source": "TAP-2.5D paper, Fig. 5(a)",
             "publishedC": "115.94",
-            "result": "not run",
-            "tone": "muted"
+            "result": "115.93 C",
+            "diff": "−0.01 K · within",
+            "tone": "ok"
           }
-        ]
+        ],
+        "replay": "Each value was run again in a fresh process, and the outputs match byte for byte.",
+        "comparator": "Version comparison on the same layouts and readout: version 7.0 gives 123.42 C and 232.67 C, 48 to 117 K above the paper.",
+        "verification": "Verified by the operator; independent re-derivation by a second reviewer in progress.",
+        "scope": "Scope of this result: this simulator build, on a 64 by 64 grid, reading block-centre temperatures. It says nothing about other grids or the score our layout search uses, and the version comparison does not isolate a single cause."
       },
       "label": "4 / 5"
     },
@@ -180,9 +187,9 @@ window.DECK_DATA = {
       "main": true,
       "kicker": "Other teams",
       "notes": {
-        "text": "Our checks are built for other teams to rerun. Team FEAgent took a closed-form heat test our agent posed, solved it with their own solver, and published a package anyone can rerun with one command. It checks the method, not our simulator. Next, they took our parameter sheet for the paper's two layouts and started their own solve.",
-        "words": 58,
-        "seconds": 26.4
+        "text": "Other teams can rerun our checks. Team FEAgent solved a closed-form heat test our agent posed, with their own solver, and published a package anyone can rerun in one command. It checks method, not our simulator. Now they are solving our two reference layouts.",
+        "words": 44,
+        "seconds": 20
       },
       "content": {
         "title": "Another team ran one of our checks with its own solver.",
@@ -248,7 +255,7 @@ window.DECK_DATA = {
           },
           {
             "at": "14:42",
-            "text": "Saved simulator output, no new solve: 51.10 to 52.40 K lost between spreader and sink across eight hand-written test layouts. A separate parser confirms two of them at 14:53."
+            "text": "Saved simulator output, no new solve: a 51.10 to 52.40 K difference between matching spreader and heat-sink nodes, across eight hand-written test layouts. A separate parser confirms two of them at 14:53."
           },
           {
             "at": "14:58",
@@ -273,10 +280,58 @@ window.DECK_DATA = {
           {
             "at": "16:40",
             "text": "Four production reads by another agent match the reviewed source."
+          },
+          {
+            "at": "23:45",
+            "text": "The fixed test runs from 23:41 to 23:44, and the operator reports PASS: 75.48 C and 115.93 C against the paper's 75.48 C and 115.94 C. A second reviewer starts an independent re-derivation at 23:50."
           }
         ]
       },
       "label": "B1"
+    },
+    {
+      "id": "reviews",
+      "main": false,
+      "kicker": "Backup · how reviews work",
+      "notes": {
+        "text": "Backup. If asked whether the agents really check each other, read the line as written, with its qualifier.",
+        "words": 18,
+        "seconds": 8.2
+      },
+      "content": {
+        "title": "How reviews work here: what a second reviewer caught.",
+        "line": "Across 34 code reviews, a second agent stated 80 of the 191 defects first. 18 were found at a version another agent had already approved. The approver confirms at least 4 as misses. These reviews weren't blind, so this is descriptive, not a controlled test.",
+        "rows": [
+          {
+            "label": "Defects first stated by a later reviewer",
+            "value": "80 of 191 (41.9%)"
+          },
+          {
+            "label": "The same, the two highest severities only",
+            "value": "24 of 74 (32.4%)"
+          },
+          {
+            "label": "Of the 80, at a version the first reviewer had also reviewed",
+            "value": "56"
+          },
+          {
+            "label": "Found at a version another agent had already approved",
+            "value": "18, in 8 pull requests"
+          },
+          {
+            "label": "Of those 18, confirmed as misses by the approver",
+            "value": "at least 4"
+          }
+        ],
+        "caveats": [
+          "Not blind: later reviewers read the earlier reviews. Of 29 defects stated by two reviewers, 28 came after the first was posted, and 1 is unknown.",
+          "Different checks: a later finding often comes from another layer, such as a real browser against the source.",
+          "Incomplete: room messages only. Review detail kept on the code host is not counted.",
+          "All 18 follow one reviewer's approvals, often scoped real-run checks. This is not a ranking of reviewers.",
+          "Counted by the analysis author, who is also one of the reviewers, from a 366-row data file. Each row is counted at the version where it was stated."
+        ]
+      },
+      "label": "B2"
     },
     {
       "id": "metrics",
@@ -293,7 +348,7 @@ window.DECK_DATA = {
         "saved": {
           "eyebrow": "Our simulator's saved output · no new solve",
           "lines": [
-            "Spreader-to-sink drop: 51.10 to 52.40 K across eight hand-written test layouts.",
+            "Spreader-to-sink difference between matching modeled nodes: 51.10 to 52.40 K across eight hand-written test layouts.",
             "Baseline layout: chip peak 118.89 C; at that cell the spreader is 70.11 K above ambient and the sink 18.51 K.",
             "A separate parser re-read two cases: 51.10 and 51.60 K."
           ],
@@ -326,15 +381,15 @@ window.DECK_DATA = {
         },
         "history": "The original headroom verdict stays INCONCLUSIVE, as recorded. Every temperature from the pre-correction simulator is labelled withdrawn.",
         "continuum": {
-          "eyebrow": "Continuum check by our own agent · not an outside team",
+          "eyebrow": "Our team's continuum FE solution · an outside team's independent FE run is still pending",
           "lines": [
             "Layout A: 78.04 C against the paper's 75.48 C (+2.56 K).",
             "Layout B: 122.21 C against the paper's 115.94 C (+6.27 K)."
           ],
-          "limit": "A finite-element solve of the same parameter sheet, finished 23:13 UTC, by an agent that had seen the paper's targets. Mesh error under 0.06 K. The gap is not explained yet."
+          "limit": "A finite-element solve of the same configured model, finished 23:13 UTC by our own agent after it had seen the paper's targets. Mesh GCI at most 0.06 K. The gap to the paper is not explained yet."
         }
       },
-      "label": "B2"
+      "label": "B3"
     },
     {
       "id": "gate-detail",
@@ -359,20 +414,32 @@ window.DECK_DATA = {
           "pr": 56,
           "state": "merged",
           "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
-          "checked": "checked 2026-10-31 23:25 UTC"
+          "checked": "checked 2026-11-01 00:12 UTC"
+        },
+        "result": {
+          "label": "PASS",
+          "values": "75.48 C and 115.93 C",
+          "verification": "Verified by the operator; independent re-derivation by a second reviewer in progress.",
+          "detail": [
+            "Run: 12 calls under a grant opened 23:41 UTC, from the merged build, one at a time, finished by 23:44. Each call was reserved, admitted, launched, receipted, settled and tagged.",
+            "Replays: byte-identical to their primary runs. At a 32 by 32 grid the same layouts give 75.46 C and 115.28 C.",
+            "Compute: 23.0 CPU-seconds used of 562 reserved, under a cap of 600.",
+            "The operator's record verdict is PASS, with no failures, errors or missing calls."
+          ],
+          "comparator": "Version comparison on the same layouts and readout: version 7.0 gives 123.42 C and 232.67 C, 48 to 117 K above the paper."
         },
         "wordings": [
           {
             "gate": "not-run",
             "label": "NOT RUN",
             "text": "The test hasn't run. What we have is a source reading, saved output and a simplified model: 75.34 and 115.83 C, from an agent that had read the hypothesis.",
-            "chosen": true
+            "chosen": false
           },
           {
             "gate": "pass",
             "label": "PASS",
             "text": "Both landed within 1 K. That reproduces those published numbers. It doesn't establish physical accuracy, and it doesn't validate any older result.",
-            "chosen": false
+            "chosen": true
           },
           {
             "gate": "fail",
@@ -382,7 +449,7 @@ window.DECK_DATA = {
           }
         ]
       },
-      "label": "B3"
+      "label": "B4"
     },
     {
       "id": "drill",
@@ -422,7 +489,7 @@ window.DECK_DATA = {
         "packageCaption": "Package view: after the drill the accepted board keeps its values, now carried by the reproduction.",
         "fixture": "Test fixture: both views replay illustrative values, and no solver ran. It shows the designed mechanism. The real withdrawal on slide 3 used a public notice and per-value labels."
       },
-      "label": "B4"
+      "label": "B5"
     },
     {
       "id": "status",
@@ -496,7 +563,7 @@ window.DECK_DATA = {
           }
         ]
       },
-      "label": "B5"
+      "label": "B6"
     },
     {
       "id": "prs",
@@ -510,88 +577,88 @@ window.DECK_DATA = {
       "content": {
         "title": "Pull requests behind this talk, with their state at the check time.",
         "repo": "Sentinelayer-AIdenID/sentilab",
-        "checked": "checked 2026-10-31 23:25 UTC",
+        "checked": "checked 2026-11-01 00:12 UTC",
         "rows": [
           {
             "number": "#56",
             "what": "Gate zero: the older simulator version behind the fixed test",
             "state": "merged",
             "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
-            "checked": "checked 2026-10-31 23:25 UTC"
+            "checked": "checked 2026-11-01 00:12 UTC"
           },
           {
             "number": "#73",
             "what": "Gate zero: pin the operator's public key",
-            "state": "open",
-            "text": "open at head 2d35e9cd",
-            "checked": "checked 2026-10-31 23:25 UTC"
+            "state": "merged",
+            "text": "merged as 1575556d at 2026-10-31 23:40 UTC",
+            "checked": "checked 2026-11-01 00:12 UTC"
           },
           {
             "number": "#57",
             "what": "Reference layouts from the paper, plus the paper's wire router",
             "state": "merged",
             "text": "merged as d298cb00 at 2026-10-31 18:04 UTC",
-            "checked": "checked 2026-10-31 23:25 UTC"
+            "checked": "checked 2026-11-01 00:12 UTC"
           },
           {
             "number": "#58",
             "what": "Public notice: pre-correction temperatures withdrawn",
             "state": "merged",
             "text": "merged as 568dd397 at 2026-10-31 16:27 UTC",
-            "checked": "checked 2026-10-31 23:25 UTC"
+            "checked": "checked 2026-11-01 00:12 UTC"
           },
           {
             "number": "#60",
             "what": "Notice on the leaderboard and verify pages",
             "state": "merged",
             "text": "merged as 551777a9 at 2026-10-31 17:59 UTC",
-            "checked": "checked 2026-10-31 23:25 UTC"
+            "checked": "checked 2026-11-01 00:12 UTC"
           },
           {
             "number": "#64",
             "what": "Every temperature carries its own qualifier",
             "state": "merged",
             "text": "merged as d2504625 at 2026-10-31 19:38 UTC",
-            "checked": "checked 2026-10-31 23:25 UTC"
+            "checked": "checked 2026-11-01 00:12 UTC"
           },
           {
             "number": "#61",
             "what": "Test fix: a guard pattern held raw control bytes",
             "state": "merged",
             "text": "merged as a5744f3a at 2026-10-31 16:48 UTC",
-            "checked": "checked 2026-10-31 23:25 UTC"
+            "checked": "checked 2026-11-01 00:12 UTC"
           },
           {
             "number": "#59",
             "what": "Design: outside agents propose layouts",
             "state": "merged",
             "text": "merged as 4f6ad0cb at 2026-10-31 17:53 UTC",
-            "checked": "checked 2026-10-31 23:25 UTC"
+            "checked": "checked 2026-11-01 00:12 UTC"
           },
           {
             "number": "#55",
             "what": "Measured run profiles; refuse to start when calls cannot fit the cap",
             "state": "merged",
             "text": "merged as 315bbff4 at 2026-10-31 15:38 UTC",
-            "checked": "checked 2026-10-31 23:25 UTC"
+            "checked": "checked 2026-11-01 00:12 UTC"
           },
           {
             "number": "#37",
             "what": "Allocation controller for simulator runs in CI",
             "state": "merged",
             "text": "merged as 224fa704 at 2026-10-31 17:09 UTC",
-            "checked": "checked 2026-10-31 23:25 UTC"
+            "checked": "checked 2026-11-01 00:12 UTC"
           },
           {
             "number": "#25",
             "what": "Headroom study runner; its result is INCONCLUSIVE, kept as recorded",
             "state": "merged",
             "text": "merged as deb24670 at 2026-10-31 12:05 UTC",
-            "checked": "checked 2026-10-31 23:25 UTC"
+            "checked": "checked 2026-11-01 00:12 UTC"
           }
         ]
       },
-      "label": "B6"
+      "label": "B7"
     },
     {
       "id": "receipt",
@@ -634,17 +701,18 @@ window.DECK_DATA = {
         "notYet": "Not yet in the record: their slab run through our own evaluator, and their result on our parameter sheet. They started that solve at 23:23 UTC after checking every input's checksum.",
         "notEvidence": "Not counted as evidence: our help-room leaderboard. Our own host's model scores it, so it is not independent."
       },
-      "label": "B7"
+      "label": "B8"
     }
   ],
   "build": {
-    "gate": "not-run",
-    "measured": null,
-    "cutoff": "2026-10-31T23:25:00Z",
-    "preview": false
+    "gate": "pass",
+    "measured": "75.48,115.93",
+    "cutoff": "2026-11-01T00:12:00Z",
+    "preview": false,
+    "rederived": false
   },
   "source": {
-    "finalSha256": "0fd30282eb43aba04119805ce166a060087027c049b02cb89df21ba7cd6918c0",
-    "schemaSha256": "e82516ff8fa1a2384755aa61cfa320c78d506414a4219ccec92cccc184954db9"
+    "finalSha256": "2bd9a0416fe2508c3f875f8ea573f36dc300b9e9521c8307c92a2d388295c501",
+    "schemaSha256": "ac722d150bc22ea569d6c7ab56cfc50b5ddec8ae75742494823ddf02c2e514e3"
   }
 };

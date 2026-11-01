@@ -29,7 +29,8 @@
     how(c) {
       const steps = c.steps.map((s, i) => `<li class="step"><span class="n">${i + 1}</span><b>${esc(s.title)}</b><p>${esc(s.text)}</p>`
         + `<p class="today"><span>31 Oct</span>${esc(s.today)}</p></li>`).join("");
-      return `<h1>${esc(c.title)}</h1><ol class="steps">${steps}</ol><p class="foot">${esc(c.footnote)}</p>`;
+      return `<h1>${esc(c.title)}</h1><ol class="steps">${steps}</ol><p class="foot">${esc(c.footnote)}</p>`
+        + `<p class="rline main-rline">${esc(c.evidence)}</p>`;
     },
     timeline(c) {
       const lines = c.lines.map((l) => `<li><time>${esc(l.at)}</time><span>${esc(l.text)}</span></li>`).join("");
@@ -39,10 +40,13 @@
     },
     gate(c) {
       const rows = c.rows.map((r) => `<tr><th>${esc(r.label)}<span>${esc(r.source)}</span></th><td>${esc(r.publishedC)} C</td>`
-        + `<td>within ${esc(c.toleranceK)} K</td><td class="res tone-${esc(r.tone)}">${esc(r.result)}</td></tr>`).join("");
+        + `<td class="res tone-${esc(r.tone)}">${esc(r.result)}</td><td class="dif tone-${esc(r.tone)}">${esc(r.diff || `must be within ${c.toleranceK} K`)}</td></tr>`).join("");
       return `<h1>${esc(c.title)}</h1><div class="common">${rich(c.common)}</div>`
-        + `<table class="gt"><thead><tr><th>Reference</th><th>Published</th><th>Must land</th><th>Result</th></tr></thead><tbody>${rows}</tbody></table>`
+        + `<table class="gt"><thead><tr><th>Reference</th><th>Paper</th><th>HotSpot 6.0</th><th>Difference</th></tr></thead><tbody>${rows}</tbody></table>`
         + `<div class="variant v-${esc(c.variant)}"><span class="pill">${esc(c.label)}</span><p>${esc(c.text)}</p></div>`
+        + (c.replay ? `<p class="rep">${esc(c.replay)}</p>` : "")
+        + (c.comparator ? `<p class="cmp">${esc(c.comparator)}</p>` : "")
+        + (c.verification ? `<p class="ver">${esc(c.verification)}</p>` : "")
         + `<p class="bottom">${esc(c.bottom)}</p>`;
     },
     reuse(c) {
@@ -57,6 +61,11 @@
       const rows = c.rows.map((r) => `<tr><td class="t">${esc(r.at)}</td><td>${esc(r.text)}</td></tr>`).join("");
       return `<h1>${esc(c.title)}</h1><table class="chron"><tbody>${rows}</tbody></table>`;
     },
+    reviews(c) {
+      const rows = c.rows.map((r) => `<tr><td>${esc(r.label)}</td><td class="v">${esc(r.value)}</td></tr>`).join("");
+      return `<h1>${esc(c.title)}</h1><p class="rline">${esc(c.line)}</p>`
+        + `<div class="b8"><table class="rvt"><tbody>${rows}</tbody></table>${list(c.caveats, "pts cav")}</div>`;
+    },
     metrics(c) {
       const m = c.model;
       const table = `<table class="mt"><thead><tr>${m.head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>`
@@ -69,7 +78,9 @@
     },
     "gate-detail"(c) {
       const w = c.wordings.map((x) => `<div class="wd${x.chosen ? " chosen" : ""}"><span class="pill">${esc(x.label)}</span><p>${esc(x.text)}</p>${x.chosen ? `<span class="tag">this export</span>` : ""}</div>`).join("");
-      return `<h1>${esc(c.title)}</h1><div class="b3"><div class="card">${list(c.rules, "pts")}<p class="srcl">${esc(c.source)}</p>`
+      const res = c.result ? `<div class="card gres"><div class="gres-h"><span class="pill">${esc(c.result.label)}</span><b>${esc(c.result.values)}</b>`
+        + `<p class="ver">${esc(c.result.verification)}</p></div>${list(c.result.detail, "pts two")}<p>${esc(c.result.comparator)}</p></div>` : "";
+      return `<h1>${esc(c.title)}</h1>${res}<div class="b3"><div class="card">${list(c.rules, "pts")}<p class="srcl">${esc(c.source)}</p>`
         + `<p class="gst">Gate-zero code: PR #${esc(c.status.pr)}, ${esc(c.status.text)} (${esc(c.status.checked)}).</p></div>`
         + `<div class="card"><span class="eyebrow">${esc(c.wordingTitle)}</span>${w}</div></div>`;
     },
@@ -98,7 +109,8 @@
   const FOOT = {
     problem: () => "This slide states the problem and the design. It reports no measurement.",
     timeline: (c) => `Times UTC, 31 Oct 2026, from the room record. ${c.note}`,
-    gate: () => "The test and the wording for all three outcomes were written before any result.",
+    gate: (c) => (c.scope ? `${c.scope} The wording for all three outcomes was fixed before the result.`
+      : "The test and the wording for all three outcomes were written before any result."),
     reuse: () => "The other team's package is public. Our own help-room leaderboard is not used as evidence.",
     chronology: (c) => c.note,
     metrics: () => "No value here is a calibrated temperature.",

@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 // Builds the SentiLab three-minute deck (deck/final/) from its one reviewed source, docs/sentilab/deck/final-3min/FINAL.json.
 //
-//   node scripts/build-deck-final.mjs                                   # NOT RUN (the default gate outcome)
-//   node scripts/build-deck-final.mjs --gate pass --measured 75.61,116.02
+//   node scripts/build-deck-final.mjs                                   # the result recorded in FINAL.json (gate.result),
+//                                                                       # or NOT RUN when none is recorded
+//   node scripts/build-deck-final.mjs --rederived                       # the same, with the status line flipped to
+//                                                                       # "independently re-derived" once the second reviewer confirms
+//   node scripts/build-deck-final.mjs --gate not-run                    # force an outcome (the recorded result is then not shown)
 //   node scripts/build-deck-final.mjs --gate fail --measured 77.10,116.02
 //   node scripts/build-deck-final.mjs --gate pass --preview             # renders only: no values, marked PREVIEW, no PDF
 //   node scripts/build-deck-final.mjs --check                           # exit 1 if the committed data differ from a fresh build
@@ -10,10 +13,12 @@
 //   ... --refresh-prs                    re-read the listed pull requests with gh, stamp them, and move the cutoff to now
 //   ... --export [--shots <dir>]         then run export-deck-pdf.mjs --deck final (needs PLAYWRIGHT_DIR)
 //
-// One flag, --gate, chooses the slide-4 outcome. The three wordings are fixed in FINAL.json before the result exists, and
-// the build refuses an outcome its measured values contradict: PASS needs both values within the tolerance of their
-// published references, FAIL needs at least one outside it, NOT RUN takes no values. The gate code can also return
-// ERROR or INCOMPLETE; neither has reviewed wording, so neither builds.
+// One flag, --gate, chooses the slide-4 outcome; without it the build uses the reviewed result in FINAL.json. The three
+// wordings were fixed in FINAL.json before the result existed, and the build refuses an outcome its measured values
+// contradict: PASS needs both values within the tolerance of their published references, FAIL needs at least one outside
+// it, NOT RUN takes no values. The gate code can also return ERROR or INCOMPLETE; neither has reviewed wording, so
+// neither builds. When the recorded result is shown, slide 4 also carries its version comparison, its scope and its
+// verification state: "verified by the operator" until --rederived says a second reviewer has re-derived it.
 //
 // Rules for the data:
 //   - Every timeline line, chronology row and example names at least one room record, and its displayed minute is the
@@ -105,6 +110,22 @@ export function checkOutcome(gate, measured, references, toleranceK, { preview =
   return references.map((r, i) => ({ id: r.id, publishedC: r.publishedC, measuredC: measured[i], within: !misses[i] }));
 }
 export const formatValues = (measured) => `${measured[0]} C and ${measured[1]} C`;
+// Signed difference in kelvin at the measured value's precision, with a true minus sign: "0.00 K", "−0.01 K".
+export function signedDiff(measured, published) {
+  const places = Math.max((measured.split(".")[1] ?? "").length, (published.split(".")[1] ?? "").length);
+  const d = milli(measured) - milli(published);
+  const abs = (Math.abs(d) / 1000).toFixed(places);
+  return `${d < 0 && Number(abs) !== 0 ? "−" : d > 0 ? "+" : ""}${abs} K`;
+}
+// The version comparator's text must state the rounded gaps to the paper that its own values give.
+export function checkComparator(comparator, references) {
+  const gaps = comparator.values.map((v, i) => Math.round((milli(v) - milli(references[i].publishedC)) / 1000));
+  const lo = Math.min(...gaps), hi = Math.max(...gaps);
+  const want = `${lo} to ${hi} K`;
+  if (!comparator.text.includes(want)) throw new FinalError(`the version comparison must say "${want}", which its values give`);
+  if (!comparator.values.every((v) => comparator.text.includes(`${v} C`))) throw new FinalError("the version comparison must quote both of its values");
+  if (!comparator.notes.includes(`${lo} to ${hi} degrees`)) throw new FinalError(`the version comparison's notes must say "${lo} to ${hi} degrees"`);
+}
 
 // ── source ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 export function loadFinal(path = FINAL_SOURCE, schemaPath = FINAL_SCHEMA) {
@@ -141,13 +162,27 @@ function checkOrdered(items, where) {
 }
 
 // ── build ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-export function buildFinalData({ final, hashes }, { gate = "not-run", measured = null, cutoff = null, preview = false } = {}) {
+export function buildFinalData({ final, hashes }, options = {}) {
+  const { cutoff = null, preview = false, rederived = false } = options;
+  const recorded = final.gate.result ?? null;
+  // Without --gate, the reviewed result recorded in FINAL.json decides; without one, NOT RUN.
+  const gate = options.gate ?? recorded?.outcome ?? "not-run";
+  const measured = options.measured ?? (recorded && gate === recorded.outcome && !preview ? recorded.measured : null);
   const cut = cutoff ?? final.cutoff;
   const cutoffMs = time(cut, "cutoff");
   if (time(final.cutoff, "FINAL.json cutoff") > cutoffMs) throw new FinalError("--cutoff cannot be earlier than the reviewed cutoff in FINAL.json");
   const values = parseMeasured(measured);
   const outcome = checkOutcome(gate, values, final.gate.references, final.gate.toleranceK, { preview });
   if (preview && gate === "not-run") throw new FinalError("--preview is for PASS and FAIL renders only");
+  // The recorded result shows (with its comparison, scope and verification state) only when this build is that result.
+  const showResult = Boolean(recorded && !preview && gate === recorded.outcome && values && values.join(",") === recorded.measured);
+  if (rederived && !showResult) throw new FinalError("--rederived applies only to the reviewed result recorded in FINAL.json");
+  if (recorded) {
+    checkRecords(recorded, "the recorded gate result", cutoffMs);
+    checkOutcome(recorded.outcome, parseMeasured(recorded.measured), final.gate.references, final.gate.toleranceK);
+    checkComparator(recorded.comparator, final.gate.references);
+  }
+  const verification = showResult ? recorded.verification[rederived ? "rederived" : "operator"] : null;
   const wps = final.talk.wordsPerSecond;
   const B = final.backup;
 
@@ -156,8 +191,11 @@ export function buildFinalData({ final, hashes }, { gate = "not-run", measured =
   final.timeline.lines.forEach((l, i) => checkRecords(l, `slide 3 line ${i + 1}`, cutoffMs));
   checkOrdered([final.timeline.lede, ...final.timeline.lines], "slide 3");
   final.how.steps.forEach((s, i) => checkRecords(s, `slide 2 step ${i + 1}`, cutoffMs));
+  checkRecords(final.how.evidence, "the slide 2 review line", cutoffMs);
+  if (final.how.evidence.line !== B.reviews.line) throw new FinalError("slide 2 and backup must carry the same review line");
   B.chronology.rows.forEach((r, i) => checkRecords(r, `chronology row ${i + 1}`, cutoffMs));
   checkOrdered(B.chronology.rows, "the chronology");
+  checkRecords(B.reviews, "the review-quality line", cutoffMs);
   for (const r of final.gate.wordingRecords) if (time(r.at, "slide 4 wording record") > cutoffMs) throw new FinalError("the slide 4 wording record is after the cutoff");
   for (const c of B.status.cards) {
     if (time(c.asOf, `status card ${c.title}`) > cutoffMs) throw new FinalError(`status card ${c.title} is dated after the cutoff`);
@@ -173,7 +211,7 @@ export function buildFinalData({ final, hashes }, { gate = "not-run", measured =
   const v = final.gate.variants[gate];
   const fill = (s) => (s.includes("[values]") && values ? s.replaceAll("[values]", formatValues(values)) : s);
   const variantText = fill(v.text);
-  const variantNotes = fill(v.notes);
+  const variantNotes = showResult ? `${fill(v.notes)} ${recorded.comparator.notes} ${verification.notes}` : fill(v.notes);
   const gateTitle = final.gate.title;
   if (!/differs between versions/.test(gateTitle)) throw new FinalError("slide 4 must say the link differs between versions");
 
@@ -201,7 +239,7 @@ export function buildFinalData({ final, hashes }, { gate = "not-run", measured =
       hero: final.problem.hero, question: final.problem.question, caption: final.problem.caption,
       answerEyebrow: final.problem.answerEyebrow, answer: final.problem.answer, domain: final.problem.domain } },
     { id: "how", main: true, kicker: final.how.kicker, notes: notes.how, content: {
-      title: final.how.title, footnote: final.how.footnote,
+      title: final.how.title, footnote: final.how.footnote, evidence: final.how.evidence.line,
       steps: final.how.steps.map((s) => ({ title: s.title, text: s.text, today: s.today })) } },
     { id: "timeline", main: true, kicker: final.timeline.kicker, notes: notes.timeline, content: {
       title: final.timeline.title,
@@ -213,17 +251,26 @@ export function buildFinalData({ final, hashes }, { gate = "not-run", measured =
       variant: gate, label: v.label, text: variantText, bottom: final.gate.bottom,
       rows: final.gate.references.map((r, i) => ({
         label: r.label, source: r.source, publishedC: r.publishedC,
-        result: gate === "not-run" ? "not run" : outcome ? `${outcome[i].measuredC} C · ${outcome[i].within ? "within" : "outside"}` : "[measured]",
+        result: gate === "not-run" ? "not run" : outcome ? `${outcome[i].measuredC} C` : "[measured]",
+        diff: outcome ? `${signedDiff(outcome[i].measuredC, r.publishedC)} · ${outcome[i].within ? "within" : "outside"}` : "",
         tone: gate === "not-run" ? "muted" : outcome ? (outcome[i].within ? "ok" : "warn") : "muted",
-      })) } },
+      })),
+      // Shown only with the reviewed result: the same-layout version comparison, the verification state and the scope.
+      replay: showResult ? recorded.replay : null,
+      comparator: showResult ? recorded.comparator.text : null,
+      verification: showResult ? verification.text : null,
+      scope: showResult ? recorded.scope : null } },
     { id: "reuse", main: true, kicker: final.reuse.kicker, notes: notes.reuse, content: {
       title: final.reuse.title, receipt: final.reuse.receipt, next: final.reuse.next, status: final.reuse.status } },
     { id: "chronology", main: false, kicker: B.chronology.kicker, notes: backupNote("Backup. If asked how the day unfolded, walk this table; every line is a room record."), content: {
       title: B.chronology.title, note: B.chronology.note, rows: B.chronology.rows.map((r) => ({ at: hhmm(r.at), text: r.text })) } },
+    { id: "reviews", main: false, kicker: B.reviews.kicker, notes: backupNote("Backup. If asked whether the agents really check each other, read the line as written, with its qualifier."), content: {
+      title: B.reviews.title, line: B.reviews.line, rows: B.reviews.rows, caveats: B.reviews.caveats } },
     { id: "metrics", main: false, kicker: B.metrics.kicker, notes: backupNote("Backup. If asked for the numbers, separate saved output from the simplified model; neither is a calibrated temperature."), content: B.metrics },
     { id: "gate-detail", main: false, kicker: B.gate.kicker, notes: backupNote("Backup. If asked how the test works, read the rules; the three wordings were written before any result."), content: {
       title: B.gate.title, rules: B.gate.rules, source: B.gate.source, wordingTitle: B.gate.wordingTitle,
       status: { pr: 56, ...prLine(gatePr) },
+      result: showResult ? { label: v.label, values: formatValues(values), verification: verification.text, detail: recorded.detail, comparator: recorded.comparator.text } : null,
       wordings: GATES.map((g) => ({ gate: g, label: final.gate.variants[g].label, text: final.gate.variants[g].text, chosen: g === gate })) } },
     { id: "drill", main: false, kicker: B.drill.kicker, notes: backupNote("Backup. This is a test fixture with illustrative values; it shows the designed mechanism, not a result."), content: B.drill },
     { id: "status", main: false, kicker: B.status.kicker, notes: backupNote("Backup. Where it stands: no deliverable is fully accepted, and scientific benefit is not established."), content: {
@@ -249,7 +296,7 @@ export function buildFinalData({ final, hashes }, { gate = "not-run", measured =
       bufferSeconds: final.talk.bufferSeconds, maxSeconds: final.talk.maxSeconds,
     },
     slides,
-    build: { gate, measured: values ? values.join(",") : null, cutoff: cut, preview },
+    build: { gate, measured: values ? values.join(",") : null, cutoff: cut, preview, rederived },
     source: { ...hashes },
   };
   checkRendered(data);
@@ -339,14 +386,20 @@ function main(args) {
   if (args.includes("--refresh-prs")) {
     const src = JSON.parse(readFileSync(FINAL_SOURCE, "utf8"));
     const at = refreshPrs(src);
+    // The source now holds facts checked at this minute, so its own reviewed cutoff moves with them.
+    if (Date.parse(at) > Date.parse(src.cutoff)) src.cutoff = at;
     writeFileSync(FINAL_SOURCE, JSON.stringify(src, null, 2) + "\n");
     cutoff ??= at;
     console.log(`refreshed ${src.backup.prs.items.length} pull requests at ${at}`);
   }
-  const options = { gate: arg(args, "--gate") ?? "not-run", measured: arg(args, "--measured") ?? null, cutoff, preview: args.includes("--preview") };
+  const options = {
+    gate: arg(args, "--gate"), measured: arg(args, "--measured") ?? null, cutoff, preview: args.includes("--preview"),
+    rederived: args.includes("--rederived"),
+  };
   const data = buildFinalData(loadFinal(), options);
   write(data);
-  console.log(`deck/final: ${data.deck.variantLabel}${data.deck.preview ? " (PREVIEW)" : ""}, cutoff ${data.deck.cutoff}, main speech ${data.budget.mainWords} words = ${data.budget.mainSeconds} s of ${data.budget.speechBudgetSeconds} s`);
+  const shown = data.slides.find((s) => s.id === "gate").content;
+  console.log(`deck/final: ${data.deck.variantLabel}${data.deck.preview ? " (PREVIEW)" : ""}${data.build.measured ? ` ${data.build.measured}` : ""}${shown.verification ? ` · ${shown.verification}` : ""}, cutoff ${data.deck.cutoff}, main speech ${data.budget.mainWords} words = ${data.budget.mainSeconds} s of ${data.budget.speechBudgetSeconds} s`);
   for (const s of data.slides) console.log(`  ${s.label.padEnd(6)} ${s.id.padEnd(12)} ${String(s.notes.words).padStart(3)} words ${String(s.notes.seconds).padStart(5)} s${s.main ? "" : "  (backup, not spoken)"}`);
   if (args.includes("--export")) {
     const shots = arg(args, "--shots");
