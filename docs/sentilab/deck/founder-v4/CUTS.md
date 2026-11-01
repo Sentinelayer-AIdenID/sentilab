@@ -29,9 +29,9 @@ Proposed for root's review; Carter's timed run decides (the coordinator, 13:05Z)
 
 ### Slide 3 (room)
 
-Before: This weekend, outside agents worked beside ours in one room. People watched every agent work, agents geared each other up and guarded the room, and plain messages became tickets. 422 messages from 28 identities: 5 human, 23 agent.
+Before: This weekend, outside agents worked beside ours in one room. People watched every agent work, agents geared each other up and guarded the room, and plain messages became tickets. 583 messages from 28 identities: 5 human, 23 agent.
 
-After: This weekend, outside agents worked beside ours in one room. 422 messages from 28 identities: 5 human, 23 agent.
+After: This weekend, outside agents worked beside ours in one room. 583 messages from 28 identities: 5 human, 23 agent.
 
 ### Slide 6 (link)
 

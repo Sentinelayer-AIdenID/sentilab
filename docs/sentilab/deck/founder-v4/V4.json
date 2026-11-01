@@ -3,7 +3,7 @@
   "title": "SentiLab",
   "event": "ScienceClaw hackathon",
   "talk": "Founder pitch (v4)",
-  "cutoff": "2026-11-01T10:10:00Z",
+  "cutoff": "2026-11-01T14:30:00Z",
   "clock": {
     "talkCapSeconds": 180,
     "transitionSeconds": 15,
@@ -38,7 +38,8 @@
     "Slide 3's refreshed help line, relayed by the coordinator: aneta's count to 12:46 UTC (team room 58014, 12:46:31Z) in root's explicit disjoint wording, with his scoped +1 (reply to 57809, 12:57:04Z): \"Four outside groups reported checks of our test case. We offered help to nine groups in all; two of the other five said it was useful.\" The fourth checker stays unnamed.",
     "The coordinator (13:40Z): aneta says DEMO-RUN-SHEET.md runs about 110 s, not 120 s; CUTS.md stays as root reviewed it, and FILL-IN carries the line \"demo sheet ≈110 s: subtract 10 s from every clock figure; the timed run decides.\"",
     "Aneta's audience read of the 12:15 export (reply to 57809, 13:43:46Z), relayed by the coordinator: slide 2's footer cut to \"Staging door, 08:39 UTC, 1 November.\" (the figure carries the caveat); backup B3 \"unnamed at its request\", since that team answered at 12:20Z. On-slide text only.",
-    "Slide 9's no-numbers fallback, relayed by the coordinator (14:13Z, aneta's suggestion at 14:12:32Z under 57809): plain12-tradeoff (v1.25, root's scoped +1 at 10:42:24Z) with the QR code, in place of plain13-crosscheck, which the demo shows at 1:15 and which leaves the deck (kept in the review evidence). The QR rule is unchanged; the spoken words do not change."
+    "Slide 9's no-numbers fallback, relayed by the coordinator (14:13Z, aneta's suggestion at 14:12:32Z under 57809): plain12-tradeoff (v1.25, root's scoped +1 at 10:42:24Z) with the QR code, in place of plain13-crosscheck, which the demo shows at 1:15 and which leaves the deck (kept in the review evidence). The QR rule is unchanged; the spoken words do not change.",
+    "The freeze inputs (the coordinator, 14:30Z): cutoff 2026-11-01T14:30:00Z; slide 9 takes its no-numbers fallback on the sealed receipt metrics-freeze-20261101T1430Z (SHA256SUMS 92e56ff5..., zip d4429c38...); slide 3's room counts from that receipt's METRICS.json and METRICS.md (generated 14:31:49.818Z), each number in its own window; CARTER-QA.md v1.36 pinned after root's two receipt checks."
   ],
   "teams": {
     "named": {
@@ -81,7 +82,8 @@
         "key": "door.view_size"
       }
     },
-    "sha256": "0ef9ebafbfbef6b60536938fbd2c4076ab94d08437c024a4e06a4915912c9fab"
+    "sha256": "275ff9e90bf9cc20648f96ae80ec1ba77c117751dfb07bba4fe2deb74e550bba",
+    "freezeNote": "After the 11:50:16Z invitation, to the 14:30:00Z cutoff: 0 outside visits, passes or scored runs; 2 unresolved arrivals without a pass (seq 80, 81); feed complete, seq 1–81, no gaps. Receipt metrics-freeze-20261101T1430Z: SHA256SUMS 92e56ff5…, zip d4429c38…."
   },
   "stills": {
     "render": {
@@ -159,8 +161,8 @@
   },
   "handoff": {
     "CARTER-QA.md": {
-      "sha256": "d1e67703e3c3e7e8c0a5d8cc7e8ba048837a9a4b2e7a2d47d941f556aaf2acfe",
-      "from": "aneta's v1.31 (ZIP 6813d5e0..., 41,586 bytes), the newest CARTER-QA.md: v1.32 and sentilab-qa-v1.33.zip (535ca670..., 5,821 bytes, QA.md only) carry none"
+      "sha256": "07edabefbbb5296ae617cd3ea0560952b067d7774a43b23201ffe50a79a22982",
+      "from": "aneta's v1.36 (reply to 58068, 13:57Z; 8,615 bytes), with root's factual +1 at 14:13:14Z and both of root's receipt checks at the 14:30Z freeze (the outside-use row matches the attribution freeze; the authors' tracker has no new issue, so \"theirs to file\" holds), relayed by the coordinator"
     },
     "DEMO-RUN-SHEET.md": {
       "sha256": "edd18756a02cf498c4ac5671e4162ecb61623c3924ef0f1b8962405b248c9962",
@@ -210,7 +212,7 @@
       "title": "Our agents and outside agents, one room, overnight.",
       "tiles": [
         {
-          "value": "422",
+          "value": "583",
           "label": "messages in the help room"
         },
         {
@@ -226,8 +228,8 @@
           "label": "outside groups reported checks of our test case. We offered help to nine groups in all; two of the other five said it was useful."
         },
         {
-          "value": "20",
-          "label": "tickets from plain messages: 11 in the help room, 9 in our team room"
+          "value": "30",
+          "label": "tickets from plain messages: 21 in the help room, 9 in our team room"
         }
       ],
       "points": [
@@ -235,12 +237,12 @@
         "Agents geared each other up",
         "Agents guarded the room"
       ],
-      "footer": "Help room, 31 Oct 13:46 to 1 Nov 07:39 UTC; the tickets also count our team room. Identities are posting handles, not people. Help offered: what the groups themselves reported, to 12:46 UTC.",
-      "say": "This weekend, outside agents worked beside ours in one room. People watched every agent work, agents geared each other up and guarded the room, and plain messages became tickets. 422 messages from 28 identities: 5 human, 23 agent.",
+      "footer": "Help room, 31 Oct 13:46 to 1 Nov 14:29 UTC; the tickets, to 14:31 UTC, also count our team room. Identities are posting handles, not people. Help offered: what the groups themselves reported, to 12:46 UTC.",
+      "say": "This weekend, outside agents worked beside ours in one room. People watched every agent work, agents geared each other up and guarded the room, and plain messages became tickets. 583 messages from 28 identities: 5 human, 23 agent.",
       "facts": [
         {
           "shows": [
-            "422"
+            "583"
           ],
           "metric": "crosscheck.help.messages"
         },
@@ -267,11 +269,11 @@
             "4",
             "12"
           ],
-          "source": "Root's correction (07:52Z) from the metrics pass's help-room counts: 28 posting identities = 5 human + 23 agent; outside our team, 16 posting identities = 4 human + 12 agent."
+          "source": "The metrics pass's help-room counts (METRICS.json crosscheck.help.posting_identities, to 1 Nov 14:29 UTC), split as root's correction (07:52Z) set it: 28 posting identities = 5 human + 23 agent; outside our team, 16 posting identities = 4 human + 12 agent."
         },
         {
           "shows": [
-            "20"
+            "30"
           ],
           "metric": "tickets.filed_from_room_messages"
         },
@@ -280,16 +282,17 @@
             "31",
             "13:46",
             "1",
-            "07:39"
+            "14:29"
           ],
-          "source": "METRICS.json: the help-room window, 2026-10-31T13:46:10Z to 2026-11-01T07:39:30Z."
+          "source": "METRICS.json: the help-room window, 2026-10-31T13:46:10Z to 2026-11-01T14:29:30Z."
         },
         {
           "shows": [
-            "11",
-            "9"
+            "21",
+            "9",
+            "14:31"
           ],
-          "source": "Root's review of v4 at 0ac58b13 (relayed 08:15Z): the 20 tickets written from plain room messages are 11 in the help room and 9 in the SentiLab room (METRICS.json tickets.filed_from_room_messages, by room)."
+          "source": "METRICS.json tickets.filed_from_room_messages, by room, in its own window (to 1 Nov 14:31 UTC): 30 tickets written from plain room messages, 21 in the help room and 9 in the SentiLab room."
         },
         {
           "shows": [
@@ -302,7 +305,7 @@
           "source": "Aneta's refreshed help line (team room 58014, 12:46:31Z), with root's scoped +1 and his explicit disjoint wording (reply to 57809, 12:57:04Z): four outside groups reported checks of our test case; help was offered to nine groups in all, each with outbound assistance on record; two of the other five said it was useful. Grouped by team, recipient-based, one bucket per group; the fourth checker stays unnamed; later puzzles and additional D1 runs stay out of the counts."
         }
       ],
-      "cue": "Carter's option, not a verified fact (keep it out of the narration unless he chooses it): \"Most teams had never had their agents talk to another lab's agents.\" Also his call: the cost, in its two separate scopes, is on the backup page; never add them. If asked about \"helpful\": our own agents wrote 205 of the 281, and the model is ours."
+      "cue": "Carter's option, not a verified fact (keep it out of the narration unless he chooses it): \"Most teams had never had their agents talk to another lab's agents.\" Also his call: the cost, in its two separate scopes, is on the backup page; never add them. If asked about \"helpful\": our own agents wrote 240 of the 385, and the model is ours."
     },
     {
       "id": "hook",
@@ -480,10 +483,10 @@
       "items": [
         "Over 10 billion AI-bot requests a week (April 2026): blog.cloudflare.com/rethinking-cache-ai-humans/",
         "AI-agent requests grew more than 1,700% in a year (Sept 2026): blog.cloudflare.com/agentic-web",
-        "Help room, 31 Oct 13:46 to 1 Nov 07:39 UTC: 422 messages (195 top-level, 227 replies) from 28 posting identities, 5 human and 23 agent; outside our team, 16 identities (4 human, 12 agent), grouped by account and handle into 8 agent posting groups plus 3 human-only groups. That grouping is an estimate, not a count of distinct teams. An earlier count at 07:09 UTC: 418.",
+        "Help room, 31 Oct 13:46 to 1 Nov 14:29 UTC: 583 messages (270 top-level, 313 replies) from 28 posting identities, 5 human and 23 agent; outside our team, 16 identities (4 human, 12 agent), grouped by account and handle into 8 agent posting groups plus 3 human-only groups. That grouping is an estimate, not a count of distinct teams. An earlier count at 07:09 UTC: 418.",
         "Help offered, to 12:46 UTC: nine outside groups, each counted once. Four reported checks of our test case: Delfie (delphisci team) on both versions in 39 min (23:01:16) and its one-change test (03:45:39); an outside team's separate solver (00:03:07); ScienceClaw's re-run (04:01); another outside team, after 04:01. Two of the other five said our help was useful (21:13:28; 00:04:12 and 00:08:14). Three unconfirmed.",
-        "Model-rated, not confirmed usefulness: our intent model rated 281 of the 399 messages it scored at least 1 on its 0–4 scale; 76 of the 281 came from outside participants, and our own agents wrote 205.",
-        "Tickets: 20 written from plain room messages, 11 in the help room and 9 in our team room; 16 of them by the ticket keeper.",
+        "Model-rated, not confirmed usefulness: our intent model rated 385 of the 550 messages it scored at least 1 on its 0–4 scale; 145 of the 385 came from outside participants, and our own agents wrote 240.",
+        "Tickets: 30 written from plain room messages, 21 in the help room and 9 in our team room; 26 of them by the ticket keeper.",
         "Elapsed times on slide 5 (plain4, every plotted time kept), from the room records, 31 Oct into 1 Nov, UTC: room posting times, not earlier local freezes. A person asks at 12:43; sealed notes 13:08 to 13:15 (one agent had seen a one-line preview); a suspect named at 13:15, 32 min after the question, and confirmed at 13:28; another person's agent models it at 14:26, having already read the suspect; a stop proposed at 15:52 and the run halted under 5 min later; the public test case at 22:22, reproduced by Delfie (delphisci team) at 23:01 (39 min) and solved by an outside team at 00:03 (1 h 41). Lanes show who contributed what, not independence. No savings figure: there is no baseline.",
         "119 °C and 241 °C: hottest modeled grid cells (119.07 and 240.53), CPU-DRAM reference layout, detailed 3D mode, byte-identical inputs, re-parsed independently.",
         "Reproduction: native block maxima 75.48 against the published 75.48, and 115.93 against 115.94; pass bar 1 degree, set in advance. More heat out than in: saved 45 mm, 64×64 cases of 6.0, 1.39% on CPU-DRAM and 0.63% on Layout A; the matching saved 7.0 cases balance within rounding.",
@@ -552,7 +555,7 @@
         "closer"
       ],
       "say": {
-        "room": "This weekend, outside agents worked beside ours in one room: agents geared each other up and guarded the room. 422 messages from 28 identities: 5 human, 23 agent."
+        "room": "This weekend, outside agents worked beside ours in one room: agents geared each other up and guarded the room. 583 messages from 28 identities: 5 human, 23 agent."
       },
       "demoSeconds": 60
     }
@@ -610,5 +613,6 @@
         "why": "A joke beat; the call to action stays. The closer is in the short cut too."
       }
     ]
-  }
+  },
+  "build": "final"
 }

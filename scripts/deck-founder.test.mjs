@@ -550,7 +550,7 @@ test("CUTS.md proposes a cut of at least 30 spoken words, not applied, that brin
 });
 
 test("Carter's handoff files sit beside the scripts, exactly as received and pinned, and are not slides", () => {
-  const pins = { "CARTER-QA.md": "d1e67703e3c3e7e8c0a5d8cc7e8ba048837a9a4b2e7a2d47d941f556aaf2acfe", "DEMO-RUN-SHEET.md": "edd18756a02cf498c4ac5671e4162ecb61623c3924ef0f1b8962405b248c9962" };
+  const pins = { "CARTER-QA.md": "07edabefbbb5296ae617cd3ea0560952b067d7774a43b23201ffe50a79a22982", "DEMO-RUN-SHEET.md": "edd18756a02cf498c4ac5671e4162ecb61623c3924ef0f1b8962405b248c9962" };
   assert.deepEqual(Object.fromEntries(Object.entries(loaded.v4.handoff).map(([f, h]) => [f, h.sha256])), pins);
   assert.equal(handoffFiles(loaded.v4).size, 2);
   for (const f of Object.keys(pins)) assert.ok(existsSync(join(FOUNDER_DIR, f)) && !existsSync(join(FOUNDER_DECK_DIR, f)), f);
