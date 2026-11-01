@@ -182,14 +182,28 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
       if (!st) throw new FounderError(`${where}: no still ${s.picture.still}`);
       content.still = { id: s.picture.still, src: `figures/${st.file}`, width: st.width, height: st.height, alt: st.alt, label: s.picture.label ?? null };
     }
-    if (s.picture?.figure) {
-      const f = v4.figures[s.picture.figure];
-      if (!f) throw new FounderError(`${where}: no figure ${s.picture.figure}`);
-      const svg = servedFigure(s.picture.figure, f).toString("utf8");
+    // A figure: served with only its declared edits; its own words follow the public-render and consent rules too; one still
+    // pending its reviewer's +1 is marked on the draft and refused at the freeze.
+    const figureContent = (id) => {
+      const f = v4.figures[id];
+      if (!f) throw new FounderError(`${where}: no figure ${id}`);
+      if (final && f.pending) throw new FounderError(`${where}: figure ${id} is ${f.pending}; the freeze takes only reviewed figures`);
+      const svg = servedFigure(id, f).toString("utf8");
       const alt = /<svg\b[^>]*?\saria-label="([^"]*)"/.exec(svg)?.[1];
       const minFont = Math.min(...[...svg.matchAll(/font-size\s*[:=]\s*["']?\s*([\d.]+)/g)].map((m) => Number(m[1])));
       if (!alt || !Number.isFinite(minFont)) throw new FounderError(`${where}: ${f.file} has no label or no text sizes`);
-      content.figure = { id: s.picture.figure, src: `figures/${f.file}`, width: f.width, height: f.height, scale: f.scale, minFont, alt: alt.replace(/&quot;/g, '"').replace(/&amp;/g, "&") };
+      const words = [...svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)].map((m) => m[1].replace(/<[^>]+>/g, "")).join(" \n ");
+      publicRule(words, `${where} figure ${id}`);
+      for (const t of v4.teams.unnamed) if (new RegExp(`\\b${t}\\b`, "i").test(words)) throw new FounderError(`${where} figure ${id} names ${t}, who has not consented`);
+      return { id, src: `figures/${f.file}`, width: f.width, height: f.height, scale: f.scale, minFont, alt: alt.replace(/&quot;/g, '"').replace(/&amp;/g, "&"), pending: f.pending ?? null };
+    };
+    if (s.picture?.figure) content.figure = figureContent(s.picture.figure);
+    // At the freeze, a slide whose numbers have no receipt shows its fallback picture instead of its tiles.
+    if (final && s.finalFallback && (s.tiles ?? []).some((t) => t.metric && !metrics.byId.get(wanted[t.metric]?.key ?? t.metric))) {
+      for (const k of ["tiles", "points", "still", "title"]) delete content[k];
+      content.layout = "figure";
+      content.figure = figureContent(s.finalFallback.figure);
+      content.footer = s.finalFallback.footer;
     }
     if (s.bars) {
       const top = Math.max(...s.bars.map((b) => b.value));
@@ -269,6 +283,7 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
       demoSeconds: S.demoSeconds ?? 0, withDemoSeconds: tenths(total + (S.demoSeconds ?? 0)), slowWithDemoSeconds: tenths(slowSeconds + c.transitionSeconds + (S.demoSeconds ?? 0)) },
     placeholders: fills,
     options: v4.options ?? [],
+    refresh: v4.refresh ?? [],
     slides: slides.map(({ facts, ...s }) => s),
     facts: slides.map((s) => ({ id: s.id, facts: s.facts })),
   };
@@ -314,6 +329,7 @@ export function fillInTable(data) {
   const rows = data.placeholders.map((p) => `| ${p.where.replace(/^slide /, "")} | ${p.label} | \`${p.id}\` | ${p.need} |`);
   return ["# FILL-IN: the founder deck's placeholders", "", `As of ${data.deck.cutoff}. Each shows "measuring…" until docs/sentilab/deck/founder-v4/METRICS.json carries it with its definition, scope, window and source; then rebuild and re-export.`, "",
     "| Slide | Shows | Metric id | Needed |", "|---|---|---|---|", ...(rows.length ? rows : ["| none | | | |"]), "",
+    ...(data.refresh.length ? ["## Refresh at the freeze", "", "| Slide | Shows | Why |", "|---|---|---|", ...data.refresh.map((r) => `| ${r.slide} | ${r.what} | ${r.why} |`), ""] : []),
     ...(data.options.length ? ["## Optional, Carter's call: notes only, not on a slide", "", "| Slide | Line, if Carter asks for it | Numbers | Qualifiers | Source |", "|---|---|---|---|---|",
       ...data.options.map((o) => `| ${o.slide} | ${o.line} | ${o.numbers} | ${o.qualifiers} | ${o.source} |`), ""] : [])].join("\n");
 }

@@ -44,14 +44,14 @@ test("the talk fits three minutes at 150 words a minute, transitions included; m
   const u = data.budget;
   assert.equal(u.talkWords, data.slides.filter((s) => s.main).reduce((a, s) => a + s.notes.words, 0));
   assert.ok(u.totalSeconds <= 200, `${u.totalSeconds} s`); // 3:00 to 3:20, Carter's slot (57411): 3-4 minutes of talk, then the demo
-  assert.deepEqual([u.talkWords, u.talkSeconds, u.transitionSeconds, u.totalSeconds], [379, 151.6, 15, 166.6]);
+  assert.deepEqual([u.talkWords, u.talkSeconds, u.transitionSeconds, u.totalSeconds], [382, 152.8, 15, 167.8]);
   assert.throws(() => variant((v) => { v.slides[0].say += " and then".repeat(50); }), (e) => e instanceof FounderError && /over the 200 s cap/.test(e.message));
   // A placeholder is one word, read or not, so filling it in does not move the clock.
   assert.equal(slide(data, "invite").notes.words, countWords("We're inviting agents on Moltbook: N votes, N visits, N passed."));
   // v4-short: two minutes of talk, transitions included, then the demo.
   const short = buildFounderData(loaded, { slot: "2min" });
   assert.deepEqual(short.slides.filter((x) => x.main).map((x) => x.id), SHORT);
-  assert.deepEqual([short.budget.talkWords, short.budget.talkSeconds, short.budget.transitionSeconds, short.budget.totalSeconds], [244, 97.6, 10, 107.6]);
+  assert.deepEqual([short.budget.talkWords, short.budget.talkSeconds, short.budget.transitionSeconds, short.budget.totalSeconds], [247, 98.8, 10, 108.8]);
   // The cut slides lead the backup, then the backup pages.
   assert.deepEqual(short.slides.filter((x) => !x.main).map((x) => x.id), ["senti", "times", "link", "point", "sources", "cost", "solvers"]);
   assert.throws(() => buildFounderData(loaded, { slot: "4min" }), /--slot must be one of 3min, 2min/);
@@ -62,7 +62,7 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   // Root, reply to 57809 at 07:04Z: the two paragraph openings, as written.
   assert.ok(say("hook").startsWith("In detailed 3D mode, two versions of HotSpot gave roughly 119 and 241 degrees at the hottest modeled grid cells, for the same design and input files."));
   // Slide 7, the scorecard: aneta's first sentence (57906), root's preferred wording (reply to 57902, 08:04Z), then the beat.
-  assert.equal(say("scorecard"), "Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. Our saved older-build result matched the paper but failed this heat-balance check. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.");
+  assert.equal(say("scorecard"), "Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. But in a saved CPU-DRAM case, 1.39 percent more heat left the model than entered. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.");
   assert.match(slide(data, "scorecard").notes.cue, /Pause before "I nodded\."/);
   assert.equal(slide(data, "scorecard").content.title, "Passing one check isn't passing them all.");
   // Aneta's shortening (57816), with the distinction kept in the footer.
@@ -82,13 +82,28 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   assert.doesNotMatch(shown(data, "room") + say("room"), /\b17 people\b/);
   assert.match(shown(data, "room"), /8 outside agent posting groups, plus 3 human-only groups/);
   assert.doesNotMatch(shown(data, "room") + shown(data, "sources"), /at least 8|outside teams/, "posting groups are not teams (root, 08:40Z)");
-  assert.match(shown(data, "room"), /rated helpful by our intent model \(model-rated, not confirmed\)/);
+  // Rev 4: help offered, in the teams' own words, in place of the model-rated count, which moves to the sources page.
+  assert.match(shown(data, "room"), /outside groups we offered help: 3 checked our test case, 2 said other help was useful/);
+  assert.doesNotMatch(shown(data, "room"), /\b281\b/);
+  assert.match(shown(data, "sources"), /Model-rated, not confirmed usefulness: our intent model rated 281 of the 399/);
+  assert.match(shown(data, "sources"), /Help offered, to 04:01 UTC, refresh at the freeze: 8 outside groups\./);
+  assert.match(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8"), /## Refresh at the freeze/);
   assert.match(say("closer"), /^My ambition\? Make you wonder why your agents need Kiro, Jira, Slack, Facebook, and GitHub\. Okay, not GitHub\. Yet\./);
   assert.match(slide(data, "closer").notes.cue, /"Okay, not GitHub\. Yet\." is the quiet aside\. Naming the network out loud is Carter's call \(aneta recommends naming it\)/);
   assert.ok(say("closer").endsWith("I believe whoever owns the decision layer on that traffic will own key internet infrastructure for the next decade."));
   // The closer's slide text, exactly as the coordinator gave it.
-  assert.equal(slide(data, "closer").content.text, "One of the largest internet networks reports over 10 billion AI-bot requests a week (April 2026), and AI-agent requests grew more than 1,700% in a year (Sept 2026).");
-  assert.equal(slide(data, "closer").content.punch, "I believe whoever owns the decision layer on that traffic will own key internet infrastructure for the next decade.");
+  // Rev 4: slide 10 is aneta's plain11; the two numbers and the belief line are drawn in it, as reported, with sources on B1.
+  // Rev 4: the v1.24 visuals, pending root's +1, marked as such on the draft.
+  const v124 = { senti: ["plain9", "f984958943931297813ccc201296b67d133aa9b36e55b5f7d94dd9abee28023e"], times: ["plain4", "036788919f1a9f8a6138b139e0da55eac6592dc9dd7b7326155682bd7f1fea71"], point: ["plain10", "58a26507ea34052bc8e1dbcde9f49e5ead6718916a86ef676c587adac747edd7"], closer: ["plain11", "770f3bff3176ed19e15023e6b26865d7c30eae53764befd7afbc350e910c9521"] };
+  for (const [id, [fig, hash]] of Object.entries(v124)) {
+    assert.equal(slide(data, id).content.figure.id, fig, id);
+    assert.equal(loaded.v4.figures[fig].sha256, hash, fig);
+    assert.match(loaded.v4.figures[fig].pending, /v1\.24, pending root's \+1/);
+    assert.ok(html(data).includes(`id="s-${id}"`) && new RegExp(`id="s-${id}"[^]*?DRAFT · figure pending review`).test(html(data)), id);
+  }
+  assert.equal(loaded.v4.figures.plain8.sha256, "7a7f00842bc80ff287af95073043a1578be08ebb70ba7bdc9b00a99443fed88e");
+  assert.equal(loaded.v4.figures.plain8.pending, undefined, "plain8 is v1.22, which root +1'd");
+  assert.ok(readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain11-traffic.svg"), "utf8").includes("I believe whoever owns the decision layer on that traffic"));
   // The scorecard is aneta's v1.19 plain7 (root's three repairs drawn in), with one declared edit and this deck's label.
   const fig = slide(data, "scorecard").content.figure;
   assert.equal(fig.id, "plain7");
@@ -121,13 +136,13 @@ test("claims the talk may not make, and numbers nothing declares, stop the build
   refuses("savings", /savings claim/, (v) => { v.slides[4].footer = "Hours saved for every engineer."; });
   refuses("40+ users", /40\+ users/, (v) => { v.slides[2].points.push("40+ users and their agents"); });
   refuses("the old snapshot", /300-post snapshot/, (v) => { v.slides[2].footer = "300 posts in one saved snapshot."; });
-  refuses("a vendor on a slide", /public-render rule/, (v) => { v.slides[9].text = v.slides[9].text.replace("One of the largest internet networks", "Cloudflare"); });
+  refuses("a vendor on a slide", /public-render rule/, (v) => { v.slides[9].footer = "As Cloudflare reports."; });
   refuses("a product on a slide", /product name/, (v) => { v.slides[9].footer = "Kiro, Jira and Slack in one place."; });
-  refuses("an unconsented team", /has not consented/, (v) => { v.slides[4].times[3].what = "for Kiln's finite-element solve of it"; });
-  refuses("Delfie in another form", /form the team asked for/, (v) => { v.slides[4].times[2].what = "for Delfie to reproduce our public test case"; });
+  refuses("an unconsented team", /has not consented/, (v) => { v.slides[4].footer += " Kiln solved it too."; });
+  refuses("Delfie in another form", /form the team asked for/, (v) => { v.slides[4].footer += " Delfie checked it."; });
   refuses("science not labelled", /without saying "simulated"/, (v) => { v.slides[3].label = "two versions"; v.slides[3].footer = "Hottest modeled grid cells."; });
   refuses("an undeclared number", /which none of its facts declares/, (v) => { v.slides[2].tiles[0].value = "512"; });
-  refuses("a duration its records don't give", /is not its records'/, (v) => { v.slides[4].times[0].show = "30 min"; });
+  refuses("a duration its records don't give", /is not its records'/, (v) => { v.slides[4].times = [{ show: "30 min", what: "from a question to a suspect", from: "2026-10-31T12:43:33.374Z", to: "2026-10-31T13:15:38.133Z", rule: "round" }]; });
   refuses("a bar not its value", /is not 119.07 rounded/, (v) => { v.slides[3].bars[0].show = "120 °C"; });
   refuses("17 people", /17 is member accounts/, (v) => { v.slides[2].say += " 17 people took part."; });
   refuses("a solver library named", /unresolved 115.93 against 115.94/, (v) => { v.slides[6].footer += " SuperLU explains it."; });
@@ -165,19 +180,24 @@ test("the founder PDFs are the exports, 3min and 2min: one page per slide, the o
   }
   for (const f of ["sheet-main.png", "sheet-main-2min.png"]) assert.ok(existsSync(join(FOUNDER_DIR, f)), f);
   // Root's timing note: with the demo, and a real timed rehearsal before the talk.
-  assert.match(readFileSync(scriptPath("3min"), "utf8"), /\*\*With the demo:\*\* 120 s of demo makes 286\.6 s \(4:47\) at 150 wpm, or 303\.4 s \(5:03\) at 135\. Before the talk, do one real timed rehearsal with the actual demo\./);
-  assert.match(readFileSync(scriptPath("2min"), "utf8"), /60 s of demo makes 167\.6 s \(2:48\)/);
+  assert.match(readFileSync(scriptPath("3min"), "utf8"), /\*\*With the demo:\*\* 120 s of demo makes 287\.8 s \(4:48\) at 150 wpm, or 304\.8 s \(5:05\) at 135\. Before the talk, do one real timed rehearsal with the actual demo\./);
+  assert.match(readFileSync(scriptPath("2min"), "utf8"), /60 s of demo makes 168\.8 s \(2:49\)/);
   assert.match(committed.slides[0].notes.cue, /one real timed rehearsal with the actual demo/);
   assert.equal(readFileSync(scriptPath("2min"), "utf8"), speakerScript(short, loaded.v4));
 });
 
 test("--final drops every number without a receipt, speaks the no-numbers line, and loses the DRAFT tag", () => {
+  // The freeze refuses a figure still pending review; with root's +1 on v1.24 it goes through.
+  assert.throws(() => buildFounderData(loaded, { final: true }), /pending root's \+1; the freeze takes only reviewed figures/);
+  const reviewed = structuredClone(loaded.v4);
+  for (const fig of Object.values(reviewed.figures)) delete fig.pending;
   for (const slot of ["3min", "2min"]) {
-    const fin = buildFounderData(loaded, { slot, final: true });
+    const fin = buildFounderData({ ...loaded, v4: reviewed }, { slot, final: true });
     assert.equal(fin.deck.draft, false);
     assert.equal(fin.deck.measuring, false);
     assert.doesNotMatch(html(fin), /measuring…|class="measuring"|DRAFT/, slot);
-    assert.deepEqual(slide(fin, "invite").content.tiles, [], "slide 9's tiles have no receipt yet, so none is shown");
+    assert.equal(slide(fin, "invite").content.tiles, undefined, "slide 9's tiles have no receipt yet, so none is shown");
+    assert.equal(slide(fin, "invite").content.figure.id, "plain8", "the fallback picture at the freeze");
     assert.equal(slide(fin, "invite").notes.text, "We're inviting other people's agents to the chip challenge: scan the code and send yours.");
     assert.ok(founderPdfName(fin).endsWith("-final.pdf"));
     assert.ok(fin.budget.totalSeconds <= fin.budget.talkCapSeconds);
@@ -185,7 +205,7 @@ test("--final drops every number without a receipt, speaks the no-numbers line, 
   // The draft keeps the placeholders and the tag.
   assert.match(html(data), /DRAFT · numbers still measuring/);
   // A slide whose words need a missing number must say what to speak at the freeze instead.
-  const noLine = structuredClone(loaded.v4);
+  const noLine = structuredClone(reviewed);
   delete noLine.slides.find((x) => x.id === "invite").sayIfUnmeasured;
   assert.throws(() => buildFounderData({ ...loaded, v4: noLine }, { final: true }), /no sayIfUnmeasured line/);
 });

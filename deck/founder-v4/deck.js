@@ -70,7 +70,9 @@
   function renderSlide(s, data) {
     const body = LAYOUTS[s.content.layout];
     if (!body) throw new Error(`no layout for slide ${s.id}`);
-    const mark = data.deck.draft ? `<span class="preview">DRAFT${data.deck.measuring ? " · numbers still measuring" : ""}</span>` : "";
+    // A figure still pending its reviewer's +1 says so on its own slide; the freeze refuses it altogether.
+    const note = s.content.figure?.pending ? " · figure pending review" : data.deck.measuring ? " · numbers still measuring" : "";
+    const mark = data.deck.draft ? `<span class="preview">DRAFT${note}</span>` : "";
     return `<section class="slide ${s.main ? "main" : "backup"}" id="s-${esc(s.id)}" data-label="${esc(s.label)}" data-notes="${esc(s.id)}">`
       + `<header class="bar"><span class="brand"><i class="mark"></i><b>${esc(data.deck.title)}</b><span>${esc(data.deck.event)}</span></span>${mark}<span class="kicker">${esc(s.kicker)}</span></header>`
       + `<div class="body l-${esc(s.content.layout)}">${body(s.content, data)}</div>`

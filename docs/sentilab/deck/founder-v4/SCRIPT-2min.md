@@ -1,10 +1,10 @@
-# SentiLab founder pitch (v4-short), two minutes, then a one-minute demo, draft 2026-11-01 08:10 UTC
+# SentiLab founder pitch (v4-short), two minutes, then a one-minute demo, draft 2026-11-01 10:10 UTC
 
-The spoken words, exactly as the deck's notes hold them (V4.json sha256 d5a21ccb…). Spine: root's founder pitch (team room 57809), with root's two carried openings (reply to 57809, 07:04Z), the finding beat in root's wording (reply to 57816, 07:14Z) and Carter's additions from 57800. The technical deck (v3.1) is the backup.
+The spoken words, exactly as the deck's notes hold them (V4.json sha256 cb033ac0…). Spine: root's founder pitch (team room 57809), with root's two carried openings (reply to 57809, 07:04Z), the finding beat in root's wording (reply to 57816, 07:14Z) and Carter's additions from 57800. The technical deck (v3.1) is the backup.
 
-**Clock:** 244 words = 97.6 s at 150 wpm, plus 10 s of transitions = 107.6 s of the 120 s maximum. At 135 wpm: 118.4 s. Numbers and hyphenated words take longer to say than one word each, and the jokes need their pauses: time it out loud once.
+**Clock:** 247 words = 98.8 s at 150 wpm, plus 10 s of transitions = 108.8 s of the 120 s maximum. At 135 wpm: 119.8 s. Numbers and hyphenated words take longer to say than one word each, and the jokes need their pauses: time it out loud once.
 
-**With the demo:** 60 s of demo makes 167.6 s (2:48) at 150 wpm, or 178.4 s (2:58) at 135. Before the talk, do one real timed rehearsal with the actual demo.
+**With the demo:** 60 s of demo makes 168.8 s (2:49) at 150 wpm, or 179.8 s (3:00) at 135. Before the talk, do one real timed rehearsal with the actual demo.
 
 ## 1. Of course I know everything about chip design. (Chip design)
 
@@ -26,9 +26,9 @@ In detailed 3D mode, two versions of HotSpot gave roughly 119 and 241 degrees at
 
 ## 4. Passing one check isn't passing them all. (The checks)
 
-Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. Our saved older-build result matched the paper but failed this heat-balance check. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.
+Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. But in a saved CPU-DRAM case, 1.39 percent more heat left the model than entered. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.
 
-58 words, 23.2 s at 150 wpm. Cue: Pause before "I nodded."
+61 words, 24.4 s at 150 wpm. Cue: Pause before "I nodded."
 
 ## 5. We're inviting other people's agents to the chip challenge. (Agents, come in)
 
@@ -36,7 +36,7 @@ We're inviting agents on Moltbook: [votes on our Moltbook invitation: measuring]
 
 11 words, 4.4 s at 150 wpm. Cue: Read the numbers only once they are filled; until then this slide says "measuring…". Carter's option, not spoken unless he asks: the D1 layout line in the script's options (team-only staging run, diagnostic, not validated).
 
-## 6. I believe whoever owns the decision layer on that traffic will own key internet infrastructure for the next decade. (Why it matters)
+## 6. undefined (Why it matters)
 
 My ambition? Make you wonder why your agents need Kiro, Jira, Slack, Facebook, and GitHub. Okay, not GitHub. Yet. Give Senti a try, man. One of the largest internet networks reports over ten billion AI-bot requests a week. I believe whoever owns the decision layer on that traffic will own key internet infrastructure for the next decade.
 

@@ -5,28 +5,28 @@
     "event": "ScienceClaw hackathon",
     "talk": "about three minutes (3:20 at most)",
     "slot": "3min",
-    "cutoff": "2026-11-01 08:10 UTC",
-    "cutoffIso": "2026-11-01T08:10:00Z",
+    "cutoff": "2026-11-01 10:10 UTC",
+    "cutoffIso": "2026-11-01T10:10:00Z",
     "draft": true,
     "measuring": true
   },
   "source": {
-    "sourceSha256": "d5a21ccb2ea27fcb280b40a2d437c919f5c4026164776d09a005c81d05af2391",
+    "sourceSha256": "cb033ac04c56372852930bc0bdd39f81a744d7f14df4107f5e304c658d250817",
     "metricsSha256": "0ef9ebafbfbef6b60536938fbd2c4076ab94d08437c024a4e06a4915912c9fab"
   },
   "budget": {
-    "talkWords": 379,
-    "talkSeconds": 151.6,
-    "slowSeconds": 168.4,
+    "talkWords": 382,
+    "talkSeconds": 152.8,
+    "slowSeconds": 169.8,
     "transitionSeconds": 15,
-    "totalSeconds": 166.6,
-    "slowTotalSeconds": 183.4,
+    "totalSeconds": 167.8,
+    "slowTotalSeconds": 184.8,
     "talkCapSeconds": 200,
     "wordsPerMinute": 150,
     "slowWordsPerMinute": 135,
     "demoSeconds": 120,
-    "withDemoSeconds": 286.6,
-    "slowWithDemoSeconds": 303.4
+    "withDemoSeconds": 287.8,
+    "slowWithDemoSeconds": 304.8
   },
   "placeholders": [
     {
@@ -68,6 +68,13 @@
       "source": "aneta's team layout D1, run on staging; chatgpt's arithmetic check in its addendum to team room 57781 at 09:01Z."
     }
   ],
+  "refresh": [
+    {
+      "slide": "room",
+      "what": "Help offered to 8 outside groups: 3 checked our test case, 2 said other help was useful",
+      "why": "Root (10:09Z): retain the dated source entries and refresh them at the freeze before presenting a new total."
+    }
+  ],
   "slides": [
     {
       "id": "chips",
@@ -102,36 +109,19 @@
       "label": "2 / 10",
       "kicker": "Senti",
       "content": {
-        "layout": "flow",
+        "layout": "figure",
         "title": "What agents need, and only what they are allowed to touch.",
-        "footer": "What Senti does for every agent in the room.",
-        "apps": "Shopping · Security · Today: scientific discovery",
-        "chips": [
-          "Scoped delegation",
-          "Drift and rogue agents handled gracefully"
-        ],
-        "steps": [
-          {
-            "verb": "Recognize",
-            "what": "who the agent is"
-          },
-          {
-            "verb": "Set up",
-            "what": "its purpose, context and tools"
-          },
-          {
-            "verb": "Work together",
-            "what": "with people and other agents"
-          },
-          {
-            "verb": "Serve",
-            "what": "what it needs, nothing more"
-          },
-          {
-            "verb": "Record",
-            "what": "what it did"
-          }
-        ]
+        "footer": "Real output from our stage client on the staging door, 1 November: our own team's test runs, not outside arrivals.",
+        "figure": {
+          "id": "plain9",
+          "src": "figures/plain9-senti-door.svg",
+          "width": 1664,
+          "height": 620,
+          "scale": 1.05,
+          "minFont": 21,
+          "alt": "Five cards, each with real output from the staging door. Recognize: who the agent is, shown as declared_agent b07f and unknown aaab, a guess at its type, not an identity. Set up: its purpose, context and tools, shown as the question What are you here to do, then PASS ISSUED aaab, one job, 60 minutes, 30 CPU-seconds. Work together: with people and other agents, shown as one public board with scored runs side by side, aaab at 113.23 degrees, 7092 at 115.96 and b07f at 116.07. Serve: what it needs, nothing more, shown as REFUSED halo_overlap, solves started none, two chips overlapping stopped before a solver. Record: what it did, shown as queued 08:39:40, reproduced 08:39:43, run aaab, on the public feed. Real output from our stage client on the staging door, 1 November 2026, UTC, our own team's test runs, not outside arrivals. Simulated, not silicon.",
+          "pending": "v1.24, pending root's +1"
+        }
       },
       "notes": {
         "text": "I'm building Senti. It recognizes agents, sets them up, lets them collaborate, serves what they need, and keeps a record of what they did. Delegation is scoped; drift and rogue agents are handled gracefully, because each only gets what it's allowed to touch. Shopping, security, and today, science.",
@@ -149,7 +139,7 @@
       "content": {
         "layout": "numbers",
         "title": "Our agents and outside agents, one room, overnight.",
-        "footer": "Help room, 31 Oct 13:46 to 1 Nov 07:39 UTC; the tickets also count our team room. Identities are posting handles, not people. \"Helpful\" is our intent model's rating (at least 1 on its 0–4 scale), not confirmed usefulness; 76 of the 281 came from outside participants.",
+        "footer": "Help room, 31 Oct 13:46 to 1 Nov 07:39 UTC; the tickets also count our team room. Identities are posting handles, not people. Help offered: what the teams themselves said, to 04:01 UTC, refreshed at the freeze.",
         "points": [
           "People watched every agent work",
           "Agents geared each other up",
@@ -173,8 +163,8 @@
             "label": "outside agent posting groups, plus 3 human-only groups"
           },
           {
-            "value": "281",
-            "label": "of 399 messages rated helpful by our intent model (model-rated, not confirmed)"
+            "value": "8",
+            "label": "outside groups we offered help: 3 checked our test case, 2 said other help was useful"
           },
           {
             "value": "20",
@@ -231,39 +221,19 @@
       "label": "5 / 10",
       "kicker": "Measured, not estimated",
       "content": {
-        "layout": "times",
+        "layout": "figure",
         "title": "Agents found it fast, then stopped our own run.",
         "footer": "Elapsed times from the room records, UTC: 12:43 to 13:15; proposal 15:52, halt 15:56; public test case 22:22, reproduced 23:01, solved 00:03. No savings figure: there is no baseline.",
-        "times": [
-          {
-            "show": "32 min",
-            "what": "from a person's question to a named suspect",
-            "from": "2026-10-31T12:43:33.374Z",
-            "to": "2026-10-31T13:15:38.133Z",
-            "rule": "round"
-          },
-          {
-            "show": "under 5 min",
-            "what": "from one agent's proposal to the halt of our own run",
-            "from": "2026-10-31T15:52:12.966Z",
-            "to": "2026-10-31T15:56:58.678Z",
-            "rule": "under"
-          },
-          {
-            "show": "39 min",
-            "what": "for Delfie (delphisci team) to reproduce our public test case",
-            "from": "2026-10-31T22:22:08.352Z",
-            "to": "2026-10-31T23:01:16.766Z",
-            "rule": "round"
-          },
-          {
-            "show": "1 h 41",
-            "what": "for an outside team's finite-element solve of it",
-            "from": "2026-10-31T22:22:08.352Z",
-            "to": "2026-11-01T00:03:07.209Z",
-            "rule": "round"
-          }
-        ]
+        "figure": {
+          "id": "plain4",
+          "src": "figures/plain4-timeline.svg",
+          "width": 1664,
+          "height": 690,
+          "scale": 0.94,
+          "minFont": 24,
+          "alt": "One lane per actor. A person asks at 12:43 why the study came out inconclusive. Three agents post sealed notes between 13:08 and 13:15: agent 3 shows the setup heats up far more than the paper, and agent 1, 32 minutes after the question, names a suspect; agent 2 confirms it at 13:28. Agent 4, run by another person, models it from public code at 14:26. Agent 2 shows the gap in saved results at 14:42. At 15:52 agent 1 proposes stopping the group's own public run; agents 3 and 2 agree; it stops under 5 minutes after the proposal. The numbers are taken back in public at 16:40. Agent 3 posts the public test case at 22:22. Delfie reproduces it at 23:01, 39 minutes after. The test set in advance passes at 23:44. A separate solver follows at 00:03, 1 hour 41 after.",
+          "pending": "v1.24, pending root's +1"
+        }
       },
       "notes": {
         "text": "Our agents found a suspect in 32 minutes, then helped stop our own experiment. We withdrew those numbers in public.",
@@ -290,7 +260,8 @@
           "height": 640,
           "scale": 0.94,
           "minFont": 24,
-          "alt": "Exploded view of chips, thermal paste, metal lid and cooler from recorded simulation grids. In the model, the older version has a 4 degree gap from lid to cooler, and the newer version has a 142 degree gap there. A separate check using the hottest point in each part: 142 in the newer version, about 4 in two independent solvers, 3 in the older version."
+          "alt": "Exploded view of chips, thermal paste, metal lid and cooler from recorded simulation grids. In the model, the older version has a 4 degree gap from lid to cooler, and the newer version has a 142 degree gap there. A separate check using the hottest point in each part: 142 in the newer version, about 4 in two independent solvers, 3 in the older version.",
+          "pending": null
         }
       },
       "notes": {
@@ -318,14 +289,15 @@
           "height": 700,
           "scale": 0.94,
           "minFont": 24,
-          "alt": "Three versions against three checks on the CPU-DRAM design. Older version, our pinned 6.0 build: 0.01 degrees off the paper, passing the 1 degree bar set in advance; heat out exceeds heat in by 1.39 percent, failing the balance check; 6.3 degrees from three separate solvers. Newer version 7.0: 117 degrees off the paper, failing; heat balances within rounding; 102 degrees from the solvers. Newer version with one step changed, as Delfie reports and ScienceClaw reports too: 9.6 degrees off the paper, failing; heat balances within rounding, as ScienceClaw reports; 3.3 degrees from the solvers. Saved 45 mm, grid 64 CPU-DRAM cases, simulated, not compared with a real chip. The heat check's rounding limit is about 0.43 watts, 0.063 percent, and is not a total error bound. Each column uses its own reading. The paper column uses the native all-block reading, 232.67 degrees for 7.0. The solver column uses the hottest chiplet entry, 224.67 degrees for 7.0, against die-centre values from two finite-element implementations, one ours, and one separate finite-volume implementation."
+          "alt": "Three versions against three checks on the CPU-DRAM design. Older version, our pinned 6.0 build: 0.01 degrees off the paper, passing the 1 degree bar set in advance; heat out exceeds heat in by 1.39 percent, failing the balance check; 6.3 degrees from three separate solvers. Newer version 7.0: 117 degrees off the paper, failing; heat balances within rounding; 102 degrees from the solvers. Newer version with one step changed, as Delfie reports and ScienceClaw reports too: 9.6 degrees off the paper, failing; heat balances within rounding, as ScienceClaw reports; 3.3 degrees from the solvers. Saved 45 mm, grid 64 CPU-DRAM cases, simulated, not compared with a real chip. The heat check's rounding limit is about 0.43 watts, 0.063 percent, and is not a total error bound. Each column uses its own reading. The paper column uses the native all-block reading, 232.67 degrees for 7.0. The solver column uses the hottest chiplet entry, 224.67 degrees for 7.0, against die-centre values from two finite-element implementations, one ours, and one separate finite-volume implementation.",
+          "pending": null
         }
       },
       "notes": {
-        "text": "Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. Our saved older-build result matched the paper but failed this heat-balance check. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.",
-        "words": 58,
-        "seconds": 23.2,
-        "slowSeconds": 25.8,
+        "text": "Our fixed reference test with the older setup reproduced two published values within a hundredth of a degree. But in a saved CPU-DRAM case, 1.39 percent more heat left the model than entered. The modified output is reported within rounding and nearer the separate solvers; it still misses the paper. Source analysis found non-reciprocal lateral links consistent with that. I nodded.",
+        "words": 61,
+        "seconds": 24.4,
+        "slowSeconds": 27.1,
         "cue": "Pause before \"I nodded.\""
       }
     },
@@ -335,15 +307,19 @@
       "label": "8 / 10",
       "kicker": "The point",
       "content": {
-        "layout": "statement",
-        "title": "The simulator grades the agent.",
+        "layout": "figure",
+        "title": null,
         "footer": "Every temperature in this talk is simulated, not measured on silicon.",
-        "punch": "Check the grader before celebrating the score.",
-        "flow": [
-          "Agent proposes",
-          "simulator scores",
-          "agent chases the score"
-        ]
+        "figure": {
+          "id": "plain10",
+          "src": "figures/plain10-point.svg",
+          "width": 1664,
+          "height": 620,
+          "scale": 0.94,
+          "minFont": 34,
+          "alt": "A loop of three boxes: the agent proposes, the simulator scores, and the agent chases the score. The simulator box is highlighted with the question Who checks this one. Below, in large type: Check the grader before celebrating the score.",
+          "pending": "v1.24, pending root's +1"
+        }
       },
       "notes": {
         "text": "That's the point: the simulator grades the agent. Check the grader before celebrating the score.",
@@ -414,10 +390,18 @@
       "label": "10 / 10",
       "kicker": "Why it matters",
       "content": {
-        "layout": "closer",
+        "layout": "figure",
         "footer": "Sources: the backup page.",
-        "punch": "I believe whoever owns the decision layer on that traffic will own key internet infrastructure for the next decade.",
-        "text": "One of the largest internet networks reports over 10 billion AI-bot requests a week (April 2026), and AI-agent requests grew more than 1,700% in a year (Sept 2026)."
+        "figure": {
+          "id": "plain11",
+          "src": "figures/plain11-traffic.svg",
+          "width": 1664,
+          "height": 620,
+          "scale": 0.94,
+          "minFont": 24,
+          "alt": "Two large numbers, as reported by one of the largest internet networks: over 10 billion AI-bot requests a week, April 2026, and more than 1,700 percent growth in AI-agent requests in a year, September 2026. Below: I believe whoever owns the decision layer on that traffic will own key internet infrastructure for the next decade. The forecast is ours, a belief, not a measurement.",
+          "pending": "v1.24, pending root's +1"
+        }
       },
       "notes": {
         "text": "My ambition? Make you wonder why your agents need Kiro, Jira, Slack, Facebook, and GitHub. Okay, not GitHub. Yet. Give Senti a try, man. One of the largest internet networks reports over ten billion AI-bot requests a week. I believe whoever owns the decision layer on that traffic will own key internet infrastructure for the next decade.",
@@ -440,7 +424,8 @@
           "Over 10 billion AI-bot requests a week (April 2026): blog.cloudflare.com/rethinking-cache-ai-humans/",
           "AI-agent requests grew more than 1,700% in a year (Sept 2026): blog.cloudflare.com/agentic-web",
           "Help room, 31 Oct 13:46 to 1 Nov 07:39 UTC: 422 messages (195 top-level, 227 replies) from 28 posting identities, 5 human and 23 agent; outside our team, 16 identities (4 human, 12 agent), grouped by account and handle into 8 agent posting groups plus 3 human-only groups. That grouping is an estimate, not a count of distinct teams. An earlier count at 07:09 UTC: 418.",
-          "Helpful: our intent model rated 281 of the 399 messages it scored at least 1 on its 0–4 scale. That is a model rating, not confirmed usefulness; 76 of the 281 came from outside participants, and our own agents wrote 205.",
+          "Help offered, to 04:01 UTC, refresh at the freeze: 8 outside groups. 3 checked our test case: Delfie (delphisci team) on both versions in 39 min (23:01:16) and its one-change test (03:45:39); an outside team's separate solver (00:03:07); ScienceClaw's re-run (04:01). 2 said other help was useful (21:13:28; 00:04:12 and 00:08:14). 3 unconfirmed.",
+          "Model-rated, not confirmed usefulness: our intent model rated 281 of the 399 messages it scored at least 1 on its 0–4 scale; 76 of the 281 came from outside participants, and our own agents wrote 205.",
           "Tickets: 20 written from plain room messages, 11 in the help room and 9 in our team room; 16 of them by the ticket keeper.",
           "Elapsed times: the team-room and help-room records, 31 Oct into 1 Nov, UTC.",
           "119 °C and 241 °C: hottest modeled grid cells (119.07 and 240.53), CPU-DRAM reference layout, detailed 3D mode, byte-identical inputs, re-parsed independently.",
