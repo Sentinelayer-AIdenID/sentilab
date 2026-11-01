@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import contextlib
+from datetime import datetime, timezone
 import io
 import os
 from pathlib import Path
@@ -20,6 +21,12 @@ from sundai_hotspot import test_gate_zero as fixtures
 
 
 class CouplingManifestTests(unittest.TestCase):
+    def test_coupling_has_its_own_grant_expiry(self):
+        coupling, _ = reference_validation.load_manifest(selection="coupling")
+        gate, _ = reference_validation.load_manifest()
+        self.assertEqual(coupling["grant_window"]["not_after_utc"], "2026-11-02T06:00:00Z")
+        self.assertEqual(gate["grant_window"]["not_after_utc"], "2026-11-01T12:00:00Z")
+
     def test_manifest_freezes_replay_files_and_outcome_presentation(self):
         manifest, _ = reference_validation.load_manifest(selection="coupling")
         evaluation = manifest["evaluation"]
@@ -100,6 +107,20 @@ class CouplingEntryTests(fixtures.EntryCase):
             self.scenario.settle(call)
         return reference_validation.report(ledger_root=self.scenario.root, tags=self.scenario.tags,
                                            selection="coupling")
+
+    def test_call_after_coupling_expiry_is_refused_without_consuming_it(self):
+        primary = next(iter(self.calls))
+        # The signed grant is deliberately wider, so the manifest must enforce its own expiry.
+        self.scenario = self.grant("expiry", cap=234, grant_id="g49-expiry",
+                                   window=(fixtures.WINDOW[0], "2026-11-03T00:00:00Z"))
+        self.scenario.reserve(primary)
+        with self.assertRaisesRegex(reference_validation.CallRefused, "window closed at 2026-11-02T06:00:00Z"):
+            self.call(primary, "expired", now=datetime(2026, 11, 2, 6, 0, 1, tzinfo=timezone.utc))
+        self.assertFalse(self.launched("expired"))
+        self.assertEqual(self.scenario.entries(primary), {})
+        self.assertEqual(self.scenario.api.launch_tags(), [])
+        self.assertEqual(self.call(primary, "at-expiry",
+            now=datetime(2026, 11, 2, 6, 0, tzinfo=timezone.utc))["status"], "exited")
 
     def test_wrong_hash_and_missing_variant_tag_refuse_before_launch(self):
         primary = next(iter(self.calls))
@@ -475,6 +496,7 @@ print(module.reference_validation.__file__)
         separate = gate0_anchor.read_ledger(gate.root, self.public, digest)
         self.assertEqual(separate["grant"]["calls"], sorted(row["id"] for row in manifest["calls"]))
         self.assertEqual(separate["grant"]["cpu_cap_s"], 234)
+        self.assertEqual(separate["grant"]["not_after_utc"], "2026-11-02T06:00:00Z")
         self.assertNotEqual(separate["dir"], gate.dir)
         self.assertEqual(before, {p.name: p.read_bytes() for p in gate.dir.glob("*.json")})
 

@@ -20,6 +20,7 @@ CALL_LIST_SHA256 = "db32a692b749e08324c295e56250f96a9548796aae232ca63f24d2ad4ab3
 BINARY_SHA256 = "6ea3b7813412c13d20c92adc6449fbc0bc87c46b521d4d5eaf80b8abc7900609"
 KIND = "material_only"
 SCHEMA = "sentilab-slab049-coupling-manifest-v1"
+NOT_AFTER_UTC = "2026-11-02T06:00:00Z"  # provisional until confirmed by root/aneta before signing
 REPLAY_OUTPUTS = ("sample.steady", "sample.grid.steady", "stdout.txt", "stderr.txt")
 PERCENTAGE_ROUNDING = "nearest whole percent from the exact rational; ties away from zero"
 PERCENTAGE_REFERENCES = {"x": "ascend910-tap25d-fig6a-raw", "y": "micro150-tap25d-fig5a-raw"}
@@ -67,7 +68,7 @@ def build_manifest() -> dict:
     if worst != frozen["total_envelope_cpu_s"]:
         raise slab049.ManifestMismatch("coupling envelope differs from the frozen call list")
     manifest = {key: copy.deepcopy(gate[key]) for key in
-                ("operator", "ledger", "anchor", "grant_window", "references", "source")}
+                ("operator", "ledger", "anchor", "references", "source")}
     manifest["source"]["allocation_sha256"] = {
         path: slab049._file_sha256(path) for path in (
             "sundai_hotspot/coupling_allocation.py", "sundai_hotspot/reference_validation.py",
@@ -75,6 +76,9 @@ def build_manifest() -> dict:
     manifest.update(
         schema=SCHEMA, ticket="01ac77ac", generated_by="python -m sundai_hotspot.coupling_allocation",
         call_list_sha256=CALL_LIST_SHA256,
+        grant_window={"not_before": "warden's grant against the merged build",
+                      "not_after_utc": NOT_AFTER_UTC,
+                      "per_call_receipts_record": "effective start and stop (UTC), wall and CPU seconds"},
         allocation="four calls: two material-only primaries and two fresh-process replays; no gate-zero grant",
         calls=calls,
         evaluation={**{key: frozen[key] for key in ("statistic", "fraction", "predicate", "references")},

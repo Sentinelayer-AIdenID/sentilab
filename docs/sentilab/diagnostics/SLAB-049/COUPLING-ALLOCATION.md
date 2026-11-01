@@ -23,6 +23,11 @@ CPU carry and operator log, inside the wrapper's mounted `/srv/gate0/runs`. The 
 directory on the host before starting the container; coupling commands refuse if it does not already exist.
 Gate zero keeps `/srv/gate0/runs`.
 
+Coupling has its own `grant_window.not_after_utc`: **2026-11-02T06:00:00Z**, a placeholder that the contract
+owner (**root/aneta**) must confirm before Warden signs the allocation. It does not inherit gate zero's expiry.
+The generated manifest and signed grant both bind this deadline; calls after it are refused before admission
+or launch. Changing the placeholder requires regenerating and signing the coupling manifest.
+
 ## Binary identity and provenance
 
 The only accepted binary is the operator image's `/app/sundai_hotspot/hotspot-material-only`, SHA-256
