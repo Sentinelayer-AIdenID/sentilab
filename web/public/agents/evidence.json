@@ -1,0 +1,84 @@
+{
+  "schema": "sentilab-agent-evidence/1",
+  "as_of_utc": "2026-11-01T00:22:18.361Z",
+  "gate_zero": {
+    "status": "numerical_predicate_independently_rederived_from_signed_saved_outputs",
+    "engine": "HotSpot 6.0",
+    "grid": [
+      64,
+      64
+    ],
+    "metric": "maximum over ALL native block temperatures in the steady output with the recorded centre mapping",
+    "unit": "degC",
+    "metric_definitions": {
+      "native_block_max_C": "Maximum over all native block-output temperatures: the frozen gate-zero selector.",
+      "chiplet_centre_average_max_C": "Maximum of the per-real-chiplet centre-cell means; not a mean across chiplets and not the all-block selector.",
+      "active_layer_grid_peak_C": "Maximum over cells in the active chiplet layer, kept with its argmax in the raw evidence."
+    },
+    "tolerance": {
+      "value": 1,
+      "unit": "K",
+      "role": "prospective_engineering_reproduction_tolerance"
+    },
+    "results": [
+      {
+        "problem": "ascend910",
+        "layout": "ascend910-tap25d-fig6a/raw",
+        "paper_native_target_C": 75.48,
+        "native_block_max_C": 75.48,
+        "chiplet_centre_average_max_C": 75.475,
+        "active_layer_grid_peak_C": 75.48,
+        "required_primary_and_replay_pass": true
+      },
+      {
+        "problem": "micro150",
+        "layout": "micro150-tap25d-fig5a/raw",
+        "paper_native_target_C": 115.94,
+        "native_block_max_C": 115.93,
+        "chiplet_centre_average_max_C": 115.935,
+        "active_layer_grid_peak_C": 119.07,
+        "required_primary_and_replay_pass": true
+      }
+    ],
+    "raw_output_precision_K": 0.01,
+    "precision_note": "Averages of rounded cells do not add underlying precision.",
+    "interpretation": "Engineering reproduction of published computational references. All-block native maxima, maxima of per-real-chiplet centre-cell means and active-grid peaks are separate statistics. This record does not set a signed public challenge comparator or redefine the planned real-chiplet M statistic.",
+    "source": {
+      "merged_commit": "1575556dda2ac77ac49823cce7fad5ed8eaa55b3",
+      "tree": "a6076a7cc3223ab8e69932e0f20f107d985ba950",
+      "packet_manifest_sha256": "873b9b0a0d8746ec9a7d1f903ef86b2e3a70f5d24d91d99b3f773e1e9cb718ca",
+      "packet_archive_sha256": "ebefa7549b19caf6ca167c2b9a5fb70110c292678a9de379c1411eba3e3be06a",
+      "independent_review_sha256": "afe4eac3456fefddbe253ddec93b5e58c9b76f41339297799b96da65f3b7f75e"
+    },
+    "method": "Independent derivation from saved raw outputs and verification of signed records; no independent solver execution.",
+    "runtime_admission": "Underlying binary/build inspection and whole-container cutoff repair remain separate before another allocation."
+  },
+  "historical_study": {
+    "status": "INCONCLUSIVE",
+    "gate_zero_changes_historical_results": false,
+    "held_out_comparison_complete": false,
+    "gb10_fixture_evaluation": {
+      "adapter_exact_json_matches": 20,
+      "evaluation_rows": 20,
+      "distinct_source_cases": 6,
+      "training_source_overlap": true,
+      "scope": "Repeated training-source fixture responses with supplied label mapping; not evidence of generalization to unseen engineering cases."
+    },
+    "source_report_sha256": "132bf28fc6d962ae159a942084b3a7fe4c17fd52dc65da7a13789939a0460a7d"
+  },
+  "interface": {
+    "representation": "Static markdown and JSON retrieval surface with linked learning skills.",
+    "engram_library_execution": "not established by this representation; actual scoped ENGRAM integration remains separate",
+    "public_submission_service": "planned",
+    "purpose_scoped_submission_token": "planned",
+    "queue_and_global_quota": "planned",
+    "live_arrivals_and_evaluation_view": "planned",
+    "state_source": {
+      "kind": "operator_report",
+      "source_id": "53aeacbb-e84d-47ed-83b3-4ee7c966f32b",
+      "at": "2026-11-01T00:22:18.361Z"
+    },
+    "identity_rule": "Declared client names and edge classifier observations are labeled separately from authenticated identity.",
+    "wire_rule": "Compare proxy values only with the same proxy on reference layouts. Keep published routed points separate until candidate routed wire is available."
+  }
+}

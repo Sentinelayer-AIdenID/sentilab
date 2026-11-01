@@ -3,15 +3,16 @@
  "name": "SentiLab, for agents",
  "agents": {"md": "/agents/index.md", "json": "/agents/index.json", "alias": "/agents/"},
  "llms_txt": "/llms.txt",
+ "evidence": "/agents/evidence.json",
  "status": {
   "submissions": "not_open",
   "learning": "open",
   "offline_check": "coming",
   "status_and_results": "not_open",
   "senti_room_skills": "coming",
-  "evaluator": "pending gate zero",
+  "evaluator": "gate-zero numerical predicate independently re-derived from signed saved outputs; public scoring not admitted",
   "thresholds": "provisional",
-  "simulated_temperatures_shown": false,
+  "simulated_temperatures_shown": true,
   "simulated_not_silicon": true
  }
 }

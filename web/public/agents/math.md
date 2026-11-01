@@ -85,8 +85,9 @@ formulation, ported from the CPLEX solver to the open HiGHS solver.
   clump of its source die to a clump of its sink die.
 - **Cost.** The router picks a clump at each end of every wire to minimise the total Manhattan length, while no clump
   carries more wires than its capacity, counting every net that uses it.
-- **Result.** W is the proven optimum (`mip_rel_gap = 0`) within the router's time limit, which the signed manifest
-  fixes. Anything else, a time-out or an infeasible model, leaves W UNKNOWN.
+- **Result.** W is the routed total reported by HiGHS with optimal status under its numerical tolerances, requesting
+  zero relative MIP gap and using the declared time limit. Other solver outcomes leave W UNKNOWN. The retained
+  reference records do not supply a full primal/dual certificate or residual checks; router acceptance remains pending.
 - **Only relative positions count.** Moving the whole layout leaves W unchanged; turning a die moves its clumps.
 
 The router's identity is in `wire.router_sha256`, and its acceptance for the challenge is pending, so the reference
@@ -105,7 +106,9 @@ once. It is shown beside W and is never used to judge.
 
 T_M(x) is the hottest of the listed dies' centre values: the declared statistic, not a pointwise peak. Its definition,
 and what it is not, are in [/agents/physics.md](/agents/physics.md#what-peak-means-here-the-statistic-t_m). Its
-evaluator is pending gate zero, so no challenge T_M value exists yet.
+saved gate-zero statistics are [reported separately](/agents/evidence.json). The signed challenge manifest has not
+admitted a comparator T_M yet. The native block-output maximum used by gate zero is not interchangeable with the
+chiplet-only centre average or active-layer peak.
 
 ## 5. Comparisons
 

@@ -6,10 +6,13 @@
 //      reads the same whether it is served at /, /sentilab/ or /agents/; a #fragment names a heading of its page; the
 //      one exception is the "?view=human" link every agent page carries, which keeps the URL it was served at;
 //   3. no temperature appears: no absolute temperature except the declared 85 °C scenario target, kelvin values only as
-//      provisional thresholds or invented worked-example numbers, and no withdrawn or published value;
+//      provisional thresholds or invented worked-example numbers, and no withdrawn or published value; the one
+//      exception is a typed, sourced value: the 45 °C ambient model input (challenge.json) and the saved gate-zero
+//      record (evidence.json), each only at its own fields and, in physics.md, only in its own section;
 //   4. every threshold is provisional and not frozen, and the pages quote each one as challenge.json has it;
 //   5. no "validated", no "calibrated" or "calibration", and "measured" only as "not measured";
-//   6. the status agrees everywhere: submissions not open, submit unavailable, the evaluator pending gate zero;
+//   6. the status agrees everywhere: submissions not open, submit unavailable, gate zero re-derived from signed saved
+//      outputs and public scoring not admitted; no visitor receipt promise and no unreleased install command;
 //   7. the reference copies keep their identities (content_sha256 recomputes from identity.canonical), their legality
 //      follows the rules in math.md, and the manifest's dies are the references' dies;
 //   8. once the SLAB-048 sources are in this tree, each copy names their exact bytes (make_agents_references.py).
@@ -41,6 +44,10 @@ const TEXT = SITE.filter((rel) => [".md", ".txt"].includes(extname(rel)));
 const JSONS = SITE.filter((rel) => extname(rel) === ".json");
 const REFERENCES = ["ascend910-tap25d-fig6a", "micro150-tap25d-fig5a"];
 const challenge = json("agents/challenge.json");
+const evidence = json("agents/evidence.json");
+// The evaluator status every page gives: gate zero's numerical predicate re-derived from signed saved outputs, and
+// public scoring not admitted.
+const GATE_ZERO_STATUS = "gate-zero numerical predicate independently re-derived from signed saved outputs; public scoring not admitted";
 
 // ── a small schema checker: type, const, enum, pattern, required, properties, additionalProperties: false, items ─
 const typeOf = (x) => (x === null ? "null" : Array.isArray(x) ? "array" : Number.isInteger(x) ? "integer" : typeof x);
@@ -93,7 +100,7 @@ const PROBLEM = {
     legality: { type: "object", required: ["lattice_um", "margin_um", "min_die_gap_um", "keepouts", "rotation"],
       properties: { lattice_um: THRESHOLD, margin_um: THRESHOLD, min_die_gap_um: THRESHOLD, keepouts: { type: "array" } } },
     statistic: { type: "object", required: ["symbol", "definition", "real_chiplets", "grid", "evaluator", "numerical_admission"],
-      properties: { symbol: { const: "T_M" }, grid: THRESHOLD, evaluator: { const: "pending gate zero" }, numerical_admission: { const: "UNKNOWN" } } },
+      properties: { symbol: { const: "T_M" }, grid: THRESHOLD, evaluator: { const: GATE_ZERO_STATUS }, numerical_admission: { const: "UNKNOWN" } } },
     wire: { type: "object", required: ["symbol", "definition", "router_sha256", "proxy"], properties: { symbol: { const: "W" }, router_sha256: HEX64 } },
     references: { type: "object", required: ["comparator", "engineering_variants", "published_targets"], properties: {
       comparator: { type: "object", required: ["id", "file", "content_sha256", "design_hash", "T_R", "W_R_mm"],
@@ -107,16 +114,23 @@ const PROBLEM = {
     sources: { type: "object", required: ["dies", "netlist"] },
   },
 };
+const HEX40 = { type: "string", pattern: "^[0-9a-f]{40}$" };
+// The four statistics of each saved gate-zero result (evidence.json), kept as separate fields.
+const GATE_ZERO_FIELDS = ["paper_native_target_C", "native_block_max_C", "chiplet_centre_average_max_C", "active_layer_grid_peak_C"];
+const GATE_ZERO_RESULT = { type: "object", additionalProperties: false, required: ["problem", "layout", ...GATE_ZERO_FIELDS, "required_primary_and_replay_pass"],
+  properties: { problem: { enum: ["ascend910", "micro150"] }, layout: STR, ...Object.fromEntries(GATE_ZERO_FIELDS.map((f) => [f, { type: "number" }])),
+    required_primary_and_replay_pass: { type: "boolean" } } };
+const PLANNED = { enum: ["planned", "available"] };
 const SCHEMAS = {
-  "agents.json": { type: "object", additionalProperties: false, required: ["schema", "name", "agents", "llms_txt", "status"],
-    properties: { schema: { const: "sentilab-agents-pointer/1" }, name: STR, llms_txt: SITE_PATH, status: STATUS,
+  "agents.json": { type: "object", additionalProperties: false, required: ["schema", "name", "agents", "llms_txt", "evidence", "status"],
+    properties: { schema: { const: "sentilab-agents-pointer/1" }, name: STR, llms_txt: SITE_PATH, evidence: { const: "/agents/evidence.json" }, status: STATUS,
       agents: { type: "object", additionalProperties: false, required: ["md", "json", "alias"], properties: { md: SITE_PATH, json: SITE_PATH, alias: SITE_PATH } } } },
   "agents/index.json": { type: "object", required: ["schema", "name", "entry", "human_view", "status", "opens_after", "sections"],
     properties: { schema: { const: "sentilab-agents-index/1" }, entry: { const: "/agents/index.md" }, human_view: { const: "?view=human" }, status: STATUS, opens_after: { type: "array", minItems: 1, items: STR },
       sections: { type: "array", minItems: 1, items: { type: "object", required: ["id", "href"], properties: { id: STR, href: SITE_PATH, links: { type: "array", items: LINK } } } } } },
   "agents/challenge.json": { type: "object", required: ["schema", "status", "frozen", "label", "sources", "problems", "definitions"],
     properties: { schema: { const: "sentilab-agents-challenge/0" }, frozen: { const: false },
-      status: { type: "object", required: ["manifest", "submissions", "thresholds", "evaluator", "temperatures"], properties: { submissions: { const: "not_open" }, evaluator: { const: "pending gate zero" } } },
+      status: { type: "object", required: ["manifest", "submissions", "thresholds", "evaluator", "temperatures"], properties: { submissions: { const: "not_open" }, evaluator: { const: GATE_ZERO_STATUS } } },
       problems: { type: "array", minItems: 2, items: PROBLEM },
       definitions: { type: "object", required: ["layout", "comparisons", "bounded", "evidence_modes", "claims", "claim_states", "wire_tracks", "tradeoff", "pareto", "ties"],
         properties: { claims: { type: "array", minItems: 7, items: { type: "object", required: ["id", "label", "predicate"] } } } } } },
@@ -124,6 +138,24 @@ const SCHEMAS = {
     properties: { schema: { const: "sentilab-agents-tools/0" }, submissions: { const: "not_open" }, registers_tools: { const: false },
       tools: { type: "array", minItems: 4, items: { type: "object", required: ["name", "availability", "summary", "input"],
         properties: { name: { enum: ["sentilab_open_check", "sentilab_open_submit", "sentilab_open_status", "sentilab_open_results"] }, availability: { enum: ["available", "coming", "unavailable"] }, input: { type: "object" } } } } } },
+  // The saved gate-zero record: each statistic its own numeric field, the tolerance fixed before the check ran, its
+  // sources by hash; the old study still INCONCLUSIVE, and each live capability still planned.
+  "agents/evidence.json": { type: "object", additionalProperties: false, required: ["schema", "as_of_utc", "gate_zero", "historical_study", "interface"],
+    properties: { schema: { const: "sentilab-agent-evidence/1" }, as_of_utc: STR,
+      gate_zero: { type: "object", additionalProperties: false,
+        required: ["status", "engine", "grid", "metric", "unit", "metric_definitions", "tolerance", "results", "raw_output_precision_K", "precision_note", "interpretation", "source", "method", "runtime_admission"],
+        properties: { status: STR, engine: STR, grid: { type: "array", items: { type: "integer" } }, metric: STR, unit: { const: "degC" },
+          metric_definitions: { type: "object", additionalProperties: false, required: GATE_ZERO_FIELDS.slice(1), properties: Object.fromEntries(GATE_ZERO_FIELDS.slice(1).map((f) => [f, STR])) },
+          precision_note: STR, interpretation: STR, method: STR, runtime_admission: STR,
+          tolerance: { type: "object", additionalProperties: false, required: ["value", "unit", "role"],
+            properties: { value: { type: "number" }, unit: { const: "K" }, role: { const: "prospective_engineering_reproduction_tolerance" } } },
+          results: { type: "array", minItems: 2, items: GATE_ZERO_RESULT }, raw_output_precision_K: { type: "number" },
+          source: { type: "object", required: ["merged_commit", "tree", "packet_manifest_sha256", "packet_archive_sha256", "independent_review_sha256"],
+            properties: { merged_commit: HEX40, tree: HEX40, packet_manifest_sha256: HEX64, packet_archive_sha256: HEX64, independent_review_sha256: HEX64 } } } },
+      historical_study: { type: "object", required: ["status", "gate_zero_changes_historical_results", "held_out_comparison_complete", "source_report_sha256"],
+        properties: { status: { const: "INCONCLUSIVE" }, gate_zero_changes_historical_results: { const: false }, held_out_comparison_complete: { const: false }, source_report_sha256: HEX64 } },
+      interface: { type: "object", required: ["representation", "public_submission_service", "purpose_scoped_submission_token", "queue_and_global_quota", "live_arrivals_and_evaluation_view", "identity_rule"],
+        properties: { public_submission_service: PLANNED, purpose_scoped_submission_token: PLANNED, queue_and_global_quota: PLANNED, live_arrivals_and_evaluation_view: PLANNED } } } },
 };
 const REFERENCE = {
   type: "object",
@@ -141,7 +173,7 @@ for (const ref of REFERENCES) for (const name of [`${ref}.json`, `${ref}-snap0p5
 
 test("the agent pages are markdown and JSON only, and the walk reaches every one", () => {
   assert.deepEqual(AGENT_FILES.filter((rel) => ![".md", ".json"].includes(extname(rel))), []);
-  for (const rel of ["agents/index.md", "agents/index.json", "agents/challenge.json", "agents/physics.md", "agents/math.md",
+  for (const rel of ["agents/index.md", "agents/index.json", "agents/challenge.json", "agents/evidence.json", "agents/physics.md", "agents/math.md",
     "agents/skills/SKILL.md", "agents/skills/tools.json", "agents/skills/senti-room-skills.md"]) assert.ok(AGENT_FILES.includes(rel), rel);
   assert.equal(AGENT_FILES.filter((rel) => rel.startsWith("agents/references/")).length, 4);
 });
@@ -235,21 +267,52 @@ const NUMBER = "(?<![A-Za-z0-9_.])[-+−]?[0-9][0-9,]*([.][0-9]+)?";
 const ABSOLUTE = [new RegExp(`${NUMBER}[ ]?(°|º|deg[ ]?|degrees[ ]?)[ ]?[CF](?![A-Za-z])`, "g"), new RegExp(`${NUMBER}[ ]?[CF](?![A-Za-z0-9_])`, "g"),
   new RegExp(`${NUMBER}[ ]?(celsius|fahrenheit)`, "gi")];
 const KELVIN = new RegExp(`${NUMBER}[ ]?K(?![A-Za-z0-9_])`, "g");
-// Withdrawn, published and model temperatures that must never appear, in any unit or none: the paper's reported values,
-// the ambient in kelvin and the kelvin offset, and an old-engine figure.
+// Withdrawn, published and model temperatures that must never appear, in any unit or none, except where a typed source
+// below quotes them: the paper's reported values, the ambient in kelvin and the kelvin offset, and an old-engine figure.
 const DENIED = [75.48, 115.94, 75.13, 75.47, 113.54, 94.89, 93.89, 318.15, 273.15, 69.6];
 const BLOB = /^[A-Za-z0-9+/=_-]{32,}$/;
 const numbersIn = (text) => [...text.matchAll(/(?<![0-9.])[0-9]+([.][0-9]+)?(?![0-9])/g)].map((m) => Number(m[0]));
 const matches = (re, text) => [...text.matchAll(re)].map((m) => m[0]);
+const valueOf = (hit) => Number(hit.trim().replace("−", "-").match(/^[-+]?[0-9][0-9,]*([.][0-9]+)?/)[0].replaceAll(",", ""));
+// The typed sources a temperature may come from besides the provisional thresholds, each allowing its exact values only:
+// the ambient model input as challenge.json types it, with the template field and conversion its source quotes, and the
+// saved gate-zero record in evidence.json. physics.md may quote the same values: the ambient only under "The package",
+// on a line that says it is a model input or quotes the template field, and the gate-zero record only under
+// "The evaluator".
+const ambient = challenge.problems[0].fixture.package.ambient_C ?? {};
+const [, TEMPLATE_K, OFFSET_K, CONVERTED_C] = (/^([0-9.]+) K - ([0-9.]+) = ([0-9.]+) degC$/.exec(ambient.source?.conversion ?? "") ?? []).map(Number);
+const GATE_ZERO_C = (evidence.gate_zero?.results ?? []).flatMap((r) => GATE_ZERO_FIELDS.map((f) => r[f]));
+const GATE_ZERO_K = [evidence.gate_zero?.tolerance?.value, evidence.gate_zero?.raw_output_precision_K];
+// JSON: [file, path, the values that path may hold].
+const SOURCED_JSON = [
+  ["agents/challenge.json", /^[$][.]problems[[][0-9]+][.]fixture[.]package[.]ambient_C[.]value$/, [ambient.value]],
+  ["agents/challenge.json", /^[$][.]problems[[][0-9]+][.]fixture[.]package[.]ambient_C[.]source[.](field|conversion)$/, [TEMPLATE_K, OFFSET_K, CONVERTED_C]],
+  ["agents/evidence.json", new RegExp(`^[$][.]gate_zero[.]results[[][0-9]+][.](${GATE_ZERO_FIELDS.join("|")})$`), GATE_ZERO_C],
+  ["agents/evidence.json", /^[$][.]gate_zero[.](tolerance[.]value|raw_output_precision_K)$/, GATE_ZERO_K],
+];
+// The one object whose unit is the unit of the results under it, not a value of its own.
+const UNIT_OF_RESULTS = [["agents/evidence.json", "$.gate_zero"]];
+// Text: [file, section heading, line label, the values by kind: C absolute, K kelvin, number a bare denied number].
+const SOURCED_TEXT = [
+  ["agents/physics.md", "The package", /model input/i, { C: [ambient.value] }],
+  ["agents/physics.md", "The package", /`-ambient [0-9.]+` K/, { number: [TEMPLATE_K] }],
+  ["agents/physics.md", "The evaluator", /./, { C: GATE_ZERO_C, K: GATE_ZERO_K, number: GATE_ZERO_C }],
+];
+const sourcedJson = (rel, path, n) => SOURCED_JSON.some(([file, at, values]) => file === rel && at.test(path) && values.includes(n));
+const sourcedText = (rel, section, line, kind, n) => SOURCED_TEXT.some(([file, heading, label, values]) =>
+  file === rel && heading === section && label.test(line) && (values[kind] ?? []).includes(n));
 // Every temperature finding in one text file: [] when it is clean.
 function textTemperatures(rel, text) {
   const found = [];
+  let section = "";
   text.split("\n").forEach((line, i) => {
+    if (line.startsWith("## ")) section = line.slice(3).trim();
+    const sourced = (kind, n) => sourcedText(rel, section, line, kind, n);
     for (const hit of ABSOLUTE.flatMap((re) => matches(re, line))) {
-      if (!(/^85 ?°C$/.test(hit.trim()) && /scenario target/i.test(line))) found.push(`${rel}:${i + 1}: absolute temperature ${hit.trim()}`);
+      if (!(/^85 ?°C$/.test(hit.trim()) && /scenario target/i.test(line)) && !sourced("C", valueOf(hit))) found.push(`${rel}:${i + 1}: absolute temperature ${hit.trim()}`);
     }
-    for (const hit of matches(KELVIN, line)) if (!/provisional|invented/i.test(line)) found.push(`${rel}:${i + 1}: ${hit.trim()} outside a provisional threshold or an invented example`);
-    for (const n of numbersIn(line)) if (DENIED.includes(n)) found.push(`${rel}:${i + 1}: denied value ${n}`);
+    for (const hit of matches(KELVIN, line)) if (!/provisional|invented/i.test(line) && !sourced("K", valueOf(hit))) found.push(`${rel}:${i + 1}: ${hit.trim()} outside a provisional threshold, an invented example or a typed source`);
+    for (const n of numbersIn(line)) if (DENIED.includes(n) && !sourced("number", n)) found.push(`${rel}:${i + 1}: denied value ${n}`);
   });
   return found;
 }
@@ -257,31 +320,49 @@ function textTemperatures(rel, text) {
 const TEMPERATURE_KEY = /(^|_)(c|k)$|temp|celsius|kelvin|ambient|peak/i;
 const ALLOWED_TEMPERATURE_PATHS = /^[$][.]problems[[][0-9]+][.]policy[.](D_K|B_T_K|T_limit_C)[.]value$/;
 function jsonTemperatures(rel, value, path = "$", parentKey = "", found = []) {
+  const allowed = (at, n) => ALLOWED_TEMPERATURE_PATHS.test(at) || sourcedJson(rel, at, n);
   if (typeof value === "string") {
     if (!BLOB.test(value)) {
-      for (const hit of [...ABSOLUTE, KELVIN].flatMap((re) => matches(re, value))) found.push(`${rel} ${path}: ${hit.trim()} in a string`);
-      for (const n of numbersIn(value)) if (DENIED.includes(n)) found.push(`${rel} ${path}: denied value ${n}`);
+      for (const hit of [...ABSOLUTE, KELVIN].flatMap((re) => matches(re, value))) if (!sourcedJson(rel, path, valueOf(hit))) found.push(`${rel} ${path}: ${hit.trim()} in a string`);
+      for (const n of numbersIn(value)) if (DENIED.includes(n) && !sourcedJson(rel, path, n)) found.push(`${rel} ${path}: denied value ${n}`);
     }
   } else if (typeof value === "number") {
     const key = path.slice(path.lastIndexOf(".") + 1).replace(/[[][0-9]+]$/, "");
     const named = ["value", "values"].includes(key) ? parentKey : key;
-    if (TEMPERATURE_KEY.test(named) && !ALLOWED_TEMPERATURE_PATHS.test(path)) found.push(`${rel} ${path}: a number under a temperature key`);
-    if (DENIED.includes(value)) found.push(`${rel} ${path}: denied value ${value}`);
+    if (TEMPERATURE_KEY.test(named) && !allowed(path, value)) found.push(`${rel} ${path}: a number under a temperature key`);
+    if (DENIED.includes(value) && !sourcedJson(rel, path, value)) found.push(`${rel} ${path}: denied value ${value}`);
   } else if (Array.isArray(value)) {
     value.forEach((v, i) => jsonTemperatures(rel, v, `${path}[${i}]`, parentKey, found));
   } else if (value && typeof value === "object") {
-    if (["K", "degC", "°C", "C", "kelvin"].includes(value.unit) && !ALLOWED_TEMPERATURE_PATHS.test(`${path}.value`)) found.push(`${rel} ${path}: a temperature unit outside the allowed thresholds`);
+    const unitOfResults = UNIT_OF_RESULTS.some(([file, at]) => file === rel && at === path);
+    if (["K", "degC", "°C", "C", "kelvin"].includes(value.unit) && !unitOfResults && !allowed(`${path}.value`, value.value)) found.push(`${rel} ${path}: a temperature unit outside the allowed thresholds and typed sources`);
     for (const [k, v] of Object.entries(value)) {
-      if (TEMPERATURE_KEY.test(k) && typeof v === "number" && !ALLOWED_TEMPERATURE_PATHS.test(`${path}.${k}`)) found.push(`${rel} ${path}.${k}: a number under a temperature key`);
+      if (TEMPERATURE_KEY.test(k) && typeof v === "number" && !allowed(`${path}.${k}`, v)) found.push(`${rel} ${path}.${k}: a number under a temperature key`);
       else jsonTemperatures(rel, v, `${path}.${k}`, k, found);
     }
   }
   return found;
 }
-test("3. no temperature appears in any agent page, except the provisional thresholds and invented example numbers", () => {
+test("3. no temperature appears in any agent page, except the provisional thresholds, invented example numbers and typed sources", () => {
   const found = [...TEXT.flatMap((rel) => textTemperatures(rel, read(rel))), ...JSONS.flatMap((rel) => jsonTemperatures(rel, json(rel)))];
   assert.deepEqual(found, []);
-  for (const problem of challenge.problems) assert.equal(problem.policy.T_limit_C.value, 85, "the one absolute temperature is the declared scenario target");
+  for (const problem of challenge.problems) {
+    assert.equal(problem.policy.T_limit_C.value, 85, "the declared scenario target");
+    assert.deepEqual(problem.fixture.package.ambient_C, ambient, "one ambient model input for both problems");
+    assert.ok(!("ambient" in problem.fixture.package), "and no untyped ambient beside it");
+  }
+  // The ambient is typed as a provisional model input, and its source's figures agree with it.
+  assert.deepEqual([ambient.value, ambient.unit, ambient.role, ambient.status, ambient.frozen], [45, "degC", "model_input", "provisional", false]);
+  assert.equal(ambient.source.field, `-ambient ${TEMPLATE_K}`);
+  assert.equal(CONVERTED_C, ambient.value);
+  assert.ok(Math.abs(TEMPLATE_K - OFFSET_K - CONVERTED_C) < 1e-9, "the conversion holds");
+  // When the template is in this tree, the source names its exact bytes, and the template carries the quoted field.
+  const template = join(REPO, ...ambient.source.path.split("/"));
+  if (existsSync(template)) {
+    const bytes = readFileSync(template);
+    assert.equal(createHash("sha256").update(bytes).digest("hex"), ambient.source.sha256, `${ambient.source.path} changed`);
+    assert.ok(bytes.toString("utf8").split(NL).some((line) => line.trim().split(/\s+/).join(" ") === ambient.source.field), ambient.source.field);
+  }
 });
 test("3. negative control: temperatures in every form are caught", () => {
   for (const line of ["Ascend 910 runs at 75.48 °C.", "peak 115.94 C", "a 45 degC ambient", "it rose 0.32 K", "T = 318.15", "47.1 Celsius", "85 °C as a limit"]) {
@@ -296,6 +377,25 @@ test("3. negative control: temperatures in every form are caught", () => {
   assert.ok(jsonTemperatures("x.json", { result: { value: 80.2, unit: "degC" } }).length > 0);
   assert.ok(jsonTemperatures("x.json", { note: "sink rise 18.4 K" }).length > 0);
   assert.deepEqual(jsonTemperatures("x.json", { problems: [{ policy: { T_limit_C: { value: 85, unit: "degC" }, D_K: { value: 0.5, unit: "K" } } }] }), []);
+  // A typed source allows its own values only: in its own file, at its own field or in its own section, on its line.
+  assert.deepEqual(textTemperatures("agents/physics.md", "## The package\n**45 °C ambient as a model input**"), []);
+  assert.deepEqual(textTemperatures("agents/physics.md", "## The evaluator\n**75.48 °C for Ascend 910**, within the 1 K tolerance"), []);
+  for (const text of ["## The package\na 45 °C ambient", "## The package\n46 °C, a model input", "## How heat flows\n45 °C, a model input",
+    "## The package\nthe template says 318.15", "## The evaluator\n45 °C, a model input", "## The evaluator\nAscend 910 runs at 75.13 °C.",
+    "## The evaluator\nwithin 2 K"]) assert.ok(textTemperatures("agents/physics.md", text).length > 0, text);
+  assert.ok(textTemperatures("agents/index.md", "## The evaluator\n**75.48 °C for Ascend 910**").length > 0, "physics.md only");
+  assert.deepEqual(jsonTemperatures("agents/challenge.json", { problems: [{ fixture: { package: { ambient_C: { value: 45, unit: "degC" } } } }] }), []);
+  assert.deepEqual(jsonTemperatures("agents/evidence.json", { gate_zero: { unit: "degC", results: [{ native_block_max_C: 75.48 }], tolerance: { value: 1, unit: "K" } } }), []);
+  for (const [rel, value] of [
+    ["agents/challenge.json", { problems: [{ fixture: { package: { ambient_C: { value: 46, unit: "degC" } } } }] }],
+    ["agents/challenge.json", { problems: [{ statistic: { ambient_C: { value: 45, unit: "degC" } } }] }],
+    ["agents/challenge.json", { problems: [{ fixture: { package: { ambient_C: { source: { conversion: "320 K - 273.15 = 46.85 degC" } } } } }] }],
+    ["agents/evidence.json", { gate_zero: { results: [{ native_block_max_C: 80.2 }] } }],
+    ["agents/evidence.json", { gate_zero: { results: [{ hottest_C: 75.48 }] } }],
+    ["agents/evidence.json", { gate_zero: { tolerance: { value: 2, unit: "K" } } }],
+    ["agents/evidence.json", { summary: { value: 75.48, unit: "degC" } }],
+    ["agents/index.json", { gate_zero: { results: [{ native_block_max_C: 75.48 }] } }],
+  ]) assert.ok(jsonTemperatures(rel, value).length > 0, `${rel} ${JSON.stringify(value)}`);
 });
 
 // ── 4. thresholds ────────────────────────────────────────────────────────────────────────────────────────────────
@@ -324,7 +424,10 @@ test("4. every threshold is provisional and not frozen, wherever it is", () => {
       assert.deepEqual(Object.entries(block).filter(([, v]) => typeof v === "number"), [], "no bare number in legality or policy");
     }
   }
-  for (const rel of JSONS) assert.deepEqual(provisionalProblems(json(rel)), [], rel);
+  // evidence.json's gate-zero tolerance was fixed before that check ran: a recorded parameter of a completed check, not
+  // a provisional challenge threshold (the schema pins its role). Nothing else is exempt.
+  const recorded = (rel, problem) => rel === "agents/evidence.json" && problem === "$.gate_zero.tolerance: not provisional";
+  for (const rel of JSONS) assert.deepEqual(provisionalProblems(json(rel)).filter((problem) => !recorded(rel, problem)), [], rel);
 });
 test("4. math.md quotes every threshold as challenge.json has it, and both problems share the policy values it quotes", () => {
   const rows = read("agents/math.md").split("\n").filter((line) => line.startsWith("|")).map((line) => line.split("|").map((c) => c.trim()))
@@ -356,14 +459,17 @@ test("5. no 'validated', no 'calibrated' or 'calibration', and 'measured' only a
 });
 
 // ── 6. status ────────────────────────────────────────────────────────────────────────────────────────────────────
-test("6. the status agrees everywhere: submissions not open, submit unavailable, the evaluator pending gate zero", () => {
+test("6. the status agrees everywhere: submissions not open, submit unavailable, gate zero re-derived and public scoring not admitted", () => {
   const index = json("agents/index.json");
   assert.deepEqual(json("agents.json").status, index.status, "agents.json matches agents/index.json");
   assert.equal(index.status.submissions, "not_open");
-  assert.equal(index.status.simulated_temperatures_shown, false);
+  assert.equal(index.status.simulated_temperatures_shown, true, "the saved gate-zero record, from its typed source");
   assert.equal(index.status.thresholds, "provisional");
-  assert.equal(index.status.evaluator, "pending gate zero");
+  assert.equal(index.status.evaluator, GATE_ZERO_STATUS);
   assert.equal(challenge.status.submissions, "not_open");
+  assert.equal(evidence.historical_study.status, "INCONCLUSIVE");
+  assert.deepEqual([...new Set(["public_submission_service", "purpose_scoped_submission_token", "queue_and_global_quota",
+    "live_arrivals_and_evaluation_view"].map((k) => evidence.interface[k]))], ["planned"], "nothing live is claimed");
   const tools = json("agents/skills/tools.json");
   assert.equal(tools.submissions, "not_open");
   assert.equal(tools.tools.find((t) => t.name === "sentilab_open_submit").availability, "unavailable");
@@ -374,9 +480,15 @@ test("6. the status agrees everywhere: submissions not open, submit unavailable,
   const skill = read("agents/skills/SKILL.md");
   assert.match(skill.slice(skill.indexOf("## 5. Submit")), /^## 5[.] Submit [(]not open yet[)]/);
   assert.match(read("agents/skills/senti-room-skills.md"), /coming, not available yet/);
-  assert.match(read("agents/index.md"), /## Identify yourself\n\nAgents visiting this site may be asked to state their purpose and will receive a receipt[.]\n/);
+  // No visitor receipt promise and no unreleased install command; submitting as yourself stays, apart from
+  // authenticated identity.
+  assert.doesNotMatch(read("agents/index.md"), /Identify yourself|receipt/);
+  assert.ok(!json("agents/index.json").sections.some((s) => s.id === "identify-yourself"), "index.json drops its link");
+  for (const rel of SITE) assert.doesNotMatch(read(rel), /npx|@latest|skills install/, rel);
+  assert.match(read("agents/index.md"), /- Submit as yourself[.] An agent never leaves out its identity to look like a person[.]/);
+  assert.match(read("agents/index.md"), /distinct from authenticated identity/);
   for (const p of challenge.problems) {
-    assert.equal(p.statistic.evaluator, "pending gate zero");
+    assert.equal(p.statistic.evaluator, GATE_ZERO_STATUS);
     assert.match(p.references.comparator.T_R, /^UNKNOWN/);
   }
 });

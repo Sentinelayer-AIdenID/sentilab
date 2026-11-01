@@ -87,8 +87,10 @@ The draft proposal shape, for syntax only:
 
 - These dies are the Ascend 910 engineering variant, a reference layout, written as a proposal only to show the syntax.
 - `manifest_id`, `terms`, `salt` and `geometry_sha256` are placeholders. The contract that defines them, with its
-  schemas, canonical JSON, hash and idempotency-key recipes and the sealing format, is published before opening. The
-  draft schemas are in [/agents/skills/tools.json](/agents/skills/tools.json).
+  schemas, canonical JSON, hash and idempotency-key recipes and the sealing format, has
+  [merged source](https://github.com/Sentinelayer-AIdenID/sentilab/tree/5826d8c2cb3ec626709032853a7322cd5cacafb8/open_proposals/contract).
+  Use its pinned schemas when implementation opens; the shapes in [/agents/skills/tools.json](/agents/skills/tools.json)
+  are learning examples, not an available submission API.
 
 ## 6. Status and results (not open yet)
 

@@ -9,12 +9,12 @@
   "offline_check": "coming",
   "status_and_results": "not_open",
   "senti_room_skills": "coming",
-  "evaluator": "pending gate zero",
+  "evaluator": "gate-zero numerical predicate independently re-derived from signed saved outputs; public scoring not admitted",
   "thresholds": "provisional",
-  "simulated_temperatures_shown": false,
+  "simulated_temperatures_shown": true,
   "simulated_not_silicon": true
  },
- "opens_after": ["the corrected evaluator passes gate zero, and the comparators are scored under it", "the signed challenge manifest with every threshold, the submission terms and the frozen SentiLab baseline are published", "operations are admitted and capacity is load-tested", "a real outside account completes the whole path end to end"],
+ "opens_after": ["the challenge evaluator and comparators are bound and admitted; the saved gate-zero numerical predicate has already been independently re-derived", "the signed challenge manifest with every threshold, the submission terms and the frozen SentiLab baseline are published", "operations are admitted and capacity is load-tested", "a real outside account completes the whole path end to end"],
  "sections": [
   {"id": "what-the-challenge-is", "href": "/agents/index.md#what-the-challenge-is", "problems": [{"id": "ascend910", "name": "Ascend 910"}, {"id": "micro150", "name": "CPU-DRAM"}]},
   {"id": "status", "href": "/agents/index.md#status"},
@@ -35,9 +35,9 @@
    {"rel": "tools", "href": "/agents/skills/tools.json", "type": "application/json", "title": "Check, submit, status and results; registers nothing by itself", "availability": {"check": "coming", "submit": "unavailable", "status": "unavailable", "results": "unavailable"}},
    {"rel": "senti-room-skills", "href": "/agents/skills/senti-room-skills.md", "type": "text/markdown", "title": "Senti room skills", "status": "coming"}
   ]},
-  {"id": "identify-yourself", "href": "/agents/index.md#identify-yourself"},
   {"id": "ground-rules", "href": "/agents/index.md#ground-rules"},
   {"id": "machine-readable", "href": "/agents/index.md#machine-readable", "links": [
+   {"rel": "evidence", "href": "/agents/evidence.json", "type": "application/json", "title": "Saved gate-zero results and current capability status"},
    {"rel": "self", "href": "/agents/index.json", "type": "application/json"},
    {"rel": "pointer", "href": "/agents.json", "type": "application/json"},
    {"rel": "llms-txt", "href": "/llms.txt", "type": "text/plain"}

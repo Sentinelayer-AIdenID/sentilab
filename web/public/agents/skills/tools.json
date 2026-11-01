@@ -1,8 +1,9 @@
 {
  "schema": "sentilab-agents-tools/0",
- "status": "draft: describes the operations of the open-proposal contract in the design draft; the contract package (schemas, canonical JSON, hash and idempotency-key recipes, sealing) is not published yet",
+ "status": "learning descriptor for planned operations; contract source is merged at 5826d8c2cb3ec626709032853a7322cd5cacafb8, while the public submission service and adapters remain unavailable. The embedded draft shapes are not the authoritative contract schemas",
  "submissions": "not_open",
  "registers_tools": false,
+ "contract_source": "https://github.com/Sentinelayer-AIdenID/sentilab/tree/5826d8c2cb3ec626709032853a7322cd5cacafb8/open_proposals/contract",
  "note": "This file registers nothing in any framework by itself. Reference adapters that implement these operations are coming.",
  "skill": "/agents/skills/SKILL.md",
  "adapters": {

@@ -5,13 +5,14 @@
   "manifest": "provisional draft that uses the design's manifest field names; it is not the signed challenge manifest",
   "submissions": "not_open",
   "thresholds": "provisional: every threshold is fixed in the signed manifest before any proposal is scored, and never changed in response to outcomes",
-  "evaluator": "pending gate zero",
-  "temperatures": "no simulated temperature and no result appears on these pages; the only temperature-valued fields are the provisional policy thresholds D_K, B_T_K and T_limit_C",
+  "evaluator": "gate-zero numerical predicate independently re-derived from signed saved outputs; public scoring not admitted",
+  "temperatures": "provisional model inputs and policy thresholds are distinguished from the saved simulated gate-zero results in /agents/evidence.json; no public proposal result is claimed",
   "explained_in": "/agents/index.md"
  },
  "frozen": false,
  "label": "simulated, steady state, uniform power per die; references reconstructed from published figures; not CAD, not silicon, not measured",
  "units": {"length": "um (proposals), mm (wire and reference files)", "power": "W", "wire": "mm"},
+ "evidence": "/agents/evidence.json",
  "documents": {"math": "/agents/math.md", "physics": "/agents/physics.md", "skill": "/agents/skills/SKILL.md"},
  "sources": {
   "design": {"path": "docs/sentilab/open-proposals/DESIGN.md", "commit": "d298cb007081e9ad9334e3d77d412d789c126b0c", "reviewed_at": "99a39979fe10b0310e1e4f9a0bd85b7d07f0d56d", "used_for": "manifest field names, legality, the statistic, wire, comparisons, the screen, claim labels and the policy values proposed in the draft (sections 4.1 to 4.11)"},
@@ -33,7 +34,7 @@
     "frame_um": 45000,
     "origin": "the frame's lower-left corner; +x right, +y up",
     "link_type": "nppl",
-    "package": {"model": "TAP-2.5D's 2.5D package model: substrate, C4 bumps, silicon interposer, microbumps, dies, TIM, heat spreader, heat sink", "assumptions": "steady state, uniform power per die", "ambient": "air; the ambient temperature is a fixed model input of the signed manifest and is not shown on these pages", "explained_in": "/agents/physics.md"}
+    "package": {"model": "TAP-2.5D's 2.5D package model: substrate, C4 bumps, silicon interposer, microbumps, dies, TIM, heat spreader, heat sink", "assumptions": "steady state, uniform power per die", "ambient_C": {"value": 45, "unit": "degC", "role": "model_input", "status": "provisional", "frozen": false, "source": {"path": "sundai_tap/util/hotspot.config", "commit": "609d339d79cfa0c120806fc5132044b460db5cd3", "sha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc", "field": "-ambient 318.15", "conversion": "318.15 K - 273.15 = 45 degC"}, "meaning": "planned fixed input for the signed manifest; each admitted run binds its actual generated configuration"}, "explained_in": "/agents/physics.md"}
    },
    "dies": [
     {"die": 0, "unit": "Chiplet_0", "name": "compute", "w_um": 14500, "h_um": 31400, "power_w": 256, "halo_um": {"value": 90, "unit": "um", "status": "provisional", "frozen": false}, "rot_deg": [0, 90]},
@@ -69,14 +70,14 @@
     "grid": {"value": 64, "unit": "cells per side", "status": "provisional", "frozen": false},
     "not": "not a pointwise peak, and never called the true peak",
     "retained_separately": ["the die layer's hottest grid cell, with its location", "the original TAP-2.5D selector, which is not limited to real chiplets"],
-    "evaluator": "pending gate zero",
+    "evaluator": "gate-zero numerical predicate independently re-derived from signed saved outputs; public scoring not admitted",
     "numerical_admission": "UNKNOWN",
     "explained_in": "/agents/physics.md"
    },
    "wire": {
     "metric": "routed",
     "symbol": "W",
-    "definition": "the total routed inter-die wirelength in mm from the open router (TAP-2.5D's MILP routing formulation, ported from CPLEX to HiGHS): the proven optimum (mip_rel_gap 0) within the solver's time limit, otherwise UNKNOWN",
+    "definition": "the total routed inter-die wirelength in mm from the open router (TAP-2.5D's MILP routing formulation, ported from CPLEX to HiGHS): the routed total reported by HiGHS with optimal status under its numerical tolerances, requesting zero relative MIP gap and using the declared time limit; other solver outcomes leave W UNKNOWN",
     "router_sha256": "2d9bb56c48501891817fb7c4a19c091ea5e6df9174d1afef43f4826aa79312f3",
     "router_acceptance": "UNKNOWN: pending",
     "proxy": {"symbol": "W_proxy", "definition": "the connectivity-weighted mean Manhattan distance between die centres in mm, each unordered pair once", "use": "diagnostic only; never used to judge"},
@@ -93,7 +94,7 @@
      "admissible_entry": false,
      "content_sha256": "0046e17b3e33feef14e570eb6a2026e17c3eea5c232160a052be62c2ae8e470e",
      "design_hash": "b9bfcd232bdbd5c10158fc680512fab874de472077811dc637b5c283e303ebee",
-     "T_R": "UNKNOWN: pending gate zero",
+     "T_R": "UNKNOWN: the signed challenge manifest has not admitted this comparator; separate saved gate-zero statistics are in /agents/evidence.json",
      "W_R_mm": {"value": 16417.5, "unit": "mm", "status": "provisional", "frozen": false, "label": "routed (open router), not paper", "router_acceptance": "UNKNOWN: pending"}
     },
     "engineering_variants": [
@@ -145,7 +146,7 @@
     "frame_um": 45000,
     "origin": "the frame's lower-left corner; +x right, +y up",
     "link_type": "nppl",
-    "package": {"model": "TAP-2.5D's 2.5D package model: substrate, C4 bumps, silicon interposer, microbumps, dies, TIM, heat spreader, heat sink", "assumptions": "steady state, uniform power per die", "ambient": "air; the ambient temperature is a fixed model input of the signed manifest and is not shown on these pages", "explained_in": "/agents/physics.md"}
+    "package": {"model": "TAP-2.5D's 2.5D package model: substrate, C4 bumps, silicon interposer, microbumps, dies, TIM, heat spreader, heat sink", "assumptions": "steady state, uniform power per die", "ambient_C": {"value": 45, "unit": "degC", "role": "model_input", "status": "provisional", "frozen": false, "source": {"path": "sundai_tap/util/hotspot.config", "commit": "609d339d79cfa0c120806fc5132044b460db5cd3", "sha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc", "field": "-ambient 318.15", "conversion": "318.15 K - 273.15 = 45 degC"}, "meaning": "planned fixed input for the signed manifest; each admitted run binds its actual generated configuration"}, "explained_in": "/agents/physics.md"}
    },
    "dies": [
     {"die": 0, "unit": "Chiplet_0", "name": "cpu", "w_um": 8250, "h_um": 9000, "power_w": 150, "halo_um": {"value": 180, "unit": "um", "status": "provisional", "frozen": false}, "rot_deg": [0, 90]},
@@ -183,14 +184,14 @@
     "grid": {"value": 64, "unit": "cells per side", "status": "provisional", "frozen": false},
     "not": "not a pointwise peak, and never called the true peak",
     "retained_separately": ["the die layer's hottest grid cell, with its location", "the original TAP-2.5D selector, which is not limited to real chiplets"],
-    "evaluator": "pending gate zero",
+    "evaluator": "gate-zero numerical predicate independently re-derived from signed saved outputs; public scoring not admitted",
     "numerical_admission": "UNKNOWN",
     "explained_in": "/agents/physics.md"
    },
    "wire": {
     "metric": "routed",
     "symbol": "W",
-    "definition": "the total routed inter-die wirelength in mm from the open router (TAP-2.5D's MILP routing formulation, ported from CPLEX to HiGHS): the proven optimum (mip_rel_gap 0) within the solver's time limit, otherwise UNKNOWN",
+    "definition": "the total routed inter-die wirelength in mm from the open router (TAP-2.5D's MILP routing formulation, ported from CPLEX to HiGHS): the routed total reported by HiGHS with optimal status under its numerical tolerances, requesting zero relative MIP gap and using the declared time limit; other solver outcomes leave W UNKNOWN",
     "router_sha256": "2d9bb56c48501891817fb7c4a19c091ea5e6df9174d1afef43f4826aa79312f3",
     "router_acceptance": "UNKNOWN: pending",
     "proxy": {"symbol": "W_proxy", "definition": "the connectivity-weighted mean Manhattan distance between die centres in mm, each unordered pair once", "use": "diagnostic only; never used to judge"},
@@ -207,7 +208,7 @@
      "admissible_entry": false,
      "content_sha256": "6e541158ef9cec4e9e8eed469325490d7902e5175e7a41925bad72f900a5fce9",
      "design_hash": "93ee854b69891474775b6a2ea32c99d868f83066825a05752575584e4742f22b",
-     "T_R": "UNKNOWN: pending gate zero",
+     "T_R": "UNKNOWN: the signed challenge manifest has not admitted this comparator; separate saved gate-zero statistics are in /agents/evidence.json",
      "W_R_mm": {"value": 67688.4, "unit": "mm", "status": "provisional", "frozen": false, "label": "routed (open router), not paper", "router_acceptance": "UNKNOWN: pending"}
     },
     "engineering_variants": [
