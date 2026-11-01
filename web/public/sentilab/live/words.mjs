@@ -145,6 +145,9 @@ export const RECORDS = Object.freeze({
   done: "That is every record.",
   none: "No records in this tab yet.",
   failed: (e) => `Earlier records could not be loaded (${e}). Try again.`,
+  filling: "Reading records that arrived all at once\u2026",
+  gapHere: "Some records that arrived all at once are not loaded yet",
+  gapFailed: (e) => `Some records that arrived all at once could not be loaded (${e}). Try again.`,
 });
 
 // The rest of the page's words that used to be codes or engineer shorthand.

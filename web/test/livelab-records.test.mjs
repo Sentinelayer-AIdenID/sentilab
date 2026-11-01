@@ -92,22 +92,24 @@ const settle = async () => { for (let i = 0; i < 25; i += 1) await new Promise((
 const walk = (el, out = []) => { if (!el) return out; out.push(el); for (const c of el.children ?? []) if (c instanceof El) walk(c, out); return out; };
 const CLASSES = ["likely_human", "unknown", "declared_agent", "automation", "crawler_claimed", "verified_agent"];
 // 450 door records: arrivals of every class, several per visit (the same short id), ascending seq 1..450.
+function record(seq) {
+  const cls = CLASSES[seq % CLASSES.length], short = (Math.floor(seq / 3) % 4096).toString(16).padStart(4, "0");
+  return { seq, at: new Date(Date.parse("2026-11-01T10:00:00Z") + seq * 60000).toISOString(), kind: "arrival", class: cls, label: `${cls} \u00b7 ${short}`,
+    purpose: "place-chiplets", short_id: short };
+}
 function history() {
   const out = [];
-  for (let seq = 1; seq <= 450; seq += 1) {
-    const cls = CLASSES[seq % CLASSES.length], short = (Math.floor(seq / 3) % 4096).toString(16).padStart(4, "0");
-    out.push({ seq, at: new Date(Date.parse("2026-11-01T10:00:00Z") + seq * 60000).toISOString(), kind: "arrival", class: cls, label: `${cls} \u00b7 ${short}`,
-      purpose: "place-chiplets", short_id: short });
-  }
+  for (let seq = 1; seq <= 450; seq += 1) out.push(record(seq));
   return out;
 }
-function world(t, { results = doc("results.json") } = {}) {
+function world(t, { results = doc("results.json"), refuse = () => false } = {}) {
   const events = history();
   const asked = [];
   const dom = installPage(t, (url) => {
     if (url.pathname === "/api/open/v1/door/events") {
       const after = Number(url.searchParams.get("after") ?? 0), limit = Math.min(200, Number(url.searchParams.get("limit") ?? 200));
       asked.push(after);
+      if (refuse(url)) return undefined;
       const rest = events.filter((e) => e.seq > after), page = rest.slice(0, limit);
       return { schema: "sentilab-door-events/1", events: page, next_after: page.length ? page.at(-1).seq : after, has_more: rest.length > limit,
         scorer: { state: "up", since: 1793528287 } };
@@ -117,7 +119,7 @@ function world(t, { results = doc("results.json") } = {}) {
     if (url.pathname === "/api/open/v1/door/board") return doc("board.json");
     return null;
   });
-  return { dom, asked };
+  return { dom, asked, events };
 }
 const rows = () => walk(document.getElementById("visitorList")).filter((el) => el.className === "rec-row");
 const button = (pred) => walk(document.getElementById("visitorList")).find((el) => el.tag === "button" && pred(el));
@@ -174,4 +176,35 @@ test("population tabs filter the records; the aquarium's labels; a refused run s
   assert.equal(outcome.attrs.get("title"), "margin", "the raw code in the tooltip");
   // An accepted run says so, with its statistic and its replay.
   assert.match(text(), /Accepted · highest chiplet-centre average [0-9.]+ °C · simulated · replay matched/);
+});
+
+// Root's review of f9cc6ab (P2 #1): history must not silently lose an interior burst. The page holds all 450 records,
+// then 100 new ones arrive in one poll; the shared feed keeps only its newest 40, so 451-510 never reach the page from
+// the feed. The page knows which seqs it has read; it reads the hole back through the gate, and never says "That is
+// every record" while a hole is known (here the first read-back is refused, so the hole stays known until a retry).
+test("a burst larger than the window is read back, and the page never says every record while a gap is known", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: Date.parse("2026-11-01T18:00:00Z") });
+  let refuseFill = true, refused = 0;
+  const w = world(t, { refuse: (url) => { const fill = url.searchParams.has("limit") && Number(url.searchParams.get("after")) >= 450; if (fill && refuseFill) refused += 1; return fill && refuseFill; } });
+  await import(`${LIVE}?records=burst`);
+  const more = () => button((el) => el.attrs.get("id") === "recordMore");
+  const seqs = () => rows().map((el) => Number(el.attrs.get("title")?.replace("seq ", "")));
+  for (let k = 0; k < 30; k += 1) { t.mock.timers.tick(200); await settle(); }
+  for (let i = 0; i < 4; i += 1) { more().click(); for (let k = 0; k < 20; k += 1) { t.mock.timers.tick(200); await settle(); } }
+  assert.equal(rows().length, 450, "the whole history first");
+  assert.match(more().textContent, /That is every record/);
+  for (let seq = 451; seq <= 550; seq += 1) w.events.push(record(seq));
+  for (let k = 0; k < 40; k += 1) { t.mock.timers.tick(200); await settle(); }
+  assert.ok(seqs().includes(550), "the burst's newest records arrived");
+  assert.ok(seqs().length < 550, "the refused read-back left a hole");
+  assert.ok(refused >= 1, "the page read the hole back on its own, before any click");
+  assert.equal(/That is every record/.test(more().textContent), false, `never "every record" while a gap is known: ${more().textContent}`);
+  assert.equal(more().disabled, false, "the reader can retry");
+  assert.ok(walk(document.getElementById("visitorList")).some((el) => el.className === "rec-gap"), "the list marks where records are missing");
+  refuseFill = false;
+  more().click();
+  for (let k = 0; k < 60; k += 1) { t.mock.timers.tick(200); await settle(); }
+  assert.deepEqual([...seqs()].sort((a, b) => a - b), Array.from({ length: 550 }, (_, i) => i + 1), "no record lost, none twice");
+  assert.match(more().textContent, /That is every record/);
+  assert.equal(walk(document.getElementById("visitorList")).some((el) => el.className === "rec-gap"), false, "no gap marker once read back");
 });

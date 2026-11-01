@@ -64,7 +64,7 @@ const fmtInt = (n) => Math.round(n).toLocaleString("en-US");
 // ── state ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 const S = {
   selectedId: null, cursorSeq: null, playing: false, playTimer: 0, explode: 0, explodeAnim: 0, orbit: false, motion: true, stage: false,
-  records: new Map(), recTab: "all", recLoading: false, recDone: false, recError: "",
+  records: new Map(), recTab: "all", recLoading: false, recWhat: "", recError: "", cover: [], gapRetryAt: 0,
   board: { ok: null, board: null, error: "", at: null }, decl: { ok: null, partial: false, list: [], error: "", at: null, through: 0 }, v3: null, v3Failed: false, v3Pending: null, drawn: null, layer: null,
 };
 // One gate for every request the page makes: spacing, Retry-After and jittered backoff (live-model.mjs createGate).
@@ -537,6 +537,11 @@ function renderArrivals() {
 // ── every door record: newest first, in the aquarium's population tabs, older pages on request ────────────────
 function renderRecords(list) {
   S.records = M.mergeRecords(S.records, feed.state.events);
+  const win = feed.state.events;
+  if (win.length) S.cover = M.addRange(S.cover, Math.min(...win.map((e) => e.seq)), feed.state.eventsCursor);
+  const gaps = M.rangeGaps(S.cover);
+  const empty = !S.cover.length && feed.state.lastOkAt && !(feed.state.eventsCursor > 0);
+  const done = !gaps.length && (M.readFromStart(S.cover) || Boolean(empty));
   const all = [...S.records.values()].sort((x, y) => y.seq - x.seq);
   const shown = S.recTab === "all" ? all : all.filter((e) => W.populationOf(e) === S.recTab);
   list.append(h("p", { class: "door-head" }, W.RECORDS.head));
@@ -551,7 +556,11 @@ function renderRecords(list) {
   const rows = h("div", { class: "rec-list", id: "recordRows" });
   const names = namesNow();
   if (!shown.length) rows.append(h("p", { class: "rail-empty" }, W.RECORDS.none));
+  let newer = null;
   for (const e of shown) {
+    // Where records are known to be missing, the list says so in place (never a silent hole).
+    if (newer !== null && gaps.some(([lo, hi]) => lo > e.seq && hi < newer)) rows.append(h("p", { class: "rec-gap" }, W.RECORDS.gapHere));
+    newer = e.seq;
     rows.append(h("div", { class: "rec-row", title: `seq ${e.seq}` }, avatar({ cls: e.cls, short: e.short, seq: e.seq, category: e.category, verification: e.verification }),
       e.kind === "arrival" && names.has(e.seq)
         ? h("span", null, h("bdi", null, names.get(e.seq)), `${W.namedTail(e)} \u00b7 ${e.event_kind === "declaration" ? W.TEXT.declared : W.TEXT.arrived}`, h("small", null, W.when(e.at)))
@@ -559,25 +568,47 @@ function renderRecords(list) {
   }
   list.append(rows);
   const more = h("button", { type: "button", class: "rec-more", id: "recordMore" },
-    S.recDone ? W.RECORDS.done : S.recLoading ? W.RECORDS.loading : S.recError ? W.RECORDS.failed(S.recError) : W.RECORDS.more);
-  more.disabled = S.recDone || S.recLoading;
-  more.addEventListener("click", () => loadEarlier());
+    S.recLoading ? (S.recWhat === "gap" ? W.RECORDS.filling : W.RECORDS.loading)
+      : S.recError ? (S.recWhat === "gap" ? W.RECORDS.gapFailed(S.recError) : W.RECORDS.failed(S.recError))
+      : gaps.length ? W.RECORDS.filling : done ? W.RECORDS.done : W.RECORDS.more);
+  more.disabled = S.recLoading || done;
+  more.addEventListener("click", () => { S.gapRetryAt = 0; if (M.rangeGaps(S.cover).length) fillGap(); else loadEarlier(); });
   list.append(more);
+  if (gaps.length && !S.recLoading) setTimeout(fillGap, 0);
 }
 // One older page at a time, through the page's gate (spaced like every other request), never a burst.
-async function loadEarlier() {
-  if (S.recLoading || S.recDone) return;
-  const held = [...S.records.keys()];
-  const oldest = held.length ? Math.min(...held) : (feed.state.eventsCursor ?? 0) + 1;
-  if (oldest <= 1) { S.recDone = true; renderWork(); return; }
-  const req = M.olderPage(oldest);
-  S.recLoading = true; S.recError = "";
+// Both readers record what they read as a covered range, and drop an answer from an ended epoch (pagehide).
+let recEpoch = 0;
+async function readRecords(what, req) {
+  const mine = recEpoch;
+  S.recLoading = true; S.recWhat = what; S.recError = "";
   renderWork();
   const got = await M.fetchEventsPage(req.after, { fetchImpl: gate.fetch, limit: req.limit });
+  if (mine !== recEpoch) return;
   S.recLoading = false;
-  if (got.ok) { S.records = M.mergeRecords(S.records, got.events); if (req.after === 0) S.recDone = true; }
-  else S.recError = got.error;
+  if (got.ok && got.next_after > req.after) {
+    S.records = M.mergeRecords(S.records, got.events);
+    S.cover = M.addRange(S.cover, req.after + 1, got.next_after);
+    S.recWhat = "";
+  } else {
+    S.recError = got.ok ? "the door returned no records for that range" : got.error;
+    if (what === "gap") S.gapRetryAt = Date.now() + GAP_RETRY_MS;
+  }
   renderWork();
+}
+async function loadEarlier() {
+  if (S.recLoading) return;
+  const oldest = S.cover[0]?.[0] ?? (feed.state.lastOkAt ? (feed.state.eventsCursor ?? 0) + 1 : null);
+  if (oldest === null || oldest <= 1) { renderWork(); return; }
+  await readRecords("older", M.olderPage(oldest));
+}
+// A hole the feed's window left (a burst of more records than it keeps) is read back on its own, through the gate,
+// one page at a time; after a failure it waits GAP_RETRY_MS (or the reader's click) before trying again.
+const GAP_RETRY_MS = 30000;
+async function fillGap() {
+  if (S.recLoading || document.hidden || Date.now() < S.gapRetryAt) return;
+  const gap = M.rangeGaps(S.cover)[0];
+  if (gap) await readRecords("gap", M.gapPage(gap));
 }
 
 // ── the flight record ──────────────────────────────────────────────────────────────────────────────────────────────
@@ -945,5 +976,5 @@ setInterval(() => { renderStatus(); renderDeclarations(); renderArrivals(); if (
 // Leaving the page stops every poll (and an answer still in flight cannot restart one: the board's epoch moves on). A
 // page restored from the back/forward cache comes back with them stopped, so pageshow starts again what pagehide
 // stopped; a fresh load gets no pageshow with persisted set.
-window.addEventListener("pagehide", () => { feed.stop(); boardEpoch += 1; clearTimeout(boardTimer); visitorsEpoch += 1; clearTimeout(visitorsTimer); stopPlay(); });
+window.addEventListener("pagehide", () => { feed.stop(); recEpoch += 1; S.recLoading = false; boardEpoch += 1; clearTimeout(boardTimer); visitorsEpoch += 1; clearTimeout(visitorsTimer); stopPlay(); });
 window.addEventListener("pageshow", (e) => { if (e.persisted) { feed.start(); pollBoard(); pollVisitors(); renderStatus(); } });

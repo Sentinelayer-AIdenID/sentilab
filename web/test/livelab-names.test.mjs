@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import * as M from "../public/sentilab/live/live-model.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FIX = join(HERE, "fixtures", "livelab");
@@ -214,3 +215,25 @@ for (const [control, act, ticks] of [["the declaration is hidden", (s) => { s.hi
     assert.equal(/Visitor (Alpha|Beta)/.test(dom.page().text.join(" ")), false, "and none anywhere on the page");
   });
 }
+
+// A read that stops answering is not a hide and not a failure, but once the last good read is older than
+// VISITORS_FRESH_MS a hide may have been missed: every name goes on the next render (0b835cc's rule, applied to names).
+test("names: a stale read clears every name once the last good read is older than the freshness limit", async (t) => {
+  const { dom, state } = await open(t, "stale");
+  assert.match(textOf(document.getElementById("arrivalStrip")), /Visitor Alpha · self-declared, not verified/);
+  state.hang = true;
+  for (let k = 0; k < 14; k += 1) { t.mock.timers.tick(1000); await settle(); }
+  const page = dom.page().text.join(" ");
+  assert.equal(page.includes("Visitor Alpha") || page.includes("Visitor Beta"), false, "no name from a stale read");
+  assert.match(textOf(document.getElementById("arrivalStrip")), /visit 82ea/, "the visit id stays");
+});
+
+test("names: declaredNames is empty unless the read succeeded and is fresh", () => {
+  const at = 1_000_000;
+  const items = [{ seq: 101, kind: "declaration", hidden: null, declaration: { name: "Visitor Beta", reason: "testing", source: null }, arrival: 100 }];
+  assert.equal(M.declaredNames({ ok: true, at: at - 1000, items }, at).get(100), "Visitor Beta", "control: fresh and ok");
+  assert.equal(M.declaredNames({ ok: true, at: at - M.VISITORS_FRESH_MS - 1, items }, at).size, 0, "stale");
+  assert.equal(M.declaredNames({ ok: false, at: at - 1000, items }, at).size, 0, "failed");
+  assert.equal(M.declaredNames({ ok: true, at: null, items }, at).size, 0, "never read");
+  assert.equal(M.declaredNames({ ok: true, at: at - 1000, items: [{ ...items[0], hidden: "operator_hidden", declaration: null }] }, at).size, 0, "hidden");
+});

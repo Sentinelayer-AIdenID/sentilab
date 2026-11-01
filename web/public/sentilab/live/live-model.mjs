@@ -565,6 +565,26 @@ export function arrivalsOf(events, max = 12) {
 // the range that ends just before it: after = oldest - 1 - limit. Its first `limit` answers cover that whole range,
 // so nothing between two pages is skipped; whatever the page also returns at or past the oldest is already held.
 export const RECORDS_PAGE = 200;
+// Which seqs the page has read completely (root, f9cc6ab P2 #1), as sorted, merged, inclusive [lo, hi] ranges. A
+// page read from `after` up to its next_after covers [after + 1, next_after]. The feed's window covers [its oldest
+// seq, the events cursor]: the feed reads every page in order and keeps the newest records, so nothing between them
+// is missing. A burst larger than the window leaves a hole between two ranges: the page reads it back, and never
+// says it holds every record while a hole is known.
+export function addRange(ranges, lo, hi) {
+  if (!count(lo) || !count(hi) || lo < 1 || hi < lo) return ranges;
+  const out = [];
+  for (const [a, b] of [...ranges, [lo, hi]].sort((x, y) => x[0] - y[0])) {
+    const last = out[out.length - 1];
+    if (last && a <= last[1] + 1) last[1] = Math.max(last[1], b); else out.push([a, b]);
+  }
+  return out;
+}
+// The holes between read ranges, oldest first: each [lo, hi] is seqs the page has not read.
+export const rangeGaps = (ranges) => ranges.slice(1).map((r, i) => [ranges[i][1] + 1, r[0] - 1]);
+// Read from the very first record with no hole: only then is "every record" true.
+export const readFromStart = (ranges) => ranges.length === 1 && ranges[0][0] <= 1;
+// The page that reads a hole back: from just before it, at most RECORDS_PAGE and no more than the hole.
+export const gapPage = (gap, limit = RECORDS_PAGE) => ({ after: gap[0] - 1, limit: Math.max(1, Math.min(limit, gap[1] - gap[0] + 1)) });
 export const olderPage = (oldest, limit = RECORDS_PAGE) => ({ after: Math.max(0, oldest - 1 - limit), limit });
 export async function fetchEventsPage(after, { fetchImpl, signal, limit = RECORDS_PAGE } = {}) {
   const got = await getJson(`${DOOR_EVENTS_PATH}?after=${after}&limit=${limit}`, { fetchImpl, signal });
