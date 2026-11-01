@@ -15,8 +15,10 @@
 //        token for a purpose, the ENGRAM view, the preview check, the tap-link confirm page, submit answering honestly
 //        with the API off, the door's 405s and scope refusal, and its stylesheet;
 //      - Amendment 4: the heartbeat route (503 presence_unavailable with the API off, 405 to a GET, 400 to a malformed
-//        body once the rate-limit binding allows it), and the opt-in: no declaration fields on the wall, the token page as
-//        the confirm page (the bundled notice, a POST form, strict-origin), a cross-site declare POST refused, no GET;
+//        body once the rate-limit binding allows it), and declarations as wrangler.jsonc ships them, off
+//        (DOOR_DECLARATIONS "off" in both environments' bundles): no declaration fields on the wall, no form, notice or
+//        opt-in on the token page (no-referrer, as before), and /agents/declare answering 404 to a POST and a GET, as a
+//        path the door never had;
 //      - the runtime logged no error.
 // Exit 0 when every check passes; 1 (with the runtime's log) otherwise. WRANGLER_VERSION pins the CLI (default below).
 import { spawn, spawnSync } from "node:child_process";
@@ -41,14 +43,16 @@ const check = (name, ok, detail = "") => { console.log(`${ok ? "PASS" : "FAIL"} 
 // 1. The bundle.
 const out = mkdtempSync(join(tmpdir(), "worker-dry-"));
 const dry = spawnSync(npx, ["--yes", `wrangler@${VERSION}`, "deploy", "--dry-run", "--outdir", out], { cwd: WEB, env, encoding: "utf8", shell: process.platform === "win32" });
-check(`wrangler ${VERSION} deploy --dry-run bundles the Worker`, dry.status === 0, dry.status === 0 ? "" : strip(`${dry.stdout}\n${dry.stderr}`).slice(-1500));
+const dryLog = strip(`${dry.stdout}\n${dry.stderr}`);
+check(`wrangler ${VERSION} deploy --dry-run bundles the Worker, with declarations off (DOOR_DECLARATIONS "off")`, dry.status === 0
+  && /env\.DOOR_DECLARATIONS \("off"\)/.test(dryLog), dry.status === 0 ? "" : dryLog.slice(-1500));
 rmSync(out, { recursive: true, force: true });
 // The staging environment (wrangler.jsonc env.staging) bundles too, with no API to reach and its own limiters.
 const stagingOut = mkdtempSync(join(tmpdir(), "worker-dry-staging-"));
 const staging = spawnSync(npx, ["--yes", `wrangler@${VERSION}`, "deploy", "--dry-run", "--env", "staging", "--outdir", stagingOut], { cwd: WEB, env, encoding: "utf8", shell: process.platform === "win32" });
 const stagingLog = strip(`${staging.stdout}\n${staging.stderr}`);
-check(`wrangler ${VERSION} deploy --dry-run --env staging: API_ORIGIN "none" and the door's five limiters`, staging.status === 0
-  && /env\.API_ORIGIN \("none"\)/.test(stagingLog) && ["DOOR_NONCE_LIMITER", "DOOR_IP_LIMITER", "DOOR_READ_LIMITER", "DOOR_MINT_LIMITER", "DOOR_HERE_LIMITER"].every((name) => stagingLog.includes(`env.${name}`)),
+check(`wrangler ${VERSION} deploy --dry-run --env staging: API_ORIGIN "none", declarations off and the door's five limiters`, staging.status === 0
+  && /env\.API_ORIGIN \("none"\)/.test(stagingLog) && /env\.DOOR_DECLARATIONS \("off"\)/.test(stagingLog) &&["DOOR_NONCE_LIMITER", "DOOR_IP_LIMITER", "DOOR_READ_LIMITER", "DOOR_MINT_LIMITER", "DOOR_HERE_LIMITER"].every((name) => stagingLog.includes(`env.${name}`)),
   staging.status === 0 ? "" : stagingLog.slice(-1500));
 rmSync(stagingOut, { recursive: true, force: true });
 
@@ -171,19 +175,25 @@ if (ready) {
     hereBad.status === 400 && (await hereBad.json().catch(() => ({}))).error === "bad_heartbeat", `${hereBad.status}`);
   const hereGet = await fetch(`${BASE}/api/open/v1/door/here`);
   check("GET /api/open/v1/door/here: 405, allow POST", hereGet.status === 405 && hereGet.headers.get("allow") === "POST", `${hereGet.status}`);
-  // Amendment 4 after warden's hold: a GET never records a declaration. The wall takes none; the token page is the
-  // confirm page, with the bundled notice and a POST form to /agents/declare; a cross-site form POST is refused.
+  // Amendment 4's opt-in as shipped: off (wrangler.jsonc DOOR_DECLARATIONS "off" until the paired deploy after root's
+  // #97). The wall takes no declaration fields; the token page has no form, notice or opt-in, even for a crafted link,
+  // and stays no-referrer; /agents/declare is not the door's, so a POST and a GET get what a path the door never had
+  // gets. (web/test/door-declarations-off.test.mjs checks every page; the door's other tests run declarations on.)
   check("the wall takes no declaration fields", !wallText.includes('name="notice_version"') && !wallText.includes('name="name"'));
   const tokenPage = await fetch(`${BASE}/agents/intent?purpose=read&name=crafted&notice_version=sentilab-public-visitor%2F1`, { headers: { accept: "text/html" } });
   const tokenText = await tokenPage.text();
-  check("the token page is the confirm page: the bundled notice, a POST form to /agents/declare, strict-origin, the link flagged",
-    tokenPage.status === 200 && tokenText.includes('<form method="post" action="/agents/declare">') && tokenText.includes("Your visit time, detector classification")
-    && tokenText.includes("A link can't publish a declaration") && tokenPage.headers.get("referrer-policy") === "strict-origin", `${tokenPage.status}`);
-  const crossSite = await fetch(`${BASE}/agents/declare`, { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded", "sec-fetch-site": "cross-site" },
-    body: "t=x&notice_version=sentilab-public-visitor%2F1&name=crafted" });
-  check("POST /agents/declare from another site: 403 cross_site", crossSite.status === 403, `${crossSite.status}`);
-  const declareGet = await fetch(`${BASE}/agents/declare?t=x&notice_version=sentilab-public-visitor%2F1&name=crafted`);
-  check("GET /agents/declare: 405 read_only", declareGet.status === 405 && (await declareGet.json().catch(() => ({}))).error === "read_only", `${declareGet.status}`);
+  check("declarations off: the token page has no declare form, no notice, no opt-in, and is no-referrer",
+    tokenPage.status === 200 && tokenText.includes("scoped purpose token") && !tokenText.includes("/agents/declare")
+    && !tokenText.includes("Your visit time, detector classification") && !/notice_version|\bdeclar(e|ation)\b/i.test(tokenText)
+    && tokenPage.headers.get("referrer-policy") === "no-referrer", `${tokenPage.status} · ${tokenPage.headers.get("referrer-policy")}`);
+  const answer = async (path, init) => { const r = await fetch(BASE + path, init); return { status: r.status, text: await r.text() }; };
+  const form = () => ({ method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: "t=x&notice_version=sentilab-public-visitor%2F1&name=crafted" });
+  const [declarePost, otherPost] = [await answer("/agents/declare", form()), await answer("/agents/no-such-door-route", form())];
+  check("declarations off: POST /agents/declare is 404, as a path the door never had", declarePost.status === 404
+    && declarePost.status === otherPost.status && declarePost.text === otherPost.text, `${declarePost.status} · other ${otherPost.status}`);
+  const [declareGet, otherGet] = [await answer("/agents/declare?name=crafted"), await answer("/agents/no-such-door-route?name=crafted")];
+  check("declarations off: GET /agents/declare is 404, as a path the door never had", declareGet.status === 404
+    && declareGet.status === otherGet.status && declareGet.text === otherGet.text, `${declareGet.status} · other ${otherGet.status}`);
   // The terms: the canonical copy, hashed by the runtime's own SHA-256 against the pin in its name; /agents/terms with
   // the API off has no pinned version, so it serves no text at all.
   const pinned = "1@f11989175769a7a3410b26ecea46aac1756033ee562c792fe29a02af931899f7";

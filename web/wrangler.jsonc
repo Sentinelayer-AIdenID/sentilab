@@ -11,7 +11,11 @@
   // INGEST_TOKEN is a Worker secret, configured by the operator; never a plain var.
   "services": [{ "binding": "COLLECTOR", "service": "aidenid-aquarium" }],
   // Keep observation off until the aquarium accepts and retains SentiLab site/path attribution (EDGE.md).
-  "vars": { "API_ORIGIN": "https://sentilab-api.graysea-7ff72f94.eastus2.azurecontainerapps.io", "AQUARIUM_POST": "off" },
+  // DOOR_DECLARATIONS: visitors' opt-in declarations (AGENT-DOOR Amendment 4: POST /agents/declare and the opt-in on a
+  // pass's page). Off ships, in both environments: no declare route (404), no page mentions declaring, nothing reaches
+  // the intake's declaration fields. The paired deploy after root's #97 turns it on; anything but exactly "on" is off.
+  "vars": { "API_ORIGIN": "https://sentilab-api.graysea-7ff72f94.eastus2.azurecontainerapps.io", "AQUARIUM_POST": "off",
+    "DOOR_DECLARATIONS": "off" },
   // The agent door (src/door/door.js). DOOR_TOKEN_KEY is a Worker secret (wrangler secret put DOOR_TOKEN_KEY, at least
   // 32 characters, its own per environment); without it the door stays closed. The terms a submission accepts come
   // from the intake's board (the signed manifest's accepted versions). Rate limits per token (nonce) and per client IP
@@ -37,7 +41,8 @@
       "name": "sentilab-web-staging",
       "routes": [{ "pattern": "staging.sentilab.aidenid.com", "custom_domain": true }],
       "services": [{ "binding": "COLLECTOR", "service": "aidenid-aquarium" }],
-      "vars": { "API_ORIGIN": "none", "AQUARIUM_POST": "off" },
+      // DOOR_DECLARATIONS off, as in production, until the paired deploy after root's #97.
+      "vars": { "API_ORIGIN": "none", "AQUARIUM_POST": "off", "DOOR_DECLARATIONS": "off" },
       "ratelimits": [
         { "name": "DOOR_NONCE_LIMITER", "namespace_id": "2026110111", "simple": { "limit": 10, "period": 60 } },
         { "name": "DOOR_IP_LIMITER", "namespace_id": "2026110112", "simple": { "limit": 60, "period": 60 } },

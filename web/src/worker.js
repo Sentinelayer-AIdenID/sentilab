@@ -92,8 +92,8 @@ export default {
     if (pathname === HERE_PATH) return handleHere(request, env);
     // SentiLab is hands-off: the service runs its own loop, so the public /api is read-only. No caller can start runs
     // or reach any API write route from outside. The edge's write routes are the agent door's POST /agents/submit and
-    // POST /agents/declare, which reach the API only after the door's token, format and rate checks, and the heartbeat
-    // above (door/door.js).
+    // POST /agents/declare (only while DOOR_DECLARATIONS is "on"), which reach the API only after the door's token,
+    // format and rate checks, and the heartbeat above (door/door.js).
     if ((pathname === "/api" || pathname.startsWith("/api/")) && !["GET", "HEAD"].includes(request.method)) {
       return new Response(JSON.stringify({ error: "read_only", detail: "The public SentiLab API is read-only." }),
         { status: 405, headers: { "content-type": "application/json", allow: "GET, HEAD", "cache-control": "no-store" } });
@@ -104,7 +104,7 @@ export default {
     }
     if (pathname === "/api" || pathname.startsWith("/api/")) return proxy(request, env);
     // The agent door (door/door.js): its own routes, and the wall in place of the mapped pages' agent version.
-    const door = doorRoute(pathname);
+    const door = doorRoute(pathname, env);
     const response = door ? await handleDoor(door, request, env, ctx)
       : await withEdge(request, env, ctx, { agentPathFor, serve: asset, serveHuman: humanAsset, serveAgent: serveWallOrAgentVersion });
     // Whatever page answers a URL that can carry a token (mapped, human override, fallback, any asset) never hands it on.
