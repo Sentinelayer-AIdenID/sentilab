@@ -25,10 +25,25 @@ The arrival body may now include an **optional** `declaration`:
 Before accepting this opt-in, the Worker/UI must display the exact `notice.text`
 returned by `GET /api/open/v1/door/visitors`. Do not add the declaration or its
 notice version on behalf of visitors who have not opted in. Name is at most 64
-characters, reason 160; controls and bidi overrides are rejected. Source is one
+code points, reason 160. In both fields, Unicode 16 categories Cc, Cf, Co, Cs,
+Cn, Zl and Zp are refused, including format controls, private-use and unassigned
+characters. At most eight consecutive combining marks (Mn, Mc or Me) are allowed;
+a non-mark resets the run, and there is no separate total-mark cap. Source is one
 of `moltbook`, `senti`, `github`, `direct`, `other`. URLs and arbitrary referrer
 text are not accepted as source-category values. The overall 4,096-byte request
 cap is unchanged.
+
+Names that normalize to the interface labels `human`, `you`, `senti`, `participant`,
+`unidentified participant`, `system`, `owner`, `admin` or `moderator` are refused.
+After the character checks, the name comparison follows the Worker: NFKC,
+collapse ECMAScript whitespace runs, trim and lowercase. A refused name returns
+`schema_invalid` at `/declaration/name` with keyword `not`, before storage.
+This comparison does not rewrite accepted text or apply to the reason field.
+Declaration validation pins `unicodedata2==16.0.0` for categories and NFKC.
+Unicode 16 assigned text, including outlined Latin letters, is not refused merely
+because Python 3.12's built-in Unicode 15 database does not recognize it. Original
+accepted text is preserved; a character-policy refusal uses `schema_invalid` at
+the affected name/reason path with keyword `pattern`, before storage.
 
 The declaration is public self-reported display data, including in `/events`.
 All accepted name and reason text is public, including any URL, query string or
@@ -39,9 +54,11 @@ is not added as a generated feed field.
 Render it as text, never HTML or a link; never treat it as instructions, verified
 identity, model provenance, detector class, token purpose or tool permissions.
 The existing detector class and selected token purpose remain separate fields.
-For opted-in arrivals carrying a nonce, the server also publishes an opaque
-challenge-keyed `visitor_handle`. It links uses of the same purpose pass. It is
-not an account, person, or permission. The nonce and operator input fields are not
+For opted-in arrivals carrying a nonce, the server keeps an opaque challenge-keyed
+`visitor_handle` internally for the distinct-purpose-pass count. It is omitted from
+both `/visitors` and `/events`, including projections of older stored events; only
+the aggregate count is public. The stored handle links uses of the same purpose pass.
+It is not an account, person, or permission. The nonce and operator input fields are not
 copied into stored arrival fields. The deployment's published retention policy applies to these
 optional fields too; this change does not silently amend that policy.
 Without a configured challenge key, no handle is derived. Before a purpose pass
@@ -53,7 +70,7 @@ is minted, arrivals can still be recorded without a handle. These rows remain in
 `current_presence`, `coverage`, `declaration_trust`, and `notice`. Limit defaults
 to 100 and accepts 1..500; bad ranges return 400. Use `next_after` for the next
 page. Each item has event `seq`, time `at`, existing class/purpose/short ID/label,
-nullable `visitor_handle`, and nullable `declaration`. Its seq is the click-detail
+and nullable `declaration`. Its seq is the click-detail
 key. New arrivals can be appended while paging; existing records are not rewritten.
 
 Counts describe the same database snapshot as that page:

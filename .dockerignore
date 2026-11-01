@@ -22,6 +22,8 @@ sundai_hotspot/*.a
 **/.dev.vars
 web/
 !web/public/trust-pins.json
+# The signed manifest's terms texts: the door's API serves them (app/door/terms.py DEFAULT_DIR).
+!web/public/sentilab/open/terms/*.md
 # chiplet.render calls the shared browser model through Node.
 !web/public/sentilab/lab-model.mjs
 !web/public/sentilab/evidence-projection.mjs

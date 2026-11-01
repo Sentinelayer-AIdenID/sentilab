@@ -18,9 +18,9 @@ from pathlib import Path
 from open_proposals.contract import canonical as hashes
 from open_proposals.contract.codes import GROUP, violation
 from open_proposals.contract.labels import label_for
-from open_proposals.contract.states import SUMMARY
 
 from . import intake
+from . import terms as door_terms
 from .dispatch import Dispatcher, ScorerState
 from .policy import CASE, NONCE, Policy, parse_utc, principal_for, short_id, utc
 from .presence import HERE, NOT_MEASURED, Presence
@@ -55,6 +55,18 @@ PUBLISHED = (
      "statistic": "the paper's HotSpot block selector, not this board's metric", "routed_wire_mm": 216064},
 )
 NOT_CLAIMED = ["beat", "margin", "routed wire", "source acceptance"]
+# The words the open feeds give a state (results, board, status), one literal pair per lifecycle state: the Package view
+# reads exactly these strings (web/public/sentilab/package/source3d.mjs SUMMARIES). The contract's four-state summary
+# (states.py SUMMARY) stays the contract's; the door says what actually ran. A reproduced run is the same pinned build
+# replayed in a fresh process: reproduction, not independent verification (the door never emits cross_checked, which
+# the contract words as reproduced). A failed run has no score. Every other state keeps the contract's word.
+FEED_SUMMARY = {"rejected": "rejected",
+                "queued": "queued", "held": "queued", "evaluating": "queued",
+                "evaluated": "evaluated", "replaying": "evaluated", "not_reproduced": "evaluated",
+                "failed": "no score",
+                "reproduced": "reproduced by a fresh-process replay",
+                "cross_checked": "reproduced by a fresh-process replay",
+                "cancelled": None, "expired": None}
 BEAT = {"available": False,
         "requires": "reproduced by replay, plus the fixed routed-wire predicates and their evidence; "
                     "this API never emits a beat verdict"}
@@ -99,8 +111,11 @@ def front(points: list) -> set:
 class Door:
     presence = None          # measured presence (presence.py); None publishes #89's not_measured state
 
-    def __init__(self, policy: Policy, store: Store, scorer=None, presence: Presence | None = None):
+    def __init__(self, policy: Policy, store: Store, scorer=None, terms: door_terms.Terms | None = None,
+                 presence: Presence | None = None):
         self.policy, self.store, self.scorer, self.presence = policy, store, scorer, presence
+        # The signed manifest's terms text, bound to its pin when the door is built (terms.py); None: unavailable.
+        self.terms = terms
         self.scorer_state = ScorerState()
         self.dispatcher = Dispatcher(self)
         self.totals = Totals()
@@ -122,7 +137,7 @@ class Door:
                 scorer = None
         # Presence is measured only where the pages send heartbeats, and the deployer says so (AGENT-DOOR A4 rev 2).
         presence = Presence() if env.get("DOOR_PRESENCE", "") == "on" else None
-        return cls(policy, Store(data / "door.sqlite3"), scorer, presence)
+        return cls(policy, Store(data / "door.sqlite3"), scorer, door_terms.from_env(policy.manifest, env), presence)
 
     def start(self, workers: bool = True) -> None:
         if self.presence is not None:
@@ -252,7 +267,7 @@ class Door:
         codes = [entry["code"] for entry in json.loads(row["codes"])]
         item = {"id": row["run_id"], "label": label(row["class"], row["short_id"]), "class": row["class"],
                 "short_id": row["short_id"], "arrival": row["arrival"],
-                "seq": row["version"], "status": row["state"], "summary": SUMMARY[row["state"]], "codes": codes,
+                "seq": row["version"], "status": row["state"], "summary": FEED_SUMMARY[row["state"]], "codes": codes,
                 "reason": row["reason"], "position": position, "dies": proposal["dies"],
                 "geometry_sha256": row["geometry_sha256"], "wire_proxy_mm": row["wire_proxy_mm"],
                 "metric": METRIC, "result": None, "verdict": None}
@@ -341,7 +356,9 @@ class Door:
             return 400, {"error": "invalid paging range"}, {}
         rows = self.store.events(after, limit + 1)
         page = rows[:limit]
-        events = [{"seq": row["seq"], "at": iso(row["at"]), "kind": row["kind"], **json.loads(row["body"])}
+        # Handles stay in the historical store for aggregation, never in an open feed.
+        events = [{"seq": row["seq"], "at": iso(row["at"]), "kind": row["kind"],
+                   **{key: value for key, value in json.loads(row["body"]).items() if key != "visitor_handle"}}
                   for row in page]
         return 200, {"schema": "sentilab-door-events/1", "events": events,
                      "next_after": page[-1]["seq"] if page else after, "has_more": len(rows) > limit,
@@ -358,8 +375,7 @@ class Door:
             body = json.loads(row["body"])
             item = {"seq": row["seq"], "at": iso(row["at"])}
             # Explicit projection: legacy/private fields can never leak through this new view.
-            item.update({key: body.get(key) for key in ("class", "purpose", "short_id", "label",
-                                                        "visitor_handle")})
+            item.update({key: body.get(key) for key in ("class", "purpose", "short_id", "label")})
             declaration = body.get("declaration")
             item["declaration"] = ({key: declaration[key] for key in ("notice_version", "name", "reason", "source")
                                     if key in declaration}
@@ -369,7 +385,7 @@ class Door:
                      "next_after": page[-1]["seq"] if page else after, "has_more": len(rows) > limit,
                      "counts": counts, "current_presence": self.current_presence(),
                      "coverage": "Recorded Door arrivals, not all HTTP requests or verified people. "
-                                 "Handles identify observed purpose passes, not unique humans or agents.",
+                                 "Counts use internal handles of observed purpose passes, not unique humans or agents.",
                      "declaration_trust": "self_declared_display_data",
                      "notice": {"version": intake.VISITOR_NOTICE, "text": intake.VISITOR_DISCLOSURE}}, {}
 

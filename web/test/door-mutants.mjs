@@ -3,7 +3,9 @@
 // gate, and every repair of the review round at 75aed822 (root's three P2s, warden's P2 and P3s, the seven mutants
 // that survived warden's run, the staging environment) and of root's repair review at df1189c4 (only an outcome the
 // door can name is definite after its POST) and warden's four P3s there (the terms a page showed, a press after an
-// earlier press, every spelling of an open feed, browsers without Sec-Fetch-Site). Each runs in a disposable copy of
+// earlier press, every spelling of an open feed, browsers without Sec-Fetch-Site), and of the copy repairs before the
+// production door opens (aneta #57911: the terms text bound to its pin, the links to it, the known limit, the start-here
+// discovery and the honest status words). Each runs in a disposable copy of
 // web/ (the working checkout is never modified) against the door's tests, and must fail an assertion there: a mutant
 // that survives, or that only breaks an import, fails this script. (Dropping equalHex's length term is an equivalent
 // mutant: TOKEN_PATTERN already fixes the MAC at 32 hex characters, so no input can tell the two apart. It is not
@@ -19,6 +21,7 @@ const DOOR = "src/door/door.js";
 const JSON_READER = "src/door/strict-json.js";
 const LAYOUT = "src/door/layout.js";
 const RENDER = "src/door/render.js";
+const ENGRAM = "src/door/engram.js";
 const WORKER = "src/worker.js";
 const WRANGLER = "wrangler.jsonc";
 
@@ -134,10 +137,33 @@ const groups = {
   "deploy, staging of its own": [
     ["staging reaches the production API", WRANGLER, '      "vars": { "API_ORIGIN": "none", "AQUARIUM_POST": "off" },', '      "vars": { "API_ORIGIN": "https://sentilab-api.graysea-7ff72f94.eastus2.azurecontainerapps.io", "AQUARIUM_POST": "off" },'],
   ],
+  "terms and copy (door-copy-p1)": [
+    ["terms served without the hash check", DOOR, '    return hexOf(await crypto.subtle.digest("SHA-256", bytes)) === pin ? bytes : null;', "    return bytes;"],
+    ["terms hash compared with the pin and its @", DOOR, 'const pin = version.slice(version.indexOf("@") + 1);', 'const pin = version.slice(version.indexOf("@"));'],
+    ["/agents/terms takes the first accepted version, not the highest", DOOR, "return serveTerms(request, env, url, (await sharedBoard(env, url)).terms);",
+      "return serveTerms(request, env, url, (await sharedBoard(env, url)).accepted[0]);"],
+    ["the canonical path serves the board's version, not its own name", DOOR,
+      "return serveTerms(request, env, url, `sentilab-open-terms/${TERMS_PATH.exec(url.pathname)[1]}`);",
+      "return serveTerms(request, env, url, (await sharedBoard(env, url)).terms);"],
+    ["no /agents/terms route", DOOR, '  "/agents/terms": { methods: ["GET", "HEAD"], handler: currentTerms },\n', ""],
+    ["/agents/terms answers POST", DOOR, '"/agents/terms": { methods: ["GET", "HEAD"], handler: currentTerms }', '"/agents/terms": { methods: ["GET", "HEAD", "POST"], handler: currentTerms }'],
+    ["the wall does not link the terms", RENDER, '<p class="fine">Submitting accepts the challenge terms: <a href="${esc(origin)}${TERMS_PAGE}">read them</a>.</p>\n', ""],
+    ["the confirm page does not link the terms", RENDER, '<code>${esc(terms)}</code> (<a href="${TERMS_PAGE}">read them</a>).</p>`;', '<code>${esc(terms)}</code>.</p>`;'],
+    ["the agent view has no terms_url", ENGRAM, " terms_url: `${origin}${TERMS_PAGE}`,", ""],
+    ["the agent view drops the known limit", ENGRAM, "known_limit: knownLimit ?? null,", "known_limit: null,"],
+    ["the agent view shows any known_limit text", ENGRAM, 'text.startsWith("Known limit: ") && ', ""],
+    ["cross_checked reads independently verified again", RENDER, 'cross_checked: "reproduced on a second build or host"', 'cross_checked: "independently verified"'],
+    ["index.md loses its first line", "public/agents/index.md", "Start here: /agents/intent\n\n# SentiLab, for agents", "# SentiLab, for agents"],
+    ["llms.txt hard-codes the state again", "public/llms.txt", "stays short. Current state: see /agents/intent.", "stays short. Status: submissions not open yet."],
+    ["evidence.json says planned again", "public/agents/evidence.json", '"public_submission_service": "the door\'s POST /agents/submit, under the terms at /agents/terms",',
+      '"public_submission_service": "planned",'],
+    ["the known limit drifts from root's words", "public/agents/evidence.json", "(about 1.39%)", "(about 1.4%)"],
+    ["robots.txt disallows the site", "public/robots.txt", "Disallow:\n", "Disallow: /\n"],
+  ],
 };
 
 const tests = ["door-token.test.mjs", "door-routes.test.mjs", "door-submit.test.mjs", "door-review.test.mjs", "door-hold.test.mjs",
-  "door-warden-p3.test.mjs", "door-json.test.mjs", "door-layout.test.mjs"];
+  "door-warden-p3.test.mjs", "door-json.test.mjs", "door-layout.test.mjs", "door-copy.test.mjs", "agents-site.test.mjs"];
 const web = new URL("../", import.meta.url);
 const repo = new URL("../", web);
 const CONTRACT_FILES = ["contracts/open-proposal-v1/reason-codes.json", "contracts/open-proposal-v1/schemas/common.schema.json"];

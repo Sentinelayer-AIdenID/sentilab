@@ -314,7 +314,7 @@ test("the terms a submission accepts come from the intake's board: the highest a
   const token = await mint();
   assert.equal((await s.go("/agents/submit", postJson({ t: token, layout: REF }))).status, 202);
   assert.equal(submits(calls)[0].body.terms, newer);
-  assert.ok((await s.go(`/s?t=${token}&l=${REF}`, { headers: BROWSER })).text.includes(`Submitting accepts the challenge terms <code>${newer}</code>.`));
+  assert.ok((await s.go(`/s?t=${token}&l=${REF}`, { headers: BROWSER })).text.includes(`Submitting accepts the challenge terms <code>${newer}</code> (<a href="/agents/terms">read them</a>).`));
   assert.equal(JSON.parse((await s.go(`/agents/engram?t=${token}`, agent())).text).submissions.terms, newer);
   t.mock.restoreAll();
   // No accepted terms: not open yet, at the edge, with nothing sent.

@@ -154,7 +154,8 @@ class IntakeTests(tk.DoorCase, unittest.TestCase):
         for path in ("/api/open/v1/door/results", "/api/open/v1/door/events", "/api/open/v1/door/board"):
             self.assertNotIn("pwned", json.dumps(self.request("GET", path)[1]))
         stored = Path(self.store.path).read_bytes()
-        for text in (b"IGNORE", b"pwned", b"ignore-previous", INJECTION.encode()):
+        # Match injected prose, not SQLite's legitimate INSERT OR IGNORE trigger DDL.
+        for text in (b"IGNORE ALL PREVIOUS", b"pwned", b"ignore-previous", INJECTION.encode()):
             self.assertNotIn(text, stored)
 
     # ── the compact format (AGENT-DOOR section 3) ──────────────────────────────────────────────────────────────

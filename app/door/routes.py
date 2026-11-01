@@ -111,3 +111,13 @@ async def here(request: Request) -> Response:
 @router.get("/stats")
 def stats() -> Response:
     return _reply(*runtime().stats())
+
+
+@router.api_route("/terms", methods=["GET", "HEAD"])
+def terms() -> Response:
+    """The signed manifest's terms text: exactly the bytes its pin names (terms.py), or 503 terms_unavailable."""
+    found = runtime().terms
+    if found is None:
+        return _reply(503, {"error": "terms_unavailable"}, {})
+    return Response(found.data, media_type="text/markdown; charset=utf-8",
+                    headers={**NO_STORE, "x-terms-version": found.version})

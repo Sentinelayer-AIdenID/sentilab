@@ -269,7 +269,7 @@ test("without published terms nothing can be submitted: the page says so and sub
   assert.deepEqual(submits(calls), []);
   installApi(t);
   const open = await setup().go(`/s?t=${token}&l=${REF}`, { headers: BROWSER });
-  assert.ok(open.text.includes(`Submitting accepts the challenge terms <code>${TERMS}</code>.`));
+  assert.ok(open.text.includes(`Submitting accepts the challenge terms <code>${TERMS}</code> (<a href="/agents/terms">read them</a>).`));
 });
 
 test("pressing the confirm page's button submits once and shows only whitelisted fields", async (t) => {

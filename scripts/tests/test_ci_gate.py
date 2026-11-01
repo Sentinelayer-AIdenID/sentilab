@@ -308,6 +308,10 @@ RAW_SPAWNS += [('sundai_hotspot/gate0_operator.py', 'subprocess.Popen', ('argv',
 RAW_SPAWNS += [('sundai_hotspot/test_gate0_operator.py', 'subprocess.run',
                 ("[sys.executable, '-c', SUPERVISOR, json.dumps(spec)]",))]
 
+# Fresh Python import-path check of the reviewed operator; no HotSpot is launched.
+RAW_SPAWNS += [('sundai_hotspot/test_coupling_allocation.py', 'subprocess.run',
+                ("[sys.executable, '-c', code, str(stale), str(fixtures.REPO_ROOT)]",))]
+
 
 class GateTests(unittest.TestCase):
     @classmethod

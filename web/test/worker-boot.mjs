@@ -184,6 +184,23 @@ if (ready) {
   check("POST /agents/declare from another site: 403 cross_site", crossSite.status === 403, `${crossSite.status}`);
   const declareGet = await fetch(`${BASE}/agents/declare?t=x&notice_version=sentilab-public-visitor%2F1&name=crafted`);
   check("GET /agents/declare: 405 read_only", declareGet.status === 405 && (await declareGet.json().catch(() => ({}))).error === "read_only", `${declareGet.status}`);
+  // The terms: the canonical copy, hashed by the runtime's own SHA-256 against the pin in its name; /agents/terms with
+  // the API off has no pinned version, so it serves no text at all.
+  const pinned = "1@f11989175769a7a3410b26ecea46aac1756033ee562c792fe29a02af931899f7";
+  const canonical = await fetch(`${BASE}/sentilab/open/terms/${pinned}.md`);
+  check("GET the canonical terms path: 200, the exact bytes, their version, markdown", canonical.status === 200
+    && same(new Uint8Array(await canonical.arrayBuffer()), file(`sentilab/open/terms/${pinned}.md`))
+    && canonical.headers.get("x-terms-version") === `sentilab-open-terms/${pinned}` && /^text[/]markdown/.test(canonical.headers.get("content-type") || ""),
+    `${canonical.status} · ${canonical.headers.get("content-type")}`);
+  const unpinned = await fetch(`${BASE}/sentilab/open/terms/2@${pinned.slice(2)}.md`);
+  check("GET a terms path with no copy behind its name: 503 terms_unavailable", unpinned.status === 503
+    && (await unpinned.json().catch(() => ({}))).error === "terms_unavailable", `${unpinned.status}`);
+  const current = await fetch(`${BASE}/agents/terms`);
+  check("GET /agents/terms with the API off: 503 terms_unavailable, no text", current.status === 503
+    && (await current.json().catch(() => ({}))).error === "terms_unavailable", `${current.status}`);
+  const robots = await fetch(`${BASE}/robots.txt`);
+  check("GET /robots.txt: 200, text, the bytes in web/public/robots.txt", robots.status === 200 && /^text[/]plain/.test(robots.headers.get("content-type") || "")
+    && same(new Uint8Array(await robots.arrayBuffer()), file("robots.txt")), `${robots.status} · ${robots.headers.get("content-type")}`);
   check("the runtime logged no error", !/\[ERROR\]/.test(strip(log)));
 }
 stop();

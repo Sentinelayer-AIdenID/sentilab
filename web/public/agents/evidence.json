@@ -1,6 +1,7 @@
 {
   "schema": "sentilab-agent-evidence/1",
   "as_of_utc": "2026-11-01T00:22:18.361Z",
+  "known_limit": "Known limit: for the saved 45mm/grid64 CPU-DRAM reference case, the source-defined ambient-boundary sum exceeds 680W input by 9.4449W (about 1.39%), beyond the 0.429424W allowance for saved-temperature rounding. This is a saved-field consistency finding, not physical calibration; the cause in the deployed binary has not been established. Current results are diagnostic.",
   "gate_zero": {
     "status": "numerical_predicate_independently_rederived_from_signed_saved_outputs",
     "engine": "HotSpot 6.0",
@@ -69,16 +70,13 @@
   "interface": {
     "representation": "Static markdown and JSON retrieval surface with linked learning skills.",
     "engram_library_execution": "not established by this representation; actual scoped ENGRAM integration remains separate",
-    "public_submission_service": "planned",
-    "purpose_scoped_submission_token": "planned",
-    "queue_and_global_quota": "planned",
-    "live_arrivals_and_evaluation_view": "planned",
-    "state_source": {
-      "kind": "operator_report",
-      "source_id": "53aeacbb-e84d-47ed-83b3-4ee7c966f32b",
-      "at": "2026-11-01T00:22:18.361Z"
-    },
+    "current_state": "Current state: see /agents/intent",
+    "public_submission_service": "the door's POST /agents/submit, under the terms at /agents/terms",
+    "purpose_scoped_submission_token": "the door's GET /agents/intent?purpose=place-chiplets",
+    "queue_and_global_quota": "kept by the scorer intake; the queue and the grant are on /api/open/v1/door/board",
+    "live_arrivals_and_evaluation_view": "the public feeds /api/open/v1/door/events and /api/open/v1/door/results",
     "identity_rule": "Declared client names and edge classifier observations are labeled separately from authenticated identity.",
+    "arrival_classes": "Each arrival's class is the edge's reading of the request's user agent and headers, by the ordered checks in /agents/index.md#who-counts-as-an-agent; it is not an identity, and the feeds count arrivals, never unique people or unique agents.",
     "wire_rule": "Compare proxy values only with the same proxy on reference layouts. Keep published routed points separate until candidate routed wire is available."
   }
 }

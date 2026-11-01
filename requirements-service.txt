@@ -1,3 +1,6 @@
 # Service layer on top of the starter's pinned scientific stack (requirements.txt).
 fastapi==0.135.4
 uvicorn==0.50.2
+unicodedata2==16.0.0
+# Starlette TestClient is used by the image's build-time smoke tests.
+httpx2==2.16.0

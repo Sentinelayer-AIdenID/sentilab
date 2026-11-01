@@ -111,6 +111,81 @@ class VisitorTests(unittest.TestCase):
         self.assertEqual(page['counts']['recorded_arrivals'], 1)
         self.assertEqual(page['items'][0]['declaration'], declaration)
 
+    def test_reserved_interface_names_are_refused_before_storage(self):
+        labels = ('human', 'you', 'senti', 'participant', 'unidentified participant',
+                  'system', 'owner', 'admin', 'moderator')
+        for label in labels:
+            wide = ''.join('\u3000' if char == ' ' else chr(ord(char) + 0xfee0) for char in label)
+            variants = ((label, 'not'), (label.upper(), 'not'), ('  ' + label.title() + '\u00a0', 'not'),
+                        (wide, 'not'), ('\u200b'.join(label), 'pattern'),
+                        (label.replace(' ', '\u2003\u00a0  '), 'not'))
+            for name, keyword in variants:
+                with self.subTest(name=name):
+                    declaration = {'notice_version': intake.VISITOR_NOTICE, 'name': name,
+                                   'reason': 'reserved-name-storage-canary', 'source': 'senti'}
+                    status, body, _ = self.arrival(nonce='a' * 16, declaration=declaration)
+                    self.assertEqual(status, 400)
+                    self.assertEqual(body['codes'], [
+                        {'code': 'schema_invalid', 'path': '/declaration/name', 'keyword': keyword}])
+                    self.assertNotIn('reserved-name-storage-canary', json.dumps(body))
+        self.assertEqual(self.door.visitors(None, None)[1]['counts']['recorded_arrivals'], 0)
+        self.assertNotIn(b'reserved-name-storage-canary', Path(self.store.path).read_bytes())
+
+    def test_nonreserved_names_and_reasons_are_preserved_as_written(self):
+        names = ('', 'Humane', 'Human bot', 'The System', 'admin2', 'You2', 'Participants',
+                 'Sentinel', 'Mod', 'Ownerless', '  Zoë 李\u00a0', 'Ｓｙｓｔｅｍ bot', 'Ada')
+        for name in names:
+            declaration = {'notice_version': intake.VISITOR_NOTICE, 'name': name,
+                           'reason': 'System', 'source': 'senti'}
+            self.assertEqual(self.arrival(declaration=declaration)[0], 204)
+        page = self.door.visitors(None, None)[1]
+        self.assertEqual([row['declaration']['name'] for row in page['items']], list(names))
+        self.assertTrue(all(row['declaration']['reason'] == 'System' for row in page['items']))
+        self.assertEqual(page['counts']['recorded_arrivals'], len(names))
+
+    def test_unicode16_outlined_reserved_names_match_the_worker(self):
+        def outlined(text):
+            return ''.join(chr(0x1ccd6 + ord(char) - ord('A')) if 'A' <= char <= 'Z' else char
+                           for char in text.upper())
+
+        labels = ('human', 'you', 'senti', 'participant', 'unidentified participant',
+                  'system', 'owner', 'admin', 'moderator')
+        for label in labels:
+            variants = ((outlined(label), 'not'),
+                        (''.join(outlined(char) if index % 2 == 0 else char for index, char in enumerate(label)), 'not'),
+                        ('\u00a0' + '\u200b'.join(outlined(label)).replace(' ', '\u2003  ') + '\u00a0', 'pattern'))
+            for name, keyword in variants:
+                with self.subTest(codepoints=[hex(ord(char)) for char in name]):
+                    status, body, _ = self.arrival(declaration={
+                        'notice_version': intake.VISITOR_NOTICE, 'name': name,
+                        'reason': 'outlined-reserved-storage-canary'})
+                    self.assertEqual(status, 400)
+                    self.assertEqual(body['codes'], [
+                        {'code': 'schema_invalid', 'path': '/declaration/name', 'keyword': keyword}])
+        self.assertEqual(self.door.visitors(None, None)[1]['counts']['recorded_arrivals'], 0)
+        self.assertNotIn(b'outlined-reserved-storage-canary', Path(self.store.path).read_bytes())
+
+    def test_benign_outlined_names_and_boundary_characters_are_preserved(self):
+        def outlined(text):
+            chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+            return ''.join(chr(0x1ccd6 + chars.index(char)) if char in chars else char
+                           for char in text.upper())
+
+        names = (outlined('HELPER'), outlined('SYSTEM BOT'), outlined('ADMIN2'),
+                 outlined('ADMIN') + '\u0301', '\U0001ccd5Admin')
+        for name in names:
+            declaration = {'notice_version': intake.VISITOR_NOTICE, 'name': name,
+                           'reason': outlined('SYSTEM')}
+            self.assertEqual(self.arrival(declaration=declaration)[0], 204)
+        page = self.door.visitors(None, None)[1]
+        self.assertEqual([row['declaration']['name'] for row in page['items']], list(names))
+        self.assertTrue(all(row['declaration']['reason'] == outlined('SYSTEM') for row in page['items']))
+        # The strengthened character policy refuses Cf and Unicode 16 Cn before name comparison.
+        self.assertEqual(self.arrival(declaration={'notice_version': intake.VISITOR_NOTICE,
+                                                  'name': 'A\u200bda'})[0], 400)
+        self.assertEqual(self.arrival(declaration={'notice_version': intake.VISITOR_NOTICE,
+                                                  'name': 'Admin\U0001ccfa'})[0], 400)
+
     def test_new_read_projection_drops_legacy_private_fields(self):
         self.store.note_arrival({'class': 'unknown', 'operator': 'hidden-operator-canary', 'nonce': 'secret',
                                  'referrer': 'https://example.com/?token=secret'}, now=1, per_min=600)
@@ -119,12 +194,38 @@ class VisitorTests(unittest.TestCase):
         self.assertNotIn('hidden-operator-canary', json.dumps(page))
         self.assertEqual(page['counts']['arrivals_by_class'], {'unknown': 1})
 
-    def test_no_public_handle_is_derived_from_an_unconfigured_challenge_key(self):
+    def test_internal_handles_are_counted_but_never_projected_publicly(self):
+        declaration = {'notice_version': intake.VISITOR_NOTICE, 'name': 'Example bot'}
+        for nonce in ('a' * 16, 'a' * 16, 'b' * 16):
+            self.assertEqual(self.arrival(nonce=nonce, declaration=declaration)[0], 204)
+        self.assertEqual(self.arrival()[0], 204)
+        # An existing record also stays unchanged on disk while its public projection is repaired.
+        self.store.note_arrival({'class': 'unknown', 'visitor_handle': 'legacy-handle-canary',
+                                 'declaration': declaration}, now=1, per_min=600)
+        before = self.store.events(0, 100)
+        handles = [json.loads(row['body']).get('visitor_handle') for row in before]
+        self.assertEqual(handles[:3], [self.door.policy.keyed('public-visitor/1', nonce)
+                                     for nonce in ('a' * 16, 'a' * 16, 'b' * 16)])
+        page = self.door.visitors(None, None)[1]
+        self.door.scorer_state = SimpleNamespace(snapshot=lambda: {'state': 'not_started'})
+        feed = self.door.events(None, None)[1]
+        self.assertTrue(all('visitor_handle' not in row for row in page['items']))
+        self.assertTrue(all('visitor_handle' not in row for row in feed['events']))
+        public = json.dumps([page, feed])
+        self.assertTrue(all(handle not in public for handle in handles if handle))
+        self.assertEqual(page['counts']['unique_observed_handles'], 3)
+        self.assertEqual(page['counts']['arrivals_without_handle'], 1)
+        self.assertEqual(page['items'][0]['declaration'], declaration)
+        self.assertEqual(feed['events'][0]['declaration'], declaration)
+        self.assertEqual(self.store.events(0, 100), before)
+
+    def test_no_handle_is_derived_from_an_unconfigured_challenge_key(self):
         self.door.policy.k_challenge = b''
         self.assertEqual(self.arrival(nonce='a' * 16,
                                      declaration={'notice_version': intake.VISITOR_NOTICE})[0], 204)
         page = self.door.visitors(None, None)[1]
-        self.assertIsNone(page['items'][0]['visitor_handle'])
+        self.assertNotIn('visitor_handle', page['items'][0])
+        self.assertNotIn('visitor_handle', json.loads(self.store.events(0, 1)[0]['body']))
         self.assertEqual(page['counts']['unique_observed_handles'], 0)
 
     def test_passive_http_view_keeps_existing_feed_limits(self):
