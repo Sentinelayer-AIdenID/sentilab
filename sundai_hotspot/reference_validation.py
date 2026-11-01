@@ -32,7 +32,8 @@ as validate_call and _run_call write it. Accounting starts before any work, and 
    timeout; the group is killed while the leader is unreaped, then the solver is reaped. Every other child (the TAP
    generator, the two loader listings) runs under its own RLIMIT_CPU and wall deadline (slab049, provenance).
 10. Settlement: the signed receipt and a signed settlement entry, on every exit path after 4, with the CPU charged
-    since 0. The operator then writes the settle tag (its message is printed).
+    since 0. The operator then writes the settle tag (its message is printed). A completed solve's receipt carries
+    its solve record, whose file list names every file of the run except the receipt itself.
 
 What this entry cannot do is the operator supervisor's contract (the manifest's enforcement section).
 
@@ -437,8 +438,13 @@ def _settle(context: dict, receipt: dict) -> None:
         receipt["outputs"], receipt["outputs_error"] = {}, repr(exc)
     if receipt["status"] == "exited" and receipt["exit_status"] == 0:
         try:
-            receipt["solve_record"] = slab049.summarize_evaluation(
+            record = slab049.summarize_evaluation(
                 out, grid_size=call["grid"], grid_format=gate_zero.GRID_FORMATS[call["kind"]])
+            # The record lists the run's files, never the receipt (root #57395). The receipt is rewritten just below,
+            # after this record is taken, so an entry for it could only name bytes that are about to be replaced.
+            # Its own hash is bound outside it: in the signed settlement and in the operator's settle tag.
+            record["files"].pop("receipt.json", None)
+            receipt["solve_record"] = record
         except Exception as exc:  # the raw outputs stay; the receipt says why the record failed
             receipt["status"], receipt["error"] = "record_error", f"{type(exc).__name__}: {exc}"
     receipt["children_cpu_s"] = _children_cpu_s() - baseline["children_s"]
