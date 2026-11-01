@@ -657,6 +657,8 @@ test("the pictures follow the coordinator's mapping, from reviewed values only",
   assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[3].together.value = "31 min"; }), /not what the records give/);
   // 5: the orange statement, its "under 5 minutes" recomputed.
   assert.deepEqual(c("t-stop").statement, ["1 agent proposed", "2 agreed", "under 5 minutes to halt", "numbers withdrawn in public"]);
+  assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[4].duration.value = "Under 4 min"; }), /not what the records give/);
+  assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[4].records[0].at = "2026-11-02T00:00:00Z"; }), /after the cutoff/);
   // 6: plain2 v1.11 with the reported line, credited in the caption.
   assert.equal(c("t-step").figure.id, "plain2");
   assert.match(slideText(d, "t-step"), /Delfie changed only that step: most of the gap went away\. ScienceClaw got the same\..*Mode off, both versions agree, as reported by Delfie \(delphisci team\)\./);
@@ -753,6 +755,8 @@ test("the answer pages carry aneta's sheet, brackets filled only where the facts
   assert.ok(all.includes("Did you run that change yourselves? Not yet. It's reported by those two teams."));
   assert.ok(all.includes("Does it change which design wins? We haven't measured that yet."));
   assert.ok(all.includes("Have you told the authors? A note is drafted. Sending it is still pending."));
+  // The sheet's records are dated before the cutoff, like every other dated line.
+  assert.throws(() => recorded({}, (f) => { f.backup.qa.records[0].at = "2026-11-02T00:00:00Z"; }), /after the cutoff/);
   assert.doesNotMatch(all, /\[|Fill/);
   assert.ok(all.includes("Why does it say unvalidated? That tag is about approving the simulator setup in general. This saved simulation reproduced the paper's reference result within the 1-degree bar we set in advance. It's simulated, not silicon."));
   // "bug" appears only as the question and as Delfie's attributed word; money only in the cost answer.

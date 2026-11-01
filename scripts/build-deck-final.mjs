@@ -100,7 +100,7 @@ export const FINAL_BANNED = [
 // everywhere else a dollar figure still stops the build.
 export const MONEY = new Set([FINAL_BANNED[0], FINAL_BANNED[1], FINAL_BANNED[2]]);
 export const onQaPage = (slide) => /^qa(?:-\d+)?$/.test(slide?.id ?? "");
-export const moneyAllowed = (slide) => slide?.id === "numbers" || onQaPage(slide) || (slide?.content?.layout === "why" && Boolean(slide.content.numbers));
+export const moneyAllowed = (slide) => slide?.id === "numbers" || onQaPage(slide);
 // aneta's answer sheet quotes Delfie's word for it, attributed ("those are their words"); nowhere else may "bug" appear.
 const BUG = FINAL_BANNED[5];
 // The talk's own spoken words name the co-lead (script v3, slide 3); the slides themselves name no person.
