@@ -101,6 +101,9 @@ operator's grant/runtime/scope; it does not change the proposal contract. The
 manifest must pass `validate_record('manifest', ...)`, match micro150's catalogue,
 netlist, geometry and selector, pin this binary, name this grant in `refs.grant`,
 and carry the same enforcement evidence in `checks.cpu_enforcement_evidence_sha256`.
+The fixture config digest and `fixture.package.hotspot_config_sha256` are checked
+separately. The generated `new_hotspot.config` is hashed under the reservation
+lock and checked again in the worker immediately before engine execution.
 The effective window is the intersection of manifest and wrapper windows. Only
 `admission: open` permits work; update the file by atomic replacement to close it.
 An invalid signature or missing evidence fails closed. Health remains readable
@@ -108,14 +111,20 @@ when admission closes. Warden supplies the actual signed manifest, runtime diges
 and whole-container enforcement evidence at deployment; test fixtures grant no
 production authority.
 
-The host is Linux with `/proc`, `prctl` subreaping, and `libseccomp.so.2`. Network
+The host is Linux with `/proc`, `prctl` subreaping, pidfds, and `libseccomp.so.2`. Network
 syscalls (including socket creation and io_uring setup) are denied in each solve
 supervisor and inherited by its children. The engine gets only the gate-zero
 locale/timezone/single-thread BLAS environment, no service credentials. Each engine
-has its own session/group and `RLIMIT_CPU=10`; the supervisor enforces a 30-second
-wall deadline and monitors cumulative tree CPU. It kills/reaps the whole tree on
-exit, including an orphan that calls `setsid()`. `wait4` reports CPU for that
-supervisor and its reaped children, including generation, failures and cleanup.
+has its own session/group and `RLIMIT_CPU=10`; the supervisor monitors cumulative
+tree CPU. A separate request guardian outside that CPU limit holds an engine
+pidfd before execution and adopts orphans if the worker dies. It enforces the
+30-second wall deadline, then allows two seconds for kill/reap; the service also
+bounds its wait and escalation. A failed `/proc` scan falls back to retained
+handles and the guardian's direct children, including adopted `setsid()` orphans.
+`wait4` reports CPU for the guardian and its reaped tree. Worker death, failed
+metering or unconfirmed cleanup sets `usage_complete: false` and charges at least
+the full 10 CPU-second reservation. Receipts also carry `cleanup_complete` and the
+separate `owner_pid`, `worker_pid` and `engine_pid`.
 Output files are limited to 16 MiB each. Per-solve directories are removed after
 hashing; both output hashes and all input hashes remain in the receipt.
 
