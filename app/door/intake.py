@@ -14,13 +14,15 @@
                pinned catalogue: a CPU may take r 0 or 1 (0 or 90 degrees), a DRAM only r 0; anything else is
                refused by the contract (rotation_not_allowed, or schema_invalid for 180 and 270)
 
-Nothing the visitor sends is stored or echoed: violations carry only codes, schema-known paths and keywords, die
-indices and whole micrometres; a request_key is kept only as a keyed digest.
+Submission violations carry only codes, schema-known paths and keywords, die indices and whole micrometres;
+a request_key is kept only as a keyed digest. Arrival declarations are a separate opt-in public display record.
 """
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+
+import unicodedata2 as declaration_unicode
 
 from open_proposals.contract import canonical as hashes
 from open_proposals.contract.codes import canonical_list, violation
@@ -35,6 +37,24 @@ MAX_BODY_BYTES = 4096
 MAX_COMPACT_CHARS = 128
 COMPACT_ITEM = re.compile(r"(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.([0-9])\Z")
 PROPOSAL_SCHEMA = "sentilab-open-proposal/1"
+VISITOR_NOTICE = "sentilab-public-visitor/1"
+VISITOR_DISCLOSURE = ("Your visit time, detector classification and selected purpose are public. If you opt in, "
+                      "your declared name, reason and source category are also public. We keep a handle internally "
+                      "to count purpose passes; that handle is not published. These declarations are not verified identity. "
+                      "Referrer URLs and query strings are not collected automatically, and the raw purpose-pass "
+                      "credential is not added as a generated feed field. All text you enter in name or reason "
+                      "is public. Do not include private information.")
+DISPLAY_TEXT = r"^[^\x00-\x1f\x7f-\x9f\u202a-\u202e\u2066-\u2069]*$"
+if declaration_unicode.unidata_version != "16.0.0":
+    raise RuntimeError("declaration validation requires Unicode 16.0.0")
+_REFUSED_DECLARATION_CATEGORIES = frozenset(("Cc", "Cf", "Co", "Cs", "Cn", "Zl", "Zp"))
+# Assigned letters/symbols that render blank are not covered by the Unicode category rule.
+_REFUSED_DECLARATION_FILLERS = frozenset("\u3164\u115f\u1160\uffa0\u2800")
+_MAX_COMBINING_RUN = 8
+# Match the Worker's nameKey rule; Python's \s includes extra C0/C1 characters.
+_NAME_SPACE = re.compile(r"[\u0009-\u000d\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+")
+_RESERVED_NAMES = frozenset(("human", "you", "senti", "participant", "unidentified participant",
+                             "system", "owner", "admin", "moderator"))
 COMMON = SCHEMAS["common"]["$id"]
 SUBMIT_SCHEMA = {
     "type": "object",
@@ -69,6 +89,15 @@ ARRIVAL_SCHEMA = {
         "operator": {"enum": list(OPERATORS)},
         "purpose": {"enum": list(PURPOSES)},
         "nonce": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+        "declaration": {
+            "type": "object", "additionalProperties": False, "required": ["notice_version"],
+            "properties": {
+                "notice_version": {"const": VISITOR_NOTICE},
+                "name": {"type": "string", "maxLength": 64, "pattern": DISPLAY_TEXT},
+                "reason": {"type": "string", "maxLength": 160, "pattern": DISPLAY_TEXT},
+                "source": {"enum": ["moltbook", "senti", "github", "direct", "other"]},
+            },
+        },
     },
 }
 _SUBMIT = StrictValidator(SUBMIT_SCHEMA, registry=REGISTRY)
@@ -114,8 +143,36 @@ def read_submit(raw: bytes, size: int | None = None) -> tuple:
     return read_object(raw, _SUBMIT, size)
 
 
+def _declaration_text_allowed(text: str) -> bool:
+    """Check original code points using the pinned Unicode 16 contract; never rewrite text."""
+    combining_run = 0
+    for char in text:
+        category = declaration_unicode.category(char)
+        if category in _REFUSED_DECLARATION_CATEGORIES or char in _REFUSED_DECLARATION_FILLERS:
+            return False
+        combining_run = combining_run + 1 if category in ("Mn", "Mc", "Me") else 0
+        if combining_run > _MAX_COMBINING_RUN:
+            return False
+    return True
+
+
 def read_arrival(raw: bytes, size: int | None = None) -> tuple:
-    return read_object(raw, _ARRIVAL, size)
+    value, found = read_object(raw, _ARRIVAL, size)
+    if found:
+        return None, found
+    declaration = value.get("declaration", {})
+    found = [violation("schema_invalid", path="/declaration/" + field, keyword="pattern")
+             for field in ("name", "reason") if not _declaration_text_allowed(declaration.get(field, ""))]
+    if found:
+        return None, canonical_list(found)
+    name = declaration.get("name", "")
+    # Compare a key only. Accepted declaration text remains exactly as submitted.
+    key = declaration_unicode.normalize("NFKC", name)
+    key = "".join(char for char in key if declaration_unicode.category(char) != "Cf")
+    key = _NAME_SPACE.sub(" ", key).strip(" ").lower()
+    if key in _RESERVED_NAMES:
+        return None, [violation("schema_invalid", path="/declaration/name", keyword="not")]
+    return value, []
 
 
 def token_refusal(claims: dict, now: float):

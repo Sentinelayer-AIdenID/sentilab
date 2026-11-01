@@ -91,7 +91,58 @@ CREATE INDEX IF NOT EXISTS requests_by_principal ON requests (principal, at);
 CREATE TABLE IF NOT EXISTS events (seq INTEGER PRIMARY KEY AUTOINCREMENT, at REAL NOT NULL, kind TEXT NOT NULL,
                                    run_id TEXT, body TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS events_by_kind ON events (kind, at);
+CREATE INDEX IF NOT EXISTS events_by_kind_seq ON events (kind, seq);
 CREATE TABLE IF NOT EXISTS counters (name TEXT PRIMARY KEY, value INTEGER NOT NULL);
+"""
+VISITOR_TABLES = (
+    "CREATE TABLE IF NOT EXISTS visitor_totals (singleton INTEGER PRIMARY KEY CHECK (singleton = 1), "
+    "recorded_arrivals INTEGER NOT NULL, unique_observed_handles INTEGER NOT NULL, "
+    "arrivals_without_handle INTEGER NOT NULL, through_seq INTEGER NOT NULL)",
+    # No type affinity: preserve json_extract's numeric/text grouping and DISTINCT semantics, including legacy rows.
+    "CREATE TABLE IF NOT EXISTS visitor_classes (class, arrivals INTEGER NOT NULL)",
+    "CREATE UNIQUE INDEX IF NOT EXISTS visitor_classes_key ON visitor_classes "
+    "((class IS NULL), COALESCE(class, ''))",
+    "CREATE TABLE IF NOT EXISTS visitor_handles (handle PRIMARY KEY)",
+)
+VISITOR_INSERT = """
+CREATE TRIGGER IF NOT EXISTS visitor_arrival_insert AFTER INSERT ON events WHEN NEW.kind = 'arrival'
+BEGIN
+  INSERT INTO visitor_classes (class, arrivals) VALUES (json_extract(NEW.body, '$.class'), 1)
+    ON CONFLICT DO UPDATE SET arrivals = arrivals + 1;
+  UPDATE visitor_totals SET
+    recorded_arrivals = recorded_arrivals + 1,
+    unique_observed_handles = unique_observed_handles + CASE
+      WHEN json_extract(NEW.body, '$.visitor_handle') IS NOT NULL AND NOT EXISTS
+        (SELECT 1 FROM visitor_handles WHERE handle = json_extract(NEW.body, '$.visitor_handle'))
+      THEN 1 ELSE 0 END,
+    arrivals_without_handle = arrivals_without_handle + (json_extract(NEW.body, '$.visitor_handle') IS NULL),
+    through_seq = MAX(through_seq, NEW.seq)
+    WHERE singleton = 1;
+  INSERT OR IGNORE INTO visitor_handles (handle)
+    SELECT json_extract(NEW.body, '$.visitor_handle')
+    WHERE json_extract(NEW.body, '$.visitor_handle') IS NOT NULL;
+END
+"""
+VISITOR_EVENT_TABLE = """
+CREATE TABLE IF NOT EXISTS visitor_event_totals (
+  singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+  passive_arrival_events INTEGER NOT NULL,
+  declaration_events INTEGER NOT NULL,
+  unclassified_arrival_events INTEGER NOT NULL
+)
+"""
+VISITOR_EVENT_INSERT = """
+CREATE TRIGGER IF NOT EXISTS visitor_event_kind_insert AFTER INSERT ON events WHEN NEW.kind = 'arrival'
+BEGIN
+  UPDATE visitor_event_totals SET
+    passive_arrival_events = passive_arrival_events +
+      (COALESCE(json_type(NEW.body, '$.declaration'), 'null') = 'null'),
+    declaration_events = declaration_events +
+      (COALESCE(json_type(NEW.body, '$.declaration'), 'null') = 'object'),
+    unclassified_arrival_events = unclassified_arrival_events +
+      (COALESCE(json_type(NEW.body, '$.declaration'), 'null') NOT IN ('null', 'object'))
+    WHERE singleton = 1;
+END
 """
 LIVE = "state NOT IN ('cancelled', 'expired')"
 # A held or active attempt counts at its envelope, or at the CPU an answer reported for it when that is larger.
@@ -119,8 +170,48 @@ class Store:
         db = self._connect()
         try:
             db.executescript(SCHEMA)
+            self._initialize_visitors(db)
         finally:
             db.close()
+
+    @staticmethod
+    def _initialize_visitors(db) -> None:
+        """Backfill append-only history once, atomically with installing its insert trigger.
+
+        A trigger also covers older Store processes still writing this file during an upgrade. The summary row is
+        the initialization marker: no caller can see partially backfilled counts or rerun the backfill on restart.
+        Historical events are never rewritten. Normal reads touch only a bounded page and the materialized counts.
+        """
+        db.execute("BEGIN IMMEDIATE")
+        try:
+            for statement in VISITOR_TABLES:
+                db.execute(statement)
+            if db.execute("SELECT 1 FROM visitor_totals WHERE singleton = 1").fetchone() is None:
+                db.execute("INSERT INTO visitor_classes (class, arrivals) "
+                           "SELECT json_extract(body, '$.class'), COUNT(*) FROM events "
+                           "WHERE kind = 'arrival' GROUP BY json_extract(body, '$.class')")
+                db.execute("INSERT INTO visitor_handles (handle) "
+                           "SELECT DISTINCT json_extract(body, '$.visitor_handle') FROM events "
+                           "WHERE kind = 'arrival' AND json_extract(body, '$.visitor_handle') IS NOT NULL")
+                db.execute("INSERT INTO visitor_totals SELECT 1, COUNT(*), "
+                           "(SELECT COUNT(*) FROM visitor_handles), "
+                           "COALESCE(SUM(json_extract(body, '$.visitor_handle') IS NULL), 0), "
+                           "COALESCE(MAX(seq), 0) FROM events WHERE kind = 'arrival'")
+            db.execute(VISITOR_INSERT)
+            # Separate additive table: older Store initializers keep their original totals-table arity.
+            # Its own marker and trigger cover upgrades, restarts and inserts from those older writers.
+            db.execute(VISITOR_EVENT_TABLE)
+            if db.execute("SELECT 1 FROM visitor_event_totals WHERE singleton = 1").fetchone() is None:
+                db.execute("INSERT INTO visitor_event_totals SELECT 1, "
+                           "COALESCE(SUM(COALESCE(json_type(body, '$.declaration'), 'null') = 'null'), 0), "
+                           "COALESCE(SUM(COALESCE(json_type(body, '$.declaration'), 'null') = 'object'), 0), "
+                           "COALESCE(SUM(COALESCE(json_type(body, '$.declaration'), 'null') "
+                           "NOT IN ('null', 'object')), 0) FROM events WHERE kind = 'arrival'")
+            db.execute(VISITOR_EVENT_INSERT)
+            db.execute("COMMIT")
+        except BaseException:
+            db.execute("ROLLBACK")
+            raise
 
     def acquire_owner(self) -> bool:
         """The exclusive right to drive attempts and recover them: a non-blocking lock on <store>.owner, held until
@@ -559,6 +650,21 @@ class Store:
             return [dict(row) for row in db.execute(
                 "SELECT seq, at, kind, run_id, body FROM events WHERE seq > ? ORDER BY seq LIMIT ?",
                 (after, limit)).fetchall()]
+
+    def visitors(self, after: int, limit: int) -> tuple:
+        """An indexed arrival page and exact materialized counts from the same read snapshot."""
+        with self.read() as db:
+            rows = [dict(row) for row in db.execute(
+                "SELECT seq, at, body FROM events WHERE kind = 'arrival' AND seq > ? "
+                "ORDER BY seq LIMIT ?", (after, limit)).fetchall()]
+            classes = {row[0]: row[1] for row in db.execute(
+                "SELECT class, arrivals FROM visitor_classes")}
+            counts = dict(db.execute("SELECT recorded_arrivals, unique_observed_handles, arrivals_without_handle, "
+                                     "through_seq FROM visitor_totals WHERE singleton = 1").fetchone())
+            event_counts = dict(db.execute("SELECT passive_arrival_events, declaration_events, "
+                                           "unclassified_arrival_events FROM visitor_event_totals "
+                                           "WHERE singleton = 1").fetchone())
+            return rows, {**counts, **event_counts, "arrivals_by_class": classes}
 
     def last_seq(self) -> int:
         with self.read() as db:

@@ -206,6 +206,10 @@ class Door:
         # operator is accepted (lane 1's shape) and never kept: it leaves every open feed (AGENT-DOOR Amendment 3).
         body = {"class": value["class"], "purpose": value.get("purpose"), "short_id": short,
                 "label": label(value["class"], short) if short else value["class"]}
+        if "declaration" in value:
+            body["declaration"] = value["declaration"]
+            if "nonce" in value and len(self.policy.k_challenge) >= 32:
+                body["visitor_handle"] = self.policy.keyed("public-visitor/1", value["nonce"])
         now = self.policy.clock()
         if not self.store.note_arrival(body, now=now, per_min=self.policy.flood.arrivals_per_min):
             codes = [violation("rate_limited", retry_after=utc(now + 60))]
@@ -344,11 +348,43 @@ class Door:
             return 400, {"error": "invalid paging range"}, {}
         rows = self.store.events(after, limit + 1)
         page = rows[:limit]
-        events = [{"seq": row["seq"], "at": iso(row["at"]), "kind": row["kind"], **json.loads(row["body"])}
+        # Handles stay in the historical store for aggregation, never in an open feed.
+        events = [{"seq": row["seq"], "at": iso(row["at"]), "kind": row["kind"],
+                   **{key: value for key, value in json.loads(row["body"]).items() if key != "visitor_handle"}}
                   for row in page]
         return 200, {"schema": "sentilab-door-events/1", "events": events,
                      "next_after": page[-1]["seq"] if page else after, "has_more": len(rows) > limit,
                      "scorer": self.scorer_state.snapshot()}, {}
+
+    def visitors(self, after, limit) -> tuple:
+        """Public arrival history. Declared text never changes token scope or classifier output."""
+        after, limit = self.cursor(after, 0, 0, CURSOR_MAX), self.cursor(limit, 100, 1, 500)
+        if after is None or limit is None:
+            return 400, {"error": "invalid paging range"}, {}
+        rows, counts = self.store.visitors(after, limit + 1)
+        page, items = rows[:limit], []
+        for row in page:
+            body = json.loads(row["body"])
+            item = {"seq": row["seq"], "at": iso(row["at"])}
+            # Explicit projection: legacy/private fields can never leak through this new view.
+            item.update({key: body.get(key) for key in ("class", "purpose", "short_id", "label")})
+            declaration = body.get("declaration")
+            item["event_kind"] = ("passive_arrival" if declaration is None else
+                                  "declaration" if isinstance(declaration, dict) else "legacy_unclassified")
+            item["declaration"] = ({key: declaration[key] for key in ("notice_version", "name", "reason", "source")
+                                    if key in declaration}
+                                   if isinstance(declaration, dict) else None)
+            items.append(item)
+        return 200, {"schema": "sentilab-door-visitors/1", "items": items,
+                     "next_after": page[-1]["seq"] if page else after, "has_more": len(rows) > limit,
+                     "counts": counts, "current_presence": {"status": "not_measured", "count": None},
+                     "coverage": "recorded_arrivals counts all recorded arrival events, including declarations. "
+                                 "passive_arrival_events, declaration_events and unclassified_arrival_events "
+                                 "partition that total; repeat declarations remain separate events. "
+                                 "unique_observed_handles counts only distinct internally linked opted-in passes. "
+                                 "These are not unique people, all purpose passes, all HTTP requests or current presence.",
+                     "declaration_trust": "self_declared_display_data",
+                     "notice": {"version": intake.VISITOR_NOTICE, "text": intake.VISITOR_DISCLOSURE}}, {}
 
     def board(self, nonce=None) -> tuple:
         """The public board. With the verified token's nonce (x-door-nonce), it also carries that token's CPU."""

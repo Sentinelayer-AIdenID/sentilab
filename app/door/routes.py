@@ -97,6 +97,11 @@ def board(x_door_nonce: str | None = Header(default=None)) -> Response:
     return _reply(*runtime().board(x_door_nonce))
 
 
+@router.get("/visitors")
+def visitors(after: str | None = None, limit: str | None = None) -> Response:
+    return _reply(*runtime().visitors(after, limit))
+
+
 @router.api_route("/terms", methods=["GET", "HEAD"])
 def terms() -> Response:
     """The signed manifest's terms text: exactly the bytes its pin names (terms.py), or 503 terms_unavailable."""
