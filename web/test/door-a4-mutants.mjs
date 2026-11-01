@@ -1,8 +1,9 @@
 // node web/test/door-a4-mutants.mjs [group-prefix]
 // Mutants of every new rule of AGENT-DOOR Amendment 4 rev 2 at the edge: the opt-in and its display-text rules and caps
-// (src/door/declare.js), the purpose step and the heartbeat proxy with its per-IP limit (src/door/door.js, src/worker.js),
-// the wall's copy and form (src/door/render.js), the heartbeat limiter's binding (wrangler.jsonc), the opt-in's delivery,
-// and the pages' heartbeat module (public/sentilab/here.mjs). Each runs in
+// (src/door/declare.js), the off switch DOOR_DECLARATIONS, the purpose step and the heartbeat proxy with its per-IP limit
+// (src/door/door.js, src/worker.js), the wall's copy and form (src/door/render.js), the heartbeat limiter's binding and the
+// shipped switch (wrangler.jsonc), the opt-in's delivery, and the pages' heartbeat module (public/sentilab/here.mjs).
+// Each runs in
 // a disposable copy of web/ (the working checkout is never modified) against the A4 tests, and must fail an assertion
 // there: a mutant that survives, or that only breaks an import or the syntax, fails this script.
 import assert from "node:assert/strict";
@@ -52,10 +53,36 @@ const groups = {
     ["a refusal here reads not_sent", DECLARE, 'if (optIn.status === "not_sent") return { status: "not_recorded", code: optIn.code',
       'if (optIn.status === "not_sent") return { status: "not_sent", code: optIn.code'],
   ],
+  "the off switch (DOOR_DECLARATIONS, shipped off)": [
+    ["on unless \"off\"", DOOR, 'export const declarationsOn = (env) => env?.DOOR_DECLARATIONS === "on";', 'export const declarationsOn = (env) => env?.DOOR_DECLARATIONS !== "off";'],
+    ["on in any case or padding", DOOR, 'export const declarationsOn = (env) => env?.DOOR_DECLARATIONS === "on";',
+      'export const declarationsOn = (env) => String(env?.DOOR_DECLARATIONS).trim().toLowerCase() === "on";'],
+    ["the declare route routed when off", DOOR, '  if (pathname === "/agents/declare") return declarationsOn(env) ? DECLARE_ROUTE : null;',
+      '  if (pathname === "/agents/declare") return DECLARE_ROUTE;'],
+    ["the wall offers the opt-in when off", DOOR, "  const options = declarationsOn(env) ? { source: viaSource(url.searchParams), declarations: true } : {};",
+      "  const options = { source: viaSource(url.searchParams), declarations: true };"],
+    ["via carried when off", DOOR, "  const options = declarationsOn(env) ? { source: viaSource(url.searchParams), declarations: true } : {};",
+      "  const options = declarationsOn(env) ? { source: viaSource(url.searchParams), declarations: true } : { source: viaSource(url.searchParams) };"],
+    ["the token page offers it when off", DOOR, "  const page = !declarationsOn(env) ? {} : {", "  const page = false ? {} : {"],
+    ["the ENGRAM view offers it when off", DOOR, "  const declare = !declarationsOn(env) ? null : declareObject(", "  const declare = false ? null : declareObject("],
+    ["the 405 text names the declare route when off", DOOR, "    const detail = declarationsOn(env) ?", "    const detail = true ?"],
+    ["the wall's page on by default", RENDER, "export function wallHtml(origin, submissions, { source = null, declarations = false } = {}) {",
+      "export function wallHtml(origin, submissions, { source = null, declarations = true } = {}) {"],
+    ["the wall's markdown on by default", RENDER, "export function wallMarkdown(origin, submissions, { source = null, declarations = false } = {}) {",
+      "export function wallMarkdown(origin, submissions, { source = null, declarations = true } = {}) {"],
+    ["the wall's JSON on by default", RENDER, "export function wallJson(origin, submissions, { source = null, declarations = false } = {}) {",
+      "export function wallJson(origin, submissions, { source = null, declarations = true } = {}) {"],
+    ["the token JSON keeps a declaration field when off", RENDER, "declare: declareObject(origin, { token, key: declare.key, source }) } : {}) };",
+      'declare: declareObject(origin, { token, key: declare.key, source }) } : { declaration: { status: "not_given" } }) };'],
+    ["the Worker routes without its env", WORKER, "    const door = doorRoute(pathname, env);", '    const door = doorRoute(pathname, { DOOR_DECLARATIONS: "on" });'],
+    ["production ships it on", WRANGLER, '    "DOOR_DECLARATIONS": "off" },', '    "DOOR_DECLARATIONS": "on" },'],
+    ["staging ships it on", WRANGLER, '"AQUARIUM_POST": "off", "DOOR_DECLARATIONS": "off" },', '"AQUARIUM_POST": "off", "DOOR_DECLARATIONS": "on" },'],
+  ],
   "the opt-in: only a POST bound to the pass": [
     ["a GET records a declaration", DOOR, "  emitArrival(request, env, ctx, url, { purpose, nonce: claims.nonce, expiresAt: claims.expires_at });",
       '  emitArrival(request, env, ctx, url, { purpose, nonce: claims.nonce, expiresAt: claims.expires_at, ...(readOptIn(url.searchParams).status === "opted_in" ? { declaration: readOptIn(url.searchParams).declaration } : {}) });'],
-    ["the declare route takes a GET", DOOR, '"/agents/declare": { methods: ["POST"], handler: declare },', '"/agents/declare": { methods: ["GET", "HEAD", "POST"], handler: declare },'],
+    ["the declare route takes a GET", DOOR, 'const DECLARE_ROUTE = Object.freeze({ methods: ["POST"], handler: declare });',
+      'const DECLARE_ROUTE = Object.freeze({ methods: ["GET", "HEAD", "POST"], handler: declare });'],
     ["a cross-site form accepted", DOOR, '  if (form && !ownPageForm(request, url)) return refuse(request, format, 403, { error: "cross_site" });', ""],
     ["a user-typed form (Sec-Fetch-Site: none) accepted", DOOR, 'const ownPageForm = (request, url) => request.headers.get("sec-fetch-site") !== "none" && sameSiteForm(request, url);',
       "const ownPageForm = (request, url) => sameSiteForm(request, url);"],
@@ -160,7 +187,7 @@ const groups = {
   ],
 };
 
-const tests = ["door-a4.test.mjs", "here.test.mjs", "door-routes.test.mjs"];
+const tests = ["door-a4.test.mjs", "here.test.mjs", "door-routes.test.mjs", "door-declarations-off.test.mjs"];
 const web = new URL("../", import.meta.url);
 const repo = new URL("../", web);
 const CONTRACT_FILES = ["contracts/open-proposal-v1/reason-codes.json", "contracts/open-proposal-v1/schemas/common.schema.json"];
