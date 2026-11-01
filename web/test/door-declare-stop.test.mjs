@@ -315,5 +315,10 @@ test("wrangler.jsonc declares both lists, as text, in production and in staging,
     declareStopped(vars, { shortId: "0000", address: "192.0.2.1" });
   }
   assert.equal(warn.mock.callCount(), 0, "no entry is ignored");
-  assert.equal(text.match(/operator stop for one pass or prefix/g)?.length, 2, "the operator's note, in both environments");
+  // The operator's note, just above the lists in both environments: commit and redeploy; a --var override lasts only
+  // until the next deploy. It offers no secret path.
+  const note = /\/\/ operator stop for one pass or prefix: edit these lists, commit and redeploy\.\r?\n\s*\/\/ A --var override lasts only until the next deploy\.\r?\n\s*"DOOR_DECLARE_DENY_(IDS|PREFIXES)"/g;
+  assert.equal(text.match(note)?.length, 2, "the operator's note, in both environments");
+  // The note's own lines are among these (just checked), so this can't pass on no lines.
+  assert.doesNotMatch(text.split(/\r?\n/).filter((line) => /operator stop|override lasts|DOOR_DECLARE_DENY/.test(line)).join("\n"), /secret/i);
 });

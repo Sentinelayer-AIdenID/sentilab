@@ -155,23 +155,27 @@ pass. **A GET never records a declaration.**
   Entries are separated by commas or whitespace. A listed pass's opt-in, or one from an address in a listed prefix, is
   refused at the door and nothing is sent to the intake. By JSON or form, the answer is the door's own refusal:
   `not_recorded` with the code `not_accepted` (below), in words that name no list. Only an opt-in that would be sent is
-  stopped; every other answer is what any pass gets. While a prefix is listed, an address the door can't read is refused
-  too.
-  - **Bad entries fail closed and never fail the Worker.** An entry that doesn't parse is ignored and logged by its
-    position (never its text, never a client address); the other entries still apply. A var that isn't text (say, a
-    JSON array in `wrangler.jsonc`), or a read that throws, refuses every opt-in until it's fixed, and is logged. With
-    `DOOR_DECLARATIONS` off, nothing reads the lists.
-  - **Setting it.** Set the lists as vars. Either edit both environments' `vars` in `web/wrangler.jsonc` and deploy, or
-    deploy with `npx wrangler deploy --var "DOOR_DECLARE_DENY_PREFIXES:203.0.113.0/24,2001:db8::/32"`. Quote the value:
-    a shell splits it at spaces. Wrangler 4.156.0 splits it only at the first colon, so an IPv6 prefix survives. A deploy
-    sets each var to what it's given, so a stop set only by `--var` is cleared by the next deploy that doesn't give it
-    again. To keep a stop, commit it: `web/test/door-declare-stop.test.mjs` fails on any committed entry the Worker would
-    ignore. Don't use a Worker secret for these names while `wrangler.jsonc` declares them as vars: Cloudflare reportedly
-    refuses a secret whose name is already a var (error 10053). That hasn't been tried here.
-  - **A stop, not a moderation queue.** Nothing is reviewed, held or released. The operator adds an entry and deploys;
-    removing it and deploying lifts the stop. A short id is 4 hex, so it also stops any other pass with the same short
-    id (about one in 65,536). A pass lasts 60 minutes, and a new pass has a new short id. A prefix stops everyone on
-    that network, a venue's included. To take a declaration that's already public off the feeds, hide it as well.
+  stopped; every other answer is what any pass gets.
+  - **Fail closed.** A bad configuration never turns declarations on and never fails the Worker:
+    - an entry that doesn't parse is ignored and logged by its position (never its text, never a client address); the
+      other entries still apply;
+    - a var that isn't text (say, a JSON array in `wrangler.jsonc`), or a read that throws, refuses every opt-in until
+      it's fixed, and is logged;
+    - while a prefix is listed, an opt-in whose client address the door can't read is refused;
+    - with `DOOR_DECLARATIONS` off, nothing reads the lists.
+  - **Setting it.** Edit both environments' lists in `web/wrangler.jsonc`, commit and redeploy. Removing an entry and
+    redeploying lifts the stop. `web/test/door-declare-stop.test.mjs` fails on any committed entry the Worker would
+    ignore. A `--var` override lasts only until the next deploy, which sets each var back to `wrangler.jsonc`:
+    `npx wrangler deploy --var "DOOR_DECLARE_DENY_PREFIXES:203.0.113.0/24,2001:db8::/32"`. Quote the value, so a shell
+    doesn't split it; wrangler 4.156.0 splits it only at the first colon, so an IPv6 prefix survives.
+  - **A stop, not a moderation queue.** Nothing is reviewed, held or released. A declaration that's already public
+    stays on the feeds until it's hidden as well.
+  - **Known limits.**
+    - A short id is 4 hex, so listing one also stops any other pass with the same short id: about one in 65,536. A pass
+      lasts 60 minutes, and a new pass has a new short id.
+    - A prefix stops everyone on that network, a venue's included.
+    - A stopped opt-in is answered without waiting for the intake, so it comes back sooner than one that's sent. The
+      words don't show the stop; the timing can.
 - **What the intake receives.** The pick's GET sends the pass's arrival as before, never with a declaration. A
   declaration is a later arrival of the same pass: same class rules, purpose and nonce, plus `declaration`. A pass
   may declare again within its limits, and each declaration is another arrival.

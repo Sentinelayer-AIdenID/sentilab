@@ -19,7 +19,8 @@
   // from declaring.
   "vars": { "API_ORIGIN": "https://sentilab-api.graysea-7ff72f94.eastus2.azurecontainerapps.io", "AQUARIUM_POST": "off",
     "DOOR_DECLARATIONS": "off",
-    // operator stop for one pass or prefix; edit and redeploy, or use wrangler secret/var at deploy
+    // operator stop for one pass or prefix: edit these lists, commit and redeploy.
+    // A --var override lasts only until the next deploy.
     "DOOR_DECLARE_DENY_IDS": "", "DOOR_DECLARE_DENY_PREFIXES": "" },
   // The agent door (src/door/door.js). DOOR_TOKEN_KEY is a Worker secret (wrangler secret put DOOR_TOKEN_KEY, at least
   // 32 characters, its own per environment); without it the door stays closed. The terms a submission accepts come
@@ -48,7 +49,8 @@
       "services": [{ "binding": "COLLECTOR", "service": "aidenid-aquarium" }],
       // DOOR_DECLARATIONS off, as in production, until warden explicitly authorizes turning it on (see the top).
       "vars": { "API_ORIGIN": "none", "AQUARIUM_POST": "off", "DOOR_DECLARATIONS": "off",
-        // operator stop for one pass or prefix; edit and redeploy, or use wrangler secret/var at deploy
+        // operator stop for one pass or prefix: edit these lists, commit and redeploy.
+        // A --var override lasts only until the next deploy.
         "DOOR_DECLARE_DENY_IDS": "", "DOOR_DECLARE_DENY_PREFIXES": "" },
       "ratelimits": [
         { "name": "DOOR_NONCE_LIMITER", "namespace_id": "2026110111", "simple": { "limit": 10, "period": 60 } },
