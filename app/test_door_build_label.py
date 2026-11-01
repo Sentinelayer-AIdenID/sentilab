@@ -18,6 +18,8 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 from open_proposals.contract import builds
 from open_proposals.contract.labels import label_for
@@ -35,6 +37,29 @@ BUILD = json.loads(builds.BUILDS_PATH.read_bytes())["builds"][0]      # as store
 TAG = BUILD["identity"]["image"]
 EVALUATOR = re.compile(SCHEMAS["common"]["$defs"]["evaluator"]["pattern"])
 FIXTURE = Path(__file__).resolve().parents[1] / "web" / "test" / "door-api-build-label.json"
+# warden's P1 on #85 (at 3c7b3062): the image is attested by digest, never by tag.
+D = tk.SCORER_IMAGE                                       # the digest the test grant pins and FakeScorer's receipts name
+OTHER = "sha256:" + tk.fake("another scorer image")
+# The 5cedde1 runtime's image digest (root's decision on room 608657e4 #57792): another image than gate zero's. A grant
+# pinning it, with the tag sentilab-gate0:2d35e9c, read reproduction_tested at 3c7b3062.
+CDE9 = "sha256:cde9ce804130ba4dd2495f458c67acde74de9307291401e8e92f600812e4e1c7"
+ABSENT = object()                                         # a field left out altogether
+
+
+def registry(digest, build=BUILD) -> tuple:
+    """A test-only registry: builds.json's build, its identity (and so its id) unchanged, recording `digest` as its
+    image digest. Never the real file, which records no digest for the gate-zero image."""
+    return (dict(build, image_digest=digest),)
+
+
+def scored(case, layout: str, door=None, nonce=tk.NONCE) -> dict:
+    """Submit one layout to a test door, drive it to its outcome and return its results item."""
+    door = door or case.door
+    status, reply, _ = door.submit(json.dumps(case.body(layout, nonce_value=nonce)).encode())
+    case.assertEqual(status, 202, reply)
+    while door.dispatcher.run_once():
+        pass
+    return {item["id"]: item for item in door.results(None, "20")[1]["items"]}[reply["run_id"]]
 
 
 class EvaluatorIdentityTests(unittest.TestCase):
@@ -126,6 +151,157 @@ class EvaluatorIdentityTests(unittest.TestCase):
                 Grant.parse(tk.grant(scorer_image_tag=bad))
         with self.assertRaises(ValueError):
             Grant.parse(tk.grant(scorer_image_tags=TAG))
+
+
+class ImageDigestTests(unittest.TestCase):
+    """warden's P1 on #85 (at 3c7b3062): the image a run attests is proved by digest, never by tag. A run is the build
+    only when the bound evaluation receipt's image_digest and the signed grant's scorer_image_digest are both
+    well-formed (sha256: and 64 lower-case hex), equal to each other, and equal to the image_digest builds.json records
+    for that build. In every other case the attested image is absent: another string, which reads unvalidated. The
+    grants here are stand-ins shaped like P1's, each also carrying the tag that names the build, which must not help."""
+
+    def setUp(self):
+        self.manifest = tk.door_manifest()
+
+    @staticmethod
+    def receipt(digest=D) -> dict:
+        receipt = {"binary_sha256": tk.EVALUATOR_BINARY_SHA256, "input_sha256": dict(tk.GATE0_INPUTS)}
+        return receipt if digest is ABSENT else receipt | {"image_digest": digest}
+
+    @staticmethod
+    def grant(digest=D, tag=TAG):
+        fields = {} if digest is ABSENT else {"scorer_image_digest": digest}
+        return SimpleNamespace(**fields, **({} if tag is ABSENT else {"scorer_image_tag": tag}))
+
+    def identity(self, receipt, grant, registered) -> str:
+        text = evaluator_identity(receipt, self.manifest, grant, registered=registered)
+        self.assertTrue(EVALUATOR.match(text), text)
+        return text
+
+    def assert_unvalidated(self, receipt, grant, registered):
+        text = self.identity(receipt, grant, registered)
+        self.assertNotEqual(BUILD["id"], text)
+        self.assertEqual("unvalidated", label_for(text))
+
+    def test_p1_another_images_digest_under_the_gate_zero_tag_reads_unvalidated(self):
+        """warden's measured case: the 5cedde1 runtime's digest (cde9ce80...) with the tag sentilab-gate0:2d35e9c
+        read reproduction_tested at 3c7b3062. It is another image: unvalidated under the real builds.json, under a
+        registry recording the test digest and under one recording none."""
+        for name, registered in (("builds.json", None), ("a test digest", registry(D)), ("no digest", registry(None))):
+            with self.subTest(name):
+                self.assert_unvalidated(self.receipt(CDE9), self.grant(CDE9), registered)
+        with self.assertRaises(ValueError, msg="a signed grant names no image tag"):
+            Grant.parse(tk.grant(scorer_image_digest=CDE9, scorer_image_tag=TAG))
+
+    def test_the_receipt_and_the_grant_must_name_the_same_digest(self):
+        for receipt, grant in ((D, OTHER), (OTHER, D), (D, CDE9), (CDE9, D)):
+            with self.subTest(receipt=receipt, grant=grant):
+                self.assert_unvalidated(self.receipt(receipt), self.grant(grant), registry(D))
+
+    def test_agreeing_is_not_enough_both_must_be_the_recorded_digest(self):
+        for digest in (OTHER, CDE9):
+            with self.subTest(digest):
+                self.assert_unvalidated(self.receipt(digest), self.grant(digest), registry(D))
+
+    def test_a_missing_or_malformed_digest_reads_unvalidated(self):
+        hexits = D[len("sha256:"):]
+        malformed = ["sha256:" + hexits.upper(), "SHA256:" + hexits, "Sha256:" + hexits, " " + D, D + " ", D + "\n",
+                     "\t" + D, D + "\u200b", "sha256:" + hexits[:32] + "\u200b" + hexits[32:], "sha256: " + hexits,
+                     "sha256:\uff10" + hexits[1:], hexits, "sha256:" + hexits[:-1], "sha256:" + hexits + "0",
+                     "sha256:" + hexits[:-1] + "g", "sha512:" + hexits, "", None, 7, [D], D.encode()]
+        cases = [("no image digest in the receipt", self.receipt(ABSENT), self.grant(D)),
+                 ("no scorer image digest in the grant", self.receipt(D), self.grant(ABSENT)),
+                 ("no grant", self.receipt(D), None),
+                 ("no receipt", None, self.grant(D)),
+                 ("neither has one", self.receipt(ABSENT), self.grant(ABSENT))]
+        for bad in malformed:
+            cases += [(f"receipt {bad!r}", self.receipt(bad), self.grant(D)),
+                      (f"grant {bad!r}", self.receipt(D), self.grant(bad)),
+                      (f"receipt and grant {bad!r}", self.receipt(bad), self.grant(bad))]
+        for name, receipt, grant in cases:
+            with self.subTest(name):
+                self.assert_unvalidated(receipt, grant, registry(D))
+        # A malformed digest is no digest, even as recorded: the same malformed value everywhere never matches.
+        for bad in malformed:
+            with self.subTest(recorded=bad):
+                self.assert_unvalidated(self.receipt(bad), self.grant(bad), registry(bad))
+
+    def test_a_build_with_no_recorded_digest_is_never_matched(self):
+        """null never equals null here: a build whose image_digest is null, or not recorded at all, matches no run,
+        not even one that carries no digest either."""
+        no_field = ({key: value for key, value in BUILD.items() if key != "image_digest"},)
+        runs = [("the run carries the test digest", self.receipt(D), self.grant(D)),
+                ("the run carries cde9ce80", self.receipt(CDE9), self.grant(CDE9)),
+                ("the receipt has none", self.receipt(ABSENT), self.grant(D)),
+                ("neither has one", self.receipt(ABSENT), self.grant(ABSENT)),
+                ("both are null", self.receipt(None), self.grant(None)),
+                ("no grant and no receipt digest", self.receipt(ABSENT), None)]
+        for registered_name, registered in (("builds.json", None), ("null", registry(None)), ("no field", no_field)):
+            for name, receipt, grant in runs:
+                with self.subTest(registry=registered_name, run=name):
+                    self.assert_unvalidated(receipt, grant, registered)
+
+    def test_positive_control_the_recorded_digest_on_both_sides_names_the_build(self):
+        """With a test-only registry recording digest D for the build, a run whose receipt and signed grant both
+        carry D is the build, whatever tag (if any) is about: the tag never decides."""
+        signed = Grant.parse(tk.grant())
+        self.assertEqual(D, signed.scorer_image_digest)
+        for grant in (signed, self.grant(D, tag=ABSENT), self.grant(D), self.grant(D, tag="sentilab-gate0:0000000"),
+                      self.grant(D, tag=None)):
+            with self.subTest(grant=grant):
+                text = self.identity(self.receipt(D), grant, registry(D))
+                self.assertEqual((BUILD["id"], "reproduction_tested"), (text, label_for(text)))
+        self.assertEqual(BUILD["identity"], attested(registry(D)[0], self.receipt(D), self.manifest, signed))
+        # The same run under the real builds.json, which records no digest for the gate-zero image: unvalidated.
+        self.assert_unvalidated(self.receipt(D), signed, None)
+
+
+class DoorImageDigestTests(tk.DoorCase, unittest.TestCase):
+    """The same rule through the door: a signed binding pinning the test scorer image, the fake scorer's receipts
+    naming an image, under a test registry recording the test image's digest for the build (builds.json records
+    none)."""
+
+    def setUp(self):
+        patcher = mock.patch.object(builds, "registered", return_value=registry(D))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        super().setUp()
+
+    def test_positive_control_a_run_on_the_recorded_image_reads_reproduction_tested(self):
+        result = scored(self, moved(30))["result"]
+        self.assertEqual((BUILD["id"], "reproduction_tested"), (result["evaluator"], result["temperature_label"]))
+
+    def test_the_real_registry_reads_the_same_run_unvalidated(self):
+        with mock.patch.object(builds, "registered", return_value=builds.load()):
+            result = scored(self, moved(31))["result"]
+        self.assertNotEqual(BUILD["id"], result["evaluator"])
+        self.assertEqual("unvalidated", result["temperature_label"])
+
+    def test_a_receipt_naming_another_image_or_none_reads_unvalidated(self):
+        """door-scorer's client refuses such a receipt before it counts; the label fails closed on its own too."""
+        for index, digest in enumerate((OTHER, CDE9, None)):
+            with self.subTest(digest):
+                self.scorer.image_digest = digest
+                result = scored(self, moved(32 + index), nonce=tk.nonce(60 + index))["result"]
+                self.assertNotEqual(BUILD["id"], result["evaluator"])
+                self.assertEqual("unvalidated", result["temperature_label"])
+
+
+class DoorP1Tests(tk.DoorCase, unittest.TestCase):
+    """warden's measured case through the door: the binding pins the 5cedde1 runtime's digest and its receipts name it.
+    The run attests that image, not the gate-zero build's: unvalidated under any registry that does not record it."""
+
+    def policy_kwargs(self):
+        return {"grant_value": tk.grant(scorer_image_digest=CDE9)}
+
+    def test_the_5cedde1_runtime_reads_unvalidated(self):
+        self.scorer.image_digest = CDE9
+        for index, (name, registered) in enumerate((("builds.json", builds.load()), ("a test digest", registry(D)),
+                                                    ("no digest", registry(None)))):
+            with self.subTest(name), mock.patch.object(builds, "registered", return_value=registered):
+                result = scored(self, moved(40 + index), nonce=tk.nonce(70 + index))["result"]
+                self.assertNotEqual(BUILD["id"], result["evaluator"])
+                self.assertEqual("unvalidated", result["temperature_label"])
 
 
 class DoorLabelTests(tk.DoorCase, unittest.TestCase):
