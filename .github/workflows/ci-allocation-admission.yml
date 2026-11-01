@@ -25,6 +25,7 @@ jobs:
       - name: Reserve from authenticated upstream run and merge metadata
         env:
           GH_TOKEN: ${{ github.token }}
+          CI_ALLOCATION_SELECTION: ${{ vars.CI_ALLOCATION_SELECTION }}
         run: python3 -m scripts.ci_admit --workflow-run "$RUNNER_TEMP/allocation/admission.json"
       - name: Preserve trusted admission or refusal
         if: always()

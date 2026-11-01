@@ -9,6 +9,7 @@ import urllib.error
 import urllib.request
 from dataclasses import asdict
 from pathlib import Path
+from scripts.ci_policy import LEGACY, selection, strict_json
 
 from scripts.ci_allocation import (
     ALLOCATION_ID,
@@ -25,13 +26,16 @@ PREFIX = 'tags/ci-allocation-' + ALLOCATION_ID + '/'
 
 
 class GitHubRefs:
-    def __init__(self, repository, credential, *, request=None):
+    def __init__(self, repository, credential, *, request=None, policy=LEGACY, expected_bootstrap=None):
         self.repository = repository
         self.credential = credential  # process memory only; never written or logged
         self.request = request or self._request
         self.bootstrap_sha = None
         self.tree = None
         self.commits = {}  # immutable objects; avoid rereading 200 commits per poll
+        self.policy = policy
+        self.prefix = 'tags/ci-allocation-' + policy.allocation_id + '/'
+        self.expected_bootstrap = expected_bootstrap
 
     def _request(self, method, path, body=None):
         req = urllib.request.Request(
@@ -52,23 +56,27 @@ class GitHubRefs:
             raise RuntimeError('GitHub allocation store unavailable') from None
 
     def read_bootstrap(self):
-        ref = self.request('GET', '/git/ref/' + PREFIX + 'bootstrap')
+        ref = self.request('GET', '/git/ref/' + self.prefix + 'bootstrap')
         if ref['object']['type'] != 'commit':
             raise TypeError('bootstrap must point to an owner-created commit')
         self.bootstrap_sha = ref['object']['sha']
+        if self.expected_bootstrap is not None and self.bootstrap_sha != self.expected_bootstrap:
+            raise ValueError('owner bootstrap ref changed')
         commit = self.request('GET', '/git/commits/' + self.bootstrap_sha)
+        if self.policy != LEGACY and commit['sha'] != self.bootstrap_sha:
+            raise ValueError('owner bootstrap commit mismatch')
         self.tree = commit['tree']['sha']
-        return json.loads(commit['message'])
+        return strict_json(commit['message'])
 
     def read_slots(self):
         # No pagination ambiguity: the namespace is bounded to 200 refs. The API
         # returns matching refs (not the Actions list's first/default page).
-        refs = self.request('GET', '/git/matching-refs/' + PREFIX + 'slot-')
+        refs = self.request('GET', '/git/matching-refs/' + self.prefix + 'slot-')
         if not isinstance(refs, list):
             raise TypeError('unreadable allocation counter')
         slots = {}
         for ref in refs:
-            name = ref['ref'].removeprefix('refs/' + PREFIX + 'slot-')
+            name = ref['ref'].removeprefix('refs/' + self.prefix + 'slot-')
             if not name.isdecimal() or ref['object']['type'] != 'commit':
                 raise RuntimeError('invalid allocation ref')
             slot = int(name)
@@ -76,56 +84,63 @@ class GitHubRefs:
             if sha not in self.commits:
                 self.commits[sha] = self.request('GET', '/git/commits/' + sha)
             commit = self.commits[sha]
-            record = json.loads(commit['message'])
-            if (record['allocation_id'] != ALLOCATION_ID or record['slot'] != slot
+            record = strict_json(commit['message'])
+            if (record['allocation_id'] != self.policy.allocation_id or record['slot'] != slot
                     or record['bootstrap_sha'] != self.bootstrap_sha or slot in slots):
                 raise RuntimeError('invalid or changed allocation lineage')
             Identity(**record['identity'])
+            if self.policy != LEGACY and (
+                    commit['sha'] != sha or [p['sha'] for p in commit['parents']] != [self.bootstrap_sha]
+                    or ref['ref'] != 'refs/' + self.prefix + f'slot-{slot:03}'
+                    or type(record['slot']) is not int
+                    or record['identity']['repository'] != self.repository
+                    or record['identity']['attempt'] != '1'):
+                raise ValueError('invalid new allocation parent or identity')
             slots[slot] = record['identity']
         return slots
 
     def claim(self, slot, identity):
         # A crash between commit creation and ref creation consumes no execution;
         # a lost response AFTER ref creation leaves the full reservation occupied.
-        record = {'allocation_id': ALLOCATION_ID, 'slot': slot, 'identity': identity,
+        record = {'allocation_id': self.policy.allocation_id, 'slot': slot, 'identity': identity,
                   'bootstrap_sha': self.bootstrap_sha}
         commit = self.request('POST', '/git/commits', {
             'message': json.dumps(record, sort_keys=True), 'tree': self.tree,
             'parents': [self.bootstrap_sha]})
-        self.request('POST', '/git/refs', {'ref': 'refs/' + PREFIX + f'slot-{slot:03}',
+        self.request('POST', '/git/refs', {'ref': 'refs/' + self.prefix + f'slot-{slot:03}',
                                           'sha': commit['sha']})
 
 
 def read_admission(store, identity, *, timeout=180, now=time.time,
-                   clock=time.monotonic, sleep=time.sleep):
+                   clock=time.monotonic, sleep=time.sleep, policy=LEGACY):
     """Read an independently created reservation; never claim or refund a slot."""
     if identity.attempt != '1':
         raise RuntimeError('rerun attempt refused; create a new run')
     deadline = clock() + timeout
     while True:
-        if now() >= EXPIRY:
+        if not policy.not_before <= now() < policy.expires_at:
             raise RuntimeError('allocation expired')
         bootstrap = store.read_bootstrap()
         debit = bootstrap.get('historical_runs_debit')
-        if (bootstrap.get('allocation_id') != ALLOCATION_ID or type(debit) is not int
-                or not 0 <= debit <= RUN_CAP or not bootstrap.get('historical_consumption')):
+        if (bootstrap.get('allocation_id') != policy.allocation_id or type(debit) is not int
+                or not 0 <= debit <= policy.run_cap or not bootstrap.get('historical_consumption')):
             raise RuntimeError('invalid allocation bootstrap')
         slots = store.read_slots()
-        if any(type(slot) is not int or not debit < slot <= RUN_CAP for slot in slots):
+        if any(type(slot) is not int or not debit < slot <= policy.run_cap for slot in slots):
             raise RuntimeError('invalid allocation slots')
         matches = [(slot, row) for slot, row in slots.items()
                    if row['repository'] == identity.repository and row['run_id'] == identity.run_id]
         # An API call may have crossed either deadline, even when it found a slot.
-        if now() >= EXPIRY or clock() >= deadline:
+        if not policy.not_before <= now() < policy.expires_at or clock() >= deadline:
             raise RuntimeError('allocation expired or admission receipt timed out')
         if matches:
             if len(matches) != 1 or matches[0][1] != asdict(identity):
                 raise RuntimeError('durable admission identity mismatch')
-            return {'allocation_id': ALLOCATION_ID, 'slot': matches[0][0],
+            return {'allocation_id': policy.allocation_id, 'slot': matches[0][0],
                     'identity': asdict(identity), 'bootstrap': bootstrap,
                     'launch_reservation': LAUNCH_CAP, 'cpu_reservation_seconds': CPU_CAP,
                     'mode': 'enforced', 'source': 'trusted workflow_run durable ref'}
-        if len(slots) + debit >= RUN_CAP:
+        if len(slots) + debit >= policy.run_cap:
             raise RuntimeError('global run cap exhausted')
         sleep(min(5, max(0, deadline - clock())))
 
@@ -230,7 +245,24 @@ def main():
     parser.add_argument('path', type=Path)
     args = parser.parse_args()
     identity = None
+    chosen = None
     try:
+        chosen = selection(os.environ.get('CI_ALLOCATION_SELECTION'))
+        if chosen is not None:
+            from scripts.ci_transition import selected_store, verify_local, reader, admit_activated
+            store, grant = selected_store(os.environ['GITHUB_REPOSITORY'], os.environ['GH_TOKEN'], chosen)
+            verify_local(grant)
+            if args.read_only:
+                receipt = reader(store, grant, chosen, Identity.environment())
+            else:
+                if os.environ['GITHUB_EVENT_NAME'] != 'workflow_run':
+                    raise ValueError('write admission requires the trusted workflow_run context')
+                receipt = admit_activated(store, grant, chosen,
+                    strict_json(Path(os.environ['GITHUB_EVENT_PATH']).read_text()))
+            args.path.parent.mkdir(parents=True, exist_ok=True)
+            args.path.write_text(json.dumps(receipt, indent=2) + '\n')
+            print('CI allocation:', receipt['state'])
+            return 0
         store = GitHubRefs(os.environ['GITHUB_REPOSITORY'], os.environ['GH_TOKEN'])
         if args.read_only:
             identity = Identity.environment()
@@ -244,7 +276,7 @@ def main():
         receipt['state'] = 'admitted'
         code = 0
     except (OSError, RuntimeError, ValueError, TypeError, KeyError, AttributeError) as exc:
-        receipt = {'allocation_id': ALLOCATION_ID,
+        receipt = {'allocation_id': ALLOCATION_ID if chosen is None else chosen['allocation_id'],
                    'identity': None if identity is None else asdict(identity),
                    'state': 'admission_refused', 'reason': str(exc),
                    'launches_reserved': 0, 'cpu_seconds': 0}

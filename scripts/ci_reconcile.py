@@ -13,6 +13,7 @@ from pathlib import Path
 
 from scripts.ci_admit import GitHubRefs
 from scripts.ci_allocation import CPU_CAP, EXPIRY, LAUNCH_CAP, Identity
+from scripts.ci_policy import LEGACY, selection, strict_json
 
 STATES = {'success', 'failure', 'timeout', 'killed', 'launch_error', 'interrupted',
           'cancelled', 'expired', 'cpu_exhausted', 'launch_violation', 'cpu_limit_violated',
@@ -86,12 +87,12 @@ def valid_settlement(value):
     return True
 
 
-def reconcile(identity, conclusion, settlement=None):
-    base = {'schema': 'ci-hotspot-terminal-v1', 'allocation_id': '56314',
+def reconcile(identity, conclusion, settlement=None, *, policy=LEGACY):
+    base = {'schema': 'ci-hotspot-terminal-v1', 'allocation_id': policy.allocation_id,
             'identity': identity, 'workflow_conclusion': conclusion,
             'experiment_allowance_charged': 0}
     if (isinstance(settlement, dict)
-            and (settlement.get('identity') != identity or settlement.get('allocation_id') != '56314')):
+            and (settlement.get('identity') != identity or settlement.get('allocation_id') != policy.allocation_id)):
         raise ValueError('settlement identity does not match durable reservation')
     if not valid_settlement(settlement):
         return dict(base, measurement='unknown: runner or settlement lost or invalid',
@@ -184,8 +185,8 @@ def authorized_bootstrap(raw, repository, event):
                              'scope': 'owner rollout; outside durable run counter'}}
 
 
-def main():
-    directory = Path(sys.argv[1])
+def main(directory=None):
+    directory = Path(sys.argv[1]) if directory is None else Path(directory)
     event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())['workflow_run']
     run_id, attempt = str(event['id']), str(event['run_attempt'])
     repository = os.environ['GITHUB_REPOSITORY']
@@ -214,21 +215,54 @@ def main():
                            admission_mode='bootstrap', **bootstrap)
             write_terminal(directory, witness)
             return
-        store = GitHubRefs(repository, os.environ['GH_TOKEN'])
-        store.read_bootstrap()
-        slots = store.read_slots()
-        matches = [identity for identity in slots.values()
-                   if identity['run_id'] == run_id and identity['attempt'] == attempt
-                   and identity['repository'] == repository]
+        matches, unreadable = [], []
+        def collect(store, policy):
+            slots = store.read_slots()
+            if policy != LEGACY and any(type(n) is not int or not 1 <= n <= policy.run_cap for n in slots):
+                raise ValueError('invalid selected terminal slots')
+            matches.extend((policy, identity) for identity in slots.values()
+                           if identity['run_id'] == run_id and identity['attempt'] == attempt
+                           and identity['repository'] == repository)
+        try:
+            store = GitHubRefs(repository, os.environ['GH_TOKEN'])
+            store.read_bootstrap()
+            collect(store, LEGACY)
+        except (OSError, RuntimeError, ValueError, TypeError, KeyError):
+            unreadable.append(LEGACY.allocation_id)
+        # Attempt both namespaces independently. An old-store outage must not
+        # erase a retained new identity; duplicate cross-policy matches are not
+        # resolved by lookup order. Artifact labels never select the policy.
+        if os.environ.get('CI_ALLOCATION_SELECTION'):
+            from scripts.ci_transition import selected_store
+            try:
+                chosen = selection(os.environ['CI_ALLOCATION_SELECTION'])
+                witness['allocation_id'] = None
+                witness['allocation_candidates'] = [LEGACY.allocation_id, chosen['allocation_id']]
+                new, grant = selected_store(repository, os.environ['GH_TOKEN'], chosen, admitting=False)
+                collect(new, new.policy)
+            except (OSError, RuntimeError, ValueError, TypeError, KeyError):
+                unreadable.append('owner-selected namespace')
         if len(matches) > 1:
-            raise ValueError('multiple durable admissions for one run')
+            witness.update(allocation_id=None, measurement='ambiguous durable admissions; consumption unknown',
+                           charged_launches=sum(p.launch_cap for p, _ in matches),
+                           charged_cpu_seconds=sum(p.cpu_cap for p, _ in matches),
+                           durable_matches=[dict(allocation_id=p.allocation_id, identity=i,
+                               charged_launches=p.launch_cap, charged_cpu_seconds=p.cpu_cap) for p, i in matches])
+            write_terminal(directory, witness)
+            return
         if matches:
-            witness = reconcile(matches[0], event['conclusion'])
-            path = directory / 'download' / 'settlement.json'
-            settlement = json.loads(path.read_text()) if path.exists() else None
-            witness = reconcile(matches[0], event['conclusion'], settlement)
+            policy, identity = matches[0]
+            witness = reconcile(identity, event['conclusion'], policy=policy)
+            if unreadable:
+                witness.update(measurement='other allocation namespace unreadable; consumption unknown',
+                               unreadable_namespaces=unreadable)
+            else:
+                path = directory / 'download' / 'settlement.json'
+                settlement = strict_json(path.read_text()) if path.exists() else None
+                witness = reconcile(identity, event['conclusion'], settlement, policy=policy)
         else:
-            witness.update(measurement='no independent admission evidence; consumption unknown')
+            witness.update(measurement='no independent admission evidence; consumption unknown',
+                           unreadable_namespaces=unreadable)
     except (OSError, RuntimeError, ValueError, TypeError, KeyError):
         # This witness does not unlock further admission and cannot replenish slots.
         pass

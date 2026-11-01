@@ -32,6 +32,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           CI_BOOTSTRAP_AUTHORIZATION: ${{ vars.CI_BOOTSTRAP_AUTHORIZATION }}
+          CI_ALLOCATION_SELECTION: ${{ vars.CI_ALLOCATION_SELECTION }}
         run: python3 -m scripts.ci_reconcile "$RUNNER_TEMP/allocation-terminal"
       - name: Upload terminal witness even after runner loss
         if: always()

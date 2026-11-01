@@ -25,6 +25,7 @@ from scripts.ci_allocation import (
     read_cpu,
 )
 from scripts.ci_hotspot_gate import serve
+from scripts.ci_policy import LEGACY, receipt_policy, strict_json
 
 # No site hooks or repository imports before containment. Only the parent can
 # attach this child; EOF on the release pipe can never start the workload.
@@ -98,14 +99,15 @@ def export(ledger, directory, admission):
 
 
 def monitor(group, process, account, *, cancelled, violated=lambda: False, cpu=read_cpu,
-            own_cpu=supervisor_cpu, clock=time.monotonic, sleep=time.sleep, wall_clock=time.time):
+            own_cpu=supervisor_cpu, clock=time.monotonic, sleep=time.sleep, wall_clock=time.time,
+            expiry=EXPIRY):
     """Fake clocks/counters exercise the same loop used around the Docker job."""
     while True:
         if cancelled():
             return 'cancelled', 130
         if violated():
             return 'launch_violation', 1
-        if wall_clock() >= EXPIRY:
+        if wall_clock() >= expiry:
             return 'expired', 1
         if account.observe(cpu(group), own_cpu(), clock()):
             return 'cpu_exhausted', 1
@@ -116,15 +118,18 @@ def monitor(group, process, account, *, cancelled, violated=lambda: False, cpu=r
 
 
 def run(directory, admission, command):
+    policy = receipt_policy(admission, os.environ.get('CI_ALLOCATION_SELECTION'))
     identity = Identity(**admission['identity'])
     if admission.get('state') != 'admitted':
         raise RuntimeError('no valid admission')
     if (admission.get('launch_reservation') != 100
             or admission.get('cpu_reservation_seconds') != CPU_CAP
-            or admission.get('allocation_id') != '56314'):
+            or admission.get('allocation_id') != policy.allocation_id):
         raise RuntimeError('invalid admission bounds')
     mode = admission.get('mode', 'enforced')
     if mode == 'bootstrap':
+        if policy != LEGACY:
+            raise RuntimeError('new policy cannot reuse legacy bootstrap')
         base = admission.get('base_sha', '')
         if (not isinstance(base, str) or not re.fullmatch(r'[a-f0-9]{40}', base)
                 or admission.get('reason') != 'controller absent at base ' + base
@@ -133,9 +138,9 @@ def run(directory, admission, command):
                 or admission.get('bootstrap_authorization', {}).get('authorized_attempt') != identity.attempt):
             raise RuntimeError('invalid base-controller bootstrap')
     elif (mode != 'enforced' or identity.attempt != '1' or type(admission.get('slot')) is not int
-          or not 1 <= admission['slot'] <= 200):
+          or not 1 <= admission['slot'] <= policy.run_cap):
         raise RuntimeError('invalid admission bounds')
-    ledger = Ledger(directory / 'events.jsonl', identity)
+    ledger = Ledger(directory / 'events.jsonl', identity, policy)
     # Reentry refuses even if the first process crashed before any solver launch.
     if (directory / 'meter-started').exists():
         raise RuntimeError('meter already started; refusing budget reset')
@@ -153,7 +158,7 @@ def run(directory, admission, command):
     old_handlers = {sig: signal.signal(sig, lambda *_: stop.append(True))
                     for sig in (signal.SIGINT, signal.SIGTERM)}
     try:
-        if time.time() >= EXPIRY:
+        if time.time() >= policy.expires_at:
             raise RuntimeError('allocation expired before workload start')
         group = create_group('ci-allocation-' + identity.run_id)
         baseline, own = read_cpu(group), supervisor_cpu()
@@ -173,7 +178,7 @@ def run(directory, admission, command):
         release_read = None
         if stop:
             state, code = 'cancelled', 130
-        elif time.time() >= EXPIRY:
+        elif time.time() >= policy.expires_at:
             state, code = 'expired', 1
         else:
             (group / 'host' / 'cgroup.procs').write_text(str(process.pid))
@@ -182,13 +187,14 @@ def run(directory, admission, command):
             # Recheck after the potentially blocking attach, before release.
             if stop:
                 state, code = 'cancelled', 130
-            elif time.time() >= EXPIRY:
+            elif time.time() >= policy.expires_at:
                 state, code = 'expired', 1
             elif account.observe(read_cpu(group), supervisor_cpu() + startup, time.monotonic()):
                 state, code = 'cpu_exhausted', 1
             else:
                 os.write(release_write, b'1')
                 state, code = monitor(group, process, account, cancelled=lambda: bool(stop),
+                                      expiry=policy.expires_at,
                                       own_cpu=lambda: supervisor_cpu() + startup,
                                       violated=lambda: bool(ledger.summary()['direct_call_violations']))
     except (OSError, RuntimeError, ValueError, KeyError, IndexError) as exc:
@@ -293,7 +299,18 @@ def recover(directory, *, root=Path('/sys/fs/cgroup')):
     admission = json.loads((directory / 'admission.json').read_text())
     if admission.get('state') != 'admitted':
         return
-    ledger = Ledger(directory / 'events.jsonl', Identity(**admission['identity']))
+    policy_receipt = admission
+    if 'allocation_id' not in admission:
+        # Old interrupted journal recovery accepted a minimal receipt. Infer the
+        # legacy ID only from an EXISTING matching opened journal, never create a
+        # new allocation or use this compatibility path for workload admission.
+        opened = strict_json((directory / 'events.jsonl').read_text().splitlines()[0])
+        if (opened.get('event') != 'opened' or opened.get('allocation_id') != LEGACY.allocation_id
+                or opened.get('identity') != admission['identity']):
+            raise ValueError('legacy recovery lacks matching existing journal')
+        policy_receipt = dict(admission, allocation_id=LEGACY.allocation_id)
+    policy = receipt_policy(policy_receipt, os.environ.get('CI_ALLOCATION_SELECTION'), admitting=False)
+    ledger = Ledger(directory / 'events.jsonl', Identity(**admission['identity']), policy)
     group = root / ('ci-allocation-' + admission['identity']['run_id'])
     sample, final_populated, errors = None, None, []
     if group.exists():

@@ -52,6 +52,8 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read # reservation writer lives in the default-branch workflow_run
+      actions: read
+      pull-requests: read
     steps:
       - name: Record runtime context before admission
         env:
@@ -96,8 +98,58 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           TRUSTED_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
           CI_BOOTSTRAP_AUTHORIZATION: ${{ vars.CI_BOOTSTRAP_AUTHORIZATION }}
+          CI_ALLOCATION_SELECTION: ${{ vars.CI_ALLOCATION_SELECTION }}
         run: |
           test "$(git rev-parse HEAD)" = "$TRUSTED_BASE_SHA"
+          if [[ -n "${CI_ALLOCATION_SELECTION:-}" ]]; then
+          python3 -I -S - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          import re
+          import subprocess
+          import sys
+          import tempfile
+          import urllib.request
+          from pathlib import Path
+
+          def pairs(items):
+              result = {}
+              for key, value in items:
+                  if key in result:
+                      raise ValueError('duplicate owner selection key')
+                  result[key] = value
+              return result
+          chosen = json.loads(os.environ['CI_ALLOCATION_SELECTION'], object_pairs_hook=pairs)
+          repository = os.environ['GITHUB_REPOSITORY']
+          if (repository != 'Sentinelayer-AIdenID/sentilab' or type(chosen) is not dict
+                  or type(chosen.get('source_commit')) is not str
+                  or not re.fullmatch('[a-f0-9]{40}', chosen['source_commit'])
+                  or type(chosen.get('loader_sha256')) is not str
+                  or not re.fullmatch('[a-f0-9]{64}', chosen['loader_sha256'])):
+              raise ValueError('invalid owner source selection')
+          request = urllib.request.Request('https://api.github.com/repos/' + repository
+              + '/contents/scripts/ci_owner_source.py?ref=' + chosen['source_commit'],
+              headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+                       'Accept': 'application/vnd.github+json'})
+          with urllib.request.urlopen(request, timeout=15) as response:
+              blob = json.load(response)
+          if blob['encoding'] != 'base64':
+              raise ValueError('invalid controller encoding')
+          raw = base64.b64decode(''.join(blob['content'].split()), validate=True)
+          if hashlib.sha256(raw).hexdigest() != chosen['loader_sha256']:
+              raise ValueError('owner loader source mismatch')
+          # Never import the checked-out base/PR or execute an artifact-supplied loader.
+          directory = Path(tempfile.mkdtemp(prefix='ci-loader-', dir=os.environ['RUNNER_TEMP']))
+          loader = directory / 'ci_owner_source.py'
+          loader.write_bytes(raw)
+          result = subprocess.run([sys.executable, '-I', '-S', str(loader),
+              'read', str(Path(os.environ['RUNNER_TEMP']) / 'allocation/admission.json')], check=False)
+          raise SystemExit(result.returncode)
+          PY
+            exit 0
+          fi
           controller_entry="$(git ls-tree "$TRUSTED_BASE_SHA" -- scripts/ci_admit.py)"
           if [[ -n "$controller_entry" ]]; then
             python3 -m scripts.ci_admit --read-only "$RUNNER_TEMP/allocation/admission.json"
@@ -230,6 +282,7 @@ jobs:
     permissions:
       contents: read
       actions: read
+      pull-requests: read
     steps:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         continue-on-error: true # the following validator turns absence into an explicit failure
@@ -240,9 +293,61 @@ jobs:
         id: admission-check
         env:
           ADMISSION_RESULT: ${{ needs.admission.result }}
+          GH_TOKEN: ${{ github.token }}
+          CI_ALLOCATION_SELECTION: ${{ vars.CI_ALLOCATION_SELECTION }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           TRUSTED_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
         run: |
+          if [[ -n "${CI_ALLOCATION_SELECTION:-}" ]]; then
+            test "$ADMISSION_RESULT" = success
+          python3 -I -S - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          import re
+          import subprocess
+          import sys
+          import tempfile
+          import urllib.request
+          from pathlib import Path
+
+          def pairs(items):
+              result = {}
+              for key, value in items:
+                  if key in result:
+                      raise ValueError('duplicate owner selection key')
+                  result[key] = value
+              return result
+          chosen = json.loads(os.environ['CI_ALLOCATION_SELECTION'], object_pairs_hook=pairs)
+          repository = os.environ['GITHUB_REPOSITORY']
+          if (repository != 'Sentinelayer-AIdenID/sentilab' or type(chosen) is not dict
+                  or type(chosen.get('source_commit')) is not str
+                  or not re.fullmatch('[a-f0-9]{40}', chosen['source_commit'])
+                  or type(chosen.get('loader_sha256')) is not str
+                  or not re.fullmatch('[a-f0-9]{64}', chosen['loader_sha256'])):
+              raise ValueError('invalid owner source selection')
+          request = urllib.request.Request('https://api.github.com/repos/' + repository
+              + '/contents/scripts/ci_owner_source.py?ref=' + chosen['source_commit'],
+              headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+                       'Accept': 'application/vnd.github+json'})
+          with urllib.request.urlopen(request, timeout=15) as response:
+              blob = json.load(response)
+          if blob['encoding'] != 'base64':
+              raise ValueError('invalid controller encoding')
+          raw = base64.b64decode(''.join(blob['content'].split()), validate=True)
+          if hashlib.sha256(raw).hexdigest() != chosen['loader_sha256']:
+              raise ValueError('owner loader source mismatch')
+          # Never import the checked-out base/PR or execute an artifact-supplied loader.
+          directory = Path(tempfile.mkdtemp(prefix='ci-loader-', dir=os.environ['RUNNER_TEMP']))
+          loader = directory / 'ci_owner_source.py'
+          loader.write_bytes(raw)
+          result = subprocess.run([sys.executable, '-I', '-S', str(loader),
+              'validate', str(Path(os.environ['RUNNER_TEMP']) / 'allocation/admission.json')], check=False)
+          raise SystemExit(result.returncode)
+          PY
+            exit 0
+          fi
           python3 -I - <<'PY'
           import json
           import os
@@ -283,10 +388,26 @@ jobs:
         with:
           persist-credentials: false
       - name: Meter build, required smoke suites, health and origin-lock checks
-        run: sudo --preserve-env=GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT python3 -m scripts.ci_cpu_meter run "$RUNNER_TEMP/allocation" bash scripts/ci_container_job.sh
+        env:
+          CI_ALLOCATION_SELECTION: ${{ vars.CI_ALLOCATION_SELECTION }}
+          CI_CONTROLLER_DIRECTORY: ${{ steps.admission-check.outputs.controller-directory }}
+        run: |
+          if [[ -n "${CI_ALLOCATION_SELECTION:-}" ]]; then
+            sudo --preserve-env=CI_ALLOCATION_SELECTION,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT python3 -I -S -c 'import sys;sys.path.insert(0,sys.argv.pop(1));from scripts.ci_cpu_meter import main;raise SystemExit(main())' "$CI_CONTROLLER_DIRECTORY" run "$RUNNER_TEMP/allocation" bash scripts/ci_container_job.sh
+          else
+            sudo --preserve-env=GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT python3 -m scripts.ci_cpu_meter run "$RUNNER_TEMP/allocation" bash scripts/ci_container_job.sh
+          fi
       - name: Settle interrupted reservations after any terminal state
         if: always() && steps.admission-check.outcome == 'success' && steps.checkout.outcome == 'success'
-        run: sudo python3 -m scripts.ci_cpu_meter recover "$RUNNER_TEMP/allocation"
+        env:
+          CI_ALLOCATION_SELECTION: ${{ vars.CI_ALLOCATION_SELECTION }}
+          CI_CONTROLLER_DIRECTORY: ${{ steps.admission-check.outputs.controller-directory }}
+        run: |
+          if [[ -n "${CI_ALLOCATION_SELECTION:-}" ]]; then
+            sudo --preserve-env=CI_ALLOCATION_SELECTION python3 -I -S -c 'import sys;sys.path.insert(0,sys.argv.pop(1));from scripts.ci_cpu_meter import main;raise SystemExit(main())' "$CI_CONTROLLER_DIRECTORY" recover "$RUNNER_TEMP/allocation"
+          else
+            sudo python3 -m scripts.ci_cpu_meter recover "$RUNNER_TEMP/allocation"
+          fi
       - name: Upload append-only launch journal and CPU settlement
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

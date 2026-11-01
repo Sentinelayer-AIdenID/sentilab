@@ -8,6 +8,7 @@ import time
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from scripts.ci_policy import LEGACY
 
 ALLOCATION_ID = '56314'
 EXPIRY = 1793556000  # 2026-11-01T18:00:00Z
@@ -50,13 +51,14 @@ class Ledger:
     An incomplete last write is corruption, never an invitation to reset a quota.
     A settlement cannot refund a reservation. Reopening validates the identity.
     """
-    def __init__(self, path, identity):
+    def __init__(self, path, identity, policy=LEGACY):
         self.path = Path(path)
         self.identity = asdict(identity)
+        self.policy = policy
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self._locked() as (stream, events):
             if not events:
-                self._append(stream, events, 'opened', allocation_id=ALLOCATION_ID,
+                self._append(stream, events, 'opened', allocation_id=self.policy.allocation_id,
                              identity=self.identity)
 
     @contextmanager
@@ -72,7 +74,7 @@ class Ledger:
             except ValueError as exc:
                 raise RuntimeError('corrupt allocation journal') from exc
             if events and (events[0].get('identity') != self.identity
-                           or events[0].get('allocation_id') != ALLOCATION_ID
+                           or events[0].get('allocation_id') != self.policy.allocation_id
                            or any(row.get('sequence') != i for i, row in enumerate(events))):
                 raise RuntimeError('allocation journal identity/sequence mismatch')
             yield stream, events
@@ -143,7 +145,7 @@ class Ledger:
             violations.append('cpu_limit_violated')
         if direct_calls:
             violations.append('launch_violation')
-        return {'schema': 'ci-hotspot-settlement-v1', 'allocation_id': ALLOCATION_ID,
+        return {'schema': 'ci-hotspot-settlement-v1', 'allocation_id': self.policy.allocation_id,
                 'identity': self.identity, 'launch_limit': LAUNCH_CAP, 'cpu_limit_seconds': CPU_CAP,
                 'launches_reserved': sum(row['event'] == 'reserved' for row in events),
                 'launches_settled': sum(row['event'] == 'settled' for row in events),
@@ -200,37 +202,38 @@ class RefAdmission:
     Bootstrap is created by the allocation owner, not automatically on a miss.
     Each occupied slot is retained even after cancellation, failure or lost reply.
     """
-    def __init__(self, store):
+    def __init__(self, store, policy=LEGACY):
         self.store = store
+        self.policy = policy
 
     def admit(self, identity, *, now=None):
-        if (time.time() if now is None else now) >= EXPIRY:
+        if not self.policy.not_before <= (time.time() if now is None else now) < self.policy.expires_at:
             raise RuntimeError('allocation expired')
         if identity.attempt != '1':
             raise RuntimeError('rerun attempt refused; create a new run')
         bootstrap = self.store.read_bootstrap()
         debit = bootstrap.get('historical_runs_debit')
-        if (bootstrap.get('allocation_id') != ALLOCATION_ID or type(debit) is not int
-                or not 0 <= debit <= RUN_CAP or not bootstrap.get('historical_consumption')):
+        if (bootstrap.get('allocation_id') != self.policy.allocation_id or type(debit) is not int
+                or not 0 <= debit <= self.policy.run_cap or not bootstrap.get('historical_consumption')):
             raise RuntimeError('invalid allocation bootstrap')
-        for _ in range(RUN_CAP + 1):
+        for _ in range(self.policy.run_cap + 1):
             slots = self.store.read_slots()
-            if any(type(slot) is not int or not debit < slot <= RUN_CAP for slot in slots):
+            if any(type(slot) is not int or not debit < slot <= self.policy.run_cap for slot in slots):
                 raise RuntimeError('invalid allocation slots')
             if any(row['repository'] == identity.repository and row['run_id'] == identity.run_id
                    for row in slots.values()):
                 raise RuntimeError('run already admitted; refusing budget reset')
-            available = next((n for n in range(debit + 1, RUN_CAP + 1) if n not in slots), None)
+            available = next((n for n in range(debit + 1, self.policy.run_cap + 1) if n not in slots), None)
             if available is None:
                 raise RuntimeError('global run cap exhausted')
             # Refresh the real clock on retries; fake time is explicit in unit tests.
-            if (time.time() if now is None else now) >= EXPIRY:
+            if not self.policy.not_before <= (time.time() if now is None else now) < self.policy.expires_at:
                 raise RuntimeError('allocation expired')
             try:
                 self.store.claim(available, asdict(identity))
             except RefConflict:
                 continue
-            return {'allocation_id': ALLOCATION_ID, 'slot': available,
+            return {'allocation_id': self.policy.allocation_id, 'slot': available,
                     'identity': asdict(identity), 'bootstrap': bootstrap,
                     'launch_reservation': LAUNCH_CAP, 'cpu_reservation_seconds': CPU_CAP}
         raise RuntimeError('admission contention; refusing')
