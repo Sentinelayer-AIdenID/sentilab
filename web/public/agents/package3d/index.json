@@ -5,7 +5,7 @@
  "built_from": [
   {
    "path": "web/public/sentilab/package/case-cpu-dram.mjs",
-   "sha256": "dd80f08f73600f6bedb17352d5a549c085ba47fd04d4d882694d51b9462382a1"
+   "sha256": "bbe945ce91a54339f12f9e06f916cfea2053cf4eedbe96b9faf3a3a24ca1aec4"
   },
   {
    "path": "sundai_tap/configs/sys_micro150_45mm.cfg",

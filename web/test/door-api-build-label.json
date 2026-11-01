@@ -1,0 +1,614 @@
+{
+ "schema": "sentilab-door-results/1",
+ "items": [
+  {
+   "id": "open-b26eba0e-4415a2582eab5fb60af17755c94c17a1",
+   "label": "declared_agent · c868",
+   "class": "declared_agent",
+   "short_id": "c868",
+   "arrival": 1,
+   "seq": 6,
+   "status": "reproduced",
+   "summary": "independently verified",
+   "codes": [],
+   "reason": null,
+   "position": null,
+   "dies": [
+    {
+     "die": 0,
+     "rot_deg": 0,
+     "x_um": 17500,
+     "y_um": 15500
+    },
+    {
+     "die": 1,
+     "rot_deg": 0,
+     "x_um": 27000,
+     "y_um": 17500
+    },
+    {
+     "die": 2,
+     "rot_deg": 0,
+     "x_um": 27000,
+     "y_um": 27500
+    },
+    {
+     "die": 3,
+     "rot_deg": 0,
+     "x_um": 18000,
+     "y_um": 27500
+    },
+    {
+     "die": 4,
+     "rot_deg": 0,
+     "x_um": 8500,
+     "y_um": 17500
+    },
+    {
+     "die": 5,
+     "rot_deg": 0,
+     "x_um": 36500,
+     "y_um": 17500
+    },
+    {
+     "die": 6,
+     "rot_deg": 0,
+     "x_um": 36500,
+     "y_um": 27500
+    },
+    {
+     "die": 7,
+     "rot_deg": 0,
+     "x_um": 8500,
+     "y_um": 27500
+    }
+   ],
+   "geometry_sha256": "af42c157d5b2790669068e18ad1eb136a7aaf47996b978a19a3677502b5fce2b",
+   "wire_proxy_mm": 10.05,
+   "metric": {
+    "metric_id": "max_chiplet_centre_cell_mean_C",
+    "definition": "per real chiplet (Chiplet_0..7), the mean of its 1, 2 or 4 central HotSpot 6.0 grid-64 cells (GRID_CENTER), then the maximum over the chiplets",
+    "unit": "C",
+    "precision_K": 0.01,
+    "reference": {
+     "layout": "raw",
+     "value_C": 115.935
+    }
+   },
+   "result": {
+    "metric": {
+     "metric_id": "max_chiplet_centre_cell_mean_C",
+     "definition": "per real chiplet (Chiplet_0..7), the mean of its 1, 2 or 4 central HotSpot 6.0 grid-64 cells (GRID_CENTER), then the maximum over the chiplets",
+     "unit": "C",
+     "precision_K": 0.01,
+     "reference": {
+      "layout": "raw",
+      "value_C": 115.935
+     }
+    },
+    "metric_id": "max_chiplet_centre_cell_mean_C",
+    "max_chiplet_centre_cell_mean_C": 98.495,
+    "native_all_block_max_C": 98.485,
+    "active_layer_peak_C": 101.1,
+    "active_guard": {
+     "field": "active_layer_peak_C",
+     "rule": "strictly below",
+     "limit_C": 119.07,
+     "ok": true
+    },
+    "per_die_C": {
+     "C0": 92.27,
+     "C1": 98.47999999999999,
+     "C2": 98.495,
+     "C3": 96.405,
+     "D0": 32.9675,
+     "D1": 31.939999999999998,
+     "D2": 31.75,
+     "D3": 31.0075
+    },
+    "grid64": null,
+    "grid": {
+     "rows": 64,
+     "cols": 64,
+     "unit": "C",
+     "layer": "active",
+     "orientation": "row 0 is the frame's top edge (max y); column 0 its left edge (min x)"
+    },
+    "replay": {
+     "code": null,
+     "fresh_process": true,
+     "match": true,
+     "receipts_bound": true
+    },
+    "reproduced": true,
+    "binding_ok": true,
+    "evaluator": "HotSpot-6.0:a7a3286e368867c26381e0a23e36b3e273bdeda9:binary_sha256:751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6:config_sha256:2a51fb6cf2b149b29d154371450f5924070fa0d5ab7ad170b7185b929ff9007b:grid:64x64:build_sha256:05a9d9cb9ba06a67123c1b4c9d3da14820429221e23b4882abc82cf49c1a0e74",
+    "temperature_label": "reproduction_tested",
+    "label": "simulated, not silicon; HotSpot 6.0, grid 64; max_chiplet_centre_cell_mean_C",
+    "verification": {
+     "replay": "reproduced",
+     "replay_code": null,
+     "distinct_execution": true,
+     "receipts_bound": true,
+     "binding_ok": true,
+     "binding_basis": [
+      "per_die",
+      "wire"
+     ],
+     "active_guard_ok": true,
+     "cpu": "measured",
+     "candidate": true,
+     "not_claimed": [
+      "beat",
+      "margin",
+      "routed wire",
+      "source acceptance"
+     ]
+    }
+   },
+   "verdict": "candidate"
+  },
+  {
+   "id": "open-b26eba0e-a532352216ad23b0c4aab652041ac2c0",
+   "label": "declared_agent · 54a5",
+   "class": "declared_agent",
+   "short_id": "54a5",
+   "arrival": 7,
+   "seq": 11,
+   "status": "not_reproduced",
+   "summary": "evaluated",
+   "codes": [
+    "reproduction_mismatch"
+   ],
+   "reason": null,
+   "position": null,
+   "dies": [
+    {
+     "die": 0,
+     "rot_deg": 0,
+     "x_um": 18000,
+     "y_um": 15500
+    },
+    {
+     "die": 1,
+     "rot_deg": 0,
+     "x_um": 27000,
+     "y_um": 17500
+    },
+    {
+     "die": 2,
+     "rot_deg": 0,
+     "x_um": 27000,
+     "y_um": 27500
+    },
+    {
+     "die": 3,
+     "rot_deg": 0,
+     "x_um": 18000,
+     "y_um": 27500
+    },
+    {
+     "die": 4,
+     "rot_deg": 0,
+     "x_um": 8500,
+     "y_um": 17500
+    },
+    {
+     "die": 5,
+     "rot_deg": 0,
+     "x_um": 36500,
+     "y_um": 17500
+    },
+    {
+     "die": 6,
+     "rot_deg": 0,
+     "x_um": 36500,
+     "y_um": 27500
+    },
+    {
+     "die": 7,
+     "rot_deg": 0,
+     "x_um": 8500,
+     "y_um": 27500
+    }
+   ],
+   "geometry_sha256": "713ccf083ff1ecb036505063192ecafb5f1718acfa32d246d3ced1c85947ec06",
+   "wire_proxy_mm": 10.1,
+   "metric": {
+    "metric_id": "max_chiplet_centre_cell_mean_C",
+    "definition": "per real chiplet (Chiplet_0..7), the mean of its 1, 2 or 4 central HotSpot 6.0 grid-64 cells (GRID_CENTER), then the maximum over the chiplets",
+    "unit": "C",
+    "precision_K": 0.01,
+    "reference": {
+     "layout": "raw",
+     "value_C": 115.935
+    }
+   },
+   "result": {
+    "metric": {
+     "metric_id": "max_chiplet_centre_cell_mean_C",
+     "definition": "per real chiplet (Chiplet_0..7), the mean of its 1, 2 or 4 central HotSpot 6.0 grid-64 cells (GRID_CENTER), then the maximum over the chiplets",
+     "unit": "C",
+     "precision_K": 0.01,
+     "reference": {
+      "layout": "raw",
+      "value_C": 115.935
+     }
+    },
+    "metric_id": "max_chiplet_centre_cell_mean_C",
+    "max_chiplet_centre_cell_mean_C": 99.765,
+    "native_all_block_max_C": 99.755,
+    "active_layer_peak_C": 102.12,
+    "active_guard": {
+     "field": "active_layer_peak_C",
+     "rule": "strictly below",
+     "limit_C": 119.07,
+     "ok": true
+    },
+    "per_die_C": {
+     "C0": 93.53,
+     "C1": 99.765,
+     "C2": 98.775,
+     "C3": 96.41499999999999,
+     "D0": 31.6825,
+     "D1": 32.1925,
+     "D2": 31.89,
+     "D3": 30.725
+    },
+    "grid64": null,
+    "grid": {
+     "rows": 64,
+     "cols": 64,
+     "unit": "C",
+     "layer": "active",
+     "orientation": "row 0 is the frame's top edge (max y); column 0 its left edge (min x)"
+    },
+    "replay": {
+     "code": "reproduction_mismatch",
+     "fresh_process": true,
+     "match": false,
+     "receipts_bound": true
+    },
+    "reproduced": false,
+    "binding_ok": true,
+    "evaluator": "HotSpot-6.0:a7a3286e368867c26381e0a23e36b3e273bdeda9:binary_sha256:751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6:config_sha256:2a51fb6cf2b149b29d154371450f5924070fa0d5ab7ad170b7185b929ff9007b:grid:64x64:build_sha256:05a9d9cb9ba06a67123c1b4c9d3da14820429221e23b4882abc82cf49c1a0e74",
+    "temperature_label": "reproduction_tested",
+    "label": "simulated, not silicon; HotSpot 6.0, grid 64; max_chiplet_centre_cell_mean_C",
+    "verification": {
+     "replay": "not_reproduced",
+     "replay_code": "reproduction_mismatch",
+     "distinct_execution": true,
+     "receipts_bound": true,
+     "binding_ok": true,
+     "binding_basis": [
+      "per_die",
+      "wire"
+     ],
+     "active_guard_ok": true,
+     "cpu": "measured",
+     "candidate": false,
+     "not_claimed": [
+      "beat",
+      "margin",
+      "routed wire",
+      "source acceptance"
+     ]
+    }
+   },
+   "verdict": null
+  },
+  {
+   "id": "open-b26eba0e-d7a2408a703a51e4698c4a27d58e466d",
+   "label": "declared_agent · 4ffa",
+   "class": "declared_agent",
+   "short_id": "4ffa",
+   "arrival": 12,
+   "seq": 16,
+   "status": "reproduced",
+   "summary": "independently verified",
+   "codes": [
+    "binding_mismatch"
+   ],
+   "reason": null,
+   "position": null,
+   "dies": [
+    {
+     "die": 0,
+     "rot_deg": 0,
+     "x_um": 17500,
+     "y_um": 15000
+    },
+    {
+     "die": 1,
+     "rot_deg": 0,
+     "x_um": 27000,
+     "y_um": 17500
+    },
+    {
+     "die": 2,
+     "rot_deg": 0,
+     "x_um": 27000,
+     "y_um": 27500
+    },
+    {
+     "die": 3,
+     "rot_deg": 0,
+     "x_um": 18000,
+     "y_um": 27500
+    },
+    {
+     "die": 4,
+     "rot_deg": 0,
+     "x_um": 8500,
+     "y_um": 17500
+    },
+    {
+     "die": 5,
+     "rot_deg": 0,
+     "x_um": 36500,
+     "y_um": 17500
+    },
+    {
+     "die": 6,
+     "rot_deg": 0,
+     "x_um": 36500,
+     "y_um": 27500
+    },
+    {
+     "die": 7,
+     "rot_deg": 0,
+     "x_um": 8500,
+     "y_um": 27500
+    }
+   ],
+   "geometry_sha256": "74853f61bef4c85bc51e542c74745c2e82e2ab568c07f7ec28604d151a247c3d",
+   "wire_proxy_mm": 10.2,
+   "metric": {
+    "metric_id": "max_chiplet_centre_cell_mean_C",
+    "definition": "per real chiplet (Chiplet_0..7), the mean of its 1, 2 or 4 central HotSpot 6.0 grid-64 cells (GRID_CENTER), then the maximum over the chiplets",
+    "unit": "C",
+    "precision_K": 0.01,
+    "reference": {
+     "layout": "raw",
+     "value_C": 115.935
+    }
+   },
+   "result": {
+    "metric": {
+     "metric_id": "max_chiplet_centre_cell_mean_C",
+     "definition": "per real chiplet (Chiplet_0..7), the mean of its 1, 2 or 4 central HotSpot 6.0 grid-64 cells (GRID_CENTER), then the maximum over the chiplets",
+     "unit": "C",
+     "precision_K": 0.01,
+     "reference": {
+      "layout": "raw",
+      "value_C": 115.935
+     }
+    },
+    "metric_id": "max_chiplet_centre_cell_mean_C",
+    "max_chiplet_centre_cell_mean_C": 99.19,
+    "native_all_block_max_C": 99.17999999999999,
+    "active_layer_peak_C": 100.69,
+    "active_guard": {
+     "field": "active_layer_peak_C",
+     "rule": "strictly below",
+     "limit_C": 119.07,
+     "ok": true
+    },
+    "per_die_C": {
+     "C0": 90.0325,
+     "C1": 98.19,
+     "C2": 98.155,
+     "C3": 95.625,
+     "D0": 32.63,
+     "D1": 31.904999999999998,
+     "D2": 31.6675,
+     "D3": 30.64
+    },
+    "grid64": null,
+    "grid": {
+     "rows": 64,
+     "cols": 64,
+     "unit": "C",
+     "layer": "active",
+     "orientation": "row 0 is the frame's top edge (max y); column 0 its left edge (min x)"
+    },
+    "replay": {
+     "code": null,
+     "fresh_process": true,
+     "match": true,
+     "receipts_bound": true
+    },
+    "reproduced": true,
+    "binding_ok": false,
+    "evaluator": "HotSpot-6.0:a7a3286e368867c26381e0a23e36b3e273bdeda9:binary_sha256:751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6:config_sha256:2a51fb6cf2b149b29d154371450f5924070fa0d5ab7ad170b7185b929ff9007b:grid:64x64:build_sha256:05a9d9cb9ba06a67123c1b4c9d3da14820429221e23b4882abc82cf49c1a0e74",
+    "temperature_label": "reproduction_tested",
+    "label": "simulated, not silicon; HotSpot 6.0, grid 64; max_chiplet_centre_cell_mean_C",
+    "verification": {
+     "replay": "reproduced",
+     "replay_code": null,
+     "distinct_execution": true,
+     "receipts_bound": true,
+     "binding_ok": false,
+     "binding_basis": [
+      "per_die",
+      "wire"
+     ],
+     "active_guard_ok": true,
+     "cpu": "measured",
+     "candidate": false,
+     "not_claimed": [
+      "beat",
+      "margin",
+      "routed wire",
+      "source acceptance"
+     ]
+    }
+   },
+   "verdict": null
+  },
+  {
+   "id": "open-b26eba0e-f1b47b586d9934069b04d2190d3c30f5",
+   "label": "declared_agent · bed6",
+   "class": "declared_agent",
+   "short_id": "bed6",
+   "arrival": 17,
+   "seq": 21,
+   "status": "reproduced",
+   "summary": "independently verified",
+   "codes": [],
+   "reason": null,
+   "position": null,
+   "dies": [
+    {
+     "die": 0,
+     "rot_deg": 0,
+     "x_um": 18000,
+     "y_um": 15000
+    },
+    {
+     "die": 1,
+     "rot_deg": 0,
+     "x_um": 27000,
+     "y_um": 17500
+    },
+    {
+     "die": 2,
+     "rot_deg": 0,
+     "x_um": 27000,
+     "y_um": 27500
+    },
+    {
+     "die": 3,
+     "rot_deg": 0,
+     "x_um": 18000,
+     "y_um": 27500
+    },
+    {
+     "die": 4,
+     "rot_deg": 0,
+     "x_um": 8500,
+     "y_um": 17500
+    },
+    {
+     "die": 5,
+     "rot_deg": 0,
+     "x_um": 36500,
+     "y_um": 17500
+    },
+    {
+     "die": 6,
+     "rot_deg": 0,
+     "x_um": 36500,
+     "y_um": 27500
+    },
+    {
+     "die": 7,
+     "rot_deg": 0,
+     "x_um": 8500,
+     "y_um": 27500
+    }
+   ],
+   "geometry_sha256": "88f9b2300619e2fe206f56a610f98d55038fbffadda2b31d1967b1cdfebd1919",
+   "wire_proxy_mm": 10.25,
+   "metric": {
+    "metric_id": "max_chiplet_centre_cell_mean_C",
+    "definition": "per real chiplet (Chiplet_0..7), the mean of its 1, 2 or 4 central HotSpot 6.0 grid-64 cells (GRID_CENTER), then the maximum over the chiplets",
+    "unit": "C",
+    "precision_K": 0.01,
+    "reference": {
+     "layout": "raw",
+     "value_C": 115.935
+    }
+   },
+   "result": {
+    "metric": {
+     "metric_id": "max_chiplet_centre_cell_mean_C",
+     "definition": "per real chiplet (Chiplet_0..7), the mean of its 1, 2 or 4 central HotSpot 6.0 grid-64 cells (GRID_CENTER), then the maximum over the chiplets",
+     "unit": "C",
+     "precision_K": 0.01,
+     "reference": {
+      "layout": "raw",
+      "value_C": 115.935
+     }
+    },
+    "metric_id": "max_chiplet_centre_cell_mean_C",
+    "max_chiplet_centre_cell_mean_C": 99.43,
+    "native_all_block_max_C": 99.42,
+    "active_layer_peak_C": 101.65,
+    "active_guard": {
+     "field": "active_layer_peak_C",
+     "rule": "strictly below",
+     "limit_C": 119.07,
+     "ok": true
+    },
+    "per_die_C": {
+     "C0": 91.23500000000001,
+     "C1": 99.43,
+     "C2": 98.41499999999999,
+     "C3": 95.63499999999999,
+     "D0": 31.387500000000003,
+     "D1": 32.1575,
+     "D2": 31.8,
+     "D3": 30.384999999999998
+    },
+    "grid64": null,
+    "grid": {
+     "rows": 64,
+     "cols": 64,
+     "unit": "C",
+     "layer": "active",
+     "orientation": "row 0 is the frame's top edge (max y); column 0 its left edge (min x)"
+    },
+    "replay": {
+     "code": null,
+     "fresh_process": true,
+     "match": true,
+     "receipts_bound": true
+    },
+    "reproduced": true,
+    "binding_ok": true,
+    "evaluator": "HotSpot-6.0:a7a3286e368867c26381e0a23e36b3e273bdeda9:binary_sha256:751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6:config_sha256:39de074f97e95de0675894ea63c05f54a8e4a71fe8553aa07873c84db2e277cc:grid:64x64:build_sha256:d9b024d216db6bae788e2c7625c80777720b95f22f1318cd5ddbea9a35f10e71",
+    "temperature_label": "unvalidated",
+    "label": "simulated, not silicon; HotSpot 6.0, grid 64; max_chiplet_centre_cell_mean_C",
+    "verification": {
+     "replay": "reproduced",
+     "replay_code": null,
+     "distinct_execution": true,
+     "receipts_bound": true,
+     "binding_ok": true,
+     "binding_basis": [
+      "per_die",
+      "wire"
+     ],
+     "active_guard_ok": true,
+     "cpu": "measured",
+     "candidate": false,
+     "not_claimed": [
+      "beat",
+      "margin",
+      "routed wire",
+      "source acceptance"
+     ]
+    }
+   },
+   "verdict": null
+  }
+ ],
+ "next_after": 21,
+ "has_more": false,
+ "metric": {
+  "metric_id": "max_chiplet_centre_cell_mean_C",
+  "definition": "per real chiplet (Chiplet_0..7), the mean of its 1, 2 or 4 central HotSpot 6.0 grid-64 cells (GRID_CENTER), then the maximum over the chiplets",
+  "unit": "C",
+  "precision_K": 0.01,
+  "reference": {
+   "layout": "raw",
+   "value_C": 115.935
+  }
+ },
+ "label": "simulated, not silicon; HotSpot 6.0, grid 64; max_chiplet_centre_cell_mean_C",
+ "scorer": {
+  "state": "up",
+  "since": 1793500000.0
+ }
+}

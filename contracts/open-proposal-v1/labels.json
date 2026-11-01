@@ -1,8 +1,9 @@
 {
   "schema": "sentilab-open-labels/1",
-  "mirrors": "the label rule of web/public/temperature-label.mjs (SLAB-053): states, lists and precedence, unchanged from sha256 b89ba45b5592b0cb586c71a577081f1df8ca61641d83a4a8757ca1881c0aaf2c (PR #58) through 91628b18d48012a6243d39b9f4c663ddc5814f8eb44cdaf121f10b6733101abe (#64, which added view helpers only)",
-  "states": ["withdrawn", "unvalidated", "illustrative", "accepted"],
+  "mirrors": "the label rule of web/public/temperature-label.mjs (SLAB-053): states, lists and precedence, unchanged from sha256 b89ba45b5592b0cb586c71a577081f1df8ca61641d83a4a8757ca1881c0aaf2c (PR #58) through 91628b18d48012a6243d39b9f4c663ddc5814f8eb44cdaf121f10b6733101abe (#64, which added view helpers only); reproduction_tested added for exactly the builds in builds.json",
+  "states": ["withdrawn", "unvalidated", "illustrative", "accepted", "reproduction_tested"],
   "withdrawn": ["HotSpot-7:f18831e48cef5d62580585cca0d7fab6c71bc3cc"],
   "illustrative": ["fixture-no-solver"],
-  "accepted": []
+  "accepted": [],
+  "reproduction_tested": ["HotSpot-6.0:a7a3286e368867c26381e0a23e36b3e273bdeda9:binary_sha256:751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6:config_sha256:2a51fb6cf2b149b29d154371450f5924070fa0d5ab7ad170b7185b929ff9007b:grid:64x64:build_sha256:05a9d9cb9ba06a67123c1b4c9d3da14820429221e23b4882abc82cf49c1a0e74"]
 }

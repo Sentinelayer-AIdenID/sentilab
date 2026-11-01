@@ -59,8 +59,9 @@ const REFUSED_RESULT = Object.freeze({
   verification_malformed: "verification unreadable", replay_malformed: "replay unreadable",
 });
 const ENGINE = "HotSpot 6.0, grid 64";
-// The labels of the reference panel's temperatures: the gate-zero statistics by their (pinned) evaluator, the paper's
-// published points by none (labelFor of a missing identity is "unvalidated").
+// The labels of the reference panel's temperatures: the gate-zero statistics by their (pinned) evaluator, the
+// reproduction-tested build (case-cpu-dram.mjs GATE_ZERO_EVALUATOR); the paper's published points by none (labelFor of a
+// missing identity is "unvalidated", so the shared notice stays while they are on the page).
 const LABEL_GATE_ZERO = labelFor(GATE_ZERO_EVALUATOR);
 const LABEL_PUBLISHED = labelFor(undefined);
 const FIELD_NOTE = Object.freeze({
@@ -70,8 +71,8 @@ const FIELD_NOTE = Object.freeze({
   mismatch: "The result does not match its pinned identity (field, orientation or statistics): no map is drawn",
 });
 const fmtMm = (v) => (Math.abs(v) >= 1000 ? Math.round(v).toLocaleString("en-US") : String(v));
-// An evaluator identity, shortened for a line of text (its build hash to 8 hex); the whole string is the title.
-const shortIdentity = (id) => id.replace(/[0-9a-f]{64}/, (x) => `${x.slice(0, 8)}…`);
+// An evaluator identity, shortened for a line of text (each commit or sha256 to 8 hex); the whole string is the title.
+const shortIdentity = (id) => id.replace(/[0-9a-f]{40,64}/g, (x) => `${x.slice(0, 8)}…`);
 const words = (code) => code.replace(/_/g, " ");
 // What the feed says a result was checked for, and what it is not (#81's verification block), as the feed's report.
 function verificationText(v) {

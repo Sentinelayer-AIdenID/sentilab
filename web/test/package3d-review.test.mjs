@@ -117,7 +117,7 @@ test("C3 (R1, D14): the pinned field is drawn only after both digests check out;
   assert.equal(raw.field_key, FIELD_PINS[0].field_sha256);
   assert.equal(raw.field_key, sha256(JSON.stringify(FIXTURE.layouts[0].result.grid64)), "the pin covers the field's exact text");
   assert.equal(raw.label, labelFor(GATE_ZERO_EVALUATOR));
-  assert.equal(raw.label, LABELS.unvalidated, "HotSpot 6.0 is not on the accepted list: unvalidated, with the notice");
+  assert.equal(raw.label, LABELS.reproduction_tested, "the pinned field's evaluator is the reproduction-tested build (#85; root's ruling): its label, no notice of its own");
   assert.equal(raw.diagnostic, false);
   assert.ok(ok.slice(1).every((L) => L.result === null), "the snapped reference and the examples have no result");
   // A changed cell or a moved die breaks the association: no field is drawn.

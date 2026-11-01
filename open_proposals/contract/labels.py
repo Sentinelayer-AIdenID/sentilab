@@ -1,10 +1,12 @@
 """The SLAB-053 label rule, mirrored from web/public/temperature-label.mjs without importing it.
 
-The state names and the three identity lists are data in contracts/open-proposal-v1/labels.json. One value from one
+The state names and the four identity lists are data in contracts/open-proposal-v1/labels.json. One value from one
 evaluator identity: withdrawn if the identity's engine:commit is on the withdrawn list (case-insensitive, every build);
 illustrative if it is exactly the fixture identity; accepted if it is exactly on the accepted list (empty for now);
-otherwise unvalidated. A value derived from several takes the most cautious state: withdrawn if any input is,
-illustrative or accepted only if every input is, otherwise unvalidated (including no inputs at all).
+reproduction_tested if it is exactly a build on that list (the complete gate-zero build of builds.json, whose
+identity string covers every field of its identity); otherwise unvalidated. A value derived from several takes the most cautious
+state: withdrawn if any input is, illustrative, accepted or reproduction_tested only if every input is, otherwise
+unvalidated (including no inputs at all). A label is the evaluator's; it never clears a result's own qualifiers.
 """
 from __future__ import annotations
 
@@ -17,7 +19,7 @@ LABELS_PATH = Path(__file__).resolve().parents[2] / "contracts" / "open-proposal
 def load_lists(path: Path = LABELS_PATH) -> dict:
     data = json.loads(path.read_bytes())
     return {"withdrawn": tuple(data["withdrawn"]), "illustrative": tuple(data["illustrative"]),
-            "accepted": tuple(data["accepted"])}
+            "accepted": tuple(data["accepted"]), "reproduction_tested": tuple(data["reproduction_tested"])}
 
 
 LISTS = load_lists()
@@ -37,6 +39,8 @@ def label_for(identity, lists: dict = LISTS) -> str:
         return "illustrative"
     if identity in lists["accepted"]:
         return "accepted"
+    if identity in lists["reproduction_tested"]:
+        return "reproduction_tested"
     return "unvalidated"
 
 
@@ -48,4 +52,6 @@ def label_for_all(identities, lists: dict = LISTS) -> str:
         return "illustrative"
     if labels and all(label == "accepted" for label in labels):
         return "accepted"
+    if labels and all(label == "reproduction_tested" for label in labels):
+        return "reproduction_tested"
     return "unvalidated"
