@@ -4,7 +4,7 @@
     "title": "SentiLab",
     "event": "ScienceClaw hackathon",
     "talk": "Five-minute slot: talk, then a live demo",
-    "cutoff": "2026-11-01 05:55 UTC",
+    "cutoff": "2026-11-01 06:20 UTC",
     "variant": "pass",
     "variantLabel": "PASS",
     "preview": false,
@@ -17,9 +17,9 @@
   "budget": {
     "checkWordsPerMinute": 150,
     "slowWordsPerSecond": 2.25,
-    "talkWords": 358,
-    "talkSeconds": 143.2,
-    "talkSlowSeconds": 159.1,
+    "talkWords": 364,
+    "talkSeconds": 145.6,
+    "talkSlowSeconds": 161.8,
     "transitionSeconds": 15,
     "talkCapSeconds": 180,
     "doorWords": 32,
@@ -90,10 +90,10 @@
       "main": true,
       "kicker": "The grader",
       "notes": {
-        "text": "Some modern processors are small chips on one base, like tiles. Where each tile sits decides how hot it runs. Agents can search layouts all night, but a simulator grades every try. A wrong grader doesn't make a dumb agent. It makes a confidently wrong one.",
-        "words": 46,
-        "seconds": 18.4,
-        "slowSeconds": 20.4
+        "text": "Some modern processors are small chips on one base, like tiles. Where each tile sits decides how hot it runs. Agents can search layouts all night, but a simulator grades every try. If nobody checks the grader, you don't get a dumb agent. You get a confident one.",
+        "words": 48,
+        "seconds": 19.2,
+        "slowSeconds": 21.3
       },
       "content": {
         "layout": "grader",
@@ -113,7 +113,7 @@
           "simulator scores",
           "agent chases the score"
         ],
-        "punch": "Wrong grader → confidently wrong agent."
+        "punch": "Unchecked grader → confident agent."
       },
       "label": "2 / 10"
     },
@@ -401,10 +401,10 @@
       "main": true,
       "kicker": "The lesson",
       "notes": {
-        "text": "Here's the lesson: an optimizer is only as reliable as the tool grading it. Independent checks expose disagreements before we build on them. That's SentiLab: agents propose, agents check, and the receipts are yours to verify.",
-        "words": 36,
-        "seconds": 14.4,
-        "slowSeconds": 16
+        "text": "Here's the lesson: an optimizer is only as reliable as the tool grading it. Independent checks expose disagreements before we build on them. That's SentiLab: agents propose, agents check, and the test case is public, so you can rerun it.",
+        "words": 40,
+        "seconds": 16,
+        "slowSeconds": 17.8
       },
       "content": {
         "layout": "closer",
@@ -1406,7 +1406,7 @@
           "pr": 56,
           "state": "merged",
           "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
-          "checked": "checked 2026-11-01 05:53 UTC"
+          "checked": "checked 2026-11-01 06:19 UTC"
         },
         "result": {
           "label": "PASS",
@@ -1608,84 +1608,84 @@
       "content": {
         "title": "Pull requests behind this talk, with their state at the check time.",
         "repo": "Sentinelayer-AIdenID/sentilab",
-        "checked": "checked 2026-11-01 05:53 UTC",
+        "checked": "checked 2026-11-01 06:19 UTC",
         "rows": [
           {
             "number": "#56",
             "what": "Gate zero: the older simulator version behind the fixed test",
             "state": "merged",
             "text": "merged as bba120dc at 2026-10-31 23:04 UTC",
-            "checked": "checked 2026-11-01 05:53 UTC"
+            "checked": "checked 2026-11-01 06:19 UTC"
           },
           {
             "number": "#73",
             "what": "Gate zero: pin the operator's public key",
             "state": "merged",
             "text": "merged as 1575556d at 2026-10-31 23:40 UTC",
-            "checked": "checked 2026-11-01 05:53 UTC"
+            "checked": "checked 2026-11-01 06:19 UTC"
           },
           {
             "number": "#57",
             "what": "Reference layouts from the paper, plus the paper's wire router",
             "state": "merged",
             "text": "merged as d298cb00 at 2026-10-31 18:04 UTC",
-            "checked": "checked 2026-11-01 05:53 UTC"
+            "checked": "checked 2026-11-01 06:19 UTC"
           },
           {
             "number": "#58",
             "what": "Public notice: pre-correction temperatures withdrawn",
             "state": "merged",
             "text": "merged as 568dd397 at 2026-10-31 16:27 UTC",
-            "checked": "checked 2026-11-01 05:53 UTC"
+            "checked": "checked 2026-11-01 06:19 UTC"
           },
           {
             "number": "#60",
             "what": "Notice on the leaderboard and verify pages",
             "state": "merged",
             "text": "merged as 551777a9 at 2026-10-31 17:59 UTC",
-            "checked": "checked 2026-11-01 05:53 UTC"
+            "checked": "checked 2026-11-01 06:19 UTC"
           },
           {
             "number": "#64",
             "what": "Every temperature carries its own qualifier",
             "state": "merged",
             "text": "merged as d2504625 at 2026-10-31 19:38 UTC",
-            "checked": "checked 2026-11-01 05:53 UTC"
+            "checked": "checked 2026-11-01 06:19 UTC"
           },
           {
             "number": "#61",
             "what": "Test fix: a guard pattern held raw control bytes",
             "state": "merged",
             "text": "merged as a5744f3a at 2026-10-31 16:48 UTC",
-            "checked": "checked 2026-11-01 05:53 UTC"
+            "checked": "checked 2026-11-01 06:19 UTC"
           },
           {
             "number": "#59",
             "what": "Design: outside agents propose layouts",
             "state": "merged",
             "text": "merged as 4f6ad0cb at 2026-10-31 17:53 UTC",
-            "checked": "checked 2026-11-01 05:53 UTC"
+            "checked": "checked 2026-11-01 06:19 UTC"
           },
           {
             "number": "#55",
             "what": "Measured run profiles; refuse to start when calls cannot fit the cap",
             "state": "merged",
             "text": "merged as 315bbff4 at 2026-10-31 15:38 UTC",
-            "checked": "checked 2026-11-01 05:53 UTC"
+            "checked": "checked 2026-11-01 06:19 UTC"
           },
           {
             "number": "#37",
             "what": "Allocation controller for simulator runs in CI",
             "state": "merged",
             "text": "merged as 224fa704 at 2026-10-31 17:09 UTC",
-            "checked": "checked 2026-11-01 05:53 UTC"
+            "checked": "checked 2026-11-01 06:19 UTC"
           },
           {
             "number": "#25",
             "what": "Headroom study runner; its result is INCONCLUSIVE, kept as recorded",
             "state": "merged",
             "text": "merged as deb24670 at 2026-10-31 12:05 UTC",
-            "checked": "checked 2026-11-01 05:53 UTC"
+            "checked": "checked 2026-11-01 06:19 UTC"
           }
         ]
       },
@@ -2238,7 +2238,7 @@
   "build": {
     "gate": "pass",
     "measured": "75.48,115.93",
-    "cutoff": "2026-11-01T05:55:00Z",
+    "cutoff": "2026-11-01T06:20:00Z",
     "preview": false,
     "rederived": true,
     "demoStatus": "recorded",
@@ -2246,7 +2246,7 @@
     "slot": "3+2"
   },
   "source": {
-    "finalSha256": "fd083b02653aa3245c946a42338b9ecff14ad354f087d5e26f08cdba3efc71b6",
+    "finalSha256": "bc17d42eb15eca73036add4cdcef0f709eb99925eb9995db1689edf62fba2c8d",
     "schemaSha256": "28db1b860c3655135cdf94e4432c2f43169214a5a198d0229eb8b84c3acb666b"
   }
 }

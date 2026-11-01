@@ -600,7 +600,7 @@ const liveReview = (options = {}, mutate) => recorded({ demoStatus: "live", demo
 const short = (options = {}, mutate) => recorded({ slot: "3total", ...options }, mutate);
 const PT = loaded.final.plainTalk;
 test("the main slides are script v3's ten: each slide's heading and its words in the notes, exactly", () => {
-  assert.equal(sha(readFileSync(PLAIN_SCRIPT)), "0706566796c3a8297f5d017bd8aac034393f45224b1ab6e6a78a77c71fb8cbcf", "script v3 as sent");
+  assert.equal(sha(readFileSync(PLAIN_SCRIPT)), "48b68cd60c226d5fdb452a1522053cca30b565ca602e662cc32452223a54d768", "script v3.1 as sent");
   const V = scriptSections(PLAIN_SCRIPT);
   assert.equal(V.length, 10);
   const d = recorded();
@@ -644,7 +644,8 @@ test("the pictures follow the coordinator's mapping, from reviewed values only",
   assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[0].hook.bars[1].value = 241; }), /is not a reviewed peak/);
   // 2: the cropped 3D still beside the three steps and the punchline.
   assert.deepEqual([c("t-grader").still.id, c("t-grader").still.label], ["render", "simulated, not silicon"]);
-  assert.match(slideText(d, "t-grader"), /Agent proposes simulator scores agent chases the score Wrong grader → confidently wrong agent\./);
+  assert.match(slideText(d, "t-grader"), /Agent proposes simulator scores agent chases the score Unchecked grader → confident agent\./);
+  assert.doesNotMatch(`${slideText(d, "t-grader")} ${notesOf(d, "t-grader")} ${notesOf(d, "t-lesson")}`, /\bwrong\b|receipts are yours/i, "aneta's two fixes (team room 57719)");
   // 3: two person cards and five role chips; no names until Carter says yes.
   assert.deepEqual(c("t-team").roles.map((r) => r.role), ["builder", "guard", "fact-checker", "skeptic", "science reader"]);
   assert.ok(c("t-team").people.every((p) => p.name === null) && c("t-team").roles.every((r) => r.agent === null));
@@ -886,11 +887,11 @@ test("each slot's talk fits its cap with its transitions at 150 words a minute, 
     assert.ok(u.doorSeconds <= u.demoSeconds && u.liveSeconds > 0, `${g}: door ${u.doorSeconds} s`);
     assert.ok(u.talkCapSeconds + u.demoSeconds <= u.maxSeconds);
   }
-  // The coordinator's figures for script v3: 358 words, 158 s at 150 wpm and 174 s at 135 with transitions; the door
+  // The coordinator's figures for script v3.1: 364 words, 161 s at 150 wpm and 177 s at 135 with transitions; the door
   // 79 words LIVE and 32 RECORDED. The short cut: 205 words in a 120 s talk cap and a 60 s demo.
   const u = recorded().budget;
-  assert.deepEqual([u.talkWords, u.talkSeconds, u.talkSlowSeconds, u.doorWords, u.doorSeconds, u.liveSeconds], [358, 143.2, 159.1, 32, 12.8, 107.2]);
-  assert.deepEqual([u.talkSeconds + u.transitionSeconds, u.talkSlowSeconds + u.transitionSeconds], [158.2, 174.1]);
+  assert.deepEqual([u.talkWords, u.talkSeconds, u.talkSlowSeconds, u.doorWords, u.doorSeconds, u.liveSeconds], [364, 145.6, 161.8, 32, 12.8, 107.2]);
+  assert.deepEqual([u.talkSeconds + u.transitionSeconds, u.talkSlowSeconds + u.transitionSeconds], [160.6, 176.8]);
   assert.equal(recorded({ demoStatus: "live", demoReview: true }).budget.doorWords, 79);
   const v = recorded({ slot: "3total" }).budget;
   assert.deepEqual([v.talkWords, v.talkSeconds, v.talkCapSeconds, v.doorWords, v.demoSeconds], [205, 82, 120, 30, 60]);
@@ -1017,7 +1018,10 @@ test("SCRIPT.md is the export's speaker script, word for word, under 16,000 char
   assert.equal(script, speakerScript(buildFinalData(loaded, committed.build), loaded.final));
   assert.ok(script.length < 16000, `${script.length} characters`);
   assert.match(script, /^# Speaker script, five-minute deck \(slot 3\+2\), review export /);
-  assert.match(script, /the main slides from script v3 in PLAIN-SCRIPT\.md; the backup slides are not spoken\./);
+  assert.match(script, /the main slides from script v3\.1 in PLAIN-SCRIPT\.md; the backup slides are not spoken\./);
+  // The version is the script file's own heading: the short cut's script says it speaks v3-short.
+  assert.match(speakerScript(short(), loaded.final), /^# Speaker script, three-minute deck \(slot 3total\), review export /);
+  assert.match(speakerScript(short(), loaded.final), /the main slides from script v3-short in PLAIN-SCRIPT-SHORT\.md; the backup slides are not spoken\./);
   assert.match(script, /The pass test is the recorded PASS \(75\.48 and 115\.93\), with the completed re-derivation\./);
   // One section per main slide, its script heading and its words; no backup slide is in the script.
   assert.deepEqual([...script.matchAll(/^## (\d+)\. /gm)].map((m) => Number(m[1])), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);

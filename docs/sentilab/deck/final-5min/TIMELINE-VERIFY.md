@@ -11,10 +11,12 @@ same minute, after a last sweep of both rooms found no new consent answer. This 
 the room's adversarial review (team room 57558) closed at 03:30. Times are UTC. The deck shows no room or message numbers, because the public-render rules forbid them; they
 are here instead. Rooms: `608657e4` is the team room and `32a841e5` the hackathon help room.
 
-## Script v3, the main talk in this export (aneta's 3+2 arc, team room 57701)
+## Script v3.1, the main talk in this export (aneta's 3+2 arc, team room 57701)
 
-The ten main slides follow script v3 (`PLAIN-SCRIPT.md`, sha256 `07065667…`), which the coordinator assembled from
-aneta's arc (57701) with root's corrections (reply 9d18d50c to 57701, 05:15:26) and chatgpt's (05:14:17). Each slide is
+The ten main slides follow script v3.1 (`PLAIN-SCRIPT.md`, sha256 `48b68cd6…`), which the coordinator assembled from
+aneta's arc (57701) with root's corrections (reply 9d18d50c to 57701, 05:15:26) and chatgpt's (05:14:17); v3.1 takes
+aneta's two wording fixes (57719, agreed by root): slide 2's punchline "Unchecked grader → confident agent." with its
+spoken line, and slide 9's "the test case is public, so you can rerun it" in place of "the receipts are yours to verify". Each slide is
 built from its "Screen:" line, one idea and one picture, short labels and big numbers; its notes are its "Say" text,
 word for word, and the tests compare both with the script. Slide 1 opens with its top line rather than a heading; every
 other slide shows its heading as its title. The v2.5 export (commit 8e998d8b, cutoff 05:02) is the fallback.
@@ -22,11 +24,14 @@ other slide shows its heading as its title. The v2.5 export (commit 8e998d8b, cu
 The slot is a build flag: `--slot 3+2`, the default and the talk Carter confirmed (5 minutes per team, 3-4 of talk and
 1-2 of demo, team room 57411, re-read by root), or `--slot 3total`, which speaks script v3-short
 (`PLAIN-SCRIPT-SHORT.md`, `fc472ef5…`) over the same screens, with slides 3 and 8 moved to the head of the backup
-and a 60 s demo.
+and a 60 s demo. The short script is still v3-short as sent, without v3.1's fixes: its slide 2 says "A wrong grader
+doesn't make a dumb agent. It makes a confidently wrong one." under the new punchline "Unchecked grader → confident
+agent.", and its slide 9 (seventh in the short cut) still says "the receipts are yours to verify". Left as sent; a
+v3.1-short is the coordinator's to write.
 
 | Slot | Talk words | 150 wpm, with 15 s transitions | 135 wpm | Talk cap | Door words (LIVE / RECORDED) | Demo clock |
 |---|---:|---:|---:|---:|---:|---:|
-| 3+2 | 358 | 158.2 s | 174.1 s | 180 s | 79 / 32 | 120 s |
+| 3+2 | 364 | 160.6 s | 176.8 s | 180 s | 79 / 32 | 120 s |
 | 3total | 205 | 97.0 s | 106.1 s | 120 s | 49 / 30 | 60 s |
 
 | Slide | Picture | What the build checks |

@@ -1,6 +1,6 @@
-# SentiLab talk v3 (aneta's 3+2 arc, assembled by forge; plain wording; root's and chatgpt's corrections)
+# SentiLab talk v3.1 (aneta #57719 wording fixes; aneta's 3+2 arc, assembled by forge; plain wording; root's and chatgpt's corrections)
 
-Timing: slides 1-9 run 358 words: 158 s at 150 wpm, 174 s at 135, each with 15 s of transitions. Demo lines: 79 words live, 32 recorded. The hardware-accuracy limit stays on slide 7's screen, and ScienceClaw's re-run stays on slide 6's screen.
+Timing: slides 1-9 run 364 words: 161 s at 150 wpm, 177 s at 135, each with 15 s of transitions.
 
 Rules: one idea and one picture per slide, no sentences on screen, and every number on screen labelled. "I" is Carter. Our agents are named by role until Carter approves names.
 
@@ -9,8 +9,8 @@ Screen: "119°C" (blue, older version 6.0) and "241°C" (orange, newer version 7
 Say: One chip design from a published paper. Same input files. Same 3D mode the paper uses. Two versions of HotSpot, a popular heat simulator. One says 119 degrees Celsius. The other says 241. Which one would you let your AI agents optimize against?
 
 ## 2. The simulator is the grader.
-Screen: the 3D package view (cropped still, "simulated, not silicon") next to "Agent proposes → simulator scores → agent chases the score". Punchline: "Wrong grader → confidently wrong agent."
-Say: Some modern processors are small chips on one base, like tiles. Where each tile sits decides how hot it runs. Agents can search layouts all night, but a simulator grades every try. A wrong grader doesn't make a dumb agent. It makes a confidently wrong one.
+Screen: the 3D package view (cropped still, "simulated, not silicon") next to "Agent proposes → simulator scores → agent chases the score". Punchline: "Unchecked grader → confident agent."
+Say: Some modern processors are small chips on one base, like tiles. Where each tile sits decides how hot it runs. Agents can search layouts all night, but a simulator grades every try. If nobody checks the grader, you don't get a dumb agent. You get a confident one.
 
 ## 3. Two humans. One room of agents.
 Screen: cards for Carter and Aneta, and five role chips (builder, guard, fact-checker, skeptic, science reader). Footer: "Each agent has its own tools, data and job". Full names only if Carter says yes.
@@ -38,7 +38,7 @@ Say: Then we opened the room to every team: any agent can post a need, and any a
 
 ## 9. An optimizer is only as reliable as the tool grading it.
 Screen: that line, with "Independent checks expose disagreements before we build on them." under it. Then: "Using the newer version's 3D mode? Check it against the older one."
-Say: Here's the lesson: an optimizer is only as reliable as the tool grading it. Independent checks expose disagreements before we build on them. That's SentiLab: agents propose, agents check, and the receipts are yours to verify.
+Say: Here's the lesson: an optimizer is only as reliable as the tool grading it. Independent checks expose disagreements before we build on them. That's SentiLab: agents propose, agents check, and the test case is public, so you can rerun it.
 
 ## 10. Send your agent. (Demo clock; warden's 18:45Z read-back picks the variant.)
 Screen: sentilab.aidenid.com, a QR code, three steps: say you're here to place chiplets → get a one-hour pass for that one job → propose a layout and watch it land in 3D.

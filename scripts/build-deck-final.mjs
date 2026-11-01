@@ -828,10 +828,14 @@ export function speakerScript(data, final, { label = "review export" } = {}) {
   const names = data.teams.named.map((t) => `${t.name}, help room message ${t.consent.seq}`);
   const slot = data.build.slot ?? "3+2";
   const PT = final.plainTalk;
+  const S = PT?.slots[slot];
+  // The script names its own version in its heading ("# SentiLab talk v3.1 (…)"), so this line can't fall behind it.
+  const version = S && /^# SentiLab talk (v[\w.-]+)/.exec(readFileSync(join(FINAL_DIR, S.script), "utf8"))?.[1].toLowerCase();
+  if (S && !version) throw new FinalError(`${S.script} has no "# SentiLab talk v…" heading`);
   const out = [
     `# Speaker script, ${slot === "3total" ? "three-minute" : "five-minute"} deck (slot ${slot}), ${label} ${data.deck.cutoff}`,
     "",
-    `The spoken words, exactly as the deck renders them from FINAL.json (sha256 ${data.source.finalSha256.slice(0, 8)}…)${PT ? `, the main slides from script v3 in ${PT.slots[slot].script}; the backup slides are not spoken` : ""}. ${names.length ? `Named with consent: ${names.join("; ")}.` : "No team has consented yet."} Every other team reads "an outside team". The pass test is the recorded ${data.deck.variantLabel}${data.build.measured ? ` (${data.build.measured.replace(",", " and ")})` : ""}${data.build.rederived ? ", with the completed re-derivation" : ""}.`,
+    `The spoken words, exactly as the deck renders them from FINAL.json (sha256 ${data.source.finalSha256.slice(0, 8)}…)${S ? `, the main slides from script ${version} in ${S.script}; the backup slides are not spoken` : ""}. ${names.length ? `Named with consent: ${names.join("; ")}.` : "No team has consented yet."} Every other team reads "an outside team". The pass test is the recorded ${data.deck.variantLabel}${data.build.measured ? ` (${data.build.measured.replace(",", " and ")})` : ""}${data.build.rederived ? ", with the completed re-derivation" : ""}.`,
     "",
     `Clock: the talk before the door is capped at ${u.talkCapSeconds} s at ${u.checkWordsPerMinute} words a minute, transitions included. The door lines count inside the ${u.demoSeconds} s demo.`,
   ];

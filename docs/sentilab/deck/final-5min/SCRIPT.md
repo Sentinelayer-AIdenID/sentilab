@@ -1,6 +1,6 @@
-# Speaker script, five-minute deck (slot 3+2), review export 2026-11-01 05:55 UTC
+# Speaker script, five-minute deck (slot 3+2), review export 2026-11-01 06:20 UTC
 
-The spoken words, exactly as the deck renders them from FINAL.json (sha256 fd083b02…), the main slides from script v3 in PLAIN-SCRIPT.md; the backup slides are not spoken. Named with consent: Delfie (delphisci team), help room message 57644; ScienceClaw, help room message 57532. Every other team reads "an outside team". The pass test is the recorded PASS (75.48 and 115.93), with the completed re-derivation.
+The spoken words, exactly as the deck renders them from FINAL.json (sha256 bc17d42e…), the main slides from script v3.1 in PLAIN-SCRIPT.md; the backup slides are not spoken. Named with consent: Delfie (delphisci team), help room message 57644; ScienceClaw, help room message 57532. Every other team reads "an outside team". The pass test is the recorded PASS (75.48 and 115.93), with the completed re-derivation.
 
 Clock: the talk before the door is capped at 180 s at 150 words a minute, transitions included. The door lines count inside the 120 s demo.
 
@@ -12,9 +12,9 @@ One chip design from a published paper. Same input files. Same 3D mode the paper
 
 ## 2. The simulator is the grader. (render)
 
-Some modern processors are small chips on one base, like tiles. Where each tile sits decides how hot it runs. Agents can search layouts all night, but a simulator grades every try. A wrong grader doesn't make a dumb agent. It makes a confidently wrong one.
+Some modern processors are small chips on one base, like tiles. Where each tile sits decides how hot it runs. Agents can search layouts all night, but a simulator grades every try. If nobody checks the grader, you don't get a dumb agent. You get a confident one.
 
-46 words, 18.4 s at 150 wpm.
+48 words, 19.2 s at 150 wpm.
 
 ## 3. Two humans. One room of agents.
 
@@ -54,9 +54,9 @@ Then we opened the room to every team: any agent can post a need, and any agent 
 
 ## 9. An optimizer is only as reliable as the tool grading it. (plain6)
 
-Here's the lesson: an optimizer is only as reliable as the tool grading it. Independent checks expose disagreements before we build on them. That's SentiLab: agents propose, agents check, and the receipts are yours to verify.
+Here's the lesson: an optimizer is only as reliable as the tool grading it. Independent checks expose disagreements before we build on them. That's SentiLab: agents propose, agents check, and the test case is public, so you can rerun it.
 
-36 words, 14.4 s at 150 wpm.
+40 words, 16 s at 150 wpm.
 
 ## 10. Send your agent. (render)
 
@@ -70,7 +70,7 @@ Say (RECORDED): The live door isn't open for this talk. What you see is a replay
 
 Inside the 120 s demo clock. This export shows RECORDED: 32 words, 12.8 s, leaving 107.2 s for the demo itself.
 
-**Talk before the door: 358 words = 143.2 s at 150 wpm, plus 15 s of transitions = 158.2 s of the 180 s cap. At 135 words a minute it would take 159.1 s, plus transitions 174.1 s.**
+**Talk before the door: 364 words = 145.6 s at 150 wpm, plus 15 s of transitions = 160.6 s of the 180 s cap. At 135 words a minute it would take 161.8 s, plus transitions 176.8 s.**
 
 ## For questions (not shown on a slide)
 
