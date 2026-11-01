@@ -73,6 +73,42 @@ class VisitorTests(unittest.TestCase):
         self.assertNotIn('operator', json.dumps(page))
         self.assertEqual(page['notice']['version'], intake.VISITOR_NOTICE)
 
+    def test_passive_visit_and_repeat_declarations_have_separate_event_counts(self):
+        shared = {'purpose': 'place-chiplets', 'nonce': 'a' * 16}
+        self.assertEqual(self.arrival(**shared)[0], 204)
+        for name in ('Example bot', 'Renamed bot'):
+            self.assertEqual(self.arrival(**shared, declaration={
+                'notice_version': intake.VISITOR_NOTICE, 'name': name})[0], 204)
+        before = self.store.events(0, 10)
+        page = self.door.visitors(None, '1')[1]
+        counts = page['counts']
+        self.assertEqual(counts['recorded_arrivals'], 3)
+        self.assertEqual(counts['passive_arrival_events'], 1)
+        self.assertEqual(counts['declaration_events'], 2)
+        self.assertEqual(counts['unclassified_arrival_events'], 0)
+        self.assertEqual(counts['unique_observed_handles'], 1)
+        self.assertTrue(page['has_more'])
+        rest = self.door.visitors(str(page['next_after']), '10')[1]
+        items = page['items'] + rest['items']
+        self.assertEqual([item['event_kind'] for item in items], ['passive_arrival', 'declaration', 'declaration'])
+        self.assertEqual([item['declaration']['name'] for item in items[1:]], ['Example bot', 'Renamed bot'])
+        self.assertEqual(rest['counts'], counts)
+        self.assertEqual(self.store.events(0, 10), before)
+
+    def test_legacy_declaration_shapes_stay_visible_without_implying_passive_visits(self):
+        with self.store.tx() as db:
+            for declaration in (None, {}, [], '', 0, False):
+                self.store._event(db, 'arrival', {'class': 'unknown', 'declaration': declaration}, 1)
+        before = self.store.events(0, 10)
+        page = self.door.visitors(None, None)[1]
+        self.assertEqual([row['event_kind'] for row in page['items']],
+                         ['passive_arrival', 'declaration'] + ['legacy_unclassified'] * 4)
+        self.assertEqual(page['counts']['passive_arrival_events'], 1)
+        self.assertEqual(page['counts']['declaration_events'], 1)
+        self.assertEqual(page['counts']['unclassified_arrival_events'], 4)
+        self.assertEqual(page['counts']['recorded_arrivals'], 6)
+        self.assertEqual(self.store.events(0, 10), before)
+
     def test_unknown_oversize_unconsented_and_secret_url_fields_are_refused_before_storage(self):
         secret_url = 'https://user:secret@example.com/path?token=secret#secret'
         attempts = [

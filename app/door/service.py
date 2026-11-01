@@ -365,6 +365,8 @@ class Door:
             # Explicit projection: legacy/private fields can never leak through this new view.
             item.update({key: body.get(key) for key in ("class", "purpose", "short_id", "label")})
             declaration = body.get("declaration")
+            item["event_kind"] = ("passive_arrival" if declaration is None else
+                                  "declaration" if isinstance(declaration, dict) else "legacy_unclassified")
             item["declaration"] = ({key: declaration[key] for key in ("notice_version", "name", "reason", "source")
                                     if key in declaration}
                                    if isinstance(declaration, dict) else None)
@@ -372,8 +374,11 @@ class Door:
         return 200, {"schema": "sentilab-door-visitors/1", "items": items,
                      "next_after": page[-1]["seq"] if page else after, "has_more": len(rows) > limit,
                      "counts": counts, "current_presence": {"status": "not_measured", "count": None},
-                     "coverage": "Recorded Door arrivals, not all HTTP requests or verified people. "
-                                 "Counts use internal handles of observed purpose passes, not unique humans or agents.",
+                     "coverage": "recorded_arrivals counts all recorded arrival events, including declarations. "
+                                 "passive_arrival_events, declaration_events and unclassified_arrival_events "
+                                 "partition that total; repeat declarations remain separate events. "
+                                 "unique_observed_handles counts only distinct internally linked opted-in passes. "
+                                 "These are not unique people, all purpose passes, all HTTP requests or current presence.",
                      "declaration_trust": "self_declared_display_data",
                      "notice": {"version": intake.VISITOR_NOTICE, "text": intake.VISITOR_DISCLOSURE}}, {}
 

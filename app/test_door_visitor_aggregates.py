@@ -12,7 +12,7 @@ from app.door.store import SCHEMA, Store
 
 
 def original_counts(db):
-    """The pre-repair query is an independent oracle, never part of the request path."""
+    """The original query plus a Python event partition: an oracle outside the request path."""
     classes = {row[0]: row[1] for row in db.execute(
         "SELECT json_extract(body, '$.class'), COUNT(*) FROM events "
         "WHERE kind = 'arrival' GROUP BY json_extract(body, '$.class')")}
@@ -20,7 +20,13 @@ def original_counts(db):
         "SELECT COUNT(DISTINCT json_extract(body, '$.visitor_handle')), "
         "COALESCE(SUM(json_extract(body, '$.visitor_handle') IS NULL), 0), COALESCE(MAX(seq), 0) "
         "FROM events WHERE kind = 'arrival'").fetchone()
-    return {"recorded_arrivals": sum(classes.values()), "arrivals_by_class": classes,
+    kinds = {"passive_arrival_events": 0, "declaration_events": 0, "unclassified_arrival_events": 0}
+    for (body,) in db.execute("SELECT body FROM events WHERE kind = 'arrival'"):
+        declaration = json.loads(body).get("declaration")
+        key = ("passive_arrival_events" if declaration is None else
+               "declaration_events" if isinstance(declaration, dict) else "unclassified_arrival_events")
+        kinds[key] += 1
+    return {**kinds, "recorded_arrivals": sum(classes.values()), "arrivals_by_class": classes,
             "unique_observed_handles": handles, "arrivals_without_handle": without, "through_seq": through}
 
 
@@ -53,7 +59,8 @@ class VisitorAggregateTests(unittest.TestCase):
         empty = Store(self.path)
         self.assertEqual(empty.visitors(0, 1), ([], {
             "recorded_arrivals": 0, "arrivals_by_class": {}, "unique_observed_handles": 0,
-            "arrivals_without_handle": 0, "through_seq": 0}))
+            "arrivals_without_handle": 0, "through_seq": 0, "passive_arrival_events": 0,
+            "declaration_events": 0, "unclassified_arrival_events": 0}))
         legacy_path = Path(self.tmp.name) / "legacy.sqlite3"
         self.path = legacy_path
         expected, before = self.legacy()
@@ -100,7 +107,52 @@ class VisitorAggregateTests(unittest.TestCase):
         self.assertTrue(other.note_arrival({"class": "unknown", "visitor_handle": "one"}, now=202, per_min=1))
         self.assertEqual(store.visitors(0, 10)[1], {
             "recorded_arrivals": 2, "arrivals_by_class": {"unknown": 2}, "unique_observed_handles": 1,
-            "arrivals_without_handle": 0, "through_seq": 3})
+            "arrivals_without_handle": 0, "through_seq": 3, "passive_arrival_events": 2,
+            "declaration_events": 0, "unclassified_arrival_events": 0})
+
+    def test_event_partition_backfills_old_aggregates_and_keeps_old_writers_working(self):
+        store = Store(self.path)
+        # Simulate a database with the earlier aggregates but no event partition.
+        with store.tx() as db:
+            db.execute("DROP TRIGGER IF EXISTS visitor_event_kind_insert")
+            db.execute("DROP TABLE IF EXISTS visitor_event_totals")
+            for declaration in (None, {}, {"name": "legacy"}, [], "bad", 0, False):
+                store._event(db, "arrival", {"class": "unknown", "declaration": declaration}, 1)
+            store._event(db, "arrival", {"class": "unknown"}, 2)
+            expected = original_counts(db)
+            before = [tuple(row) for row in db.execute("SELECT * FROM events ORDER BY seq")]
+        for upgraded in (Store(self.path), Store(self.path)):
+            self.assertEqual(upgraded.visitors(0, 1)[1], expected)
+            with upgraded.read() as db:
+                self.assertEqual([tuple(row) for row in db.execute("SELECT * FROM events ORDER BY seq")], before)
+        # This older Store object and a direct SQL writer do not know about the new counters.
+        store.note_arrival({"class": "unknown", "declaration": {"name": "old writer"}}, now=3, per_min=100)
+        with store.tx() as db:
+            db.execute("INSERT INTO events (at, kind, body) VALUES (4, 'arrival', ?)",
+                       (json.dumps({"class": "unknown", "declaration": []}),))
+            expected = original_counts(db)
+        self.assertEqual(Store(self.path).visitors(0, 1)[1], expected)
+        self.assertEqual([expected[key] for key in
+                          ("passive_arrival_events", "declaration_events", "unclassified_arrival_events")], [2, 3, 5])
+        self.assertEqual(sum(expected[key] for key in
+                             ("passive_arrival_events", "declaration_events", "unclassified_arrival_events")),
+                         expected["recorded_arrivals"])
+
+    def test_partition_migration_failure_rolls_back_and_retries_without_history_changes(self):
+        store = Store(self.path)
+        store.note_arrival({"class": "unknown", "declaration": {"name": "legacy"}}, now=1, per_min=100)
+        before = store.events(0, 10)
+        with store.tx() as db:
+            db.execute("DROP TRIGGER IF EXISTS visitor_event_kind_insert")
+            db.execute("DROP TABLE IF EXISTS visitor_event_totals")
+        with patch("app.door.store.VISITOR_EVENT_INSERT", "invalid sql", create=True), \
+                self.assertRaises(sqlite3.OperationalError):
+            Store(self.path)
+        with sqlite3.connect(self.path) as db:
+            self.assertIsNone(db.execute("SELECT name FROM sqlite_master WHERE name = 'visitor_event_totals'").fetchone())
+        upgraded = Store(self.path)
+        self.assertEqual(upgraded.events(0, 10), before)
+        self.assertEqual(upgraded.visitors(0, 10)[1]["declaration_events"], 1)
 
     def test_page_and_counts_share_snapshot_during_another_stores_write(self):
         class PausingStore(Store):
@@ -142,6 +194,9 @@ class VisitorAggregateTests(unittest.TestCase):
         self.assertEqual(failures, [])
         self.assertEqual(len(rows), 1)
         self.assertEqual(counts["recorded_arrivals"], 1)
+        self.assertEqual(counts["passive_arrival_events"], 1)
+        self.assertEqual(counts["declaration_events"], 0)
+        self.assertEqual(counts["unclassified_arrival_events"], 0)
         self.assertEqual(counts["through_seq"], rows[-1]["seq"])
         self.assertEqual(other.visitors(0, 10)[1]["recorded_arrivals"], 2)
 
@@ -173,6 +228,9 @@ class VisitorAggregateTests(unittest.TestCase):
                 self.assertEqual([row["seq"] for row in rows], [n for n in expected_sequences if n > after][:2])
                 self.assertEqual(counts["recorded_arrivals"], len(expected_sequences))
                 self.assertEqual(counts["unique_observed_handles"], 8)
+                self.assertEqual(counts["passive_arrival_events"], len(expected_sequences))
+                self.assertEqual(counts["declaration_events"], 0)
+                self.assertEqual(counts["unclassified_arrival_events"], 0)
                 self.assertLessEqual(store.last_ticks, 20, "request exceeded 2,000 SQLite VM instructions")
                 self.assertFalse(any("json_extract" in sql.lower() for sql in store.last_statements))
             with sqlite3.connect(self.path) as db:

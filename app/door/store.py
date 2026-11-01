@@ -123,6 +123,27 @@ BEGIN
     WHERE json_extract(NEW.body, '$.visitor_handle') IS NOT NULL;
 END
 """
+VISITOR_EVENT_TABLE = """
+CREATE TABLE IF NOT EXISTS visitor_event_totals (
+  singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
+  passive_arrival_events INTEGER NOT NULL,
+  declaration_events INTEGER NOT NULL,
+  unclassified_arrival_events INTEGER NOT NULL
+)
+"""
+VISITOR_EVENT_INSERT = """
+CREATE TRIGGER IF NOT EXISTS visitor_event_kind_insert AFTER INSERT ON events WHEN NEW.kind = 'arrival'
+BEGIN
+  UPDATE visitor_event_totals SET
+    passive_arrival_events = passive_arrival_events +
+      (COALESCE(json_type(NEW.body, '$.declaration'), 'null') = 'null'),
+    declaration_events = declaration_events +
+      (COALESCE(json_type(NEW.body, '$.declaration'), 'null') = 'object'),
+    unclassified_arrival_events = unclassified_arrival_events +
+      (COALESCE(json_type(NEW.body, '$.declaration'), 'null') NOT IN ('null', 'object'))
+    WHERE singleton = 1;
+END
+"""
 LIVE = "state NOT IN ('cancelled', 'expired')"
 # A held or active attempt counts at its envelope, or at the CPU an answer reported for it when that is larger.
 PROMISED = "MAX(amount_cpu_s, COALESCE(lower_bound_cpu_s, 0))"
@@ -177,6 +198,16 @@ class Store:
                            "COALESCE(SUM(json_extract(body, '$.visitor_handle') IS NULL), 0), "
                            "COALESCE(MAX(seq), 0) FROM events WHERE kind = 'arrival'")
             db.execute(VISITOR_INSERT)
+            # Separate additive table: older Store initializers keep their original totals-table arity.
+            # Its own marker and trigger cover upgrades, restarts and inserts from those older writers.
+            db.execute(VISITOR_EVENT_TABLE)
+            if db.execute("SELECT 1 FROM visitor_event_totals WHERE singleton = 1").fetchone() is None:
+                db.execute("INSERT INTO visitor_event_totals SELECT 1, "
+                           "COALESCE(SUM(COALESCE(json_type(body, '$.declaration'), 'null') = 'null'), 0), "
+                           "COALESCE(SUM(COALESCE(json_type(body, '$.declaration'), 'null') = 'object'), 0), "
+                           "COALESCE(SUM(COALESCE(json_type(body, '$.declaration'), 'null') "
+                           "NOT IN ('null', 'object')), 0) FROM events WHERE kind = 'arrival'")
+            db.execute(VISITOR_EVENT_INSERT)
             db.execute("COMMIT")
         except BaseException:
             db.execute("ROLLBACK")
@@ -630,7 +661,10 @@ class Store:
                 "SELECT class, arrivals FROM visitor_classes")}
             counts = dict(db.execute("SELECT recorded_arrivals, unique_observed_handles, arrivals_without_handle, "
                                      "through_seq FROM visitor_totals WHERE singleton = 1").fetchone())
-            return rows, {**counts, "arrivals_by_class": classes}
+            event_counts = dict(db.execute("SELECT passive_arrival_events, declaration_events, "
+                                           "unclassified_arrival_events FROM visitor_event_totals "
+                                           "WHERE singleton = 1").fetchone())
+            return rows, {**counts, **event_counts, "arrivals_by_class": classes}
 
     def last_seq(self) -> int:
         with self.read() as db:

@@ -48,6 +48,8 @@ DISPLAY_TEXT = r"^[^\x00-\x1f\x7f-\x9f\u202a-\u202e\u2066-\u2069]*$"
 if declaration_unicode.unidata_version != "16.0.0":
     raise RuntimeError("declaration validation requires Unicode 16.0.0")
 _REFUSED_DECLARATION_CATEGORIES = frozenset(("Cc", "Cf", "Co", "Cs", "Cn", "Zl", "Zp"))
+# Assigned letters/symbols that render blank are not covered by the Unicode category rule.
+_REFUSED_DECLARATION_FILLERS = frozenset("\u3164\u115f\u1160\uffa0\u2800")
 _MAX_COMBINING_RUN = 8
 # Match the Worker's nameKey rule; Python's \s includes extra C0/C1 characters.
 _NAME_SPACE = re.compile(r"[\u0009-\u000d\u0020\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+")
@@ -146,7 +148,7 @@ def _declaration_text_allowed(text: str) -> bool:
     combining_run = 0
     for char in text:
         category = declaration_unicode.category(char)
-        if category in _REFUSED_DECLARATION_CATEGORIES:
+        if category in _REFUSED_DECLARATION_CATEGORIES or char in _REFUSED_DECLARATION_FILLERS:
             return False
         combining_run = combining_run + 1 if category in ("Mn", "Mc", "Me") else 0
         if combining_run > _MAX_COMBINING_RUN:
