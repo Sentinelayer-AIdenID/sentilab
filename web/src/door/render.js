@@ -36,7 +36,7 @@ function submitForm({ token, compact, terms, again, button }) {
 // assistant's type) and the time; after a purpose pick also the purpose and short_id (4 hex of sha256 of the new
 // token's nonce; the nonce itself and the declared operator are never kept). Every arrival is published on the
 // intake's public events feed (/api/open/v1/door/events).
-const RECORDED = "What we record: your assistant's type and the time of this visit. If you pick a purpose, we also record it and a short visit id. These appear on our public activity feed.";
+const RECORDED = "What we record: a guess at your assistant's type, and the time of this visit. If you pick a purpose, we also record it and a short visit id. These appear on our public activity feed.";
 const RECORDED_JSON = "class and time; plus purpose and a short visit id if you pick one; published on the public activity feed";
 const SUBMISSIONS = Object.freeze({
   open: "open. Submitting needs a place-chiplets token.",
