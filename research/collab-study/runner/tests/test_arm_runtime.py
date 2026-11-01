@@ -92,13 +92,17 @@ def test_c_round_robin_shares_every_labelled_reply_and_only_writer_final_ends(tm
     assert [row['agent'] for row in accounting['attempts']] == [1, 2, 3, 1]
     assert [agent['charged_tokens'] for agent in job['agents'].values()] == [240, 120, 120]
     for turn, call in enumerate(model.calls):
-        assert call['messages'][:2] == [
-            {'role': 'system', 'content': 'sealed system'},
-            {'role': 'user', 'content': 'five packet files'}]
-        assert call['messages'][2:-1] == [
-            {'role': 'assistant', 'content': f'Agent {i + 1}:\n{text}'}
-            for i, text in enumerate(replies[:turn])]
-        assert call['messages'][-1]['content'] == f'sealed instruction for agent {turn % 3 + 1}'
+        instruction = f'sealed instruction for agent {turn % 3 + 1}'
+        expected = [{'role': 'system', 'content': 'sealed system'}]
+        if turn < 3:
+            shared = [f'Agent {i + 1}:\n{text}' for i, text in enumerate(replies[:turn])]
+            expected.append({'role': 'user', 'content': '\n\n'.join(['five packet files', *shared, instruction])})
+        else:
+            expected.extend([
+                {'role': 'user', 'content': 'five packet files\n\nsealed instruction for agent 1'},
+                {'role': 'assistant', 'content': 'Agent 1:\n' + replies[0]},
+                {'role': 'user', 'content': f'Agent 2:\n{replies[1]}\n\nAgent 3:\n{replies[2]}\n\n{instruction}'}])
+        assert call['messages'] == expected
 
 
 def test_c_skips_exhausted_agents_and_returns_empty_without_writer_final(tmp_path):
@@ -162,3 +166,20 @@ def test_dollar_stopped_history_is_unobserved_with_stop_reason(tmp_path, arm, be
     assert job['run_stop_reason'] == 'dollar_cap'
     assert {agent['stop_reason'] for agent in job['agents'].values()} == {'dollar_cap'}
     assert bool(model.calls) is not before_first_call
+
+
+def test_c_messages_alternate_roles_and_keep_every_shared_reply_once(tmp_path):
+    replies = [f'unique review {n}' for n in range(6)] + [final('writer done')]
+    model = ScriptedModel(*(response(text) for text in replies))
+    run_arm(tmp_path, 'C', model)
+    for turn, call in enumerate(model.calls):
+        messages = call['messages']
+        assert messages[0]['role'] == 'system'
+        assert messages[-1]['role'] == 'user'
+        assert all(left['role'] != right['role'] for left, right in zip(messages, messages[1:]))
+        combined = '\n\n'.join(message['content'] for message in messages)
+        for index, reply in enumerate(replies[:turn]):
+            assert combined.count(f'Agent {index % 3 + 1}:\n{reply}') == 1
+        for message in messages:
+            if message['role'] == 'assistant':
+                assert message['content'].startswith(f'Agent {turn % 3 + 1}:\n')
