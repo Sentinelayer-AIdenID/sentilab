@@ -459,11 +459,12 @@ function play() {
 function setExplode(v, { animate = false } = {}) {
   cancelAnimationFrame(S.explodeAnim);
   const to = Math.max(0, Math.min(1, v));
+  // The control states the chosen setting at once; only the drawing eases toward it.
+  $("explodeButton").setAttribute("aria-pressed", to > 0.02 ? "true" : "false");
+  $("explodeWord").textContent = to > 0.02 ? "Exploded" : "Assembled";
   const apply = (x) => {
     S.explode = x;
     $("explodeRange").value = String(Math.round(x * 100));
-    $("explodeButton").setAttribute("aria-pressed", x > 0.02 ? "true" : "false");
-    $("explodeWord").textContent = x > 0.02 ? "Exploded" : "Assembled";
     const { L, at } = shownRun();
     if (L && S.v3) drawPackage(L, M.runView(L, { at }), at);
   };
