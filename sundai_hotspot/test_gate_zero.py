@@ -2205,6 +2205,28 @@ class AdmissionTests(EntryCase):
                 self.assertEqual(len(scenario.ledger()["entries"]), 1)
 
 
+class ReceiptInventoryTests(EntryCase):
+    """root (#57395): a receipt's solve record lists the run's files, never the receipt itself. The receipt is
+    rewritten when the call settles, after the record is taken, so an entry for it could only name earlier bytes.
+    Its own hash is bound outside it, in the signed settlement and the settle tag."""
+
+    def test_a_fresh_receipt_lists_every_file_of_its_run_but_itself_and_every_entry_matches(self):
+        self.scenario.reserve(P_ASCEND)
+        self.control_case("inventory", peak_c=75.30)
+        receipt = self.call(P_ASCEND, "inventory")
+        self.assertEqual((receipt["status"], receipt["exit_status"]), ("exited", 0), receipt.get("error"))
+        run = self.root / "inventory"
+        on_disk = gate0_anchor.verify(self.public, json.loads((run / "receipt.json").read_text()))  # signed
+        files = on_disk["solve_record"]["files"]
+        self.assertNotIn("receipt.json", files)
+        self.assertEqual(set(files), {path.name for path in run.iterdir() if path.is_file()} - {"receipt.json"})
+        for name, entry in files.items():  # nothing listed was replaced after the record was taken
+            self.assertEqual((entry["sha256"], entry["bytes"]), (_sha256(run / name), (run / name).stat().st_size),
+                             name)
+        self.assertEqual(self.scenario.entries(P_ASCEND)["settlement"]["receipt_sha256"],
+                         _sha256(run / "receipt.json"))  # the receipt's own hash, bound outside it
+
+
 @unittest.skipUnless(os.name == "posix", "RLIMIT_CPU is POSIX")
 class ChildLimitTests(unittest.TestCase):
     """warden #56967 P2-3: every child SLAB-049 starts has RLIMIT_CPU and a wall deadline. The solver's, the
