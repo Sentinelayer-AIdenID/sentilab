@@ -129,8 +129,16 @@ def _json(value) -> bytes:
     return (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8")
 
 
-def load_manifest(manifest_path: Path | None = None) -> tuple[dict, str]:
+def load_manifest(manifest_path: Path | None = None, *, selection: str = "gate0") -> tuple[dict, str]:
     """The manifest and its SHA-256, refused unless it is exactly what this tree generates."""
+    if selection == "coupling":
+        from sundai_hotspot import coupling_allocation
+        try:
+            return coupling_allocation.load_manifest(manifest_path)
+        except slab049.ManifestMismatch as exc:
+            raise CallRefused(str(exc)) from exc
+    if selection != "gate0":
+        raise CallRefused(f"unknown manifest selection: {selection!r}")
     data = Path(manifest_path or slab049.MANIFEST_PATH).read_bytes()
     try:
         return slab049.check_manifest(data), hashlib.sha256(data).hexdigest()
@@ -242,7 +250,7 @@ def stage(reference: gate_zero.Reference, spec: dict, out: Path) -> dict[str, st
 def validate_call(call_id: str, out: Path, *, timeout_s: float | None, ledger_root: Path | None = None,
                   operator_key_path: Path | None = None, anchor_request=None, binary: Path | None = None,
                   manifest_path: Path | None = None, kind: str | None = None, reference: str | None = None,
-                  grid: int | None = None, now: datetime | None = None) -> dict:
+                  grid: int | None = None, now: datetime | None = None, selection: str = "gate0") -> dict:
     """Admit and run one listed call (the order is in the module docstring). Needs no prior gate-zero PASS.
 
     anchor_request is the operator's GitHub client (gate0_anchor.github_request with SLAB049_ANCHOR_TOKEN): it reads
@@ -251,7 +259,7 @@ def validate_call(call_id: str, out: Path, *, timeout_s: float | None, ledger_ro
     # 0. The accounting starts before any work of this invocation: every exit after admission is charged from here.
     baseline, started, clock = _cpu_counters(), _now(), time.perf_counter()
     # 1. Refusals that do no process work, cheapest first.
-    manifest, manifest_sha256 = load_manifest(manifest_path)
+    manifest, manifest_sha256 = load_manifest(manifest_path, selection=selection)
     call = admit(call_id, manifest, timeout_s=timeout_s, kind=kind, reference=reference, grid=grid, now=now)
     key, public_hex = operator_key(manifest, operator_key_path)
     if anchor_request is None:
@@ -287,6 +295,9 @@ def validate_call(call_id: str, out: Path, *, timeout_s: float | None, ledger_ro
         executable = _private_executable(source, private)
         try:
             identity = gate_zero.evaluator_identity(call["kind"], executable)
+            if selection == "coupling":
+                from sundai_hotspot import coupling_allocation
+                identity = coupling_allocation.require_binary(call, executable)
             build = provenance.require_build_provenance(call["kind"], source, identity["binary_sha256"])
         except (gate_zero.GateZeroRefusal, provenance.ProvenanceError) as exc:
             raise CallRefused(f"{call_id}: {exc}") from exc
@@ -307,6 +318,7 @@ def validate_call(call_id: str, out: Path, *, timeout_s: float | None, ledger_ro
         except (gate0_anchor.AdmissionRefused, AuthenticationError, AnchorUnavailable, OSError) as exc:
             raise CallRefused(f"{call_id}: not admitted: {type(exc).__name__}: {exc}") from exc
         context = {"call": call, "pinned": pinned, "spec": spec, "out": out, "root": root, "key": key,
+                   "manifest": manifest,
                    "public_hex": public_hex, "grant": grant, "manifest_sha256": manifest_sha256,
                    "anchor_request": anchor_request, "executable": executable, "source": source,
                    "identity": identity, "build": build, "reservation": reservation, "baseline": baseline,
@@ -445,6 +457,13 @@ def _settle(context: dict, receipt: dict) -> None:
             # Its own hash is bound outside it: in the signed settlement and in the operator's settle tag.
             record["files"].pop("receipt.json", None)
             receipt["solve_record"] = record
+            if call["kind"] == "material_only":
+                from sundai_hotspot import coupling_allocation
+                ledger = gate0_anchor.read_ledger(context["root"], context["public_hex"], context["manifest_sha256"])
+                primary = coupling_allocation.primary_directory(
+                    call, ledger, gate0_anchor.TagReader(context["anchor_request"]),
+                    context["manifest"], context["manifest_sha256"])
+                receipt["coupling"] = coupling_allocation.evaluate_call(call, out, record, context["identity"], primary)
         except Exception as exc:  # the raw outputs stay; the receipt says why the record failed
             receipt["status"], receipt["error"] = "record_error", f"{type(exc).__name__}: {exc}"
     receipt["children_cpu_s"] = _children_cpu_s() - baseline["children_s"]
@@ -470,7 +489,7 @@ def _settle(context: dict, receipt: dict) -> None:
 
 
 def report(*, ledger_root: Path | None = None, tags: gate0_anchor.TagReader | None = None,
-           manifest_path: Path | None = None) -> dict:
+           manifest_path: Path | None = None, selection: str = "gate0") -> dict:
     """From the authenticated ledger and the operator's tags, by admitted call id, with no extra call (reads only).
 
     A call is usable only after gate_zero.verify_call binds it (signed ledger and receipt, the operator's reserve,
@@ -484,9 +503,12 @@ def report(*, ledger_root: Path | None = None, tags: gate0_anchor.TagReader | No
     - whether each replay's outputs are byte-identical to its primary's;
     - the same-index spreader-sink drop and the same-index stack at the active argmax (reported, not asserted).
     """
-    manifest, manifest_sha256 = load_manifest(manifest_path)  # the pinned operator key comes from the tree's manifest
+    manifest, manifest_sha256 = load_manifest(manifest_path, selection=selection)
     root, tags = gate0_anchor.configured(manifest, ledger_root=ledger_root, tags=tags)
     ledger = gate0_anchor.read_ledger(root, manifest["operator"]["public_key_ed25519"], manifest_sha256)
+    if selection == "coupling":
+        from sundai_hotspot import coupling_allocation
+        return coupling_allocation.report(manifest, manifest_sha256, ledger, tags)
     entries, not_completed = {}, []
     for call in manifest["calls"]:
         entry = {"call": call["id"], "kind": call["kind"], "reference": call["reference"], "grid": call["grid"],
@@ -551,19 +573,22 @@ def main(argv: list[str] | None = None) -> int:
     record.add_argument("--kind", required=True, choices=sorted(gate_zero.EVALUATOR_KINDS))
     record.add_argument("--binary", type=Path)
     for command in (run, record, summary):
+        if command is not record:
+            command.add_argument("--manifest", choices=("gate0", "coupling"), default="gate0")
         command.add_argument("--ledger-root", type=Path,
                              help="the operator's ledger root (default: $SLAB049_LEDGER_ROOT)")
         command.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
     if args.command == "report":
-        args.out.write_text(json.dumps(report(ledger_root=args.ledger_root), indent=2, sort_keys=True) + "\n",
+        args.out.write_text(json.dumps(report(ledger_root=args.ledger_root, selection=args.manifest),
+                                       indent=2, sort_keys=True) + "\n",
                             encoding="utf-8")
         return 0
     if args.command == "validate-reference":
         try:
             receipt = validate_call(args.call, args.out, timeout_s=args.timeout, ledger_root=args.ledger_root,
                                     operator_key_path=args.operator_key, binary=args.binary, kind=args.kind,
-                                    reference=args.reference, grid=args.grid)
+                                    reference=args.reference, grid=args.grid, selection=args.manifest)
         except CallRefused as exc:
             print(f"refused: {exc}", file=sys.stderr)
             return 2
