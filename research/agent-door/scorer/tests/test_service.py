@@ -18,7 +18,7 @@ from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from ledger import Ledger, Refused
 from service import Scorer, server_for
-from thermal import GRANT_ID, PINNED_SHA256, sha256
+from thermal import GRANT_ID, PINNED_SHA256, Thermal, sha256, stage
 from open_proposals.contract import geometry_sha256, manifest_id, proposal_sha256, run_id
 from sentilab_core.envelope import canonical
 from test_thermal import SCORER, proposal_for
@@ -44,7 +44,10 @@ class Harness:
         physical = fixtures['manifests']['M']
         for name in ('problem', 'fixture', 'dies', 'netlist', 'legality'):
             self.manifest[name] = copy.deepcopy(physical[name])
-        self.manifest['fixture']['package']['hotspot_config_sha256'] = hashlib.sha256(b'test-config').hexdigest()
+        config_dir = tmp_path / 'config-reference'
+        config_dir.mkdir(exist_ok=True)
+        self.manifest['fixture']['package']['hotspot_config_sha256'] = stage(
+            Thermal().raw_spec, config_dir)['new_hotspot.config']
         self.manifest['statistic']['real_chiplets'] = [f'Chiplet_{i}' for i in range(8)]
         self.manifest['statistic']['evaluator']['binary_sha256'] = sha256(self.engine)
         self.manifest['refs']['grant'] = GRANT_ID
@@ -232,6 +235,57 @@ def test_closed_or_invalid_admission_refuses_even_after_success(harness):
     h.admission.write_text(json.dumps(document))
     assert h.call('/v1/score', h.request('third'))[1]['codes'] == [{'code': 'not_open_yet'}]
     assert len(h.rows()) == 2
+
+
+@pytest.mark.parametrize('field', ['package', 'fixture'])
+def test_signed_wrong_config_digest_refuses_before_reservation(harness, field):
+    from open_proposals.contract import validate_record
+    h = harness()
+    fixture = h.manifest['fixture']
+    if field == 'package':
+        fixture['package']['hotspot_config_sha256'] = hashlib.sha256(b'wrong package').hexdigest()
+    else:
+        fixture['config_sha256'] = hashlib.sha256(b'wrong fixture').hexdigest()
+    assert validate_record('manifest', h.manifest) == []
+    h.write_admission()  # Correctly signed; only the selected physical digest is wrong.
+    status, result = h.call('/v1/score', h.request())
+    assert status == 422 and result['codes'] == [{'code': 'not_open_yet'}]
+    assert h.rows() == []
+    assert list(h.path.glob('observed-*.json')) == []
+
+
+def test_staged_config_is_checked_before_reservation(harness, monkeypatch):
+    import service
+    h = harness()
+    def corrupt(spec, directory):
+        hashes = stage(spec, directory)
+        with (directory / 'new_hotspot.config').open('ab') as stream:
+            stream.write(b'\n# changed after hashing\n')
+        return hashes
+    monkeypatch.setattr(service, 'stage', corrupt, raising=False)
+    status, result = h.call('/v1/score', h.request())
+    assert status == 422 and result['codes'] == [{'code': 'not_open_yet'}]
+    assert h.rows() == []
+    assert list(h.path.glob('observed-*.json')) == []
+
+
+def test_worker_checks_config_again_before_engine_exec(harness, monkeypatch):
+    import service
+    h = harness()
+    popen = service.subprocess.Popen
+    def corrupt(args, **kwargs):
+        if len(args) > 3 and str(args[1]).endswith('/sandbox.py'):
+            config = Path(args[3]) / 'new_hotspot.config'
+            config.write_bytes((h.path / 'config-reference/new_hotspot.config').read_bytes()
+                               + b'\n# changed after reservation\n')
+        return popen(args, **kwargs)
+    monkeypatch.setattr(service.subprocess, 'Popen', corrupt)
+    status, result = h.call('/v1/score', h.request())
+    assert status == 200 and result['state'] == 'failed'
+    assert result['codes'] == [{'code': 'oracle_error'}]
+    assert [row['phase'] for row in h.rows()] == ['reserved', 'settled']
+    assert h.rows()[-1]['cpu_s'] > 0
+    assert list(h.path.glob('observed-*.json')) == []
 
 
 def test_startup_pin_default_and_missing_image(harness, monkeypatch):

@@ -40,6 +40,7 @@ class Thermal:
     def __init__(self):
         self.geometry = TapGeometry.load('micro150-45mm')
         self.raw_spec = slab049.reference_spec(REFERENCE_ID)
+        self.config_sha256 = gate_zero.frozen_inputs(gate_zero.reference(REFERENCE_ID))['new_hotspot.config']
 
     def check_manifest(self, manifest):
         """A signed manifest cannot change the problem or relax the pinned geometry."""
@@ -48,6 +49,8 @@ class Thermal:
                 or manifest['fixture']['config_sha256'] != p.config_sha256
                 or manifest['fixture']['frame_um'] != 45000 or len(manifest['dies']) != 8):
             raise ValueError('manifest does not bind micro150-45mm')
+        if manifest['fixture']['package']['hotspot_config_sha256'] != self.config_sha256:
+            raise ValueError('manifest package config differs from gate zero')
         if (manifest['netlist']['matrix'] != [list(row) for row in p.connections]
                 or manifest['fixture']['ambient_c'] != p.ambient_c
                 or manifest['fixture']['link_type'] != p.link_type
@@ -95,6 +98,11 @@ def stage(spec, directory):
     for name, data in files.items():
         (directory / name).write_bytes(data)
     return {name: sha256(directory / name) for name in files}
+
+
+def check_config(directory, expected):
+    if sha256(directory / 'new_hotspot.config') != expected:
+        raise ValueError('staged HotSpot config differs from signed package')
 
 
 def read_score(directory):

@@ -13,10 +13,11 @@ from sundai_hotspot import gate_zero, slab049
 
 
 @pytest.fixture
-def manifest():
+def manifest(tmp_path):
     root = SCORER.parents[2]
     value = json.loads((root / 'contracts/open-proposal-v1/golden/manifests.json').read_text())['manifests']['M']
     value['terms']['accepted_versions'] = ['sentilab-open-terms/1@' + 'a' * 64]
+    value['fixture']['package']['hotspot_config_sha256'] = stage(Thermal().raw_spec, tmp_path)['new_hotspot.config']
     return value
 
 

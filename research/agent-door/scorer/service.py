@@ -24,7 +24,7 @@ from sentilab_core.envelope import canonical
 from sundai_hotspot.reference_validation import SOLVER_ENVIRONMENT
 from ledger import Ledger, Refused
 from sandbox import WALL_TIMEOUT_S
-from thermal import GRANT_ID, PINNED_SHA256, Thermal, sha256
+from thermal import GRANT_ID, PINNED_SHA256, Thermal, check_config, sha256, stage
 
 HEX = re.compile(r'[0-9a-f]{64}\Z')
 RUN = re.compile(r'open-[0-9a-f]{8}-[0-9a-f]{32}\Z')
@@ -144,42 +144,49 @@ class Scorer:
         return {'ok': True, 'binary_sha256': self.binary_sha256, 'grant_id': GRANT_ID,
                 'image_digest': self.image_digest, 'budget_left_cpu_s': self.ledger.budget_left()}
 
-    def validate(self, proposal):
+    def validate(self, proposal, directory=None):
         manifest, identity = self.admission.current()
+        if directory is not None:
+            try:
+                check_config(directory, manifest['fixture']['package']['hotspot_config_sha256'])
+            except (OSError, ValueError):
+                raise Rejected([violation('not_open_yet')]) from None
         result = self.thermal.validate(json.dumps(proposal, allow_nan=False, separators=(',', ':')).encode(), manifest, identity)
         if result.outcome != 'legal' or result.kind != 'proposal':
             raise Rejected(result.violations or [violation('schema_invalid', path='/schema', keyword='const')])
         return identity
 
-    def solve(self, spec):
+    def solve(self, spec, *, directory=None):
+        if directory is None:
+            with tempfile.TemporaryDirectory(prefix='solve-', dir=self.work_root) as folder:
+                return self.solve(spec, directory=Path(folder))
         start, clock_start = now(), time.monotonic()
-        with tempfile.TemporaryDirectory(prefix='solve-', dir=self.work_root) as folder:
-            directory = Path(folder)
-            # Only geometry-derived generator inputs go to the worker; never a proposal, salt or credential.
-            process = subprocess.Popen([sys.executable, str(Path(__file__).with_name('sandbox.py')),
-                                        str(self.engine), folder, str(self.wall_timeout)],
-                                       stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                                       env=SOLVER_ENVIRONMENT, start_new_session=True)
-            try:
-                process.stdin.write(json.dumps(spec).encode())
-                process.stdin.close()
-            except BrokenPipeError:
-                pass
-            _, status, usage = os.wait4(process.pid, 0)
-            process.returncode = os.waitstatus_to_exitcode(status)
-            cpu_s = usage.ru_utime + usage.ru_stime  # worker + its reaped descendants, isolated per request
-            result_path = directory / 'result.json'
-            try:
-                result = json.loads(result_path.read_bytes()) if process.returncode == 0 else {'reason': 'oracle_error'}
-            except (OSError, ValueError):
-                result = {'reason': 'oracle_error'}
-            receipt = {'grant_id': GRANT_ID, 'image_digest': self.image_digest, 'binary_sha256': self.binary_sha256,
-                       'input_sha256': result.get('input_sha256', {}), 'output_sha256': result.get('output_sha256', {}),
-                       'output_map_sha256': result.get('output_sha256', {}).get('sample.grid.steady'),
-                       'cpu_s': cpu_s, 'wall_s': time.monotonic() - clock_start, 'started_at': start, 'ended_at': now(),
-                       'worker_pid': process.pid, 'engine_pid': result.get('engine_pid'),
-                       'workspace_id': directory.name, 'cleanup_pids': result.get('cleanup_pids', [])}
-            return result, receipt
+        folder = str(directory)
+        # Only geometry-derived generator inputs go to the worker; never a proposal, salt or credential.
+        process = subprocess.Popen([sys.executable, str(Path(__file__).with_name('sandbox.py')),
+                                    str(self.engine), folder, str(self.wall_timeout)],
+                                   stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                   env=SOLVER_ENVIRONMENT, start_new_session=True)
+        try:
+            process.stdin.write(json.dumps(dict(spec, hotspot_config_sha256=self.thermal.config_sha256)).encode())
+            process.stdin.close()
+        except BrokenPipeError:
+            pass
+        _, status, usage = os.wait4(process.pid, 0)
+        process.returncode = os.waitstatus_to_exitcode(status)
+        cpu_s = usage.ru_utime + usage.ru_stime  # worker + its reaped descendants, isolated per request
+        result_path = directory / 'result.json'
+        try:
+            result = json.loads(result_path.read_bytes()) if process.returncode == 0 else {'reason': 'oracle_error'}
+        except (OSError, ValueError):
+            result = {'reason': 'oracle_error'}
+        receipt = {'grant_id': GRANT_ID, 'image_digest': self.image_digest, 'binary_sha256': self.binary_sha256,
+                   'input_sha256': result.get('input_sha256', {}), 'output_sha256': result.get('output_sha256', {}),
+                   'output_map_sha256': result.get('output_sha256', {}).get('sample.grid.steady'),
+                   'cpu_s': cpu_s, 'wall_s': time.monotonic() - clock_start, 'started_at': start, 'ended_at': now(),
+                   'worker_pid': process.pid, 'engine_pid': result.get('engine_pid'),
+                   'workspace_id': directory.name, 'cleanup_pids': result.get('cleanup_pids', [])}
+        return result, receipt
 
     def request(self, operation, request):
         if (not isinstance(request, dict) or set(request) != {'run_id', 'proposal', 'token_ref'}
@@ -197,32 +204,36 @@ class Scorer:
                    'payload_sha256': digest({'schema': 'scorer-payload/1', 'proposal': proposal}),
                    'geometry_sha256': proposal['geometry_sha256'], 'grant_id': GRANT_ID,
                    'binary_sha256': self.binary_sha256, 'image_digest': self.image_digest}
-        reservation, cached, original = self.ledger.reserve(binding, operation, lambda: self.validate(proposal))
-        if cached is not None:
-            return cached, 0.0
-        receipt = {'grant_id': GRANT_ID, 'image_digest': self.image_digest, 'binary_sha256': self.binary_sha256,
-                   'cpu_s': 0.0, 'input_sha256': {}, 'output_sha256': {}, 'output_map_sha256': None,
-                   'started_at': now(), 'ended_at': now(), 'wall_s': 0.0}
-        try:
-            result, receipt = self.solve(self.thermal.spec(proposal))
-        except Exception:
-            # An uncertain launch cannot refund its reservation. No exception text reaches a log or response.
-            result, receipt['cpu_s'] = {'reason': 'oracle_error'}, 10.0
-        receipt.update(geometry_sha256=proposal['geometry_sha256'], reservation_id=reservation,
-                       manifest_id=identity)
-        response = {'run_id': run_id, 'receipt': receipt}
-        if result.get('reason'):
-            response.update(state='failed', codes=[violation(result['reason'])])
-        else:
-            response.update(result['score'], wire_proxy_mm=self.thermal.wire(proposal), state='evaluated')
-        if operation == 'replay':
-            equal = same_evaluation(response, original)
-            response.update(state='reproduced' if equal else 'not_reproduced',
-                            receipts=[original['receipt'], receipt],
-                            codes=[] if equal else [violation('reproduction_failed' if result.get('reason')
-                                                            else 'reproduction_mismatch')])
-        self.ledger.settle(reservation, receipt['cpu_s'], response)
-        return response, receipt['cpu_s']
+        spec = self.thermal.spec(proposal)
+        with tempfile.TemporaryDirectory(prefix='solve-', dir=self.work_root) as folder:
+            directory = Path(folder)
+            stage(spec, directory)
+            reservation, cached, original = self.ledger.reserve(binding, operation, lambda: self.validate(proposal, directory))
+            if cached is not None:
+                return cached, 0.0
+            receipt = {'grant_id': GRANT_ID, 'image_digest': self.image_digest, 'binary_sha256': self.binary_sha256,
+                       'cpu_s': 0.0, 'input_sha256': {}, 'output_sha256': {}, 'output_map_sha256': None,
+                       'started_at': now(), 'ended_at': now(), 'wall_s': 0.0}
+            try:
+                result, receipt = self.solve(spec, directory=directory)
+            except Exception:
+                # An uncertain launch cannot refund its reservation. No exception text reaches a log or response.
+                result, receipt['cpu_s'] = {'reason': 'oracle_error'}, 10.0
+            receipt.update(geometry_sha256=proposal['geometry_sha256'], reservation_id=reservation,
+                           manifest_id=identity)
+            response = {'run_id': run_id, 'receipt': receipt}
+            if result.get('reason'):
+                response.update(state='failed', codes=[violation(result['reason'])])
+            else:
+                response.update(result['score'], wire_proxy_mm=self.thermal.wire(proposal), state='evaluated')
+            if operation == 'replay':
+                equal = same_evaluation(response, original)
+                response.update(state='reproduced' if equal else 'not_reproduced',
+                                receipts=[original['receipt'], receipt],
+                                codes=[] if equal else [violation('reproduction_failed' if result.get('reason')
+                                                                else 'reproduction_mismatch')])
+            self.ledger.settle(reservation, receipt['cpu_s'], response)
+            return response, receipt['cpu_s']
 
 
 def strict_json(data):
