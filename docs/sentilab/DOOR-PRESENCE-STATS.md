@@ -17,11 +17,15 @@ A lab page sends this every 60 s while it is visible (`web/public/sentilab/here.
 - **Answers** (all `cache-control: no-store`):
   - `204` when the tab is counted or refreshed.
   - `400 {"error": "bad_heartbeat"}`.
-  - `403 {"error": "cross_site"}`.
+  - `403 {"error": "cross_site"}`: a Sec-Fetch-Site other than `same-origin`, or an `Origin` of another site.
+  - `405` with `allow: POST`, to any other method.
   - `415 {"error": "unsupported_media_type"}`.
   - `429 {"error": "rate_limited"}`, with `Retry-After: 60`.
   - `503 {"error": "presence_unavailable"}`, when presence isn't measured on this deployment or the API can't
     be reached.
+- **The API's own answers to the Worker:** `204`; `400 {"error": "bad_heartbeat", "codes"}`; `429` with
+  `Retry-After: 60`; `503 {"error": "presence_not_measured"}` without `DOOR_PRESENCE=on`. Only the exact path
+  `/api/open/v1/door/here` takes a POST: any other spelling of it is the read-only API.
 
 **What is kept, exactly:**
 
@@ -29,7 +33,7 @@ A lab page sends this every 60 s while it is visible (`web/public/sentilab/here.
 |---|---|---|
 | API memory | `tab -> {page, class, last_seen}` | 120 s after the tab's last heartbeat; a sweeper erases it within 1 s after that |
 | API memory | today's set of HMAC-SHA256(daily key, tab), first 16 bytes; the daily key is random | until the UTC day ends; set and key are dropped together |
-| Worker memory | per client IP prefix: `{start, count}` for the rate limit | at most 60 s |
+| Worker memory | per client /24 or /48 prefix: `{start, count}` for the rate limit | each heartbeat first drops every window that began 60 s or more ago; an isolate that gets no further request can run no timer, and keeps its last windows until it is recycled |
 
 Nothing is written to disk. A restart starts the counts again. The hosting provider's network-level request logs
 may record IP addresses under that provider's own policy.
@@ -75,13 +79,18 @@ These are counted from the events the feeds serve, up to and including `through_
   - in the wall's JSON and markdown;
   - in the ENGRAM view (`declare.notice`).
 - **The opt-in** is the visitor sending `notice_version`, equal to the notice shown, with the purpose. Only then
-  are `name`, `reason` and `source` read. They are checked against #89's rules, and the Worker also refuses C1
-  controls. Without that opt-in nothing typed is recorded. The pass is minted either way.
+  are `name`, `reason` and `source` read. They are checked by #89's rules, with its C1 repair:
+  - controls (C0, DEL and C1) and bidi embeddings, overrides and isolates are refused;
+  - lengths count code points;
+  - the text is otherwise passed on exactly as written.
+
+  Without that opt-in nothing typed is recorded. The pass is minted either way.
 - **The answer.** The token page's `declaration` is one of:
-  - `{"status": "sent"}`;
-  - `{"status": "not_given"}`;
-  - `{"status": "not_sent", "code", "detail"}`.
+  - `{"status": "sent", "detail"}`;
+  - `{"status": "not_given"}`, with a `detail` when a name or reason was typed without the opt-in;
+  - `{"status": "not_sent", "code", "detail"}`, where `code` is one of `notice_unavailable`, `notice_changed`,
+    `field_repeated`, `too_long`, `control_character` or `source_unknown`.
   It never echoes the text.
 - **`?via=<source>`** (one of #89's source values) only pre-fills `source`: the form's selected option and the
-  `declare.template`. It records nothing. On `/agents/` it shows classified agents the purpose step in place of
-  the static index, with no arrival for that view.
+  `declare.template`. It is carried in the wall's purpose links and in the token page's link to the agent view, so
+  the agent view can pre-fill it too, and it records nothing. `/agents/` is unchanged.
