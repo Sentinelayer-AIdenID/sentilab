@@ -64,6 +64,7 @@ const fmtInt = (n) => Math.round(n).toLocaleString("en-US");
 // ── state ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 const S = {
   selectedId: null, cursorSeq: null, playing: false, playTimer: 0, explode: 0, explodeAnim: 0, orbit: false, motion: true, stage: false,
+  records: new Map(), recTab: "all", recLoading: false, recDone: false, recError: "",
   board: { ok: null, board: null, error: "", at: null }, decl: { ok: null, partial: false, list: [], error: "", at: null, through: 0 }, v3: null, v3Failed: false, v3Pending: null, drawn: null, layer: null,
 };
 // One gate for every request the page makes: spacing, Retry-After and jittered backoff (live-model.mjs createGate).
@@ -195,7 +196,7 @@ function runCard(L, selected, { mobile = false } = {}) {
   } else {
     btn.append(h("span", { class: "experiment-tag" }, STATUS_TAG[L.status] ?? L.status),
       h("strong", null, M.runTitle(L)), h("small", { class: "vt" }, W.visitorType(L.cls)),
-      h("small", null, v.metric ? [v.metric.text, " ", h("em", { title: v.metric.title }, W.tempWord(v.metric, v.verification))] : v.none),
+      h("small", { class: `outcome ${M.runOutcome(L).kind}`, title: M.runOutcome(L).title }, M.runOutcome(L).text),
       h("span", { class: "experiment-bottom" }, h("span", { class: v.metric ? "mint-dot" : "grey-dot" }), v.metric ? "simulated, not silicon" : "no temperature yet"));
   }
   btn.addEventListener("click", () => selectRun(L.id));
@@ -244,9 +245,10 @@ function renderModel() {
   mv.className = view?.metric ? "" : "none";
   if (view?.metric) {
     const [num, unit] = view.metric.text.split(" ");
-    mv.append(num, h("small", null, unit), h("em", { title: view.metric.title }, W.tempWord(view.metric, view.verification)));
+    mv.append(num, h("small", null, unit), h("em", { title: view.metric.title }, W.tempWord(view.metric)));
     mv.title = `${view.metricDefinition} ${view.metric.title} Rounded to 0.01 °C for display.`;
-    $("metricDescription").textContent = `${W.METRIC_NAME} · simulated, not silicon${view.diagnostic ? " · diagnostic" : ""}`;
+    const replay = view.verification?.replay === "reproduced" ? " · replay matched" : view.verification?.replay === "not_reproduced" ? " · replay did not match" : "";
+    $("metricDescription").textContent = `${W.METRIC_NAME} · simulated, not silicon${replay}${view.diagnostic ? " · diagnostic" : ""}`;
   } else if (view?.atRecord) {
     mv.textContent = view.state.toLowerCase();
     mv.title = "";
@@ -335,7 +337,8 @@ function drawAtlas(svg, { large = false } = {}) {
       s("text", { x: x - 22, y: y - 12 }, st.n), s("text", { class: "st-count", x: x + 22, y: y - 12, "text-anchor": "end" }, String(st.count)));
     svg.append(g);
     // One dot per run at its station (a task state), at most 12 drawn per station; arrivals are counted, not drawn.
-    const row = st.runs.slice(-12);
+    const row = st.runs.slice(-6);
+    if (st.runs.length > 6) svg.append(s("text", { x: x + 38, y: y + 22, class: "atlas-more", fill: "#cfe2d5", "font-size": 8, "text-anchor": "start" }, `+${st.runs.length - 6}`));
     row.forEach((r, k) => {
       const cx = x - ((row.length - 1) * 11) / 2 + k * 11, cy = y + 19;
       const dot = avatar({ cls: r.cls, short: r.label.split(" · ")[1] ?? null, seq: 0 });
@@ -351,6 +354,8 @@ function drawAtlas(svg, { large = false } = {}) {
   return a;
 }
 function renderWork() {
+  const scroller = $("visitorList");
+  const keep = scroller.scrollTop ?? 0;
   renderArrivals();
   const a = drawAtlas($("atlasSvg"));
   $("mapLegend").textContent = `${W.TEXT.mapLegend}${a.out.length ? ` · ${W.TEXT.outOfFlow(a.out.length)}` : ""}`;
@@ -366,23 +371,20 @@ function renderWork() {
     const where = r.submitted ? W.TEXT.submitted(W.when(r.submitted.at)) : W.TEXT.submittedEarlier;
     const btn = h("button", { type: "button", class: `agent-row${shown && r.run_id === shown.id ? " selected" : ""}`, dataset: { run: r.run_id } },
       h("span", { class: `agent-avatar c-${r.cls}`, "aria-hidden": "true" }, CLASS_MARK[r.cls] ?? "?"),
-      h("span", null, h("strong", null, `Run ${r.short}`), h("small", null, `${W.visitorType(r.cls)} · ${r.sameLabel ? `${where} · 1 of ${r.sameLabel + 1} designs with this short id` : where}`)),
+      h("span", null, h("strong", null, `Run ${r.short}`), h("small", null, `${W.visitorType(r.cls)} · ${r.sameLabel ? `${where} · 1 of ${r.sameLabel + 1} designs with this short id` : where}`),
+        ...(() => { const L = layouts().find((l) => l.id === r.run_id); if (!L) return []; const o = M.runOutcome(L); return [h("small", { class: `outcome ${o.kind}`, title: o.title }, o.text)]; })()),
       h("span", { class: "agent-task" }, task), h("span", { class: `agent-pip ${r.task ? STATE_PIP(r.task.state) : "grey"}` }));
     btn.addEventListener("click", () => { if (layouts().some((l) => l.id === r.run_id)) selectRun(r.run_id); openRun(r); });
     list.append(btn);
   }
-  if (door.length || anonymous.length) list.append(h("p", { class: "door-head" }, W.TEXT.recentVisitors));
-  for (const d of door.slice(0, 12)) {
-    list.append(h("div", { class: "anon-row" }, h("span", { class: "agent-pip sky" }), h("b", null, W.visitorType(d.cls)),
-      `visit ${d.short} · ${W.TEXT.visits(d.arrivals)}${d.attempts ? `, ${W.TEXT.attempts(d.attempts)}` : ""} · ${W.TEXT.lastSeen(W.when(d.last.at))}`));
-  }
-  for (const a of anonymous) list.append(h("div", { class: "anon-row" }, h("span", { class: "agent-pip sky" }), h("b", null, W.visitorType(a.cls)), `${W.TEXT.noTask(a.count)} · ${W.TEXT.lastSeen(W.when(a.lastAt))}`));
+  renderRecords(list);
   if (!runs.length && !door.length && !anonymous.length) list.append(h("p", { class: "rail-empty" }, M.feedStatus(feed.state, { hostname: location.hostname }).state === "error" ? "No records: the door feed is not answering." : "No records yet."));
   // The newest record, or the replay cursor's.
   const pts = points();
   const c = M.cursorIndex(pts, S.cursorSeq);
   const p = c === null ? pts.at(-1) : pts[c];
   $("selectedEventLabel").textContent = c === null ? W.TEXT.newest : W.TEXT.replayStep(c + 1, pts.length);
+  scroller.scrollTop = keep;
   $("eventTitle").textContent = p ? M.recordTitle(p) : "No record yet";
   $("eventSubtitle").textContent = p ? W.when(p.at) : "Waiting for the door";
   $("eventSubtitle").title = p ? `seq ${p.seq}` : "";
@@ -460,6 +462,49 @@ function renderArrivals() {
     avatar(a), h("span", null, a.short ? `visit ${a.short}` : W.visitorType(a.cls)), h("span", null, W.when(a.at, now)))));
   $("arrivals").hidden = list.length === 0;
   $("arrivalsHead").textContent = W.ARRIVALS_HEAD;
+}
+
+// ── every door record: newest first, in the aquarium's population tabs, older pages on request ────────────────
+function renderRecords(list) {
+  S.records = M.mergeRecords(S.records, feed.state.events);
+  const all = [...S.records.values()].sort((x, y) => y.seq - x.seq);
+  const shown = S.recTab === "all" ? all : all.filter((e) => W.populationOf(e) === S.recTab);
+  list.append(h("p", { class: "door-head" }, W.RECORDS.head));
+  const tabs = h("div", { class: "rec-tabs", role: "tablist", "aria-label": "Records by who sent them" });
+  for (const p of W.POPULATIONS) {
+    const n = p.id === "all" ? all.length : all.filter((e) => W.populationOf(e) === p.id).length;
+    const b = h("button", { type: "button", role: "tab", class: S.recTab === p.id ? "on" : "", "aria-selected": S.recTab === p.id ? "true" : "false", dataset: { tab: p.id } }, `${p.label} ${n}`);
+    b.addEventListener("click", () => { S.recTab = p.id; renderWork(); });
+    tabs.append(b);
+  }
+  list.append(tabs);
+  const rows = h("div", { class: "rec-list", id: "recordRows" });
+  if (!shown.length) rows.append(h("p", { class: "rail-empty" }, W.RECORDS.none));
+  for (const e of shown) {
+    rows.append(h("div", { class: "rec-row", title: `seq ${e.seq}` }, avatar({ cls: e.cls, short: e.short, seq: e.seq, category: e.category, verification: e.verification }),
+      h("span", null, M.recordSentence(e), h("small", null, W.when(e.at)))));
+  }
+  list.append(rows);
+  const more = h("button", { type: "button", class: "rec-more", id: "recordMore" },
+    S.recDone ? W.RECORDS.done : S.recLoading ? W.RECORDS.loading : S.recError ? W.RECORDS.failed(S.recError) : W.RECORDS.more);
+  more.disabled = S.recDone || S.recLoading;
+  more.addEventListener("click", () => loadEarlier());
+  list.append(more);
+}
+// One older page at a time, through the page's gate (spaced like every other request), never a burst.
+async function loadEarlier() {
+  if (S.recLoading || S.recDone) return;
+  const held = [...S.records.keys()];
+  const oldest = held.length ? Math.min(...held) : (feed.state.eventsCursor ?? 0) + 1;
+  if (oldest <= 1) { S.recDone = true; renderWork(); return; }
+  const req = M.olderPage(oldest);
+  S.recLoading = true; S.recError = "";
+  renderWork();
+  const got = await M.fetchEventsPage(req.after, { fetchImpl: gate.fetch, limit: req.limit });
+  S.recLoading = false;
+  if (got.ok) { S.records = M.mergeRecords(S.records, got.events); if (req.after === 0) S.recDone = true; }
+  else S.recError = got.error;
+  renderWork();
 }
 
 // ── the flight record ──────────────────────────────────────────────────────────────────────────────────────────────
@@ -739,6 +784,7 @@ function wire() {
   });
   document.addEventListener("visibilitychange", () => { if (document.hidden) stopPlay(); else pollBoard(); });
   new ResizeObserver(() => renderTrace()).observe($("traceSvg"));
+  $("visitorList").addEventListener("scroll", (e) => { const el = e.target; if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) loadEarlier(); }, { passive: true });
   new ResizeObserver(() => { frameCamera(); if (!$("packageCanvas2d").hidden) draw2d(shownRun().L); }).observe($("modelViewport"));
 }
 

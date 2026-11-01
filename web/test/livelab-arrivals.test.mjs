@@ -112,7 +112,7 @@ test("a new arrival slides in as an avatar with a plain sentence and its visit i
   const card = document.getElementById("arrivalCard");
   assert.equal(card.hidden, false, "the newest arrival holds the card");
   const cardText = dom.part("arrivalCard").text.join(" ");
-  assert.match(cardText, /An automated visitor that says what it is arrived · here to place chiplets · just now/);
+  assert.match(cardText, /An automated visitor \(declared\) arrived · here to place chiplets · just now/);
   assert.match(cardText, /visit 82ea/, "the visit id is visible");
   assert.equal(/AI agent/.test(cardText), false, "a declared class never claims to be an AI agent");
   assert.equal(CODES.test(cardText), false, "no class code");

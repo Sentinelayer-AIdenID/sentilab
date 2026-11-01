@@ -12,7 +12,7 @@
 // carry (presence, identity, a page route) is reported as unknown, never guessed.
 import { normalizeEvents, fetchDoorResults, LIVE_FRESH_MS, BOARD_METRIC, readScorer, statusLine, hostEnv, DOOR_EVENTS_PATH }
   from "../package/source3d.mjs";
-import { stateLine, summaryLine, eventLine, codeWords } from "../package/status.mjs";
+import { stateLine, summaryLine, eventLine, codeWords, reasonWords } from "../package/status.mjs";
 import { formatTemp } from "../package/temps.mjs";
 import { dieRects } from "../package/model.mjs";
 import { INTERPOSER_MM } from "../package/case-cpu-dram.mjs";
@@ -66,8 +66,10 @@ export function normalizeEventsTimed(doc) {
     // operator's name, the service's name and the verification level: each read only in its exact shape.
     const x = {};
     if (typeof raw.purpose === "string" && ID.test(raw.purpose)) x.purpose = raw.purpose;
-    if (typeof raw.operatorName === "string" && NAME.test(raw.operatorName)) x.operatorName = raw.operatorName;
-    if (typeof raw.serviceName === "string" && NAME.test(raw.serviceName)) x.serviceName = raw.serviceName;
+    // The door publishes these as operator_name and service_name (app/door/service.py); either spelling is read.
+    const operatorName = raw.operator_name ?? raw.operatorName, serviceName = raw.service_name ?? raw.serviceName;
+    if (typeof operatorName === "string" && NAME.test(operatorName)) x.operatorName = operatorName;
+    if (typeof serviceName === "string" && NAME.test(serviceName)) x.serviceName = serviceName;
     if (["signature", "network", "claimed", "inferred", "unverified"].includes(raw.verification)) x.verification = raw.verification;
     if (["training_crawler", "search_crawler", "ai_assistant", "ai_agent", "preview_bot", "monitor", "automation", "unknown", "human"].includes(raw.category)) x.category = raw.category;
     extra.set(raw.seq, x);
@@ -509,6 +511,52 @@ export function arrivalsOf(events, max = 12) {
   return [...(events ?? [])].filter((e) => e.kind === "arrival").sort((a, b) => b.seq - a.seq).slice(0, max)
     .map((e) => ({ seq: e.seq, at: e.at ?? null, cls: e.cls, short: e.short, purpose: e.purpose ?? null, declaration: e.event_kind === "declaration",
       operatorName: e.operatorName ?? null, serviceName: e.serviceName ?? null, verification: e.verification ?? null, category: e.category ?? null }));
+}
+// ── every door record: older pages on request, merged by seq (no gap, no duplicate) ─────────────────────────────────
+// The events feed pages ascending from `after` (at most 200 a page). To go back from the oldest record held, ask for
+// the range that ends just before it: after = oldest - 1 - limit. Its first `limit` answers cover that whole range,
+// so nothing between two pages is skipped; whatever the page also returns at or past the oldest is already held.
+export const RECORDS_PAGE = 200;
+export const olderPage = (oldest, limit = RECORDS_PAGE) => ({ after: Math.max(0, oldest - 1 - limit), limit });
+export async function fetchEventsPage(after, { fetchImpl, signal, limit = RECORDS_PAGE } = {}) {
+  const got = await getJson(`${DOOR_EVENTS_PATH}?after=${after}&limit=${limit}`, { fetchImpl, signal });
+  if (!got.ok) return got;
+  const page = normalizeEventsTimed(got.doc);
+  return page ? { ok: true, ...page } : { ok: false, error: "answer is not a door events page" };
+}
+export function mergeRecords(held, events) {
+  const out = new Map(held);
+  for (const e of events ?? []) if (!out.has(e.seq)) out.set(e.seq, e);
+  return out;
+}
+// One record as a plain sentence (no class code, no seq): who did what.
+export function recordSentence(e) {
+  if (e.kind === "run") return `${W.layoutFrom(e.short)} ${W.RUN_STATE[e.state] ?? e.state.replace(/_/g, " ")}`;
+  const who = W.CATEGORY?.[e.category] ?? W.visitorSubject(e.cls);
+  const visit = e.short ? ` · visit ${e.short}` : "";
+  if (e.kind === "attempt") return `${who} tried to submit a layout · refused: ${(e.codes ?? []).map(codeWords).join(", ") || "no reason given"}${visit}`;
+  return `${who} ${e.event_kind === "declaration" ? W.TEXT.declared : W.TEXT.arrived}${visit}`;
+}
+// Every run's real outcome, from the results feed's own status, codes and reason, in plain words; the raw codes go in
+// the title only. Accepted means scored by the simulator; the replay part says whether a fresh run matched.
+export function runOutcome(L) {
+  const r = L.result;
+  const codes = [...(L.codes ?? []), ...(L.reason ? [L.reason] : [])];
+  const title = codes.length ? codes.join(", ") : "";
+  const why = (L.codes ?? []).map(codeWords).concat(L.reason ? [reasonWords(L.reason)] : []).join(", ");
+  const temp = r ? `${W.METRIC_NAME.toLowerCase()} ${formatTemp(r.metric.value, r.label, { digits: 2 }).text} · simulated` : null;
+  const replay = r?.verification?.replay === "reproduced" ? "replay matched" : r?.verification?.replay === "not_reproduced" ? "replay did not match" : "replay pending";
+  switch (L.status) {
+    case "reproduced": case "cross_checked": case "evaluated": case "replaying":
+      return { kind: "accepted", text: temp ? `Accepted · ${temp} · ${L.status === "evaluated" || L.status === "replaying" ? "replay pending" : replay}` : "Accepted · no temperature in the record", title };
+    case "not_reproduced":
+      return { kind: "accepted", text: temp ? `Scored · ${temp} · replay did not match` : "Scored · replay did not match", title };
+    case "rejected": return { kind: "refused", text: `Refused · ${why || "no reason given"}`, title };
+    case "failed": return { kind: "refused", text: `Could not be simulated · ${why || "no reason given"}`, title };
+    case "cancelled": case "expired": return { kind: "refused", text: `Stopped · ${why || L.status}`, title };
+    case "evaluating": return { kind: "waiting", text: "Being simulated", title };
+    default: return { kind: "waiting", text: L.position ? `Waiting in line · number ${L.position}` : "Waiting in line", title };
+  }
 }
 // "15:21:02Z" from a server timestamp; "time not recorded" for none.
 export const hms = (at) => (at ? `${at.slice(11, 19)}Z` : "time not recorded");

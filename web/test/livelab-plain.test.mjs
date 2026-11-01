@@ -86,7 +86,7 @@ function installPage(t, answer) {
 const settle = async () => { for (let i = 0; i < 25; i += 1) await new Promise((r) => setImmediate(r)); };
 
 const UTC = /\b\d{1,2}:\d{2}(:\d{2})?(\.\d+)?Z\b/;
-const CODES = /(?<![\w-])(declared_agent|verified_agent|signed_agent|crawler_claimed|likely_human|automation)(?![\w-])/;
+const CODES = /(?<![\w-])(declared_agent|verified_agent|signed_agent|crawler_claimed|likely_human|automation(?! bot)(?! · bot))(?![\w-])/;
 
 test("the page reads in plain words: no UTC stamps, no class codes, no seq numbers in its visible text", async (t) => {
   t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: Date.parse("2026-11-01T15:30:00Z") });

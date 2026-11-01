@@ -324,15 +324,15 @@ test("copy: a run is titled by its short id, and its class is a separate visitor
   await feed.pollOnce();
   for (const L of feed.state.layouts) {
     assert.equal(M.runTitle(L), `Run ${L.short}`);
-    assert.equal(M.visitorType(L.cls), { unknown: "not identified", declared_agent: "automated visitor · says what it is", automation: "script or bot" }[L.cls]);
+    assert.equal(M.visitorType(L.cls), { unknown: "Unresolved", declared_agent: "Automated visitor · declared", automation: "Automation · bot" }[L.cls]);
     assert.equal(M.runTitle(L).includes(L.cls), false, `${M.runTitle(L)} carries no class word`);
   }
   const pts = M.traceModel(feed.state.events).points;
   const run = pts.find((p) => p.kind === "run"), anon = pts.find((p) => p.kind === "arrival" && !p.label.includes(" · "));
   assert.match(M.recordTitle(run), /^The layout from visit [0-9a-f]{4} /);
-  assert.match(M.recordTitle(anon), /^(A script or bot|An automated visitor that says what it is|A visitor \(not identified\)) arrived$/);
-  assert.equal(M.recordTitle({ kind: "arrival", label: "unknown · 7c2e", line: "arrived at the door" }), "A visitor (not identified) arrived · visit 7c2e");
-  assert.equal(M.recordTitle({ kind: "arrival", label: "declared_agent · 82ea", line: "arrived at the door" }), "An automated visitor that says what it is arrived · visit 82ea");
+  assert.match(M.recordTitle(anon), /^(An automation bot|An automated visitor \(declared\)|An unresolved visitor) arrived$/);
+  assert.equal(M.recordTitle({ kind: "arrival", label: "unknown · 7c2e", line: "arrived at the door" }), "An unresolved visitor arrived · visit 7c2e");
+  assert.equal(M.recordTitle({ kind: "arrival", label: "declared_agent · 82ea", line: "arrived at the door" }), "An automated visitor (declared) arrived · visit 82ea");
 });
 
 // Warden's P1-2(b): the page honours Retry-After on 429 and 503, backs off with jitter otherwise (no fixed 5 s
@@ -584,4 +584,23 @@ test("root's witness: a reserved request dispatches before a new 429 is processe
   assert.ok(i >= 0);
   const early = trace.slice(i + 1).filter((x) => x.kind === "dispatch" && x.at < trace[i].embargoUntil);
   assert.deepEqual(early, [], `after the 429 is processed, no queued dispatch before ${trace[i].embargoUntil}; trace=${JSON.stringify(trace)}`);
+});
+
+// The door publishes a recognised lab as operator_name and service_name (app/door/service.py, a43f24ee). The page
+// must read those exact field names, or no arrival ever says which lab it came from.
+test("an arrival's lab names are read from the door's own field names", () => {
+  const doc = { schema: "sentilab-door-events/1", next_after: 2, has_more: false, events: [
+    { seq: 1, at: "2026-11-01T18:30:00.000000Z", kind: "arrival", class: "declared_agent", label: "declared_agent · 9a1b",
+      purpose: "place-chiplets", short_id: "9a1b", operator: "openai", operator_name: "OpenAI", service: "openai.chatgpt-user",
+      service_name: "ChatGPT-User", category: "ai_assistant", verification: "claimed" },
+    { seq: 2, at: "2026-11-01T18:30:05.000000Z", kind: "arrival", class: "likely_human", label: "likely_human · 77aa",
+      purpose: "read", short_id: "77aa" }] };
+  const events = M.normalizeEventsTimed(doc).events;
+  const agent = events.find((e) => e.seq === 1), person = events.find((e) => e.seq === 2);
+  assert.equal(agent.operatorName, "OpenAI");
+  assert.equal(agent.serviceName, "ChatGPT-User");
+  assert.equal(agent.category, "ai_assistant");
+  assert.equal(agent.verification, "claimed");
+  assert.equal(person.operatorName, undefined);
+  assert.equal(person.serviceName, undefined);
 });

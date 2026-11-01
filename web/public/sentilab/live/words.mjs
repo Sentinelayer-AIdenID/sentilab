@@ -6,25 +6,25 @@
 
 // A visitor's type, from the door's classification of it. A classification, not an identity.
 export const VISITOR_TYPE = Object.freeze({
-  verified_agent: "AI agent · identity verified",
-  signed_agent: "AI agent · signed, not verified",
-  declared_agent: "automated visitor · says what it is",
-  crawler_claimed: "automated visitor · says it is a crawler",
-  automation: "script or bot",
-  likely_human: "probably a person",
-  unknown: "not identified",
-  ours: "our own agent",
+  verified_agent: "Verified agent · signed",
+  signed_agent: "Agent · signed, not verified",
+  declared_agent: "Automated visitor · declared",
+  crawler_claimed: "Crawler · claimed",
+  automation: "Automation · bot",
+  likely_human: "Likely human",
+  unknown: "Unresolved",
+  ours: "Our own agent",
 });
 export const visitorType = (cls) => VISITOR_TYPE[cls] ?? VISITOR_TYPE.unknown;
-// The same, as the subject of a sentence: "An AI agent (says so itself) arrived".
+// The same, as the subject of a sentence: "A likely human arrived".
 export const VISITOR_SUBJECT = Object.freeze({
-  verified_agent: "An AI agent (identity verified)",
-  signed_agent: "An AI agent (signed, not verified)",
-  declared_agent: "An automated visitor that says what it is",
-  crawler_claimed: "An automated visitor that says it is a crawler",
-  automation: "A script or bot",
-  likely_human: "Probably a person",
-  unknown: "A visitor (not identified)",
+  verified_agent: "A verified agent (signed)",
+  signed_agent: "An agent (signed, not verified)",
+  declared_agent: "An automated visitor (declared)",
+  crawler_claimed: "A crawler (claimed)",
+  automation: "An automation bot",
+  likely_human: "A likely human",
+  unknown: "An unresolved visitor",
   ours: "Our own agent",
 });
 export const visitorSubject = (cls) => VISITOR_SUBJECT[cls] ?? VISITOR_SUBJECT.unknown;
@@ -108,6 +108,29 @@ export const RESULT_CHECK = Object.freeze({
   evaluated: "simulated once, not yet checked again", replaying: "being checked again",
 });
 export const layoutFrom = (short) => (short ? `The layout from visit ${short}` : "A layout");
+
+// The aquarium's populations as tabs (AIdenID live-aquarium POPULATIONS and populationOf): a record's population comes
+// from the registry category when a feed carries it, else from the visitor class (a declared visitor is grouped with
+// the agents, as the aquarium does, while its own label stays "Automated visitor · declared").
+export const POPULATIONS = Object.freeze([
+  { id: "all", label: "All" }, { id: "agent", label: "AI agents" }, { id: "crawler", label: "Crawlers" },
+  { id: "human", label: "People" }, { id: "bot", label: "Bots" }, { id: "unresolved", label: "Unresolved" },
+]);
+const BY_CATEGORY = Object.freeze({ training_crawler: "crawler", search_crawler: "crawler", ai_agent: "agent", ai_assistant: "agent", human: "human",
+  automation: "bot", monitor: "bot", preview_bot: "bot", unknown: "unresolved" });
+const BY_CLASS = Object.freeze({ verified_agent: "agent", signed_agent: "agent", declared_agent: "agent", ours: "agent", crawler_claimed: "crawler",
+  likely_human: "human", automation: "bot", unknown: "unresolved" });
+export const populationOf = (r) => BY_CATEGORY[r.category] ?? BY_CLASS[r.cls] ?? "unresolved";
+
+// The records list.
+export const RECORDS = Object.freeze({
+  head: "EVERY DOOR RECORD · NEWEST FIRST",
+  more: "Show earlier records",
+  loading: "Loading earlier records…",
+  done: "That is every record.",
+  none: "No records in this tab yet.",
+  failed: (e) => `Earlier records could not be loaded (${e}). Try again.`,
+});
 
 // The rest of the page's words that used to be codes or engineer shorthand.
 export const TEXT = Object.freeze({
