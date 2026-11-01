@@ -92,8 +92,10 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   assert.doesNotMatch(say("room") + shown(data, "room"), /most teams/i);
   assert.match(slide(data, "room").notes.cue, /^Carter's option, not a verified fact .*"Most teams had never had their agents talk to another lab's agents\."/);
   // The participants line in aneta's wording (57906), with the metrics pass's numbers (root, 07:52Z).
-  assert.ok(say("room").endsWith("422 messages from 28 identities: 5 human, 23 agent."));
-  assert.match(shown(data, "room"), /11 in the help room, 9 in our team room/);
+  // The room's numbers are the metrics file's (its facts hold each to METRICS.json, refreshed at the freeze).
+  const help = (k) => loaded.metrics.byId.get(k).value;
+  assert.match(say("room"), new RegExp(`${help("crosscheck.help.messages")} messages from ${help("crosscheck.help.posting_identities")} identities: \\d+ human, ${help("crosscheck.help.members_plus_posting_agents") - help("crosscheck.help.members")} agent\\.$`));
+  assert.match(shown(data, "room"), /\d+ in the help room, \d+ in our team room/);
   assert.doesNotMatch(shown(data, "room") + say("room"), /\b17 people\b/);
   // Rev 5 (aneta 57941): one 8 on the slide; the posting-group estimate stays on the sources page.
   assert.doesNotMatch(shown(data, "room"), /posting groups/);
@@ -106,7 +108,7 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   assert.deepEqual(slide(data, "room").content.tiles[3], { value: "Four", label: "outside groups reported checks of our test case. We offered help to nine groups in all; two of the other five said it was useful." });
   assert.doesNotMatch(shown(data, "room"), /\b281\b|04:01|we offered help to 8|3 outside groups/);
   assert.match(shown(data, "room"), /Help offered: what the groups themselves reported, to 12:46 UTC\./);
-  assert.match(shown(data, "sources"), /Model-rated, not confirmed usefulness: our intent model rated 281 of the 399/);
+  assert.match(shown(data, "sources"), new RegExp(`Model-rated, not confirmed usefulness: our intent model rated ${help("helpful.messages")} of the ${help("helpful.scored_messages")}`));
   assert.match(shown(data, "sources"), /Help offered, to 12:46 UTC: nine outside groups, each counted once\. Four reported checks of our test case: .*; another outside team, after 04:01\. Two of the other five said our help was useful \(21:13:28; 00:04:12 and 00:08:14\)\. Three unconfirmed\./);
   assert.ok(readFileSync(FOUNDER_OUTPUTS.sources, "utf8").includes("Aneta's refreshed help line (team room 58014, 12:46:31Z), with root's scoped +1 and his explicit disjoint wording (reply to 57809, 12:57:04Z)"));
   assert.match(fillInTable(draft), /## Refresh at the freeze/);
@@ -191,7 +193,8 @@ test("claims the talk may not make, and numbers nothing declares, stop the build
   refuses("17 people", /17 is member accounts/, (v) => { v.slides[2].say += " 17 people took part."; });
   refuses("a solver library named", /unresolved 115.93 against 115.94/, (v) => { v.slides[6].footer += " SuperLU explains it."; });
   refuses("money on a main slide", /money on a main slide/, (v) => { v.slides[2].footer += " It cost USD 8,232.41."; });
-  refuses("a number that is not the metrics file's", /but METRICS.json gives 422/, (v) => { v.slides[2].tiles[0].value = "421"; v.slides[2].facts[0].shows = ["421"]; });
+  const msgs = pre.metrics.byId.get("crosscheck.help.messages").value;
+  refuses("a number that is not the metrics file's", new RegExp(`but METRICS.json gives ${msgs.toLocaleString("en-US")}`), (v) => { v.slides[2].tiles[0].value = String(msgs - 1); v.slides[2].facts[0].shows = [String(msgs - 1)]; });
   refuses("a different metrics file", /is not the file V4.json pins/, (v) => { v.metrics.sha256 = "0".repeat(64); });
 });
 
@@ -536,7 +539,8 @@ test("CUTS.md proposes a cut of at least 30 spoken words, not applied, that brin
   // The build refuses a passage that is not there exactly once, or one that touches a number or a placeholder.
   const bad = (mutate, re) => { const v4 = structuredClone(loaded.v4); mutate(v4.cuts); assert.throws(() => cutsPlan({ ...loaded, v4 }), re); };
   bad((k) => { k.cut[0].from = " not in the words"; }, /must appear once in slide room's words, found 0/);
-  bad((k) => { k.cut.push({ slide: "room", from: " 422 messages from 28 identities", to: " Messages", why: "test" }); }, /may not touch a number/);
+  const counted = / \d[\d,]* messages from \d+ identities/.exec(loaded.v4.slides.find((x) => x.id === "room").say)[0];
+  bad((k) => { k.cut.push({ slide: "room", from: counted, to: " Messages", why: "test" }); }, /may not touch a number/);
   bad((k) => { k.cut.push({ slide: "invite", from: " {m:door.visits} visits,", to: "", why: "test" }); }, /may not touch a measured placeholder/);
   bad((k) => { k.cut.push({ slide: "sources", from: "x", to: "", why: "test" }); }, /sources is not a main slide of the full talk/);
 });
