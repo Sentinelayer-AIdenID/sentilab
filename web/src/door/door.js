@@ -10,7 +10,9 @@
 //   GET  /agents/board                  the top 10: class, short id and scores
 //   POST /agents/declare                a visitor's opt-in declaration, bound to its pass (Amendment 4): a person's
 //                                       same-origin form from the confirm page, or an agent's JSON with the pass token
-//                                       and the declare_key its pass's view showed; a GET never records one
+//                                       and the declare_key its pass's view showed; a GET never records one. Only while
+//                                       DOOR_DECLARATIONS is exactly "on": otherwise the path is not the door's (404,
+//                                       as before Amendment 4) and no page offers or mentions declaring
 //   GET  /agents/terms                  the text of the terms a submission accepts (the board's pinned version)
 //   GET  /sentilab/open/terms/<n>@<sha256>.md   one terms version at the contract's canonical path, by its own name
 // Any other method on these paths is 405 read_only; POST /agents/submit and /agents/declare are the writes. Classified agents get
@@ -463,7 +465,7 @@ async function authorize(request, env, url, values, required, format) {
 // landing link's ?via= pre-fills the source and is carried in the purpose links, never recorded.
 async function wall(request, env, url) {
   const board = request.method === "HEAD" ? { admission: "unknown" } : await sharedBoard(env, url);
-  const options = { source: viaSource(url.searchParams) };
+  const options = declarationsOn(env) ? { source: viaSource(url.searchParams), declarations: true } : {};
   const kind = negotiate(request);
   if (kind === "json") return json(request, 200, wallJson(url.origin, board.admission, options));
   if (kind === "md") return markdown(request, 200, wallMarkdown(url.origin, board.admission, options));
@@ -488,8 +490,9 @@ async function intent(request, env, ctx, url) {
   // exact notice; only a POST from that form (or an agent's POST with the pass's declare_key) publishes it.
   const { admission } = await sharedBoard(env, url);
   emitArrival(request, env, ctx, url, { purpose, nonce: claims.nonce, expiresAt: claims.expires_at });
+  // With declarations off the page is the token page as before Amendment 4's opt-in: no form, no notice, no via.
   const carried = linkCarriesDeclaration(url.searchParams);
-  const page = {
+  const page = !declarationsOn(env) ? {} : {
     declaration: carried ? declarationOutcome({ status: "not_sent", code: "link_cannot_declare" }) : { status: "not_given" },
     source: viaSource(url.searchParams),
     declare: { key: await declareKey(key, { site: url.host, nonce: claims.nonce, version: NOTICE.version }), prefill: prefillFrom(url.searchParams), carried },
@@ -507,9 +510,9 @@ async function engram(request, env, ctx, url) {
   const [live, record] = await Promise.all([
     reading ? callApi(env, API.board, { nonce: auth.claims.nonce, host: url.host, timeoutMs: 2500 }).then(readBoard) : { admission: "unknown", board: null, cpuSecondsLeft: null, terms: null },
     evidenceRecord(request, env, url)]);
-  // How to declare on this pass (Amendment 4): one POST with this token and its declare_key.
-  const key = await declareKey(usableKey(env), { site: url.host, nonce: auth.claims.nonce, version: NOTICE.version });
-  const declare = declareObject(url.origin, { token: auth.token, key, source: viaSource(url.searchParams) });
+  // How to declare on this pass (Amendment 4): one POST with this token and its declare_key. Only with declarations on.
+  const declare = !declarationsOn(env) ? null : declareObject(url.origin, { token: auth.token, source: viaSource(url.searchParams),
+    key: await declareKey(usableKey(env), { site: url.host, nonce: auth.claims.nonce, version: NOTICE.version }) });
   return json(request, 200, agentView({ origin: url.origin, token: auth.token, claims: auth.claims, submissions: live.admission, terms: live.terms,
     gateZero: record.gate, knownLimit: record.knownLimit, board: live.board ?? [], boardStatus: live.board ? "ok" : "unavailable", cpuSecondsLeft: live.cpuSecondsLeft,
     declare }));
@@ -831,15 +834,21 @@ const ROUTES = Object.freeze({
   "/agents/check": { methods: ["GET", "HEAD"], handler: check },
   "/agents/submit": { methods: ["POST"], handler: submit },
   "/agents/board": { methods: ["GET", "HEAD"], handler: board },
-  "/agents/declare": { methods: ["POST"], handler: declare },
   "/agents/terms": { methods: ["GET", "HEAD"], handler: currentTerms },
   "/s": { methods: ["GET", "HEAD"], handler: confirm },
 });
 const STATUS_ROUTE = Object.freeze({ methods: ["GET", "HEAD"], handler: status });
 const TERMS_VERSION_ROUTE = Object.freeze({ methods: ["GET", "HEAD"], handler: termsVersion });
 
+// POST /agents/declare is the door's only while declarations are on (DOOR_DECLARATIONS exactly "on"; worker.js passes
+// its env). Off, the default, the path is not the door's: it answers as it did before Amendment 4 (404), so nothing
+// can reach the intake's declaration fields.
+const DECLARE_ROUTE = Object.freeze({ methods: ["POST"], handler: declare });
+export const declarationsOn = (env) => env?.DOOR_DECLARATIONS === "on";
+
 // The door route for a path, or null when the path is not the door's.
-export function doorRoute(pathname) {
+export function doorRoute(pathname, env = {}) {
+  if (pathname === "/agents/declare") return declarationsOn(env) ? DECLARE_ROUTE : null;
   if (Object.hasOwn(ROUTES, pathname)) return ROUTES[pathname];
   if (termsDirPath(pathname)) return TERMS_VERSION_ROUTE;
   return pathname.startsWith(STATUS_PREFIX) ? STATUS_ROUTE : null;
@@ -847,7 +856,9 @@ export function doorRoute(pathname) {
 
 export async function handleDoor(route, request, env, ctx) {
   if (!route.methods.includes(request.method)) {
-    return json(request, 405, { error: "read_only", detail: "The agent door's write routes are POST /agents/submit and POST /agents/declare." }, { allow: route.methods.join(", ") });
+    const detail = declarationsOn(env) ? "The agent door's write routes are POST /agents/submit and POST /agents/declare."
+      : "The agent door's only write route is POST /agents/submit.";
+    return json(request, 405, { error: "read_only", detail }, { allow: route.methods.join(", ") });
   }
   return route.handler(request, env, ctx, new URL(request.url));
 }

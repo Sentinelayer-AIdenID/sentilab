@@ -99,6 +99,20 @@ These are counted from the events the feeds serve, up to and including `through_
 After warden's hold at `c078b4fe`: a declaration is published only by an explicit POST, bound to the visitor's own
 pass. **A GET never records a declaration.**
 
+- **Off by default.** The Worker takes declarations only while its env var `DOOR_DECLARATIONS` is exactly `"on"`
+  (warden, 13:29Z: without a switch, any Worker deploy from main would turn them on). `web/wrangler.jsonc` ships
+  `"off"` for production and staging until the paired deploy after root's #97. Off, and for any other value
+  (missing, `"On"`, `"true"`):
+  - `/agents/declare` is not the door's: a POST (form or JSON) or a GET gets what any path the door doesn't own gets
+    (404), as before this amendment;
+  - no page or JSON the door renders mentions declaring or links to it: the wall, the purpose pages and their next
+    links, the ENGRAM view and the door's 405 text are as before, with no notice, no form, no `declare` object and
+    no `?via=` carried in links (`/llms.txt` and `/agents/` never mentioned it);
+  - nothing reaches the intake with a declaration.
+
+  The heartbeat keeps its own default-off behavior, unchanged. `web/test/door-declarations-off.test.mjs` checks the
+  off cases and the shipped config; the door's other tests run with `"on"` (`web/test/door-harness.mjs`), which is
+  the behavior below, unchanged. `web/test/worker-boot.mjs` checks the shipped config in the Workers runtime.
 - **The notice.** `NOTICE` is a constant bundled with the Worker (`web/src/door/declare.js`): exactly the API's
   `VISITOR_NOTICE` and `VISITOR_DISCLOSURE` (`app/door/intake.py`). Two tests hold it there:
   `app/test_door_a4_fixtures.py` checks it against the API's source, and `web/test/door-a4.test.mjs` checks it against
@@ -171,5 +185,5 @@ pass. **A GET never records a declaration.**
     - `429` for the limits.
   - The text is never echoed.
 - **`?via=<source>`** (one of #89's source values) only pre-fills `source`: the confirm form's selected option, and the
-  body in the pass views. It is carried in the wall's purpose links and in the token page's link to the agent view, and
-  it records nothing. `/agents/` is unchanged.
+  body in the pass views. With declarations on, it is carried in the wall's purpose links and in the token page's link
+  to the agent view; off, it is not. It records nothing either way. `/agents/` is unchanged.

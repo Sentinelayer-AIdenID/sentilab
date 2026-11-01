@@ -86,11 +86,13 @@ export function installApi(t, routes = {}) {
   return calls;
 }
 
-// A fresh Worker environment and execution context; extra overrides env (undefined values delete keys).
+// A fresh Worker environment and execution context; extra overrides env (undefined values delete keys). Declarations
+// are on here (DOOR_DECLARATIONS "on"), as the paired deploy after root's #97 runs them, so the door's tests exercise
+// them; wrangler.jsonc ships them off, and door-declarations-off.test.mjs checks that default.
 export function setup(extra = {}) {
   resetDoorState();
   const pending = [];
-  const env = { ASSETS: assets(), API_ORIGIN, ORIGIN_TOKEN: "origin-test-token", DOOR_TOKEN_KEY: KEY, AQUARIUM_POST: "off" };
+  const env = { ASSETS: assets(), API_ORIGIN, ORIGIN_TOKEN: "origin-test-token", DOOR_TOKEN_KEY: KEY, AQUARIUM_POST: "off", DOOR_DECLARATIONS: "on" };
   for (const [k, v] of Object.entries(extra)) { if (v === undefined) delete env[k]; else env[k] = v; }
   const ctx = { waitUntil: (promise) => pending.push(promise) };
   const go = async (path, init = {}, base = BASE) => {

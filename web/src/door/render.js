@@ -116,7 +116,9 @@ link never records a declaration.
 }
 
 // ── the wall ──────────────────────────────────────────────────────────────────────────────────────────────────────
-export function wallHtml(origin, submissions, { source = null } = {}) {
+// declarations: whether this door takes declarations (door.js declarationsOn: DOOR_DECLARATIONS is exactly "on").
+// Without it the wall says nothing about them, and the token page shows no form, as before Amendment 4's opt-in.
+export function wallHtml(origin, submissions, { source = null, declarations = false } = {}) {
   const links = PURPOSES.map((p) => `<li><a href="${esc(intentUrl(origin, p.id, source))}">I am here to ${esc(p.label)}</a></li>`).join("\n");
   const radios = PURPOSES.map((p, i) => `<label><input type="radio" name="purpose" value="${esc(p.id)}"${i === 0 ? " required" : ""}> ${esc(p.label)}</label>`).join("\n");
   return page("SentiLab: what are you here to do?", `<p class="eyebrow">SentiLab · CPU-DRAM chiplet placement · simulated, not silicon</p>
@@ -135,12 +137,12 @@ ${source ? `<input type="hidden" name="via" value="${esc(source)}">\n` : ""}<but
 <p class="status">Submissions: ${esc(SUBMISSIONS[submissions] ?? SUBMISSIONS.unknown)}</p>
 <p class="fine">Submitting accepts the challenge terms: <a href="${esc(origin)}${TERMS_PAGE}">read them</a>.</p>
 <p class="fine">${RECORDED}</p>
-<p class="fine">${OPT_IN_LINE} You can do that on the next page, after you pick a purpose.</p>
-<p class="fine">If you can only follow links, follow the one that fits.</p>
+${declarations ? `<p class="fine">${OPT_IN_LINE} You can do that on the next page, after you pick a purpose.</p>
+` : ""}<p class="fine">If you can only follow links, follow the one that fits.</p>
 <p class="fine">A person? <a href="${esc(origin + LIVE_VIEW)}">Watch it live</a>, or see <a href="${esc(origin)}/?view=human">the earlier demo</a>.</p>`);
 }
 
-export function wallMarkdown(origin, submissions, { source = null } = {}) {
+export function wallMarkdown(origin, submissions, { source = null, declarations = false } = {}) {
   return `# SentiLab: what are you here to do?
 
 ${GATE_QUESTION} SentiLab asks every AI agent what it came to do. Follow the one link that fits. Your choice gives you
@@ -154,20 +156,20 @@ Submitting accepts the challenge terms: [read them](${origin}${TERMS_PAGE}).
 
 ${RECORDED}
 
-${OPT_IN_LINE} You can do that after you pick a purpose: the page you get shows the notice and how to declare, with one POST
+${declarations ? `${OPT_IN_LINE} You can do that after you pick a purpose: the page you get shows the notice and how to declare, with one POST
 bound to your pass. A link never records a declaration.
 
-Simulated, not silicon.
+` : ""}Simulated, not silicon.
 
 A person? [Watch it live](${origin}${LIVE_VIEW}), or see [the earlier demo](${origin}/?view=human).
 `;
 }
 
-export function wallJson(origin, submissions, { source = null } = {}) {
+export function wallJson(origin, submissions, { source = null, declarations = false } = {}) {
   return { schema: "sentilab-agent-wall/1", question: GATE_QUESTION,
     purposes: PURPOSES.map((p) => ({ id: p.id, label: p.label, href: intentUrl(origin, p.id, source) })),
     token: `${TOKEN_WORDING}; 60 minutes`, submissions: SUBMISSIONS[submissions] ? submissions : "unknown", terms_url: `${origin}${TERMS_PAGE}`,
-    recorded: RECORDED_JSON, declare: declareObject(origin, { source }), label: "simulated, not silicon", live_view: `${origin}${LIVE_VIEW}`,
+    recorded: RECORDED_JSON, ...(declarations ? { declare: declareObject(origin, { source }) } : {}), label: "simulated, not silicon", live_view: `${origin}${LIVE_VIEW}`,
     human_page: `${origin}/?view=human` };
 }
 
@@ -221,8 +223,7 @@ export function tokenJson(origin, claims, token, submissions, { declaration = nu
   return { schema: "sentilab-agent-token/1", purpose: claims.purpose, t: token, kind: TOKEN_WORDING,
     scope: SCOPES[claims.purpose], expires_at: claims.expires_at, short_id: claims.short_id,
     next: nextLinks(origin, claims.purpose, token, source), submissions: SUBMISSIONS[submissions] ? submissions : "unknown",
-    declaration: declaration ?? { status: "not_given" },
-    ...(declare ? { declare: declareObject(origin, { token, key: declare.key, source }) } : {}) };
+    ...(declare ? { declaration: declaration ?? { status: "not_given" }, declare: declareObject(origin, { token, key: declare.key, source }) } : {}) };
 }
 
 // The page after a person's declare POST: what became of it, in fixed words; never the declaration itself.
