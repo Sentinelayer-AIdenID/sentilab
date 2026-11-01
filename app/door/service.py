@@ -238,9 +238,14 @@ class Door:
         legal, found = intake.legality(self.policy, proposal.item)
         if not legal:
             return refuse(found)
+        # The visitor this run belongs to (root, 18:40Z): the latest arrival of the SAME pass at or before this
+        # submission, by the nonce's keyed handle, exactly as a declaration's arrival; never a short-id match.
+        handle = (self.policy.keyed("public-visitor/1", claims["nonce"])
+                  if len(self.policy.k_challenge) >= 32 else None)
         decision = self.store.admit(policy=self.policy, proposal=proposal, klass=klass, operator=operator,
                                     wire_proxy_mm=self.policy.checker.wire_proxy_mm(proposal.item["dies"]),
-                                    token_exp=claims["exp"], now=now)
+                                    token_exp=claims["exp"], now=now,
+                                    visit_arrival=self.store.arrival_of_pass(handle) if handle is not None else None)
         if decision["decision"] in ("rejected", "refused"):
             return self._rejected(decision["codes"], limits=decision.get("limits"), now=now)
         row, position = self.store.run(decision["run_id"])
@@ -317,7 +322,7 @@ class Door:
         proposal = json.loads(row["proposal"])
         codes = [entry["code"] for entry in json.loads(row["codes"])]
         item = {"id": row["run_id"], "label": label(row["class"], row["short_id"]), "class": row["class"],
-                "short_id": row["short_id"], "arrival": row["arrival"],
+                "short_id": row["short_id"], "arrival": row["arrival"], "visit_arrival": row.get("visit_arrival"),
                 "seq": row["version"], "status": row["state"], "summary": FEED_SUMMARY[row["state"]], "codes": codes,
                 "reason": row["reason"], "position": position, "dies": proposal["dies"],
                 "geometry_sha256": row["geometry_sha256"], "wire_proxy_mm": row["wire_proxy_mm"],
@@ -416,6 +421,8 @@ class Door:
             body = json.loads(row["body"])
             public = (hidden_declaration(body, row["hidden_reason"]) if row["hidden_reason"] is not None else
                       {key: value for key, value in body.items() if key not in ("visitor_handle", "pass_handle")})
+            if row["kind"] == "run":
+                public.setdefault("visit_arrival", None)      # runs recorded before the visit link read null
             if row["kind"] == "arrival" and row["hidden_reason"] is None:
                 public.update(published_lab(body))
                 if isinstance(body.get("declaration"), dict):

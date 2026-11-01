@@ -121,6 +121,19 @@ test("P3-3: the public proxy passes the intake's board, results and events on wi
   assert.equal(JSON.parse((await s.go("/api/view/runs")).text).operator, "openai");
 });
 
+// ── Carter 19:59Z: a run names its visitor's arrival (visit_arrival); the proxy passes it through unchanged ────────
+test("the public proxy passes visit_arrival through on results items and run records", async (t) => {
+  const feed = { schema: "x", items: [{ id: "open-1", arrival: 7, visit_arrival: 4, result: null }, { id: "open-2", arrival: 8, visit_arrival: null }],
+    events: [{ kind: "run", run_id: "open-1", state: "queued", visit_arrival: 4, pass_handle: "a".repeat(64) }] };
+  t.mock.method(globalThis, "fetch", async () => Response.json(feed));
+  const s = setup();
+  for (const path of ["results", "events", "board"].map((name) => `/api/open/v1/door/${name}`)) {
+    const value = JSON.parse((await s.go(`${path}?after=0`)).text);
+    assert.deepEqual([value.items[0].visit_arrival, value.items[1].visit_arrival, value.items[0].arrival, value.events[0].visit_arrival,
+      "pass_handle" in value.events[0]], [4, null, 7, 4, false], path);
+  }
+});
+
 // ── root's rollback finding (18:40Z): the intake's internal pass handles never leave through the proxy ────────────
 test("the public proxy drops pass_handle and visitor_handle at any depth on every open feed", async (t) => {
   const leaky = { schema: "x", pass_handle: "a".repeat(64), visitor_handle: "b".repeat(64),

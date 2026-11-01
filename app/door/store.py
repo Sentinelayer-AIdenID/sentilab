@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS runs (
   active_c REAL,
   binding_ok INTEGER,
   token_exp INTEGER,
+  visit_arrival INTEGER,
   created_at REAL NOT NULL,
   updated_at REAL NOT NULL,
   version INTEGER NOT NULL,
@@ -186,6 +187,9 @@ class Store:
         db = self._connect()
         try:
             db.executescript(SCHEMA)
+            # Older stores gain the run's visit link (root, 18:40Z); older runs read null.
+            if "visit_arrival" not in {row[1] for row in db.execute("PRAGMA table_info(runs)")}:
+                db.execute("ALTER TABLE runs ADD COLUMN visit_arrival INTEGER")
             self._initialize_visitors(db)
         finally:
             db.close()
@@ -330,8 +334,10 @@ class Store:
                           (arrival,)).fetchone()[0]
 
     def _run_event(self, db, run, state: str, now: float, **extra) -> int:
+        # visit_arrival: the seq of the latest arrival of the pass that submitted this run, or null (Store.admit).
+        visit = run["visit_arrival"] if "visit_arrival" in run.keys() else None
         body = {"run_id": run["run_id"], "label": label(run["class"], run["short_id"]), "short_id": run["short_id"],
-                "class": run["class"], "state": state, **extra}
+                "class": run["class"], "state": state, "visit_arrival": visit, **extra}
         return self._event(db, "run", body, now, run["run_id"])
 
     # ── intake ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -390,7 +396,7 @@ class Store:
         return found
 
     def admit(self, *, policy, proposal, klass: str, operator: str, wire_proxy_mm: float, token_exp: float,
-              now: float) -> dict:
+              now: float, visit_arrival=None) -> dict:
         """One atomic decision: duplicate, conflict, a policy refusal, or queued with its CPU envelope held."""
         manifest_id, grant, item = policy.manifest_id, policy.grant, proposal.item
         short = proposal.principal[-64:][:4]
@@ -417,16 +423,17 @@ class Store:
                                             "outcome": "refused", "codes": [entry["code"] for entry in codes]}, now)
                 return {"decision": "refused", "codes": codes, "limits": sorted({scope for scope, _ in found})}
             transition(Entry(), "accept")
-            run = {"run_id": proposal.run_id, "class": klass, "short_id": short, "operator": operator}
+            run = {"run_id": proposal.run_id, "class": klass, "short_id": short, "operator": operator,
+                   "visit_arrival": visit_arrival}
             seq = self._run_event(db, run, "queued", now)
             db.execute(
                 "INSERT INTO runs (run_id, arrival, manifest_id, principal, short_id, class, operator, case_id, "
                 "proposal_key, proposal_sha256, geometry_sha256, proposal, wire_proxy_mm, state, codes, token_exp, "
-                "created_at, updated_at, version) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', '[]', ?, ?, ?, ?)",
+                "visit_arrival, created_at, updated_at, version) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', '[]', ?, ?, ?, ?, ?)",
                 (proposal.run_id, seq, manifest_id, proposal.principal, short, klass, operator, "cpu-dram",
                  item["proposal_key"], proposal.proposal_sha256, proposal.geometry_sha256, _json(item),
-                 wire_proxy_mm, int(token_exp), now, now, seq))
+                 wire_proxy_mm, int(token_exp), visit_arrival, now, now, seq))
             db.execute("INSERT INTO reservations (reservation_id, run_id, principal, grant_id, amount_cpu_s, state, "
                        "created_at) VALUES (?, ?, ?, ?, ?, 'held', ?)",
                        (str(uuid.uuid4()), proposal.run_id, proposal.principal, grant.grant,
