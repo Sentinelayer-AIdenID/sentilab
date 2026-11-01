@@ -56,10 +56,14 @@ def test_print_freeze_binds_actual_request_settings_caps_prices_and_all_files(tm
         'temperature': 0.3, 'top_p': 1, 'max_tokens_per_reply': 100, 'stream': False,
         'allow_redirects': False, 'timeout': 'remaining arm wall time'}
     assert descriptor['protocol'] == protocol
-    assert descriptor['output_schema'] == 'collab-study-output-v4'
+    assert descriptor['output_schema'] == 'collab-study-output-v5'
     assert descriptor['caps'] == {'tokens_per_agent': protocol['caps'], 'wall_seconds': 900,
                                   'max_usd': '10', 'parallel_arms': 6}
-    assert descriptor['turn_rule'] == {'order': [1, 2, 3], 'writer': 1, 'skip_stopped_agents': True}
+    assert descriptor['turn_rule'] == {
+        'order': [1, 2, 3], 'writer': 1, 'skip_stopped_agents': True,
+        'first_turn_prompt': 'append_to_packet_after_blank_line',
+        'writer_final_requires_peer_turns': True, 'cap_or_failure_counts_as_turn': True,
+        'selection_order': ['last_writer_final_after_peer_turns', 'last_emitted_set', 'failed_run']}
     assert len(descriptor['packet_files']) == 10
     assert set(descriptor['prompts']) == {'system', 'continue', 'c1', 'c2', 'c3'}
     assert descriptor['packets_tree_sha256'] == runner.sha256(runner.canonical(descriptor['packet_files']))
@@ -306,9 +310,12 @@ def test_live_pilot_only_needs_no_freeze_order_or_study_packets(tmp_path, monkey
     output = tmp_path / 'output'
     assert {path.name for path in output.iterdir() if path.is_dir()} == {'pilot-A', 'pilot-C'}
     accounting = json.loads((output / 'ACCOUNTING.json').read_text())
-    assert accounting['scopes']['pilot']['attempts'] == len(calls) == 2
+    assert accounting['scopes']['pilot']['attempts'] == len(calls) == 5  # A once; C rotates 1, 2, 3, 1.
     assert accounting['scopes']['study']['attempts'] == 0
-    assert accounting['grand_total_usd'] == '0.00028'
+    assert accounting['grand_total_usd'] == '0.0007'
+    c_job = json.loads((output / 'pilot-C/job.json').read_text())
+    assert c_job['selection']['rule'] == 'last_writer_final_after_peer_turns'
+    assert all(agent['charged_tokens'] > 0 for agent in c_job['agents'].values())
     assert json.loads((output / 'FREEZE.json').read_text())['pilot_only'] is True
 
 
@@ -328,7 +335,7 @@ def test_lone_surrogate_reply_is_escaped_in_every_output(tmp_path, capsys, monke
     assert runner.main(args) == 0
     output = tmp_path / 'output'
     accounting = json.loads((output / 'ACCOUNTING.json').read_text())
-    assert accounting['scopes']['study']['attempts'] == 10
+    assert accounting['scopes']['study']['attempts'] == 16  # Two packets: A=1, B=3, C=4 each.
     assert json.loads((output / 'case-one-A/findings.json').read_text())['findings'][0]['evidence'] == '\ud800'
     transcript = (output / 'case-one-A/transcript.jsonl').read_text()
     assert '\\ud800' in transcript
@@ -413,8 +420,8 @@ def test_rerun_keeps_finished_jobs_and_previous_charges(tmp_path, capsys, monkey
     assert runner.main(args) == 0
     after = json.loads((output / 'ACCOUNTING.json').read_text())
     assert after['attempts'][:4] == before['attempts']
-    assert len(resumed) == 6  # Remaining C, A, B, C jobs.
-    assert after['grand_total_usd'] == '0.002393'
+    assert len(resumed) == 12  # Remaining C=4, A=1, B=3, C=4 jobs.
+    assert after['grand_total_usd'] == '0.003233'
     assert {p.name: p.read_bytes() for p in first.iterdir()} == original
     assert json.loads((output / order[1]['job_id'] / 'job.json').read_text())['history_complete'] is False
 
@@ -459,7 +466,7 @@ def test_receipt_write_failure_keeps_settled_usage_and_marks_recovery_incomplete
     after = json.loads((output / 'ACCOUNTING.json').read_text())
     assert after['attempts'][0] == before['attempts'][0]
     assert after['attempts'][0]['request_s'] >= 0
-    assert after['grand_total_usd'] == '0.0014'
+    assert after['grand_total_usd'] == '0.00224'  # Sixteen settled responses, including both full C rotations.
     job = json.loads((output / 'case-one-A/job.json').read_text())
     assert job['history_complete'] is False
     assert job['wall_seconds'] is None

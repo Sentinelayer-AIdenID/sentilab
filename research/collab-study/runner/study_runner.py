@@ -661,6 +661,9 @@ class JobOutputs:
         self._set_indices = {}
         self._finals = {}
         self._final_indices = {}
+        self._c_turns = {}
+        self._c_writer_final = None
+        self._last_set = None
         self._parsed_attempts = set()
         self._history_complete = not recover
         self.closed = False
@@ -692,14 +695,22 @@ class JobOutputs:
                 agent = value["agent"]
                 emitted_bytes = b""
                 last_final = max((n for n, emitted in enumerate(sets) if emitted["kind"] == "FINAL"), default=-1)
+                selectable = value.get("event") == "response" and not value.get("deadline_exceeded") and elapsed < 900
+                writer_eligible = agent == 1 and {2, 3} <= self._c_turns.keys()
                 for n, emitted in enumerate(sets):
                     index = self._set_indices.get(agent, 0)
                     row = {"job_id": self.job["job_id"], "arm": self.job["arm"], "agent": agent,
                            "set_index": index, "elapsed_s": elapsed, **emitted,
-                           "selected_final": n == last_final,
+                           "selected_final": n == last_final and
+                               (self.job["arm"] != "C" or (selectable and writer_eligible)),
                            "malformed": [{**line, "malformed": True} for line in emitted["malformed"]]}
                     emitted_bytes += canonical(row) + b"\n"
                     self._set_indices[agent] = index + 1
+                    if selectable:
+                        candidate = {**row, "malformed": emitted["malformed"]}
+                        self._last_set = candidate
+                        if self.job["arm"] == "C" and row["selected_final"]:
+                            self._c_writer_final = candidate
                     if emitted["kind"] == "FINAL":
                         self._finals[agent] = {key: emitted[key] for key in ("findings", "malformed", "discarded")}
                         self._final_indices[agent] = index
@@ -710,6 +721,17 @@ class JobOutputs:
     def final_set(self, agent: int) -> dict | None:
         with self._record_lock:
             return self._finals.get(agent)
+
+    def complete_c_turn(self, agent: AgentState) -> None:
+        with self._record_lock:
+            if agent.successful_responses:
+                self._c_turns.setdefault(agent.number, "response")
+            elif agent.stop_reason not in {None, "wall_time", "dollar_cap"}:
+                self._c_turns.setdefault(agent.number, agent.stop_reason)
+
+    def c_writer_final_ready(self) -> bool:
+        with self._record_lock:
+            return self._c_writer_final is not None
 
     def abort(self) -> None:
         """Close a partial transcript without pretending the job completed."""
@@ -737,7 +759,7 @@ class JobOutputs:
             }
         agent_times = [agent["agent_s"] for agent in per_agent.values()]
         wall_seconds = max(0, self.clock() - self.start_time) if self.start_time is not None else 0
-        job = {**self.job, "schema": "collab-study-job-v4", "start_utc": self.start_utc, "end_utc": utc_now(),
+        job = {**self.job, "schema": "collab-study-job-v5", "start_utc": self.start_utc, "end_utc": utc_now(),
                "wall_seconds": None if self.recovered else wall_seconds,
                "agent_s": None if None in agent_times else sum(agent_times),
                "recovered": self.recovered, "agents": per_agent,
@@ -752,6 +774,16 @@ class JobOutputs:
                "run_stop_reason": accounting["stop_reason"],
                "overspend_tokens": sum(agent["overspend_tokens"] for agent in per_agent.values()),
                "overspend_limit_exceeded": any(row["overspend_limit_exceeded"] for row in attempts)}
+        if self.job["arm"] == "C":
+            selected = self._c_writer_final or self._last_set
+            rule = ("last_writer_final_after_peer_turns" if self._c_writer_final else
+                    "last_emitted_set" if selected else "failed_run")
+            job["selection"] = {"rule": "interrupted_run" if self.recovered else rule,
+                                **{key: selected[key] if selected else None for key in ("agent", "set_index", "kind")}}
+            job["failed"] = selected is None
+            job["c_turns"] = {str(number): reason for number, reason in self._c_turns.items()}
+            if selected:
+                findings = {key: selected[key] for key in ("findings", "malformed", "discarded")}
         self.abort()
         if not self.recovered or not (self.directory / "findings.json").exists():
             write_json_exclusive(self.directory / "findings.json", findings)
@@ -809,20 +841,23 @@ def run_arm(job: dict, *, output: Path, engine: RequestEngine, system_prompt: st
             findings = {str(agent.number): result for agent, result in zip(agents, results)}
         else:
             findings, transcript, finalized = empty_set(), [], False
-            histories = {agent.number: [dict(message) for message in base] for agent in agents}
+            histories = {agent.number: [dict(base[0]), {"role": "user", "content":
+                         packet_message + "\n\n" + c_turn_prompts[agent.number]}] for agent in agents}
             cursors = {agent.number: 0 for agent in agents}
             while not finalized and any(not agent.stop_reason for agent in agents):
                 for agent in agents:
                     if agent.stop_reason:
                         continue
                     messages = histories[agent.number]
-                    shared = transcript[cursors[agent.number]:] + [c_turn_prompts[agent.number]]
+                    shared = transcript[cursors[agent.number]:]
                     if messages[-1]["role"] == "user":
-                        messages[-1]["content"] += "\n\n" + "\n\n".join(shared)
+                        if shared:
+                            messages[-1]["content"] += "\n\n" + "\n\n".join(shared)
                     else:
-                        messages.append({"role": "user", "content": "\n\n".join(shared)})
+                        messages.append({"role": "user", "content": "\n\n".join(shared + [c_turn_prompts[agent.number]])})
                     reply = engine.request(job["job_id"], agent, messages, deadline=deadline,
                                            scope=scope, record=writer.record)
+                    writer.complete_c_turn(agent)
                     if reply is None:
                         continue
                     labelled = f"Agent {agent.number}:\n{reply.content}"
@@ -833,9 +868,8 @@ def run_arm(job: dict, *, output: Path, engine: RequestEngine, system_prompt: st
                     # last request, including its own newly appended reply.
                     for participant in agents:
                         participant.prompt_bound += usage_counts(reply.usage)[2]
-                    final = writer.final_set(agent.number)
-                    if agent.number == 1 and final is not None:
-                        findings, finalized = final, True
+                    if agent.number == 1 and writer.c_writer_final_ready():
+                        finalized = True
                         agent.stop_reason = "final"
                         for other in agents:
                             if not other.stop_reason:
@@ -1068,14 +1102,18 @@ def main(argv=None) -> int:
         if not args.dry_run and not endpoint:
             raise InputError("STUDY_ENDPOINT must be set for a live freeze")
         descriptor = {**inputs.freeze,
-                      "output_schema": "collab-study-output-v4",
+                      "output_schema": "collab-study-output-v5",
                       "request_settings": {"model": "deepseek-v4-pro", "deployment": inputs.protocol["deployment"],
                                            "temperature": 0.3, "top_p": 1, "max_tokens_per_reply": inputs.protocol["max_tokens_per_reply"],
                                            "stream": False, "allow_redirects": False, "timeout": "remaining arm wall time"},
                       "endpoint_sha256": None if args.dry_run else sha256(endpoint.encode("utf-8")),
                       "caps": {"tokens_per_agent": inputs.protocol["caps"], "wall_seconds": 900,
                                "max_usd": inputs.protocol["max_usd"], "parallel_arms": args.parallel},
-                      "turn_rule": {"order": [1, 2, 3], "writer": 1, "skip_stopped_agents": True},
+                      "turn_rule": {"order": [1, 2, 3], "writer": 1, "skip_stopped_agents": True,
+                                    "first_turn_prompt": "append_to_packet_after_blank_line",
+                                    "writer_final_requires_peer_turns": True,
+                                    "cap_or_failure_counts_as_turn": True,
+                                    "selection_order": ["last_writer_final_after_peer_turns", "last_emitted_set", "failed_run"]},
                       "retry_rule": {"limit": 1, "delay_seconds": 10, "before_first_success_only": True,
                                      "evidenced_presend_only": True},
                       "dry_run": args.dry_run, "pilot": pilot_freeze, "pilot_only": args.pilot_only}

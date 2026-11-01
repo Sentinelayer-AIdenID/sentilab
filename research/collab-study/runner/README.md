@@ -37,8 +37,10 @@ The packet message uses headers `### README.md`, `### config.json`, etc., in the
 order above. A/B subsequently receive their own reply and the sealed continue
 prompt. C receives every prior reply as `Agent N:\n<verbatim reply>`. Each agent's
 own replies have the assistant role; peer replies are folded into one user
-message with that turn's sealed `c1`, `c2`, or `c3` prompt. The initial user
-message includes the packet, so roles alternate even on the first turn.
+message with that turn's sealed `c1`, `c2`, or `c3` prompt. Each C agent's first
+user message starts with the packet, a blank line, and its sealed turn prompt,
+followed by any peer replies. Roles alternate from the first turn onward.
+A/B first messages contain only the packet.
 
 The contract does not supply an initial prompt count, pilot selection, or C
 participant instructions. This implementation makes those explicit operator
@@ -96,8 +98,15 @@ overwrite mode exists.
 A has one 120,000-token agent. B runs three isolated 40,000-token agents
 concurrently, with independent findings. C rotates agents 1, 2, 3, skipping
 stopped agents; a nonwriter's `FINAL` is recorded and that agent keeps taking
-turns. Only writer 1's `FINAL` ends the arm with findings. Each arm has one
-900-second deadline. Jobs start in order with at most `--parallel` arm workers
+turns. Writer 1's `FINAL` ends the arm only after agents 2 and 3 have each had
+a turn; a capped or failed agent also satisfies this participation rule.
+An early writer `FINAL` remains timed in the history and rotation continues.
+Select the last writer `FINAL` emitted after both peers' participation. If none
+arrives before the cap or deadline, select the last emitted fixed-format set
+(`FINDINGS` or `FINAL`) from any agent, including an early writer `FINAL`.
+With no set, record a failed run. Explicit empty sets still count as sets;
+late or failed responses remain in the history but cannot supply the result.
+Each arm has one 900-second deadline. Jobs start in order with at most `--parallel` arm workers
 (1–6, default 6). B's three internal agents are part of one arm worker.
 
 Before each attempt, the prompt reservation and bounded output must fit the
@@ -141,6 +150,12 @@ Each job contains:
   agent's `agent_s` sums its request durations; the job's `agent_s` sums all
   agents, so overlapping B requests count separately. Request durations include
   failed attempts but exclude receipt writing, parsing and retry sleep.
+  For C, `c_turns` records which agents satisfied participation and how
+  (`response`, `token_cap`, or the failure reason). `selection` identifies the
+  selected `agent`, `set_index`, `kind`, and rule:
+  `last_writer_final_after_peer_turns`, `last_emitted_set`, or `failed_run`.
+  `failed` is true when no selectable set exists. Interrupted recovery uses
+  `interrupted_run` and retains the existing incomplete-history behavior.
 * `transcript.jsonl`: request-message hashes and every reply verbatim, including
   each attempt's scope, raw usage, reservations, `request_s` duration and
   accounting outcome. Durations also persist in `ACCOUNTING.json`.
@@ -153,15 +168,16 @@ Each job contains:
   model-written timestamps have no effect. Multiple sets in one reply share its
   parsing-completion time. Interim sets do not stop the agent. Late replies are
   retained for analysis even when they cannot supply the final arm result.
-  When a reply has multiple FINALs, all remain recorded; `selected_final` marks
-  the last FINAL in that reply, which supplies that agent's final set. Its
-  `set_index` is reported as `final_set_index` in the agent's job metadata.
-  C still uses only the designated writer's final set for the arm result.
+  When a reply has multiple FINALs, all remain recorded. For A/B,
+  `selected_final` marks the last FINAL in the reply. For C it marks only the
+  last eligible writer FINAL, so early writer and nonwriter FINALs are false;
+  a fallback selection is identified by `job.json` instead. Per-agent
+  `final_set_index` records the last emitted FINAL, whether selected or not.
 * `findings.json`: `{findings, malformed, discarded}` for A/C; a map from agent
   number to that structure for B. No B merging is performed. At most 20 valid
   `{file, location, defect, evidence}` objects are kept. Malformed lines after
-  `FINAL` remain recorded without repair. Without a valid final marker, the set
-  is empty.
+  `FINAL` remain recorded without repair. A/B require a final marker; C also
+  permits the interim-set fallback described above.
 
 At run level, `FREEZE.json` records the input seal, `ACCOUNTING.json` contains all
 attempts and pilot/study/retry totals, and `RUN-MANIFEST.json` hashes every output
@@ -180,7 +196,8 @@ attempts has zero request time. Only untouched jobs run next;
 no interrupted request is replayed. Missing or inconsistent accounting is
 refused. Exit 2 means invalid/inaccessible inputs or outputs; exit 0
 means a recorded run completed, which can include cap stops or model failures.
-The freeze declares `collab-study-output-v4` and the manifest hashes emitted-set
+The freeze declares `collab-study-output-v5`, binds C's amended selection and
+first-turn rules in `turn_rule`, and the manifest hashes emitted-set
 histories too. The runner has no correctness key and does not calculate
 `first_correct`; analysis uses the histories and completeness flag to distinguish
 an unobserved result from a complete history with no correct finding.
