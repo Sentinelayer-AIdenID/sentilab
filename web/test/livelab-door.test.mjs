@@ -108,7 +108,7 @@ function door() {
   const base = doc("events.json"), results = doc("results.json"), board = doc("board.json");
   const events = [], items = [], decls = [];
   let seq = base.next_after, rseq = results.next_after;
-  const state = { hidden: false };
+  const state = { hidden: false, hang: false, answered: 0 };
   // A run's result row carries its own queued record's seq as `arrival`, as the door's does (that orders the results).
   const add = (hex, states, { at, visitArrival = null, held = false } = {}) => {
     const id = `open-0000${hex}-${"0".repeat(28)}${hex}`, status = states.at(-1), first = seq + 1;
@@ -124,6 +124,8 @@ function door() {
   const declare = (arrival, name, hex) => { seq += 1; decls.push({ seq, arrival, name, hex }); };
   const proto = doc("visitors-declarations.json").items.find((i) => i.event_kind === "declaration" && i.declaration);
   const answer = (url) => {
+    if (state.hang) return "hang";   // every read from now on never answers
+    state.answered += 1;
     const after = Number(url.searchParams.get("after") ?? 0);
     if (url.pathname === "/api/open/v1/door/results") {
       if (after < results.next_after) return results;
@@ -149,10 +151,11 @@ function door() {
   };
   return { answer, add, arrive, declare, release, state };
 }
+let lastPage = null;
 async function open(t, tag) {
   t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: NOW });
   const d = door();
-  installPage(t, d.answer);
+  lastPage = installPage(t, d.answer);
   await import(`${LIVE}?proposals=${tag}`);
   await settleFor(t, 4000);
   return d;
@@ -244,4 +247,32 @@ test("door: the cap holds at Door (six figures, +N for the rest) and the Door co
   const window = [...base.events.map((e) => e.kind), ...Array(9).fill("arrival")].slice(-40);
   const doorCount = atlasEls().filter((el) => el.tag === "text" && el.getAttribute("class") === "st-count")[0].textContent;
   assert.equal(doorCount, String(window.filter((k) => k === "arrival").length), "the Door count is the arrivals in the newest records, as before");
+});
+
+// Root (26000ae P2): a Door figure must age out on the page's clock even when reads hang. Before, clock ticks redrew the
+// maps only when names changed, so with every read hanging a visitor stayed at the Door past its 15 minutes (root's
+// witness: age 924,000 ms, guest count still 1). Now the 1 s clock recomputes the Door's visitors and redraws both maps
+// (and the expanded table) when that set changes, with no network answer at all.
+test("door: with every read hanging, a visitor ages out of the Door on the clock, on the small and the expanded map", async (t) => {
+  const d = await open(t, "expiry");
+  d.arrive("9f8c", Date.now());
+  await settleFor(t, 4000);
+  const bigEls = () => walk(document.getElementById("modalBody"));
+  const bigGuests = () => bigEls().filter((el) => el.tag === "svg" && /\bguest\b/.test(el.getAttribute("class") ?? "")).length;
+  const doorCount = (els) => els.filter((el) => el.tag === "text" && el.getAttribute("class") === "st-count")[0]?.textContent;
+  const tableDoor = () => bigEls().filter((el) => el.tag === "td").map((el) => el.textContent)[1];
+  assert.equal(figures().filter((f) => f.guest).length, 1, "the visitor is at the Door");
+  lastPage.atlasButton.click();
+  assert.equal(bigGuests(), 1, "and on the expanded map");
+  d.state.hang = true;
+  const answered = d.state.answered;
+  await settleFor(t, 14 * 60000, 1000);
+  assert.equal(figures().filter((f) => f.guest).length, 1, "still inside its 15 minutes");
+  await settleFor(t, 70000, 1000);
+  assert.equal(d.state.answered, answered, "no read answered while it aged out");
+  assert.equal(figures().filter((f) => f.guest).length, 0, "gone from the small map");
+  assert.equal(bigGuests(), 0, "gone from the expanded map");
+  assert.equal(guestLabel(), "", "no visit label left at the Door");
+  assert.equal(tableDoor(), `${doorCount(atlasEls())} · arrival records`, "the expanded table was redrawn with the maps (the Door's live count)");
+  assert.equal(doorCount(bigEls()), doorCount(atlasEls()));
 });

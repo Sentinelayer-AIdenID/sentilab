@@ -539,12 +539,22 @@ function draw2d(L) {
 
 // ── the work: atlas, visitors, newest record ─────────────────────────────────────────────────────────────────────
 const STATION_XY = [[56, 34], [150, 22], [244, 34], [258, 108], [150, 128], [42, 108]];
+// The Door visitors last drawn (their arrival seqs). The page's 1 s clock recomputes them and redraws both maps when
+// the set changes, so a visitor ages out of the Door at its 15 minutes even when no read answers (root, 26000ae P2).
+let doorKey = null;
+const doorKeyOf = (visitors) => visitors.map((e) => e.seq).join(",");
+function doorChanged() {
+  if (doorKey === null) return false;
+  const held = [...S.records.values(), ...feed.state.events];
+  return doorKeyOf(M.doorVisitors(held, Date.now(), M.linkedArrivals(held))) !== doorKey;
+}
 function drawAtlas(svg, { large = false } = {}) {
   const a = M.atlas(layouts(), feed.state.events, walkAt());
   const shown = shownRun().L;
   const playing = new Set(a.stations.flatMap((st) => st.playback.map((r) => r.id)));
   const held = [...S.records.values(), ...feed.state.events];
   const visitorsNow = M.doorVisitors(held, Date.now(), M.linkedArrivals(held));
+  doorKey = doorKeyOf(visitorsNow);
   svg.replaceChildren();
   svg.append(s("ellipse", { class: "atlas-ring", cx: 150, cy: 76, rx: 108, ry: 52 }));
   a.stations.forEach((st, i) => {
@@ -1189,7 +1199,7 @@ pollVisitors();
 pollLicences();
 setInterval(pollLicences, 5 * 60 * 1000);
 // The badge and ages follow the clock even when no answer arrives (a hung request must still turn LIVE into STALE).
-setInterval(() => { renderStatus(); renderDeclarations(); renderArrivals(); renderProposals(); renderPresence(); if (namesChanged()) render(); }, 1000);
+setInterval(() => { renderStatus(); renderDeclarations(); renderArrivals(); renderProposals(); renderPresence(); if (namesChanged()) render(); else if (doorChanged()) drawMaps(); }, 1000);
 // Leaving the page stops every poll (and an answer still in flight cannot restart one: the board's epoch moves on). A
 // page restored from the back/forward cache comes back with them stopped, so pageshow starts again what pagehide
 // stopped; a fresh load gets no pageshow with persisted set.
