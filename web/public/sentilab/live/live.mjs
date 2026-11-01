@@ -135,6 +135,11 @@ function shownRun() {
 const walks = new Map();          // run id -> { steps, i }
 const walkSeen = new Map();       // run id -> its newest run-record seq already drawn
 let walkHistory = null, walkBase = 0, walkCursor = 0, walkTimer = 0, hiddenSincePoll = false;
+// "New proposal" at the top of the model (Carter, 19:33Z: when an agent finishes and proposes, it shows at the top of
+// the 3D space and says new proposal): while following live, a change of the followed run to another one
+// shows the badge for NEW_PROPOSAL_MS. The run followed at load is never new; a viewer's own pick never shows it.
+const NEW_PROPOSAL_MS = 15000;
+let followedId = null, newProposalUntil = 0;
 function planWalks() {
   const ev = feed.state.events;
   if (walkHistory === null) {
@@ -278,6 +283,9 @@ function renderModel() {
   $("selectionCaption").textContent = renderer === "2d" ? "2D drawing · orbit and explode need the 3D view" : "Drag to orbit · scroll to zoom · arrows when focused";
   const runNamed = L ? M.runName(L, feed.state.events, namesNow()) : null;
   if (L) $("modelTitle").replaceChildren(...runTitleParts(L)); else $("modelTitle").textContent = "A closer look at the package.";
+  const following = S.selectedId == null && S.cursorSeq == null;
+  if (L && following) { if (followedId !== null && L.id !== followedId) newProposalUntil = Date.now() + NEW_PROPOSAL_MS; followedId = L.id; }
+  $("newProposal").hidden = !(L && following && Date.now() < newProposalUntil);
   $("modelSub").textContent = L ? W.visitorType(L.cls) : "";
   const lastRun = L ? [...feed.state.events].filter((e) => e.kind === "run" && e.run_id === L.id).sort((x, y) => y.seq - x.seq)[0] : null;
   $("modelCap").textContent = !L ? "" : [runNamed === null ? W.layoutFrom(L.short) : `${runNamed}${W.namedLayout(L)}`, view.metric ? `${W.METRIC_NAME.toLowerCase()} ${view.metric.text} · ${W.tempWord(view.metric, view.verification)}` : null,

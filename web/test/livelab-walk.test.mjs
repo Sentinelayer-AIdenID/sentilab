@@ -161,3 +161,22 @@ test("walk: a run whose records arrive a poll before its result still walks ever
   assert.deepEqual(seen.map((s) => s[0]), ["0", "1", "2", "3", "4"], "from its first recorded step, in order");
   assert.deepEqual(captions(), []);
 });
+
+// Carter (19:33Z): "When ChatGPT finishes and proposes I need to see it at the top in the 3d space. It should say new
+// proposal". A run that arrives live and becomes the followed run shows "New proposal" over the model for 15 s; the run
+// followed at load never does.
+test("new proposal: a run that arrives live puts 'New proposal' over the model, then it clears", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: NOW });
+  const d = door(["queued", "evaluating", "evaluated", "replaying", "reproduced"]);
+  installPage(t, d.answer);
+  await import(`${LIVE}?walk=newproposal`);
+  const badge = () => document.getElementById("newProposal");
+  for (let k = 0; k < 8; k += 1) { t.mock.timers.tick(500); await settle(); }
+  assert.equal(badge().hidden, true, "the run followed at load is not new");
+  d.phase.live = true;
+  let shown = false;
+  for (let k = 0; k < 40; k += 1) { t.mock.timers.tick(100); await settle(); if (badge().hidden === false) shown = true; }
+  assert.equal(shown, true, "a run that arrives live shows the badge");
+  for (let k = 0; k < 40; k += 1) { t.mock.timers.tick(500); await settle(); }
+  assert.equal(badge().hidden, true, "and it clears after about 15 s");
+});

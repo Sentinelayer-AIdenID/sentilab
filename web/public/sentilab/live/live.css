@@ -48,3 +48,4 @@ footer{font-size:12px;padding:12px 0;align-items:flex-start;flex-direction:colum
 .arrival-strip .av-item.named{min-width:132px;max-width:132px}.av-name bdi{font-weight:600;color:#ecd9b8}.av-name.card{display:block;font-size:11px;color:#e1efe6;margin-bottom:2px}.rec-row bdi{font-weight:600;color:#ecd9b8}.atlas-visit{font:7px var(--mono);fill:#cfe2d5}
 .atlas-step{font:600 7px var(--sans);fill:#f2d9a8;paint-order:stroke;stroke:#0f1a14;stroke-width:2px}
 .rec-gap{margin:4px 7px;padding:6px 8px;border:1px dashed #8c704c;border-radius:4px;font-size:10px;color:var(--amber)}
+.new-proposal{display:inline-block;margin-left:10px;padding:2px 9px;border-radius:999px;background:#1f5a45;color:#dff7ec;font:700 11px var(--sans);letter-spacing:.08em;text-transform:uppercase;vertical-align:middle;animation:np-pulse 1.1s ease-in-out 4}.new-proposal[hidden]{display:none}@keyframes np-pulse{50%{box-shadow:0 0 0 6px rgba(114,213,181,.28)}}
