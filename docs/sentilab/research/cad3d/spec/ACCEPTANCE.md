@@ -15,8 +15,8 @@ Test kinds:
 - **device**: manual on the reference phone (D4), recording and traces attached to the PR.
 
 Gate: no phase is done until its listed ACs pass (SPEC.md §9). The top gate for any public release of the page is
-AC-01 to AC-06, AC-12, AC-20 to AC-27, AC-32, AC-34, AC-36 and AC-41. The product gate is separate: Carter
-approves the rendered page, from real-browser screenshots, before any deploy (SPEC.md §11).
+AC-01 to AC-06, AC-12, AC-20 to AC-27, AC-32, AC-34, AC-36, AC-41 and AC-46 (a) to (c). The product gate is separate:
+Carter approves the rendered page, from real-browser screenshots, before any deploy (SPEC.md §11).
 
 ## Temperatures and labels
 
@@ -28,9 +28,10 @@ through `resolveLabel()`: AC-06.)
 
 **AC-02 No temperature text outside `temps.mjs`** (static). In `web/public/sentilab/package3d/*.{js,mjs}`: no
 `toFixed(` outside `temps.mjs` and `quantity.mjs` (non-temperature quantities), no `°C`, `℃` or `degC` literal outside
-`temps.mjs`, no `fillText`/`strokeText` (no canvas text at all), no import that bypasses `temps.mjs` to format a value.
-The page is added to the existing "every page takes its notice and labels from this one module" test
-(main:web/test/temperature-label.test.mjs:320-341): `package3d.js` gets `NOTICE` through `temps.mjs` from
+`temps.mjs` (one exception: the adopted `field-validator.mjs`, while its sha256 equals AC-46 (a)'s pin, compares the
+unit alias `°C` and never shows it), no `fillText`/`strokeText` (no canvas text at all), no import that bypasses
+`temps.mjs` to format a value. The page is added to the existing "every page takes its notice and labels from this one
+module" test (main:web/test/temperature-label.test.mjs:320-341): `package3d.js` gets `NOTICE` through `temps.mjs` from
 `../../temperature-label.mjs`, holds no copy of the notice text, and `index.html` has the exact slot
 `<p class="wnotice" id="wnotice" role="note" hidden></p>`. Pass: zero hits; the extended test passes.
 
@@ -242,7 +243,7 @@ rotation equal. Adversarial: a candidate 0.0001 mm off the raw reference → no 
 variant → matched to `snap0p5`, never to `raw`; a run whose family is `ascend910` (50 mm) is never drawn on the 45 mm
 stack. Pass: all (X3, X6).
 
-## Fields (fixtures until P1-P4 land)
+## Fields (fixtures until P1-P5 land)
 
 **AC-20 Only verified, named artifacts are fetched** (node, browser network log). `fieldRefs()` returns only hashes from
 applied measurement `node.create` envelopes inside the verified prefix. Hashes after K, in rejected events, in a replay
@@ -250,40 +251,58 @@ file's other fields or in unverified rows are never requested; replay vector V8 
 zero requests for it (L3:ACCEPTANCE A-03). In production before P1-P4 the page makes zero artifact requests and shows
 "No field in this run's receipts". Pass: requested set ⊆ allowlist.
 
-**AC-21 Bad frames are refused, not rendered** (node). For each case `checkFieldArtifact` returns `{ ok: false, error }`,
+**AC-21 Bad frames are refused, not rendered** (node). Each case runs on a run with verified inputs (AC-41 (b)), with
+a complete target and association record, and changes only what its row names. For each, the field's status is
+`refused` with the adopted module's code (SPEC.md §5.7) or the host's (from `fieldRefs`, the feed or `checkField`),
 the texture updater is never called (spy) and the previous texture bytes are unchanged:
 
 | Case | Error |
 |---|---|
-| bytes one bit off the signed hash | `hash_mismatch` (nothing decoded first) |
-| 4 MiB + 1 byte | `too_large` |
-| invalid UTF-8, a BOM, truncated JSON | `malformed` |
-| another format string | `format` |
-| (C4) an unknown or missing key at the top level or in `binding`, `producer`, `grid` or a layer record (for example `extent_m` for `extent_mm`, or no `unit` key); `values` or a layer's values not an array | `malformed` |
-| binding names another run, measurement or evaluator (including the fixture identity on a withdrawn envelope: laundering) | `binding_mismatch` |
-| (C1) the artifact's `candidate_hash` names another candidate's layout, or its `problem_hash` another problem, than the measurement's signed `record.binding.candidate_id` and `semantics.task_contract`; a measurement whose signed `candidate_id` differs from its candidate node's is refused earlier, by `fieldRefs`, before any fetch | `binding_mismatch` |
-| an input source hash (`samplelayers.lcf`, `new_hotspot.config`, `sample.ptrace`) missing or not in the envelope's `artifact_hashes` | `binding_mismatch` |
-| (C2) a pointer in C over an artifact in K, or the reverse (the values are never converted) | `unit_conflict` |
-| (C3) a layer index missing (no 4), duplicated (3 twice), unexpected (8), not an integer (`"four"`) or out of order; indices unequal to `producer.emitted_layer_ids` | `layer_ids` |
-| (C3) a layer record with a non-finite or non-positive thickness, resistivity or heat capacity, a non-boolean `powered` or no name | `malformed` |
-| rows, cols or layers differ from the pointer; a layer one value short; 129 rows; 17 layers; `row0` not `top` or `bottom`; (C4) `rows: 0` with empty arrays, a non-integer `cols`, a 3 x 2 grid against a 2 x 3 pointer (same cell count) | `dims` |
-| (C4) `extent_mm` with a non-finite bound or a zero span; an extent equal to the spreader or sink outline, or otherwise not the verified central grid domain | `extent` |
-| a string, `null`, `1e400` | `out_of_range` |
-| a value below absolute zero or above the scene bounds after conversion (scene.mjs:92-98) | `out_of_range` |
-| unit `F` or any undocumented alias | `unit_not_supported` |
+| bytes one bit off the signed hash | `hash_mismatch` (nothing decoded first; the resolver never called) |
+| 4 MiB + 1 byte | `too_large` (the feed, from `readBodyCapped`, before the module runs) |
+| invalid UTF-8, a BOM, truncated JSON, trailing data, a duplicate member name (also under an escaped alias) | `malformed_json` |
+| another format string, in the artifact or the pointer | `format` |
+| (C4) a key missing or added at the top level (for example a v0.2 `producer` block, or no `unit` key) | `artifact_schema` |
+| (C4) a key missing or added in `binding`, in `grid` or `extent_mm` (for example `extent_m` for `extent_mm`), in a layer record, or among the four named `sources` | `binding_schema`, `grid_schema`, `layer_schema`, `source_schema` |
+| a signed pointer (`values.field`) with a key added or missing, or a `sha256` that is not 64 hex | `pointer_schema` (`fieldRefs`, before any fetch) |
+| (C1) a `null` or non-hash `candidate_hash` or `problem_hash`; an empty run, measurement or evaluator | `binding_schema` |
+| binding names another run, measurement or evaluator than the target (including the fixture identity on a withdrawn envelope: laundering) | `binding_mismatch` |
+| (C1) the artifact's `candidate_hash` names another candidate's layout, or its `problem_hash` another problem, than the target's signed `record.binding.candidate_id` and `semantics.task_contract` | `binding_mismatch` |
+| the stale-target replay: a valid earlier artifact with its valid earlier receipt, checked while the playhead selects a later run sharing its candidate, problem, model and producer | `binding_mismatch`; through a draft-shaped ref, `draft_target_conflict` before the resolver is called (AC-46) |
+| two named source hashes swapped, or any differing from the association record's | `source_association_mismatch` |
+| argv empty or not strings; argv differing from the record's (compared, never run) | `argv_schema`; `argv_association_mismatch` |
+| (C2) a pointer in C over an artifact in K, or the reverse (the values are never converted) | `unit_mismatch` |
+| unit `F`, `null` or any undocumented alias, in the pointer or the artifact | `unit_not_supported` |
+| (C3) a layer index duplicated (3 twice), not an integer (`"four"`), negative or above 15; a layer record with a non-finite or non-positive thickness, resistivity or heat capacity, a non-boolean `powered`, no name or an unknown `source` | `layer_schema` |
+| (C3) a layer missing (no 4, with pointer and artifact agreeing on seven), unexpected (8 in place of 7) or in another order than the association record's | `layer_identity_mismatch` |
+| a layer record differing from the record's (name, thickness, material, `powered`, source) | `layer_association_mismatch` |
+| rows, cols or layers differ from the pointer; a layer one value short; (C4) a 3 x 2 artifact under a 2 x 3 pointer (same cell count); a pointer with 0 rows, 129 rows or 17 layers | `dims` |
+| (C4) in the artifact, `rows: 0`, a non-integer `cols` or 129 rows; `row0` not `top` or `bottom`; `map_mode` not `center` or `max`; `extent_mm` with a non-finite bound or a zero span | `grid_schema` |
+| a grid, row origin or map mode differing from the association record's; (C4) an extent stretched to the spreader or sink outline while the record keeps the central grid | `grid_association_mismatch` |
+| (C4) a registered extent that is not the verified central grid domain (artifact and record both stretched to a package outline) | `extent` (the host, after registration) |
+| a string, `true`, `null` or an overflowing number (`1e400`) as a value | `nonfinite_value` |
+| a value outside scene.mjs `BOUNDS.temperature_c` after conversion (scene.mjs:92-98) | `out_of_range` |
+| an association record for another hash, with another identity than the target's, or malformed (an identity, the receipt `{ seq, event_id, hash }`, the grid, the layer table, the sources or argv) | `association_hash_mismatch`, `association_mismatch`, `association_schema`, `association_receipt` |
+| a target hash identity present but malformed (a non-hash `model_hash`) | `target_schema` |
+| a target run, measurement or evaluator that differs from the ref's, an empty one included | `draft_target_conflict` (`checkField`, before the module runs) |
+| a ref or target that is not plain data (an accessor, a class instance, a sparse array) | `malformed_context` |
+| bytes that are not a `Uint8Array`, or a view of a shared buffer | `invalid_bytes`, `shared_buffer` |
 
-A layer table that passes the layer-identity gate but differs from the model manifest is accepted and listed in
-`stack_differs_from_manifest`; a malformed or ambiguous one is refused above and never listed as a difference (C3). A
-`null` unit, shape, producer, layer set, candidate or problem is not a refusal: the field is unassociated (AC-41 (h)).
-The orientation case uses an asymmetric basis, so that a swapped or flipped mapping cannot pass (A#57218): rows
-unequal to columns, a non-square extent, and one marked cell off both diagonals and away from every corner. Declared
-`row0: "top"`, the cell renders, and `cellAt()` picks it, at its expected centre; declared `row0: "bottom"`, at the
-vertically mirrored centre; a transposed (rows for columns), flipped or corner-for-centre mapping lands elsewhere and
-fails; a row index equal to `rows` is out of range (L3:ACCEPTANCE A-04, made asymmetric). The W4 fixture
-`asymmetric_zero_origin_mapper` supplies the numbers (C#57232): 3 rows by 5 columns over 20 x 9 mm (cells 4 x 3 mm);
-the cell at row 0, column 3 has centre (14, 7.5) mm and lower-left (12, 6) mm under `row0: "top"`, and centre
-(14, 1.5) mm under `row0: "bottom"`; row 2, column 1 has centre (6, 1.5) mm; a vertical flip, (14, 1.5) under `top`,
-or the corner (12, 6) given as the centre fails; row 3 is out of range. Pass: every row, plus the orientation case.
+The module's `temperature_bounds_schema` and `reference_stack_schema` cannot arise from this host, which passes
+scene.mjs's bounds and no reference table.
+
+The artifact's layer table, equal to the association record's, is the authority for that result: it is never
+relabelled or remapped to the family's manifest, and a malformed or ambiguous table is refused above (C3). Missing
+association evidence is not a refusal: the field is unassociated (AC-41 (h)). The orientation case uses an asymmetric
+basis, so that a swapped or flipped mapping cannot pass (A#57218): rows unequal to columns, a non-square extent, and
+one marked cell off both diagonals and away from every corner. Declared `row0: "top"`, the cell renders, and
+`cellAt()` picks it, at its expected centre; declared `row0: "bottom"`, at the vertically mirrored centre; a
+transposed (rows for columns), flipped or corner-for-centre mapping lands elsewhere and fails; a row index equal to
+`rows` is out of range (L3:ACCEPTANCE A-04, made asymmetric). The W4 fixture `asymmetric_zero_origin_mapper` supplies
+the numbers (C#57232): 3 rows by 5 columns over 20 x 9 mm (cells 4 x 3 mm); the cell at row 0, column 3 has centre
+(14, 7.5) mm and lower-left (12, 6) mm under `row0: "top"`, and centre (14, 1.5) mm under `row0: "bottom"`; row 2,
+column 1 has centre (6, 1.5) mm; a vertical flip, (14, 1.5) under `top`, or the corner (12, 6) given as the centre
+fails; row 3 is out of range. Pass: every row, plus the orientation case.
 
 **AC-22 The field is the solver's grid on the solver's layer, on one declared scale** (node, browser). `colourLut()` is
 built only from `heatColor()` and stays within 1/255 of it over 200,000 temperatures on scales 10, 80 and 400 wide;
@@ -319,10 +338,13 @@ abort (spy), and `__package3d.facts().fieldAsOf <= K` (L3:ACCEPTANCE A-06). Pass
 verified prefix; the simulated-time line reads `Steady state · no simulated time axis`; pages, keepalives, duplicate
 rows and backlog never change `as_of_seq` or count as a new result; a new verified result is announced once in the
 live region; a field change is a single cut (no intermediate blended frame in a frame-by-frame capture). Late results
-(A#57218): a field fetch that completes after its result left the prefix, after a mode switch or after the playhead
-moved to another result is discarded by hash and never drawn; a verified result that arrives after the run is listed
-`finished` is shown with its own `as of seq S` and announced once while the label stays ENDED; a result behind the
-playhead says `behind`; nothing is ordered as newest by arrival time. Pass: all.
+(A#57218): a field fetch or check that completes after its result left the prefix, after a mode switch, after K
+dropped below it or after the playhead moved to another result is discarded by the host's generation guard (its stamp
+of epoch, view mode and the playhead's measurement, checked before the module is called and when it returns, against
+the allowlist at the current cut: A#57404), whatever it returned, `verified` included, and never drawn, while K
+growing alone never discards one; a verified result that arrives after the run is listed `finished` is shown with its
+own `as of seq S` and announced once while the label stays ENDED; a result behind the playhead says `behind`; nothing
+is ordered as newest by arrival time. Pass: all.
 
 ## Site rules
 
@@ -453,7 +475,7 @@ record (at `253ee4f7`) with a verbatim quote; every number in a served claim occ
 main:docs/sentilab/references/README.md:79-80 and the lane-1 sealed manifest); the anatomy heat sink carries no model
 value; forge signs the content review and astra the evidence review. Pass: all, with the two sign-offs recorded.
 
-## Added in v0.2 (after root's review, A#57218)
+## Added in v0.2 (after root's review, A#57218, and the inputs since)
 
 **AC-41 Family match is not input verification; validity is not association** (node). With TEST-key replays: (a) a
 row shaped as today's producer writes it (a named `record.input_hashes`, no signed flags) whose family matches →
@@ -466,13 +488,17 @@ with signed flags, and `samplelayers.lcf`, `new_hotspot.config` and flags equal 
 `input_differences: ["new_hotspot.config"]`, not verified, schematic; (d) as (b) with `-detailed_3D off` → that flag
 listed, not verified; (e) a row with only `values.artifact_hashes` → `inputs_evidence: unnamed_list`, not verified;
 (f) a family the manifest lacks → `family_match: no_match`, `reference: null`, schematic with "no model for family
-<f>"; (g) a field artifact that passes every AC-21 check, on a run of (a), (c), (e) or (f) → status `unassociated`
-with reason `run_inputs_unverified`: no texture, no legend scale from it, no number in the twin, while its existence
-and receipt are listed; on a run of (b) → `verified`; (h) on a run of (b), an artifact that passes every AC-21 check
-but declares `null` for its `candidate_hash` or `problem_hash`, its `unit` (or the pointer's), its `rows` and `cols`,
-its producer's `native_format` or `executable`, or its `emitted_layer_ids` → `unassociated` with `candidate_unbound`,
-`problem_unbound`, `unit_unbound`, `grid_shape_unbound`, `producer_unbound` or `producer_layer_unbound` (C#57177,
-C1-C4): never drawn, never exported as numbers. Pass: all (SPEC.md §5.6, §5.7).
+<f>"; (g) a field artifact the module registers, on a run of (a), (c), (e) or (f) → status `unassociated` with reason
+`run_inputs_unverified`: no texture, no legend scale from it, no number in the twin, while its existence and receipt
+are listed; on a run of (b) → `verified`; (h) on a run of (b), an artifact that passes every AC-21 check but whose
+association is missing → `unassociated` with the module's code as the reason (C#57177 C1-C4, as the adopted module
+carries them: C#57385): a target lacking a signed identity, as every target lacks `model_hash` and `producer_hash`
+today (P5) → `target_incomplete`; no complete signed association record in the verified prefix (no signed grid, layer
+table, argv or steady-grid hash: P1, P5) → `association_missing`; a record lacking an identity →
+`association_incomplete`; a resolver that throws → `association_unavailable`; no resolver →
+`association_resolver_missing`; no bounds → `temperature_bounds_missing`. A family match, signed flags or the
+artifact's own declarations never fill what is missing: never drawn, never exported as numbers. An artifact-side
+`null` is a malformed artifact, refused in AC-21. Pass: all (SPEC.md §5.6, §5.7).
 
 **AC-42 Paused presentation during ingestion** (node, browser; W-E12). Results on a live fixture feed and on a long
 replay load: Pause holds the drawn values, the field and the playhead at seq S while rows keep arriving and verifying
@@ -504,36 +530,39 @@ requires. Not required for the first page; required before any MCP tool for the 
 (main:scripts/sentilab-scene.mjs:6-7; A#57059; A#57218).
 
 **AC-45 The W4 review fixtures, adapted** (node, python; synthetic inputs from C#57232, SPEC.md §5.10). W13 runs every
-field case below in its wrapped form (a `sentilab-field/0.1` artifact as P1 would write it, under a TEST-key
-measurement) and expects this spec's outcome; rows marked P1 only test P1's converter and are listed for its owner. No
-grid value of the pack is ever shown or exported as a temperature.
+field case below in its wrapped form (a `sentilab-field/0.1` artifact as P1 would write it, with its association
+record and target, under a TEST-key measurement) through `checkField` and the adopted module, and expects this spec's
+outcome; rows marked P1 only test P1's converter and are listed for its owner. The module's own crosswalk of these
+cases (`fixture-crosswalk.json`, C#57385) agrees with every row's status; it names in words what this table names as
+codes (for `hs6_03`, "association missing" where the code here is `target_incomplete`), and records that its tests did
+not execute the native cases. No grid value of the pack is ever shown or exported as a temperature.
 
 | Case | Pack outcome | This spec's outcome |
 |---|---|---|
-| `hs6_01_bound_layer0` | accept | `verified`, as layer 0, the substrate (SPEC.md §5.7); never shown as layer 4 |
-| `hs6_02_branch_unknown` | no_association | `unassociated` (`producer_layer_unbound`): the secondary-path branch is not bound |
-| `hs6_03_unknown_producer` | no_association | `unassociated` (`producer_unbound`, `producer_layer_unbound`) |
-| `hs6_04_wrong_layer_request` | reject | asking for layer 4 of a layer-0 field is refused (`layer_not_emitted`); nothing is relabelled |
+| `hs6_01_bound_layer0` | accept | `verified`, as layer 0, the substrate: the record's layer table holds layer 0 only (SPEC.md §5.7); never shown as layer 4 |
+| `hs6_02_branch_unknown` | no_association | `unassociated` (`association_missing`): no signed record binds the secondary-path branch |
+| `hs6_03_unknown_producer` | no_association | `unassociated` (`target_incomplete`): no signed producer identity, and none is made from the format's resemblance |
+| `hs6_04_wrong_layer_request` | reject | asking for layer 4 of the registered layer-0 field is refused (`layer_not_emitted`); an artifact that relabels it layer 4 is `layer_identity_mismatch`; nothing is relabelled |
 | `hs6_05_truncated` | reject | `dims` (a layer one value short) |
 | `hs6_06_duplicate_index` | reject | P1 only: P1 refuses a repeated cell index |
 | `hist_01_all_layers` | accept | `verified`, ids 0 to 7 kept |
 | `hist_02_select_layer4` | accept | `verified`; layer 4 is selected by its id after the whole document passed, never the first layer as a proxy |
-| `hist_03_truncated_last_layer` | reject | `dims` |
-| `hist_04_missing_layer4` | reject | `layer_ids` (C3) |
-| `hist_05_duplicate_layer3` | reject | `layer_ids` (C3) |
+| `hist_03_truncated_last_layer` | reject | `dims`; no partial field |
+| `hist_04_missing_layer4` | reject | `layer_identity_mismatch`: seven layers, agreeing with the pointer, against the record's eight (C3) |
+| `hist_05_duplicate_layer3` | reject | `layer_schema` (C3) |
 | `hist_06_indexes_do_not_reset` | reject | P1 only: P1 refuses indices that do not restart in each layer |
-| `hist_07_unexpected_layer8` | reject | `layer_ids` (C3) |
-| `hist_08_malformed_header` | reject | P1 refuses the header; the wrapped analogue, a non-integer `index` such as `"four"`, is `layer_ids` |
-| `hist_09_same_count_wrong_shape` | reject | `dims` (a 3 x 2 artifact under a 2 x 3 pointer: C4) |
-| `hist_10_shape_missing` | no_association | `unassociated` (`grid_shape_unbound`) |
-| `hist_11_nonnumeric_value` | reject | `out_of_range` (a string value) |
-| `hist_12_reject_package_stretch` | reject | `extent` (an `extent_mm` equal to the spreader outline: C4) |
+| `hist_07_unexpected_layer8` | reject | `layer_identity_mismatch` (C3) |
+| `hist_08_malformed_header` | reject | P1 only: P1 refuses the header; the wrapped analogue, a non-integer `index` such as `"four"`, is `layer_schema` |
+| `hist_09_same_count_wrong_shape` | reject | `dims` (a 3 x 2 artifact under a 2 x 3 pointer: C4); `grid_association_mismatch` when artifact and pointer agree and the record differs |
+| `hist_10_shape_missing` | no_association | no artifact: P1 writes none without a shape, and the page shows no field; the wrapped analogue, `rows: null` in the artifact under a 2 x 3 pointer, is `grid_schema` (a pointer without its shape is `dims`, before the hash) |
+| `hist_11_nonnumeric_value` | reject | `nonfinite_value` (a string value) |
+| `hist_12_reject_package_stretch` | reject | `grid_association_mismatch`: the artifact's extent stretched to the spreader outline, the record's the central grid (C4); with both stretched, `extent` |
 | `hist_13_core_field_with_package_outline` | accept | `verified`; layer 6 coloured over the central grid only, its 40 x 40 mm outline uncoloured and labelled `unmeasured` |
-| `hist_14_units_missing` | no_association | `unassociated` (`unit_unbound`); never labelled K or C |
+| `hist_14_units_missing` | no_association | no artifact: P1 writes none without a declared unit; the wrapped analogue, `unit: null`, is `unit_not_supported`; never labelled K or C |
 
 Added beside the pack, from the same review's field-contract findings (C1, C2): an artifact whose `candidate_hash` or
-`problem_hash` is missing → `unassociated` (`candidate_unbound`, `problem_unbound`), or contradicts the signed
-expectation → `binding_mismatch`; a pointer in C over an artifact in K → `unit_conflict`.
+`problem_hash` is `null` → `binding_schema`, or contradicts the target → `binding_mismatch`; a target without them →
+`unassociated` (`target_incomplete`); a pointer in C over an artifact in K → `unit_mismatch`.
 
 Geometry vectors: (a) centre (12.5, 17.25) mm with an 8 x 5.5 mm size → lower-left (8.5, 14.5) mm in the RenderModel
 and (0.0085, 0.0145) m in the writer's floorplan; centre (4, 3) mm with 8 x 6 mm → (0, 0); a centre used as a
@@ -545,6 +574,26 @@ mm, 11 x 5 mm; no vertical thickness is taken from the halo width (AC-16); (c) t
 powered, or "every layer-4 region is silicon because the layer default is" fail (AC-16); (d) layer 4's `Ubump_0` is
 silicon with zero block power, and a copper assignment inferred from its name fails (AC-16); (e) the asymmetric
 mapper of AC-21. Pass: every row and vector, with each fixture's synthetic origin recorded.
+
+**AC-46 The adopted field check and its boundary** (node, static; W13; C#57385, A#57404). (a) `field-validator.mjs` is
+byte-identical to the adopted module: 17,067 bytes, sha256
+`af0d24a7f4029cca378775c83be9465422127f00c2e5c75bbf7188b82d7880bc`; only `field.mjs` imports it, and no other module
+of the room checks a field artifact itself (static). (b) The capped body: `checkFieldArtifact` is called only from
+`checkField`, and only with the `Uint8Array` that `readBodyCapped` returned for that fetch (spies on both); an
+over-cap body is refused `too_large` with no module call. (c) The stale-target repair, the three cases of the replay
+the delivery keeps (C#57385, `independent/root-portable-review.json`): an earlier valid artifact with its valid
+earlier receipt, checked while the target is a later run that shares its candidate, problem, model and producer →
+`refused` (`binding_mismatch`), and through a draft-shaped ref `draft_target_conflict`, with zero resolver calls and
+no retry under another target; the matching target → `verified` (on a run with verified inputs); no target →
+`unassociated` (`target_incomplete`), with zero resolver calls. (d) Follow-up (root's one nonblocking finding in
+A#57404, which she rated P3): a decorated `Uint8Array` (an own `byteLength` reporting under the cap on a longer array,
+a custom iterator yielding other bytes, or a shadowed `buffer`, `byteOffset` or `length`) cannot change the bytes the
+module copies or slip past the cap: the copy equals the array's intrinsic contents, read through the typed-array
+prototype's own getters, and the cap applies to the intrinsic length. The adopted module reads `byteLength` and copies
+through the iterator (field-validator-proposal.mjs:165, :169), so (d) waits for a revised module with its own digest
+and review. It does not block W13: a wire body cannot carry those properties, and (b) admits no other input; it is
+required before the module takes input from any other caller. Pass: (a) to (c) for W13; (d) when the revised module
+lands.
 
 ## Crosswalk to astra's 41 source cases (W0.2)
 

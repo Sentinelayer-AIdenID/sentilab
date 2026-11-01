@@ -31,7 +31,10 @@ web/public/sentilab/package3d/
   pick.mjs            PURE  pick() ray-box, cellAt()
   flows.mjs           PURE  overlayFor(model, { kind }) -> paths + legend + qualifier
   temps.mjs           PURE  formatTemp(), tempNode(), TEMP_PATTERN, findBareTemperatures()
-  field.mjs           PURE* fieldRefs(), checkFieldArtifact() (*hashing via WebCrypto), fieldScale(), colourLut(), fieldTexels()
+  field-validator.mjs PURE* the adopted W13 module, byte-identical, never edited (SPEC.md §5.7): checkFieldArtifact(),
+                      translateDraftRef() (*hashing via WebCrypto)
+  field.mjs           PURE* the host around it (*the module's hashing): fieldRefs(), fieldTarget(), fieldResolver(),
+                      checkField(), fieldScale(), colourLut(), fieldTexels()
   stream.mjs          createFieldFeed(), solveStatus(), createDoorbell()   (fetch injectable; node-testable)
   twin.mjs            PURE  twinOf(), twinMarkdown()
   labels.mjs          DOM   createLabelLayer() (per-property CSSOM)
@@ -57,7 +60,8 @@ Import rules (static test, AC-02):
   `../evidence-projection.mjs`, `../lab-model.mjs`, `../view-core.mjs`, `../canonical.mjs`, `../runs-list.mjs`,
   `../../temperature-label.mjs`. No DOM, no clock, no randomness, no WebGL.
 - Only `render3d.mjs` and `gl.mjs` call WebGL. Only `temps.mjs` turns a temperature into text. No `toFixed(` on a
-  temperature and no `°C` outside `temps.mjs`.
+  temperature and no `°C` outside `temps.mjs`, except in the adopted `field-validator.mjs` at its pinned hash, where
+  `°C` is a unit alias it compares and never text it shows (AC-02, AC-46).
 - `package3d.js` gets verified data only through `../package/source.mjs` (source.mjs:1-12) and never computes
   LIVE or STALE itself (source.mjs:172-182).
 
@@ -65,8 +69,9 @@ Frozen operation names (W0.1): `geometryPreimage`, `readAnatomy`, `readAssembly`
 `fixtureFor`, `inputsVerification`, `standsForIndex`, `resultView`, `signedInputsOf`, `receiptCompleteness`,
 `matchReference`, `buildRenderModel`, `displayBoxes`, `explodeOffsets`, `sectionAt`, `interconnectArrays`,
 `instanceBudget`, `pick`, `overlayFor`, `formatTemp`, `tempNode`, `serializeLabel`, `resolveLabel`,
-`resolveValueLabel`, `findBareTemperatures`, `fieldRefs`, `checkFieldArtifact`, `associateField`, `fieldScale`,
-`colourLut`, `fieldTexels`, `createFieldFeed`, `solveStatus`, `twinOf`, `readTwin`, `twinMarkdown`, `writeGlb`; CLI
+`resolveValueLabel`, `findBareTemperatures`, `fieldRefs`, `fieldTarget`, `fieldResolver`, `checkField`, `fieldScale`,
+`colourLut`, `fieldTexels`, `createFieldFeed`, `solveStatus`, `twinOf`, `readTwin`, `twinMarkdown`, `writeGlb`; the
+adopted module's `checkFieldArtifact` and `translateDraftRef`, as delivered; CLI
 `scripts/package3d.mjs data|twin|export3d|check`.
 
 ## 1. `quantity.mjs`: quantities, bases, units
@@ -583,109 +588,74 @@ with °C must be normalised to K·mm²/W), `silicon_85C` and `silicon_at_100C` (
 `5 K·mm²/W`, `117.5 W/(m*K)`, `C4 bumps`, `4 C4 rows`, `10,000-30,000`, `seq 12`, `2,778 W/(m²·K)`, `HBM3E 12-high`,
 `L4 chip layer`. (Checked in Node 22 against this exact pattern while writing this spec; the build's test re-runs it.)
 
-## 9. `field.mjs`: refs, artifact checks, scale, texels (used in production only after P1-P4)
+## 9. `field.mjs` and `field-validator.mjs`: the adopted check and its host (in production only after P1-P5)
 
 ```js
-// field.mjs (PURE except hashing, which uses WebCrypto through view-core.mjs sha256Hex, view-core.mjs:44).
-import { sha256Hex } from "../view-core.mjs";
-import { strictJson } from "../runs-list.mjs";                       // runs-list.mjs:11 (fatal UTF-8, BOM kept -> refused)
+// field-validator.mjs: the adopted W13 module (C#57385; root's source +1, A#57404), vendored BYTE-IDENTICAL from
+// field-validator-proposal.mjs: 17,067 bytes, sha256 af0d24a7f4029cca378775c83be9465422127f00c2e5c75bbf7188b82d7880bc,
+// proposal version carter-w13/1. Never edited here; a change is a new digest with its own review (AC-46). Exports:
+//   checkFieldArtifact(bytes, { ref, target, resolveAssociation, temperatureBoundsC, normalizedFieldLayerReference })
+//     -> { ok: true, status: "registered", field } | { ok: false, status: "rejected" | "unassociated", code, detail }
+//     field: { sha256, binding, model_hash, producer_hash, receipt, grid, declared_unit, pointer_unit, unit: "C",
+//              layers: [{ index, name, thickness_m, resistivity_mK_W, heat_capacity_J_m3K, powered, source, values_c }],
+//              sources, argv, stack_differs_from_manifest }                                  (deep-frozen plain data)
+//   translateDraftRef(draftRef, { target }) -> { ref, target }; throws a TypeError with code "draft_target_conflict"
+//     when the draft's run_id, measurement or evaluator differs from a target identity that is present
+//   FIELD_CAPS = { max_bytes: 4 MiB, max_rows: 128, max_cols: 128, max_layers: 16 }; FIELD_FORMAT
+
+// field.mjs (PURE except the module's hashing): the host side of the boundary. It repeats no check the module makes;
+// it adds only what the module cannot know: the allowlist, the playhead's target, the verified prefix, the run's inputs.
+import { checkFieldArtifact, translateDraftRef, FIELD_CAPS } from "./field-validator.mjs";
 import { heatColor, BOUNDS } from "../package/scene.mjs";            // scene.mjs:269-275, :92-98
 import { rgb } from "../package/render.mjs";                         // render.mjs:24
+export { FIELD_CAPS };
 
-export const FIELD_FORMAT = "sentilab-field/0.1";
-export const FIELD_CAPS = Object.freeze({ max_bytes: 4 * 1024 * 1024, max_rows: 128, max_cols: 128, max_layers: 16 });
-const HEX64 = /^[0-9a-f]{64}$/;
-const INPUT_SOURCES = Object.freeze(["samplelayers.lcf", "new_hotspot.config", "sample.ptrace"]);
-
-/// The allowlist: ONLY fields named by measurement node.create envelopes inside the verified projectable prefix that
+// The allowlist: ONLY fields named by measurement node.create envelopes inside the verified projectable prefix that
 // project() applied. Nothing after K, nothing rejected, nothing from a file manifest (L3:PSEUDOCODE §6, unchanged).
-// Each ref carries, from the VERIFIED envelopes: the pointer (sha256, format, rows, cols, layers, unit), run_id,
-// measurement, evaluator, artifact_hashes (the signed input hashes), and (C1) expected_candidate = the measurement's
-// signed record.binding.candidate_id, which must equal its candidate node's (else the ref is refused,
-// binding_mismatch), and expected_problem = its signed semantics.task_contract; either is null when not signed.
-export function fieldRefs(prefixEnvelopes, projection) { /* -> Map<sha256, ref> */ }
+// Each ref is draft-shaped: the pointer (sha256, format, rows, cols, layers, unit) plus the naming measurement's run_id,
+// measurement and evaluator. Left out before any fetch, with that measurement's field refused: a signed values.field
+// whose key set is not exactly those six or whose sha256 is not 64 hex (pointer_schema; translateDraftRef copies the
+// six and would never see an added key), and a measurement whose signed record.binding.candidate_id differs from its
+// candidate node's (binding_mismatch).
+export function fieldRefs(prefixEnvelopes, projection) { /* -> { refs: Map<sha256, ref>, refused: [{ measurement, error }] } */ }
 
-const TOP_KEYS = ["argv", "binding", "format", "grid", "layers", "producer", "sources", "unit", "values"];   // closed sets (C4)
-const BINDING_KEYS = ["candidate_hash", "evaluator_version", "measurement", "problem_hash", "run_id"];
-const PRODUCER_KEYS = ["emitted_layer_ids", "executable", "native_format"];
-const GRID_KEYS = ["cols", "extent_mm", "map_mode", "row0", "rows"];
-const LAYER_KEYS = ["heat_capacity_J_m3K", "index", "name", "powered", "resistivity_mK_W", "source", "thickness_m"];
-const UNIT = (u) => (u === "K" ? "K" : u === "C" || u === "°C" ? "C" : u === null ? null : undefined);   // documented aliases only (C2)
+// The target (the stale-target repair, A#57404): the seven identities of the measurement the playhead selects, read
+// from the verified envelopes at the current cut and ONLY from there: run_id, measurement, evaluator_version;
+// candidate_hash = its signed record.binding.candidate_id; problem_hash = its signed semantics.task_contract;
+// model_hash, producer_hash = the run's own producer and config receipt (P5). Unsigned -> null (the module then says
+// unassociated, target_incomplete). Never read from an artifact, a pointer, a ref or an older receipt.
+export function fieldTarget(verification, playhead) { /* -> { run_id, measurement, evaluator_version, candidate_hash, problem_hash, model_hash, producer_hash } */ }
 
-// bytes: the raw body, already capped by readBodyCapped (view-core.mjs:108). The seven gates of SPEC.md §5.7, in this
-// order; nothing is decoded before the hash matches. A refusal returns { ok: false, error }: nothing drawn, previous
-// texture bytes untouched. Missing association evidence is not a refusal: it is collected in `unbound` (AC-41).
-// domain: the verified central grid domain { x0: 0, y0: 0, x1: interposer_mm, y1: interposer_mm } of the run's verified
-// inputs, or null when they are not verified (associateField then reports run_inputs_unverified).
-export async function checkFieldArtifact(bytes, ref, { stack = null, domain = null } = {}) {
-  if (!(bytes instanceof Uint8Array) || bytes.length > FIELD_CAPS.max_bytes) return no("too_large");          // 1 bytes
-  if ((await sha256Hex(bytes)) !== ref.sha256) return no("hash_mismatch");
-  let doc; try { doc = strictJson(bytes); } catch { return no("malformed"); }
-  if (doc?.format !== FIELD_FORMAT) return no("format");
-  if (!closedKeys(doc, TOP_KEYS) || !closedKeys(doc.binding, BINDING_KEYS) || !closedKeys(doc.producer, PRODUCER_KEYS)   // 2 structure (C4)
-      || !closedKeys(doc.grid, GRID_KEYS) || !Array.isArray(doc.layers) || !Array.isArray(doc.values)
-      || !doc.layers.every((l) => closedKeys(l, LAYER_KEYS)) || !doc.values.every(Array.isArray)) return no("malformed");
-  const unbound = [], b = doc.binding;                                                                         // 3 binding
-  if (b.run_id !== ref.run_id || b.measurement !== ref.measurement || b.evaluator_version !== ref.evaluator) return no("binding_mismatch");
-  for (const [key, want, reason] of [["candidate_hash", ref.expected_candidate, "candidate_unbound"], ["problem_hash", ref.expected_problem, "problem_unbound"]]) {
-    if (b[key] !== null && want !== null && b[key] !== want) return no("binding_mismatch", key);               // (C1) a contradiction
-    if (b[key] === null || want === null) unbound.push(reason);                                                // (C1) missing evidence
-  }
-  const signed = new Set(Array.isArray(ref.artifact_hashes) ? ref.artifact_hashes : []);
-  for (const name of INPUT_SOURCES) if (!HEX64.test(doc.sources?.[name] ?? "") || !signed.has(doc.sources[name])) return no("binding_mismatch", `source ${name}`);
-  const pu = UNIT(ref.unit), au = UNIT(doc.unit);                                                              // 4 units (C2)
-  if (pu === undefined || au === undefined) return no("unit_not_supported");
-  if (pu !== null && au !== null && pu !== au) return no("unit_conflict");                                      // compared BEFORE converting
-  if (pu === null || au === null) unbound.push("unit_unbound");
-  if (doc.layers.length > FIELD_CAPS.max_layers || doc.values.length > FIELD_CAPS.max_layers) return no("dims");   // 6's layer cap, before 5
-  const ids = doc.layers.map((l) => l.index), p = doc.producer;                                               // 5 layer identity (C3)
-  if (p.native_format === null || p.executable === null) unbound.push("producer_unbound");
-  if (p.emitted_layer_ids === null) {                                  // no bound layer branch: every index is null too
-    if (!ids.every((i) => i === null)) return no("layer_ids");
-    unbound.push("producer_layer_unbound");
-  } else {
-    if (!ids.every((i) => Number.isInteger(i) && i >= 0 && i < FIELD_CAPS.max_layers) || ids.some((i, k) => k > 0 && i <= ids[k - 1])) return no("layer_ids");
-    if (!sameIds(p.emitted_layer_ids, ids)) return no("layer_ids");   // the id set BEFORE the count: a missing layer 4 is layer_ids
-  }
-  if (doc.layers.length !== ref.layers || doc.values.length !== doc.layers.length) return no("dims");
-  if (!doc.layers.every(wellFormedLayer)) return no("malformed", "layer record");                             // name; finite positive t, r, c; boolean powered
-  const { rows, cols, row0, map_mode, extent_mm } = doc.grid;                                                  // 6 grid (C4)
-  if (rows === null || cols === null) unbound.push("grid_shape_unbound");
-  else if (!(posInt(rows) && posInt(cols)) || rows > FIELD_CAPS.max_rows || cols > FIELD_CAPS.max_cols || rows !== ref.rows || cols !== ref.cols) return no("dims");
-  if (!["top", "bottom"].includes(row0) || !["max", "center"].includes(map_mode)) return no("dims");
-  if (!finiteRect(extent_mm)) return no("extent");                                                            // 7 domain (C4): finite, positive spans
-  if (domain && !sameRect(extent_mm, domain, 1e-9)) return no("extent");                                      // never a package outline
-  const toC = pu === "K" ? (v) => v - 273.15 : (v) => v;                                                       // converted ONCE, only when bound
-  const layers = [];
-  for (let k = 0; k < doc.layers.length; k += 1) {
-    const raw = doc.values[k];
-    if (rows !== null && cols !== null && raw.length !== rows * cols) return no("dims");
-    if (!raw.every((v) => typeof v === "number" && Number.isFinite(v))) return no("out_of_range");            // a string, null, 1e400
-    const c = pu === null || au === null ? null : Float32Array.from(raw, toC);                                  // unbound unit: never converted or drawn
-    if (c && c.some((v) => v < BOUNDS.temperature_c.min || v > BOUNDS.temperature_c.max)) return no("out_of_range");
-    layers.push(Object.freeze({ index: ids[k], name: doc.layers[k].name, thickness_m: doc.layers[k].thickness_m, c }));   // the SOURCE id, never k
-  }
-  const differs = stack ? compareLayerTable(doc.layers, stack.layers) : [];   // advisory only for a well-formed table (gate 5 passed)
-  return { ok: true, field: Object.freeze({ ref, grid: Object.freeze({ rows, cols, extent_mm, row0, map_mode }), layers, differs,
-    units_declared: Object.freeze({ pointer: ref.unit, artifact: doc.unit }), producer: p, unbound: Object.freeze(unbound) }) };
+// The verified-prefix resolver handed to the module: for sha256, the applied measurement node.create inside the
+// projectable prefix whose values.field names it, and the association record read from THAT envelope's signed body,
+// never from target: { artifact_sha256, run_id, measurement, evaluator_version, candidate_hash, problem_hash,
+// model_hash, producer_hash, grid, layers, sources, argv, receipt: { seq, event_id, hash } }. null when there is no such
+// envelope (after K, rejected, withdrawn) or any part is unsigned there (today: the grid, the layer table, argv, the
+// steady grid's hash and both identities: P1, P5). Never a partial record.
+export function fieldResolver(verification) { return async ({ sha256, target }) => { /* -> record | null */ }; }
+
+// One check. bytes: the Uint8Array that readBodyCapped returned for this ref (stream.mjs), nothing else. domain: the
+// verified central grid domain { x0: 0, y0: 0, x1: interposer_mm, y1: interposer_mm } of the run's verified inputs, or
+// null. Returns { status, field?, error?, reasons? }; the feed builds the fieldStatus of SPEC.md §5.6 from it.
+export async function checkField(bytes, ref, { target, resolveAssociation, result, domain }) {
+  let call;
+  try { call = translateDraftRef(ref, { target }); }                     // extracts the pointer; never touches target
+  catch (e) { return { status: "refused", error: e?.code === "draft_target_conflict" ? e.code : "malformed_context" }; }   // never retried under another target
+  const r = await checkFieldArtifact(bytes, { ref: call.ref, target: call.target, resolveAssociation,
+    temperatureBoundsC: { min: BOUNDS.temperature_c.min, max: BOUNDS.temperature_c.max } });          // no layer reference (C6)
+  if (!r.ok) return r.status === "unassociated" ? { status: "unassociated", reasons: [r.code] } : { status: "refused", error: r.code };
+  if (!result.model.run_inputs_verified || domain === null) return { status: "unassociated", reasons: ["run_inputs_unverified"] };
+  if (!sameRect(r.field.grid.extent_mm, domain, 1e-9)) return { status: "refused", error: "extent" };    // never a package outline
+  return { status: "verified", field: r.field };                         // values_c in C; both declared units kept
 }
 
-// Validity is not association (SPEC.md §5.7; A#57218 item 6). A field that passed checkFieldArtifact is drawn
-// ("verified") only when its association holds; otherwise it is "unassociated" with its reasons, nothing is drawn, no
-// scale comes from it and no number is exported, while its existence and receipt are listed.
-export function associateField(field, result) {
-  const reasons = [...field.unbound];                                   // candidate, problem, unit, producer, layers, shape (C1-C4)
-  if (!result.model.run_inputs_verified) reasons.push("run_inputs_unverified");
-  return reasons.length ? { status: "unassociated", reasons } : { status: "verified", reasons: [] };
-}
-
-// One fixed scale per run over every verified field value, rounded out to 5 and at least 10 wide (the rule runFrame
-// applies, scene.mjs:230-233); live runs only widen it (playhead.mjs:28-38).
+// One fixed scale per run over every verified field value (layers[].values_c), rounded out to 5 and at least 10 wide
+// (the rule runFrame applies, scene.mjs:230-233); live runs only widen it (playhead.mjs:28-38).
 export function fieldScale(fields, previous = null) { /* ... */ }
 // 1,024-entry table built from heatColor() at bin centres; within 1/255 per channel (L3:evidence/extra-05).
 export function colourLut(scale) { /* L3:PSEUDOCODE §6, unchanged */ }
 // RGBA8 texels for one layer in the declared row order; NEAREST only (L3:PSEUDOCODE §6, unchanged). layerId is a SOURCE
-// id the field holds (gate 5); any other id is refused ({ error: "layer_not_emitted" }), never mapped to a position, so a
+// id the field holds; any other id is refused ({ error: "layer_not_emitted" }), never mapped to a position, so a
 // layer-0 field is never drawn as layer 4 (SPEC.md §5.7; AC-45 hs6_04).
 export function fieldTexels(field, layerId, { scale, lut }) { /* ... */ }
 ```
@@ -694,20 +664,43 @@ export function fieldTexels(field, layerId, { scale, lut }) { /* ... */ }
 
 ```js
 // stream.mjs. Fetches only the ARTIFACTS the verified prefix names, with backpressure and back-off; never decides
-// LIVE or STALE (source.mjs liveModeOf, source.mjs:172-177, does). L3:PSEUDOCODE §7 with three changes:
-//   - adopt() also aborts every in-flight fetch and drops the cache on a mode switch (dispose(), PL-12/§6.7);
-//   - a response that arrives for a hash no longer wanted is discarded by hash, never shown (stale fetch);
+// LIVE or STALE (source.mjs liveModeOf, source.mjs:172-177, does). L3:PSEUDOCODE §7 (request, pump, fetchOne, back-off,
+// cache, status) with these changes:
+//   - dispose() (every view-mode switch: content kind, or replay against live source) aborts every in-flight fetch,
+//     drops the cache and advances the epoch (PL-12/§6.7); adopt() on every verification change replaces the allowlist
+//     and aborts only the fetches whose ref left it (K dropped below it, or rejected): K growing aborts nothing;
+//   - the host-owned capped fetch-body boundary (A#57404): every body is read by readBodyCapped (view-core.mjs:108),
+//     and only the Uint8Array it returns reaches checkField; an over-cap body is refused (too_large) before the module
+//     runs, while a non-200 or a network failure stays a transport problem (lane 3's back-off, then "unavailable");
+//   - the generation guard, in the host and not in the module (A#57404): fetchOne() below;
+//   - the cache is keyed by (measurement, sha256), since a check depends on its target;
 //   - artifactUrl defaults to the P3 route and the feed reports { kind: "absent" } while that route does not exist
 //     (production until P1-P4), so the page says "No field in this run's receipts" instead of retrying forever.
 import { readBodyCapped } from "../view-core.mjs";
-import { fieldRefs, checkFieldArtifact, FIELD_CAPS } from "./field.mjs";
+import { fieldRefs, fieldTarget, fieldResolver, checkField, FIELD_CAPS } from "./field.mjs";
 
 export function createFieldFeed({ fetchImpl = (...a) => fetch(...a), onChange = () => {}, now = () => Date.now(),
                                    artifactUrl = (h) => `/api/view/artifacts/${h}`, enabled = false, maxInFlight = 2,
-                                   cacheBytes = 32 << 20, stack = null }) {
-  /* adopt(verification), request(seq, pickRef), status(ref), dispose()  (L3:PSEUDOCODE §7); status(ref) is one of
-     loading | verified | unassociated (with reasons, from associateField) | refused (with its error) | unavailable;
-     checkFieldArtifact gets the run's verified central grid domain, or null while run inputs are unverified */
+                                   cacheBytes = 32 << 20 }) {
+  /* adopt(verification, { result, domain }), request(seq, pickRef), status(ref), dispose()  (L3:PSEUDOCODE §7).
+     adopt() keeps v (the verification), result (its resultView()) and domain (the verified central grid domain, or
+     null). status(ref) is loading | verified | unassociated (with reasons) | refused (with its error) | unavailable;
+     the feed builds the fieldStatus of SPEC.md §5.6 from it and from fieldRefs' refusals.
+     A stamp is { epoch, mode, seq, measurement, sha256 }: the playhead's seq and the measurement it selects there,
+     read from the verified prefix, never from the ref. current(stamp): the epoch and mode are unchanged, the playhead
+     still selects that measurement, and its ref is still in the allowlist (at or below K, not rejected).
+     fetchOne(ref, stamp), lane 3's try/catch and back-off kept:
+       try {
+         const res = await fetchImpl(artifactUrl(ref.sha256), { signal, cache: "force-cache" });   // immutable
+         if (res.status !== 200) throw new Error(`http_${res.status}`);        // transport, never a refusal
+         const body = await readBodyCapped(res, FIELD_CAPS.max_bytes, "too_large");
+         if (!current(stamp)) return;                                          // discarded before the module runs
+         if (!body.ok) return commit(stamp, { status: "refused", error: "too_large" });
+         const out = await checkField(body.bytes, ref, { target: fieldTarget(v, stamp.seq),
+           resolveAssociation: fieldResolver(v), result, domain });
+         if (!current(stamp)) return;                                          // discarded when it returns, whatever out is
+         commit(stamp, out);                  // its status now; its texture and announcement too, unless paused (AC-42)
+       } catch { if (!signal.aborted) backOff(ref); }      // 1, 2, 4 ... 30 s, 5 attempts, then "unavailable" */
 }
 
 // Solve status from the verified lifecycle only (evidence-projection.mjs:11-12 lists simulation_pending):
@@ -818,7 +811,8 @@ import { PINS } from "./pins.mjs";
 // 2. Mode switch: dispose the renderer's GL objects and the field feed, rebuild ONE RenderModel for the new kind (X1).
 // 3. Results: exactly the Package view's trust and adapter path (package.js:644-660): no crypto.subtle -> nothing drawn;
 //    setupTrust(); the demo replay by default, ?src=live for live; every verification change -> reconcile()
-//    (playhead.mjs:43-56), resultView(), field feed adopt() (when enabled), rebuild the result RenderModel.
+//    (playhead.mjs:43-56), resultView(), field feed adopt(v, { result, domain }) (when enabled), rebuild the result
+//    RenderModel.
 // 4. Notice: needsNotice(v.prefixEnvelopes) as package.js:297-300; the slot is the exact existing markup.
 // 5. Header: modeNow()/liveModeOf() only; refreshed every second on the client clock as package.js:637.
 // 6. Every temperature through tempNode(h, v.value, label) with label = resolveValueLabel(v, { verified:
@@ -897,7 +891,7 @@ def test_w4_geometry_vectors():                                    # C#57232 vec
 | `web/test/package3d-model.test.mjs` | AC-08, AC-11 (undrawn parts: bounds, pick, section), AC-12, AC-13, AC-15 |
 | `web/test/package3d-labels.test.mjs` | AC-01, AC-02, AC-05 (static: no `toDataURL`/`toBlob`), AC-06, AC-07 |
 | `web/test/package3d-results.test.mjs` | AC-18, AC-19, AC-23, AC-24 (with the terminal states), AC-25, AC-26 (with late results), AC-41, AC-42 (driving source.mjs's poller with injected fetch, as the Package view's live tests do) |
-| `web/test/package3d-field.test.mjs` | AC-20, AC-21 (with the W4 asymmetric mapper), AC-22, AC-41 (association), AC-45 (the 20 wrapped W4 field cases) |
+| `web/test/package3d-field.test.mjs` | AC-20, AC-21 (with the W4 asymmetric mapper), AC-22, AC-26 (the generation guard: a resolver that settles after the playhead moves), AC-41 (association), AC-45 (the 20 wrapped W4 field cases), AC-46 (the module's pin, the capped body, the stale-target replay) |
 | `web/test/package3d-twin.test.mjs` | AC-06 (result → JSON bytes → `readTwin` → markdown, and every altered identity, state and text), AC-36, AC-37 |
 | existing `worker-csp.test.mjs`, `worker-boot.mjs`, `temperature-label.test.mjs`, `public-names.test.mjs`, `control-bytes.test.mjs` | AC-27, AC-28 (the page added to their lists) |
 | `sundai_hotspot/test_package3d_model_stack.py` | AC-16, AC-45 (the W4 geometry vectors, as data) |

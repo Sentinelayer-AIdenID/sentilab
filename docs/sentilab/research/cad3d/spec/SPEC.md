@@ -6,7 +6,7 @@ deployed or agreed.** After all three sign the exact document, warden
 provisions one build agent (the "Astra ultra box") that implements it phase by phase (section 9).
 
 Companions in this folder: `PSEUDOCODE.md` (modules and signatures, with integration points), `ACCEPTANCE.md`
-(testable criteria, AC-01 to AC-45), `TRACE.md` (every requirement mapped to its source, input hashes, and the line
+(testable criteria, AC-01 to AC-46), `TRACE.md` (every requirement mapped to its source, input hashes, and the line
 moves since lane 3 was written).
 
 ## 0. How to read this
@@ -16,11 +16,12 @@ moves since lane 3 was written).
   astra's room messages (verbatim copy read from `C:/tmp/cad3d-astra-lane2.md`); `A#57218` is root's (astra's) review
   of v0.1, pinned in TRACE.md section 1; `A#57278` and `A#57288` are root's notes on the decisions and on the exact
   producer source map (review packet at sentilab `209dad7a`). `C#57177` marks the ChatGPT field-association/W4
-  review's replies under room message #57177, and `C#57232` its fixture pack. `pr56:<path>:<line>` is PR #56's
-  successor commit `7f70baf56998cdeea9fcaa56954fc78f8f6c8071`, a source identity separate from the draft-pinned
-  `main:` (pending review, not merged). `F#57046` is the founder's ask.
-  `main:<path>:<line>` is origin/main at `d25046256b4a712b529977f31e10b7e32248a9c0`. `pr66:<path>:<line>` is the
-  open PR #66 head `609d339d79cfa0c120806fc5132044b460db5cd3`.
+  review's replies under room message #57177, and `C#57232` its fixture pack; `C#57385` marks ChatGPT's W13
+  field-check module, delivered under room message #57385, and `A#57404` root's source +1 for it. `pr56:<path>:<line>`
+  is PR #56's successor commit `7f70baf56998cdeea9fcaa56954fc78f8f6c8071`, a source identity separate from the
+  draft-pinned `main:` (pending review, not merged). `F#57046` is the founder's ask. `main:<path>:<line>` is
+  origin/main at `d25046256b4a712b529977f31e10b7e32248a9c0`. `pr66:<path>:<line>` is the open PR #66 head
+  `609d339d79cfa0c120806fc5132044b460db5cd3`.
 - **Line numbers moved once.** Lane 3 cited origin/main at `46791be`. Commit `d250462` (#64, per-value labels)
   changed `temperature-label.mjs`, `package.js`, `scene.mjs` and a few other web files, so some lane 3 line numbers
   shifted; this spec uses the `d250462` lines (TRACE.md section 3 lists every moved citation). `git diff --stat
@@ -67,6 +68,11 @@ moves since lane 3 was written).
   - W4 fixture pack (C#57232, sha256 `908655f7…`): its vocabulary is mapped onto this schema, its synthetic
     provenance kept, its 20 field cases mapped to this spec's outcomes (P1-only rows marked) and its geometry
     vectors bound to AC-13, AC-16 and AC-21; its code is never run (5.10, W0.4, W4, W13; AC-45).
+  - W13 field check (C#57385, A#57404): the field checks are the adopted module (sha256 `af0d24a7…`), called only with
+    the host's capped fetch body, with the stale-target repair carried and the generation guard kept in the host.
+    The artifact keeps the draft's eight keys; producer, model, layer, grid, source and argv identity come from the
+    host's verified association record. Root's one nonblocking finding (decorated typed-array inputs) is a follow-up
+    case, and no second renderer is built (5.7, 5.10, W13; AC-21, AC-26, AC-41, AC-45, AC-46).
 
 ## 1. Goals and non-goals
 
@@ -219,7 +225,7 @@ between them, dims the rest (L3:ARCHITECTURE §4.5), and fills the detail panel.
 
 | Overlay | Typical anatomy | Our model | Results |
 |---|---|---|---|
-| Heat | Lane 1's flows drawn as paths through the parts: primary path up (lidded or lidless), secondary path down, HBM vertical path, and three lateral coupling paths (lid or spreader, interposer, mold) with the contested-share note (thm-026 against thm-048). The legend states the sourced share ("about 95% leaves through the top", thm-036) without numbers on arrows. | Conduction through the 8 layers, with a cross at the bottom of layer 0 (`bottom adiabatic: no heat leaves through the substrate in this model`, hotspot.config:48) and the spreader's 2 x lateral extent marked. | No arrows. A verified field per solver layer (once P1-P4 land), else per-chiplet centre colours where the run has them, else nothing; the existing basis text applies (`chiplet-centre temperatures from the solver; not a field`, scene.mjs:18). |
+| Heat | Lane 1's flows drawn as paths through the parts: primary path up (lidded or lidless), secondary path down, HBM vertical path, and three lateral coupling paths (lid or spreader, interposer, mold) with the contested-share note (thm-026 against thm-048). The legend states the sourced share ("about 95% leaves through the top", thm-036) without numbers on arrows. | Conduction through the 8 layers, with a cross at the bottom of layer 0 (`bottom adiabatic: no heat leaves through the substrate in this model`, hotspot.config:48) and the spreader's 2 x lateral extent marked. | No arrows. A verified field per solver layer (once P1-P5 land), else per-chiplet centre colours where the run has them, else nothing; the existing basis text applies (`chiplet-centre temperatures from the solver; not a field`, scene.mjs:18). |
 | Power | VRM to board, BGA, substrate, C4, interposer TSV, interposer wiring with deep-trench capacitors, micro-bumps, die. Sourced numbers (core rail as low as 0.7 V, about 1,000 A, at least 3 mF of board capacitance) live in the panel, not on the path. | Per-die power inputs in W from the fixture config, spread uniformly over each die (passive_interposer.py:182-195). | The same model inputs for the run's fixture. |
 | Signal | HBM bus (PHY, micro-bumps, interposer wiring, base die, TSVs, DRAM), die-to-die, off-package; bus widths and per-stack bandwidths from facts in the panel. | The fixture's netlist weights between dies (sys_*.cfg connections), labelled `TAP connection weights; not routed wires, not bandwidth`. | The same netlist; `W` shown only as `wire proxy (mm)`, never as routed wire (conductor.py:345; README.md:105-108). |
 
@@ -247,7 +253,7 @@ A `Thermal path` tab beside the part detail: a DOM table plus a simple ladder dr
   adiabatic`, and the comparison column against the typical values. Header: `Model inputs and derived t/k. Not
   results.`
 - **Results:** per-layer statistics of a verified field (minimum and maximum per solver layer, each labelled), once
-  P1-P4 land; until then: `No per-layer values in this run's receipts.`
+  P1-P5 land; until then: `No per-layer values in this run's receipts.`
 - **Agent:** `anatomy.md#thermal-path`, `model-<fixture>.md#stack`, and the result twin's `field` block.
 
 ### 4.5 Live and replay states (S5, Results only)
@@ -266,7 +272,7 @@ A `Thermal path` tab beside the part detail: a DOM table plus a simple ladder dr
 | Doorbell (optional, later) | Only pokes the poller; never data, never progress, never LIVE. | L3:ARCHITECTURE §6.2 |
 | Paused presentation | During ingestion (a replay loading, a long catch-up, or live), Pause holds the drawn values, the field and the playhead at seq S while verification and ingestion continue; the chip reads `paused · N new verified results`, where N counts verified results after S, never pages, keepalives, duplicates or backlog; nothing new is drawn or announced until an explicit Resume (button or `P`), which moves to the newest verified state and announces once. The mode chip still comes from `source.mjs`, and a K drop below S applies at once. | A#57218 (W-E12); AC-42 |
 | Run ended | `ENDED · run finished` from `source.mjs` only; a candidate still pending reads `no result (run ended)`, never `solving`; a frozen board and the terminal paging states keep their labels over ENDED. | main:contracts/view-envelope-v0.6.2/VIEW-ENVELOPE.md:110, :120-123; A#57218; AC-24 |
-| Late result | A field fetch that completes after its result left the prefix, after a mode switch or after the playhead moved is discarded by hash; a verified result arriving after the run is listed finished is shown with its own `as of seq S` and announced once, while the label stays ENDED. | A#57218; section 6.7; AC-26 |
+| Late result | A field fetch that completes after its result left the prefix, after a mode switch or after the playhead moved is discarded by the host's generation guard, whatever the check returned (section 5.7); a verified result arriving after the run is listed finished is shown with its own `as of seq S` and announced once, while the label stays ENDED. | A#57218; section 6.7; AC-26 |
 
 "Real time" means exactly this: results appear within seconds of the core signing them, under the unchanged LIVE
 rule, and every field is a completed, signed solve stamped with its seq. Nothing from inside a solve is shown, and
@@ -1105,7 +1111,7 @@ Statistics (PL-9), each with where it comes from today:
 |---|---|---|
 | `chip_layer_grid_max` | J: the chip layer's grid maximum with `-grid_map_mode max` (`metric_id` `peak-chip-c`) | in every live measurement (conductor.py:342-344; tap_oracle_worker.py:368, :426) |
 | `chiplet_centre` | `values.center_temps`, read in the J's unit | demo fixture and older rows (scene.mjs:148-162); not emitted by the live producer |
-| `field_cell` | one cell of a verified field artifact, on one solver layer | none until P1-P4 |
+| `field_cell` | one cell of a verified field artifact, on one solver layer | none until P1-P5 |
 | `all_layers_grid_max` | peak over all 8 layers | worker result only (tap_oracle_worker.py:427); not in any envelope |
 | `chiplet_unit_native` | HotSpot's native per-unit temperatures of `Chiplet_i` | not emitted |
 | `tap_selector` | TAP's own `run_hotspot()` selector with `-grid_map_mode center` | not computed (README.md:116-119) |
@@ -1155,16 +1161,17 @@ hash already covers its `values.geometry` (main:contracts/view-envelope-v0.5/VIE
 reference layout is numeric (centres within 1e-6 mm, rotations equal, same fixture), never a re-hash in JavaScript
 (section 5.0).
 
-### 5.7 Field artifact `sentilab-field/0.1` and its pointer (prerequisite formats)
+### 5.7 Field artifact `sentilab-field/0.1`, its pointer and the adopted check (prerequisite formats)
 
-Lane 3's proposal (L3:ARCHITECTURE §5.2) with additions marked (+), and (C) from the W4 review C#57177. Produced by
-the core, not by this build.
+Lane 3's proposal (L3:ARCHITECTURE §5.2) with additions marked (+). Produced by the core, not by this build. Since
+W13 adopted the field check (C#57385, A#57404), the artifact keeps the draft's eight keys exactly: v0.2's `producer`
+block and its `null` values are gone, and what an artifact cannot prove about itself, its association, comes from
+the host's verified receipts (below).
 
 ```json
 {
   "format": "sentilab-field/0.1",
   "binding": { "run_id": "<run>", "measurement": "<node id>", "evaluator_version": "<identity>", "candidate_hash": "<64 hex> (+)", "problem_hash": "<64 hex> (+)" },
-  "producer": { "native_format": "<hotspot7-all-layers or hotspot6-headerless-layer0, or null> (C)", "executable": "<build identity, or null> (C)", "emitted_layer_ids": [0, 1, 2, 3, 4, 5, 6, 7] },
   "grid": { "rows": 32, "cols": 32, "extent_mm": { "x0": 0, "y0": 0, "x1": 45, "y1": 45 }, "row0": "top", "map_mode": "max (+)" },
   "unit": "K",
   "layers": [ { "index": 0, "name": "substrate", "thickness_m": 0.0002, "resistivity_mK_W": 3.33, "heat_capacity_J_m3K": 1060000, "powered": false, "source": "samplelayers.lcf" } ],
@@ -1174,71 +1181,122 @@ the core, not by this build.
 }
 ```
 
-Pointer in the measurement envelope: `values.field = { "sha256", "format", "rows", "cols", "layers", "unit" }`.
-Checks before anything is drawn (PSEUDOCODE §9; refusals in AC-21, association in AC-41), in this order:
+Pointer in the measurement envelope: `values.field = { "sha256", "format", "rows", "cols", "layers", "unit" }`. Every
+key set (the top level, `binding`, `grid` with `extent_mm`, each layer record, the four named `sources`, the pointer)
+is closed, and every value is required. Layer ids are integers 0..15 and unique; `values[i]` belongs to
+`layers[i].index`, which the field keeps, never the array position.
 
-1. **Bytes.** Allowlist (named by an applied measurement `node.create` in the verified prefix), size cap (4 MiB),
-   sha256 of the exact bytes, strict UTF-8 JSON, format.
-2. **Structure (C4).** The top-level, `binding`, `producer`, `grid` and layer-record key sets are closed: an unknown
-   or missing key is `malformed`, and a value the producer could not bind is present as `null`. `layers`, `values`
-   and every layer's values are arrays.
-3. **Binding.** Run, measurement and evaluator identity equal the envelope's. (C1) The artifact's `candidate_hash`
-   and `problem_hash` are compared with the expectations the ref carries from the verified envelopes: the
-   measurement's signed `record.binding.candidate_id`, the candidate's canonical layout hash
-   (main:sundai_controller/controller.py:152-165), which must equal its candidate node's; and its signed
-   `semantics.task_contract`, the producer's problem hash (main:sundai_hotspot/tap_oracle.py:874-895;
-   main:sentilab_core/conductor.py:91, :342-343; the conductor checks both against the oracle result at :335). A
-   contradiction is `binding_mismatch`; a value missing on either side leaves the field unassociated
-   (`candidate_unbound`, `problem_unbound`). (+) Every input source hash (`samplelayers.lcf`, `new_hotspot.config`,
-   `sample.ptrace`) is a member of the envelope's signed input hashes.
-4. **Units (C2).** The pointer's and the artifact's units are each normalised through the documented aliases only
-   (`K`; `C` and `°C` to C) and compared before any conversion: a conflict is `unit_conflict` (a pointer saying C over
-   an artifact in K is never converted), another unit is `unit_not_supported`, and a `null` on either side leaves the
-   field unassociated (`unit_unbound`). Both declarations are kept; values convert exactly once.
-5. **Layer identity (C3).** Every layer record has a name, finite positive `thickness_m`, `resistivity_mK_W` and
-   `heat_capacity_J_m3K`, and a boolean `powered`. When `producer.emitted_layer_ids` is bound, every `index` is an
-   integer in 0..15, unique and strictly ascending, and the set equals `emitted_layer_ids`; that is checked before the
-   count, so a missing layer is `layer_ids`, not `dims`, and the count then equals the pointer's `layers`. `values[i]`
-   belongs to `layers[i].index`, which the field keeps (never the array position). A missing, duplicated, unexpected
-   or non-integer index is `layer_ids`, a bad record is `malformed`, and neither becomes an advisory difference. When
-   `emitted_layer_ids` is `null` every `index` is `null` too and the field is unassociated (`producer_layer_unbound`);
-   a `null` `native_format` or `executable` leaves it unassociated as well (`producer_unbound`).
-6. **Grid (C4).** More than 16 layer records is `dims`, checked before gate 5. `rows` and `cols` are positive
-   integers within the caps (at most 128 x 128, the worker's bound at tap_oracle_worker.py:283-287) and equal the
-   pointer's; a same-count different shape is `dims`,
-   and a `null` leaves the field unassociated (`grid_shape_unbound`). Every layer holds exactly rows x cols finite
-   numbers inside scene.mjs `BOUNDS` after conversion (scene.mjs:92-98); `row0` is `top` or `bottom`; `map_mode` is
-   declared.
-7. **Domain (C4).** `extent_mm` has finite bounds and positive spans and equals the verified central grid domain, the
-   interposer square `[0, interposer_mm]²` of the run's verified inputs (section 5.6), within 1e-9 mm. An extent
-   equal to a spreader or sink outline, or otherwise different, is `extent`. Without verified run inputs there is no
-   verified domain: the comparison is deferred and the field is unassociated (`run_inputs_unverified`) in any case.
-   Spreader and sink fields cover that central grid only (section 5.4): the rest of their outlines is drawn
-   uncoloured and labelled `unmeasured`.
+**The adopted check (W13).** The field check is the module delivered under C#57385, `field-validator-proposal.mjs`
+(17,067 bytes, sha256 `af0d24a7f4029cca378775c83be9465422127f00c2e5c75bbf7188b82d7880bc`, proposal version
+`carter-w13/1`), with root's source +1 (A#57404: its 67 supplied tests and root's 13 independent controls pass;
+review `afb4be17…`, seal `99f47da5…`; TRACE.md section 1). W13 vendors it byte-identical as `field-validator.mjs` and
+a test pins its hash (AC-46). It is never edited here: a change is a new digest with its own review. It validates and
+returns frozen plain data; it draws nothing and holds no state, so the page keeps one renderer, the D5 pick, which
+draws only what the host accepted. The host calls it once per fetched artifact,
+`checkFieldArtifact(bytes, { ref, target, resolveAssociation, temperatureBoundsC })`, with:
 
-A layer table that passes 5 but differs from the model manifest is not refused: the artifact's table is the authority
-for that result, and the difference is listed (`stack_differs_from_manifest`).
+- `bytes`: the `Uint8Array` that `readBodyCapped` returned for that fetch, capped at 4 MiB
+  (main:web/public/sentilab/view-core.mjs:108-131). This is the host-owned capped fetch-body boundary (A#57404): an
+  over-cap body is refused `too_large` before the module runs, and nothing else (a caller's view, copy or object) is
+  ever passed in.
+- `ref`: exactly the six pointer keys, from the envelope that names the artifact in the verified prefix (`fieldRefs`,
+  the allowlist of L3:PSEUDOCODE §6). `fieldRefs` leaves out, before any fetch, a signed pointer with any other key
+  set or a `sha256` that is not 64 hex (`pointer_schema`): the module's `translateDraftRef` copies only the six keys,
+  so it would never see an added one.
+- `target`: the seven identities of the measurement the playhead selects, read from the verified envelopes at the
+  current cut. `run_id`, `measurement` and `evaluator_version`; `candidate_hash`, its signed
+  `record.binding.candidate_id`, the candidate's canonical layout hash (main:sundai_controller/controller.py:152-165),
+  which must equal its candidate node's (else `fieldRefs` leaves it out, before any fetch); `problem_hash`, its signed
+  `semantics.task_contract`, the producer's problem hash (main:sundai_hotspot/tap_oracle.py:874-895;
+  main:sentilab_core/conductor.py:91, :342-343; the conductor checks both against the oracle result at :335); and
+  `model_hash` and `producer_hash`, from the run's own producer and config receipt (below; P5). An identity that is
+  not signed is absent.
+- `resolveAssociation`: the verified-prefix resolver (`fieldResolver`). For the artifact's hash it finds the applied
+  measurement `node.create` inside the verified projectable prefix whose `values.field` names it, and returns the
+  association record read from that envelope's signed body, never from `target`: `artifact_sha256`, the seven
+  identities, `grid`, the exact ordered `layers` table, the four named `sources`, `argv`, and
+  `receipt { seq, event_id, hash }`. It returns `null` when there is no such envelope (after K, rejected, withdrawn)
+  or when any part of the record is not signed there; never a partial record.
+- `temperatureBoundsC`: scene.mjs `BOUNDS.temperature_c` (main:web/public/sentilab/package/scene.mjs:92-98).
+- No `normalizedFieldLayerReference`: no lossless projection exists from the model stack, whose layers mix region
+  materials (C6), to one record per layer. How a run's inputs differ from its family's manifest is section 5.6's
+  `input_differences`, and `stack_differs_from_manifest` stays empty.
 
-**Validity is not association** (A#57218 item 6). An artifact that passes every check above exists and is valid; it
-is drawn (`status: verified`) only when its association also holds, starting with `run_inputs_verified` (section
-5.6), which registers its layers to the run's stack and its grid to the run's geometry. Otherwise its status is
-`unassociated` with its reasons (`run_inputs_unverified`, and from the checks above `candidate_unbound`,
-`problem_unbound`, `unit_unbound`, `producer_unbound`, `producer_layer_unbound`, `grid_shape_unbound`): nothing is
-drawn, no legend scale comes from it, and no number is exported; its existence and receipt are listed. Field
-existence and field eligibility are separate predicates.
+The module checks, in this order (field-validator-proposal.mjs:163-250): the bytes and the cap; the pointer; the
+sha256 of the exact bytes, before any decoding; strict JSON (fatal UTF-8, no BOM, no duplicate member names even under
+escaped aliases, nothing trailing); the top-level keys, the format, the binding and the grid; the pointer's shape
+against the artifact's (rows, columns and layer count, so a same-count different shape is `dims`); the layer records,
+the four named sources and argv; the units, each normalised through the documented aliases only (`K`; `C` and `°C` to
+C) and compared before any conversion; each layer's value count (`dims`) and finite values, converted once; the
+target, and the artifact's five binding identities against it; the bounds after conversion; and the association
+record, compared exactly: the hash, the seven identities, the grid with its row origin and map mode, the layer ids in
+order (the same reordering on both sides passes; on one side it is refused), the whole layer records, the named
+sources and argv (compared, never run). AC-21 lists its refusals (the two this host cannot reach are noted there) and
+AC-41 its unassociated codes.
+
+| The module returns | The page | Then |
+|---|---|---|
+| `registered` | `verified`, once the host's checks below pass | drawn, on the run's stack, with its measurement's label |
+| `unassociated` (`target_incomplete`, `association_missing`, `association_incomplete`, `association_unavailable`, `association_resolver_missing`, `temperature_bounds_missing`, `digest_unavailable`) | `unassociated`, with the code as its reason | nothing drawn, no legend scale from it, no number exported; its existence and receipt listed |
+| `rejected` (every other code) | `refused`, with the code | nothing drawn; the previous texture untouched (AC-21) |
+
+After `registered` the host still requires `run_inputs_verified` (section 5.6), which registers the layers to the
+run's stack and the grid to the run's geometry, else `unassociated` (`run_inputs_unverified`); and a registered
+`extent_mm` equal, within 1e-9 mm, to the verified central grid domain, the interposer square `[0, interposer_mm]²`
+of the run's verified inputs, else `refused` (`extent`): a field is never stretched onto a spreader or sink outline.
+Spreader and sink fields cover that central grid only (section 5.4); the rest of their outlines is drawn uncoloured
+and labelled `unmeasured`. A layer is drawn by its source id, and asking for an id the field does not hold is refused
+(`layer_not_emitted`).
+
+**Validity is not association** (A#57218 item 6). Registration means the artifact matches the verified context the
+host supplied; the module checks no signature of its own and confers no scientific acceptance (its
+`registration_scope`). A field that exists but is not associated is listed with its receipt and drawn nowhere: field
+existence and field eligibility are separate predicates. A verified field's numbers (the legend, a picked cell) are
+shown only with the label of the measurement that names it, resolved as PL-2 requires.
+
+**The stale-target repair, carried** (C#57385; A#57404). The target is resolved independently, at the current
+playhead, and is the authority: nothing fills or overwrites it from the artifact, its pointer, an older receipt or a
+draft-shaped ref. An earlier valid artifact with its valid earlier receipt therefore cannot retarget a later run that
+shares its candidate, problem, model and producer: it is refused (`binding_mismatch`). Refs that carry the run,
+measurement and evaluator beside the pointer pass through the module's `translateDraftRef(ref, { target })`, which
+only extracts the pointer: a conflict throws `draft_target_conflict`, which the host records as a refusal and never
+retries under another target, and a missing target identity stays missing (`target_incomplete`). The first candidate
+overwrote the target in exactly this way; it was repaired before delivery, the delivery keeps the three-case replay
+that root re-ran (C#57385: HANDOFF.txt, `independent/root-portable-review.json`), and root's own controls cover
+stale-target handling (A#57404; AC-46).
+
+**The generation guard stays in the host** (A#57404). The module awaits its hash and the resolver and keeps no state,
+so it cannot know whether its answer is still wanted. The host stamps every fetch with its epoch (advanced only by
+`dispose()`, which every view-mode switch runs: content kind, or replay against live source), the view mode, the
+measurement the playhead selects and its field's hash. The stamp is checked before the module is called and again when
+it returns, and it is current only while the epoch and the mode are unchanged, the playhead still selects that
+measurement, and that measurement's ref is still in the allowlist at the current cut (at or below K, not rejected). K
+growing never makes a stamp stale; a mode switch, a playhead move or K dropping below the ref does, and a stale result
+is discarded whatever it is: never drawn, never a status change, never announced (AC-26).
+
+**Producer and model identities** (forge's, with the producer's owner: P5). `producer_hash` identifies what made the
+field: the solver build that wrote the native file, its native format, the layer ids that build emits, and the
+converter that wrote the artifact (P1). `model_hash` identifies what was solved: the run's model inputs as run
+(`samplelayers.lcf` with the floorplans it names, and the resolved `new_hotspot.config`) and the model-selecting
+flags. The target takes both from the run's own producer and config receipt and the association record from the
+measurement that names the field, and the module requires them equal (`association_mismatch`). The page never
+computes either from unsigned data, and the exact preimages are the producer owner's to fix. Until both are signed,
+every target lacks them and every field is `unassociated` (`target_incomplete`): by code reading, today's receipts
+sign neither (P5).
 
 **Producer formats are not interchangeable** (C3, C4; A#57278). Native grid outputs differ by producer, and nothing
-infers one from another: P1 converts a native file into this format and declares `producer`. The draft-pinned
-HotSpot 7 writer prints every layer under `Layer n:` headers, Kelvin to two decimals, with row-major indices
-restarting in each layer (main:sundai_hotspot/temperature_grid.c:1261-1295; byte-identical in PR #56's successor at
+infers one from another: P1 converts a native file into this format, and the producer identity and the layer table
+its build emits are signed with the measurement, not declared by the artifact. The draft-pinned HotSpot 7 writer
+prints every layer under `Layer n:` headers, Kelvin to two decimals, with row-major indices restarting in each layer
+(main:sundai_hotspot/temperature_grid.c:1261-1295; byte-identical in PR #56's successor at
 pr56:sundai_hotspot/temperature_grid.c:1286-1320), and the warm worker requires all eight layers and returns layer 4
 (main:sundai_hotspot/tap_oracle_worker.py:88-101). Native HotSpot 6 built without the all-layers writer prints one
 headerless layer chosen by the secondary-path setting: with the captured `-model_secondary 0` that is layer 0, which
 in TAP's LCF is the substrate, not the powered chip layer 4 (pr56:sundai_hotspot6/temperature_grid.c:1037-1082,
-:1140-1148; pr56:sundai_hotspot6/temperature_grid.h:35-50). Such a field is declared `emitted_layer_ids: [0]` and is
-never relabelled as layer 4. The all-layers HotSpot 6 evaluator build exists in the successor
-(pr56:sundai_hotspot6/temperature_grid.c:1107-1148; pr56:scripts/build_hotspot6.sh:30-42) and has to be named in
-`producer.executable`. Source facts do not establish which producer a run used: that is the run's own producer and
+:1140-1148; pr56:sundai_hotspot6/temperature_grid.h:35-50). Such a field's signed layer table holds layer 0 only, and
+it is never relabelled as layer 4. The all-layers HotSpot 6 evaluator build exists in the successor
+(pr56:sundai_hotspot6/temperature_grid.c:1107-1148; pr56:scripts/build_hotspot6.sh:30-42) and has to be named in the
+producer identity. Source facts do not establish which producer a run used: that is the run's own producer and
 config receipt (P5).
 
 ### 5.8 Agent twin `sentilab-twin/1`
@@ -1324,26 +1382,29 @@ Only its JSON and text are adopted, as review inputs adapted to this schema (AC-
 
 | The pack's term | This spec |
 |---|---|
-| `producer_profile`: `official_hotspot6_headerless`, `historical_1bdf584b_all_layer`, `unknown` | `producer.native_format` of the field artifact (section 5.7): `hotspot6-headerless-layer0`, `hotspot7-all-layers`, `null` |
+| `producer_profile`: `official_hotspot6_headerless`, `historical_1bdf584b_all_layer`, `unknown` | the producer identity, `producer_hash`, signed with the run (section 5.7), whose preimage names the native format (HotSpot 6 headerless layer 0, HotSpot 7 all layers); `unknown` is a target without it (`target_incomplete`) |
 | `manifest.rows`, `columns` | `grid.rows`, `grid.cols` of the artifact, and the pointer's `rows`, `cols` |
-| `temperature_unit` | the artifact's `unit` and the pointer's `unit`, compared (gate 4) |
-| `expected_emitted_layer_ids` | `producer.emitted_layer_ids`, equal to the layer records' `index` set (gate 5) |
+| `temperature_unit` | the artifact's `unit` and the pointer's `unit`, compared before any conversion (`unit_mismatch`) |
+| `expected_emitted_layer_ids` | the association record's ordered layer ids, which the artifact's layer records must equal (`layer_identity_mismatch`) |
 | `grid_extent` `{ x_min, y_min, width, height }` in m | `grid.extent_mm` `{ x0, y0, x1, y1 }` in mm (x1 = x_min + width), converted once |
 | `coordinate_frame.raster_row_zero: north` | `grid.row0: "top"` |
 | `synthetic_package_roles` `{6: spreader, 7: sink}`, `package_extents` | model-stack layers 6 and 7 (`role`), and their outlines (`spreader_mm`, `sink_mm`); the grid domain is `grid_extent: interposer` (section 5.4) |
 | `request.target_layer_id` | the field layer the page draws (`F`; `fieldTexels(field, id)`) |
 | `request.paint_extent`, `outline_extent` | the coloured extent (the verified central grid domain only) and the uncoloured `unmeasured` outline |
-| outcome `accept` | the artifact passes the gates of section 5.7 and its association holds: `verified` |
-| outcome `reject` | a refusal with this spec's code (`dims`, `layer_ids`, `out_of_range`, `extent`, ...) |
-| outcome `no_association` | `unassociated` with this spec's reason; never drawn, never exported as numbers |
+| outcome `accept` | the adopted module registers the artifact and the host's checks pass (section 5.7): `verified` |
+| outcome `reject` | a refusal with the module's code (`dims`, `layer_schema`, `layer_identity_mismatch`, `nonfinite_value`, `grid_association_mismatch`, ...) or the host's (`extent`, `layer_not_emitted`) |
+| outcome `no_association` | `unassociated` with the module's code as the reason; never drawn, never exported as numbers. Where only a native file can lack something (a shape, a unit), P1 writes no artifact and the page shows no field |
 | geometry `z` from the substrate's outer face, in m | this spec's frame puts z = 0 on the interposer's bottom face, in mm: z(here) = z(pack) × 1000 − 0.27 |
 
 Where the cases land: the native-format cases (headerless and headed text, per-layer index sequences, layer headers)
-are acceptance inputs for P1's converter, which is owned elsewhere; each is also wrapped, as P1 would write it, into
-a `sentilab-field/0.1` artifact and a TEST-key measurement envelope for `checkFieldArtifact` and `associateField`
-(W13), with a synthetic verified domain equal to the case's grid extent. The geometry vectors test the W4 Python
-check (centre to lower-left in metres, the six explicit layers, a region's material) and the page's own conversions
-(the RenderModel's mm, the GLB's metres, `cellAt()`). Rows that only a native file can express are marked P1 only.
+are acceptance inputs for P1's converter, which is owned elsewhere; each is also wrapped, as P1 would write it, into a
+`sentilab-field/0.1` artifact with its association record and target, under a TEST-key measurement envelope, for
+`checkField` and the adopted module (W13), with a synthetic verified domain equal to the case's grid extent. The
+module's own crosswalk of the 20 cases (`fixture-crosswalk.json`, C#57385) agrees with every row's status, and says
+its tests did not execute the native cases; for `hs6_03` it says "association missing" where this spec's code is
+`target_incomplete`. The geometry vectors test the W4 Python check (centre to lower-left in metres, the six explicit
+layers, a region's material) and the page's own conversions (the RenderModel's mm, the GLB's metres, `cellAt()`). Rows
+that only a native file can express are marked P1 only.
 
 ## 6. Rendering architecture
 
@@ -1403,7 +1464,7 @@ Lane 3's architecture (L3:ARCHITECTURE §0-§10) is adopted, with the deltas in 
   maps the picked sheet back to its grid layer and the hit's x and y (unchanged by explode and readable, which move
   only z) to a grid cell.
 
-### 6.4 Fields on 3D (after P1-P4)
+### 6.4 Fields on 3D (after P1-P5)
 
 Per solver layer, not per anatomy part: one RGBA8 texture per grid layer, NEAREST filtering, texels from a 1,024-entry
 lookup table built from scene.mjs `heatColor()` (main:web/public/sentilab/package/scene.mjs:269-275), so the 3D, the
@@ -1412,6 +1473,8 @@ stippled in screen space; one fixed scale per run over every verified field valu
 wide, widening only while live (scene.mjs:230-233; playhead.mjs:28-38); grid size and layer name in the legend; no
 interpolation and no field built from centre temperatures (L3:ARCHITECTURE §5.3-§5.5; REQUIREMENTS V13 and F24,
 main:docs/sentilab/draft-0.5/REQUIREMENTS.md:179, :264). Grid layers 6 and 7 cover the interposer area only (5.4).
+The adopted field check (section 5.7) only validates: the D5 renderer is the only renderer, and it draws a field
+only once the host has accepted it.
 
 ### 6.5 Labels and DOM
 
@@ -1443,7 +1506,8 @@ WebSocket: the Worker strips `upgrade` (main:web/src/worker.js:7, :26).
 - Render on demand: zero frames while idle. On mode switch, page hide and `webglcontextlost`, every GL object is
   deleted and counted (A#57059: "explicitly dispose resources"); the test hook reports live GL object counts, and
   AC-35 repeats the cleanup over 100 consecutive switches.
-- Stale fetches are aborted on mode switch and K drop (AbortController), and a late response is discarded by hash.
+- Stale fetches are aborted on mode switch and K drop (AbortController), and a late response or check is discarded
+  by the host's generation guard (section 5.7).
 - Budgets: ACCEPTANCE AC-34 (both sources' numbers; D4). Interconnect instances are sampled on a regular lattice
   within a budget derived from the triangle budget, and the view says `1 of k² sites drawn · N total`
   (L3:ARCHITECTURE §4.5).
@@ -1455,7 +1519,7 @@ WebSocket: the Worker strips `upgrade` (main:web/src/worker.js:7, :26).
 | One RenderModel from parts.json plus verified scene plus solver stack | One RenderModel per content kind; mixed input refused | rule 2, A#57053 (X1) |
 | Modelled-part thickness falls back to parts.json nominal without a field (PSEUDOCODE §1 step 3) | The run's verified inputs, else schematic; never anatomy, and never the family's current manifest | X3, X4, D6; A#57218 item 6 |
 | RenderModel carries display thickness next to true (`z0`, `z0_true`, `thickened`) | RenderModel is assembled only; display boxes come from `view.mjs` | rule 3, A#57059 (immutable assembled geometry) |
-| `checkFieldArtifact` binds run, measurement, evaluator | also checks input-source hashes against the signed `artifact_hashes`, and lists layer-table differences | L3:ARCHITECTURE §5.2 item 1 says those hashes are signed; this makes the check explicit |
+| `checkFieldArtifact` binds run, measurement, evaluator | the adopted W13 module checks the artifact against the playhead's target and the host's verified association record: candidate, problem, model and producer identities, grid, the ordered layer table, named sources and argv (section 5.7) | L3:ARCHITECTURE §5.2 item 1 says those hashes are signed; C#57177, C#57385, A#57404 |
 | Twin JSON (+ GLB) at `/agents/package3d/<id>.json`, catalogue at `/agents/index.json` | JSON plus markdown per content kind under `/agents/package3d/`; catalogue `/agents/package3d/index.json` | rule 9; PR #66 owns `/agents/index.json` (D9) |
 | Budgets: phone 300,000 triangles, 60 draw calls | root's initial phone tier, as targets to be measured, not limits (D4, section 6.11) | inputs differ |
 | `explodedZ` added to section rectangles | the same, through `view.mjs` | |
@@ -1539,11 +1603,11 @@ D4's phone numbers are prospective targets to measure against, not limits (A#572
 
 | Id | Change | Owner | Blocks | Today |
 |---|---|---|---|---|
-| P1 | **Producer:** publish `sentilab-field/0.1` (section 5.7) from `sample.grid.steady`, all 8 layers, with the layer table, grid extent, row order, named input sources and argv; the `producer` block (native format, executable, emitted layer ids), the candidate and problem hashes, and `null` for anything it cannot bind, never a guess (C1-C4). | TBD (core producer owner) | any field (W14) | the worker parses all 8 layers but keeps layer 4 only (main:sundai_hotspot/tap_oracle_worker.py:91-100, :417-431) |
+| P1 | **Producer:** publish `sentilab-field/0.1` (section 5.7: the draft's eight keys, every value required) from `sample.grid.steady`, all 8 layers, with the layer table, grid extent, row order, named input sources, argv and the candidate and problem hashes. Where a native file cannot establish a value (a shape, a unit, the emitted branch), write no artifact: never a guess or a placeholder (C1-C4; C#57385). | TBD (core producer owner) | any field (W14) | the worker parses all 8 layers but keeps layer 4 only (main:sundai_hotspot/tap_oracle_worker.py:91-100, :417-431) |
 | P2 | **Measurement pointer:** `values.field = { sha256, format, rows, cols, layers, unit }` in the measurement envelope, and documented in the VIEW-ENVELOPE contract. | TBD (producer and contract owners) | W14 | values are J, W, scenario_id, artifact_hashes (main:sentilab_core/conductor.py:344-346; VIEW-ENVELOPE v0.5:23-25) |
 | P3 | **API route:** `GET /api/view/artifacts/<sha256>`: read-only, immutable, capped at 4 MiB, serving only hashes a run's log names. The Worker passes upstream `cache-control` through, so no Worker change. | TBD (API owner) | W14 | no such route (main:app/view.py:90, :97, :186) |
 | P4 | **Label rule:** `hasTemperature()` counts `values.field`, with a test, so a field-only measurement raises the notice. | TBD (label-rule owner) | W14 | J and centre temperatures only (main:web/public/temperature-label.mjs:163) |
-| P5 | **Receipt completeness:** the solver argv (at least the model-selecting flags) signed with the measurement, the named input-hash map confirmed on a real envelope, and both carried by the field artifact. | TBD (producer owner) | `run_inputs_verified` (exact stack and field registration) and the `receipt_completeness` chip turning green; diagnostic display never waits for it | by code reading the signed body names the inputs (conductor.py:337-341) beside the unnamed `values` copy (:346); the argv stays in retained output only (tap_oracle_worker.py:372-375); no live envelope inspected |
+| P5 | **Receipt completeness:** the solver argv (at least the model-selecting flags) signed with the measurement, the named input-hash map confirmed on a real envelope, and both carried by the field artifact. For fields: `producer_hash` and `model_hash` (what each identifies: section 5.7; the exact preimages are this owner's) signed in the run's producer and config receipt and in each measurement that names a field, with that measurement's association record (the grid, the ordered layer table, the four named sources and argv). | TBD (producer owner) | `run_inputs_verified` (exact stack and field registration), every field target (`target_incomplete` until then) and the `receipt_completeness` chip turning green; diagnostic display never waits for it | by code reading the signed body names the inputs (conductor.py:337-341) beside the unnamed `values` copy (:346); the argv stays in retained output only (tap_oracle_worker.py:372-375); no live envelope inspected |
 | P6 | **Replay artifacts:** serve fields next to replay bundles (`/api/replay/<bundle>/artifacts/<sha256>` or static files). | TBD (API owner) | fields in replays | the page builds `/api/replay/…` (package.js:652-654); not served |
 | P7 | **Grid layer order and extent** for layers 6 and 7 confirmed by the producer (section 5.4). | TBD (producer owner) | drawing fields on spreader and sink | code reading only |
 | P8 | **Evaluator acceptance:** an ACCEPTED entry for an exact identity. | label-rule owner with the SLAB-049 review | any "accepted" label (never blocks the build) | ACCEPTED is empty (temperature-label.mjs:28) |
@@ -1603,13 +1667,13 @@ screenshots. No item deploys, runs a solver, or touches the producer, the API, t
 | Item | Size | Scope | Acceptance |
 |---|---|---|---|
 | W12 | M | Results mode on replay and live through `source.mjs`: J, W and centre temperatures with per-value labels and statistics, as-of stamps, solve status, simulated-time line, STALE and ENDED, K drops, paused presentation; the demo replay as the default, as in the Package view. | AC-04, AC-18, AC-19, AC-23, AC-24, AC-26, AC-41, AC-42 |
-| W13 | M | `field.mjs` and `stream.mjs`, tested only on fixtures signed with the TEST key; in production the field path reports "no field in this run's receipts" until P1-P4 land; the W4 fixture pack's 20 field cases wrapped as TEST-key artifacts (section 5.10). | AC-05, AC-20, AC-21, AC-22, AC-25, AC-41, AC-45 |
+| W13 | M | `field.mjs` and `stream.mjs`: the host around the adopted module `field-validator.mjs`, vendored byte-identical and pinned (section 5.7): `fieldRefs`, `fieldTarget`, `fieldResolver`, `checkField` (the stale-target repair), the capped body and the generation guard; tested only on fixtures signed with the TEST key; in production the field path reports "no field in this run's receipts" until P1-P5 land; the W4 fixture pack's 20 field cases wrapped as TEST-key artifacts with association records (section 5.10). No second renderer: verified fields go to the D5 renderer through `fieldTexels`. | AC-05, AC-20, AC-21, AC-22, AC-25, AC-26, AC-41, AC-45, AC-46 |
 
 ### Phase 6: gated items
 
 | Item | Gate | Scope | Acceptance |
 |---|---|---|---|
-| W14 | P1-P4 merged (and P7 for layers 6-7) | Enable fields in production; rerun device budgets. | AC-05, AC-20 to AC-22, AC-25, AC-34 |
+| W14 | P1-P5 merged (and P7 for layers 6-7) | Enable fields in production; rerun device budgets. | AC-05, AC-20 to AC-22, AC-25, AC-34 |
 | W15 | P10 | Optional doorbell. | AC-24 (doorbell clause) |
 | W16 | a trial approved by the reviewers (section 10) | Optional scriptable CAD for authored geometry. | AC-38, AC-43 |
 | W17 | D7 | Optional SKETCH mode. | AC-39 |
@@ -1702,6 +1766,9 @@ stays behind the W16 trial (section 10), and deferred CAD cases do not block the
   readings) were spot-checked (web-06, extra-05) but not re-fetched; astra's CAD claims were copied, not re-fetched;
   lane 1's quotes were not re-run against the sealed evidence (lane 1 reports 176 of 176 machine-checked); the sealed
   evidence outside git was not inspected.
+- **The adopted field module was read, not run, here:** its 67 tests and root's 13 independent controls ran under its
+  author and root (A#57404). The codes in AC-21, AC-41 and AC-45 are read from its source
+  (field-validator-proposal.mjs:163-276) and its crosswalk.
 - **Estimates, not measurements:** renderer size, frame times, latencies and the budgets are lane 3's estimates or
   astra's proposed targets; AC-34 measures them.
 - **Code readings:** grid layers 6 and 7 being the spreader and sink, covering the interposer area, is a reading of
