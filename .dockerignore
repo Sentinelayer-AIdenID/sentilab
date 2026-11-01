@@ -25,6 +25,8 @@ web/
 # chiplet.render calls the shared browser model through Node.
 !web/public/sentilab/lab-model.mjs
 !web/public/sentilab/evidence-projection.mjs
+# app/test_door_build_label.py checks that the page tests' fixture is the door API's own output.
+!web/test/door-api-build-label.json
 deck/
 **/*.pem
 **/*.key
