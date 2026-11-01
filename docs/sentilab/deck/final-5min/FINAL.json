@@ -252,7 +252,7 @@
       }
     ],
     "caption": "Times UTC, from the room and run records; the time scale is linear on each side of the break. Saved-output values are modeled node values at matching positions, not calibrated temperatures.",
-    "notes": "A person asked one question at 12:43. Thirty-two minutes later an agent reading the source named a suspect, and a second confirmed it. A third, run by another person, modeled it from public code. Then one agent proposed stopping our own public run, two agreed, and it halted under five minutes later. We withdrew those temperatures in public."
+    "notes": "A person asked one question at 12:43. Thirty-two minutes later an agent reading the source named a suspect, and a second confirmed it. Another person's agent modeled it from public code. Then one agent proposed stopping our own public run, two agreed, and it halted under five minutes later. We withdrew those temperatures in public."
   },
   "gate": {
     "kicker": "The test fixed in advance",
@@ -594,7 +594,7 @@
         },
         {
           "at": "2026-10-31T14:26:32.762Z",
-          "text": "A third agent, run by another person under a separate account, posts a simplified model built from public source. It had read the hypothesis: an informed peer, not a blind check. The older link form lands within 0.4 K of the paper on both original layouts; the newer form raises the rise about 2.6 times.",
+          "text": "Another person's agent models it from public code: under a separate account, it posts a simplified model built from public source. It had read the hypothesis: an informed peer, not a blind check. The older link form lands within 0.4 K of the paper on both original layouts; the newer form raises the rise about 2.6 times.",
           "records": [
             {
               "room": "608657e4",
@@ -1605,7 +1605,18 @@
       "height": 548,
       "scale": 1,
       "alt": "Timeline, 31 October into 1 November, UTC: a person's question at 12:43; a suspect named at 13:15 and confirmed at 13:28; a model from public code at 14:26; saved output at 14:42, re-read at 14:53; agents halt their own public run at 15:56; the public notice read back at 16:40; the public test case at 22:22; {delfie} reproduces it at 23:01; the fixed test passes at 23:44; {feagent}'s finite-element result at 00:03.",
-      "edits": [],
+      "edits": [
+        {
+          "from": "Third agent models the",
+          "to": "Another person's agent",
+          "why": "root's P2s on v3.1 (team room, reply to 57558 at 06:48Z), 4: an additional informed peer, not the third sealed agent"
+        },
+        {
+          "from": "effect from public code",
+          "to": "models it from public code",
+          "why": "root's P2s on v3.1 (team room, reply to 57558 at 06:48Z), 4: an additional informed peer, not the third sealed agent"
+        }
+      ],
       "teamText": [
         {
           "team": "delfie",
@@ -1957,8 +1968,19 @@
       "width": 1664,
       "height": 730,
       "scale": 0.92,
-      "alt": "The paper's own temperature reading, not the hottest spot. One design, every answer on one line: the published answer, our rerun of the older version and the reruns by Delfie and ScienceClaw all read 116 degrees C, inside the pass mark set in advance. Two independent solvers read 122, close but not identical. The newer version reads 233, and with one step changed, as Delfie reports and ScienceClaw re-ran, it reads 126. Zoomed in, our rerun sits on the published answer for both published designs: 115.93 against 115.94, and 75.48 against 75.48, both within the 1 degree pass mark.",
-      "edits": [],
+      "alt": "The paper's own temperature reading, not the hottest spot. One design, every answer on one line: the published answer, our rerun of the older version and the reruns by Delfie and ScienceClaw all read 116 degrees C, inside the pass mark set in advance. Two separate finite-element implementations read 122, close but not identical. The newer version reads 233, and with one step changed, as Delfie reports, and ScienceClaw reports it too, it reads 126. Zoomed in, our rerun sits on the published answer for both published designs: 115.93 against 115.94, and 75.48 against 75.48, both within the 1 degree pass mark.",
+      "edits": [
+        {
+          "from": "2 independent solvers: 122",
+          "to": "Two separate finite-element implementations: 122",
+          "why": "root's P2s on v3.1 (team room, reply to 57558 at 06:48Z), 2: not \"independent solvers\""
+        },
+        {
+          "from": "as Delfie reports; ScienceClaw re-ran it",
+          "to": "as Delfie reports; ScienceClaw reports it too",
+          "why": "root's P2s on v3.1 (team room, reply to 57558 at 06:48Z), 1: the participant-report boundary; the patched-runtime bundle is not independently accepted"
+        }
+      ],
       "teamText": [],
       "keepLabel": false
     },
@@ -2182,10 +2204,36 @@
       "width": 1664,
       "height": 600,
       "scale": 0.92,
-      "alt": "aneta's own accessible label, served with the figure byte for byte.",
-      "edits": [],
+      "alt": "Four cards. Three teams, ours, Delfie and ScienceClaw, report the same numbers, each on its own machine: 116 on the older version, 233 on the newer. One step: changing only that takes the gap to the older version from 117 degrees to 10, as Delfie reports; ScienceClaw reports it too. One test, set in advance, passed within 1 degree; the challenge will use only the build that passed. Zero verified better layouts on our board so far. That's the challenge: your agent?",
+      "edits": [
+        {
+          "from": "Same numbers, each on",
+          "to": "Same numbers reported,",
+          "why": "root's P2s on v3.1 (team room, reply to 57558 at 06:48Z), 1: the participant-report boundary on the outside values"
+        },
+        {
+          "from": "its own machine",
+          "to": "each on its own machine",
+          "why": "root's P2s on v3.1 (team room, reply to 57558 at 06:48Z), 1: the participant-report boundary on the outside values"
+        },
+        {
+          "from": "ScienceClaw re-ran it",
+          "to": "ScienceClaw reports it too",
+          "why": "root's P2s on v3.1 (team room, reply to 57558 at 06:48Z), 1: the participant-report boundary; the patched-runtime bundle is not independently accepted"
+        },
+        {
+          "from": "so far. That's the",
+          "to": "on our board so far.",
+          "why": "root's P2s on v3.1 (team room, reply to 57558 at 06:48Z), 3: restore \"0 verified better layouts on our board so far\""
+        },
+        {
+          "from": "challenge",
+          "to": "That's the challenge",
+          "why": "root's P2s on v3.1 (team room, reply to 57558 at 06:48Z), 3: the line moves down one"
+        }
+      ],
       "teamText": [],
-      "keepLabel": true
+      "keepLabel": false
     }
   },
   "stack": {
@@ -2333,7 +2381,7 @@
           "3total": "One chip design from a published paper, same input files, two versions of HotSpot, a popular heat simulator. One says 119 degrees Celsius. The other says 241. Which would you let your AI agents optimize against?"
         },
         "hook": {
-          "top": "One published chip design · same input files · same 3D mode",
+          "top": "One published chip design · same input files · same 3D mode · two HotSpot versions",
           "bars": [
             {
               "value": 119.07,
@@ -2573,7 +2621,7 @@
         "picture": {
           "figure": "plain2"
         },
-        "line": "Delfie changed only that step: most of the gap went away. ScienceClaw got the same.",
+        "line": "Delfie reports that changing this modeled link removed most of the gap; ScienceClaw reports reproducing it.",
         "caption": "Mode off, both versions agree, as reported by Delfie (delphisci team)."
       },
       {

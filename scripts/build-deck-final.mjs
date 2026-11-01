@@ -554,7 +554,7 @@ export function buildFinalData({ final, hashes }, options = {}) {
     { id: "demo", main: true, kicker: final.demo.kicker, notes: `${final.demo.notes} ${final.demo.statuses[demoStatus].notes}`, content: {
       title: final.demo.title, instruction: final.demo.instruction, urlNote: final.demo.urlIsPlaceholder ? final.demo.urlNote : null,
       diagram: final.demo.diagram, status: demoStatus, statusText: final.demo.statuses[demoStatus].text,
-      // REPLAY shows the 3D still in place of the instruction and the six steps (warden reads production back at 18:45).
+      // REPLAY shows the 3D still in place of the instruction and the six steps.
       still: ["replay", "recorded"].includes(demoStatus) && stills.view3d ? { ...stills.view3d, label: B.view3d?.label ?? null } : null } },
     { id: "how", main: false, kicker: "Backup · how the team works", notes: "Backup. If asked how the team works, walk the four steps; each has a dated example.", content: {
       title: final.how.title, footnote: final.how.footnote, evidence: null,

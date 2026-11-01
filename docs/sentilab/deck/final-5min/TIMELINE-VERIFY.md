@@ -58,6 +58,26 @@ everywhere else. The sheet's reading notes ("learn the first line…", "please d
 slide. The figures the v2.5 talk carried that left the main deck (plain1, plain4, plain5, fig6) are backup slides with
 their v2.5 captions.
 
+## Root's P2s on v3.1 (team room, reply to 57558 at 06:48:17Z)
+
+Root read all 43 pages of the 06:20 PDF (sha256 `df7153dc…`) and asked for six ordinary follow-ups. This export makes
+them, at the same 06:20 cutoff, with no other change:
+
+| # | Where | Now | Was |
+|---|---|---|---|
+| 1 | slide 6, the line | "Delfie reports that changing this modeled link removed most of the gap; ScienceClaw reports reproducing it." | "Delfie changed only that step: most of the gap went away. ScienceClaw got the same." |
+| 1 | slide 9 (plain6), the outside values | "Same numbers reported, each on its own machine"; "as Delfie reports; ScienceClaw reports it too" | "Same numbers, each on its own machine"; "as Delfie reports; ScienceClaw re-ran it" |
+| 1 | slide 7 (plain3), the same line, for consistency | "as Delfie reports; ScienceClaw reports it too" | "as Delfie reports; ScienceClaw re-ran it" |
+| 2 | slide 7 (plain3) | "Two separate finite-element implementations: 122" | "2 independent solvers: 122" |
+| 3 | slide 9 (plain6) | "0 verified better layouts on our board so far. That's the challenge" | "0 verified better layouts so far. That's the challenge" |
+| 4 | B3 (fig4), 14:26; B10, 14:26; B3's notes | "Another person's agent models it from public code" | "Third agent models the effect from public code"; "A third agent, run by another person under a separate account, …"; "A third, run by another person, …" |
+| 5 | slide 1, the top line | "One published chip design · same input files · same 3D mode · two HotSpot versions" | the same without "· two HotSpot versions" |
+| 6 | the 18:45Z live check | not in the PDF or the speaker script; this file's v2.5 note now names the current plan | "warden's 18:45Z production readback" |
+
+The figure changes are declared text edits on aneta's files (`edits` in `FINAL.json`, each with its reason); plain6 is
+no longer served byte for byte, so its accessible label is this deck's own, rewritten to match. The heading of slide 10
+in `PLAIN-SCRIPT.md` (script v3.1 as sent) still says "warden's 18:45Z read-back picks the variant"; it is not rendered.
+
 ## The v2.5 plain talk, now the fallback (Carter, team room 57563, 02:51)
 
 The nine main slides follow the coordinator's plain-language script v2.5, committed byte for byte as `PLAIN-SCRIPT.md`
@@ -129,8 +149,8 @@ the build refuses it anywhere else.
 
 ### Slide 9, the door (LIVE or REPLAY)
 
-REPLAY is the export's default until the address is confirmed at the 12:00Z cutover and warden's 18:45Z production
-readback passes; `demo.urlIsPlaceholder` stays true. The replay fixture holds saved reference temperatures and
+REPLAY was the v2.5 export's default until the address is confirmed (the current plan: production at 12:00Z and the
+packet at 14:00Z, before the 16:00Z submission); `demo.urlIsPlaceholder` stays true. The replay fixture holds saved reference temperatures and
 synthetic arrivals that were never scored, so the slide calls it a preview and never a recorded run: "Status: replay
 preview. Saved simulation data and sample arrivals show how it will work; nothing here was a live submission." astra
 opened the staging replay in a browser (team room, reply to 57558, 03:26:02): it says REPLAY, bundled fixture and

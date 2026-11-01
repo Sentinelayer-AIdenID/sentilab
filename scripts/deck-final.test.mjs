@@ -640,7 +640,7 @@ test("the pictures follow the coordinator's mapping, from reviewed values only",
   // 1: two bars to scale from the reviewed chip-layer peaks, 119.07 and 240.53, rounded.
   assert.deepEqual(c("t-hook").hook.bars.map((b) => [b.value, b.label, b.tone]), [["119°C", "older version 6.0", "older"], ["241°C", "newer version 7.0", "newer"]]);
   assert.equal(c("t-hook").hook.bars[0].share, 119.07 / 240.53);
-  assert.equal(c("t-hook").hook.top, "One published chip design · same input files · same 3D mode");
+  assert.equal(c("t-hook").hook.top, "One published chip design · same input files · same 3D mode · two HotSpot versions", "root: name the simulator once on slide 1 or 2");
   assert.match(slideText(d, "t-hook"), /Hottest spot on the chips · simulated, not silicon/);
   assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[0].hook.bars[1].value = 241; }), /is not a reviewed peak/);
   // 2: the cropped 3D still beside the three steps and the punchline.
@@ -663,7 +663,7 @@ test("the pictures follow the coordinator's mapping, from reviewed values only",
   assert.throws(() => recorded({}, (f) => { f.plainTalk.slides[4].records[0].at = "2026-11-02T00:00:00Z"; }), /after the cutoff/);
   // 6: plain2 v1.11 with the reported line, credited in the caption.
   assert.equal(c("t-step").figure.id, "plain2");
-  assert.match(slideText(d, "t-step"), /Delfie changed only that step: most of the gap went away\. ScienceClaw got the same\..*Mode off, both versions agree, as reported by Delfie \(delphisci team\)\./);
+  assert.match(slideText(d, "t-step"), /Delfie reports that changing this modeled link removed most of the gap; ScienceClaw reports reproducing it\..*Mode off, both versions agree, as reported by Delfie \(delphisci team\)\./, "root's participant-report boundary");
   // 7: plain3 v2 with the two-row test, each row the recorded result against its published reference.
   assert.equal(c("t-bar").figure.id, "plain3");
   assert.deepEqual(c("t-bar").table.map((r) => [r.published, r.ours, r.result]), [["75.48", "75.48", "PASS"], ["115.94", "115.93", "PASS"]]);

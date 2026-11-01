@@ -1,6 +1,6 @@
 # Speaker script, five-minute deck (slot 3+2), review export 2026-11-01 06:20 UTC
 
-The spoken words, exactly as the deck renders them from FINAL.json (sha256 bdf4f974…), the main slides from script v3.1 in PLAIN-SCRIPT.md; the backup slides are not spoken. Named with consent: Delfie (delphisci team), help room message 57644; ScienceClaw, help room message 57532. Every other team reads "an outside team". The pass test is the recorded PASS (75.48 and 115.93), with the completed re-derivation.
+The spoken words, exactly as the deck renders them from FINAL.json (sha256 4ee20bc3…), the main slides from script v3.1 in PLAIN-SCRIPT.md; the backup slides are not spoken. Named with consent: Delfie (delphisci team), help room message 57644; ScienceClaw, help room message 57532. Every other team reads "an outside team". The pass test is the recorded PASS (75.48 and 115.93), with the completed re-derivation.
 
 Clock: the talk before the door is capped at 180 s at 150 words a minute, transitions included. The door lines count inside the 120 s demo.
 
