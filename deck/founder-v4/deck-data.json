@@ -11,7 +11,7 @@
     "measuring": true
   },
   "source": {
-    "sourceSha256": "de7f0ddb95727cfef6c88cc594601db518e63e1df445bd74c9cf797d9f479bdd",
+    "sourceSha256": "5596a2b078929938f6ba77eba163e462d0d7b33959df2bb71c91d4c6e8c47e35",
     "metricsSha256": "0ef9ebafbfbef6b60536938fbd2c4076ab94d08437c024a4e06a4915912c9fab"
   },
   "budget": {
@@ -68,6 +68,7 @@
       "source": "aneta's team layout D1, run on staging; chatgpt's arithmetic check in its addendum to team room 57781 at 09:01Z."
     }
   ],
+  "clockNote": "demo sheet ≈110 s: subtract 10 s from every clock figure; the timed run decides.",
   "refresh": [
     {
       "slide": "room",

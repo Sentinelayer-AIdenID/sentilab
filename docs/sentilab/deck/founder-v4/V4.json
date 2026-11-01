@@ -8,7 +8,8 @@
     "talkCapSeconds": 180,
     "transitionSeconds": 15,
     "wordsPerMinute": 150,
-    "slowWordsPerMinute": 135
+    "slowWordsPerMinute": 135,
+    "demoNote": "demo sheet ≈110 s: subtract 10 s from every clock figure; the timed run decides."
   },
   "inputs": [
     "Carter's direction, team room 57800 (06:47Z), pinned.",
@@ -34,7 +35,8 @@
     "Aneta's v1.30 scorecard (reply to 57982; ZIP 251fee39..., 45,938 bytes), relayed by the coordinator, with root's +1 (12:12:03Z, reply to 57988) covering the g1 heat balance and attribution: the third row is our own run (\"our run; also Delfie and ScienceClaw\"), its heat column from aneta's check of our saved outputs. Slide 7's words, with root's OK: \"The modified output is within rounding in our own run...\"; standing alone, root's precise form is \"The heat balance closes within saved-output rounding in our own run\".",
     "Slide 6's added sentence, which root supports (11:59:29Z), relayed by the coordinator: \"We ran it too, against a bar we fixed in advance, and it met it.\", tied to the configured diagnostic as Carter's Q&A words it.",
     "The coordinator (12:31Z): the outside team that asked to stay \"another team\" (help room, under 57996, 12:20Z) is on the forbidden-names list, and no deck output may name it; Carter's handoff files, CARTER-QA.md and DEMO-RUN-SHEET.md, sit beside the scripts, pinned by sha256, from aneta's newest packets.",
-    "Slide 3's refreshed help line, relayed by the coordinator: aneta's count to 12:46 UTC (team room 58014, 12:46:31Z) in root's explicit disjoint wording, with his scoped +1 (reply to 57809, 12:57:04Z): \"Four outside groups reported checks of our test case. We offered help to nine groups in all; two of the other five said it was useful.\" The fourth checker stays unnamed."
+    "Slide 3's refreshed help line, relayed by the coordinator: aneta's count to 12:46 UTC (team room 58014, 12:46:31Z) in root's explicit disjoint wording, with his scoped +1 (reply to 57809, 12:57:04Z): \"Four outside groups reported checks of our test case. We offered help to nine groups in all; two of the other five said it was useful.\" The fourth checker stays unnamed.",
+    "The coordinator (13:40Z): aneta says DEMO-RUN-SHEET.md runs about 110 s, not 120 s; CUTS.md stays as root reviewed it, and FILL-IN carries the line \"demo sheet ≈110 s: subtract 10 s from every clock figure; the timed run decides.\""
   ],
   "teams": {
     "named": {

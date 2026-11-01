@@ -328,6 +328,8 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
       demoSeconds: S.demoSeconds ?? 0, withDemoSeconds: tenths(total + (S.demoSeconds ?? 0)), slowWithDemoSeconds: tenths(slowSeconds + c.transitionSeconds + (S.demoSeconds ?? 0)) },
     placeholders: fills,
     options: v4.options ?? [],
+    // The clock's caveat for Carter (the coordinator, 13:40Z): FILL-IN carries it, the slides do not.
+    clockNote: v4.clock.demoNote ?? null,
     refresh: v4.refresh ?? [],
     slides: slides.map(({ facts, ...s }) => s),
     facts: slides.map((s) => ({ id: s.id, facts: s.facts })),
@@ -381,7 +383,8 @@ export function fillInTable(data) {
     "| Slide | Shows | Metric id | Needed |", "|---|---|---|---|", ...(rows.length ? rows : ["| none | | | |"]), "",
     ...(data.refresh.length ? ["## Refresh at the freeze", "", "| Slide | Shows | Why |", "|---|---|---|", ...data.refresh.map((r) => `| ${r.slide} | ${r.what} | ${r.why} |`), ""] : []),
     ...(data.options.length ? ["## Optional, Carter's call: notes only, not on a slide", "", "| Slide | Line, if Carter asks for it | Numbers | Qualifiers | Source |", "|---|---|---|---|---|",
-      ...data.options.map((o) => `| ${o.slide} | ${o.line} | ${o.numbers} | ${o.qualifiers} | ${o.source} |`), ""] : [])].join("\n");
+      ...data.options.map((o) => `| ${o.slide} | ${o.line} | ${o.numbers} | ${o.qualifiers} | ${o.source} |`), ""] : []),
+    ...(data.clockNote ? ["## Clock", "", data.clockNote, ""] : [])].join("\n");
 }
 
 export function sourcesList(data) {

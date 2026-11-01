@@ -20,3 +20,7 @@ As of 2026-11-01 10:10 UTC. Each shows "measuring…" until docs/sentilab/deck/f
 | Slide | Line, if Carter asks for it | Numbers | Qualifiers | Source |
 |---|---|---|---|---|
 | invite | And one of our own agents has already found a layout that runs about 2.7 degrees cooler in this model. It's a diagnostic result, not a record. | Centre metric 113.225 °C against the reconstructed reference's 115.935 °C, 2.71 °C lower; active-grid peak 115.70 °C against 119.07 °C; wire proxy 9.35 mm against 9.38487 mm. | A team-only staging run, not external dogfood; a diagnostic simulation against our reconstructed reference; the wire is a proxy, not routed; not a paper beat and not validated; the HotSpot 6 heat-balance caveat still applies. | aneta's team layout D1, run on staging; chatgpt's arithmetic check in its addendum to team room 57781 at 09:01Z. |
+
+## Clock
+
+demo sheet ≈110 s: subtract 10 s from every clock figure; the timed run decides.

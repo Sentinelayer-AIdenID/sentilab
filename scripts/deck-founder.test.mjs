@@ -508,6 +508,10 @@ test("CUTS.md proposes a cut of at least 30 spoken words, not applied, that brin
   const doc = readFileSync(join(FOUNDER_DIR, "CUTS.md"), "utf8");
   assert.ok(doc.startsWith("# CUTS: a proposed cut of the spoken words, not applied"));
   for (const c of plan.cut) assert.ok(doc.includes(`- Before: "${c.from.trim()}"`) && doc.includes(`After: ${c.after}`), c.slide);
+  // The demo sheet runs about 110 s, not 120 (aneta, relayed 13:40Z): CUTS.md stays as root reviewed it, and FILL-IN
+  // carries the caveat for every clock figure, in the coordinator's words.
+  assert.ok(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8").includes("## Clock\n\ndemo sheet ≈110 s: subtract 10 s from every clock figure; the timed run decides.\n"));
+  assert.ok(fillInTable(draft).includes("demo sheet ≈110 s"));
   // The build refuses a passage that is not there exactly once, or one that touches a number or a placeholder.
   const bad = (mutate, re) => { const v4 = structuredClone(loaded.v4); mutate(v4.cuts); assert.throws(() => cutsPlan({ ...loaded, v4 }), re); };
   bad((k) => { k.cut[0].from = " not in the words"; }, /must appear once in slide room's words, found 0/);
