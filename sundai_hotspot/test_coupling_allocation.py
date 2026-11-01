@@ -401,6 +401,7 @@ print(module.reference_validation.__file__)
                 mock.patch.object(gate0_operator, "carried_cpu_s", return_value=0), \
                 mock.patch.object(gate0_operator, "RUNS", self.root / "runs"), \
                 mock.patch.object(gate0_operator, "LOG", self.root / "operator.log"), \
+                mock.patch.object(gate0_operator, "require_coupling_storage"), \
                 mock.patch.object(coupling_allocation, "require_binary"), \
                 mock.patch.object(gate0_operator, "run_call", side_effect=engine), contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(gate0_operator.cmd_run(args), 0)

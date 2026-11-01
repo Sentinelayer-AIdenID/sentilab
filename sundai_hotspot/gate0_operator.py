@@ -137,6 +137,8 @@ def require_coupling_storage(report_out: Path | None = None) -> None:
         if report_out is not None:
             if report_out.parent != RUNS or report_out in paths:
                 raise ValueError("coupling report must be a separate file directly in the persistent coupling directory")
+            if report_out.exists() or report_out.is_symlink():
+                raise ValueError("coupling report output must be fresh; existing evidence is never overwritten")
             paths.append(report_out)
         for path in paths:
             resolved = path.resolve()
@@ -144,6 +146,14 @@ def require_coupling_storage(report_out: Path | None = None) -> None:
                 raise ValueError(f"coupling output escapes or aliases the persistent tree: {path}")
     except (OSError, ValueError, RuntimeError) as exc:
         raise SystemExit(f"coupling persistence preflight refused: {exc}") from exc
+
+
+def require_fresh_call_outputs(out: Path) -> None:
+    """A call must not reuse evidence or follow a pre-existing stdout/stderr symlink."""
+    require_coupling_storage()
+    paths = (out, out.with_name(out.name + ".stdout"), out.with_name(out.name + ".stderr"))
+    if out.parent != RUNS or any(path.exists() or path.is_symlink() for path in paths):
+        raise SystemExit("coupling call output paths must be fresh; reconcile existing evidence without retrying")
 
 
 def save_cpu(total: float | None, lower_bound: float | None = None) -> None:
@@ -350,7 +360,7 @@ def run_call(call: dict, argv: list[str], out: Path, budget: dict, *, meter=None
     with OwnedProcesses() as owned:
         start = meter()  # before the launch: if this read fails, nothing is launched
         last_read = budget["carried"] + start
-        with stdout_path.open("wb") as stdout, stderr_path.open("wb") as stderr:
+        with stdout_path.open("xb") as stdout, stderr_path.open("xb") as stderr:
             child = subprocess.Popen(argv, cwd=cwd, stdout=stdout, stderr=stderr, start_new_session=True)
         while child.poll() is None:
             try:
@@ -428,12 +438,14 @@ def cmd_run(args) -> int:
         if used + envelope > budget["cap"]:
             log("stop_budget", call=cid, used_cpu_s=round(used, 3), envelope_cpu_s=envelope, cap=budget["cap"])
             return 4
+        out = RUNS / f"{cid}-{int(time.time())}"
+        if getattr(args, "manifest", "gate0") == "coupling":
+            require_fresh_call_outputs(out)
         if reader.read(args.grant_id, "reserve", cid, manifest_sha256) is None:
             ref = gate0_anchor.tag_ref(args.grant_id, "reserve", cid)
             sha = gate0_anchor._create_tag(request, ref, gate0_anchor.tag_message(
                 "reserve", args.grant_id, manifest_sha256, cid), tree=build_tree, parents=[build])
             log("reserved", call=cid, ref=ref, commit=sha)
-        out = RUNS / f"{cid}-{int(time.time())}"
         out.mkdir(parents=getattr(args, "manifest", "gate0") != "coupling")
         result = run_call(call, call_argv(call, args, out), out, budget)
         if result["survivors"]:

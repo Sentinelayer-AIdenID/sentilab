@@ -97,6 +97,54 @@ class PersistenceTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assert_cli_refused_before_effects("report", "--out", str(path))
 
+    def test_report_preserves_existing_supervisor_sidecars_and_reports(self):
+        for name in ("primary-1.stdout", "primary-1.stderr", "prior-report.json"):
+            path = self.runs / name
+            path.write_bytes(b"retained evidence")
+            with self.subTest(path=path):
+                self.assert_cli_refused_before_effects("report", "--out", str(path))
+                self.assertEqual(path.read_bytes(), b"retained evidence")
+
+    def test_occupied_call_outputs_refuse_before_reservation_or_launch(self):
+        call = {"id": "primary", "accounting": {"reserved_cpu_s": 58.5}}
+        manifest = {"operator": {"public_key_ed25519": "test"}, "calls": [call]}
+        args = SimpleNamespace(manifest="coupling", key=Path("unused"), ledger_root=Path("unused"),
+                               grant_id="test", only=None)
+        for suffix in ("", ".stdout", ".stderr"):
+            path = self.runs / ("primary-1" + suffix)
+            path.write_bytes(b"retained")
+            with self.subTest(suffix=suffix), ExitStack() as stack:
+                stack.enter_context(mock.patch.object(operator, "load", return_value=(manifest, "test")))
+                stack.enter_context(mock.patch.object(operator, "check_key"))
+                stack.enter_context(mock.patch.object(operator, "github",
+                    return_value=mock.Mock(return_value={"tree": {"sha": "unused"}})))
+                stack.enter_context(mock.patch.object(operator, "cgroup_cpu_s", return_value=0))
+                stack.enter_context(mock.patch.object(operator.time, "time", return_value=1))
+                stack.enter_context(mock.patch.dict(operator.os.environ, {"BUILD_SHA": "a" * 40}))
+                stack.enter_context(mock.patch.object(gate0_anchor, "read_ledger",
+                    return_value={"grant": {"grant_id": "test", "cpu_cap_s": 234}}))
+                stack.enter_context(mock.patch.object(gate0_anchor, "TagReader",
+                    return_value=SimpleNamespace(read=mock.Mock(return_value=None))))
+                effects = [stack.enter_context(mock.patch.object(operator, name)) for name in ("log", "run_call")]
+                effects.append(stack.enter_context(mock.patch.object(gate0_anchor, "_create_tag")))
+                with self.assertRaises(SystemExit):
+                    operator.cmd_run(args)
+                for effect in effects:
+                    effect.assert_not_called()
+                self.assertEqual(path.read_bytes(), b"retained")
+            path.unlink()
+
+    def test_exclusive_sidecar_creation_never_follows_existing_file(self):
+        out = self.runs / "fresh-call"
+        sidecar = self.runs / "fresh-call.stdout"
+        sidecar.write_bytes(b"retained")
+        with mock.patch.object(operator, "OwnedProcesses", return_value=nullcontext()), \
+                mock.patch.object(operator.subprocess, "Popen") as launch:
+            with self.assertRaises(FileExistsError):
+                operator.run_call({}, [], out, {"carried": 0}, meter=lambda: 0)
+            launch.assert_not_called()
+        self.assertEqual(sidecar.read_bytes(), b"retained")
+
     def test_escaping_file_and_directory_symlinks_refuse(self):
         outside = self.mount.parent / "outside"
         outside.mkdir()

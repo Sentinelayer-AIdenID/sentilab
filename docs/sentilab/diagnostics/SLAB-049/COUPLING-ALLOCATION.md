@@ -41,6 +41,9 @@ carry and log hash readback from the host after the container exits. An existing
 fixture does not establish that operational proof. Reports go directly in the coupling directory and cannot
 overwrite its carry, temporary carry, log or per-call evidence. Do not work around a refusal by making an
 ephemeral directory.
+Report destinations must be fresh, including when an existing name belongs to a supervisor stdout/stderr
+sidecar. Before each reservation, the operator rechecks storage and refuses any occupied call directory or
+sidecar path; sidecar files are then created exclusively so an existing file or symlink cannot be overwritten.
 
 ## Binary identity and provenance
 
