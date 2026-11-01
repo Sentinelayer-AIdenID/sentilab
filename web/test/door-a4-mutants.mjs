@@ -1,8 +1,10 @@
 // node web/test/door-a4-mutants.mjs [group-prefix]
 // Mutants of every new rule of AGENT-DOOR Amendment 4 rev 2 at the edge: the opt-in and its display-text rules and caps
-// (src/door/declare.js), the purpose step and the heartbeat proxy with its per-IP limit (src/door/door.js, src/worker.js),
-// the wall's copy and form (src/door/render.js), the heartbeat limiter's binding (wrangler.jsonc), the opt-in's delivery,
-// and the pages' heartbeat module (public/sentilab/here.mjs). Each runs in
+// (src/door/declare.js, with its generated Unicode 16.0 tables in src/door/unicode16.js), the JSON path's well-formed
+// strings, the off switch DOOR_DECLARATIONS, the purpose step and the heartbeat proxy with its per-IP limit
+// (src/door/door.js, src/worker.js), the wall's copy and form (src/door/render.js), the heartbeat limiter's binding and
+// the shipped switch (wrangler.jsonc), the opt-in's delivery, and the pages' heartbeat module
+// (public/sentilab/here.mjs). Each runs in
 // a disposable copy of web/ (the working checkout is never modified) against the A4 tests, and must fail an assertion
 // there: a mutant that survives, or that only breaks an import or the syntax, fails this script.
 import assert from "node:assert/strict";
@@ -20,42 +22,92 @@ const WRANGLER = "wrangler.jsonc";
 const B = String.fromCharCode(92);       // a backslash, so no escape in this file can turn into the character it names
 const NL = String.fromCharCode(10);
 const TOKEN = "src/door/token.js";
+// The Unicode 16.0 tables are generated (src/door/unicode16.js, from the API's unicodedata2): a mutant drops a range
+// from one, as a hand edit or a stale table would. The Hangul fillers U+115F, U+1160, U+3164 and U+FFA0 are
+// default-ignorable too, so dropping one from REFUSED alone is an equivalent mutant (DEFAULT_IGNORABLE still refuses
+// it); U+2800 is not default-ignorable.
+const U16 = "src/door/unicode16.js";
 const CATEGORIES = ["Cc", "Cf", "Co", "Cs", "Cn", "Zl", "Zp"];
-const categories = (list) => `const REFUSED_CATEGORY = /[${list.map((c) => `${B}p{${c}}`).join("")}]/u;`;
-const FILLERS = [0x115f, 0x1160, 0x3164, 0xffa0, 0x2800];
-const fillerList = (list) => `export const INVISIBLE_FILLERS = Object.freeze([${list.map((c) => `0x${c.toString(16)}`).join(", ")}]);`;
 
 const groups = {
-  "the character policy (root's shared rule)": [
-    ...CATEGORIES.map((category) => [`${category} accepted`, DECLARE, categories(CATEGORIES), categories(CATEGORIES.filter((c) => c !== category))]),
-    ...FILLERS.map((code) => [`the filler U+${code.toString(16)} accepted`, DECLARE, fillerList(FILLERS), fillerList(FILLERS.filter((c) => c !== code))]),
-    ["the fillers not checked", DECLARE, '    if (INVISIBLE_FILLERS.includes(char.codePointAt(0))) return "control_character";' + NL, ""],
-    ["categories judged after normalising (a tag payload stripped, then accepted)", DECLARE, "  if (REFUSED_CATEGORY.test(text)) return \"control_character\";",
-      `  if (REFUSED_CATEGORY.test(text.normalize("NFKC").replace(/${B}p{Cf}/gu, ""))) return "control_character";`],
+  "the character policy (root's shared rule, Unicode 16.0)": [
+    ["Cc accepted (U+0000-001F dropped from REFUSED)", U16, `export const REFUSED = Object.freeze([${NL}  0x0000, 0x001F, `, `export const REFUSED = Object.freeze([${NL}  `],
+    ["Cf and Cn accepted (U+05F5-0605 dropped)", U16, "0x05F5, 0x0605, ", ""],
+    ["Cs, Co and Cn accepted (U+D7FC-F8FF dropped)", U16, "0xD7FC, 0xF8FF, ", ""],
+    ["Cn accepted (U+20C1-20CF, unassigned in 16.0, dropped)", U16, "0x20C1, 0x20CF,", ""],
+    ["Zl and Zp accepted (U+2028-202E dropped)", U16, "0x2028, 0x202E, ", ""],
+    ["the blank Braille filler U+2800 accepted", U16, "0x2800, 0x2800, ", ""],
+    ["a mark range dropped (U+0300-036F)", U16, `export const MARKS = Object.freeze([${NL}  0x0300, 0x036F, `, `export const MARKS = Object.freeze([${NL}  `],
+    ["the default-ignorables not checked", DECLARE, "const refusedCode = (code) => inRanges(REFUSED, code) || inRanges(DEFAULT_IGNORABLE, code);",
+      "const refusedCode = (code) => inRanges(REFUSED, code);"],
+    ["the variation selectors U+FE00-FE0F accepted", DECLARE, "0xFE00, 0xFE0F, ", ""],
+    ["the supplementary variation selectors U+E0100-E01EF accepted", DECLARE, "0xE0000, 0xE0FFF]", "0xE0000, 0xE00FF]"],
+    ["the engine's Unicode 17.0 categories again", DECLARE, "const refusedCode = (code) => inRanges(REFUSED, code) || inRanges(DEFAULT_IGNORABLE, code);",
+      `const refusedCode = (code) => /[${CATEGORIES.map((c) => `${B}p{${c}}`).join("")}]/u.test(String.fromCodePoint(code)) || [0x115f, 0x1160, 0x3164, 0xffa0, 0x2800].includes(code) || inRanges(DEFAULT_IGNORABLE, code);`],
+    ["the engine's Unicode 17.0 marks again", DECLARE, "    run = inRanges(MARKS, code) ? run + 1 : 0;", `    run = /^${B}p{M}$/u.test(String.fromCodePoint(code)) ? run + 1 : 0;`],
+    ["the binary search misses each table's last range", DECLARE, "  let high = table.length / 2 - 1;", "  let high = table.length / 2 - 2;"],
+    ["categories judged after normalising (a tag payload stripped, then accepted)", DECLARE, "  const codes = Array.from(text, (char) => char.codePointAt(0));",
+      "  const codes = Array.from(nameKey(text), (char) => char.codePointAt(0));"],
     ["a run of 9 marks allowed", DECLARE, "export const MAX_MARK_RUN = 8;", "export const MAX_MARK_RUN = 9;"],
-    ["mark runs never reset (a total quota)", DECLARE, "run = MARK.test(char) ? run + 1 : 0;", "run = MARK.test(char) ? run + 1 : run;"],
+    ["mark runs never reset (a total quota)", DECLARE, "run = inRanges(MARKS, code) ? run + 1 : 0;", "run = inRanges(MARKS, code) ? run + 1 : run;"],
     ["mark runs not checked", DECLARE, '    if (run > MAX_MARK_RUN) return "combining_marks";', ""],
-    ["length counted in UTF-16 units", DECLARE, "return [...text].length > max ? \"too_long\" : null;", "return text.length > max ? \"too_long\" : null;"],
-    ["cap off by one", DECLARE, "return [...text].length > max ? \"too_long\" : null;", "return [...text].length >= max ? \"too_long\" : null;"],
+    ["length counted in UTF-16 units", DECLARE, "return codes.length > max ? \"too_long\" : null;", "return text.length > max ? \"too_long\" : null;"],
+    ["cap off by one", DECLARE, "return codes.length > max ? \"too_long\" : null;", "return codes.length >= max ? \"too_long\" : null;"],
     ["name cap 65", DECLARE, "FIELD_LIMITS = Object.freeze({ name: 64, reason: 160 });", "FIELD_LIMITS = Object.freeze({ name: 65, reason: 160 });"],
     ["reason cap 161", DECLARE, "FIELD_LIMITS = Object.freeze({ name: 64, reason: 160 });", "FIELD_LIMITS = Object.freeze({ name: 64, reason: 161 });"],
+    ["a blank field accepted", DECLARE, '    if (field !== "source" && nameKey(values[0]) === "") return { status: "not_sent", code: "blank" };' + NL, ""],
+    ["blank checked on the name only", DECLARE, 'if (field !== "source" && nameKey(values[0]) === "")', 'if (field === "name" && nameKey(values[0]) === "")'],
+  ],
+  "well-formed strings on the JSON path": [
+    ["the check removed (a lone surrogate becomes U+FFFD and passes)", DOOR,
+      "  const illFormed = entries.filter(([k, v]) => DECLARED_TEXT.includes(k) && !v.isWellFormed()).map(([k]) => k);", "  const illFormed = [];"],
+    ["only the name checked", DOOR, 'const DECLARED_TEXT = Object.freeze(["name", "reason", "source"]);', 'const DECLARED_TEXT = Object.freeze(["name"]);'],
+    ["the finding not passed on", DOOR, "  const optIn = readOptIn(params, fields.illFormed);", "  const optIn = readOptIn(params);"],
+    ["an ill-formed field not refused", DECLARE, '    if (illFormed.includes(field)) return { status: "not_sent", code: "control_character" };' + NL, ""],
   ],
   "reserved names (defense in depth)": [
     ["reserved names accepted", DECLARE, '    if (field === "name" && RESERVED_NAMES.includes(nameKey(values[0]))) return { status: "not_sent", code: "reserved_name" };', ""],
     ["the rule on reason, not name", DECLARE, 'if (field === "name" && RESERVED_NAMES', 'if (field === "reason" && RESERVED_NAMES'],
     ["a reserved label missing", DECLARE, '  "moderator"]);', '  "moderators"]);'],
-    ["compared without NFKC", DECLARE, 'return name.normalize("NFKC").replace(', "return name.replace("],
+    ["compared without NFKC", DECLARE, 'Array.from(name.normalize("NFKC"))', "Array.from(name)"],
     ["compared case-sensitively", DECLARE, ".trim().toLowerCase();", ".trim();"],
     ["compared untrimmed", DECLARE, ".trim().toLowerCase();", ".toLowerCase();"],
     ["whitespace runs kept", DECLARE, `.replace(/${B}s+/gu, " ")`, ""],
-    ["format characters kept", DECLARE, `.replace(/${B}p{Cf}/gu, "")`, ""],
+    ["format characters kept", DECLARE, '.filter((char) => !inRanges(FORMAT, char.codePointAt(0)))', ""],
+    ["the comparison's format table loses U+200B-200F", U16, "0x180E, 0x180E, 0x200B, 0x200F, ", "0x180E, 0x180E, "],
     ["a refusal here reads not_sent", DECLARE, 'if (optIn.status === "not_sent") return { status: "not_recorded", code: optIn.code',
       'if (optIn.status === "not_sent") return { status: "not_sent", code: optIn.code'],
+  ],
+  "the off switch (DOOR_DECLARATIONS, shipped off)": [
+    ["on unless \"off\"", DOOR, 'export const declarationsOn = (env) => env?.DOOR_DECLARATIONS === "on";', 'export const declarationsOn = (env) => env?.DOOR_DECLARATIONS !== "off";'],
+    ["on in any case or padding", DOOR, 'export const declarationsOn = (env) => env?.DOOR_DECLARATIONS === "on";',
+      'export const declarationsOn = (env) => String(env?.DOOR_DECLARATIONS).trim().toLowerCase() === "on";'],
+    ["the declare route routed when off", DOOR, '  if (pathname === "/agents/declare") return declarationsOn(env) ? DECLARE_ROUTE : null;',
+      '  if (pathname === "/agents/declare") return DECLARE_ROUTE;'],
+    ["the wall offers the opt-in when off", DOOR, "  const options = declarationsOn(env) ? { source: viaSource(url.searchParams), declarations: true } : {};",
+      "  const options = { source: viaSource(url.searchParams), declarations: true };"],
+    ["via carried when off", DOOR, "  const options = declarationsOn(env) ? { source: viaSource(url.searchParams), declarations: true } : {};",
+      "  const options = declarationsOn(env) ? { source: viaSource(url.searchParams), declarations: true } : { source: viaSource(url.searchParams) };"],
+    ["the token page offers it when off", DOOR, "  const page = !declarationsOn(env) ? {} : {", "  const page = false ? {} : {"],
+    ["the ENGRAM view offers it when off", DOOR, "  const declare = !declarationsOn(env) ? null : declareObject(", "  const declare = false ? null : declareObject("],
+    ["the 405 text names the declare route when off", DOOR, "    const detail = declarationsOn(env) ?", "    const detail = true ?"],
+    ["the wall's page on by default", RENDER, "export function wallHtml(origin, submissions, { source = null, declarations = false } = {}) {",
+      "export function wallHtml(origin, submissions, { source = null, declarations = true } = {}) {"],
+    ["the wall's markdown on by default", RENDER, "export function wallMarkdown(origin, submissions, { source = null, declarations = false } = {}) {",
+      "export function wallMarkdown(origin, submissions, { source = null, declarations = true } = {}) {"],
+    ["the wall's JSON on by default", RENDER, "export function wallJson(origin, submissions, { source = null, declarations = false } = {}) {",
+      "export function wallJson(origin, submissions, { source = null, declarations = true } = {}) {"],
+    ["the token JSON keeps a declaration field when off", RENDER, "declare: declareObject(origin, { token, key: declare.key, source }) } : {}) };",
+      'declare: declareObject(origin, { token, key: declare.key, source }) } : { declaration: { status: "not_given" } }) };'],
+    ["the Worker routes without its env", WORKER, "    const door = doorRoute(pathname, env);", '    const door = doorRoute(pathname, { DOOR_DECLARATIONS: "on" });'],
+    ["production ships it on", WRANGLER, '    "DOOR_DECLARATIONS": "off" },', '    "DOOR_DECLARATIONS": "on" },'],
+    ["staging ships it on", WRANGLER, '"AQUARIUM_POST": "off", "DOOR_DECLARATIONS": "off" },', '"AQUARIUM_POST": "off", "DOOR_DECLARATIONS": "on" },'],
   ],
   "the opt-in: only a POST bound to the pass": [
     ["a GET records a declaration", DOOR, "  emitArrival(request, env, ctx, url, { purpose, nonce: claims.nonce, expiresAt: claims.expires_at });",
       '  emitArrival(request, env, ctx, url, { purpose, nonce: claims.nonce, expiresAt: claims.expires_at, ...(readOptIn(url.searchParams).status === "opted_in" ? { declaration: readOptIn(url.searchParams).declaration } : {}) });'],
-    ["the declare route takes a GET", DOOR, '"/agents/declare": { methods: ["POST"], handler: declare },', '"/agents/declare": { methods: ["GET", "HEAD", "POST"], handler: declare },'],
+    ["the declare route takes a GET", DOOR, 'const DECLARE_ROUTE = Object.freeze({ methods: ["POST"], handler: declare });',
+      'const DECLARE_ROUTE = Object.freeze({ methods: ["GET", "HEAD", "POST"], handler: declare });'],
     ["a cross-site form accepted", DOOR, '  if (form && !ownPageForm(request, url)) return refuse(request, format, 403, { error: "cross_site" });', ""],
     ["a user-typed form (Sec-Fetch-Site: none) accepted", DOOR, 'const ownPageForm = (request, url) => request.headers.get("sec-fetch-site") !== "none" && sameSiteForm(request, url);',
       "const ownPageForm = (request, url) => sameSiteForm(request, url);"],
@@ -160,7 +212,7 @@ const groups = {
   ],
 };
 
-const tests = ["door-a4.test.mjs", "here.test.mjs", "door-routes.test.mjs"];
+const tests = ["door-a4.test.mjs", "here.test.mjs", "door-routes.test.mjs", "door-declaration-u16.test.mjs", "door-declarations-off.test.mjs"];
 const web = new URL("../", import.meta.url);
 const repo = new URL("../", web);
 const CONTRACT_FILES = ["contracts/open-proposal-v1/reason-codes.json", "contracts/open-proposal-v1/schemas/common.schema.json"];
