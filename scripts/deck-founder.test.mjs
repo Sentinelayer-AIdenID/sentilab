@@ -7,8 +7,8 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 import {
   FOUNDER_DECK_DIR, FOUNDER_DIR, FOUNDER_OUTPUTS, FounderError, buildFounderData, checkUnnamed, countWords, fillInTable,
-  founderPdfName, handoffFiles, loadFounder, outputsMatch, publicOutputs, scriptPath, serialize, sourcesList, speakerScript,
-  windowShown,
+  founderPdfName, handoffFiles, loadFounder, loadMetrics, outputsMatch, publicOutputs, scriptPath, serialize, sourcesList,
+  speakerScript, windowShown,
 } from "./build-deck-founder.mjs";
 import { PDF_DIR, REPO_ROOT } from "./build-deck-data.mjs";
 
@@ -16,14 +16,22 @@ const require = createRequire(import.meta.url);
 const deck = require(join(FOUNDER_DECK_DIR, "deck.js"));
 const loaded = loadFounder();
 const data = buildFounderData(loaded);
-// The draft, built explicitly: the tests that describe placeholders and the DRAFT tag hold before and after the freeze.
-const draft = buildFounderData(loaded, { final: false });
-const committed = JSON.parse(readFileSync(join(FOUNDER_DECK_DIR, "deck-data.json"), "utf8"));
-// A build of a changed copy of the source, for the refusal tests.
-const variant = (mutate, metrics = loaded.metrics) => {
+// The source as it stood before the freeze: V4.json in draft mode, with METRICS.json's numbers only. The tests that
+// describe placeholders, the fallback and the draft build from it, so they hold before and after the freeze lands.
+const pre = (() => {
   const v4 = structuredClone(loaded.v4);
+  delete v4.build;
+  delete v4.metrics.freezeSha256;
+  return { ...loaded, v4, metrics: { ...loadMetrics(), freezeSha256: null } };
+})();
+// The draft, built explicitly: the tests that describe placeholders and the DRAFT tag hold before and after the freeze.
+const draft = buildFounderData(pre, { final: false });
+const committed = JSON.parse(readFileSync(join(FOUNDER_DECK_DIR, "deck-data.json"), "utf8"));
+// A build of a changed copy of the pre-freeze source, for the refusal tests.
+const variant = (mutate, metrics = pre.metrics) => {
+  const v4 = structuredClone(pre.v4);
   mutate(v4);
-  return buildFounderData({ ...loaded, v4, metrics });
+  return buildFounderData({ ...pre, v4, metrics });
 };
 const slide = (d, id) => d.slides.find((s) => s.id === id);
 const html = (d) => deck.renderSlides(d);
@@ -189,14 +197,15 @@ test("a number not measured yet shows \"measuring…\" and is listed to fill in;
   assert.deepEqual(draft.placeholders.map((p) => p.id).sort(), [...want].sort());
   assert.equal((html(draft).match(/class="measuring"/g) ?? []).length, 4, "four measuring tiles, all on the door slide");
   assert.equal(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8"), fillInTable(data), "FILL-IN is the committed build's");
-  for (const id of want) assert.ok(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8").includes(`\`${id}\``), id);
+  for (const id of want) assert.ok(fillInTable(draft).includes(`\`${id}\``), id);
+  for (const p of data.placeholders) assert.ok(readFileSync(FOUNDER_OUTPUTS.fillIn, "utf8").includes(`\`${p.id}\``), p.id);
   assert.match(slide(draft, "invite").notes.text, /^We're inviting agents on Moltbook: \[votes on our Moltbook invitation: measuring\]/);
   assert.doesNotMatch(shown(draft, "invite") + slide(draft, "invite").notes.text, /\bWe invited\b|\bour (?:Moltbook )?post\b/, "no past tense about Moltbook before the post exists");
   assert.ok(draft.deck.measuring && founderPdfName(draft).endsWith("-draft.pdf"));
   // With the metrics on file, the tiles carry them and the words read them out.
   const keys = ["moltbook.post_votes", "door.visits", "door.agents_passed", "door.view_size"];
-  const byId = new Map([...loaded.metrics.byId, ...keys.map((id, k) => [id, { id, value: 100 + k, display: String(100 + k), definition: "d", scope: "s", window: "w", source: "x" }])]);
-  const filled = variant(() => {}, { sha256: loaded.metrics.sha256, byId });
+  const byId = new Map([...pre.metrics.byId, ...keys.map((id, k) => [id, { id, value: 100 + k, display: String(100 + k), definition: "d", scope: "s", window: "w", source: "x" }])]);
+  const filled = variant(() => {}, { sha256: pre.metrics.sha256, byId });
   assert.equal(filled.placeholders.length, 0);
   assert.doesNotMatch(html(filled), /class="measuring"/);
   assert.match(slide(filled, "invite").notes.text, /^We're inviting agents on Moltbook: 100 votes, 101 visits, 102 passed\.$/);
@@ -221,12 +230,12 @@ test("the founder PDFs are the exports, 3min and 2min: one page per slide, the o
 
 test("--final drops every number without a receipt, speaks the no-numbers line, and loses the DRAFT tag", () => {
   // The freeze refuses a figure still pending review; with root's +1 on v1.24, none is.
-  const pending = structuredClone(loaded.v4);
+  const pending = structuredClone(pre.v4);
   pending.figures.plain10.pending = "v9.99, pending a reviewer's +1";
-  assert.throws(() => buildFounderData({ ...loaded, v4: pending }, { final: true }), /pending a reviewer's \+1; the freeze takes only reviewed figures/);
-  const reviewed = structuredClone(loaded.v4);
+  assert.throws(() => buildFounderData({ ...pre, v4: pending }, { final: true }), /pending a reviewer's \+1; the freeze takes only reviewed figures/);
+  const reviewed = structuredClone(pre.v4);
   for (const slot of ["3min", "2min"]) {
-    const fin = buildFounderData({ ...loaded, v4: reviewed }, { slot, final: true });
+    const fin = buildFounderData({ ...pre, v4: reviewed }, { slot, final: true });
     assert.equal(fin.deck.draft, false);
     assert.equal(fin.deck.measuring, false);
     assert.doesNotMatch(html(fin), /measuring…|class="measuring"|DRAFT/, slot);
@@ -241,7 +250,7 @@ test("--final drops every number without a receipt, speaks the no-numbers line, 
   // A slide whose words need a missing number must say what to speak at the freeze instead.
   const noLine = structuredClone(reviewed);
   delete noLine.slides.find((x) => x.id === "invite").sayIfUnmeasured;
-  assert.throws(() => buildFounderData({ ...loaded, v4: noLine }, { final: true }), /no sayIfUnmeasured line/);
+  assert.throws(() => buildFounderData({ ...pre, v4: noLine }, { final: true }), /no sayIfUnmeasured line/);
 });
 
 test("founder deck files are LF-only, with no control bytes", () => {
@@ -286,10 +295,10 @@ test("the optional D1 layout result is Carter's call: in the notes and FILL-IN w
 });
 
 test("the freeze drops tiles without a receipt even with no fallback picture, and a figure's own words face the public-render rule", () => {
-  const reviewed = structuredClone(loaded.v4);
+  const reviewed = structuredClone(pre.v4);
   for (const fig of Object.values(reviewed.figures)) delete fig.pending;
   delete reviewed.slides.find((x) => x.id === "invite").finalFallback;
-  const fin = buildFounderData({ ...loaded, v4: reviewed }, { final: true });
+  const fin = buildFounderData({ ...pre, v4: reviewed }, { final: true });
   assert.deepEqual(slide(fin, "invite").content.tiles, [], "no receipt, no tile");
   // A vendor name drawn into a figure stops the build like one typed on the slide.
   const named = structuredClone(loaded.v4);
@@ -298,9 +307,9 @@ test("the freeze drops tiles without a receipt even with no fallback picture, an
 });
 
 test("a figure still pending review is marked on its draft slide", () => {
-  const pending = structuredClone(loaded.v4);
+  const pending = structuredClone(pre.v4);
   pending.figures.plain10.pending = "v9.99, pending a reviewer's +1";
-  const d = buildFounderData({ ...loaded, v4: pending });
+  const d = buildFounderData({ ...pre, v4: pending });
   const section = (id) => html(d).split("\n").find((x) => x.includes(`id="s-${id}"`));
   assert.match(section("point"), /DRAFT · figure pending review/);
   assert.doesNotMatch(section("chips"), /figure pending review/);
@@ -353,9 +362,9 @@ test("root's rev 5 review: the timeline keeps its qualifications, the help line 
 });
 
 test("V4.json's build sets the committed build's mode: \"final\" is the freeze, anything else but \"draft\" stops the build", () => {
-  const frozen = structuredClone(loaded.v4);
+  const frozen = structuredClone(pre.v4);
   frozen.build = "final";
-  const fin = buildFounderData({ ...loaded, v4: frozen });
+  const fin = buildFounderData({ ...pre, v4: frozen });
   assert.equal(fin.deck.draft, false);
   assert.doesNotMatch(html(fin), /DRAFT/);
   assert.ok(founderPdfName(fin).endsWith("-final.pdf"));
@@ -370,7 +379,7 @@ test("V4.json's build sets the committed build's mode: \"final\" is the freeze, 
 test("at the freeze, slide 9 keeps each measured tile and always the QR code and the door: all four measured, some, none", async () => {
   const { readQr } = await import("./qr-read.mjs");
   const m = (id, value) => [id, { id, value, display: String(value), definition: "d", scope: "s", window_start: "2026-11-01T07:13:20Z", window_end: "2026-11-01T14:20:05Z", window: "2026-11-01T07:13:20Z to 2026-11-01T14:20:05Z", source: "x", from: "METRICS-FREEZE.json" }];
-  const freeze = (keys) => variant((v) => { v.build = "final"; }, { sha256: loaded.metrics.sha256, byId: new Map([...loaded.metrics.byId, ...keys.map((k, i) => m(k, 10 + i))]) });
+  const freeze = (keys) => variant((v) => { v.build = "final"; }, { sha256: pre.metrics.sha256, byId: new Map([...pre.metrics.byId, ...keys.map((k, i) => m(k, 10 + i))]) });
   const cases = { all: ["moltbook.post_votes", "door.visits", "door.agents_passed", "door.view_size"], some: ["door.visits", "door.agents_passed"], none: [] };
   for (const [name, keys] of Object.entries(cases)) {
     const d = freeze(keys);
@@ -478,7 +487,7 @@ test("CUTS.md proposes a cut of at least 30 spoken words, not applied, that brin
   assert.deepEqual([clock["Now, draft"].talkWords, clock["Now, draft"].withDemoSeconds, clock["Now, draft"].slowWithDemoSeconds], [400, 295, 312.8]);
   for (const k of ["With the cut, draft", "With the cut, at the freeze (slide 9's no-numbers line)"]) assert.ok(clock[k].slowWithDemoSeconds <= 300, `${k}: ${clock[k].slowWithDemoSeconds} s`);
   // Not applied: the deck speaks every word it did, and no slide, figure or number moves.
-  assert.equal(data.budget.talkWords, 400);
+  assert.equal(draft.budget.talkWords, 400);
   for (const c of [...plan.cut, ...plan.alternates]) assert.ok(slide(data, c.slide).notes.text.includes(c.from.trim()), c.slide);
   // The document is the build's, with each passage before and after.
   const doc = readFileSync(join(FOUNDER_DIR, "CUTS.md"), "utf8");
