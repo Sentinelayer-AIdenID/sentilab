@@ -317,3 +317,210 @@ def test_pilot_only_still_refuses_a_known_sealed_packet(tmp_path, capsys):
     assert runner.main(args + ['--pilot-only', '--pilot-packet', str(tmp_path / 'packets/case-one')]) == 2
     assert 'pilot must differ' in capsys.readouterr().err
     assert not (tmp_path / 'output').exists()
+
+
+def test_lone_surrogate_reply_is_escaped_in_every_output(tmp_path, capsys, monkeypatch):
+    args, _, _ = fixture(tmp_path)
+    _, args = freeze(tmp_path, args, capsys)
+    content = 'FINAL\n' + json.dumps({'file': 'model.py', 'location': '1', 'defect': 'bad',
+                                     'evidence': '\ud800'}, ensure_ascii=False)
+    monkeypatch.setattr(runner.DryRunModel, 'complete', lambda *a, **kw: response(content))
+    assert runner.main(args) == 0
+    output = tmp_path / 'output'
+    accounting = json.loads((output / 'ACCOUNTING.json').read_text())
+    assert accounting['scopes']['study']['attempts'] == 10
+    assert json.loads((output / 'case-one-A/findings.json').read_text())['findings'][0]['evidence'] == '\ud800'
+    transcript = (output / 'case-one-A/transcript.jsonl').read_text()
+    assert '\\ud800' in transcript
+    for path in output.rglob('*.json*'):
+        path.read_bytes().decode('utf-8')
+
+
+@pytest.mark.parametrize('failure', [OSError, RuntimeError, KeyboardInterrupt])
+def test_interrupted_run_checkpoints_cost_and_rerun_continues_ledger(tmp_path, capsys, monkeypatch, failure):
+    args, protocol, _ = fixture(tmp_path)
+    protocol['max_usd'] = '0.0005'
+    (tmp_path / 'protocol.json').write_text(json.dumps(protocol))
+    args += ['--parallel', '1']
+    _, args = freeze(tmp_path, args, capsys)
+    checkpoints = []
+
+    def interrupted(*a, **kw):
+        path = tmp_path / 'output/ACCOUNTING.json'
+        checkpoints.append(json.loads(path.read_text()) if path.exists() else None)
+        raise failure('synthetic interruption')
+
+    monkeypatch.setattr(runner.DryRunModel, 'complete', interrupted)
+    if failure is OSError:
+        assert runner.main(args) == 2
+    else:
+        with pytest.raises(failure):
+            runner.main(args)
+    output = tmp_path / 'output'
+    assert (output / 'ACCOUNTING.json').is_file()
+    assert checkpoints[0]['reserved_usd'] == '0.0003'
+    accounting = json.loads((output / 'ACCOUNTING.json').read_text())
+    assert accounting['grand_total_usd'] == '0.0003'
+    assert accounting['unknown_usage'] is True
+    assert accounting['reserved_usd'] == '0'
+    assert len(accounting['attempts']) == 1
+    assert not (output / 'RUN-MANIFEST.json').exists()
+
+    def no_call(*a, **kw):
+        pytest.fail('rerun reset the dollar ledger or replayed the interrupted job')
+
+    monkeypatch.setattr(runner.DryRunModel, 'complete', no_call)
+    assert runner.main(args) == 0
+    recovered = json.loads((output / 'ACCOUNTING.json').read_text())
+    assert recovered['grand_total_usd'] == '0.0003'
+    assert recovered['attempts'] == accounting['attempts']
+    assert recovered['stop_reason'] == 'dollar_cap'
+    job = json.loads((output / 'case-one-A/job.json').read_text())
+    assert job['history_complete'] is False
+    assert job['agents']['1']['stop_reason'] == 'interrupted_run'
+    assert job['agents']['1']['charged_tokens'] == 200
+    assert (output / 'RUN-MANIFEST.json').is_file()
+
+
+def test_rerun_keeps_finished_jobs_and_previous_charges(tmp_path, capsys, monkeypatch):
+    args, _, order = fixture(tmp_path)
+    args += ['--parallel', '1']
+    _, args = freeze(tmp_path, args, capsys)
+    calls = []
+
+    def model(*a, **kw):
+        calls.append(True)
+        if len(calls) > 1:
+            raise OSError('synthetic interruption')
+        return response('FINAL\n')
+
+    monkeypatch.setattr(runner.DryRunModel, 'complete', model)
+    assert runner.main(args) == 2
+    output = tmp_path / 'output'
+    first = output / order[0]['job_id']
+    original = {p.name: p.read_bytes() for p in first.iterdir()}
+    before = json.loads((output / 'ACCOUNTING.json').read_text())
+    assert before['grand_total_usd'] == '0.00104'  # Finished A, then three interrupted B calls.
+    resumed = []
+
+    def final_model(*a, **kw):
+        resumed.append(True)
+        return response('FINAL\n')
+
+    monkeypatch.setattr(runner.DryRunModel, 'complete', final_model)
+    assert runner.main(args) == 0
+    after = json.loads((output / 'ACCOUNTING.json').read_text())
+    assert after['attempts'][:4] == before['attempts']
+    assert len(resumed) == 6  # Remaining C, A, B, C jobs.
+    assert after['grand_total_usd'] == '0.00188'
+    assert {p.name: p.read_bytes() for p in first.iterdir()} == original
+    assert json.loads((output / order[1]['job_id'] / 'job.json').read_text())['history_complete'] is False
+
+
+def test_rerun_requires_matching_descriptor_and_an_inactive_output(tmp_path, capsys, monkeypatch):
+    args, _, _ = fixture(tmp_path)
+    args += ['--parallel', '1']
+    descriptor, args = freeze(tmp_path, args, capsys)
+    output = tmp_path / 'output'
+    with runner.open_run(output, descriptor):
+        assert runner.main(args) == 2
+        assert 'still active' in capsys.readouterr().err
+    runner.write_json_exclusive(output / 'FREEZE.json', {**descriptor, 'pilot_only': True})
+    sentinel = b'costs must not be reset\n'
+    (output / 'ACCOUNTING.json').write_bytes(sentinel)
+    assert runner.main(args) == 2
+    assert 'freeze' in capsys.readouterr().err
+    assert (output / 'ACCOUNTING.json').read_bytes() == sentinel
+
+
+def test_receipt_write_failure_keeps_settled_usage_and_marks_recovery_incomplete(tmp_path, capsys, monkeypatch):
+    args, _, _ = fixture(tmp_path)
+    args += ['--parallel', '1']
+    _, args = freeze(tmp_path, args, capsys)
+    original = runner.JobOutputs.record
+
+    def fail_response(writer, value):
+        if value['event'] == 'response':
+            raise OSError('synthetic receipt failure')
+        return original(writer, value)
+
+    monkeypatch.setattr(runner.JobOutputs, 'record', fail_response)
+    monkeypatch.setattr(runner.DryRunModel, 'complete', lambda *a, **kw: response('FINAL\n'))
+    assert runner.main(args) == 2
+    output = tmp_path / 'output'
+    before = json.loads((output / 'ACCOUNTING.json').read_text())
+    assert before['grand_total_usd'] == '0.00014'
+    assert before['unknown_usage'] is False
+    assert before['attempts'][0]['state'] == 'response'
+    monkeypatch.setattr(runner.JobOutputs, 'record', original)
+    assert runner.main(args) == 0
+    after = json.loads((output / 'ACCOUNTING.json').read_text())
+    assert after['attempts'][0] == before['attempts'][0]
+    assert after['grand_total_usd'] == '0.0014'
+    job = json.loads((output / 'case-one-A/job.json').read_text())
+    assert job['history_complete'] is False
+    assert job['wall_seconds'] is None
+    assert job['start_utc'] == before['attempts'][0]['start_utc']
+
+
+@pytest.mark.parametrize('name', [
+    'findings.json', 'job.json', 'RUN-MANIFEST.json', 'transcript.jsonl', 'emitted_sets.jsonl',
+])
+def test_interruption_during_publication_leaves_only_complete_records(tmp_path, capsys, monkeypatch, name):
+    args, _, _ = fixture(tmp_path)
+    args += ['--parallel', '1']
+    _, args = freeze(tmp_path, args, capsys)
+    monkeypatch.setattr(runner.DryRunModel, 'complete', lambda *a, **kw: response('FINAL\n'))
+    original = runner.Path.open
+    interrupted = []
+
+    class InterruptedWrite:
+        def __init__(self, stream):
+            self.stream = stream
+
+        def __enter__(self):
+            self.stream.__enter__()
+            return self
+
+        def __exit__(self, *args):
+            return self.stream.__exit__(*args)
+
+        def __getattr__(self, attr):
+            return getattr(self.stream, attr)
+
+        def write(self, data):
+            if data and not interrupted:
+                interrupted.append(True)
+                self.stream.write(data[:max(1, len(data) // 2)])
+                self.stream.flush()
+                raise OSError('synthetic interruption halfway through file write')
+            return self.stream.write(data)
+
+    def open_file(path, mode='r', *a, **kw):
+        stream = original(path, mode, *a, **kw)
+        if path.name.lstrip('.').removesuffix('.tmp') == name and any(flag in mode for flag in 'wxa'):
+            return InterruptedWrite(stream)
+        return stream
+
+    monkeypatch.setattr(runner.Path, 'open', open_file)
+    assert runner.main(args) == 2
+    output = tmp_path / 'output'
+    assert interrupted
+    assert not (output / 'RUN-MANIFEST.json').exists()
+    for path in output.rglob('*.json*'):
+        if path.name.endswith('.jsonl'):
+            for line in path.read_bytes().splitlines():
+                json.loads(line)
+        else:
+            json.loads(path.read_bytes())
+    before = json.loads((output / 'ACCOUNTING.json').read_text())
+    # A hard kill can leave unpublished staging bytes; the locked rerun reclaims them.
+    (output / 'case-one-A/.job.json.tmp').write_bytes(b'{"partial":')
+    monkeypatch.setattr(runner.Path, 'open', original)
+    assert runner.main(args) == 0
+    after = json.loads((output / 'ACCOUNTING.json').read_text())
+    assert after['attempts'][:len(before['attempts'])] == before['attempts']
+    manifest = json.loads((output / 'RUN-MANIFEST.json').read_text())
+    for relative, digest in manifest['files'].items():
+        assert runner.sha256((output / relative).read_bytes()) == digest
+    assert not list(output.rglob('.*.tmp'))

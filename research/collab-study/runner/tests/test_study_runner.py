@@ -626,3 +626,24 @@ def test_output_files_and_case_variants_cannot_replace_existing_job(tmp_path):
     with pytest.raises(FileExistsError):
         runner.write_json_exclusive(path, {'replacement': True})
     assert json.loads(path.read_text()) == {'original': True}
+
+
+def test_restart_reserves_pending_attempt_as_unknown_without_resetting_spend(tmp_path):
+    path = tmp_path / 'ACCOUNTING.json'
+    prices = {'input': '1', 'cached_input': '0.5', 'output': '2'}
+    ledger = runner.Ledger('0.0005', prices, checkpoint=path)
+    first = ledger.reserve('finished', 1, 'pilot', prompt_bound=100, max_tokens=100)
+    ledger.settle(first, usage={'prompt_tokens': 100, 'completion_tokens': 20})
+    ledger.reserve('interrupted', 1, 'study', prompt_bound=100, max_tokens=100,
+                   agent_cap=40000, tokens_before=39900)
+    assert json.loads(path.read_text())['reserved_usd'] == '0.0003'
+    # Emulate process loss: no close_pending/finally ran in the first instance.
+    resumed = runner.Ledger('0.0005', prices, checkpoint=path, resume=True)
+    report = resumed.report()
+    assert report['grand_total_usd'] == '0.00044'
+    assert report['reserved_usd'] == '0'
+    assert report['attempts'][1]['failure'] == 'interrupted_unknown'
+    assert report['attempts'][1]['overspend_tokens'] == 100
+    assert resumed.reserve('next', 1, 'study', prompt_bound=100, max_tokens=100) is None
+    again = runner.Ledger('0.0005', prices, checkpoint=path, resume=True)
+    assert again.report() == resumed.report() == json.loads(path.read_text())

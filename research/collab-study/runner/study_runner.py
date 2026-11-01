@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import argparse
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 import hashlib
+import fcntl
 import json
 import os
 import queue
@@ -35,7 +37,7 @@ def sha256(data: bytes) -> str:
 
 
 def canonical(value) -> bytes:
-    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    return json.dumps(value, ensure_ascii=True, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
 
 
 def read_packet(directory: Path) -> tuple[str, dict[str, str]]:
@@ -331,19 +333,49 @@ def decimal_text(value: Decimal) -> str:
 class Ledger:
     """Reserve concurrent calls atomically; retain actual and unknown charges."""
 
-    def __init__(self, max_usd, prices: dict):
+    def __init__(self, max_usd, prices: dict, *, checkpoint: Path | None = None, resume=False):
         self.max_usd = money(max_usd)
         self.prices = {name: money(prices[name]) for name in ("input", "cached_input", "output")}
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
+        self._checkpoint = checkpoint
         self._spent = Decimal(0)
         self._reserved = Decimal(0)
         self._attempts = []
         self.stop_reason = None
+        if resume:
+            saved = read_json_bytes(checkpoint.read_bytes())
+            try:
+                self._attempts = saved["attempts"]
+                if any(row["attempt"] != i or row["state"] not in {"pending", "response", "failed"}
+                       or row["scope"] not in {"pilot", "study", "retry"}
+                       for i, row in enumerate(self._attempts, 1)):
+                    raise ValueError
+                self._spent = sum((money(row["charged_usd"]) for row in self._attempts if row["state"] != "pending"), Decimal(0))
+                self._reserved = sum((money(row["reserved_usd"]) for row in self._attempts if row["state"] == "pending"), Decimal(0))
+                self.stop_reason = saved["stop_reason"]
+                if self.report() != saved:
+                    raise ValueError
+            except (KeyError, TypeError, ValueError):
+                raise InputError("invalid existing accounting; refusing to reset costs") from None
+            self.close_pending()
+        self.save()
+
+    def save(self) -> None:
+        with self._lock:
+            if self._checkpoint is not None:
+                write_json_atomic(self._checkpoint, self.report())
+
+    def close_pending(self) -> None:
+        for attempt in self._attempts:
+            if attempt["state"] == "pending":
+                self.settle(attempt, failure=CallFailure("interrupted_unknown"),
+                            agent_cap=attempt.get("agent_cap"), tokens_before=attempt.get("tokens_before", 0))
 
     def cost(self, prompt: int, cached: int, output: int) -> Decimal:
         return ((prompt - cached) * self.prices["input"] + cached * self.prices["cached_input"] + output * self.prices["output"]) / 1_000_000
 
-    def reserve(self, job_id: str, agent: int, scope: str, *, prompt_bound: int, max_tokens: int) -> dict | None:
+    def reserve(self, job_id: str, agent: int, scope: str, *, prompt_bound: int, max_tokens: int,
+                agent_cap: int | None = None, tokens_before: int = 0) -> dict | None:
         if scope not in {"pilot", "study", "retry"}:
             raise InputError("invalid accounting scope")
         if type(prompt_bound) is not int or prompt_bound < 0 or type(max_tokens) is not int or max_tokens <= 0:
@@ -352,12 +384,15 @@ class Ledger:
         with self._lock:
             if self.stop_reason or self._spent + self._reserved + bound > self.max_usd:
                 self.stop_reason = "dollar_cap"
+                self.save()
                 return None
             attempt = {"job_id": job_id, "agent": agent, "scope": scope, "attempt": len(self._attempts) + 1,
                        "start_utc": utc_now(), "prompt_bound": prompt_bound, "max_tokens": max_tokens,
-                       "reserved_usd": decimal_text(bound), "state": "pending"}
+                       "reserved_usd": decimal_text(bound), "state": "pending",
+                       "agent_cap": agent_cap, "tokens_before": tokens_before}
             self._reserved += bound
             self._attempts.append(attempt)
+            self.save()
             return attempt
 
     def settle(self, attempt: dict, *, usage=None, failure: CallFailure | None = None,
@@ -395,6 +430,7 @@ class Ledger:
                             "over_reserved_tokens": max(0, charged - attempt["prompt_bound"] - attempt["max_tokens"])})
             if self._spent > self.max_usd:
                 self.stop_reason = "dollar_cap"
+            self.save()
 
     def report(self) -> dict:
         with self._lock:
@@ -459,7 +495,8 @@ class RequestEngine:
                 agent.stop_reason = "token_cap"
                 return None
             attempt = self.ledger.reserve(job_id, agent.number, "retry" if retry else scope,
-                                          prompt_bound=agent.prompt_bound, max_tokens=max_tokens)
+                                          prompt_bound=agent.prompt_bound, max_tokens=max_tokens,
+                                          agent_cap=agent.cap, tokens_before=agent.charged_tokens)
             if attempt is None:
                 agent.stop_reason = "dollar_cap"
                 return None
@@ -506,11 +543,63 @@ class RequestEngine:
 
 
 def write_json_exclusive(path: Path, value) -> None:
-    data = canonical(value) + b"\n"
-    with path.open("xb") as stream:
-        stream.write(data)
-        stream.flush()
-        os.fsync(stream.fileno())
+    write_bytes_atomic(path, canonical(value) + b"\n", exclusive=True)
+
+
+def write_json_atomic(path: Path, value) -> None:
+    write_bytes_atomic(path, canonical(value) + b"\n")
+
+
+def write_bytes_atomic(path: Path, data: bytes, *, exclusive=False) -> None:
+    """Publish complete records, including on interruption during a write."""
+    temporary = path.with_name("." + path.name + ".tmp")
+    if path.is_symlink() or temporary.is_symlink():
+        raise InputError("output files must not be symlinks")
+    try:
+        with temporary.open("wb") as stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+        if exclusive:
+            os.link(temporary, path)
+        else:
+            os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+    directory = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        os.fsync(directory)
+    finally:
+        os.close(directory)
+
+
+@contextmanager
+def open_run(output: Path, descriptor: dict):
+    """Lock a new or interrupted run; sealed outputs are never reopened."""
+    if output.is_symlink():
+        raise InputError("output directory must not be a symlink")
+    resume = output.exists() and any(output.iterdir())
+    if resume:
+        if (output / "RUN-MANIFEST.json").exists() or not (output / ".running").is_file():
+            raise InputError("output must start empty or contain an unsealed run")
+        if any(path.is_symlink() for path in output.rglob("*")):
+            raise InputError("output must not contain symlinks")
+    else:
+        claim_output(output)
+    with (output / ".running").open("r+") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise InputError("output run is still active") from None
+        if resume:
+            verify_freeze(output / "FREEZE.json", descriptor)
+            if not (output / "ACCOUNTING.json").is_file():
+                raise InputError("interrupted run has no accounting; refusing to reset costs")
+            names = {"ACCOUNTING.json", "RUN-MANIFEST.json", "transcript.jsonl", "emitted_sets.jsonl", "findings.json", "job.json"}
+            for path in output.rglob(".*.tmp"):
+                if path.name[1:-4] in names:
+                    path.unlink()  # Unpublished temporary bytes; originals are atomic.
+        yield resume
 
 
 class JobOutputs:
@@ -518,7 +607,7 @@ class JobOutputs:
 
     _creation_lock = threading.Lock()
 
-    def __init__(self, output: Path, job: dict, *, clock=time.monotonic):
+    def __init__(self, output: Path, job: dict, *, clock=time.monotonic, recover=False):
         job_id = job.get("job_id")
         if not isinstance(job_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}", job_id):
             raise InputError("job_id must be a nonempty safe directory name")
@@ -532,17 +621,29 @@ class JobOutputs:
         with self._creation_lock:
             if output.is_symlink() or not (output / ".running").is_file():
                 raise InputError("output directory must be claimed first")
-            if any(path.name.casefold() == job_id.casefold() for path in output.iterdir()):
-                raise InputError("duplicate job directory")
-            self.directory.mkdir()
-        self._stream = (self.directory / "transcript.jsonl").open("x", encoding="utf-8")
-        self._emitted = (self.directory / "emitted_sets.jsonl").open("x", encoding="utf-8")
+            if recover:
+                allowed = {"findings.json", "transcript.jsonl", "emitted_sets.jsonl"}
+                if not self.directory.is_dir() or not {path.name for path in self.directory.iterdir()} <= allowed:
+                    raise InputError("cannot recover unexpected job output")
+            else:
+                if any(path.name.casefold() == job_id.casefold() for path in output.iterdir()):
+                    raise InputError("duplicate job directory")
+                self.directory.mkdir()
+        self._stream = self.directory / "transcript.jsonl"
+        self._emitted = self.directory / "emitted_sets.jsonl"
+        for path in (self._stream, self._emitted):
+            if recover and path.exists():
+                for line in path.read_bytes().splitlines():
+                    read_json_bytes(line)
+            else:
+                write_bytes_atomic(path, b"", exclusive=True)
+        self.recovered = recover
         self._record_lock = threading.Lock()
         self._first_request_time = None
         self._set_indices = {}
         self._finals = {}
         self._parsed_attempts = set()
-        self._history_complete = True
+        self._history_complete = not recover
         self.closed = False
 
     def record(self, value: dict) -> None:
@@ -560,18 +661,19 @@ class JobOutputs:
                 elapsed = self.clock() - self._first_request_time
                 self._parsed_attempts.add(value["attempt"])
                 agent = value["agent"]
+                emitted_bytes = b""
                 for emitted in sets:
                     index = self._set_indices.get(agent, 0)
                     row = {"job_id": self.job["job_id"], "arm": self.job["arm"], "agent": agent,
                            "set_index": index, "elapsed_s": elapsed, **emitted,
                            "malformed": [{**line, "malformed": True} for line in emitted["malformed"]]}
-                    self._emitted.write(canonical(row).decode("utf-8") + "\n")
+                    emitted_bytes += canonical(row) + b"\n"
                     self._set_indices[agent] = index + 1
                     if emitted["kind"] == "FINAL":
                         self._finals[agent] = {key: emitted[key] for key in ("findings", "malformed", "discarded")}
-                self._emitted.flush()
-            self._stream.write(canonical(value).decode("utf-8") + "\n")
-            self._stream.flush()
+                if emitted_bytes:
+                    write_bytes_atomic(self._emitted, self._emitted.read_bytes() + emitted_bytes)
+            write_bytes_atomic(self._stream, self._stream.read_bytes() + canonical(value) + b"\n")
 
     def final_set(self, agent: int) -> dict | None:
         with self._record_lock:
@@ -579,8 +681,6 @@ class JobOutputs:
 
     def abort(self) -> None:
         """Close a partial transcript without pretending the job completed."""
-        self._stream.close()
-        self._emitted.close()
         self.closed = True
 
     def finish(self, agents: list[AgentState], findings, ledger: Ledger) -> None:
@@ -601,7 +701,8 @@ class JobOutputs:
                 "usage": [row["usage"] for row in rows],
             }
         job = {**self.job, "schema": "collab-study-job-v3", "start_utc": self.start_utc, "end_utc": utc_now(),
-               "wall_seconds": max(0, self.clock() - self.start_time), "agents": per_agent,
+               "wall_seconds": None if self.recovered else max(0, self.clock() - self.start_time),
+               "recovered": self.recovered, "agents": per_agent,
                "history_complete": self._history_complete and
                    not any(agent.stop_reason == "dollar_cap" for agent in agents) and
                    all(row["state"] == "response" and row["attempt"] in self._parsed_attempts for row in attempts),
@@ -613,12 +714,9 @@ class JobOutputs:
                "run_stop_reason": accounting["stop_reason"],
                "overspend_tokens": sum(agent["overspend_tokens"] for agent in per_agent.values()),
                "overspend_limit_exceeded": any(row["overspend_limit_exceeded"] for row in attempts)}
-        self._stream.flush()
-        os.fsync(self._stream.fileno())
-        self._emitted.flush()
-        os.fsync(self._emitted.fileno())
         self.abort()
-        write_json_exclusive(self.directory / "findings.json", findings)
+        if not self.recovered or not (self.directory / "findings.json").exists():
+            write_json_exclusive(self.directory / "findings.json", findings)
         write_json_exclusive(self.directory / "job.json", job)
 
 
@@ -725,7 +823,13 @@ def finish_run(output: Path, ledger: Ledger) -> dict:
             raise InputError("output must not contain symlinks")
         if directory.is_dir() and {path.name for path in directory.iterdir()} != {"job.json", "findings.json", "transcript.jsonl", "emitted_sets.jsonl"}:
             raise InputError("cannot seal unfinished job")
-    write_json_exclusive(output / "ACCOUNTING.json", accounting)
+        if directory.is_dir():
+            read_json_bytes((directory / "job.json").read_bytes())
+            read_json_bytes((directory / "findings.json").read_bytes())
+            for name in ("transcript.jsonl", "emitted_sets.jsonl"):
+                for line in (directory / name).read_bytes().splitlines():
+                    read_json_bytes(line)
+    write_json_atomic(output / "ACCOUNTING.json", accounting)
     hashes = {}
     for path in sorted(output.rglob("*")):
         if path.is_symlink():
@@ -826,10 +930,46 @@ def run_jobs(inputs: Inputs, *, output: Path, engine: RequestEngine, parallel: i
                                           for n in ([1] if job["arm"] == "A" else [1, 2, 3])},
                 "c_turn_prompts": {n: prompts[f"c{n}"] for n in (1, 2, 3)}, "scope": scope}
 
+    def prepare(job):
+        directory = output / job["job_id"]
+        if not directory.exists():
+            return JobOutputs(output, job, clock=engine.clock)
+        if (directory / "job.json").is_file():
+            completed = read_json_bytes((directory / "job.json").read_bytes())
+            if not isinstance(completed, dict) or any(completed.get(key) != value for key, value in job.items()):
+                raise InputError("completed job does not match current inputs")
+            read_json_bytes((directory / "findings.json").read_bytes())
+            return None
+        # Do not replay an interrupted arm: its history is unobserved. Keep
+        # its existing transcript and charges and continue with untouched jobs.
+        writer = JobOutputs(output, job, clock=engine.clock, recover=True)
+        try:
+            rows = [row for row in engine.ledger.report()["attempts"] if row["job_id"] == job["job_id"]]
+            writer.start_utc = rows[0]["start_utc"] if rows else None
+            agents = []
+            for n in ([1] if job["arm"] == "A" else [1, 2, 3]):
+                own = [row for row in rows if row["agent"] == n]
+                agents.append(AgentState(n, 120000 if job["arm"] == "A" else 40000, 0,
+                                         charged_tokens=sum(row["charged_tokens"] for row in own),
+                                         unknown_usage_attempts=sum(row["unknown_usage"] for row in own),
+                                         stop_reason="interrupted_run"))
+            writer.record({"event": "interrupted_run", "history_complete": False})
+            empty = {"findings": [], "malformed": [], "discarded": 0}
+            findings = {str(agent.number): empty for agent in agents} if job["arm"] == "B" else empty
+            if (directory / "findings.json").exists():
+                read_json_bytes((directory / "findings.json").read_bytes())
+            writer.finish(agents, findings, engine.ledger)
+        finally:
+            if not writer.closed:
+                writer.abort()
+        return None
+
     if pilot_message is not None:
         for arm in inputs.protocol["pilot_arms"]:
             job = {"job_id": "pilot-" + arm, "arm": arm, "packet": "pilot", "repeat": 1}
-            run_arm(job, **arguments(job, pilot_message, "pilot"))
+            writer = prepare(job)
+            if writer is not None:
+                run_arm(job, writer=writer, **arguments(job, pilot_message, "pilot"))
     if pilot_only:
         return
     active = set()
@@ -841,9 +981,10 @@ def run_jobs(inputs: Inputs, *, output: Path, engine: RequestEngine, parallel: i
                     future.result()
             # The coordinator creates the receipt synchronously, so the recorded
             # job starts follow order.json even when worker scheduling differs.
-            writer = JobOutputs(output, job, clock=engine.clock)
-            active.add(pool.submit(run_arm, job, writer=writer,
-                                   **arguments(job, inputs.packets[job["packet"]], "study")))
+            writer = prepare(job)
+            if writer is not None:
+                active.add(pool.submit(run_arm, job, writer=writer,
+                                       **arguments(job, inputs.packets[job["packet"]], "study")))
         for future in active:
             future.result()
 
@@ -918,13 +1059,20 @@ def main(argv=None) -> int:
         if any(args.output.resolve().is_relative_to(root.resolve()) for root in packet_roots):
             raise InputError("output must be outside all packet directories")
         model = DryRunModel() if args.dry_run else HTTPModel.from_env()
-        claim_output(args.output)
-        write_json_exclusive(args.output / "FREEZE.json", descriptor)
-        ledger = Ledger(inputs.protocol["max_usd"], inputs.protocol["prices_per_million"])
-        engine = RequestEngine(model, ledger, max_tokens_per_reply=inputs.protocol["max_tokens_per_reply"])
-        run_jobs(inputs, output=args.output, engine=engine, parallel=args.parallel,
-                 pilot_message=pilot_message, pilot_only=args.pilot_only)
-        finish_run(args.output, ledger)
+        with open_run(args.output, descriptor) as resume:
+            ledger = Ledger(inputs.protocol["max_usd"], inputs.protocol["prices_per_million"],
+                            checkpoint=args.output / "ACCOUNTING.json", resume=resume)
+            try:
+                if not resume:
+                    write_json_exclusive(args.output / "FREEZE.json", descriptor)
+                engine = RequestEngine(model, ledger, max_tokens_per_reply=inputs.protocol["max_tokens_per_reply"])
+                run_jobs(inputs, output=args.output, engine=engine, parallel=args.parallel,
+                         pilot_message=pilot_message, pilot_only=args.pilot_only)
+                finish_run(args.output, ledger)
+            finally:
+                if not (args.output / "RUN-MANIFEST.json").exists():
+                    ledger.close_pending()
+                    ledger.save()
         return 0
     except InputError as error:
         print(str(error), file=sys.stderr)

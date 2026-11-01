@@ -101,7 +101,8 @@ stopped agents; a nonwriter's `FINAL` stops that agent's turns, while only write
 (1–6, default 6). B's three internal agents are part of one arm worker.
 
 Before each attempt, the agent's last reported prompt usage (or explicit initial
-bound) plus the bounded output must fit its remaining cap. A thread-safe ledger
+bound), every reply appended since that prompt, and the bounded output must fit
+its remaining cap. Reply increments come from provider completion usage. A thread-safe ledger
 also reserves the maximum dollar cost, including other in-flight calls. If that
 would cross the dollar cap, all subsequent calls stop; remaining jobs receive
 empty findings and stop receipts. Provider prompt counts can grow beyond the
@@ -127,7 +128,7 @@ Each job contains:
 * `job.json`: metadata, UTC timestamps, wall duration, per-agent caps/usage,
   request IDs, failures, unknown charges, token overspend, job dollar charges,
   the run's dollar overshoot/stop state as of that job's completion, and
-  `history_complete`. That flag is false after a failure, missing/unparsed reply,
+  `history_complete`. That flag is false after a dollar-cap stop, failure, missing/unparsed reply,
   or reply received beyond the deadline, even if a later retry succeeds.
 * `transcript.jsonl`: request-message hashes and every reply verbatim, including
   each attempt's scope, raw usage, reservations and accounting outcome.
@@ -148,10 +149,17 @@ Each job contains:
 
 At run level, `FREEZE.json` records the input seal, `ACCOUNTING.json` contains all
 attempts and pilot/study/retry totals, and `RUN-MANIFEST.json` hashes every output
-file except itself. Include the manifest in the output seal. The runner uses
-exclusive writes and never edits sealed results. Interrupted runs retain
-`.running` and partial transcript reservations rather than pretending to have a
-complete manifest. Exit 2 means invalid/inaccessible inputs or outputs; exit 0
+file except itself. Include the manifest in the output seal. The runner never
+edits sealed results. On Linux, a process lock protects active runs. All records
+are published atomically; `ACCOUNTING.json` is checkpointed before each request,
+after each settlement, and on every execution exit. JSON escapes preserve lone
+surrogates without breaking UTF-8 output. Rerunning an interrupted output with
+the same inputs continues its ledger: pending reservations become unknown-cost
+charges, completed jobs remain untouched, and interrupted jobs are marked
+`interrupted_run` with incomplete histories. Their `wall_seconds` is null,
+because monotonic timing cannot span processes. Only untouched jobs run next;
+no interrupted request is replayed. Missing or inconsistent accounting is
+refused. Exit 2 means invalid/inaccessible inputs or outputs; exit 0
 means a recorded run completed, which can include cap stops or model failures.
 The freeze declares `collab-study-output-v3` and the manifest hashes emitted-set
 histories too. The runner has no correctness key and does not calculate
