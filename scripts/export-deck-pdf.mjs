@@ -154,6 +154,18 @@ function checkSlide(k) {
     const fs = parseFloat(getComputedStyle(t).fontSize) * (t.closest("svg").getBoundingClientRect().width / scale) / t.closest("svg").viewBox.baseVal.width;
     if (fs < out.minFont) { out.minFont = fs; out.minFontAt = `svg text "${t.textContent}"`; }
   }
+  // The title's ink, descenders included (the text's own boxes, not its line box), never runs into a figure (aneta's read
+  // of final-2's page 3, 15:18Z: plain14's dark box clipped the title's g, y and commas).
+  const title = slide.querySelector("h1");
+  if (title) {
+    const range = document.createRange();
+    range.selectNodeContents(title);
+    for (const img of slide.querySelectorAll("img[data-fig]")) {
+      const f = img.getBoundingClientRect();
+      const hit = Math.max(0, ...[...range.getClientRects()].map((r) => (Math.min(r.right, f.right) - Math.max(r.left, f.left) > 0.5 ? Math.min(r.bottom, f.bottom) - Math.max(r.top, f.top) : 0)));
+      if (hit > 0.5) out.issues.push(`the title runs into figure ${img.dataset.fig} by ${(hit / scale).toFixed(1)}px`);
+    }
+  }
   // A figure is a picture with text in it: it must load, and its smallest text, scaled to the width it is drawn at, is
   // held to the same floor as the slide's own text.
   out.figures = [];

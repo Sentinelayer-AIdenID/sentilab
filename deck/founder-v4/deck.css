@@ -123,6 +123,10 @@ h1.big { font-size: 72px; }
 /* 6: the figure */
 .fwrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
 .fwrap .fig { margin: 0; }
+/* 3 (plain14 with the bullets under it): the picture sits low, just above the bullets, so a footer that wraps longer in
+   print takes room from the gap under the title, never the title itself (aneta's read of final-2's page 3, 15:18Z) */
+.l-figure .fwrap:has(+ .npoints) { align-items: flex-end; }
+.l-figure .npoints { margin-top: 14px; }
 .fline { flex: none; margin: 8px 0 18px; font: 650 44px/1.2 var(--display); color: var(--amber); }
 
 /* 7: the pair of tiles */
