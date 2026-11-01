@@ -138,6 +138,7 @@ a { color: var(--cyan); }
 .chip.lost { background: #273741; color: #c6d4da; border-color: #3b5260; }
 .chip.out { background: var(--red-bg); color: #f6c3b2; border-color: var(--red-line); }
 .chip.open { background: #1d3040; color: #a9c8ee; border-color: #34506b; }
+.chip.neutral { background: #273741; color: #d6e2e5; border-color: #4a6170; }
 .chip.init { background: #2a2f3a; color: #c4cad8; border-color: #454d60; }
 .chip.v-valid { background: #1f3a30; color: #b7ecc5; border-color: #36624f; }
 .chip.v-stale { background: #463a20; color: #f3d9a4; border-color: #7a6334; }

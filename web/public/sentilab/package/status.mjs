@@ -52,8 +52,10 @@ export function stateLine(L) {
   const w = why(L);
   return w ? `${word}: ${w}` : word;
 }
-// The contract's own summary of that state (open_proposals/contract/states.py SUMMARY), when the API gives one.
-export const summaryLine = (L) => (L?.summary ? `contract state: ${L.summary}` : null);
+// The contract's own summary of that state (open_proposals/contract/states.py SUMMARY), printed as the API words it
+// (source3d.mjs SUMMARIES: only the door's current words are read). A failed run has no score, so it reads "no score"
+// even where an older API still calls it "evaluated".
+export const summaryLine = (L) => (L?.status === "failed" ? "contract state: no score" : L?.summary ? `contract state: ${L.summary}` : null);
 // One line for an event of the arrivals panel (after its label).
 export function eventLine(e) {
   if (e.kind === "arrival") return "arrived at the door";

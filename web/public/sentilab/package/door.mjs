@@ -37,10 +37,13 @@ const CLASS_NOTE = Object.freeze({
   likely_human: "Most likely a person's browser. A classification, not an identity.",
   unknown: "An unclassified visitor.",
 });
+// A run's chip. Reproduced is neutral: a replay that matched is not a beat (the API emits no beat verdict, and a reproduced
+// layout may still fail the active guard). Green ("won") is kept for an explicit beat verdict, which the door never emits
+// today.
 const STATUS_CHIP = Object.freeze({
   reference: ["ref", "REFERENCE"], example: ["init", "EXAMPLE"], queued: ["open", "QUEUED"], held: ["open", "HELD"],
   evaluating: ["open", "EVALUATING"], evaluated: ["open", "EVALUATED"], replaying: ["open", "REPLAYING"],
-  reproduced: ["won", "REPRODUCED"], cross_checked: ["won", "CROSS-CHECKED"], not_reproduced: ["out", "NOT REPRODUCED"],
+  reproduced: ["neutral", "REPRODUCED"], cross_checked: ["neutral", "CROSS-CHECKED"], not_reproduced: ["out", "NOT REPRODUCED"],
   rejected: ["out", "REJECTED"], failed: ["out", "FAILED"], cancelled: ["out", "CANCELLED"], expired: ["out", "EXPIRED"],
 });
 const NOT_SCORED = Object.freeze({

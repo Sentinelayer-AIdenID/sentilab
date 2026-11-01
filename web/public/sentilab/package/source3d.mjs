@@ -58,8 +58,10 @@ export const CLASSES = Object.freeze(["reference-only", "reference", "example", 
 export const STATUSES = Object.freeze(["rejected", "queued", "held", "evaluating", "evaluated", "failed", "replaying",
   "reproduced", "not_reproduced", "cross_checked", "cancelled", "expired"]);
 export const FIXTURE_STATUSES = Object.freeze(["reference", "example"]);
-// The contract's summary of a state (open_proposals/contract/states.py SUMMARY; cancelled and expired have none).
-export const SUMMARIES = Object.freeze(["rejected", "queued", "evaluated", "independently verified"]);
+// The contract's summary of a state (open_proposals/contract/states.py SUMMARY; cancelled and expired have none), in the
+// door's words: a reproduced run is "reproduced by a fresh-process replay" and a failed run has "no score". The old word
+// for a reproduced run overstated a same-build replay in a fresh process; it is not read, so the page never shows it.
+export const SUMMARIES = Object.freeze(["rejected", "queued", "evaluated", "reproduced by a fresh-process replay", "no score"]);
 // The scorer's states as the API reports them (#81 app/door/dispatch.py ScorerState).
 export const SCORER_STATES = Object.freeze(["unknown", "up", "down"]);
 // States whose result is a score that stands (a failed run's numbers are never drawn).

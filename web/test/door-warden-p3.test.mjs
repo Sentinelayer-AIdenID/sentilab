@@ -32,7 +32,7 @@ test("P3-1: the confirm form carries the terms it shows, and a press is sent und
   const calls = installApi(t, { board: boardWith([TERMS, NEWER]) });
   const s = setup();
   const page = await s.go(`/s?t=${token}&l=${REF}`, { headers: BROWSER });
-  assert.ok(page.text.includes(`Submitting accepts the challenge terms <code>${NEWER}</code>.`));
+  assert.ok(page.text.includes(`Submitting accepts the challenge terms <code>${NEWER}</code> (<a href="/agents/terms">read them</a>).`));
   assert.ok(page.text.includes(field("terms", NEWER)), "the form carries the terms the page shows");
   // A page shown before the newer version, under one the intake still accepts: sent under that one, not the newest.
   const r = await s.go("/agents/submit", press(token, TERMS));

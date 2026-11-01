@@ -24,7 +24,7 @@ ENV CI_ALLOCATION=${CI_ALLOCATION}
 # Each gate-zero evaluator gets <binary>.provenance.json, which validate-reference requires (sundai_hotspot.provenance).
 RUN cd sundai_hotspot && make -j4 SUPERLU=1 CI_ALLOCATION=${CI_ALLOCATION} \
  && make SUPERLU=1 CI_ALLOCATION=${CI_ALLOCATION} hotspot-material-only \
- && (cd /app && python3 -m sundai_hotspot.provenance hotspot7_default) \
+ && (cd /app && python3 -m sundai_hotspot.provenance hotspot7_default material_only) \
  && bash /app/scripts/build_hotspot6.sh \
  && mkdir -p /licenses \
  && cp /app/sundai_hotspot/LICENSE /licenses/HotSpot-LICENSE \

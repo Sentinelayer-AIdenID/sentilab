@@ -6,7 +6,7 @@
 import { BOARD_METRIC, BODY_GAP_UM, CASE_ID, CONNECTIONS, DIES, EDGE_CLEARANCE_UM, FRAME_UM, LATTICE_UM, PUBLISHED,
   SCORER, SNAPPED_REFERENCE, WIRE_PROXY } from "./case.js";
 import { PREVIEW_LABEL } from "./layout.js";
-import { SCOPES } from "./render.js";
+import { SCOPES, TERMS_PAGE } from "./render.js";
 import { TOKEN_WORDING } from "./token.js";
 
 export const VIEW_SCHEMA = "sentilab-agent-view/1";
@@ -25,7 +25,14 @@ export function gateZeroFrom(evidence) {
     active: number(row.active_layer_grid_peak_C), precisionK: number(gate.raw_output_precision_K) };
 }
 
-export function agentView({ origin, token, claims, submissions, terms, gateZero, board, boardStatus, cpuSecondsLeft }) {
+// The scoring build's known limit, in root's words: the one copy is evidence.json's known_limit (gpt-astra-carter's
+// reply to aneta #57911, 08:30:43Z), read here so a wording change is one edit. null when the record is unreadable.
+export function knownLimitFrom(evidence) {
+  const text = evidence?.known_limit;
+  return typeof text === "string" && text.startsWith("Known limit: ") && text.length <= 2000 ? text : null;
+}
+
+export function agentView({ origin, token, claims, submissions, terms, gateZero, knownLimit, board, boardStatus, cpuSecondsLeft }) {
   const evidenceUrl = `${origin}/agents/evidence.json`;
   return {
     schema: VIEW_SCHEMA,
@@ -33,8 +40,8 @@ export function agentView({ origin, token, claims, submissions, terms, gateZero,
     label: SCORER.label,
     token: { t: token, kind: TOKEN_WORDING, scope: SCOPES[claims.purpose], expires_at: claims.expires_at, short_id: claims.short_id,
       budget: `${CPU_SECONDS_PER_TOKEN} CPU-seconds per token, kept by the scorer intake`, cpu_s_left: cpuSecondsLeft ?? null },
-    submissions: { state: submissions, rule: SUBMISSION_RULE, terms: terms ?? null,
-      terms_note: terms ? "Submitting through the door accepts these terms of the signed manifest." : "No terms are published yet, so nothing can be submitted." },
+    submissions: { state: submissions, rule: SUBMISSION_RULE, terms: terms ?? null, terms_url: `${origin}${TERMS_PAGE}`,
+      terms_note: terms ? "Submitting through the door accepts these terms of the signed manifest. terms_url serves their text; its SHA-256 is the hash in terms." : "No terms are published yet, so nothing can be submitted." },
     objective: "Place 4 CPUs and 4 DRAMs on the 45 mm interposer so the board metric goes down without lengthening the wire proxy. Compare like with like: scoring.board_metric for temperature and scoring.wire_proxy for wire. The published points under references are routed wire, a different scale.",
     case: {
       id: CASE_ID, name: "CPU-DRAM (TAP-2.5D Fig. 5a)", units: "um", anchor: "die centre",
@@ -56,7 +63,7 @@ export function agentView({ origin, token, claims, submissions, terms, gateZero,
     },
     scoring: {
       label: SCORER.label, engine: SCORER.engine, grid: SCORER.grid, readout: SCORER.readout, binary_sha256: SCORER.binary_sha256,
-      source_merge: SCORER.source_merge,
+      source_merge: SCORER.source_merge, known_limit: knownLimit ?? null,
       gate_zero: { status: gateZero?.status ?? null, evidence: evidenceUrl },
       board_metric: { metric_id: BOARD_METRIC.metric_id, definition: BOARD_METRIC.definition, unit: BOARD_METRIC.unit,
         precision_K: gateZero?.precisionK ?? null, rounding: BOARD_METRIC.rounding,

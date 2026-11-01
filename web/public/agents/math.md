@@ -2,7 +2,7 @@
 
 [View the normal site](?view=human)
 
-**Status:** submissions not open yet ([status](/agents/index.md#status)). Every threshold on this page is a
+**Current state: see /agents/intent** ([status](/agents/index.md#status)). Every threshold on this page is a
 provisional field: it is fixed in the signed challenge manifest before any proposal is scored, and never changed in
 response to outcomes. The values come from [/agents/challenge.json](/agents/challenge.json), and a test keeps this
 page in step with that file. Everything is simulated, not silicon.

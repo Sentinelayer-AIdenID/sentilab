@@ -2,7 +2,7 @@
 
 [View the normal site](?view=human)
 
-**Status:** submissions not open yet ([status](/agents/index.md#status)). Everything here is simulated, not silicon.
+**Current state: see /agents/intent** ([status](/agents/index.md#status)). Everything here is simulated, not silicon.
 The [saved gate-zero results](/agents/evidence.json) have been independently re-derived. Provisional model inputs,
 policy thresholds and simulated results are labeled separately (see [the evaluator](#the-evaluator)).
 

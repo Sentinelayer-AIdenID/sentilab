@@ -27,7 +27,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SKIP = {".git", "deck", "sundai_thermal", "__pycache__", "node_modules"}
 SUITES = ("app.test_door_intake", "app.test_door_dispatch", "app.test_door_feeds", "app.test_door_root_r1",
-          "app.test_door_root_r2", "app.test_door_warden_p3")
+          "app.test_door_root_r2", "app.test_door_warden_p3", "app.test_door_terms")
 RUNNER = """
 import json, sys, unittest
 def flat(suite):
@@ -45,7 +45,8 @@ print(json.dumps(sorted({t.id().rsplit(".", 1)[-1] for t, _ in result.failures +
 D = "app/door/"
 IN, L, P, S, SV, DP = (D + "intake.py", D + "legality.py", D + "policy.py", D + "store.py", D + "service.py",
                        D + "dispatch.py")
-SC = D + "scorer.py"
+SC, T, R = D + "scorer.py", D + "terms.py", D + "routes.py"
+NL = chr(10)
 
 # (id, hazard, file, snippet, replacement)
 MUTANTS = [
@@ -204,6 +205,49 @@ MUTANTS = [
      '            if not isinstance(nonce, str) or not NONCE.match(nonce):\n'
      '                return 400, {"error": "token_required"}, {}\n            if grant is not None',
      '            if grant is not None'),
+    # ── the terms text (aneta #57911 P1-2): only the bytes the signed manifest's pin names ──
+    ("terms-hash-unchecked", "terms: a file under the pinned name is served whatever its bytes", T,
+     "if len(data) > MAX_BYTES or hashlib.sha256(data).hexdigest() != pin:", "if len(data) > MAX_BYTES:"),
+    ("terms-wrong-pin", "terms: the bytes are compared with the wrong value (the version text's hash)", T,
+     "if len(data) > MAX_BYTES or hashlib.sha256(data).hexdigest() != pin:",
+     "if len(data) > MAX_BYTES or hashlib.sha256(data).hexdigest() != hashlib.sha256(version.encode()).hexdigest():"),
+    ("terms-first-version", "terms: the first accepted version is served, not the highest", T,
+     "return max(valid, key=lambda value: int(VERSION.fullmatch(value).group(1)), default=None)",
+     "return valid[0] if valid else None"),
+    ("terms-lowest-version", "terms: the lowest accepted version is served", T,
+     "return max(valid, key=lambda value: int(VERSION.fullmatch(value).group(1)), default=None)",
+     "return min(valid, key=lambda value: int(VERSION.fullmatch(value).group(1)), default=None)"),
+    ("terms-version-as-text", "terms: versions compared as text (9 above 10)", T,
+     "return max(valid, key=lambda value: int(VERSION.fullmatch(value).group(1)), default=None)",
+     "return max(valid, default=None)"),
+    ("terms-fallback-lower", "terms: a missing highest version is replaced by a lower one", T,
+     "    except (OSError, ValueError):" + NL + "        return None",
+     "    except (OSError, ValueError):" + NL
+     + "        rest = [v for v in manifest['terms']['accepted_versions'] if v != version]" + NL
+     + "        return load({'terms': {'accepted_versions': rest}}, directory) if rest else None"),
+    ("terms-unbounded", "terms: a file of any size is read and served", T,
+     ("data = handle.read(MAX_BYTES + 1)", "if len(data) > MAX_BYTES or hashlib"),
+     ("data = handle.read()", "if hashlib")),
+    ("terms-config-ignored", "terms: DOOR_TERMS_DIR is ignored", T,
+     "return load(manifest, Path(configured) if configured else DEFAULT_DIR)", "return load(manifest, DEFAULT_DIR)"),
+    ("terms-config-falls-back", "terms: the configured directory falls back to the tree's", T,
+     "return load(manifest, Path(configured) if configured else DEFAULT_DIR)",
+     "return (configured and load(manifest, Path(configured))) or load(manifest, DEFAULT_DIR)"),
+    ("terms-unavailable-as-200", "terms: the route answers 200 without the pinned text", R,
+     'return _reply(503, {"error": "terms_unavailable"}, {})',
+     'return _reply(200, {"error": "terms_unavailable"}, {})'),
+    # ── the feeds' summary words (aneta #57911 P1-3) ──
+    ("summary-reproduced-contract", "summary: a fresh-process replay reads independently verified", SV,
+     '"reproduced": "reproduced by a fresh-process replay",', '"reproduced": "independently verified",'),
+    ("summary-failed-contract", "summary: a failed run reads evaluated", SV,
+     '"failed": "no score",', '"failed": "evaluated",'),
+    ("summary-cross-checked-contract", "summary: a cross-check reads independently verified", SV,
+     '"cross_checked": "reproduced by a fresh-process replay",', '"cross_checked": "independently verified",'),
+    ("summary-failed-replay-reproduced", "summary: a replay that did not reproduce reads reproduced", SV,
+     '"not_reproduced": "evaluated",', '"not_reproduced": "reproduced by a fresh-process replay",'),
+    ("summary-contract-words", "summary: the feeds use the contract's words", SV,
+     '"summary": FEED_SUMMARY[row["state"]]',
+     '"summary": __import__("open_proposals.contract.states", fromlist=["SUMMARY"]).SUMMARY[row["state"]]'),
 ]
 
 
