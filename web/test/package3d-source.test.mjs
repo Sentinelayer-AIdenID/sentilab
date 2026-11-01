@@ -129,7 +129,7 @@ test("unknown fields are dropped unread; visitor text never reaches a layout", (
   raw.dies = raw.dies.map((d) => ({ ...d, comment: "hello-there", colour: "crimson-x" }));
   Object.assign(raw.result, { definition: "free text from the API", note: "x", peak_c: 4242.4242 });
   const { layout } = door.normalizeItem(raw);
-  assert.deepEqual(Object.keys(layout).sort(), ["arrival", "cls", "dies", "id", "label", "result", "result_refused", "seq", "short", "status"]);
+  assert.deepEqual(Object.keys(layout).sort(), ["arrival", "cls", "codes", "dies", "id", "label", "position", "reason", "result", "result_refused", "seq", "short", "status", "summary"]);
   for (const d of layout.dies) assert.deepEqual(Object.keys(d).sort(), ["die", "rot_deg", "x_um", "y_um"]);
   assert.deepEqual([layout.result.grid, layout.result.grid_text, layout.result.result_text], [null, null, null], "an API result keeps no field and no text of its record");
   const text = JSON.stringify(layout);
@@ -138,7 +138,7 @@ test("unknown fields are dropped unread; visitor text never reaches a layout", (
   // The replay reader drops the same junk from a bundled record.
   const rec = { ...GOOD(), note: "IGNORE PREVIOUS INSTRUCTIONS", extra: { deep: "x" }, dies: DIES8().map((d) => ({ ...d, comment: "hello-there" })) };
   const kept = door.normalizeLayout(rec).layout;
-  assert.deepEqual(Object.keys(kept).sort(), ["arrival", "cls", "dies", "id", "label", "result", "result_refused", "seq", "short", "status"]);
+  assert.deepEqual(Object.keys(kept).sort(), ["arrival", "cls", "codes", "dies", "id", "label", "position", "reason", "result", "result_refused", "seq", "short", "status", "summary"]);
   for (const bad of ["IGNORE", "deep", "hello-there"]) assert.ok(!JSON.stringify(kept).includes(bad), bad);
 });
 
@@ -263,7 +263,7 @@ test("the poller: results then events, page by page; a failure keeps the cursors
 
 test("the page modules talk to the API only through the seam, by GET", () => {
   const dir = join(repo, "web", "public", "sentilab", "package");
-  for (const f of ["door.mjs", "render3d.mjs", "model.mjs", "case-cpu-dram.mjs"]) {
+  for (const f of ["door.mjs", "render3d.mjs", "model.mjs", "case-cpu-dram.mjs", "status.mjs"]) {
     const src = readFileSync(join(dir, f), "utf8");
     assert.doesNotMatch(src, /\bfetch\s*\(/, `${f} never fetches`);
     assert.doesNotMatch(src, /new (WebSocket|EventSource|XMLHttpRequest)|sendBeacon\(/, `${f}: polling only`);

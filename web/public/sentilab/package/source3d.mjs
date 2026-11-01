@@ -17,13 +17,18 @@
 //            label: the only name the page shows, never free text
 //   status   a state of the open-proposal contract (STATUSES); `arrival` (the door's admission order) and `seq` (the
 //            record's version: an older version never replaces a newer one)
+//   position the run's place in the queue (1 is next), while queued or held, as the API reported it; the poller then
+//            keeps it current by #81's own rule (withPositions); `codes` and `reason`, why it is where it is
+//            (contract reason codes, #81's own reasons: [a-z0-9_] identifiers only); `summary`, the contract's own
+//            four-state summary of the state (SUMMARIES). status.mjs words them; nothing is derived from animation.
 //   dies     exactly 8 contract dies { die: 0..7, x_um, y_um, rot_deg }: die i is TAP die i (C0..C3, then D0..D3), its
 //            centre in micrometres from the interposer's lower-left corner, a catalogue rotation (CPU 0 or 90, DRAM 0)
 //   result   null, or the scorer's: the value under result.metric_id (exactly BOARD_METRIC) with its metric's
 //            precision_K, native_all_block_max_C and active_layer_peak_C (distinct statistics, shown apart by name),
 //            active_guard, evaluator, temperature_label, verification and replay. Never its grid64 (below).
 // From an event: seq, kind, the label rebuilt from class and short_id, and for an attempt its outcome and codes, for a
-// run its id, state and codes. Scorer events move the cursor only.
+// run its id, state and codes. Scorer events move the cursor only. From each page, the API's scorer snapshot
+// ({ state: unknown | up | down, since }), which status.mjs shows as the scorer chip.
 // A record that breaks a rule is refused whole (never drawn, counted with its reason code). A result that breaks a rule
 // is dropped and the layout drawn without a value, with the reason.
 //
@@ -53,6 +58,10 @@ export const CLASSES = Object.freeze(["reference-only", "reference", "example", 
 export const STATUSES = Object.freeze(["rejected", "queued", "held", "evaluating", "evaluated", "failed", "replaying",
   "reproduced", "not_reproduced", "cross_checked", "cancelled", "expired"]);
 export const FIXTURE_STATUSES = Object.freeze(["reference", "example"]);
+// The contract's summary of a state (open_proposals/contract/states.py SUMMARY; cancelled and expired have none).
+export const SUMMARIES = Object.freeze(["rejected", "queued", "evaluated", "independently verified"]);
+// The scorer's states as the API reports them (#81 app/door/dispatch.py ScorerState).
+export const SCORER_STATES = Object.freeze(["unknown", "up", "down"]);
 // States whose result is a score that stands (a failed run's numbers are never drawn).
 export const SCORED = Object.freeze(["evaluated", "replaying", "reproduced", "not_reproduced", "cross_checked", "reference"]);
 // The board's one frozen statistic (the score, the replay, the board and the 3D caption all use it).
@@ -85,6 +94,7 @@ const SHORT = /^[0-9a-f]{4}$/;
 const HEX64 = /^[0-9a-f]{64}$/;
 const CODE = /^[a-z][a-z0-9_]{0,47}$/;
 const isObj = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
+const codesOf = (list) => (Array.isArray(list) ? list.filter((c) => typeof c === "string" && CODE.test(c)).slice(0, 8) : []);
 const num = (x) => typeof x === "number" && Number.isFinite(x);
 const count = (n) => Number.isSafeInteger(n) && n >= 0;
 const inTemp = (v) => num(v) && v >= BOUNDS.temp_c.min && v <= BOUNDS.temp_c.max;
@@ -130,9 +140,13 @@ export function normalizeItem(raw) {
   if (!STATUSES.includes(raw.status)) return { refused: "status_unknown" };
   const dies = readDies(raw.dies, "index");
   if (dies.refused) return dies;
+  const queued = raw.status === "queued" || raw.status === "held";
   const layout = {
     id: raw.id, cls: raw.class, short: raw.short_id, label, status: raw.status,
     seq: count(raw.seq) ? raw.seq : null, arrival: count(raw.arrival) ? raw.arrival : null,
+    position: queued && Number.isSafeInteger(raw.position) && raw.position >= 1 ? raw.position : null,
+    reason: typeof raw.reason === "string" && CODE.test(raw.reason) ? raw.reason : null, codes: codesOf(raw.codes),
+    summary: SUMMARIES.includes(raw.summary) ? raw.summary : null,
     dies: dies.dies, result: null, result_refused: null,
   };
   if (raw.result !== undefined && raw.result !== null) {
@@ -218,7 +232,13 @@ export function normalizeResults(doc) {
     layouts.push(n.layout);
   }
   if (doc.items.length > BOUNDS.layouts) refused.over_cap = doc.items.length - BOUNDS.layouts;
-  return { layouts, refused, next_after: doc.next_after, has_more: doc.has_more };
+  return { layouts, refused, next_after: doc.next_after, has_more: doc.has_more, scorer: readScorer(doc.scorer) };
+}
+// The API's scorer snapshot -> { state, since }: one of SCORER_STATES and the epoch second it began (or null). Anything
+// else reads as unknown: the snapshot is the page's only source of the scorer's health.
+export function readScorer(raw) {
+  if (!isObj(raw) || !SCORER_STATES.includes(raw.state)) return { state: "unknown", since: null };
+  return { state: raw.state, since: num(raw.since) && raw.since > 0 && raw.since < 1e11 ? raw.since : null };
 }
 
 // ── the API: one event (the arrivals) ────────────────────────────────────────────────────────────────────────────
@@ -235,14 +255,13 @@ export function normalizeEvent(raw) {
   const label = short === null ? raw.class : labelText(raw.class, short);
   if (raw.label !== label) return { refused: "label_invalid" };
   const event = { seq: raw.seq, kind: raw.kind, cls: raw.class, short, label };
-  const codes = () => (Array.isArray(raw.codes) ? raw.codes.filter((c) => typeof c === "string" && CODE.test(c)).slice(0, 4) : []);
   if (raw.kind === "attempt") {
     if (raw.outcome !== "rejected" && raw.outcome !== "refused") return { refused: "event_malformed" };
-    Object.assign(event, { outcome: raw.outcome, codes: codes() });
+    Object.assign(event, { outcome: raw.outcome, codes: codesOf(raw.codes).slice(0, 4) });
   }
   if (raw.kind === "run") {
     if (typeof raw.run_id !== "string" || !RUN_ID.test(raw.run_id) || !STATUSES.includes(raw.state)) return { refused: "event_malformed" };
-    Object.assign(event, { run_id: raw.run_id, state: raw.state, codes: codes() });
+    Object.assign(event, { run_id: raw.run_id, state: raw.state, codes: codesOf(raw.codes).slice(0, 4) });
   }
   return { event };
 }
@@ -255,7 +274,7 @@ export function normalizeEvents(doc) {
     if (n.refused) refused[n.refused] = (refused[n.refused] ?? 0) + 1;
     else if (n.event) events.push(n.event);
   }
-  return { events, refused, next_after: doc.next_after, has_more: doc.has_more };
+  return { events, refused, next_after: doc.next_after, has_more: doc.has_more, scorer: readScorer(doc.scorer) };
 }
 // Keep each event once (by seq), in seq order, the newest BOUNDS.events.
 export function mergeEvents(current, incoming) {
@@ -280,7 +299,8 @@ export function normalizeLayout(raw) {
   if (dies.refused) return dies;
   const layout = {
     id: raw.id, cls: lab.cls, short: lab.short, label: labelText(lab.cls, lab.short), status: raw.status,
-    seq: count(raw.seq) ? raw.seq : null, arrival: null, dies: dies.dies, result: null, result_refused: null,
+    seq: count(raw.seq) ? raw.seq : null, arrival: null, position: null, reason: null, codes: [], summary: null,
+    dies: dies.dies, result: null, result_refused: null,
   };
   if (raw.result !== undefined && raw.result !== null) {
     const r = normalizeResult(raw.result, layout.status);
@@ -388,6 +408,17 @@ export function normalizeReplay(doc) {
 // as new, else it is a stale or replayed answer and is dropped. Order: the door's admission order (arrival) when every
 // record has one, else the order each id was first seen (the replay).
 export const isOlder = (incoming, held) => Number.isSafeInteger(held.seq) && !(Number.isSafeInteger(incoming.seq) && incoming.seq >= held.seq);
+// A waiting run's place, by #81's own rule (app/door/store.py _position): the number of queued or held runs whose arrival
+// is at or before its own, over the API's own states. The results feed returns a run again only when the run itself
+// changes, so the place it reported goes stale as the runs ahead of it leave the queue; the poller reapplies the rule
+// after every page. Only the API's states and arrival numbers count: nothing on the page's own clock or animation.
+export function withPositions(layouts) {
+  const waiting = layouts.filter((l) => (l.status === "queued" || l.status === "held") && count(l.arrival));
+  return layouts.map((l) => {
+    const position = waiting.includes(l) ? waiting.filter((w) => w.arrival <= l.arrival).length : null;
+    return position === l.position ? l : { ...l, position };
+  });
+}
 export function mergeArrivals(current, incoming) {
   const byId = new Map(current.map((l) => [l.id, l]));
   const order = current.map((l) => l.id);
@@ -455,7 +486,8 @@ export const LIVE_FRESH_MS = 12000;
 export const MAX_PAGES = 8;
 export function createDoorFeed({ onChange = () => {}, fetchImpl = (...a) => fetch(...a), now = () => Date.now(),
   fetchResults = fetchDoorResults, fetchEvents = fetchDoorEvents } = {}) {
-  const state = { layouts: [], cursor: 0, events: [], eventsCursor: 0, connected: null, lastOkAt: null, error: "", refused: {}, polls: 0 };
+  const state = { layouts: [], cursor: 0, events: [], eventsCursor: 0, connected: null, lastOkAt: null, error: "", refused: {}, polls: 0,
+    scorer: null };
   let timer = null, stopped = true, epoch = 0, controller = null;
   const tally = (refused) => { for (const [k, v] of Object.entries(refused)) state.refused[k] = (state.refused[k] ?? 0) + v; };
   // Pages of one feed until has_more is false; false when a page failed (the error is in state.error), null when stopped.
@@ -468,6 +500,7 @@ export function createDoorFeed({ onChange = () => {}, fetchImpl = (...a) => fetc
       if (!got.ok) { state.error = got.error; return false; }
       tally(got.refused);
       take(got);
+      state.scorer = { ...got.scorer, at: now() };   // the newest snapshot, and when this page read it
       const moved = got.next_after > state[cursorKey];
       state[cursorKey] = got.next_after;
       if (!got.has_more || !moved) break;
@@ -476,7 +509,7 @@ export function createDoorFeed({ onChange = () => {}, fetchImpl = (...a) => fetc
   }
   async function pollOnce() {
     const mine = epoch;
-    const results = await drain(mine, fetchResults, "cursor", (got) => { state.layouts = mergeArrivals(state.layouts, got.layouts); });
+    const results = await drain(mine, fetchResults, "cursor", (got) => { state.layouts = withPositions(mergeArrivals(state.layouts, got.layouts)); });
     if (results === null) return null;
     const events = results ? await drain(mine, fetchEvents, "eventsCursor", (got) => { state.events = mergeEvents(state.events, got.events); }) : false;
     if (events === null || mine !== epoch) return null;

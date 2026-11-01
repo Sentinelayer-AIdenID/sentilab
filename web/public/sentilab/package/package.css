@@ -292,6 +292,8 @@ dialog ul { margin: 0; padding: 14px 18px 16px 34px; display: grid; gap: 8px; co
 
 /* the agent-door info panel */
 .info.door .clsnote { margin: 4px 0 0; font-size: 13.5px; color: var(--muted); line-height: 1.4; }
+.info.door .dstate { margin: 6px 0 0; font: 600 13.5px var(--mono); color: var(--text); line-height: 1.4; }
+.controls.door .chip.scorer { font-size: 12px; padding: 2px 8px; }
 .info.door .row1 b { font-family: var(--mono); font-size: 22px; letter-spacing: 0; }
 .score .big { font: 600 40px/1.05 var(--mono); letter-spacing: -.02em; }
 .score .big.none { font: 600 20px var(--sans); color: var(--muted); letter-spacing: 0; }

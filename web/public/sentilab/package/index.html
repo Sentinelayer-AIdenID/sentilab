@@ -57,6 +57,7 @@
       <input type="range" id="dScrub" min="0" max="0" value="0" aria-label="Layouts in arrival order">
     </div>
     <span class="pos" id="dPos">0 / 0</span>
+    <span class="chip scorer init" id="dScorer" hidden></span>
     <span class="fixture" id="dFixture" hidden title="The bundled list: the raw and snapped references and two synthetic examples. The raw reference's map is the gate-zero HotSpot 6.0 output for that layout.">Bundled fixture · examples synthetic, never scored</span>
     <div class="cam" role="group" aria-label="View">
       <div class="seg rseg" role="group" aria-label="Renderer"><button type="button" data-r="3d" class="r3d">3D</button><button type="button" data-r="2d" class="r2d">2D</button></div>
@@ -145,6 +146,7 @@
         <div class="lbl" id="dWhoLbl">Selected layout</div>
         <div class="row1"><b id="dName">-</b></div>
         <p class="clsnote" id="dClsNote"></p>
+        <p class="dstate" id="dState" hidden></p>
       </div>
       <div class="block score" id="dScore">
         <div class="lbl" id="dMetricName">Max chiplet-centre mean</div>
