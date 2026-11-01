@@ -7,6 +7,7 @@ slot stays held until it resolves. Written to fail first at 796fec43.
 import unittest
 
 from app.door import testkit as tk
+from app.door.scorer import ScorerError
 from app.test_door_dispatch import moved
 from app.test_door_root_r1 import AccountingCase
 
@@ -33,6 +34,22 @@ class LowerBoundAccountingTests(AccountingCase):
         self.assertEqual(self.store.run(second)[0]["state"], "queued")
         self.assertEqual(self.store.run(first)[0]["state"], "evaluating", "the open attempt keeps its slot")
         self.assertIn("grant", [stop["scope"] for stop in self.store.stops()])
+
+    def test_an_ambiguous_reply_over_its_envelope_holds_back_the_free_slot(self):
+        """Root's focused regression: a timeout or 5xx reply reporting more than its envelope, while another parallel
+        slot is free. The attempt stays open at its reported 35 CPU-s, so the free slot cannot start a second 20."""
+        first = self.submit(self.body(moved(0)))[1]["run_id"]
+        second = self.submit(self.body(moved(1)))[1]["run_id"]
+
+        def timed_out(_request):
+            raise ScorerError("scorer_timeout", began=True, definitive=False, cpu_s=35.0)
+
+        self.scorer.score = timed_out
+        self.assertFalse(self.door.dispatcher.run_once(), "the reply is unknown: the attempt stays open")
+        self.assertEqual(self.store.run(first)[0]["state"], "evaluating")
+        self.assertFalse(self.door.dispatcher.run_once(), "a slot is free, but 35 + 20 would exceed 40")
+        self.assertEqual(self.store.run(second)[0]["state"], "queued")
+        self.assertEqual(self.door.board()[1]["grant"]["cpu_s_remaining"], 0.0)
 
     def test_intake_counts_it_too(self):
         self.policy.grant = tk.policy(grant_value=tk.grant(cpu_cap_s=60, token_cpu_s=60, run_reserve_cpu_s=20,

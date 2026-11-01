@@ -210,7 +210,7 @@ class Store:
 
     def _run_event(self, db, run, state: str, now: float, **extra) -> int:
         body = {"run_id": run["run_id"], "label": label(run["class"], run["short_id"]), "short_id": run["short_id"],
-                "class": run["class"], "operator": run["operator"], "state": state, **extra}
+                "class": run["class"], "state": state, **extra}
         return self._event(db, "run", body, now, run["run_id"])
 
     # ── intake ──────────────────────────────────────────────────────────────────────────────────────────────────

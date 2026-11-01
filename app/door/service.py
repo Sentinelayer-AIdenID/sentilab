@@ -187,8 +187,8 @@ class Door:
         if found:
             return 400, {"schema": "sentilab-door-arrival/1", "state": "rejected", "codes": found}, {}
         short = short_id(principal_for(value["nonce"])) if "nonce" in value else None
-        body = {"class": value["class"], "operator": value.get("operator", "unknown"),
-                "purpose": value.get("purpose"), "short_id": short,
+        # operator is accepted (lane 1's shape) and never kept: it leaves every open feed (AGENT-DOOR Amendment 3).
+        body = {"class": value["class"], "purpose": value.get("purpose"), "short_id": short,
                 "label": label(value["class"], short) if short else value["class"]}
         now = self.policy.clock()
         if not self.store.note_arrival(body, now=now, per_min=self.policy.flood.arrivals_per_min):
@@ -235,7 +235,7 @@ class Door:
         proposal = json.loads(row["proposal"])
         codes = [entry["code"] for entry in json.loads(row["codes"])]
         item = {"id": row["run_id"], "label": label(row["class"], row["short_id"]), "class": row["class"],
-                "operator": row["operator"], "short_id": row["short_id"], "arrival": row["arrival"],
+                "short_id": row["short_id"], "arrival": row["arrival"],
                 "seq": row["version"], "status": row["state"], "summary": SUMMARY[row["state"]], "codes": codes,
                 "reason": row["reason"], "position": position, "dies": proposal["dies"],
                 "geometry_sha256": row["geometry_sha256"], "wire_proxy_mm": row["wire_proxy_mm"],
