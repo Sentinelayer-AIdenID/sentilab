@@ -170,6 +170,14 @@ const REFERENCE = {
   },
 };
 for (const ref of REFERENCES) for (const name of [`${ref}.json`, `${ref}-snap0p5.json`]) SCHEMAS[`agents/references/${name}`] = REFERENCE;
+// The Package view's agent twin (the CAD/3D spec's sentilab-twin/1, content "model"): a stub with the model stack, dies
+// and rules, no temperatures (web/test/package3d-vendor.test.mjs checks its built_from hashes).
+SCHEMAS["agents/package3d/index.json"] = { type: "object", additionalProperties: false,
+  required: ["schema", "content", "status_text", "built_from", "frame", "view_transforms", "data", "labels", "omitted", "derivatives"],
+  properties: { schema: { const: "sentilab-twin/1" }, content: { const: "model" }, status_text: STR,
+    built_from: { type: "array", minItems: 1, items: { type: "object", additionalProperties: false, required: ["path", "sha256"], properties: { path: STR, sha256: HEX64 } } },
+    frame: { type: "object" }, view_transforms: { const: "Explode, readable thickening and section are view transforms. Every coordinate here is assembled." },
+    data: { type: "object" }, labels: { type: "array" }, omitted: { type: "array" }, derivatives: { type: "array" } } };
 
 test("the agent pages are markdown and JSON only, and the walk reaches every one", () => {
   assert.deepEqual(AGENT_FILES.filter((rel) => ![".md", ".json"].includes(extname(rel))), []);

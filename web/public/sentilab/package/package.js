@@ -7,7 +7,9 @@ import { viewHref } from "../view-links.mjs";
 import { shortId } from "../lab-model.mjs";
 import { sceneAt, frameScaleInputs, scaleTicks, describeEvent, describeSource, refusalText, spanText, TRACK_ORDER, TRACKS, trackName } from "./scene.mjs";
 import { reconcile } from "./playhead.mjs";
-import { drawPackage, TrackAnimation, HOME_AZIMUTH, ORBIT_MS, easeInOut } from "./render.mjs";
+import { drawPackage, TrackAnimation, HOME_AZIMUTH, ORBIT_MS, easeInOut, luminance } from "./render.mjs";
+import { webgl2Available } from "./render3d.mjs";
+import { buildRenderModel } from "./model.mjs";
 // Temperatures are labelled by the one rule (temperature-label.mjs) from the evaluator identity of the measurement each
 // came from, for replays and the live feed alike. The numbers stay as recorded; the page says so above the stage.
 import { labelFor, labelForAll, evaluatorIds, scaleIdentities, needsNotice, NOTICE } from "../../temperature-label.mjs";
@@ -15,18 +17,24 @@ import { labelFor, labelForAll, evaluatorIds, scaleIdentities, needsNotice, NOTI
 const params = new URLSearchParams(location.search);
 const $ = (id) => document.getElementById(id);
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+// Two feeds, one page: the agent door (CPU-DRAM layouts, door.mjs) and the lab runs (this module). A link that carries
+// any lab-run context (from the Lab view, a bundle, a run, a playhead or test keys) opens the lab runs; ?feed= says it
+// outright; anything else opens the agent door. One feed per load: switching is a link.
+const LAB_PARAMS = ["src", "run", "bundle", "seq", "track", "pins"];
+const FEED = ["door", "lab"].includes(params.get("feed")) ? params.get("feed") : LAB_PARAMS.some((k) => params.has(k)) ? "lab" : "door";
+$("shell").dataset.feed = FEED;
 const STEP_MS = REDUCED ? 1300 : 800;
 const ORBIT_EVERY_MS = 6500;
 
 // ── tiny DOM helper: text only ────────────────────────────────────────────────────────────────────────────────
-// A `style` prop goes through the CSSOM (style.cssText), never a style="" attribute: the page's Content-Security-Policy
+// A `style` prop goes through the CSSOM, one property at a time, never a style="" attribute: the page's Content-Security-Policy
 // (style-src 'self') refuses inline style attributes, and allows the CSSOM.
 function h(tag, props, ...kids) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(props ?? {})) {
     if (v == null || v === false) continue;
     if (k === "class") node.className = v;
-    else if (k === "style") node.style.cssText = String(v);
+    else if (k === "style") for (const decl of String(v).split(";")) { const i = decl.indexOf(":"); if (i > 0) node.style.setProperty(decl.slice(0, i).trim(), decl.slice(i + 1).trim()); }
     else if (k.startsWith("on")) node.addEventListener(k.slice(2), v);
     else node.setAttribute(k, v === true ? "" : String(v));
   }
@@ -59,6 +67,7 @@ const S = {
   lid: params.has("lid") ? params.get("lid") !== "0" : !matchMedia("(max-width: 760px)").matches,   // phones: off unless asked
   orbit: false, orbitTimer: null,
   az: { from: HOME_AZIMUTH, to: HOME_AZIMUTH, start: 0 },
+  r: "2d", want: "3d", why2d: "", v3: null, lost: false,   // the main view's renderer: 3D (render3d.mjs) or the 2D isometric canvas (render.mjs)
 };
 const anims = Object.fromEntries(TRACK_ORDER.map((t) => [t, new TrackAnimation()]));
 const active = () => (S.source === "api" ? S.liveSrc : S.file);
@@ -256,7 +265,8 @@ function drawAll(now) {
   const drawable = (t) => { const L = S.scene?.tracks.find((x) => x.track === t)?.layout; return Boolean(footprint && L && !L.geometry_error); };
   const hasMain = drawable(S.selected);
   const compactMain = main.w < 700;
-  drawPackage(main.ctx, hasMain ? { ...mf, footprint, unit } : null, {
+  if (S.r === "3d" && S.v3) draw3d(hasMain ? { ...mf, footprint, unit } : null, az);
+  else drawPackage(main.ctx, hasMain ? { ...mf, footprint, unit } : null, {
     width: main.w, height: main.h, azimuthDeg: az, labels: true, callouts: !compactMain, lid: S.lid,
     pad: compactMain ? { l: 12, r: 12, t: 12, b: 12 } : { l: Math.min(250, main.w * 0.18), r: 24, t: 20, b: 26 },
   });
@@ -269,6 +279,59 @@ function drawAll(now) {
     });
   }
   if (busy) requestDraw();
+}
+
+// The same frame in 3D: the result-kind RenderModel (model.mjs) of what the 2D view would draw, with the same words on
+// each chiplet (its id, its centre value, STALE) as DOM labels, at the 2D view's azimuth.
+const fmt1 = (v) => (Math.round(v * 10) / 10).toFixed(1);
+const NO_FOOTPRINT = Object.freeze({ substrate: { x0: 0, y0: 0, x1: 1, y1: 1 }, interposer: { x0: 0, y0: 0, x1: 1, y1: 1 } });
+function draw3d(frame, az) {
+  if (!frame) { S.v3.setLab(buildRenderModel({ kind: "result", footprint: NO_FOOTPRINT, chiplets: [] }).model, { labels: [], lid: false, azimuthDeg: az }); return; }
+  const { model } = buildRenderModel({ kind: "result", footprint: frame.footprint, chiplets: frame.chiplets });
+  const top = new Map(model.boxes.filter((b) => b.type === "chiplet").map((b) => [b.chiplet, b.z1]));
+  const labels = frame.chiplets.filter((c) => c.alpha > 0.05).map((c) => ({
+    id: c.id, x: c.x + c.w / 2, y: c.y + c.h / 2, z: (top.get(c.id) ?? 0) + 0.05, alpha: c.alpha, dark: luminance(c.fill) > 0.46,
+    parts: [["b", null, c.id],
+      ...(c.temp !== null && c.temp !== undefined ? [["span", "v", `${fmt1(c.temp)}${frame.unit === "°C" ? "°" : ""}`]] : []),
+      ...(c.state === "stale" ? [["span", "stale", "STALE"]] : [])],
+  }));
+  S.v3.setLab(model, { labels, ghosts: frame.ghosts ?? [], accepted: frame.accepted, pulse: frame.pulse, lid: S.lid, azimuthDeg: az });
+}
+// A lost graphics context: the old 3D view is disposed at once (frames, listeners, GL objects), the 2D view takes over,
+// and a new 3D view is built when the browser restores the context (the same lifecycle as the door feed).
+function onContextLost() {
+  const old = S.v3;
+  S.v3 = null;
+  S.lost = true;
+  old?.dispose();
+  $("main3d").addEventListener("webglcontextrestored", () => { S.lost = false; if (S.want === "3d") setRenderer("3d", "", { user: false }); }, { once: true });
+  setRenderer("2d", "The 3D view lost its graphics context: showing the 2D view until it is restored", { user: false });
+}
+async function setRenderer(r, why = "", { user = true } = {}) {
+  const can3d = webgl2Available();
+  if (user) S.want = r;
+  if (r === "3d" && !can3d) { r = "2d"; why = "WebGL 2 is not available in this browser: showing the 2D view"; }
+  if (r === "3d" && !S.v3 && S.lost) { r = "2d"; why = "The 3D view's graphics context is lost: showing the 2D view until it is restored"; }
+  if (r === "3d" && !S.v3) {
+    try {
+      const { createView3D } = await import("./render3d.mjs");
+      S.v3 = await createView3D({ canvas: $("main3d"), labels: $("labels3d"), leaders: $("leaders3d"), reduced: REDUCED, onContextLost });
+      S.v3.onUserMove(() => { if (S.orbit) setOrbit(false); });
+    } catch (e) {
+      r = "2d"; why = `The 3D view could not start (${String(e?.message ?? e).slice(0, 80)}): showing the 2D view`;
+    }
+  }
+  S.r = r; S.why2d = why;
+  const is3d = r === "3d";
+  $("main3d").hidden = !is3d; $("labels3d").hidden = !is3d; $("leaders3d").toggleAttribute("hidden", !is3d); $("mainCanvas").hidden = is3d;
+  for (const b of document.querySelectorAll(".controls[data-feed=lab] .rseg button")) {
+    b.classList.toggle("on", b.dataset.r === r);
+    if (b.dataset.r === "3d") b.disabled = !can3d;
+  }
+  $("vNotes").replaceChildren(...(is3d ? [h("span", null, "schematic stack · heights not to scale"), h("span", null, "footprints from the evidence, in mm, to scale")] : []),
+    ...(why ? [h("span", { class: "why" }, why)] : []));
+  if (is3d) S.v3.resize(); else sizeSurface(surfaces.get("main"));
+  requestDraw();
 }
 
 // ── DOM ─────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -600,7 +663,9 @@ function showChain() {
   $("chainDlg").showModal();
 }
 
-// ── wiring ──────────────────────────────────────────────────────────────────────────────────────────────────
+// ── wiring and start (the lab-runs feed) ────────────────────────────────────────────────────────────────────
+async function startLab() {
+$("feedLab").classList.add("on");
 $("play").onclick = () => (S.playing ? stop() : play());
 $("scrub").oninput = (e) => { stop(); if (S.source === "api") S.following = false; setCursor(Number(e.target.value)); };
 for (const b of $("source").querySelectorAll("button")) b.onclick = () => setSource(b.dataset.src);
@@ -635,9 +700,13 @@ document.addEventListener("keydown", (e) => {
   else if (/^[0-5]$/.test(e.key)) select(TRACK_ORDER[Number(e.key)]);
 });
 setInterval(() => { if (S.source === "api") renderTop(active(), active()?.verification); }, 1000);   // the mode label ages on the client clock
+for (const b of document.querySelectorAll(".controls[data-feed=lab] .rseg button")) b.onclick = () => setRenderer(b.dataset.r);
 
-// ── start ───────────────────────────────────────────────────────────────────────────────────────────────────
 surface("main", $("mainCanvas"));
+// The main view: 3D when the browser has WebGL 2 and motion is allowed (or ?r=3d asks), else the 2D isometric canvas.
+const askR = params.get("r");
+await setRenderer(askR === "2d" ? "2d" : REDUCED && askR !== "3d" ? "2d" : "3d",
+  REDUCED && askR !== "2d" && askR !== "3d" ? "Reduced motion is on: showing the 2D view (3D is one click away)" : "");
 buildStrip();
 setLid(S.lid);
 for (const b of $("source").querySelectorAll("button")) b.classList.toggle("on", b.dataset.src === S.source);
@@ -659,4 +728,12 @@ if (!globalThis.crypto?.subtle) {
   await loadReplay(replay);
 }
 // A test hook for real-browser checks: read-only facts, no control over trust or data.
-Object.defineProperty(window, "__packageView", { value: Object.freeze({ facts: () => ({ cursor: S.cursor, seq: S.scene?.at.seq ?? 0, selected: S.selected, prefix: active()?.verification?.prefixCount ?? 0, total: total() }) }) });
+Object.defineProperty(window, "__packageView", { value: Object.freeze({ facts: () => ({ cursor: S.cursor, seq: S.scene?.at.seq ?? 0, selected: S.selected, prefix: active()?.verification?.prefixCount ?? 0, total: total(), renderer: S.r, ...(S.v3?.stats() ?? {}) }) }) });
+}
+
+if (FEED === "door") {
+  const { startDoor } = await import("./door.mjs");
+  await startDoor({ params, REDUCED });
+} else {
+  await startLab();
+}

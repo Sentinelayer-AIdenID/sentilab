@@ -290,6 +290,9 @@ export function drawPackage(ctx, frame, opts) {
 
   const subG = drawBox(ctx, cam, { ...substrate, z0: 0, z1: S }, { top: PALETTE.substrate, topEdge: "rgba(160,210,190,0.18)" });
   const intG = drawBox(ctx, cam, { ...interposer, z0: S, z1: S + I }, { top: PALETTE.interposer, topEdge: "rgba(190,215,225,0.30)" });
+  // A temperature field (the agent-door view only; never a lab run): the grid image mapped flat onto the top face,
+  // nearest-neighbour, one colour per cell.
+  if (frame.field) drawField(ctx, cam, frame.field, S + I, intG.top);
 
   // The board's accepted package carries a thin gold edge; the acceptance itself pulses it once.
   if (frame.accepted || frame.pulse !== null) {
@@ -341,6 +344,10 @@ export function drawPackage(ctx, frame, opts) {
       topEdge: overlapping ? PALETTE.overlap : c.state === "stale" ? rgba(PALETTE.stale, 0.75) : "rgba(255,255,255,0.38)",
       topEdgeWidth: overlapping || c.state === "stale" ? 1.8 : 1.1,
     }).top;
+    if (frame.field) {
+      drawField(ctx, cam, frame.field, boxes[k].z1, tops[k]);
+      ctx.save(); poly(ctx, tops[k]); ctx.strokeStyle = "rgba(255,255,255,0.8)"; ctx.lineWidth = 1.6; ctx.stroke(); ctx.restore();
+    }
   }
   // Overlaps that failed the constraint check: the shared rectangle, outlined at the taller top.
   for (const o of frame.overlaps ?? []) {
@@ -361,6 +368,19 @@ export function drawPackage(ctx, frame, opts) {
   }
   if (opts.callouts) drawCallouts(ctx, cam, { substrate, interposer, lidBox, S, I, chipBase, lid: opts.lid, chiplets: frame.chiplets });
   return cam;
+}
+
+// field: { canvas (image row 0 = the far edge, y1), x0, y0, x1, y1 } in mm. The image is mapped by one affine transform
+// onto the plane z, clipped to `clip` (a projected top face), with image smoothing off.
+function drawField(ctx, cam, field, z, clip) {
+  const A = cam.project(field.x0, field.y1, z), B = cam.project(field.x1, field.y1, z), C = cam.project(field.x0, field.y0, z);
+  const iw = field.canvas.width, ih = field.canvas.height;
+  ctx.save();
+  if (clip) { poly(ctx, clip); ctx.clip(); }
+  ctx.imageSmoothingEnabled = false;
+  ctx.transform((B[0] - A[0]) / iw, (B[1] - A[1]) / iw, (C[0] - A[0]) / ih, (C[1] - A[1]) / ih, A[0], A[1]);
+  ctx.drawImage(field.canvas, 0, 0);
+  ctx.restore();
 }
 
 function lidLines(cam, b) {

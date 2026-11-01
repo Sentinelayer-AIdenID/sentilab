@@ -1,0 +1,215 @@
+{
+ "schema": "sentilab-twin/1",
+ "content": "model",
+ "status_text": "Our model · the layers and blocks our thermal solver actually simulates, with its simplifications. Not the real package.",
+ "built_from": [
+  {
+   "path": "web/public/sentilab/package/case-cpu-dram.mjs",
+   "sha256": "dd80f08f73600f6bedb17352d5a549c085ba47fd04d4d882694d51b9462382a1"
+  },
+  {
+   "path": "sundai_tap/configs/sys_micro150_45mm.cfg",
+   "sha256": "de6e3edbed848f1bd81758a92f72a1f0b6aa5ffa60aca3153a324cf7a78d9ffd"
+  },
+  {
+   "path": "docs/sentilab/references/micro150-tap25d-fig5a.json",
+   "sha256": "db1193ddb6ccc75cb67e9df9753ffe0ddd84d119cd422c4cb7f5e3c8552b2490"
+  },
+  {
+   "path": "docs/sentilab/references/micro150-tap25d-fig5a-snap0p5.json",
+   "sha256": "00ad046b932470343dac58a73e7c1def3f78b5292e2ae6920c6f84b26a25cb51"
+  }
+ ],
+ "frame": {
+  "units": "mm",
+  "origin": "the interposer's lower-left corner on its bottom face",
+  "x": "right",
+  "y": "up in plan view",
+  "z": "up, toward the cooler",
+  "interposer_mm": 45
+ },
+ "view_transforms": "Explode, readable thickening and section are view transforms. Every coordinate here is assembled.",
+ "data": {
+  "fixture_id": "micro150-45mm",
+  "human_view": "/sentilab/package/",
+  "stack": [
+   {
+    "level": "substrate",
+    "grid_layer": 0,
+    "name": "Substrate",
+    "z0_mm": -0.27,
+    "z1_mm": -0.07,
+    "side_mm": 45,
+    "k_W_per_mK": 0.3
+   },
+   {
+    "level": "c4",
+    "grid_layer": 1,
+    "name": "C4 bumps + underfill",
+    "z0_mm": -0.07,
+    "z1_mm": 0,
+    "side_mm": 45,
+    "k_W_per_mK": 1.6
+   },
+   {
+    "level": "interposer",
+    "grid_layer": 2,
+    "name": "Silicon interposer",
+    "z0_mm": 0,
+    "z1_mm": 0.11,
+    "side_mm": 45,
+    "k_W_per_mK": 100
+   },
+   {
+    "level": "ubump",
+    "grid_layer": 3,
+    "name": "Microbumps + underfill",
+    "z0_mm": 0.11,
+    "z1_mm": 0.12,
+    "side_mm": 45,
+    "k_W_per_mK": 1.6
+   },
+   {
+    "level": "chip",
+    "grid_layer": 4,
+    "name": "Chip layer",
+    "z0_mm": 0.12,
+    "z1_mm": 0.27,
+    "side_mm": 45,
+    "k_W_per_mK": 100
+   },
+   {
+    "level": "tim",
+    "grid_layer": 5,
+    "name": "TIM",
+    "z0_mm": 0.27,
+    "z1_mm": 0.29,
+    "side_mm": 45,
+    "k_W_per_mK": 4
+   },
+   {
+    "level": "spreader",
+    "grid_layer": 6,
+    "name": "Heat spreader",
+    "z0_mm": 0.29,
+    "z1_mm": 1.29,
+    "side_mm": 90,
+    "k_W_per_mK": 400
+   },
+   {
+    "level": "sink",
+    "grid_layer": 7,
+    "name": "Heat sink base",
+    "z0_mm": 1.29,
+    "z1_mm": 8.19,
+    "side_mm": 180,
+    "k_W_per_mK": 400
+   }
+  ],
+  "dies": [
+   {
+    "id": "tap-chiplet-0",
+    "door_name": "C0",
+    "role": "compute",
+    "w_mm": 8.25,
+    "h_mm": 9,
+    "power_w": 150,
+    "halo_mm": 0.18
+   },
+   {
+    "id": "tap-chiplet-1",
+    "door_name": "C1",
+    "role": "compute",
+    "w_mm": 8.25,
+    "h_mm": 9,
+    "power_w": 150,
+    "halo_mm": 0.18
+   },
+   {
+    "id": "tap-chiplet-2",
+    "door_name": "C2",
+    "role": "compute",
+    "w_mm": 8.25,
+    "h_mm": 9,
+    "power_w": 150,
+    "halo_mm": 0.18
+   },
+   {
+    "id": "tap-chiplet-3",
+    "door_name": "C3",
+    "role": "compute",
+    "w_mm": 8.25,
+    "h_mm": 9,
+    "power_w": 150,
+    "halo_mm": 0.18
+   },
+   {
+    "id": "tap-chiplet-4",
+    "door_name": "D0",
+    "role": "memory_dram_block",
+    "w_mm": 8.75,
+    "h_mm": 8.75,
+    "power_w": 20,
+    "halo_mm": 0.135
+   },
+   {
+    "id": "tap-chiplet-5",
+    "door_name": "D1",
+    "role": "memory_dram_block",
+    "w_mm": 8.75,
+    "h_mm": 8.75,
+    "power_w": 20,
+    "halo_mm": 0.135
+   },
+   {
+    "id": "tap-chiplet-6",
+    "door_name": "D2",
+    "role": "memory_dram_block",
+    "w_mm": 8.75,
+    "h_mm": 8.75,
+    "power_w": 20,
+    "halo_mm": 0.135
+   },
+   {
+    "id": "tap-chiplet-7",
+    "door_name": "D3",
+    "role": "memory_dram_block",
+    "w_mm": 8.75,
+    "h_mm": 8.75,
+    "power_w": 20,
+    "halo_mm": 0.135
+   }
+  ],
+  "rules": {
+   "lattice_mm": 0.5,
+   "body_gap_mm": 0.1,
+   "edge_clearance_incl_halo_mm": 0.5,
+   "rotations_deg": {
+    "CPU": [
+     0,
+     90
+    ],
+    "DRAM": [
+     0
+    ]
+   }
+  },
+  "positions": "die centres in micrometres from the agent door, never drawn here; see the human view"
+ },
+ "labels": [],
+ "omitted": [
+  {
+   "what": "temperatures",
+   "why": "A static twin carries no temperatures; scored layouts and their maps are in the human view only."
+  },
+  {
+   "what": "layouts and agent arrivals",
+   "why": "Live and replayed layouts come from the agent door's feed, not from this static file."
+  },
+  {
+   "what": "render derivative (GLB)",
+   "why": "Not built for this page."
+  }
+ ],
+ "derivatives": []
+}

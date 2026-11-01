@@ -9,6 +9,7 @@ binary distribution).
 | HotSpot 7.0 thermal simulator | `sundai_hotspot/` | https://github.com/uvahotspot/HotSpot | `f18831e48cef5d62580585cca0d7fab6c71bc3cc` | Custom University of Virginia license, `sundai_hotspot/LICENSE` |
 | HotSpot 6.0 thermal simulator (TAP-2.5D's version) | `sundai_hotspot6/` | https://github.com/uvahotspot/HotSpot | `a7a3286e368867c26381e0a23e36b3e273bdeda9` | Custom University of Virginia license, `sundai_hotspot6/LICENSE` |
 | TAP-2.5D chiplet placement | `sundai_tap/` | https://github.com/bu-icsg/TAP-2.5D | `3a3f4e5a4d019b2d9cda1f72d8d1755238845dbb` | Apache-2.0, `sundai_tap/LICENSE` |
+| three.js 0.187.0 (the Package view's 3D renderer) | `web/public/vendor/three/0.187.0/` | https://github.com/mrdoob/three.js (npm `three@0.187.0`) | `7e89746a687bb88271253698fa108b1dd59825d0` | MIT, `web/public/vendor/three/0.187.0/LICENSE` |
 
 Each `temperature_grid.c` carries one SentiLab change, behind a macro that is off in the default build. Without
 the macro, the file compiles to the upstream text; a test checks this byte for byte.
@@ -32,6 +33,8 @@ Obligations we follow:
   - `sundai_tap/configs/sys_ascend910_45mm.cfg` and `sys_micro150_45mm.cfg`: derived from the upstream configs, with
     a 45 mm interposer and a SentiLab legality section.
 - SuperLU (if a build links it): its BSD-style LBNL notice is reproduced in any binary distribution.
+- three.js: served byte-identical to the npm release (sha256 of each file in `web/public/vendor/three/0.187.0/VERSION.txt`,
+  checked by `web/test/package3d-vendor.test.mjs`), with its MIT license file beside it.
 - No GPL code (for example 3D-ICE) enters this repository.
 
 The starter's own new code (`sundai_controller/`, `sundai_thermal/`, the probe driver) carries no license yet;
