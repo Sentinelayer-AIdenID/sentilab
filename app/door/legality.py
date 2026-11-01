@@ -115,7 +115,11 @@ class PinnedTapChecker:
             cells.append(center_cells(block_extent(unit, side, side, GRID, GRID)))
         return cells
 
+    def centre_means(self, dies, grid) -> list:
+        """Each real chiplet's centre-cell mean on the grid, in die order."""
+        return [sum(grid[cell["row"]][cell["col"]] * cell["weight"] for cell in cells)
+                for cells in self.centre_cells(dies)]
+
     def selector(self, dies, grid) -> float:
         """max_chiplet_centre_cell_mean_C: per real chiplet the mean of its central cells, then the maximum."""
-        return max(sum(grid[cell["row"]][cell["col"]] * cell["weight"] for cell in cells)
-                   for cells in self.centre_cells(dies))
+        return max(self.centre_means(dies, grid))

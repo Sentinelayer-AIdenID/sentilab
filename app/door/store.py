@@ -308,7 +308,8 @@ class Store:
                 seq = self._run_event(db, run, "evaluating", now)
                 db.execute("UPDATE runs SET state = 'evaluating', updated_at = ?, version = ? WHERE run_id = ?",
                            (now, seq, run["run_id"]))
-                return {"run_id": run["run_id"], "reservation_id": held["reservation_id"],
+                return {"run_id": run["run_id"], "principal": run["principal"],
+                        "reservation_id": held["reservation_id"],
                         "envelope_cpu_s": held["amount_cpu_s"], "proposal": json.loads(run["proposal"]),
                         "geometry_sha256": run["geometry_sha256"], "manifest_id": run["manifest_id"]}
 

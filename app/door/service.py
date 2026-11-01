@@ -105,13 +105,15 @@ class Door:
         configured = env.get("DOOR_DATA_DIR", "")
         data = Path(configured) if configured else (Path("/data/door") if Path("/data").is_dir() else
                                                      Path("/tmp/door"))
-        scorer = None
-        if env.get("DOOR_SCORER_URL") and env.get("DOOR_SCORER_TOKEN"):
+        policy, scorer = Policy.from_env(env), None
+        if env.get("DOOR_SCORER_URL") and env.get("DOOR_SCORER_TOKEN") and policy.usable:
             try:
-                scorer = HttpScorer(env["DOOR_SCORER_URL"], env["DOOR_SCORER_TOKEN"])
+                # Health reads "up" only when the scorer answers as the manifest's pinned binary under this grant.
+                scorer = HttpScorer(env["DOOR_SCORER_URL"], env["DOOR_SCORER_TOKEN"], grant_id=policy.grant.grant,
+                                    binary_sha256=policy.manifest["statistic"]["evaluator"]["binary_sha256"])
             except ValueError:
                 scorer = None
-        return cls(Policy.from_env(env), Store(data / "door.sqlite3"), scorer)
+        return cls(policy, Store(data / "door.sqlite3"), scorer)
 
     def start(self) -> None:
         self.dispatcher.start()
@@ -245,7 +247,9 @@ class Door:
                 "native_all_block_max_C": result["native_all_block_max_C"],
                 "active_layer_peak_C": result["active_layer_peak_C"],
                 "active_guard": {**GUARD, "ok": guard_ok},
-                "grid64": [[round(value, 3) for value in grid_row] for grid_row in result["grid64"]],
+                "per_die_C": result["per_die_C"],
+                "grid64": None if result["grid64"] is None else [[round(value, 3) for value in grid_row]
+                                                                  for grid_row in result["grid64"]],
                 "grid": {"rows": 64, "cols": 64, "unit": "C", "layer": "active",
                          "orientation": "row 0 is the frame's top edge (max y); column 0 its left edge (min x)"},
                 "replay": result["replay"], "reproduced": row["state"] == "reproduced",

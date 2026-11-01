@@ -9,6 +9,7 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 
 from app.door import testkit as tk
+from open_proposals.contract import canonical as hashes
 from app.door.dispatch import failure_for
 from app.door.scorer import ScorerError
 from app.door.store import Store
@@ -45,9 +46,14 @@ class StateTests(tk.DoorCase, unittest.TestCase):
         held = self.reservation(run_id)
         self.assertEqual((held["state"], held["charged_cpu_s"], held["usage"]), ("settled", 2.5, "measured"))
         request = self.scorer.calls[0]
+        row, _ = self.store.run(run_id)
+        self.assertEqual(set(request), {"run_id", "token_ref", "proposal"}, "door-scorer's exact request shape")
         self.assertEqual(request["run_id"], run_id)
-        self.assertEqual(request["reserve_cpu_s"], 10)
-        self.assertEqual([die["die"] for die in request["dies"]], list(range(8)))
+        self.assertEqual(request["proposal"], json.loads(row["proposal"]))
+        self.assertEqual(request["token_ref"], self.policy.participant_ref(row["principal"]))
+        self.assertEqual(hashes.run_id(self.policy.manifest_id, request["token_ref"],
+                                       hashes.proposal_sha256(request["proposal"])), run_id,
+                         "the scorer's run-id check (run_id(manifest, token_ref, proposal_sha256)) gives the door's")
 
     def test_replay_failures_end_not_reproduced_with_their_code(self):
         for mode, code in (("mismatch", "reproduction_mismatch"), ("not_fresh", "fresh_process_required")):
@@ -95,16 +101,45 @@ class StateTests(tk.DoorCase, unittest.TestCase):
         self.assertEqual(self.store.run(run_id)[0]["state"], "reproduced")
         self.assertEqual(self.door.board()[1]["scorer"]["state"], "up")
 
-    def test_a_score_whose_numbers_disagree_with_its_grid_keeps_the_evaluation_but_no_verdict(self):
-        self.scorer.mode = "bad_binding"
+    def test_a_score_whose_numbers_disagree_with_its_parts_keeps_the_evaluation_but_no_verdict(self):
+        """The metric must be the maximum of the per-die values, each per-die value its grid mean when a grid comes
+        back, and the scorer's wire proxy the door's."""
+        for index, (mode, with_grid, failed) in enumerate((("bad_binding", False, "per_die_ok"),
+                                                            ("bad_wire", False, "wire_ok"),
+                                                            ("bad_die", True, "grid_ok"))):
+            self.scorer.mode, self.scorer.with_grid = mode, with_grid
+            run_id = self.submit_one(moved(index), nonce_value=tk.nonce(800 + index))
+            self.drain()
+            row, _ = self.store.run(run_id)
+            self.assertEqual((row["state"], [c["code"] for c in json.loads(row["codes"])]),
+                             ("reproduced", ["binding_mismatch"]), mode)
+            item = self.door.status(run_id, tk.nonce(800 + index))[1]
+            self.assertFalse(item["result"]["binding_ok"], mode)
+            self.assertFalse(json.loads(row["result"])["binding"][failed], mode)
+            self.assertIsNone(item["verdict"], mode)
+
+    def test_a_bound_score_with_a_grid_passes_every_check(self):
+        self.scorer.with_grid = True
+        run_id = self.submit_one()
+        self.drain()
+        bound = json.loads(self.store.run(run_id)[0]["result"])["binding"]
+        self.assertEqual({name: bound[name] for name in ("per_die_ok", "grid_ok", "wire_ok", "ok")},
+                         {"per_die_ok": True, "grid_ok": True, "wire_ok": True, "ok": True})
+
+    def test_a_replay_that_cannot_complete_is_not_reproduced_and_a_refusal_costs_nothing(self):
+        self.scorer.mode = "replay_failed"
         run_id = self.submit_one()
         self.drain()
         row, _ = self.store.run(run_id)
         self.assertEqual((row["state"], [c["code"] for c in json.loads(row["codes"])]),
-                         ("reproduced", ["binding_mismatch"]))
-        item = self.door.status(run_id, tk.NONCE)[1]
-        self.assertFalse(item["result"]["binding_ok"])
-        self.assertIsNone(item["verdict"])
+                         ("not_reproduced", ["reproduction_failed"]))
+        self.scorer.mode = "refused"
+        run_id = self.submit_one(moved(1))
+        self.drain()
+        row, _ = self.store.run(run_id)
+        self.assertEqual((row["state"], row["reason"]), ("failed", "scorer_refused"))
+        held = self.reservation(run_id)
+        self.assertEqual((held["charged_cpu_s"], held["usage"]), (0.0, "never_began"))
 
     def test_restart_recovery_fails_an_interrupted_attempt_and_charges_its_envelope(self):
         run_id = self.submit_one()

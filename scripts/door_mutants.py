@@ -1,10 +1,13 @@
 """Mutation check for the agent door: each mutant injects one real hazard into a fresh temporary copy of the repo; the
 door's tests must fail. The working tree is never touched.
 
-    python -m app.door.mutants              # every mutant; exit 1 if any survives, fails to land or breaks the run
-    python -m app.door.mutants --land       # only check that every mutant's snippet occurs exactly once
-    python -m app.door.mutants --only=a,b   # just these (a spot check, not the result)
-    python -m app.door.mutants --jobs=3     # copies tested at once
+    python -m scripts.door_mutants              # every mutant; exit 1 if any survives, fails to land or breaks
+    python -m scripts.door_mutants --land       # only check that every mutant's snippets occur exactly once
+    python -m scripts.door_mutants --only=a,b   # just these (a spot check, not the result)
+    python -m scripts.door_mutants --jobs=3     # copies tested at once
+
+It lives in scripts/, outside the shipped trees, like the contract's own open_proposals/contract/mutants.py: it launches
+the door's test suites in temporary copies, which is a development tool's process launch, not the service's.
 
 A mutant must land (each of its snippets occurs exactly once and the file changes), or it is reported as an error,
 never as a survivor; a mutant that stops the suites from importing is broken, never a kill. A mutant's snippet and
@@ -21,7 +24,7 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 SKIP = {".git", "deck", "sundai_thermal", "__pycache__", "node_modules"}
 SUITES = ("app.test_door_intake", "app.test_door_dispatch", "app.test_door_feeds")
 RUNNER = """
@@ -41,6 +44,7 @@ print(json.dumps(sorted({t.id().rsplit(".", 1)[-1] for t, _ in result.failures +
 D = "app/door/"
 IN, L, P, S, SV, DP = (D + "intake.py", D + "legality.py", D + "policy.py", D + "store.py", D + "service.py",
                        D + "dispatch.py")
+SC = D + "scorer.py"
 
 # (id, hazard, file, snippet, replacement)
 MUTANTS = [
@@ -127,9 +131,22 @@ MUTANTS = [
     # ── the frozen metric ──
     ("guard-not-strict", "metric: the active guard admits 119.07", SV, "and row[\"active_c\"] < ACTIVE_GUARD_C)",
      "and row[\"active_c\"] <= ACTIVE_GUARD_C)"),
-    ("binding-unchecked", "metric: a score that disagrees with its grid stands unqualified", DP,
-     "    bound = (abs(selector - score.max_chiplet_centre_cell_mean_C) <= BINDING_TOLERANCE_K",
-     "    bound = True or (abs(selector - score.max_chiplet_centre_cell_mean_C) <= BINDING_TOLERANCE_K"),
+    ("binding-unchecked", "metric: a score that disagrees with its parts stands unqualified", DP,
+     '    checks["ok"] = all(value for name, value in checks.items() if name.endswith("_ok"))',
+     '    checks["ok"] = True'),
+    ("binding-grid-ignored", "metric: a returned grid is not checked against the per-die values", DP,
+     "                               and all(abs(mean - score.per_die_C[name]) <= BINDING_TOLERANCE_K",
+     "                               and all(True or abs(mean - score.per_die_C[name]) <= BINDING_TOLERANCE_K"),
+    # ── the scorer seam (door-scorer, PR #79) ──
+    ("token-ref-unkeyed", "scorer: token_ref is the bare nonce hash, not the keyed participant_ref", DP,
+     '"token_ref": door.policy.participant_ref(claimed["principal"]),', '"token_ref": claimed["principal"][-64:],'),
+    ("refusal-charged", "scorer: a refusal before any solve is charged the envelope", SC,
+     'raise ScorerError("scorer_refused", began=False)', 'raise ScorerError("scorer_refused", began=True)'),
+    ("replay-error-reproduced", "scorer: a replay that could not complete counts as reproduced", SC,
+     'reproduced, code, replay_receipt = False, "reproduction_failed", None',
+     'reproduced, code, replay_receipt = True, None, {}'),
+    ("health-binary-ignored", "scorer: health accepts another binary", SC,
+     'and payload.get("binary_sha256") == self._binary', ""),
     ("replay-unchecked", "metric: a failed replay counts as reproduced", DP,
      "reproduced = score.replay_fresh_process and score.replay_match", "reproduced = True"),
 ]

@@ -5,9 +5,10 @@
   which is the gate-zero HotSpot 6.0 hash the door pins.
 - TEST_KEY: an Ed25519 key derived from a public phrase. It signs test bindings only; the door's pinned operator key
   is warden's, and a binding signed with this key never verifies against it.
-- FakeScorer: a deterministic stand-in for door-scorer. Its grid is a smooth sum of bumps at the die centres printed
-  to 0.01 K, and its selector is computed from that grid with the door's own GRID_CENTER code, so its binding holds
-  unless a mode breaks it on purpose.
+- FakeScorer: a deterministic stand-in for door-scorer's Score. Its grid is a smooth sum of bumps at the die centres
+  printed to 0.01 K; its per-die values are that grid's GRID_CENTER means (the door's own code) and its metric their
+  maximum, so its binding holds unless a mode breaks it on purpose. Like the real scorer it returns no grid unless
+  with_grid is set.
 """
 from __future__ import annotations
 
@@ -138,11 +139,12 @@ def grid_for(dies, offset: float = 0.0) -> list:
 
 
 class FakeScorer:
-    """mode: ok | down | timeout | error | cutoff | grant_expired | mismatch | not_fresh | bad_binding | raise."""
+    """mode: ok | down | timeout | error | refused | cutoff | grant_expired | mismatch | not_fresh | replay_failed |
+    bad_binding | bad_die | bad_wire | raise."""
 
-    def __init__(self, checker, *, mode="ok", healthy=True, cpu_s=2.5, delay_s=0.0, offset=-60.0):
+    def __init__(self, checker, *, mode="ok", healthy=True, cpu_s=2.5, delay_s=0.0, offset=-60.0, with_grid=False):
         self.checker, self.mode, self.healthy, self.cpu_s, self.delay_s = checker, mode, healthy, cpu_s, delay_s
-        self.offset = offset
+        self.offset, self.with_grid = offset, with_grid
         self.calls, self.health_calls = [], 0
         self.started = threading.Event()
         self.release = None          # a threading.Event a test may set to hold a score call open
@@ -168,17 +170,24 @@ class FakeScorer:
             raise ScorerError("scorer_cutoff", began=True, cpu_s=self.cpu_s)
         if self.mode == "grant_expired":
             raise ScorerError("grant_expired", began=True, cpu_s=0.5)
+        if self.mode == "refused":
+            raise ScorerError("scorer_refused", began=False)
         if self.mode == "raise":
             raise RuntimeError("adapter fault")
-        dies = request["dies"]
+        dies = request["proposal"]["dies"]
         grid = grid_for(dies, self.offset)
-        selector = self.checker.selector(dies, grid)
-        if self.mode == "bad_binding":
-            selector += 1.0
-        peak = max(max(row) for row in grid)
-        return Score(selector, selector - 0.01, peak, tuple(tuple(row) for row in grid),
-                     self.mode != "not_fresh", self.mode != "mismatch", self.cpu_s, EVALUATOR_BINARY_SHA256,
-                     {"run_id": request["run_id"], "fake": True}, dict(METRIC))
+        means = self.checker.centre_means(dies, grid)
+        per_die = dict(zip(("C0", "C1", "C2", "C3", "D0", "D1", "D2", "D3"), means))
+        metric = max(means) + (1.0 if self.mode == "bad_binding" else 0.0)
+        if self.mode == "bad_die":
+            per_die["D3"] += 0.5
+        wire = self.checker.wire_proxy_mm(dies) + (0.5 if self.mode == "bad_wire" else 0.0)
+        fresh = self.mode not in ("not_fresh", "replay_failed")
+        code = "reproduction_failed" if self.mode == "replay_failed" else None
+        return Score(metric, metric - 0.01, max(max(row) for row in grid), per_die,
+                     tuple(tuple(row) for row in grid) if self.with_grid else None, wire, fresh,
+                     self.mode not in ("mismatch", "replay_failed"), code, self.cpu_s, EVALUATOR_BINARY_SHA256,
+                     {"score": {"run_id": request["run_id"], "fake": True}, "replay": None}, dict(METRIC))
 
 
 NONCE = "0123456789abcdef"

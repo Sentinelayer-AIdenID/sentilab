@@ -7,22 +7,25 @@ ends `failed` with an explicit reason (scorer_down, scorer_timeout, scorer_error
 its contract code. At launch the run is revalidated: the signed manifest and open admission, accepted terms, the
 case, and the legality gate on the stored proposal. A window that has ended expires every queued run.
 
-A score is checked against the selector before it is recorded: the door recomputes max_chiplet_centre_cell_mean_C
-from the scorer's grid with gate zero's GRID_CENTER code, and the active-layer peak as the grid's maximum. A
-disagreement over half the grid's 0.01 K print precision keeps the evaluation but carries binding_mismatch, which
-withholds any candidate verdict.
+A score is checked against the selector before it is recorded. The metric must be the maximum of the eight chiplets'
+centre-cell means the scorer reports; when the scorer also returns the 64 x 64 active-layer grid, the door recomputes
+each chiplet's mean with gate zero's GRID_CENTER code and the active peak as the grid's maximum; and the scorer's wire
+proxy must be the door's. A disagreement (over half the grid's 0.01 K print precision for temperatures) keeps the
+evaluation but carries binding_mismatch, which withholds any candidate verdict.
 """
 from __future__ import annotations
 
 import logging
 import threading
 
-from .policy import CASE
 from .scorer import BINDING_TOLERANCE_K, ScorerError, cpu_seconds
 
 _logger = logging.getLogger(__name__)
 FAILURE_CODE = {"scorer_down": "oracle_error", "scorer_timeout": "timeout", "scorer_error": "oracle_error",
-                "scorer_cutoff": "stopped", "grant_expired": "grant_expired"}
+                "scorer_refused": "oracle_error", "scorer_cutoff": "stopped", "grant_expired": "grant_expired",
+                "interrupted": "interrupted"}
+DIE_NAMES = ("C0", "C1", "C2", "C3", "D0", "D1", "D2", "D3")
+WIRE_TOLERANCE_MM = 1e-5
 HEALTH_TTL_S = 5.0
 
 
@@ -45,29 +48,45 @@ class ScorerState:
         return {"state": self.state, "since": self.since}
 
 
+def binding(score, dies, checker) -> dict:
+    """How the score binds to the frozen selector and the layout; ok only when every available check agrees."""
+    metric = score.max_chiplet_centre_cell_mean_C
+    per_die_max = max(score.per_die_C.values())
+    checks = {"per_die_max_C": per_die_max,
+              "per_die_ok": abs(per_die_max - metric) <= BINDING_TOLERANCE_K}
+    if score.grid64 is not None:
+        means = checker.centre_means(dies, score.grid64)
+        peak = max(max(row) for row in score.grid64)
+        checks.update(grid_selector_C=max(means), grid_active_peak_C=peak,
+                      grid_ok=(abs(max(means) - metric) <= BINDING_TOLERANCE_K
+                               and abs(peak - score.active_layer_peak_C) <= BINDING_TOLERANCE_K
+                               and all(abs(mean - score.per_die_C[name]) <= BINDING_TOLERANCE_K
+                                       for mean, name in zip(means, DIE_NAMES))))
+    if score.wire_proxy_mm is not None:
+        checks.update(scorer_wire_proxy_mm=score.wire_proxy_mm,
+                      wire_ok=abs(score.wire_proxy_mm - checker.wire_proxy_mm(dies)) <= WIRE_TOLERANCE_MM)
+    checks["ok"] = all(value for name, value in checks.items() if name.endswith("_ok"))
+    return checks
+
+
 def outcome_for(score, claimed: dict, checker) -> dict:
     """The settled outcome of a returned score: charged its measured CPU, its binding checked against the selector."""
     dies = claimed["proposal"]["dies"]
-    grid = score.grid64
-    selector = checker.selector(dies, grid)
-    peak = max(max(row) for row in grid)
-    bound = (abs(selector - score.max_chiplet_centre_cell_mean_C) <= BINDING_TOLERANCE_K
-             and abs(peak - score.active_layer_peak_C) <= BINDING_TOLERANCE_K)
+    bound = binding(score, dies, checker)
     reproduced = score.replay_fresh_process and score.replay_match
-    replay_code = None if reproduced else (
-        "fresh_process_required" if not score.replay_fresh_process else "reproduction_mismatch")
+    replay_code = None if reproduced else (score.replay_code or (
+        "fresh_process_required" if not score.replay_fresh_process else "reproduction_mismatch"))
     envelope = claimed["envelope_cpu_s"]
     result = {"metric": score.metric, "max_chiplet_centre_cell_mean_C": score.max_chiplet_centre_cell_mean_C,
               "native_all_block_max_C": score.native_all_block_max_C,
-              "active_layer_peak_C": score.active_layer_peak_C,
-              "grid64": [list(row) for row in grid],
+              "active_layer_peak_C": score.active_layer_peak_C, "per_die_C": dict(score.per_die_C),
+              "grid64": None if score.grid64 is None else [list(row) for row in score.grid64],
               "replay": {"fresh_process": score.replay_fresh_process, "match": score.replay_match},
-              "binding": {"recomputed_max_chiplet_centre_cell_mean_C": selector,
-                          "recomputed_active_layer_peak_C": peak, "ok": bound},
+              "binding": bound,
               "evaluator": {"binary_sha256": score.evaluator_binary_sha256, "grid": 64},
               "cpu_s": score.cpu_s, "overrun": score.cpu_s > envelope, "receipt": score.receipt}
     return {"kind": "scored", "charged_cpu_s": score.cpu_s, "usage": "measured" if score.cpu_s <= envelope else
-            "measured_overrun", "qualifiers": [] if bound else ["binding_mismatch"], "reproduced": reproduced,
+            "measured_overrun", "qualifiers": [] if bound["ok"] else ["binding_mismatch"], "reproduced": reproduced,
             "replay_code": replay_code, "result": result, "metric_c": score.max_chiplet_centre_cell_mean_C}
 
 
@@ -142,10 +161,8 @@ class Dispatcher:
         claimed = door.store.claim(check=door.launch_check, parallel=door.policy.grant.parallel, now=now)
         if claimed is None:
             return False
-        request = {"run_id": claimed["run_id"], "manifest_id": claimed["manifest_id"],
-                   "geometry_sha256": claimed["geometry_sha256"], "case": CASE,
-                   "units": claimed["proposal"]["units"], "anchor": claimed["proposal"]["anchor"],
-                   "dies": claimed["proposal"]["dies"], "reserve_cpu_s": claimed["envelope_cpu_s"]}
+        request = {"run_id": claimed["run_id"], "token_ref": door.policy.participant_ref(claimed["principal"]),
+                   "proposal": claimed["proposal"]}
         try:
             score = door.scorer.score(request)
         except ScorerError as error:
