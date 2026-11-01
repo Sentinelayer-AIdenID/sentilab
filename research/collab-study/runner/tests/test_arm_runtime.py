@@ -140,3 +140,14 @@ def test_arm_does_not_invent_initial_prompt_bounds(tmp_path):
     with pytest.raises(runner.InputError, match='initial prompt'):
         run_arm(tmp_path, 'B', ScriptedModel(), bounds={1: 100})
     assert not (tmp_path / 'output/job-one').exists()
+
+
+def test_c_prompt_reservations_include_all_three_replies_between_turns(tmp_path):
+    # Agent 1's next request would include its own reply and both peers' replies.
+    model = ScriptedModel(*(response('reviewing', prompt=19860 + 100 * turn, completion=100)
+                            for turn in range(6)))
+    job, _, accounting = run_arm(tmp_path, 'C', model, bounds={n: 19860 for n in (1, 2, 3)})
+    assert not job['overspend_limit_exceeded']
+    assert all(agent['charged_tokens'] <= agent['cap'] + 100 for agent in job['agents'].values())
+    assert len(model.calls) == 3
+    assert [row['prompt_bound'] for row in accounting['attempts']] == [19860, 19960, 20060]
