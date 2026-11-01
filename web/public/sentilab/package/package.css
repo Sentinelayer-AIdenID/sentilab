@@ -298,6 +298,10 @@ dialog ul { margin: 0; padding: 14px 18px 16px 34px; display: grid; gap: 8px; co
 .score .claimline { margin-top: 5px; font: 13px var(--mono); color: #b8c8cd; }
 .score .distinct { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 3px; font: 13px var(--mono); color: var(--muted); }
 .score .distinct b { color: #d6e2e5; font-weight: 600; }
+.score .verif { margin: 6px 0 0; font: 12.5px/1.35 var(--mono); color: var(--muted); }
+.arrivals .arrlist { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; font: 12.5px var(--mono); color: var(--muted); }
+.arrivals .arrlist b { font-weight: 600; }
+.arrivals .arrlist li.none { font-family: var(--sans); }
 .legend .scalebar .guard { position: absolute; top: -4px; bottom: -4px; width: 2px; background: #fff; box-shadow: 0 0 0 1px #0a1317; }
 .legend .basis small { display: block; margin-top: 3px; font: 12.5px var(--mono); color: var(--muted); font-weight: 400; }
 .refs .rgroup { margin-top: 8px; }

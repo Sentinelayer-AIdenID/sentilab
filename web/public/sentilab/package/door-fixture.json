@@ -1,5 +1,5 @@
 {
- "schema": "sentilab-door-layouts/1",
+ "schema": "sentilab-package-replay/1",
  "fixture": true,
  "case": "micro150-45mm",
  "provenance": {
