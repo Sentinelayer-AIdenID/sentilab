@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import resource
+import select
 import signal
 import sys
 import time
@@ -166,13 +167,15 @@ def supervise(engine, spec, directory, wall_timeout, registration=None):
         tree = descendants()
         own = resource.getrusage(resource.RUSAGE_SELF)
         live_cpu = sum(row[3] / hz for row in tree.values())
-        if reason is None:
+        leader_exited = (leader_status is None and os.waitid(
+            os.P_PID, pid, os.WEXITED | os.WNOHANG | os.WNOWAIT) is not None)
+        # Completion wins over a late polling tick. Cleanup has its own bound;
+        # crossing the solve deadline while reaping must not change the result.
+        if reason is None and leader_status is None and not leader_exited:
             if stopping:
                 reason = 'interrupted'
             elif time.monotonic() - start >= wall_timeout or live_cpu + reaped_cpu + own.ru_utime + own.ru_stime >= CPU_LIMIT_S:
                 reason = 'timeout'
-        leader_exited = (leader_status is None and os.waitid(
-            os.P_PID, pid, os.WEXITED | os.WNOHANG | os.WNOWAIT) is not None)
         if reason or leader_status is not None or leader_exited:
             if cleanup_deadline is None:
                 cleanup_deadline = time.monotonic() + CLEANUP_TIMEOUT_S
@@ -257,6 +260,7 @@ def guard(engine, spec, directory, wall_timeout):
     os.close(receive)
     os.set_blocking(report, False)
     deadline = time.monotonic() + wall_timeout
+    result_deadline = None
     cleanup_deadline = None
     worker_status = None
     engine_pid = engine_handle = None
@@ -280,20 +284,8 @@ def guard(engine, spec, directory, wall_timeout):
                     pass
                 except (OSError, ValueError):
                     failure = 'oracle_error'
-            if stopping or time.monotonic() >= deadline:
-                failure = failure or ('interrupted' if stopping else 'timeout')
-            if failure or worker_status is not None:
-                if cleanup_deadline is None:
-                    cleanup_deadline = time.monotonic() + CLEANUP_TIMEOUT_S
-                if worker_status is None:  # Its PID is still retained, independent of /proc availability.
-                    os.kill(worker, signal.SIGKILL)
-                if engine_handle is not None:
-                    try:
-                        signal.pidfd_send_signal(engine_handle, signal.SIGKILL)
-                        killed.add(engine_pid)
-                    except ProcessLookupError:
-                        pass
-                kill_children()
+            # Reap a completed worker before testing the wall clock. A guardian
+            # scheduled late must preserve the result already produced by it.
             no_children = False
             while True:
                 try:
@@ -313,6 +305,30 @@ def guard(engine, spec, directory, wall_timeout):
             if no_children:
                 cleanup_complete = True
                 break
+            if stopping:
+                failure = failure or 'interrupted'
+            elif worker_status is None and failure is None:
+                if engine_handle is not None and select.select([engine_handle], [], [], 0)[0]:
+                    # The engine has exited; allow bounded reaping/result writing
+                    # even when its exit and the wall deadline share a poll tick.
+                    if result_deadline is None:
+                        result_deadline = time.monotonic() + CLEANUP_TIMEOUT_S
+                    if time.monotonic() >= result_deadline:
+                        failure = 'oracle_error'
+                elif time.monotonic() >= deadline:
+                    failure = 'timeout'
+            if failure or worker_status is not None:
+                if cleanup_deadline is None:
+                    cleanup_deadline = time.monotonic() + CLEANUP_TIMEOUT_S
+                if worker_status is None:  # Its PID is still retained, independent of /proc availability.
+                    os.kill(worker, signal.SIGKILL)
+                if engine_handle is not None:
+                    try:
+                        signal.pidfd_send_signal(engine_handle, signal.SIGKILL)
+                        killed.add(engine_pid)
+                    except ProcessLookupError:
+                        pass
+                kill_children()
             if cleanup_deadline is not None and time.monotonic() >= cleanup_deadline:
                 failure = failure or 'oracle_error'
                 break
