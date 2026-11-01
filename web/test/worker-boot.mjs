@@ -192,6 +192,14 @@ if (ready) {
     && same(new Uint8Array(await canonical.arrayBuffer()), file(`sentilab/open/terms/${pinned}.md`))
     && canonical.headers.get("x-terms-version") === `sentilab-open-terms/${pinned}` && /^text[/]markdown/.test(canonical.headers.get("content-type") || ""),
     `${canonical.status} · ${canonical.headers.get("content-type")}`);
+  // Other spellings of the same path are the door's too (x-terms-version: served through the hash check, never by the
+  // asset layer directly).
+  for (const spelling of [`/sentilab/open/terms/${pinned.replace("@", "%40")}.md`, `/SENTILAB/OPEN/TERMS/${pinned}.md`, `/sentilab/open/terms%2F${pinned}.md`]) {
+    const r = await fetch(`${BASE}${spelling}`);
+    check(`GET ${spelling.slice(0, 40)}...: the door's hash-checked answer, never the bare asset`, r.status === 200
+      && r.headers.get("x-terms-version") === `sentilab-open-terms/${pinned}` && same(new Uint8Array(await r.arrayBuffer()), file(`sentilab/open/terms/${pinned}.md`)),
+      `${r.status} · ${r.headers.get("x-terms-version")}`);
+  }
   const unpinned = await fetch(`${BASE}/sentilab/open/terms/2@${pinned.slice(2)}.md`);
   check("GET a terms path with no copy behind its name: 503 terms_unavailable", unpinned.status === 503
     && (await unpinned.json().catch(() => ({}))).error === "terms_unavailable", `${unpinned.status}`);

@@ -223,9 +223,27 @@ async function currentTerms(request, env, ctx, url) {
   return serveTerms(request, env, url, (await sharedBoard(env, url)).terms);
 }
 
-// GET /sentilab/open/terms/<n>@<sha256>.md: one version, by the hash in its own name.
+// A path as an asset layer could resolve it: percent-decoded (decodedPath), backslashes and repeated slashes made one
+// slash, dot segments resolved, lower-cased. null when its escapes do not decode.
+function resolvedPath(pathname) {
+  const decoded = decodedPath(pathname);
+  if (decoded === null) return null;
+  try { return new URL(decoded.replace(/[\\/]+/g, "/"), "https://door.invalid").pathname.toLowerCase(); } catch { return null; }
+}
+const TERMS_DIR = "/sentilab/open/terms";
+// Every spelling of a path in the terms directory is the door's (encoded, double-encoded, any case, dot segments), so
+// no request reaches the static copies except through the hash check below.
+const termsDirPath = (pathname) => {
+  const resolved = resolvedPath(pathname);
+  return resolved === null ? /sentilab[\\/]+open[\\/]+terms/i.test(pathname) : resolved === TERMS_DIR || resolved.startsWith(`${TERMS_DIR}/`);
+};
+
+// GET /sentilab/open/terms/<n>@<sha256>.md, in any spelling: one version, by the hash in its own name. Anything else in
+// that directory is terms_unavailable.
 async function termsVersion(request, env, ctx, url) {
-  return serveTerms(request, env, url, `sentilab-open-terms/${TERMS_PATH.exec(url.pathname)[1]}`);
+  const match = TERMS_PATH.exec(resolvedPath(url.pathname) ?? "");
+  if (!match) return json(request, 503, { error: "terms_unavailable" });
+  return serveTerms(request, env, url, `sentilab-open-terms/${match[1]}`);
 }
 
 // ── rate limits ───────────────────────────────────────────────────────────────────────────────────────────────────
@@ -823,7 +841,7 @@ const TERMS_VERSION_ROUTE = Object.freeze({ methods: ["GET", "HEAD"], handler: t
 // The door route for a path, or null when the path is not the door's.
 export function doorRoute(pathname) {
   if (Object.hasOwn(ROUTES, pathname)) return ROUTES[pathname];
-  if (TERMS_PATH.test(pathname)) return TERMS_VERSION_ROUTE;
+  if (termsDirPath(pathname)) return TERMS_VERSION_ROUTE;
   return pathname.startsWith(STATUS_PREFIX) ? STATUS_ROUTE : null;
 }
 
