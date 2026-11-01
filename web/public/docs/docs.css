@@ -1,0 +1,7 @@
+.lead{font-size:1.05rem;line-height:1.55}
+.note{border-left:3px solid #c9a35a;padding:6px 10px;background:rgba(201,163,90,.08)}
+dl{display:grid;grid-template-columns:minmax(150px,240px) 1fr;gap:8px 18px}
+dt{font-weight:600}
+dd{margin:0}
+ol li,ul li{margin:6px 0;line-height:1.5}
+@media (max-width:640px){dl{grid-template-columns:1fr}dd{margin-bottom:8px}}
