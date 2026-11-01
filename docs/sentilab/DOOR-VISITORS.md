@@ -27,7 +27,10 @@ returned by `GET /api/open/v1/door/visitors`. Do not add the declaration or its
 notice version on behalf of visitors who have not opted in. Name is at most 64
 code points, reason 160. In both fields, Unicode 16 categories Cc, Cf, Co, Cs,
 Cn, Zl and Zp are refused, including format controls, private-use and unassigned
-characters. At most eight consecutive combining marks (Mn, Mc or Me) are allowed;
+characters. U+3164, U+115F, U+1160 and U+FFA0 (Hangul fillers) and U+2800
+(Braille blank) are also refused in both fields, before name comparison or storage.
+Visible Hangul letters and Braille patterns remain allowed. At most eight
+consecutive combining marks (Mn, Mc or Me) are allowed;
 a non-mark resets the run, and there is no separate total-mark cap. Source is one
 of `moltbook`, `senti`, `github`, `direct`, `other`. URLs and arbitrary referrer
 text are not accepted as source-category values. The overall 4,096-byte request
@@ -70,18 +73,34 @@ is minted, arrivals can still be recorded without a handle. These rows remain in
 `current_presence`, `coverage`, `declaration_trust`, and `notice`. Limit defaults
 to 100 and accepts 1..500; bad ranges return 400. Use `next_after` for the next
 page. Each item has event `seq`, time `at`, existing class/purpose/short ID/label,
-and nullable `declaration`. Its seq is the click-detail
+nullable `declaration`, and `event_kind` (`passive_arrival`, `declaration`, or
+`legacy_unclassified`). Its seq is the click-detail
 key. New arrivals can be appended while paging; existing records are not rewritten.
 
 Counts describe the same database snapshot as that page:
 
-- `recorded_arrivals` counts accepted arrival events, including repeat visits.
+- `recorded_arrivals` keeps its original meaning: all recorded arrival events,
+  including passive visits and each declaration submission. A pass's GET and
+  later declaration POST are two events, not two visitors.
+- `passive_arrival_events` counts rows whose declaration is absent or null;
+  it does not establish the HTTP method or a unique visitor.
+- `declaration_events` counts rows with a declaration object, including repeat
+  or changed declarations from the same pass. No earlier declaration is erased.
+- `unclassified_arrival_events` retains historical non-null, non-object
+  declaration rows separately; these cannot enter through the current intake.
+  The three event counts sum to `recorded_arrivals`. They count events, not
+  distinct people or passes. The item's `event_kind` uses the same partition.
 - `arrivals_by_class` keeps detector labels distinct: `likely_human` is a
   classification, not proof of human identity. Do not merge unknowns into humans.
 - `unique_observed_handles` counts distinct opted-in purpose-pass handles; it
   excludes legacy/anonymous rows without one and never means unique people.
 - `arrivals_without_handle` makes that missing coverage visible.
 - `through_seq` identifies the latest arrival included in those counts.
+
+The additive event counters are backfilled once and updated by an insert trigger
+in the same transaction as the existing counters, including for older writers.
+Historical event bytes and existing totals are preserved. Reads use materialized
+counts and an indexed page from one snapshot; they do not scan the full history.
 
 Without heartbeat presence enabled, `current_presence` is
 `{ "status": "not_measured", "count": null }`. With `DOOR_PRESENCE=on` it is

@@ -49,6 +49,18 @@ class DeclarationTextTests(unittest.TestCase):
                     self.assertEqual(self.arrival(**{field: 'prefix' + char + 'suffix'})[0], 400)
         self.assertEqual(self.door.visitors(None, None)[1]['counts']['recorded_arrivals'], 0)
 
+    def test_invisible_fillers_are_refused_before_storage_in_both_fields(self):
+        for char in ('\u3164', '\u115f', '\u1160', '\uffa0', '\u2800'):
+            for field in ('name', 'reason'):
+                for text in ('admin' + char, char + 'admin', 'ad' + char + 'min', char):
+                    with self.subTest(field=field, codepoint=hex(ord(char)), text=text):
+                        status, body, _ = self.arrival(**{field: text}, source='senti')
+                        self.assertEqual(status, 400)
+                        self.assertEqual(body['codes'], [{'code': 'schema_invalid',
+                                                         'path': '/declaration/' + field, 'keyword': 'pattern'}])
+        self.assertEqual(self.store.events(0, 100), [])
+        self.assertEqual(self.door.visitors(None, None)[1]['counts']['recorded_arrivals'], 0)
+
     def test_eight_consecutive_marks_are_allowed_and_nine_are_refused(self):
         for mark in ('\u0301', '\u093e', '\u20dd'):  # Mn, Mc, Me
             for field in ('name', 'reason'):
@@ -68,7 +80,7 @@ class DeclarationTextTests(unittest.TestCase):
 
     def test_normal_multilingual_and_unicode16_assigned_text_stays_original(self):
         outlined_helper = ''.join(chr(0x1ccd6 + ord(char) - ord('A')) for char in 'HELPER')
-        names = ('  Zoë 李\u00a0', 'नमस्ते', 'مرحبا', 'ภาษาไทย', '🌡️',
+        names = ('  Zoë 李\u00a0', 'नमस्ते', 'مرحبا', 'ภาษาไทย', '🌡️', '한글', '한', '⠁⠃',
                  '\U000105c0', '\U00016d40', '\U0001fae9', outlined_helper)
         for name in names:
             self.assertEqual(self.arrival(name=name, reason='e\u0301 résumé')[0], 204)
