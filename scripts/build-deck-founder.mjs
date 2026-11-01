@@ -334,7 +334,9 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
   };
 }
 
-export const founderPdfName = (data) => `founder-v4/SentiLab-founder-${data.deck.slot}-${data.deck.cutoffIso.slice(0, 10)}-${data.deck.cutoffIso.slice(11, 13)}${data.deck.cutoffIso.slice(14, 16)}-${!data.deck.draft ? "final" : data.deck.measuring ? "draft" : "review"}.pdf`;
+// What a build is: the freeze's final, a draft with numbers still measuring, or a review export with none missing.
+export const buildKind = (data) => (!data.deck.draft ? "final" : data.deck.measuring ? "draft" : "review");
+export const founderPdfName = (data) => `founder-v4/SentiLab-founder-${data.deck.slot}-${data.deck.cutoffIso.slice(0, 10)}-${data.deck.cutoffIso.slice(11, 13)}${data.deck.cutoffIso.slice(14, 16)}-${buildKind(data)}.pdf`;
 
 export function serialize(data) {
   const { facts, ...pub } = data;
@@ -347,7 +349,7 @@ const mss = (s) => `${Math.floor(Math.round(s) / 60)}:${String(Math.round(s) % 6
 export function speakerScript(data, v4) {
   const u = data.budget;
   const out = [
-    `# SentiLab founder pitch (v4${data.deck.slot === "3min" ? "" : "-short"}), ${data.deck.talk}, ${data.deck.measuring ? "draft" : "review"} ${data.deck.cutoff}`,
+    `# SentiLab founder pitch (v4${data.deck.slot === "3min" ? "" : "-short"}), ${data.deck.talk}, ${buildKind(data)} ${data.deck.cutoff}`,
     "",
     `The spoken words, exactly as the deck's notes hold them (V4.json sha256 ${data.source.sourceSha256.slice(0, 8)}…). Spine: root's founder pitch (team room 57809), with root's two carried openings (reply to 57809, 07:04Z), the finding beat in root's wording (reply to 57816, 07:14Z) and Carter's additions from 57800. The technical deck (v3.1) is the backup.`,
     "",
@@ -372,7 +374,10 @@ export function speakerScript(data, v4) {
 
 export function fillInTable(data) {
   const rows = data.placeholders.map((p) => `| ${p.where.replace(/^slide /, "")} | ${p.label}${p.dropped ? " (dropped at the freeze: no receipt)" : ""} | \`${p.id}\` | ${p.need} |`);
-  return ["# FILL-IN: the founder deck's placeholders", "", `As of ${data.deck.cutoff}. Each shows "measuring…" until docs/sentilab/deck/founder-v4/METRICS.json carries it with its definition, scope, window and source; then rebuild and re-export.`, "",
+  const head = data.deck.draft
+    ? `As of ${data.deck.cutoff}. Each shows "measuring…" until docs/sentilab/deck/founder-v4/METRICS.json carries it with its definition, scope, window and source; then rebuild and re-export.`
+    : `The freeze, ${data.deck.cutoff}. Each below had no receipt, so its slide does not show it and its words are not read.`;
+  return ["# FILL-IN: the founder deck's placeholders", "", head, "",
     "| Slide | Shows | Metric id | Needed |", "|---|---|---|---|", ...(rows.length ? rows : ["| none | | | |"]), "",
     ...(data.refresh.length ? ["## Refresh at the freeze", "", "| Slide | Shows | Why |", "|---|---|---|", ...data.refresh.map((r) => `| ${r.slide} | ${r.what} | ${r.why} |`), ""] : []),
     ...(data.options.length ? ["## Optional, Carter's call: notes only, not on a slide", "", "| Slide | Line, if Carter asks for it | Numbers | Qualifiers | Source |", "|---|---|---|---|---|",
