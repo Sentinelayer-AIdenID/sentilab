@@ -73,7 +73,8 @@ def build_manifest() -> dict:
                     "limits": slab049.per_call_limits(), "per_call_reserve_cpu_s": slab049.per_call_reserve_s()},
         builds={KIND: {"binary": binary, "binary_sha256": BINARY_SHA256,
                        "provenance": binary + ".provenance.json",
-                       "command": gate_zero.EVALUATOR_KINDS[KIND]["build"],
+                       "command": (gate_zero.EVALUATOR_KINDS[KIND]["build"]
+                                   + " && python3 -m sundai_hotspot.provenance material_only"),
                        "identity_tag": gate_zero.VARIANT_TAG.decode("ascii")}})
     return manifest
 
