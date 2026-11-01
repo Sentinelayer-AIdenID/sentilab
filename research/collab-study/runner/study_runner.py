@@ -660,6 +660,7 @@ def run_arm(job: dict, *, output: Path, engine: RequestEngine, system_prompt: st
                 return final
             messages.extend([{"role": "assistant", "content": reply.content},
                              {"role": "user", "content": continue_prompt}])
+            agent.prompt_bound += usage_counts(reply.usage)[2]
         return empty_set()
 
     try:
@@ -681,6 +682,10 @@ def run_arm(job: dict, *, output: Path, engine: RequestEngine, system_prompt: st
                     if reply is None:
                         continue
                     transcript.append({"role": "assistant", "content": f"Agent {agent.number}:\n{reply.content}"})
+                    # Each next prompt includes every reply since that agent's
+                    # last request, including its own newly appended reply.
+                    for participant in agents:
+                        participant.prompt_bound += usage_counts(reply.usage)[2]
                     final = writer.final_set(agent.number)
                     if final is not None and not agent.stop_reason:
                         agent.stop_reason = "final"
