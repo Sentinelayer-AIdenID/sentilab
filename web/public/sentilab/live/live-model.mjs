@@ -426,9 +426,31 @@ export const stationOf = (status) => STATION_OF[status] ?? null;   // rejected, 
 // newer than afterSeq that have a station, oldest first: never a step the run did not record.
 export const WALK_STEP_MS = 700;
 export function walkSteps(events, runId, afterSeq) {
-  return [...(events ?? [])].filter((e) => e.kind === "run" && e.run_id === runId && e.seq > afterSeq && stationOf(e.state))
-    .sort((a, b) => a.seq - b.seq).map((e, i) => ({ i, seq: e.seq, state: e.state, station: stationOf(e.state), word: W.STEP_WORD[e.state] ?? e.state }));
+  const recs = [...(events ?? [])].filter((e) => e.kind === "run" && e.run_id === runId && e.seq > afterSeq && stationOf(e.state)).sort((a, b) => a.seq - b.seq);
+  const steps = recs.map((e) => ({ seq: e.seq, state: e.state, station: stationOf(e.state), word: W.STEP_WORD[e.state] ?? e.state }));
+  // From the door (Carter 20:05Z, root 20:08Z): only when the run's own first record, the queued one, is among the new
+  // steps and names its visitor's arrival (visit_arrival, the exact same-pass link), the visitor's figure starts at
+  // Door (that arrival) and passes Submit (the queued record: the submission was accepted) before the run's own steps.
+  const first = recs[0];
+  if (first && first.state === "queued" && count(first.visitArrival)) steps.unshift(
+    { seq: first.visitArrival, state: "arrival", station: "door", word: W.STEP_WORD.arrival },
+    { seq: first.seq, state: "submitted", station: "submit", word: W.STEP_WORD.submitted });
+  return steps.map((s, i) => ({ ...s, i }));
 }
+// The visitors at the Door station: arrival records (not declaration events) from the last DOOR_RECENT_MS by their
+// own time, newest first, without the ones a run names as its visit (that visitor's figure is the run's).
+export const DOOR_RECENT_MS = 15 * 60 * 1000;
+export function doorVisitors(records, nowMs, linked = new Set()) {
+  const out = new Map();
+  for (const e of records ?? []) {
+    if (e.kind !== "arrival" || e.event_kind === "declaration" || out.has(e.seq) || linked.has(e.seq)) continue;
+    const t = e.at ? Date.parse(e.at) : NaN;
+    if (Number.isFinite(t) && nowMs - t <= DOOR_RECENT_MS) out.set(e.seq, e);
+  }
+  return [...out.values()].sort((a, b) => b.seq - a.seq);
+}
+// The arrivals runs name as their visit (visit_arrival on their run records).
+export const linkedArrivals = (records) => new Set((records ?? []).filter((e) => e.kind === "run" && count(e.visitArrival)).map((e) => e.visitArrival));
 // at: run id -> a recorded step the run is playing back (live.mjs). runs and the counts are always the live state (each
 // run at its latest station); a run playing back is also listed under `playback` at the station of the step it shows
 // (root, 0ba078e P2 3: the live queue and result stay true; the replayed stage is drawn apart and labelled).
@@ -442,7 +464,8 @@ export function atlas(layouts, events, at = null) {
     if (st) runs.get(st).push(r);
     else out.push({ id: L.id, label: L.label, status: L.status });
     const step = at?.get(L.id) ?? null;
-    if (step && stationOf(step.state)) playback.get(stationOf(step.state)).push({ ...r, status: step.state, step });
+    const ps = step ? step.station ?? stationOf(step.state) : null;
+    if (ps) playback.get(ps).push({ ...r, status: step.state, step });
   }
   const ev = events ?? [];
   const counts = Object.fromEntries(STATIONS.map((s) => [s.id, runs.get(s.id).length]));

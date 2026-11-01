@@ -221,10 +221,12 @@ for (const [control, act] of [
     await settle();
     assert.deepEqual(captions(), [], "no playback once stopped");
     assert.deepEqual(counts(document.getElementById("atlasSvg")), live, "the latest state");
-    const drawn = dump(document.getElementById("atlasSvg")).attrs.join(" ");
+    // A visitor's one-off slide-in class (door-in) ends on its own; it is not a walk.
+    const still = () => dump(document.getElementById("atlasSvg")).attrs.join(" ").replaceAll(" door-in", "");
+    const drawn = still();
     await settleFor(t, 4000);
     assert.deepEqual(captions(), [], "a late timer callback does nothing");
-    assert.equal(dump(document.getElementById("atlasSvg")).attrs.join(" "), drawn, "nothing redrawn by a stale walk");
+    assert.equal(still(), drawn, "nothing redrawn by a stale walk");
   });
 }
 

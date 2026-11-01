@@ -1,7 +1,7 @@
 // node --test test/livelab-proposals.test.mjs (from web/)
 // Carter (19:59Z): a timeline of the proposed runs, newest at top, with when each was proposed ("just now", "1 min
 // ago"), "New proposal" on the ones that just arrived, a check mark once the door received it, and who proposed it.
-// Root (20:01Z): the time is the run's own submission time; the check mark means "Proposal received" (the door's intake
+// Root (20:01Z): the time is the run's own submission time; the check mark means "Submission accepted" (the door's intake
 // accepted it: a queued record), with the evaluation's outcome on its own line; a proposal refused at intake gets the
 // refusal mark and reason instead; a name only through the run record's exact visit_arrival, never a short id.
 import { test } from "node:test";
@@ -190,7 +190,7 @@ test("proposals: the check mark means the door's intake received it; a proposal 
   await settleFor(t, 4000);
   const byShort = (hex) => rows().find((el) => text(el).includes(`visit ${hex}`));
   const received = (el) => walk(el).some((x) => x.tag === "small" && x.className === "proposal-received");
-  assert.ok(received(byShort("d004")), "a queued proposal is received"); assert.match(text(byShort("d004")), /Proposal received.*(Simulating|Accepted)/);
+  assert.ok(received(byShort("d004")), "a queued proposal is received"); assert.match(text(byShort("d004")), /Submission accepted.*(Simulating|Accepted)/);
   assert.equal(received(byShort("e005")), false, "refused at intake: no check mark");
   assert.match(text(byShort("e005")), /Refused · /, "the refusal and its reason");
   assert.ok(walk(byShort("e005")).some((x) => x.tag === "svg" && /refused/.test(x.getAttribute("class") ?? "")), "the refusal mark");

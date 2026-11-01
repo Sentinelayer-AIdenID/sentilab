@@ -455,6 +455,8 @@ function drawAtlas(svg, { large = false } = {}) {
   const a = M.atlas(layouts(), feed.state.events, walkAt());
   const shown = shownRun().L;
   const playing = new Set(a.stations.flatMap((st) => st.playback.map((r) => r.id)));
+  const held = [...S.records.values(), ...feed.state.events];
+  const visitorsNow = M.doorVisitors(held, Date.now(), M.linkedArrivals(held));
   svg.replaceChildren();
   svg.append(s("ellipse", { class: "atlas-ring", cx: 150, cy: 76, rx: 108, ry: 52 }));
   a.stations.forEach((st, i) => {
@@ -474,13 +476,19 @@ function drawAtlas(svg, { large = false } = {}) {
     const slots = 6 - back.length;
     const live = st.runs.filter((r) => !playing.has(r.id));
     const kept = slots > 0 ? live.slice(-slots) : [];
-    const row = [...kept, ...back];
-    const more = st.runs.length - kept.length - back.filter((r) => r.live === st.id).length;
+    // At Door: the recent visitors (arrival records of the last 15 min), newest nearest, in the slots left; +N counts
+    // the rest. The Door count stays the live count. A visitor moves only through its run's records (a run naming
+    // its arrival as visit_arrival walks from Door); a visitor with no such run stays here.
+    const guests = st.id === "door" ? visitorsNow : [];
+    const keptGuests = st.id === "door" && slots > 0 ? guests.slice(0, slots).reverse() : [];
+    const row = [...kept, ...keptGuests, ...back];
+    const more = st.id === "door" ? guests.length - keptGuests.length : st.runs.length - kept.length - back.filter((r) => r.live === st.id).length;
     if (more > 0) svg.append(s("text", { x: x + 38, y: y + 22, class: "atlas-more", fill: "#cfe2d5", "font-size": 8, "text-anchor": "start" }, `+${more}`));
     row.forEach((r, k) => {
       const cx = x - ((row.length - 1) * 11) / 2 + k * 11, cy = y + 19;
-      const dot = avatar({ cls: r.cls, short: r.label.split(" · ")[1] ?? null, seq: 0 });
       const size = large ? 16 : 13;
+      if (r.kind === "arrival") { drawGuest(svg, r, cx, cy, size, r === keptGuests.at(-1)); return; }
+      const dot = avatar({ cls: r.cls, short: r.label.split(" · ")[1] ?? null, seq: 0 });
       dot.setAttribute("x", (cx - size / 2).toFixed(1)); dot.setAttribute("y", (cy - size / 2).toFixed(1));
       dot.setAttribute("width", size); dot.setAttribute("height", size);
       dot.setAttribute("class", `av atlas-av${shown && r.id === shown.id ? " sel" : ""}${r.step ? " playback" : ""}`);
@@ -496,6 +504,24 @@ function drawAtlas(svg, { large = false } = {}) {
     });
   });
   return a;
+}
+// A visitor at Door: its figure (sliding in when it first arrives live) and, under the newest one, its declared name
+// through the exact declaration.arrival relation ("self-declared, not verified") or its visit id. Text only.
+const guestSeen = new Map();     // arrival seq -> when first drawn (null: held at the first read)
+function drawGuest(svg, e, cx, cy, size, newest) {
+  const now = Date.now();
+  if (!guestSeen.has(e.seq)) guestSeen.set(e.seq, walkHistory === null ? null : now);
+  const since = guestSeen.get(e.seq);
+  const dot = avatar({ cls: e.cls, short: e.short, seq: e.seq, category: e.category, verification: e.verification });
+  dot.setAttribute("x", (cx - size / 2).toFixed(1)); dot.setAttribute("y", (cy - size / 2).toFixed(1));
+  dot.setAttribute("width", size); dot.setAttribute("height", size);
+  dot.setAttribute("class", `av atlas-av guest${since !== null && now - since < 1500 ? " door-in" : ""}`);
+  dot.append(s("title", {}, `${W.doorLabel(e.short)} \u00b7 at the door`));
+  svg.append(dot);
+  if (!newest) return;
+  const name = namesNow().get(e.seq) ?? null;
+  svg.append(s("text", { class: "atlas-guest", x: cx.toFixed(1), y: (cy + size / 2 + 8).toFixed(1), "text-anchor": "middle" },
+    name === null ? W.doorLabel(e.short) : `${name} \u00b7 self-declared, not verified`));
 }
 // The open expanded atlas (its map and table), redrawn with the small one on every render and every playback step
 // (root, 0ba078e P2 2); null when the dialog is closed or shows something else.

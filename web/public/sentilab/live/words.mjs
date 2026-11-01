@@ -108,14 +108,16 @@ export function tempWord(t, verification = null) {
 // A run's step, in the words its outcome line uses (live-model.mjs runOutcome), as its avatar passes it.
 export const STEP_WORD = Object.freeze({ queued: "Waiting in line", held: "Held", evaluating: "Simulating", evaluated: "Re-checking (replay)",
   replaying: "Re-checking (replay)", reproduced: "Accepted \u00b7 replay matched", cross_checked: "Accepted \u00b7 cross-checked",
-  not_reproduced: "Scored \u00b7 replay did not match" });
+  not_reproduced: "Scored \u00b7 replay did not match", arrival: "At the door", submitted: "Submission accepted" });
+// A visitor at the Door station: its declared name (exact declaration.arrival only) with the note, or its visit id.
+export const doorLabel = (short) => (short ? `visit ${short}` : "a visitor");
 // The proposals timeline (Carter, 19:59Z): one row per run, newest at top.
 export const PROPOSALS = Object.freeze({
   head: "PROPOSALS \u00b7 NEWEST FIRST",
   from: (short) => (short ? `Proposal from visit ${short}` : "Proposal"),
   named: (short) => ` \u00b7 self-declared, not verified${short ? ` \u00b7 visit ${short}` : ""}`,
-  received: "Proposal received",
-  receivedTitle: "The door’s intake accepted this proposal (it has a queued record)",
+  received: "Submission accepted",
+  receivedTitle: "The door’s intake accepted this submission (it has a queued record)",
   refused: "Refused at intake",
   fresh: "New proposal",
   none: "No proposals yet. The first one appears here as it arrives.",
