@@ -78,6 +78,7 @@ function installPage(t, answer) {
     const url = new URL(String(input), "https://sentilab.aidenid.com");
     const body = answer(url);
     if (body === "network") throw new TypeError("network error");
+    if (body === "hang") return new Promise(() => {});
     if (body === undefined) return new Response("{}", { status: 502 });
     return body === null ? new Response("{}", { status: 404 }) : new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
   });
@@ -103,7 +104,7 @@ function door({ runVisit = null, declare = null } = {}) {
     purpose: "place-chiplets", short_id: "82ea" });
   const runs = runVisit === null ? base.events : base.events.map((e) => (e.kind === "run" && e.short_id === "5cb8" ? { ...e, visit_arrival: runVisit } : e));
   const events = { ...base, events: [...runs, arrival(99, 4000), arrival(100, 2000)], next_after: 100 };
-  const state = { hidden: false, fail: false };
+  const state = { hidden: false, fail: false, hang: false };
   const decl = (seq, arrivalSeq, name, short = "82ea", cls = "declared_agent") => (state.hidden
     ? { seq, at: new Date(NOW - 1000).toISOString(), class: cls, purpose: "place-chiplets", short_id: short, label: `${cls} · ${short}`, event_kind: "declaration", hidden: "operator_hidden", declaration: null }
     : { ...proto, seq, at: new Date(NOW - 1000).toISOString(), class: cls, purpose: "place-chiplets", short_id: short, label: `${cls} · ${short}`, event_kind: "declaration", arrival: arrivalSeq,
@@ -117,7 +118,7 @@ function door({ runVisit = null, declare = null } = {}) {
     if (url.pathname === "/api/open/v1/door/results") return after >= results.next_after ? { ...results, items: [], has_more: false } : results;
     if (url.pathname === "/api/open/v1/door/events") return after >= events.next_after ? { ...events, events: [], has_more: false } : events;
     if (url.pathname === "/api/open/v1/door/board") return board;
-    if (url.pathname === "/api/open/v1/door/visitors") { if (state.fail) return undefined; const v = visitors(); return after >= v.next_after ? { ...v, items: [], has_more: false } : v; }
+    if (url.pathname === "/api/open/v1/door/visitors") { if (state.hang) return "hang"; if (state.fail) return undefined; const v = visitors(); return after >= v.next_after ? { ...v, items: [], has_more: false } : v; }
     return null;
   };
   return { answer, state };
@@ -190,3 +191,26 @@ test("names: a run record that carries visit_arrival is titled by that arrival's
   assert.equal(runSide(dom).includes("Visitor Gamma"), false, "a hide clears the run's name");
   assert.match(dom.part("runList").text.join(" "), /The layout from visit 5cb8/);
 });
+
+// Root (19:01Z): once the arrival card's display time has passed, the hidden card must not keep the copied name in
+// its DOM. With the card expired past ARRIVAL_HOLD_MS, a hide, a failed read or a stale read leaves no declared name
+// anywhere in #arrivalCard, hidden or not.
+async function expiredCard(t, tag) {
+  const opened = await open(t, tag);
+  assert.match(textOf(document.getElementById("arrivalCard")), /Visitor Beta · self-declared, not verified/, "control: the fresh card is named");
+  for (let k = 0; k < 9; k += 1) { t.mock.timers.tick(1000); await settle(); }
+  assert.equal(document.getElementById("arrivalCard").hidden, true, "the card has expired");
+  assert.match(textOf(document.getElementById("arrivalStrip")), /Visitor Beta · self-declared, not verified/, "control: the name is still current");
+  return opened;
+}
+const cardDom = (dom) => { const d = dom.part("arrivalCard"); return [...d.text, ...d.attrs, ...d.html].join(" "); };
+for (const [control, act, ticks] of [["the declaration is hidden", (s) => { s.hidden = true; }, 5], ["the visitors read fails", (s) => { s.fail = true; }, 5],
+  ["the read goes stale", (s) => { s.hang = true; }, 13]]) {
+  test(`names: after the card expired, ${control}: no declared name anywhere in the card's DOM`, async (t) => {
+    const { dom, state } = await expiredCard(t, `expired-${ticks}-${control.split(" ")[2]}`);
+    act(state);
+    for (let k = 0; k < ticks; k += 1) { t.mock.timers.tick(1000); await settle(); }
+    assert.equal(/Visitor (Alpha|Beta)/.test(cardDom(dom)), false, `the hidden card keeps no name: ${cardDom(dom)}`);
+    assert.equal(/Visitor (Alpha|Beta)/.test(dom.page().text.join(" ")), false, "and none anywhere on the page");
+  });
+}

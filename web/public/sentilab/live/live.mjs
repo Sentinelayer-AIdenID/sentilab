@@ -473,6 +473,8 @@ function renderArrivals() {
   const fresh = newest && newest.at && now - Date.parse(newest.at) <= ARRIVAL_HOLD_MS;
   const card = $("arrivalCard");
   card.hidden = !fresh;
+  // A settled card keeps nothing: a name it showed must not linger in its DOM once the card is hidden (root, 19:01Z).
+  if (!fresh && cardSeq !== null) { card.replaceChildren(); cardSeq = null; cardLine = null; }
   const cardName = fresh ? names.get(newest.seq) ?? null : null;
   const cardKey = fresh ? JSON.stringify([newest.seq, cardName]) : null;
   if (fresh && cardSeq !== cardKey) {
