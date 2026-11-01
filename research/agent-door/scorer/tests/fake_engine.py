@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import resource
+import signal
 import socket
 import sys
 import time
@@ -15,16 +16,21 @@ try:
     socket.socket()
 except PermissionError:
     network_denied = True
-report.write_text(json.dumps({'pid': os.getpid(), 'executable': sys.executable,
+report.write_text(json.dumps({'pid': os.getpid(), 'worker_pid': os.getppid(), 'executable': sys.executable,
                               'limits': resource.getrlimit(resource.RLIMIT_CPU),
                               'network_denied': network_denied, 'environment': sorted(os.environ)}))
-if mode == 'escape':
+if mode in ('escape', 'escape-worker-kill'):
     child = os.fork()
     if child == 0:
         os.setsid()
         CONTROL.with_name('escaped.pid').write_text(str(os.getpid()))
         while True:
             time.sleep(1)
+    while not CONTROL.with_name('escaped.pid').exists():
+        time.sleep(0.01)
+if mode in ('worker-kill', 'escape-worker-kill', 'worker-stop'):
+    os.kill(os.getppid(), signal.SIGSTOP if mode == 'worker-stop' else signal.SIGKILL)
+    time.sleep(60)
 if mode in ('timeout', 'escape'):
     time.sleep(60)
 if mode == 'cpu':

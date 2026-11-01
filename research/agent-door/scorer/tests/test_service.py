@@ -468,3 +468,171 @@ def test_reservation_is_atomic_across_processes(tmp_path):
     assert sum(r == ('refused', 403) for r in results) == 5
     assert Ledger(path).budget_left() == 3570
     output.close()
+
+
+@pytest.fixture
+def fault_cleanup(tmp_path):
+    # Own leaked negative-control children so failed regressions leave no zombies.
+    import ctypes
+    import signal
+    libc = ctypes.CDLL(None)
+    previous = ctypes.c_int()
+    assert libc.prctl(37, ctypes.byref(previous), 0, 0, 0) == 0
+    assert libc.prctl(36, 1, 0, 0, 0) == 0
+    def clean():
+        pids = set()
+        for path in tmp_path.glob('observed-*.json'):
+            value = json.loads(path.read_text())
+            pids.update((value['pid'], value['worker_pid']))
+        escaped = tmp_path / 'escaped.pid'
+        if escaped.exists():
+            pids.add(int(escaped.read_text()))
+        for pid in pids:
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        deadline = time.monotonic() + 3
+        while pids and time.monotonic() < deadline:
+            for pid in list(pids):
+                try:
+                    reaped, _ = os.waitpid(pid, os.WNOHANG)
+                    if reaped:
+                        pids.remove(pid)
+                except ChildProcessError:
+                    if not Path(f'/proc/{pid}').exists():
+                        pids.remove(pid)
+            time.sleep(0.01)
+    yield clean
+    clean()
+    assert libc.prctl(36, previous.value, 0, 0, 0) == 0
+
+
+def assert_fault_accounting(h, result):
+    observed = list(h.path.glob('observed-*.json'))
+    assert len(observed) == 1
+    engine = json.loads(observed[0].read_text())['pid']
+    assert not Path(f'/proc/{engine}').exists(), 'engine survived worker failure'
+    escaped = h.path / 'escaped.pid'
+    if escaped.exists():
+        assert not Path(f'/proc/{int(escaped.read_text())}').exists(), 'escaped descendant survived'
+    assert result['state'] == 'failed'
+    assert result['receipt']['cpu_s'] == 10
+    assert result['receipt']['usage_complete'] is False
+    assert result['receipt']['cleanup_complete'] is True
+    assert [row['phase'] for row in h.rows()] == ['reserved', 'settled']
+    assert h.rows()[-1]['cpu_s'] == 10
+
+
+@pytest.mark.parametrize('mode', ['worker-kill', 'escape-worker-kill'])
+def test_worker_sigkill_cleans_orphans_and_charges_full(harness, fault_cleanup, mode):
+    h = harness(mode, wall_timeout=0.6)
+    start = time.monotonic()
+    status, result = h.call('/v1/score', h.request())
+    assert status == 200 and time.monotonic() - start < 5
+    assert_fault_accounting(h, result)
+    assert result['codes'] == [{'code': 'oracle_error'}]
+
+
+def inject_meter_failure(h, monkeypatch, persistent):
+    import service
+    sandbox_path = SCORER / 'sandbox.py'
+    bootstrap = h.path / 'fault-sandbox.py'
+    # Inject an actual /proc iteration failure in the isolated process, after a
+    # setsid grandchild exists. No production fault-injection switch is needed.
+    injection = f'''
+_original_iterdir = Path.iterdir
+_meter_failed = False
+def _fault_iterdir(self):
+    global _meter_failed
+    if str(self) == '/proc' and Path({str(h.path / 'escaped.pid')!r}).exists():
+        if {persistent!r} or not _meter_failed:
+            _meter_failed = True
+            raise OSError('injected meter failure')
+    return _original_iterdir(self)
+Path.iterdir = _fault_iterdir
+'''
+    bootstrap.write_text('import sys\nfrom pathlib import Path\n'
+                         + f'sys.path.insert(0, {str(SCORER)!r})\n'
+                         + f'__file__ = {str(sandbox_path)!r}\n'
+                         + f'source = Path(__file__).read_text().replace("if __name__ == \'__main__\':", '
+                         + repr(injection + "\nif __name__ == '__main__':") + ')\n'
+                         + 'exec(compile(source, __file__, "exec"))\n')
+    popen = service.subprocess.Popen
+    def start(args, **kwargs):
+        if len(args) > 1 and args[1] == str(sandbox_path):
+            args = [args[0], str(bootstrap), *args[2:]]
+        return popen(args, **kwargs)
+    monkeypatch.setattr(service.subprocess, 'Popen', start)
+
+
+def test_persistent_enumeration_failure_cleans_and_charges_full(harness, monkeypatch, fault_cleanup):
+    h = harness('escape', wall_timeout=0.6)
+    inject_meter_failure(h, monkeypatch, persistent=True)
+    start = time.monotonic()
+    status, result = h.call('/v1/score', h.request())
+    assert status == 200 and time.monotonic() - start < 5
+    assert_fault_accounting(h, result)
+    assert result['codes'] == [{'code': 'oracle_error'}]
+
+
+def test_handled_meter_failure_still_charges_full(harness, monkeypatch, fault_cleanup):
+    h = harness('escape', wall_timeout=0.6)
+    inject_meter_failure(h, monkeypatch, persistent=False)
+    status, result = h.call('/v1/score', h.request())
+    assert status == 200
+    assert_fault_accounting(h, result)
+    assert result['codes'] == [{'code': 'oracle_error'}]
+
+
+def test_outer_deadline_kills_stopped_worker(harness, fault_cleanup):
+    h = harness('worker-stop', wall_timeout=0.6)
+    start = time.monotonic()
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        pending = pool.submit(h.call, '/v1/score', h.request())
+        try:
+            status, result = pending.result(timeout=5)
+            assert status == 200 and time.monotonic() - start < 5
+            assert_fault_accounting(h, result)
+            assert result['codes'] == [{'code': 'timeout'}]
+        finally:
+            fault_cleanup()  # Also unblock the negative control's blocking wait4.
+
+
+def test_service_bounds_a_stopped_owner(harness, monkeypatch, fault_cleanup):
+    import service
+    import signal
+    h = harness('timeout', wall_timeout=0.6)
+    owners = []
+    popen = service.subprocess.Popen
+    def start(args, **kwargs):
+        process = popen(args, **kwargs)
+        if len(args) > 1 and args[1] == str(SCORER / 'sandbox.py'):
+            owners.append(process)
+        return process
+    monkeypatch.setattr(service.subprocess, 'Popen', start)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        pending = pool.submit(h.call, '/v1/score', h.request())
+        handle = None
+        try:
+            deadline = time.monotonic() + 3
+            while not list(h.path.glob('observed-*.json')) and time.monotonic() < deadline:
+                time.sleep(0.01)
+            assert len(owners) == 1 and list(h.path.glob('observed-*.json'))
+            handle = os.pidfd_open(owners[0].pid)
+            signal.pidfd_send_signal(handle, signal.SIGSTOP)
+            status, result = pending.result(timeout=7)
+            engine = json.loads(next(h.path.glob('observed-*.json')).read_text())['pid']
+            assert not Path(f'/proc/{engine}').exists()
+            assert not Path(f'/proc/{owners[0].pid}').exists()
+            assert status == 200 and result['state'] == 'failed'
+            assert result['receipt']['cpu_s'] == h.rows()[-1]['cpu_s'] == 10
+            assert result['receipt']['usage_complete'] is False
+        finally:
+            if handle is not None:
+                try:
+                    signal.pidfd_send_signal(handle, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                os.close(handle)
+            fault_cleanup()

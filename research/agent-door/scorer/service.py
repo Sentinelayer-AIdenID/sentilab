@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import re
+import signal
 import subprocess
 import sys
 import tempfile
@@ -23,7 +24,7 @@ from open_proposals.contract.codes import violation
 from sentilab_core.envelope import canonical
 from sundai_hotspot.reference_validation import SOLVER_ENVIRONMENT
 from ledger import Ledger, Refused
-from sandbox import WALL_TIMEOUT_S
+from sandbox import CLEANUP_TIMEOUT_S, CPU_LIMIT_S, WALL_TIMEOUT_S
 from thermal import GRANT_ID, PINNED_SHA256, Thermal, check_config, sha256, stage
 
 HEX = re.compile(r'[0-9a-f]{64}\Z')
@@ -104,6 +105,27 @@ def same_evaluation(response, original):
                     if k not in ('receipt', 'state', 'run_id')))
 
 
+def wait_owner(process, wall_timeout):
+    deadline = time.monotonic() + wall_timeout + CLEANUP_TIMEOUT_S
+    phase = 0
+    while True:
+        child, status, usage = os.wait4(process.pid, os.WNOHANG)
+        if child:
+            process.returncode = os.waitstatus_to_exitcode(status)
+            return usage, phase == 0
+        if time.monotonic() >= deadline:
+            if phase == 2:
+                return None, False
+            # The guardian normally cleans first; the last resort is bounded too.
+            try:
+                os.killpg(process.pid, signal.SIGTERM if phase == 0 else signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            phase += 1
+            deadline = time.monotonic() + CLEANUP_TIMEOUT_S
+        time.sleep(0.01)
+
+
 class Scorer:
     def __init__(self, *, ledger, admission, work_root, wall_timeout=WALL_TIMEOUT_S):
         self.token = os.environ.get('SCORER_TOKEN', '')
@@ -162,29 +184,40 @@ class Scorer:
                 return self.solve(spec, directory=Path(folder))
         start, clock_start = now(), time.monotonic()
         folder = str(directory)
+        payload = json.dumps(dict(spec, hotspot_config_sha256=self.thermal.config_sha256)).encode()
         # Only geometry-derived generator inputs go to the worker; never a proposal, salt or credential.
         process = subprocess.Popen([sys.executable, str(Path(__file__).with_name('sandbox.py')),
                                     str(self.engine), folder, str(self.wall_timeout)],
                                    stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                    env=SOLVER_ENVIRONMENT, start_new_session=True)
         try:
-            process.stdin.write(json.dumps(dict(spec, hotspot_config_sha256=self.thermal.config_sha256)).encode())
-            process.stdin.close()
+            try:
+                process.stdin.write(payload)
+            finally:
+                process.stdin.close()
         except BrokenPipeError:
             pass
-        _, status, usage = os.wait4(process.pid, 0)
-        process.returncode = os.waitstatus_to_exitcode(status)
-        cpu_s = usage.ru_utime + usage.ru_stime  # worker + its reaped descendants, isolated per request
+        except OSError:
+            wait_owner(process, 0)
+            raise
+        usage, owner_completed = wait_owner(process, self.wall_timeout)
+        measured_cpu = usage.ru_utime + usage.ru_stime if usage is not None else 0.0
         result_path = directory / 'result.json'
         try:
             result = json.loads(result_path.read_bytes()) if process.returncode == 0 else {'reason': 'oracle_error'}
         except (OSError, ValueError):
             result = {'reason': 'oracle_error'}
+        usage_complete = bool(owner_completed and result.get('usage_complete') and result.get('cleanup_complete'))
+        cpu_s = measured_cpu if usage_complete else max(CPU_LIMIT_S, measured_cpu)
+        if not usage_complete:
+            result['reason'] = result.get('reason') or 'oracle_error'
         receipt = {'grant_id': GRANT_ID, 'image_digest': self.image_digest, 'binary_sha256': self.binary_sha256,
                    'input_sha256': result.get('input_sha256', {}), 'output_sha256': result.get('output_sha256', {}),
                    'output_map_sha256': result.get('output_sha256', {}).get('sample.grid.steady'),
-                   'cpu_s': cpu_s, 'wall_s': time.monotonic() - clock_start, 'started_at': start, 'ended_at': now(),
-                   'worker_pid': process.pid, 'engine_pid': result.get('engine_pid'),
+                   'cpu_s': cpu_s, 'usage_complete': usage_complete,
+                   'cleanup_complete': bool(result.get('cleanup_complete')),
+                   'wall_s': time.monotonic() - clock_start, 'started_at': start, 'ended_at': now(),
+                   'owner_pid': process.pid, 'worker_pid': result.get('worker_pid'), 'engine_pid': result.get('engine_pid'),
                    'workspace_id': directory.name, 'cleanup_pids': result.get('cleanup_pids', [])}
         return result, receipt
 
