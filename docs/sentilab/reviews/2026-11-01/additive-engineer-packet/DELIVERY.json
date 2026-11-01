@@ -1,0 +1,29 @@
+{
+  "createdAt": "2026-11-01T13:50:04.205117+00:00",
+  "zip": {
+    "path": "sentilab-additive-private-2026-11-01.zip",
+    "bytes": 1042214,
+    "sha256": "ef4443daab23f9d3ceec3bc691f9a6aaca98e124109c7076a5d197d9124d95c6",
+    "members": 17
+  },
+  "manifest": {
+    "path": "payload/MANIFEST.json",
+    "bytes": 2885,
+    "sha256": "e0a4b6e67f5c02428f1a277dd79e67f10fdca5e0c8572e3ed2cf9ac0d61e4589",
+    "payloadEntries": 16
+  },
+  "verification": {
+    "status": "PASS",
+    "checks": "Saved byte identities, CRCs, confined paths and manifests only",
+    "outerFiles": 16,
+    "archives": 5,
+    "archiveMembers": 326,
+    "innerManifestEntries": 321
+  },
+  "privateOnly": true,
+  "uploaded": false,
+  "independentOuterReview": "Pending root or assigned nonauthor review",
+  "originalComponentBytesPreserved": true,
+  "componentCodeExecuted": false,
+  "newModelSolverContainerRun": false
+}
