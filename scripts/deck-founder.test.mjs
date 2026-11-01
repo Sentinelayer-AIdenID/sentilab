@@ -126,19 +126,20 @@ test("root's carried openings, the finding beat in root's words and Carter's add
     assert.equal(loaded.v4.figures[fig].pending, undefined, fig);
     assert.ok(loaded.v4.figures[fig].review.startsWith("root's scoped +1 on v1.24, 10:16:54Z (review 66d1d020"), fig);
   }
-  // Slide 9's freeze fallback is aneta's plain13 from v1.32: v1.31's five rows and root's wording with a narrower
-  // finite-element label; root's scoped +1 (12:25:10Z). It replaces v1.22's plain8, which stays in the review evidence only.
-  assert.equal(loaded.v4.figures.plain13.sha256, "bea8f1d5669654ff83078b1009c59af9a9fd689b4f90899c703074ba75d9fbbf");
-  assert.match(loaded.v4.figures.plain13.review, /^aneta's v1\.32 \(ZIP ea7d2995fe7a134648f798e48a6dba5d1899f1099c76989461f1ce3e2c491d4e, 41,053 bytes\): .*root's scoped \+1, 12:25:10Z \(reply to 57997\): no numerical token changed\./);
-  assert.equal(loaded.v4.figures.plain13.pending, undefined);
-  // Every figure on the freeze branch is approved (the coordinator, 12:26Z): v1.24's, v1.30's plain7, v1.32's plain13.
+  // Slide 9's freeze fallback is aneta's plain12-tradeoff from v1.25, root's scoped +1 (10:42:24Z), with the QR code (the
+  // coordinator, 14:13Z): the board the audience is invited to. plain13 is the demo's figure at 1:15 and leaves the deck,
+  // as v1.22's plain8 did; both stay in the review evidence.
+  assert.equal(loaded.v4.figures.plain12.sha256, "31176c7d13ef96c987b5775c9c9ee41a4b739e6bafac1314eef838a59f69524a");
+  assert.match(loaded.v4.figures.plain12.review, /^aneta's v1\.25 \(ZIP 824dd6a6f13838d0628b98136778440aea826d04254cb395f780eb656eae73a0, 44,927 bytes\); root's scoped \+1, 10:42:24Z \(reply to 57940\)/);
+  // Every figure on the freeze branch is approved: v1.24's, v1.25's plain12, v1.30's plain7.
   for (const [id, f] of Object.entries(loaded.v4.figures)) assert.equal(f.pending, undefined, id);
-  const p13 = readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain13-crosscheck.svg"), "utf8");
-  for (const t of ["from our ask in the help room to replies reporting re-runs,", "Finite element, a separate code", "another team; extrapolated, later reply", "in five rows"]) assert.ok(p13.includes(t), t);
-  assert.doesNotMatch(p13, /own solvers|own compute|Vortex/);
-  assert.equal(loaded.v4.slides.find((x) => x.id === "invite").finalFallback.figure, "plain13");
-  assert.equal(loaded.v4.figures.plain8, undefined);
-  for (const dir of [join(FOUNDER_DIR, "figures"), join(FOUNDER_DECK_DIR, "figures")]) assert.ok(!readdirSync(dir).some((f) => f.startsWith("plain8")), dir);
+  const p12 = readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain12-tradeoff.svg"), "utf8");
+  for (const t of ["Each dot is one team run, reproduced by a fresh-process replay", "Not a frontier or an optimum: an adaptive search that stopped early chose these points."]) assert.ok(p12.includes(t), t);
+  assert.equal(loaded.v4.slides.find((x) => x.id === "invite").finalFallback.figure, "plain12");
+  for (const gone of ["plain8", "plain13"]) {
+    assert.equal(loaded.v4.figures[gone], undefined, gone);
+    for (const dir of [join(FOUNDER_DIR, "figures"), join(FOUNDER_DECK_DIR, "figures")]) assert.ok(!readdirSync(dir).some((f) => f.startsWith(gone)), `${dir}: ${gone}`);
+  }
   assert.ok(readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain11-traffic.svg"), "utf8").includes("I believe whoever owns the decision layer on that traffic"));
   assert.doesNotMatch(html(data), /figure pending review/);
   // plain9 is captioned as the historical staging run it shows (root, 10:16:54Z): the figure carries the caveat, the footer
@@ -246,7 +247,7 @@ test("--final drops every number without a receipt, speaks the no-numbers line, 
     assert.equal(fin.deck.measuring, false);
     assert.doesNotMatch(html(fin), /measuring…|class="measuring"|DRAFT/, slot);
     assert.equal(slide(fin, "invite").content.tiles, undefined, "slide 9's tiles have no receipt yet, so none is shown");
-    assert.equal(slide(fin, "invite").content.figure.id, "plain13", "the fallback picture at the freeze");
+    assert.equal(slide(fin, "invite").content.figure.id, "plain12", "the fallback picture at the freeze");
     assert.equal(slide(fin, "invite").notes.text, "We're inviting other people's agents to the chip challenge: scan the code and send yours.");
     assert.ok(founderPdfName(fin).endsWith("-final.pdf"));
     // Root's copy P2 (relayed 13:49Z): the final's script lists what was dropped, and claims no "measuring…" for it.
@@ -392,7 +393,7 @@ test("V4.json's build sets the committed build's mode: \"final\" is the freeze, 
   noted.metrics.freezeNote = "Counted to 14:30:00Z: none from outside (test).";
   const withNote = fillInTable(buildFounderData({ ...pre, v4: noted }));
   assert.match(withNote, /votes on our Moltbook invitation \(not shown at the freeze: see "At the freeze"\)/);
-  assert.ok(withNote.includes("## At the freeze\n\nCounted to 14:30:00Z: none from outside (test).\n"));
+  assert.ok(withNote.includes("## At the freeze\n\nSlide 9 (invite) shows its no-numbers fallback: plain12-tradeoff.svg, with the QR code to https://sentilab.aidenid.com and the door's address.\n\nCounted to 14:30:00Z: none from outside (test).\n"));
   assert.match(withNote, /^# FILL-IN: the founder deck's placeholders\n\nThe freeze, .*the receipt is under "At the freeze"\./);
   // The refresh list is a draft's to-do for the freeze: the final lists none.
   assert.match(fillInTable(draft), /## Refresh at the freeze/);
@@ -423,12 +424,14 @@ test("at the freeze, slide 9 keeps each measured tile and always the QR code and
     const receipts = sourcesList(d).split("## invite")[1]?.split("\n## ")[0] ?? "";
     if (name === "none") {
       assert.equal(inv.content.layout, "fallback");
-      assert.equal(inv.content.figure.id, "plain13", "the fallback picture only when nothing is measured");
-      assert.match(section, /data-fig="plain13"/, "the fallback picture is drawn");
+      assert.equal(inv.content.figure.id, "plain12", "the fallback picture only when nothing is measured");
+      assert.match(section, /data-fig="plain12"/, "the fallback picture is drawn");
       assert.equal(inv.content.tiles, undefined);
-      assert.equal(receipts, "", "no tile, no receipt");
-      // Root's P2 wording (11:57:49Z), verbatim, for the line about the cross-check.
-      assert.equal(inv.content.footer, "Within six minutes of our ask, two other teams reported reruns in their own setups. Both reported the same direction.");
+      // No tile, so no tile receipt; the picture's numbers have theirs in SOURCES.md, and FILL-IN names the fallback.
+      assert.match(receipts, /^\n\n- 115\.94, 113\.23, 108\.85, 104\.62, 98\.29, 96\.51, 2\.71, 19\.43, 1\.49, 0\.2: plain12-tradeoff, aneta's v1\.25 \(ZIP 824dd6a6\.\.\., 44,927 bytes; root's scoped \+1 at 10:42:24Z, reply to 57940\)/);
+      assert.ok(fillInTable(d).includes("Slide 9 (invite) shows its no-numbers fallback: plain12-tradeoff.svg, with the QR code to https://sentilab.aidenid.com and the door's address."));
+      // The footer was plain13's line; plain12 carries its own small print, so the fallback adds none.
+      assert.equal(inv.content.footer, "");
     } else {
       assert.equal(inv.content.layout, "numbers");
       assert.equal(inv.content.figure, undefined, `${name}: no fallback picture while a number is measured`);

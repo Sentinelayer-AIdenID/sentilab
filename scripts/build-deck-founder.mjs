@@ -193,6 +193,7 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
     ...v4.slides.filter((s) => !S.main.includes(s.id)).map((s) => ({ ...s, main: false })),
     ...v4.backup.map((s) => ({ ...s, main: false })),
   ];
+  let fallbackShown = null; // the slide and picture that took the tiles' place at the freeze, for FILL-IN
   const slides = all.map((s, i) => {
     if (ids.has(s.id)) throw new FounderError(`duplicate slide id ${s.id}`);
     ids.add(s.id);
@@ -238,6 +239,7 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
       content.layout = "fallback";
       content.figure = figureContent(s.finalFallback.figure);
       content.footer = s.finalFallback.footer;
+      if (s.main) fallbackShown = { slide: s.id, n: S.main.indexOf(s.id) + 1, figure: content.figure.src.replace(/^figures\//, ""), qr: v4.stills[content.still?.id]?.payload ?? null };
     }
     if (s.picture?.still === "qr" && !content.still) throw new FounderError(`${where} lost its QR code`);
     // A QR code comes with the address it encodes, printed on the slide, for anyone who cannot scan it.
@@ -299,6 +301,8 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
         source: `${receipt([].concat(f.metric))}${f.derive && f.derive !== "value" && f.derive !== "minus" ? `, shown as its ${f.derive}` : ""}.`,
       } : f)),
       ...(content.tiles ?? []).filter((t) => t.metric && !t.measuring).map((t) => ({ shows: [t.value, t.when], source: `${receipt([wanted[t.metric].key ?? t.metric])}.` })),
+      // The fallback picture's numbers and their source, when it is shown.
+      ...(content.layout === "fallback" && s.finalFallback.source ? [{ shows: s.finalFallback.shows ?? [], source: s.finalFallback.source }] : []),
     ];
     // The script's heading for the slide: its source heading, else its on-screen title, else its kicker; never empty.
     const heading = [s.heading, content.title, s.kicker].find((x) => typeof x === "string" && x.trim());
@@ -332,6 +336,7 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
     clockNote: v4.clock.demoNote ?? null,
     // At the freeze, the coordinator's receipt for what slide 9 does not show (V4.json metrics.freezeNote), if given.
     freezeNote: final ? v4.metrics.freezeNote ?? null : null,
+    fallback: fallbackShown,
     refresh: v4.refresh ?? [],
     slides: slides.map(({ facts, ...s }) => s),
     facts: slides.map((s) => ({ id: s.id, facts: s.facts })),
@@ -392,7 +397,9 @@ export function fillInTable(data) {
     ...(data.deck.draft && data.refresh.length ? ["## Refresh at the freeze", "", "| Slide | Shows | Why |", "|---|---|---|", ...data.refresh.map((r) => `| ${r.slide} | ${r.what} | ${r.why} |`), ""] : []),
     ...(data.options.length ? ["## Optional, Carter's call: notes only, not on a slide", "", "| Slide | Line, if Carter asks for it | Numbers | Qualifiers | Source |", "|---|---|---|---|---|",
       ...data.options.map((o) => `| ${o.slide} | ${o.line} | ${o.numbers} | ${o.qualifiers} | ${o.source} |`), ""] : []),
-    ...(data.freezeNote ? ["## At the freeze", "", data.freezeNote, ""] : []),
+    ...(data.freezeNote || data.fallback ? ["## At the freeze", "",
+      ...(data.fallback ? [`Slide ${data.fallback.n} (${data.fallback.slide}) shows its no-numbers fallback: ${data.fallback.figure}, with the QR code to ${data.fallback.qr} and the door's address.`, ""] : []),
+      ...(data.freezeNote ? [data.freezeNote, ""] : [])] : []),
     ...(data.clockNote ? ["## Clock", "", data.clockNote, ""] : [])].join("\n");
 }
 

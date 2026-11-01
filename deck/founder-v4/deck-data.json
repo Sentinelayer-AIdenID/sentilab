@@ -11,7 +11,7 @@
     "measuring": true
   },
   "source": {
-    "sourceSha256": "a199a6e91b34145e9f868717c06a7fdb3e151f5b5fb9457c8ff4ca98da0a402d",
+    "sourceSha256": "2cf52a91ad3d1f7dca52c184278dd2d928341c9ca8938dfa8985098d8c671703",
     "metricsSha256": "0ef9ebafbfbef6b60536938fbd2c4076ab94d08437c024a4e06a4915912c9fab"
   },
   "budget": {
@@ -70,6 +70,7 @@
   ],
   "clockNote": "demo sheet ≈110 s: subtract 10 s from every clock figure; the timed run decides.",
   "freezeNote": null,
+  "fallback": null,
   "refresh": [
     {
       "slide": "room",
