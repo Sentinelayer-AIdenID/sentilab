@@ -296,6 +296,12 @@ RAW_SPAWNS += [('sundai_hotspot/provenance.py', 'subprocess.Popen', ('[loader, s
                ('sundai_hotspot/test_gate_zero.py', 'subprocess.Popen',
                 ("[sys.executable, '-c', 'while True: pass']",))]
 
+# SLAB-049 operator supervisor (docs/ci-spawn-review.md, SLAB-049 follow-up round): warden's gate0_operator, which
+# ran the gate on the grant host, launches validate-reference (the solver entry above, which refuses under
+# CI_ALLOCATION=1) and the read-only record and report subcommands. No HotSpot of its own; never run in CI.
+RAW_SPAWNS += [('sundai_hotspot/gate0_operator.py', 'subprocess.Popen', ('argv',)),
+               ('sundai_hotspot/gate0_operator.py', 'subprocess.run', ('argv',))]
+
 
 class GateTests(unittest.TestCase):
     @classmethod
