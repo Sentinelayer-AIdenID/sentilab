@@ -92,6 +92,7 @@ export function readQuantity(q, { path, facts, allowed = BASES }) {
   if (q.basis === "sourced" && (!q.facts?.length || [q.value, q.min, q.max].every((v) => v === null))) return fail("malformed", path, "sourced needs facts and a number");
   if (q.basis === "derived" && (!q.facts?.length || !nonEmpty(q.derivation) || q.value === null)) return fail("malformed", path, "derived needs inputs and arithmetic");
   if (q.basis === "model" && !nonEmpty(q.model_ref)) return fail("malformed", path, "model needs file:line");
+  if (q.basis === "evidence" && (!nonEmpty(q.evidence_ref) || q.value === null)) return fail("malformed", path, "evidence needs its receipt and a value");
   for (const f of q.facts ?? []) if (!Object.hasOwn(facts ?? {}, f)) return fail("fact_unknown", path, f);
   const lo = q.min ?? -Infinity, hi = q.max ?? Infinity;
   if (lo > hi || (q.value !== null && (q.value < lo || q.value > hi))) return fail("range_order", path, "min <= value <= max");
@@ -159,7 +160,7 @@ export function geometryPreimage(frame, instances) {
 ```js
 // anatomy.mjs (PURE). All or nothing, like scene.mjs readGeometry (web/public/sentilab/package/scene.mjs:105-132).
 import { readQuantity, drawnMm } from "./quantity.mjs";
-import { findBareTemperatures } from "./temps.mjs";
+import { findBareTemperatures, TEMP_KEY } from "./temps.mjs";
 import { INSTANCE_ID, typeOfId, geometryPreimage } from "./ids.mjs";
 import { sha256Hex } from "../view-core.mjs";                     // web/public/sentilab/view-core.mjs:44
 
@@ -174,8 +175,9 @@ const MODEL_KEYS = /(^|_)(our_model|in_our_model|solver_layer)(_|$)/;           
 // source is missing, any type edge or flow step naming an unknown part type, a parent_type cycle.
 export function readAnatomy(json) {
   if (json?.schema !== ANATOMY_SCHEMA || json.content !== "anatomy" || json.status_text !== ANATOMY_STATUS) return no("schema");
-  const temps = scanStrings(json, (s) => findBareTemperatures(s));     // strings AND keys
-  if (temps.length) return no("bare_temperature", temps[0]);
+  const temps = scanStrings(json, (s) => findBareTemperatures(s));     // string values
+  const tempKeys = scanKeys(json, (k) => TEMP_KEY.test(k));              // keys (silicon_85C): TEMP_KEY, as §8 says
+  if (temps.length || tempKeys.length) return no("bare_temperature", temps[0] ?? tempKeys[0]);
   if (scanKeys(json, (k) => MODEL_KEYS.test(k)).length) return no("malformed", "model field in anatomy");
   // ... readQuantity over every thickness/footprint/count/k/interconnect/electrical/share with allowed: ANATOMY_BASES
   // ... resolve facts -> sources, edges -> part types, flow steps -> part types; parent_type acyclic
@@ -189,7 +191,7 @@ export function readAnatomy(json) {
 // an edge whose type_edge is not in anatomy.type_edges, geometry_sha256 mismatch, a retired id in use.
 export async function readAssembly(json, anatomy) {
   if (json?.schema !== ASSEMBLY_SCHEMA || json.content !== "anatomy") return no("schema");
-  if (json.anatomy_sha256 !== anatomy.sha256) return no("binding_mismatch", "assembly built for another anatomy");
+  if (json.anatomy_sha256 !== anatomy.sha256) return no("binding_mismatch", "assembly built for another anatomy");   // anatomy.sha256: the file's PINS hash, attached by the loader, not a schema field
   const ids = new Set();
   for (const inst of json.instances) {
     if (!INSTANCE_ID.test(inst.id) || ids.has(inst.id) || typeOfId(inst.id) !== inst.type) return no("malformed", inst.id);
@@ -229,7 +231,7 @@ export const MODEL_STATUS = "Our model · the layers and blocks our thermal solv
 // boundary.temperature_inputs entry with rendered !== false; any bare temperature string (PL-4); a fixture whose
 // dies' chiplet_id is not tap-chiplet-<index> (sundai_hotspot/tap_oracle.py:311); spreader_mm !== 2 * interposer_mm
 // or sink_mm !== 2 * spreader_mm (sundai_tap/passive_interposer.py:154-155); a stands_for type unknown to the anatomy.
-export function readModelStack(json, { anatomyTypes = null } = {}) { /* -> { stack, error } */ }
+export function readModelStack(json, { anatomyTypes = null } = {}) { /* -> { stack, error }; stack.sha256 is the file's PINS hash, attached by the loader */ }
 
 // Layouts: refuses a kind other than raw|snap0p5, mismatched array lengths, a fixture_id not in the stack, a
 // frame_mm different from the fixture's interposer_mm. The content_sha256 is NOT recomputed here (Python-canonical:
@@ -331,8 +333,10 @@ export function resultView({ verification, scene, track, ids, mode, stack, layou
 // A value's label is the SERIALIZED record of the rule's own object (temps.mjs serializeLabel). Object identity is never
 // relied on outside this process: every reader recomputes and compares it (temps.mjs resolveLabel, SPEC.md §7 PL-2).
 
-// What today's receipts bind (SPEC.md §5.6): evaluator identity and signed geometry yes; inputs as an unnamed list
-// (conductor.py:346); no argv; the power trace only inside the unnamed list; no field.
+// What the receipts bind (SPEC.md §5.6), computed from the verified envelopes: evaluator identity and signed geometry;
+// input hashes "named" when the signed body carries record.input_hashes (today's producer does, by code reading:
+// conductor.py:337-341), else "unnamed" (values.artifact_hashes, :346); argv "absent" unless signed; the power trace
+// "named" when sample.ptrace is in the named map, else "in_unnamed_list"; the field's status (AC-18).
 export function receiptCompleteness(verification, L) { /* -> { evaluator_identity, geometry_signed, input_hashes, argv, power_trace, field } */ }
 
 // Numeric match of a signed layout to a reviewed reference (never a JavaScript re-hash of Python-canonical JSON).
@@ -383,7 +387,7 @@ export function buildRenderModel({ kind, anatomy = null, assembly = null, varian
     notes: out.notes,                                // e.g. "spreader 90 mm and sink 180 mm drawn as outlines"
     not_drawn: out.not_drawn,                        // UNDRAWN instances (SPEC.md §5.3): [{ id, type, parent, label, dims, reason: "size unknown and no render hint" }];
                                                      // the part tree, panel, links and twin use them; bounds, pick(), sectionAt() and fields never do
-    geometry_key: out.geometry_key,                  // geometryPreimage(frame, this model's instances, drawn and not): the frozen
+    geometry_key: out.geometry_key,                  // geometryPreimage(frame, this model's instances, drawn and not; generated boxes as { id, type, parent, variants: ["all"], drawn: true, box, array: null }): the frozen
                                                      // preimage of SPEC.md §5.0, for the immutability test (AC-12)
   }), error: null };
 }
@@ -467,7 +471,7 @@ export function sectionAt(model, plane, display) {
 // interconnect.mjs (PURE). Arrays are sampled on a regular lattice (every k-th site in both directions),
 // deterministically, and the view says "1 of k² sites drawn · N total (basis)" (L3:ARCHITECTURE §4.5).
 export const TRIS_PER_INSTANCE = 28;            // closed 8-sided cylinder: 16 side + 2 x 6 cap triangles
-// The instance budget follows from the triangle budget (AC-34, D4), not from a fixed count.
+// The instance budget is a setting derived from D4's triangle target (AC-34), not a fixed count; it moves if the target does.
 export function instanceBudget({ triangleBudget, otherTriangles }) {
   return Math.max(0, Math.floor((triangleBudget - otherTriangles) / TRIS_PER_INSTANCE));
 }
@@ -633,6 +637,7 @@ export async function checkFieldArtifact(bytes, ref, { stack = null, domain = nu
   if (pu === undefined || au === undefined) return no("unit_not_supported");
   if (pu !== null && au !== null && pu !== au) return no("unit_conflict");                                      // compared BEFORE converting
   if (pu === null || au === null) unbound.push("unit_unbound");
+  if (doc.layers.length > FIELD_CAPS.max_layers || doc.values.length > FIELD_CAPS.max_layers) return no("dims");   // 6's layer cap, before 5
   const ids = doc.layers.map((l) => l.index), p = doc.producer;                                               // 5 layer identity (C3)
   if (p.native_format === null || p.executable === null) unbound.push("producer_unbound");
   if (p.emitted_layer_ids === null) {                                  // no bound layer branch: every index is null too
@@ -674,7 +679,7 @@ export function associateField(field, result) {
   return reasons.length ? { status: "unassociated", reasons } : { status: "verified", reasons: [] };
 }
 
-/ One fixed scale per run over every accepted field value, rounded out to 5 and at least 10 wide (the rule runFrame
+// One fixed scale per run over every verified field value, rounded out to 5 and at least 10 wide (the rule runFrame
 // applies, scene.mjs:230-233); live runs only widen it (playhead.mjs:28-38).
 export function fieldScale(fields, previous = null) { /* ... */ }
 // 1,024-entry table built from heatColor() at bin centres; within 1/255 per channel (L3:evidence/extra-05).
@@ -786,7 +791,8 @@ export function writeGlb(model) { /* -> Uint8Array; the caller records its sha25
   adapter over the pinned, vendored core, with the same contract: SPEC.md §6.10): lane 3's (L3:PSEUDOCODE §9) with:
   `dispose()` deletes every program, buffer and texture and returns the counts; `stats` adds `glObjects`;
   `setModel()` takes a frozen RenderModel plus the display Map from `displayBoxes()` (the renderer never computes
-  offsets); the drawing buffer is capped (`dprCap = 2`, and on phones also at most 1,000,000 pixels: the D4 targets).
+  offsets); the drawing buffer is capped (`dprCap = 2`, and on phones also at most 1,000,000 pixels: settings chosen
+  to meet D4's buffer target).
 
 ## 13. `package3d.js`: the page controller
 
@@ -820,10 +826,10 @@ import { PINS } from "./pins.mjs";
 //    through describeQuantity(); never toFixed() elsewhere.
 // 7. WebGL2 available -> lazy import("./render3d.mjs") after the first model is built; else fallback2d. Context lost ->
 //    fallback2d at once; restored -> rebuild from the cached model and texels (no refetch, no re-verify).
-// 7b. The figure (SPEC.md §6.5): the chips, the legend and the source line are DOM children of figure#p3d-figure,
+// 7a. The figure (SPEC.md §6.5): the chips, the legend and the source line are DOM children of figure#p3d-figure,
 //    positioned inside its box; any image of the view is of the figure; no module of the room calls toDataURL or
 //    toBlob (no canvas-only export).
-// 7c. Paused presentation (SPEC.md §4.5, AC-42): Pause freezes the DRAWN state at seq S; verification, the feed and
+// 7b. Paused presentation (SPEC.md §4.5, AC-42): Pause freezes the DRAWN state at seq S; verification, the feed and
 //    field checks keep running; pending = verified results after S (never pages, keepalives, duplicates or backlog);
 //    Resume (button or P) jumps to the newest verified state and announces once; a K drop below S applies at once.
 // 8. Read-only test hook, as package.js:662:
@@ -853,8 +859,8 @@ def test_layers_match_generator(tmp_path):
         lcf = parse_lcf(files["samplelayers.lcf"])                    # 6 layers: thickness, resistivity, heat capacity, power, lateral
         assert_layers_equal(manifest["layers"][:6], lcf, rel=1e-12)
         for flp in lcf.floorplans:                                    # all six, as the generated LCF names them (C5, C6)
-            assert_regions_equal(manifest_regions(fixture, flp), parse_flp(files[flp]))   # every region: name, size, position,
-                                                                      # resistivity, heat capacity (FLP before LCF default), power
+            assert_region_classes(manifest_units(flp), parse_flp(files[flp]))   # every generated region carries its class's
+                                                                      # recorded resistivity, capacity and power (FLP before LCF)
         assert_halos_equal(fixture["dies"], parse_flp(files["sampleL4_ChipLayer.flp"]))   # halo_mm per die from Ubump widths
         cfg = parse_config(files["new_hotspot.config"])               # the RESOLVED config the solver would read
         assert cfg["s_spreader"] == 2 * fixture["interposer_mm"] / 1000 and cfg["s_sink"] == 2 * cfg["s_spreader"]

@@ -115,12 +115,12 @@ outside the "In our model" line. Pass: string equality, and zero result or model
 
 **AC-10 Quantity rules** (node). `readQuantity` refuses: `unknown` with a number; `render_hint` without a value or
 `hint_basis`; `sourced` without facts or without any number; `derived` without `derivation`; `model` without
-`model_ref`; `evidence` without `evidence_ref`; `min > max`; `value` outside `[min, max]`; a non-finite number; a fact
-id not in the manifest; a temperature unit; a bare temperature inside `derivation`, `hint_basis`, `note` or
-`display.derivation`; a `display` on anything but a `sourced` quantity with `value: null`; a `display` without
-`basis: "render_hint"`, a finite value or a derivation; a `display.value` outside `[min, max]`. The schema
-blocks of SPEC.md §5.1 refuse the same set where the schema language can say it. Pass: every case refused with its
-code; valid cases accepted.
+`model_ref`; `evidence` without `evidence_ref` or without a value; `min > max`; `value` outside `[min, max]`; a
+non-finite number; a fact id not in the manifest; a temperature unit; a bare temperature inside `derivation`,
+`hint_basis`, `note` or `display.derivation`; a `display` on anything but a `sourced` quantity with `value: null`; a
+`display` without `basis: "render_hint"`, a finite value or a derivation; a `display.value` outside `[min, max]`. The
+schema blocks of SPEC.md §5.1 refuse the same set where the schema language can say it. Pass: every case refused with
+its code; valid cases accepted.
 
 **AC-11 An unknown dimension renders as unknown** (browser, node). The lid's thickness (no source in lane 1:
 L1:REPORT §3.3) shows `not sourced · drawn at 1.000 mm (display only: …)` with the hint's reason; the die-side
@@ -198,7 +198,9 @@ and ids (L3:ACCEPTANCE A-11). Pass: equal.
 **AC-16 The model manifest matches the generator** (python). Every fixture is generated in its own fresh directory
 (C5). For each: the 6 LCF layers' thickness, resistivity, heat capacity, power and lateral flags equal the generated
 `samplelayers.lcf` (main:sundai_tap/passive_interposer.py:135-149); every region of all six generated floorplans
-(name, size, position, resistivity, heat capacity, power) equals the manifest's region records, the floorplan's values
+carries the resistivity, heat capacity and power of its class in the manifest's per-layer `units` records, which the
+W4 check records from the generated files (sizes and positions are checked against the layout, halos and edge
+strips), the floorplan's values
 taking precedence over the LCF defaults (C6; main:sundai_hotspot/temperature_grid.c:387-400): layer-4 `Ubump_*`
 regions are silicon with zero power, `Edge_*` regions use the bump mix, the C4 and interposer slabs carry their
 mixtures (:59-74), and whitespace is the underfill `fill_space` writes (main:sundai_tap/util/fill_space.py:18-20,
@@ -259,7 +261,7 @@ the texture updater is never called (spy) and the previous texture bytes are unc
 | another format string | `format` |
 | (C4) an unknown or missing key at the top level or in `binding`, `producer`, `grid` or a layer record (for example `extent_m` for `extent_mm`, or no `unit` key); `values` or a layer's values not an array | `malformed` |
 | binding names another run, measurement or evaluator (including the fixture identity on a withdrawn envelope: laundering) | `binding_mismatch` |
-| (C1) the artifact's `candidate_hash` names another candidate's layout, or its `problem_hash` another problem, than the measurement's signed `record.binding.candidate_id` and `semantics.task_contract`; the measurement's signed `candidate_id` differs from its candidate node's | `binding_mismatch` |
+| (C1) the artifact's `candidate_hash` names another candidate's layout, or its `problem_hash` another problem, than the measurement's signed `record.binding.candidate_id` and `semantics.task_contract`; a measurement whose signed `candidate_id` differs from its candidate node's is refused earlier, by `fieldRefs`, before any fetch | `binding_mismatch` |
 | an input source hash (`samplelayers.lcf`, `new_hotspot.config`, `sample.ptrace`) missing or not in the envelope's `artifact_hashes` | `binding_mismatch` |
 | (C2) a pointer in C over an artifact in K, or the reverse (the values are never converted) | `unit_conflict` |
 | (C3) a layer index missing (no 4), duplicated (3 twice), unexpected (8), not an integer (`"four"`) or out of order; indices unequal to `producer.emitted_layer_ids` | `layer_ids` |
@@ -380,14 +382,14 @@ reference phone and its browser, and a desktop are named before measuring; prepa
 reported separately; the D5 pick is measured as a spike in W9.5 and as built in W11. The phone column is
 root's initial tier (D4): prospective targets, not limits.
 
-| Measure | Lane 3 phone (A-10) | astra phone (A#57059) | Phone target (D4) | Desktop (lane 3) |
+| Measure | Lane 3 phone (A-10) | astra phone (A#57059) | Phone target (D4, or lane 3 where D4 sets none) | Desktop (lane 3) |
 |---|---|---|---|---|
-| p95 frame time while orbiting or exploding | ≤ 33 ms | ≤ 33 ms (interaction, named phone) | ≤ 33 ms | ≤ 16.7 ms |
-| triangles per frame | ≤ 300 k | ≤ 50 k | ≤ 50 k | ≤ 1.5 M |
-| draw calls | ≤ 60 | ≤ 100 | ≤ 60 | ≤ 120 |
-| interconnect instances | ≤ 6,000 | (follows from triangles) | `instanceBudget()` from 50 k (about 1,600 at 28 triangles each) | ≤ 60,000 |
-| drawing buffer | DPR ≤ 2 | ≤ 1 megapixel | DPR ≤ 2 and ≤ 1,000,000 px | DPR ≤ 2 |
-| render derivative per scene | not set | ≤ 2 MiB | GLB ≤ 2 MiB; served JSON per scene reported | reported |
+| p95 frame time while orbiting or exploding | ≤ 33 ms | ≤ 33 ms (interaction, named phone) | ≤ 33 ms (lane 3, astra) | ≤ 16.7 ms |
+| triangles per frame | ≤ 300,000 | ≤ 50,000 | ≤ 50,000 (D4) | ≤ 1,500,000 |
+| draw calls | ≤ 60 | ≤ 100 | ≤ 60 (D4) | ≤ 120 |
+| interconnect instances | ≤ 6,000 | (follows from triangles) | a setting: `instanceBudget()` from the 50,000 target (about 1,600 at 28 triangles each) | ≤ 60,000 |
+| drawing buffer | DPR ≤ 2 | ≤ 1 megapixel | ≤ 1,000,000 px (D4), met by the settings DPR ≤ 2 and the pixel cap | DPR ≤ 2 |
+| render derivative per scene | not set | ≤ 2 MiB | GLB ≤ 2 MiB (D4); served JSON per scene reported | reported |
 | frames while idle | 0 after 1 s | not set | 0 after 1 s | 0 after 1 s |
 | field texture memory | ≤ 4 MB | not set | ≤ 4 MB | ≤ 16 MB |
 | JS heap after 10 min live | ≤ 60 MB, flat | not set | ≤ 60 MB, flat | ≤ 120 MB |
