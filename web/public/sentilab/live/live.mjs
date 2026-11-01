@@ -418,9 +418,13 @@ function drawAtlas(svg, { large = false } = {}) {
     // One figure per run at its live station (a task state), at most 6 drawn per station; arrivals are counted, not
     // drawn. A run playing back its steps is drawn at the step it shows instead, labelled Playback; the count and the
     // "+N" stay the live state (a run playing back elsewhere is one of this station's +N).
-    const back = st.playback;
+    // Six slots a row, playbacks first (root, 0c97bbd P2: with no slot left, slice(-0) kept every live figure). A
+    // playback past the sixth is not drawn; like every live run not drawn at its station, it is one of its live
+    // station's +N.
+    const back = st.playback.slice(0, 6);
+    const slots = 6 - back.length;
     const live = st.runs.filter((r) => !playing.has(r.id));
-    const kept = live.slice(-Math.max(0, 6 - back.length));
+    const kept = slots > 0 ? live.slice(-slots) : [];
     const row = [...kept, ...back];
     const more = st.runs.length - kept.length - back.filter((r) => r.live === st.id).length;
     if (more > 0) svg.append(s("text", { x: x + 38, y: y + 22, class: "atlas-more", fill: "#cfe2d5", "font-size": 8, "text-anchor": "start" }, `+${more}`));

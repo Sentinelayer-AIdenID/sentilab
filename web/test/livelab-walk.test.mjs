@@ -347,3 +347,71 @@ test("new proposal: a shown badge ends at its deadline even when later reads nev
   for (let k = 0; k < 40; k += 1) { t.mock.timers.tick(500); await settle(); }
   assert.equal(badge().hidden, true, "it ends at its deadline, with every read hanging");
 });
+
+// Root (0c97bbd P2): a row of figures is capped at six, playbacks included. With six runs playing back at once, a
+// station had no slot left for its live figures, but slice(-0) kept every one of them: nine existing runs and six new
+// ones drew fifteen figures at Board. Now no row ever draws more than six; "+N" accounts for every live run not drawn
+// at its station (a run playing back elsewhere is one of them); the counts stay the live state.
+test("walk: six runs playing back at once never draw more than six figures a row; +N and the counts stay the live state", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: NOW });
+  const base = doc("events.json"), results = doc("results.json"), board = doc("board.json");
+  assert.equal(results.items.length, 9, "nine existing runs");
+  const fresh = Array.from({ length: 6 }, (_, k) => {
+    const hex = `aa0${k}`, id = `open-0000${hex}-${"0".repeat(28)}${hex}`;
+    return { id, item: { ...results.items[0], id, short_id: hex, label: `unknown · ${hex}`, class: "unknown", arrival: 0, seq: results.next_after + 1 + k } };
+  });
+  const recs = fresh.flatMap((r, k) => ["queued", "evaluating", "evaluated", "replaying", "reproduced"].map((state, i) => ({ seq: 100 + k * 5 + i,
+    at: new Date(NOW + k * 500 + i * 100).toISOString(), kind: "run", class: "unknown", label: r.item.label, run_id: r.id, short_id: r.item.short_id, state })));
+  const later = { ...base, events: recs, next_after: recs.at(-1).seq, has_more: false };
+  const items = fresh.map((r) => r.item);
+  const phase = { live: false };
+  installPage(t, (url) => {
+    const after = Number(url.searchParams.get("after") ?? 0);
+    if (url.pathname === "/api/open/v1/door/results") {
+      if (after < results.next_after) return results;
+      return phase.live && after < items.at(-1).seq ? { ...results, items, next_after: items.at(-1).seq, has_more: false } : { ...results, items: [], next_after: after, has_more: false };
+    }
+    if (url.pathname === "/api/open/v1/door/events") {
+      if (after < base.next_after) return base;
+      return phase.live && after < later.next_after ? later : { ...base, events: [], next_after: after, has_more: false };
+    }
+    if (url.pathname === "/api/open/v1/door/board") return board;
+    return null;
+  });
+  await import(`${LIVE}?walk=six`);
+  for (let k = 0; k < 8; k += 1) { t.mock.timers.tick(500); await settle(); }
+  phase.live = true;
+  for (let k = 0; k < 40 && captions().length < 6; k += 1) { t.mock.timers.tick(100); await settle(); }
+  assert.equal(captions().length, 6, "six playbacks at once");
+  // Each figure and each "+N" belongs to the station nearest to where it is drawn (STATION_XY in live.mjs).
+  const XY = [[56, 34], [150, 22], [244, 34], [258, 108], [150, 128], [42, 108]], NAMES = ["door", "submit", "queue", "simulate", "replay", "board"];
+  const near = (x, y) => NAMES[XY.map(([sx, sy]) => (sx - x) ** 2 + (sy - y) ** 2).reduce((best, d, i, all) => (d < all[best] ? i : best), 0)];
+  const look = () => {
+    const els = walk(document.getElementById("atlasSvg"));
+    const figures = els.filter((el) => el.tag === "svg" && /\batlas-av\b/.test(el.getAttribute("class") ?? ""))
+      .map((el) => ({ at: near(Number(el.getAttribute("x")) + Number(el.getAttribute("width")) / 2, Number(el.getAttribute("y")) + Number(el.getAttribute("height")) / 2 - 19),
+        playback: /\bplayback\b/.test(el.getAttribute("class")) }));
+    const more = Object.fromEntries(els.filter((el) => el.tag === "text" && el.getAttribute("class") === "atlas-more")
+      .map((el) => [near(Number(el.getAttribute("x")) - 38, Number(el.getAttribute("y")) - 22), Number(el.textContent.replace("+", ""))]));
+    return { figures, more, counts: counts(document.getElementById("atlasSvg")) };
+  };
+  const views = [];
+  for (let k = 0; k < 45; k += 1) { views.push(look()); t.mock.timers.tick(100); await settle(); }
+  assert.deepEqual(captions(), [], "the playbacks have ended");
+  const rest = look();
+  assert.equal(rest.counts[5], "15", "Board holds all fifteen runs live");
+  views.push(rest);
+  for (const [i, v] of views.entries()) {
+    for (const name of NAMES) {
+      const row = v.figures.filter((f) => f.at === name);
+      assert.ok(row.length <= 6, `view ${i}: ${name} draws ${row.length} figures`);
+    }
+    assert.deepEqual(v.counts, rest.counts, `view ${i}: the counts are the live state`);
+    // Every run is live at Board: the figures drawn there plus its +N are all fifteen (a run playing back elsewhere is
+    // one of Board's +N); every other station counts 0 live runs and shows no +N.
+    const atBoard = v.figures.filter((f) => f.at === "board").length;
+    assert.equal(atBoard + (v.more.board ?? 0), 15, `view ${i}: Board's figures and +N account for every live run (${atBoard} + ${v.more.board ?? 0})`);
+    for (const name of ["queue", "simulate", "replay"]) assert.equal(v.more[name] ?? 0, 0, `view ${i}: no +N at ${name}`);
+  }
+  assert.ok(views.some((v) => v.figures.filter((f) => f.at === "board" && f.playback).length === 6), "all six played back to Board together");
+});
