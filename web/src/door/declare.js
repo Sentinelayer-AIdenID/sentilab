@@ -22,9 +22,13 @@
 export const SOURCES = Object.freeze(["moltbook", "senti", "github", "direct", "other"]);
 export const FIELD_LIMITS = Object.freeze({ name: 64, reason: 160 });
 export const MAX_MARK_RUN = 8;
+// Assigned characters that render blank but are letters or symbols, so the category rule passes them (warden's P3 at
+// c43571e4; root's API refuses the same five): the Hangul fillers U+115F, U+1160, U+3164 and U+FFA0, and the blank
+// Braille pattern U+2800. Refused as invisible, judged on the original input like the categories.
+export const INVISIBLE_FILLERS = Object.freeze([0x115f, 0x1160, 0x3164, 0xffa0, 0x2800]);
 export const NOTICE = Object.freeze({
   version: "sentilab-public-visitor/1",
-  text: "Your visit time, detector classification and selected purpose are public. If you opt in, your declared name, reason and source category are also public, together with a handle that links visits using this purpose pass. These declarations are not verified identity. Referrer URLs and query strings are not collected automatically, and the raw purpose-pass credential is not added as a generated feed field. All text you enter in name or reason is public. Do not include private information.",
+  text: "Your visit time, detector classification and selected purpose are public. If you opt in, your declared name, reason and source category are also public. We keep a handle internally to count purpose passes; that handle is not published. These declarations are not verified identity. Referrer URLs and query strings are not collected automatically, and the raw purpose-pass credential is not added as a generated feed field. All text you enter in name or reason is public. Do not include private information.",
 });
 const REFUSED_CATEGORY = /[\p{Cc}\p{Cf}\p{Co}\p{Cs}\p{Cn}\p{Zl}\p{Zp}]/u;
 const MARK = /^\p{M}$/u;
@@ -67,6 +71,7 @@ export function displayTextProblem(text, max) {
   if (REFUSED_CATEGORY.test(text)) return "control_character";
   let run = 0;
   for (const char of text) {
+    if (INVISIBLE_FILLERS.includes(char.codePointAt(0))) return "control_character";
     run = MARK.test(char) ? run + 1 : 0;
     if (run > MAX_MARK_RUN) return "combining_marks";
   }

@@ -403,7 +403,7 @@ function emitArrival(request, env, ctx, url, { identity, purpose = null, nonce =
   } catch { /* a missing or broken execution context never breaks a page */ }
 }
 
-// An opt-in's arrival, sent now (the token page waits for it), and what became of it, from the intake's own answer only:
+// An opt-in's arrival, sent now (POST /agents/declare waits for it), and what became of it, from the intake's own answer only:
 //   "skipped"       the door's arrival limit held it back: nothing was sent
 //   "not_sent"      no intake is configured: nothing was sent
 //   "recorded"      the intake accepted it (204)

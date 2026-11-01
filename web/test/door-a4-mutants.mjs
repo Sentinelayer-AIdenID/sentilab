@@ -22,10 +22,14 @@ const NL = String.fromCharCode(10);
 const TOKEN = "src/door/token.js";
 const CATEGORIES = ["Cc", "Cf", "Co", "Cs", "Cn", "Zl", "Zp"];
 const categories = (list) => `const REFUSED_CATEGORY = /[${list.map((c) => `${B}p{${c}}`).join("")}]/u;`;
+const FILLERS = [0x115f, 0x1160, 0x3164, 0xffa0, 0x2800];
+const fillerList = (list) => `export const INVISIBLE_FILLERS = Object.freeze([${list.map((c) => `0x${c.toString(16)}`).join(", ")}]);`;
 
 const groups = {
   "the character policy (root's shared rule)": [
     ...CATEGORIES.map((category) => [`${category} accepted`, DECLARE, categories(CATEGORIES), categories(CATEGORIES.filter((c) => c !== category))]),
+    ...FILLERS.map((code) => [`the filler U+${code.toString(16)} accepted`, DECLARE, fillerList(FILLERS), fillerList(FILLERS.filter((c) => c !== code))]),
+    ["the fillers not checked", DECLARE, '    if (INVISIBLE_FILLERS.includes(char.codePointAt(0))) return "control_character";' + NL, ""],
     ["categories judged after normalising (a tag payload stripped, then accepted)", DECLARE, "  if (REFUSED_CATEGORY.test(text)) return \"control_character\";",
       `  if (REFUSED_CATEGORY.test(text.normalize("NFKC").replace(/${B}p{Cf}/gu, ""))) return "control_character";`],
     ["a run of 9 marks allowed", DECLARE, "export const MAX_MARK_RUN = 8;", "export const MAX_MARK_RUN = 9;"],

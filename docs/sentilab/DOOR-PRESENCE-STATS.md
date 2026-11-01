@@ -83,7 +83,7 @@ These are counted from the events the feeds serve, up to and including `through_
 
 | Field | Count of |
 |---|---|
-| `passes` | arrival events that carry a purpose and no declaration. Each purpose choice mints one pass and sends one such arrival. A declaration is a later arrival of the same pass (section 4), so it is never counted as another pass. |
+| `passes` | passive arrival events that carry a purpose: #89's partition, declaration absent or null (`event_kind` `passive_arrival`). Each purpose choice mints one pass and sends one such arrival. A declaration is a later arrival of the same pass (section 4), a declaration event in that partition, so it is never counted as another pass. |
 | `submissions` | `attempt` events plus runs: every submission the intake recorded. |
 | `results.evaluated` | runs with a `run` event in state `evaluated` |
 | `results.reproduced` | runs with a `run` event in state `reproduced` |
@@ -103,6 +103,9 @@ pass. **A GET never records a declaration.**
   `VISITOR_NOTICE` and `VISITOR_DISCLOSURE` (`app/door/intake.py`). Two tests hold it there:
   `app/test_door_a4_fixtures.py` checks it against the API's source, and `web/test/door-a4.test.mjs` checks it against
   the fixture the API's code generates. Nothing polls `/visitors`, so a slow API can't make visitors slow.
+  - The text is root's, from #89's repair: the handle is kept internally and is not published.
+  - The version stays `sentilab-public-visitor/1`, because nothing was ever recorded under `/1`. No API or Worker
+    deployed to staging or production held the declaration code, and both live stores hold no declarations.
 - **Where a declaration can be published.** `POST /agents/declare`, in two forms:
   - **A person:** the confirm form on the pass's own page, the HTML token page. It shows the exact notice, then the fields,
     then an unticked "Publish this with my visit" box. A link's `name`, `reason` and `source` only pre-fill those fields,
@@ -121,8 +124,10 @@ pass. **A GET never records a declaration.**
 - **What the intake receives.** The pick's GET sends the pass's arrival as before, never with a declaration. A
   declaration is a later arrival of the same pass: same class rules, purpose and nonce, plus `declaration`. A pass
   may declare again within its limits, and each declaration is another arrival.
-  - #89's `/visitors` counts are arrival counts, so a pass that declared appears there more than once: once plain,
-    then once per declaration, all with the same `short_id`.
+  - #89's `/visitors` partitions arrivals by `event_kind`: `passive_arrival`, `declaration`, or
+    `legacy_unclassified`. Each kind is counted, and the three counts sum to `recorded_arrivals`.
+  - A pass that declared appears as one passive arrival, then one declaration event per declaration, all with the
+    same `short_id`. `visitor_handle` stays internal: it is in neither `/visitors` nor `/events`.
   - `/stats` counts the pass once (section 3).
 - **The fields.** They follow root's shared character policy, judged on the original input:
   - any code point in the general categories Cc, Cf, Co, Cs, Cn, Zl or Zp is refused. That covers controls, format and
@@ -133,12 +138,15 @@ pass. **A GET never records a declaration.**
   - a `name` that normalizes to a reserved interface label is refused. It is compared after NFKC, removing format
     characters, collapsing whitespace runs, trimming and lower-casing, against human, you, senti, participant,
     unidentified participant, system, owner, admin and moderator;
+  - the five invisible fillers are refused too: the Hangul fillers U+115F, U+1160, U+3164 and U+FFA0, and the blank
+    Braille pattern U+2800. They are letters or symbols, so the category rule passes them. Root's API refuses the same
+    five;
   - accepted text is passed on exactly as written.
 
-  The Worker's Unicode tables are the JavaScript engine's: Unicode 17.0 under the tests' Node 22.23 (ICU 78.2), and
-  workerd's own when deployed. The API image's Python 3.12 has Unicode 15.0, and root is bridging it to Unicode 16. A
-  character one side counts as unassigned and the other doesn't fails safe: the intake refuses it, and the visitor is told
-  "not recorded".
+  The Worker's Unicode tables are the JavaScript engine's: Unicode 17.0 under the tests' Node 22.23.1 (ICU 78.2), and
+  workerd's own when deployed. The API pins Unicode 16.0.0 (`unicodedata2`) and refuses to start on any other version.
+  A character assigned in 17 but not in 16 passes the Worker and is refused by the API as unassigned. That fails
+  closed: the visitor is told "not recorded".
 - **The answers.**
   - The token page's `declaration`: `{"status": "not_given"}`, or, when the link carried declaration fields,
     `{"status": "not_recorded", "code": "link_cannot_declare", "detail"}`.

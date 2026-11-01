@@ -100,7 +100,7 @@ export function agentView({ origin, token, claims, submissions, terms, gateZero,
     },
     board,
     board_status: boardStatus,
-    // How to opt in to a public declaration (Amendment 4 rev 2): the notice, the template and the fields (declare.js).
+    // How to publish a declaration on this pass (Amendment 4 rev 2): the notice, the endpoint, the body and the fields (declare.js).
     ...(declare ? { declare } : {}),
     human_page: `${origin}/?view=human`,
   };
