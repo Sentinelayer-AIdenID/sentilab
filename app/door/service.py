@@ -23,14 +23,33 @@ from . import intake
 from . import terms as door_terms
 from .dispatch import Dispatcher, ScorerState
 from .evaluator import ALIAS
-from .policy import CASE, NONCE, Policy, parse_utc, principal_for, short_id, utc
+from .policy import CASE, CLASSES, NONCE, PURPOSES, Policy, parse_utc, principal_for, short_id, utc
 from .presence import HERE, NOT_MEASURED, Presence
 from .scorer import ACTIVE_GUARD_C, METRIC, METRIC_ID, HttpScorer
 from .stats import Totals
-from .store import Store, label
+from .store import HIDE_REASONS, Store, label
 
 RUN_ID = re.compile(r"open-[0-9a-f]{8}-[0-9a-f]{32}\Z")
 CURSOR_MAX = 2 ** 53 - 1
+
+
+def hidden_declaration(body: dict, reason: str) -> dict:
+    """One safe projection for a hidden row, including legacy derived labels and nested extra fields.
+
+    Never copy arbitrary text from the stored body. The detector class and selected purpose are fixed enums; the
+    short ID is the existing four-hex public identifier. The original declaration and handle stay on disk.
+    """
+    klass = body.get("class") if body.get("class") in CLASSES else "unknown"
+    purpose = body.get("purpose") if body.get("purpose") in PURPOSES else None
+    short = body.get("short_id")
+    if not isinstance(short, str) or re.fullmatch(r"[0-9a-f]{4}", short) is None:
+        short = None
+    return {"class": klass, "purpose": purpose, "short_id": short,
+            "label": label(klass, short) if short is not None else klass,
+            "event_kind": "declaration", "declaration": None,
+            "hidden": reason if reason in HIDE_REASONS else "other"}
+
+
 RESULT_LABEL = "simulated, not silicon; HotSpot 6.0, grid 64; " + METRIC_ID
 EVALUATOR_IDENTITY = ALIAS          # the broad alias (names no build: unvalidated); results name their full identity
 PROXY = {"field": "wire_proxy_mm", "unit": "mm", "kind": "proxy, not routed wire",
@@ -361,9 +380,13 @@ class Door:
         rows = self.store.events(after, limit + 1)
         page = rows[:limit]
         # Handles stay in the historical store for aggregation, never in an open feed.
-        events = [{"seq": row["seq"], "at": iso(row["at"]), "kind": row["kind"],
-                   **{key: value for key, value in json.loads(row["body"]).items() if key != "visitor_handle"}}
-                  for row in page]
+        events = []
+        for row in page:
+            body = json.loads(row["body"])
+            public = (hidden_declaration(body, row["hidden_reason"]) if row["hidden_reason"] is not None else
+                      {key: value for key, value in body.items() if key != "visitor_handle"})
+            identity = {"seq": row["seq"], "at": iso(row["at"]), "kind": row["kind"]}
+            events.append({**public, **identity} if row["hidden_reason"] is not None else {**identity, **public})
         return 200, {"schema": "sentilab-door-events/1", "events": events,
                      "next_after": page[-1]["seq"] if page else after, "has_more": len(rows) > limit,
                      "scorer": self.scorer_state.snapshot()}, {}
@@ -378,6 +401,10 @@ class Door:
         for row in page:
             body = json.loads(row["body"])
             item = {"seq": row["seq"], "at": iso(row["at"])}
+            if row["hidden_reason"] is not None:
+                item.update(hidden_declaration(body, row["hidden_reason"]))
+                items.append(item)
+                continue
             # Explicit projection: legacy/private fields can never leak through this new view.
             item.update({key: body.get(key) for key in ("class", "purpose", "short_id", "label")})
             declaration = body.get("declaration")
