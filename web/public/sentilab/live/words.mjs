@@ -167,7 +167,7 @@ export const PACKAGES_PAGE = Object.freeze({
   lead: (n) => (n ? `${n} accepted layout${n === 1 ? "" : "s"} whose fresh-process replay matched, coolest first, as the door’s public results feed gives them.` : "No accepted layout whose replay matched yet."),
   reading: "Reading every page of the door’s results…",
   done: (n) => `Every page read · ${n} listed`,
-  failed: (e) => `The door’s results could not all be read (${e}). Any layouts shown are incomplete, and the bulk downloads stay off.`,
+  failed: (e) => `The door’s results could not all be read (${e}). The list may be incomplete, and the bulk downloads stay off.`,
   visit: (short) => (short ? `visit ${short}` : "a visit"),
   facts: (value, wire) => `highest chiplet-centre average ${Number.isFinite(value) ? value.toFixed(2) : "?"} °C · simulated · wire proxy ${Number.isFinite(wire) ? wire : "?"} mm`,
   outcome: "replay matched",

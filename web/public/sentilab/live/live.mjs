@@ -322,7 +322,7 @@ function renderProposals() {
     if (r.row.className !== cls) r.row.className = cls;
     once(r, "who", JSON.stringify([name, L.short, fresh]), () => r.who.replaceChildren(
       ...(name === null ? [W.PROPOSALS.from(L.short)] : [h("bdi", null, name), W.PROPOSALS.named(L.short)]),
-      fresh ? h("span", { class: "new-proposal small" }, W.PROPOSALS.fresh) : null));
+      ...(fresh ? [h("span", { class: "new-proposal small" }, W.PROPOSALS.fresh)] : [])));
     once(r, "marks", JSON.stringify([mark, o.kind, o.text, o.title]), () => r.marks.replaceChildren(...(mark === "received"
       ? [h("small", { class: "proposal-received", title: W.PROPOSALS.receivedTitle }, markSvg("received"), W.PROPOSALS.received),
         h("small", { class: `outcome ${o.kind}`, title: o.title }, o.text)]

@@ -224,3 +224,14 @@ test("proposals: a declared name only through the run record's visit_arrival, an
   assert.equal(rows().some((el) => text(el).includes("Visitor Gamma")), false, "a hide removes the name from the timeline");
   assert.match(text(rows().find((el) => text(el).includes("9f8c"))), /Proposal from visit 9f8c/);
 });
+
+// Review (23:38Z): a row that is not new must not print "null". Native replaceChildren turns a null child into the text
+// "null" (the recording DOM does the same), so an absent badge is left out, never passed as null.
+test("proposals: a row without the New proposal badge never shows the word null", async (t) => {
+  await open(t, "no-null");
+  const list = document.getElementById("proposalList");
+  const all = walk(list).flatMap((el) => (el.children ?? []).filter((c) => !(c && typeof c === "object" && "tag" in c)).map((c) => c.text));
+  assert.ok(rows().length > 0, "rows are listed");
+  assert.equal(all.some((s) => s === "null"), false, "no text node is the word null");
+  assert.equal(rows().some((el) => /null/.test(el.textContent)), false, "no row reads null");
+});
