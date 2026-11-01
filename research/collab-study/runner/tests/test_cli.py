@@ -272,3 +272,48 @@ def test_output_cannot_modify_a_packet_directory(tmp_path, capsys):
     assert 'outside' in capsys.readouterr().err
     assert not output.exists()
     assert len(list((tmp_path / 'packets/case-one').iterdir())) == 5
+
+
+def test_live_pilot_only_needs_no_freeze_order_or_study_packets(tmp_path, monkeypatch):
+    args, protocol, _ = fixture(tmp_path)
+    pilot = packet(tmp_path / 'pilot')
+    protocol['pilot_arms'] = ['A', 'C']
+    protocol['initial_prompt_tokens'] = {'pilot-A': {'1': 100},
+                                         'pilot-C': {str(n): 100 for n in (1, 2, 3)}}
+    (tmp_path / 'protocol.json').write_text(json.dumps(protocol))
+    for flag in ('--order', '--packets'):
+        index = args.index(flag)
+        del args[index:index + 2]
+    args.remove('--dry-run')
+    calls = []
+
+    class Response:
+        status_code = 200
+        headers = {}
+
+        def json(self):
+            return {'choices': [{'message': {'content': 'FINAL\n'}}],
+                    'usage': {'prompt_tokens': 100, 'completion_tokens': 20}}
+
+    def post(self, endpoint, **kwargs):
+        calls.append(kwargs['json'])
+        return Response()
+
+    monkeypatch.setenv('STUDY_ENDPOINT', 'https://provider.invalid/chat/completions')
+    monkeypatch.setenv('STUDY_API_KEY', 'obviously-fake-credential')
+    monkeypatch.setattr(runner.requests.Session, 'post', post)
+    assert runner.main(args + ['--pilot-only', '--pilot-packet', str(pilot)]) == 0
+    output = tmp_path / 'output'
+    assert {path.name for path in output.iterdir() if path.is_dir()} == {'pilot-A', 'pilot-C'}
+    accounting = json.loads((output / 'ACCOUNTING.json').read_text())
+    assert accounting['scopes']['pilot']['attempts'] == len(calls) == 2
+    assert accounting['scopes']['study']['attempts'] == 0
+    assert accounting['grand_total_usd'] == '0.00028'
+    assert json.loads((output / 'FREEZE.json').read_text())['pilot_only'] is True
+
+
+def test_pilot_only_still_refuses_a_known_sealed_packet(tmp_path, capsys):
+    args, _, _ = fixture(tmp_path)
+    assert runner.main(args + ['--pilot-only', '--pilot-packet', str(tmp_path / 'packets/case-one')]) == 2
+    assert 'pilot must differ' in capsys.readouterr().err
+    assert not (tmp_path / 'output').exists()

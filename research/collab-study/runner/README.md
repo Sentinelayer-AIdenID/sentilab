@@ -1,6 +1,6 @@
 # Collaboration study runner
 
-`study_runner.py` runs protocol v2 with Amendments 1 and 2, using Python 3.12 and
+`study_runner.py` runs protocol v2 with Amendments 1–3, using Python 3.12 and
 `requests`. Packets are UTF-8 text only: the runner never imports or executes
 their `model.py`. The tests and example use synthetic packets exclusively.
 The operator obtains participant packets through the separate private handoff.
@@ -45,6 +45,13 @@ must be established by the operator before sealing. Every later charged token
 count comes from provider usage or an explicitly labelled unknown-cost reserve.
 
 ## Freeze and run
+
+For a live pilot before sealing, pass `--pilot-only --pilot-packet PATH`, the
+protocol, all five prompt arguments, and an output directory. This mode runs
+only `pilot_arms`, writes `ACCOUNTING.json`, and stops. It needs no freeze, order,
+or study packets. If both `--order` and `--packets` are supplied, the pilot must
+differ from every listed packet. Full study runs retain all freeze, ten-packet,
+and pilot-separation checks. The pilot descriptor records `pilot_only: true`.
 
 Set `STUDY_ENDPOINT` to the complete HTTPS chat-completions URL and
 `STUDY_API_KEY` through the operator's environment. Neither value is printed;
