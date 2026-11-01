@@ -20,6 +20,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { CSP } from "../src/csp.js";
+import { UNRECOGNIZED_CLIENT_UA } from "./client-fixture.mjs";
 
 const WEB = join(dirname(fileURLToPath(import.meta.url)), "..");
 const VERSION = process.env.WRANGLER_VERSION || "4.156.0";
@@ -54,7 +55,7 @@ const stop = () => {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let ready = false;
 for (let i = 0; i < 120 && exited === null && !/\[ERROR\]/.test(log); i += 1) {
-  try { const r = await fetch(`${BASE}/sentilab/`); if (r.status) { ready = true; break; } } catch {}
+  try { const r = await fetch(`${BASE}/sentilab/`, { headers: { "user-agent": UNRECOGNIZED_CLIENT_UA } }); if (r.status) { ready = true; break; } } catch {}
   await sleep(500);
 }
 check("the Workers runtime starts and answers", ready && !/\[ERROR\]/.test(strip(log)), ready ? "" : `exited=${exited}`);
@@ -65,7 +66,7 @@ if (ready) {
   for (const [path, rel] of [["/sentilab/", "sentilab/index.html"], ["/sentilab/package/", "sentilab/package/index.html"], ["/sentilab/lab.js", "sentilab/lab.js"], ["/", "index.html"],
     ["/sentilab/package/render3d.mjs", "sentilab/package/render3d.mjs"], ["/sentilab/package/door-fixture.json", "sentilab/package/door-fixture.json"],
     ["/vendor/three/0.187.0/three.module.js", "vendor/three/0.187.0/three.module.js"], ["/vendor/three/0.187.0/three.core.js", "vendor/three/0.187.0/three.core.js"]]) {
-    const r = await fetch(BASE + path);
+    const r = await fetch(BASE + path, { headers: { "user-agent": UNRECOGNIZED_CLIENT_UA } });
     const body = new Uint8Array(await r.arrayBuffer());
     check(`GET ${path}: 200, the exact CSP, the bytes in web/public/${rel}`, r.status === 200 && r.headers.get("content-security-policy") === CSP && same(body, file(rel)),
       `${r.status} · csp ${r.headers.get("content-security-policy") === CSP ? "exact" : JSON.stringify(r.headers.get("content-security-policy"))}`);
@@ -81,17 +82,17 @@ if (ready) {
   for (const [path, accept, rel, type] of [["/agents/", undefined, "agents/index.md", "text/markdown; charset=utf-8"],
     ["/", "text/markdown", "agents/index.md", "text/markdown; charset=utf-8"], ["/", "application/json", "agents/index.json", "application/json; charset=utf-8"],
     ["/sentilab/package/", "text/markdown", "agents/physics.md", "text/markdown; charset=utf-8"]]) {
-    const r = await fetch(BASE + path, accept ? { headers: { accept } } : {});
+    const r = await fetch(BASE + path, { headers: { "user-agent": UNRECOGNIZED_CLIENT_UA, ...(accept ? { accept } : {}) } });
     const body = new Uint8Array(await r.arrayBuffer());
     check(`GET ${path}${accept ? ` (Accept: ${accept})` : ""}: the agent version web/public/${rel}, ${type}, the exact CSP`,
       r.status === 200 && r.headers.get("content-type") === type && r.headers.get("content-security-policy") === CSP && same(body, file(rel)),
       `${r.status} · ${r.headers.get("content-type")}`);
   }
   // A browser's Accept: the human page, byte for byte, varying on Accept, kept out of shared caches, naming its agent version.
-  const human = await fetch(`${BASE}/`, { headers: { accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" } });
+  const human = await fetch(`${BASE}/`, { headers: { "user-agent": UNRECOGNIZED_CLIENT_UA, accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" } });
   const humanBody = new Uint8Array(await human.arrayBuffer());
   check("GET / with a browser's Accept: the human page, with Vary: Accept, private caching and the Link header",
-    human.status === 200 && same(humanBody, file("index.html")) && human.headers.get("vary") === "Accept"
+    human.status === 200 && same(humanBody, file("index.html")) && human.headers.get("vary") === "Accept, User-Agent, Signature, Signature-Input, Signature-Agent, Cookie, Accept-Language, Sec-Fetch-Mode, Sec-Fetch-Dest, Sec-Fetch-Site, Sec-CH-UA, Sec-CH-UA-Mobile, Sec-CH-UA-Platform, Referer"
       && human.headers.get("cache-control") === "private, no-store" && human.headers.get("link") === '</agents/>; rel="alternate"; type="text/markdown"',
     `${human.status} · vary ${human.headers.get("vary")} · cache-control ${human.headers.get("cache-control")} · link ${human.headers.get("link")}`);
   const api = await fetch(`${BASE}/api/view/runs`);
