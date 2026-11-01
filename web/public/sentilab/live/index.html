@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#09110f">
+  <title>SentiLab · Live Lab</title>
+  <meta name="description" content="SentiLab Live Lab: the agent door's runs on the CPU-DRAM package, the work as the door records it, and the evidence behind each result. Simulated, not silicon.">
+  <link rel="icon" href="/sentilab/live/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/sentilab/live/live.css">
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Skip to the lab</a>
+  <div class="intro hidden" id="intro" aria-hidden="true">
+    <div class="intro-grid"></div><div class="intro-orbit orbit-a"></div><div class="intro-orbit orbit-b"></div>
+    <div class="intro-core"><div class="intro-chip chip-a"></div><div class="intro-chip chip-b"></div><div class="intro-chip chip-c"></div><div class="intro-chip chip-d"></div></div>
+    <div class="intro-word">Senti<span>Lab</span><small>SCIENCE, IN MOTION.</small></div>
+    <button type="button" id="skipIntro">Enter the lab <span aria-hidden="true">↗</span></button><span class="intro-foot">AIDENID × SENTI</span>
+  </div>
+  <div id="app">
+  <header class="topbar">
+    <button type="button" class="brand" id="brand" aria-label="Replay the SentiLab entrance"><img src="/sentilab/live/mark.svg" width="28" height="28" alt=""><span>Senti<span class="brand-light">Lab</span></span></button>
+    <nav aria-label="Main"><a class="nav-item active" href="/sentilab/live/" aria-current="page">Workspace</a><button type="button" class="nav-item" data-modal="atlas">Door atlas</button><button type="button" class="nav-item" data-modal="evidence">Evidence</button></nav>
+    <div class="header-end">
+      <span class="live-badge" id="liveBadge" data-state="connecting" role="status" aria-live="polite"><i></i><b id="liveWord">CONNECTING</b><small id="liveAge"></small></span>
+      <button type="button" class="quiet icon-button" id="motionToggle" aria-pressed="false" aria-label="Pause all motion" title="Pause all motion"><span data-icon="pause"></span></button>
+      <button type="button" class="stage-button" id="stageButton" aria-pressed="false"><span data-icon="expand"></span><span class="stage-word">Stage mode</span></button>
+    </div>
+  </header>
+  <main>
+    <section class="page-intro">
+      <div><div class="eyebrow">THE COLLABORATIVE SCIENCE WORKSPACE</div><h1>Ideas move. <span>Evidence stays.</span></h1></div>
+      <div class="intro-caption"><span class="tiny-orbit"></span><p>One experiment. Every agent. The whole story.<small>Explore the model. Follow the work. Inspect the proof.</small></p></div>
+    </section>
+    <p class="wnotice" id="wnotice" role="note"></p>
+    <div class="feed-banner" id="feedBanner" role="status" hidden></div>
+    <div class="mobile-tabs" role="tablist" aria-label="Workspace panels"><button type="button" class="active" data-mobile="model" role="tab" aria-selected="true" aria-controls="modelPanel">The model</button><button type="button" data-mobile="agents" role="tab" aria-selected="false" aria-controls="activityPanel">The work</button><button type="button" data-mobile="trace" role="tab" aria-selected="false" aria-controls="tracePanel">Flight record</button></div>
+    <div class="mobile-experiments" id="mobileRuns" role="group" aria-label="Choose a run"></div>
+    <div class="workspace" id="workspace" tabindex="-1">
+      <aside class="left-rail panel" aria-label="Runs and package layers">
+        <div class="rail-heading"><span class="eyebrow">EXPERIMENTS · DOOR RUNS</span><span class="count" id="runCount">--</span></div>
+        <div class="run-list" id="runList" role="group" aria-label="Runs, newest arrival first"></div>
+        <a class="compare-button" id="labRuns" href="/sentilab/"><span data-icon="compare"></span><span id="labRunsText">Lab runs: checking</span><span aria-hidden="true">↗</span></a>
+        <div class="layer-heading"><span class="eyebrow">MODEL STACK · TRUE THICKNESS</span><span id="layerCount">--</span></div>
+        <div class="layer-list" id="layerList" role="group" aria-label="Inspect a layer of the model stack"></div>
+        <button type="button" class="rail-help" data-modal="about"><span data-icon="info"></span> How to read this lab</button>
+      </aside>
+      <section class="model-panel panel" id="modelPanel" aria-label="Interactive package model">
+        <div class="panel-top"><div><span class="eyebrow">01 / THE PHYSICAL MODEL</span><h2 id="modelTitle">A closer look at the package.</h2></div><button type="button" class="subtle icon-button" id="modelReset" aria-label="Reset the camera" title="Reset view"><span data-icon="reset"></span></button></div>
+        <div class="model-toolbar"><div class="segmented" role="group" aria-label="Package appearance"><button type="button" class="active" id="anatomyMode" aria-pressed="true">Anatomy</button><button type="button" id="heatMode" aria-pressed="false" disabled aria-describedby="fieldNote">Thermal view</button></div><span class="model-kind" id="modelKind"><i></i><span id="modelKindText">NO RUN</span></span><button type="button" class="text-button" data-modal="receipt">Inspect <span aria-hidden="true">↗</span></button></div>
+        <div class="model-viewport" id="modelViewport">
+          <div class="canvas-grid"></div>
+          <canvas id="packageCanvas" tabindex="0" role="img" aria-label="3D view of the package"></canvas>
+          <svg id="leaders3d" class="leaders3d" aria-hidden="true"></svg>
+          <div id="labels3d" class="labels3d" aria-hidden="true"></div>
+          <div class="model-empty" id="modelEmpty" hidden><b id="modelEmptyTitle">Waiting for the door</b><span id="modelEmptyText">Reading the runs.</span></div>
+          <div class="model-caption"><span class="mint-dot"></span><span id="selectionCaption">Drag to orbit · scroll to zoom · arrows when focused</span></div>
+          <div class="model-note" id="modelNote">Schematic layer heights<br>Not manufacturing CAD</div>
+          <p class="field-note" id="fieldNote">Field overlay unavailable</p>
+          <div class="floating-layer" id="layerDetail" hidden></div>
+        </div>
+        <div class="view-controls"><button type="button" id="explodeButton" class="pill" aria-pressed="false"><span data-icon="layers"></span><span id="explodeWord">Assembled</span></button><label class="explode-range"><span>Assembled</span><input type="range" id="explodeRange" min="0" max="100" value="0" aria-label="Layer separation (display only)"><span>Separated</span></label><button type="button" id="orbitButton" class="subtle icon-button" aria-label="Start slow orbit" aria-pressed="false" title="Slow orbit"><span data-icon="orbit"></span></button></div>
+        <div class="model-metrics">
+          <div><span id="metricLabel">BOARD METRIC · SELECTED RUN</span><strong id="metricValue">--</strong><p id="metricDescription">Max chiplet-centre mean</p></div>
+          <div><span>PACKAGE FRAME</span><strong id="frameValue">--</strong><p id="frameNote">Interposer square of the model</p></div>
+          <div><span>EVALUATION SOURCE</span><strong class="metric-source" id="metricSource">--</strong><p id="metricSourceDetail">No result selected</p></div>
+        </div>
+      </section>
+      <aside class="activity-panel panel" id="activityPanel" aria-label="The work, as the door records it">
+        <div class="panel-top"><div><span class="eyebrow">02 / THE COLLECTIVE</span><h2>Follow the work.</h2></div><button type="button" class="subtle icon-button" data-modal="atlas" aria-label="Expand the door atlas"><span data-icon="expand"></span></button></div>
+        <div class="replay-state" id="feedState"><span class="replay-dot"></span><span id="feedStateText">CONNECTING TO THE DOOR</span><button type="button" data-modal="live">What is live? <span aria-hidden="true">↗</span></button></div>
+        <dl class="door-facts" id="doorFacts" aria-label="The door, from its board"><div><dt>DOOR</dt><dd id="factDoor" class="na">unavailable</dd></div><div><dt>SCORER</dt><dd id="factScorer" class="na">unknown</dd></div><div><dt>QUEUE</dt><dd id="factQueue" class="na">unavailable</dd></div><div><dt>CPU BUDGET</dt><dd id="factBudget" class="na">unavailable</dd></div></dl>
+        <div class="agent-map"><svg id="atlasSvg" viewBox="0 0 300 172" role="img" aria-label="Door atlas: runs at their last reported state"></svg><span class="map-legend" id="mapLegend">A dot is a run at its last reported state, not a screen position</span></div>
+        <div class="agents-heading"><span class="eyebrow">VISITORS · CLASS · SHORT ID</span><span id="visitorCount">--</span></div>
+        <div class="agent-list" id="visitorList" role="group" aria-label="Visitors by short id, newest record first"></div>
+        <div class="next-event"><span class="eyebrow" id="selectedEventLabel">NEWEST RECORD</span><button type="button" id="selectedEvent"><span class="event-glyph" aria-hidden="true">↗</span><span><strong id="eventTitle">No record yet</strong><small id="eventSubtitle">Waiting for the door</small></span><span aria-hidden="true">↗</span></button></div>
+      </aside>
+      <section class="trace-panel panel" id="tracePanel" aria-label="Flight record: the door's newest records">
+        <div class="trace-heading"><div><span class="eyebrow">03 / THE FLIGHT RECORD</span><h2>Every handoff leaves a trail.</h2></div><div class="trace-actions"><button type="button" data-modal="trace" class="subtle"><span data-icon="code"></span><span class="ta-word">Inspect records</span></button></div></div>
+        <div class="timeline-body"><div class="timeline-labels"><span><i class="sky"></i>Arrivals</span><span><i class="amber"></i>Attempts</span><span><i class="mint"></i>Runs</span></div><div class="timeline-grid" id="timelineGrid"><div class="phase-labels"><span id="traceStart">--</span><span id="traceMid">ORDER OF RECORDS, NOT TO TIME SCALE</span><span id="traceEnd">--</span></div><svg id="traceSvg" viewBox="0 0 1000 80" preserveAspectRatio="none" aria-hidden="true"></svg><div class="playhead" id="playhead" hidden><i></i></div></div></div>
+        <div class="transport"><div class="transport-buttons"><button type="button" id="rewind" aria-label="Replay from the first record"><span data-icon="rewind"></span></button><button type="button" id="play" class="play-button" aria-label="Replay the recorded records"><span data-icon="play"></span></button><button type="button" id="step" aria-label="Next record"><span data-icon="step"></span></button></div><span class="timecode" id="timecode">-- <span>/ --</span></span><input type="range" id="replayRange" min="0" max="0" value="0" aria-label="Replay position: record" disabled><button type="button" class="follow-live" id="followLive" aria-pressed="true">Follow live</button><span class="transport-note" id="transportNote">Replay plays only when you choose it</span></div>
+        <div class="mobile-event-list" id="mobileEventList" aria-label="Newest records"></div>
+      </section>
+    </div>
+    <footer><div><img src="/sentilab/live/mark.svg" width="14" height="14" alt=""> <span>Science you can inspect.</span><span class="footer-divider">/</span><button type="button" data-modal="sources">Sources &amp; scope</button><span class="footer-divider">/</span><a href="/sentilab/package/?feed=door">Package view</a><span class="footer-divider">/</span><a href="/lab">Earlier demo</a></div><div><button type="button" id="replayIntro">Replay entrance</button><span class="footer-divider">·</span><span>AIdenID × Senti</span></div></footer>
+  </main>
+  </div>
+  <dialog id="modal" aria-labelledby="modalTitle"><div class="modal-shell"><div class="modal-top"><span class="eyebrow" id="modalEyebrow">SENTILAB</span><button type="button" id="closeModal" class="icon-button subtle" aria-label="Close dialog"><span data-icon="close"></span></button></div><h2 id="modalTitle"></h2><div id="modalBody"></div></div></dialog>
+  <script type="module" src="/sentilab/live/live.mjs"></script>
+</body>
+</html>
