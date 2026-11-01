@@ -189,18 +189,55 @@ class PresenceStateTests(unittest.TestCase):
         self.assertEqual(presence.beat("live", "1" * 32, "agent"), "counted")
         self.assertEqual(presence.snapshot()["tabs_seen_today"], 4)
 
-    def test_capacity_bounds_active_tabs_and_the_day_set(self):
-        presence = Presence(clock=self.clock, new_key=keys(), max_active=2, max_day=3)
+    def test_the_active_cap_refuses_a_new_tab_and_still_refreshes_a_known_one(self):
+        presence = Presence(clock=self.clock, new_key=keys(), max_active=2, max_day=10)
         self.assertEqual(presence.beat("live", TAB_A, "agent"), "counted")
         self.assertEqual(presence.beat("live", TAB_B, "agent"), "counted")
         self.assertEqual(presence.beat("live", TAB_C, "agent"), "limited")      # full: a new tab is not kept
         self.assertEqual(presence.beat("live", TAB_A, "agent"), "refreshed")    # a known tab still refreshes
+        self.assertNotIn(TAB_C, presence._active)
+        self.assertEqual(presence.snapshot()["tabs_seen_today"], 2)             # the refused tab is not counted today
         self.clock.now += WINDOW_S
         self.assertEqual(presence.beat("live", TAB_C, "agent"), "counted")
-        self.assertEqual(presence.beat("live", "1" * 32, "agent"), "counted")
-        self.assertEqual(presence.snapshot()["tabs_seen_today"], 3)             # the day set stops at max_day
-        self.assertEqual(presence.beat("live", "2" * 32, "agent"), "limited")
-        self.assertEqual(len(presence._seen), 3)
+        self.assertEqual(presence.snapshot()["tabs_seen_today"], 3)
+
+    def test_crossing_the_day_cap_refuses_untrackable_tabs_so_the_count_stays_exact(self):
+        # Root's control on 6438264c: max_day=2, max_active=10 and three distinct tabs gave active=3, today=2.
+        presence = Presence(clock=self.clock, new_key=keys(), max_active=10, max_day=2)
+        self.assertEqual(presence.beat("live", TAB_A, "agent"), "counted")
+        self.assertEqual(presence.beat("live", TAB_B, "agent"), "counted")
+        self.assertEqual(presence.beat("live", TAB_C, "agent"), "limited")
+        snap = presence.snapshot()
+        self.assertEqual((snap["active_tabs"]["total"], snap["tabs_seen_today"]), (2, 2))
+        self.assertNotIn(TAB_C, presence._active)
+        # A tab already in today's set is still tracked at the cap: it refreshes, and comes back after going quiet.
+        self.assertEqual(presence.beat("board", TAB_A, "agent"), "refreshed")
+        self.clock.now += WINDOW_S + 1
+        self.assertEqual(presence.beat("live", TAB_B, "agent"), "counted")
+        self.assertEqual(presence.beat("live", TAB_C, "agent"), "limited")
+        snap = presence.snapshot()
+        self.assertEqual((snap["active_tabs"]["total"], snap["tabs_seen_today"]), (1, 2))
+        # Every counted tab is in today's set: active can never exceed what today's count can see.
+        marks = {hmac.new(presence._key, tab.encode(), hashlib.sha256).digest()[:16] for tab in presence._active}
+        self.assertLessEqual(marks, presence._seen)
+
+    def test_the_utc_day_reset_frees_the_day_cap(self):
+        presence = Presence(clock=self.clock, new_key=keys(), max_active=10, max_day=2)
+        self.clock.now = MIDNIGHT - 30
+        presence.beat("live", TAB_A, "agent")
+        presence.beat("live", TAB_B, "agent")
+        self.assertEqual(presence.beat("live", TAB_C, "agent"), "limited")
+        self.clock.now = MIDNIGHT
+        snap = presence.snapshot()
+        self.assertEqual((snap["active_tabs"]["total"], snap["tabs_seen_today"]), (2, 0))   # still active, not yet seen today
+        self.assertEqual(presence.beat("live", TAB_C, "agent"), "counted")      # a new day has room again
+        self.assertEqual(presence.beat("live", TAB_A, "agent"), "refreshed")    # seen today now, once
+        self.assertEqual(presence.beat("live", TAB_B, "agent"), "limited")      # the new day's cap: B can't be tracked
+        snap = presence.snapshot()
+        self.assertEqual((snap["active_tabs"]["total"], snap["tabs_seen_today"]), (3, 2))
+        self.clock.now = MIDNIGHT + WINDOW_S - 25                               # B's last heartbeat was before midnight
+        snap = presence.snapshot()
+        self.assertEqual((snap["active_tabs"]["total"], snap["tabs_seen_today"]), (2, 2))
 
 
 class PresenceDoorTests(tk.DoorCase, unittest.TestCase):

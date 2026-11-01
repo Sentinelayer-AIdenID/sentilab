@@ -41,8 +41,10 @@ may record IP addresses under that provider's own policy.
   - `active_tabs.total`: tabs whose last heartbeat came within the last 120 s.
   - `by_page`: all five pages, with zeros included.
   - `by_class`: all four classes, with zeros included.
-  - `tabs_seen_today`: distinct tabs that sent a heartbeat since 00:00 UTC, or since the API started if that was
-    later. A tab that comes back is counted once.
+  - `tabs_seen_today`: distinct tabs whose heartbeat was accepted since 00:00 UTC, or since the API started if that
+    was later. A tab that comes back is counted once. The number is exact for accepted heartbeats. A refused heartbeat
+    is counted nowhere: over the rate limits, or over the memory bounds (20,000 active tabs, 200,000 tabs a day). Once
+    today's set is full, a tab not already in it is refused until the UTC day ends.
 - **Otherwise:** `{"status": "not_measured", "count": null}`, exactly as #89.
 
 These are tabs, not people. Labels say "active tabs (last 2 min)", never "people" or "humans online".

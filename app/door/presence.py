@@ -13,6 +13,10 @@ What is kept, all of it in this process's memory, never on disk:
   counted twice. The daily key is random. The set and its key are dropped together when the UTC day ends.
 - the number of heartbeats in the current minute, for the overall limit (no IP: this service has none).
 
+Memory is bounded (max_active tabs, max_day marks a day). A heartbeat over a bound or a limit is refused and counted
+nowhere: once today's set is full, a tab not already in it is refused until the day ends, so every counted tab is in the
+set and tabs_seen_today is exact for the heartbeats accepted (root's P2 on #90 at 6438264c).
+
 These are tabs, not people: one browser can open many tabs, and a bot can POST here. A restart starts every count
 again. Turned on by DOOR_PRESENCE=on (service.Door.from_env); without it the door publishes #89's not_measured state.
 """
@@ -97,13 +101,17 @@ class Presence:
             if count >= self._per_minute:
                 return "limited"
             known = tab in self._active
+            mark = self._mark(tab)
+            # A tab today's set can't hold is not counted anywhere, so every counted tab is in the set and
+            # tabs_seen_today stays exact, never a silent undercount (root's #90 P2).
+            if mark not in self._seen and len(self._seen) >= self._max_day:
+                return "limited"
             if not known and len(self._active) >= self._max_active:
                 return "limited"
             self._minute = (start, count + 1)
             self._active.pop(tab, None)
             self._active[tab] = {"page": page, "class": klass, "last_seen": float(now)}
-            if len(self._seen) < self._max_day:
-                self._seen.add(self._mark(tab))
+            self._seen.add(mark)
             return "refreshed" if known else "counted"
 
     def snapshot(self) -> dict:
