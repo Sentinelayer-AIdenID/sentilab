@@ -1,0 +1,507 @@
+{
+ "center_uncertainty_mm": [
+  [
+   0.0014,
+   0.0014
+  ],
+  [
+   0.0018,
+   0.0014
+  ],
+  [
+   0.0018,
+   0.0018
+  ],
+  [
+   0.0014,
+   0.0018
+  ],
+  [
+   0.001,
+   0.0014
+  ],
+  [
+   0.0022,
+   0.0014
+  ],
+  [
+   0.0022,
+   0.0018
+  ],
+  [
+   0.001,
+   0.0018
+  ]
+ ],
+ "center_uncertainty_note": "Per coordinate (L-infinity), an empirical estimate under stated assumptions of the error in reading the figure: the largest offset found on TAP-2.5D's own placer panels from their 1 mm grid, plus the coordinate times the relative spread of the panel's three scale estimates, plus the 5e-5 mm storage step, rounded up to 1e-4 mm. It covers reading the figure only. It is not a figure-to-silicon error bound, and how faithfully the figure shows the authors' simulated layout cannot be read from it.",
+ "centers_mm": [
+  [
+   17.9249,
+   17.5496
+  ],
+  [
+   27.0751,
+   17.5496
+  ],
+  [
+   27.0751,
+   27.4497
+  ],
+  [
+   17.9249,
+   27.4497
+  ],
+  [
+   8.5751,
+   17.5496
+  ],
+  [
+   36.4249,
+   17.5496
+  ],
+  [
+   36.4249,
+   27.4497
+  ],
+  [
+   8.5751,
+   27.4497
+  ]
+ ],
+ "claim_label": "Simulated with [evaluator and hash], steady state, uniform power per die. Reference reconstructed from a published figure. Not CAD, not silicon, not measured.",
+ "continuous_rules_legal": true,
+ "copied_from": [
+  {
+   "file_sha256": "db1193ddb6ccc75cb67e9df9753ffe0ddd84d119cd422c4cb7f5e3c8552b2490",
+   "path": "docs/sentilab/references/micro150-tap25d-fig5a.json",
+   "record": "SLAB-048 reference layouts"
+  }
+ ],
+ "design_hash": "93ee854b69891474775b6a2ea32c99d868f83066825a05752575584e4742f22b",
+ "dies": [
+  {
+   "catalog_mm": [
+    8.25,
+    9.0
+   ],
+   "die": 0,
+   "halo_mm": 0.18,
+   "name": "CPU, 150 W",
+   "power_w": 150.0
+  },
+  {
+   "catalog_mm": [
+    8.25,
+    9.0
+   ],
+   "die": 1,
+   "halo_mm": 0.18,
+   "name": "CPU, 150 W",
+   "power_w": 150.0
+  },
+  {
+   "catalog_mm": [
+    8.25,
+    9.0
+   ],
+   "die": 2,
+   "halo_mm": 0.18,
+   "name": "CPU, 150 W",
+   "power_w": 150.0
+  },
+  {
+   "catalog_mm": [
+    8.25,
+    9.0
+   ],
+   "die": 3,
+   "halo_mm": 0.18,
+   "name": "CPU, 150 W",
+   "power_w": 150.0
+  },
+  {
+   "catalog_mm": [
+    8.75,
+    8.75
+   ],
+   "die": 4,
+   "halo_mm": 0.135,
+   "name": "DRAM, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    8.75,
+    8.75
+   ],
+   "die": 5,
+   "halo_mm": 0.135,
+   "name": "DRAM, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    8.75,
+    8.75
+   ],
+   "die": 6,
+   "halo_mm": 0.135,
+   "name": "DRAM, 20 W",
+   "power_w": 20.0
+  },
+  {
+   "catalog_mm": [
+    8.75,
+    8.75
+   ],
+   "die": 7,
+   "halo_mm": 0.135,
+   "name": "DRAM, 20 W",
+   "power_w": 20.0
+  }
+ ],
+ "fixture": {
+  "config": "sundai_tap/configs/sys_micro150_45mm.cfg",
+  "config_sha256": "de6e3edbed848f1bd81758a92f72a1f0b6aa5ffa60aca3153a324cf7a78d9ffd",
+  "fixture_id": "micro150-45mm",
+  "frame_mm": 45.0
+ },
+ "footprints_mm": [
+  [
+   8.25,
+   9.0
+  ],
+  [
+   8.25,
+   9.0
+  ],
+  [
+   8.25,
+   9.0
+  ],
+  [
+   8.25,
+   9.0
+  ],
+  [
+   8.75,
+   8.75
+  ],
+  [
+   8.75,
+   8.75
+  ],
+  [
+   8.75,
+   8.75
+  ],
+  [
+   8.75,
+   8.75
+  ]
+ ],
+ "identity": {
+  "canonical": {
+   "centers_mm": [
+    [
+     17.9249,
+     17.5496
+    ],
+    [
+     27.0751,
+     17.5496
+    ],
+    [
+     27.0751,
+     27.4497
+    ],
+    [
+     17.9249,
+     27.4497
+    ],
+    [
+     8.5751,
+     17.5496
+    ],
+    [
+     36.4249,
+     17.5496
+    ],
+    [
+     36.4249,
+     27.4497
+    ],
+    [
+     8.5751,
+     27.4497
+    ]
+   ],
+   "die_order": "TAP fixture config order",
+   "footprints_mm": [
+    [
+     8.25,
+     9.0
+    ],
+    [
+     8.25,
+     9.0
+    ],
+    [
+     8.25,
+     9.0
+    ],
+    [
+     8.25,
+     9.0
+    ],
+    [
+     8.75,
+     8.75
+    ],
+    [
+     8.75,
+     8.75
+    ],
+    [
+     8.75,
+     8.75
+    ],
+    [
+     8.75,
+     8.75
+    ]
+   ],
+   "frame_mm": 45.0,
+   "rotated": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "schema": "sentilab-layout-identity-v1",
+   "units": {
+    "coordinates": "die centres; origin at the interposer's lower-left corner; +x right, +y up",
+    "length": "mm",
+    "rotation": "true = turned 90 degrees from the fixture config's (width, height)"
+   }
+  },
+  "content_sha256": "6e541158ef9cec4e9e8eed469325490d7902e5175e7a41925bad72f900a5fce9",
+  "hashing": "sha256 of json.dumps(canonical, sort_keys=True, separators=(',', ':'))"
+ },
+ "kind": "raw",
+ "label": "reconstructed from a published figure, continuous, reference-only",
+ "labels": [
+  "approximate reconstruction from published figure",
+  "simulated reference, not silicon",
+  "human-designed RESEARCH layout (Kannan et al., MICRO 2015), not a shipped package"
+ ],
+ "layout_id": "micro150-tap25d-fig5a/raw",
+ "legal_on_fixture": false,
+ "lower_left_mm": [
+  [
+   13.8,
+   13.0497
+  ],
+  [
+   22.9503,
+   13.0497
+  ],
+  [
+   22.9503,
+   22.9493
+  ],
+  [
+   13.8,
+   22.9493
+  ],
+  [
+   4.2006,
+   13.1746
+  ],
+  [
+   32.0503,
+   13.1746
+  ],
+  [
+   32.0503,
+   23.0751
+  ],
+  [
+   4.2006,
+   23.0751
+  ]
+ ],
+ "model_omissions": [
+  "Kannan et al.'s design is a research proposal; TAP-2.5D's die sizes and powers are its model of it."
+ ],
+ "omitted": [
+  {
+   "fields": [
+    "paper_reported",
+    "paper_settings",
+    "round_trip",
+    "validation_points"
+   ],
+   "why": "temperatures and paper-reported values: these pages show no temperatures, and published targets are kept in separate fields of the signed manifest (the router identity is kept in routed_wirelength)"
+  },
+  {
+   "fields": [
+    "snapped",
+    "raw_to_snapped_mm",
+    "raw_to_snapped_norms",
+    "max_abs_raw_to_snapped_mm"
+   ],
+   "why": "the 1 mm snapped variant: kept as history in the source record, superseded as the baseline, not part of this site"
+  },
+  {
+   "fields": [
+    "raw.label",
+    "raw.role",
+    "track",
+    "wire_metric"
+   ],
+   "why": "superseded wording, replaced by this file's label, role and wire_note"
+  },
+  {
+   "fields": [
+    "decoding",
+    "raw.how_obtained",
+    "raw.decoded_size_mm",
+    "raw.uncertainty_rule",
+    "raw.fixture_gate_message",
+    "raw_annotations.uncertainty_statement",
+    "raw_annotations.continuous_rules_check",
+    "raw_annotations.role",
+    "raw_annotations.frozen",
+    "raw_annotations.reviewed_at",
+    "raw_annotations.section_sha256",
+    "snapped_annotations",
+    "interposer_mm",
+    "schema",
+    "ticket.uuid"
+   ],
+   "why": "figure-extraction and record internals; the uncertainty rule is restated in center_uncertainty_note"
+  }
+ ],
+ "reference_id": "micro150-tap25d-fig5a",
+ "role": "The comparator R. It is scored by the same evaluator and router as every proposal. Its centres are continuous and sit off the 500 um lattice, so it is reference-only and never an admissible entry.",
+ "rotated": [
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false
+ ],
+ "routed_wirelength": {
+  "frozen": false,
+  "label": "routed (open router), not paper",
+  "router": "sundai_hotspot/tap_router.py",
+  "router_acceptance": "UNKNOWN: router acceptance is pending",
+  "router_sha256": "2d9bb56c48501891817fb7c4a19c091ea5e6df9174d1afef43f4826aa79312f3",
+  "solver": {
+   "highs": "1.8.0",
+   "highs_status": "reported by the pinned SciPy build and recorded; not pinned, and not an admission of any other binary or host",
+   "scipy": "1.17.0",
+   "scipy_pinned_by": "requirements.txt"
+  },
+  "status": "provisional",
+  "value_mm": 67688.4
+ },
+ "schema": "sentilab-agents-reference/1",
+ "source": {
+  "caption": "Fig. 5: Thermal maps of the CPU-DRAM System: (a) the original placement [14], (b) a placement solution using Compact-2.5D approach, (c) TAP-2.5D solutions using repeaterless non-pipelined link, and (d) using gas-station links.",
+  "citation": "Y. Ma, L. Delshadtehrani, C. Demirkiran, J. L. Abellan, A. Joshi, \"TAP-2.5D: A Thermally-Aware Chiplet Placement Methodology for 2.5D Systems\", DATE 2021, pp. 1246-1251, doi:10.23919/DATE51398.2021.9474011",
+  "figure": "Fig. 5",
+  "page_index": 5,
+  "page_number": 6,
+  "panel": "a",
+  "pdf_sha256": "b209f51aec188e2bcdbf6f4acc3723fb30fbc5c14cca7e70141d478edadec234",
+  "url": "http://people.bu.edu/joshi/files/Ma_TAP-2.5D-DATE2021.pdf"
+ },
+ "ticket": {
+  "id": "SLAB-048",
+  "name": "REF-RECON"
+ },
+ "title": "CPU-DRAM original placement (Kannan et al., MICRO 2015) as drawn in TAP-2.5D Fig. 5(a)",
+ "units": {
+  "coordinates": "die centres; origin at the interposer's lower-left corner; +x right, +y up",
+  "length": "mm",
+  "rotation": "true = turned 90 degrees from the fixture config's (width, height)"
+ },
+ "violations_on_fixture": [
+  {
+   "amount_mm": 0.0751,
+   "dies": [
+    0
+   ],
+   "message": "chiplet 0 center is off the 0.5 mm placement grid",
+   "rule": "lattice"
+  },
+  {
+   "amount_mm": 0.0751,
+   "dies": [
+    1
+   ],
+   "message": "chiplet 1 center is off the 0.5 mm placement grid",
+   "rule": "lattice"
+  },
+  {
+   "amount_mm": 0.0751,
+   "dies": [
+    2
+   ],
+   "message": "chiplet 2 center is off the 0.5 mm placement grid",
+   "rule": "lattice"
+  },
+  {
+   "amount_mm": 0.0751,
+   "dies": [
+    3
+   ],
+   "message": "chiplet 3 center is off the 0.5 mm placement grid",
+   "rule": "lattice"
+  },
+  {
+   "amount_mm": 0.0751,
+   "dies": [
+    4
+   ],
+   "message": "chiplet 4 center is off the 0.5 mm placement grid",
+   "rule": "lattice"
+  },
+  {
+   "amount_mm": 0.0751,
+   "dies": [
+    5
+   ],
+   "message": "chiplet 5 center is off the 0.5 mm placement grid",
+   "rule": "lattice"
+  },
+  {
+   "amount_mm": 0.0751,
+   "dies": [
+    6
+   ],
+   "message": "chiplet 6 center is off the 0.5 mm placement grid",
+   "rule": "lattice"
+  },
+  {
+   "amount_mm": 0.0751,
+   "dies": [
+    7
+   ],
+   "message": "chiplet 7 center is off the 0.5 mm placement grid",
+   "rule": "lattice"
+  }
+ ],
+ "violations_without_center_lattice": [],
+ "wire_note": "routed_wirelength is this layout's routed wire W, from the open router (TAP-2.5D's MILP router ported from CPLEX to HiGHS), the wire figure the challenge judges. It depends only on the dies' relative positions: moving the whole layout leaves it unchanged. wire_proxy_mm is the proxy W_proxy, the connectivity-weighted mean Manhattan distance between die centres, a diagnostic that is never used to judge. Neither runs a thermal solve.",
+ "wire_proxy_mm": 9.3849
+}

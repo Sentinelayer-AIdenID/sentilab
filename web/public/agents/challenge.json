@@ -1,0 +1,304 @@
+{
+ "schema": "sentilab-agents-challenge/0",
+ "title": "SentiLab chiplet-placement challenge: the provisional manifest, for learning",
+ "status": {
+  "manifest": "provisional draft that uses the design's manifest field names; it is not the signed challenge manifest",
+  "submissions": "not_open",
+  "thresholds": "provisional: every threshold is fixed in the signed manifest before any proposal is scored, and never changed in response to outcomes",
+  "evaluator": "gate-zero numerical predicate independently re-derived from signed saved outputs; public scoring not admitted",
+  "temperatures": "provisional model inputs and policy thresholds are distinguished from the saved simulated gate-zero results in /agents/evidence.json; no public proposal result is claimed",
+  "explained_in": "/agents/index.md"
+ },
+ "frozen": false,
+ "label": "simulated, steady state, uniform power per die; references reconstructed from published figures; not CAD, not silicon, not measured",
+ "units": {"length": "um (proposals), mm (wire and reference files)", "power": "W", "wire": "mm"},
+ "evidence": "/agents/evidence.json",
+ "documents": {"math": "/agents/math.md", "physics": "/agents/physics.md", "skill": "/agents/skills/SKILL.md"},
+ "sources": {
+  "design": {"path": "docs/sentilab/open-proposals/DESIGN.md", "commit": "d298cb007081e9ad9334e3d77d412d789c126b0c", "reviewed_at": "99a39979fe10b0310e1e4f9a0bd85b7d07f0d56d", "used_for": "manifest field names, legality, the statistic, wire, comparisons, the screen, claim labels and the policy values proposed in the draft (sections 4.1 to 4.11)"},
+  "brief": {"path": "docs/sentilab/open-proposals/CHALLENGE-BRIEF.md", "commit": "d298cb007081e9ad9334e3d77d412d789c126b0c", "reviewed_at": "99a39979fe10b0310e1e4f9a0bd85b7d07f0d56d", "used_for": "the problems, the rules a layout must follow and how labels are read"},
+  "contract": {"path": "docs/sentilab/reviews/2026-10-31/challenge-math-1606/PROVISIONAL-CONTRACT.md", "commit": "2f697274959bf11de512381cd1507d0608df3322", "used_for": "delta_T, q_r, the bounded and screened predicates and the tradeoff budgets"},
+  "review": {"path": "docs/sentilab/reviews/2026-10-31/challenge-math-1606/REVIEW.md", "commit": "2f697274959bf11de512381cd1507d0608df3322", "used_for": "the separation of comparator and published targets, the statistic wording and the scenario-target wording"},
+  "references": {"commit": "d298cb007081e9ad9334e3d77d412d789c126b0c", "paths": ["docs/sentilab/references/ascend910-tap25d-fig6a.json", "docs/sentilab/references/ascend910-tap25d-fig6a-snap0p5.json", "docs/sentilab/references/micro150-tap25d-fig5a.json", "docs/sentilab/references/micro150-tap25d-fig5a-snap0p5.json"], "used_for": "die sizes, powers and halos, the reference identities and the routed wire of the references"},
+  "fixture_configs": {"commit": "d298cb007081e9ad9334e3d77d412d789c126b0c", "files": [{"path": "sundai_tap/configs/sys_ascend910_45mm.cfg", "sha256": "4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c"}, {"path": "sundai_tap/configs/sys_micro150_45mm.cfg", "sha256": "de6e3edbed848f1bd81758a92f72a1f0b6aa5ffa60aca3153a324cf7a78d9ffd"}], "used_for": "the netlists: the files each reference record pins by fixture.config_sha256"}
+ },
+ "problems": [
+  {
+   "problem": "ascend910",
+   "name": "Ascend 910",
+   "description": "a shipped AI processor as modelled in the TAP-2.5D paper: the paper's die sizes, powers and connections, not vendor data",
+   "fixture": {
+    "id": "ascend910-45mm",
+    "config": "sundai_tap/configs/sys_ascend910_45mm.cfg",
+    "config_sha256": "4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c",
+    "frame_um": 45000,
+    "origin": "the frame's lower-left corner; +x right, +y up",
+    "link_type": "nppl",
+    "package": {"model": "TAP-2.5D's 2.5D package model: substrate, C4 bumps, silicon interposer, microbumps, dies, TIM, heat spreader, heat sink", "assumptions": "steady state, uniform power per die", "ambient_C": {"value": 45, "unit": "degC", "role": "model_input", "status": "provisional", "frozen": false, "source": {"path": "sundai_tap/util/hotspot.config", "commit": "609d339d79cfa0c120806fc5132044b460db5cd3", "sha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc", "field": "-ambient 318.15", "conversion": "318.15 K - 273.15 = 45 degC"}, "meaning": "planned fixed input for the signed manifest; each admitted run binds its actual generated configuration"}, "explained_in": "/agents/physics.md"}
+   },
+   "dies": [
+    {"die": 0, "unit": "Chiplet_0", "name": "compute", "w_um": 14500, "h_um": 31400, "power_w": 256, "halo_um": {"value": 90, "unit": "um", "status": "provisional", "frozen": false}, "rot_deg": [0, 90]},
+    {"die": 1, "unit": "Chiplet_1", "name": "io", "w_um": 10500, "h_um": 16000, "power_w": 14, "halo_um": {"value": 45, "unit": "um", "status": "provisional", "frozen": false}, "rot_deg": [0, 90]},
+    {"die": 2, "unit": "Chiplet_2", "name": "hbm", "w_um": 7750, "h_um": 11870, "power_w": 20, "halo_um": {"value": 45, "unit": "um", "status": "provisional", "frozen": false}, "rot_deg": [0, 90]},
+    {"die": 3, "unit": "Chiplet_3", "name": "hbm", "w_um": 7750, "h_um": 11870, "power_w": 20, "halo_um": {"value": 45, "unit": "um", "status": "provisional", "frozen": false}, "rot_deg": [0, 90]},
+    {"die": 4, "unit": "Chiplet_4", "name": "hbm", "w_um": 7750, "h_um": 11870, "power_w": 20, "halo_um": {"value": 45, "unit": "um", "status": "provisional", "frozen": false}, "rot_deg": [0, 90]},
+    {"die": 5, "unit": "Chiplet_5", "name": "hbm", "w_um": 7750, "h_um": 11870, "power_w": 20, "halo_um": {"value": 45, "unit": "um", "status": "provisional", "frozen": false}, "rot_deg": [0, 90]}
+   ],
+   "netlist": {
+    "matrix": [[0, 200, 256, 256, 256, 256], [200, 0, 0, 0, 0, 0], [256, 0, 0, 0, 0, 0], [256, 0, 0, 0, 0, 0], [256, 0, 0, 0, 0, 0], [256, 0, 0, 0, 0, 0]],
+    "entries": "R[i][j]: the number of wires between die i and die j",
+    "counting": {"routed": "each ordered pair (i, j) with R[i][j] > 0 is a directed net of R[i][j] wires, so each link is routed once in each direction", "proxy": "each unordered pair once"}
+   },
+   "legality": {
+    "units": "um",
+    "anchor": "die-centre",
+    "rotation": "per_die_90",
+    "lattice_um": {"value": 500, "unit": "um", "status": "provisional", "frozen": false, "applies_to": "every candidate centre coordinate", "rationale": "a declared finite engineering benchmark choice; not CAD precision, not a manufacturing tolerance, not an uncertainty estimate and not reference-position uncertainty"},
+    "margin_um": {"value": 500, "unit": "um", "status": "provisional", "frozen": false, "applies_to": "each die with its halo, from every frame edge", "rationale": "TAP-2.5D draws edge strips half its 1 mm placement grid wide around the interposer, and every die keeps its halo clear of them"},
+    "min_die_gap_um": {"value": 100, "unit": "um", "status": "provisional", "frozen": false, "applies_to": "die bodies, without halos, along x or along y", "rationale": "TAP-2.5D Eqn. (10)"},
+    "halo": "each die's microbump ring, from TAP-2.5D's model for the link type: a uniform ring, the same when the die turns; per-die widths in dies[].halo_um. Halo rings may touch but not overlap",
+    "keepouts": [],
+    "rules_in_order": ["catalogue", "frame", "lattice", "margin", "halo_overlap", "min_spacing", "keepout"],
+    "explained_in": "/agents/math.md"
+   },
+   "statistic": {
+    "id": "M",
+    "symbol": "T_M",
+    "definition": "the maximum native centre-map value over the real chiplets enumerated in real_chiplets",
+    "real_chiplets": ["Chiplet_0", "Chiplet_1", "Chiplet_2", "Chiplet_3", "Chiplet_4", "Chiplet_5"],
+    "centre_mapping": "GRID_CENTER: a die's value is the mean of the 1, 2 or 4 central grid cells of its block on the die layer (pinned)",
+    "grid": {"value": 64, "unit": "cells per side", "status": "provisional", "frozen": false},
+    "not": "not a pointwise peak, and never called the true peak",
+    "retained_separately": ["the die layer's hottest grid cell, with its location", "the original TAP-2.5D selector, which is not limited to real chiplets"],
+    "evaluator": "gate-zero numerical predicate independently re-derived from signed saved outputs; public scoring not admitted",
+    "numerical_admission": "UNKNOWN",
+    "explained_in": "/agents/physics.md"
+   },
+   "wire": {
+    "metric": "routed",
+    "symbol": "W",
+    "definition": "the total routed inter-die wirelength in mm from the open router (TAP-2.5D's MILP routing formulation, ported from CPLEX to HiGHS): the routed total reported by HiGHS with optimal status under its numerical tolerances, requesting zero relative MIP gap and using the declared time limit; other solver outcomes leave W UNKNOWN",
+    "router_sha256": "2d9bb56c48501891817fb7c4a19c091ea5e6df9174d1afef43f4826aa79312f3",
+    "router_acceptance": "UNKNOWN: pending",
+    "proxy": {"symbol": "W_proxy", "definition": "the connectivity-weighted mean Manhattan distance between die centres in mm, each unordered pair once", "use": "diagnostic only; never used to judge"},
+    "thermal_solve": "none: wire is computed apart from the thermal model",
+    "explained_in": "/agents/math.md"
+   },
+   "references": {
+    "comparator": {
+     "id": "ascend910-tap25d-fig6a/raw",
+     "file": "/agents/references/ascend910-tap25d-fig6a.json",
+     "label": "reconstructed from a published figure, continuous, reference-only",
+     "continuous": true,
+     "legal_on_fixture": false,
+     "admissible_entry": false,
+     "content_sha256": "0046e17b3e33feef14e570eb6a2026e17c3eea5c232160a052be62c2ae8e470e",
+     "design_hash": "b9bfcd232bdbd5c10158fc680512fab874de472077811dc637b5c283e303ebee",
+     "T_R": "UNKNOWN: the signed challenge manifest has not admitted this comparator; separate saved gate-zero statistics are in /agents/evidence.json",
+     "W_R_mm": {"value": 16417.5, "unit": "mm", "status": "provisional", "frozen": false, "label": "routed (open router), not paper", "router_acceptance": "UNKNOWN: pending"}
+    },
+    "engineering_variants": [
+     {"id": "ascend910-tap25d-fig6a-snap0p5", "file": "/agents/references/ascend910-tap25d-fig6a-snap0p5.json", "label": "engineering variant", "role": "engineering comparison and sensitivity baseline; never a paper match", "legal_on_fixture": true, "content_sha256": "e0c7ce9eb641ee6aea7d2015e5bc0fc5e3f38f1759c2c2252f14ad5104af022a", "design_hash": "224f2ea088fc50f5eb209a44f1a82fa3704c06037456dc6976657df105c6c9e0"}
+    ],
+    "published_targets": {"source": "Y. Ma et al., TAP-2.5D, DATE 2021, Fig. 6(a)", "use": "a separately named paper-target diagnostic only; never substituted for T_M(R) or W(R)", "values": "kept in separate fields of the signed manifest; not shown on these pages"}
+   },
+   "policy": {
+    "status": "provisional: policy choices, not uncertainty estimates; fixed in the signed manifest before any proposal is scored",
+    "frozen": false,
+    "D_K": {"value": 0.5, "unit": "K", "status": "provisional", "frozen": false, "meaning": "D, the allowed thermal degradation: delta_T_upper <= D"},
+    "r": {"value": 0.05, "unit": "fraction of W(R)", "status": "provisional", "frozen": false, "meaning": "the relaxed-wire allowance: q_r_upper <= 0, that is W(c) <= (1 + r) W(R); a relaxed label always names r"},
+    "B_T_K": {"value": 1.0, "unit": "K", "status": "provisional", "frozen": false, "meaning": "B_T, the required thermal improvement: delta_T_upper <= -B_T"},
+    "B_W_fraction": {"value": 0.02, "unit": "fraction of W_R_mm", "status": "provisional", "frozen": false, "basis": "references.comparator.W_R_mm, the nominal comparator wire, in every scenario", "meaning": "B_W, the required wire improvement, in mm: this fraction times the nominal W_R_mm (the design's B_W_mm), used as q_0_upper <= -B_W"},
+    "T_limit_C": {"value": 85, "unit": "degC", "status": "provisional", "frozen": false, "meaning": "the declared temperature target: a chosen scenario target, not a hardware or safety limit"},
+    "tradeoff_budgets_r": {"values": [0.1, 0.25, 0.5, 1.0], "unit": "fraction of W(R)", "status": "provisional", "frozen": false, "meaning": "nested wire budgets: the best observed T_M under W(c) <= (1 + r) W(R), for each r"}
+   },
+   "bounds": {"u_T": "UNKNOWN", "u_q": "UNKNOWN", "u_abs": "UNKNOWN", "rule": "no bound is accepted today, and no bound defaults to zero"},
+   "screen": {
+    "status": "provisional",
+    "frozen": false,
+    "claim": "passes the listed sensitivity cases",
+    "missing": "INCOMPLETE",
+    "failed": "INCONCLUSIVE",
+    "scenarios": [
+     {"id": "nominal", "applies_to": "both", "candidate": "c at grid 64", "comparator": "R at grid 64", "compared": ["T_M", "W"]},
+     {"id": "mesh-32", "applies_to": "both", "candidate": "c at grid 32", "comparator": "R at grid 32", "compared": ["T_M"]},
+     {"id": "position-<die>-<axis>-<sign>", "applies_to": "R", "candidate": "nominal c at grid 64", "comparator": "the exact perturbed R at grid 64", "compared": ["T_M", "the routed W of the perturbed R"], "moves": "one die, one axis, 500 um either way; every other die and every rotation fixed", "exclusions": "moves that break continuous legality (every fixture rule except the lattice), enumerated before any outcome", "accounting": "counted and granted separately"}
+    ],
+    "basis": "B_W stays defined on the nominal W_R_mm in every scenario",
+    "rules": "the scenarios are fixed before any outcome and never chosen or removed after one; an empty set never passes"
+   },
+   "sources": {
+    "dies": "docs/sentilab/references/ascend910-tap25d-fig6a.json at d298cb007081e9ad9334e3d77d412d789c126b0c: dies[].catalog_mm (width, height), power_w and halo_mm; the same values as DESIGN.md section 4.11",
+    "netlist": "sundai_tap/configs/sys_ascend910_45mm.cfg lines 23-28 at d298cb007081e9ad9334e3d77d412d789c126b0c (sha256 4a922560510ba0ab66d04030f137f80262891e7ac7afac3025a57f539e885a8c, the reference record's fixture.config_sha256); the same matrix as DESIGN.md section 4.11",
+    "legality": "DESIGN.md sections 4.1, 4.3 and 4.11; the margin rationale from sundai_hotspot/tap_oracle.py (TAP_MARGIN_MM) at d298cb007081e9ad9334e3d77d412d789c126b0c",
+    "references": "docs/sentilab/references/ (identities and routed wire) at d298cb007081e9ad9334e3d77d412d789c126b0c; DESIGN.md section 4.2",
+    "statistic_wire_policy_screen": "DESIGN.md sections 4.4 to 4.9 and 4.11; PROVISIONAL-CONTRACT.md"
+   }
+  },
+  {
+   "problem": "micro150",
+   "name": "CPU-DRAM",
+   "description": "a published, human-designed research layout (Kannan et al., MICRO 2015) as modelled in the TAP-2.5D paper; not a shipped package",
+   "fixture": {
+    "id": "micro150-45mm",
+    "config": "sundai_tap/configs/sys_micro150_45mm.cfg",
+    "config_sha256": "de6e3edbed848f1bd81758a92f72a1f0b6aa5ffa60aca3153a324cf7a78d9ffd",
+    "frame_um": 45000,
+    "origin": "the frame's lower-left corner; +x right, +y up",
+    "link_type": "nppl",
+    "package": {"model": "TAP-2.5D's 2.5D package model: substrate, C4 bumps, silicon interposer, microbumps, dies, TIM, heat spreader, heat sink", "assumptions": "steady state, uniform power per die", "ambient_C": {"value": 45, "unit": "degC", "role": "model_input", "status": "provisional", "frozen": false, "source": {"path": "sundai_tap/util/hotspot.config", "commit": "609d339d79cfa0c120806fc5132044b460db5cd3", "sha256": "1c92fb1c03d279a26ae0fd7a51ac4a9a0fef004223af0f5603c6619d75b949dc", "field": "-ambient 318.15", "conversion": "318.15 K - 273.15 = 45 degC"}, "meaning": "planned fixed input for the signed manifest; each admitted run binds its actual generated configuration"}, "explained_in": "/agents/physics.md"}
+   },
+   "dies": [
+    {"die": 0, "unit": "Chiplet_0", "name": "cpu", "w_um": 8250, "h_um": 9000, "power_w": 150, "halo_um": {"value": 180, "unit": "um", "status": "provisional", "frozen": false}, "rot_deg": [0, 90]},
+    {"die": 1, "unit": "Chiplet_1", "name": "cpu", "w_um": 8250, "h_um": 9000, "power_w": 150, "halo_um": {"value": 180, "unit": "um", "status": "provisional", "frozen": false}, "rot_deg": [0, 90]},
+    {"die": 2, "unit": "Chiplet_2", "name": "cpu", "w_um": 8250, "h_um": 9000, "power_w": 150, "halo_um": {"value": 180, "unit": "um", "status": "provisional", "frozen": false}, "rot_deg": [0, 90]},
+    {"die": 3, "unit": "Chiplet_3", "name": "cpu", "w_um": 8250, "h_um": 9000, "power_w": 150, "halo_um": {"value": 180, "unit": "um", "status": "provisional", "frozen": false}, "rot_deg": [0, 90]},
+    {"die": 4, "unit": "Chiplet_4", "name": "dram", "w_um": 8750, "h_um": 8750, "power_w": 20, "halo_um": {"value": 135, "unit": "um", "status": "provisional", "frozen": false}, "rot_deg": [0]},
+    {"die": 5, "unit": "Chiplet_5", "name": "dram", "w_um": 8750, "h_um": 8750, "power_w": 20, "halo_um": {"value": 135, "unit": "um", "status": "provisional", "frozen": false}, "rot_deg": [0]},
+    {"die": 6, "unit": "Chiplet_6", "name": "dram", "w_um": 8750, "h_um": 8750, "power_w": 20, "halo_um": {"value": 135, "unit": "um", "status": "provisional", "frozen": false}, "rot_deg": [0]},
+    {"die": 7, "unit": "Chiplet_7", "name": "dram", "w_um": 8750, "h_um": 8750, "power_w": 20, "halo_um": {"value": 135, "unit": "um", "status": "provisional", "frozen": false}, "rot_deg": [0]}
+   ],
+   "netlist": {
+    "matrix": [[0, 256, 0, 256, 1024, 0, 0, 0], [256, 0, 256, 0, 0, 1024, 0, 0], [0, 256, 0, 256, 0, 0, 1024, 0], [256, 0, 256, 0, 0, 0, 0, 1024], [1024, 0, 0, 0, 0, 0, 0, 0], [0, 1024, 0, 0, 0, 0, 0, 0], [0, 0, 1024, 0, 0, 0, 0, 0], [0, 0, 0, 1024, 0, 0, 0, 0]],
+    "entries": "R[i][j]: the number of wires between die i and die j",
+    "counting": {"routed": "each ordered pair (i, j) with R[i][j] > 0 is a directed net of R[i][j] wires, so each link is routed once in each direction", "proxy": "each unordered pair once"}
+   },
+   "legality": {
+    "units": "um",
+    "anchor": "die-centre",
+    "rotation": "per_die_90",
+    "lattice_um": {"value": 500, "unit": "um", "status": "provisional", "frozen": false, "applies_to": "every candidate centre coordinate", "rationale": "a declared finite engineering benchmark choice; not CAD precision, not a manufacturing tolerance, not an uncertainty estimate and not reference-position uncertainty"},
+    "margin_um": {"value": 500, "unit": "um", "status": "provisional", "frozen": false, "applies_to": "each die with its halo, from every frame edge", "rationale": "TAP-2.5D draws edge strips half its 1 mm placement grid wide around the interposer, and every die keeps its halo clear of them"},
+    "min_die_gap_um": {"value": 100, "unit": "um", "status": "provisional", "frozen": false, "applies_to": "die bodies, without halos, along x or along y", "rationale": "TAP-2.5D Eqn. (10)"},
+    "halo": "each die's microbump ring, from TAP-2.5D's model for the link type: a uniform ring, the same when the die turns; per-die widths in dies[].halo_um. Halo rings may touch but not overlap",
+    "keepouts": [],
+    "rules_in_order": ["catalogue", "frame", "lattice", "margin", "halo_overlap", "min_spacing", "keepout"],
+    "explained_in": "/agents/math.md"
+   },
+   "statistic": {
+    "id": "M",
+    "symbol": "T_M",
+    "definition": "the maximum native centre-map value over the real chiplets enumerated in real_chiplets",
+    "real_chiplets": ["Chiplet_0", "Chiplet_1", "Chiplet_2", "Chiplet_3", "Chiplet_4", "Chiplet_5", "Chiplet_6", "Chiplet_7"],
+    "centre_mapping": "GRID_CENTER: a die's value is the mean of the 1, 2 or 4 central grid cells of its block on the die layer (pinned)",
+    "grid": {"value": 64, "unit": "cells per side", "status": "provisional", "frozen": false},
+    "not": "not a pointwise peak, and never called the true peak",
+    "retained_separately": ["the die layer's hottest grid cell, with its location", "the original TAP-2.5D selector, which is not limited to real chiplets"],
+    "evaluator": "gate-zero numerical predicate independently re-derived from signed saved outputs; public scoring not admitted",
+    "numerical_admission": "UNKNOWN",
+    "explained_in": "/agents/physics.md"
+   },
+   "wire": {
+    "metric": "routed",
+    "symbol": "W",
+    "definition": "the total routed inter-die wirelength in mm from the open router (TAP-2.5D's MILP routing formulation, ported from CPLEX to HiGHS): the routed total reported by HiGHS with optimal status under its numerical tolerances, requesting zero relative MIP gap and using the declared time limit; other solver outcomes leave W UNKNOWN",
+    "router_sha256": "2d9bb56c48501891817fb7c4a19c091ea5e6df9174d1afef43f4826aa79312f3",
+    "router_acceptance": "UNKNOWN: pending",
+    "proxy": {"symbol": "W_proxy", "definition": "the connectivity-weighted mean Manhattan distance between die centres in mm, each unordered pair once", "use": "diagnostic only; never used to judge"},
+    "thermal_solve": "none: wire is computed apart from the thermal model",
+    "explained_in": "/agents/math.md"
+   },
+   "references": {
+    "comparator": {
+     "id": "micro150-tap25d-fig5a/raw",
+     "file": "/agents/references/micro150-tap25d-fig5a.json",
+     "label": "reconstructed from a published figure, continuous, reference-only",
+     "continuous": true,
+     "legal_on_fixture": false,
+     "admissible_entry": false,
+     "content_sha256": "6e541158ef9cec4e9e8eed469325490d7902e5175e7a41925bad72f900a5fce9",
+     "design_hash": "93ee854b69891474775b6a2ea32c99d868f83066825a05752575584e4742f22b",
+     "T_R": "UNKNOWN: the signed challenge manifest has not admitted this comparator; separate saved gate-zero statistics are in /agents/evidence.json",
+     "W_R_mm": {"value": 67688.4, "unit": "mm", "status": "provisional", "frozen": false, "label": "routed (open router), not paper", "router_acceptance": "UNKNOWN: pending"}
+    },
+    "engineering_variants": [
+     {"id": "micro150-tap25d-fig5a-snap0p5", "file": "/agents/references/micro150-tap25d-fig5a-snap0p5.json", "label": "engineering variant", "role": "engineering comparison and sensitivity baseline; never a paper match", "legal_on_fixture": true, "content_sha256": "ecfca7f46fd422f6c35ee35cf7c9ffc97f2a0a627907a69f03891910bc248be9", "design_hash": "0f806acbd50c8847d27509e4e179453cd006444c5adcd7b36413115394d0807f"}
+    ],
+    "published_targets": {"source": "Y. Ma et al., TAP-2.5D, DATE 2021, Fig. 5(a)", "use": "a separately named paper-target diagnostic only; never substituted for T_M(R) or W(R)", "values": "kept in separate fields of the signed manifest; not shown on these pages"}
+   },
+   "policy": {
+    "status": "provisional: policy choices, not uncertainty estimates; fixed in the signed manifest before any proposal is scored",
+    "frozen": false,
+    "D_K": {"value": 0.5, "unit": "K", "status": "provisional", "frozen": false, "meaning": "D, the allowed thermal degradation: delta_T_upper <= D"},
+    "r": {"value": 0.05, "unit": "fraction of W(R)", "status": "provisional", "frozen": false, "meaning": "the relaxed-wire allowance: q_r_upper <= 0, that is W(c) <= (1 + r) W(R); a relaxed label always names r"},
+    "B_T_K": {"value": 1.0, "unit": "K", "status": "provisional", "frozen": false, "meaning": "B_T, the required thermal improvement: delta_T_upper <= -B_T"},
+    "B_W_fraction": {"value": 0.02, "unit": "fraction of W_R_mm", "status": "provisional", "frozen": false, "basis": "references.comparator.W_R_mm, the nominal comparator wire, in every scenario", "meaning": "B_W, the required wire improvement, in mm: this fraction times the nominal W_R_mm (the design's B_W_mm), used as q_0_upper <= -B_W"},
+    "T_limit_C": {"value": 85, "unit": "degC", "status": "provisional", "frozen": false, "meaning": "the declared temperature target: a chosen scenario target, not a hardware or safety limit"},
+    "tradeoff_budgets_r": {"values": [0.1, 0.25, 0.5, 1.0], "unit": "fraction of W(R)", "status": "provisional", "frozen": false, "meaning": "nested wire budgets: the best observed T_M under W(c) <= (1 + r) W(R), for each r"}
+   },
+   "bounds": {"u_T": "UNKNOWN", "u_q": "UNKNOWN", "u_abs": "UNKNOWN", "rule": "no bound is accepted today, and no bound defaults to zero"},
+   "screen": {
+    "status": "provisional",
+    "frozen": false,
+    "claim": "passes the listed sensitivity cases",
+    "missing": "INCOMPLETE",
+    "failed": "INCONCLUSIVE",
+    "scenarios": [
+     {"id": "nominal", "applies_to": "both", "candidate": "c at grid 64", "comparator": "R at grid 64", "compared": ["T_M", "W"]},
+     {"id": "mesh-32", "applies_to": "both", "candidate": "c at grid 32", "comparator": "R at grid 32", "compared": ["T_M"]},
+     {"id": "position-<die>-<axis>-<sign>", "applies_to": "R", "candidate": "nominal c at grid 64", "comparator": "the exact perturbed R at grid 64", "compared": ["T_M", "the routed W of the perturbed R"], "moves": "one die, one axis, 500 um either way; every other die and every rotation fixed", "exclusions": "moves that break continuous legality (every fixture rule except the lattice), enumerated before any outcome", "accounting": "counted and granted separately"}
+    ],
+    "basis": "B_W stays defined on the nominal W_R_mm in every scenario",
+    "rules": "the scenarios are fixed before any outcome and never chosen or removed after one; an empty set never passes"
+   },
+   "sources": {
+    "dies": "docs/sentilab/references/micro150-tap25d-fig5a.json at d298cb007081e9ad9334e3d77d412d789c126b0c: dies[].catalog_mm (width, height), power_w and halo_mm; DESIGN.md section 4.11 gives this manifest the same shape",
+    "netlist": "sundai_tap/configs/sys_micro150_45mm.cfg lines 23-30 at d298cb007081e9ad9334e3d77d412d789c126b0c (sha256 de6e3edbed848f1bd81758a92f72a1f0b6aa5ffa60aca3153a324cf7a78d9ffd, the reference record's fixture.config_sha256), the file DESIGN.md section 4.11 cites for this manifest",
+    "legality": "DESIGN.md sections 4.1, 4.3 and 4.11; the margin rationale from sundai_hotspot/tap_oracle.py (TAP_MARGIN_MM) at d298cb007081e9ad9334e3d77d412d789c126b0c",
+    "references": "docs/sentilab/references/ (identities and routed wire) at d298cb007081e9ad9334e3d77d412d789c126b0c; DESIGN.md section 4.2",
+    "statistic_wire_policy_screen": "DESIGN.md sections 4.4 to 4.9 and 4.11; PROVISIONAL-CONTRACT.md"
+   }
+  }
+ ],
+ "definitions": {
+  "layout": {
+   "entry": "one object per die, in the problem's die order, with the fields die, x_um, y_um and rot_deg",
+   "coordinates": "integer micrometres of the die centre, from the frame's lower-left corner; +x right, +y up",
+   "rotation": "0 or 90 degrees about the die centre; a turn swaps width and height; a square die cannot turn",
+   "explained_in": "/agents/math.md"
+  },
+  "comparisons": {
+   "comparator": "R: the raw reconstruction, scored by the same evaluator and router as the candidate, in the same manifest version; it is continuous and reference-only, so the lattice rule does not apply to it and it is never an entry",
+   "delta_T": "T_M(c) - T_M(R), in K",
+   "q_r": "W(c) - (1 + r) W(R), in mm; q_r <= 0 means the candidate fits wire allowance r",
+   "never": ["published paper targets in place of T_M(R) or W(R)", "T from one geometry with W from another"]
+  },
+  "bounded": {
+   "delta_T_upper": "estimated delta_T + u_T",
+   "q_r_upper": "estimated q_r + u_q(r)",
+   "u_q(r)": "b_c + (1 + r) b_R, from individual wire error bounds b_c and b_R, for r >= 0",
+   "status": "no bound is accepted today, so u_T, u_q and u_abs are UNKNOWN and no claim is bounded"
+  },
+  "evidence_modes": {
+   "bounded": "the predicate holds with accepted bounds added (none today)",
+   "passes the listed sensitivity cases": "the predicate holds on the estimated values in every required scenario of the screen; not an error bound, and silent about unlisted cases"
+  },
+  "claims": [
+   {"id": "declared-temperature-target", "label": "declared temperature target", "predicate": "estimated_T_M(c) + u_abs(c) <= T_limit", "note": "T_limit is a chosen scenario target, not a hardware or safety limit; a centre-mapped value below it says nothing about every die, grid point, junction or real device"},
+   {"id": "strict-wire-thermal-tolerance", "label": "strict-wire thermal tolerance", "predicate": "q_0_upper <= 0 (W(c) <= W(R)) and delta_T_upper <= D"},
+   {"id": "r-relaxed-wire-thermal-tolerance", "label": "r-relaxed-wire thermal tolerance", "predicate": "q_r_upper <= 0 and delta_T_upper <= D", "note": "r appears in the label; 1.05 times the comparator wire is relaxed, never strict and never equal wire"},
+   {"id": "strict-thermal-improvement", "label": "strict thermal improvement", "predicate": "q_0_upper <= 0 and delta_T_upper <= -B_T"},
+   {"id": "strict-wire-improvement", "label": "strict wire improvement", "predicate": "q_0_upper <= -B_W and delta_T_upper <= 0"},
+   {"id": "wire-improvement-with-allowed-thermal-degradation", "label": "wire improvement with allowed thermal degradation", "predicate": "q_0_upper <= -B_W and delta_T_upper <= D", "note": "a relaxed label when D > 0"},
+   {"id": "robust-dominance-over-r", "label": "robust dominance over R", "predicate": "q_0_upper <= 0 and delta_T_upper <= 0, with at least one strict improvement under the published tie and margin rule"}
+  ],
+  "claim_rules": [
+   "every claim is checked after legality and numerical admission",
+   "non-inferiority is not equality, and a two-sided reproduction claim is a different predicate",
+   "every result shows its nominal values, labelled or not, INCOMPLETE or not",
+   "claims are suppressed by a failed required gate-zero check, a failed source, input or statistic binding, a failed pure predicate fixture or a failed required scenario",
+   "an unexpected scientific diagnostic does not suppress valid claims; the mismatch and its raw values are published as a diagnostic",
+   "thresholds, scenarios, the evaluator and the reference are never tuned toward expected classifications"
+  ],
+  "claim_states": {"INCOMPLETE": "a required scenario is missing", "INCONCLUSIVE": "a required scenario failed", "UNKNOWN": "the evidence is missing; never an assumed pass"},
+  "wire_tracks": {
+   "strict": {"predicate": "W(c) <= W(R)", "label": "strict wire"},
+   "relaxed": {"predicate": "W(c) <= (1 + r) W(R), with r from policy.r", "label": "relaxed wire, named with its r; never strict and never equal wire"},
+   "budgets": {"predicate": "W(c) <= (1 + r) W(R) for each r in policy.tradeoff_budgets_r", "label": "within the r wire budget", "rules": "nested, so one layout can appear in several; wire-budget scenarios, not weights or tracks; not separate wins and not evidence of global optimality; more wire without a temperature benefit is not a tradeoff"}
+  },
+  "tradeoff": "for each budget r, report the best observed T_M under W(c) <= (1 + r) W(R); strict, relaxed and nondominated results are reported separately",
+  "pareto": "the nondominated set of T_M against W, with no claim",
+  "ties": "ascending T_M, then geometry hash",
+  "failures": "retained; no automatic retry"
+ }
+}

@@ -43,6 +43,10 @@ const FILES = {
 };
 const bytes = async (res) => new Uint8Array(await res.arrayBuffer());
 const headerList = (res) => [...res.headers.entries()].sort();
+// The three pages with an agent version also carry the negotiation headers: they vary on Accept, stay out of shared
+// caches and name their agent version (worker-agents.test.mjs covers the negotiation).
+const negotiated = (alternate) => ({ vary: "Accept", "cache-control": "private, no-store", link: `<${alternate}>; rel="alternate"; type="text/markdown"` });
+const ADDED = { "/sentilab/": negotiated("/agents/"), "/sentilab/package/": negotiated("/agents/physics.md"), "/sentilab/lab.js": {}, "/": negotiated("/agents/") };
 
 test("the exported policy is exactly the reviewed one", () => {
   assert.equal(CSP, EXACT);
@@ -55,7 +59,7 @@ test("worker.js exports only its default handler (the Workers runtime refuses an
 });
 
 for (const path of ["/sentilab/", "/sentilab/package/", "/sentilab/lab.js", "/"]) {
-  test(`asset ${path}: the exact CSP is added; status, body bytes and every other header are the asset layer's`, async () => {
+  test(`asset ${path}: the exact CSP is added; status, body bytes and every other header are the asset layer's (pages add their negotiation headers)`, async () => {
     const env = { ASSETS: assets(FILES), API_ORIGIN: ORIGIN };
     const direct = await env.ASSETS.fetch(new Request(`https://sentilab.aidenid.com${path}`));
     const res = await worker.fetch(new Request(`https://sentilab.aidenid.com${path}`), env);
@@ -63,7 +67,8 @@ for (const path of ["/sentilab/", "/sentilab/package/", "/sentilab/lab.js", "/"]
     assert.equal(res.headers.get("content-security-policy"), EXACT);
     assert.deepEqual(await bytes(res), new Uint8Array(FILES[path].body), "the body is untouched");
     const others = headerList(res).filter(([k]) => k !== "content-security-policy");
-    assert.deepEqual(others, headerList(direct), "every other header is the asset layer's");
+    const expected = Object.entries({ ...Object.fromEntries(headerList(direct)), ...ADDED[path] }).sort();
+    assert.deepEqual(others, expected, "every other header is the asset layer's, plus a page's negotiation headers");
   });
 }
 test("asset responses that aren't 200 keep their status and still carry the CSP (304, 404)", async () => {
