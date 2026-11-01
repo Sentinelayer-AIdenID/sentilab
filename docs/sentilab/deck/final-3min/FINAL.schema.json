@@ -1,0 +1,1153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sentilab-deck-final/1",
+  "title": "SentiLab three-minute deck source",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "deck",
+    "cutoff",
+    "talk",
+    "problem",
+    "how",
+    "timeline",
+    "gate",
+    "reuse",
+    "backup"
+  ],
+  "$defs": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 700
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+    },
+    "sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "room",
+        "ref",
+        "author",
+        "at"
+      ],
+      "properties": {
+        "room": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}$"
+        },
+        "ref": {
+          "type": "string",
+          "pattern": "^(seq \\d{5,6}|reply [0-9a-f-]{36} to seq \\d{5,6})$"
+        },
+        "author": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "at": {
+          "$ref": "#/$defs/time"
+        },
+        "stated": {
+          "$ref": "#/$defs/time"
+        }
+      }
+    },
+    "records": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/record"
+      }
+    },
+    "dated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "at",
+        "text",
+        "records"
+      ],
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/time"
+        },
+        "text": {
+          "$ref": "#/$defs/text"
+        },
+        "records": {
+          "$ref": "#/$defs/records"
+        }
+      }
+    },
+    "titled": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "text"
+      ],
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "text": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "variant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "text",
+        "notes"
+      ],
+      "properties": {
+        "label": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "NOT RUN"
+          ]
+        },
+        "text": {
+          "$ref": "#/$defs/text"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        }
+      }
+    },
+    "labelled": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "text"
+      ],
+      "properties": {
+        "label": {
+          "$ref": "#/$defs/text"
+        },
+        "text": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "labelled2": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "value"
+      ],
+      "properties": {
+        "label": {
+          "$ref": "#/$defs/text"
+        },
+        "value": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    }
+  },
+  "properties": {
+    "format": {
+      "const": "sentilab-deck-final/1"
+    },
+    "deck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "event",
+        "talk"
+      ],
+      "properties": {
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "event": {
+          "$ref": "#/$defs/text"
+        },
+        "talk": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "cutoff": {
+      "$ref": "#/$defs/time"
+    },
+    "talk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maxSeconds",
+        "speechBudgetSeconds",
+        "bufferSeconds",
+        "wordsPerSecond"
+      ],
+      "properties": {
+        "maxSeconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 600
+        },
+        "speechBudgetSeconds": {
+          "type": "integer",
+          "minimum": 30,
+          "maximum": 600
+        },
+        "bufferSeconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 120
+        },
+        "wordsPerSecond": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 5
+        }
+      }
+    },
+    "problem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kicker",
+        "hero",
+        "question",
+        "caption",
+        "answerEyebrow",
+        "answer",
+        "domain",
+        "notes"
+      ],
+      "properties": {
+        "kicker": {
+          "$ref": "#/$defs/text"
+        },
+        "hero": {
+          "$ref": "#/$defs/text"
+        },
+        "question": {
+          "$ref": "#/$defs/text"
+        },
+        "caption": {
+          "$ref": "#/$defs/text"
+        },
+        "answerEyebrow": {
+          "$ref": "#/$defs/text"
+        },
+        "answer": {
+          "$ref": "#/$defs/text"
+        },
+        "domain": {
+          "$ref": "#/$defs/text"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        }
+      }
+    },
+    "how": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kicker",
+        "title",
+        "steps",
+        "evidence",
+        "footnote",
+        "notes"
+      ],
+      "properties": {
+        "kicker": {
+          "$ref": "#/$defs/text"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "footnote": {
+          "$ref": "#/$defs/text"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "title",
+              "text",
+              "today",
+              "records"
+            ],
+            "properties": {
+              "title": {
+                "$ref": "#/$defs/text"
+              },
+              "text": {
+                "$ref": "#/$defs/text"
+              },
+              "today": {
+                "$ref": "#/$defs/text"
+              },
+              "records": {
+                "$ref": "#/$defs/records"
+              }
+            }
+          }
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "line",
+            "records"
+          ],
+          "properties": {
+            "line": {
+              "$ref": "#/$defs/text"
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            }
+          }
+        }
+      }
+    },
+    "timeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kicker",
+        "title",
+        "lede",
+        "lines",
+        "callout",
+        "note",
+        "notes"
+      ],
+      "properties": {
+        "kicker": {
+          "$ref": "#/$defs/text"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "lede": {
+          "$ref": "#/$defs/dated"
+        },
+        "lines": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 10,
+          "items": {
+            "$ref": "#/$defs/dated"
+          }
+        },
+        "callout": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "big",
+            "label",
+            "sub"
+          ],
+          "properties": {
+            "big": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 8
+            },
+            "label": {
+              "$ref": "#/$defs/text"
+            },
+            "sub": {
+              "$ref": "#/$defs/text"
+            }
+          }
+        },
+        "note": {
+          "$ref": "#/$defs/text"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kicker",
+        "title",
+        "common",
+        "toleranceK",
+        "references",
+        "variants",
+        "bottom",
+        "wordingRecords"
+      ],
+      "properties": {
+        "kicker": {
+          "$ref": "#/$defs/text"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "common": {
+          "$ref": "#/$defs/text"
+        },
+        "toleranceK": {
+          "type": "string",
+          "pattern": "^\\d{1,3}\\.\\d{1,3}$"
+        },
+        "references": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "label",
+              "source",
+              "publishedC"
+            ],
+            "properties": {
+              "id": {
+                "enum": [
+                  "A",
+                  "B"
+                ]
+              },
+              "label": {
+                "$ref": "#/$defs/text"
+              },
+              "source": {
+                "$ref": "#/$defs/text"
+              },
+              "publishedC": {
+                "type": "string",
+                "pattern": "^\\d{1,3}\\.\\d{1,3}$"
+              }
+            }
+          }
+        },
+        "variants": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "pass",
+            "fail",
+            "not-run"
+          ],
+          "properties": {
+            "pass": {
+              "$ref": "#/$defs/variant"
+            },
+            "fail": {
+              "$ref": "#/$defs/variant"
+            },
+            "not-run": {
+              "$ref": "#/$defs/variant"
+            }
+          }
+        },
+        "bottom": {
+          "$ref": "#/$defs/text"
+        },
+        "wordingRecords": {
+          "$ref": "#/$defs/records"
+        },
+        "result": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "outcome",
+            "measured",
+            "records",
+            "comparator",
+            "scope",
+            "verification",
+            "detail",
+            "replay"
+          ],
+          "properties": {
+            "outcome": {
+              "enum": [
+                "pass",
+                "fail"
+              ]
+            },
+            "measured": {
+              "type": "string",
+              "pattern": "^\\d{1,3}\\.\\d{1,3},\\d{1,3}\\.\\d{1,3}$"
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            },
+            "comparator": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "values",
+                "text",
+                "notes"
+              ],
+              "properties": {
+                "values": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 2,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^\\d{1,3}\\.\\d{1,3}$"
+                  }
+                },
+                "text": {
+                  "$ref": "#/$defs/text"
+                },
+                "notes": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400
+                }
+              }
+            },
+            "scope": {
+              "$ref": "#/$defs/text"
+            },
+            "verification": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "operator",
+                "rederived"
+              ],
+              "properties": {
+                "operator": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "text",
+                    "notes"
+                  ],
+                  "properties": {
+                    "text": {
+                      "$ref": "#/$defs/text"
+                    },
+                    "notes": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 400
+                    }
+                  }
+                },
+                "rederived": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "text",
+                    "notes"
+                  ],
+                  "properties": {
+                    "text": {
+                      "$ref": "#/$defs/text"
+                    },
+                    "notes": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 400
+                    }
+                  }
+                }
+              }
+            },
+            "detail": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 6,
+              "items": {
+                "$ref": "#/$defs/text"
+              }
+            },
+            "replay": {
+              "$ref": "#/$defs/text"
+            }
+          }
+        }
+      }
+    },
+    "reuse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kicker",
+        "title",
+        "receipt",
+        "next",
+        "status",
+        "notes"
+      ],
+      "properties": {
+        "kicker": {
+          "$ref": "#/$defs/text"
+        },
+        "title": {
+          "$ref": "#/$defs/text"
+        },
+        "next": {
+          "$ref": "#/$defs/text"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        },
+        "receipt": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "team",
+            "where",
+            "commit",
+            "what",
+            "result",
+            "rerun",
+            "limit"
+          ],
+          "properties": {
+            "team": {
+              "$ref": "#/$defs/text"
+            },
+            "where": {
+              "$ref": "#/$defs/text"
+            },
+            "commit": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}$"
+            },
+            "what": {
+              "$ref": "#/$defs/text"
+            },
+            "result": {
+              "$ref": "#/$defs/text"
+            },
+            "rerun": {
+              "$ref": "#/$defs/text"
+            },
+            "limit": {
+              "$ref": "#/$defs/text"
+            }
+          }
+        },
+        "status": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "label",
+              "value"
+            ],
+            "properties": {
+              "label": {
+                "$ref": "#/$defs/text"
+              },
+              "value": {
+                "$ref": "#/$defs/text"
+              }
+            }
+          }
+        }
+      }
+    },
+    "backup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chronology",
+        "reviews",
+        "metrics",
+        "gate",
+        "drill",
+        "status",
+        "prs",
+        "receipt"
+      ],
+      "properties": {
+        "chronology": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "rows",
+            "note"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "note": {
+              "$ref": "#/$defs/text"
+            },
+            "rows": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 16,
+              "items": {
+                "$ref": "#/$defs/dated"
+              }
+            }
+          }
+        },
+        "reviews": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "line",
+            "rows",
+            "caveats",
+            "records"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "line": {
+              "$ref": "#/$defs/text"
+            },
+            "rows": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {
+                "$ref": "#/$defs/labelled2"
+              }
+            },
+            "caveats": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 8,
+              "items": {
+                "$ref": "#/$defs/text"
+              }
+            },
+            "records": {
+              "$ref": "#/$defs/records"
+            }
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "saved",
+            "model",
+            "continuum",
+            "history"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "history": {
+              "$ref": "#/$defs/text"
+            },
+            "saved": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "eyebrow",
+                "lines",
+                "limit"
+              ],
+              "properties": {
+                "eyebrow": {
+                  "$ref": "#/$defs/text"
+                },
+                "lines": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "$ref": "#/$defs/text"
+                  }
+                },
+                "limit": {
+                  "$ref": "#/$defs/text"
+                }
+              }
+            },
+            "model": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "eyebrow",
+                "head",
+                "rows",
+                "spread",
+                "review"
+              ],
+              "properties": {
+                "eyebrow": {
+                  "$ref": "#/$defs/text"
+                },
+                "head": {
+                  "type": "array",
+                  "minItems": 4,
+                  "maxItems": 4,
+                  "items": {
+                    "$ref": "#/$defs/text"
+                  }
+                },
+                "rows": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "array",
+                    "minItems": 4,
+                    "maxItems": 4,
+                    "items": {
+                      "$ref": "#/$defs/text"
+                    }
+                  }
+                },
+                "spread": {
+                  "$ref": "#/$defs/text"
+                },
+                "review": {
+                  "$ref": "#/$defs/text"
+                }
+              }
+            },
+            "continuum": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "eyebrow",
+                "lines",
+                "limit"
+              ],
+              "properties": {
+                "eyebrow": {
+                  "$ref": "#/$defs/text"
+                },
+                "lines": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "$ref": "#/$defs/text"
+                  }
+                },
+                "limit": {
+                  "$ref": "#/$defs/text"
+                }
+              }
+            }
+          }
+        },
+        "gate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "rules",
+            "source",
+            "wordingTitle"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "source": {
+              "$ref": "#/$defs/text"
+            },
+            "wordingTitle": {
+              "$ref": "#/$defs/text"
+            },
+            "rules": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/text"
+              }
+            }
+          }
+        },
+        "drill": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "flow",
+            "labCaption",
+            "packageCaption",
+            "fixture"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "flow": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 6,
+              "items": {
+                "$ref": "#/$defs/titled"
+              }
+            },
+            "labCaption": {
+              "$ref": "#/$defs/text"
+            },
+            "packageCaption": {
+              "$ref": "#/$defs/text"
+            },
+            "fixture": {
+              "$ref": "#/$defs/text"
+            }
+          }
+        },
+        "status": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "deliverables",
+            "cards"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "deliverables": {
+              "type": "array",
+              "minItems": 8,
+              "maxItems": 8,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "text"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^D0[0-7]$"
+                  },
+                  "text": {
+                    "$ref": "#/$defs/text"
+                  }
+                }
+              }
+            },
+            "cards": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 6,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "title",
+                  "text",
+                  "originAt",
+                  "asOf"
+                ],
+                "properties": {
+                  "title": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "text": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "originAt": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/$defs/time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "asOf": {
+                    "$ref": "#/$defs/time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "prs": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "repo",
+            "items"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "repo": {
+              "$ref": "#/$defs/text"
+            },
+            "items": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 12,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "number",
+                  "what",
+                  "state",
+                  "head",
+                  "merge",
+                  "mergedAt",
+                  "checkedAt"
+                ],
+                "properties": {
+                  "number": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "what": {
+                    "$ref": "#/$defs/text"
+                  },
+                  "state": {
+                    "enum": [
+                      "OPEN",
+                      "MERGED",
+                      "CLOSED"
+                    ]
+                  },
+                  "head": {
+                    "$ref": "#/$defs/sha"
+                  },
+                  "merge": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/$defs/sha"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mergedAt": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/$defs/time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "checkedAt": {
+                    "$ref": "#/$defs/time"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "receipt": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kicker",
+            "title",
+            "facts",
+            "notYet",
+            "notEvidence"
+          ],
+          "properties": {
+            "kicker": {
+              "$ref": "#/$defs/text"
+            },
+            "title": {
+              "$ref": "#/$defs/text"
+            },
+            "facts": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/labelled"
+              }
+            },
+            "notYet": {
+              "$ref": "#/$defs/text"
+            },
+            "notEvidence": {
+              "$ref": "#/$defs/text"
+            }
+          }
+        }
+      }
+    }
+  }
+}
