@@ -95,19 +95,28 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   // The room's numbers are the metrics file's (its facts hold each to METRICS.json, refreshed at the freeze).
   const help = (k) => loaded.metrics.byId.get(k).value;
   assert.match(say("room"), new RegExp(`${help("crosscheck.help.messages")} messages from ${help("crosscheck.help.posting_identities")} identities: \\d+ human, ${help("crosscheck.help.members_plus_posting_agents") - help("crosscheck.help.members")} agent\\.$`));
-  assert.match(shown(data, "room"), /\d+ in the help room, \d+ in our team room/);
+  // Slide 3 is aneta's plain14-room v4 (root's scoped +1 at 14:56:50Z): its footer and SOURCES carry root's three
+  // qualifications, and the picture its own counts, links, help outcomes and ticket split.
+  assert.equal(slide(data, "room").content.figure.id, "plain14");
+  for (const q of ["Messages posted by 14:30 UTC, with the structure read at 14:36 UTC and a later edit retained.", "Links are thread author plus mentions: a message reaching five handles counts five times. They're links, not confirmed exchanges or usefulness.", "30 tickets = 21 in the help room + 9 in our team room, at 14:31 UTC."]) {
+    assert.ok(slide(data, "room").content.footer.includes(q), q);
+    assert.ok(shown(data, "sources").includes(q), q);
+  }
+  assert.ok(shown(data, "sources").includes("Accepted for structure and picture, with 546 of 583 rows corroborated; not a complete raw-history verification."));
+  const p14 = readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain14-room.svg"), "utf8");
+  for (const t of ["21 in the help room, 9 in our team room", "4 reported checks of our test case", "2 of the other 5 said it was useful", "We offered help to 9 outside groups, by 12:46 UTC"]) assert.ok(p14.includes(t), t);
   assert.doesNotMatch(shown(data, "room") + say("room"), /\b17 people\b/);
   // Rev 5 (aneta 57941): one 8 on the slide; the posting-group estimate stays on the sources page.
   assert.doesNotMatch(shown(data, "room"), /posting groups/);
-  assert.match(shown(data, "sources"), /\d+ agent posting groups plus \d+ human-only groups/);
-  assert.equal(slide(data, "room").content.tiles.length, 5);
-  assert.doesNotMatch(shown(data, "room") + shown(data, "sources"), /at least 8|outside teams/, "posting groups are not teams (root, 08:40Z)");
+  assert.ok(shown(data, "sources").includes("The slide 3 picture: 583 messages posted by 14:30 UTC, from 28 posting identities."));
+  assert.equal(slide(data, "room").content.tiles, undefined, "the picture takes the tiles' place");
+  assert.doesNotMatch(shown(data, "room"), /at least 8|outside teams/, "posting groups are not teams (root, 08:40Z)");
   // Help offered, in the groups' own reports, in place of the model-rated count, which moves to the sources page. Refreshed
   // to 12:46 UTC in root's explicit disjoint wording, word for word (aneta 58014; root's +1, reply to 57809 at 12:57:04Z).
-  assert.ok(shown(data, "room").includes("Four outside groups reported checks of our test case. We offered help to nine groups in all; two of the other five said it was useful."));
-  assert.deepEqual(slide(data, "room").content.tiles[3], { value: "Four", label: "outside groups reported checks of our test case. We offered help to nine groups in all; two of the other five said it was useful." });
+  // The help outcomes (4/9/2) stay the separately accepted line, with root's +1 at 12:57:04Z, in SOURCES.
+  assert.ok(readFileSync(FOUNDER_OUTPUTS.sources, "utf8").includes("Aneta's refreshed help line (team room 58014, 12:46:31Z), with root's scoped +1 and his explicit disjoint wording"));
   assert.doesNotMatch(shown(data, "room"), /\b281\b|04:01|we offered help to 8|3 outside groups/);
-  assert.match(shown(data, "room"), /Help offered: what the groups themselves reported, to 12:46 UTC\./);
+  assert.match(shown(data, "sources"), /Help offered, to 12:46 UTC: nine outside groups, each counted once\. Four reported checks of our test case/);
   assert.match(shown(data, "sources"), new RegExp(`Model-rated, not confirmed usefulness, to 1 Nov \\d\\d:\\d\\d UTC: our intent model rated ${help("helpful.messages")} of the ${help("helpful.scored_messages")}`));
   // Root's content P2 (14:45:47Z): the cost page's intent-model line is the freeze file's, in its own window, with no dollar claim.
   assert.ok(shown(data, "cost").includes(`Our intent model: ${help("intent_model.calls")} recorded successful calls (109 dry run, 448 live, 77 host scores), 31 Oct 22:13 to 1 Nov 14:18 UTC; its cost is not measured.`));
@@ -191,14 +200,14 @@ test("claims the talk may not make, and numbers nothing declares, stop the build
   refuses("an unconsented team", /has not consented/, (v) => { v.slides[4].footer += " Kiln solved it too."; });
   refuses("Delfie in another form", /form the team asked for/, (v) => { v.slides[4].footer += " Delfie checked it."; });
   refuses("science not labelled", /without saying "simulated"/, (v) => { v.slides[3].label = "two versions"; v.slides[3].footer = "Hottest modeled grid cells."; });
-  refuses("an undeclared number", /which none of its facts declares/, (v) => { v.slides[2].tiles[0].value = "512"; });
+  refuses("an undeclared number", /which none of its facts declares/, (v) => { v.slides[2].footer += " 512 more."; });
   refuses("a duration its records don't give", /is not its records'/, (v) => { v.slides[4].times = [{ show: "30 min", what: "from a question to a suspect", from: "2026-10-31T12:43:33.374Z", to: "2026-10-31T13:15:38.133Z", rule: "round" }]; });
   refuses("a bar not its value", /is not 119.07 rounded/, (v) => { v.slides[3].bars[0].show = "120 °C"; });
   refuses("17 people", /17 is member accounts/, (v) => { v.slides[2].say += " 17 people took part."; });
   refuses("a solver library named", /unresolved 115.93 against 115.94/, (v) => { v.slides[6].footer += " SuperLU explains it."; });
   refuses("money on a main slide", /money on a main slide/, (v) => { v.slides[2].footer += " It cost USD 8,232.41."; });
   const msgs = pre.metrics.byId.get("crosscheck.help.messages").value;
-  refuses("a number that is not the metrics file's", new RegExp(`but METRICS.json gives ${msgs.toLocaleString("en-US")}`), (v) => { v.slides[2].tiles[0].value = String(msgs - 1); v.slides[2].facts[0].shows = [String(msgs - 1)]; });
+  refuses("a number that is not the metrics file's", new RegExp(`but METRICS.json gives ${msgs.toLocaleString("en-US")}`), (v) => { v.slides[2].facts[0].shows = [String(msgs - 1)]; });
   refuses("a different metrics file", /is not the file V4.json pins/, (v) => { v.metrics.sha256 = "0".repeat(64); });
 });
 
@@ -369,7 +378,7 @@ test("root's rev 5 review: the timeline keeps its qualifications, the help line 
   for (const t of ["room posting times, not earlier local freezes", "one agent had seen a one-line preview", "having already read the suspect", "not independence", "No savings figure: there is no baseline", "every plotted time kept"]) assert.ok(shown(data, "sources").includes(t), t);
   // Page 3: the help count carries its date (refreshed to 12:46 UTC, root's +1 at 12:57:04Z); aneta's 14:05Z re-check is
   // on the FILL-IN refresh list, and nothing claims a refresh the build has not made.
-  assert.ok(slide(data, "room").content.footer.endsWith("Help offered: what the groups themselves reported, to 12:46 UTC."));
+  assert.ok(slide(data, "room").content.footer.startsWith("Help room record, 31 Oct 13:46 to 1 Nov 14:30 UTC; handles, not people."));
   assert.doesNotMatch(shown(data, "room") + shown(data, "sources"), /refresh(?:ed)? at the freeze/);
   assert.match(fillInTable(draft), /\| room \| Help offered: four checked, nine offered in all, two of the other five said it was useful \(to 12:46 UTC, root's \+1 at 12:57:04Z\) \| Aneta re-checks at about 14:05Z/);
   // The scripts: every main slide has a real heading, in both cuts.

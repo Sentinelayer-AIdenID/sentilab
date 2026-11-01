@@ -11,7 +11,7 @@
     "measuring": false
   },
   "source": {
-    "sourceSha256": "88c172e645b7b5ea25f8ef70d1eeeb9b027d89966de1465392cbd5560f7b5a1d",
+    "sourceSha256": "c0f95d52631ef451744ffee3263cb42e981157bea4b61c0be7e20166bfa0576e",
     "metricsSha256": "275ff9e90bf9cc20648f96ae80ec1ba77c117751dfb07bba4fe2deb74e550bba"
   },
   "budget": {
@@ -148,36 +148,24 @@
       "kicker": "This weekend",
       "heading": "Our agents and outside agents, one room, overnight.",
       "content": {
-        "layout": "numbers",
+        "layout": "figure",
         "title": "Our agents and outside agents, one room, overnight.",
-        "footer": "Help room, 31 Oct 13:46 to 1 Nov 14:29 UTC; the tickets, to 14:31 UTC, also count our team room. Identities are posting handles, not people. Help offered: what the groups themselves reported, to 12:46 UTC.",
+        "footer": "Help room record, 31 Oct 13:46 to 1 Nov 14:30 UTC; handles, not people. Messages posted by 14:30 UTC, with the structure read at 14:36 UTC and a later edit retained. Links are thread author plus mentions: a message reaching five handles counts five times. They're links, not confirmed exchanges or usefulness. 30 tickets = 21 in the help room + 9 in our team room, at 14:31 UTC.",
         "points": [
           "People watched every agent work",
           "Agents geared each other up",
           "Agents guarded the room"
         ],
-        "tiles": [
-          {
-            "value": "583",
-            "label": "messages in the help room"
-          },
-          {
-            "value": "28",
-            "label": "identities: 5 human, 23 agent"
-          },
-          {
-            "value": "16",
-            "label": "of them outside our team: 4 human, 12 agent"
-          },
-          {
-            "value": "Four",
-            "label": "outside groups reported checks of our test case. We offered help to nine groups in all; two of the other five said it was useful."
-          },
-          {
-            "value": "30",
-            "label": "tickets from plain messages: 21 in the help room, 9 in our team room"
-          }
-        ]
+        "figure": {
+          "id": "plain14",
+          "src": "figures/plain14-room.svg",
+          "width": 1664,
+          "height": 640,
+          "scale": 1.05,
+          "minFont": 21,
+          "alt": "Network of the help room's 583 messages, to 14:30 UTC, from 28 posting identities, 5 human and 23 agent, 16 of them outside our team. Lines show replies and @mentions: 252 from our team to outside, 159 from outside to our team, 152 between outside teams. We offered help to 9 outside groups: 4 reported checks of our test case, 2 of the other 5 said it was useful, and 3 haven't confirmed, by 12:46 UTC. 30 tickets came from plain messages, at 14:31 UTC: 21 in the help room, 9 in our team room. Each line sums one handle's replies and mentions to another; automated notices count as messages and draw no lines.",
+          "pending": null
+        }
       },
       "notes": {
         "text": "This weekend, outside agents worked beside ours in one room. People watched every agent work, agents geared each other up and guarded the room, and plain messages became tickets. 583 messages from 28 identities: 5 human, 23 agent.",
@@ -422,7 +410,7 @@
         "items": [
           "Over 10 billion AI-bot requests a week (April 2026): blog.cloudflare.com/rethinking-cache-ai-humans/",
           "AI-agent requests grew more than 1,700% in a year (Sept 2026): blog.cloudflare.com/agentic-web",
-          "Help room, 31 Oct 13:46 to 1 Nov 14:29 UTC: 583 messages (270 top-level, 313 replies) from 28 posting identities, 5 human and 23 agent; outside our team, 16 identities (4 human, 12 agent), grouped by account and handle into 8 agent posting groups plus 3 human-only groups. That grouping is an estimate, not a count of distinct teams. An earlier count at 07:09 UTC: 418.",
+          "The slide 3 picture: 583 messages posted by 14:30 UTC, from 28 posting identities. Links across team lines: 252 from our team to outside, 159 from outside to our team, 152 between outside teams; automated notices count as messages but make no links, and links inside one team aren't drawn. Links are thread author plus mentions: a message reaching five handles counts five times. They're links, not confirmed exchanges or usefulness. Messages posted by 14:30 UTC, with the structure read at 14:36 UTC and a later edit retained. 30 tickets = 21 in the help room + 9 in our team room, at 14:31 UTC. Accepted for structure and picture, with 546 of 583 rows corroborated; not a complete raw-history verification. An earlier count at 07:39 UTC was 422 messages (195 top-level, 227 replies by event type).",
           "Help offered, to 12:46 UTC: nine outside groups, each counted once. Four reported checks of our test case: Delfie (delphisci team) on both versions in 39 min (23:01:16) and its one-change test (03:45:39); an outside team's separate solver (00:03:07); ScienceClaw's re-run (04:01); another outside team, after 04:01. Two of the other five said our help was useful (21:13:28; 00:04:12 and 00:08:14). Three unconfirmed.",
           "Model-rated, not confirmed usefulness, to 1 Nov 14:29 UTC: our intent model rated 385 of the 550 messages it scored at least 1 on its 0–4 scale; 145 of the 385 came from outside participants, and our own agents wrote 240.",
           "Tickets, to 1 Nov 14:31 UTC: 30 written from plain room messages, 21 in the help room and 9 in our team room; 26 of them by the ticket keeper.",

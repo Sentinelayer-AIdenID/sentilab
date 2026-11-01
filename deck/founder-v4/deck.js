@@ -59,7 +59,7 @@
       return `${h1(c)}<div class="times">${c.times.map((t) => `<div class="time"><b>${esc(t.show)}</b><span>${esc(t.what)}</span></div>`).join("")}</div>`;
     },
     figure(c) {
-      return `${h1(c)}${c.label ? `<p class="blabel">${pill(c.label, "warn")}</p>` : ""}<div class="fwrap">${fig(c.figure)}</div>${c.line ? `<p class="fline">${esc(c.line)}</p>` : ""}`;
+      return `${h1(c)}${c.label ? `<p class="blabel">${pill(c.label, "warn")}</p>` : ""}<div class="fwrap">${fig(c.figure)}</div>${c.line ? `<p class="fline">${esc(c.line)}</p>` : ""}${pointList(c)}`;
     },
     tiles(c) {
       return `${h1(c)}<p class="blabel">${pill(c.label, "warn")}</p><div class="pair">${c.tiles.map((t) => `<div class="ptile ptile-${esc(t.tone)}"><b>${esc(t.head)}</b><p>${esc(t.body)}</p></div>`).join("")}</div>`;
