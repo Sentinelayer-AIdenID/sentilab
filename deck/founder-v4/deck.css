@@ -168,7 +168,9 @@ h1.big { font-size: 72px; }
 
 /* 9 at a freeze with nothing measured: the fallback picture in the tiles' place, the QR code beside it (never dropped)
    and the door's address under them */
-.l-fallback .fb { margin-top: 10px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.l-fallback .fb { position: relative; margin-top: 10px; display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
 .l-fallback .npoints { margin-top: 8px; }
 .l-fallback .fb .fig { margin: 0; flex: none; }
-.l-fallback .fb .still img { border-radius: 10px; background: #fff; }
+/* The QR code, 330px, in the free space right of the picture's own text (final-2: aneta's P2, 14:41Z) */
+.l-fallback .fb .still { position: absolute; right: 0; top: 80px; }
+.l-fallback .fb .still img { border-radius: 12px; background: #fff; }

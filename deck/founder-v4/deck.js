@@ -46,7 +46,9 @@
     // Slide 9 at a freeze with no measured number: the fallback picture takes the tiles' place, with the door's QR code
     // beside it (the picture at its type floor leaves a 205px column) and the door's address under them.
     fallback(c) {
-      return `${h1(c)}<div class="fb">${fig(c.figure)}${still(c.still, 200)}</div>${pointList(c)}`;
+      // The QR code sits in the free space right of the picture's own text, 330px wide (aneta, 14:41Z: bigger, to scan
+      // from farther back), over the picture's empty margin, not over its words.
+      return `${h1(c)}<div class="fb">${fig(c.figure)}${still(c.still, 330)}</div>${pointList(c)}`;
     },
     bars(c) {
       const bars = c.bars.map((b) => `<div class="hbar hbar-${esc(b.tone)}"><span class="hbar-fill" style="width:${(b.share * 100).toFixed(2)}%"></span>`

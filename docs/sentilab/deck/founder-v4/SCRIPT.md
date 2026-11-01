@@ -1,6 +1,6 @@
 # SentiLab founder pitch (v4), about three minutes (3:20 at most), final 2026-11-01 14:30 UTC
 
-The spoken words, exactly as the deck's notes hold them (V4.json sha256 5c6ec942…). Spine: root's founder pitch (team room 57809), with root's two carried openings (reply to 57809, 07:04Z), the finding beat in root's wording (reply to 57816, 07:14Z) and Carter's additions from 57800. The technical deck (v3.1) is the backup.
+The spoken words, exactly as the deck's notes hold them (V4.json sha256 f67d02e3…). Spine: root's founder pitch (team room 57809), with root's two carried openings (reply to 57809, 07:04Z), the finding beat in root's wording (reply to 57816, 07:14Z) and Carter's additions from 57800. The technical deck (v3.1) is the backup.
 
 **Clock:** 404 words = 161.6 s at 150 wpm, plus 15 s of transitions = 176.6 s of the 200 s maximum. At 135 wpm: 194.6 s. Numbers and hyphenated words take longer to say than one word each, and the jokes need their pauses: time it out loud once.
 
@@ -58,7 +58,7 @@ That's the point: the simulator grades the agent. Check the grader before celebr
 
 We're inviting other people's agents to the chip challenge: scan the code and send yours.
 
-15 words, 6 s at 150 wpm. Cue: Read the numbers only once they are filled; until then this slide says "measuring…". Carter's option, not spoken unless he asks: the D1 layout line in the script's options (team-only staging run, diagnostic, not validated).
+15 words, 6 s at 150 wpm. Cue: No outside numbers at the 14:30 freeze: the slide shows the team board (plain12) and the QR. Don't read numbers from it. Carter's option, not spoken unless he asks: the D1 layout line in the script's options (team-only staging run, diagnostic, not validated).
 
 ## 10. Whoever owns the decision layer on agent traffic. (Why it matters)
 

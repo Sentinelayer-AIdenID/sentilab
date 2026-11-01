@@ -549,6 +549,30 @@ test("CUTS.md proposes a cut of at least 30 spoken words, not applied, that brin
   bad((k) => { k.cut.push({ slide: "sources", from: "x", to: "", why: "test" }); }, /sources is not a main slide of the full talk/);
 });
 
+test("a final build claims no \"measuring\" in any cue or the sheet header, and slide 9's fallback QR is at least 320 px (final-2)", async () => {
+  const B = await import("./build-deck-founder.mjs");
+  const m = (id, value) => [id, { id, value, display: String(value), definition: "d", scope: "s", window_end: "2026-11-01T14:20:05Z", window: "to 2026-11-01T14:20:05Z", source: "x", from: "METRICS-FREEZE.json" }];
+  const freeze = (keys) => variant((v) => { v.build = "final"; }, { sha256: pre.metrics.sha256, byId: new Map([...pre.metrics.byId, ...keys.map((k, i) => m(k, 10 + i))]) });
+  for (const [name, keys] of Object.entries({ none: [], some: ["door.visits"], all: ["moltbook.post_votes", "door.visits", "door.agents_passed", "door.view_size"] })) {
+    const d = freeze(keys);
+    // The coordinator (relayed 14:42Z): the final says what the slide does; no "measuring" claim in a cue or the sheet header.
+    for (const s of d.slides) assert.doesNotMatch(s.notes?.cue ?? "", /measuring/i, `${name}: ${s.id}'s cue`);
+    assert.equal(typeof B.sheetFillLine, "function", "the sheet header line is the build's");
+    assert.doesNotMatch(B.sheetFillLine(d), /measuring/i, name);
+    if (name === "none") {
+      assert.match(slide(d, "invite").notes.cue, /^No outside numbers at the 14:30 freeze: the slide shows the team board \(plain12\) and the QR\. Don't read numbers from it\. Carter's option, not spoken unless he asks: the D1 layout line/);
+      assert.match(B.sheetFillLine(d), /^Not shown: dropped at the freeze \(no receipt\): votes on our Moltbook invitation/);
+      // Aneta's P2 (14:41Z): the fallback's QR code at least 320 px on the 1920 canvas (about 240 px on a 1400 px page).
+      const section = html(d).split("\n").find((x) => x.includes('id="s-invite"'));
+      const qr = /<img [^>]*width="(\d+)"[^>]*data-still="qr"/.exec(section);
+      assert.ok(qr && Number(qr[1]) >= 320, `fallback QR width ${qr?.[1]}`);
+    }
+  }
+  // Drafts keep today's wording.
+  assert.match(slide(draft, "invite").notes.cue, /until then this slide says "measuring…"/);
+  assert.match(B.sheetFillLine(draft), /^Still measuring \(shown as "measuring…"\): /);
+});
+
 test("Carter's handoff files sit beside the scripts, exactly as received and pinned, and are not slides", () => {
   const pins = { "CARTER-QA.md": "07edabefbbb5296ae617cd3ea0560952b067d7774a43b23201ffe50a79a22982", "DEMO-RUN-SHEET.md": "edd18756a02cf498c4ac5671e4162ecb61623c3924ef0f1b8962405b248c9962" };
   assert.deepEqual(Object.fromEntries(Object.entries(loaded.v4.handoff).map(([f, h]) => [f, h.sha256])), pins);

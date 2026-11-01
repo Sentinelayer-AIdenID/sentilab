@@ -290,7 +290,9 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
       claimRules(say, `${where} words`, SAY_BANNED);
       for (const t of v4.teams.unnamed) if (new RegExp(`\\b${t}\\b`, "i").test(say)) throw new FounderError(`${where} words name ${t}, who has not consented`);
       const words = countWords(raw.replace(/\{m:[\w.]+\}/g, "N"));
-      notes = { text: say, words, seconds: tenths(words / (v4.clock.wordsPerMinute / 60)), slowSeconds: tenths(words / (v4.clock.slowWordsPerMinute / 60)), cue: s.cue ?? null };
+      // The cue says what the slide does: at the freeze, the fallback's own cue or the final cue, never a draft's "measuring…".
+      const cue = final ? (content.layout === "fallback" ? s.finalFallback?.cue : s.cueFinal) ?? s.cue : s.cue;
+      notes = { text: say, words, seconds: tenths(words / (v4.clock.wordsPerMinute / 60)), slowSeconds: tenths(words / (v4.clock.slowWordsPerMinute / 60)), cue: cue ?? null };
     }
     const main = S.main.length;
     // For SOURCES.md: a metrics fact, and each measured tile, is described by its file's own definition, window and scope.
@@ -343,6 +345,9 @@ export function buildFounderData({ v4, sourceSha256, metrics }, { slot = "3min",
   };
 }
 
+// The review sheet's line about numbers not on their slides: a draft shows them as "measuring…"; the final shows none.
+export const sheetFillLine = (data) => (!data.placeholders.length ? ""
+  : `${data.deck.draft ? "Still measuring (shown as \"measuring…\")" : `Not shown: dropped at the freeze (${data.freezeNote ? "receipt in FILL-IN" : "no receipt"})`}: ${data.placeholders.map((p) => p.label).join(" · ")}`);
 // What a build is: the freeze's final, a draft with numbers still measuring, or a review export with none missing.
 export const buildKind = (data) => (!data.deck.draft ? "final" : data.deck.measuring ? "draft" : "review");
 export const founderPdfName = (data) => `founder-v4/SentiLab-founder-${data.deck.slot}-${data.deck.cutoffIso.slice(0, 10)}-${data.deck.cutoffIso.slice(11, 13)}${data.deck.cutoffIso.slice(14, 16)}-${buildKind(data)}.pdf`;

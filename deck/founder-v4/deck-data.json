@@ -11,7 +11,7 @@
     "measuring": false
   },
   "source": {
-    "sourceSha256": "5c6ec942c00679a319014446fd4b06623e8725bf9aa11d178bc5fae0a1dcf654",
+    "sourceSha256": "f67d02e32f268f82fa870bdcc3e804e94fb4d64271a1b84442e176e804badfd5",
     "metricsSha256": "275ff9e90bf9cc20648f96ae80ec1ba77c117751dfb07bba4fe2deb74e550bba"
   },
   "budget": {
@@ -378,7 +378,7 @@
         "words": 15,
         "seconds": 6,
         "slowSeconds": 6.7,
-        "cue": "Read the numbers only once they are filled; until then this slide says \"measuring…\". Carter's option, not spoken unless he asks: the D1 layout line in the script's options (team-only staging run, diagnostic, not validated)."
+        "cue": "No outside numbers at the 14:30 freeze: the slide shows the team board (plain12) and the QR. Don't read numbers from it. Carter's option, not spoken unless he asks: the D1 layout line in the script's options (team-only staging run, diagnostic, not validated)."
       }
     },
     {
