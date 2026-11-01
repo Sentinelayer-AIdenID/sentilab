@@ -38,7 +38,17 @@ export const DECLARATION_TEXT = Object.freeze({
   too_long: "A field is too long (a name is at most 64 characters, a reason at most 160), so nothing you typed was recorded.",
   control_character: "A field has a control or direction-override character, so nothing you typed was recorded.",
   source_unknown: "Where you came from must be one of moltbook, senti, github, direct or other, so nothing you typed was recorded.",
+  reserved_name: "That name is reserved for the lab's own labels, so nothing you typed was recorded. Your purpose pass works as usual.",
 });
+
+// Names that would pass for the lab's own interface labels are refused, so no declaration can read as a system, staff
+// or participant label. They are compared by nameKey: NFKC, format characters removed, whitespace runs collapsed,
+// trimmed, lower-cased. This is defense in depth; a declaration is always shown as "self-described", behind a click.
+export const RESERVED_NAMES = Object.freeze(["human", "you", "senti", "participant", "unidentified participant", "system", "owner", "admin",
+  "moderator"]);
+export function nameKey(name) {
+  return name.normalize("NFKC").replace(/\p{Cf}/gu, "").replace(/\s+/gu, " ").trim().toLowerCase();
+}
 
 // null when text is acceptable display text of at most max code points; otherwise the reason it is not.
 export function displayTextProblem(text, max) {
@@ -80,6 +90,7 @@ export function readOptIn(params, notice) {
     if (values.length === 0 || values[0] === "") continue;
     const problem = field === "source" ? (SOURCES.includes(values[0]) ? null : "source_unknown") : displayTextProblem(values[0], FIELD_LIMITS[field]);
     if (problem) return { status: "not_sent", code: problem };
+    if (field === "name" && RESERVED_NAMES.includes(nameKey(values[0]))) return { status: "not_sent", code: "reserved_name" };
     declaration[field] = values[0];
   }
   return { status: "opted_in", declaration };
@@ -99,7 +110,8 @@ export function declarationOutcome(optIn, delivery = null) {
     const known = typeof delivery === "string" && Object.hasOwn(DELIVERED, delivery) ? DELIVERED[delivery] : { status: "unconfirmed" };
     return { ...known, detail: DECLARATION_TEXT[known.code ?? known.status] };
   }
-  if (optIn.status === "not_sent") return { status: "not_sent", code: optIn.code, detail: DECLARATION_TEXT[optIn.code] };
+  // Refused here, before anything was sent: not recorded, with the reason.
+  if (optIn.status === "not_sent") return { status: "not_recorded", code: optIn.code, detail: DECLARATION_TEXT[optIn.code] };
   return optIn.typed ? { status: "not_given", detail: DECLARATION_TEXT.not_opted_in } : { status: "not_given" };
 }
 

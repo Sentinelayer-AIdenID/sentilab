@@ -12,8 +12,8 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { BROWSER, NAMES, UA, agent, installApi, mint, postJson, setup } from "./door-harness.mjs";
-import { DECLARATION_TEXT, OPT_IN_LINE, SOURCES, declarationOutcome, declareObject, displayTextProblem, noticeFrom, readOptIn,
-  viaSource } from "../src/door/declare.js";
+import { DECLARATION_TEXT, OPT_IN_LINE, RESERVED_NAMES, SOURCES, declarationOutcome, declareObject, displayTextProblem, nameKey, noticeFrom,
+  readOptIn, viaSource } from "../src/door/declare.js";
 import { HERE_LIMITER, HERE_PAGES, HERE_PATH, deliverArrival } from "../src/door/door.js";
 import { HERE_LINE } from "../public/sentilab/here.mjs";
 import { RECORDED } from "../src/door/render.js";
@@ -101,6 +101,41 @@ test("an opt-in exists only when the visitor sends the notice version they were 
   }
 });
 
+// ── reserved names: no declaration may read as one of the lab's own interface labels (defense in depth) ──────────────
+test("a name that normalizes to a reserved label is refused at the door; others pass as written", () => {
+  assert.deepEqual([...RESERVED_NAMES], ["human", "you", "senti", "participant", "unidentified participant", "system", "owner", "admin", "moderator"]);
+  const notice = { version: V, text: NOTICE.text };
+  const read = (name) => readOptIn(new URLSearchParams({ notice_version: V, name }), notice);
+  const wide = (text) => [...text].map((c) => (c === " " ? String.fromCodePoint(0x3000) : String.fromCodePoint(c.codePointAt(0) + 0xfee0))).join("");
+  const zw = String.fromCharCode(0x200b);
+  const nbsp = String.fromCharCode(0x00a0);
+  const reserved = ["Human", "You", "Senti", "Participant", "Unidentified participant", "System", "Owner", "Admin", "Moderator",
+    "human", "HUMAN", "sYsTeM", "  Admin  ", `Owner${nbsp}`, "unidentified   participant", `${String.fromCharCode(0x2003)}Moderator `,
+    wide("Human"), wide("SENTI"), wide("Unidentified participant"), `Sys${zw}tem`, `Y${zw}ou`];
+  for (const name of reserved) assert.deepEqual(read(name), { status: "not_sent", code: "reserved_name" }, JSON.stringify(name));
+  for (const name of ["Humane", "Human bot", "The System", "admin2", "You2", "Participants", "Sentinel", "Mod", "Ownerless"]) {
+    assert.equal(read(name).status, "opted_in", name);
+    assert.equal(read(name).declaration.name, name, "passed on exactly as written");
+  }
+  assert.equal(nameKey(wide("Unidentified participant")), "unidentified participant");
+  assert.equal(nameKey(`  Sys${zw}tem${nbsp}`), "system");
+});
+
+test("a reserved name at the purpose step: not recorded, the pass still minted, nothing of it sent", async (t) => {
+  const calls = withNotice(t);
+  const { go, drain } = setup();
+  const name = [..."SENTI"].map((c) => String.fromCodePoint(c.codePointAt(0) + 0xfee0)).join("");
+  const res = await go(intent({ purpose: "place-chiplets", notice_version: V, name, reason: "hello", source: "other" }), json());
+  assert.equal(res.status, 200);
+  const token = JSON.parse(res.text);
+  assert.match(token.t, /^spt1\.place-chiplets\./);
+  assert.deepEqual(token.declaration, { status: "not_recorded", code: "reserved_name", detail: DECLARATION_TEXT.reserved_name });
+  assert.ok(!res.text.includes(name) && !res.text.includes("hello"));
+  await drain();
+  const [arrival] = arrivals(calls);
+  assert.deepEqual(Object.keys(arrival).sort(), ["class", "nonce", "operator", "purpose"]);
+});
+
 // ── the wall: the notice before the opt-in, and via pre-filling source only ──────────────────────────────────────
 test("the wall's JSON carries the exact notice and the declare template, with via pre-filling source only", async (t) => {
   withNotice(t);
@@ -158,7 +193,7 @@ test("without a readable notice the wall offers no opt-in and the purpose step a
     assert.equal(wall.declare.notice, undefined);
     assert.ok(!(await go("/agents/intent", { headers: BROWSER })).text.includes('name="notice_version"'));
     const token = JSON.parse((await go(intent({ purpose: "read", notice_version: V, name: "x" }), json())).text);
-    assert.deepEqual(token.declaration, { status: "not_sent", code: "notice_unavailable", detail: DECLARATION_TEXT.notice_unavailable });
+    assert.deepEqual(token.declaration, { status: "not_recorded", code: "notice_unavailable", detail: DECLARATION_TEXT.notice_unavailable });
     await drain();
     for (const body of arrivals(calls)) assert.equal(body.declaration, undefined);
     t.mock.restoreAll();
@@ -237,7 +272,7 @@ test("a refused opt-in still mints the same pass, sends no declaration and says 
     const res = await go(intent({ purpose: "place-chiplets", notice_version: V, ...fields }), json());
     assert.equal(res.status, 200);
     const token = JSON.parse(res.text);
-    assert.deepEqual(token.declaration, { status: "not_sent", code, detail: DECLARATION_TEXT[code] });
+    assert.deepEqual(token.declaration, { status: "not_recorded", code, detail: DECLARATION_TEXT[code] });
     assert.deepEqual(Object.keys(token).sort(), Object.keys(plain).sort());
     for (const key of ["purpose", "kind", "scope", "submissions", "schema"]) assert.equal(token[key], plain[key], key);
     for (const value of Object.values(fields)) assert.ok(!res.text.includes(value.slice(0, 40)));
@@ -289,7 +324,9 @@ test("what the token page says about an opt-in, by its delivery: recorded only o
   }
   assert.deepEqual(declarationOutcome({ status: "not_given", typed: false }), { status: "not_given" });
   assert.deepEqual(declarationOutcome({ status: "not_given", typed: true }), { status: "not_given", detail: DECLARATION_TEXT.not_opted_in });
-  assert.deepEqual(declarationOutcome({ status: "not_sent", code: "too_long" }), { status: "not_sent", code: "too_long", detail: DECLARATION_TEXT.too_long });
+  assert.deepEqual(declarationOutcome({ status: "not_sent", code: "too_long" }), { status: "not_recorded", code: "too_long", detail: DECLARATION_TEXT.too_long });
+  assert.deepEqual(declarationOutcome({ status: "not_sent", code: "reserved_name" }),
+    { status: "not_recorded", code: "reserved_name", detail: DECLARATION_TEXT.reserved_name });
   assert.equal(DECLARATION_TEXT.sent, undefined, "no outcome says sent on a guess");
 });
 

@@ -104,6 +104,10 @@ These are counted from the events the feeds serve, up to and including `through_
   are `name`, `reason` and `source` read. They are checked by #89's rules, with its C1 repair:
   - controls (C0, DEL and C1) and bidi embeddings, overrides and isolates are refused;
   - lengths count code points;
+  - a `name` that normalizes to a reserved interface label is refused. It is compared after NFKC, removing format
+    characters, collapsing whitespace runs, trimming and lower-casing, against human, you, senti, participant,
+    unidentified participant, system, owner, admin and moderator. This is defense in depth, since a declaration is always
+    shown as "self-described", behind a click. The API's matching rule is a separate contract delta for #89;
   - the text is otherwise passed on exactly as written.
 
   Without that opt-in nothing typed is recorded. The pass is minted either way.
@@ -111,12 +115,13 @@ These are counted from the events the feeds serve, up to and including `through_
   what the intake did with it, from the intake's own answer, and is one of:
   - `{"status": "recorded", "detail"}`: the intake accepted the arrival (204);
   - `{"status": "not_recorded", "code", "detail"}`, where `code` is `busy` (the door's arrival limit held it back, or the
-    intake's answered 429), `refused` (the intake answered 400, rejected) or `intake_unavailable` (no intake configured);
+    intake answered 429), `refused` (the intake answered 400, rejected) or `intake_unavailable` (no intake configured);
   - `{"status": "unconfirmed", "detail"}`: a timeout, no answer, or an answer the door can't name, so it may or may not
     be published;
   - `{"status": "not_given"}`, with a `detail` when a name or reason was typed without the opt-in;
-  - `{"status": "not_sent", "code", "detail"}`, where `code` is one of `notice_unavailable`, `notice_changed`,
-    `field_repeated`, `too_long`, `control_character` or `source_unknown`.
+  - `{"status": "not_recorded", "code", "detail"}` for a refusal at the door, before anything is sent. `code` is one of
+    `notice_unavailable`, `notice_changed`, `field_repeated`, `too_long`, `control_character`, `source_unknown` or
+    `reserved_name`.
   It never echoes the text.
 - **`?via=<source>`** (one of #89's source values) only pre-fills `source`: the form's selected option and the
   `declare.template`. It is carried in the wall's purpose links and in the token page's link to the agent view, so

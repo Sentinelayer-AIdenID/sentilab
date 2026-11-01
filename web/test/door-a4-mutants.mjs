@@ -33,6 +33,18 @@ const groups = {
     ["name cap 65", DECLARE, "FIELD_LIMITS = Object.freeze({ name: 64, reason: 160 });", "FIELD_LIMITS = Object.freeze({ name: 65, reason: 160 });"],
     ["reason cap 161", DECLARE, "FIELD_LIMITS = Object.freeze({ name: 64, reason: 160 });", "FIELD_LIMITS = Object.freeze({ name: 64, reason: 161 });"],
   ],
+  "reserved names (defense in depth)": [
+    ["reserved names accepted", DECLARE, '    if (field === "name" && RESERVED_NAMES.includes(nameKey(values[0]))) return { status: "not_sent", code: "reserved_name" };', ""],
+    ["the rule on reason, not name", DECLARE, 'if (field === "name" && RESERVED_NAMES', 'if (field === "reason" && RESERVED_NAMES'],
+    ["a reserved label missing", DECLARE, '  "moderator"]);', '  "moderators"]);'],
+    ["compared without NFKC", DECLARE, 'return name.normalize("NFKC").replace(', "return name.replace("],
+    ["compared case-sensitively", DECLARE, ".trim().toLowerCase();", ".trim();"],
+    ["compared untrimmed", DECLARE, ".trim().toLowerCase();", ".toLowerCase();"],
+    ["whitespace runs kept", DECLARE, `.replace(/${B}s+/gu, " ")`, ""],
+    ["format characters kept", DECLARE, `.replace(/${B}p{Cf}/gu, "")`, ""],
+    ["a refusal here reads not_sent", DECLARE, 'if (optIn.status === "not_sent") return { status: "not_recorded", code: optIn.code',
+      'if (optIn.status === "not_sent") return { status: "not_sent", code: optIn.code'],
+  ],
   "the opt-in": [
     ["a stale notice version accepted", DECLARE, '  if (versions[0] !== notice.version) return { status: "not_sent", code: "notice_changed" };\n', ""],
     ["two notice versions: the first taken", DECLARE, '  if (versions.length > 1) return { status: "not_sent", code: "field_repeated" };\n', ""],
