@@ -139,8 +139,10 @@ test("root's carried openings, the finding beat in root's words and Carter's add
   for (const dir of [join(FOUNDER_DIR, "figures"), join(FOUNDER_DECK_DIR, "figures")]) assert.ok(!readdirSync(dir).some((f) => f.startsWith("plain8")), dir);
   assert.ok(readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain11-traffic.svg"), "utf8").includes("I believe whoever owns the decision layer on that traffic"));
   assert.doesNotMatch(html(data), /figure pending review/);
-  // plain9 is captioned as the historical staging run it shows (root, 10:16:54Z).
-  assert.match(shown(data, "senti"), /Staging output, 08:39 UTC, 1 November: our own team's test runs/);
+  // plain9 is captioned as the historical staging run it shows (root, 10:16:54Z): the figure carries the caveat, the footer
+  // only the place and time (aneta's audience read, 13:43:46Z).
+  assert.equal(slide(data, "senti").content.footer, "Staging door, 08:39 UTC, 1 November.");
+  assert.ok(readFileSync(join(FOUNDER_DECK_DIR, "figures", "plain9-senti-door.svg"), "utf8").includes("These are our own team's test runs, not outside arrivals."));
   assert.equal(slide(data, "senti").content.figure.minFont, 21, "plain9's own 21 px text stays as drawn, recorded for the renderer");
   // The scorecard is aneta's v1.30 plain7, with root's +1 (12:12:03Z): its third row is our own run, served as drawn, with
   // its own alt text (the expanded description, now with our run) and this deck's label.
@@ -282,7 +284,8 @@ test("cost and the other solvers are backup pages, each with its scope, never on
   assert.ok(solvers.includes("Two finite-element implementations and a separate finite-volume implementation report about 78 and 122 degrees for these two designs. Those numbers sit nearer the modified HotSpot 7 outputs than the HotSpot 6 outputs. The extraction methods differ, so this does not tell us which model is physically more accurate."));
   assert.match(solvers, /die-centre readings from those implementations against HotSpot's selector values/);
   assert.match(solvers, /one finite-element implementation is ours/);
-  assert.match(solvers, /unnamed until it consents/);
+  assert.match(solvers, /another outside team's, unnamed at its request\./);
+  assert.doesNotMatch(solvers, /until it consents/);
   assert.doesNotMatch(solvers, /three outside teams|within 0\.01 K in both cases/i);
 });
 

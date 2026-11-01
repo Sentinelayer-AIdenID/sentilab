@@ -36,7 +36,8 @@
     "Slide 6's added sentence, which root supports (11:59:29Z), relayed by the coordinator: \"We ran it too, against a bar we fixed in advance, and it met it.\", tied to the configured diagnostic as Carter's Q&A words it.",
     "The coordinator (12:31Z): the outside team that asked to stay \"another team\" (help room, under 57996, 12:20Z) is on the forbidden-names list, and no deck output may name it; Carter's handoff files, CARTER-QA.md and DEMO-RUN-SHEET.md, sit beside the scripts, pinned by sha256, from aneta's newest packets.",
     "Slide 3's refreshed help line, relayed by the coordinator: aneta's count to 12:46 UTC (team room 58014, 12:46:31Z) in root's explicit disjoint wording, with his scoped +1 (reply to 57809, 12:57:04Z): \"Four outside groups reported checks of our test case. We offered help to nine groups in all; two of the other five said it was useful.\" The fourth checker stays unnamed.",
-    "The coordinator (13:40Z): aneta says DEMO-RUN-SHEET.md runs about 110 s, not 120 s; CUTS.md stays as root reviewed it, and FILL-IN carries the line \"demo sheet ≈110 s: subtract 10 s from every clock figure; the timed run decides.\""
+    "The coordinator (13:40Z): aneta says DEMO-RUN-SHEET.md runs about 110 s, not 120 s; CUTS.md stays as root reviewed it, and FILL-IN carries the line \"demo sheet ≈110 s: subtract 10 s from every clock figure; the timed run decides.\"",
+    "Aneta's audience read of the 12:15 export (reply to 57809, 13:43:46Z), relayed by the coordinator: slide 2's footer cut to \"Staging door, 08:39 UTC, 1 November.\" (the figure carries the caveat); backup B3 \"unnamed at its request\", since that team answered at 12:20Z. On-slide text only."
   ],
   "teams": {
     "named": {
@@ -186,7 +187,7 @@
       "kicker": "Senti",
       "layout": "figure",
       "title": "What agents need, and only what they are allowed to touch.",
-      "footer": "Staging output, 08:39 UTC, 1 November: our own team's test runs with our stage client, not outside arrivals.",
+      "footer": "Staging door, 08:39 UTC, 1 November.",
       "say": "I'm building Senti. It recognizes agents, sets them up, lets them collaborate, serves what they need, and keeps a record of what they did. Delegation is scoped; drift and rogue agents are handled gracefully, because each only gets what it's allowed to touch. Shopping, security, and today, science.",
       "facts": [
         {
@@ -498,7 +499,7 @@
       "items": [
         "Two finite-element implementations and a separate finite-volume implementation report about 78 and 122 degrees for these two designs. Those numbers sit nearer the modified HotSpot 7 outputs than the HotSpot 6 outputs. The extraction methods differ, so this does not tell us which model is physically more accurate.",
         "What is compared: die-centre readings from those implementations against HotSpot's selector values.",
-        "Whose: one finite-element implementation is ours; the other is an outside team's, and the finite-volume implementation is another outside team's, unnamed until it consents.",
+        "Whose: one finite-element implementation is ours; the other is an outside team's, and the finite-volume implementation is another outside team's, unnamed at its request.",
         "Differences, descriptive only: about 0.7 and 3.3 degrees from the modified 7.0, and about 2.6 and 6.3 degrees from 6.0."
       ],
       "footer": "Simulated, not measured on silicon.",

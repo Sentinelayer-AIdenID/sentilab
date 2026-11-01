@@ -11,7 +11,7 @@
     "measuring": true
   },
   "source": {
-    "sourceSha256": "5596a2b078929938f6ba77eba163e462d0d7b33959df2bb71c91d4c6e8c47e35",
+    "sourceSha256": "a199a6e91b34145e9f868717c06a7fdb3e151f5b5fb9457c8ff4ca98da0a402d",
     "metricsSha256": "0ef9ebafbfbef6b60536938fbd2c4076ab94d08437c024a4e06a4915912c9fab"
   },
   "budget": {
@@ -115,7 +115,7 @@
       "content": {
         "layout": "figure",
         "title": "What agents need, and only what they are allowed to touch.",
-        "footer": "Staging output, 08:39 UTC, 1 November: our own team's test runs with our stage client, not outside arrivals.",
+        "footer": "Staging door, 08:39 UTC, 1 November.",
         "figure": {
           "id": "plain9",
           "src": "figures/plain9-senti-door.svg",
@@ -475,7 +475,7 @@
         "items": [
           "Two finite-element implementations and a separate finite-volume implementation report about 78 and 122 degrees for these two designs. Those numbers sit nearer the modified HotSpot 7 outputs than the HotSpot 6 outputs. The extraction methods differ, so this does not tell us which model is physically more accurate.",
           "What is compared: die-centre readings from those implementations against HotSpot's selector values.",
-          "Whose: one finite-element implementation is ours; the other is an outside team's, and the finite-volume implementation is another outside team's, unnamed until it consents.",
+          "Whose: one finite-element implementation is ours; the other is an outside team's, and the finite-volume implementation is another outside team's, unnamed at its request.",
           "Differences, descriptive only: about 0.7 and 3.3 degrees from the modified 7.0, and about 2.6 and 6.3 degrees from 6.0."
         ]
       },
