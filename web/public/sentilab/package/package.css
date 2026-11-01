@@ -251,6 +251,7 @@ dialog ul { margin: 0; padding: 14px 18px 16px 34px; display: grid; gap: 8px; co
 .t.s-unvalidated em.q { color: #c9d6e2; background: #233040; border-color: #4a5d73; }
 .t.s-withdrawn em.q { color: #f3d9a4; background: #463a20; border-color: #7a6334; }
 .t.s-illustrative em.q { color: var(--amber); background: var(--amber-bg); border-color: #7a6334; }
+.t.s-reproduction_tested em.q { color: #bdf0cc; background: #24443a; border-color: #3f7a63; }
 .dcaption .t { font: 700 19px var(--mono); color: #fff6e0; }
 .score .distinct .t, .refs .t { color: #d6e2e5; font-weight: 600; }
 .dtile .tf .t { color: var(--text); font-size: 15px; font-weight: 600; }

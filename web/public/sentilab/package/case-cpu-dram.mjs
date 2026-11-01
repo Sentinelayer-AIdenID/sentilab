@@ -105,10 +105,14 @@ export const REFERENCES = Object.freeze({
 // The active-layer guard: a layout's active-layer peak must be strictly below this (the raw layout's own peak).
 export const ACTIVE_LAYER_GUARD_C = 119.07;
 
-// The evaluator identity of the gate-zero HotSpot 6.0 build at grid 64 (the door API's own string for it). Temperatures
-// are labelled by temperature-label.mjs labelFor() of a VERIFIED identity; this one is not on the accepted list, so its
-// values are "unvalidated" and carry the shared notice.
-export const GATE_ZERO_EVALUATOR = "hotspot6:751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6:grid:64x64";
+// The evaluator identity of the gate-zero build: HotSpot 6.0 at upstream a7a3286e, its pinned binary, the configuration
+// files both raw references share, grid 64 and the pinned centre mapping, sealed by build_sha256. Exactly the "id" of the
+// one build in contracts/open-proposal-v1/builds.json (#85); temperature-label.mjs lists it on REPRODUCTION_TESTED, so
+// the gate-zero statistics and the pinned raw reference's field read "simulated · reproduction-tested build". It names a
+// build that reproduced two published reference temperatures in simulation, nothing about hardware. Temperatures are
+// labelled by labelFor() of a VERIFIED identity only: this one is reviewed page code, bound to the raw reference's field
+// by its pin (FIELD_PINS); a feed result never borrows it.
+export const GATE_ZERO_EVALUATOR = "HotSpot-6.0:a7a3286e368867c26381e0a23e36b3e273bdeda9:binary_sha256:751b357f6b5af395a4447d6e3bfeef3a75eb447091798365a3db4f0e00618cc6:config_sha256:2a51fb6cf2b149b29d154371450f5924070fa0d5ab7ad170b7185b929ff9007b:grid:64x64:build_sha256:05a9d9cb9ba06a67123c1b4c9d3da14820429221e23b4882abc82cf49c1a0e74";
 
 // The admitted field associations: the only fields this page draws. Each binds a bundled layout's exact geometry to the
 // exact bytes of its field, to the rest of its result record and to the evaluator that produced it, reviewed here in page
