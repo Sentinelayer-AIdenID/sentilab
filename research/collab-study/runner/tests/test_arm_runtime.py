@@ -151,3 +151,14 @@ def test_c_prompt_reservations_include_all_three_replies_between_turns(tmp_path)
     assert all(agent['charged_tokens'] <= agent['cap'] + 100 for agent in job['agents'].values())
     assert len(model.calls) == 3
     assert [row['prompt_bound'] for row in accounting['attempts']] == [19860, 19960, 20060]
+
+
+@pytest.mark.parametrize('arm', ['A', 'B', 'C'])
+@pytest.mark.parametrize('before_first_call', [True, False])
+def test_dollar_stopped_history_is_unobserved_with_stop_reason(tmp_path, arm, before_first_call):
+    model = ScriptedModel(*(response('interim') for _ in range(3)))
+    job, _, _ = run_arm(tmp_path, arm, model, max_usd='0.00029' if before_first_call else '0.0004')
+    assert job['history_complete'] is False
+    assert job['run_stop_reason'] == 'dollar_cap'
+    assert {agent['stop_reason'] for agent in job['agents'].values()} == {'dollar_cap'}
+    assert bool(model.calls) is not before_first_call
