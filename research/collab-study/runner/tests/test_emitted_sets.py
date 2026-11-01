@@ -1,5 +1,8 @@
 """Amendment 2: complete emitted histories with runner-owned timing."""
 import json
+import threading
+
+import pytest
 
 from test_arm_runtime import final
 from test_study_runner import FakeClock, ScriptedModel, job_metadata, response, runner
@@ -150,3 +153,59 @@ def test_every_final_in_one_reply_is_recorded_and_last_is_explicitly_selected(tm
     assert job['agents']['1']['final_set_index'] == 1
     assert json.loads((output / 'job-one/findings.json').read_text())['findings'][0]['evidence'] == 'last candidate'
     assert len(model.calls) == 1
+
+
+@pytest.mark.parametrize('arm', ['A', 'B', 'C'])
+def test_setup_delay_uses_one_arm_clock_and_records_summed_request_times(tmp_path, arm):
+    clock = FakeClock()
+    output = tmp_path / 'output'
+    runner.claim_output(output)
+    writer = runner.JobOutputs(output, job_metadata(arm), clock=clock)
+    clock.now = 100  # Output allocation/setup must not shift only wall_seconds.
+    barrier = threading.Barrier(3) if arm == 'B' else None
+
+    class Model:
+        calls = 0
+
+        def complete(self, messages, *, max_tokens, timeout):
+            self.calls += 1
+            assert timeout == 900 - (7 * (self.calls - 1) if arm == 'C' else 0)
+            if barrier:
+                # All three requests overlap for seven seconds in arm B.
+                barrier.wait(timeout=5)
+                clock.now = 107
+                barrier.wait(timeout=5)
+            else:
+                clock.now += 7
+            return response(final('finished') if arm != 'C' or self.calls == 4
+                            else final('interim').replace('FINAL', 'FINDINGS', 1))
+
+    ledger = runner.Ledger('10', {'input': '1', 'cached_input': '0.5', 'output': '2'})
+    engine = runner.RequestEngine(Model(), ledger, max_tokens_per_reply=100, clock=clock)
+    runner.run_arm(job_metadata(arm), output=output, writer=writer, engine=engine,
+                   system_prompt='system', packet_message='packet', continue_prompt='continue',
+                   initial_prompt_bounds={n: 100 for n in (1, 2, 3)},
+                   c_turn_prompts={n: f'turn {n}' for n in (1, 2, 3)})
+    job = json.loads((output / 'job-one/job.json').read_text())
+    emitted = [json.loads(line) for line in (output / 'job-one/emitted_sets.jsonl').read_text().splitlines()]
+    expected_agent_s = {'A': [7], 'B': [7, 7, 7], 'C': [14, 7, 7]}[arm]
+    assert job['wall_seconds'] == max(row['elapsed_s'] for row in emitted) == (28 if arm == 'C' else 7)
+    assert [agent['agent_s'] for agent in job['agents'].values()] == expected_agent_s
+    assert job['agent_s'] == sum(expected_agent_s)
+    assert all(row['request_s'] == 7 for row in ledger.report()['attempts'])
+
+
+@pytest.mark.parametrize('retry', [False, True])
+def test_request_time_sums_failed_attempts_but_excludes_retry_sleep(tmp_path, retry):
+    emitted, job, _, output = execute(tmp_path, 'A', [
+        runner.CallFailure('presend_failure' if retry else 'timeout_unknown', safe_to_retry=retry),
+        response(final('after retry')),
+    ], ticks=7)
+    assert job['agents']['1']['agent_s'] == job['agent_s'] == (14 if retry else 7)
+    assert job['wall_seconds'] == (24 if retry else 7)
+    if retry:
+        assert emitted[0]['elapsed_s'] == 24
+    else:
+        assert emitted == []
+    attempts = json.loads((output / 'ACCOUNTING.json').read_text())['attempts']
+    assert [row['request_s'] for row in attempts] == ([7, 7] if retry else [7])

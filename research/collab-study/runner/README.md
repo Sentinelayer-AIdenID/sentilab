@@ -136,14 +136,20 @@ Each job contains:
   the run's dollar overshoot/stop state as of that job's completion, and
   `history_complete`. That flag is false after a dollar-cap stop, failure, missing/unparsed reply,
   or reply received beyond the deadline, even if a later retry succeeds.
+  One monotonic arm start, after output setup and before execution, anchors the
+  900-second deadline, `wall_seconds`, and every emitted `elapsed_s`. Each
+  agent's `agent_s` sums its request durations; the job's `agent_s` sums all
+  agents, so overlapping B requests count separately. Request durations include
+  failed attempts but exclude receipt writing, parsing and retry sleep.
 * `transcript.jsonl`: request-message hashes and every reply verbatim, including
-  each attempt's scope, raw usage, reservations and accounting outcome.
+  each attempt's scope, raw usage, reservations, `request_s` duration and
+  accounting outcome. Durations also persist in `ACCOUNTING.json`.
 * `emitted_sets.jsonl`: every set introduced by an exact `FINDINGS` or `FINAL`
   line anywhere in a reply, including C nonwriters' sets and malformed lines.
   Entries contain `job_id`, `arm`, `agent`, `set_index` (per agent, from zero),
   `kind`, `elapsed_s`, `findings`, `malformed`, and `discarded`. Malformed lines
   preserve their text and carry `malformed: true`. Time is taken from the runner's
-  monotonic clock after parsing the reply, relative to the arm's first request;
+  monotonic clock after parsing the reply, relative to the common arm start;
   model-written timestamps have no effect. Multiple sets in one reply share its
   parsing-completion time. Interim sets do not stop the agent. Late replies are
   retained for analysis even when they cannot supply the final arm result.
@@ -167,11 +173,14 @@ surrogates without breaking UTF-8 output. Rerunning an interrupted output with
 the same inputs continues its ledger: pending reservations become unknown-cost
 charges, completed jobs remain untouched, and interrupted jobs are marked
 `interrupted_run` with incomplete histories. Their `wall_seconds` is null,
-because monotonic timing cannot span processes. Only untouched jobs run next;
+because monotonic timing cannot span processes. Completed request durations
+survive recovery; an interrupted attempt with no duration makes the affected
+agent's and arm's `agent_s` null, rather than reporting zero. An agent with no
+attempts has zero request time. Only untouched jobs run next;
 no interrupted request is replayed. Missing or inconsistent accounting is
 refused. Exit 2 means invalid/inaccessible inputs or outputs; exit 0
 means a recorded run completed, which can include cap stops or model failures.
-The freeze declares `collab-study-output-v3` and the manifest hashes emitted-set
+The freeze declares `collab-study-output-v4` and the manifest hashes emitted-set
 histories too. The runner has no correctness key and does not calculate
 `first_correct`; analysis uses the histories and completeness flag to distinguish
 an unobserved result from a complete history with no correct finding.

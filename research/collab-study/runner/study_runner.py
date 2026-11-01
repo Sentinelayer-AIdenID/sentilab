@@ -396,7 +396,7 @@ class Ledger:
                 return None
             attempt = {"job_id": job_id, "agent": agent, "scope": scope, "attempt": len(self._attempts) + 1,
                        "start_utc": utc_now(), "prompt_bound": prompt_bound, "max_tokens": max_tokens,
-                       "reserved_usd": decimal_text(bound), "state": "pending",
+                       "reserved_usd": decimal_text(bound), "state": "pending", "request_s": None,
                        "agent_cap": agent_cap, "tokens_before": tokens_before}
             self._reserved += bound
             self._attempts.append(attempt)
@@ -404,7 +404,8 @@ class Ledger:
             return attempt
 
     def settle(self, attempt: dict, *, usage=None, failure: CallFailure | None = None,
-               request_id=None, agent_cap: int | None = None, tokens_before: int = 0) -> None:
+               request_id=None, agent_cap: int | None = None, tokens_before: int = 0,
+               request_s: float | None = None) -> None:
         unknown = False
         if failure and failure.safe_to_retry and usage is None:
             charged, amount = 0, Decimal(0)
@@ -429,6 +430,7 @@ class Ledger:
             self._spent += amount
             overspend = max(0, tokens_before + charged - agent_cap) if agent_cap is not None else 0
             attempt.update({"end_utc": utc_now(), "state": "failed" if failure else "response",
+                            "request_s": request_s,
                             "usage": usage, "unknown_usage": unknown, "charged_tokens": charged,
                             "charged_usd": decimal_text(amount), "request_id": request_id or (failure.request_id if failure else None),
                             "failure": failure.kind if failure else None,
@@ -514,15 +516,19 @@ class RequestEngine:
                 return None
             record({**attempt, "event": "request", "messages_sha256": message_hash})
             reply, failure = None, None
+            request_start = self.clock()
             try:
-                reply = self.model.complete(messages, max_tokens=max_tokens, timeout=remaining_time)
+                try:
+                    reply = self.model.complete(messages, max_tokens=max_tokens, timeout=remaining_time)
+                finally:
+                    request_s = max(0, self.clock() - request_start)
                 usage_counts(reply.usage)
             except CallFailure as error:
                 failure = error
             usage = reply.usage if reply is not None else failure.usage
             request_id = reply.request_id if reply is not None else failure.request_id
             self.ledger.settle(attempt, usage=usage, failure=failure, request_id=request_id,
-                               agent_cap=agent.cap, tokens_before=agent.charged_tokens)
+                               agent_cap=agent.cap, tokens_before=agent.charged_tokens, request_s=request_s)
             agent.charged_tokens += attempt["charged_tokens"]
             agent.unknown_usage_attempts += int(attempt["unknown_usage"])
             try:
@@ -627,8 +633,8 @@ class JobOutputs:
             raise InputError("invalid job metadata")
         self.job = {name: job[name] for name in ("job_id", "arm", "packet", "repeat")}
         self.clock = clock
-        self.start_utc = utc_now()
-        self.start_time = clock()
+        self.start_utc = None
+        self.start_time = None
         self.directory = output / job_id
         with self._creation_lock:
             if output.is_symlink() or not (output / ".running").is_file():
@@ -651,7 +657,7 @@ class JobOutputs:
                 write_bytes_atomic(path, b"", exclusive=True)
         self.recovered = recover
         self._record_lock = threading.Lock()
-        self._first_request_time = None
+        self._request_started = False
         self._set_indices = {}
         self._finals = {}
         self._final_indices = {}
@@ -659,19 +665,29 @@ class JobOutputs:
         self._history_complete = not recover
         self.closed = False
 
+    def start_arm(self) -> float:
+        """One origin for the deadline, emitted findings and final wall time."""
+        with self._record_lock:
+            if self.start_time is None:
+                self.start_time = self.clock()
+                self.start_utc = utc_now()
+            return self.start_time
+
     def record(self, value: dict) -> None:
         if self.closed:
             raise InputError("job output is already closed")
+        if value.get("event") == "request":
+            self.start_arm()
         with self._record_lock:
-            if value.get("event") == "request" and self._first_request_time is None:
-                self._first_request_time = self.clock()
+            if value.get("event") == "request":
+                self._request_started = True
             if value.get("event") == "failure" or value.get("deadline_exceeded"):
                 self._history_complete = False
             if isinstance(value.get("reply"), str):
-                if self._first_request_time is None:
+                if not self._request_started:
                     raise InputError("reply cannot precede the first request")
                 sets = parse_emitted_sets(value["reply"])
-                elapsed = self.clock() - self._first_request_time
+                elapsed = self.clock() - self.start_time
                 self._parsed_attempts.add(value["attempt"])
                 agent = value["agent"]
                 emitted_bytes = b""
@@ -709,16 +725,21 @@ class JobOutputs:
         per_agent = {}
         for agent in agents:
             rows = [row for row in attempts if row["agent"] == agent.number]
+            durations = [row.get("request_s") for row in rows]
             per_agent[str(agent.number)] = {
                 "cap": agent.cap, "charged_tokens": agent.charged_tokens,
+                "agent_s": None if None in durations else sum(durations),
                 "unknown_usage_attempts": agent.unknown_usage_attempts,
                 "overspend_tokens": max(0, agent.charged_tokens - agent.cap),
                 "stop_reason": agent.stop_reason,
                 "final_set_index": self._final_indices.get(agent.number),
                 "usage": [row["usage"] for row in rows],
             }
-        job = {**self.job, "schema": "collab-study-job-v3", "start_utc": self.start_utc, "end_utc": utc_now(),
-               "wall_seconds": None if self.recovered else max(0, self.clock() - self.start_time),
+        agent_times = [agent["agent_s"] for agent in per_agent.values()]
+        wall_seconds = max(0, self.clock() - self.start_time) if self.start_time is not None else 0
+        job = {**self.job, "schema": "collab-study-job-v4", "start_utc": self.start_utc, "end_utc": utc_now(),
+               "wall_seconds": None if self.recovered else wall_seconds,
+               "agent_s": None if None in agent_times else sum(agent_times),
                "recovered": self.recovered, "agents": per_agent,
                "history_complete": self._history_complete and
                    not any(agent.stop_reason == "dollar_cap" for agent in agents) and
@@ -757,7 +778,7 @@ def run_arm(job: dict, *, output: Path, engine: RequestEngine, system_prompt: st
         raise InputError("C requires sealed turn prompts for all three agents")
     agents = [AgentState(n, 120000 if arm == "A" else 40000, initial_prompt_bounds[n]) for n in numbers]
     writer = writer or JobOutputs(output, job, clock=engine.clock)
-    deadline = writer.start_time + 900
+    deadline = writer.start_arm() + 900
     base = [{"role": "system", "content": system_prompt}, {"role": "user", "content": packet_message}]
 
     def empty_set():
@@ -1047,7 +1068,7 @@ def main(argv=None) -> int:
         if not args.dry_run and not endpoint:
             raise InputError("STUDY_ENDPOINT must be set for a live freeze")
         descriptor = {**inputs.freeze,
-                      "output_schema": "collab-study-output-v3",
+                      "output_schema": "collab-study-output-v4",
                       "request_settings": {"model": "deepseek-v4-pro", "deployment": inputs.protocol["deployment"],
                                            "temperature": 0.3, "top_p": 1, "max_tokens_per_reply": inputs.protocol["max_tokens_per_reply"],
                                            "stream": False, "allow_redirects": False, "timeout": "remaining arm wall time"},
