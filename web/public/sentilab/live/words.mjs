@@ -161,7 +161,9 @@ export const TEXT = Object.freeze({
   lastSeen: (t) => `last seen ${t}`,
   arrived: "arrived",
   declared: "sent a declaration",
-  mapLegend: "Each figure is a design, at the last step it reached",
+  mapLegend: "Each figure is a design, at the last step it reached. When several of a run's steps arrive at once, its figure plays them back "
+    + "in order, marked Playback; the numbers always show where every run is now",
+  playback: (word) => `Playback \u00b7 ${word}`,
   outOfFlow: (n) => `${n} stopped early (rejected, failed, cancelled or expired)`,
   computeLeft: (leftMin, capMin) => `about ${leftMin} of ${capMin} min`,
   simulatorUp: (t) => `running since ${t}`,

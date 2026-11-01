@@ -134,7 +134,11 @@ function shownRun() {
 // newer records ends a walk at once and continues from the real latest state.
 const walks = new Map();          // run id -> { steps, i }
 const walkSeen = new Map();       // run id -> its newest run-record seq already drawn
-let walkHistory = null, walkBase = 0, walkCursor = 0, walkTimer = 0, hiddenSincePoll = false;
+let walkHistory = null, walkBase = 0, walkCursor = 0, walkTimer = 0, walkEpoch = 0, hiddenSincePoll = false;
+// Ends every walk: its timer is cleared and its epoch ended, so a callback already queued does nothing.
+function cancelWalks() { walkEpoch += 1; walks.clear(); clearTimeout(walkTimer); walkTimer = 0; }
+// Pause all motion, a hidden tab and pagehide end a walk at once and redraw the latest state (root, 0ba078e P2 1).
+function stopWalks() { const had = walks.size > 0; cancelWalks(); if (had) drawMaps(); }
 // "New proposal" at the top of the model (Carter, 19:33Z: when an agent finishes and proposes, it shows at the top of
 // the 3D space and says new proposal): while following live, a change of the followed run to another one
 // shows the badge for NEW_PROPOSAL_MS. The run followed at load is never new; a viewer's own pick never shows it.
@@ -149,7 +153,7 @@ function planWalks() {
     return;
   }
   const moved = (feed.state.eventsCursor ?? 0) > walkCursor;
-  if (moved) { walkCursor = feed.state.eventsCursor; walks.clear(); clearTimeout(walkTimer); walkTimer = 0; }
+  if (moved) { walkCursor = feed.state.eventsCursor; cancelWalks(); }
   const still = REDUCED || !S.motion || document.hidden || hiddenSincePoll;
   if (moved) hiddenSincePoll = Boolean(document.hidden);
   // A run's records can arrive a poll before its result (two feeds, two requests): its walk waits until it can be drawn.
@@ -160,13 +164,15 @@ function planWalks() {
     if (steps.length) walkSeen.set(id, steps[steps.length - 1].seq);
     if (!still && !walkHistory.has(id) && steps.length >= 2) walks.set(id, { steps, i: 0 });
   }
-  if (walks.size && !walkTimer) walkTimer = setTimeout(stepWalks, M.WALK_STEP_MS);
+  if (walks.size && !walkTimer) scheduleWalk();
 }
-function stepWalks() {
+function scheduleWalk() { const mine = walkEpoch; walkTimer = setTimeout(() => stepWalks(mine), M.WALK_STEP_MS); }
+function stepWalks(mine) {
+  if (mine !== walkEpoch) return;
   walkTimer = 0;
   for (const [id, w] of walks) { w.i += 1; if (w.i >= w.steps.length) walks.delete(id); }
-  drawAtlas($("atlasSvg"));
-  if (walks.size) walkTimer = setTimeout(stepWalks, M.WALK_STEP_MS);
+  drawMaps();
+  if (walks.size) scheduleWalk();
 }
 const walkAt = () => (walks.size ? new Map([...walks].map(([id, w]) => [id, w.steps[w.i]])) : null);
 
@@ -388,6 +394,7 @@ const STATION_XY = [[56, 34], [150, 22], [244, 34], [258, 108], [150, 128], [42,
 function drawAtlas(svg, { large = false } = {}) {
   const a = M.atlas(layouts(), feed.state.events, walkAt());
   const shown = shownRun().L;
+  const playing = new Set(a.stations.flatMap((st) => st.playback.map((r) => r.id)));
   svg.replaceChildren();
   svg.append(s("ellipse", { class: "atlas-ring", cx: 150, cy: 76, rx: 108, ry: 52 }));
   a.stations.forEach((st, i) => {
@@ -397,33 +404,50 @@ function drawAtlas(svg, { large = false } = {}) {
     g.append(title, s("rect", { x: x - 22, y: y - 9, width: 44, height: 18, rx: 3 }), s("text", { class: "st-name", x, y: y + 3, "text-anchor": "middle" }, st.name),
       s("text", { x: x - 22, y: y - 12 }, st.n), s("text", { class: "st-count", x: x + 22, y: y - 12, "text-anchor": "end" }, String(st.count)));
     svg.append(g);
-    // One dot per run at its station (a task state), at most 12 drawn per station; arrivals are counted, not drawn.
-    const row = st.runs.slice(-6);
-    if (st.runs.length > 6) svg.append(s("text", { x: x + 38, y: y + 22, class: "atlas-more", fill: "#cfe2d5", "font-size": 8, "text-anchor": "start" }, `+${st.runs.length - 6}`));
+    // One figure per run at its live station (a task state), at most 6 drawn per station; arrivals are counted, not
+    // drawn. A run playing back its steps is drawn at the step it shows instead, labelled Playback; the count and the
+    // "+N" stay the live state (a run playing back elsewhere is one of this station's +N).
+    const back = st.playback;
+    const live = st.runs.filter((r) => !playing.has(r.id));
+    const kept = live.slice(-Math.max(0, 6 - back.length));
+    const row = [...kept, ...back];
+    const more = st.runs.length - kept.length - back.filter((r) => r.live === st.id).length;
+    if (more > 0) svg.append(s("text", { x: x + 38, y: y + 22, class: "atlas-more", fill: "#cfe2d5", "font-size": 8, "text-anchor": "start" }, `+${more}`));
     row.forEach((r, k) => {
       const cx = x - ((row.length - 1) * 11) / 2 + k * 11, cy = y + 19;
       const dot = avatar({ cls: r.cls, short: r.label.split(" · ")[1] ?? null, seq: 0 });
       const size = large ? 16 : 13;
       dot.setAttribute("x", (cx - size / 2).toFixed(1)); dot.setAttribute("y", (cy - size / 2).toFixed(1));
       dot.setAttribute("width", size); dot.setAttribute("height", size);
-      dot.setAttribute("class", `av atlas-av${shown && r.id === shown.id ? " sel" : ""}`);
-      dot.append(s("title", {}, `${W.layoutFrom(r.label.split(" · ")[1] ?? null)} ${W.RUN_STATE[r.status] ?? r.status}`));
+      dot.setAttribute("class", `av atlas-av${shown && r.id === shown.id ? " sel" : ""}${r.step ? " playback" : ""}`);
+      dot.append(s("title", {}, r.step ? `${W.layoutFrom(r.label.split(" · ")[1] ?? null)}: a playback of a step it just recorded (${W.RUN_STATE[r.status] ?? r.status})`
+        : `${W.layoutFrom(r.label.split(" · ")[1] ?? null)} ${W.RUN_STATE[r.status] ?? r.status}`));
       dot.addEventListener("click", () => selectRun(r.id));
       svg.append(dot);
-      // A walking run carries the plain word of the step it is passing, above its avatar.
+      // A run playing back carries the plain word of the step it shows, marked as a playback, above its figure.
       if (r.step) svg.append(s("text", { class: "atlas-step", x: cx.toFixed(1), y: (cy - size / 2 - 3).toFixed(1), "text-anchor": "middle",
-        "data-step": String(r.step.i), "data-station": r.step.station }, r.step.word));
+        "data-step": String(r.step.i), "data-station": r.step.station }, W.TEXT.playback(r.step.word)));
       const short = r.label.split(" \u00b7 ")[1] ?? null;
       if (shown && r.id === shown.id && short) svg.append(s("text", { class: "atlas-visit", x: cx.toFixed(1), y: (cy + size / 2 + 8).toFixed(1), "text-anchor": "middle" }, `visit ${short}`));
     });
   });
   return a;
 }
+// The open expanded atlas (its map and table), redrawn with the small one on every render and every playback step
+// (root, 0ba078e P2 2); null when the dialog is closed or shows something else.
+let openAtlas = null;
+const atlasTable = (a) => table(a.stations.map((st) => [`${st.n} ${st.name}`, `${st.count} \u00b7 ${st.what}`]));
+function drawMaps() {
+  const a = drawAtlas($("atlasSvg"));
+  if (openAtlas && $("modal").open === false) openAtlas = null;
+  if (openAtlas) openAtlas.tableBox.replaceChildren(atlasTable(drawAtlas(openAtlas.svg, { large: true })));
+  return a;
+}
 function renderWork() {
   const scroller = $("visitorList");
   const keep = scroller.scrollTop ?? 0;
   renderArrivals();
-  const a = drawAtlas($("atlasSvg"));
+  const a = drawMaps();
   $("mapLegend").textContent = `${W.TEXT.mapLegend}${a.out.length ? ` · ${W.TEXT.outOfFlow(a.out.length)}` : ""}`;
   // Keyed on the full run id: two runs with one label are two rows, and door records (no run id) are a qualified label
   // group, never attached to a run (live-model.mjs followWork).
@@ -730,7 +754,7 @@ function setOrbit(on) {
 }
 function setMotion(on) {
   S.motion = on;
-  if (!on) { setOrbit(false); stopPlay(); }
+  if (!on) { setOrbit(false); stopPlay(); stopWalks(); }
   $("motionToggle").setAttribute("aria-pressed", on ? "false" : "true");
   $("motionToggle").setAttribute("aria-label", on ? "Pause all motion" : "Allow motion");
   $("motionToggle").innerHTML = icon(on ? "pause" : "play");
@@ -762,6 +786,7 @@ function selectLayer(level) {
 
 // ── dialogs ────────────────────────────────────────────────────────────────────────────────────────────────────────
 function openDialog(title, eyebrow, ...body) {
+  openAtlas = null;
   $("modalTitle").textContent = title;
   $("modalEyebrow").textContent = eyebrow;
   $("modalBody").replaceChildren(...body);
@@ -820,11 +845,13 @@ function showModal(kind) {
     svg.setAttribute("role", "img");
     svg.setAttribute("aria-label", "Door atlas, expanded");
     const a = drawAtlas(svg, { large: true });
+    const tableBox = h("div", null, atlasTable(a));
     openDialog("Stations are the door's own records.", "THE DOOR ATLAS",
-      lead("Each station is a kind of record the door emits. A dot is a run at its last reported state: a task state, not a screen position. Arrivals and refused attempts are counted where the door saw them."),
+      lead("Each station is a kind of record the door emits. A figure is a run at its last reported state: a task state, not a screen position. The numbers and this table always show the live state. Arrivals and refused attempts are counted where the door saw them."),
       h("div", { class: "large-map" }, svg),
-      table(a.stations.map((st) => [`${st.n} ${st.name}`, `${st.count} · ${st.what}`])),
-      note("No dot moves on the page's own clock. When a record changes a run's state, its dot changes station at once; nothing is interpolated in between."));
+      tableBox,
+      note("When several of a run's step records arrive in one read, its figure plays them back in their recorded order, about 0.7 s a step on the page's own clock, captioned Playback, then rests at the run's latest step. It shows only steps the run recorded; nothing is invented or interpolated between them. With reduced motion, paused motion or a hidden tab, a figure goes straight to its latest step."));
+    openAtlas = { svg, tableBox };
   } else if (kind === "live") {
     const st = M.feedStatus(feed.state, { hostname: location.hostname });
     openDialog("Live means the door answered just now.", "WHAT IS LIVE",
@@ -894,7 +921,7 @@ function wire() {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { hideIntro(); if (S.stage && !$("modal").open) setStage(false); }
   });
-  document.addEventListener("visibilitychange", () => { if (document.hidden) { stopPlay(); hiddenSincePoll = true; } else pollBoard(); });
+  document.addEventListener("visibilitychange", () => { if (document.hidden) { stopPlay(); hiddenSincePoll = true; stopWalks(); } else pollBoard(); });
   new ResizeObserver(() => renderTrace()).observe($("traceSvg"));
   $("visitorList").addEventListener("scroll", (e) => { const el = e.target; if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) loadEarlier(); }, { passive: true });
   new ResizeObserver(() => { frameCamera(); if (!$("packageCanvas2d").hidden) draw2d(shownRun().L); }).observe($("modelViewport"));
@@ -984,5 +1011,5 @@ setInterval(() => { renderStatus(); renderDeclarations(); renderArrivals(); if (
 // Leaving the page stops every poll (and an answer still in flight cannot restart one: the board's epoch moves on). A
 // page restored from the back/forward cache comes back with them stopped, so pageshow starts again what pagehide
 // stopped; a fresh load gets no pageshow with persisted set.
-window.addEventListener("pagehide", () => { feed.stop(); recEpoch += 1; S.recLoading = false; boardEpoch += 1; clearTimeout(boardTimer); visitorsEpoch += 1; clearTimeout(visitorsTimer); stopPlay(); });
+window.addEventListener("pagehide", () => { feed.stop(); stopWalks(); recEpoch += 1; S.recLoading = false; boardEpoch += 1; clearTimeout(boardTimer); visitorsEpoch += 1; clearTimeout(visitorsTimer); stopPlay(); });
 window.addEventListener("pageshow", (e) => { if (e.persisted) { feed.start(); pollBoard(); pollVisitors(); renderStatus(); } });

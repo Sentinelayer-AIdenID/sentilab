@@ -419,21 +419,26 @@ export function walkSteps(events, runId, afterSeq) {
   return [...(events ?? [])].filter((e) => e.kind === "run" && e.run_id === runId && e.seq > afterSeq && stationOf(e.state))
     .sort((a, b) => a.seq - b.seq).map((e, i) => ({ i, seq: e.seq, state: e.state, station: stationOf(e.state), word: W.STEP_WORD[e.state] ?? e.state }));
 }
-// at: run id -> a step the run is walking through (live.mjs), drawn at that step's station instead of its latest.
+// at: run id -> a recorded step the run is playing back (live.mjs). runs and the counts are always the live state (each
+// run at its latest station); a run playing back is also listed under `playback` at the station of the step it shows
+// (root, 0ba078e P2 3: the live queue and result stay true; the replayed stage is drawn apart and labelled).
 export function atlas(layouts, events, at = null) {
   const runs = new Map(STATIONS.map((s) => [s.id, []]));
+  const playback = new Map(STATIONS.map((s) => [s.id, []]));
   const out = [];
   for (const L of layouts ?? []) {
-    const step = at?.get(L.id) ?? null;
-    const st = stationOf(step ? step.state : L.status);
-    if (st) runs.get(st).push({ id: L.id, label: L.label, cls: L.cls, status: step ? step.state : L.status, step });
+    const st = stationOf(L.status);
+    const r = { id: L.id, label: L.label, cls: L.cls, status: L.status, live: st };
+    if (st) runs.get(st).push(r);
     else out.push({ id: L.id, label: L.label, status: L.status });
+    const step = at?.get(L.id) ?? null;
+    if (step && stationOf(step.state)) playback.get(stationOf(step.state)).push({ ...r, status: step.state, step });
   }
   const ev = events ?? [];
   const counts = Object.fromEntries(STATIONS.map((s) => [s.id, runs.get(s.id).length]));
   counts.door = ev.filter((e) => e.kind === "arrival").length;
   counts.submit = ev.filter((e) => e.kind === "attempt").length;
-  return { stations: STATIONS.map((s) => ({ ...s, count: counts[s.id], runs: runs.get(s.id) })), out };
+  return { stations: STATIONS.map((s) => ({ ...s, count: counts[s.id], runs: runs.get(s.id), playback: playback.get(s.id) })), out };
 }
 
 // ── follow the work: keyed on the full run id ────────────────────────────────────────────────────────────────────

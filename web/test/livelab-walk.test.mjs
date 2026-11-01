@@ -41,7 +41,8 @@ class El extends FakeNode {
   setAttribute(k, v) { this.attrs.set(k, String(v)); }
   getAttribute(k) { return this.attrs.get(k) ?? null; }
   removeAttribute(k) { this.attrs.delete(k); }
-  addEventListener() {} removeEventListener() {} focus() {} showModal() {} close() {} remove() {}
+  addEventListener(type, fn) { ((this.listeners ??= {})[type] ??= []).push(fn); } removeEventListener() {} focus() {} showModal() {} close() {} remove() {}
+  click() { for (const fn of this.listeners?.click ?? []) fn({ type: "click", target: this }); }
   querySelector() { return new El("stub"); }
   querySelectorAll() { return []; }
   getBoundingClientRect() { return { width: 800, height: 400, left: 0, top: 0, right: 800, bottom: 400 }; }
@@ -64,10 +65,18 @@ function installPage(t, answer, { reduced = false } = {}) {
   const define = (name, value) => { saved.set(name, Object.getOwnPropertyDescriptor(globalThis, name)); Object.defineProperty(globalThis, name, { value, configurable: true, writable: true }); };
   const ids = new Map();
   define("Node", FakeNode);
-  define("document", { hidden: false, visibilityState: "visible", activeElement: null, body: new El("body"),
-    getElementById: (id) => { if (!ids.has(id)) ids.set(id, new El(id)); return ids.get(id); }, querySelector: () => null, querySelectorAll: () => [],
-    createElement: (tag) => new El(tag), createElementNS: (_, tag) => new El(tag), addEventListener() {}, removeEventListener() {} });
-  define("window", { addEventListener() {}, removeEventListener() {}, devicePixelRatio: 1 });
+  const on = (target) => (type, fn) => { ((target.listeners ??= {})[type] ??= []).push(fn); };
+  // The page wires every [data-modal] button through querySelectorAll: one stands in for "Expand the door atlas".
+  const atlasButton = new El("button"); atlasButton.dataset.modal = "atlas";
+  const doc = { hidden: false, visibilityState: "visible", activeElement: null, body: new El("body"),
+    getElementById: (id) => { if (!ids.has(id)) ids.set(id, new El(id)); return ids.get(id); }, querySelector: () => null,
+    querySelectorAll: (sel) => (sel === "[data-modal]" ? [atlasButton] : []),
+    createElement: (tag) => new El(tag), createElementNS: (_, tag) => new El(tag), removeEventListener() {} };
+  doc.addEventListener = on(doc);
+  define("document", doc);
+  const win = { removeEventListener() {}, devicePixelRatio: 1 };
+  win.addEventListener = on(win);
+  define("window", win);
   define("location", { hostname: "sentilab.aidenid.com", search: "", pathname: "/sentilab/live/" });
   define("matchMedia", (q) => ({ matches: /reduced-motion/.test(String(q)) ? reduced : true, addEventListener() {} }));
   define("sessionStorage", { getItem: () => "yes", setItem() {} });
@@ -82,7 +91,8 @@ function installPage(t, answer, { reduced = false } = {}) {
     return body === null ? new Response("{}", { status: 404 }) : new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
   });
   t.after(() => { for (const [name, desc] of saved) { if (desc) Object.defineProperty(globalThis, name, desc); else delete globalThis[name]; } });
-  return { page: () => { const out = { text: [], attrs: [], html: [] }; for (const el of ids.values()) dump(el, out); return out; },
+  const fire = (target, type, extra = {}) => { for (const fn of target.listeners?.[type] ?? []) fn({ type, ...extra }); };
+  return { atlasButton, fire: (where, type, extra) => fire(where === "window" ? win : doc, type, extra), page: () => { const out = { text: [], attrs: [], html: [] }; for (const el of ids.values()) dump(el, out); return out; },
     part: (id) => (ids.has(id) ? dump(ids.get(id)) : { text: [], attrs: [], html: [] }) };
 }
 const settle = async () => { for (let i = 0; i < 25; i += 1) await new Promise((r) => setImmediate(r)); };
@@ -139,8 +149,8 @@ async function live(t, tag, states, { reduced = false, resultsLag = false } = {}
 
 test("walk: a run whose five step records arrive in one poll walks through each recorded step in order, then rests", async (t) => {
   const seen = await live(t, "five", ["queued", "evaluating", "evaluated", "replaying", "reproduced"]);
-  assert.deepEqual(seen.map((s) => s.slice(1)), [["queue", "Waiting in line"], ["simulate", "Simulating"], ["replay", "Re-checking (replay)"],
-    ["replay", "Re-checking (replay)"], ["board", "Accepted · replay matched"]]);
+  assert.deepEqual(seen.map((s) => s.slice(1)), [["queue", "Playback · Waiting in line"], ["simulate", "Playback · Simulating"], ["replay", "Playback · Re-checking (replay)"],
+    ["replay", "Playback · Re-checking (replay)"], ["board", "Playback · Accepted · replay matched"]]);
   assert.deepEqual(seen.map((s) => s[0]), ["0", "1", "2", "3", "4"], "five positions, in the records' order");
   assert.deepEqual(captions(), [], "then it rests at its real latest step");
 });
@@ -152,7 +162,7 @@ test("walk: with reduced motion the run jumps straight to its latest step", asyn
 
 test("walk: no step is shown that is not in the run's records", async (t) => {
   const seen = await live(t, "skip", ["queued", "evaluating", "reproduced"]);
-  assert.deepEqual(seen.map((s) => s.slice(1)), [["queue", "Waiting in line"], ["simulate", "Simulating"], ["board", "Accepted · replay matched"]]);
+  assert.deepEqual(seen.map((s) => s.slice(1)), [["queue", "Playback · Waiting in line"], ["simulate", "Playback · Simulating"], ["board", "Playback · Accepted · replay matched"]]);
   assert.equal(seen.some((s) => s[1] === "replay"), false, "the run recorded no replay step, so none is shown");
 });
 
@@ -179,4 +189,113 @@ test("new proposal: a run that arrives live puts 'New proposal' over the model, 
   assert.equal(shown, true, "a run that arrives live shows the badge");
   for (let k = 0; k < 40; k += 1) { t.mock.timers.tick(500); await settle(); }
   assert.equal(badge().hidden, true, "and it clears after about 15 s");
+});
+
+// Root's +1 review of 0ba078e (three P2s). A walk is a playback of records already received: anything that stops
+// motion stops it at once and shows the latest state, a late timer does nothing, an open expanded atlas follows it,
+// and the station counts always show the live state, never the replayed stage.
+async function walking(t, tag, opts = {}) {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: NOW });
+  const d = door(["queued", "evaluating", "evaluated", "replaying", "reproduced"]);
+  const dom = installPage(t, d.answer, opts);
+  await import(`${LIVE}?walk=${tag}`);
+  for (let k = 0; k < 8; k += 1) { t.mock.timers.tick(500); await settle(); }
+  d.phase.live = true;
+  for (let k = 0; k < 40 && !captions().length; k += 1) { t.mock.timers.tick(100); await settle(); }
+  assert.equal(captions().length, 1, "a walk is playing");
+  return dom;
+}
+const counts = (svg) => walk(svg).filter((el) => el.tag === "text" && el.getAttribute("class") === "st-count").map((el) => el.textContent);
+const settleFor = async (t, ms) => { for (let k = 0; k < ms / 100; k += 1) { t.mock.timers.tick(100); await settle(); } };
+
+for (const [control, act] of [
+  ["Pause all motion", () => document.getElementById("motionToggle").click()],
+  ["a hidden tab", (dom) => { document.hidden = true; document.visibilityState = "hidden"; dom.fire("document", "visibilitychange"); }],
+  ["pagehide", (dom) => dom.fire("window", "pagehide", { persisted: false })],
+]) {
+  test(`walk: ${control} stops an active walk at once and shows the latest state; a late timer does nothing`, async (t) => {
+    const dom = await walking(t, `stop-${control.split(" ")[1] ?? control}`);
+    const live = counts(document.getElementById("atlasSvg"));
+    act(dom);
+    await settle();
+    assert.deepEqual(captions(), [], "no playback once stopped");
+    assert.deepEqual(counts(document.getElementById("atlasSvg")), live, "the latest state");
+    const drawn = dump(document.getElementById("atlasSvg")).attrs.join(" ");
+    await settleFor(t, 4000);
+    assert.deepEqual(captions(), [], "a late timer callback does nothing");
+    assert.equal(dump(document.getElementById("atlasSvg")).attrs.join(" "), drawn, "nothing redrawn by a stale walk");
+  });
+}
+
+test("walk: an open expanded atlas plays back with the small one, step for step", async (t) => {
+  const dom = await walking(t, "expanded");
+  dom.atlasButton.click();
+  const modalSteps = () => walk(document.getElementById("modalBody")).filter((el) => el.tag === "text" && el.getAttribute("class") === "atlas-step")
+    .map((el) => el.getAttribute("data-step"));
+  for (let k = 0; k < 3; k += 1) {
+    await settleFor(t, 700);
+    assert.deepEqual(modalSteps(), captions().map((c) => c[0]), `the expanded map shows the same step as the small one (${k})`);
+  }
+  assert.ok(captions().length === 1, "still mid-walk");
+});
+
+test("walk: station counts during a walk equal the live state, and the playback is labelled as one", async (t) => {
+  await walking(t, "counts");
+  const during = counts(document.getElementById("atlasSvg"));
+  const caption = captions()[0][2];
+  await settleFor(t, 5000);
+  assert.deepEqual(captions(), [], "the walk has ended");
+  assert.deepEqual(during, counts(document.getElementById("atlasSvg")), "the counts never showed the replayed stage");
+  assert.match(caption, /^Playback · /, "the walking caption says it is a playback");
+  assert.match(document.getElementById("mapLegend").textContent, /plays them back/, "the legend describes the playback");
+});
+
+// A newer poll during a walk ends it at once; the ended walk's timer must never advance the next walk (root's "guard
+// late callbacks"). Run A walks; while it is still on its steps, the next poll brings run B's whole life. Every step of
+// B stays up for its full time: a stale timer from A would advance B early and run two timer chains at once.
+test("walk: a newer poll ends a walk at once, and the ended walk's timer never advances the next one", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: NOW });
+  const base = doc("events.json"), results = doc("results.json"), board = doc("board.json");
+  const run = (hex, n) => ({ id: `open-0000${hex}-${"0".repeat(28)}${hex}`, item: { ...results.items[0], id: `open-0000${hex}-${"0".repeat(28)}${hex}`, short_id: hex,
+    label: `unknown · ${hex}`, class: "unknown", arrival: 0, seq: results.next_after + n } });
+  const A = run("beef", 1), B = run("cafe", 2);
+  const recs = (r, from) => ["queued", "evaluating", "evaluated", "replaying", "reproduced"].map((state, i) => ({ seq: from + i, at: new Date(NOW + i * 100).toISOString(),
+    kind: "run", class: "unknown", label: r.item.label, run_id: r.id, short_id: r.item.short_id, state }));
+  const phase = { a: false, b: false };
+  installPage(t, (url) => {
+    const after = Number(url.searchParams.get("after") ?? 0);
+    if (url.pathname === "/api/open/v1/door/results") {
+      const items = [...(phase.a ? [A.item] : []), ...(phase.b ? [B.item] : [])].filter((i) => i.seq > Math.max(after, results.next_after - 1) && after >= results.next_after);
+      if (after < results.next_after) return results;
+      return { ...results, items, next_after: items.length ? items.at(-1).seq : after, has_more: false };
+    }
+    if (url.pathname === "/api/open/v1/door/events") {
+      if (after < base.next_after) return base;
+      const events = [...(phase.a ? recs(A, 100) : []), ...(phase.b ? recs(B, 110) : [])].filter((e) => e.seq > after);
+      return { ...base, events, next_after: events.length ? events.at(-1).seq : after, has_more: false };
+    }
+    if (url.pathname === "/api/open/v1/door/board") return board;
+    return null;
+  });
+  await import(`${LIVE}?walk=late`);
+  for (let k = 0; k < 8; k += 1) { t.mock.timers.tick(500); await settle(); }
+  phase.a = true;
+  for (let k = 0; k < 40 && !captions().length; k += 1) { t.mock.timers.tick(100); await settle(); }
+  assert.equal(captions().length, 1, "run A is playing back");
+  phase.b = true;
+  const timeline = [];
+  for (let k = 0; k < 90; k += 1) {
+    t.mock.timers.tick(100); await settle();
+    const c = captions();
+    timeline.push(c.length === 1 ? c[0][0] : c.length ? "many" : "-");
+  }
+  assert.equal(timeline.includes("many"), false, "never two playbacks at once: the newer poll ended A");
+  // B's steps: the indices after the first time the timeline restarts at 0.
+  const restart = timeline.findIndex((x, i) => i > 0 && x === "0" && timeline[i - 1] !== "0");
+  assert.ok(restart > 0, `B's playback started: ${timeline.join(" ")}`);
+  const runs = [];
+  for (const x of timeline.slice(restart)) { if (runs.length && runs.at(-1)[0] === x) runs.at(-1)[1] += 1; else runs.push([x, 1]); }
+  const steps = runs.filter(([x]) => x !== "-");
+  assert.deepEqual(steps.map(([x]) => x), ["0", "1", "2", "3", "4"], `B shows each of its steps once, in order: ${timeline.slice(restart).join(" ")}`);
+  for (const [x, n] of steps.slice(0, 4)) assert.ok(n >= 6, `step ${x} stays up its full time (${n * 100} ms): ${timeline.slice(restart).join(" ")}`);
 });
