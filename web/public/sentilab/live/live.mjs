@@ -78,7 +78,7 @@ async function ensure3d() {
     try {
       const { createView3D } = await import("../package/render3d.mjs");
       const v = await createView3D({ canvas: $("packageCanvas"), labels: $("labels3d"), leaders: $("leaders3d"), reduced: REDUCED,
-        onContextLost: () => { const old = S.v3; S.v3 = null; S.drawn = null; old?.dispose(); S.v3Failed = true; renderModel(); } });
+        onContextLost: () => { const old = S.v3; S.v3 = null; S.drawn = null; old?.dispose(); S.v3Failed = true; S.v3Lost = true; renderModel(); } });
       v.setLayerWords(new Map(STACK_LAYERS.map((l) => [l.level, [["b", null, l.name], ["span", null, formatThickness(l.t_mm)]]])));
       v.onUserMove(() => { if (S.orbit) setOrbit(false); });
       S.v3 = v;
@@ -224,8 +224,9 @@ function renderModel() {
       : st === "connecting" ? "Reading the runs." : "Connected. The first proposal is drawn here as it arrives.";
   } else if (!can3d || S.v3Failed) {
     empty.hidden = false;
-    $("modelEmptyTitle").textContent = "The 3D view needs WebGL2";
-    $("modelEmptyText").textContent = "This browser can't start it. The Package view draws the same run in 2D.";
+    $("modelEmptyTitle").textContent = S.v3Lost ? "The 3D view lost its graphics context" : "The 3D view needs WebGL2";
+    $("modelEmptyText").textContent = S.v3Lost ? "Reload the page to draw it again. The Package view draws the same run in 2D."
+      : "This browser can't start it. The Package view draws the same run in 2D.";
   } else empty.hidden = true;
   $("modelTitle").textContent = L ? `Run ${L.label}` : "A closer look at the package.";
   $("modelKindText").textContent = L ? `${STATUS_TAG[L.status] ?? L.status} · RECORD ${L.seq ?? "?"}` : "NO RUN";
@@ -389,7 +390,8 @@ function followLive() { stopPlay(); S.cursor = null; render(); }
 function stopPlay() { S.playing = false; clearTimeout(S.playTimer); }
 function play() {
   const n = points().length;
-  if (!n || !S.motion) return;
+  if (!n) return;
+  if (!S.motion) setMotion(true);   // choosing to play is choosing motion
   if (S.cursor === null || S.cursor >= n - 1) S.cursor = 0;
   S.playing = true;
   const tick = () => {
