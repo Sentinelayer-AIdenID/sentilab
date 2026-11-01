@@ -27,7 +27,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SKIP = {".git", "deck", "sundai_thermal", "__pycache__", "node_modules"}
 SUITES = ("app.test_door_intake", "app.test_door_dispatch", "app.test_door_feeds", "app.test_door_root_r1",
-          "app.test_door_root_r2")
+          "app.test_door_root_r2", "app.test_door_warden_p3")
 RUNNER = """
 import json, sys, unittest
 def flat(suite):
@@ -98,7 +98,7 @@ MUTANTS = [
      'charged, usage = max(envelope, reported or 0.0), "unknown_charged_envelope"',
      'charged, usage = 0.0, "unknown_charged_envelope"'),
     ("overrun-capped", "cpu: an overrun is charged only the envelope", DP,
-     '"charged_cpu_s": score.cpu_s, "usage"', '"charged_cpu_s": min(score.cpu_s, envelope), "usage"'),
+     '"charged_cpu_s": charged, "usage"', '"charged_cpu_s": min(charged, envelope), "usage"'),
     ("resolve-below-envelope", "cpu: an operator settles an open attempt below its envelope", S,
      'if charged_cpu_s < max(held["amount_cpu_s"], held["lower_bound_cpu_s"] or 0.0):', "if False:"),
     ("lower-bound-ignored", "cpu: a reported lower bound is dropped at settlement", S,
@@ -189,6 +189,21 @@ MUTANTS = [
      '"receipt": None, "cpu": REPLAY_RESERVE_CPU_S}'),
     ("replay-unchecked", "metric: a failed replay counts as reproduced", DP,
      "reproduced = score.replay_fresh_process and score.replay_match", "reproduced = True"),
+    # ── warden's P3s on #81 ──
+    ("unknown-below-envelope", "cpu: unmeasured usage settles below the run's envelope (P3-1)", DP,
+     "charged = score.cpu_s if score.cpu_known else max(envelope, score.cpu_s)", "charged = score.cpu_s"),
+    ("board-every-grant", "board: the grant view counts every grant's reservations (P3-3)", S,
+     '"FROM reservations WHERE grant_id = ? GROUP BY state", (grant_id,))}', '"FROM reservations GROUP BY state")}'),
+    ("operator-stored", "privacy: the declared operator is stored (P3-6)", SV,
+     'value.get("class", "unknown"), "unknown"', 'value.get("class", "unknown"), value.get("operator", "unknown")'),
+    ("receipt-in-public-result", "privacy: the raw receipt reaches a public result (P3-2)", SV,
+     '                "label": RESULT_LABEL,\n                "verification": self.verification(',
+     '                "label": RESULT_LABEL, "receipt": result["receipt"],\n'
+     '                "verification": self.verification('),
+    ("board-nonce-unchecked", "board: any x-door-nonce shape is read (P3-2)", SV,
+     '            if not isinstance(nonce, str) or not NONCE.match(nonce):\n'
+     '                return 400, {"error": "token_required"}, {}\n            if grant is not None',
+     '            if grant is not None'),
 ]
 
 

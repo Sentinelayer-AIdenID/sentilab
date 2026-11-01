@@ -564,9 +564,9 @@ class Store:
         with self.read() as db:
             return db.execute("SELECT COALESCE(MAX(seq), 0) FROM events").fetchone()[0]
 
-    def board_rows(self) -> tuple:
+    def board_rows(self, grant_id=None) -> tuple:
         """Scored runs without their grids (the ranking and the front need only these columns), the counters, the
-        run states and the grant's reservations by state."""
+        run states and this grant's reservations by state (another grant's are not this one's: warden's P3-3)."""
         with self.read() as db:
             scored = [dict(row) for row in db.execute(
                 "SELECT run_id, state, metric_c, active_c, binding_ok, wire_proxy_mm, geometry_sha256 FROM runs "
@@ -575,5 +575,5 @@ class Store:
             states = {row[0]: row[1] for row in db.execute("SELECT state, COUNT(*) FROM runs GROUP BY state")}
             grant_rows = {row[0]: row[1] for row in db.execute(
                 f"SELECT state, COALESCE(SUM(CASE WHEN state = 'settled' THEN charged_cpu_s ELSE {PROMISED} END), 0) "
-                "FROM reservations GROUP BY state")}
+                "FROM reservations WHERE grant_id = ? GROUP BY state", (grant_id,))}
         return scored, counters, states, grant_rows
